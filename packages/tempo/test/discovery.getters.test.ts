@@ -1,6 +1,4 @@
-import { describe, test, expect, beforeEach } from 'vitest';
 import { Tempo } from '#tempo';
-import '#tempo/term/standard'; // automatically register standard terms
 
 const label = 'discovery.getters:';
 
@@ -57,12 +55,12 @@ describe(`${label} instance t.ranges`, () => {
 
   test('reports current active ranges for fixed date (North-sphere)', () => {
     Tempo.init({ sphere: 'north' });										// Lock to North for deterministic results
-    const t = new Tempo('2024-04-15'); 
+    const t = new Tempo('2024-04-15');
     const ranges = t.ranges;
-    
+
     expect(ranges.qtr).toBe('Q2');
     expect(ranges.quarter).toBe('Q2');
-    
+
     expect(ranges.zdc).toBe('Aries');
     expect(ranges.zodiac).toBe('Aries');
   });

@@ -78,8 +78,9 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	}
 
 	const selfZdt = this.toDateTime();
-	const offset = new (this.constructor as any)(value, { ...opts, mode: enums.MODE.Strict });
+	const offset = new (this.constructor as any)(value, { ...opts, anchor: this, mode: enums.MODE.Strict });
 	const offsetZdt = offset.toDateTime();
+
 
 	const diffZone = selfZdt.timeZoneId !== offsetZdt.timeZoneId;
 	const dur = selfZdt.until(offsetZdt.withCalendar(selfZdt.calendarId), {

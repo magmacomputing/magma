@@ -7,6 +7,7 @@ describe('Debug QuarterTerm', () => {
 	});
 
 	it('should return 12 ranges for the 3-cycle window', () => {
+		Tempo.init({ sphere: 'north' });										// Explicitly lock for testing
 		const t = new Tempo();
 		// @ts-ignore
 		const list = QuarterTerm.resolve.call(t);

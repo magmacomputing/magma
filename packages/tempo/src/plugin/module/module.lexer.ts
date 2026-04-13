@@ -49,7 +49,7 @@ export function prefix<T extends t.WEEKDAY | t.MONTH>(str: any): T {
 }
 
 /** resolve a relative modifier (+, -, next, ago, etc) */
-function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifier) {
+export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifier) {
 	adjust = Math.abs(adjust);
 	switch (mod) {
 		case void 0:

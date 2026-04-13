@@ -11,8 +11,11 @@ import type { Tempo } from './tempo.class.js';
 /** characters allowed inside timezone/calendar brackets */
 const bracket_content = /[^\]]+/;
 
-/** common RegExp patterns */
-const MatchBase = {
+/** 
+ * Tempo Match patterns — Soft-Frozen to allow for dynamic event/period resolution  
+ * common RegExp patterns
+ */
+export const Match = proxify({
 	/** match all {} pairs, if they start with a word char */	braces: /{([#]?[\w]+(?:\.[\w]+)*)}/g,
 	/** named capture-group, if it starts with a letter */		captures: /\(\?<([a-zA-Z][\w]*)>(.*?)(?<!\\)\)/g,
 	/** event */																							event: /^([gl])?evt(?<idx>[0-9]+)$|^g?dt$/,
@@ -29,13 +32,9 @@ const MatchBase = {
 	/** Z character */																				zed: /^Z$/,
 	/** base guard characters (digits and common symbols) */	guard: /[\d\s\-\.\:T\/Z\+\-\(\)\,\=\#]/i,
 	/** bracketed content (timezone/calendar) */							bracket: /\[[^\]]+\]/i,
+	/** slick shorthand-shifter (e.g. #qtr.>2q2) */						slick: /^([#]?[\w]+\.?)([\+\-\<\>]=?|next|prev|this|last)?([0-9]+)?([\w]+)$/,
 	/** escape special regex characters in a string */				escape: (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-/** 
- * Tempo Match patterns — Soft-Frozen to allow for dynamic event/period resolution
- */
-export const Match = proxify(MatchBase, true, false);
+}, true, false);
 
 /** Tempo Symbol registry */
 export const Token = looseIndex<string, symbol>()({

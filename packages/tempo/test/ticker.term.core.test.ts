@@ -3,6 +3,9 @@ import '#tempo/term/standard'
 import '#tempo/ticker'
 
 describe('Ticker with Terms', () => {
+	beforeEach(() => {
+		Tempo.init({ sphere: 'north' });
+	});
 
 	test.each([
 		{

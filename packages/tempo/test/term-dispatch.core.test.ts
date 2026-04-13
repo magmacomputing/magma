@@ -28,8 +28,10 @@ describe('Term Dispatch Refactor', () => {
 	});
 
 	it('should throw error for unknown term', () => {
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
 		const t = new Tempo();
 		expect(() => t.set({ '#unknown': 1 })).toThrow('Unknown Term identifier: #unknown');
+		spy.mockRestore();
 	});
 
 	it('should handle mid.term correctly', () => {

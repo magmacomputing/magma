@@ -30,7 +30,15 @@ export class Logify {
 		const output = msg.map(m => {
 			if (m instanceof Error) return m.message;
 			if (isObject(m)) {
-				try { return JSON.stringify(m); } catch { return '[Object]'; }
+				try {
+					const name = m.constructor?.name ?? 'Object';			// avoiding JSON.stringify (expensive)
+					if (name === 'Object') {
+						const keys = Object.keys(m);
+						const summary = keys.slice(0, 3).join(', ');
+						return `{ ${summary}${keys.length > 3 ? '...' : ''} }`;
+					}
+					return `[${name}]`;
+				} catch { return '[Object]'; }
 			}
 			return String(m);
 		}).filter(s => !isEmpty(s)).join(' ');

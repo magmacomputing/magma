@@ -7,6 +7,7 @@ describe('Error Handling stabilization', () => {
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
 		try {
 			expect(() => Tempo.ticker('invalid')).toThrow();
+			expect(spy).toHaveBeenCalled();
 		} finally {
 			spy.mockRestore();
 		}

@@ -198,15 +198,17 @@ export class Tempo {
 
 	/** try to infer hemisphere using the timezone's daylight-savings setting */
 	static #setSphere = (shape: Internal.State, options: Tempo.Options) => {
-		if (isUndefined(shape.config.timeZone) || Tempo.#hasOwn(options, 'sphere'))
-			return shape.config.sphere;													// already specified or no timeZone to calculate from
+		if (Tempo.#hasOwn(options, 'sphere')) return options.sphere;
 
-		const tz = shape.config.timeZone as string;
-		const sphere = getHemisphere(tz);
-		if (tz.toLowerCase() === 'utc' || !sphere) return undefined;
+		if (Tempo.#hasOwn(options, 'timeZone')) {
+			const tz = options.timeZone as string;
+			if (tz.toLowerCase() !== 'utc') return getHemisphere(tz);
+		}
 
-		return isDefined(options.timeZone) ? (sphere ?? 'north') : (sphere ?? shape.config.sphere ?? 'north');
+		// Honor currently inherited lock (don't overwrite with undefined)
+		return (shape === Tempo.#global) ? undefined : Tempo.config.sphere;
 	}
+
 
 	/** determine if we have a {timeZone} which prefers {mdy} date-order */
 	static #isMonthDay(shape: Internal.State) {
@@ -1185,23 +1187,23 @@ export class Tempo {
 
 	/** current Tempo configuration */
 	get config() {
-		const base = Object.create(Default);										// Default → global overrides
-		const gDesc = omit(Object.getOwnPropertyDescriptors(Tempo.#global.config), 'value');
-		Object.defineProperties(base, gDesc);
+		const out = Object.assign({},
+			Default,
+			Tempo.#global.config,
+			this.#local.config
+		);
 
-		const out = Object.create(base);												// global → local overrides
-		const lDesc = omit(Object.getOwnPropertyDescriptors(this.#local.config), 'value', 'anchor', 'mode', 'lazy');
-		Object.defineProperties(out, lDesc);
+		markConfig(out);
 
-		Object.defineProperties(out, {
-			mode: { value: this.#local.parse.mode, enumerable: true, writable: true, configurable: true },
-			lazy: { value: this.#local.parse.lazy, enumerable: true, writable: true, configurable: true },
-			toJSON: {
-				value: () => Object.fromEntries(										// bare-bones: only show local overrides
-					Object.entries(out)),															// proxify sees own toJSON, skips allObject
-				enumerable: false, configurable: true
-			},
+		if (!Object.hasOwn(out, 'mode')) Object.defineProperty(out, 'mode', { value: this.#local.parse.mode, enumerable: true, writable: true, configurable: true });
+		if (!Object.hasOwn(out, 'lazy')) Object.defineProperty(out, 'lazy', { value: this.#local.parse.lazy, enumerable: true, writable: true, configurable: true });
+
+		Object.defineProperty(out, 'toJSON', {
+			value: () => Object.fromEntries(										// bare-bones: only show local overrides
+				Object.entries(out)),															// proxify sees own toJSON, skips allObject
+			enumerable: false, configurable: true
 		});
+
 
 		return proxify(out) as t.Internal.Config;
 	}

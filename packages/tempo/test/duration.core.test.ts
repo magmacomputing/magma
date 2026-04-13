@@ -2,8 +2,10 @@ import { Tempo } from '#tempo/core';
 
 describe('Tempo.duration() (Core)', () => {
 	it('should throw Error if plugin not loaded', () => {
-		// Note: t.config access in interpret handles the static config lookup
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
 		expect(() => Tempo.duration('P1Y')).toThrow('duration plugin not loaded');
+		expect(spy).toHaveBeenCalled();
+		spy.mockRestore();
 	});
 
 	it('should work after manual extension', async () => {

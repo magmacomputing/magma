@@ -22,6 +22,7 @@ const groups = defineRange([
 function resolve(t: Tempo, anchor?: any): any[] {
 	const source: any = anchor ?? t;
 	const sphere = isTempo(source) ? source.config.sphere : (source.sphere ?? t.config.sphere);
+
 	const template = (groups as any)[sphere] ?? [];
 	if (template.length === 0) return [];
 
