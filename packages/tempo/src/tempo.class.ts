@@ -870,9 +870,14 @@ export class Tempo {
 	static get instant() { return Temporal.Instant.fromEpochNanoseconds(this.now()) }
 
 	/** static Tempo.terms (registry) */
-	static get terms(): Secure<Omit<Tempo.TermPlugin, 'define'>[]> {
-		return secure(Tempo.#terms
-			.map(({ define, ...rest }) => rest));								// omit the 'define' method
+	static get terms(): Secure<Omit<Tempo.TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<Tempo.TermPlugin, 'define' | 'resolve'>> {
+		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => rest);
+		return delegate(list, (key) => {
+			if (isString(key) && !['length', 'map', 'find', 'forEach', 'includes'].includes(key)) {
+				return list.find(t => t.key === key || t.scope === key);
+			}
+			return undefined;
+		}) as any;
 	}
 
 	/** static Tempo.formats (registry) */
@@ -1151,6 +1156,33 @@ export class Tempo {
 	/** ISO weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as Tempo.Weekday }
 	/** Nanoseconds since Unix epoch (BigInt) */							get nano() { return this.toDateTime().epochNanoseconds }
 	/** `true` if the underlying date-time is valid. */				get isValid() { this.#ensureParsed(); return isZonedDateTime(this.#zdt) && !this.#errored }
+
+	/** list of registered terms and their available range keys */
+	get terms(): Record<string, string[]> {
+		const res: Record<string, string[]> = {};
+		Tempo.terms.forEach(term => {
+			const source = (term as any).ranges || (term as any).groups || [];					// check both ranges and groups
+			const list = Array.isArray(source) ? source : Object.values(source).flat(Infinity) as any[];
+			const ranges = [...new Set(list.map(r => r.key).filter(isString))];					// collect unique range keys
+			res[term.key] = ranges;
+			if (term.scope) res[term.scope] = ranges;													// add scope alias if defined
+		});
+		return res;
+	}
+
+	/** current range key for every registered term */
+	get ranges(): Record<string, string> {
+		const res: Record<string, string> = {};
+		Tempo.terms.forEach(term => {
+			const val = (this as any).term[term.key];																// access the term-delegate (forces evaluation)
+			if (isString(val)) {
+				res[term.key] = val;
+				if (term.scope) res[term.scope] = val;													// alias the string to the scope key
+			}
+		});
+		return res;
+	}
+
 	/** current Tempo configuration */
 	get config() {
 		const base = Object.create(Default);										// Default → global overrides

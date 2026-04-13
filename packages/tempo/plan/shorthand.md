@@ -36,3 +36,75 @@ Important to retain the assigned Range-list when using a TermKey or TermScope (f
 ** allowable to use the TermKey ('#qtr.q3') or TermScope ('#quarter.q3') interchangeably in the above.
 ** if the offset values are negative, then new Tempos are returned prior to the current Tempo
 ** allowable to use the string key from the above as a shorthand only to denote '1' term e.g. .add('#zodiac.aries')
+
+
+## Extended Term Syntax
+
+Term PlugIns and Extension PlugIns are where Tempo will really shine.
+If we can make the syntax for these clear, concise, and easy to remember, then we'll have a winner.
+
+Extended Term usage involves combining a Term Key (or Term Scope as an alias, if defined) with a Range Key, separated by a '.' to do some interesting things.  Combine this with 'shorthand' keys (see below) and we can make this very concise.
+
+In order to make this really easy for the developer, they will need the ability to query the available Term Keys and Range Keys for the current Tempo.  (I'm not sure if they have this already ?)
+
+### .until() with Extended Terms
+Just as we've done above with .set() and .add(), I can see some benefits to allowing Extended Terms to be used in .until() as well.  the .until() method returns a Tempo.Duration object (a standard Temporal.DurationLikeObject but with an .iso property as well)... let's call it a DLO (for duration-like object) in these notes.
+
+## #quarter
+1) { start: '#quarter' } returns a DLO representing the duration from the current Tempo to the beginning of the current quarter (so usually negative)
+2) { start: '#quarter.q2'} returns a DLO representing the duration from the current Tempo to the beginning of the second quarter in the current Term
+3) { mid: '#quarter' } returns a DLO representing the duration from the current Tempo to the middle of the current quarter
+4) { mid: '#quarter.q3' } returns a DLO representing the duration from the current Tempo to the middle of the third quarter in the current Term
+5) { end: '#quarter' } returns a DLO representing the duration from the current Tempo to the end of the current quarter
+6) { end: '#quarter.q4' } returns a DLO representing the duration from the current Tempo to the end of the fourth quarter in the current Term
+
+## #period
+7) { start: '#period' } returns a DLO representing the duration from the current Tempo to the beginning of the current period (so usually negative)
+8) { start: '#period.afternoon' } returns a DLO representing the duration from the current Tempo to the beginning of the 'afternoon'
+9) { mid: '#period' } returns a DLO representing the duration from the current Tempo to the middle of the current period
+10) { mid: '#period.evening' } returns a DLO representing the duration from the current Tempo to the middle of the 'evening'
+11) { end: '#period' } returns a DLO representing the duration from the current Tempo to the end of the current period
+12) { end: '#period.night' } returns a DLO representing the duration from the current Tempo to the end of the 'night'
+
+## #zodiac
+13) { start: '#zodiac' } returns a DLO representing the duration from the current Tempo to the beginning of the current zodiac sign (so usually negative)
+14) { start: '#zodiac.taurus' } returns a DLO representing the duration from the current Tempo to the beginning of the 'Taurus' sign
+15) { mid: '#zodiac' } returns a DLO representing the duration from the current Tempo to the middle of the current zodiac sign
+16) { mid: '#zodiac.taurus' } returns a DLO representing the duration from the current Tempo to the middle of the 'Taurus' sign
+17) { end: '#zodiac' } returns a DLO representing the duration from the current Tempo to the end of the current zodiac sign
+18) { end: '#zodiac.taurus' } returns a DLO representing the duration from the current Tempo to the end of the 'Taurus' sign
+
+## #season
+19) { start: '#season' } returns a DLO representing the duration from the current Tempo to the beginning of the current season (so usually negative)
+20) { start: '#season.summer' } returns a DLO representing the duration from the current Tempo to the beginning of the 'Summer' season
+21) { mid: '#season' } returns a DLO representing the duration from the current Tempo to the middle of the current season
+22) { mid: '#season.summer' } returns a DLO representing the duration from the current Tempo to the middle of the 'Summer' season
+23) { end: '#season' } returns a DLO representing the duration from the current Tempo to the end of the current season
+24) { end: '#season.summer' } returns a DLO representing the duration from the current Tempo to the end of the 'Summer' season
+
+## combining with 'shorthand' (which implies 'start')
+25) '#qtr.q1' is a shorthand for { start: '#quarter.q1' }
+26) '#period.afternoon' is a shorthand for { start: '#period.afternoon' }
+27) '#zodiac.taurus' is a shorthand for { start: '#zodiac.taurus' }
+28) '#season.summer' is a shorthand for { start: '#season.summer' }
+
+## Gotcha's
+- When running in 'lite' mode (#tempo/core) then the TermModule must be activated for this to be useful.
+If it is not, then a Tempo created with any of the above syntax will throw an error (respecting the catch:boolean flag)
+- Ranges have upper- and lower-bounds (e.g. Q1-Q4, Aries-Pisces, Spring-Winter, Morning-Night) determined by their sorted Duration fields (year, month, day, etc).   When using 'until' it is expected that the DLO will be in the same range as the current Tempo (defined by that Tempo's year/month/day, etc).  For example, in Q3 then '#qtr.q2' will return a negative DLO... in Morning then '#period.night' will return a positive DLO.  in 'Taurus' then '#zodiac.aries' will return a negative DLO.  in 'Spring' then '#season.winter' will return a negative DLO in southern hemisphere, but positive in northern hemisphere.
+- To move outside of a Range requires the use of the 'add' method.  For example, t1.until(t1.add({years:1}).set('#qtr.q2'))
+- No consideration is being given (at this release) to the 'CN' (Chinese) sub-objects on any of the terms.
+
+## Slick (as an alternative to 'knowing' what unit to use in an 'add()')
+- To provide a 'slick' method for moving across a Range (and beyond), we will consider using the Tempo.Modifier syntax
+1) .until('#qtr.>q2') will return a DLO representing the time from the current Tempo to the beginning of the next quarter-two
+2) .until('#zdc.>=Aries') will return a DLO representing the duration from the current Tempo to the beginning of the next Aries term
+3) .until('#szn.-Winter') will return a DLO representing the duration from the current Tempo to the beginning of the previous Winter term
+4) .until('#period.>=morning') will return a DLO representing the duration from the current Tempo to the beginning of the next morning
+
+## and to take this one step further
+5) .until({start: '#qtr.>q2'}) is the long-version of ('#qtr.>q2')
+6) .until({mid: '#qtr.>q3'}) returns a DLO representing the duration from the current Tempo to the middle of the next quarter-three
+7) .until({start: '#period.-3morning}) returns a DLO representing the duration from the current Tempo to 3 days ago in the morning
+
+so t1.until(t1.add({years:1}).set('#qtr.q2')) can be re-written as t1.until('#qtr.>q2')
