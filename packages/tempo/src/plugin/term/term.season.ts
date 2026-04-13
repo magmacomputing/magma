@@ -28,7 +28,6 @@ const groups = defineRange([
 function resolve(t: Tempo, anchor?: any) {
 	const source: any = anchor ?? t;
 	const sphere = isTempo(source) ? source.config.sphere : (source.sphere ?? t.config.sphere ?? COMPASS.North);
-
 	const template = (groups as any)[`meteorological.${sphere}`] ?? [];
 	if (template.length === 0) return [];
 

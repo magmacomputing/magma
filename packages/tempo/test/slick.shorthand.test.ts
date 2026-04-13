@@ -71,4 +71,13 @@ describe('Slick Shorthand Resolution', () => {
     const elapsed = t.since('#qtr.this', 'days');           // time since CURRENT quarter start
     expect(elapsed).toBe('14d ago');                        // Apr 15 since Apr 1 is 14 days (narrow style)
   });
+
+  test('shorthand with mid and end mutations', () => {
+    const t = new Tempo('2024-01-01', { sphere: 'north' }); // Start of Q1 (North)
+
+    // Q1 2024 (Jan 1 - Apr 1). Midpoint is Feb 15th
+    const midQ1 = t.set({ mid: '#qtr.q1' });
+    expect(midQ1.mm).toBe(2);
+    expect(midQ1.dd).toBe(15);
+  });
 });

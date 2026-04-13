@@ -1663,7 +1663,15 @@ export class Tempo {
 				if (key === 'slk') {
 					const slk = groups[key];
 					// Resolve the shifter using the same engine as .set() / .add()
-					dateTime = resolveTermMutation(Tempo, this, 'set', slk, undefined, dateTime);
+					const result = resolveTermMutation(Tempo, this, 'set', slk, undefined, dateTime);
+					if (result === null) {
+						// Immediately abort parsing by returning early to avoid non-ZonedDateTime errors
+						this.#errored = true;
+						resolved.add(key);
+						delete groups[key];
+						break;
+					}
+					dateTime = result;
 					resolved.add(key);
 					delete groups[key];
 					continue;

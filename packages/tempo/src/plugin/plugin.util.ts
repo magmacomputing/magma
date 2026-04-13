@@ -150,7 +150,6 @@ export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) 
  */
 export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor?: any): string | ResolvedRange | undefined {
 	const chronological = sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
-
 	if (chronological.length === 0) return undefined;
 
 	const match = chronological

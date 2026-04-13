@@ -46,19 +46,23 @@ describe('Ticker with Terms', () => {
 	])('should pulse $name', ({ interval, seed, expected }) => {
 		const pulses: string[] = []
 		const ticker = Tempo.ticker(interval, { seed })
-		const callback = vi.fn((t: Tempo) => {
-			pulses.push(t.toString().substring(0, 19))
-		})
+		try {
+			const callback = vi.fn((t: Tempo) => {
+				pulses.push(t.toString().substring(0, 19))
+			})
 
-		ticker.on('pulse', callback)
+			ticker.on('pulse', callback)
 
-		// Manual pulses to simulate time passing (after the initial bootstrap pulse)
-		ticker.pulse()
-		ticker.pulse()
-		ticker.pulse()
+			// Manual pulses to simulate time passing (after the initial bootstrap pulse)
+			ticker.pulse()
+			ticker.pulse()
+			ticker.pulse()
 
-		expect(callback).toHaveBeenCalledTimes(4)
-		expect(pulses).toEqual(expected)
+			expect(callback).toHaveBeenCalledTimes(4)
+			expect(pulses).toEqual(expected)
+		} finally {
+			ticker.stop();
+		}
 	})
 
 	it('should refuse to launch with an invalid #term', async () => {
