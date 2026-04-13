@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-04-13
+
+### Added
+- **Slick Shorthand Engine**: Finalized and stabilized the high-performance term-shorthand syntax (`#namespace.modifier`). Advanced temporal navigation (e.g. `#qtr.>2q1`) is now fully supported across `.set()`, `.add()`, `.until()`, and `.since()`.
+- **Inclusive Range Shifters**: Introduced `>=` and `<=` modifiers to the "Slick" engine. These shifters are strictly inclusive, allowing the current term to be matched if it contains the cursor, providing a deterministic "current or next" resolution pattern.
+- **Advanced Terminology Docs**: Published a comprehensive documentation suite (`doc/tempo.advanced_term.html`) detailing lexer constraints, modifier priority, and bifurcated resolution logic for high-performance term cycles.
+
+### Changed
+- **Boundary Performance**: Optimized the term resolution loop to utilize `BigInt` nanosecond comparisons for all shifter logic (`>`, `<`, `next`, `prev`), ensuring deterministic behavior across complex fiscal and calendar boundaries.
+
+### Fixed
+- **Infinite Loop Resolution**: Resolved a critical regression where shorthand modifiers were leaking into range-keys, triggering infinite recursion during term mutation.
+- **Hemisphere Inference**: Fixed an initialization bug in `Tempo.init()` where the `sphere` configuration could be incorrectly overwritten or ignored during system-timezone evaluation.
+- **Shorthand Lexer Safety**: Hardened the lexer to strictly enforce Range-Key constraints (no reserved characters or leading digits), eliminating collisions between direction modifiers and repeat counts.
+
 ## [2.1.1] - 2026-04-12
 
 ### Added
