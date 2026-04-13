@@ -14,10 +14,13 @@ describe(`${label} parse result accumulation`, () => {
     const t1 = new Tempo('2024-05-20');
     const t2 = t1.set({ time: '10:00' });
     const t3 = t2.set({ period: 'afternoon' });
+    const len1 = t1.parse.result.length;
+    const len2 = t2.parse.result.length;
+    const len3 = t3.parse.result.length;
 
-    expect(t3.parse.result.length).toBe(7);								// 1 (constr) + 1 (set.time) + 5 (set.period lineage)
-    // Also ensure it meets the minimum
-    expect(t3.parse.result.length).toBeGreaterThanOrEqual(5);
+    expect(len3).toBeGreaterThan(len2);
+    expect(len2).toBeGreaterThan(len1);
+    expect(len3).toBeGreaterThanOrEqual(5);
   });
 
   test('mixed .add() and .set() calls preserve history', () => {

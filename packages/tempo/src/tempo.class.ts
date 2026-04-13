@@ -200,15 +200,21 @@ export class Tempo {
 	static #setSphere = (shape: Internal.State, options: Tempo.Options) => {
 		if (isDefined(options.sphere)) return options.sphere;
 
-		if (isDefined(options.timeZone)) {
-			const tz = String(options.timeZone);
-			return (tz.toLowerCase() === 'utc') ? undefined : getHemisphere(tz);
+		const configTz = shape.config?.timeZone;
+		if (isDefined(configTz)) {
+			const tz = String(configTz);
+			if (tz.toLowerCase() === 'utc') return undefined;
+			const sphere = getHemisphere(tz);
+			if (isDefined(sphere)) return sphere;
 		}
 
-		const tz = shape.config?.timeZone;
-		if (isDefined(tz) && String(tz).toLowerCase() !== 'utc') return getHemisphere(String(tz));
+		if (isDefined(options.timeZone)) {
+			const tz = String(options.timeZone);
+			if (tz.toLowerCase() === 'utc') return undefined;
+			const sphere = getHemisphere(tz);
+			if (isDefined(sphere)) return sphere;
+		}
 
-		// Honor currently inherited lock (don't overwrite with undefined)
 		return isDefined(shape.config?.sphere) ? shape.config.sphere : undefined;
 	}
 

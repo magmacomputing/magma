@@ -5,6 +5,8 @@ describe('Tempo Infinite Loop Protection', () => {
     Tempo.init()
   })
 
+  afterEach(() => vi.restoreAllMocks())
+
   test('cyclic alias resolution (A -> B -> A) is broken by resolvingKeys', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
     const event = {
@@ -14,7 +16,6 @@ describe('Tempo Infinite Loop Protection', () => {
     const t = new Tempo('loopA', { event, catch: true })
     expect(t.toString()).toBe('loopA')
     expect(spy).toHaveBeenCalled();
-    spy.mockRestore();
   })
 
   test('deep alias chain is broken by MAX_DEPTH', () => {
@@ -27,6 +28,5 @@ describe('Tempo Infinite Loop Protection', () => {
     const t = new Tempo('step0', { event, catch: true })
     expect(t.toString()).toBe('step0')
     expect(spy).toHaveBeenCalled();
-    spy.mockRestore();
   })
 })

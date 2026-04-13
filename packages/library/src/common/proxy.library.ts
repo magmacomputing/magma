@@ -139,6 +139,9 @@ export function secureRef<T extends object>(target: T): T {
 		},
 		deleteProperty(t, k) {
 			throw new Error(`Security: Deletion attempt on protected key '${String(k)}'`);
+		},
+		setPrototypeOf() {
+			throw new Error(`Security: Prototype mutation attempt on protected object`);
 		}
 	});
 }

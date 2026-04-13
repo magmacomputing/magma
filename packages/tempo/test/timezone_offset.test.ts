@@ -21,5 +21,6 @@ describe('Tempo TimeZone Offset', () => {
 	it('should handle timeZone in constructor options', () => {
 		const t = new Tempo({ value: '2024-01-01T12:00:00', timeZone: '+10:30' });
 		expect(t.config.timeZone).toBe('+10:30');
+		expect(t.format('{tz}')).toContain('+10:30');
 	});
 });

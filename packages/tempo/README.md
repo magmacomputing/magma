@@ -16,7 +16,7 @@ Working with `Date` in JavaScript has historically been painful. The new `Tempor
 - **Natural Language**: Supports word-based numbers (0-10) in relative parsing (e.g., "two days ago").
 - **Fluent API**: Chainable methods for adding, subtracting, and setting date-times (similar to Moment.js).
 - **Formatting**: Use custom tokens to format date-times in a way that is both intuitive and flexible.
-- **Plugin**: Extend core functionality safely; built-ins (e.g., TickerPlugin) self-register on import (just import the module).
+- **Plugin**: Extend core functionality safely; built-ins (like the Ticker) are ready-to-use in the full package, or can be opted-into via side-effect imports when using the lean Core engine.
 - **Terms**: Access complex date ranges (Quarters, Seasons, Zodiacs) easily.
 - **Immutable**: Operations (like `set` and `add`) return a new `Tempo` instance, ensuring thread safety and predictability.
 
@@ -115,7 +115,7 @@ Tempo v2.1.0 is a major milestone, delivering a more reactive architecture and r
 - **Improved Logging**: Internal logging uses context-aware Symbols for better decoupling.
 - **Static API**: `Tempo.duration()` static method for convenient duration creation.
 
-- **Side Effect Registration**: Plugin and Term now support self-registration. Simply importing a plugin is now sufficient to extend the Tempo core automatically.
+- **Side Effect Registration**: Plugins now support automatic registration. While the full package includes all modules by default, Core users can activate features simply by importing the corresponding module (e.g., `@magmacomputing/tempo/ticker`).
 - **100% Reliability**: The engine passes all regression tests, ensuring complete stability across parsing, calculation, and formatting routines.
 - **Unified Term Logic**: Terms (like Quarters and Seasons) are now fully integrated. Use `#` in `set()` to jump to boundaries, and `{#term}` in `format()` to embed semantic labels (e.g. "Second Quarter") directly into strings.
 - **Relational Term Math**: A category-first feature. Shift dates by semantic "steps" with `.add({ '#quarter': 1 })`. Tempo preserves your relative duration within the term, jumping across gaps and handling overflows with mathematical precision.

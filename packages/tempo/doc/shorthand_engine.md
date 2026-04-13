@@ -10,7 +10,9 @@ Shorthand follows the pattern: `#namespace.range`
 - **Range**: A specific range defined by that plugin (e.g., `q1`, `morning`, `aries`).
 
 > [!IMPORTANT]
-> Shorthand literals are **not** supported in the `Tempo` constructor. They are resolved relative to an existing instance and must be used via mutation methods (`.set()`, `.add()`) or the Ticker.
+> **Prerequisite**: Shorthand resolution requires the Terms Module to be activated in Core environments (e.g., `Tempo.extend(TermsModule)` or `import '@magmacomputing/tempo/term/standard'`). Without activation, shorthand calls like `.set('#...')` or `.add('#...')` will throw missing-term/plugin errors.
+>
+> Shorthand literals are **not** supported in the `Tempo` constructor. They are resolved relative to an existing instance and must be used via instance methods (`.set()`, `.add()`, `.until()`, `.since()`) or the Ticker.
 
 
 ## Usage Patterns
@@ -43,6 +45,17 @@ t.add({ '#period.morning': 2 });	// 2026-06-03T08:00:00
 
 // DESCRIPTIVE: Move one quarter ahead (relative to current position)
 t.add({ '#quarter': 1 });					// Q1 -> Q2, or Q2 -> Q3
+```
+
+### 4. Relative Comparison (`.until()`, `.since()`)
+Shorthand can be used to calculate durations between the current instance and a specific term range.
+
+```typescript
+// Find how many days until the next Q1
+t.until('#qtr.q1', 'days');
+
+// Find how long it has been since the start of the current morning
+t.since('#period.morning');
 ```
 
 > [!TIP]

@@ -70,7 +70,7 @@ See the section on [plugin](tempo.term.md) for more information.
 
 ```typescript
 const t = new Tempo();
-const isWeekend = t.term.isWeekend (through plugin)
+const isWeekend = t.term.isWeekend;             // through plugin
 
 // Built-in complex terms via plugin
 t.term.qtr; // returns calculated 'fiscal quarter' based on current instance (date and hemisphere) e.g., 'Q1'

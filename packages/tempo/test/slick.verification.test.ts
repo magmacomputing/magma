@@ -70,7 +70,7 @@ describe('Tempo Shorthand Suite (Comprehensive)', () => {
 	});
 
 	describe('Environment & Type Safety', () => {
-		test('Tempo.init() casting timeZone to string', () => {
+		test('Tempo constructor casting timeZone to string', () => {
 			// This test verifies the fix for tempo.class:209 / #setSphere
 			const mockTz = { toString: () => 'Australia/Sydney' };
 

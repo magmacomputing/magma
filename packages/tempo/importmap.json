@@ -7,7 +7,6 @@
     "@magmacomputing/tempo/format": "./dist/plugin/module/module.format.js",
     "@magmacomputing/tempo/plugin": "./dist/plugin/plugin.index.js",
     "@magmacomputing/tempo/enums": "./dist/tempo.enum.js",
-    "@magmacomputing/tempo/library": "./dist/library.index.js",
-    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.4.4/dist/index.esm.min.js"
+    "@magmacomputing/tempo/library": "./dist/library.index.js"
   }
 }

@@ -116,6 +116,14 @@ describe('Tempo Issue Fixes', () => {
       expect(shifted.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-21')
     })
 
+    test('set() with debug: true preserves behavior and flags', () => {
+      const t = new Tempo('2024-05-20 10:00', { timeZone: 'UTC' })
+      const shifted = t.set('tomorrow', { timeZone: 'America/New_York', debug: true })
+      expect(shifted.tz).toBe('America/New_York')
+      expect(shifted.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-21')
+      expect(shifted.config.debug).toBe(true)
+    })
+
     test('add() accepts a duration payload', () => {
       const t = new Tempo('2024-05-20 10:00', { timeZone: 'UTC' })
       const nextWeek = t.add({ days: 7 })

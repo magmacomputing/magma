@@ -37,8 +37,7 @@ Tempo is an ESM-first library. You can use it in the browser without a build ste
     "@magmacomputing/tempo/plugin": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/plugin/plugin.util.js",
     "@magmacomputing/tempo/enums": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/tempo.enum.js",
     "@magmacomputing/tempo/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/library.index.js",
-    "@magmacomputing/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/library/dist/common/index.js",
-    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.4.4/dist/index.esm.min.js"
+    "@magmacomputing/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/library/dist/common.index.js"
   }
 }
 </script>
@@ -331,7 +330,7 @@ See the [Tempo Ticker guide](./tempo.ticker.md) for full details and API signatu
 
 ## Plugin (Terms)
 
-`Tempo` can be extended with "terms" – plugin that calculate complex date ranges. 
+`Tempo` can be extended with 'terms' — plugins that calculate complex date ranges. 
 
 ### Unified Term Logic (v2.0.0)
 

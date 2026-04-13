@@ -4,7 +4,7 @@
 
 ## Installation
 
-To use the ticker, simply import the module as a side effect or import the `TickerModule` directly. Both methods automatically register the `Tempo.ticker()` method with the core library:
+To use the ticker, you can import the module as a side effect or import the `TickerModule` directly. The side-effect import (`import '@magmacomputing/tempo/ticker'`) registers the `Tempo.ticker` method automatically, while importing the `TickerModule` explicitly requires you to call `Tempo.extend(TickerModule)` to register it with the core library:
 
 ```typescript
 // Pattern A: One-line activation (Side effect)

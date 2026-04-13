@@ -2,12 +2,22 @@ import { Tempo } from '#tempo';
 import { QuarterTerm } from '#tempo/plugin/term/term.quarter.js';
 
 describe('Debug QuarterTerm', () => {
+	let priorConfig: any;
+
+	beforeAll(() => {
+		priorConfig = { ...Tempo.config };
+		Tempo.init({ sphere: 'north' });												// Explicitly lock for testing
+	});
+
+	afterAll(() => {
+		Tempo.init(priorConfig);																// Restore global state
+	});
+
 	it('should have a resolve method', () => {
 		expect(typeof QuarterTerm.resolve).toBe('function');
 	});
 
 	it('should return 12 ranges for the 3-cycle window', () => {
-		Tempo.init({ sphere: 'north' });										// Explicitly lock for testing
 		const t = new Tempo();
 		// @ts-ignore
 		const list = QuarterTerm.resolve.call(t);

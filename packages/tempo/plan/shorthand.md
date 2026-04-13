@@ -105,6 +105,6 @@ If it is not, then a Tempo created with any of the above syntax will throw an er
 ## and to take this one step further
 5) .until({start: '#qtr.>q2'}) is the long-version of ('#qtr.>q2')
 6) .until({mid: '#qtr.>q3'}) returns a DLO representing the duration from the current Tempo to the middle of the next quarter-three
-7) .until({start: '#period.-3morning}) returns a DLO representing the duration from the current Tempo to 3 days ago in the morning
+7) .until({start: '#period.-3morning'}) returns a DLO representing the duration from the current Tempo to 3 days ago in the morning
 
 so t1.until(t1.add({years:1}).set('#qtr.q2')) can be re-written as t1.until('#qtr.>q2')

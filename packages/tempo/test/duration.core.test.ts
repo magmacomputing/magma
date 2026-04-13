@@ -1,11 +1,12 @@
 import { Tempo } from '#tempo/core';
 
 describe('Tempo.duration() (Core)', () => {
+	afterEach(() => vi.restoreAllMocks())
+
 	it('should throw Error if plugin not loaded', () => {
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
 		expect(() => Tempo.duration('P1Y')).toThrow('duration plugin not loaded');
 		expect(spy).toHaveBeenCalled();
-		spy.mockRestore();
 	});
 
 	it('should work after manual extension', async () => {

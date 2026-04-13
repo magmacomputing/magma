@@ -25,9 +25,9 @@ We must transition from **Implicit Instance State** to **Explicit Context Inject
 ```typescript
 interface ParseContext {
     anchor: Temporal.ZonedDateTime;
-    registry: Tempo.Registry;
+    registry: Tempo.Internal.Registry;
     options: Tempo.Options;
-    results: Internal.Match[];
+    results: Tempo.Internal.Match[];
     depth: number;
     resolvingKeys: Set<string>;
 }
@@ -45,6 +45,7 @@ Instead of "hijacking" a `this` context, nested lookups will pass a **Cloned Con
 ---
 
 ## 🚦 v2 Implementation Merit
+
 | Phase | Task | Complexity |
 | :--- | :--- | :--- |
 | **Phase 1** | Refactor `Tempo` class to use an internal `context` object for parsing instead of field-level properties. | Medium |

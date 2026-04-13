@@ -22,7 +22,7 @@
 body {
   background: var(--bg-dark);
   color: var(--text-main);
-  font-family: 'Outfit', sans-serif;
+  font-family: Outfit, sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   background-image: 

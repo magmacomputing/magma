@@ -21,6 +21,7 @@ export default defineConfig({
       { find: /^#tempo\/core$/, replacement: resolve(__dirname, './src/core.index.ts') },
       { find: /^#tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
       { find: /^#tempo\/term\/standard$/, replacement: resolve(__dirname, './src/plugin/term/standard.index.ts') },
+      { find: /^#tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/$1') },
       { find: /^#tempo\/ticker$/, replacement: resolve(__dirname, './src/plugin/extend/extend.ticker.ts') },
       { find: /^#tempo\/duration$/, replacement: resolve(__dirname, './src/plugin/module/module.duration.ts') },
       { find: /^#tempo\/format$/, replacement: resolve(__dirname, './src/plugin/module/module.format.ts') },

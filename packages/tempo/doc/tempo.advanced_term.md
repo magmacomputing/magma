@@ -43,7 +43,7 @@ The shorthand resolves differently depending on the method invoked.
 
 ### `.set(shorthand)` - The Anchor
 Aligns the instance forward or backward to the matched term.
-- `t.set('#qtr.q1')`: Snaps to the start of the current cycle's Q1.
+- `t.set('#qtr.q1')`: Snaps to the start of the matched Q1 found within the absolute search scope.
 - `t.set('#qtr.>q1')`: Snaps to the start of the *next* available Q1.
 
 ### `.add(shorthand)` - The Momentum

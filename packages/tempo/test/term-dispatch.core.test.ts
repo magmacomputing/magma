@@ -5,6 +5,8 @@ import '#tempo/term/standard';
 Tempo.extend(FormatModule);
 
 describe('Term Dispatch Refactor', () => {
+	afterEach(() => vi.restoreAllMocks())
+
 	it('should set term by index (#quarter: 2)', () => {
 		const t = new Tempo('2024-01-01T00:00:00', { timeZone: 'America/New_York' });
 		const t2 = t.set({ '#quarter': 2 });
@@ -31,7 +33,6 @@ describe('Term Dispatch Refactor', () => {
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
 		const t = new Tempo();
 		expect(() => t.set({ '#unknown': 1 })).toThrow('Unknown Term identifier: #unknown');
-		spy.mockRestore();
 	});
 
 	it('should handle mid.term correctly', () => {

@@ -25,7 +25,7 @@
         </h3>
         <p>Custom Range-Keys (e.g., <code>q1</code>, <code>morning</code>) must adhere to these constraints to prevent lexer collisions:</p>
         <ul style="margin: 12px 0 0 20px;">
-          <li><strong>No Control Characters</strong>: <code>> < + = , . ! @ # $ % ^ & *</code> are reserved.</li>
+          <li><strong>No Control Characters</strong>: <code>&gt; &lt; + = , . ! @ # $ % ^ & * ( ) [ ] { }</code> are reserved.</li>
           <li><strong>No Leading Numbers</strong>: <code>1q</code> is <strong>invalid</strong>. Leading digits are reserved for repeat counts.</li>
         </ul>
       </div>
@@ -46,16 +46,16 @@
         </thead>
         <tbody>
           <tr>
-            <td><code class="badge">></code></td>
+            <td><code class="badge">&gt;</code></td>
             <td><strong>Forward</strong></td>
             <td>Jump to next boundary</td>
-            <td><code>#qtr.></code></td>
+            <td><code>#qtr.&gt;</code></td>
           </tr>
           <tr>
-            <td><code class="badge"><</code></td>
+            <td><code class="badge">&lt;</code></td>
             <td><strong>Backward</strong></td>
             <td>Jump to previous boundary</td>
-            <td><code>#qtr.<</code></td>
+            <td><code>#qtr.&lt;</code></td>
           </tr>
           <tr>
             <td><code class="badge">+</code></td>
@@ -71,7 +71,7 @@
           </tr>
           <tr>
             <td><code class="badge">next</code></td>
-            <td><strong>Alias (>)</strong></td>
+            <td><strong>Alias (&gt;)</strong></td>
             <td>Semantic forward skip</td>
             <td><code>#qtr.next</code></td>
           </tr>
@@ -96,17 +96,17 @@
         <div class="card" id="card-add">
           <h4>.add()</h4>
           <p>The <strong>Momentum</strong>. Advances the cursor relative to its current position.</p>
-          <code>t.add('#qtr.>2')</code>
+          <code>t.add('#qtr.&gt;2')</code>
         </div>
         <div class="card" id="card-until">
           <h4>.until()</h4>
           <p>The <strong>Future Goal</strong>. Measures duration from current point forward to target.</p>
-          <code>t.until('#qtr.>')</code>
+          <code>t.until('#qtr.&gt;')</code>
         </div>
         <div class="card" id="card-since">
           <h4>.since()</h4>
           <p>The <strong>Past Origin</strong>. Measures duration from target up to current point.</p>
-          <code>t.since('#qtr.<')</code>
+          <code>t.since('#qtr.&lt;')</code>
         </div>
       </div>
     </section>
@@ -118,7 +118,7 @@
         <p style="color: var(--text-dim); margin-bottom: 20px;">The engine selects targets based on the présence of a directional modifier:</p>
         <ul>
           <li><strong>Absolute Search</strong>: Finding <code>#qtr.q1</code> uses <strong>proximity sorting</strong>. It snaps to the Q1 physically closest to the current point.</li>
-          <li><strong>Directed Search</strong>: Finding <code>#qtr.>q1</code> uses <strong>chronological filtering</strong>. It only considers candidates starting <em>strictly after</em> the current point.</li>
+          <li><strong>Directed Search</strong>: Finding <code>#qtr.&gt;q1</code> uses <strong>chronological filtering</strong>. It only considers candidates starting <em>strictly after</em> the current point.</li>
         </ul>
       </div>
     </section>
@@ -129,9 +129,9 @@
         <span class="comment">// Resolving a fiscal quarter shift in Sydney</span><br>
         <span class="keyword">const</span> t = <span class="keyword">new</span> <span class="method">Tempo</span>(<span class="string">'2025-12-25'</span>, { sphere: <span class="string">'south'</span> });<br><br>
         <span class="comment">// Move exactly 2 quarters forward</span><br>
-        t.<span class="method">add</span>(<span class="string">'#qtr.>2'</span>); <br><br>
+        t.<span class="method">add</span>(<span class="string">'#qtr.&gt;2'</span>); <br><br>
         <span class="comment">// Calculate time remaining until next Q1</span><br>
-        <span class="keyword">const</span> remaining = t.<span class="method">until</span>(<span class="string">'#qtr.>q1'</span>);<br>
+        <span class="keyword">const</span> remaining = t.<span class="method">until</span>(<span class="string">'#qtr.&gt;q1'</span>);<br>
         console.<span class="method">log</span>(remaining.<span class="method">toString</span>());
       </div>
     </section>

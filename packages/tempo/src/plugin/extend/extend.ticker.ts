@@ -356,5 +356,9 @@ export const TickerModule: Tempo.Extension = defineExtension((_options, TempoCla
 		return instance.bootstrap(proxy);
 	};
 
-	(TempoClass as any).tickers = Ticker.active;
+	Object.defineProperty(TempoClass, 'tickers', {
+		get: () => Ticker.active,
+		enumerable: true,
+		configurable: true
+	});
 });

@@ -33,9 +33,9 @@ interface Options {
   debug?: boolean;              // Enable internal log tracking
   catch?: boolean;              // If true, invalid inputs return a Void instance
   store?: string;               // Key for persistent storage (e.g., localStorage)
-  sphere?: 'north' | 'south';   // Hemisphere for seasonal plugin
+  sphere?: 'north' | 'south';   // Hemisphere for seasonal plugins
   timeStamp?: 'ms' | 'ns';      // Precision for numeric timestamps
-  [key: string]: any;           // Allows for custom configuration shared with plugin
+  [key: string]: any;           // Allows custom configurations shared with plugins
 }
 ```
 
@@ -116,7 +116,7 @@ interface Discovery {
 ---
 
 ## `Tempo.TermPlugin`
-The interface for defining custom business-logic plugin.
+The interface for defining custom business-logic plugins.
 
 ```typescript
 type TermPlugin = {

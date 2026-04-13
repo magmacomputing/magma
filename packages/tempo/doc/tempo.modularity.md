@@ -79,10 +79,10 @@ export const MyModule = defineModule((options, TempoClass) => {
 There is a subtle but important distinction between how features are activated in Core mode:
 
 *   **`Tempo.extend(Module)`**: This is **Immediate and Explicit**. It applies the module to the class exactly when the line is executed. This is the safest pattern for most users.
-*   **`Tempo.init()`**: This is **Reactive Discovery**. It scans the global registry for any plugin that were imported via side-effects (e.g., `import '@magmacomputing/tempo/ticker'`) and applies them all at once.
+*   **`Tempo.init()`**: This is **Reactive Discovery**. It scans the global registry for any plugins that were imported via side effects (e.g., `import '@magmacomputing/tempo/ticker'`) and applies them all at once.
 
 > [!CAUTION]
-> **The "Sledge-Hammer" Effect**: `Tempo.init()` does not just add new features; it performs a **full state refresh**. It resets the `Tempo` prototype back to its pristine default before re-applying all registered plugin. If you have manually modified the `Tempo` prototype (via monkey-patching or `Object.defineProperty`), **`Tempo.init()` will wipe out your modifications.** Always use `Tempo.extend()` or a formal plugin if you want your changes to survive an initialization sweep.
+> **The "Sledge-Hammer" Effect**: `Tempo.init()` does not just add new features; it performs a **full state refresh**. It resets the `Tempo` prototype back to its pristine default before re-applying all registered plugins. If you have manually modified the `Tempo` prototype (via monkey-patching or `Object.defineProperty`), **`Tempo.init()` will wipe out your modifications.** Always use `Tempo.extend()` or a formal plugin if you want your changes to survive an initialization sweep.
 
 **The Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** appear on the `Tempo` class. You would need to call `Tempo.init()` again to "refresh" the engine's feature set and pick up the latecomers.
 

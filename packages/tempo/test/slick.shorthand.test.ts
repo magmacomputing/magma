@@ -50,10 +50,10 @@ describe('Slick Shorthand Resolution', () => {
   test('slick until() returns correct duration', () => {
     const t = new Tempo('2024-04-15');
     const dlo = t.until('#qtr.>q2');                        // Duration to next Q2 (approx 1 year away)
-    expect(dlo.years).toBe(0);                              // in Temporal, until() usually gives months/days if years not requested?
-    // Wait, let's check the absolute duration or just the ISO
-    expect(dlo.iso).toContain('P');													// check for valid ISO duration
-    expect(dlo.iso).toContain('11M');												// approx 11 months
+    expect(dlo.years).toBe(0);
+    expect(dlo.months).toBe(11);
+    expect(dlo.days).toBe(17);
+    expect(dlo.iso).toBe('P11M17D');
 
     // Test the new "Anonymous Shorter" syntax (#qtr.>)
     const anon = t.until('#qtr.>');                         // Duration to START of the very next quarter

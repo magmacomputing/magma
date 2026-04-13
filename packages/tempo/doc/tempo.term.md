@@ -178,7 +178,7 @@ import { defineTerm, defineRange, getTermRange, resolveCycleWindow } from '@magm
 import { enums, type Tempo } from '@magmacomputing/tempo/core';
 
 /** 1. The range boundaries (grouped by sphere) */
-const groups = defineRange([
+const ranges = defineRange([
   { key: 'Spring', month: 3,  sphere: enums.COMPASS.North },
   { key: 'Summer', month: 6,  sphere: enums.COMPASS.North },
   { key: 'Autumn', month: 9,  sphere: enums.COMPASS.North },
@@ -189,7 +189,7 @@ const groups = defineRange([
 function resolve(t: Tempo, anchor?: any): any[] {
   const source = anchor ?? t;
   const sphere = source.config?.sphere ?? t.config.sphere;
-  const template = groups[sphere] ?? [];
+  const template = ranges[sphere] ?? [];
   
   // resolveCycleWindow handle the ±1 year shifting for boundaries
   return resolveCycleWindow(t, template, anchor);
@@ -200,7 +200,7 @@ export const MySeasonTerm = defineTerm({
     key: 'szn',
     scope: 'season',
     description: 'Custom seasonal range',
-    groups,
+    ranges,
 
     /** Optional: Used for multi-cycle discovery & traversals */
     resolve(this: Tempo, anchor?: any) {
