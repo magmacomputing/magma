@@ -65,4 +65,10 @@ describe('Slick Shorthand Resolution', () => {
     const wrap = dec25.until('#qtr.>');                     // Should wrap to Jan 1st of next year
     expect(wrap.days).toBe(7);                              // Dec 25 -> Jan 1 is exactly 7 days
   });
+
+  test('slick since() returns correct duration', () => {
+    const t = new Tempo('2024-04-15');                      // in Q2 2024 (starts Apr 1)
+    const elapsed = t.since('#qtr.this', 'days');           // time since CURRENT quarter start
+    expect(elapsed).toBe('14d ago');                        // Apr 15 since Apr 1 is 14 days (narrow style)
+  });
 });

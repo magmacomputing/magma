@@ -23,8 +23,10 @@ The engine supports a variety of modifiers to control how a term is resolved. Mo
 
 | Modifier | Type | Meaning | Example |
 | :--- | :--- | :--- | :--- |
-| `>` | **Forward Shifter** | Move forward to the very next term boundary. | `#qtr.>` |
+| `>` | **Forward Shifter** | Move forward to the next term boundary. | `#qtr.>` |
 | `<` | **Backward Shifter** | Move backward to the previous term boundary. | `#qtr.<` |
+| `>=` | **Inclusive Forward** | Matches current term or next forward boundary. | `#qtr.>=q1` |
+| `<=` | **Inclusive Backward** | Matches current term or previous backward boundary. | `#qtr.<=q1` |
 | `+` | **Future Relative** | Offset forward by N instances (default 1). | `#qtr.+2` |
 | `-` | **Past Relative** | Offset backward by N instances (default 1). | `#qtr.-1` |
 | `next` | **Alias (>)** | Semantically identical to `>`. | `#qtr.next` |
@@ -63,11 +65,13 @@ Returns a **Duration** representing the time elapsed **since** the target was pa
 
 The engine uses a bifurcated sorting strategy to ensure results are intuitive:
 
-1. **Absolute Terms** (`#namespace.id`): 
-   Uses **Distance-Based Sorting**. The engine finds the candidate whose start date is physically closest to the current instance (even if it's in the past).
-   
-2. **Shifters & Directed Targets** (`#namespace.>id`): 
-   Uses **Chronological Momentum**. The engine filters for candidates that start *strictly after* (for `>`) or *strictly before* (for `<`) the current instance.
+  1. **Absolute Terms** (`#namespace.id`): 
+     Uses **Distance-Based Sorting**. The engine finds the candidate whose start date is physically closest to the current instance (even if it's in the past).
+     
+  2. **Shifters & Directed Targets** (`#namespace.>id`): 
+     Uses **Chronological Momentum**. 
+     - Modifiers `>` and `<` are **exclusive** (start/end must be strictly after/before cursor).
+     - Modifiers `>=` and `<=` are **inclusive** (current term is allowed if it contains the cursor).
 
 ### Examples
 
