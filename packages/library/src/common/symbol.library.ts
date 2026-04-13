@@ -17,3 +17,13 @@
 	}
 	return obj;
 }
+
+export default {
+/** key to use for identifying the raw target of a Proxy */	$Target,
+/** key to trigger full discovery of all lazy properties */	$Discover,
+/** key to identify objects that should remain extensible */$Extensible,
+/** NodeJS custom inspection symbol for the Proxy pattern */$Inspect,
+/** unique marker to identify a Logify configuration object */$Logify,
+/** key to identify the global type registry */							$Registry,
+/** key to identify the global registration hook */					$Register,
+}

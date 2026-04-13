@@ -10,15 +10,26 @@ import type { Tempo } from '../../tempo.class.js';
 
 declare module '../../tempo.class.js' {
 	interface Tempo {
-		/** time duration until (with unit, returns number) */	until(until: Tempo.Until, opts?: Tempo.Options): number;
-		/** time duration until another date-time (with unit) */until(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, until: Tempo.Until): number;
-		/** time duration until (returns Duration) */						until(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): Tempo.Duration;
-		/** time duration until another date-time */						until(optsOrDate?: Tempo.DateTime | Tempo.Until | Tempo.Options, optsOrUntil?: Tempo.Options | Tempo.Until): number | Tempo.Duration;
+		/** time duration until (returns Duration) */
+		until(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): Tempo.Duration;
 
-		/** time elapsed since (with unit) */										since(until: Tempo.Until, opts?: Tempo.Options): string;
-		/** time elapsed since another date-time (with unit) */	since(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, until: Tempo.Until): string;
-		/** time elapsed since another date-time (w'out unit) */since(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): string;
-		/** time elapsed since another date-time */							since(optsOrDate?: any, optsOrUntil?: any): string;
+		/** time duration until (with unit, returns number) */
+		until(unit: Tempo.Unit, opts?: Tempo.Options): number;
+
+		/** time duration until another date-time (with unit as second param) */
+		until(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, unit: Tempo.Unit): number;
+
+		/** fallback: union of possible returns */
+		until(optsOrDate?: Tempo.DateTime | Tempo.Until | Tempo.Options, optsOrUntil?: Tempo.Options | Tempo.Until): number | Tempo.Duration;
+
+		/** time elapsed since (with unit) */
+		since(until: Tempo.Until, opts?: Tempo.Options): string;
+		/** time elapsed since another date-time (with unit) */
+		since(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, until: Tempo.Until): string;
+		/** time elapsed since another date-time (w'out unit) */
+		since(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): string;
+		/** time elapsed since another date-time */
+		since(optsOrDate?: any, optsOrUntil?: any): string;
 	}
 }
 

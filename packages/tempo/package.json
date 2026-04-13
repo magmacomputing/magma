@@ -154,7 +154,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.1.0",
+    "@magmacomputing/library": "^2.1.2",
     "@rollup/plugin-alias": "^6.0.0",
     "magic-string": "^0.30.21"
   },

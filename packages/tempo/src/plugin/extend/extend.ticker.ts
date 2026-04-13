@@ -5,7 +5,7 @@ import { instant, normaliseFractionalDurations } from '#library/temporal.library
 import { markConfig } from '#library/symbol.library.js'
 
 import { DURATIONS } from '../../tempo.enum.js'
-import { $logError, $logDebug } from '../../tempo.symbol.js';
+import sym, { $logError, $logDebug } from '../../tempo.symbol.js';
 import { defineExtension } from '../plugin.util.js'
 import type { Tempo } from '../../tempo.class.js'
 

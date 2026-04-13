@@ -19,9 +19,9 @@ import type { Property, TypeValue, Secure } from '#library/type.library.js';
 import { compose } from './plugin/module/module.composer.js';
 import { resolveTermMutation, resolveTermValue } from './plugin/module/module.term.js';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './plugin/module/module.lexer.js';
-import { REGISTRY, registerPlugin, registerTerm, getRange, getTermRange, resolveTermShift, interpret, findTermPlugin } from './plugin/plugin.util.js'
+import { REGISTRY, registerPlugin, registerTerm, getRange, getTermRange, interpret, findTermPlugin } from './plugin/plugin.util.js'
 
-import { default as sym, isTempo, registerHook, $termError } from './tempo.symbol.js';
+import sym, {  isTempo, registerHook } from './tempo.symbol.js';
 import { Match, Token, Snippet, Layout, Event, Period, Default } from './tempo.default.js';
 import enums, { STATE, DISCOVERY, registryUpdate, registryReset } from './tempo.enum.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -80,14 +80,14 @@ export class Tempo {
 	})
 
 	/** handle internal errors using the global config */
-	static [sym.$logError](...msg: any[]) {
+	static [sym.$logError](...msg: any[]): void {
 		const config = (isObject(msg[0]) && (msg[0] as any)[$Logify] === true) ? msg.shift() : Tempo.#global.config;
 		markConfig(config);														// ensure config is marked for Logify
 		Tempo.#dbg.error(config, ...msg);
 	}
 
 	/** handle internal debug info using the global config */
-	static [sym.$logDebug](...msg: any[]) {
+	static [sym.$logDebug](...msg: any[]): void {
 		Tempo.#dbg.debug(...msg);
 	}
 
@@ -104,7 +104,7 @@ export class Tempo {
 	/** Set of allowed lowercased tokens for the Master Guard */					static #allowedTokens: Set<string> = new Set();
 
 	/** Centralized error dispatcher for Term resolution failures */
-	static [$termError](config: Tempo.Options, term: string) {
+	static [sym.$termError](config: Tempo.Options, term: string): void {
 		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
 		const msg = `Unknown Term identifier: ${term}${hint}`;
 		Tempo.#dbg.error(config, msg);
@@ -883,12 +883,15 @@ export class Tempo {
 	/** static Tempo.terms (registry) */
 	static get terms(): Secure<Omit<Tempo.TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<Tempo.TermPlugin, 'define' | 'resolve'>> {
 		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => rest);
+		// `delegate` returns an array-like proxy that also supports string lookups; use
+		// an `unknown` bridge to assert the combined intersection type so the compiler
+		// treats `Tempo.terms` as array-like and indexable by key.
 		return delegate(list, (key) => {
 			if (isString(key) && !['length', 'map', 'find', 'forEach', 'includes'].includes(key)) {
 				return list.find(t => t.key === key || t.scope === key);
 			}
 			return undefined;
-		}) as any;
+		}) as unknown as Secure<Omit<Tempo.TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<Tempo.TermPlugin, 'define' | 'resolve'>>;
 	}
 
 	/** static Tempo.formats (registry) */
@@ -1345,7 +1348,7 @@ export class Tempo {
 				const ident = term.startsWith('#') ? term.slice(1) : term;
 				const termObj = Tempo.#terms.find(t => t.key === ident || t.scope === ident);
 				if (!termObj) {
-					Tempo[$termError](this.#local.config, term);
+					Tempo[sym.$termError](this.#local.config, term);
 					return undefined as any;
 				}
 
@@ -1404,7 +1407,7 @@ export class Tempo {
 
 			// security check: if it contains term-keys (#) while no plugins are loaded
 			if (isObject(tempo) && Object.keys(tempo).some(k => k.startsWith('#')) && Tempo.#terms.length === 0) {
-				Tempo[$termError](this.#local.config, Object.keys(tempo).find(k => k.startsWith('#'))!);
+				Tempo[sym.$termError](this.#local.config, Object.keys(tempo).find(k => k.startsWith('#'))!);
 				return undefined as any;
 			}
 
@@ -1517,7 +1520,7 @@ export class Tempo {
 			// security check: if it contains term-keys (#) in core mode, we should throw a hint
 			const keys = Object.keys(options);
 			if (keys.some(k => k.startsWith('#')) && Tempo.#terms.length === 0) {
-				Tempo[$termError](this.#local.config, keys.find(k => k.startsWith('#'))!);
+				Tempo[sym.$termError](this.#local.config, keys.find(k => k.startsWith('#'))!);
 				return undefined as any;
 			}
 

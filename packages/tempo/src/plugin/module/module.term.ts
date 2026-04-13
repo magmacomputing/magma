@@ -2,7 +2,7 @@ import { Temporal } from '@js-temporal/polyfill';
 
 import { isDefined, isObject, isString, isZonedDateTime } from '#library/type.library.js';
 import { isNumeric } from '#library/coercion.library.js';
-import { $termError } from '../../tempo.symbol.js';
+import sym from '../../tempo.symbol.js';
 import { getSafeFallbackStep } from '../../tempo.util.js';
 import { Match } from '../../tempo.default.js';
 import { REGISTRY, getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin.util.js';
@@ -29,7 +29,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 	const termObj = findTermPlugin(termPart);
 
 	if (!termObj) {
-		Tempo[$termError](instance.config, unit);
+		Tempo[sym.$termError](instance.config, unit);
 		return null;
 	}
 
@@ -70,7 +70,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			if (rKey) {
 				const found = rawList.some(r => r.key?.toLowerCase() === rKey.toLowerCase());
 				if (!found) {
-					Tempo[$termError](instance.config, unit);
+					Tempo[sym.$termError](instance.config, unit);
 					return null;
 				}
 				candidates = rawList.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
@@ -114,7 +114,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 
 			if (next) return next.start.withTimeZone(tz).withCalendar(cal);
 
-			Tempo[$termError](instance.config, unit);
+			Tempo[sym.$termError](instance.config, unit);
 			return null;
 		}
 
@@ -124,7 +124,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 		let iterations = 0;
 		while (iterations < 200 && remaining > 0) {
 			if (++iterations > 200) {
-				Tempo[$termError](instance.config, unit);
+				Tempo[sym.$termError](instance.config, unit);
 				return null;
 			}
 
@@ -135,7 +135,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			if (rKey) {
 				const found = rawList.some(r => r.key?.toLowerCase() === rKey.toLowerCase());
 				if (!found) {
-					Tempo[$termError](instance.config, unit);
+					Tempo[sym.$termError](instance.config, unit);
 					return null;
 				}
 				list = list.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
@@ -360,7 +360,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 		let iterations = 0;
 		while (remaining > 0) {
 			if (++iterations > 100) {												// Safety-Valve: prevent infinite shift
-				Tempo[$termError](instance.config, unit);
+				Tempo[sym.$termError](instance.config, unit);
 				return null;
 			}
 
@@ -372,7 +372,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			}
 
 			if (list.length === 0) {
-				Tempo[$termError](instance.config, unit);
+				Tempo[sym.$termError](instance.config, unit);
 				return null;
 			}
 
@@ -384,7 +384,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 				// if we hit the edge of the current list, jump to the end of the current cycle and try again
 				const current = (getTermRange(instance, list, false, jump) as any);
 				if (!current) {
-					Tempo[$termError](instance.config, unit);
+					Tempo[sym.$termError](instance.config, unit);
 					return null;
 				}
 

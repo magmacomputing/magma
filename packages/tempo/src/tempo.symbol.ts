@@ -17,6 +17,7 @@ import type { Tempo } from '#tempo/tempo.class.js';
 /** key for contextual Debug Logging */											export const $logDebug = Symbol.for('$TempoLogDebug');
 
 /** key for centralized Term Error dispatching */						export const $termError = Symbol.for('$TempoTermError');
+/** internal key for signaling pre-errored state in constructor */export const $errored = Symbol.for('$TempoErrored');
 
 /**
  * Define a reactive registration hook on a global symbol.
@@ -25,14 +26,29 @@ import type { Tempo } from '#tempo/tempo.class.js';
  * @returns any previous callback already registered for this symbol
  */
 export function registerHook(sym: symbol, cb: (val: any) => void) {
-	const existing = (globalThis as any)[sym];
+    const existing = (globalThis as any)[sym];
 
-	if (existing !== undefined && typeof existing === 'function')
-		console.warn(`Overwriting existing hook for symbol: ${sym.description}`);
+    if (existing !== undefined && typeof existing === 'function')
+        console.warn(`Overwriting existing hook for symbol: ${sym.description}`);
 
-	(globalThis as any)[sym] = cb;
-	return existing;																					// allow chaining or cleanup
+    (globalThis as any)[sym] = cb;
+    return existing; // allow chaining or cleanup
 }
 
 /** check valid Tempo */
 export const isTempo = (tempo?: any): tempo is Tempo => tempo?.[$isTempo] === true;
+
+/** global symbols */
+const _sym = {
+    /** key for Global Discovery of Tempo configuration */ $Tempo,
+    /** key for Global Discovery of Tempo Plugins */ $Plugins,
+    /** key for Reactive Plugin Registration */ $Register,
+    /** key for Global Identity Brand for Tempo */ $isTempo,
+    /** key for Internal Interpreter Service */ $Interpreter,
+    /** key for contextual Error Logging */ $logError,
+    /** key for contextual Debug Logging */ $logDebug,
+    /** key for centralized Term Error dispatching */ $termError,
+    /** internal key for signaling pre-errored state in constructor */ $errored
+} as const;
+
+export default _sym;
