@@ -12,7 +12,7 @@ import { enumify } from '#library/enumerate.library.js';
 import { ownKeys, ownEntries, getAccessors, omit } from '#library/reflection.library.js';
 import { pad, singular, trimAll } from '#library/string.library.js';
 import { getType, asType, isEmpty, isNull, isNullish, isDefined, isUndefined, isString, isObject, isRegExp, isRegExpLike, isIntegerLike, isSymbol, isFunction, isClass, isZonedDateTime, isPlainDate, isPlainTime } from '#library/type.library.js';
-import { getHemisphere, getResolvedOptions, canonicalLocale } from '#library/international.library.js';
+import { getResolvedOptions, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import { instant } from '#library/temporal.library.js';
 import type { Property, TypeValue, Secure } from '#library/type.library.js';
 
@@ -198,15 +198,18 @@ export class Tempo {
 
 	/** try to infer hemisphere using the timezone's daylight-savings setting */
 	static #setSphere = (shape: Internal.State, options: Tempo.Options) => {
-		if (Tempo.#hasOwn(options, 'sphere')) return options.sphere;
+		if (isDefined(options.sphere)) return options.sphere;
 
-		if (Tempo.#hasOwn(options, 'timeZone')) {
-			const tz = options.timeZone as string;
-			if (tz.toLowerCase() !== 'utc') return getHemisphere(tz);
+		if (isDefined(options.timeZone)) {
+			const tz = String(options.timeZone);
+			return (tz.toLowerCase() === 'utc') ? undefined : getHemisphere(tz);
 		}
 
+		const tz = shape.config?.timeZone;
+		if (isDefined(tz) && String(tz).toLowerCase() !== 'utc') return getHemisphere(String(tz));
+
 		// Honor currently inherited lock (don't overwrite with undefined)
-		return (shape === Tempo.#global) ? undefined : Tempo.config.sphere;
+		return isDefined(shape.config?.sphere) ? shape.config.sphere : undefined;
 	}
 
 
@@ -491,6 +494,7 @@ export class Tempo {
 			...ownKeys(Tempo.#global.parse.period),
 			...ownKeys(Tempo.#global.parse.snippet),
 			...ownKeys(Tempo.#global.parse.layout),
+			...[Token.slk],
 			...Tempo.#terms.map(t => t.key),
 			...Tempo.#terms.map(t => t.scope),
 			'am', 'pm', 'ago', 'hence', 'this', 'next', 'prev', 'last', 'from', 'now', 'today', 'yesterday', 'tomorrow', 'start', 'mid', 'end',
@@ -701,7 +705,7 @@ export class Tempo {
 				locale: { value: Tempo.#locale(), enumerable: true, writable: true, configurable: true },
 				discovery: { value: Symbol.keyFor($Tempo) as string, enumerable: true, writable: true, configurable: true },
 				formats: { value: enumify(STATE.FORMAT, false), enumerable: true, writable: true, configurable: true },
-				sphere: { value: undefined, enumerable: true, writable: true, configurable: true },
+				sphere: { value: getHemisphere(timeZone), enumerable: true, writable: true, configurable: true },
 				get: { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true },
 				scope: { value: 'global', enumerable: true, writable: true, configurable: true },
 				catch: { value: options.catch ?? false, enumerable: true, writable: true, configurable: true }
@@ -1647,8 +1651,17 @@ export class Tempo {
 			const resolved = new Set<string>();											// track keys resolved in this pass
 			let pending: string[];
 
-			while ((pending = ownKeys(groups).filter(k => (Match.event.test(k) || Match.period.test(k)) && !resolved.has(k))).length > 0) {
+			while ((pending = ownKeys(groups).filter(k => (Match.event.test(k) || Match.period.test(k) || k === 'slk') && !resolved.has(k))).length > 0) {
 				const key = pending[0];
+
+				if (key === 'slk') {
+					const slk = groups[key];
+					// Resolve the shifter using the same engine as .set() / .add()
+					dateTime = resolveTermMutation(Tempo, this, 'set', slk, undefined, dateTime);
+					resolved.add(key);
+					delete groups[key];
+					continue;
+				}
 
 				const isEvent = Match.event.test(key);
 				const isPeriod = Match.period.test(key);

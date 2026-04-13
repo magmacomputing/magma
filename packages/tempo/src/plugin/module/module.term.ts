@@ -36,17 +36,19 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 	const tz = zdt.timeZoneId;
 	const cal = zdt.calendarId;
 
-	// Slick Shorthand Parsing (e.g. >q2, <=Aries)
+	// Slick Shorthand Parsing (e.g. #qtr.>2, #zodiac.<)
 	let mod: string | undefined;
 	let nbr = 1;
 	let rKey = rangePart;
 
-	if (rangePart) {
-		const slick = unit.match(Match.slick);
-		if (slick) {
-			mod = slick[2] || (isNumeric(slick[3]) ? '+' : undefined);
-			nbr = isNumeric(slick[3]) ? Number(slick[3]) : 1;
-			rKey = slick[4];
+	const slickStr = (rangePart ? unit : (isString(offset) ? offset : undefined));
+	if (slickStr) {
+		const slick = slickStr.match(Match.slick) || (isString(offset) ? offset.match(/^(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/) : null);
+		const { groups } = (slick || {}) as any;
+		if (groups) {
+			mod = groups.sh_mod || (isNumeric(groups.sh_nbr) ? '+' : undefined);
+			nbr = isNumeric(groups.sh_nbr) ? Number(groups.sh_nbr) : 1;
+			rKey = (groups.sh_unit && groups.sh_unit.length > 0) ? groups.sh_unit : (groups.sh_mod ? undefined : rKey);
 		}
 	}
 
@@ -55,8 +57,6 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 		let jump = zdt;
 		let list = getRange(termObj, instance, jump);
 
-
-
 		if (mod) {
 			// Resolve Slick Search
 			const direction = (mod.includes('<') || mod.includes('-') || mod === 'prev' || mod === 'last') ? -1 : 1;
@@ -64,7 +64,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			let iterations = 0;
 
 			while (remaining > 0) {
-				if (++iterations > 20) {												// Safety-Valve
+				if (++iterations > 200) {												// Safety-Valve: prevent infinite shift
 					Tempo[$termError](instance.config, unit);
 					return null;
 				}
@@ -72,7 +72,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 				list = getRange(termObj, instance, jump);
 				if (rKey) list = list.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
 
-				if (list.length === 0) {												// No matches in current cycle, jump to next/prev cycle
+				if (list.length === 0) {
 					const currentRes = (getTermRange(instance, getRange(termObj, instance, jump), false, jump) as any);
 					if (!currentRes) { jump = (direction > 0) ? jump.add({ days: 30 }) : jump.subtract({ days: 30 }); continue; }
 					jump = (direction > 0) ? currentRes.end.toDateTime() : currentRes.start.toDateTime().subtract({ nanoseconds: 1 });
@@ -102,36 +102,49 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 				const compare = (r: any) => {
 					const start = r.start.toDateTime().epochNanoseconds as bigint;
 					const end = r.end.toDateTime().epochNanoseconds as bigint;
-					const isRelative = (mod === '+' || mod === '-');
+					const isRelative = (mod === '+' || mod === '-' || mod === '>' || mod === '<' || mod === 'next' || mod === 'prev');
 					const cursor = isRelative ? (jump.epochNanoseconds as bigint) : (zdt.epochNanoseconds as bigint);
 
-					const res = parseModifier({
-						mod: mod as any,
-						adjust: 1,
-						offset: Number(cursor / 1000000n),
-						period: Number((mod === '<' || mod === '<=' || mod === '-' || mod === 'prev' || mod === 'last')
-							? end / 1000000n
-							: start / 1000000n)
-					});
-
-					if (mod === '+' || mod === '-') return res !== 0;
-					if (mod === '>' || mod === 'next') return res > 0;
-					if (mod === '<' || mod === 'prev' || mod === 'last') return res < 0;
-					if (mod === '>=') return res >= 0;
-					if (mod === '<=') return res <= 0;
-					if (mod === 'this' || mod === void 0) return res === 0;
-
-					return true;
+					let match = false;
+					if (mod === '>' || mod === 'next') match = iterations > 1 ? start >= cursor : start > cursor;
+					else if (mod === '<' || mod === 'prev' || mod === 'last') match = iterations > 1 ? end <= cursor : end < cursor;
+					else if (mod === '>=') match = end > cursor;
+					else if (mod === '<=') match = start <= cursor;
+					else {
+						const res = parseModifier({
+							mod: mod as any,
+							adjust: 1,
+							offset: Number(cursor / 1000000n),
+							period: Number((mod === '<' || mod === '<=' || mod === '-' || mod === 'prev' || mod === 'last')
+								? end / 1000000n
+								: start / 1000000n)
+						});
+						if (mod === '+' || mod === '-') match = res !== 0;
+						else if (mod === 'this' || mod === void 0) match = res === 0;
+						else match = true;
+					}
+					return match;
 				};
+
+				const isShifter = (mod === '>' || mod === '<' || mod === 'next' || mod === 'prev' || mod === 'last');
 
 				const matches = resolved.filter(compare).sort((a, b) => {
 					const startA = a.start.toDateTime().epochNanoseconds as bigint;
 					const startB = b.start.toDateTime().epochNanoseconds as bigint;
-					const isRelative = (mod === '+' || mod === '-');
-					const cursor = isRelative ? (jump.epochNanoseconds as bigint) : (zdt.epochNanoseconds as bigint);
+					const cursor = jump.epochNanoseconds as bigint;
+
+					if (isShifter) return direction > 0 ? (startA < startB ? -1 : 1) : (startA > startB ? -1 : 1);
+
 					const diffA = startA > cursor ? startA - cursor : cursor - startA;
 					const diffB = startB > cursor ? startB - cursor : cursor - startB;
 					return diffA < diffB ? -1 : (diffA > diffB ? 1 : 0);
+				}).filter(m => {
+					if (!isShifter) return true;
+					const start = m.start.toDateTime().epochNanoseconds as bigint;
+					const end = m.end.toDateTime().epochNanoseconds as bigint;
+					const cursor = jump.epochNanoseconds as bigint;
+					if (direction > 0) return start >= cursor;
+					return end <= cursor;
 				});
 
 
@@ -140,14 +153,11 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 
 					const found = target.start.toDateTime().withTimeZone(tz).withCalendar(cal);
 					remaining--;
-					if (remaining === 0) return found;										// success!
+					if (remaining === 0) return found;								// success!
 
-					// move jump slightly past target to find next occurrence
+					// move jump past found target to find next occurrence
 					jump = (direction > 0) ? target.end.toDateTime() : target.start.toDateTime().subtract({ nanoseconds: 1 });
-				} else {
-
-
-					// No matches in this cycle satisfying compare, move to next cycle
+				} else {																						// No matches in this cycle satisfying compare, move to next cycle
 					const currentRes = (getTermRange(instance, getRange(termObj, instance, jump), false, jump) as any);
 					if (!currentRes) { jump = (direction > 0) ? jump.add({ days: 30 }) : jump.subtract({ days: 30 }); continue; }
 					jump = (direction > 0) ? currentRes.end.toDateTime() : currentRes.start.toDateTime().subtract({ nanoseconds: 1 });
