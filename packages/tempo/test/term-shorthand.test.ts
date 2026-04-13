@@ -66,20 +66,26 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 	})
 
 	describe('Error handling', () => {
+		let errorSpy: any;
+
+		beforeEach(() => {
+			errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
+		})
+
 		afterEach(() => {
 			vi.restoreAllMocks()
 		})
 
 		test('invalid term shorthand trips #errored (with catch:true)', () => {
-			vi.spyOn(console, 'error').mockImplementation(() => {})
 			const t = new Tempo('2026-01-01', { catch: true }).set('#invalid.term')
 			expect(t.isValid).toBe(false)
+			expect(errorSpy).toHaveBeenCalled()
 		})
 
 		test('invalid range in known term trips #errored (with catch:true)', () => {
-			vi.spyOn(console, 'error').mockImplementation(() => {})
 			const t = new Tempo('2026-01-01', { catch: true }).set('#qtr.q99')
 			expect(t.isValid).toBe(false)
+			expect(errorSpy).toHaveBeenCalled()
 		})
 	})
 

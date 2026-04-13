@@ -13,14 +13,15 @@ describe('Error Handling stabilization', () => {
 
 	it('should log a warning and fallback to 1s when catch: true', () => {
 		Tempo.init({ catch: true });
-		const spy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
 		let t: any;
 		expect(() => {
 			t = Tempo.ticker('invalid');
 		}).not.toThrow();
 
-		expect(spy).toHaveBeenCalled();
+		expect(errorSpy).toHaveBeenCalled();
 		expect(t).toBeDefined();
 
 		t?.[Symbol.dispose]();
