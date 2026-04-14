@@ -131,10 +131,10 @@ Tempo v2.1.2 continues the architectural improvements started in v2.0:
 - **Automatic Registration**: Built-ins self-register on import (just import the module).
 
 For detailed technical guides, please refer to:
-- [Tempo Modularity](./doc/tempo.modularity.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo.modularity.md))
 - [Vision & Value Proposition](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/vision.md)
 - [Tempo vs. Native Temporal](./doc/tempo-vs-temporal.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo-vs-temporal.md))
 - [Tempo vs. The Competition](./doc/comparison.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/comparison.md))
+- [Tempo Modularity](./doc/tempo.modularity.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo.modularity.md))
 - [Tempo API Reference](./doc/tempo.api.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo.api.md))
 - [Tempo Class Documentation](./doc/Tempo.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/Tempo.md))
 - [Tempo Term Shorthand](./doc/tempo.shorthand.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo.shorthand.md))
