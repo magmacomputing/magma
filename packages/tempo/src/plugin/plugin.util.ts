@@ -3,7 +3,8 @@ import { isDefined, isFunction, isString } from '#library/type.library.js';
 import { secure } from '#library/utility.library.js';
 import { SCHEMA, getLargestUnit } from '../tempo.util.js';
 import { sortKey, byKey } from '#library/array.library.js';
-import { $Register, $Plugins, isTempo, $Interpreter, $logError, $logDebug } from '../tempo.symbol.js';
+import lib from '#library/symbol.library.js';
+import sym, { isTempo } from '../tempo.symbol.js';
 import { secureRef } from '#library/proxy.library.js';
 import type { Tempo } from '../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange, Plugin, Extension } from './plugin.type.js';
@@ -40,11 +41,10 @@ export const REGISTRY = new Proxy(_REGISTRY, {
 
 /** internal helper to resolve the class-host from either an instance or the class itself */
 function getHost(t: any): any {
-	const $T = Symbol.for('$Target');
 	const isFn = typeof t === 'function';
-	if (isFn) return t?.[$T] ?? t;
+	if (isFn) return t?.[lib.$Target] ?? t;
 	const host = (t as any)?.constructor ?? (isDefined(t) ? Reflect.get(Object(t), 'constructor') : Object);
-	const target = host?.[$T] ?? host;
+	const target = host?.[lib.$Target] ?? host;
 	return typeof target === 'function' ? target : Object;
 }
 
@@ -54,7 +54,7 @@ function getHost(t: any): any {
  */
 export function interpret(t: any, module: string, methodOrFallback?: any, ...args: any[]) {
 	const host = getHost(t);
-	const hostLogic = REGISTRY.modules[module] ?? host[$Interpreter]?.[module];
+	const hostLogic = REGISTRY.modules[module] ?? host[sym.$Interpreter]?.[module];
 
 	try {
 		if (!isFunction(hostLogic)) throw new Error(`${module} plugin not loaded`);
@@ -65,7 +65,7 @@ export function interpret(t: any, module: string, methodOrFallback?: any, ...arg
 
 		return logic.apply(t, args);
 	} catch (err) {
-		host[$logError](t.config, err);
+		host[sym.$logError](t?.config, err);
 	}
 
 	return (isFunction(methodOrFallback) ? methodOrFallback() : undefined);
@@ -91,7 +91,7 @@ export const defineModule = <T extends Plugin>(module: T): T => {
 
 /**
  * ## defineInterpreterModule
- * Used to register a module that attaches methods to the Tempo $Interpreter registry.
+ * Used to register a module that attaches methods to the Tempo sym.$Interpreter registry.
  */
 export const defineInterpreterModule = (name: string, logic: any) =>
 	defineModule((options: any, TempoClass: any) => {
@@ -102,11 +102,11 @@ export const defineInterpreterModule = (name: string, logic: any) =>
 		REGISTRY.modules[name] = logic;
 
 		// 2. Fallback for legacy class-local access
-		TempoClass[$Interpreter] ??= secureRef({});
-		if (isDefined(TempoClass[$Interpreter][name]) && TempoClass[$Interpreter][name] !== logic) {
+		TempoClass[sym.$Interpreter] ??= secureRef({});
+		if (isDefined(TempoClass[sym.$Interpreter][name]) && TempoClass[sym.$Interpreter][name] !== logic) {
 			throw new Error(`Tempo Interpreter Module clash: '${name}' logic is already defined.`);
 		}
-		TempoClass[$Interpreter][name] = logic;
+		TempoClass[sym.$Interpreter][name] = logic;
 	});
 
 /**
@@ -298,11 +298,11 @@ export function resolveTermShift(tempo: Tempo, source: any[], offset: string, sh
 	if (!range) return undefined;
 
 	// find index in list (matching key and all shared date/time units for accurate identity)
-	const idx = list.findIndex(r => 
-		r.key === range.key && 
+	const idx = list.findIndex(r =>
+		r.key === range.key &&
 		SCHEMA.every(([u]) => (isDefined(r[u]) && isDefined(range[u])) ? r[u] === range[u] : true)
 	);
-	
+
 	if (idx === -1) return undefined;
 
 	const targetIdx = idx + shift;
@@ -328,7 +328,7 @@ export function resolveCycleWindow(t: Tempo, template: Range[], anchor?: any) {
 	if (largest === 'hour' || largest === 'minute') {
 		const list: Range[] = [];
 		const base = Temporal.PlainDate.from(source);
-		
+
 		for (const offset of [-1, 0, 1]) {
 			const date = base.add({ days: offset });
 			template.forEach(itm => {
@@ -374,7 +374,7 @@ export function resolveCycleWindow(t: Tempo, template: Range[], anchor?: any) {
  * Registration hook for Term plugins.
  */
 export function registerTerm(term: TermPlugin) {
-	const db = (globalThis as any)[$Plugins] ??= secureRef({
+	const db = (globalThis as any)[sym.$Plugins] ??= secureRef({
 		terms: [] as TermPlugin[],
 		plugins: [] as Plugin[]
 	});
@@ -388,7 +388,7 @@ export function registerTerm(term: TermPlugin) {
 		REGISTRY.terms.push(term);
 	}
 
-	(globalThis as any)[$Register]?.(term);
+	(globalThis as any)[sym.$Register]?.(term);
 }
 
 /**
@@ -396,7 +396,7 @@ export function registerTerm(term: TermPlugin) {
  * Registration hook for general plugins.
  */
 export function registerPlugin(plugin: any) {
-	const db = (globalThis as any)[$Plugins] ??= secureRef({
+	const db = (globalThis as any)[sym.$Plugins] ??= secureRef({
 		terms: [] as TermPlugin[],
 		plugins: [] as Plugin[]
 	});
@@ -410,5 +410,5 @@ export function registerPlugin(plugin: any) {
 		REGISTRY.extends.push(plugin);
 	}
 
-	(globalThis as any)[$Register]?.(plugin);
+	(globalThis as any)[sym.$Register]?.(plugin);
 }

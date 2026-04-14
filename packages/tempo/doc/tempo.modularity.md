@@ -15,10 +15,13 @@ Adds support for `.until()` and `.since()` instance methods, as well as the stat
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
 import { DurationModule } from '@magmacomputing/tempo/duration';
+import { FormatModule } from '@magmacomputing/tempo/format';
+import { TickerModule } from '@magmacomputing/tempo/ticker';
 
+// Individual extension...
 Tempo.extend(DurationModule);
 
-// Bulk extension is also supported!
+// ...or bulk extension!
 Tempo.extend(DurationModule, FormatModule, TickerModule);
 ```
 

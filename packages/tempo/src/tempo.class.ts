@@ -6,7 +6,7 @@ import { Immutable, Serializable } from '#library/class.library.js';
 import { asArray, asInteger, isNumeric } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { proxify, delegate } from '#library/proxy.library.js';
-import { $Logify, $Discover, markConfig } from '#library/symbol.library.js';
+import lib, { markConfig } from '#library/symbol.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { enumify } from '#library/enumerate.library.js';
 import { ownKeys, ownEntries, getAccessors, omit } from '#library/reflection.library.js';
@@ -21,7 +21,7 @@ import { resolveTermMutation, resolveTermValue } from './plugin/module/module.te
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './plugin/module/module.lexer.js';
 import { REGISTRY, registerPlugin, registerTerm, getRange, getTermRange, interpret, findTermPlugin } from './plugin/plugin.util.js'
 
-import sym, {  isTempo, registerHook } from './tempo.symbol.js';
+import sym, { isTempo, registerHook } from './tempo.symbol.js';
 import { Match, Token, Snippet, Layout, Event, Period, Default } from './tempo.default.js';
 import enums, { STATE, DISCOVERY, registryUpdate, registryReset } from './tempo.enum.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -81,7 +81,7 @@ export class Tempo {
 
 	/** handle internal errors using the global config */
 	static [sym.$logError](...msg: any[]): void {
-		const config = (isObject(msg[0]) && (msg[0] as any)[$Logify] === true) ? msg.shift() : Tempo.#global.config;
+		const config = (isObject(msg[0]) && (msg[0] as any)[lib.$Logify] === true) ? msg.shift() : Tempo.#global.config;
 		markConfig(config);														// ensure config is marked for Logify
 		Tempo.#dbg.error(config, ...msg);
 	}
@@ -96,15 +96,15 @@ export class Tempo {
 	/** Tempo state for the global configuration */						static #global = {} as Internal.State
 	/** cache for next-available 'usr' Token key */						static #usrCount = 0;
 	/** guard against infinite mutation recursion */					static #mutateDepth = 0;
-	/** mutable list of registered term plugins */						static #terms: Tempo.TermPlugin[] = REGISTRY.terms;
+	/** mutable list of registered term plugins */						static #terms: t.TermPlugin[] = REGISTRY.terms;
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
-	/** mapping of terms to their resolved values */					static #termMap: Map<string, Tempo.TermPlugin> = new Map();
+	/** mapping of terms to their resolved values */					static #termMap: Map<string, t.TermPlugin> = new Map();
 	/** flag to prevent recursion during init */							static #lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
 	/** Master Guard predicate (implements RegExp-like interface) */					static #guard: { test(str: string): boolean } = { test: () => true };
 	/** Set of allowed lowercased tokens for the Master Guard */					static #allowedTokens: Set<string> = new Set();
 
 	/** Centralized error dispatcher for Term resolution failures */
-	static [sym.$termError](config: Tempo.Options, term: string): void {
+	static [sym.$termError](config: t.Options, term: string): void {
 		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
 		const msg = `Unknown Term identifier: ${term}${hint}`;
 		Tempo.#dbg.error(config, msg);
@@ -196,21 +196,13 @@ export class Tempo {
 	}
 
 	/** try to infer hemisphere using the timezone's daylight-savings setting */
-	static #setSphere = (shape: Internal.State, options: Tempo.Options) => {
+	static #setSphere = (shape: Internal.State, options: t.Options) => {
 		if (isDefined(options.sphere)) return options.sphere;
 
-		const configTz = shape.config?.timeZone;
-		if (isDefined(configTz)) {
-			const tz = String(configTz);
-			if (tz.toLowerCase() === 'utc') return undefined;
-			const sphere = getHemisphere(tz);
-			if (isDefined(sphere)) return sphere;
-		}
-
-		if (isDefined(options.timeZone)) {
-			const tz = String(options.timeZone);
-			if (tz.toLowerCase() === 'utc') return undefined;
-			const sphere = getHemisphere(tz);
+		const tz = options.timeZone;
+		if (isDefined(tz)) {
+			if (String(tz).toLowerCase() === 'utc') return undefined;
+			const sphere = getHemisphere(String(tz));
 			if (isDefined(sphere)) return sphere;
 		}
 
@@ -285,9 +277,9 @@ export class Tempo {
 	 * conform input of Snippet / Layout / Event / Period options  
 	 * This is needed because we allow the user to flexibly provide detail as {[key]:val} or {[key]:val}[] or [key,val][]  
 	 */
-	static #setConfig(shape: Internal.State, ...options: Tempo.Options[]) {
+	static #setConfig(shape: Internal.State, ...options: t.Options[]) {
 
-		const mergedOptions: Tempo.Options = Object.assign({}, ...options);
+		const mergedOptions: t.Options = Object.assign({}, ...options);
 
 		if (shape === Tempo.#global)																// sanitize global configuration
 			omit(mergedOptions, 'value', 'anchor', 'result');
@@ -346,11 +338,11 @@ export class Tempo {
 						break;
 
 					case 'mdyLocales':
-						shape.parse[optKey] = Tempo.#mdyLocales(arg.value as NonNullable<Tempo.Options[typeof optKey]>);
+						shape.parse[optKey] = Tempo.#mdyLocales(arg.value as NonNullable<t.Options[typeof optKey]>);
 						break;
 
 					case 'mdyLayouts':																// these are the 'layouts' that need to swap parse-order
-						shape.parse[optKey] = asArray(arg.value as NonNullable<Tempo.Options[typeof optKey]>);
+						shape.parse[optKey] = asArray(arg.value as NonNullable<t.Options[typeof optKey]>);
 						break;
 
 					case 'pivot':
@@ -358,7 +350,7 @@ export class Tempo {
 						break;
 
 					case 'config':
-						Tempo.#setConfig(shape, arg.value as Tempo.Options);
+						Tempo.#setConfig(shape, arg.value as t.Options);
 						break;
 
 					case 'timeZone': {
@@ -369,10 +361,10 @@ export class Tempo {
 
 					case 'formats':
 						if (Tempo.#isLocal(shape) && !Tempo.#hasOwn(shape.config, 'formats'))
-							shape.config.formats = shape.config.formats.extend({}) as Tempo.FormatRegistry;	// shadow parent prototype
+							shape.config.formats = shape.config.formats.extend({}) as t.FormatRegistry;	// shadow parent prototype
 
 						if (isObject(arg.value))
-							shape.config.formats = shape.config.formats.extend(arg.value as Property<any>) as Tempo.FormatRegistry;
+							shape.config.formats = shape.config.formats.extend(arg.value as Property<any>) as t.FormatRegistry;
 						break;
 
 					case 'discovery':
@@ -414,7 +406,7 @@ export class Tempo {
 	// The google-apps-script types package provides its own Intl.Locale interface that doesn't include getTimeZones(),
 	// and it takes priority over the ESNext.Intl augmentation in tsconfig.
 	// The "(mdy as any).getTimeZones?.()" can be replaced with "mdy.getTimeZones()" after google-apps-script is corrected
-	static #mdyLocales(value: Tempo.Options["mdyLocales"]) {
+	static #mdyLocales(value: t.Options["mdyLocales"]) {
 		return asArray(value)
 			.map(mdy => new Intl.Locale(mdy))
 			.map(mdy => ({ locale: mdy.baseName, timeZones: (mdy as Record<string, any>).getTimeZones?.() ?? [] }))
@@ -446,7 +438,7 @@ export class Tempo {
 
 		// 3. Process Formats
 		if (discovery.formats) {
-			shape.config.formats = shape.config.formats.extend(discovery.formats) as Tempo.FormatRegistry;
+			shape.config.formats = shape.config.formats.extend(discovery.formats) as t.FormatRegistry;
 			registryUpdate('FORMAT', discovery.formats);
 		}
 
@@ -585,8 +577,8 @@ export class Tempo {
 	 *               If the last argument is a plain object (and not a plugin/term), 
 	 *               it will be treated as the 'options' for all plugins in the call.
 	 */
-	static extend(plugin: Tempo.Plugin, options?: Tempo.Options): typeof Tempo;
-	static extend(plugins: (Tempo.Plugin | Tempo.TermPlugin | any)[], options?: Tempo.Options): typeof Tempo;
+	static extend(plugin: t.Plugin, options?: t.Options): typeof Tempo;
+	static extend(plugins: (t.Plugin | t.TermPlugin | any)[], options?: t.Options): typeof Tempo;
 	static extend(...args: any[]): typeof Tempo;
 	static extend(...args: any[]): typeof Tempo {
 		let options = (args.length > 1 && isObject(args[args.length - 1]) && !isFunction(args[args.length - 1]) && !isDefined(args[args.length - 1].key)) ? args.pop() : undefined;
@@ -617,7 +609,7 @@ export class Tempo {
 				else if (isObject(item)) {
 					// 1. handle TermPlugin
 					if (isString((item as any).key) && isFunction((item as any).define)) {
-						const config = item as Tempo.TermPlugin;
+						const config = item as t.TermPlugin;
 						if (Tempo.#termMap.has(config.key)) return;
 
 						Tempo.#terms.push(config);											// update registry (BEFORE side-effects)
@@ -655,7 +647,7 @@ export class Tempo {
 							registryUpdate('TIMEZONE', tzs)
 						}
 						if (discovery.formats) {
-							Tempo.#global.config.formats = Tempo.#global.config.formats.extend(discovery.formats) as Tempo.FormatRegistry;
+							Tempo.#global.config.formats = Tempo.#global.config.formats.extend(discovery.formats) as t.FormatRegistry;
 							registryUpdate('FORMAT', discovery.formats)
 						}
 
@@ -682,7 +674,7 @@ export class Tempo {
 	}
 
 	/** Reset Tempo to its default, built-in registration state */
-	static init(options: Tempo.Options = {}): typeof Tempo {
+	static init(options: t.Options = {}): typeof Tempo {
 		if (Tempo.#lifecycle.initialising) return this;
 		Tempo.#lifecycle.initialising = true;
 
@@ -695,8 +687,8 @@ export class Tempo {
 				layout: Object.assign({}, Layout),
 				event: Object.assign({}, Event),
 				period: Object.assign({}, Period),
-				mdyLocales: Tempo.#mdyLocales(Default.mdyLocales as Tempo.Options['mdyLocales']),
-				mdyLayouts: asArray(Default.mdyLayouts as Tempo.Options['mdyLayouts']) as Tempo.Pair[],
+				mdyLocales: Tempo.#mdyLocales(Default.mdyLocales as t.Options['mdyLocales']),
+				mdyLayouts: asArray(Default.mdyLayouts as t.Options['mdyLayouts']) as t.Pair[],
 				pivot: Default.pivot,
 				mode: Default.mode as any,
 				lazy: false,
@@ -759,11 +751,11 @@ export class Tempo {
 
 	/** Reads options from persistent storage (e.g., localStorage). */
 	static readStore(key = Tempo.#global.config.store) {
-		return getStorage<Tempo.Options>(key, {});
+		return getStorage<t.Options>(key, {});
 	}
 
 	/** Writes configuration into persistent storage. */
-	static writeStore(config?: Tempo.Options, key = Tempo.#global.config.store) {
+	static writeStore(config?: t.Options, key = Tempo.#global.config.store) {
 		return setStorage(key, config);
 	}
 
@@ -831,8 +823,8 @@ export class Tempo {
 	}
 
 	/** Compares two `Tempo` instances or date-time values. */
-	static compare(tempo1?: Tempo.DateTime | Tempo.Options, tempo2?: Tempo.DateTime | Tempo.Options) {
-		const one = new Tempo(tempo1 as Tempo.DateTime), two = new Tempo(tempo2 as Tempo.DateTime);
+	static compare(tempo1?: t.DateTime | t.Options, tempo2?: t.DateTime | t.Options) {
+		const one = new Tempo(tempo1 as t.DateTime), two = new Tempo(tempo2 as t.DateTime);
 
 		return Number((one.nano > two.nano) || -(one.nano < two.nano)) + 0;
 	}
@@ -872,16 +864,16 @@ export class Tempo {
 	}
 
 	/** Creates a new `Tempo` instance. */
-	static from(options?: Tempo.Options): Tempo;
-	static from(tempo: Tempo.DateTime | undefined, options?: Tempo.Options): Tempo;
-	static from(tempo?: Tempo.DateTime | Tempo.Options, options?: Tempo.Options) { return new this(tempo as NonNullable<Tempo.DateTime>, options); }
+	static from(options?: t.Options): Tempo;
+	static from(tempo: t.DateTime | undefined, options?: t.Options): Tempo;
+	static from(tempo?: t.DateTime | t.Options, options?: t.Options) { return new this(tempo as NonNullable<t.DateTime>, options); }
 
 	static now() { return instant().epochNanoseconds; }
 	/** get the current system Instant */
 	static get instant() { return Temporal.Instant.fromEpochNanoseconds(this.now()) }
 
 	/** static Tempo.terms (registry) */
-	static get terms(): Secure<Omit<Tempo.TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<Tempo.TermPlugin, 'define' | 'resolve'>> {
+	static get terms(): Secure<Omit<t.TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<t.TermPlugin, 'define' | 'resolve'>> {
 		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => rest);
 		// `delegate` returns an array-like proxy that also supports string lookups; use
 		// an `unknown` bridge to assert the combined intersection type so the compiler
@@ -891,7 +883,7 @@ export class Tempo {
 				return list.find(t => t.key === key || t.scope === key);
 			}
 			return undefined;
-		}) as unknown as Secure<Omit<Tempo.TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<Tempo.TermPlugin, 'define' | 'resolve'>>;
+		}) as unknown as Secure<Omit<t.TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<t.TermPlugin, 'define' | 'resolve'>>;
 	}
 
 	/** static Tempo.formats (registry) */
@@ -911,7 +903,7 @@ export class Tempo {
 	}
 
 	/** 
-	 * configuration governing the static 'rules' used when parsing Tempo.DateTime argument
+	 * configuration governing the static 'rules' used when parsing t.DateTime argument
 	 */
 	static get parse() {
 		const parse = Tempo.#global.parse;
@@ -961,8 +953,8 @@ export class Tempo {
 
 	get [sym.$isTempo]() { return true }
 
-	/** constructor tempo */																	#tempo?: Tempo.DateTime;
-	/** constructor options */																#options = {} as Tempo.Options;
+	/** constructor tempo */																	#tempo?: t.DateTime;
+	/** constructor options */																#options = {} as t.Options;
 	/** instantiation Temporal Instant */											#now: Temporal.Instant;
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
 	/** indicator that the instance failed to parse */				#errored = false;
@@ -970,14 +962,14 @@ export class Tempo {
 	/** prebuilt formats, for convenience */									#fmt!: any;
 	/** mapping of terms to their resolved values */					#term!: any;
 	/** instance values to complement static values */				#local = {
-		/** instance configuration */															config: { [$Logify]: true } as unknown as Internal.Config,
+		/** instance configuration */															config: { [lib.$Logify]: true } as unknown as Internal.Config,
 		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.Match[] } as Internal.Parse
 	} as Internal.State;
 
 	/** Static initialization block to sequence the bootstrap phase */
 	static {
 		// Define the reactive register hook
-		registerHook(sym.$Register, (plugin: Tempo.Plugin | Tempo.Plugin[]) => { if (!Tempo.isExtending) Tempo.extend(plugin) });
+		registerHook(sym.$Register, (plugin: t.Plugin | t.Plugin[]) => { if (!Tempo.isExtending) Tempo.extend(plugin) });
 
 		Tempo.init();																					// synchronously initialize the library
 	}
@@ -988,9 +980,9 @@ export class Tempo {
 	 * @param tempo - The date-time value to parse. Can be a string, number, BigInt, Date, or another Tempo/Temporal object.
 	 * @param options - Configuration options for this specific instance.
 	 */
-	constructor(options?: Tempo.Options);
-	constructor(tempo: Tempo.DateTime, options?: Tempo.Options);
-	constructor(tempo?: Tempo.DateTime | Tempo.Options, options: Tempo.Options = {}) {
+	constructor(options?: t.Options);
+	constructor(tempo: t.DateTime, options?: t.Options);
+	constructor(tempo?: t.DateTime | t.Options, options: t.Options = {}) {
 		this.#now = instant();																	// stash current Instant
 		[this.#tempo, this.#options] = this.#swap(tempo, options);	// swap arguments around
 		this.#setLocal(this.#options);													// parse local options
@@ -1009,13 +1001,8 @@ export class Tempo {
 		this.#term = this.#setDelegator('term');								// initialize the term-delegator
 		this.#anchor = this.#options.anchor;
 
-		if ((this.#options as any)[sym.$errored]) {
-			// process.stderr.write('DEBUG: Setting #errored to true in constructor\n');
+		if ((this.#options as any)[sym.$errored])
 			this.#errored = true;
-		}
-
-		// const syms = Object.getOwnPropertySymbols(this.#options);
-		// process.stderr.write(`DEBUG: constructor symbols count=${syms.length} has_errored=${syms.includes($errored)}\n`);
 
 		if (!this.#local.parse.lazy) this.#ensureParsed();			// attempt to interpret immediately (if not lazy)
 	}
@@ -1024,7 +1011,7 @@ export class Tempo {
 	#ensureParsed() {
 		if (this.#zdt) return;
 		try {
-			this.#zdt = this.#parse(this.#tempo as Tempo.DateTime, this.#anchor);
+			this.#zdt = this.#parse(this.#tempo as t.DateTime, this.#anchor);
 			secure(this.#local.config);
 			const skip = [this.#local.parse.format, this.#local.parse.term].filter(v => v !== undefined);
 			secure(this.#local.parse, new WeakSet(skip as any));
@@ -1091,7 +1078,7 @@ export class Tempo {
 	#setDelegator(host: 'term' | 'fmt') {
 		const target = Object.create(null);
 		const proxy = delegate(target, (key) => {
-			if (key === $Discover) return this.#discover(host, target);
+			if (key === lib.$Discover) return this.#discover(host, target);
 			if (!isString(key)) return;
 
 			// discovery phase
@@ -1157,30 +1144,29 @@ export class Tempo {
 
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
 	/** 4-digit ISO week-numbering year */										get yw() { return this.toDateTime().yearOfWeek }
-	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as Tempo.mm }
-	/** ISO week number of the year */												get ww() { return this.toDateTime().weekOfYear as Tempo.ww }
+	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
+	/** ISO week number of the year */												get ww() { return this.toDateTime().weekOfYear as t.ww }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day }
 	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day }
-	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as Tempo.hh }
-	/** Minutes of the hour (0-59) */													get mi() { return this.toDateTime().minute as Tempo.mi }
-	/** Seconds of the minute (0-59) */												get ss() { return this.toDateTime().second as Tempo.ss }
-	/** Milliseconds of the second (0-999) */									get ms() { return this.toDateTime().millisecond as Tempo.ms }
-	/** Microseconds of the millisecond (0-999) */						get us() { return this.toDateTime().microsecond as Tempo.us }
-	/** Nanoseconds of the microsecond (0-999) */							get ns() { return this.toDateTime().nanosecond as Tempo.ns }
+	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
+	/** Minutes of the hour (0-59) */													get mi() { return this.toDateTime().minute as t.mi }
+	/** Seconds of the minute (0-59) */												get ss() { return this.toDateTime().second as t.ss }
+	/** Milliseconds of the second (0-999) */									get ms() { return this.toDateTime().millisecond as t.ms }
+	/** Microseconds of the millisecond (0-999) */						get us() { return this.toDateTime().microsecond as t.us }
+	/** Nanoseconds of the microsecond (0-999) */							get ns() { return this.toDateTime().nanosecond as t.ns }
 	/** Fractional seconds (e.g., 0.123456789) */							get ff() { return +(`0.${pad(this.ms, 3)}${pad(this.us, 3)}${pad(this.ns, 3)}`) }
 	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.toDateTime().timeZoneId }
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.toDateTime().calendarId }
 	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[this.#local.config.timeStamp] }
-	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as Tempo.Month) }
-	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as Tempo.Month) }
-	/** Short weekday name (e.g., 'Mon') */										get www() { return Tempo.WEEKDAY.keyOf(this.toDateTime().dayOfWeek as Tempo.Weekday) }
-	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Tempo.WEEKDAYS.keyOf(this.toDateTime().dayOfWeek as Tempo.Weekday) }
-	/** ISO weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as Tempo.Weekday }
+	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as t.Month) }
+	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as t.Month) }
+	/** Short weekday name (e.g., 'Mon') */										get www() { return Tempo.WEEKDAY.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
+	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Tempo.WEEKDAYS.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
+	/** ISO weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
 	/** Nanoseconds since Unix epoch (BigInt) */							get nano() { return this.toDateTime().epochNanoseconds }
 	/** `true` if the underlying date-time is valid. */
 	get isValid() {
 		this.#ensureParsed();
-		// process.stderr.write(`DEBUG: isValid zdt=${!!this.#zdt} errored=${this.#errored}\n`);
 		return isZonedDateTime(this.#zdt) && !this.#errored;
 	}
 
@@ -1274,8 +1260,8 @@ export class Tempo {
 		return interpret(this, 'duration', undefined, 'since', ...args);
 	}
 
-	/** returns a new `Tempo` with specific duration added. */add(tempo?: Tempo.Add, options?: Tempo.Options) { this.#ensureParsed(); return this.#add(tempo, options); }
-	/** returns a new `Tempo` with specific offsets. */				set(tempo?: Tempo.Set, options?: Tempo.Options) { this.#ensureParsed(); return this.#set(tempo, options); }
+	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options) { this.#ensureParsed(); return this.#add(tempo, options); }
+	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options) { this.#ensureParsed(); return this.#set(tempo, options); }
 	/** returns a clone of the current `Tempo` instance. */		clone() { return new this.#Tempo(this, this.config) }
 
 	/** returns the underlying Temporal.ZonedDateTime */
@@ -1307,7 +1293,7 @@ export class Tempo {
 
 
 	/** setup local 'config' and 'parse' rules (prototype-linked to global) */
-	#setLocal(options: Tempo.Options = {}) {
+	#setLocal(options: t.Options = {}) {
 		this.#local.config = markConfig(Object.create(Tempo.#global.config));
 		Object.assign(this.#local.config, { scope: 'local' });
 
@@ -1323,7 +1309,7 @@ export class Tempo {
 	}
 
 	/** parse DateTime input */
-	#parse(tempo: Tempo.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {
+	#parse(tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {
 		if (isNull(tempo)) {																		// fail-early
 			this.#errored = true;
 			return undefined as any;
@@ -1451,7 +1437,7 @@ export class Tempo {
 	}
 
 	/** resolve constructor / method arguments */
-	#swap(tempo?: Tempo.DateTime | Tempo.Options, options: Tempo.Options = {}): [Tempo.DateTime | undefined, Tempo.Options] {
+	#swap(tempo?: t.DateTime | t.Options, options: t.Options = {}): [t.DateTime | undefined, t.Options] {
 		if (isTempo(tempo)) {
 			// preserve parse result history when creating new instance from an existing one
 			return [tempo, { result: [...tempo.parse.result], ...options }];
@@ -1462,7 +1448,7 @@ export class Tempo {
 	}
 
 	/** check if we've been given a Tempo Options object */
-	#isOptions(arg: any): arg is Tempo.Options {
+	#isOptions(arg: any): arg is t.Options {
 		if (!isObject(arg) || arg.constructor !== Object) return false;
 
 		const keys = ownKeys(arg);															// if it contains any 'mutation' keys, then it's not (just) an options object
@@ -1474,7 +1460,7 @@ export class Tempo {
 	}
 
 	/** check if we've been given a ZonedDateTimeLike object */
-	#isZonedDateTimeLike(tempo: Tempo.DateTime | Tempo.Options | undefined): tempo is Temporal.ZonedDateTimeLike & { value?: any } {
+	#isZonedDateTimeLike(tempo: t.DateTime | t.Options | undefined): tempo is Temporal.ZonedDateTimeLike & { value?: any } {
 		if (!isObject(tempo) || isEmpty(tempo))
 			return false;
 
@@ -1502,7 +1488,7 @@ export class Tempo {
 	}
 
 	/** conform input to a Temporal.ZonedDateTime */
-	#conform(tempo: Tempo.DateTime, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): TypeValue<any> {
+	#conform(tempo: t.DateTime, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): TypeValue<any> {
 		const arg = asType(tempo);
 		const { type, value } = arg;
 
@@ -1515,7 +1501,7 @@ export class Tempo {
 
 
 		if (this.#isZonedDateTimeLike(tempo)) {									// tempo is ZonedDateTime-ish object (throw away 'value' property)
-			const { timeZone, calendar, value: _, ...options } = tempo as Tempo.Options;
+			const { timeZone, calendar, value: _, ...options } = tempo as t.Options;
 
 			// security check: if it contains term-keys (#) in core mode, we should throw a hint
 			const keys = Object.keys(options);
@@ -1776,20 +1762,21 @@ export class Tempo {
 
 		// resolve month-names into month-numbers (some browsers do not allow month-names when parsing a Date)
 		if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {
-			const mm = prefix(groups["mm"] as Tempo.MONTH);				// conform month-name
-			groups["mm"] = Tempo.MONTH[mm as Tempo.MONTH]!.toString().padStart(2, "0");
+			const mm = prefix(groups["mm"] as t.MONTH);				// conform month-name
+			groups["mm"] = Tempo.MONTH[mm as t.MONTH]!.toString().padStart(2, "0");
 		}
 
 		return dateTime;
 	}
 
-	#add = (args?: any, options: Tempo.Options = {}) => {
+	#add = (args?: any, options: t.Options = {}) => {
 		if (!isZonedDateTime(this.#zdt)) return this;
 
 		const overrides = {
 			timeZone: options.timeZone ?? this.tz,
 			calendar: options.calendar ?? this.cal,
-		} as Required<Tempo.Options>;
+			sphere: options.sphere ?? this.config.sphere
+		} as Required<t.Options>;
 
 		let zdt = this.#zdt.withTimeZone(overrides.timeZone).withCalendar(overrides.calendar);
 		this.#parseDepth++;
@@ -1872,13 +1859,14 @@ export class Tempo {
 	}
 
 	/** mutate the date-time by setting specific offsets */
-	#set = (args?: any, options: Tempo.Options = {}) => {
+	#set = (args?: any, options: t.Options = {}) => {
 		if (!isZonedDateTime(this.#zdt)) return this;
 
 		const overrides = {
 			timeZone: options.timeZone ?? this.tz,
 			calendar: options.calendar ?? this.cal,
-		} as Required<Tempo.Options>;
+			sphere: options.sphere ?? this.config.sphere
+		} as Required<t.Options>;
 
 		// Shift the current instance to the target timezone first to ensure
 		// that any relative keywords (like 'tomorrow') are resolved correctly.
@@ -1931,9 +1919,11 @@ export class Tempo {
 								case 'start.term':
 								case 'mid.term':
 								case 'end.term':
-									const res = resolveTermMutation(Tempo, this, mutate, term!, adjust, zdt);
-									if (res === null) this.#errored = true;
-									return res ?? zdt;
+									{
+										const res = resolveTermMutation(Tempo, this, mutate, term!, adjust, zdt);
+										if (res === null) this.#errored = true;
+										return res ?? zdt;
+									}
 
 								case 'set.timeZone':
 									return zdt.withTimeZone(offset as Temporal.TimeZoneLike);
@@ -1947,9 +1937,11 @@ export class Tempo {
 								case 'set.event':
 								case 'set.dow':															// set day-of-week by number
 								case 'set.wkd':															// set day-of-week by name
-									const res2 = this.#parse(offset as any, zdt, term);
-									if (isUndefined(res2)) this.#errored = true;
-									return res2 ?? zdt;
+									{
+										const res2 = this.#parse(offset as any, zdt, term);
+										if (isUndefined(res2)) this.#errored = true;
+										return res2 ?? zdt;
+									}
 
 								case 'set.year':
 								case 'set.month':
@@ -1974,9 +1966,11 @@ export class Tempo {
 								case 'set.ms':
 								case 'set.us':
 								case 'set.ns':
-									const value = Tempo.ELEMENT[single as Tempo.Element];
-									return zdt
-										.with({ [value]: offset });
+									{
+										const value = Tempo.ELEMENT[single as t.Element];
+										return zdt
+											.with({ [value]: offset });
+									}
 
 								case 'start.year':
 									return zdt
@@ -2095,9 +2089,9 @@ export class Tempo {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // shortcut functions to common Tempo properties / methods
-/** current timestamp (ts) */	export const getStamp = ((tempo: Tempo.DateTime, options: Tempo.Options) => new Tempo(tempo, options).ts) as Tempo.Params<number | bigint>;
-/** create new Tempo */				export const getTempo = ((tempo: Tempo.DateTime, options: Tempo.Options) => new Tempo(tempo, options)) as Tempo.Params<Tempo>;
-/** format a Tempo */					export const fmtTempo = ((fmt: string, tempo: Tempo.DateTime, options: Tempo.Options) => new Tempo(tempo, options).format(fmt as any)) as Internal.Fmt;
+/** current timestamp (ts) */	export const getStamp = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).ts) as t.Params<number | bigint>;
+/** create new Tempo */				export const getTempo = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options)) as t.Params<Tempo>;
+/** format a Tempo */					export const fmtTempo = ((fmt: string, tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).format(fmt as any)) as Internal.Fmt;
 
 export namespace Tempo {
 	export type DateTime = t.DateTime;

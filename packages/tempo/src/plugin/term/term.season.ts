@@ -1,15 +1,15 @@
 import { getTermRange, defineTerm, defineRange, resolveCycleWindow } from '../plugin.util.js';
 import { COMPASS } from '../../tempo.enum.js';
 import { type Tempo } from '../../tempo.class.js';
-import { isTempo } from '../../tempo.symbol.js';
+import sym from '../../tempo.symbol.js';
 
-/** definition of fiscal season ranges */
+/** definition of meteorological season ranges */
 const groups = defineRange([
 	// Meteorological (North)
-	{ key: 'Spring', day: 20, month: 3, symbol: 'Flower', group: 'meteorological', sphere: COMPASS.North },
-	{ key: 'Summer', day: 21, month: 6, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.North },
-	{ key: 'Autumn', day: 23, month: 9, symbol: 'Leaf', group: 'meteorological', sphere: COMPASS.North },
-	{ key: 'Winter', day: 22, month: 12, symbol: 'Snowflake', group: 'meteorological', sphere: COMPASS.North },
+	{ key: 'Spring', day: 1, month: 3, symbol: 'Flower', group: 'meteorological', sphere: COMPASS.North },
+	{ key: 'Summer', day: 1, month: 6, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.North },
+	{ key: 'Autumn', day: 1, month: 9, symbol: 'Leaf', group: 'meteorological', sphere: COMPASS.North },
+	{ key: 'Winter', day: 1, month: 12, symbol: 'Snowflake', group: 'meteorological', sphere: COMPASS.North },
 
 	// Meteorological (South)
 	{ key: 'Spring', day: 1, month: 9, symbol: 'Flower', group: 'meteorological', sphere: COMPASS.South },
@@ -26,8 +26,13 @@ const groups = defineRange([
 
 /** resolve the full candidate list for the current context */
 function resolve(t: Tempo, anchor?: any) {
-	const source: any = anchor ?? t;
-	const sphere = isTempo(source) ? source.config.sphere : (source.sphere ?? t.config.sphere ?? COMPASS.North);
+	const sphere = (anchor as any)?.sphere ?? t.config.sphere;
+
+	if (sphere === undefined) {
+		(t.constructor as any)[sym.$termError](t.config, 'sphere');
+		return [];
+	}
+
 	const template = (groups as any)[`meteorological.${sphere}`] ?? [];
 	if (template.length === 0) return [];
 

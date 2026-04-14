@@ -8,7 +8,9 @@
     "paths": {
       "#library": ["../../library/src/common.index.ts"],
       "#library/*": ["../../library/src/common/*"],
+      "#browser": ["../../library/src/browser.index.ts"],
       "#browser/*": ["../../library/src/browser/*"],
+      "#server": ["../../library/src/server.index.ts"],
       "#server/*": ["../../library/src/server/*"],
       "#tempo": ["./tempo.index.ts"],
       "#tempo/core": ["./core.index.ts"],

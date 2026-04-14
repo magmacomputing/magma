@@ -1,4 +1,4 @@
-import { $Target } from '#library/symbol.library.js';
+import lib from '#library/symbol.library.js';
 import { Tempo } from '#tempo';
 import { registryUpdate } from '#tempo/tempo.enum.js';
 
@@ -42,17 +42,17 @@ describe('Discovery Security (Direct Registry Check)', () => {
 
 	afterAll(() => {
 		// Cleanup added keys to keep environment clean for other tests
-		const numTarget = (Tempo.NUMBER as any)[$Target];
+		const numTarget = (Tempo.NUMBER as any)[lib.$Target];
 		if (numTarget) {
 			delete numTarget.eleven;
 		}
 
-		const fmtTarget = (Tempo.FORMAT as any)[$Target];
+		const fmtTarget = (Tempo.FORMAT as any)[lib.$Target];
 		if (fmtTarget) {
 			delete fmtTarget.custom;
 		}
 
-		const tzTarget = (Tempo.TIMEZONE as any)[$Target];
+		const tzTarget = (Tempo.TIMEZONE as any)[lib.$Target];
 		if (tzTarget) {
 			delete tzTarget.myzone;
 		}

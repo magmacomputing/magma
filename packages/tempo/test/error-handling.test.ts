@@ -6,12 +6,14 @@ describe('Error Handling stabilization', () => {
 
 	it('should throw an error for invalid ticker interval by default', () => {
 		Tempo.init({ catch: false });
-		const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
 		expect(() => Tempo.ticker('invalid')).toThrow();
-		expect(spy).toHaveBeenCalled();
+		expect(errorSpy).toHaveBeenCalled();
 	});
 
-	it('should log a warning and fallback to 1s when catch: true', () => {
+	it('should log an error and fallback to 1s when catch: true', () => {
 		Tempo.init({ catch: true });
 		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
 		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });

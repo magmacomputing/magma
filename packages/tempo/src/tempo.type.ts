@@ -8,7 +8,7 @@
  */
 
 import * as enums from '#tempo/tempo.enum.js';
-import { $Tempo, $Plugins, $Register } from '#tempo/tempo.symbol.js';
+import sym from '#tempo/tempo.symbol.js';
 import type { Snippet, Layout, Event, Period, Token } from '#tempo/tempo.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
 import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension } from './plugin/plugin.type.js';
@@ -28,9 +28,9 @@ declare module '#library/type.library.js' {
 
 declare global {
 	interface globalThis {
-		[$Tempo]?: Internal.Discovery;
-		[$Plugins]?: Internal.Discovery;
-		[$Register]?: () => void;
+		[sym.$Tempo]?: Internal.Discovery;
+		[sym.$Plugins]?: Internal.Discovery;
+		[sym.$Register]?: () => void;
 	}
 }
 

@@ -34,7 +34,7 @@ Tempo is an ESM-first library. You can use it in the browser without a build ste
     "@magmacomputing/tempo/ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/plugin/extend/extend.ticker.js",
     "@magmacomputing/tempo/duration": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/plugin/module/module.duration.js",
     "@magmacomputing/tempo/format": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/plugin/module/module.format.js",
-    "@magmacomputing/tempo/plugin": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/plugin/plugin.util.js",
+    "@magmacomputing/tempo/plugin": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/plugin/plugin.index.js",
     "@magmacomputing/tempo/enums": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/tempo.enum.js",
     "@magmacomputing/tempo/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/library.index.js",
     "@magmacomputing/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/library/dist/common.index.js"
@@ -300,9 +300,9 @@ To add a plugin, use the static `extend()` method.
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { TickerPlugin } from '@magmacomputing/tempo/ticker';
+import { TickerModule } from '@magmacomputing/tempo/ticker';
 
-Tempo.extend(TickerPlugin);
+Tempo.extend(TickerModule);
 ```
 
 - [Plugin Development Guide](./tempo.plugin.md): A detailed overview of the `Tempo.extend()` API and best practices for creating custom extensions.

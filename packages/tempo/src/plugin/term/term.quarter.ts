@@ -1,5 +1,5 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../plugin.util.js';
-import { isTempo } from '../../tempo.symbol.js';
+import sym from '../../tempo.symbol.js';
 import { COMPASS } from '../../tempo.enum.js';
 import { type Tempo } from '../../tempo.class.js';
 import { isNumber } from '#library/type.library.js';
@@ -20,8 +20,12 @@ const groups = defineRange([
 
 /** resolve the full candidate list for the current context */
 function resolve(t: Tempo, anchor?: any): any[] {
-	const source: any = anchor ?? t;
-	const sphere = isTempo(source) ? (source.config.sphere ?? COMPASS.North) : (source.sphere ?? t.config.sphere ?? COMPASS.North);
+	const sphere = (anchor as any)?.sphere ?? t.config.sphere;
+
+	if (sphere === undefined) {
+		(t.constructor as any)[sym.$termError](t.config, 'sphere');
+		return [];
+	}
 
 	const template = (groups as any)[sphere] ?? [];
 	if (template.length === 0) return [];

@@ -1,6 +1,6 @@
 import { secure } from '#library/utility.library.js';
 import { asType, isNumber } from '#library/type.library.js';
-import { $Extensible } from '#library/symbol.library.js';
+import lib from '#library/symbol.library.js';
 import { ownEntries } from '#library/reflection.library.js';
 import { proxify } from '#library/proxy.library.js';
 import { memoizeMethod } from '#library/function.library.js';
@@ -109,7 +109,7 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 	}
 
 	const target = Object.create(proto, Object.getOwnPropertyDescriptors(stash));
-	if (!frozen) Object.defineProperty(target, $Extensible, { value: true, enumerable: false });
+	if (!frozen) Object.defineProperty(target, lib.$Extensible, { value: true, enumerable: false });
 	return proxify(target, true, frozen);										// proxy is ALWAYS frozen (read-only), but target is only 'locked' if requested
 }
 

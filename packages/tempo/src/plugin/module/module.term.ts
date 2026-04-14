@@ -122,11 +122,8 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 		const direction = (mod?.includes('<') || mod?.includes('-') || mod === 'prev' || mod === 'last') ? -1 : 1;
 		let remaining = nbr;
 		let iterations = 0;
-		while (iterations < 200 && remaining > 0) {
-			if (++iterations > 200) {
-				Tempo[sym.$termError](instance.config, unit);
-				return null;
-			}
+		while (remaining > 0 && iterations < 200) {
+			iterations++;
 
 			const rawList = getRange(termObj, instance, jump);
 			let list = rawList;
@@ -310,9 +307,18 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			}
 		}
 
+		if (remaining > 0) {
+			Tempo[sym.$termError](instance.config, unit);
+			return null;
+		}
+
 		// Final range resolution for mid/end
 		if (mutate === 'mid' || mutate === 'end') {
 			const finalRange = (getTermRange(instance, getRange(termObj, instance, jump), false, jump) as any);
+			if (!finalRange) {
+				Tempo[sym.$termError](instance.config, unit);
+				return null;
+			}
 			if (mutate === 'mid') {
 				const startNs = finalRange.start.toDateTime().epochNanoseconds as bigint;
 				const endNs = finalRange.end.toDateTime().epochNanoseconds as bigint;

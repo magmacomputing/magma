@@ -7,17 +7,17 @@
 
 import type { Tempo } from '#tempo/tempo.class.js';
 
-/** key for Global Discovery of Tempo configuration */			export const $Tempo = Symbol.for('$Tempo');
-/** key for Global Discovery of Tempo Plugins */						export const $Plugins = Symbol.for('$TempoPlugin');
-/** key for Reactive Plugin Registration */									export const $Register = Symbol.for('$TempoRegister');
-/** key for Global Identity Brand for Tempo */							export const $isTempo = Symbol.for('$isTempo');
+const $Tempo = Symbol.for('$Tempo');
+const $Plugins = Symbol.for('$TempoPlugin');
+const $Register = Symbol.for('$TempoRegister');
+const $isTempo = Symbol.for('$isTempo');
 
-/** key for Internal Interpreter Service */									export const $Interpreter = Symbol.for('$TempoInterpreter');
-/** key for contextual Error Logging */											export const $logError = Symbol.for('$TempoLogError');
-/** key for contextual Debug Logging */											export const $logDebug = Symbol.for('$TempoLogDebug');
+const $Interpreter = Symbol.for('$TempoInterpreter');
+const $logError = Symbol.for('$TempoLogError');
+const $logDebug = Symbol.for('$TempoLogDebug');
 
-/** key for centralized Term Error dispatching */						export const $termError = Symbol.for('$TempoTermError');
-/** internal key for signaling pre-errored state in constructor */export const $errored = Symbol.for('$TempoErrored');
+const $termError = Symbol.for('$TempoTermError');
+const $errored = Symbol.for('$TempoErrored');
 
 /**
  * Define a reactive registration hook on a global symbol.
@@ -40,14 +40,14 @@ export const isTempo = (tempo?: any): tempo is Tempo => tempo?.[$isTempo] === tr
 
 /** global symbols */
 const _sym = {
-    /** key for Global Discovery of Tempo configuration */ $Tempo,
-    /** key for Global Discovery of Tempo Plugins */ $Plugins,
-    /** key for Reactive Plugin Registration */ $Register,
-    /** key for Global Identity Brand for Tempo */ $isTempo,
-    /** key for Internal Interpreter Service */ $Interpreter,
-    /** key for contextual Error Logging */ $logError,
-    /** key for contextual Debug Logging */ $logDebug,
-    /** key for centralized Term Error dispatching */ $termError,
+    /** key for Global Discovery of Tempo configuration */  $Tempo,
+    /** key for Global Discovery of Tempo Plugins */        $Plugins,
+    /** key for Reactive Plugin Registration */             $Register,
+    /** key for Global Identity Brand for Tempo */          $isTempo,
+    /** key for Internal Interpreter Service */             $Interpreter,
+    /** key for contextual Error Logging */                 $logError,
+    /** key for contextual Debug Logging */                 $logDebug,
+    /** key for centralized Term Error dispatching */       $termError,
     /** internal key for signaling pre-errored state in constructor */ $errored
 } as const;
 

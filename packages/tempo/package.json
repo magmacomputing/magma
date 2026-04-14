@@ -97,6 +97,10 @@
       "types": "./dist/plugin/module/module.*.d.ts",
       "import": "./dist/plugin/module/module.*.js"
     },
+    "./term/standard": {
+      "types": "./dist/plugin/term/standard.index.d.ts",
+      "import": "./dist/plugin/term/standard.index.js"
+    },
     "./term/*": {
       "types": "./dist/plugin/term/term.*.d.ts",
       "import": "./dist/plugin/term/term.*.js"

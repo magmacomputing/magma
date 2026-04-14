@@ -1,4 +1,4 @@
-import { $Target } from '#library/symbol.library.js';
+import lib from '#library/symbol.library.js';
 import { distinct } from '#library/array.library.js';
 import { asType, getType, isEmpty, isFunction, isPrimitive } from '#library/type.library.js';
 import type { Obj, KeyOf, ValueOf, EntryOf, Primitives } from '#library/type.library.js';
@@ -83,7 +83,7 @@ export function ownEntries<T extends Obj>(json: T, all = false) {
 		return [] as EntryOf<T>[];
 
 	const getOwn = (obj: any): [PropertyKey, any][] => {			// helper function to get own enumerable properties
-		const tgt = obj[$Target] ?? obj;												// unwrap if it's a proxy
+		const tgt = obj[lib.$Target] ?? obj;										// unwrap if it's a proxy
 
 		return Reflect.ownKeys(tgt)
 			.filter(key => Object.getOwnPropertyDescriptor(tgt, key)?.enumerable)
@@ -96,12 +96,12 @@ export function ownEntries<T extends Obj>(json: T, all = false) {
 	// all=true: collect per-level bottom-up, reverse to top-down, dedup via Map
 	// Map preserves first-insertion position but allows value update (own key shadows ancestor)
 	const levels: [PropertyKey, any][][] = [];
-	const limit = 50;																				// prevent infinite loops (increased from 10)
+	const limit = 50;																					// prevent infinite loops (increased from 10)
 	let depth = 0;
 	let proto: any = json;
 
 	do {
-		const t = proto[$Target] ?? proto;											// CRITICAL: unwrap before checking marker to avoid trap recursion
+		const t = proto[lib.$Target] ?? proto;									// CRITICAL: unwrap before checking marker to avoid trap recursion
 
 		const lvl = getOwn(proto);
 		if (lvl.length) levels.push(lvl);
