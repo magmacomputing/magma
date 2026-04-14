@@ -1,33 +1,32 @@
-import { Tempo } from '#tempo/tempo.class.js';
-import '#tempo/plugins/extend/plugin.ticker.js';
+import { Tempo } from '#tempo';
+import '#tempo/plugin/extend/extend.ticker.js';
 
 describe('Error Handling stabilization', () => {
+	afterEach(() => vi.restoreAllMocks())
+
 	it('should throw an error for invalid ticker interval by default', () => {
 		Tempo.init({ catch: false });
-		const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
-		try {
-			expect(() => Tempo.ticker('invalid')).toThrow();
-		} finally {
-			spy.mockRestore();
-		}
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+		expect(() => Tempo.ticker('invalid')).toThrow();
+		expect(errorSpy).toHaveBeenCalled();
 	});
 
-	it('should log a warning and fallback to 1s when catch: true', () => {
+	it('should log an error and fallback to 1s when catch: true', () => {
 		Tempo.init({ catch: true });
-		const spy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
 		let t: any;
-		try {
-			expect(() => {
-				t = Tempo.ticker('invalid');
-			}).not.toThrow();
+		expect(() => {
+			t = Tempo.ticker('invalid');
+		}).not.toThrow();
 
-			expect(spy).toHaveBeenCalled();
-			expect(t).toBeDefined();
-		} finally {
-			t?.[Symbol.dispose]();
-			spy.mockRestore();
-			Tempo.init({ catch: false }); // Reset
-		}
+		expect(errorSpy).toHaveBeenCalled();
+		expect(t).toBeDefined();
+
+		t?.[Symbol.dispose]();
+		Tempo.init({ catch: false }); // Reset
 	});
 });

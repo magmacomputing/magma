@@ -1,4 +1,3 @@
-
 import { getOffsets } from '#library/temporal.library.js';
 
 /**
@@ -43,9 +42,15 @@ export function getHemisphere(timeZone: string = getResolvedOptions().timeZone) 
 	try {
 		const { jan, jul } = getOffsets(timeZone);							// using default reference-year (2024) for stability
 
-		if (jan === jul) return undefined;											// No DST or equatorial
+		// Fallback: Check for known Southern geographic prefixes that might not observer DST
+		const southPrefixes = ['Australia', 'Antarctica', 'Africa/Johannesburg', 'America/Buenos_Aires', 'America/Sao_Paulo'];
+		const isSouthZone = southPrefixes.some(p => timeZone.startsWith(p));
 
-		return jul > jan ? 'north' : 'south';
+		switch (true) {
+			case jul > jan: return 'north';
+			case jul < jan: return 'south';
+			default: return isSouthZone ? 'south' : undefined;
+		}
 	} catch (e) {
 		return undefined;
 	}

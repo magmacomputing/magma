@@ -35,7 +35,7 @@ interface Options {
   store?: string;               // Key for persistent storage (e.g., localStorage)
   sphere?: 'north' | 'south';   // Hemisphere for seasonal plugins
   timeStamp?: 'ms' | 'ns';      // Precision for numeric timestamps
-  [key: string]: any;           // Allows for custom configuration shared with plugins
+  [key: string]: any;           // Allows custom configurations shared with plugins
 }
 ```
 
@@ -107,7 +107,7 @@ interface Discovery {
   options?: Options | (() => Options);
   timeZones?: Record<string, string>;
   terms?: TermPlugin | TermPlugin[];
-  plugins?: Plugin | Plugin[];
+  plugin?: Plugin | Plugin[];
   numbers?: Record<string, number>;
   formats?: Record<string, string>;
 }

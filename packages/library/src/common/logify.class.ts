@@ -1,5 +1,5 @@
 import { Immutable } from '#library/class.library.js';
-import { $Logify, markConfig } from '#library/symbol.library.js';
+import lib, { markConfig } from '#library/symbol.library.js';
 import { asType, isObject, isEmpty, type ValueOf } from '#library/type.library.js';
 
 const Method = {
@@ -16,21 +16,29 @@ const Method = {
 @Immutable
 export class Logify {
 	#name: string;
-	#opts: Logify.Constructor = { [$Logify]: true };
+	#opts: Logify.Constructor = { [lib.$Logify]: true };
 
 	/**
 	 * if {catch:true} then show a warning on the console and return  
 	 * otherwise show an error on the console and re-throw the error
 	 */
 	#trap(method: Logify.Method, ...msg: any[]) {
-		const config = (isObject(msg[0]) && (msg[0] as any)[$Logify] === true) ? msg.shift() : this.#opts;
+		const config = (isObject(msg[0]) && (msg[0] as any)[lib.$Logify] === true) ? msg.shift() : this.#opts;
 
 		if (method === Method.Debug && !config.debug) return;
 
 		const output = msg.map(m => {
 			if (m instanceof Error) return m.message;
 			if (isObject(m)) {
-				try { return JSON.stringify(m); } catch { return '[Object]'; }
+				try {
+					const name = m.constructor?.name ?? 'Object';			// avoiding JSON.stringify (expensive)
+					if (name === 'Object') {
+						const keys = Object.keys(m);
+						const summary = keys.slice(0, 3).join(', ');
+						return `{ ${summary}${keys.length > 3 ? `, ... (+${keys.length - 3} more)` : ''} }`;
+					}
+					return `[${name}]`;
+				} catch { return '[Object]'; }
 			}
 			return String(m);
 		}).filter(s => !isEmpty(s)).join(' ');
@@ -84,6 +92,6 @@ export namespace Logify {
 		debug?: boolean | undefined,
 		catch?: boolean | undefined,
 		silent?: boolean | undefined,
-		[$Logify]?: boolean | undefined
+		[lib.$Logify]?: boolean | undefined
 	}
 }

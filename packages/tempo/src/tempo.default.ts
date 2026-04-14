@@ -1,8 +1,10 @@
 import { looseIndex } from '#library/object.library.js';
 import { secure } from '#library/utility.library.js';
 import { proxify } from '#library/proxy.library.js';
-import { NUMBER, MODE } from '#tempo/tempo.enum.js';
-import type { Options } from '#tempo/tempo.type.js';
+import { NUMBER, MODE } from './tempo.enum.js';
+import type { Options } from './tempo.type.js';
+import { getResolvedOptions } from '#library/international.library.js';
+import type { Tempo } from './tempo.class.js';
 
 // BE VERY CAREFUL NOT TO BREAK THE REGEXP PATTERNS BELOW
 // TEMPO functionality heavily depends on these patterns
@@ -10,8 +12,11 @@ import type { Options } from '#tempo/tempo.type.js';
 /** characters allowed inside timezone/calendar brackets */
 const bracket_content = /[^\]]+/;
 
-/** common RegExp patterns */
-const MatchBase = {
+/** 
+ * Tempo Match patterns — Soft-Frozen to allow for dynamic event/period resolution  
+ * common RegExp patterns
+ */
+export const Match = proxify({
 	/** match all {} pairs, if they start with a word char */	braces: /{([#]?[\w]+(?:\.[\w]+)*)}/g,
 	/** named capture-group, if it starts with a letter */		captures: /\(\?<([a-zA-Z][\w]*)>(.*?)(?<!\\)\)/g,
 	/** event */																							event: /^([gl])?evt(?<idx>[0-9]+)$|^g?dt$/,
@@ -28,13 +33,11 @@ const MatchBase = {
 	/** Z character */																				zed: /^Z$/,
 	/** base guard characters (digits and common symbols) */	guard: /[\d\s\-\.\:T\/Z\+\-\(\)\,\=\#]/i,
 	/** bracketed content (timezone/calendar) */							bracket: /\[[^\]]+\]/i,
-	/** escape special regex characters in a string */				escape: (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-/** 
- * Tempo Match patterns — Soft-Frozen to allow for dynamic event/period resolution
- */
-export const Match = proxify(MatchBase, true, false);
+	/** slick shorthand-shifter (e.g. #qtr.>2q2) */						shorthand: /(?:(?:#[\w]+|[\w]+)\.(?:[\+\-\<\>]=?|next|prev|this|last)?(?:[0-9]+)?(?:[\w]*))/,
+	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
+	/** escape special regex characters in a string */				escape: (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+	/** numeric-only string detection */											numeric: /^\s*[-+]?\d+(\.\d+)?\s*$/
+}, true, false);
 
 /** Tempo Symbol registry */
 export const Token = looseIndex<string, symbol>()({
@@ -55,6 +58,7 @@ export const Token = looseIndex<string, symbol>()({
 	/** separator */																					sep: Symbol('sep'),
 	/** modifier */																						mod: Symbol('mod'),
 	/** generic number */																			nbr: Symbol('nbr'),
+	/** Tempo slick shorthand */															slk: Symbol('slk'),
 	/** Tempo event */																				evt: Symbol('evt'),
 	/** Tempo period */																				per: Symbol('per'),
 	/** time zone offset */																		tzd: Symbol('tzd'),
@@ -102,6 +106,7 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.sep]: new RegExp(`(?:${Match.separator.source})`),	// date-input separator character "/\\-., " (non-capture group)
 	[Token.unt]: /(?<unt>year|month|week|day|hour|minute|second|millisecond)(?:s)?/,	// useful for '2 days ago' etc
 	[Token.brk]: new RegExp(`(\\[(?<brk>${bracket_content.source})\\](?:\\[(?<cal>${bracket_content.source})\\])?)?`),	// timezone/calendar brackets [...]
+	[Token.slk]: new RegExp(`${Match.shorthand.source}`),					// shorthand shifter
 })
 export type Snippet = typeof Snippet
 
@@ -110,7 +115,7 @@ export type Snippet = typeof Snippet
  * the Layout's keys are in the order that they will be checked against an input value  
  */
 export const Layout = looseIndex<symbol, string>()({
-	[Token.dt]: '({dd}{sep}?{mm}({sep}?{yy})?|{mod}?({evt}))',// calendar or event
+	[Token.dt]: '({dd}{sep}?{mm}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk}))',// calendar, event or slick
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
 	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tzd}?{brk}?',	// calendar/event and clock/period
 	[Token.dmy]: '({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?',// day-month(-year)
@@ -137,10 +142,13 @@ export const Event = looseIndex<string, string | Function>()({
 	'christmas': '25 Dec',
 	'xmas ?eve': '24 Dec',
 	'xmas': '25 Dec',
-	'now': function (this: any) { return this },										// this instance
-	'today': function (this: any) { return this },										// today at current time
-	'tomorrow': function (this: any) { return this.add({ days: 1 }) },	// tomorrow at current time
-	'yesterday': function (this: any) { return this.add({ days: -1 }) },// yesterday at current time
+	'now': function (this: Tempo) { return this.toNow() },
+	'today': function (this: Tempo) {
+		const { year, month, day } = this.toNow();
+		return this.toDateTime().with({ year, month, day })
+	},
+	'tomorrow': function (this: Tempo) { return this.add({ days: 1 }) },		// tomorrow at current time
+	'yesterday': function (this: Tempo) { return this.add({ days: -1 }) },	// yesterday at current time
 });
 export type Event = typeof Event
 
@@ -167,10 +175,11 @@ export const Default = secure({
 	/** log to console */																			debug: false,
 	/** catch or throw Errors */															catch: false,
 	/** initialization strategy (auto | strict | defer) */		mode: MODE.Auto,
-	/** used to parse two-digit years*/												pivot: 75,										/** @link https:	//en.wikipedia.org/wiki/Date_windowing */
+	/** used to parse two-digit years*/												pivot: 75,					/** @link https:	//en.wikipedia.org/wiki/Date_windowing */
 	/** precision to measure timestamps (ms | us) */					timeStamp: 'ms',
 	/** calendaring system */																	calendar: 'iso8601',
-	/** default timezone if not specified */									timeZone: 'UTC',
+	/** default timezone if not specified */									timeZone: getResolvedOptions().timeZone,
+	/** default locale if not specified */										locale: getResolvedOptions().locale,
 	/** locales that prefer month-day order */								mdyLocales: ['en-US', 'en-AS'],	/** @link https:	//en.wikipedia.org/wiki/Date_format_by_country */
 	/** layouts that need to swap parse-order */							mdyLayouts: [['dayMonthYear', 'monthDayYear']],
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,

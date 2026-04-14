@@ -23,7 +23,7 @@ Tempo employs two distinct methodologies for protecting its internal state. Thes
 | :--- | :--- | :--- |
 | **Primary Target** | `Tempo.#term`, `Tempo.#fmt` (Instance State) | `NUMBER`, `FORMAT` (Global Registries) |
 | **Scope** | **Instance-Specific**: Unique to every separate `new Tempo()` call. | **Global-Shared**: One single source of truth used by all instances. |
-| **Primary Goal** | **Performance**: Avoid computing expensive terms (like `qtr` or `szn`) until needed. | **Extensibility**: Allow plugins to safely "append" new data to registries at runtime. |
+| **Primary Goal** | **Performance**: Avoid computing expensive terms (e.g., `qtr` or `szn`) until they are needed, | **Extensibility**: Allow plugins to safely append new data to registries at runtime. |
 | **Mechanism** | `Object.create(proto)` + Prototype Shadowing. | `new Proxy(target)` + Symbol-bypass. |
 | **Why this one?** | **Memory Efficiency**: Thousands of instances share the same base prototype. | **Reference Stability**: Shared registries must stay at the same object reference. |
 
@@ -36,7 +36,7 @@ This objective is achieved through two primary architectural pillars:
 1.  **Lazy Evaluation ([Section 1](#1-lazy-evaluation-shadowing))**: Deferring the expensive work of string parsing and term computation until the first property access.
 2.  **Master Guard ([Section 3](#3-master-guard-fast-fail-sync-point))**: Implementing a high-speed "fast-fail" gatekeeper to instantly reject invalid inputs when parsing *is* eventually triggered.
 
-Together, these ensure that `new Tempo()` maintains an O(1) constructor execution time by deferring O(N) full-parse work until the first property access, regardless of how many plugins or custom terms are registered in the global system.
+Together, these ensure that `new Tempo()` maintains an $O(1)$ constructor execution time by deferring $O(N)$ full-parse work until the first property access, regardless of how many plugins or custom terms are registered in the global system.
 
 ---
 
@@ -100,7 +100,7 @@ The **Guarded-Lazy** strategy ensures that even with hundreds of custom plugins,
 1.  **Length-Sorted Terms**: To prevent "partial matching" (e.g., matching `noon` inside `afternoon`), all registered terms are sorted by length (descending) before the Guard regex is built.
 2.  **Automated Escaping**: All custom terms are escaped to prevent regex injection or character collision.
 3.  **High-Speed Gatekeeper**: This single-pass $O(1)$ regex acts as the fast-fail gatekeeper.
-4.  **Auto-Lazy**: Valid inputs that pass the guard automatically switch the instance to `lazy: true` mode, deferring the $O(N)$ full-parse work until the first property access.
+4.  **Auto-Lazy**: Valid inputs that pass the guard automatically switch the instance to `mode: 'defer'` mode, deferring the $O(N)$ full-parse work until the first property access.
 
 ### 📈 Validation & Performance
 The efficiency of the Master Guard and the success of the Zero-Cost objective have been validated via local benchmarking:

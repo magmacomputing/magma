@@ -1,4 +1,4 @@
-import { Tempo } from '#tempo/tempo.class.js';
+import { Tempo } from '#tempo';
 import type { Plugin } from '#tempo/tempo.type.js';
 
 describe('Tempo Reactive Registration', () => {
@@ -16,7 +16,7 @@ describe('Tempo Reactive Registration', () => {
 		}
 
 		// Register it (simulating side-effect import)
-		const { registerPlugin } = await import('#tempo/plugins/plugin.util.js')
+		const { registerPlugin } = await import('#tempo/plugin/plugin.util.js')
 		registerPlugin(myLatePlugin)
 
 		// Now, WITHOUT manual Tempo.init(), it should still be there!

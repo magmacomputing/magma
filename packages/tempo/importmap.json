@@ -1,0 +1,12 @@
+{
+  "imports": {
+    "@magmacomputing/tempo": "./dist/tempo.index.js",
+    "@magmacomputing/tempo/core": "./dist/core.index.js",
+    "@magmacomputing/tempo/ticker": "./dist/plugin/extend/extend.ticker.js",
+    "@magmacomputing/tempo/duration": "./dist/plugin/module/module.duration.js",
+    "@magmacomputing/tempo/format": "./dist/plugin/module/module.format.js",
+    "@magmacomputing/tempo/plugin": "./dist/plugin/plugin.index.js",
+    "@magmacomputing/tempo/enums": "./dist/tempo.enum.js",
+    "@magmacomputing/tempo/library": "./dist/library.index.js"
+  }
+}

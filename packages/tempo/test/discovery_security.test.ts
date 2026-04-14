@@ -1,11 +1,12 @@
-import { $Target } from '#library/symbol.library.js';
-import { Tempo, enums } from '#tempo';
+import lib from '#library/symbol.library.js';
+import { Tempo } from '#tempo';
+import { registryUpdate } from '#tempo/tempo.enum.js';
 
 describe('Discovery Security (Direct Registry Check)', () => {
 
 	test('registryUpdate protects core NUMBER keys from overwrite', () => {
 		// Attempt to overwrite 'one' via direct registryUpdate (which discovery uses)
-		enums.registryUpdate('NUMBER', { one: 99, eleven: 11 });
+		registryUpdate('NUMBER', { one: 99, eleven: 11 });
 
 		expect(Tempo.NUMBER.one).toBe(1);
 		expect(Tempo.NUMBER.one).not.toBe(99);
@@ -14,7 +15,7 @@ describe('Discovery Security (Direct Registry Check)', () => {
 
 	test('registryUpdate protects core TIMEZONE keys from overwrite', () => {
 		// Attempt to overwrite 'utc' alias
-		enums.registryUpdate('TIMEZONE', { utc: 'Broken/Zone', myzone: 'Pacific/Auckland' });
+		registryUpdate('TIMEZONE', { utc: 'Broken/Zone', myzone: 'Pacific/Auckland' });
 
 		expect(Tempo.TIMEZONE.utc).toBe('UTC');
 		expect(Tempo.TIMEZONE.utc).not.toBe('Broken/Zone');
@@ -24,7 +25,7 @@ describe('Discovery Security (Direct Registry Check)', () => {
 	test('registryUpdate protects core FORMAT keys from overwrite', () => {
 		// Attempt to overwrite 'date' format
 		const originalDate = Tempo.FORMAT.date;
-		enums.registryUpdate('FORMAT', { date: 'BROKEN', custom: 'YYYY' });
+		registryUpdate('FORMAT', { date: 'BROKEN', custom: 'YYYY' });
 
 		expect(Tempo.FORMAT.date).toBe(originalDate);
 		expect((Tempo.FORMAT as any).custom).toBe('YYYY');
@@ -41,17 +42,17 @@ describe('Discovery Security (Direct Registry Check)', () => {
 
 	afterAll(() => {
 		// Cleanup added keys to keep environment clean for other tests
-		const numTarget = (Tempo.NUMBER as any)[$Target];
+		const numTarget = (Tempo.NUMBER as any)[lib.$Target];
 		if (numTarget) {
 			delete numTarget.eleven;
 		}
 
-		const fmtTarget = (Tempo.FORMAT as any)[$Target];
+		const fmtTarget = (Tempo.FORMAT as any)[lib.$Target];
 		if (fmtTarget) {
 			delete fmtTarget.custom;
 		}
 
-		const tzTarget = (Tempo.TIMEZONE as any)[$Target];
+		const tzTarget = (Tempo.TIMEZONE as any)[lib.$Target];
 		if (tzTarget) {
 			delete tzTarget.myzone;
 		}

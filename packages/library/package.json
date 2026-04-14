@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/library",
-  "version": "2.0.1",
+  "version": "2.1.2",
   "description": "Shared utility library for Tempo",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -19,53 +19,57 @@
     "monorepo"
   ],
   "type": "module",
-  "main": "dist/common/index.js",
-  "types": "dist/common/index.d.ts",
-    "exports": {
-      ".": {
-        "types": "./dist/common/index.d.ts",
-        "import": "./dist/common/index.js"
-      },
-      "./browser": {
-        "types": "./dist/browser/index.d.ts",
-        "import": "./dist/browser/index.js"
-      },
-      "./common": {
-        "types": "./dist/common/index.d.ts",
-        "import": "./dist/common/index.js"
-      },
-      "./server": {
-        "node": {
-          "types": "./dist/server/index.d.ts",
-          "import": "./dist/server/index.js"
-        },
-        "browser": null
-      },
-      "./browser/*.js": {
-        "development": "./src/browser/*.ts",
-        "default": "./dist/browser/*.js"
-      },
-      "./server/*.js": {
-        "development": "./src/server/*.ts",
-        "default": "./dist/server/*.js"
-      },
-      "./common/*.js": {
-        "development": "./src/common/*.ts",
-        "default": "./dist/common/*.js"
-      },
-      "./*.js": {
-        "development": "./src/common/*.ts",
-        "default": "./dist/common/*.js"
-      }
+  "main": "dist/common.index.js",
+  "types": "dist/common.index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/common.index.d.ts",
+      "development": "./src/common.index.ts",
+      "import": "./dist/common.index.js"
     },
+    "./browser": {
+      "types": "./dist/browser.index.d.ts",
+      "development": "./src/browser.index.ts",
+      "import": "./dist/browser.index.js"
+    },
+    "./common": {
+      "types": "./dist/common.index.d.ts",
+      "development": "./src/common.index.ts",
+      "import": "./dist/common.index.js"
+    },
+    "./server": {
+      "node": {
+        "types": "./dist/server.index.d.ts",
+        "development": "./src/server.index.ts",
+        "import": "./dist/server.index.js"
+      },
+      "browser": null
+    },
+    "./browser/*.js": {
+      "development": "./src/browser/*.ts",
+      "default": "./dist/browser/*.js"
+    },
+    "./server/*.js": {
+      "development": "./src/server/*.ts",
+      "default": "./dist/server/*.js"
+    },
+    "./common/*.js": {
+      "development": "./src/common/*.ts",
+      "default": "./dist/common/*.js"
+    },
+    "./*.js": {
+      "development": "./src/common/*.ts",
+      "default": "./dist/common/*.js"
+    }
+  },
   "files": [
     "dist/",
     "src/"
   ],
   "imports": {
     "#library": {
-      "development": "./src/common/index.ts",
-      "default": "./dist/common/index.js"
+      "development": "./src/common.index.ts",
+      "default": "./dist/common.index.js"
     },
     "#library/*.js": {
       "development": "./src/common/*.ts",

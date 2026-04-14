@@ -4,18 +4,26 @@
 
 ## Installation
 
-To use the ticker, simply import the plugin as a side effect or import the `Ticker` namespace directly if you need to access the [Reporting & Registry](#reporting--registry) API. Both methods automatically register the `Tempo.ticker()` method with the core library:
+To use the ticker, you can import the module as a side effect or import the `TickerModule` directly. The side-effect import (`import '@magmacomputing/tempo/ticker'`) registers the `Tempo.ticker` method automatically, while importing the `TickerModule` explicitly requires you to call `Tempo.extend(TickerModule)` to register it with the core library:
 
 ```typescript
-// Pattern A: Pure side-effect (registers Tempo.ticker)
-import '@magmacomputing/tempo/plugins/ticker';
-import { Tempo } from '@magmacomputing/tempo';
+// Pattern A: One-line activation (Side effect)
+import '@magmacomputing/tempo/ticker';
 
-// Pattern B: Direct import (recommended if using Ticker.active)
-import { Ticker } from '@magmacomputing/tempo/plugins/ticker';
-import { Tempo } from '@magmacomputing/tempo';
+// Pattern B: Explicit Module (Recommended)
+import { Tempo } from '@magmacomputing/tempo/core';
+import { TickerModule } from '@magmacomputing/tempo/ticker';
 
-// Ticker is now available via Tempo.ticker() in both patterns!
+Tempo.extend(TickerModule);
+```
+
+### Direct Access
+If you need to access the [Reporting & Registry](#reporting--registry) API (like `Ticker.active`), you should import the `Ticker` namespace:
+
+```typescript
+import { Ticker } from '@magmacomputing/tempo/ticker';
+
+console.log(Ticker.active);
 ```
 
 ## 🚀 Enhancements
@@ -153,7 +161,7 @@ The `Ticker` class provides a centralized way to monitor all active (non-stopped
 A static getter that returns an array of snapshots for every live ticker.
 
 ```typescript
-import { Ticker } from '@magmacomputing/tempo/plugins/ticker';
+import { Ticker } from '@magmacomputing/tempo/ticker';
 
 // Monitor all active tickers
 const monitoring = Ticker.active;
@@ -222,7 +230,7 @@ The `Ticker` class maintains a static registry of all currently active tickers. 
 A static getter that returns an array of [`Ticker.Snapshot`](#tickersnapshot) objects for all active (non-stopped) tickers.
 
 ```typescript
-import { Ticker } from '@magmacomputing/tempo/plugins/ticker';
+import { Ticker } from '@magmacomputing/tempo/ticker';
 
 // Get a report of all running tickers
 const reports = Ticker.active;

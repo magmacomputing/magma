@@ -11,19 +11,19 @@ This document outlines the various debugging and introspection mechanisms availa
 Before an instance is even created, you can inspect the static state of the `Tempo` class to understand the global configuration and available plugins.
 
 ### `Tempo.config`
-Returns the current *global* configuration settings that act as the default for all new `Tempo` instances. This includes properties like the default `locale`, `timeZone`, and formatting layouts.
+Returns the collection of current *global* configuration settings that act as the default for all new `Tempo` instances. This includes properties like the default `locale`, `timeZone`, and formatting layouts.
 
 ### `Tempo.default`
-Returns the *initial*, out-of-the-box defaults that `Tempo` ships with, unaffected by any modifications made via [Global Discovery](../README.md#global-discovery) or [`Tempo.init()`](./tempo.config.md).
+Returns the collection of *initial*, out-of-the-box defaults that `Tempo` ships with, unaffected by any modifications made via [Global Discovery](../README.md#global-discovery) or [`Tempo.init()`](./tempo.config.md).
 
 ### `Tempo.terms`
-Returns an array of all currently registered term plugins. This is useful to verify which plugins have been loaded via `Tempo.addTerm()`.
+Returns an array of all currently registered term plugins. This is useful to verify which plugins have been loaded via [`Tempo.extend()`](./tempo.plugin.md).
 
 ### `Tempo.properties`
 Returns an array of the available static getters on the `Tempo` class.
 
 ### `Tempo.parse`
-Returns the current *global* set of parsing rules. This includes the registry of regex patterns (`pattern`), snippets, and mapped `{event}` and `{period}` definitions.
+Returns the collection of current *global* parsing rules. This includes the registries of regex patterns (`pattern`), snippets, and mapped `{event}` and `{period}` definitions.
 
 ---
 
@@ -32,7 +32,7 @@ Returns the current *global* set of parsing rules. This includes the registry of
 Once a `Tempo` instance is instantiated, you can inspect its internal state to understand how it was constructed and what logic was applied.
 
 ### `this.config`
-Returns the specific configuration settings applied to *this instance*. This is a composite of the global `Tempo.config` and any specific `Tempo.Options` passed during instantiation.
+Returns the collection of configuration settings applied to *this instance*. This is a composite of the global `Tempo.config` and any specific `Tempo.Options` passed during instantiation.
 
 ### `this.parse.result`
 This is arguably the most powerful debugging tool within Tempo. The `parse.result` property contains an array (a history lineage) of all the rule-matches that occurred to produce the current value.
@@ -44,10 +44,10 @@ Because `Tempo` is chainable (e.g., `new Tempo('xmas').set({ period: 'afternoon'
 *   `groups`: The resolved components (`yy`, `mm`, `dd`, `hh`, etc.) extracted from the match.
 
 ### `this.term`
-Returns an object containing the evaluated results of all registered term plugins for this specific instance.
+Returns a collection containing the evaluated results of all registered term plugins for this specific instance.
 
 ### `this.fmt`
-Returns an object containing the pre-calculated string outputs for all standard formatting codes (e.g., `this.fmt.iso8601`).
+Returns a collection containing the pre-calculated string outputs for all currently registered formatting codes.
 
 ### Primitive Auditing
 If you simply need to see the value represented in different primitive formats, `Tempo` implements `[Symbol.toPrimitive]`:

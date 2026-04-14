@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-04-14
+
+### Added
+- **Slick Shorthand Engine**: Finalized and stabilized the high-performance term-shorthand syntax (`#namespace.modifier`). Advanced temporal navigation (e.g. `#qtr.>2q1`) is now fully supported across `.set()`, `.add()`, `.until()`, and `.since()`.
+- **Inclusive Range Shifters**: Introduced `>=` and `<=` modifiers to the "Slick" engine. These shifters are strictly inclusive, allowing the current term to be matched if it contains the cursor, providing a deterministic "current or next" resolution pattern.
+- **Advanced Terminology Docs**: Published a comprehensive documentation suite (`doc/tempo.advanced_term.html`) detailing lexer constraints, modifier priority, and bifurcated resolution logic for high-performance term cycles.
+
+### Changed
+- **Boundary Performance**: Optimized the term resolution loop to utilize `BigInt` nanosecond comparisons for all shifter logic (`>`, `<`, `next`, `prev`), ensuring deterministic behavior across complex fiscal and calendar boundaries.
+- **Fail-Fast Constructor**: Hardened the constructor guard to explicitly `throw` an `Error` when term-based mutation keys (`#`) are detected. This replaces the previous silent "invalid instance" return, ensuring developers catch improper syntax immediately.
+- **Config Merge Priority**: Refactored `Tempo.#setConfig` to read from persistent storage *before* applying provided options, ensuring that stored values are not unintentionally overwritten by transient defaults.
+- **Centralized Patterns**: Integrated the numeric string detection regex into the central `Match` registry in `tempo.default.ts`, removing hardcoded duplicates from the mutation module.
+
+### Fixed
+- **Infinite Loop Resolution**: Resolved a critical regression where shorthand modifiers were leaking into range-keys, triggering infinite recursion during term mutation.
+- **Hemisphere Inference**: Fixed an initialization bug in `Tempo.init()` where the `sphere` configuration could be incorrectly overwritten or ignored during system-timezone evaluation.
+- **Shorthand Lexer Safety**: Hardened the lexer to strictly enforce Range-Key constraints (no reserved characters or leading digits), eliminating collisions between direction modifiers and repeat counts.
+- **Zone-Shift Visibility**: Fixed a bug in `.set()` where relative term resolution was ignoring `timeZone` or `calendar` overrides passed in the same mutation object. The engine now shifts context *before* resolving terms.
+- **Numeric String Mutations**: Corrected a logic error that misidentified numeric-looking strings (e.g. `"2"`) as term keywords; these are now correctly handled as numeric offsets.
+- **Documentation Integrity**: Consolidated fragmented shorthand guides, fixed conflicting CDN links in import-map examples, and corrected the description of `Tempo.init()` to accurately reflect prototype persistence.
+
+## [2.1.1] - 2026-04-12
+
+### Added
+- **Constructor Protection**: Implemented a strict guard against passing term-based mutation objects (`#`) directly to the `Tempo` constructor. The engine now explicitly rejects these inputs and directs users to the appropriate `.set()` or `.add()` methods for instance transformation.
+- **Unified Term Errors**: Centralized term-resolution error logic into a shared static helper, ensuring consistent "Helpful Hint" messaging for missing plugins across the constructor, mutation engine, and parser.
+
+### Changed
+- **Modular Hardening**: Hardened the core engine to strictly enforce `ZonedDateTime` types for all internal states. This prevents "Ghost Date" leaks and silent fallbacks to "Today" when input resolution fails in Core mode.
+- **Singular Path Refactor**: Standardized all internal and external paths, directories, and documentation to use the singular `plugin` and `term` form (e.g., `#tempo/plugin`, `@magmacomputing/tempo/term`).
+- **Auto-Lazy Precision**: Refined the "Zero-Cost" auto-lazy trigger to only fire for String inputs, ensuring that malformed Objects fail-fast during construction rather than deferring failures.
+- **Bulk Extension DX**: Rebuilt `Tempo.extend()` with intelligent rest-parameter support and restored high-level type overloads for improved IDE autocompletion and type-safety.
+
+### Fixed
+- **Build Stability**: Resolved type errors in the test suite (specifically `tempo_guard.test.ts`) that were triggering failures during project-referenced builds (`tsc -b`).
+- **Sync Normalization**: Fixed a regression where early-resolving inputs (like ISO strings) were bypassing final timezone and calendar normalization.
+
+---
+
+## [2.1.0] - 2026-04-11
+
+### Added
+- **TimeZone Offset Support**: Formally verified and documented support for `+HH:MM` and `-HH:MM` ISO-8601 fixed-offset strings in the `timeZone` configuration.
+- **Browser Reference Map**: Included a comprehensive [importmap.json](./importmap.json) in the package root to provide a standard mapping for bare module specifiers in browser environments.
+
+### Changed
+- **Modular Import Refactor**: Cleaned up the public API by removing the required `plugin/` component from sub-path imports. Plugins are now accessible directly via `@magmacomputing/tempo/ticker`, `@magmacomputing/tempo/duration`, etc.
+- **Configuration Mode**: Refactored the `lazy: boolean` option into a more semantic `mode: 'auto' | 'strict' | 'defer'` setting, offering better control over the Zero-Cost Constructor hydration strategy.
+- **Export Alignment**: Synchronized `package.json` `exports` with the recommended import-map and documentation snippets to ensure 1:1 parity between Node.js and Browser environments.
+
+### Fixed
+- **Documentation Clarity**: Updated all markdown guides (Ticker, Terms, Layout, etc.) to use verified import patterns and corrected various outdated configuration references.
+
+---
+
 ## [2.0.1] - 2026-04-03
 
 ### Added

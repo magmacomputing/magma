@@ -1,11 +1,11 @@
-import { $Target, $Inspect, $Discover } from '#library/symbol.library.js';
+import lib from '#library/symbol.library.js';
 import { allObject } from '#library/reflection.library.js';
 import { secure } from '#library/utility.library.js';
-import { isFunction, isSymbol, registerType, type Constructor, type Type } from '#library/type.library.js';
+import { isDefined, isFunction, isSymbol, registerType, type Constructor, type Type } from '#library/type.library.js';
 
 /** Stealth Proxy pattern to allow for iteration and logging over a Frozen object */
 export function proxify<T extends object>(target: T, frozen = true, lock = frozen) {
-	const tgt = (target as any)[$Target] ?? target;						// unwrap if it's already a proxy
+	const tgt = (target as any)[lib.$Target] ?? target;				// unwrap if it's already a proxy
 	let cachedJSON: any;
 
 	registerType(tgt as Constructor);													// auto-register with global type system
@@ -28,10 +28,10 @@ export function proxify<T extends object>(target: T, frozen = true, lock = froze
 			return Reflect.set(tgt, key, val);
 		},
 		get: (_, key) => {
-			if (key === $Target)
+			if (key === lib.$Target)
 				return tgt;																					// found the 'stop' marker
 
-			if (frozen && (key === $Inspect || key === 'toJSON')) {	// two special properties require virtual closures
+			if (frozen && (key === lib.$Inspect || key === 'toJSON')) {	// two special properties require virtual closures
 				const own = Object.getOwnPropertyDescriptor(tgt, key);
 				if (own && isFunction(own.value))										// if object already has its own toJSON, return
 					return own.value;
@@ -80,12 +80,12 @@ export function delegate<T extends object>(target: T, onGet: (key: string | symb
 		},
 
 		ownKeys: (t) => {
-			if (!pending.has($Discover)) {
-				pending.add($Discover);
+			if (!pending.has(lib.$Discover)) {
+				pending.add(lib.$Discover);
 				try {
-					onGet($Discover, t);															// full discovery phase
+					onGet(lib.$Discover, t);															// full discovery phase
 				} finally {
-					pending.delete($Discover);
+					pending.delete(lib.$Discover);
 				}
 			}
 			return Reflect.ownKeys(t);
@@ -112,3 +112,37 @@ export function delegate<T extends object>(target: T, onGet: (key: string | symb
 	}) as T;
 }
 
+
+/** internal helper to check for array truncation attempts */
+const isTruncating = (t: any, k: PropertyKey, v: any) => Array.isArray(t) && k === 'length' && v < t.length;
+
+/** internal helper to verify that a mutation is safe (Closed for Modification, Open for Extension) */
+const assertSafe = (t: any, k: PropertyKey, v: any) => {
+	if (isTruncating(t, k, v)) throw new Error('Security: Truncation attempt on protected array.');
+	if (Array.isArray(t) && k === 'length') return;
+	if (Reflect.has(t, k)) throw new Error(`Security: Mutation attempt on protected key '${String(k)}'`);
+}
+
+/** 
+ * ## secureRef
+ * Wrap an object or array in a protective Proxy that follows 'Closed for Modification, Open for Extension'.
+ * Allows adding new properties/elements, but prevents overwriting or deleting existing ones.
+ */
+export function secureRef<T extends object>(target: T): T {
+	return new Proxy(target, {
+		set(t, k, v) {
+			assertSafe(t, k, v);
+			return Reflect.set(t, k, v);
+		},
+		defineProperty(t, k, d) {
+			assertSafe(t, k, d.value);
+			return Reflect.defineProperty(t, k, d);
+		},
+		deleteProperty(t, k) {
+			throw new Error(`Security: Deletion attempt on protected key '${String(k)}'`);
+		},
+		setPrototypeOf() {
+			throw new Error(`Security: Prototype mutation attempt on protected object`);
+		}
+	});
+}

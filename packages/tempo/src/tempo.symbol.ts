@@ -5,12 +5,19 @@
  * clean separation of concerns.
  */
 
-import { Tempo } from '#tempo/tempo.class.js';
+import type { Tempo } from '#tempo/tempo.class.js';
 
-/** key for Global Discovery of Tempo configuration */			export const $Tempo = Symbol.for('$Tempo');
-/** key for Global Discovery of Tempo Plugins */						export const $Plugins = Symbol.for('$TempoPlugin');
-/** key for Reactive Plugin Registration */									export const $Register = Symbol.for('$TempoRegister');
-/** key for Global Identity Brand for Tempo */							export const $isTempo = Symbol.for('$isTempo');
+const $Tempo = Symbol.for('$Tempo');
+const $Plugins = Symbol.for('$TempoPlugin');
+const $Register = Symbol.for('$TempoRegister');
+const $isTempo = Symbol.for('$isTempo');
+
+const $Interpreter = Symbol.for('$TempoInterpreter');
+const $logError = Symbol.for('$TempoLogError');
+const $logDebug = Symbol.for('$TempoLogDebug');
+
+const $termError = Symbol.for('$TempoTermError');
+const $errored = Symbol.for('$TempoErrored');
 
 /**
  * Define a reactive registration hook on a global symbol.
@@ -19,14 +26,29 @@ import { Tempo } from '#tempo/tempo.class.js';
  * @returns any previous callback already registered for this symbol
  */
 export function registerHook(sym: symbol, cb: (val: any) => void) {
-	const existing = (globalThis as any)[sym];
+    const existing = (globalThis as any)[sym];
 
-	if (existing !== undefined && typeof existing === 'function')
-		console.warn(`Overwriting existing hook for symbol: ${sym.description}`);
+    if (existing !== undefined && typeof existing === 'function')
+        console.warn(`Overwriting existing hook for symbol: ${sym.description}`);
 
-	(globalThis as any)[sym] = cb;
-	return existing;																					// allow chaining or cleanup
+    (globalThis as any)[sym] = cb;
+    return existing; // allow chaining or cleanup
 }
 
 /** check valid Tempo */
 export const isTempo = (tempo?: any): tempo is Tempo => tempo?.[$isTempo] === true;
+
+/** global symbols */
+const _sym = {
+    /** key for Global Discovery of Tempo configuration */  $Tempo,
+    /** key for Global Discovery of Tempo Plugins */        $Plugins,
+    /** key for Reactive Plugin Registration */             $Register,
+    /** key for Global Identity Brand for Tempo */          $isTempo,
+    /** key for Internal Interpreter Service */             $Interpreter,
+    /** key for contextual Error Logging */                 $logError,
+    /** key for contextual Debug Logging */                 $logDebug,
+    /** key for centralized Term Error dispatching */       $termError,
+    /** internal key for signaling pre-errored state in constructor */ $errored
+} as const;
+
+export default _sym;

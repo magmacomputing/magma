@@ -1,0 +1,414 @@
+import { Temporal } from '@js-temporal/polyfill';
+import { isDefined, isFunction, isString } from '#library/type.library.js';
+import { secure } from '#library/utility.library.js';
+import { SCHEMA, getLargestUnit } from '../tempo.util.js';
+import { sortKey, byKey } from '#library/array.library.js';
+import lib from '#library/symbol.library.js';
+import sym, { isTempo } from '../tempo.symbol.js';
+import { secureRef } from '#library/proxy.library.js';
+import type { Tempo } from '../tempo.class.js';
+import type { TermPlugin, Range, ResolvedRange, Plugin, Extension } from './plugin.type.js';
+
+const _REGISTRY = {
+	terms: secureRef([] as TermPlugin[]),
+	extends: secureRef([] as Extension[]),
+	modules: secureRef({} as Record<string, any>)
+}
+
+/** 
+ * # REGISTRY
+ * Internal registry for registered components.
+ * Closed for modification, Open for extension.
+ */
+export const REGISTRY = new Proxy(_REGISTRY, {
+	get: (t, k) => Reflect.get(t, k),
+	set: (t, k, v) => {
+		if (Object.hasOwn(t, k)) {
+			throw new Error(`Tempo Security: Mutation attempt on protected registry key '${String(k)}'`);
+		}
+		return Reflect.set(t, k, v);
+	},
+	defineProperty: (t, k, d) => {
+		if (Object.hasOwn(t, k)) {
+			throw new Error(`Tempo Security: Mutation attempt on protected registry key '${String(k)}'`);
+		}
+		return Reflect.defineProperty(t, k, d);
+	},
+	deleteProperty: () => {
+		throw new Error(`Tempo Security: Deletion attempt on protected registry.`);
+	}
+});
+
+/** internal helper to resolve the class-host from either an instance or the class itself */
+function getHost(t: any): any {
+	const isFn = typeof t === 'function';
+	if (isFn) return t?.[lib.$Target] ?? t;
+	const host = (t as any)?.constructor ?? (isDefined(t) ? Reflect.get(Object(t), 'constructor') : Object);
+	const target = host?.[lib.$Target] ?? host;
+	return typeof target === 'function' ? target : Object;
+}
+
+/**
+ * ## interpret
+ * Utility to safely delegate calls to the Tempo Interpreter with catch-support.
+ */
+export function interpret(t: any, module: string, methodOrFallback?: any, ...args: any[]) {
+	const host = getHost(t);
+	const hostLogic = REGISTRY.modules[module] ?? host[sym.$Interpreter]?.[module];
+
+	try {
+		if (!isFunction(hostLogic)) throw new Error(`${module} plugin not loaded`);
+
+		// Resolve the specific logic (either the module itself or a sub-method)
+		const logic = isString(methodOrFallback) ? hostLogic[methodOrFallback] : hostLogic;
+		if (!isFunction(logic)) throw new Error(`${module} ${methodOrFallback} method not loaded`);
+
+		return logic.apply(t, args);
+	} catch (err) {
+		host[sym.$logError](t?.config, err);
+	}
+
+	return (isFunction(methodOrFallback) ? methodOrFallback() : undefined);
+}
+
+/**
+ * ## defineTerm
+ * Helper to register a Term plugin.
+ */
+export const defineTerm = <T extends TermPlugin>(term: T): T => {
+	registerTerm(term);
+	return term;
+}
+
+/**
+ * ## defineModule
+ * Used to register an internal modularization component.
+ */
+export const defineModule = <T extends Plugin>(module: T): T => {
+	registerPlugin(module);
+	return module;
+}
+
+/**
+ * ## defineInterpreterModule
+ * Used to register a module that attaches methods to the Tempo sym.$Interpreter registry.
+ */
+export const defineInterpreterModule = (name: string, logic: any) =>
+	defineModule((options: any, TempoClass: any) => {
+		// 1. Secure the Global Registry
+		if (isDefined(REGISTRY.modules[name]) && REGISTRY.modules[name] !== logic) {
+			throw new Error(`Tempo Security: Core Module clash for '${name}'. Logic is already defined.`);
+		}
+		REGISTRY.modules[name] = logic;
+
+		// 2. Fallback for legacy class-local access
+		TempoClass[sym.$Interpreter] ??= secureRef({});
+		if (isDefined(TempoClass[sym.$Interpreter][name]) && TempoClass[sym.$Interpreter][name] !== logic) {
+			throw new Error(`Tempo Interpreter Module clash: '${name}' logic is already defined.`);
+		}
+		TempoClass[sym.$Interpreter][name] = logic;
+	});
+
+/**
+ * ## defineExtension
+ * Used to register a class-augmenting extension.
+ */
+export const defineExtension = <T extends Plugin>(extension: T): T => {
+	registerPlugin(extension);
+	return extension;
+}
+
+/**
+ * ## findTermPlugin
+ * Find a Term plugin by key, scope, or sub-key.
+ */
+export function findTermPlugin(ident: string): TermPlugin | undefined {
+	if (!isString(ident)) return undefined;
+	const id = (ident.startsWith('#') ? ident.slice(1) : ident).toLowerCase();
+	const [termPart] = id.split('.');
+
+	return REGISTRY.terms.find(t => {
+		if (t.key?.toLowerCase() === termPart || t.scope?.toLowerCase() === termPart) return true;
+		if (t.groups) {
+			const list = Array.isArray(t.groups) ? t.groups : Object.values(t.groups).flat(Infinity) as Range[];
+			return list.some(r => r.key?.toLowerCase() === id || r.key?.toLowerCase() === termPart);
+		}
+		return false;
+	});
+}
+
+/**
+ * ## defineRange
+ * Factory to normalize and group Term ranges for efficient lookup.
+ */
+export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) {
+	return byKey(ranges, ...keys);
+}
+
+/**
+ * find where a Tempo fits within a range of DateTime
+ */
+export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor?: any): string | ResolvedRange | undefined {
+	const chronological = sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
+	if (chronological.length === 0) return undefined;
+
+	const match = chronological
+		.toReversed()
+		.find((range: any) => {
+			for (const [rKey, sKey] of SCHEMA) {
+				const val = range[rKey];
+
+				if (isDefined(val)) {
+					const source: any = anchor ?? tempo;
+					const sVal = isTempo(source) ? source[sKey] : source[sKey] ?? source[rKey];
+
+					if (sVal === undefined) continue;
+					if (sVal > val) return true;
+					if (sVal < val) return false;
+				}
+			}
+
+			return true;																					// fallback if DateTime exactly matches a range criteria
+		})
+		?? chronological.at(-1)!
+
+	const i = chronological.indexOf(match);
+	const next = chronological[i + 1];
+
+	const zdt = anchor ?? (tempo as any).toDateTime();
+
+	// determine the largest unit defined in the range list, and use the unit above it as rollover
+	const unit = getLargestUnit(list);
+	const unitIndex = SCHEMA.findIndex(([u]) => u === unit);
+	const rolloverIndex = Math.max(0, unitIndex - 1);
+	const rolloverUnit = SCHEMA[rolloverIndex][0];
+
+	const resolve = (range: Range, anchor: Temporal.ZonedDateTime) => {
+		const obj: any = {};
+		for (let i = 0; i < SCHEMA.length; i++) {
+			const [u] = SCHEMA[i];
+			if (isDefined(range[u])) {
+				obj[u] = range[u];
+			} else if (i > rolloverIndex) {
+				obj[u] = (i <= 2) ? 1 : 0;													// year, month, day reset to 1; time units reset to 0
+			} else {
+				obj[u] = (anchor as any)[u];
+			}
+		}
+		// @ts-ignore
+		const zdt = Temporal.ZonedDateTime.from({ ...obj, timeZone: anchor.timeZoneId, calendar: anchor.calendarId });
+		// @ts-ignore
+		return new tempo.constructor(zdt, (tempo as any).config);
+	}
+
+	const start = resolve(match, zdt);
+	let end: Tempo;
+
+	if (next) {
+		end = resolve(next, zdt);
+	} else {
+		end = resolve(match, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+	}
+
+	if (keyOnly) return match.key;
+
+	const result = {
+		...match,
+		start,
+		end
+	} as ResolvedRange;
+	return result;
+}
+
+/**
+ * # getRange
+ * Resolve the full list of candidates for a term, passing an anchor to prevent recursion.
+ */
+export function getRange(term: TermPlugin, t: Tempo, anchor?: any, group?: string): Range[] {
+	let res: any;
+
+	try {
+		res = term.resolve ? term.resolve.call(t, anchor) : term.define.call(t, false, anchor);
+	} catch (err: any) {
+		if (err.message.includes('Class constructor')) {
+			return [];
+		}
+		throw err;
+	}
+
+	let list = (res == null) ? [] : (Array.isArray(res) ? res : [res]);
+
+	if (group) {
+		// find the registered ranges for this term and filter by group
+		const meta: any = (term as any).groups ?? (term as any).ranges;
+		if (meta) {
+			const source = Array.isArray(meta) ? meta : Object.values(meta).flat(Infinity);
+			list = (source as any[]).filter(r => r.group === group);
+		}
+	}
+
+	return secure(list) as Range[];
+}
+
+/**
+ * Resolve a term to a specific boundary based on a mutation.
+ */
+export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mutate: string): any {
+	const ident = offset.startsWith('#') ? offset.slice(1) : offset;
+	const termObj = terms.find(t => t.key === ident || t.scope === ident);
+	if (!termObj) return undefined;
+
+	const anchor = (tempo as any).toDateTime();
+	const list = getRange(termObj, tempo, anchor);
+	const range = (getTermRange(tempo, list, false, anchor) as any);
+	if (!range) return undefined;
+
+	if (mutate === 'start') return range.start;
+	if (mutate === 'mid') {
+		const startNs = range.start.toDateTime().epochNanoseconds as bigint;
+		const endNs = range.end.toDateTime().epochNanoseconds as bigint;
+		const midNs = startNs + (endNs - startNs) / BigInt(2);
+		// @ts-ignore
+		return new tempo.constructor(Temporal.Instant.fromEpochNanoseconds(midNs).toZonedDateTimeISO((range.start as any).tz).withCalendar((range.start as any).cal), (tempo as any).config);
+	}
+	if (mutate === 'end') return range.end.subtract({ nanoseconds: 1 });
+
+	return undefined;
+}
+
+/**
+ * Resolve a term shift.
+ */
+export function resolveTermShift(tempo: Tempo, source: any[], offset: string, shift: number): any {
+	const anchor = (tempo as any).toDateTime();
+	let list: Range[] = [];
+
+	// If source is a list of plugins, find the right one and resolve it.
+	// Otherwise, it's a pre-resolved list of ranges.
+	if (source.length > 0 && 'define' in source[0]) {
+		const ident = offset.startsWith('#') ? offset.slice(1) : offset;
+		const termObj = source.find(t => t.key === ident || t.scope === ident);
+		if (!termObj) return undefined;
+		list = getRange(termObj, tempo, anchor);
+	} else {
+		list = source;
+	}
+
+	const range = (getTermRange(tempo, list, false, anchor) as any);
+	if (!range) return undefined;
+
+	// find index in list (matching key and all shared date/time units for accurate identity)
+	const idx = list.findIndex(r =>
+		r.key === range.key &&
+		SCHEMA.every(([u]) => (isDefined(r[u]) && isDefined(range[u])) ? r[u] === range[u] : true)
+	);
+
+	if (idx === -1) return undefined;
+
+	const targetIdx = idx + shift;
+	const target = list[targetIdx];
+	if (!target) return undefined;
+
+	// resolve target range
+	const res = (getTermRange(tempo, [target], false) as any);
+	if (!res) return undefined;
+	return res.start;
+}
+
+/**
+ * ## resolveCycleWindow
+ * Helper to generate a 3-cycle candidate window around an anchor.
+ * Defaults to yearly cycles, but supports daily cycles if the template suggests it.
+ */
+export function resolveCycleWindow(t: Tempo, template: Range[], anchor?: any) {
+	const source = anchor ?? (t as any).toDateTime();
+	const largest = getLargestUnit(template);
+
+	// Handle Daily Cycles (e.g. TimelineTerm)
+	if (largest === 'hour' || largest === 'minute') {
+		const list: Range[] = [];
+		const base = Temporal.PlainDate.from(source);
+
+		for (const offset of [-1, 0, 1]) {
+			const date = base.add({ days: offset });
+			template.forEach(itm => {
+				list.push({
+					...itm,
+					year: date.year,
+					month: date.month,
+					day: date.day
+				});
+			});
+		}
+		return list;
+	}
+
+	// Handle Yearly Cycles (Default)
+	const yy = isTempo(source) ? source.yy : (source.year ?? source.yy);
+	const mm = isTempo(source) ? source.mm : (source.month ?? source.mm);
+	const dd = isTempo(source) ? source.dd : (source.day ?? source.dd);
+
+	const startItem = template[0];
+	const startMm = startItem.month ?? 1;
+	const startDd = startItem.day ?? 1;
+
+	let baseYear = yy;
+	if (mm < startMm || (mm === startMm && dd < startDd)) baseYear--;
+
+	const list: Range[] = [];
+	for (const offset of [-1, 0, 1]) {
+		const yy = baseYear + offset;
+		template.forEach(itm => {
+			const clone = { ...itm };
+			if (isDefined(itm.year)) clone.year = itm.year + yy;
+			else clone.year = yy;
+			list.push(clone);
+		});
+	}
+
+	return list;
+}
+
+/**
+ * ## registerTerm
+ * Registration hook for Term plugins.
+ */
+export function registerTerm(term: TermPlugin) {
+	const db = (globalThis as any)[sym.$Plugins] ??= secureRef({
+		terms: [] as TermPlugin[],
+		plugins: [] as Plugin[]
+	});
+	db.terms ??= secureRef([] as TermPlugin[]);
+
+	if (!db.terms.some((t: any) => t.key === term.key)) {
+		db.terms.push(term);
+	}
+
+	if (!REGISTRY.terms.find(t => t.key === term.key)) {
+		REGISTRY.terms.push(term);
+	}
+
+	(globalThis as any)[sym.$Register]?.(term);
+}
+
+/**
+ * ## registerPlugin
+ * Registration hook for general plugins.
+ */
+export function registerPlugin(plugin: any) {
+	const db = (globalThis as any)[sym.$Plugins] ??= secureRef({
+		terms: [] as TermPlugin[],
+		plugins: [] as Plugin[]
+	});
+	db.plugins ??= secureRef([] as Plugin[]);
+
+	if (!db.plugins.includes(plugin)) {
+		db.plugins.push(plugin);
+	}
+
+	if (!REGISTRY.extends.includes(plugin)) {
+		REGISTRY.extends.push(plugin);
+	}
+
+	(globalThis as any)[sym.$Register]?.(plugin);
+}

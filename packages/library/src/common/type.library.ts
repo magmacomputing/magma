@@ -1,11 +1,11 @@
-import { $Extensible, $Target, $Registry } from '#library/symbol.library.js';
+import lib from '#library/symbol.library.js';
 
 const $isTempo = Symbol.for('$isTempo');
 const registry: Instance[] = [];														// global types for getType
 
 /** the primitive type reported by toStringTag() */
 const protoType = (obj?: unknown) => {
-	const raw = (obj as any)?.[$Target] ?? obj;							// bypass Proxy traps
+	const raw = (obj as any)?.[lib.$Target] ?? obj;						// bypass Proxy traps
 	return Object.prototype.toString.call(raw).slice(8, -1) as Type;
 }
 
@@ -19,7 +19,7 @@ const protoType = (obj?: unknown) => {
  * before calling getType() to ensure custom types are correctly identified.
  */
 export const getType = (obj?: any, ...instances: Instance[]): Type => {
-	const raw = (obj as any)?.[$Target] ?? obj;							// bypass Proxy traps
+	const raw = (obj as any)?.[lib.$Target] ?? obj;						// bypass Proxy traps
 	const type = protoType(raw);
 
 	switch (true) {
@@ -33,13 +33,13 @@ export const getType = (obj?: any, ...instances: Instance[]): Type => {
 			if (isArrayLike(raw)) return 'ArrayLike';
 
 			for (const inst of instances) {
-				const instRaw = (inst.class as any)?.[$Target] ?? inst.class;
+				const instRaw = (inst.class as any)?.[lib.$Target] ?? inst.class;
 				if (raw === instRaw || (instRaw && raw instanceof instRaw)) return inst.type as Type;
 			}
 
-			const globalRegistry = (globalThis as any)[$Registry] ?? [];
+			const globalRegistry = (globalThis as any)[lib.$Registry] ?? [];
 			for (const inst of [...registry, ...globalRegistry]) {
-				const instRaw = (inst.class as any)?.[$Target] ?? inst.class;
+				const instRaw = (inst.class as any)?.[lib.$Target] ?? inst.class;
 				if (raw === instRaw || (instRaw && raw instanceof instRaw)) return inst.type as Type;
 			}
 
@@ -116,15 +116,15 @@ export const isPlainMonthDay = <T>(obj: T): obj is Extract<T, Temporal.PlainMont
 
 // non-standard Objects
 export const isTempo = <T>(obj?: T): obj is Extract<T, GetType<'Tempo'>> => {
-	const raw = (obj as any)?.[$Target] ?? obj;								// bypass Proxy traps
+	const raw = (obj as any)?.[lib.$Target] ?? obj;								// bypass Proxy traps
 	return !!(raw?.[$isTempo]);
 }
 export const isEnum = <T, E extends Property<any>>(obj?: T): obj is Extract<T, GetType<'Enumify', E>> => isType(obj, 'Enumify');
 export const isPledge = <T, P = any>(obj?: T): obj is Extract<T, GetType<'Pledge', P>> => isType(obj, 'Pledge');
 
 /** assert value for secure() */
-export const isExtensible = (obj: any): obj is any => !!(obj?.[$Extensible]);
-export const isTarget = (obj: any): obj is any => !!(obj?.[$Target]);
+export const isExtensible = (obj: any): obj is any => !!(obj?.[lib.$Extensible]);
+export const isTarget = (obj: any): obj is any => !!(obj?.[lib.$Target]);
 
 export const nullToZero = <T>(obj: T) => obj ?? 0;
 export const nullToEmpty = <T>(obj: T) => obj ?? '';
@@ -153,17 +153,17 @@ export function assertNever(val: never): asserts val is never { throw new Error(
  */
 export const resetRegistry = () => {
 	registry.length = 0;
-	if (Array.isArray((globalThis as any)[$Registry])) {
-		(globalThis as any)[$Registry].length = 0;
+	if (Array.isArray((globalThis as any)[lib.$Registry])) {
+		(globalThis as any)[lib.$Registry].length = 0;
 	}
 };
-const classRegex = /^\s*(class\s|\[native code\])/;						// match class keyword OR native constructor
+const classRegex = /^\s*(class\s|\[native code\])/;					// match class keyword OR native constructor
 
 /** private helper to safely identify an ES6 class, bypassing Proxies */
 const isClassConstructor = (obj: any): boolean => {
 	if (typeof obj !== 'function') return false;
 
-	const raw = (obj as any)?.[$Target] ?? obj;							// bypass Proxy traps
+	const raw = (obj as any)?.[lib.$Target] ?? obj;						// bypass Proxy traps
 
 	// Arrow functions do NOT have a prototype property, whereas traditional functions and classes DO.
 	// This is a high-performance check to immediately classify arrow functions as non-classes.
@@ -175,8 +175,9 @@ const isClassConstructor = (obj: any): boolean => {
 	if (raw?.[$isTempo] || name === 'Tempo' || tag === 'Tempo' || (typeof tag === 'string' && (tag.startsWith('Temporal.') || tag.startsWith('Tempo.')))) return true;
 	if (typeof tag === 'string' && tag.endsWith('Function')) return false;	// check the tag directly to avoid misidentifying function as class
 
-	const globalRegistry = (globalThis as any)[$Registry] ?? [];
-	if (globalRegistry.some((inst: any) => ((inst.class as any)?.[$Target] ?? inst.class) === raw || (name && inst.type === name) || (tag && inst.type === tag))) return true;
+	const globalRegistry = (globalThis as any)[lib.$Registry] ?? [];
+	if (globalRegistry.some((inst: any) => ((inst.class as any)?.[lib.$Target] ?? inst.class) === raw || (name && inst.type === name) || (tag && inst.type === tag))) return true;
+
 
 	// 3. Last resort: Inspection of constructor property & prototype (Transpilation-Safe)
 	try {

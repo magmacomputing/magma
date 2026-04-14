@@ -3,13 +3,13 @@
  * These symbols utilize Symbol.for() to ensure consistency across module boundaries.
  */
 
-/** key to use for identifying the raw target of a Proxy */	export const $Target = Symbol.for('$Target');
-/** key to trigger full discovery of all lazy properties */	export const $Discover = Symbol.for('$Discover');
-/** key to identify objects that should remain extensible */export const $Extensible = Symbol.for('$Extensible');
-/** NodeJS custom inspection symbol for the Proxy pattern */export const $Inspect = Symbol.for('nodejs.util.inspect.custom');
-/** unique marker to identify a Logify configuration object */export const $Logify = Symbol.for('$Logify');
-/** key to identify the global type registry */							export const $Registry = Symbol.for('$Registry');
-/** key to identify the global registration hook */					export const $Register = Symbol.for('$Register');
+const $Target = Symbol.for('$LibraryTarget');
+const $Discover = Symbol.for('$LibraryDiscover');
+const $Extensible = Symbol.for('$LibraryExtensible');
+const $Inspect = Symbol.for('nodejs.util.inspect.custom');
+const $Logify = Symbol.for('$LibraryLogify');
+const $Registry = Symbol.for('$LibraryRegistry');
+const $Register = Symbol.for('$LibraryRegister');
 
 /** identify and mark a Logify configuration object */			export function markConfig<T extends object>(obj: T): T {
 	if (!(obj as any)[$Logify] && Object.isExtensible(obj)) {
@@ -17,3 +17,14 @@
 	}
 	return obj;
 }
+
+export default {
+/** key to use for identifying the raw target of a Proxy */	$Target,
+/** key to trigger full discovery of all lazy properties */	$Discover,
+/** key to identify objects that should remain extensible */$Extensible,
+/** NodeJS custom inspection symbol for the Proxy pattern */$Inspect,
+/** unique marker to identify a Logify configuration object */$Logify,
+/** key to identify the global type registry */							$Registry,
+/** key to identify the global registration hook */					$Register,
+}
+
