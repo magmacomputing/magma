@@ -1,4 +1,4 @@
-import { Tempo } from '#tempo/tempo.class.js';
+import { Tempo } from '#tempo';
 
 const label = 'static:';
 
@@ -9,7 +9,7 @@ describe(`${label}`, () => {
 
   test(`${label} get the properties`, () => {
     expect(Tempo.properties.toSorted())
-      .toEqual(['yy', 'yw', 'mm', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'fmt', 'ww', 'tz', 'cal', 'ts', 'dow', 'mmm', 'mon', 'www', 'wkd', 'day', 'nano', 'term', 'config', 'epoch', 'parse', 'isValid'].toSorted())
+      .toEqual(['yy', 'yw', 'mm', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'fmt', 'ww', 'tz', 'cal', 'ts', 'dow', 'mmm', 'mon', 'www', 'wkd', 'day', 'nano', 'term', 'terms', 'config', 'epoch', 'parse', 'ranges', 'isValid'].toSorted())
   })
 
   test(`${label} get the elements`, () => {

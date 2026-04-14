@@ -1,4 +1,4 @@
-import { Tempo } from '#tempo/tempo.class.js';
+import { Tempo } from '#tempo';
 
 const label = 'instance.add:';
 
@@ -35,9 +35,13 @@ describe(`${label} add method`, () => {
 
   test('preserves previously collected parse results', () => {
     const t = new Tempo('20-May');
-    expect(t.parse.result.length).toBe(1);
+    const history1 = t.parse.result.length;
     const t2 = t.add({ day: 1 });
-    expect(t2.parse.result.length).toBe(1);
+    const history2 = t2.parse.result.length;
+
+    expect(history2).toBeGreaterThan(history1);
+    // Verify the mutation was recorded (it appears as a ZonedDateTime in the history)
+    expect(t2.parse.result.some(r => r.type?.includes('ZonedDateTime'))).toBe(true);
     expect(t2.parse.result[0].match).toBeDefined();
   });
 

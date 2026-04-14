@@ -5,7 +5,7 @@
     "composite": true,
     "paths": {
       "#library": [
-        "./src/common/index.ts"
+        "./src/common.index.ts"
       ],
       "#library/*.js": [
         "./src/common/*.ts"
@@ -13,8 +13,14 @@
       "#library/*": [
         "./src/common/*"
       ],
+       "#browser": [
+        "./src/browser.index.ts"
+      ],
       "#browser/*": [
         "./src/browser/*"
+      ],
+      "#server": [
+        "./src/server.index.ts"
       ],
       "#server/*": [
         "./src/server/*"

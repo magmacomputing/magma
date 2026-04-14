@@ -1,4 +1,4 @@
-import { Tempo } from '#tempo/tempo.class.js'
+import { Tempo } from '#tempo'
 
 // Use a private test symbol to avoid trashing global scope
 const $TestTempo = Symbol.for('TestIssueFixesDiscovery')
@@ -111,9 +111,21 @@ describe('Tempo Issue Fixes', () => {
     test('set() accepts two arguments (value, options)', () => {
       const t = new Tempo('2024-05-20 10:00', { timeZone: 'UTC' })
       // This would have failed before
+      const shifted = t.set('tomorrow', { timeZone: 'America/New_York', debug: false })
+      expect(shifted.tz).toBe('America/New_York')
+      expect(shifted.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-21')
+    })
+
+    test('set() with debug: true preserves behavior and flags', () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => { });
+      const t = new Tempo('2024-05-20 10:00', { timeZone: 'UTC' })
       const shifted = t.set('tomorrow', { timeZone: 'America/New_York', debug: true })
       expect(shifted.tz).toBe('America/New_York')
       expect(shifted.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-21')
+      expect(shifted.config.debug).toBe(true)
+      logSpy.mockRestore();
+      debugSpy.mockRestore();
     })
 
     test('add() accepts a duration payload', () => {

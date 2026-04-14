@@ -24,7 +24,7 @@ Unified extender for library functionality.
   **Formats:** `Tempo.extend(MyFormat)` — Registers custom format strings.
 
 - **Returns:** `typeof Tempo` (for chaining).
-- **Note:** Plugins are only installed once. Existing core members are protected.
+- **Note:** Plugins are installed only once; existing core members are protected.
 
 ### `Tempo.from(tempo?: Tempo.DateTime | Tempo.Options, options?: Tempo.Options)`
 Creates a new `Tempo` instance. A static alternative to `new Tempo()`.
@@ -33,6 +33,11 @@ Creates a new `Tempo` instance. A static alternative to `new Tempo()`.
 ### `Tempo.compare(tempo1, tempo2?)`
 Compares two `Tempo` instances or date-time values for sorting.
 - **Returns:** `-1` (smaller), `0` (equal), or `1` (larger).
+
+### `Tempo.duration(input)`
+(Plugin required) Creates a full Tempo Duration object (EDO) from an ISO string or DurationLike object.
+- **Returns:** `Tempo.Duration`
+- **Example:** `Tempo.duration('P1Y')` or `Tempo.duration({ months: 2 })`
 
 
 ### `Tempo.now()`

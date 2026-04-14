@@ -1,4 +1,4 @@
-import { $Target, $Extensible } from '#library/symbol.library.js';
+import lib from '#library/symbol.library.js';
 import { enumify, Enum } from '#library/enumerate.library.js';
 import { proxify } from '#library/proxy.library.js';
 import { allDescriptors, ownKeys } from '#library/reflection.library.js';
@@ -107,11 +107,11 @@ export const STATE = {
 	LIMIT: allDescriptors(Defaults.LIMIT),
 } as const;
 
-(STATE.NUMBER as any)[$Extensible] = true;
-(STATE.FORMAT as any)[$Extensible] = true;
-(STATE.TIMEZONE as any)[$Extensible] = true;
-(STATE.DURATION as any)[$Extensible] = true;
-(STATE.DURATIONS as any)[$Extensible] = true;
+(STATE.NUMBER as any)[lib.$Extensible] = true;
+(STATE.FORMAT as any)[lib.$Extensible] = true;
+(STATE.TIMEZONE as any)[lib.$Extensible] = true;
+(STATE.DURATION as any)[lib.$Extensible] = true;
+(STATE.DURATIONS as any)[lib.$Extensible] = true;
 
 /** Gregorian calendar week-days (short-form) */
 export const WEEKDAY = enumify(['All', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
@@ -234,9 +234,9 @@ const REGISTRIES: Record<string, any> = {
 /** update a global registry with new discoverable data */
 export function registryUpdate(name: keyof typeof STATE, data: Record<string, any>) {
 	const registry = REGISTRIES[name];
-	if (!isDefined(registry) || !isDefined(registry[$Target])) return;	// early-return if no valid target to mutate
+	if (!isDefined(registry) || !isDefined(registry[lib.$Target])) return;	// early-return if no valid target to mutate
 
-	const target = registry[$Target] as Property<any>;
+	const target = registry[lib.$Target] as Property<any>;
 	const state = STATE[name] as Property<any>;
 
 	Object.entries(data).forEach(([key, val]) => {
@@ -258,7 +258,7 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 export function registryReset() {
 	ownKeys(STATE).forEach(name => {
 		const state = STATE[name as keyof typeof STATE] as Property<any>;
-		const target = REGISTRIES[name]?.[$Target] as Property<any>;
+		const target = REGISTRIES[name]?.[lib.$Target] as Property<any>;
 		const defaults = Defaults[name as keyof typeof Defaults] as Property<any>;
 
 		// 1. Purge all own-properties from state and target (if configurable)

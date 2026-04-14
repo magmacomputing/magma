@@ -1,4 +1,4 @@
-import { Tempo } from '#tempo/tempo.class.js';
+import { Tempo } from '#tempo';
 
 const label = 'static.getters:';
 
@@ -162,8 +162,11 @@ describe(`${label} terms`, () => {
     Tempo.terms.forEach((t: any) => expect(typeof t.key).toBe('string'));
   })
 
-  test('terms does not expose the "define" function', () => {
-    Tempo.terms.forEach((t: any) => expect((t as any).define).toBeUndefined());
+  test('terms does not expose internal functions', () => {
+    Tempo.terms.forEach((t: any) => {
+      expect((t as any).define).toBeUndefined();
+      expect((t as any).resolve).toBeUndefined();
+    });
   })
 
 })
