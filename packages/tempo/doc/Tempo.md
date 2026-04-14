@@ -37,7 +37,8 @@ Tempo is an ESM-first library. You can use it in the browser without a build ste
     "@magmacomputing/tempo/plugin": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/plugin/plugin.index.js",
     "@magmacomputing/tempo/enums": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/tempo.enum.js",
     "@magmacomputing/tempo/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/library.index.js",
-    "@magmacomputing/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/library/dist/common.index.js"
+    "@magmacomputing/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/library/dist/common.index.js",
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill/dist/index.esm.min.js"
   }
 }
 </script>
@@ -106,20 +107,6 @@ import { Tempo } from '@magmacomputing/tempo';
 const t = new Tempo('next Friday');
 console.log(t.format('{dd} {mon} {yyyy}'));
 ```
-
-### 🌐 Browser (Import Maps)
-
-`Tempo` is an ESM-first library and can be used directly in modern browsers using [Import Maps](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap). This is a great way to use `Tempo` without a build step.
-
-```html
-<script type="importmap">
-  {
-    "imports": {
-      "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/index.js",
-      "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.4.4/dist/index.esm.min.js"
-    }
-  }
-</script>
 
 <script type="module">
   // Optional: Import polyfill if not natively supported
@@ -299,7 +286,7 @@ Tempo is designed to be lean. Non-core features like the `ticker` or advanced bu
 To add a plugin, use the static `extend()` method. 
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from '@magmacomputing/tempo/core';
 import { TickerModule } from '@magmacomputing/tempo/ticker';
 
 Tempo.extend(TickerModule);
@@ -308,14 +295,14 @@ Tempo.extend(TickerModule);
 - [Plugin Development Guide](./tempo.plugin.md): A detailed overview of the `Tempo.extend()` API and best practices for creating custom extensions.
 
 > [!NOTE]
-> **Selective Immobility**: When you extend Tempo, the core methods (like `format`, `add`, `set`) are protected. You can add NEW functionality, but you cannot overwrite the essential behavior of the library.
+> **Selective Immobility**: When you extend Tempo, the base methods (like `format`, `add`, `set`) are protected. You can add NEW functionality, but you cannot overwrite the essential behavior of the library.
 
 ---
 
 ## Ticker (Optional Plugin)
 
 `Tempo.ticker` creates a reactive stream of `Tempo` instances, making it easy to build clocks or countdowns. 
-**Note**: This requires the `TickerPlugin` to be installed first.
+**Note**: This requires the `TickerModule` to be specifically installed first, when using the 'Tempo Core' package.
 
 ```typescript
 // Pattern: Async Generator, which emits a new Tempo instance every second
@@ -334,7 +321,7 @@ See the [Tempo Ticker guide](./tempo.ticker.md) for full details and API signatu
 
 ### Unified Term Logic (v2.0.0)
 
-Terms are now fully integrated into the core `set()` and `format()` methods via the `#` indicator:
+Terms are now fully integrated into the base `set()`, `add()`, `until()` and `format()` methods via the `#` indicator:
 
 1. **Anchored Mutations**: Jump to the `start`, `mid`, or `end` of any term:
    ```typescript
@@ -362,7 +349,7 @@ Terms remain accessible via the `t.term` getter for programmatic use. The `start
 ```typescript
 const q = t.term.qtr;
 console.log(q.start.format('{dd} {mmm}')); // Fluent formatting directly from the term!
-console.log(q.end.since(t, 'days'));        // Calculate days remaining in the quarter
+console.log(q.end.since(t, 'days'));       // Calculate days remaining in the quarter
 ```
 
 See the [Tempo Terms guide](./tempo.term.md) for full details and plugin development.

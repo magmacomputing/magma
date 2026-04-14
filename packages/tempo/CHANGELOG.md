@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.2] - 2026-04-13
+## [2.1.2] - 2026-04-14
 
 ### Added
 - **Slick Shorthand Engine**: Finalized and stabilized the high-performance term-shorthand syntax (`#namespace.modifier`). Advanced temporal navigation (e.g. `#qtr.>2q1`) is now fully supported across `.set()`, `.add()`, `.until()`, and `.since()`.
@@ -14,11 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Boundary Performance**: Optimized the term resolution loop to utilize `BigInt` nanosecond comparisons for all shifter logic (`>`, `<`, `next`, `prev`), ensuring deterministic behavior across complex fiscal and calendar boundaries.
+- **Fail-Fast Constructor**: Hardened the constructor guard to explicitly `throw` an `Error` when term-based mutation keys (`#`) are detected. This replaces the previous silent "invalid instance" return, ensuring developers catch improper syntax immediately.
+- **Config Merge Priority**: Refactored `Tempo.#setConfig` to read from persistent storage *before* applying provided options, ensuring that stored values are not unintentionally overwritten by transient defaults.
+- **Centralized Patterns**: Integrated the numeric string detection regex into the central `Match` registry in `tempo.default.ts`, removing hardcoded duplicates from the mutation module.
 
 ### Fixed
 - **Infinite Loop Resolution**: Resolved a critical regression where shorthand modifiers were leaking into range-keys, triggering infinite recursion during term mutation.
 - **Hemisphere Inference**: Fixed an initialization bug in `Tempo.init()` where the `sphere` configuration could be incorrectly overwritten or ignored during system-timezone evaluation.
 - **Shorthand Lexer Safety**: Hardened the lexer to strictly enforce Range-Key constraints (no reserved characters or leading digits), eliminating collisions between direction modifiers and repeat counts.
+- **Zone-Shift Visibility**: Fixed a bug in `.set()` where relative term resolution was ignoring `timeZone` or `calendar` overrides passed in the same mutation object. The engine now shifts context *before* resolving terms.
+- **Numeric String Mutations**: Corrected a logic error that misidentified numeric-looking strings (e.g. `"2"`) as term keywords; these are now correctly handled as numeric offsets.
+- **Documentation Integrity**: Consolidated fragmented shorthand guides, fixed conflicting CDN links in import-map examples, and corrected the description of `Tempo.init()` to accurately reflect prototype persistence.
 
 ## [2.1.1] - 2026-04-12
 

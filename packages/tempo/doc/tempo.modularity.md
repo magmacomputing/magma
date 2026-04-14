@@ -32,7 +32,7 @@ Adds support for the `.format()` method and custom layout resolution.
 Adds support for reactive time-pulsing via the static `Tempo.ticker()` method.
 
 ### Terms Module (@magmacomputing/tempo/term)
-Adds support for semantic terms like `qtr`, `szn`, and `fiscal`. There are three ways to enable terms:
+Adds support for semantic terms like `qtr`, `szn`, `zdc`, and `per`. There are three ways to enable terms:
 
 #### 1. The Side-Effect (Standard Activation)
 Fastest way to enable all standard terms in a Core environment.
@@ -85,7 +85,7 @@ There is a subtle but important distinction between how features are activated i
 *   **`Tempo.init()`**: This is **Reactive Discovery**. It scans the global registry for any plugins that were imported via side effects (e.g., `import '@magmacomputing/tempo/ticker'`) and applies them all at once.
 
 > [!CAUTION]
-> **The "Sledge-Hammer" Effect**: `Tempo.init()` does not just add new features; it performs a **full state refresh**. It resets the `Tempo` prototype back to its pristine default before re-applying all registered plugins. If you have manually modified the `Tempo` prototype (via monkey-patching or `Object.defineProperty`), **`Tempo.init()` will wipe out your modifications.** Always use `Tempo.extend()` or a formal plugin if you want your changes to survive an initialization sweep.
+> **The State Refresh**: `Tempo.init()` performs a **full state refresh** for the engine. It resets the global configuration, internal term registries, and formatting maps back to defaults before re-applying all currently registered plugins from the global discovery layer. While it does **not** wipe out manual monkey-patches to the `Tempo` prototype, it *does* clear all previously registered terms and custom formats. To ensure your custom logic is managed correctly within the initialization lifecycle, always use `Tempo.extend()` or encapsulate your changes within a formal plugin.
 
 **The Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** appear on the `Tempo` class. You would need to call `Tempo.init()` again to "refresh" the engine's feature set and pick up the latecomers.
 

@@ -279,16 +279,17 @@ export class Tempo {
 	 */
 	static #setConfig(shape: Internal.State, ...options: t.Options[]) {
 
-		const mergedOptions: t.Options = Object.assign({}, ...options);
+		const providedOptions: t.Options = Object.assign({}, ...options);
+		const storeKey = providedOptions.store;
+		const mergedOptions: t.Options = storeKey
+			? Object.assign(Tempo.readStore(storeKey), providedOptions)
+			: providedOptions;
 
 		if (shape === Tempo.#global)																// sanitize global configuration
 			omit(mergedOptions, 'value', 'anchor', 'result');
 
 		if (isEmpty(mergedOptions))																	// nothing to do
 			return;
-
-		if (mergedOptions.store)																		// check for local-storage
-			Object.assign(mergedOptions, { ...Tempo.readStore(mergedOptions.store), ...mergedOptions });
 
 		/** helper to normalize snippet/layout Options into the target Config */
 		const collect = (target: Property<any>, value: any, convert: (v: any) => any) => {
@@ -1387,8 +1388,9 @@ export class Tempo {
 
 			// security check: if it contains term-keys (#) in constructor mode, we should throw an unsupported syntax error
 			if (isUndefined(term) && isObject(tempo) && Object.keys(tempo).some(k => k.startsWith('#'))) {
-				Tempo.#dbg.error(this.#local.config, `Unsupported Syntax: Term-based mutations (#) cannot be passed to the constructor. Use new Tempo().set(${JSON.stringify(tempo)}) instead.`);
-				return undefined as any;
+				const msg = `Unsupported Syntax: Term-based mutations (#) cannot be passed to the constructor. Use new Tempo().set(${JSON.stringify(tempo)}) instead.`;
+				Tempo.#dbg.error(this.#local.config, msg);
+				throw new Error(msg);
 			}
 
 			// security check: if it contains term-keys (#) while no plugins are loaded
@@ -1868,6 +1870,12 @@ export class Tempo {
 			sphere: options.sphere ?? this.config.sphere
 		} as Required<t.Options>;
 
+		if (isObject(args) && args.constructor === Object) {
+			const { timeZone, calendar } = args as Temporal.ZonedDateTimeLikeObject;
+			if (timeZone) overrides.timeZone = timeZone;
+			if (calendar) overrides.calendar = calendar;
+		}
+
 		// Shift the current instance to the target timezone first to ensure
 		// that any relative keywords (like 'tomorrow') are resolved correctly.
 		let zdt = this.#zdt.withTimeZone(overrides.timeZone).withCalendar(overrides.calendar);
@@ -1884,10 +1892,6 @@ export class Tempo {
 				}
 				// 2. Process Mutation Object
 				else if (isObject(args) && args.constructor === Object) {
-
-					const { timeZone, calendar } = args as Temporal.ZonedDateTimeLikeObject;
-					if (timeZone) overrides.timeZone = timeZone;
-					if (calendar) overrides.calendar = calendar;
 
 					zdt = Object.entries(args ?? {})									// loop through each mutation
 						.reduce<Temporal.ZonedDateTime>((zdt, [key, adjust]) => {	// apply each mutation to preceding one

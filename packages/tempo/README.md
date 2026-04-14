@@ -21,7 +21,7 @@ Working with `Date` in JavaScript has historically been painful. The new `Tempor
 - **Immutable**: Operations (like `set` and `add`) return a new `Tempo` instance, ensuring thread safety and predictability.
 
 ```javascript
-// v2.1.0 - Automatic registration via side-effect import
+// v2.1.2 - Automatic registration via side-effect import
 import '@magmacomputing/tempo/ticker';
 ```
 
@@ -107,9 +107,9 @@ console.log(now.fmt.date);                    // using pre-built formats: "2026-
 > [!IMPORTANT]
 > **Documentation Update**: We have been made aware that the documentation links between npmjs.com (the package host) and GitHub (the source repository) were broken a short while back. To overcome this, we have altered our Publish process to now include the doc/ subfolder (along with dist/ folder). We sincerely apologize for any past trouble and thank you for your support.
 
-## ✨ New in v2.1.0
+## ✨ New in v2.1.2
 
-Tempo v2.1.0 is a major milestone, delivering a more reactive architecture and rock-solid stability.
+Tempo v2.1.2 is a major milestone, delivering a more reactive architecture and rock-solid stability.
 
 - **Modular Architecture**: Tempo is now split into `core` and optional plugin/modules, allowing you to include only what you need.
 - **Improved Logging**: Internal logging uses context-aware Symbols for better decoupling.
@@ -125,23 +125,23 @@ Tempo v2.1.0 is a major milestone, delivering a more reactive architecture and r
 - **Enhanced Parsing**: Significant refinements to the natural language engine for even more intuitive relative-date handling.
 ## ⚠️ Migrating from v1.x
 
-Tempo v2.1.0 continues the architectural improvements started in v2.0:
+Tempo v2.1.2 continues the architectural improvements started in v2.0:
 
 - **Modular Architecture**: Use optional modules for `duration` and `format` to keep your bundle lean.
 - **Automatic Registration**: Built-ins self-register on import (just import the module).
 
 For detailed technical guides, please refer to:
-- [Tempo Modularity](./doc/tempo.modularity.md) ([v2.1.0](https://github.com/magmacomputing/magma/blob/v2.1.0/packages/tempo/doc/tempo.modularity.md))
-- [Vision & Value Proposition](https://github.com/magmacomputing/magma/blob/v2.1.0/packages/tempo/doc/vision.md)
-- [Tempo vs. Native Temporal](./doc/tempo-vs-temporal.md) ([v2.1.0](https://github.com/magmacomputing/magma/blob/v2.1.0/packages/tempo/doc/tempo-vs-temporal.md))
-- [Tempo vs. The Competition](./doc/comparison.md) ([v2.1.0](https://github.com/magmacomputing/magma/blob/v2.1.0/packages/tempo/doc/comparison.md))
-- [Tempo API Reference](./doc/tempo.api.md) ([v2.1.0](https://github.com/magmacomputing/magma/blob/v2.1.0/packages/tempo/doc/tempo.api.md))
-- [Tempo Class Documentation](./doc/Tempo.md) ([v2.1.0](https://github.com/magmacomputing/magma/blob/v2.1.0/packages/tempo/doc/Tempo.md))
-- [Tempo Term Shorthand](./doc/tempo.shorthand.md) ([v2.1.0](https://github.com/magmacomputing/magma/blob/v2.1.0/packages/tempo/doc/tempo.shorthand.md))
-- [Plugin System](./doc/tempo.plugin.md) ([v2.1.0](https://github.com/magmacomputing/magma/blob/v2.1.0/packages/tempo/doc/tempo.plugin.md))
-- [Configuration Guide](./doc/tempo.config.md) ([v2.1.0](https://github.com/magmacomputing/magma/blob/v2.1.0/packages/tempo/doc/tempo.config.md))
-- [Architecture & Internal Protection](./doc/architecture.md) ([v2.1.0](https://github.com/magmacomputing/magma/blob/v2.1.0/packages/tempo/doc/architecture.md))
-- [Commercial Support](./doc/commercial.md) ([v2.1.0](https://github.com/magmacomputing/magma/blob/v2.1.0/packages/tempo/doc/commercial.md))
+- [Tempo Modularity](./doc/tempo.modularity.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo.modularity.md))
+- [Vision & Value Proposition](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/vision.md)
+- [Tempo vs. Native Temporal](./doc/tempo-vs-temporal.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo-vs-temporal.md))
+- [Tempo vs. The Competition](./doc/comparison.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/comparison.md))
+- [Tempo API Reference](./doc/tempo.api.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo.api.md))
+- [Tempo Class Documentation](./doc/Tempo.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/Tempo.md))
+- [Tempo Term Shorthand](./doc/tempo.shorthand.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo.shorthand.md))
+- [Plugin System](./doc/tempo.plugin.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo.plugin.md))
+- [Configuration Guide](./doc/tempo.config.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo.config.md))
+- [Architecture & Internal Protection](./doc/architecture.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/architecture.md))
+- [Commercial Support](./doc/commercial.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/commercial.md))
 
 ## 💖 Support the Project
 

@@ -331,10 +331,14 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 	}
 
 	// 2. Handle Relative Mutations (add | set)
-	if (isString(offset) && !offset.startsWith('#')) {
+	const isNumericString = isString(offset) && Match.numeric.test(String(offset));
+	if (isString(offset) && !offset.startsWith('#') && !isNumericString) {
 		let jump = zdt;
+
 		// Determine the shifted target by recursively calling .set on a temporary strict instance
-		let next = new instance.constructor(jump, { ...instance.config, mode: 'strict' }).set({ [unit]: offset }).toDateTime();
+		let nextInstance = new instance.constructor(jump, { ...instance.config, mode: 'strict' }).set({ [unit]: offset });
+		if (!nextInstance.isValid) return null;
+		let next = nextInstance.toDateTime();
 
 		let iterations = 0;
 		while (next.epochNanoseconds <= zdt.epochNanoseconds) {
@@ -351,7 +355,10 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 					jump = jump.add(step);
 				}
 			}
-			next = new instance.constructor(jump, { ...instance.config, mode: 'strict' }).set({ [unit]: offset }).toDateTime();
+
+			nextInstance = new instance.constructor(jump, { ...instance.config, mode: 'strict' }).set({ [unit]: offset });
+			if (!nextInstance.isValid) return null;
+			next = nextInstance.toDateTime();
 		}
 		return next;
 	}

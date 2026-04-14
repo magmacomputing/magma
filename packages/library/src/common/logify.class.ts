@@ -35,7 +35,7 @@ export class Logify {
 					if (name === 'Object') {
 						const keys = Object.keys(m);
 						const summary = keys.slice(0, 3).join(', ');
-						return `{ ${summary}${keys.length > 3 ? '...' : ''} }`;
+						return `{ ${summary}${keys.length > 3 ? `, ... (+${keys.length - 3} more)` : ''} }`;
 					}
 					return `[${name}]`;
 				} catch { return '[Object]'; }

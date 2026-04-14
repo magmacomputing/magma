@@ -14,7 +14,7 @@ Shorthand follows the pattern: `#[namespace].[modifier][repeat][range]`
 
 > [!IMPORTANT]
 > **Prerequisite**: Shorthand resolution requires the Terms Module to be activated in Core environments (e.g., `Tempo.extend(TermsModule)` or `import '@magmacomputing/tempo/term/standard'`).
->
+
 > Shorthand literals are **not** supported in the `Tempo` constructor. They are resolved relative to an existing instance and must be used via instance methods (`.set()`, `.add()`, `.until()`, `.since()`) or the Ticker.
 
 ---
@@ -52,7 +52,7 @@ Aligns the instance forward or backward to the matched term boundary.
 Advances the instance relative to its current position.
 - **Cycle Shifting**: `t.add('#qtr')` moves to the start of the next quarter boundary.
 - **Multi-Boundary**: `t.add('#qtr.>2')` moves forward exactly two quarter boundaries.
-- **Step Shifting**: Providing an object like `t.add({ '#quarter': 1 })` allows shifting by a specific number of "slots" or "steps" within the term's cycle while preserving your relative duration from the start of the term.
+- **Step Shifting**: Providing an object like `t.add({ '#qtr': 1 })` allows shifting by a specific number of "slots" or "steps" within the term's cycle while preserving your relative duration from the start of the term.
 
 ### `.until(shorthand)` - Duration Forward
 Returns a **Duration** representing the time remaining **until** the target is reached.
@@ -127,4 +127,4 @@ When defining ranges in a Terminology Plugin, you must adhere to the **Golden Ru
 
 - **Sphere Locking**: When working with hemisphere-dependent terms (like Quarters), ensure your Tempo instance has an explicit `sphere` config (`north` or `south`) for deterministic results.
 - **Error Handling**: Use `{ catch: true }` in your Tempo config if you want to gracefully handle unknown shorthand without throwing.
-- **Step Shifting**: Use integer values (e.g. `{ '#quarter': 1 }`) in a **Ticker** to create standard recurring intervals.
+- **Step Shifting**: Use integer values (e.g. `{ '#qtr': 1 }`) in a **Ticker** to create standard recurring intervals.

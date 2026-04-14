@@ -16,7 +16,7 @@ A "Medium Precision" polynomial approximation (e.g., Jean Meeus' method) can be 
 ```typescript
 function getSpringEquinox(year: number) {
   const y = (year - 2000) / 1000;
-  // Mean JDE for Spring Equinox + periodic corrections
+  // Mean JDE for Spring Equinox (base polynomial only)
   const jde = 2451623.80984 + 365242.37404 * y + 0.05169 * y * y;
   return Temporal.Instant.fromEpochMilliseconds((jde - 2440587.5) * 86400000);
 }
@@ -48,5 +48,5 @@ export const AstroSeasonTerm = defineTerm({
 ```
 
 ## Considerations
-- **Hemisphere Awareness**: The labels must be inverted for the Southern Hemisphere while maintaining the same astronomical trigger points.
+- **Hemisphere Awareness**: The labels must be inverted in the Southern Hemisphere while maintaining the same astronomical trigger points.
 - **Precision**: For the 21st century, a simplified polynomial is accurate to within a few minutes, which is sufficient for most calendar-based applications.
