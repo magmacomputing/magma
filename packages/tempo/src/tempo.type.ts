@@ -163,6 +163,8 @@ export namespace Internal {
 		/** locale (e.g. en-AU) */															locale: string;
 		/** pivot year for two-digit years */										pivot: number;
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
+		/** Pre-configured relative time formatter */						rtfFormat?: Intl.RelativeTimeFormat;
+		/** Default style for relative time ('long' | 'short' | 'narrow') */ rtfStyle?: Intl.RelativeTimeFormatStyle;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** locale-names that prefer 'mm-dd-yy' date order */		mdyLocales: string | string[];

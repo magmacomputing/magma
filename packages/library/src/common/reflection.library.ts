@@ -82,8 +82,17 @@ export function ownEntries<T extends Obj>(json: T, all = false) {
 	if (!json || typeof json !== 'object')
 		return [] as EntryOf<T>[];
 
+	/** recursively unwrap proxies to get to the base target */
+	const unwrap = (obj: any): any => {
+		let curr = obj;
+		while (curr && curr[lib.$Target]) {
+			curr = curr[lib.$Target];
+		}
+		return curr;
+	}
+
 	const getOwn = (obj: any): [PropertyKey, any][] => {			// helper function to get own enumerable properties
-		const tgt = obj[lib.$Target] ?? obj;										// unwrap if it's a proxy
+		const tgt = unwrap(obj);
 
 		return Reflect.ownKeys(tgt)
 			.filter(key => Object.getOwnPropertyDescriptor(tgt, key)?.enumerable)
@@ -101,7 +110,7 @@ export function ownEntries<T extends Obj>(json: T, all = false) {
 	let proto: any = json;
 
 	do {
-		const t = proto[lib.$Target] ?? proto;									// CRITICAL: unwrap before checking marker to avoid trap recursion
+		const t = unwrap(proto);
 
 		const lvl = getOwn(proto);
 		if (lvl.length) levels.push(lvl);

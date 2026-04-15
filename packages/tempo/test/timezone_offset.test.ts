@@ -1,4 +1,5 @@
 import { Tempo } from '../src/tempo.class.js';
+import '../src/plugin/module/module.format.js';
 
 describe('Tempo TimeZone Offset', () => {
 	beforeEach(() => {

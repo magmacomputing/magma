@@ -56,6 +56,76 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 		}
 	}
 
+	// 0. Handle relative .add() — preserving position within the target range
+	if (mutate === 'add') {
+		const slickParsed = !!slickStr;
+		const directional = mod && !['this', '>=', '<='].includes(mod);
+		const numeric = !slickParsed && isNumeric(offset);
+
+		if (directional || numeric || (slickParsed && !mod)) {
+			const addDir = directional
+				? ((mod!.includes('<') || mod!.includes('-') || mod === 'prev' || mod === 'last') ? -1 : 1)
+				: (numeric ? Math.sign(Number(offset) || 1) : 1);
+			const addCount = slickParsed
+				? nbr
+				: Math.abs(Number(offset) || 1);
+
+			// Find current containing range
+			const rawList = getRange(termObj, instance, zdt);
+			const currentRange = getTermRange(instance, rawList, false, zdt) as any;
+			if (!currentRange) {
+				Tempo[sym.$termError](instance.config, unit);
+				return null;
+			}
+
+			// Calculate cursor's offset within current range (nanoseconds)
+			const startNs = currentRange.start.toDateTime().epochNanoseconds as bigint;
+			const cursorNs = zdt.epochNanoseconds as bigint;
+			const positionNs = cursorNs - startNs;
+
+			// Step through adjacent ranges to reach the target
+			let jump = zdt;
+			let remaining = addCount;
+			let target: any = null;
+			let iters = 0;
+
+			while (remaining > 0 && iters < 200) {
+				iters++;
+				const jumpList = getRange(termObj, instance, jump);
+				const range = getTermRange(instance, jumpList, false, jump) as any;
+				if (!range) break;
+
+				jump = addDir > 0
+					? range.end.toDateTime()
+					: range.start.toDateTime().subtract({ nanoseconds: 1 });
+
+				const nextList = getRange(termObj, instance, jump);
+				const next = getTermRange(instance, nextList, false, jump) as any;
+				if (!next) break;
+
+				// If a specific range-key was requested, skip non-matching ranges
+				if (rKey && next.key?.toLowerCase() !== rKey.toLowerCase()) continue;
+
+				target = next;
+				remaining--;
+			}
+
+			if (!target || remaining > 0) {
+				Tempo[sym.$termError](instance.config, unit);
+				return null;
+			}
+
+			// Apply same position-offset, clamped to target range bounds
+			const tStartNs = target.start.toDateTime().epochNanoseconds as bigint;
+			const tEndNs = target.end.toDateTime().epochNanoseconds as bigint;
+			let tNs = tStartNs + positionNs;
+			if (tNs >= tEndNs) tNs = tEndNs - 1n;	// clamp to range end
+			if (tNs < tStartNs) tNs = tStartNs;		// clamp to range start
+
+			return toInstant(tNs).toZonedDateTimeISO(tz).withCalendar(cal);
+		}
+	}
+
 	// 1. Handle Absolute Mutations (start | mid | end) OR Slick Mutations
 	if (mutate === 'start' || mutate === 'mid' || mutate === 'end' || mod) {
 		let jump = zdt;

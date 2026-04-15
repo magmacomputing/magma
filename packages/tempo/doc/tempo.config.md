@@ -96,7 +96,9 @@ Tempo.init({
 | `calendar` | `string` | `'iso8601'` | Default calendar system. |
 | `pivot` | `number` | `75` | Cutoff for parsing two-digit years. |
 | `timeStamp`| `'ms' \| 'ns'` | `'ms'` | Precision for timestamps. |
-| `sphere` | `'north' \| 'south'`| Auto-inferred (from time zones' daylight saving rules) Hemisphere for seasonal plugins. |
+| `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
+| `rtfFormat` | `Intl.RTF` | `undefined` | Pre-configured relative time formatter. |
+| `rtfStyle` | `'long' \| 'short' \| 'narrow'` | `'narrow'` | Default style for relative time formatting. |
 | `debug` | `boolean` | `false` | Enables internal log tracking. |
 | `catch` | `boolean` | `false` | If true, invalid inputs return a Void instance. |
 | `mode` | `'auto' \| 'strict' \| 'defer'` | `'auto'` | Controls the hydration strategy and parsing strictness. |

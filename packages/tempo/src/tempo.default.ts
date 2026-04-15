@@ -3,7 +3,7 @@ import { secure } from '#library/utility.library.js';
 import { proxify } from '#library/proxy.library.js';
 import { NUMBER, MODE } from './tempo.enum.js';
 import type { Options } from './tempo.type.js';
-import { getResolvedOptions } from '#library/international.library.js';
+import { getDateTimeFormat } from '#library/international.library.js';
 import type { Tempo } from './tempo.class.js';
 
 // BE VERY CAREFUL NOT TO BREAK THE REGEXP PATTERNS BELOW
@@ -35,6 +35,7 @@ export const Match = proxify({
 	/** bracketed content (timezone/calendar) */							bracket: /\[[^\]]+\]/i,
 	/** slick shorthand-shifter (e.g. #qtr.>2q2) */						shorthand: /(?:(?:#[\w]+|[\w]+)\.(?:[\+\-\<\>]=?|next|prev|this|last)?(?:[0-9]+)?(?:[\w]*))/,
 	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
+	/** extracted value-only version of a slick shifter */		slickValue: /^(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
 	/** escape special regex characters in a string */				escape: (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
 	/** numeric-only string detection */											numeric: /^\s*[-+]?\d+(\.\d+)?\s*$/
 }, true, false);
@@ -175,6 +176,7 @@ export const Guard = [
 	'am', 'pm', 'ago', 'hence', 'this', 'next', 'prev', 'last', 'from', 'now', 'today', 'yesterday', 'tomorrow', 'start', 'mid', 'end',
 	'year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond',
 	'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds', 'nanoseconds',
+	'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
 	'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays'
 ]
 
@@ -186,8 +188,8 @@ export const Default = secure({
 	/** used to parse two-digit years*/												pivot: 75,					/** @link https:	//en.wikipedia.org/wiki/Date_windowing */
 	/** precision to measure timestamps (ms | us) */					timeStamp: 'ms',
 	/** calendaring system */																	calendar: 'iso8601',
-	/** default timezone if not specified */									timeZone: getResolvedOptions().timeZone,
-	/** default locale if not specified */										locale: getResolvedOptions().locale,
+	/** default timezone if not specified */									timeZone: getDateTimeFormat().timeZone,
+	/** default locale if not specified */										locale: getDateTimeFormat().locale,
 	/** locales that prefer month-day order */								mdyLocales: ['en-US', 'en-AS'],	/** @link https:	//en.wikipedia.org/wiki/Date_format_by_country */
 	/** layouts that need to swap parse-order */							mdyLayouts: [['dayMonthYear', 'monthDayYear']],
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,

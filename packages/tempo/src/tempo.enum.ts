@@ -254,6 +254,14 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 	clearCache(target);
 }
 
+/** @internal storage for reset hooks */
+const resetHooks = (): (() => void)[] => (globalThis as any)[Symbol.for('$TempoReset')] ??= [];
+
+/** Register a hook to be called when the registry is reset */
+export function onRegistryReset(hook: () => void) {
+	resetHooks().push(hook);
+}
+
 /** Reset all extendable registries to their original built-in defaults */
 export function registryReset() {
 	ownKeys(STATE).forEach(name => {
@@ -283,6 +291,8 @@ export function registryReset() {
 		if (target) clearCache(target);
 		clearCache(state);																			// clear cache for state object
 	});
+
+	resetHooks().forEach(hook => hook());
 }
 
 /** public-reachable enums */

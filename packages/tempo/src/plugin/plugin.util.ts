@@ -1,5 +1,5 @@
 import { toZonedDateTime, toPlainDate, toInstant } from '#library/temporal.library.js';
-import { isDefined, isFunction, isString } from '#library/type.library.js';
+import { isDefined, isFunction, isString, isUndefined } from '#library/type.library.js';
 import { secure } from '#library/utility.library.js';
 import { SCHEMA, getLargestUnit } from '../tempo.util.js';
 import { sortKey, byKey } from '#library/array.library.js';
@@ -9,10 +9,14 @@ import { secureRef } from '#library/proxy.library.js';
 import type { Tempo } from '../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange, Plugin, Extension } from './plugin.type.js';
 
+const _terms = [] as TermPlugin[];
+const _extends = [] as Extension[];
+
 const _REGISTRY = {
-	terms: secureRef([] as TermPlugin[]),
-	extends: secureRef([] as Extension[]),
-	modules: secureRef({} as Record<string, any>)
+	terms: secureRef(_terms),
+	extends: secureRef(_extends),
+	modules: secureRef({} as Record<string, any>),
+	installed: new Set<any>()
 }
 
 /** 
@@ -311,11 +315,13 @@ export function resolveTermShift(tempo: Tempo, source: any[], offset: string, sh
 	const range = (getTermRange(tempo, list, false, anchor) as any);
 	if (!range) return undefined;
 
-	// find index in list (matching key and all shared date/time units for accurate identity)
-	const idx = list.findIndex(r =>
-		r.key === range.key &&
-		SCHEMA.every(([u]) => (isDefined(r[u]) && isDefined(range[u])) ? r[u] === range[u] : true)
-	);
+	// find index in list (matching key and major components for identity)
+	const idx = list.findIndex(r => {
+		return r.key === range.key &&
+			(isUndefined(r.year) || isUndefined(range.year) || r.year === range.year) &&
+			(isUndefined(r.month) || isUndefined(range.month) || r.month === range.month) &&
+			(isUndefined(r.day) || isUndefined(range.day) || r.day === range.day);
+	});
 
 	if (idx === -1) return undefined;
 
@@ -425,4 +431,17 @@ export function registerPlugin(plugin: any) {
 	}
 
 	(globalThis as any)[sym.$Register]?.(plugin);
+}
+
+/** 
+ * Internal hook used by the Tempo class to ensure 
+ * the registry is fully purged during a #registryReset().
+ */
+export function resetInternalRegistry() {
+	_terms.length = 0;
+	_extends.length = 0;
+	// @ts-ignore
+	const modules = _REGISTRY.modules[lib.$Target] ?? _REGISTRY.modules;
+	for (const key in modules) delete modules[key];
+	_REGISTRY.installed.clear();
 }

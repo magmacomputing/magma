@@ -12,18 +12,18 @@ import { enumify } from '#library/enumerate.library.js';
 import { ownKeys, ownEntries, getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType, asType, isEmpty, isNull, isNullish, isDefined, isUndefined, isString, isObject, isNumber, isRegExp, isRegExpLike, isIntegerLike, isSymbol, isFunction, isClass, isZonedDateTime, isPlainDate, isPlainTime } from '#library/type.library.js';
-import { getResolvedOptions, getHemisphere, canonicalLocale } from '#library/international.library.js';
+import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import { instant } from '#library/temporal.library.js';
 import type { Property, TypeValue, Secure } from '#library/type.library.js';
 
 import { compose } from './plugin/module/module.composer.js';
 import { resolveTermMutation, resolveTermValue } from './plugin/module/module.term.js';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './plugin/module/module.lexer.js';
-import { REGISTRY, registerPlugin, registerTerm, getRange, getTermRange, interpret } from './plugin/plugin.util.js'
+import { REGISTRY, registerPlugin, registerTerm, getRange, getTermRange, interpret, resetInternalRegistry } from './plugin/plugin.util.js'
 
 import sym, { isTempo, registerHook } from './tempo.symbol.js';
 import { Match, Token, Snippet, Layout, Event, Period, Default, Guard } from './tempo.default.js';
-import enums, { STATE, DISCOVERY, registryUpdate, registryReset } from './tempo.enum.js';
+import enums, { STATE, DISCOVERY, registryUpdate, registryReset, onRegistryReset } from './tempo.enum.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 const Context = getContext();																// current execution context
@@ -111,6 +111,8 @@ export class Tempo {
 	static [sym.$errored] = sym.$errored;
 	/** guard against infinite mutation recursion */
 	static [sym.$mutateDepth] = 0;
+	/** hook to re-validate the Master Guard */
+	static [sym.$rebuildGuard]() { Tempo.#buildGuard() }
 
 	/** handle internal debug info using the global config */
 	static [sym.$logDebug](...msg: any[]): void {
@@ -510,6 +512,7 @@ export class Tempo {
 
 				let i = 0;
 				const len = input.length;
+				// console.log(`Guard testing: "${input}"`);
 
 				while (i < len) {
 					const char = input[i];
@@ -536,7 +539,9 @@ export class Tempo {
 					const slice = input.substring(i, i + searchLen).toLowerCase();
 
 					for (let l = searchLen; l > 0; l--) {
-						if (Tempo.#allowedTokens.has(slice.substring(0, l))) {
+						const candidate = slice.substring(0, l);
+						if (Tempo.#allowedTokens.has(candidate)) {
+							// console.log(`  Matched token: "${candidate}" at ${i}`);
 							i += l;
 							matched = true;
 							break;
@@ -592,8 +597,8 @@ export class Tempo {
 			items.forEach(item => {
 				const arg = item as any;
 				if (isFunction(arg)) {		// Standard Plugin registration
-					if ((arg as any).installed) return;
-					(arg as any).installed = true;										// mark as installed (BEFORE side-effects)
+					if (REGISTRY.installed.has(arg)) return;
+					REGISTRY.installed.add(arg);										// mark as installed (BEFORE side-effects)
 
 					registerPlugin(arg);
 					try {
@@ -680,7 +685,7 @@ export class Tempo {
 		Tempo.#lifecycle.initialising = true;
 
 		try {
-			const { timeZone, calendar } = getResolvedOptions();
+			const { timeZone, calendar } = getDateTimeFormat();
 
 			// 1. Establish the base parsing state
 			Tempo.#global.parse = markConfig({
@@ -1846,3 +1851,8 @@ export namespace Tempo {
 
 	export interface Params<T> extends t.Params<T> { }
 }
+
+onRegistryReset(() => {
+	resetInternalRegistry();
+	Tempo[sym.$rebuildGuard]();
+});

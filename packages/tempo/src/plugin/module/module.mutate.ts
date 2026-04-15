@@ -164,9 +164,6 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 						}
 					}, zdt);
 			}
-			else if (type === 'add') {
-				// Handle legacy .add(Tempo) or other types if supported
-			}
 			else {
 				// @ts-ignore - access to private constructor fallback
 				return new TempoClass(args, { ...state.options, ...overrides, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored, [sym.$mutateDepth]: state.mutateDepth });

@@ -40,19 +40,18 @@ export function curry<Args extends any[], Res>(fn: (...args: Args) => Res): Curr
 }
 
 /** generic function to memoize repeated function calls */
-export function memoizeFunction<F extends (...args: any[]) => any>(fn: F) {
+export function memoizeFunction<F extends (...args: any[]) => any>(fn: F): F {
 	const cache = new Map<string, ReturnType<F>>();						// using a Map for better key handling than plain objects
 
-	return function (...args: unknown[]) {
-		const key = JSON.stringify(args);												// create a unique key from arguments
+	return function (this: any, ...args: Parameters<F>): ReturnType<F> {
+		const key = JSON.stringify(args, (_, v) => v === undefined ? '__und__' : v);
 		if (!cache.has(key)) {
-			// @ts-ignore
 			const result = fn.apply(this, args);									// call the original function with the correct context
 			cache.set(key, Object.freeze(result));								// stash the result for subsequent calls
 		}
 
-		return cache.get(key);
-	}
+		return cache.get(key)!;
+	} as F;
 }
 
 const wm = new WeakMap<object, Map<string, any>>();
@@ -69,7 +68,7 @@ export function memoizeMethod<Context = Property<any>, T = any>(name: PropertyKe
 		configurable: false,
 		writable: false,
 		value: function (this: Context, ...args: any[]) {
-			const key = `${String(name)},${JSON.stringify(args)}`;
+			const key = `${String(name)},${JSON.stringify(args, (_, v) => v === undefined ? '__und__' : v)}`;
 			let cache = wm.get(this as any);
 
 			if (!cache) {																					// add a new Map into the WeakMap

@@ -50,8 +50,8 @@ Aligns the instance forward or backward to the matched term boundary.
 
 ### `.add(shorthand)` - Targeted Momentum
 Advances the instance relative to its current position.
-- **Cycle Shifting**: `t.add('#qtr')` moves to the start of the next quarter boundary.
-- **Multi-Boundary**: `t.add('#qtr.>2')` moves forward exactly two quarter boundaries.
+- **Cycle Shifting**: `t.add('#qtr')` shifts forward by one quarter cycle, preserving the relative duration from cycle start (e.g. 2 months in -> 2 months into next quarter).
+- **Multi-Boundary**: `t.add('#qtr.>2')` moves forward exactly two quarter boundaries, preserving the relative cycle offset.
 - **Step Shifting**: Providing an object like `t.add({ '#qtr': 1 })` allows shifting by a specific number of "slots" or "steps" within the term's cycle while preserving your relative duration from the start of the term.
 
 ### `.until(shorthand)` - Duration Forward
@@ -85,11 +85,11 @@ const t = new Tempo('2024-12-25', { sphere: 'north' });
 // ABSOLUTE: Finds latest Q1 at or before Dec 25th (Jan 1st 2024)
 t.set('#qtr.q1'); // 2024-01-01
 
-// DIRECTED: Finds the next Q1 AFTER current (Jan 1st 2025)
-t.add('#qtr.>q1'); // 2025-01-01
+// DIRECTED: Finds the next Q1 AFTER current and applies current Q-offset (~85 days)
+t.add('#qtr.>q1'); // 2025-03-27
 
-// MULTI-SHIFT: Advances two boundary quarters forward (Q2 2025)
-t.add('#qtr.>2'); // 2025-04-01
+// MULTI-SHIFT: Advances two boundary quarters forward and applies current Q-offset
+t.add('#qtr.>2'); // 2025-06-25
 ```
 
 ---

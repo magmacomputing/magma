@@ -3,9 +3,17 @@ import { TermsModule } from '#tempo/term';
 import { DurationModule } from '#tempo/duration';
 import { FormatModule } from '#tempo/format';
 import { MutateModule } from '#tempo/mutate';
+import { TickerModule } from '#tempo/ticker';
+import { onRegistryReset } from './tempo.enum.js';
 
 // Batteries Included: Register standard modules
-Tempo.extend([MutateModule, FormatModule, DurationModule, TermsModule]);
+const core = [MutateModule, FormatModule, DurationModule, TermsModule, TickerModule];
+
+onRegistryReset(() => {
+	Tempo.extend(core);
+});
+
+Tempo.extend(core);
 
 export * from './tempo.class.js';
 export { default as enums } from './tempo.enum.js';         // Tempo enumerators

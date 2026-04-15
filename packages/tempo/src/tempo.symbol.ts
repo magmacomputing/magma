@@ -20,6 +20,8 @@ const $termError = Symbol.for('$TempoTermError');
 const $errored = Symbol.for('$TempoErrored');
 const $Internal = Symbol.for('$TempoInternal');
 const $mutateDepth = Symbol.for('$TempoMutateDepth');
+const $rebuildGuard = Symbol.for('$TempoRebuildGuard');
+export const $reset = Symbol.for('$TempoReset');
 
 /**
  * Define a reactive registration hook on a global symbol.
@@ -53,6 +55,8 @@ const _sym = {
     /** internal key for signaling pre-errored state in constructor */ $errored,
     /** internal key for accessing private instance state */ $Internal,
     /** internal key for tracking mutation recursion depth */ $mutateDepth,
+    /** internal key for re-validating the Master Guard */  $rebuildGuard,
+    /** internal key for decentralized registry resets */   $reset,
 } as const;
 
 export default _sym;

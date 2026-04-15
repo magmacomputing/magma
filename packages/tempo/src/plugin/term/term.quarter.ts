@@ -30,7 +30,7 @@ function resolve(t: Tempo, anchor?: any): any[] {
 	const template = (groups as any)[sphere] ?? [];
 	if (template.length === 0) return [];
 
-	const list = resolveCycleWindow(t, template, anchor);
+	const list = resolveCycleWindow(t, template, anchor).map(itm => ({ ...itm }));
 
 	list.forEach(itm => {
 		if (isNumber(itm.fiscal)) itm.fiscal += itm.year;
