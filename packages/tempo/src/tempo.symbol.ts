@@ -18,6 +18,8 @@ const $logDebug = Symbol.for('$TempoLogDebug');
 
 const $termError = Symbol.for('$TempoTermError');
 const $errored = Symbol.for('$TempoErrored');
+const $Internal = Symbol.for('$TempoInternal');
+const $mutateDepth = Symbol.for('$TempoMutateDepth');
 
 /**
  * Define a reactive registration hook on a global symbol.
@@ -48,7 +50,9 @@ const _sym = {
     /** key for contextual Error Logging */                 $logError,
     /** key for contextual Debug Logging */                 $logDebug,
     /** key for centralized Term Error dispatching */       $termError,
-    /** internal key for signaling pre-errored state in constructor */ $errored
+    /** internal key for signaling pre-errored state in constructor */ $errored,
+    /** internal key for accessing private instance state */ $Internal,
+    /** internal key for tracking mutation recursion depth */ $mutateDepth,
 } as const;
 
 export default _sym;

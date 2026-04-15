@@ -14,7 +14,7 @@ describe(`${label} set method`, () => {
 
   test('sets via parsing string (e.g. period)', () => {
     const t = new Tempo('2024-05-20 08:00');
-    const t2 = t.set({ event: 'afternoon' });							            // afternoon -> 15:00 usually
+    const t2 = t.set({ event: 'afternoon' });							  // afternoon -> 15:00 usually
     expect(t2.hh).toBe(15);
   });
 
@@ -43,6 +43,20 @@ describe(`${label} set method`, () => {
     const end = t.set({ end: 'month' });
     expect(end.dd).toBe(31);
     expect(end.hh).toBe(23);
+  });
+
+  test('today/tomorrow/yesterday events via set', () => {
+    const t = new Tempo('2024-05-20 12:34:56');
+    const todayObserved = t.set('today');
+    const now = new Tempo();
+    expect(todayObserved.yy).toBe(now.yy);
+    expect(todayObserved.mm).toBe(now.mm);
+    expect(todayObserved.dd).toBe(now.dd);
+    expect(todayObserved.hh).toBe(12); // preserved time
+
+    const tomorrow = t.set('tomorrow');
+    expect(tomorrow.dd).toBe(21);
+    expect(tomorrow.hh).toBe(12); // preserved time
   });
 
 });

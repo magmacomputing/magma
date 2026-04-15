@@ -7,8 +7,10 @@
 [![TypeScript Ready](https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Native ESM](https://img.shields.io/badge/Native-ESM-green)](https://nodejs.org/api/esm.html)
 
-## 🚀 Overview
-
+<details open>
+<summary style="display: list-item; font-size: 1.5em; font-weight: bold; margin: 0.83em 0; cursor: pointer;">
+🚀 Overview
+</summary>
 Working with `Date` in JavaScript has historically been painful. The new `Temporal` standard (Stage 4) fixes this, but it can be verbose and strict when parsing strings. 
 
 **Tempo** bridges that gap by providing:
@@ -19,25 +21,42 @@ Working with `Date` in JavaScript has historically been painful. The new `Tempor
 - **Plugin**: Extend core functionality safely; built-ins (like the Ticker) are ready-to-use in the full package, or can be opted-into via side-effect imports when using the lean Core engine.
 - **Terms**: Access complex date ranges (Quarters, Seasons, Zodiacs) easily.
 - **Immutable**: Operations (like `set` and `add`) return a new `Tempo` instance, ensuring thread safety and predictability.
-
-```javascript
-// v2.1.2 - Automatic registration via side-effect import
-import '@magmacomputing/tempo/ticker';
-```
-
-## 🤔 Why Tempo?
-
+___
+</details>
+<details>
+  <summary style="display: list-item; font-size: 1.5em; font-weight: bold; margin: 0.83em 0; cursor: pointer;">
+    🤔 Why Tempo?
+  </summary>
 If you're looking for a **modern date library** that leverages the native power of the browser's `Temporal` API, Tempo is for you.
 
 - **Type Safety**: Built from the ground up with TypeScript.
 - **Performance**: High-performance wrapper with minimal overhead.
 - **Familiarity**: If you like the fluent syntax of **Moment** or **Day.js**, you'll feel right at home.
 - **Future-Proof**: Built on the TC39 `Temporal` standard.
+___
+</details>
+<details>
+  <summary style="display: list-item; font-size: 1.5em; font-weight: bold; margin: 0.83em 0; cursor: pointer;">
+  🎯 Target Audience
+  </summary>
 
-## 🎯 Target Audience
 Tempo is built for **modern JavaScript developers** who require a premium, type-safe, and developer-friendly interface over the native Temporal API. It is ideal for those migrating from legacy libraries like **Moment.js**, **Day.js**, or **Luxon**, as well as teams building complex, time-sensitive applications that demand reliability, immutability, and high-performance parsing.
+Tempo is designed for a broad spectrum of developers and teams who interact with date and time data in JavaScript:
 
-## 📦 Installation
+### 1. Modern JavaScript Developers
+For those who want to leverage the power of the native `Temporal` API today but find its raw implementation too verbose or strict for rapid development.
+
+### 2. Teams Migrating from Legacy Libraries
+Ideal for organizations looking to move away from **Moment.js**, **Day.js**, or **Luxon** without sacrificing the fluent, chainable API and flexible parsing on which they've come to rely.
+
+### 3. Enterprise Application Architects
+For those building complex, time-sensitive systems (such as financial platforms, scheduling engines, or global logistics trackers) that demand the precision of Temporal combined with a premium, type-safe developer experience.
+___
+</details>
+<details open>
+  <summary style="display: list-item; font-size: 1.5em; font-weight: bold; margin: 0.83em 0; cursor: pointer;">
+  📦 Installation
+  </summary>
 
 ```bash
 npm install @magmacomputing/tempo
@@ -82,8 +101,12 @@ For environments without `importmap` support or simple prototypes, use the bundl
   console.log(t.toString());
 </script>
 ```
-
-## 🛠️ Quick Start
+___
+</details>
+<details>
+  <summary style="display: list-item; font-size: 1.5em; font-weight: bold; margin: 0.83em 0; cursor: pointer;">
+  🛠️ Quick Start
+  </summary>
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
@@ -101,13 +124,17 @@ const startOfMonth = now.set({ start: 'month' });
 console.log(now.format('{dd} {mmm} {yyyy}')); // using custom format with tokens: "24 Jan 2026"
 console.log(now.fmt.date);                    // using pre-built formats: "2026-01-24"
 ```
+___
+</details>
+<details>
+  <summary style="display: list-item; font-size: 1.5em; font-weight: bold; margin: 0.83em 0; cursor: pointer;">
+  📚 Documentation
+  </summary>
 
-## 📚 Documentation
-
-> [!IMPORTANT]
-> **Documentation Update**: We have been made aware that the documentation links between npmjs.com (the package host) and GitHub (the source repository) were broken a short while back. To overcome this, we have altered our Publish process to now include the doc/ subfolder (along with dist/ folder). We sincerely apologize for any past trouble and thank you for your support.
-
-## ✨ New in v2.1.2
+  <details style="margin-left: 20px;">
+  <summary style="display: list-item; font-size: 1.5em; font-weight: bold; margin: 0.83em 0; cursor: pointer;">
+  ✨ New in v2.1.2
+  </summary>
 
 Tempo v2.1.2 is a major milestone, delivering a more reactive architecture and rock-solid stability.
 
@@ -129,8 +156,13 @@ Tempo v2.1.2 continues the architectural improvements started in v2.0:
 
 - **Modular Architecture**: Use optional modules for `duration` and `format` to keep your bundle lean.
 - **Automatic Registration**: Built-ins self-register on import (just import the module).
+___
+  </details>
+  <details style="margin-left: 20px;">
+  <summary style="display: list-item; font-size: 1.5em; font-weight: bold; margin: 0.83em 0; cursor: pointer;">
+  📚 Detailed technical guides
+  </summary>
 
-For detailed technical guides, please refer to:
 - [Vision & Value Proposition](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/vision.md)
 - [Tempo vs. Native Temporal](./doc/tempo-vs-temporal.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo-vs-temporal.md))
 - [Tempo vs. The Competition](./doc/comparison.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/comparison.md))
@@ -142,8 +174,14 @@ For detailed technical guides, please refer to:
 - [Configuration Guide](./doc/tempo.config.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/tempo.config.md))
 - [Architecture & Internal Protection](./doc/architecture.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/architecture.md))
 - [Commercial Support](./doc/commercial.md) ([v2.1.2](https://github.com/magmacomputing/magma/blob/v2.1.2/packages/tempo/doc/commercial.md))
+___
+  </details>
+</details>
 
-## 💖 Support the Project
+<details>
+<summary style="display: list-item; font-size: 1.5em; font-weight: bold; margin: 0.83em 0; cursor: pointer;">
+💖 Support the Project
+</summary>
 
 If you find **Tempo** useful and want to support its development, please consider sponsoring us on GitHub! Your support helps keep the project active and premium.
 
@@ -186,3 +224,4 @@ How are we doing? Let us know with a simple reaction!
 ## ⚖️ License
 
 Distributed under the MIT License. See `LICENSE` for more information.
+</details>

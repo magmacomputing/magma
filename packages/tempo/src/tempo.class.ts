@@ -10,8 +10,8 @@ import lib, { markConfig } from '#library/symbol.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { enumify } from '#library/enumerate.library.js';
 import { ownKeys, ownEntries, getAccessors, omit } from '#library/reflection.library.js';
-import { pad, singular, trimAll } from '#library/string.library.js';
-import { getType, asType, isEmpty, isNull, isNullish, isDefined, isUndefined, isString, isObject, isRegExp, isRegExpLike, isIntegerLike, isSymbol, isFunction, isClass, isZonedDateTime, isPlainDate, isPlainTime } from '#library/type.library.js';
+import { pad, trimAll } from '#library/string.library.js';
+import { getType, asType, isEmpty, isNull, isNullish, isDefined, isUndefined, isString, isObject, isNumber, isRegExp, isRegExpLike, isIntegerLike, isSymbol, isFunction, isClass, isZonedDateTime, isPlainDate, isPlainTime } from '#library/type.library.js';
 import { getResolvedOptions, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import { instant } from '#library/temporal.library.js';
 import type { Property, TypeValue, Secure } from '#library/type.library.js';
@@ -19,15 +19,30 @@ import type { Property, TypeValue, Secure } from '#library/type.library.js';
 import { compose } from './plugin/module/module.composer.js';
 import { resolveTermMutation, resolveTermValue } from './plugin/module/module.term.js';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './plugin/module/module.lexer.js';
-import { REGISTRY, registerPlugin, registerTerm, getRange, getTermRange, interpret, findTermPlugin } from './plugin/plugin.util.js'
+import { REGISTRY, registerPlugin, registerTerm, getRange, getTermRange, interpret } from './plugin/plugin.util.js'
 
 import sym, { isTempo, registerHook } from './tempo.symbol.js';
-import { Match, Token, Snippet, Layout, Event, Period, Default } from './tempo.default.js';
+import { Match, Token, Snippet, Layout, Event, Period, Default, Guard } from './tempo.default.js';
 import enums, { STATE, DISCOVERY, registryUpdate, registryReset } from './tempo.enum.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
-
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 const Context = getContext();																// current execution context
 
+/** set a mutable, enumerable property on a target */
+const setProperty = <T>(target: object, key: PropertyKey, value: T) =>
+	Object.defineProperty(target, key, {
+		value, writable: true, configurable: true, enumerable: true
+	});
+
+/** return the Prototype parent of an object */
+const proto = (obj: object) => Object.getPrototypeOf(obj);
+/** test object has own property with the given key */
+const hasOwn = (obj: object, key: string) => Object.hasOwn(obj, key);
+/** return whether the shape is 'local' or 'global' */
+const isLocal = (shape: { config: { scope: string } }) => shape.config.scope === 'local';
+/** create an object based on a prototype */
+const create = <T extends object>(obj: object, name: string): T => Object.create(proto(obj)[name]);
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 namespace Internal {
 	export type State = t.Internal.State;
 	export type Parse = t.Internal.Parse;
@@ -43,13 +58,12 @@ namespace Internal {
 		<F extends string>(fmt: F, options: t.Options): t.FormatType<F>;
 	}
 }
-
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /**
  * # Tempo
  * A powerful wrapper around `Temporal.ZonedDateTime` for flexible parsing and intuitive manipulation of date-time objects.
  * Bridges the gap between raw string/number inputs and the strict requirements of the ECMAScript Temporal API.
  */
-
 @Serializable
 @Immutable
 export class Tempo {
@@ -73,11 +87,18 @@ export class Tempo {
 	/** check if Tempo is currently initializing */						static get isInitializing() { return Tempo.#lifecycle.extendDepth > 0 || !Tempo.#lifecycle.ready }
 	/** check if Tempo is currently extending */							static get isExtending() { return Tempo.#lifecycle.extendDepth > 0 }
 
-
 	static #dbg = new Logify('Tempo', {
 		debug: Default?.debug ?? false,
 		catch: Default?.catch ?? false
 	})
+
+	/** Tempo state for the global configuration */						static #global = {} as Internal.State
+	/** cache for next-available 'usr' Token key */						static #usrCount = 0;
+	/** mutable list of registered term plugins */						static #terms: t.TermPlugin[] = REGISTRY.terms;
+	/** mapping of terms to their resolved values */					static #termMap: Map<string, t.TermPlugin> = new Map();
+	/** flag to prevent recursion during init */							static #lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
+	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
+	/** Set of allowed lowercased tokens for the Master Guard */		static #allowedTokens: Set<string> = new Set();
 
 	/** handle internal errors using the global config */
 	static [sym.$logError](...msg: any[]): void {
@@ -86,22 +107,15 @@ export class Tempo {
 		Tempo.#dbg.error(config, ...msg);
 	}
 
+	/** internal key for signaling pre-errored state in constructor */
+	static [sym.$errored] = sym.$errored;
+	/** guard against infinite mutation recursion */
+	static [sym.$mutateDepth] = 0;
+
 	/** handle internal debug info using the global config */
 	static [sym.$logDebug](...msg: any[]): void {
 		Tempo.#dbg.debug(...msg);
 	}
-
-	/** a collection of parse rule-matches */									#matches: Internal.Match[] | undefined;
-
-	/** Tempo state for the global configuration */						static #global = {} as Internal.State
-	/** cache for next-available 'usr' Token key */						static #usrCount = 0;
-	/** guard against infinite mutation recursion */					static #mutateDepth = 0;
-	/** mutable list of registered term plugins */						static #terms: t.TermPlugin[] = REGISTRY.terms;
-	/** current parsing depth to manage state isolation */		#parseDepth = 0;
-	/** mapping of terms to their resolved values */					static #termMap: Map<string, t.TermPlugin> = new Map();
-	/** flag to prevent recursion during init */							static #lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
-	/** Master Guard predicate (implements RegExp-like interface) */					static #guard: { test(str: string): boolean } = { test: () => true };
-	/** Set of allowed lowercased tokens for the Master Guard */					static #allowedTokens: Set<string> = new Set();
 
 	/** Centralized error dispatcher for Term resolution failures */
 	static [sym.$termError](config: t.Options, term: string): void {
@@ -111,12 +125,6 @@ export class Tempo {
 		if (config.catch !== true) throw new Error(msg);
 	}
 
-	//** prototype helpers */
-	/** return the Prototype parent of an object */						static #proto(obj: object) { return Object.getPrototypeOf(obj) }
-	/** test object has own property with the given key */		static #hasOwn(obj: object, key: string) { return Object.hasOwn(obj, key) }
-	/** return whether the shape is 'local' or 'global' */		static #isLocal(shape: Internal.State) { return shape.config.scope === 'local' }
-	/** create an object based on a prototype */							static #create<T extends object>(obj: object, name: string): T { return Object.create(Tempo.#proto(obj)[name]) }
-
 	/**
 	 * {dt} is a layout that combines date-related {snippets} (e.g. dd, mm -or- evt) into a pattern against which a string can be tested.  
 	 * because it will also include a list of events (e.g. 'new_years' | 'xmas'), we need to rebuild {dt} if the user adds a new event
@@ -124,7 +132,7 @@ export class Tempo {
 	// TODO:  check all Layouts which reference "{evt}" and update them
 	static #setEvents(shape: Internal.State) {
 		const events = ownEntries(shape.parse.event, true);
-		if (Tempo.#isLocal(shape) && !Tempo.#hasOwn(shape.parse, 'event') && !Tempo.#hasOwn(shape.parse, 'isMonthDay'))
+		if (isLocal(shape) && !hasOwn(shape.parse, 'event') && !hasOwn(shape.parse, 'isMonthDay'))
 			return;																					// no local change needed
 
 		const src = shape.config.scope.substring(0, 1);							// 'g'lobal or 'l'ocal
@@ -133,33 +141,23 @@ export class Tempo {
 			.join('|')																				// make an 'Or' pattern for the event-keys
 
 		if (groups) {
-			const protoEvt = Tempo.#proto(shape.parse.snippet)[Token.evt]?.source;
-			if (!Tempo.#isLocal(shape) || groups !== protoEvt) {
-				if (Tempo.#isLocal(shape) && !Tempo.#hasOwn(shape.parse, 'snippet'))
-					shape.parse.snippet = Tempo.#create(shape.parse, 'snippet');
+			const protoEvt = proto(shape.parse.snippet)[Token.evt]?.source;
+			if (!isLocal(shape) || groups !== protoEvt) {
+				if (isLocal(shape) && !hasOwn(shape.parse, 'snippet'))
+					shape.parse.snippet = create(shape.parse, 'snippet');
 
-				Object.defineProperty(shape.parse.snippet, Token.evt, {
-					value: new RegExp(groups),
-					enumerable: true,
-					writable: true,
-					configurable: true
-				});
+				setProperty(shape.parse.snippet, Token.evt, new RegExp(groups));
 			}
 		}
 
 		if (shape.parse.isMonthDay) {
-			const protoDt = Tempo.#proto(shape.parse.layout)[Token.dt] as string;
+			const protoDt = proto(shape.parse.layout)[Token.dt] as string;
 			const localDt = '{mm}{sep}?{dd}({sep}?{yy})?|{mod}?({evt})';
-			if (!Tempo.#isLocal(shape) || localDt !== protoDt) {
-				if (Tempo.#isLocal(shape) && !Tempo.#hasOwn(shape.parse, 'layout'))
-					shape.parse.layout = Tempo.#create(shape.parse, 'layout');
+			if (!isLocal(shape) || localDt !== protoDt) {
+				if (isLocal(shape) && !hasOwn(shape.parse, 'layout'))
+					shape.parse.layout = create(shape.parse, 'layout');
 
-				Object.defineProperty(shape.parse.layout, Token.dt, {
-					value: localDt,
-					enumerable: true,
-					writable: true,
-					configurable: true
-				});
+				setProperty(shape.parse.layout, Token.dt, localDt);
 			}
 		}
 	}
@@ -171,7 +169,7 @@ export class Tempo {
 	// TODO:  check all Layouts which reference "{per}" and update them
 	static #setPeriods(shape: Internal.State) {
 		const periods = ownEntries(shape.parse.period, true);
-		if (Tempo.#isLocal(shape) && !Tempo.#hasOwn(shape.parse, 'period'))
+		if (isLocal(shape) && !hasOwn(shape.parse, 'period'))
 			return;																							// no local change needed
 
 		const src = (shape.config.scope ?? "global").substring(0, 1);				// 'g'lobal or 'l'ocal
@@ -180,17 +178,12 @@ export class Tempo {
 			.join('|')																						// make an 'or' pattern for the period-keys
 
 		if (groups) {
-			const protoPer = Tempo.#proto(shape.parse.snippet)[Token.per]?.source;
-			if (!Tempo.#isLocal(shape) || groups !== protoPer) {
-				if (Tempo.#isLocal(shape) && !Tempo.#hasOwn(shape.parse, 'snippet'))
-					shape.parse.snippet = Tempo.#create(shape.parse, 'snippet');
+			const protoPer = proto(shape.parse.snippet)[Token.per]?.source;
+			if (!isLocal(shape) || groups !== protoPer) {
+				if (isLocal(shape) && !hasOwn(shape.parse, 'snippet'))
+					shape.parse.snippet = create(shape.parse, 'snippet');
 
-				Object.defineProperty(shape.parse.snippet, Token.per, {
-					value: new RegExp(groups),
-					enumerable: true,
-					writable: true,
-					configurable: true
-				});
+				setProperty(shape.parse.snippet, Token.per, new RegExp(groups));
 			}
 		}
 	}
@@ -214,7 +207,7 @@ export class Tempo {
 	static #isMonthDay(shape: Internal.State) {
 		const monthDay = [...asArray(Tempo.#global.parse.mdyLocales)];
 
-		if (Tempo.#isLocal(shape) && Tempo.#hasOwn(shape.parse, 'mdyLocales'))
+		if (isLocal(shape) && hasOwn(shape.parse, 'mdyLocales'))
 			monthDay.push(...shape.parse.mdyLocales);						// append local mdyLocales (not overwrite global)
 
 		return monthDay.some(mdy => {
@@ -278,7 +271,6 @@ export class Tempo {
 	 * This is needed because we allow the user to flexibly provide detail as {[key]:val} or {[key]:val}[] or [key,val][]  
 	 */
 	static #setConfig(shape: Internal.State, ...options: t.Options[]) {
-
 		const providedOptions: t.Options = Object.assign({}, ...options);
 		const storeKey = providedOptions.store;
 		const mergedOptions: t.Options = storeKey
@@ -322,8 +314,8 @@ export class Tempo {
 					case 'event':
 					case 'period':
 						// lazy-shadowing: only create local object if it doesn't already exist on local shape
-						if (!Tempo.#hasOwn(shape.parse, optKey))
-							shape.parse[optKey] = Tempo.#create(shape.parse, optKey);
+						if (!hasOwn(shape.parse, optKey))
+							shape.parse[optKey] = create(shape.parse, optKey);
 
 						const rule = shape.parse[optKey];
 						if (['snippet', 'layout'].includes(optKey)) {
@@ -356,12 +348,17 @@ export class Tempo {
 
 					case 'timeZone': {
 						const zone = String(arg.value).toLowerCase() as t.TIMEZONE;
-						Object.defineProperty(shape.config, 'timeZone', { value: enums.TIMEZONE[zone] ?? arg.value, writable: true, configurable: true, enumerable: true });
+						setProperty(shape.config, 'timeZone', enums.TIMEZONE[zone] ?? arg.value);
+						break;
+					}
+
+					case 'calendar': {
+						setProperty(shape.config, 'calendar', String(arg.value));
 						break;
 					}
 
 					case 'formats':
-						if (Tempo.#isLocal(shape) && !Tempo.#hasOwn(shape.config, 'formats'))
+						if (isLocal(shape) && !hasOwn(shape.config, 'formats'))
 							shape.config.formats = shape.config.formats.extend({}) as t.FormatRegistry;	// shadow parent prototype
 
 						if (isObject(arg.value))
@@ -369,7 +366,7 @@ export class Tempo {
 						break;
 
 					case 'discovery':
-						Object.defineProperty(shape.config, 'discovery', { value: isSymbol(optVal) ? Symbol.keyFor(optVal) as string : optVal, writable: true, configurable: true, enumerable: true });
+						setProperty(shape.config, 'discovery', isSymbol(optVal) ? Symbol.keyFor(optVal) as string : optVal);
 						break;
 
 					case 'plugins':
@@ -385,13 +382,13 @@ export class Tempo {
 						break;																					// internal anchor used for relativity parsing
 
 					default:																					// else just add to config
-						Object.defineProperty(shape.config, optKey, { value: optVal, writable: true, configurable: true, enumerable: true });
+						setProperty(shape.config, optKey, optVal);
 						break;
 				}
 			})
 
 		const isMonthDay = Tempo.#isMonthDay(shape);
-		if (isMonthDay !== Tempo.#proto(shape.parse).isMonthDay)// this will always set on 'global', conditionally on 'local'
+		if (isMonthDay !== proto(shape.parse).isMonthDay)		// this will always set on 'global', conditionally on 'local'
 			shape.parse.isMonthDay = isMonthDay;
 
 		shape.config.sphere = Tempo.#setSphere(shape, mergedOptions);
@@ -464,7 +461,7 @@ export class Tempo {
 		snippet[Token.afx] = new RegExp(`((s)? (?<afx>${Match.affix.source}))?${snippet[Token.sep].source}?`);
 
 		// ensure we have our own Map to mutate (shadow if local)
-		if (!Tempo.#hasOwn(shape.parse, 'pattern'))
+		if (!hasOwn(shape.parse, 'pattern'))
 			shape.parse.pattern = new Map(shape.parse.pattern);							// preserve inherited entries while shadowing
 
 		const layouts = { ...shape.parse.layout };										// shallow-copy to include inherited properties
@@ -495,10 +492,7 @@ export class Tempo {
 			...[Token.slk],
 			...Tempo.#terms.map(t => t.key),
 			...Tempo.#terms.map(t => t.scope),
-			'am', 'pm', 'ago', 'hence', 'this', 'next', 'prev', 'last', 'from', 'now', 'today', 'yesterday', 'tomorrow', 'start', 'mid', 'end',
-			'year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond',
-			'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds', 'nanoseconds',
-			'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays'
+			...Guard
 		].filter(w => isString(w) || isSymbol(w))
 			.map(w => (isSymbol(w) ? w.description : (w as string))!.toLowerCase())
 			.filter(Boolean);
@@ -562,6 +556,12 @@ export class Tempo {
 				return true;
 			}
 		}
+	}
+
+	/** @internal resolve a global discovery config object by symbol key */
+	static #getConfig(sym: symbol) {
+		const discovery = (globalThis as Record<symbol, any>)[sym];
+		return proxify(omit({ ...discovery, scope: 'discovery' }, 'value'));
 	}
 
 	/**
@@ -845,11 +845,6 @@ export class Tempo {
 		return proxify(out);
 	}
 
-	/** global discovery configuration */
-	static #getConfig(sym: symbol) {
-		const discovery = (globalThis as Record<symbol, any>)[sym];
-		return proxify(omit({ ...discovery, scope: 'discovery' }, 'value'));
-	}
 
 	/** global discovery configuration */
 	static get discovery() {
@@ -933,9 +928,50 @@ export class Tempo {
 		return !!(instance?.[sym.$isTempo])
 	}
 
+	static {																									// Static initialization block to sequence the bootstrap phase
+		// Define the reactive register hook
+		registerHook(sym.$Register, (plugin: t.Plugin | t.Plugin[]) => { if (!Tempo.isExtending) Tempo.extend(plugin) });
+
+		Tempo.init();																						// synchronously initialize the library
+	}
+
+	/** constructor tempo */																	#tempo?: t.DateTime;
+	/** constructor options */																#options = {} as t.Options;
+	/** instantiation Temporal Instant */											#now: Temporal.Instant;
+	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
+	/** indicator that the instance failed to parse */				#errored = false;
+	/** temporary anchor used during parsing */								#anchor?: Temporal.ZonedDateTime | undefined;
+	/** prebuilt formats, for convenience */									#fmt!: any;
+	/** mapping of terms to their resolved values */					#term!: any;
+	/** a collection of parse rule-matches */									#matches: Internal.Match[] | undefined;
+	/** current parsing depth to manage state isolation */		#parseDepth = 0;
+	/** current mutation depth to manage infinite recursion */#mutateDepth = 0;
+	/** instance values to complement static values */				#local = {
+		/** instance configuration */															config: { [lib.$Logify]: true } as unknown as Internal.Config,
+		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.Match[] } as Internal.Parse
+	} as Internal.State;
+
+	/** internal access to instance private state */
+	[sym.$Internal]() {
+		const self = this;
+		return {
+			get zdt() { return self.#zdt },
+			set zdt(val) { self.#zdt = val },
+			get errored() { return self.#errored },
+			set errored(val) { self.#errored = val },
+			get parseDepth() { return self.#parseDepth },
+			set parseDepth(val) { self.#parseDepth = val },
+			get mutateDepth() { return self.#mutateDepth },
+			set mutateDepth(val) { self.#mutateDepth = val },
+			get matches() { return self.#matches },
+			set matches(val) { self.#matches = val },
+			get options() { return self.#options },
+			parse: (tempo: any, anchor: any, term?: any) => self.#parse(tempo, anchor, term)
+		}
+	}
+
 	/** allow for auto-convert of Tempo to BigInt, Number or String */
 	[Symbol.toPrimitive](hint?: 'string' | 'number' | 'default') {
-		// Tempo.#dbg.info(this.config, getType(this), '.hint: ', hint);
 		switch (hint) {
 			case 'string': return this.toString();								// ISO 8601 string
 			case 'number': return this.epoch.ms;									// Unix epoch (milliseconds)
@@ -953,27 +989,6 @@ export class Tempo {
 	}
 
 	get [sym.$isTempo]() { return true }
-
-	/** constructor tempo */																	#tempo?: t.DateTime;
-	/** constructor options */																#options = {} as t.Options;
-	/** instantiation Temporal Instant */											#now: Temporal.Instant;
-	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
-	/** indicator that the instance failed to parse */				#errored = false;
-	/** temporary anchor used during parsing */								#anchor?: Temporal.ZonedDateTime | undefined;
-	/** prebuilt formats, for convenience */									#fmt!: any;
-	/** mapping of terms to their resolved values */					#term!: any;
-	/** instance values to complement static values */				#local = {
-		/** instance configuration */															config: { [lib.$Logify]: true } as unknown as Internal.Config,
-		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.Match[] } as Internal.Parse
-	} as Internal.State;
-
-	/** Static initialization block to sequence the bootstrap phase */
-	static {
-		// Define the reactive register hook
-		registerHook(sym.$Register, (plugin: t.Plugin | t.Plugin[]) => { if (!Tempo.isExtending) Tempo.extend(plugin) });
-
-		Tempo.init();																					// synchronously initialize the library
-	}
 
 	/**
 	 * Instantiates a new `Tempo` object.
@@ -1002,8 +1017,8 @@ export class Tempo {
 		this.#term = this.#setDelegator('term');								// initialize the term-delegator
 		this.#anchor = this.#options.anchor;
 
-		if ((this.#options as any)[sym.$errored])
-			this.#errored = true;
+		if ((this.#options as any)[sym.$errored]) this.#errored = true;
+		if (isNumber((this.#options as any)[sym.$mutateDepth])) this.#mutateDepth = (this.#options as any)[sym.$mutateDepth];
 
 		if (!this.#local.parse.lazy) this.#ensureParsed();			// attempt to interpret immediately (if not lazy)
 	}
@@ -1207,8 +1222,8 @@ export class Tempo {
 
 		markConfig(out);
 
-		if (!Object.hasOwn(out, 'mode')) Object.defineProperty(out, 'mode', { value: this.#local.parse.mode, enumerable: true, writable: true, configurable: true });
-		if (!Object.hasOwn(out, 'lazy')) Object.defineProperty(out, 'lazy', { value: this.#local.parse.lazy, enumerable: true, writable: true, configurable: true });
+		if (!Object.hasOwn(out, 'mode')) setProperty(out, 'mode', this.#local.parse.mode);
+		if (!Object.hasOwn(out, 'lazy')) setProperty(out, 'lazy', this.#local.parse.lazy);
 
 		Object.defineProperty(out, 'toJSON', {
 			value: () => Object.fromEntries(										// bare-bones: only show local overrides
@@ -1261,8 +1276,8 @@ export class Tempo {
 		return interpret(this, 'duration', undefined, 'since', ...args);
 	}
 
-	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options) { this.#ensureParsed(); return this.#add(tempo, options); }
-	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options) { this.#ensureParsed(); return this.#set(tempo, options); }
+	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', () => { throw new Error('Tempo MutateModule not loaded. Did you forget to Tempo.extend(MutateModule)?') }, 'add', tempo, options); }
+	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', () => { throw new Error('Tempo MutateModule not loaded. Did you forget to Tempo.extend(MutateModule)?') }, 'set', tempo, options); }
 	/** returns a clone of the current `Tempo` instance. */		clone() { return new this.#Tempo(this, this.config) }
 
 	/** returns the underlying Temporal.ZonedDateTime */
@@ -1299,12 +1314,7 @@ export class Tempo {
 		Object.assign(this.#local.config, { scope: 'local' });
 
 		this.#local.parse = markConfig(Object.create(Tempo.#global.parse));
-		Object.defineProperty(this.#local.parse, 'result', {
-			value: [...(options.result ?? [])],
-			writable: true,
-			enumerable: true,
-			configurable: true
-		});
+		setProperty(this.#local.parse, 'result', [...(options.result ?? [])]);
 
 		Tempo.#setConfig(this.#local, options);									// set #local config
 	}
@@ -1419,12 +1429,7 @@ export class Tempo {
 				if (Reflect.isExtensible(this.#local.parse)) {
 					// ensure 'result' array is present and append our discovered matches
 					if (isUndefined(this.#local.parse.result)) {
-						Object.defineProperty(this.#local.parse, 'result', {
-							value: [...(this.#matches ?? [])],
-							writable: true,
-							enumerable: true,
-							configurable: true
-						});
+						setProperty(this.#local.parse, 'result', [...(this.#matches ?? [])]);
 					} else {
 						this.#local.parse.result.push(...(this.#matches ?? []));
 					}
@@ -1770,325 +1775,6 @@ export class Tempo {
 
 		return dateTime;
 	}
-
-	#add = (args?: any, options: t.Options = {}) => {
-		if (!isZonedDateTime(this.#zdt)) return this;
-
-		const overrides = {
-			timeZone: options.timeZone ?? this.tz,
-			calendar: options.calendar ?? this.cal,
-			sphere: options.sphere ?? this.config.sphere
-		} as Required<t.Options>;
-
-		let zdt = this.#zdt.withTimeZone(overrides.timeZone).withCalendar(overrides.calendar);
-		this.#parseDepth++;
-
-		const isRoot = this.#parseDepth === 1;
-		if (isRoot) this.#matches = [...this.parse.result];
-
-		try {
-			if (isDefined(args)) {
-				// 1. Intercept Shorthand String (e.g. .add('#quarter'))
-				if (isString(args) && args.startsWith('#')) {
-					zdt = resolveTermMutation(Tempo, this, 'add', args, 1, zdt);
-					if (zdt === null) this.#errored = true;
-				}
-				// 2. Process Mutation Object
-				else if (isObject(args) && args.constructor === Object) {
-					const mutate = 'add';
-					zdt = Object.entries(args ?? {})										// loop through each mutation
-						.reduce<Temporal.ZonedDateTime>((zdt, [unit, offset]) => {	// apply each mutation to preceding one
-							if (++Tempo.#mutateDepth > 100) {						// Safety-Valve: recursion guard
-								Tempo.#dbg.error(this.#local.config, `Infinite recursion detected in mutation engine for ${unit}`);
-								this.#errored = true;
-								return zdt;
-							}
-							try {
-								if (unit === 'timeZone' || unit === 'calendar') return zdt;
-
-								const isTerm = unit.startsWith('#');
-								const name = isTerm ? unit.slice(1) : unit;
-								const isTermPlugin = !isTerm && !!findTermPlugin(name as string);
-
-								if (isTerm || isTermPlugin) {
-									const res = resolveTermMutation(Tempo, this, mutate, unit, offset, zdt);
-									if (res === null) this.#errored = true;
-									return res ?? zdt;
-								}
-
-								const single = singular((enums.ELEMENT[unit as t.Element] ?? unit) as string);
-								const plural = single + 's';
-
-								switch (`${mutate}.${single}`) {
-									case 'add.year':
-									case 'add.month':
-									case 'add.week':
-									case 'add.day':
-									case 'add.hour':
-									case 'add.minute':
-									case 'add.second':
-									case 'add.millisecond':
-									case 'add.microsecond':
-									case 'add.nanosecond':
-										return zdt.add({ [plural]: offset });
-
-									default:
-										Tempo.#dbg.error(this.#local.config, `Unexpected method(${mutate}), unit(${unit}) and offset(${offset})`);
-										this.#errored = true;
-										return zdt;
-								}
-							} finally {
-								Tempo.#mutateDepth--;
-							}
-						}, zdt);
-				}
-				else {
-					return new this.#Tempo(args, { ...this.#options, ...overrides, ...options, result: this.#matches, anchor: zdt, [sym.$errored]: this.#errored });
-				}
-			}
-
-			if (this.#errored) {
-				const res = new this.#Tempo(null, { ...this.#options, ...overrides, ...options, result: this.#matches, [sym.$errored]: true });
-				return res;
-			}
-
-			return new this.#Tempo(zdt, { ...this.#options, ...overrides, ...options, result: this.#matches, anchor: zdt, [sym.$errored]: this.#errored } as any);
-
-		} finally {
-			if (isRoot) this.#matches = undefined;
-			this.#parseDepth--;
-		}
-	}
-
-	/** mutate the date-time by setting specific offsets */
-	#set = (args?: any, options: t.Options = {}) => {
-		if (!isZonedDateTime(this.#zdt)) return this;
-
-		const overrides = {
-			timeZone: options.timeZone ?? this.tz,
-			calendar: options.calendar ?? this.cal,
-			sphere: options.sphere ?? this.config.sphere
-		} as Required<t.Options>;
-
-		if (isObject(args) && args.constructor === Object) {
-			const { timeZone, calendar } = args as Temporal.ZonedDateTimeLikeObject;
-			if (timeZone) overrides.timeZone = timeZone;
-			if (calendar) overrides.calendar = calendar;
-		}
-
-		// Shift the current instance to the target timezone first to ensure
-		// that any relative keywords (like 'tomorrow') are resolved correctly.
-		let zdt = this.#zdt.withTimeZone(overrides.timeZone).withCalendar(overrides.calendar);
-		this.#parseDepth++;
-		const isRoot = this.#parseDepth === 1;
-		if (isRoot) this.#matches = [...this.parse.result];
-
-		try {
-			if (isDefined(args)) {
-				// 1. Intercept Shorthand String (e.g. .set('#morning') or .set('#zodiac.aries'))
-				if (isString(args) && args.startsWith('#')) {
-					zdt = resolveTermMutation(Tempo, this, 'start', args, args, zdt);
-					if (zdt === null) this.#errored = true;
-				}
-				// 2. Process Mutation Object
-				else if (isObject(args) && args.constructor === Object) {
-
-					zdt = Object.entries(args ?? {})									// loop through each mutation
-						.reduce<Temporal.ZonedDateTime>((zdt, [key, adjust]) => {	// apply each mutation to preceding one
-							if (key === 'timeZone' || key === 'calendar') return zdt;
-
-							const { mutate, offset, single, term } = ((key) => {
-								switch (key) {
-									case 'start':
-									case 'mid':
-									case 'end':
-										{
-											const val = adjust?.toString() ?? '';
-											const isTerm = val.startsWith('#');
-											const single = isTerm ? 'term' : singular(val);
-											return { mutate: key as Tempo.Mutate, offset: val, single, term: isTerm ? val : undefined }
-										}
-									default:
-										{
-											const isTerm = key.startsWith('#');
-											const name = isTerm ? key.slice(1) : key;
-											const isTermPlugin = !isTerm && !!findTermPlugin(name as string);
-											const single = isTerm || isTermPlugin ? 'term' : singular(name as string);
-											return { mutate: 'set', offset: adjust, single, term: isTerm ? (key as string) : (isTermPlugin ? key : undefined) }
-										}
-								}
-							})(key);																			// IIFE to analyze arguments
-
-							switch (`${mutate}.${single}`) {
-								case 'start.term':
-								case 'mid.term':
-								case 'end.term':
-									{
-										const res = resolveTermMutation(Tempo, this, mutate, term!, adjust, zdt);
-										if (res === null) this.#errored = true;
-										return res ?? zdt;
-									}
-
-								case 'set.timeZone':
-									return zdt.withTimeZone(offset as Temporal.TimeZoneLike);
-								case 'set.calendar':
-									return zdt.withCalendar(offset as Temporal.CalendarLike);
-
-								case 'set.term':
-								case 'set.period':
-								case 'set.time':
-								case 'set.date':
-								case 'set.event':
-								case 'set.dow':															// set day-of-week by number
-								case 'set.wkd':															// set day-of-week by name
-									{
-										const res2 = this.#parse(offset as any, zdt, term);
-										if (isUndefined(res2)) this.#errored = true;
-										return res2 ?? zdt;
-									}
-
-								case 'set.year':
-								case 'set.month':
-								// case 'set.week':																				// not defined
-								case 'set.day':
-								case 'set.hour':
-								case 'set.minute':
-								case 'set.second':
-								case 'set.millisecond':
-								case 'set.microsecond':
-								case 'set.nanosecond':
-									return zdt
-										.with({ [single]: offset });
-
-								case 'set.yy':
-								case 'set.mm':
-								// case 'set.ww':																					// not defined
-								case 'set.dd':
-								case 'set.hh':
-								case 'set.mi':
-								case 'set.ss':
-								case 'set.ms':
-								case 'set.us':
-								case 'set.ns':
-									{
-										const value = Tempo.ELEMENT[single as t.Element];
-										return zdt
-											.with({ [value]: offset });
-									}
-
-								case 'start.year':
-									return zdt
-										.with({ month: Tempo.MONTH.Jan, day: 1 })
-										.startOfDay();
-
-								case 'start.month':
-									return zdt
-										.with({ day: 1 })
-										.startOfDay();
-
-								case 'start.week':
-									return zdt
-										.add({ days: -(this.dow - Tempo.WEEKDAY.Mon) })
-										.startOfDay();
-
-								case 'start.day':
-									return zdt
-										.startOfDay();
-
-								case 'start.hour':
-								case 'start.minute':
-								case 'start.second':
-									return zdt
-										.round({ smallestUnit: offset as 'hour' | 'minute' | 'second', roundingMode: 'trunc' });
-
-								// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-								case 'mid.year':
-									return zdt
-										.with({ month: Tempo.MONTH.Jul, day: 1 })
-										.startOfDay();
-
-								case 'mid.month':
-									return zdt
-										.with({ day: Math.trunc(zdt.daysInMonth / 2) })
-										.startOfDay();
-
-								case 'mid.week':
-									return zdt
-										.add({ days: -(this.dow - Tempo.WEEKDAY.Thu) })
-										.startOfDay();
-
-								case 'mid.day':
-									return zdt
-										.round({ smallestUnit: 'day', roundingMode: 'trunc' })
-										.add({ hours: 12 });
-
-								case 'mid.hour':
-									return zdt
-										.round({ smallestUnit: 'hour', roundingMode: 'trunc' })
-										.add({ minutes: 30 });
-
-								case 'mid.minute':
-									return zdt
-										.round({ smallestUnit: 'minute', roundingMode: 'trunc' })
-										.add({ seconds: 30 });
-
-								case 'mid.second':
-									return zdt
-										.round({ smallestUnit: 'second', roundingMode: 'trunc' })
-										.add({ milliseconds: 500 });
-
-								// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-								case 'end.year':
-									return zdt
-										.add({ years: 1 })
-										.with({ month: Tempo.MONTH.Jan, day: 1 })
-										.startOfDay()
-										.subtract({ nanoseconds: 1 });
-
-								case 'end.month':
-									return zdt
-										.add({ months: 1 })
-										.with({ day: 1 })
-										.startOfDay()
-										.subtract({ nanoseconds: 1 });
-
-								case 'end.week':
-									return zdt
-										.add({ days: (Tempo.WEEKDAY.Sun - this.dow) + 1 })
-										.startOfDay()
-										.subtract({ nanoseconds: 1 });
-
-								case 'end.day':
-								case 'end.hour':
-								case 'end.minute':
-								case 'end.second':
-									return zdt
-										.round({ smallestUnit: offset as 'day' | 'hour' | 'minute' | 'second', roundingMode: 'ceil' })
-										.subtract({ nanoseconds: 1 });
-								default:
-									Tempo.#dbg.error(this.#local.config, `Unexpected method(${mutate}), unit(${adjust}) and offset(${single})`);
-									return zdt;
-							}
-						}, zdt)																					// start reduce with the shifted zonedDateTime
-					if (zdt === null) this.#errored = true;
-				}
-				else {
-					return new this.#Tempo(args, { ...this.#options, ...overrides, ...options, result: this.#matches, anchor: zdt, [sym.$errored]: this.#errored });
-				}
-			}
-
-			if (this.#errored) {
-				const res = new this.#Tempo(null, { ...this.#options, ...overrides, ...options, result: this.#matches, [sym.$errored]: true });
-				return res;
-			}
-
-			return new this.#Tempo(zdt, { ...this.#options, ...overrides, ...options, result: this.#matches, anchor: zdt, [sym.$errored]: this.#errored } as any);
-		} finally {
-			if (isRoot) this.#matches = undefined;
-			this.#parseDepth--;
-		}
-	}
-
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

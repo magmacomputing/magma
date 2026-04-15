@@ -1,4 +1,4 @@
-import { Temporal } from '@js-temporal/polyfill';
+import { toZonedDateTime, toPlainDate, toInstant } from '#library/temporal.library.js';
 import { isDefined, isFunction, isString } from '#library/type.library.js';
 import { secure } from '#library/utility.library.js';
 import { SCHEMA, getLargestUnit } from '../tempo.util.js';
@@ -13,6 +13,14 @@ const _REGISTRY = {
 	terms: secureRef([] as TermPlugin[]),
 	extends: secureRef([] as Extension[]),
 	modules: secureRef({} as Record<string, any>)
+}
+
+/** 
+ * # STATE
+ * Mutable internal state for Tempo.
+ */
+export const STATE = {
+	mutateDepth: 0
 }
 
 /** 
@@ -40,7 +48,7 @@ export const REGISTRY = new Proxy(_REGISTRY, {
 });
 
 /** internal helper to resolve the class-host from either an instance or the class itself */
-function getHost(t: any): any {
+export function getHost(t: any): any {
 	const isFn = typeof t === 'function';
 	if (isFn) return t?.[lib.$Target] ?? t;
 	const host = (t as any)?.constructor ?? (isDefined(t) ? Reflect.get(Object(t), 'constructor') : Object);
@@ -65,7 +73,11 @@ export function interpret(t: any, module: string, methodOrFallback?: any, ...arg
 
 		return logic.apply(t, args);
 	} catch (err) {
-		host[sym.$logError](t?.config, err);
+		if (isFunction(host?.[sym.$logError])) {
+			host[sym.$logError](t?.config, err);
+		} else {
+			console.error(`Tempo [${module}]:`, err);
+		}
 	}
 
 	return (isFunction(methodOrFallback) ? methodOrFallback() : undefined);
@@ -96,17 +108,19 @@ export const defineModule = <T extends Plugin>(module: T): T => {
 export const defineInterpreterModule = (name: string, logic: any) =>
 	defineModule((options: any, TempoClass: any) => {
 		// 1. Secure the Global Registry
-		if (isDefined(REGISTRY.modules[name]) && REGISTRY.modules[name] !== logic) {
-			throw new Error(`Tempo Security: Core Module clash for '${name}'. Logic is already defined.`);
+		if (isDefined(REGISTRY.modules[name])) {
+			if (REGISTRY.modules[name] !== logic) throw new Error(`Tempo Security: Core Module clash for '${name}'. Logic is already defined.`);
+		} else {
+			REGISTRY.modules[name] = logic;
 		}
-		REGISTRY.modules[name] = logic;
 
 		// 2. Fallback for legacy class-local access
 		TempoClass[sym.$Interpreter] ??= secureRef({});
-		if (isDefined(TempoClass[sym.$Interpreter][name]) && TempoClass[sym.$Interpreter][name] !== logic) {
-			throw new Error(`Tempo Interpreter Module clash: '${name}' logic is already defined.`);
+		if (isDefined(TempoClass[sym.$Interpreter][name])) {
+			if (TempoClass[sym.$Interpreter][name] !== logic) throw new Error(`Tempo Interpreter Module clash: '${name}' logic is already defined.`);
+		} else {
+			TempoClass[sym.$Interpreter][name] = logic;
 		}
-		TempoClass[sym.$Interpreter][name] = logic;
 	});
 
 /**
@@ -196,7 +210,7 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor
 			}
 		}
 		// @ts-ignore
-		const zdt = Temporal.ZonedDateTime.from({ ...obj, timeZone: anchor.timeZoneId, calendar: anchor.calendarId });
+		const zdt = toZonedDateTime({ ...obj, timeZone: anchor.timeZoneId, calendar: anchor.calendarId });
 		// @ts-ignore
 		return new tempo.constructor(zdt, (tempo as any).config);
 	}
@@ -269,7 +283,7 @@ export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mu
 		const endNs = range.end.toDateTime().epochNanoseconds as bigint;
 		const midNs = startNs + (endNs - startNs) / BigInt(2);
 		// @ts-ignore
-		return new tempo.constructor(Temporal.Instant.fromEpochNanoseconds(midNs).toZonedDateTimeISO((range.start as any).tz).withCalendar((range.start as any).cal), (tempo as any).config);
+		return new tempo.constructor(toInstant(midNs).toZonedDateTimeISO((range.start as any).tz).withCalendar((range.start as any).cal), (tempo as any).config);
 	}
 	if (mutate === 'end') return range.end.subtract({ nanoseconds: 1 });
 
@@ -327,7 +341,7 @@ export function resolveCycleWindow(t: Tempo, template: Range[], anchor?: any) {
 	// Handle Daily Cycles (e.g. TimelineTerm)
 	if (largest === 'hour' || largest === 'minute') {
 		const list: Range[] = [];
-		const base = Temporal.PlainDate.from(source);
+		const base = toPlainDate(source);
 
 		for (const offset of [-1, 0, 1]) {
 			const date = base.add({ days: offset });

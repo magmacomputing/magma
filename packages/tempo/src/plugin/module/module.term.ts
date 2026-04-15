@@ -1,11 +1,11 @@
-import { Temporal } from '@js-temporal/polyfill';
-
-import { isDefined, isObject, isString, isZonedDateTime } from '#library/type.library.js';
+import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
+import { isDefined, isString, isZonedDateTime } from '#library/type.library.js';
 import { isNumeric } from '#library/coercion.library.js';
+
 import sym from '../../tempo.symbol.js';
 import { getSafeFallbackStep } from '../../tempo.util.js';
 import { Match } from '../../tempo.default.js';
-import { REGISTRY, getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin.util.js';
+import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin.util.js';
 import { parseModifier } from './module.lexer.js';
 
 /**
@@ -77,7 +77,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			}
 
 			const starts = candidates.map(c => {
-				const s = Temporal.ZonedDateTime.from({
+				const s = toZonedDateTime({
 					year: c.year ?? jump.year,
 					month: c.month ?? 1,
 					day: c.day ?? 1,
@@ -139,7 +139,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			}
 
 			const resolved = rawList.map(c => {
-				const start = Temporal.ZonedDateTime.from({
+				const start = toZonedDateTime({
 					year: c.year ?? jump.year,
 					month: c.month ?? 1,
 					day: c.day ?? 1,
@@ -323,7 +323,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 				const startNs = finalRange.start.toDateTime().epochNanoseconds as bigint;
 				const endNs = finalRange.end.toDateTime().epochNanoseconds as bigint;
 				const midNs = startNs + (endNs - startNs) / BigInt(2);
-				return Temporal.Instant.fromEpochNanoseconds(midNs).toZonedDateTimeISO(tz).withCalendar(cal);
+				return toInstant(midNs).toZonedDateTimeISO(tz).withCalendar(cal);
 			}
 			return finalRange.end.toDateTime().subtract({ nanoseconds: 1 }).withTimeZone(tz).withCalendar(cal);
 		}
@@ -335,32 +335,25 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 	if (isString(offset) && !offset.startsWith('#') && !isNumericString) {
 		let jump = zdt;
 
-		// Determine the shifted target by recursively calling .set on a temporary strict instance
-		let nextInstance = new instance.constructor(jump, { ...instance.config, mode: 'strict' }).set({ [unit]: offset });
-		if (!nextInstance.isValid) return null;
-		let next = nextInstance.toDateTime();
+		const range = termObj.define.call(new Tempo(jump, { ...instance.config, mode: 'strict' }), false);
+		const step = getSafeFallbackStep(range as any, termObj.scope ?? (unit === '#period' ? 'period' : undefined));
+		let next = jump.add(step);
 
 		let iterations = 0;
 		while (next.epochNanoseconds <= zdt.epochNanoseconds) {
 			if (++iterations > 50) {													// Safety-Valve: prevent infinite look-ahead
-				const range = termObj.define.call(new instance.constructor(jump, { ...instance.config, mode: 'strict' }), false);
+				const range = termObj.define.call(new Tempo(jump, { ...instance.config, mode: 'strict' }), false);
 				const step = getSafeFallbackStep(range as any, termObj.scope ?? (unit === '#period' ? 'period' : undefined));
 				jump = jump.add(step);
 			} else {
-				const range = termObj.define.call(new instance.constructor(jump, { ...instance.config, mode: 'strict' }), false);
-				if (isObject(range) && (range as any).end) {
-					jump = (range as any).end.toDateTime();
-				} else {
-					const step = (unit === '#period' || termObj.scope === 'period') ? { days: 1 } : { years: 1 };
-					jump = jump.add(step);
-				}
+				const range = termObj.define.call(new Tempo(jump, { ...instance.config, mode: 'strict' }), false);
+				const step = getSafeFallbackStep(range as any, termObj.scope ?? (unit === '#period' ? 'period' : undefined));
+				jump = jump.add(step);
+				next = jump;
 			}
-
-			nextInstance = new instance.constructor(jump, { ...instance.config, mode: 'strict' }).set({ [unit]: offset });
-			if (!nextInstance.isValid) return null;
-			next = nextInstance.toDateTime();
 		}
-		return next;
+		const res = new Tempo(offset, { ...instance.config, anchor: next, mode: 'strict' }).toDateTime();
+		return isZonedDateTime(res) ? res : next;
 	}
 
 	// 3. Handle Numeric Shifts or Term Shifting

@@ -41,7 +41,7 @@ export const Match = proxify({
 
 /** Tempo Symbol registry */
 export const Token = looseIndex<string, symbol>()({
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Snippet Symbols
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Snippet Symbols
 	/** year */																								yy: Symbol('yy'),
 	/** ISO yearOfWeek */																			yw: Symbol('yw'),
 	/** month */																							mm: Symbol('mm'),
@@ -62,7 +62,7 @@ export const Token = looseIndex<string, symbol>()({
 	/** Tempo event */																				evt: Symbol('evt'),
 	/** Tempo period */																				per: Symbol('per'),
 	/** time zone offset */																		tzd: Symbol('tzd'),
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Layout Symbols
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Layout Symbols
 	/** date */																								dt: Symbol('date'),
 	/** time */																								tm: Symbol('time'),
 	/** date and time */																			dtm: Symbol('dateTime'),
@@ -144,11 +144,11 @@ export const Event = looseIndex<string, string | Function>()({
 	'xmas': '25 Dec',
 	'now': function (this: Tempo) { return this.toNow() },
 	'today': function (this: Tempo) {
-		const { year, month, day } = this.toNow();
-		return this.toDateTime().with({ year, month, day })
+		const { year, month, day } = this.toNow();							// create a 'today' Tempo
+		return this.toDateTime().with({ year, month, day });		// return just the date-components
 	},
-	'tomorrow': function (this: Tempo) { return this.add({ days: 1 }) },		// tomorrow at current time
-	'yesterday': function (this: Tempo) { return this.add({ days: -1 }) },	// yesterday at current time
+	'tomorrow': function (this: Tempo) { return this.add({ days: 1 }) },					// tomorrow at current time
+	'yesterday': function (this: Tempo) { return this.add({ days: -1 }) },				// yesterday at current time
 });
 export type Event = typeof Event
 
@@ -169,6 +169,14 @@ export const Period = looseIndex<string, string | Function>()({
 })
 export type Period = typeof Period
 
+
+/** Reasonable default options for initial Tempo config */
+export const Guard = [
+	'am', 'pm', 'ago', 'hence', 'this', 'next', 'prev', 'last', 'from', 'now', 'today', 'yesterday', 'tomorrow', 'start', 'mid', 'end',
+	'year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond',
+	'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds', 'nanoseconds',
+	'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays'
+]
 
 /** Reasonable default options for initial Tempo config */
 export const Default = secure({
