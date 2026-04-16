@@ -44,7 +44,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 
 	const slickStr = (rangePart ? unit : (isString(offset) ? offset : undefined));
 	if (slickStr) {
-		const slick = slickStr.match(Match.slick) || (isString(offset) ? offset.match(/^(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/) : null);
+		const slick = slickStr.match(Match.slick) || (isString(offset) ? offset.match(Match.slickValue) : null);
 		const { groups } = (slick || {}) as any;
 		if (groups) {
 			const hasMod = !!groups.sh_mod;

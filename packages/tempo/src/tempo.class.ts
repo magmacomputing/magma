@@ -20,11 +20,12 @@ import type { Property, TypeValue, Secure } from '#library/type.library.js';
 import { compose } from './plugin/module/module.composer.js';
 import { resolveTermMutation, resolveTermValue } from './plugin/module/module.term.js';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './plugin/module/module.lexer.js';
-import { REGISTRY, registerPlugin, registerTerm, getRange, getTermRange, interpret, resetInternalRegistry } from './plugin/plugin.util.js'
+import { REGISTRY, registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
+import { registerPlugin, registerTerm, getRange, getTermRange, interpret } from './plugin/plugin.util.js'
 
 import sym, { isTempo, registerHook } from './tempo.symbol.js';
 import { Match, Token, Snippet, Layout, Event, Period, Default, Guard } from './tempo.default.js';
-import enums, { STATE, DISCOVERY, registryUpdate, registryReset, onRegistryReset } from './tempo.enum.js';
+import enums, { STATE, DISCOVERY } from './tempo.enum.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 const Context = getContext();																// current execution context
@@ -100,6 +101,12 @@ export class Tempo {
 	/** flag to prevent recursion during init */							static #lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
 	/** Set of allowed lowercased tokens for the Master Guard */		static #allowedTokens: Set<string> = new Set();
+
+	static {
+		onRegistryReset(() => {
+			Tempo[sym.$rebuildGuard]();
+		});
+	}
 
 	/** @internal handle internal errors using the global config */
 	static [sym.$logError](...msg: any[]): void {
@@ -1852,8 +1859,3 @@ export namespace Tempo {
 
 	export interface Params<T> extends t.Params<T> { }
 }
-
-onRegistryReset(() => {
-	resetInternalRegistry();
-	Tempo[sym.$rebuildGuard]();
-});

@@ -2,7 +2,8 @@ import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#li
 import { singular } from '#library/string.library.js';
 import sym from '../../tempo.symbol.js';
 import enums from '../../tempo.enum.js';
-import { defineInterpreterModule, findTermPlugin, getHost, REGISTRY } from '../plugin.util.js';
+import { REGISTRY } from '../../tempo.register.js';
+import { defineInterpreterModule, findTermPlugin, getHost } from '../plugin.util.js';
 import { resolveTermMutation } from './module.term.js';
 import type { Tempo } from '../../tempo.class.js';
 import type * as t from '../../tempo.type.js';
@@ -187,7 +188,6 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 /**
  * MutateModule registration
  */
-// @ts-ignore
 // Eagerly register with the global registry to ensure availability even if .extend() is delayed
 REGISTRY.modules['MutateModule'] = mutate;
 

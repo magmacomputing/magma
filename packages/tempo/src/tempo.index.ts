@@ -1,10 +1,11 @@
 import { Tempo } from './tempo.class.js';
+import { onRegistryReset } from './tempo.register.js';
+
 import { TermsModule } from '#tempo/term';
 import { DurationModule } from '#tempo/duration';
 import { FormatModule } from '#tempo/format';
 import { MutateModule } from '#tempo/mutate';
 import { TickerModule } from '#tempo/ticker';
-import { onRegistryReset } from './tempo.enum.js';
 
 // Batteries Included: Register standard modules
 const core = [MutateModule, FormatModule, DurationModule, TermsModule, TickerModule];

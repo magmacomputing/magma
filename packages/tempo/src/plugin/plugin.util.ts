@@ -1,23 +1,15 @@
-import { toZonedDateTime, toPlainDate, toInstant } from '#library/temporal.library.js';
+import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
 import { isDefined, isFunction, isString, isUndefined, isNumber } from '#library/type.library.js';
 import { secure } from '#library/utility.library.js';
-import { SCHEMA, getLargestUnit } from '../tempo.util.js';
 import { sortKey, byKey } from '#library/array.library.js';
-import lib from '#library/symbol.library.js';
-import sym, { isTempo } from '../tempo.symbol.js';
 import { secureRef } from '#library/proxy.library.js';
+
+import { SCHEMA, getLargestUnit } from '../tempo.util.js';
+import sym, { isTempo } from '../tempo.symbol.js';
 import type { Tempo } from '../tempo.class.js';
-import type { TermPlugin, Range, ResolvedRange, Plugin, Extension } from './plugin.type.js';
+import type { TermPlugin, Range, ResolvedRange, Plugin } from './plugin.type.js';
 
-const _terms = [] as TermPlugin[];
-const _extends = [] as Extension[];
-
-const _REGISTRY = {
-	terms: secureRef(_terms),
-	extends: secureRef(_extends),
-	modules: secureRef({} as Record<string, any>),
-	installed: new Set<any>()
-}
+import { REGISTRY } from '../tempo.register.js';
 
 /** 
  * # STATE
@@ -26,30 +18,6 @@ const _REGISTRY = {
 export const STATE = {
 	mutateDepth: 0
 }
-
-/** 
- * # REGISTRY
- * Internal registry for registered components.
- * Closed for modification, Open for extension.
- */
-export const REGISTRY = new Proxy(_REGISTRY, {
-	get: (t, k) => Reflect.get(t, k),
-	set: (t, k, v) => {
-		if (Object.hasOwn(t, k)) {
-			throw new Error(`Tempo Security: Mutation attempt on protected registry key '${String(k)}'`);
-		}
-		return Reflect.set(t, k, v);
-	},
-	defineProperty: (t, k, d) => {
-		if (Object.hasOwn(t, k)) {
-			throw new Error(`Tempo Security: Mutation attempt on protected registry key '${String(k)}'`);
-		}
-		return Reflect.defineProperty(t, k, d);
-	},
-	deleteProperty: () => {
-		throw new Error(`Tempo Security: Deletion attempt on protected registry.`);
-	}
-});
 
 export function getHost(t: any): any {
 	return (t as any).constructor;
@@ -75,7 +43,7 @@ export function interpret(t: any, module: string, methodOrFallback?: any, ...arg
 		if (isFunction(host?.[sym.$logError])) {
 			host[sym.$logError](t?.config, err);
 		} else {
-			console.error(`Tempo [${module}]:`, err);
+			console.error(`Tempo [${module}]: structural error - no logger available on host.`, err);
 		}
 	}
 
@@ -161,7 +129,7 @@ export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) 
 /**
  * find where a Tempo fits within a range of DateTime
  */
-export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor?: any): string | ResolvedRange | undefined {
+export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | number = true, anchor?: any): string | ResolvedRange | undefined {
 	const chronological = sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
 	if (chronological.length === 0) return undefined;
 
@@ -220,7 +188,7 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor
 			start,
 			end,
 			...match
-		};
+		}
 	}
 
 	const match = chronological[matchIndex === -1 ? 0 : matchIndex];
@@ -245,7 +213,7 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor
 		start,
 		end,
 		...match
-	};
+	}
 }
 
 /**
@@ -261,7 +229,7 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Ra
 			const host = new (getHost(t))(anchor, (t as any).config);
 			res = isFunction(term.resolve) ? term.resolve.call(host, anchor) : term.define.call(host, false, anchor);
 		} else {
-			res = isFunction(term.resolve) ? term.resolve.call(t) : term.define.call(t, group);
+			res = isFunction(term.resolve) ? term.resolve.call(t) : term.define.call(t, false);
 		}
 	} catch (err: any) {
 		if (err.message.includes('Class constructor')) {
@@ -483,17 +451,4 @@ export function registerPlugin(plugin: any) {
 	}
 
 	(globalThis as any)[sym.$Register]?.(plugin);
-}
-
-/** 
- * Internal hook used by the Tempo class to ensure 
- * the registry is fully purged during a #registryReset().
- */
-export function resetInternalRegistry() {
-	_terms.length = 0;
-	_extends.length = 0;
-	// @ts-ignore
-	const modules = _REGISTRY.modules[lib.$Target] ?? _REGISTRY.modules;
-	for (const key in modules) delete modules[key];
-	_REGISTRY.installed.clear();
 }
