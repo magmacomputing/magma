@@ -187,7 +187,6 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | num
 		}
 
 		return {
-			range: match,
 			start,
 			end,
 			...match
@@ -212,7 +211,6 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | num
 	}
 
 	return {
-		range: match,
 		start,
 		end,
 		...match
