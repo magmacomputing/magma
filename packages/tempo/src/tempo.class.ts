@@ -615,6 +615,14 @@ export class Tempo {
 						}
 					}
 				}
+				else if (isObject(item) && isString((item as any).name) && isFunction((item as any).install)) {
+					// Plugin object form { name, install }
+					if (REGISTRY.installed.has(arg)) return;
+					REGISTRY.installed.add(arg);										// mark as installed (BEFORE side-effects)
+
+					registerPlugin(arg);
+					(arg as t.Plugin).install.call(this as any, this);
+				}
 				else if (isObject(item)) {
 					// 1. handle TermPlugin
 					if (isString((item as any).key) && isFunction((item as any).define)) {

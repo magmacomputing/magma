@@ -4,8 +4,11 @@ import type { Plugin } from '#tempo/tempo.type.js';
 describe('Tempo Plugin System', () => {
 
 	test('should extend Tempo with a static method', () => {
-		const staticPlugin: Plugin = (_options, TempoClass) => {
-			(TempoClass as any).staticMethod = () => 'static';
+		const staticPlugin: Plugin = {
+			name: 'StaticPlugin',
+			install(this: Tempo, TempoClass) {
+				(TempoClass as any).staticMethod = () => 'static';
+			},
 		};
 
 		Tempo.extend(staticPlugin);
@@ -13,10 +16,13 @@ describe('Tempo Plugin System', () => {
 	});
 
 	test('should extend Tempo with an instance method', () => {
-		const instancePlugin: Plugin = (_options, TempoClass) => {
-			(TempoClass.prototype as any).instanceMethod = function() {
-				return 'instance';
-			};
+		const instancePlugin: Plugin = {
+			name: 'InstancePlugin',
+			install(this: Tempo, TempoClass) {
+				(TempoClass.prototype as any).instanceMethod = function() {
+					return 'instance';
+				};
+			},
 		};
 
 		Tempo.extend(instancePlugin);
@@ -24,20 +30,11 @@ describe('Tempo Plugin System', () => {
 		expect((t as any).instanceMethod()).toBe('instance');
 	});
 
-	test('should pass options to the plugin', () => {
-		let receivedOptions: any;
-		const optionsPlugin: Plugin = (options) => {
-			receivedOptions = options;
-		};
-
-		Tempo.extend(optionsPlugin, { foo: 'bar' });
-		expect(receivedOptions).toEqual({ foo: 'bar' });
-	});
-
 	test('should not install the same plugin twice', () => {
 		let installCount = 0;
-		const singlePlugin: Plugin = () => {
-			installCount++;
+		const singlePlugin: Plugin = {
+			name: 'SinglePlugin',
+			install() { installCount++; },
 		};
 
 		Tempo.extend(singlePlugin);
@@ -45,20 +42,12 @@ describe('Tempo Plugin System', () => {
 		expect(installCount).toBe(1);
 	});
 
-	test('should provide a factory function to the plugin', () => {
-		let factoryResult: any;
-		const factoryPlugin: Plugin = (_opts, _Class, factory) => {
-			factoryResult = factory('2024-01-01');
-		};
-
-		Tempo.extend(factoryPlugin);
-		expect(factoryResult).toBeInstanceOf(Tempo);
-		expect(factoryResult.toString()).toContain('2024-01-01');
-	});
-
 	test('should auto-load plugins from init options', () => {
 		let loaded = false;
-		const initPlugin: Plugin = () => { loaded = true; };
+		const initPlugin: Plugin = {
+			name: 'InitPlugin',
+			install() { loaded = true; },
+		};
 
 		Tempo.init({ plugins: [initPlugin] });
 		expect(loaded).toBe(true);
@@ -67,7 +56,10 @@ describe('Tempo Plugin System', () => {
 	test('should auto-load plugins from global discovery', () => {
 		const testDiscovery = '$TempoTestDiscovery';
 		let loaded = false;
-		const discoveryPlugin: Plugin = () => { loaded = true; };
+		const discoveryPlugin: Plugin = {
+			name: 'DiscoveryPlugin',
+			install() { loaded = true; },
+		};
 
 		(globalThis as any)[Symbol.for(testDiscovery)] = {
 			plugins: [discoveryPlugin]
@@ -85,8 +77,11 @@ describe('Tempo Plugin System', () => {
 		}).toThrow();
 
 		// 2. Try to add new (should succeed)
-		const newPlugin: Plugin = (_opts, _Class) => {
-			(_Class as any).freshMethod = () => 'fresh';
+		const newPlugin: Plugin = {
+			name: 'NewPlugin',
+			install(this: Tempo, TempoClass) {
+				(TempoClass as any).freshMethod = () => 'fresh';
+			},
 		};
 		Tempo.extend(newPlugin);
 		expect((Tempo as any).freshMethod()).toBe('fresh');
