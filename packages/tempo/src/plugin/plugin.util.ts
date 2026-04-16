@@ -51,13 +51,8 @@ export const REGISTRY = new Proxy(_REGISTRY, {
 	}
 });
 
-/** internal helper to resolve the class-host from either an instance or the class itself */
 export function getHost(t: any): any {
-	const isFn = typeof t === 'function';
-	if (isFn) return t?.[lib.$Target] ?? t;
-	const host = (t as any)?.constructor ?? (isDefined(t) ? Reflect.get(Object(t), 'constructor') : Object);
-	const target = host?.[lib.$Target] ?? host;
-	return typeof target === 'function' ? target : Object;
+	return (t as any).constructor;
 }
 
 /**
@@ -170,29 +165,6 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor
 	const chronological = sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
 	if (chronological.length === 0) return undefined;
 
-	const match = chronological
-		.toReversed()
-		.find((range: any) => {
-			for (const [rKey, sKey] of SCHEMA) {
-				const val = range[rKey];
-
-				if (isDefined(val)) {
-					const source: any = anchor ?? tempo;
-					const sVal = isTempo(source) ? source[sKey] : source[sKey] ?? source[rKey];
-
-					if (sVal === undefined) continue;
-					if (sVal > val) return true;
-					if (sVal < val) return false;
-				}
-			}
-
-			return true;																					// fallback if DateTime exactly matches a range criteria
-		})
-		?? chronological.at(-1)!
-
-	const i = chronological.indexOf(match);
-	const next = chronological[i + 1];
-
 	const zdt = anchor ?? (tempo as any).toDateTime();
 
 	// determine the largest unit defined in the range list, and use the unit above it as rollover
@@ -216,10 +188,46 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor
 			}
 		}
 		// @ts-ignore
-		const zdt = toZonedDateTime({ ...obj, timeZone: anchor.timeZoneId, calendar: anchor.calendarId });
+		const resZdt = toZonedDateTime({ ...obj, timeZone: anchor.timeZoneId, calendar: anchor.calendarId });
 		// @ts-ignore
-		return new tempo.constructor(zdt, (tempo as any).config);
+		return new tempo.constructor(resZdt, (tempo as any).config);
 	}
+
+	const matchIndex = chronological.findLastIndex(range => {
+		const date = resolve(range, zdt);
+		return (date.toDateTime().epochNanoseconds as bigint) <= (zdt.epochNanoseconds as bigint);
+	});
+
+	if (isNumber(keyOnly)) {
+		const cycle = chronological.length / 3;
+		const offset = matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle;
+		const match = chronological[offset + (keyOnly - 1)];
+		const start = resolve(match, zdt);
+		let end: Tempo;
+		const i = offset + (keyOnly - 1);
+		const next = chronological[i + 1];
+
+		if (next) {
+			end = resolve(next, zdt);
+		} else {
+			const roll = { ...match };
+			if (isNumber(roll.year)) roll.year++;
+			end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+		}
+
+		return {
+			range: match,
+			start,
+			end,
+			...match
+		};
+	}
+
+	const match = chronological[matchIndex === -1 ? 0 : matchIndex];
+	if (keyOnly === true) return match.key;
+
+	const i = chronological.indexOf(match);
+	const next = chronological[i + 1];
 
 	const start = resolve(match, zdt);
 	let end: Tempo;
@@ -227,28 +235,34 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor
 	if (next) {
 		end = resolve(next, zdt);
 	} else {
-		end = resolve(match, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+		const roll = { ...match };
+		if (isNumber(roll.year)) roll.year++;
+		end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
 	}
 
-	if (keyOnly) return match.key;
-
-	const result = {
-		...match,
+	return {
+		range: match,
 		start,
-		end
-	} as ResolvedRange;
-	return result;
+		end,
+		...match
+	};
 }
 
 /**
  * # getRange
  * Resolve the full list of candidates for a term, passing an anchor to prevent recursion.
  */
-export function getRange(term: TermPlugin, t: Tempo, anchor?: any, group?: string): Range[] {
+export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Range[] {
+	const term = (entry.plugin ?? entry) as TermPlugin;
 	let res: any;
 
 	try {
-		res = term.resolve ? term.resolve.call(t, anchor) : term.define.call(t, false, anchor);
+		if (isDefined(anchor)) {
+			const host = new (getHost(t))(anchor, (t as any).config);
+			res = isFunction(term.resolve) ? term.resolve.call(host, anchor) : term.define.call(host, false, anchor);
+		} else {
+			res = isFunction(term.resolve) ? term.resolve.call(t) : term.define.call(t, group);
+		}
 	} catch (err: any) {
 		if (err.message.includes('Class constructor')) {
 			return [];
@@ -258,12 +272,18 @@ export function getRange(term: TermPlugin, t: Tempo, anchor?: any, group?: strin
 
 	let list = (res == null) ? [] : (Array.isArray(res) ? res : [res]);
 
+	const keys = (term as any).groupBy ?? [];
+	if (keys.length > 0) {
+		list = list.filter(r => keys.every((key: string) => r[key] === (t.config as any)[key]));
+	}
+
 	if (group) {
-		// find the registered ranges for this term and filter by group
-		const meta: any = (term as any).groups ?? (term as any).ranges;
-		if (meta) {
-			const source = Array.isArray(meta) ? meta : Object.values(meta).flat(Infinity);
+		const meta: any = (term as any).define ?? (term as any).groups ?? (term as any).ranges;
+		if (meta && !Array.isArray(meta)) {
+			const source = Object.values(meta).flat(Infinity);
 			list = (source as any[]).filter(r => r.group === group);
+		} else {
+			list = list.filter(r => r.group === group);
 		}
 	}
 

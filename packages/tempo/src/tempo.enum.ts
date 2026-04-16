@@ -257,11 +257,11 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 }
 
 /** @internal storage for reset hooks */
-const resetHooks = (): (() => void)[] => (globalThis as any)[sym.$reset] ??= [];
+const resetHooks = (): Set<() => void> => (globalThis as any)[sym.$reset] ??= new Set();
 
 /** @internal Register a hook to be called when the registry is reset */
 export function onRegistryReset(hook: () => void) {
-	resetHooks().push(hook);
+	resetHooks().add(hook);
 }
 
 /** Reset all extendable registries to their original built-in defaults */

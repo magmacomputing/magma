@@ -1,4 +1,8 @@
 import { Tempo } from '#tempo/core';
+import sym from '#tempo/tempo.symbol.js';
+
+// Clear persistent reset hooks to ensure a truly fresh state for this core test
+(globalThis as any)[sym.$reset] = new Set();
 
 describe('Tempo.duration() (Core)', () => {
 	afterEach(() => vi.restoreAllMocks())

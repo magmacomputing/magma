@@ -63,7 +63,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 		const numeric = !slickParsed && isNumeric(offset);
 
 		if (directional || numeric || (slickParsed && !mod)) {
-			const addDir = directional
+			const shiftDir = directional
 				? ((mod!.includes('<') || mod!.includes('-') || mod === 'prev' || mod === 'last') ? -1 : 1)
 				: (numeric ? Math.sign(Number(offset) || 1) : 1);
 			const addCount = slickParsed
@@ -81,7 +81,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			// Calculate cursor's offset within current range (nanoseconds)
 			const startNs = currentRange.start.toDateTime().epochNanoseconds as bigint;
 			const cursorNs = zdt.epochNanoseconds as bigint;
-			const positionNs = (directional || slickParsed) ? 0n : cursorNs - startNs;
+			const positionNs = cursorNs - startNs;
 
 			// Step through adjacent ranges to reach the target
 			let jump = zdt;
@@ -95,19 +95,19 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 				const range = getTermRange(instance, jumpList, false, jump) as any;
 				if (!range) break;
 
-				jump = addDir > 0
+				const matchKey = !rKey || range.key?.toLowerCase() === rKey.toLowerCase();
+				const hasMoved = (shiftDir > 0)
+					? (range.start.toDateTime().epochNanoseconds as bigint) > (zdt.epochNanoseconds as bigint)
+					: (range.end.toDateTime().epochNanoseconds as bigint) < (zdt.epochNanoseconds as bigint);
+
+				if (matchKey && (iters > 1 || hasMoved)) {
+					target = range;
+					remaining--;
+				}
+
+				jump = (shiftDir > 0)
 					? range.end.toDateTime()
 					: range.start.toDateTime().subtract({ nanoseconds: 1 });
-
-				const nextList = getRange(termObj, instance, jump);
-				const next = getTermRange(instance, nextList, false, jump) as any;
-				if (!next) break;
-
-				// If a specific range-key was requested, skip non-matching ranges
-				if (rKey && next.key?.toLowerCase() !== rKey.toLowerCase()) continue;
-
-				target = next;
-				remaining--;
 			}
 
 			if (!target || remaining > 0) {
@@ -313,8 +313,8 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 				let match = false;
 				if (mod === '>' || mod === 'next') match = (iterations > 1) ? (start >= cursor) : (start > cursor);
 				else if (mod === '<' || mod === 'prev' || mod === 'last') match = (iterations > 1) ? (end <= cursor) : (end < cursor);
-				else if (mod === '>=') match = iterations > 1 ? start >= cursor : end > cursor;
-				else if (mod === '<=') match = iterations > 1 ? end <= cursor : start <= cursor;
+				else if (mod === '>=') match = (iterations > 1) ? (start >= cursor) : (end > cursor);
+				else if (mod === '<=') match = (iterations > 1) ? (end <= cursor) : (start <= cursor);
 				else if (mod === '+' || mod === '-') {
 					const res = parseModifier({
 						mod: mod as any, adjust: 1, offset: Number(cursor / 1000000n),
@@ -426,7 +426,17 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 		return isZonedDateTime(res) ? res : next;
 	}
 
-	// 3. Handle Numeric Shifts or Term Shifting
+	// 3. Handle Absolute Numeric Set (e.g. .set({ '#quarter': 2 }))
+	if (mutate === 'set' && !mod && isNumeric(offset)) {
+		const rawList = getRange(termObj, instance, zdt);
+		const target = getTermRange(instance, rawList, Number(offset), zdt) as any;
+		if (target) return target.start.toDateTime().withTimeZone(tz).withCalendar(cal);
+		
+		Tempo[sym.$termError](instance.config, unit);
+		return null;
+	}
+
+	// 4. Handle Numeric Shifts or Term Shifting
 	if (isNumeric(offset) || (isString(offset) && offset.startsWith('#'))) {
 		const shiftValue = isNumeric(offset) ? Number(offset) : 1;
 		let jump = zdt;
