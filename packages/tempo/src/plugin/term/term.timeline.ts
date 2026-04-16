@@ -14,8 +14,7 @@ const groups = defineRange([
 ], 'group');
 
 function resolve(t: Tempo, anchor?: any) {
-	const template = groups["standard"] ?? [];
-	return resolveCycleWindow(t, template, anchor);
+	return resolveCycleWindow(t, groups, { ...anchor, sphere: 'standard' });
 }
 
 export const TimelineTerm = defineTerm({
@@ -30,6 +29,6 @@ export const TimelineTerm = defineTerm({
 
 	/** determine where the current Tempo instance fits within the above range */
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		return getTermRange(this, groups['standard'], keyOnly, anchor);
+		return getTermRange(this, resolve(this, anchor), keyOnly, anchor);
 	}
 });

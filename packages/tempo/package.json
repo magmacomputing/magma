@@ -148,11 +148,11 @@
   },
   "scripts": {
     "test": "vitest run --workspace ../../vitest.workspace.ts",
-    "repl": "tsx --conditions=development -i --import ./scripts/setup.polyfill.ts --import ./scripts/repl.ts",
-    "core": "tsx --conditions=development -i --import ./scripts/setup.polyfill.ts --import ./scripts/core.ts",
+    "repl": "tsx --conditions=development -i --import ./bin/setup.polyfill.ts --import ./bin/repl.ts",
+    "core": "tsx --conditions=development -i --import ./bin/setup.polyfill.ts --import ./bin/core.ts",
     "build": "tsc -b && npm run build:bundle && npm run build:resolve",
     "build:bundle": "rollup -c",
-    "build:resolve": "tsx scripts/resolve-types.ts",
+    "build:resolve": "tsx bin/resolve-types.ts",
     "clean": "tsc -b --clean && rm -rf dist",
     "publish": "npm publish --access public",
     "prepublishOnly": "npm run build"

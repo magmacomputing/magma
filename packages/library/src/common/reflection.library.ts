@@ -1,31 +1,30 @@
-import lib from '#library/symbol.library.js';
-import { distinct } from '#library/array.library.js';
+import { distinct, ownKeys, ownEntries } from '#library/primitive.library.js';
 import { asType, getType, isEmpty, isFunction, isPrimitive } from '#library/type.library.js';
-import type { Obj, KeyOf, ValueOf, EntryOf, Primitives } from '#library/type.library.js';
+import type { Obj, KeyOf, Primitives } from '#library/type.library.js';
 
 /** mutate Object | Array by excluding values with specified primitive 'types' */
 export function exclude<T extends Obj>(obj: T, ...types: (Primitives | Lowercase<Primitives>)[]) {
 	const exclusions = distinct(types.map(item => item.toLowerCase())) as typeof types;
 
-	if (obj && typeof obj === 'object') {										// only works on Objects and Arrays
+	if (obj && typeof obj === 'object') {											// only works on Objects and Arrays
 		const keys = [] as KeyOf<T>[];
 
 		(ownEntries(obj) as [KeyOf<T>, Obj][])
 			.forEach(([key, value]) => {
 				const type = getType(value);
 
-				if (['Object', 'Array'].includes(type))						// recurse into object
+				if (['Object', 'Array'].includes(type))							// recurse into object
 					exclude(value, ...exclusions);
 
 				if (isPrimitive(value) && exclusions.includes(type.toLowerCase() as Primitives))
 					keys.push(key)
 			})
 
-		if (!isEmpty(keys))																		// if any values to be excluded
+		if (!isEmpty(keys))																			// if any values to be excluded
 			omit(obj, ...keys);
 	}
 
-	return obj;																							// return Object reference, even though Object has been mutated
+	return obj;																								// return Object reference, even though Object has been mutated
 }
 
 /** mutate Object | Array reference with properties removed */
@@ -37,7 +36,7 @@ export function omit<T extends Obj>(obj: T, ...keys: PropertyKey[]) {
 	switch (type) {
 		case 'Array':
 			if (isEmpty(keys)) {
-				value.length = 0;																	// clear Array
+				value.length = 0;																		// clear Array
 				break;
 			}
 			keys
@@ -47,11 +46,11 @@ export function omit<T extends Obj>(obj: T, ...keys: PropertyKey[]) {
 			break;
 
 		case 'Object':
-			(isEmpty(keys) ? ownKeys(value) : keys)							// if no {keys}, assume all ownKeys
+			(isEmpty(keys) ? ownKeys(value) : keys)								// if no {keys}, assume all ownKeys
 				.forEach(key => Reflect.deleteProperty(value, key));
 	}
 
-	return value;																						// return Object reference, even though Object has been mutated
+	return value;																							// return Object reference, even though Object has been mutated
 }
 
 /** remove all ownKeys from an Object | Array */
@@ -62,63 +61,6 @@ export function purge<T extends Obj>(obj: T) {
 /** reset Object */
 export function reset<T extends Obj>(orig: T, obj?: T) {
 	return Object.assign(purge(orig), { ...obj });
-}
-
-// These functions are to preserve the typescript 'type' of an object's keys & values
-// and will include both string and symbol keys
-
-/** array of all enumerable PropertyKeys */
-export function ownKeys<T extends Obj>(json: T, all = false) {
-	return ownEntries(json, all).map(([key]) => key as KeyOf<T>);
-}
-
-/** array of all enumerable object values */
-export function ownValues<T extends Obj>(json: T, all = false) {
-	return ownEntries(json, all).map(([_, value]) => value as ValueOf<T>);
-}
-
-/** tuple of enumerable entries with string | symbol keys */
-export function ownEntries<T extends Obj>(json: T, all = false) {
-	if (!json || typeof json !== 'object')
-		return [] as EntryOf<T>[];
-
-	/** recursively unwrap proxies to get to the base target */
-	const unwrap = (obj: any): any => {
-		let curr = obj;
-		while (curr && curr[lib.$Target]) {
-			curr = curr[lib.$Target];
-		}
-		return curr;
-	}
-
-	const getOwn = (obj: any): [PropertyKey, any][] => {			// helper function to get own enumerable properties
-		const tgt = unwrap(obj);
-
-		return Reflect.ownKeys(tgt)
-			.filter(key => Object.getOwnPropertyDescriptor(tgt, key)?.enumerable)
-			.map(key => [key, tgt[key]]);
-	}
-
-	if (!all)
-		return getOwn(json) as EntryOf<T>[];
-
-	// all=true: collect per-level bottom-up, reverse to top-down, dedup via Map
-	// Map preserves first-insertion position but allows value update (own key shadows ancestor)
-	const levels: [PropertyKey, any][][] = [];
-	const limit = 50;																					// prevent infinite loops (increased from 10)
-	let depth = 0;
-	let proto: any = json;
-
-	do {
-		const t = unwrap(proto);
-
-		const lvl = getOwn(proto);
-		if (lvl.length) levels.push(lvl);
-
-		proto = Object.getPrototypeOf(t);
-	} while (proto && proto !== Object.prototype && ++depth < limit);
-
-	return [...new Map(levels.reverse().flat()).entries()] as EntryOf<T>[];
 }
 
 /** return an Object containing all 'own' and 'inherited' enumerable properties */

@@ -17,10 +17,10 @@ const getOutputFileName = (moduleId, name) => {
 		: (name || '[name]') + '.js';
 }
 
-export default {
-	input: 'dist/tempo.index.js',
-	output: [
-		{			// The UMD bundle (standard single file for browser/legacy)
+export default [
+	{
+		input: 'dist/tempo.index.js',
+		output: {			// The UMD bundle (standard single file for browser/legacy)
 			file: 'dist/tempo.bundle.js',
 			format: 'umd',
 			name: 'Tempo',
@@ -30,7 +30,18 @@ export default {
 				'@js-temporal/polyfill': 'TemporalLibrary'
 			}
 		},
-		{			// The Granular Tree-Shaken ESM distribution
+		plugins: [
+			resolve({ extensions: ['.js'] }),
+			indentFix()
+		],
+		external: ['@js-temporal/polyfill']
+	},
+	{
+		input: {
+			'tempo.index': 'dist/tempo.index.js',
+			'library.index': 'dist/library.index.js'
+		},
+		output: {			// The Granular Tree-Shaken ESM distribution
 			dir: 'dist',
 			format: 'es',
 			preserveModules: true,
@@ -38,29 +49,31 @@ export default {
 			sourcemap: false,
 			indent: '\t',
 			entryFileNames: (chunkInfo) => getOutputFileName(chunkInfo.facadeModuleId, chunkInfo.name)
-		}
-	],
-	plugins: [
-		resolve({
-			extensions: ['.js']
-		}),
-		{
-			name: 'indentation-fix',
-			renderChunk(code) {
-				const ms = new MagicString(code);
-				const regex = /^( {4})+/gm;
-				let match;
+		},
+		plugins: [
+			resolve({ extensions: ['.js'] }),
+			indentFix()
+		],
+		external: ['@js-temporal/polyfill']
+	}
+];
 
-				while ((match = regex.exec(code)) !== null) {
-					ms.overwrite(match.index, match.index + match[0].length, '\t'.repeat(match[0].length / 4));
-				}
+function indentFix() {
+	return {
+		name: 'indentation-fix',
+		renderChunk(code) {
+			const ms = new MagicString(code);
+			const regex = /^( {4})+/gm;
+			let match;
 
-				return {
-					code: ms.toString(),
-					map: ms.generateMap({ hires: true })
-				};
+			while ((match = regex.exec(code)) !== null) {
+				ms.overwrite(match.index, match.index + match[0].length, '\t'.repeat(match[0].length / 4));
 			}
+
+			return {
+				code: ms.toString(),
+				map: ms.generateMap({ hires: true })
+			};
 		}
-	],
-	external: ['@js-temporal/polyfill']
+	};
 }

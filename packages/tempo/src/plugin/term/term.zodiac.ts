@@ -1,5 +1,6 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../plugin.util.js';
 import { type Tempo } from '../../tempo.class.js';
+import { isNumber } from '#library/type.library.js';
 
 /** definition of astrological zodiac ranges */
 const groups = defineRange([
@@ -41,14 +42,12 @@ const groups = defineRange([
 
 /** resolve the full candidate list for the current context */
 function resolve(t: Tempo, anchor?: any) {
-	const western = (groups as any)['western'] ?? [];
-	if (western.length === 0) return [];
-
-	const list = resolveCycleWindow(t, western, anchor);
+	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['group'], group: 'western' });
 
 	// calculate the Chinese Zodiac based on the year of the candidate sign
-	list.forEach((itm: any) => {
-		itm['CN'] = getChineseZodiac(itm.year);
+	list.forEach(itm => { 
+		const year = itm.year ?? (anchor?.year);
+		if (isNumber(year)) itm['CN'] = getChineseZodiac(year); 
 	});
 
 	return list;
@@ -79,18 +78,21 @@ function getChineseZodiac(year: number) {
 	const animals = (groups as any)['animal'] ?? [];
 	const elements = (groups as any)['element'] ?? [];
 
-	if (animals.length === 0 || elements.length === 0) {
-		throw new Error(`[getChineseZodiac] Missing registration: animal (${animals.length}) or element (${elements.length})`);
-	}
+	if (animals.length === 0 || elements.length === 0) return undefined;
 
-	const animalIndex = ((year - 4) % 12 + 12) % 12;						// calculate the animal index
-	const elementIndex = Math.floor((((year - 4) % 10) + 10) % 10 / 2);			// calculate the element index based on the last digit of the year
-	const yinYang = year % 2 === 0 ? 'Yang' : 'Yin';						// determine Yin or Yang
+	const animalIndex = ((year - 4) % 12 + 12) % 12;
+	const elementIndex = Math.floor((((year - 4) % 10) + 10) % 10 / 2);
+	const yinYang = year % 2 === 0 ? 'Yang' : 'Yin';
+
+	const animal = animals[animalIndex];
+	const element = elements[elementIndex];
+
+	if (!animal || !element) return undefined;
 
 	return {
-		animal: animals[animalIndex].key,
-		traits: (animals[animalIndex] as any).traits,
-		element: elements[elementIndex].key,
+		animal: animal.key,
+		traits: (animal as any).traits,
+		element: element.key,
 		yinYang: yinYang
 	}
 }

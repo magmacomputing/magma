@@ -1,10 +1,12 @@
 import lib from '#library/symbol.library.js';
 import { enumify, Enum } from '#library/enumerate.library.js';
 import { proxify } from '#library/proxy.library.js';
-import { allDescriptors, ownKeys } from '#library/reflection.library.js';
+import { ownKeys } from '#library/primitive.library.js';
+import { allDescriptors } from '#library/reflection.library.js';
 import { clearCache } from '#library/function.library.js';
 import { isUndefined, isDefined } from '#library/type.library.js';
 import type { OwnOf, KeyOf, ValueOf, LooseUnion, Mutable, Property } from '#library/type.library.js';
+import sym from './tempo.symbol.js';
 
 /** calendar seasons */
 export const SEASON = enumify({
@@ -240,7 +242,7 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 	const state = STATE[name] as Property<any>;
 
 	Object.entries(data).forEach(([key, val]) => {
-		if (isUndefined(target[key])) {																// only add if key does not exist
+		if (isUndefined(target[key])) {													// only add if key does not exist
 			Object.defineProperty(target, key, {
 				value: val,
 				enumerable: true,
@@ -255,9 +257,9 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 }
 
 /** @internal storage for reset hooks */
-const resetHooks = (): (() => void)[] => (globalThis as any)[Symbol.for('$TempoReset')] ??= [];
+const resetHooks = (): (() => void)[] => (globalThis as any)[sym.$reset] ??= [];
 
-/** Register a hook to be called when the registry is reset */
+/** @internal Register a hook to be called when the registry is reset */
 export function onRegistryReset(hook: () => void) {
 	resetHooks().push(hook);
 }

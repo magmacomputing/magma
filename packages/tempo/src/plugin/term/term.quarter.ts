@@ -1,5 +1,4 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../plugin.util.js';
-import sym from '../../tempo.symbol.js';
 import { COMPASS } from '../../tempo.enum.js';
 import { type Tempo } from '../../tempo.class.js';
 import { isNumber } from '#library/type.library.js';
@@ -20,17 +19,7 @@ const groups = defineRange([
 
 /** resolve the full candidate list for the current context */
 function resolve(t: Tempo, anchor?: any): any[] {
-	const sphere = (anchor as any)?.sphere ?? t.config.sphere;
-
-	if (sphere === undefined) {
-		(t.constructor as any)[sym.$termError](t.config, 'sphere');
-		return [];
-	}
-
-	const template = (groups as any)[sphere] ?? [];
-	if (template.length === 0) return [];
-
-	const list = resolveCycleWindow(t, template, anchor).map(itm => ({ ...itm }));
+	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['sphere'] });
 
 	list.forEach(itm => {
 		if (isNumber(itm.fiscal)) itm.fiscal += itm.year;
@@ -55,8 +44,6 @@ export const QuarterTerm = defineTerm({
 	/** determine where the current Tempo instance fits within the above range */
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
 		const res = resolve(this, anchor);
-		const result = getTermRange(this, asArray(res), keyOnly, anchor) as any;
-
-		return result;
+		return getTermRange(this, asArray(res), keyOnly, anchor) as any;
 	}
 });

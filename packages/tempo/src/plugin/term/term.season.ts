@@ -1,7 +1,6 @@
 import { getTermRange, defineTerm, defineRange, resolveCycleWindow } from '../plugin.util.js';
 import { COMPASS } from '../../tempo.enum.js';
-import { type Tempo } from '../../tempo.class.js';
-import sym from '../../tempo.symbol.js';
+import type { Tempo } from '../../tempo.class.js';
 
 /** definition of meteorological season ranges */
 const groups = defineRange([
@@ -26,17 +25,7 @@ const groups = defineRange([
 
 /** resolve the full candidate list for the current context */
 function resolve(t: Tempo, anchor?: any) {
-	const sphere = (anchor as any)?.sphere ?? t.config.sphere;
-
-	if (sphere === undefined) {
-		(t.constructor as any)[sym.$termError](t.config, 'sphere');
-		return [];
-	}
-
-	const template = (groups as any)[`meteorological.${sphere}`] ?? [];
-	if (template.length === 0) return [];
-
-	const list = resolveCycleWindow(t, template, anchor);
+	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['group', 'sphere'], group: 'meteorological' });
 
 	// append Chinese trait information as an additional metadata field (CN)
 	const chinese = (groups as any)['chinese.'] ?? [];

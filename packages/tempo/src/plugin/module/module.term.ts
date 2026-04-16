@@ -81,7 +81,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			// Calculate cursor's offset within current range (nanoseconds)
 			const startNs = currentRange.start.toDateTime().epochNanoseconds as bigint;
 			const cursorNs = zdt.epochNanoseconds as bigint;
-			const positionNs = cursorNs - startNs;
+			const positionNs = (directional || slickParsed) ? 0n : cursorNs - startNs;
 
 			// Step through adjacent ranges to reach the target
 			let jump = zdt;

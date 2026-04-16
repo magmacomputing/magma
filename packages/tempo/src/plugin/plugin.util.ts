@@ -1,5 +1,5 @@
 import { toZonedDateTime, toPlainDate, toInstant } from '#library/temporal.library.js';
-import { isDefined, isFunction, isString, isUndefined } from '#library/type.library.js';
+import { isDefined, isFunction, isString, isUndefined, isNumber } from '#library/type.library.js';
 import { secure } from '#library/utility.library.js';
 import { SCHEMA, getLargestUnit } from '../tempo.util.js';
 import { sortKey, byKey } from '#library/array.library.js';
@@ -205,12 +205,14 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor
 		const obj: any = {};
 		for (let i = 0; i < SCHEMA.length; i++) {
 			const [u] = SCHEMA[i];
-			if (isDefined(range[u])) {
-				obj[u] = range[u];
+			const val = range[u];
+			if (isNumber(val)) {
+				obj[u] = val;
 			} else if (i > rolloverIndex) {
-				obj[u] = (i <= 2) ? 1 : 0;													// year, month, day reset to 1; time units reset to 0
+				obj[u] = (i <= 2) ? 1 : 0;
 			} else {
-				obj[u] = (anchor as any)[u];
+				const fallback = (anchor as any)[u];
+				obj[u] = isNumber(fallback) ? fallback : (i <= 2 ? 1 : 0);
 			}
 		}
 		// @ts-ignore
@@ -335,58 +337,88 @@ export function resolveTermShift(tempo: Tempo, source: any[], offset: string, sh
 	return res.start;
 }
 
+type resolveOptions = {
+	anchor?: any;
+	groupBy?: string[];
+	[key: string]: any;
+}
 /**
- * ## resolveCycleWindow
- * Helper to generate a 3-cycle candidate window around an anchor.
- * Defaults to yearly cycles, but supports daily cycles if the template suggests it.
+ * # resolveCycleWindow
+ * Resolves a window of ranges (prev, current, next) around a source date,
+ * ensuring all returned ranges are detached clones and validated against the context.
  */
-export function resolveCycleWindow(t: Tempo, template: Range[], anchor?: any) {
-	const source = anchor ?? (t as any).toDateTime();
-	const largest = getLargestUnit(template);
+export function resolveCycleWindow(source: Tempo | any, template: Range[] | Record<string, Range[]>, { anchor, groupBy = [], ...options }: resolveOptions = {}): Range[] {
+	// ensure we have a valid Tempo instance to work with
+	const t = isTempo(source) ? source : (isDefined(source) ? new (getHost(source))(source) : source);
+	if (!isTempo(t)) return [];
 
-	// Handle Daily Cycles (e.g. TimelineTerm)
-	if (largest === 'hour' || largest === 'minute') {
-		const list: Range[] = [];
-		const base = toPlainDate(source);
+	// 1. Resolve Template (supporting optional dynamic grouping)
+	let list: Range[] = [];
+	if (!isDefined(template)) {
+		(t.constructor as any)[sym.$termError](t.config, 'template');
+		return [];
+	}
 
+	if (!Array.isArray(template) && groupBy.length > 0) {
+		const groupKey = groupBy
+			.map(key => options[key] ?? anchor?.[key] ?? t.config[key] ?? (t as any)[key] ?? '')
+			.join('.');
+
+		list = (template as any)[groupKey] ?? [];
+
+		if (list.length === 0) {
+			const missing = groupBy.filter(k => isUndefined(options[k]) && isUndefined(anchor?.[k]) && isUndefined(t.config[k]));
+			const msg = missing.length > 0 ? `Missing grouping criteria: ${missing.join(', ')}` : `No ranges found for group: ${groupKey}`;
+			(t.constructor as any)[sym.$termError](t.config, msg);
+			return [];
+		}
+	} else {
+		list = Array.isArray(template) ? template : Object.values(template).flat() as Range[];
+	}
+
+	if (list.length === 0) return [];
+
+	// 2. Resolve Window (Sub-Yearly vs Yearly)
+	const unit = getLargestUnit(list);
+	if (!['year', 'month', 'day'].includes(unit as any)) {
+		const results: Range[] = [];
 		for (const offset of [-1, 0, 1]) {
-			const date = base.add({ days: offset });
-			template.forEach(itm => {
-				list.push({
+			const date = t.add({ days: offset });
+			list.forEach(itm => {
+				results.push({
 					...itm,
-					year: date.year,
-					month: date.month,
-					day: date.day
+					year: date.yy,
+					month: date.mm,
+					day: date.dd
 				});
 			});
 		}
-		return list;
+		return results;
 	}
 
 	// Handle Yearly Cycles (Default)
-	const yy = isTempo(source) ? source.yy : (source.year ?? source.yy);
-	const mm = isTempo(source) ? source.mm : (source.month ?? source.mm);
-	const dd = isTempo(source) ? source.dd : (source.day ?? source.dd);
+	const yy = t.yy;
+	const mm = t.mm;
+	const dd = t.dd;
 
-	const startItem = template[0];
+	const startItem = list[0];
 	const startMm = startItem.month ?? 1;
 	const startDd = startItem.day ?? 1;
 
 	let baseYear = yy;
 	if (mm < startMm || (mm === startMm && dd < startDd)) baseYear--;
 
-	const list: Range[] = [];
+	const window: Range[] = [];
 	for (const offset of [-1, 0, 1]) {
-		const yy = baseYear + offset;
-		template.forEach(itm => {
+		const targetYY = baseYear + offset;
+		list.forEach(itm => {
 			const clone = { ...itm };
-			if (isDefined(itm.year)) clone.year = itm.year + yy;
-			else clone.year = yy;
-			list.push(clone);
+			if (isDefined(itm.year)) clone.year = itm.year + targetYY;
+			else clone.year = targetYY;
+			window.push(clone);
 		});
 	}
-
-	return list;
+	return window;
 }
 
 /**

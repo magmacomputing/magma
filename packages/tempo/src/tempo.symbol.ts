@@ -21,7 +21,7 @@ const $errored = Symbol.for('$TempoErrored');
 const $Internal = Symbol.for('$TempoInternal');
 const $mutateDepth = Symbol.for('$TempoMutateDepth');
 const $rebuildGuard = Symbol.for('$TempoRebuildGuard');
-export const $reset = Symbol.for('$TempoReset');
+const $reset = Symbol.for('$TempoReset');
 
 /**
  * Define a reactive registration hook on a global symbol.

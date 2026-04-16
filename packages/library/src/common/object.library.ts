@@ -1,21 +1,6 @@
-import { ownKeys, ownEntries } from '#library/reflection.library.js';
-import { isObject, isArray, isReference, isFunction, isDefined, isEmpty, isNullish } from '#library/type.library.js';
+import { ownKeys, ownEntries } from '#library/primitive.library.js';
+import { isObject, isArray, isReference, isFunction, isDefined, isNullish } from '#library/type.library.js';
 import type { Extend, Property } from '#library/type.library.js';
-
-/** Get nested value */
-export function extract<T>(obj: any, path: string | number, dflt?: T): T {
-	if (isEmpty(path))
-		return obj as T;																				// finished searching
-	if (!isObject(obj) && !isArray(obj))
-		return obj as T;
-
-	return path
-		.toString()
-		.replace(/\[([^\[\]]*)\]/g, '.$1.')										// convert [indexes] to properties
-		.split('.')
-		.filter(field => !isEmpty(field))											// remove empty fields
-		.reduce((acc, field) => acc?.[field] ?? null, obj) ?? dflt
-}
 
 /** remove quotes around property names */
 export const unQuoteObj = (obj: any) => {
@@ -52,7 +37,7 @@ export const isEqual = (obj1: any = {}, obj2: any = {}): boolean => {
 			const val2 = obj2[key];
 
 			return isReference(val1) && isReference(val2)
-				? isEqual(val1, val2)															// recurse into object
+				? isEqual(val1, val2)																// recurse into object
 				: val1 === val2
 		})
 }

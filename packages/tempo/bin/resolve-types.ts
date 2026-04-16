@@ -59,13 +59,16 @@ function rewrite(filePath: string) {
     replacement = './';
   } else {
     // If at root (or elsewhere), #library/ becomes ./lib/ (with relative prefix)
-    let prefix = './';
-    for (let i = 0; i < depth; i++) prefix = '../' + prefix;
-    replacement = `${prefix}lib/`;
+    let prefix = '';
+    for (let i = 0; i < depth; i++) prefix += '../';
+    replacement = `${prefix || './'}lib/`;
   }
 
   const updatedContent = content
-    .replace(/#library\//g, replacement)
+    .replace(/#library\/([^"')]+\.js)/g, (match, libPath) => {
+      const fileName = path.basename(libPath);
+      return `${replacement}${fileName}`;
+    })
     .replace(/#library(['"])/g, (match, quote) => `${replacement}index.js${quote}`);
 
   if (content !== updatedContent) {

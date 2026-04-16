@@ -9,7 +9,8 @@ import { proxify, delegate } from '#library/proxy.library.js';
 import lib, { markConfig } from '#library/symbol.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { enumify } from '#library/enumerate.library.js';
-import { ownKeys, ownEntries, getAccessors, omit } from '#library/reflection.library.js';
+import { ownKeys, ownEntries } from '#library/primitive.library.js';
+import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType, asType, isEmpty, isNull, isNullish, isDefined, isUndefined, isString, isObject, isNumber, isRegExp, isRegExpLike, isIntegerLike, isSymbol, isFunction, isClass, isZonedDateTime, isPlainDate, isPlainTime } from '#library/type.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
@@ -84,8 +85,8 @@ export class Tempo {
 	/** initialization strategies */													static get MODE() { return enums.MODE }
 	/** some useful Dates */																	static get LIMIT() { return enums.LIMIT }
 
-	/** check if Tempo is currently initializing */						static get isInitializing() { return Tempo.#lifecycle.extendDepth > 0 || !Tempo.#lifecycle.ready }
-	/** check if Tempo is currently extending */							static get isExtending() { return Tempo.#lifecycle.extendDepth > 0 }
+	/** @internal check if Tempo is currently initializing */						static get isInitializing() { return Tempo.#lifecycle.extendDepth > 0 || !Tempo.#lifecycle.ready }
+	/** @internal check if Tempo is currently extending */							static get isExtending() { return Tempo.#lifecycle.extendDepth > 0 }
 
 	static #dbg = new Logify('Tempo', {
 		debug: Default?.debug ?? false,
@@ -100,26 +101,26 @@ export class Tempo {
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
 	/** Set of allowed lowercased tokens for the Master Guard */		static #allowedTokens: Set<string> = new Set();
 
-	/** handle internal errors using the global config */
+	/** @internal handle internal errors using the global config */
 	static [sym.$logError](...msg: any[]): void {
 		const config = (isObject(msg[0]) && (msg[0] as any)[lib.$Logify] === true) ? msg.shift() : Tempo.#global.config;
 		markConfig(config);														// ensure config is marked for Logify
 		Tempo.#dbg.error(config, ...msg);
 	}
 
-	/** internal key for signaling pre-errored state in constructor */
+	/** @internal internal key for signaling pre-errored state in constructor */
 	static [sym.$errored] = sym.$errored;
-	/** guard against infinite mutation recursion */
+	/** @internal guard against infinite mutation recursion */
 	static [sym.$mutateDepth] = 0;
-	/** hook to re-validate the Master Guard */
+	/** @internal hook to re-validate the Master Guard */
 	static [sym.$rebuildGuard]() { Tempo.#buildGuard() }
 
-	/** handle internal debug info using the global config */
+	/** @internal handle internal debug info using the global config */
 	static [sym.$logDebug](...msg: any[]): void {
 		Tempo.#dbg.debug(...msg);
 	}
 
-	/** Centralized error dispatcher for Term resolution failures */
+	/** @internal Centralized error dispatcher for Term resolution failures */
 	static [sym.$termError](config: t.Options, term: string): void {
 		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
 		const msg = `Unknown Term identifier: ${term}${hint}`;
@@ -755,17 +756,17 @@ export class Tempo {
 		return interpret(Tempo, 'duration', 'toDuration', input);
 	}
 
-	/** Reads options from persistent storage (e.g., localStorage). */
+	/** @internal Reads options from persistent storage (e.g., localStorage). */
 	static readStore(key = Tempo.#global.config.store) {
 		return getStorage<t.Options>(key, {});
 	}
 
-	/** Writes configuration into persistent storage. */
+	/** @internal Writes configuration into persistent storage. */
 	static writeStore(config?: t.Options, key = Tempo.#global.config.store) {
 		return setStorage(key, config);
 	}
 
-	/** lookup or registers a new `Symbol` for a given key. */
+	/** @internal lookup or registers a new `Symbol` for a given key. */
 	static getSymbol(key?: string | symbol) {
 		if (isUndefined(key)) {
 			const usr = `usr.${++Tempo.#usrCount}`;							// allocate a prefixed 'user' key
@@ -782,7 +783,7 @@ export class Tempo {
 		return Token[key as keyof typeof Token] ?? Symbol.for(`$Tempo.${key}`);
 	}
 
-	/** translates {layout} into an anchored, case-insensitive RegExp. */
+	/** @internal translates {layout} into an anchored, case-insensitive RegExp. */
 	static regexp(layout: string | RegExp, snippet?: Snippet) {
 		// helper function to replace {name} placeholders with their corresponding snippets
 		function matcher(str: string | RegExp, depth = 0): string {

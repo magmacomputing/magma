@@ -1,4 +1,4 @@
-import { ownEntries } from '#library/reflection.library.js';
+import { ownEntries } from '#library/primitive.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { type Constructor, type Type, registerType } from '#library/type.library.js';
 

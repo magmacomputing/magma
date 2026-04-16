@@ -12,10 +12,7 @@ import type { Tempo } from './tempo.class.js';
 /** characters allowed inside timezone/calendar brackets */
 const bracket_content = /[^\]]+/;
 
-/** 
- * Tempo Match patterns — Soft-Frozen to allow for dynamic event/period resolution  
- * common RegExp patterns
- */
+/** @internal Tempo Match patterns */
 export const Match = proxify({
 	/** match all {} pairs, if they start with a word char */	braces: /{([#]?[\w]+(?:\.[\w]+)*)}/g,
 	/** named capture-group, if it starts with a letter */		captures: /\(\?<([a-zA-Z][\w]*)>(.*?)(?<!\\)\)/g,
@@ -40,7 +37,7 @@ export const Match = proxify({
 	/** numeric-only string detection */											numeric: /^\s*[-+]?\d+(\.\d+)?\s*$/
 }, true, false);
 
-/** Tempo Symbol registry */
+/** @internal Tempo Symbol registry */
 export const Token = looseIndex<string, symbol>()({
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Snippet Symbols
 	/** year */																								yy: Symbol('yy'),
@@ -75,6 +72,7 @@ export const Token = looseIndex<string, symbol>()({
 	/** relative offset (years, days, hours, etc) */					rel: Symbol('relativeOffset'),
 	/** timezone/calendar brackets */													brk: Symbol('brackets'),
 })
+/** @internal Tempo Symbol registry type */
 export type Token = typeof Token
 
 /**
@@ -89,6 +87,7 @@ export type Token = typeof Token
  * a {snippet} is a simple, reusable regex pattern for a component of a date-time string (e.g. 'hh' or 'yy')  
  */
 // Note: computed Components ('evt', 'per') are added during 'Tempo.init()' (for static) and/or 'new Tempo()' (per instance)
+/** @internal Tempo Snippet registry */
 export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.yy]: /(?<yy>([0-9]{2})?[0-9]{2})/,								// arbitrary upper-limit of yy=9999
 	[Token.mm]: /(?<mm>[0\s]?[1-9]|1[0-2]|Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)/,	// month-name (abbrev or full) or month-number 01-12
@@ -109,12 +108,14 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.brk]: new RegExp(`(\\[(?<brk>${bracket_content.source})\\](?:\\[(?<cal>${bracket_content.source})\\])?)?`),	// timezone/calendar brackets [...]
 	[Token.slk]: new RegExp(`${Match.shorthand.source}`),					// shorthand shifter
 })
+/** @internal Tempo Snippet type */
 export type Snippet = typeof Snippet
 
 /**
  * a {layout} is a Record of snippet-combinations describing an input DateTime argument  
  * the Layout's keys are in the order that they will be checked against an input value  
  */
+/** @internal Tempo Layout registry */
 export const Layout = looseIndex<symbol, string>()({
 	[Token.dt]: '({dd}{sep}?{mm}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk}))',// calendar, event or slick
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
@@ -126,6 +127,7 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.off]: '{mod}?{dd}{afx}?',													// day of month, with optional offset
 	[Token.rel]: '{nbr}{sep}?{unt}{sep}?{afx}',								// relative duration (e.g. 2 days ago)
 })
+/** @internal Tempo Layout type */
 export type Layout = typeof Layout
 
 /** 
@@ -134,6 +136,7 @@ export type Layout = typeof Layout
  * if assigning a function, use standard 'function()' syntax to allow for 'this' binding.
  * also, a function should always have a .toString() method which returns a parse-able Date string
  */
+/** @internal Tempo Event registry */
 export const Event = looseIndex<string, string | Function>()({
 	'new.?years? ?eve': '31 Dec',
 	'nye': '31 Dec',
@@ -151,6 +154,7 @@ export const Event = looseIndex<string, string | Function>()({
 	'tomorrow': function (this: Tempo) { return this.add({ days: 1 }) },					// tomorrow at current time
 	'yesterday': function (this: Tempo) { return this.add({ days: -1 }) },				// yesterday at current time
 });
+/** @internal Tempo Event type */
 export type Event = typeof Event
 
 /** 
@@ -158,6 +162,7 @@ export type Event = typeof Event
  * values can be a string or a function that returns a string.
  * if using a function, use regular 'function()' syntax to allow for 'this' binding.
  */
+/** @internal Tempo Period registry */
 export const Period = looseIndex<string, string | Function>()({
 	'mid[ -]?night': '24:00',
 	'morning': '8:00',
@@ -168,10 +173,11 @@ export const Period = looseIndex<string, string | Function>()({
 	'evening': '18:00',
 	'night': '20:00',
 })
+/** @internal Tempo Period type */
 export type Period = typeof Period
 
 
-/** Reasonable default options for initial Tempo config */
+/** @internal Tempo Master Guard list */
 export const Guard = [
 	'am', 'pm', 'ago', 'hence', 'this', 'next', 'prev', 'last', 'from', 'now', 'today', 'yesterday', 'tomorrow', 'start', 'mid', 'end',
 	'year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond',
@@ -180,7 +186,7 @@ export const Guard = [
 	'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays'
 ]
 
-/** Reasonable default options for initial Tempo config */
+/** @internal Tempo Default options */
 export const Default = secure({
 	/** log to console */																			debug: false,
 	/** catch or throw Errors */															catch: false,
