@@ -73,21 +73,24 @@ export const defineModule = <T extends Plugin>(module: T): T => {
  * Used to register a module that attaches methods to the Tempo sym.$Interpreter registry.
  */
 export const defineInterpreterModule = (name: string, logic: any) =>
-	defineModule((options: any, TempoClass: any) => {
-		// 1. Secure the Global Registry
-		if (isDefined(REGISTRY.modules[name])) {
-			if (REGISTRY.modules[name] !== logic) throw new Error(`Tempo Security: Core Module clash for '${name}'. Logic is already defined.`);
-		} else {
-			REGISTRY.modules[name] = logic;
-		}
+	defineModule({
+		name,
+		install(this: Tempo, TempoClass: typeof Tempo) {
+			// 1. Secure the Global Registry
+			if (isDefined(REGISTRY.modules[name])) {
+				if (REGISTRY.modules[name] !== logic) throw new Error(`Tempo Security: Core Module clash for '${name}'. Logic is already defined.`);
+			} else {
+				REGISTRY.modules[name] = logic;
+			}
 
-		// 2. Fallback for legacy class-local access
-		TempoClass[sym.$Interpreter] ??= secureRef({});
-		if (isDefined(TempoClass[sym.$Interpreter][name])) {
-			if (TempoClass[sym.$Interpreter][name] !== logic) throw new Error(`Tempo Interpreter Module clash: '${name}' logic is already defined.`);
-		} else {
-			TempoClass[sym.$Interpreter][name] = logic;
-		}
+			// 2. Fallback for legacy class-local access
+			(TempoClass as any)[sym.$Interpreter] ??= secureRef({});
+			if (isDefined((TempoClass as any)[sym.$Interpreter][name])) {
+				if ((TempoClass as any)[sym.$Interpreter][name] !== logic) throw new Error(`Tempo Interpreter Module clash: '${name}' logic is already defined.`);
+			} else {
+				(TempoClass as any)[sym.$Interpreter][name] = logic;
+			}
+		},
 	});
 
 /**
@@ -451,4 +454,6 @@ export function registerPlugin(plugin: any) {
 	}
 
 	(globalThis as any)[sym.$Register]?.(plugin);
+
+	return plugin;
 }

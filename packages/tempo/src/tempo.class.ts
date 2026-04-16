@@ -23,7 +23,7 @@ import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './plugin/
 import { REGISTRY, registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
 import { registerPlugin, registerTerm, getRange, getTermRange, interpret } from './plugin/plugin.util.js'
 
-import { sym, $isTempo, $Register, $rebuildGuard, $logError, $logDebug, $termError, $errored, $mutateDepth, registerHook, isTempo } from './tempo.symbol.js';
+import sym, { isTempo, registerHook } from './tempo.symbol.js';
 import { Match, Token, Snippet, Layout, Event, Period, Default, Guard } from './tempo.default.js';
 import enums, { STATE, DISCOVERY } from './tempo.enum.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -54,12 +54,12 @@ namespace Internal {
 	export type Registry = t.Internal.Registry;
 	export type PluginContainer = t.Internal.PluginContainer;
 
-
 	export type Fmt = {																					// used for the fmtTempo() shortcut
 		<F extends string>(fmt: F, tempo?: t.DateTime, options?: t.Options): t.FormatType<F>;
 		<F extends string>(fmt: F, options: t.Options): t.FormatType<F>;
 	}
 }
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /**
  * # Tempo
@@ -86,8 +86,8 @@ export class Tempo {
 	/** initialization strategies */													static get MODE() { return enums.MODE }
 	/** some useful Dates */																	static get LIMIT() { return enums.LIMIT }
 
-	/** @internal check if Tempo is currently initializing */						static get isInitializing() { return Tempo.#lifecycle.extendDepth > 0 || !Tempo.#lifecycle.ready }
-	/** @internal check if Tempo is currently extending */							static get isExtending() { return Tempo.#lifecycle.extendDepth > 0 }
+	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return Tempo.#lifecycle.extendDepth > 0 || !Tempo.#lifecycle.ready }
+	/** @internal check if Tempo is currently extending */		static get isExtending() { return Tempo.#lifecycle.extendDepth > 0 }
 
 	static #dbg = new Logify('Tempo', {
 		debug: Default?.debug ?? false,
@@ -104,26 +104,26 @@ export class Tempo {
 
 
 	/** @internal handle internal errors using the global config */
-	static [$logError](...msg: any[]): void {
+	static [sym.$logError](...msg: any[]): void {
 		const config = (isObject(msg[0]) && (msg[0] as any)[lib.$Logify] === true) ? msg.shift() : Tempo.#global.config;
-		markConfig(config);														// ensure config is marked for Logify
+		markConfig(config);                                     // ensure config is marked for Logify
 		Tempo.#dbg.error(config, ...msg);
 	}
 
 	/** @internal internal key for signaling pre-errored state in constructor */
-	static [$errored] = $errored;
+	static [sym.$errored] = sym.$errored;
 	/** @internal guard against infinite mutation recursion */
-	static [$mutateDepth] = 0;
+	static [sym.$mutateDepth] = 0;
 	/** @internal hook to re-validate the Master Guard */
-	static [$rebuildGuard]() { Tempo.#buildGuard() }
+	static [sym.$rebuildGuard]() { Tempo.#buildGuard() }
 
 	/** @internal handle internal debug info using the global config */
-	static [$logDebug](...msg: any[]): void {
+	static [sym.$logDebug](...msg: any[]): void {
 		Tempo.#dbg.debug(...msg);
 	}
 
 	/** @internal Centralized error dispatcher for Term resolution failures */
-	static [$termError](config: t.Options, term: string): void {
+	static [sym.$termError](config: t.Options, term: string): void {
 		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
 		const msg = `Unknown Term identifier: ${term}${hint}`;
 		Tempo.#dbg.error(config, msg);
@@ -931,24 +931,24 @@ export class Tempo {
 	static [Symbol.dispose]() { Tempo.init() }
 
 	/** allow instanceof to work across module boundaries via the local brand symbol */
-	static [$isTempo] = true;
+	static [sym.$isTempo] = true;
 	static [Symbol.hasInstance](instance: any) {
-		return !!(instance?.[$isTempo])
+		return !!(instance?.[sym.$isTempo])
 	}
 
 	/** check if a supplied variable is a valid Tempo instance */
 	static isTempo(instance?: any): instance is Tempo {
-		return !!(instance?.[$isTempo])
+		return !!(instance?.[sym.$isTempo])
 	}
 
 	static {																									// Static initialization block to sequence the bootstrap phase
 		// Define the reactive register hook
-		registerHook($Register, (plugin: t.Plugin | t.Plugin[]) => {
+		registerHook(sym.$Register, (plugin: t.Plugin | t.Plugin[]) => {
 			if (!Tempo.isExtending) Tempo.extend(plugin)
 		});
 
 		onRegistryReset(() => {
-			Tempo[$rebuildGuard]();
+			(Tempo as any)[sym.$rebuildGuard]();
 		});
 
 		Tempo.init();																						// synchronously initialize the library
@@ -1364,7 +1364,7 @@ export class Tempo {
 				const ident = term.startsWith('#') ? term.slice(1) : term;
 				const termObj = Tempo.#terms.find(t => t.key === ident || t.scope === ident);
 				if (!termObj) {
-					Tempo[sym.$termError](this.#local.config, term);
+					(Tempo as any)[sym.$termError](this.#local.config, term);
 					return undefined as any;
 				}
 
@@ -1423,7 +1423,7 @@ export class Tempo {
 
 			// security check: if it contains term-keys (#) while no plugins are loaded
 			if (isObject(tempo) && Object.keys(tempo).some(k => k.startsWith('#')) && Tempo.#terms.length === 0) {
-				Tempo[sym.$termError](this.#local.config, Object.keys(tempo).find(k => k.startsWith('#'))!);
+				(Tempo as any)[sym.$termError](this.#local.config, Object.keys(tempo).find(k => k.startsWith('#'))!);
 				return undefined as any;
 			}
 
@@ -1531,10 +1531,9 @@ export class Tempo {
 			// security check: if it contains term-keys (#) in core mode, we should throw a hint
 			const keys = Object.keys(options);
 			if (keys.some(k => k.startsWith('#')) && Tempo.#terms.length === 0) {
-				Tempo[sym.$termError](this.#local.config, keys.find(k => k.startsWith('#'))!);
+				(Tempo as any)[sym.$termError](this.#local.config, keys.find(k => k.startsWith('#'))!);
 				return undefined as any;
 			}
-
 
 			if (!isEmpty(options)) zdt = zdt.with(options as Temporal.ZonedDateTimeLikeObject);
 
@@ -1864,3 +1863,4 @@ export namespace Tempo {
 
 	export interface Params<T> extends t.Params<T> { }
 }
+

@@ -8,6 +8,7 @@ import { DURATIONS } from '../../tempo.enum.js'
 import sym from '../../tempo.symbol.js';
 import { defineExtension } from '../plugin.util.js'
 import type { Tempo } from '../../tempo.class.js'
+import type { TempoType } from '../plugin.type.js'
 
 declare module '../../tempo.class.js' {
 	namespace Tempo {
@@ -92,7 +93,7 @@ const ACTIVE_TICKERS = new Set<Ticker.Instance>();
  * Stateful class for Tempo.Ticker instances.
  */
 class TickerInstance implements Ticker.Descriptor {
-	#TempoClass: typeof Tempo;
+	#TempoClass: TempoType;
 	#payload: Record<string, any> = {};
 	#current: Tempo;
 	#until: Tempo | undefined;
@@ -108,7 +109,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#catchListeners = new Set<Ticker.Callback>();
 	#self!: Ticker.Instance;
 
-	constructor(TempoClass: typeof Tempo, arg1: any, arg2?: any) {
+	constructor(TempoClass: TempoType, arg1: any, arg2?: any) {
 		this.#TempoClass = TempoClass;
 
 		// ── Overload Parsing ─────────────────────────────────────────────────
@@ -141,7 +142,7 @@ class TickerInstance implements Ticker.Descriptor {
 		const isInterval = isDefined(rawOptions.seconds) && Number.isFinite(rawOptions.seconds) && !Number.isNaN(rawOptions.seconds);
 
 		if (isDefined(arg1) && !isInterval && !isSeed && !cb) {
-			this.#TempoClass[sym.$logError](markConfig(rawOptions), `Invalid Ticker interval or seed: ${String(arg1)}`);
+			(this.#TempoClass as any)[sym.$logError](markConfig(rawOptions), `Invalid Ticker interval or seed: ${String(arg1)}`);
 		}
 
 		const { limit: lmt, until: stopAt, seed: startAt, ...rest } = rawOptions;
@@ -170,10 +171,10 @@ class TickerInstance implements Ticker.Descriptor {
 		// ── Validation ───────────────────────────────────────────────
 		if (!this.#current.isValid) {
 			this.stop();
-			this.#TempoClass[sym.$logError](this.#current.config, `Invalid Ticker seed: ${String(this.#current)}`);
+			(this.#TempoClass as any)[sym.$logError](this.#current.config, `Invalid Ticker seed: ${String(this.#current)}`);
 		} else if (this.#until && !this.#until.isValid) {
 			this.stop();
-			this.#TempoClass[sym.$logError](this.#current.config, `Invalid Ticker boundary: ${String(this.#until)}`);
+			(this.#TempoClass as any)[sym.$logError](this.#current.config, `Invalid Ticker boundary: ${String(this.#until)}`);
 		} else {
 			try {
 				const firstStep = this.#current.add(this.#payload);
@@ -186,7 +187,7 @@ class TickerInstance implements Ticker.Descriptor {
 				this.#runBootstrap();
 			} catch (e: any) {
 				this.stop();
-				this.#TempoClass[sym.$logError](this.#current.config, `Invalid Ticker payload resolution for ${JSON.stringify(this.#payload)}`, e);
+				(this.#TempoClass as any)[sym.$logError](this.#current.config, `Invalid Ticker payload resolution for ${JSON.stringify(this.#payload)}`, e);
 				queueMicrotask(() => this.#catchListeners.forEach(l => l(this.#current, () => this.stop())));
 				this.#isForward = true;
 				this.#isInstant = false;
@@ -331,34 +332,38 @@ class TickerInstance implements Ticker.Descriptor {
 }
 
 /**
+/**
  * # TickerModule
  */
-export const TickerModule: Tempo.Extension = defineExtension((_options, TempoClass, _factory) => {
-	(TempoClass as any).ticker = function (this: typeof Tempo, arg1: any, arg2?: any): Ticker.Instance {
-		const instance = new TickerInstance(this, arg1, arg2);
-		const proxy = new Proxy((() => instance.stop()) as any, {
-			get: (_, prop) => {
-				if (prop === 'pulse') return instance.pulse.bind(instance);
-				if (prop === 'on') return instance.on.bind(instance);
-				if (prop === 'stop') return instance.stop.bind(instance);
-				if (prop === 'info') return instance.info;
-				if (prop === 'next') return instance.next.bind(instance);
-				if (prop === 'return') return instance.return.bind(instance);
-				if (prop === 'throw') return instance.throw.bind(instance);
-				if (prop === Symbol.asyncIterator) return () => proxy;
-				if (prop === Symbol.asyncDispose) return instance[Symbol.asyncDispose].bind(instance);
-				if (prop === Symbol.dispose) return instance[Symbol.dispose].bind(instance);
-				return (instance as any)[prop];
-			},
-			apply: (target) => target()
-		}) as unknown as Ticker.Instance;
+export const TickerModule: Tempo.Extension = defineExtension({
+	name: 'TickerModule',
+	install(this: Tempo, TempoClass: TempoType) {
+		(TempoClass as any).ticker = function (this: TempoType, arg1: any, arg2?: any): Ticker.Instance {
+			const instance = new TickerInstance(this as unknown as TempoType, arg1, arg2);
+			const proxy = new Proxy((() => instance.stop()) as any, {
+				get: (_, prop) => {
+					if (prop === 'pulse') return instance.pulse.bind(instance);
+					if (prop === 'on') return instance.on.bind(instance);
+					if (prop === 'stop') return instance.stop.bind(instance);
+					if (prop === 'info') return instance.info;
+					if (prop === 'next') return instance.next.bind(instance);
+					if (prop === 'return') return instance.return.bind(instance);
+					if (prop === 'throw') return instance.throw.bind(instance);
+					if (prop === Symbol.asyncIterator) return () => proxy;
+					if (prop === Symbol.asyncDispose) return instance[Symbol.asyncDispose].bind(instance);
+					if (prop === Symbol.dispose) return instance[Symbol.dispose].bind(instance);
+					return (instance as any)[prop];
+				},
+				apply: (target) => target()
+			}) as unknown as Ticker.Instance;
 
-		return instance.bootstrap(proxy);
-	};
+			return instance.bootstrap(proxy);
+		};
 
-	Object.defineProperty(TempoClass, 'tickers', {
-		get: () => Ticker.active,
-		enumerable: true,
-		configurable: true
-	});
+		Object.defineProperty(TempoClass, 'tickers', {
+			get: () => Ticker.active,
+			enumerable: true,
+			configurable: true
+		});
+	},
 });

@@ -1,6 +1,8 @@
 import type { Prettify, Property } from '#library/type.library.js';
 import type { Tempo } from '../tempo.class.js';
 
+export type TempoType = typeof Tempo;
+
 /**
  * ## TermPlugin
  * Interface for term-driven parsing and resolution.
@@ -24,7 +26,7 @@ export type Terms = Property<any>;
  */
 export interface Plugin {
 	name: string;
-	install: (this: Tempo, t: typeof Tempo) => void;
+	install: (this: Tempo, t: TempoType) => void;
 }
 
 /**
@@ -48,19 +50,49 @@ export interface Extension extends Plugin {
  * ## Range
  * Discrete time interval within a specific term.
  */
-export interface Range {
+// export interface Range {
+// 	key: string;
+// 	start: bigint;
+// 	end: bigint;
+// 	cycle?: number;
+// }
+export type Range = Prettify<{
 	key: string;
-	start: bigint;
-	end: bigint;
-	cycle?: number;
-}
+	group?: string;																						// categorization marker (e.g. 'western', 'chinese', 'fiscal')
+	[meta: string]: any;
+} & (
+		{ year: number } | { month: number } | { week: number } | { day: number } |
+		{ hour: number } | { minute: number } | { second: number } |
+		{ millisecond: number } | { microsecond: number } | { nanosecond: number }
+	) & {
+		year?: number;
+		month?: number;
+		week?: number;
+		day?: number;
+		hour?: number;
+		minute?: number;
+		second?: number;
+		millisecond?: number;
+		microsecond?: number;
+		nanosecond?: number;
+	}>;
+
 
 /**
  * ## ResolvedRange
  * Range with additional metadata.
  */
-export interface ResolvedRange extends Range {
-	label: string;
-	active: boolean;
-	index: number;
+// export interface ResolvedRange extends Range {
+// 	label: string;
+// 	active: boolean;
+// 	index: number;
+// }
+export type ResolvedRange = Range & {
+	start: Tempo;
+	end: Tempo;
+	scope?: string;
+	label?: string;
+	unit?: string;
+	rollover?: string;
+	[str: string]: any;
 }
