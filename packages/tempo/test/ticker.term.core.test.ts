@@ -1,6 +1,6 @@
 import { Tempo } from '#tempo/core';
-import { MutateModule } from '#tempo/mutate';
 import '#tempo/term/standard';
+import { MutateModule } from '#tempo/mutate';
 import { TickerModule } from '#tempo/ticker';
 
 Tempo.extend(MutateModule, TickerModule);

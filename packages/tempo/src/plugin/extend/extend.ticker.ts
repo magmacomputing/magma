@@ -103,6 +103,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#genFirstYielded = false;
 	#isForward = true;
 	#isInstant = false;
+	#isShorthand = false;
 	#schedId: any;
 	#waiter: Pledge<void> | undefined;
 	#listeners = new Set<Ticker.Callback>();
@@ -177,11 +178,17 @@ class TickerInstance implements Ticker.Descriptor {
 			(this.#TempoClass as any)[sym.$logError](this.#current.config, `Invalid Ticker boundary: ${String(this.#until)}`);
 		} else {
 			try {
-				const firstStep = this.#current.add(this.#payload);
+				// Use .set() only for directional shorthand values (e.g. '>', '<', '>2')
+				// Use .add() for numeric counts and named ranges (e.g. 1, 'morning')
+				this.#isShorthand = Object.entries(this.#payload).some(([k, v]) =>
+					k.startsWith('#') && typeof v === 'string' && /^[<>]/.test(v.trim())
+				);
+				const hasTermKey = Object.keys(this.#payload).some(k => k.startsWith('#'));
+				const firstStep = this.#isShorthand ? this.#current.set(this.#payload) : this.#current.add(this.#payload);
 				if (!firstStep.isValid) throw new Error(`Invalid Ticker payload resolution for ${JSON.stringify(this.#payload)}`);
 				this.#isForward = this.#TempoClass.compare(firstStep, this.#current) >= 0;
 				this.#isInstant = firstStep.epoch.ns === this.#current.epoch.ns;
-				if (Object.keys(this.#payload).some(k => k.startsWith('#'))) this.#current = firstStep;
+				if (hasTermKey) this.#current = firstStep;
 
 				ACTIVE_TICKERS.add(this.#self);
 				this.#runBootstrap();
@@ -237,7 +244,7 @@ class TickerInstance implements Ticker.Descriptor {
 			return t;
 		}
 
-		this.#current = this.#isInstant ? t : t.add(this.#payload);
+		this.#current = this.#isInstant ? t : (this.#isShorthand ? t.set(this.#payload) : t.add(this.#payload));
 		this.#ticks++;
 
 		if (isDefined(this.#limit) && this.#ticks >= this.#limit) this.stop();

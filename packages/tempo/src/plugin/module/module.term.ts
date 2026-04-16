@@ -60,15 +60,15 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 	if (mutate === 'add') {
 		const slickParsed = !!slickStr;
 		const directional = mod && !['this', '>=', '<='].includes(mod);
-		const numeric = !slickParsed && isNumeric(offset);
+		const numericOffset = !directional && isNumeric(offset);
 
-		if (directional || numeric || (slickParsed && !mod)) {
+		if (directional || numericOffset || (slickParsed && !mod)) {
 			const shiftDir = directional
 				? ((mod!.includes('<') || mod!.includes('-') || mod === 'prev' || mod === 'last') ? -1 : 1)
-				: (numeric ? Math.sign(Number(offset) || 1) : 1);
-			const addCount = slickParsed
+				: (numericOffset ? Math.sign(Number(offset) || 1) : 1);
+			const addCount = directional
 				? nbr
-				: Math.abs(Number(offset) || 1);
+				: (numericOffset ? Math.abs(Number(offset) || 1) : nbr);
 
 			// Find current containing range
 			const rawList = getRange(termObj, instance, zdt);

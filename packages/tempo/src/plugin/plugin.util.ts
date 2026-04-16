@@ -1,5 +1,5 @@
 import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
-import { isDefined, isFunction, isString, isUndefined, isNumber } from '#library/type.library.js';
+import { isDefined, isFunction, isString, isUndefined, isNumber, isClass } from '#library/type.library.js';
 import { secure } from '#library/utility.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { secureRef } from '#library/proxy.library.js';
@@ -20,7 +20,7 @@ export const STATE = {
 }
 
 export function getHost(t: any): any {
-	return (t as any).constructor;
+	return isFunction(t) || isClass(t) ? t : (t as any).constructor;
 }
 
 /**
