@@ -23,7 +23,7 @@ import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './plugin/
 import { REGISTRY, registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
 import { registerPlugin, registerTerm, getRange, getTermRange, interpret } from './plugin/plugin.util.js'
 
-import sym, { isTempo, registerHook } from './tempo.symbol.js';
+import { sym, $isTempo, $Register, $rebuildGuard, $logError, $logDebug, $termError, $errored, $mutateDepth, registerHook, isTempo } from './tempo.symbol.js';
 import { Match, Token, Snippet, Layout, Event, Period, Default, Guard } from './tempo.default.js';
 import enums, { STATE, DISCOVERY } from './tempo.enum.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -102,33 +102,28 @@ export class Tempo {
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
 	/** Set of allowed lowercased tokens for the Master Guard */		static #allowedTokens: Set<string> = new Set();
 
-	static {
-		onRegistryReset(() => {
-			Tempo[sym.$rebuildGuard]();
-		});
-	}
 
 	/** @internal handle internal errors using the global config */
-	static [sym.$logError](...msg: any[]): void {
+	static [$logError](...msg: any[]): void {
 		const config = (isObject(msg[0]) && (msg[0] as any)[lib.$Logify] === true) ? msg.shift() : Tempo.#global.config;
 		markConfig(config);														// ensure config is marked for Logify
 		Tempo.#dbg.error(config, ...msg);
 	}
 
 	/** @internal internal key for signaling pre-errored state in constructor */
-	static [sym.$errored] = sym.$errored;
+	static [$errored] = $errored;
 	/** @internal guard against infinite mutation recursion */
-	static [sym.$mutateDepth] = 0;
+	static [$mutateDepth] = 0;
 	/** @internal hook to re-validate the Master Guard */
-	static [sym.$rebuildGuard]() { Tempo.#buildGuard() }
+	static [$rebuildGuard]() { Tempo.#buildGuard() }
 
 	/** @internal handle internal debug info using the global config */
-	static [sym.$logDebug](...msg: any[]): void {
+	static [$logDebug](...msg: any[]): void {
 		Tempo.#dbg.debug(...msg);
 	}
 
 	/** @internal Centralized error dispatcher for Term resolution failures */
-	static [sym.$termError](config: t.Options, term: string): void {
+	static [$termError](config: t.Options, term: string): void {
 		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
 		const msg = `Unknown Term identifier: ${term}${hint}`;
 		Tempo.#dbg.error(config, msg);
@@ -936,14 +931,25 @@ export class Tempo {
 	static [Symbol.dispose]() { Tempo.init() }
 
 	/** allow instanceof to work across module boundaries via the local brand symbol */
-	static [sym.$isTempo] = true;
+	static [$isTempo] = true;
 	static [Symbol.hasInstance](instance: any) {
-		return !!(instance?.[sym.$isTempo])
+		return !!(instance?.[$isTempo])
+	}
+
+	/** check if a supplied variable is a valid Tempo instance */
+	static isTempo(instance?: any): instance is Tempo {
+		return !!(instance?.[$isTempo])
 	}
 
 	static {																									// Static initialization block to sequence the bootstrap phase
 		// Define the reactive register hook
-		registerHook(sym.$Register, (plugin: t.Plugin | t.Plugin[]) => { if (!Tempo.isExtending) Tempo.extend(plugin) });
+		registerHook($Register, (plugin: t.Plugin | t.Plugin[]) => {
+			if (!Tempo.isExtending) Tempo.extend(plugin)
+		});
+
+		onRegistryReset(() => {
+			Tempo[$rebuildGuard]();
+		});
 
 		Tempo.init();																						// synchronously initialize the library
 	}
@@ -1361,7 +1367,6 @@ export class Tempo {
 					Tempo[sym.$termError](this.#local.config, term);
 					return undefined as any;
 				}
-
 
 				// 1. if input is numeric, resolve by index
 				if (isNumeric(tempo as any)) {

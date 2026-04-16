@@ -1,11 +1,11 @@
-import lib from '#library/symbol.library.js';
 import { clearCache } from '#library/function.library.js';
 import { isDefined, isUndefined } from '#library/type.library.js';
 import { ownKeys } from '#library/primitive.library.js';
 import { secureRef } from '#library/proxy.library.js';
+import lib from '#library/symbol.library.js';
 import type { Property } from '#library/type.library.js';
 
-import sym from './tempo.symbol.js';
+import { sym } from './tempo.symbol.js';
 import type { TermPlugin, Extension } from './plugin/plugin.type.js';
 
 // Import the live enums and their mutable state from the enum module
