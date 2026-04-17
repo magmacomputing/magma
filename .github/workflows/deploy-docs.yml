@@ -36,6 +36,7 @@ jobs:
           cache: 'npm'
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+          NODE_OPTIONS: "--experimental-temporal"
 
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps

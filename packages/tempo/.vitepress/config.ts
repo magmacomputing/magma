@@ -1,4 +1,9 @@
 import { defineConfig } from 'vitepress'
+import { Temporal } from '@js-temporal/polyfill'
+
+if (!globalThis.Temporal) {
+  globalThis.Temporal = Temporal;
+}
 
 export default defineConfig({
   base: '/magma/',
