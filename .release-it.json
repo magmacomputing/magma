@@ -13,8 +13,14 @@
     "access": "public"
   },
   "hooks": {
-    "before:init": ["npm test"],
-    "after:bump": ["npm run build"]
+    "before:init": [
+      "npm test"
+    ],
+    "after:bump": [
+      "npm version ${version} -w @magmacomputing/tempo -w @magmacomputing/library --no-git-tag-version",
+      "npm run build:library",
+      "npm run build:tempo"
+    ]
   },
   "plugins": {
     "@release-it/keep-a-changelog": {

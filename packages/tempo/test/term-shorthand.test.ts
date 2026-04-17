@@ -39,29 +39,31 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 
 	describe('.add() shorthand', () => {
 		test('add("#qtr.q1") moves to the next Q1', () => {
-			const t = new Tempo('2026-06-01', { sphere: 'north' })	// Midway through Q2
-			const res = t.add('#qtr.q1')						// Should find 2027-01-01
+			const t = new Tempo('2026-06-01', { sphere: 'north' })	// 2 months into Q2 (starts Apr 1)
+			const res = t.add('#qtr.q1')						// Should find 2027-01-01 and apply 2mo offset
 			expect(res.yy).toBe(2027)
-			expect(res.mm).toBe(1)
-			expect(res.dd).toBe(1)
+			expect(res.mm).toBe(3)
+			expect(res.dd).toBe(3)
 		})
 
 		test('add({ "#period.morning": 2 }) moves two mornings ahead', () => {
-			const t = new Tempo('2026-01-01T12:00:00', { sphere: 'north' })	// Current morning is Jan 1 08:00
+			const t = new Tempo('2026-01-01T09:00:00', { sphere: 'north' })	// 1 hr into morning (starts 08:00)
 			const res = t.add({ '#period.morning': 2 })
-			// Morning 1: Jan 2 08:00
-			// Morning 2: Jan 3 08:00
+			// Jan 2 08:00 + 1hr = Jan 2 09:00
+			// Jan 3 08:00 + 1hr = Jan 3 09:00
 			expect(res.dd).toBe(3)
-			expect(res.hh).toBe(8)
+			expect(res.hh).toBe(9)
 		})
 
 		test('add({ "#zodiac.aries": -1 }) moves one cycle back from current Aries', () => {
 			const t = new Tempo('2026-06-01', { sphere: 'north' })
-			// Current Aries is 2026-03-21
+			// 11 days into Gemini (starts May 21)
+			// Move -1 Aries from Gemini context hits Aries 2026 (Mar 21)
+			// Apply 11 days offset -> April 1st 2026
 			const res = t.add({ '#zodiac.aries': -1 })
-			expect(res.yy).toBe(2025)
-			expect(res.mm).toBe(3)
-			expect(res.dd).toBe(21)
+			expect(res.yy).toBe(2026)
+			expect(res.mm).toBe(4)
+			expect(res.dd).toBe(1)
 		})
 	})
 

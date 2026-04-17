@@ -1,0 +1,10 @@
+{
+  "entryPoints": ["src/tempo.index.ts"],
+  "out": "doc/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "hideBreadcrumbs": true,
+  "hidePageTitle": true,
+  "readme": "none",
+  "excludeInternal": true,
+  "githubPages": false
+}

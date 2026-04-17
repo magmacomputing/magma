@@ -56,8 +56,8 @@ export type { Plugin, Module, Extension };
 /** Configuration to use for #until() and #since() argument */
 export type DateTimeUnit = Temporal.DateUnit | Temporal.TimeUnit
 export type Unit = DateTimeUnit | Plural<DateTimeUnit>
-type Units = Temporal.PluralizeUnit<DateTimeUnit>;
-type BaseDuration = Record<Units, number>;
+export type Units = Plural<DateTimeUnit>;
+export type BaseDuration = Record<Units, number>;
 /**
  * # FlexibleDuration
  * A distributive mapped type over {@link Units} which requires at least one duration key 
@@ -78,8 +78,8 @@ export type FlexibleDuration = {
 export type Until = (Options & { unit?: Unit }) | Unit
 
 export type Mutate = 'start' | 'mid' | 'end'
-type TermOffset = { [K: `#${string}`]: number | string }
-type SetFields = {
+export type TermOffset = { [K: `#${string}`]: number | string }
+export type SetFields = {
 	[K in Mutate]?: Unit | `#${string}`;
 } & {
 	[K in 'date' | 'time' | 'event' | 'period']?: string;
@@ -88,7 +88,7 @@ export type Set = Prettify<SetFields & {
 	timeZone?: Temporal.TimeZoneLike;
 	calendar?: Temporal.CalendarLike;
 } & TermOffset> | DateTime
-type AddUnits = { [K in Unit]?: number };
+export type AddUnits = { [K in Unit]?: number };
 export type Add = Prettify<AddUnits & TermOffset> | DateTime
 
 export type Modifier = '=' | '-' | '+' | '<' | '<=' | '-=' | '>' | '>=' | '+=' | 'this' | 'next' | 'prev' | 'last' | 'first' | undefined
@@ -163,6 +163,8 @@ export namespace Internal {
 		/** locale (e.g. en-AU) */															locale: string;
 		/** pivot year for two-digit years */										pivot: number;
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
+		/** Pre-configured relative time formatter */						rtfFormat?: Intl.RelativeTimeFormat;
+		/** Default style for relative time ('long' | 'short' | 'narrow') */ rtfStyle?: Intl.RelativeTimeFormatStyle;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** locale-names that prefer 'mm-dd-yy' date order */		mdyLocales: string | string[];
@@ -214,7 +216,7 @@ export namespace Internal {
 	}
 
 	/** debug a Tempo instantiation */
-	type MatchExtend = { type: 'Event' | 'Period', value: string | number | Function }
+	export type MatchExtend = { type: 'Event' | 'Period', value: string | number | Function }
 	export type Match = {
 		/** pattern which matched the input */									match?: string | undefined;
 		/** groups from the pattern match */										groups?: Groups;

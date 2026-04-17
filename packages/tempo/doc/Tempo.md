@@ -65,13 +65,13 @@ npm install @magmacomputing/tempo
 
 ---
 
-## ✨ What's New in v2.0.1 (Stabilized)
-The **v2.0.1** release focus is on internal hardening, security, and developer ergonomics:
+## ✨ What's New in v2.1.2 (Stabilized)
+The **v2.1.2** release represents the stabilization of the modular architecture and the introduction of advanced relational math:
 
-- **Parsing Engine Stabilization**: Re-engineered pattern generation for $O(1)$ instance creation and fixed a bug where local layout literals were being destroyed during state synchronization.
-- **Registry Security (Soft Freeze)**: Core registries (`TIMEZONE`, `NUMBER`, `FORMAT`) are now protected by a proxy-based "Soft Freeze" layer. They are read-only for public consumers while remaining extensible via the primary public API **`Tempo.extend({ timeZones, formats, ... })`**.
-- **Ticker & Registry Hardening**: Fully synchronized `pulse()` and `next()` logic to ensure consistent pulse counts ($N$ pulses for `limit: N`); resolved async generator hangs and cold-start scheduling issues, ensuring 100% reliability for long-running reactive streams.
-- **Project Structure Refactoring**: Internal tooling moved from `#tempo/bin` to `#tempo/scripts` for better ESM/TS integration.
+- **Modular Architecture**: Tempo is now split into **Core** (lite) and **Full** (batteries-included) versions. Features like Tickers and Durations are now side-effectable plugins.
+- **Relational Math**: Shifting by terms (e.g., `.add({ '#quarter': 1 })`) now uses **Cycle Preservation**, maintaining your relative offset within semantic cycles.
+- **Scan-and-Consume Guard**: A high-performance internal matching engine that enables $O(1)$ instantiation even with dozens of active terminology plugins.
+- **Logify & Symbol Internalization**: Internal diagnostics and lifecycle hooks are now protected by context-aware Symbols, preventing state leakage and ensuring monorepo compatibility.
 
 ---
 

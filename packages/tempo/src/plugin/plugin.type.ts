@@ -1,6 +1,8 @@
 import type { Prettify, Property } from '#library/type.library.js';
 import type { Tempo } from '../tempo.class.js';
 
+export type TempoType = typeof Tempo;
+
 /**
  * ## TermPlugin
  * Interface for term-driven parsing and resolution.
@@ -19,9 +21,41 @@ export interface TermPlugin {
 export type Terms = Property<any>;
 
 /**
- * ## Range
- * term definition range — must have at least one duration component.
+ * ## Plugin
+ * Interface for general Tempo plugins (Modules/Extensions).
  */
+export interface Plugin {
+	name: string;
+	install: (this: Tempo, t: TempoType) => void;
+}
+
+/**
+ * ## Module
+ * Type for Module plugins.
+ */
+export interface Module extends Plugin {
+	[key: string]: any;
+}
+
+/**
+ * ## Extension
+ * Type for Extension plugins.
+ */
+export interface Extension extends Plugin {
+	[key: string]: any;
+}
+
+
+/**
+ * ## Range
+ * Discrete time interval within a specific term.
+ */
+// export interface Range {
+// 	key: string;
+// 	start: bigint;
+// 	end: bigint;
+// 	cycle?: number;
+// }
 export type Range = Prettify<{
 	key: string;
 	group?: string;																						// categorization marker (e.g. 'western', 'chinese', 'fiscal')
@@ -43,10 +77,16 @@ export type Range = Prettify<{
 		nanosecond?: number;
 	}>;
 
+
 /**
  * ## ResolvedRange
- * A range that has been resolved to full start/end boundaries.
+ * Range with additional metadata.
  */
+// export interface ResolvedRange extends Range {
+// 	label: string;
+// 	active: boolean;
+// 	index: number;
+// }
 export type ResolvedRange = Range & {
 	start: Tempo;
 	end: Tempo;
@@ -56,21 +96,3 @@ export type ResolvedRange = Range & {
 	rollover?: string;
 	[str: string]: any;
 }
-
-/**
- * ## Plugin
- * extend the functionality of the Tempo class.
- */
-export type Plugin = (options: any, TempoClass: typeof Tempo, factory: (val: any) => Tempo) => void;
-
-/**
- * ## Module
- * Internal extensions to the Tempo class (same signature as Plugin).
- */
-export type Module = Plugin;
-
-/**
- * ## Extension
- * Class-augmenting extensions to the Tempo class (same signature as Plugin).
- */
-export type Extension = Plugin;

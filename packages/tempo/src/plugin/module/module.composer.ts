@@ -1,4 +1,3 @@
-import '#library/temporal.polyfill.js';
 import { isNumeric } from '#library/coercion.library.js';
 import { Match } from '../../tempo.default.js';
 import { TemporalObject, TypeValue, isInstant, isZonedDateTime, isPlainDate, isPlainDateTime, isTempo } from '#library/type.library.js';

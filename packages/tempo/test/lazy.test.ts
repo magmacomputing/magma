@@ -1,4 +1,7 @@
 import { Tempo } from '../src/tempo.class.js';
+import { FormatModule } from '../src/plugin/module/module.format.js';
+
+Tempo.extend(FormatModule);
 
 describe('Tempo Lazy Evaluation (Shadowing)', () => {
 	beforeEach(() => {

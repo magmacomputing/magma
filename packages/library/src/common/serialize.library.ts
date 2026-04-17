@@ -1,5 +1,5 @@
 import { curry } from '#library/function.library.js';
-import { ownKeys, ownValues, ownEntries } from '#library/reflection.library.js';
+import { ownKeys, ownValues, ownEntries } from '#library/primitive.library.js';
 
 import { isType, asType, isEmpty, isDefined, isUndefined, isNullish, isString, isObject, isArray, isFunction, isSymbolFor, isSymbol } from '#library/type.library.js';
 import type { Obj, Type } from '#library/type.library.js';

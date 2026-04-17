@@ -1,4 +1,4 @@
-import { Tempo } from '../src/tempo.class.js';
+import { Tempo } from '#tempo';
 
 describe('Tempo TimeZone Offset', () => {
 	beforeEach(() => {

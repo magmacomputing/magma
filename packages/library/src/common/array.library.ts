@@ -1,6 +1,5 @@
 import { asString } from '#library/coercion.library.js';
-import { extract } from '#library/object.library.js';
-import { ownEntries } from '#library/reflection.library.js';
+import { extract, ownEntries } from '#library/primitive.library.js';
 import { stringify } from '#library/serialize.library.js';
 import { isNumber, isDate, isTempo, isObject, isDefined, isUndefined, isFunction, nullToValue } from '#library/type.library.js';
 import type { Property } from '#library/type.library.js';
@@ -107,16 +106,6 @@ export function byLkp<T extends Property<any>>(arr: T[], fnKey: GroupFn<T> | key
 
 	return ownEntries(group)
 		.reduce((acc, [key, grp]) => Object.assign(acc, { [key]: grp?.pop() }), {} as Record<PropertyKey, T>)
-}
-
-/** return an array with no repeated elements */
-export function distinct<T>(arr: T[]): T[];
-/** return a mapped array with no repeated elements */
-export function distinct<T, S>(arr: T[], mapfn: (value: T, index: number, array: T[]) => S, thisArg?: any): S[];
-export function distinct<T>(arr: T[], mapfn?: (value: any, index: number, array: any[]) => any) {
-	return mapfn
-		? distinct(arr.map(mapfn))
-		: Array.from(new Set(arr));
 }
 
 /** clear down an Array */

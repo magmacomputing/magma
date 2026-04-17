@@ -10,9 +10,11 @@ describe('Tempo Reactive Registration', () => {
 		expect(Tempo.config.scope).toBe('global')
 
 		// Mock a late-registering plugin
-		const $LateDiscovery = Symbol('LateDiscovery')
-		const myLatePlugin: Plugin = (options, TempoClass) => {
-			(TempoClass as any).lateMethod = () => 'it works!'
+		const myLatePlugin: Plugin = {
+			name: 'LateDiscovery',
+			install(this: Tempo, TempoClass) {
+				(TempoClass as any).lateMethod = () => 'it works!'
+			},
 		}
 
 		// Register it (simulating side-effect import)

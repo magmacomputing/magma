@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const polyfill = resolve(__dirname, 'packages/tempo/bin/setup.polyfill.ts');
 
 export default defineWorkspace([
   {
@@ -15,7 +16,7 @@ export default defineWorkspace([
         '**/test/**/*.core.test.ts',
         '**/test/**/*.lazy.test.ts'
       ],
-      setupFiles: [resolve(__dirname, 'packages/tempo/scripts/setup.full.ts')],
+      setupFiles: [polyfill],
     }
   },
   {
@@ -24,7 +25,7 @@ export default defineWorkspace([
       name: 'Tempo: Core',
       include: ['**/test/**/*.core.test.ts', '**/test/**/*.lazy.test.ts'],
       exclude: ['**/node_modules/**'],
-      setupFiles: [],
+      setupFiles: [polyfill],
     }
   }
 ])

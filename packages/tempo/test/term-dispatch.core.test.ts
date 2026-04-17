@@ -1,8 +1,7 @@
 import { Tempo } from '#tempo/core';
-import { FormatModule } from '#tempo/format';
+import '#tempo/mutate';
+import '#tempo/format';
 import '#tempo/term/standard';
-
-Tempo.extend(FormatModule);
 
 describe('Term Dispatch Refactor', () => {
 	afterEach(() => vi.restoreAllMocks())

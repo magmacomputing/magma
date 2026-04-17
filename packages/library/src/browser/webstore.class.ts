@@ -1,5 +1,4 @@
-import { distinct } from '#library/array.library.js';
-import { ownEntries } from '#library/reflection.library.js';
+import { distinct, ownEntries } from '#library/primitive.library.js';
 import { stringify, objectify } from '#library/serialize.library.js';
 import { asType, isEmpty, isNullish, isString } from '#library/type.library.js';
 import type { Property, ValueOf } from '#library/type.library.js';

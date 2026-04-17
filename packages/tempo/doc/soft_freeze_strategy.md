@@ -79,7 +79,12 @@ export function enumify(list, frozen = true) {
 To prevent a global discovery object from "trashing" the registry, the library implements a **Safe Merge** rule for all shared states.
 
 When merging external data (discovery or plugin):
-- New keys are added.
-- Existing keys are **preserved**.
+- **Additive Only**: New keys are added.
+- **Root Protection**: Core building blocks (like `NUMBER['one']` or `FORMAT['iso']`) are protected from being overwritten.
 
-This ensures that while the library is extensible, its fundamental building blocks (like `NUMBER['one']`) remain immutable and secure.
+This ensures that while the library is extensible, its fundamental logic remains deterministic and secure across all environments.
+
+---
+
+> [!NOTE]
+> **v2.1.2 Update**: The Soft Freeze is now tightly integrated with **Logify**. Internal state updates bypass the Proxy using a private Symbol, allowing the engine to remain "Silent" while performing complex transactional updates during the discovery phase.

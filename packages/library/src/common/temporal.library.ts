@@ -21,9 +21,9 @@ export function unix() {
 	return Math.trunc(instant().epochMilliseconds / 1_000);
 }
 
-/** return the current Unix timestamp (milliseconds) */
+/** return the current Unix timestamp (nanoseconds) */
 export function epoch() {
-	return instant().epochMilliseconds;
+	return instant().epochNanoseconds;
 }
 
 /** return the January and July offsets (nanoseconds) for a given timezone and year */
@@ -71,3 +71,37 @@ export function normaliseFractionalDurations(payload: Record<string, any>) {
 
 	return payload;
 }
+
+// ── Temporal Factory Helpers ─────────────────────
+// These centralise all runtime Temporal constructor
+// access so that consuming modules never need to
+// import a polyfill directly.
+// ─────────────────────────────────────────────────
+
+/**
+ * ## toZonedDateTime
+ * Create a `Temporal.ZonedDateTime` from a
+ * property-bag (year, month, day, …, timeZone, calendar).
+ */
+export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike & { timeZone: Temporal.TimeZoneLike, calendar?: Temporal.CalendarLike }): Temporal.ZonedDateTime {
+	return Temporal.ZonedDateTime.from(bag);
+}
+
+/**
+ * ## toPlainDate
+ * Create a `Temporal.PlainDate` from a
+ * property-bag or ISO string.
+ */
+export function toPlainDate(bag: Temporal.PlainDateLike | string): Temporal.PlainDate {
+	return Temporal.PlainDate.from(bag);
+}
+
+/**
+ * ## toInstant
+ * Create a `Temporal.Instant` from epoch
+ * nanoseconds (bigint).
+ */
+export function toInstant(epochNanoseconds: bigint): Temporal.Instant {
+	return Temporal.Instant.fromEpochNanoseconds(epochNanoseconds);
+}
+

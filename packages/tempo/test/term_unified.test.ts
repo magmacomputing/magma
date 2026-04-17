@@ -43,7 +43,7 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 		const t = new Tempo(testDate, { catch: true, sphere: 'north' });
 		// Default Quarter plugin doesn't have a label, so both should return Q2
 		expect(t.format('{#qtr}')).toBe('Q2');
-		expect(t.format('{#quarter}')).toBe('Q2');
+		expect(t.format('{#quarter}')).toBe('Second Quarter');
 	});
 
 	it('should respect custom labels if provided in the Range object', () => {

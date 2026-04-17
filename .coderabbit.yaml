@@ -1,0 +1,10 @@
+# .coderabbit.yaml
+reviews:
+  path_filters:
+    # Use "! " at the start of a pattern to EXCLUDE it from the review
+    - "!**/doc/api/**"            # Ignore ONLY the generated TypeDoc API documentation
+    - "!**/docs/**"               # Ignore other generated documentation artifacts
+    - "!**/.vitepress/cache/**"    # Ignore VitePress cache
+    - "!**/.vitepress/dist/**"     # Ignore VitePress build output
+    - "!**/dist/**"               # Ignore all build artifacts
+    - "!**/vendor/**"             # Ignore third-party code

@@ -1,51 +1,18 @@
-import { Temporal } from '@js-temporal/polyfill';
-import { isDefined, isFunction, isString } from '#library/type.library.js';
+import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
+import { isDefined, isFunction, isString, isUndefined, isNumber, isClass } from '#library/type.library.js';
 import { secure } from '#library/utility.library.js';
-import { SCHEMA, getLargestUnit } from '../tempo.util.js';
 import { sortKey, byKey } from '#library/array.library.js';
-import lib from '#library/symbol.library.js';
-import sym, { isTempo } from '../tempo.symbol.js';
 import { secureRef } from '#library/proxy.library.js';
+
+import { SCHEMA, getLargestUnit } from '../tempo.util.js';
+import sym, { isTempo } from '../tempo.symbol.js';
 import type { Tempo } from '../tempo.class.js';
-import type { TermPlugin, Range, ResolvedRange, Plugin, Extension } from './plugin.type.js';
+import type { TermPlugin, Range, ResolvedRange, Plugin } from './plugin.type.js';
 
-const _REGISTRY = {
-	terms: secureRef([] as TermPlugin[]),
-	extends: secureRef([] as Extension[]),
-	modules: secureRef({} as Record<string, any>)
-}
+import { REGISTRY } from '../tempo.register.js';
 
-/** 
- * # REGISTRY
- * Internal registry for registered components.
- * Closed for modification, Open for extension.
- */
-export const REGISTRY = new Proxy(_REGISTRY, {
-	get: (t, k) => Reflect.get(t, k),
-	set: (t, k, v) => {
-		if (Object.hasOwn(t, k)) {
-			throw new Error(`Tempo Security: Mutation attempt on protected registry key '${String(k)}'`);
-		}
-		return Reflect.set(t, k, v);
-	},
-	defineProperty: (t, k, d) => {
-		if (Object.hasOwn(t, k)) {
-			throw new Error(`Tempo Security: Mutation attempt on protected registry key '${String(k)}'`);
-		}
-		return Reflect.defineProperty(t, k, d);
-	},
-	deleteProperty: () => {
-		throw new Error(`Tempo Security: Deletion attempt on protected registry.`);
-	}
-});
-
-/** internal helper to resolve the class-host from either an instance or the class itself */
-function getHost(t: any): any {
-	const isFn = typeof t === 'function';
-	if (isFn) return t?.[lib.$Target] ?? t;
-	const host = (t as any)?.constructor ?? (isDefined(t) ? Reflect.get(Object(t), 'constructor') : Object);
-	const target = host?.[lib.$Target] ?? host;
-	return typeof target === 'function' ? target : Object;
+export function getHost(t: any): any {
+	return isFunction(t) || isClass(t) ? t : (t as any).constructor;
 }
 
 /**
@@ -65,7 +32,11 @@ export function interpret(t: any, module: string, methodOrFallback?: any, ...arg
 
 		return logic.apply(t, args);
 	} catch (err) {
-		host[sym.$logError](t?.config, err);
+		if (isFunction(host?.[sym.$logError])) {
+			host[sym.$logError](t?.config, err);
+		} else {
+			console.error(`Tempo [${module}]: structural error - no logger available on host.`, err);
+		}
 	}
 
 	return (isFunction(methodOrFallback) ? methodOrFallback() : undefined);
@@ -94,19 +65,24 @@ export const defineModule = <T extends Plugin>(module: T): T => {
  * Used to register a module that attaches methods to the Tempo sym.$Interpreter registry.
  */
 export const defineInterpreterModule = (name: string, logic: any) =>
-	defineModule((options: any, TempoClass: any) => {
-		// 1. Secure the Global Registry
-		if (isDefined(REGISTRY.modules[name]) && REGISTRY.modules[name] !== logic) {
-			throw new Error(`Tempo Security: Core Module clash for '${name}'. Logic is already defined.`);
-		}
-		REGISTRY.modules[name] = logic;
+	defineModule({
+		name,
+		install(this: Tempo, TempoClass: typeof Tempo) {
+			// 1. Secure the Global Registry
+			if (isDefined(REGISTRY.modules[name])) {
+				if (REGISTRY.modules[name] !== logic) throw new Error(`Tempo Security: Core Module clash for '${name}'. Logic is already defined.`);
+			} else {
+				REGISTRY.modules[name] = logic;
+			}
 
-		// 2. Fallback for legacy class-local access
-		TempoClass[sym.$Interpreter] ??= secureRef({});
-		if (isDefined(TempoClass[sym.$Interpreter][name]) && TempoClass[sym.$Interpreter][name] !== logic) {
-			throw new Error(`Tempo Interpreter Module clash: '${name}' logic is already defined.`);
-		}
-		TempoClass[sym.$Interpreter][name] = logic;
+			// 2. Fallback for legacy class-local access
+			(TempoClass as any)[sym.$Interpreter] ??= secureRef({});
+			if (isDefined((TempoClass as any)[sym.$Interpreter][name])) {
+				if ((TempoClass as any)[sym.$Interpreter][name] !== logic) throw new Error(`Tempo Interpreter Module clash: '${name}' logic is already defined.`);
+			} else {
+				(TempoClass as any)[sym.$Interpreter][name] = logic;
+			}
+		},
 	});
 
 /**
@@ -148,32 +124,9 @@ export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) 
 /**
  * find where a Tempo fits within a range of DateTime
  */
-export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor?: any): string | ResolvedRange | undefined {
+export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | number = true, anchor?: any): string | ResolvedRange | undefined {
 	const chronological = sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
 	if (chronological.length === 0) return undefined;
-
-	const match = chronological
-		.toReversed()
-		.find((range: any) => {
-			for (const [rKey, sKey] of SCHEMA) {
-				const val = range[rKey];
-
-				if (isDefined(val)) {
-					const source: any = anchor ?? tempo;
-					const sVal = isTempo(source) ? source[sKey] : source[sKey] ?? source[rKey];
-
-					if (sVal === undefined) continue;
-					if (sVal > val) return true;
-					if (sVal < val) return false;
-				}
-			}
-
-			return true;																					// fallback if DateTime exactly matches a range criteria
-		})
-		?? chronological.at(-1)!
-
-	const i = chronological.indexOf(match);
-	const next = chronological[i + 1];
 
 	const zdt = anchor ?? (tempo as any).toDateTime();
 
@@ -187,19 +140,60 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor
 		const obj: any = {};
 		for (let i = 0; i < SCHEMA.length; i++) {
 			const [u] = SCHEMA[i];
-			if (isDefined(range[u])) {
-				obj[u] = range[u];
+			const val = range[u];
+			if (isNumber(val)) {
+				obj[u] = val;
 			} else if (i > rolloverIndex) {
-				obj[u] = (i <= 2) ? 1 : 0;													// year, month, day reset to 1; time units reset to 0
+				obj[u] = (i <= 2) ? 1 : 0;
 			} else {
-				obj[u] = (anchor as any)[u];
+				const fallback = (anchor as any)[u];
+				obj[u] = isNumber(fallback) ? fallback : (i <= 2 ? 1 : 0);
 			}
 		}
 		// @ts-ignore
-		const zdt = Temporal.ZonedDateTime.from({ ...obj, timeZone: anchor.timeZoneId, calendar: anchor.calendarId });
+		const resZdt = toZonedDateTime({ ...obj, timeZone: anchor.timeZoneId, calendar: anchor.calendarId });
 		// @ts-ignore
-		return new tempo.constructor(zdt, (tempo as any).config);
+		return new tempo.constructor(resZdt, (tempo as any).config);
 	}
+
+	const matchIndex = chronological.findLastIndex(range => {
+		const date = resolve(range, zdt);
+		return (date.toDateTime().epochNanoseconds as bigint) <= (zdt.epochNanoseconds as bigint);
+	});
+
+	if (isNumber(keyOnly)) {
+		const cycle = Math.floor(chronological.length / 3);
+		if (cycle === 0 || !Number.isInteger(keyOnly) || keyOnly < 1 || keyOnly > cycle) return undefined;
+
+		const offset = matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle;
+		const match = chronological[offset + (keyOnly - 1)];
+		if (!match) return undefined;
+
+		const start = resolve(match, zdt);
+		let end: Tempo;
+		const i = offset + (keyOnly - 1);
+		const next = chronological[i + 1];
+
+		if (next) {
+			end = resolve(next, zdt);
+		} else {
+			const roll = { ...match };
+			if (isNumber(roll.year)) roll.year++;
+			end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+		}
+
+		return {
+			start,
+			end,
+			...match
+		}
+	}
+
+	const match = chronological[matchIndex === -1 ? 0 : matchIndex];
+	if (keyOnly === true) return match.key;
+
+	const i = chronological.indexOf(match);
+	const next = chronological[i + 1];
 
 	const start = resolve(match, zdt);
 	let end: Tempo;
@@ -207,28 +201,33 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly = true, anchor
 	if (next) {
 		end = resolve(next, zdt);
 	} else {
-		end = resolve(match, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+		const roll = { ...match };
+		if (isNumber(roll.year)) roll.year++;
+		end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
 	}
 
-	if (keyOnly) return match.key;
-
-	const result = {
-		...match,
+	return {
 		start,
-		end
-	} as ResolvedRange;
-	return result;
+		end,
+		...match
+	}
 }
 
 /**
  * # getRange
  * Resolve the full list of candidates for a term, passing an anchor to prevent recursion.
  */
-export function getRange(term: TermPlugin, t: Tempo, anchor?: any, group?: string): Range[] {
+export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Range[] {
+	const term = (entry.plugin ?? entry) as TermPlugin;
 	let res: any;
 
 	try {
-		res = term.resolve ? term.resolve.call(t, anchor) : term.define.call(t, false, anchor);
+		if (isDefined(anchor)) {
+			const host = new (getHost(t))(anchor, (t as any).config);
+			res = isFunction(term.resolve) ? term.resolve.call(host, anchor) : term.define.call(host, false, anchor);
+		} else {
+			res = isFunction(term.resolve) ? term.resolve.call(t) : term.define.call(t, false);
+		}
 	} catch (err: any) {
 		if (err.message.includes('Class constructor')) {
 			return [];
@@ -238,12 +237,20 @@ export function getRange(term: TermPlugin, t: Tempo, anchor?: any, group?: strin
 
 	let list = (res == null) ? [] : (Array.isArray(res) ? res : [res]);
 
+	const keys = (term as any).groupBy ?? [];
+	if (keys.length > 0) {
+		list = list.filter(r => keys.every((key: string) => r[key] === (t.config as any)[key]));
+	}
+
 	if (group) {
-		// find the registered ranges for this term and filter by group
 		const meta: any = (term as any).groups ?? (term as any).ranges;
-		if (meta) {
-			const source = Array.isArray(meta) ? meta : Object.values(meta).flat(Infinity);
+		const isPlainObject = (val: any) => typeof val === 'object' && val !== null && !Array.isArray(val) && !isFunction(val);
+
+		if (isPlainObject(meta)) {
+			const source = Object.values(meta).flat(Infinity);
 			list = (source as any[]).filter(r => r.group === group);
+		} else {
+			list = list.filter(r => r.group === group);
 		}
 	}
 
@@ -269,7 +276,7 @@ export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mu
 		const endNs = range.end.toDateTime().epochNanoseconds as bigint;
 		const midNs = startNs + (endNs - startNs) / BigInt(2);
 		// @ts-ignore
-		return new tempo.constructor(Temporal.Instant.fromEpochNanoseconds(midNs).toZonedDateTimeISO((range.start as any).tz).withCalendar((range.start as any).cal), (tempo as any).config);
+		return new tempo.constructor(toInstant(midNs).toZonedDateTimeISO((range.start as any).tz).withCalendar((range.start as any).cal), (tempo as any).config);
 	}
 	if (mutate === 'end') return range.end.subtract({ nanoseconds: 1 });
 
@@ -297,11 +304,13 @@ export function resolveTermShift(tempo: Tempo, source: any[], offset: string, sh
 	const range = (getTermRange(tempo, list, false, anchor) as any);
 	if (!range) return undefined;
 
-	// find index in list (matching key and all shared date/time units for accurate identity)
-	const idx = list.findIndex(r =>
-		r.key === range.key &&
-		SCHEMA.every(([u]) => (isDefined(r[u]) && isDefined(range[u])) ? r[u] === range[u] : true)
-	);
+	// find index in list (matching key and major components for identity)
+	const idx = list.findIndex(r => {
+		return r.key === range.key &&
+			(isUndefined(r.year) || isUndefined(range.year) || r.year === range.year) &&
+			(isUndefined(r.month) || isUndefined(range.month) || r.month === range.month) &&
+			(isUndefined(r.day) || isUndefined(range.day) || r.day === range.day);
+	});
 
 	if (idx === -1) return undefined;
 
@@ -315,58 +324,88 @@ export function resolveTermShift(tempo: Tempo, source: any[], offset: string, sh
 	return res.start;
 }
 
+type resolveOptions = {
+	anchor?: any;
+	groupBy?: string[];
+	[key: string]: any;
+}
 /**
- * ## resolveCycleWindow
- * Helper to generate a 3-cycle candidate window around an anchor.
- * Defaults to yearly cycles, but supports daily cycles if the template suggests it.
+ * # resolveCycleWindow
+ * Resolves a window of ranges (prev, current, next) around a source date,
+ * ensuring all returned ranges are detached clones and validated against the context.
  */
-export function resolveCycleWindow(t: Tempo, template: Range[], anchor?: any) {
-	const source = anchor ?? (t as any).toDateTime();
-	const largest = getLargestUnit(template);
+export function resolveCycleWindow(source: Tempo | any, template: Range[] | Record<string, Range[]>, { anchor, groupBy = [], ...options }: resolveOptions = {}): Range[] {
+	// ensure we have a valid Tempo instance to work with
+	const t = isTempo(source) ? source : (isDefined(source) ? new (getHost(source))(source) : source);
+	if (!isTempo(t)) return [];
 
-	// Handle Daily Cycles (e.g. TimelineTerm)
-	if (largest === 'hour' || largest === 'minute') {
-		const list: Range[] = [];
-		const base = Temporal.PlainDate.from(source);
+	// 1. Resolve Template (supporting optional dynamic grouping)
+	let list: Range[] = [];
+	if (!isDefined(template)) {
+		(t.constructor as any)[sym.$termError](t.config, 'template');
+		return [];
+	}
 
+	if (!Array.isArray(template) && groupBy.length > 0) {
+		const groupKey = groupBy
+			.map(key => options[key] ?? anchor?.[key] ?? t.config[key] ?? (t as any)[key] ?? '')
+			.join('.');
+
+		list = (template as any)[groupKey] ?? [];
+
+		if (list.length === 0) {
+			const missing = groupBy.filter(k => isUndefined(options[k]) && isUndefined(anchor?.[k]) && isUndefined(t.config[k]));
+			const msg = missing.length > 0 ? `Missing grouping criteria: ${missing.join(', ')}` : `No ranges found for group: ${groupKey}`;
+			(t.constructor as any)[sym.$termError](t.config, msg);
+			return [];
+		}
+	} else {
+		list = Array.isArray(template) ? template : Object.values(template).flat() as Range[];
+	}
+
+	if (list.length === 0) return [];
+
+	// 2. Resolve Window (Sub-Yearly vs Yearly)
+	const unit = getLargestUnit(list);
+	if (!['year', 'month', 'day'].includes(unit as any)) {
+		const results: Range[] = [];
 		for (const offset of [-1, 0, 1]) {
-			const date = base.add({ days: offset });
-			template.forEach(itm => {
-				list.push({
+			const date = t.add({ days: offset });
+			list.forEach(itm => {
+				results.push({
 					...itm,
-					year: date.year,
-					month: date.month,
-					day: date.day
+					year: date.yy,
+					month: date.mm,
+					day: date.dd
 				});
 			});
 		}
-		return list;
+		return results;
 	}
 
 	// Handle Yearly Cycles (Default)
-	const yy = isTempo(source) ? source.yy : (source.year ?? source.yy);
-	const mm = isTempo(source) ? source.mm : (source.month ?? source.mm);
-	const dd = isTempo(source) ? source.dd : (source.day ?? source.dd);
+	const yy = t.yy;
+	const mm = t.mm;
+	const dd = t.dd;
 
-	const startItem = template[0];
+	const startItem = list[0];
 	const startMm = startItem.month ?? 1;
 	const startDd = startItem.day ?? 1;
 
 	let baseYear = yy;
 	if (mm < startMm || (mm === startMm && dd < startDd)) baseYear--;
 
-	const list: Range[] = [];
+	const window: Range[] = [];
 	for (const offset of [-1, 0, 1]) {
-		const yy = baseYear + offset;
-		template.forEach(itm => {
+		const targetYY = baseYear + offset;
+		list.forEach(itm => {
 			const clone = { ...itm };
-			if (isDefined(itm.year)) clone.year = itm.year + yy;
-			else clone.year = yy;
-			list.push(clone);
+			if (isDefined(itm.year)) clone.year = itm.year + targetYY;
+			else clone.year = targetYY;
+			window.push(clone);
 		});
 	}
-
-	return list;
+	return window;
 }
 
 /**
@@ -411,4 +450,6 @@ export function registerPlugin(plugin: any) {
 	}
 
 	(globalThis as any)[sym.$Register]?.(plugin);
+
+	return plugin;
 }

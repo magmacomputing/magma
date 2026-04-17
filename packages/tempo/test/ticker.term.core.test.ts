@@ -1,6 +1,9 @@
-import { Tempo } from '#tempo/core'
-import '#tempo/term/standard'
-import '#tempo/ticker'
+import { Tempo } from '#tempo/core';
+import '#tempo/term/standard';
+import { MutateModule } from '#tempo/mutate';
+import { TickerModule } from '#tempo/ticker';
+
+Tempo.extend(MutateModule, TickerModule);
 
 describe('Ticker with Terms', () => {
 	beforeEach(() => {

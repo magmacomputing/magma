@@ -130,6 +130,10 @@ const assertSafe = (t: any, k: PropertyKey, v: any) => {
  */
 export function secureRef<T extends object>(target: T): T {
 	return new Proxy(target, {
+		get(t, k) {
+			if (k === lib.$Target) return t;
+			return Reflect.get(t, k);
+		},
 		set(t, k, v) {
 			assertSafe(t, k, v);
 			return Reflect.set(t, k, v);

@@ -34,6 +34,8 @@ interface Options {
   catch?: boolean;              // If true, invalid inputs return a Void instance
   store?: string;               // Key for persistent storage (e.g., localStorage)
   sphere?: 'north' | 'south';   // Hemisphere for seasonal plugins
+  rtfFormat?: Intl.RelativeTimeFormat; // Pre-configured formatter
+  rtfStyle?: 'long' | 'short' | 'narrow'; // Default style (default: 'narrow')
   timeStamp?: 'ms' | 'ns';      // Precision for numeric timestamps
   [key: string]: any;           // Allows custom configurations shared with plugins
 }

@@ -1,4 +1,4 @@
-import { ownValues } from '#library/reflection.library.js';
+import { ownValues } from '#library/primitive.library.js';
 import { isDefined, isPrimitive } from '#library/type.library.js';
 import type { Secure, ValueOf } from '#library/type.library.js';
 

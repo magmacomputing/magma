@@ -1,13 +1,19 @@
 /**
  * This file verifies native Temporal API support.
- * Any library that depends on the Temporal API should ensure this is loaded first.
+ * It does NOT import or bundle any polyfill.
+ * If Temporal is not available, a clear error is thrown.
+ *
+ * Consumers who need polyfill support should load one
+ * (e.g. `@js-temporal/polyfill`) at their application
+ * entry point, before importing this library.
  */
 
-import { Temporal } from '@js-temporal/polyfill';
-
-// @ts-ignore
-if (!globalThis.Temporal) {
-	Object.defineProperty(globalThis, 'Temporal', { value: Temporal, enumerable: false, configurable: true, writable: true });
+if (typeof globalThis.Temporal === 'undefined') {
+	throw new Error(
+		'Temporal API is not available. ' +
+		'Please use a runtime with native Temporal support (Node 22+, Deno, Bun) ' +
+		'or load a polyfill (e.g. @js-temporal/polyfill) before importing this library.'
+	);
 }
 
 export { }
