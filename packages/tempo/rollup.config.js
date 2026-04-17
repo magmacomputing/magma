@@ -3,58 +3,61 @@ import resolve from '@rollup/plugin-node-resolve';
 import MagicString from 'magic-string';
 
 /**
- * Custom logic to route modules based on origin.
- * We want Tempo code in the root and internal library code in lib/
+ * Rollup Configuration for Tempo
+ * 
+ * 1. Global IIFE Bundle: Single file for <script> tags, includes all dependencies.
+ * 2. Granular ESM: Multi-file for bundlers, keeps external dependencies external.
  */
-const getOutputFileName = (moduleId, name) => {
-	if (!moduleId) return (name || '[name]') + '.js';
-
-	const rel = path.relative(process.cwd(), moduleId);
-
-	// Check if this module is from outside the tempo package (likely @magmacomputing/library)
-	return (rel.startsWith('..') || rel.includes('node_modules'))
-		? 'lib/' + path.basename(moduleId, '.js') + '.js'
-		: (name || '[name]') + '.js';
-}
 
 export default [
 	{
-		input: 'dist/tempo.index.js',
-		output: {			// The UMD bundle (standard single file for browser/legacy)
+		input: 'dist/tempo.entry.js',
+		output: {
 			file: 'dist/tempo.bundle.js',
-			format: 'umd',
+			format: 'iife',
 			name: 'Tempo',
+			exports: 'default', // Ensures 'new Tempo()' works on the global object
 			sourcemap: false,
 			indent: '\t',
-			globals: {
-				'@js-temporal/polyfill': 'TemporalLibrary'
-			}
 		},
 		plugins: [
 			resolve({ extensions: ['.js'] }),
 			indentFix()
 		],
-		external: ['@js-temporal/polyfill']
 	},
 	{
 		input: {
 			'tempo.index': 'dist/tempo.index.js',
 			'library.index': 'dist/library.index.js'
 		},
-		output: {			// The Granular Tree-Shaken ESM distribution
+		// Keep tslib external in ESM distribution for better bundler compatibility
+		external: ['tslib'],
+		output: {
 			dir: 'dist',
 			format: 'es',
 			preserveModules: true,
 			preserveModulesRoot: 'dist',
 			sourcemap: false,
 			indent: '\t',
-			entryFileNames: (chunkInfo) => getOutputFileName(chunkInfo.facadeModuleId, chunkInfo.name)
+			// Map library imports to lib/ for browser-ready granular ESM
+			entryFileNames: (chunkInfo) => {
+				if (!chunkInfo.facadeModuleId) return '[name].js';
+				const rel = path.relative(process.cwd(), chunkInfo.facadeModuleId);
+				return (rel.startsWith('..') || rel.includes('node_modules'))
+					? 'lib/' + path.basename(chunkInfo.facadeModuleId, '.js') + '.js'
+					: '[name].js';
+			}
 		},
 		plugins: [
-			resolve({ extensions: ['.js'] }),
+			// We DO want to resolve @magmacomputing/library and bundle it into lib/ 
+			// because it's a workspace sibling and part of our distribution logic.
+			// But we EXCLUDE tslib (above) as it's a standard external dependency.
+			resolve({ 
+				extensions: ['.js'],
+				moduleDirectories: ['node_modules'] 
+			}),
 			indentFix()
 		],
-		external: ['@js-temporal/polyfill']
 	}
 ];
 

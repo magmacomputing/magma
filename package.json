@@ -16,12 +16,12 @@
     "build:library": "npm run build --workspace=@magmacomputing/library",
     "clean": "tsc -b --clean",
     "release": "release-it",
-    "release:tempo": "npm run build --workspace=@magmacomputing/tempo && npm run publish --workspace=@magmacomputing/tempo",
-    "version:patch": "npm version patch -w @magmacomputing/tempo -w @magmacomputing/library --no-git-tag-version",
-    "version:minor": "npm version minor -w @magmacomputing/tempo -w @magmacomputing/library --no-git-tag-version",
-    "version:major": "npm version major -w @magmacomputing/tempo -w @magmacomputing/library --no-git-tag-version",
+    "version:sync": "npm version ${npm_package_version} -w @magmacomputing/tempo -w @magmacomputing/library --no-git-tag-version",
     "repl": "npm run repl --workspace=@magmacomputing/tempo",
-    "core": "npm run core --workspace=@magmacomputing/tempo"
+    "core": "npm run core --workspace=@magmacomputing/tempo",
+    "docs:dev": "npm run docs:dev --workspace=@magmacomputing/tempo",
+    "docs:build": "npm run docs:build --workspace=@magmacomputing/tempo",
+    "docs:preview": "npm run docs:preview --workspace=@magmacomputing/tempo"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",

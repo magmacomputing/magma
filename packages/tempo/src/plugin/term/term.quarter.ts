@@ -6,15 +6,15 @@ import { asArray } from '#library';
 
 /** definition of fiscal quarter ranges */
 const groups = defineRange([
-	{ key: 'Q1', day: 1, month: 1, fiscal: 0, sphere: COMPASS.North },
-	{ key: 'Q2', day: 1, month: 4, fiscal: 0, sphere: COMPASS.North },
-	{ key: 'Q3', day: 1, month: 7, fiscal: 0, sphere: COMPASS.North },
-	{ key: 'Q4', day: 1, month: 10, fiscal: 0, sphere: COMPASS.North },
+	{ key: 'Q1', day: 1, month: 1, fiscal: 0, sphere: COMPASS.North, label: 'First Quarter' },
+	{ key: 'Q2', day: 1, month: 4, fiscal: 0, sphere: COMPASS.North, label: 'Second Quarter' },
+	{ key: 'Q3', day: 1, month: 7, fiscal: 0, sphere: COMPASS.North, label: 'Third Quarter' },
+	{ key: 'Q4', day: 1, month: 10, fiscal: 0, sphere: COMPASS.North, label: 'Fourth Quarter' },
 
-	{ key: 'Q1', day: 1, month: 7, fiscal: 1, sphere: COMPASS.South },
-	{ key: 'Q2', day: 1, month: 10, fiscal: 1, sphere: COMPASS.South },
-	{ key: 'Q3', day: 1, month: 1, year: 1, fiscal: 0, sphere: COMPASS.South },
-	{ key: 'Q4', day: 1, month: 4, year: 1, fiscal: 0, sphere: COMPASS.South },
+	{ key: 'Q1', day: 1, month: 7, fiscal: 1, sphere: COMPASS.South, label: 'First Quarter' },
+	{ key: 'Q2', day: 1, month: 10, fiscal: 1, sphere: COMPASS.South, label: 'Second Quarter' },
+	{ key: 'Q3', day: 1, month: 1, year: 1, fiscal: 0, sphere: COMPASS.South, label: 'Third Quarter' },
+	{ key: 'Q4', day: 1, month: 4, year: 1, fiscal: 0, sphere: COMPASS.South, label: 'Fourth Quarter' },
 ], 'sphere');
 
 /** resolve the full candidate list for the current context */

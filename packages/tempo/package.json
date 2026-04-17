@@ -155,7 +155,11 @@
     "build:resolve": "tsx bin/resolve-types.ts",
     "clean": "tsc -b --clean && rm -rf dist",
     "publish": "npm publish --access public",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "docs:api": "typedoc",
+    "docs:dev": "npm run docs:api && vitepress dev",
+    "docs:build": "npm run docs:api && vitepress build",
+    "docs:preview": "vitepress preview"
   },
   "files": [
     "doc/",
@@ -166,9 +170,12 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "^2.1.2",
+    "@magmacomputing/library": "workspace:*",
     "@rollup/plugin-alias": "^6.0.0",
-    "magic-string": "^0.30.21"
+    "magic-string": "^0.30.21",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "vitepress": "^1.6.4"
   },
   "directories": {
     "doc": "doc",

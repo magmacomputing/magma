@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo 4: Expected Error (No Plugin)</title>
+    <style>
+        body { font-family: monospace; background: #0f172a; color: #f8fafc; padding: 2rem; }
+        .box { border: 1px solid #334155; padding: 1.5rem; border-radius: 8px; background: #1e293b; }
+        .pass { color: #4ade80; font-weight: bold; }
+        .expected-error { color: #f87171; background: #450a0a; padding: 10px; border-radius: 4px; margin-top: 10px; border: 1px solid #991b1b; }
+        .label { color: #94a3b8; font-size: 0.8rem; margin-bottom: 0.5rem; display: block; }
+    </style>
+</head>
+<body>
+    <h1>⏳ Demo 4: Expected Error (No Plugin)</h1>
+    <div class="box">
+        <span class="label">STATUS</span>
+        <div id="status">Testing for expected error...</div>
+        <br>
+        <span class="label">CAPTURED ERROR MESSAGE</span>
+        <div id="output" class="expected-error">Waiting for error...</div>
+    </div>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "@magmacomputing/tempo/core": "../dist/tempo.class.js"
+      }
+    }
+    </script>
+
+    <script type="module">
+        import { Tempo } from '@magmacomputing/tempo/core';
+        
+        try {
+            const t = new Tempo('2026-04-17');
+            // This should THROW because no format plugin is loaded
+            t.format('{yyyy}');
+            
+            document.getElementById('status').innerText = 'FAILED: Error was NOT thrown.';
+            document.getElementById('output').innerText = 'The engine allowed formatting without a plugin loaded.';
+        } catch (e) {
+            document.getElementById('output').innerText = e.message;
+            document.getElementById('status').innerHTML = '<span class="pass">✓ PASSED (Error correctly caught)</span>';
+        }
+    </script>
+</body>
+</html>

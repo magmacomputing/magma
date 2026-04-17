@@ -1,130 +1,103 @@
 # Tempo Shorthand Engine
 
-The Tempo Shorthand Engine provides a powerful, namespace-based syntax for resolving complex date/time ranges (Terms) such as fiscal quarters, daily periods, and zodiac signs. It allows you to navigate temporal cycles with high-performance, intuitive expressions.
+The Tempo Shorthand Engine (the "Slick" engine) provides a powerful, namespace-based syntax for navigating and manipulating complex date/time cycles (Terms). It allows you to treat high-level concepts like Quarters, Seasons, and Daily Periods as first-class units of measure.
 
-## 1. Syntax Overview
+## 1. The Three Modes of Shorthand
 
-Shorthand follows the pattern: `#[namespace].[modifier][repeat][range]`
+Shorthand behavior changes depending on whether you provide a **String**, an **Object**, or a **Structural Key**.
 
-- **Namespace**: The registered key of a Term Plugin (e.g., `qtr`, `period`, `zodiac`).
-- **Separator**: A literal dot `.` used to trigger range-mode.
-- **Modifier**: Optional symbols to control direction and inclusivity (e.g., `>`, `<=`).
-- **Repeat**: Optional digit to shift by multiple boundaries (e.g., `>2`).
-- **Range (Optional)**: A specific range identifier defined by the plugin (e.g., `q1`, `morning`, `aries`).
+### A. Navigation Mode (String Shorthand)
+**Used in:** `.set()`, `.add()`, `.until()`, `.since()`, and the Ticker.  
+**Pattern:** `#[namespace].[modifier][repeat][range]`  
+**Best for:** Jumping to specific boundaries (e.g., "the start of the next Q1").
 
-> [!IMPORTANT]
-> **Prerequisite**: Shorthand resolution requires the Terms Module to be activated in Core environments (e.g., `Tempo.extend(TermsModule)` or `import '@magmacomputing/tempo/term/standard'`).
+```javascript
+t.set('#qtr.>q1'); // Snaps to the start of the next available Q1
+t.add('#period.next'); // Jumps to the start of the next defined period
+```
 
-> Shorthand literals are **not** supported in the `Tempo` constructor. They are resolved relative to an existing instance and must be used via instance methods (`.set()`, `.add()`, `.until()`, `.since()`) or the Ticker.
+### B. Relational Mode (Object Shorthand)
+**Used in:** `.add()` and `.set()`.  
+**Pattern:** `{ '#namespace': value }`  
+**Best for:** Shifting by semantic "steps" while preserving your relative position.
 
----
+```javascript
+// Relational Add: Preserves your offset within the cycle
+t.add({ '#qtr': 1 }); // If you are 20 days into Q1, you resolve to 20 days into Q2.
 
-## 2. Shorthand Modifiers
+// Relational Set: Absolute index alignment
+t.set({ '#qtr': 2 }); // Aligns to the start of the 2nd quarter of the current year
+```
 
-The engine supports a variety of modifiers to control how a term is resolved. Modifiers can be combined with optional repeat counts (e.g., `>2`).
+### C. Structural Mode (Key Shorthand)
+**Used in:** `.set()`.  
+**Pattern:** `{ start: '#namespace', end: '#namespace' }`  
+**Best for:** Snapping a date to the precise boundaries of its current term.
 
-| Modifier | Type | Meaning | Example |
-| :--- | :--- | :--- | :--- |
-| `>` | **Forward Shifter** | Move forward to the next term boundary. | `#qtr.>` |
-| `<` | **Backward Shifter** | Move backward to the previous term boundary. | `#qtr.<` |
-| `>=` | **Inclusive Forward** | Matches current term or next forward boundary. | `#qtr.>=q1` |
-| `<=` | **Inclusive Backward** | Matches current term or previous backward boundary. | `#qtr.<=q1` |
-| `+` | **Future Relative** | Offset forward by N instances (default 1). | `#qtr.+2` |
-| `-` | **Past Relative** | Offset backward by N instances (default 1). | `#qtr.-1` |
-| `next` | **Alias (>)** | Semantically identical to `>`. | `#qtr.next` |
-| `prev` | **Alias (<)** | Semantically identical to `<`. | `#qtr.prev` |
-| `last` | **Alias (<)** | Semantically identical to `<`. | `#qtr.last` |
-| `this` | **Identity** | Resolves the term containing the current point. | `#qtr.this` |
-| *none* | **Contextual** | Resolves the nearest instance (absolute). | `#qtr.q1` |
-
----
-
-## 3. Usage & Method Behaviors
-
-The shorthand resolves differently depending on the method invoked.
-
-### `.set(shorthand)` - Absolute Alignment
-Aligns the instance forward or backward to the matched term boundary.
-- `t.set('#zodiac.aries')`: Snaps to the start of the current year's Aries.
-- `t.set('#qtr.>q1')`: Snaps to the start of the *next* available Q1.
-
-### `.add(shorthand)` - Targeted Momentum
-Advances the instance relative to its current position.
-- **Cycle Shifting**: `t.add('#qtr')` shifts forward by one quarter cycle, preserving the relative duration from cycle start (e.g. 2 months in -> 2 months into next quarter).
-- **Multi-Boundary**: `t.add('#qtr.>2')` moves forward exactly two quarter boundaries, preserving the relative cycle offset.
-- **Step Shifting**: Providing an object like `t.add({ '#qtr': 1 })` allows shifting by a specific number of "slots" or "steps" within the term's cycle while preserving your relative duration from the start of the term.
-
-### `.until(shorthand)` - Duration Forward
-Returns a **Duration** representing the time remaining **until** the target is reached.
-- `t.until('#qtr.q1', 'days')`: Calculates days until the next Q1.
-
-### `.since(shorthand)` - Duration Backward
-Returns a **Duration** representing the time elapsed **since** the target was passed.
-- `t.since('#period.morning')`: Calculates time elapsed since the start of the current morning.
-
----
-
-## 4. Resolution Logic: Proximity vs. Momentum
-
-The "Slick" engine uses a bifurcated sorting strategy to ensure results are intuitive:
-
-1.  **Absolute Terms** (`#namespace.id`): 
-    Uses **Past-Leaning Resolution**. The engine finds the latest matching range whose start date is at or before the current cursor (this favors the current or most recent instance).
-      
-2.  **Shifters & Directed Targets** (`#namespace.>id`): 
-    Uses **Chronological Momentum**. 
-    - Modifiers `>` and `<` are **exclusive** (start/end must be strictly after/before cursor).
-    - Modifiers `>=` and `<=` are **inclusive** (current term is allowed if it contains the cursor).
-
-### Examples
-
-```typescript
-// Assume today is Dec 25th 2024 (Explicitly North Hemisphere, Q4)
-const t = new Tempo('2024-12-25', { sphere: 'north' });
-
-// ABSOLUTE: Finds latest Q1 at or before Dec 25th (Jan 1st 2024)
-t.set('#qtr.q1'); // 2024-01-01
-
-// DIRECTED: Finds the next Q1 AFTER current and applies current Q-offset (~85 days)
-t.add('#qtr.>q1'); // 2025-03-27
-
-// MULTI-SHIFT: Advances two boundary quarters forward and applies current Q-offset
-t.add('#qtr.>2'); // 2025-06-25
+```javascript
+t.set({ start: '#qtr' }); // Snaps to the exact start of the current quarter
+t.set({ end: '#year' });  // Snaps to the final nanosecond of the current year
 ```
 
 ---
 
-## 5. Advanced Behaviors
+## 2. Navigation Modifiers
 
-### Cycle Identity Preservation
-The engine is "context-aware" across boundaries. When shifting by term, Tempo maintains the identity of the current state:
-- If you are in **Q2 2026** and shift by `+1` Quarter, it resolves to **Q3 2026**.
-- If you are in **morning** of Jan 1st and shift by `+1` Period, it resolves to the next registered period (e.g., `midmorning`).
+Modifiers control the direction and inclusivity of the search.
 
-### Multi-Day & Multi-Year Resolution
-Terms automatically resolve across logical boundaries:
-- **Daily Cycles**: (e.g., `#period`) resolve within a 3-day window (`yesterday`, `today`, `tomorrow`) to ensure smooth transit across midnight.
-- **Yearly Cycles**: (e.g., `#qtr`, `#zodiac`) resolve within a 3-year window to handle boundary-crossing ranges (like North vs South fiscal years).
+| Modifier | Meaning | Behavior |
+| :--- | :--- | :--- |
+| `>` | **Forward (Exclusive)** | Finds the next boundary strictly *after* the current time. |
+| `<` | **Backward (Exclusive)** | Finds the previous boundary strictly *before* the current time. |
+| `>=` | **Forward (Inclusive)** | Returns the current term if it contains the cursor; otherwise, the next. |
+| `<=` | **Backward (Inclusive)** | Returns the current term if it contains the cursor; otherwise, the previous. |
+| `+` | **Relative Future** | Alias for `>`. |
+| `-` | **Relative Past** | Alias for `<`. |
+| `this` | **Identity** | Resolves the term currently containing the cursor. |
 
 ---
 
-## 6. Development Constraints (Range-Keys)
+## 3. Proximity vs. Momentum
 
-When defining ranges in a Terminology Plugin, you must adhere to the **Golden Rules of Range-Keys** to avoid lexer collisions with modifiers.
+The "Slick" engine uses two different sorting strategies to ensure results feel "natural."
 
-> [!CAUTION]
-> **Reserved Characters**: Range-Keys **MUST NOT** contain any of the following characters:
+### Proximity Resolution (Identifiers)
+When you use a simple identifier like `#zodiac.aries`, Tempo uses **Past-Leaning Resolution**. It finds the most recent instance of Aries that has already started. If you are *currently* in Aries, it returns the start of the current one.
+
+### Momentum Resolution (Shifters)
+When you use a shifter like `>q1`, Tempo uses **Chronological Momentum**. It ignores where you are now and looks exclusively into the future for the next occurrence.
+
+---
+
+## 4. The "Cycle Preservation" Guarantee
+
+One of Tempo's premium features is its ability to maintain your **relative offset** when shifting across terms.
+
+If you are 45% of the way through a **Morning** period and you call `t.add({ '#period': 1 })`, Tempo doesn't just add a fixed number of hours. It:
+1.  Determines your relative percentage/offset within the current Morning.
+2.  Finds the boundaries of the *next* registered period (e.g., Afternoon).
+3.  Calculates the same 45% point within that new period.
+
+This ensures that "shifting by a quarter" or "shifting by a period" feels mathematically correct even when those terms have different durations.
+
+---
+
+## 5. Development Constraints
+
+When building custom Terminology Plugins, you must follow the **Golden Rules of Range-Keys** to ensure the lexer can resolve them:
+
+> [!IMPORTANT]
+> **No Reserved Characters**: Range-Keys (e.g., `q1`, `aries`) must not contain:  
 > `> < + = , . ! @ # $ % ^ & * ( ) [ ] { }`
-> These characters are reserved for directional shifters and lexer boundaries.
 
 > [!WARNING]
-> **Numeric Anchoring**: Range-Keys **MUST NOT** start with a digit (0-9). 
-> For example: `1q` is **INVALID**, use `q1` instead. Leading numbers are reserved for repetition counts.
+> **No Leading Numbers**: Range-Keys must not start with a digit.  
+> `1q` is **Invalid** (Lexer thinks it's a repeat count). Use `q1` instead.
 
 ---
 
-## 7. Best Practices
+## 6. Best Practices
 
-- **Sphere Locking**: When working with hemisphere-dependent terms (like Quarters), ensure your Tempo instance has an explicit `sphere` config (`north` or `south`) for deterministic results.
-- **Error Handling**: Use `{ catch: true }` in your Tempo config if you want to gracefully handle unknown shorthand without throwing.
-- **Step Shifting**: Use integer values (e.g. `{ '#qtr': 1 }`) in a **Ticker** to create standard recurring intervals.
+- **Explicit Spheres**: Always set `sphere: 'north'` or `'south'` in your config if using seasonal terms.
+- **Method Intent**: Use **String shorthand** for "Jumping" to boundaries and **Object shorthand** for "Shifting" relative to your current time.
+- **Fail-Safe**: Use `catch: true` in your global config to allow shorthand resolution to fail silently (returning a `void` instance) instead of throwing.

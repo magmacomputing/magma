@@ -582,12 +582,22 @@ export class Tempo {
 	/**
 	 * Register a plugin or term extension.
 	 * 
-	 * @param args - A plugin, term, or list/array of extensions to register.
-	 *               If the last argument is a plain object (and not a plugin/term), 
-	 *               it will be treated as the 'options' for all plugins in the call.
+	 * @param plugin - A plugin or term extension to register.
+	 * @param options - Optional configuration for the plugin.
 	 */
 	static extend(plugin: t.Plugin, options?: t.Options): typeof Tempo;
+	/**
+	 * Register an array of plugins or term extensions.
+	 * 
+	 * @param plugins - An array of plugins, terms, or extensions to register.
+	 * @param options - Optional configuration for the plugins.
+	 */
 	static extend(plugins: (t.Plugin | t.TermPlugin | any)[], options?: t.Options): typeof Tempo;
+	/**
+	 * Register multiple plugins or term extensions.
+	 * 
+	 * @param args - A plugin, term, or list of extensions to register.
+	 */
 	static extend(...args: any[]): typeof Tempo;
 	static extend(...args: any[]): typeof Tempo {
 		let options = (args.length > 1 && isObject(args[args.length - 1]) && !isFunction(args[args.length - 1]) && !isDefined(args[args.length - 1].key)) ? args.pop() : undefined;
@@ -1018,12 +1028,17 @@ export class Tempo {
 	get [sym.$isTempo]() { return true }
 
 	/**
-	 * Instantiates a new `Tempo` object.
+	 * Instantiates a new `Tempo` object with configuration only.
 	 * 
-	 * @param tempo - The date-time value to parse. Can be a string, number, BigInt, Date, or another Tempo/Temporal object.
 	 * @param options - Configuration options for this specific instance.
 	 */
 	constructor(options?: t.Options);
+	/**
+	 * Instantiates a new `Tempo` object with a value.
+	 * 
+	 * @param tempo - The date-time value to parse.
+	 * @param options - Configuration options for this specific instance.
+	 */
 	constructor(tempo: t.DateTime, options?: t.Options);
 	constructor(tempo?: t.DateTime | t.Options, options: t.Options = {}) {
 		this.#now = instant();																	// stash current Instant

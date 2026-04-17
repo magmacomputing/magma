@@ -1,95 +1,69 @@
-# The Immutable Prototype-Shadowing Lazy Evaluation Pattern
+# The Immutable Proxy-Delegator Lazy Evaluation Pattern
 
 When building complex JavaScript libraries (like date-time utilities), exposing numerous computed properties as getters on an object is common. However, computing them all upfront is expensive, and re-computing them on every access is wasteful. The standard solution is "Lazy Evaluation": evaluate the getter on first access, and then overwrite the getter with the literal value.
 
 But what if the base object is strictly **immutable** (via `Object.freeze`)? 
 
-This article details a highly optimized $O(1)$ pattern for securely lazy-evaluating properties on immutable objects using prototype shadowing and private fields.
+This article details a highly optimized $O(1)$ pattern for securely lazy-evaluating properties on immutable objects using a Proxy-based delegator and private fields.
 
 ## The Problem: Mutating Frozen State
 
 A traditional lazy evaluation approach destroys and recreates the properties on the parent object. If the parent object is `Object.freeze()`'d for security (preventing API consumers from tampering with state), you cannot simply `Object.defineProperty` to overwrite the getter with a literal value.
 
-To get around freezing, you might try taking all property descriptors, wiping the object, mapping the other getters to a new object, adding the evaluated value, and calling `Object.freeze()` on the new object.
+To get around freezing, you might try taking all property descriptors, wiping the object, mapping the other getters to a new object, adding the evaluated value, and calling `Object.freeze()` on the new object. This operation runs in $O(N)$ time every single time *any* getter is accessed.
 
-```javascript
-// The O(N) approach - Extremely slow and memory-heavy
+## The Solution: Proxy-Delegator with Memoization
 
-get: function () {
-    const props = Object.getOwnPropertyDescriptors(this.#term);
-    this.#term = {}; // wipe
-    
-    // Re-assign all N other getters
-    Object.entries(props).forEach(([prop, desc]) => {
-        if (prop !== name) Object.defineProperty(this.#term, prop, desc);
-    });
-
-    const value = computeExpensiveValue();
-    Object.defineProperty(this.#term, name, { value, enumerable: true });
-    
-    return Object.freeze(value);
-}
-```
-
-This operation runs in $O(N)$ time (where $N$ is the number of getters on the object) every single time *any* getter is accessed. In a hot loop, building and throwing away objects with dozens of descriptors wrecks memory (GC churn) and severely hits the CPU.
-
-## The Solution: Prototype Shadowing
-
-We can achieve lazy evaluation in $O(1)$ time by swapping out `Object.defineProperty` for `Object.create()`.
+Tempo achieves lazy evaluation in $O(1)$ time using a **Delegator Proxy** that memoizes results back onto the target object.
 
 ```javascript
 // The O(1) approach - Extremely fast, zero overhead
 
-#setTerm(name, defineFunction) {
-    Object.defineProperty(this.#term, name, {
-        configurable: false,
-        enumerable: false,
-        get: () => {
-            const value = defineFunction.call(this); // Evaluate the value
-            
-            // Prototype-shadow the getter with a frozen wrapper object
-            this.#term = Object.freeze(Object.create(this.#term, {
-                [name]: {
-                    value,
-                    configurable: false,
-                    writable: false,
-                    enumerable: true
-                }
-            }));
-            
-            return Object.freeze(value);
-        }
-    });
+#setLazy(target, name, defineFunction) {
+    const get = () => {
+        const value = defineFunction.call(this); // Evaluate the value
+        
+        // Memoize the value by defining it as a static property on the target
+        Object.defineProperty(target, name, {
+            value,
+            enumerable: true,
+            configurable: true,
+            writable: false
+        });
+        
+        return value;
+    };
+
+    // Define the initial getter
+    Object.defineProperty(target, name, { get, enumerable: true, configurable: true });
 }
 ```
 
 ### How it Works
 
-1. **Reassignment, not Mutation:** 
-   We freeze the properties of the base object (`this.#term`) upfront. Instead of modifying the frozen object, we build a *new* object that has the literal `value` property, and we set its prototype to the *old* `this.#term`. Then, we point `this.#term` to the new object. Freezing prevents mutation, but it does not prevent variable reassignment.
+1. **Proxy Entry Point:** 
+   Tempo uses a single Proxy (the `delegate` helper) to catch the very first access to a property. This Proxy doesn't store state; it just routes the request to the lazy evaluator.
    
 2. **Private Fields Bypass the Freeze:**
-   If `this.#term` were a public property (`this.term`), freezing the outer class `this` would prevent us from reassigning `this.term`. However, native JS Private Fields (`#term`) don't exist as properties on the object; they are internal engine slots. Thus, `Object.freeze(this)` cannot lock `#term`, allowing us to freely reassign the pointer to the new prototype chain internally while keeping it completely insulated from outside tampering.
+   The internal containers (`#term`, `#fmt`) are private fields. Native JS Private Fields don't exist as properties on the object; they are internal engine slots. Thus, even if the `Tempo` instance is frozen, we can still update the *internal* state of the container objects.
 
 3. **Innate JS Engine Optimizations:**
-   When `.quarter` is evaluated next, it creates another object on top:
-   `[Newest Link (quarter)]` → `[Middle Link (qtr)]` → `[Base Object (un-evaluated getters)]`
-   
-   If the user asks for `.yearly` (not yet evaluated), the JS engine traverses the prototype chain transparently. V8 and SpiderMonkey are massively optimized for prototype traversal via Inline Caches. You exchange an `O(N)` property iteration penalty for an `O(K)` prototype lookup (where `K` is the number of evaluated properties), executing in Native C++ at lightning speed.
+   Once a property (e.g., `.quarter`) is evaluated, it is "baked" into the target object as a standard value property. Subsequent lookups bypass the Proxy and the getter entirely. The JS engine treats it as a raw property access, which is the fastest possible operation in JavaScript.
 
 4. **Zero Over-allocation:**
-   Unused getters remain safely tucked away on the root object at the bottom of the prototype chain. They cost absolutely nothing in execution time or memory until they are needed.
+   Unused getters remain as simple function pointers. They cost absolutely nothing in execution time or memory until they are needed.
 
 ### Summary
 
-By strategically combining **Private Fields**, **`Object.create()`**, and **Prototype lookups**, we can build securely immutable APIs that lazy-load computed getters with absolute minimal overhead.
+By combining **Private Fields**, **Proxies**, and **Property Memoization**, Tempo builds securely immutable APIs that lazy-load computed getters with zero overhead after the initial call.
 
 ## 🌈 The Best of All Worlds
 
-As of **v2.0.1**, Tempo maintains **`enumerable: true`** for all properties in its `#term` and `#fmt` containers. This design choice provides a unique trifecta of benefits:
+As of **v2.1.2**, Tempo uses a **Proxy-Delegator** that combines the security of immutability with the speed of raw property access:
 
 1. **Lazy by Default**: Properties are only evaluated when accessed, keeping the constructor near-instant.
-2. **Targeted Evaluation**: Accessing a single property (e.g., `t.term.quarter`) only evaluates that specific getter.
-3. **Transparent Discovery**: Because properties are enumerable, a simple `console.log(t.term)` will trigger the eager evaluation of *all* currently registered terms. 
+2. **Memoized Evaluation**: Once accessed (e.g., `t.term.quarter`), the result is "baked" into the instance using `Object.defineProperty`.
+3. **$O(1)$ Performance**: Every access *after* the first is a direct property lookup—no Proxy traps, no prototype traversal.
+4. **Transparent Discovery**: Because properties are enumerable, `console.log(t.term)` or `JSON.stringify` will trigger the evaluation of all registered terms at once, providing a perfect "snapshot" of the instance state.
 
-This transparency is invaluable for debugging, as it allows developers to see the full state of the grammar-engine at a glance. To prevent terminal noise during these "Full Evaluation" events (especially on invalid dates), use the **`silent: true`** configuration option.
+To prevent diagnostic noise during these full-evaluation events, initialize Tempo with **`silent: true`**.
