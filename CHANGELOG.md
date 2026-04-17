@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-04-17
+
+### Added
+- **Live Documentation Links**: Updated the package README to link directly to the live VitePress site.
+
+### Fixed
+- **CI/CD Hardening**: Resolved dependency resolution and build target issues in the GitHub Actions deployment pipeline.
+
 ## [2.2.0] - 2026-04-17
 
 ### Added
