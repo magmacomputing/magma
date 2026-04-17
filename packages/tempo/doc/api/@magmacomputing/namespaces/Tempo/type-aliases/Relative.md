@@ -2,6 +2,6 @@
 
 ***
 
-> **Relative** = [`Relative`](../../../../type-aliases/Relative.md)
+> **Relative** = `t.Relative`
 
-Defined in: [tempo.class.ts:1860](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1860)
+Defined in: [tempo.class.ts:1870](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1870)

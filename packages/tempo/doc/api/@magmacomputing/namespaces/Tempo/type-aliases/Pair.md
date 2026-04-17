@@ -2,6 +2,6 @@
 
 ***
 
-> **Pair** = [`Pair`](../../../../type-aliases/Pair.md)
+> **Pair** = `t.Pair`
 
-Defined in: [tempo.class.ts:1830](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1830)
+Defined in: [tempo.class.ts:1840](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1840)
