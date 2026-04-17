@@ -2,13 +2,11 @@
 
 ***
 
-Defined in: [tempo.class.ts:1887](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1887)
-
-Type for consistency in expected arguments for helper functions
+Defined in: [tempo.class.ts:1897](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1897)
 
 ## Extends
 
-- [`Params`](../../../../interfaces/Params.md)\<`T`\>
+- `Params`\<`T`\>
 
 ## Type Parameters
 
@@ -20,15 +18,13 @@ Type for consistency in expected arguments for helper functions
 
 > **Params**(`tempo?`, `options?`): `T`
 
-Defined in: [tempo.class.ts:1887](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1887)
-
-Type for consistency in expected arguments for helper functions
+Defined in: [tempo.class.ts:1897](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1897)
 
 ### Parameters
 
 #### tempo?
 
-[`DateTime`](../../../../type-aliases/DateTime.md)
+`DateTime`
 
 #### options?
 
@@ -58,7 +54,7 @@ globalThis Discovery Symbol
 
 ##### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => [`Tempo`](../../../../classes/Tempo.md); `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => [`Tempo`](../../../../classes/Tempo.md); \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../../Internal/type-aliases/PatternOption.md)\<[`Logic`](../../../../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => [`Tempo`](../../../../classes/Tempo.md); `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => [`Tempo`](../../../../classes/Tempo.md); \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -70,7 +66,7 @@ custom format strings to merge in the FORMAT enum
 
 ##### layout?
 
-[`PatternOption`](../../Internal/type-aliases/PatternOption.md)\<[`Pattern`](../../../../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -82,7 +78,7 @@ locale (e.g. en-AU)
 
 ##### mdyLayouts?
 
-[`Pair`](../../../../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -100,7 +96,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ##### period?
 
-[`PatternOption`](../../Internal/type-aliases/PatternOption.md)\<[`Logic`](../../../../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -112,7 +108,7 @@ pivot year for two-digit years
 
 ##### plugins?
 
-[`Plugin`](../../../../interfaces/Plugin.md) \| [`Plugin`](../../../../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -136,7 +132,7 @@ suppress console output during catch
 
 ##### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../../Internal/type-aliases/PatternOption.md)\<[`Pattern`](../../../../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -154,7 +150,7 @@ localStorage key
 
 ##### timeStamp?
 
-[`TimeStamp`](../../Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -166,7 +162,7 @@ Temporal timeZone
 
 ##### value?
 
-[`DateTime`](../../../../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -178,9 +174,7 @@ supplied value to parse
 
 > **Params**(`options`): `T`
 
-Defined in: [tempo.class.ts:1887](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1887)
-
-Type for consistency in expected arguments for helper functions
+Defined in: [tempo.class.ts:1897](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1897)
 
 ### Parameters
 
@@ -212,7 +206,7 @@ globalThis Discovery Symbol
 
 ##### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => [`Tempo`](../../../../classes/Tempo.md); `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => [`Tempo`](../../../../classes/Tempo.md); \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../../Internal/type-aliases/PatternOption.md)\<[`Logic`](../../../../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => [`Tempo`](../../../../classes/Tempo.md); `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => [`Tempo`](../../../../classes/Tempo.md); \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -224,7 +218,7 @@ custom format strings to merge in the FORMAT enum
 
 ##### layout?
 
-[`PatternOption`](../../Internal/type-aliases/PatternOption.md)\<[`Pattern`](../../../../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -236,7 +230,7 @@ locale (e.g. en-AU)
 
 ##### mdyLayouts?
 
-[`Pair`](../../../../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -254,7 +248,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ##### period?
 
-[`PatternOption`](../../Internal/type-aliases/PatternOption.md)\<[`Logic`](../../../../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -266,7 +260,7 @@ pivot year for two-digit years
 
 ##### plugins?
 
-[`Plugin`](../../../../interfaces/Plugin.md) \| [`Plugin`](../../../../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -290,7 +284,7 @@ suppress console output during catch
 
 ##### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../../Internal/type-aliases/PatternOption.md)\<[`Pattern`](../../../../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -308,7 +302,7 @@ localStorage key
 
 ##### timeStamp?
 
-[`TimeStamp`](../../Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -320,7 +314,7 @@ Temporal timeZone
 
 ##### value?
 
-[`DateTime`](../../../../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 

@@ -2,9 +2,9 @@
 
 ***
 
-> **PatternOptionArray**\<`T`\> = [`PatternOptionArray`](../../Internal/type-aliases/PatternOptionArray.md)\<`T`\>
+> **PatternOptionArray**\<`T`\> = `t.Internal.PatternOptionArray`\<`T`\>
 
-Defined in: [tempo.class.ts:1833](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1833)
+Defined in: [tempo.class.ts:1843](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1843)
 
 ## Type Parameters
 

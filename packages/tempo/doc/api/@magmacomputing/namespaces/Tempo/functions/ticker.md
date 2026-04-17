@@ -6,7 +6,7 @@
 
 > **ticker**(`interval?`): `Instance`
 
-Defined in: [plugin/extend/extend.ticker.ts:16](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/extend/extend.ticker.ts#L16)
+Defined in: [plugin/extend/extend.ticker.ts:16](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/extend/extend.ticker.ts#L16)
 
 ### Parameters
 
@@ -22,7 +22,7 @@ Defined in: [plugin/extend/extend.ticker.ts:16](https://github.com/magmacomputin
 
 > **ticker**(`options`): `Instance`
 
-Defined in: [plugin/extend/extend.ticker.ts:17](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/extend/extend.ticker.ts#L17)
+Defined in: [plugin/extend/extend.ticker.ts:17](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/extend/extend.ticker.ts#L17)
 
 ### Parameters
 
@@ -38,7 +38,7 @@ Defined in: [plugin/extend/extend.ticker.ts:17](https://github.com/magmacomputin
 
 > **ticker**(`callback`): `Instance`
 
-Defined in: [plugin/extend/extend.ticker.ts:18](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/extend/extend.ticker.ts#L18)
+Defined in: [plugin/extend/extend.ticker.ts:18](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/extend/extend.ticker.ts#L18)
 
 ### Parameters
 
@@ -54,7 +54,7 @@ Defined in: [plugin/extend/extend.ticker.ts:18](https://github.com/magmacomputin
 
 > **ticker**(`interval`, `callback`): `Instance`
 
-Defined in: [plugin/extend/extend.ticker.ts:19](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/extend/extend.ticker.ts#L19)
+Defined in: [plugin/extend/extend.ticker.ts:19](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/extend/extend.ticker.ts#L19)
 
 ### Parameters
 
@@ -74,7 +74,7 @@ Defined in: [plugin/extend/extend.ticker.ts:19](https://github.com/magmacomputin
 
 > **ticker**(`options`, `callback`): `Instance`
 
-Defined in: [plugin/extend/extend.ticker.ts:20](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/extend/extend.ticker.ts#L20)
+Defined in: [plugin/extend/extend.ticker.ts:20](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/extend/extend.ticker.ts#L20)
 
 ### Parameters
 
@@ -94,7 +94,7 @@ Defined in: [plugin/extend/extend.ticker.ts:20](https://github.com/magmacomputin
 
 > **ticker**(`options`, `extraOptions`): `Instance`
 
-Defined in: [plugin/extend/extend.ticker.ts:21](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/extend/extend.ticker.ts#L21)
+Defined in: [plugin/extend/extend.ticker.ts:21](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/extend/extend.ticker.ts#L21)
 
 ### Parameters
 

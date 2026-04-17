@@ -2,9 +2,9 @@
 
 ***
 
-> **FormatType**\<`K`\> = [`FormatType`](../../../../type-aliases/FormatType.md)\<`K`\>
+> **FormatType**\<`K`\> = `t.FormatType`\<`K`\>
 
-Defined in: [tempo.class.ts:1855](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1855)
+Defined in: [tempo.class.ts:1865](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1865)
 
 ## Type Parameters
 

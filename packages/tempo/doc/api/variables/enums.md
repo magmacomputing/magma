@@ -4,7 +4,7 @@
 
 > **enums**: `object`
 
-Defined in: [tempo.enum.ts:237](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.enum.ts#L237)
+Defined in: [tempo.enum.ts:237](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.enum.ts#L237)
 
 public-reachable enums
 
@@ -48,7 +48,7 @@ common format aliases
 
 > **get** **maxTempo**(): `bigint`
 
-Defined in: [tempo.enum.ts:97](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.enum.ts#L97)
+Defined in: [tempo.enum.ts:97](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.enum.ts#L97)
 
 Tempo(31-Dec-9999.23:59:59).ns
 
@@ -62,7 +62,7 @@ Tempo(31-Dec-9999.23:59:59).ns
 
 > **get** **minTempo**(): `bigint`
 
-Defined in: [tempo.enum.ts:98](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.enum.ts#L98)
+Defined in: [tempo.enum.ts:98](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.enum.ts#L98)
 
 Tempo(01-Jan-1000.00:00:00).ns
 

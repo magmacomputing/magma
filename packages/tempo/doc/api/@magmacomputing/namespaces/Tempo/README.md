@@ -72,7 +72,7 @@
 
 > **get** **COMPASS**(): `EnumifyType`\<\{ `East`: `"east"`; `North`: `"north"`; `South`: `"south"`; `West`: `"west"`; \}\>
 
-Defined in: [tempo.class.ts:80](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L80)
+Defined in: [tempo.class.ts:84](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L84)
 
 Compass cardinal points
 
@@ -88,7 +88,7 @@ Compass cardinal points
 
 > **get** **DURATION**(): `EnumifyType`\<\{ `day`: `86400`; `hour`: `3600`; `microsecond`: `0.000001`; `millisecond`: `0.001`; `minute`: `60`; `month`: `2628000`; `nanosecond`: `1e-9`; `second`: `1`; `week`: `604800`; `year`: `31536000`; \}\>
 
-Defined in: [tempo.class.ts:76](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L76)
+Defined in: [tempo.class.ts:80](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L80)
 
 Time durations as seconds (singular)
 
@@ -104,7 +104,7 @@ Time durations as seconds (singular)
 
 > **get** **DURATIONS**(): `EnumifyType`\<\{ `days`: `86400000`; `hours`: `3600000`; `microseconds`: `0.001`; `milliseconds`: `1`; `minutes`: `60000`; `months`: `2628000000`; `nanoseconds`: `0.000001`; `seconds`: `1000`; `weeks`: `604800000`; `years`: `31536000000`; \}\>
 
-Defined in: [tempo.class.ts:77](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L77)
+Defined in: [tempo.class.ts:81](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L81)
 
 Time durations as milliseconds (plural)
 
@@ -120,7 +120,7 @@ Time durations as milliseconds (plural)
 
 > **get** **ELEMENT**(): `EnumifyType`\<\{ `dd`: `"day"`; `hh`: `"hour"`; `mi`: `"minute"`; `mm`: `"month"`; `ms`: `"millisecond"`; `ns`: `"nanosecond"`; `ss`: `"second"`; `us`: `"microsecond"`; `ww`: `"week"`; `yy`: `"year"`; \}\>
 
-Defined in: [tempo.class.ts:82](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L82)
+Defined in: [tempo.class.ts:86](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L86)
 
 Tempo to Temporal DateTime Units map
 
@@ -136,7 +136,7 @@ Tempo to Temporal DateTime Units map
 
 > **get** **MONTH**(): `EnumifyType`\<`Index`\<readonly \[`"All"`, `"Jan"`, `"Feb"`, `"Mar"`, `"Apr"`, `"May"`, `"Jun"`, `"Jul"`, `"Aug"`, `"Sep"`, `"Oct"`, `"Nov"`, `"Dec"`\]\>\>
 
-Defined in: [tempo.class.ts:74](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L74)
+Defined in: [tempo.class.ts:78](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L78)
 
 Month names (short-form)
 
@@ -152,7 +152,7 @@ Month names (short-form)
 
 > **get** **MONTHS**(): `EnumifyType`\<`Index`\<readonly \[`"Every"`, `"January"`, `"February"`, `"March"`, `"April"`, `"May"`, `"June"`, `"July"`, `"August"`, `"September"`, `"October"`, `"November"`, `"December"`\]\>\>
 
-Defined in: [tempo.class.ts:75](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L75)
+Defined in: [tempo.class.ts:79](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L79)
 
 Month names (long-form)
 
@@ -168,7 +168,7 @@ Month names (long-form)
 
 > **get** **SEASON**(): `EnumifyType`\<\{ `Autumn`: `"autumn"`; `Spring`: `"spring"`; `Summer`: `"summer"`; `Winter`: `"winter"`; \}\>
 
-Defined in: [tempo.class.ts:79](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L79)
+Defined in: [tempo.class.ts:83](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L83)
 
 Quarterly Seasons
 
@@ -184,7 +184,7 @@ Quarterly Seasons
 
 > **get** **WEEKDAY**(): `EnumifyType`\<`Index`\<readonly \[`"All"`, `"Mon"`, `"Tue"`, `"Wed"`, `"Thu"`, `"Fri"`, `"Sat"`, `"Sun"`\]\>\>
 
-Defined in: [tempo.class.ts:72](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L72)
+Defined in: [tempo.class.ts:76](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L76)
 
 Weekday names (short-form)
 
@@ -200,7 +200,7 @@ Weekday names (short-form)
 
 > **get** **WEEKDAYS**(): `EnumifyType`\<`Index`\<readonly \[`"Everyday"`, `"Monday"`, `"Tuesday"`, `"Wednesday"`, `"Thursday"`, `"Friday"`, `"Saturday"`, `"Sunday"`\]\>\>
 
-Defined in: [tempo.class.ts:73](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L73)
+Defined in: [tempo.class.ts:77](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L77)
 
 Weekday names (long-form)
 

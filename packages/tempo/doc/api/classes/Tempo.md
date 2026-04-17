@@ -2,7 +2,7 @@
 
 ***
 
-Defined in: [tempo.class.ts:71](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L71)
+Defined in: [tempo.class.ts:75](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L75)
 
 # Tempo
 A powerful wrapper around `Temporal.ZonedDateTime` for flexible parsing and intuitive manipulation of date-time objects.
@@ -10,7 +10,7 @@ Bridges the gap between raw string/number inputs and the strict requirements of 
 
 ## Indexable
 
-> \[`key`: `symbol`\]: `string` \| `boolean` \| ((`hint?`) => `string` \| `number` \| `bigint`) \| (() => `ArrayIterator`\<`EntryOf`\<`any`\>\>) \| (() => `object`)
+> \[`key`: `symbol`\]: `string` \| `boolean` \| ((`hint?`) => `string` \| `number` \| `bigint`) \| (() => `ArrayIterator`\<`EntryOf`\<`any`\>\>) \| \{ \}
 
 ## Constructors
 
@@ -18,7 +18,7 @@ Bridges the gap between raw string/number inputs and the strict requirements of 
 
 > **new Tempo**(`options?`): `Tempo`
 
-Defined in: [tempo.class.ts:1035](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1035)
+Defined in: [tempo.class.ts:1045](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1045)
 
 Instantiates a new `Tempo` object with configuration only.
 
@@ -54,7 +54,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -66,7 +66,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -78,7 +78,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -96,7 +96,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -108,7 +108,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -132,7 +132,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -150,7 +150,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -162,7 +162,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -174,7 +174,7 @@ supplied value to parse
 
 > **new Tempo**(`tempo`, `options?`): `Tempo`
 
-Defined in: [tempo.class.ts:1042](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1042)
+Defined in: [tempo.class.ts:1052](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1052)
 
 Instantiates a new `Tempo` object with a value.
 
@@ -182,7 +182,7 @@ Instantiates a new `Tempo` object with a value.
 
 ##### tempo
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 The date-time value to parse.
 
@@ -216,7 +216,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -228,7 +228,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -240,7 +240,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -258,7 +258,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -270,7 +270,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -294,7 +294,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -312,7 +312,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -324,7 +324,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -340,7 +340,7 @@ supplied value to parse
 
 > **get** **\[toStringTag\]**(): `string`
 
-Defined in: [tempo.class.ts:1024](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1024)
+Defined in: [tempo.class.ts:1034](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1034)
 
 ##### Returns
 
@@ -354,7 +354,7 @@ Defined in: [tempo.class.ts:1024](https://github.com/magmacomputing/magma/blob/5
 
 > **get** **cal**(): `string`
 
-Defined in: [tempo.class.ts:1217](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1217)
+Defined in: [tempo.class.ts:1227](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1227)
 
 Temporal Calendar ID (e.g., 'iso8601' | 'gregory')
 
@@ -368,15 +368,15 @@ Temporal Calendar ID (e.g., 'iso8601' | 'gregory')
 
 #### Get Signature
 
-> **get** **config**(): [`Config`](../@magmacomputing/namespaces/Internal/interfaces/Config.md)
+> **get** **config**(): `Config`
 
-Defined in: [tempo.class.ts:1258](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1258)
+Defined in: [tempo.class.ts:1268](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1268)
 
 current Tempo configuration
 
 ##### Returns
 
-[`Config`](../@magmacomputing/namespaces/Internal/interfaces/Config.md)
+`Config`
 
 ***
 
@@ -386,7 +386,7 @@ current Tempo configuration
 
 > **get** **day**(): `number`
 
-Defined in: [tempo.class.ts:1208](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1208)
+Defined in: [tempo.class.ts:1218](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1218)
 
 Day of the month (alias for `dd`)
 
@@ -402,7 +402,7 @@ Day of the month (alias for `dd`)
 
 > **get** **dd**(): `number`
 
-Defined in: [tempo.class.ts:1207](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1207)
+Defined in: [tempo.class.ts:1217](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1217)
 
 Day of the month (1-31)
 
@@ -418,7 +418,7 @@ Day of the month (1-31)
 
 > **get** **dow**(): `0` \| `1` \| `2` \| `3` \| `4` \| `5` \| `6` \| `7`
 
-Defined in: [tempo.class.ts:1223](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1223)
+Defined in: [tempo.class.ts:1233](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1233)
 
 ISO weekday number: Mon=1, Sun=7
 
@@ -434,7 +434,7 @@ ISO weekday number: Mon=1, Sun=7
 
 > **get** **epoch**(): `SecureObject`\<\{ `ms`: `number`; `ns`: `bigint`; `ss`: `number`; `us`: `number`; \}\>
 
-Defined in: [tempo.class.ts:1288](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1288)
+Defined in: [tempo.class.ts:1298](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1298)
 
 units since epoch
 
@@ -450,7 +450,7 @@ units since epoch
 
 > **get** **ff**(): `number`
 
-Defined in: [tempo.class.ts:1215](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1215)
+Defined in: [tempo.class.ts:1225](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1225)
 
 Fractional seconds (e.g., 0.123456789)
 
@@ -466,7 +466,7 @@ Fractional seconds (e.g., 0.123456789)
 
 > **get** **fmt**(): `any`
 
-Defined in: [tempo.class.ts:1287](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1287)
+Defined in: [tempo.class.ts:1297](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1297)
 
 Formatted results for all pre-defined format codes
 
@@ -480,15 +480,15 @@ Formatted results for all pre-defined format codes
 
 #### Get Signature
 
-> **get** **hh**(): [`hh`](../type-aliases/hh.md)
+> **get** **hh**(): `hh`
 
-Defined in: [tempo.class.ts:1209](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1209)
+Defined in: [tempo.class.ts:1219](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1219)
 
 Hour of the day (0-23)
 
 ##### Returns
 
-[`hh`](../type-aliases/hh.md)
+`hh`
 
 ***
 
@@ -498,7 +498,7 @@ Hour of the day (0-23)
 
 > **get** **isValid**(): `boolean`
 
-Defined in: [tempo.class.ts:1226](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1226)
+Defined in: [tempo.class.ts:1236](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1236)
 
 `true` if the underlying date-time is valid.
 
@@ -512,15 +512,15 @@ Defined in: [tempo.class.ts:1226](https://github.com/magmacomputing/magma/blob/5
 
 #### Get Signature
 
-> **get** **mi**(): [`mi`](../type-aliases/mi.md)
+> **get** **mi**(): `mi`
 
-Defined in: [tempo.class.ts:1210](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1210)
+Defined in: [tempo.class.ts:1220](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1220)
 
 Minutes of the hour (0-59)
 
 ##### Returns
 
-[`mi`](../type-aliases/mi.md)
+`mi`
 
 ***
 
@@ -528,15 +528,15 @@ Minutes of the hour (0-59)
 
 #### Get Signature
 
-> **get** **mm**(): [`mm`](../type-aliases/mm.md)
+> **get** **mm**(): `mm`
 
-Defined in: [tempo.class.ts:1205](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1205)
+Defined in: [tempo.class.ts:1215](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1215)
 
 Month number: Jan=1, Dec=12
 
 ##### Returns
 
-[`mm`](../type-aliases/mm.md)
+`mm`
 
 ***
 
@@ -546,7 +546,7 @@ Month number: Jan=1, Dec=12
 
 > **get** **mmm**(): `"All"` \| `"Jan"` \| `"Feb"` \| `"Mar"` \| `"Apr"` \| `"May"` \| `"Jun"` \| `"Jul"` \| `"Aug"` \| `"Sep"` \| `"Oct"` \| `"Nov"` \| `"Dec"`
 
-Defined in: [tempo.class.ts:1219](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1219)
+Defined in: [tempo.class.ts:1229](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1229)
 
 Short month name (e.g., 'Jan')
 
@@ -562,7 +562,7 @@ Short month name (e.g., 'Jan')
 
 > **get** **mon**(): `"May"` \| `"Every"` \| `"January"` \| `"February"` \| `"March"` \| `"April"` \| `"June"` \| `"July"` \| `"August"` \| `"September"` \| `"October"` \| `"November"` \| `"December"`
 
-Defined in: [tempo.class.ts:1220](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1220)
+Defined in: [tempo.class.ts:1230](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1230)
 
 Full month name (e.g., 'January')
 
@@ -576,15 +576,15 @@ Full month name (e.g., 'January')
 
 #### Get Signature
 
-> **get** **ms**(): [`ms`](../type-aliases/ms.md)
+> **get** **ms**(): `ms`
 
-Defined in: [tempo.class.ts:1212](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1212)
+Defined in: [tempo.class.ts:1222](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1222)
 
 Milliseconds of the second (0-999)
 
 ##### Returns
 
-[`ms`](../type-aliases/ms.md)
+`ms`
 
 ***
 
@@ -594,7 +594,7 @@ Milliseconds of the second (0-999)
 
 > **get** **nano**(): `bigint`
 
-Defined in: [tempo.class.ts:1224](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1224)
+Defined in: [tempo.class.ts:1234](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1234)
 
 Nanoseconds since Unix epoch (BigInt)
 
@@ -608,15 +608,15 @@ Nanoseconds since Unix epoch (BigInt)
 
 #### Get Signature
 
-> **get** **ns**(): [`ns`](../type-aliases/ns.md)
+> **get** **ns**(): `ns`
 
-Defined in: [tempo.class.ts:1214](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1214)
+Defined in: [tempo.class.ts:1224](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1224)
 
 Nanoseconds of the microsecond (0-999)
 
 ##### Returns
 
-[`ns`](../type-aliases/ns.md)
+`ns`
 
 ***
 
@@ -624,15 +624,15 @@ Nanoseconds of the microsecond (0-999)
 
 #### Get Signature
 
-> **get** **parse**(): [`Parse`](../@magmacomputing/namespaces/Internal/interfaces/Parse.md)
+> **get** **parse**(): `Parse`
 
-Defined in: [tempo.class.ts:1281](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1281)
+Defined in: [tempo.class.ts:1291](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1291)
 
 Instance-specific parse rules (merged with global)
 
 ##### Returns
 
-[`Parse`](../@magmacomputing/namespaces/Internal/interfaces/Parse.md)
+`Parse`
 
 ***
 
@@ -642,7 +642,7 @@ Instance-specific parse rules (merged with global)
 
 > **get** **ranges**(): `Record`\<`string`, `string`\>
 
-Defined in: [tempo.class.ts:1245](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1245)
+Defined in: [tempo.class.ts:1255](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1255)
 
 current range key for every registered term
 
@@ -656,15 +656,15 @@ current range key for every registered term
 
 #### Get Signature
 
-> **get** **ss**(): [`ss`](../type-aliases/ss.md)
+> **get** **ss**(): `ss`
 
-Defined in: [tempo.class.ts:1211](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1211)
+Defined in: [tempo.class.ts:1221](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1221)
 
 Seconds of the minute (0-59)
 
 ##### Returns
 
-[`ss`](../type-aliases/ss.md)
+`ss`
 
 ***
 
@@ -674,7 +674,7 @@ Seconds of the minute (0-59)
 
 > **get** **term**(): `any`
 
-Defined in: [tempo.class.ts:1286](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1286)
+Defined in: [tempo.class.ts:1296](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1296)
 
 Object containing results from all term plugins
 
@@ -690,7 +690,7 @@ Object containing results from all term plugins
 
 > **get** **terms**(): `Record`\<`string`, `string`[]\>
 
-Defined in: [tempo.class.ts:1232](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1232)
+Defined in: [tempo.class.ts:1242](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1242)
 
 list of registered terms and their available range keys
 
@@ -706,7 +706,7 @@ list of registered terms and their available range keys
 
 > **get** **ts**(): `number` \| `bigint`
 
-Defined in: [tempo.class.ts:1218](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1218)
+Defined in: [tempo.class.ts:1228](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1228)
 
 Unix timestamp (defaults to milliseconds)
 
@@ -722,7 +722,7 @@ Unix timestamp (defaults to milliseconds)
 
 > **get** **tz**(): `string`
 
-Defined in: [tempo.class.ts:1216](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1216)
+Defined in: [tempo.class.ts:1226](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1226)
 
 IANA Time Zone ID (e.g., 'Australia/Sydney')
 
@@ -736,15 +736,15 @@ IANA Time Zone ID (e.g., 'Australia/Sydney')
 
 #### Get Signature
 
-> **get** **us**(): [`us`](../type-aliases/us.md)
+> **get** **us**(): `us`
 
-Defined in: [tempo.class.ts:1213](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1213)
+Defined in: [tempo.class.ts:1223](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1223)
 
 Microseconds of the millisecond (0-999)
 
 ##### Returns
 
-[`us`](../type-aliases/us.md)
+`us`
 
 ***
 
@@ -754,7 +754,7 @@ Microseconds of the millisecond (0-999)
 
 > **get** **wkd**(): `"Everyday"` \| `"Monday"` \| `"Tuesday"` \| `"Wednesday"` \| `"Thursday"` \| `"Friday"` \| `"Saturday"` \| `"Sunday"`
 
-Defined in: [tempo.class.ts:1222](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1222)
+Defined in: [tempo.class.ts:1232](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1232)
 
 Full weekday name (e.g., 'Monday')
 
@@ -768,15 +768,15 @@ Full weekday name (e.g., 'Monday')
 
 #### Get Signature
 
-> **get** **ww**(): [`ww`](../type-aliases/ww.md)
+> **get** **ww**(): `ww`
 
-Defined in: [tempo.class.ts:1206](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1206)
+Defined in: [tempo.class.ts:1216](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1216)
 
 ISO week number of the year
 
 ##### Returns
 
-[`ww`](../type-aliases/ww.md)
+`ww`
 
 ***
 
@@ -786,7 +786,7 @@ ISO week number of the year
 
 > **get** **www**(): `"All"` \| `"Mon"` \| `"Tue"` \| `"Wed"` \| `"Thu"` \| `"Fri"` \| `"Sat"` \| `"Sun"`
 
-Defined in: [tempo.class.ts:1221](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1221)
+Defined in: [tempo.class.ts:1231](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1231)
 
 Short weekday name (e.g., 'Mon')
 
@@ -802,7 +802,7 @@ Short weekday name (e.g., 'Mon')
 
 > **get** **yw**(): `number` \| `undefined`
 
-Defined in: [tempo.class.ts:1204](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1204)
+Defined in: [tempo.class.ts:1214](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1214)
 
 4-digit ISO week-numbering year
 
@@ -818,7 +818,7 @@ Defined in: [tempo.class.ts:1204](https://github.com/magmacomputing/magma/blob/5
 
 > **get** **yy**(): `number`
 
-Defined in: [tempo.class.ts:1203](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1203)
+Defined in: [tempo.class.ts:1213](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1213)
 
 4-digit year (e.g., 2024)
 
@@ -834,7 +834,7 @@ Defined in: [tempo.class.ts:1203](https://github.com/magmacomputing/magma/blob/5
 
 > **get** `static` **config**(): `any`
 
-Defined in: [tempo.class.ts:860](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L860)
+Defined in: [tempo.class.ts:868](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L868)
 
 global Tempo configuration
 
@@ -848,15 +848,15 @@ global Tempo configuration
 
 #### Get Signature
 
-> **get** `static` **default**(): `Readonly`\<\{ `calendar?`: `string` \| `SecureObject`\<`ZonedDateTime`\> \| `SecureObject`\<`PlainDate`\> \| `SecureObject`\<`PlainDateTime`\> \| `SecureObject`\<`PlainMonthDay`\> \| `SecureObject`\<`PlainYearMonth`\>; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: [`Logic`](../type-aliases/Logic.md) \| `SecureObject`\<`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\>\> \| `SecureObject`\<`Record`\<`string` \| `symbol`, [`Logic`](../type-aliases/Logic.md)\>\> \| `SecureArray`\<[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>\>; `formats?`: `SecureObject`\<`Property`\<`any`\>\>; `layout?`: [`Pattern`](../type-aliases/Pattern.md) \| `SecureObject`\<`Record`\<`string` \| `symbol`, [`Pattern`](../type-aliases/Pattern.md)\>\> \| `SecureArray`\<[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>\> \| `SecureObject`\<`Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>\>; `locale?`: `string`; `mdyLayouts?`: `SecureArray`\<[`Pair`](../type-aliases/Pair.md)\>; `mdyLocales?`: `string` \| `SecureArray`\<`string`\>; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: [`Logic`](../type-aliases/Logic.md) \| `SecureObject`\<`Record`\<`string` \| `symbol`, [`Logic`](../type-aliases/Logic.md)\>\> \| `SecureArray`\<[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>\> \| `SecureObject`\<`Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>\>; `pivot?`: `number`; `plugins?`: `SecureObject`\<[`Plugin`](../interfaces/Plugin.md)\> \| `SecureArray`\<[`Plugin`](../interfaces/Plugin.md)\>; `rtfFormat?`: `SecureObject`\<`RelativeTimeFormat`\>; `rtfStyle?`: `RelativeTimeFormatStyle`; `scope`: `"default"`; `silent?`: `boolean`; `snippet?`: [`Pattern`](../type-aliases/Pattern.md) \| `SecureObject`\<`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\>\> \| `SecureObject`\<`Record`\<`string` \| `symbol`, [`Pattern`](../type-aliases/Pattern.md)\>\> \| `SecureArray`\<[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>\>; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: [`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md); `timeZone`: `string` \| `SecureObject`\<`ZonedDateTime`\>; `value?`: `string` \| `number` \| `bigint` \| `Date` \| `SecureObject`\<`ZonedDateTime`\> \| `SecureObject`\<`PlainDate`\> \| `SecureObject`\<`PlainDateTime`\> \| `SecureObject`\<`Tempo`\> \| `SecureObject`\<`Instant`\> \| `SecureObject`\<`PlainTime`\> \| `SecureObject`\<`Duration`\> \| `SecureObject`\<`ZonedDateTimeLikeObject`\> \| `null`; \}\>
+> **get** `static` **default**(): `Readonly`\<\{ `calendar?`: `string` \| `SecureObject`\<`ZonedDateTime`\> \| `SecureObject`\<`PlainDate`\> \| `SecureObject`\<`PlainDateTime`\> \| `SecureObject`\<`PlainMonthDay`\> \| `SecureObject`\<`PlainYearMonth`\>; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: `Logic` \| `SecureObject`\<`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\>\> \| `SecureObject`\<`Record`\<`string` \| `symbol`, `Logic`\>\> \| `SecureArray`\<`PatternOption`\<`Logic`\>\>; `formats?`: `SecureObject`\<`Property`\<`any`\>\>; `layout?`: `Pattern` \| `SecureObject`\<`Record`\<`string` \| `symbol`, `Pattern`\>\> \| `SecureArray`\<`PatternOption`\<`Pattern`\>\> \| `SecureObject`\<`Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>\>; `locale?`: `string`; `mdyLayouts?`: `SecureArray`\<`Pair`\>; `mdyLocales?`: `string` \| `SecureArray`\<`string`\>; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: `Logic` \| `SecureObject`\<`Record`\<`string` \| `symbol`, `Logic`\>\> \| `SecureArray`\<`PatternOption`\<`Logic`\>\> \| `SecureObject`\<`Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>\>; `pivot?`: `number`; `plugins?`: `SecureObject`\<`Plugin`\> \| `SecureArray`\<`Plugin`\>; `rtfFormat?`: `SecureObject`\<`RelativeTimeFormat`\>; `rtfStyle?`: `RelativeTimeFormatStyle`; `scope`: `"default"`; `silent?`: `boolean`; `snippet?`: `Pattern` \| `SecureObject`\<`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\>\> \| `SecureObject`\<`Record`\<`string` \| `symbol`, `Pattern`\>\> \| `SecureArray`\<`PatternOption`\<`Pattern`\>\>; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: `TimeStamp`; `timeZone`: `string` \| `SecureObject`\<`ZonedDateTime`\>; `value?`: `string` \| `number` \| `bigint` \| `Date` \| `SecureObject`\<`ZonedDateTime`\> \| `SecureObject`\<`PlainDate`\> \| `SecureObject`\<`PlainDateTime`\> \| `SecureObject`\<`Tempo`\> \| `SecureObject`\<`Instant`\> \| `SecureObject`\<`PlainTime`\> \| `SecureObject`\<`Duration`\> \| `SecureObject`\<`ZonedDateTimeLikeObject`\> \| `null`; \}\>
 
-Defined in: [tempo.class.ts:923](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L923)
+Defined in: [tempo.class.ts:931](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L931)
 
 Tempo initial default settings
 
 ##### Returns
 
-`Readonly`\<\{ `calendar?`: `string` \| `SecureObject`\<`ZonedDateTime`\> \| `SecureObject`\<`PlainDate`\> \| `SecureObject`\<`PlainDateTime`\> \| `SecureObject`\<`PlainMonthDay`\> \| `SecureObject`\<`PlainYearMonth`\>; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: [`Logic`](../type-aliases/Logic.md) \| `SecureObject`\<`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\>\> \| `SecureObject`\<`Record`\<`string` \| `symbol`, [`Logic`](../type-aliases/Logic.md)\>\> \| `SecureArray`\<[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>\>; `formats?`: `SecureObject`\<`Property`\<`any`\>\>; `layout?`: [`Pattern`](../type-aliases/Pattern.md) \| `SecureObject`\<`Record`\<`string` \| `symbol`, [`Pattern`](../type-aliases/Pattern.md)\>\> \| `SecureArray`\<[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>\> \| `SecureObject`\<`Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>\>; `locale?`: `string`; `mdyLayouts?`: `SecureArray`\<[`Pair`](../type-aliases/Pair.md)\>; `mdyLocales?`: `string` \| `SecureArray`\<`string`\>; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: [`Logic`](../type-aliases/Logic.md) \| `SecureObject`\<`Record`\<`string` \| `symbol`, [`Logic`](../type-aliases/Logic.md)\>\> \| `SecureArray`\<[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>\> \| `SecureObject`\<`Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>\>; `pivot?`: `number`; `plugins?`: `SecureObject`\<[`Plugin`](../interfaces/Plugin.md)\> \| `SecureArray`\<[`Plugin`](../interfaces/Plugin.md)\>; `rtfFormat?`: `SecureObject`\<`RelativeTimeFormat`\>; `rtfStyle?`: `RelativeTimeFormatStyle`; `scope`: `"default"`; `silent?`: `boolean`; `snippet?`: [`Pattern`](../type-aliases/Pattern.md) \| `SecureObject`\<`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\>\> \| `SecureObject`\<`Record`\<`string` \| `symbol`, [`Pattern`](../type-aliases/Pattern.md)\>\> \| `SecureArray`\<[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>\>; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: [`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md); `timeZone`: `string` \| `SecureObject`\<`ZonedDateTime`\>; `value?`: `string` \| `number` \| `bigint` \| `Date` \| `SecureObject`\<`ZonedDateTime`\> \| `SecureObject`\<`PlainDate`\> \| `SecureObject`\<`PlainDateTime`\> \| `SecureObject`\<`Tempo`\> \| `SecureObject`\<`Instant`\> \| `SecureObject`\<`PlainTime`\> \| `SecureObject`\<`Duration`\> \| `SecureObject`\<`ZonedDateTimeLikeObject`\> \| `null`; \}\>
+`Readonly`\<\{ `calendar?`: `string` \| `SecureObject`\<`ZonedDateTime`\> \| `SecureObject`\<`PlainDate`\> \| `SecureObject`\<`PlainDateTime`\> \| `SecureObject`\<`PlainMonthDay`\> \| `SecureObject`\<`PlainYearMonth`\>; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: `Logic` \| `SecureObject`\<`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\>\> \| `SecureObject`\<`Record`\<`string` \| `symbol`, `Logic`\>\> \| `SecureArray`\<`PatternOption`\<`Logic`\>\>; `formats?`: `SecureObject`\<`Property`\<`any`\>\>; `layout?`: `Pattern` \| `SecureObject`\<`Record`\<`string` \| `symbol`, `Pattern`\>\> \| `SecureArray`\<`PatternOption`\<`Pattern`\>\> \| `SecureObject`\<`Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>\>; `locale?`: `string`; `mdyLayouts?`: `SecureArray`\<`Pair`\>; `mdyLocales?`: `string` \| `SecureArray`\<`string`\>; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: `Logic` \| `SecureObject`\<`Record`\<`string` \| `symbol`, `Logic`\>\> \| `SecureArray`\<`PatternOption`\<`Logic`\>\> \| `SecureObject`\<`Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>\>; `pivot?`: `number`; `plugins?`: `SecureObject`\<`Plugin`\> \| `SecureArray`\<`Plugin`\>; `rtfFormat?`: `SecureObject`\<`RelativeTimeFormat`\>; `rtfStyle?`: `RelativeTimeFormatStyle`; `scope`: `"default"`; `silent?`: `boolean`; `snippet?`: `Pattern` \| `SecureObject`\<`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\>\> \| `SecureObject`\<`Record`\<`string` \| `symbol`, `Pattern`\>\> \| `SecureArray`\<`PatternOption`\<`Pattern`\>\>; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: `TimeStamp`; `timeZone`: `string` \| `SecureObject`\<`ZonedDateTime`\>; `value?`: `string` \| `number` \| `bigint` \| `Date` \| `SecureObject`\<`ZonedDateTime`\> \| `SecureObject`\<`PlainDate`\> \| `SecureObject`\<`PlainDateTime`\> \| `SecureObject`\<`Tempo`\> \| `SecureObject`\<`Instant`\> \| `SecureObject`\<`PlainTime`\> \| `SecureObject`\<`Duration`\> \| `SecureObject`\<`ZonedDateTimeLikeObject`\> \| `null`; \}\>
 
 ***
 
@@ -866,7 +866,7 @@ Tempo initial default settings
 
 > **get** `static` **discovery**(): `any`
 
-Defined in: [tempo.class.ts:876](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L876)
+Defined in: [tempo.class.ts:884](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L884)
 
 global discovery configuration
 
@@ -882,7 +882,7 @@ global discovery configuration
 
 > **get** `static` **FORMAT**(): `EnumifyType`\<\{ `date`: `"{yyyy}-{mm}-{dd}"`; `dayDate`: `"{dd}-{mmm}-{yyyy}"`; `dayMonth`: `"{dd}-{mmm}"`; `dayTime`: `"{dd}-{mmm}-{yyyy} {hh}:{mi}:{ss}"`; `display`: `"{www}, {dd} {mmm} {yyyy}"`; `logStamp`: `"{yyyy}{mm}{dd}T{hhmiss}.{ff}"`; `sortTime`: `"{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}"`; `time`: `"{hh}:{mi}:{ss}"`; `weekDate`: `"{www}, {yyyy}-{mmm}-{dd}"`; `weekStamp`: `"{www}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}.{ff}"`; `weekTime`: `"{www}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}"`; `yearMonth`: `"{yyyy}{mm}"`; `yearMonthDay`: `"{yyyy}{mm}{dd}"`; `yearWeek`: `"{yw}{ww}"`; \}\>
 
-Defined in: [tempo.class.ts:83](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L83)
+Defined in: [tempo.class.ts:87](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L87)
 
 Pre-configured format {name -> string} pairs
 
@@ -898,7 +898,7 @@ Pre-configured format {name -> string} pairs
 
 > **get** `static` **formats**(): `any`
 
-Defined in: [tempo.class.ts:912](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L912)
+Defined in: [tempo.class.ts:920](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L920)
 
 static Tempo.formats (registry)
 
@@ -914,7 +914,7 @@ static Tempo.formats (registry)
 
 > **get** `static` **instant**(): `Instant`
 
-Defined in: [tempo.class.ts:895](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L895)
+Defined in: [tempo.class.ts:903](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L903)
 
 get the current system Instant
 
@@ -930,7 +930,7 @@ get the current system Instant
 
 > **get** `static` **LIMIT**(): `object`
 
-Defined in: [tempo.class.ts:87](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L87)
+Defined in: [tempo.class.ts:91](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L91)
 
 some useful Dates
 
@@ -968,7 +968,7 @@ Tempo(01-Jan-1000.00:00:00).ns
 
 > **get** `static` **MODE**(): `EnumifyType`\<\{ `Auto`: `"auto"`; `Defer`: `"defer"`; `Strict`: `"strict"`; \}\>
 
-Defined in: [tempo.class.ts:86](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L86)
+Defined in: [tempo.class.ts:90](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L90)
 
 initialization strategies
 
@@ -984,7 +984,7 @@ initialization strategies
 
 > **get** `static` **NUMBER**(): `EnumifyType`\<\{ `eight`: `8`; `five`: `5`; `four`: `4`; `nine`: `9`; `one`: `1`; `seven`: `7`; `six`: `6`; `ten`: `10`; `three`: `3`; `two`: `2`; `zero`: `0`; \}\>
 
-Defined in: [tempo.class.ts:84](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L84)
+Defined in: [tempo.class.ts:88](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L88)
 
 Number names (0-10)
 
@@ -1000,7 +1000,7 @@ Number names (0-10)
 
 > **get** `static` **options**(): `any`
 
-Defined in: [tempo.class.ts:882](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L882)
+Defined in: [tempo.class.ts:890](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L890)
 
 ##### Returns
 
@@ -1012,15 +1012,15 @@ Defined in: [tempo.class.ts:882](https://github.com/magmacomputing/magma/blob/5f
 
 #### Get Signature
 
-> **get** `static` **parse**(): [`Parse`](../@magmacomputing/namespaces/Internal/interfaces/Parse.md)
+> **get** `static` **parse**(): `Parse`
 
-Defined in: [tempo.class.ts:930](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L930)
+Defined in: [tempo.class.ts:938](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L938)
 
 configuration governing the static 'rules' used when parsing t.DateTime argument
 
 ##### Returns
 
-[`Parse`](../@magmacomputing/namespaces/Internal/interfaces/Parse.md)
+`Parse`
 
 ***
 
@@ -1030,7 +1030,7 @@ configuration governing the static 'rules' used when parsing t.DateTime argument
 
 > **get** `static` **properties**(): `SecureArray`\<`string`\>
 
-Defined in: [tempo.class.ts:917](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L917)
+Defined in: [tempo.class.ts:925](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L925)
 
 static Tempo properties getter
 
@@ -1044,15 +1044,15 @@ static Tempo properties getter
 
 #### Get Signature
 
-> **get** `static` **terms**(): `SecureArray`\<`Omit`\<[`TermPlugin`](../interfaces/TermPlugin.md), `"define"` \| `"resolve"`\>\> & `Record`\<`string`, `Omit`\<[`TermPlugin`](../interfaces/TermPlugin.md), `"define"` \| `"resolve"`\>\>
+> **get** `static` **terms**(): `SecureArray`\<`Omit`\<`TermPlugin`, `"define"` \| `"resolve"`\>\> & `Record`\<`string`, `Omit`\<`TermPlugin`, `"define"` \| `"resolve"`\>\>
 
-Defined in: [tempo.class.ts:898](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L898)
+Defined in: [tempo.class.ts:906](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L906)
 
 static Tempo.terms (registry)
 
 ##### Returns
 
-`SecureArray`\<`Omit`\<[`TermPlugin`](../interfaces/TermPlugin.md), `"define"` \| `"resolve"`\>\> & `Record`\<`string`, `Omit`\<[`TermPlugin`](../interfaces/TermPlugin.md), `"define"` \| `"resolve"`\>\>
+`SecureArray`\<`Omit`\<`TermPlugin`, `"define"` \| `"resolve"`\>\> & `Record`\<`string`, `Omit`\<`TermPlugin`, `"define"` \| `"resolve"`\>\>
 
 ***
 
@@ -1062,7 +1062,7 @@ static Tempo.terms (registry)
 
 > **get** `static` **TIMEZONE**(): `object`
 
-Defined in: [tempo.class.ts:85](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L85)
+Defined in: [tempo.class.ts:89](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L89)
 
 TimeZone aliases
 
@@ -1136,7 +1136,7 @@ TimeZone aliases
 
 > **\[iterator\]**(): `ArrayIterator`\<`EntryOf`\<`any`\>\>
 
-Defined in: [tempo.class.ts:1020](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1020)
+Defined in: [tempo.class.ts:1030](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1030)
 
 iterate over instance formats
 
@@ -1150,7 +1150,7 @@ iterate over instance formats
 
 > **\[toPrimitive\]**(`hint?`): `string` \| `number` \| `bigint`
 
-Defined in: [tempo.class.ts:1011](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1011)
+Defined in: [tempo.class.ts:1021](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1021)
 
 allow for auto-convert of Tempo to BigInt, Number or String
 
@@ -1170,7 +1170,7 @@ allow for auto-convert of Tempo to BigInt, Number or String
 
 > **add**(`tempo?`, `options?`): `Tempo`
 
-Defined in: [tempo.class.ts:1321](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1321)
+Defined in: [tempo.class.ts:1331](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1331)
 
 returns a new `Tempo` with specific duration added.
 
@@ -1178,7 +1178,7 @@ returns a new `Tempo` with specific duration added.
 
 ##### tempo?
 
-[`Add`](../type-aliases/Add.md)
+`Add`
 
 ##### options?
 
@@ -1208,7 +1208,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -1220,7 +1220,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -1232,7 +1232,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -1250,7 +1250,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -1262,7 +1262,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -1286,7 +1286,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -1304,7 +1304,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -1316,7 +1316,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -1330,7 +1330,7 @@ supplied value to parse
 
 > **clone**(): `Tempo`
 
-Defined in: [tempo.class.ts:1323](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1323)
+Defined in: [tempo.class.ts:1333](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1333)
 
 returns a clone of the current `Tempo` instance.
 
@@ -1346,7 +1346,7 @@ returns a clone of the current `Tempo` instance.
 
 > **format**\<`K`\>(`fmt`): `any`
 
-Defined in: [tempo.class.ts:1305](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1305)
+Defined in: [tempo.class.ts:1315](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1315)
 
 ##### Type Parameters
 
@@ -1368,7 +1368,7 @@ Defined in: [tempo.class.ts:1305](https://github.com/magmacomputing/magma/blob/5
 
 > **format**(`fmt`): `any`
 
-Defined in: [plugin/module/module.format.ts:12](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/module/module.format.ts#L12)
+Defined in: [plugin/module/module.format.ts:12](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/module/module.format.ts#L12)
 
 applies a format to the instance.
 
@@ -1388,7 +1388,7 @@ applies a format to the instance.
 
 > **set**(`tempo?`, `options?`): `Tempo`
 
-Defined in: [tempo.class.ts:1322](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1322)
+Defined in: [tempo.class.ts:1332](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1332)
 
 returns a new `Tempo` with specific offsets.
 
@@ -1396,7 +1396,7 @@ returns a new `Tempo` with specific offsets.
 
 ##### tempo?
 
-[`Set`](../type-aliases/Set.md)
+`Set`
 
 ##### options?
 
@@ -1426,7 +1426,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -1438,7 +1438,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -1450,7 +1450,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -1468,7 +1468,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -1480,7 +1480,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -1504,7 +1504,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -1522,7 +1522,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -1534,7 +1534,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -1550,7 +1550,7 @@ supplied value to parse
 
 > **since**(...`args`): `any`
 
-Defined in: [tempo.class.ts:1316](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1316)
+Defined in: [tempo.class.ts:1326](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1326)
 
 time elapsed since another date-time
 
@@ -1568,7 +1568,7 @@ time elapsed since another date-time
 
 > **since**(`until`, `opts?`): `string`
 
-Defined in: [plugin/module/module.duration.ts:18](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/module/module.duration.ts#L18)
+Defined in: [plugin/module/module.duration.ts:18](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/module/module.duration.ts#L18)
 
 time elapsed since (with unit)
 
@@ -1576,7 +1576,7 @@ time elapsed since (with unit)
 
 ###### until
 
-[`Until`](../type-aliases/Until.md)
+`Until`
 
 ###### opts?
 
@@ -1606,7 +1606,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -1618,7 +1618,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -1630,7 +1630,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -1648,7 +1648,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -1660,7 +1660,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -1684,7 +1684,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -1702,7 +1702,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -1714,7 +1714,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -1726,7 +1726,7 @@ supplied value to parse
 
 > **since**(`dateTimeOrOpts`, `until`): `string`
 
-Defined in: [plugin/module/module.duration.ts:19](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/module/module.duration.ts#L19)
+Defined in: [plugin/module/module.duration.ts:19](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/module/module.duration.ts#L19)
 
 time elapsed since another date-time (with unit)
 
@@ -1734,15 +1734,15 @@ time elapsed since another date-time (with unit)
 
 ###### dateTimeOrOpts
 
-[`DateTime`](../type-aliases/DateTime.md) \| \{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+`DateTime` \| \{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 ***
 
 ###### Type Literal
 
-\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
 ###### calendar?
 
@@ -1794,7 +1794,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -1824,7 +1824,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -1878,13 +1878,13 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
 ###### until
 
-[`Until`](../type-aliases/Until.md)
+`Until`
 
 ##### Returns
 
@@ -1894,7 +1894,7 @@ supplied value to parse
 
 > **since**(`dateTimeOrOpts?`, `opts?`): `string`
 
-Defined in: [plugin/module/module.duration.ts:20](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/module/module.duration.ts#L20)
+Defined in: [plugin/module/module.duration.ts:20](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/module/module.duration.ts#L20)
 
 time elapsed since another date-time (w'out unit)
 
@@ -1902,15 +1902,15 @@ time elapsed since another date-time (w'out unit)
 
 ###### dateTimeOrOpts?
 
-[`DateTime`](../type-aliases/DateTime.md) \| \{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+`DateTime` \| \{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 ***
 
 ###### Type Literal
 
-\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
 ###### calendar?
 
@@ -1962,7 +1962,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -1992,7 +1992,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -2046,7 +2046,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -2078,7 +2078,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -2090,7 +2090,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -2102,7 +2102,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -2120,7 +2120,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -2132,7 +2132,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -2156,7 +2156,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -2174,7 +2174,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -2186,7 +2186,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -2198,7 +2198,7 @@ supplied value to parse
 
 > **since**(`optsOrDate?`, `optsOrUntil?`): `string`
 
-Defined in: [plugin/module/module.duration.ts:21](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/module/module.duration.ts#L21)
+Defined in: [plugin/module/module.duration.ts:21](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/module/module.duration.ts#L21)
 
 time elapsed since another date-time
 
@@ -2222,7 +2222,7 @@ time elapsed since another date-time
 
 > **toDate**(): `Date`
 
-Defined in: [tempo.class.ts:1341](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1341)
+Defined in: [tempo.class.ts:1351](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1351)
 
 the date-time as a standard `Date` object.
 
@@ -2236,7 +2236,7 @@ the date-time as a standard `Date` object.
 
 > **toDateTime**(): `ZonedDateTime`
 
-Defined in: [tempo.class.ts:1326](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1326)
+Defined in: [tempo.class.ts:1336](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1336)
 
 returns the underlying Temporal.ZonedDateTime
 
@@ -2250,7 +2250,7 @@ returns the underlying Temporal.ZonedDateTime
 
 > **toInstant**(): `Instant`
 
-Defined in: [tempo.class.ts:1338](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1338)
+Defined in: [tempo.class.ts:1348](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1348)
 
 returns the underlying Temporal.Instant
 
@@ -2264,7 +2264,7 @@ returns the underlying Temporal.Instant
 
 > **toJSON**(): `object`
 
-Defined in: [tempo.class.ts:1350](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1350)
+Defined in: [tempo.class.ts:1360](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1360)
 
 Custom JSON serialization for `JSON.stringify`.
 
@@ -2314,7 +2314,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ##### plugins
 
-> **plugins**: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+> **plugins**: `Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -2356,7 +2356,7 @@ localStorage key
 
 ##### timeStamp
 
-> **timeStamp**: [`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+> **timeStamp**: `TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -2376,7 +2376,7 @@ Temporal timeZone
 
 > **toNow**(): `ZonedDateTime`
 
-Defined in: [tempo.class.ts:1340](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1340)
+Defined in: [tempo.class.ts:1350](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1350)
 
 the current system time localized to this instance.
 
@@ -2390,7 +2390,7 @@ the current system time localized to this instance.
 
 > **toPlainDate**(): `PlainDate`
 
-Defined in: [tempo.class.ts:1335](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1335)
+Defined in: [tempo.class.ts:1345](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1345)
 
 returns a Temporal.PlainDate representation
 
@@ -2404,7 +2404,7 @@ returns a Temporal.PlainDate representation
 
 > **toPlainDateTime**(): `PlainDateTime`
 
-Defined in: [tempo.class.ts:1337](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1337)
+Defined in: [tempo.class.ts:1347](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1347)
 
 returns a Temporal.PlainDateTime representation
 
@@ -2418,7 +2418,7 @@ returns a Temporal.PlainDateTime representation
 
 > **toPlainTime**(): `PlainTime`
 
-Defined in: [tempo.class.ts:1336](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1336)
+Defined in: [tempo.class.ts:1346](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1346)
 
 returns a Temporal.PlainTime representation
 
@@ -2432,7 +2432,7 @@ returns a Temporal.PlainTime representation
 
 > **toString**(): `string`
 
-Defined in: [tempo.class.ts:1343](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1343)
+Defined in: [tempo.class.ts:1353](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1353)
 
 ISO8601 string representation of the date-time.
 
@@ -2448,7 +2448,7 @@ ISO8601 string representation of the date-time.
 
 > **until**(...`args`): `any`
 
-Defined in: [tempo.class.ts:1311](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L1311)
+Defined in: [tempo.class.ts:1321](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L1321)
 
 time duration until another date-time
 
@@ -2464,9 +2464,9 @@ time duration until another date-time
 
 #### Call Signature
 
-> **until**(`dateTimeOrOpts?`, `opts?`): [`Duration`](../type-aliases/Duration.md)
+> **until**(`dateTimeOrOpts?`, `opts?`): `Duration`
 
-Defined in: [plugin/module/module.duration.ts:13](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/module/module.duration.ts#L13)
+Defined in: [plugin/module/module.duration.ts:13](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/module/module.duration.ts#L13)
 
 time duration until (returns Duration)
 
@@ -2474,15 +2474,15 @@ time duration until (returns Duration)
 
 ###### dateTimeOrOpts?
 
-[`DateTime`](../type-aliases/DateTime.md) \| \{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+`DateTime` \| \{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 ***
 
 ###### Type Literal
 
-\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
 ###### calendar?
 
@@ -2534,7 +2534,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -2564,7 +2564,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -2618,7 +2618,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -2650,7 +2650,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -2662,7 +2662,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -2674,7 +2674,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -2692,7 +2692,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -2704,7 +2704,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -2728,7 +2728,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -2746,7 +2746,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -2758,19 +2758,19 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
 ##### Returns
 
-[`Duration`](../type-aliases/Duration.md)
+`Duration`
 
 #### Call Signature
 
 > **until**(`unit`, `opts?`): `number`
 
-Defined in: [plugin/module/module.duration.ts:14](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/module/module.duration.ts#L14)
+Defined in: [plugin/module/module.duration.ts:14](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/module/module.duration.ts#L14)
 
 time duration until (with unit, returns number)
 
@@ -2778,7 +2778,7 @@ time duration until (with unit, returns number)
 
 ###### unit
 
-[`Unit`](../type-aliases/Unit.md)
+`Unit`
 
 ###### opts?
 
@@ -2808,7 +2808,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -2820,7 +2820,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -2832,7 +2832,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -2850,7 +2850,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -2862,7 +2862,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -2886,7 +2886,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -2904,7 +2904,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -2916,7 +2916,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -2928,7 +2928,7 @@ supplied value to parse
 
 > **until**(`dateTimeOrOpts`, `unit`): `number`
 
-Defined in: [plugin/module/module.duration.ts:15](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/module/module.duration.ts#L15)
+Defined in: [plugin/module/module.duration.ts:15](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/module/module.duration.ts#L15)
 
 time duration until another date-time (with unit )
 
@@ -2936,15 +2936,15 @@ time duration until another date-time (with unit )
 
 ###### dateTimeOrOpts
 
-[`DateTime`](../type-aliases/DateTime.md) \| \{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+`DateTime` \| \{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 ***
 
 ###### Type Literal
 
-\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
 ###### calendar?
 
@@ -2996,7 +2996,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -3026,7 +3026,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -3080,13 +3080,13 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
 ###### unit
 
-[`Unit`](../type-aliases/Unit.md)
+`Unit`
 
 ##### Returns
 
@@ -3094,9 +3094,9 @@ supplied value to parse
 
 #### Call Signature
 
-> **until**(`optsOrDate?`, `optsOrUntil?`): `number` \| [`Duration`](../type-aliases/Duration.md)
+> **until**(`optsOrDate?`, `optsOrUntil?`): `number` \| `Duration`
 
-Defined in: [plugin/module/module.duration.ts:16](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/plugin/module/module.duration.ts#L16)
+Defined in: [plugin/module/module.duration.ts:16](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/plugin/module/module.duration.ts#L16)
 
 fallback: union of possible returns
 
@@ -3104,7 +3104,7 @@ fallback: union of possible returns
 
 ###### optsOrDate?
 
-`string` \| `number` \| `bigint` \| `Tempo` \| `Instant` \| `ZonedDateTime` \| `Date` \| `PlainDate` \| `PlainTime` \| `PlainDateTime` \| `Duration` \| `ZonedDateTimeLikeObject` \| \{\[`key`: `string`\]: `any`; `calendar?`: `CalendarLike`; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: `Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>; `formats?`: `Property`\<`any`\>; `layout?`: [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: `RelativeTimeFormatStyle`; `silent?`: `boolean`; `snippet?`: `Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: [`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md); `timeZone?`: `TimeZoneLike`; `value?`: [`DateTime`](../type-aliases/DateTime.md); \} \| `object` & `object` \| `null`
+`string` \| `number` \| `bigint` \| `Tempo` \| `Instant` \| `ZonedDateTime` \| `Date` \| `PlainDate` \| `PlainTime` \| `PlainDateTime` \| `Duration` \| `ZonedDateTimeLikeObject` \| \{\[`key`: `string`\]: `any`; `calendar?`: `CalendarLike`; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: `Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>; `formats?`: `Property`\<`any`\>; `layout?`: `PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: `PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: `RelativeTimeFormatStyle`; `silent?`: `boolean`; `snippet?`: `Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: `TimeStamp`; `timeZone?`: `TimeZoneLike`; `value?`: `DateTime`; \} \| `object` & `object` \| `null`
 
 `string`
 
@@ -3156,7 +3156,7 @@ fallback: union of possible returns
 
 ###### Type Literal
 
-\{\[`key`: `string`\]: `any`; `calendar?`: `CalendarLike`; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: `Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>; `formats?`: `Property`\<`any`\>; `layout?`: [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: `RelativeTimeFormatStyle`; `silent?`: `boolean`; `snippet?`: `Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: [`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md); `timeZone?`: `TimeZoneLike`; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+\{\[`key`: `string`\]: `any`; `calendar?`: `CalendarLike`; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: `Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>; `formats?`: `Property`\<`any`\>; `layout?`: `PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: `PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: `RelativeTimeFormatStyle`; `silent?`: `boolean`; `snippet?`: `Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: `TimeStamp`; `timeZone?`: `TimeZoneLike`; `value?`: `DateTime`; \}
 
 ###### calendar?
 
@@ -3184,7 +3184,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -3196,7 +3196,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -3208,7 +3208,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -3226,7 +3226,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -3238,7 +3238,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -3262,7 +3262,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -3280,7 +3280,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -3292,7 +3292,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -3306,15 +3306,15 @@ supplied value to parse
 
 ###### optsOrUntil?
 
-[`Until`](../type-aliases/Until.md) \| \{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+`Until` \| \{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
-[`Until`](../type-aliases/Until.md)
+`Until`
 
 ***
 
 ###### Type Literal
 
-\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
 ###### calendar?
 
@@ -3366,7 +3366,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -3396,7 +3396,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -3450,13 +3450,13 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
 ##### Returns
 
-`number` \| [`Duration`](../type-aliases/Duration.md)
+`number` \| `Duration`
 
 ***
 
@@ -3464,7 +3464,7 @@ supplied value to parse
 
 > `static` **\[dispose\]**(): `void`
 
-Defined in: [tempo.class.ts:949](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L949)
+Defined in: [tempo.class.ts:957](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L957)
 
 release global config and reset library to defaults
 
@@ -3478,7 +3478,7 @@ release global config and reset library to defaults
 
 > `static` **\[hasInstance\]**(`instance`): `boolean`
 
-Defined in: [tempo.class.ts:953](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L953)
+Defined in: [tempo.class.ts:961](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L961)
 
 #### Parameters
 
@@ -3496,7 +3496,7 @@ Defined in: [tempo.class.ts:953](https://github.com/magmacomputing/magma/blob/5f
 
 > `static` **\[iterator\]**(): `ArrayIterator`\<`string`\>
 
-Defined in: [tempo.class.ts:944](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L944)
+Defined in: [tempo.class.ts:952](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L952)
 
 iterate over Tempo properties
 
@@ -3510,7 +3510,7 @@ iterate over Tempo properties
 
 > `static` **compare**(`tempo1?`, `tempo2?`): `number`
 
-Defined in: [tempo.class.ts:853](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L853)
+Defined in: [tempo.class.ts:861](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L861)
 
 Compares two `Tempo` instances or date-time values.
 
@@ -3518,11 +3518,11 @@ Compares two `Tempo` instances or date-time values.
 
 ##### tempo1?
 
-\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \} \| [`DateTime`](../type-aliases/DateTime.md)
+\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \} \| `DateTime`
 
 ###### Type Literal
 
-\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
 ###### calendar?
 
@@ -3574,7 +3574,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -3604,7 +3604,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -3658,21 +3658,21 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
 ***
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 ##### tempo2?
 
-\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \} \| [`DateTime`](../type-aliases/DateTime.md)
+\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \} \| `DateTime`
 
 ###### Type Literal
 
-\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: [`Pair`](../type-aliases/Pair.md)[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: [`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: [`DateTime`](../type-aliases/DateTime.md); \}
+\{\[`key`: `string`\]: `any`; `calendar?`: CalendarLike \| undefined; `catch?`: `boolean`; `debug?`: `boolean`; `discovery?`: `string` \| `symbol`; `event?`: Extend\<\{ readonly 'new.?years? ?eve': "31 Dec"; readonly nye: "31 Dec"; readonly 'new.?years?( ?day)?': "01 Jan"; readonly ny: "01 Jan"; readonly 'christmas ?eve': "24 Dec"; readonly christmas: "25 Dec"; ... 5 more ...; readonly yesterday: (this: Tempo) =\> Tempo; \}, string, string \| Function\> \| PatternOption\<...\> \| ...; `formats?`: `Property`\<`any`\>; `layout?`: PatternOption\<Pattern\> \| Extend\<\{ readonly \[x: symbol\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| ... 5 more ... \| "\{nbr\}\{sep\}?\{unt\}\{sep\}?\{afx\}"; \}, symbol, string\> \| undefined; `locale?`: `string`; `mdyLayouts?`: `Pair`[]; `mdyLocales?`: `string` \| `string`[]; `mode?`: `"auto"` \| `"strict"` \| `"defer"`; `period?`: PatternOption\<Logic\> \| Extend\<\{ readonly 'mid\[ -\]?night': "24:00"; readonly morning: "8:00"; readonly 'mid\[ -\]?morning': "10:00"; readonly 'mid\[ -\]?day': "12:00"; readonly noon: "12:00"; readonly 'after\[ -\]?noon': "3:00pm"; readonly evening: "18:00"; readonly night: "20:00"; \}, string, string \| Function\> \| undefined; `pivot?`: `number`; `plugins?`: `Plugin` \| `Plugin`[]; `rtfFormat?`: `RelativeTimeFormat`; `rtfStyle?`: RelativeTimeFormatStyle \| undefined; `silent?`: `boolean`; `snippet?`: Extend\<\{ readonly \[x: symbol\]: RegExp; \}, symbol, RegExp\> \| PatternOption\<Pattern\> \| undefined; `sphere?`: `"north"` \| `"south"` \| `"east"` \| `"west"`; `store?`: `string`; `timeStamp?`: TimeStamp \| undefined; `timeZone?`: TimeZoneLike \| undefined; `value?`: `DateTime`; \}
 
 ###### calendar?
 
@@ -3724,7 +3724,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -3754,7 +3754,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -3808,13 +3808,13 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
 ***
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 #### Returns
 
@@ -3824,9 +3824,9 @@ supplied value to parse
 
 ### duration()
 
-> `static` **duration**(`input`): [`Duration`](../type-aliases/Duration.md)
+> `static` **duration**(`input`): `Duration`
 
-Defined in: [tempo.class.ts:775](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L775)
+Defined in: [tempo.class.ts:783](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L783)
 
 returns a full Tempo Duration object (EDO) for the given input
 
@@ -3838,7 +3838,7 @@ returns a full Tempo Duration object (EDO) for the given input
 
 #### Returns
 
-[`Duration`](../type-aliases/Duration.md)
+`Duration`
 
 ***
 
@@ -3848,7 +3848,7 @@ returns a full Tempo Duration object (EDO) for the given input
 
 > `static` **extend**(`plugin`, `options?`): *typeof* [`Tempo`](../@magmacomputing/namespaces/Tempo/README.md)
 
-Defined in: [tempo.class.ts:588](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L588)
+Defined in: [tempo.class.ts:592](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L592)
 
 Register a plugin or term extension.
 
@@ -3856,7 +3856,7 @@ Register a plugin or term extension.
 
 ###### plugin
 
-[`Plugin`](../interfaces/Plugin.md)
+`Plugin`
 
 A plugin or term extension to register.
 
@@ -3890,7 +3890,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -3902,7 +3902,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -3914,7 +3914,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -3932,7 +3932,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -3944,7 +3944,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -3968,7 +3968,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -3986,7 +3986,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -3998,7 +3998,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -4010,7 +4010,7 @@ supplied value to parse
 
 > `static` **extend**(`plugins`, `options?`): *typeof* [`Tempo`](../@magmacomputing/namespaces/Tempo/README.md)
 
-Defined in: [tempo.class.ts:595](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L595)
+Defined in: [tempo.class.ts:599](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L599)
 
 Register an array of plugins or term extensions.
 
@@ -4052,7 +4052,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -4064,7 +4064,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -4076,7 +4076,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -4094,7 +4094,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -4106,7 +4106,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -4130,7 +4130,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -4148,7 +4148,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -4160,7 +4160,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -4172,7 +4172,7 @@ supplied value to parse
 
 > `static` **extend**(...`args`): *typeof* [`Tempo`](../@magmacomputing/namespaces/Tempo/README.md)
 
-Defined in: [tempo.class.ts:601](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L601)
+Defined in: [tempo.class.ts:605](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L605)
 
 Register multiple plugins or term extensions.
 
@@ -4196,7 +4196,7 @@ A plugin, term, or list of extensions to register.
 
 > `static` **from**(`options?`): `Tempo`
 
-Defined in: [tempo.class.ts:889](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L889)
+Defined in: [tempo.class.ts:897](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L897)
 
 Creates a new `Tempo` instance.
 
@@ -4230,7 +4230,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -4242,7 +4242,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -4254,7 +4254,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -4272,7 +4272,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -4284,7 +4284,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -4308,7 +4308,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -4326,7 +4326,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -4338,7 +4338,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -4350,7 +4350,7 @@ supplied value to parse
 
 > `static` **from**(`tempo`, `options?`): `Tempo`
 
-Defined in: [tempo.class.ts:890](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L890)
+Defined in: [tempo.class.ts:898](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L898)
 
 Creates a new `Tempo` instance.
 
@@ -4358,7 +4358,7 @@ Creates a new `Tempo` instance.
 
 ###### tempo
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 ###### options?
 
@@ -4388,7 +4388,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -4400,7 +4400,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -4412,7 +4412,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -4430,7 +4430,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -4442,7 +4442,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -4466,7 +4466,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -4484,7 +4484,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -4496,7 +4496,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -4510,7 +4510,7 @@ supplied value to parse
 
 > `static` **init**(`options?`): *typeof* [`Tempo`](../@magmacomputing/namespaces/Tempo/README.md)
 
-Defined in: [tempo.class.ts:704](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L704)
+Defined in: [tempo.class.ts:712](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L712)
 
 Reset Tempo to its default, built-in registration state
 
@@ -4544,7 +4544,7 @@ globalThis Discovery Symbol
 
 ###### event?
 
-`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\>
+`Extend`\<\{ `christmas`: `"25 Dec"`; `christmas ?eve`: `"24 Dec"`; `new.?years? ?eve`: `"31 Dec"`; `new.?years?( ?day)?`: `"01 Jan"`; `now`: (`this`) => `ZonedDateTime`; `ny`: `"01 Jan"`; `nye`: `"31 Dec"`; `today`: (`this`) => `ZonedDateTime`; `tomorrow`: (`this`) => `Tempo`; `xmas`: `"25 Dec"`; `xmas ?eve`: `"24 Dec"`; `yesterday`: (`this`) => `Tempo`; \}, `string`, `string` \| `Function`\> \| `PatternOption`\<`Logic`\>
 
 custom date aliases (events).
 
@@ -4556,7 +4556,7 @@ custom format strings to merge in the FORMAT enum
 
 ###### layout?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
+`PatternOption`\<`Pattern`\> \| `Extend`\<\{\[`key`: `symbol`\]: "(\{dd\}\{sep\}?\{mm\}(\{sep\}?\{yy\})?\|\{mod\}?(\{evt\})\|(?\<slk\>\{slk\}))" \| "(\{hh\}\{mi\}?\{ss\}?\{ff\}?\{mer\}?\|\{per\})" \| "(\{dt\})(?:(?:\{sep\}+\|T)(\{tm\}))?\{tzd\}?\{brk\}?" \| `"({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?"` \| `"({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?"` \| `"{mod}?{wkd}{afx}?{sfx}?"` \| `"{mod}?{dd}{afx}?"` \| `"{nbr}{sep}?{unt}{sep}?{afx}"`; \}, `symbol`, `string`\>
 
 patterns to help parse value
 
@@ -4568,7 +4568,7 @@ locale (e.g. en-AU)
 
 ###### mdyLayouts?
 
-[`Pair`](../type-aliases/Pair.md)[]
+`Pair`[]
 
 swap parse-order of layouts
 
@@ -4586,7 +4586,7 @@ initialization strategy ('auto'|'strict'|'defer')
 
 ###### period?
 
-[`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Logic`](../type-aliases/Logic.md)\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
+`PatternOption`\<`Logic`\> \| `Extend`\<\{ `after[ -]?noon`: `"3:00pm"`; `evening`: `"18:00"`; `mid[ -]?day`: `"12:00"`; `mid[ -]?morning`: `"10:00"`; `mid[ -]?night`: `"24:00"`; `morning`: `"8:00"`; `night`: `"20:00"`; `noon`: `"12:00"`; \}, `string`, `string` \| `Function`\>
 
 custom time aliases (periods).
 
@@ -4598,7 +4598,7 @@ pivot year for two-digit years
 
 ###### plugins?
 
-[`Plugin`](../interfaces/Plugin.md) \| [`Plugin`](../interfaces/Plugin.md)[]
+`Plugin` \| `Plugin`[]
 
 plugins to be automatically extended
 
@@ -4622,7 +4622,7 @@ suppress console output during catch
 
 ###### snippet?
 
-`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| [`PatternOption`](../@magmacomputing/namespaces/Internal/type-aliases/PatternOption.md)\<[`Pattern`](../type-aliases/Pattern.md)\>
+`Extend`\<\{\[`key`: `symbol`\]: `RegExp`; \}, `symbol`, `RegExp`\> \| `PatternOption`\<`Pattern`\>
 
 date-time snippets to help compose a Layout
 
@@ -4640,7 +4640,7 @@ localStorage key
 
 ###### timeStamp?
 
-[`TimeStamp`](../@magmacomputing/namespaces/Internal/type-aliases/TimeStamp.md)
+`TimeStamp`
 
 Precision to measure timestamps (ms | us)
 
@@ -4652,7 +4652,7 @@ Temporal timeZone
 
 ###### value?
 
-[`DateTime`](../type-aliases/DateTime.md)
+`DateTime`
 
 supplied value to parse
 
@@ -4666,7 +4666,7 @@ supplied value to parse
 
 > `static` **isTempo**(`instance?`): `instance is Tempo`
 
-Defined in: [tempo.class.ts:958](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L958)
+Defined in: [tempo.class.ts:966](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L966)
 
 check if a supplied variable is a valid Tempo instance
 
@@ -4686,7 +4686,7 @@ check if a supplied variable is a valid Tempo instance
 
 > `static` **now**(): `bigint`
 
-Defined in: [tempo.class.ts:893](https://github.com/magmacomputing/magma/blob/5faff5120d794572ccb66101602099151541b1b6/packages/tempo/src/tempo.class.ts#L893)
+Defined in: [tempo.class.ts:901](https://github.com/magmacomputing/magma/blob/89627f63804c7d98ed8e67803bd9b66732dc4555/packages/tempo/src/tempo.class.ts#L901)
 
 #### Returns
 
