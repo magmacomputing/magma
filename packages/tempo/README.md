@@ -1,3 +1,9 @@
+<a href="https://magmacomputing.github.io/magma/">
+  <img src="./img/docs-banner.png" width="100%" alt="Visit Tempo Documentation">
+</a>
+
+<br>
+
 <table width="100%" border="0" style="border: none;">
   <tbody>
     <tr style="border: none;">
