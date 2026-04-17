@@ -18,9 +18,25 @@ p.resolve('Success!');
 
 // 3. Await the promise anywhere
 const result = await p.promise;
+
+// Note: resolve/reject are idempotent. Calling them on an already-settled 
+// pledge is safe; it will log a warning but won't change the state.
 ```
 
-## 2. Advanced Callbacks
+## 2. Then-ability
+
+A `Pledge` is a first-class "Then-able". You don't need to access `.promise` to chain your logic; you can call `.then()` and `.catch()` directly on the `Pledge` instance.
+
+```typescript
+const p = new Pledge('NaturalAction');
+
+p.then(val => console.log(val))
+ .catch(err => console.error(err));
+
+p.resolve('Victory!');
+```
+
+## 3. Advanced Callbacks
 
 You can register lifecycle hooks during instantiation. These are useful for cross-cutting concerns like logging or resource cleanup.
 
@@ -37,7 +53,7 @@ const p = new Pledge<string>({
 *   **`onReject`**: Triggered when `p.reject()` is called.
 *   **`onSettle`**: Triggered regardless of outcome (analogous to `finally`).
 
-## 3. Debugging with Tags
+## 4. Debugging with Tags
 
 Each `Pledge` can be assigned a `tag` string. This tag is included in logs and error messages if the `debug` or `catch` flags are set.
 
@@ -49,7 +65,7 @@ const p = new Pledge({ tag: 'DatabaseQuery', debug: true });
 p.reject('Timeout');
 ```
 
-## 4. Global Configuration
+## 5. Global Configuration
 
 You can set global defaults for all future `Pledge` instances using `Pledge.init()`.
 
@@ -62,10 +78,10 @@ Pledge.init({
 
 To reset to library defaults:
 ```typescript
-Pledge.init({});
+Pledge.init();
 ```
 
-## 5. Automatic Cleanup (Symbol.dispose)
+## 6. Automatic Cleanup (Symbol.dispose)
 
 `Pledge` implements the `Disposable` interface. If a `Pledge` goes out of scope while still pending, it will automatically reject to prevent "hanging" async operations.
 
@@ -77,7 +93,7 @@ Pledge.init({});
 }
 ```
 
-## 6. State Accessors
+## 7. State Accessors
 
 *   **`p.state`**: Returns `'pending'`, `'resolved'`, or `'rejected'`.
 *   **`p.isPending`**: `boolean`

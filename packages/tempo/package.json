@@ -43,6 +43,10 @@
       "development": "./src/plugin/module/module.format.ts",
       "default": "./dist/plugin/module/module.format.js"
     },
+    "#tempo/mutate": {
+      "development": "./src/plugin/module/module.mutate.ts",
+      "default": "./dist/plugin/module/module.mutate.js"
+    },
     "#tempo/ticker": {
       "development": "./src/plugin/extend/extend.ticker.ts",
       "default": "./dist/plugin/extend/extend.ticker.js"
@@ -125,6 +129,10 @@
       "types": "./dist/plugin/module/module.format.d.ts",
       "import": "./dist/plugin/module/module.format.js"
     },
+    "./mutate": {
+      "types": "./dist/plugin/module/module.mutate.d.ts",
+      "import": "./dist/plugin/module/module.mutate.js"
+    },
     "./library": {
       "types": "./dist/library.index.d.ts",
       "import": "./dist/library.index.js"
@@ -140,27 +148,35 @@
   },
   "scripts": {
     "test": "vitest run --workspace ../../vitest.workspace.ts",
-    "repl": "tsx --conditions=development -i --import ./scripts/repl.ts",
-    "core": "tsx --conditions=development -i --import ./scripts/core.ts",
+    "repl": "tsx --conditions=development -i --import ./bin/setup.polyfill.ts --import ./bin/repl.ts",
+    "core": "tsx --conditions=development -i --import ./bin/setup.polyfill.ts --import ./bin/core.ts",
     "build": "tsc -b && npm run build:bundle && npm run build:resolve",
     "build:bundle": "rollup -c",
-    "build:resolve": "tsx scripts/resolve-types.ts",
+    "build:resolve": "tsx bin/resolve-types.ts",
     "clean": "tsc -b --clean && rm -rf dist",
     "publish": "npm publish --access public",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "docs:api": "typedoc",
+    "docs:dev": "npm run docs:api && vitepress dev",
+    "docs:build": "npm run docs:api && vitepress build",
+    "docs:preview": "vitepress preview"
   },
   "files": [
     "doc/",
-    "dist/"
+    "dist/",
+    ".vitepress/dist/"
   ],
   "dependencies": {
     "tslib": "^2.8.1"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "^2.1.2",
+    "@magmacomputing/library": "workspace:*",
     "@rollup/plugin-alias": "^6.0.0",
-    "magic-string": "^0.30.21"
+    "magic-string": "^0.30.21",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "vitepress": "^1.6.4"
   },
   "directories": {
     "doc": "doc",

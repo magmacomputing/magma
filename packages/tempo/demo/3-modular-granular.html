@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Demo 3: Modular (Granular)</title>
+    <style>
+        body { font-family: monospace; background: #0f172a; color: #f8fafc; padding: 2rem; }
+        .box { border: 1px solid #334155; padding: 1.5rem; border-radius: 8px; background: #1e293b; }
+        .pass { color: #4ade80; }
+        .label { color: #94a3b8; font-size: 0.8rem; margin-bottom: 0.5rem; display: block; }
+    </style>
+</head>
+<body>
+    <h1>⏳ Demo 3: Modular (Granular)</h1>
+    <div class="box">
+        <span class="label">STATUS</span>
+        <div id="status">Loading...</div>
+        <br>
+        <span class="label">RESULT</span>
+        <pre id="output"></pre>
+    </div>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "@magmacomputing/tempo/core": "../dist/tempo.class.js",
+        "@magmacomputing/tempo/format": "../dist/plugin/module/module.format.js"
+      }
+    }
+    </script>
+
+    <script type="module">
+        import { Tempo } from '@magmacomputing/tempo/core';
+        import { FormatModule } from '@magmacomputing/tempo/format';
+        
+        try {
+            // Manually extend core with ONLY the Format module
+            Tempo.extend(FormatModule);
+
+            const t = new Tempo('2026-04-17');
+            document.getElementById('output').innerText = `Modular Parse & Format: ${t.format('{yyyy}-{mm}-{dd}')}`;
+            document.getElementById('status').innerHTML = '<span class="pass">✓ PASSED</span>';
+        } catch (e) {
+            document.getElementById('status').innerText = 'FAILED: ' + e.message;
+            console.error(e);
+        }
+    </script>
+</body>
+</html>

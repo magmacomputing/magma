@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Demo 2: Global Bundle</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 2rem;
+        }
+
+        .box {
+            border: 1px solid #334155;
+            padding: 1.5rem;
+            border-radius: 8px;
+            background: #1e293b;
+        }
+
+        .pass {
+            color: #4ade80;
+        }
+
+        .label {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>⏳ Demo 2: Global Bundle</h1>
+    <div class="box">
+        <span class="label">STATUS</span>
+        <div id="status">Loading...</div>
+        <br>
+        <span class="label">RESULT</span>
+        <pre id="output"></pre>
+    </div>
+
+    <!-- Self-contained bundle -->
+    <script src="../dist/tempo.bundle.js"></script>
+
+    <script>
+        try {
+            // Tempo is global because of the IIFE bundle
+            const t = new Tempo('next friday');
+            document.getElementById('output').innerText = `Global Bundle Resolution: ${t.format('{dd} {mon} {yyyy}')}`;
+            document.getElementById('status').innerHTML = '<span class="pass">✓ PASSED</span>';
+        } catch (e) {
+            document.getElementById('status').innerText = 'FAILED: ' + e.message;
+            console.error(e);
+        }
+    </script>
+</body>
+
+</html>

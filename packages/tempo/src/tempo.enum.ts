@@ -1,10 +1,12 @@
 import lib from '#library/symbol.library.js';
 import { enumify, Enum } from '#library/enumerate.library.js';
 import { proxify } from '#library/proxy.library.js';
-import { allDescriptors, ownKeys } from '#library/reflection.library.js';
+import { ownKeys } from '#library/primitive.library.js';
+import { allDescriptors } from '#library/reflection.library.js';
 import { clearCache } from '#library/function.library.js';
 import { isUndefined, isDefined } from '#library/type.library.js';
 import type { OwnOf, KeyOf, ValueOf, LooseUnion, Mutable, Property } from '#library/type.library.js';
+import sym from './tempo.symbol.js';
 
 /** calendar seasons */
 export const SEASON = enumify({
@@ -30,7 +32,7 @@ export type COMPASS = ValueOf<typeof COMPASS>
  */
 
 /** @internal LIVE state for all registries */
-const Defaults = {
+export const DEFAULTS = {
 	NUMBER: {
 		zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10
 	},
@@ -99,12 +101,12 @@ const Defaults = {
 
 /** @internal Centralized mutable state for all extendable registries */
 export const STATE = {
-	NUMBER: allDescriptors(Defaults.NUMBER),
-	DURATION: allDescriptors(Defaults.DURATION),
-	TIMEZONE: allDescriptors(Defaults.TIMEZONE),
-	DURATIONS: allDescriptors(Defaults.DURATIONS),
-	FORMAT: allDescriptors(Defaults.FORMAT),
-	LIMIT: allDescriptors(Defaults.LIMIT),
+	NUMBER: allDescriptors(DEFAULTS.NUMBER),
+	DURATION: allDescriptors(DEFAULTS.DURATION),
+	TIMEZONE: allDescriptors(DEFAULTS.TIMEZONE),
+	DURATIONS: allDescriptors(DEFAULTS.DURATIONS),
+	FORMAT: allDescriptors(DEFAULTS.FORMAT),
+	LIMIT: allDescriptors(DEFAULTS.LIMIT),
 } as const;
 
 (STATE.NUMBER as any)[lib.$Extensible] = true;
@@ -227,63 +229,9 @@ export type Discovery = KeyOf<typeof DISCOVERY>
 
 
 /** @internal LIVE Registries mapping (STATE key -> Enum/Proxy) */
-const REGISTRIES: Record<string, any> = {
+export const REGISTRIES: Record<string, any> = {
 	NUMBER, DURATION, TIMEZONE, DURATIONS, FORMAT, LIMIT,
 };
-
-/** update a global registry with new discoverable data */
-export function registryUpdate(name: keyof typeof STATE, data: Record<string, any>) {
-	const registry = REGISTRIES[name];
-	if (!isDefined(registry) || !isDefined(registry[lib.$Target])) return;	// early-return if no valid target to mutate
-
-	const target = registry[lib.$Target] as Property<any>;
-	const state = STATE[name] as Property<any>;
-
-	Object.entries(data).forEach(([key, val]) => {
-		if (isUndefined(target[key])) {																// only add if key does not exist
-			Object.defineProperty(target, key, {
-				value: val,
-				enumerable: true,
-				writable: true,
-				configurable: true
-			});
-			if (isDefined(state)) state[key] = val;
-		}
-	});
-
-	clearCache(target);
-}
-
-/** Reset all extendable registries to their original built-in defaults */
-export function registryReset() {
-	ownKeys(STATE).forEach(name => {
-		const state = STATE[name as keyof typeof STATE] as Property<any>;
-		const target = REGISTRIES[name]?.[lib.$Target] as Property<any>;
-		const defaults = Defaults[name as keyof typeof Defaults] as Property<any>;
-
-		// 1. Purge all own-properties from state and target (if configurable)
-		[state, target].filter(isDefined).forEach(obj => {
-			Reflect.ownKeys(obj).forEach(key => {
-				const desc = Object.getOwnPropertyDescriptor(obj, key);
-				if (desc?.configurable) delete obj[key];
-			});
-		});
-
-		// 2. Restore defaults using property descriptors to preserve accessors/configurability
-		Reflect.ownKeys(defaults).forEach(key => {
-			const desc = Object.getOwnPropertyDescriptor(defaults, key);
-
-			if (desc) {
-				[state, target].filter(isDefined).forEach(obj => {
-					Object.defineProperty(obj, key, desc);
-				});
-			}
-		});
-
-		if (target) clearCache(target);
-		clearCache(state);																			// clear cache for state object
-	});
-}
 
 /** public-reachable enums */
 export default {

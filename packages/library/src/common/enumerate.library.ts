@@ -1,11 +1,11 @@
 import { secure } from '#library/utility.library.js';
 import { asType, isNumber } from '#library/type.library.js';
-import lib from '#library/symbol.library.js';
-import { ownEntries } from '#library/reflection.library.js';
+import { ownEntries } from '#library/primitive.library.js';
 import { proxify } from '#library/proxy.library.js';
-import { memoizeMethod } from '#library/function.library.js';
-import type { Property, Index, KeyOf, ValueOf, EntryOf, Invert, LooseKey } from '#library/type.library.js';
 import { Serializable } from '#library/class.library.js';
+import { memoizeMethod } from '#library/function.library.js';
+import lib from '#library/symbol.library.js';
+import type { Property, Index, KeyOf, ValueOf, EntryOf, Invert, LooseKey } from '#library/type.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T = any> {

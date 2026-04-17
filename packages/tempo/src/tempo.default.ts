@@ -3,7 +3,7 @@ import { secure } from '#library/utility.library.js';
 import { proxify } from '#library/proxy.library.js';
 import { NUMBER, MODE } from './tempo.enum.js';
 import type { Options } from './tempo.type.js';
-import { getResolvedOptions } from '#library/international.library.js';
+import { getDateTimeFormat } from '#library/international.library.js';
 import type { Tempo } from './tempo.class.js';
 
 // BE VERY CAREFUL NOT TO BREAK THE REGEXP PATTERNS BELOW
@@ -12,10 +12,7 @@ import type { Tempo } from './tempo.class.js';
 /** characters allowed inside timezone/calendar brackets */
 const bracket_content = /[^\]]+/;
 
-/** 
- * Tempo Match patterns — Soft-Frozen to allow for dynamic event/period resolution  
- * common RegExp patterns
- */
+/** @internal Tempo Match patterns */
 export const Match = proxify({
 	/** match all {} pairs, if they start with a word char */	braces: /{([#]?[\w]+(?:\.[\w]+)*)}/g,
 	/** named capture-group, if it starts with a letter */		captures: /\(\?<([a-zA-Z][\w]*)>(.*?)(?<!\\)\)/g,
@@ -35,13 +32,14 @@ export const Match = proxify({
 	/** bracketed content (timezone/calendar) */							bracket: /\[[^\]]+\]/i,
 	/** slick shorthand-shifter (e.g. #qtr.>2q2) */						shorthand: /(?:(?:#[\w]+|[\w]+)\.(?:[\+\-\<\>]=?|next|prev|this|last)?(?:[0-9]+)?(?:[\w]*))/,
 	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
+	/** extracted value-only version of a slick shifter */		slickValue: /^(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
 	/** escape special regex characters in a string */				escape: (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
 	/** numeric-only string detection */											numeric: /^\s*[-+]?\d+(\.\d+)?\s*$/
 }, true, false);
 
-/** Tempo Symbol registry */
+/** @internal Tempo Symbol registry */
 export const Token = looseIndex<string, symbol>()({
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Snippet Symbols
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Snippet Symbols
 	/** year */																								yy: Symbol('yy'),
 	/** ISO yearOfWeek */																			yw: Symbol('yw'),
 	/** month */																							mm: Symbol('mm'),
@@ -62,7 +60,7 @@ export const Token = looseIndex<string, symbol>()({
 	/** Tempo event */																				evt: Symbol('evt'),
 	/** Tempo period */																				per: Symbol('per'),
 	/** time zone offset */																		tzd: Symbol('tzd'),
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Layout Symbols
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Layout Symbols
 	/** date */																								dt: Symbol('date'),
 	/** time */																								tm: Symbol('time'),
 	/** date and time */																			dtm: Symbol('dateTime'),
@@ -74,6 +72,7 @@ export const Token = looseIndex<string, symbol>()({
 	/** relative offset (years, days, hours, etc) */					rel: Symbol('relativeOffset'),
 	/** timezone/calendar brackets */													brk: Symbol('brackets'),
 })
+/** @internal Tempo Symbol registry type */
 export type Token = typeof Token
 
 /**
@@ -88,6 +87,7 @@ export type Token = typeof Token
  * a {snippet} is a simple, reusable regex pattern for a component of a date-time string (e.g. 'hh' or 'yy')  
  */
 // Note: computed Components ('evt', 'per') are added during 'Tempo.init()' (for static) and/or 'new Tempo()' (per instance)
+/** @internal Tempo Snippet registry */
 export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.yy]: /(?<yy>([0-9]{2})?[0-9]{2})/,								// arbitrary upper-limit of yy=9999
 	[Token.mm]: /(?<mm>[0\s]?[1-9]|1[0-2]|Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)/,	// month-name (abbrev or full) or month-number 01-12
@@ -108,12 +108,14 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.brk]: new RegExp(`(\\[(?<brk>${bracket_content.source})\\](?:\\[(?<cal>${bracket_content.source})\\])?)?`),	// timezone/calendar brackets [...]
 	[Token.slk]: new RegExp(`${Match.shorthand.source}`),					// shorthand shifter
 })
+/** @internal Tempo Snippet type */
 export type Snippet = typeof Snippet
 
 /**
  * a {layout} is a Record of snippet-combinations describing an input DateTime argument  
  * the Layout's keys are in the order that they will be checked against an input value  
  */
+/** @internal Tempo Layout registry */
 export const Layout = looseIndex<symbol, string>()({
 	[Token.dt]: '({dd}{sep}?{mm}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk}))',// calendar, event or slick
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
@@ -125,6 +127,7 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.off]: '{mod}?{dd}{afx}?',													// day of month, with optional offset
 	[Token.rel]: '{nbr}{sep}?{unt}{sep}?{afx}',								// relative duration (e.g. 2 days ago)
 })
+/** @internal Tempo Layout type */
 export type Layout = typeof Layout
 
 /** 
@@ -133,6 +136,7 @@ export type Layout = typeof Layout
  * if assigning a function, use standard 'function()' syntax to allow for 'this' binding.
  * also, a function should always have a .toString() method which returns a parse-able Date string
  */
+/** @internal Tempo Event registry */
 export const Event = looseIndex<string, string | Function>()({
 	'new.?years? ?eve': '31 Dec',
 	'nye': '31 Dec',
@@ -144,12 +148,20 @@ export const Event = looseIndex<string, string | Function>()({
 	'xmas': '25 Dec',
 	'now': function (this: Tempo) { return this.toNow() },
 	'today': function (this: Tempo) {
+		// ABSOLUTE: Snaps to the current system date
 		const { year, month, day } = this.toNow();
-		return this.toDateTime().with({ year, month, day })
+		return this.toDateTime().with({ year, month, day });
 	},
-	'tomorrow': function (this: Tempo) { return this.add({ days: 1 }) },		// tomorrow at current time
-	'yesterday': function (this: Tempo) { return this.add({ days: -1 }) },	// yesterday at current time
+	'tomorrow': function (this: Tempo) {
+		// RELATIVE: Offsets the current anchor by one day
+		return this.add({ days: 1 });
+	},
+	'yesterday': function (this: Tempo) {
+		// RELATIVE: Offsets the current anchor by one day
+		return this.add({ days: -1 });
+	},
 });
+/** @internal Tempo Event type */
 export type Event = typeof Event
 
 /** 
@@ -157,6 +169,7 @@ export type Event = typeof Event
  * values can be a string or a function that returns a string.
  * if using a function, use regular 'function()' syntax to allow for 'this' binding.
  */
+/** @internal Tempo Period registry */
 export const Period = looseIndex<string, string | Function>()({
 	'mid[ -]?night': '24:00',
 	'morning': '8:00',
@@ -167,10 +180,20 @@ export const Period = looseIndex<string, string | Function>()({
 	'evening': '18:00',
 	'night': '20:00',
 })
+/** @internal Tempo Period type */
 export type Period = typeof Period
 
 
-/** Reasonable default options for initial Tempo config */
+/** @internal Tempo Master Guard list */
+export const Guard = [
+	'am', 'pm', 'ago', 'hence', 'this', 'next', 'prev', 'last', 'from', 'now', 'today', 'yesterday', 'tomorrow', 'start', 'mid', 'end',
+	'year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond',
+	'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds', 'nanoseconds',
+	'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+	'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays'
+]
+
+/** @internal Tempo Default options */
 export const Default = secure({
 	/** log to console */																			debug: false,
 	/** catch or throw Errors */															catch: false,
@@ -178,8 +201,8 @@ export const Default = secure({
 	/** used to parse two-digit years*/												pivot: 75,					/** @link https:	//en.wikipedia.org/wiki/Date_windowing */
 	/** precision to measure timestamps (ms | us) */					timeStamp: 'ms',
 	/** calendaring system */																	calendar: 'iso8601',
-	/** default timezone if not specified */									timeZone: getResolvedOptions().timeZone,
-	/** default locale if not specified */										locale: getResolvedOptions().locale,
+	/** default timezone if not specified */									timeZone: getDateTimeFormat().timeZone,
+	/** default locale if not specified */										locale: getDateTimeFormat().locale,
 	/** locales that prefer month-day order */								mdyLocales: ['en-US', 'en-AS'],	/** @link https:	//en.wikipedia.org/wiki/Date_format_by_country */
 	/** layouts that need to swap parse-order */							mdyLayouts: [['dayMonthYear', 'monthDayYear']],
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,

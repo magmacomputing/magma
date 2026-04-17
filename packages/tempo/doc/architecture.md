@@ -5,11 +5,16 @@ Tempo v2.0.1 introduces several industry-leading architectural patterns designed
 ## 🌐 Shared Global Registry
 To solve the "Split-Brain" issue inherent in monorepo development (where multiple instances of the same library might be loaded), Tempo utilizes a **Shared Global Registry**. By leveraging `Symbol.for('magmacomputing/library/registry')` on `globalThis`, all versions of the Tempo and Library packages share a unified type-identification engine. This ensures that classes are correctly identified as constructors even when loaded across different module boundaries.
 
+## 🕵️ Decoupled Logging (Logify)
+Tempo uses **Logify**, a diagnostic engine that leverages private Symbols to avoid polluting the public console or object state.
+- **Context-Aware**: Logs track their discovery path (e.g., "Applied via Global Discovery").
+- **Zero-Footprint**: When `debug: false`, the logging overhead is mathematically eliminated.
+- **Symbol-Gated**: Diagnostic metadata is attached via `Symbol.for($Logify)`, making it invisible to standard iteration (`Object.keys`) and serialization (`JSON.stringify`).
+
 ## 🛡️ Hardened Functional Resolution
-Tempo implements a "Fail-Safe" execution pattern for functional inputs. The **Hardened Functional Resolution** engine automatically detects and recovers from misidentified types—such as ES6 classes wrapped in defensive Proxies.
-- **Defensive Execution**: All plugin and factory invocations are wrapped in recursive `try/catch` blocks.
-- **Automatic Recovery**: If a class constructor is accidentally invoked as a function, Tempo catches the `TypeError`, downgrades it to a diagnostic warning, and returns the original constructor to ensure the library remains operational.
-- **Deep Identification**: A three-tiered identification strategy (Reference, Tag, and Name matching) ensures "Perfect Identification" of constructors across all module boundaries.
+The engine implements a "Fail-Safe" execution pattern for functional inputs, automatically recovering from misidentified types—such as ES6 classes wrapped in defensive Proxies or circular dependency deadlocks.
+- **Defensive Execution**: All plugin invocations are wrapped in recursive `try/catch` blocks.
+- **Silent Failover**: When combined with `catch: true`, resolution failures return a **Void Instance**, preventing application crashes while providing clear diagnostic symbols for debugging.
 
 ## 🏗️ Tempo Architecture: Internal Protection & Performance
 
@@ -97,10 +102,10 @@ Used for: `new Tempo(string | number)`
 The **Guarded-Lazy** strategy ensures that even with hundreds of custom plugins, the entry point remains nearly instantaneous. In **v2.0.1**, this was refined for 100% matching reliability.
 
 ### How it works:
-1.  **Length-Sorted Terms**: To prevent "partial matching" (e.g., matching `noon` inside `afternoon`), all registered terms are sorted by length (descending) before the Guard regex is built.
-2.  **Automated Escaping**: All custom terms are escaped to prevent regex injection or character collision.
-3.  **High-Speed Gatekeeper**: This single-pass $O(1)$ regex acts as the fast-fail gatekeeper.
-4.  **Auto-Lazy**: Valid inputs that pass the guard automatically switch the instance to `mode: 'defer'` mode, deferring the $O(N)$ full-parse work until the first property access.
+1.  **Longest-Token Matching**: To prevent partial matching (e.g., matching `qtr` inside `quarter`), the guard uses a "Scan-and-Consume" loop that prioritizes the longest available token.
+2.  **Unified Wordlist**: The guard automatically ingests all registered Terms, Timezones, Month names, and Custom Events into a single high-speed lookup Set.
+3.  **High-Speed Gatekeeper**: By avoiding complex backtracking regexes, the gatekeeper provides predictable $O(1)$ performance even as the plugin list grows.
+4.  **Auto-Lazy**: Valid inputs that pass the guard automatically switch the instance to `mode: 'defer'`, deferring the full $O(N)$ parse work until a property is actually read.
 
 ### 📈 Validation & Performance
 The efficiency of the Master Guard and the success of the Zero-Cost objective have been validated via local benchmarking:
@@ -110,6 +115,21 @@ The efficiency of the Master Guard and the success of the Zero-Cost objective ha
 
 > [!TIP]
 > For detailed timing results and methodology, see [Performance Benchmarks](./tempo.benchmarks.md).
+
+---
+
+## 🔄 Internal Lifecycle & Reactive Sync
+Tempo maintains system-wide synchronization through a private, Symbol-based hook system.
+
+### Reactive Registration
+When a plugin is imported via a side-effect (`import '@magmacomputing/tempo/ticker'`), it triggers a **`sym.$Register`** hook. 
+- **Auto-Sync**: The `Tempo` class listens for these hooks and automatically updates its internal registries.
+- **Guard Rebuild**: Every time a new term or layout is registered, the **Master Guard** is automatically rebuilt to include the new tokens, ensuring the "Zero-Cost Constructor" always stays up to date.
+
+### Disposable Engine (`Symbol.dispose`)
+The `Tempo` class implements the explicit resource management pattern. 
+- **Clean Slate**: Calling `Tempo[Symbol.dispose]()` (or using the `using` keyword in a test suite) resets all global registries and configuration to their factory defaults.
+- **Isolation**: This is critical for testing environments to prevent state-leaks between test cases.
 
 ---
 

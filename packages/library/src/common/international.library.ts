@@ -1,4 +1,20 @@
 import { getOffsets } from '#library/temporal.library.js';
+import { memoizeFunction } from '#library/function.library.js';
+
+/** memoized helper for Intl.RelativeTimeFormat instances */
+const getRTF = memoizeFunction((locale?: string, style: Intl.RelativeTimeFormatStyle = 'narrow') => {
+	return new Intl.RelativeTimeFormat(locale, { style });
+});
+
+/** memoized helper for Intl.ListFormat instances */
+const getLF = memoizeFunction((locale?: string, type: Intl.ListFormatType = 'conjunction', style: Intl.ListFormatStyle = 'long') => {
+	return new Intl.ListFormat(locale, { type, style });
+});
+
+/** memoized helper for Intl.DateTimeFormat instances */
+const getDTF = memoizeFunction((locale?: string) => {
+	return new Intl.DateTimeFormat(locale);
+});
 
 /**
  * International Cookbook  
@@ -6,8 +22,8 @@ import { getOffsets } from '#library/temporal.library.js';
  */
 
 /** return the system's current TimeZone, Calendar, and Locale */
-export function getResolvedOptions() {
-	return Intl.DateTimeFormat().resolvedOptions();
+export function getDateTimeFormat() {
+	return getDTF().resolvedOptions();
 }
 
 /** return the canonicalized locale string */
@@ -22,7 +38,7 @@ export function canonicalLocale(locale: string) {
 /** return a localized relative time string (e.g., 'in 2 days') */
 export function getRelativeTime(value: number, unit: Intl.RelativeTimeFormatUnit, locale?: string, style: Intl.RelativeTimeFormatStyle = 'narrow') {
 	try {
-		return new Intl.RelativeTimeFormat(locale, { style }).format(value, unit);
+		return getRTF(locale, style).format(value, unit);
 	} catch (e) {
 		return `${value} ${unit}`;
 	}
@@ -31,14 +47,14 @@ export function getRelativeTime(value: number, unit: Intl.RelativeTimeFormatUnit
 /** return a localized list string (e.g., 'A, B, and C') */
 export function formatList(list: string[], locale?: string, type: Intl.ListFormatType = 'conjunction', style: Intl.ListFormatStyle = 'long') {
 	try {
-		return new Intl.ListFormat(locale, { type, style }).format(list);
+		return getLF(locale, type, style).format(list);
 	} catch (e) {
 		return list.join(', ');
 	}
 }
 
 /** try to infer hemisphere using the timezone's daylight-savings setting */
-export function getHemisphere(timeZone: string = getResolvedOptions().timeZone) {
+export function getHemisphere(timeZone: string = getDateTimeFormat().timeZone) {
 	try {
 		const { jan, jul } = getOffsets(timeZone);							// using default reference-year (2024) for stability
 

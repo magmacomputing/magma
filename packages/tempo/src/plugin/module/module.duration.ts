@@ -10,26 +10,15 @@ import type { Tempo } from '../../tempo.class.js';
 
 declare module '../../tempo.class.js' {
 	interface Tempo {
-		/** time duration until (returns Duration) */
-		until(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): Tempo.Duration;
+		/** time duration until (returns Duration) */						until(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): Tempo.Duration;
+		/** time duration until (with unit, returns number) */	until(unit: Tempo.Unit, opts?: Tempo.Options): number;
+		/** time duration until another date-time (with unit ) */until(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, unit: Tempo.Unit): number;
+		/** fallback: union of possible returns */							until(optsOrDate?: Tempo.DateTime | Tempo.Until | Tempo.Options, optsOrUntil?: Tempo.Options | Tempo.Until): number | Tempo.Duration;
 
-		/** time duration until (with unit, returns number) */
-		until(unit: Tempo.Unit, opts?: Tempo.Options): number;
-
-		/** time duration until another date-time (with unit as second param) */
-		until(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, unit: Tempo.Unit): number;
-
-		/** fallback: union of possible returns */
-		until(optsOrDate?: Tempo.DateTime | Tempo.Until | Tempo.Options, optsOrUntil?: Tempo.Options | Tempo.Until): number | Tempo.Duration;
-
-		/** time elapsed since (with unit) */
-		since(until: Tempo.Until, opts?: Tempo.Options): string;
-		/** time elapsed since another date-time (with unit) */
-		since(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, until: Tempo.Until): string;
-		/** time elapsed since another date-time (w'out unit) */
-		since(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): string;
-		/** time elapsed since another date-time */
-		since(optsOrDate?: any, optsOrUntil?: any): string;
+		/** time elapsed since (with unit) */										since(until: Tempo.Until, opts?: Tempo.Options): string;
+		/** time elapsed since another date-time (with unit) */	since(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, until: Tempo.Until): string;
+		/** time elapsed since another date-time (w'out unit) */since(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): string;
+		/** time elapsed since another date-time */							since(optsOrDate?: any, optsOrUntil?: any): string;
 	}
 }
 
@@ -71,14 +60,14 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			({ value, ...opts } = arg as any);
 			break;
 		case isObject(arg) && isObject(until):
-			({ value, unit, ...opts } = Object.assign({}, arg, until) as any);
+			({ value, unit, ...opts } = Object.assign({ value: arg }, until) as any);
 			break;
 		case isString(until):
 			unit = until;
 			value = arg;
 			break;
 		case isObject(until):
-			unit = (until as any).unit;
+			({ unit, ...opts } = until as any);
 			value = arg;
 			break;
 		case isObject(arg) && isDefined((arg as any).unit):
@@ -92,11 +81,8 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	const offset = new (this.constructor as any)(value, { ...opts, anchor: this, mode: enums.MODE.Strict });
 	const offsetZdt = offset.toDateTime();
 
-
 	const diffZone = selfZdt.timeZoneId !== offsetZdt.timeZoneId;
-	const dur = selfZdt.until(offsetZdt.withCalendar(selfZdt.calendarId), {
-		largestUnit: diffZone ? 'hours' : (unit ?? 'years')
-	});
+	const dur = selfZdt.until(offsetZdt.withCalendar(selfZdt.calendarId), { largestUnit: diffZone ? 'hours' : (unit ?? 'years') });
 
 	if (isDefined(unit))
 		unit = `${singular(unit)}s`;
@@ -116,16 +102,22 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			.join('')
 
 		const locale = (this as any).config['locale'];
-		const style = 'narrow';
+		const rtf = opts['rtfFormat'] || (this as any).config['rtfFormat'];
+
+		const getFormatted = (val: number, u: any) => {
+			if (rtf instanceof Intl.RelativeTimeFormat) return rtf.format(val, u);
+			const style = opts['rtfStyle'] || (this as any).config['rtfStyle'] || 'narrow';
+			return getRelativeTime(val, u, locale, style);
+		}
 
 		switch (res.unit) {
-			case 'years': return getRelativeTime(date[0], res.unit, locale, style);
-			case 'months': return getRelativeTime(date[1], res.unit, locale, style);
-			case 'weeks': return getRelativeTime(res.weeks, res.unit, locale, style)
-			case 'days': return getRelativeTime(date[2], res.unit, locale, style);
-			case 'hours': return getRelativeTime(time[0], res.unit, locale, style);
-			case 'minutes': return getRelativeTime(time[1], res.unit, locale, style);
-			case 'seconds': return getRelativeTime(time[2], res.unit, locale, style);
+			case 'years': return getFormatted(date[0], res.unit);
+			case 'months': return getFormatted(date[1], res.unit);
+			case 'weeks': return getFormatted(res.weeks, res.unit);
+			case 'days': return getFormatted(date[2], res.unit);
+			case 'hours': return getFormatted(time[0], res.unit);
+			case 'minutes': return getFormatted(time[1], res.unit);
+			case 'seconds': return getFormatted(time[2], res.unit);
 			case 'milliseconds':
 			case 'microseconds':
 			case 'nanoseconds':

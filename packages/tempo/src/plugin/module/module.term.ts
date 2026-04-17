@@ -1,11 +1,11 @@
-import { Temporal } from '@js-temporal/polyfill';
-
-import { isDefined, isObject, isString, isZonedDateTime } from '#library/type.library.js';
+import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
+import { isDefined, isString, isZonedDateTime } from '#library/type.library.js';
 import { isNumeric } from '#library/coercion.library.js';
+
 import sym from '../../tempo.symbol.js';
 import { getSafeFallbackStep } from '../../tempo.util.js';
 import { Match } from '../../tempo.default.js';
-import { REGISTRY, getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin.util.js';
+import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin.util.js';
 import { parseModifier } from './module.lexer.js';
 
 /**
@@ -44,7 +44,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 
 	const slickStr = (rangePart ? unit : (isString(offset) ? offset : undefined));
 	if (slickStr) {
-		const slick = slickStr.match(Match.slick) || (isString(offset) ? offset.match(/^(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/) : null);
+		const slick = slickStr.match(Match.slick) || (isString(offset) ? offset.match(Match.slickValue) : null);
 		const { groups } = (slick || {}) as any;
 		if (groups) {
 			const hasMod = !!groups.sh_mod;
@@ -53,6 +53,76 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			nbr = hasNbr ? Number(groups.sh_nbr) : 1;
 			rKey = (groups.sh_unit && groups.sh_unit.length > 0) ? groups.sh_unit : (hasMod ? undefined : rKey);
 			numericOnly = hasNbr && !hasMod;
+		}
+	}
+
+	// 0. Handle relative .add() — preserving position within the target range
+	if (mutate === 'add') {
+		const slickParsed = !!slickStr;
+		const directional = mod && !['this', '>=', '<='].includes(mod);
+		const numericOffset = !directional && isNumeric(offset);
+
+		if (directional || numericOffset || (slickParsed && !mod)) {
+			const shiftDir = directional
+				? ((mod!.includes('<') || mod!.includes('-') || mod === 'prev' || mod === 'last') ? -1 : 1)
+				: (numericOffset ? Math.sign(Number(offset) || 1) : 1);
+			const addCount = directional
+				? nbr
+				: (numericOffset ? Math.abs(Number(offset) || 1) : nbr);
+
+			// Find current containing range
+			const rawList = getRange(termObj, instance, zdt);
+			const currentRange = getTermRange(instance, rawList, false, zdt) as any;
+			if (!currentRange) {
+				Tempo[sym.$termError](instance.config, unit);
+				return null;
+			}
+
+			// Calculate cursor's offset within current range (nanoseconds)
+			const startNs = currentRange.start.toDateTime().epochNanoseconds as bigint;
+			const cursorNs = zdt.epochNanoseconds as bigint;
+			const positionNs = cursorNs - startNs;
+
+			// Step through adjacent ranges to reach the target
+			let jump = zdt;
+			let remaining = addCount;
+			let target: any = null;
+			let iters = 0;
+
+			while (remaining > 0 && iters < 200) {
+				iters++;
+				const jumpList = getRange(termObj, instance, jump);
+				const range = getTermRange(instance, jumpList, false, jump) as any;
+				if (!range) break;
+
+				const matchKey = !rKey || range.key?.toLowerCase() === rKey.toLowerCase();
+				const hasMoved = (shiftDir > 0)
+					? (range.start.toDateTime().epochNanoseconds as bigint) > (zdt.epochNanoseconds as bigint)
+					: (range.end.toDateTime().epochNanoseconds as bigint) < (zdt.epochNanoseconds as bigint);
+
+				if (matchKey && (iters > 1 || hasMoved)) {
+					target = range;
+					remaining--;
+				}
+
+				jump = (shiftDir > 0)
+					? range.end.toDateTime()
+					: range.start.toDateTime().subtract({ nanoseconds: 1 });
+			}
+
+			if (!target || remaining > 0) {
+				Tempo[sym.$termError](instance.config, unit);
+				return null;
+			}
+
+			// Apply same position-offset, clamped to target range bounds
+			const tStartNs = target.start.toDateTime().epochNanoseconds as bigint;
+			const tEndNs = target.end.toDateTime().epochNanoseconds as bigint;
+			let tNs = tStartNs + positionNs;
+			if (tNs >= tEndNs) tNs = tEndNs - 1n;	// clamp to range end
+			if (tNs < tStartNs) tNs = tStartNs;		// clamp to range start
+
+			return toInstant(tNs).toZonedDateTimeISO(tz).withCalendar(cal);
 		}
 	}
 
@@ -77,7 +147,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			}
 
 			const starts = candidates.map(c => {
-				const s = Temporal.ZonedDateTime.from({
+				const s = toZonedDateTime({
 					year: c.year ?? jump.year,
 					month: c.month ?? 1,
 					day: c.day ?? 1,
@@ -139,7 +209,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			}
 
 			const resolved = rawList.map(c => {
-				const start = Temporal.ZonedDateTime.from({
+				const start = toZonedDateTime({
 					year: c.year ?? jump.year,
 					month: c.month ?? 1,
 					day: c.day ?? 1,
@@ -243,8 +313,8 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 				let match = false;
 				if (mod === '>' || mod === 'next') match = (iterations > 1) ? (start >= cursor) : (start > cursor);
 				else if (mod === '<' || mod === 'prev' || mod === 'last') match = (iterations > 1) ? (end <= cursor) : (end < cursor);
-				else if (mod === '>=') match = iterations > 1 ? start >= cursor : end > cursor;
-				else if (mod === '<=') match = iterations > 1 ? end <= cursor : start <= cursor;
+				else if (mod === '>=') match = (iterations > 1) ? (start >= cursor) : (end > cursor);
+				else if (mod === '<=') match = (iterations > 1) ? (end <= cursor) : (start <= cursor);
 				else if (mod === '+' || mod === '-') {
 					const res = parseModifier({
 						mod: mod as any, adjust: 1, offset: Number(cursor / 1000000n),
@@ -323,7 +393,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 				const startNs = finalRange.start.toDateTime().epochNanoseconds as bigint;
 				const endNs = finalRange.end.toDateTime().epochNanoseconds as bigint;
 				const midNs = startNs + (endNs - startNs) / BigInt(2);
-				return Temporal.Instant.fromEpochNanoseconds(midNs).toZonedDateTimeISO(tz).withCalendar(cal);
+				return toInstant(midNs).toZonedDateTimeISO(tz).withCalendar(cal);
 			}
 			return finalRange.end.toDateTime().subtract({ nanoseconds: 1 }).withTimeZone(tz).withCalendar(cal);
 		}
@@ -335,35 +405,38 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 	if (isString(offset) && !offset.startsWith('#') && !isNumericString) {
 		let jump = zdt;
 
-		// Determine the shifted target by recursively calling .set on a temporary strict instance
-		let nextInstance = new instance.constructor(jump, { ...instance.config, mode: 'strict' }).set({ [unit]: offset });
-		if (!nextInstance.isValid) return null;
-		let next = nextInstance.toDateTime();
+		const range = termObj.define.call(new Tempo(jump, { ...instance.config, mode: 'strict' }), false);
+		const step = getSafeFallbackStep(range as any, termObj.scope ?? (unit === '#period' ? 'period' : undefined));
+		let next = jump.add(step);
 
 		let iterations = 0;
 		while (next.epochNanoseconds <= zdt.epochNanoseconds) {
 			if (++iterations > 50) {													// Safety-Valve: prevent infinite look-ahead
-				const range = termObj.define.call(new instance.constructor(jump, { ...instance.config, mode: 'strict' }), false);
+				const range = termObj.define.call(new Tempo(jump, { ...instance.config, mode: 'strict' }), false);
 				const step = getSafeFallbackStep(range as any, termObj.scope ?? (unit === '#period' ? 'period' : undefined));
 				jump = jump.add(step);
 			} else {
-				const range = termObj.define.call(new instance.constructor(jump, { ...instance.config, mode: 'strict' }), false);
-				if (isObject(range) && (range as any).end) {
-					jump = (range as any).end.toDateTime();
-				} else {
-					const step = (unit === '#period' || termObj.scope === 'period') ? { days: 1 } : { years: 1 };
-					jump = jump.add(step);
-				}
+				const range = termObj.define.call(new Tempo(jump, { ...instance.config, mode: 'strict' }), false);
+				const step = getSafeFallbackStep(range as any, termObj.scope ?? (unit === '#period' ? 'period' : undefined));
+				jump = jump.add(step);
+				next = jump;
 			}
-
-			nextInstance = new instance.constructor(jump, { ...instance.config, mode: 'strict' }).set({ [unit]: offset });
-			if (!nextInstance.isValid) return null;
-			next = nextInstance.toDateTime();
 		}
-		return next;
+		const res = new Tempo(offset, { ...instance.config, anchor: next, mode: 'strict' }).toDateTime();
+		return isZonedDateTime(res) ? res : next;
 	}
 
-	// 3. Handle Numeric Shifts or Term Shifting
+	// 3. Handle Absolute Numeric Set (e.g. .set({ '#quarter': 2 }))
+	if (mutate === 'set' && !mod && isNumeric(offset)) {
+		const rawList = getRange(termObj, instance, zdt);
+		const target = getTermRange(instance, rawList, Number(offset), zdt) as any;
+		if (target) return target.start.toDateTime().withTimeZone(tz).withCalendar(cal);
+		
+		Tempo[sym.$termError](instance.config, unit);
+		return null;
+	}
+
+	// 4. Handle Numeric Shifts or Term Shifting
 	if (isNumeric(offset) || (isString(offset) && offset.startsWith('#'))) {
 		const shiftValue = isNumeric(offset) ? Number(offset) : 1;
 		let jump = zdt;

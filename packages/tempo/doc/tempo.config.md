@@ -7,18 +7,18 @@
 Settings are loaded in the following order (where later stages override earlier ones):
 1.  **Library Defaults**: Sensible out-of-the-box baseline.
 2.  **Persistent Storage**: Sticky user preferences (which merge into Defaults).
-3.  **Global Discovery**: Enterprise-level setup discovered via `Symbol.for($Tempo)`.
-4.  **Implicit/Explicit Initialization**: Baseline configuration via `Tempo.init()`.
-5.  **Instance Constructor**: Specific overrides for a single `new Tempo()` call.
+3.  **Global Discovery**: Enterprise-level setup discovered via `Symbol.for('$Tempo')`.
+4.  **Library Extension**: Dynamic feature registration via `Tempo.extend()`.
+5.  **Explicit Initialization**: Baseline configuration via `Tempo.init()`.
+6.  **Instance Constructor**: Specific overrides for a single `new Tempo()` call.
 
 ---
 
 ## 🔒 Registry Protection (Soft Freeze)
 
-As of **v2.0.1**, Tempo implements a **Soft Freeze** strategy for core registries (`TIMEZONE`, `NUMBER`, `FORMAT`, etc.). 
-
-- **Read-Only Proxy**: Registries are returned as read-only proxies. Any attempt to directly assign to them (e.g., `Tempo.TIMEZONE.myzone = '...' `) will fail or be ignored.
-- **Controlled Extension**: To update a registry, you must use the provided extension methods like `Tempo.extend()` or `Tempo.registryUpdate()`. This ensures that internal caches (like the Master Guard regex) are correctly synchronized.
+- **Read-Only Proxy**: Core registries (`TIMEZONE`, `FORMAT`, etc.) are returned as read-only proxies. Any attempt to directly assign to them will fail.
+- **Controlled Extension**: To update a registry, you must use `Tempo.extend()` or `Tempo.init()`. This ensures internal caches (like the Master Guard regex) are synchronized.
+- **Atomic Updates**: Multiple extensions are batched, ensuring that the parsing engine is only rebuilt once per change.
 
 This strategy prevents accidental state corruption while maintaining the flexible, extensible nature of the library.
 
@@ -96,11 +96,13 @@ Tempo.init({
 | `calendar` | `string` | `'iso8601'` | Default calendar system. |
 | `pivot` | `number` | `75` | Cutoff for parsing two-digit years. |
 | `timeStamp`| `'ms' \| 'ns'` | `'ms'` | Precision for timestamps. |
-| `sphere` | `'north' \| 'south'`| Auto-inferred (from time zones' daylight saving rules) Hemisphere for seasonal plugins. |
-| `debug` | `boolean` | `false` | Enables internal log tracking. |
-| `catch` | `boolean` | `false` | If true, invalid inputs return a Void instance. |
-| `mode` | `'auto' \| 'strict' \| 'defer'` | `'auto'` | Controls the hydration strategy and parsing strictness. |
-| `silent` | `boolean` | `false` | Suppresses both `console.error` and `console.warn` output. When combined with `catch: true`, expected failures (like invalid date strings) produce no console output. |
+| `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
+| `rtfFormat` | `Intl.RTF` | `undefined` | Pre-configured relative time formatter. |
+| `rtfStyle` | `'long' \| 'short' \| 'narrow'` | `'narrow'` | Default style for relative time formatting. |
+| `debug` | `boolean` | `false` | Enables internal log tracking using context-aware Symbols. |
+| `catch` | `boolean` | `false` | If true, invalid inputs return a Void instance instead of throwing. |
+| `mode` | `'auto' \| 'strict' \| 'defer'` | `'auto'` | Controls the hydration strategy (e.g., `defer` for Zero-Cost creation). |
+| `silent` | `boolean` | `false` | Suppresses console output. Combined with `catch: true` for silent failover. |
 
 ---
 

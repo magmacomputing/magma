@@ -81,11 +81,11 @@ export const MyModule = defineModule((options, TempoClass) => {
 
 There is a subtle but important distinction between how features are activated in Core mode:
 
-*   **`Tempo.extend(Module)`**: This is **Immediate and Explicit**. It applies the module to the class exactly when the line is executed. This is the safest pattern for most users.
-*   **`Tempo.init()`**: This is **Reactive Discovery**. It scans the global registry for any plugins that were imported via side effects (e.g., `import '@magmacomputing/tempo/ticker'`) and applies them all at once.
+*   **`Tempo.extend(Module)`**: This is **Immediate and Explicit**. It applies the module to the class exactly when the line is executed. This is the recommended pattern for modular applications.
+*   **`Tempo.init()`**: This is **Discovery-Driven**. It scans the global environment for any plugins that were imported via side effects (e.g., `import '@magmacomputing/tempo/ticker'`) and hydrates the engine all at once.
 
 > [!CAUTION]
-> **The State Refresh**: `Tempo.init()` performs a **full state refresh** for the engine. It resets the global configuration, internal term registries, and formatting maps back to defaults before re-applying all currently registered plugins from the global discovery layer. While it does **not** wipe out manual monkey-patches to the `Tempo` prototype, it *does* clear all previously registered terms and custom formats. To ensure your custom logic is managed correctly within the initialization lifecycle, always use `Tempo.extend()` or encapsulate your changes within a formal plugin.
+> **The Initialization Lifecycle**: `Tempo.init()` performs a **full state refresh**. It resets configuration, term registries, and formatting maps to defaults before re-applying all currently discovered plugins. To ensure your custom logic is managed correctly, always use `Tempo.extend()` or encapsulate changes within a formal plugin.
 
-**The Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** appear on the `Tempo` class. You would need to call `Tempo.init()` again to "refresh" the engine's feature set and pick up the latecomers.
+**The Side-Effect Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** automatically appear on the `Tempo` class. You would need to call `Tempo.init()` again or use `Tempo.extend()` to pick up the latecomers.
 
