@@ -148,11 +148,18 @@ export const Event = looseIndex<string, string | Function>()({
 	'xmas': '25 Dec',
 	'now': function (this: Tempo) { return this.toNow() },
 	'today': function (this: Tempo) {
-		const { year, month, day } = this.toNow();							// create a 'today' Tempo
-		return this.toDateTime().with({ year, month, day });		// return just the date-components
+		// ABSOLUTE: Snaps to the current system date
+		const { year, month, day } = this.toNow();
+		return this.toDateTime().with({ year, month, day });
 	},
-	'tomorrow': function (this: Tempo) { return this.add({ days: 1 }) },					// tomorrow at current time
-	'yesterday': function (this: Tempo) { return this.add({ days: -1 }) },				// yesterday at current time
+	'tomorrow': function (this: Tempo) {
+		// RELATIVE: Offsets the current anchor by one day
+		return this.add({ days: 1 });
+	},
+	'yesterday': function (this: Tempo) {
+		// RELATIVE: Offsets the current anchor by one day
+		return this.add({ days: -1 });
+	},
 });
 /** @internal Tempo Event type */
 export type Event = typeof Event
