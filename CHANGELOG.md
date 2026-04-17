@@ -7,9 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-04-17
+
 ### Added
-- **Browser Distribution Dashboard**: Launched a comprehensive verification suite at `/demo/index.html` to validate ESM, IIFE, and modular distributions.
-- **Breaking Change**: The `Tempo.add()` and `Tempo.set()` methods now require the `MutateModule` to be explicitly registered via `Tempo.extend(MutateModule)`. This change moves the library towards a fully modular architecture where advanced mutation logic is opt-in, reducing the core bundle size for read-only consumers.
+- **Modular Mutation Engine**: Refactored `add()` and `set()` into a standalone `MutateModule`. While the public entry point remains "batteries-included," this refactor allows advanced users to import a slimmed-down `Tempo` core and only opt-in to mutation logic as needed.
+- **VitePress Documentation Site**: Launched a comprehensive, searchable documentation platform with deep TypeDoc integration and interactive guides.
+- **Browser Distribution Dashboard**: Introduced a unified verification suite at `/demo/index.html` to validate ESM, IIFE, and modular distributions in real-time.
+- **Enhanced Payload Validation**: Implemented strict validation for Ticker payloads to prevent ambiguous mixing of directional and relative mutations.
+
+### Changed
+- **Semantic Event Update**: Refactored `tomorrow` and `yesterday` to be instance-relative rather than system-anchored, providing more predictable behavior during complex temporal shifts.
+- **Internal State Protection**: Hardened the `[sym.$Internal]()` accessor, making the underlying `zdt` read-only to guarantee instance immutability.
+
+### Fixed
+- **Arithmetic Precision**: Resolved out-of-bounds access and floating-point indexing errors in term range resolution through floored cycle calculations.
+- **State Propagation**: Fixed inconsistent `mutateDepth` propagation in error fallback paths, ensuring robust recursive protection.
+- **Primitive Integrity**: Corrected the `distinct` utility to properly respect and bind `thisArg` during mapping operations.
+- **Redundant State Removal**: Eliminated the unused global `STATE` constant from utilities to prevent potential cross-instance state leakage.
 
 ## [2.1.2] - 2026-04-16
 
