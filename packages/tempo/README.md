@@ -28,6 +28,7 @@
       <td style="border: none; padding: 0 5px;"><a href="https://tc39.es/proposal-temporal/"><img src="https://img.shields.io/badge/Temporal-Stage%204-green" alt="Temporal"></a></td>
       <td style="border: none; padding: 0 5px;"><a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript" alt="TypeScript Ready"></a></td>
       <td style="border: none; padding: 0 5px;"><a href="https://nodejs.org/api/esm.html"><img src="https://img.shields.io/badge/Native-ESM-green" alt="Native ESM"></a></td>
+      <td style="border: none; padding: 0 5px;"><a href="https://magmacomputing.github.io/magma/"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress" alt="Documentation"></a></td>
     </tr>
   </tbody>
 </table>
@@ -127,7 +128,7 @@ const startOfMonth = now.set({ start: 'month' });
 console.log(now.format('{dd} {mmm} {yyyy}')); // using custom format with tokens: "24 Jan 2026"
 console.log(now.fmt.date);                    // using pre-built formats: "2026-01-24"
 ```
-  Looking for the full API reference? Check out the **[Tempo API Guide](./doc/tempo.api.md)**.
+  Looking for the full API reference? Check out the **[Tempo API Guide](https://magmacomputing.github.io/magma/doc/tempo.api)**.
 
 
 ## 💬 Contact & Support
