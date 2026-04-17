@@ -30,6 +30,28 @@ type Curry<Args extends any[], Res> =
 	? (arg: FirstArg) => Curry<RestArgs, Res>
 	: Res;
 
+/**
+ * ## serialize
+ * Robust deterministic serialization for cache keys.
+ * Handles BigInt, Map, Set, Function, Undefined, and Circular refs.
+ */
+function serialize(val: any, seen = new WeakSet()): string {
+	return JSON.stringify(val, function(this: any, key: string, value: any) {
+		if (value === undefined) return '\u0000__undefined__\u0000';
+		if (typeof value === 'bigint') return `bigint:${value}`;
+		if (typeof value === 'function') return `function:${value.name || 'anonymous'}`;
+
+		if (value !== null && typeof value === 'object') {
+			if (seen.has(value)) return '<Circular>';
+			seen.add(value);
+
+			if (value instanceof Map) return `map:[${Array.from(value.entries()).map(e => serialize(e, seen)).sort().join(',')}]`;
+			if (value instanceof Set) return `set:[${Array.from(value).map(v => serialize(v, seen)).sort().join(',')}]`;
+		}
+		return value;
+	});
+}
+
 /** curry a Function to allow partial calls */
 export function curry<Args extends any[], Res>(fn: (...args: Args) => Res): Curry<Args, Res> {
 	return function curried(...args: any[]): any {
@@ -44,7 +66,7 @@ export function memoizeFunction<F extends (...args: any[]) => any>(fn: F): F {
 	const cache = new Map<string, ReturnType<F>>();						// using a Map for better key handling than plain objects
 
 	return function (this: any, ...args: Parameters<F>): ReturnType<F> {
-		const key = JSON.stringify(args, (_, v) => v === undefined ? '__und__' : v);
+		const key = serialize(args);
 		if (!cache.has(key)) {
 			const result = fn.apply(this, args);									// call the original function with the correct context
 			cache.set(key, Object.freeze(result));								// stash the result for subsequent calls
@@ -68,7 +90,7 @@ export function memoizeMethod<Context = Property<any>, T = any>(name: PropertyKe
 		configurable: false,
 		writable: false,
 		value: function (this: Context, ...args: any[]) {
-			const key = `${String(name)},${JSON.stringify(args, (_, v) => v === undefined ? '__und__' : v)}`;
+			const key = `${String(name)},${serialize(args)}`;
 			let cache = wm.get(this as any);
 
 			if (!cache) {																					// add a new Map into the WeakMap

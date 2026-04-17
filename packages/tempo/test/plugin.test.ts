@@ -55,18 +55,23 @@ describe('Tempo Plugin System', () => {
 
 	test('should auto-load plugins from global discovery', () => {
 		const testDiscovery = '$TempoTestDiscovery';
+		const discoveryKey = Symbol.for(testDiscovery);
 		let loaded = false;
 		const discoveryPlugin: Plugin = {
 			name: 'DiscoveryPlugin',
 			install() { loaded = true; },
 		};
 
-		(globalThis as any)[Symbol.for(testDiscovery)] = {
+		(globalThis as any)[discoveryKey] = {
 			plugins: [discoveryPlugin]
 		};
 
-		Tempo.init({ discovery: testDiscovery });
-		expect(loaded).toBe(true);
+		try {
+			Tempo.init({ discovery: testDiscovery });
+			expect(loaded).toBe(true);
+		} finally {
+			delete (globalThis as any)[discoveryKey];
+		}
 	});
 
 	test('should protect existing members but allow new ones', () => {

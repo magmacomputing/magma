@@ -3,7 +3,7 @@ import { COMPASS } from '../../tempo.enum.js';
 import type { Tempo } from '../../tempo.class.js';
 
 /** definition of meteorological season ranges */
-const groups = defineRange([
+const ranges = [
 	// Meteorological (North)
 	{ key: 'Spring', day: 1, month: 3, symbol: 'Flower', group: 'meteorological', sphere: COMPASS.North },
 	{ key: 'Summer', day: 1, month: 6, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.North },
@@ -21,14 +21,17 @@ const groups = defineRange([
 	{ key: 'Summer', day: 1, month: 6, symbol: 'Sun', group: 'chinese', trait: 'A period of heat and fruition' },
 	{ key: 'Autumn', day: 1, month: 9, symbol: 'Leaf', group: 'chinese', trait: 'A time for harvest and contraction' },
 	{ key: 'Winter', day: 1, month: 12, symbol: 'Snowflake', group: 'chinese', trait: 'A period of stillness and consolidation' },
-], 'group', 'sphere');
+];
+
+/** definition of meteorological season ranges */
+const groups = defineRange(ranges, 'group', 'sphere');
 
 /** resolve the full candidate list for the current context */
 function resolve(t: Tempo, anchor?: any) {
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['group', 'sphere'], group: 'meteorological' });
 
 	// append Chinese trait information as an additional metadata field (CN)
-	const chinese = (groups as any)['chinese.'] ?? [];
+	const chinese = ranges.filter((g: any) => g.group === 'chinese');
 	list.forEach((itm: any) => itm['CN'] = getTermRange(t, chinese, false, anchor));
 
 	return list;

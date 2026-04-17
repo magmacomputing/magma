@@ -20,7 +20,7 @@ describe('instance.since relative formatting', () => {
         const t2 = new Tempo('2024-01-01T14:30:00');
 
         const res = t2.since(t1, { unit: 'hours', rtfStyle: 'short' });
-        expect(res).toMatch(/2 hr. ago/i);
+        expect(res).toMatch(/2 hrs?\. ago/i);
     });
 
     test('supports custom Intl.RelativeTimeFormat instance', () => {

@@ -66,6 +66,9 @@ function rewrite(filePath: string) {
 
   const updatedContent = content
     .replace(/#library\/([^"')]+\.js)/g, (match, libPath) => {
+      // NOTE: We use path.basename here because the @magmacomputing/library distribution 
+      // is currently flat (dist/common/*.js), and our resolve process flattens all 
+      // used library modules into the local dist/lib/ directory.
       const fileName = path.basename(libPath);
       return `${replacement}${fileName}`;
     })

@@ -2,7 +2,7 @@
   <tbody>
     <tr style="border: none;">
       <td align="left" width="100" style="border: none;">
-        <img src="./img/logo.svg" width="100" style="display: block;">
+        <img src="./img/logo.svg" width="100" style="display: block;" alt="Tempo logo">
       </td>
       <td align="left" style="border: none;" valign="middle">
         <span style="font-size: 4em; font-weight: bold; line-height: 1;">Tempo</span>

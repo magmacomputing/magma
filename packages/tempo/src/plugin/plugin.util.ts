@@ -11,14 +11,6 @@ import type { TermPlugin, Range, ResolvedRange, Plugin } from './plugin.type.js'
 
 import { REGISTRY } from '../tempo.register.js';
 
-/** 
- * # STATE
- * Mutable internal state for Tempo.
- */
-export const STATE = {
-	mutateDepth: 0
-}
-
 export function getHost(t: any): any {
 	return isFunction(t) || isClass(t) ? t : (t as any).constructor;
 }
@@ -170,9 +162,13 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | num
 	});
 
 	if (isNumber(keyOnly)) {
-		const cycle = chronological.length / 3;
+		const cycle = Math.floor(chronological.length / 3);
+		if (cycle === 0 || !Number.isInteger(keyOnly) || keyOnly < 1 || keyOnly > cycle) return undefined;
+
 		const offset = matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle;
 		const match = chronological[offset + (keyOnly - 1)];
+		if (!match) return undefined;
+
 		const start = resolve(match, zdt);
 		let end: Tempo;
 		const i = offset + (keyOnly - 1);
@@ -247,8 +243,10 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Ra
 	}
 
 	if (group) {
-		const meta: any = (term as any).define ?? (term as any).groups ?? (term as any).ranges;
-		if (meta && !Array.isArray(meta)) {
+		const meta: any = (term as any).groups ?? (term as any).ranges;
+		const isPlainObject = (val: any) => typeof val === 'object' && val !== null && !Array.isArray(val) && !isFunction(val);
+
+		if (isPlainObject(meta)) {
 			const source = Object.values(meta).flat(Infinity);
 			list = (source as any[]).filter(r => r.group === group);
 		} else {

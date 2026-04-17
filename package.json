@@ -16,7 +16,7 @@
     "build:library": "npm run build --workspace=@magmacomputing/library",
     "clean": "tsc -b --clean",
     "release": "release-it",
-    "version:sync": "npm version ${npm_package_version} -w @magmacomputing/tempo -w @magmacomputing/library --no-git-tag-version",
+    "version:sync": "node -e \"require('child_process').execSync('npm version ' + process.env.npm_package_version + ' -w @magmacomputing/tempo -w @magmacomputing/library --no-git-tag-version', {stdio:'inherit'})\"",
     "repl": "npm run repl --workspace=@magmacomputing/tempo",
     "core": "npm run core --workspace=@magmacomputing/tempo",
     "docs:dev": "npm run docs:dev --workspace=@magmacomputing/tempo",

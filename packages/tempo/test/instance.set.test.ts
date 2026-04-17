@@ -45,18 +45,37 @@ describe(`${label} set method`, () => {
     expect(end.hh).toBe(23);
   });
 
-  test('today/tomorrow/yesterday events via set', () => {
-    const t = new Tempo('2024-05-20 12:34:56');
-    const todayObserved = t.set('today');
-    const now = new Tempo();
-    expect(todayObserved.yy).toBe(now.yy);
-    expect(todayObserved.mm).toBe(now.mm);
-    expect(todayObserved.dd).toBe(now.dd);
-    expect(todayObserved.hh).toBe(12); // preserved time
+  describe('Relative Events', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-05-20 12:00:00'));
+    });
 
-    const tomorrow = t.set('tomorrow');
-    expect(tomorrow.dd).toBe(21);
-    expect(tomorrow.hh).toBe(12); // preserved time
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    test('today/tomorrow/yesterday events via set', () => {
+      const t = new Tempo('2024-05-15 12:34:56');
+      
+      const todayObserved = t.set('today');
+      expect(todayObserved.yy).toBe(2024);
+      expect(todayObserved.mm).toBe(5);
+      expect(todayObserved.dd).toBe(20); // 'today' is always the system-date
+      expect(todayObserved.hh).toBe(12); // preserved time from t
+
+      const tomorrow = t.set('tomorrow');
+      expect(tomorrow.yy).toBe(2024);
+      expect(tomorrow.mm).toBe(5);
+      expect(tomorrow.dd).toBe(16); // 'tomorrow' is relative to the instance
+      expect(tomorrow.hh).toBe(12); // preserved time from t
+
+      const yesterday = t.set('yesterday');
+      expect(yesterday.yy).toBe(2024);
+      expect(yesterday.mm).toBe(5);
+      expect(yesterday.dd).toBe(14); // 'yesterday' is relative to the instance
+      expect(yesterday.hh).toBe(12); // preserved time from t
+    });
   });
 
 });

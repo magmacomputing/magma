@@ -86,7 +86,7 @@ export class Tempo {
 	/** initialization strategies */													static get MODE() { return enums.MODE }
 	/** some useful Dates */																	static get LIMIT() { return enums.LIMIT }
 
-	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return Tempo.#lifecycle.extendDepth > 0 || !Tempo.#lifecycle.ready }
+	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !Tempo.#lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return Tempo.#lifecycle.extendDepth > 0 }
 
 	static #dbg = new Logify('Tempo', {
@@ -627,11 +627,15 @@ export class Tempo {
 				}
 				else if (isObject(item) && isString((item as any).name) && isFunction((item as any).install)) {
 					// Plugin object form { name, install }
-					if (REGISTRY.installed.has(arg)) return;
-					REGISTRY.installed.add(arg);										// mark as installed (BEFORE side-effects)
+					const name = (item as any).name;
+					if (REGISTRY.installed.has(name)) {
+						Tempo.#dbg.debug(Tempo.#global.config, `Plugin already installed by name: ${name}`);
+						return;
+					}
+					REGISTRY.installed.add(name);
 
-					registerPlugin(arg);
-					(arg as t.Plugin).install.call(this as any, this);
+					registerPlugin(item);
+					(item as t.Plugin).install.call(this as any, this);
 				}
 				else if (isObject(item)) {
 					// 1. handle TermPlugin
@@ -988,12 +992,14 @@ export class Tempo {
 		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.Match[] } as Internal.Parse
 	} as Internal.State;
 
-	/** internal access to instance private state */
+	/** 
+	 * @internal Internal access to instance private state.
+	 * This surface is not part of the public contract and is subject to change.
+	 */
 	[sym.$Internal]() {
 		const self = this;
 		return {
 			get zdt() { return self.#zdt },
-			set zdt(val) { self.#zdt = val },
 			get errored() { return self.#errored },
 			set errored(val) { self.#errored = val },
 			get parseDepth() { return self.#parseDepth },

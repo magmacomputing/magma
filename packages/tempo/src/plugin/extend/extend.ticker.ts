@@ -178,11 +178,19 @@ class TickerInstance implements Ticker.Descriptor {
 			(this.#TempoClass as any)[sym.$logError](this.#current.config, `Invalid Ticker boundary: ${String(this.#until)}`);
 		} else {
 			try {
-				// Use .set() only for directional shorthand values (e.g. '>', '<', '>2')
-				// Use .add() for numeric counts and named ranges (e.g. 1, 'morning')
-				this.#isShorthand = Object.entries(this.#payload).some(([k, v]) =>
+				// ── Mode Detection ──────────────────────────────────────────
+				// Directional shorthand ('>', '<') implies absolute snapping via .set()
+				// Numeric durations or named ranges imply relative shifting via .add()
+				const hasShorthand = Object.entries(this.#payload).some(([k, v]) =>
 					k.startsWith('#') && typeof v === 'string' && /^[<>]/.test(v.trim())
 				);
+				const hasRelative = Object.keys(this.#payload).some(k => !k.startsWith('#'));
+
+				if (hasShorthand && hasRelative) {
+					throw new Error(`Ambiguous Ticker payload: cannot mix directional shorthand terms (e.g. '>') with relative durations (e.g. 'hours'). Use one or the other.`);
+				}
+
+				this.#isShorthand = hasShorthand;
 				const hasTermKey = Object.keys(this.#payload).some(k => k.startsWith('#'));
 				const firstStep = this.#isShorthand ? this.#current.set(this.#payload) : this.#current.add(this.#payload);
 				if (!firstStep.isValid) throw new Error(`Invalid Ticker payload resolution for ${JSON.stringify(this.#payload)}`);
@@ -338,7 +346,6 @@ class TickerInstance implements Ticker.Descriptor {
 	[Symbol.dispose]() { this.stop(); }
 }
 
-/**
 /**
  * # TickerModule
  */

@@ -73,8 +73,8 @@ export function extract<T>(obj: any, path: string | number, dflt?: T): T {
 export function distinct<T>(arr: T[]): T[];
 /** return a mapped array with no repeated elements */
 export function distinct<T, S>(arr: T[], mapfn: (value: T, index: number, array: T[]) => S, thisArg?: any): S[];
-export function distinct<T>(arr: T[], mapfn?: (value: any, index: number, array: any[]) => any) {
+export function distinct<T>(arr: T[], mapfn?: (value: any, index: number, array: any[]) => any, thisArg?: any) {
 	return mapfn
-		? distinct(arr.map(mapfn))
+		? distinct(arr.map(mapfn, thisArg))
 		: Array.from(new Set(arr));
 }

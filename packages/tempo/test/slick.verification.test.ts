@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo';
+import '#tempo/ticker';
 
 describe('Tempo Shorthand Suite (Comprehensive)', () => {
 	beforeEach(() => {

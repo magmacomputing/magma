@@ -35,7 +35,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 	let zdt = selfZdt.withTimeZone(overrides.timeZone).withCalendar(overrides.calendar);
 	state.parseDepth++;
 	const isRoot = state.parseDepth === 1;
-	if (isRoot) state.matches = [...this.parse.result];
+	if (isRoot) state.matches = Array.isArray(this.parse?.result) ? [...this.parse.result] : [];
 
 	try {
 		if (isDefined(args)) {
@@ -111,9 +111,6 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 								case 'add.millisecond': case 'add.microsecond': case 'add.nanosecond':
 									return currZdt.add({ [singular(single) + 's']: offset });
 
-								case 'set.timeZone': return currZdt.withTimeZone(offset as Temporal.TimeZoneLike);
-								case 'set.calendar': return currZdt.withCalendar(offset as Temporal.CalendarLike);
-
 								case 'set.period': case 'set.time': case 'set.date': case 'set.event':
 								case 'set.dow': case 'set.wkd': {
 									const res = internalParse(offset, currZdt, term);
@@ -173,11 +170,11 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 
 		if (state.errored) {
 			// @ts-ignore - access to private constructor fallback
-			return new TempoClass(null, { ...state.options, ...overrides, ...options, result: state.matches, [sym.$errored]: true });
+			return new TempoClass(null, { ...state.options, ...overrides, ...options, result: state.matches, [sym.$errored]: true, [sym.$mutateDepth]: state.mutateDepth });
 		}
 
 		// @ts-ignore
-		return new TempoClass(zdt, { ...state.options, ...overrides, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored });
+		return new TempoClass(zdt, { ...state.options, ...overrides, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored, [sym.$mutateDepth]: state.mutateDepth });
 
 	} finally {
 		if (isRoot) state.matches = undefined;

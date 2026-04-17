@@ -8,13 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **VitePress Documentation**: Launched a modern, searchable documentation site powered by VitePress and TypeDoc.
-- **Proxy-Delegator Pattern**: Refined the lazy-evaluation engine for $O(1)$ property access.
-- **Scan-and-Consume Guard**: Implemented high-performance token matching for v2.1.2 stabilization.
+- **Browser Distribution Dashboard**: Launched a comprehensive verification suite at `/demo/index.html` to validate ESM, IIFE, and modular distributions.
 
 ## [2.1.2] - 2026-04-16
 
 ### Added
+- **VitePress Documentation**: Launched a modern, searchable documentation site powered by VitePress and TypeDoc.
+- **Proxy-Delegator Pattern**: Refined the lazy-evaluation engine for $O(1)$ property access.
+- **Scan-and-Consume Guard**: Implemented high-performance token matching for v2.1.2 stabilization.
 - **Ticker Stability Guard**: Implemented a 10,000-iteration safety break in `resolveTermShift` to prevent infinite loops when resolving malformed or non-advancing custom terms.
 - **Unified Diagnostics (`Logify`)**: Integrated the `Logify` utility into core internal classes. This provides a standardized mechanism for `debug`, `catch`, and `silent` modes across the library.
 

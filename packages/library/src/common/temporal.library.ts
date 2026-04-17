@@ -79,7 +79,7 @@ export function normaliseFractionalDurations(payload: Record<string, any>) {
 // ─────────────────────────────────────────────────
 
 /**
- * ## zonedDateTimeFrom
+ * ## toZonedDateTime
  * Create a `Temporal.ZonedDateTime` from a
  * property-bag (year, month, day, …, timeZone, calendar).
  */
@@ -88,7 +88,7 @@ export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike & { timeZone: Te
 }
 
 /**
- * ## plainDateFrom
+ * ## toPlainDate
  * Create a `Temporal.PlainDate` from a
  * property-bag or ISO string.
  */
@@ -97,7 +97,7 @@ export function toPlainDate(bag: Temporal.PlainDateLike | string): Temporal.Plai
 }
 
 /**
- * ## instantFromEpochNs
+ * ## toInstant
  * Create a `Temporal.Instant` from epoch
  * nanoseconds (bigint).
  */
