@@ -3,7 +3,11 @@ on:
   push:
     branches: [main]
     # Trigger only on changes to tempo package or this workflow
-    paths: ['packages/tempo/**', '.github/workflows/deploy-docs.yml']
+    paths:
+      - 'packages/tempo/**'
+      - '.github/workflows/deploy-docs.yml'
+      - 'package.json'
+      - 'package-lock.json'
 
 permissions:
   contents: read
