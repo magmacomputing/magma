@@ -1,8 +1,8 @@
 import { defineConfig } from 'vitepress'
 import { Temporal } from '@js-temporal/polyfill'
 
-if (!globalThis.Temporal) {
-  globalThis.Temporal = Temporal;
+if (!(globalThis as any).Temporal) {
+  (globalThis as any).Temporal = Temporal;
 }
 
 export default defineConfig({
