@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Browser Distribution Dashboard**: Launched a comprehensive verification suite at `/demo/index.html` to validate ESM, IIFE, and modular distributions.
+- **Breaking Change**: The `Tempo.add()` and `Tempo.set()` methods now require the `MutateModule` to be explicitly registered via `Tempo.extend(MutateModule)`. This change moves the library towards a fully modular architecture where advanced mutation logic is opt-in, reducing the core bundle size for read-only consumers.
 
 ## [2.1.2] - 2026-04-16
 

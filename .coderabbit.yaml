@@ -2,11 +2,8 @@
 reviews:
   path_filters:
     # Use "! " at the start of a pattern to EXCLUDE it from the review
-    - "!docs/**"                # Ignore everything in the docs directory
-    - "!doc/**"                 # Ignore nested doc folders
-    - "!documentation/**"       # Ignore another common directory name
-    - "!static/docs/**"         # Ignore nested doc folders
-    - "!**/*.md"                # Ignore all Markdown files
-    - "!**/*.pdf"               # Ignore PDF files
-    - "!**/*.txt"               # Ignore text files
-    - "!**/vendor/**"           # Pro-tip: Also ignore third-party code to save count
+    - "!**/doc/**"                # Ignore all generated TypeDoc folders
+    - "!**/docs/**"               # Ignore all generated VitePress folders
+    - "!**/.vitepress/cache/**"    # Ignore VitePress cache
+    - "!**/.vitepress/dist/**"     # Ignore VitePress build output
+    - "!**/vendor/**"             # Ignore third-party code

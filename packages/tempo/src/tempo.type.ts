@@ -56,7 +56,7 @@ export type { Plugin, Module, Extension };
 /** Configuration to use for #until() and #since() argument */
 export type DateTimeUnit = Temporal.DateUnit | Temporal.TimeUnit
 export type Unit = DateTimeUnit | Plural<DateTimeUnit>
-export type Units = Temporal.PluralizeUnit<DateTimeUnit>;
+export type Units = Plural<DateTimeUnit>;
 export type BaseDuration = Record<Units, number>;
 /**
  * # FlexibleDuration

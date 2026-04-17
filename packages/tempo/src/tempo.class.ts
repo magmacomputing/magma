@@ -44,6 +44,10 @@ const hasOwn = (obj: object, key: string) => Object.hasOwn(obj, key);
 const isLocal = (shape: { config: { scope: string } }) => shape.config.scope === 'local';
 /** create an object based on a prototype */
 const create = <T extends object>(obj: object, name: string): T => Object.create(proto(obj)[name]);
+/** helper to throw error if MutateModule is missing */
+const throwMutateModuleNotLoaded = () => {
+	throw new Error('Tempo MutateModule not loaded. Did you forget to Tempo.extend(MutateModule)?');
+};
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 namespace Internal {
 	export type State = t.Internal.State;
@@ -1324,8 +1328,8 @@ export class Tempo {
 		return interpret(this, 'duration', undefined, 'since', ...args);
 	}
 
-	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', () => { throw new Error('Tempo MutateModule not loaded. Did you forget to Tempo.extend(MutateModule)?') }, 'add', tempo, options); }
-	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', () => { throw new Error('Tempo MutateModule not loaded. Did you forget to Tempo.extend(MutateModule)?') }, 'set', tempo, options); }
+	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', throwMutateModuleNotLoaded, 'add', tempo, options); }
+	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', throwMutateModuleNotLoaded, 'set', tempo, options); }
 	/** returns a clone of the current `Tempo` instance. */		clone() { return new this.#Tempo(this, this.config) }
 
 	/** returns the underlying Temporal.ZonedDateTime */

@@ -14,7 +14,7 @@ const groups = defineRange([
 ], 'group');
 
 function resolve(t: Tempo, anchor?: any) {
-	return resolveCycleWindow(t, groups, { ...anchor, sphere: 'standard' });
+	return resolveCycleWindow(t, groups, { anchor, groupBy: ['group'], group: 'standard' });
 }
 
 export const TimelineTerm = defineTerm({

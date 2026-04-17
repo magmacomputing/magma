@@ -118,7 +118,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 									return res ?? currZdt;
 								}
 
-								case 'set.year': case 'set.month': case 'set.week': case 'set.day':
+								case 'set.year': case 'set.month': case 'set.day':
 								case 'set.hour': case 'set.minute': case 'set.second':
 								case 'set.millisecond': case 'set.microsecond': case 'set.nanosecond':
 									return currZdt.with({ [single]: offset });
@@ -131,14 +131,14 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 
 								case 'start.year': return currZdt.with({ month: enums.MONTH.Jan, day: 1 }).startOfDay();
 								case 'start.month': return currZdt.with({ day: 1 }).startOfDay();
-								case 'start.week': return currZdt.add({ days: -(this.dow - enums.WEEKDAY.Mon) }).startOfDay();
+								case 'start.week': return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Mon) }).startOfDay();
 								case 'start.day': return currZdt.startOfDay();
 								case 'start.hour': case 'start.minute': case 'start.second':
 									return currZdt.round({ smallestUnit: offset as any, roundingMode: 'trunc' });
 
 								case 'mid.year': return currZdt.with({ month: enums.MONTH.Jul, day: 1 }).startOfDay();
 								case 'mid.month': return currZdt.with({ day: Math.trunc(currZdt.daysInMonth / 2) }).startOfDay();
-								case 'mid.week': return currZdt.add({ days: -(this.dow - enums.WEEKDAY.Thu) }).startOfDay();
+								case 'mid.week': return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Thu) }).startOfDay();
 								case 'mid.day': return currZdt.round({ smallestUnit: 'day', roundingMode: 'trunc' }).add({ hours: 12 });
 								case 'mid.hour': return currZdt.round({ smallestUnit: 'hour', roundingMode: 'trunc' }).add({ minutes: 30 });
 								case 'mid.minute': return currZdt.round({ smallestUnit: 'minute', roundingMode: 'trunc' }).add({ seconds: 30 });
@@ -146,7 +146,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 
 								case 'end.year': return currZdt.add({ years: 1 }).with({ month: enums.MONTH.Jan, day: 1 }).startOfDay().subtract({ nanoseconds: 1 });
 								case 'end.month': return currZdt.add({ months: 1 }).with({ day: 1 }).startOfDay().subtract({ nanoseconds: 1 });
-								case 'end.week': return currZdt.add({ days: (enums.WEEKDAY.Sun - this.dow) + 1 }).startOfDay().subtract({ nanoseconds: 1 });
+								case 'end.week': return currZdt.add({ days: (enums.WEEKDAY.Sun - currZdt.dayOfWeek) + 1 }).startOfDay().subtract({ nanoseconds: 1 });
 								case 'end.day': case 'end.hour': case 'end.minute': case 'end.second':
 									return currZdt.round({ smallestUnit: offset as any, roundingMode: 'ceil' }).subtract({ nanoseconds: 1 });
 

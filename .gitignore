@@ -46,5 +46,5 @@ Thumbs.db
 .~*.xlsx#
 .~*.xlsm#
 .rollup.cache/
-.vitepress/cache/
-.vitepress/dist/
+**/.vitepress/cache/
+**/.vitepress/dist/
