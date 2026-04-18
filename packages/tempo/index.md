@@ -37,13 +37,13 @@ onMounted(async () => {
   // Initial update
   const now = new Tempo()
   updateHands(now.hh, now.mi, now.ss)
-  timeStr.value = now.format('{yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
+  timeStr.value = now.format('{wkd}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
   tzStr.value = now.tz
 
   // Continuous ticker
   ticker = Tempo.ticker({ seconds: 1 }, (t) => {
     updateHands(t.hh, t.mi, t.ss)
-    timeStr.value = t.format('{yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
+    timeStr.value = t.format('{wkd}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
     tzStr.value = t.tz
   })
 })
@@ -59,13 +59,13 @@ onUnmounted(() => {
   <div class="tempo-hero-content">
     <div class="tempo-hero-left">
       <div class="tempo-title-row">
-        <img src="/logo.svg" class="tempo-hero-logo" alt="Tempo Logo">
+        <img src="./logo.svg" class="tempo-hero-logo" alt="Tempo Logo">
         <h1 class="tempo-hero-name">Tempo</h1>
       </div>
       <div class="tempo-tagline-row">
         <p class="tempo-hero-tagline">The Professional Date-Time Library for the Temporal API</p>
         <div class="tempo-hero-actions">
-          <a href="/README" class="tempo-btn tempo-btn-brand">Get Started</a>
+          <a href="./README" class="tempo-btn tempo-btn-brand">Get Started</a>
           <a href="https://github.com/magmacomputing/magma/tree/main/packages/tempo" class="tempo-btn tempo-btn-alt">View on GitHub</a>
         </div>
       </div>
