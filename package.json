@@ -1,6 +1,6 @@
 {
   "name": "tempo-monorepo",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "private": true,
   "description": "Magma Computing Monorepo",
   "repository": {
@@ -21,10 +21,12 @@
     "core": "npm run core --workspace=@magmacomputing/tempo",
     "docs:dev": "npm run docs:dev --workspace=@magmacomputing/tempo",
     "docs:build": "npm run docs:build --workspace=@magmacomputing/tempo",
-    "docs:preview": "npm run docs:preview --workspace=@magmacomputing/tempo"
+    "docs:preview": "npm run docs:preview --workspace=@magmacomputing/tempo",
+    "test:dist": "npm run build:library && npm run build:tempo && cross-env TEST_DIST=true vitest run"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
+    "cross-env": "^7.0.3",
     "@release-it/keep-a-changelog": "^5.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@types/google.maps": "^3.58.1",

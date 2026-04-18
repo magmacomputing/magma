@@ -10,7 +10,7 @@ export default defineWorkspace([
     extends: 'packages/tempo/vitest.config.ts',
     test: {
       name: 'Tempo: Full',
-      include: ['**/test/**/*.{test,spec}.ts'],
+      include: ['packages/tempo/test/**/*.{test,spec}.ts'],
       exclude: [
         '**/node_modules/**',
         '**/test/**/*.core.test.ts',
@@ -23,7 +23,16 @@ export default defineWorkspace([
     extends: 'packages/tempo/vitest.config.ts',
     test: {
       name: 'Tempo: Core',
-      include: ['**/test/**/*.core.test.ts', '**/test/**/*.lazy.test.ts'],
+      include: ['packages/tempo/test/**/*.core.test.ts', 'packages/tempo/test/**/*.lazy.test.ts'],
+      exclude: ['**/node_modules/**'],
+      setupFiles: [polyfill],
+    }
+  },
+  {
+    extends: 'packages/library/vitest.config.ts',
+    test: {
+      name: 'Library: Full',
+      include: ['packages/library/test/**/*.{test,spec}.ts'],
       exclude: ['**/node_modules/**'],
       setupFiles: [polyfill],
     }

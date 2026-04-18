@@ -84,11 +84,34 @@ export const setAccessors = (obj: any = {}) => {
 }
 
 const ownAccessors = (obj: any = {}, type: 'get' | 'set') => {
-	const accessors = Object.getOwnPropertyDescriptors(obj.prototype || Object.getPrototypeOf(obj));
+	const keys: PropertyKey[] = [];
+	const limit = 50;
+	let depth = 0;
 
-	return ownEntries(accessors)
-		.filter(([_, descriptor]) => isFunction(descriptor[type]))
-		.map(([key, _]) => key)
+	// 1. Walk the Instance Prototype chain (for instance accessors)
+	let proto = obj.prototype || Object.getPrototypeOf(obj);
+	while (proto && proto !== Object.prototype && ++depth < limit) {
+		const descriptors = Object.getOwnPropertyDescriptors(proto);
+		Reflect.ownKeys(descriptors).forEach(key => {
+			if (isFunction((descriptors as any)[key][type]))
+				keys.push(key);
+		});
+		proto = Object.getPrototypeOf(proto);
+	}
+
+	// 2. Walk the Constructor chain (for static accessors)
+	let constructor = isFunction(obj) ? obj : (obj as any).constructor;
+	depth = 0;
+	while (constructor && constructor !== Object && constructor !== Function && ++depth < limit) {
+		const descriptors = Object.getOwnPropertyDescriptors(constructor);
+		Reflect.ownKeys(descriptors).forEach(key => {
+			if (isFunction((descriptors as any)[key][type]))
+				keys.push(key);
+		});
+		constructor = Object.getPrototypeOf(constructor);
+	}
+
+	return distinct(keys as string[]);
 }
 
 /**

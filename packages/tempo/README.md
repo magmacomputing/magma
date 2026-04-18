@@ -1,22 +1,12 @@
-<a href="https://magmacomputing.github.io/magma/">
-  <img src="./img/docs-banner.png" width="100%" alt="Visit Tempo Documentation">
-</a>
-
-<br>
-
 <table width="100%" border="0" style="border: none;">
   <tbody>
     <tr style="border: none;">
-      <td align="left" width="100" style="border: none;">
-        <img src="./img/logo.svg" width="100" style="display: block;" alt="Tempo logo">
+      <td align="left" width="120" style="border: none;">
+        <img src="./img/logo.svg" width="120" alt="Tempo logo">
       </td>
-      <td align="left" style="border: none;" valign="middle">
-        <span style="font-size: 4em; font-weight: bold; line-height: 1;">Tempo</span>
-      </td>
-    </tr>
-    <tr style="border: none;">
-      <td colspan="2" align="center" style="border: none; padding-top: 20px;">
-        <strong>The Professional Date-Time Library for Temporal</strong>
+      <td align="left" style="border: none; padding-left: 20px;" valign="middle">
+        <h1 style="color: #3498db; font-size: 3.5em; font-weight: bold; margin: 0; border: none;">Tempo</h1>
+        <p style="color: #2c3e50; font-size: 1.2em; font-weight: bold; margin: 0;">The Professional Date-Time Library for the Temporal API</p>
       </td>
     </tr>
   </tbody>
@@ -116,6 +106,17 @@ For environments without `importmap` support or simple prototypes, use the bundl
   console.log(t.toString());
 </script>
 ```
+
+---
+
+## 📚 Documentation
+
+For a deeper dive into the API, architecture, and advanced features:
+
+*   **[Official Documentation Website](https://magmacomputing.github.io/magma/)** — Tutorials, interactive demos, and "Getting Started" guides.
+*   **[Full API Reference Guide](https://magmacomputing.github.io/magma/doc/tempo.api)** — Detailed technical documentation for every class and method.
+
+---
 ## 🛠️ Quick Start
 
 ```javascript
@@ -134,7 +135,6 @@ const startOfMonth = now.set({ start: 'month' });
 console.log(now.format('{dd} {mmm} {yyyy}')); // using custom format with tokens: "24 Jan 2026"
 console.log(now.fmt.date);                    // using pre-built formats: "2026-01-24"
 ```
-  Looking for the full API reference? Check out the **[Tempo API Guide](https://magmacomputing.github.io/magma/doc/tempo.api)**.
 
 
 ## 💬 Contact & Support

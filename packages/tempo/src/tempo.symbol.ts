@@ -22,6 +22,10 @@ export const sym = {
     /** internal key for tracking mutation recursion depth */ $mutateDepth: Symbol.for('$TempoMutateDepth'),
     /** internal key for re-validating the Master Guard */  $rebuildGuard: Symbol.for('$TempoRebuildGuard'),
     /** internal key for decentralized registry resets */   $reset: Symbol.for('$TempoReset'),
+    /** internal key for tracking installed plugins */      $installed: Symbol.for('$TempoInstalled'),
+    /** internal key for tracking registered terms */       $terms: Symbol.for('$TempoTerms'),
+    /** internal key for tracking registered extensions */  $extends: Symbol.for('$TempoExtends'),
+    /** internal key for tracking registered modules */     $modules: Symbol.for('$TempoModules'),
 } as const;
 
 /**
