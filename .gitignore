@@ -48,3 +48,4 @@ Thumbs.db
 .rollup.cache/
 **/.vitepress/cache/
 **/.vitepress/dist/
+**/doc/api/
