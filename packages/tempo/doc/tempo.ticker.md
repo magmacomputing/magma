@@ -1,6 +1,6 @@
 # Tempo Ticker
 
-`Tempo.ticker` is an optional plugin (provided in the project) that creates a reactive stream of `Tempo` instances at regular intervals. It is designed to be high-performance and lightweight, providing a simple way to build clocks, countdowns, or scheduled updates.
+`Tempo.ticker` is an optional plugin (provided in the @magmacomputing/tempo/ticker module) that creates a reactive stream of `Tempo` instances at regular intervals. It is designed to be high-performance and lightweight, providing a simple way to build clocks, countdowns, or scheduled updates.
 
 ## Installation
 
@@ -142,11 +142,11 @@ All listeners use the same callback signature: `(t, stop) => {}`.
 
 ```typescript
 const ticker = Tempo.ticker(1);
-ticker.on('pulse', (t) => console.log('Listener A:', t));
-ticker.on('pulse', (t) => console.log('Listener B:', t));
-ticker.on('stop', (t, stop) => console.log('Ticker stopped at:', t, stop));
+ticker.on('pulse', (t) => console.log('Listener A:', t.fmt.weekTime));
+ticker.on('pulse', (t) => console.log('Listener B:', t.fmt.weekTime));
+ticker.on('stop', (t) => console.log('Ticker stopped at:', t.fmt.weekTime));
 ```
-For `'stop'` listeners, `stop` is included for callback signature consistency; invoking it after stop has already occurred is a no-op.
+For `'stop'` listeners, the `stop` callback argument is included for signature consistency; however, invoking it after stop has already occurred is a no-op.
 
 ### 4. Manual Pulsing (.pulse)
 In some scenarios, you may want to drive a ticker manually (e.g., from a UI event or a WebSocket message) while still benefiting from the ticker's internal state management and listeners.
