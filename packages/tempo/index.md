@@ -4,7 +4,10 @@ layout: home
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { withBase } from 'vitepress'
 
+const logoUrl = withBase('/logo.svg')
+const getStartedUrl = withBase('/README')
 const hDeg = ref(0)
 const mDeg = ref(0)
 const sDeg = ref(0)
@@ -59,13 +62,13 @@ onUnmounted(() => {
   <div class="tempo-hero-content">
     <div class="tempo-hero-left">
       <div class="tempo-title-row">
-        <img src="./logo.svg" class="tempo-hero-logo" alt="Tempo Logo">
+        <img :src="logoUrl" class="tempo-hero-logo" alt="Tempo Logo">
         <h1 class="tempo-hero-name">Tempo</h1>
       </div>
       <div class="tempo-tagline-row">
         <p class="tempo-hero-tagline">The Professional Date-Time Library for the Temporal API</p>
         <div class="tempo-hero-actions">
-          <a href="./README" class="tempo-btn tempo-btn-brand">Get Started</a>
+          <a :href="getStartedUrl" class="tempo-btn tempo-btn-brand">Get Started</a>
           <a href="https://github.com/magmacomputing/magma/tree/main/packages/tempo" class="tempo-btn tempo-btn-alt">View on GitHub</a>
         </div>
       </div>
