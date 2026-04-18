@@ -12,14 +12,16 @@ import type { TermPlugin, Extension } from './plugin/plugin.type.js';
 import { STATE, REGISTRIES, DEFAULTS } from './tempo.enum.js';
 
 /** @internal storage for plugin/module registry */
-const _terms = [] as TermPlugin[];
-const _extends = [] as Extension[];
+const _terms = (globalThis as any)[sym.$terms] ??= [] as TermPlugin[];
+const _extends = (globalThis as any)[sym.$extends] ??= [] as Extension[];
+const _modules = (globalThis as any)[sym.$modules] ??= {} as Record<string, any>;
+const _installed = (globalThis as any)[sym.$installed] ??= new Set();
 
 const _REGISTRY = {
 	terms: secureRef(_terms),
 	extends: secureRef(_extends),
-	modules: secureRef({} as Record<string, any>),
-	installed: new Set<any>()
+	modules: secureRef(_modules),
+	installed: _installed
 }
 
 /** 
@@ -67,18 +69,22 @@ export function registryReset() {
 		clearCache(state);
 	});
 
-	// 3. Clear Term and Extension arrays (managed via secureRef)
+	// 3. Clear all plugin/module storage via raw targets
 	const internal = (_REGISTRY as any);
-	if (internal.terms[lib.$Target]) internal.terms[lib.$Target].length = 0;
-	if (internal.extends[lib.$Target]) internal.extends[lib.$Target].length = 0;
-
-	// 4. Clear Modules and Installed Set
+	const terms = internal.terms[lib.$Target] ?? internal.terms;
+	const extensions = internal.extends[lib.$Target] ?? internal.extends;
 	const modules = internal.modules[lib.$Target] ?? internal.modules;
+
+	terms.length = 0;
+	extensions.length = 0;
+	
 	for (const key in modules) delete modules[key];
 	internal.installed.clear();
 
 	// Trigger all registered reset hooks
-	resetHooks().forEach(hook => hook());
+	const hooks = resetHooks();
+	hooks.forEach(hook => hook());
+	hooks.clear();
 }
 
 /** update a global registry with new discoverable data */

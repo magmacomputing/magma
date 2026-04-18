@@ -17,8 +17,8 @@ declare module '#library/type.library.js' {
  * Wrap a Promise's resolve/reject/finally methods for later fulfilment.  
  * with useful methods for tracking the state of the Promise, chaining fulfilment, etc.  
  ```
-	 new Pledge<T>({tag: string, onResolve?: () => void, onReject?: () => void, onSettle?: () => void})
-	 new Pledge<T>(tag?: string) 
+	new Pledge<T>({tag: string, onResolve?: () => void, onReject?: () => void, onSettle?: () => void})
+	new Pledge<T>(tag?: string)
  ```
  */
 @Immutable
