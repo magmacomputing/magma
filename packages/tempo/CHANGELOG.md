@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2026-04-18
+
+### Fixed
+- **Plugin Infrastructure Preservation**: Refactored the Rollup configuration to treat all library files as public entry points. This prevents critical utilities (like `defineExtension`) from being tree-shaken during the build process, ensuring that modular plugins can register correctly.
+- **API Surface Hardening**: Explicitly exported all registration and utility helpers (`defineModule`, `defineTerm`, etc.) from the main entry point to guarantee their availability for third-party extensions.
+- **Documentation Build Stability**: Updated the documentation configuration to utilize pre-compiled `dist/` assets. This resolves runtime `SyntaxError` issues in the browser caused by the presence of modern TC39 decorators in the raw TypeScript source files.
+- **Decorator Transpilation**: Refactored utility functions to ensure standard function declarations are used where appropriate, improving the reliability of the transpilation phase.
+
 ## [2.1.2] - 2026-04-14
 
 ### Added

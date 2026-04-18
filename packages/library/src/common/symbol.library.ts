@@ -18,6 +18,8 @@ const sym = {
 	$Registry: Symbol.for('$LibraryRegistry'),
 	/** key to identify the global registration hook */
 	$Register: Symbol.for('$LibraryRegister'),
+	/** key to identify the global serialization registry */
+	$SerializerRegistry: Symbol.for('$LibrarySerializerRegistry'),
 } as const;
 
 /** identify and mark a Logify configuration object */

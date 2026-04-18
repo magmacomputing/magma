@@ -67,21 +67,26 @@ export default defineConfig({
   },
   vite: {
     build: {
+      target: 'es2022'
+    },
+    esbuild: {
       target: 'esnext'
     },
     resolve: {
-      // Include 'development' so workspace packages resolve from TypeScript source
-      // (no pre-built dist required when running docs:dev or docs:build).
       conditions: ['development', 'module', 'browser', 'import', 'default'],
       alias: [
+        {
+          find: /^#library\/(.*)\.js$/,
+          replacement: fileURLToPath(new URL('../../library/dist/common/$1.js', import.meta.url))
+        },
         // More-specific path must come first so it is matched before the bare package.
         {
           find: /^@magmacomputing\/tempo\/ticker$/,
-          replacement: fileURLToPath(new URL('../src/plugin/extend/extend.ticker.ts', import.meta.url))
+          replacement: fileURLToPath(new URL('../dist/plugin/extend/extend.ticker.js', import.meta.url))
         },
         {
           find: /^@magmacomputing\/tempo$/,
-          replacement: fileURLToPath(new URL('../src/tempo.index.ts', import.meta.url))
+          replacement: fileURLToPath(new URL('../dist/tempo.index.js', import.meta.url))
         },
       ]
     },

@@ -1,6 +1,11 @@
 import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import resolve from '@rollup/plugin-node-resolve';
 import MagicString from 'magic-string';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const distPath = path.join(__dirname, 'dist');
 
 /**
  * Rollup Configuration for Tempo
@@ -9,9 +14,41 @@ import MagicString from 'magic-string';
  * 2. Granular ESM: Multi-file for bundlers, keeps external dependencies external.
  */
 
+function getFiles(dir, suffix = '.js') {
+	const files = [];
+	if (!fs.existsSync(dir)) return files;
+
+	try {
+		const items = fs.readdirSync(dir, { withFileTypes: true });
+		for (const item of items) {
+			const fullPath = path.join(dir, item.name);
+			if (item.isDirectory()) {
+				files.push(...getFiles(fullPath, suffix));
+			} else if (item.name.endsWith(suffix) && !item.name.endsWith('.bundle.js') && !item.name.endsWith('.entry.js')) {
+				files.push(fullPath);
+			}
+		}
+	} catch (e) {
+		console.error(`Rollup Build Warning: Could not read directory ${dir}. Ensure 'tsc' has run.`);
+	}
+	return files;
+}
+
+// Generate a map of entry points from all files in dist (after tsc has run)
+const entryPoints = Object.fromEntries(
+	getFiles(distPath).map(file => [
+		path.relative(distPath, file).replace(/\.js$/, ''),
+		file
+	])
+);
+
+// Force inclusion of the full library for testing/distribution parity
+// We resolve this relative to this config file's directory
+entryPoints['lib/common.index'] = path.resolve(__dirname, '../library/dist/common.index.js');
+
 export default [
 	{
-		input: 'dist/tempo.entry.js',
+		input: path.join(distPath, 'tempo.entry.js'),
 		output: {
 			file: 'dist/tempo.bundle.js',
 			format: 'iife',
@@ -26,23 +63,20 @@ export default [
 		],
 	},
 	{
-		input: {
-			'tempo.index': 'dist/tempo.index.js',
-			'library.index': 'dist/library.index.js'
-		},
+		input: entryPoints,
 		// Keep tslib external in ESM distribution for better bundler compatibility
 		external: ['tslib'],
 		output: {
 			dir: 'dist',
 			format: 'es',
 			preserveModules: true,
-			preserveModulesRoot: 'dist',
+			preserveModulesRoot: distPath,
 			sourcemap: false,
 			indent: '\t',
 			// Map library imports to lib/ for browser-ready granular ESM
 			entryFileNames: (chunkInfo) => {
 				if (!chunkInfo.facadeModuleId) return '[name].js';
-				const rel = path.relative(process.cwd(), chunkInfo.facadeModuleId);
+				const rel = path.relative(__dirname, chunkInfo.facadeModuleId);
 				return (rel.startsWith('..') || rel.includes('node_modules'))
 					? 'lib/' + path.basename(chunkInfo.facadeModuleId, '.js') + '.js'
 					: '[name].js';

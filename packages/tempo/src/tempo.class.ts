@@ -748,7 +748,6 @@ export class Tempo {
 				if (key.startsWith('usr.'))													// only remove 'usr.' prefixed keys
 					delete Token[key];
 
-			Tempo.#terms = [];																		// clear registered terms
 			Tempo.#termMap.clear();																// clear term lookup map
 			registryReset();																			// purge formats and numbers
 

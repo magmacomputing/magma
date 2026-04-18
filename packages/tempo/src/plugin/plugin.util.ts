@@ -103,11 +103,11 @@ export function findTermPlugin(ident: string): TermPlugin | undefined {
 	const id = (ident.startsWith('#') ? ident.slice(1) : ident).toLowerCase();
 	const [termPart] = id.split('.');
 
-	return REGISTRY.terms.find(t => {
+	return REGISTRY.terms.find((t: TermPlugin) => {
 		if (t.key?.toLowerCase() === termPart || t.scope?.toLowerCase() === termPart) return true;
 		if (t.groups) {
 			const list = Array.isArray(t.groups) ? t.groups : Object.values(t.groups).flat(Infinity) as Range[];
-			return list.some(r => r.key?.toLowerCase() === id || r.key?.toLowerCase() === termPart);
+			return list.some((r: Range) => r.key?.toLowerCase() === id || r.key?.toLowerCase() === termPart);
 		}
 		return false;
 	});
@@ -423,7 +423,7 @@ export function registerTerm(term: TermPlugin) {
 		db.terms.push(term);
 	}
 
-	if (!REGISTRY.terms.find(t => t.key === term.key)) {
+	if (!REGISTRY.terms.find((t: TermPlugin) => t.key === term.key)) {
 		REGISTRY.terms.push(term);
 	}
 
