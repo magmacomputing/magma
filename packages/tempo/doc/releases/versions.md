@@ -1,5 +1,29 @@
 # 📜 Version History
 
+## [v2.2.2] - 2026-04-18
+### 🛡️ Registry Stabilization
+- Globalized module and serialization registries using `Symbol.for()` on `globalThis` to ensure state consistency across module reloads, HMR, and bundled distributions.
+- Implemented secure, local Proxy wrapping for registries to prevent closure persistence across library reloads.
+
+### 🔍 Hardened Reflection
+- Fixed static property reflection for decorated classes by implementing recursive prototype chain traversal in `getAccessors`.
+- Refined prototype walking logic to prevent leaks from `Object.prototype` and `Function.prototype`.
+
+### 📦 Production Optimization
+- Achieved 100% build parity and test coverage in the production distribution (`test:dist`).
+- Reduced NPM package size by nearly 50% by excluding non-essential documentation and image assets from the public package.
+- Hardened Rollup build paths to be context-aware and defensive against missing artifacts.
+
+### 🎨 Premium Documentation & UX
+- Redesigned the documentation landing page with a custom, high-performance Hero section and a live Tempo-driven analog clock.
+- Harmonized branding across README and documentation sites with "Tempo Blue" styling.
+- Fixed routing and asset resolution for GitHub Pages deployments using VitePress base-path helpers.
+
+### ⚙️ CI/CD & Tooling
+- Upgraded GitHub Actions pipeline to **Node.js 24** to resolve deprecation warnings.
+- Restored separate "Full" and "Core" test suite isolation in local and workspace Vitest configurations.
+- Standardized documentation build order to ensure artifacts are compiled before generation.
+
 ## [v2.1.3] - 2026-04-18
 ### New Features
 Added VitePress-based documentation system with TypeDoc API reference integration
