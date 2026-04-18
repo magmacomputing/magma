@@ -1,45 +1,73 @@
 import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
-import { isDefined, isFunction, isString, isUndefined, isNumber, isClass } from '#library/type.library.js';
+import { isDefined, isFunction, isString, isUndefined, isNumber, isClass, isObject, isEmpty, isZonedDateTime } from '#library/type.library.js';
 import { secure } from '#library/utility.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { secureRef } from '#library/proxy.library.js';
+import lib from '#library/symbol.library.js';
+import { REGISTRY, _INTERNAL_REGISTRY, _MODULES } from '../tempo.register.js';
 
 import { SCHEMA, getLargestUnit } from '../tempo.util.js';
-import sym, { isTempo } from '../tempo.symbol.js';
+import { sym, isTempo } from '../tempo.symbol.js';
 import type { Tempo } from '../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange, Plugin } from './plugin.type.js';
-
-import { REGISTRY } from '../tempo.register.js';
 
 export function getHost(t: any): any {
 	return isFunction(t) || isClass(t) ? t : (t as any).constructor;
 }
 
 /**
+ * ## ensureModule
+ * Ensure a specific module is loaded, throwing a friendly error if not.
+ */
+export function ensureModule(t: any, module: string): boolean {
+	const host = getHost(t);
+	const hostLogic = (REGISTRY.modules as any)[module];
+	const isTermsLoaded = (module === 'term' || module === 'TermsModule') && REGISTRY.terms.length > 0;
+
+	if (!isDefined(hostLogic) && !isTermsLoaded) {
+		const msg = `Tempo: ${module} module not loaded. (Did you forget to Tempo.extend() or import '#tempo/${module.toLowerCase()}'?)`;
+		if (isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
+
+		if (t?.config?.catch === true) return false;
+		throw new Error(msg);
+	}
+	return true;
+}
+/**
  * ## interpret
  * Utility to safely delegate calls to the Tempo Interpreter with catch-support.
  */
 export function interpret(t: any, module: string, methodOrFallback?: any, ...args: any[]) {
 	const host = getHost(t);
-	const hostLogic = REGISTRY.modules[module] ?? host[sym.$Interpreter]?.[module];
 
-	try {
-		if (!isFunction(hostLogic)) throw new Error(`${module} plugin not loaded`);
-
-		// Resolve the specific logic (either the module itself or a sub-method)
-		const logic = isString(methodOrFallback) ? hostLogic[methodOrFallback] : hostLogic;
-		if (!isFunction(logic)) throw new Error(`${module} ${methodOrFallback} method not loaded`);
-
-		return logic.apply(t, args);
-	} catch (err) {
-		if (isFunction(host?.[sym.$logError])) {
-			host[sym.$logError](t?.config, err);
-		} else {
-			console.error(`Tempo [${module}]: structural error - no logger available on host.`, err);
-		}
+	// 1. Module Validation
+	if (!ensureModule(t, module)) {
+		return isFunction(methodOrFallback) ? methodOrFallback.apply(t, args) : undefined;
 	}
 
-	return (isFunction(methodOrFallback) ? methodOrFallback() : undefined);
+	const hostLogic = (REGISTRY.modules as any)[module];
+
+	// 2. Resolve the specific logic (either the module itself or a sub-method)
+		const logic = isString(methodOrFallback) ? hostLogic[methodOrFallback] : hostLogic;
+
+		// 3. Logic Not Found or Not a Function
+		if (!isFunction(logic)) {
+			// Fallback to calling the function if provided
+			if (isFunction(methodOrFallback)) return methodOrFallback.apply(t, args);
+
+			// Special case: if hostLogic is an object and the first arg is a valid method name
+			if (isObject(hostLogic) && isString(args[0]) && isFunction((hostLogic as any)[args[0]])) {
+				const method = args.shift();
+				return (hostLogic as any)[method].apply(t, args);
+			}
+
+			const msg = `Tempo: ${module} method '${String(methodOrFallback)}' not found`;
+			if (isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
+			throw new Error(msg);
+		}
+
+	// 4. Execute the logic
+	return logic.apply(t, args);
 }
 
 /**
@@ -68,11 +96,12 @@ export const defineInterpreterModule = (name: string, logic: any) =>
 	defineModule({
 		name,
 		install(this: Tempo, TempoClass: typeof Tempo) {
+			const modules = (_INTERNAL_REGISTRY.modules as any)[lib.$Target] ?? _MODULES;
 			// 1. Secure the Global Registry
-			if (isDefined(REGISTRY.modules[name])) {
-				if (REGISTRY.modules[name] !== logic) throw new Error(`Tempo Security: Core Module clash for '${name}'. Logic is already defined.`);
-			} else {
-				REGISTRY.modules[name] = logic;
+			if (isUndefined(modules[name])) {
+				modules[name] = logic;
+			} else if (modules[name] !== logic) {
+				throw new Error(`Tempo Security: Core Module clash for '${name}'. Logic is already defined.`);
 			}
 
 			// 2. Fallback for legacy class-local access

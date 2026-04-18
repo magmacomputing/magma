@@ -22,6 +22,7 @@
     "parsing"
   ],
   "type": "module",
+  "sideEffects": false,
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
   "imports": {
@@ -42,6 +43,10 @@
     "#tempo/format": {
       "development": "./src/plugin/module/module.format.ts",
       "default": "./dist/plugin/module/module.format.js"
+    },
+    "#tempo/parse": {
+      "development": "./src/plugin/module/module.parse.ts",
+      "default": "./dist/plugin/module/module.parse.js"
     },
     "#tempo/mutate": {
       "development": "./src/plugin/module/module.mutate.ts",
@@ -144,7 +149,8 @@
     "./term": {
       "types": "./dist/plugin/term/term.index.d.ts",
       "import": "./dist/plugin/term/term.index.js"
-    }
+    },
+    "./bundle": "./dist/tempo.bundle.js"
   },
   "scripts": {
     "test": "vitest run",
@@ -163,7 +169,9 @@
     "docs:preview": "vitepress preview"
   },
   "files": [
-    "dist/"
+    "dist/",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "dependencies": {
     "tslib": "^2.8.1"

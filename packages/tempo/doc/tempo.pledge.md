@@ -7,7 +7,7 @@ The `Pledge` utility is a specialized wrapper around `Promise.withResolvers()` d
 A `Pledge` provides direct access to its state and resolution methods.
 
 ```typescript
-import { Pledge } from '@magmacomputing/tempo';
+import { Pledge } from '@magmacomputing/tempo/library';
 
 // 1. Instantiate
 const p = new Pledge<string>('DataFetch');

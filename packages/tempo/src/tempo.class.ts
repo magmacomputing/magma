@@ -1,9 +1,10 @@
 import '#library/temporal.polyfill.js';
+const Temporal = (globalThis as any).Temporal;
 
 import { Logify } from '#library/logify.class.js';
 import { secure } from '#library/utility.library.js';
 import { Immutable, Serializable } from '#library/class.library.js';
-import { asArray, asInteger, isNumeric } from '#library/coercion.library.js';
+import { asArray } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { proxify, delegate } from '#library/proxy.library.js';
 import lib, { markConfig } from '#library/symbol.library.js';
@@ -12,18 +13,17 @@ import { enumify } from '#library/enumerate.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
-import { getType, asType, isEmpty, isNull, isNullish, isDefined, isUndefined, isString, isObject, isNumber, isRegExp, isRegExpLike, isIntegerLike, isSymbol, isFunction, isClass, isZonedDateTime, isPlainDate, isPlainTime } from '#library/type.library.js';
+import { getType, asType, isEmpty, isNullish, isDefined, isUndefined, isString, isObject, isNumber, isRegExp, isRegExpLike, isIntegerLike, isSymbol, isFunction, isClass, isZonedDateTime, isPlainDate, isPlainTime } from '#library/type.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import { instant } from '#library/temporal.library.js';
-import type { Property, TypeValue, Secure } from '#library/type.library.js';
+import type { Property, Secure } from '#library/type.library.js';
 
-import { compose } from './plugin/module/module.composer.js';
-import { resolveTermMutation, resolveTermValue } from './plugin/module/module.term.js';
-import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './plugin/module/module.lexer.js';
-import { REGISTRY, registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
-import { registerPlugin, registerTerm, getRange, getTermRange, interpret } from './plugin/plugin.util.js'
+import { registerPlugin, registerTerm, getTermRange, interpret, ensureModule } from './plugin/plugin.util.js'
+import './plugin/module/module.parse.js';
+import './plugin/module/module.mutate.js';
 
 import sym, { isTempo, registerHook } from './tempo.symbol.js';
+import { REGISTRY, registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
 import { Match, Token, Snippet, Layout, Event, Period, Default, Guard } from './tempo.default.js';
 import enums, { STATE, DISCOVERY } from './tempo.enum.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -106,6 +106,11 @@ export class Tempo {
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
 	/** Set of allowed lowercased tokens for the Master Guard */		static #allowedTokens: Set<string> = new Set();
 
+	/** @internal Static access to global private state. */
+	static [sym.$Internal]() {
+		return Tempo.#global;
+	}
+
 
 	/** @internal handle internal errors using the global config */
 	static [sym.$logError](...msg: any[]): void {
@@ -114,25 +119,13 @@ export class Tempo {
 		Tempo.#dbg.error(config, ...msg);
 	}
 
-	/** @internal internal key for signaling pre-errored state in constructor */
-	static [sym.$errored] = sym.$errored;
-	/** @internal guard against infinite mutation recursion */
-	static [sym.$mutateDepth] = 0;
-	/** @internal hook to re-validate the Master Guard */
-	static [sym.$rebuildGuard]() { Tempo.#buildGuard() }
-
-	/** @internal handle internal debug info using the global config */
-	static [sym.$logDebug](...msg: any[]): void {
-		Tempo.#dbg.debug(...msg);
+	/** @internal handle internal debug logs */
+	static [sym.$logDebug](...args: any[]): void {
+		const config = (isObject(args[0]) && (args[0] as any)[lib.$Logify] === true) ? args.shift() : Tempo.#global.config;
+		markConfig(config);
+		Tempo.#dbg.debug(config, ...args);
 	}
 
-	/** @internal Centralized error dispatcher for Term resolution failures */
-	static [sym.$termError](config: t.Options, term: string): void {
-		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
-		const msg = `Unknown Term identifier: ${term}${hint}`;
-		Tempo.#dbg.error(config, msg);
-		if (config.catch !== true) throw new Error(msg);
-	}
 
 	/**
 	 * {dt} is a layout that combines date-related {snippets} (e.g. dd, mm -or- evt) into a pattern against which a string can be tested.  
@@ -778,11 +771,6 @@ export class Tempo {
 		return this
 	}
 
-	/** returns a full Tempo Duration object (EDO) for the given input */
-	static duration(input: any): Tempo.Duration {
-		return interpret(Tempo, 'duration', 'toDuration', input);
-	}
-
 	/** @internal Reads options from persistent storage (e.g., localStorage). */
 	static readStore(key = Tempo.#global.config.store) {
 		return getStorage<t.Options>(key, {});
@@ -944,7 +932,8 @@ export class Tempo {
 			period: { ...parse.period },
 			mdyLocales: [...parse.mdyLocales],
 			mdyLayouts: [...parse.mdyLayouts],
-		}) as Internal.Parse;
+			mode: parse.mode
+		});
 	}
 
 	/** iterate over Tempo properties */
@@ -982,37 +971,75 @@ export class Tempo {
 	/** constructor tempo */																	#tempo?: t.DateTime;
 	/** constructor options */																#options = {} as t.Options;
 	/** instantiation Temporal Instant */											#now: Temporal.Instant;
-	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
-	/** indicator that the instance failed to parse */				#errored = false;
-	/** temporary anchor used during parsing */								#anchor?: Temporal.ZonedDateTime | undefined;
-	/** prebuilt formats, for convenience */									#fmt!: any;
-	/** mapping of terms to their resolved values */					#term!: any;
-	/** a collection of parse rule-matches */									#matches: Internal.Match[] | undefined;
-	/** current parsing depth to manage state isolation */		#parseDepth = 0;
-	/** current mutation depth to manage infinite recursion */#mutateDepth = 0;
+	/** underlying Temporal ZonedDateTime */									#zdt_!: Temporal.ZonedDateTime;
+	/** indicator that the instance failed to parse */				#errored_ = false;
+	/** temporary anchor used during parsing */								#anchor_: Temporal.ZonedDateTime | undefined;
+	/** prebuilt formats, for convenience */									#fmt_!: any;
+	/** mapping of terms to their resolved values */					#term_!: any;
+	/** a collection of parse rule-matches */									#matches_: Internal.Match[] | undefined;
+	/** current parsing depth to manage state isolation */		#parseDepth_ = 0;
+	/** current mutation depth to manage infinite recursion */#mutateDepth_ = 0;
 	/** instance values to complement static values */				#local = {
 		/** instance configuration */															config: { [lib.$Logify]: true } as unknown as Internal.Config,
 		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.Match[] } as Internal.Parse
 	} as Internal.State;
+
+	get #zdt(): Temporal.ZonedDateTime { return this.#zdt_ as Temporal.ZonedDateTime }
+	set #zdt(val: Temporal.ZonedDateTime) { this.#zdt_ = val }
+	get #errored(): boolean { return this.#errored_ }
+	set #errored(val: boolean) { this.#errored_ = val }
+	get #parseDepth(): number { return this.#parseDepth_ ?? 0 }
+	set #parseDepth(val: number) { this.#parseDepth_ = val }
+	get #mutateDepth(): number { return this.#mutateDepth_ ?? 0 }
+	set #mutateDepth(val: number) { this.#mutateDepth_ = val }
+	get #matches(): Internal.Match[] | undefined { return this.#matches_ }
+	set #matches(val: Internal.Match[] | undefined) { this.#matches_ = val }
+	get #anchor(): Temporal.ZonedDateTime | undefined { return this.#anchor_ }
+	set #anchor(val: Temporal.ZonedDateTime | undefined) { this.#anchor_ = val }
+
+	/** @internal internal key for signaling pre-errored state in constructor */
+	static [sym.$errored] = sym.$errored;
+	/** @internal guard against infinite mutation recursion */
+	static [sym.$mutateDepth] = 0;
+	/** @internal hook to re-validate the Master Guard */
+	static [sym.$rebuildGuard]() { Tempo.#buildGuard() }
+
+	/** @internal */	static [sym.$termError](config: Internal.Config, term: string): void {
+		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
+		const msg = `Unknown Term identifier: ${term}${hint}`;
+		Tempo.#dbg.error(config, msg);
+		if (config.catch !== true) throw new Error(msg);
+	}
+	/** @internal */	static get [sym.$terms](): t.TermPlugin[] { return REGISTRY.terms as t.TermPlugin[] }
+	/** @internal */	static get [sym.$dbg](): Logify { return Tempo.#dbg }
+	/** @internal */	static get [sym.$guard]() { return (Tempo as any).#guard }
 
 	/** 
 	 * @internal Internal access to instance private state.
 	 * This surface is not part of the public contract and is subject to change.
 	 */
 	[sym.$Internal]() {
-		const self = this;
+		const self = this as any;
 		return {
 			get zdt() { return self.#zdt },
+			set zdt(val: any) { self.#zdt = val },
 			get errored() { return self.#errored },
-			set errored(val) { self.#errored = val },
+			set errored(val: any) { self.#errored = val },
 			get parseDepth() { return self.#parseDepth },
-			set parseDepth(val) { self.#parseDepth = val },
+			set parseDepth(val: any) { self.#parseDepth = val },
 			get mutateDepth() { return self.#mutateDepth },
-			set mutateDepth(val) { self.#mutateDepth = val },
+			set mutateDepth(val: any) { self.#mutateDepth = val },
 			get matches() { return self.#matches },
-			set matches(val) { self.#matches = val },
+			set matches(val: any) { self.#matches = val },
+			get anchor() { return self.#anchor },
+			set anchor(val: any) { self.#anchor = val },
 			get options() { return self.#options },
-			parse: (tempo: any, anchor: any, term?: any) => self.#parse(tempo, anchor, term)
+			get tempo() { return self.#tempo },
+			get now() { return self.#now },
+			config: self.#local.config,
+			parse: self.#local.parse,
+			OPTION: enums.OPTION,
+			ZONED_DATE_TIME: enums.ZONED_DATE_TIME
 		}
 	}
 
@@ -1027,7 +1054,7 @@ export class Tempo {
 
 	/** iterate over instance formats */
 	[Symbol.iterator]() {
-		return ownEntries(this.#fmt, true)[Symbol.iterator]();	// instance Iterator over tuple of FormatType[]
+		return ownEntries(this.#fmt_, true)[Symbol.iterator]();	// instance Iterator over tuple of FormatType[]
 	}
 
 	get [Symbol.toStringTag]() {															// default string description
@@ -1064,8 +1091,8 @@ export class Tempo {
 			this.#local.parse.lazy = true;												// auto-switch to lazy-mode for valid strings
 		}
 
-		this.#fmt = this.#setDelegator('fmt');									// initialize the format-delegator
-		this.#term = this.#setDelegator('term');								// initialize the term-delegator
+		this.#fmt_ = this.#setDelegator('fmt');									// initialize the format-delegator
+		this.#term_ = this.#setDelegator('term');								// initialize the term-delegator
 		this.#anchor = this.#options.anchor;
 
 		if ((this.#options as any)[sym.$errored]) this.#errored = true;
@@ -1085,7 +1112,7 @@ export class Tempo {
 		} catch (err) {
 			const msg = `Cannot create Tempo: ${(err as Error).message}\n${(err as Error).stack}`;
 			if (this.#local.config.catch === true) {
-				Tempo.#dbg.warn(this.#local.config, msg);					// log as warning if in catch-mode
+				Tempo.#dbg.error(this.#local.config, msg);					// log as error if in catch-mode
 			} else {
 				Tempo.#dbg.error(this.#local.config, err, msg);		// log as error then re-throw
 				throw err;
@@ -1150,10 +1177,12 @@ export class Tempo {
 
 			// discovery phase
 			if (host === 'fmt') {
+				if (!ensureModule(this, 'format')) return undefined;
 				if (isDefined(this.#local.config.formats[key])) {
 					return this.#setLazy(target, key, () => this.format(key as t.Format))?.();
 				}
 			} else {
+				if (!ensureModule(this, 'term')) return undefined;
 				const term = Tempo.#termMap.get(key);
 				if (term) {
 					const isKeyOnly = term.key === key;
@@ -1292,8 +1321,8 @@ export class Tempo {
 		return this.#local.parse;
 	}
 
-	/** Object containing results from all term plugins */		get term() { return this.#term }
-	/** Formatted results for all pre-defined format codes */	get fmt() { return this.#fmt }
+	/** Keyed results for all resolved terms */ get term() { return this.#term_ }
+	/** Formatted results for all pre-defined format codes */ get fmt() { return this.#fmt_ }
 	/** units since epoch */																	get epoch() {
 		return secure({
 			/** seconds since epoch */														ss: Math.trunc(this.toDateTime().epochMilliseconds / 1_000),
@@ -1327,12 +1356,12 @@ export class Tempo {
 		return interpret(this, 'duration', undefined, 'since', ...args);
 	}
 
-	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', throwMutateModuleNotLoaded, 'add', tempo, options); }
-	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', throwMutateModuleNotLoaded, 'set', tempo, options); }
+	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'add', tempo, options); }
+	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'set', tempo, options); }
 	/** returns a clone of the current `Tempo` instance. */		clone() { return new this.#Tempo(this, this.config) }
 
 	/** returns the underlying Temporal.ZonedDateTime */
-	toDateTime() {
+	toDateTime(): Temporal.ZonedDateTime {
 		try {
 			this.#ensureParsed();
 			return isZonedDateTime(this.#zdt) ? this.#zdt : this.#now.toZonedDateTimeISO('UTC');
@@ -1346,7 +1375,7 @@ export class Tempo {
 	/** returns a Temporal.PlainDateTime representation */		toPlainDateTime() { return this.toDateTime().toPlainDateTime() }
 	/** returns the underlying Temporal.Instant */						toInstant() { return this.toDateTime().toInstant() }
 
-	/** the current system time localized to this instance. */toNow() { return this.#Tempo.instant.toZonedDateTimeISO(this.tz).withCalendar(this.cal) }
+	/** the current system time localized to this instance. */toNow() { return instant().toZonedDateTimeISO(this.tz).withCalendar(this.cal) }
 	/** the date-time as a standard `Date` object. */					toDate() { return new Date(this.toDateTime().round({ smallestUnit: enums.ELEMENT.ms }).epochMilliseconds) }
 	/**ISO8601 string representation of the date-time. */
 	toString() {
@@ -1372,125 +1401,25 @@ export class Tempo {
 
 	/** parse DateTime input */
 	#parse(tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {
-		if (isNull(tempo)) {																		// fail-early
-			this.#errored = true;
-			return undefined as any;
-		}
+		return interpret(this, 'ParseModule', 'parse', tempo, dateTime, term) ?? this.#fallbackParse(tempo, dateTime, term);
+	}
 
-		this.#parseDepth++;
-		const isRoot = this.#parseDepth === 1;
-		if (isRoot) this.#matches = [];													// initialize match accumulator
-		let today: Temporal.ZonedDateTime;
-
-		try {
-			const { config } = this.#local;
-			const val = dateTime ?? this.#anchor ?? (isTempo(tempo) ? tempo.toDateTime() : (isZonedDateTime(tempo) ? tempo : undefined));
-			const basis = isDefined(val) ? val : instant().toZonedDateTimeISO(config.timeZone);
-
-			const tz = isTempo(basis) ? basis.tz : (isZonedDateTime(basis) ? basis.timeZoneId : config.timeZone);
-			const cal = isTempo(basis) ? basis.cal : (isZonedDateTime(basis) ? basis.calendarId : config.calendar);
-
-			today = isZonedDateTime(basis) ? basis : (isTempo(basis) ? (basis as any).toDateTime() : instant().toZonedDateTimeISO(tz).withCalendar(cal));
-
-			if (term) {
-				const ident = term.startsWith('#') ? term.slice(1) : term;
-				const termObj = Tempo.#terms.find(t => t.key === ident || t.scope === ident);
-				if (!termObj) {
-					(Tempo as any)[sym.$termError](this.#local.config, term);
-					return undefined as any;
-				}
-
-				// 1. if input is numeric, resolve by index
-				if (isNumeric(tempo as any)) {
-					const list = getRange(termObj, this, today);
-					const current = (getTermRange(this, list, false, today) as any);
-					const isMultiCycle = isDefined(termObj.resolve) && list.some(r => r.year !== undefined);
-					const itemsPerCycle = isMultiCycle ? list.length / 3 : list.length;
-					const currentIdx = list.findIndex(r => r.key === current.key && (isMultiCycle ? r.year === current.year : true));
-
-					const cycleOffset = isMultiCycle ? Math.floor(currentIdx / itemsPerCycle) * itemsPerCycle : 0;
-					const targetIdx = cycleOffset + (Number(tempo) - 1);
-					const item = list[targetIdx];
-
-					if (item) {
-						const range = (getTermRange(this, [item], false, today) as any);
-						if (range?.start) return range.start.toDateTime().withTimeZone(tz).withCalendar(cal);
-					}
-					throw new RangeError(`Term index out of range: ${tempo} for ${term}`);
-				}
-
-				// 2. if input is the term identifier itself, resolve current range
-				if (tempo === term) {
-					const range = termObj.define.call(this, false, today);
-					const list = isUndefined(range) ? [] : asArray(range as unknown) as t.Range[];
-					const current = (getTermRange(this, list, false, today) as any);
-					if (current?.start) return current.start.toDateTime().withTimeZone(tz).withCalendar(cal);
-				}
-			}
-
+	#fallbackParse(tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {
+		if (isZonedDateTime(tempo)) return tempo;
+		if (isTempo(tempo)) return tempo.toDateTime();
+		if (isString(tempo)) {
 			try {
-				// anchor successfully determined
-			} catch (err) {
-				Tempo.#dbg.error(this.#local.config, err, 'Anchor determination failed');
-				return this.toNow();																// fallback to absolute now
-			}
-
-			const isAnchored = isDefined(dateTime) || isDefined(this.#anchor);
-			const resolvingKeys = new Set<string>();
-			const res = this.#conform(tempo, today, isAnchored, resolvingKeys);
-
-			if (isString(tempo) && tempo.startsWith('#')) {
-				const res = resolveTermValue(Tempo, this, tempo, today);
-				if (isZonedDateTime(res)) return res;
-				return undefined as any;
-			}
-
-
-			// security check: if it contains term-keys (#) in constructor mode, we should throw an unsupported syntax error
-			if (isUndefined(term) && isObject(tempo) && Object.keys(tempo).some(k => k.startsWith('#'))) {
-				const msg = `Unsupported Syntax: Term-based mutations (#) cannot be passed to the constructor. Use new Tempo().set(${JSON.stringify(tempo)}) instead.`;
-				Tempo.#dbg.error(this.#local.config, msg);
-				throw new Error(msg);
-			}
-
-			// security check: if it contains term-keys (#) while no plugins are loaded
-			if (isObject(tempo) && Object.keys(tempo).some(k => k.startsWith('#')) && Tempo.#terms.length === 0) {
-				(Tempo as any)[sym.$termError](this.#local.config, Object.keys(tempo).find(k => k.startsWith('#'))!);
-				return undefined as any;
-			}
-
-
-			// re-fetch zone/cal as they may have been updated by brackets during #conform
-			const { timeZone: tz2, calendar: cal2 } = this.#local.config;
-			const targetTz = isString(tz2) ? tz2 : (tz2 as any).id ?? (tz2 as any).timeZoneId;
-			const targetCal = isString(cal2) ? cal2 : (cal2 as any).id ?? (cal2 as any).calendarId;
-
-			// results are now handled at the end of #parse via #matches
-			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal);
-
-			dateTime = dt;
-			if (timeZone && this.#local) this.#local.config.timeZone = timeZone;
-
-			// Final adjustment to normalize timezone and calendar across all types
-			if (isZonedDateTime(dateTime) && !this.#errored)
-				dateTime = dateTime.withTimeZone(targetTz).withCalendar(targetCal);
-
-			if (isRoot) {
-				if (Reflect.isExtensible(this.#local.parse)) {
-					// ensure 'result' array is present and append our discovered matches
-					if (isUndefined(this.#local.parse.result)) {
-						setProperty(this.#local.parse, 'result', [...(this.#matches ?? [])]);
-					} else {
-						this.#local.parse.result.push(...(this.#matches ?? []));
-					}
-				}
-			}
-
-			return (isZonedDateTime(dateTime) && !this.#errored) ? dateTime : undefined as any;
-		} finally {
-			if (isRoot) this.#matches = undefined;
-			this.#parseDepth--;
+				const tz = (this.#local.config.timeZone as string) ?? 'UTC';
+				if ((tempo as string).includes('[')) return Temporal.ZonedDateTime.from(tempo as string);
+				return Temporal.PlainDateTime.from(tempo as string).toZonedDateTime(tz);
+			} catch { /* ignore and throw below */ }
 		}
+		if (isUndefined(tempo) || isEmpty(tempo)) return dateTime ?? instant().toZonedDateTimeISO(this.#local.config.timeZone);
+
+		const msg = 'Tempo ParseModule not loaded. Did you forget to Tempo.extend(ParseModule)?';
+		Tempo.#dbg.error(this.#local.config, msg);
+		if (this.#local.config.catch !== true) throw new Error(msg);
+		return undefined as any;
 	}
 
 	/** resolve constructor / method arguments */
@@ -1538,291 +1467,10 @@ export class Tempo {
 		if (isDefined(this.#anchor) && !match.isAnchored)
 			match.isAnchored = true;
 
-		const res = this.#matches ?? this.#local.parse.result;
+		const res = (this.#matches ?? this.#local.parse.result) as any[];
 		if (isDefined(res) && !Object.isFrozen(res)) {
 			if (!res.includes(match)) res.push(match);
 		}
-	}
-
-	/** conform input to a Temporal.ZonedDateTime */
-	#conform(tempo: t.DateTime, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): TypeValue<any> {
-		const arg = asType(tempo);
-		const { type, value } = arg;
-
-		if (!isZonedDateTime(dateTime)) {
-			Tempo.#dbg.error(this.#local.config, new TypeError(`Sacred Anchor corrupted: ${String(value)}`));
-			return arg;
-		}
-
-		let zdt = dateTime as any;
-
-
-		if (this.#isZonedDateTimeLike(tempo)) {									// tempo is ZonedDateTime-ish object (throw away 'value' property)
-			const { timeZone, calendar, value: _, ...options } = tempo as t.Options;
-
-			// security check: if it contains term-keys (#) in core mode, we should throw a hint
-			const keys = Object.keys(options);
-			if (keys.some(k => k.startsWith('#')) && Tempo.#terms.length === 0) {
-				(Tempo as any)[sym.$termError](this.#local.config, keys.find(k => k.startsWith('#'))!);
-				return undefined as any;
-			}
-
-			if (!isEmpty(options)) zdt = zdt.with(options as Temporal.ZonedDateTimeLikeObject);
-
-			if (timeZone)
-				if (isZonedDateTime(zdt)) zdt = zdt.withTimeZone(timeZone);// optionally set timeZone
-			if (calendar)
-				zdt = zdt.withCalendar(calendar);										// optionally set calendar
-
-			this.#result({ type: 'Temporal.ZonedDateTimeLike', value: zdt, match: 'Temporal.ZonedDateTimeLike' });
-
-			return Object.assign(arg, {
-				type: 'Temporal.ZonedDateTime',											// override {arg.type}
-				value: zdt,
-			})
-		}
-
-		if (type !== 'String' && type !== 'Number' && type !== 'Function' && type !== 'AsyncFunction') {
-			this.#result(arg, { match: type });										// log the 'type' detected and return
-			return arg;
-		}
-
-		if (isTempo(value)) {
-			const res = (value as Tempo).toDateTime();
-			this.#local.config.timeZone = res.timeZoneId;
-			this.#local.config.calendar = res.calendarId;
-			return Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: res });
-		}
-
-		if (isString(value)) {
-			const trim = (value as string).trim();
-			const guard = Tempo.#guard.test(trim);
-
-			if (!guard) {
-				const local = [...ownKeys(this.#local.parse.event), ...ownKeys(this.#local.parse.period)];
-				const bypass = local.some(key => trim.toLowerCase().includes(String(key).toLowerCase()));
-				if (!bypass) return arg;
-			}
-		}
-
-		return this.#parseLayout(value as string | number, dateTime, isAnchored, resolvingKeys);
-	}
-
-	/** match a string or number against known layouts */
-	#parseLayout(value: string | number, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): TypeValue<any> {
-		const arg = asType(value);
-		const { type } = arg;
-		const trim = (type === 'String') ? (value as string).trim() : value.toString();
-		const resolving = new Set(resolvingKeys);
-
-		if (resolving.size >= 100) {
-			Tempo.#dbg.error(this.#local.config, new RangeError(`Infinite recursion detected in layout resolution for: ${String(value)}`));
-			return arg;
-		}
-
-		if (type === 'String') {																// if original value is String
-			if (isEmpty(trim)) {																	// don't conform empty string
-				this.#result(arg, { match: 'Empty' });
-				return Object.assign(arg, { type: 'Empty' });
-			}
-			if (isIntegerLike(trim)) {														// if string representation of BigInt literal
-				this.#result(arg, { match: 'BigInt' });
-				return Object.assign(arg, { type: 'BigInt', value: asInteger(trim) });
-			}
-		}
-		else {																									// else it is a Number
-			if (Number.isNaN(value) || !Number.isFinite(value)) return arg;				// ignore NaN/Infinity
-			if (trim.length <= 7) {																// cannot reliably interpret small numbers:  might be {ss} or {yymmdd} or {dmmyyyy}
-				const msg = 'Cannot safely interpret number with less than 8-digits: use string instead';
-				Tempo.#dbg.error(this.#local.config, new TypeError(msg));
-				return arg;
-			}
-		}
-
-		if (!isZonedDateTime(dateTime)) return arg;									// safety-check: cannot parse against a corrupted anchor
-
-		let zdt = dateTime as any;
-		const anchorTime = zdt.toPlainTime();
-		const map = this.#local.parse.pattern;
-		for (const [sym, pat] of map) {
-			const groups = this.#parseMatch(pat, trim);						// determine pattern-match groups
-			if (isEmpty(groups)) continue;												// no match, so skip this iteration
-
-			const hasAlias = Object.keys(groups).some(k => k.includes('evt') || k.includes('per'));
-			const isRootMatch = Object.keys(groups).some(k => k === 'dt' || k === 'tm');
-			const hadEventOrPeriod = hasAlias || isRootMatch;
-
-			this.#result(arg, { match: sym.description, groups: { ...groups } });	// stash the {key} of the pattern that was matched
-
-			dateTime = parseZone(groups, dateTime, this.#local.config);
-			dateTime = this.#parseGroups(groups, dateTime, isAnchored, resolvingKeys);
-
-			/**
-			 * finished analyzing a matched pattern.  
-			 * rebuild {arg.value} into a ZonedDateTime
-			 */
-			dateTime = parseWeekday(groups, dateTime, Tempo.#dbg, this.#local.config);
-			dateTime = parseDate(groups, dateTime, Tempo.#dbg, this.#local.config, this.#local.parse["pivot"]);
-			dateTime = parseTime(groups, dateTime);
-
-			// if no time-components were matched, strip time to midnight baseline
-			const hasTime = Object.keys(groups).some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key))
-				|| hadEventOrPeriod
-				|| !dateTime.toPlainTime().equals(anchorTime);
-
-			if (!isAnchored && !hasTime)
-				dateTime = dateTime.withPlainTime('00:00:00');
-
-			if (isZonedDateTime(dateTime)) {
-				Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: dateTime, match: sym.description, groups });
-			}
-
-			Tempo.#dbg.debug(this.#local.config, 'groups', groups);	// show resolved date-time elements
-			Tempo.#dbg.debug(this.#local.config, 'pattern', sym.description);	// show the matched pattern
-
-			break;																								// stop checking patterns
-		}
-
-		return arg;
-	}
-
-	/** apply a regex-match against a value, and clean the result */
-	#parseMatch(pat: RegExp, value: string | number | (() => string)) {
-		const groups = value.toString().match(pat)?.groups || {}
-
-		ownEntries(groups)																			// remove undefined, NaN, null and empty values
-			.forEach(([key, val]: [string, any]) => isEmpty(val) && delete groups[key]);
-
-		return groups as Tempo.Groups;
-	}
-
-	/** resolve {event} | {period} to their date | time values (mutates groups) */
-	#parseGroups(groups: Tempo.Groups, dateTime: Temporal.ZonedDateTime, isAnchored: boolean, resolvingKeys: Set<string>): Temporal.ZonedDateTime {
-		if (!isZonedDateTime(dateTime)) return dateTime;
-
-		const prevAnchor = this.#anchor;
-		const prevZdt = this.#zdt;
-
-		this.#anchor = dateTime;																// temporarily anchor the instance so events resolve relative to current state
-		this.#zdt = dateTime;																	// temporarily prime the instance to avoid recursion during event resolution
-
-		this.#parseDepth++;
-		const isRoot = this.#parseDepth === 1;
-		if (isRoot) this.#matches = [];
-
-		try {
-			const resolved = new Set<string>();											// track keys resolved in this pass
-			let pending: string[];
-
-			while ((pending = ownKeys(groups).filter(k => (Match.event.test(k) || Match.period.test(k) || k === 'slk') && !resolved.has(k))).length > 0) {
-				const key = pending[0];
-
-				if (key === 'slk') {
-					const slk = groups[key];
-					// Resolve the shifter using the same engine as .set() / .add()
-					const result = resolveTermMutation(Tempo, this, 'set', slk, undefined, dateTime);
-					if (result === null) {
-						// Immediately abort parsing by returning early to avoid non-ZonedDateTime errors
-						this.#errored = true;
-						resolved.add(key);
-						delete groups[key];
-						break;
-					}
-					dateTime = result;
-					resolved.add(key);
-					delete groups[key];
-					continue;
-				}
-
-				const isEvent = Match.event.test(key);
-				const isPeriod = Match.period.test(key);
-				const isGlobal = key.startsWith('g');
-				const isLocal = key.startsWith('l');
-				const idx = +key.substring((isGlobal || isLocal) ? 4 : 3);					// gevt0/lper0 (4) or evt0 (3)
-				const src = isGlobal ? (isEvent ? Tempo.#global.parse.event : Tempo.#global.parse.period) : (isEvent ? this.#local.parse.event : this.#local.parse.period);
-				const entry = ownEntries(src, true)[idx];
-
-				if (!entry) {
-					resolved.add(key);
-					continue;
-				}
-
-				const aliasKey = `${key}:${entry[0]}`;							// unique per-entry cycle guard key (e.g. gert0:tomorrow)
-				if (resolvingKeys.size > 50 || resolvingKeys.has(aliasKey)) {
-					const msg = `Infinite recursion detected in Tempo resolution for: ${aliasKey}`;
-					this.#errored = true;															// mark as errored for graceful fallback
-					Tempo.#dbg.error(this.#local.config, new RangeError(msg));
-					resolved.add(key);
-					continue;
-				}
-
-				resolvingKeys.add(aliasKey);
-				resolved.add(key);
-
-				const definition = entry[1];
-				let res: string = '';
-				if (typeof definition === 'function') {
-					try {
-						this.#anchor = dateTime;																// update anchor baseline for relative functional resolvers
-						this.#zdt = dateTime;																		// sync instance state before call
-						const result = (definition as Function).call(this);
-						if (isTempo(result)) dateTime = result.toDateTime();		// capture shifted date from new instance
-						else if (isZonedDateTime(result)) dateTime = result as Temporal.ZonedDateTime;					// capture shifted date from Temporal object
-						else dateTime = isZonedDateTime(this.#zdt) ? (this.#zdt as any) : dateTime;																// capture any mutations back to loop
-						res = String(result);
-					} catch (e: any) {
-						if (e.message.includes('Temporal')) {								// handle cases where 'this' is used in a Temporal-strict way
-							res = (definition as any).toString();
-						} else {
-							throw e;
-						}
-					}
-				} else {
-					res = (definition as string);
-				}
-
-				if (isEvent && !isAnchored && isZonedDateTime(dateTime)) dateTime = (dateTime as any).startOfDay();
-
-				Tempo.#dbg.debug(this.#local.config, 'event', `resolved "${key}" to "${res}" against ${(dateTime as any).toString?.() ?? String(dateTime)}`);
-
-				try {
-					// restore Event/Period match reporting for this alias resolution pass
-					const type = isEvent ? 'Event' : 'Period';
-					const val = entry![0];
-					const pat = (isEvent ? 'dt' : 'tm');
-					const resolveVal = isFunction(definition) ? res : definition;
-					this.#result({ type, value: val, match: pat, groups: { [key]: resolveVal as string } });
-
-					const resolving = new Set(resolvingKeys);
-					resolving.add(aliasKey);
-					const resMatch = this.#parseLayout(res, dateTime, isAnchored, resolving);
-
-					if (resMatch.type === 'Temporal.ZonedDateTime')
-						dateTime = resMatch.value;
-				} finally {
-					resolved.add(key);
-				}
-
-				delete groups[key];
-			}
-		} finally {
-			this.#anchor = prevAnchor;														// restore anchor baseline
-			if (this.#parseDepth === 1) {
-				this.#zdt = prevZdt;																// restore instance state only if root
-				this.#matches = undefined;
-			} else {
-				if (isZonedDateTime(dateTime)) this.#zdt = dateTime;			// only propagate valid Temporal state to parent level
-			}
-			this.#parseDepth--;
-		}
-
-		// resolve month-names into month-numbers (some browsers do not allow month-names when parsing a Date)
-		if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {
-			const mm = prefix(groups["mm"] as t.MONTH);				// conform month-name
-			groups["mm"] = Tempo.MONTH[mm as t.MONTH]!.toString().padStart(2, "0");
-		}
-
-		return dateTime;
 	}
 }
 

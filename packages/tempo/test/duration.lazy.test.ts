@@ -1,12 +1,13 @@
 import { Tempo } from '#tempo/core';
 
-describe('Tempo Duration Plugin (Lazy)', () => {
+describe('Tempo.duration() (Core)', () => {
+	beforeEach(() => { Tempo.init(); });
 	afterEach(() => vi.restoreAllMocks())
 
 	it('should throw "plugin not loaded" by default', () => {
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
 		const t = new Tempo('2024-01-01');
-		expect(() => t.until('2024-01-02')).toThrow('Tempo: duration plugin not loaded');
+		expect(() => t.until('2024-01-02')).toThrow(/Tempo: duration module not loaded/);
 		expect(spy).toHaveBeenCalled();
 	});
 
