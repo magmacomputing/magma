@@ -62,7 +62,7 @@ export namespace Ticker {
 	/** Internal descriptor for Ticker methods and properties */
 	export interface Descriptor extends AsyncGenerator<Tempo, any>, AsyncDisposable, Disposable {
 		pulse(): Tempo;
-		on(event: 'pulse' | 'catch', cb: (t: Tempo, stop: () => void) => void): this;
+		on(event: 'pulse' | 'catch' | 'stop', cb: (t: Tempo, stop: () => void) => void): this;
 		stop(): void;
 		readonly info: {
 			next: Tempo;
@@ -108,6 +108,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#waiter: Pledge<void> | undefined;
 	#listeners = new Set<Ticker.Callback>();
 	#catchListeners = new Set<Ticker.Callback>();
+	#stopListeners = new Set<Ticker.Callback>();
 	#self!: Ticker.Instance;
 
 	constructor(TempoClass: TempoType, arg1: any, arg2?: any) {
@@ -267,16 +268,18 @@ class TickerInstance implements Ticker.Descriptor {
 		return t;
 	}
 
-	on(event: 'pulse' | 'catch', cb: Ticker.Callback) {
+	on(event: 'pulse' | 'catch' | 'stop', cb: Ticker.Callback) {
 		if (event === 'pulse') {
 			this.#listeners.add(cb);
 			this.#runBootstrap();
 		}
 		if (event === 'catch') this.#catchListeners.add(cb);
+		if (event === 'stop') this.#stopListeners.add(cb);
 		return this;
 	}
 
 	stop() {
+		if (this.#stopped) return;
 		this.#stopped = true;
 		ACTIVE_TICKERS.delete(this.#self);
 		if (this.#schedId) {
@@ -287,6 +290,7 @@ class TickerInstance implements Ticker.Descriptor {
 			this.#waiter.resolve();
 			this.#waiter = undefined;
 		}
+		this.#stopListeners.forEach(l => l(this.#current, () => undefined));
 	}
 
 	get info() {
