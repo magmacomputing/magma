@@ -21,4 +21,15 @@ describe('Ticker Stop Listener', () => {
 		expect(receivedTempo).toBeDefined();
 		expect(typeof receivedStop).toBe('function');
 	});
+
+	it('should only invoke stop listeners once when stop is called multiple times', () => {
+		let calls = 0;
+		const ticker = Tempo.ticker({ seconds: 1 });
+		ticker.on('stop', () => calls++);
+
+		ticker.stop();
+		ticker.stop();
+
+		expect(calls).toBe(1);
+	});
 });
