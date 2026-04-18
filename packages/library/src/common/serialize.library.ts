@@ -5,7 +5,9 @@ import { isType, asType, isEmpty, isDefined, isUndefined, isNullish, isString, i
 import type { Obj, Type } from '#library/type.library.js';
 
 
-export const Registry = new Map<string, Function>();
+import sym from '#library/symbol.library.js';
+
+export const Registry = (globalThis as any)[sym.$SerializerRegistry] ??= new Map<string, Function>();
 
 /** register a Class for serialization */
 export const registerSerializable = (name: string, cls: Function) => {

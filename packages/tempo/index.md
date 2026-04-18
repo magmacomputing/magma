@@ -11,6 +11,7 @@ const sDeg = ref(0)
 const timeStr = ref('')
 const tzStr = ref('')
 
+let isMounted = false
 let ticker = null
 
 function updateHands(h24, m, s) {
@@ -21,11 +22,15 @@ function updateHands(h24, m, s) {
 }
 
 onMounted(async () => {
+  isMounted = true
+
   // Dynamically import Tempo + TickerModule
   const [{ Tempo }, { TickerModule }] = await Promise.all([
     import('@magmacomputing/tempo'),
     import('@magmacomputing/tempo/ticker'),
   ])
+
+  if (!isMounted) return
 
   Tempo.extend(TickerModule)
 
@@ -44,6 +49,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  isMounted = false
   ticker?.stop()
   ticker = null
 })

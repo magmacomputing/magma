@@ -7,6 +7,7 @@ const isDist = process.env.TEST_DIST === 'true';
 
 export default defineConfig({
   test: {
+    name: 'Library: Full',
     globals: true,
     environment: 'node',
     include: ['test/**/*.{test,spec}.ts'],

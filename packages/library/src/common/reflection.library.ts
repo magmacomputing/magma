@@ -102,7 +102,7 @@ const ownAccessors = (obj: any = {}, type: 'get' | 'set') => {
 	// 2. Walk the Constructor chain (for static accessors)
 	let constructor = isFunction(obj) ? obj : (obj as any).constructor;
 	depth = 0;
-	while (constructor && constructor !== Object && constructor !== Function && ++depth < limit) {
+	while (constructor && constructor !== Function.prototype && constructor !== Object.prototype && ++depth < limit) {
 		const descriptors = Object.getOwnPropertyDescriptors(constructor);
 		Reflect.ownKeys(descriptors).forEach(key => {
 			if (isFunction((descriptors as any)[key][type]))

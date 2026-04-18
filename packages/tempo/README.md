@@ -1,12 +1,12 @@
-<table width="100%" border="0" style="border: none;">
+<table width="100%">
   <tbody>
-    <tr style="border: none;">
-      <td align="left" width="120" style="border: none;">
+    <tr>
+      <td align="left" width="120">
         <img src="./img/logo.svg" width="120" alt="Tempo logo">
       </td>
-      <td align="left" style="border: none; padding-left: 20px;" valign="middle">
-        <h1 style="color: #3498db; font-size: 3.5em; font-weight: bold; margin: 0; border: none;">Tempo</h1>
-        <p style="color: #2c3e50; font-size: 1.2em; font-weight: bold; margin: 0;">The Professional Date-Time Library for the Temporal API</p>
+      <td align="left" valign="middle">
+        <h1>Tempo</h1>
+        <p><strong>The Professional Date-Time Library for the Temporal API</strong></p>
       </td>
     </tr>
   </tbody>
@@ -17,14 +17,14 @@
 **Tempo** is a premium, high-performance wrapper around the JavaScript `Temporal` API. It provides a modern, **immutable**, and **fluent** interface for date-time manipulation, and flexible parsing. It's designed as a better-performing, type-safe alternative to legacy libraries like **Moment.js**, **Day.js**, and **Luxon**.
 
 <div align="center">
-<table border="0" style="border: none;">
+<table>
   <tbody>
-    <tr style="border: none;">
-      <td style="border: none; padding: 0 5px;"><a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a></td>
-      <td style="border: none; padding: 0 5px;"><a href="https://tc39.es/proposal-temporal/"><img src="https://img.shields.io/badge/Temporal-Stage%204-green" alt="Temporal"></a></td>
-      <td style="border: none; padding: 0 5px;"><a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript" alt="TypeScript Ready"></a></td>
-      <td style="border: none; padding: 0 5px;"><a href="https://nodejs.org/api/esm.html"><img src="https://img.shields.io/badge/Native-ESM-green" alt="Native ESM"></a></td>
-      <td style="border: none; padding: 0 5px;"><a href="https://magmacomputing.github.io/magma/"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress" alt="Documentation"></a></td>
+    <tr>
+      <td align="center"><a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a></td>
+      <td align="center"><a href="https://tc39.es/proposal-temporal/"><img src="https://img.shields.io/badge/Temporal-Stage%204-green" alt="Temporal"></a></td>
+      <td align="center"><a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript" alt="TypeScript Ready"></a></td>
+      <td align="center"><a href="https://nodejs.org/api/esm.html"><img src="https://img.shields.io/badge/Native-ESM-green" alt="Native ESM"></a></td>
+      <td align="center"><a href="https://magmacomputing.github.io/magma/"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress" alt="Documentation"></a></td>
     </tr>
   </tbody>
 </table>
