@@ -138,6 +138,7 @@ setTimeout(() => {
 ```
 ### 3. Event Listeners (.on)
 Instead of (or in addition to) the constructor callback, you can register listeners for the `'pulse'`, `'stop'`, and `'catch'` events.
+All listeners use the same callback signature: `(t, stop) => {}`.
 
 ```typescript
 const ticker = Tempo.ticker(1);
