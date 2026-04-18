@@ -290,7 +290,7 @@ class TickerInstance implements Ticker.Descriptor {
 			this.#waiter.resolve();
 			this.#waiter = undefined;
 		}
-		this.#stopListeners.forEach(l => l(this.#current, () => this.stop()));
+		this.#stopListeners.forEach(l => l(this.#current, () => undefined));
 	}
 
 	get info() {
