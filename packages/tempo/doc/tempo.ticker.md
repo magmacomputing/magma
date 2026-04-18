@@ -146,6 +146,7 @@ ticker.on('pulse', (t) => console.log('Listener A:', t));
 ticker.on('pulse', (t) => console.log('Listener B:', t));
 ticker.on('stop', (t, stop) => console.log('Ticker stopped at:', t, stop));
 ```
+For `'stop'` listeners, `stop` is included for callback signature consistency; invoking it after stop has already occurred is a no-op.
 
 ### 4. Manual Pulsing (.pulse)
 In some scenarios, you may want to drive a ticker manually (e.g., from a UI event or a WebSocket message) while still benefiting from the ticker's internal state management and listeners.
