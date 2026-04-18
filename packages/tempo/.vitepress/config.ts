@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import { fileURLToPath } from 'node:url'
 import { Temporal } from '@js-temporal/polyfill'
 
 if (!(globalThis as any).Temporal) {
@@ -67,6 +68,27 @@ export default defineConfig({
   vite: {
     build: {
       target: 'esnext'
+    },
+    resolve: {
+      // Include 'development' so workspace packages resolve from TypeScript source
+      // (no pre-built dist required when running docs:dev or docs:build).
+      conditions: ['development', 'module', 'browser', 'import', 'default'],
+      alias: [
+        // More-specific path must come first so it is matched before the bare package.
+        {
+          find: /^@magmacomputing\/tempo\/ticker$/,
+          replacement: fileURLToPath(new URL('../src/plugin/extend/extend.ticker.ts', import.meta.url))
+        },
+        {
+          find: /^@magmacomputing\/tempo$/,
+          replacement: fileURLToPath(new URL('../src/tempo.index.ts', import.meta.url))
+        },
+      ]
+    },
+    ssr: {
+      // Prevent Vite from externalising these packages during SSR so the aliases
+      // above are honoured in the server-side rendering pass as well.
+      noExternal: ['@magmacomputing/tempo', '@magmacomputing/library']
     }
   }
 })
