@@ -145,7 +145,8 @@
     "./term": {
       "types": "./dist/plugin/term/term.index.d.ts",
       "import": "./dist/plugin/term/term.index.js"
-    }
+    },
+    "./bundle": "./dist/tempo.bundle.js"
   },
   "scripts": {
     "test": "vitest run",
