@@ -137,12 +137,13 @@ setTimeout(() => {
 }, 5000);
 ```
 ### 3. Event Listeners (.on)
-Instead of (or in addition to) the constructor callback, you can register listeners for the `'pulse'` event.
+Instead of (or in addition to) the constructor callback, you can register listeners for the `'pulse'`, `'stop'`, and `'catch'` events.
 
 ```typescript
 const ticker = Tempo.ticker(1);
 ticker.on('pulse', (t) => console.log('Listener A:', t));
 ticker.on('pulse', (t) => console.log('Listener B:', t));
+ticker.on('stop', (t, stop) => console.log('Ticker stopped at:', t, stop));
 ```
 
 ### 4. Manual Pulsing (.pulse)
@@ -212,7 +213,7 @@ The object returned by `Tempo.ticker()` (or an instance of the `Ticker` class) i
 
 | Method / Property | Description |
 | :--- | :--- |
-| `on(event, cb)` | Registers a listener for the `'pulse'` event. |
+| `on(event, cb)` | Registers a listener for the `'pulse'`, `'stop'`, or `'catch'` events. |
 | `pulse()` | Manually triggers a pulse, advances state, and notifies listeners. Returns the new `Tempo`. |
 | `info` | Read-only getter returning `{ next, ticks, limit, interval, stopped }`. |
 | `stop()` | Stops the ticker, clears active timers, and immediately resolves any pending async iteration Promises. |
