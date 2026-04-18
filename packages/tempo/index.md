@@ -40,13 +40,13 @@ onMounted(async () => {
   // Initial update
   const now = new Tempo()
   updateHands(now.hh, now.mi, now.ss)
-  timeStr.value = now.format('{wkd}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
+  timeStr.value = now.format('{www}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
   tzStr.value = now.tz
 
   // Continuous ticker
   ticker = Tempo.ticker({ seconds: 1 }, (t) => {
     updateHands(t.hh, t.mi, t.ss)
-    timeStr.value = t.format('{wkd}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
+    timeStr.value = t.format('{www}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
     tzStr.value = t.tz
   })
 })
