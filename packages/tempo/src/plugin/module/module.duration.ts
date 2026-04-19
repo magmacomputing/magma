@@ -154,11 +154,11 @@ export const DurationModule: Tempo.Module = defineModule({
 	install(this: Tempo, TempoClass: typeof Tempo) {
 		// 1. Register logic in the global interpreter registry
 		const modules = (globalThis as any)[sym.$modules] ?? {};
-		if (isUndefined(modules['duration'])) {
-			modules['duration'] = duration;
+		if (isUndefined(modules['DurationModule'])) {
+			modules['DurationModule'] = duration;
 		}
 
 		// 2. Inject the static helper
-		(TempoClass as any).duration = (input: any) => interpret(TempoClass, 'duration', 'toDuration', input);
+		(TempoClass as any).duration = (input: any) => interpret(TempoClass, 'DurationModule', 'toDuration', false, input);
 	}
 });

@@ -1,5 +1,6 @@
 import { Tempo } from '#tempo/core';
 import '#tempo/mutate';
+import '#tempo/parse';
 
 describe('Number-Word Pilot (0-10)', () => {
 	it('should resolve word-based counts in weekday patterns', () => {

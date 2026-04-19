@@ -1,6 +1,4 @@
 import '#library/temporal.polyfill.js';
-const Temporal = (globalThis as any).Temporal;
-
 import { Logify } from '#library/logify.class.js';
 import { secure } from '#library/utility.library.js';
 import { Immutable, Serializable } from '#library/class.library.js';
@@ -19,8 +17,6 @@ import { instant } from '#library/temporal.library.js';
 import type { Property, Secure } from '#library/type.library.js';
 
 import { registerPlugin, registerTerm, getTermRange, interpret, ensureModule } from './plugin/plugin.util.js'
-import './plugin/module/module.parse.js';
-import './plugin/module/module.mutate.js';
 
 import sym, { isTempo, registerHook } from './tempo.symbol.js';
 import { REGISTRY, registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
@@ -1177,12 +1173,12 @@ export class Tempo {
 
 			// discovery phase
 			if (host === 'fmt') {
-				if (!ensureModule(this, 'format')) return undefined;
+				if (!ensureModule(this, 'FormatModule')) return undefined;
 				if (isDefined(this.#local.config.formats[key])) {
 					return this.#setLazy(target, key, () => this.format(key as t.Format))?.();
 				}
 			} else {
-				if (!ensureModule(this, 'term')) return undefined;
+				if (!ensureModule(this, 'TermsModule')) return undefined;
 				const term = Tempo.#termMap.get(key);
 				if (term) {
 					const isKeyOnly = term.key === key;
@@ -1342,22 +1338,22 @@ export class Tempo {
 
 	format<K extends t.Format>(fmt: K) {
 		this.#ensureParsed();
-		return interpret(this, 'format', () => `{${String(fmt)}}`, fmt);
+		return interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt);
 	}
 
 
-	/** time duration until another date-time */							until(...args: any[]): any {
+	/** time duration until another date-time */							until(arg0?: any, arg1?: any): any {
 		this.#ensureParsed();
-		return interpret(this, 'duration', undefined, 'until', ...args);
+		return interpret(this, 'DurationModule', undefined, false, 'until', arg0, arg1);
 	}
 
-	/** time elapsed since another date-time */								since(...args: any[]): any {
+	/** time elapsed since another date-time */								since(arg0?: any, arg1?: any): any {
 		this.#ensureParsed();
-		return interpret(this, 'duration', undefined, 'since', ...args);
+		return interpret(this, 'DurationModule', undefined, false, 'since', arg0, arg1);
 	}
 
-	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'add', tempo, options); }
-	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'set', tempo, options); }
+	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'add', false, tempo, options); }
+	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'set', false, tempo, options); }
 	/** returns a clone of the current `Tempo` instance. */		clone() { return new this.#Tempo(this, this.config) }
 
 	/** returns the underlying Temporal.ZonedDateTime */
@@ -1401,7 +1397,7 @@ export class Tempo {
 
 	/** parse DateTime input */
 	#parse(tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {
-		return interpret(this, 'ParseModule', 'parse', tempo, dateTime, term) ?? this.#fallbackParse(tempo, dateTime, term);
+		return interpret(this, 'ParseModule', 'parse', true, tempo, dateTime, term) ?? this.#fallbackParse(tempo, dateTime, term);
 	}
 
 	#fallbackParse(tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {

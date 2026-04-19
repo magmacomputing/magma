@@ -1,11 +1,11 @@
 import { Tempo } from './tempo.class.js';
 import { onRegistryReset } from './tempo.register.js';
 
-import { TermsModule } from '#tempo/term';
+import { ParseModule } from '#tempo/parse';
+import { MutateModule } from '#tempo/mutate';
 import { DurationModule } from '#tempo/duration';
 import { FormatModule } from '#tempo/format';
-import { MutateModule } from '#tempo/mutate';
-import { ParseModule } from './plugin/module/module.parse.js';
+import { TermsModule } from '#tempo/term';
 
 // Batteries Included: Register standard modules
 const core = [ParseModule, MutateModule, FormatModule, DurationModule, TermsModule];

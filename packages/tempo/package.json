@@ -22,7 +22,15 @@
     "parsing"
   ],
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/temporal.polyfill.js",
+    "**/module.parse.js",
+    "**/module.mutate.js",
+    "**/tempo.index.js",
+    "**/*.polyfill.ts",
+    "**/*.module.ts",
+    "src/tempo.index.ts"
+  ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
   "imports": {
@@ -155,8 +163,8 @@
   "scripts": {
     "test": "vitest run",
     "test:dist": "cross-env TEST_DIST=true vitest run",
-    "repl": "tsx --conditions=development -i --import ./bin/setup.polyfill.ts --import ./bin/repl.ts",
-    "core": "tsx --conditions=development -i --import ./bin/setup.polyfill.ts --import ./bin/core.ts",
+    "repl": "tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
+    "core": "cross-env TEMPO_LITE=true tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/core.ts",
     "build": "tsc -b && npm run build:bundle && npm run build:resolve",
     "build:bundle": "rollup -c",
     "build:resolve": "tsx bin/resolve-types.ts",

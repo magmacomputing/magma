@@ -44,7 +44,6 @@ const entryPoints = Object.fromEntries(
 
 // Force inclusion of the full library for testing/distribution parity
 // We resolve this relative to this config file's directory
-entryPoints['lib/common.index'] = path.resolve(__dirname, '../library/dist/common.index.js');
 
 export default [
 	{

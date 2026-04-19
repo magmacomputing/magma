@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDist = process.env.TEST_DIST === 'true';
-const polyfill = resolve(__dirname, './bin/setup.polyfill.ts');
+const polyfill = resolve(__dirname, './bin/temporal-polyfill.ts');
 
 export default defineConfig({
   plugins: [],
@@ -24,12 +24,11 @@ export default defineConfig({
       { find: /^#tempo\/core$/, replacement: resolve(__dirname, './dist/core.index.js') },
       { find: /^#tempo\/term$/, replacement: resolve(__dirname, './dist/plugin/term/term.index.js') },
       { find: /^#tempo\/term\/standard$/, replacement: resolve(__dirname, './dist/plugin/term/standard.index.js') },
-      { find: /^#tempo\/term\/(.*)$/, replacement: resolve(__dirname, './dist/plugin/term/$1.js') },
-      { find: /^#tempo\/ticker$/, replacement: resolve(__dirname, './dist/plugin/extend/extend.ticker.js') },
       { find: /^#tempo\/duration$/, replacement: resolve(__dirname, './dist/plugin/module/module.duration.js') },
       { find: /^#tempo\/format$/, replacement: resolve(__dirname, './dist/plugin/module/module.format.js') },
       { find: /^#tempo\/parse$/, replacement: resolve(__dirname, './dist/plugin/module/module.parse.js') },
       { find: /^#tempo\/mutate$/, replacement: resolve(__dirname, './dist/plugin/module/module.mutate.js') },
+      { find: /^#tempo\/ticker$/, replacement: resolve(__dirname, './dist/plugin/extend/extend.ticker.js') },
       { find: /^#tempo\/scripts\/(.*)\.js$/, replacement: resolve(__dirname, './scripts/$1.js') },
       { find: /^#tempo\/plugin\/plugin\.(.*)\.js$/, replacement: resolve(__dirname, './dist/plugin/plugin.$1.js') },
       { find: /^#tempo\/plugin\/extend\.(.*)\.js$/, replacement: resolve(__dirname, './dist/plugin/extend/extend.$1.js') },

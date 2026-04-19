@@ -19,15 +19,16 @@ export function getHost(t: any): any {
  * ## ensureModule
  * Ensure a specific module is loaded, throwing a friendly error if not.
  */
-export function ensureModule(t: any, module: string): boolean {
+export function ensureModule(t: any, module: string, silent: boolean = false): boolean {
 	const host = getHost(t);
 	const hostLogic = (REGISTRY.modules as any)[module];
 	const isTermsLoaded = (module === 'term' || module === 'TermsModule') && REGISTRY.terms.length > 0;
 
 	if (!isDefined(hostLogic) && !isTermsLoaded) {
 		const msg = `Tempo: ${module} module not loaded. (Did you forget to Tempo.extend() or import '#tempo/${module.toLowerCase()}'?)`;
-		if (isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
+		if (!silent && isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
 
+		if (silent) return false;
 		if (t?.config?.catch === true) return false;
 		throw new Error(msg);
 	}
@@ -37,11 +38,11 @@ export function ensureModule(t: any, module: string): boolean {
  * ## interpret
  * Utility to safely delegate calls to the Tempo Interpreter with catch-support.
  */
-export function interpret(t: any, module: string, methodOrFallback?: any, ...args: any[]) {
+export function interpret(t: any, module: string, methodOrFallback?: any, silent: boolean = false, ...args: any[]) {
 	const host = getHost(t);
 
 	// 1. Module Validation
-	if (!ensureModule(t, module)) {
+	if (!ensureModule(t, module, silent)) {
 		return isFunction(methodOrFallback) ? methodOrFallback.apply(t, args) : undefined;
 	}
 

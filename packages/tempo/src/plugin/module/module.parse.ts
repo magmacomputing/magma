@@ -1,17 +1,14 @@
 import '#library/temporal.polyfill.js';
-const Temporal = (globalThis as any).Temporal;
-import { asType, isNull, isString, isObject, isNumber, isZonedDateTime, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/type.library.js';
+import { asType, isNull, isString, isObject, isZonedDateTime, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/type.library.js';
 import { asInteger, isNumeric } from '#library/coercion.library.js';
 import { instant } from '#library/temporal.library.js';
-import { trimAll } from '#library/string.library.js';
-import { secure } from '#library/utility.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 
 import type { Tempo } from '../../tempo.class.js';
 import { isTempo } from '../../tempo.symbol.js';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './module.lexer.js';
-import { REGISTRY, _MODULES } from '../../tempo.register.js';
-import { Match, Token } from '../../tempo.default.js';
+import { _MODULES } from '../../tempo.register.js';
+import { Match } from '../../tempo.default.js';
 import { resolveTermMutation, resolveTermValue } from './module.term.js';
 import { compose } from './module.composer.js';
 import { getRange, getTermRange, defineInterpreterModule } from '../plugin.util.js';
