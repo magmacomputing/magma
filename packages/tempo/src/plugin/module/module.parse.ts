@@ -458,6 +458,3 @@ const ParseEngine = {
  * Decouples date-string interpretation from the core class.
  */
 export const ParseModule = defineInterpreterModule('ParseModule', ParseEngine);
-
-// Eagerly register the engine with the global registry to ensure availability even if .extend() is delayed
-_MODULES['ParseModule'] = ParseEngine;

@@ -44,7 +44,7 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
 	// 1. Module Validation
 	if (!ensureModule(t, module, silent)) {
 		if (isFunction(methodOrFallback)) return methodOrFallback.apply(t, args);
-		if (isString(methodOrFallback) && (t?.config?.catch === true || silent)) return t;
+		if ((isString(methodOrFallback) || isUndefined(methodOrFallback)) && (t?.config?.catch === true || silent)) return t;
 		return undefined;
 	}
 

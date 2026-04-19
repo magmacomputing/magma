@@ -186,7 +186,8 @@
   "files": [
     "dist/",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "img/"
   ],
   "dependencies": {
     "tslib": "^2.8.1"

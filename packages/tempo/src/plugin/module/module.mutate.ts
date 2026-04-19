@@ -170,7 +170,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 			else {
 				// 3. Return a new instance with the final state
 				// @ts-ignore - access to private constructor/state
-				return new (this.constructor as any)(args, { ...this.config, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored });
+				return new (this.constructor as any)(args, { ...state.options, ...this.config, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored, [sym.$mutateDepth]: state.mutateDepth });
 			}
 		}
 

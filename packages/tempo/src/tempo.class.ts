@@ -1324,16 +1324,8 @@ export class Tempo {
 		return interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt);
 	}
 
-
-	/** time duration until another date-time */							until(arg0?: any, arg1?: any): any {
-		this.#ensureParsed();
-		return interpret(this, 'DurationModule', undefined, false, 'until', arg0, arg1);
-	}
-
-	/** time elapsed since another date-time */								since(arg0?: any, arg1?: any): any {
-		this.#ensureParsed();
-		return interpret(this, 'DurationModule', undefined, false, 'since', arg0, arg1);
-	}
+	/** time duration until another date-time */							until(arg0?: any, arg1?: any): any { this.#ensureParsed(); return interpret(this, 'DurationModule', undefined, false, 'until', arg0, arg1) ?? this; }
+	/** time elapsed since another date-time */								since(arg0?: any, arg1?: any): any { this.#ensureParsed(); return interpret(this, 'DurationModule', undefined, false, 'since', arg0, arg1) ?? this; }
 
 	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'add', false, tempo, options) ?? this; }
 	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this; }

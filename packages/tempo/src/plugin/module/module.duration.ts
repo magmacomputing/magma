@@ -160,13 +160,7 @@ export const DurationModule: Tempo.Module = defineModule({
 
 		// 2. Inject the static helper
 		(TempoClass as any).duration = function (this: typeof Tempo, input: any) {
-			try {
-				return interpret(this, 'DurationModule', 'toDuration', false, input);
-			} catch (e) {
-				// if the static call fails, fallback to an instance-context call to provide
-				// the helpful "module not loaded" diagnostic consistent with instance UX.
-				return (new this() as any).duration(input);
-			}
+			return interpret(this, 'DurationModule', 'toDuration', false, input);
 		};
 	}
 });

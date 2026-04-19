@@ -38,6 +38,8 @@ const displayFeatures = [...features, ...features.slice(0, 3)]
 let isMounted = false
 let ticker = null
 let carouselTimer = null
+let fallbackIntervalId = null
+let initFailed = false
 
 function updateHands(h24, m, s) {
   const h = h24 % 12
@@ -47,14 +49,15 @@ function updateHands(h24, m, s) {
 }
 
 // One-time library setup
-const initPromise = (async () => {
+let initPromise = (async () => {
   try {
     // HMR Safeguard for development only (stripped in production)
     let registry, originalHas
     if (import.meta.env.DEV) {
       const registryKey = Symbol.for('$LibrarySerializerRegistry')
       registry = globalThis[registryKey] ??= new Map()
-      originalHas = registry.has
+      // HMR Workaround: Temporarily bypass registry presence checks to allow class re-hydration
+      originalHas = registry.has.bind(registry)
       registry.has = () => false
     }
 
@@ -71,16 +74,21 @@ const initPromise = (async () => {
     return Tempo
   } catch (e) {
     console.error('Tempo failed to initialize:', e)
+    initFailed = true
+    initPromise = undefined
     throw e
   }
 })()
 
 async function startTicker() {
+  if (initFailed) return
   try {
+    if (!initPromise) return
     const Tempo = await initPromise
     if (!isMounted) return
     
     ticker?.stop()
+    if (fallbackIntervalId) clearInterval(fallbackIntervalId)
     
     const sync = (t) => {
       const dt = t.toDateTime()
@@ -100,7 +108,8 @@ async function startTicker() {
       tzStr.value = Intl.DateTimeFormat().resolvedOptions().timeZone
     }
     fallback()
-    setInterval(fallback, 1000)
+    if (fallbackIntervalId) clearInterval(fallbackIntervalId)
+    fallbackIntervalId = setInterval(fallback, 1000)
   }
 }
 
@@ -128,6 +137,7 @@ function handleVisibility() {
     startCarousel()
   } else {
     ticker?.stop()
+    if (fallbackIntervalId) clearInterval(fallbackIntervalId)
     clearInterval(carouselTimer)
     carouselTimer = null
   }
@@ -143,9 +153,32 @@ onMounted(() => {
 onUnmounted(() => {
   isMounted = false
   ticker?.stop()
+  if (fallbackIntervalId) clearInterval(fallbackIntervalId)
   clearInterval(carouselTimer)
   document.removeEventListener('visibilitychange', handleVisibility)
 })
+
+// --- A11y & Keyboard Controls ---
+const featureRefs = ref([])
+
+function handleKeydown(e) {
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault()
+    if (activeIndex.value > 0) activeIndex.value--
+    focusActiveCard()
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault()
+    if (activeIndex.value < features.length - 1) activeIndex.value++
+    focusActiveCard()
+  }
+}
+
+function focusActiveCard() {
+  setTimeout(() => {
+    const el = featureRefs.value[activeIndex.value]
+    if (el) el.focus()
+  }, 100)
+}
 </script>
 
 <div class="tempo-hero">
@@ -193,16 +226,32 @@ onUnmounted(() => {
 </div>
 
 <div class="tempo-carousel-container" 
+     role="region" 
+     aria-label="Tempo features"
      @mouseenter="isPaused = true" 
-     @mouseleave="isPaused = false">
+     @mouseleave="isPaused = false"
+     @keydown="handleKeydown">
+  
+  <div class="tempo-carousel-controls">
+    <button class="tempo-carousel-toggle" @click="isPaused = !isPaused" :aria-label="isPaused ? 'Play carousel' : 'Pause carousel'">
+      <span v-if="isPaused">▶️</span>
+      <span v-else>⏸️</span>
+    </button>
+  </div>
+
   <div class="tempo-carousel-track" 
+       role="list"
+       :aria-live="isPaused ? 'off' : 'polite'"
        :style="{ 
          transform: `translateX(-${activeIndex * (100 / displayFeatures.length)}%)`,
          transition: transitionEnabled ? 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
        }">
     <div v-for="(feat, i) in displayFeatures" 
          :key="i" 
-         class="tempo-feature-card">
+         :ref="el => featureRefs[i] = el"
+         class="tempo-feature-card"
+         role="listitem"
+         tabindex="0">
       <div class="tempo-feature-content">
         <div class="tempo-feature-icon">{{ feat.icon }}</div>
         <h3 class="tempo-feature-title">{{ feat.title }}</h3>
@@ -373,6 +422,33 @@ onUnmounted(() => {
   padding: 60px 24px;
   max-width: 1152px;
   margin: 0 auto;
+  position: relative;
+}
+
+.tempo-carousel-controls {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 10;
+}
+
+.tempo-carousel-toggle {
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-border);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+}
+
+.tempo-carousel-toggle:hover {
+  border-color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg-mute);
 }
 
 .tempo-carousel-track {
