@@ -11,7 +11,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['test/**/*.{test,spec}.ts'],
-    setupFiles: [resolve(__dirname, '../tempo/bin/setup.polyfill.ts')],
+    setupFiles: [resolve(__dirname, '../tempo/bin/temporal-polyfill.ts')],
   },
   resolve: {
     alias: isDist ? [

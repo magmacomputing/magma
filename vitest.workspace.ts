@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const polyfill = resolve(__dirname, 'packages/tempo/bin/setup.polyfill.ts');
+const polyfill = resolve(__dirname, 'packages/tempo/bin/temporal-polyfill.ts');
 
 export default defineWorkspace([
   {
