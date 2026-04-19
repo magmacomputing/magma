@@ -208,8 +208,6 @@ try {
 > [!WARNING]
 > If you are using `const` or `let` without a `finally` block, an assertion failure will skip the `stop()` call, leaving a live timer in the event loop. Always prefer the `using` keyword or `try...finally` for industrial-grade resource management.
 
----
-
 ### `Ticker` Object
 The object returned by `Tempo.ticker()` (or an instance of the `Ticker` class) implements the following interface:
 
@@ -222,8 +220,6 @@ The object returned by `Tempo.ticker()` (or an instance of the `Ticker` class) i
 | `[Symbol.dispose]` | Standard cleanup for `using` blocks. |
 | `[Symbol.asyncDispose]` | Standard async cleanup for `await using` blocks. |
 | `[Symbol.asyncIterator]` | Standard async iteration support (for `for await` loops). |
-
----
 
 ## 📊 Reporting & Registry
 
@@ -254,8 +250,6 @@ type Snapshot = {
   stopped: boolean;     // Whether the ticker is stopped
 }
 ```
-
----
 
 ## 🎯 One-Shot Ticker (Meeting Alerts)
 
@@ -292,8 +286,6 @@ Tempo.ticker({
 
 > [!WARNING]
 > While `limit: 1` handles the stop condition automatically, always remember that if you are using long-running tickers without a limit, you **must** use the [Disposer Pattern](#zombie-tickers-warning) or manual `stop()` to avoid memory leaks and zombie processes.
-
----
 
 ## 🧭 Advanced: Syncing Multiple Clocks
 

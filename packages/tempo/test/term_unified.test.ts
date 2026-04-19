@@ -5,8 +5,12 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 	const testDate = '2024-05-15T12:00:00+10:00[Australia/Sydney]';
 
 	beforeEach(() => {
-		Tempo.init()
-	})
+		Tempo.init();
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
 
 	it('should jump to the start of a term using #term syntax in set()', () => {
 		const t = new Tempo(testDate, { catch: true, sphere: 'north' });
@@ -72,6 +76,7 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 	});
 
 	it('should throw an error for invalid terms when catch is false', () => {
+		vi.spyOn(console, 'error').mockImplementation(() => { });
 		const t = new Tempo(testDate, { catch: false, sphere: 'north', silent: true });
 		expect(() => t.set({ start: '#invalid' })).toThrow(/Unknown Term identifier\: #invalid/);
 	});

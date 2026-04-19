@@ -5,7 +5,7 @@
         <img src="./img/logo.svg" width="120" alt="Tempo logo">
       </td>
       <td align="left" valign="middle">
-        <h1>Tempo</h1>
+        <h1><font color="#3498db">Tempo</font></h1>
         <p><strong>The Professional Date-Time Library for the Temporal API</strong></p>
       </td>
     </tr>
@@ -63,13 +63,15 @@ Ideal for organizations looking to move away from **Moment.js**, **Day.js**, or 
 For those building complex, time-sensitive systems (such as financial platforms, scheduling engines, or global logistics trackers) that demand the precision of Temporal combined with a premium, type-safe developer experience.
 ## 📦 Installation
 
+### 💻 on the Server (or Bundler)
+For Node.js, Bun, Deno, or projects using a bundler (Vite, Webpack, etc.), install via npm:
+
 ```bash
 npm install @magmacomputing/tempo
 ```
 
-### 💻 on the Server
 Tempo is a native ESM package. In Node.js (20+), simply import the class.
-Node.js, Bun and Deno support native ESM out of the box.
+Node.js, Bun, and Deno support native ESM out of the box.
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
@@ -79,30 +81,54 @@ console.log(t.format('{dd} {mon} {yyyy}'));
 ```
 
 ### 🌐 in the Browser (Import Maps)
-Since Tempo is a native ESM package, you can use it directly in modern browsers using `importmap`:
+Since Tempo is a native ESM package, you can use it directly in modern browsers using `importmap`. The **bundle** entrypoint includes all standard modules pre-registered, but requires a separate `Temporal` polyfill for current browser environments.
 
 ```html
 <script type="importmap">
 {
   "imports": {
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/tempo.index.js"
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/bundle"
   }
 }
 </script>
 <script type="module">
-  import { Tempo } from '@magmacomputing/tempo';
+  import Tempo from '@magmacomputing/tempo';
   const t = new Tempo('next friday');
   console.log(t.format('{mon} {day}'));
 </script>
 ```
 
 ### 📦 in the Browser (Script Tag)
-For environments without `importmap` support or simple prototypes, use the bundled version:
+For environments without `importmap` support or simple prototypes, use the global bundle. This automatically attaches the `Tempo` class to the `window` object.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/dist/tempo.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/global"></script>
 <script>
   const t = new Tempo('tomorrow');
+  console.log(t.toString());
+</script>
+```
+
+### 🧪 Advanced: Granular ESM (Lite Build)
+For maximum performance, you can use the lean **Core** engine and opt-in to specific modules. This prevents loading unused logic and keeps your production bundle minimal.
+
+```html
+<script type="importmap">
+{
+  "imports": {
+    "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/core",
+    "@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/mutate"
+  }
+}
+</script>
+<script type="module">
+  import { Tempo } from '@magmacomputing/tempo/core';
+  import { MutateModule } from '@magmacomputing/tempo/mutate';
+
+  // Opt-in to mutation logic
+  Tempo.extend(MutateModule);
+
+  const t = new Tempo().add({ days: 1 });
   console.log(t.toString());
 </script>
 ```

@@ -15,12 +15,12 @@ afterAll(() => {
 });
 
 describe('Tempo.duration() (Core)', () => {
+	beforeEach(() => { Tempo.init(); });
 	afterEach(() => vi.restoreAllMocks())
 
-	it('should throw Error if plugin not loaded', () => {
-		const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
-		expect(() => Tempo.duration('P1Y')).toThrow('duration plugin not loaded');
-		expect(spy).toHaveBeenCalled();
+	it('should be undefined if plugin not loaded', () => {
+		expect(Tempo.duration).toBeUndefined();
+		expect(() => (Tempo as any).duration('P1Y')).toThrow();
 	});
 
 	it('should work after manual extension', async () => {

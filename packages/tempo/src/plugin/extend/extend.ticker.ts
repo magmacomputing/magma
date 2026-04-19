@@ -5,8 +5,8 @@ import { instant, normaliseFractionalDurations } from '#library/temporal.library
 import { markConfig } from '#library/symbol.library.js'
 
 import { DURATIONS } from '../../tempo.enum.js'
-import sym from '../../tempo.symbol.js';
 import { defineExtension } from '../plugin.util.js'
+import sym from '../../tempo.symbol.js';
 import type { Tempo } from '../../tempo.class.js'
 import type { TempoType } from '../plugin.type.js'
 
@@ -356,27 +356,32 @@ class TickerInstance implements Ticker.Descriptor {
 export const TickerModule: Tempo.Extension = defineExtension({
 	name: 'TickerModule',
 	install(this: Tempo, TempoClass: TempoType) {
-		(TempoClass as any).ticker = function (this: TempoType, arg1: any, arg2?: any): Ticker.Instance {
-			const instance = new TickerInstance(this as unknown as TempoType, arg1, arg2);
-			const proxy = new Proxy((() => instance.stop()) as any, {
-				get: (_, prop) => {
-					if (prop === 'pulse') return instance.pulse.bind(instance);
-					if (prop === 'on') return instance.on.bind(instance);
-					if (prop === 'stop') return instance.stop.bind(instance);
-					if (prop === 'info') return instance.info;
-					if (prop === 'next') return instance.next.bind(instance);
-					if (prop === 'return') return instance.return.bind(instance);
-					if (prop === 'throw') return instance.throw.bind(instance);
-					if (prop === Symbol.asyncIterator) return () => proxy;
-					if (prop === Symbol.asyncDispose) return instance[Symbol.asyncDispose].bind(instance);
-					if (prop === Symbol.dispose) return instance[Symbol.dispose].bind(instance);
-					return (instance as any)[prop];
-				},
-				apply: (target) => target()
-			}) as unknown as Ticker.Instance;
+		Object.defineProperty(TempoClass, 'ticker', {
+			value: function (this: TempoType, arg1: any, arg2?: any): Ticker.Instance {
+				const instance = new TickerInstance(this as unknown as TempoType, arg1, arg2);
+				const proxy = new Proxy((() => instance.stop()) as any, {
+					get: (_, prop) => {
+						if (prop === 'pulse') return instance.pulse.bind(instance);
+						if (prop === 'on') return instance.on.bind(instance);
+						if (prop === 'stop') return instance.stop.bind(instance);
+						if (prop === 'info') return instance.info;
+						if (prop === 'next') return instance.next.bind(instance);
+						if (prop === 'return') return instance.return.bind(instance);
+						if (prop === 'throw') return instance.throw.bind(instance);
+						if (prop === Symbol.asyncIterator) return () => proxy;
+						if (prop === Symbol.asyncDispose) return instance[Symbol.asyncDispose].bind(instance);
+						if (prop === Symbol.dispose) return instance[Symbol.dispose].bind(instance);
+						return (instance as any)[prop];
+					},
+					apply: (target) => target()
+				}) as unknown as Ticker.Instance;
 
-			return instance.bootstrap(proxy);
-		};
+				return instance.bootstrap(proxy);
+			},
+			writable: true,
+			configurable: true,
+			enumerable: true
+		});
 
 		Object.defineProperty(TempoClass, 'tickers', {
 			get: () => Ticker.active,

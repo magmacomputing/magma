@@ -4,8 +4,6 @@ Tempo uses a custom `enumify` utility to define enumerations rather than relying
 
 This guide explains how they are defined, how you use them as a consumer of the `Tempo` library, and why this design pattern was chosen.
 
----
-
 ## 1. How Tempo Enums are Defined
 
 Tempo's core enumerators (like Weekdays, Months, Seasons) are built using the exported `enumify` function. 
@@ -34,8 +32,6 @@ After defining the enumify object, simple TypeScript helper aliases pull out the
 export type SEASON = ValueOf<typeof SEASON>; // Type: 'summer' | 'autumn' | 'winter' | 'spring'
 ```
 
----
-
 ## 2. Using Enums Outside of Tempo
 
 For consumers of the library, these enumerations are exposed cleanly as **static getters** on the core `Tempo` class.  They are also available as a namespace object from the 'barrel' (index.ts) export `enums`.
@@ -48,6 +44,24 @@ import { Tempo } from '@magmacomputing/tempo';
 // Direct Value access
 const direction = Tempo.COMPASS.North; // 'north'
 const monthIndex = Tempo.MONTH.Feb;    // 2 (since 'All' was index 0)
+```
+
+## 3. Creating Custom Enums
+
+You can utilize the same `enumify` engine for your own application logic by importing it from the library subpath. This is particularly useful for maintaining consistent data patterns and iteration capabilities throughout your project.
+
+### Example Usage
+
+```typescript
+import { enumify } from '@magmacomputing/tempo/library';
+
+// 1. Define your Enum
+export const STATUS = enumify(['Pending', 'Active', 'Resolved', 'Archived']);
+
+// 2. Use the built-in methods
+const allKeys = STATUS.keys();     // ['Pending', 'Active', 'Resolved', 'Archived']
+const isActive = STATUS.has('Active'); // true
+const value = STATUS.Resolved;      // 2
 ```
 or alternatively, directly from the 'enums' export in the package.json
 ```typescript
@@ -78,9 +92,7 @@ const keyName = Tempo.MONTH.keyOf(2);               // 'Feb'
 const customStrings = Tempo.WEEKDAY.map(([key, val]) => `${key} is day ${val}`);
 ```
 
----
-
-## 3. How They Are Used Inside Tempo
+## 4. How They Are Used Inside Tempo
 
 Internally, the `Tempo` logic relies heavily on these enumerators. This gives the parsing and formatting engines guaranteed type-safety and robust lookup dictionaries.
 
@@ -88,9 +100,7 @@ For instance, the `.format()` logic can map tokens efficiently, and parser confi
 
 The overarching design ensures the library stays strongly typed, internally consistent, and protected against accidental runtime mutation via `Object.freeze()`.
 
----
-
-## 4. `enumify` vs. TypeScript `enum` (The Trade-Offs)
+## 5. `enumify` vs. TypeScript `enum` (The Trade-Offs)
 
 TypeScript's native `enum` is one of the few TS features that generates structural runtime JavaScript, and it has known friction points in the JavaScript community. 
 

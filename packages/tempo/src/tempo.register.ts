@@ -84,7 +84,6 @@ export function registryReset() {
 	// Trigger all registered reset hooks
 	const hooks = resetHooks();
 	hooks.forEach(hook => hook());
-	hooks.clear();
 }
 
 /** update a global registry with new discoverable data */
@@ -115,3 +114,5 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
  * Only use this within the core library.
  */
 export const _INTERNAL_REGISTRY = _REGISTRY;
+/** @internal raw access to module storage */
+export const _MODULES = _modules;
