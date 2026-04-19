@@ -13,7 +13,7 @@ describe('Tempo.duration() (Core)', () => {
 
 	it('should work after importing the plugin', async () => {
 		// @ts-ignore
-		await import('../src/plugin/module/module.duration.js');
+		await import('#tempo/duration');
 
 		const t = new Tempo('2024-01-01');
 		const diff = t.until('2024-01-02', 'days');

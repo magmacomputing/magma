@@ -55,4 +55,5 @@ Tempo provides a specialized wrapper around `Promise.withResolvers()` called `Pl
 *   **Resource Management:** Implements `Symbol.dispose` to automatically reject pending promises when they go out of scope, preventing deadlocks or memory leaks.
 
 👉 **[Read the full Pledge Guide](./tempo.pledge.md)** for advanced usage with callbacks, debugging tags, and lifecycle management.
+
 ---

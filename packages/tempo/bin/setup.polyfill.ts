@@ -4,10 +4,10 @@
 import './temporal-polyfill.js';
 
 // Bootstrap Core Modules for Tests
-import { Tempo } from '../src/tempo.class.js';
-import { onRegistryReset } from '../src/tempo.register.js';
-import { ParseModule } from '../src/plugin/module/module.parse.js';
-import { MutateModule } from '../src/plugin/module/module.mutate.js';
+import { Tempo } from '#tempo/core';
+import { onRegistryReset } from '#tempo/tempo.register.js';
+import { ParseModule } from '#tempo/parse';
+import { MutateModule } from '#tempo/mutate';
 
 const core = [ParseModule, MutateModule];
 

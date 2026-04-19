@@ -14,8 +14,6 @@ new Tempo('25-Dec-2024').term.season     // ← computed on first access, cached
 > [!TIP]
 > **Transparent Discovery**: As of **v2.0.1**, all term properties are **enumerable**. Whilst modern `console.log` environments (like Node.js) will typically display these as `[Getter]` to preserve laziness, they *are* visible to property-scanning tools. This means a serializer (like `JSON.stringify`) or a deep-clone utility **will** trigger the eager evaluation of *every* registered term at once. To prevent terminal noise during these events (e.g., for invalid dates), initialize Tempo with **`silent: true`**.
 
----
-
 ## What a Term Does
 
 A term plugin answers a single question:
@@ -31,7 +29,6 @@ Plugin expose two views of that result via the `Tempo.term` object:
 | `tempo.term.<key>` | A short identifier string (e.g. `'qtr'`, `'szn'`, `'zdc'`) |
 | `tempo.term.<scope>` | The full matching range object, with all metadata fields (e.g. `key`, `day`, `month`, `year`, `sphere`, etc.) |
 The `<key>` and `<scope>` are defined by the plugin author, where the intent of the `<key>` is to provide a short identifier value, and the intent of the `<scope>` is to provide the full matching range object.
----
 
 ## Provided Plugin
 
@@ -52,8 +49,6 @@ const t = new Tempo('15-Feb-2025', { sphere: 'south' });
 
 t.term.qtr      // → 'Q3'  (southern hemisphere)
 ```
-
----
 
 ### `szn` / `season` — Meteorological Seasons
 
@@ -77,8 +72,6 @@ const t = new Tempo('01-Jul-2025', { sphere: 'south' });
 t.term.szn      // → 'Winter'  (southern hemisphere, different boundary dates)
 ```
 
----
-
 ### `zdc` / `zodiac` — Astrological Zodiac
 
 Determines the Western astrological sign for the date.  
@@ -94,8 +87,6 @@ t.term.zodiac
 t.term.zodiac.CN
 // → { animal: 'Snake', traits: 'Wise, intuitive', element: 'Wood', yinYang: 'Yin' }
 ```
-
----
 
 ### `per` / `period` — Daily Time Periods
 
@@ -119,8 +110,6 @@ t.term.per      // → 'midday'
 t.term.period   // → { key: 'midday', hour: 12 }
 ```
 
----
-
 ## Inspecting Registered Terms
 
 The static `Tempo.terms` getter returns a read-only list of all registered plugin:
@@ -134,8 +123,6 @@ Tempo.terms
 //     { key: 'per', scope: 'period',   description: 'Daily time period' },
 //   ]
 ```
-
----
 
 ## Activating Terms
 
@@ -164,8 +151,6 @@ import { QuarterTerm } from '@magmacomputing/tempo/term/quarter';
 
 Tempo.extend(QuarterTerm);
 ```
-
----
 
 ## How to Define a Term Plugin
 
@@ -218,7 +203,6 @@ export const MySeasonTerm = defineTerm({
     }
 });
 ```
-
 
 ### `Range` fields
 
@@ -283,8 +267,6 @@ const t = new Tempo('2025-02-15');
 console.log(t.term.cfy); // → "FY2024" (because it's before July 2025)
 ```
 
----
-
 ## 🧭 Writing Math-Aware Terms
 
 To unlock Tempo's advanced **Term Traversal** (e.g., `t.add({ '#quarter': 1 })`) and **Ticker Syncing**, a plugin must provide semantic **boundaries** (`start` and `end`). 
@@ -313,8 +295,6 @@ return keyOnly ? 'MyTerm' : {
 };
 ```
 
----
-
 ## 🕒 Terms in Tickers
 Any term that provides `start` and `end` boundaries can be used to drive a `Tempo.ticker`. This is ideal for logic that doesn't follow a fixed duration (like seasons or fiscal quarters).
 
@@ -327,8 +307,6 @@ for await (const t of quarterly) {
 }
 ```
 
----
-
 ## 🛠️ Developer Guide: Best Practices
 
 To ensure a custom `Term` plugin integrates fully with Tempo, follow these guidelines:
@@ -338,8 +316,6 @@ To ensure a custom `Term` plugin integrates fully with Tempo, follow these guide
 3.  **Memoization Safety**: Keep the `define` function pure. It will only be called once per instance access.
 4.  **Math Readiness**: Always use `getTermRange` or provide boundaries. Without them, users cannot use your term in `add()`, `set()`, or `ticker()`.
 5.  **Key consistency**: Ensure the `key` property you return in the `define` function's scope object matches the `key` definition of your plugin.
-
----
 
 ## 🧭 Best Practices: Idempotency & Side-Effects
 

@@ -1,4 +1,4 @@
-import { Tempo } from '../src/tempo.class.js'
+import { Tempo } from '#tempo'
 
 test('Tempo import', () => {
   expect(Tempo).toBeDefined()

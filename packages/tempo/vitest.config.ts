@@ -28,6 +28,8 @@ export default defineConfig({
       { find: /^#tempo\/ticker$/, replacement: resolve(__dirname, './dist/plugin/extend/extend.ticker.js') },
       { find: /^#tempo\/duration$/, replacement: resolve(__dirname, './dist/plugin/module/module.duration.js') },
       { find: /^#tempo\/format$/, replacement: resolve(__dirname, './dist/plugin/module/module.format.js') },
+      { find: /^#tempo\/parse$/, replacement: resolve(__dirname, './dist/plugin/module/module.parse.js') },
+      { find: /^#tempo\/mutate$/, replacement: resolve(__dirname, './dist/plugin/module/module.mutate.js') },
       { find: /^#tempo\/scripts\/(.*)\.js$/, replacement: resolve(__dirname, './scripts/$1.js') },
       { find: /^#tempo\/plugin\/plugin\.(.*)\.js$/, replacement: resolve(__dirname, './dist/plugin/plugin.$1.js') },
       { find: /^#tempo\/plugin\/extend\.(.*)\.js$/, replacement: resolve(__dirname, './dist/plugin/extend/extend.$1.js') },

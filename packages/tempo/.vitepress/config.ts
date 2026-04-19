@@ -44,9 +44,9 @@ export default defineConfig({
         text: 'Advanced Reference',
         items: [
           { text: 'API Reference', link: '/doc/tempo.api' },
+          { text: 'Types System', link: '/doc/tempo.types' },
           { text: 'Shorthand Engine', link: '/doc/tempo.shorthand' },
           { text: 'Weekday Engine', link: '/doc/tempo.weekday' },
-          { text: 'Types System', link: '/doc/tempo.types' },
           { text: 'Debugging', link: '/doc/tempo.debugging' }
         ]
       },
@@ -63,10 +63,10 @@ export default defineConfig({
         text: 'Utility Library',
         items: [
           { text: 'Library Overview', link: '/doc/tempo.library' },
-          { text: 'Advanced Promises (Pledge)', link: '/doc/tempo.pledge' },
-          { text: 'Decorators', link: '/doc/tempo.decorators' },
           { text: 'Enumerators', link: '/doc/tempo.enumerators' },
-          { text: 'Serializers', link: '/doc/tempo.serializers' }
+          { text: 'Serializers', link: '/doc/tempo.serializers' },
+          { text: 'Decorators', link: '/doc/tempo.decorators' },
+          { text: 'Advanced Promises (Pledge)', link: '/doc/tempo.pledge' },
         ]
       },
       {

@@ -67,7 +67,6 @@ From that point, the plugin is available to new Tempo instances.
 
 See the section on [plugin](tempo.term.md) for more information.
 
-
 ```typescript
 const t = new Tempo();
 const isWeekend = t.term.isWeekend;             // through plugin

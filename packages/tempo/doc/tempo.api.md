@@ -59,7 +59,6 @@ Compares two `Tempo` instances or date-time values for sorting.
 - **Returns:** `Tempo.Duration`
 - **Example:** `Tempo.duration('P1Y')` or `Tempo.duration({ months: 2 })`
 
-
 ### `Tempo.now()`
 Returns the current Unix epoch in nanoseconds as a `BigInt`.
 
