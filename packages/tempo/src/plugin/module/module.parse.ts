@@ -174,16 +174,16 @@ const ParseEngine = {
 			})
 		}
 
-		if (type !== 'String' && type !== 'Number' && type !== 'Function' && type !== 'AsyncFunction') {
-			ParseEngine.result.call(this, arg, { match: type });
-			return arg;
-		}
-
 		if (isTempo(value)) {
 			const res = (value as any).toDateTime();
 			state.config.timeZone = res.timeZoneId;
 			state.config.calendar = res.calendarId;
 			return Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: res });
+		}
+
+		if (type !== 'String' && type !== 'Number' && type !== 'Function' && type !== 'AsyncFunction') {
+			ParseEngine.result.call(this, arg, { match: type });
+			return arg;
 		}
 
 		if (isString(value)) {

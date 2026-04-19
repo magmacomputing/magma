@@ -102,7 +102,7 @@ Since Tempo is a native ESM package, you can use it directly in modern browsers 
 For environments without `importmap` support or simple prototypes, use the global bundle. This automatically attaches the `Tempo` class to the `window` object.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/bundle"></script>
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/global"></script>
 <script>
   const t = new Tempo('tomorrow');
   console.log(t.toString());

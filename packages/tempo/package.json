@@ -164,7 +164,12 @@
     },
     "./bundle": {
       "types": "./dist/tempo.index.d.ts",
-      "import": "./dist/tempo.bundle.js"
+      "import": "./dist/tempo.bundle.esm.js"
+    },
+    "./global": {
+      "types": "./dist/tempo.index.d.ts",
+      "import": "./dist/tempo.bundle.js",
+      "script": "./dist/tempo.bundle.js"
     }
   },
   "scripts": {

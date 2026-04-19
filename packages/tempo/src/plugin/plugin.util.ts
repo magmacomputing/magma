@@ -25,7 +25,8 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 	const isTermsLoaded = (module === 'term' || module === 'TermsModule') && REGISTRY.terms.length > 0;
 
 	if (!isDefined(hostLogic) && !isTermsLoaded) {
-		const msg = `Tempo: ${module} module not loaded. (Did you forget to Tempo.extend() or import '#tempo/${module.toLowerCase()}'?)`;
+		const baseName = module.endsWith('Module') ? module.slice(0, -6) : module;
+		const msg = `Tempo: ${module} not loaded. (Did you forget to Tempo.extend(${module}) or import '#tempo/${baseName.toLowerCase()}'?)`;
 		if (!silent && isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
 
 		if (silent) return false;

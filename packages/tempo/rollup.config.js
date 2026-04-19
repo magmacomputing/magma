@@ -48,14 +48,22 @@ const entryPoints = Object.fromEntries(
 export default [
 	{
 		input: path.join(distPath, 'tempo.entry.js'),
-		output: {
-			file: 'dist/tempo.bundle.js',
-			format: 'iife',
-			name: 'Tempo',
-			exports: 'default', // Ensures 'new Tempo()' works on the global object
-			sourcemap: false,
-			indent: '\t',
-		},
+		output: [
+			{
+				file: 'dist/tempo.bundle.js',
+				format: 'iife',
+				name: 'Tempo',
+				exports: 'default', // Ensures 'new Tempo()' works on the global object
+				sourcemap: false,
+				indent: '\t',
+			},
+			{
+				file: 'dist/tempo.bundle.esm.js',
+				format: 'es',
+				sourcemap: false,
+				indent: '\t',
+			}
+		],
 		plugins: [
 			resolve({ extensions: ['.js'] }),
 			indentFix()
