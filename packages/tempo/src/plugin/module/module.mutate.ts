@@ -93,7 +93,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 
 							const slug = `${op}.${single}`;
 
-							const parseInner = (input: any, anchor?: any, module?: any) => {
+							const parseInner = (input: any, anchor?: any) => {
 								const res = (this.constructor as any).from(input, { ...this.config, anchor });
 								if (res.isValid) {
 									state.matches.push(...res.parse.result);
@@ -118,7 +118,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 
 								case 'set.period': case 'set.time': case 'set.date': case 'set.event':
 								case 'set.dow': case 'set.wkd': {
-									const res = parseInner(offset, currZdt, term);
+									const res = parseInner(offset, currZdt);
 									if (isUndefined(res)) state.errored = true;
 									return res ?? currZdt;
 								}
@@ -204,6 +204,3 @@ const MutateEngine = {
  * MutateModule registration
  */
 export const MutateModule = defineInterpreterModule('MutateModule', MutateEngine);
-
-// Eagerly register the engine with the global registry to ensure availability even if .extend() is delayed
-_MODULES['MutateModule'] = MutateEngine;

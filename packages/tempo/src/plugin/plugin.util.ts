@@ -43,7 +43,9 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
 
 	// 1. Module Validation
 	if (!ensureModule(t, module, silent)) {
-		return isFunction(methodOrFallback) ? methodOrFallback.apply(t, args) : undefined;
+		if (isFunction(methodOrFallback)) return methodOrFallback.apply(t, args);
+		if (isString(methodOrFallback) && (t?.config?.catch === true || silent)) return t;
+		return undefined;
 	}
 
 	const hostLogic = (REGISTRY.modules as any)[module];

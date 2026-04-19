@@ -55,11 +55,15 @@ const ParseEngine = {
 				if (isNumeric(tempo as any)) {
 					const list = getRange(termObj, this, today);
 					const current = (getTermRange(this, list, false, today) as any);
+					if (!current) throw new RangeError(`Term index out of range: ${tempo} for ${term}`);
+
 					const isMultiCycle = isDefined(termObj.resolve) && list.some(r => r.year !== undefined);
 					const itemsPerCycle = isMultiCycle ? list.length / 3 : list.length;
 					const currentIdx = list.findIndex(r => r.key === current.key && (isMultiCycle ? r.year === current.year : true));
 
-					const cycleOffset = isMultiCycle ? Math.floor(currentIdx / itemsPerCycle) * itemsPerCycle : 0;
+					if (currentIdx === -1 || itemsPerCycle <= 0) throw new RangeError(`Term index out of range: ${tempo} for ${term}`);
+
+					const cycleOffset = Math.floor(currentIdx / itemsPerCycle) * itemsPerCycle;
 					const targetIdx = cycleOffset + (Number(tempo) - 1);
 					const item = list[targetIdx];
 
@@ -78,10 +82,6 @@ const ParseEngine = {
 				}
 			}
 
-			const isAnchored = isDefined(dateTime) || isDefined(state.anchor);
-			const resolvingKeys = new Set<string>();
-			const res = ParseEngine.conform.call(this, tempo, today, isAnchored, resolvingKeys);
-
 			if (isString(tempo) && tempo.startsWith('#')) {
 				const res = resolveTermValue(TempoClass, this, tempo, today);
 				if (isZonedDateTime(res)) return res;
@@ -98,6 +98,10 @@ const ParseEngine = {
 				(TempoClass as any)[sym.$termError](state.config, Object.keys(tempo).find(k => k.startsWith('#'))!);
 				return undefined as any;
 			}
+
+			const isAnchored = isDefined(dateTime) || isDefined(state.anchor);
+			const resolvingKeys = new Set<string>();
+			const res = ParseEngine.conform.call(this, tempo, today, isAnchored, resolvingKeys);
 
 			const { timeZone: tz2, calendar: cal2 } = state.config;
 			const targetTz = isString(tz2) ? tz2 : (tz2 as any).id ?? (tz2 as any).timeZoneId;
@@ -281,7 +285,7 @@ const ParseEngine = {
 	},
 
 	/** apply a regex-match against a value, and clean the result */
-	parseMatch(this: any, pat: RegExp, value: string | number | (() => string)) {
+	parseMatch(this: any, pat: RegExp, value: string | number) {
 		const groups = value.toString().match(pat)?.groups || {}
 
 		ownEntries(groups)

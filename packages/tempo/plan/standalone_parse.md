@@ -42,7 +42,7 @@ To make `ParseEngine.parse` standalone, we would need to:
 graph TD
     A[Smart Lexer] --> B[Stateless Parse Engine]
     B --> C[Standalone parse Function]
-    B --> D[Tempo Class #parse]
+    B --> D[Tempo Class parse]
     C --> E[Temporal.ZonedDateTime]
     D --> F[Tempo Instance]
     G[Guard] --> B
@@ -51,8 +51,8 @@ graph TD
 
 ## 5. Conclusion
 Implementing a standalone `parse` function is **Highly Feasible**. 
-- **Phase 1**: Refactor `ParseEngine` to be stateless (accepting config/state as arguments).
-- **Phase 2**: Export a wrapper `parse()` function from `#tempo/parse`.
-- **Phase 3**: Update `Tempo.class` to delegate its `#parse` logic to this shared stateless engine.
+- Refactoring the `ParseEngine` to be stateless (accepting config/state as arguments) is the first step toward decoupling the parser.
+- A wrapper `parse()` function will then be exported from `#tempo/parse` to provide a dedicated standalone entry point.
+- Finally, `Tempo.class` will be updated to delegate its internal `#parse` logic to this shared stateless engine.
 
 This would allow Tempo to serve as a high-performance "Natural Language to Temporal" parser for users who prefer the native Temporal API but want the "Slick" parsing capabilities of Tempo.

@@ -8,14 +8,36 @@ import { withBase } from 'vitepress'
 
 const logoUrl = withBase('/logo.svg')
 const getStartedUrl = withBase('/README')
+
+// --- Clock State ---
 const hDeg = ref(0)
 const mDeg = ref(0)
 const sDeg = ref(0)
-const timeStr = ref('')
+const timeStr = ref('Loading...')
 const tzStr = ref('')
+
+// --- Carousel State ---
+const activeIndex = ref(0)
+const isPaused = ref(false)
+const transitionEnabled = ref(true)
+
+const features = [
+  { title: 'Zero-Cost', details: 'Lazy evaluation and smart matching ensure instantiation overhead is near-zero.', icon: '⚡' },
+  { title: '#friday.last', details: 'Natural language parsing for business cycles. Resolve complex terms with zero configuration.', icon: '🎯' },
+  { title: 'Cycle Persistence', details: 'Shift by semantic terms while preserving your relative day-of-period offset.', icon: '🔄' },
+  { title: 'Tempo.ticker()', details: 'State-of-the-art timing engine with AsyncGenerator support and auto-adjusting TimeZones.', icon: '⏱️' },
+  { title: 'Temporal Inside', details: 'Built on the ECMAScript Temporal API. Inherit the reliability of the future standard.', icon: '🏗️' },
+  { title: 'Monorepo Resilient', details: 'Built for stability in complex environments with proxy-protected registries.', icon: '🛡️' },
+  { title: 'Tree-Shakable', details: 'Keep your bundle light. Only import the modules you need—from Fiscal calendars to Tickers.', icon: '📦' },
+  { title: 'Business Aware', details: 'Native support for fiscal quarters, years, and seasons. Perfect for financial applications.', icon: '📈' }
+]
+
+// 8 features + 3 clones for a seamless 3-card viewport
+const displayFeatures = [...features, ...features.slice(0, 3)]
 
 let isMounted = false
 let ticker = null
+let carouselTimer = null
 
 function updateHands(h24, m, s) {
   const h = h24 % 12
@@ -24,37 +46,105 @@ function updateHands(h24, m, s) {
   sDeg.value = (s / 60) * 360
 }
 
-onMounted(async () => {
+// One-time library setup
+const initPromise = (async () => {
+  try {
+    // HMR Safeguard for development only (stripped in production)
+    let registry, originalHas
+    if (import.meta.env.DEV) {
+      const registryKey = Symbol.for('$LibrarySerializerRegistry')
+      registry = globalThis[registryKey] ??= new Map()
+      originalHas = registry.has
+      registry.has = () => false
+    }
+
+    const [{ Tempo }, { TickerModule }] = await Promise.all([
+      import('@magmacomputing/tempo'),
+      import('@magmacomputing/tempo/ticker'),
+    ])
+
+    if (import.meta.env.DEV) registry.has = originalHas
+    
+    Tempo.init()
+    if (!Tempo.ticker) Tempo.extend(TickerModule)
+    
+    return Tempo
+  } catch (e) {
+    console.error('Tempo failed to initialize:', e)
+    throw e
+  }
+})()
+
+async function startTicker() {
+  try {
+    const Tempo = await initPromise
+    if (!isMounted) return
+    
+    ticker?.stop()
+    
+    const sync = (t) => {
+      const dt = t.toDateTime()
+      updateHands(dt.hour, dt.minute, dt.second)
+      timeStr.value = t.format('{www}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
+      tzStr.value = t.tz
+    }
+
+    sync(new Tempo())
+    ticker = Tempo.ticker({ seconds: 1 }, sync)
+  } catch (e) {
+    timeStr.value = `Error: ${e.message || 'Unknown'}`
+    const fallback = () => {
+      const d = new Date()
+      updateHands(d.getHours(), d.getMinutes(), d.getSeconds())
+      timeStr.value = `Fallback: ${d.toLocaleTimeString()} (${e.message})`
+      tzStr.value = Intl.DateTimeFormat().resolvedOptions().timeZone
+    }
+    fallback()
+    setInterval(fallback, 1000)
+  }
+}
+
+function startCarousel() {
+  if (carouselTimer) clearInterval(carouselTimer)
+  carouselTimer = setInterval(() => {
+    if (!isPaused.value) {
+      activeIndex.value++
+      // Seamless loop: if we hit the start of the clones, wait for slide then snap
+      if (activeIndex.value >= features.length) {
+        setTimeout(() => {
+          if (!isMounted) return
+          transitionEnabled.value = false
+          activeIndex.value = 0
+          setTimeout(() => { transitionEnabled.value = true }, 50)
+        }, 850)
+      }
+    }
+  }, 4000)
+}
+
+function handleVisibility() {
+  if (document.visibilityState === 'visible') {
+    startTicker()
+    startCarousel()
+  } else {
+    ticker?.stop()
+    clearInterval(carouselTimer)
+    carouselTimer = null
+  }
+}
+
+onMounted(() => {
   isMounted = true
-
-  // Dynamically import Tempo + TickerModule
-  const [{ Tempo }, { TickerModule }] = await Promise.all([
-    import('@magmacomputing/tempo'),
-    import('@magmacomputing/tempo/ticker'),
-  ])
-
-  if (!isMounted) return
-
-  Tempo.extend(TickerModule)
-
-  // Initial update
-  const now = new Tempo()
-  updateHands(now.hh, now.mi, now.ss)
-  timeStr.value = now.format('{www}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
-  tzStr.value = now.tz
-
-  // Continuous ticker
-  ticker = Tempo.ticker({ seconds: 1 }, (t) => {
-    updateHands(t.hh, t.mi, t.ss)
-    timeStr.value = t.format('{www}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
-    tzStr.value = t.tz
-  })
+  startTicker()
+  startCarousel()
+  document.addEventListener('visibilitychange', handleVisibility)
 })
 
 onUnmounted(() => {
   isMounted = false
   ticker?.stop()
-  ticker = null
+  clearInterval(carouselTimer)
+  document.removeEventListener('visibilitychange', handleVisibility)
 })
 </script>
 
@@ -102,18 +192,23 @@ onUnmounted(() => {
   </div>
 </div>
 
-<div class="tempo-features">
-  <div class="tempo-feature-card">
-    <h3 class="tempo-feature-title">Zero-Cost Constructor</h3>
-    <p class="tempo-feature-details">Lazy evaluation and smart matching ensure instantiation overhead is near-zero, even with massive plugin lists.</p>
-  </div>
-  <div class="tempo-feature-card">
-    <h3 class="tempo-feature-title">Relational Math</h3>
-    <p class="tempo-feature-details">Shift by semantic terms (Quarters, Seasons, Periods) while preserving your relative cycle offset.</p>
-  </div>
-  <div class="tempo-feature-card">
-    <h3 class="tempo-feature-title">Hardened & Modular</h3>
-    <p class="tempo-feature-details">Built for resilience in complex monorepos with proxy-protected registries and decoupled diagnostics.</p>
+<div class="tempo-carousel-container" 
+     @mouseenter="isPaused = true" 
+     @mouseleave="isPaused = false">
+  <div class="tempo-carousel-track" 
+       :style="{ 
+         transform: `translateX(-${activeIndex * (100 / displayFeatures.length)}%)`,
+         transition: transitionEnabled ? 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
+       }">
+    <div v-for="(feat, i) in displayFeatures" 
+         :key="i" 
+         class="tempo-feature-card">
+      <div class="tempo-feature-content">
+        <div class="tempo-feature-icon">{{ feat.icon }}</div>
+        <h3 class="tempo-feature-title">{{ feat.title }}</h3>
+        <p class="tempo-feature-details">{{ feat.details }}</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -273,38 +368,47 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-.tempo-features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
-  padding: 64px 24px;
+.tempo-carousel-container {
+  overflow: hidden;
+  padding: 60px 24px;
   max-width: 1152px;
   margin: 0 auto;
 }
 
+.tempo-carousel-track {
+  display: flex;
+  width: 366.66%; /* (8 + 3) / 3 * 100% */
+}
+
 .tempo-feature-card {
-  background-color: var(--vp-c-bg-soft);
+  flex: 0 0 calc(100% / 11);
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.tempo-feature-content {
   padding: 24px;
+  height: 100%;
+  background-color: var(--vp-c-bg-soft);
   border-radius: 12px;
   border: 1px solid var(--vp-c-border);
-  transition: border-color 0.25s, background-color 0.25s;
+  transition: all 0.3s ease;
+  cursor: default;
+  position: relative;
 }
 
-.tempo-feature-card:hover {
+.tempo-feature-content:hover {
   border-color: var(--vp-c-brand-1);
+  transform: translateY(-4px);
+  background-color: var(--vp-c-bg-mute);
 }
 
-.tempo-feature-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-  color: var(--vp-c-text-1);
-}
+.tempo-feature-icon { font-size: 2rem; margin-bottom: 12px; }
+.tempo-feature-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--vp-c-brand-1); font-family: ui-monospace, monospace; }
+.tempo-feature-details { font-size: 0.9rem; line-height: 1.5; color: var(--vp-c-text-2); }
 
-.tempo-feature-details {
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--vp-c-text-2);
-  margin: 0;
+@media (max-width: 768px) {
+  .tempo-carousel-track { width: 1100%; }
+  .tempo-feature-card { flex: 0 0 calc(100% / 11); }
 }
 </style>

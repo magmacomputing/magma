@@ -40,10 +40,6 @@ const hasOwn = (obj: object, key: string) => Object.hasOwn(obj, key);
 const isLocal = (shape: { config: { scope: string } }) => shape.config.scope === 'local';
 /** create an object based on a prototype */
 const create = <T extends object>(obj: object, name: string): T => Object.create(proto(obj)[name]);
-/** helper to throw error if MutateModule is missing */
-const throwMutateModuleNotLoaded = () => {
-	throw new Error('Tempo MutateModule not loaded. Did you forget to Tempo.extend(MutateModule)?');
-};
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 namespace Internal {
 	export type State = t.Internal.State;
@@ -235,7 +231,7 @@ export class Tempo {
 				const swap1 = (idx1 < idx2) && shape.parse.isMonthDay;	// we prefer {mdy} and the 1st tuple was found earlier than the 2nd
 				const swap2 = (idx1 > idx2) && !shape.parse.isMonthDay;	// we dont prefer {mdy} and the 1st tuple was found later than the 2nd
 
-				if (swap1 || swap2) {															// since {layouts} is an array, ok to swap by-reference
+				if (swap1 || swap2) {																// since {layouts} is an array, ok to swap by-reference
 					[layouts[idx1], layouts[idx2]] = [layouts[idx2], layouts[idx1]];
 					chg = true;
 				}
@@ -245,22 +241,20 @@ export class Tempo {
 			shape.parse.layout = Object.fromEntries(layouts) as Layout;	// rebuild Layout in new parse order
 	}
 
-	// Modular parsing helpers moved to #tempo/plugin/module/lexer.ts
-
 	/** get first Canonical name of a supplied locale */
 	static #locale = (locale?: string) => {
 		let language: string | undefined;
 
-		try {																									// lookup locale
+		try {																										// lookup locale
 			language = canonicalLocale(locale!);
-		} catch (error) { }																		// catch unknown locale
+		} catch (error) { }																			// catch unknown locale
 
 		const global = Context.global;
 
 		return language ??
 			global?.navigator?.languages?.[0] ??									// fallback to current first navigator.languages[]
 			global?.navigator?.language ??												// else navigator.language
-			Default.locale ??																		// else default locale
+			Default.locale ??																			// else default locale
 			locale																								// cannot determine locale
 	}
 
@@ -967,31 +961,20 @@ export class Tempo {
 	/** constructor tempo */																	#tempo?: t.DateTime;
 	/** constructor options */																#options = {} as t.Options;
 	/** instantiation Temporal Instant */											#now: Temporal.Instant;
-	/** underlying Temporal ZonedDateTime */									#zdt_!: Temporal.ZonedDateTime;
-	/** indicator that the instance failed to parse */				#errored_ = false;
-	/** temporary anchor used during parsing */								#anchor_: Temporal.ZonedDateTime | undefined;
-	/** prebuilt formats, for convenience */									#fmt_!: any;
-	/** mapping of terms to their resolved values */					#term_!: any;
-	/** a collection of parse rule-matches */									#matches_: Internal.Match[] | undefined;
-	/** current parsing depth to manage state isolation */		#parseDepth_ = 0;
-	/** current mutation depth to manage infinite recursion */#mutateDepth_ = 0;
+	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
+	/** indicator that the instance failed to parse */				#errored = false;
+	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
+	/** prebuilt formats, for convenience */									#fmt!: any;
+	/** mapping of terms to their resolved values */					#term!: any;
+	/** a collection of parse rule-matches */									#matches: Internal.Match[] | undefined;
+	/** current parsing depth to manage state isolation */		#parseDepth = 0;
+	/** current mutation depth to manage infinite recursion */#mutateDepth = 0;
 	/** instance values to complement static values */				#local = {
 		/** instance configuration */															config: { [lib.$Logify]: true } as unknown as Internal.Config,
 		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.Match[] } as Internal.Parse
 	} as Internal.State;
 
-	get #zdt(): Temporal.ZonedDateTime { return this.#zdt_ as Temporal.ZonedDateTime }
-	set #zdt(val: Temporal.ZonedDateTime) { this.#zdt_ = val }
-	get #errored(): boolean { return this.#errored_ }
-	set #errored(val: boolean) { this.#errored_ = val }
-	get #parseDepth(): number { return this.#parseDepth_ ?? 0 }
-	set #parseDepth(val: number) { this.#parseDepth_ = val }
-	get #mutateDepth(): number { return this.#mutateDepth_ ?? 0 }
-	set #mutateDepth(val: number) { this.#mutateDepth_ = val }
-	get #matches(): Internal.Match[] | undefined { return this.#matches_ }
-	set #matches(val: Internal.Match[] | undefined) { this.#matches_ = val }
-	get #anchor(): Temporal.ZonedDateTime | undefined { return this.#anchor_ }
-	set #anchor(val: Temporal.ZonedDateTime | undefined) { this.#anchor_ = val }
+
 
 	/** @internal internal key for signaling pre-errored state in constructor */
 	static [sym.$errored] = sym.$errored;
@@ -1050,7 +1033,7 @@ export class Tempo {
 
 	/** iterate over instance formats */
 	[Symbol.iterator]() {
-		return ownEntries(this.#fmt_, true)[Symbol.iterator]();	// instance Iterator over tuple of FormatType[]
+		return ownEntries(this.#fmt, true)[Symbol.iterator]();	// instance Iterator over tuple of FormatType[]
 	}
 
 	get [Symbol.toStringTag]() {															// default string description
@@ -1087,8 +1070,8 @@ export class Tempo {
 			this.#local.parse.lazy = true;												// auto-switch to lazy-mode for valid strings
 		}
 
-		this.#fmt_ = this.#setDelegator('fmt');									// initialize the format-delegator
-		this.#term_ = this.#setDelegator('term');								// initialize the term-delegator
+		this.#fmt = this.#setDelegator('fmt');									// initialize the format-delegator
+		this.#term = this.#setDelegator('term');								// initialize the term-delegator
 		this.#anchor = this.#options.anchor;
 
 		if ((this.#options as any)[sym.$errored]) this.#errored = true;
@@ -1317,8 +1300,8 @@ export class Tempo {
 		return this.#local.parse;
 	}
 
-	/** Keyed results for all resolved terms */ get term() { return this.#term_ }
-	/** Formatted results for all pre-defined format codes */ get fmt() { return this.#fmt_ }
+	/** Keyed results for all resolved terms */ get term() { return this.#term }
+	/** Formatted results for all pre-defined format codes */ get fmt() { return this.#fmt }
 	/** units since epoch */																	get epoch() {
 		return secure({
 			/** seconds since epoch */														ss: Math.trunc(this.toDateTime().epochMilliseconds / 1_000),
@@ -1352,8 +1335,8 @@ export class Tempo {
 		return interpret(this, 'DurationModule', undefined, false, 'since', arg0, arg1);
 	}
 
-	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'add', false, tempo, options); }
-	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'set', false, tempo, options); }
+	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'add', false, tempo, options) ?? this; }
+	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this; }
 	/** returns a clone of the current `Tempo` instance. */		clone() { return new this.#Tempo(this, this.config) }
 
 	/** returns the underlying Temporal.ZonedDateTime */
@@ -1397,7 +1380,16 @@ export class Tempo {
 
 	/** parse DateTime input */
 	#parse(tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {
-		return interpret(this, 'ParseModule', 'parse', true, tempo, dateTime, term) ?? this.#fallbackParse(tempo, dateTime, term);
+		if (!ensureModule(this, 'ParseModule', true)) return this.#fallbackParse(tempo, dateTime, term);
+
+		const res = interpret(this, 'ParseModule', 'parse', false, tempo, dateTime, term);
+		if (isUndefined(res)) {
+			const msg = `Tempo: ParseModule error. Could not parse ${String(tempo)}`;
+			Tempo.#dbg.error(this.#local.config, msg);
+			if (this.#local.config.catch !== true) throw new Error(msg);
+			return undefined as any;
+		}
+		return res;
 	}
 
 	#fallbackParse(tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {

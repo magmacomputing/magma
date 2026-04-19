@@ -24,11 +24,10 @@
   "type": "module",
   "sideEffects": [
     "**/temporal.polyfill.js",
-    "**/module.parse.js",
-    "**/module.mutate.js",
+    "**/*-polyfill.ts",
+    "**/module.*.js",
+    "**/module.*.ts",
     "**/tempo.index.js",
-    "**/*.polyfill.ts",
-    "**/*.module.ts",
     "src/tempo.index.ts"
   ],
   "main": "dist/tempo.index.js",
@@ -146,6 +145,11 @@
       "types": "./dist/plugin/module/module.mutate.d.ts",
       "import": "./dist/plugin/module/module.mutate.js"
     },
+    "./parse": {
+      "types": "./dist/plugin/module/module.parse.d.ts",
+      "development": "./src/plugin/module/module.parse.ts",
+      "default": "./dist/plugin/module/module.parse.js"
+    },
     "./library": {
       "types": "./dist/library.index.d.ts",
       "import": "./dist/library.index.js"
@@ -158,7 +162,10 @@
       "types": "./dist/plugin/term/term.index.d.ts",
       "import": "./dist/plugin/term/term.index.js"
     },
-    "./bundle": "./dist/tempo.bundle.js"
+    "./bundle": {
+      "types": "./dist/tempo.index.d.ts",
+      "import": "./dist/tempo.bundle.js"
+    }
   },
   "scripts": {
     "test": "vitest run",

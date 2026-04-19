@@ -30,6 +30,11 @@ Snippets represent specific date or time units. When arranged in a layout, they 
 | `{unt}` | Time units | `year(s)`, `day(s)`, etc. |
 | `{evt}` | Event alias | `xmas`, `nye`, etc. |
 | `{per}` | Period alias | `midnight`, `noon`, etc. |
+| `{sfx}` | Time-pattern suffix | `T {tm} Z` |
+| `{brk}` | Zone/Calendar brackets | `[UTC][u-ca=iso8601]` |
+| `{www}` | Short weekday name | `Mon`, `Tue`, etc. |
+| `{nbr}` | Numeric value or word | `1`, `two`, etc. |
+| `{afx}` | Relative affix | `ago`, `hence`, `from now` |
 
 ### Composite Snippets
 

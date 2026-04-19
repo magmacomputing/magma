@@ -153,12 +153,20 @@ export const DurationModule: Tempo.Module = defineModule({
 	name: 'duration',
 	install(this: Tempo, TempoClass: typeof Tempo) {
 		// 1. Register logic in the global interpreter registry
-		const modules = (globalThis as any)[sym.$modules] ?? {};
+		const modules = (globalThis as any)[sym.$modules] ??= {};
 		if (isUndefined(modules['DurationModule'])) {
 			modules['DurationModule'] = duration;
 		}
 
 		// 2. Inject the static helper
-		(TempoClass as any).duration = (input: any) => interpret(TempoClass, 'DurationModule', 'toDuration', false, input);
+		(TempoClass as any).duration = function (this: typeof Tempo, input: any) {
+			try {
+				return interpret(this, 'DurationModule', 'toDuration', false, input);
+			} catch (e) {
+				// if the static call fails, fallback to an instance-context call to provide
+				// the helpful "module not loaded" diagnostic consistent with instance UX.
+				return (new this() as any).duration(input);
+			}
+		};
 	}
 });

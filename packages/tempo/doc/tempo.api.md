@@ -24,7 +24,6 @@ You can instantiate `Tempo` in several ways:
 - **`BigInt`**: Unix timestamps in nanoseconds.
 - **`Date`**: Standard JavaScript `Date` object.
 - **`Tempo`**: Clones another Tempo instance.
-- **`Function`**: A dynamic resolver (max depth 5).
 - **`Temporal.*`**: Any native Temporal object (ZonedDateTime, PlainDate, etc.).
 
 ---

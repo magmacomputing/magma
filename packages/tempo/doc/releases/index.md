@@ -8,7 +8,7 @@ Explore the evolution of Tempo through its version history.
 
 ---
 
-### Release Strategy
+## Release Strategy
 Tempo follows [Semantic Versioning](https://semver.org/).
 - **Major**: Breaking changes and architectural shifts.
 - **Minor**: New features and significant enhancements.
