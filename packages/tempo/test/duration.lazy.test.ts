@@ -7,7 +7,7 @@ describe('Tempo.duration() (Core)', () => {
 	it('should throw "plugin not loaded" by default', () => {
 		const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
 		const t = new Tempo('2024-01-01');
-		expect(() => t.until('2024-01-02')).toThrow(/Tempo: DurationModule module not loaded/);
+		expect(() => t.until('2024-01-02')).toThrow(/Tempo: DurationModule not loaded/);
 		expect(spy).toHaveBeenCalled();
 	});
 
