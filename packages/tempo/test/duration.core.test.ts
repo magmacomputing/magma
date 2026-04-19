@@ -1,17 +1,21 @@
 import { Tempo } from '#tempo/core';
-import sym from '#tempo/tempo.symbol.js';
+import { getRuntime } from '#tempo/tempo.runtime.js';
 
-let originalReset: Set<any>;
+// Preserve the existing reset hooks and give this test suite a clean slate.
+// Using the runtime API instead of the legacy globalThis[sym.$reset] slot.
+const savedHooks: Array<() => void> = [];
 
 beforeAll(() => {
-	// Preserve original reset hooks and provide a clean slate for this core test
-	originalReset = (globalThis as any)[sym.$reset];
-	(globalThis as any)[sym.$reset] = new Set();
+	const hooks = getRuntime().resetHooks;
+	hooks.forEach(h => savedHooks.push(h));
+	hooks.clear();
 });
 
 afterAll(() => {
 	// Restore original state to avoid polluting other tests
-	(globalThis as any)[sym.$reset] = originalReset;
+	const hooks = getRuntime().resetHooks;
+	hooks.clear();
+	savedHooks.forEach(h => hooks.add(h));
 });
 
 describe('Tempo.duration() (Core)', () => {

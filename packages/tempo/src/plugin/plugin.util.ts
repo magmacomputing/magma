@@ -7,7 +7,8 @@ import lib from '#library/symbol.library.js';
 import { REGISTRY, _INTERNAL_REGISTRY, _MODULES } from '../tempo.register.js';
 
 import { SCHEMA, getLargestUnit } from '../tempo.util.js';
-import { sym, isTempo } from '../tempo.symbol.js';
+import sym, { isTempo } from '../tempo.symbol.js';
+import { getRuntime } from '../tempo.runtime.js';
 import type { Tempo } from '../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange, Plugin } from './plugin.type.js';
 
@@ -52,23 +53,23 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
 	const hostLogic = (REGISTRY.modules as any)[module];
 
 	// 2. Resolve the specific logic (either the module itself or a sub-method)
-		const logic = isString(methodOrFallback) ? hostLogic[methodOrFallback] : hostLogic;
+	const logic = isString(methodOrFallback) ? hostLogic[methodOrFallback] : hostLogic;
 
-		// 3. Logic Not Found or Not a Function
-		if (!isFunction(logic)) {
-			// Fallback to calling the function if provided
-			if (isFunction(methodOrFallback)) return methodOrFallback.apply(t, args);
+	// 3. Logic Not Found or Not a Function
+	if (!isFunction(logic)) {
+		// Fallback to calling the function if provided
+		if (isFunction(methodOrFallback)) return methodOrFallback.apply(t, args);
 
-			// Special case: if hostLogic is an object and the first arg is a valid method name
-			if (isObject(hostLogic) && isString(args[0]) && isFunction((hostLogic as any)[args[0]])) {
-				const method = args.shift();
-				return (hostLogic as any)[method].apply(t, args);
-			}
-
-			const msg = `Tempo: ${module} method '${String(methodOrFallback)}' not found`;
-			if (isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
-			throw new Error(msg);
+		// Special case: if hostLogic is an object and the first arg is a valid method name
+		if (isObject(hostLogic) && isString(args[0]) && isFunction((hostLogic as any)[args[0]])) {
+			const method = args.shift();
+			return (hostLogic as any)[method].apply(t, args);
 		}
+
+		const msg = `Tempo: ${module} method '${String(methodOrFallback)}' not found`;
+		if (isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
+		throw new Error(msg);
+	}
 
 	// 4. Execute the logic
 	return logic.apply(t, args);
@@ -446,21 +447,16 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
  * Registration hook for Term plugins.
  */
 export function registerTerm(term: TermPlugin) {
-	const db = (globalThis as any)[sym.$Plugins] ??= secureRef({
-		terms: [] as TermPlugin[],
-		plugins: [] as Plugin[]
-	});
-	db.terms ??= secureRef([] as TermPlugin[]);
+	const rt = getRuntime();
 
-	if (!db.terms.some((t: any) => t.key === term.key)) {
-		db.terms.push(term);
-	}
+	// Validate and persist in the runtime's discovery database.
+	rt.addTerm(term);
 
 	if (!REGISTRY.terms.find((t: TermPlugin) => t.key === term.key)) {
 		REGISTRY.terms.push(term);
 	}
 
-	(globalThis as any)[sym.$Register]?.(term);
+	rt.fireRegisterHook(term);
 }
 
 /**
@@ -468,21 +464,16 @@ export function registerTerm(term: TermPlugin) {
  * Registration hook for general plugins.
  */
 export function registerPlugin(plugin: any) {
-	const db = (globalThis as any)[sym.$Plugins] ??= secureRef({
-		terms: [] as TermPlugin[],
-		plugins: [] as Plugin[]
-	});
-	db.plugins ??= secureRef([] as Plugin[]);
+	const rt = getRuntime();
 
-	if (!db.plugins.includes(plugin)) {
-		db.plugins.push(plugin);
-	}
+	// Validate and persist in the runtime's discovery database.
+	rt.addPlugin(plugin);
 
 	if (!REGISTRY.extends.includes(plugin)) {
 		REGISTRY.extends.push(plugin);
 	}
 
-	(globalThis as any)[sym.$Register]?.(plugin);
+	rt.fireRegisterHook(plugin);
 
 	return plugin;
 }
