@@ -1,5 +1,5 @@
 import { isNumeric } from '#library/coercion.library.js';
-import { Match } from '../../tempo.default.js';
+import { Match } from '../../support/tempo.default.js';
 import { TemporalObject, TypeValue, isInstant, isZonedDateTime, isPlainDate, isPlainDateTime, isTempo } from '#library/type.library.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 

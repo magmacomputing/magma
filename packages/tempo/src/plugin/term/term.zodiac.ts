@@ -1,5 +1,5 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../term.util.js';
-import { type Tempo } from '../../tempo.class.js';
+import { type Tempo } from '../../support/tempo.class.js';
 import { isNumber } from '#library/type.library.js';
 
 /** definition of astrological zodiac ranges */

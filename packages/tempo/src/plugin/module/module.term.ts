@@ -2,9 +2,9 @@ import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
 import { isDefined, isString, isZonedDateTime } from '#library/type.library.js';
 import { isNumeric } from '#library/coercion.library.js';
 
-import sym from '../../tempo.symbol.js';
-import { getSafeFallbackStep } from '../../tempo.util.js';
-import { Match } from '../../tempo.default.js';
+import sym from '../../support/tempo.symbol.js';
+import { getSafeFallbackStep } from '../../support/tempo.util.js';
+import { Match } from '../../support/tempo.default.js';
 import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../term.util.js';
 import { parseModifier } from './module.lexer.js';
 

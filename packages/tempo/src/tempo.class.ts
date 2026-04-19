@@ -11,18 +11,18 @@ import { enumify } from '#library/enumerate.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
-import { getType, asType, isEmpty, isNullish, isDefined, isUndefined, isString, isObject, isNumber, isRegExp, isRegExpLike, isIntegerLike, isSymbol, isFunction, isClass, isZonedDateTime, isPlainDate, isPlainTime } from '#library/type.library.js';
+import { getType, asType, isEmpty, isNullish, isDefined, isUndefined, isString, isObject, isRegExp, isRegExpLike, isSymbol, isFunction, isClass, isZonedDateTime } from '#library/type.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import { instant } from '#library/temporal.library.js';
 import type { Property, Secure } from '#library/type.library.js';
 
-import { getRuntime } from './tempo.runtime.js';
-import sym, { isTempo, registerHook } from './tempo.symbol.js';
-import { registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
+import { getRuntime } from './support/tempo.runtime.js';
+import sym, { isTempo } from './support/tempo.symbol.js';
+import { registryUpdate, registryReset, onRegistryReset } from './support/tempo.register.js';
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
-import { Match, Token, Snippet, Layout, Event, Period, Default, Guard } from './tempo.default.js';
-import enums, { STATE, DISCOVERY } from './tempo.enum.js';
+import { Match, Token, Snippet, Layout, Event, Period, Default, Guard } from './support/tempo.default.js';
+import enums, { STATE, DISCOVERY } from './support/tempo.enum.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 const Context = getContext();																// current execution context
@@ -381,7 +381,7 @@ export class Tempo {
 			})
 
 		const isMonthDay = Tempo.#isMonthDay(shape);
-		if (isMonthDay !== proto(shape.parse).isMonthDay)		// this will always set on 'global', conditionally on 'local'
+		if (isMonthDay !== proto(shape.parse).isMonthDay)				// this will always set on 'global', conditionally on 'local'
 			shape.parse.isMonthDay = isMonthDay;
 
 		shape.config.sphere = Tempo.#setSphere(shape, mergedOptions);
@@ -404,12 +404,10 @@ export class Tempo {
 	}
 
 	/** support "Global Discovery" of user-options */
-	static #setDiscovery(shape: Internal.State, key: string | symbol = shape.config.discovery ?? sym.$Tempo) {
-		const sym = isString(key) ? Symbol.for(key) : key;
-		const discovery = (globalThis as Record<symbol, any>)[sym] as Internal.Discovery;
+	static #setDiscovery(shape: Internal.State, discovery?: Internal.Discovery) {
 		if (!isObject(discovery)) return {}
 
-		markConfig(discovery);																// auto-mark the discovery object
+		markConfig(discovery);																	// auto-mark the discovery object
 
 		// 1. Process TimeZones (normalize to lowercase for lookup)
 		if (discovery.timeZones) {
@@ -455,16 +453,16 @@ export class Tempo {
 
 		// ensure we have our own Map to mutate (shadow if local)
 		if (!hasOwn(shape.parse, 'pattern'))
-			shape.parse.pattern = new Map(shape.parse.pattern);							// preserve inherited entries while shadowing
+			shape.parse.pattern = new Map(shape.parse.pattern);		// preserve inherited entries while shadowing
 
-		const layouts = { ...shape.parse.layout };										// shallow-copy to include inherited properties
+		const layouts = { ...shape.parse.layout };							// shallow-copy to include inherited properties
 		for (const [sym, layout] of ownEntries(layouts, true)) {
 			const reg = Tempo.regexp(layout, snippet);
-			shape.parse.pattern.set(sym, reg);											// merge/update compiled RegExp
+			shape.parse.pattern.set((sym as symbol), reg);										// merge/update compiled RegExp
 		}
 
 		if (shape === Tempo.#global)
-			Tempo.#buildGuard();															// build the high-performance 'Master Guard' ONLY for global changes
+			Tempo.#buildGuard();																	// build the high-performance 'Master Guard' ONLY for global changes
 	}
 
 	static #buildGuard() {
@@ -740,11 +738,14 @@ export class Tempo {
 			const discoveryKey = options.discovery ?? Symbol.keyFor(sym.$Tempo) as string;
 			const storeKey = Symbol.keyFor(sym.$Tempo) as string;
 
+			const rt = getRuntime();
+			const userDiscovery = (globalThis as any)[isString(discoveryKey) ? Symbol.for(discoveryKey) : discoveryKey] as Internal.Discovery;
+
 			Tempo.#setConfig(Tempo.#global,
 				{ store: storeKey, discovery: storeKey, scope: 'global' },
 				Tempo.readStore(storeKey),													// allow for storage-values to overwrite
-				Tempo.#setDiscovery(Tempo.#global, sym.$Plugins),		// persistent library extensions
-				Tempo.#setDiscovery(Tempo.#global, discoveryKey),		// user Discovery (Configuration bootstrapping)
+				Tempo.#setDiscovery(Tempo.#global, rt.pluginsDb as any),		// persistent library extensions
+				Tempo.#setDiscovery(Tempo.#global, userDiscovery),		// user Discovery (Configuration bootstrapping)
 				options,																						// explicit options from the call
 			)
 
@@ -950,12 +951,12 @@ export class Tempo {
 
 	static {																									// Static initialization block to sequence the bootstrap phase
 		// Define the reactive register hook
-		registerHook(sym.$Register, (plugin: t.Plugin | t.Plugin[]) => {
+		getRuntime().setHook(sym.$Register, (plugin: t.Plugin | t.Plugin[]) => {
 			if (!Tempo.isExtending) Tempo.extend(plugin)
 		});
 
 		onRegistryReset(() => {
-			(Tempo as any)[sym.$rebuildGuard]();
+			Tempo.#buildGuard();
 		});
 
 		Tempo.init();																						// synchronously initialize the library
@@ -981,10 +982,6 @@ export class Tempo {
 
 	/** @internal internal key for signaling pre-errored state in constructor */
 	static [sym.$errored] = sym.$errored;
-	/** @internal guard against infinite mutation recursion */
-	static [sym.$mutateDepth] = 0;
-	/** @internal hook to re-validate the Master Guard */
-	static [sym.$rebuildGuard]() { Tempo.#buildGuard() }
 
 	/** @internal */	static [sym.$termError](config: Internal.Config, term: string): void {
 		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
@@ -1077,8 +1074,16 @@ export class Tempo {
 		this.#term = this.#setDelegator('term');								// initialize the term-delegator
 		this.#anchor = this.#options.anchor;
 
-		if ((this.#options as any)[sym.$errored]) this.#errored = true;
-		if (isNumber((this.#options as any)[sym.$mutateDepth])) this.#mutateDepth = (this.#options as any)[sym.$mutateDepth];
+		// 🧬 Unified State Hand-off (from clone / mutate)
+		const handoff = (this.#options as any)[sym.$Internal];
+		if (isObject(handoff)) {
+			this.#errored = handoff.errored ?? false;
+			this.#mutateDepth = handoff.mutateDepth ?? 0;
+			this.#parseDepth = handoff.parseDepth ?? 0;
+			this.#matches = handoff.matches;
+		} else if ((this.#options as any)[sym.$errored]) {
+			this.#errored = true;
+		}
 
 		if (!this.#local.parse.lazy) this.#ensureParsed();			// attempt to interpret immediately (if not lazy)
 	}
@@ -1300,7 +1305,12 @@ export class Tempo {
 	/** Instance-specific parse rules (merged with global) */
 	get parse() {
 		this.#ensureParsed();
-		return this.#local.parse;
+		// Return a shadowed view so we can safely inject matches without breaking the freeze on the original state
+		const out = Object.create(this.#local.parse);
+		if (this.#matches !== undefined) {
+			Object.defineProperty(out, 'result', { value: this.#matches, enumerable: true, configurable: true });
+		}
+		return out;
 	}
 
 	/** Keyed results for all resolved terms */ get term() { return this.#term }

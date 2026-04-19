@@ -1,10 +1,5 @@
-import type { TermPlugin, Extension, Plugin } from './plugin/plugin.type.js';
-
-/**
- * The single hardened globalThis bridge symbol for the TempoRuntime singleton.
- * Using a namespaced, versioned key avoids collisions with any other library.
- */
-const BRIDGE = Symbol.for('magmacomputing/tempo/runtime');
+import sym from './tempo.symbol.js';
+import type { TermPlugin, Extension, Plugin } from '../plugin/plugin.type.js';
 
 /**
  * # TempoRuntime
@@ -49,27 +44,26 @@ export class TempoRuntime {
 	 * Kept as a plain object (not a secureRef) so callers can push() into the arrays.
 	 */
 	readonly pluginsDb: { terms: TermPlugin[]; plugins: Plugin[] } = { terms: [], plugins: [] };
+	readonly #hooks: Map<symbol, (val: any) => void> = new Map();
 
-	/** The single reactive registration callback (replaces `globalThis[sym.$Register]`). */
-	#registerHook: ((val: any) => void) | undefined;
 
 	// ─── Register hook ────────────────────────────────────────────────────────
 
-	/**
-	 * Install (or replace) the reactive registration callback.
-	 * Returns the previous callback so callers can chain or restore it.
-	 */
-	setRegisterHook(cb: (val: any) => void): ((val: any) => void) | undefined {
-		if (this.#registerHook !== undefined && this.#registerHook !== cb)
-			console.warn('TempoRuntime: replacing existing register hook');
-		const prev = this.#registerHook;
-		this.#registerHook = cb;
+	/** Set a registration hook for a given symbol. Returns the previous hook. */
+	setHook(sym: symbol, cb: (val: any) => void): ((val: any) => void) | undefined {
+		const prev = this.#hooks.get(sym);
+		this.#hooks.set(sym, cb);
 		return prev;
 	}
 
-	/** Invoke the reactive registration callback (no-op if none is set). */
-	fireRegisterHook(val: any): void {
-		this.#registerHook?.(val);
+	/** Get a registration hook for a given symbol. */
+	getHook(sym: symbol): ((val: any) => void) | undefined {
+		return this.#hooks.get(sym);
+	}
+
+	/** Invoke the hook for a given symbol. */
+	emit(sym: symbol, val: any): void {
+		this.#hooks.get(sym)?.(val);
 	}
 
 	// ─── Validated mutation helpers ───────────────────────────────────────────
@@ -112,38 +106,21 @@ export class TempoRuntime {
  * symbol with a hardened property descriptor (non-enumerable, non-configurable,
  * non-writable).  Subsequent calls — even from other bundle copies — retrieve the same
  * object via `globalThis[BRIDGE]`, preserving the single-source-of-truth guarantee.
- *
- * A non-enumerable getter for the legacy `sym.$Plugins` slot is also installed the first
- * time so that `Tempo.init()` (which reads `globalThis[sym.$Plugins]` to re-apply
- * persistent plugin registrations) continues to find the live `pluginsDb` without any
- * changes to the Tempo class itself.
  */
 export function getRuntime(): TempoRuntime {
-	const existing = (globalThis as any)[BRIDGE];
+	const existing = (globalThis as any)[sym.$Bridge];
 	if (existing instanceof TempoRuntime) return existing;
 
 	const rt = new TempoRuntime();
 
 	// Pin as a single hardened slot: the only thing Tempo puts on globalThis for
 	// its own internal bookkeeping.
-	Object.defineProperty(globalThis, BRIDGE, {
+	Object.defineProperty(globalThis, sym.$Bridge, {
 		value: rt,
 		enumerable: false,
 		configurable: false,
 		writable: false,
 	});
-
-	// Backward-compat: expose pluginsDb via the legacy sym.$Plugins slot so that
-	// code that reads globalThis[Symbol.for('$TempoPlugin')] (e.g. Tempo.init's
-	// #setDiscovery call) still finds the live plugin database.
-	const LEGACY_PLUGINS = Symbol.for('$TempoPlugin');
-	if (!Object.getOwnPropertyDescriptor(globalThis, LEGACY_PLUGINS)) {
-		Object.defineProperty(globalThis, LEGACY_PLUGINS, {
-			get() { return (globalThis as any)[BRIDGE]?.pluginsDb; },
-			enumerable: false,
-			configurable: false,
-		});
-	}
 
 	return rt;
 }

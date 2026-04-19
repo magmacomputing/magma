@@ -4,17 +4,17 @@ import { asArray, asInteger, isNumeric } from '#library/coercion.library.js';
 import { instant } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 
-import type { Tempo } from '../../tempo.class.js';
+import type { Tempo } from '../../support/tempo.class.js';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './module.lexer.js';
-import { _MODULES } from '../../tempo.register.js';
-import sym, { isTempo } from '../../tempo.symbol.js';
-import { Match } from '../../tempo.default.js';
+import { registryUpdate } from '../../support/tempo.register.js';
+import sym, { isTempo } from '../../support/tempo.symbol.js';
+import { Match } from '../../support/tempo.default.js';
 import { resolveTermMutation, resolveTermValue } from './module.term.js';
 import { compose } from './module.composer.js';
 import { defineInterpreterModule } from '../plugin.util.js';
 import { getRange, getTermRange } from '../term.util.js';
-import { getRuntime } from '../../tempo.runtime.js';
-import * as t from '../../tempo.type.js';
+import { getRuntime } from '../../support/tempo.runtime.js';
+import * as t from '../../support/tempo.type.js';
 
 /**
  * Internal Parse Engine Implementation
@@ -78,7 +78,7 @@ const ParseEngine = {
 				if (tempo === term) {
 					const range = termObj.define.call(this, false, today);
 					const list = isUndefined(range) ? [] : asArray(range as t.Range | t.Range[]);
-					const current = (getTermRange(this, list, false, today) as any);
+					const current = getTermRange(this, list, false, today) as t.ResolvedRange | undefined;
 					if (current?.start) return current.start.toDateTime().withTimeZone(tz).withCalendar(cal);
 				}
 			}

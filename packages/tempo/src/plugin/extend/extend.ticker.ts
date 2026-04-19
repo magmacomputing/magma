@@ -4,9 +4,9 @@ import { asArray, isNumeric } from '#library/coercion.library.js'
 import { instant, normaliseFractionalDurations } from '#library/temporal.library.js'
 import { markConfig } from '#library/symbol.library.js'
 
-import { DURATIONS } from '../../tempo.enum.js'
+import { DURATIONS } from '../../support/tempo.enum.js'
 import { defineExtension, attachStatics } from '../plugin.util.js'
-import sym from '../../tempo.symbol.js';
+import sym from '../../support/tempo.symbol.js';
 import type { Tempo } from '../../tempo.class.js'
 import type { TempoType } from '../plugin.type.js'
 

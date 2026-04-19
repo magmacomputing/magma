@@ -5,7 +5,7 @@ import { ifDefined } from '#library/object.library.js';
 import { getRelativeTime } from '#library/international.library.js';
 
 import { defineInterpreterModule, interpret } from '../plugin.util.js';
-import enums from '../../tempo.enum.js';
+import enums from '../../support/tempo.enum.js';
 import type { Tempo } from '../../tempo.class.js';
 
 declare module '../../tempo.class.js' {

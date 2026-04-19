@@ -6,32 +6,11 @@ import lib from '#library/symbol.library.js';
 import type { Property } from '#library/type.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
-import type { TermPlugin, Extension } from './plugin/plugin.type.js';
 
 // Import the live enums and their mutable state from the enum module
 import { STATE, REGISTRIES, DEFAULTS } from './tempo.enum.js';
 
 const rt = getRuntime();
-
-/** @internal storage for plugin/module registry — backed by TempoRuntime */
-const _terms = rt.terms;
-const _extends = rt.extensions;
-const _modules = rt.modules;
-const _installed = rt.installed;
-
-const _REGISTRY = {
-	terms: secureRef(_terms),
-	extends: secureRef(_extends),
-	modules: secureRef(_modules),
-	installed: _installed
-}
-
-/** 
- * # REGISTRY
- * Internal registry for registered components.
- * Closed for modification, Open for extension.
- */
-export const REGISTRY = secureRef(_REGISTRY);
 
 /** @internal Return the runtime's reset-hook set */
 const resetHooks = (): Set<() => void> => rt.resetHooks;
@@ -71,17 +50,11 @@ export function registryReset() {
 		clearCache(state);
 	});
 
-	// 3. Clear all plugin/module storage via raw targets
-	const internal = (_REGISTRY as any);
-	const terms = internal.terms[lib.$Target] ?? internal.terms;
-	const extensions = internal.extends[lib.$Target] ?? internal.extends;
-	const modules = internal.modules[lib.$Target] ?? internal.modules;
+	rt.terms.length = 0;
+	rt.extensions.length = 0;
 
-	terms.length = 0;
-	extensions.length = 0;
-	
-	for (const key in modules) delete modules[key];
-	internal.installed.clear();
+	for (const key in rt.modules) delete rt.modules[key];
+	rt.installed.clear();
 
 	// Trigger all registered reset hooks
 	const hooks = resetHooks();
@@ -111,10 +84,3 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 	clearCache(target);
 }
 
-/** 
- * @internal raw access to registry for core operations 
- * Only use this within the core library.
- */
-export const _INTERNAL_REGISTRY = _REGISTRY;
-/** @internal raw access to module storage */
-export const _MODULES = _modules;

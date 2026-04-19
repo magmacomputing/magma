@@ -1,9 +1,8 @@
 import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from '#library/type.library.js';
 import { secureRef } from '#library/proxy.library.js';
-import lib from '#library/symbol.library.js';
 
-import sym from '../tempo.symbol.js';
-import { getRuntime } from '../tempo.runtime.js';
+import sym from '../support/tempo.symbol.js';
+import { getRuntime } from '../support/tempo.runtime.js';
 import type { Tempo } from '../tempo.class.js';
 import type { Plugin } from './plugin.type.js';
 
@@ -162,7 +161,7 @@ export function registerPlugin(plugin: any) {
 		rt.extensions.push(plugin);
 	}
 
-	rt.fireRegisterHook(plugin);
+	rt.emit(sym.$Register, plugin);
 
 	return plugin;
 }

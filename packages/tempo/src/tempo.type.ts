@@ -243,9 +243,8 @@ export namespace Internal {
 		/** pre-defined config options for Tempo.#global */			options?: Options | (() => Options);
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
+		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
-		/** term plugins to be registered via Tempo.addTerm() */term?: TermPlugin | TermPlugin[];
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: Plugin | Plugin[];
-		/** @deprecated use term instead */											terms?: TermPlugin | TermPlugin[];
 	}
 }

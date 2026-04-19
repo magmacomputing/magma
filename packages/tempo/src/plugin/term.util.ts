@@ -2,9 +2,9 @@ import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
 import { isDefined, isFunction, isString, isUndefined, isNumber, isObject, isEmpty } from '#library/type.library.js';
 import { secure } from '#library/utility.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
-import { SCHEMA, getLargestUnit } from '../tempo.util.js';
-import sym, { isTempo } from '../tempo.symbol.js';
-import { getRuntime } from '../tempo.runtime.js';
+import { SCHEMA, getLargestUnit } from '../support/tempo.util.js';
+import sym, { isTempo } from '../support/tempo.symbol.js';
+import { getRuntime } from '../support/tempo.runtime.js';
 import type { Tempo } from '../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange } from './plugin.type.js';
 import { getHost } from './plugin.util.js';
@@ -347,5 +347,5 @@ export function registerTerm(term: TermPlugin) {
 		rt.terms.push(term);
 	}
 
-	rt.fireRegisterHook(term);
+	rt.emit(sym.$Register, term);
 }

@@ -1,8 +1,7 @@
 import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/type.library.js';
 import { singular } from '#library/string.library.js';
-import sym from '../../tempo.symbol.js';
-import enums from '../../tempo.enum.js';
-import { _MODULES } from '../../tempo.register.js';
+import sym from '../../support/tempo.symbol.js';
+import enums from '../../support/tempo.enum.js';
 import { defineInterpreterModule } from '../plugin.util.js';
 import { findTermPlugin } from '../term.util.js';
 import { resolveTermMutation } from './module.term.js';
@@ -171,17 +170,17 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 			else {
 				// 3. Return a new instance with the final state
 				// @ts-ignore - access to private constructor/state
-				return new (this.constructor as any)(args, { ...state.options, ...this.config, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored, [sym.$mutateDepth]: state.mutateDepth });
+				return new (this.constructor as any)(args, { ...state.options, ...this.config, ...options, anchor: zdt, [sym.$Internal]: state });
 			}
 		}
 
 		if (state.errored) {
 			// @ts-ignore - access to private constructor fallback
-			return new (this.constructor as any)(null, { ...state.options, ...overrides, ...options, result: state.matches, [sym.$errored]: true, [sym.$mutateDepth]: state.mutateDepth });
+			return new (this.constructor as any)(null, { ...state.options, ...overrides, ...options, [sym.$Internal]: state });
 		}
 
 		// @ts-ignore
-		return new (this.constructor as any)(zdt, { ...state.options, ...overrides, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored, [sym.$mutateDepth]: state.mutateDepth });
+		return new (this.constructor as any)(zdt, { ...state.options, ...overrides, ...options, anchor: zdt, [sym.$Internal]: state });
 
 	} finally {
 		if (isRoot) state.matches = undefined;
