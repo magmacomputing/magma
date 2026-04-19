@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.4] - 2026-04-19
+
+### Fixed
+- **Ticker Redefinition**: Added safety guards to `TickerModule.install` to prevent `TypeError: Cannot redefine property: ticker` when extending an already-initialized or `@Immutable` class.
+- **Granular ESM Resolution**: Bundled `tslib` into granular ESM distribution files to resolve browser-side "Failed to resolve module specifier" errors.
+- **Documentation Build**: Resolved dead links in `Tempo.md` to ensure successful VitePress production builds.
+- **Verification Dashboard**: Synchronized the browser verification dashboard with current build artifacts and updated to `v2.2.4`.
+
+## [2.2.3] - 2026-04-19
+
+### Added
+- **Dual-Bundle Strategy**: Modernized the Rollup configuration to produce both a "batteries-included" ESM bundle (`tempo.bundle.esm.js`) and a classic IIFE bundle (`tempo.bundle.js`).
+- **Global Export Map**: Added `./bundle` (ESM) and `./global` (IIFE) export mappings to `package.json` for better consumer clarity.
+
+### Changed
+- **Parsing Priority**: Reordered `ParseEngine.result` validation to ensure `isTempo` instances are converted to `Temporal.ZonedDateTime` before primitive-type validation occurs.
+- **Registry Error Hints**: Improved module-resolution error messages to suggest cleaner import specifiers (e.g., `#tempo/parse` instead of `#tempo/parsemodule`).
+
+### Fixed
+- **Version Synchronization**: Unified versions across the monorepo root, `tempo`, and `library` packages.
+- **Test Infrastructure**: Updated `vitest.workspace.ts` and library configurations to use the renamed `temporal-polyfill.ts` setup file.
+
 ## [2.2.1] - 2026-04-17
 
 ### Added
