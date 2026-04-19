@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.3] - 2026-04-20
+
+### Added
+- **Modular Parse Engine**: Successfully decoupled internal parsing logic into `ParseModule`, enabling standalone parsing support and reducing core class complexity.
+- **Carousel Accessibility**: Added ARIA roles, labels, and keyboard controls (Arrow keys) to the documentation carousel to improve screen reader and keyboard user experience.
+- **Layout Snippets**: Introduced layout patterns with snippet-based customization for more flexible date formatting.
+
+### Changed
+- **HMR Resilience**: Hardened the development-mode registry workaround by binding the original `Map.has` method and moving extension registration before class initialization, resolving "read only property" errors during hot reloads.
+- **Modular Registration**: Enforced standard `defineInterpreterModule` clash guards for all core modules (Parse, Mutate, Duration) to prevent registry collisions.
+
+### Fixed
+- **Resource Management**: Fixed interval leaks in the documentation clock by implementing proper cleanup for the fallback heartbeat timer during unmounting and visibility changes.
+- **Initialization Stability**: Added a sentinel guard and optimized `initPromise` handling to prevent redundant error logging and failed awaits during page visibility transitions.
+- **Mutation Engine Hardening**: Corrected preserves `state.options` and the `mutateDepth` recursion guard across all instance creation paths in `MutateModule`.
+- **Fluent Chaining Fallbacks**: Hardened `until()` and `since()` calls with explicit host-instance fallbacks to preserve fluent chaining when modules are missing in "catch" mode.
+
 ## [2.2.2] - 2026-04-18
 
 ### Fixed
