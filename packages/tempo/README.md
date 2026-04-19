@@ -87,7 +87,7 @@ Since Tempo is a native ESM package, you can use it directly in modern browsers 
 <script type="importmap">
 {
   "imports": {
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/bundle"
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.esm.js"
   }
 }
 </script>
@@ -102,7 +102,7 @@ Since Tempo is a native ESM package, you can use it directly in modern browsers 
 For environments without `importmap` support or simple prototypes, use the global bundle. This automatically attaches the `Tempo` class to the `window` object.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/global"></script>
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.js"></script>
 <script>
   const t = new Tempo('tomorrow');
   console.log(t.toString());
@@ -116,8 +116,8 @@ For maximum performance, you can use the lean **Core** engine and opt-in to spec
 <script type="importmap">
 {
   "imports": {
-    "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/core",
-    "@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/mutate"
+    "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/core.index.js",
+    "@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.mutate.js"
   }
 }
 </script>
@@ -132,6 +132,9 @@ For maximum performance, you can use the lean **Core** engine and opt-in to spec
   console.log(t.toString());
 </script>
 ```
+
+> [!TIP]
+> **CDN Versioning**: The examples above use `@2` to pin to the current major version. To always reference the **latest** release, you can omit the version string (e.g., `.../@magmacomputing/tempo/dist/tempo.bundle.js`).
 
 ---
 

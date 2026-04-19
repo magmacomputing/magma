@@ -32,6 +32,9 @@
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
+  "browser": "dist/tempo.bundle.js",
+  "unpkg": "dist/tempo.bundle.js",
+  "jsdelivr": "dist/tempo.bundle.js",
   "imports": {
     "#library": "@magmacomputing/library",
     "#library/*.js": "@magmacomputing/library/common/*.js",
