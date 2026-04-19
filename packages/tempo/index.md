@@ -68,8 +68,8 @@ let initPromise = (async () => {
 
     if (import.meta.env.DEV) registry.has = originalHas
     
-    Tempo.init()
     if (!Tempo.ticker) Tempo.extend(TickerModule)
+    Tempo.init()
     
     return Tempo
   } catch (e) {
