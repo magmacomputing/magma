@@ -72,7 +72,7 @@ export default [
 	{
 		input: entryPoints,
 		// Keep tslib external in ESM distribution for better bundler compatibility
-		external: ['tslib'],
+		external: [],
 		output: {
 			dir: 'dist',
 			format: 'es',

@@ -45,13 +45,13 @@
     <script type="importmap">
     {
       "imports": {
-        "@magmacomputing/tempo": "../dist/tempo.index.js"
+        "@magmacomputing/tempo": "../dist/tempo.bundle.esm.js"
       }
     }
     </script>
 
     <script type="module">
-        import { Tempo } from '@magmacomputing/tempo';
+        import Tempo from '@magmacomputing/tempo';
 
         try {
             const t = new Tempo('next monday');
