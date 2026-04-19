@@ -149,7 +149,6 @@ Tempo.extend({
 
 - [Layout Patterns Guide](./tempo.layout.md): Details on creating custom parsing patterns and using relative units.
 - [Weekday Parsing Guide](./tempo.weekday.md): Deep dive into relative weekday expressions (e.g., "next Monday").
-- [Custom Patterns & Snippets](./tempo.pattern.md): Advanced guide on how Tempo translates layouts into regex.
 
 ### US-Style Dates (Ambiguous Digits)
 When parsing dates comprised entirely of digits (e.g., `04012026`), the input can be visually ambiguous: Is it `04-Jan-2026` (Day-Month-Year) or `Apr-01-2026` (Month-Day-Year)?
