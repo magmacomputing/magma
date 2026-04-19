@@ -1,0 +1,18 @@
+<script type="importmap">
+{
+  "imports": {
+    "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/core.index.js",
+    "@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.mutate.js"
+  }
+}
+</script>
+<script type="module">
+  import { Tempo } from '@magmacomputing/tempo/core';
+  import { MutateModule } from '@magmacomputing/tempo/mutate';
+
+  // Opt-in to mutation logic
+  Tempo.extend(MutateModule);
+
+  const t = new Tempo().add({ days: 1 });
+  console.log(t.toString());
+</script>

@@ -1,4 +1,4 @@
-import { getTermRange, defineTerm, defineRange, resolveCycleWindow } from '../plugin.util.js';
+import { getTermRange, defineTerm, defineRange, resolveCycleWindow } from '../term.util.js';
 import { COMPASS } from '../../tempo.enum.js';
 import type { Tempo } from '../../tempo.class.js';
 

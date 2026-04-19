@@ -4,9 +4,8 @@ import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { getRelativeTime } from '#library/international.library.js';
 
-import { defineModule, interpret } from '../plugin.util.js';
+import { defineInterpreterModule, interpret } from '../plugin.util.js';
 import enums from '../../tempo.enum.js';
-import sym from '../../tempo.symbol.js';
 import type { Tempo } from '../../tempo.class.js';
 
 declare module '../../tempo.class.js' {
@@ -149,18 +148,8 @@ duration.toDuration = (input: string | Temporal.DurationLikeObject) => {
 /**
  * Functional Module to attach duration methods to Tempo.
  */
-export const DurationModule: Tempo.Module = defineModule({
-	name: 'duration',
-	install(this: Tempo, TempoClass: typeof Tempo) {
-		// 1. Register logic in the global interpreter registry
-		const modules = (globalThis as any)[sym.$modules] ??= {};
-		if (isUndefined(modules['DurationModule'])) {
-			modules['DurationModule'] = duration;
-		}
-
-		// 2. Inject the static helper
-		(TempoClass as any).duration = function (this: typeof Tempo, input: any) {
-			return interpret(this, 'DurationModule', 'toDuration', false, input);
-		};
+export const DurationModule: Tempo.Module = defineInterpreterModule('DurationModule', duration, {
+	duration(this: typeof Tempo, input: any) {
+		return interpret(this, 'DurationModule', 'toDuration', false, input);
 	}
 });

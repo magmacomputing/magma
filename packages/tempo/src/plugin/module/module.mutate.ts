@@ -1,9 +1,10 @@
 import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/type.library.js';
 import { singular } from '#library/string.library.js';
-import { sym } from '../../tempo.symbol.js';
+import sym from '../../tempo.symbol.js';
 import enums from '../../tempo.enum.js';
-import { REGISTRY, _MODULES } from '../../tempo.register.js';
-import { defineInterpreterModule, findTermPlugin, getHost } from '../plugin.util.js';
+import { _MODULES } from '../../tempo.register.js';
+import { defineInterpreterModule } from '../plugin.util.js';
+import { findTermPlugin } from '../term.util.js';
 import { resolveTermMutation } from './module.term.js';
 import type { Tempo } from '../../tempo.class.js';
 import type * as t from '../../tempo.type.js';

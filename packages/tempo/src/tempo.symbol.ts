@@ -9,7 +9,7 @@ import { getRuntime } from './tempo.runtime.js';
  */
 
 /** @internal Tempo Symbol Registry */
-export const sym = {
+const sym = {
     /** key for Global Discovery of Tempo configuration */  $Tempo: Symbol.for('$Tempo'),
     /** key for Global Discovery of Tempo Plugins */        $Plugins: Symbol.for('$TempoPlugin'),
     /** key for Reactive Plugin Registration */             $Register: Symbol.for('$TempoRegister'),
@@ -28,16 +28,16 @@ export const sym = {
     /** internal key for instance-level anchor baseline */    $anchor: Symbol.for('$TempoAnchor'),
     /** internal key for the underlying Temporal ZonedDateTime */ $zdt: Symbol.for('$TempoZDT'),
     /** internal key for re-validating the Master Guard */  $rebuildGuard: Symbol.for('$TempoRebuildGuard'),
-    /** @deprecated use getRuntime().resetHooks — kept for backward compatibility */
-    $reset: Symbol.for('$TempoReset'),
-    /** @deprecated use getRuntime().installed — kept for backward compatibility */
-    $installed: Symbol.for('$TempoInstalled'),
-    /** @deprecated use getRuntime().terms — kept for backward compatibility */
-    $terms: Symbol.for('$TempoTerms'),
-    /** @deprecated use getRuntime().extensions — kept for backward compatibility */
-    $extends: Symbol.for('$TempoExtends'),
-    /** @deprecated use getRuntime().modules — kept for backward compatibility */
-    $modules: Symbol.for('$TempoModules'),
+    // /** @deprecated use getRuntime().resetHooks — kept for backward compatibility */
+    // $reset: Symbol.for('$TempoReset'),
+    // /** @deprecated use getRuntime().installed — kept for backward compatibility */
+    // $installed: Symbol.for('$TempoInstalled'),
+    // /** @deprecated use getRuntime().terms — kept for backward compatibility */
+    // $terms: Symbol.for('$TempoTerms'),
+    // /** @deprecated use getRuntime().extensions — kept for backward compatibility */
+    // $extends: Symbol.for('$TempoExtends'),
+    // /** @deprecated use getRuntime().modules — kept for backward compatibility */
+    // $modules: Symbol.for('$TempoModules'),
 } as const;
 
 /**

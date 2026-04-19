@@ -1,18 +1,19 @@
 import '#library/temporal.polyfill.js';
 import { asType, isNull, isString, isObject, isZonedDateTime, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/type.library.js';
-import { asInteger, isNumeric } from '#library/coercion.library.js';
+import { asArray, asInteger, isNumeric } from '#library/coercion.library.js';
 import { instant } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 
 import type { Tempo } from '../../tempo.class.js';
-import { isTempo } from '../../tempo.symbol.js';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './module.lexer.js';
 import { _MODULES } from '../../tempo.register.js';
+import sym, { isTempo } from '../../tempo.symbol.js';
 import { Match } from '../../tempo.default.js';
 import { resolveTermMutation, resolveTermValue } from './module.term.js';
 import { compose } from './module.composer.js';
-import { getRange, getTermRange, defineInterpreterModule } from '../plugin.util.js';
-import { sym } from '../../tempo.symbol.js';
+import { defineInterpreterModule } from '../plugin.util.js';
+import { getRange, getTermRange } from '../term.util.js';
+import { getRuntime } from '../../tempo.runtime.js';
 import * as t from '../../tempo.type.js';
 
 /**
@@ -46,7 +47,7 @@ const ParseEngine = {
 
 			if (term) {
 				const ident = term.startsWith('#') ? term.slice(1) : term;
-				const termObj = (TempoClass as any)[sym.$terms].find((t: any) => t.key === ident || t.scope === ident);
+				const termObj = getRuntime().terms.find((t: any) => t.key === ident || t.scope === ident);
 				if (!termObj) {
 					(TempoClass as any)[sym.$termError](state.config, term);
 					return undefined as any;
@@ -76,7 +77,7 @@ const ParseEngine = {
 
 				if (tempo === term) {
 					const range = termObj.define.call(this, false, today);
-					const list = isUndefined(range) ? [] : (Array.isArray(range) ? range : [range]);
+					const list = isUndefined(range) ? [] : asArray(range as t.Range | t.Range[]);
 					const current = (getTermRange(this, list, false, today) as any);
 					if (current?.start) return current.start.toDateTime().withTimeZone(tz).withCalendar(cal);
 				}
@@ -94,7 +95,7 @@ const ParseEngine = {
 				throw new Error(msg);
 			}
 
-			if (isObject(tempo) && Object.keys(tempo).some(k => k.startsWith('#')) && (TempoClass as any)[sym.$terms].length === 0) {
+			if (isObject(tempo) && Object.keys(tempo).some(k => k.startsWith('#')) && getRuntime().terms.length === 0) {
 				(TempoClass as any)[sym.$termError](state.config, Object.keys(tempo).find(k => k.startsWith('#'))!);
 				return undefined as any;
 			}
@@ -154,7 +155,7 @@ const ParseEngine = {
 			const { timeZone, calendar, value: _, ...options } = tempo as t.Options;
 
 			const keys = Object.keys(options);
-			if (keys.some(k => k.startsWith('#')) && (TempoClass as any)[sym.$terms].length === 0) {
+			if (keys.some(k => k.startsWith('#')) && getRuntime().terms.length === 0) {
 				(TempoClass as any)[sym.$termError](state.config, keys.find(k => k.startsWith('#'))!);
 				return undefined as any;
 			}

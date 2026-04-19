@@ -5,7 +5,7 @@ import { instant, normaliseFractionalDurations } from '#library/temporal.library
 import { markConfig } from '#library/symbol.library.js'
 
 import { DURATIONS } from '../../tempo.enum.js'
-import { defineExtension } from '../plugin.util.js'
+import { defineExtension, attachStatics } from '../plugin.util.js'
 import sym from '../../tempo.symbol.js';
 import type { Tempo } from '../../tempo.class.js'
 import type { TempoType } from '../plugin.type.js'
@@ -356,10 +356,8 @@ class TickerInstance implements Ticker.Descriptor {
 export const TickerModule: Tempo.Extension = defineExtension({
 	name: 'TickerModule',
 	install(this: Tempo, TempoClass: TempoType) {
-		if (Object.hasOwn(TempoClass, 'ticker')) return;
-
-		Object.defineProperty(TempoClass, 'ticker', {
-			value: function (this: TempoType, arg1: any, arg2?: any): Ticker.Instance {
+		attachStatics(TempoClass, {
+			ticker: function (this: TempoType, arg1: any, arg2?: any): Ticker.Instance {
 				const instance = new TickerInstance(this as unknown as TempoType, arg1, arg2);
 				const proxy = new Proxy((() => instance.stop()) as any, {
 					get: (_, prop) => {
@@ -380,17 +378,9 @@ export const TickerModule: Tempo.Extension = defineExtension({
 
 				return instance.bootstrap(proxy);
 			},
-			writable: true,
-			configurable: true,
-			enumerable: true
-		});
-
-		if (Object.hasOwn(TempoClass, 'tickers')) return;
-
-		Object.defineProperty(TempoClass, 'tickers', {
-			get: () => Ticker.active,
-			enumerable: true,
-			configurable: true
+			tickers: {
+				get: () => Ticker.active
+			}
 		});
 	},
 });

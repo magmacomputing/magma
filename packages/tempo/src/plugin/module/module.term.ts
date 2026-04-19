@@ -5,7 +5,7 @@ import { isNumeric } from '#library/coercion.library.js';
 import sym from '../../tempo.symbol.js';
 import { getSafeFallbackStep } from '../../tempo.util.js';
 import { Match } from '../../tempo.default.js';
-import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin.util.js';
+import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../term.util.js';
 import { parseModifier } from './module.lexer.js';
 
 /**

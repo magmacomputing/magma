@@ -16,10 +16,11 @@ import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/inte
 import { instant } from '#library/temporal.library.js';
 import type { Property, Secure } from '#library/type.library.js';
 
-import { registerPlugin, registerTerm, getTermRange, interpret, ensureModule } from './plugin/plugin.util.js'
-
+import { getRuntime } from './tempo.runtime.js';
 import sym, { isTempo, registerHook } from './tempo.symbol.js';
-import { REGISTRY, registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
+import { registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
+import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
+import { registerTerm, getTermRange } from './plugin/term.util.js';
 import { Match, Token, Snippet, Layout, Event, Period, Default, Guard } from './tempo.default.js';
 import enums, { STATE, DISCOVERY } from './tempo.enum.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -92,7 +93,7 @@ export class Tempo {
 
 	/** Tempo state for the global configuration */						static #global = {} as Internal.State
 	/** cache for next-available 'usr' Token key */						static #usrCount = 0;
-	/** mutable list of registered term plugins */						static #terms: t.TermPlugin[] = REGISTRY.terms;
+	/** mutable list of registered term plugins */						static get #terms(): t.TermPlugin[] { return getRuntime().terms }
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, t.TermPlugin> = new Map();
 	/** flag to prevent recursion during init */							static #lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
@@ -596,9 +597,10 @@ export class Tempo {
 		try {
 			items.forEach(item => {
 				const arg = item as any;
-				if (isFunction(arg)) {		// Standard Plugin registration
-					if (REGISTRY.installed.has(arg)) return;
-					REGISTRY.installed.add(arg);										// mark as installed (BEFORE side-effects)
+				if (isFunction(arg)) {															// Standard Plugin registration
+					const rt = getRuntime();
+					if (rt.installed.has(arg)) return;
+					rt.installed.add(arg);														// mark as installed (BEFORE side-effects)
 
 					registerPlugin(arg);
 					try {
@@ -615,11 +617,12 @@ export class Tempo {
 				else if (isObject(item) && isString((item as any).name) && isFunction((item as any).install)) {
 					// Plugin object form { name, install }
 					const name = (item as any).name;
-					if (REGISTRY.installed.has(name)) {
+					const rt = getRuntime();
+					if (rt.installed.has(name)) {
 						Tempo.#dbg.debug(Tempo.#global.config, `Plugin already installed by name: ${name}`);
 						return;
 					}
-					REGISTRY.installed.add(name);
+					rt.installed.add(name);
 
 					registerPlugin(item);
 					(item as t.Plugin).install.call(this as any, this);
@@ -989,7 +992,7 @@ export class Tempo {
 		Tempo.#dbg.error(config, msg);
 		if (config.catch !== true) throw new Error(msg);
 	}
-	/** @internal */	static get [sym.$terms](): t.TermPlugin[] { return REGISTRY.terms as t.TermPlugin[] }
+	// /** @internal */	static get [sym.$terms](): t.TermPlugin[] { return getRuntime().terms as t.TermPlugin[] }
 	/** @internal */	static get [sym.$dbg](): Logify { return Tempo.#dbg }
 	/** @internal */	static get [sym.$guard]() { return (Tempo as any).#guard }
 

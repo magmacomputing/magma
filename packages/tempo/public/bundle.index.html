@@ -1,0 +1,12 @@
+<script type="importmap">
+{
+  "imports": {
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.esm.js"
+  }
+}
+</script>
+<script type="module">
+  import Tempo from '@magmacomputing/tempo';
+  const t = new Tempo('next friday');
+  console.log(t.format('{mon} {day}'));
+</script>
