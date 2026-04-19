@@ -53,9 +53,12 @@ export default [
 				file: 'dist/tempo.bundle.js',
 				format: 'iife',
 				name: 'Tempo',
-				exports: 'default', // Ensures 'new Tempo()' works on the global object
+				exports: 'default',
 				sourcemap: false,
 				indent: '\t',
+				globals: {
+					'@js-temporal/polyfill': 'Temporal'
+				}
 			},
 			{
 				file: 'dist/tempo.bundle.esm.js',
@@ -64,6 +67,7 @@ export default [
 				indent: '\t',
 			}
 		],
+		external: ['@js-temporal/polyfill'],
 		plugins: [
 			resolve({ extensions: ['.js'] }),
 			indentFix()
@@ -71,8 +75,8 @@ export default [
 	},
 	{
 		input: entryPoints,
-		// Keep tslib external in ESM distribution for better bundler compatibility
-		external: [],
+		// Keep dependencies external for granular distribution
+		external: ['@js-temporal/polyfill'],
 		output: {
 			dir: 'dist',
 			format: 'es',

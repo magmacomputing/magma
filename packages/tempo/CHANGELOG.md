@@ -5,19 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.2.3] - 2026-04-20
-
-### Added
-- **Modular Parse Engine**: Successfully decoupled internal parsing logic into `ParseModule`, enabling standalone parsing support and reducing core class complexity.
-- **Carousel Accessibility**: Added ARIA roles, labels, and keyboard controls (Arrow keys) to the documentation carousel to improve screen reader and keyboard user experience.
-- **Layout Snippets**: Introduced layout patterns with snippet-based customization for more flexible date formatting.
-
-### Changed
-- **HMR Resilience**: Hardened the development-mode registry workaround by binding the original `Map.has` method and moving extension registration before class initialization, resolving "read only property" errors during hot reloads.
-- **Modular Registration**: Enforced standard `defineInterpreterModule` clash guards for all core modules (Parse, Mutate, Duration) to prevent registry collisions.
+## [2.2.4] - 2026-04-19
 
 ### Fixed
-- **Resource Management**: Fixed interval leaks in the documentation clock by implementing proper cleanup for the fallback heartbeat timer during unmounting and visibility changes.
+- **Ticker Redefinition**: Added safety guards to `TickerModule.install` to prevent `TypeError: Cannot redefine property: ticker` when extending an already-initialized or `@Immutable` class.
+- **Granular ESM Resolution**: Bundled `tslib` into granular ESM distribution files to resolve browser-side "Failed to resolve module specifier" errors.
+- **Documentation Build**: Resolved dead links in `Tempo.md` to ensure successful VitePress production builds.
+- **Verification Dashboard**: Synchronized the browser verification dashboard with current build artifacts.
+
+## [2.2.3] - 2026-04-19
+
+### Added
+- **Dual-Bundle Strategy**: Modernized the Rollup configuration to produce both a "batteries-included" ESM bundle (`tempo.bundle.esm.js`) and a classic IIFE bundle (`tempo.bundle.js`).
+- **Global Export Map**: Added `./bundle` (ESM) and `./global` (IIFE) export mappings to `package.json` for better consumer clarity.
+- **Modular Parse Engine**: Successfully decoupled internal parsing logic into `ParseModule`, enabling standalone parsing support and reducing core class complexity.
+- **Carousel Accessibility**: Added ARIA roles, labels, and keyboard controls (Arrow keys) to the documentation carousel to improve accessibility.
+
+### Changed
+- **Parsing Priority**: Reordered `ParseEngine.result` validation to ensure `isTempo` instances are converted to `Temporal.ZonedDateTime` before primitive-type validation occurs.
+- **Registry Error Hints**: Improved module-resolution error messages to suggest cleaner import specifiers (e.g., `#tempo/parse` instead of `#tempo/parsemodule`).
+- **HMR Resilience**: Hardened the development-mode registry workaround to prevent "read only property" errors during hot reloads.
+
+### Fixed
+- **Version Synchronization**: Unified versions across the monorepo root, `tempo`, and `library` packages.
+- **Test Infrastructure**: Updated `vitest.workspace.ts` to use the renamed `temporal-polyfill.ts` setup file.
+- **Resource Management**: Fixed interval leaks in the documentation clock during unmounting and visibility changes.
 - **Initialization Stability**: Added a sentinel guard and optimized `initPromise` handling to prevent redundant error logging and failed awaits during page visibility transitions.
 - **Mutation Engine Hardening**: Corrected preserves `state.options` and the `mutateDepth` recursion guard across all instance creation paths in `MutateModule`.
 - **Fluent Chaining Fallbacks**: Hardened `until()` and `since()` calls with explicit host-instance fallbacks to preserve fluent chaining when modules are missing in "catch" mode.
