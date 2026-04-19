@@ -1,4 +1,5 @@
 import type { Tempo } from './tempo.class.js';
+import { getRuntime } from './tempo.runtime.js';
 
 /**
  * Centralized registry for all Tempo-specific Global Symbols.
@@ -21,19 +22,31 @@ export const sym = {
     /** internal key for accessing private instance state */ $Internal: Symbol.for('$TempoInternal'),
     /** internal key for tracking mutation recursion depth */ $mutateDepth: Symbol.for('$TempoMutateDepth'),
     /** internal key for re-validating the Master Guard */  $rebuildGuard: Symbol.for('$TempoRebuildGuard'),
-    /** internal key for decentralized registry resets */   $reset: Symbol.for('$TempoReset'),
-    /** internal key for tracking installed plugins */      $installed: Symbol.for('$TempoInstalled'),
-    /** internal key for tracking registered terms */       $terms: Symbol.for('$TempoTerms'),
-    /** internal key for tracking registered extensions */  $extends: Symbol.for('$TempoExtends'),
-    /** internal key for tracking registered modules */     $modules: Symbol.for('$TempoModules'),
+    /** @deprecated use getRuntime().resetHooks — kept for backward compatibility */
+    $reset: Symbol.for('$TempoReset'),
+    /** @deprecated use getRuntime().installed — kept for backward compatibility */
+    $installed: Symbol.for('$TempoInstalled'),
+    /** @deprecated use getRuntime().terms — kept for backward compatibility */
+    $terms: Symbol.for('$TempoTerms'),
+    /** @deprecated use getRuntime().extensions — kept for backward compatibility */
+    $extends: Symbol.for('$TempoExtends'),
+    /** @deprecated use getRuntime().modules — kept for backward compatibility */
+    $modules: Symbol.for('$TempoModules'),
 } as const;
 
 /**
- * Define a reactive registration hook on a global symbol.
+ * Install a reactive registration hook.
+ *
+ * When `symbol` is `sym.$Register` the hook is stored inside the TempoRuntime
+ * (not directly on `globalThis`) so it benefits from the runtime's hardened,
+ * single-slot global bridge.  For any other symbol the hook is written to
+ * `globalThis` using the same legacy behaviour.
  */
 export function registerHook(symbol: symbol, cb: (val: any) => void) {
-    const existing = (globalThis as any)[symbol];
+    if (symbol === sym.$Register)
+        return getRuntime().setRegisterHook(cb);
 
+    const existing = (globalThis as any)[symbol];
     if (existing !== undefined && typeof existing === 'function')
         console.warn(`Overwriting existing hook for symbol: ${symbol.description}`);
     (globalThis as any)[symbol] = cb;

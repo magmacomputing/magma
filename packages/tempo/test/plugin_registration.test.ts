@@ -1,12 +1,12 @@
 import { Tempo } from '#tempo';
-import sym from '#tempo/tempo.symbol.js';
+import { getRuntime } from '#tempo/tempo.runtime.js';
 import { TickerModule } from '#tempo/ticker';
 
 describe('Ticker Registration / Initialization', () => {
 
 	test('TickerModule should be auto-registered on import', () => {
-		// 1. TickerModule was imported above, so it should be in $Plugins
-		const db = (globalThis as any)[sym.$Plugins];
+		// 1. TickerModule was imported above, so it should be in the runtime's pluginsDb.
+		const db = getRuntime().pluginsDb;
 		expect(db).toBeDefined();
 		expect(db.plugins).toContain(TickerModule);
 

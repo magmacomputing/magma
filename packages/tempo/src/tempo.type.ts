@@ -28,9 +28,13 @@ declare module '#library/type.library.js' {
 
 declare global {
 	interface globalThis {
+		/**
+		 * User-facing Global Discovery slot.
+		 * Applications place a Discovery object here (keyed by the string returned by
+		 * `Symbol.keyFor(sym.$Tempo)`, or by a custom symbol passed to `Tempo.init`).
+		 * Internal machinery now lives inside the TempoRuntime — see `tempo.runtime.ts`.
+		 */
 		[sym.$Tempo]?: Internal.Discovery;
-		[sym.$Plugins]?: Internal.Discovery;
-		[sym.$Register]?: () => void;
 	}
 }
 

@@ -6,6 +6,7 @@ import { secureRef } from '#library/proxy.library.js';
 
 import { SCHEMA, getLargestUnit } from '../tempo.util.js';
 import sym, { isTempo } from '../tempo.symbol.js';
+import { getRuntime } from '../tempo.runtime.js';
 import type { Tempo } from '../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange, Plugin } from './plugin.type.js';
 
@@ -413,21 +414,16 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
  * Registration hook for Term plugins.
  */
 export function registerTerm(term: TermPlugin) {
-	const db = (globalThis as any)[sym.$Plugins] ??= secureRef({
-		terms: [] as TermPlugin[],
-		plugins: [] as Plugin[]
-	});
-	db.terms ??= secureRef([] as TermPlugin[]);
+	const rt = getRuntime();
 
-	if (!db.terms.some((t: any) => t.key === term.key)) {
-		db.terms.push(term);
-	}
+	// Validate and persist in the runtime's discovery database.
+	rt.addTerm(term);
 
 	if (!REGISTRY.terms.find((t: TermPlugin) => t.key === term.key)) {
 		REGISTRY.terms.push(term);
 	}
 
-	(globalThis as any)[sym.$Register]?.(term);
+	rt.fireRegisterHook(term);
 }
 
 /**
@@ -435,21 +431,16 @@ export function registerTerm(term: TermPlugin) {
  * Registration hook for general plugins.
  */
 export function registerPlugin(plugin: any) {
-	const db = (globalThis as any)[sym.$Plugins] ??= secureRef({
-		terms: [] as TermPlugin[],
-		plugins: [] as Plugin[]
-	});
-	db.plugins ??= secureRef([] as Plugin[]);
+	const rt = getRuntime();
 
-	if (!db.plugins.includes(plugin)) {
-		db.plugins.push(plugin);
-	}
+	// Validate and persist in the runtime's discovery database.
+	rt.addPlugin(plugin);
 
 	if (!REGISTRY.extends.includes(plugin)) {
 		REGISTRY.extends.push(plugin);
 	}
 
-	(globalThis as any)[sym.$Register]?.(plugin);
+	rt.fireRegisterHook(plugin);
 
 	return plugin;
 }

@@ -5,17 +5,19 @@ import { secureRef } from '#library/proxy.library.js';
 import lib from '#library/symbol.library.js';
 import type { Property } from '#library/type.library.js';
 
-import { sym } from './tempo.symbol.js';
+import { getRuntime } from './tempo.runtime.js';
 import type { TermPlugin, Extension } from './plugin/plugin.type.js';
 
 // Import the live enums and their mutable state from the enum module
 import { STATE, REGISTRIES, DEFAULTS } from './tempo.enum.js';
 
-/** @internal storage for plugin/module registry */
-const _terms = (globalThis as any)[sym.$terms] ??= [] as TermPlugin[];
-const _extends = (globalThis as any)[sym.$extends] ??= [] as Extension[];
-const _modules = (globalThis as any)[sym.$modules] ??= {} as Record<string, any>;
-const _installed = (globalThis as any)[sym.$installed] ??= new Set();
+const rt = getRuntime();
+
+/** @internal storage for plugin/module registry — backed by TempoRuntime */
+const _terms = rt.terms;
+const _extends = rt.extensions;
+const _modules = rt.modules;
+const _installed = rt.installed;
 
 const _REGISTRY = {
 	terms: secureRef(_terms),
@@ -31,8 +33,8 @@ const _REGISTRY = {
  */
 export const REGISTRY = secureRef(_REGISTRY);
 
-/** @internal storage for reset hooks */
-const resetHooks = (): Set<() => void> => (globalThis as any)[sym.$reset] ??= new Set();
+/** @internal Return the runtime's reset-hook set */
+const resetHooks = (): Set<() => void> => rt.resetHooks;
 
 /** @internal Register a hook to be called when the registry is reset */
 export function onRegistryReset(hook: () => void) {
