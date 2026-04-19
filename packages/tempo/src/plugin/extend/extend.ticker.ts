@@ -356,6 +356,8 @@ class TickerInstance implements Ticker.Descriptor {
 export const TickerModule: Tempo.Extension = defineExtension({
 	name: 'TickerModule',
 	install(this: Tempo, TempoClass: TempoType) {
+		if (Object.hasOwn(TempoClass, 'ticker')) return;
+
 		Object.defineProperty(TempoClass, 'ticker', {
 			value: function (this: TempoType, arg1: any, arg2?: any): Ticker.Instance {
 				const instance = new TickerInstance(this as unknown as TempoType, arg1, arg2);
@@ -382,6 +384,8 @@ export const TickerModule: Tempo.Extension = defineExtension({
 			configurable: true,
 			enumerable: true
 		});
+
+		if (Object.hasOwn(TempoClass, 'tickers')) return;
 
 		Object.defineProperty(TempoClass, 'tickers', {
 			get: () => Ticker.active,
