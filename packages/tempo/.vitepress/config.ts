@@ -18,15 +18,16 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/README' },
       { text: 'API', link: '/doc/tempo.api' },
-      { text: 'Releases', link: '/doc/releases/versions' }
+      { text: 'Releases', link: '/doc/releases/' }
     ],
     sidebar: [
       {
         text: 'Getting Started',
         items: [
           { text: 'Introduction', link: '/README' },
+          { text: 'Cookbook', link: '/doc/tempo.cookbook' },
           { text: 'Migration Guide', link: '/doc/migration-guide' },
-          { text: 'Version History', link: '/doc/releases/versions' }
+          { text: 'Release Notes', link: '/doc/releases/' }
         ]
       },
       {
@@ -34,9 +35,19 @@ export default defineConfig({
         items: [
           { text: 'Configuration', link: '/doc/tempo.config' },
           { text: 'Modularity', link: '/doc/tempo.modularity' },
-          { text: 'Shorthand Engine', link: '/doc/tempo.shorthand' },
+          { text: 'Layout Patterns', link: '/doc/tempo.layout' },
           { text: 'Terms System', link: '/doc/tempo.term' },
           { text: 'Ticker Plugin', link: '/doc/tempo.ticker' }
+        ]
+      },
+      {
+        text: 'Advanced Reference',
+        items: [
+          { text: 'API Reference', link: '/doc/tempo.api' },
+          { text: 'Types System', link: '/doc/tempo.types' },
+          { text: 'Shorthand Engine', link: '/doc/tempo.shorthand' },
+          { text: 'Weekday Engine', link: '/doc/tempo.weekday' },
+          { text: 'Debugging', link: '/doc/tempo.debugging' }
         ]
       },
       {
@@ -49,11 +60,28 @@ export default defineConfig({
         ]
       },
       {
+        text: 'Utility Library',
+        items: [
+          { text: 'Library Overview', link: '/doc/tempo.library' },
+          { text: 'Enumerators', link: '/doc/tempo.enumerators' },
+          { text: 'Serializers', link: '/doc/tempo.serializers' },
+          { text: 'Decorators', link: '/doc/tempo.decorators' },
+          { text: 'Advanced Promises (Pledge)', link: '/doc/tempo.pledge' },
+        ]
+      },
+      {
         text: 'Ecosystem',
         items: [
           { text: 'Contribution Guide', link: '/CONTRIBUTING' },
           { text: 'Comparison', link: '/doc/comparison' },
+          { text: 'Tempo vs Temporal', link: '/doc/tempo-vs-temporal' },
           { text: 'Project Vision', link: '/doc/vision' }
+        ]
+      },
+      {
+        text: 'Services & Support',
+        items: [
+          { text: 'Professional Services', link: '/doc/commercial' }
         ]
       }
     ],

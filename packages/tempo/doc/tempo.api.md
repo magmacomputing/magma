@@ -9,6 +9,25 @@ This document provides a comprehensive technical reference for the `Tempo` class
 
 ---
 
+## 🏗️ Constructor
+
+You can instantiate `Tempo` in several ways:
+
+- **`new Tempo()`**: Defaults to current time ("now").
+- **`new Tempo(dateTime)`**: Parses a date-time value.
+- **`new Tempo(dateTime, options)`**: Parses with specific configuration.
+- **`new Tempo(options)`**: Defaults to "now" with specific configuration.
+
+### Valid `dateTime` Types:
+- **`string`**: ISO 8601, natural language ("tomorrow", "next Friday"), or custom patterns.
+- **`number`**: Unix timestamps in milliseconds (default) or microseconds.
+- **`BigInt`**: Unix timestamps in nanoseconds.
+- **`Date`**: Standard JavaScript `Date` object.
+- **`Tempo`**: Clones another Tempo instance.
+- **`Temporal.*`**: Any native Temporal object (ZonedDateTime, PlainDate, etc.).
+
+---
+
 ## 🏗️ Static Methods
 
 ### `Tempo.init(options?: Tempo.Options)`
@@ -38,7 +57,6 @@ Compares two `Tempo` instances or date-time values for sorting.
 (Plugin required) Creates a full Tempo Duration object (EDO) from an ISO string or DurationLike object.
 - **Returns:** `Tempo.Duration`
 - **Example:** `Tempo.duration('P1Y')` or `Tempo.duration({ months: 2 })`
-
 
 ### `Tempo.now()`
 Returns the current Unix epoch in nanoseconds as a `BigInt`.
@@ -178,3 +196,9 @@ Returns a `Temporal.PlainDateTime` representation.
 - `fmt`: Registry of pre-calculated strings for all standard formats. (Note: These are enumerable for easy discovery).
 - `config`: The effective configuration for this specific instance (Note: `scope`, `anchor`, and `value` are excluded from the public object).
 - `parse`: The parsing rules and lineage for this instance.
+
+---
+
+> [!TIP]
+> **Looking for the full technical details?**  
+> For an exhaustive, auto-generated reference of every property, internal type, and class member, see our [Full Technical API Reference](./api/README.md).

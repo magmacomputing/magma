@@ -14,7 +14,7 @@ The serializers are heavily utilized under the hood but are also exposed for rob
 Serializes variables, primitives, and rich objects into string-safe representations. Unlike standard JSON, it detects complex types and translates them into identifiable single key:value structures (e.g., `{"$BigInt":"123"}`).
 
 ```typescript
-import { stringify } from '@magmacomputing/tempo';
+import { stringify } from '@magmacomputing/tempo/library';
 
 const richData = new Map([
   ['time', new Date()],
@@ -30,7 +30,7 @@ const safeString = stringify(richData);
 The inverse of `stringify`. It rebuilds an object from its stringified representation, parsing the specialized `{ $Type: value }` signatures back into their native JavaScript object instances.
 
 ```typescript
-import { objectify } from '@magmacomputing/tempo';
+import { objectify } from '@magmacomputing/tempo/library';
 
 const restored = objectify(safeString);
 // restored instance is a true Map, containing true Date, Symbol, and BigInt primitives
@@ -40,7 +40,7 @@ const restored = objectify(safeString);
 Creates a deep-copy of an object by piping it through `stringify` and immediately back through `objectify`. This results in a detached, deeply cloned object that retains its rich types. 
 
 ```typescript
-import { cloneify } from '@magmacomputing/tempo';
+import { cloneify } from '@magmacomputing/tempo/library';
 
 const detachedCopy = cloneify(richData);
 ```

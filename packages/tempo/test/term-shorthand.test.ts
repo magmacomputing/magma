@@ -1,6 +1,7 @@
 import { Tempo } from '#tempo'
 
 describe('Tempo Term Literacy (Namespace Shorthand)', () => {
+	afterEach(() => vi.restoreAllMocks());
 
 	describe('.set() shorthand', () => {
 		test('set("#period.morning") sets to the start of morning', () => {

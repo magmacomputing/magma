@@ -1,8 +1,8 @@
 import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/type.library.js';
 import { singular } from '#library/string.library.js';
-import sym from '../../tempo.symbol.js';
+import { sym } from '../../tempo.symbol.js';
 import enums from '../../tempo.enum.js';
-import { REGISTRY } from '../../tempo.register.js';
+import { REGISTRY, _MODULES } from '../../tempo.register.js';
 import { defineInterpreterModule, findTermPlugin, getHost } from '../plugin.util.js';
 import { resolveTermMutation } from './module.term.js';
 import type { Tempo } from '../../tempo.class.js';
@@ -14,11 +14,7 @@ import type * as t from '../../tempo.type.js';
 function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options = {}) {
 	const state = (this as any)[sym.$Internal]();
 	if (!isZonedDateTime(state.zdt)) return this;
-
-	const { zdt: selfZdt, parse: internalParse } = state;
-	const TempoClass = getHost(this);
-
-
+	const { zdt: selfZdt } = state;
 	const overrides = {
 		timeZone: options.timeZone ?? this.tz,
 		calendar: options.calendar ?? this.cal,
@@ -42,7 +38,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 			// 1. Shorthand String
 			if (isString(args) && args.startsWith('#')) {
 				const resolveType = type === 'add' ? 'add' : 'start';
-				const res = resolveTermMutation(TempoClass, this, resolveType, args, (type === 'add' ? 1 : args), zdt);
+				const res = resolveTermMutation((this.constructor as any), this, resolveType, args, (type === 'add' ? 1 : args), zdt);
 				if (res === null) state.errored = true;
 				else zdt = res;
 			}
@@ -56,7 +52,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 							// @ts-ignore - access to mutation guard
 							if (++state.mutateDepth > 100) {
 								// @ts-ignore - access to static logger
-								TempoClass[sym.$logError](this.config, `Infinite recursion detected in mutation engine for key: ${key}, adjust: ${adjust}, depth: ${state.mutateDepth}`);
+								(this.constructor as any)[sym.$logError](this.config, `Infinite recursion detected in mutation engine for key: ${key}, adjust: ${adjust}, depth: ${state.mutateDepth}`);
 								state.errored = true;
 								return currZdt;
 							}
@@ -97,9 +93,18 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 
 							const slug = `${op}.${single}`;
 
+							const parseInner = (input: any, anchor?: any) => {
+								const res = (this.constructor as any).from(input, { ...this.config, anchor });
+								if (res.isValid) {
+									state.matches.push(...res.parse.result);
+									return res.toDateTime();
+								}
+								return undefined;
+							};
+
 							// Term-based mutations
 							if (slug.endsWith('.term')) {
-								const res = resolveTermMutation(TempoClass, this, op as any, term!, adjust, currZdt);
+								const res = resolveTermMutation((this.constructor as any), this, op as any, term!, adjust, currZdt);
 								if (res === null) state.errored = true;
 								return res ?? currZdt;
 							}
@@ -113,7 +118,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 
 								case 'set.period': case 'set.time': case 'set.date': case 'set.event':
 								case 'set.dow': case 'set.wkd': {
-									const res = internalParse(offset, currZdt, term);
+									const res = parseInner(offset, currZdt);
 									if (isUndefined(res)) state.errored = true;
 									return res ?? currZdt;
 								}
@@ -152,7 +157,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 
 								default:
 									// @ts-ignore
-									TempoClass[sym.$logError](this.config, `Unexpected method(${op}), unit(${key}) and offset(${adjust})`);
+									(this.constructor as any)[sym.$logError](this.config, `Unexpected method(${op}), unit(${key}) and offset(${adjust})`);
 									state.errored = true;
 									return currZdt;
 							}
@@ -163,18 +168,19 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 					}, zdt);
 			}
 			else {
-				// @ts-ignore - access to private constructor fallback
-				return new TempoClass(args, { ...state.options, ...overrides, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored, [sym.$mutateDepth]: state.mutateDepth });
+				// 3. Return a new instance with the final state
+				// @ts-ignore - access to private constructor/state
+				return new (this.constructor as any)(args, { ...state.options, ...this.config, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored, [sym.$mutateDepth]: state.mutateDepth });
 			}
 		}
 
 		if (state.errored) {
 			// @ts-ignore - access to private constructor fallback
-			return new TempoClass(null, { ...state.options, ...overrides, ...options, result: state.matches, [sym.$errored]: true, [sym.$mutateDepth]: state.mutateDepth });
+			return new (this.constructor as any)(null, { ...state.options, ...overrides, ...options, result: state.matches, [sym.$errored]: true, [sym.$mutateDepth]: state.mutateDepth });
 		}
 
 		// @ts-ignore
-		return new TempoClass(zdt, { ...state.options, ...overrides, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored, [sym.$mutateDepth]: state.mutateDepth });
+		return new (this.constructor as any)(zdt, { ...state.options, ...overrides, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored, [sym.$mutateDepth]: state.mutateDepth });
 
 	} finally {
 		if (isRoot) state.matches = undefined;
@@ -183,9 +189,18 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 }
 
 /**
+ * Mutate Engine Implementation
+ */
+const MutateEngine = {
+	add(this: Tempo, args?: any, options: t.Options = {}) {
+		return mutate.call(this, 'add', args, options);
+	},
+	set(this: Tempo, args?: any, options: t.Options = {}) {
+		return mutate.call(this, 'set', args, options);
+	}
+};
+
+/**
  * MutateModule registration
  */
-// Eagerly register with the global registry to ensure availability even if .extend() is delayed
-REGISTRY.modules['MutateModule'] = mutate;
-
-export const MutateModule = defineInterpreterModule('MutateModule', mutate);
+export const MutateModule = defineInterpreterModule('MutateModule', MutateEngine);

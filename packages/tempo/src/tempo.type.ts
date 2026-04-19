@@ -11,6 +11,7 @@ import * as enums from '#tempo/tempo.enum.js';
 import sym from '#tempo/tempo.symbol.js';
 import type { Snippet, Layout, Event, Period, Token } from '#tempo/tempo.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
+export type { TypeValue };
 import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension } from './plugin/plugin.type.js';
 
 /**

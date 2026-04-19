@@ -80,4 +80,4 @@ function format(this: Tempo, fmt: any) {
 }
 
 // @ts-ignore
-export const FormatModule: Tempo.Module = defineInterpreterModule('format', format);
+export const FormatModule: Tempo.Module = defineInterpreterModule('FormatModule', format);

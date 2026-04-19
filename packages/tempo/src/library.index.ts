@@ -7,3 +7,4 @@
 export { Pledge } from '#library/pledge.class.js';
 export { enumify, type Enum } from '#library/enumerate.library.js';
 export { proxify } from '#library/proxy.library.js';
+export { stringify, objectify, cloneify } from '#library/serialize.library.js';

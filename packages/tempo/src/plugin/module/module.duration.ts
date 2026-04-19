@@ -4,11 +4,17 @@ import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { getRelativeTime } from '#library/international.library.js';
 
-import { defineInterpreterModule } from '../plugin.util.js';
+import { defineModule, interpret } from '../plugin.util.js';
 import enums from '../../tempo.enum.js';
+import sym from '../../tempo.symbol.js';
 import type { Tempo } from '../../tempo.class.js';
 
 declare module '../../tempo.class.js' {
+	namespace Tempo {
+		/** returns a full Tempo Duration object (EDO) for the given input */
+		function duration(input: any): Tempo.Duration;
+	}
+
 	interface Tempo {
 		/** time duration until (returns Duration) */						until(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): Tempo.Duration;
 		/** time duration until (with unit, returns number) */	until(unit: Tempo.Unit, opts?: Tempo.Options): number;
@@ -143,5 +149,18 @@ duration.toDuration = (input: string | Temporal.DurationLikeObject) => {
 /**
  * Functional Module to attach duration methods to Tempo.
  */
-// @ts-ignore
-export const DurationModule: Tempo.Module = defineInterpreterModule('duration', duration);
+export const DurationModule: Tempo.Module = defineModule({
+	name: 'duration',
+	install(this: Tempo, TempoClass: typeof Tempo) {
+		// 1. Register logic in the global interpreter registry
+		const modules = (globalThis as any)[sym.$modules] ??= {};
+		if (isUndefined(modules['DurationModule'])) {
+			modules['DurationModule'] = duration;
+		}
+
+		// 2. Inject the static helper
+		(TempoClass as any).duration = function (this: typeof Tempo, input: any) {
+			return interpret(this, 'DurationModule', 'toDuration', false, input);
+		};
+	}
+});

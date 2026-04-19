@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo/core';
+import '#tempo/parse';
 import '#tempo/mutate';
 import '#tempo/format';
 import '#tempo/term/standard';

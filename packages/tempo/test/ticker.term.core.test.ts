@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo/core';
+import '#tempo/parse';
 import '#tempo/term/standard';
 import { MutateModule } from '#tempo/mutate';
 import { TickerModule } from '#tempo/ticker';

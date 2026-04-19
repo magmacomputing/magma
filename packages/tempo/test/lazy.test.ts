@@ -1,5 +1,5 @@
-import { Tempo } from '../src/tempo.class.js';
-import { FormatModule } from '../src/plugin/module/module.format.js';
+import { Tempo } from '#tempo';
+import { FormatModule } from '#tempo/format';
 
 Tempo.extend(FormatModule);
 

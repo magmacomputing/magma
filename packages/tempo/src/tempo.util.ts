@@ -1,4 +1,5 @@
 import { isDefined } from '#library/type.library.js';
+import { asArray } from '#library/coercion.library.js';
 import type { Tempo } from './tempo.class.js';
 import type { Range, DateTimeUnit } from './tempo.type.js';
 
@@ -17,13 +18,13 @@ export const SCHEMA = [
 
 /** helper to find the largest Temporal unit defined in a Range list */
 export function getLargestUnit(list: Range | Range[]): DateTimeUnit | undefined {
-	const items = Array.isArray(list) ? list : [list];
+	const items = asArray(list);
 	return SCHEMA.find(([u]) => items.some(r => isDefined(r[u])))?.[0];
 }
 
 /** helper to determine a safe forward step for infinite-loop recovery */
 export function getSafeFallbackStep(range: Range | Range[], scope?: string): Temporal.DurationLike {
-	const items = Array.isArray(range) ? range : [range];
+	const items = asArray(range);
 	const first = items[0] as any;
 
 	// prioritize stashed 'rollover' metadata (calculated by getTermRange) if available

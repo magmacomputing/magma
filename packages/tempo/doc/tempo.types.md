@@ -2,8 +2,6 @@
 
 This document provides a reference for the core TypeScript types and interfaces used within the `Tempo` namespace. These types define the valid inputs, configuration options, and manipulation arguments for the library.
 
----
-
 ## `Tempo.DateTime`
 The primary type used for arguments representing a point in time. `Tempo` is extremely flexible and can interpret a wide range of formats. It also provides methods to extract these back as `Temporal` objects (e.g., `toPlainDate()`, `toInstant()`, etc.).
 
@@ -18,8 +16,6 @@ type DateTime =
   | Temporal.ZonedDateTimeLike  // Temporal ZonedDateTime object or property bag
   | undefined | null            // Interpreted as "now"
 ```
-
----
 
 ## `Tempo.Options`
 Configuration options that can be passed to `Tempo.init()` or the `Tempo` constructor.
@@ -41,8 +37,6 @@ interface Options {
 }
 ```
 
----
-
 ## `Tempo.Add`
 Used by the `.add()` method to specify a duration to add or subtract.
 
@@ -52,8 +46,6 @@ type Add = Partial<Record<Tempo.Unit, number>>;
 // Example:
 t.add({ days: 5, hours: -2 });
 ```
-
----
 
 ## `Tempo.Set`
 Used by the `.set()` method to move to a specific unit boundary or date-time alias.
@@ -70,8 +62,6 @@ t.set({ event: 'xmas' });     // Relative or absolute event alias
 t.set({ time: '14:30' });     // Specific time string
 ```
 
----
-
 ## `Tempo.Unit`
 Valid date and time unit strings used throughout the API.
 
@@ -83,8 +73,6 @@ type Unit =
   | 'years' | 'months' | 'weeks' | 'days' // Plurals are also supported
   // ... etc.
 ```
-
----
 
 ## `Tempo.Until`
 The argument passed to `.until()` and `.since()`.
@@ -98,8 +86,6 @@ type Until =
 t.until('2025-01-01', 'days');
 t.since('yesterday', { timeZone: 'UTC' });
 ```
-
----
 
 ## `Tempo.Discovery`
 The contract for global discovery via `Symbol.for($Tempo)`.
@@ -115,8 +101,6 @@ interface Discovery {
 }
 ```
 
----
-
 ## `Tempo.TermPlugin`
 The interface for defining custom business-logic plugins.
 
@@ -128,7 +112,6 @@ type TermPlugin = {
   define: (this: Tempo, keyOnly?: boolean) => any;
 }
 ```
----
 
 ## `Tempo.TickerOptions`
 Advanced configuration for `Tempo.ticker()`. Extends `Temporal.DurationLike` (plural keys only).
