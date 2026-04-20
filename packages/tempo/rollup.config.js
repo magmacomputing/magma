@@ -52,8 +52,8 @@ export default [
 			{
 				file: 'dist/tempo.bundle.js',
 				format: 'iife',
-				name: 'Tempo',
-				exports: 'default',
+				name: '_TempoExport',
+				exports: 'named',
 				sourcemap: false,
 				indent: '\t',
 				globals: {

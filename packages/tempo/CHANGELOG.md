@@ -5,7 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.6] - 2026-04-20
+
+### Added
+- **Isomorphic Export Support**: Enhanced the `dist/tempo.bundle.esm.js` to provide both a default export and a named `{ Tempo }` export, ensuring the exact same import syntax works seamlessly across Node.js and browser environments.
+
+### Fixed
+- **JSBI Resolution**: Explicitly added `jsbi` to all documentation import maps to resolve bare-specifier errors in `@js-temporal/polyfill` when running in strict browser environments.
+- **Documentation Formatting**: Corrected orphaned script blocks and added missing headers to the `Tempo.md` guide for better readability.
+
+## [2.2.5] - 2026-04-20
+
+### Added
+- **Cross-Bundle Singleton Stability**: Implemented a symbol-based brand check for `TempoRuntime` to ensure reliable singleton resolution even when multiple versions of the library are loaded.
+
+### Changed
+- **Consolidated Internal Storage**: Merged redundant internal term/plugin arrays into a unified, validated `pluginsDb` within `TempoRuntime`.
+- **Refined Year Semantics**: Normalized the `year` component in term templates to intelligently distinguish between relative offsets and absolute historical years.
+
+### Fixed
+- **Term Resolution Accuracy**: Fixed a sorting bug in the yearly-cycle resolution engine.
+- **Documentation Integrity**: Updated architecture and README guides with provided functional, complete importmap examples for browser environments.
+- **HTML Standards Compliance**: Wrapped library demonstration and test pages in proper HTML5 skeletons.
+
 ## [2.2.4] - 2026-04-19
+
 
 ### Fixed
 - **Ticker Redefinition**: Added safety guards to `TickerModule.install` to prevent `TypeError: Cannot redefine property: ticker` when extending an already-initialized or `@Immutable` class.

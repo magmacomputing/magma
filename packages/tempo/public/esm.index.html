@@ -2,9 +2,227 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<title>Tempo ESM Test</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Tempo ESM Lite Test</title>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--bg-color: #0f172a;
+			--card-bg: rgba(30, 41, 59, 0.7);
+			--primary: #3b82f6;
+			--secondary: #8b5cf6;
+			--text-main: #f8fafc;
+			--text-muted: #94a3b8;
+			--accent: #10b981;
+		}
+
+		* { box-sizing: border-box; margin: 0; padding: 0; }
+
+		body {
+			font-family: 'Outfit', sans-serif;
+			background-color: var(--bg-color);
+			color: var(--text-main);
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			overflow: hidden;
+		}
+
+		.blob {
+			position: absolute;
+			filter: blur(80px);
+			z-index: -1;
+			opacity: 0.6;
+			animation: float 10s infinite alternate ease-in-out;
+		}
+		.blob-1 {
+			top: -10%; right: -5%;
+			width: 400px; height: 400px;
+			background: linear-gradient(to right, var(--primary), var(--secondary));
+			border-radius: 50%;
+		}
+		.blob-2 {
+			bottom: -10%; left: -5%;
+			width: 300px; height: 300px;
+			background: linear-gradient(to right, #ec4899, var(--secondary));
+			border-radius: 50%;
+			animation-delay: -5s;
+		}
+
+		@keyframes float {
+			0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+			100% { transform: translate(-30px, 50px) rotate(10deg) scale(1.1); }
+		}
+
+		.container {
+			width: 100%;
+			max-width: 500px;
+			padding: 20px;
+			perspective: 1000px;
+		}
+
+		.glass-card {
+			background: var(--card-bg);
+			backdrop-filter: blur(16px);
+			-webkit-backdrop-filter: blur(16px);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+			border-radius: 24px;
+			padding: 40px;
+			box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+			transform: translateY(0);
+			transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+			position: relative;
+			overflow: hidden;
+		}
+
+		.glass-card:hover {
+			transform: translateY(-5px);
+			box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+		}
+
+		.glass-card::before {
+			content: '';
+			position: absolute;
+			top: 0; left: 0; right: 0;
+			height: 2px;
+			background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+			transform: translateX(-100%);
+			animation: shimmer 3s infinite;
+		}
+
+		@keyframes shimmer { 100% { transform: translateX(100%); } }
+
+		h1 {
+			font-size: 2.2rem;
+			font-weight: 800;
+			margin-bottom: 5px;
+			background: linear-gradient(135deg, #fff, #a5b4fc);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			letter-spacing: -0.5px;
+		}
+
+		.subtitle {
+			color: var(--secondary);
+			font-size: 0.9rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 2px;
+			margin-bottom: 30px;
+			display: inline-block;
+			padding: 4px 12px;
+			background: rgba(139, 92, 246, 0.1);
+			border-radius: 100px;
+		}
+
+		.code-block {
+			background: rgba(15, 23, 42, 0.8);
+			border: 1px solid rgba(255,255,255,0.05);
+			border-radius: 12px;
+			padding: 24px 16px 16px;
+			margin-bottom: 24px;
+			position: relative;
+		}
+
+		.code-block::before {
+			content: '💻 snippet';
+			position: absolute;
+			top: -10px;
+			left: 12px;
+			background: #1e293b;
+			padding: 2px 8px;
+			border-radius: 4px;
+			font-size: 0.7rem;
+			color: var(--text-muted);
+			font-weight: 600;
+		}
+
+		code {
+			font-family: 'Fira Code', monospace;
+			font-size: 0.85rem;
+			color: #e2e8f0;
+			white-space: pre-wrap;
+			line-height: 1.5;
+		}
+
+		.keyword { color: #c678dd; }
+		.type { color: #e5c07b; }
+		.method { color: #61afef; }
+		.string { color: #98c379; }
+
+		.output-panel {
+			background: linear-gradient(145deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.02));
+			border: 1px solid rgba(16, 185, 129, 0.2);
+			border-radius: 12px;
+			padding: 20px;
+			text-align: center;
+		}
+
+		.label {
+			display: block;
+			font-size: 0.75rem;
+			color: var(--accent);
+			text-transform: uppercase;
+			letter-spacing: 1.5px;
+			font-weight: 800;
+			margin-bottom: 8px;
+		}
+
+		.result {
+			font-size: 1.4rem;
+			font-weight: 600;
+			color: #fff;
+			text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+		}
+
+		.pulse-loading {
+			animation: pulse 1.5s infinite alternate;
+			color: var(--text-muted);
+			text-shadow: none;
+		}
+
+		@keyframes pulse {
+			0% { opacity: 0.5; }
+			100% { opacity: 1; }
+		}
+
+		.footer {
+			margin-top: 30px;
+			text-align: center;
+			font-size: 0.8rem;
+			color: var(--text-muted);
+		}
+	</style>
 </head>
 <body>
+	<div class="blob blob-1"></div>
+	<div class="blob blob-2"></div>
+
+	<div class="container">
+		<div class="glass-card">
+			<h1>Tempo</h1>
+			<div class="subtitle">ESM Lite Build</div>
+			
+			<div class="code-block">
+				<code><span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo/core'</span>;
+<span class="keyword">import</span> { <span class="type">MutateModule</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo/mutate'</span>;
+
+<span class="type">Tempo</span>.<span class="method">extend</span>(MutateModule);
+<span class="keyword">const</span> t = <span class="keyword">new</span> <span class="type">Tempo</span>().<span class="method">add</span>({ days: <span class="type">1</span> });</code>
+			</div>
+
+			<div class="output-panel">
+				<span class="label">Result</span>
+				<div id="result" class="result pulse-loading">Initializing Temporal...</div>
+			</div>
+
+			<div class="footer">
+				Output also available in the developer console.
+			</div>
+		</div>
+	</div>
+
 	<!-- 
 		Note: This importmap illustrates the core/mutate pattern. 
 		Extend this map to include other subpaths (e.g., /format, /duration) 
@@ -13,6 +231,7 @@
 	<script type="importmap">
 	{
 		"imports": {
+			"jsbi": "https://cdn.jsdelivr.net/npm/jsbi@4.3.0/dist/jsbi.mjs",
 			"@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/core.index.js",
 			"@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.mutate.js",
 			"@magmacomputing/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/library@2/dist/common.index.js",
@@ -21,16 +240,27 @@
 	}
 	</script>
 	<script type="module">
+		import '@js-temporal/polyfill';
 		import { Tempo } from '@magmacomputing/tempo/core';
 		import { MutateModule } from '@magmacomputing/tempo/mutate';
 
 		// Opt-in to mutation logic
 		Tempo.extend(MutateModule);
 
-		const t = new Tempo().add({ days: 1 });
-		console.log(t.toString());
+		try {
+			const t = new Tempo().add({ days: 1 });
+			console.log('Tempo execution successful:', t.toString());
+			
+			const resEl = document.getElementById('result');
+			resEl.textContent = t.toString();
+			resEl.classList.remove('pulse-loading');
+		} catch (e) {
+			console.error(e);
+			const resEl = document.getElementById('result');
+			resEl.textContent = 'Error: Check Console';
+			resEl.classList.remove('pulse-loading');
+			resEl.style.color = '#ef4444';
+		}
 	</script>
-
-	<p>Open the console to see the output.</p>
 </body>
 </html>

@@ -145,14 +145,14 @@ function handleVisibility() {
       if (document.visibilityState !== 'visible') return
       isResuming.value = false
       tickerActive.value = true
-      console.info('%c[Tempo]%c ⚡ Ticker Resumed', 'color: #2563eb; font-weight: bold', 'color: inherit')
+      console.info('%c[Tempo]%c ⚡ Resuming Ticker', 'color: #2563eb; font-weight: bold', 'color: inherit')
       startTicker()
       startCarousel()
     }, 1200)
   } else {
     isResuming.value = false
     tickerActive.value = false
-    console.info('%c[Tempo]%c 💤 Ticker Paused (Standby)', 'color: #71717a; font-weight: bold', 'color: inherit')
+    console.info('%c[Tempo]%c 💤 Pausing Ticker (Standby)', 'color: #71717a; font-weight: bold', 'color: inherit')
     ticker?.stop()
     if (fallbackIntervalId) clearInterval(fallbackIntervalId)
     clearInterval(carouselTimer)
