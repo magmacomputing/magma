@@ -49,13 +49,10 @@ export interface Extension extends Plugin {
 /**
  * ## Range
  * Discrete time interval within a specific term.
+ * 
+ * When Range.year is a number it is interpreted as a relative offset if |year| ≤ 10 
+ * and as an absolute year otherwise.
  */
-// export interface Range {
-// 	key: string;
-// 	start: bigint;
-// 	end: bigint;
-// 	cycle?: number;
-// }
 export type Range = Prettify<{
 	key: string;
 	group?: string;																						// categorization marker (e.g. 'western', 'chinese', 'fiscal')

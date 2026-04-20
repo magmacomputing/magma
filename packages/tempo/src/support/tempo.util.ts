@@ -1,7 +1,7 @@
 import { isDefined } from '#library/type.library.js';
 import { asArray } from '#library/coercion.library.js';
-import type { Tempo } from './tempo.class.js';
-import type { Range, DateTimeUnit } from './tempo.type.js';
+import type { Tempo } from '../tempo.class.js';
+import type { Range, DateTimeUnit } from '../tempo.type.js';
 
 /** internal schema for Temporal units and their Tempo property aliases */
 export const SCHEMA = [

@@ -40,8 +40,8 @@ describe(`${label} add method`, () => {
     const history2 = t2.parse.result.length;
 
     expect(history2).toBeGreaterThan(history1);
-    // Verify the mutation was recorded (it appears as a ZonedDateTime in the history)
-    expect(t2.parse.result.some(r => r.type?.includes('ZonedDateTime'))).toBe(true);
+    // Verify the mutation was recorded (it appears as a Mutation in the history)
+    expect(t2.parse.result.some(r => r.type === 'Mutation')).toBe(true);
     expect(t2.parse.result[0].match).toBeDefined();
   });
 

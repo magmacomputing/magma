@@ -1,5 +1,5 @@
-import { getTermRange, defineTerm, defineRange, resolveCycleWindow } from '../plugin.util.js';
-import { COMPASS } from '../../tempo.enum.js';
+import { getTermRange, defineTerm, defineRange, resolveCycleWindow } from '../term.util.js';
+import { COMPASS } from '../../support/tempo.enum.js';
 import type { Tempo } from '../../tempo.class.js';
 
 /** definition of meteorological season ranges */
