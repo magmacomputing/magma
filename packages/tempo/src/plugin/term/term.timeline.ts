@@ -1,4 +1,4 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../plugin.util.js';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../term.util.js';
 import type { Tempo } from '../../tempo.class.js';
 
 /** definition of daily time periods */

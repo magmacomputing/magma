@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -27,8 +27,7 @@
     "**/*-polyfill.ts",
     "**/module.*.js",
     "**/module.*.ts",
-    "**/tempo.index.js",
-    "src/tempo.index.ts"
+    "**/tempo.index.js"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
@@ -94,6 +93,14 @@
       "development": "./src/plugin/term/term.*.ts",
       "default": "./dist/plugin/term/term.*.js"
     },
+    "#tempo/support": {
+      "development": "./src/support/support.index.ts",
+      "default": "./dist/support/support.index.js"
+    },
+    "#tempo/support/*.js": {
+      "development": "./src/support/*.ts",
+      "default": "./dist/support/*.js"
+    },
     "#tempo/*.js": {
       "development": "./src/*.ts",
       "default": "./dist/*.js"
@@ -105,8 +112,8 @@
       "import": "./dist/tempo.index.js"
     },
     "./enums": {
-      "types": "./dist/tempo.enum.d.ts",
-      "import": "./dist/tempo.enum.js"
+      "types": "./dist/support/tempo.enum.d.ts",
+      "import": "./dist/support/tempo.enum.js"
     },
     "./extend/*": {
       "types": "./dist/plugin/extend/extend.*.d.ts",
@@ -202,7 +209,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.2.4",
+    "@magmacomputing/library": "2.2.5",
     "@rollup/plugin-alias": "^6.0.0",
     "cross-env": "^7.0.3",
     "magic-string": "^0.30.21",

@@ -1,20 +1,24 @@
 import { Tempo } from '#tempo/core';
-import sym from '#tempo/tempo.symbol.js';
-
-let originalReset: Set<any>;
-
-beforeAll(() => {
-	// Preserve original reset hooks and provide a clean slate for this core test
-	originalReset = (globalThis as any)[sym.$reset];
-	(globalThis as any)[sym.$reset] = new Set();
-});
-
-afterAll(() => {
-	// Restore original state to avoid polluting other tests
-	(globalThis as any)[sym.$reset] = originalReset;
-});
+import { getRuntime } from '#tempo/support';
 
 describe('Tempo.duration() (Core)', () => {
+	// Preserve the existing reset hooks and give this test suite a clean slate.
+	// Using the runtime API instead of the legacy globalThis[sym.$reset] slot.
+	let savedHooks: Array<() => void> = [];
+
+	beforeAll(() => {
+		const hooks = getRuntime().resetHooks;
+		hooks.forEach(h => savedHooks.push(h));
+		hooks.clear();
+	});
+
+	afterAll(() => {
+		// Restore original state to avoid polluting other tests
+		const hooks = getRuntime().resetHooks;
+		hooks.clear();
+		savedHooks.forEach(h => hooks.add(h));
+	});
+
 	beforeEach(() => { Tempo.init(); });
 	afterEach(() => vi.restoreAllMocks())
 
@@ -27,7 +31,7 @@ describe('Tempo.duration() (Core)', () => {
 		// @ts-ignore
 		const { DurationModule } = await import('#tempo/duration');
 		Tempo.extend(DurationModule);
-		
+
 		const d = Tempo.duration('P1Y');
 		expect(d.years).toBe(1);
 		expect(d.iso).toBe('P1Y');

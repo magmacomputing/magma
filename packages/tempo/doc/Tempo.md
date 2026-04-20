@@ -29,16 +29,10 @@ Tempo is an ESM-first library. You can use it in the browser without a build ste
 <script type="importmap">
 {
   "imports": {
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.esm.js",
     "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/core.index.js",
-    "@magmacomputing/tempo/ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/extend/extend.ticker.js",
-    "@magmacomputing/tempo/duration": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.duration.js",
-    "@magmacomputing/tempo/format": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.format.js",
-    "@magmacomputing/tempo/plugin": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/plugin.index.js",
-    "@magmacomputing/tempo/enums": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.enum.js",
-    "@magmacomputing/tempo/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/library.index.js",
+    "@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.mutate.js",
     "@magmacomputing/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/library@2/dist/common.index.js",
-    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.min.js"
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js"
   }
 }
 </script>
@@ -56,7 +50,7 @@ For legacy environments or simple prototypes, use the single-file bundle:
 ```
 
 > [!TIP]
-> **CDN Versioning**: The examples above use `@2` to pin to the current major version. To always reference the **latest** release, you can omit the version string (e.g., `.../@magmacomputing/tempo/dist/tempo.bundle.js`).
+> **CDN Versioning**: The examples above use pinned versions (`@magmacomputing/tempo@2`, `@magmacomputing/library@2`, `@js-temporal/polyfill@0.5`) for production stability. To use the latest releases, you can omit the version string from every URL (e.g., remove `@2` from all Magma entries and `@0.5` from the polyfill). Ensure all `@magmacomputing/...` entries resolve to the same release to avoid mixed-version loading.
 
 ---
 

@@ -1,5 +1,5 @@
 import { Tempo } from './tempo.class.js';
-import { onRegistryReset } from './tempo.register.js';
+import { onRegistryReset, enums } from '#tempo/support';
 
 import { ParseModule } from '#tempo/parse';
 import { MutateModule } from '#tempo/mutate';
@@ -15,4 +15,4 @@ onRegistryReset(() => { Tempo.extend(core); });
 Tempo.extend(core);
 
 export * from './tempo.class.js';
-export { default as enums } from './tempo.enum.js';
+export { enums };

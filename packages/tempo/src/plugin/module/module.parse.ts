@@ -1,18 +1,16 @@
 import '#library/temporal.polyfill.js';
-import { asType, isNull, isString, isObject, isZonedDateTime, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/type.library.js';
-import { asInteger, isNumeric } from '#library/coercion.library.js';
+import { asType, isNull, isString, isObject, isZonedDateTime, isDefined, isUndefined, isIntegerLike, isEmpty, type TypeValue } from '#library/type.library.js';
+import { asArray, asInteger, isNumeric } from '#library/coercion.library.js';
 import { instant } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 
 import type { Tempo } from '../../tempo.class.js';
-import { isTempo } from '../../tempo.symbol.js';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './module.lexer.js';
-import { _MODULES } from '../../tempo.register.js';
-import { Match } from '../../tempo.default.js';
+import sym, { isTempo, Match, getRuntime } from '#tempo/support';
 import { resolveTermMutation, resolveTermValue } from './module.term.js';
 import { compose } from './module.composer.js';
-import { getRange, getTermRange, defineInterpreterModule } from '../plugin.util.js';
-import { sym } from '../../tempo.symbol.js';
+import { defineInterpreterModule } from '../plugin.util.js';
+import { getRange, getTermRange } from '../term.util.js';
 import * as t from '../../tempo.type.js';
 
 /**
@@ -43,10 +41,11 @@ const ParseEngine = {
 			today = isZonedDateTime(basis) ? basis : (isTempo(basis) ? (basis as any).toDateTime() : instant().toZonedDateTimeISO(tz).withCalendar(cal));
 
 			const TempoClass = this.constructor as typeof Tempo;
+			const terms = getRuntime().pluginsDb.terms;
 
 			if (term) {
 				const ident = term.startsWith('#') ? term.slice(1) : term;
-				const termObj = (TempoClass as any)[sym.$terms].find((t: any) => t.key === ident || t.scope === ident);
+				const termObj = terms.find((termEntry: any) => termEntry.key === ident || termEntry.scope === ident);
 				if (!termObj) {
 					(TempoClass as any)[sym.$termError](state.config, term);
 					return undefined as any;
@@ -76,8 +75,8 @@ const ParseEngine = {
 
 				if (tempo === term) {
 					const range = termObj.define.call(this, false, today);
-					const list = isUndefined(range) ? [] : (Array.isArray(range) ? range : [range]);
-					const current = (getTermRange(this, list, false, today) as any);
+					const list = isUndefined(range) ? [] : asArray(range as t.Range | t.Range[]);
+					const current = getTermRange(this, list, false, today) as t.ResolvedRange | undefined;
 					if (current?.start) return current.start.toDateTime().withTimeZone(tz).withCalendar(cal);
 				}
 			}
@@ -88,15 +87,19 @@ const ParseEngine = {
 				return undefined as any;
 			}
 
-			if (isUndefined(term) && isObject(tempo) && Object.keys(tempo).some(k => k.startsWith('#'))) {
-				const msg = `Unsupported Syntax: Term-based mutations (#) cannot be passed to the constructor. Use new Tempo().set(${JSON.stringify(tempo)}) instead.`;
-				(TempoClass as any)[sym.$logError](state.config, msg);
-				throw new Error(msg);
-			}
-
-			if (isObject(tempo) && Object.keys(tempo).some(k => k.startsWith('#')) && (TempoClass as any)[sym.$terms].length === 0) {
-				(TempoClass as any)[sym.$termError](state.config, Object.keys(tempo).find(k => k.startsWith('#'))!);
-				return undefined as any;
+			if (isObject(tempo)) {
+				const termKey = Object.keys(tempo).find(k => k.startsWith('#'));
+				if (termKey) {
+					if (isUndefined(term)) {
+						const msg = `Unsupported Syntax: Term-based mutations (#) cannot be passed to the constructor. Use new Tempo().set(${JSON.stringify(tempo)}) instead.`;
+						(TempoClass as any)[sym.$logError](state.config, msg);
+						throw new Error(msg);
+					}
+					if (terms.length === 0) {
+						(TempoClass as any)[sym.$termError](state.config, termKey);
+						return undefined as any;
+					}
+				}
 			}
 
 			const isAnchored = isDefined(dateTime) || isDefined(state.anchor);
@@ -136,11 +139,12 @@ const ParseEngine = {
 	},
 
 	/** conform input to a Temporal.ZonedDateTime */
-	conform(this: any, tempo: t.DateTime, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): t.TypeValue<any> {
+	conform(this: any, tempo: t.DateTime, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): TypeValue<any> {
 		const state = this[sym.$Internal]();
 		const arg = asType(tempo);
 		const { type, value } = arg;
 		const TempoClass = this.constructor as typeof Tempo;
+		const terms = getRuntime().pluginsDb.terms;
 
 
 		if (!isZonedDateTime(dateTime)) {
@@ -153,9 +157,9 @@ const ParseEngine = {
 		if (ParseEngine.isZonedDateTimeLike.call(this, tempo)) {
 			const { timeZone, calendar, value: _, ...options } = tempo as t.Options;
 
-			const keys = Object.keys(options);
-			if (keys.some(k => k.startsWith('#')) && (TempoClass as any)[sym.$terms].length === 0) {
-				(TempoClass as any)[sym.$termError](state.config, keys.find(k => k.startsWith('#'))!);
+			const termKey = Object.keys(options).find(k => k.startsWith('#'));
+			if (termKey && terms.length === 0) {
+				(TempoClass as any)[sym.$termError](state.config, termKey);
 				return undefined as any;
 			}
 
@@ -210,7 +214,7 @@ const ParseEngine = {
 	},
 
 	/** match a string or number against known layouts */
-	parseLayout(this: any, value: string | number, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): t.TypeValue<any> {
+	parseLayout(this: any, value: string | number, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): TypeValue<any> {
 		const state = this[sym.$Internal]();
 		const arg = asType(value);
 		const { type } = arg;
