@@ -4,7 +4,7 @@ import { SeasonTerm } from './term.season.js'
 import { ZodiacTerm } from './term.zodiac.js'
 import { TimelineTerm } from './term.timeline.js'
 
-import type {Tempo} from '../../support/tempo.class.js';
+import type { Tempo } from '../../tempo.class.js';
 
 /** collection of built-in terms for initial registration */
 export const StandardTerms = [QuarterTerm, SeasonTerm, ZodiacTerm, TimelineTerm];

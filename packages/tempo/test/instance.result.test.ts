@@ -17,7 +17,6 @@ describe(`${label} parse result accumulation`, () => {
     const len1 = t1.parse.result.length;
     const len2 = t2.parse.result.length;
     const len3 = t3.parse.result.length;
-
     expect(len3).toBeGreaterThan(len2);
     expect(len2).toBeGreaterThan(len1);
     expect(len3).toBeGreaterThanOrEqual(5);
@@ -28,9 +27,6 @@ describe(`${label} parse result accumulation`, () => {
       .add({ day: 1 })
       .set({ period: 'noon' });
 
-    // 1 for constr, 1 for .set (add doesn't push new parsing but preserves)
-    // Actually user said: "expect that #add will now push a 'ZonedDateTime' rule-match"
-    // Let's check current implementation of #add
     expect(t.parse.result.length).toBeGreaterThanOrEqual(2);
   });
 

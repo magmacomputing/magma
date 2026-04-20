@@ -1,5 +1,5 @@
 import { Tempo } from '#tempo';
-import { getRuntime } from '#tempo/tempo.runtime.js';
+import { getRuntime } from '#tempo/support/tempo.runtime.js';
 import { TickerModule } from '#tempo/ticker';
 
 describe('Ticker Registration / Initialization', () => {

@@ -1,6 +1,6 @@
 import { Tempo, enums } from '#tempo/core';
 import { stringify, objectify, enumify, getType } from '#library';
-import { Token, Snippet } from '#tempo/tempo.default.js';
+import { Token, Snippet } from '#tempo/support/tempo.default.js';
 
 // Pre-load Tempo and Token to the global scope for ease of use in the core REPL
 Object.assign(globalThis, { Tempo, Token, Snippet, getType, stringify, objectify, enumify, enums });

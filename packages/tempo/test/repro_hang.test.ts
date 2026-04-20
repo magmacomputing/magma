@@ -1,6 +1,6 @@
 import { getType } from '#library/type.library.js'
 import { Tempo } from '#tempo'
-import { isTempo } from '#tempo/tempo.symbol.js';
+import { isTempo } from '#tempo/support/tempo.symbol.js';
 
 describe('Tempo Initialization Hang Repro', () => {
 	it('should initialize without hanging when accessed via Proxy', () => {

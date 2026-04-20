@@ -1,8 +1,7 @@
 import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from '#library/type.library.js';
 import { secureRef } from '#library/proxy.library.js';
 
-import sym from '../support/tempo.symbol.js';
-import { getRuntime } from '../support/tempo.runtime.js';
+import sym, { getRuntime } from '#tempo/support';
 import type { Tempo } from '../tempo.class.js';
 import type { Plugin } from './plugin.type.js';
 

@@ -1,4 +1,5 @@
 import '#library/temporal.polyfill.js';
+
 import { Logify } from '#library/logify.class.js';
 import { secure } from '#library/utility.library.js';
 import { Immutable, Serializable } from '#library/class.library.js';
@@ -16,14 +17,17 @@ import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/inte
 import { instant } from '#library/temporal.library.js';
 import type { Property, Secure } from '#library/type.library.js';
 
-import { getRuntime } from './support/tempo.runtime.js';
-import sym, { isTempo } from './support/tempo.symbol.js';
-import { registryUpdate, registryReset, onRegistryReset } from './support/tempo.register.js';
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
-import { Match, Token, Snippet, Layout, Event, Period, Default, Guard } from './support/tempo.default.js';
-import enums, { STATE, DISCOVERY } from './support/tempo.enum.js';
+
+import sym, { getRuntime, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Default, Guard, enums, STATE, DISCOVERY } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
+
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		Tempo: { type: 'Tempo', value: Tempo };
+	}
+}
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 const Context = getContext();																// current execution context
 
@@ -998,7 +1002,7 @@ export class Tempo {
 	 * This surface is not part of the public contract and is subject to change.
 	 */
 	[sym.$Internal]() {
-		const self = this as any;
+		const self = (this as any)[lib.$Target] ?? this;
 		return {
 			get zdt() { return self.#zdt },
 			set zdt(val: any) { self.#zdt = val },
@@ -1058,6 +1062,7 @@ export class Tempo {
 	constructor(tempo?: t.DateTime | t.Options, options: t.Options = {}) {
 		this.#now = instant();																	// stash current Instant
 		[this.#tempo, this.#options] = this.#swap(tempo, options);	// swap arguments around
+		if (isZonedDateTime(this.#tempo)) this.#zdt = this.#tempo;
 		this.#setLocal(this.#options);													// parse local options
 
 		const { mode } = this.#local.parse;
@@ -1079,7 +1084,7 @@ export class Tempo {
 		if (isObject(handoff)) {
 			this.#errored = handoff.errored ?? false;
 			this.#mutateDepth = handoff.mutateDepth ?? 0;
-			this.#parseDepth = handoff.parseDepth ?? 0;
+			this.#parseDepth = 0;
 			this.#matches = handoff.matches;
 		} else if ((this.#options as any)[sym.$errored]) {
 			this.#errored = true;
@@ -1094,7 +1099,7 @@ export class Tempo {
 		try {
 			this.#zdt = this.#parse(this.#tempo as t.DateTime, this.#anchor);
 			secure(this.#local.config);
-			const skip = [this.#local.parse.format, this.#local.parse.term].filter(v => v !== undefined);
+			const skip = [this.#local.parse.format, this.#local.parse.term, this.#local.parse.result].filter(v => v !== undefined);
 			secure(this.#local.parse, new WeakSet(skip as any));
 		} catch (err) {
 			const msg = `Cannot create Tempo: ${(err as Error).message}\n${(err as Error).stack}`;
@@ -1303,14 +1308,15 @@ export class Tempo {
 	}
 
 	/** Instance-specific parse rules (merged with global) */
-	get parse() {
-		this.#ensureParsed();
+	get parse(): Internal.Parse {
+		const self = (this as any)[lib.$Target] ?? this;
+		self.#ensureParsed();
 		// Return a shadowed view so we can safely inject matches without breaking the freeze on the original state
-		const out = Object.create(this.#local.parse);
-		if (this.#matches !== undefined) {
-			Object.defineProperty(out, 'result', { value: this.#matches, enumerable: true, configurable: true });
+		const out = Object.create(self.#local.parse);
+		if (self.#matches !== undefined) {
+			Object.defineProperty(out, 'result', { value: self.#matches, enumerable: true, configurable: true });
 		}
-		return out;
+		return out as t.Internal.Parse;
 	}
 
 	/** Keyed results for all resolved terms */ get term() { return this.#term }
@@ -1419,11 +1425,11 @@ export class Tempo {
 	#swap(tempo?: t.DateTime | t.Options, options: t.Options = {}): [t.DateTime | undefined, t.Options] {
 		if (isTempo(tempo)) {
 			// preserve parse result history when creating new instance from an existing one
-			return [tempo, { result: [...tempo.parse.result], ...options }];
+			return [tempo, Object.assign({ result: [...tempo.parse.result] }, options)];
 		}
 		return this.#isOptions(tempo)
-			? [tempo.value, { ...tempo }]
-			: [tempo, { ...options }];
+			? [tempo.value, Object.assign({}, tempo)]
+			: [tempo, options];
 	}
 
 	/** check if we've been given a Tempo Options object */

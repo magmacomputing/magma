@@ -1,5 +1,5 @@
 import { Tempo } from '#tempo/core';
-import { getRuntime } from '#tempo/tempo.runtime.js';
+import { getRuntime } from '#tempo/support/tempo.runtime.js';
 
 // Preserve the existing reset hooks and give this test suite a clean slate.
 // Using the runtime API instead of the legacy globalThis[sym.$reset] slot.

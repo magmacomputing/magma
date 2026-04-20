@@ -31,7 +31,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 	let zdt = selfZdt.withTimeZone(overrides.timeZone).withCalendar(overrides.calendar);
 	state.parseDepth++;
 	const isRoot = state.parseDepth === 1;
-	if (isRoot) state.matches = Array.isArray(this.parse?.result) ? [...this.parse.result] : [];
+	const matches = Array.isArray(this.parse?.result) ? Array.from(this.parse.result) : [];
 
 	try {
 		if (isDefined(args)) {
@@ -92,11 +92,10 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 							})(key, adjust, type);
 
 							const slug = `${op}.${single}`;
-
 							const parseInner = (input: any, anchor?: any) => {
 								const res = (this.constructor as any).from(input, { ...this.config, anchor });
 								if (res.isValid) {
-									state.matches.push(...res.parse.result);
+									matches.push(...res.parse.result);
 									return res.toDateTime();
 								}
 								return undefined;
@@ -170,20 +169,22 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 			else {
 				// 3. Return a new instance with the final state
 				// @ts-ignore - access to private constructor/state
-				return new (this.constructor as any)(args, { ...state.options, ...this.config, ...options, anchor: zdt, [sym.$Internal]: state });
+				return new (this.constructor as any)(args, { ...state.options, ...this.config, ...options, anchor: zdt, [sym.$Internal]: { ...state, matches } });
 			}
 		}
 
 		if (state.errored) {
 			// @ts-ignore - access to private constructor fallback
-			return new (this.constructor as any)(null, { ...state.options, ...overrides, ...options, [sym.$Internal]: state });
+			return new (this.constructor as any)(null, { ...state.options, ...overrides, ...options, [sym.$Internal]: { ...state, matches } });
 		}
 
 		// @ts-ignore
-		return new (this.constructor as any)(zdt, { ...state.options, ...overrides, ...options, anchor: zdt, [sym.$Internal]: state });
+		matches.push({ type: 'ZonedDateTime', value: zdt.toString(), match: zdt });
+
+		// @ts-ignore
+		return new (this.constructor as any)(zdt, { ...state.options, ...overrides, ...options, anchor: zdt, [sym.$Internal]: { ...state, matches } });
 
 	} finally {
-		if (isRoot) state.matches = undefined;
 		state.parseDepth--;
 	}
 }

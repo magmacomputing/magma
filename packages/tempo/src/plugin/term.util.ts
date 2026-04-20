@@ -1,10 +1,8 @@
 import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
-import { isDefined, isFunction, isString, isUndefined, isNumber, isObject, isEmpty } from '#library/type.library.js';
+import { isDefined, isFunction, isString, isUndefined, isNumber } from '#library/type.library.js';
 import { secure } from '#library/utility.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
-import { SCHEMA, getLargestUnit } from '../support/tempo.util.js';
-import sym, { isTempo } from '../support/tempo.symbol.js';
-import { getRuntime } from '../support/tempo.runtime.js';
+import sym, { SCHEMA, getLargestUnit, isTempo, getRuntime } from '#tempo/support';
 import type { Tempo } from '../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange } from './plugin.type.js';
 import { getHost } from './plugin.util.js';

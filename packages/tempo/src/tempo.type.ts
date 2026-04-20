@@ -7,25 +7,17 @@
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
 
-import * as enums from '#tempo/tempo.enum.js';
-import sym from '#tempo/tempo.symbol.js';
-import type { Snippet, Layout, Event, Period, Token } from '#tempo/tempo.default.js';
+import * as enums from '#tempo/support/tempo.enum.js';
+import sym from '#tempo/support/tempo.symbol.js';
+import type { Snippet, Layout, Event, Period, Token } from '#tempo/support/tempo.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
-export type { TypeValue };
-import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension } from './plugin/plugin.type.js';
+import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension } from '#tempo/plugin/plugin.type.js';
 
 /**
  * Structural forward-reference to the Tempo class.
  * 'import type' is safe for circular ESM references — erased at runtime.
 */
 import type { Tempo } from '#tempo/tempo.class.js';
-
-declare module '#library/type.library.js' {
-	interface TypeValueMap<T> {
-		Tempo: { type: 'Tempo', value: Tempo };
-		'Tempo.Duration': { type: 'Tempo.Duration', value: Duration };
-	}
-}
 
 declare global {
 	interface globalThis {
@@ -199,6 +191,14 @@ export namespace Internal {
 		/** parsing rules */																		parse: Parse;
 	}
 
+	/** debug a Tempo instantiation */
+	export type MatchExtend = { type: 'Event' | 'Period', value: string | number | Function }
+	export type Match = {
+		/** pattern which matched the input */									match?: string | undefined;
+		/** groups from the pattern match */										groups?: Groups;
+		/** was this a nested/anchored parse? */								isAnchored?: boolean;
+	} & (TypeValue<any> | MatchExtend)
+
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */
 	export interface Parse {
 		/** Locales which prefer 'mm-dd-yyyy' date-order */			mdyLocales: { locale: string, timeZones: string[] }[];
@@ -220,14 +220,6 @@ export namespace Internal {
 		/** @internal localized Master Guard scanner */					guard?: { test(str: string): boolean };
 	}
 
-	/** debug a Tempo instantiation */
-	export type MatchExtend = { type: 'Event' | 'Period', value: string | number | Function }
-	export type Match = {
-		/** pattern which matched the input */									match?: string | undefined;
-		/** groups from the pattern match */										groups?: Groups;
-		/** was this a nested/anchored parse? */								isAnchored?: boolean;
-	} & (TypeValue<any> | MatchExtend)
-
 	/** drop the parse-only Options */
 	export type OptionsKeep = Omit<BaseOptions, "mdyLocales" | "mdyLayouts" | "pivot" | "snippet" | "layout" | "event" | "period" | "value">
 
@@ -248,3 +240,5 @@ export namespace Internal {
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: Plugin | Plugin[];
 	}
 }
+
+export type Match = Internal.Match;

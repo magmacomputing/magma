@@ -1,20 +1,17 @@
 import '#library/temporal.polyfill.js';
-import { asType, isNull, isString, isObject, isZonedDateTime, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/type.library.js';
+import { asType, isNull, isString, isObject, isZonedDateTime, isDefined, isUndefined, isIntegerLike, isEmpty, type TypeValue } from '#library/type.library.js';
 import { asArray, asInteger, isNumeric } from '#library/coercion.library.js';
 import { instant } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 
-import type { Tempo } from '../../support/tempo.class.js';
+import type { Tempo } from '../../tempo.class.js';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './module.lexer.js';
-import { registryUpdate } from '../../support/tempo.register.js';
-import sym, { isTempo } from '../../support/tempo.symbol.js';
-import { Match } from '../../support/tempo.default.js';
+import sym, { isTempo, Match, getRuntime } from '#tempo/support';
 import { resolveTermMutation, resolveTermValue } from './module.term.js';
 import { compose } from './module.composer.js';
 import { defineInterpreterModule } from '../plugin.util.js';
 import { getRange, getTermRange } from '../term.util.js';
-import { getRuntime } from '../../support/tempo.runtime.js';
-import * as t from '../../support/tempo.type.js';
+import * as t from '../../tempo.type.js';
 
 /**
  * Internal Parse Engine Implementation
@@ -137,7 +134,7 @@ const ParseEngine = {
 	},
 
 	/** conform input to a Temporal.ZonedDateTime */
-	conform(this: any, tempo: t.DateTime, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): t.TypeValue<any> {
+	conform(this: any, tempo: t.DateTime, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): TypeValue<any> {
 		const state = this[sym.$Internal]();
 		const arg = asType(tempo);
 		const { type, value } = arg;
@@ -211,7 +208,7 @@ const ParseEngine = {
 	},
 
 	/** match a string or number against known layouts */
-	parseLayout(this: any, value: string | number, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): t.TypeValue<any> {
+	parseLayout(this: any, value: string | number, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): TypeValue<any> {
 		const state = this[sym.$Internal]();
 		const arg = asType(value);
 		const { type } = arg;

@@ -27,6 +27,12 @@ declare module '../../tempo.class.js' {
 	}
 }
 
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		'Tempo.Duration': { type: 'Tempo.Duration', value: Tempo.Duration };
+	}
+}
+
 /**
  * Convert a Temporal.Duration to a full Tempo.Duration object (EDO).
  */

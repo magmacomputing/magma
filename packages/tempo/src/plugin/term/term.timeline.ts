@@ -1,5 +1,5 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../term.util.js';
-import type { Tempo } from '../../support/tempo.class.js';
+import type { Tempo } from '../../tempo.class.js';
 
 /** definition of daily time periods */
 const groups = defineRange([

@@ -95,6 +95,10 @@
       "development": "./src/plugin/term/term.*.ts",
       "default": "./dist/plugin/term/term.*.js"
     },
+    "#tempo/support": {
+      "development": "./src/support/support.index.ts",
+      "default": "./dist/support/support.index.js"
+    },
     "#tempo/support/*.js": {
       "development": "./src/support/*.ts",
       "default": "./dist/support/*.js"

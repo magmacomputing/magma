@@ -1,5 +1,5 @@
 import { Tempo } from '#tempo';
-import { isTempo } from '#tempo/tempo.symbol.js';
+import { isTempo } from '#tempo/support/tempo.symbol.js';
 import '#tempo/ticker'
 
 // TickerModule self-registers on import via definePlugin
