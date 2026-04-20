@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.6] - 2026-04-20
+
+### Added
+- **Premium Browser Test Dashboard**: Overhauled the browser-based test suite with a modern, glassmorphism-inspired UI featuring interactive feedback, live result streaming, and robust error visualization.
+- **Isomorphic Export Support**: Enhanced the `dist/tempo.bundle.esm.js` to provide both a default export and a named `{ Tempo }` export, ensuring the exact same import syntax works seamlessly across Node.js and browser environments.
+
+### Changed
+- **Unified Import Syntax**: Standardized all documentation and testing examples to use named imports (`import { Tempo } from '@magmacomputing/tempo'`), eliminating environment-specific inconsistencies.
+
+### Fixed
+- **JSBI Resolution**: Explicitly added `jsbi` to all documentation import maps to resolve bare-specifier errors in `@js-temporal/polyfill` when running in strict browser environments.
+- **Documentation Formatting**: Corrected orphaned script blocks and added missing headers to the `Tempo.md` guide for better readability.
+
+
 ## [2.2.5] - 2026-04-20
 
 ### Added

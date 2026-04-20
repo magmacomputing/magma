@@ -5,28 +5,39 @@ Tempo is designed as a modular library, allowing you to include only the feature
 ## Core vs. Full
 
 * **@magmacomputing/tempo/core**: The bare-bones Tempo engine. Includes parsing, basic getters, and internal state management.
-* **@magmacomputing/tempo**: The "batteries included" version. Includes all standard modules (Duration, Format, Ticker, Term Registry, etc.).
-
-## Available Modules
-
-### Duration Module (@magmacomputing/tempo/duration)
-Adds support for `.until()` and `.since()` instance methods, as well as the static `Tempo.duration()` factory.
+* **@magmacomputing/tempo**: The "batteries included" version. Includes all standard modules (Duration, Format, Term Registry, Mutate, etc.).
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
 import { DurationModule } from '@magmacomputing/tempo/duration';
 import { FormatModule } from '@magmacomputing/tempo/format';
+import { MutateModule } from '@magmacomputing/tempo/mutate';
+import { ParseModule } from '@magmacomputing/tempo/parse';
+import { TermsModule } from '@magmacomputing/tempo/term';
+
+// and an optional ticker module (for reactive time pulsing)
 import { TickerModule } from '@magmacomputing/tempo/ticker';
 
 // Individual extension...
 Tempo.extend(DurationModule);
 
 // ...or bulk extension!
-Tempo.extend(DurationModule, FormatModule, TickerModule);
+Tempo.extend(DurationModule, FormatModule, TermsModule, MutateModule, ...);
 ```
+
+## Available Modules
+
+### Duration Module (@magmacomputing/tempo/duration)
+Adds support for `.until()` and `.since()` instance methods, as well as the static `Tempo.duration()` factory.
 
 ### Format Module (@magmacomputing/tempo/format)
 Adds support for the `.format()` method and custom layout resolution.
+
+### Mutate Module (@magmacomputing/tempo/mutate)
+Adds support for the `.add()` and `.set()` instance methods, enabling time manipulation.
+
+### Parse Module (@magmacomputing/tempo/parse)
+Handles string parsing and token extraction. This is included automatically in the `full` package, but must be explicitly opted-in when using `core`.
 
 ### Ticker Module (@magmacomputing/tempo/ticker)
 Adds support for reactive time-pulsing via the static `Tempo.ticker()` method.

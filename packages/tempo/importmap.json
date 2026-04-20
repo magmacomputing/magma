@@ -1,5 +1,7 @@
 {
   "imports": {
+    "jsbi": "https://cdn.jsdelivr.net/npm/jsbi@4.3.0/dist/jsbi.mjs",
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
     "@magmacomputing/tempo": "./dist/tempo.index.js",
     "@magmacomputing/tempo/core": "./dist/core.index.js",
     "@magmacomputing/tempo/ticker": "./dist/plugin/extend/extend.ticker.js",

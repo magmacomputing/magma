@@ -29,6 +29,7 @@ Tempo is an ESM-first library. You can use it in the browser without a build ste
 <script type="importmap">
 {
   "imports": {
+    "jsbi": "https://cdn.jsdelivr.net/npm/jsbi@4.3.0/dist/jsbi.mjs",
     "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/core.index.js",
     "@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.mutate.js",
     "@magmacomputing/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/library@2/dist/common.index.js",
@@ -105,6 +106,9 @@ const t = new Tempo('next Friday');
 console.log(t.format('{dd} {mon} {yyyy}'));
 ```
 
+### 🌐 Browser Usage
+
+```html
 <script type="module">
   // Optional: Import polyfill if not natively supported
   if (!globalThis.Temporal) {
