@@ -4,9 +4,8 @@ import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { getRelativeTime } from '#library/international.library.js';
 
-import { defineModule, interpret } from '../plugin.util.js';
-import enums from '../../tempo.enum.js';
-import sym from '../../tempo.symbol.js';
+import { defineInterpreterModule, interpret } from '../plugin.util.js';
+import enums from '../../support/tempo.enum.js';
 import type { Tempo } from '../../tempo.class.js';
 
 declare module '../../tempo.class.js' {
@@ -18,13 +17,19 @@ declare module '../../tempo.class.js' {
 	interface Tempo {
 		/** time duration until (returns Duration) */						until(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): Tempo.Duration;
 		/** time duration until (with unit, returns number) */	until(unit: Tempo.Unit, opts?: Tempo.Options): number;
-		/** time duration until another date-time (with unit ) */until(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, unit: Tempo.Unit): number;
+		/** time duration until another date-time (with unit) */until(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, unit: Tempo.Unit): number;
 		/** fallback: union of possible returns */							until(optsOrDate?: Tempo.DateTime | Tempo.Until | Tempo.Options, optsOrUntil?: Tempo.Options | Tempo.Until): number | Tempo.Duration;
 
 		/** time elapsed since (with unit) */										since(until: Tempo.Until, opts?: Tempo.Options): string;
 		/** time elapsed since another date-time (with unit) */	since(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, until: Tempo.Until): string;
 		/** time elapsed since another date-time (w'out unit) */since(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): string;
 		/** time elapsed since another date-time */							since(optsOrDate?: any, optsOrUntil?: any): string;
+	}
+}
+
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		'Tempo.Duration': { type: 'Tempo.Duration', value: Tempo.Duration };
 	}
 }
 
@@ -149,18 +154,8 @@ duration.toDuration = (input: string | Temporal.DurationLikeObject) => {
 /**
  * Functional Module to attach duration methods to Tempo.
  */
-export const DurationModule: Tempo.Module = defineModule({
-	name: 'duration',
-	install(this: Tempo, TempoClass: typeof Tempo) {
-		// 1. Register logic in the global interpreter registry
-		const modules = (globalThis as any)[sym.$modules] ??= {};
-		if (isUndefined(modules['DurationModule'])) {
-			modules['DurationModule'] = duration;
-		}
-
-		// 2. Inject the static helper
-		(TempoClass as any).duration = function (this: typeof Tempo, input: any) {
-			return interpret(this, 'DurationModule', 'toDuration', false, input);
-		};
+export const DurationModule: Tempo.Module = defineInterpreterModule('DurationModule', duration, {
+	duration(this: typeof Tempo, input: any) {
+		return interpret(this, 'DurationModule', 'toDuration', false, input);
 	}
 });

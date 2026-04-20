@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Tempo ESM Test</title>
+</head>
+<body>
+	<!-- 
+		Note: This importmap illustrates the core/mutate pattern. 
+		Extend this map to include other subpaths (e.g., /format, /duration) 
+		before importing additional modules. 
+	-->
+	<script type="importmap">
+	{
+		"imports": {
+			"@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/core.index.js",
+			"@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.mutate.js",
+			"@magmacomputing/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/library@2/dist/common.index.js",
+			"@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js"
+		}
+	}
+	</script>
+	<script type="module">
+		import { Tempo } from '@magmacomputing/tempo/core';
+		import { MutateModule } from '@magmacomputing/tempo/mutate';
+
+		// Opt-in to mutation logic
+		Tempo.extend(MutateModule);
+
+		const t = new Tempo().add({ days: 1 });
+		console.log(t.toString());
+	</script>
+
+	<p>Open the console to see the output.</p>
+</body>
+</html>

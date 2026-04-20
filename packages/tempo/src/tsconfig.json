@@ -18,6 +18,8 @@
       "#tempo/format": ["./plugin/module/module.format.ts"],
       "#tempo/ticker": ["./plugin/extend/extend.ticker.ts"],
       "#tempo/term/*": ["./plugin/term/term.*.ts"],
+      "#tempo/support": ["./support/support.index.ts"],
+      "#tempo/support/*": ["./support/*"],
       "#tempo/*": ["./*"]
     }
   },

@@ -1,7 +1,7 @@
 import { asString } from '#library/coercion.library.js';
 import { extract, ownEntries } from '#library/primitive.library.js';
 import { stringify } from '#library/serialize.library.js';
-import { isNumber, isDate, isTempo, isObject, isDefined, isUndefined, isFunction, nullToValue } from '#library/type.library.js';
+import { isNumber, isDate, isObject, isDefined, isUndefined, isFunction, nullToValue } from '#library/type.library.js';
 import type { Property } from '#library/type.library.js';
 
 // adapted from https://jsbin.com/insert/4/edit?js,output
@@ -54,8 +54,8 @@ export function sortBy<T extends Property<T>>(...keys: (PropertyKey | SortBy)[])
 				switch (true) {
 					case isNumber(valueA) && isNumber(valueB):
 					case isDate(valueA) && isDate(valueB):
-					case isTempo(valueA) && isTempo(valueB):
-						result = dir * (valueA - valueB);
+					case isObject(valueA) && isObject(valueB) && typeof valueA.valueOf() === 'number' && typeof valueB.valueOf() === 'number':
+						result = (dir as any) * ((valueA as any) - (valueB as any));
 						break;
 
 					default:

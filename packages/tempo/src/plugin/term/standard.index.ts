@@ -1,5 +1,5 @@
 import { Tempo } from '../../tempo.class.js';
-import { onRegistryReset } from '../../tempo.register.js';
+import { onRegistryReset } from '../../support/tempo.register.js';
 import { TermsModule } from './term.index.js';
 
 // Side-effect: Automatically register all standard terms

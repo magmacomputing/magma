@@ -5,34 +5,15 @@ import { secureRef } from '#library/proxy.library.js';
 import lib from '#library/symbol.library.js';
 import type { Property } from '#library/type.library.js';
 
-import { sym } from './tempo.symbol.js';
-import type { TermPlugin, Extension } from './plugin/plugin.type.js';
+import { getRuntime } from './tempo.runtime.js';
 
 // Import the live enums and their mutable state from the enum module
 import { STATE, REGISTRIES, DEFAULTS } from './tempo.enum.js';
 
-/** @internal storage for plugin/module registry */
-const _terms = (globalThis as any)[sym.$terms] ??= [] as TermPlugin[];
-const _extends = (globalThis as any)[sym.$extends] ??= [] as Extension[];
-const _modules = (globalThis as any)[sym.$modules] ??= {} as Record<string, any>;
-const _installed = (globalThis as any)[sym.$installed] ??= new Set();
+const rt = getRuntime();
 
-const _REGISTRY = {
-	terms: secureRef(_terms),
-	extends: secureRef(_extends),
-	modules: secureRef(_modules),
-	installed: _installed
-}
-
-/** 
- * # REGISTRY
- * Internal registry for registered components.
- * Closed for modification, Open for extension.
- */
-export const REGISTRY = secureRef(_REGISTRY);
-
-/** @internal storage for reset hooks */
-const resetHooks = (): Set<() => void> => (globalThis as any)[sym.$reset] ??= new Set();
+/** @internal Return the runtime's reset-hook set */
+const resetHooks = (): Set<() => void> => rt.resetHooks;
 
 /** @internal Register a hook to be called when the registry is reset */
 export function onRegistryReset(hook: () => void) {
@@ -69,17 +50,9 @@ export function registryReset() {
 		clearCache(state);
 	});
 
-	// 3. Clear all plugin/module storage via raw targets
-	const internal = (_REGISTRY as any);
-	const terms = internal.terms[lib.$Target] ?? internal.terms;
-	const extensions = internal.extends[lib.$Target] ?? internal.extends;
-	const modules = internal.modules[lib.$Target] ?? internal.modules;
-
-	terms.length = 0;
-	extensions.length = 0;
-	
-	for (const key in modules) delete modules[key];
-	internal.installed.clear();
+	rt.pluginsDb.terms.length = 0;
+	rt.pluginsDb.plugins.length = 0;
+	rt.extensions.length = 0;
 
 	// Trigger all registered reset hooks
 	const hooks = resetHooks();
@@ -109,10 +82,3 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 	clearCache(target);
 }
 
-/** 
- * @internal raw access to registry for core operations 
- * Only use this within the core library.
- */
-export const _INTERNAL_REGISTRY = _REGISTRY;
-/** @internal raw access to module storage */
-export const _MODULES = _modules;

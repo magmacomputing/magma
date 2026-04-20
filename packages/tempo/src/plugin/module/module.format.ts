@@ -3,8 +3,8 @@ import { pad } from '#library/string.library.js';
 import { ifNumeric } from '#library/coercion.library.js';
 
 import { defineInterpreterModule } from '../plugin.util.js';
-import { Match } from '../../tempo.default.js';
-import { NumericPattern } from '../../tempo.enum.js';
+import { Match } from '../../support/tempo.default.js';
+import { NumericPattern } from '../../support/tempo.enum.js';
 import type { Tempo } from '../../tempo.class.js';
 
 declare module '../../tempo.class.js' {

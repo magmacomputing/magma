@@ -1,6 +1,6 @@
-import lib from '#library/symbol.library.js';
 import { Tempo } from '#tempo';
-import { registryUpdate } from '#tempo/tempo.register.js';
+import { registryUpdate } from '#tempo/support';
+import lib from '#library/symbol.library.js';
 
 describe('Discovery Security (Direct Registry Check)', () => {
 

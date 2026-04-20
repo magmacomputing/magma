@@ -38,7 +38,7 @@ Working with `Date` in JavaScript has historically been painful. The new `Tempor
 - **Natural Language**: Supports word-based numbers (0-10) in relative parsing (e.g., "two days ago").
 - **Fluent API**: Chainable methods for adding, subtracting, and setting date-times (similar to Moment.js).
 - **Formatting**: Use custom tokens to format date-times in a way that is both intuitive and flexible.
-- **Plugin**: Extend core functionality safely; built-ins (like the Ticker) are ready-to-use in the full package, or can be opted-into via side-effect imports when using the lean Core engine.
+- **Plugin**: Extend core functionality safely; all extensions (including the Ticker) are opted-into via side-effect imports or explicit registration, ensuring a lean footprint even in the full package.
 - **Terms**: Access complex date ranges (Quarters, Seasons, Zodiacs) easily.
 - **Immutable**: Operations (like `set` and `add`) return a new `Tempo` instance, ensuring thread safety and predictability.
 ## 🤔 Why Tempo?
@@ -87,12 +87,14 @@ Since Tempo is a native ESM package, you can use it directly in modern browsers 
 <script type="importmap">
 {
   "imports": {
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
     "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.esm.js"
   }
 }
 </script>
 <script type="module">
-  import Tempo from '@magmacomputing/tempo';
+  import '@js-temporal/polyfill';
+  import { Tempo } from '@magmacomputing/tempo';
   const t = new Tempo('next friday');
   console.log(t.format('{mon} {day}'));
 </script>
@@ -102,6 +104,7 @@ Since Tempo is a native ESM package, you can use it directly in modern browsers 
 For environments without `importmap` support or simple prototypes, use the global bundle. This automatically attaches the `Tempo` class to the `window` object.
 
 ```html
+<script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.js"></script>
 <script>
   const t = new Tempo('tomorrow');
@@ -116,12 +119,15 @@ For maximum performance, you can use the lean **Core** engine and opt-in to spec
 <script type="importmap">
 {
   "imports": {
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
     "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/core.index.js",
-    "@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.mutate.js"
+    "@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.mutate.js",
+    "@magmacomputing/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/library@2/dist/common.index.js"
   }
 }
 </script>
 <script type="module">
+  import '@js-temporal/polyfill';
   import { Tempo } from '@magmacomputing/tempo/core';
   import { MutateModule } from '@magmacomputing/tempo/mutate';
 
@@ -134,7 +140,7 @@ For maximum performance, you can use the lean **Core** engine and opt-in to spec
 ```
 
 > [!TIP]
-> **CDN Versioning**: The examples above use `@2` to pin to the current major version. To always reference the **latest** release, you can omit the version string (e.g., `.../@magmacomputing/tempo/dist/tempo.bundle.js`).
+> **CDN Versioning**: The examples above use pinned versions (`@magmacomputing/tempo@2`, `@magmacomputing/library@2`, `@js-temporal/polyfill@0.5`) for production stability. To use the latest releases, you can omit the version string from every URL (e.g., remove `@2` from all Magma entries and `@0.5` from the polyfill). Ensure all `@magmacomputing/...` entries resolve to the same release to avoid mixed-version loading.
 
 ---
 
