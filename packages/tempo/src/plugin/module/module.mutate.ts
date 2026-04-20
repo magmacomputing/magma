@@ -1,12 +1,18 @@
 import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/type.library.js';
 import { singular } from '#library/string.library.js';
-import { sym } from '../../tempo.symbol.js';
-import enums from '../../tempo.enum.js';
-import { REGISTRY, _MODULES } from '../../tempo.register.js';
-import { defineInterpreterModule, findTermPlugin, getHost } from '../plugin.util.js';
+import sym from '../../support/tempo.symbol.js';
+import enums from '../../support/tempo.enum.js';
+import { defineInterpreterModule } from '../plugin.util.js';
+import { findTermPlugin } from '../term.util.js';
 import { resolveTermMutation } from './module.term.js';
 import type { Tempo } from '../../tempo.class.js';
 import type * as t from '../../tempo.type.js';
+
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		Mutation: { type: 'Mutation', value: any };
+	}
+}
 
 /**
  * MutateModule logic for Tempo.add and Tempo.set
@@ -31,7 +37,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 	let zdt = selfZdt.withTimeZone(overrides.timeZone).withCalendar(overrides.calendar);
 	state.parseDepth++;
 	const isRoot = state.parseDepth === 1;
-	if (isRoot) state.matches = Array.isArray(this.parse?.result) ? [...this.parse.result] : [];
+	const matches = Array.isArray(this.parse?.result) ? Array.from(this.parse.result) : [];
 
 	try {
 		if (isDefined(args)) {
@@ -92,11 +98,10 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 							})(key, adjust, type);
 
 							const slug = `${op}.${single}`;
-
 							const parseInner = (input: any, anchor?: any) => {
 								const res = (this.constructor as any).from(input, { ...this.config, anchor });
 								if (res.isValid) {
-									state.matches.push(...res.parse.result);
+									matches.push(...res.parse.result);
 									return res.toDateTime();
 								}
 								return undefined;
@@ -170,20 +175,22 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 			else {
 				// 3. Return a new instance with the final state
 				// @ts-ignore - access to private constructor/state
-				return new (this.constructor as any)(args, { ...state.options, ...this.config, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored, [sym.$mutateDepth]: state.mutateDepth });
+				return new (this.constructor as any)(args, { ...state.options, ...this.config, ...options, anchor: zdt, [sym.$Internal]: { ...state, matches } });
 			}
 		}
 
 		if (state.errored) {
 			// @ts-ignore - access to private constructor fallback
-			return new (this.constructor as any)(null, { ...state.options, ...overrides, ...options, result: state.matches, [sym.$errored]: true, [sym.$mutateDepth]: state.mutateDepth });
+			return new (this.constructor as any)(null, { ...state.options, ...overrides, ...options, [sym.$Internal]: { ...state, matches } });
 		}
 
 		// @ts-ignore
-		return new (this.constructor as any)(zdt, { ...state.options, ...overrides, ...options, result: state.matches, anchor: zdt, [sym.$errored]: state.errored, [sym.$mutateDepth]: state.mutateDepth });
+		matches.push({ type: 'Mutation', value: zdt, match: 'mutation' });
+
+		// @ts-ignore
+		return new (this.constructor as any)(zdt, { ...state.options, ...overrides, ...options, anchor: zdt, [sym.$Internal]: { ...state, matches } });
 
 	} finally {
-		if (isRoot) state.matches = undefined;
 		state.parseDepth--;
 	}
 }

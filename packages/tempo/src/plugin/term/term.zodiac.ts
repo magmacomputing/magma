@@ -1,4 +1,4 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../plugin.util.js';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../term.util.js';
 import { type Tempo } from '../../tempo.class.js';
 import { isNumber } from '#library/type.library.js';
 
@@ -45,9 +45,9 @@ function resolve(t: Tempo, anchor?: any) {
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['group'], group: 'western' });
 
 	// calculate the Chinese Zodiac based on the year of the candidate sign
-	list.forEach(itm => { 
+	list.forEach(itm => {
 		const year = itm.year ?? (anchor?.year);
-		if (isNumber(year)) itm['CN'] = getChineseZodiac(year); 
+		if (isNumber(year)) itm['CN'] = getChineseZodiac(year);
 	});
 
 	return list;

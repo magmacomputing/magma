@@ -227,11 +227,10 @@ const discoveryKeys = ['options', 'timeZones', 'terms', 'plugins', 'numbers', 'f
 export const DISCOVERY = proxify(enumify(discoveryKeys, false), true, false);
 export type Discovery = KeyOf<typeof DISCOVERY>
 
-
 /** @internal LIVE Registries mapping (STATE key -> Enum/Proxy) */
 export const REGISTRIES: Record<string, any> = {
 	NUMBER, DURATION, TIMEZONE, DURATIONS, FORMAT, LIMIT,
-};
+}
 
 /** public-reachable enums */
 export default {

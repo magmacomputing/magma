@@ -19,7 +19,7 @@ describe('Tempo Plugin System', () => {
 		const instancePlugin: Plugin = {
 			name: 'InstancePlugin',
 			install(this: Tempo, TempoClass) {
-				(TempoClass.prototype as any).instanceMethod = function() {
+				(TempoClass.prototype as any).instanceMethod = function () {
 					return 'instance';
 				};
 			},
@@ -77,8 +77,8 @@ describe('Tempo Plugin System', () => {
 	test('should protect existing members but allow new ones', () => {
 		// 1. Try to overwrite existing (should throw in strict mode)
 		// Note: Tempo.now is a static method we want to protect
-		expect(() => { 
-			(Tempo as any).now = () => 'hacked'; 
+		expect(() => {
+			(Tempo as any).now = () => 'hacked';
 		}).toThrow();
 
 		// 2. Try to add new (should succeed)
@@ -93,8 +93,8 @@ describe('Tempo Plugin System', () => {
 	});
 
 	test('should protect Symbol properties (like Symbol.dispose)', () => {
-		expect(() => { 
-			(Tempo as any)[Symbol.dispose] = () => {}; 
+		expect(() => {
+			(Tempo as any)[Symbol.dispose] = () => { };
 		}).toThrow();
 	});
 });

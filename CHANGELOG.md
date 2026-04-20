@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.5] - 2026-04-20
+
+### Added
+- **Cross-Bundle Singleton Stability**: Implemented a symbol-based brand check for `TempoRuntime` to ensure reliable singleton resolution even when multiple versions of the library are loaded.
+
+### Changed
+- **Consolidated Internal Storage**: Merged redundant internal term/plugin arrays into a unified, validated `pluginsDb` within `TempoRuntime`, reducing memory overhead and improving consistency.
+- **Refined Year Semantics**: Normalized the `year` component in term templates to intelligently distinguish between relative offsets (e.g., year `0`) and absolute historical years (e.g., year `2000`).
+- **Improved Type Safety**: Introduced `MatchResult` as a type alias for `Internal.Match` to resolve naming conflicts with the `Match` runtime class, while maintaining the public `Match` export for backward compatibility.
+
+### Fixed
+- **Term Resolution Accuracy**: Fixed a sorting bug in the yearly-cycle resolution engine that caused incorrect anchor identification for non-calendar-ordered term groups (e.g., seasons).
+- **Documentation Integrity**: Updated architecture and README guides to point to the correct `#tempo/support` module and provided functional, complete importmap examples for browser environments.
+- **HTML Standards Compliance**: Wrapped library demonstration and test pages in proper HTML5 skeletons to ensure consistent rendering and prevent quirks-mode issues.
+- **Package Optimization**: Refined `sideEffects` in `package.json` to exclude non-published source files, improving tree-shaking for consumer builds.
+
+
 ## [2.2.4] - 2026-04-19
 
 ### Fixed

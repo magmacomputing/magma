@@ -7,12 +7,11 @@
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
 
-import * as enums from '#tempo/tempo.enum.js';
-import sym from '#tempo/tempo.symbol.js';
-import type { Snippet, Layout, Event, Period, Token } from '#tempo/tempo.default.js';
+import * as enums from '#tempo/support/tempo.enum.js';
+import sym from '#tempo/support/tempo.symbol.js';
+import type { Snippet, Layout, Event, Period, Token } from '#tempo/support/tempo.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
-export type { TypeValue };
-import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension } from './plugin/plugin.type.js';
+import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension } from '#tempo/plugin/plugin.type.js';
 
 /**
  * Structural forward-reference to the Tempo class.
@@ -20,18 +19,15 @@ import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension
 */
 import type { Tempo } from '#tempo/tempo.class.js';
 
-declare module '#library/type.library.js' {
-	interface TypeValueMap<T> {
-		Tempo: { type: 'Tempo', value: Tempo };
-		'Tempo.Duration': { type: 'Tempo.Duration', value: Duration };
-	}
-}
-
 declare global {
 	interface globalThis {
+		/**
+		 * User-facing Global Discovery slot.
+		 * Applications place a Discovery object here (keyed by the string returned by
+		 * `Symbol.keyFor(sym.$Tempo)`, or by a custom symbol passed to `Tempo.init`).
+		 * Internal machinery now lives inside the TempoRuntime — see `tempo.runtime.ts`.
+		 */
 		[sym.$Tempo]?: Internal.Discovery;
-		[sym.$Plugins]?: Internal.Discovery;
-		[sym.$Register]?: () => void;
 	}
 }
 
@@ -195,6 +191,14 @@ export namespace Internal {
 		/** parsing rules */																		parse: Parse;
 	}
 
+	/** debug a Tempo instantiation */
+	export type MatchExtend = { type: 'Event' | 'Period', value: string | number | Function }
+	export type Match = {
+		/** pattern which matched the input */									match?: string | undefined;
+		/** groups from the pattern match */										groups?: Groups;
+		/** was this a nested/anchored parse? */								isAnchored?: boolean;
+	} & (TypeValue<any> | MatchExtend)
+
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */
 	export interface Parse {
 		/** Locales which prefer 'mm-dd-yyyy' date-order */			mdyLocales: { locale: string, timeZones: string[] }[];
@@ -216,14 +220,6 @@ export namespace Internal {
 		/** @internal localized Master Guard scanner */					guard?: { test(str: string): boolean };
 	}
 
-	/** debug a Tempo instantiation */
-	export type MatchExtend = { type: 'Event' | 'Period', value: string | number | Function }
-	export type Match = {
-		/** pattern which matched the input */									match?: string | undefined;
-		/** groups from the pattern match */										groups?: Groups;
-		/** was this a nested/anchored parse? */								isAnchored?: boolean;
-	} & (TypeValue<any> | MatchExtend)
-
 	/** drop the parse-only Options */
 	export type OptionsKeep = Omit<BaseOptions, "mdyLocales" | "mdyLayouts" | "pivot" | "snippet" | "layout" | "event" | "period" | "value">
 
@@ -239,9 +235,10 @@ export namespace Internal {
 		/** pre-defined config options for Tempo.#global */			options?: Options | (() => Options);
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
+		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
-		/** term plugins to be registered via Tempo.addTerm() */term?: TermPlugin | TermPlugin[];
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: Plugin | Plugin[];
-		/** @deprecated use term instead */											terms?: TermPlugin | TermPlugin[];
 	}
 }
+
+export type MatchResult = Internal.Match;
