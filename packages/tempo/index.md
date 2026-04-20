@@ -15,6 +15,8 @@ const mDeg = ref(0)
 const sDeg = ref(0)
 const timeStr = ref('Loading...')
 const tzStr = ref('')
+const tickerActive = ref(true)
+const isResuming = ref(false)
 
 // --- Carousel State ---
 const activeIndex = ref(0)
@@ -40,6 +42,7 @@ let ticker = null
 let carouselTimer = null
 let fallbackIntervalId = null
 let initFailed = false
+let resumeTimer = null
 
 function updateHands(h24, m, s) {
   const h = h24 % 12
@@ -132,10 +135,24 @@ function startCarousel() {
 }
 
 function handleVisibility() {
+  if (resumeTimer) clearTimeout(resumeTimer)
+  
   if (document.visibilityState === 'visible') {
-    startTicker()
-    startCarousel()
+    isResuming.value = true
+    console.info('%c[Tempo]%c ⏳ Waking Ticker...', 'color: #f59e0b; font-weight: bold', 'color: inherit')
+    
+    resumeTimer = setTimeout(() => {
+      if (document.visibilityState !== 'visible') return
+      isResuming.value = false
+      tickerActive.value = true
+      console.info('%c[Tempo]%c ⚡ Ticker Resumed', 'color: #2563eb; font-weight: bold', 'color: inherit')
+      startTicker()
+      startCarousel()
+    }, 1200)
   } else {
+    isResuming.value = false
+    tickerActive.value = false
+    console.info('%c[Tempo]%c 💤 Ticker Paused (Standby)', 'color: #71717a; font-weight: bold', 'color: inherit')
     ticker?.stop()
     if (fallbackIntervalId) clearInterval(fallbackIntervalId)
     clearInterval(carouselTimer)
@@ -217,7 +234,12 @@ function focusActiveCard() {
           <circle cx="100" cy="100" r="2.5" class="tempo-hub-inner" />
         </svg>
         <div class="tempo-time-display">
-          <p class="tempo-iso-time">{{ timeStr }}</p>
+          <div class="tempo-status-row">
+            <p class="tempo-iso-time">{{ timeStr }}</p>
+            <span :class="['tempo-ticker-status', tickerActive ? 'is-active' : 'is-standby', isResuming ? 'is-resuming' : '']">
+              {{ tickerActive ? 'Live' : (isResuming ? 'Waking...' : 'Standby') }}
+            </span>
+          </div>
           <p class="tempo-tz-time">{{ tzStr }}</p>
         </div>
       </div>
@@ -486,5 +508,54 @@ function focusActiveCard() {
 @media (max-width: 768px) {
   .tempo-carousel-track { width: 1100%; }
   .tempo-feature-card { flex: 0 0 calc(100% / 11); }
+}
+.tempo-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.tempo-ticker-status {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.tempo-ticker-status.is-active {
+  background: rgba(37, 99, 235, 0.1);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  animation: tempo-pulse 2s infinite;
+}
+
+.tempo-ticker-status.is-resuming {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.tempo-ticker-status.is-standby {
+  background: rgba(113, 113, 122, 0.1);
+  color: #71717a;
+  border: 1px solid rgba(113, 113, 122, 0.2);
+}
+
+@keyframes tempo-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.tempo-clock-mini {
+  transition: opacity 0.5s ease;
+}
+
+.tempo-clock-mini:has(.is-standby) {
+  opacity: 0.7;
 }
 </style>
