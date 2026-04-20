@@ -117,7 +117,9 @@ For maximum performance, you can use the lean **Core** engine and opt-in to spec
 {
   "imports": {
     "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/core.index.js",
-    "@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.mutate.js"
+    "@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/plugin/module/module.mutate.js",
+    "@magmacomputing/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/library@2/dist/common.index.js",
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js"
   }
 }
 </script>
@@ -134,7 +136,7 @@ For maximum performance, you can use the lean **Core** engine and opt-in to spec
 ```
 
 > [!TIP]
-> **CDN Versioning**: The examples above use `@2` to pin to the current major version. To always reference the **latest** release, you can omit the version string (e.g., `.../@magmacomputing/tempo/dist/tempo.bundle.js`).
+> **CDN Versioning**: The examples above use pinned versions (`@magmacomputing/tempo@2`, `@magmacomputing/library@2`, `@js-temporal/polyfill@0.5`) for production stability. To use the latest releases, you can omit the version string from every URL (e.g., remove `@2` from all Magma entries and `@0.5` from the polyfill). Ensure all `@magmacomputing/...` entries resolve to the same release to avoid mixed-version loading.
 
 ---
 

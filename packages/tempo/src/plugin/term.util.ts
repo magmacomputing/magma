@@ -25,7 +25,7 @@ export function findTermPlugin(ident: string): TermPlugin | undefined {
 	const id = (ident.startsWith('#') ? ident.slice(1) : ident).toLowerCase();
 	const [termPart] = id.split('.');
 
-	return getRuntime().terms.find((t: TermPlugin) => {
+	return getRuntime().pluginsDb.terms.find((t: TermPlugin) => {
 		if (t.key?.toLowerCase() === termPart || t.scope?.toLowerCase() === termPart) return true;
 		if (t.groups) {
 			const list = Array.isArray(t.groups) ? t.groups : Object.values(t.groups).flat(Infinity) as Range[];
@@ -287,6 +287,9 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 
 	if (list.length === 0) return [];
 
+	// Ensure chronological order for reliable anchor/window calculation
+	sortKey(list, 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
+
 	// 2. Resolve Window (Sub-Yearly vs Yearly)
 	const unit = getLargestUnit(list);
 	if (!['year', 'month', 'day'].includes(unit as any)) {
@@ -322,8 +325,13 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 		const targetYY = baseYear + offset;
 		list.forEach(itm => {
 			const clone = { ...itm };
-			if (isDefined(itm.year)) clone.year = itm.year + targetYY;
-			else clone.year = targetYY;
+			// Normalize year semantics: Treat small offsets as relative to the cycle,
+			// while treating larger numbers as absolute years (e.g. for fixed historical dates).
+			if (isNumber(itm.year)) {
+				clone.year = (itm.year >= -10 && itm.year <= 10) ? itm.year + targetYY : itm.year;
+			} else {
+				clone.year = targetYY;
+			}
 			window.push(clone);
 		});
 	}
@@ -340,10 +348,6 @@ export function registerTerm(term: TermPlugin) {
 
 	// Validate and persist in the runtime's discovery database.
 	rt.addTerm(term);
-
-	if (!rt.terms.find((t: TermPlugin) => t.key === term.key)) {
-		rt.terms.push(term);
-	}
 
 	rt.emit(sym.$Register, term);
 }

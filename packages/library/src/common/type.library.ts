@@ -1,6 +1,5 @@
 import lib from '#library/symbol.library.js';
 
-const $isTempo = Symbol.for('$isTempo');
 const registry: Instance[] = [];														// global types for getType
 
 /** the primitive type reported by toStringTag() */
@@ -115,10 +114,6 @@ export const isPlainYearMonth = <T>(obj: T): obj is Extract<T, Temporal.PlainYea
 export const isPlainMonthDay = <T>(obj: T): obj is Extract<T, Temporal.PlainMonthDay> => isType(obj, 'Temporal.PlainMonthDay') || (!!(globalThis as any).Temporal?.PlainMonthDay && (obj as any) instanceof (globalThis as any).Temporal.PlainMonthDay);
 
 // non-standard Objects
-export const isTempo = <T>(obj?: T): obj is Extract<T, GetType<'Tempo'>> => {
-	const raw = (obj as any)?.[lib.$Target] ?? obj;								// bypass Proxy traps
-	return !!(raw?.[$isTempo]);
-}
 export const isEnum = <T, E extends Property<any>>(obj?: T): obj is Extract<T, GetType<'Enumify', E>> => isType(obj, 'Enumify');
 export const isPledge = <T, P = any>(obj?: T): obj is Extract<T, GetType<'Pledge', P>> => isType(obj, 'Pledge');
 
@@ -172,7 +167,7 @@ const isClassConstructor = (obj: any): boolean => {
 	const tag = raw?.[Symbol.toStringTag] ?? raw?.prototype?.[Symbol.toStringTag];
 
 	// Absolute bypass for Tempo and Temporal identities (using global brands)
-	if (raw?.[$isTempo] || name === 'Tempo' || tag === 'Tempo' || (typeof tag === 'string' && (tag.startsWith('Temporal.') || tag.startsWith('Tempo.')))) return true;
+	if (name === 'Tempo' || tag === 'Tempo' || (typeof tag === 'string' && (tag.startsWith('Temporal.') || tag.startsWith('Tempo.')))) return true;
 	if (typeof tag === 'string' && tag.endsWith('Function')) return false;	// check the tag directly to avoid misidentifying function as class
 
 	const globalRegistry = (globalThis as any)[lib.$Registry] ?? [];

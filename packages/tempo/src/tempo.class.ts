@@ -49,7 +49,7 @@ const create = <T extends object>(obj: object, name: string): T => Object.create
 namespace Internal {
 	export type State = t.Internal.State;
 	export type Parse = t.Internal.Parse;
-	export type Match = t.Internal.Match;
+	export type MatchResult = t.Internal.Match;
 	export type Config = t.Internal.Config;
 	export type Discovery = t.Internal.Discovery;
 	export type Registry = t.Internal.Registry;
@@ -97,7 +97,7 @@ export class Tempo {
 
 	/** Tempo state for the global configuration */						static #global = {} as Internal.State
 	/** cache for next-available 'usr' Token key */						static #usrCount = 0;
-	/** mutable list of registered term plugins */						static get #terms(): t.TermPlugin[] { return getRuntime().terms }
+	/** mutable list of registered term plugins */						static get #terms(): t.TermPlugin[] { return getRuntime().pluginsDb.terms }
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, t.TermPlugin> = new Map();
 	/** flag to prevent recursion during init */							static #lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
@@ -974,12 +974,12 @@ export class Tempo {
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
 	/** prebuilt formats, for convenience */									#fmt!: any;
 	/** mapping of terms to their resolved values */					#term!: any;
-	/** a collection of parse rule-matches */									#matches: Internal.Match[] | undefined;
+	/** a collection of parse rule-matches */									#matches: Internal.MatchResult[] | undefined;
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
 	/** current mutation depth to manage infinite recursion */#mutateDepth = 0;
 	/** instance values to complement static values */				#local = {
 		/** instance configuration */															config: { [lib.$Logify]: true } as unknown as Internal.Config,
-		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.Match[] } as Internal.Parse
+		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.MatchResult[] } as Internal.Parse
 	} as Internal.State;
 
 
@@ -993,7 +993,7 @@ export class Tempo {
 		Tempo.#dbg.error(config, msg);
 		if (config.catch !== true) throw new Error(msg);
 	}
-	// /** @internal */	static get [sym.$terms](): t.TermPlugin[] { return getRuntime().terms as t.TermPlugin[] }
+
 	/** @internal */	static get [sym.$dbg](): Logify { return Tempo.#dbg }
 	/** @internal */	static get [sym.$guard]() { return (Tempo as any).#guard }
 
@@ -1002,7 +1002,7 @@ export class Tempo {
 	 * This surface is not part of the public contract and is subject to change.
 	 */
 	[sym.$Internal]() {
-		const self = (this as any)[lib.$Target] ?? this;
+		const self: Tempo = (this as any)[lib.$Target] ?? this;
 		return {
 			get zdt() { return self.#zdt },
 			set zdt(val: any) { self.#zdt = val },
@@ -1309,7 +1309,7 @@ export class Tempo {
 
 	/** Instance-specific parse rules (merged with global) */
 	get parse(): Internal.Parse {
-		const self = (this as any)[lib.$Target] ?? this;
+		const self: Tempo = (this as any)[lib.$Target] ?? this;
 		self.#ensureParsed();
 		// Return a shadowed view so we can safely inject matches without breaking the freeze on the original state
 		const out = Object.create(self.#local.parse);
@@ -1460,8 +1460,8 @@ export class Tempo {
 			.every((key: string) => enums.ZONED_DATE_TIME.has(key))
 	}
 
-	#result(...rest: Partial<Internal.Match>[]) {
-		const match = Object.assign({}, ...rest) as Internal.Match;	// collect all object arguments
+	#result(...rest: Partial<Internal.MatchResult>[]) {
+		const match = Object.assign({}, ...rest) as Internal.MatchResult;	// collect all object arguments
 
 		if (isDefined(this.#anchor) && !match.isAnchored)
 			match.isAnchored = true;

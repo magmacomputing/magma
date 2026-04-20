@@ -41,10 +41,11 @@ const ParseEngine = {
 			today = isZonedDateTime(basis) ? basis : (isTempo(basis) ? (basis as any).toDateTime() : instant().toZonedDateTimeISO(tz).withCalendar(cal));
 
 			const TempoClass = this.constructor as typeof Tempo;
+			const terms = getRuntime().pluginsDb.terms;
 
 			if (term) {
 				const ident = term.startsWith('#') ? term.slice(1) : term;
-				const termObj = getRuntime().terms.find((t: any) => t.key === ident || t.scope === ident);
+				const termObj = terms.find((termEntry: any) => termEntry.key === ident || termEntry.scope === ident);
 				if (!termObj) {
 					(TempoClass as any)[sym.$termError](state.config, term);
 					return undefined as any;
@@ -86,15 +87,19 @@ const ParseEngine = {
 				return undefined as any;
 			}
 
-			if (isUndefined(term) && isObject(tempo) && Object.keys(tempo).some(k => k.startsWith('#'))) {
-				const msg = `Unsupported Syntax: Term-based mutations (#) cannot be passed to the constructor. Use new Tempo().set(${JSON.stringify(tempo)}) instead.`;
-				(TempoClass as any)[sym.$logError](state.config, msg);
-				throw new Error(msg);
-			}
-
-			if (isObject(tempo) && Object.keys(tempo).some(k => k.startsWith('#')) && getRuntime().terms.length === 0) {
-				(TempoClass as any)[sym.$termError](state.config, Object.keys(tempo).find(k => k.startsWith('#'))!);
-				return undefined as any;
+			if (isObject(tempo)) {
+				const termKey = Object.keys(tempo).find(k => k.startsWith('#'));
+				if (termKey) {
+					if (isUndefined(term)) {
+						const msg = `Unsupported Syntax: Term-based mutations (#) cannot be passed to the constructor. Use new Tempo().set(${JSON.stringify(tempo)}) instead.`;
+						(TempoClass as any)[sym.$logError](state.config, msg);
+						throw new Error(msg);
+					}
+					if (terms.length === 0) {
+						(TempoClass as any)[sym.$termError](state.config, termKey);
+						return undefined as any;
+					}
+				}
 			}
 
 			const isAnchored = isDefined(dateTime) || isDefined(state.anchor);
@@ -139,6 +144,7 @@ const ParseEngine = {
 		const arg = asType(tempo);
 		const { type, value } = arg;
 		const TempoClass = this.constructor as typeof Tempo;
+		const terms = getRuntime().pluginsDb.terms;
 
 
 		if (!isZonedDateTime(dateTime)) {
@@ -151,9 +157,9 @@ const ParseEngine = {
 		if (ParseEngine.isZonedDateTimeLike.call(this, tempo)) {
 			const { timeZone, calendar, value: _, ...options } = tempo as t.Options;
 
-			const keys = Object.keys(options);
-			if (keys.some(k => k.startsWith('#')) && getRuntime().terms.length === 0) {
-				(TempoClass as any)[sym.$termError](state.config, keys.find(k => k.startsWith('#'))!);
+			const termKey = Object.keys(options).find(k => k.startsWith('#'));
+			if (termKey && terms.length === 0) {
+				(TempoClass as any)[sym.$termError](state.config, termKey);
 				return undefined as any;
 			}
 

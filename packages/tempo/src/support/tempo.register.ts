@@ -50,7 +50,7 @@ export function registryReset() {
 		clearCache(state);
 	});
 
-	rt.terms.length = 0;
+	rt.pluginsDb.terms.length = 0;
 	rt.extensions.length = 0;
 
 	for (const key in rt.modules) delete rt.modules[key];

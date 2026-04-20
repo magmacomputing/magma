@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -27,9 +27,7 @@
     "**/*-polyfill.ts",
     "**/module.*.js",
     "**/module.*.ts",
-    "**/tempo.index.js",
-    "src/tempo.index.ts",
-    "src/support/*.ts"
+    "**/tempo.index.js"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
@@ -211,7 +209,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.2.4",
+    "@magmacomputing/library": "2.2.5",
     "@rollup/plugin-alias": "^6.0.0",
     "cross-env": "^7.0.3",
     "magic-string": "^0.30.21",

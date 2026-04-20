@@ -1,12 +1,25 @@
-<script type="importmap">
-{
-  "imports": {
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.esm.js"
-  }
-}
-</script>
-<script type="module">
-  import Tempo from '@magmacomputing/tempo';
-  const t = new Tempo('next friday');
-  console.log(t.format('{mon} {day}'));
-</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Tempo Bundle Test</title>
+</head>
+<body>
+	<script type="importmap">
+	{
+		"imports": {
+			"@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.esm.js",
+			"@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js"
+		}
+	}
+	</script>
+	<script type="module">
+		import Tempo from '@magmacomputing/tempo';
+		const t = new Tempo('next friday');
+		console.log(t.format('{mon} {day}'));
+	</script>
+
+	<p>Open the console to see the output.</p>
+</body>
+</html>

@@ -14,8 +14,9 @@ export default defineConfig({
       { find: /^#tempo\/plugins\/plugin\.util\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugins/plugin.util.ts') },
       { find: /^#tempo\/plugins\/plugin\.type\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugins/plugin.type.ts') },
       { find: /^#tempo\/plugins\/plugin\.(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugins/extend/plugin.$1.ts') },
-      { find: /^#tempo\/core$/, replacement: path.resolve(__dirname, './packages/tempo/src/tempo.core.ts') },
+      { find: /^#tempo\/core$/, replacement: path.resolve(__dirname, './packages/tempo/src/core.index.ts') },
       { find: /^#tempo\/tempo\.class\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/tempo.index.ts') },
+      { find: /^#tempo\/support$/, replacement: path.resolve(__dirname, './packages/tempo/src/support/support.index.ts') },
       { find: /^#tempo\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/$1.ts') },
       { find: /^#tempo\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/src/$1.ts') }
     ]

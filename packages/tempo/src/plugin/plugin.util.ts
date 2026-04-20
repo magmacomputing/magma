@@ -17,7 +17,7 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 	const host = getHost(t);
 	const rt = getRuntime();
 	const hostLogic = (rt.modules as any)[module];
-	const isTermsLoaded = (module === 'term' || module === 'TermsModule') && rt.terms.length > 0;
+	const isTermsLoaded = (module === 'term' || module === 'TermsModule') && rt.pluginsDb.terms.length > 0;
 
 	if (!isDefined(hostLogic) && !isTermsLoaded) {
 		const baseName = module.endsWith('Module') ? module.slice(0, -6) : module;
@@ -90,6 +90,7 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 
 		const isDescriptor = isObject(val) && (isFunction((val as any).get) || isFunction((val as any).set));
 
+		// attachStatics: Intentional ordering in Object.defineProperty overrides any caller-provided flags in isDescriptor to force non-enumerable behavior (avoiding @Immutable exposure).
 		Object.defineProperty(TempoClass, key, {
 			...(isDescriptor ? val : { value: val, writable: true }),
 			enumerable: false,

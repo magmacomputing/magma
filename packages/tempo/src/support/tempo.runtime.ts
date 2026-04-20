@@ -3,6 +3,7 @@ import type { TermPlugin, Extension, Plugin } from '../plugin/plugin.type.js';
 
 /**
  * # TempoRuntime
+ * @internal
  * Centralized, hardened container for all Tempo inter-module state.
  *
  * Previously, Tempo spread its inter-module state across many `globalThis[Symbol.*]`
@@ -21,15 +22,13 @@ import type { TermPlugin, Extension, Plugin } from '../plugin/plugin.type.js';
  * same runtime and therefore share the same arrays / sets — the same guarantee that
  * was previously achieved by scattering `Symbol.for(…)` writes across many slots.
  *
- * ## Scoped runtimes
- * `TempoRuntime.createScoped()` returns a fresh, independent runtime that is NOT
- * stored on `globalThis`.  Pass it explicitly to internal helpers that accept an
- * optional `runtime` parameter when you need full isolation (e.g. in tests or
- * sandboxed sub-applications).
+ * ## Scoped runtimes (Experimental)
+ * `TempoRuntime.createScoped()` returns a fresh, isolated runtime that is *not* stored on `globalThis`, enabling clean test isolation without globalThis manipulation.  **Note**: Scoped runtimes are currently an experimental internal feature and are not yet fully threaded through all core utilities.  Scoped runtimes are not pinned to `globalThis`, lack the `defineProperty` descriptor protections of the primary instance, and instead rely solely on the lexical reference returned (contrasting with the hardened `getRuntime()` and `globalThis[BRIDGE]` behavior). Implementation examples of this test-scoping pattern can be found in [plugin_registration.test.ts](../test/plugin_registration.test.ts) and [duration.core.test.ts](../test/duration.core.test.ts).
  */
 export class TempoRuntime {
-	/** raw term-plugin storage array — consumed by REGISTRY in tempo.register.ts */
-	readonly terms: TermPlugin[] = [];
+	constructor() {
+		(this as any)[sym.$RuntimeBrand] = true;
+	}
 	/** raw extension-plugin storage array — consumed by REGISTRY */
 	readonly extensions: Extension[] = [];
 	/** raw named-module map — consumed by REGISTRY */
@@ -50,20 +49,20 @@ export class TempoRuntime {
 	// ─── Register hook ────────────────────────────────────────────────────────
 
 	/** Set a registration hook for a given symbol. Returns the previous hook. */
-	setHook(sym: symbol, cb: (val: any) => void): ((val: any) => void) | undefined {
-		const prev = this.#hooks.get(sym);
-		this.#hooks.set(sym, cb);
+	setHook(key: symbol, cb: (val: any) => void): ((val: any) => void) | undefined {
+		const prev = this.#hooks.get(key);
+		this.#hooks.set(key, cb);
 		return prev;
 	}
 
 	/** Get a registration hook for a given symbol. */
-	getHook(sym: symbol): ((val: any) => void) | undefined {
-		return this.#hooks.get(sym);
+	getHook(key: symbol): ((val: any) => void) | undefined {
+		return this.#hooks.get(key);
 	}
 
 	/** Invoke the hook for a given symbol. */
-	emit(sym: symbol, val: any): void {
-		this.#hooks.get(sym)?.(val);
+	emit(key: symbol, val: any): void {
+		this.#hooks.get(key)?.(val);
 	}
 
 	// ─── Validated mutation helpers ───────────────────────────────────────────
@@ -91,8 +90,10 @@ export class TempoRuntime {
 	// ─── Factory helpers ──────────────────────────────────────────────────────
 
 	/**
+	 * @internal @experimental
 	 * Create a fresh, **scoped** runtime that is NOT stored on `globalThis`.
-	 * Use this for test isolation or sandboxed sub-applications.
+	 * NOTE: Scoped runtimes are currently experimental and not yet fully threaded
+	 * through all internal helpers. Use for manual state isolation only.
 	 */
 	static createScoped(): TempoRuntime {
 		return new TempoRuntime();
@@ -109,18 +110,20 @@ export class TempoRuntime {
  */
 export function getRuntime(): TempoRuntime {
 	const existing = (globalThis as any)[sym.$Bridge];
-	if (existing instanceof TempoRuntime) return existing;
+	if (existing && existing[sym.$RuntimeBrand] === true) return existing;
 
 	const rt = new TempoRuntime();
 
-	// Pin as a single hardened slot: the only thing Tempo puts on globalThis for
-	// its own internal bookkeeping.
-	Object.defineProperty(globalThis, sym.$Bridge, {
-		value: rt,
-		enumerable: false,
-		configurable: false,
-		writable: false,
-	});
+	// Pin as a single hardened slot if it doesn't already exist.
+	// This avoids Redefinition errors if multiple bundles are loaded.
+	if (!existing) {
+		Object.defineProperty(globalThis, sym.$Bridge, {
+			value: rt,
+			enumerable: false,
+			configurable: false,
+			writable: false,
+		});
+	}
 
 	return rt;
 }

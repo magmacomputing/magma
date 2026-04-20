@@ -241,4 +241,4 @@ export namespace Internal {
 	}
 }
 
-export type Match = Internal.Match;
+export type MatchResult = Internal.Match;

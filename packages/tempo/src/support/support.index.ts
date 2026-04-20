@@ -29,7 +29,7 @@ export {
 
 export { isTempo } from './tempo.symbol.js';
 export { registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
-export { getRuntime } from './tempo.runtime.js';
+export { getRuntime, TempoRuntime } from './tempo.runtime.js';
 export { Match, Token, Snippet, Layout, Event, Period, Guard, Default } from './tempo.default.js';
 export { SCHEMA, getLargestUnit, getSafeFallbackStep } from './tempo.util.js';
 

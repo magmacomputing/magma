@@ -17,7 +17,7 @@ declare module '../../tempo.class.js' {
 	interface Tempo {
 		/** time duration until (returns Duration) */						until(dateTimeOrOpts?: Tempo.DateTime | Tempo.Options, opts?: Tempo.Options): Tempo.Duration;
 		/** time duration until (with unit, returns number) */	until(unit: Tempo.Unit, opts?: Tempo.Options): number;
-		/** time duration until another date-time (with unit ) */until(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, unit: Tempo.Unit): number;
+		/** time duration until another date-time (with unit) */until(dateTimeOrOpts: Tempo.DateTime | Tempo.Options, unit: Tempo.Unit): number;
 		/** fallback: union of possible returns */							until(optsOrDate?: Tempo.DateTime | Tempo.Until | Tempo.Options, optsOrUntil?: Tempo.Options | Tempo.Until): number | Tempo.Duration;
 
 		/** time elapsed since (with unit) */										since(until: Tempo.Until, opts?: Tempo.Options): string;
