@@ -16,12 +16,17 @@ export function getHost(t: any): any {
 export function ensureModule(t: any, module: string, silent: boolean = false): boolean {
 	const host = getHost(t);
 	const rt = getRuntime();
-	const hostLogic = (rt.modules as any)[module];
-	const isTermsLoaded = (module === 'term' || module === 'TermsModule') && rt.pluginsDb.terms.length > 0;
+	const mod = module === 'term' ? 'TermsModule' : module;
+	const hostLogic = (rt.modules as any)[mod];
+
+	// terms fallback only applies when the canonical module entry actually exists in the discovery database
+	const isTermsLoaded = (mod === 'TermsModule') &&
+		(isDefined(hostLogic) || rt.installed.has('TermsModule') || rt.pluginsDb.plugins.some(p => p.name === 'TermsModule')) &&
+		rt.pluginsDb.terms.length > 0;
 
 	if (!isDefined(hostLogic) && !isTermsLoaded) {
-		const baseName = module.endsWith('Module') ? module.slice(0, -6) : module;
-		const msg = `Tempo: ${module} not loaded. (Did you forget to Tempo.extend(${module}) or import '#tempo/${baseName.toLowerCase()}'?)`;
+		const baseName = mod.endsWith('Module') ? mod.slice(0, -6) : mod;
+		const msg = `Tempo: ${mod} not loaded. (Did you forget to Tempo.extend(${mod}) or import '#tempo/${baseName.toLowerCase()}'?)`;
 		if (!silent && isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
 
 		if (silent) return false;
@@ -86,9 +91,24 @@ export const defineModule = <T extends Plugin>(module: T): T => {
  */
 export function attachStatics(TempoClass: any, props: Record<string, any>) {
 	for (const [key, val] of Object.entries(props)) {
-		if (Object.hasOwn(TempoClass, key)) continue;
+		if (Object.hasOwn(TempoClass, key)) {
+			const msg = `Tempo: Static name collision on "${key}". Property is already defined on the host class.`;
+			if (isFunction(TempoClass[sym.$logError])) {
+				// use catch:true to report the collision without a fatal throw (supports re-extension in shared environments)
+				TempoClass[sym.$logError]({ ...TempoClass.config, catch: true }, msg);
+			}
+			console.error(msg);
+			continue;
+		}
 
-		const isDescriptor = isObject(val) && (isFunction((val as any).get) || isFunction((val as any).set));
+		const isDescriptor = isObject(val) && (
+			(val as any)[sym.$Descriptor] === true ||
+			(
+				(isDefined(val.get) || isDefined(val.set) || isDefined(val.value) || isDefined(val.writable) || isDefined(val.configurable) || isDefined(val.enumerable)) &&
+				(!isDefined(val.get) || isFunction(val.get)) &&
+				(!isDefined(val.set) || isFunction(val.set))
+			)
+		);
 
 		// attachStatics: Intentional ordering in Object.defineProperty overrides any caller-provided flags in isDescriptor to force non-enumerable behavior (avoiding @Immutable exposure).
 		Object.defineProperty(TempoClass, key, {
@@ -157,9 +177,7 @@ export function registerPlugin(plugin: any) {
 	// Validate and persist in the runtime's discovery database.
 	rt.addPlugin(plugin);
 
-	if (!rt.extensions.includes(plugin)) {
-		rt.extensions.push(plugin);
-	}
+	rt.addExtension(plugin);
 
 	rt.emit(sym.$Register, plugin);
 

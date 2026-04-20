@@ -426,6 +426,10 @@ export class Tempo {
 			registryUpdate('NUMBER', discovery.numbers);
 
 		// 2. Process Terms
+		if ((discovery as any).term) {
+			discovery.terms = [...asArray(discovery.terms || []), ...asArray((discovery as any).term)];
+			Tempo.#dbg.warn(shape.config, 'Tempo: Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
+		}
 		if (discovery.terms)
 			this.extend(asArray(discovery.terms));
 
@@ -635,7 +639,6 @@ export class Tempo {
 						const config = item as t.TermPlugin;
 						if (Tempo.#termMap.has(config.key)) return;
 
-						Tempo.#terms.push(config);											// update registry (BEFORE side-effects)
 						Tempo.#termMap.set(config.key, config);
 						if (config.scope) Tempo.#termMap.set(config.scope, config);
 
@@ -659,6 +662,10 @@ export class Tempo {
 					// 2. handle Discovery object (container)
 					else {
 						const discovery = item as any
+						if (discovery.term) {
+							discovery.terms = [...asArray(discovery.terms || []), ...asArray(discovery.term)];
+							Tempo.#dbg.warn(Tempo.#global.config, 'Tempo: Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
+						}
 						if (discovery.options) Tempo.#setConfig(Tempo.#global, discovery.options)
 						if (discovery.plugins) this.extend(discovery.plugins, discovery.options)
 						if (discovery.terms) this.extend(discovery.terms)

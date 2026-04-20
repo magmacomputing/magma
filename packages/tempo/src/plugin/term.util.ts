@@ -288,6 +288,7 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 	if (list.length === 0) return [];
 
 	// Ensure chronological order for reliable anchor/window calculation
+	list = [...list]; // Defensive copy to avoid mutating the original template
 	sortKey(list, 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
 
 	// 2. Resolve Window (Sub-Yearly vs Yearly)
@@ -328,7 +329,7 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 			// Normalize year semantics: Treat small offsets as relative to the cycle,
 			// while treating larger numbers as absolute years (e.g. for fixed historical dates).
 			if (isNumber(itm.year)) {
-				clone.year = (itm.year >= -10 && itm.year <= 10) ? itm.year + targetYY : itm.year;
+				clone.year = (itm.year >= -10 && itm.year <= 10) ? itm.year + targetYY : itm.year; // See Range JSDoc in plugin.type.ts (|year| ≤ 10 is relative)
 			} else {
 				clone.year = targetYY;
 			}

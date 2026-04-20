@@ -1,7 +1,7 @@
 import { Tempo, enums } from '#tempo/core';
 import { stringify, objectify, enumify, getType, Pledge } from '#library';
 
-// Pre-load Tempo and Token to the global scope for ease of use in the core REPL
+// Pre-load core symbols (Tempo, getType, stringify, objectify, enumify, Pledge, enums) to the global scope
 Object.assign(globalThis, { Tempo, getType, stringify, objectify, enumify, Pledge, enums });
 
 console.log(`\n\x1b[38;2;252;194;1m\x1b[1m ⏳ Tempo (core) \x1b[0m\x1b[38;2;45;212;191mREPL initialized (core only).\x1b[0m\n`);

@@ -85,6 +85,11 @@ describe('TempoRuntime Cross-Bundle Adoption', () => {
 			// 3. Verify it ignored the fake and created a new one
 			expect(rt).not.toBe(fake);
 			expect(rt).toBeInstanceOf(TempoRuntime);
+
+			// 4. Verify consecutive calls return the same instance (singleton stability)
+			const rt2 = getRuntime();
+			expect(rt2).toBe(rt);
+			expect(rt2).toBeInstanceOf(TempoRuntime);
 		} finally {
 			try {
 				delete (globalThis as any)[sym.$Bridge];
@@ -92,6 +97,36 @@ describe('TempoRuntime Cross-Bundle Adoption', () => {
 			} catch {
 				/* ignore */
 			}
+		}
+	});
+
+	test('getRuntime() should maintain singleton stability even if the global slot is occupied by an unbranded non-configurable object', () => {
+		const original = (globalThis as any)[sym.$Bridge];
+
+		// 1. Force a non-configurable unbranded object into the bridge slot
+		const fake = { isFake: true };
+		try {
+			Object.defineProperty(globalThis, sym.$Bridge, {
+				value: fake,
+				configurable: false,
+				writable: false
+			});
+		} catch (e) {
+			// If already locked by a real runtime, we can't run this specific regression
+			return;
+		}
+
+		try {
+			// 2. Call getRuntime() twice
+			const rt1 = getRuntime();
+			const rt2 = getRuntime();
+
+			// 3. Verify stability
+			expect(rt1).not.toBe(fake);
+			expect(rt1).toBeInstanceOf(TempoRuntime);
+			expect(rt2).toBe(rt1);
+		} finally {
+			// Note: We cannot cleanup the non-configurable 'fake' from globalThis in this test
 		}
 	});
 });

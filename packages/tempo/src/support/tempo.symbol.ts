@@ -22,6 +22,7 @@ const sym = {
     /** internal key for accessing private instance state */$Internal: Symbol.for('magmacomputing/tempo/internal'),
     /** hardened globalThis bridge key for the TempoRuntime */$Bridge: Symbol.for('magmacomputing/tempo/runtime'),
     /** cross-bundle brand check for TempoRuntime */        $RuntimeBrand: Symbol.for('magmacomputing/tempo/runtime/brand'),
+    /** branding for explicit PropertyDescriptors */        $Descriptor: Symbol.for('magmacomputing/tempo/descriptor'),
 } as const;
 
 /** check valid Tempo instance */

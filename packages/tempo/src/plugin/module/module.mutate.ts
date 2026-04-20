@@ -8,6 +8,12 @@ import { resolveTermMutation } from './module.term.js';
 import type { Tempo } from '../../tempo.class.js';
 import type * as t from '../../tempo.type.js';
 
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		Mutation: { type: 'Mutation', value: any };
+	}
+}
+
 /**
  * MutateModule logic for Tempo.add and Tempo.set
  */
@@ -179,7 +185,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 		}
 
 		// @ts-ignore
-		matches.push({ type: 'ZonedDateTime', value: zdt.toString(), match: zdt });
+		matches.push({ type: 'Mutation', value: zdt, match: 'mutation' });
 
 		// @ts-ignore
 		return new (this.constructor as any)(zdt, { ...state.options, ...overrides, ...options, anchor: zdt, [sym.$Internal]: { ...state, matches } });

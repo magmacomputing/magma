@@ -87,6 +87,16 @@ export class TempoRuntime {
 			this.pluginsDb.plugins.push(plugin);
 	}
 
+	/**
+	 * Record an Extension in the raw storage.
+	 * Guards against duplicate entries and ensures validation.
+	 */
+	addExtension(extension: any): void {
+		if (!extension) return;
+		if (!this.extensions.includes(extension))
+			this.extensions.push(extension);
+	}
+
 	// ─── Factory helpers ──────────────────────────────────────────────────────
 
 	/**
@@ -100,6 +110,8 @@ export class TempoRuntime {
 	}
 }
 
+let localFallbackRuntime: TempoRuntime | undefined;
+
 /**
  * Return the singleton `TempoRuntime`.
  *
@@ -112,6 +124,8 @@ export function getRuntime(): TempoRuntime {
 	const existing = (globalThis as any)[sym.$Bridge];
 	if (existing && existing[sym.$RuntimeBrand] === true) return existing;
 
+	if (localFallbackRuntime) return localFallbackRuntime;
+
 	const rt = new TempoRuntime();
 
 	// Pin as a single hardened slot if it doesn't already exist.
@@ -123,6 +137,19 @@ export function getRuntime(): TempoRuntime {
 			configurable: false,
 			writable: false,
 		});
+	} else {
+		const desc = Object.getOwnPropertyDescriptor(globalThis, sym.$Bridge);
+		if (desc && desc.configurable !== false) {
+			Object.defineProperty(globalThis, sym.$Bridge, {
+				value: rt,
+				enumerable: false,
+				configurable: false,
+				writable: false,
+			});
+		} else {
+			// Cannot overwrite a non-configurable global, use local fallback
+			localFallbackRuntime = rt;
+		}
 	}
 
 	return rt;
