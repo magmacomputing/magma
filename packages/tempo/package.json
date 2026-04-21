@@ -54,8 +54,8 @@
       "default": "./dist/plugin/module/module.format.js"
     },
     "#tempo/parse": {
-      "development": "./src/plugin/module/module.parse.ts",
-      "default": "./dist/plugin/module/module.parse.js"
+      "development": "./src/tempo.parse.ts",
+      "default": "./dist/tempo.parse.js"
     },
     "#tempo/mutate": {
       "development": "./src/plugin/module/module.mutate.ts",
@@ -156,9 +156,8 @@
       "import": "./dist/plugin/module/module.mutate.js"
     },
     "./parse": {
-      "types": "./dist/plugin/module/module.parse.d.ts",
-      "development": "./src/plugin/module/module.parse.ts",
-      "default": "./dist/plugin/module/module.parse.js"
+      "types": "./dist/tempo.parse.d.ts",
+      "import": "./dist/tempo.parse.js"
     },
     "./library": {
       "types": "./dist/library.index.d.ts",

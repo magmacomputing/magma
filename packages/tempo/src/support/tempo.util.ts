@@ -1,40 +1,76 @@
-import { isDefined } from '#library/type.library.js';
-import { asArray } from '#library/coercion.library.js';
-import type { Tempo } from '../tempo.class.js';
-import type { Range, DateTimeUnit } from '../tempo.type.js';
+import { sym, Token } from './tempo.symbol.js';
+import { asType, isSymbol, isUndefined, isString } from '#library/type.library.js';
+import { ownEntries } from '#library/primitive.library.js';
+import { getRuntime } from './tempo.runtime.js';
 
-/** internal schema for Temporal units and their Tempo property aliases */
-export const SCHEMA = [
-	['year', 'yy'],
-	['month', 'mm'],
-	['day', 'dd'],
-	['hour', 'hh'],
-	['minute', 'mi'],
-	['second', 'ss'],
-	['millisecond', 'ms'],
-	['microsecond', 'us'],
-	['nanosecond', 'ns']
-] as [DateTimeUnit, keyof Tempo][];
+/** @internal set a mutable, enumerable property on a target */
+export const setProperty = <T>(target: object, key: PropertyKey, value: T) =>
+	Object.defineProperty(target, key, { value, writable: true, configurable: true, enumerable: true });
 
-/** helper to find the largest Temporal unit defined in a Range list */
-export function getLargestUnit(list: Range | Range[]): DateTimeUnit | undefined {
-	const items = asArray(list);
-	return SCHEMA.find(([u]) => items.some(r => isDefined(r[u])))?.[0];
+/** @internal return the Prototype parent of an object */
+export const proto = (obj: object) => Object.getPrototypeOf(obj);
+
+/** @internal test object has own property with the given key */
+export const hasOwn = (obj: object, key: string) => Object.hasOwn(obj, key);
+
+/** @internal create an object based on a prototype */
+export const create = <T extends object>(obj: object, name: string): T => Object.create(proto(obj)[name]);
+
+/** @internal resolve a key to a symbol from Token or sym registries */
+export function getSymbol(key?: string | symbol): symbol {
+	if (isSymbol(key))
+		return key as symbol;
+
+	if (isUndefined(key)) {
+		const runtime = getRuntime();
+		const usr = `usr.${++runtime.usrCount}`;								// allocate a prefixed 'user' key
+		return (Token as any)[usr] = Symbol(usr);								// add to Symbol register
+	}
+
+	if (isString(key) && (key as string).includes('.')) {
+		const description = (key as string).split('.').pop()!;	// use last segment as description
+		return (Token as any)[key as string] ??= Symbol(description);
+	}
+
+	return (Token as any)[key!] ?? (sym as any)[key!] ?? Symbol.for(key as string);
 }
 
-/** helper to determine a safe forward step for infinite-loop recovery */
-export function getSafeFallbackStep(range: Range | Range[], scope?: string): Temporal.DurationLike {
-	const items = asArray(range);
-	const first = items[0] as any;
+/** @internal helper to normalize snippet/layout Options into the target Config */
+export function collect(target: Record<symbol, any>, value: any, convert: (v: any) => any) {
+	const itm = asType(value);
+	target ??= {}
 
-	// prioritize stashed 'rollover' metadata (calculated by getTermRange) if available
-	const rolloverUnit = first?.rollover || (() => {
-		const unit = getLargestUnit(items);
-		const unitIndex = SCHEMA.findIndex(([u]) => u === unit);
-		const rolloverIndex = Math.max(0, unitIndex - 1);
-		return (unitIndex !== -1) ? SCHEMA[rolloverIndex][0] : undefined;
-	})();
+	switch (itm.type) {
+		case 'Object':
+			ownEntries(itm.value as Record<string, any>)
+				.forEach(([k, v]) => target[getSymbol(k)] = convert(v));
+			break;
+		case 'String':
+		case 'RegExp':
+			target[getSymbol()] = convert(itm.value);
+			break;
+		case 'Array':
+			(itm.value as any[]).forEach(elm => collect(target, elm, convert));
+			break;
+	}
+}
 
-	if (rolloverUnit) return { [`${rolloverUnit}s`]: 1 } as any;
-	return scope === 'period' ? { days: 1 } : { years: 1 };
+/** @internal standard date/time component order */
+export const SCHEMA = [
+	['year', 'yy'], ['month', 'mm'], ['day', 'dd'], ['hour', 'hh'], ['minute', 'mi'], ['second', 'ss'], ['millisecond', 'ms'], ['microsecond', 'us'], ['nanosecond', 'ns']
+] as const;
+
+/** @internal get the largest defined unit from a list of ranges */
+export function getLargestUnit(list: any[]): string {
+	for (const [unit] of SCHEMA) {
+		if (list.some(r => r[unit] !== undefined)) return unit;
+	}
+	return 'nanosecond';
+}
+
+/** @internal get a safe fallback step for a given unit */
+export function getSafeFallbackStep(unit: string): number {
+	const idx = SCHEMA.findIndex(([u]) => u === unit);
+	if (idx === -1) return 1;
+	return (idx <= 2) ? 1 : 0;
 }

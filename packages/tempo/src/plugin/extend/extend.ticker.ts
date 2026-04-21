@@ -6,7 +6,7 @@ import { markConfig } from '#library/symbol.library.js'
 
 import { DURATIONS } from '../../support/tempo.enum.js'
 import { defineExtension, attachStatics } from '../plugin.util.js'
-import sym from '../../support/tempo.symbol.js';
+import { sym } from '../../support/tempo.symbol.js';
 import type { Tempo } from '../../tempo.class.js'
 import type { TempoType } from '../plugin.type.js'
 

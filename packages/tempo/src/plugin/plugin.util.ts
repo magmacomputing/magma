@@ -1,12 +1,15 @@
 import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from '#library/type.library.js';
 import { secureRef } from '#library/proxy.library.js';
 
-import sym, { getRuntime } from '#tempo/support';
+import { sym, getRuntime, isTempo } from '#tempo/support';
 import type { Tempo } from '../tempo.class.js';
 import type { Plugin } from './plugin.type.js';
 
 export function getHost(t: any): any {
-	return isFunction(t) || isClass(t) ? t : (t as any).constructor;
+	const TempoClass = getRuntime().modules['Tempo'];
+	if (isFunction(t) || isClass(t)) return t;
+	if (isTempo(t)) return TempoClass ?? (t as any).constructor;
+	return TempoClass ?? (t as any).constructor;
 }
 
 /**

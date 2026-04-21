@@ -1,5 +1,5 @@
 import { defineModule } from '../plugin.util.js'
-import sym, { getRuntime, onRegistryReset } from '#tempo/support';
+import { getRuntime, onRegistryReset } from '#tempo/support';
 import { QuarterTerm } from './term.quarter.js'
 import { SeasonTerm } from './term.season.js'
 import { ZodiacTerm } from './term.zodiac.js'

@@ -20,7 +20,7 @@ import type { Property, Secure } from '#library/type.library.js';
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
 
-import sym, { getRuntime, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY } from '#tempo/support';
+import { sym, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, type TempoBrand } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -69,7 +69,7 @@ namespace Internal {
  */
 @Serializable
 @Immutable
-export class Tempo {
+export class Tempo implements TempoBrand {
 	/** Weekday names (short-form) */													static get WEEKDAY() { return enums.WEEKDAY }
 	/** Weekday names (long-form) */													static get WEEKDAYS() { return enums.WEEKDAYS }
 	/** Month names (short-form) */														static get MONTH() { return enums.MONTH }
@@ -90,10 +90,7 @@ export class Tempo {
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !Tempo.#lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return Tempo.#lifecycle.extendDepth > 0 }
 
-	static #dbg = new Logify('Tempo', {
-		debug: Default?.debug ?? false,
-		catch: Default?.catch ?? false
-	})
+	/** Logify for internal errors and debug logs */					static #dbg = new Logify('Tempo', { debug: Default?.debug ?? false, catch: Default?.catch ?? false })
 
 	/** Tempo state for the global configuration */						static #global = {} as Internal.State
 	/** cache for next-available 'usr' Token key */						static #usrCount = 0;
@@ -351,7 +348,7 @@ export class Tempo {
 						break;
 
 					case 'timeZone': {
-						const zone = String(arg.value).toLowerCase() as t.TIMEZONE;
+						const zone = arg.value.toString().toLowerCase();
 						setProperty(shape.config, 'timeZone', enums.TIMEZONE[zone] ?? arg.value);
 						break;
 					}
@@ -742,6 +739,10 @@ export class Tempo {
 		Tempo.#lifecycle.initialising = true;
 
 		try {
+			const rt = getRuntime();
+			const state = rt.state ?? init();
+			Tempo.#global = state;
+
 			const { timeZone, calendar } = getDateTimeFormat();
 
 			// 1. Establish the base parsing state
@@ -783,7 +784,6 @@ export class Tempo {
 			const discoveryKey = options.discovery ?? Symbol.keyFor(sym.$Tempo) as string;
 			const storeKey = Symbol.keyFor(sym.$Tempo) as string;
 
-			const rt = getRuntime();
 			const userDiscovery = (globalThis as any)[isString(discoveryKey) ? Symbol.for(discoveryKey) : discoveryKey] as Internal.Discovery;
 
 			Tempo.#setConfig(Tempo.#global,
@@ -1032,7 +1032,7 @@ export class Tempo {
 	/** @internal internal key for signaling pre-errored state in constructor */
 	static [sym.$errored] = sym.$errored;
 
-	/** @internal */	static [sym.$termError](config: Internal.Config, term: string): void {
+	/** @internal */	static [TermError](config: Internal.Config, term: string): void {
 		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
 		const msg = `Unknown Term identifier: ${term}${hint}`;
 		Tempo.#dbg.error(config, msg);
@@ -1089,7 +1089,7 @@ export class Tempo {
 		return 'Tempo';																					// hard-coded to avoid minification mangling
 	}
 
-	get [sym.$isTempo]() { return true }
+	get [sym.$isTempo](): true { return true }
 
 	/**
 	 * Instantiates a new `Tempo` object with configuration only.
@@ -1459,10 +1459,10 @@ export class Tempo {
 
 	/** resolve constructor / method arguments */
 	#swap(tempo?: t.DateTime | t.Options, options: t.Options = {}): [t.DateTime | undefined, t.Options] {
-		if (isTempo(tempo)) {
+		if (isTempo(tempo))
 			// preserve parse result history when creating new instance from an existing one
 			return [tempo, Object.assign({ result: [...tempo.parse.result] }, options)];
-		}
+
 		return this.#isOptions(tempo)
 			? [tempo.value, Object.assign({}, tempo)]
 			: [tempo, options];

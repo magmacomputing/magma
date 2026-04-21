@@ -6,14 +6,20 @@ import { MutateModule } from '#tempo/mutate';
 import { DurationModule } from '#tempo/duration';
 import { FormatModule } from '#tempo/format';
 import { TermsModule } from '#tempo/term';
+import { getRuntime } from '#tempo/support';
 
 // Batteries Included: Register standard modules
 const core = [ParseModule, MutateModule, FormatModule, DurationModule, TermsModule];
 
-onRegistryReset(() => { Tempo.extend(core); });
+getRuntime().modules['Tempo'] = Tempo;
+onRegistryReset(() => { 
+	getRuntime().modules['Tempo'] = Tempo;
+	Tempo.extend(core); 
+});
 
 Tempo.extend(core);
 
 export * from './tempo.class.js';
+export { parse } from './tempo.parse.js';
 export { enums };
 export default Tempo;

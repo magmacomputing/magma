@@ -7,16 +7,12 @@
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
 
+import { sym } from '#tempo/support/tempo.symbol.js';
 import * as enums from '#tempo/support/tempo.enum.js';
-import sym from '#tempo/support/tempo.symbol.js';
-import type { Snippet, Layout, Event, Period, Token, Ignore } from '#tempo/support/tempo.default.js';
+import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/tempo.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
 import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension } from '#tempo/plugin/plugin.type.js';
-
-/**
- * Structural forward-reference to the Tempo class.
- * 'import type' is safe for circular ESM references — erased at runtime.
-*/
+import type { Token } from '#tempo/support/tempo.symbol.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 
 declare global {
@@ -234,13 +230,14 @@ export namespace Internal {
 	}
 
 	/** structured configuration for Global Discovery via Symbol.for('$Tempo') */
+	type Ignores = string | string[] | (() => string | string[]);
 	export interface Discovery {
 		/** pre-defined config options for Tempo.#global */			options?: Options | (() => Options);
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
-		/** noise words to ignore during parsing via Tempo.ignore() */ ignore?: Ignore | (() => Ignore);
+		/** noise words to ignore during parsing via Tempo.ignore() */ ignore?: Ignores
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: Plugin | Plugin[];
 	}
 }

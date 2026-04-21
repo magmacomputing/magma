@@ -1,5 +1,3 @@
-import sym from './tempo.symbol.js';
-
 export {
 	default as enums,
 	STATE,
@@ -27,11 +25,11 @@ export {
 	NumericPattern
 } from './tempo.enum.js';
 
-export { isTempo } from './tempo.symbol.js';
+export { sym, isTempo, Token, TermError, type TempoBrand } from './tempo.symbol.js';
 export { registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
 export { getRuntime, TempoRuntime } from './tempo.runtime.js';
-export { Match, Token, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './tempo.default.js';
+export { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './tempo.default.js';
 export { SCHEMA, getLargestUnit, getSafeFallbackStep } from './tempo.util.js';
+export { init, extendState } from './tempo.init.js';
 
 export { default as lib } from '#library/symbol.library.js';
-export default sym;
