@@ -16,3 +16,4 @@ Tempo.extend(core);
 
 export * from './tempo.class.js';
 export { enums };
+export default Tempo;

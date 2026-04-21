@@ -26,7 +26,7 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 
 	if (!isDefined(hostLogic) && !isTermsLoaded) {
 		const baseName = mod.endsWith('Module') ? mod.slice(0, -6) : mod;
-		const msg = `Tempo: ${mod} not loaded. (Did you forget to Tempo.extend(${mod}) or import '#tempo/${baseName.toLowerCase()}'?)`;
+		const msg = `${mod} not loaded. (Did you forget to Tempo.extend(${mod}) or import '#tempo/${baseName.toLowerCase()}'?)`;
 		if (!silent && isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
 
 		if (silent) return false;
@@ -66,7 +66,7 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
 			return (hostLogic as any)[method].apply(t, args);
 		}
 
-		const msg = `Tempo: ${module} method '${String(methodOrFallback)}' not found`;
+		const msg = `${module} method '${String(methodOrFallback)}' not found`;
 		if (isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
 		throw new Error(msg);
 	}
@@ -92,7 +92,7 @@ export const defineModule = <T extends Plugin>(module: T): T => {
 export function attachStatics(TempoClass: any, props: Record<string, any>) {
 	for (const [key, val] of Object.entries(props)) {
 		if (Object.hasOwn(TempoClass, key)) {
-			const msg = `Tempo: Static name collision on "${key}". Property is already defined on the host class.`;
+			const msg = `Static name collision on "${key}". Property is already defined on the host class.`;
 			if (isFunction(TempoClass[sym.$logError])) {
 				// use catch:true to report the collision without a fatal throw (supports re-extension in shared environments)
 				TempoClass[sym.$logError]({ ...TempoClass.config, catch: true }, msg);

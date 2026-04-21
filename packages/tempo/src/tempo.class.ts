@@ -428,7 +428,7 @@ export class Tempo {
 		// 2. Process Terms
 		if ((discovery as any).term) {
 			discovery.terms = [...asArray(discovery.terms || []), ...asArray((discovery as any).term)];
-			Tempo.#dbg.warn(shape.config, 'Tempo: Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
+			Tempo.#dbg.warn(shape.config, 'Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
 		}
 		if (discovery.terms)
 			this.extend(asArray(discovery.terms));
@@ -664,7 +664,7 @@ export class Tempo {
 						const discovery = item as any
 						if (discovery.term) {
 							discovery.terms = [...asArray(discovery.terms || []), ...asArray(discovery.term)];
-							Tempo.#dbg.warn(Tempo.#global.config, 'Tempo: Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
+							Tempo.#dbg.warn(Tempo.#global.config, 'Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
 						}
 						if (discovery.options) Tempo.#setConfig(Tempo.#global, discovery.options)
 						if (discovery.plugins) this.extend(discovery.plugins, discovery.options)
@@ -1097,26 +1097,33 @@ export class Tempo {
 			this.#errored = true;
 		}
 
-		if (!this.#local.parse.lazy) this.#ensureParsed();			// attempt to interpret immediately (if not lazy)
+		if (!this.#local.parse.lazy) this.#resolve();						// attempt to interpret immediately (if not lazy)
 	}
 
-	/** Ensure the instance has been parsed (for deferred execution) */
-	#ensureParsed() {
-		if (this.#zdt) return;
-		try {
-			this.#zdt = this.#parse(this.#tempo as t.DateTime, this.#anchor);
-			secure(this.#local.config);
-			const skip = [this.#local.parse.format, this.#local.parse.term, this.#local.parse.result].filter(v => v !== undefined);
-			secure(this.#local.parse, new WeakSet(skip as any));
-		} catch (err) {
-			const msg = `Cannot create Tempo: ${(err as Error).message}\n${(err as Error).stack}`;
-			if (this.#local.config.catch === true) {
-				Tempo.#dbg.error(this.#local.config, msg);					// log as error if in catch-mode
-			} else {
-				Tempo.#dbg.error(this.#local.config, err, msg);		// log as error then re-throw
-				throw err;
+	/** Resolve the instance to a Temporal.ZonedDateTime (with optional callback) */
+	#resolve<T>(cb?: (zdt: Temporal.ZonedDateTime) => T): T | Temporal.ZonedDateTime {
+		if (!this.#zdt) {
+			try {
+				const skip = [this.#local.parse.format, this.#local.parse.term, this.#local.parse.result]
+					.filter(isDefined);
+				this.#zdt = this.#parse(this.#tempo as t.DateTime, this.#anchor);
+				secure(this.#local.config);
+				secure(this.#local.parse, new WeakSet(skip));
+			} catch (err) {
+				this.#errored = true;																// mark as errored
+				const msg = `Cannot create Tempo: ${(err as Error).message}\n${(err as Error).stack}`;
+				if (this.#local.config.catch === true) {
+					Tempo.#dbg.error(this.#local.config, msg);				// log as error if in catch-mode
+					this.#zdt = this.#now.toZonedDateTimeISO('UTC');
+				} else {
+					Tempo.#dbg.error(this.#local.config, err, msg);		// log as error then re-throw
+					throw err;
+				}
 			}
 		}
+
+		const zdt = isZonedDateTime(this.#zdt) ? this.#zdt : this.#now.toZonedDateTimeISO('UTC');
+		return cb?.(zdt) ?? zdt;
 	}
 
 	#setLazy(target: any, name: PropertyKey | undefined, define: (keyOnly: boolean) => any, isKeyOnly = false) {
@@ -1259,11 +1266,7 @@ export class Tempo {
 	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Tempo.WEEKDAYS.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
 	/** ISO weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
 	/** Nanoseconds since Unix epoch (BigInt) */							get nano() { return this.toDateTime().epochNanoseconds }
-	/** `true` if the underlying date-time is valid. */
-	get isValid() {
-		this.#ensureParsed();
-		return isZonedDateTime(this.#zdt) && !this.#errored;
-	}
+	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
 
 	/** list of registered terms and their available range keys */
 	get terms(): Record<string, string[]> {
@@ -1317,16 +1320,16 @@ export class Tempo {
 	/** Instance-specific parse rules (merged with global) */
 	get parse(): Internal.Parse {
 		const self: Tempo = (this as any)[lib.$Target] ?? this;
-		self.#ensureParsed();
+		self.#resolve();
 		// Return a shadowed view so we can safely inject matches without breaking the freeze on the original state
 		const out = Object.create(self.#local.parse);
-		if (self.#matches !== undefined) {
+		if (self.#matches !== undefined)
 			Object.defineProperty(out, 'result', { value: self.#matches, enumerable: true, configurable: true });
-		}
+
 		return out as t.Internal.Parse;
 	}
 
-	/** Keyed results for all resolved terms */ get term() { return this.#term }
+	/** Keyed results for all resolved terms */								get term() { return this.#term }
 	/** Formatted results for all pre-defined format codes */ get fmt() { return this.#fmt }
 	/** units since epoch */																	get epoch() {
 		return secure({
@@ -1345,28 +1348,16 @@ export class Tempo {
 	 */
 	/** @internal */																					get #Tempo() { return this.constructor as typeof Tempo; }
 
-	format<K extends t.Format>(fmt: K) {
-		this.#ensureParsed();
-		return interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt);
-	}
+	/** apply a custom format. */															format<K extends t.Format>(fmt: K) { return this.#resolve(() => interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt)); }
 
-	/** time duration until another date-time */							until(arg0?: any, arg1?: any): any { this.#ensureParsed(); return interpret(this, 'DurationModule', undefined, false, 'until', arg0, arg1) ?? this; }
-	/** time elapsed since another date-time */								since(arg0?: any, arg1?: any): any { this.#ensureParsed(); return interpret(this, 'DurationModule', undefined, false, 'since', arg0, arg1) ?? this; }
+	/** time duration until another date-time */							until(arg0?: any, arg1?: any): any { return this.#resolve(() => interpret(this, 'DurationModule', undefined, false, 'until', arg0, arg1) ?? this); }
+	/** time elapsed since another date-time */								since(arg0?: any, arg1?: any): any { return this.#resolve(() => interpret(this, 'DurationModule', undefined, false, 'since', arg0, arg1) ?? this); }
 
-	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'add', false, tempo, options) ?? this; }
-	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { this.#ensureParsed(); return interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this; }
+	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'add', false, tempo, options) ?? this); }
+	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this); }
 	/** returns a clone of the current `Tempo` instance. */		clone() { return new this.#Tempo(this, this.config) }
 
-	/** returns the underlying Temporal.ZonedDateTime */
-	toDateTime(): Temporal.ZonedDateTime {
-		try {
-			this.#ensureParsed();
-			return isZonedDateTime(this.#zdt) ? this.#zdt : this.#now.toZonedDateTimeISO('UTC');
-		} catch (err) {
-			if (this.#local.config.catch === true) return this.#now.toZonedDateTimeISO('UTC');
-			throw err;
-		}
-	}
+	/** returns the underlying Temporal.ZonedDateTime */			toDateTime() { return this.#resolve() as Temporal.ZonedDateTime; }
 	/** returns a Temporal.PlainDate representation */				toPlainDate() { return this.toDateTime().toPlainDate() }
 	/** returns a Temporal.PlainTime representation */				toPlainTime() { return this.toDateTime().toPlainTime() }
 	/** returns a Temporal.PlainDateTime representation */		toPlainDateTime() { return this.toDateTime().toPlainDateTime() }
@@ -1402,7 +1393,7 @@ export class Tempo {
 
 		const res = interpret(this, 'ParseModule', 'parse', false, tempo, dateTime, term);
 		if (isUndefined(res)) {
-			const msg = `Tempo: ParseModule error. Could not parse ${String(tempo)}`;
+			const msg = `ParseModule error. Could not parse ${String(tempo)}`;
 			Tempo.#dbg.error(this.#local.config, msg);
 			if (this.#local.config.catch !== true) throw new Error(msg);
 			return undefined as any;

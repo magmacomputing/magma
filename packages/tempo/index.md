@@ -3,7 +3,7 @@ layout: home
 ---
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { withBase } from 'vitepress'
 
 const logoUrl = withBase('/logo.svg')
@@ -17,10 +17,23 @@ const timeStr = ref('Loading...')
 const tzStr = ref('')
 const tickerActive = ref(true)
 const isResuming = ref(false)
+const selectedTz = ref(Intl.DateTimeFormat().resolvedOptions().timeZone)
+const commonZones = ref([
+  Intl.DateTimeFormat().resolvedOptions().timeZone,
+  'UTC', 
+  'Europe/London', 
+  'Europe/Paris', 
+  'America/New_York', 
+  'America/Los_Angeles', 
+  'Asia/Tokyo', 
+  'Australia/Sydney'
+])
 
 // --- Carousel State ---
 const activeIndex = ref(0)
-const isPaused = ref(false)
+const isManualPaused = ref(false)
+const isHovering = ref(false)
+const isPaused = computed(() => isManualPaused.value || isHovering.value)
 const transitionEnabled = ref(true)
 
 const features = [
@@ -100,8 +113,8 @@ async function startTicker() {
       tzStr.value = t.tz
     }
 
-    sync(new Tempo())
-    ticker = Tempo.ticker({ seconds: 1 }, sync)
+    sync(new Tempo({ timeZone: selectedTz.value }))
+    ticker = Tempo.ticker({ seconds: 1, timeZone: selectedTz.value }, sync)
   } catch (e) {
     timeStr.value = `Error: ${e.message || 'Unknown'}`
     const fallback = () => {
@@ -175,6 +188,10 @@ onUnmounted(() => {
   document.removeEventListener('visibilitychange', handleVisibility)
 })
 
+watch(selectedTz, () => {
+  if (isMounted) startTicker()
+})
+
 // --- A11y & Keyboard Controls ---
 const featureRefs = ref([])
 
@@ -240,7 +257,9 @@ function focusActiveCard() {
               {{ tickerActive ? 'Live' : (isResuming ? 'Waking...' : 'Standby') }}
             </span>
           </div>
-          <p class="tempo-tz-time">{{ tzStr }}</p>
+          <select v-model="selectedTz" class="tempo-tz-select" aria-label="Select Timezone">
+            <option v-for="tz in [...new Set(commonZones)]" :key="tz" :value="tz">{{ tz }}</option>
+          </select>
         </div>
       </div>
     </div>
@@ -250,13 +269,13 @@ function focusActiveCard() {
 <div class="tempo-carousel-container" 
      role="region" 
      aria-label="Tempo features"
-     @mouseenter="isPaused = true" 
-     @mouseleave="isPaused = false"
+     @mouseenter="isHovering = true" 
+     @mouseleave="isHovering = false"
      @keydown="handleKeydown">
   
   <div class="tempo-carousel-controls">
-    <button class="tempo-carousel-toggle" @click="isPaused = !isPaused" :aria-label="isPaused ? 'Play carousel' : 'Pause carousel'">
-      <span v-if="isPaused">▶️</span>
+    <button class="tempo-carousel-toggle" @click="isManualPaused = !isManualPaused" :aria-label="isManualPaused ? 'Play carousel' : 'Pause carousel'">
+      <span v-if="isManualPaused">▶️</span>
       <span v-else>⏸️</span>
     </button>
   </div>
@@ -431,12 +450,31 @@ function focusActiveCard() {
   white-space: nowrap;
 }
 
-.tempo-tz-time {
+.tempo-tz-select {
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-2);
+  border: 1px solid var(--vp-c-border);
+  border-radius: 4px;
+  padding: 4px 12px;
   font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
   font-size: 0.8rem;
-  color: var(--vp-c-text-2);
-  margin: 4px 0 0;
-  white-space: nowrap;
+  margin-top: 8px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.tempo-tz-select:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-bg-mute);
+}
+
+.tempo-tz-select:focus {
+  border-color: var(--vp-c-brand-1);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
 .tempo-carousel-container {
