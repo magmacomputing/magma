@@ -20,7 +20,7 @@ import type { Property, Secure } from '#library/type.library.js';
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
 
-import sym, { getRuntime, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Default, Guard, enums, STATE, DISCOVERY } from '#tempo/support';
+import sym, { getRuntime, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -310,6 +310,7 @@ export class Tempo {
 					case 'layout':
 					case 'event':
 					case 'period':
+					case 'ignore':
 						// lazy-shadowing: only create local object if it doesn't already exist on local shape
 						if (!hasOwn(shape.parse, optKey))
 							shape.parse[optKey] = create(shape.parse, optKey);
@@ -322,8 +323,14 @@ export class Tempo {
 									: isRegExp(v) ? v.source : v
 							)
 						} else {
-							asArray(arg.value as Event | Period)
-								.forEach(elm => ownEntries(elm).forEach(([key, val]) => (rule as Record<string, any>)[key] = val))
+							asArray(arg.value)
+								.forEach(elm => {
+									if (isObject(elm)) {
+										Object.assign(rule, elm);
+									} else if (isString(elm)) {
+										rule[elm] = elm;
+									}
+								})
 						}
 						break;
 
@@ -393,6 +400,7 @@ export class Tempo {
 		if (isDefined(shape.parse.mdyLayouts)) Tempo.#swapLayout(shape);
 		if (isDefined(shape.parse.event)) Tempo.#setEvents(shape);
 		if (isDefined(shape.parse.period)) Tempo.#setPeriods(shape);
+		if (isDefined(shape.parse.ignore)) Tempo.#setIgnores(shape);
 
 		Tempo.#setPatterns(shape);															// setup Regex DateTime patterns
 	}
@@ -445,11 +453,16 @@ export class Tempo {
 
 		// 4. Process Options
 		let opts = discovery.options || {}
+		if (discovery.ignore) {
+			const ignore = isFunction(discovery.ignore) ? discovery.ignore() : discovery.ignore;
+			Tempo.init({ ignore });
+		}
 		return isFunction(opts) ? opts() : opts;
 	}
 
 	/** build RegExp patterns */
 	static #setPatterns(shape: Internal.State) {
+		if (isDefined(shape.parse.ignore)) Tempo.#setIgnores(shape);
 		const snippet = shape.parse.snippet;
 
 		// 1. ensure numeric snippets are current
@@ -473,6 +486,25 @@ export class Tempo {
 			Tempo.#buildGuard();																	// build the high-performance 'Master Guard' ONLY for global changes
 	}
 
+	/** build a Case-Insensitive regex pattern to strip noise words */
+	static #setIgnores(shape: Internal.State) {
+		const ignores = ownKeys(shape.parse.ignore, true);
+		if (isLocal(shape) && !hasOwn(shape.parse, 'ignore'))
+			return;
+
+		if (isEmpty(ignores)) {
+			delete shape.parse.ignorePattern;
+			return;
+		}
+
+		const words = ignores
+			.filter(isString)
+			.map(w => Match.escape(w.toLowerCase()))
+			.join('|');
+
+		shape.parse.ignorePattern = new RegExp(`\\b(${words})\\b`, 'gi');
+	}
+
 	static #buildGuard() {
 		// Tempo.#dbg.error(Tempo.#global.config, 'Building Guard...');
 		const wordsList = [
@@ -486,6 +518,7 @@ export class Tempo {
 			...ownKeys(enums.TIMEZONE),
 			...ownKeys(Tempo.#global.parse.event),
 			...ownKeys(Tempo.#global.parse.period),
+			...ownKeys(Tempo.#global.parse.ignore),
 			...ownKeys(Tempo.#global.parse.snippet),
 			...ownKeys(Tempo.#global.parse.layout),
 			...[Token.slk],
@@ -717,6 +750,7 @@ export class Tempo {
 				layout: Object.assign({}, Layout),
 				event: Object.assign({}, Event),
 				period: Object.assign({}, Period),
+				ignore: Object.fromEntries(asArray(Ignore).map(w => [w, w])),
 				mdyLocales: Tempo.#mdyLocales(Default.mdyLocales as t.Options['mdyLocales']),
 				mdyLayouts: asArray(Default.mdyLayouts as t.Options['mdyLayouts']) as t.Pair[],
 				pivot: Default.pivot,
@@ -935,6 +969,7 @@ export class Tempo {
 			layout: { ...parse.layout },
 			event: { ...parse.event },
 			period: { ...parse.period },
+			ignore: { ...parse.ignore },
 			mdyLocales: [...parse.mdyLocales],
 			mdyLayouts: [...parse.mdyLayouts],
 			mode: parse.mode
@@ -948,6 +983,11 @@ export class Tempo {
 
 	/** release global config and reset library to defaults */
 	static [Symbol.dispose]() { Tempo.init() }
+
+	/** static Tempo.ignores (registry) */
+	static get ignores(): Secure<Ignore> {
+		return secure(ownKeys(Tempo.#global.parse.ignore, true));
+	}
 
 	/** allow instanceof to work across module boundaries via the local brand symbol */
 	static [sym.$isTempo] = true;
@@ -988,8 +1028,6 @@ export class Tempo {
 		/** instance configuration */															config: { [lib.$Logify]: true } as unknown as Internal.Config,
 		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.MatchResult[] } as Internal.Parse
 	} as Internal.State;
-
-
 
 	/** @internal internal key for signaling pre-errored state in constructor */
 	static [sym.$errored] = sym.$errored;

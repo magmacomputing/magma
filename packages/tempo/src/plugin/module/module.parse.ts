@@ -142,7 +142,7 @@ const ParseEngine = {
 	conform(this: any, tempo: t.DateTime, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): TypeValue<any> {
 		const state = this[sym.$Internal]();
 		const arg = asType(tempo);
-		const { type, value } = arg;
+		let { type, value } = arg;
 		const TempoClass = this.constructor as typeof Tempo;
 		const terms = getRuntime().pluginsDb.terms;
 
@@ -191,7 +191,10 @@ const ParseEngine = {
 		}
 
 		if (isString(value)) {
-			const trim = (value as string).trim();
+			let trim = (value as string).trim();
+			if (state.parse.ignorePattern)
+				trim = trim.replace(state.parse.ignorePattern, ' ').replace(Match.spaces, ' ').trim();
+
 			const guard = (TempoClass as any)[sym.$guard].test(trim);
 
 			if (!guard) {
@@ -208,6 +211,7 @@ const ParseEngine = {
 				const bypass = local.some(key => trim.toLowerCase().includes(String(key).toLowerCase()));
 				if (!bypass) return arg;
 			}
+			value = trim; // Update value for downstream parsing
 		}
 
 		return ParseEngine.parseLayout.call(this, value as string | number, dateTime, isAnchored, resolvingKeys);
@@ -218,7 +222,7 @@ const ParseEngine = {
 		const state = this[sym.$Internal]();
 		const arg = asType(value);
 		const { type } = arg;
-		const trim = (type === 'String') ? (value as string).trim() : value.toString();
+		const trim = value.toString().trim();//(type === 'String') ? (value as string).trim() : value.toString();
 		const resolving = new Set(resolvingKeys);
 		const TempoClass = this.constructor as typeof Tempo;
 

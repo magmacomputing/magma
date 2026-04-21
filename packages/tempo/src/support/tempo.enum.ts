@@ -1,12 +1,8 @@
 import lib from '#library/symbol.library.js';
 import { enumify, Enum } from '#library/enumerate.library.js';
 import { proxify } from '#library/proxy.library.js';
-import { ownKeys } from '#library/primitive.library.js';
 import { allDescriptors } from '#library/reflection.library.js';
-import { clearCache } from '#library/function.library.js';
-import { isUndefined, isDefined } from '#library/type.library.js';
-import type { OwnOf, KeyOf, ValueOf, LooseUnion, Mutable, Property } from '#library/type.library.js';
-import sym from './tempo.symbol.js';
+import type { OwnOf, KeyOf, ValueOf, LooseUnion, Mutable } from '#library/type.library.js';
 
 /** calendar seasons */
 export const SEASON = enumify({

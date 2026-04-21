@@ -103,6 +103,7 @@ Tempo.init({
 | `catch` | `boolean` | `false` | If true, invalid inputs return a Void instance instead of throwing. |
 | `mode` | `'auto' \| 'strict' \| 'defer'` | `'auto'` | Controls the hydration strategy (e.g., `defer` for Zero-Cost creation). |
 | `silent` | `boolean` | `false` | Suppresses console output. Combined with `catch: true` for silent failover. |
+| `ignore` | `string \| string[]` | `['at']` | List of noise words to be stripped before parsing. |
 
 ---
 
@@ -117,9 +118,14 @@ const t = new Tempo('now', { timeZone: 'UTC' });
 
 ---
 
-## 5. Advanced: Parsing Rules
+## 5. Advanced Parsing Rules
 
-Beyond basic settings, you can extend Tempo's intelligence by supplying custom **Events** (date aliases) and **Periods** (time aliases) at any global configuration tier.
+Beyond basic settings, Tempo's parsing engine can be extended with custom rules and behaviors to handle specialized natural language or high-volume processing requirements.
+
+### 📅 5.1 Custom Events and Periods
+
+You can extend Tempo's intelligence by supplying custom **Events** (date aliases) and **Periods** (time aliases) at any global configuration tier.
+
 
 ```javascript
 Tempo.init({
@@ -136,7 +142,7 @@ Tempo.init({
 const delivery = new Tempo('deadline'); // Parsed using your custom logic
 ```
 
-### ⚡ 5b. Deferring Initialization (`mode: 'defer'`)
+### ⚡ 5.2 Deferring Initialization (`mode: 'defer'`)
 
 By default (`mode: 'auto'`), Tempo uses the **Master Guard** to determine if a string can be lazily evaluated. For exceptionally high-volume scenarios where you may be creating thousands of Tempo instances but only using them for calculations (not formatting or terms), you can force a standard lazy behavior using `mode: 'defer'`.
 
@@ -152,6 +158,29 @@ console.log(t.format('{yyyy}')); // Discovery triggers NOW, only once.
 
 > [!TIP]
 > **Zero-Cost Constructor**: Combining the **Master Guard** (automatic) and the **`defer`** mode allows Tempo to satisfy the "Zero-Cost Constructor" requirement for mass-processing applications.
+
+
+### 🧹 5.3 Noise Word Filtering (`ignore`)
+
+Tempo allows you to specify "noise words" that should be ignored during natural language parsing. This is particularly useful for handling human-readable strings that contain connectors or filler words.
+
+By default, Tempo ignores the word **"at"** (e.g., `"Friday at 3pm"` becomes `"Friday 3pm"` internally).
+
+```javascript
+// Extend globally
+Tempo.init({ ignore: ['the', 'o-clock'] });
+
+// Use in a specific instance
+const t = new Tempo('next Friday at 3 o-clock', { 
+  ignore: 'o-clock' 
+}); 
+
+console.log(t.toString()); // Resolved correctly
+```
+
+> [!TIP]
+> **Registry Structure**: The `ignore` registry accepts a **String** or an **Array** of strings. These are converted to a high-performance internal format to support efficient prototype-based shadowing.
+
 
 ---
 

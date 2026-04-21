@@ -183,6 +183,14 @@ export const Period = looseIndex<string, string | Function>()({
 /** @internal Tempo Period type */
 export type Period = typeof Period
 
+/** 
+ * an {ignore} is a list of noise words to be stripped during parsing.
+ */
+/** @internal Tempo Ignore registry */
+export const Ignore = ['at', 'the', 'o-clock', 'o\'clock', 'on', 'in', 'of', 'by', 'for', 'to'] as const;
+/** @internal Tempo Ignore type */
+export type Ignore = string | string[];
+
 
 /** @internal Tempo Master Guard list */
 export const Guard = [

@@ -25,6 +25,7 @@ export default defineConfig({
         text: 'Getting Started',
         items: [
           { text: 'Introduction', link: '/README' },
+          { text: 'Installation', link: '/doc/installation' },
           { text: 'Cookbook', link: '/doc/tempo.cookbook' },
           { text: 'Migration Guide', link: '/doc/migration-guide' },
           { text: 'Release Notes', link: '/doc/releases/' }

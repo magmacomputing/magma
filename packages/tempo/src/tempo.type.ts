@@ -9,7 +9,7 @@
 
 import * as enums from '#tempo/support/tempo.enum.js';
 import sym from '#tempo/support/tempo.symbol.js';
-import type { Snippet, Layout, Event, Period, Token } from '#tempo/support/tempo.default.js';
+import type { Snippet, Layout, Event, Period, Token, Ignore } from '#tempo/support/tempo.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
 import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension } from '#tempo/plugin/plugin.type.js';
 
@@ -170,6 +170,7 @@ export namespace Internal {
 		/** patterns to help parse value */											layout: Layout | PatternOption<Pattern>;
 		/** custom date aliases (events). */										event: Event | PatternOption<Logic>;
 		/** custom time aliases (periods). */										period: Period | PatternOption<Logic>;
+		/** noise words to ignore during parsing. */						ignore: Ignore;
 		/** custom format strings to merge in the FORMAT enum */formats: Property<any>;
 		/** plugins to be automatically extended */							plugins: Plugin | Plugin[];
 		/** supplied value to parse */													value: DateTime;
@@ -210,6 +211,7 @@ export namespace Internal {
 		/** Map of regex-patterns to match input-string */			pattern: Registry;
 		/** configured Events */																event: Event;
 		/** configured Periods */																period: Period;
+		/** noise words to ignore during parsing */							ignore: Record<string, string>;
 		/** pivot year for two-digit years */										pivot: number;
 		/** parsing match result */															result: Match[];
 		/** was this a nested/anchored parse? */								isAnchored?: boolean;
@@ -218,6 +220,7 @@ export namespace Internal {
 		/** @internal lazy delegator for formats */							format?: any;
 		/** @internal lazy delegator for terms */								term?: any;
 		/** @internal localized Master Guard scanner */					guard?: { test(str: string): boolean };
+		/** @internal localized Noise Word scanner */						ignorePattern?: RegExp;
 	}
 
 	/** drop the parse-only Options */
@@ -237,6 +240,7 @@ export namespace Internal {
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
+		/** noise words to ignore during parsing via Tempo.ignore() */ ignore?: Ignore | (() => Ignore);
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: Plugin | Plugin[];
 	}
 }
