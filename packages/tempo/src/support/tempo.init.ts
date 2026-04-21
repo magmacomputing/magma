@@ -7,33 +7,35 @@ import { ownEntries } from '#library/primitive.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
 import { setProperty, hasOwn, create, collect } from './tempo.util.js';
-import { sym } from './tempo.symbol.js';
+import { sym, Token } from './tempo.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
 import * as t from '../tempo.type.js';
 
 /** @internal Initialise the global Tempo state */
-export function init(options: t.Options = {}) {
+export function init(options: t.Options = {}): t.Internal.State {
 	const runtime = getRuntime();
 	if (runtime.state) return runtime.state;
 
 	const { timeZone, calendar } = getDateTimeFormat();
 
-	const state: any = {
+	const state = {
 		config: {},
 		parse: {}
-	};
+	} as t.Internal.State
 
 	// 1. Establish the base parsing state
 	state.parse = markConfig({
+		token: Token,
+		result: [],
 		snippet: Object.assign({}, Snippet),
 		layout: Object.assign({}, Layout),
 		event: Object.assign({}, Event),
 		period: Object.assign({}, Period),
 		ignore: Object.fromEntries(asArray(Ignore).map(w => [w, w])),
 		mdyLocales: asArray(Default.mdyLocales as any),
-		mdyLayouts: asArray(Default.mdyLayouts as any) as t.Pair[],
-		pivot: Default.pivot,
+		mdyLayouts: asArray<t.Pair>(Default.mdyLayouts as any),
+		pivot: Default.pivot as any,
 		mode: Default.mode as any,
 		lazy: false,
 		pattern: new Map<symbol, RegExp>(),
@@ -68,7 +70,7 @@ export function extendState(state: any, options: t.Options) {
 		isObject: (v: any) => typeof v === 'object' && v !== null,
 		isUndefined: (v: any) => v === undefined,
 		isRegExp: (v: any) => v instanceof RegExp,
-		asType: (v: any) => ({ type: typeof v, value: v }) // basic fallback
+		asType: (v: any) => ({ type: Object.prototype.toString.call(v).slice(8, -1), value: v })
 	};
 
 	ownEntries(options).forEach(([optKey, optVal]) => {
@@ -80,7 +82,7 @@ export function extendState(state: any, options: t.Options) {
 			case 'layout':
 			case 'event':
 			case 'period':
-			case 'ignore':
+			case 'ignore': {
 				if (!hasOwn(state.parse, optKey))
 					state.parse[optKey] = create(state.parse, optKey);
 
@@ -98,6 +100,7 @@ export function extendState(state: any, options: t.Options) {
 					})
 				}
 				break;
+			}
 
 			case 'timeZone': {
 				const zone = String(arg.value).toLowerCase();
@@ -119,6 +122,10 @@ export function extendState(state: any, options: t.Options) {
 
 			case 'mode':
 				state.parse.mode = String(arg.value);
+				break;
+
+			case 'anchor':
+				state.anchor = arg.value;
 				break;
 		}
 	});

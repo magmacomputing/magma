@@ -28,6 +28,7 @@ const commonZones = ref([
   'Asia/Tokyo', 
   'Australia/Sydney'
 ])
+const uniqueZones = computed(() => [...new Set(commonZones.value)])
 
 // --- Carousel State ---
 const activeIndex = ref(0)
@@ -114,7 +115,7 @@ async function startTicker() {
     }
 
     sync(new Tempo({ timeZone: selectedTz.value }))
-    ticker = Tempo.ticker({ seconds: 1, timeZone: selectedTz.value }, sync)
+    ticker = Tempo.ticker({ seconds: 1, seed: { timeZone: selectedTz.value } }, sync)
   } catch (e) {
     timeStr.value = `Error: ${e.message || 'Unknown'}`
     const fallback = () => {
@@ -258,7 +259,7 @@ function focusActiveCard() {
             </span>
           </div>
           <select v-model="selectedTz" class="tempo-tz-select" aria-label="Select Timezone">
-            <option v-for="tz in [...new Set(commonZones)]" :key="tz" :value="tz">{{ tz }}</option>
+            <option v-for="tz in uniqueZones" :key="tz" :value="tz">{{ tz }}</option>
           </select>
         </div>
       </div>

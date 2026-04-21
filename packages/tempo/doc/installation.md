@@ -28,7 +28,7 @@ const t = new Tempo('next Friday');
 Tempo is a native ESM package and works perfectly with Deno. You can add it via the `deno add` command which will resolve it from the npm registry.
 
 ```bash
-deno add @magmacomputing/tempo
+deno add npm:@magmacomputing/tempo
 ```
 
 ### Usage
@@ -114,4 +114,4 @@ const t = new Tempo().add({ days: 1 });
 We recommend pinning your versions in production environments to ensure stability. 
 
 *   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/...` (Locks to major version 2)
-*   **Latest**: Omit the version string (e.g., `@magmacomputing/tempo/...`) to always receive the latest release.
+*   **Latest**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/...` (Omit the version string to always receive the latest release. Note that JSDelivr will resolve a missing version tag to the latest published release).

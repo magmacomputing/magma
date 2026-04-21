@@ -1,9 +1,8 @@
-import '#library/temporal.polyfill.js';
-
+import { markConfig } from '#library/symbol.library.js';
 import { getRuntime } from './support/tempo.runtime.js';
 import { init, extendState } from './support/tempo.init.js';
 import { ParseEngine } from './plugin/module/module.parse.js';
-import type { DateTime, Options } from './tempo.type.js';
+import type { DateTime, Options, Internal } from './tempo.type.js';
 
 export * from './plugin/module/module.parse.js';
 
@@ -20,16 +19,17 @@ export function parse(value: DateTime, options: Options = {}): Temporal.ZonedDat
 	const globalState = runtime.state ?? init();
 
 	// Create a local state shadowed from the global state
-	const state = {
-		config: Object.create(globalState.config),
-		parse: Object.create(globalState.parse)
-	};
+	const state: Internal.State = {
+		config: markConfig(Object.create(globalState.config)),
+		parse: markConfig(Object.create(globalState.parse))
+	} as Internal.State;
 
 	// Standalone parsing defaults to 'strict' mode
-	options.mode ??= 'strict';
+	const localOptions = { ...options };
+	localOptions.mode ??= 'strict';
 
 	// Apply options
-	extendState(state, options);
+	extendState(state, localOptions);
 
 	// Execute the parse
 	return ParseEngine.parse(state, value);

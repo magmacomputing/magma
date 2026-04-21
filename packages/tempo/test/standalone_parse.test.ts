@@ -1,13 +1,17 @@
-import { expect, test } from 'vitest';
 import { parse } from '#tempo/parse';
 import { Tempo } from '#tempo';
 import { Temporal } from '@js-temporal/polyfill';
+import { registryReset } from '#tempo/support';
+
+beforeEach(() => {
+	registryReset();
+});
 
 test('standalone parse: tomorrow', () => {
-	const zdt = parse('tomorrow');
+	const now = Temporal.Now.zonedDateTimeISO();
+	const zdt = parse('tomorrow', { anchor: now });
 	expect(zdt).toBeInstanceOf(Temporal.ZonedDateTime);
 
-	const now = Temporal.Now.zonedDateTimeISO();
 	const tomorrow = now.add({ days: 1 }).startOfDay();
 
 	expect(zdt.year).toBe(tomorrow.year);

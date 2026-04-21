@@ -8,8 +8,8 @@ import type { Plugin } from './plugin.type.js';
 export function getHost(t: any): any {
 	const TempoClass = getRuntime().modules['Tempo'];
 	if (isFunction(t) || isClass(t)) return t;
-	if (isTempo(t)) return TempoClass ?? (t as any).constructor;
-	return TempoClass ?? (t as any).constructor;
+	if (isTempo(t)) return (t as any).constructor ?? TempoClass;
+	return TempoClass ?? (t as any)?.constructor;
 }
 
 /**

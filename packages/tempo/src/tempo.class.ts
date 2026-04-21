@@ -270,7 +270,6 @@ export class Tempo implements TempoBrand {
 		const mergedOptions: t.Options = storeKey
 			? Object.assign(Tempo.readStore(storeKey), providedOptions)
 			: providedOptions;
-
 		if (shape === Tempo.#global)																// sanitize global configuration
 			omit(mergedOptions, 'value', 'anchor', 'result');
 
@@ -397,7 +396,6 @@ export class Tempo implements TempoBrand {
 		if (isDefined(shape.parse.mdyLayouts)) Tempo.#swapLayout(shape);
 		if (isDefined(shape.parse.event)) Tempo.#setEvents(shape);
 		if (isDefined(shape.parse.period)) Tempo.#setPeriods(shape);
-		if (isDefined(shape.parse.ignore)) Tempo.#setIgnores(shape);
 
 		Tempo.#setPatterns(shape);															// setup Regex DateTime patterns
 	}
@@ -726,9 +724,8 @@ export class Tempo implements TempoBrand {
 			Tempo.#lifecycle.extendDepth--;												// decrement the re-entrant nesting counter
 		}
 
-		if (Tempo.#lifecycle.extendDepth === 0) {
+		if (Tempo.#lifecycle.extendDepth === 0)
 			Tempo.#setPatterns(Tempo.#global);										// rebuild the global patterns
-		}
 
 		return this;
 	}
@@ -740,38 +737,38 @@ export class Tempo implements TempoBrand {
 
 		try {
 			const rt = getRuntime();
-			const state = rt.state ?? init();
+			rt.state = undefined;																// force fresh state
+			const state = init();
 			Tempo.#global = state;
 
-			const { timeZone, calendar } = getDateTimeFormat();
+			// 1. Augment the parsing state (non-destructively)
+			const parse = Tempo.#global.parse;
+			parse.pattern ??= new Map<symbol, RegExp>();
+			parse.mdyLocales = Tempo.#mdyLocales(Default.mdyLocales as t.Options['mdyLocales']);
+			parse.mdyLayouts = asArray(Default.mdyLayouts as t.Options['mdyLayouts']) as t.Pair[];
+			parse.pivot ??= Default.pivot as any;
+			parse.mode ??= Default.mode as any;
+			parse.lazy = false;
 
-			// 1. Establish the base parsing state
-			Tempo.#global.parse = markConfig({
-				snippet: Object.assign({}, Snippet),
-				layout: Object.assign({}, Layout),
-				event: Object.assign({}, Event),
-				period: Object.assign({}, Period),
-				ignore: Object.fromEntries(asArray(Ignore).map(w => [w, w])),
-				mdyLocales: Tempo.#mdyLocales(Default.mdyLocales as t.Options['mdyLocales']),
-				mdyLayouts: asArray(Default.mdyLayouts as t.Options['mdyLayouts']) as t.Pair[],
-				pivot: Default.pivot,
-				mode: Default.mode as any,
-				lazy: false,
-			}) as Internal.Parse;
+			// 2. Establish context and keys
+			const sys = getDateTimeFormat();
+			const timeZone = options.timeZone ?? sys.timeZone;
+			const calendar = options.calendar ?? sys.calendar;
+			const config = Tempo.#global.config;
+			const discoveryKey = options.discovery ?? Symbol.keyFor(sym.$Tempo) as string;
+			const storeKey = options.store || config.store || Symbol.keyFor(sym.$Tempo) as string;
+			const userDiscovery = (globalThis as any)[isString(discoveryKey) ? Symbol.for(discoveryKey) : discoveryKey] as Internal.Discovery;
 
-			// 2. Establish the base configuration options
-			Tempo.#global.config = markConfig(Object.create(Default));
-			Object.defineProperties(Tempo.#global.config, {
-				calendar: { value: calendar, enumerable: true, writable: true, configurable: true },
-				timeZone: { value: timeZone, enumerable: true, writable: true, configurable: true },
-				locale: { value: Tempo.#locale(), enumerable: true, writable: true, configurable: true },
-				discovery: { value: Symbol.keyFor(sym.$Tempo) as string, enumerable: true, writable: true, configurable: true },
-				formats: { value: enumify(STATE.FORMAT, false), enumerable: true, writable: true, configurable: true },
-				sphere: { value: getHemisphere(timeZone), enumerable: true, writable: true, configurable: true },
-				get: { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true },
-				scope: { value: 'global', enumerable: true, writable: true, configurable: true },
-				catch: { value: options.catch ?? false, enumerable: true, writable: true, configurable: true }
-			});
+			// Resolve locale if missing or invalid
+			const currentLocale = config.locale;
+			const locale = (!currentLocale || currentLocale === 'en-US') ? Tempo.#locale(currentLocale) : currentLocale;
+
+			if (!hasOwn(config, 'get')) {
+				Object.defineProperty(config, 'get', {
+					value: function (key: string) { return this[key] },
+					enumerable: false, writable: true, configurable: true
+				});
+			}
 
 			Tempo.#usrCount = 0;																	// reset user-key counter
 			for (const key of Object.keys(Token))									// purge user-allocated Tokens
@@ -781,16 +778,21 @@ export class Tempo implements TempoBrand {
 			Tempo.#termMap.clear();																// clear term lookup map
 			registryReset();																			// purge formats and numbers
 
-			const discoveryKey = options.discovery ?? Symbol.keyFor(sym.$Tempo) as string;
-			const storeKey = Symbol.keyFor(sym.$Tempo) as string;
-
-			const userDiscovery = (globalThis as any)[isString(discoveryKey) ? Symbol.for(discoveryKey) : discoveryKey] as Internal.Discovery;
-
+			// 3. Apply configuration via unified setters (non-destructive merge)
 			Tempo.#setConfig(Tempo.#global,
+				{
+					calendar,
+					timeZone,
+					locale,
+					discovery: storeKey,
+					formats: config.formats ?? enumify(STATE.FORMAT, false),
+					scope: 'global',
+					catch: options.catch ?? config.catch ?? false
+				},
 				{ store: storeKey, discovery: storeKey, scope: 'global' },
 				Tempo.readStore(storeKey),													// allow for storage-values to overwrite
 				Tempo.#setDiscovery(Tempo.#global, rt.pluginsDb as any),		// persistent library extensions
-				Tempo.#setDiscovery(Tempo.#global, userDiscovery),		// user Discovery (Configuration bootstrapping)
+				Tempo.#setDiscovery(Tempo.#global, userDiscovery),	// user Discovery (Configuration bootstrapping)
 				options,																						// explicit options from the call
 			)
 
@@ -964,7 +966,7 @@ export class Tempo implements TempoBrand {
 	static get parse() {
 		const parse = Tempo.#global.parse;
 		return secure({
-			...parse,																							// spread primitives like {pivot}
+			...omit(parse, 'token'),															// spread primitives like {pivot}
 			snippet: { ...parse.snippet },												// spread nested objects
 			layout: { ...parse.layout },
 			event: { ...parse.event },
@@ -1040,7 +1042,7 @@ export class Tempo implements TempoBrand {
 	}
 
 	/** @internal */	static get [sym.$dbg](): Logify { return Tempo.#dbg }
-	/** @internal */	static get [sym.$guard]() { return (Tempo as any).#guard }
+	/** @internal */	static get [sym.$guard]() { return Tempo.#guard }
 
 	/** 
 	 * @internal Internal access to instance private state.
@@ -1391,8 +1393,8 @@ export class Tempo implements TempoBrand {
 	/** time duration until another date-time */							until(arg0?: any, arg1?: any): any { return this.#resolve(() => interpret(this, 'DurationModule', undefined, false, 'until', arg0, arg1) ?? this); }
 	/** time elapsed since another date-time */								since(arg0?: any, arg1?: any): any { return this.#resolve(() => interpret(this, 'DurationModule', undefined, false, 'since', arg0, arg1) ?? this); }
 
-	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.Add, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'add', false, tempo, options) ?? this); }
-	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.Set, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this); }
+	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'add', false, tempo, options) ?? this); }
+	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.MutateSet, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this); }
 	/** returns a clone of the current `Tempo` instance. */		clone() { return new this.#Tempo(this, this.config) }
 
 	/** returns the underlying Temporal.ZonedDateTime */			toDateTime() { return this.#resolve() as Temporal.ZonedDateTime; }
@@ -1537,8 +1539,8 @@ export namespace Tempo {
 	export type Unit = t.Unit;
 	export type Until = t.Until;
 	export type Mutate = t.Mutate;
-	export type Set = t.Set;
-	export type Add = t.Add;
+	export type Set = t.MutateSet;
+	export type Add = t.MutateAdd;
 
 	export type OwnFormat = t.OwnFormat;
 	export type Formats = t.Formats;

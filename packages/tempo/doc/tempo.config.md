@@ -167,19 +167,21 @@ Tempo allows you to specify "noise words" that should be ignored during natural 
 By default, Tempo ignores the word **"at"** (e.g., `"Friday at 3pm"` becomes `"Friday 3pm"` internally).
 
 ```javascript
-// Extend globally
+// Extend globally via Tempo.init()
+// This adds 'the' and 'o-clock' to the existing default list (['at'])
 Tempo.init({ ignore: ['the', 'o-clock'] });
 
-// Use in a specific instance
+// Use in a specific instance via the Tempo constructor (new Tempo(...))
+// This instance will ignore 'at', 'the', and 'o-clock'
 const t = new Tempo('next Friday at 3 o-clock', { 
   ignore: 'o-clock' 
 }); 
 
-console.log(t.toString()); // Resolved correctly
+console.log(t.toString()); // Resolved correctly (noise words stripped)
 ```
 
 > [!TIP]
-> **Registry Structure**: The `ignore` registry accepts a **String** or an **Array** of strings. These are converted to a high-performance internal format to support efficient prototype-based shadowing.
+> **Registry Structure**: The `ignore` registry accepts a **String** or an **Array** of strings. These are converted to a high-performance internal format to support efficient prototype-based shadowing. Note that values provided via `Tempo.init()` or the `new Tempo()` constructor **merge** with the default ignore list rather than replacing it.
 
 
 ---

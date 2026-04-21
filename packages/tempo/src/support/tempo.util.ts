@@ -14,7 +14,13 @@ export const proto = (obj: object) => Object.getPrototypeOf(obj);
 export const hasOwn = (obj: object, key: string) => Object.hasOwn(obj, key);
 
 /** @internal create an object based on a prototype */
-export const create = <T extends object>(obj: object, name: string): T => Object.create(proto(obj)[name]);
+export const create = <T extends object>(obj: object, name: string): T => {
+	const entry = proto(obj)[name];
+	if (typeof entry !== 'object' || entry === null) {
+		throw new TypeError(`[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`);
+	}
+	return Object.create(entry);
+};
 
 /** @internal resolve a key to a symbol from Token or sym registries */
 export function getSymbol(key?: string | symbol): symbol {
@@ -38,7 +44,6 @@ export function getSymbol(key?: string | symbol): symbol {
 /** @internal helper to normalize snippet/layout Options into the target Config */
 export function collect(target: Record<symbol, any>, value: any, convert: (v: any) => any) {
 	const itm = asType(value);
-	target ??= {}
 
 	switch (itm.type) {
 		case 'Object':
@@ -68,9 +73,3 @@ export function getLargestUnit(list: any[]): string {
 	return 'nanosecond';
 }
 
-/** @internal get a safe fallback step for a given unit */
-export function getSafeFallbackStep(unit: string): number {
-	const idx = SCHEMA.findIndex(([u]) => u === unit);
-	if (idx === -1) return 1;
-	return (idx <= 2) ? 1 : 0;
-}

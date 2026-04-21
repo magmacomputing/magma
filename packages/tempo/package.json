@@ -27,7 +27,8 @@
     "**/*-polyfill.ts",
     "**/module.*.js",
     "**/module.*.ts",
-    "**/tempo.index.js"
+    "**/tempo.index.js",
+    "**/tempo.parse.js"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",

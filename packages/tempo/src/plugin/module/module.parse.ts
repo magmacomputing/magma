@@ -17,7 +17,12 @@ import * as t from '../../tempo.type.js';
  * Internal helper to resolve state from 'this' context or first argument
  */
 const withState = (fn: Function) => function (this: any, ...args: any[]) {
-	const state = isTempo(this) ? (this as any)[sym.$Internal]() : args.shift();
+	const isBound = isTempo(this);
+	const state = isBound ? (this as any)[sym.$Internal]() : args.shift();
+
+	if (!isBound && (!isObject(state) || !state?.config || !state?.parse))
+		throw new TypeError(`[Tempo#_ParseEngine] Invalid state provided to withState() wrapper. Expected Tempo state object (with .config and .parse), but received: ${typeof state}. This often happens if the first argument is missing when calling standalone parse methods.`);
+
 	return fn.call(this, state, ...args);
 };
 
@@ -26,7 +31,7 @@ const withState = (fn: Function) => function (this: any, ...args: any[]) {
  */
 const _ParseEngine = {
 	/** parse DateTime input */
-	parse(state: any, tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {
+	parse(state: t.Internal.State, tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {
 		if (isNull(tempo)) {
 			state.errored = true;
 			return undefined as any;
@@ -351,7 +356,12 @@ const _ParseEngine = {
 				const isGlobal = key.startsWith('g');
 				const isLocal = key.startsWith('l');
 				const idx = +key.substring((isGlobal || isLocal) ? 4 : 3);
-				const src = isGlobal ? (isEvent ? (getRuntime().modules['Tempo'] as any)[sym.$Internal]().parse.event : (getRuntime().modules['Tempo'] as any)[sym.$Internal]().parse.period) : (isEvent ? state.parse.event : state.parse.period);
+				// const src = isGlobal ? (isEvent ? (getRuntime().modules['Tempo'] as any)[sym.$Internal]().parse.event : (getRuntime().modules['Tempo'] as any)[sym.$Internal]().parse.period) : (isEvent ? state.parse.event : state.parse.period);
+				const globalParse = isGlobal ? (TempoClass as any)?.[sym.$Internal]?.().parse : undefined;
+				const src =
+					isGlobal
+						? (isEvent ? globalParse?.event : globalParse?.period)
+						: (isEvent ? state.parse.event : state.parse.period);
 				const entry = ownEntries(src, true)[idx];
 
 
@@ -379,13 +389,20 @@ const _ParseEngine = {
 						state.anchor = dateTime;
 						state.zdt = dateTime;
 
-						// Provide a host context that mimics a Tempo instance for the handler
-						const host = TempoClass ? new (TempoClass as any)(dateTime, state.config) : {
+						// Provide a lightweight host context that mimics a Tempo instance for the handler
+						const host = {
 							add: (val: any) => dateTime.add(val),
 							set: (val: any) => isObject(val) ? dateTime.with(val) : dateTime,
 							toNow: () => Temporal.Now.zonedDateTimeISO(state.config.timeZone),
 							toDateTime: () => dateTime,
-							[sym.$isTempo]: true
+							get hh() { return dateTime.hour },
+							get mi() { return dateTime.minute },
+							get ss() { return dateTime.second },
+							get yy() { return dateTime.year },
+							get mm() { return dateTime.month },
+							get dd() { return dateTime.day },
+							[sym.$isTempo]: true,
+							config: state.config
 						};
 
 						const result = (definition as Function).call(host);

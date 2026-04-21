@@ -77,12 +77,12 @@ export type SetFields = {
 } & {
 	[K in 'date' | 'time' | 'event' | 'period']?: string;
 }
-export type Set = Prettify<SetFields & {
+export type MutateSet = Prettify<SetFields & {
 	timeZone?: Temporal.TimeZoneLike;
 	calendar?: Temporal.CalendarLike;
 } & TermOffset> | DateTime
 export type AddUnits = { [K in Unit]?: number };
-export type Add = Prettify<AddUnits & TermOffset> | DateTime
+export type MutateAdd = Prettify<AddUnits & TermOffset> | DateTime
 
 export type Modifier = '=' | '-' | '+' | '<' | '<=' | '-=' | '>' | '>=' | '+=' | 'this' | 'next' | 'prev' | 'last' | 'first' | undefined
 export type Relative = 'ago' | 'hence' | 'prior' | 'from now'
@@ -170,7 +170,7 @@ export namespace Internal {
 		/** custom format strings to merge in the FORMAT enum */formats: Property<any>;
 		/** plugins to be automatically extended */							plugins: Plugin | Plugin[];
 		/** supplied value to parse */													value: DateTime;
-		/** @internal temporary anchor used during parsing */		anchor: Temporal.ZonedDateTime;
+		/** @internal temporary anchor used during parsing */		anchor: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
 	}
 
@@ -186,6 +186,13 @@ export namespace Internal {
 	export interface State {																	// 'global' and 'local' variables
 		/** current defaults for all Tempo instances */					config: Config;
 		/** parsing rules */																		parse: Parse;
+		/** @internal current valid configuration options */		OPTION: Set<string>;
+		/** @internal valid Temporal units for ZonedDateTime */	ZONED_DATE_TIME: Set<string>;
+
+		/** @internal current recursion depth during parsing */	parseDepth?: number;
+		/** @internal current matches during parsing */					matches?: Match[] | undefined;
+		/** @internal current anchor during parsing */					anchor?: Temporal.ZonedDateTime;
+		/** @internal has the parse operation errored? */				errored?: boolean;
 	}
 
 	/** debug a Tempo instantiation */
@@ -198,7 +205,7 @@ export namespace Internal {
 
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */
 	export interface Parse {
-		/** Locales which prefer 'mm-dd-yyyy' date-order */			mdyLocales: { locale: string, timeZones: string[] }[];
+		/** Locales which prefer 'mm-dd-yyyy' date-order */			mdyLocales: ({ locale: string, timeZones: string[] } | string)[];
 		/** Layout names that are switched to mdy */						mdyLayouts: Pair[];
 		/** is a timeZone that prefers 'mmddyyyy' date order */	isMonthDay?: boolean;
 		/** Symbol registry */																	token: Token;
@@ -230,14 +237,13 @@ export namespace Internal {
 	}
 
 	/** structured configuration for Global Discovery via Symbol.for('$Tempo') */
-	type Ignores = string | string[] | (() => string | string[]);
 	export interface Discovery {
 		/** pre-defined config options for Tempo.#global */			options?: Options | (() => Options);
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
-		/** noise words to ignore during parsing via Tempo.ignore() */ ignore?: Ignores
+		/** noise words to ignore during parsing via Tempo.ignore() */ ignore?: Ignore
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: Plugin | Plugin[];
 	}
 }

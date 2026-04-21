@@ -205,10 +205,8 @@
 			<div class="subtitle">ESM Lite Build</div>
 			
 			<div class="code-block">
-				<code><span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo/core'</span>;
-<span class="keyword">import</span> { <span class="type">MutateModule</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo/mutate'</span>;
+				<code><span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo'</span>;
 
-<span class="type">Tempo</span>.<span class="method">extend</span>(MutateModule);
 <span class="keyword">const</span> t = <span class="keyword">new</span> <span class="type">Tempo</span>().<span class="method">add</span>({ days: <span class="type">1</span> });</code>
 			</div>
 
@@ -233,8 +231,8 @@
 		"imports": {
 			"jsbi": "https://cdn.jsdelivr.net/npm/jsbi@4.3.0/dist/jsbi.mjs",
 			"@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
-			"@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.index.js",
-	}
+			"@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.esm.js"
+		}
 	}
 	</script>
 	<script type="module">

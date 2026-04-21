@@ -2,7 +2,7 @@ import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
 import { isDefined, isString, isZonedDateTime } from '#library/type.library.js';
 import { asArray, isNumeric } from '#library/coercion.library.js';
 
-import { sym, getSafeFallbackStep, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
+import { sym, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
 import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../term.util.js';
 import { getHost } from '../plugin.util.js';
 import { parseModifier } from './module.lexer.js';
@@ -420,16 +420,14 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 				if (unitIndex !== -1) {
 					const rolloverIndex = Math.max(0, unitIndex - 1);
 					const stepUnit = SCHEMA[rolloverIndex][0];
-					const stepVal = getSafeFallbackStep(stepUnit);
-					return { [`${stepUnit}s`]: stepVal === 0 ? 1 : stepVal } as any;
+					return { [`${stepUnit}s`]: 1 } as any;
 				}
 			}
 
 			// Fallback if range doesn't define units
 			const fallbackUnit = termObj.scope ?? 'year';
 			const stepUnit = fallbackUnit === 'period' ? 'day' : fallbackUnit;
-			const stepVal = getSafeFallbackStep(stepUnit);
-			return { [`${stepUnit}s`]: stepVal === 0 ? 1 : stepVal } as any;
+			return { [`${stepUnit}s`]: 1 } as any;
 		};
 
 		const range = termObj.define.call(new (getHost(instance))(jump, { ...instance.config, mode: 'strict' }), false);
