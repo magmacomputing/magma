@@ -43,7 +43,7 @@ export function init(options: t.Options = {}): t.Internal.State {
 	});
 
 	// 2. Establish the base configuration options
-	state.config = markConfig({ ...Default });
+	markConfig(Object.assign(state.config, Default));
 	Object.defineProperties(state.config, {
 		calendar: { value: calendar, enumerable: true, writable: true, configurable: true },
 		timeZone: { value: timeZone, enumerable: true, writable: true, configurable: true },

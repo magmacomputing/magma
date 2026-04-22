@@ -1,7 +1,7 @@
 import '#library/temporal.polyfill.js';
 import { pad } from '#library/string.library.js';
 import { ifNumeric } from '#library/coercion.library.js';
-import { isString, isObject, isZonedDateTime, isInstant, isUndefined, isDefined } from '#library/type.library.js';
+import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined } from '#library/type.library.js';
 
 import { isTempo, enums, Match, getRuntime } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
@@ -34,15 +34,30 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 	const config = isTempo(obj) ? obj.config : state?.config;
 	const tz = config?.timeZone ?? 'UTC';
 
-	const zdt = isTempo(obj)
-		? obj.toDateTime()
-		: (isZonedDateTime(obj)
-			? obj
-			: (isInstant(obj)
-				? (obj as Temporal.Instant).toZonedDateTimeISO(tz)
-				: (isUndefined(obj)
-					? Temporal.Now.zonedDateTimeISO(tz)
-					: obj)));
+	let zdt: any;
+	switch (true) {
+		case isTempo(obj):
+			zdt = (obj as any).toDateTime();
+			break;
+		case isZonedDateTime(obj):
+			zdt = obj;
+			break;
+		case isInstant(obj):
+			zdt = (obj as any).toZonedDateTimeISO(tz);
+			break;
+		case isString(obj):
+			zdt = (obj as any).includes('[') ? Temporal.ZonedDateTime.from(obj as any) : ((obj as any).includes('T') ? Temporal.PlainDateTime.from(obj as any).toZonedDateTime(tz) : Temporal.PlainDate.from(obj as any).toZonedDateTime(tz));
+			break;
+		case isPlainDateTime(obj):
+		case isPlainDate(obj):
+			zdt = (obj as any).toZonedDateTime(tz);
+			break;
+		case obj === undefined:
+			zdt = Temporal.Now.zonedDateTimeISO(tz);
+			break;
+		default:
+			zdt = obj;
+	}
 
 	if (isUndefined(fmt)) {
 		const formats = config?.formats ?? enums.FORMAT;

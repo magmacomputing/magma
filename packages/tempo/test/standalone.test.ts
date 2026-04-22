@@ -65,6 +65,22 @@ describe('Tempo: Standalone Utilities', () => {
             expect(res).toBe(expected);
         });
 
+        it('should support ISO strings as input', () => {
+            expect(format('2026-04-22T15:00:00+10:00[Australia/Sydney]', '{yyyy}')).toBe('2026');
+            expect(format('2026-04-22T15:00:00', '{yyyy}')).toBe('2026'); // PlainDateTime -> ZDT
+            expect(format('2026-04-22', '{yyyy}')).toBe('2026'); // PlainDate -> ZDT
+        });
+
+        it('should support Temporal.PlainDate as input', () => {
+            const pd = Temporal.PlainDate.from('2026-04-22');
+            expect(format(pd, '{yyyy}-{mm}-{dd}')).toBe('2026-04-22');
+        });
+
+        it('should support Temporal.PlainDateTime as input', () => {
+            const pdt = Temporal.PlainDateTime.from('2026-04-22T15:00:00');
+            expect(format(pdt, '{yyyy}-{mm}-{dd}')).toBe('2026-04-22');
+        });
+
         it('should default to "Now" when called with no arguments', () => {
             const res = format();
             // Numeric return for yearMonthDay
