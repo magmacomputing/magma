@@ -151,10 +151,11 @@ When `mode: 'defer'` is set, the registry-discovery logic is deferred until the 
 ```javascript
 // Optimized for mass-creation
 const t = new Tempo('now', { mode: 'defer' });
-// No registries are built yet. The constructor returns in O(1) time.
 
 console.log(t.format('{yyyy}')); // Discovery triggers NOW, only once.
 ```
+
+When initialized this way, no registries are built upfront. The constructor returns in $O(1)$ time.
 
 > [!TIP]
 > **Zero-Cost Constructor**: Combining the **Master Guard** (automatic) and the **`defer`** mode allows Tempo to satisfy the "Zero-Cost Constructor" requirement for mass-processing applications.

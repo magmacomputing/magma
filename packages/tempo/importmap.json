@@ -6,11 +6,12 @@
     "@magmacomputing/tempo/core": "./dist/core.index.js",
     "@magmacomputing/tempo/ticker": "./dist/plugin/extend/extend.ticker.js",
     "@magmacomputing/tempo/duration": "./dist/plugin/module/module.duration.js",
-    "@magmacomputing/tempo/format": "./dist/plugin/module/module.format.js",
     "@magmacomputing/tempo/mutate": "./dist/plugin/module/module.mutate.js",
-    "@magmacomputing/tempo/parse": "./dist/plugin/module/module.parse.js",
     "@magmacomputing/tempo/plugin": "./dist/plugin/plugin.index.js",
-    "@magmacomputing/tempo/enums": "./dist/tempo.enum.js",
+    "@magmacomputing/tempo/format": "./dist/discrete/discrete.format.js",
+    "@magmacomputing/tempo/parse": "./dist/discrete/discrete.parse.js",
+    "@magmacomputing/tempo/discrete": "./dist/discrete/discrete.index.js",
+    "@magmacomputing/tempo/enums": "./dist/support/tempo.enum.js",
     "@magmacomputing/tempo/library": "./dist/library.index.js"
   }
 }
