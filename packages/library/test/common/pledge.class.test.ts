@@ -8,7 +8,7 @@ describe('Pledge', () => {
 		expect(p1.isResolved).toBe(true);
 		expect(await p1.promise).toBe('ok');
 
-		const p2 = new Pledge<string>({ catch: true });
+		const p2 = new Pledge<string>({ catch: true, silent: true });
 		p2.reject(new Error('fail'));
 		expect(p2.isRejected).toBe(true);
 		await expect(p2.promise).rejects.toThrow('fail');
@@ -22,7 +22,7 @@ describe('Pledge', () => {
 	});
 
 	test('disposal', async () => {
-		const p = new Pledge({ catch: true });
+		const p = new Pledge({ catch: true, silent: true });
 		p[Symbol.dispose]();
 		expect(p.isRejected).toBe(true);
 		await expect(p.promise).rejects.toThrow('Pledge disposed');
@@ -37,7 +37,7 @@ describe('Pledge', () => {
 		await p1.promise;
 		expect(onResolve).toHaveBeenCalledWith('data');
 
-		const p2 = new Pledge({ onReject, catch: true });
+		const p2 = new Pledge({ onReject, catch: true, silent: true });
 		await expect(p2.reject(new Error('err'))).rejects.toThrow('err');
 		expect(onReject).toHaveBeenCalled();
 	});

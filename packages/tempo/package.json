@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -25,10 +25,11 @@
   "sideEffects": [
     "**/temporal.polyfill.js",
     "**/*-polyfill.ts",
+    "**/tempo.index.js",
     "**/module.*.js",
     "**/module.*.ts",
-    "**/tempo.index.js",
-    "**/tempo.parse.js"
+    "**/discrete.*.js",
+    "**/discrete.*.ts"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
@@ -49,14 +50,6 @@
     "#tempo/duration": {
       "development": "./src/plugin/module/module.duration.ts",
       "default": "./dist/plugin/module/module.duration.js"
-    },
-    "#tempo/format": {
-      "development": "./src/plugin/module/module.format.ts",
-      "default": "./dist/plugin/module/module.format.js"
-    },
-    "#tempo/parse": {
-      "development": "./src/tempo.parse.ts",
-      "default": "./dist/tempo.parse.js"
     },
     "#tempo/mutate": {
       "development": "./src/plugin/module/module.mutate.ts",
@@ -101,6 +94,18 @@
     "#tempo/support/*.js": {
       "development": "./src/support/*.ts",
       "default": "./dist/support/*.js"
+    },
+    "#tempo/parse": {
+      "development": "./src/discrete/discrete.parse.ts",
+      "default": "./dist/discrete/discrete.parse.js"
+    },
+    "#tempo/format": {
+      "development": "./src/discrete/discrete.format.ts",
+      "default": "./dist/discrete/discrete.format.js"
+    },
+    "#tempo/discrete": {
+      "development": "./src/discrete/discrete.index.ts",
+      "default": "./dist/discrete/discrete.index.js"
     },
     "#tempo/*.js": {
       "development": "./src/*.ts",
@@ -148,17 +153,21 @@
       "types": "./dist/plugin/module/module.duration.d.ts",
       "import": "./dist/plugin/module/module.duration.js"
     },
-    "./format": {
-      "types": "./dist/plugin/module/module.format.d.ts",
-      "import": "./dist/plugin/module/module.format.js"
-    },
     "./mutate": {
       "types": "./dist/plugin/module/module.mutate.d.ts",
       "import": "./dist/plugin/module/module.mutate.js"
     },
+    "./discrete": {
+      "types": "./dist/discrete/discrete.index.d.ts",
+      "import": "./dist/discrete/discrete.index.js"
+    },
+    "./format": {
+      "types": "./dist/discrete/discrete.format.d.ts",
+      "import": "./dist/discrete/discrete.format.js"
+    },
     "./parse": {
-      "types": "./dist/tempo.parse.d.ts",
-      "import": "./dist/tempo.parse.js"
+      "types": "./dist/discrete/discrete.parse.d.ts",
+      "import": "./dist/discrete/discrete.parse.js"
     },
     "./library": {
       "types": "./dist/library.index.d.ts",
@@ -211,10 +220,11 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.3.0",
+    "@magmacomputing/library": "2.4.0",
     "@rollup/plugin-alias": "^6.0.0",
     "cross-env": "^7.0.3",
     "magic-string": "^0.30.21",
+    "markdown-it-mathjax3": "^4.3.2",
     "typedoc": "^0.28.19",
     "typedoc-plugin-markdown": "^4.11.0",
     "vitepress": "^1.6.4"

@@ -6,7 +6,8 @@
     "composite": true,
     "types": [
       "vitest/globals",
-      "node"
+      "node",
+      "@js-temporal/polyfill"
     ],
     "paths": {
       "#library": [
@@ -31,7 +32,13 @@
         "../src/plugin/module/module.duration.ts"
       ],
       "#tempo/format": [
-        "../src/plugin/module/module.format.ts"
+        "../src/discrete/discrete.format.ts"
+      ],
+      "#tempo/parse": [
+        "../src/discrete/discrete.parse.ts"
+      ],
+      "#tempo/discrete": [
+        "../src/discrete/discrete.index.ts"
       ],
       "#tempo/ticker": [
         "../src/plugin/extend/extend.ticker.ts"

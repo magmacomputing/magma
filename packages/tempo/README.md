@@ -37,18 +37,18 @@
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
 
-// 🎯 Natural Language Parsing
-const event = new Tempo('next Friday 3pm');
+// 🎯 Natural Language Parsing (Deterministic anchor)
+const event = new Tempo('next Friday 3pm', { anchor: '2026-10-15' });
 
 // 🔄 Fluent Mutations (Immutable)
 const reminder = event.add({ hours: 2 }).set({ minute: 0 });
 
 // ⏳ Comparative Durations
-const diff = event.until('next month');
-console.log(diff.toString()); // e.g. P3W2D
+const diff = event.until('2026-12-25');
+console.log(diff.iso); // P2M2D
 
 // 📝 Beautiful Formatting
-console.log(event.format('{mon} {day}, {year}')); // e.g. Oct 24, 2026
+console.log(event.format('{mon} {day}, {yyyy}')); // October 23, 2026
 ```
 
 ---
@@ -89,7 +89,7 @@ For granular "Lite" builds, see the [Full Installation Guide](https://magmacompu
 
 ## ✨ Why Tempo?
 *   **🏗️ Future Standard**: Built natively on the TC39 `Temporal` proposal. Inherit the reliability of the future standard.
-*   **🗣️ Natural Language**: Resolve complex terms like `#friday.last` or "two days ago" with zero configuration.
+*   **🗣️ Natural Language**: Resolve complex terms like `#quarter.last` or "two days ago" with zero configuration.
 *   **🔄 Cycle Persistence**: Shift by semantic terms (Quarters, Seasons) while preserving your relative day-of-period offset.
 *   **⚡ Zero-Cost Parsing**: Lazy evaluation and smart matching ensure instantiation overhead is near-zero.
 *   **🛡️ Monorepo Resilient**: Built for stability in complex environments with proxy-protected registries.

@@ -19,7 +19,9 @@ onRegistryReset(() => {
 
 Tempo.extend(core);
 
-export * from './tempo.class.js';
-export { parse } from './tempo.parse.js';
+export { parse } from './discrete/discrete.parse.js';
+export { format } from './discrete/discrete.format.js';
 export { enums };
+
+export * from './tempo.class.js';
 export default Tempo;
