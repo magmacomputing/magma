@@ -99,7 +99,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 			case 'www': return enums.WEEKDAY.keyOf(zdt.dayOfWeek as any);
 			case 'ww': return pad(zdt.weekOfYear);
 			case 'hh': return pad(zdt.hour);
-			case 'HH': return (zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12).toString();
+			case 'HH': return pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12);
 			case 'mer': return zdt.hour >= 12 ? 'pm' : 'am';
 			case 'MER': return zdt.hour >= 12 ? 'PM' : 'AM';
 			case 'mi': return pad(zdt.minute);
@@ -125,7 +125,8 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 		}
 	});
 
-	const isNumericOutput = (NumericPattern as readonly string[]).includes(template as any) || (result.length > 0 && /^[0-9]+$/.test(result));
+	const tokens = template.match(new RegExp(Match.braces, 'g'));
+	const isNumericOutput = (NumericPattern as readonly string[]).includes(template as any) || (tokens && tokens.length > 1 && /^[0-9]+$/.test(result));
 	return (isNumericOutput ? ifNumeric(result, true) : result) as any;
 }
 

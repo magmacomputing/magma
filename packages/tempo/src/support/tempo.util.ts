@@ -22,7 +22,7 @@ export const create = <T extends object>(obj: object, name: string): T => {
 	if (typeof entry !== 'object' || entry === null) {
 		throw new TypeError(`[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`);
 	}
-	return Object.create(entry);
+	return { ...entry } as T;
 };
 
 /** @internal resolve a key to a symbol from Token or sym registries */

@@ -92,7 +92,7 @@ Tempo.extend(FormatModule);
 | `{www}` | Short Weekday Name | `Sat` |
 | `{dow}` | Day of Week (1-7) | `6` |
 | `{hh}` | 2-digit Hour (24h) | `15` |
-| `{HH}` | 12-hour clock | `3` |
+| `{HH}` | 2-digit Hour (12h) | `03` |
 | `{mer}` | am/pm marker | `pm` |
 | `{MER}` | AM/PM marker | `PM` |
 | `{mi}` | Minutes | `30` |
@@ -110,7 +110,7 @@ Tempo.extend(FormatModule);
 If your format string contains `{HH}` (12-hour clock) but lacks a `{mer}` or `{MER}` token, Tempo will automatically append `{mer}` to the end of the last time component to ensure the time remains unambiguous.
 
 ```typescript
-t.format('{HH}:{mi}'); // "3:30pm" (auto-appended pm)
+t.format('{HH}:{mi}'); // "03:30pm" (auto-appended pm)
 ```
 
 ### 🔢 Numeric Resolution
