@@ -1,5 +1,5 @@
 import { Tempo } from '#tempo';
-import type { Plugin } from '#tempo/tempo.type.js';
+import type { Plugin } from '#tempo/plugin/plugin.type.js';
 
 describe('Tempo Plugin System', () => {
 

@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "2.2.6",
+  "version": "2.3.0",
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -27,7 +27,8 @@
     "**/*-polyfill.ts",
     "**/module.*.js",
     "**/module.*.ts",
-    "**/tempo.index.js"
+    "**/tempo.index.js",
+    "**/tempo.parse.js"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
@@ -54,8 +55,8 @@
       "default": "./dist/plugin/module/module.format.js"
     },
     "#tempo/parse": {
-      "development": "./src/plugin/module/module.parse.ts",
-      "default": "./dist/plugin/module/module.parse.js"
+      "development": "./src/tempo.parse.ts",
+      "default": "./dist/tempo.parse.js"
     },
     "#tempo/mutate": {
       "development": "./src/plugin/module/module.mutate.ts",
@@ -156,9 +157,8 @@
       "import": "./dist/plugin/module/module.mutate.js"
     },
     "./parse": {
-      "types": "./dist/plugin/module/module.parse.d.ts",
-      "development": "./src/plugin/module/module.parse.ts",
-      "default": "./dist/plugin/module/module.parse.js"
+      "types": "./dist/tempo.parse.d.ts",
+      "import": "./dist/tempo.parse.js"
     },
     "./library": {
       "types": "./dist/library.index.d.ts",
@@ -186,11 +186,13 @@
     "test": "vitest run",
     "test:dist": "cross-env TEST_DIST=true vitest run",
     "repl": "tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
+    "bare": "tsx --conditions=development -i --import ./bin/temporal-polyfill.ts",
     "core": "cross-env TEMPO_LITE=true tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/core.ts",
-    "build": "tsc -b && npm run build:bundle && npm run build:resolve",
+    "parse": "cross-env TEMPO_LITE=true tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/parse.ts",
+    "build": "npm run clean && tsc -b && npm run build:bundle && npm run build:resolve",
     "build:bundle": "rollup -c",
     "build:resolve": "tsx bin/resolve-types.ts",
-    "clean": "tsc -b --clean && rm -rf dist",
+    "clean": "rm -rf dist && (tsc -b --clean || true)",
     "publish": "npm publish --access public",
     "prepublishOnly": "npm run build",
     "docs:api": "typedoc",
@@ -209,7 +211,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.2.6",
+    "@magmacomputing/library": "2.3.0",
     "@rollup/plugin-alias": "^6.0.0",
     "cross-env": "^7.0.3",
     "magic-string": "^0.30.21",

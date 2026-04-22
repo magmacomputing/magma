@@ -1,6 +1,7 @@
 import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/type.library.js';
 import { singular } from '#library/string.library.js';
-import sym from '../../support/tempo.symbol.js';
+
+import { sym } from '../../support/tempo.symbol.js';
 import enums from '../../support/tempo.enum.js';
 import { defineInterpreterModule } from '../plugin.util.js';
 import { findTermPlugin } from '../term.util.js';

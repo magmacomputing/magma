@@ -9,7 +9,7 @@ import type { Tempo } from '../../tempo.class.js';
 
 declare module '../../tempo.class.js' {
     interface Tempo {
-        /** applies a format to the instance. */ format(fmt: any): any;
+        /** applies a format to the instance. */            format(fmt: any): any;
     }
 }
 

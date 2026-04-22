@@ -1,12 +1,19 @@
 import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
 import { isDefined, isString, isZonedDateTime } from '#library/type.library.js';
-import { isNumeric } from '#library/coercion.library.js';
+import { asArray, isNumeric } from '#library/coercion.library.js';
 
-import sym from '../../support/tempo.symbol.js';
-import { getSafeFallbackStep } from '../../support/tempo.util.js';
-import { Match } from '../../support/tempo.default.js';
+import { sym, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
 import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../term.util.js';
+import { getHost } from '../plugin.util.js';
 import { parseModifier } from './module.lexer.js';
+
+import type { Tempo } from '../../tempo.class.js';
+import type { TempoType } from '../plugin.type.js';
+
+/**
+ * Internal helper to safely get the ZonedDateTime from a Tempo instance or raw object
+ */
+const toZdt = (v: any): Temporal.ZonedDateTime => isTempo(v) ? v.toDateTime() : v;
 
 /**
  * Resolves a mutation (start/mid/end/add) against a Tempo Term.
@@ -19,7 +26,7 @@ import { parseModifier } from './module.lexer.js';
  * @param zdt - The current ZonedDateTime state
  * @returns The mutated ZonedDateTime
  */
-export function resolveTermMutation(Tempo: any, instance: any, mutate: string, unit: string, offset: any, zdt: any): any {
+export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: string, unit: string, offset: any, zdt: Temporal.ZonedDateTime): Temporal.ZonedDateTime | null {
 	if (!isZonedDateTime(zdt)) return zdt;
 
 	const [termPart, rangePart] = unit.startsWith('#')
@@ -29,7 +36,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 	const termObj = findTermPlugin(termPart);
 
 	if (!termObj) {
-		Tempo[sym.$termError](instance.config, unit);
+		Tempo?.[sym.$termError]?.(instance.config, unit);
 		return null;
 	}
 
@@ -74,12 +81,12 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			const rawList = getRange(termObj, instance, zdt);
 			const currentRange = getTermRange(instance, rawList, false, zdt) as any;
 			if (!currentRange) {
-				Tempo[sym.$termError](instance.config, unit);
+				Tempo?.[sym.$termError]?.(instance.config, unit);
 				return null;
 			}
 
 			// Calculate cursor's offset within current range (nanoseconds)
-			const startNs = currentRange.start.toDateTime().epochNanoseconds as bigint;
+			const startNs = toZdt(currentRange.start).epochNanoseconds as bigint;
 			const cursorNs = zdt.epochNanoseconds as bigint;
 			const positionNs = cursorNs - startNs;
 
@@ -97,8 +104,8 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 
 				const matchKey = !rKey || range.key?.toLowerCase() === rKey.toLowerCase();
 				const hasMoved = (shiftDir > 0)
-					? (range.start.toDateTime().epochNanoseconds as bigint) > (zdt.epochNanoseconds as bigint)
-					: (range.end.toDateTime().epochNanoseconds as bigint) < (zdt.epochNanoseconds as bigint);
+					? (toZdt(range.start).epochNanoseconds as bigint) > (zdt.epochNanoseconds as bigint)
+					: (toZdt(range.end).epochNanoseconds as bigint) < (zdt.epochNanoseconds as bigint);
 
 				if (matchKey && (iters > 1 || hasMoved)) {
 					target = range;
@@ -106,18 +113,18 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 				}
 
 				jump = (shiftDir > 0)
-					? range.end.toDateTime()
-					: range.start.toDateTime().subtract({ nanoseconds: 1 });
+					? toZdt(range.end)
+					: toZdt(range.start).subtract({ nanoseconds: 1 });
 			}
 
 			if (!target || remaining > 0) {
-				Tempo[sym.$termError](instance.config, unit);
+				Tempo?.[sym.$termError]?.(instance.config, unit);
 				return null;
 			}
 
 			// Apply same position-offset, clamped to target range bounds
-			const tStartNs = target.start.toDateTime().epochNanoseconds as bigint;
-			const tEndNs = target.end.toDateTime().epochNanoseconds as bigint;
+			const tStartNs = toZdt(target.start).epochNanoseconds as bigint;
+			const tEndNs = toZdt(target.end).epochNanoseconds as bigint;
 			let tNs = tStartNs + positionNs;
 			if (tNs >= tEndNs) tNs = tEndNs - 1n;	// clamp to range end
 			if (tNs < tStartNs) tNs = tStartNs;		// clamp to range start
@@ -140,7 +147,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			if (rKey) {
 				const found = rawList.some(r => r.key?.toLowerCase() === rKey.toLowerCase());
 				if (!found) {
-					Tempo[sym.$termError](instance.config, unit);
+					Tempo?.[sym.$termError]?.(instance.config, unit);
 					return null;
 				}
 				candidates = rawList.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
@@ -184,7 +191,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 
 			if (next) return next.start.withTimeZone(tz).withCalendar(cal);
 
-			Tempo[sym.$termError](instance.config, unit);
+			Tempo?.[sym.$termError]?.(instance.config, unit);
 			return null;
 		}
 
@@ -202,7 +209,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			if (rKey) {
 				const found = rawList.some(r => r.key?.toLowerCase() === rKey.toLowerCase());
 				if (!found) {
-					Tempo[sym.$termError](instance.config, unit);
+					Tempo?.[sym.$termError]?.(instance.config, unit);
 					return null;
 				}
 				list = list.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
@@ -234,43 +241,43 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 				const candidates = resolved.filter(c => rKey ? c.key?.toLowerCase() === rKey.toLowerCase() : true);
 				// prefer latest start <= cursor (zdt)
 				const prev = candidates
-					.filter(it => (it.start.toDateTime().epochNanoseconds as bigint) <= (zdt.epochNanoseconds as bigint))
+					.filter(it => (toZdt(it.start).epochNanoseconds) <= (zdt.epochNanoseconds ))
 					.sort((a, b) => {
-						const sa = a.start.toDateTime().epochNanoseconds as bigint;
-						const sb = b.start.toDateTime().epochNanoseconds as bigint;
+						const sa = toZdt(a.start).epochNanoseconds;
+						const sb = toZdt(b.start).epochNanoseconds;
 						return sa === sb ? 0 : (sa > sb ? -1 : 1);
 					})[0];
 
 				if (prev) {
 					const target = prev;
-					const found = target.start.toDateTime().withTimeZone(tz).withCalendar(cal);
+					const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 					remaining--;
 					if (remaining === 0) {
 						if (mutate === 'mid' || mutate === 'end') { jump = found; break; }
 						return found;
 					}
-					jump = target.end.toDateTime();
+					jump = toZdt(target.end);
 					continue;
 				}
 
 				// otherwise pick the nearest future start
 				const next = candidates
-					.filter(it => (it.start.toDateTime().epochNanoseconds as bigint) > (zdt.epochNanoseconds as bigint))
+					.filter(it => (toZdt(it.start).epochNanoseconds as bigint) > (zdt.epochNanoseconds))
 					.sort((a, b) => {
-						const sa = a.start.toDateTime().epochNanoseconds as bigint;
-						const sb = b.start.toDateTime().epochNanoseconds as bigint;
+						const sa = toZdt(a.start).epochNanoseconds;
+						const sb = toZdt(b.start).epochNanoseconds;
 						return sa === sb ? 0 : (sa < sb ? -1 : 1);
 					})[0];
 
 				if (next) {
 					const target = next;
-					const found = target.start.toDateTime().withTimeZone(tz).withCalendar(cal);
+					const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 					remaining--;
 					if (remaining === 0) {
 						if (mutate === 'mid' || mutate === 'end') { jump = found; break; }
 						return found;
 					}
-					jump = target.end.toDateTime();
+					jump = toZdt(target.end);
 					continue;
 				}
 			}
@@ -280,22 +287,22 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			if (numericOnly && iterations > 1) {
 				const candidates = resolved
 					.filter(c => rKey ? c.key?.toLowerCase() === rKey.toLowerCase() : true)
-					.filter(it => (it.start.toDateTime().epochNanoseconds as bigint) > (jump.epochNanoseconds as bigint))
+					.filter(it => (toZdt(it.start).epochNanoseconds as bigint) > (jump.epochNanoseconds as bigint))
 					.sort((a, b) => {
-						const sa = a.start.toDateTime().epochNanoseconds as bigint;
-						const sb = b.start.toDateTime().epochNanoseconds as bigint;
+						const sa = toZdt(a.start).epochNanoseconds as bigint;
+						const sb = toZdt(b.start).epochNanoseconds as bigint;
 						return sa === sb ? 0 : (sa < sb ? -1 : 1);
 					});
 
 				if (candidates.length > 0) {
 					const target = candidates[0];
-					const found = target.start.toDateTime().withTimeZone(tz).withCalendar(cal);
+					const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 					remaining--;
 					if (remaining === 0) {
 						if (mutate === 'mid' || mutate === 'end') { jump = found; break; }
 						return found;
 					}
-					jump = target.end.toDateTime();
+					jump = toZdt(target.end);
 					continue;
 				}
 			}
@@ -306,8 +313,8 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			const isShifter = (mod === '>' || mod === '<' || mod === 'next' || mod === 'prev' || mod === 'last' || mod === '+' || mod === '-');
 
 			const compare = (r: any) => {
-				const start = r.start.toDateTime().epochNanoseconds as bigint;
-				const end = r.end.toDateTime().epochNanoseconds as bigint;
+				const start = toZdt(r.start).epochNanoseconds as bigint;
+				const end = toZdt(r.end).epochNanoseconds as bigint;
 				const cursor = (isShifter && iterations > 1) ? (jump.epochNanoseconds as bigint) : (zdt.epochNanoseconds as bigint);
 
 				let match = false;
@@ -340,9 +347,9 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 				.filter(c => rKey ? c.key?.toLowerCase() === rKey.toLowerCase() : true)
 				.filter(compare)
 				.sort((a, b) => {
-					const startA = a.start.toDateTime().epochNanoseconds as bigint;
-					const startB = b.start.toDateTime().epochNanoseconds as bigint;
-					const cursor = jump.epochNanoseconds as bigint;
+					const startA = toZdt(a.start).epochNanoseconds;
+					const startB = toZdt(b.start).epochNanoseconds;
+					const cursor = jump.epochNanoseconds;
 
 					if (isShifter) return direction > 0 ? (startA < startB ? -1 : 1) : (startA > startB ? -1 : 1);
 
@@ -351,16 +358,16 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 					return diffA < diffB ? -1 : (diffA > diffB ? 1 : 0);
 				}).filter(m => {
 					if (!isShifter) return true;
-					const start = m.start.toDateTime().epochNanoseconds as bigint;
-					const end = m.end.toDateTime().epochNanoseconds as bigint;
-					const cursor = jump.epochNanoseconds as bigint;
+					const start = toZdt(m.start).epochNanoseconds;
+					const end = toZdt(m.end).epochNanoseconds;
+					const cursor = jump.epochNanoseconds;
 					if (direction > 0) return start >= cursor;
 					return end <= cursor;
 				});
 
 			if (matches.length > 0) {
 				const target = matches[0];
-				const found = target.start.toDateTime().withTimeZone(tz).withCalendar(cal);
+				const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 				remaining--;
 				if (remaining === 0) {
 					if (mutate === 'mid' || mutate === 'end') {
@@ -369,16 +376,16 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 					}
 					return found;
 				}
-				jump = (direction > 0) ? target.end.toDateTime() : target.start.toDateTime().subtract({ nanoseconds: 1 });
+				jump = (direction > 0) ? toZdt(target.end) : toZdt(target.start).subtract({ nanoseconds: 1 });
 			} else {
 				const currentRes = (getTermRange(instance, rawList, false, jump) as any);
 				if (!currentRes) { jump = (direction > 0) ? jump.add({ days: 30 }) : jump.subtract({ days: 30 }); continue; }
-				jump = (direction > 0) ? currentRes.end.toDateTime() : currentRes.start.toDateTime().subtract({ nanoseconds: 1 });
+				jump = (direction > 0) ? toZdt(currentRes.end) : toZdt(currentRes.start).subtract({ nanoseconds: 1 });
 			}
 		}
 
 		if (remaining > 0) {
-			Tempo[sym.$termError](instance.config, unit);
+			Tempo?.[sym.$termError]?.(instance.config, unit);
 			return null;
 		}
 
@@ -386,16 +393,16 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 		if (mutate === 'mid' || mutate === 'end') {
 			const finalRange = (getTermRange(instance, getRange(termObj, instance, jump), false, jump) as any);
 			if (!finalRange) {
-				Tempo[sym.$termError](instance.config, unit);
+				Tempo?.[sym.$termError]?.(instance.config, unit);
 				return null;
 			}
 			if (mutate === 'mid') {
-				const startNs = finalRange.start.toDateTime().epochNanoseconds as bigint;
-				const endNs = finalRange.end.toDateTime().epochNanoseconds as bigint;
+				const startNs = toZdt(finalRange.start).epochNanoseconds as bigint;
+				const endNs = toZdt(finalRange.end).epochNanoseconds as bigint;
 				const midNs = startNs + (endNs - startNs) / BigInt(2);
 				return toInstant(midNs).toZonedDateTimeISO(tz).withCalendar(cal);
 			}
-			return finalRange.end.toDateTime().subtract({ nanoseconds: 1 }).withTimeZone(tz).withCalendar(cal);
+			return toZdt(finalRange.end).subtract({ nanoseconds: 1 }).withTimeZone(tz).withCalendar(cal);
 		}
 		return jump;
 	}
@@ -405,24 +412,39 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 	if (isString(offset) && !offset.startsWith('#') && !isNumericString) {
 		let jump = zdt;
 
-		const range = termObj.define.call(new Tempo(jump, { ...instance.config, mode: 'strict' }), false);
-		const step = getSafeFallbackStep(range as any, termObj.scope ?? (unit === '#period' ? 'period' : undefined));
-		let next = jump.add(step);
+		const getStep = (currentRange: any) => {
+			if (currentRange) {
+				const items = asArray(currentRange);
+				const largestUnit = getLargestUnit(items);
+				const unitIndex = SCHEMA.findIndex(([u]) => u === largestUnit);
+				if (unitIndex !== -1) {
+					const rolloverIndex = Math.max(0, unitIndex - 1);
+					const stepUnit = SCHEMA[rolloverIndex][0];
+					return { [`${stepUnit}s`]: 1 } as any;
+				}
+			}
+
+			// Fallback if range doesn't define units
+			const fallbackUnit = termObj.scope ?? 'year';
+			const stepUnit = fallbackUnit === 'period' ? 'day' : fallbackUnit;
+			return { [`${stepUnit}s`]: 1 } as any;
+		};
+
+		const range = termObj.define.call(new (getHost(instance))(jump, { ...instance.config, mode: 'strict' }), false);
+		let next = jump.add(getStep(range));
 
 		let iterations = 0;
 		while (next.epochNanoseconds <= zdt.epochNanoseconds) {
 			if (++iterations > 50) {													// Safety-Valve: prevent infinite look-ahead
-				const range = termObj.define.call(new Tempo(jump, { ...instance.config, mode: 'strict' }), false);
-				const step = getSafeFallbackStep(range as any, termObj.scope ?? (unit === '#period' ? 'period' : undefined));
-				jump = jump.add(step);
+				Tempo?.[sym.$termError]?.(instance.config, unit);
+				return null;
 			} else {
-				const range = termObj.define.call(new Tempo(jump, { ...instance.config, mode: 'strict' }), false);
-				const step = getSafeFallbackStep(range as any, termObj.scope ?? (unit === '#period' ? 'period' : undefined));
-				jump = jump.add(step);
+				const currentRange = termObj.define.call(new (getHost(instance))(jump, { ...instance.config, mode: 'strict' }), false);
+				jump = jump.add(getStep(currentRange));
 				next = jump;
 			}
 		}
-		const res = new Tempo(offset, { ...instance.config, anchor: next, mode: 'strict' }).toDateTime();
+		const res = new (getHost(instance))(offset, { ...instance.config, anchor: next, mode: 'strict' }).toDateTime();
 		return isZonedDateTime(res) ? res : next;
 	}
 
@@ -430,9 +452,9 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 	if (mutate === 'set' && !mod && isNumeric(offset)) {
 		const rawList = getRange(termObj, instance, zdt);
 		const target = getTermRange(instance, rawList, Number(offset), zdt) as any;
-		if (target) return target.start.toDateTime().withTimeZone(tz).withCalendar(cal);
-		
-		Tempo[sym.$termError](instance.config, unit);
+		if (target) return toZdt(target.start).withTimeZone(tz).withCalendar(cal);
+
+		Tempo?.[sym.$termError]?.(instance.config, unit);
 		return null;
 	}
 
@@ -446,7 +468,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 		let iterations = 0;
 		while (remaining > 0) {
 			if (++iterations > 100) {												// Safety-Valve: prevent infinite shift
-				Tempo[sym.$termError](instance.config, unit);
+				Tempo?.[sym.$termError]?.(instance.config, unit);
 				return null;
 			}
 
@@ -458,23 +480,23 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 			}
 
 			if (list.length === 0) {
-				Tempo[sym.$termError](instance.config, unit);
+				Tempo?.[sym.$termError]?.(instance.config, unit);
 				return null;
 			}
 
-			const res = resolveTermShift(new instance.constructor(jump, instance.config), list, unit, direction);
+			const res = resolveTermShift(new (getHost(instance))(jump, instance.config), list, unit, direction);
 			if (isDefined(res)) {
-				jump = res.toDateTime();
+				jump = toZdt(res);
 				remaining--;
 			} else {
 				// if we hit the edge of the current list, jump to the end of the current cycle and try again
 				const current = (getTermRange(instance, list, false, jump) as any);
 				if (!current) {
-					Tempo[sym.$termError](instance.config, unit);
+					Tempo?.[sym.$termError]?.(instance.config, unit);
 					return null;
 				}
 
-				const nextJump = (direction > 0) ? current.end.toDateTime() : current.start.toDateTime().subtract({ nanoseconds: 1 });
+				const nextJump = (direction > 0) ? toZdt(current.end) : toZdt(current.start).subtract({ nanoseconds: 1 });
 				if (nextJump.epochNanoseconds === jump.epochNanoseconds) {			// detect zero-progress stall
 					jump = (direction > 0) ? jump.add({ days: 1 }) : jump.subtract({ days: 1 });
 				} else {
@@ -492,7 +514,7 @@ export function resolveTermMutation(Tempo: any, instance: any, mutate: string, u
 /**
  * Resolves a term identifier (e.g. '#quarter') to its current value (start of cycle).
  */
-export function resolveTermValue(Tempo: any, instance: any, term: string, zdt: any): any {
+export function resolveTermValue(Tempo: TempoType, instance: Tempo, term: string, zdt: Temporal.ZonedDateTime): Temporal.ZonedDateTime | null {
 	return resolveTermMutation(Tempo, instance, 'start', term, term, zdt);
 }
 

@@ -3,7 +3,7 @@ layout: home
 ---
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { withBase } from 'vitepress'
 
 const logoUrl = withBase('/logo.svg')
@@ -16,11 +16,26 @@ const sDeg = ref(0)
 const timeStr = ref('Loading...')
 const tzStr = ref('')
 const tickerActive = ref(true)
+const isManualTickerPaused = ref(false)
 const isResuming = ref(false)
+const selectedTz = ref(Intl.DateTimeFormat().resolvedOptions().timeZone)
+const commonZones = ref([
+  Intl.DateTimeFormat().resolvedOptions().timeZone,
+  'UTC', 
+  'Europe/London', 
+  'Europe/Paris', 
+  'America/New_York', 
+  'America/Los_Angeles', 
+  'Asia/Tokyo', 
+  'Australia/Sydney'
+])
+const uniqueZones = computed(() => [...new Set(commonZones.value)])
 
 // --- Carousel State ---
 const activeIndex = ref(0)
-const isPaused = ref(false)
+const isManualPaused = ref(false)
+const isHovering = ref(false)
+const isPaused = computed(() => isManualPaused.value || isHovering.value)
 const transitionEnabled = ref(true)
 
 const features = [
@@ -100,8 +115,11 @@ async function startTicker() {
       tzStr.value = t.tz
     }
 
-    sync(new Tempo())
-    ticker = Tempo.ticker({ seconds: 1 }, sync)
+    sync(new Tempo({ timeZone: selectedTz.value }))
+    
+    if (isManualTickerPaused.value) return
+    
+    ticker = Tempo.ticker({ seconds: 1, seed: { timeZone: selectedTz.value } }, sync)
   } catch (e) {
     timeStr.value = `Error: ${e.message || 'Unknown'}`
     const fallback = () => {
@@ -113,6 +131,18 @@ async function startTicker() {
     fallback()
     if (fallbackIntervalId) clearInterval(fallbackIntervalId)
     fallbackIntervalId = setInterval(fallback, 1000)
+  }
+}
+
+function toggleTicker() {
+  isManualTickerPaused.value = !isManualTickerPaused.value
+  if (isManualTickerPaused.value) {
+    tickerActive.value = false
+    ticker?.stop()
+    if (fallbackIntervalId) clearInterval(fallbackIntervalId)
+  } else {
+    tickerActive.value = true
+    startTicker()
   }
 }
 
@@ -138,11 +168,18 @@ function handleVisibility() {
   if (resumeTimer) clearTimeout(resumeTimer)
   
   if (document.visibilityState === 'visible') {
+    if (isManualTickerPaused.value) {
+      isResuming.value = false
+      return
+    }
     isResuming.value = true
-    console.info('%c[Tempo]%c ⏳ Waking Ticker...', 'color: #f59e0b; font-weight: bold', 'color: inherit')
+    console.info('%c[Tempo]%c ⏳ Syncing Ticker...', 'color: #f59e0b; font-weight: bold', 'color: inherit')
     
     resumeTimer = setTimeout(() => {
-      if (document.visibilityState !== 'visible') return
+      if (document.visibilityState !== 'visible' || isManualTickerPaused.value) {
+        isResuming.value = false
+        return
+      }
       isResuming.value = false
       tickerActive.value = true
       console.info('%c[Tempo]%c ⚡ Resuming Ticker', 'color: #2563eb; font-weight: bold', 'color: inherit')
@@ -173,6 +210,10 @@ onUnmounted(() => {
   if (fallbackIntervalId) clearInterval(fallbackIntervalId)
   clearInterval(carouselTimer)
   document.removeEventListener('visibilitychange', handleVisibility)
+})
+
+watch(selectedTz, () => {
+  if (isMounted) startTicker()
 })
 
 // --- A11y & Keyboard Controls ---
@@ -236,11 +277,17 @@ function focusActiveCard() {
         <div class="tempo-time-display">
           <div class="tempo-status-row">
             <p class="tempo-iso-time">{{ timeStr }}</p>
-            <span :class="['tempo-ticker-status', tickerActive ? 'is-active' : 'is-standby', isResuming ? 'is-resuming' : '']">
-              {{ tickerActive ? 'Live' : (isResuming ? 'Waking...' : 'Standby') }}
-            </span>
+            <button 
+              @click="toggleTicker"
+              :class="['tempo-ticker-status', tickerActive ? 'is-active' : (isManualTickerPaused ? 'is-paused' : 'is-standby'), isResuming ? 'is-resuming' : '']"
+              :aria-label="tickerActive ? 'Pause Ticker' : 'Start Ticker'"
+            >
+              {{ tickerActive ? 'Live' : (isResuming ? 'Syncing...' : (isManualTickerPaused ? 'Start' : 'Standby')) }}
+            </button>
           </div>
-          <p class="tempo-tz-time">{{ tzStr }}</p>
+          <select v-model="selectedTz" class="tempo-tz-select" aria-label="Select Timezone">
+            <option v-for="tz in uniqueZones" :key="tz" :value="tz">{{ tz }}</option>
+          </select>
         </div>
       </div>
     </div>
@@ -250,13 +297,13 @@ function focusActiveCard() {
 <div class="tempo-carousel-container" 
      role="region" 
      aria-label="Tempo features"
-     @mouseenter="isPaused = true" 
-     @mouseleave="isPaused = false"
+     @mouseenter="isHovering = true" 
+     @mouseleave="isHovering = false"
      @keydown="handleKeydown">
   
   <div class="tempo-carousel-controls">
-    <button class="tempo-carousel-toggle" @click="isPaused = !isPaused" :aria-label="isPaused ? 'Play carousel' : 'Pause carousel'">
-      <span v-if="isPaused">▶️</span>
+    <button class="tempo-carousel-toggle" @click="isManualPaused = !isManualPaused" :aria-label="isManualPaused ? 'Play carousel' : 'Pause carousel'">
+      <span v-if="isManualPaused">▶️</span>
       <span v-else>⏸️</span>
     </button>
   </div>
@@ -431,12 +478,31 @@ function focusActiveCard() {
   white-space: nowrap;
 }
 
-.tempo-tz-time {
+.tempo-tz-select {
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-2);
+  border: 1px solid var(--vp-c-border);
+  border-radius: 4px;
+  padding: 4px 12px;
   font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
   font-size: 0.8rem;
-  color: var(--vp-c-text-2);
-  margin: 4px 0 0;
-  white-space: nowrap;
+  margin-top: 8px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.tempo-tz-select:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-text-1);
+  background: var(--vp-c-bg-mute);
+}
+
+.tempo-tz-select:focus {
+  border-color: var(--vp-c-brand-1);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
 .tempo-carousel-container {
@@ -524,6 +590,14 @@ function focusActiveCard() {
   border-radius: 4px;
   font-weight: 700;
   transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: none;
+  line-height: 1;
+}
+
+.tempo-ticker-status:hover {
+  filter: brightness(1.1);
 }
 
 .tempo-ticker-status.is-active {
@@ -545,6 +619,18 @@ function focusActiveCard() {
   border: 1px solid rgba(113, 113, 122, 0.2);
 }
 
+.tempo-ticker-status.is-paused {
+  background: rgba(52, 152, 219, 0.15);
+  color: #3498db;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+  animation: tempo-pulse 3s infinite ease-in-out;
+}
+
+.tempo-ticker-status.is-paused:hover {
+  background: rgba(52, 152, 219, 0.25);
+  color: var(--vp-c-brand-1);
+}
+
 @keyframes tempo-pulse {
   0% { opacity: 1; }
   50% { opacity: 0.7; }
@@ -552,10 +638,26 @@ function focusActiveCard() {
 }
 
 .tempo-clock-mini {
-  transition: opacity 0.5s ease;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.tempo-clock-mini:has(.is-standby) {
-  opacity: 0.7;
+.tempo-clock-mini:has(.is-standby) .tempo-clock-svg,
+.tempo-clock-mini:has(.is-paused) .tempo-clock-svg {
+  filter: grayscale(0.2) opacity(0.4);
+}
+
+.tempo-clock-mini:has(.is-standby) .tempo-iso-time,
+.tempo-clock-mini:has(.is-paused) .tempo-iso-time {
+  opacity: 0.5;
+}
+
+.tempo-clock-mini:has(.is-paused) .tempo-tz-select {
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.tempo-clock-mini:has(.is-standby) .tempo-tz-select {
+  opacity: 0.5;
+  pointer-events: none;
 }
 </style>

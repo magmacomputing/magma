@@ -6,6 +6,7 @@ import { getRelativeTime } from '#library/international.library.js';
 
 import { defineInterpreterModule, interpret } from '../plugin.util.js';
 import enums from '../../support/tempo.enum.js';
+import type { Module } from '../plugin.type.js';
 import type { Tempo } from '../../tempo.class.js';
 
 declare module '../../tempo.class.js' {
@@ -154,7 +155,7 @@ duration.toDuration = (input: string | Temporal.DurationLikeObject) => {
 /**
  * Functional Module to attach duration methods to Tempo.
  */
-export const DurationModule: Tempo.Module = defineInterpreterModule('DurationModule', duration, {
+export const DurationModule: Module = defineInterpreterModule('DurationModule', duration, {
 	duration(this: typeof Tempo, input: any) {
 		return interpret(this, 'DurationModule', 'toDuration', false, input);
 	}

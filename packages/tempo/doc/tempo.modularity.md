@@ -4,7 +4,7 @@ Tempo is designed as a modular library, allowing you to include only the feature
 
 ## Core vs. Full
 
-* **@magmacomputing/tempo/core**: The bare-bones Tempo engine. Includes parsing, basic getters, and internal state management.
+* **@magmacomputing/tempo/core**: The bare-bones Tempo engine. Includes parsing (standard ISO string or a native `Temporal` object), basic getters, and internal state management.
 * **@magmacomputing/tempo**: The "batteries included" version. Includes all standard modules (Duration, Format, Term Registry, Mutate, etc.).
 
 ```typescript
