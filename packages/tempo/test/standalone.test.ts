@@ -33,6 +33,12 @@ describe('Tempo: Standalone Utilities', () => {
             expect(res).toBe(20260422);
         });
 
+        it('should return a number for ad-hoc numeric-only patterns (generic detection)', () => {
+            const res = format(zdt, '{mm}{dd}');
+            expect(typeof res).toBe('number');
+            expect(res).toBe(422); // 0422
+        });
+
         it('should return a Queriable Proxy when called without a template', () => {
             const res = format(zdt);
             expect(typeof res).toBe('object');

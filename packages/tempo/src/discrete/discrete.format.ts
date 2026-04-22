@@ -125,8 +125,8 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 		}
 	});
 
-	const isExplicitlyNumeric = (NumericPattern as readonly string[]).includes(template as any);
-	return (isExplicitlyNumeric ? ifNumeric(result) : result) as any;
+	const isNumericOutput = (NumericPattern as readonly string[]).includes(template as any) || (result.length > 0 && /^[0-9]+$/.test(result));
+	return (isNumericOutput ? ifNumeric(result, true) : result) as any;
 }
 
 /**
