@@ -43,5 +43,29 @@ t.set({ start: '#quarter' });
 t.add({ '#quarter': 2 });
 ```
 
+## 🚀 Tempo v2.4.0: Standalone Utilities & Path Deprecation
+
+Tempo v2.4.0 introduces a new `discrete/` folder for standalone utilities (`parse` and `format`).
+
+### 🛠️ Standalone Imports
+You can now import lightweight, tree-shakable versions of our parsing and formatting engines without the `Tempo` class:
+```javascript
+import { parse } from '@magmacomputing/tempo/parse';
+import { format } from '@magmacomputing/tempo/format';
+```
+
+### ⚠️ Deprecated Paths
+We have reorganized the internal file structure to optimize for standalone usage. The following internal paths are now **deprecated** and will be removed in a future release:
+
+*   ❌ `@magmacomputing/tempo/module/parse`
+*   ❌ `@magmacomputing/tempo/module/format`
+
+**Action Required**:
+1.  **Do not use `dist/` paths** in your imports. These are unstable and may change.
+2.  **Use package subpath maps**: Update your imports to use the official entry points:
+    *   ✅ `@magmacomputing/tempo/parse`
+    *   ✅ `@magmacomputing/tempo/format`
+3.  **Check your Import Maps**: If you use browser-side import maps, ensure they point to the new package-mapped locations rather than internal `plugin/module/` paths.
+
 ## 🧪 Testing and Stability
 v2.x has been hardened with a 100% pass rate on our regression suite. If you were relying on undocumented "quirks" or bugs in v1.x parsing, you may find that v2.x is more strict and deterministic.

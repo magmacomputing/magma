@@ -147,9 +147,8 @@ export function getRuntime(): TempoRuntime {
 				configurable: false,
 				writable: false,
 			});
-		} else {
-			// Cannot overwrite a non-configurable global, use local fallback
-			localFallbackRuntime = rt;
+		} else {																								// Cannot overwrite a non-configurable global
+			localFallbackRuntime = rt;														// use local fallback
 		}
 	}
 

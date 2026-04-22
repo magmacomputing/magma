@@ -1,19 +1,23 @@
 import '#library/temporal.polyfill.js';
-import { asType, isNull, isString, isObject, isZonedDateTime, isDefined, isUndefined, isIntegerLike, isEmpty, type TypeValue } from '#library/type.library.js';
+import { asType, isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isIntegerLike, isEmpty, type TypeValue } from '#library/type.library.js';
 import { asArray, asInteger, isNumeric } from '#library/coercion.library.js';
 import { instant } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
+import { markConfig } from '#library/symbol.library.js';
 
-import { sym, enums, isTempo, Match, getRuntime } from '../../support/support.index.js';
-import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './module.lexer.js';
-import { resolveTermMutation, resolveTermValue } from './module.term.js';
-import { compose } from './module.composer.js';
+import { sym, enums, isTempo, Match, getRuntime } from '../support/support.index.js';
+import { init, extendState } from '../support/tempo.init.js';
+import { setPatterns } from '../support/tempo.util.js';
 
-import { getRange, getTermRange } from '../term.util.js';
-import { defineInterpreterModule } from '../plugin.util.js';
-import type { Range, ResolvedRange } from '../plugin.type.js';
-import type { Tempo } from '../../tempo.class.js';
-import * as t from '../../tempo.type.js';
+import { prefix, parseWeekday, parseDate, parseTime, parseZone } from '../plugin/module/module.lexer.js';
+import { resolveTermMutation, resolveTermValue } from '../plugin/module/module.term.js';
+import { compose } from '../plugin/module/module.composer.js';
+
+import { getRange, getTermRange } from '../plugin/term.util.js';
+import { defineInterpreterModule } from '../plugin/plugin.util.js';
+import type { Range, ResolvedRange } from '../plugin/plugin.type.js';
+import type { Tempo } from '../tempo.class.js';
+import * as t from '../tempo.type.js';
 
 /**
  * Internal helper to resolve state from 'this' context or first argument
@@ -39,6 +43,14 @@ const _ParseEngine = {
 			return undefined as any;
 		}
 
+		if (!term && (isZonedDateTime(tempo) || isInstant(tempo))) {
+			const { config } = state;
+			const tz = isString(config.timeZone) ? config.timeZone : (config.timeZone as any).id ?? (config.timeZone as any).timeZoneId;
+			const cal = isString(config.calendar) ? config.calendar : (config.calendar as any).id ?? (config.calendar as any).calendarId;
+			const dt = isZonedDateTime(tempo) ? tempo : (tempo as Temporal.Instant).toZonedDateTimeISO(tz);
+			return dt.withTimeZone(tz).withCalendar(cal);
+		}
+
 		state.parseDepth = (state.parseDepth ?? 0) + 1;
 		const isRoot = state.parseDepth === 1;
 		if (isRoot) state.matches = [];
@@ -46,7 +58,7 @@ const _ParseEngine = {
 
 		try {
 			const { config } = state;
-			const val = dateTime ?? state.anchor ?? (isTempo(tempo) ? (tempo as any).toDateTime() : (isZonedDateTime(tempo) ? tempo : undefined));
+			const val = dateTime ?? state.anchor ?? (isTempo(tempo) ? (tempo as any).toDateTime() : (isZonedDateTime(tempo) ? tempo : (isInstant(tempo) ? tempo.toZonedDateTimeISO(config.timeZone) : undefined)));
 			const basis = isDefined(val) ? val : instant().toZonedDateTimeISO(config.timeZone);
 
 			const tz = isTempo(basis) ? (basis as any).tz : (isZonedDateTime(basis) ? basis.timeZoneId : config.timeZone);
@@ -357,7 +369,6 @@ const _ParseEngine = {
 				const isGlobal = key.startsWith('g');
 				const isLocal = key.startsWith('l');
 				const idx = +key.substring((isGlobal || isLocal) ? 4 : 3);
-				// const src = isGlobal ? (isEvent ? (getRuntime().modules['Tempo'] as any)[sym.$Internal]().parse.event : (getRuntime().modules['Tempo'] as any)[sym.$Internal]().parse.period) : (isEvent ? state.parse.event : state.parse.period);
 				const globalParse = isGlobal ? (TempoClass as any)?.[sym.$Internal]?.().parse : undefined;
 				const src =
 					isGlobal
@@ -515,3 +526,35 @@ const isFunction = (v: any): v is Function => typeof v === 'function';
  * Decouples date-string interpretation from the core class.
  */
 export const ParseModule = defineInterpreterModule('ParseModule', ParseEngine);
+
+/**
+ * Standalone Parser
+ * Returns a Temporal.ZonedDateTime from a variety of inputs.
+ *
+ * @example
+ * import { parse } from '@magmacomputing/tempo/parse';
+ * const zdt = parse('2026-04-22');
+ */
+export function parse(value: t.DateTime, options: t.Options = {}): Temporal.ZonedDateTime {
+	const runtime = getRuntime();
+	const globalState = runtime.state ?? init();
+
+	// Create a local state shadowed from the global state
+	const state: t.Internal.State = {
+		config: markConfig(Object.create(globalState.config)),
+		parse: markConfig(Object.create(globalState.parse))
+	} as t.Internal.State;
+
+	// Standalone parsing defaults to 'strict' mode
+	const localOptions = { ...options };
+	localOptions.mode ??= 'strict';
+
+	// Apply options
+	extendState(state, localOptions);
+
+	// Compile RegEx patterns
+	setPatterns(state);
+
+	// Execute the parse
+	return ParseEngine.parse(state, value);
+}

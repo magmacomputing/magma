@@ -36,6 +36,7 @@ export default defineConfig({
         items: [
           { text: 'Configuration', link: '/doc/tempo.config' },
           { text: 'Smart Parsing', link: '/doc/tempo.parse' },
+          { text: 'Smart Formatting', link: '/doc/tempo.format' },
           { text: 'Modularity', link: '/doc/tempo.modularity' },
           { text: 'Layout Patterns', link: '/doc/tempo.layout' },
           { text: 'Terms System', link: '/doc/tempo.term' },
@@ -113,6 +114,18 @@ export default defineConfig({
         {
           find: /^@magmacomputing\/tempo\/ticker$/,
           replacement: fileURLToPath(new URL('../dist/plugin/extend/extend.ticker.js', import.meta.url))
+        },
+        {
+          find: /^@magmacomputing\/tempo\/parse$/,
+          replacement: fileURLToPath(new URL('../dist/discrete/discrete.parse.js', import.meta.url))
+        },
+        {
+          find: /^@magmacomputing\/tempo\/format$/,
+          replacement: fileURLToPath(new URL('../dist/discrete/discrete.format.js', import.meta.url))
+        },
+        {
+          find: /^@magmacomputing\/tempo\/discrete$/,
+          replacement: fileURLToPath(new URL('../dist/discrete/discrete.index.js', import.meta.url))
         },
         {
           find: /^@magmacomputing\/tempo$/,

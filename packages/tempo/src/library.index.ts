@@ -1,6 +1,6 @@
 /**
- * # Tempo Library
- * This is a secondary entry point for the "Tempo Utility Stack".
+ * # Magma Library
+ * This is a secondary entry point for the "Magma Utility Stack".
  * It provides curated access to the specific utilities Tempo uses under the hood.
  */
 
