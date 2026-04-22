@@ -30,11 +30,17 @@ After defining the enumify object, simple TypeScript helper aliases pull out the
 
 ```typescript
 export type SEASON = ValueOf<typeof SEASON>; // Type: 'summer' | 'autumn' | 'winter' | 'spring'
+export type Season = KeyOf<typeof SEASON>;  // Type: 'Summer' | 'Autumn' | 'Winter' | 'Spring'
 ```
+The above types allow for the use of `Season` and `SEASON` as type arguments, providing type safety for both the keys and values of the enum.
+
+It is generally recommended to use the **values** (lowercase) as type arguments, as they are used as the actual values in the enumify object. This allows for easier use of the enumify methods, which operate on the values.
+
+**Note:** TypeScript provides automatic typing for native enums, but it is not the case with enumify.
 
 ## 2. Using Enums Outside of Tempo
 
-For consumers of the library, these enumerations are exposed cleanly as **static getters** on the core `Tempo` class.  They are also available as a namespace object from the 'barrel' (index.ts) export `enums`.
+For consumers of the library, these enumerations are exposed cleanly as **static getters** on the core `Tempo` class.  They are also available as a namespace object from the 'barrel' (tempo.index.ts) export `enums`.
 
 You can use the values directly as arguments:
 

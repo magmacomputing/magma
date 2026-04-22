@@ -1,17 +1,18 @@
 import { looseIndex } from '#library/object.library.js';
 import { secure } from '#library/utility.library.js';
 import { proxify } from '#library/proxy.library.js';
-import { NUMBER, MODE } from './tempo.enum.js';
-import type { Options } from '../tempo.type.js';
 import { getDateTimeFormat } from '#library/international.library.js';
-import type { Tempo } from '../tempo.class.js';
 
-// BE VERY CAREFUL NOT TO BREAK THE REGEXP PATTERNS BELOW
-// TEMPO functionality heavily depends on these patterns
+import { NUMBER, MODE } from './tempo.enum.js';
+import { Token } from './tempo.symbol.js';
+import type { Options } from '../tempo.type.js';
+import type { Tempo } from '../tempo.class.js';
 
 /** characters allowed inside timezone/calendar brackets */
 const bracket_content = /[^\]]+/;
 
+// BE VERY CAREFUL NOT TO BREAK THE REGEXP PATTERNS BELOW
+// TEMPO functionality heavily depends on these patterns
 /** @internal Tempo Match patterns */
 export const Match = proxify({
 	/** match all {} pairs, if they start with a word char */	braces: /{([#]?[\w]+(?:\.[\w]+)*)}/g,
@@ -34,46 +35,9 @@ export const Match = proxify({
 	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
 	/** extracted value-only version of a slick shifter */		slickValue: /^(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
 	/** escape special regex characters in a string */				escape: (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-	/** numeric-only string detection */											numeric: /^\s*[-+]?\d+(\.\d+)?\s*$/
+	/** numeric-only string detection */											numeric: /^\s*[-+]?\d+(\.\d+)?\s*$/,
+	/** match suspicious nested quantifiers (backtracking) */	backtrack: /(\(.*\)\+|\(.*\)\*|\(.*\)\{.*\})/,
 }, true, false);
-
-/** @internal Tempo Symbol registry */
-export const Token = looseIndex<string, symbol>()({
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Snippet Symbols
-	/** year */																								yy: Symbol('yy'),
-	/** ISO yearOfWeek */																			yw: Symbol('yw'),
-	/** month */																							mm: Symbol('mm'),
-	/** day */																								dd: Symbol('dd'),
-	/** hour */																								hh: Symbol('hh'),
-	/** minute */																							mi: Symbol('mi'),
-	/** second */																							ss: Symbol('ss'),
-	/** fraction */																						ff: Symbol('ff'),
-	/** meridiem */																						mer: Symbol('mer'),
-	/** short weekday name */																	www: Symbol('www'),
-	/** relative-suffix */																		afx: Symbol('afx'),
-	/** time-suffix */																				sfx: Symbol('sfx'),
-	/** time unit */																					unt: Symbol('unt'),
-	/** separator */																					sep: Symbol('sep'),
-	/** modifier */																						mod: Symbol('mod'),
-	/** generic number */																			nbr: Symbol('nbr'),
-	/** Tempo slick shorthand */															slk: Symbol('slk'),
-	/** Tempo event */																				evt: Symbol('evt'),
-	/** Tempo period */																				per: Symbol('per'),
-	/** time zone offset */																		tzd: Symbol('tzd'),
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Layout Symbols
-	/** date */																								dt: Symbol('date'),
-	/** time */																								tm: Symbol('time'),
-	/** date and time */																			dtm: Symbol('dateTime'),
-	/** day-month-year */																			dmy: Symbol('dayMonthYear'),
-	/** month-day-year */																			mdy: Symbol('monthDayYear'),
-	/** year-month-day */																			ymd: Symbol('yearMonthDay'),
-	/** day of month offset */																off: Symbol('offset'),
-	/** weekDay */																						wkd: Symbol('weekDay'),
-	/** relative offset (years, days, hours, etc) */					rel: Symbol('relativeOffset'),
-	/** timezone/calendar brackets */													brk: Symbol('brackets'),
-})
-/** @internal Tempo Symbol registry type */
-export type Token = typeof Token
 
 /**
  * user will need to know these in order to configure their own patterns  
@@ -183,6 +147,13 @@ export const Period = looseIndex<string, string | Function>()({
 /** @internal Tempo Period type */
 export type Period = typeof Period
 
+/** 
+ * an {ignore} is a list of noise words to be stripped during parsing.
+ */
+/** @internal Tempo Ignore registry */
+export const Ignore = ['at', 'the', 'o-clock', 'o\'clock', 'on', 'in', 'of', 'by', 'for', 'to'] as const;
+/** @internal Tempo Ignore type */
+export type Ignore = string | string[] | (() => string | string[])
 
 /** @internal Tempo Master Guard list */
 export const Guard = [
@@ -191,7 +162,7 @@ export const Guard = [
 	'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds', 'nanoseconds',
 	'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
 	'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays'
-]
+] as const;
 
 /** @internal Tempo Default options */
 export const Default = secure({

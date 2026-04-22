@@ -2,7 +2,7 @@ import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
 import { isDefined, isFunction, isString, isUndefined, isNumber } from '#library/type.library.js';
 import { secure } from '#library/utility.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
-import sym, { SCHEMA, getLargestUnit, isTempo, getRuntime } from '#tempo/support';
+import { sym, SCHEMA, getLargestUnit, isTempo, getRuntime } from '#tempo/support';
 import type { Tempo } from '../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange } from './plugin.type.js';
 import { getHost } from './plugin.util.js';
@@ -75,7 +75,7 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | num
 		// @ts-ignore
 		const resZdt = toZonedDateTime({ ...obj, timeZone: anchor.timeZoneId, calendar: anchor.calendarId });
 		// @ts-ignore
-		return new tempo.constructor(resZdt, (tempo as any).config);
+		return new (getHost(tempo))(resZdt, (tempo as any).config);
 	}
 
 	const matchIndex = chronological.findLastIndex(range => {
@@ -258,7 +258,7 @@ type resolveOptions = {
  */
 export function resolveCycleWindow(source: Tempo | any, template: Range[] | Record<string, Range[]>, { anchor, groupBy = [], ...options }: resolveOptions = {}): Range[] {
 	// ensure we have a valid Tempo instance to work with
-	const t = isTempo(source) ? source : (isDefined(source) ? new (getHost(source))(source) : source);
+	const t = (isTempo(source) ? source : (isDefined(source) ? new (getHost(source))(source) : source)) as Tempo;
 	if (!isTempo(t)) return [];
 
 	// 1. Resolve Template (supporting optional dynamic grouping)

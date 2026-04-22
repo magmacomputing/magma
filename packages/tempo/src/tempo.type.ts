@@ -7,16 +7,12 @@
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
 
+import { sym } from '#tempo/support/tempo.symbol.js';
 import * as enums from '#tempo/support/tempo.enum.js';
-import sym from '#tempo/support/tempo.symbol.js';
-import type { Snippet, Layout, Event, Period, Token } from '#tempo/support/tempo.default.js';
+import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/tempo.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
 import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension } from '#tempo/plugin/plugin.type.js';
-
-/**
- * Structural forward-reference to the Tempo class.
- * 'import type' is safe for circular ESM references — erased at runtime.
-*/
+import type { Token } from '#tempo/support/tempo.symbol.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 
 declare global {
@@ -48,7 +44,6 @@ export type Options = Prettify<{ [K in keyof Internal.BaseOptions]?: Internal.Ba
  * Every attempt to resolve an input to a Tempo should always be checked with .isValid before continuing.
  * Otherwise unpredictable behaviour is likely.
  */
-export type { Plugin, Module, Extension };
 
 /** Configuration to use for #until() and #since() argument */
 export type DateTimeUnit = Temporal.DateUnit | Temporal.TimeUnit
@@ -81,12 +76,12 @@ export type SetFields = {
 } & {
 	[K in 'date' | 'time' | 'event' | 'period']?: string;
 }
-export type Set = Prettify<SetFields & {
+export type MutateSet = Prettify<SetFields & {
 	timeZone?: Temporal.TimeZoneLike;
 	calendar?: Temporal.CalendarLike;
 } & TermOffset> | DateTime
 export type AddUnits = { [K in Unit]?: number };
-export type Add = Prettify<AddUnits & TermOffset> | DateTime
+export type MutateAdd = Prettify<AddUnits & TermOffset> | DateTime
 
 export type Modifier = '=' | '-' | '+' | '<' | '<=' | '-=' | '>' | '>=' | '+=' | 'this' | 'next' | 'prev' | 'last' | 'first' | undefined
 export type Relative = 'ago' | 'hence' | 'prior' | 'from now'
@@ -113,8 +108,6 @@ export type Format = enums.Format;
 /** Enum registry of format strings */
 export type FormatRegistry = enums.FormatEnum;
 export type FormatType<K extends PropertyKey> = enums.FormatType<K>;
-
-export type { Range, TermPlugin, ResolvedRange, Terms };
 
 export type WEEKDAY = enums.WEEKDAY
 export type WEEKDAYS = enums.WEEKDAYS
@@ -170,10 +163,11 @@ export namespace Internal {
 		/** patterns to help parse value */											layout: Layout | PatternOption<Pattern>;
 		/** custom date aliases (events). */										event: Event | PatternOption<Logic>;
 		/** custom time aliases (periods). */										period: Period | PatternOption<Logic>;
+		/** noise words to ignore during parsing. */						ignore: Ignore;
 		/** custom format strings to merge in the FORMAT enum */formats: Property<any>;
 		/** plugins to be automatically extended */							plugins: Plugin | Plugin[];
 		/** supplied value to parse */													value: DateTime;
-		/** @internal temporary anchor used during parsing */		anchor: Temporal.ZonedDateTime;
+		/** @internal temporary anchor used during parsing */		anchor: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
 	}
 
@@ -189,6 +183,13 @@ export namespace Internal {
 	export interface State {																	// 'global' and 'local' variables
 		/** current defaults for all Tempo instances */					config: Config;
 		/** parsing rules */																		parse: Parse;
+		/** @internal current valid configuration options */		OPTION: Set<string>;
+		/** @internal valid Temporal units for ZonedDateTime */	ZONED_DATE_TIME: Set<string>;
+
+		/** @internal current recursion depth during parsing */	parseDepth?: number;
+		/** @internal current matches during parsing */					matches?: Match[] | undefined;
+		/** @internal current anchor during parsing */					anchor?: Temporal.ZonedDateTime;
+		/** @internal has the parse operation errored? */				errored?: boolean;
 	}
 
 	/** debug a Tempo instantiation */
@@ -201,7 +202,7 @@ export namespace Internal {
 
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */
 	export interface Parse {
-		/** Locales which prefer 'mm-dd-yyyy' date-order */			mdyLocales: { locale: string, timeZones: string[] }[];
+		/** Locales which prefer 'mm-dd-yyyy' date-order */			mdyLocales: ({ locale: string, timeZones: string[] } | string)[];
 		/** Layout names that are switched to mdy */						mdyLayouts: Pair[];
 		/** is a timeZone that prefers 'mmddyyyy' date order */	isMonthDay?: boolean;
 		/** Symbol registry */																	token: Token;
@@ -210,6 +211,7 @@ export namespace Internal {
 		/** Map of regex-patterns to match input-string */			pattern: Registry;
 		/** configured Events */																event: Event;
 		/** configured Periods */																period: Period;
+		/** noise words to ignore during parsing */							ignore: Record<string, string>;
 		/** pivot year for two-digit years */										pivot: number;
 		/** parsing match result */															result: Match[];
 		/** was this a nested/anchored parse? */								isAnchored?: boolean;
@@ -218,10 +220,11 @@ export namespace Internal {
 		/** @internal lazy delegator for formats */							format?: any;
 		/** @internal lazy delegator for terms */								term?: any;
 		/** @internal localized Master Guard scanner */					guard?: { test(str: string): boolean };
+		/** @internal localized Noise Word scanner */						ignorePattern?: RegExp;
 	}
 
 	/** drop the parse-only Options */
-	export type OptionsKeep = Omit<BaseOptions, "mdyLocales" | "mdyLayouts" | "pivot" | "snippet" | "layout" | "event" | "period" | "value">
+	export type OptionsKeep = Omit<BaseOptions, "mdyLocales" | "mdyLayouts" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
 
 	/** Instance configuration derived from supply, storage, and discovery. */
 	export interface Config extends Required<Omit<OptionsKeep, "formats">> {
@@ -237,6 +240,7 @@ export namespace Internal {
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
+		/** noise words to ignore during parsing via Tempo.ignore() */ ignore?: Ignore
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: Plugin | Plugin[];
 	}
 }

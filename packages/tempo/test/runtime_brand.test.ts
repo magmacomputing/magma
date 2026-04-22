@@ -1,4 +1,4 @@
-import sym, { getRuntime, TempoRuntime } from '#tempo/support';
+import { sym, getRuntime, TempoRuntime } from '#tempo/support';
 
 describe('TempoRuntime Cross-Bundle Adoption', () => {
 	/**

@@ -1,5 +1,6 @@
-import sym from './tempo.symbol.js';
+import { sym } from './tempo.symbol.js';
 import type { TermPlugin, Extension, Plugin } from '../plugin/plugin.type.js';
+import type { Internal } from '../tempo.type.js';
 
 /**
  * # TempoRuntime
@@ -12,23 +13,22 @@ import type { TermPlugin, Extension, Plugin } from '../plugin/plugin.type.js';
  * slot a possible tamper target.
  *
  * `TempoRuntime` replaces all of those slots with a **single** well-known entry on
- * `globalThis` (the BRIDGE symbol above).  The slot is defined as non-enumerable,
+ * `globalThis` (the `$Bridge` symbol).  The slot is defined as non-enumerable,
  * non-configurable and non-writable so external code cannot replace or delete the
  * runtime object.  All mutation goes through the controlled methods on this class.
  *
  * ## Multi-bundle / HMR compatibility
- * `getRuntime()` checks `globalThis[BRIDGE]` before creating a new instance.  When
+ * `getRuntime()` checks `globalThis[$Bridge]` before creating a new instance.  When
  * two bundle copies of the library are loaded (monorepo, HMR, etc.), both find the
  * same runtime and therefore share the same arrays / sets — the same guarantee that
  * was previously achieved by scattering `Symbol.for(…)` writes across many slots.
  *
  * ## Scoped runtimes (Experimental)
- * `TempoRuntime.createScoped()` returns a fresh, isolated runtime that is *not* stored on `globalThis`, enabling clean test isolation without globalThis manipulation.  **Note**: Scoped runtimes are currently an experimental internal feature and are not yet fully threaded through all core utilities.  Scoped runtimes are not pinned to `globalThis`, lack the `defineProperty` descriptor protections of the primary instance, and instead rely solely on the lexical reference returned (contrasting with the hardened `getRuntime()` and `globalThis[BRIDGE]` behavior). Implementation examples of this test-scoping pattern can be found in [plugin_registration.test.ts](../test/plugin_registration.test.ts) and [duration.core.test.ts](../test/duration.core.test.ts).
+ * `TempoRuntime.createScoped()` returns a fresh, isolated runtime that is *not* stored on `globalThis`, enabling clean test isolation without globalThis manipulation.  **Note**: Scoped runtimes are currently an experimental internal feature and are not yet fully threaded through all core utilities.  Scoped runtimes are not pinned to `globalThis`, lack the `defineProperty` descriptor protections of the primary instance, and instead rely solely on the lexical reference returned (contrasting with the hardened `getRuntime()` and `globalThis[$Bridge]` behavior). Implementation examples of this test-scoping pattern can be found in [plugin_registration.test.ts](../test/plugin_registration.test.ts) and [duration.core.test.ts](../test/duration.core.test.ts).
  */
 export class TempoRuntime {
-	constructor() {
-		(this as any)[sym.$RuntimeBrand] = true;
-	}
+	constructor() { (this as any)[sym.$RuntimeBrand] = true; }
+
 	/** raw extension-plugin storage array — consumed by REGISTRY */
 	readonly extensions: Extension[] = [];
 	/** raw named-module map — consumed by REGISTRY */
@@ -39,14 +39,17 @@ export class TempoRuntime {
 	readonly resetHooks: Set<() => void> = new Set();
 	/**
 	 * Persistent plugin/term discovery database.
-	 * Replaces the `globalThis[sym.$Plugins]` slot.
 	 * Kept as a plain object (not a secureRef) so callers can push() into the arrays.
-	 */
+	*/
 	readonly pluginsDb: { terms: TermPlugin[]; plugins: Plugin[] } = { terms: [], plugins: [] };
-	readonly #hooks: Map<symbol, (val: any) => void> = new Map();
 
+	/** persistent global configuration state — mirrors Tempo.#global */
+	state?: Internal.State | undefined;
+	/** cache for next-available 'usr' Token key */
+	usrCount: number = 0;
 
 	// ─── Register hook ────────────────────────────────────────────────────────
+	readonly #hooks: Map<symbol, (val: any) => void> = new Map();
 
 	/** Set a registration hook for a given symbol. Returns the previous hook. */
 	setHook(key: symbol, cb: (val: any) => void): ((val: any) => void) | undefined {
@@ -66,7 +69,6 @@ export class TempoRuntime {
 	}
 
 	// ─── Validated mutation helpers ───────────────────────────────────────────
-
 	/**
 	 * Record a Term in the discovery database.
 	 * Validates the shape before storing so malformed entries cannot corrupt state.
@@ -98,7 +100,6 @@ export class TempoRuntime {
 	}
 
 	// ─── Factory helpers ──────────────────────────────────────────────────────
-
 	/**
 	 * @internal @experimental
 	 * Create a fresh, **scoped** runtime that is NOT stored on `globalThis`.
@@ -115,10 +116,10 @@ let localFallbackRuntime: TempoRuntime | undefined;
 /**
  * Return the singleton `TempoRuntime`.
  *
- * On the first call the runtime is created and pinned to `globalThis` under the BRIDGE
+ * On the first call the runtime is created and pinned to `globalThis` under the $Bridge
  * symbol with a hardened property descriptor (non-enumerable, non-configurable,
  * non-writable).  Subsequent calls — even from other bundle copies — retrieve the same
- * object via `globalThis[BRIDGE]`, preserving the single-source-of-truth guarantee.
+ * object via `globalThis[$Bridge]`, preserving the single-source-of-truth guarantee.
  */
 export function getRuntime(): TempoRuntime {
 	const existing = (globalThis as any)[sym.$Bridge];

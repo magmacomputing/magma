@@ -25,6 +25,7 @@ export default defineConfig({
         text: 'Getting Started',
         items: [
           { text: 'Introduction', link: '/README' },
+          { text: 'Installation', link: '/doc/installation' },
           { text: 'Cookbook', link: '/doc/tempo.cookbook' },
           { text: 'Migration Guide', link: '/doc/migration-guide' },
           { text: 'Release Notes', link: '/doc/releases/' }
@@ -34,6 +35,7 @@ export default defineConfig({
         text: 'Core Concepts',
         items: [
           { text: 'Configuration', link: '/doc/tempo.config' },
+          { text: 'Smart Parsing', link: '/doc/tempo.parse' },
           { text: 'Modularity', link: '/doc/tempo.modularity' },
           { text: 'Layout Patterns', link: '/doc/tempo.layout' },
           { text: 'Terms System', link: '/doc/tempo.term' },

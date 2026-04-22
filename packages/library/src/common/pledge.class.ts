@@ -25,7 +25,7 @@ declare module '#library/type.library.js' {
 export class Pledge<T> {
 	#pledge: PromiseWithResolvers<T>;
 	#status = {} as Pledge.Status<T>;
-	static #dbg = new Logify('Pledge: ');
+	static #dbg = new Logify('Pledge');
 	static #static = {} as Pledge.Constructor;
 
 	static STATE = secure({

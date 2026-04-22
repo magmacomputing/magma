@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-04-22
+
+### Added
+- **Standalone Parse Support**: Enhanced the `ParseModule` to support standalone parsing of textual dates (including names like "Jan") without requiring a bound host class instance.
+- **Backtracking Security**: Implemented suspicious quantifier detection (`Match.backtrack`) in the snippet registry to prevent catastrophic backtracking and malicious regex patterns.
+- **Automatic Sphere Sync**: The engine now automatically recalculates the `config.sphere` (hemisphere) state whenever the `timeZone` is updated in the configuration.
+
+### Changed
+- **Heading Hierarchy**: Restructured the documentation and README headers to use a sequential H2-based hierarchy for improved accessibility and document flow.
+
+### Fixed
+- **Infinite Loop Protection**: Added safety-valve logic to the term resolution engine to prevent infinite loops when traversing large date ranges.
+- **Parse Error Resilience**: Hardened the resolution engine to explicitly detect and log `undefined` results from the parser, ensuring `isValid` correctly reflects the parse state and preventing silent UTC fallbacks.
+- **Standalone Resilience**: Added optional chaining to all host class references in the term resolver to prevent `TypeError` in standalone contexts.
+- **Type-Safe Configuration**: Updated the `Options` type to strictly isolate parse-time-only properties from runtime state.
+
 ## [2.2.6] - 2026-04-20
 
 ### Added

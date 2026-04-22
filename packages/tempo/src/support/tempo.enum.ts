@@ -1,12 +1,9 @@
 import lib from '#library/symbol.library.js';
 import { enumify, Enum } from '#library/enumerate.library.js';
 import { proxify } from '#library/proxy.library.js';
-import { ownKeys } from '#library/primitive.library.js';
 import { allDescriptors } from '#library/reflection.library.js';
-import { clearCache } from '#library/function.library.js';
-import { isUndefined, isDefined } from '#library/type.library.js';
-import type { OwnOf, KeyOf, ValueOf, LooseUnion, Mutable, Property } from '#library/type.library.js';
-import sym from './tempo.symbol.js';
+import { looseIndex } from '#library/object.library.js';
+import type { OwnOf, KeyOf, ValueOf, LooseUnion, Mutable } from '#library/type.library.js';
 
 /** calendar seasons */
 export const SEASON = enumify({
@@ -136,12 +133,13 @@ export type MONTHS = KeyOf<typeof MONTHS>
 export type Months = ValueOf<typeof MONTHS>
 
 /** number names (0-10) */
-export const NUMBER = proxify(enumify(STATE.NUMBER, false), true, false);
+export const NUMBER = looseIndex<string, number>()(proxify(enumify(STATE.NUMBER, false), true, false));
+export type NUMBER = typeof NUMBER;
 export type Number = KeyOf<typeof NUMBER>
 
 /** common time-zone aliases */
-export const TIMEZONE = proxify(STATE.TIMEZONE, true, false);
-export type TIMEZONE = KeyOf<typeof TIMEZONE>
+export const TIMEZONE = looseIndex<string, string>()(proxify(STATE.TIMEZONE, true, false));
+export type TIMEZONE = typeof TIMEZONE;
 export type Timezone = ValueOf<typeof TIMEZONE>
 
 /** number of seconds in a time unit */
@@ -153,8 +151,8 @@ export const DURATIONS = enumify(STATE.DURATIONS, false);
 export type DURATIONS = KeyOf<typeof DURATIONS>
 
 /** common format aliases */
-export const FORMAT = proxify(enumify(STATE.FORMAT, false), true, false);
-export type FORMAT = ValueOf<typeof FORMAT>
+export const FORMAT = looseIndex<string, string | number>()(proxify(enumify(STATE.FORMAT, false), true, false));
+export type FORMAT = typeof FORMAT;
 export type Format = LooseUnion<KeyOf<typeof FORMAT> & string>
 
 /** patterns that return a number */

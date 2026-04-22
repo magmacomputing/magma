@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo';
+import { registryReset } from '#tempo/support';
 import type { Options } from '#tempo/tempo.type.js';
 
 describe('Tempo storage functionality', () => {
@@ -11,8 +12,8 @@ describe('Tempo storage functionality', () => {
 		delete (globalThis as any)[Symbol.for(testDiscovery)];
 		delete process.env[customKey];
 		delete process.env[testKey];
-		// Reset global config to use test keys
-		Tempo.init({ store: testKey, discovery: testDiscovery });
+		// Reset global registries and runtime state
+		Tempo.init();
 	})
 
 	it('should write to and read from a custom storage key', () => {
