@@ -151,7 +151,7 @@ export type Period = typeof Period
  * an {ignore} is a list of noise words to be stripped during parsing.
  */
 /** @internal Tempo Ignore registry */
-export const Ignore = ['at', 'the', 'o-clock', 'o\'clock', 'on', 'in', 'of', 'by', 'for', 'to'];
+export const Ignore = ['at', 'the', 'o-clock', 'o\'clock', 'on', 'in', 'of', 'by', 'for', 'to'] as const;
 /** @internal Tempo Ignore type */
 export type Ignore = string | string[] | (() => string | string[])
 

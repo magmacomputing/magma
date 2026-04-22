@@ -1,5 +1,5 @@
 import { sym, Token } from './tempo.symbol.js';
-import { isSymbol, isUndefined, isString, isRegExp, isNullish, isRegExpLike } from '#library/type.library.js';
+import { isSymbol, isUndefined, isString, isRegExp, isNullish, isRegExpLike, asType } from '#library/type.library.js';
 import { ownEntries, ownKeys } from '#library/primitive.library.js';
 import { getRuntime } from './tempo.runtime.js';
 import { Match, Snippet, Layout } from './tempo.default.js';
@@ -46,7 +46,7 @@ export function getSymbol(key?: string | symbol): symbol {
 
 /** @internal helper to normalize snippet/layout Options into the target Config */
 export function collect(target: Record<symbol, any>, value: any, convert: (v: any) => any) {
-	const itm = { type: Object.prototype.toString.call(value).slice(8, -1), value }; // inline asType to avoid dependency loop if needed, but we have it imported above actually
+	const itm = asType(value);
 
 	switch (itm.type) {
 		case 'Object':
@@ -124,6 +124,8 @@ export function compileRegExp(layout: string | RegExp, state: t.Internal.State, 
 	}
 }
 
+const isEmpty = (v: any) => !v || (Array.isArray(v) && v.length === 0) || (typeof v === 'object' && Object.keys(v).length === 0);
+
 /** @internal build RegExp patterns into the state */
 export function setPatterns(state: t.Internal.State) {
 	const snippet = state.parse.snippet;
@@ -160,5 +162,3 @@ export function setPatterns(state: t.Internal.State) {
 		// console.log(`DEBUG Compiled [${String(symbol)}]:`, compiled.source.substring(0, 50) + '...');
 	});
 }
-
-const isEmpty = (v: any) => !v || (Array.isArray(v) && v.length === 0) || (typeof v === 'object' && Object.keys(v).length === 0);

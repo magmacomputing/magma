@@ -12,9 +12,9 @@ import { getRuntime } from '#tempo/support';
 const core = [ParseModule, MutateModule, FormatModule, DurationModule, TermsModule];
 
 getRuntime().modules['Tempo'] = Tempo;
-onRegistryReset(() => { 
+onRegistryReset(() => {
 	getRuntime().modules['Tempo'] = Tempo;
-	Tempo.extend(core); 
+	Tempo.extend(core);
 });
 
 Tempo.extend(core);

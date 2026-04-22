@@ -1145,9 +1145,8 @@ export class Tempo implements TempoBrand {
 			// discovery phase
 			if (host === 'fmt') {
 				if (!ensureModule(this, 'FormatModule')) return undefined;
-				if (isDefined(this.#local.config.formats[key])) {
+				if (isDefined(this.#local.config.formats[key]))
 					return this.#setLazy(target, key, () => this.format(key as t.Format))?.();
-				}
 			} else {
 				if (!ensureModule(this, 'TermsModule')) return undefined;
 				const term = Tempo.#termMap.get(key);

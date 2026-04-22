@@ -21,8 +21,10 @@ namespace Lexer {
 function num(groups: Record<string, string | number>) {
 	return ownEntries(groups)
 		.reduce((acc: Record<string, number>, [key, val]: [string, any]) => {
-			if (Number.isFinite(Number(val))) {
-				acc[key] = Number(val);
+			const v = isString(val) ? val.trim() : val;
+			if (v === '') return acc;
+			if (Number.isFinite(Number(v))) {
+				acc[key] = Number(v);
 				return acc;
 			}
 
@@ -44,7 +46,8 @@ function num(groups: Record<string, string | number>) {
 export function prefix<T extends t.WEEKDAY | t.MONTH>(str: any): T {
 	let value = str;
 	if (isString(value)) {
-		const low = value.toLowerCase();
+		const low = value.trim().toLowerCase();
+		if (low === '') return value;
 		const match = Object.keys(enums.NUMBER).find(key => key.startsWith(low));
 		if (match) return match as any;
 
@@ -145,7 +148,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 
 	let { year, month, day } = num({
 		year: yy ?? dateTime.year,
-		month: prefix(mm ?? dateTime.month),
+		month: prefix((isString(mm) && mm.trim() === '') ? dateTime.month : (mm ?? dateTime.month)),
 		day: dd ?? dateTime.day,
 	} as any);
 

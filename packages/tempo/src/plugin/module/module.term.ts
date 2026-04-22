@@ -436,9 +436,8 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 		let iterations = 0;
 		while (next.epochNanoseconds <= zdt.epochNanoseconds) {
 			if (++iterations > 50) {													// Safety-Valve: prevent infinite look-ahead
-				const currentRange = termObj.define.call(new (getHost(instance))(jump, { ...instance.config, mode: 'strict' }), false);
-				jump = jump.add(getStep(currentRange));
-				next = jump;
+				Tempo?.[sym.$termError]?.(instance.config, unit);
+				return null;
 			} else {
 				const currentRange = termObj.define.call(new (getHost(instance))(jump, { ...instance.config, mode: 'strict' }), false);
 				jump = jump.add(getStep(currentRange));
@@ -493,7 +492,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 				// if we hit the edge of the current list, jump to the end of the current cycle and try again
 				const current = (getTermRange(instance, list, false, jump) as any);
 				if (!current) {
-					Tempo[sym.$termError]?.(instance.config, unit);
+					Tempo?.[sym.$termError]?.(instance.config, unit);
 					return null;
 				}
 

@@ -18,6 +18,7 @@ const resetIdle = () => {
 		console.warn('\n\x1b[33m[Tempo] REPL idle for 1 hour. Safety shutdown triggered.\x1b[0m');
 		process.exit(0);
 	}, 3600 * 1000);
+	idleTimer.unref();
 };
 
 process.stdin.on('data', resetIdle);

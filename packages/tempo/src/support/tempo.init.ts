@@ -11,6 +11,7 @@ import { sym, Token } from './tempo.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
 import * as t from '../tempo.type.js';
+import type { Mode } from '../tempo.type.js';
 
 /** @internal Initialise the global Tempo state */
 export function init(options: t.Options = {}): t.Internal.State {
@@ -64,15 +65,16 @@ export function init(options: t.Options = {}): t.Internal.State {
 }
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
-export function extendState(state: any, options: t.Options) {
-	const { isString, isObject, isUndefined, isRegExp, asType } = getRuntime().modules['Library'] ?? {
-		isString: (v: any) => typeof v === 'string',
-		isObject: (v: any) => typeof v === 'object' && v !== null,
-		isUndefined: (v: any) => v === undefined,
-		isRegExp: (v: any) => v instanceof RegExp,
-		asType: (v: any) => ({ type: Object.prototype.toString.call(v).slice(8, -1), value: v })
-	};
+export function extendState(state: t.Internal.State, options: t.Options) {
+	const {
+		isString = (v: any) => typeof v === 'string',
+		isObject = (v: any) => typeof v === 'object' && v !== null,
+		isUndefined = (v: any) => v === undefined,
+		isRegExp = (v: any) => v instanceof RegExp,
+		asType = (v: any) => ({ type: Object.prototype.toString.call(v).slice(8, -1), value: v })
+	} = getRuntime().modules['Library'] ?? {};
 
+	let patternsDirty = false;
 	ownEntries(options).forEach(([optKey, optVal]) => {
 		if (isUndefined(optVal)) return;
 		const arg = asType(optVal);
@@ -83,6 +85,7 @@ export function extendState(state: any, options: t.Options) {
 			case 'event':
 			case 'period':
 			case 'ignore': {
+				patternsDirty = true;
 				if (!hasOwn(state.parse, optKey))
 					state.parse[optKey] = create(state.parse, optKey);
 
@@ -101,7 +104,7 @@ export function extendState(state: any, options: t.Options) {
 				} else {
 					asArray(arg.value).forEach(elm => {
 						if (isObject(elm)) Object.assign(rule, elm);
-						else if (isString(elm)) rule[elm] = elm;
+						else if (isString(elm)) Object.assign(rule, { [elm]: elm });
 					})
 				}
 				break;
@@ -130,7 +133,7 @@ export function extendState(state: any, options: t.Options) {
 			}
 
 			case 'mode':
-				state.parse.mode = String(arg.value);
+				state.parse.mode = String(arg.value) as Mode;
 				break;
 
 			case 'anchor':
@@ -139,7 +142,7 @@ export function extendState(state: any, options: t.Options) {
 		}
 	});
 
-	setPatterns(state);
+	if (patternsDirty) setPatterns(state);
 
 	return state;
 }
