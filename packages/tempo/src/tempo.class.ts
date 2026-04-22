@@ -12,16 +12,16 @@ import { enumify } from '#library/enumerate.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
-import { getType, asType, isEmpty, isNullish, isDefined, isUndefined, isString, isObject, isRegExp, isRegExpLike, isSymbol, isFunction, isClass, isZonedDateTime } from '#library/type.library.js';
+import { getType, asType, isEmpty, isDefined, isUndefined, isString, isObject, isRegExp, isSymbol, isFunction, isClass, isZonedDateTime, Property, Secure } from '#library/type.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
-import { instant } from '#library/temporal.library.js';
-import type { Property, Secure } from '#library/type.library.js';
-
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
+import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
+import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns } from './support/tempo.util.js';
 
 import { sym, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, type TempoBrand } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
+import { instant } from '#library/temporal.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
@@ -31,20 +31,9 @@ declare module '#library/type.library.js' {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 const Context = getContext();																// current execution context
 
-/** set a mutable, enumerable property on a target */
-const setProperty = <T>(target: object, key: PropertyKey, value: T) =>
-	Object.defineProperty(target, key, {
-		value, writable: true, configurable: true, enumerable: true
-	});
-
-/** return the Prototype parent of an object */
-const proto = (obj: object) => Object.getPrototypeOf(obj);
-/** test object has own property with the given key */
-const hasOwn = (obj: object, key: string) => Object.hasOwn(obj, key);
 /** return whether the shape is 'local' or 'global' */
 const isLocal = (shape: { config: { scope: string } }) => shape.config.scope === 'local';
-/** create an object based on a prototype */
-const create = <T extends object>(obj: object, name: string): T => Object.create(proto(obj)[name]);
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 namespace Internal {
 	export type State = t.Internal.State;
@@ -94,8 +83,8 @@ export class Tempo implements TempoBrand {
 
 	/** Tempo state for the global configuration */						static #global = {} as Internal.State
 	/** cache for next-available 'usr' Token key */						static #usrCount = 0;
-	/** mutable list of registered term plugins */						static get #terms(): t.TermPlugin[] { return getRuntime().pluginsDb.terms }
-	/** mapping of terms to their resolved values */					static #termMap: Map<string, t.TermPlugin> = new Map();
+	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return getRuntime().pluginsDb.terms }
+	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
 	/** flag to prevent recursion during init */							static #lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
 	/** Set of allowed lowercased tokens for the Master Guard */		static #allowedTokens: Set<string> = new Set();
@@ -375,7 +364,7 @@ export class Tempo implements TempoBrand {
 
 					case 'mode':
 						shape.parse.mode = optVal as any;
-						shape.parse.lazy = (optVal === Tempo.MODE.Defer);	// if defer, set lazy true. if strict, set lazy false. if auto, constructor will decide.
+						shape.parse.lazy = (optVal === enums.MODE.Defer);	// if defer, set lazy true. if strict, set lazy false. if auto, constructor will decide.
 						break;
 
 					case 'anchor':
@@ -397,7 +386,7 @@ export class Tempo implements TempoBrand {
 		if (isDefined(shape.parse.event)) Tempo.#setEvents(shape);
 		if (isDefined(shape.parse.period)) Tempo.#setPeriods(shape);
 
-		Tempo.#setPatterns(shape);															// setup Regex DateTime patterns
+		setPatterns(shape);															// setup Regex DateTime patterns
 	}
 
 	/** setup mdy TimeZones, using Intl.Locale */
@@ -450,67 +439,29 @@ export class Tempo implements TempoBrand {
 		let opts = discovery.options || {}
 		if (discovery.ignore) {
 			const ignore = isFunction(discovery.ignore) ? discovery.ignore() : discovery.ignore;
-			Tempo.init({ ignore });
+			opts = { ...opts, ignore };
 		}
-		return isFunction(opts) ? opts() : opts;
-	}
+		const res = isFunction(opts) ? opts() : opts;
 
-	/** build RegExp patterns */
-	static #setPatterns(shape: Internal.State) {
-		if (isDefined(shape.parse.ignore)) Tempo.#setIgnores(shape);
-		const snippet = shape.parse.snippet;
-
-		// 1. ensure numeric snippets are current
-		const keys = Object.keys(enums.NUMBER).map(w => Match.escape(w));			// escape each key
-		const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a, b) => b.length - a.length).join('|')})`);
-		snippet[Token.nbr] = nbr;
-		snippet[Token.mod] = new RegExp(`((?<mod>${Match.modifier.source})?${nbr.source}? *)`);
-		snippet[Token.afx] = new RegExp(`((s)? (?<afx>${Match.affix.source}))?${snippet[Token.sep].source}?`);
-
-		// ensure we have our own Map to mutate (shadow if local)
-		if (!hasOwn(shape.parse, 'pattern'))
-			shape.parse.pattern = new Map(shape.parse.pattern);		// preserve inherited entries while shadowing
-
-		const layouts = { ...shape.parse.layout };							// shallow-copy to include inherited properties
-		for (const [sym, layout] of ownEntries(layouts, true)) {
-			const reg = Tempo.regexp(layout, snippet);
-			shape.parse.pattern.set((sym as symbol), reg);										// merge/update compiled RegExp
+		if (shape === Tempo.#global) {
+			Tempo.#buildGuard();
+			setPatterns(shape);
 		}
 
-		if (shape === Tempo.#global)
-			Tempo.#buildGuard();																	// build the high-performance 'Master Guard' ONLY for global changes
-	}
-
-	/** build a Case-Insensitive regex pattern to strip noise words */
-	static #setIgnores(shape: Internal.State) {
-		const ignores = ownKeys(shape.parse.ignore, true);
-		if (isLocal(shape) && !hasOwn(shape.parse, 'ignore'))
-			return;
-
-		if (isEmpty(ignores)) {
-			delete shape.parse.ignorePattern;
-			return;
-		}
-
-		const words = ignores
-			.filter(isString)
-			.map(w => Match.escape(w.toLowerCase()))
-			.join('|');
-
-		shape.parse.ignorePattern = new RegExp(`\\b(${words})\\b`, 'gi');
+		return res;
 	}
 
 	static #buildGuard() {
 		// Tempo.#dbg.error(Tempo.#global.config, 'Building Guard...');
 		const wordsList = [
-			...ownKeys(enums.NUMBER),
-			...ownKeys(enums.WEEKDAY),
-			...ownKeys(enums.WEEKDAYS),
-			...ownKeys(enums.MONTH),
-			...ownKeys(enums.MONTHS),
-			...ownKeys(enums.DURATION),
-			...ownKeys(enums.DURATIONS),
-			...ownKeys(enums.TIMEZONE),
+			...Object.keys(enums.NUMBER),
+			...Object.keys(enums.WEEKDAY),
+			...Object.keys(enums.WEEKDAYS),
+			...Object.keys(enums.MONTH),
+			...Object.keys(enums.MONTHS),
+			...Object.keys(enums.DURATION),
+			...Object.keys(enums.DURATIONS),
+			...Object.keys(enums.TIMEZONE),
 			...ownKeys(Tempo.#global.parse.event),
 			...ownKeys(Tempo.#global.parse.period),
 			...ownKeys(Tempo.#global.parse.ignore),
@@ -537,7 +488,6 @@ export class Tempo implements TempoBrand {
 
 				let i = 0;
 				const len = input.length;
-				// console.log(`Guard testing: "${input}"`);
 
 				while (i < len) {
 					const char = input[i];
@@ -566,7 +516,6 @@ export class Tempo implements TempoBrand {
 					for (let l = searchLen; l > 0; l--) {
 						const candidate = slice.substring(0, l);
 						if (Tempo.#allowedTokens.has(candidate)) {
-							// console.log(`  Matched token: "${candidate}" at ${i}`);
 							i += l;
 							matched = true;
 							break;
@@ -607,14 +556,14 @@ export class Tempo implements TempoBrand {
 	 * @param plugin - A plugin or term extension to register.
 	 * @param options - Optional configuration for the plugin.
 	 */
-	static extend(plugin: t.Plugin, options?: t.Options): typeof Tempo;
+	static extend(plugin: Plugin, options?: t.Options): typeof Tempo;
 	/**
 	 * Register an array of plugins or term extensions.
 	 * 
 	 * @param plugins - An array of plugins, terms, or extensions to register.
 	 * @param options - Optional configuration for the plugins.
 	 */
-	static extend(plugins: (t.Plugin | t.TermPlugin | any)[], options?: t.Options): typeof Tempo;
+	static extend(plugins: (Plugin | TermPlugin | any)[], options?: t.Options): typeof Tempo;
 	/**
 	 * Register multiple plugins or term extensions.
 	 * 
@@ -659,12 +608,12 @@ export class Tempo implements TempoBrand {
 					rt.installed.add(name);
 
 					registerPlugin(item);
-					(item as t.Plugin).install.call(this as any, this);
+					(item as Plugin).install.call(this as any, this);
 				}
 				else if (isObject(item)) {
 					// 1. handle TermPlugin
 					if (isString((item as any).key) && isFunction((item as any).define)) {
-						const config = item as t.TermPlugin;
+						const config = item as TermPlugin;
 						if (Tempo.#termMap.has(config.key)) return;
 
 						Tempo.#termMap.set(config.key, config);
@@ -724,8 +673,10 @@ export class Tempo implements TempoBrand {
 			Tempo.#lifecycle.extendDepth--;												// decrement the re-entrant nesting counter
 		}
 
-		if (Tempo.#lifecycle.extendDepth === 0)
-			Tempo.#setPatterns(Tempo.#global);										// rebuild the global patterns
+		if (Tempo.#lifecycle.extendDepth === 0) {
+			Tempo.#buildGuard();
+			setPatterns(Tempo.#global);										// rebuild the global patterns
+		}
 
 		return this;
 	}
@@ -802,7 +753,7 @@ export class Tempo implements TempoBrand {
 				Tempo.#dbg.info(Tempo.config, 'Tempo:', Tempo.#global.config);
 
 			Tempo.#lifecycle.ready = true;
-			Tempo.#setPatterns(Tempo.#global);										// rebuild the global patterns (Master Guard etc)
+			setPatterns(Tempo.#global);										// rebuild the global patterns (Master Guard etc)
 
 		} finally {
 			Tempo.#lifecycle.initialising = false;
@@ -841,48 +792,7 @@ export class Tempo implements TempoBrand {
 
 	/** @internal translates {layout} into an anchored, case-insensitive RegExp. */
 	static regexp(layout: string | RegExp, snippet?: Snippet) {
-		// helper function to replace {name} placeholders with their corresponding snippets
-		function matcher(str: string | RegExp, depth = 0): string {
-			if (depth > 12) return isRegExp(str) ? str.source : str;	// depth guard
-
-			let source = isRegExp(str) ? str.source : str;
-
-			if (isRegExpLike(source))														// string that looks like a RegExp
-				source = source.substring(1, source.length - 1);		// remove the leading/trailing "/"
-			if (source.startsWith('^') && source.endsWith('$'))
-				source = source.substring(1, source.length - 1);		// remove the leading/trailing anchors (^ $)
-
-			return source.replaceAll(new RegExp(Match.braces), (match, name) => {	// iterate over "{}" pairs in the source string
-				const token = Tempo.getSymbol(name);								// get the symbol for this {name}
-				const customs = snippet?.[token as keyof Snippet]?.source ?? snippet?.[name as keyof Snippet]?.source;
-				const globals = Tempo.#global.parse.snippet[token as keyof Snippet]?.source ?? Tempo.#global.parse.snippet[name as keyof Snippet]?.source;
-				const layout = Layout[token as keyof Layout];			// get resolution source (layout)
-
-				let res = customs ?? globals ?? layout;						// get the snippet/layout source
-
-				if (isNullish(res) && name.includes('.')) {				// if no definition found, try fallback
-					const prefix = name.split('.')[0];								// get the base token name
-					const pToken = Tempo.getSymbol(prefix);
-					res = snippet?.[pToken as keyof Snippet]?.source ?? snippet?.[prefix as keyof Snippet]?.source
-						?? Snippet[pToken as keyof Snippet]?.source ?? Snippet[prefix as keyof Snippet]?.source
-						?? Layout[pToken as keyof Layout];
-				}
-
-				if (res && name.includes('.')) {										// wrap dotted extensions for identification
-					const safeName = name.replace(/\./g, '_');
-					if (!res.startsWith(`(?<${safeName}>`))
-						res = `(?<${safeName}>${res})`;
-				}
-
-				return (isNullish(res) || res === match)						// if no definition found,
-					? match																						// return the original match
-					: matcher(res, depth + 1);												// else recurse to see if snippet contains embedded "{}" pairs
-			});
-		}
-
-		layout = matcher(layout);																// initiate the layout-parse
-
-		return new RegExp(`^(${layout})$`, 'i');								// translate the source into a regex
+		return compileRegExp(layout, Tempo.#global, snippet as any);
 	}
 
 	/** Compares two `Tempo` instances or date-time values. */
@@ -931,7 +841,7 @@ export class Tempo implements TempoBrand {
 	static get instant() { return Temporal.Instant.fromEpochNanoseconds(this.now()) }
 
 	/** static Tempo.terms (registry) */
-	static get terms(): Secure<Omit<t.TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<t.TermPlugin, 'define' | 'resolve'>> {
+	static get terms(): Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>> {
 		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => rest);
 		// `delegate` returns an array-like proxy that also supports string lookups; use
 		// an `unknown` bridge to assert the combined intersection type so the compiler
@@ -941,7 +851,7 @@ export class Tempo implements TempoBrand {
 				return list.find(t => t.key === key || t.scope === key);
 			}
 			return undefined;
-		}) as unknown as Secure<Omit<t.TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<t.TermPlugin, 'define' | 'resolve'>>;
+		}) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
 	}
 
 	/** static Tempo.formats (registry) */
@@ -1004,7 +914,7 @@ export class Tempo implements TempoBrand {
 
 	static {																									// Static initialization block to sequence the bootstrap phase
 		// Define the reactive register hook
-		getRuntime().setHook(sym.$Register, (plugin: t.Plugin | t.Plugin[]) => {
+		getRuntime().setHook(sym.$Register, (plugin: Plugin | Plugin[]) => {
 			if (!Tempo.isExtending) Tempo.extend(plugin)
 		});
 
@@ -1147,6 +1057,17 @@ export class Tempo implements TempoBrand {
 				const skip = [this.#local.parse.format, this.#local.parse.term, this.#local.parse.result]
 					.filter(isDefined);
 				this.#zdt = this.#parse(this.#tempo as t.DateTime, this.#anchor);
+				if (isUndefined(this.#zdt)) {
+					this.#errored = true;
+					const msg = `Tempo parse returned undefined for: ${String(this.#tempo)}`;
+					if (this.#local.config.catch === true) {
+						Tempo.#dbg.error(this.#local.config, msg);
+						this.#zdt = this.#now.toZonedDateTimeISO('UTC');
+					} else {
+						Tempo.#dbg.error(this.#local.config, msg);
+						throw new Error(msg);
+					}
+				}
 				secure(this.#local.config);
 				secure(this.#local.parse, new WeakSet(skip));
 			} catch (err) {
@@ -1530,11 +1451,6 @@ export namespace Tempo {
 	export interface BaseOptions extends t.Internal.BaseOptions { }
 	export type Options = t.Options;
 
-	export type TermPlugin = t.TermPlugin;
-	export type Plugin = t.Plugin;
-	export type Module = t.Module;
-	export type Extension = t.Extension;
-
 	/** Configuration to use for #until() and #since() argument */
 	export type Unit = t.Unit;
 	export type Until = t.Until;
@@ -1547,8 +1463,6 @@ export namespace Tempo {
 	export type Format = t.Format;
 	export type FormatRegistry = t.FormatRegistry;
 	export type FormatType<K extends PropertyKey> = t.FormatType<K>;
-
-	export type Terms = t.Terms;
 
 	export type Modifier = t.Modifier;
 	export type Relative = t.Relative;

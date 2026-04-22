@@ -44,7 +44,6 @@ export type Options = Prettify<{ [K in keyof Internal.BaseOptions]?: Internal.Ba
  * Every attempt to resolve an input to a Tempo should always be checked with .isValid before continuing.
  * Otherwise unpredictable behaviour is likely.
  */
-export type { Plugin, Module, Extension };
 
 /** Configuration to use for #until() and #since() argument */
 export type DateTimeUnit = Temporal.DateUnit | Temporal.TimeUnit
@@ -109,8 +108,6 @@ export type Format = enums.Format;
 /** Enum registry of format strings */
 export type FormatRegistry = enums.FormatEnum;
 export type FormatType<K extends PropertyKey> = enums.FormatType<K>;
-
-export type { Range, TermPlugin, ResolvedRange, Terms };
 
 export type WEEKDAY = enums.WEEKDAY
 export type WEEKDAYS = enums.WEEKDAYS
@@ -227,7 +224,7 @@ export namespace Internal {
 	}
 
 	/** drop the parse-only Options */
-	export type OptionsKeep = Omit<BaseOptions, "mdyLocales" | "mdyLayouts" | "pivot" | "snippet" | "layout" | "event" | "period" | "value">
+	export type OptionsKeep = Omit<BaseOptions, "mdyLocales" | "mdyLayouts" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
 
 	/** Instance configuration derived from supply, storage, and discovery. */
 	export interface Config extends Required<Omit<OptionsKeep, "formats">> {

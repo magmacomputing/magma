@@ -2,6 +2,7 @@ import { markConfig } from '#library/symbol.library.js';
 import { getRuntime } from './support/tempo.runtime.js';
 import { init, extendState } from './support/tempo.init.js';
 import { ParseEngine } from './plugin/module/module.parse.js';
+import { setPatterns } from './support/tempo.util.js';
 import type { DateTime, Options, Internal } from './tempo.type.js';
 
 export * from './plugin/module/module.parse.js';
@@ -30,6 +31,9 @@ export function parse(value: DateTime, options: Options = {}): Temporal.ZonedDat
 
 	// Apply options
 	extendState(state, localOptions);
+
+	// Compile RegEx patterns
+	setPatterns(state);
 
 	// Execute the parse
 	return ParseEngine.parse(state, value);

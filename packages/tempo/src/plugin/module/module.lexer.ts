@@ -21,11 +21,20 @@ namespace Lexer {
 function num(groups: Record<string, string | number>) {
 	return ownEntries(groups)
 		.reduce((acc: Record<string, number>, [key, val]: [string, any]) => {
-			const low = isString(val) ? val.toLowerCase() : '';
-			if (Number.isFinite(Number(val)))
+			if (Number.isFinite(Number(val))) {
 				acc[key] = Number(val);
-			else if (low in enums.NUMBER)
+				return acc;
+			}
+
+			const resolved = prefix(val);
+			const low = isString(resolved) ? resolved.toLowerCase() : '';
+
+			if (low in enums.NUMBER)
 				acc[key] = enums.NUMBER[low as t.Number];
+			else if (resolved in enums.MONTH)
+				acc[key] = enums.MONTH[resolved as t.MONTH];
+			else if (resolved in enums.WEEKDAY)
+				acc[key] = enums.WEEKDAY[resolved as t.WEEKDAY];
 
 			return acc;
 		}, {} as Record<string, number>);
@@ -37,7 +46,7 @@ export function prefix<T extends t.WEEKDAY | t.MONTH>(str: any): T {
 	if (isString(value)) {
 		const low = value.toLowerCase();
 		const match = Object.keys(enums.NUMBER).find(key => key.startsWith(low));
-		if (match) return enums.NUMBER[match as t.Number] as any;
+		if (match) return match as any;
 
 		// search in weekdays and months
 		for (const dict of [enums.WEEKDAY, enums.MONTH]) {
@@ -136,7 +145,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 
 	let { year, month, day } = num({
 		year: yy ?? dateTime.year,
-		month: mm ?? dateTime.month,
+		month: prefix(mm ?? dateTime.month),
 		day: dd ?? dateTime.day,
 	} as any);
 

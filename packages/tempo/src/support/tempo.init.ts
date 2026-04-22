@@ -6,7 +6,7 @@ import { markConfig } from '#library/symbol.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
-import { setProperty, hasOwn, create, collect } from './tempo.util.js';
+import { setProperty, hasOwn, create, collect, setPatterns } from './tempo.util.js';
 import { sym, Token } from './tempo.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
@@ -88,11 +88,16 @@ export function extendState(state: any, options: t.Options) {
 
 				const rule = state.parse[optKey];
 				if (['snippet', 'layout'].includes(optKey)) {
-					collect(rule, arg.value, (v: any) =>
-						optKey === 'snippet'
-							? isRegExp(v) ? v : new RegExp(v)
-							: isRegExp(v) ? v.source : v
-					)
+					collect(rule, arg.value, (v: any) => {
+						if (optKey === 'snippet') {
+							const pattern = isRegExp(v) ? v.source : String(v);
+							// 🛡️ Security Check: Prevent catastrophic backtracking and malicious patterns
+							if (pattern.length > 500) throw new Error(`[Tempo#extend] Snippet pattern too long (max 500 chars).`);
+							if (Match.backtrack.test(pattern)) throw new Error(`[Tempo#extend] Snippet contains suspicious nested quantifiers.`);
+							return new RegExp(pattern);
+						}
+						return isRegExp(v) ? v.source : v;
+					});
 				} else {
 					asArray(arg.value).forEach(elm => {
 						if (isObject(elm)) Object.assign(rule, elm);
@@ -104,7 +109,9 @@ export function extendState(state: any, options: t.Options) {
 
 			case 'timeZone': {
 				const zone = String(arg.value).toLowerCase();
-				setProperty(state.config, 'timeZone', enums.TIMEZONE[zone] ?? arg.value);
+				const resolvedZone = enums.TIMEZONE[zone] ?? arg.value;
+				setProperty(state.config, 'timeZone', resolvedZone);
+				setProperty(state.config, 'sphere', getHemisphere(resolvedZone));
 				break;
 			}
 
@@ -116,9 +123,11 @@ export function extendState(state: any, options: t.Options) {
 				setProperty(state.config, 'locale', String(arg.value));
 				break;
 
-			case 'pivot':
-				state.parse.pivot = Number(arg.value);
+			case 'pivot': {
+				const v = Number(arg.value);
+				if (Number.isInteger(v) && v >= 0) state.parse.pivot = v;
 				break;
+			}
 
 			case 'mode':
 				state.parse.mode = String(arg.value);
@@ -129,6 +138,8 @@ export function extendState(state: any, options: t.Options) {
 				break;
 		}
 	});
+
+	setPatterns(state);
 
 	return state;
 }

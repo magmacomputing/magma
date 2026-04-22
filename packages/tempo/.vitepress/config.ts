@@ -35,6 +35,7 @@ export default defineConfig({
         text: 'Core Concepts',
         items: [
           { text: 'Configuration', link: '/doc/tempo.config' },
+          { text: 'Smart Parsing', link: '/doc/tempo.parse' },
           { text: 'Modularity', link: '/doc/tempo.modularity' },
           { text: 'Layout Patterns', link: '/doc/tempo.layout' },
           { text: 'Terms System', link: '/doc/tempo.term' },

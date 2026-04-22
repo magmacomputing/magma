@@ -1,7 +1,10 @@
 import { sym, Token } from './tempo.symbol.js';
-import { asType, isSymbol, isUndefined, isString } from '#library/type.library.js';
-import { ownEntries } from '#library/primitive.library.js';
+import { isSymbol, isUndefined, isString, isRegExp, isNullish, isRegExpLike } from '#library/type.library.js';
+import { ownEntries, ownKeys } from '#library/primitive.library.js';
 import { getRuntime } from './tempo.runtime.js';
+import { Match, Snippet, Layout } from './tempo.default.js';
+import enums from './tempo.enum.js';
+import type * as t from '../tempo.type.js';
 
 /** @internal set a mutable, enumerable property on a target */
 export const setProperty = <T>(target: object, key: PropertyKey, value: T) =>
@@ -38,12 +41,12 @@ export function getSymbol(key?: string | symbol): symbol {
 		return (Token as any)[key as string] ??= Symbol(description);
 	}
 
-	return (Token as any)[key!] ?? (sym as any)[key!] ?? Symbol.for(key as string);
+	return (Token as any)[key!] ?? (sym as any)[key!] ?? Symbol.for(`$Tempo.${key as string}`);
 }
 
 /** @internal helper to normalize snippet/layout Options into the target Config */
 export function collect(target: Record<symbol, any>, value: any, convert: (v: any) => any) {
-	const itm = asType(value);
+	const itm = { type: Object.prototype.toString.call(value).slice(8, -1), value }; // inline asType to avoid dependency loop if needed, but we have it imported above actually
 
 	switch (itm.type) {
 		case 'Object':
@@ -73,3 +76,89 @@ export function getLargestUnit(list: any[]): string {
 	return 'nanosecond';
 }
 
+/** @internal translates {layout} into an anchored, case-insensitive RegExp. */
+export function compileRegExp(layout: string | RegExp, state: t.Internal.State, snippet?: Snippet) {
+	// helper function to replace {name} placeholders with their corresponding snippets
+	const matcher = (source: string, d = 0): string => {
+		if (d > 10) return source;													// prevent infinite recursion
+
+		if (source.startsWith('/') && source.endsWith('/'))
+			source = source.substring(1, source.length - 1);			// remove the leading/trailing "/"
+		if (source.startsWith('^') && source.endsWith('$'))
+			source = source.substring(1, source.length - 1);			// remove the leading/trailing anchors (^ $)
+
+		return source.replaceAll(new RegExp(Match.braces), (match, name) => {	// iterate over "{}" pairs in the source string
+			const token = getSymbol(name);								// get the symbol for this {name}
+			const customs = snippet?.[token as keyof Snippet]?.source ?? snippet?.[name as keyof Snippet]?.source;
+			const globals = state.parse.snippet[token as keyof Snippet]?.source ?? state.parse.snippet[name as keyof Snippet]?.source;
+			const defaultLayout = Layout[token as keyof typeof Layout];	// get resolution source (layout)
+
+			let res = customs ?? globals ?? defaultLayout;								// get the snippet/layout source
+
+			if (isNullish(res) && name.includes('.')) {						// if no definition found, try fallback
+				const prefix = name.split('.')[0];									// get the base token name
+				const pToken = getSymbol(prefix);
+				res = snippet?.[pToken as keyof Snippet]?.source ?? snippet?.[prefix as keyof Snippet]?.source
+					?? state.parse.snippet[pToken as keyof typeof Snippet]?.source ?? state.parse.snippet[prefix as keyof typeof Snippet]?.source
+					?? Layout[pToken as keyof typeof Layout];
+			}
+
+			if (res && name.includes('.')) {											// wrap dotted extensions for identification
+				const safeName = name.replace(/\./g, '_');
+				if (!res.startsWith(`(?<${safeName}>`))
+					res = `(?<${safeName}>${res})`;
+			}
+
+			return (isNullish(res) || res === match)							// if no definition found,
+				? match																							// return the original match
+				: matcher(res, d + 1);													// else recurse to see if snippet contains embedded "{}" pairs
+		});
+	};
+
+	try {
+		const source = isRegExp(layout) ? layout.source : layout;
+		const expanded = matcher(source);
+		return new RegExp(`^(${expanded})$`, 'i');
+	} catch (e: any) {
+		return new RegExp(`^${Match.escape(layout as string)}$`, 'i');
+	}
+}
+
+/** @internal build RegExp patterns into the state */
+export function setPatterns(state: t.Internal.State) {
+	const snippet = state.parse.snippet;
+
+	// 1. ensure numeric snippets are current
+	if (enums?.NUMBER) {
+		const keys = Object.keys(enums.NUMBER).map(w => Match.escape(w));			// escape each key
+		const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a, b) => b.length - a.length).join('|')})`);
+		snippet[Token.nbr] = nbr;
+		snippet[Token.mod] = new RegExp(`((?<mod>${Match.modifier.source})?${nbr.source}? *)`);
+		snippet[Token.afx] = new RegExp(`((s)? (?<afx>${Match.affix.source}))?${snippet[Token.sep].source}?`);
+	}
+
+	// 2. build ignore pattern
+	const ignores = ownKeys(state.parse.ignore, true);
+	if (!isEmpty(ignores)) {
+		const words = ignores
+			.filter(isString)
+			.map(w => Match.escape(w.toLowerCase()))
+			.join('|');
+		state.parse.ignorePattern = new RegExp(`\\b(${words})\\b`, 'gi');
+	} else {
+		delete state.parse.ignorePattern;
+	}
+
+	// ensure we have our own Map to mutate
+	state.parse.pattern = new Map(state.parse.pattern);
+
+	// 3. build the patterns
+	ownEntries(state.parse.layout).forEach(([key, layout]) => {
+		const symbol = getSymbol(key);
+		const compiled = compileRegExp(layout, state, snippet);
+		state.parse.pattern.set(symbol, compiled);
+		// console.log(`DEBUG Compiled [${String(symbol)}]:`, compiled.source.substring(0, 50) + '...');
+	});
+}
+
+const isEmpty = (v: any) => !v || (Array.isArray(v) && v.length === 0) || (typeof v === 'object' && Object.keys(v).length === 0);

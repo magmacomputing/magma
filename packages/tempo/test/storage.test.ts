@@ -13,7 +13,7 @@ describe('Tempo storage functionality', () => {
 		delete process.env[customKey];
 		delete process.env[testKey];
 		// Reset global registries and runtime state
-		registryReset();
+		Tempo.init();
 	})
 
 	it('should write to and read from a custom storage key', () => {

@@ -1,24 +1,33 @@
-# Tempo
+<div style="display: flex; align-items: stretch; gap: 24px; margin-bottom: 24px;">
+  <img src="./img/logo.svg" width="90" height="90" alt="Tempo Logo">
+  <div style="display: flex; flex-direction: column; height: 90px;">
+    <div style="height: 45px; display: flex; align-items: flex-start;">
+      <h1 style="margin: 0; color: #3498db; border-bottom: none; padding: 0; line-height: 1;">Tempo</h1>
+    </div>
+    <div style="height: 45px; display: flex; align-items: center;">
+      <div style="font-weight: 600; font-size: 1.1rem; color: #2c3e50; line-height: 1.2;">The Professional Date-Time Library for the Temporal API</div>
+    </div>
+  </div>
+</div>
 
-**The Professional Date-Time Library for the Temporal API**
-
-<img src="./img/logo.svg" width="120" alt="Tempo logo">
 
 **Tempo** is a premium, high-performance wrapper for the ECMAScript `Temporal` API. Designed for professionals, it combines **immutable** state-management with a **fluent**, natural-language engine. It is the modern, type-safe successor to legacy libraries like Moment.js and Luxon.
 
-<div align="center">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Temporal](https://img.shields.io/badge/Temporal-Stage%204-green)](https://tc39.es/proposal-temporal/)
-[![TypeScript Ready](https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Native ESM](https://img.shields.io/badge/Native-ESM-green)](https://nodejs.org/api/esm.html)
-[![Documentation](https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress)](https://magmacomputing.github.io/magma/)
 
+<div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 32px 0;">
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://tc39.es/proposal-temporal/"><img src="https://img.shields.io/badge/Temporal-Stage%204-green" alt="Temporal"></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript" alt="TypeScript Ready"></a>
+  <a href="https://nodejs.org/api/esm.html"><img src="https://img.shields.io/badge/Native-ESM-green" alt="Native ESM"></a>
+  <a href="https://magmacomputing.github.io/magma/"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress" alt="Documentation"></a>
 </div>
+
+
 
 ---
 
-### ⚡ Quick Start
+## ⚡ Quick Start
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
 
@@ -36,7 +45,7 @@ Tempo.ticker({ seconds: 1 }, (t) => {
 
 ---
 
-### 📦 Installation
+## 📦 Installation
 
 ```bash
 npm install @magmacomputing/tempo       # npm
@@ -70,7 +79,7 @@ For granular "Lite" builds, see the [Full Installation Guide](https://magmacompu
 
 ---
 
-### ✨ Why Tempo?
+## ✨ Why Tempo?
 *   **🏗️ Future Standard**: Built natively on the TC39 `Temporal` proposal. Inherit the reliability of the future standard.
 *   **🗣️ Natural Language**: Resolve complex terms like `#friday.last` or "two days ago" with zero configuration.
 *   **🔄 Cycle Persistence**: Shift by semantic terms (Quarters, Seasons) while preserving your relative day-of-period offset.
@@ -80,7 +89,7 @@ For granular "Lite" builds, see the [Full Installation Guide](https://magmacompu
 
 ---
 
-### 📚 Documentation
+## 📚 Documentation
 
 For a deeper dive into the API, architecture, and advanced features:
 
@@ -89,7 +98,7 @@ For a deeper dive into the API, architecture, and advanced features:
 
 ---
 
-### 💬 Contact & Support
+## 💬 Contact & Support
 
 1. **Bug Reports & Features**: Please open an [Issue](https://github.com/magmacomputing/magma/issues).
 2. **Questions & Ideas**: Start a thread in [Discussions](https://github.com/magmacomputing/magma/discussions).
@@ -97,7 +106,7 @@ For a deeper dive into the API, architecture, and advanced features:
 
 ---
 
-### 🗳️ Feedback & Reactions
+## 🗳️ Feedback & Reactions
 
 [🚀 Premium!](https://github.com/magmacomputing/magma/issues/new?title=Feedback:%20🚀%20Premium!) &nbsp; | &nbsp; 
 [⭐ Loving it!](https://github.com/magmacomputing/magma/issues/new?title=Feedback:%20⭐%20Loving%20it!) &nbsp; | &nbsp; 
@@ -106,6 +115,6 @@ For a deeper dive into the API, architecture, and advanced features:
 
 ---
 
-### ⚖️ License
+## ⚖️ License
 
 Distributed under the MIT License. See `LICENSE` for more information.

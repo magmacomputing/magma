@@ -8,7 +8,7 @@ import { DURATIONS } from '../../support/tempo.enum.js'
 import { defineExtension, attachStatics } from '../plugin.util.js'
 import { sym } from '../../support/tempo.symbol.js';
 import type { Tempo } from '../../tempo.class.js'
-import type { TempoType } from '../plugin.type.js'
+import type { Extension, TempoType } from '../plugin.type.js'
 
 declare module '../../tempo.class.js' {
 	namespace Tempo {
@@ -353,7 +353,7 @@ class TickerInstance implements Ticker.Descriptor {
 /**
  * # TickerModule
  */
-export const TickerModule: Tempo.Extension = defineExtension({
+export const TickerModule: Extension = defineExtension({
 	name: 'TickerModule',
 	install(this: Tempo, TempoClass: TempoType) {
 		attachStatics(TempoClass, {

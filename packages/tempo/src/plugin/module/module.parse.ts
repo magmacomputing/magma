@@ -4,13 +4,15 @@ import { asArray, asInteger, isNumeric } from '#library/coercion.library.js';
 import { instant } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 
-import type { Tempo } from '../../tempo.class.js';
+import { sym, enums, isTempo, Match, getRuntime } from '../../support/support.index.js';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './module.lexer.js';
-import { sym, isTempo, Match, getRuntime } from '../../support/support.index.js';
 import { resolveTermMutation, resolveTermValue } from './module.term.js';
 import { compose } from './module.composer.js';
-import { defineInterpreterModule } from '../plugin.util.js';
+
 import { getRange, getTermRange } from '../term.util.js';
+import { defineInterpreterModule } from '../plugin.util.js';
+import type { Range, ResolvedRange } from '../plugin.type.js';
+import type { Tempo } from '../../tempo.class.js';
 import * as t from '../../tempo.type.js';
 
 /**
@@ -88,8 +90,8 @@ const _ParseEngine = {
 
 				if (tempo === term) {
 					const range = termObj.define.call(state as any, false, today);
-					const list = isUndefined(range) ? [] : asArray(range as t.Range | t.Range[]);
-					const current = getTermRange(state as any, list, false, today) as t.ResolvedRange | undefined;
+					const list = isUndefined(range) ? [] : asArray(range as Range | Range[]);
+					const current = getTermRange(state as any, list, false, today) as ResolvedRange | undefined;
 					if (current?.start) return current.start.toDateTime().withTimeZone(tz).withCalendar(cal);
 				}
 			}
@@ -264,8 +266,7 @@ const _ParseEngine = {
 
 		let zdt = dateTime as any;
 		const anchorTime = zdt.toPlainTime();
-		const map = state.parse.pattern;
-		for (const [symKey, pat] of map) {
+		for (const [symKey, pat] of state.parse.pattern) {
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
 			if (isEmpty(groups)) continue;
 
@@ -458,7 +459,8 @@ const _ParseEngine = {
 
 		if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {
 			const mm = prefix(groups["mm"] as t.MONTH);
-			if (TempoClass) groups["mm"] = (TempoClass as any).MONTH[mm as t.MONTH]!.toString().padStart(2, "0");
+			if (TempoClass) groups["mm"] = (TempoClass as any).MONTH[mm as t.MONTH]!.toString().padStart(2, '0');
+			else if (enums.MONTH[mm as t.MONTH]) groups["mm"] = enums.MONTH[mm as t.MONTH]!.toString().padStart(2, '0');
 		}
 
 		return dateTime;
