@@ -17,8 +17,6 @@ To get around freezing, you might try taking all property descriptors, wiping th
 Tempo achieves lazy evaluation in $O(1)$ time using a **Delegator Proxy** that memoizes results back onto the target object.
 
 ```javascript
-// The O(1) approach - Extremely fast, zero overhead
-
 #setLazy(target, name, defineFunction) {
     const get = () => {
         const value = defineFunction.call(this); // Evaluate the value

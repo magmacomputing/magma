@@ -28,7 +28,8 @@
     "**/module.*.js",
     "**/module.*.ts",
     "**/tempo.index.js",
-    "**/tempo.parse.js"
+    "./dist/discrete/discrete.parse.js",
+    "./dist/discrete/discrete.format.js"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
@@ -231,6 +232,7 @@
     "@rollup/plugin-alias": "^6.0.0",
     "cross-env": "^7.0.3",
     "magic-string": "^0.30.21",
+    "markdown-it-mathjax3": "^4.3.2",
     "typedoc": "^0.28.19",
     "typedoc-plugin-markdown": "^4.11.0",
     "vitepress": "^1.6.4"

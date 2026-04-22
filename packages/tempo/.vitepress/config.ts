@@ -10,6 +10,9 @@ export default defineConfig({
   base: '/magma/',
   title: "Tempo",
   description: "The Professional Date-Time Library for Temporal",
+  markdown: {
+    math: true
+  },
   themeConfig: {
     logo: '/logo.svg',
     search: {
