@@ -1,7 +1,7 @@
 /**
  * # Magma Library
  * This is a secondary entry point for the "Magma Utility Stack".
- * It provides curated access to the specific utilities Tempo uses under the hood.
+ * It provides curated access to the specific utilities Magma uses under the hood.
  */
 
 export { Pledge } from '#library/pledge.class.js';

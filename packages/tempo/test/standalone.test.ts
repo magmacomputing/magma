@@ -1,14 +1,22 @@
 import { format } from '#tempo/format';
 import { parse } from '#tempo/parse';
-import { init } from '#tempo/support';
+import { init, getRuntime } from '#tempo/support';
 
 
 describe('Tempo: Standalone Utilities', () => {
+    let prevState: any;
 
     beforeAll(() => {
+        // Save current state to restore later
+        prevState = { ...getRuntime().state?.config };
         // Initialize the standard patterns and layouts for the standalone parser
         // Force UTC for deterministic testing of Instant projection
         init({ timeZone: 'UTC' });
+    });
+
+    afterAll(() => {
+        // Restore previous state
+        init(prevState);
     });
 
     describe('format()', () => {

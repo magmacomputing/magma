@@ -25,11 +25,11 @@
   "sideEffects": [
     "**/temporal.polyfill.js",
     "**/*-polyfill.ts",
+    "**/tempo.index.js",
     "**/module.*.js",
     "**/module.*.ts",
-    "**/tempo.index.js",
-    "./dist/discrete/discrete.parse.js",
-    "./dist/discrete/discrete.format.js"
+    "**/discrete.*.js",
+    "**/discrete.*.ts"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
@@ -124,14 +124,6 @@
     "./extend/*": {
       "types": "./dist/plugin/extend/extend.*.d.ts",
       "import": "./dist/plugin/extend/extend.*.js"
-    },
-    "./module/parse": {
-      "types": "./dist/discrete/discrete.parse.d.ts",
-      "import": "./dist/discrete/discrete.parse.js"
-    },
-    "./module/format": {
-      "types": "./dist/discrete/discrete.format.d.ts",
-      "import": "./dist/discrete/discrete.format.js"
     },
     "./module/*": {
       "types": "./dist/plugin/module/module.*.d.ts",

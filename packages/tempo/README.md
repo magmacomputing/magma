@@ -37,18 +37,18 @@
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
 
-// 🎯 Natural Language Parsing
-const event = new Tempo('next Friday 3pm');
+// 🎯 Natural Language Parsing (Deterministic anchor)
+const event = new Tempo('next Friday 3pm', { anchor: '2026-10-15' });
 
 // 🔄 Fluent Mutations (Immutable)
 const reminder = event.add({ hours: 2 }).set({ minute: 0 });
 
 // ⏳ Comparative Durations
-const diff = event.until('xmas');
-console.log(diff.iso); // e.g. P3W2D
+const diff = event.until('2026-12-25');
+console.log(diff.iso); // P2M2D
 
 // 📝 Beautiful Formatting
-console.log(event.format('{mon} {day}, {yyyy}')); // e.g. Oct 24, 2026
+console.log(event.format('{mon} {day}, {yyyy}')); // October 23, 2026
 ```
 
 ---

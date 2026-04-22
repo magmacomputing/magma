@@ -1,3 +1,4 @@
+import '#library/temporal.polyfill.js';
 import { pad } from '#library/string.library.js';
 import { ifNumeric } from '#library/coercion.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isUndefined, isDefined } from '#library/type.library.js';
@@ -69,7 +70,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 
 	const formats = config?.formats ?? enums.FORMAT;
 
-	let template = (isString(fmt) && formats && (formats as any).has(fmt as string))
+	let template = (isString(fmt) && formats && (typeof (formats as any).has === 'function' ? (formats as any).has(fmt as string) : Object.prototype.hasOwnProperty.call(formats, fmt as string)))
 		? (formats as Record<string, string>)[fmt as string]
 		: String(fmt);
 
@@ -82,7 +83,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 		}
 	}
 
-	const result = template.replaceAll(new RegExp(Match.braces), (_match: string, token: string) => {
+	const result = template.replace(new RegExp(Match.braces, 'g'), (_match: string, token: string) => {
 		switch (token) {
 			case 'yyyy': return pad(zdt.year, 4);
 			case 'yy': return pad(zdt.year % 100);
@@ -98,7 +99,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 			case 'www': return enums.WEEKDAY.keyOf(zdt.dayOfWeek as any);
 			case 'ww': return pad(zdt.weekOfYear);
 			case 'hh': return pad(zdt.hour);
-			case 'HH': return pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12);
+			case 'HH': return (zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12).toString();
 			case 'mer': return zdt.hour >= 12 ? 'pm' : 'am';
 			case 'MER': return zdt.hour >= 12 ? 'PM' : 'AM';
 			case 'mi': return pad(zdt.minute);

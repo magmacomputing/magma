@@ -81,20 +81,29 @@ Tempo.extend(FormatModule);
 | :--- | :--- | :--- |
 | `{yyyy}` | 4-digit Year | `2026` |
 | `{yy}` | 2-digit Year | `26` |
+| `{yw}` | Year of Week (ISO) | `2026` |
+| `{yyww}` | Year & Week (ISO) | `202617` |
 | `{mon}` | Full Month Name | `October` |
 | `{mmm}` | Short Month Name | `Oct` |
 | `{mm}` | 2-digit Month | `10` |
 | `{dd}` | 2-digit Day | `24` |
+| `{day}` | Unpadded Day | `24` (or `9`) |
 | `{wkd}` | Full Weekday Name | `Saturday` |
 | `{www}` | Short Weekday Name | `Sat` |
+| `{dow}` | Day of Week (1-7) | `6` |
 | `{hh}` | 2-digit Hour (24h) | `15` |
 | `{HH}` | 12-hour clock | `3` |
 | `{mer}` | am/pm marker | `pm` |
 | `{MER}` | AM/PM marker | `PM` |
 | `{mi}` | Minutes | `30` |
 | `{ss}` | Seconds | `45` |
+| `{hhmiss}` | Compact Time (24h) | `153045` |
+| `{ms}` | 3-digit Milliseconds | `123` |
+| `{us}` | 3-digit Microseconds | `456` |
+| `{ns}` | 3-digit Nanoseconds | `789` |
 | `{ff}` | Fractional Seconds | `123456789` |
 | `{ts}` | Unix Timestamp | `1792843200000` |
+| `{nano}` | Nanosecond Timestamp | `1792843200000000000` |
 | `{tz}` | Time Zone ID | `Australia/Sydney` |
 
 ### 🔄 Automatic Meridiem

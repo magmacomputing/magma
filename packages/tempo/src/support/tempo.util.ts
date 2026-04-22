@@ -87,7 +87,7 @@ export function compileRegExp(layout: string | RegExp, state: t.Internal.State, 
 		if (source.startsWith('^') && source.endsWith('$'))
 			source = source.substring(1, source.length - 1);			// remove the leading/trailing anchors (^ $)
 
-		return source.replaceAll(new RegExp(Match.braces), (match, name) => {	// iterate over "{}" pairs in the source string
+		return source.replace(new RegExp(Match.braces, 'g'), (match, name) => {	// iterate over "{}" pairs in the source string
 			const token = getSymbol(name);								// get the symbol for this {name}
 			const customs = snippet?.[token as keyof Snippet]?.source ?? snippet?.[name as keyof Snippet]?.source;
 			const globals = state.parse.snippet[token as keyof Snippet]?.source ?? state.parse.snippet[name as keyof Snippet]?.source;
@@ -128,6 +128,10 @@ const isEmpty = (v: any) => !v || (Array.isArray(v) && v.length === 0) || (typeo
 
 /** @internal build RegExp patterns into the state */
 export function setPatterns(state: t.Internal.State) {
+	// ensure we have our own isolated mutable containers before mutation
+	state.parse.snippet = { ...state.parse.snippet };
+	state.parse.pattern = new Map(state.parse.pattern);
+
 	const snippet = state.parse.snippet;
 
 	// 1. ensure numeric snippets are current
@@ -150,9 +154,6 @@ export function setPatterns(state: t.Internal.State) {
 	} else {
 		delete state.parse.ignorePattern;
 	}
-
-	// ensure we have our own Map to mutate
-	state.parse.pattern = new Map(state.parse.pattern);
 
 	// 3. build the patterns
 	ownEntries(state.parse.layout).forEach(([key, layout]) => {

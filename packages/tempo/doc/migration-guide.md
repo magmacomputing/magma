@@ -54,8 +54,8 @@ import { parse } from '@magmacomputing/tempo/parse';
 import { format } from '@magmacomputing/tempo/format';
 ```
 
-### ⚠️ Deprecated Paths
-We have reorganized the internal file structure to optimize for standalone usage. The following internal paths are now **deprecated** and will be removed in a future release:
+### ⚠️ Removed Paths
+We have reorganized the internal file structure to optimize for standalone usage. The following internal paths have been **removed** from the public export map in v2.4.0:
 
 *   ❌ `@magmacomputing/tempo/module/parse`
 *   ❌ `@magmacomputing/tempo/module/format`
