@@ -20,6 +20,21 @@ console.log(zdt.toString()); // 2026-04-28T15:00:00+10:00[Australia/Sydney]
 *   **Temporal Native**: Perfect for projects that already use native `Temporal` objects but need a friendlier input layer for users.
 *   **Strict by Default**: The standalone function defaults to `mode: 'strict'`, ensuring that it won't "guess" if the input is ambiguous.
 
+### ⚠️ Standalone vs. Class-Based
+It is important to understand the trade-offs when using the lightweight `parse()` function:
+
+| Feature | Standalone `parse()` | `new Tempo()` Class |
+| :--- | :--- | :--- |
+| **Return Type** | Native `Temporal.ZonedDateTime` | `Tempo` Instance |
+| **Fluent API** | ❌ Native Temporal methods only | ✅ `.add()`, `.set()`, `.format()`, etc. |
+| **Validation** | ❌ No `.isValid` property | ✅ Track success via `.isValid` |
+| **State** | ❌ One-off (Stateless) | ✅ Persistent instance configuration |
+| **Plugins** | ❌ Bypasses class-level plugins | ✅ Full support for `.ticker()`, etc. |
+| **Global Config** | ❌ Configuration per call only | ✅ Configure once via `Tempo.init()` |
+
+> [!TIP]
+> Use **Standalone Parse** for server-side processing or background tasks where bundle size is the priority. Use the **Tempo Class** for UI-heavy applications that need advanced formatting and mutation chains.
+
 ---
 
 ## 🏗️ Class-Based Parsing
