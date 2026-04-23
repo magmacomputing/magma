@@ -1,6 +1,5 @@
 import { looseIndex } from '#library/object.library.js';
-import { secure } from '#library/utility.library.js';
-import { proxify } from '#library/proxy.library.js';
+import { secure, proxify } from '#library/proxy.library.js';
 import { getDateTimeFormat } from '#library/international.library.js';
 
 import { NUMBER, MODE } from './tempo.enum.js';
@@ -81,9 +80,10 @@ export type Snippet = typeof Snippet
  */
 /** @internal Tempo Layout registry */
 export const Layout = looseIndex<symbol, string>()({
-	[Token.dt]: '({dd}{sep}?{mm}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk}))',// calendar, event or slick
+	[Token.dt]: '({dd}{sep}?{mm}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk})|{wkd})',// calendar, event, slick or weekday
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
 	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tzd}?{brk}?',	// calendar/event and clock/period
+	[Token.tmd]: '({tm})(?:(?:{sep}+|T)({dt}))?{tzd}?{brk}?',	// clock/period and calendar/event
 	[Token.dmy]: '({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?',// day-month(-year)
 	[Token.mdy]: '({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?',// month-day(-year)
 	[Token.ymd]: '({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?',// year-month(-day)
@@ -124,6 +124,10 @@ export const Event = looseIndex<string, string | Function>()({
 		// RELATIVE: Offsets the current anchor by one day
 		return this.add({ days: -1 });
 	},
+	'fortnight': function (this: Tempo) {
+		// RELATIVE: Offsets the current anchor by two weeks
+		return this.add({ weeks: 2 });
+	},
 });
 /** @internal Tempo Event type */
 export type Event = typeof Event
@@ -143,6 +147,9 @@ export const Period = looseIndex<string, string | Function>()({
 	'after[ -]?noon': '3:00pm',
 	'evening': '18:00',
 	'night': '20:00',
+	'half[ -]?hour': function (this: Tempo) {
+		return this.add({ minutes: 30 });
+	},
 })
 /** @internal Tempo Period type */
 export type Period = typeof Period

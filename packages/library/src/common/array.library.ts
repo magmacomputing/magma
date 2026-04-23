@@ -1,7 +1,7 @@
-import { asString } from '#library/coercion.library.js';
+import { asString, nullToValue } from '#library/coercion.library.js';
 import { extract, ownEntries } from '#library/primitive.library.js';
 import { stringify } from '#library/serialize.library.js';
-import { isNumber, isDate, isObject, isDefined, isUndefined, isFunction, nullToValue } from '#library/type.library.js';
+import { isNumber, isDate, isObject, isDefined, isUndefined, isFunction } from '#library/assertion.library.js';
 import type { Property } from '#library/type.library.js';
 
 // adapted from https://jsbin.com/insert/4/edit?js,output

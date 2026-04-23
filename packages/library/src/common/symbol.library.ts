@@ -3,7 +3,7 @@
  * These symbols utilize Symbol.for() to ensure consistency across module boundaries.
  */
 
-const sym = {
+export const sym = {
 	/** key to use for identifying the raw target of a Proxy */
 	$Target: Symbol.for('$LibraryTarget'),
 	/** key to trigger full discovery of all lazy properties */
@@ -20,6 +20,8 @@ const sym = {
 	$Register: Symbol.for('$LibraryRegister'),
 	/** key to identify the global serialization registry */
 	$SerializerRegistry: Symbol.for('$LibrarySerializerRegistry'),
+	/** universal key to identify a trusted Class or Instance brand */
+	$Identity: Symbol.for('$LibraryIdentity'),
 } as const;
 
 /** identify and mark a Logify configuration object */
@@ -29,5 +31,3 @@ export function markConfig<T extends object>(obj: T): T {
 
 	return obj;
 }
-
-export default sym;

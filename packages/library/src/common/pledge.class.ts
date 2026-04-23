@@ -2,10 +2,10 @@ import { Logify } from '#library/logify.class.js';
 import { markConfig } from '#library/symbol.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { ifDefined } from '#library/object.library.js';
-import { secure } from '#library/utility.library.js';
+import { secure } from '#library/proxy.library.js';
 import { cleanify } from '#library/serialize.library.js';
 import { Immutable } from '#library/class.library.js';
-import { isEmpty, isObject } from '#library/type.library.js';
+import { isEmpty, isObject } from '#library/assertion.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {

@@ -1,5 +1,6 @@
 import { ownValues } from '#library/primitive.library.js';
-import { isDefined, isPrimitive } from '#library/type.library.js';
+import { isDefined, isPrimitive } from '#library/assertion.library.js';
+import { sym } from '#library/symbol.library.js';
 import type { Secure, ValueOf } from '#library/type.library.js';
 
 /** General utility functions */
@@ -64,13 +65,16 @@ export const getContext = (): Context => {
 }
 
 /** deep-freeze an Array | Object to make it immutable (with recursion guard) */
-export function secure<const T extends object>(obj: T, seen = new WeakSet<object>()) {
-	if (isPrimitive(obj) || Object.isFrozen(obj) || seen.has(obj))
+export function deepFreeze<const T extends object>(obj: T, skip = new WeakSet<object>(), seen = new WeakSet<object>()) {
+	if (isPrimitive(obj) || Object.isFrozen(obj) || seen.has(obj) || skip.has(obj))
+		return obj as Secure<T>;
+
+	if ((obj as any)[sym.$Extensible])
 		return obj as Secure<T>;
 
 	seen.add(obj);
 
-	ownValues(obj as any).forEach(val => secure(val, seen));
+	ownValues(obj as any).forEach(val => deepFreeze(val, skip, seen));
 
 	return Object.freeze(obj) as Secure<T>;
 }

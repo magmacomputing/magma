@@ -1,8 +1,8 @@
 import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
-import { isDefined, isFunction, isString, isUndefined, isNumber } from '#library/type.library.js';
-import { secure } from '#library/utility.library.js';
+import { isDefined, isFunction, isString, isUndefined, isNumber } from '#library/assertion.library.js';
+import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
-import { sym, SCHEMA, getLargestUnit, isTempo, getRuntime } from '#tempo/support';
+import { sym, TermError, SCHEMA, getLargestUnit, isTempo, getRuntime } from '#tempo/support';
 import type { Tempo } from '../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange } from './plugin.type.js';
 import { getHost } from './plugin.util.js';
@@ -161,7 +161,14 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Ra
 
 	const keys = (term as any).groupBy ?? [];
 	if (keys.length > 0) {
-		list = list.filter(r => keys.every((key: string) => r[key] === (t.config as any)[key]));
+		list = list.filter(r => keys.every((key: string) => {
+			if (key === 'sphere') {
+				const valA = String(r[key] ?? '').toLowerCase();
+				const valB = String((t.config as any)[key] ?? '').toLowerCase();
+				return valB.includes(valA);
+			}
+			return r[key] === (t.config as any)[key];
+		}));
 	}
 
 	if (group) {
@@ -264,7 +271,7 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 	// 1. Resolve Template (supporting optional dynamic grouping)
 	let list: Range[] = [];
 	if (!isDefined(template)) {
-		(t.constructor as any)[sym.$termError](t.config, 'template');
+		(t.constructor as any)[TermError](t.config, 'template');
 		return [];
 	}
 
@@ -274,11 +281,23 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 			.join('.');
 
 		list = (template as any)[groupKey] ?? [];
+		if (list.length === 0 && groupBy.includes('sphere')) {
+			const sphereIdx = groupBy.indexOf('sphere');
+			const targetParts = groupKey.split('.');
+			const targetSphere = targetParts[sphereIdx].toLowerCase();
+
+			const bestKey = Object.keys(template).find(k => {
+				const kParts = k.split('.');
+				if (kParts.length !== targetParts.length) return false;
+				return kParts.every((p, i) => i === sphereIdx ? targetSphere.includes(p.toLowerCase()) : p === targetParts[i]);
+			});
+			if (bestKey) list = (template as any)[bestKey];
+		}
 
 		if (list.length === 0) {
 			const missing = groupBy.filter(k => isUndefined(options[k]) && isUndefined(anchor?.[k]) && isUndefined(t.config[k]));
 			const msg = missing.length > 0 ? `Missing grouping criteria: ${missing.join(', ')}` : `No ranges found for group: ${groupKey}`;
-			(t.constructor as any)[sym.$termError](t.config, msg);
+			(t.constructor as any)[TermError](t.config, msg);
 			return [];
 		}
 	} else {

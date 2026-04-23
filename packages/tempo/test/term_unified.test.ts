@@ -88,6 +88,13 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 		expect(t.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
 	});
 
+	it('should support granular sphere matching (e.g. SouthSouthWest)', () => {
+		// Even though ranges are defined for 'south', 'SouthSouthWest' should match it via .includes()
+		const t = new Tempo(testDate, { catch: true, sphere: 'SouthSouthWest' });
+		expect(t.format('{#qtr}')).toBe('Q4');
+		expect(t.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+	});
+
 	describe('Term Range Boundaries (Fluent & Immutable)', () => {
 		it('should return start and end as Tempo instances', () => {
 			const t = new Tempo(testDate, { catch: true, sphere: 'north' });

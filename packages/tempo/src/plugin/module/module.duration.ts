@@ -1,11 +1,11 @@
-import { isString, isObject, isDefined, isUndefined } from '#library/type.library.js';
+import { isString, isObject, isDefined, isUndefined } from '#library/assertion.library.js';
 import { singular } from '#library/string.library.js';
 import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { getRelativeTime } from '#library/international.library.js';
 
 import { defineInterpreterModule, interpret } from '../plugin.util.js';
-import enums from '../../support/tempo.enum.js';
+import { enums } from '#tempo/support';
 import type { Module } from '../plugin.type.js';
 import type { Tempo } from '../../tempo.class.js';
 

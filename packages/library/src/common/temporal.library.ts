@@ -4,7 +4,7 @@
 */
 
 import '#library/temporal.polyfill.js';											// ensure Temporal is available
-import { isNumber } from '#library/type.library.js';
+import { isNumber, isString } from '#library/assertion.library.js';
 
 /** return the current Temporal.Now.instant */
 export function instant() {
@@ -105,3 +105,13 @@ export function toInstant(epochNanoseconds: bigint): Temporal.Instant {
 	return Temporal.Instant.fromEpochNanoseconds(epochNanoseconds);
 }
 
+/**
+ * ## getTemporalIds
+ * Normalize TimeZone and Calendar inputs into a [timeZoneId, calendarId] tuple.
+ */
+export function getTemporalIds(tz: any, cal: any): [string, string] {
+	const tzId = isString(tz) ? tz : (tz as any)?.timeZoneId ?? (tz as any)?.id;
+	const calId = isString(cal) ? cal : (cal as any)?.calendarId ?? (cal as any)?.id;
+
+	return [tzId, calId];
+}

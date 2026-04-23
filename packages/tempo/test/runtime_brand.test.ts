@@ -40,7 +40,6 @@ describe('TempoRuntime Cross-Bundle Adoption', () => {
 				expect(rt).toBe(original);
 				return;
 			}
-			console.warn('Skipping mock adoption test: globalThis bridge is already locked by a different runtime instance.');
 			return;
 		}
 

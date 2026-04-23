@@ -1,5 +1,6 @@
 import { sym, Token } from './tempo.symbol.js';
-import { isSymbol, isUndefined, isString, isRegExp, isNullish, isRegExpLike, asType } from '#library/type.library.js';
+import { asType } from '#library/type.library.js';
+import { isSymbol, isUndefined, isString, isRegExp, isNullish, isObject, isEmpty } from '#library/assertion.library.js';
 import { ownEntries, ownKeys } from '#library/primitive.library.js';
 import { getRuntime } from './tempo.runtime.js';
 import { Match, Snippet, Layout } from './tempo.default.js';
@@ -19,7 +20,7 @@ export const hasOwn = (obj: object, key: string) => Object.hasOwn(obj, key);
 /** @internal create an object based on a prototype */
 export const create = <T extends object>(obj: object, name: string): T => {
 	const entry = proto(obj)[name];
-	if (typeof entry !== 'object' || entry === null) {
+	if (!isObject(entry)) {
 		throw new TypeError(`[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`);
 	}
 	return { ...entry } as T;
@@ -124,7 +125,7 @@ export function compileRegExp(layout: string | RegExp, state: t.Internal.State, 
 	}
 }
 
-const isEmpty = (v: any) => !v || (Array.isArray(v) && v.length === 0) || (typeof v === 'object' && Object.keys(v).length === 0);
+
 
 /** @internal build RegExp patterns into the state */
 export function setPatterns(state: t.Internal.State) {
@@ -138,6 +139,7 @@ export function setPatterns(state: t.Internal.State) {
 	if (enums?.NUMBER) {
 		const keys = Object.keys(enums.NUMBER).map(w => Match.escape(w));			// escape each key
 		const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a, b) => b.length - a.length).join('|')})`);
+
 		snippet[Token.nbr] = nbr;
 		snippet[Token.mod] = new RegExp(`((?<mod>${Match.modifier.source})?${nbr.source}? *)`);
 		snippet[Token.afx] = new RegExp(`((s)? (?<afx>${Match.affix.source}))?${snippet[Token.sep].source}?`);
@@ -145,11 +147,13 @@ export function setPatterns(state: t.Internal.State) {
 
 	// 2. build ignore pattern
 	const ignores = ownKeys(state.parse.ignore, true);
+
 	if (!isEmpty(ignores)) {
 		const words = ignores
 			.filter(isString)
 			.map(w => Match.escape(w.toLowerCase()))
 			.join('|');
+
 		state.parse.ignorePattern = new RegExp(`\\b(${words})\\b`, 'gi');
 	} else {
 		delete state.parse.ignorePattern;
@@ -159,7 +163,7 @@ export function setPatterns(state: t.Internal.State) {
 	ownEntries(state.parse.layout).forEach(([key, layout]) => {
 		const symbol = getSymbol(key);
 		const compiled = compileRegExp(layout, state, snippet);
+
 		state.parse.pattern.set(symbol, compiled);
-		// console.log(`DEBUG Compiled [${String(symbol)}]:`, compiled.source.substring(0, 50) + '...');
 	});
 }

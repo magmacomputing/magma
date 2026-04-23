@@ -1,5 +1,6 @@
 import { distinct, ownKeys, ownEntries } from '#library/primitive.library.js';
-import { asType, getType, isEmpty, isFunction, isPrimitive } from '#library/type.library.js';
+import { asType, getType } from '#library/type.library.js';
+import { isEmpty, isFunction, isPrimitive } from '#library/assertion.library.js';
 import type { Obj, KeyOf, Primitives } from '#library/type.library.js';
 
 /** mutate Object | Array by excluding values with specified primitive 'types' */

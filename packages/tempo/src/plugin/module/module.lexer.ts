@@ -1,9 +1,8 @@
 import '#library/temporal.polyfill.js';
-import { isString, isEmpty, isUndefined, isDefined, isTemporal } from '#library/type.library.js';
+import { isString, isEmpty, isUndefined, isDefined, isTemporal } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { pad, singular } from '#library/string.library.js';
-import { Match } from '../../support/tempo.default.js';
-import enums from '../../support/tempo.enum.js';
+import { Match, enums } from '#tempo/support';
 import * as t from '../../tempo.type.js';
 
 /**

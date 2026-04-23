@@ -1,24 +1,20 @@
 import { looseIndex } from '#library/object.library.js';
+import { sym as lib } from '#library/symbol.library.js';
 
 /** check valid Tempo instance */
-export const isTempo = (tempo?: any): tempo is TempoBrand => Boolean(tempo?.[sym.$isTempo]);
+export const isTempo = (tempo?: any): tempo is TempoBrand => Boolean(tempo?.[sym.$Identity]);
 
 /**
  * Centralized registry for all Tempo-specific Global Symbols.
  * These symbols utilize Symbol.for() to ensure consistency across module boundaries.
- * Tempo-specific symbols are kept here (rather than @magmacomputing/library) to maintain
- * clean separation of concerns.
  */
 
-export const IsTempo: unique symbol = Symbol.for('magmacomputing/tempo/isTempo') as any;
 export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termError') as any;
 
-/** @internal Tempo Symbol Registry */
-export const sym = {
+/** @internal Tempo Symbol Registry (Local Keys) */
+const local = {
 	/** key for Global Discovery of Tempo configuration */		$Tempo: Symbol.for('$Tempo'),
 	/** key for Reactive Plugin Registration */								$Register: Symbol.for('magmacomputing/tempo/register'),
-	/** key for Global Identity Brand for Tempo */						$isTempo: IsTempo,
-	/** key for centralized Term Error dispatching */					$termError:TermError,
 	/** key for Internal Interpreter Service */								$Interpreter: Symbol.for('magmacomputing/tempo/interpreter'),
 	/** key for contextual Error Logging */										$logError: Symbol.for('magmacomputing/tempo/logError'),
 	/** key for contextual Debug Logging */										$logDebug: Symbol.for('magmacomputing/tempo/logDebug'),
@@ -31,11 +27,15 @@ export const sym = {
 	/** branding for explicit PropertyDescriptors */					$Descriptor: Symbol.for('magmacomputing/tempo/descriptor'),
 } as const;
 
-/** @internal Local interface for brand checking without circular imports */
-export interface TempoBrand {
-	[sym.$isTempo]: true;
+/** @internal Unified Symbol Registry (Inherits from #library via Prototype Chain) */
+export const sym = Object.assign(Object.create(lib), local) as typeof lib & typeof local;
+
+/** @internal Local type for brand checking without circular imports */
+export type TempoBrand = {
+	[sym.$Identity]: true;
 	toDateTime(): Temporal.ZonedDateTime;
 	config: any;
+	parse: any;
 }
 
 /** @internal Tempo Token registry */
@@ -65,6 +65,7 @@ export const Token = looseIndex<string, symbol>()({
 	/** date */																								dt: Symbol('date'),
 	/** time */																								tm: Symbol('time'),
 	/** date and time */																			dtm: Symbol('dateTime'),
+	/** time and date */																			tmd: Symbol('timeDate'),
 	/** day-month-year */																			dmy: Symbol('dayMonthYear'),
 	/** month-day-year */																			mdy: Symbol('monthDayYear'),
 	/** year-month-day */																			ymd: Symbol('yearMonthDay'),

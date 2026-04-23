@@ -1,6 +1,6 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../term.util.js';
-import { type Tempo } from '../../tempo.class.js';
-import { isNumber } from '#library/type.library.js';
+import { isNumber } from '#library/assertion.library.js';
+import type { Tempo } from '../../tempo.class.js';
 
 /** definition of astrological zodiac ranges */
 const groups = defineRange([

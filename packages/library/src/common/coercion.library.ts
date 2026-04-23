@@ -1,5 +1,6 @@
 import { clone, stringify } from '#library/serialize.library.js';
-import { isIntegerLike, isArrayLike, isDefined, isInteger, isIterable, isNullish, isString, isUndefined, asType, isNumber } from '#library/type.library.js';
+import { asType } from '#library/type.library.js';
+import { isIntegerLike, isArrayLike, isDefined, isInteger, isIterable, isNullish, isString, isUndefined, isNumber, isNumeric } from '#library/assertion.library.js';
 
 /** Coerce {value} into {value[]} ( if not already ), with optional {fill} Object */
 export function asArray<T>(arr: Exclude<ArrayLike<T>, string> | undefined): T[];
@@ -52,25 +53,6 @@ export function asInteger<T extends string | number | bigint>(str?: T) {
 	}
 }
 
-/** test if can convert String to Numeric */
-export function isNumeric(str?: string | number | bigint) {
-	const arg = asType(str);
-
-	switch (arg.type) {
-		case 'Number':
-		case 'BigInt':
-			return true;
-
-		case 'String':
-			return isIntegerLike(arg.value)
-				? true																							// is Number | BigInt
-				: !isNaN(asNumber(str)) && isFinite(str as number)	// test if Number
-
-		default:
-			return false;
-	}
-}
-
 /** return as Number if possible, else original String */
 export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
 	switch (true) {
@@ -87,3 +69,7 @@ export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
 			return str as string;																// non-numeric String → as-is
 	}
 }
+
+export const nullToZero = <T>(obj: T) => obj ?? 0;
+export const nullToEmpty = <T>(obj: T) => obj ?? '';
+export const nullToValue = <T, R>(obj: T, value: R) => obj ?? value;

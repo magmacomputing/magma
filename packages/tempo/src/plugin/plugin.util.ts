@@ -1,4 +1,4 @@
-import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from '#library/type.library.js';
+import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from '#library/assertion.library.js';
 import { secureRef } from '#library/proxy.library.js';
 
 import { sym, getRuntime, isTempo } from '#tempo/support';

@@ -1,6 +1,8 @@
 import { Immutable } from '#library/class.library.js';
-import lib, { markConfig } from '#library/symbol.library.js';
-import { asType, isObject, isEmpty, type ValueOf } from '#library/type.library.js';
+import { sym, markConfig } from '#library/symbol.library.js';
+import { asType } from '#library/type.library.js';
+import { isObject, isEmpty } from '#library/assertion.library.js';
+import type { ValueOf } from '#library/type.library.js';
 
 const Method = {
 	Log: 'log',
@@ -10,22 +12,34 @@ const Method = {
 	Error: 'error',
 } as const
 
+const Level = {
+	[Method.Error]: 1,
+	[Method.Warn]: 2,
+	[Method.Info]: 3,
+	[Method.Log]: 3,
+	[Method.Debug]: 4,
+} as const;
+
 /**
  * provide standard logging methods to the console for a class
  */
 @Immutable
 export class Logify {
 	#name: string;
-	#opts: Logify.Constructor = { [lib.$Logify]: true };
+	#opts: Logify.Constructor = { [sym.$Logify]: true };
 
 	/**
 	 * if {catch:true} then show a warning on the console and return  
 	 * otherwise show an error on the console and re-throw the error
 	 */
 	#trap(method: Logify.Method, ...msg: any[]) {
-		const config = (isObject(msg[0]) && (msg[0] as any)[lib.$Logify] === true) ? msg.shift() : this.#opts;
+		const config = (isObject(msg[0]) && (msg[0] as any)[sym.$Logify] === true) ? msg.shift() : this.#opts;
 
-		if (method === Method.Debug && !config.debug) return;
+		const currentLevel = (typeof config.debug === 'number') ? config.debug : (config.debug ? Level[Method.Debug] : Level[Method.Error]);
+		const methodLevel = Level[method] ?? 0;
+
+		if (methodLevel > currentLevel) return;
+
 
 		const output = msg.map(m => {
 			if (m instanceof Error) return m.message;
@@ -89,9 +103,9 @@ export namespace Logify {
 	export type Method = ValueOf<typeof Method>
 
 	export interface Constructor {
-		debug?: boolean | undefined,
+		debug?: boolean | number | undefined,
 		catch?: boolean | undefined,
 		silent?: boolean | undefined,
-		[lib.$Logify]?: boolean | undefined
+		[sym.$Logify]?: boolean | undefined
 	}
 }

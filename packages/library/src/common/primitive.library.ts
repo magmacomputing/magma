@@ -1,5 +1,5 @@
-import sym from '#library/symbol.library.js';
-import { isEmpty } from '#library/type.library.js';
+import { sym } from '#library/symbol.library.js';
+import { isEmpty } from '#library/assertion.library.js';
 import type { Obj, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
 
 /**
@@ -9,18 +9,23 @@ import type { Obj, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
  * These functions have NO dependencies on array, object, or reflection libraries.
  */
 
+/** 
+ * ## unwrap
+ * Traverse a Proxy chain and return the underlying raw target object.
+ * Hardened against prototype-climbing bugs.
+ */
+export function unwrap<T extends object>(obj: T): T {
+	let curr = (obj as any)?.[sym.$Target] ?? obj;
+	while (Object.prototype.hasOwnProperty.call(curr, sym.$Target)) {
+		curr = curr[sym.$Target];
+	}
+	return curr;
+}
+
 /** Tuple of enumerable entries with string | symbol keys */
 export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 	if (!json || typeof json !== 'object')
 		return [] as EntryOf<T>[];
-
-	const unwrap = (obj: any): any => {
-		let curr = obj;
-		while (curr && curr[sym.$Target]) {
-			curr = curr[sym.$Target];
-		}
-		return curr;
-	}
 
 	const getOwn = (obj: any): [PropertyKey, any][] => {
 		const tgt = unwrap(obj);

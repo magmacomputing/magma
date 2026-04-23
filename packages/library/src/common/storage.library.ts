@@ -1,6 +1,6 @@
 import { objectify, stringify } from '#library/serialize.library.js';
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isDefined, isUndefined, isString } from '#library/type.library.js';
+import { isDefined, isUndefined, isString } from '#library/assertion.library.js';
 
 const context = getContext();
 

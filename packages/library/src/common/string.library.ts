@@ -1,6 +1,6 @@
-import { asNumber, asString, isNumeric } from '#library/coercion.library.js';
+import { asNumber, asString, nullToValue } from '#library/coercion.library.js';
 import { stringify } from '#library/serialize.library.js';
-import { isString, isObject, assertCondition, assertString, nullToValue } from '#library/type.library.js';
+import { isString, isObject, isNumeric, assertCondition, assertString } from '#library/assertion.library.js';
 
 // General <string> functions
 
@@ -93,8 +93,8 @@ export const plural = (val: string | number | Record<string, string>, word: stri
 
 type SingularUnit<T extends string> = T extends `${infer S}s`
 	? T extends `${string}${string}${string}${string}`
-		? S
-		: T
+	? S
+	: T
 	: T;
 
 /** strip a plural suffix, if endsWith 's' */

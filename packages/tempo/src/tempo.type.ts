@@ -7,7 +7,7 @@
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
 
-import { sym } from '#tempo/support/tempo.symbol.js';
+import { sym, TempoBrand } from '#tempo/support/tempo.symbol.js';
 import * as enums from '#tempo/support/tempo.enum.js';
 import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/tempo.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
@@ -28,7 +28,7 @@ declare global {
 }
 
 /** the value that Tempo will attempt to interpret as a valid ISO date / time */
-export type DateTime = string | number | bigint | Date | Tempo | TemporalObject | Temporal.ZonedDateTimeLike | undefined | null
+export type DateTime = string | number | bigint | Date | Tempo | TempoBrand | TemporalObject | Temporal.ZonedDateTimeLike | undefined | null;
 
 export type Pattern = string | RegExp
 export type Logic = string | number | Function
@@ -145,7 +145,7 @@ export namespace Internal {
 	export interface BaseOptions {
 		/** localStorage key */																	store: string;
 		/** globalThis Discovery Symbol */											discovery: string | symbol;
-		/** additional console.log for tracking */							debug: boolean | undefined;
+		/** additional console.log for tracking */							debug: boolean | enums.LOG | undefined;
 		/** catch or throw Errors */														catch: boolean | undefined;
 		/** suppress console output during catch */							silent: boolean | undefined;
 		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;

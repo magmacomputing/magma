@@ -1,25 +1,26 @@
 import '#library/temporal.polyfill.js';
 
 import { Logify } from '#library/logify.class.js';
-import { secure } from '#library/utility.library.js';
 import { Immutable, Serializable } from '#library/class.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
-import { proxify, delegate } from '#library/proxy.library.js';
-import lib, { markConfig } from '#library/symbol.library.js';
+import { secure, proxify, delegate } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { enumify } from '#library/enumerate.library.js';
-import { ownKeys, ownEntries } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
-import { getType, asType, isEmpty, isDefined, isUndefined, isString, isObject, isRegExp, isSymbol, isFunction, isClass, isZonedDateTime, Property, Secure } from '#library/type.library.js';
+import { getType, asType } from '#library/type.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isObject, isRegExp, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isZonedDateTimeLike } from '#library/assertion.library.js';
+import type { Property, Secure } from '#library/type.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
+
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns } from './support/tempo.util.js';
 
-import { sym, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, type TempoBrand } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, type TempoBrand } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 import { instant } from '#library/temporal.library.js';
 
@@ -58,7 +59,7 @@ namespace Internal {
  */
 @Serializable
 @Immutable
-export class Tempo implements TempoBrand {
+export class Tempo {
 	/** Weekday names (short-form) */													static get WEEKDAY() { return enums.WEEKDAY }
 	/** Weekday names (long-form) */													static get WEEKDAYS() { return enums.WEEKDAYS }
 	/** Month names (short-form) */														static get MONTH() { return enums.MONTH }
@@ -94,17 +95,19 @@ export class Tempo implements TempoBrand {
 		return Tempo.#global;
 	}
 
+	/** @internal brand check to distinguish Tempo objects from other objects */
+	[sym.$Identity] = true as const;
 
 	/** @internal handle internal errors using the global config */
 	static [sym.$logError](...msg: any[]): void {
-		const config = (isObject(msg[0]) && (msg[0] as any)[lib.$Logify] === true) ? msg.shift() : Tempo.#global.config;
+		const config = (isObject(msg[0]) && (msg[0] as any)[sym.$Logify] === true) ? msg.shift() : Tempo.#global.config;
 		markConfig(config);                                     // ensure config is marked for Logify
 		Tempo.#dbg.error(config, ...msg);
 	}
 
 	/** @internal handle internal debug logs */
 	static [sym.$logDebug](...args: any[]): void {
-		const config = (isObject(args[0]) && (args[0] as any)[lib.$Logify] === true) ? args.shift() : Tempo.#global.config;
+		const config = (isObject(args[0]) && (args[0] as any)[sym.$Logify] === true) ? args.shift() : Tempo.#global.config;
 		markConfig(config);
 		Tempo.#dbg.debug(config, ...args);
 	}
@@ -660,7 +663,7 @@ export class Tempo implements TempoBrand {
 
 						// only trigger init if we're assigning a new discovery object to a symbol
 						if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
-							const discoverySymbol = (typeof options === 'symbol' ? options : options?.discovery) ?? sym.$Tempo
+							const discoverySymbol = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo
 							if ((globalThis as Record<symbol, any>)[discoverySymbol] !== item) {
 								; (globalThis as Record<symbol, any>)[discoverySymbol] = item
 								Tempo.#setConfig(Tempo.#global, { discovery: discoverySymbol })
@@ -902,14 +905,14 @@ export class Tempo implements TempoBrand {
 	}
 
 	/** allow instanceof to work across module boundaries via the local brand symbol */
-	static [sym.$isTempo] = true;
+	static [sym.$Identity] = true;
 	static [Symbol.hasInstance](instance: any) {
-		return !!(instance?.[sym.$isTempo])
+		return !!(instance?.[sym.$Identity])
 	}
 
 	/** check if a supplied variable is a valid Tempo instance */
 	static isTempo(instance?: any): instance is Tempo {
-		return !!(instance?.[sym.$isTempo])
+		return !!(instance?.[sym.$Identity])
 	}
 
 	static {																									// Static initialization block to sequence the bootstrap phase
@@ -937,7 +940,7 @@ export class Tempo implements TempoBrand {
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
 	/** current mutation depth to manage infinite recursion */#mutateDepth = 0;
 	/** instance values to complement static values */				#local = {
-		/** instance configuration */															config: { [lib.$Logify]: true } as unknown as Internal.Config,
+		/** instance configuration */															config: { [sym.$Logify]: true } as unknown as Internal.Config,
 		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.MatchResult[] } as Internal.Parse
 	} as Internal.State;
 
@@ -959,7 +962,7 @@ export class Tempo implements TempoBrand {
 	 * This surface is not part of the public contract and is subject to change.
 	 */
 	[sym.$Internal]() {
-		const self: Tempo = (this as any)[lib.$Target] ?? this;
+		const self: Tempo = unwrap(this);
 		return {
 			get zdt() { return self.#zdt },
 			set zdt(val: any) { self.#zdt = val },
@@ -1001,7 +1004,7 @@ export class Tempo implements TempoBrand {
 		return 'Tempo';																					// hard-coded to avoid minification mangling
 	}
 
-	get [sym.$isTempo](): true { return true }
+	get [sym.$Identity](): true { return true }
 
 	/**
 	 * Instantiates a new `Tempo` object with configuration only.
@@ -1021,6 +1024,10 @@ export class Tempo implements TempoBrand {
 		[this.#tempo, this.#options] = this.#swap(tempo, options);	// swap arguments around
 		if (isZonedDateTime(this.#tempo)) this.#zdt = this.#tempo;
 		this.#setLocal(this.#options);													// parse local options
+		if (!this.#zdt && isObject(this.#tempo) && isDurationLike(this.#tempo)) {
+			// relative shorthand for "now plus duration"
+			this.#zdt = this.#now.toZonedDateTimeISO(this.#local.config.timeZone).add(this.#tempo as Temporal.DurationLike);
+		}
 
 		const { mode } = this.#local.parse;
 		const input = String(this.#tempo ?? '');
@@ -1139,7 +1146,7 @@ export class Tempo implements TempoBrand {
 	#setDelegator(host: 'term' | 'fmt') {
 		const target = Object.create(null);
 		const proxy = delegate(target, (key) => {
-			if (key === lib.$Discover) return this.#discover(host, target);
+			if (key === sym.$Discover) return this.#discover(host, target);
 			if (!isString(key)) return;
 
 			// discovery phase
@@ -1156,7 +1163,7 @@ export class Tempo implements TempoBrand {
 						try {
 							const result = term.define.call(this, keyOnly);
 							const res = Array.isArray(result) ? getTermRange(this, result, keyOnly) : result;
-							return (typeof res === 'object' && res !== null) ? secure(res) : res;
+							return isObject(res) ? secure(res) : res;
 						} catch (err: any) {
 							if (err.message.includes('Class constructor')) {
 								Tempo.#dbg.warn(this.#local.config, `Misidentified class in term definition: ${key}`, err.stack ?? err);
@@ -1189,7 +1196,7 @@ export class Tempo implements TempoBrand {
 					try {
 						const res = term.resolve ? term.resolve.call(this, anchor) : term.define.call(this, keyOnly, anchor);
 						const out = (getTermRange(this, (Array.isArray(res) ? (res as any) : [res]), keyOnly, anchor) as any);
-						return (typeof out === 'object' && out !== null) ? secure(out) : out;
+						return isObject(out) ? secure(out) : out;
 					} catch (err: any) {
 						if (err.message.includes('Class constructor')) {
 							Tempo.#dbg.warn(this.#local.config, `Misidentified class in term discovery: ${term.key}`, err.stack ?? err);
@@ -1279,7 +1286,7 @@ export class Tempo implements TempoBrand {
 
 	/** Instance-specific parse rules (merged with global) */
 	get parse(): Internal.Parse {
-		const self: Tempo = (this as any)[lib.$Target] ?? this;
+		const self: Tempo = unwrap(this);
 		self.#resolve();
 		// Return a shadowed view so we can safely inject matches without breaking the freeze on the original state
 		const out = Object.create(self.#local.parse);
@@ -1404,18 +1411,13 @@ export class Tempo implements TempoBrand {
 
 	/** check if we've been given a ZonedDateTimeLike object */
 	#isZonedDateTimeLike(tempo: t.DateTime | t.Options | undefined): tempo is Temporal.ZonedDateTimeLike & { value?: any } {
-		if (!isObject(tempo) || isEmpty(tempo))
-			return false;
+		if (!isObject(tempo) || isEmpty(tempo) || isTempo(tempo)) return false;
 
-		// if it contains any 'options' keys, it's not a ZonedDateTime
+		// if it contains any 'options' keys (other than value), it's likely an Options object
 		const keys = ownKeys(tempo);
-		if (keys.some(key => enums.OPTION.has(key) && key !== 'value'))
-			return false;
+		if (keys.some(key => enums.OPTION.has(key) && key !== 'value')) return false;
 
-		// we include {value} to allow for Tempo instances
-		return keys
-			.filter(isString)
-			.every((key: string) => enums.ZONED_DATE_TIME.has(key))
+		return isZonedDateTimeLike(tempo);
 	}
 
 	#result(...rest: Partial<Internal.MatchResult>[]) {

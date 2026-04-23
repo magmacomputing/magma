@@ -3,6 +3,8 @@ import { enumify } from '#library/enumerate.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { getDateTimeFormat, getHemisphere } from '#library/international.library.js';
 import { markConfig } from '#library/symbol.library.js';
+import { asType } from '#library/type.library.js';
+import { isString, isObject, isUndefined, isRegExp } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
@@ -66,15 +68,8 @@ export function init(options: t.Options = {}): t.Internal.State {
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
 export function extendState(state: t.Internal.State, options: t.Options) {
-	const {
-		isString = (v: any) => typeof v === 'string',
-		isObject = (v: any) => typeof v === 'object' && v !== null,
-		isUndefined = (v: any) => v === undefined,
-		isRegExp = (v: any) => v instanceof RegExp,
-		asType = (v: any) => ({ type: Object.prototype.toString.call(v).slice(8, -1), value: v })
-	} = getRuntime().modules['Library'] ?? {};
-
 	let patternsDirty = false;
+
 	ownEntries(options).forEach(([optKey, optVal]) => {
 		if (isUndefined(optVal)) return;
 		const arg = asType(optVal);

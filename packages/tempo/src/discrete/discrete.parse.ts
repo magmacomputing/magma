@@ -1,14 +1,13 @@
 import '#library/temporal.polyfill.js';
-import { asType, isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isIntegerLike, isEmpty, type TypeValue } from '#library/type.library.js';
-import { asArray, asInteger, isNumeric } from '#library/coercion.library.js';
-import { instant } from '#library/temporal.library.js';
+import { asType } from '#library/type.library.js';
+import { isNull, isString, isObject, isFunction, isZonedDateTime, isInstant, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/assertion.library.js';
+import { asArray, asInteger } from '#library/coercion.library.js';
+import { isNumeric } from '#library/assertion.library.js';
+import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
-import { markConfig } from '#library/symbol.library.js';
+import type { TypeValue } from '#library/type.library.js';
 
-import { sym, enums, isTempo, Match, getRuntime } from '../support/support.index.js';
-import { init, extendState } from '../support/tempo.init.js';
-import { setPatterns } from '../support/tempo.util.js';
-
+import { sym, markConfig, TermError, enums, isTempo, Match, getRuntime, init, extendState, setPatterns } from '#tempo/support';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from '../plugin/module/module.lexer.js';
 import { resolveTermMutation, resolveTermValue } from '../plugin/module/module.term.js';
 import { compose } from '../plugin/module/module.composer.js';
@@ -19,11 +18,7 @@ import type { Range, ResolvedRange } from '../plugin/plugin.type.js';
 import type { Tempo } from '../tempo.class.js';
 import * as t from '../tempo.type.js';
 
-/**
- * Internal helpers to normalize TimeZone and Calendar IDs
- */
-const tzId = (v: any): string => typeof v === 'string' ? v : (v?.id ?? v?.timeZoneId);
-const calId = (v: any): string => typeof v === 'string' ? v : (v?.id ?? v?.calendarId);
+
 
 /**
  * Internal helper to resolve state from 'this' context or first argument
@@ -51,8 +46,7 @@ const _ParseEngine = {
 
 		if (!term && (isZonedDateTime(tempo) || isInstant(tempo))) {
 			const { config } = state;
-			const tz = tzId(config.timeZone);
-			const cal = calId(config.calendar);
+			const [tz, cal] = getTemporalIds(config.timeZone, config.calendar);
 			const dt = isZonedDateTime(tempo) ? tempo : (tempo as Temporal.Instant).toZonedDateTimeISO(tz);
 			return dt.withTimeZone(tz).withCalendar(cal);
 		}
@@ -67,8 +61,7 @@ const _ParseEngine = {
 			const val = dateTime ?? state.anchor ?? (isTempo(tempo) ? (tempo as any).toDateTime() : (isZonedDateTime(tempo) ? tempo : (isInstant(tempo) ? tempo.toZonedDateTimeISO(config.timeZone) : undefined)));
 			const basis = isDefined(val) ? val : instant().toZonedDateTimeISO(config.timeZone);
 
-			const tz = isTempo(basis) ? (basis as any).tz : tzId(basis ?? config.timeZone);
-			const cal = isTempo(basis) ? (basis as any).cal : calId(basis ?? config.calendar);
+			const [tz, cal] = isTempo(basis) ? [(basis as any).tz, (basis as any).cal] : getTemporalIds(basis ?? config.timeZone, basis ?? config.calendar);
 
 			today = isZonedDateTime(basis) ? basis : (isTempo(basis) ? (basis as any).toDateTime() : instant().toZonedDateTimeISO(tz).withCalendar(cal));
 
@@ -80,7 +73,7 @@ const _ParseEngine = {
 				const termObj = terms.find((termEntry: any) => termEntry.key === ident || termEntry.scope === ident);
 				if (!termObj) {
 					if (TempoClass)
-						(TempoClass as any)[sym.$termError](state.config, term);
+						(TempoClass as any)[TermError](state.config, term);
 					return undefined as any;
 				}
 
@@ -129,7 +122,7 @@ const _ParseEngine = {
 						throw new Error(msg);
 					}
 					if (terms.length === 0) {
-						if (TempoClass) (TempoClass as any)[sym.$termError](state.config, termKey);
+						if (TempoClass) (TempoClass as any)[TermError](state.config, termKey);
 						return undefined as any;
 					}
 				}
@@ -140,8 +133,7 @@ const _ParseEngine = {
 			const res = _ParseEngine.conform(state, tempo, today, isAnchored, resolvingKeys);
 
 			const { timeZone: tz2, calendar: cal2 } = state.config;
-			const targetTz = tzId(tz2);
-			const targetCal = calId(cal2);
+			const [targetTz, targetCal] = getTemporalIds(tz2, cal2);
 
 			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal);
 
@@ -191,7 +183,7 @@ const _ParseEngine = {
 
 			const termKey = Object.keys(options).find(k => k.startsWith('#'));
 			if (termKey && terms.length === 0) {
-				if (TempoClass) (TempoClass as any)[sym.$termError](state.config, termKey);
+				if (TempoClass) (TempoClass as any)[TermError](state.config, termKey);
 				return undefined as any;
 			}
 
@@ -402,7 +394,7 @@ const _ParseEngine = {
 
 				const definition = entry[1];
 				let res: string = '';
-				if (typeof definition === 'function') {
+				if (isFunction(definition)) {
 					try {
 						state.anchor = dateTime;
 						state.zdt = dateTime;
@@ -419,7 +411,7 @@ const _ParseEngine = {
 							get yy() { return dateTime.year },
 							get mm() { return dateTime.month },
 							get dd() { return dateTime.day },
-							[sym.$isTempo]: true,
+							[sym.$Identity]: true,
 							config: state.config
 						};
 
@@ -448,7 +440,7 @@ const _ParseEngine = {
 					const type = isEvent ? 'Event' : 'Period';
 					const val = entry![0];
 					const pat = (isEvent ? 'dt' : 'tm');
-					const resolveVal = typeof definition === 'function' ? res : definition;
+					const resolveVal = isFunction(definition) ? res : definition;
 					_ParseEngine.result(state, { type, value: val as any, match: pat, groups: { [key]: resolveVal as string } });
 
 					const resolving = new Set(resolvingKeys);
@@ -524,7 +516,7 @@ export const ParseEngine = {
 	result: withState(_ParseEngine.result)
 };
 
-const isFunction = (v: any): v is Function => typeof v === 'function';
+
 
 /**
  * # ParseModule
