@@ -38,25 +38,31 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 		return entries as EntryOf<T>[];
 	}
 
-	const entries: [PropertyKey, any][] = [];
-	const seen = new Set<PropertyKey>();
+	const levels: any[] = [];
 	const limit = 50;
 	let depth = 0;
-	let proto: any = tgt;
+	let curr: any = tgt;
 
-	while (proto && proto !== Object.prototype && depth++ < limit) {
-		const current = unwrap(proto);
-		const keys = Reflect.ownKeys(current);
+	while (curr && curr !== Object.prototype && depth++ < limit) {
+		levels.push(unwrap(curr));
+		curr = Object.getPrototypeOf(curr);
+	}
+
+	const entries: [PropertyKey, any][] = [];
+	const seen = new Set<PropertyKey>();
+
+	for (const level of levels.reverse()) {
+		const keys = Reflect.ownKeys(level);
 
 		for (const k of keys) {
 			if (seen.has(k)) continue;
-			const desc = Object.getOwnPropertyDescriptor(current, k);
-			if (!desc || !desc.enumerable) continue;
-			seen.add(k);
-			entries.push([k, (current as any)[k]]);
-		}
 
-		proto = Object.getPrototypeOf(current);
+			const desc = Object.getOwnPropertyDescriptor(level, k);
+			if (!desc || !desc.enumerable) continue;
+
+			seen.add(k);
+			entries.push([k, (tgt as any)[k]]);
+		}
 	}
 
 	return entries as EntryOf<T>[];

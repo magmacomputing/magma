@@ -34,7 +34,6 @@ export class Logify {
 	 */
 	#trap(method: Logify.Method, ...msg: any[]) {
 		const config = (isObject(msg[0]) && (msg[0] as any)[sym.$Logify] === true) ? msg.shift() : this.#opts;
-
 		const currentLevel = (typeof config.debug === 'number') ? config.debug : (config.debug ? Level[Method.Debug] : Level[Method.Error]);
 		const methodLevel = Level[method] ?? 0;
 

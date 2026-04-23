@@ -9,6 +9,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should maintain isolated registries for sandboxes', () => {
+		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 		const MyTempo = Tempo.create({
 			period: {
 				'tea-time': '16:00'
@@ -17,6 +18,7 @@ describe('Sandbox Factory Pattern', () => {
 
 		// The base Tempo should not have 'tea-time'
 		expect(() => new Tempo('tea-time')).toThrow();
+		spy.mockRestore();
 
 		const t = new MyTempo('tea-time');
 		expect(t.hh).toBe(16);

@@ -4,7 +4,7 @@ import { asArray } from '#library/coercion.library.js';
 import { getDateTimeFormat, getHemisphere } from '#library/international.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { asType } from '#library/type.library.js';
-import { isString, isObject, isUndefined, isRegExp } from '#library/assertion.library.js';
+import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
@@ -45,18 +45,25 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	});
 
 	// 2. Establish the base configuration options
-	markConfig(Object.assign(state.config, baseState?.config ?? Default));
-	Object.defineProperties(state.config, {
-		calendar: { value: calendar, enumerable: true, writable: true, configurable: true },
-		timeZone: { value: timeZone, enumerable: true, writable: true, configurable: true },
-		locale: { value: (getDateTimeFormat() as any).locale ?? 'en-US', enumerable: true, writable: true, configurable: true },
-		discovery: { value: Symbol.keyFor(sym.$Tempo) as string, enumerable: true, writable: true, configurable: true },
-		formats: { value: enumify(STATE.FORMAT, false), enumerable: true, writable: true, configurable: true },
-		sphere: { value: getHemisphere(timeZone), enumerable: true, writable: true, configurable: true },
-		get: { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true },
-		scope: { value: 'global', enumerable: true, writable: true, configurable: true },
-		catch: { value: options.catch ?? false, enumerable: true, writable: true, configurable: true }
-	});
+	if (isGlobal) {
+		markConfig(Object.assign(state.config, Default));
+		const { timeZone, calendar } = getDateTimeFormat();
+		Object.defineProperties(state.config, {
+			calendar: { value: calendar, enumerable: true, writable: true, configurable: true },
+			timeZone: { value: timeZone, enumerable: true, writable: true, configurable: true },
+			locale: { value: (getDateTimeFormat() as any).locale ?? 'en-US', enumerable: true, writable: true, configurable: true },
+			discovery: { value: Symbol.keyFor(sym.$Tempo) as string, enumerable: true, writable: true, configurable: true },
+			formats: { value: enumify(STATE.FORMAT, false), enumerable: true, writable: true, configurable: true },
+			sphere: { value: getHemisphere(timeZone), enumerable: true, writable: true, configurable: true },
+			get: { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true },
+			scope: { value: 'global', enumerable: true, writable: true, configurable: true },
+			catch: { value: options.catch ?? false, enumerable: true, writable: true, configurable: true }
+		});
+	} else if (baseState) {
+		state.config = markConfig(Object.create(baseState.config));
+		setProperty(state.config, 'scope', 'local');
+		if (isDefined(options.catch)) setProperty(state.config, 'catch', options.catch);
+	}
 
 	// 3. Initialize registries that need objects
 	state.OPTION = new Set(Object.keys(Default));

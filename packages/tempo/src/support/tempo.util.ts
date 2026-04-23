@@ -20,9 +20,9 @@ export const hasOwn = (obj: object, key: PropertyKey) => Object.hasOwn(obj, key)
 /** @internal create an object based on a prototype */
 export const create = <T extends object>(obj: object, name: string): T => {
 	const entry = proto(obj)[name];
-	if (!isObject(entry)) {
+	if (!isObject(entry))
 		throw new TypeError(`[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`);
-	}
+
 	return { ...entry } as T;
 };
 
