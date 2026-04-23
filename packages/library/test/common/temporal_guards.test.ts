@@ -1,5 +1,4 @@
-import * as t from '#library/type.library.js';
-import '#library/temporal.polyfill.js';
+import * as t from '#library/assertion.library.js';
 
 describe('Temporal Type Guards', () => {
 	it('should identify Temporal.Instant', () => {

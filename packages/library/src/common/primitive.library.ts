@@ -1,5 +1,4 @@
 import { sym } from '#library/symbol.library.js';
-import { isEmpty } from '#library/assertion.library.js';
 import type { Obj, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
 
 /**
@@ -16,8 +15,9 @@ import type { Obj, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
  */
 export function unwrap<T extends object>(obj: T): T {
 	let curr = (obj as any)?.[sym.$Target] ?? obj;
-	while (Object.prototype.hasOwnProperty.call(curr, sym.$Target)) {
-		curr = curr[sym.$Target];
+	// Hardened against different Symbol instances across module boundaries
+	while (curr && (Object.prototype.hasOwnProperty.call(curr, sym.$Target) || (curr as any).$Target)) {
+		curr = curr[sym.$Target] ?? (curr as any).$Target;
 	}
 	return curr;
 }
@@ -27,28 +27,39 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 	if (!json || typeof json !== 'object')
 		return [] as EntryOf<T>[];
 
-	const getOwn = (obj: any): [PropertyKey, any][] => {
-		const tgt = unwrap(obj);
-		return Reflect.ownKeys(tgt)
-			.filter(key => Object.getOwnPropertyDescriptor(tgt, key)?.enumerable)
-			.map(key => [key, tgt[key]]);
+	const tgt = unwrap(json);
+	if (!all) {
+		const keys = Reflect.ownKeys(tgt).reverse();
+		const entries: [PropertyKey, any][] = [];
+		for (const k of keys) {
+			const desc = Object.getOwnPropertyDescriptor(tgt, k);
+			if (desc && desc.enumerable) entries.push([k, (tgt as any)[k]]);
+		}
+		return entries as EntryOf<T>[];
 	}
 
-	if (!all) return getOwn(json) as EntryOf<T>[];
-
-	const levels: [PropertyKey, any][][] = [];
+	const entries: [PropertyKey, any][] = [];
+	const seen = new Set<PropertyKey>();
 	const limit = 50;
 	let depth = 0;
-	let proto: any = json;
+	let proto: any = tgt;
 
-	do {
-		const t = unwrap(proto);
-		const lvl = getOwn(proto);
-		if (lvl.length) levels.push(lvl);
-		proto = Object.getPrototypeOf(t);
-	} while (proto && proto !== Object.prototype && ++depth < limit);
+	while (proto && proto !== Object.prototype && depth++ < limit) {
+		const current = unwrap(proto);
+		const keys = Reflect.ownKeys(current).reverse();
 
-	return [...new Map(levels.reverse().flat()).entries()] as EntryOf<T>[];
+		for (const k of keys) {
+			if (seen.has(k)) continue;
+			const desc = Object.getOwnPropertyDescriptor(current, k);
+			if (!desc || !desc.enumerable) continue;
+			seen.add(k);
+			entries.push([k, (current as any)[k]]);
+		}
+
+		proto = Object.getPrototypeOf(current);
+	}
+
+	return entries as EntryOf<T>[];
 }
 
 /** Array of all enumerable PropertyKeys */
@@ -63,7 +74,7 @@ export function ownValues<T extends Obj>(json: T, all = false): ValueOf<T>[] {
 
 /** Get nested value using dot or bracket notation */
 export function extract<T>(obj: any, path: string | number, dflt?: T): T {
-	if (isEmpty(path)) return obj as T;
+	if (path === undefined || path === null || path === '') return obj as T;
 	if (obj === null || typeof obj !== 'object') return dflt as T;
 
 	return path

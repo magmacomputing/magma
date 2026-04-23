@@ -47,7 +47,7 @@ export const isUndefined = <T>(obj?: T): obj is undefined => isType<undefined>(o
 export const isDefined = <T>(obj: T): obj is NonNullable<T> => !isNullish(obj);
 
 export const isClass = <T>(obj?: T): obj is Extract<T, Function> => isType(obj, 'Class');
-export const isFunction = <T>(obj?: T): obj is Extract<T, Function> => isType(obj, 'Function', 'AsyncFunction');
+export const isFunction = <T>(obj?: T): obj is Extract<T, Function> => isType(obj, 'Function', 'AsyncFunction', 'Class');
 export const isPromise = <T>(obj?: T): obj is Extract<T, Promise<any>> => isType(obj, 'Promise');
 export const isMap = <T, K = any, V = any>(obj?: T): obj is Extract<T, Map<K, V>> => isType(obj, 'Map');
 export const isSet = <T, K = any>(obj?: T): obj is Extract<T, Set<K>> => isType(obj, 'Set');
@@ -64,12 +64,12 @@ export const isTemporal = <T>(obj: T): obj is Extract<T, Temporals> => protoType
 	(obj as any) instanceof (globalThis as any).Temporal.PlainMonthDay
 ));
 
-export const isInstant = <T>(obj: T): obj is Extract<T, Temporal.Instant> => isType(obj, 'Temporal.Instant') || (!!(globalThis as any).Temporal?.Instant && (obj as any) instanceof (globalThis as any).Temporal.Instant);
-export const isZonedDateTime = <T>(obj: T): obj is Extract<T, Temporal.ZonedDateTime> => isType(obj, 'Temporal.ZonedDateTime') || (!!(globalThis as any).Temporal?.ZonedDateTime && (obj as any) instanceof (globalThis as any).Temporal.ZonedDateTime);
-export const isPlainDate = <T>(obj: T): obj is Extract<T, Temporal.PlainDate> => isType(obj, 'Temporal.PlainDate') || (!!(globalThis as any).Temporal?.PlainDate && (obj as any) instanceof (globalThis as any).Temporal.PlainDate);
-export const isPlainTime = <T>(obj: T): obj is Extract<T, Temporal.PlainTime> => isType(obj, 'Temporal.PlainTime') || (!!(globalThis as any).Temporal?.PlainTime && (obj as any) instanceof (globalThis as any).Temporal.PlainTime);
-export const isPlainDateTime = <T>(obj: T): obj is Extract<T, Temporal.PlainDateTime> => isType(obj, 'Temporal.PlainDateTime') || (!!(globalThis as any).Temporal?.PlainDateTime && (obj as any) instanceof (globalThis as any).Temporal.PlainDateTime);
-export const isDuration = <T>(obj: T): obj is Extract<T, Temporal.Duration> => isType(obj, 'Temporal.Duration') || (!!(globalThis as any).Temporal?.Duration && (obj as any) instanceof (globalThis as any).Temporal.Duration);
+export const isInstant = <T>(obj: T): obj is Extract<T, Temporal.Instant> => isType(obj, 'Temporal.Instant') || (!!(globalThis as any).Temporal?.Instant && (obj as any) instanceof (globalThis as any).Temporal.Instant) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.Instant');
+export const isZonedDateTime = <T>(obj: T): obj is Extract<T, Temporal.ZonedDateTime> => isType(obj, 'Temporal.ZonedDateTime') || (!!(globalThis as any).Temporal?.ZonedDateTime && (obj as any) instanceof (globalThis as any).Temporal.ZonedDateTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.ZonedDateTime');
+export const isPlainDate = <T>(obj: T): obj is Extract<T, Temporal.PlainDate> => isType(obj, 'Temporal.PlainDate') || (!!(globalThis as any).Temporal?.PlainDate && (obj as any) instanceof (globalThis as any).Temporal.PlainDate) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainDate');
+export const isPlainTime = <T>(obj: T): obj is Extract<T, Temporal.PlainTime> => isType(obj, 'Temporal.PlainTime') || (!!(globalThis as any).Temporal?.PlainTime && (obj as any) instanceof (globalThis as any).Temporal.PlainTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainTime');
+export const isPlainDateTime = <T>(obj: T): obj is Extract<T, Temporal.PlainDateTime> => isType(obj, 'Temporal.PlainDateTime') || (!!(globalThis as any).Temporal?.PlainDateTime && (obj as any) instanceof (globalThis as any).Temporal.PlainDateTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainDateTime');
+export const isDuration = <T>(obj: T): obj is Extract<T, Temporal.Duration> => isType(obj, 'Temporal.Duration') || (!!(globalThis as any).Temporal?.Duration && (obj as any) instanceof (globalThis as any).Temporal.Duration) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.Duration');
 export const isDurationLike = <T>(obj: T): obj is Extract<T, Temporal.DurationLike | string | Temporal.Duration> => isString(obj) || isDuration(obj) || (isObject(obj) && (
 	'years' in obj || 'months' in obj || 'weeks' in obj || 'days' in obj ||
 	'hours' in obj || 'minutes' in obj || 'seconds' in obj ||

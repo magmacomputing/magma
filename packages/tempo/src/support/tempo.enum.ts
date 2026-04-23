@@ -213,7 +213,7 @@ export type MUTATION = ValueOf<typeof MUTATION>
 export type Mutation = KeyOf<typeof MUTATION>
 
 /** allowed keys for ZonedDateTime-like objects */
-const zonedDateTimeKeys = ['value', 'timeZoneId', 'calendarId', 'monthCode', 'offset', 'timeZone', ...elementKeys] as const;
+const zonedDateTimeKeys = ['value', 'timeZoneId', 'calendarId', 'monthCode', 'offset', 'timeZone', 'year', 'month', 'day', 'hour', 'minute', 'second', ...elementKeys] as const;
 export const ZONED_DATE_TIME = enumify(zonedDateTimeKeys, false);
 export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>

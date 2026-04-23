@@ -18,6 +18,8 @@ import type { Range, ResolvedRange } from '../plugin/plugin.type.js';
 import type { Tempo } from '../tempo.class.js';
 import * as t from '../tempo.type.js';
 
+const isZDT = (obj: any) => obj && (obj[Symbol.toStringTag] === 'Temporal.ZonedDateTime' || typeof obj.toInstant === 'function');
+
 
 
 /**
@@ -62,8 +64,8 @@ const _ParseEngine = {
 			const basis = isDefined(val) ? val : instant().toZonedDateTimeISO(config.timeZone);
 
 			const [tz, cal] = isTempo(basis) ? [(basis as any).tz, (basis as any).cal] : getTemporalIds(basis ?? config.timeZone, basis ?? config.calendar);
-
-			today = isZonedDateTime(basis) ? basis : (isTempo(basis) ? (basis as any).toDateTime() : instant().toZonedDateTimeISO(tz).withCalendar(cal));
+			const isAnchored = isDefined(val);
+			today = isZDT(basis) ? basis : (isTempo(basis) ? (basis as any).toDateTime() : (isZDT(val) ? val : instant().toZonedDateTimeISO(tz).withCalendar(cal)));
 
 			const TempoClass = getRuntime().modules['Tempo'];
 			const terms = getRuntime().pluginsDb.terms;
@@ -128,9 +130,9 @@ const _ParseEngine = {
 				}
 			}
 
-			const isAnchored = isDefined(dateTime) || isDefined(state.anchor);
+			const isAnchoredVal = isAnchored || isDefined(dateTime) || isDefined(state.anchor);
 			const resolvingKeys = new Set<string>();
-			const res = _ParseEngine.conform(state, tempo, today, isAnchored, resolvingKeys);
+			const res = _ParseEngine.conform(state, tempo, today, isAnchoredVal, resolvingKeys);
 
 			const { timeZone: tz2, calendar: cal2 } = state.config;
 			const [targetTz, targetCal] = getTemporalIds(tz2, cal2);
@@ -237,7 +239,8 @@ const _ParseEngine = {
 			value = trim; // Update value for downstream parsing
 		}
 
-		return _ParseEngine.parseLayout(state, value as string | number, dateTime, isAnchored, resolvingKeys);
+		const res = _ParseEngine.parseLayout(state, value as string | number, dateTime, isAnchored, resolvingKeys);
+		return res;
 	},
 
 	/** match a string or number against known layouts */
@@ -278,11 +281,10 @@ const _ParseEngine = {
 		const anchorTime = zdt.toPlainTime();
 		for (const [symKey, pat] of state.parse.pattern) {
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
-			if (isEmpty(groups)) continue;
-
-			const hasAlias = Object.keys(groups).some(k => k.includes('evt') || k.includes('per'));
-			const isRootMatch = Object.keys(groups).some(k => k === 'dt' || k === 'tm');
-			const hadEventOrPeriod = hasAlias || isRootMatch;
+			if (isEmpty(groups)) {
+				continue;
+			}
+			const hasTime = Object.keys(groups).some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key)) || Object.values(groups).includes('now');
 
 			_ParseEngine.result(state, { match: symKey.description, value: trim, groups: { ...groups } });
 
@@ -293,20 +295,12 @@ const _ParseEngine = {
 			dateTime = parseDate(groups, dateTime, (TempoClass as any)?.[sym.$dbg], state.config, state.parse["pivot"]);
 			dateTime = parseTime(groups, dateTime);
 
-			const hasTime = Object.keys(groups).some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key))
-				|| hadEventOrPeriod
-				|| !dateTime.toPlainTime().equals(anchorTime);
-
-			if (!isAnchored && !hasTime)
+			const isChanged = !dateTime.toPlainTime().equals(anchorTime);
+			if (!hasTime && !isChanged)
 				dateTime = dateTime.withPlainTime('00:00:00');
 
-			if (isZonedDateTime(dateTime)) {
+			if (isZDT(dateTime)) {
 				Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: dateTime, match: symKey.description, groups });
-			}
-
-			if (TempoClass) {
-				(TempoClass as any)[sym.$logDebug](state.config, 'groups', groups);
-				(TempoClass as any)[sym.$logDebug](state.config, 'pattern', symKey.description);
 			}
 
 			break;
@@ -327,10 +321,8 @@ const _ParseEngine = {
 	},
 
 	/** resolve {event} | {period} to their date | time values (mutates groups) */
-	parseGroups(state: any, groups: t.Groups, dateTime: Temporal.ZonedDateTime, isAnchored: boolean, resolvingKeys: Set<string>): Temporal.ZonedDateTime {
-		if (!isZonedDateTime(dateTime)) return dateTime;
+	parseGroups(state: t.Internal.State, groups: t.Groups, dateTime: Temporal.ZonedDateTime, isAnchored: boolean, resolvingKeys: Set<string>): Temporal.ZonedDateTime {
 		const TempoClass = getRuntime().modules['Tempo'];
-
 		const prevAnchor = state.anchor;
 		const prevZdt = state.zdt;
 
@@ -365,27 +357,35 @@ const _ParseEngine = {
 
 				const isEvent = Match.event.test(key);
 				const isGlobal = key.startsWith('g');
-				const isLocal = key.startsWith('l');
-				const idx = +key.substring((isGlobal || isLocal) ? 4 : 3);
-				const globalParse = isGlobal ? (TempoClass as any)?.[sym.$Internal]?.().parse : undefined;
-				const src =
-					isGlobal
-						? (isEvent ? globalParse?.event : globalParse?.period)
-						: (isEvent ? state.parse.event : state.parse.period);
-				const entry = ownEntries(src, true)[idx];
+				const isNamed = key === 'gdt' || key === 'dt' || key === 'gtm' || key === 'tm';
+				const idx = isNamed ? -1 : +key.substring(4);
+				console.error(`[Tempo] Processing key: ${key}, idx: ${idx}, isEvent: ${isEvent}, isGlobal: ${isGlobal}, isNamed: ${isNamed}`);
 
-
-				if (!entry) {
+				if (isNamed) {
 					resolved.add(key);
+					delete groups[key];
 					continue;
 				}
 
-				const aliasKey = `${key}:${String(entry[0])}`;
+				const globalParse = isGlobal ? (TempoClass as any)?.[sym.$Internal]?.().parse : undefined;
+				const src = isGlobal
+					? (isEvent ? globalParse?.event : globalParse?.period)
+					: (isEvent ? state.parse.event : state.parse.period);
+				const entry = ownEntries(src, true)[idx];
+
+				if (!entry) {
+					resolved.add(key);
+					delete groups[key];
+					continue;
+				}
+
+				const aliasKey = entry[0] as string;
 				if (resolvingKeys.size > 50 || resolvingKeys.has(aliasKey)) {
 					const msg = `Infinite recursion detected in Tempo resolution for: ${aliasKey}`;
 					state.errored = true;
 					if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new RangeError(msg));
 					resolved.add(key);
+					delete groups[key];
 					continue;
 				}
 
@@ -396,14 +396,16 @@ const _ParseEngine = {
 				let res: string = '';
 				if (isFunction(definition)) {
 					try {
-						state.anchor = dateTime;
-						state.zdt = dateTime;
-
 						// Provide a lightweight host context that mimics a Tempo instance for the handler
 						const host = {
 							add: (val: any) => dateTime.add(val),
-							set: (val: any) => isObject(val) ? dateTime.with(val) : dateTime,
-							toNow: () => Temporal.Now.zonedDateTimeISO(state.config.timeZone),
+							subtract: (val: any) => dateTime.subtract(val),
+							with: (val: any) => dateTime.with(val),
+							set: (val: any, opt?: any) => {
+								const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
+								return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
+							},
+							toNow: () => instant().toZonedDateTimeISO(state.config.timeZone).withCalendar(state.config.calendar),
 							toDateTime: () => dateTime,
 							get hh() { return dateTime.hour },
 							get mi() { return dateTime.minute },
@@ -417,24 +419,16 @@ const _ParseEngine = {
 
 						const result = (definition as Function).call(host);
 						if (isTempo(result)) dateTime = (result as any).toDateTime();
-						else if (isZonedDateTime(result)) dateTime = result as Temporal.ZonedDateTime;
+						else if (isZDT(result)) dateTime = result as Temporal.ZonedDateTime;
 						else if (isObject(result) && isFunction((result as any).toDateTime)) dateTime = (result as any).toDateTime();
-						else dateTime = isZonedDateTime(state.zdt) ? (state.zdt as any) : dateTime;
-						res = String(result);
+						res = isString(result) || isNumeric(result) ? String(result) : '';
+						state.zdt = dateTime;
 					} catch (e: any) {
-						if (e.message.includes('Temporal')) {
-							res = (definition as any).toString();
-						} else {
-							throw e;
-						}
+						throw e;
 					}
 				} else {
 					res = (definition as string);
 				}
-
-				if (isEvent && !isAnchored && isZonedDateTime(dateTime)) dateTime = (dateTime as any).startOfDay();
-
-				if (TempoClass) (TempoClass as any)[sym.$logDebug](state.config, 'event', `resolved "${key}" to "${res}" against ${(dateTime as any).toString?.() ?? String(dateTime)}`);
 
 				try {
 					const type = isEvent ? 'Event' : 'Period';
@@ -443,27 +437,24 @@ const _ParseEngine = {
 					const resolveVal = isFunction(definition) ? res : definition;
 					_ParseEngine.result(state, { type, value: val as any, match: pat, groups: { [key]: resolveVal as string } });
 
-					const resolving = new Set(resolvingKeys);
-					resolving.add(aliasKey);
-					const resMatch = _ParseEngine.parseLayout(state, res, dateTime, isAnchored, resolving);
+					// only re-parse if we have a non-empty string resolution
+					if (!isEmpty(res) && res !== String(val)) {
+						const resolving = new Set(resolvingKeys);
+						resolving.add(aliasKey);
+						const resMatch = _ParseEngine.parseLayout(state, res, dateTime, true, resolving);
 
-					if (resMatch.type === 'Temporal.ZonedDateTime')
-						dateTime = resMatch.value;
+						if (resMatch.type === 'Temporal.ZonedDateTime')
+							dateTime = resMatch.value;
+					}
 				} finally {
-					resolved.add(key);
+					delete groups[key];
 				}
-
-				delete groups[key];
 			}
 		} finally {
 			state.anchor = prevAnchor;
-			if (state.parseDepth === 1) {
-				state.zdt = prevZdt;
-				state.matches = undefined;
-			} else {
-				if (isZonedDateTime(dateTime)) state.zdt = dateTime;
-			}
+			if (isZonedDateTime(dateTime)) state.zdt = dateTime;
 			state.parseDepth--;
+			if (state.parseDepth === 0) state.matches = undefined;
 		}
 
 		if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {

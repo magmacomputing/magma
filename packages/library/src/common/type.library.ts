@@ -1,10 +1,11 @@
 import { sym } from '#library/symbol.library.js';
+import { unwrap } from '#library/primitive.library.js';
 
 const registry: Instance[] = [];														// global types for getType
 
 /** the primitive type reported by toStringTag() */
 export const protoType = (obj?: unknown) => {
-	const raw = (obj as any)?.[sym.$Target] ?? obj;						// bypass Proxy traps
+	const raw = (obj && typeof obj === 'object') ? unwrap(obj as object) : obj;
 	return Object.prototype.toString.call(raw).slice(8, -1) as Type;
 }
 
@@ -78,26 +79,36 @@ const isClassConstructor = (obj: any): boolean => {
 	const tag = raw?.[Symbol.toStringTag] ?? raw?.prototype?.[Symbol.toStringTag];
 
 	// Absolute bypass for branded identities (using universal brand)
-	if (raw?.[sym.$Identity] || raw?.prototype?.[sym.$Identity]) return true;
+	if (raw?.[sym.$Identity] || raw?.prototype?.[sym.$Identity]) {
+		return true;
+	}
 	if (typeof tag === 'string' && tag.startsWith('Temporal.')) return true;
 	if (typeof tag === 'string' && tag.endsWith('Function')) return false;	// check the tag directly to avoid misidentifying function as class
 
 	const globalRegistry = (globalThis as any)[sym.$Registry] ?? [];
-	if (globalRegistry.some((inst: any) => ((inst.class as any)?.[sym.$Target] ?? inst.class) === raw || (name && inst.type === name) || (tag && inst.type === tag))) return true;
+	if (globalRegistry.some((inst: any) => ((inst.class as any)?.[sym.$Target] ?? inst.class) === raw || (name && inst.type === name) || (tag && inst.type === tag))) {
+		return true;
+	}
 
 
 	// 3. Last resort: Inspection of constructor property & prototype (Transpilation-Safe)
 	try {
 		const str = Function.prototype.toString.call(raw);
-		if (classRegex.test(str)) return true;
+		if (classRegex.test(str)) {
+			return true;
+		}
 
 		// ES6 classes have a non-writable prototype descriptor
 		const descriptor = Object.getOwnPropertyDescriptor(raw, 'prototype');
-		if (descriptor && descriptor.writable === false) return true;
+		if (descriptor && descriptor.writable === false) {
+			return true;
+		}
 
 		// if it's a function with a 'prototype' that is NOT an empty object (excluding its constructor), it's likely a class
 		const proto = raw.prototype;
-		if (proto && Object.getOwnPropertyNames(proto).length > 2) return true;
+		if (proto && Object.getOwnPropertyNames(proto).length > 2) {
+			return true;
+		}
 
 	} catch {
 		return false;

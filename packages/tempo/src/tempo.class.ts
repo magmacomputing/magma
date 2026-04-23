@@ -136,6 +136,11 @@ export class Tempo {
 
 				setProperty(shape.parse.snippet, Token.evt, new RegExp(groups));
 			}
+		} else {
+			// If no groups, ensure we don't have a stale or empty regex that could cause issues
+			if (hasOwn(shape.parse.snippet, Token.evt)) {
+				delete shape.parse.snippet[Token.evt as any];
+			}
 		}
 
 		if (shape.parse.isMonthDay) {
@@ -172,6 +177,11 @@ export class Tempo {
 					shape.parse.snippet = create(shape.parse, 'snippet');
 
 				setProperty(shape.parse.snippet, Token.per, new RegExp(groups));
+			}
+		} else {
+			// If no groups, ensure we don't have a stale or empty regex that could cause issues
+			if (hasOwn(shape.parse.snippet, Token.per)) {
+				delete shape.parse.snippet[Token.per as any];
 			}
 		}
 	}
@@ -1021,7 +1031,8 @@ export class Tempo {
 	constructor(tempo: t.DateTime, options?: t.Options);
 	constructor(tempo?: t.DateTime | t.Options, options: t.Options = {}) {
 		this.#now = instant();																	// stash current Instant
-		[this.#tempo, this.#options] = this.#swap(tempo, options);	// swap arguments around
+		[this.#tempo, this.#options] = this.#swap(tempo, options);// swap arguments around
+
 		if (isZonedDateTime(this.#tempo)) this.#zdt = this.#tempo;
 		this.#setLocal(this.#options);													// parse local options
 		if (!this.#zdt && isObject(this.#tempo) && isDurationLike(this.#tempo)) {
