@@ -199,6 +199,7 @@ export namespace Internal {
 		/** pattern which matched the input */									match?: string | undefined;
 		/** groups from the pattern match */										groups?: Groups;
 		/** was this a nested/anchored parse? */								isAnchored?: boolean;
+		/** where this match came from (e.g. 'default', 'local', 'plugin:X') */ source?: string;
 	} & (TypeValue<any> | MatchExtend)
 
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */

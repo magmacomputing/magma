@@ -15,10 +15,10 @@ import enums, { STATE } from './tempo.enum.js';
 import * as t from '../tempo.type.js';
 import type { Mode } from '../tempo.type.js';
 
-/** @internal Initialise the global Tempo state */
-export function init(options: t.Options = {}): t.Internal.State {
+/** @internal Initialise a Tempo state */
+export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State): t.Internal.State {
 	const runtime = getRuntime();
-	if (runtime.state) return runtime.state;
+	if (isGlobal && runtime.state && !baseState) return runtime.state;
 
 	const { timeZone, calendar } = getDateTimeFormat();
 
@@ -31,21 +31,21 @@ export function init(options: t.Options = {}): t.Internal.State {
 	state.parse = markConfig({
 		token: Token,
 		result: [],
-		snippet: Object.assign({}, Snippet),
-		layout: Object.assign({}, Layout),
-		event: Object.assign({}, Event),
-		period: Object.assign({}, Period),
-		ignore: Object.fromEntries(asArray(Ignore).map(w => [w, w])),
-		mdyLocales: asArray(Default.mdyLocales as any),
-		mdyLayouts: asArray<t.Pair>(Default.mdyLayouts as any),
-		pivot: Default.pivot as any,
-		mode: Default.mode as any,
+		snippet: Object.assign({}, baseState?.parse.snippet ?? Snippet),
+		layout: Object.assign({}, baseState?.parse.layout ?? Layout),
+		event: Object.assign({}, baseState?.parse.event ?? Event),
+		period: Object.assign({}, baseState?.parse.period ?? Period),
+		ignore: baseState ? { ...baseState.parse.ignore } : Object.fromEntries(asArray(Ignore).map(w => [w, w])),
+		mdyLocales: asArray(baseState?.parse.mdyLocales ?? Default.mdyLocales as any),
+		mdyLayouts: asArray<t.Pair>(baseState?.parse.mdyLayouts ?? Default.mdyLayouts as any),
+		pivot: (baseState?.parse.pivot ?? Default.pivot) as any,
+		mode: (baseState?.parse.mode ?? Default.mode) as any,
 		lazy: false,
-		pattern: new Map<symbol, RegExp>(),
+		pattern: new Map(baseState?.parse.pattern),
 	});
 
 	// 2. Establish the base configuration options
-	markConfig(Object.assign(state.config, Default));
+	markConfig(Object.assign(state.config, baseState?.config ?? Default));
 	Object.defineProperties(state.config, {
 		calendar: { value: calendar, enumerable: true, writable: true, configurable: true },
 		timeZone: { value: timeZone, enumerable: true, writable: true, configurable: true },
@@ -62,7 +62,7 @@ export function init(options: t.Options = {}): t.Internal.State {
 	state.OPTION = new Set(Object.keys(Default));
 	state.ZONED_DATE_TIME = new Set(['year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond', 'offset', 'timeZone', 'calendar']);
 
-	runtime.state = state;
+	if (isGlobal) runtime.state = state;
 	return state;
 }
 

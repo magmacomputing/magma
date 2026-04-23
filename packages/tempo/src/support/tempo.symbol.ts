@@ -25,6 +25,12 @@ const local = {
 	/** hardened globalThis bridge key for the TempoRuntime */$Bridge: Symbol.for('magmacomputing/tempo/runtime'),
 	/** cross-bundle brand check for TempoRuntime */					$RuntimeBrand: Symbol.for('magmacomputing/tempo/runtime/brand'),
 	/** branding for explicit PropertyDescriptors */					$Descriptor: Symbol.for('magmacomputing/tempo/descriptor'),
+	/** internal static config helper */											$setConfig: Symbol.for('magmacomputing/tempo/setConfig'),
+	/** internal static discovery helper */										$setDiscovery: Symbol.for('magmacomputing/tempo/setDiscovery'),
+	/** internal static event builder */											$setEvents: Symbol.for('magmacomputing/tempo/setEvents'),
+	/** internal static period builder */											$setPeriods: Symbol.for('magmacomputing/tempo/setPeriods'),
+	/** internal static guard builder */											$buildGuard: Symbol.for('magmacomputing/tempo/buildGuard'),
+	/** internal static base class marker */										$IsBase: Symbol.for('magmacomputing/tempo/isBase'),
 } as const;
 
 /** @internal Unified Symbol Registry (Inherits from #library via Prototype Chain) */

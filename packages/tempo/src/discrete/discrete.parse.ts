@@ -360,7 +360,7 @@ const _ParseEngine = {
 				const isEvent = Match.event.test(key);
 				const isGlobal = key.startsWith('g');
 				const isNamed = key === 'gdt' || key === 'dt' || key === 'gtm' || key === 'tm';
-				const idx = isNamed ? -1 : +key.substring(4);
+				const idx = isNamed ? -1 : +(key.match(/\d+$/)?.[0] ?? -1);
 
 				if (isNamed) {
 					resolved.add(key);
@@ -373,6 +373,12 @@ const _ParseEngine = {
 					? (isEvent ? globalParse?.event : globalParse?.period)
 					: (isEvent ? state.parse.event : state.parse.period);
 				const entry = ownEntries(src, true)[idx];
+
+				if (!entry) {
+					resolved.add(key);
+					delete groups[key];
+					continue;
+				}
 
 				if (!entry) {
 					resolved.add(key);
@@ -452,7 +458,8 @@ const _ParseEngine = {
 					const type = isEvent ? 'Event' : 'Period';
 					const pat = (isEvent ? 'dt' : 'tm');
 					const resolveVal = isFunction(definition) ? res : definition;
-					_ParseEngine.result(state, { type, value: entry[0] as any, match: pat, groups: { [key]: resolveVal as string } });
+					const source = isGlobal ? 'global' : 'local';
+					_ParseEngine.result(state, { type, value: entry[0] as any, match: pat, source, groups: { [key]: resolveVal as string } });
 
 					// Protect against recursive re-evaluation of same alias
 					if (!isEmpty(res) && res !== String(groups[key])) {
