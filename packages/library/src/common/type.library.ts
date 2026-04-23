@@ -21,14 +21,15 @@ export const protoType = (obj?: unknown) => {
 export const getType = (obj?: any, ...instances: Instance[]): Type => {
 	const raw = (obj as any)?.[sym.$Target] ?? obj;						// bypass Proxy traps
 	const type = protoType(raw);
-
 	switch (true) {
 		case obj === null: return 'Null';
 		case obj === undefined: return 'Undefined';
 
 		case isClassConstructor(raw): return 'Class';
-		case typeof raw === 'function': return type;						// catch all functional types (including AsyncFunction)
-
+		case typeof raw === 'function': {
+			if (type !== 'Function') console.log('[Library] getType weird function:', type, obj?.name);
+			return type;						// catch all functional types (including AsyncFunction)
+		}
 		case type === 'Object': {
 			// check for ArrayLike (e.g. {0:'a', 1:'b', length:2})
 			if ('length' in raw && Object.keys(raw).every(key => key === 'length' || !isNaN(Number(key)))) return 'ArrayLike';
@@ -71,6 +72,8 @@ const isClassConstructor = (obj: any): boolean => {
 	if (typeof obj !== 'function') return false;
 
 	const raw = (obj as any)?.[sym.$Target] ?? obj;						// bypass Proxy traps
+	
+	const result = (() => {
 
 	// Arrow functions do NOT have a prototype property, whereas traditional functions and classes DO.
 	// This is a high-performance check to immediately classify arrow functions as non-classes.

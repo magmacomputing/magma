@@ -18,7 +18,7 @@ import type { Range, ResolvedRange } from '../plugin/plugin.type.js';
 import type { Tempo } from '../tempo.class.js';
 import * as t from '../tempo.type.js';
 
-const isZDT = (obj: any) => obj && (obj[Symbol.toStringTag] === 'Temporal.ZonedDateTime' || typeof obj.toInstant === 'function');
+
 
 
 
@@ -65,7 +65,7 @@ const _ParseEngine = {
 
 			const [tz, cal] = isTempo(basis) ? [(basis as any).tz, (basis as any).cal] : getTemporalIds(basis ?? config.timeZone, basis ?? config.calendar);
 			const isAnchored = isDefined(val);
-			today = isZDT(basis) ? basis : (isTempo(basis) ? (basis as any).toDateTime() : (isZDT(val) ? val : instant().toZonedDateTimeISO(tz).withCalendar(cal)));
+			today = isZonedDateTime(basis) ? basis : (isTempo(basis) ? (basis as any).toDateTime() : (isZonedDateTime(val) ? val : instant().toZonedDateTimeISO(tz).withCalendar(cal)));
 
 			const TempoClass = getRuntime().modules['Tempo'];
 			const terms = getRuntime().pluginsDb.terms;
@@ -173,6 +173,7 @@ const _ParseEngine = {
 		const terms = getRuntime().pluginsDb.terms;
 
 
+		if (isTempo(dateTime)) dateTime = dateTime.toDateTime();
 		if (!isZonedDateTime(dateTime)) {
 			if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new TypeError(`Sacred Anchor corrupted: ${String(value)}`));
 			return arg;
@@ -279,6 +280,7 @@ const _ParseEngine = {
 
 		let zdt = dateTime as any;
 		const anchorTime = zdt.toPlainTime();
+		console.log('[Tempo] parseLayout isAnchored:', isAnchored, 'dateTime:', dateTime.toString());
 		for (const [symKey, pat] of state.parse.pattern) {
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
 			if (isEmpty(groups)) {
@@ -296,10 +298,10 @@ const _ParseEngine = {
 			dateTime = parseTime(groups, dateTime);
 
 			const isChanged = !dateTime.toPlainTime().equals(anchorTime);
-			if (!hasTime && !isChanged)
+			if (!isAnchored && !hasTime && !isChanged)
 				dateTime = dateTime.withPlainTime('00:00:00');
 
-			if (isZDT(dateTime)) {
+			if (isZonedDateTime(dateTime)) {
 				Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: dateTime, match: symKey.description, groups });
 			}
 
@@ -339,6 +341,7 @@ const _ParseEngine = {
 
 			while ((pending = ownKeys(groups).filter(k => (Match.event.test(k) || Match.period.test(k) || k === 'slk') && !resolved.has(k))).length > 0) {
 				const key = pending[0];
+				console.log('[Tempo] parseGroups key:', key, 'value:', groups[key]);
 
 				if (key === 'slk') {
 					const slk = groups[key];
@@ -359,7 +362,7 @@ const _ParseEngine = {
 				const isGlobal = key.startsWith('g');
 				const isNamed = key === 'gdt' || key === 'dt' || key === 'gtm' || key === 'tm';
 				const idx = isNamed ? -1 : +key.substring(4);
-				console.error(`[Tempo] Processing key: ${key}, idx: ${idx}, isEvent: ${isEvent}, isGlobal: ${isGlobal}, isNamed: ${isNamed}`);
+				console.log(`[Tempo] Processing key: ${key}, idx: ${idx}, isEvent: ${isEvent}, isGlobal: ${isGlobal}, isNamed: ${isNamed}`);
 
 				if (isNamed) {
 					resolved.add(key);
@@ -372,6 +375,7 @@ const _ParseEngine = {
 					? (isEvent ? globalParse?.event : globalParse?.period)
 					: (isEvent ? state.parse.event : state.parse.period);
 				const entry = ownEntries(src, true)[idx];
+				console.log('[Tempo] parseGroups entry:', entry ? entry[0] : 'MISSING', 'definition type:', typeof entry?.[1]);
 
 				if (!entry) {
 					resolved.add(key);
@@ -380,6 +384,7 @@ const _ParseEngine = {
 				}
 
 				const aliasKey = entry[0] as string;
+				console.log('[Tempo] parseGroups aliasKey:', aliasKey, 'resolvingKeys:', Array.from(resolvingKeys));
 				if (resolvingKeys.size > 50 || resolvingKeys.has(aliasKey)) {
 					const msg = `Infinite recursion detected in Tempo resolution for: ${aliasKey}`;
 					state.errored = true;
@@ -393,13 +398,22 @@ const _ParseEngine = {
 				resolved.add(key);
 
 				const definition = entry[1];
+				const isFn = isFunction(definition);
+				console.log('[Tempo] parseGroups checking if definition is function:', typeof definition, 'isFunction:', isFn);
 				let res: string = '';
-				if (isFunction(definition)) {
+				if (isFn) {
 					try {
+						console.log('[Tempo] parseGroups definition source:', String(definition).substring(0, 50));
 						// Provide a lightweight host context that mimics a Tempo instance for the handler
 						const host = {
-							add: (val: any) => dateTime.add(val),
-							subtract: (val: any) => dateTime.subtract(val),
+							add: (val: any) => {
+								console.log('[Tempo] host.add called with:', JSON.stringify(val));
+								return dateTime.add(val);
+							},
+							subtract: (val: any) => {
+								console.log('[Tempo] host.subtract called with:', JSON.stringify(val));
+								return dateTime.subtract(val);
+							},
 							with: (val: any) => dateTime.with(val),
 							set: (val: any, opt?: any) => {
 								const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
@@ -418,12 +432,19 @@ const _ParseEngine = {
 						};
 
 						const result = (definition as Function).call(host);
+						console.log('[Tempo] parseGroups result type:', typeof result, 'isZDT:', isZonedDateTime(result));
 						if (isTempo(result)) dateTime = (result as any).toDateTime();
-						else if (isZDT(result)) dateTime = result as Temporal.ZonedDateTime;
+						else if (isZonedDateTime(result)) {
+							// if we have a full ZonedDateTime result, preserve it
+							dateTime = result as Temporal.ZonedDateTime;
+						}
 						else if (isObject(result) && isFunction((result as any).toDateTime)) dateTime = (result as any).toDateTime();
+						
 						res = isString(result) || isNumeric(result) ? String(result) : '';
+						console.log('[Tempo] parseGroups updated dateTime:', dateTime.toString());
 						state.zdt = dateTime;
 					} catch (e: any) {
+						console.log('[Tempo] parseGroups ERROR:', e.message, e.stack);
 						throw e;
 					}
 				} else {

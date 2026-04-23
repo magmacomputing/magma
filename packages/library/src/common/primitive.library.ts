@@ -15,8 +15,12 @@ import type { Obj, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
  */
 export function unwrap<T extends object>(obj: T): T {
 	let curr = (obj as any)?.[sym.$Target] ?? obj;
-	// Hardened against different Symbol instances across module boundaries
+	let depth = 0;
 	while (curr && (Object.prototype.hasOwnProperty.call(curr, sym.$Target) || (curr as any).$Target)) {
+		if (++depth > 10) {
+			console.error('[Library] unwrap: Infinite recursion detected!');
+			break;
+		}
 		curr = curr[sym.$Target] ?? (curr as any).$Target;
 	}
 	return curr;
@@ -29,7 +33,7 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 
 	const tgt = unwrap(json);
 	if (!all) {
-		const keys = Reflect.ownKeys(tgt).reverse();
+		const keys = Reflect.ownKeys(tgt);
 		const entries: [PropertyKey, any][] = [];
 		for (const k of keys) {
 			const desc = Object.getOwnPropertyDescriptor(tgt, k);
@@ -46,7 +50,7 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 
 	while (proto && proto !== Object.prototype && depth++ < limit) {
 		const current = unwrap(proto);
-		const keys = Reflect.ownKeys(current).reverse();
+		const keys = Reflect.ownKeys(current);
 
 		for (const k of keys) {
 			if (seen.has(k)) continue;

@@ -15,7 +15,7 @@ export const setProperty = <T>(target: object, key: PropertyKey, value: T) =>
 export const proto = (obj: object) => Object.getPrototypeOf(obj);
 
 /** @internal test object has own property with the given key */
-export const hasOwn = (obj: object, key: string) => Object.hasOwn(obj, key);
+export const hasOwn = (obj: object, key: PropertyKey) => Object.hasOwn(obj, key);
 
 /** @internal create an object based on a prototype */
 export const create = <T extends object>(obj: object, name: string): T => {

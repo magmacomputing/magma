@@ -187,8 +187,9 @@ export namespace Internal {
 		/** @internal valid Temporal units for ZonedDateTime */	ZONED_DATE_TIME: Set<string>;
 
 		/** @internal current recursion depth during parsing */	parseDepth?: number;
-		/** @internal current matches during parsing */					matches?: Match[] | undefined;
-		/** @internal current anchor during parsing */					anchor?: Temporal.ZonedDateTime;
+		/** @internal current matches during parsing */					matches: Match[] | undefined;
+		/** @internal current anchor during parsing */					anchor: Temporal.ZonedDateTime | undefined;
+		/** @internal current ZonedDateTime during parsing */		zdt?: Temporal.ZonedDateTime;
 		/** @internal has the parse operation errored? */				errored?: boolean;
 	}
 
