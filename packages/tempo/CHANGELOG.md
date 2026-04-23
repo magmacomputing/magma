@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Alias Precedence**: User-defined `event` and `period` aliases now take precedence over built-in aliases when both patterns match.
+
+### Notes
+- **Impact**: Parsing output may change for consumers who previously relied on built-in alias resolution winning in overlap cases.
+- **Guidance**: If needed, rename custom aliases to avoid overlap or remove the conflicting custom alias.
+
 ## [2.3.0] - 2026-04-22
 
 ### Added

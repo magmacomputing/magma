@@ -56,5 +56,14 @@ The `npm run release` command triggers the following automated steps:
 - **Git Operations**: Commits the version bump and changelog update, tags the release (e.g., `v2.1.3`), and pushes to GitHub.
 - **NPM & GitHub**: Publishes the packages to NPM and creates a formal release on GitHub.
 
+## 📝 Release Note Callouts
+
+When shipping parser behavior changes, explicitly call them out in `CHANGELOG.md` under `## [Unreleased]` before running `npm run release`.
+
+Current required callout:
+- **Alias precedence change**: user-defined `event`/`period` aliases now take precedence over built-ins when both match.
+- **Impact**: parsing output may change for consumers who previously relied on built-in alias resolution winning.
+- **Guidance**: if needed, rename custom aliases to avoid overlap or disable the conflicting custom alias.
+
 ---
 *Maintained by Magma Computing. For internal support, contact the project lead.*

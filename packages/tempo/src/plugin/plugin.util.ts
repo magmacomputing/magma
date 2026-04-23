@@ -100,7 +100,7 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 				// use catch:true to report the collision without a fatal throw (supports re-extension in shared environments)
 				TempoClass[sym.$logError]({ ...TempoClass.config, catch: true }, msg);
 			}
-			console.error(msg);
+			// console.error(msg);
 			continue;
 		}
 

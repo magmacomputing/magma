@@ -15,12 +15,8 @@ import type { Obj, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
  */
 export function unwrap<T extends object>(obj: T): T {
 	let curr = (obj as any)?.[sym.$Target] ?? obj;
-	let depth = 0;
+	// Hardened against different Symbol instances across module boundaries
 	while (curr && (Object.prototype.hasOwnProperty.call(curr, sym.$Target) || (curr as any).$Target)) {
-		if (++depth > 10) {
-			console.error('[Library] unwrap: Infinite recursion detected!');
-			break;
-		}
 		curr = curr[sym.$Target] ?? (curr as any).$Target;
 	}
 	return curr;

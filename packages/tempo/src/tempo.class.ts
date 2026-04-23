@@ -262,6 +262,21 @@ export class Tempo {
 			locale																								// cannot determine locale
 	}
 
+	/** detect likely overlap between two alias keys/patterns */
+	static #isAliasCollision(a: string, b: string): boolean {
+		if (a === b) return true;
+
+		try {
+			if (new RegExp(`^(?:${a})$`, 'i').test(b)) return true;
+		} catch { }
+
+		try {
+			if (new RegExp(`^(?:${b})$`, 'i').test(a)) return true;
+		} catch { }
+
+		return false;
+	}
+
 	/**
 	 * conform input of Snippet / Layout / Event / Period options  
 	 * This is needed because we allow the user to flexibly provide detail as {[key]:val} or {[key]:val}[] or [key,val][]  
@@ -321,14 +336,44 @@ export class Tempo {
 									: isRegExp(v) ? v.source : v
 							)
 						} else {
+							const aliases: [string, any][] = [];
 							asArray(arg.value)
 								.forEach(elm => {
 									if (isObject(elm)) {
-										Object.assign(rule, elm);
+										ownEntries(elm as Record<string, any>, true)
+											.forEach(([k, v]) => aliases.push([String(k), v]));
 									} else if (isString(elm)) {
-										rule[elm] = elm;
+										aliases.push([elm, elm]);
 									}
-								})
+								});
+
+							if ((optKey === 'event' || optKey === 'period') && aliases.length > 0) {
+								const existing = ownEntries(rule as Record<string, any>, true)
+									.map(([k, v]) => [String(k), v] as [string, any]);
+								const incomingKeys = new Set(aliases.map(([k]) => k));
+
+								aliases.forEach(([incomingKey]) => {
+									const collisions = existing
+										.map(([k]) => k)
+										.filter(k => !incomingKeys.has(k) && Tempo.#isAliasCollision(k, incomingKey));
+
+									if (!isEmpty(collisions)) {
+										Tempo.#dbg.warn(shape.config,
+											`Potential ${optKey} alias collision: "${incomingKey}" overlaps with existing alias(es): ${collisions.join(', ')}`);
+									}
+								});
+
+								const next = Object.fromEntries([
+									...aliases,
+									...existing.filter(([k]) => !incomingKeys.has(k))
+								]);
+
+								ownKeys(rule as Record<string, any>, true)
+									.forEach(key => delete (rule as any)[key]);
+								Object.assign(rule, next);
+							} else {
+								Object.assign(rule, Object.fromEntries(aliases));
+							}
 						}
 						break;
 
