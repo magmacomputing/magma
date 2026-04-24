@@ -17,6 +17,7 @@ import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/inte
 
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
+import { resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns } from './support/tempo.util.js';
 
@@ -63,20 +64,20 @@ namespace Internal {
 export class Tempo {
 	/** Weekday names (short-form) */													static get WEEKDAY() { return enums.WEEKDAY }
 	/** Weekday names (long-form) */													static get WEEKDAYS() { return enums.WEEKDAYS }
-	/** Month names (short-form) */														static get MONTH() { return enums.MONTH }
-	/** Month names (long-form) */														static get MONTHS() { return enums.MONTHS }
+	/** Month names (short-form) */															static get MONTH() { return enums.MONTH }
+	/** Month names (long-form) */															static get MONTHS() { return enums.MONTHS }
 	/** Time durations as seconds (singular) */								static get DURATION() { return enums.DURATION }
-	/** Time durations as milliseconds (plural) */						static get DURATIONS() { return enums.DURATIONS }
+	/** Time durations as milliseconds (plural) */					static get DURATIONS() { return enums.DURATIONS }
 
 	/** Quarterly Seasons */																	static get SEASON() { return enums.SEASON }
 	/** Compass cardinal points */														static get COMPASS() { return enums.COMPASS }
 
-	/** Tempo to Temporal DateTime Units map */								static get ELEMENT() { return enums.ELEMENT }
+	/** Tempo to Temporal DateTime Units map */							static get ELEMENT() { return enums.ELEMENT }
 	/** Pre-configured format {name -> string} pairs */				static get FORMAT() { return enums.FORMAT }
 	/** Number names (0-10) */																static get NUMBER() { return enums.NUMBER }
 	/** TimeZone aliases */																		static get TIMEZONE() { return enums.TIMEZONE }
 	/** initialization strategies */													static get MODE() { return enums.MODE }
-	/** some useful Dates */																	static get LIMIT() { return enums.LIMIT }
+	/** some useful Dates */																			static get LIMIT() { return enums.LIMIT }
 
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !Tempo.#lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return Tempo.#lifecycle.extendDepth > 0 }
@@ -228,29 +229,16 @@ export class Tempo {
 	 * this allows the parser to try to interpret '04012023' as Apr-01-2023 before trying 04-Jan-2023  
 	 */
 	static #swapLayout(shape: Internal.State) {
-		const layouts = ownEntries(shape.parse.layout);				// get entries of Layout Record
-		const swap = shape.parse.mdyLayouts;										// get the swap-tuple
-		let chg = false;																				// no need to rebuild, if no change
+		const layout = resolveLayoutOrder({
+			layout: shape.parse.layout,
+			mdyLayouts: shape.parse.mdyLayouts,
+			isMonthDay: !!shape.parse.isMonthDay,
+		});
 
-		swap
-			.forEach(([dmy, mdy]) => {														// loop over each swap-tuple
-				const idx1 = layouts.findIndex(([key]) => (key as symbol).description === dmy);	// 1st swap element exists in {layouts}
-				const idx2 = layouts.findIndex(([key]) => (key as symbol).description === mdy);	// 2nd swap element exists in {layouts}
+		if (layout !== shape.parse.layout)
+			shape.parse.layout = layout as Layout;
 
-				if (idx1 === -1 || idx2 === -1)
-					return;																					// no pair to swap
-
-				const swap1 = (idx1 < idx2) && shape.parse.isMonthDay;	// we prefer {mdy} and the 1st tuple was found earlier than the 2nd
-				const swap2 = (idx1 > idx2) && !shape.parse.isMonthDay;	// we dont prefer {mdy} and the 1st tuple was found later than the 2nd
-
-				if (swap1 || swap2) {																// since {layouts} is an array, ok to swap by-reference
-					[layouts[idx1], layouts[idx2]] = [layouts[idx2], layouts[idx1]];
-					chg = true;
-				}
-			})
-
-		if (chg)
-			shape.parse.layout = Object.fromEntries(layouts) as Layout;	// rebuild Layout in new parse order
+		Tempo.#dbg.debug(shape.config, `Resolved layout order: ${getLayoutOrder(layout).join(' -> ')}`);
 	}
 
 	/** get first Canonical name of a supplied locale */
