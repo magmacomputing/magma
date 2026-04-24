@@ -14,13 +14,15 @@ import type { Obj, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
  * Hardened against prototype-climbing bugs and cyclic $Target chains.
  */
 export function unwrap<T extends object>(obj: T): T {
-	let curr = (obj as any)?.[sym.$Target] ?? obj;
+	let curr = obj as any;
 	let depth = 0;
 	const maxDepth = 50; // Guard against infinite loops on cyclic or self-referential $Target chains
-	
-	// Hardened against different Symbol instances across module boundaries
-	while (curr && depth < maxDepth && (Object.prototype.hasOwnProperty.call(curr, sym.$Target) || (curr as any).$Target)) {
-		curr = curr[sym.$Target] ?? (curr as any).$Target;
+
+	// Use direct reads so proxy get-traps can surface synthetic $Target values.
+	while (curr) {
+		const next = curr[sym.$Target] ?? (curr as any).$Target;
+		if (!next || depth >= maxDepth) break;
+		curr = next;
 		depth++;
 	}
 	return curr;

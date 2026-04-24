@@ -11,6 +11,7 @@ const Method = {
 	Info: 'info',
 	Warn: 'warn',
 	Debug: 'debug',
+	Trace: 'trace',
 	Error: 'error',
 } as const;
 
@@ -21,6 +22,7 @@ const Level = {
 	[Method.Info]: 3,
 	[Method.Log]: 3,
 	[Method.Debug]: 4,
+	[Method.Trace]: 5,
 } as const;
 
 /**
@@ -76,6 +78,7 @@ export class Logify {
 	/** console.info */		info = (...msg: any[]) => this.#trap(Method.Info, ...msg);
 	/** console.warn */		warn = (...msg: any[]) => this.#trap(Method.Warn, ...msg);
 	/** console.debug */	debug = (...msg: any[]) => this.#trap(Method.Debug, ...msg);
+	/** console.trace */	trace = (...msg: any[]) => this.#trap(Method.Trace, ...msg);
 	/** console.error */	error = (...msg: any[]) => this.#trap(Method.Error, ...msg);
 
 	constructor(self?: Logify.Constructor | string, opts = {} as Logify.Constructor) {
@@ -116,6 +119,17 @@ export namespace Logify {
 	export type Method = ValueOf<typeof Method>
 
 	export interface Constructor {
+		/**
+		 * Logging verbosity: `boolean | number`.
+		 * - `true` maps to `LOG.Debug`
+		 * - `false` (or unset) maps to `LOG.Info`
+		 * - numeric values map directly to `LOG` levels
+		 *
+		 * Note: numeric `0` (`LOG.Off`) suppresses all console emission, including
+		 * `console.error`. Errors can still be rethrown when `catch: false`, but no
+		 * error log is emitted. Use `true` or a higher numeric level to ensure errors
+		 * are logged to the console.
+		 */
 		debug?: boolean | number | undefined,
 		catch?: boolean | undefined,
 		silent?: boolean | undefined,

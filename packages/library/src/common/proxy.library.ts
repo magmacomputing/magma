@@ -43,7 +43,18 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 
 		getOwnPropertyDescriptor: (t, k) => {
 			if (keys && !keys.includes(k)) return undefined;
-			if (keys) return { enumerable: true, configurable: true };
+			if (keys) {
+				if (onGet && !pending.has(k)) {
+					pending.add(k);
+					try {
+						const value = onGet(k, t);
+						if (isDefined(value)) return { enumerable: true, configurable: true, value };
+					} finally {
+						pending.delete(k);
+					}
+				}
+				return { enumerable: true, configurable: true };
+			}
 			return Reflect.getOwnPropertyDescriptor(t, k);
 		},
 
@@ -144,6 +155,6 @@ export function secure<const T extends object>(obj: T, skip = new WeakSet<object
 
 /** Create a virtual Proxy where fixed keys are mapped to a callback function */
 export function delegator<K extends string | symbol>(keys: K[] | Record<K, any>, fn: (prop: K) => any): Record<K, any> {
-	const keyList = Array.isArray(keys) ? keys : Object.keys(keys) as K[];
+	const keyList = Array.isArray(keys) ? keys : Reflect.ownKeys(keys) as K[];
 	return factory({} as any, { keys: keyList, onGet: fn as any });
 }

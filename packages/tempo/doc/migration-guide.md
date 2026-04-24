@@ -67,15 +67,15 @@ We have reorganized the package structure to support these standalone entry poin
 
     > Note: The shipped `packages/tempo/importmap.json` is the supported exception for version-locked internal mappings. Use it as-is for your installed Tempo version instead of hand-authoring `dist/` paths.
 
-        Example:
-        ```json
-        {
-            "imports": {
-                "@magmacomputing/tempo/parse": "./node_modules/@magmacomputing/tempo/parse",
-                "@magmacomputing/tempo/format": "./node_modules/@magmacomputing/tempo/format"
-            }
-        }
-        ```
+    Example:
+```json
+{
+    "imports": {
+        "@magmacomputing/tempo/parse": "./node_modules/@magmacomputing/tempo/parse",
+        "@magmacomputing/tempo/format": "./node_modules/@magmacomputing/tempo/format"
+    }
+}
+```
 
 ## 🔁 Migrating from version 2.4
 

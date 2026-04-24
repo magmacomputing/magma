@@ -61,8 +61,17 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		});
 	} else if (baseState) {
 		state.config = markConfig(Object.create(baseState.config));
-		setProperty(state.config, 'scope', 'local');
-		if (isDefined(options.catch)) setProperty(state.config, 'catch', options.catch);
+		Object.defineProperties(state.config, {
+			calendar: { value: (state.config as any).calendar, enumerable: true, writable: true, configurable: true },
+			timeZone: { value: (state.config as any).timeZone, enumerable: true, writable: true, configurable: true },
+			locale: { value: (state.config as any).locale, enumerable: true, writable: true, configurable: true },
+			discovery: { value: (state.config as any).discovery, enumerable: true, writable: true, configurable: true },
+			formats: { value: (state.config as any).formats, enumerable: true, writable: true, configurable: true },
+			sphere: { value: (state.config as any).sphere, enumerable: true, writable: true, configurable: true },
+			get: { value: (state.config as any).get, enumerable: false, writable: true, configurable: true },
+			scope: { value: 'local', enumerable: true, writable: true, configurable: true },
+		});
+		setProperty(state.config, 'catch', options.catch);
 	} else {
 		markConfig(Object.assign(state.config, Default));
 		Object.defineProperties(state.config, {

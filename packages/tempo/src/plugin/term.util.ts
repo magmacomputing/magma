@@ -165,6 +165,7 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Ra
 			if (key === 'sphere') {
 				const valA = String(r[key] ?? '').toLowerCase();
 				const valB = String((t.config as any)[key] ?? '').toLowerCase();
+				if (valA === '' || valB === '') return false;
 				return valB.includes(valA);
 			}
 			return r[key] === (t.config as any)[key];
@@ -271,7 +272,7 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 	// 1. Resolve Template (supporting optional dynamic grouping)
 	let list: Range[] = [];
 	if (!isDefined(template)) {
-		(t.constructor as any)[TermError](t.config, 'template');
+		(t.constructor as any)[TermError]?.(t.config, 'template');
 		return [];
 	}
 
@@ -300,7 +301,7 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 				if (!staticMatch) continue;
 
 				const sphereLower = sphereSegment.toLowerCase();
-				const sphereMatch = targetSphere.includes(sphereLower) || sphereLower.includes(targetSphere);
+				const sphereMatch = targetSphere.includes(sphereLower);
 				if (!sphereMatch) continue;
 
 				if (
@@ -317,7 +318,7 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 		if (list.length === 0) {
 			const missing = groupBy.filter(k => isUndefined(options[k]) && isUndefined(anchor?.[k]) && isUndefined(t.config[k]));
 			const msg = missing.length > 0 ? `Missing grouping criteria: ${missing.join(', ')}` : `No ranges found for group: ${groupKey}`;
-			(t.constructor as any)[TermError](t.config, msg);
+			(t.constructor as any)[TermError]?.(t.config, msg);
 			return [];
 		}
 	} else {

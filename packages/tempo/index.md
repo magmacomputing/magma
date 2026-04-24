@@ -232,6 +232,8 @@ function toggleCarousel() {
 }
 
 function onSwipeStart(e) {
+  if (isDragging.value) return
+  if (e.isPrimary === false) return
   if (e.pointerType === 'mouse' && e.button !== 0) return
   swipePointerId = e.pointerId
   swipeStartX = e.clientX
@@ -308,6 +310,14 @@ function handleVisibility() {
     console.info('%c[Tempo]%c 💤 Pausing Ticker (Standby)', 'color: #71717a; font-weight: bold', 'color: inherit')
     ticker?.stop()
     if (fallbackIntervalId) clearInterval(fallbackIntervalId)
+    if (carouselSnapTimer) {
+      clearTimeout(carouselSnapTimer)
+      carouselSnapTimer = null
+    }
+    if (carouselRestoreTimer) {
+      clearTimeout(carouselRestoreTimer)
+      carouselRestoreTimer = null
+    }
     clearInterval(carouselTimer)
     carouselTimer = null
   }

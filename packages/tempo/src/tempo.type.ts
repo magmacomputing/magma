@@ -7,7 +7,7 @@
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
 
-import { sym, TempoBrand } from '#tempo/support/tempo.symbol.js';
+import { sym, type TempoBrand } from '#tempo/support/tempo.symbol.js';
 import * as enums from '#tempo/support/tempo.enum.js';
 import type { Logify } from '#library/logify.class.js';
 import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/tempo.default.js';

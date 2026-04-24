@@ -81,7 +81,7 @@ describe('Pledge', () => {
 			await Promise.resolve();
 
 			expect(warnSpy).toHaveBeenCalledTimes(1);
-			expect(String(warnSpy.mock.calls[0]?.[0])).toContain('Pledge: Pledge callback failed');
+			expect(String(warnSpy.mock.calls[0]?.[0])).toContain('Pledge callback failed');
 			expect(debugSpy).not.toHaveBeenCalled();
 		} finally {
 			warnSpy.mockRestore();
