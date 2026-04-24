@@ -53,6 +53,30 @@ const uk = new Tempo('04012026', { timeZone: 'Europe/London' });
 console.log(uk.format('{mon} {dd}')); // "January 04"
 ```
 
+For digits-only input, Tempo checks the most likely compact interpretation first:
+
+- A `6`-digit string is checked as compact time first (`hhmiss`). If it is not a valid time, Tempo then tries compact date layouts like `ddmmyy` or `mmddyy`.
+- An `8`-digit string is checked as a compact date, with month-day-year vs day-month-year decided by `timeZone`.
+
+```typescript
+const time = new Tempo('093015', { timeZone: 'UTC' });
+console.log(time.format('{hh}:{mi}:{ss}')); // "09:30:15"
+
+const shortDate = new Tempo('310559', { timeZone: 'Europe/London' });
+console.log(shortDate.format('{yyyy}-{mm}-{dd}')); // "1959-05-31"
+
+const usDate = new Tempo('04012026', { timeZone: 'America/New_York' });
+console.log(usDate.format('{yyyy}-{mm}-{dd}')); // "2026-04-01"
+
+const ukDate = new Tempo('04012026', { timeZone: 'Europe/London' });
+console.log(ukDate.format('{yyyy}-{mm}-{dd}')); // "2026-01-04"
+```
+
+To avoid ambiguity, prefer separators whenever you control the input format:
+
+- Use `09:30:15` instead of `093015`.
+- Use `2026-04-01`, `04/01/2026`, or `01/04/2026` instead of `04012026`.
+
 ### Handling Relative Strings
 Tempo natively understands human-readable offsets.
 ```typescript

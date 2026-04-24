@@ -32,11 +32,24 @@ const commonZones = ref([
 const uniqueZones = computed(() => [...new Set(commonZones.value)])
 
 // --- Carousel State ---
-const activeIndex = ref(0)
+const LEADING_CLONES = 1
+const TRAILING_CLONES = 3
+
+const activeIndex = ref(LEADING_CLONES)
 const isManualPaused = ref(false)
 const isHovering = ref(false)
-const isPaused = computed(() => isManualPaused.value || isHovering.value)
+const isDragging = ref(false)
+const isPaused = computed(() => isManualPaused.value || isHovering.value || isDragging.value)
 const transitionEnabled = ref(true)
+const carouselTrackRef = ref(null)
+const dragOffsetX = ref(0)
+
+const swipeHint = computed(() => {
+  if (!isDragging.value) return 'Swipe'
+  if (dragOffsetX.value < -8) return 'Swipe left'
+  if (dragOffsetX.value > 8) return 'Swipe right'
+  return 'Swipe'
+})
 
 const features = [
   { title: 'Zero-Cost', details: 'Lazy evaluation and smart matching ensure instantiation overhead is near-zero.', icon: '⚡' },
@@ -49,8 +62,12 @@ const features = [
   { title: 'Business Aware', details: 'Native support for fiscal quarters, zodiac signs, and meteorological seasons. Perfect for financial applications or astrology buffs or meteorologists !', icon: '📈' }
 ]
 
-// 8 features + 3 clones for a seamless 3-card viewport
-const displayFeatures = [...features, ...features.slice(0, 3)]
+// Real features plus leading/trailing clones for seamless bi-directional looping.
+const displayFeatures = [
+  ...features.slice(-LEADING_CLONES),
+  ...features,
+  ...features.slice(0, TRAILING_CLONES)
+]
 
 let isMounted = false
 let ticker = null
@@ -58,6 +75,11 @@ let carouselTimer = null
 let fallbackIntervalId = null
 let initFailed = false
 let resumeTimer = null
+let swipeStartX = 0
+let swipeLastX = 0
+let swipePointerId = null
+
+const SWIPE_MIN_DISTANCE = 40
 
 function updateHands(h24, m, s) {
   const h = h24 % 12
@@ -150,24 +172,90 @@ function startCarousel() {
   if (carouselTimer) clearInterval(carouselTimer)
   carouselTimer = setInterval(() => {
     if (!isPaused.value) {
-      activeIndex.value++
-      // Seamless loop: if we hit the start of the clones, wait for slide then snap
-      if (activeIndex.value >= features.length) {
-        setTimeout(() => {
-          if (!isMounted) return
-          transitionEnabled.value = false
-          activeIndex.value = 0
-          setTimeout(() => { transitionEnabled.value = true }, 50)
-        }, 850)
-      }
+      moveNext()
     }
   }, 4000)
+}
+
+function moveNext() {
+  activeIndex.value++
+  // If we enter trailing clones, animate one step then snap back to first real item.
+  if (activeIndex.value >= LEADING_CLONES + features.length) {
+    setTimeout(() => {
+      if (!isMounted) return
+      transitionEnabled.value = false
+      activeIndex.value = LEADING_CLONES
+      setTimeout(() => { transitionEnabled.value = true }, 50)
+    }, 850)
+  }
+}
+
+function movePrev() {
+  activeIndex.value--
+  // If we enter leading clones, animate one step then snap to last real item.
+  if (activeIndex.value < LEADING_CLONES) {
+    setTimeout(() => {
+      if (!isMounted) return
+      transitionEnabled.value = false
+      activeIndex.value = LEADING_CLONES + features.length - 1
+      setTimeout(() => { transitionEnabled.value = true }, 50)
+    }, 850)
+  }
+}
+
+function toggleCarousel() {
+  isManualPaused.value = !isManualPaused.value
+}
+
+function onSwipeStart(e) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return
+  swipePointerId = e.pointerId
+  swipeStartX = e.clientX
+  swipeLastX = e.clientX
+  dragOffsetX.value = 0
+  isDragging.value = true
+  transitionEnabled.value = false
+  carouselTrackRef.value?.setPointerCapture?.(e.pointerId)
+}
+
+function onSwipeMove(e) {
+  if (!isDragging.value || swipePointerId !== e.pointerId) return
+  swipeLastX = e.clientX
+  const raw = swipeLastX - swipeStartX
+  dragOffsetX.value = Math.max(-96, Math.min(96, raw))
+}
+
+function finishSwipe(e) {
+  if (!isDragging.value || swipePointerId !== e.pointerId) return
+
+  const endX = e.clientX ?? swipeLastX
+  const deltaX = endX - swipeStartX
+
+  isDragging.value = false
+  swipePointerId = null
+  transitionEnabled.value = true
+  dragOffsetX.value = 0
+  carouselTrackRef.value?.releasePointerCapture?.(e.pointerId)
+
+  if (Math.abs(deltaX) < SWIPE_MIN_DISTANCE) return
+  if (deltaX < 0) moveNext()
+  else movePrev()
+}
+
+function cancelSwipe() {
+  isDragging.value = false
+  swipePointerId = null
+  transitionEnabled.value = true
+  dragOffsetX.value = 0
 }
 
 function handleVisibility() {
   if (resumeTimer) clearTimeout(resumeTimer)
   
   if (document.visibilityState === 'visible') {
+    // Always restart carousel timer on return; its own pause state is enforced via isPaused.
+    startCarousel()
+
     if (isManualTickerPaused.value) {
       isResuming.value = false
       return
@@ -184,7 +272,6 @@ function handleVisibility() {
       tickerActive.value = true
       console.info('%c[Tempo]%c ⚡ Resuming Ticker', 'color: #2563eb; font-weight: bold', 'color: inherit')
       startTicker()
-      startCarousel()
     }, 1200)
   } else {
     isResuming.value = false
@@ -222,11 +309,11 @@ const featureRefs = ref([])
 function handleKeydown(e) {
   if (e.key === 'ArrowLeft') {
     e.preventDefault()
-    if (activeIndex.value > 0) activeIndex.value--
+    movePrev()
     focusActiveCard()
   } else if (e.key === 'ArrowRight') {
     e.preventDefault()
-    if (activeIndex.value < features.length - 1) activeIndex.value++
+    moveNext()
     focusActiveCard()
   }
 }
@@ -302,17 +389,26 @@ function focusActiveCard() {
      @keydown="handleKeydown">
   
   <div class="tempo-carousel-controls">
-    <button class="tempo-carousel-toggle" @click="isManualPaused = !isManualPaused" :aria-label="isManualPaused ? 'Play carousel' : 'Pause carousel'">
+    <button class="tempo-carousel-toggle" @click="toggleCarousel" :aria-label="isManualPaused ? 'Play carousel' : 'Pause carousel'">
       <span v-if="isManualPaused">▶️</span>
       <span v-else>⏸️</span>
     </button>
   </div>
 
+  <div v-if="isDragging" class="tempo-swipe-hint" aria-live="polite">{{ swipeHint }}</div>
+
   <div class="tempo-carousel-track" 
+       ref="carouselTrackRef"
+       :class="{ 'is-dragging': isDragging }"
        role="list"
        :aria-live="isPaused ? 'off' : 'polite'"
+       @pointerdown="onSwipeStart"
+       @pointermove="onSwipeMove"
+       @pointerup="finishSwipe"
+       @pointercancel="cancelSwipe"
        :style="{ 
-         transform: `translateX(-${activeIndex * (100 / displayFeatures.length)}%)`,
+         '--carousel-count': displayFeatures.length,
+         transform: `translateX(calc(-${activeIndex * (100 / displayFeatures.length)}% + ${dragOffsetX}px))`,
          transition: transitionEnabled ? 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
        }">
     <div v-for="(feat, i) in displayFeatures" 
@@ -520,6 +616,23 @@ function focusActiveCard() {
   z-index: 10;
 }
 
+.tempo-swipe-hint {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 10;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vp-c-brand-1);
+  background: color-mix(in srgb, var(--vp-c-bg-soft) 88%, transparent);
+  border: 1px solid var(--vp-c-border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  backdrop-filter: blur(4px);
+}
+
 .tempo-carousel-toggle {
   background: var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-border);
@@ -541,11 +654,22 @@ function focusActiveCard() {
 
 .tempo-carousel-track {
   display: flex;
-  width: 366.66%; /* (8 + 3) / 3 * 100% */
+  width: calc((var(--carousel-count) / 3) * 100%);
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+}
+
+.tempo-carousel-track.is-dragging {
+  cursor: grabbing;
+}
+
+.tempo-carousel-track.is-dragging .tempo-feature-content {
+  border-color: color-mix(in srgb, var(--vp-c-brand-1) 40%, var(--vp-c-border));
 }
 
 .tempo-feature-card {
-  flex: 0 0 calc(100% / 11);
+  flex: 0 0 calc(100% / var(--carousel-count));
   padding: 12px;
   box-sizing: border-box;
 }
@@ -572,8 +696,8 @@ function focusActiveCard() {
 .tempo-feature-details { font-size: 0.9rem; line-height: 1.5; color: var(--vp-c-text-2); }
 
 @media (max-width: 768px) {
-  .tempo-carousel-track { width: 1100%; }
-  .tempo-feature-card { flex: 0 0 calc(100% / 11); }
+  .tempo-carousel-track { width: calc(var(--carousel-count) * 100%); }
+  .tempo-feature-card { flex: 0 0 calc(100% / var(--carousel-count)); }
 }
 .tempo-status-row {
   display: flex;

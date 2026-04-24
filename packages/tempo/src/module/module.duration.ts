@@ -4,12 +4,12 @@ import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { getRelativeTime } from '#library/international.library.js';
 
-import { defineInterpreterModule, interpret } from '../plugin.util.js';
+import { defineInterpreterModule, interpret } from '../plugin/plugin.util.js';
 import { enums, isTempo } from '#tempo/support';
-import type { Module } from '../plugin.type.js';
-import type { Tempo } from '../../tempo.class.js';
+import type { Module } from '../plugin/plugin.type.js';
+import type { Tempo } from '../tempo.class.js';
 
-declare module '../../tempo.class.js' {
+declare module '../tempo.class.js' {
 	namespace Tempo {
 		/** returns a full Tempo Duration object (EDO) for the given input */
 		function duration(input: any): Tempo.Duration;

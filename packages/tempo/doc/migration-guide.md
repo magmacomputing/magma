@@ -45,7 +45,7 @@ t.add({ '#quarter': 2 });
 
 ## 🚀 Tempo v2.4.0: Standalone Utilities & Path Deprecation
 
-Tempo v2.4.0 introduces a new `discrete/` folder for standalone utilities (`parse` and `format`).
+Tempo v2.4.0 introduces standalone utility entry points for `parse` and `format`.
 
 ### 🛠️ Standalone Imports
 You can now import lightweight, tree-shakable versions of our parsing and formatting engines without the `Tempo` class:
@@ -54,18 +54,35 @@ import { parse } from '@magmacomputing/tempo/parse';
 import { format } from '@magmacomputing/tempo/format';
 ```
 
-### ⚠️ Removed Paths
-We have reorganized the internal file structure to optimize for standalone usage. The following internal paths have been **removed** from the public export map in v2.4.0:
-
-*   ❌ `@magmacomputing/tempo/module/parse`
-*   ❌ `@magmacomputing/tempo/module/format`
+### ⚠️ Reorganized Paths
+We have reorganized the package structure to support these standalone entry points more cleanly.
 
 **Action Required**:
-1.  **Do not use `dist/` paths** in your imports. These are unstable and may change.
-2.  **Use package subpath maps**: Update your imports to use the official entry points:
+1.  **Use package subpath maps**: Update your imports to use the official entry points:
+    *   ❌ `@magmacomputing/tempo/module/parse`
+    *   ❌ `@magmacomputing/tempo/module/format`
     *   ✅ `@magmacomputing/tempo/parse`
     *   ✅ `@magmacomputing/tempo/format`
-3.  **Check your Import Maps**: If you use browser-side import maps, ensure they point to the new package-mapped locations rather than internal `plugin/module/` paths.
+2.  **Check your Import Maps**: If you use browser-side import maps, ensure they point to the new package-mapped locations rather than the package's internal paths. A maintained `importmap.json` is included in the project root as the sanctioned reference.
+
+        Example:
+        ```json
+        {
+            "imports": {
+                "@magmacomputing/tempo/parse": "./dist/discrete/discrete.parse.js",
+                "@magmacomputing/tempo/format": "./dist/discrete/discrete.format.js"
+            }
+        }
+        ```
+
+## 🔁 Migrating from version 2.4
+
+As Tempo grows, it has become much more efficient for our developers to logically re-group certain modules.
+
+**Action Required**:
+1.  Review your browser `importmap` entries.
+2.  Replace any older internal paths with the current package subpath entries (for example, `@magmacomputing/tempo/duration`, `@magmacomputing/tempo/mutate`, `@magmacomputing/tempo/parse`, and `@magmacomputing/tempo/format`).
+3.  Do not pin imports in your code directly to internal folder layouts in `dist/`, since those paths may change as modules are reorganized.  Instead rely wholly on your import maps.
 
 ## 🧪 Testing and Stability
 v2.x has been hardened with a 100% pass rate on our regression suite. If you were relying on undocumented "quirks" or bugs in v1.x parsing, you may find that v2.x is more strict and deterministic.

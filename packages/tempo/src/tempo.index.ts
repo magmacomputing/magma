@@ -2,9 +2,10 @@ import { Tempo } from './tempo.class.js';
 import { onRegistryReset, enums } from '#tempo/support';
 
 import { ParseModule } from '#tempo/parse';
+import { FormatModule } from '#tempo/format';
+
 import { MutateModule } from '#tempo/mutate';
 import { DurationModule } from '#tempo/duration';
-import { FormatModule } from '#tempo/format';
 import { TermsModule } from '#tempo/term';
 import { getRuntime } from '#tempo/support';
 

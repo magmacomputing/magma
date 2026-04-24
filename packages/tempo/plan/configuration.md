@@ -96,3 +96,95 @@ The Sandbox Factory pattern has been finalized to ensure fully isolated, reprodu
 
 ### Status:
 Fully implemented and verified in `sandbox-factory.test.ts`. 100% pass rate achieved.
+
+## 2026-04-24: Release A Execution Plan (Layout Order Resolver Foundation)
+
+This section begins the Release A implementation plan from the wishlist roadmap.
+
+### Release A Goal
+Extract layout-order decision logic into a dedicated resolver while preserving behavior.
+
+### In-Scope (Release A)
+- Extract ordering logic currently embedded in Tempo class internals into a standalone helper/module.
+- Keep external API behavior unchanged.
+- Add deterministic tests for order resolution and swap semantics.
+- Add debug-only visibility of final resolved layout order.
+
+### Out-of-Scope (Release A)
+- No `layoutOrder` option yet.
+- No input-class pre-filtering yet.
+- No planner-based candidate filtering yet.
+
+### Current Logic Baseline
+- Baseline order comes from parse layout object insertion order.
+- Locale preference currently swaps named pairs via `mdyLayouts`.
+- Existing behavior must remain byte-for-byte equivalent for default configs.
+
+### Proposed module split
+
+Target file: `src/engine/engine.layout.ts`
+
+This follows the existing `engine.*` convention for internal logic extracted from the class engine
+(alongside `engine.composer`, `engine.mutate`, `engine.duration`, `engine.term`, `engine.lexer`).
+The `discrete/` folder is reserved for standalone importable functionality (`discrete.parse`,
+`discrete.format`) — layout-order resolution is internal engine logic, not a public entry point.
+
+Candidate exported surface:
+```ts
+export type LayoutEntry = [symbol, string];
+
+export interface ResolveLayoutOrderArgs {
+  layout: Record<symbol, string>;
+  mdyLayouts: [string, string][];
+  isMonthDay: boolean;
+}
+
+export function resolveLayoutOrder(args: ResolveLayoutOrderArgs): Record<symbol, string>;
+```
+
+### Work packages
+
+1. Extract + wire
+- Move swap logic from class private method into resolver function.
+- Replace class-internal swap implementation with resolver call.
+- Keep exact pair-swap semantics unchanged.
+
+2. Determinism tests
+- Add tests that assert:
+  - no-op when no swap pair matches
+  - one pair swap in month-day locales
+  - reverse swap in non-month-day locales
+  - multiple pair handling remains stable
+  - unrelated layout relative order is preserved
+
+3. Debug visibility
+- In debug mode, optionally emit resolved order list for diagnostics.
+- Keep output behind existing debug gates; no new public API.
+
+### Test matrix (Release A)
+
+Core:
+- existing parse/order regressions continue passing
+- new resolver unit tests pass
+
+Behavior safety:
+- compact 6/8-digit date tests unchanged
+- weekday precedence tests unchanged
+- relative/offset precedence tests unchanged
+
+Integration sweep:
+- full `vitest` run must be green
+
+### Acceptance criteria
+- All existing behavior preserved with no public API changes.
+- Resolver module introduced and used by Tempo class.
+- Order determinism covered by focused tests.
+- Full test suite passes.
+
+### Risk controls
+- Land extraction first with behavior parity tests before any feature additions.
+- Avoid combining this with planner or pre-filtering work in same release.
+- Keep commit scope narrow: extraction + tests + minimal wiring.
+
+### Next step after Release A
+- Start Release B by introducing `layoutOrder` option through this resolver.

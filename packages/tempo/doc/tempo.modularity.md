@@ -2,6 +2,15 @@
 
 Tempo is designed as a modular library, allowing you to include only the features you need. This reduces the core bundle size and prevents your application from being polluted with unused functionality.
 
+## Module Activation Quick Guide
+
+If you are using module entry points, use this rule of thumb:
+
+1. `import '@magmacomputing/tempo/<module>'` (side-effect import): auto-registers that module. You usually do **not** need `Tempo.extend(...)` for the same module.
+2. `import { SomeModule } from '@magmacomputing/tempo/<module>'` (named import): requires explicit activation via `Tempo.extend(SomeModule)`.
+3. `Tempo.init()` is primarily for baseline configuration and discovery refresh. You generally call it at startup for config, or again only if you loaded side-effect modules later at runtime.
+4. Import order is usually only relevant when modules are loaded dynamically/lazily. For deterministic activation in those cases, prefer explicit `Tempo.extend(...)` immediately after import.
+
 ## Core vs. Full
 
 * **@magmacomputing/tempo/core**: The bare-bones Tempo engine. Includes parsing (standard ISO string or a native `Temporal` object), basic getters, and internal state management.

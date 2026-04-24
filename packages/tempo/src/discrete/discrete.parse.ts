@@ -8,9 +8,9 @@ import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import type { TypeValue } from '#library/type.library.js';
 
 import { sym, markConfig, TermError, enums, isTempo, Match, getRuntime, init, extendState, setPatterns } from '#tempo/support';
-import { prefix, parseWeekday, parseDate, parseTime, parseZone } from '../plugin/module/module.lexer.js';
-import { resolveTermMutation, resolveTermValue } from '../plugin/module/module.term.js';
-import { compose } from '../plugin/module/module.composer.js';
+import { prefix, parseWeekday, parseDate, parseTime, parseZone } from '../engine/engine.lexer.js';
+import { resolveTermMutation, resolveTermValue } from '../engine/engine.term.js';
+import { compose } from '../engine/engine.composer.js';
 
 import { getRange, getTermRange } from '../plugin/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';

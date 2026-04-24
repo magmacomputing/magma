@@ -4,12 +4,12 @@ import { asArray } from '#library/coercion.library.js';
 import { isNumeric } from '#library/assertion.library.js';
 
 import { TermError, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
-import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../term.util.js';
-import { getHost } from '../plugin.util.js';
-import { parseModifier } from './module.lexer.js';
+import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin/term.util.js';
+import { getHost } from '../plugin/plugin.util.js';
+import { parseModifier } from './engine.lexer.js';
 
-import type { Tempo } from '../../tempo.class.js';
-import type { TempoType } from '../plugin.type.js';
+import type { Tempo } from '../tempo.class.js';
+import type { TempoType } from '../plugin/plugin.type.js';
 
 /**
  * Internal helper to safely get the ZonedDateTime from a Tempo instance or raw object

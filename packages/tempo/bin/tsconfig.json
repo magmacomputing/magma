@@ -42,19 +42,22 @@
         "../src/plugin/term/term.*.ts"
       ],
       "#tempo/duration": [
-        "../src/plugin/module/module.duration.ts"
+        "../src/module/module.duration.ts"
       ],
       "#tempo/plugin/plugin.*.js": [
         "../src/plugin/plugin.*.ts"
       ],
-      "#tempo/plugin/extend.*.js": [
-        "../src/plugin/extend/extend.*.ts"
+      "#tempo/engine/*.js": [
+        "../src/engine/*.ts"
       ],
-      "#tempo/plugin/module.*.js": [
-        "../src/plugin/module/module.*.ts"
+      "#tempo/module/*.js": [
+        "../src/module/*.ts"
       ],
-      "#tempo/plugin/term.*.js": [
-        "../src/plugin/term/term.*.ts"
+      "#tempo/plugin/extend/*.js": [
+        "../src/plugin/extend/*.ts"
+      ],
+      "#tempo/plugin/term/*.js": [
+        "../src/plugin/term/*.ts"
       ],
       "#tempo/*.js": [
         "../src/*.ts"

@@ -26,6 +26,12 @@
     "**/temporal.polyfill.js",
     "**/*-polyfill.ts",
     "**/tempo.index.js",
+    "**/plugin/term/standard.index.js",
+    "**/plugin/term/standard.index.ts",
+    "**/plugin/extend/extend.*.js",
+    "**/plugin/extend/extend.*.ts",
+    "**/engine.*.js",
+    "**/engine.*.ts",
     "**/module.*.js",
     "**/module.*.ts",
     "**/discrete.*.js",
@@ -48,12 +54,12 @@
       "default": "./dist/core.index.js"
     },
     "#tempo/duration": {
-      "development": "./src/plugin/module/module.duration.ts",
-      "default": "./dist/plugin/module/module.duration.js"
+      "development": "./src/module/module.duration.ts",
+      "default": "./dist/module/module.duration.js"
     },
     "#tempo/mutate": {
-      "development": "./src/plugin/module/module.mutate.ts",
-      "default": "./dist/plugin/module/module.mutate.js"
+      "development": "./src/module/module.mutate.ts",
+      "default": "./dist/module/module.mutate.js"
     },
     "#tempo/ticker": {
       "development": "./src/plugin/extend/extend.ticker.ts",
@@ -75,17 +81,21 @@
       "development": "./src/plugin/plugin.*.ts",
       "default": "./dist/plugin/plugin.*.js"
     },
-    "#tempo/plugin/extend.*.js": {
-      "development": "./src/plugin/extend/extend.*.ts",
-      "default": "./dist/plugin/extend/extend.*.js"
+    "#tempo/plugin/extend/*.js": {
+      "development": "./src/plugin/extend/*.ts",
+      "default": "./dist/plugin/extend/*.js"
     },
-    "#tempo/plugin/module.*.js": {
-      "development": "./src/plugin/module/module.*.ts",
-      "default": "./dist/plugin/module/module.*.js"
+    "#tempo/engine/*.js": {
+      "development": "./src/engine/*.ts",
+      "default": "./dist/engine/*.js"
     },
-    "#tempo/plugin/term.*.js": {
-      "development": "./src/plugin/term/term.*.ts",
-      "default": "./dist/plugin/term/term.*.js"
+    "#tempo/module/*.js": {
+      "development": "./src/module/*.ts",
+      "default": "./dist/module/*.js"
+    },
+    "#tempo/plugin/term/*.js": {
+      "development": "./src/plugin/term/*.ts",
+      "default": "./dist/plugin/term/*.js"
     },
     "#tempo/support": {
       "development": "./src/support/support.index.ts",
@@ -126,8 +136,8 @@
       "import": "./dist/plugin/extend/extend.*.js"
     },
     "./module/*": {
-      "types": "./dist/plugin/module/module.*.d.ts",
-      "import": "./dist/plugin/module/module.*.js"
+      "types": "./dist/module/module.*.d.ts",
+      "import": "./dist/module/module.*.js"
     },
     "./term/standard": {
       "types": "./dist/plugin/term/standard.index.d.ts",
@@ -150,12 +160,12 @@
       "import": "./dist/plugin/extend/extend.ticker.js"
     },
     "./duration": {
-      "types": "./dist/plugin/module/module.duration.d.ts",
-      "import": "./dist/plugin/module/module.duration.js"
+      "types": "./dist/module/module.duration.d.ts",
+      "import": "./dist/module/module.duration.js"
     },
     "./mutate": {
-      "types": "./dist/plugin/module/module.mutate.d.ts",
-      "import": "./dist/plugin/module/module.mutate.js"
+      "types": "./dist/module/module.mutate.d.ts",
+      "import": "./dist/module/module.mutate.js"
     },
     "./discrete": {
       "types": "./dist/discrete/discrete.index.d.ts",
@@ -211,8 +221,6 @@
   },
   "files": [
     "dist/",
-    "README.md",
-    "CHANGELOG.md",
     "img/"
   ],
   "dependencies": {

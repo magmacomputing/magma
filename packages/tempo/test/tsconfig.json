@@ -29,7 +29,7 @@
         "../src/core.index.ts"
       ],
       "#tempo/duration": [
-        "../src/plugin/module/module.duration.ts"
+        "../src/module/module.duration.ts"
       ],
       "#tempo/format": [
         "../src/discrete/discrete.format.ts"
@@ -42,6 +42,18 @@
       ],
       "#tempo/ticker": [
         "../src/plugin/extend/extend.ticker.ts"
+      ],
+      "#tempo/engine/*.js": [
+        "../src/engine/*.ts"
+      ],
+      "#tempo/module/*.js": [
+        "../src/module/*.ts"
+      ],
+      "#tempo/plugin/extend/*.js": [
+        "../src/plugin/extend/*.ts"
+      ],
+      "#tempo/plugin/term/*.js": [
+        "../src/plugin/term/*.ts"
       ],
       "#tempo/term/*": [
         "../src/plugin/term/term.*.ts"

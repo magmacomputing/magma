@@ -77,6 +77,10 @@ export const Token = looseIndex<string, symbol>()({
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Layout Symbols
 	/** date */																								dt: Symbol('date'),
 	/** time */																								tm: Symbol('time'),
+	/** compact time (hhmiss) */															hms: Symbol('hourMinuteSecond'),
+	/** compact day-month-year (ddmmyy) */										dmy6: Symbol('dayMonthYearShort'),
+	/** compact month-day-year (mmddyy) */										mdy6: Symbol('monthDayYearShort'),
+	/** compact year-month-day (yymmdd) */										ymd6: Symbol('yearMonthDayShort'),
 	/** date and time */																			dtm: Symbol('dateTime'),
 	/** time and date */																			tmd: Symbol('timeDate'),
 	/** day-month-year */																			dmy: Symbol('dayMonthYear'),

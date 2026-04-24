@@ -1,6 +1,24 @@
 # Installation Guide
 
-Tempo is designed to be environment-agnostic. Whether you are building a server-side application, a modern browser project with ESM, or a performance-critical "Lite" bundle, Tempo provides a specific path for you.
+`Tempo` is designed to be environment-agnostic. Whether you are building a server-side application, a modern browser project with ESM, or a performance-critical "Lite" bundle, `Tempo` provides a specific path for you.
+
+## Temporal Polyfill Note
+
+`Tempo` expects the host environment to provide `Temporal`, either through native runtime support or a user-supplied polyfill.
+
+`Temporal` is now at Stage 4 and is expected to land broadly in runtimes soon. To avoid needlessly inflating package size with a dependency that will increasingly become unnecessary, `Tempo` does not bundle a `Temporal` polyfill by default.
+
+As of May 2026, Chrome 144 has shipped `Temporal`, while Node.js still does not provide built-in `Temporal` globally. Please verify support in your actual target runtime(s) and add a polyfill only when needed.
+
+You can check at runtime with a simple guard:
+
+```js
+if (typeof globalThis.Temporal === 'undefined') {
+  // Load your Temporal polyfill for this environment
+}
+```
+
+Note: The examples below include a polyfill for demonstration purposes only, so the snippets work consistently across environments.
 
 ---
 
@@ -18,6 +36,21 @@ bun add @magmacomputing/tempo       # bun
 ### Usage
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
+const t = new Tempo('next Friday');
+```
+
+### Node.js quick-start (if Temporal is not available)
+
+The polyfill import shown here is conditional guidance, not required for all environments.
+
+```bash
+npm install @js-temporal/polyfill
+```
+
+```javascript
+import '@js-temporal/polyfill';
+import { Tempo } from '@magmacomputing/tempo';
+
 const t = new Tempo('next Friday');
 ```
 

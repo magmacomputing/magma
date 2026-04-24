@@ -3,7 +3,7 @@ import { isString, isEmpty, isUndefined, isDefined, isTemporal } from '#library/
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { pad, singular } from '#library/string.library.js';
 import { Match, enums } from '#tempo/support';
-import * as t from '../../tempo.type.js';
+import * as t from '../tempo.type.js';
 
 /**
  * Internal Lexer helpers for the Tempo parsing engine.  
