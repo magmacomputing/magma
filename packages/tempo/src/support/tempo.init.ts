@@ -63,6 +63,20 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		state.config = markConfig(Object.create(baseState.config));
 		setProperty(state.config, 'scope', 'local');
 		if (isDefined(options.catch)) setProperty(state.config, 'catch', options.catch);
+	} else {
+		markConfig(Object.assign(state.config, Default));
+		Object.defineProperties(state.config, {
+			calendar: { value: calendar, enumerable: true, writable: true, configurable: true },
+			timeZone: { value: timeZone, enumerable: true, writable: true, configurable: true },
+			locale: { value: (getDateTimeFormat() as any).locale ?? 'en-US', enumerable: true, writable: true, configurable: true },
+			discovery: { value: Symbol.keyFor(sym.$Tempo) as string, enumerable: true, writable: true, configurable: true },
+			formats: { value: enumify(STATE.FORMAT, false), enumerable: true, writable: true, configurable: true },
+			sphere: { value: getHemisphere(timeZone), enumerable: true, writable: true, configurable: true },
+			get: { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true },
+			scope: { value: 'local', enumerable: true, writable: true, configurable: true },
+		});
+		if (isDefined(options.catch))
+			setProperty(state.config, 'catch', options.catch);
 	}
 
 	// 3. Initialize registries that need objects

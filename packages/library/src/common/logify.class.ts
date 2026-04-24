@@ -2,16 +2,19 @@ import { Immutable } from '#library/class.library.js';
 import { sym, markConfig } from '#library/symbol.library.js';
 import { asType } from '#library/type.library.js';
 import { isObject, isEmpty } from '#library/assertion.library.js';
-import type { ValueOf } from '#library/type.library.js';
+import { enumify } from '#library/enumerate.library.js';
+import type { ValueOf, KeyOf } from '#library/type.library.js';
 
+/** @internal console method names keyed by internal identifiers (not exported; see LOG enum for public API) */
 const Method = {
 	Log: 'log',
 	Info: 'info',
 	Warn: 'warn',
 	Debug: 'debug',
 	Error: 'error',
-} as const
+} as const;
 
+/** @internal severity levels mapped to Method names for gating logic (not exported; see LOG enum for public API) */
 const Level = {
 	[Method.Error]: 1,
 	[Method.Warn]: 2,
@@ -34,11 +37,10 @@ export class Logify {
 	 */
 	#trap(method: Logify.Method, ...msg: any[]) {
 		const config = (isObject(msg[0]) && (msg[0] as any)[sym.$Logify] === true) ? msg.shift() : this.#opts;
-		const currentLevel = (typeof config.debug === 'number') ? config.debug : (config.debug ? Level[Method.Debug] : Level[Method.Error]);
+		const currentLevel = (typeof config.debug === 'number')
+			? config.debug
+			: (config.debug === true ? Level[Method.Debug] : Level[Method.Info]);
 		const methodLevel = Level[method] ?? 0;
-
-		if (methodLevel > currentLevel) return;
-
 
 		const output = msg.map(m => {
 			if (m instanceof Error) return m.message;
@@ -56,7 +58,7 @@ export class Logify {
 			return String(m);
 		}).filter(s => !isEmpty(s)).join(' ');
 
-		if (!config.silent && !isEmpty(output))
+		if (!config.silent && !isEmpty(output) && methodLevel <= currentLevel)
 			(console as any)[method](`${this.#name}: ${output}`);
 
 		if (method === Method.Error && !config.catch) {
@@ -97,6 +99,18 @@ export class Logify {
 		this.#opts.silent = opts.silent ?? false;								// default silent to 'false'
 	}
 }
+
+/** logging severity levels for Logify output control */
+export const LOG = enumify({
+	Off: 0,
+	Error: 1,
+	Warn: 2,
+	Info: 3,
+	Debug: 4,
+	Trace: 5,
+}, false);
+export type LOG = ValueOf<typeof LOG>
+export type LogLevel = KeyOf<typeof LOG>
 
 export namespace Logify {
 	export type Method = ValueOf<typeof Method>

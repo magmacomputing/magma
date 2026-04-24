@@ -1,7 +1,6 @@
 import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
-import { isDefined, isString, isZonedDateTime } from '#library/assertion.library.js';
+import { isDefined, isString, isZonedDateTime, isNumeric } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
-import { isNumeric } from '#library/assertion.library.js';
 
 import { TermError, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
 import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin/term.util.js';

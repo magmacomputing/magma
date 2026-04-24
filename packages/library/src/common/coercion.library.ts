@@ -70,6 +70,6 @@ export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
 	}
 }
 
-export const nullToZero = <T>(obj: T) => obj ?? 0;
-export const nullToEmpty = <T>(obj: T) => obj ?? '';
-export const nullToValue = <T, R>(obj: T, value: R) => obj ?? value;
+export const nullishToZero = <T>(obj: T) => obj ?? 0;
+export const nullishToEmpty = <T>(obj: T) => obj ?? '';
+export const nullishToValue = <T, R>(obj: T, value: R) => obj ?? value;

@@ -110,8 +110,11 @@ export function toInstant(epochNanoseconds: bigint): Temporal.Instant {
  * Normalize TimeZone and Calendar inputs into a [timeZoneId, calendarId] tuple.
  */
 export function getTemporalIds(tz: any, cal: any): [string, string] {
-	const tzId = isString(tz) ? tz : (tz as any)?.timeZoneId ?? (tz as any)?.id;
-	const calId = isString(cal) ? cal : (cal as any)?.calendarId ?? (cal as any)?.id;
+	const rawTz = isString(tz) ? tz : ((tz as any)?.timeZoneId ?? (tz as any)?.id);
+	const rawCal = isString(cal) ? cal : ((cal as any)?.calendarId ?? (cal as any)?.id);
+	const fallbackTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+	const tzId = (isString(rawTz) && rawTz.trim().length > 0) ? rawTz : fallbackTz;
+	const calId = (isString(rawCal) && rawCal.trim().length > 0) ? rawCal : 'iso8601';
 
-	return [tzId, calId];
+	return [tzId || 'UTC', calId || 'iso8601'];
 }

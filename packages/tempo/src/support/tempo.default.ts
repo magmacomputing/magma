@@ -99,9 +99,10 @@ export type Layout = typeof Layout
 
 /** 
  * an {event} is a Record of regex-pattern-like-string keys that describe Date strings.
- * values can be a string or a function that returns a string. 
+ * values can be a string, or a function that resolves to a date-like value.
  * if assigning a function, use standard 'function()' syntax to allow for 'this' binding.
- * also, a function should always have a .toString() method which returns a parse-able Date string
+ * Event functions should resolve to the date side of parsing (for example a parse-able date string,
+ * a ZonedDateTime, or a Tempo instance whose date component is meaningful to the caller).
  */
 /** @internal Tempo Event registry */
 export const Event = looseIndex<string, string | Function>()({
@@ -137,8 +138,10 @@ export type Event = typeof Event
 
 /** 
  * a {period} is a Record of regex-pattern-like keys that describe pre-defined Time strings.
- * values can be a string or a function that returns a string.
+ * values can be a string, or a function that resolves to a time-like value.
  * if using a function, use regular 'function()' syntax to allow for 'this' binding.
+ * Period functions should resolve to the time side of parsing (ideally a parse-able clock value,
+ * or a Tempo/ZonedDateTime whose time component is meaningful to the caller).
  */
 /** @internal Tempo Period registry */
 export const Period = looseIndex<string, string | Function>()({
@@ -151,7 +154,7 @@ export const Period = looseIndex<string, string | Function>()({
 	'evening': '18:00',
 	'night': '20:00',
 	'half[ -]?hour': function (this: Tempo) {
-		return this.add({ minutes: 30 });
+		return `${this.hh}:30`;
 	},
 })
 /** @internal Tempo Period type */

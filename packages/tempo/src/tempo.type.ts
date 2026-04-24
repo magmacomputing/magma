@@ -9,9 +9,10 @@
 
 import { sym, TempoBrand } from '#tempo/support/tempo.symbol.js';
 import * as enums from '#tempo/support/tempo.enum.js';
+import type { Logify } from '#library/logify.class.js';
 import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/tempo.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
-import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension } from '#tempo/plugin/plugin.type.js';
+import type {  TermPlugin,  Plugin } from '#tempo/plugin/plugin.type.js';
 import type { Token } from '#tempo/support/tempo.symbol.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 
@@ -145,9 +146,9 @@ export namespace Internal {
 	export interface BaseOptions {
 		/** localStorage key */																	store: string;
 		/** globalThis Discovery Symbol */											discovery: string | symbol;
-		/** additional console.log for tracking */							debug: boolean | enums.LOG | undefined;
-		/** catch or throw Errors */														catch: boolean | undefined;
-		/** suppress console output during catch */							silent: boolean | undefined;
+		/** additional console.log for tracking */							debug: Logify.Constructor["debug"];
+		/** catch or throw Errors */														catch: Logify.Constructor["catch"];
+		/** suppress console output during catch */							silent: Logify.Constructor["silent"];
 		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
 		/** Temporal calendar */																calendar: Temporal.CalendarLike;
 		/** locale (e.g. en-AU) */															locale: string;

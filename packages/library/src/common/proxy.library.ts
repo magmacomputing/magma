@@ -30,7 +30,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 	const tgt = unwrap(target);
 
 	// 2. Harden the target if requested
-	if (lock) deepFreeze(tgt, skip);
+	if (lock) deepFreeze(tgt, skip ? { skip } : undefined);
 	registerType(tgt as Constructor);
 
 	const handler: ProxyHandler<any> = {

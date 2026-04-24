@@ -45,7 +45,7 @@ describe('Sandbox Factory Pattern', () => {
 	it('should record traceability info in parse results', () => {
 		const MyTempo = Tempo.create({
 			period: {
-				'half-hour': function (this: Tempo) { return this.add({ minutes: 30 }) }
+				'half-hour': function (this: Tempo) { return `${this.hh}:30` }
 			}
 		});
 

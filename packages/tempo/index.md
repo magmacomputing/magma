@@ -72,6 +72,8 @@ const displayFeatures = [
 let isMounted = false
 let ticker = null
 let carouselTimer = null
+let carouselSnapTimer = null
+let carouselRestoreTimer = null
 let fallbackIntervalId = null
 let initFailed = false
 let resumeTimer = null
@@ -177,16 +179,43 @@ function startCarousel() {
   }, 4000)
 }
 
+function clearCarouselSnapTimers() {
+  if (carouselSnapTimer) {
+    clearTimeout(carouselSnapTimer)
+    carouselSnapTimer = null
+  }
+  if (carouselRestoreTimer) {
+    clearTimeout(carouselRestoreTimer)
+    carouselRestoreTimer = null
+  }
+}
+
+function scheduleCarouselSnap(nextIndex) {
+  clearCarouselSnapTimers()
+  carouselSnapTimer = setTimeout(() => {
+    if (!isMounted) {
+      carouselSnapTimer = null
+      return
+    }
+    carouselSnapTimer = null
+    transitionEnabled.value = false
+    activeIndex.value = nextIndex
+    carouselRestoreTimer = setTimeout(() => {
+      if (!isMounted) {
+        carouselRestoreTimer = null
+        return
+      }
+      transitionEnabled.value = true
+      carouselRestoreTimer = null
+    }, 50)
+  }, 850)
+}
+
 function moveNext() {
   activeIndex.value++
   // If we enter trailing clones, animate one step then snap back to first real item.
   if (activeIndex.value >= LEADING_CLONES + features.length) {
-    setTimeout(() => {
-      if (!isMounted) return
-      transitionEnabled.value = false
-      activeIndex.value = LEADING_CLONES
-      setTimeout(() => { transitionEnabled.value = true }, 50)
-    }, 850)
+    scheduleCarouselSnap(LEADING_CLONES)
   }
 }
 
@@ -194,12 +223,7 @@ function movePrev() {
   activeIndex.value--
   // If we enter leading clones, animate one step then snap to last real item.
   if (activeIndex.value < LEADING_CLONES) {
-    setTimeout(() => {
-      if (!isMounted) return
-      transitionEnabled.value = false
-      activeIndex.value = LEADING_CLONES + features.length - 1
-      setTimeout(() => { transitionEnabled.value = true }, 50)
-    }, 850)
+    scheduleCarouselSnap(LEADING_CLONES + features.length - 1)
   }
 }
 
@@ -250,7 +274,10 @@ function cancelSwipe() {
 }
 
 function handleVisibility() {
-  if (resumeTimer) clearTimeout(resumeTimer)
+  if (resumeTimer) {
+    clearTimeout(resumeTimer)
+    resumeTimer = null
+  }
   
   if (document.visibilityState === 'visible') {
     // Always restart carousel timer on return; its own pause state is enforced via isPaused.
@@ -264,10 +291,12 @@ function handleVisibility() {
     console.info('%c[Tempo]%c ⏳ Syncing Ticker...', 'color: #f59e0b; font-weight: bold', 'color: inherit')
     
     resumeTimer = setTimeout(() => {
-      if (document.visibilityState !== 'visible' || isManualTickerPaused.value) {
+      if (!isMounted || document.visibilityState !== 'visible' || isManualTickerPaused.value) {
+        resumeTimer = null
         isResuming.value = false
         return
       }
+      resumeTimer = null
       isResuming.value = false
       tickerActive.value = true
       console.info('%c[Tempo]%c ⚡ Resuming Ticker', 'color: #2563eb; font-weight: bold', 'color: inherit')
@@ -293,6 +322,11 @@ onMounted(() => {
 
 onUnmounted(() => {
   isMounted = false
+  clearCarouselSnapTimers()
+  if (resumeTimer) {
+    clearTimeout(resumeTimer)
+    resumeTimer = null
+  }
   ticker?.stop()
   if (fallbackIntervalId) clearInterval(fallbackIntervalId)
   clearInterval(carouselTimer)

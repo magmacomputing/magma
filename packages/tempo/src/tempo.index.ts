@@ -10,7 +10,7 @@ import { TermsModule } from '#tempo/term';
 import { getRuntime } from '#tempo/support';
 
 // Batteries Included: Register standard modules
-const core = [ParseModule, MutateModule, FormatModule, DurationModule, TermsModule];
+const core = [ParseModule, FormatModule, MutateModule, DurationModule, TermsModule];
 
 getRuntime().modules['Tempo'] = Tempo;
 onRegistryReset(() => {

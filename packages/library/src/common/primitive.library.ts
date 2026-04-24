@@ -11,13 +11,17 @@ import type { Obj, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
 /** 
  * ## unwrap
  * Traverse a Proxy chain and return the underlying raw target object.
- * Hardened against prototype-climbing bugs.
+ * Hardened against prototype-climbing bugs and cyclic $Target chains.
  */
 export function unwrap<T extends object>(obj: T): T {
 	let curr = (obj as any)?.[sym.$Target] ?? obj;
+	let depth = 0;
+	const maxDepth = 50; // Guard against infinite loops on cyclic or self-referential $Target chains
+	
 	// Hardened against different Symbol instances across module boundaries
-	while (curr && (Object.prototype.hasOwnProperty.call(curr, sym.$Target) || (curr as any).$Target)) {
+	while (curr && depth < maxDepth && (Object.prototype.hasOwnProperty.call(curr, sym.$Target) || (curr as any).$Target)) {
 		curr = curr[sym.$Target] ?? (curr as any).$Target;
+		depth++;
 	}
 	return curr;
 }

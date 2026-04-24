@@ -65,4 +65,49 @@ describe('Pledge', () => {
 		}
 	});
 
+	test('callback failures warn at default debug level (indirect Logify integration)', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+		try {
+			const p = new Pledge({
+				onResolve: () => {
+					throw new Error('resolve callback failed');
+				}
+			});
+
+			p.resolve('ok');
+			await p.promise;
+			await Promise.resolve();
+
+			expect(warnSpy).toHaveBeenCalledTimes(1);
+			expect(String(warnSpy.mock.calls[0]?.[0])).toContain('Pledge: Pledge callback failed');
+			expect(debugSpy).not.toHaveBeenCalled();
+		} finally {
+			warnSpy.mockRestore();
+			debugSpy.mockRestore();
+		}
+	});
+
+	test('numeric debug level gates callback warning logs (indirect Logify integration)', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+		try {
+			const p = new Pledge({
+				debug: 0,
+				onResolve: () => {
+					throw new Error('resolve callback failed');
+				}
+			});
+
+			p.resolve('ok');
+			await p.promise;
+			await Promise.resolve();
+
+			expect(warnSpy).not.toHaveBeenCalled();
+		} finally {
+			warnSpy.mockRestore();
+		}
+	});
+
 });

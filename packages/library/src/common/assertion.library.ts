@@ -11,7 +11,8 @@ export const isReference = (obj?: unknown): obj is Object => !isPrimitive(obj);
 export const isIterable = <T>(obj: unknown): obj is Iterable<T> => Symbol.iterator in Object(obj) && !isString(obj);
 
 export const isString = <T>(obj?: T): obj is Extract<T, string> => isType(obj, 'String');
-export const isNumber = <T>(obj?: T): obj is Extract<T, number> => isType(obj, 'Number') && isFinite(obj as number);
+export const isNumber = <T>(obj?: T): obj is Extract<T, number> => isType(obj, 'Number');
+export const isFiniteNumber = <T>(obj?: T): obj is Extract<T, number> => isType(obj, 'Number') && isFinite(obj as number);
 
 /** test if can convert String to Numeric */
 export function isNumeric(str?: any): boolean {
@@ -95,7 +96,7 @@ export const isEmpty = <T>(obj?: T) => false
 	|| isNullish(obj)
 	|| (isObject(obj) && (Reflect.ownKeys(obj).length === 0))
 	|| (isString(obj) && (obj.trim().length === 0))
-	|| (isNumber(obj) && (isNaN(obj as any) === true))
+	|| Number.isNaN(obj as any)
 	|| (isArray(obj) && (obj.length === 0))
 	|| (isSet(obj) && (obj.size === 0))
 	|| (isMap(obj) && (obj.size === 0))

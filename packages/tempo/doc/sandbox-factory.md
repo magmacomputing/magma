@@ -49,7 +49,7 @@ console.log(t.parse.result);
   {
     type: "Period",
     value: "market-open",
-    source: "global", // Referred to as 'global' relative to the Sandbox
+    source: "sandbox", // Resolved from FinTempo (factory/sandbox layer)
     match: "tm",
     ...
   }

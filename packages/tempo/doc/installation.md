@@ -8,7 +8,7 @@
 
 `Temporal` is now at Stage 4 and is expected to land broadly in runtimes soon. To avoid needlessly inflating package size with a dependency that will increasingly become unnecessary, `Tempo` does not bundle a `Temporal` polyfill by default.
 
-As of May 2026, Chrome 144 has shipped `Temporal`, while Node.js still does not provide built-in `Temporal` globally. Please verify support in your actual target runtime(s) and add a polyfill only when needed.
+As of 13 January 2026, Chrome 144 has shipped `Temporal`, and Firefox 139 also includes native `Temporal` support, while Node.js still does not provide built-in `Temporal` globally. Please verify support in your actual target runtime(s) and add a polyfill only when needed.
 
 You can check at runtime with a simple guard:
 
@@ -78,6 +78,8 @@ For browser environments that support **Import Maps**, you can use the granular 
 
 ### 1. Import Map Setup
 Add this to your `<head>` to resolve the dependencies:
+
+> Note: If you are self-hosting Tempo files, use the shipped `packages/tempo/importmap.json` as-is for your installed version instead of hand-authoring `dist/` paths.
 
 ```html
 <script type="importmap">

@@ -44,6 +44,9 @@
       "#tempo/duration": [
         "../src/module/module.duration.ts"
       ],
+      "#tempo/mutate": [
+        "../src/module/module.mutate.ts"
+      ],
       "#tempo/plugin/plugin.*.js": [
         "../src/plugin/plugin.*.ts"
       ],

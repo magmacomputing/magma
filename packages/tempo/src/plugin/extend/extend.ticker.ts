@@ -1,8 +1,7 @@
-import { isObject, isFunction, isDefined, isUndefined, isEmpty, isNumber } from '#library/assertion.library.js'
-import { Pledge } from '#library/pledge.class.js'
-import { asArray } from '#library/coercion.library.js'
-import { isNumeric } from '#library/assertion.library.js'
-import { instant, normaliseFractionalDurations } from '#library/temporal.library.js'
+import { isObject, isFunction, isDefined, isUndefined, isEmpty, isNumber, isNumeric, isFiniteNumber } from '#library/assertion.library.js';
+import { Pledge } from '#library/pledge.class.js';
+import { asArray } from '#library/coercion.library.js';
+import { instant, normaliseFractionalDurations } from '#library/temporal.library.js';
 
 import { sym, markConfig, enums } from '#tempo/support';
 import { defineExtension, attachStatics } from '../plugin.util.js'
@@ -139,8 +138,8 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 
 		// ── Initialization ───────────────────────────────────────────────────
-		const isSeed = isDefined(rawOptions.seed) && (!isNumber(rawOptions.seed) || (Number.isFinite(rawOptions.seed as number) && !Number.isNaN(rawOptions.seed as number)));
-		const isInterval = isDefined(rawOptions.seconds) && Number.isFinite(rawOptions.seconds) && !Number.isNaN(rawOptions.seconds);
+		const isSeed = isDefined(rawOptions.seed);
+		const isInterval = isDefined(rawOptions.seconds) && isFiniteNumber(rawOptions.seconds);
 
 		if (isDefined(arg1) && !isInterval && !isSeed && !cb) {
 			(this.#TempoClass as any)[sym.$logError](markConfig(rawOptions), `Invalid Ticker interval or seed: ${String(arg1)}`);

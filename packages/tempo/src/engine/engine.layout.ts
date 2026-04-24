@@ -27,6 +27,11 @@ export function createLayoutController(layout: Record<symbol, string>): LayoutCo
 /**
  * Reorder layouts according to a classification entry.
  * Unknown layout names are appended in their original relative order.
+ * 
+ * @remarks
+ * Must return the original layout reference when no reordering occurs (no-op paths).
+ * This preserves referential equality for consumers expecting `resolvedLayout === originalLayout`
+ * when the classification is missing or causes no changes.
  */
 export function resolveLayoutClassificationOrder(layout: Record<symbol, string>, controller: LayoutController, classification: PropertyKey = DEFAULT_LAYOUT_CLASS): Record<symbol, string> {
 	const preferred = controller[classification] ?? [];
@@ -55,6 +60,11 @@ export function resolveLayoutClassificationOrder(layout: Record<symbol, string>,
 /**
  * Resolve parse layout order based on locale preference while preserving
  * existing pair-swap semantics used by Tempo.
+ * 
+ * @remarks
+ * Must return the original layout reference when no reordering or swaps occur (no-op paths).
+ * This preserves referential equality for consumers expecting `resolvedLayout === originalLayout`
+ * when the locale preference matches existing order or no swap pairs are found.
  */
 export function resolveLayoutOrder({ layout, mdyLayouts, isMonthDay, layoutController, classification }: ResolveLayoutOrderArgs): Record<symbol, string> {
 	const ordered = resolveLayoutClassificationOrder(

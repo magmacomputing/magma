@@ -260,17 +260,13 @@ export class Tempo {
 
 	/** detect likely overlap between two alias keys/patterns */
 	static #isAliasCollision(a: string, b: string): boolean {
-		if (a === b) return true;
+		const left = a.trim().toLowerCase();
+		const right = b.trim().toLowerCase();
 
-		try {
-			if (new RegExp(`^(?:${a})$`, 'i').test(b)) return true;
-		} catch { }
+		if (!left || !right) return false;
+		if (left === right) return true;
 
-		try {
-			if (new RegExp(`^(?:${b})$`, 'i').test(a)) return true;
-		} catch { }
-
-		return false;
+		return left.includes(right) || right.includes(left);
 	}
 
 	/**
@@ -749,7 +745,7 @@ export class Tempo {
 		}
 
 		const discovery = options.discovery ?? Symbol('TempoSandbox');
-		(globalThis as any)[discovery] = SandboxTempo;
+		(globalThis as any)[discovery] = { options: { ...options }, scope: 'sandbox' };
 
 		const state = init(options, false, (this as any)[$Internal]());
 		state.config.discovery = discovery;

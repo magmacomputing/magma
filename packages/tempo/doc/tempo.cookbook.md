@@ -55,7 +55,7 @@ console.log(uk.format('{mon} {dd}')); // "January 04"
 
 For digits-only input, Tempo checks the most likely compact interpretation first:
 
-- A `6`-digit string is checked as compact time first (`hhmiss`). If it is not a valid time, Tempo then tries compact date layouts like `ddmmyy` or `mmddyy`.
+- A `6`-digit string is **always** validated as compact time first (`hhmiss`) **regardless of `timeZone`**—this validation is timezone-independent. Only if validation fails does Tempo then try compact date layouts (like `ddmmyy` or `mmddyy`), where `timeZone` decides month-day vs day-month order.
 - An `8`-digit string is checked as a compact date, with month-day-year vs day-month-year decided by `timeZone`.
 
 ```typescript
@@ -64,6 +64,8 @@ console.log(time.format('{hh}:{mi}:{ss}')); // "09:30:15"
 
 const shortDate = new Tempo('310559', { timeZone: 'Europe/London' });
 console.log(shortDate.format('{yyyy}-{mm}-{dd}')); // "1959-05-31"
+
+// Two-digit years use Tempo's sliding `pivot` window (default `pivot: 75`): values at/after the computed pivot map to the previous century (so `59` -> `1959` here), and you can change this via constructor/parser options like `new Tempo(input, { pivot: 50, timeZone: 'Europe/London' })`.
 
 const usDate = new Tempo('04012026', { timeZone: 'America/New_York' });
 console.log(usDate.format('{yyyy}-{mm}-{dd}')); // "2026-04-01"

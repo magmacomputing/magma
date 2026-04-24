@@ -1,4 +1,4 @@
-import { asNumber, asString, nullToValue } from '#library/coercion.library.js';
+import { asNumber, asString, nullishToValue } from '#library/coercion.library.js';
 import { stringify } from '#library/serialize.library.js';
 import { isString, isObject, isNumeric, assertCondition, assertString } from '#library/assertion.library.js';
 
@@ -134,7 +134,7 @@ export const strlen = <Min extends number, Max extends number>(str: unknown, min
  * @returns	fixed-length string padded on the left with fill-character
  */
 export const pad = (nbr: string | number | bigint = 0, len = 2, fill?: string | number) =>
-	nbr.toString().padStart(len, nullToValue(fill, isNumeric(nbr) ? '0' : ' ').toString());
+	nbr.toString().padStart(len, nullishToValue(fill, isNumeric(nbr) ? '0' : ' ').toString());
 
 /** pad a string with non-blocking spaces, to help right-align a display */
 export const padString = (str: string | number | bigint, pad = 6) =>

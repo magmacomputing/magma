@@ -4,7 +4,6 @@ import { ownEntries } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable } from '#library/class.library.js';
 import { memoizeMethod } from '#library/function.library.js';
-import { sym } from '#library/symbol.library.js';
 import type { Property, Index, KeyOf, ValueOf, EntryOf, Invert, LooseKey } from '#library/type.library.js';
 
 declare module '#library/type.library.js' {
@@ -109,8 +108,7 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 	}
 
 	const target = Object.create(proto, Object.getOwnPropertyDescriptors(stash));
-	if (!frozen) Object.defineProperty(target, sym.$Extensible, { value: true, enumerable: false });
-	return proxify(target, true, frozen);											// proxy is ALWAYS frozen (read-only), but target is only 'locked' if requested
+	return proxify(target, true, frozen);										// proxy is ALWAYS frozen (read-only), but target is only 'locked' if requested
 }
 
 /** create an entry in the Serialization Registry to describe how to rebuild an Enum */

@@ -63,14 +63,16 @@ We have reorganized the package structure to support these standalone entry poin
     *   ❌ `@magmacomputing/tempo/module/format`
     *   ✅ `@magmacomputing/tempo/parse`
     *   ✅ `@magmacomputing/tempo/format`
-2.  **Check your Import Maps**: If you use browser-side import maps, ensure they point to the new package-mapped locations rather than the package's internal paths. A maintained `importmap.json` is included in the project root as the sanctioned reference.
+2.  **Check your Import Maps**: If you use browser-side import maps, ensure they point to package subpath locations rather than internal folder paths. A maintained `importmap.json` is included in the package root (`packages/tempo/importmap.json`) as the sanctioned reference for each release.
+
+    > Note: The shipped `packages/tempo/importmap.json` is the supported exception for version-locked internal mappings. Use it as-is for your installed Tempo version instead of hand-authoring `dist/` paths.
 
         Example:
         ```json
         {
             "imports": {
-                "@magmacomputing/tempo/parse": "./dist/discrete/discrete.parse.js",
-                "@magmacomputing/tempo/format": "./dist/discrete/discrete.format.js"
+                "@magmacomputing/tempo/parse": "./node_modules/@magmacomputing/tempo/parse",
+                "@magmacomputing/tempo/format": "./node_modules/@magmacomputing/tempo/format"
             }
         }
         ```

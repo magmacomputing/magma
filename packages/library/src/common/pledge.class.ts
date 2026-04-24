@@ -175,16 +175,16 @@ export namespace Pledge {
 		onResolve?: Pledge.Resolve | Pledge.Resolve[] | undefined;
 		onReject?: Pledge.Reject | Pledge.Reject[] | undefined;
 		onSettle?: Pledge.Settle | Pledge.Settle[] | undefined;
-		debug?: boolean | undefined;
-		catch?: boolean | undefined;
-		silent?: boolean | undefined;
+		debug?: Logify.Constructor["debug"];
+		catch?: Logify.Constructor["catch"];
+		silent?: Logify.Constructor["silent"];
 	}
 
 	export interface Status<T> {
 		tag?: string | undefined;
-		debug?: boolean | undefined;
-		catch?: boolean | undefined;
-		silent?: boolean | undefined;
+		debug?: Pledge.Constructor["debug"];
+		catch?: Pledge.Constructor["catch"];
+		silent?: Pledge.Constructor["silent"];
 		state: symbol;
 		settled?: T | undefined;
 		error?: any | undefined;

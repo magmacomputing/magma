@@ -14,18 +14,6 @@ export const SEASON = enumify({
 }, false);
 export type SEASON = ValueOf<typeof SEASON>
 
-/** logging levels */
-export const LOG = enumify({
-	Off: 0,
-	Error: 1,
-	Warn: 2,
-	Info: 3,
-	Debug: 4,
-	Trace: 5,
-}, false);
-export type LOG = ValueOf<typeof LOG>
-export type Log = KeyOf<typeof LOG>
-
 /** cardinal directions */
 export const COMPASS = looseIndex<string, string>()(enumify({
 	North: 'north',

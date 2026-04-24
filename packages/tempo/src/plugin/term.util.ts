@@ -286,11 +286,31 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 			const targetParts = groupKey.split('.');
 			const targetSphere = targetParts[sphereIdx].toLowerCase();
 
-			const bestKey = Object.keys(template).find(k => {
+			let bestKey: string | undefined;
+			let bestSphereLength = -1;
+
+			for (const k of Object.keys(template)) {
 				const kParts = k.split('.');
-				if (kParts.length !== targetParts.length) return false;
-				return kParts.every((p, i) => i === sphereIdx ? targetSphere.includes(p.toLowerCase()) : p === targetParts[i]);
-			});
+				if (kParts.length !== targetParts.length) continue;
+
+				const sphereSegment = (kParts[sphereIdx] ?? '').trim();
+				if (!sphereSegment) continue;
+
+				const staticMatch = kParts.every((p, i) => i === sphereIdx || p === targetParts[i]);
+				if (!staticMatch) continue;
+
+				const sphereLower = sphereSegment.toLowerCase();
+				const sphereMatch = targetSphere.includes(sphereLower) || sphereLower.includes(targetSphere);
+				if (!sphereMatch) continue;
+
+				if (
+					sphereSegment.length > bestSphereLength ||
+					(sphereSegment.length === bestSphereLength && (!bestKey || k.localeCompare(bestKey) < 0))
+				) {
+					bestKey = k;
+					bestSphereLength = sphereSegment.length;
+				}
+			}
 			if (bestKey) list = (template as any)[bestKey];
 		}
 

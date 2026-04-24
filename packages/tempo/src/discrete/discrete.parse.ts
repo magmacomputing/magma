@@ -380,12 +380,6 @@ const _ParseEngine = {
 					continue;
 				}
 
-				if (!entry) {
-					resolved.add(key);
-					delete groups[key];
-					continue;
-				}
-
 				const aliasKey = entry[0] as string;
 				if (resolvingKeys.size > 50 || resolvingKeys.has(aliasKey)) {
 					const msg = `Infinite recursion detected in Tempo resolution for: ${aliasKey}`;
@@ -476,7 +470,8 @@ const _ParseEngine = {
 			}
 		} finally {
 			state.anchor = prevAnchor;
-			if (isZonedDateTime(dateTime)) state.zdt = dateTime;
+			if (isDefined(prevZdt)) state.zdt = prevZdt;
+			else delete state.zdt;
 			state.parseDepth--;
 			if (state.parseDepth === 0) state.matches = undefined;
 		}

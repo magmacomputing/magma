@@ -58,7 +58,7 @@ The `npm run release` command triggers the following automated steps:
 
 ## 📝 Release Note Callouts
 
-When shipping parser behavior changes, explicitly call them out in `CHANGELOG.md` under `## [Unreleased]` before running `npm run release`.
+When shipping parser behavior changes, explicitly call them out in `packages/tempo/CHANGELOG.md` under `## [Unreleased]` before running `npm run release`.
 
 Current required callout:
 - **Alias precedence change**: user-defined `event`/`period` aliases now take precedence over built-ins when both match.
