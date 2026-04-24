@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-04-24
+
+### Added
+- **Sandbox Factory Mode**: Introduced `Tempo.create()`, a static factory method for creating isolated `Tempo` subclasses with independent configurations and registries, preventing global state leakage.
+- **Layout Controller Framework**: Added a classification-based layout controller to `engine.layout`, enabling future input-aware parsing optimizations.
+
+### Changed
+- **Layout Order Resolver**: Extracted layout-ordering logic into a dedicated module to improve maintainability and testability.
+- **Module Path Flattening**: Relocated core modules to `src/module/` for a flatter, more intuitive internal architecture.
+
+### Fixed
+- **Determinism Coverage**: Added comprehensive unit tests for layout resolution and multi-pair swap handling.
+
+
+## [2.3.0] - 2026-04-22
+
+### Added
+- **Standalone Parse Engine**: Extracted the natural language engine into a standalone `parse()` function for instance-free datetime resolution.
+- **Noise Filtering**: Added an `ignore` option to strip irrelevant words during string parsing.
+- **Backtracking Security**: Implemented `Match.backtrack` safety guards in the snippet registry.
+- **Ecosystem Installation Guide**: Released comprehensive installation instructions for Node.js, Deno, and standard browser environments.
+
+### Changed
+- **Automatic Context Sync**: Hemisphere settings now automatically synchronize with timezone updates.
+- **State Optimization**: Refactored the internal parser state machine for reduced memory usage.
+- **Interactive Playground**: Enhanced the browser-based demo with live timezone selectors and real-time clock updates.
+
+### Fixed
+- **Resolution Resilience**: Hardened the resolution loop with safety valves to prevent infinite loops in extreme date ranges.
+- **Type Safety**: Hardened TypeScript definitions for all `parse` and `term` resolution functions.
+
+
 ## [2.2.6] - 2026-04-20
 
 ### Added

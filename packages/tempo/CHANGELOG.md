@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Layout Order Resolver Module**: Extracted layout-ordering decision logic from the Tempo class into a dedicated `engine.layout` module (`src/engine/engine.layout.ts`). This module provides deterministic functions for resolving parse layout order based on locale preference and maintains existing pair-swap semantics.
+- **Layout Controller Framework**: Implemented a minimal controller-map infrastructure (`LayoutController` type, `createLayoutController`, `resolveLayoutClassificationOrder`) to enable future input-class pre-filtering and custom layout ordering without structural refactors. The framework currently has a single default classification that mirrors existing behavior.
+- **Debug Layout Order Visibility**: Added optional debug output in `Tempo.#swapLayout` to emit the resolved layout order for diagnostics (when `debug: true`).
+
 ### Changed
+- **Internal Layout Resolution**: Refactored `Tempo.#swapLayout` to delegate ordering to the external resolver, improving separation of concerns and testability.
 - **Alias Precedence**: User-defined `event` and `period` aliases now take precedence over built-in aliases when both patterns match.
 
 ### Notes
-- **Impact**: Parsing output may change for consumers who previously relied on built-in alias resolution winning in overlap cases.
+- **API Impact**: No public API changes; layout-ordering behavior is byte-for-byte equivalent to prior releases.
+- **Performance**: Layout resolution is still $O(n)$ where $n$ is the number of layout entries; controller infrastructure is optimized for future per-input classification without per-call overhead.
 - **Guidance**: If needed, rename custom aliases to avoid overlap or remove the conflicting custom alias.
 
 ## [2.3.0] - 2026-04-22
