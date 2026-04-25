@@ -25,10 +25,10 @@ The most efficient way to author a plugin is using the `definePlugin` factory. T
 ```typescript
 import { definePlugin } from '@magmacomputing/tempo/plugin';
 
-export const MyPlugin = definePlugin((options, TempoClass, factory) => {
+export const MyPlugin = definePlugin((TempoClass, options, factory) => {
   /**
-   * options:    The global configuration object
    * TempoClass: The internal Tempo class (for static methods)
+  * options:    The global configuration object
    * factory:    A helper to create new Tempo instances without 'new'
    */
 
@@ -48,7 +48,7 @@ If you prefer not to use the factory (e.g. for plugin that should *not* self-reg
 ```typescript
 import type { Tempo } from '@magmacomputing/tempo/core';
 
-export const ManualPlugin: Tempo.Plugin = (options, TempoClass, factory) => {
+export const ManualPlugin: Tempo.Plugin = (TempoClass, options, factory) => {
   // ... implementation ...
 };
 ```
@@ -197,7 +197,7 @@ class MyPluginInstance implements MyPluginTypes.Descriptor {
 Use a `Proxy` in your `definePlugin` factory to handle the callability trap. This allows your plugin to act as a function (the shortcut) and an object (the stateful class) simultaneously.
 
 ```typescript
-export const MyPlugin = definePlugin((options, TempoClass, factory) => {
+export const MyPlugin = definePlugin((TempoClass, options, factory) => {
   (TempoClass as any).myTool = function(arg1: any): MyPluginTypes.Instance {
     const instance = new MyPluginInstance(arg1);
     
@@ -229,7 +229,7 @@ If your plugin requires its own configuration, export a **factory function** tha
 import { defineModule } from '@magmacomputing/tempo/plugin';
 
 export const HolidayModule = (pluginOptions = {}) => {
-  return defineModule((tempoOptions, TempoClass, factory) => {
+  return defineModule((TempoClass, tempoOptions, factory) => {
     // ... use pluginOptions here ...
   });
 };
@@ -244,7 +244,7 @@ import { defineModule } from '@magmacomputing/tempo/plugin';
 import { PluginA } from './plugin.a.js';
 import { PluginB } from './plugin.b.js';
 
-export const MyFeatureModule = defineModule((options, TempoClass) => {
+export const MyFeatureModule = defineModule((TempoClass, options) => {
   TempoClass.extend([PluginA, PluginB]);
 });
 ```

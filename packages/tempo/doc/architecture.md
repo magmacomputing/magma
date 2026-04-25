@@ -66,22 +66,21 @@ Together, these ensure that `new Tempo()` maintains an $O(1)$ constructor execut
 
 ---
 
-## 🔁 Iteration & Enumerability (The Shadowing Chain)
+## 🔁 Iteration & Enumerability (Delegator Proxies)
 
-When using prototype shadowing, the JavaScript behavior for property inspection changes significantly. This is a trade-off for the performance gains.
+Tempo now uses delegator Proxies for `fmt` and `term`, not prototype shadow-chain relocation. Enumeration behavior is therefore more standard and predictable than in earlier releases of Tempo.
 
-### ⚠️ The `Object.keys()` Warning
-`Object.keys(instance.fmt)` only returns the **enumerable own properties** of the current link in the shadowing chain.
-- **Initially**: Returns `[]` (all evaluated getters are non-enumerable on the base).
-- **After 1st Access** (e.g., `.date`): Returns `['date']`.
-- **After 2nd Access** (e.g., `.time`): Returns `['time']`. The `.date` property is now located on the **immediate prototype** of the current object.
+### ✅ `Object.keys()` Behavior
+`Object.keys(instance.fmt)` and `Object.keys(instance.term)` return the enumerable own keys currently registered on each delegator target.
 
-### 🛡️ The Flattening Iterator
-Tempo implements a **Flattening Iterator** via `[Symbol.iterator]` which enables iterable consumers like `for...of`, array spread (`[...instance]`), and `Object.fromEntries(instance)` to traverse the shadowing chain (using `Object.getPrototypeOf`) and collect evaluated property entries.
+- **Discovery on enumeration**: Calling `Object.keys(...)` triggers proxy discovery, which pre-registers available keys as enumerable lazy getters.
+- **Before direct access**: Keys can already be visible and probeable.
+- **After access**: Access memoizes values on the same target object; keys remain stable and do not "move" across prototype links.
 
-- **`[Symbol.iterator]`**: Traverses the shadowing chain to provide a flattened view of all computed state.
-- **⚠️ Important**: `for...in` and object spread (`{...instance}`) **do not** use the iterator; instead, they rely on enumerable own/inherited properties and are not supported by the flattening logic.
-- **`Tempo.formats` & `Tempo.terms`**: These static getters continue to provide a registry-wide view of **available** keys across the entire system, regardless of their evaluation state.
+### 🛡️ Iteration Notes
+- **`Object.keys` / `for...in` / object spread**: Operate on enumerable keys exposed by the delegator target after discovery.
+- **`[Symbol.iterator]`**: Still provides explicit iterator semantics where implemented.
+- **`Tempo.formats` & `Tempo.terms`**: These static getters continue to provide a registry-wide view of available keys across the system, independent of per-instance memoization state.
 
 ---
 

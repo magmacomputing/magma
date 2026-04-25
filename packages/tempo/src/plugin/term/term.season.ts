@@ -31,8 +31,10 @@ function resolve(t: Tempo, anchor?: any) {
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['group', 'sphere'], group: 'meteorological' });
 
 	// append Chinese trait information as an additional metadata field (CN)
-	const chinese = ranges.filter((g: any) => g.group === 'chinese');
-	list.forEach((itm: any) => itm['CN'] = getTermRange(t, chinese, false, anchor));
+	// const chinese = ranges.filter((g: any) => g.group === 'chinese');
+	// list.forEach((itm: any) => itm['CN'] = getTermRange(t, chinese, false, anchor));
+	// This was removed as it added complexity without clear value; the Chinese traits are already included in the base range definitions and
+	// should more-properly be surfaced by a new Tempo() with a Chinese-specific timeZone.
 
 	return list;
 }

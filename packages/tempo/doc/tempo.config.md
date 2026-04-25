@@ -43,21 +43,53 @@ Tempo.init({ store: 'userSettings' });
 
 ## 2. Global Discovery
 
-To facilitate configuration in micro-frontend architectures or when using a `<script>` tag, Tempo automatically "discovers" a global configuration object before any instances are created.
+To facilitate configuration in micro-frontend architectures or script-first bootstraps, Tempo can discover a Discovery object from globalThis during Tempo.init().
 
-### Using a Static Method (Recommended)
-This is the most secure and ergonomic method to provide configuration, and is compatible with ESM hoisting.
+The intended flow is:
+1. Write a Discovery object into globalThis under the configured discovery symbol key.
+2. Import a module containing Tempo.
+3. Tempo class static initialization runs Tempo.init().
+4. Tempo.init() reads the global discovery slot and merges it.
+
+By default, the key is Symbol.for('$Tempo').
+
+### Pre-Bootstrap Discovery (globalThis)
+
+```javascript
+// Must run before the first Tempo module is evaluated
+globalThis[Symbol.for('$Tempo')] = {
+  options: { timeZone: 'Europe/Paris' },
+  timeZones: { MYTZ: 'Asia/Dubai' },
+  formats: { myFormat: '{dd}!!{mm}!!{yyyy}' },
+  terms: [myCustomTermPlugin]
+};
+
+// Load Tempo after the discovery object is in place
+const { Tempo } = await import('@magmacomputing/tempo');
+```
+
+::: info
+With static ESM imports, import evaluation happens before module body execution. If you need discovery to apply on first load, assign globalThis in an earlier script/module, or use dynamic import as shown above.
+:::
+
+### Explicit Runtime Registration (Not Global Discovery)
+Using Tempo.extend(...) is explicit registration after Tempo is loaded. It is ergonomic and strongly recommended for normal application code, but it is a different mechanism from pre-bootstrap global discovery.
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
 
 Tempo.extend({
-   options: { timeZone: 'Europe/Paris' },
-   timeZones: { 'MYTZ': 'Asia/Dubai' },
-   formats: { 'myFormat': '{dd}!!{mm}!!{yyyy}' },
-   terms: [ myCustomTermPlugin ]
- });
+  options: { timeZone: 'Europe/Paris' },
+  timeZones: { MYTZ: 'Asia/Dubai' },
+  formats: { myFormat: '{dd}!!{mm}!!{yyyy}' },
+  terms: [myCustomTermPlugin]
+});
 ```
+
+### Security and Ergonomics Notes
+- Global Discovery is convenient for host-controlled bootstraps and cross-bundle handoff.
+- Tempo.extend(...) is usually safer in app code because configuration is explicit, local, and easier to trace.
+- Use Global Discovery when you must configure Tempo before the first Tempo import executes.
 
 ### Discovery Contract
 Tempo looks for the following structure:

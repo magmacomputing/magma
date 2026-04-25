@@ -17,7 +17,7 @@ import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/inte
 
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
-import { resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
+import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns } from './support/tempo.util.js';
 
@@ -229,10 +229,15 @@ export class Tempo {
 	 * this allows the parser to try to interpret '04012023' as Apr-01-2023 before trying 04-Jan-2023  
 	 */
 	static #swapLayout(shape: Internal.State) {
+		const layoutController = shape.parse.layoutOrder.length > 0
+			? { [DEFAULT_LAYOUT_CLASS]: [...shape.parse.layoutOrder] }
+			: undefined;
+
 		const layout = resolveLayoutOrder({
 			layout: shape.parse.layout,
 			mdyLayouts: shape.parse.mdyLayouts,
 			isMonthDay: !!shape.parse.isMonthDay,
+			...(layoutController !== undefined && { layoutController }),
 		});
 
 		if (layout !== shape.parse.layout)
@@ -377,6 +382,12 @@ export class Tempo {
 						shape.parse[optKey] = asArray(arg.value as NonNullable<t.Options[typeof optKey]>);
 						break;
 
+					case 'layoutOrder':
+						shape.parse.layoutOrder = asArray(arg.value as NonNullable<t.Options[typeof optKey]>)
+							.map(v => String(v).trim())
+							.filter(Boolean);
+						break;
+
 					case 'pivot':
 						shape.parse["pivot"] = Number(arg.value);
 						break;
@@ -432,7 +443,7 @@ export class Tempo {
 
 		shape.config.sphere = Tempo.#setSphere(shape, mergedOptions);
 
-		if (isDefined(shape.parse.mdyLocales)) Tempo.#swapLayout(shape);
+		Tempo.#swapLayout(shape);
 		if (isDefined(shape.parse.event)) (this as any)[$setEvents](shape);
 		if (isDefined(shape.parse.period)) (this as any)[$setPeriods](shape);
 
@@ -640,7 +651,7 @@ export class Tempo {
 
 					registerPlugin(arg);
 					try {
-						(arg as any)(options, this, (val: any) => new this(val));
+						(arg as any)(this, options, (val: any) => new this(val));
 					} catch (e: any) {
 						const msg = (e?.message ?? '').toLowerCase();
 						if (msg.includes('constructor') || msg.includes('class') || (e instanceof TypeError) || isClass(arg)) {
@@ -786,6 +797,7 @@ export class Tempo {
 			parse.pattern ??= new Map<symbol, RegExp>();
 			parse.mdyLocales = Tempo.#mdyLocales(Default.mdyLocales as t.Options['mdyLocales']);
 			parse.mdyLayouts = asArray(Default.mdyLayouts as t.Options['mdyLayouts']) as t.Pair[];
+			parse.layoutOrder = asArray(Default.layoutOrder as t.Options['layoutOrder']) as string[];
 			parse.pivot ??= Default.pivot as any;
 			parse.mode ??= Default.mode as any;
 			parse.lazy = false;
@@ -974,6 +986,7 @@ export class Tempo {
 			ignore: { ...parse.ignore },
 			mdyLocales: [...parse.mdyLocales],
 			mdyLayouts: [...parse.mdyLayouts],
+			layoutOrder: [...parse.layoutOrder],
 			mode: parse.mode
 		});
 	}
