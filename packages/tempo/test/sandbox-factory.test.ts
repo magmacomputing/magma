@@ -26,20 +26,33 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should support shadowing global aliases', () => {
-		// Global 'noon' is 12:00
-		const EarlyNoon = Tempo.create({
-			period: {
-				'noon': '11:00'
-			}
-		});
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-		// Original remains unaffected (if not manually reset in a way that changes it)
-		// We expect 12:00 for the base Tempo
-		const t1 = new Tempo('noon');
-		expect(t1.hh).toBe(12);
+		try {
+			// Global 'noon' is 12:00
+			const EarlyNoon = Tempo.create({
+				period: {
+					'noon': '11:00'
+				}
+			});
 
-		const t2 = new EarlyNoon('noon');
-		expect(t2.hh).toBe(11);
+			// Original remains unaffected (if not manually reset in a way that changes it)
+			// We expect 12:00 for the base Tempo
+			const t1 = new Tempo('noon');
+			expect(t1.hh).toBe(12);
+
+			const t2 = new EarlyNoon('noon');
+			expect(t2.hh).toBe(11);
+
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining('Potential period alias collision: "noon" overlaps with existing alias(es): after[ -]?noon')
+			);
+			expect(errSpy).not.toHaveBeenCalled();
+		} finally {
+			warnSpy.mockRestore();
+			errSpy.mockRestore();
+		}
 	});
 
 	it('should record traceability info in parse results', () => {

@@ -66,22 +66,24 @@ Together, these ensure that `new Tempo()` maintains an $O(1)$ constructor execut
 
 ---
 
-## 🔁 Iteration & Enumerability (The Shadowing Chain)
+## 🔁 Iteration & Enumerability (Delegator Proxies)
 
-When using prototype shadowing, the JavaScript behavior for property inspection changes significantly. This is a trade-off for the performance gains.
+A delegator Proxy is a Proxy wrapper whose traps forward operations to an internal target/handler pair; unlike a standard Proxy (which typically mediates access directly against one wrapped target object), delegation is explicit and routed through that intermediate forwarding layer. In Tempo, "delegator Proxy" and "Generic Lazy Delegator Proxy" refer to the same public delegation mechanism, while lazy shadowing for `Tempo.#term`/`Tempo.#fmt` is a separate private-field initialization mechanism. These mechanisms coexist: the `instance.term` / `instance.fmt` public API uses the delegator Proxy path, and `Tempo.#term` / `Tempo.#fmt` private fields are initialized once via lazy shadowing.
 
-### ⚠️ The `Object.keys()` Warning
-`Object.keys(instance.fmt)` only returns the **enumerable own properties** of the current link in the shadowing chain.
-- **Initially**: Returns `[]` (all evaluated getters are non-enumerable on the base).
-- **After 1st Access** (e.g., `.date`): Returns `['date']`.
-- **After 2nd Access** (e.g., `.time`): Returns `['time']`. The `.date` property is now located on the **immediate prototype** of the current object.
+### ✅ `Object.keys()` Behavior
+`Object.keys(instance.fmt)` and `Object.keys(instance.term)` return the enumerable own keys currently registered on each delegator target.
 
-### 🛡️ The Flattening Iterator
-Tempo implements a **Flattening Iterator** via `[Symbol.iterator]` which enables iterable consumers like `for...of`, array spread (`[...instance]`), and `Object.fromEntries(instance)` to traverse the shadowing chain (using `Object.getPrototypeOf`) and collect evaluated property entries.
+- **Proxy discovery (definition)**: Proxy discovery is the proxy-handler phase that enumerates available target keys and installs enumerable lazy getter properties on the proxy target without reading their values.
+- **Triggered by enumeration APIs**: Discovery runs when enumeration APIs execute, including `Object.keys(instance.fmt)`, `for...in`, and `Reflect.ownKeys(...)` on the delegator proxy.
+- **Timing**: Discovery happens at enumeration time (before any property `get`), so key visibility is established before value resolution.
+- **Before direct access**: Keys can already be visible and probeable.
+- **Relation to [Section 1](#1-lazy-evaluation-shadowing)**: Discovery only registers getters; actual value computation and memoization happen later, when a getter is first invoked (for example, `instance.fmt.someKey`).
+- **After access**: Getter access memoizes values on the same target object; keys remain stable and do not "move" across prototype links.
 
-- **`[Symbol.iterator]`**: Traverses the shadowing chain to provide a flattened view of all computed state.
-- **⚠️ Important**: `for...in` and object spread (`{...instance}`) **do not** use the iterator; instead, they rely on enumerable own/inherited properties and are not supported by the flattening logic.
-- **`Tempo.formats` & `Tempo.terms`**: These static getters continue to provide a registry-wide view of **available** keys across the entire system, regardless of their evaluation state.
+### 🛡️ Iteration Notes
+- **`Object.keys` / `for...in` / object spread**: Operate on enumerable keys exposed by the delegator target after discovery.
+- **`[Symbol.iterator]`**: Still provides explicit iterator semantics where implemented.
+- **`Tempo.formats` & `Tempo.terms`**: These static getters continue to provide a registry-wide view of available keys across the system, independent of per-instance memoization state.
 
 ---
 

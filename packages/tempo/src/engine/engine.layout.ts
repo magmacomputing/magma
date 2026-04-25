@@ -1,8 +1,21 @@
 import { ownEntries } from '#library/primitive.library.js';
+import { Token } from '#tempo/support/tempo.symbol.js';
 import type * as t from '../tempo.type.js';
 
 export type LayoutEntry = [symbol, string];
 export type LayoutController = Record<PropertyKey, string[]>;
+
+const TOKEN_ALIAS = new Map<symbol, string>(
+	(ownEntries(Token, true) as [string, symbol][]).map(([name, key]) => [key, name])
+);
+
+// Support alias-driven ordering regardless of symbol identity by resolving
+// token names (e.g. dt, wkd, tm) to their symbol descriptions.
+const TOKEN_DESCRIPTION_BY_NAME = new Map<string, string>(
+	(ownEntries(Token, true) as [string, symbol][])
+		.map(([name, key]) => [name, key.description ?? ''] as const)
+		.filter(([, description]) => description.length > 0)
+);
 
 export const DEFAULT_LAYOUT_CLASS: unique symbol = Symbol('default');
 
@@ -38,13 +51,21 @@ export function resolveLayoutClassificationOrder(layout: Record<symbol, string>,
 	if (preferred.length === 0) return layout;
 
 	const entries = ownEntries(layout) as LayoutEntry[];
-	const byName = new Map(entries.map(([key, value]) => [key.description ?? '', [key, value] as LayoutEntry]));
+	const byName = new Map<string, LayoutEntry>();
+	entries.forEach(([key, value]) => {
+		const description = key.description ?? '';
+		if (description) byName.set(description, [key, value]);
+		const alias = TOKEN_ALIAS.get(key);
+		if (alias) byName.set(alias, [key, value]);
+	});
 	const next: LayoutEntry[] = [];
 	const seen = new Set<symbol>();
 
 	preferred.forEach(name => {
-		const entry = byName.get(name);
+		const resolvedName = TOKEN_DESCRIPTION_BY_NAME.get(name) ?? name;
+		const entry = byName.get(resolvedName) ?? byName.get(name);
 		if (!entry) return;
+		if (seen.has(entry[0])) return;
 		seen.add(entry[0]);
 		next.push(entry);
 	});

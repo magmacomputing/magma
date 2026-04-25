@@ -1,11 +1,19 @@
 import { sym, Token } from './tempo.symbol.js';
 import { asType } from '#library/type.library.js';
+import { asArray } from '#library/coercion.library.js';
 import { isSymbol, isUndefined, isString, isRegExp, isNullish, isObject, isEmpty } from '#library/assertion.library.js';
 import { ownEntries, ownKeys } from '#library/primitive.library.js';
 import { getRuntime } from './tempo.runtime.js';
 import { Match, Snippet, Layout } from './tempo.default.js';
 import enums from './tempo.enum.js';
 import type * as t from '../tempo.type.js';
+
+/** @internal normalize layout-order options into a clean string array */
+export function normalizeLayoutOrder(value: unknown): string[] {
+	return asArray(value)
+		.map(v => String(v).trim())
+		.filter(Boolean);
+}
 
 /** @internal set a mutable, enumerable property on a target */
 export const setProperty = <T>(target: object, key: PropertyKey, value: T) =>
