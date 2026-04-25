@@ -1,7 +1,7 @@
-import { asString } from '#library/coercion.library.js';
+import { asString, nullishToValue } from '#library/coercion.library.js';
 import { extract, ownEntries } from '#library/primitive.library.js';
 import { stringify } from '#library/serialize.library.js';
-import { isNumber, isDate, isObject, isDefined, isUndefined, isFunction, nullToValue } from '#library/type.library.js';
+import { isNumber, isDate, isObject, isDefined, isUndefined, isFunction } from '#library/assertion.library.js';
 import type { Property } from '#library/type.library.js';
 
 // adapted from https://jsbin.com/insert/4/edit?js,output
@@ -48,8 +48,8 @@ export function sortBy<T extends Property<T>>(...keys: (PropertyKey | SortBy)[])
 			if (result === 0) {																	// no need to look further if result !== 0
 				const dir = key.dir === 'desc' ? -1 : 1;
 				const field = key.field + (key.index ? `[${key.index}]` : '');
-				const valueA = extract(left, field, nullToValue(key.default, 0));
-				const valueB = extract(right, field, nullToValue(key.default, 0));
+const valueA = extract(left, field, nullishToValue(key.default, 0));
+			const valueB = extract(right, field, nullishToValue(key.default, 0));
 
 				switch (true) {
 					case isNumber(valueA) && isNumber(valueB):

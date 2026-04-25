@@ -1,6 +1,6 @@
-import { isNumeric } from '#library/coercion.library.js';
 import { isTempo, Match } from '#tempo/support';
-import { TemporalObject, TypeValue, isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/type.library.js';
+import { isNumeric, isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
+import type { TemporalObject, TypeValue } from '#library/type.library.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 
 /**

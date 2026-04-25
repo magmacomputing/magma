@@ -15,8 +15,9 @@ const str = format(zdt, '{mon} {day}, {yyyy}');
 console.log(str); // e.g., "October 24, 2026"
 ```
 
-> [!IMPORTANT]
-> **Terms and Standalone Formatting**: When using `format()` with native `Temporal` objects, **Terms** (tokens starting with `#`) are not resolved. To use Terms resolution in your format strings, you must either pass a `Tempo` instance to the `format()` utility or use the class-based `.format()` method.
+::: warning
+**Terms and Standalone Formatting**: When using `format()` with native `Temporal` objects, **Terms** (tokens starting with `#`) are not resolved. To use Terms resolution in your format strings, you must either pass a `Tempo` instance to the `format()` utility or use the class-based `.format()` method.
+:::
 
 ### Supported Input Types
 The engine can interpret:

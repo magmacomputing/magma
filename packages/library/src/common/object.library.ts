@@ -1,5 +1,5 @@
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
-import { isObject, isArray, isReference, isFunction, isDefined, isNullish } from '#library/type.library.js';
+import { isObject, isArray, isReference, isFunction, isDefined, isNullish } from '#library/assertion.library.js';
 import type { Extend, Property } from '#library/type.library.js';
 
 /** remove quotes around property names */

@@ -1,5 +1,6 @@
 import { enumify } from '#library/enumerate.library.js';
-import { isEmpty, isFunction, type ValueOf } from '#library/type.library.js';
+import { isEmpty, isFunction } from '#library/assertion.library.js';
+import type { ValueOf } from '#library/type.library.js';
 
 /**
  * A Wrapper Class around HammerJS.  

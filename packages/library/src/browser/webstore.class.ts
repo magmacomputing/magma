@@ -1,6 +1,7 @@
 import { distinct, ownEntries } from '#library/primitive.library.js';
 import { stringify, objectify } from '#library/serialize.library.js';
-import { asType, isEmpty, isNullish, isString } from '#library/type.library.js';
+import { asType } from '#library/type.library.js';
+import { isEmpty, isNullish, isString } from '#library/assertion.library.js';
 import type { Property, ValueOf } from '#library/type.library.js';
 
 const STORAGE = {

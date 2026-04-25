@@ -1,6 +1,6 @@
 import { asObject } from '#library/object.library.js';
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNullish } from '#library/type.library.js';
+import { isNullish } from '#library/assertion.library.js';
 import { instant } from '#library/temporal.library.js';
 import { getHemisphere } from '#library/international.library.js';
 

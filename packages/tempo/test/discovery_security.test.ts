@@ -1,6 +1,6 @@
 import { Tempo } from '#tempo';
 import { registryUpdate } from '#tempo/support';
-import lib from '#library/symbol.library.js';
+import { unwrap } from '#library/primitive.library.js';
 
 describe('Discovery Security (Direct Registry Check)', () => {
 
@@ -42,17 +42,17 @@ describe('Discovery Security (Direct Registry Check)', () => {
 
 	afterAll(() => {
 		// Cleanup added keys to keep environment clean for other tests
-		const numTarget = (Tempo.NUMBER as any)[lib.$Target];
+		const numTarget = unwrap(Tempo.NUMBER as any);
 		if (numTarget) {
 			delete numTarget.eleven;
 		}
 
-		const fmtTarget = (Tempo.FORMAT as any)[lib.$Target];
+		const fmtTarget = unwrap(Tempo.FORMAT as any);
 		if (fmtTarget) {
 			delete fmtTarget.custom;
 		}
 
-		const tzTarget = (Tempo.TIMEZONE as any)[lib.$Target];
+		const tzTarget = unwrap(Tempo.TIMEZONE as any);
 		if (tzTarget) {
 			delete tzTarget.myzone;
 		}

@@ -1,11 +1,11 @@
 import '#library/temporal.polyfill.js';
 import { pad } from '#library/string.library.js';
 import { ifNumeric } from '#library/coercion.library.js';
-import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined } from '#library/type.library.js';
+import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined } from '#library/assertion.library.js';
+import { delegator } from '#library/proxy.library.js';
 
-import { isTempo, enums, Match, getRuntime } from '#tempo/support';
+import { isTempo, enums, Match, getRuntime, NumericPattern } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
-import { NumericPattern } from '../support/tempo.enum.js';
 import type { Tempo } from '../tempo.class.js';
 
 declare module '../tempo.class.js' {
@@ -32,6 +32,7 @@ export function format(obj: Temporal.ZonedDateTime | any, fmt: string | symbol):
 export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol): string | number | any {
 	const state = getRuntime().state;
 	const config = isTempo(obj) ? obj.config : state?.config;
+	const formats = Object.assign(Object.create(enums.FORMAT), config?.formats);
 	const tz = config?.timeZone ?? 'UTC';
 
 	let zdt: any;
@@ -59,31 +60,10 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 			zdt = obj;
 	}
 
-	if (isUndefined(fmt)) {
-		const formats = config?.formats ?? enums.FORMAT;
-		return new Proxy({} as any, {
-			get(_, prop: string) {
-				if (!isString(prop) || prop === 'constructor' || prop === 'then') return undefined;
-				return format(zdt, prop);
-			},
-			ownKeys() {
-				return Object.keys(formats);
-			},
-			getOwnPropertyDescriptor(t, prop: string) {
-				if (isString(prop) && isDefined(formats[prop])) {
-					return {
-						enumerable: true,
-						configurable: true
-					};
-				}
-				return undefined;
-			}
-		});
-	}
+	if (isUndefined(fmt))
+		return delegator(formats, (prop) => format(zdt, prop));
 
 	if (!isZonedDateTime(zdt)) return '';
-
-	const formats = config?.formats ?? enums.FORMAT;
 
 	let template = (isString(fmt) && formats && (typeof (formats as any).has === 'function' ? (formats as any).has(fmt as string) : Object.prototype.hasOwnProperty.call(formats, fmt as string)))
 		? (formats as Record<string, string>)[fmt as string]

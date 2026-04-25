@@ -1,31 +1,53 @@
 import { Immutable } from '#library/class.library.js';
-import lib, { markConfig } from '#library/symbol.library.js';
-import { asType, isObject, isEmpty, type ValueOf } from '#library/type.library.js';
+import { sym, markConfig } from '#library/symbol.library.js';
+import { asType } from '#library/type.library.js';
+import { isObject, isEmpty } from '#library/assertion.library.js';
+import { enumify } from '#library/enumerate.library.js';
+import type { ValueOf, KeyOf } from '#library/type.library.js';
 
+export const LOG = enumify(['Off', 'Error', 'Warn', 'Info', 'Debug', 'Trace']);
+export type LOG = ValueOf<typeof LOG>
+export type LogLevel = KeyOf<typeof LOG>
+
+/** @internal console method names keyed by internal identifiers (not exported; see LOG enum for public API) */
 const Method = {
 	Log: 'log',
 	Info: 'info',
 	Warn: 'warn',
 	Debug: 'debug',
+	Trace: 'trace',
 	Error: 'error',
-} as const
+} as const;
 
+/** @internal severity levels mapped to Method names for gating logic, derived from LOG */
+const Level = {
+	[Method.Error]: LOG.Error,
+	[Method.Warn]: LOG.Warn,
+	[Method.Info]: LOG.Info,
+	[Method.Log]: LOG.Info,
+	[Method.Debug]: LOG.Debug,
+	[Method.Trace]: LOG.Trace,
+} as const;
+
+/** logging severity levels for Logify output control */
 /**
  * provide standard logging methods to the console for a class
  */
 @Immutable
 export class Logify {
 	#name: string;
-	#opts: Logify.Constructor = { [lib.$Logify]: true };
+	#opts: Logify.Constructor = { [sym.$Logify]: true };
 
 	/**
 	 * if {catch:true} then show a warning on the console and return  
 	 * otherwise show an error on the console and re-throw the error
 	 */
 	#trap(method: Logify.Method, ...msg: any[]) {
-		const config = (isObject(msg[0]) && (msg[0] as any)[lib.$Logify] === true) ? msg.shift() : this.#opts;
-
-		if (method === Method.Debug && !config.debug) return;
+		const config = (isObject(msg[0]) && (msg[0] as any)[sym.$Logify] === true) ? msg.shift() : this.#opts;
+		const currentLevel = (typeof config.debug === 'number')
+			? config.debug
+			: (config.debug === true ? LOG.Trace : LOG.Info);
+		const methodLevel = Level[method] ?? 0;
 
 		const output = msg.map(m => {
 			if (m instanceof Error) return m.message;
@@ -43,7 +65,7 @@ export class Logify {
 			return String(m);
 		}).filter(s => !isEmpty(s)).join(' ');
 
-		if (!config.silent && !isEmpty(output))
+		if (!config.silent && !isEmpty(output) && methodLevel <= currentLevel)
 			(console as any)[method](`${this.#name}: ${output}`);
 
 		if (method === Method.Error && !config.catch) {
@@ -61,6 +83,7 @@ export class Logify {
 	/** console.info */		info = (...msg: any[]) => this.#trap(Method.Info, ...msg);
 	/** console.warn */		warn = (...msg: any[]) => this.#trap(Method.Warn, ...msg);
 	/** console.debug */	debug = (...msg: any[]) => this.#trap(Method.Debug, ...msg);
+	/** console.trace */	trace = (...msg: any[]) => this.#trap(Method.Trace, ...msg);
 	/** console.error */	error = (...msg: any[]) => this.#trap(Method.Error, ...msg);
 
 	constructor(self?: Logify.Constructor | string, opts = {} as Logify.Constructor) {
@@ -89,9 +112,20 @@ export namespace Logify {
 	export type Method = ValueOf<typeof Method>
 
 	export interface Constructor {
-		debug?: boolean | undefined,
+		/**
+		 * Logging verbosity: `boolean | number`.
+		 * - `true` maps to `LOG.Trace`, enabling trace-level logging
+		 * - `false` (or unset) maps to `LOG.Info`
+		 * - numeric values map directly to `LOG` levels
+		 *
+		 * Note: numeric `0` (`LOG.Off`) suppresses all console emission, including
+		 * `console.error`. Errors can still be rethrown when `catch: false`, but no
+		 * error log is emitted. Use `true` or a higher numeric level to ensure errors
+		 * are logged to the console.
+		 */
+		debug?: boolean | number | undefined,
 		catch?: boolean | undefined,
 		silent?: boolean | undefined,
-		[lib.$Logify]?: boolean | undefined
+		[sym.$Logify]?: boolean | undefined
 	}
 }

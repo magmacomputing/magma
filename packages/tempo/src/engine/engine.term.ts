@@ -1,14 +1,14 @@
 import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
-import { isDefined, isString, isZonedDateTime } from '#library/type.library.js';
-import { asArray, isNumeric } from '#library/coercion.library.js';
+import { isDefined, isString, isZonedDateTime, isNumeric } from '#library/assertion.library.js';
+import { asArray } from '#library/coercion.library.js';
 
-import { sym, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
-import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../term.util.js';
-import { getHost } from '../plugin.util.js';
-import { parseModifier } from './module.lexer.js';
+import { TermError, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
+import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin/term.util.js';
+import { getHost } from '../plugin/plugin.util.js';
+import { parseModifier } from './engine.lexer.js';
 
-import type { Tempo } from '../../tempo.class.js';
-import type { TempoType } from '../plugin.type.js';
+import type { Tempo } from '../tempo.class.js';
+import type { TempoType } from '../plugin/plugin.type.js';
 
 /**
  * Internal helper to safely get the ZonedDateTime from a Tempo instance or raw object
@@ -36,7 +36,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 	const termObj = findTermPlugin(termPart);
 
 	if (!termObj) {
-		Tempo?.[sym.$termError]?.(instance.config, unit);
+		Tempo?.[TermError]?.(instance.config, unit);
 		return null;
 	}
 
@@ -81,7 +81,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 			const rawList = getRange(termObj, instance, zdt);
 			const currentRange = getTermRange(instance, rawList, false, zdt) as any;
 			if (!currentRange) {
-				Tempo?.[sym.$termError]?.(instance.config, unit);
+				Tempo?.[TermError]?.(instance.config, unit);
 				return null;
 			}
 
@@ -118,7 +118,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 			}
 
 			if (!target || remaining > 0) {
-				Tempo?.[sym.$termError]?.(instance.config, unit);
+				Tempo?.[TermError]?.(instance.config, unit);
 				return null;
 			}
 
@@ -147,7 +147,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 			if (rKey) {
 				const found = rawList.some(r => r.key?.toLowerCase() === rKey.toLowerCase());
 				if (!found) {
-					Tempo?.[sym.$termError]?.(instance.config, unit);
+					Tempo?.[TermError]?.(instance.config, unit);
 					return null;
 				}
 				candidates = rawList.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
@@ -191,7 +191,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 
 			if (next) return next.start.withTimeZone(tz).withCalendar(cal);
 
-			Tempo?.[sym.$termError]?.(instance.config, unit);
+			Tempo?.[TermError]?.(instance.config, unit);
 			return null;
 		}
 
@@ -209,7 +209,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 			if (rKey) {
 				const found = rawList.some(r => r.key?.toLowerCase() === rKey.toLowerCase());
 				if (!found) {
-					Tempo?.[sym.$termError]?.(instance.config, unit);
+					Tempo?.[TermError]?.(instance.config, unit);
 					return null;
 				}
 				list = list.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
@@ -241,7 +241,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 				const candidates = resolved.filter(c => rKey ? c.key?.toLowerCase() === rKey.toLowerCase() : true);
 				// prefer latest start <= cursor (zdt)
 				const prev = candidates
-					.filter(it => (toZdt(it.start).epochNanoseconds) <= (zdt.epochNanoseconds ))
+					.filter(it => (toZdt(it.start).epochNanoseconds) <= (zdt.epochNanoseconds))
 					.sort((a, b) => {
 						const sa = toZdt(a.start).epochNanoseconds;
 						const sb = toZdt(b.start).epochNanoseconds;
@@ -385,7 +385,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 		}
 
 		if (remaining > 0) {
-			Tempo?.[sym.$termError]?.(instance.config, unit);
+			Tempo?.[TermError]?.(instance.config, unit);
 			return null;
 		}
 
@@ -393,7 +393,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 		if (mutate === 'mid' || mutate === 'end') {
 			const finalRange = (getTermRange(instance, getRange(termObj, instance, jump), false, jump) as any);
 			if (!finalRange) {
-				Tempo?.[sym.$termError]?.(instance.config, unit);
+				Tempo?.[TermError]?.(instance.config, unit);
 				return null;
 			}
 			if (mutate === 'mid') {
@@ -436,7 +436,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 		let iterations = 0;
 		while (next.epochNanoseconds <= zdt.epochNanoseconds) {
 			if (++iterations > 50) {													// Safety-Valve: prevent infinite look-ahead
-				Tempo?.[sym.$termError]?.(instance.config, unit);
+				Tempo?.[TermError]?.(instance.config, unit);
 				return null;
 			} else {
 				const currentRange = termObj.define.call(new (getHost(instance))(jump, { ...instance.config, mode: 'strict' }), false);
@@ -454,7 +454,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 		const target = getTermRange(instance, rawList, Number(offset), zdt) as any;
 		if (target) return toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 
-		Tempo?.[sym.$termError]?.(instance.config, unit);
+		Tempo?.[TermError]?.(instance.config, unit);
 		return null;
 	}
 
@@ -468,7 +468,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 		let iterations = 0;
 		while (remaining > 0) {
 			if (++iterations > 100) {												// Safety-Valve: prevent infinite shift
-				Tempo?.[sym.$termError]?.(instance.config, unit);
+				Tempo?.[TermError]?.(instance.config, unit);
 				return null;
 			}
 
@@ -480,7 +480,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 			}
 
 			if (list.length === 0) {
-				Tempo?.[sym.$termError]?.(instance.config, unit);
+				Tempo?.[TermError]?.(instance.config, unit);
 				return null;
 			}
 
@@ -492,7 +492,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 				// if we hit the edge of the current list, jump to the end of the current cycle and try again
 				const current = (getTermRange(instance, list, false, jump) as any);
 				if (!current) {
-					Tempo?.[sym.$termError]?.(instance.config, unit);
+					Tempo?.[TermError]?.(instance.config, unit);
 					return null;
 				}
 

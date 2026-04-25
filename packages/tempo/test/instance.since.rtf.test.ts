@@ -41,4 +41,13 @@ describe('instance.since relative formatting', () => {
         const res = t.since(t1, 'hours');
         expect(res).toMatch(/2 hours ago/i);
     });
+
+    test('inherits rtfFormat from instance configuration', () => {
+        const t1 = new Tempo('2024-01-01T12:00:00');
+        const rtf = new Intl.RelativeTimeFormat('fr', { style: 'long' });
+        const t = new Tempo('2024-01-01T14:30:00', { rtfFormat: rtf });
+
+        const res = t.since(t1, 'hours');
+        expect(res).toMatch(/il y a 2 heures/i);
+    });
 });

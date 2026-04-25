@@ -1,10 +1,9 @@
-import { secure } from '#library/utility.library.js';
-import { asType, isNumber } from '#library/type.library.js';
+import { asType } from '#library/type.library.js';
+import { isNumber } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
-import { proxify } from '#library/proxy.library.js';
+import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable } from '#library/class.library.js';
 import { memoizeMethod } from '#library/function.library.js';
-import lib from '#library/symbol.library.js';
 import type { Property, Index, KeyOf, ValueOf, EntryOf, Invert, LooseKey } from '#library/type.library.js';
 
 declare module '#library/type.library.js' {
@@ -79,7 +78,7 @@ function value(val: any) {
  * ```typescript
  * const Status = enumify(['Active', 'Inactive', 'Pending']);
  * console.log(Status.Active);															// 0
- * console.log(Status.has('Active'));											// true
+ * console.log(Status.has('Active'));												// true
  * console.log(Status.keys());															// ['Active', 'Inactive', 'Pending']
  * ```
  */
@@ -109,7 +108,6 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 	}
 
 	const target = Object.create(proto, Object.getOwnPropertyDescriptors(stash));
-	if (!frozen) Object.defineProperty(target, lib.$Extensible, { value: true, enumerable: false });
 	return proxify(target, true, frozen);										// proxy is ALWAYS frozen (read-only), but target is only 'locked' if requested
 }
 

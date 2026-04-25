@@ -1,5 +1,5 @@
-import lib from '#library/symbol.library.js'
+import { sym } from '#library/symbol.library.js'
 
 test('symbol import', () => {
-  expect(lib.$Logify).toBeDefined()
+  expect(sym.$Logify).toBeDefined()
 })

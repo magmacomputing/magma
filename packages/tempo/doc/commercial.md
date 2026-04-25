@@ -38,5 +38,6 @@ Ready to discuss your project? Get in touch with our engineering team:
 
 ---
 
-> [!NOTE]
-> Tempo is, and will always be, an **Open Core** project. Our professional services are designed to complement the free library with deep domain expertise and specialized extensions.
+::: info
+Tempo is, and will always be, an **Open Core** project. Our professional services are designed to complement the free library with deep domain expertise and specialized extensions.
+:::

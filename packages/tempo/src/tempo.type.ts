@@ -7,11 +7,12 @@
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
 
-import { sym } from '#tempo/support/tempo.symbol.js';
+import { sym, type TempoBrand } from '#tempo/support/tempo.symbol.js';
 import * as enums from '#tempo/support/tempo.enum.js';
+import type { Logify } from '#library/logify.class.js';
 import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/tempo.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
-import type { Range, TermPlugin, ResolvedRange, Plugin, Terms, Module, Extension } from '#tempo/plugin/plugin.type.js';
+import type { TermPlugin, Plugin } from '#tempo/plugin/plugin.type.js';
 import type { Token } from '#tempo/support/tempo.symbol.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 
@@ -28,7 +29,7 @@ declare global {
 }
 
 /** the value that Tempo will attempt to interpret as a valid ISO date / time */
-export type DateTime = string | number | bigint | Date | Tempo | TemporalObject | Temporal.ZonedDateTimeLike | undefined | null
+export type DateTime = string | number | bigint | Date | Tempo | TempoBrand | TemporalObject | Temporal.ZonedDateTimeLike | undefined | null;
 
 export type Pattern = string | RegExp
 export type Logic = string | number | Function
@@ -145,9 +146,9 @@ export namespace Internal {
 	export interface BaseOptions {
 		/** localStorage key */																	store: string;
 		/** globalThis Discovery Symbol */											discovery: string | symbol;
-		/** additional console.log for tracking */							debug: boolean | undefined;
-		/** catch or throw Errors */														catch: boolean | undefined;
-		/** suppress console output during catch */							silent: boolean | undefined;
+		/** additional console.log for tracking */							debug: Logify.Constructor["debug"];
+		/** catch or throw Errors */														catch: Logify.Constructor["catch"];
+		/** suppress console output during catch */							silent: Logify.Constructor["silent"];
 		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
 		/** Temporal calendar */																calendar: Temporal.CalendarLike;
 		/** locale (e.g. en-AU) */															locale: string;
@@ -187,17 +188,20 @@ export namespace Internal {
 		/** @internal valid Temporal units for ZonedDateTime */	ZONED_DATE_TIME: Set<string>;
 
 		/** @internal current recursion depth during parsing */	parseDepth?: number;
-		/** @internal current matches during parsing */					matches?: Match[] | undefined;
+		/** @internal current matches during parsing */					matches?: Match[];
 		/** @internal current anchor during parsing */					anchor?: Temporal.ZonedDateTime;
+		/** @internal current ZonedDateTime during parsing */		zdt?: Temporal.ZonedDateTime;
 		/** @internal has the parse operation errored? */				errored?: boolean;
 	}
 
 	/** debug a Tempo instantiation */
 	export type MatchExtend = { type: 'Event' | 'Period', value: string | number | Function }
+	export type MatchSource = 'default' | 'global' | 'local' | `plugin:${string}`
 	export type Match = {
 		/** pattern which matched the input */									match?: string | undefined;
 		/** groups from the pattern match */										groups?: Groups;
 		/** was this a nested/anchored parse? */								isAnchored?: boolean;
+		/** where this match came from: 'default', 'global', 'local', or `plugin:${string}` */ source?: MatchSource;
 	} & (TypeValue<any> | MatchExtend)
 
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */

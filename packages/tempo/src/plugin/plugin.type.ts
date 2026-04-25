@@ -1,6 +1,6 @@
 import type { Prettify, Property } from '#library/type.library.js';
 import type { Tempo } from '../tempo.class.js';
-import { TermError } from '../support/tempo.symbol.js';
+import { TermError } from '#tempo/support';
 
 export type TempoType = typeof Tempo & {
 	[TermError]?: (config: any, term: string) => void;

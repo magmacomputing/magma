@@ -3,6 +3,7 @@
  */
 
 export * from './common/array.library.js';
+export * from './common/assertion.library.js';
 export * from './common/buffer.library.js';
 export * from './common/cipher.class.js';
 export * from './common/class.library.js';

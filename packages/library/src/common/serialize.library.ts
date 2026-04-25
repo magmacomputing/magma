@@ -1,8 +1,9 @@
 import { curry } from '#library/function.library.js';
 import { ownKeys, ownValues, ownEntries } from '#library/primitive.library.js';
 
-import { isType, asType, isEmpty, isDefined, isUndefined, isNullish, isString, isObject, isArray, isFunction, isSymbolFor, isSymbol } from '#library/type.library.js';
-import sym from '#library/symbol.library.js';
+import { asType } from '#library/type.library.js';
+import { isType, isEmpty, isDefined, isUndefined, isNullish, isString, isObject, isArray, isFunction, isSymbolFor, isSymbol } from '#library/assertion.library.js';
+import { sym } from '#library/symbol.library.js';
 import type { Obj, Type } from '#library/type.library.js';
 
 export const Registry = (globalThis as any)[sym.$SerializerRegistry] ??= new Map<string, Function>();
@@ -11,9 +12,8 @@ export const Registry = (globalThis as any)[sym.$SerializerRegistry] ??= new Map
 export const registerSerializable = (name: string, cls: Function) => {
 	const key = name.startsWith('$') ? name : `$${name}`;
 
-	if (Registry.has(key)) {
+	if (Registry.has(key))
 		throw new Error(`[registerSerializable] Collision: '${key}' is already registered with ${Registry.get(key)?.name || 'anonymous constructor'}`);
-	}
 
 	Registry.set(key, cls);
 }

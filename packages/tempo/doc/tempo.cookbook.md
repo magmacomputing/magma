@@ -46,12 +46,38 @@ Tempo uses your timezone to decide if `04012026` is April 1st or January 4th.
 ```typescript
 // US Context (en-US)
 const us = new Tempo('04012026', { timeZone: 'America/New_York' }); 
-console.log(us.format('{mon} {dd}')); // "April 1"
+console.log(us.format('{mon} {dd}')); // "April 01"
 
 // UK/Elsewhere Context (en-GB)
 const uk = new Tempo('04012026', { timeZone: 'Europe/London' });
 console.log(uk.format('{mon} {dd}')); // "January 04"
 ```
+
+For digits-only input, Tempo checks the most likely compact interpretation first:
+
+- A `6`-digit string is **always** validated as compact time first (`hhmiss`) **regardless of `timeZone`**—this validation is timezone-independent. Only if validation fails does Tempo then try compact date layouts (like `ddmmyy` or `mmddyy`), where `timeZone` decides month-day vs day-month order.
+- An `8`-digit string is checked as a compact date, with month-day-year vs day-month-year decided by `timeZone`.
+
+```typescript
+const time = new Tempo('093015', { timeZone: 'UTC' });
+console.log(time.format('{hh}:{mi}:{ss}')); // "09:30:15"
+
+const shortDate = new Tempo('310559', { timeZone: 'Europe/London' });
+console.log(shortDate.format('{yyyy}-{mm}-{dd}')); // "1959-05-31"
+
+// Two-digit years use Tempo's sliding `pivot` window (default `pivot: 75`): values at/after the computed pivot map to the previous century (so `59` -> `1959` here), and you can change this via constructor/parser options like `new Tempo(input, { pivot: 50, timeZone: 'Europe/London' })`.
+
+const usDate = new Tempo('04012026', { timeZone: 'America/New_York' });
+console.log(usDate.format('{yyyy}-{mm}-{dd}')); // "2026-04-01"
+
+const ukDate = new Tempo('04012026', { timeZone: 'Europe/London' });
+console.log(ukDate.format('{yyyy}-{mm}-{dd}')); // "2026-01-04"
+```
+
+To avoid ambiguity, prefer separators whenever you control the input format:
+
+- Use `09:30:15` instead of `093015`.
+- Use `2026-04-01`, `04/01/2026`, or `01/04/2026` instead of `04012026`.
 
 ### Handling Relative Strings
 Tempo natively understands human-readable offsets.
@@ -123,7 +149,7 @@ const isWeekend = t.dow >= 6; // Saturday = 6, Sunday = 7
 ```
 
 ### What Fiscal Quarter are we in?
-Using the `qtr` Term plugin (**Note**: `term.qtr` is a convenient alias for the full `term.quarter` property).
+Using the `qtr` Term plugin (`term.qtr` is a convenient alias for the full `term.quarter` property).
 ```typescript
 const t = new Tempo();
 console.log(`Current Quarter: ${t.term.qtr}`); // "Q1", "Q2", etc.
@@ -159,8 +185,9 @@ console.log(t.format('We are currently in the {#quarter}')); // "We are currentl
 
 ---
 
-> [!NOTE]
-> The examples below use the `using` and `await using` syntax, which require **TypeScript 5.2+** and a runtime that supports **TC39 Explicit Resource Management**.
+::: info
+The examples below use the `using` and `await using` syntax, which require **TypeScript 5.2+** and a runtime that supports **TC39 Explicit Resource Management**.
+:::
 
 ### Subscription Billing (Recurring Payments)
 Use a `seed` to anchor your subscription to a specific day, then use a month-based ticker.

@@ -40,7 +40,12 @@ It is generally recommended to use the **values** (lowercase) as type arguments,
 
 ## 2. Using Enums Outside of Tempo
 
-For consumers of the library, these enumerations are exposed cleanly as **static getters** on the core `Tempo` class.  They are also available as a namespace object from the 'barrel' (tempo.index.ts) export `enums`.
+For consumers of the library, these enumerations are exposed via **public package exports**:
+
+- As static properties on `Tempo` (convenient in app code already using `Tempo`)
+- As the canonical enums namespace from `@magmacomputing/tempo/enums` (recommended for direct enum imports)
+
+Avoid referencing internal source files (such as `tempo.index.ts`) in application code.
 
 You can use the values directly as arguments:
 
@@ -50,6 +55,16 @@ import { Tempo } from '@magmacomputing/tempo';
 // Direct Value access
 const direction = Tempo.COMPASS.North; // 'north'
 const monthIndex = Tempo.MONTH.Feb;    // 2 (since 'All' was index 0)
+```
+
+Canonical namespace import:
+
+```typescript
+import { enums } from '@magmacomputing/tempo/enums';
+
+const { COMPASS, MONTH } = enums;
+const direction = COMPASS.North;
+const monthIndex = MONTH.Feb;
 ```
 
 ## 3. Creating Custom Enums
@@ -69,7 +84,7 @@ const allKeys = STATUS.keys();     // ['Pending', 'Active', 'Resolved', 'Archive
 const isActive = STATUS.has('Active'); // true
 const value = STATUS.Resolved;      // 2
 ```
-or alternatively, directly from the 'enums' export in the package.json
+or import from the explicit enums subpath export
 ```typescript
 import { enums } from '@magmacomputing/tempo/enums';
 
@@ -77,6 +92,13 @@ const {COMPASS, MONTH} = enums;
 
 const direction = COMPASS.North; // 'north'
 const monthIndex = MONTH.Feb;    // 2 (since 'All' was index 0)
+```
+
+or import only the enum you need in a single line:
+```typescript
+import { COMPASS, MONTH } from '@magmacomputing/tempo/enums';
+
+console.log('compass: ', COMPASS.keys());
 ```
 
 Because `enumify` attaches a rich prototype, consumers can iterate through, validate, and query the enum structure easily. These are operations that are painfully clunky with standard TypeScript `enums`.
