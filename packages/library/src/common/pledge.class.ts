@@ -2,10 +2,10 @@ import { Logify } from '#library/logify.class.js';
 import { markConfig } from '#library/symbol.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { ifDefined } from '#library/object.library.js';
-import { secure } from '#library/utility.library.js';
+import { secure } from '#library/proxy.library.js';
 import { cleanify } from '#library/serialize.library.js';
 import { Immutable } from '#library/class.library.js';
-import { isEmpty, isObject } from '#library/type.library.js';
+import { isEmpty, isObject } from '#library/assertion.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
@@ -175,16 +175,16 @@ export namespace Pledge {
 		onResolve?: Pledge.Resolve | Pledge.Resolve[] | undefined;
 		onReject?: Pledge.Reject | Pledge.Reject[] | undefined;
 		onSettle?: Pledge.Settle | Pledge.Settle[] | undefined;
-		debug?: boolean | undefined;
-		catch?: boolean | undefined;
-		silent?: boolean | undefined;
+		debug?: Logify.Constructor["debug"];
+		catch?: Logify.Constructor["catch"];
+		silent?: Logify.Constructor["silent"];
 	}
 
 	export interface Status<T> {
 		tag?: string | undefined;
-		debug?: boolean | undefined;
-		catch?: boolean | undefined;
-		silent?: boolean | undefined;
+		debug?: Pledge.Constructor["debug"];
+		catch?: Pledge.Constructor["catch"];
+		silent?: Pledge.Constructor["silent"];
 		state: symbol;
 		settled?: T | undefined;
 		error?: any | undefined;

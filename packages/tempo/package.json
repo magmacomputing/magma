@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -26,10 +26,16 @@
     "**/temporal.polyfill.js",
     "**/*-polyfill.ts",
     "**/tempo.index.js",
-    "**/module.*.js",
-    "**/module.*.ts",
-    "**/discrete.*.js",
-    "**/discrete.*.ts"
+    "**/plugin/term/standard.index.js",
+    "**/plugin/term/standard.index.ts",
+    "**/plugin/extend/extend.*.js",
+    "**/plugin/extend/extend.*.ts",
+    "dist/engine/engine.*.js",
+    "src/engine/engine.*.ts",
+    "dist/module/module.*.js",
+    "src/module/module.*.ts",
+    "dist/discrete/discrete.*.js",
+    "src/discrete/discrete.*.ts"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
@@ -47,13 +53,17 @@
       "development": "./src/core.index.ts",
       "default": "./dist/core.index.js"
     },
+    "#tempo/enums": {
+      "development": "./src/support/tempo.enum.ts",
+      "default": "./dist/support/tempo.enum.js"
+    },
     "#tempo/duration": {
-      "development": "./src/plugin/module/module.duration.ts",
-      "default": "./dist/plugin/module/module.duration.js"
+      "development": "./src/module/module.duration.ts",
+      "default": "./dist/module/module.duration.js"
     },
     "#tempo/mutate": {
-      "development": "./src/plugin/module/module.mutate.ts",
-      "default": "./dist/plugin/module/module.mutate.js"
+      "development": "./src/module/module.mutate.ts",
+      "default": "./dist/module/module.mutate.js"
     },
     "#tempo/ticker": {
       "development": "./src/plugin/extend/extend.ticker.ts",
@@ -75,17 +85,21 @@
       "development": "./src/plugin/plugin.*.ts",
       "default": "./dist/plugin/plugin.*.js"
     },
-    "#tempo/plugin/extend.*.js": {
-      "development": "./src/plugin/extend/extend.*.ts",
-      "default": "./dist/plugin/extend/extend.*.js"
+    "#tempo/plugin/extend/*.js": {
+      "development": "./src/plugin/extend/*.ts",
+      "default": "./dist/plugin/extend/*.js"
     },
-    "#tempo/plugin/module.*.js": {
-      "development": "./src/plugin/module/module.*.ts",
-      "default": "./dist/plugin/module/module.*.js"
+    "#tempo/engine/*.js": {
+      "development": "./src/engine/*.ts",
+      "default": "./dist/engine/*.js"
     },
-    "#tempo/plugin/term.*.js": {
-      "development": "./src/plugin/term/term.*.ts",
-      "default": "./dist/plugin/term/term.*.js"
+    "#tempo/module/*.js": {
+      "development": "./src/module/*.ts",
+      "default": "./dist/module/*.js"
+    },
+    "#tempo/plugin/term/*.js": {
+      "development": "./src/plugin/term/*.ts",
+      "default": "./dist/plugin/term/*.js"
     },
     "#tempo/support": {
       "development": "./src/support/support.index.ts",
@@ -126,8 +140,8 @@
       "import": "./dist/plugin/extend/extend.*.js"
     },
     "./module/*": {
-      "types": "./dist/plugin/module/module.*.d.ts",
-      "import": "./dist/plugin/module/module.*.js"
+      "types": "./dist/module/module.*.d.ts",
+      "import": "./dist/module/module.*.js"
     },
     "./term/standard": {
       "types": "./dist/plugin/term/standard.index.d.ts",
@@ -150,12 +164,12 @@
       "import": "./dist/plugin/extend/extend.ticker.js"
     },
     "./duration": {
-      "types": "./dist/plugin/module/module.duration.d.ts",
-      "import": "./dist/plugin/module/module.duration.js"
+      "types": "./dist/module/module.duration.d.ts",
+      "import": "./dist/module/module.duration.js"
     },
     "./mutate": {
-      "types": "./dist/plugin/module/module.mutate.d.ts",
-      "import": "./dist/plugin/module/module.mutate.js"
+      "types": "./dist/module/module.mutate.d.ts",
+      "import": "./dist/module/module.mutate.js"
     },
     "./discrete": {
       "types": "./dist/discrete/discrete.index.d.ts",
@@ -211,8 +225,6 @@
   },
   "files": [
     "dist/",
-    "README.md",
-    "CHANGELOG.md",
     "img/"
   ],
   "dependencies": {
@@ -220,7 +232,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.4.0",
+    "@magmacomputing/library": "2.5.0",
     "@rollup/plugin-alias": "^6.0.0",
     "cross-env": "^7.0.3",
     "magic-string": "^0.30.21",

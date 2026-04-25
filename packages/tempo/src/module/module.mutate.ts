@@ -1,13 +1,12 @@
-import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/type.library.js';
+import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
 import { singular } from '#library/string.library.js';
 
-import { sym } from '../../support/tempo.symbol.js';
-import enums from '../../support/tempo.enum.js';
-import { defineInterpreterModule } from '../plugin.util.js';
-import { findTermPlugin } from '../term.util.js';
-import { resolveTermMutation } from './module.term.js';
-import type { Tempo } from '../../tempo.class.js';
-import type * as t from '../../tempo.type.js';
+import { sym, enums } from '#tempo/support';
+import { defineInterpreterModule } from '../plugin/plugin.util.js';
+import { findTermPlugin } from '../plugin/term.util.js';
+import { resolveTermMutation } from '../engine/engine.term.js';
+import type { Tempo } from '../tempo.class.js';
+import type * as t from '../tempo.type.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {

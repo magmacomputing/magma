@@ -11,8 +11,9 @@ Once evaluated, the result is memoised — subsequent reads of the same property
 new Tempo('25-Dec-2024').term.season     // ← computed on first access, cached thereafter
 ```
 
-> [!TIP]
-> **Transparent Discovery**: As of **v2.0.1**, all term properties are **enumerable**. Whilst modern `console.log` environments (like Node.js) will typically display these as `[Getter]` to preserve laziness, they *are* visible to property-scanning tools. This means a serializer (like `JSON.stringify`) or a deep-clone utility **will** trigger the eager evaluation of *every* registered term at once. To prevent terminal noise during these events (e.g., for invalid dates), initialize Tempo with **`silent: true`**.
+::: tip
+**Transparent Discovery**: As of **v2.0.1**, all term properties are **enumerable**. Whilst modern `console.log` environments (like Node.js) will typically display these as `[Getter]` to preserve laziness, they *are* visible to property-scanning tools. This means a serializer (like `JSON.stringify`) or a deep-clone utility **will** trigger the eager evaluation of *every* registered term at once. To prevent terminal noise during these events (e.g., for invalid dates), initialize Tempo with **`silent: true`**.
+:::
 
 ## What a Term Does
 
@@ -315,11 +316,13 @@ To ensure a custom `Term` plugin integrates fully with Tempo, follow these guide
 2.  **Metadata-First Boundaries**: If your plugin handles multiple sets (e.g. hemispheres or cultural calendars), avoid using array indices like `ranges[0]`. Instead, add marker fields like **`sphere`** or **`group`** to each range object and use `.filter()` inside your `define` function.
 3.  **Memoization Safety**: Keep the `define` function pure. It will only be called once per instance access.
 4.  **Math Readiness**: Always use `getTermRange` or provide boundaries. Without them, users cannot use your term in `add()`, `set()`, or `ticker()`.
-5.  **Key consistency**: Ensure the `key` property you return in the `define` function's scope object matches the `key` definition of your plugin.
+5.  **Key consistency**: It is valid to remap the returned scope `key` (for example, `cfy` -> `FY2024`) when that is the semantic value your term represents. Be intentional and keep it consistent with your `ranges` lookup and consumer expectations.
+6.  **Unique Names**: Keep `key` and `scope` globally unique across all registered terms. Collisions are unsupported and may produce order-dependent lookups.
 
 ## 🧭 Best Practices: Idempotency & Side-Effects
 
-> [!IMPORTANT]
-> Because term lookups are **memoized** (cached) on the instance, the `define` function must be **pure and idempotent**. It should only depend on the current `Tempo` instance state and its configuration (`this.config`).
->
-> **Never apply side-effects** or modify external state within a term definition. The function is only guaranteed to run once per instance access; subsequent reads will return the cached value directly without re-executing your logic.
+::: warning
+Because term lookups are **memoized** (cached) on the instance, the `define` function must be **pure and idempotent**. It should only depend on the current `Tempo` instance state and its configuration (`this.config`).
+
+**Never apply side-effects** or modify external state within a term definition. The function is only guaranteed to run once per instance access; subsequent reads will return the cached value directly without re-executing your logic.
+:::

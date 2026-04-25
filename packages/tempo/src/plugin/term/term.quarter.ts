@@ -1,8 +1,8 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../term.util.js';
 import { COMPASS } from '../../support/tempo.enum.js';
-import { type Tempo } from '../../tempo.class.js';
-import { isNumber } from '#library/type.library.js';
+import { isNumber } from '#library/assertion.library.js';
 import { asArray } from '#library';
+import type { Tempo } from '../../tempo.class.js';
 
 /** definition of fiscal quarter ranges */
 const groups = defineRange([

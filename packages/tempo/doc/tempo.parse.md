@@ -20,8 +20,9 @@ console.log(zdt.toString()); // 2026-04-28T15:00:00+10:00[Australia/Sydney]
 *   **Temporal Native**: Perfect for projects that already use native `Temporal` objects but need a friendlier input layer for users.
 *   **Strict by Default**: The standalone function defaults to `mode: 'strict'`, ensuring that it won't "guess" if the input is ambiguous.
 
-> [!IMPORTANT]
-> **Terms and Standalone Parsing**: Standalone `parse()` supports all standard natural language patterns but does not resolve **Global Terms** or aliases unless they are part of the core pattern registry. For full term-dispatch and instance-aware resolution, use the `Tempo` class.
+::: warning
+**Terms and Standalone Parsing**: Standalone `parse()` supports all standard natural language patterns but does not resolve **Global Terms** or aliases unless they are part of the core pattern registry. For full term-dispatch and instance-aware resolution, use the `Tempo` class.
+:::
 
 ### ⚠️ Standalone vs. Class-Based
 It is important to understand the trade-offs when using the lightweight `parse()` function:
@@ -35,8 +36,9 @@ It is important to understand the trade-offs when using the lightweight `parse()
 | **Plugins** | ❌ Bypasses class-level plugins | ✅ Full support for `.ticker()`, etc. |
 | **Global Config** | ❌ Configuration per call only | ✅ Configure once via `Tempo.init()` |
 
-> [!TIP]
-> Use **Standalone Parse** for server-side processing or background tasks where bundle size is the priority. Use the **Tempo Class** for UI-heavy applications that need advanced formatting and mutation chains.
+::: tip
+Use **Standalone Parse** for server-side processing or background tasks where bundle size is the priority. Use the **Tempo Class** for UI-heavy applications that need advanced formatting and mutation chains.
+:::
 
 ---
 

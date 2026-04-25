@@ -88,6 +88,25 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 		expect(t.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
 	});
 
+	it('should support granular sphere matching (e.g. SouthSouthWest)', () => {
+		// Even though ranges are defined for 'south', 'SouthSouthWest' should match it via .includes()
+		const t = new Tempo(testDate, { catch: true, sphere: 'SouthSouthWest' });
+		expect(t.format('{#qtr}')).toBe('Q4');
+		expect(t.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+	});
+
+	it('should match sphere values case-insensitively', () => {
+		// Verify that all-caps 'SOUTH' produces the same results as lowercase 'south'
+		const t = new Tempo(testDate, { catch: true, sphere: 'SOUTH' });
+		expect(t.format('{#qtr}')).toBe('Q4');
+		expect(t.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+		
+		// Also verify all-caps granular matching 'SOUTHSOUTHWEST' works like 'SouthSouthWest'
+		const t2 = new Tempo(testDate, { catch: true, sphere: 'SOUTHSOUTHWEST' });
+		expect(t2.format('{#qtr}')).toBe('Q4');
+		expect(t2.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+	});
+
 	describe('Term Range Boundaries (Fluent & Immutable)', () => {
 		it('should return start and end as Tempo instances', () => {
 			const t = new Tempo(testDate, { catch: true, sphere: 'north' });

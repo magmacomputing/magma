@@ -1,15 +1,15 @@
-import { isString, isObject, isDefined, isUndefined } from '#library/type.library.js';
+import { isString, isObject, isDefined, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
 import { singular } from '#library/string.library.js';
 import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { getRelativeTime } from '#library/international.library.js';
 
-import { defineInterpreterModule, interpret } from '../plugin.util.js';
-import enums from '../../support/tempo.enum.js';
-import type { Module } from '../plugin.type.js';
-import type { Tempo } from '../../tempo.class.js';
+import { defineInterpreterModule, interpret } from '../plugin/plugin.util.js';
+import { enums, isTempo } from '#tempo/support';
+import type { Module } from '../plugin/plugin.type.js';
+import type { Tempo } from '../tempo.class.js';
 
-declare module '../../tempo.class.js' {
+declare module '../tempo.class.js' {
 	namespace Tempo {
 		/** returns a full Tempo Duration object (EDO) for the given input */
 		function duration(input: any): Tempo.Duration;
@@ -67,9 +67,10 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 				({ unit, ...opts } = until as any)
 			else unit = until;
 			break;
-		case isObject(arg) && isString(until):
-			unit = until;
-			({ value, ...opts } = arg as any);
+		case isObject(arg) && isTempo(arg):
+			value = (arg as any).toDateTime();
+			if (isObject(until)) ({ unit, ...opts } = until as any);
+			else unit = until;
 			break;
 		case isObject(arg) && isObject(until):
 			({ value, unit, ...opts } = Object.assign({ value: arg }, until) as any);

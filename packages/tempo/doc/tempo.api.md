@@ -199,6 +199,7 @@ Returns a `Temporal.PlainDateTime` representation.
 
 ---
 
-> [!TIP]
-> **Looking for the full technical details?**  
-> For an exhaustive, auto-generated reference of every property, internal type, and class member, see our [Full Technical API Reference](./api/README.md).
+::: tip
+**Looking for the full technical details?**  
+For an exhaustive, auto-generated reference of every property, internal type, and class member, see our [Full Technical API Reference](./api/README.md).
+:::

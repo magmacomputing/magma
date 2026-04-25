@@ -2,6 +2,15 @@
 
 Tempo is designed as a modular library, allowing you to include only the features you need. This reduces the core bundle size and prevents your application from being polluted with unused functionality.
 
+## Module Activation Quick Guide
+
+If you are using module entry points, use this rule of thumb:
+
+1. `import '@magmacomputing/tempo/<module>'` (side-effect import): auto-registers that module. You usually do **not** need `Tempo.extend(...)` for the same module.
+2. `import { SomeModule } from '@magmacomputing/tempo/<module>'` (named import): requires explicit activation via `Tempo.extend(SomeModule)`.
+3. `Tempo.init()` is primarily for baseline configuration and initial discovery. Call it at startup for config; if you load modules later at runtime, use `Tempo.extend(...)` for deterministic activation.
+4. Import order is usually only relevant when modules are loaded dynamically/lazily. For deterministic activation in those cases, prefer explicit `Tempo.extend(...)` immediately after import.
+
 ## Core vs. Full
 
 * **@magmacomputing/tempo/core**: The bare-bones Tempo engine. Includes parsing (standard ISO string or a native `Temporal` object), basic getters, and internal state management.
@@ -85,8 +94,9 @@ export const MyModule = defineModule((options, TempoClass) => {
 });
 ```
 
-> [!IMPORTANT]
-> **Dual Module Hazard**: If you are using `@magmacomputing/tempo/core` and `@magmacomputing/tempo` in the same project, ensure you use the `development` condition or consistent import paths to avoid registering the same classes twice.
+::: warning
+**Dual Module Hazard**: If you are using `@magmacomputing/tempo/core` and `@magmacomputing/tempo` in the same project, ensure you use the `development` condition or consistent import paths to avoid registering the same classes twice.
+:::
 
 ## ⚠️ The Registration "Gotcha"
 
@@ -95,8 +105,9 @@ There is a subtle but important distinction between how features are activated i
 *   **`Tempo.extend(Module)`**: This is **Immediate and Explicit**. It applies the module to the class exactly when the line is executed. This is the recommended pattern for modular applications.
 *   **`Tempo.init()`**: This is **Discovery-Driven**. It scans the global environment for any plugins that were imported via side effects (e.g., `import '@magmacomputing/tempo/ticker'`) and hydrates the engine all at once.
 
-> [!CAUTION]
-> **The Initialization Lifecycle**: `Tempo.init()` performs a **full state refresh**. It resets configuration, term registries, and formatting maps to defaults before re-applying all currently discovered plugins. To ensure your custom logic is managed correctly, always use `Tempo.extend()` or encapsulate changes within a formal plugin.
+::: danger
+**The Initialization Lifecycle**: `Tempo.init()` performs a **full state refresh**. It resets configuration, term registries, and formatting maps to defaults before re-applying all currently discovered plugins. To ensure your custom logic is managed correctly, always use `Tempo.extend()` or encapsulate changes within a formal plugin.
+:::
 
-**The Side-Effect Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** automatically appear on the `Tempo` class. You would need to call `Tempo.init()` again or use `Tempo.extend()` to pick up the latecomers.
+**The Side-Effect Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** automatically appear on the `Tempo` class. Because `Tempo.init()` short-circuits once state already exists, re-calling it will not load those late modules. Use `Tempo.extend()` explicitly to activate late-loaded modules instead of trying to re-run `Tempo.init()`.
 

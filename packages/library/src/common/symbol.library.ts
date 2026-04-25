@@ -3,23 +3,18 @@
  * These symbols utilize Symbol.for() to ensure consistency across module boundaries.
  */
 
-const sym = {
-	/** key to use for identifying the raw target of a Proxy */
-	$Target: Symbol.for('$LibraryTarget'),
-	/** key to trigger full discovery of all lazy properties */
-	$Discover: Symbol.for('$LibraryDiscover'),
-	/** key to identify objects that should remain extensible */
-	$Extensible: Symbol.for('$LibraryExtensible'),
-	/** NodeJS custom inspection symbol for the Proxy pattern */
-	$Inspect: Symbol.for('nodejs.util.inspect.custom'),
-	/** unique marker to identify a Logify configuration object */
-	$Logify: Symbol.for('$LibraryLogify'),
-	/** key to identify the global type registry */
-	$Registry: Symbol.for('$LibraryRegistry'),
-	/** key to identify the global registration hook */
-	$Register: Symbol.for('$LibraryRegister'),
-	/** key to identify the global serialization registry */
-	$SerializerRegistry: Symbol.for('$LibrarySerializerRegistry'),
+export const $Target: unique symbol = Symbol.for('$LibraryTarget') as any;
+export const $Discover: unique symbol = Symbol.for('$LibraryDiscover') as any;
+export const $Extensible: unique symbol = Symbol.for('$LibraryExtensible') as any;
+export const $Inspect: unique symbol = Symbol.for('nodejs.util.inspect.custom') as any;
+export const $Logify: unique symbol = Symbol.for('$LibraryLogify') as any;
+export const $Registry: unique symbol = Symbol.for('$LibraryRegistry') as any;
+export const $Register: unique symbol = Symbol.for('$LibraryRegister') as any;
+export const $SerializerRegistry: unique symbol = Symbol.for('$LibrarySerializerRegistry') as any;
+export const $Identity: unique symbol = Symbol.for('$LibraryIdentity') as any;
+
+export const sym = {
+	$Target, $Discover, $Extensible, $Inspect, $Logify, $Registry, $Register, $SerializerRegistry, $Identity
 } as const;
 
 /** identify and mark a Logify configuration object */
@@ -29,5 +24,3 @@ export function markConfig<T extends object>(obj: T): T {
 
 	return obj;
 }
-
-export default sym;

@@ -1,6 +1,24 @@
 # Installation Guide
 
-Tempo is designed to be environment-agnostic. Whether you are building a server-side application, a modern browser project with ESM, or a performance-critical "Lite" bundle, Tempo provides a specific path for you.
+`Tempo` is designed to be environment-agnostic. Whether you are building a server-side application, a modern browser project with ESM, or a performance-critical "Lite" bundle, `Tempo` provides a specific path for you.
+
+## Temporal Polyfill Note
+
+`Tempo` expects the host environment to provide `Temporal`, either through native runtime support or a user-supplied polyfill.
+
+`Temporal` is now at Stage 4 and is expected to land broadly in runtimes soon. To avoid needlessly inflating package size with a dependency that will increasingly become unnecessary, `Tempo` does not bundle a `Temporal` polyfill by default.
+
+As of 13 January 2026, Chrome 144 has shipped `Temporal`, and Firefox 139 also includes native `Temporal` support, while Node.js still does not provide built-in `Temporal` globally. Please verify support in your actual target runtime(s) and add a polyfill only when needed.
+
+You can check at runtime with a simple guard:
+
+```js
+if (typeof globalThis.Temporal === 'undefined') {
+  // Load your Temporal polyfill for this environment
+}
+```
+
+Note: The examples below include a polyfill for demonstration purposes only, so the snippets work consistently across environments.
 
 ---
 
@@ -18,6 +36,21 @@ bun add @magmacomputing/tempo       # bun
 ### Usage
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
+const t = new Tempo('next Friday');
+```
+
+### Node.js quick-start (if Temporal is not available)
+
+The polyfill import shown here is conditional guidance, not required for all environments.
+
+```bash
+npm install @js-temporal/polyfill
+```
+
+```javascript
+import '@js-temporal/polyfill';
+import { Tempo } from '@magmacomputing/tempo';
+
 const t = new Tempo('next Friday');
 ```
 
@@ -45,6 +78,8 @@ For browser environments that support **Import Maps**, you can use the granular 
 
 ### 1. Import Map Setup
 Add this to your `<head>` to resolve the dependencies:
+
+> Note: If you are self-hosting Tempo files, use the shipped `packages/tempo/importmap.json` as-is for your installed version instead of hand-authoring `dist/` paths.
 
 ```html
 <script type="importmap">
@@ -104,8 +139,9 @@ Tempo.extend(MutateModule);
 const t = new Tempo().add({ days: 1 });
 ```
 
-> [!IMPORTANT]
-> When using the Lite build, the `Tempo` class will have almost no methods (like `.add()`, `.set()`, or `.format()`) until you explicitly call `Tempo.extend()` with the appropriate module.
+::: warning
+When using the Lite build, the `Tempo` class will have almost no methods (like `.add()`, `.set()`, or `.format()`) until you explicitly call `Tempo.extend()` with the appropriate module.
+:::
 
 ---
 

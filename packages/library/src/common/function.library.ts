@@ -1,5 +1,5 @@
-import { secure } from '#library/utility.library.js';
-import { isUndefined, type Property } from '#library/type.library.js';
+import { secure } from '#library/proxy.library.js';
+import type { Property } from '#library/type.library.js';
 
 // https://medium.com/codex/currying-in-typescript-ca5226c85b85
 type PartialTuple<T extends any[], X extends any[] = []> =
@@ -36,7 +36,7 @@ type Curry<Args extends any[], Res> =
  * Handles BigInt, Map, Set, Function, Undefined, and Circular refs.
  */
 function serialize(val: any, seen = new WeakSet()): string {
-	return JSON.stringify(val, function(this: any, key: string, value: any) {
+	return JSON.stringify(val, function (this: any, key: string, value: any) {
 		if (value === undefined) return '\u0000__undefined__\u0000';
 		if (typeof value === 'bigint') return `bigint:${value}`;
 		if (typeof value === 'function') return `function:${value.name || 'anonymous'}`;

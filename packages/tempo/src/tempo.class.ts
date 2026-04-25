@@ -1,25 +1,27 @@
 import '#library/temporal.polyfill.js';
 
 import { Logify } from '#library/logify.class.js';
-import { secure } from '#library/utility.library.js';
 import { Immutable, Serializable } from '#library/class.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
-import { proxify, delegate } from '#library/proxy.library.js';
-import lib, { markConfig } from '#library/symbol.library.js';
+import { secure, proxify, delegate } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { enumify } from '#library/enumerate.library.js';
-import { ownKeys, ownEntries } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
-import { getType, asType, isEmpty, isDefined, isUndefined, isString, isObject, isRegExp, isSymbol, isFunction, isClass, isZonedDateTime, Property, Secure } from '#library/type.library.js';
+import { getType, asType } from '#library/type.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isObject, isRegExp, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isZonedDateTimeLike } from '#library/assertion.library.js';
+import type { Property, Secure } from '#library/type.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
+
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
+import { resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns } from './support/tempo.util.js';
 
-import { sym, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, type TempoBrand } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, type TempoBrand, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 import { instant } from '#library/temporal.library.js';
 
@@ -34,6 +36,7 @@ const Context = getContext();																// current execution context
 /** return whether the shape is 'local' or 'global' */
 const isLocal = (shape: { config: { scope: string } }) => shape.config.scope === 'local';
 
+const ClassStates = new WeakMap<typeof Tempo, Internal.State>();
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 namespace Internal {
 	export type State = t.Internal.State;
@@ -58,30 +61,30 @@ namespace Internal {
  */
 @Serializable
 @Immutable
-export class Tempo implements TempoBrand {
+export class Tempo {
 	/** Weekday names (short-form) */													static get WEEKDAY() { return enums.WEEKDAY }
 	/** Weekday names (long-form) */													static get WEEKDAYS() { return enums.WEEKDAYS }
-	/** Month names (short-form) */														static get MONTH() { return enums.MONTH }
-	/** Month names (long-form) */														static get MONTHS() { return enums.MONTHS }
+	/** Month names (short-form) */															static get MONTH() { return enums.MONTH }
+	/** Month names (long-form) */															static get MONTHS() { return enums.MONTHS }
 	/** Time durations as seconds (singular) */								static get DURATION() { return enums.DURATION }
-	/** Time durations as milliseconds (plural) */						static get DURATIONS() { return enums.DURATIONS }
+	/** Time durations as milliseconds (plural) */					static get DURATIONS() { return enums.DURATIONS }
 
 	/** Quarterly Seasons */																	static get SEASON() { return enums.SEASON }
 	/** Compass cardinal points */														static get COMPASS() { return enums.COMPASS }
 
-	/** Tempo to Temporal DateTime Units map */								static get ELEMENT() { return enums.ELEMENT }
+	/** Tempo to Temporal DateTime Units map */							static get ELEMENT() { return enums.ELEMENT }
 	/** Pre-configured format {name -> string} pairs */				static get FORMAT() { return enums.FORMAT }
 	/** Number names (0-10) */																static get NUMBER() { return enums.NUMBER }
 	/** TimeZone aliases */																		static get TIMEZONE() { return enums.TIMEZONE }
 	/** initialization strategies */													static get MODE() { return enums.MODE }
-	/** some useful Dates */																	static get LIMIT() { return enums.LIMIT }
+	/** some useful Dates */																			static get LIMIT() { return enums.LIMIT }
 
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !Tempo.#lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return Tempo.#lifecycle.extendDepth > 0 }
 
 	/** Logify for internal errors and debug logs */					static #dbg = new Logify('Tempo', { debug: Default?.debug ?? false, catch: Default?.catch ?? false })
 
-	/** Tempo state for the global configuration */						static #global = {} as Internal.State
+	/** Tempo state for the global configuration */						static #global = {} as Internal.State;
 	/** cache for next-available 'usr' Token key */						static #usrCount = 0;
 	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return getRuntime().pluginsDb.terms }
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
@@ -89,23 +92,32 @@ export class Tempo implements TempoBrand {
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
 	/** Set of allowed lowercased tokens for the Master Guard */		static #allowedTokens: Set<string> = new Set();
 
+	static [$IsBase] = true;
+
 	/** @internal Static access to global private state. */
-	static [sym.$Internal]() {
-		return Tempo.#global;
+	static [$Internal]() {
+		return ClassStates.get(this) ?? Tempo.#global;
 	}
 
+	/** @internal brand check to distinguish Tempo objects from other objects */
+	get [$Identity](): true { return true }
 
 	/** @internal handle internal errors using the global config */
-	static [sym.$logError](...msg: any[]): void {
-		const config = (isObject(msg[0]) && (msg[0] as any)[lib.$Logify] === true) ? msg.shift() : Tempo.#global.config;
+	static [$logError](...msg: any[]): void {
+		const provided = (isObject(msg[0]) && (msg[0] as any)[$Logify] === true) ? msg.shift() : undefined;
+		const global = (this as any)[$Internal]().config;
+		const config = markConfig(Object.create(global));
+		if (provided) Object.entries(provided).forEach(([k, v]) => setProperty(config, k, v));
 		markConfig(config);                                     // ensure config is marked for Logify
 		Tempo.#dbg.error(config, ...msg);
 	}
 
 	/** @internal handle internal debug logs */
-	static [sym.$logDebug](...args: any[]): void {
-		const config = (isObject(args[0]) && (args[0] as any)[lib.$Logify] === true) ? args.shift() : Tempo.#global.config;
-		markConfig(config);
+	static [$logDebug](...args: any[]): void {
+		const provided = (isObject(args[0]) && (args[0] as any)[$Logify] === true) ? args.shift() : undefined;
+		const global = (this as any)[$Internal]().config;
+		const config = markConfig(Object.create(global));
+		if (provided) Object.entries(provided).forEach(([k, v]) => setProperty(config, k, v));
 		Tempo.#dbg.debug(config, ...args);
 	}
 
@@ -115,7 +127,7 @@ export class Tempo implements TempoBrand {
 	 * because it will also include a list of events (e.g. 'new_years' | 'xmas'), we need to rebuild {dt} if the user adds a new event
 	 */
 	// TODO:  check all Layouts which reference "{evt}" and update them
-	static #setEvents(shape: Internal.State) {
+	static [$setEvents](shape: Internal.State) {
 		const events = ownEntries(shape.parse.event, true);
 		if (isLocal(shape) && !hasOwn(shape.parse, 'event') && !hasOwn(shape.parse, 'isMonthDay'))
 			return;																					// no local change needed
@@ -132,6 +144,11 @@ export class Tempo implements TempoBrand {
 					shape.parse.snippet = create(shape.parse, 'snippet');
 
 				setProperty(shape.parse.snippet, Token.evt, new RegExp(groups));
+			}
+		} else {
+			// If no groups, ensure we don't have a stale or empty regex that could cause issues
+			if (hasOwn(shape.parse.snippet, Token.evt)) {
+				delete shape.parse.snippet[Token.evt as any];
 			}
 		}
 
@@ -152,7 +169,7 @@ export class Tempo implements TempoBrand {
 	 * because it will also include a list of periods (e.g. 'midnight' | 'afternoon' ), we need to rebuild {tm} if the user adds a new period
 	*/
 	// TODO:  check all Layouts which reference "{per}" and update them
-	static #setPeriods(shape: Internal.State) {
+	static [$setPeriods](shape: Internal.State) {
 		const periods = ownEntries(shape.parse.period, true);
 		if (isLocal(shape) && !hasOwn(shape.parse, 'period'))
 			return;																							// no local change needed
@@ -169,6 +186,11 @@ export class Tempo implements TempoBrand {
 					shape.parse.snippet = create(shape.parse, 'snippet');
 
 				setProperty(shape.parse.snippet, Token.per, new RegExp(groups));
+			}
+		} else {
+			// If no groups, ensure we don't have a stale or empty regex that could cause issues
+			if (hasOwn(shape.parse.snippet, Token.per)) {
+				delete shape.parse.snippet[Token.per as any];
 			}
 		}
 	}
@@ -190,7 +212,7 @@ export class Tempo implements TempoBrand {
 
 	/** determine if we have a {timeZone} which prefers {mdy} date-order */
 	static #isMonthDay(shape: Internal.State) {
-		const monthDay = [...asArray(Tempo.#global.parse.mdyLocales)];
+		const monthDay = [...asArray((this as any)[$Internal]().parse.mdyLocales)];
 
 		if (isLocal(shape) && hasOwn(shape.parse, 'mdyLocales'))
 			monthDay.push(...shape.parse.mdyLocales);						// append local mdyLocales (not overwrite global)
@@ -207,29 +229,16 @@ export class Tempo implements TempoBrand {
 	 * this allows the parser to try to interpret '04012023' as Apr-01-2023 before trying 04-Jan-2023  
 	 */
 	static #swapLayout(shape: Internal.State) {
-		const layouts = ownEntries(shape.parse.layout);				// get entries of Layout Record
-		const swap = shape.parse.mdyLayouts;										// get the swap-tuple
-		let chg = false;																				// no need to rebuild, if no change
+		const layout = resolveLayoutOrder({
+			layout: shape.parse.layout,
+			mdyLayouts: shape.parse.mdyLayouts,
+			isMonthDay: !!shape.parse.isMonthDay,
+		});
 
-		swap
-			.forEach(([dmy, mdy]) => {														// loop over each swap-tuple
-				const idx1 = layouts.findIndex(([key]) => (key as symbol).description === dmy);	// 1st swap element exists in {layouts}
-				const idx2 = layouts.findIndex(([key]) => (key as symbol).description === mdy);	// 2nd swap element exists in {layouts}
+		if (layout !== shape.parse.layout)
+			shape.parse.layout = layout as Layout;
 
-				if (idx1 === -1 || idx2 === -1)
-					return;																					// no pair to swap
-
-				const swap1 = (idx1 < idx2) && shape.parse.isMonthDay;	// we prefer {mdy} and the 1st tuple was found earlier than the 2nd
-				const swap2 = (idx1 > idx2) && !shape.parse.isMonthDay;	// we dont prefer {mdy} and the 1st tuple was found later than the 2nd
-
-				if (swap1 || swap2) {																// since {layouts} is an array, ok to swap by-reference
-					[layouts[idx1], layouts[idx2]] = [layouts[idx2], layouts[idx1]];
-					chg = true;
-				}
-			})
-
-		if (chg)
-			shape.parse.layout = Object.fromEntries(layouts) as Layout;	// rebuild Layout in new parse order
+		Tempo.#dbg.debug(shape.config, `Resolved layout order: ${getLayoutOrder(layout).join(' -> ')}`);
 	}
 
 	/** get first Canonical name of a supplied locale */
@@ -249,11 +258,22 @@ export class Tempo implements TempoBrand {
 			locale																								// cannot determine locale
 	}
 
+	/** detect likely overlap between two alias keys/patterns */
+	static #isAliasCollision(a: string, b: string): boolean {
+		const left = a.trim().toLowerCase();
+		const right = b.trim().toLowerCase();
+
+		if (!left || !right) return false;
+		if (left === right) return true;
+
+		return left.includes(right) || right.includes(left);
+	}
+
 	/**
 	 * conform input of Snippet / Layout / Event / Period options  
 	 * This is needed because we allow the user to flexibly provide detail as {[key]:val} or {[key]:val}[] or [key,val][]  
 	 */
-	static #setConfig(shape: Internal.State, ...options: t.Options[]) {
+	static [$setConfig](shape: Internal.State, ...options: t.Options[]) {
 		const providedOptions: t.Options = Object.assign({}, ...options);
 		const storeKey = providedOptions.store;
 		const mergedOptions: t.Options = storeKey
@@ -308,14 +328,44 @@ export class Tempo implements TempoBrand {
 									: isRegExp(v) ? v.source : v
 							)
 						} else {
+							const aliases: [string, any][] = [];
 							asArray(arg.value)
 								.forEach(elm => {
 									if (isObject(elm)) {
-										Object.assign(rule, elm);
+										ownEntries(elm as Record<string, any>, true)
+											.forEach(([k, v]) => aliases.push([String(k), v]));
 									} else if (isString(elm)) {
-										rule[elm] = elm;
+										aliases.push([elm, elm]);
 									}
-								})
+								});
+
+							if ((optKey === 'event' || optKey === 'period') && aliases.length > 0) {
+								const existing = ownEntries(rule as Record<string, any>, true)
+									.map(([k, v]) => [String(k), v] as [string, any]);
+								const incomingKeys = new Set(aliases.map(([k]) => k));
+
+								aliases.forEach(([incomingKey]) => {
+									const collisions = existing
+										.map(([k]) => k)
+										.filter(k => !incomingKeys.has(k) && Tempo.#isAliasCollision(k, incomingKey));
+
+									if (!isEmpty(collisions)) {
+										Tempo.#dbg.warn(shape.config,
+											`Potential ${optKey} alias collision: "${incomingKey}" overlaps with existing alias(es): ${collisions.join(', ')}`);
+									}
+								});
+
+								const next = Object.fromEntries([
+									...aliases,
+									...existing.filter(([k]) => !incomingKeys.has(k))
+								]);
+
+								ownKeys(rule as Record<string, any>, true)
+									.forEach(key => delete (rule as any)[key]);
+								Object.assign(rule, next);
+							} else {
+								Object.assign(rule, Object.fromEntries(aliases));
+							}
 						}
 						break;
 
@@ -332,7 +382,7 @@ export class Tempo implements TempoBrand {
 						break;
 
 					case 'config':
-						Tempo.#setConfig(shape, arg.value as t.Options);
+						(this as any)[$setConfig](shape, arg.value as t.Options);
 						break;
 
 					case 'timeZone': {
@@ -382,9 +432,9 @@ export class Tempo implements TempoBrand {
 
 		shape.config.sphere = Tempo.#setSphere(shape, mergedOptions);
 
-		if (isDefined(shape.parse.mdyLayouts)) Tempo.#swapLayout(shape);
-		if (isDefined(shape.parse.event)) Tempo.#setEvents(shape);
-		if (isDefined(shape.parse.period)) Tempo.#setPeriods(shape);
+		if (isDefined(shape.parse.mdyLocales)) Tempo.#swapLayout(shape);
+		if (isDefined(shape.parse.event)) (this as any)[$setEvents](shape);
+		if (isDefined(shape.parse.period)) (this as any)[$setPeriods](shape);
 
 		setPatterns(shape);															// setup Regex DateTime patterns
 	}
@@ -400,7 +450,7 @@ export class Tempo implements TempoBrand {
 	}
 
 	/** support "Global Discovery" of user-options */
-	static #setDiscovery(shape: Internal.State, discovery?: Internal.Discovery) {
+	static [$setDiscovery](shape: Internal.State, discovery?: Internal.Discovery) {
 		if (!isObject(discovery)) return {}
 
 		markConfig(discovery);																	// auto-mark the discovery object
@@ -444,15 +494,14 @@ export class Tempo implements TempoBrand {
 		const res = isFunction(opts) ? opts() : opts;
 
 		if (shape === Tempo.#global) {
-			Tempo.#buildGuard();
+			(this as any)[$buildGuard]();
 			setPatterns(shape);
 		}
 
 		return res;
 	}
 
-	static #buildGuard() {
-		// Tempo.#dbg.error(Tempo.#global.config, 'Building Guard...');
+	static [$buildGuard]() {
 		const wordsList = [
 			...Object.keys(enums.NUMBER),
 			...Object.keys(enums.WEEKDAY),
@@ -462,11 +511,11 @@ export class Tempo implements TempoBrand {
 			...Object.keys(enums.DURATION),
 			...Object.keys(enums.DURATIONS),
 			...Object.keys(enums.TIMEZONE),
-			...ownKeys(Tempo.#global.parse.event),
-			...ownKeys(Tempo.#global.parse.period),
-			...ownKeys(Tempo.#global.parse.ignore),
-			...ownKeys(Tempo.#global.parse.snippet),
-			...ownKeys(Tempo.#global.parse.layout),
+			...ownKeys((this as any)[$Internal]().parse.event),
+			...ownKeys((this as any)[$Internal]().parse.period),
+			...ownKeys((this as any)[$Internal]().parse.ignore),
+			...ownKeys((this as any)[$Internal]().parse.snippet),
+			...ownKeys((this as any)[$Internal]().parse.layout),
 			...[Token.slk],
 			...Tempo.#terms.map(t => t.key),
 			...Tempo.#terms.map(t => t.scope),
@@ -535,6 +584,10 @@ export class Tempo implements TempoBrand {
 				return true;
 			}
 		}
+
+		if ((this as any)[$Internal]() === Tempo.#global) {
+			setPatterns((this as any)[$Internal]());
+		}
 	}
 
 	/** @internal resolve a global discovery config object by symbol key */
@@ -591,7 +644,7 @@ export class Tempo implements TempoBrand {
 					} catch (e: any) {
 						const msg = (e?.message ?? '').toLowerCase();
 						if (msg.includes('constructor') || msg.includes('class') || (e instanceof TypeError) || isClass(arg)) {
-							Tempo.#dbg.warn(Tempo.#global.config, `Misidentified class in plugin registration: ${(arg as any).name}`, e.stack ?? e);
+							Tempo.#dbg.warn((this as any)[$Internal]().config, `Misidentified class in plugin registration: ${(arg as any).name}`, e.stack ?? e);
 						} else {
 							throw e;
 						}
@@ -602,7 +655,7 @@ export class Tempo implements TempoBrand {
 					const name = (item as any).name;
 					const rt = getRuntime();
 					if (rt.installed.has(name)) {
-						Tempo.#dbg.debug(Tempo.#global.config, `Plugin already installed by name: ${name}`);
+						Tempo.#dbg.debug((this as any)[$Internal]().config, `Plugin already installed by name: ${name}`);
 						return;
 					}
 					rt.installed.add(name);
@@ -623,7 +676,7 @@ export class Tempo implements TempoBrand {
 
 						// 3. sync with parser registries
 						if (config.scope && config.ranges) {
-							const target = config.scope === 'period' ? Tempo.#global.parse.period : (config.scope === 'event' ? Tempo.#global.parse.event : undefined);
+							const target = config.scope === 'period' ? (this as any)[sym.$Internal]().parse.period : (config.scope === 'event' ? (this as any)[sym.$Internal]().parse.event : undefined);
 							if (target) {
 								config.ranges.forEach(r => {
 									if (r.key && !target[r.key]) {
@@ -631,8 +684,8 @@ export class Tempo implements TempoBrand {
 										if (val) target[r.key] = val;
 									}
 								});
-								if (config.scope === 'period') Tempo.#setPeriods(Tempo.#global);
-								if (config.scope === 'event') Tempo.#setEvents(Tempo.#global);
+								if (config.scope === 'period') (this as any)[$setPeriods]((this as any)[sym.$Internal]());
+								if (config.scope === 'event') (this as any)[$setEvents]((this as any)[sym.$Internal]());
 							}
 						}
 					}
@@ -641,9 +694,9 @@ export class Tempo implements TempoBrand {
 						const discovery = item as any
 						if (discovery.term) {
 							discovery.terms = [...asArray(discovery.terms || []), ...asArray(discovery.term)];
-							Tempo.#dbg.warn(Tempo.#global.config, 'Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
+							Tempo.#dbg.warn((this as any)[$Internal]().config, 'Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
 						}
-						if (discovery.options) Tempo.#setConfig(Tempo.#global, discovery.options)
+						if (discovery.options) (this as any)[$setConfig]((this as any)[$Internal](), discovery.options)
 						if (discovery.plugins) this.extend(discovery.plugins, discovery.options)
 						if (discovery.terms) this.extend(discovery.terms)
 
@@ -654,16 +707,16 @@ export class Tempo implements TempoBrand {
 							registryUpdate('TIMEZONE', tzs)
 						}
 						if (discovery.formats) {
-							Tempo.#global.config.formats = Tempo.#global.config.formats.extend(discovery.formats) as t.FormatRegistry;
+							(this as any)[$Internal]().config.formats = (this as any)[$Internal]().config.formats.extend(discovery.formats) as t.FormatRegistry;
 							registryUpdate('FORMAT', discovery.formats)
 						}
 
 						// only trigger init if we're assigning a new discovery object to a symbol
 						if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
-							const discoverySymbol = (typeof options === 'symbol' ? options : options?.discovery) ?? sym.$Tempo
+							const discoverySymbol = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo
 							if ((globalThis as Record<symbol, any>)[discoverySymbol] !== item) {
-								; (globalThis as Record<symbol, any>)[discoverySymbol] = item
-								Tempo.#setConfig(Tempo.#global, { discovery: discoverySymbol })
+								(globalThis as Record<symbol, any>)[discoverySymbol] = item;
+								(this as any)[$setConfig]((this as any)[$Internal](), { discovery: discoverySymbol })
 							}
 						}
 					}
@@ -674,15 +727,47 @@ export class Tempo implements TempoBrand {
 		}
 
 		if (Tempo.#lifecycle.extendDepth === 0) {
-			Tempo.#buildGuard();
-			setPatterns(Tempo.#global);										// rebuild the global patterns
+			(this as any)[$buildGuard]();
+			setPatterns((this as any)[$Internal]());							// rebuild the global patterns
 		}
 
 		return this;
 	}
 
+	/**
+	 * 🏭 Sandbox Factory Mode
+	 * Create a fresh, isolated Tempo subclass with its own configuration and registries.
+	 * Returns a new class that inherits from the caller, but maintains independent state.
+	 */
+	static create(options: t.Options = {}): typeof Tempo {
+		const SandboxTempo = class extends (this as any) {
+			static [Symbol.toStringTag] = 'TempoSandbox';
+		}
+
+		const discovery = options.discovery ?? Symbol('TempoSandbox');
+		(globalThis as any)[discovery] = { options: { ...options }, scope: 'sandbox' };
+
+		const state = init(options, false, (this as any)[$Internal]());
+		state.config.discovery = discovery;
+		ClassStates.set(SandboxTempo as any, state);
+
+		// Apply configuration to the sandbox
+		(SandboxTempo as any)[$setConfig](state,
+			{
+				scope: 'local',
+				discovery,
+				catch: options.catch ?? false
+			},
+			options
+		);
+
+		Object.freeze(SandboxTempo);
+		return SandboxTempo as unknown as typeof Tempo;
+	}
+
 	/** Reset Tempo to its default, built-in registration state */
 	static init(options: t.Options = {}): typeof Tempo {
+
 		if (Tempo.#lifecycle.initialising) return this;
 		Tempo.#lifecycle.initialising = true;
 
@@ -690,10 +775,14 @@ export class Tempo implements TempoBrand {
 			const rt = getRuntime();
 			rt.state = undefined;																// force fresh state
 			const state = init();
-			Tempo.#global = state;
+			if ((this as any)[sym.$IsBase]) {
+				Tempo.#global = state;
+			} else {
+				ClassStates.set(this, state);
+			}
 
 			// 1. Augment the parsing state (non-destructively)
-			const parse = Tempo.#global.parse;
+			const parse = state.parse;
 			parse.pattern ??= new Map<symbol, RegExp>();
 			parse.mdyLocales = Tempo.#mdyLocales(Default.mdyLocales as t.Options['mdyLocales']);
 			parse.mdyLayouts = asArray(Default.mdyLayouts as t.Options['mdyLayouts']) as t.Pair[];
@@ -705,9 +794,9 @@ export class Tempo implements TempoBrand {
 			const sys = getDateTimeFormat();
 			const timeZone = options.timeZone ?? sys.timeZone;
 			const calendar = options.calendar ?? sys.calendar;
-			const config = Tempo.#global.config;
-			const discoveryKey = options.discovery ?? Symbol.keyFor(sym.$Tempo) as string;
-			const storeKey = options.store || config.store || Symbol.keyFor(sym.$Tempo) as string;
+			const config = state.config;
+			const discoveryKey = options.discovery ?? Symbol.keyFor($Tempo) as string;
+			const storeKey = options.store || config.store || Symbol.keyFor($Tempo) as string;
 			const userDiscovery = (globalThis as any)[isString(discoveryKey) ? Symbol.for(discoveryKey) : discoveryKey] as Internal.Discovery;
 
 			// Resolve locale if missing or invalid
@@ -730,7 +819,7 @@ export class Tempo implements TempoBrand {
 			registryReset();																			// purge formats and numbers
 
 			// 3. Apply configuration via unified setters (non-destructive merge)
-			Tempo.#setConfig(Tempo.#global,
+			(this as any)[$setConfig](state,
 				{
 					calendar,
 					timeZone,
@@ -741,19 +830,19 @@ export class Tempo implements TempoBrand {
 					catch: options.catch ?? config.catch ?? false
 				},
 				{ store: storeKey, discovery: storeKey, scope: 'global' },
-				Tempo.readStore(storeKey),													// allow for storage-values to overwrite
-				Tempo.#setDiscovery(Tempo.#global, rt.pluginsDb as any),		// persistent library extensions
-				Tempo.#setDiscovery(Tempo.#global, userDiscovery),	// user Discovery (Configuration bootstrapping)
+				this.readStore(storeKey),													// allow for storage-values to overwrite
+				(this as any)[$setDiscovery](state, rt.pluginsDb as any),		// persistent library extensions
+				(this as any)[$setDiscovery](state, userDiscovery),	// user Discovery (Configuration bootstrapping)
 				options,																						// explicit options from the call
 			)
 
 			if (options.plugins) this.extend(options.plugins);		// ensure init-plugins are processed before 'ready'
 
 			if (Context.type === CONTEXT.Browser || options.debug === true)
-				Tempo.#dbg.info(Tempo.config, 'Tempo:', Tempo.#global.config);
+				Tempo.#dbg.info(this.config, 'Tempo:', state.config);
 
 			Tempo.#lifecycle.ready = true;
-			setPatterns(Tempo.#global);										// rebuild the global patterns (Master Guard etc)
+			setPatterns(state);										// rebuild the global patterns (Master Guard etc)
 
 		} finally {
 			Tempo.#lifecycle.initialising = false;
@@ -764,12 +853,12 @@ export class Tempo implements TempoBrand {
 	}
 
 	/** @internal Reads options from persistent storage (e.g., localStorage). */
-	static readStore(key = Tempo.#global.config.store) {
+	static readStore(key = (this as any)[$Internal]().config.store) {
 		return getStorage<t.Options>(key, {});
 	}
 
 	/** @internal Writes configuration into persistent storage. */
-	static writeStore(config?: t.Options, key = Tempo.#global.config.store) {
+	static writeStore(config?: t.Options, key = (this as any)[$Internal]().config.store) {
 		return setStorage(key, config);
 	}
 
@@ -792,7 +881,7 @@ export class Tempo implements TempoBrand {
 
 	/** @internal translates {layout} into an anchored, case-insensitive RegExp. */
 	static regexp(layout: string | RegExp, snippet?: Snippet) {
-		return compileRegExp(layout, Tempo.#global, snippet as any);
+		return compileRegExp(layout, (this as any)[$Internal](), snippet as any);
 	}
 
 	/** Compares two `Tempo` instances or date-time values. */
@@ -804,8 +893,9 @@ export class Tempo implements TempoBrand {
 
 	/** global Tempo configuration */
 	static get config() {
+		const state = (this as any)[$Internal]();
 		const out = Object.create(Default);
-		const descriptors = omit(Object.getOwnPropertyDescriptors(Tempo.#global.config), 'value', 'anchor');
+		const descriptors = omit(Object.getOwnPropertyDescriptors(state.config), 'value', 'anchor');
 
 		Object.defineProperties(out, descriptors);
 		Object.defineProperty(out, 'toJSON',										// bare-bones: only show global overrides
@@ -822,11 +912,11 @@ export class Tempo implements TempoBrand {
 	static get discovery() {
 		const discovery = this.config.discovery;
 		const sym = isString(discovery) ? Symbol.for(discovery) : discovery;
-		return Tempo.#getConfig(sym);
+		return Tempo.#getConfig(sym as symbol);
 	}
 
 	static get options() {
-		const keyFor = this.config.store ?? Symbol.keyFor(sym.$Tempo) as string;
+		const keyFor = this.config.store ?? Symbol.keyFor($Tempo) as string;
 		const storage = proxify(Object.assign({ key: keyFor, scope: 'storage' }, omit(Tempo.readStore(keyFor), 'value')));
 		return Object.assign({}, this.default, storage, this.discovery, this.config);
 	}
@@ -874,7 +964,7 @@ export class Tempo implements TempoBrand {
 	 * configuration governing the static 'rules' used when parsing t.DateTime argument
 	 */
 	static get parse() {
-		const parse = Tempo.#global.parse;
+		const parse = (this as any)[$Internal]().parse;
 		return secure({
 			...omit(parse, 'token'),															// spread primitives like {pivot}
 			snippet: { ...parse.snippet },												// spread nested objects
@@ -898,28 +988,28 @@ export class Tempo implements TempoBrand {
 
 	/** static Tempo.ignores (registry) */
 	static get ignores(): Secure<Ignore> {
-		return secure(ownKeys(Tempo.#global.parse.ignore, true));
+		return secure(ownKeys((this as any)[$Internal]().parse.ignore, true) as string[]);
 	}
 
 	/** allow instanceof to work across module boundaries via the local brand symbol */
-	static [sym.$isTempo] = true;
+	static [$Identity] = true;
 	static [Symbol.hasInstance](instance: any) {
-		return !!(instance?.[sym.$isTempo])
+		return !!(instance?.[$Identity])
 	}
 
 	/** check if a supplied variable is a valid Tempo instance */
 	static isTempo(instance?: any): instance is Tempo {
-		return !!(instance?.[sym.$isTempo])
+		return !!(instance?.[$Identity])
 	}
 
 	static {																									// Static initialization block to sequence the bootstrap phase
 		// Define the reactive register hook
-		getRuntime().setHook(sym.$Register, (plugin: Plugin | Plugin[]) => {
+		getRuntime().setHook($Register, (plugin: Plugin | Plugin[]) => {
 			if (!Tempo.isExtending) Tempo.extend(plugin)
 		});
 
 		onRegistryReset(() => {
-			Tempo.#buildGuard();
+			(Tempo as any)[$buildGuard]();
 		});
 
 		Tempo.init();																						// synchronously initialize the library
@@ -937,12 +1027,12 @@ export class Tempo implements TempoBrand {
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
 	/** current mutation depth to manage infinite recursion */#mutateDepth = 0;
 	/** instance values to complement static values */				#local = {
-		/** instance configuration */															config: { [lib.$Logify]: true } as unknown as Internal.Config,
+		/** instance configuration */															config: { [$Logify]: true } as unknown as Internal.Config,
 		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.MatchResult[] } as Internal.Parse
 	} as Internal.State;
 
 	/** @internal internal key for signaling pre-errored state in constructor */
-	static [sym.$errored] = sym.$errored;
+	static [$errored] = $errored;
 
 	/** @internal */	static [TermError](config: Internal.Config, term: string): void {
 		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
@@ -951,15 +1041,15 @@ export class Tempo implements TempoBrand {
 		if (config.catch !== true) throw new Error(msg);
 	}
 
-	/** @internal */	static get [sym.$dbg](): Logify { return Tempo.#dbg }
-	/** @internal */	static get [sym.$guard]() { return Tempo.#guard }
+	/** @internal */	static get [$dbg](): Logify { return Tempo.#dbg }
+	/** @internal */	static get [$guard]() { return Tempo.#guard }
 
 	/** 
 	 * @internal Internal access to instance private state.
 	 * This surface is not part of the public contract and is subject to change.
 	 */
-	[sym.$Internal]() {
-		const self: Tempo = (this as any)[lib.$Target] ?? this;
+	[$Internal]() {
+		const self: Tempo = unwrap(this);
 		return {
 			get zdt() { return self.#zdt },
 			set zdt(val: any) { self.#zdt = val },
@@ -1001,7 +1091,6 @@ export class Tempo implements TempoBrand {
 		return 'Tempo';																					// hard-coded to avoid minification mangling
 	}
 
-	get [sym.$isTempo](): true { return true }
 
 	/**
 	 * Instantiates a new `Tempo` object with configuration only.
@@ -1018,9 +1107,14 @@ export class Tempo implements TempoBrand {
 	constructor(tempo: t.DateTime, options?: t.Options);
 	constructor(tempo?: t.DateTime | t.Options, options: t.Options = {}) {
 		this.#now = instant();																	// stash current Instant
-		[this.#tempo, this.#options] = this.#swap(tempo, options);	// swap arguments around
+		[this.#tempo, this.#options] = this.#swap(tempo, options);// swap arguments around
+
 		if (isZonedDateTime(this.#tempo)) this.#zdt = this.#tempo;
 		this.#setLocal(this.#options);													// parse local options
+		if (!this.#zdt && isObject(this.#tempo) && isDurationLike(this.#tempo)) {
+			// relative shorthand for "now plus duration"
+			this.#zdt = this.#now.toZonedDateTimeISO(this.#local.config.timeZone).add(this.#tempo as Temporal.DurationLike);
+		}
 
 		const { mode } = this.#local.parse;
 		const input = String(this.#tempo ?? '');
@@ -1037,13 +1131,13 @@ export class Tempo implements TempoBrand {
 		this.#anchor = this.#options.anchor;
 
 		// 🧬 Unified State Hand-off (from clone / mutate)
-		const handoff = (this.#options as any)[sym.$Internal];
+		const handoff = (this.#options as any)[$Internal];
 		if (isObject(handoff)) {
 			this.#errored = handoff.errored ?? false;
 			this.#mutateDepth = handoff.mutateDepth ?? 0;
 			this.#parseDepth = 0;
 			this.#matches = handoff.matches;
-		} else if ((this.#options as any)[sym.$errored]) {
+		} else if ((this.#options as any)[$errored]) {
 			this.#errored = true;
 		}
 
@@ -1139,7 +1233,7 @@ export class Tempo implements TempoBrand {
 	#setDelegator(host: 'term' | 'fmt') {
 		const target = Object.create(null);
 		const proxy = delegate(target, (key) => {
-			if (key === lib.$Discover) return this.#discover(host, target);
+			if (key === $Discover) return this.#discover(host, target);
 			if (!isString(key)) return;
 
 			// discovery phase
@@ -1156,7 +1250,7 @@ export class Tempo implements TempoBrand {
 						try {
 							const result = term.define.call(this, keyOnly);
 							const res = Array.isArray(result) ? getTermRange(this, result, keyOnly) : result;
-							return (typeof res === 'object' && res !== null) ? secure(res) : res;
+							return isObject(res) ? secure(res) : res;
 						} catch (err: any) {
 							if (err.message.includes('Class constructor')) {
 								Tempo.#dbg.warn(this.#local.config, `Misidentified class in term definition: ${key}`, err.stack ?? err);
@@ -1189,7 +1283,7 @@ export class Tempo implements TempoBrand {
 					try {
 						const res = term.resolve ? term.resolve.call(this, anchor) : term.define.call(this, keyOnly, anchor);
 						const out = (getTermRange(this, (Array.isArray(res) ? (res as any) : [res]), keyOnly, anchor) as any);
-						return (typeof out === 'object' && out !== null) ? secure(out) : out;
+						return isObject(out) ? secure(out) : out;
 					} catch (err: any) {
 						if (err.message.includes('Class constructor')) {
 							Tempo.#dbg.warn(this.#local.config, `Misidentified class in term discovery: ${term.key}`, err.stack ?? err);
@@ -1256,13 +1350,9 @@ export class Tempo implements TempoBrand {
 
 	/** current Tempo configuration */
 	get config() {
-		const out = Object.assign({},
-			Default,
-			Tempo.#global.config,
-			this.#local.config
-		);
-
-		markConfig(out);
+		const global = (this as any)[$Internal]().config;
+		const out = markConfig(Object.create(global));
+		Object.entries(this.#local.config).forEach(([k, v]) => setProperty(out, k, v));
 
 		if (!Object.hasOwn(out, 'mode')) setProperty(out, 'mode', this.#local.parse.mode);
 		if (!Object.hasOwn(out, 'lazy')) setProperty(out, 'lazy', this.#local.parse.lazy);
@@ -1279,7 +1369,7 @@ export class Tempo implements TempoBrand {
 
 	/** Instance-specific parse rules (merged with global) */
 	get parse(): Internal.Parse {
-		const self: Tempo = (this as any)[lib.$Target] ?? this;
+		const self: Tempo = unwrap(this);
 		self.#resolve();
 		// Return a shadowed view so we can safely inject matches without breaking the freeze on the original state
 		const out = Object.create(self.#local.parse);
@@ -1338,13 +1428,14 @@ export class Tempo implements TempoBrand {
 
 	/** setup local 'config' and 'parse' rules (prototype-linked to global) */
 	#setLocal(options: t.Options = {}) {
-		this.#local.config = markConfig(Object.create(Tempo.#global.config));
+		const classState = (this.constructor as any)[$Internal]();
+		this.#local.config = markConfig(Object.create(classState.config));
 		Object.assign(this.#local.config, { scope: 'local' });
 
-		this.#local.parse = markConfig(Object.create(Tempo.#global.parse));
+		this.#local.parse = markConfig(Object.create(classState.parse));
 		setProperty(this.#local.parse, 'result', [...(options.result ?? [])]);
 
-		Tempo.#setConfig(this.#local, options);									// set #local config
+		(this.constructor as any)[$setConfig](this.#local, options);									// set #local config
 	}
 
 	/** parse DateTime input */
@@ -1404,18 +1495,13 @@ export class Tempo implements TempoBrand {
 
 	/** check if we've been given a ZonedDateTimeLike object */
 	#isZonedDateTimeLike(tempo: t.DateTime | t.Options | undefined): tempo is Temporal.ZonedDateTimeLike & { value?: any } {
-		if (!isObject(tempo) || isEmpty(tempo))
-			return false;
+		if (!isObject(tempo) || isEmpty(tempo) || isTempo(tempo)) return false;
 
-		// if it contains any 'options' keys, it's not a ZonedDateTime
+		// if it contains any 'options' keys (other than value), it's likely an Options object
 		const keys = ownKeys(tempo);
-		if (keys.some(key => enums.OPTION.has(key) && key !== 'value'))
-			return false;
+		if (keys.some(key => enums.OPTION.has(key) && key !== 'value')) return false;
 
-		// we include {value} to allow for Tempo instances
-		return keys
-			.filter(isString)
-			.every((key: string) => enums.ZONED_DATE_TIME.has(key))
+		return isZonedDateTimeLike(tempo);
 	}
 
 	#result(...rest: Partial<Internal.MatchResult>[]) {

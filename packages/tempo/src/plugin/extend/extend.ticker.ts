@@ -1,12 +1,10 @@
-import { isObject, isFunction, isDefined, isUndefined, isEmpty, isNumber } from '#library/type.library.js'
-import { Pledge } from '#library/pledge.class.js'
-import { asArray, isNumeric } from '#library/coercion.library.js'
-import { instant, normaliseFractionalDurations } from '#library/temporal.library.js'
-import { markConfig } from '#library/symbol.library.js'
+import { isObject, isFunction, isDefined, isUndefined, isEmpty, isNumber, isNumeric, isFiniteNumber } from '#library/assertion.library.js';
+import { Pledge } from '#library/pledge.class.js';
+import { asArray } from '#library/coercion.library.js';
+import { instant, normaliseFractionalDurations } from '#library/temporal.library.js';
 
-import { DURATIONS } from '../../support/tempo.enum.js'
+import { sym, markConfig, enums } from '#tempo/support';
 import { defineExtension, attachStatics } from '../plugin.util.js'
-import { sym } from '../../support/tempo.symbol.js';
 import type { Tempo } from '../../tempo.class.js'
 import type { Extension, TempoType } from '../plugin.type.js'
 
@@ -140,8 +138,8 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 
 		// ── Initialization ───────────────────────────────────────────────────
-		const isSeed = isDefined(rawOptions.seed) && (!isNumber(rawOptions.seed) || (Number.isFinite(rawOptions.seed as number) && !Number.isNaN(rawOptions.seed as number)));
-		const isInterval = isDefined(rawOptions.seconds) && Number.isFinite(rawOptions.seconds) && !Number.isNaN(rawOptions.seconds);
+		const isSeed = isDefined(rawOptions.seed);
+		const isInterval = isDefined(rawOptions.seconds) && isFiniteNumber(rawOptions.seconds);
 
 		if (isDefined(arg1) && !isInterval && !isSeed && !cb) {
 			(this.#TempoClass as any)[sym.$logError](markConfig(rawOptions), `Invalid Ticker interval or seed: ${String(arg1)}`);
@@ -152,7 +150,7 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#until = stopAt ? new this.#TempoClass(isOptions(stopAt) ? undefined : stopAt, isOptions(stopAt) ? { ...rest, ...stopAt } : rest) : undefined;
 		if (cb) this.#listeners.add(cb);
 
-		const durationKeys = new Set(Object.keys(DURATIONS));
+		const durationKeys = new Set(Object.keys(enums.DURATIONS));
 		for (const [key, val] of Object.entries(rest))
 			if (isDefined(val) && (durationKeys.has(key) || key.startsWith('#')))
 				this.#payload[key] = val;
@@ -364,10 +362,10 @@ export const TickerModule: Extension = defineExtension({
 						if (prop === 'pulse') return instance.pulse.bind(instance);
 						if (prop === 'on') return instance.on.bind(instance);
 						if (prop === 'stop') return instance.stop.bind(instance);
-						if (prop === 'info') return instance.info;
 						if (prop === 'next') return instance.next.bind(instance);
 						if (prop === 'return') return instance.return.bind(instance);
 						if (prop === 'throw') return instance.throw.bind(instance);
+						if (prop === 'info') return instance.info;
 						if (prop === Symbol.asyncIterator) return () => proxy;
 						if (prop === Symbol.asyncDispose) return instance[Symbol.asyncDispose].bind(instance);
 						if (prop === Symbol.dispose) return instance[Symbol.dispose].bind(instance);

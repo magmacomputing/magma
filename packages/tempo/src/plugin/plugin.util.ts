@@ -1,4 +1,4 @@
-import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from '#library/type.library.js';
+import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from '#library/assertion.library.js';
 import { secureRef } from '#library/proxy.library.js';
 
 import { sym, getRuntime, isTempo } from '#tempo/support';
@@ -100,7 +100,7 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 				// use catch:true to report the collision without a fatal throw (supports re-extension in shared environments)
 				TempoClass[sym.$logError]({ ...TempoClass.config, catch: true }, msg);
 			}
-			console.error(msg);
+			// console.error(msg);
 			continue;
 		}
 

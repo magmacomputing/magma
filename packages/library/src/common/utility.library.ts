@@ -1,5 +1,6 @@
 import { ownValues } from '#library/primitive.library.js';
-import { isDefined, isPrimitive } from '#library/type.library.js';
+import { isDefined, isPrimitive } from '#library/assertion.library.js';
+import { sym } from '#library/symbol.library.js';
 import type { Secure, ValueOf } from '#library/type.library.js';
 
 /** General utility functions */
@@ -63,14 +64,40 @@ export const getContext = (): Context => {
 	return { global, type: CONTEXT.Unknown };
 }
 
-/** deep-freeze an Array | Object to make it immutable (with recursion guard) */
-export function secure<const T extends object>(obj: T, seen = new WeakSet<object>()) {
-	if (isPrimitive(obj) || Object.isFrozen(obj) || seen.has(obj))
+/** Shared empty WeakSet sentinel to avoid allocations for default skip parameter */
+const EMPTY_SKIP = new WeakSet<object>();
+
+/**
+ * Deep-freeze an Array | Object to make it immutable (with recursion guard).
+ * 
+ * @param obj - The object to freeze
+ * @param options - Optional configuration
+ * @param options.skip - Externally owned WeakSet of objects to skip during freezing; not mutated by this function (caller responsible for lifecycle)
+ * @returns The frozen object with Secure<T> type
+ * 
+ * @remarks
+ * - Internally maintains a `seen` WeakSet to track visited objects and prevent infinite recursion
+ * - The `skip` parameter is an opt-out mechanism for caller-controlled exclusions
+ * - Symbol `sym.$Extensible` objects are always skipped
+ */
+export function deepFreeze<const T extends object>(obj: T, options?: { skip?: WeakSet<object> }): Secure<T>;
+export function deepFreeze<const T extends object>(obj: T, options?: { skip?: WeakSet<object> }, seen?: WeakSet<object>): Secure<T>;
+export function deepFreeze<const T extends object>(obj: T, options?: { skip?: WeakSet<object> } | WeakSet<object>, seen: WeakSet<object> = new WeakSet<object>()): Secure<T> {
+	// Support both old and new signatures for backward compatibility
+	const skip = (options instanceof WeakSet) ? options : (options?.skip ?? EMPTY_SKIP);
+	
+	if (isPrimitive(obj) || Object.isFrozen(obj) || seen.has(obj) || skip.has(obj))
+		return obj as Secure<T>;
+
+	if ((obj as any)?.[Symbol.toStringTag] === 'Enumify')
+		return obj as Secure<T>;
+
+	if ((obj as any)[sym.$Extensible])
 		return obj as Secure<T>;
 
 	seen.add(obj);
 
-	ownValues(obj as any).forEach(val => secure(val, seen));
+	ownValues(obj as any).forEach(val => deepFreeze(val, { skip }, seen));
 
 	return Object.freeze(obj) as Secure<T>;
 }
