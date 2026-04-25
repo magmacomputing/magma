@@ -86,13 +86,13 @@ As Tempo grows, it has become much more efficient for our developers to logicall
 2.  Replace any older internal paths with the current package subpath entries (for example, `@magmacomputing/tempo/duration`, `@magmacomputing/tempo/mutate`, `@magmacomputing/tempo/parse`, and `@magmacomputing/tempo/format`).
 3.  Do not pin imports in your code directly to internal folder layouts in `dist/`, since those paths may change as modules are reorganized.  Instead rely wholly on your import maps.
 
-## 🔁 Migrating to version 2.6.0
+## 🔁 Migrating from version 2.6.0
 
 Season term scope output has been simplified.
 
 **Action Required**:
 1.  If you previously relied on the Chinese-specific object attached to `term.season` scope output, remove that dependency.
-2.  Resolve Chinese season context by creating a dedicated `Tempo` instance with the appropriate Chinese `timeZone` (or explicit `sphere`) for the interpretation you need.
+2.  Resolve Chinese season context by creating a dedicated `Tempo` instance with the appropriate Chinese `timeZone` for the interpretation you need.
 
 ## 🧪 Testing and Stability
 v2.x has been hardened with a 100% pass rate on our regression suite. If you were relying on undocumented "quirks" or bugs in v1.x parsing, you may find that v2.x is more strict and deterministic.

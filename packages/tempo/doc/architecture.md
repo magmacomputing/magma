@@ -68,14 +68,17 @@ Together, these ensure that `new Tempo()` maintains an $O(1)$ constructor execut
 
 ## 🔁 Iteration & Enumerability (Delegator Proxies)
 
-Tempo now uses delegator Proxies for `fmt` and `term`, not prototype shadow-chain relocation. Enumeration behavior is therefore more standard and predictable than in earlier releases of Tempo.
+A delegator Proxy is a Proxy wrapper whose traps forward operations to an internal target/handler pair; unlike a standard Proxy (which typically mediates access directly against one wrapped target object), delegation is explicit and routed through that intermediate forwarding layer. In Tempo, "delegator Proxy" and "Generic Lazy Delegator Proxy" refer to the same public delegation mechanism, while lazy shadowing for `Tempo.#term`/`Tempo.#fmt` is a separate private-field initialization mechanism. These mechanisms coexist: the `instance.term` / `instance.fmt` public API uses the delegator Proxy path, and `Tempo.#term` / `Tempo.#fmt` private fields are initialized once via lazy shadowing.
 
 ### ✅ `Object.keys()` Behavior
 `Object.keys(instance.fmt)` and `Object.keys(instance.term)` return the enumerable own keys currently registered on each delegator target.
 
-- **Discovery on enumeration**: Calling `Object.keys(...)` triggers proxy discovery, which pre-registers available keys as enumerable lazy getters.
+- **Proxy discovery (definition)**: Proxy discovery is the proxy-handler phase that enumerates available target keys and installs enumerable lazy getter properties on the proxy target without reading their values.
+- **Triggered by enumeration APIs**: Discovery runs when enumeration APIs execute, including `Object.keys(instance.fmt)`, `for...in`, and `Reflect.ownKeys(...)` on the delegator proxy.
+- **Timing**: Discovery happens at enumeration time (before any property `get`), so key visibility is established before value resolution.
 - **Before direct access**: Keys can already be visible and probeable.
-- **After access**: Access memoizes values on the same target object; keys remain stable and do not "move" across prototype links.
+- **Relation to [Section 1](#1-lazy-evaluation-shadowing)**: Discovery only registers getters; actual value computation and memoization happen later, when a getter is first invoked (for example, `instance.fmt.someKey`).
+- **After access**: Getter access memoizes values on the same target object; keys remain stable and do not "move" across prototype links.
 
 ### 🛡️ Iteration Notes
 - **`Object.keys` / `for...in` / object spread**: Operate on enumerable keys exposed by the delegator target after discovery.

@@ -19,11 +19,11 @@ import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js
 import { registerTerm, getTermRange } from './plugin/term.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
-import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns } from './support/tempo.util.js';
+import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
 
 import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, type TempoBrand, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
-import { instant } from '#library/temporal.library.js';
+import { instant, normalizeUtcOffset } from '#library/temporal.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
@@ -383,9 +383,7 @@ export class Tempo {
 						break;
 
 					case 'layoutOrder':
-						shape.parse.layoutOrder = asArray(arg.value as NonNullable<t.Options[typeof optKey]>)
-							.map(v => String(v).trim())
-							.filter(Boolean);
+						shape.parse.layoutOrder = normalizeLayoutOrder(arg.value as NonNullable<t.Options[typeof optKey]>);
 						break;
 
 					case 'pivot':
@@ -397,8 +395,10 @@ export class Tempo {
 						break;
 
 					case 'timeZone': {
-						const zone = arg.value.toString().toLowerCase();
-						setProperty(shape.config, 'timeZone', enums.TIMEZONE[zone] ?? arg.value);
+						const zone = String(arg.value).toLowerCase();
+						const resolvedZone = enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
+						setProperty(shape.config, 'timeZone', resolvedZone);
+						setProperty(shape.config, 'sphere', getHemisphere(resolvedZone));
 						break;
 					}
 

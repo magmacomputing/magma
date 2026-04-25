@@ -9,7 +9,7 @@ import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/a
 import { ownEntries } from '#library/primitive.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
-import { setProperty, hasOwn, create, collect, setPatterns } from './tempo.util.js';
+import { setProperty, hasOwn, create, collect, setPatterns, normalizeLayoutOrder } from './tempo.util.js';
 import { sym, Token } from './tempo.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
@@ -139,9 +139,7 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 			}
 
 			case 'layoutOrder':
-				state.parse.layoutOrder = asArray(arg.value)
-					.map(v => String(v).trim())
-					.filter(Boolean);
+				state.parse.layoutOrder = normalizeLayoutOrder(arg.value);
 				break;
 
 			case 'timeZone': {

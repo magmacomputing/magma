@@ -27,9 +27,9 @@ import { definePlugin } from '@magmacomputing/tempo/plugin';
 
 export const MyPlugin = definePlugin((TempoClass, options, factory) => {
   /**
-   * TempoClass: The internal Tempo class (for static methods)
+  * TempoClass: The internal Tempo class (for static methods)
   * options:    The global configuration object
-   * factory:    A helper to create new Tempo instances without 'new'
+  * factory:    A helper to create new Tempo instances without 'new'
    */
 
   // 1. Add a static method

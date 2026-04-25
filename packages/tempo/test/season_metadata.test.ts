@@ -6,5 +6,6 @@ describe('Season Metadata Resolution', () => {
         const q = t.term.season as any;
         
         expect(q.key).toBe('Spring');
+           expect(q.CN).toBeUndefined();
     });
 });

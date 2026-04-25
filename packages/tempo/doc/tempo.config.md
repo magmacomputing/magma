@@ -43,15 +43,15 @@ Tempo.init({ store: 'userSettings' });
 
 ## 2. Global Discovery
 
-To facilitate configuration in micro-frontend architectures or script-first bootstraps, Tempo can discover a Discovery object from globalThis during Tempo.init().
+To facilitate configuration in micro-frontend architectures or script-first bootstraps, `Tempo` can discover a Discovery object from `globalThis` during `Tempo.init()`.
 
 The intended flow is:
-1. Write a Discovery object into globalThis under the configured discovery symbol key.
-2. Import a module containing Tempo.
-3. Tempo class static initialization runs Tempo.init().
-4. Tempo.init() reads the global discovery slot and merges it.
+1. Write a Discovery object into `globalThis` under the configured discovery symbol key.
+2. Import a module containing `Tempo`.
+3. `Tempo` class static initialization runs `Tempo.init()`.
+4. `Tempo.init()` reads the global discovery slot and merges it.
 
-By default, the key is Symbol.for('$Tempo').
+By default, the key is `Symbol.for('$Tempo')`.
 
 ### Pre-Bootstrap Discovery (globalThis)
 
@@ -69,11 +69,11 @@ const { Tempo } = await import('@magmacomputing/tempo');
 ```
 
 ::: info
-With static ESM imports, import evaluation happens before module body execution. If you need discovery to apply on first load, assign globalThis in an earlier script/module, or use dynamic import as shown above.
+With static ESM imports, import evaluation happens before module body execution. If you need discovery to apply on first load, assign `globalThis` in an earlier script/module, or use dynamic `import()` as shown above.
 :::
 
 ### Explicit Runtime Registration (Not Global Discovery)
-Using Tempo.extend(...) is explicit registration after Tempo is loaded. It is ergonomic and strongly recommended for normal application code, but it is a different mechanism from pre-bootstrap global discovery.
+Using `Tempo.extend(...)` is explicit registration after `Tempo` is loaded. It is ergonomic and strongly recommended for normal application code, but it is a different mechanism from pre-bootstrap global discovery.
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
@@ -88,8 +88,8 @@ Tempo.extend({
 
 ### Security and Ergonomics Notes
 - Global Discovery is convenient for host-controlled bootstraps and cross-bundle handoff.
-- Tempo.extend(...) is usually safer in app code because configuration is explicit, local, and easier to trace.
-- Use Global Discovery when you must configure Tempo before the first Tempo import executes.
+- `Tempo.extend(...)` is usually safer in app code because configuration is explicit, local, and easier to trace.
+- Use Global Discovery when you must configure `Tempo` before the first `Tempo` import executes.
 
 ### Discovery Contract
 Tempo looks for the following structure:

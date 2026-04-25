@@ -130,5 +130,11 @@ export function normalizeUtcOffset(zone: string): string {
 	if (!match) return zone;
 
 	const [, sign, hours, minutes] = match;
-	return `${sign}${hours.padStart(2,'0')}:${minutes ?? '00'}`;
+	const h = Number(hours);
+	const m = Number(minutes ?? '0');
+
+	// Temporal-valid range: -12:00 .. +14:00, minutes 0..59
+	if (h > 14 || m > 59 || (sign === '+' && h === 14 && m !== 0) || (sign === '-' && h > 12)) return zone;
+
+	return `${sign}${hours.padStart(2, '0')}:${minutes ?? '00'}`;
 }

@@ -65,6 +65,7 @@ export function resolveLayoutClassificationOrder(layout: Record<symbol, string>,
 		const resolvedName = TOKEN_DESCRIPTION_BY_NAME.get(name) ?? name;
 		const entry = byName.get(resolvedName) ?? byName.get(name);
 		if (!entry) return;
+		if (seen.has(entry[0])) return;
 		seen.add(entry[0]);
 		next.push(entry);
 	});
