@@ -94,4 +94,28 @@ describe('engine.layout resolver', () => {
 		expect(classified).toBe(layout);
 		expect(orderOf(classified)).toEqual(['hms', 'dmy6', 'mdy6', 'ymd6']);
 	});
+
+	test('supports token-key aliases in preferred layout ordering', () => {
+		const layout = makeLayout(['hourMinuteSecond', 'weekDay', 'date', 'time']);
+		const classified = resolveLayoutClassificationOrder(layout, {
+			[DEFAULT_LAYOUT_CLASS]: ['wkd', 'dt', 'tm'],
+		}, DEFAULT_LAYOUT_CLASS);
+
+		expect(orderOf(classified)).toEqual(['weekDay', 'date', 'time', 'hourMinuteSecond']);
+	});
+
+	test('applies preferred order before month-day swaps', () => {
+		const layout = makeLayout(['dayMonthYear', 'monthDayYear', 'weekDay', 'date', 'time']);
+		const resolved = resolveLayoutOrder({
+			layout,
+			mdyLayouts: [['dayMonthYear', 'monthDayYear']],
+			isMonthDay: true,
+			layoutController: {
+				[DEFAULT_LAYOUT_CLASS]: ['wkd', 'dt', 'tm', 'dmy', 'mdy'],
+			},
+			classification: DEFAULT_LAYOUT_CLASS,
+		});
+
+		expect(orderOf(resolved)).toEqual(['weekDay', 'date', 'time', 'monthDayYear', 'dayMonthYear']);
+	});
 });

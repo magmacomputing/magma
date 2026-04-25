@@ -9,7 +9,7 @@ Historically, `Tempo.init()` modified the global library state. This meant that:
 3. Testing multiple configurations required careful cleanup between tests.
 
 ## The Solution
-`Tempo.create()` returns a **derived class** with its own isolated configuration, registry, and plugin state. Each sandbox inherits from the caller, but runs with independent internal state.
+`Tempo.create()` returns a **derived sandboxed class** with its own isolated configuration, registry, and plugin state. Each sandbox inherits from the caller, but runs with independent internal state.
 
 ### Example: Creating a Sandbox
 ```typescript

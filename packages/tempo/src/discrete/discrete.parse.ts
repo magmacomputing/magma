@@ -264,7 +264,16 @@ const _ParseEngine = {
 		let zdt = dateTime as any;
 		const anchorTime = zdt.toPlainTime();
 
-		for (const [symKey, pat] of state.parse.pattern) {
+		const orderedPatterns = (ownEntries(state.parse.layout) as [PropertyKey, string][])
+			.map(([layoutKey]) => {
+				const symKey = typeof layoutKey === 'symbol'
+					? layoutKey
+					: (state.parse.token?.[String(layoutKey)] as symbol | undefined);
+				return [symKey, symKey ? state.parse.pattern.get(symKey) : undefined] as const;
+			});
+
+		for (const [symKey, pat] of orderedPatterns) {
+			if (!symKey || !pat) continue;
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
 			if (isEmpty(groups)) {
 				continue;

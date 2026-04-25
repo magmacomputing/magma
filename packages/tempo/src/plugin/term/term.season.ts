@@ -15,12 +15,6 @@ const ranges = [
 	{ key: 'Summer', day: 1, month: 12, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.South },
 	{ key: 'Autumn', day: 1, month: 3, symbol: 'Leaf', group: 'meteorological', sphere: COMPASS.South },
 	{ key: 'Winter', day: 1, month: 6, symbol: 'Snowflake', group: 'meteorological', sphere: COMPASS.South },
-
-	// Chinese
-	{ key: 'Spring', day: 1, month: 3, symbol: 'Flower', group: 'chinese', trait: 'A time of renewal and growth' },
-	{ key: 'Summer', day: 1, month: 6, symbol: 'Sun', group: 'chinese', trait: 'A period of heat and fruition' },
-	{ key: 'Autumn', day: 1, month: 9, symbol: 'Leaf', group: 'chinese', trait: 'A time for harvest and contraction' },
-	{ key: 'Winter', day: 1, month: 12, symbol: 'Snowflake', group: 'chinese', trait: 'A period of stillness and consolidation' },
 ];
 
 /** definition of meteorological season ranges */
@@ -29,10 +23,6 @@ const groups = defineRange(ranges, 'group', 'sphere');
 /** resolve the full candidate list for the current context */
 function resolve(t: Tempo, anchor?: any) {
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['group', 'sphere'], group: 'meteorological' });
-
-	// append Chinese trait information as an additional metadata field (CN)
-	const chinese = ranges.filter((g: any) => g.group === 'chinese');
-	list.forEach((itm: any) => itm['CN'] = getTermRange(t, chinese, false, anchor));
 
 	return list;
 }
@@ -44,7 +34,7 @@ function resolve(t: Tempo, anchor?: any) {
 export const SeasonTerm = defineTerm({
 	key: 'szn',
 	scope: 'season',
-	description: 'Meteorogical season',
+	description: 'Meteorological season',
 	groups,
 
 	resolve(this: Tempo, anchor?: any) {

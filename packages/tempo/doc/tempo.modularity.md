@@ -85,7 +85,7 @@ You can create your own modules to extend Tempo's internal engine or its public 
 ```typescript
 import { defineModule } from '@magmacomputing/tempo/plugin';
 
-export const MyModule = defineModule((options, TempoClass) => {
+export const MyModule = defineModule((TempoClass, options) => {
     // Add instance methods
     TempoClass.prototype.sayHello = function() { return 'Hello!'; };
     

@@ -189,5 +189,6 @@ export const Default = secure({
 	/** default locale if not specified */										locale: getDateTimeFormat().locale,
 	/** locales that prefer month-day order */								mdyLocales: ['en-US', 'en-AS'],	/** @link https:	//en.wikipedia.org/wiki/Date_format_by_country */
 	/** layouts that need to swap parse-order */							mdyLayouts: [['dayMonthYearShort', 'monthDayYearShort'], ['dayMonthYear', 'monthDayYear']],
+	/** preferred parse-order of layouts */										layoutOrder: [],
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 } as Options)

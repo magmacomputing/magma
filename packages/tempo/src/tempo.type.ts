@@ -160,6 +160,7 @@ export namespace Internal {
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** locale-names that prefer 'mm-dd-yy' date order */		mdyLocales: string | string[];
 		/** swap parse-order of layouts */											mdyLayouts: Pair[];
+		/** preferred parse-order of layouts */									layoutOrder: string[];
 		/** date-time snippets to help compose a Layout */			snippet: Snippet | PatternOption<Pattern>;
 		/** patterns to help parse value */											layout: Layout | PatternOption<Pattern>;
 		/** custom date aliases (events). */										event: Event | PatternOption<Logic>;
@@ -208,6 +209,7 @@ export namespace Internal {
 	export interface Parse {
 		/** Locales which prefer 'mm-dd-yyyy' date-order */			mdyLocales: ({ locale: string, timeZones: string[] } | string)[];
 		/** Layout names that are switched to mdy */						mdyLayouts: Pair[];
+		/** preferred parse-order of layouts */									layoutOrder: string[];
 		/** is a timeZone that prefers 'mmddyyyy' date order */	isMonthDay?: boolean;
 		/** Symbol registry */																	token: Token;
 		/** Tempo snippets to aid in parsing */									snippet: Snippet;
@@ -228,7 +230,7 @@ export namespace Internal {
 	}
 
 	/** drop the parse-only Options */
-	export type OptionsKeep = Omit<BaseOptions, "mdyLocales" | "mdyLayouts" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
+	export type OptionsKeep = Omit<BaseOptions, "mdyLocales" | "mdyLayouts" | "layoutOrder" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
 
 	/** Instance configuration derived from supply, storage, and discovery. */
 	export interface Config extends Required<Omit<OptionsKeep, "formats">> {

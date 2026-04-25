@@ -2,13 +2,14 @@ import '#library/temporal.polyfill.js';
 import { enumify } from '#library/enumerate.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { getDateTimeFormat, getHemisphere } from '#library/international.library.js';
+import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { asType } from '#library/type.library.js';
 import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
-import { setProperty, hasOwn, create, collect, setPatterns } from './tempo.util.js';
+import { setProperty, hasOwn, create, collect, setPatterns, normalizeLayoutOrder } from './tempo.util.js';
 import { sym, Token } from './tempo.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
@@ -39,6 +40,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		ignore: baseState ? { ...baseState.parse.ignore } : Object.fromEntries(asArray(Ignore).map(w => [w, w])),
 		mdyLocales: asArray(baseState?.parse.mdyLocales ?? Default.mdyLocales as any),
 		mdyLayouts: asArray<t.Pair>(baseState?.parse.mdyLayouts ?? Default.mdyLayouts as any),
+		layoutOrder: asArray<string>(baseState?.parse.layoutOrder ?? Default.layoutOrder as any),
 		pivot: (baseState?.parse.pivot ?? Default.pivot) as any,
 		mode: (baseState?.parse.mode ?? Default.mode) as any,
 		lazy: false,
@@ -136,9 +138,13 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				break;
 			}
 
+			case 'layoutOrder':
+				state.parse.layoutOrder = normalizeLayoutOrder(arg.value);
+				break;
+
 			case 'timeZone': {
 				const zone = String(arg.value).toLowerCase();
-				const resolvedZone = enums.TIMEZONE[zone] ?? arg.value;
+				const resolvedZone = enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
 				setProperty(state.config, 'timeZone', resolvedZone);
 				setProperty(state.config, 'sphere', getHemisphere(resolvedZone));
 				break;
