@@ -1,0 +1,48 @@
+name: Tempo CI
+
+on:
+  push:
+    branches:
+      - main
+      - release-c-layout-order-planner
+  pull_request:
+    branches:
+      - main
+      - release-c-layout-order-planner
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm ci
+        working-directory: packages/tempo
+      - name: Run standard tests
+        run: npm test
+        working-directory: packages/tempo
+
+  test-parse-prefilter:
+    name: Test with parsePrefilter enabled
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/release-c-layout-order-planner' || github.event.pull_request.base.ref == 'main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm ci
+        working-directory: packages/tempo
+      - name: Enable parsePrefilter globally
+        run: |
+          echo "Tempo.init({ parsePrefilter: true })" > test/ci.prefilter.setup.js
+      - name: Run all tests with parsePrefilter
+        run: npm test
+        working-directory: packages/tempo
+      - name: Run end-to-end benchmark
+        run: npx tsx --conditions=development scratch/bench.parse.prefilter.e2e.ts
+        working-directory: packages/tempo
