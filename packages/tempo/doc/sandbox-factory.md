@@ -9,14 +9,14 @@ Historically, `Tempo.init()` modified the global library state. This meant that:
 3. Testing multiple configurations required careful cleanup between tests.
 
 ## The Solution
-`Tempo.init()` now returns a **derived class** when provided with configuration options. Each derived class maintains its own isolated `State` and `Registry`.
+`Tempo.create()` returns a **derived sandboxed class**. You may optionally pass configuration options to seed that sandbox. Each derived class maintains its own isolated `State` and `Registry`.
 
 ### Example: Creating a Sandbox
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
 // Create a specialized Sandbox for a Financial app
-const FinTempo = Tempo.init({
+const FinTempo = Tempo.create({
   period: {
     'market-open': '09:30',
     'market-close': '16:00'
@@ -34,7 +34,7 @@ When using sandboxes, it's important to know which configuration resolved an inp
 ### Hierarchy of Resolution
 When a conflict occurs (e.g., you redefine "noon"), Tempo uses a **"Last One Wins"** strategy:
 1. **Local (Instance)**: Options passed to `new Tempo(val, options)`.
-2. **Sandbox (Factory)**: Options passed to `Tempo.init(options)`.
+2. **Sandbox (Factory)**: Options passed to `Tempo.create(options)`.
 3. **Plugins**: Aliases registered via `Tempo.extend()`.
 4. **Global Defaults**: Built-in aliases like "xmas", "midnight", etc.
 
@@ -58,7 +58,7 @@ console.log(t.parse.result);
 ```
 
 ## Immutability & Security
-Sandboxed classes created via `Tempo.init()` are protected by the same `@Immutable` and `@Serializable` decorators as the base class. 
+Sandboxed classes created via `Tempo.create()` are protected by the same `@Immutable` and `@Serializable` decorators as the base class. 
 - The Sandbox class itself is hardened against static member modification.
 - Instances of the Sandbox are frozen upon construction.
 - The internal state is stored in a `WeakMap`, inaccessible to external code.
