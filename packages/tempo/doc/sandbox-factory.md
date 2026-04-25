@@ -64,6 +64,6 @@ Sandboxed classes created via `Tempo.create()` are protected by the same `@Immut
 - The internal state is stored in a `WeakMap`, inaccessible to external code.
 
 ## Best Practices
-1. **Initialize Once**: Create your application-specific Sandbox once and export it as your primary entry point.
+1. **Create Once**: Create your application-specific Sandbox once and export it as your primary entry point.
 2. **Prefer Sandboxes for Custom Aliases**: Avoid modifying the base `Tempo` class if your app is intended to be used as a library.
 3. **Use Debug Mode**: When developing new aliases, set `debug: true` to receive console warnings about naming collisions.
