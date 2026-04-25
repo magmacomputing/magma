@@ -9,7 +9,7 @@ Historically, `Tempo.init()` modified the global library state. This meant that:
 3. Testing multiple configurations required careful cleanup between tests.
 
 ## The Solution
-`Tempo.create()` returns a **derived sandboxed class**. You may optionally pass configuration options to seed that sandbox. Each derived class maintains its own isolated `State` and `Registry`.
+`Tempo.create()` returns a **derived class** with its own isolated configuration, registry, and plugin state. Each sandbox inherits from the caller, but runs with independent internal state.
 
 ### Example: Creating a Sandbox
 ```typescript
@@ -58,7 +58,7 @@ console.log(t.parse.result);
 ```
 
 ## Immutability & Security
-Sandboxed classes created via `Tempo.create()` are protected by the same `@Immutable` and `@Serializable` decorators as the base class. 
+Sandboxed classes created via `Tempo.create()` are protected by the same `@Immutable` and `@Serializable` decorators as the base class.
 - The Sandbox class itself is hardened against static member modification.
 - Instances of the Sandbox are frozen upon construction.
 - The internal state is stored in a `WeakMap`, inaccessible to external code.
