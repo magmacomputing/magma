@@ -285,7 +285,7 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 		if (list.length === 0 && groupBy.includes('sphere')) {
 			const sphereIdx = groupBy.indexOf('sphere');
 			const targetParts = groupKey.split('.');
-			const targetSphere = targetParts[sphereIdx].toLowerCase();
+			const targetSphere = (targetParts.length > sphereIdx ? targetParts[sphereIdx] : '').toLowerCase();
 
 			let bestKey: string | undefined;
 			let bestSphereLength = -1;

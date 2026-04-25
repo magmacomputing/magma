@@ -160,7 +160,7 @@ const _ParseEngine = {
 
 			return (isZonedDateTime(dateTime) && !state.errored) ? dateTime : undefined as any;
 		} finally {
-			if (isRoot) state.matches = undefined;
+			if (isRoot) delete state.matches;
 			state.parseDepth--;
 		}
 	},
@@ -469,11 +469,12 @@ const _ParseEngine = {
 				}
 			}
 		} finally {
-			state.anchor = prevAnchor;
+			if (isDefined(prevAnchor)) state.anchor = prevAnchor;
+			else delete state.anchor;
 			if (isDefined(prevZdt)) state.zdt = prevZdt;
 			else delete state.zdt;
 			state.parseDepth--;
-			if (state.parseDepth === 0) state.matches = undefined;
+			if (state.parseDepth === 0) delete state.matches;
 		}
 
 		if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {

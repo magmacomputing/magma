@@ -19,7 +19,7 @@ The property descriptor is `enumerable: false, configurable: false, writable: fa
 **Benefits:**
 - **Reduced global footprint** — one slot instead of seven.
 - **Centralised hardening** — input validation (`addTerm`, `addPlugin`) and hook management (`setRegisterHook`, `fireRegisterHook`) live in one place.
-- **Scoped runtimes (Experimental)** — `TempoRuntime.createScoped()` returns a fresh, isolated runtime that is *not* stored on `globalThis`, enabling clean test isolation without globalThis manipulation.  **Note**: Scoped runtimes are currently an experimental internal feature and are not yet fully threaded through all core utilities.  Scoped runtimes are not pinned to `globalThis`, lack the `defineProperty` descriptor protections of the primary instance, and instead rely solely on the lexical reference returned (contrasting with the hardened `getRuntime()` and `globalThis[BRIDGE]` behavior). Implementation examples of this test-scoping pattern can be found in [plugin_registration.test.ts](../test/plugin_registration.test.ts) and [duration.core.test.ts](../test/duration.core.test.ts).
+- **Scoped runtimes (Experimental)** — `TempoRuntime.createScoped()` returns a fresh, isolated runtime that is *not* stored on `globalThis`, enabling clean test isolation without globalThis manipulation. Scoped runtimes are currently an experimental internal feature and are not yet fully threaded through all core utilities. Scoped runtimes are not pinned to `globalThis`, lack the `defineProperty` descriptor protections of the primary instance, and instead rely solely on the lexical reference returned (contrasting with the hardened `getRuntime()` and `globalThis[BRIDGE]` behavior). Implementation examples of this test-scoping pattern can be found in [plugin_registration.test.ts](../test/plugin_registration.test.ts) and [duration.core.test.ts](../test/duration.core.test.ts).
 - **Multi-bundle / HMR safety** — `getRuntime()` checks `globalThis[BRIDGE]` before constructing, so two bundle copies of Tempo always share the same runtime object, preserving the original split-brain guarantee.
 
 **User-facing "Global Discovery" slots remain on `globalThis`.**  The `sym.$Tempo` slot (and custom discovery symbols passed to `Tempo.init`) are intentionally user-readable, so they stay as ordinary writable properties.  Only internal bookkeeping moved into the runtime.
@@ -96,8 +96,9 @@ The **Instance Shadowing** pattern is designed for massive scale. When a library
 - **Stage 2**: Tempo uses a **Generic Lazy Delegator** Proxy (via `getLazyDelegator`) which catches property access and evaluates it on-demand.
 - **Result**: The JS engine executes lookups via an optimized Proxy handler, making lookups nearly as fast as raw property access while keeping the state strictly immutable.
 
-> [!TIP]
-> For more implementation details, see [Lazy Evaluation Pattern](./lazy-evaluation-pattern.md).
+::: tip
+For more implementation details, see [Lazy Evaluation Pattern](./lazy-evaluation-pattern.md).
+:::
 
 ---
 
@@ -111,8 +112,9 @@ Global registries must be **live** but **secure**. As of **v2.0.1**, these are p
 - **The Library**: Uses a private symbol bypass to perform "Transactional Updates" via `registryUpdate()`.
 - **Result**: The object reference remains constant while allowing controlled extensibility. This ensures that internal caches (like the Master Guard) can be re-synchronized whenever a registry changes.
 
-> [!TIP]
-> For more implementation details, see [Soft Freeze Strategy](./soft_freeze_strategy.md).
+::: tip
+For more implementation details, see [Soft Freeze Strategy](./soft_freeze_strategy.md).
+:::
 
 ---
 
@@ -134,8 +136,9 @@ The efficiency of the Master Guard and the success of the Zero-Cost objective ha
 - **Instantiation Overhead**: ~523µs on average (passing the Master Guard). *(Node.js v24.14.1, 12th Gen Intel i7-1255U, Linux x86_64; steady-state measured after 1k warm-up runs, n=10k. Validates the Zero-Cost objective on this hardware.)*
 - **Fast-Fail Rejection**: ~359µs on average (failing the Master Guard). *(Node.js v24.14.1, 12th Gen Intel i7-1255U, Linux x86_64; steady-state measured after 1k warm-up runs, n=10k. Demonstrates the Master Guard's low-latency rejection performance.)*
 
-> [!TIP]
-> For detailed timing results and methodology, see [Performance Benchmarks](./tempo.benchmarks.md).
+::: tip
+For detailed timing results and methodology, see [Performance Benchmarks](./tempo.benchmarks.md).
+:::
 
 ---
 

@@ -46,7 +46,7 @@ Tempo uses your timezone to decide if `04012026` is April 1st or January 4th.
 ```typescript
 // US Context (en-US)
 const us = new Tempo('04012026', { timeZone: 'America/New_York' }); 
-console.log(us.format('{mon} {dd}')); // "April 1"
+console.log(us.format('{mon} {dd}')); // "April 01"
 
 // UK/Elsewhere Context (en-GB)
 const uk = new Tempo('04012026', { timeZone: 'Europe/London' });
@@ -149,7 +149,7 @@ const isWeekend = t.dow >= 6; // Saturday = 6, Sunday = 7
 ```
 
 ### What Fiscal Quarter are we in?
-Using the `qtr` Term plugin (**Note**: `term.qtr` is a convenient alias for the full `term.quarter` property).
+Using the `qtr` Term plugin (`term.qtr` is a convenient alias for the full `term.quarter` property).
 ```typescript
 const t = new Tempo();
 console.log(`Current Quarter: ${t.term.qtr}`); // "Q1", "Q2", etc.
@@ -185,8 +185,9 @@ console.log(t.format('We are currently in the {#quarter}')); // "We are currentl
 
 ---
 
-> [!NOTE]
-> The examples below use the `using` and `await using` syntax, which require **TypeScript 5.2+** and a runtime that supports **TC39 Explicit Resource Management**.
+::: info
+The examples below use the `using` and `await using` syntax, which require **TypeScript 5.2+** and a runtime that supports **TC39 Explicit Resource Management**.
+:::
 
 ### Subscription Billing (Recurring Payments)
 Use a `seed` to anchor your subscription to a specific day, then use a month-based ticker.

@@ -12,7 +12,7 @@ import * as enums from '#tempo/support/tempo.enum.js';
 import type { Logify } from '#library/logify.class.js';
 import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/tempo.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
-import type {  TermPlugin,  Plugin } from '#tempo/plugin/plugin.type.js';
+import type { TermPlugin, Plugin } from '#tempo/plugin/plugin.type.js';
 import type { Token } from '#tempo/support/tempo.symbol.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 
@@ -188,8 +188,8 @@ export namespace Internal {
 		/** @internal valid Temporal units for ZonedDateTime */	ZONED_DATE_TIME: Set<string>;
 
 		/** @internal current recursion depth during parsing */	parseDepth?: number;
-		/** @internal current matches during parsing */					matches: Match[] | undefined;
-		/** @internal current anchor during parsing */					anchor: Temporal.ZonedDateTime | undefined;
+		/** @internal current matches during parsing */					matches?: Match[];
+		/** @internal current anchor during parsing */					anchor?: Temporal.ZonedDateTime;
 		/** @internal current ZonedDateTime during parsing */		zdt?: Temporal.ZonedDateTime;
 		/** @internal has the parse operation errored? */				errored?: boolean;
 	}

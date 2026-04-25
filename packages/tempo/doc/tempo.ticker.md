@@ -85,7 +85,7 @@ By providing a **negative** interval, you can create a ticker that moves backwar
 ```typescript
 // Count down from 10 seconds, moving backwards 1s at a time
 using countdown = Tempo.ticker({ seconds: -1, seed: "00:00:10" }, (t, stop) => {
-  console.log(t.format('ss'));
+  console.log(t.format('{ss}'));
   if (t.ss === 0) stop(); 
 });
 ```
@@ -205,8 +205,9 @@ try {
 }
 ```
 
-> [!WARNING]
-> If you are using `const` or `let` without a `finally` block, an assertion failure will skip the `stop()` call, leaving a live timer in the event loop. Always prefer the `using` keyword or `try...finally` for industrial-grade resource management.
+::: warning
+If you are using `const` or `let` without a `finally` block, an assertion failure will skip the `stop()` call, leaving a live timer in the event loop. Always prefer the `using` keyword or `try...finally` for industrial-grade resource management.
+:::
 
 ### `Ticker` Object
 The object returned by `Tempo.ticker()` (or an instance of the `Ticker` class) implements the following interface:
@@ -255,17 +256,18 @@ type Snapshot = {
 
 You can use the ticker as a "one-shot" timer for specific events by simply specifying a **seed** value. This is perfect for setting up a single alert (e.g., for a meeting) that cleans itself up immediately after firing.
 
-> [!TIP]
-> **Seed-Only Logic**: Providing a `seed` (as a string or in an options object) without any other duration-based keys (`seconds`, `minutes`, etc.) or a `limit` implies a `limit: 1`. 
-> 
-> Effectively, `Tempo.ticker('Fri 10am')` and `Tempo.ticker({ seed: 'Fri 10am' })` and `Tempo.ticker({ seed: 'Fri 10am', limit: 1 })` are all treated as one-shot tickers.
->
-> **Inclusive Boundaries**: Termination conditions (`limit` and `until`) are **inclusive**. A ticker with `limit: 1` will pulse exactly once before stopping.
+::: tip
+**Seed-Only Logic**: Providing a `seed` (as a string or in an options object) without any other duration-based keys (`seconds`, `minutes`, etc.) or a `limit` implies a `limit: 1`. 
+
+Effectively, `Tempo.ticker('Fri 10am')` and `Tempo.ticker({ seed: 'Fri 10am' })` and `Tempo.ticker({ seed: 'Fri 10am', limit: 1 })` are all treated as one-shot tickers.
+
+**Inclusive Boundaries**: Termination conditions (`limit` and `until`) are **inclusive**. A ticker with `limit: 1` will pulse exactly once before stopping.
+:::
 
 ```typescript
 // Pattern A: Implicit one-shot via string seed
 Tempo.ticker('Friday 10am', (t) => {
-  console.log(`Meeting alert: ${t.format('HH:mm')}`);
+  console.log(`Meeting alert: ${t.format('{HH}:{mi}')}`);
 });
 
 // Pattern B: Explicit one-shot via options
@@ -274,18 +276,21 @@ const event = { meeting: 'Friday 10am' };
 Tempo.ticker({ 
   seed: { value: 'meeting', event }
 }, (t) => {
-  console.log(`Meeting alert: ${t.format('HH:mm')}`);
+  console.log(`Meeting alert: ${t.format('{HH}:{mi}')}`);
 });
 ```
 
-> [!IMPORTANT]
-> **Future Seeds**: If the `seed` is in the future, the Ticker will remain dormant (waiting) until that time is reached. **Most Tickers emit an initial pulse immediately** (at the `seed` time or "now"), but a future seed will delay that first pulse until the specified time.
+::: warning
+**Future Seeds**: If the `seed` is in the future, the Ticker will remain dormant (waiting) until that time is reached. **Most Tickers emit an initial pulse immediately** (at the `seed` time or "now"), but a future seed will delay that first pulse until the specified time.
+:::
 
-> [!CAUTION]
-> **Persistence**: Ticker timers exist only **in-memory**. If the driving process (e.g., Node.js) terminates, any scheduled future pulses (including those from future seeds) are lost. For critical long-term scheduling, consider an external persistent job runner.
+::: danger
+**Persistence**: Ticker timers exist only **in-memory**. If the driving process (e.g., Node.js) terminates, any scheduled future pulses (including those from future seeds) are lost. For critical long-term scheduling, consider an external persistent job runner.
+:::
 
-> [!WARNING]
-> While `limit: 1` handles the stop condition automatically, always remember that if you are using long-running tickers without a limit, you **must** use the [Disposer Pattern](#zombie-tickers-warning) or manual `stop()` to avoid memory leaks and zombie processes.
+::: warning
+While `limit: 1` handles the stop condition automatically, always remember that if you are using long-running tickers without a limit, you **must** use the [Disposer Pattern](#zombie-tickers-warning) or manual `stop()` to avoid memory leaks and zombie processes.
+:::
 
 ## 🧭 Advanced: Syncing Multiple Clocks
 

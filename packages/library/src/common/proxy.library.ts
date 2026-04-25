@@ -44,7 +44,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 		getOwnPropertyDescriptor: (t, k) => {
 			if (keys && !keys.includes(k)) return undefined;
 			if (keys) {
-				if (onGet && !pending.has(k)) {
+				if (onGet && !isSymbol(k) && !pending.has(k)) {
 					pending.add(k);
 					try {
 						const value = onGet(k, t);
@@ -116,7 +116,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 				}
 				// silent mark to avoid redundant discovery
 				if (Reflect.isExtensible(t) && !Reflect.has(t, k))
-					Object.defineProperty(t, k, { value: undefined, enumerable: false, configurable: true });
+					Object.defineProperty(t, k, { value: undefined, writable: true, enumerable: false, configurable: true });
 			}
 
 			const val = Reflect.get(t, k, r);

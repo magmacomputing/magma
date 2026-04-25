@@ -74,7 +74,9 @@ declare module '@magmacomputing/tempo/core' {
 }
 ```
 
-> [!WARNING]
+::: warning
+
+:::
 
 > **Understanding Tempo Versions**:
 > - **`@magmacomputing/tempo/core` (Lite)**: A bare-bones engine with zero side-effects. This is the recommended choice for production builds and plugin authoring.
@@ -101,8 +103,9 @@ Tempo.init();                                         // 3. Discover and activat
 const pulse = Tempo.ticker(1); 
 ```
 
-> [!NOTE]
-> **Import Order**: While older versions of Tempo were sensitive to import order, current versions handle sequencing robustly. `Tempo.init()` is automatically called during bootstrap to ensure all discovered plugin are integrated. If you dynamically load plugin later, you can call `Tempo.init()` manually to refresh the registry.
+::: info
+**Import Order**: While older versions of Tempo were sensitive to import order, current versions handle sequencing robustly. `Tempo.init()` is automatically called during bootstrap to ensure all discovered plugin are integrated. If you dynamically load plugin later, you can call `Tempo.init()` manually to refresh the registry.
+:::
 
 ---
 
@@ -150,6 +153,14 @@ if (errorCondition) {
 ```
 
 This pattern ensures that Tempo remains robust in production environments while providing strict validation during development.
+
+### 6. Term Key/Scope Collisions
+If your plugin registers a **Term** (`key` / optional `scope`), keep both identifiers globally unique.
+
+- Avoid reusing an existing term `key` (e.g., another plugin already uses `qtr`).
+- Avoid reusing an existing `scope` alias (e.g., another plugin already uses `quarter`).
+
+Current behavior is not ideal for collisions: duplicate term keys are ignored, while scope alias resolution is order-dependent and can shadow another term. Treat collisions as unsupported and choose unique names to ensure deterministic behavior.
 
 ## Advanced Pattern: Stateful Classes & Callable Proxies
 

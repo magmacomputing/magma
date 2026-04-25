@@ -139,8 +139,9 @@ Tempo.extend(MutateModule);
 const t = new Tempo().add({ days: 1 });
 ```
 
-> [!IMPORTANT]
-> When using the Lite build, the `Tempo` class will have almost no methods (like `.add()`, `.set()`, or `.format()`) until you explicitly call `Tempo.extend()` with the appropriate module.
+::: warning
+When using the Lite build, the `Tempo` class will have almost no methods (like `.add()`, `.set()`, or `.format()`) until you explicitly call `Tempo.extend()` with the appropriate module.
+:::
 
 ---
 

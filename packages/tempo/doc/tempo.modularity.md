@@ -94,8 +94,9 @@ export const MyModule = defineModule((options, TempoClass) => {
 });
 ```
 
-> [!IMPORTANT]
-> **Dual Module Hazard**: If you are using `@magmacomputing/tempo/core` and `@magmacomputing/tempo` in the same project, ensure you use the `development` condition or consistent import paths to avoid registering the same classes twice.
+::: warning
+**Dual Module Hazard**: If you are using `@magmacomputing/tempo/core` and `@magmacomputing/tempo` in the same project, ensure you use the `development` condition or consistent import paths to avoid registering the same classes twice.
+:::
 
 ## ⚠️ The Registration "Gotcha"
 
@@ -104,8 +105,9 @@ There is a subtle but important distinction between how features are activated i
 *   **`Tempo.extend(Module)`**: This is **Immediate and Explicit**. It applies the module to the class exactly when the line is executed. This is the recommended pattern for modular applications.
 *   **`Tempo.init()`**: This is **Discovery-Driven**. It scans the global environment for any plugins that were imported via side effects (e.g., `import '@magmacomputing/tempo/ticker'`) and hydrates the engine all at once.
 
-> [!CAUTION]
-> **The Initialization Lifecycle**: `Tempo.init()` performs a **full state refresh**. It resets configuration, term registries, and formatting maps to defaults before re-applying all currently discovered plugins. To ensure your custom logic is managed correctly, always use `Tempo.extend()` or encapsulate changes within a formal plugin.
+::: danger
+**The Initialization Lifecycle**: `Tempo.init()` performs a **full state refresh**. It resets configuration, term registries, and formatting maps to defaults before re-applying all currently discovered plugins. To ensure your custom logic is managed correctly, always use `Tempo.extend()` or encapsulate changes within a formal plugin.
+:::
 
 **The Side-Effect Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** automatically appear on the `Tempo` class. You would need to call `Tempo.init()` again or use `Tempo.extend()` to pick up the latecomers.
 

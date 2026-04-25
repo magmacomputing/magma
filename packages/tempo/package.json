@@ -53,6 +53,10 @@
       "development": "./src/core.index.ts",
       "default": "./dist/core.index.js"
     },
+    "#tempo/enums": {
+      "development": "./src/support/tempo.enum.ts",
+      "default": "./dist/support/tempo.enum.js"
+    },
     "#tempo/duration": {
       "development": "./src/module/module.duration.ts",
       "default": "./dist/module/module.duration.js"

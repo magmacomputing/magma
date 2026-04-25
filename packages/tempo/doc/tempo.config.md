@@ -65,10 +65,16 @@ Tempo looks for the following structure:
 | Property | Type | Description |
 | :--- | :--- | :--- |
 | `options` | `Options \| (() => Options)` | Configuration options merged into global state. |
-| `plugin` | `Plugin \| Plugin[]` | Modular plugin to be extended onto Tempo automatically. |
+| `plugins` | `Plugin \| Plugin[]` | Modular plugin(s) to be extended onto Tempo automatically. |
 | `terms` | `TermPlugin \| TermPlugin[]` | Custom term plugin to be registered. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
+| `numbers` | `Record<string, number>` | Custom number-word aliases merged into the NUMBER registry. |
 | `formats` | `Record<string, string>` | Custom format strings to be merged into `Tempo.FORMAT`. |
+| `ignore` | `string \| string[] \| (() => string \| string[])` | Additional noise words to merge into parser ignore rules. |
+
+::: info
+Legacy discovery key `term` (singular) is still accepted for backward compatibility, but `terms` is the supported contract key.
+:::
 
 ---
 
@@ -92,20 +98,34 @@ Tempo.init({
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `timeZone` | `string` | System Zone | Default IANA time zone or alias. |
-| `locale` | `string` | System Locale | Default BCP 47 language tag. |
+| `locale` | `string` | System Locale | Default BCP 47 language tag. used in .since() method |
 | `calendar` | `string` | `'iso8601'` | Default calendar system. |
 | `pivot` | `number` | `75` | Cutoff for parsing two-digit years. |
+| `mdyLocales` | `string \| string[]` | `['en-US','en-AS']` | Locale list that prefers month-day-year parse ordering. |
+| `mdyLayouts` | `[string, string][]` | Built-in pairs | Layout swap pairs used when month-day ordering applies. |
 | `timeStamp`| `'ms' \| 'ns'` | `'ms'` | Precision for timestamps. |
 | `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
 | `rtfFormat` | `Intl.RTF` | `undefined` | Pre-configured relative time formatter. |
 | `rtfStyle` | `'long' \| 'short' \| 'narrow'` | `'narrow'` | Default style for relative time formatting. |
-| `debug` | `boolean` | `false` | Enables internal log tracking using context-aware Symbols. |
+| `event` | `Record<string, string \| Function>` | Built-in aliases | Custom date aliases merged into the event registry. |
+| `period` | `Record<string, string \| Function>` | Built-in aliases | Custom time aliases merged into the period registry. |
+| `snippet` | `Record<string, string \| RegExp>` | Built-in snippets | Custom snippet patterns used to compose parse layouts. |
+| `layout` | `Record<string, string \| RegExp>` | Built-in layouts | Custom parse layouts for date/time pattern matching. |
+| `formats` | `Record<string, string>` | Built-in formats | Named format aliases merged into `Tempo.FORMAT`. |
+| `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. |
+| `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
+| `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
+| `debug` | `boolean \| number` | `false` | Controls log verbosity. `true` maps to `LOG.Debug`, `false` maps to `LOG.Info`, and numeric values map directly to `LOG` levels (`0=Off ... 5=Trace`). |
 | `catch` | `boolean` | `false` | If true, invalid inputs return a Void instance instead of throwing. |
 | `mode` | `'auto' \| 'strict' \| 'defer'` | `'auto'` | Controls the hydration strategy (e.g., `defer` for Zero-Cost creation). |
 | `silent` | `boolean` | `false` | Suppresses console output. Combined with `catch: true` for silent failover. |
 | `ignore` | `string \| string[]` | `['at']` | List of noise words to be stripped before parsing. |
 
 ---
+
+::: info
+`debug` currently accepts only `boolean` or numeric level values. String labels like `'trace'` are not supported.
+:::
 
 ## 4. Instance-Level Overrides
 
@@ -139,12 +159,12 @@ Tempo.init({
   }
 })
 
-const delivery = new Tempo('deadline'); // Parsed using your custom logic
+const delivery = new Tempo('deadline'); // Parsed using your custom logic, adds 30-days to current-date
 ```
 
 ### ⚡ 5.2 Deferring Initialization (`mode: 'defer'`)
 
-By default (`mode: 'auto'`), Tempo uses the **Master Guard** to determine if a string can be lazily evaluated. For exceptionally high-volume scenarios where you may be creating thousands of Tempo instances but only using them for calculations (not formatting or terms), you can force a standard lazy behavior using `mode: 'defer'`.
+By default (`mode: 'auto'`), Tempo uses the **Master Guard** to determine if a string can be lazily evaluated. For exceptionally high-volume scenarios where you may be creating thousands of Tempo instances but only using them for calculations (not formats or terms), you can force a standard lazy behavior using `mode: 'defer'`.
 
 When `mode: 'defer'` is set, the registry-discovery logic is deferred until the first time you access a property on `t.fmt` or `t.term`.
 
@@ -157,8 +177,9 @@ console.log(t.format('{yyyy}')); // Discovery triggers NOW, only once.
 
 When initialized this way, no registries are built upfront. The constructor returns in $O(1)$ time.
 
-> [!TIP]
-> **Zero-Cost Constructor**: Combining the **Master Guard** (automatic) and the **`defer`** mode allows Tempo to satisfy the "Zero-Cost Constructor" requirement for mass-processing applications.
+::: tip
+**Zero-Cost Constructor**: Combining the **Master Guard** (automatic) and the **`defer`** mode allows Tempo to satisfy the "Zero-Cost Constructor" requirement for mass-processing applications.
+:::
 
 
 ### 🧹 5.3 Noise Word Filtering (`ignore`)
@@ -181,8 +202,9 @@ const t = new Tempo('next Friday at 3 o-clock', {
 console.log(t.toString()); // Resolved correctly (noise words stripped)
 ```
 
-> [!TIP]
-> **Registry Structure**: The `ignore` registry accepts a **String** or an **Array** of strings. These are converted to a high-performance internal format to support efficient prototype-based shadowing. Note that values provided via `Tempo.init()` or the `new Tempo()` constructor **merge** with the default ignore list rather than replacing it.
+::: tip
+**Registry Structure**: The `ignore` registry accepts a **String** or an **Array** of strings. These are converted to a high-performance internal format to support efficient prototype-based shadowing. Note that values provided via `Tempo.init()` or the `new Tempo()` constructor **merge** with the default ignore list rather than replacing it.
+:::
 
 
 ---
@@ -197,11 +219,13 @@ console.log(t.toString()); // Resolved correctly (noise words stripped)
 | **Global Init** | 🥈 High | Standard baseline for the whole application. |
 | **Instance** | 🥇 Highest | Ad-hoc overrides for specific calculations. |
 
-> [!TIP]
-> **Observability**: When `debug: true` is set, Tempo logs its discovery path to the console (e.g., "Global Discovery found via Symbol"), making it easy to trace exactly where a setting originated.
+::: tip
+**Observability**: When `debug: true` is set, Tempo logs its discovery path to the console (e.g., "Global Discovery found via Symbol"), making it easy to trace exactly where a setting originated.
+:::
 
-> [!NOTE]
-> **Hidden Keys**: The `tempo.config` getter excludes internal properties like `anchor` and input-only properties like `value` to keep the public API clean. These properties are still used internally for relative date resolution and instance hydration.
+::: info
+**Hidden Keys**: The `tempo.config` getter excludes internal properties like `anchor` and input-only properties like `value` to keep the public API clean. These properties are still used internally for relative date resolution and instance hydration.
+:::
 
 ---
 
@@ -226,5 +250,6 @@ Tempo includes a built-in registry of common timezone abbreviations. These are s
 | `npt` | `Asia/Kathmandu` |
 | `jst` | `Asia/Tokyo` |
 
-> [!TIP]
-> You can extend this list or override existing aliases using `Tempo.extend({ timeZones: { ... } })`.
+::: tip
+You can extend this list or override existing aliases using `Tempo.extend({ timeZones: { ... } })`.
+:::
