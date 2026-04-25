@@ -74,10 +74,6 @@ declare module '@magmacomputing/tempo/core' {
 }
 ```
 
-::: warning
-
-:::
-
 > **Understanding Tempo Versions**:
 > - **`@magmacomputing/tempo/core` (Lite)**: A bare-bones engine with zero side-effects. This is the recommended choice for production builds and plugin authoring.
 > - **`@magmacomputing/tempo` (Full)**: The "Batteries Included" version which automatically imports and registers all standard modules.

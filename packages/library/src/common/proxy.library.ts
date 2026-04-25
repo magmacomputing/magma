@@ -5,6 +5,8 @@ import { unwrap } from '#library/primitive.library.js';
 import { isFunction, isSymbol, isDefined } from '#library/assertion.library.js';
 import { registerType, type Constructor } from '#library/type.library.js';
 
+const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
+
 /** internal options for the unified proxy engine */
 type ProxyOptions = {
 	frozen?: boolean;																					// read-only Proxy (throws on set/delete)
@@ -123,7 +125,17 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 			if (bind && isFunction(val)) {
 				const desc = Object.getOwnPropertyDescriptor(t, k);
 				if (desc && !desc.configurable && !desc.writable) return val;
-				return val.bind(t);
+				let perTargetCache = boundMethodCache.get(val);
+				if (!perTargetCache) {
+					perTargetCache = new WeakMap<object, Function>();
+					boundMethodCache.set(val, perTargetCache);
+				}
+
+				const cachedBound = perTargetCache.get(t);
+				if (cachedBound) return cachedBound;
+				const bound = val.bind(t);
+				perTargetCache.set(t, bound);
+				return bound;
 			}
 			return val;
 		}
@@ -156,5 +168,5 @@ export function secure<const T extends object>(obj: T, skip = new WeakSet<object
 /** Create a virtual Proxy where fixed keys are mapped to a callback function */
 export function delegator<K extends string | symbol>(keys: K[] | Record<K, any>, fn: (prop: K) => any): Record<K, any> {
 	const keyList = Array.isArray(keys) ? keys : Reflect.ownKeys(keys) as K[];
-	return factory({} as any, { keys: keyList, onGet: fn as any });
+	return factory({} as any, { keys: keyList, onGet: fn as any, frozen: true });
 }

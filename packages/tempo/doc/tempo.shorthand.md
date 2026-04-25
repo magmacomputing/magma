@@ -86,12 +86,14 @@ This ensures that "shifting by a quarter" or "shifting by a period" feels mathem
 
 When building custom Terminology Plugins, you must follow the **Golden Rules of Range-Keys** to ensure the lexer can resolve them:
 
-::: warning
+:::warning
 **No Reserved Characters**: Range-Keys (e.g., `q1`, `aries`) must not contain:  
 `> < + = , . ! @ # $ % ^ & * ( ) [ ] { }`
+
+The [Range-Keys](#5-development-constraints) rule does not reserve `-` even though the Relative Past shorthand uses `-` as an alias for `<`; that modifier is parsed in operator position, not as part of the range-key token itself.
 :::
 
-::: warning
+:::warning
 **No Leading Numbers**: Range-Keys must not start with a digit.  
 `1q` is **Invalid** (Lexer thinks it's a repeat count). Use `q1` instead.
 :::

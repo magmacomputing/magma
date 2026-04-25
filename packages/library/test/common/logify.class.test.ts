@@ -19,6 +19,25 @@ describe('Logify severity gating', () => {
 		}
 	});
 
+	test('enables trace level when debug is true', () => {
+		const traceSpy = vi.spyOn(console, 'trace').mockImplementation(() => {});
+		const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+		try {
+			const log = new Logify('LogifyTestTrace', { debug: true });
+			log.trace('trace-visible');
+			log.debug('debug-visible');
+
+			expect(traceSpy).toHaveBeenCalledTimes(1);
+			expect(traceSpy).toHaveBeenCalledWith('LogifyTestTrace: trace-visible');
+			expect(debugSpy).toHaveBeenCalledTimes(1);
+			expect(debugSpy).toHaveBeenCalledWith('LogifyTestTrace: debug-visible');
+		} finally {
+			traceSpy.mockRestore();
+			debugSpy.mockRestore();
+		}
+	});
+
 	test('uses numeric debug level directly', () => {
 		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 		const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});

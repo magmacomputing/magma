@@ -196,11 +196,12 @@ export namespace Internal {
 
 	/** debug a Tempo instantiation */
 	export type MatchExtend = { type: 'Event' | 'Period', value: string | number | Function }
+	export type MatchSource = 'default' | 'global' | 'local' | `plugin:${string}`
 	export type Match = {
 		/** pattern which matched the input */									match?: string | undefined;
 		/** groups from the pattern match */										groups?: Groups;
 		/** was this a nested/anchored parse? */								isAnchored?: boolean;
-		/** where this match came from (e.g. 'default', 'local', 'plugin:X') */ source?: string;
+		/** where this match came from: 'default', 'global', 'local', or `plugin:${string}` */ source?: MatchSource;
 	} & (TypeValue<any> | MatchExtend)
 
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */

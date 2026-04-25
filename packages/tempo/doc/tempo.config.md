@@ -112,7 +112,7 @@ Tempo.init({
 | `snippet` | `Record<string, string \| RegExp>` | Built-in snippets | Custom snippet patterns used to compose parse layouts. |
 | `layout` | `Record<string, string \| RegExp>` | Built-in layouts | Custom parse layouts for date/time pattern matching. |
 | `formats` | `Record<string, string>` | Built-in formats | Named format aliases merged into `Tempo.FORMAT`. |
-| `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. |
+| `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. Unlike core init options such as `snippet`, `layout`, `event`, or `period`, these values are not merged into internal state via `extendState`; `Tempo.init()` applies each plugin with `Tempo.extend(p)`, so plugin authors should treat them as instance/class augmentations rather than internal-state merges. |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
 | `debug` | `boolean \| number` | `false` | Controls log verbosity. `true` maps to `LOG.Debug`, `false` maps to `LOG.Info`, and numeric values map directly to `LOG` levels (`0=Off ... 5=Trace`). |

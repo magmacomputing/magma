@@ -18,6 +18,7 @@ import type { Mode } from '../tempo.type.js';
 /** @internal Initialise a Tempo state */
 export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State): t.Internal.State {
 	const runtime = getRuntime();
+	// Global init is intentionally idempotent after first hydration; late-loaded modules must use Tempo.extend().
 	if (isGlobal && runtime.state && !baseState) return runtime.state;
 
 	const { timeZone, calendar } = getDateTimeFormat();

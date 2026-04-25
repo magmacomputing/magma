@@ -46,7 +46,7 @@ export class Logify {
 		const config = (isObject(msg[0]) && (msg[0] as any)[sym.$Logify] === true) ? msg.shift() : this.#opts;
 		const currentLevel = (typeof config.debug === 'number')
 			? config.debug
-			: (config.debug === true ? LOG.Debug : LOG.Info);
+			: (config.debug === true ? LOG.Trace : LOG.Info);
 		const methodLevel = Level[method] ?? 0;
 
 		const output = msg.map(m => {
@@ -114,7 +114,7 @@ export namespace Logify {
 	export interface Constructor {
 		/**
 		 * Logging verbosity: `boolean | number`.
-		 * - `true` maps to `LOG.Debug`
+		 * - `true` maps to `LOG.Trace`, enabling trace-level logging
 		 * - `false` (or unset) maps to `LOG.Info`
 		 * - numeric values map directly to `LOG` levels
 		 *

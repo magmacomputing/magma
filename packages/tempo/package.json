@@ -30,12 +30,12 @@
     "**/plugin/term/standard.index.ts",
     "**/plugin/extend/extend.*.js",
     "**/plugin/extend/extend.*.ts",
-    "**/engine.*.js",
-    "**/engine.*.ts",
-    "**/module.*.js",
-    "**/module.*.ts",
-    "**/discrete.*.js",
-    "**/discrete.*.ts"
+    "dist/engine/engine.*.js",
+    "src/engine/engine.*.ts",
+    "dist/module/module.*.js",
+    "src/module/module.*.ts",
+    "dist/discrete/discrete.*.js",
+    "src/discrete/discrete.*.ts"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",

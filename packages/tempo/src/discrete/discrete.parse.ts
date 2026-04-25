@@ -6,34 +6,18 @@ import { isNumeric } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import type { TypeValue } from '#library/type.library.js';
-
-import { sym, markConfig, TermError, enums, isTempo, Match, getRuntime, init, extendState, setPatterns } from '#tempo/support';
-import { prefix, parseWeekday, parseDate, parseTime, parseZone } from '../engine/engine.lexer.js';
 import { resolveTermMutation, resolveTermValue } from '../engine/engine.term.js';
+import { prefix, parseWeekday, parseDate, parseTime, parseZone } from '../engine/engine.lexer.js';
 import { compose } from '../engine/engine.composer.js';
 
 import { getRange, getTermRange } from '../plugin/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/plugin.type.js';
-import type { Tempo } from '../tempo.class.js';
+import { sym, isTempo, TermError, getRuntime, Match } from '../support/support.index.js';
+import { markConfig, setPatterns, init, extendState } from '../support/support.index.js';
+import enums from '../support/tempo.enum.js';
 import * as t from '../tempo.type.js';
-
-
-
-
-
-/**
- * Internal helper to resolve state from 'this' context or first argument
- */
-const withState = (fn: Function) => function (this: any, ...args: any[]) {
-	const isBound = isTempo(this);
-	const state = isBound ? (this as any)[sym.$Internal]() : args.shift();
-
-	if (!isBound && (!isObject(state) || !state?.config || !state?.parse))
-		throw new TypeError(`[Tempo#_ParseEngine] Invalid state provided to withState() wrapper. Expected Tempo state object (with .config and .parse), but received: ${typeof state}. This often happens if the first argument is missing when calling standalone parse methods.`);
-
-	return fn.call(this, state, ...args);
-};
+import type { Tempo } from '../tempo.class.js';
 
 /**
  * Internal Parse Engine Implementation
@@ -130,9 +114,8 @@ const _ParseEngine = {
 				}
 			}
 
-			const isAnchoredVal = isAnchored || isDefined(dateTime) || isDefined(state.anchor);
 			const resolvingKeys = new Set<string>();
-			const res = _ParseEngine.conform(state, tempo, today, isAnchoredVal, resolvingKeys);
+			const res = _ParseEngine.conform(state, tempo, today, isAnchored, resolvingKeys);
 
 			const { timeZone: tz2, calendar: cal2 } = state.config;
 			const [targetTz, targetCal] = getTemporalIds(tz2, cal2);
@@ -397,53 +380,48 @@ const _ParseEngine = {
 				const isFn = isFunction(definition);
 				let res: string = '';
 				if (isFn) {
-					try {
-						// Provide a lightweight host context that mimics a Tempo instance for the handler
-						const host = {
-							add: (val: any) => {
-								return dateTime.add(val);
-							},
-							subtract: (val: any) => {
-								return dateTime.subtract(val);
-							},
-							with: (val: any) => dateTime.with(val),
-							set: (val: any, opt?: any) => {
-								const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
-								return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
-							},
-							toNow: () => instant().toZonedDateTimeISO(state.config.timeZone).withCalendar(state.config.calendar),
-							toDateTime: () => dateTime,
-							get hh() { return dateTime.hour },
-							get mi() { return dateTime.minute },
-							get ss() { return dateTime.second },
-							get yy() { return dateTime.year },
-							get mm() { return dateTime.month },
-							get dd() { return dateTime.day },
-							[sym.$Identity]: true,
-							config: state.config
-						};
+					// Provide a lightweight host context that mimics a Tempo instance for the handler
+					const host = {
+						add: (val: any) => {
+							return dateTime.add(val);
+						},
+						subtract: (val: any) => {
+							return dateTime.subtract(val);
+						},
+						with: (val: any) => dateTime.with(val),
+						set: (val: any, opt?: any) => {
+							const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
+							return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
+						},
+						toNow: () => instant().toZonedDateTimeISO(state.config.timeZone).withCalendar(state.config.calendar),
+						toDateTime: () => dateTime,
+						get hh() { return dateTime.hour },
+						get mi() { return dateTime.minute },
+						get ss() { return dateTime.second },
+						get yy() { return dateTime.year },
+						get mm() { return dateTime.month },
+						get dd() { return dateTime.day },
+						[sym.$Identity]: true,
+						config: state.config
+					};
 
-						const result = (definition as Function).call(host);
-						if (isString(result) && /^\d{1,2}:\d{2}$/.test(result)) {
-							const [hourStr, minuteStr] = result.split(':');
-							const hour = Number(hourStr);
-							const minute = Number(minuteStr);
-							dateTime = dateTime.with({ hour, minute, second: 0, millisecond: 0 });
-							res = '';
-						} else if (isTempo(result)) {
-							dateTime = (result as any).toDateTime();
-						} else if (isZonedDateTime(result)) {
-							dateTime = result as Temporal.ZonedDateTime;
-						} else if (isObject(result) && isFunction((result as any).toDateTime)) {
-							dateTime = (result as any).toDateTime();
-						} else {
-							res = isString(result) || isNumeric(result) ? String(result) : '';
-						}
-						state.zdt = dateTime;
+					const result = (definition as Function).call(host);
+					if (isString(result) && /^(?:[01]?\d|2[0-3]):[0-5]\d$/.test(result)) {
+						const [hourStr, minuteStr] = result.split(':');
+						const hour = Number(hourStr);
+						const minute = Number(minuteStr);
+						dateTime = dateTime.with({ hour, minute, second: 0, millisecond: 0 });
+						res = '';
+					} else if (isTempo(result)) {
+						dateTime = (result as any).toDateTime();
+					} else if (isZonedDateTime(result)) {
+						dateTime = result as Temporal.ZonedDateTime;
+					} else if (isObject(result) && isFunction((result as any).toDateTime)) {
+						dateTime = (result as any).toDateTime();
+					} else {
+						res = isString(result) || isNumeric(result) ? String(result) : '';
 					}
-					catch (e: any) {
-						throw e;
-					}
+					state.zdt = dateTime;
 				} else {
 					res = (definition as string);
 				}
@@ -451,7 +429,7 @@ const _ParseEngine = {
 				try {
 					const type = isEvent ? 'Event' : 'Period';
 					const pat = (isEvent ? 'dt' : 'tm');
-					const resolveVal = isFunction(definition) ? res : definition;
+					const resolveVal = isFn ? res : definition;
 					const source = isGlobal ? 'global' : 'local';
 					_ParseEngine.result(state, { type, value: entry[0] as any, match: pat, source, groups: { [key]: resolveVal as string } });
 
@@ -512,6 +490,18 @@ const _ParseEngine = {
 			if (!res.includes(match)) res.push(match);
 		}
 	}
+};
+
+const withState = <A extends any[], R>(fn: (state: t.Internal.State, ...args: A) => R) => {
+	return function (this: any, ...args: [t.Internal.State, ...A] | A): R {
+		const firstArg = args[0] as t.Internal.State | undefined;
+		if (isObject(firstArg) && isObject(firstArg.config) && isObject(firstArg.parse)) {
+			return fn(firstArg, ...(args.slice(1) as A));
+		}
+
+		const state = (this as any)?.[sym.$Internal]?.() ?? this;
+		return fn(state as t.Internal.State, ...(args as A));
+	};
 };
 
 /**

@@ -8,7 +8,7 @@ If you are using module entry points, use this rule of thumb:
 
 1. `import '@magmacomputing/tempo/<module>'` (side-effect import): auto-registers that module. You usually do **not** need `Tempo.extend(...)` for the same module.
 2. `import { SomeModule } from '@magmacomputing/tempo/<module>'` (named import): requires explicit activation via `Tempo.extend(SomeModule)`.
-3. `Tempo.init()` is primarily for baseline configuration and discovery refresh. You generally call it at startup for config, or again only if you loaded side-effect modules later at runtime.
+3. `Tempo.init()` is primarily for baseline configuration and initial discovery. Call it at startup for config; if you load modules later at runtime, use `Tempo.extend(...)` for deterministic activation.
 4. Import order is usually only relevant when modules are loaded dynamically/lazily. For deterministic activation in those cases, prefer explicit `Tempo.extend(...)` immediately after import.
 
 ## Core vs. Full
@@ -109,5 +109,5 @@ There is a subtle but important distinction between how features are activated i
 **The Initialization Lifecycle**: `Tempo.init()` performs a **full state refresh**. It resets configuration, term registries, and formatting maps to defaults before re-applying all currently discovered plugins. To ensure your custom logic is managed correctly, always use `Tempo.extend()` or encapsulate changes within a formal plugin.
 :::
 
-**The Side-Effect Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** automatically appear on the `Tempo` class. You would need to call `Tempo.init()` again or use `Tempo.extend()` to pick up the latecomers.
+**The Side-Effect Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** automatically appear on the `Tempo` class. Because `Tempo.init()` short-circuits once state already exists, re-calling it will not load those late modules. Use `Tempo.extend()` explicitly to activate late-loaded modules instead of trying to re-run `Tempo.init()`.
 
