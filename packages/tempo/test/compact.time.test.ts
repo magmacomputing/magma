@@ -44,8 +44,15 @@ describe('compact hhmiss parsing', () => {
 	});
 
 	test('does not regress compact date parsing for 8-digit input', () => {
+		console.log('process: ', process.env.TZ, process.env.LANG, process.env.LC_ALL);
+		console.log('Tempo: ', Tempo.config.sphere, Tempo.config.timeZone, Tempo.config.locale);
 		const us = new Tempo('04012026', { timeZone: 'America/New_York' });
 		const uk = new Tempo('04012026', { timeZone: 'Europe/London' });
+
+		console.log('US:', us.toString(), 'UK:', uk.toString());
+		console.log('sphere: ', us.config.sphere, uk.config.sphere);
+		console.log('timeZone: ', us.config.timeZone, uk.config.timeZone);
+		console.log('locale: ', us.config.locale, uk.config.locale);
 
 		expect(us.mm).toBe(4);
 		expect(us.dd).toBe(1);
