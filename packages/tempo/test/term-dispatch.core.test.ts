@@ -5,8 +5,6 @@ import '#tempo/format';
 import '#tempo/term/standard';
 
 describe('Term Dispatch Refactor', () => {
-	afterEach(() => vi.restoreAllMocks())
-
 	it('should set term by index (#quarter: 2)', () => {
 		const t = new Tempo('2024-01-01T00:00:00', { timeZone: 'America/New_York' });
 		const t2 = t.set({ '#quarter': 2 });

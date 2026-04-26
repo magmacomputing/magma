@@ -14,6 +14,7 @@ globalThis._consoleSpies = [
   vi.spyOn(console, 'warn').mockImplementation(() => {}),
   vi.spyOn(console, 'debug').mockImplementation(() => {}),
   vi.spyOn(console, 'log').mockImplementation(() => {}),
+  vi.spyOn(console, 'info').mockImplementation(() => {}),
 ];
 
 /** restore global console spies after all tests */

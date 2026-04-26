@@ -11,7 +11,7 @@ describe('Ticker with Terms', () => {
 		Tempo.init({ sphere: 'north' });
 	});
 
-	afterEach(() => vi.restoreAllMocks())
+	// afterEach(() => vi.restoreAllMocks())
 
 	test.each([
 		{
@@ -70,7 +70,7 @@ describe('Ticker with Terms', () => {
 	})
 
 	it('should refuse to launch with an invalid #term', async () => {
-		const spy = vi.spyOn(console, 'error').mockImplementation(() => { })
+		// const spy = vi.spyOn(console, 'error').mockImplementation(() => { })
 		const seed = '2020-01-01'
 		const payload = { '#invalid': 1 }
 
@@ -89,6 +89,6 @@ describe('Ticker with Terms', () => {
 		await Promise.resolve()
 		expect(errorCallback).toHaveBeenCalled()
 
-		spy.mockRestore()
+		// spy.mockRestore()
 	})
 })
