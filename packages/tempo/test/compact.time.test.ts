@@ -53,6 +53,7 @@ describe('compact hhmiss parsing', () => {
 		console.log('sphere: ', us.config.sphere, uk.config.sphere);
 		console.log('timeZone: ', us.config.timeZone, uk.config.timeZone);
 		console.log('locale: ', us.config.locale, uk.config.locale);
+		console.log('isMDY: ', us.parse.isMonthDay, uk.parse.isMonthDay);
 
 		expect(us.mm).toBe(4);
 		expect(us.dd).toBe(1);
