@@ -1,4 +1,9 @@
+
 name: Tempo CI
+env:
+  TZ: America/New_York
+  LANG: en_US.UTF-8
+  LC_ALL: en_US.UTF-8
 
 on:
   push:
