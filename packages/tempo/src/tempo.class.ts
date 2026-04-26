@@ -21,7 +21,7 @@ import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engi
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
 
-import { mdyFallback } from './support/tempo.default.js';
+import { mdyFallback, dmyDt, mdyDt } from './support/tempo.default.js';
 import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, type TempoBrand, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 import { instant, normalizeUtcOffset } from '#library/temporal.library.js';
@@ -153,15 +153,15 @@ export class Tempo {
 			}
 		}
 
-		if (shape.parse.isMonthDay) {
-			const protoDt = proto(shape.parse.layout)[Token.dt] as string;
-			const localDt = '{mm}{sep}?{dd}({sep}?{yy})?|{mod}?({evt})';
-			if (!isLocal(shape) || localDt !== protoDt) {
-				if (isLocal(shape) && !hasOwn(shape.parse, 'layout'))
-					shape.parse.layout = create(shape.parse, 'layout');
+		const isMonthDay = Boolean(shape.parse.isMonthDay);
+		const protoDt = proto(shape.parse.layout)[Token.dt] as string;
+		const targetDt = isMonthDay ? mdyDt : dmyDt;
 
-				setProperty(shape.parse.layout, Token.dt, localDt);
-			}
+		if (!isLocal(shape) || targetDt !== protoDt) {
+			if (isLocal(shape) && !hasOwn(shape.parse, 'layout'))
+				shape.parse.layout = create(shape.parse, 'layout');
+
+			setProperty(shape.parse.layout, Token.dt, targetDt);
 		}
 	}
 
