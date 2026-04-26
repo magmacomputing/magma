@@ -458,9 +458,9 @@ export class Tempo {
 		return asArray(value)
 			.map(mdy => new Intl.Locale(mdy))
 			.map(intl => ({ locale: intl.baseName, timeZones: intl.getTimeZones?.() ?? [] }))
-			.map(intl => { console.log('pre: ', intl); return intl })
+			// .map(intl => { console.log('pre: ', intl); return intl })
 			.map(intl => (intl.timeZones.length > 0 ? intl : { ...intl, timeZones: mdyFallback[intl.locale] ?? [] }))
-			.map(intl => { console.log('post: ', intl); return intl })
+		// .map(intl => { console.log('post: ', intl); return intl })
 	}
 
 	/** support "Global Discovery" of user-options */
