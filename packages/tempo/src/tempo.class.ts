@@ -457,8 +457,10 @@ export class Tempo {
 	static #mdyLocales(value: t.Options["mdyLocales"]) {
 		return asArray(value)
 			.map(mdy => new Intl.Locale(mdy))
-			.map(mdy => ({ locale: mdy.baseName, timeZones: (mdy as Record<string, any>).getTimeZones?.() ?? [] }))
-			.map(zone => zone.timeZones.length > 0 ? zone : { ...zone, timeZones: mdyFallback[zone.locale] ?? [] })
+			.map(intl => ({ locale: intl.baseName, timeZones: intl.getTimeZones?.() ?? [] }))
+			.map(intl => { console.log('pre: ', intl); return intl })
+			.map(intl => (intl.timeZones.length > 0 ? intl : { ...intl, timeZones: mdyFallback[intl.locale] ?? [] }))
+			.map(intl => { console.log('post: ', intl); return intl })
 	}
 
 	/** support "Global Discovery" of user-options */
