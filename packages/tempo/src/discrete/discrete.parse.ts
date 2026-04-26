@@ -7,6 +7,7 @@ import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import type { TypeValue } from '#library/type.library.js';
 import { resolveTermMutation, resolveTermValue } from '../engine/engine.term.js';
+import { selectLayoutPatterns } from '../engine/engine.planner.js';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from '../engine/engine.lexer.js';
 import { compose } from '../engine/engine.composer.js';
 
@@ -264,16 +265,25 @@ const _ParseEngine = {
 		let zdt = dateTime as any;
 		const anchorTime = zdt.toPlainTime();
 
-		const orderedPatterns = (ownEntries(state.parse.layout) as [PropertyKey, string][])
-			.map(([layoutKey]) => {
-				const symKey = typeof layoutKey === 'symbol'
-					? layoutKey
-					: (state.parse.token?.[String(layoutKey)] as symbol | undefined);
-				return [symKey, symKey ? state.parse.pattern.get(symKey) : undefined] as const;
-			});
+		const orderedPatterns = selectLayoutPatterns(state, trim, {
+			enablePrefilter: state.parse.parsePrefilter === true,
+			onPlan: (summary) => {
+				if (state.parse.parsePrefilter !== true || !state.config?.debug) return;
+				if (!TempoClass) return;
+
+				const reduced = summary.totalCandidates - summary.selectedCandidates;
+				if (reduced <= 0 && !summary.fallbackToFull) return;
+
+				(TempoClass as any)[sym.$logDebug](state.config,
+					`Planner summary: selected ${summary.selectedCandidates}/${summary.totalCandidates}`,
+					`rules=${summary.rulesApplied.join(',') || 'none'}`,
+					`fallback=${summary.fallbackToFull}`,
+					`input="${summary.inputClass.trim}"`
+				);
+			}
+		});
 
 		for (const [symKey, pat] of orderedPatterns) {
-			if (!symKey || !pat) continue;
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
 			if (isEmpty(groups)) {
 				continue;
@@ -538,6 +548,9 @@ export const ParseModule = defineInterpreterModule('ParseModule', ParseEngine);
 /**
  * Standalone Parser
  * Returns a Temporal.ZonedDateTime from a variety of inputs.
+ *
+ * @param value - The date-time value to parse (string, number, Date, or Tempo instance).
+ * @param options - Configuration overrides for this specific parse operation.
  *
  * @example
  * import { parse } from '@magmacomputing/tempo/parse';

@@ -6,6 +6,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDist = process.env.TEST_DIST === 'true';
 const polyfill = resolve(__dirname, './bin/temporal-polyfill.ts');
 
+const ciPrefilterSetup = resolve(__dirname, './test/ci.prefilter.setup.ts');
+
+const consoleSpySetup = resolve(__dirname, './test/setup.console-spy.ts');
+
 export default defineConfig({
   plugins: [],
   test: {
@@ -17,7 +21,9 @@ export default defineConfig({
         maxForks: 2,
       },
     },
-    setupFiles: [polyfill],
+    setupFiles: process.env.TEMPO_PREFILTER_CI === 'true'
+      ? [polyfill, consoleSpySetup, ciPrefilterSetup]
+      : [polyfill, consoleSpySetup],
   },
   resolve: {
     alias: isDist ? [

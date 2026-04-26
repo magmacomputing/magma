@@ -386,6 +386,10 @@ export class Tempo {
 						shape.parse.layoutOrder = normalizeLayoutOrder(arg.value as NonNullable<t.Options[typeof optKey]>);
 						break;
 
+					case 'parsePrefilter':
+						shape.parse.parsePrefilter = Boolean(arg.value);
+						break;
+
 					case 'pivot':
 						shape.parse["pivot"] = Number(arg.value);
 						break;
@@ -798,6 +802,7 @@ export class Tempo {
 			parse.mdyLocales = Tempo.#mdyLocales(Default.mdyLocales as t.Options['mdyLocales']);
 			parse.mdyLayouts = asArray(Default.mdyLayouts as t.Options['mdyLayouts']) as t.Pair[];
 			parse.layoutOrder = asArray(Default.layoutOrder as t.Options['layoutOrder']) as string[];
+			parse.parsePrefilter = Boolean(Default.parsePrefilter);
 			parse.pivot ??= Default.pivot as any;
 			parse.mode ??= Default.mode as any;
 			parse.lazy = false;
@@ -987,6 +992,7 @@ export class Tempo {
 			mdyLocales: [...parse.mdyLocales],
 			mdyLayouts: [...parse.mdyLayouts],
 			layoutOrder: [...parse.layoutOrder],
+			parsePrefilter: parse.parsePrefilter,
 			mode: parse.mode
 		});
 	}

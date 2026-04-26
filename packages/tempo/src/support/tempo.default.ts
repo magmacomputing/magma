@@ -190,5 +190,6 @@ export const Default = secure({
 	/** locales that prefer month-day order */								mdyLocales: ['en-US', 'en-AS'],	/** @link https:	//en.wikipedia.org/wiki/Date_format_by_country */
 	/** layouts that need to swap parse-order */							mdyLayouts: [['dayMonthYearShort', 'monthDayYearShort'], ['dayMonthYear', 'monthDayYear']],
 	/** preferred parse-order of layouts */										layoutOrder: [],
+	/** enable parse planner pre-filtering (Release C feature-flag) */ parsePrefilter: false,
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 } as Options)

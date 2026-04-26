@@ -1,9 +1,15 @@
 {
   "entryPoints": ["src/tempo.index.ts"],
   "out": "doc/api",
-  "plugin": ["typedoc-plugin-markdown"],
+  "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
   "hideBreadcrumbs": true,
   "hidePageTitle": true,
+  "disableSources": true,
+  "parametersFormat": "table",
+  "outputFileStrategy": "members",
+  "flattenOutputFiles": true,
+  "expandObjects": true,
+  "useCodeBlocks": true,
   "readme": "none",
   "excludeInternal": true,
   "githubPages": false

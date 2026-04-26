@@ -36,7 +36,12 @@ export type Logic = string | number | Function
 export type Pair = [string, string]
 export type Groups = Record<string, string>
 
-export type Options = Prettify<{ [K in keyof Internal.BaseOptions]?: Internal.BaseOptions[K] } & Record<string, any>>;
+/**
+ * Configuration options for Tempo instances and operations.
+ */
+export interface Options extends Partial<Internal.BaseOptions> {
+	[key: string]: any;
+}
 
 
 /**
@@ -161,6 +166,7 @@ export namespace Internal {
 		/** locale-names that prefer 'mm-dd-yy' date order */		mdyLocales: string | string[];
 		/** swap parse-order of layouts */											mdyLayouts: Pair[];
 		/** preferred parse-order of layouts */									layoutOrder: string[];
+		/** enable parse planner pre-filtering (Release C feature-flag) */ parsePrefilter: boolean;
 		/** date-time snippets to help compose a Layout */			snippet: Snippet | PatternOption<Pattern>;
 		/** patterns to help parse value */											layout: Layout | PatternOption<Pattern>;
 		/** custom date aliases (events). */										event: Event | PatternOption<Logic>;
@@ -210,6 +216,7 @@ export namespace Internal {
 		/** Locales which prefer 'mm-dd-yyyy' date-order */			mdyLocales: ({ locale: string, timeZones: string[] } | string)[];
 		/** Layout names that are switched to mdy */						mdyLayouts: Pair[];
 		/** preferred parse-order of layouts */									layoutOrder: string[];
+		/** enable parse planner pre-filtering */							parsePrefilter: boolean;
 		/** is a timeZone that prefers 'mmddyyyy' date order */	isMonthDay?: boolean;
 		/** Symbol registry */																	token: Token;
 		/** Tempo snippets to aid in parsing */									snippet: Snippet;

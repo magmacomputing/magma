@@ -37,6 +37,17 @@ if (t.isValid) {
 }
 ```
 
+### Global Configuration & Initialization
+You can initialize global defaults that apply to all future `Tempo` instances.
+```typescript
+Tempo.init({
+  timeZone: 'UTC',
+  locale: 'en-GB',
+  silent: true // Suppress console errors for expected parsing failures
+});
+```
+Settings are inherited from library defaults, persistent storage, and your provided options.
+
 ---
 
 ## Parsing Challenges
@@ -120,6 +131,16 @@ const daysLeft = t.until('2025-01-01', 'days');
 console.log(`${daysLeft} days remaining`);
 ```
 
+### Precision Manipulation (`end` vs `mid`)
+When using `.set()` with a term anchor (like `#qtr`), you can specify whether to land on the inclusive end or the exact center.
+```typescript
+// Lands on 30-Sep 23:59:59.999... (Inclusive End)
+const qtrEnd = new Tempo().set({ end: '#qtr' });
+
+// Lands on the arithmetic nanosecond midpoint of the period
+const qtrMid = new Tempo().set({ mid: '#qtr' });
+```
+
 ---
 
 ## Timezones & Locales
@@ -136,6 +157,19 @@ console.log(london.format('{hh}:{mi}')); // "15:00"
 ### Get "Now" in UTC
 ```typescript
 const utcNow = new Tempo({ timeZone: 'UTC' });
+```
+
+### High-Performance Relative Time (`since`)
+Tempo memoizes `Intl.RelativeTimeFormat` objects internally for efficiency.
+```typescript
+const t = new Tempo('yesterday');
+console.log(t.since()); // "1d ago" (narrow style)
+
+// For maximum performance in tight loops, pass a pre-allocated formatter
+const rtf = new Intl.RelativeTimeFormat('fr', { style: 'long' });
+for (const entry of logEntries) {
+  console.log(new Tempo(entry.ts).since(null, { rtfFormat: rtf }));
+}
 ```
 
 ---

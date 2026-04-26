@@ -41,6 +41,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		mdyLocales: asArray(baseState?.parse.mdyLocales ?? Default.mdyLocales as any),
 		mdyLayouts: asArray<t.Pair>(baseState?.parse.mdyLayouts ?? Default.mdyLayouts as any),
 		layoutOrder: asArray<string>(baseState?.parse.layoutOrder ?? Default.layoutOrder as any),
+		parsePrefilter: Boolean(baseState?.parse.parsePrefilter ?? Default.parsePrefilter),
 		pivot: (baseState?.parse.pivot ?? Default.pivot) as any,
 		mode: (baseState?.parse.mode ?? Default.mode) as any,
 		lazy: false,
@@ -140,6 +141,10 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 			case 'layoutOrder':
 				state.parse.layoutOrder = normalizeLayoutOrder(arg.value);
+				break;
+
+			case 'parsePrefilter':
+				state.parse.parsePrefilter = Boolean(arg.value);
 				break;
 
 			case 'timeZone': {
