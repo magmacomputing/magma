@@ -65,20 +65,20 @@ namespace Internal {
 export class Tempo {
 	/** Weekday names (short-form) */													static get WEEKDAY() { return enums.WEEKDAY }
 	/** Weekday names (long-form) */													static get WEEKDAYS() { return enums.WEEKDAYS }
-	/** Month names (short-form) */															static get MONTH() { return enums.MONTH }
-	/** Month names (long-form) */															static get MONTHS() { return enums.MONTHS }
+	/** Month names (short-form) */														static get MONTH() { return enums.MONTH }
+	/** Month names (long-form) */														static get MONTHS() { return enums.MONTHS }
 	/** Time durations as seconds (singular) */								static get DURATION() { return enums.DURATION }
-	/** Time durations as milliseconds (plural) */					static get DURATIONS() { return enums.DURATIONS }
+	/** Time durations as milliseconds (plural) */						static get DURATIONS() { return enums.DURATIONS }
 
 	/** Quarterly Seasons */																	static get SEASON() { return enums.SEASON }
 	/** Compass cardinal points */														static get COMPASS() { return enums.COMPASS }
 
-	/** Tempo to Temporal DateTime Units map */							static get ELEMENT() { return enums.ELEMENT }
+	/** Tempo to Temporal DateTime Units map */								static get ELEMENT() { return enums.ELEMENT }
 	/** Pre-configured format {name -> string} pairs */				static get FORMAT() { return enums.FORMAT }
 	/** Number names (0-10) */																static get NUMBER() { return enums.NUMBER }
 	/** TimeZone aliases */																		static get TIMEZONE() { return enums.TIMEZONE }
 	/** initialization strategies */													static get MODE() { return enums.MODE }
-	/** some useful Dates */																			static get LIMIT() { return enums.LIMIT }
+	/** some useful Dates */																	static get LIMIT() { return enums.LIMIT }
 
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !Tempo.#lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return Tempo.#lifecycle.extendDepth > 0 }
@@ -457,7 +457,8 @@ export class Tempo {
 	static #mdyLocales(value: t.Options["mdyLocales"]) {
 		return asArray(value)
 			.map(mdy => new Intl.Locale(mdy))
-			.map(mdy => ({ locale: mdy.baseName, timeZones: (mdy as Record<string, any>).getTimeZones?.() ?? mdyFallback[mdy.baseName] ?? [] }));
+			.map(mdy => ({ locale: mdy.baseName, timeZones: (mdy as Record<string, any>).getTimeZones?.() ?? [] }))
+			.map(zone => zone.timeZones.length > 0 ? zone : { ...zone, timeZones: mdyFallback[zone.locale] ?? [] })
 	}
 
 	/** support "Global Discovery" of user-options */
