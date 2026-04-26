@@ -78,8 +78,10 @@ export type Snippet = typeof Snippet
  * the Layout's keys are in the order that they will be checked against an input value  
  */
 /** @internal Layout components for date resolution */
-export const dmyDt = '({dd}{sep}?{mm}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk})|{wkd})';
-export const mdyDt = '({mm}{sep}?{dd}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk})|{wkd})';
+export const datePattern = {
+	dmy: '({dd}{sep}?{mm}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk})|{wkd})',
+	mdy: '({mm}{sep}?{dd}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk})|{wkd})'
+}
 
 /** @internal Tempo Layout registry */
 export const Layout = looseIndex<symbol, string>()({
@@ -88,7 +90,7 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.mdy6]: '(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])(?<yy>[0-9]{2})',// compact date (mmddyy)
 	[Token.ymd6]: '(?<yy>[0-9]{2})(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])',// compact date (yymmdd)
 	[Token.wkd]: '{mod}?{wkd}{afx}?{sfx}?',										// weekday-only layout; MUST precede {dt} (which also matches bare weekday names via its {wkd} alternative)
-	[Token.dt]: dmyDt,																// calendar, event, slick or weekday
+	[Token.dt]: datePattern.dmy,															// calendar, event, slick or weekday
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
 	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tzd}?{brk}?',	// calendar/event and clock/period
 	[Token.tmd]: '({tm})(?:(?:{sep}+|T)({dt}))?{tzd}?{brk}?',	// clock/period and calendar/event

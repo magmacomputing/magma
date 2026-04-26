@@ -70,7 +70,7 @@ jobs:
         env:
           TEMPO_PREFILTER_CI: 'true'
       - name: Run end-to-end benchmark
-        run: npx tsx --conditions=development scratch/bench.parse.prefilter.e2e.ts > bench-output.json
+        run: npx tsx --conditions=development bench/bench.parse.prefilter.e2e.ts > bench-output.json
         working-directory: packages/tempo
       - name: Upload benchmark output
         uses: actions/upload-artifact@v4
