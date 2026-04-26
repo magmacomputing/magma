@@ -21,6 +21,7 @@ import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engi
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
 
+import { mdyFallback } from './support/tempo.default.js';
 import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, type TempoBrand, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 import { instant, normalizeUtcOffset } from '#library/temporal.library.js';
@@ -215,7 +216,6 @@ export class Tempo {
 
 		if (isLocal(shape) && hasOwn(shape.parse, 'mdyLocales'))
 			monthDay.push(...shape.parse.mdyLocales);							// append local mdyLocales (not overwrite global)
-		console.log('checking if timezone prefers month-day order: ', shape.config.scope, shape.config.timeZone, monthDay);
 
 		return monthDay.some(mdy => {
 			const m = mdy as { locale: string, timeZones: string[] };
@@ -455,16 +455,9 @@ export class Tempo {
 	// and it takes priority over the ESNext.Intl augmentation in tsconfig.
 	// The "(mdy as any).getTimeZones?.()" can be replaced with "mdy.getTimeZones()" after google-apps-script is corrected
 	static #mdyLocales(value: t.Options["mdyLocales"]) {
-const val = asArray(value)[0];
-console.log('Intl.Locale support: ', typeof Intl !== 'undefined' && typeof Intl.Locale !== 'undefined');
-console.log('en_us locale: ', new Intl.Locale(val));
-console.log('value: ', val);
-console.log('string: ', JSON.stringify(new Intl.Locale(val)));
-console.log('getTimeZones: ', (new Intl.Locale(val) as any).getTimeZones?.());
-console.log('count: ', (new Intl.Locale(val) as any).getTimeZones?.().length);
 		return asArray(value)
 			.map(mdy => new Intl.Locale(mdy))
-			.map(mdy => ({ locale: mdy.baseName, timeZones: (mdy as Record<string, any>).getTimeZones?.() ?? [] }))
+			.map(mdy => ({ locale: mdy.baseName, timeZones: (mdy as Record<string, any>).getTimeZones?.() ?? mdyFallback[mdy.baseName] ?? [] }));
 	}
 
 	/** support "Global Discovery" of user-options */

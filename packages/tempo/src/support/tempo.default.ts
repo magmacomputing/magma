@@ -192,3 +192,53 @@ export const Default = secure({
 	/** preferred parse-order of layouts */										layoutOrder: [],
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 } as Options)
+
+/** @internal
+ * Fallback for environments which do not robustly support Intl.Locale.getTimeZones()  
+ * Keep an eye on this list !  It may become necessary in a future release to allow Users to update this list.  
+ */
+export const mdyFallback = {
+	'en-US': [
+		"America/Adak",
+		"America/Anchorage",
+		"America/Boise",
+		"America/Chicago",
+		"America/Denver",
+		"America/Detroit",
+		"America/Indiana/Indianapolis",
+		"America/Indiana/Knox",
+		"America/Indiana/Marengo",
+		"America/Indiana/Petersburg",
+		"America/Indiana/Tell_City",
+		"America/Indiana/Vevay",
+		"America/Indiana/Vincennes",
+		"America/Indiana/Winamac",
+		"America/Indianapolis",
+		"America/Juneau",
+		"America/Kentucky/Louisville",
+		"America/Kentucky/Monticello",
+		"America/Los_Angeles",
+		"America/Louisville",
+		"America/Menominee",
+		"America/Metlakatla",
+		"America/New_York",
+		"America/Nome",
+		"America/North_Dakota/Beulah",
+		"America/North_Dakota/Center",
+		"America/North_Dakota/New_Salem",
+		"America/Phoenix",
+		"America/Sitka",
+		"America/Yakutat",
+		"Pacific/Honolulu",
+		"US/Aleutian",
+		"US/Alaska",
+		"US/Arizona",
+		"US/Central",
+		"US/Eastern",
+		"US/Mountain",
+		"US/Pacific"
+	],
+	'en-AS': [
+		"Pacific/Pago_Pago"
+	]
+} as Record<string, string[]>
