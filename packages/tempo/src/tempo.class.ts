@@ -455,9 +455,15 @@ export class Tempo {
 	// and it takes priority over the ESNext.Intl augmentation in tsconfig.
 	// The "(mdy as any).getTimeZones?.()" can be replaced with "mdy.getTimeZones()" after google-apps-script is corrected
 	static #mdyLocales(value: t.Options["mdyLocales"]) {
+const val = asArray(value)[0];
+console.log('Intl.Locale support: ', typeof Intl !== 'undefined' && typeof Intl.Locale !== 'undefined');
+console.log('en_us locale: ', new Intl.Locale(val));
+console.log('value: ', val);
+console.log('string: ', JSON.stringify(new Intl.Locale(val)));
+console.log('getTimeZones: ', (new Intl.Locale(val) as any).getTimeZones?.());
+console.log('count: ', (new Intl.Locale(val) as any).getTimeZones?.().length);
 		return asArray(value)
 			.map(mdy => new Intl.Locale(mdy))
-			.map(mdy => {console.log(Intl.Locale, mdy); return mdy})	// DEBUG
 			.map(mdy => ({ locale: mdy.baseName, timeZones: (mdy as Record<string, any>).getTimeZones?.() ?? [] }))
 	}
 
