@@ -232,11 +232,12 @@ export class Tempo {
 		const layoutController = shape.parse.layoutOrder.length > 0
 			? { [DEFAULT_LAYOUT_CLASS]: [...shape.parse.layoutOrder] }
 			: undefined;
-
+console.log('shape.config: ', shape.config);
+console.log('shape.parse: ', shape.parse);
 		const layout = resolveLayoutOrder({
 			layout: shape.parse.layout,
 			mdyLayouts: shape.parse.mdyLayouts,
-			isMonthDay: !!shape.parse.isMonthDay,
+			isMonthDay: Boolean(shape.parse.isMonthDay),
 			...(layoutController !== undefined && { layoutController }),
 		});
 
@@ -1007,12 +1008,12 @@ export class Tempo {
 	/** allow instanceof to work across module boundaries via the local brand symbol */
 	static [$Identity] = true;
 	static [Symbol.hasInstance](instance: any) {
-		return !!(instance?.[$Identity])
+		return Boolean(instance?.[$Identity])
 	}
 
 	/** check if a supplied variable is a valid Tempo instance */
 	static isTempo(instance?: any): instance is Tempo {
-		return !!(instance?.[$Identity])
+		return instance instanceof Tempo;//Boolean(instance?.[$Identity])
 	}
 
 	static {																									// Static initialization block to sequence the bootstrap phase
