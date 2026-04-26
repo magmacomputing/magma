@@ -209,13 +209,13 @@ export class Tempo {
 		return isDefined(shape.config?.sphere) ? shape.config.sphere : undefined;
 	}
 
-
 	/** determine if we have a {timeZone} which prefers {mdy} date-order */
 	static #isMonthDay(shape: Internal.State) {
 		const monthDay = [...asArray((this as any)[$Internal]().parse.mdyLocales)];
 
 		if (isLocal(shape) && hasOwn(shape.parse, 'mdyLocales'))
-			monthDay.push(...shape.parse.mdyLocales);						// append local mdyLocales (not overwrite global)
+			monthDay.push(...shape.parse.mdyLocales);							// append local mdyLocales (not overwrite global)
+		console.log('checking if timezone prefers month-day order: ', shape.config.scope, shape.config.timeZone, monthDay);
 
 		return monthDay.some(mdy => {
 			const m = mdy as { locale: string, timeZones: string[] };
@@ -232,8 +232,7 @@ export class Tempo {
 		const layoutController = shape.parse.layoutOrder.length > 0
 			? { [DEFAULT_LAYOUT_CLASS]: [...shape.parse.layoutOrder] }
 			: undefined;
-console.log('shape.config: ', shape.config);
-console.log('shape.parse: ', shape.parse);
+
 		const layout = resolveLayoutOrder({
 			layout: shape.parse.layout,
 			mdyLayouts: shape.parse.mdyLayouts,
@@ -458,6 +457,7 @@ console.log('shape.parse: ', shape.parse);
 	static #mdyLocales(value: t.Options["mdyLocales"]) {
 		return asArray(value)
 			.map(mdy => new Intl.Locale(mdy))
+			.map(mdy => {console.log(Intl.Locale, mdy); return mdy})	// DEBUG
 			.map(mdy => ({ locale: mdy.baseName, timeZones: (mdy as Record<string, any>).getTimeZones?.() ?? [] }))
 	}
 
