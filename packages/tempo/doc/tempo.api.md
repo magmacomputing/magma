@@ -132,13 +132,10 @@ Calculates the duration until another date-time.
 Returns a human-readable relative time string (e.g., "3 days ago").
 - **Returns:** `string`
 - **Options:** 
-  - `rtfStyle`: `'long' | 'short' | 'narrow'` (default: `'narrow'`). See `Intl.RelativeTimeFormatStyle`.
-  - `rtfFormat`: A pre-configured `Intl.RelativeTimeFormat` instance.
-- **Example:** 
-  - `t.since('yesterday')` -> `"1d ago"`
-  - `t.since('yesterday', { rtfStyle: 'long' })` -> `"1 day ago"`
-  - `t.since(t2, { rtfFormat: new Intl.RelativeTimeFormat('fr') })` -> `"il y a 2 heures"`
-- **Performance:** Tempo memoizes `Intl` object creation internally. For maximum performance in high-volume loops, you can pass a pre-allocated `rtfFormat` instance.
+  - `relativeTime`: `{ format: Intl.RTF, style: 'long' | 'short' | 'narrow' }` (default style: `'narrow'`).
+  - `t.since('yesterday', { relativeTime: { style: 'long' } })` -> `"1 day ago"`
+  - `t.since(t2, { relativeTime: { format: new Intl.RelativeTimeFormat('fr') } })` -> `"il y a 2 heures"`
+- **Performance:** Tempo memoizes `Intl` object creation internally. For maximum performance in high-volume loops, you can pass a pre-allocated `relativeTime.format` instance.
 
 ### `tempo.isValid`
 Returns `true` if the instance represents a valid date-time.

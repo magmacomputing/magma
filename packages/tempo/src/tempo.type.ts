@@ -33,7 +33,8 @@ export type DateTime = string | number | bigint | Date | Tempo | TempoBrand | Te
 
 export type Pattern = string | RegExp
 export type Logic = string | number | Function
-export type Pair = [string, string]
+export type Pair = [string, string] | readonly [string, string]
+export type LayoutPair = Pair | string[] | readonly string[]
 export type Groups = Record<string, string>
 
 export type Options = Prettify<{ [K in keyof Internal.BaseOptions]?: Internal.BaseOptions[K] } & Record<string, any>>;
@@ -130,6 +131,17 @@ export type Number = enums.Number
 export type Mode = enums.MODE
 export type NumericPattern = typeof enums.NumericPattern[number];
 
+export interface RelativeTime {
+	/** Pre-configured relative time formatter */							format?: Intl.RelativeTimeFormat;
+	/** Default style for relative time */										style?: Intl.RelativeTimeFormatStyle;
+}
+
+export interface MonthDay {
+	/** locale-names that prefer 'mm-dd-yy' date order */			locales?: string[] | readonly string[];
+	/** swap parse-order of layouts */												layouts?: LayoutPair[] | readonly LayoutPair[];
+	/** timezones to use for MDY fallback (per locale) */			timezones?: Record<string, string[] | readonly string[]>;
+	/** indicates if MDY parsing order is currently active */ active?: boolean;
+}
 
 /** Type for consistency in expected arguments for helper functions */
 export interface Params<T> {
@@ -145,7 +157,7 @@ export namespace Internal {
 	/** the Options object found in a config-module, or passed to a call to Tempo.init({}) or 'new Tempo({})' */
 	export interface BaseOptions {
 		/** localStorage key */																	store: string;
-		/** globalThis Discovery Symbol */											discovery: string | symbol;
+		/** globalThis Discovery Symbol */											discovery: string | symbol | Discovery;
 		/** additional console.log for tracking */							debug: Logify.Constructor["debug"];
 		/** catch or throw Errors */														catch: Logify.Constructor["catch"];
 		/** suppress console output during catch */							silent: Logify.Constructor["silent"];
@@ -154,12 +166,10 @@ export namespace Internal {
 		/** locale (e.g. en-AU) */															locale: string;
 		/** pivot year for two-digit years */										pivot: number;
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
-		/** Pre-configured relative time formatter */						rtfFormat?: Intl.RelativeTimeFormat;
-		/** Default style for relative time ('long' | 'short' | 'narrow') */ rtfStyle?: Intl.RelativeTimeFormatStyle;
+		/** relative time formatting configuration */						relativeTime?: RelativeTime;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
-		/** locale-names that prefer 'mm-dd-yy' date order */		mdyLocales: string | string[];
-		/** swap parse-order of layouts */											mdyLayouts: Pair[];
+		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
 		/** preferred parse-order of layouts */									layoutOrder: string[];
 		/** date-time snippets to help compose a Layout */			snippet: Snippet | PatternOption<Pattern>;
 		/** patterns to help parse value */											layout: Layout | PatternOption<Pattern>;
@@ -207,10 +217,8 @@ export namespace Internal {
 
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */
 	export interface Parse {
-		/** Locales which prefer 'mm-dd-yyyy' date-order */			mdyLocales: ({ locale: string, timeZones: string[] } | string)[];
-		/** Layout names that are switched to mdy */						mdyLayouts: Pair[];
+		/** regional date-parsing configuration */							monthDay: MonthDay;
 		/** preferred parse-order of layouts */									layoutOrder: string[];
-		/** is a timeZone that prefers 'mmddyyyy' date order */	isMonthDay?: boolean;
 		/** Symbol registry */																	token: Token;
 		/** Tempo snippets to aid in parsing */									snippet: Snippet;
 		/** Tempo layout strings */															layout: Layout;
@@ -230,7 +238,7 @@ export namespace Internal {
 	}
 
 	/** drop the parse-only Options */
-	export type OptionsKeep = Omit<BaseOptions, "mdyLocales" | "mdyLayouts" | "layoutOrder" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
+	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "layoutOrder" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
 
 	/** Instance configuration derived from supply, storage, and discovery. */
 	export interface Config extends Required<Omit<OptionsKeep, "formats">> {
@@ -243,6 +251,8 @@ export namespace Internal {
 	export interface Discovery {
 		/** pre-defined config options for Tempo.#global */			options?: Options | (() => Options);
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
+		/** regional date-parsing configuration */							monthDay?: MonthDay;
+		/** relative time formatting configuration */						relativeTime?: RelativeTime;
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;

@@ -1,5 +1,5 @@
 import { clearCache } from '#library/function.library.js';
-import { isDefined, isUndefined } from '#library/assertion.library.js';
+import { isDefined, isObject, isUndefined } from '#library/assertion.library.js';
 import { ownKeys } from '#library/primitive.library.js';
 import { unwrap } from '#library/primitive.library.js';
 import type { Property } from '#library/type.library.js';
@@ -69,9 +69,22 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 		return;
 
 	Object.entries(data).forEach(([key, val]) => {
-		if (isUndefined(target[key])) {													// only add if key does not exist
+		const current = target[key];
+
+		if (isUndefined(current)) {															// only add if key does not exist
 			setProperty(target, key, val);
 			if (isDefined(state)) state[key] = val;
+		} else if (Array.isArray(current) && Array.isArray(val)) {					// append to existing arrays (e.g. MONTH_DAY.locales)
+			val.forEach(v => { if (!current.includes(v)) current.push(v) });
+		} else if (isObject(current) && isObject(val)) {							// deep merge for objects (e.g. MONTH_DAY.timezones)
+			Object.entries(val).forEach(([innerKey, innerVal]) => {
+				const innerCurrent = current[innerKey];
+				if (isUndefined(innerCurrent)) {
+					setProperty(current, innerKey, innerVal);
+				} else if (Array.isArray(innerCurrent) && Array.isArray(innerVal)) {
+					innerVal.forEach(v => { if (!innerCurrent.includes(v)) innerCurrent.push(v) });
+				}
+			});
 		}
 	});
 

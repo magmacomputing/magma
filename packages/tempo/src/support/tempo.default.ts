@@ -2,7 +2,7 @@ import { looseIndex } from '#library/object.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { getDateTimeFormat } from '#library/international.library.js';
 
-import { NUMBER, MODE } from './tempo.enum.js';
+import { NUMBER, MODE, MONTH_DAY } from './tempo.enum.js';
 import { Token } from './tempo.symbol.js';
 import type { Options } from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
@@ -193,58 +193,7 @@ export const Default = secure({
 	/** calendaring system */																	calendar: 'iso8601',
 	/** default timezone if not specified */									timeZone: getDateTimeFormat().timeZone,
 	/** default locale if not specified */										locale: getDateTimeFormat().locale,
-	/** locales that prefer month-day order */								mdyLocales: ['en-US', 'en-AS'],	/** @link https:	//en.wikipedia.org/wiki/Date_format_by_country */
-	/** layouts that need to swap parse-order */							mdyLayouts: [['dayMonthYearShort', 'monthDayYearShort'], ['dayMonthYear', 'monthDayYear']],
+	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
 	/** preferred parse-order of layouts */										layoutOrder: [],
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 } as Options)
-
-/** @internal
- * Fallback for environments which do not robustly support Intl.Locale.getTimeZones()  
- * Keep an eye on this list !  It may become necessary in a future release to allow Users to update this list.  
- */
-export const mdyFallback = {
-	'en-US': [
-		"America/Adak",
-		"America/Anchorage",
-		"America/Boise",
-		"America/Chicago",
-		"America/Denver",
-		"America/Detroit",
-		"America/Indiana/Indianapolis",
-		"America/Indiana/Knox",
-		"America/Indiana/Marengo",
-		"America/Indiana/Petersburg",
-		"America/Indiana/Tell_City",
-		"America/Indiana/Vevay",
-		"America/Indiana/Vincennes",
-		"America/Indiana/Winamac",
-		"America/Indianapolis",
-		"America/Juneau",
-		"America/Kentucky/Louisville",
-		"America/Kentucky/Monticello",
-		"America/Los_Angeles",
-		"America/Louisville",
-		"America/Menominee",
-		"America/Metlakatla",
-		"America/New_York",
-		"America/Nome",
-		"America/North_Dakota/Beulah",
-		"America/North_Dakota/Center",
-		"America/North_Dakota/New_Salem",
-		"America/Phoenix",
-		"America/Sitka",
-		"America/Yakutat",
-		"Pacific/Honolulu",
-		"US/Aleutian",
-		"US/Alaska",
-		"US/Arizona",
-		"US/Central",
-		"US/Eastern",
-		"US/Mountain",
-		"US/Pacific"
-	],
-	'en-AS': [
-		"Pacific/Pago_Pago"
-	]
-} as Record<string, string[]>

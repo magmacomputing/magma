@@ -22,6 +22,7 @@ export {
 	ZONED_DATE_TIME,
 	OPTION,
 	PARSE,
+	MONTH_DAY,
 	NumericPattern
 } from './tempo.enum.js';
 

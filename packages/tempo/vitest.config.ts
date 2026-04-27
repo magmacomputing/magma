@@ -17,7 +17,10 @@ export default defineConfig({
         maxForks: 2,
       },
     },
-    setupFiles: [polyfill],
+    setupFiles: [
+      polyfill,
+      resolve(__dirname, './test/setup.prefilter.ts'),
+    ],
   },
   resolve: {
     alias: isDist ? [
