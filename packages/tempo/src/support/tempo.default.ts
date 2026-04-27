@@ -77,6 +77,12 @@ export type Snippet = typeof Snippet
  * a {layout} is a Record of snippet-combinations describing an input DateTime argument  
  * the Layout's keys are in the order that they will be checked against an input value  
  */
+/** @internal Layout components for date resolution */
+export const datePattern = {
+	dmy: '({dd}{sep}?{mm}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk})|{wkd})',
+	mdy: '({mm}{sep}?{dd}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk})|{wkd})'
+}
+
 /** @internal Tempo Layout registry */
 export const Layout = looseIndex<symbol, string>()({
 	[Token.hms]: '(?<hh>(?:[01][0-9]|2[0-4]))(?<mi>[0-5][0-9])(?<ss>[0-5][0-9])',	// compact clock (hhmiss)
@@ -84,7 +90,7 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.mdy6]: '(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])(?<yy>[0-9]{2})',// compact date (mmddyy)
 	[Token.ymd6]: '(?<yy>[0-9]{2})(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])',// compact date (yymmdd)
 	[Token.wkd]: '{mod}?{wkd}{afx}?{sfx}?',										// weekday-only layout; MUST precede {dt} (which also matches bare weekday names via its {wkd} alternative)
-	[Token.dt]: '({dd}{sep}?{mm}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk})|{wkd})',// calendar, event, slick or weekday
+	[Token.dt]: datePattern.dmy,															// calendar, event, slick or weekday
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
 	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tzd}?{brk}?',	// calendar/event and clock/period
 	[Token.tmd]: '({tm})(?:(?:{sep}+|T)({dt}))?{tzd}?{brk}?',	// clock/period and calendar/event
@@ -193,3 +199,53 @@ export const Default = secure({
 	/** enable parse planner pre-filtering (Release C feature-flag) */ parsePrefilter: false,
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 } as Options)
+
+/** @internal
+ * Fallback for environments which do not robustly support Intl.Locale.getTimeZones()  
+ * Keep an eye on this list !  It may become necessary in a future release to allow Users to update this list.  
+ */
+export const mdyFallback = {
+	'en-US': [
+		"America/Adak",
+		"America/Anchorage",
+		"America/Boise",
+		"America/Chicago",
+		"America/Denver",
+		"America/Detroit",
+		"America/Indiana/Indianapolis",
+		"America/Indiana/Knox",
+		"America/Indiana/Marengo",
+		"America/Indiana/Petersburg",
+		"America/Indiana/Tell_City",
+		"America/Indiana/Vevay",
+		"America/Indiana/Vincennes",
+		"America/Indiana/Winamac",
+		"America/Indianapolis",
+		"America/Juneau",
+		"America/Kentucky/Louisville",
+		"America/Kentucky/Monticello",
+		"America/Los_Angeles",
+		"America/Louisville",
+		"America/Menominee",
+		"America/Metlakatla",
+		"America/New_York",
+		"America/Nome",
+		"America/North_Dakota/Beulah",
+		"America/North_Dakota/Center",
+		"America/North_Dakota/New_Salem",
+		"America/Phoenix",
+		"America/Sitka",
+		"America/Yakutat",
+		"Pacific/Honolulu",
+		"US/Aleutian",
+		"US/Alaska",
+		"US/Arizona",
+		"US/Central",
+		"US/Eastern",
+		"US/Mountain",
+		"US/Pacific"
+	],
+	'en-AS': [
+		"Pacific/Pago_Pago"
+	]
+} as Record<string, string[]>

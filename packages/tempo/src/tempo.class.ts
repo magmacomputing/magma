@@ -21,6 +21,7 @@ import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engi
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
 
+import { mdyFallback, datePattern } from './support/tempo.default.js';
 import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, type TempoBrand, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 import { instant, normalizeUtcOffset } from '#library/temporal.library.js';
@@ -64,20 +65,20 @@ namespace Internal {
 export class Tempo {
 	/** Weekday names (short-form) */													static get WEEKDAY() { return enums.WEEKDAY }
 	/** Weekday names (long-form) */													static get WEEKDAYS() { return enums.WEEKDAYS }
-	/** Month names (short-form) */															static get MONTH() { return enums.MONTH }
-	/** Month names (long-form) */															static get MONTHS() { return enums.MONTHS }
+	/** Month names (short-form) */														static get MONTH() { return enums.MONTH }
+	/** Month names (long-form) */														static get MONTHS() { return enums.MONTHS }
 	/** Time durations as seconds (singular) */								static get DURATION() { return enums.DURATION }
-	/** Time durations as milliseconds (plural) */					static get DURATIONS() { return enums.DURATIONS }
+	/** Time durations as milliseconds (plural) */						static get DURATIONS() { return enums.DURATIONS }
 
 	/** Quarterly Seasons */																	static get SEASON() { return enums.SEASON }
 	/** Compass cardinal points */														static get COMPASS() { return enums.COMPASS }
 
-	/** Tempo to Temporal DateTime Units map */							static get ELEMENT() { return enums.ELEMENT }
+	/** Tempo to Temporal DateTime Units map */								static get ELEMENT() { return enums.ELEMENT }
 	/** Pre-configured format {name -> string} pairs */				static get FORMAT() { return enums.FORMAT }
 	/** Number names (0-10) */																static get NUMBER() { return enums.NUMBER }
 	/** TimeZone aliases */																		static get TIMEZONE() { return enums.TIMEZONE }
 	/** initialization strategies */													static get MODE() { return enums.MODE }
-	/** some useful Dates */																			static get LIMIT() { return enums.LIMIT }
+	/** some useful Dates */																	static get LIMIT() { return enums.LIMIT }
 
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !Tempo.#lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return Tempo.#lifecycle.extendDepth > 0 }
@@ -152,15 +153,15 @@ export class Tempo {
 			}
 		}
 
-		if (shape.parse.isMonthDay) {
-			const protoDt = proto(shape.parse.layout)[Token.dt] as string;
-			const localDt = '{mm}{sep}?{dd}({sep}?{yy})?|{mod}?({evt})';
-			if (!isLocal(shape) || localDt !== protoDt) {
-				if (isLocal(shape) && !hasOwn(shape.parse, 'layout'))
-					shape.parse.layout = create(shape.parse, 'layout');
+		const isMonthDay = Boolean(shape.parse.isMonthDay);
+		const protoDt = proto(shape.parse.layout)[Token.dt] as string;
+		const targetDt = isMonthDay ? datePattern.mdy : datePattern.dmy;
 
-				setProperty(shape.parse.layout, Token.dt, localDt);
-			}
+		if (!isLocal(shape) || targetDt !== protoDt) {
+			if (isLocal(shape) && !hasOwn(shape.parse, 'layout'))
+				shape.parse.layout = create(shape.parse, 'layout');
+
+			setProperty(shape.parse.layout, Token.dt, targetDt);
 		}
 	}
 
@@ -209,13 +210,12 @@ export class Tempo {
 		return isDefined(shape.config?.sphere) ? shape.config.sphere : undefined;
 	}
 
-
 	/** determine if we have a {timeZone} which prefers {mdy} date-order */
 	static #isMonthDay(shape: Internal.State) {
 		const monthDay = [...asArray((this as any)[$Internal]().parse.mdyLocales)];
 
 		if (isLocal(shape) && hasOwn(shape.parse, 'mdyLocales'))
-			monthDay.push(...shape.parse.mdyLocales);						// append local mdyLocales (not overwrite global)
+			monthDay.push(...shape.parse.mdyLocales);							// append local mdyLocales (not overwrite global)
 
 		return monthDay.some(mdy => {
 			const m = mdy as { locale: string, timeZones: string[] };
@@ -236,7 +236,7 @@ export class Tempo {
 		const layout = resolveLayoutOrder({
 			layout: shape.parse.layout,
 			mdyLayouts: shape.parse.mdyLayouts,
-			isMonthDay: !!shape.parse.isMonthDay,
+			isMonthDay: Boolean(shape.parse.isMonthDay),
 			...(layoutController !== undefined && { layoutController }),
 		});
 
@@ -461,7 +461,10 @@ export class Tempo {
 	static #mdyLocales(value: t.Options["mdyLocales"]) {
 		return asArray(value)
 			.map(mdy => new Intl.Locale(mdy))
-			.map(mdy => ({ locale: mdy.baseName, timeZones: (mdy as Record<string, any>).getTimeZones?.() ?? [] }))
+			.map(intl => ({ locale: intl.baseName, timeZones: intl.getTimeZones?.() ?? [] }))
+			// .map(intl => { console.log('pre: ', intl); return intl })
+			.map(intl => (intl.timeZones.length > 0 ? intl : { ...intl, timeZones: mdyFallback[intl.locale] ?? [] }))
+		// .map(intl => { console.log('post: ', intl); return intl })
 	}
 
 	/** support "Global Discovery" of user-options */
@@ -1013,12 +1016,12 @@ export class Tempo {
 	/** allow instanceof to work across module boundaries via the local brand symbol */
 	static [$Identity] = true;
 	static [Symbol.hasInstance](instance: any) {
-		return !!(instance?.[$Identity])
+		return Boolean(instance?.[$Identity])
 	}
 
 	/** check if a supplied variable is a valid Tempo instance */
 	static isTempo(instance?: any): instance is Tempo {
-		return !!(instance?.[$Identity])
+		return instance instanceof Tempo;//Boolean(instance?.[$Identity])
 	}
 
 	static {																									// Static initialization block to sequence the bootstrap phase
