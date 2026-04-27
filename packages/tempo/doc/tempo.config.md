@@ -133,7 +133,7 @@ Tempo.init({
 | `locale` | `string` | System Locale | Default BCP 47 language tag. used in .since() method |
 | `calendar` | `string` | `'iso8601'` | Default calendar system. |
 | `pivot` | `number` | `75` | Cutoff for parsing two-digit years. |
-| `mdyLocales` | `string \| string[]` | `['en-US','en-AS']` | Locale list that prefers month-day-year parse ordering. |
+| `mdyLocales` | `string \| string[]` | `['en-US','en-AS']` | Locale list that prefers month-day-year parse ordering. Tempo uses `Intl.Locale.getTimeZones()` to detect if your `timeZone` belongs to these locales, with an automated fallback for CI environments. |
 | `mdyLayouts` | `[string, string][]` | Built-in pairs | Layout swap pairs used when month-day ordering applies. |
 | `timeStamp`| `'ms' \| 'ns'` | `'ms'` | Precision for timestamps. |
 | `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |

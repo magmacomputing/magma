@@ -90,6 +90,8 @@ Tempo uses your configuration to resolve ambiguous dates.
 ### US-Style Dates (`MM/DD/YYYY`)
 If you parse a numeric string like `04012026`, Tempo uses your `timeZone` to decide if it means **April 1st** (US) or **4th of January** (UK/AU).
 
+Tempo achieves this by dynamically checking if your current `timeZone` is associated with a locale that prefers Month-Day ordering (like `en-US`). It uses the `Intl.Locale.prototype.getTimeZones()` API where available, and maintains a robust **hardcoded fallback list** for environments (like Node.js CI or non-ICU environments) where the full Intl API is not present.
+
 ```typescript
 const us = new Tempo('04012026', { timeZone: 'America/New_York' }); // Apr 1
 const au = new Tempo('04012026', { timeZone: 'Australia/Sydney' });  // Jan 4
