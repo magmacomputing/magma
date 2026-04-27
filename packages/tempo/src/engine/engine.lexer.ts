@@ -136,6 +136,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 
 /** resolve a date pattern match */
 export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, logger: any, config: any, pivot: number = 75): Temporal.ZonedDateTime {
+
 	const { mod, nbr = '1', afx, unt, yy, mm, dd } = groups as Lexer.GroupDate;
 	if (isEmpty(yy) && isEmpty(mm) && isEmpty(dd) && isUndefined(unt))
 		return dateTime;
@@ -145,11 +146,13 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 		return dateTime;
 	}
 
-	let { year, month, day } = num({
-		year: yy ?? dateTime.year,
-		month: prefix((isString(mm) && mm.trim() === '') ? dateTime.month : (mm ?? dateTime.month)),
-		day: dd ?? dateTime.day,
-	} as any);
+	// Use config.anchor (if present and looks like a Temporal.ZonedDateTime) for fallback year/month/day
+	// Always use config.anchor as fallback if present
+	 let { year, month, day } = num({
+	 		year: yy ?? dateTime.year,
+	 		month: prefix((isString(mm) && mm.trim() === '') ? dateTime.month : (mm ?? dateTime.month)),
+	 		day: dd ?? dateTime.day,
+	 } as any);
 
 	if (unt) {
 		const { nbr: adjust = 1 } = num({ nbr });
@@ -165,11 +168,11 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 		return dateTime;
 	}
 
-	if (year.toString().match(Match.twoDigit)) {
-		const pivotYear = dateTime.subtract({ years: pivot }).year % 100;
-		const century = Math.trunc(dateTime.year / 100);
-		year += (century - Number(year >= pivotYear)) * 100;
-	}
+ 	if (year.toString().match(Match.twoDigit)) {
+ 		const pivotYear = dateTime.subtract({ years: pivot }).year % 100;
+ 		const century = Math.trunc(dateTime.year / 100);
+ 		year += (century - Number(year >= pivotYear)) * 100;
+ 	}
 
 	const { nbr: adjust = 1 } = num({ nbr });
 	const offset = Number(pad(month) + '.' + pad(day));

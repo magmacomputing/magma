@@ -134,12 +134,12 @@ export class Tempo {
 	static [$setEvents](shape: Internal.State) {
 		const events = ownEntries(shape.parse.event, true);
 		if (isLocal(shape) && !hasOwn(shape.parse, 'event') && !hasOwn(shape.parse.monthDay, 'active'))
-			return;																					// no local change needed
+			return;																								// no local change needed
 
-		const src = shape.config.scope.substring(0, 1);							// 'g'lobal or 'l'ocal
+		const src = shape.config.scope.substring(0, 1);					// 'g'lobal or 'l'ocal
 		const groups = events
 			.map(([pat, _], idx) => `(?<${src}evt${idx}>${pat})`)	// assign a number to the pattern
-			.join('|')																				// make an 'Or' pattern for the event-keys
+			.join('|')																						// make an 'Or' pattern for the event-keys
 
 		if (groups) {
 			const protoEvt = proto(shape.parse.snippet)[Token.evt]?.source;
@@ -218,15 +218,7 @@ export class Tempo {
 		const { timeZone, locale } = shape.config;
 		const mdy = shape.parse.monthDay;
 		const globalMdy = Tempo.MONTH_DAY as t.MonthDay;
-
-		// 1. Check Locales list (including local and global registries)
-		const locales = new Set([
-			...asArray(mdy.locales),
-			...asArray(globalMdy.locales)
-		]);
-
 		const intl = new Intl.Locale(locale);
-		if (locales.has(intl.baseName) || locales.has(intl.language)) return true;
 
 		// 2. Check TimeZone registry (local and global)
 		const tzs = mdy.timezones || {};
@@ -533,7 +525,7 @@ export class Tempo {
 			locales: resolvedLocales as any,
 			layouts: layoutsList as any,
 			timezones: tzs
-		};
+		}
 	}
 
 	/** support "Global Discovery" of user-options */
@@ -1021,6 +1013,7 @@ export class Tempo {
 					Object.entries(out)),															// proxify sees own toJSON, skips allObject
 				enumerable: false, configurable: true
 			});
+
 		return proxify(out);
 	}
 

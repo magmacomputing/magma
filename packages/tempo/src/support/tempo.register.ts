@@ -41,7 +41,11 @@ export function registryReset() {
 
 			if (desc) {
 				[state, target].filter(obj => obj != null).forEach(obj => {
-					Object.defineProperty(obj, key, desc);
+					if (Object.isExtensible(obj)) {
+						Object.defineProperty(obj, key, desc);
+					} else {
+						console.warn(`[tempo] registryReset: Cannot define property '${String(key)}' on non-extensible object`, obj);
+					}
 				});
 			}
 		});

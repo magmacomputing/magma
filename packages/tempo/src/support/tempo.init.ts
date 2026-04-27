@@ -11,7 +11,7 @@ import { ownEntries } from '#library/primitive.library.js';
 import { getRuntime } from './tempo.runtime.js';
 import { setProperty, hasOwn, create, collect, setPatterns, normalizeLayoutOrder } from './tempo.util.js';
 import { sym, Token } from './tempo.symbol.js';
-import { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './tempo.default.js';
+import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
 import * as t from '../tempo.type.js';
 import type { Mode } from '../tempo.type.js';
@@ -38,7 +38,13 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		event: Object.assign({}, baseState?.parse.event ?? Event),
 		period: Object.assign({}, baseState?.parse.period ?? Period),
 		ignore: baseState ? { ...baseState.parse.ignore } : Object.fromEntries(asArray(Ignore).map(w => [w, w])),
-		monthDay: { ...baseState?.parse.monthDay ?? Default.monthDay },
+		monthDay: {
+			...(isObject(baseState?.parse.monthDay)
+				? baseState?.parse.monthDay
+				: isObject(Default.monthDay)
+					? Default.monthDay
+					: {})
+		},
 		layoutOrder: asArray<string>(baseState?.parse.layoutOrder ?? Default.layoutOrder as any),
 		parsePrefilter: Boolean(baseState?.parse.parsePrefilter ?? Default.parsePrefilter),
 		pivot: (baseState?.parse.pivot ?? Default.pivot) as any,

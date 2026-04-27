@@ -89,13 +89,13 @@ export function resolveLayoutClassificationOrder(layout: Record<symbol, string>,
  */
 export function resolveLayoutOrder({ layout, monthDayLayouts, isMonthDay, layoutController, classification }: ResolveLayoutOrderArgs): Record<symbol, string> {
 	const ordered = resolveLayoutClassificationOrder(
-		layout,
-		layoutController ?? createLayoutController(layout),
-		classification ?? DEFAULT_LAYOUT_CLASS,
+	 layout,
+	 layoutController ?? createLayoutController(layout),
+	 classification ?? DEFAULT_LAYOUT_CLASS,
 	);
 
-	const layouts = ownEntries(ordered) as LayoutEntry[];
-	let changed = false;
+		const layouts = ownEntries(ordered) as LayoutEntry[];
+		let changed = false;
 
 	monthDayLayouts.forEach(([dmy, mdy]) => {
 		const idx1 = layouts.findIndex(([key]) => key.description === dmy);

@@ -285,18 +285,23 @@ const _ParseEngine = {
 
 		for (const [symKey, pat] of orderedPatterns) {
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
-			if (isEmpty(groups)) {
+			if (isEmpty(groups))
 				continue;
-			}
-			const hasTime = Object.keys(groups).some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key)) || Object.values(groups).includes('now');
 
+			const hasTime = Object.keys(groups).some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key)) || Object.values(groups).includes('now');
 			_ParseEngine.result(state, { match: symKey.description, value: trim, groups: { ...groups } });
 
 			dateTime = parseZone(groups, dateTime, state.config);
 			dateTime = _ParseEngine.parseGroups(state, groups, dateTime, isAnchored, resolvingKeys);
 
 			dateTime = parseWeekday(groups, dateTime, (TempoClass as any)?.[sym.$dbg], state.config);
+
+			// Inject anchor into config for parseDate
+			// const prevAnchor = state.config.anchor;
+			// state.config.anchor = state.anchor ?? dateTime;
 			dateTime = parseDate(groups, dateTime, (TempoClass as any)?.[sym.$dbg], state.config, state.parse["pivot"]);
+			// state.config.anchor = prevAnchor;
+
 			dateTime = parseTime(groups, dateTime);
 
 			const isChanged = !dateTime.toPlainTime().equals(anchorTime);
@@ -453,14 +458,18 @@ const _ParseEngine = {
 					_ParseEngine.result(state, { type, value: entry[0] as any, match: pat, source, groups: { [key]: resolveVal as string } });
 
 					// Protect against recursive re-evaluation of same alias
-					if (!isEmpty(res) && res !== String(groups[key])) {
-						const resolving = new Set(resolvingKeys);
-						resolving.add(aliasKey);
-						const resMatch = _ParseEngine.parseLayout(state, res, dateTime, true, resolving);
+					   if (!isEmpty(res) && res !== String(groups[key])) {
+						   const resolving = new Set(resolvingKeys);
+						   resolving.add(aliasKey);
+						   // Explicitly propagate anchor for recursive parse
+						   const prevAnchor:any = state.anchor;
+						   state.anchor = dateTime;
+						   const resMatch = _ParseEngine.parseLayout(state, res, dateTime, true, resolving);
+						   state.anchor = prevAnchor;
 
-						if (resMatch.type === 'Temporal.ZonedDateTime')
-							dateTime = resMatch.value;
-					}
+						   if (resMatch.type === 'Temporal.ZonedDateTime')
+							   dateTime = resMatch.value;
+					   }
 				} finally {
 					delete groups[key];
 				}

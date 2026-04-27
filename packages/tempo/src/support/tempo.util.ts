@@ -16,8 +16,13 @@ export function normalizeLayoutOrder(value: unknown): string[] {
 }
 
 /** @internal set a mutable, enumerable property on a target */
-export const setProperty = <T>(target: object, key: PropertyKey, value: T) =>
-	Object.defineProperty(target, key, { value, writable: true, configurable: true, enumerable: true });
+export const setProperty = <T>(target: object, key: PropertyKey, value: T) => {
+	if (Object.isExtensible(target)) {
+		Object.defineProperty(target, key, { value, writable: true, configurable: true, enumerable: true });
+	} else {
+		console.warn(`[tempo] setProperty: Cannot define property '${String(key)}' on non-extensible object`, target);
+	}
+};
 
 /** @internal return the Prototype parent of an object */
 export const proto = (obj: object) => Object.getPrototypeOf(obj);
