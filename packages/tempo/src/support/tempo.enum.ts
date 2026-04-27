@@ -94,6 +94,25 @@ export const DEFAULTS = {
 		/** Tempo(31-Dec-9999.23:59:59).ns */										get maxTempo() { return Temporal.Instant.from('9999-12-31T23:59:59.999999999+00:00').epochNanoseconds },
 		/** Tempo(01-Jan-1000.00:00:00).ns */										get minTempo() { return Temporal.Instant.from('1000-01-01T00:00+00:00').epochNanoseconds },
 	},
+	MONTH_DAY: {
+		locales: ['en-US', 'en-AS'],
+		layouts: [['dayMonthYearShort', 'monthDayYearShort'], ['dayMonthYear', 'monthDayYear']],
+		timezones: {
+			'en-US': [
+				"America/Adak", "America/Anchorage", "America/Boise", "America/Chicago", "America/Denver",
+				"America/Detroit", "America/Indiana/Indianapolis", "America/Indiana/Knox", "America/Indiana/Marengo",
+				"America/Indiana/Petersburg", "America/Indiana/Tell_City", "America/Indiana/Vevay", "America/Indiana/Vincennes",
+				"America/Indiana/Winamac", "America/Indianapolis", "America/Juneau", "America/Kentucky/Louisville",
+				"America/Kentucky/Monticello", "America/Los_Angeles", "America/Louisville", "America/Menominee",
+				"America/Metlakatla", "America/New_York", "America/Nome", "America/North_Dakota/Beulah",
+				"America/North_Dakota/Center", "America/North_Dakota/New_Salem", "America/Phoenix", "America/Sitka",
+				"America/Yakutat", "Pacific/Honolulu"
+			],
+			'en-AS': [
+				"Pacific/Pago_Pago"
+			]
+		}
+	}
 } as const;
 
 /** @internal Centralized mutable state for all extendable registries */
@@ -104,6 +123,7 @@ export const STATE = {
 	DURATIONS: allDescriptors(DEFAULTS.DURATIONS),
 	FORMAT: allDescriptors(DEFAULTS.FORMAT),
 	LIMIT: allDescriptors(DEFAULTS.LIMIT),
+	MONTH_DAY: allDescriptors(DEFAULTS.MONTH_DAY),
 };
 
 (STATE.NUMBER as any)[sym.$Extensible] = true;
@@ -111,6 +131,7 @@ export const STATE = {
 (STATE.TIMEZONE as any)[sym.$Extensible] = true;
 (STATE.DURATION as any)[sym.$Extensible] = true;
 (STATE.DURATIONS as any)[sym.$Extensible] = true;
+(STATE.MONTH_DAY as any)[sym.$Extensible] = true;
 
 /** Gregorian calendar week-days (short-form) */
 export const WEEKDAY = enumify(['All', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
@@ -177,6 +198,9 @@ export type FormatEnum = Enum.wrap<OwnFormat & Record<string, string | number>>;
 
 export const LIMIT = proxify(STATE.LIMIT, true, false);
 
+/** regional month-day-year parsing settings */
+export const MONTH_DAY = proxify(STATE.MONTH_DAY, true, false);
+
 /** date-time element tokens */
 const elementKeys = ['yy', 'mm', 'ww', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
 export const ELEMENT = enumify({
@@ -207,7 +231,7 @@ export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
-const optionKeys = ['value', 'mode', 'mdyLocales', 'mdyLayouts', 'layoutOrder', 'parsePrefilter', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'pivot', 'sphere', 'timeStamp', 'snippet', 'layout', 'event', 'period', 'formats', 'plugins'] as const;
+const optionKeys = ['value', 'mode', 'monthDay', 'relativeTime', 'layoutOrder', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'pivot', 'sphere', 'timeStamp', 'snippet', 'layout', 'event', 'period', 'formats', 'plugins'] as const;
 export const OPTION = enumify(optionKeys, false);
 export type Option = KeyOf<typeof OPTION>
 
@@ -216,18 +240,18 @@ export const MODE = enumify({ Auto: 'auto', Strict: 'strict', Defer: 'defer', },
 export type MODE = ValueOf<typeof MODE>
 
 /** allowed keys for internal parse state */
-const parseKeys = ['mdyLocales', 'mdyLayouts', 'layoutOrder', 'parsePrefilter', 'formats', 'pivot', 'snippet', 'layout', 'event', 'period', 'anchor', 'value', 'discovery', 'plugins', 'mode'] as const;
+const parseKeys = ['monthDay', 'layoutOrder', 'formats', 'pivot', 'snippet', 'layout', 'event', 'period', 'anchor', 'value', 'discovery', 'plugins', 'mode'] as const;
 export const PARSE = enumify(parseKeys, false);
 export type Parse = KeyOf<typeof PARSE>
 
 /** allowed keys for global discovery objects */
-const discoveryKeys = ['options', 'timeZones', 'terms', 'plugins', 'numbers', 'formats'] as const;
+const discoveryKeys = ['options', 'timeZones', 'monthDay', 'terms', 'plugins', 'numbers', 'formats'] as const;
 export const DISCOVERY = enumify(discoveryKeys, false);
 export type Discovery = KeyOf<typeof DISCOVERY>
 
 /** @internal LIVE Registries mapping (STATE key -> Enum/Proxy) */
 export const REGISTRIES: Record<string, any> = {
-	NUMBER, DURATION, TIMEZONE, DURATIONS, FORMAT, LIMIT,
+	NUMBER, DURATION, TIMEZONE, DURATIONS, FORMAT, LIMIT, MONTH_DAY,
 }
 
 /** public-reachable enums */
@@ -250,4 +274,5 @@ export default {
 	OPTION,
 	MODE,
 	PARSE,
+	MONTH_DAY,
 }

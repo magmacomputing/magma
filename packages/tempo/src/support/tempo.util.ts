@@ -89,7 +89,7 @@ export function getLargestUnit(list: any[]): string {
 export function compileRegExp(layout: string | RegExp, state: t.Internal.State, snippet?: Snippet) {
 	// helper function to replace {name} placeholders with their corresponding snippets
 	const matcher = (source: string, d = 0): string => {
-		if (d > 10) return source;													// prevent infinite recursion
+		if (d > 10) return source;															// prevent infinite recursion
 
 		if (source.startsWith('/') && source.endsWith('/'))
 			source = source.substring(1, source.length - 1);			// remove the leading/trailing "/"
@@ -100,16 +100,17 @@ export function compileRegExp(layout: string | RegExp, state: t.Internal.State, 
 			const token = getSymbol(name);								// get the symbol for this {name}
 			const customs = snippet?.[token as keyof Snippet]?.source ?? snippet?.[name as keyof Snippet]?.source;
 			const globals = state.parse.snippet[token as keyof Snippet]?.source ?? state.parse.snippet[name as keyof Snippet]?.source;
-			const defaultLayout = Layout[token as keyof typeof Layout];	// get resolution source (layout)
+			const stateLayout = state.parse.layout[token as keyof Layout] ?? state.parse.layout[name as keyof Layout];
+			const defaultLayout = Layout[token as keyof Layout];	// get resolution source (layout)
 
-			let res = customs ?? globals ?? defaultLayout;								// get the snippet/layout source
+			let res = customs ?? globals ?? stateLayout ?? defaultLayout;								// get the snippet/layout source
 
 			if (isNullish(res) && name.includes('.')) {						// if no definition found, try fallback
 				const prefix = name.split('.')[0];									// get the base token name
 				const pToken = getSymbol(prefix);
 				res = snippet?.[pToken as keyof Snippet]?.source ?? snippet?.[prefix as keyof Snippet]?.source
-					?? state.parse.snippet[pToken as keyof typeof Snippet]?.source ?? state.parse.snippet[prefix as keyof typeof Snippet]?.source
-					?? Layout[pToken as keyof typeof Layout];
+					?? state.parse.snippet[pToken as keyof Snippet]?.source ?? state.parse.snippet[prefix as keyof Snippet]?.source
+					?? Layout[pToken as keyof Layout];
 			}
 
 			if (res && name.includes('.')) {											// wrap dotted extensions for identification

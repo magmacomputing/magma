@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-04-27
+
+### Added
+- **Grouped Configuration Options**: Consolidated `monthDay` and `relativeTime` options into nested objects.
+- **Internal layout detection**: Added `isMonthDay` detection for improved regional layout resolution.
+- **CI Benchmarks**: Added performance benchmarking suite to CI.
+
+### Fixed
+- **Event Overrides**: Fixed `$setEvents` logic to correctly handle custom event overrides.
+- **TimeZone Fallbacks**: Improved and cleaned up the IANA TimeZone fallback list.
+- **Intl.Locale Debugging**: Enhanced diagnostic logging for locale resolution.
+
+## [2.6.0] - 2026-04-25
+
+### Added
+- **Standardized UTC Offsets**: Added `normalizeUtcOffset` utility for transforming informal UTC-offset strings.
+- **Custom Layout Order**: Added `layoutOrder` option to customize parsing element precedence.
+
+### Changed
+- **Season Scope Simplification (Breaking)**: Removed Chinese-specific object from `term.season` scope.
+- **Refined TimeZone Normalization**: Improved UTC offset handling during initialization.
+
+### Fixed
+- **Layout Pattern Resolution**: Fixed ordering to respect intended sequence.
+
 ## [2.5.0] - 2026-04-24
 
 ### Added

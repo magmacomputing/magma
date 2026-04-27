@@ -21,7 +21,7 @@ export const DEFAULT_LAYOUT_CLASS: unique symbol = Symbol('default');
 
 export interface ResolveLayoutOrderArgs {
 	layout: Record<symbol, string>;
-	mdyLayouts: t.Pair[];
+	monthDayLayouts: t.LayoutPair[] | readonly t.LayoutPair[];
 	isMonthDay: boolean;
 	layoutController?: LayoutController;
 	classification?: PropertyKey;
@@ -34,7 +34,7 @@ export interface ResolveLayoutOrderArgs {
 export function createLayoutController(layout: Record<symbol, string>): LayoutController {
 	return {
 		[DEFAULT_LAYOUT_CLASS]: getLayoutOrder(layout),
-	};
+	}
 }
 
 /**
@@ -87,7 +87,7 @@ export function resolveLayoutClassificationOrder(layout: Record<symbol, string>,
  * This preserves referential equality for consumers expecting `resolvedLayout === originalLayout`
  * when the locale preference matches existing order or no swap pairs are found.
  */
-export function resolveLayoutOrder({ layout, mdyLayouts, isMonthDay, layoutController, classification }: ResolveLayoutOrderArgs): Record<symbol, string> {
+export function resolveLayoutOrder({ layout, monthDayLayouts, isMonthDay, layoutController, classification }: ResolveLayoutOrderArgs): Record<symbol, string> {
 	const ordered = resolveLayoutClassificationOrder(
 		layout,
 		layoutController ?? createLayoutController(layout),
@@ -97,7 +97,7 @@ export function resolveLayoutOrder({ layout, mdyLayouts, isMonthDay, layoutContr
 	const layouts = ownEntries(ordered) as LayoutEntry[];
 	let changed = false;
 
-	mdyLayouts.forEach(([dmy, mdy]) => {
+	monthDayLayouts.forEach(([dmy, mdy]) => {
 		const idx1 = layouts.findIndex(([key]) => key.description === dmy);
 		const idx2 = layouts.findIndex(([key]) => key.description === mdy);
 

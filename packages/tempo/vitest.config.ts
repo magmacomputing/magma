@@ -4,10 +4,9 @@ import { defineConfig } from 'vitest/config';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDist = process.env.TEST_DIST === 'true';
+
 const polyfill = resolve(__dirname, './bin/temporal-polyfill.ts');
-
 const ciPrefilterSetup = resolve(__dirname, './test/ci.prefilter.setup.ts');
-
 const consoleSpySetup = resolve(__dirname, './test/setup.console-spy.ts');
 
 export default defineConfig({
