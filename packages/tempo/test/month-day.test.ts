@@ -1,8 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { Tempo } from '../src/tempo.class.js';
-import { ParseModule } from '../src/discrete/discrete.parse.js';
-import { Token } from '../src/support/tempo.symbol.js';
-import { datePattern } from '../src/support/tempo.default.js';
+import { Tempo } from '#tempo';
+import { ParseModule } from '#tempo/parse';
 
 // Ensure ParseModule is loaded for date component parsing
 Tempo.extend(ParseModule);
@@ -10,23 +7,17 @@ Tempo.extend(ParseModule);
 describe('Tempo: Month-Day Parsing (Ambiguity Support)', () => {
 
 	it('should auto-detect MDY order for en-US locale', () => {
-		const t = new Tempo('04/01/2023', { locale: 'en-US' });
-		expect(t.parse.monthDay.active, 'MDY should be active for en-US').toBe(true);
+		const t = new Tempo('04/01/2023', { locale: 'en-US', timeZone: 'America/New_York' });
+		expect(t.parse.monthDay.active, 'MDY should be active for America/New_York').toBe(true);
 		expect(t.mm, 'Month should be April (4)').toBe(4);
 		expect(t.day, 'Day should be 1st').toBe(1);
 	});
 
 	it('should auto-detect DMY order for en-GB locale', () => {
-		const t = new Tempo('04/01/2023', { locale: 'en-GB' });
-		expect(t.parse.monthDay.active, 'MDY should NOT be active for en-GB').toBe(false);
+		const t = new Tempo('04/01/2023', { locale: 'en-GB', timeZone: 'Europe/London' });
+		expect(t.parse.monthDay.active, 'MDY should NOT be active for Europe/London').toBe(false);
 		expect(t.mm, 'Month should be January (1)').toBe(1);
 		expect(t.day, 'Day should be 4th').toBe(4);
-	});
-
-	it('should auto-detect MDY order for America/New_York timezone', () => {
-		const t = new Tempo('04/01/2023', { timeZone: 'America/New_York' });
-		expect(t.parse.monthDay.active, 'MDY should be active for New York').toBe(true);
-		expect(t.mm, 'Month should be April (4)').toBe(4);
 	});
 
 	it('should allow manual override to force MDY parsing (active: true)', () => {
@@ -51,12 +42,15 @@ describe('Tempo: Month-Day Parsing (Ambiguity Support)', () => {
 		const Sandbox = Tempo.create({
 			discovery: {
 				monthDay: {
+					timezones: {
+						'fr-CA': ['America/Toronto']
+					},
 					locales: ['fr-CA']
 				}
 			}
 		});
 
-		const t = new Sandbox('04/01/2023', { locale: 'fr-CA' });
+		const t = new Sandbox('04/01/2023', { locale: 'fr-CA', timeZone: 'America/Toronto' });
 		expect(t.parse.monthDay.active, 'MDY should be active for fr-CA after augmentation').toBe(true);
 		expect(t.mm).toBe(4);
 	});

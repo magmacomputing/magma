@@ -213,20 +213,27 @@ export class Tempo {
 		return isDefined(shape.config?.sphere) ? shape.config.sphere : undefined;
 	}
 
-	/** determine if we have a {timeZone} or {locale} which prefers {mdy} date-order */
+	/** determine if we have a {timeZone} which prefers {mdy} date-order */
 	static #isMonthDay(shape: Internal.State) {
 		const { timeZone, locale } = shape.config;
 		const mdy = shape.parse.monthDay;
 		const globalMdy = Tempo.MONTH_DAY as t.MonthDay;
 		const intl = new Intl.Locale(locale);
-
-		// 2. Check TimeZone registry (local and global)
-		const tzs = mdy.timezones || {};
-		const globalTzs = globalMdy.timezones || {};
 		const tz = String(timeZone);
 
-		if (tzs[intl.baseName]?.includes(tz) || tzs[intl.language]?.includes(tz)) return true;
+		// Find the resolved timezone list for the current locale (which includes getTimeZones data)
+		const activeLocaleData = (mdy.locales as any[])?.find(l => l.locale === intl.baseName || l.locale === intl.language);
+		if (activeLocaleData?.timeZones?.includes(tz)) return true;
+
+		// Fallback to global timezones if not found in resolved locales
+		const globalTzs = globalMdy.timezones || {};
 		if (globalTzs[intl.baseName]?.includes(tz) || globalTzs[intl.language]?.includes(tz)) return true;
+
+		// Dynamically check if the timezone belongs to the locale IF the locale was added to globalMdy.locales (e.g., via Discovery)
+		if (asArray(globalMdy.locales).includes(intl.baseName) || asArray(globalMdy.locales).includes(intl.language)) {
+			const intlTzs = (intl as any).getTimeZones?.() || [];
+			if (intlTzs.includes(tz)) return true;
+		}
 
 		return false;
 	}
@@ -461,7 +468,9 @@ export class Tempo {
 			})
 
 		// Resolve effective 'active' flag (either from explicit options or auto-detection)
-		const active = shape.parse.monthDay.active ?? Tempo.#isMonthDay(shape);
+		const active = Reflect.has(mergedOptions, 'monthDay')
+			? shape.parse.monthDay.active
+			: Tempo.#isMonthDay(shape);
 
 		// If flag differs from inherited default, apply it to the local state (shadowing if necessary)
 		if (active !== proto(shape.parse).monthDay?.active) {
@@ -869,6 +878,11 @@ export class Tempo {
 			options
 		);
 
+		// If the sandbox was provided with monthDay discovery, resolve and apply it to the isolated state
+		if (isObject(options.discovery) && options.discovery.monthDay) {
+			state.parse.monthDay = Tempo.#resolveMonthDay(options.discovery.monthDay);
+		}
+
 		Object.freeze(SandboxTempo);
 		return SandboxTempo as unknown as typeof Tempo;
 	}
@@ -1009,8 +1023,12 @@ export class Tempo {
 		Object.defineProperties(out, descriptors);
 		Object.defineProperty(out, 'toJSON',										// bare-bones: only show global overrides
 			{
-				value: () => Object.fromEntries(
-					Object.entries(out)),															// proxify sees own toJSON, skips allObject
+				value: () => Object.fromEntries(Object.entries(out)),															// proxify sees own toJSON, skips allObject
+				enumerable: false, configurable: true
+			});
+		Object.defineProperty(out, sym.$Inspect,
+			{
+				value: () => Object.fromEntries(Object.entries(out)),
 				enumerable: false, configurable: true
 			});
 

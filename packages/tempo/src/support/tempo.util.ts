@@ -22,7 +22,13 @@ export const setProperty = <T>(target: object, key: PropertyKey, value: T) => {
 	} else {
 		console.warn(`[tempo] setProperty: Cannot define property '${String(key)}' on non-extensible object`, target);
 	}
-};
+}
+
+/** @internal set multiple mutable, enumerable properties on a target */
+export const setProperties = (target: object, properties: Record<PropertyKey, any>) => {
+	ownEntries(properties)
+		.forEach(([key, value]) => setProperty(target, key, value));
+}
 
 /** @internal return the Prototype parent of an object */
 export const proto = (obj: object) => Object.getPrototypeOf(obj);
@@ -37,7 +43,7 @@ export const create = <T extends object>(obj: object, name: string): T => {
 		throw new TypeError(`[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`);
 
 	return { ...entry } as T;
-};
+}
 
 /** @internal resolve a key to a symbol from Token or sym registries */
 export function getSymbol(key?: string | symbol): symbol {

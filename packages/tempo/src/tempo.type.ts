@@ -145,7 +145,7 @@ export interface MonthDay {
 	/** locale-names that prefer 'mm-dd-yy' date order */			locales?: string[] | readonly string[];
 	/** swap parse-order of layouts */												layouts?: LayoutPair[] | readonly LayoutPair[];
 	/** timezones to use for MDY fallback (per locale) */			timezones?: Record<string, string[] | readonly string[]>;
-	/** indicates if MDY parsing order is currently active */ active?: boolean;
+	/** indicates if MDY parsing order is currently active */ active?: boolean | undefined;
 }
 
 /** Type for consistency in expected arguments for helper functions */

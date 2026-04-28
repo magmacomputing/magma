@@ -124,14 +124,15 @@ export const STATE = {
 	FORMAT: allDescriptors(DEFAULTS.FORMAT),
 	LIMIT: allDescriptors(DEFAULTS.LIMIT),
 	MONTH_DAY: allDescriptors(DEFAULTS.MONTH_DAY),
-};
+}
 
-(STATE.NUMBER as any)[sym.$Extensible] = true;
-(STATE.FORMAT as any)[sym.$Extensible] = true;
-(STATE.TIMEZONE as any)[sym.$Extensible] = true;
-(STATE.DURATION as any)[sym.$Extensible] = true;
-(STATE.DURATIONS as any)[sym.$Extensible] = true;
-(STATE.MONTH_DAY as any)[sym.$Extensible] = true;
+const defineExtensible = (target: any) => Object.defineProperty(target, sym.$Extensible, { value: true, enumerable: false, configurable: false, writable: false });
+defineExtensible(STATE.NUMBER);
+defineExtensible(STATE.FORMAT);
+defineExtensible(STATE.TIMEZONE);
+defineExtensible(STATE.DURATION);
+defineExtensible(STATE.DURATIONS);
+defineExtensible(STATE.MONTH_DAY);
 
 /** Gregorian calendar week-days (short-form) */
 export const WEEKDAY = enumify(['All', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);

@@ -9,7 +9,7 @@ import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/a
 import { ownEntries } from '#library/primitive.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
-import { setProperty, hasOwn, create, collect, setPatterns, normalizeLayoutOrder } from './tempo.util.js';
+import { setProperty, setProperties, hasOwn, create, collect, setPatterns, normalizeLayoutOrder } from './tempo.util.js';
 import { sym, Token } from './tempo.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
@@ -57,42 +57,42 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	if (isGlobal) {
 		markConfig(Object.assign(state.config, Default));
 		const { timeZone, calendar } = getDateTimeFormat();
-		Object.defineProperties(state.config, {
-			calendar: { value: calendar, enumerable: true, writable: true, configurable: true },
-			timeZone: { value: timeZone, enumerable: true, writable: true, configurable: true },
-			locale: { value: (getDateTimeFormat() as any).locale ?? 'en-US', enumerable: true, writable: true, configurable: true },
-			discovery: { value: Symbol.keyFor(sym.$Tempo) as string, enumerable: true, writable: true, configurable: true },
-			formats: { value: enumify(STATE.FORMAT, false), enumerable: true, writable: true, configurable: true },
-			sphere: { value: getHemisphere(timeZone), enumerable: true, writable: true, configurable: true },
-			get: { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true },
-			scope: { value: 'global', enumerable: true, writable: true, configurable: true },
-			catch: { value: options.catch ?? false, enumerable: true, writable: true, configurable: true }
+		setProperties(state.config, {
+			calendar,
+			timeZone,
+			locale: (getDateTimeFormat() as any).locale ?? 'en-US',
+			discovery: Symbol.keyFor(sym.$Tempo) as string,
+			formats: enumify(STATE.FORMAT, false),
+			sphere: getHemisphere(timeZone),
+			scope: 'global',
+			catch: options.catch ?? false
 		});
+		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 	} else if (baseState) {
 		state.config = markConfig(Object.create(baseState.config));
-		Object.defineProperties(state.config, {
-			calendar: { value: (state.config as any).calendar, enumerable: true, writable: true, configurable: true },
-			timeZone: { value: (state.config as any).timeZone, enumerable: true, writable: true, configurable: true },
-			locale: { value: (state.config as any).locale, enumerable: true, writable: true, configurable: true },
-			discovery: { value: (state.config as any).discovery, enumerable: true, writable: true, configurable: true },
-			formats: { value: (state.config as any).formats, enumerable: true, writable: true, configurable: true },
-			sphere: { value: (state.config as any).sphere, enumerable: true, writable: true, configurable: true },
-			get: { value: (state.config as any).get, enumerable: false, writable: true, configurable: true },
-			scope: { value: 'local', enumerable: true, writable: true, configurable: true },
+		setProperties(state.config, {
+			calendar: (state.config as any).calendar,
+			timeZone: (state.config as any).timeZone,
+			locale: (state.config as any).locale,
+			discovery: (state.config as any).discovery,
+			formats: (state.config as any).formats,
+			sphere: (state.config as any).sphere,
+			scope: 'local'
 		});
+		Object.defineProperty(state.config, 'get', { value: (state.config as any).get, enumerable: false, writable: true, configurable: true });
 		setProperty(state.config, 'catch', options.catch);
 	} else {
 		markConfig(Object.assign(state.config, Default));
-		Object.defineProperties(state.config, {
-			calendar: { value: calendar, enumerable: true, writable: true, configurable: true },
-			timeZone: { value: timeZone, enumerable: true, writable: true, configurable: true },
-			locale: { value: (getDateTimeFormat() as any).locale ?? 'en-US', enumerable: true, writable: true, configurable: true },
-			discovery: { value: Symbol.keyFor(sym.$Tempo) as string, enumerable: true, writable: true, configurable: true },
-			formats: { value: enumify(STATE.FORMAT, false), enumerable: true, writable: true, configurable: true },
-			sphere: { value: getHemisphere(timeZone), enumerable: true, writable: true, configurable: true },
-			get: { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true },
-			scope: { value: 'local', enumerable: true, writable: true, configurable: true },
+		setProperties(state.config, {
+			calendar,
+			timeZone,
+			locale: (getDateTimeFormat() as any).locale ?? 'en-US',
+			discovery: Symbol.keyFor(sym.$Tempo) as string,
+			formats: enumify(STATE.FORMAT, false),
+			sphere: getHemisphere(timeZone),
+			scope: 'local'
 		});
+		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 		if (isDefined(options.catch))
 			setProperty(state.config, 'catch', options.catch);
 	}

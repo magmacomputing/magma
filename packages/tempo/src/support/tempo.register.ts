@@ -1,5 +1,5 @@
 import { clearCache } from '#library/function.library.js';
-import { isDefined, isObject, isUndefined } from '#library/assertion.library.js';
+import { isDefined, isObject, isSymbol, isUndefined } from '#library/assertion.library.js';
 import { ownKeys } from '#library/primitive.library.js';
 import { unwrap } from '#library/primitive.library.js';
 import type { Property } from '#library/type.library.js';
@@ -29,10 +29,12 @@ export function registryReset() {
 
 		// 1. Purge all own-properties from state and target (if configurable)
 		[state, target].filter(obj => obj != null).forEach(obj => {
-			Reflect.ownKeys(obj).forEach(key => {
-				const desc = Object.getOwnPropertyDescriptor(obj, key);
-				if (desc?.configurable) delete obj[key];
-			});
+			Reflect.ownKeys(obj)
+				.filter(key => !isSymbol(key))
+				.forEach(key => {
+					const desc = Object.getOwnPropertyDescriptor(obj, key);
+					if (desc?.configurable) delete obj[key];
+				});
 		});
 
 		// 2. Restore defaults using property descriptors to preserve accessors/configurability
@@ -72,25 +74,27 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 	if (!isDefined(target) || target === registry)
 		return;
 
-	Object.entries(data).forEach(([key, val]) => {
-		const current = target[key];
+	const merge = (tgt: any, src: any, st?: any) => {
+		Object.entries(src).forEach(([key, val]) => {
+			const current = tgt[key];
 
-		if (isUndefined(current)) {															// only add if key does not exist
-			setProperty(target, key, val);
-			if (isDefined(state)) state[key] = val;
-		} else if (Array.isArray(current) && Array.isArray(val)) {					// append to existing arrays (e.g. MONTH_DAY.locales)
-			val.forEach(v => { if (!current.includes(v)) current.push(v) });
-		} else if (isObject(current) && isObject(val)) {							// deep merge for objects (e.g. MONTH_DAY.timezones)
-			Object.entries(val).forEach(([innerKey, innerVal]) => {
-				const innerCurrent = current[innerKey];
-				if (isUndefined(innerCurrent)) {
-					setProperty(current, innerKey, innerVal);
-				} else if (Array.isArray(innerCurrent) && Array.isArray(innerVal)) {
-					innerVal.forEach(v => { if (!innerCurrent.includes(v)) innerCurrent.push(v) });
-				}
-			});
-		}
-	});
+			if (isUndefined(current)) {														// only add if key does not exist
+				setProperty(tgt, key, val);
+				if (isDefined(st)) st[key] = val;
+				return;
+			}
+
+			if (Array.isArray(current) && Array.isArray(val)) {		// append to existing arrays (e.g. MONTH_DAY.locales)
+				val.forEach(v => { if (!current.includes(v)) current.push(v) });
+				return;
+			}
+
+			if (isObject(current) && isObject(val))								// deep merge for objects (e.g. MONTH_DAY.timezones)
+				merge(current, val);
+		});
+	};
+
+	merge(target, data, state);
 
 	clearCache(target);
 }

@@ -59,9 +59,9 @@ describe(`${label} init`, () => {
     expect(Tempo.parse.pivot).toBe(50);
   })
 
-  test('mdyLocales are set after init with a locale', () => {
-    Tempo.init({ mdyLocales: ['en-PH'] });
-    expect(Tempo.parse.mdyLocales.length).toBeGreaterThan(0);
+  test('monthDay.locales are set after init with a locale', () => {
+    Tempo.init({ monthDay: { locales: ['en-PH'] } });
+    expect(Tempo.parse.monthDay.locales.length).toBeGreaterThan(0);
   })
 
 })
