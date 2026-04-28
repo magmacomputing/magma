@@ -8,9 +8,9 @@ When Tempo encounters a date string like `04/01/2023`, it could be interpreted a
 
 ### How Detection Works
 
-Tempo automatically activates Month-Day-Year (MDY) parsing if:
-1.  The current **Locale** is known to prefer MDY (e.g., `en-US`, `en-AS`).
-2.  The current **TimeZone** belongs to a region that prefers MDY (e.g., `America/New_York`).
+Tempo automatically activates Month-Day-Year (MDY) parsing if the current **TimeZone** belongs to a region that prefers MDY (e.g., `America/New_York`), or if explicitly configured via the `monthDay.active` flag. Otherwise, it defaults to the more universally common Day-Month-Year (DMY) parsing patterns.
+
+While the current **Locale** provides the metadata to map timezones (e.g. leveraging `Intl.Locale.getTimeZones()`), it is the timezone itself that instructs Tempo to apply MDY patterns first.
 
 This logic is powered by the `MONTH_DAY` registry.
 
