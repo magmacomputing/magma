@@ -94,9 +94,9 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
 	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tzd}?{brk}?',	// calendar/event and clock/period
 	[Token.tmd]: '({tm})(?:(?:{sep}+|T)({dt}))?{tzd}?{brk}?',	// clock/period and calendar/event
-	[Token.ymd]: '({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?',// year-month(-day)
-	[Token.mdy]: '({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?',// month-day(-year)
 	[Token.dmy]: '({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?',// day-month(-year)
+	[Token.mdy]: '({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?',// month-day(-year)
+	[Token.ymd]: '({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?',// year-month(-day)
 	[Token.off]: '{mod}?{dd}{afx}?',													// day of month, with optional offset
 	[Token.rel]: '{nbr}{sep}?{unt}{sep}?{afx}',								// relative duration (e.g. 2 days ago)
 })

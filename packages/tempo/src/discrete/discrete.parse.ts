@@ -467,18 +467,18 @@ const _ParseEngine = {
 					_ParseEngine.result(state, { type, value: entry[0] as any, match: pat, source, groups: { [key]: resolveVal as string } });
 
 					// Protect against recursive re-evaluation of same alias
-					   if (!isEmpty(res) && res !== String(groups[key])) {
-						   const resolving = new Set(resolvingKeys);
-						   resolving.add(aliasKey);
-						   // Explicitly propagate anchor for recursive parse
-						   const prevAnchor:any = state.anchor;
-						   state.anchor = dateTime;
-						   const resMatch = _ParseEngine.parseLayout(state, res, dateTime, true, resolving);
-						   state.anchor = prevAnchor;
+					if (!isEmpty(res) && res !== String(groups[key])) {
+						const resolving = new Set(resolvingKeys);
+						resolving.add(aliasKey);
+						// Explicitly propagate anchor for recursive parse
+						const prevAnchor: any = state.anchor;
+						state.anchor = dateTime;
+						const resMatch = _ParseEngine.parseLayout(state, res, dateTime, true, resolving);
+						state.anchor = prevAnchor;
 
-						   if (resMatch.type === 'Temporal.ZonedDateTime')
-							   dateTime = resMatch.value;
-					   }
+						if (resMatch.type === 'Temporal.ZonedDateTime')
+							dateTime = resMatch.value;
+					}
 				} finally {
 					delete groups[key];
 				}

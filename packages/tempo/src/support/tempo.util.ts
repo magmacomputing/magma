@@ -186,4 +186,5 @@ export function setPatterns(state: t.Internal.State) {
 
 		state.parse.pattern.set(symbol, compiled);
 	});
+
 }
