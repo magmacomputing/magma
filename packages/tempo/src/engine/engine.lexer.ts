@@ -1,8 +1,8 @@
 import '#library/temporal.polyfill.js';
-import { isString, isEmpty, isUndefined, isDefined, isTemporal } from '#library/assertion.library.js';
+import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { pad, singular } from '#library/string.library.js';
-import { Match, enums } from '#tempo/support';
+import { Match, enums, isTempo } from '#tempo/support';
 import * as t from '../tempo.type.js';
 
 /**
@@ -44,9 +44,10 @@ function num(groups: Record<string, string | number>) {
 /** conform weekday/month names using prefix matching */
 export function prefix<T extends t.WEEKDAY | t.MONTH>(str: any): T {
 	let value = str;
+
 	if (isString(value)) {
 		const low = value.trim().toLowerCase();
-		if (low === '') return value;
+		if (low === '') return value as T;
 		const match = Object.keys(enums.NUMBER).find(key => key.startsWith(low));
 		if (match) return match as any;
 
@@ -56,6 +57,7 @@ export function prefix<T extends t.WEEKDAY | t.MONTH>(str: any): T {
 			if (found) return found as T;
 		}
 	}
+
 	return value as T;
 }
 
@@ -151,8 +153,12 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 		return dateTime;
 	}
 
-	// Fallback order: provided -> config.anchor (if Temporal-like) -> dateTime
-	const anchor = (config && isTemporal(config.anchor)) ? config.anchor : undefined;
+	// Fallback order: provided -> config.anchor (normalized to Temporal-like) -> dateTime
+	let anchor = config?.anchor;
+	if (isTempo(anchor)) anchor = anchor.toDateTime();
+	if (isInstant(anchor)) anchor = anchor.toZonedDateTimeISO(config?.timeZone || 'UTC');
+	if (!isTemporal(anchor)) anchor = undefined;
+
 	const fallbackYear = isDefined(anchor?.year) ? anchor.year : dateTime.year;
 	const fallbackMonth = isDefined(anchor?.month) ? anchor.month : dateTime.month;
 	const fallbackDay = isDefined(anchor?.day) ? anchor.day : dateTime.day;
@@ -177,11 +183,11 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 		return dateTime;
 	}
 
- 	if (year.toString().match(Match.twoDigit)) {
- 		const pivotYear = dateTime.subtract({ years: pivot }).year % 100;
- 		const century = Math.trunc(dateTime.year / 100);
- 		year += (century - Number(year >= pivotYear)) * 100;
- 	}
+	if (year.toString().match(Match.twoDigit)) {
+		const pivotYear = dateTime.subtract({ years: pivot }).year % 100;
+		const century = Math.trunc(dateTime.year / 100);
+		year += (century - Number(year >= pivotYear)) * 100;
+	}
 
 	const { nbr: adjust = 1 } = num({ nbr });
 	const offset = Number(pad(month) + '.' + pad(day));

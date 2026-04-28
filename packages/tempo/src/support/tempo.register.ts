@@ -3,6 +3,7 @@ import { isEqual } from '#library/object.library.js';
 import { isDefined, isObject, isSymbol, isUndefined } from '#library/assertion.library.js';
 import { ownKeys } from '#library/primitive.library.js';
 import { unwrap } from '#library/primitive.library.js';
+import { sym } from './tempo.symbol.js';
 import type { Property } from '#library/type.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
@@ -32,7 +33,7 @@ export function registryReset() {
 		[state, target].filter(obj => obj != null).forEach(obj => {
 			if (Object.isExtensible(obj)) {
 				Reflect.ownKeys(obj)
-					.filter(key => !isSymbol(key))
+					.filter(key => !isSymbol(key) || !Object.values(sym).includes(key as any))
 					.forEach(key => {
 						const desc = Object.getOwnPropertyDescriptor(obj, key);
 						if (desc?.configurable) delete obj[key];
@@ -93,12 +94,23 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 			}
 
 			if (Array.isArray(current) && Array.isArray(val)) {		// append to existing arrays (e.g. MONTH_DAY.locales)
-				val.forEach(v => { if (!current.some((existing: any) => isEqual(existing, v))) current.push(v) });
+				val.forEach(v => {
+					if (!current.some((existing: any) => isEqual(existing, v))) {
+						current.push(v);
+						if (isDefined(st)) {
+							if (!Array.isArray(st[key])) setProperty(st, key, []);
+							if (!st[key].some((existing: any) => isEqual(existing, v))) st[key].push(v);
+						}
+					}
+				});
 				return;
 			}
 
-			if (isObject(current) && isObject(val))								// deep merge for objects (e.g. MONTH_DAY.timezones)
-				merge(current, val);
+			if (isObject(current) && isObject(val)) {								// deep merge for objects (e.g. MONTH_DAY.timezones)
+				if (isDefined(st) && !isObject(st[key])) setProperty(st, key, {});
+				merge(current, val, isDefined(st) ? st[key] : undefined);
+				return;
+			}
 		});
 	};
 

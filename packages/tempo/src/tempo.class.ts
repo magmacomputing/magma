@@ -394,7 +394,7 @@ export class Tempo {
 						break;
 
 					case 'monthDay':
-						shape.parse.monthDay = resolveMonthDay(arg.value, Tempo.MONTH_DAY);
+						shape.parse.monthDay = resolveMonthDay(arg.value, shape.parse.monthDay);
 						break;
 
 					case 'layoutOrder':
@@ -789,9 +789,11 @@ export class Tempo {
 
 						// only trigger init if we're assigning a new discovery object to a symbol
 						if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
-							const discoverySymbol = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo
-							if ((globalThis as Record<symbol, any>)[discoverySymbol] !== item) {
-								(globalThis as Record<symbol, any>)[discoverySymbol] = item;
+							const discovery = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
+							const discoverySymbol = isString(discovery) ? Symbol.for(discovery) : (isSymbol(discovery) && !Symbol.keyFor(discovery) ? Symbol.for('TempoSandbox') : discovery);
+
+							if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item) {
+								(globalThis as Record<symbol, any>)[discoverySymbol as symbol] = item;
 								(this as any)[$setConfig]((this as any)[$Internal](), { discovery: discoverySymbol })
 							}
 						}
@@ -820,9 +822,10 @@ export class Tempo {
 			static [Symbol.toStringTag] = 'TempoSandbox';
 		}
 
-		const normalizedDiscovery = (isObject(options.discovery) && !isSymbol(options.discovery)) || isUndefined(options.discovery)
-			? Symbol('TempoSandbox')
-			: options.discovery as string | symbol;
+		const discovery = options.discovery;
+		const normalizedDiscovery = (isObject(discovery) && !isSymbol(discovery)) || isUndefined(discovery) || (isSymbol(discovery) && !Symbol.keyFor(discovery))
+			? Symbol.for('TempoSandbox')
+			: (isString(discovery) ? Symbol.for(discovery) : discovery) as string | symbol;
 
 		let data: any = { options: { ...options, discovery: normalizedDiscovery }, scope: 'sandbox' };
 
@@ -849,7 +852,8 @@ export class Tempo {
 
 		// If the sandbox was provided with monthDay discovery, resolve and apply it to the isolated state
 		if (isObject(options.discovery) && options.discovery.monthDay) {
-			state.parse.monthDay = resolveMonthDay(options.discovery.monthDay, Tempo.MONTH_DAY);
+			const discoveryMD = resolveMonthDay(options.discovery.monthDay, Tempo.MONTH_DAY);
+			state.parse.monthDay = { ...state.parse.monthDay, ...discoveryMD };
 		}
 
 		Object.freeze(SandboxTempo);

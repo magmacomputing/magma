@@ -189,9 +189,11 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				setProperty(state.config, 'catch', Boolean(arg.value));
 				break;
 
-			case 'pivot':
-				state.parse.pivot = arg.value;
+			case 'pivot': {
+				const pivot = parseInt(String(arg.value));
+				state.parse.pivot = (Number.isFinite(pivot) && pivot >= 0 && pivot <= 99) ? pivot : Default.pivot!;
 				break;
+			}
 
 			case 'mode':
 				state.parse.mode = arg.value;

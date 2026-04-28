@@ -224,10 +224,8 @@ const _ParseEngine = {
 					return res;
 				};
 				const local = [...keys(state.parse.event), ...keys(state.parse.period)];
-				const bypass = local.some(key => {
-					try { return new RegExp(String(key), 'i').test(trim); }
-					catch { return trim.toLowerCase().includes(String(key).toLowerCase()); }
-				});
+				const lowTrim = trim.toLowerCase();
+				const bypass = local.some(key => lowTrim.includes(String(key).toLowerCase()));
 				if (!bypass) return arg;
 			}
 			value = trim; // Update value for downstream parsing

@@ -1,5 +1,5 @@
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
-import { isObject, isArray, isReference, isFunction, isDefined, isNullish } from '#library/assertion.library.js';
+import { isObject, isArray, isReference, isFunction, isDefined, isNullish, isMap, isSet } from '#library/assertion.library.js';
 import type { Extend, Property } from '#library/type.library.js';
 
 /** remove quotes around property names */
@@ -33,14 +33,22 @@ export const isEqual = (a: any, b: any): boolean => {
 		return left.length === right.length && left.every((v, i) => isEqual(v, right[i]));
 	}
 
+	if (isMap(a) && isMap(b))
+		return a.size === b.size && Array.from(a.keys()).every(k => b.has(k) && isEqual(a.get(k), b.get(k)));
+
+	if (isSet(a) && isSet(b))
+		return a.size === b.size && Array.from(a).every(v => b.has(v));
+
 	if (isObject(a) && isObject(b)) {
 		const left = a as any, right = b as any;
 		const keys = new Set<PropertyKey>();
-		const keys1 = isFunction(left.keys) ? Array.from<PropertyKey>(left.keys()) : ownKeys(left);
-		const keys2 = isFunction(right.keys) ? Array.from<PropertyKey>(right.keys()) : ownKeys(right);
+		const keys1 = (isFunction(left.keys) && Object.getPrototypeOf(left) !== Object.prototype) ? Array.from<PropertyKey>(left.keys()) : ownKeys(left);
+		const keys2 = (isFunction(right.keys) && Object.getPrototypeOf(right) !== Object.prototype) ? Array.from<PropertyKey>(right.keys()) : ownKeys(right);
 
 		keys1.forEach(k => keys.add(k));
 		keys2.forEach(k => keys.add(k));
+
+		if (keys.size !== keys1.length || keys.size !== keys2.length) return false;
 
 		return [...keys].every(k => isEqual(left[k], right[k]));
 	}

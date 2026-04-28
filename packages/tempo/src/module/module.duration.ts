@@ -57,7 +57,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	let value, opts: any = {}, unit: any;
 
 	switch (true) {
-		case isString(arg) && enums.ELEMENT.values().includes(singular(arg)):
+		case isString(arg) && enums.ELEMENT.values().includes(singular(arg) as any):
 			unit = arg;
 			({ value, ...opts } = until || {});
 			break;
