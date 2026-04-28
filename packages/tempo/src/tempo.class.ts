@@ -136,7 +136,7 @@ export class Tempo {
 		if (isLocal(shape) && !hasOwn(shape.parse, 'event') && !hasOwn(shape.parse.monthDay, 'active'))
 			return;																								// no local change needed
 
-		const src = shape.config.scope.substring(0, 1);					// 'g'lobal or 'l'ocal
+		const src = shape.config.scope === 'global' ? 'g' : 'l';			// 'g'lobal or 'l'ocal (sandbox also uses 'l')
 		const groups = events
 			.map(([pat, _], idx) => `(?<${src}evt${idx}>${pat})`)	// assign a number to the pattern
 			.join('|')																						// make an 'Or' pattern for the event-keys
@@ -178,7 +178,7 @@ export class Tempo {
 		if (isLocal(shape) && !hasOwn(shape.parse, 'period'))
 			return;																							// no local change needed
 
-		const src = (shape.config.scope ?? "global").substring(0, 1);				// 'g'lobal or 'l'ocal
+		const src = shape.config.scope === 'global' ? 'g' : 'l';   // 'g'lobal or 'l'ocal (sandbox also uses 'l')
 		const groups = periods
 			.map(([pat, _], idx) => `(?<${src}per${idx}>${pat})`)	// {pattern} is the 1st element of the tuple
 			.join('|')																						// make an 'or' pattern for the period-keys
@@ -867,11 +867,12 @@ export class Tempo {
 		const state = init(options, false, (this as any)[$Internal]());
 		state.config.discovery = discovery as any;
 		ClassStates.set(SandboxTempo as any, state);
+		setPatterns(state); // compile regex patterns for the isolated sandbox state
 
 		// Apply configuration to the sandbox
 		(SandboxTempo as any)[$setConfig](state,
 			{
-				scope: 'local',
+				scope: 'sandbox',
 				discovery: discovery as any,
 				catch: options.catch ?? false
 			},
@@ -1455,11 +1456,11 @@ export class Tempo {
 	get terms(): Record<string, string[]> {
 		const res: Record<string, string[]> = {};
 		Tempo.terms.forEach(term => {
-			const source = (term as any).ranges || (term as any).groups || [];					// check both ranges and groups
+			const source = (term as any).ranges || (term as any).groups || [];				// check both ranges and groups
 			const list = Array.isArray(source) ? source : Object.values(source).flat(Infinity) as any[];
-			const ranges = [...new Set(list.map(r => r.key).filter(isString))];					// collect unique range keys
+			const ranges = [...new Set(list.map(r => r.key).filter(isString))];				// collect unique range keys
 			res[term.key] = ranges;
-			if (term.scope) res[term.scope] = ranges;													// add scope alias if defined
+			if (term.scope) res[term.scope] = ranges;							// add scope alias if defined
 		});
 		return res;
 	}
@@ -1468,10 +1469,10 @@ export class Tempo {
 	get ranges(): Record<string, string> {
 		const res: Record<string, string> = {};
 		Tempo.terms.forEach(term => {
-			const val = (this as any).term[term.key];																// access the term-delegate (forces evaluation)
+			const val = (this as any).term[term.key];							// access the term-delegate (forces evaluation)
 			if (isString(val)) {
 				res[term.key] = val;
-				if (term.scope) res[term.scope] = val;													// alias the string to the scope key
+				if (term.scope) res[term.scope] = val;							// alias the string to the scope key
 			}
 		});
 		return res;
@@ -1487,11 +1488,10 @@ export class Tempo {
 		if (!Object.hasOwn(out, 'lazy')) setProperty(out, 'lazy', this.#local.parse.lazy);
 
 		Object.defineProperty(out, 'toJSON', {
-			value: () => Object.fromEntries(										// bare-bones: only show local overrides
-				Object.entries(out)),															// proxify sees own toJSON, skips allObject
+			value: () => Object.fromEntries(											// bare-bones: only show local overrides
+				Object.entries(out)),																// proxify sees own toJSON, skips allObject
 			enumerable: false, configurable: true
 		});
-
 
 		return proxify(out) as t.Internal.Config;
 	}
@@ -1553,7 +1553,6 @@ export class Tempo {
 
 	/** Custom JSON serialization for `JSON.stringify`. */
 	toJSON() { return { ...this.#local.config, value: this.toString() } }
-
 
 	/** setup local 'config' and 'parse' rules (prototype-linked to global) */
 	#setLocal(options: t.Options = {}) {

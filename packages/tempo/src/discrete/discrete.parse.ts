@@ -202,8 +202,14 @@ const _ParseEngine = {
 
 		if (isString(value)) {
 			let trim = (value as string).trim();
-			if (state.parse.ignorePattern)
-				trim = trim.replace(state.parse.ignorePattern, ' ').replace(Match.spaces, ' ').trim();
+			if (state.parse.ignorePattern) {
+				// Clone the RegExp: global/sticky flags maintain `lastIndex` state, which
+				// cannot be mutated when `state.parse` is frozen (e.g. on a sandbox instance).
+				const pat = Object.isFrozen(state.parse.ignorePattern)
+					? new RegExp(state.parse.ignorePattern.source, state.parse.ignorePattern.flags)
+					: state.parse.ignorePattern;
+				trim = trim.replace(pat, ' ').replace(Match.spaces, ' ').trim();
+			}
 
 			const guard = (TempoClass as any)?.[sym.$guard]?.test(trim) ?? true;
 
@@ -218,7 +224,10 @@ const _ParseEngine = {
 					return res;
 				};
 				const local = [...keys(state.parse.event), ...keys(state.parse.period)];
-				const bypass = local.some(key => trim.toLowerCase().includes(String(key).toLowerCase()));
+				const bypass = local.some(key => {
+					try { return new RegExp(String(key), 'i').test(trim); }
+					catch { return trim.toLowerCase().includes(String(key).toLowerCase()); }
+				});
 				if (!bypass) return arg;
 			}
 			value = trim; // Update value for downstream parsing
