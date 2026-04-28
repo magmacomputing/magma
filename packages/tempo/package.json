@@ -208,6 +208,8 @@
   "scripts": {
     "test": "vitest run",
     "test:dist": "cross-env TEST_DIST=true vitest run",
+    "test:ci": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
+    "test:ci:prefilter": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TEMPO_PREFILTER_CI=true vitest run",
     "repl": "tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "bare": "tsx --conditions=development -i --import ./bin/temporal-polyfill.ts",
     "core": "cross-env TEMPO_LITE=true tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/core.ts",
