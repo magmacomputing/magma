@@ -11,10 +11,11 @@ export const $Logify: unique symbol = Symbol.for('$LibraryLogify') as any;
 export const $Registry: unique symbol = Symbol.for('$LibraryRegistry') as any;
 export const $Register: unique symbol = Symbol.for('$LibraryRegister') as any;
 export const $SerializerRegistry: unique symbol = Symbol.for('$LibrarySerializerRegistry') as any;
+export const $ImmutableSkip: unique symbol = Symbol.for('$LibraryImmutableSkip') as any;
 export const $Identity: unique symbol = Symbol.for('$LibraryIdentity') as any;
 
 export const sym = {
-	$Target, $Discover, $Extensible, $Inspect, $Logify, $Registry, $Register, $SerializerRegistry, $Identity
+	$Target, $Discover, $Extensible, $Inspect, $Logify, $Registry, $Register, $SerializerRegistry, $Identity, $ImmutableSkip
 } as const;
 
 /** identify and mark a Logify configuration object */

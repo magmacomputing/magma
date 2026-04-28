@@ -9,7 +9,7 @@ import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/a
 import { ownEntries } from '#library/primitive.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, setPatterns, normalizeLayoutOrder } from './tempo.util.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay } from './tempo.util.js';
 import { sym, Token } from './tempo.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
@@ -105,6 +105,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	return state;
 }
 
+
 /** @internal Extend a Tempo state with new options (Shadowing) */
 export function extendState(state: t.Internal.State, options: t.Options) {
 	let patternsDirty = false;
@@ -148,6 +149,10 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				state.parse.layoutOrder = normalizeLayoutOrder(arg.value);
 				break;
 
+			case 'monthDay':
+				state.parse.monthDay = resolveMonthDay(arg.value, state.parse.monthDay);
+				break;
+
 			case 'parsePrefilter':
 				state.parse.parsePrefilter = Boolean(arg.value);
 				break;
@@ -168,23 +173,33 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				setProperty(state.config, 'locale', String(arg.value));
 				break;
 
-			case 'pivot': {
-				const v = Number(arg.value);
-				if (Number.isInteger(v) && v >= 0) state.parse.pivot = v;
+			case 'discovery':
+				setProperty(state.config, 'discovery', arg.value);
 				break;
-			}
+
+			case 'formats':
+				setProperty(state.config, 'formats', arg.value);
+				break;
+
+			case 'sphere':
+				setProperty(state.config, 'sphere', arg.value);
+				break;
+
+			case 'catch':
+				setProperty(state.config, 'catch', Boolean(arg.value));
+				break;
+
+			case 'pivot':
+				state.parse.pivot = arg.value;
+				break;
 
 			case 'mode':
-				state.parse.mode = String(arg.value) as Mode;
+				state.parse.mode = arg.value;
 				break;
 
-			case 'anchor':
-				state.anchor = arg.value;
+			default:
+				setProperty(state.config, optKey, arg.value);
 				break;
 		}
 	});
-
-	if (patternsDirty) setPatterns(state);
-
-	return state;
 }

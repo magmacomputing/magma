@@ -146,6 +146,7 @@ export interface MonthDay {
 	/** swap parse-order of layouts */												layouts?: LayoutPair[] | readonly LayoutPair[];
 	/** timezones to use for MDY fallback (per locale) */			timezones?: Record<string, string[] | readonly string[]>;
 	/** indicates if MDY parsing order is currently active */ active?: boolean | undefined;
+	/** @internal resolved locale and timezone metadata */		resolvedLocales?: { locale: string, timeZones: string[] }[];
 }
 
 /** Type for consistency in expected arguments for helper functions */
@@ -171,7 +172,7 @@ export namespace Internal {
 		/** locale (e.g. en-AU) */															locale: string;
 		/** pivot year for two-digit years */										pivot: number;
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
-		/** relative time formatting configuration */						relativeTime?: RelativeTime;
+		/** relative time formatting configuration */						relativeTime?: RelativeTime | ((value: number, unit: any) => string);
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
@@ -259,7 +260,7 @@ export namespace Internal {
 		/** pre-defined config options for Tempo.#global */			options?: Options | (() => Options);
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** regional date-parsing configuration */							monthDay?: MonthDay;
-		/** relative time formatting configuration */						relativeTime?: RelativeTime;
+		/** relative time formatting configuration */						relativeTime?: RelativeTime | ((value: number, unit: any) => string);
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;

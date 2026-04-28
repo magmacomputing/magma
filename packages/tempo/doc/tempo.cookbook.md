@@ -168,7 +168,8 @@ console.log(t.since()); // "1d ago" (narrow style)
 // For maximum performance in tight loops, pass a pre-allocated formatter
 const rtf = new Intl.RelativeTimeFormat('fr', { style: 'long' });
 for (const entry of logEntries) {
-  console.log(new Tempo(entry.ts).since(null, { rtfFormat: rtf }));
+  // Use the new grouped API: pass the formatter's format function
+  console.log(new Tempo(entry.ts).since(null, { relativeTime: rtf.format.bind(rtf) }));
 }
 ```
 

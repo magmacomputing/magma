@@ -1,4 +1,5 @@
 import { clearCache } from '#library/function.library.js';
+import { isEqual } from '#library/object.library.js';
 import { isDefined, isObject, isSymbol, isUndefined } from '#library/assertion.library.js';
 import { ownKeys } from '#library/primitive.library.js';
 import { unwrap } from '#library/primitive.library.js';
@@ -27,14 +28,16 @@ export function registryReset() {
 		const defaults = DEFAULTS[name as keyof typeof DEFAULTS] as Property<any>;
 		const target = unwrap(REGISTRIES[name] as any);
 
-		// 1. Purge all own-properties from state and target (if configurable)
+		// 1. Purge all own-properties from state and target (if configurable and extensible)
 		[state, target].filter(obj => obj != null).forEach(obj => {
-			Reflect.ownKeys(obj)
-				.filter(key => !isSymbol(key))
-				.forEach(key => {
-					const desc = Object.getOwnPropertyDescriptor(obj, key);
-					if (desc?.configurable) delete obj[key];
-				});
+			if (Object.isExtensible(obj)) {
+				Reflect.ownKeys(obj)
+					.filter(key => !isSymbol(key))
+					.forEach(key => {
+						const desc = Object.getOwnPropertyDescriptor(obj, key);
+						if (desc?.configurable) delete obj[key];
+					});
+			} // else: skip deletion for non-extensible objects
 		});
 
 		// 2. Restore defaults using property descriptors to preserve accessors/configurability
@@ -46,7 +49,12 @@ export function registryReset() {
 					if (Object.isExtensible(obj)) {
 						Object.defineProperty(obj, key, desc);
 					} else {
-						console.warn(`[tempo] registryReset: Cannot define property '${String(key)}' on non-extensible object`, obj);
+						// For non-extensible objects, only update if property exists
+						if (Object.prototype.hasOwnProperty.call(obj, key)) {
+							Object.defineProperty(obj, key, desc);
+						} else {
+							console.warn(`[tempo] registryReset: Cannot define property '${String(key)}' on non-extensible object (property does not exist)`, obj);
+						}
 					}
 				});
 			}
@@ -85,7 +93,7 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 			}
 
 			if (Array.isArray(current) && Array.isArray(val)) {		// append to existing arrays (e.g. MONTH_DAY.locales)
-				val.forEach(v => { if (!current.includes(v)) current.push(v) });
+				val.forEach(v => { if (!current.some((existing: any) => isEqual(existing, v))) current.push(v) });
 				return;
 			}
 

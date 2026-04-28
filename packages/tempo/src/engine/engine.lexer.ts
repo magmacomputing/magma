@@ -137,7 +137,12 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 /** resolve a date pattern match */
 export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, logger: any, config: any, pivot: number = 75): Temporal.ZonedDateTime {
 
-	const { mod, nbr = '1', afx, unt, yy, mm, dd } = groups as Lexer.GroupDate;
+	const { mod, nbr = '1', afx, unt } = groups as Lexer.GroupDate;
+	// Normalize yy, mm, dd: treat empty string as missing
+	let yy = (typeof groups.yy === 'string' && groups.yy.trim() === '') ? undefined : groups.yy;
+	let mm = (typeof groups.mm === 'string' && groups.mm.trim() === '') ? undefined : groups.mm;
+	let dd = (typeof groups.dd === 'string' && groups.dd.trim() === '') ? undefined : groups.dd;
+
 	if (isEmpty(yy) && isEmpty(mm) && isEmpty(dd) && isUndefined(unt))
 		return dateTime;
 
@@ -146,13 +151,17 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 		return dateTime;
 	}
 
-	// Use config.anchor (if present and looks like a Temporal.ZonedDateTime) for fallback year/month/day
-	// Always use config.anchor as fallback if present
-	 let { year, month, day } = num({
-	 		year: yy ?? dateTime.year,
-	 		month: prefix((isString(mm) && mm.trim() === '') ? dateTime.month : (mm ?? dateTime.month)),
-	 		day: dd ?? dateTime.day,
-	 } as any);
+	// Fallback order: provided -> config.anchor (if Temporal-like) -> dateTime
+	const anchor = (config && isTemporal(config.anchor)) ? config.anchor : undefined;
+	const fallbackYear = isDefined(anchor?.year) ? anchor.year : dateTime.year;
+	const fallbackMonth = isDefined(anchor?.month) ? anchor.month : dateTime.month;
+	const fallbackDay = isDefined(anchor?.day) ? anchor.day : dateTime.day;
+
+	let { year, month, day } = num({
+		year: yy ?? fallbackYear,
+		month: prefix(mm ?? fallbackMonth),
+		day: dd ?? fallbackDay,
+	} as any);
 
 	if (unt) {
 		const { nbr: adjust = 1 } = num({ nbr });

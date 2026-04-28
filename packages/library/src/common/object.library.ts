@@ -22,24 +22,30 @@ export const asObject = <T>(obj?: Record<PropertyKey, any>) => {
 	return temp as T;
 }
 
-/** deep-compare object values for equality */
-export const isEqual = (obj1: any = {}, obj2: any = {}): boolean => {
-	const keys = new Set<PropertyKey>();											// union of unique keys from both Objects
-	const keys1 = isFunction(obj1.keys) ? Array.from<PropertyKey>(obj1.keys()) : ownKeys(obj1);
-	const keys2 = isFunction(obj2.keys) ? Array.from<PropertyKey>(obj2.keys()) : ownKeys(obj2);
+/** deep-compare object and array values for equality */
+export const isEqual = (a: any, b: any): boolean => {
+	if (a === b) return true;
+	if (isNullish(a) || isNullish(b)) return a === b;
+	if (typeof a !== typeof b) return false;
 
-	keys1.forEach(key => keys.add(key));
-	keys2.forEach(key => keys.add(key));
+	if (isArray(a) && isArray(b)) {
+		const left = a as any[], right = b as any[];
+		return left.length === right.length && left.every((v, i) => isEqual(v, right[i]));
+	}
 
-	return [...keys]																					// cast as Array
-		.every(key => {
-			const val1 = obj1[key];
-			const val2 = obj2[key];
+	if (isObject(a) && isObject(b)) {
+		const left = a as any, right = b as any;
+		const keys = new Set<PropertyKey>();
+		const keys1 = isFunction(left.keys) ? Array.from<PropertyKey>(left.keys()) : ownKeys(left);
+		const keys2 = isFunction(right.keys) ? Array.from<PropertyKey>(right.keys()) : ownKeys(right);
 
-			return isReference(val1) && isReference(val2)
-				? isEqual(val1, val2)																// recurse into object
-				: val1 === val2
-		})
+		keys1.forEach(k => keys.add(k));
+		keys2.forEach(k => keys.add(k));
+
+		return [...keys].every(k => isEqual(left[k], right[k]));
+	}
+
+	return false;
 }
 
 /** find all methods on an Object */

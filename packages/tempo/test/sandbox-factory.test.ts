@@ -24,10 +24,6 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should support shadowing global aliases', () => {
-		// // Clear previous calls to ensure assertions are local to this test
-		// (console.warn as any).mockClear();
-		// (console.error as any).mockClear();
-
 		// Global 'noon' is 12:00
 		const EarlyNoon = Tempo.create({
 			period: {

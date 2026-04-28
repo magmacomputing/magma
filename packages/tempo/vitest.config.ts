@@ -23,6 +23,13 @@ export default defineConfig({
     setupFiles: process.env.TEMPO_PREFILTER_CI === 'true'
       ? [polyfill, consoleSpySetup, ciPrefilterSetup]
       : [polyfill, consoleSpySetup],
+    // *.core.test.ts and *.lazy.test.ts assert plugin-isolation behaviour
+    // (e.g. "DurationModule not loaded").  The ciPrefilterSetup imports '#tempo'
+    // (full build) which side-effects modules into the runtime, making those
+    // assertions impossible to satisfy.  They run in the standard test job.
+    exclude: process.env.TEMPO_PREFILTER_CI === 'true'
+      ? ['**/*.core.test.ts', '**/*.lazy.test.ts', '**/node_modules/**']
+      : ['**/node_modules/**'],
   },
   resolve: {
     alias: isDist ? [

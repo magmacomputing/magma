@@ -3,7 +3,6 @@ import { getRuntime } from '#tempo/support';
 
 describe('Tempo.duration() (Core)', () => {
 	// Preserve the existing reset hooks and give this test suite a clean slate.
-	// Using the runtime API instead of the legacy globalThis[sym.$reset] slot.
 	let savedHooks: Array<() => void> = [];
 
 	beforeAll(() => {
@@ -13,14 +12,12 @@ describe('Tempo.duration() (Core)', () => {
 	});
 
 	afterAll(() => {
-		// Restore original state to avoid polluting other tests
 		const hooks = getRuntime().resetHooks;
 		hooks.clear();
 		savedHooks.forEach(h => hooks.add(h));
 	});
 
 	beforeEach(() => { Tempo.init(); });
-	afterEach(() => vi.restoreAllMocks())
 
 	it('should be undefined if plugin not loaded', () => {
 		expect(Tempo.duration).toBeUndefined();

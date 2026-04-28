@@ -1,3 +1,5 @@
+import { isBoolean } from '#library/assertion.library.js';
+
 import { sym, Token } from './tempo.symbol.js';
 import { asType } from '#library/type.library.js';
 import { asArray } from '#library/coercion.library.js';
@@ -121,6 +123,7 @@ export function compileRegExp(layout: string | RegExp, state: t.Internal.State, 
 				const pToken = getSymbol(prefix);
 				res = snippet?.[pToken as keyof Snippet]?.source ?? snippet?.[prefix as keyof Snippet]?.source
 					?? state.parse.snippet[pToken as keyof Snippet]?.source ?? state.parse.snippet[prefix as keyof Snippet]?.source
+					?? state.parse.layout[pToken as keyof Layout] ?? state.parse.layout[prefix as keyof Layout]
 					?? Layout[pToken as keyof Layout];
 			}
 
@@ -132,7 +135,7 @@ export function compileRegExp(layout: string | RegExp, state: t.Internal.State, 
 
 			return (isNullish(res) || res === match)							// if no definition found,
 				? match																							// return the original match
-				: matcher(res, d + 1);													// else recurse to see if snippet contains embedded "{}" pairs
+				: matcher(res, d + 1);															// else recurse to see if snippet contains embedded "{}" pairs
 		});
 	};
 
@@ -187,4 +190,56 @@ export function setPatterns(state: t.Internal.State) {
 		state.parse.pattern.set(symbol, compiled);
 	});
 
+}
+
+/**
+ * @internal Normalize a MonthDay configuration value against a base.
+ * @param value The user-supplied value to normalize
+ * @param base The base/default value (e.g., Tempo.MONTH_DAY)
+ */
+export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthDay): t.MonthDay {
+	if (isBoolean(value)) value = { active: value } as t.MonthDay;
+	const warned = new Set<string>();
+
+	// 1. Merge Locales and Layouts (Additive)
+	const localesList = [...new Set([...asArray(base.locales), ...asArray(value.locales)])];
+	const layoutsList = [...new Set([...asArray(base.layouts), ...asArray(value.layouts)])];
+
+	// 2. Merge TimeZones (Deep Additive)
+	const tzs: Record<string, string[]> = { ...base.timezones } as any;
+	if (value.timezones) {
+		Object.entries(value.timezones).forEach(([k, v]) => {
+			try {
+				const normalized = new Intl.Locale(k).baseName;
+				tzs[normalized] = [...new Set([...asArray(tzs[normalized] || []), ...asArray(v)])];
+			} catch {
+				tzs[k] = [...new Set([...asArray(tzs[k] || []), ...asArray(v)])];
+			}
+		});
+	}
+
+	// 3. Resolve to Internal Format
+	const resolvedLocales = localesList.map(mdy => {
+		const intl = new Intl.Locale(mdy);
+		const tzs_intl = (intl as any).getTimeZones?.() ?? [];
+		const fallback = tzs[intl.baseName] ?? [];
+
+		if (tzs_intl.length === 0 && fallback.length === 0 && !warned.has(intl.baseName)) {
+			warned.add(intl.baseName);
+			// Optionally: warn here if needed
+		}
+
+		return {
+			locale: intl.baseName,
+			timeZones: tzs_intl.length > 0 ? tzs_intl : fallback
+		};
+	});
+
+	return {
+		...value,
+		locales: localesList as any,
+		layouts: layoutsList as any,
+		timezones: tzs,
+		resolvedLocales
+	};
 }

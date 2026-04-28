@@ -110,7 +110,9 @@ The individual `rtfFormat` and `rtfStyle` options have been consolidated into a 
 - **v2.7.x:** `new Tempo({ relativeTime: { style: 'long' } })`
 
 ### Action Required:
-While the old top-level keys still work as fallbacks in the current release, you should update your configuration to use the new nested structure to ensure compatibility with future versions and the upcoming Release-C optimization engine.
+Only the deprecated top-level keys `rtfFormat` and `rtfStyle` are still accepted as legacy fallbacks in the current release, handled specifically in the `Tempo` class constructor for backward compatibility. 
+
+In contrast, the old `mdyLocales` and `mdyLayouts` keys are **not** treated as aliases and will be ignored; these must be migrated to the new nested `monthDay` structure. Update your configuration to ensure compatibility with future versions and the Release-C optimization engine. Refer to the `Tempo` constructor for implementation details on legacy alias handling.
 
 ## 🧪 Testing and Stability
 v2.x has been hardened with a 100% pass rate on our regression suite. If you were relying on undocumented "quirks" or bugs in v1.x parsing, you may find that v2.x is more strict and deterministic.

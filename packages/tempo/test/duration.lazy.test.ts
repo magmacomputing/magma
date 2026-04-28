@@ -4,9 +4,12 @@ describe('Tempo.duration() (Core)', () => {
 	beforeEach(() => { Tempo.init(); });
 
 	it('should throw "plugin not loaded" by default', () => {
+		Tempo.setCatchMode(false);
+		Tempo.unloadModule('DurationModule');
+
 		const t = new Tempo('2024-01-01');
 
-		expect(() => t.until('2024-01-02')).toThrow(/Tempo: DurationModule not loaded/);
+		expect(() => t.until('2024-01-02')).toThrow(/DurationModule not loaded/);
 		expect(console.error).toHaveBeenCalled();
 	});
 

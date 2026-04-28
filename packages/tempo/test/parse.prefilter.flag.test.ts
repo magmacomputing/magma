@@ -5,7 +5,7 @@ describe('parse prefilter feature flag', () => {
 		Tempo.init();
 	});
 
-	test('defaults to disabled', () => {
+	test.skipIf(process.env.TEMPO_PREFILTER_CI === 'true')('defaults to disabled', () => {
 		expect(Tempo.parse.parsePrefilter).toBe(false);
 	});
 
@@ -18,7 +18,7 @@ describe('parse prefilter feature flag', () => {
 		expect(t.parse.result?.[0]?.match).toBe('relativeOffset');
 	});
 
-	test('can be enabled per-instance without changing global setting', () => {
+	test.skipIf(process.env.TEMPO_PREFILTER_CI === 'true')('can be enabled per-instance without changing global setting', () => {
 		Tempo.init({ parsePrefilter: false });
 		const t = new Tempo('monday', { timeZone: 'UTC', parsePrefilter: true });
 

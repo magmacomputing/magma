@@ -61,7 +61,8 @@ describe(`${label} init`, () => {
 
   test('monthDay.locales are set after init with a locale', () => {
     Tempo.init({ monthDay: { locales: ['en-PH'] } });
-    expect(Tempo.parse.monthDay.locales.length).toBeGreaterThan(0);
+    // locales is an array of strings: ['en-PH', ...]
+    expect(Tempo.parse.monthDay.locales).toEqual(expect.arrayContaining(['en-PH']));
   })
 
 })

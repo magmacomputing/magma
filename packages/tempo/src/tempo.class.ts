@@ -18,11 +18,12 @@ import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/inte
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
+import { resolveMonthDay } from './support/tempo.util.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
 
 import { datePattern } from './support/tempo.default.js';
-import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, type TempoBrand, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, $ImmutableSkip, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 import { instant, normalizeUtcOffset } from '#library/temporal.library.js';
 
@@ -93,8 +94,6 @@ export class Tempo {
 	/** flag to prevent recursion during init */							static #lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
 	/** Set of allowed lowercased tokens for the Master Guard */		static #allowedTokens: Set<string> = new Set();
-	/** Track locales that have already been warned about missing fallbacks */
-	static #mdyWarned = new Set<string>();
 
 	static [$IsBase] = true;
 
@@ -102,6 +101,9 @@ export class Tempo {
 	static [$Internal]() {
 		return ClassStates.get(this) ?? Tempo.#global;
 	}
+
+	static [$ImmutableSkip] = ['init'];
+	static get $ImmutableSkip() { return ['init']; }
 
 	/** @internal brand check to distinguish Tempo objects from other objects */
 	get [$Identity](): true { return true }
@@ -222,7 +224,7 @@ export class Tempo {
 		const tz = String(timeZone);
 
 		// Find the resolved timezone list for the current locale (which includes getTimeZones data)
-		const activeLocaleData = (mdy.locales as any[])?.find(l => l.locale === intl.baseName || l.locale === intl.language);
+		const activeLocaleData = mdy.resolvedLocales?.find(l => l.locale === intl.baseName || l.locale === intl.language);
 		if (activeLocaleData?.timeZones?.includes(tz)) return true;
 
 		// Fallback to global timezones if not found in resolved locales
@@ -392,7 +394,7 @@ export class Tempo {
 						break;
 
 					case 'monthDay':
-						shape.parse.monthDay = Tempo.#resolveMonthDay(arg.value as t.MonthDay);
+						shape.parse.monthDay = resolveMonthDay(arg.value, Tempo.MONTH_DAY);
 						break;
 
 					case 'layoutOrder':
@@ -489,53 +491,16 @@ export class Tempo {
 		setPatterns(shape);															// setup Regex DateTime patterns
 	}
 
-	/** resolve regional date-parsing configuration */
-	static #resolveMonthDay(value: t.MonthDay | boolean = {}): t.MonthDay {
-		if (isBoolean(value)) value = { active: value } as t.MonthDay
-		const base = Tempo.MONTH_DAY;
-		const warned = Tempo.#mdyWarned;
-
-		// 1. Merge Locales and Layouts (Additive)
-		const localesList = [...new Set([...asArray(base.locales), ...asArray(value.locales)])];
-		const layoutsList = [...new Set([...asArray(base.layouts), ...asArray(value.layouts)])];
-
-		// 2. Merge TimeZones (Deep Additive)
-		const tzs: Record<string, string[]> = { ...base.timezones } as any;
-		if (value.timezones) {
-			Object.entries(value.timezones).forEach(([k, v]) => {
-				try {
-					const normalized = new Intl.Locale(k).baseName;
-					tzs[normalized] = [...new Set([...asArray(tzs[normalized] || []), ...asArray(v)])];
-				} catch {
-					tzs[k] = [...new Set([...asArray(tzs[k] || []), ...asArray(v)])];
-				}
-			});
-		}
-
-		// 3. Resolve to Internal Format
-		const resolvedLocales = localesList.map(mdy => {
-			const intl = new Intl.Locale(mdy);
-			const tzs_intl = (intl as any).getTimeZones?.() ?? [];
-			const fallback = tzs[intl.baseName] ?? [];
-
-			if (tzs_intl.length === 0 && fallback.length === 0 && !warned.has(intl.baseName)) {
-				warned.add(intl.baseName);
-				Tempo.#dbg.warn(undefined, `MDY Detection: Locale "${intl.baseName}" has no associated timezones in this environment and is missing from MONTH_DAY registry. Please add it to Tempo.MONTH_DAY.timezones to ensure correct date parsing order.`);
-			}
-
-			return {
-				locale: intl.baseName,
-				timeZones: tzs_intl.length > 0 ? tzs_intl : fallback
-			}
-		});
-
-		return {
-			...value,
-			locales: resolvedLocales as any,
-			layouts: layoutsList as any,
-			timezones: tzs
-		}
-	}
+	// /** resolve regional date-parsing configuration */
+	//    /**
+	// 	* Normalize a MonthDay configuration value against the base.
+	// 	* @internal
+	// 	*/
+	//    static resolveMonthDay(value: t.MonthDay | boolean = {}): t.MonthDay {
+	// 	   // Use the shared utility and Tempo.MONTH_DAY as base
+	// 	   // Optionally, warn using #dbg if needed
+	// 	   return resolveMonthDayUtil(value, Tempo.MONTH_DAY);
+	//    }
 
 	/** support "Global Discovery" of user-options */
 	static [$setDiscovery](shape: Internal.State, discovery?: Internal.Discovery) {
@@ -804,6 +769,9 @@ export class Tempo {
 							discovery.terms = [...asArray(discovery.terms || []), ...asArray(discovery.term)];
 							Tempo.#dbg.warn((this as any)[$Internal]().config, 'Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
 						}
+						if (discovery.plugin) {
+							discovery.plugins = [...asArray(discovery.plugins || []), ...asArray(discovery.plugin)];
+						}
 						if (discovery.options) (this as any)[$setConfig]((this as any)[$Internal](), discovery.options)
 						if (discovery.plugins) this.extend(discovery.plugins, discovery.options)
 						if (discovery.terms) this.extend(discovery.terms)
@@ -852,20 +820,20 @@ export class Tempo {
 			static [Symbol.toStringTag] = 'TempoSandbox';
 		}
 
-		let discovery = options.discovery;
-		let data: any = { options: { ...options }, scope: 'sandbox' };
+		const normalizedDiscovery = (isObject(options.discovery) && !isSymbol(options.discovery)) || isUndefined(options.discovery)
+			? Symbol('TempoSandbox')
+			: options.discovery as string | symbol;
 
-		if (isObject(discovery)) {
-			data = { ...data, ...discovery };
-			discovery = Symbol('TempoSandbox');
-		} else if (isUndefined(discovery)) {
-			discovery = Symbol('TempoSandbox');
+		let data: any = { options: { ...options, discovery: normalizedDiscovery }, scope: 'sandbox' };
+
+		if (isObject(options.discovery) && !isSymbol(options.discovery)) {
+			data = { ...data, ...options.discovery as any };
 		}
 
-		(globalThis as any)[discovery as any] = data;
+		(globalThis as any)[normalizedDiscovery as any] = data;
 
 		const state = init(options, false, (this as any)[$Internal]());
-		state.config.discovery = discovery as any;
+		state.config.discovery = normalizedDiscovery as any;
 		ClassStates.set(SandboxTempo as any, state);
 		setPatterns(state); // compile regex patterns for the isolated sandbox state
 
@@ -873,15 +841,15 @@ export class Tempo {
 		(SandboxTempo as any)[$setConfig](state,
 			{
 				scope: 'sandbox',
-				discovery: discovery as any,
+				discovery: normalizedDiscovery as any,
 				catch: options.catch ?? false
 			},
-			options
+			{ ...options, discovery: normalizedDiscovery }
 		);
 
 		// If the sandbox was provided with monthDay discovery, resolve and apply it to the isolated state
 		if (isObject(options.discovery) && options.discovery.monthDay) {
-			state.parse.monthDay = Tempo.#resolveMonthDay(options.discovery.monthDay);
+			state.parse.monthDay = resolveMonthDay(options.discovery.monthDay, Tempo.MONTH_DAY);
 		}
 
 		Object.freeze(SandboxTempo);
@@ -907,7 +875,7 @@ export class Tempo {
 			// 1. Augment the parsing state (non-destructively)
 			const parse = state.parse;
 			parse.pattern ??= new Map<symbol, RegExp>();
-			parse.monthDay = Tempo.#resolveMonthDay(Default.monthDay as t.MonthDay);
+			parse.monthDay = resolveMonthDay(Default.monthDay, Tempo.MONTH_DAY);
 			parse.layoutOrder = asArray(Default.layoutOrder as t.Options['layoutOrder']) as string[];
 			parse.parsePrefilter = Boolean(Default.parsePrefilter);
 			parse.pivot ??= Default.pivot as any;
@@ -919,9 +887,17 @@ export class Tempo {
 			const timeZone = options.timeZone ?? sys.timeZone;
 			const calendar = options.calendar ?? sys.calendar;
 			const config = state.config;
-			const discovery = options.discovery ?? Symbol.keyFor($Tempo) as string;
+			let discovery = options.discovery ?? Symbol.keyFor($Tempo) as string;
 			const storeKey = options.store || config.store || Symbol.keyFor($Tempo) as string;
-			const userDiscovery = (isObject(discovery) && !isSymbol(discovery)) ? discovery as Internal.Discovery : (globalThis as any)[isString(discovery) ? Symbol.for(discovery) : discovery] as Internal.Discovery;
+
+			// Normalize discovery to a symbol if it's an object to prevent leakage into config state
+			if (isObject(discovery) && !isSymbol(discovery)) {
+				const data = discovery;
+				discovery = Symbol.for(`tempo.discovery.${Tempo.#usrCount++}`);
+				(globalThis as any)[discovery] = data;
+			}
+			const normalizedDiscovery = isString(discovery) ? Symbol.for(discovery) : discovery;
+			const userDiscovery = (globalThis as any)[normalizedDiscovery] as Internal.Discovery;
 
 			// Resolve locale if missing or invalid
 			const currentLocale = config.locale;
@@ -948,12 +924,12 @@ export class Tempo {
 					calendar,
 					timeZone,
 					locale,
-					discovery: storeKey,
+					discovery: normalizedDiscovery,
 					formats: config.formats ?? enumify(STATE.FORMAT, false),
 					scope: 'global',
 					catch: options.catch ?? config.catch ?? false
 				},
-				{ store: storeKey, discovery: storeKey, scope: 'global' },
+				{ store: storeKey, discovery: normalizedDiscovery, scope: 'global' },
 				this.readStore(storeKey),													// allow for storage-values to overwrite
 				(this as any)[$setDiscovery](state, rt.pluginsDb as any),		// persistent library extensions
 				(this as any)[$setDiscovery](state, userDiscovery),	// user Discovery (Configuration bootstrapping)
@@ -974,6 +950,29 @@ export class Tempo {
 		}
 
 		return this
+	}
+
+	/** explicitly enable/disable "catch" mode for internal errors */
+	static setCatchMode(catchMode: boolean): typeof Tempo {
+		(this as any)[$setConfig]((this as any)[$Internal](), { catch: catchMode });
+		return this;
+	}
+
+	/** @internal unload a module by name (experimental internal use only) */
+	static unloadModule(name: string): typeof Tempo {
+		const rt = getRuntime();
+		delete rt.modules[name];
+		rt.installed.delete(name);
+		const baseName = name.endsWith('Module') ? name.slice(0, -6) : name;
+		rt.installed.delete(baseName);
+		return this;
+	}
+
+	/** @internal check if a module is loaded */
+	static hasModule(name: string): boolean {
+		const rt = getRuntime();
+		const mod = name === 'term' ? 'TermsModule' : name;
+		return isDefined(rt.modules[mod]) || rt.installed.has(mod) || rt.pluginsDb.plugins.some(p => p.name === mod);
 	}
 
 	/** @internal Reads options from persistent storage (e.g., localStorage). */
@@ -1272,6 +1271,23 @@ export class Tempo {
 		}
 
 		if (!this.#local.parse.lazy) this.#resolve();						// attempt to interpret immediately (if not lazy)
+	}
+
+	/** explicitly enable/disable "catch" mode for this instance */
+	setCatchMode(catchMode: boolean): this {
+		setProperty(this.#local.config, 'catch', catchMode);
+		return this;
+	}
+
+	/** @internal unload a module by name (experimental internal use only) */
+	unloadModule(name: string): this {
+		(this.constructor as typeof Tempo).unloadModule(name);
+		return this;
+	}
+
+	/** @internal check if a module is loaded */
+	hasModule(name: string): boolean {
+		return (this.constructor as typeof Tempo).hasModule(name);
 	}
 
 	/** Resolve the instance to a Temporal.ZonedDateTime (with optional callback) */

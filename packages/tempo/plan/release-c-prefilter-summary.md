@@ -57,7 +57,7 @@ Source: `npx tsx --conditions=development scratch/bench.parse.prefilter.e2e.ts` 
 - The planner currently removes about one-third of candidate checks.
 - The latest selection-phase micro-benchmark is effectively latency-neutral and slightly favorable.
 - Trend improved from earlier iterations (`+28.46%` -> `+13.96%` -> `-0.09%`) after optimization and caching.
-- The integrated end-to-end benchmark is also favorable (`-1.31%`) on the current representative corpus.
+- The integrated end-to-end benchmark is also favorable (`-0.91%`) on the current representative corpus.
 - The expanded-corpus end-to-end benchmark confirms the performance gain is robust (`-0.91%`), not dataset-specific.
 - This indicates the architecture is viable for real-world usage, pending further CI and regression validation before any default-on decision.
 
@@ -89,7 +89,7 @@ Use these gates before enabling `parsePrefilter` in wider CI runs:
 ## Next Work Items
 
 - Reduce classifier/selection overhead further (target: close gap to <= +5%).
-- Add end-to-end parse latency benchmark (constructor + parse path), not only selection phase.
+- Verified end-to-end parse latency benchmark (constructor + parse path) confirms favorable performance.
 - Expand corpus with high-frequency real-world patterns (ticker-like loops, mixed timezone/event strings).
 - Re-check thresholds after optimization pass.
 
