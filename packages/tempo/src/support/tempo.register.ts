@@ -94,9 +94,10 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 			}
 
 			if (Array.isArray(current) && Array.isArray(val)) {		// append to existing arrays (e.g. MONTH_DAY.locales)
+				const arr = current as any[];
 				val.forEach(v => {
-					if (!current.some((existing: any) => isEqual(existing, v))) {
-						current.push(v);
+					if (!arr.some((existing: any) => isEqual(existing, v))) {
+						arr.push(v);
 						if (isDefined(st)) {
 							if (!Array.isArray(st[key])) setProperty(st, key, []);
 							if (!st[key].some((existing: any) => isEqual(existing, v))) st[key].push(v);
@@ -106,7 +107,7 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 				return;
 			}
 
-			if (isObject(current) && isObject(val)) {								// deep merge for objects (e.g. MONTH_DAY.timezones)
+			if (isObject(current) && isObject(val)) {							// deep merge for objects (e.g. MONTH_DAY.timezones)
 				if (isDefined(st) && !isObject(st[key])) setProperty(st, key, {});
 				merge(current, val, isDefined(st) ? st[key] : undefined);
 				return;
