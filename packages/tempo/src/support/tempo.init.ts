@@ -38,10 +38,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		event: Object.assign({}, baseState?.parse.event ?? Event),
 		period: Object.assign({}, baseState?.parse.period ?? Period),
 		ignore: baseState ? { ...baseState.parse.ignore } : Object.fromEntries(asArray(Ignore).map(w => [w, w])),
-		monthDay: {
-			...((isObject(baseState?.parse.monthDay) ? baseState?.parse.monthDay : {}) as object),
-			...((isObject(Default.monthDay) ? Default.monthDay : {}) as object)
-		},
+		monthDay: resolveMonthDay(baseState?.parse.monthDay ?? {}, Default.monthDay as any),
 		layoutOrder: asArray<string>(baseState?.parse.layoutOrder ?? Default.layoutOrder as any),
 		parsePrefilter: Boolean(baseState?.parse.parsePrefilter ?? Default.parsePrefilter),
 		pivot: (baseState?.parse.pivot ?? Default.pivot) as any,

@@ -51,7 +51,7 @@ const _ParseEngine = {
 
 		try {
 			const { config } = state;
-			const val = dateTime ?? state.anchor ?? (isTempo(tempo) ? (tempo as any).toDateTime() : (isZonedDateTime(tempo) ? tempo : (isInstant(tempo) ? tempo.toZonedDateTimeISO(config.timeZone) : undefined)));
+			const val = dateTime ?? state.anchor ?? state.config.anchor ?? (isTempo(tempo) ? (tempo as any).toDateTime() : (isZonedDateTime(tempo) ? tempo : (isInstant(tempo) ? tempo.toZonedDateTimeISO(config.timeZone) : undefined)));
 			const basis = isTempo(val) ? (val as any).toDateTime() : (isDefined(val) ? val : instant().toZonedDateTimeISO(config.timeZone));
 			const isAnchored = isDefined(val);
 			if (isRoot) {
@@ -504,15 +504,15 @@ const _ParseEngine = {
 	result(state: any, ...rest: Partial<t.Internal.Match>[]) {
 		const match = Object.assign({}, ...rest) as t.Internal.Match;
 
-		if (isDefined(state.parse.anchor)) {
-			if (!match.isAnchored) match.isAnchored = true;
+		if (isDefined(state.parse.anchor))
 			match.anchor = state.parse.anchor;
-		}
+
+		if (!isDefined(match.isAnchored) && isDefined(state.parse.isAnchored))
+			match.isAnchored = state.parse.isAnchored;
 
 		const res = state.parse.result;
-		if (isDefined(res) && !Object.isFrozen(res)) {
+		if (isDefined(res) && !Object.isFrozen(res))
 			if (!res.includes(match)) res.push(match);
-		}
 	}
 }
 

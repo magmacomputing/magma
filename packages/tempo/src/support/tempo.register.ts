@@ -31,14 +31,13 @@ export function registryReset() {
 
 		// 1. Purge all own-properties from state and target (if configurable and extensible)
 		[state, target].filter(obj => obj != null).forEach(obj => {
-			if (Object.isExtensible(obj)) {
-				Reflect.ownKeys(obj)
-					.filter(key => !isSymbol(key) || !Object.values(sym).includes(key as any))
-					.forEach(key => {
-						const desc = Object.getOwnPropertyDescriptor(obj, key);
-						if (desc?.configurable) delete obj[key];
-					});
-			} // else: skip deletion for non-extensible objects
+			const symInternal = Object.values(sym);								// these are the Symbols we want to preserve
+			Reflect.ownKeys(obj)
+				.filter(key => !isSymbol(key) || !symInternal.includes(key as any))
+				.forEach(key => {
+					const desc = Object.getOwnPropertyDescriptor(obj, key);
+					if (desc?.configurable) delete obj[key];
+				});
 		});
 
 		// 2. Restore defaults using property descriptors to preserve accessors/configurability

@@ -448,7 +448,9 @@ export class Tempo {
 						break;
 
 					case 'relativeTime':
-						if (isObject(optVal))
+						if (isFunction(optVal))
+							shape.config.relativeTime = optVal as any;
+						else if (isObject(optVal))
 							shape.config.relativeTime = { ...shape.config.relativeTime, ...(optVal as any) };
 						break;
 
@@ -772,25 +774,57 @@ export class Tempo {
 						if (discovery.plugin) {
 							discovery.plugins = [...asArray(discovery.plugins || []), ...asArray(discovery.plugin)];
 						}
-						if (discovery.options) (this as any)[$setConfig]((this as any)[$Internal](), discovery.options)
-						if (discovery.plugins) this.extend(discovery.plugins, discovery.options)
-						if (discovery.terms) this.extend(discovery.terms)
 
-						// handle other discovery keys directly
-						if (discovery.numbers) registryUpdate('NUMBER', discovery.numbers)
-						if (discovery.timeZones) {
-							const tzs = Object.fromEntries(ownEntries(discovery.timeZones).map(([k, v]) => [k.toString().toLowerCase(), v]));
-							registryUpdate('TIMEZONE', tzs)
-						}
-						if (discovery.formats) {
-							(this as any)[$Internal]().config.formats = (this as any)[$Internal]().config.formats.extend(discovery.formats) as t.FormatRegistry;
-							registryUpdate('FORMAT', discovery.formats)
-						}
+						DISCOVERY.keys().forEach(key => {
+							const val = discovery[key];
+							if (!isDefined(val)) return;
+
+							switch (key) {
+								case 'options':
+									(this as any)[$setConfig]((this as any)[$Internal](), val);
+									break;
+
+								case 'plugins':
+									this.extend(val, discovery.options);
+									break;
+
+								case 'terms':
+									this.extend(val);
+									break;
+
+								case 'numbers':
+									registryUpdate('NUMBER', val);
+									break;
+
+								case 'timeZones': {
+									const tzs = Object.fromEntries(ownEntries(val).map(([k, v]) => [k.toString().toLowerCase(), v]));
+									registryUpdate('TIMEZONE', tzs);
+									break;
+								}
+
+								case 'formats': {
+									const internal = (this as any)[$Internal]();
+									internal.config.formats = internal.config.formats.extend(val) as t.FormatRegistry;
+									registryUpdate('FORMAT', val);
+									break;
+								}
+
+								case 'monthDay':
+									registryUpdate('MONTH_DAY', val);
+									break;
+
+								case 'relativeTime': {
+									const internal = (this as any)[$Internal]();
+									internal.config.relativeTime = { ...internal.config.relativeTime, ...val };
+									break;
+								}
+							}
+						});
 
 						// only trigger init if we're assigning a new discovery object to a symbol
 						if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
 							const discovery = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
-							const discoverySymbol = isString(discovery) ? Symbol.for(discovery) : (isSymbol(discovery) && !Symbol.keyFor(discovery) ? Symbol.for('TempoSandbox') : discovery);
+							const discoverySymbol = isString(discovery) ? Symbol.for(discovery) : (isSymbol(discovery) && !Symbol.keyFor(discovery) ? Symbol('TempoSandbox') : discovery);
 
 							if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item) {
 								(globalThis as Record<symbol, any>)[discoverySymbol as symbol] = item;
@@ -824,7 +858,7 @@ export class Tempo {
 
 		const discovery = options.discovery;
 		const normalizedDiscovery = (isObject(discovery) && !isSymbol(discovery)) || isUndefined(discovery) || (isSymbol(discovery) && !Symbol.keyFor(discovery))
-			? Symbol.for('TempoSandbox')
+			? Symbol('TempoSandbox')
 			: (isString(discovery) ? Symbol.for(discovery) : discovery) as string | symbol;
 
 		let data: any = { options: { ...options, discovery: normalizedDiscovery }, scope: 'sandbox' };
