@@ -7,18 +7,11 @@ export function asArray<T>(arr: Exclude<ArrayLike<T>, string> | undefined): T[];
 export function asArray<T>(arr: T | Exclude<Iterable<T> | undefined, string>): NonNullable<T>[];
 export function asArray<T, K>(arr: Iterable<T> | ArrayLike<T>, fill: K): K[];
 export function asArray<T, K>(arr: T | Iterable<T> | ArrayLike<T> = [], fill?: K): (T | K)[] {
-	switch (true) {
-		case isArrayLike<T>(arr):															// allow for {length:nn} objects
-		case isIterable<T>(arr) && !isString(arr):							// dont iterate Strings
-			return Array.from<T, K>(arr, val => {
-				return isUndefined(fill) || isDefined(val)
-					? val as unknown as K														// if no {fill}, then use {val}
-					: clone(fill)																		// clone {fill} to create new Objects
-			});
+	const mapFn = (val: unknown) => (isUndefined(fill) || isDefined(val)) ? val as unknown as K : clone(fill);
 
-		default:
-			return Array.of(arr);
-	}
+	return (isArrayLike<T>(arr) || (isIterable<T>(arr) && !isString(arr)))
+		? Array.from<T, K>(arr as Iterable<T>, mapFn)
+		: [arr as T] as (T | K)[];
 }
 
 /** stringify if not nullish */

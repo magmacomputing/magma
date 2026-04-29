@@ -33,11 +33,17 @@ export const isEqual = (a: any, b: any): boolean => {
 		return left.length === right.length && left.every((v, i) => isEqual(v, right[i]));
 	}
 
-	if (isMap(a) && isMap(b))
-		return a.size === b.size && Array.from(a.keys()).every(k => b.has(k) && isEqual(a.get(k), b.get(k)));
+	if (isMap(a) && isMap(b)) {
+		const left = a as Map<any, any>, right = b as Map<any, any>;
+		return left.size === right.size &&
+			Array.from(left.keys()).every(k => right.has(k) && isEqual(left.get(k), right.get(k)));
+	}
 
-	if (isSet(a) && isSet(b))
-		return a.size === b.size && Array.from(a).every(v => b.has(v));
+	if (isSet(a) && isSet(b)) {
+		const left = a as Set<any>, right = b as Set<any>;
+		return left.size === right.size &&
+			Array.from(left).every(v => right.has(v));
+	}
 
 	if (isObject(a) && isObject(b)) {
 		const left = a as any, right = b as any;
