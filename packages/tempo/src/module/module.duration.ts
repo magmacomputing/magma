@@ -119,7 +119,8 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 		const rtOptions = opts['relativeTime'];
 		
 		const rtf = (typeof rtOptions === 'function' ? rtOptions : rtOptions?.format) 
-			|| rtConfig?.format || opts['rtfFormat'] || (this as any).config['rtfFormat'];
+			|| (typeof rtConfig === 'function' ? rtConfig : rtConfig?.format)
+			|| opts['rtfFormat'] || (this as any).config['rtfFormat'];
 
 		const getFormatted = (val: number, u: any) => {
 			if (typeof rtf === 'function') return rtf(val, u);

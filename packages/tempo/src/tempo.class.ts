@@ -303,10 +303,10 @@ export class Tempo {
 		const mergedOptions: t.Options = storeKey
 			? Object.assign(Tempo.readStore(storeKey), providedOptions)
 			: providedOptions;
-		if (shape === Tempo.#global)																// sanitize global configuration
+		if (shape === Tempo.#global)														// sanitize global configuration
 			omit(mergedOptions, 'value', 'anchor', 'result');
 
-		if (isEmpty(mergedOptions))																	// nothing to do
+		if (isEmpty(mergedOptions))															// nothing to do
 			return;
 
 		/** helper to normalize snippet/layout Options into the target Config */
@@ -900,7 +900,7 @@ export class Tempo {
 				discovery = Symbol.for(`tempo.discovery.${Tempo.#usrCount++}`);
 				(globalThis as any)[discovery] = data;
 			}
-			const normalizedDiscovery = isString(discovery) ? Symbol.for(discovery) : discovery;
+			const normalizedDiscovery = isString(discovery) ? Symbol.for(discovery) : (discovery as symbol);
 			const userDiscovery = (globalThis as any)[normalizedDiscovery] as Internal.Discovery;
 
 			// Resolve locale if missing or invalid
@@ -923,18 +923,17 @@ export class Tempo {
 			registryReset();																			// purge formats and numbers
 
 			// 3. Apply configuration via unified setters (non-destructive merge)
-			(this as any)[$setConfig](state,
-				{
-					calendar,
-					timeZone,
-					locale,
-					discovery: normalizedDiscovery,
-					formats: config.formats ?? enumify(STATE.FORMAT, false),
-					scope: 'global',
-					catch: options.catch ?? config.catch ?? false
-				},
+			(this as any)[$setConfig](state, {
+				calendar,
+				timeZone,
+				locale,
+				discovery: normalizedDiscovery,
+				formats: config.formats ?? enumify(STATE.FORMAT, false),
+				scope: 'global',
+				catch: options.catch ?? config.catch ?? false
+			},
 				{ store: storeKey, discovery: normalizedDiscovery, scope: 'global' },
-				this.readStore(storeKey),													// allow for storage-values to overwrite
+				this.readStore(storeKey),														// allow for storage-values to overwrite
 				(this as any)[$setDiscovery](state, rt.pluginsDb as any),		// persistent library extensions
 				(this as any)[$setDiscovery](state, userDiscovery),	// user Discovery (Configuration bootstrapping)
 				options,																						// explicit options from the call
@@ -1022,7 +1021,7 @@ export class Tempo {
 	static get config() {
 		const state = (this as any)[$Internal]();
 		const out = Object.create(Default);
-		const descriptors = omit(Object.getOwnPropertyDescriptors(state.config), 'value', 'anchor');
+		const descriptors = omit(Object.getOwnPropertyDescriptors(state.config), 'value', 'anchor', 'result');
 
 		Object.defineProperties(out, descriptors);
 		Object.defineProperty(out, 'toJSON',										// bare-bones: only show global overrides
@@ -1520,10 +1519,23 @@ export class Tempo {
 	get parse(): Internal.Parse {
 		const self: Tempo = unwrap(this);
 		self.#resolve();
+
 		// Return a shadowed view so we can safely inject matches without breaking the freeze on the original state
 		const out = Object.create(self.#local.parse);
-		if (self.#matches !== undefined)
-			Object.defineProperty(out, 'result', { value: self.#matches, enumerable: true, configurable: true });
+
+		// Explicitly surface key debug properties as "own" properties for better visibility in consoles/REPLs
+		const keys = ['anchor', 'isAnchored', 'mode', 'pivot'] as const;
+		for (const key of keys) {
+			if (self.#local.parse[key] !== undefined)
+				Object.defineProperty(out, key, { value: self.#local.parse[key], enumerable: true, configurable: true });
+		}
+
+		// Always surface the result (prioritizing current operation matches)
+		Object.defineProperty(out, 'result', {
+			value: self.#matches ?? self.#local.parse.result ?? [],
+			enumerable: true,
+			configurable: true
+		});
 
 		return out as t.Internal.Parse;
 	}
@@ -1639,29 +1651,6 @@ export class Tempo {
 
 		return keys
 			.some(key => enums.OPTION.has(key));
-	}
-
-	/** check if we've been given a ZonedDateTimeLike object */
-	#isZonedDateTimeLike(tempo: t.DateTime | t.Options | undefined): tempo is Temporal.ZonedDateTimeLike & { value?: any } {
-		if (!isObject(tempo) || isEmpty(tempo) || isTempo(tempo)) return false;
-
-		// if it contains any 'options' keys (other than value), it's likely an Options object
-		const keys = ownKeys(tempo);
-		if (keys.some(key => enums.OPTION.has(key) && key !== 'value')) return false;
-
-		return isZonedDateTimeLike(tempo);
-	}
-
-	#result(...rest: Partial<Internal.MatchResult>[]) {
-		const match = Object.assign({}, ...rest) as Internal.MatchResult;	// collect all object arguments
-
-		if (isDefined(this.#anchor) && !match.isAnchored)
-			match.isAnchored = true;
-
-		const res = (this.#matches ?? this.#local.parse.result) as any[];
-		if (isDefined(res) && !Object.isFrozen(res)) {
-			if (!res.includes(match)) res.push(match);
-		}
 	}
 }
 

@@ -220,6 +220,7 @@ export namespace Internal {
 		/** groups from the pattern match */										groups?: Groups;
 		/** was this a nested/anchored parse? */								isAnchored?: boolean;
 		/** where this match came from: 'default', 'global', 'local', or `plugin:${string}` */ source?: MatchSource;
+		/** anchor value used for this match */									anchor?: Temporal.ZonedDateTime;
 	} & (TypeValue<any> | MatchExtend)
 
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */
@@ -237,6 +238,7 @@ export namespace Internal {
 		/** pivot year for two-digit years */										pivot: number;
 		/** parsing match result */															result: Match[];
 		/** was this a nested/anchored parse? */								isAnchored?: boolean;
+		/** anchor value used for this parse operation */				anchor?: Temporal.ZonedDateTime;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode: enums.MODE;
 		/** @internal is parsing currently deferred? */					lazy: boolean;
 		/** @internal lazy delegator for formats */							format?: any;

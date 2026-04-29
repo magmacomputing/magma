@@ -16,6 +16,7 @@ import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/plugin.type.js';
 import { sym, isTempo, TermError, getRuntime, Match } from '../support/support.index.js';
 import { markConfig, setPatterns, init, extendState } from '../support/support.index.js';
+import { setProperty } from '#tempo/support/tempo.util.js';
 import enums from '../support/tempo.enum.js';
 import * as t from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
@@ -40,16 +41,25 @@ const _ParseEngine = {
 
 		state.parseDepth = (state.parseDepth ?? 0) + 1;
 		const isRoot = state.parseDepth === 1;
-		if (isRoot) state.matches = [];
+
+		if (isRoot) {
+			if (!Array.isArray(state.parse.result))
+				setProperty(state.parse, 'result', []);
+			state.parse.result.length = 0;
+		}
 		let today: Temporal.ZonedDateTime;
 
 		try {
 			const { config } = state;
 			const val = dateTime ?? state.anchor ?? (isTempo(tempo) ? (tempo as any).toDateTime() : (isZonedDateTime(tempo) ? tempo : (isInstant(tempo) ? tempo.toZonedDateTimeISO(config.timeZone) : undefined)));
-			const basis = isDefined(val) ? val : instant().toZonedDateTimeISO(config.timeZone);
+			const basis = isTempo(val) ? (val as any).toDateTime() : (isDefined(val) ? val : instant().toZonedDateTimeISO(config.timeZone));
+			const isAnchored = isDefined(val);
+			if (isRoot) {
+				state.parse.anchor = basis;
+				state.parse.isAnchored = isAnchored;
+			}
 
 			const [tz, cal] = isTempo(basis) ? [(basis as any).tz, (basis as any).cal] : getTemporalIds(basis ?? config.timeZone, basis ?? config.calendar);
-			const isAnchored = isDefined(val);
 			today = isZonedDateTime(basis) ? basis : (isTempo(basis) ? (basis as any).toDateTime() : (isZonedDateTime(val) ? val : instant().toZonedDateTimeISO(tz).withCalendar(cal)));
 
 			const TempoClass = getRuntime().modules['Tempo'];
@@ -129,22 +139,8 @@ const _ParseEngine = {
 			if (isZonedDateTime(dateTime) && !state.errored)
 				dateTime = dateTime.withTimeZone(targetTz).withCalendar(targetCal);
 
-			if (isRoot) {
-				if (Reflect.isExtensible(state.parse)) {
-					if (isUndefined(state.parse.result)) {
-						Object.defineProperty(state.parse, 'result', {
-							value: [...(state.matches ?? [])],
-							writable: true, configurable: true, enumerable: true
-						});
-					} else {
-						state.parse.result.push(...(state.matches ?? []));
-					}
-				}
-			}
-
 			return (isZonedDateTime(dateTime) && !state.errored) ? dateTime : undefined as any;
 		} finally {
-			if (isRoot) delete state.matches;
 			state.parseDepth--;
 		}
 	},
@@ -300,24 +296,16 @@ const _ParseEngine = {
 
 			dateTime = parseZone(groups, dateTime, state.config);
 			dateTime = _ParseEngine.parseGroups(state, groups, dateTime, isAnchored, resolvingKeys);
-
 			dateTime = parseWeekday(groups, dateTime, (TempoClass as any)?.[sym.$dbg], state.config);
-
-			// Inject anchor into config for parseDate
-			// const prevAnchor = state.config.anchor;
-			// state.config.anchor = state.anchor ?? dateTime;
 			dateTime = parseDate(groups, dateTime, (TempoClass as any)?.[sym.$dbg], state.config, state.parse["pivot"]);
-			// state.config.anchor = prevAnchor;
-
 			dateTime = parseTime(groups, dateTime);
 
 			const isChanged = !dateTime.toPlainTime().equals(anchorTime);
 			if (!isAnchored && !hasTime && !isChanged)
 				dateTime = dateTime.withPlainTime('00:00:00');
 
-			if (isZonedDateTime(dateTime)) {
+			if (isZonedDateTime(dateTime))
 				Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: dateTime, match: symKey.description, groups });
-			}
 
 			break;
 		}
@@ -331,7 +319,6 @@ const _ParseEngine = {
 
 		ownEntries(groups)
 			.forEach(([key, val]: [string, any]) => isEmpty(val) && delete groups[key]);
-
 
 		return groups as t.Groups;
 	},
@@ -517,15 +504,17 @@ const _ParseEngine = {
 	result(state: any, ...rest: Partial<t.Internal.Match>[]) {
 		const match = Object.assign({}, ...rest) as t.Internal.Match;
 
-		if (isDefined(state.anchor) && !match.isAnchored)
-			match.isAnchored = true;
+		if (isDefined(state.parse.anchor)) {
+			if (!match.isAnchored) match.isAnchored = true;
+			match.anchor = state.parse.anchor;
+		}
 
-		const res = state.matches ?? state.parse.result;
+		const res = state.parse.result;
 		if (isDefined(res) && !Object.isFrozen(res)) {
 			if (!res.includes(match)) res.push(match);
 		}
 	}
-};
+}
 
 const withState = <A extends any[], R>(fn: (state: t.Internal.State, ...args: A) => R) => {
 	return function (this: any, ...args: [t.Internal.State, ...A] | A): R {
@@ -536,8 +525,8 @@ const withState = <A extends any[], R>(fn: (state: t.Internal.State, ...args: A)
 
 		const state = (this as any)?.[sym.$Internal]?.() ?? this;
 		return fn(state as t.Internal.State, ...(args as A));
-	};
-};
+	}
+}
 
 /**
  * Public Parse Engine (wrapped for dual-mode support)
@@ -551,8 +540,6 @@ export const ParseEngine = {
 	isZonedDateTimeLike: withState(_ParseEngine.isZonedDateTimeLike),
 	result: withState(_ParseEngine.result)
 };
-
-
 
 /**
  * # ParseModule
