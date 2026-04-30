@@ -40,10 +40,21 @@ export type Groups = Record<string, string>
 /**
  * Configuration options for Tempo instances and operations.
  */
-export interface Options extends Partial<Internal.BaseOptions> {
+/**
+ * Updated Options type to support new layout: { order: string[] } structure.
+ * Remove layoutOrder from BaseOptions and add layout?: { order?: string[], preFilter?: boolean }
+ */
+export interface Options extends Omit<Partial<Internal.BaseOptions>, 'layoutOrder'> {
+	layout?: {
+		order?: string[];
+		preFilter?: boolean;
+	} | PatternOption<Pattern>;
 	[key: string]: any;
 }
-
+export type PatternOption<T> =
+  | T
+  | Record<string | symbol, T>
+  | Array<PatternOption<T>>;
 
 /**
  * # Plugin

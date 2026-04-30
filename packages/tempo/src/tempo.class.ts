@@ -21,7 +21,7 @@ import { registerTerm, getTermRange } from './plugin/term.util.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 
 import { resolveMonthDay } from './support/tempo.util.js';
-import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
+import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './parse/parse.layout.js';
 import { datePattern } from './support/tempo.default.js';
 import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
 import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
@@ -33,12 +33,9 @@ declare module '#library/type.library.js' {
 	}
 }
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-const Context = getContext();																// current execution context
-
-/** return whether the shape is 'local' or 'global' */
-const isLocal = (shape: { config: { scope: string } }) => shape.config.scope === 'local';
-
-const ClassStates = new WeakMap<typeof Tempo, Internal.State>();
+/** current execution context */														const Context = getContext();
+/** return whether the shape is 'local' or 'global' */			const isLocal = (shape: { config: { scope: string } }) => shape.config.scope === 'local';
+/**  */																											const ClassStates = new WeakMap<typeof Tempo, Internal.State>();
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 namespace Internal {
 	export type State = t.Internal.State;
@@ -135,6 +132,8 @@ export class Tempo {
 		if (provided) Object.entries(provided).forEach(([k, v]) => setProperty(config, k, v));
 		Tempo.#dbg.debug(config, ...args);
 	}
+
+// ...rest of the class definition remains unchanged...
 
 
 	/**

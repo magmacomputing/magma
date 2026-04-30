@@ -31,8 +31,6 @@ function createImmutableWrapper<T extends Constructor>(
 	addInitializer(() => {
 		const skip = (value as any)[$ImmutableSkip]
 			?? (value as any).$ImmutableSkip
-			?? (value.constructor as any)?.[$ImmutableSkip]
-			?? (value.constructor as any)?.$ImmutableSkip
 			?? [];
 
 		hardenClassStaticsAndPrototypes(value, wrapper, skip);
