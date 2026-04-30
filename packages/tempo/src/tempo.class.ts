@@ -13,19 +13,19 @@ import { pad, trimAll } from '#library/string.library.js';
 import { getType, asType } from '#library/type.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isRegExp, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isZonedDateTimeLike, isBoolean } from '#library/assertion.library.js';
 import type { Property, Secure } from '#library/type.library.js';
+import { instant, normalizeUtcOffset } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
-import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
-import { resolveMonthDay } from './support/tempo.util.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
-import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
 
+import { resolveMonthDay } from './support/tempo.util.js';
+import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 import { datePattern } from './support/tempo.default.js';
-import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, $ImmutableSkip, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
+import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
+import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
-import { instant, normalizeUtcOffset } from '#library/temporal.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
@@ -102,8 +102,17 @@ export class Tempo {
 		return ClassStates.get(this) ?? Tempo.#global;
 	}
 
-	static [$ImmutableSkip] = ['init'];
-	static get $ImmutableSkip() { return ['init']; }
+	static get $ImmutableSkip() {
+		const global = typeof globalThis !== 'undefined' ? globalThis : (window as any);
+		const nodeEnv = typeof global !== 'undefined'
+			&& typeof global.process !== 'undefined'
+			&& global.process.env
+			&& (global.process.env.NODE_ENV === 'test' || global.process.env.CI);
+
+		return (nodeEnv || global.TEMPO_TESTING)
+			? ['init']
+			: []
+	}
 
 	/** @internal brand check to distinguish Tempo objects from other objects */
 	get [$Identity](): true { return true }
