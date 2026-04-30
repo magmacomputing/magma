@@ -76,7 +76,6 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 	});
 
 	it('should throw an error for invalid terms when catch is false', () => {
-		vi.spyOn(console, 'error').mockImplementation(() => { });
 		const t = new Tempo(testDate, { catch: false, sphere: 'north', silent: true });
 		expect(() => t.set({ start: '#invalid' })).toThrow(/Unknown Term identifier\: #invalid/);
 	});

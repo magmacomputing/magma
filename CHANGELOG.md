@@ -7,19 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.4.0] - 2026-04-24
+## [2.7.0] - 2026-04-27
 
 ### Added
-- **Sandbox Factory Mode**: Introduced `Tempo.create()`, a static factory method for creating isolated `Tempo` subclasses with independent configurations and registries, preventing global state leakage.
-- **Layout Controller Framework**: Added a classification-based layout controller to `engine.layout`, enabling future input-aware parsing optimizations.
+- **Grouped Configuration Options**: Consolidated `monthDay` and `relativeTime` options into nested objects.
+- **Internal layout detection**: Added `isMonthDay` detection for improved regional layout resolution.
+- **CI Benchmarks**: Added performance benchmarking suite to CI.
+
+### Fixed
+- **Event Overrides**: Fixed `$setEvents` logic to correctly handle custom event overrides.
+- **TimeZone Fallbacks**: Improved and cleaned up the IANA TimeZone fallback list.
+- **Intl.Locale Debugging**: Enhanced diagnostic logging for locale resolution.
+
+## [2.6.0] - 2026-04-25
+
+### Added
+- **Standardized UTC Offsets**: Added `normalizeUtcOffset` utility for transforming informal UTC-offset strings.
+- **Custom Layout Order**: Added `layoutOrder` option to customize parsing element precedence.
 
 ### Changed
-- **Layout Order Resolver**: Extracted layout-ordering logic into a dedicated module to improve maintainability and testability.
+- **Season Scope Simplification (Breaking)**: Removed Chinese-specific object from `term.season` scope.
+- **Refined TimeZone Normalization**: Improved UTC offset handling during initialization.
+
+### Fixed
+- **Layout Pattern Resolution**: Fixed ordering to respect intended sequence.
+
+## [2.5.0] - 2026-04-24
+
+### Added
+- **Sandbox Factory Mode**: Introduced `Tempo.create()`, a static factory method for creating isolated `Tempo` subclasses with independent configurations and registries.
+- **Layout Order Resolver Module**: Extracted layout-ordering decision logic into a dedicated `engine.layout` module.
+- **Layout Controller Framework**: Implemented minimal controller-map infrastructure for future input-class pre-filtering.
+- **Debug Layout Order Visibility**: Added optional debug output in `Tempo.#swapLayout` to emit the resolved layout order for diagnostics.
+
+### Changed
+- **Internal Layout Resolution**: Refactored `Tempo.#swapLayout` to delegate ordering to the external resolver.
+- **Alias Precedence**: User-defined `event` and `period` aliases now take precedence over built-in aliases.
 - **Module Path Flattening**: Relocated core modules to `src/module/` for a flatter, more intuitive internal architecture.
 
 ### Fixed
 - **Determinism Coverage**: Added comprehensive unit tests for layout resolution and multi-pair swap handling.
 
+## [2.4.0] - (Skipped)
+
+_Version 2.4.0 was not released; the project merged new functionality from 2.4.0 into 2.5.0._
 
 ## [2.3.0] - 2026-04-22
 

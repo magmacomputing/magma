@@ -48,8 +48,8 @@ export function sortBy<T extends Property<T>>(...keys: (PropertyKey | SortBy)[])
 			if (result === 0) {																	// no need to look further if result !== 0
 				const dir = key.dir === 'desc' ? -1 : 1;
 				const field = key.field + (key.index ? `[${key.index}]` : '');
-const valueA = extract(left, field, nullishToValue(key.default, 0));
-			const valueB = extract(right, field, nullishToValue(key.default, 0));
+				const valueA = extract(left, field, nullishToValue(key.default, 0));
+				const valueB = extract(right, field, nullishToValue(key.default, 0));
 
 				switch (true) {
 					case isNumber(valueA) && isNumber(valueB):

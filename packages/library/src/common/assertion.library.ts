@@ -10,8 +10,8 @@ export const isPrimitive = (obj?: unknown): obj is Primitive => isType(obj, 'Str
 export const isReference = (obj?: unknown): obj is Object => !isPrimitive(obj);
 export const isIterable = <T>(obj: unknown): obj is Iterable<T> => Symbol.iterator in Object(obj) && !isString(obj);
 
-export const isString = <T>(obj?: T): obj is Extract<T, string> => isType(obj, 'String');
-export const isNumber = <T>(obj?: T): obj is Extract<T, number> => isType(obj, 'Number');
+export const isString = <T>(obj: T): obj is T & string => isType(obj, 'String');
+export const isNumber = <T>(obj: T): obj is T & number => isType(obj, 'Number');
 export const isFiniteNumber = <T>(obj?: T): obj is Extract<T, number> => isType(obj, 'Number') && isFinite(obj as number);
 
 /** test if can convert String to Numeric */
@@ -32,26 +32,26 @@ export const isInteger = <T>(obj?: T): obj is Extract<T, bigint> => isType(obj, 
 export const isIntegerLike = <T>(obj?: T): obj is Extract<T, string> => isType(obj, 'String') && /^-?[0-9]+n$/.test(obj as string);
 export const isDigit = <T>(obj?: T): obj is Extract<T, number | bigint> => isType(obj, 'Number', 'BigInt');
 export const isBoolean = <T>(obj?: T): obj is Extract<T, boolean> => isType(obj, 'Boolean');
-export const isArray = <T>(obj: unknown): obj is T[] => isType(obj, 'Array');
+export const isArray = <T>(obj: T): obj is T & any[] => isType(obj, 'Array');
 export const isArrayLike = <T>(obj: any): obj is ArrayLike<T> => protoType(obj) === 'Object' && 'length' in obj && Object.keys(obj).every(key => key === 'length' || !isNaN(Number(key)));
-export const isObject = <T>(obj?: T): obj is Extract<T, object> => isType(obj, 'Object');
-export const isDate = <T>(obj?: T): obj is Extract<T, Date> => isType(obj, 'Date');
+export const isObject = <T>(obj: T): obj is T & Property<any> => isType(obj, 'Object');
+export const isDate = <T>(obj: T): obj is T & Date => isType(obj, 'Date');
 export const isRegExp = <T>(obj?: T): obj is Extract<T, RegExp> => isType(obj, 'RegExp');
 export const isRegExpLike = <T>(obj?: T): obj is Extract<T, string> => isType(obj, 'String') && /^\/.*\/$/.test(obj as string);
 export const isSymbol = <T>(obj?: T): obj is Extract<T, symbol> => isType(obj, 'Symbol');
 export const isSymbolFor = <T>(obj?: T): obj is Extract<T, symbol> => isType<symbol>(obj, 'Symbol') && Symbol.keyFor(obj) !== undefined;
 export const isPropertyKey = (obj?: unknown): obj is PropertyKey => isType<PropertyKey>(obj, 'String', 'Number', 'Symbol');
 
-export const isNull = <T>(obj?: T): obj is Extract<T, null> => isType(obj, 'Null');
-export const isNullish = <T>(obj: T): obj is Extract<T, Nullish> => isType<undefined | null | void>(obj, 'Null', 'Undefined', 'Void', 'Empty');
-export const isUndefined = <T>(obj?: T): obj is undefined => isType<undefined>(obj, 'Undefined', 'Void', 'Empty');
+export const isNull = <T>(obj: T): obj is T & null => isType(obj, 'Null');
+export const isNullish = <T>(obj: T): obj is T & Nullish => isType<undefined | null | void>(obj, 'Null', 'Undefined', 'Void', 'Empty');
+export const isUndefined = <T>(obj: T): obj is T & undefined => isType<undefined>(obj, 'Undefined', 'Void', 'Empty');
 export const isDefined = <T>(obj: T): obj is NonNullable<T> => !isNullish(obj);
 
 export const isClass = <T>(obj?: T): obj is Extract<T, Function> => isType(obj, 'Class');
 export const isFunction = <T>(obj?: T): obj is Extract<T, Function> => isType(obj, 'Function', 'AsyncFunction');
 export const isPromise = <T>(obj?: T): obj is Extract<T, Promise<any>> => isType(obj, 'Promise');
-export const isMap = <T, K = any, V = any>(obj?: T): obj is Extract<T, Map<K, V>> => isType(obj, 'Map');
-export const isSet = <T, K = any>(obj?: T): obj is Extract<T, Set<K>> => isType(obj, 'Set');
+export const isMap = <T>(obj: T): obj is T & Map<any, any> => isType(obj, 'Map');
+export const isSet = <T>(obj: T): obj is T & Set<any> => isType(obj, 'Set');
 export const isError = <T>(err?: T): err is Extract<T, Error> => isType(err, 'Error');
 
 export const isTemporal = <T>(obj: T): obj is Extract<T, Temporals> => protoType(obj).startsWith('Temporal.') || (!!(globalThis as any).Temporal && (

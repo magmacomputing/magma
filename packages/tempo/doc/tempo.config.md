@@ -133,12 +133,10 @@ Tempo.init({
 | `locale` | `string` | System Locale | Default BCP 47 language tag. used in .since() method |
 | `calendar` | `string` | `'iso8601'` | Default calendar system. |
 | `pivot` | `number` | `75` | Cutoff for parsing two-digit years. |
-| `mdyLocales` | `string \| string[]` | `['en-US','en-AS']` | Locale list that prefers month-day-year parse ordering. Tempo uses `Intl.Locale.getTimeZones()` to detect if your `timeZone` belongs to these locales, with an automated fallback for CI environments. |
-| `mdyLayouts` | `[string, string][]` | Built-in pairs | Layout swap pairs used when month-day ordering applies. |
+| `monthDay` | `MonthDay \| boolean` | `undefined` | Regional date-parsing configuration (grouped). Includes `active`, `locales`, `layouts`, and `timezones`. |
 | `timeStamp`| `'ms' \| 'ns'` | `'ms'` | Precision for timestamps. |
 | `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
-| `rtfFormat` | `Intl.RTF` | `undefined` | Pre-configured relative time formatter. |
-| `rtfStyle` | `'long' \| 'short' \| 'narrow'` | `'narrow'` | Default style for relative time formatting. |
+| `relativeTime` | `RelativeTime` | `undefined` | Relative time formatting configuration (grouped). |
 | `event` | `Record<string, string \| Function>` | Built-in aliases | Custom date aliases merged into the event registry. |
 | `period` | `Record<string, string \| Function>` | Built-in aliases | Custom time aliases merged into the period registry. |
 | `snippet` | `Record<string, string \| RegExp>` | Built-in snippets | Custom snippet patterns used to compose parse layouts. |

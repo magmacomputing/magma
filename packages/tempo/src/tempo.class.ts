@@ -11,18 +11,19 @@ import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType, asType } from '#library/type.library.js';
-import { isEmpty, isDefined, isUndefined, isString, isObject, isRegExp, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isZonedDateTimeLike } from '#library/assertion.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isObject, isRegExp, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isZonedDateTimeLike, isBoolean } from '#library/assertion.library.js';
 import type { Property, Secure } from '#library/type.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
+import { resolveMonthDay } from './support/tempo.util.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
 
-import { mdyFallback, datePattern } from './support/tempo.default.js';
-import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, type TempoBrand, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
+import { datePattern } from './support/tempo.default.js';
+import { sym, markConfig, TermError, getRuntime, init, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, $ImmutableSkip, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 import { instant, normalizeUtcOffset } from '#library/temporal.library.js';
 
@@ -77,6 +78,7 @@ export class Tempo {
 	/** Pre-configured format {name -> string} pairs */				static get FORMAT() { return enums.FORMAT }
 	/** Number names (0-10) */																static get NUMBER() { return enums.NUMBER }
 	/** TimeZone aliases */																		static get TIMEZONE() { return enums.TIMEZONE }
+	/** regional date-parsing configuration */								static get MONTH_DAY() { return enums.MONTH_DAY }
 	/** initialization strategies */													static get MODE() { return enums.MODE }
 	/** some useful Dates */																	static get LIMIT() { return enums.LIMIT }
 
@@ -99,6 +101,9 @@ export class Tempo {
 	static [$Internal]() {
 		return ClassStates.get(this) ?? Tempo.#global;
 	}
+
+	static [$ImmutableSkip] = ['init'];
+	static get $ImmutableSkip() { return ['init']; }
 
 	/** @internal brand check to distinguish Tempo objects from other objects */
 	get [$Identity](): true { return true }
@@ -130,13 +135,13 @@ export class Tempo {
 	// TODO:  check all Layouts which reference "{evt}" and update them
 	static [$setEvents](shape: Internal.State) {
 		const events = ownEntries(shape.parse.event, true);
-		if (isLocal(shape) && !hasOwn(shape.parse, 'event') && !hasOwn(shape.parse, 'isMonthDay'))
-			return;																					// no local change needed
+		if (isLocal(shape) && !hasOwn(shape.parse, 'event') && !hasOwn(shape.parse.monthDay, 'active'))
+			return;																								// no local change needed
 
-		const src = shape.config.scope.substring(0, 1);							// 'g'lobal or 'l'ocal
+		const src = shape.config.scope === 'global' ? 'g' : 'l';			// 'g'lobal or 'l'ocal (sandbox also uses 'l')
 		const groups = events
 			.map(([pat, _], idx) => `(?<${src}evt${idx}>${pat})`)	// assign a number to the pattern
-			.join('|')																				// make an 'Or' pattern for the event-keys
+			.join('|')																						// make an 'Or' pattern for the event-keys
 
 		if (groups) {
 			const protoEvt = proto(shape.parse.snippet)[Token.evt]?.source;
@@ -153,7 +158,7 @@ export class Tempo {
 			}
 		}
 
-		const isMonthDay = Boolean(shape.parse.isMonthDay);
+		const isMonthDay = Boolean(shape.parse.monthDay.active);
 		const protoDt = proto(shape.parse.layout)[Token.dt] as string;
 		const targetDt = isMonthDay ? datePattern.mdy : datePattern.dmy;
 
@@ -175,7 +180,7 @@ export class Tempo {
 		if (isLocal(shape) && !hasOwn(shape.parse, 'period'))
 			return;																							// no local change needed
 
-		const src = (shape.config.scope ?? "global").substring(0, 1);				// 'g'lobal or 'l'ocal
+		const src = shape.config.scope === 'global' ? 'g' : 'l';   // 'g'lobal or 'l'ocal (sandbox also uses 'l')
 		const groups = periods
 			.map(([pat, _], idx) => `(?<${src}per${idx}>${pat})`)	// {pattern} is the 1st element of the tuple
 			.join('|')																						// make an 'or' pattern for the period-keys
@@ -212,16 +217,35 @@ export class Tempo {
 
 	/** determine if we have a {timeZone} which prefers {mdy} date-order */
 	static #isMonthDay(shape: Internal.State) {
-		const monthDay = [...asArray((this as any)[$Internal]().parse.mdyLocales)];
+		const { timeZone, locale } = shape.config;
+		const mdy = shape.parse.monthDay;
+		const globalMdy = Tempo.MONTH_DAY as t.MonthDay;
 
-		if (isLocal(shape) && hasOwn(shape.parse, 'mdyLocales'))
-			monthDay.push(...shape.parse.mdyLocales);							// append local mdyLocales (not overwrite global)
+		let intl: Intl.Locale;
+		try {
+			intl = new Intl.Locale(Tempo.#locale(locale));
+		} catch (e) {
+			Tempo.#dbg.warn(shape.config, `Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, e);
+			intl = new Intl.Locale('en-US');
+		}
 
-		return monthDay.some(mdy => {
-			const m = mdy as { locale: string, timeZones: string[] };
-			const tzs = m.timeZones ?? (m as Record<string, any>).getTimeZones?.() ?? [];
-			return tzs.includes(shape.config.timeZone as string);
-		});
+		const tz = String(timeZone);
+
+		// Find the resolved timezone list for the current locale (which includes getTimeZones data)
+		const activeLocaleData = mdy.resolvedLocales?.find(l => l.locale === intl.baseName || l.locale === intl.language);
+		if (activeLocaleData?.timeZones?.includes(tz)) return true;
+
+		// Fallback to global timezones if not found in resolved locales
+		const globalTzs = globalMdy.timezones || {};
+		if (globalTzs[intl.baseName]?.includes(tz) || globalTzs[intl.language]?.includes(tz)) return true;
+
+		// Dynamically check if the timezone belongs to the locale IF the locale was added to globalMdy.locales (e.g., via Discovery)
+		if (asArray(globalMdy.locales).includes(intl.baseName) || asArray(globalMdy.locales).includes(intl.language)) {
+			const intlTzs = (intl as any).getTimeZones?.() || [];
+			if (intlTzs.includes(tz)) return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -229,14 +253,17 @@ export class Tempo {
 	 * this allows the parser to try to interpret '04012023' as Apr-01-2023 before trying 04-Jan-2023  
 	 */
 	static #swapLayout(shape: Internal.State) {
+		const { layouts } = shape.parse.monthDay;
+		if (isEmpty(layouts)) return;
+
 		const layoutController = shape.parse.layoutOrder.length > 0
 			? { [DEFAULT_LAYOUT_CLASS]: [...shape.parse.layoutOrder] }
 			: undefined;
 
 		const layout = resolveLayoutOrder({
 			layout: shape.parse.layout,
-			mdyLayouts: shape.parse.mdyLayouts,
-			isMonthDay: Boolean(shape.parse.isMonthDay),
+			monthDayLayouts: layouts!,
+			isMonthDay: Boolean(shape.parse.monthDay.active),
 			...(layoutController !== undefined && { layoutController }),
 		});
 
@@ -284,10 +311,10 @@ export class Tempo {
 		const mergedOptions: t.Options = storeKey
 			? Object.assign(Tempo.readStore(storeKey), providedOptions)
 			: providedOptions;
-		if (shape === Tempo.#global)																// sanitize global configuration
+		if (shape === Tempo.#global)														// sanitize global configuration
 			omit(mergedOptions, 'value', 'anchor', 'result');
 
-		if (isEmpty(mergedOptions))																	// nothing to do
+		if (isEmpty(mergedOptions))															// nothing to do
 			return;
 
 		/** helper to normalize snippet/layout Options into the target Config */
@@ -374,21 +401,27 @@ export class Tempo {
 						}
 						break;
 
-					case 'mdyLocales':
-						shape.parse[optKey] = Tempo.#mdyLocales(arg.value as NonNullable<t.Options[typeof optKey]>);
-						break;
-
-					case 'mdyLayouts':																// these are the 'layouts' that need to swap parse-order
-						shape.parse[optKey] = asArray(arg.value as NonNullable<t.Options[typeof optKey]>);
+					case 'monthDay':
+						shape.parse.monthDay = resolveMonthDay(arg.value, shape.parse.monthDay);
 						break;
 
 					case 'layoutOrder':
 						shape.parse.layoutOrder = normalizeLayoutOrder(arg.value as NonNullable<t.Options[typeof optKey]>);
 						break;
 
-					case 'pivot':
-						shape.parse["pivot"] = Number(arg.value);
+					case 'parsePrefilter':
+						shape.parse.parsePrefilter = Boolean(arg.value);
 						break;
+
+					case 'pivot': {
+						const pivot = parseInt(String(arg.value));
+						if (Number.isFinite(pivot) && pivot >= 0 && pivot <= 99) {
+							shape.parse.pivot = pivot;
+						} else {
+							Tempo.#dbg.warn(shape.config, `Invalid pivot value: ${arg.value}. Pivot must be a finite number between 0 and 99.`);
+						}
+						break;
+					}
 
 					case 'config':
 						(this as any)[$setConfig](shape, arg.value as t.Options);
@@ -416,7 +449,7 @@ export class Tempo {
 						break;
 
 					case 'discovery':
-						setProperty(shape.config, 'discovery', isSymbol(optVal) ? Symbol.keyFor(optVal) as string : optVal);
+						setProperty(shape.config, 'discovery', isSymbol(optVal) ? (Symbol.keyFor(optVal) ?? optVal) : optVal);
 						break;
 
 					case 'plugins':
@@ -428,6 +461,21 @@ export class Tempo {
 						shape.parse.lazy = (optVal === enums.MODE.Defer);	// if defer, set lazy true. if strict, set lazy false. if auto, constructor will decide.
 						break;
 
+					case 'relativeTime':
+						if (isFunction(optVal))
+							shape.config.relativeTime = optVal as any;
+						else if (isObject(optVal))
+							shape.config.relativeTime = { ...shape.config.relativeTime, ...(optVal as any) };
+						break;
+
+					case 'rtfFormat':																	// deprecated alias
+						shape.config.relativeTime = { ...shape.config.relativeTime, format: optVal as Intl.RelativeTimeFormat };
+						break;
+
+					case 'rtfStyle':																	// deprecated alias
+						shape.config.relativeTime = { ...shape.config.relativeTime, style: optVal as Intl.RelativeTimeFormatStyle };
+						break;
+
 					case 'anchor':
 						break;																					// internal anchor used for relativity parsing
 
@@ -437,9 +485,18 @@ export class Tempo {
 				}
 			})
 
-		const isMonthDay = Tempo.#isMonthDay(shape);
-		if (isMonthDay !== proto(shape.parse).isMonthDay)				// this will always set on 'global', conditionally on 'local'
-			shape.parse.isMonthDay = isMonthDay;
+		// Resolve effective 'active' flag (either from explicit options or auto-detection)
+		const active = Reflect.has(mergedOptions, 'monthDay')
+			? shape.parse.monthDay.active
+			: Tempo.#isMonthDay(shape);
+
+		// If flag differs from inherited default, apply it to the local state (shadowing if necessary)
+		if (active !== proto(shape.parse).monthDay?.active) {
+			if (!hasOwn(shape.parse, 'monthDay'))
+				shape.parse.monthDay = { ...shape.parse.monthDay };
+
+			shape.parse.monthDay.active = active;
+		}
 
 		shape.config.sphere = Tempo.#setSphere(shape, mergedOptions);
 
@@ -450,18 +507,16 @@ export class Tempo {
 		setPatterns(shape);															// setup Regex DateTime patterns
 	}
 
-	/** setup mdy TimeZones, using Intl.Locale */
-	// The google-apps-script types package provides its own Intl.Locale interface that doesn't include getTimeZones(),
-	// and it takes priority over the ESNext.Intl augmentation in tsconfig.
-	// The "(mdy as any).getTimeZones?.()" can be replaced with "mdy.getTimeZones()" after google-apps-script is corrected
-	static #mdyLocales(value: t.Options["mdyLocales"]) {
-		return asArray(value)
-			.map(mdy => new Intl.Locale(mdy))
-			.map(intl => ({ locale: intl.baseName, timeZones: intl.getTimeZones?.() ?? [] }))
-			// .map(intl => { console.log('pre: ', intl); return intl })
-			.map(intl => (intl.timeZones.length > 0 ? intl : { ...intl, timeZones: mdyFallback[intl.locale] ?? [] }))
-		// .map(intl => { console.log('post: ', intl); return intl })
-	}
+	// /** resolve regional date-parsing configuration */
+	//    /**
+	// 	* Normalize a MonthDay configuration value against the base.
+	// 	* @internal
+	// 	*/
+	//    static resolveMonthDay(value: t.MonthDay | boolean = {}): t.MonthDay {
+	// 	   // Use the shared utility and Tempo.MONTH_DAY as base
+	// 	   // Optionally, warn using #dbg if needed
+	// 	   return resolveMonthDayUtil(value, Tempo.MONTH_DAY);
+	//    }
 
 	/** support "Global Discovery" of user-options */
 	static [$setDiscovery](shape: Internal.State, discovery?: Internal.Discovery) {
@@ -481,6 +536,26 @@ export class Tempo {
 		if (discovery.numbers)
 			registryUpdate('NUMBER', discovery.numbers);
 
+		// 1c. Process MDY settings
+		if (discovery.monthDay) {
+			const md = discovery.monthDay;
+			if (md.timezones) {
+				const mdyTzs = Object.fromEntries(
+					ownEntries(md.timezones, true).map(([k, v]) => {
+						try { return [new Intl.Locale(String(k)).baseName, v] }
+						catch { return [String(k), v] }
+					})
+				);
+				registryUpdate('MONTH_DAY', { timezones: mdyTzs });
+			}
+			if (md.locales) registryUpdate('MONTH_DAY', { locales: asArray(md.locales) });
+			if (md.layouts) registryUpdate('MONTH_DAY', { layouts: asArray(md.layouts) });
+		}
+
+		// 1d. Process RelativeTime
+		if (discovery.relativeTime)
+			shape.config.relativeTime = { ...shape.config.relativeTime, ...discovery.relativeTime };
+
 		// 2. Process Terms
 		if ((discovery as any).term) {
 			discovery.terms = [...asArray(discovery.terms || []), ...asArray((discovery as any).term)];
@@ -499,7 +574,7 @@ export class Tempo {
 		if (discovery.plugins)
 			asArray(discovery.plugins).forEach(p => this.extend(p));
 
-		// 4. Process Options
+		// 5. Process Options
 		let opts = discovery.options || {}
 		if (discovery.ignore) {
 			const ignore = isFunction(discovery.ignore) ? discovery.ignore() : discovery.ignore;
@@ -710,26 +785,63 @@ export class Tempo {
 							discovery.terms = [...asArray(discovery.terms || []), ...asArray(discovery.term)];
 							Tempo.#dbg.warn((this as any)[$Internal]().config, 'Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
 						}
-						if (discovery.options) (this as any)[$setConfig]((this as any)[$Internal](), discovery.options)
-						if (discovery.plugins) this.extend(discovery.plugins, discovery.options)
-						if (discovery.terms) this.extend(discovery.terms)
+						if (discovery.plugin) {
+							discovery.plugins = [...asArray(discovery.plugins || []), ...asArray(discovery.plugin)];
+						}
 
-						// handle other discovery keys directly
-						if (discovery.numbers) registryUpdate('NUMBER', discovery.numbers)
-						if (discovery.timeZones) {
-							const tzs = Object.fromEntries(ownEntries(discovery.timeZones).map(([k, v]) => [k.toString().toLowerCase(), v]));
-							registryUpdate('TIMEZONE', tzs)
-						}
-						if (discovery.formats) {
-							(this as any)[$Internal]().config.formats = (this as any)[$Internal]().config.formats.extend(discovery.formats) as t.FormatRegistry;
-							registryUpdate('FORMAT', discovery.formats)
-						}
+						DISCOVERY.keys().forEach(key => {
+							const val = discovery[key];
+							if (!isDefined(val)) return;
+
+							switch (key) {
+								case 'options':
+									(this as any)[$setConfig]((this as any)[$Internal](), val);
+									break;
+
+								case 'plugins':
+									this.extend(val, discovery.options);
+									break;
+
+								case 'terms':
+									this.extend(val);
+									break;
+
+								case 'numbers':
+									registryUpdate('NUMBER', val);
+									break;
+
+								case 'timeZones': {
+									const tzs = Object.fromEntries(ownEntries(val).map(([k, v]) => [k.toString().toLowerCase(), v]));
+									registryUpdate('TIMEZONE', tzs);
+									break;
+								}
+
+								case 'formats': {
+									const internal = (this as any)[$Internal]();
+									internal.config.formats = internal.config.formats.extend(val) as t.FormatRegistry;
+									registryUpdate('FORMAT', val);
+									break;
+								}
+
+								case 'monthDay':
+									registryUpdate('MONTH_DAY', val);
+									break;
+
+								case 'relativeTime': {
+									const internal = (this as any)[$Internal]();
+									internal.config.relativeTime = { ...internal.config.relativeTime, ...val };
+									break;
+								}
+							}
+						});
 
 						// only trigger init if we're assigning a new discovery object to a symbol
 						if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
-							const discoverySymbol = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo
-							if ((globalThis as Record<symbol, any>)[discoverySymbol] !== item) {
-								(globalThis as Record<symbol, any>)[discoverySymbol] = item;
+							const discovery = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
+							const discoverySymbol = isString(discovery) ? Symbol.for(discovery) : (isSymbol(discovery) && !Symbol.keyFor(discovery) ? Symbol('TempoSandbox') : discovery);
+
+							if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item) {
+								(globalThis as Record<symbol, any>)[discoverySymbol as symbol] = item;
 								(this as any)[$setConfig]((this as any)[$Internal](), { discovery: discoverySymbol })
 							}
 						}
@@ -758,22 +870,39 @@ export class Tempo {
 			static [Symbol.toStringTag] = 'TempoSandbox';
 		}
 
-		const discovery = options.discovery ?? Symbol('TempoSandbox');
-		(globalThis as any)[discovery] = { options: { ...options }, scope: 'sandbox' };
+		const discovery = options.discovery;
+		const normalizedDiscovery = (isObject(discovery) && !isSymbol(discovery)) || isUndefined(discovery) || (isSymbol(discovery) && !Symbol.keyFor(discovery))
+			? Symbol('TempoSandbox')
+			: (isString(discovery) ? Symbol.for(discovery) : discovery) as string | symbol;
+
+		let data: any = { options: { ...options, discovery: normalizedDiscovery }, scope: 'sandbox' };
+
+		if (isObject(options.discovery) && !isSymbol(options.discovery)) {
+			data = { ...data, ...options.discovery as any };
+		}
+
+		(globalThis as any)[normalizedDiscovery as any] = data;
 
 		const state = init(options, false, (this as any)[$Internal]());
-		state.config.discovery = discovery;
+		state.config.discovery = normalizedDiscovery as any;
 		ClassStates.set(SandboxTempo as any, state);
+		setPatterns(state); // compile regex patterns for the isolated sandbox state
 
 		// Apply configuration to the sandbox
 		(SandboxTempo as any)[$setConfig](state,
 			{
-				scope: 'local',
-				discovery,
+				scope: 'sandbox',
+				discovery: normalizedDiscovery as any,
 				catch: options.catch ?? false
 			},
-			options
+			{ ...options, discovery: normalizedDiscovery }
 		);
+
+		// If the sandbox was provided with monthDay discovery, resolve and apply it to the isolated state
+		if (isObject(options.discovery) && options.discovery.monthDay) {
+			const discoveryMD = resolveMonthDay(options.discovery.monthDay, Tempo.MONTH_DAY);
+			state.parse.monthDay = { ...state.parse.monthDay, ...discoveryMD };
+		}
 
 		Object.freeze(SandboxTempo);
 		return SandboxTempo as unknown as typeof Tempo;
@@ -787,7 +916,7 @@ export class Tempo {
 
 		try {
 			const rt = getRuntime();
-			rt.state = undefined;																// force fresh state
+			rt.state = undefined;																	// force fresh state
 			const state = init();
 			if ((this as any)[sym.$IsBase]) {
 				Tempo.#global = state;
@@ -798,9 +927,9 @@ export class Tempo {
 			// 1. Augment the parsing state (non-destructively)
 			const parse = state.parse;
 			parse.pattern ??= new Map<symbol, RegExp>();
-			parse.mdyLocales = Tempo.#mdyLocales(Default.mdyLocales as t.Options['mdyLocales']);
-			parse.mdyLayouts = asArray(Default.mdyLayouts as t.Options['mdyLayouts']) as t.Pair[];
+			parse.monthDay = resolveMonthDay(Default.monthDay, Tempo.MONTH_DAY);
 			parse.layoutOrder = asArray(Default.layoutOrder as t.Options['layoutOrder']) as string[];
+			parse.parsePrefilter = Boolean(Default.parsePrefilter);
 			parse.pivot ??= Default.pivot as any;
 			parse.mode ??= Default.mode as any;
 			parse.lazy = false;
@@ -810,9 +939,17 @@ export class Tempo {
 			const timeZone = options.timeZone ?? sys.timeZone;
 			const calendar = options.calendar ?? sys.calendar;
 			const config = state.config;
-			const discoveryKey = options.discovery ?? Symbol.keyFor($Tempo) as string;
+			let discovery = options.discovery ?? Symbol.keyFor($Tempo) as string;
 			const storeKey = options.store || config.store || Symbol.keyFor($Tempo) as string;
-			const userDiscovery = (globalThis as any)[isString(discoveryKey) ? Symbol.for(discoveryKey) : discoveryKey] as Internal.Discovery;
+
+			// Normalize discovery to a symbol if it's an object to prevent leakage into config state
+			if (isObject(discovery) && !isSymbol(discovery)) {
+				const data = discovery;
+				discovery = Symbol.for(`tempo.discovery.${Tempo.#usrCount++}`);
+				(globalThis as any)[discovery] = data;
+			}
+			const normalizedDiscovery = isString(discovery) ? Symbol.for(discovery) : (discovery as symbol);
+			const userDiscovery = (globalThis as any)[normalizedDiscovery] as Internal.Discovery;
 
 			// Resolve locale if missing or invalid
 			const currentLocale = config.locale;
@@ -834,18 +971,17 @@ export class Tempo {
 			registryReset();																			// purge formats and numbers
 
 			// 3. Apply configuration via unified setters (non-destructive merge)
-			(this as any)[$setConfig](state,
-				{
-					calendar,
-					timeZone,
-					locale,
-					discovery: storeKey,
-					formats: config.formats ?? enumify(STATE.FORMAT, false),
-					scope: 'global',
-					catch: options.catch ?? config.catch ?? false
-				},
-				{ store: storeKey, discovery: storeKey, scope: 'global' },
-				this.readStore(storeKey),													// allow for storage-values to overwrite
+			(this as any)[$setConfig](state, {
+				calendar,
+				timeZone,
+				locale,
+				discovery: normalizedDiscovery,
+				formats: config.formats ?? enumify(STATE.FORMAT, false),
+				scope: 'global',
+				catch: options.catch ?? config.catch ?? false
+			},
+				{ store: storeKey, discovery: normalizedDiscovery, scope: 'global' },
+				this.readStore(storeKey),														// allow for storage-values to overwrite
 				(this as any)[$setDiscovery](state, rt.pluginsDb as any),		// persistent library extensions
 				(this as any)[$setDiscovery](state, userDiscovery),	// user Discovery (Configuration bootstrapping)
 				options,																						// explicit options from the call
@@ -865,6 +1001,29 @@ export class Tempo {
 		}
 
 		return this
+	}
+
+	/** explicitly enable/disable "catch" mode for internal errors */
+	static setCatchMode(catchMode: boolean): typeof Tempo {
+		(this as any)[$setConfig]((this as any)[$Internal](), { catch: catchMode });
+		return this;
+	}
+
+	/** @internal unload a module by name (experimental internal use only) */
+	static unloadModule(name: string): typeof Tempo {
+		const rt = getRuntime();
+		delete rt.modules[name];
+		rt.installed.delete(name);
+		const baseName = name.endsWith('Module') ? name.slice(0, -6) : name;
+		rt.installed.delete(baseName);
+		return this;
+	}
+
+	/** @internal check if a module is loaded */
+	static hasModule(name: string): boolean {
+		const rt = getRuntime();
+		const mod = name === 'term' ? 'TermsModule' : name;
+		return isDefined(rt.modules[mod]) || rt.installed.has(mod) || rt.pluginsDb.plugins.some(p => p.name === mod);
 	}
 
 	/** @internal Reads options from persistent storage (e.g., localStorage). */
@@ -910,15 +1069,20 @@ export class Tempo {
 	static get config() {
 		const state = (this as any)[$Internal]();
 		const out = Object.create(Default);
-		const descriptors = omit(Object.getOwnPropertyDescriptors(state.config), 'value', 'anchor');
+		const descriptors = omit(Object.getOwnPropertyDescriptors(state.config), 'value', 'anchor', 'result');
 
 		Object.defineProperties(out, descriptors);
 		Object.defineProperty(out, 'toJSON',										// bare-bones: only show global overrides
 			{
-				value: () => Object.fromEntries(
-					Object.entries(out)),															// proxify sees own toJSON, skips allObject
+				value: () => Object.fromEntries(Object.entries(out)),															// proxify sees own toJSON, skips allObject
 				enumerable: false, configurable: true
 			});
+		Object.defineProperty(out, sym.$Inspect,
+			{
+				value: () => Object.fromEntries(Object.entries(out)),
+				enumerable: false, configurable: true
+			});
+
 		return proxify(out);
 	}
 
@@ -987,9 +1151,9 @@ export class Tempo {
 			event: { ...parse.event },
 			period: { ...parse.period },
 			ignore: { ...parse.ignore },
-			mdyLocales: [...parse.mdyLocales],
-			mdyLayouts: [...parse.mdyLayouts],
+			monthDay: { ...parse.monthDay },
 			layoutOrder: [...parse.layoutOrder],
+			parsePrefilter: parse.parsePrefilter,
 			mode: parse.mode
 		});
 	}
@@ -1015,7 +1179,7 @@ export class Tempo {
 
 	/** check if a supplied variable is a valid Tempo instance */
 	static isTempo(instance?: any): instance is Tempo {
-		return instance instanceof Tempo;//Boolean(instance?.[$Identity])
+		return instance instanceof Tempo;
 	}
 
 	static {																									// Static initialization block to sequence the bootstrap phase
@@ -1158,6 +1322,23 @@ export class Tempo {
 		}
 
 		if (!this.#local.parse.lazy) this.#resolve();						// attempt to interpret immediately (if not lazy)
+	}
+
+	/** explicitly enable/disable "catch" mode for this instance */
+	setCatchMode(catchMode: boolean): this {
+		setProperty(this.#local.config, 'catch', catchMode);
+		return this;
+	}
+
+	/** @internal unload a module by name (experimental internal use only) */
+	unloadModule(name: string): this {
+		(this.constructor as typeof Tempo).unloadModule(name);
+		return this;
+	}
+
+	/** @internal check if a module is loaded */
+	hasModule(name: string): boolean {
+		return (this.constructor as typeof Tempo).hasModule(name);
 	}
 
 	/** Resolve the instance to a Temporal.ZonedDateTime (with optional callback) */
@@ -1342,11 +1523,11 @@ export class Tempo {
 	get terms(): Record<string, string[]> {
 		const res: Record<string, string[]> = {};
 		Tempo.terms.forEach(term => {
-			const source = (term as any).ranges || (term as any).groups || [];					// check both ranges and groups
+			const source = (term as any).ranges || (term as any).groups || [];				// check both ranges and groups
 			const list = Array.isArray(source) ? source : Object.values(source).flat(Infinity) as any[];
-			const ranges = [...new Set(list.map(r => r.key).filter(isString))];					// collect unique range keys
+			const ranges = [...new Set(list.map(r => r.key).filter(isString))];				// collect unique range keys
 			res[term.key] = ranges;
-			if (term.scope) res[term.scope] = ranges;													// add scope alias if defined
+			if (term.scope) res[term.scope] = ranges;							// add scope alias if defined
 		});
 		return res;
 	}
@@ -1355,10 +1536,10 @@ export class Tempo {
 	get ranges(): Record<string, string> {
 		const res: Record<string, string> = {};
 		Tempo.terms.forEach(term => {
-			const val = (this as any).term[term.key];																// access the term-delegate (forces evaluation)
+			const val = (this as any).term[term.key];							// access the term-delegate (forces evaluation)
 			if (isString(val)) {
 				res[term.key] = val;
-				if (term.scope) res[term.scope] = val;													// alias the string to the scope key
+				if (term.scope) res[term.scope] = val;							// alias the string to the scope key
 			}
 		});
 		return res;
@@ -1374,11 +1555,10 @@ export class Tempo {
 		if (!Object.hasOwn(out, 'lazy')) setProperty(out, 'lazy', this.#local.parse.lazy);
 
 		Object.defineProperty(out, 'toJSON', {
-			value: () => Object.fromEntries(										// bare-bones: only show local overrides
-				Object.entries(out)),															// proxify sees own toJSON, skips allObject
+			value: () => Object.fromEntries(											// bare-bones: only show local overrides
+				Object.entries(out)),																// proxify sees own toJSON, skips allObject
 			enumerable: false, configurable: true
 		});
-
 
 		return proxify(out) as t.Internal.Config;
 	}
@@ -1387,10 +1567,23 @@ export class Tempo {
 	get parse(): Internal.Parse {
 		const self: Tempo = unwrap(this);
 		self.#resolve();
+
 		// Return a shadowed view so we can safely inject matches without breaking the freeze on the original state
 		const out = Object.create(self.#local.parse);
-		if (self.#matches !== undefined)
-			Object.defineProperty(out, 'result', { value: self.#matches, enumerable: true, configurable: true });
+
+		// Explicitly surface key debug properties as "own" properties for better visibility in consoles/REPLs
+		const keys = ['anchor', 'isAnchored', 'mode', 'pivot'] as const;
+		for (const key of keys) {
+			if (self.#local.parse[key] !== undefined)
+				Object.defineProperty(out, key, { value: self.#local.parse[key], enumerable: true, configurable: true });
+		}
+
+		// Always surface the result (prioritizing current operation matches)
+		Object.defineProperty(out, 'result', {
+			value: self.#matches ?? self.#local.parse.result ?? [],
+			enumerable: true,
+			configurable: true
+		});
 
 		return out as t.Internal.Parse;
 	}
@@ -1440,7 +1633,6 @@ export class Tempo {
 
 	/** Custom JSON serialization for `JSON.stringify`. */
 	toJSON() { return { ...this.#local.config, value: this.toString() } }
-
 
 	/** setup local 'config' and 'parse' rules (prototype-linked to global) */
 	#setLocal(options: t.Options = {}) {
@@ -1507,29 +1699,6 @@ export class Tempo {
 
 		return keys
 			.some(key => enums.OPTION.has(key));
-	}
-
-	/** check if we've been given a ZonedDateTimeLike object */
-	#isZonedDateTimeLike(tempo: t.DateTime | t.Options | undefined): tempo is Temporal.ZonedDateTimeLike & { value?: any } {
-		if (!isObject(tempo) || isEmpty(tempo) || isTempo(tempo)) return false;
-
-		// if it contains any 'options' keys (other than value), it's likely an Options object
-		const keys = ownKeys(tempo);
-		if (keys.some(key => enums.OPTION.has(key) && key !== 'value')) return false;
-
-		return isZonedDateTimeLike(tempo);
-	}
-
-	#result(...rest: Partial<Internal.MatchResult>[]) {
-		const match = Object.assign({}, ...rest) as Internal.MatchResult;	// collect all object arguments
-
-		if (isDefined(this.#anchor) && !match.isAnchored)
-			match.isAnchored = true;
-
-		const res = (this.#matches ?? this.#local.parse.result) as any[];
-		if (isDefined(res) && !Object.isFrozen(res)) {
-			if (!res.includes(match)) res.push(match);
-		}
 	}
 }
 

@@ -1,3 +1,5 @@
+import { isBoolean } from '#library/assertion.library.js';
+
 import { sym, Token } from './tempo.symbol.js';
 import { asType } from '#library/type.library.js';
 import { asArray } from '#library/coercion.library.js';
@@ -16,8 +18,19 @@ export function normalizeLayoutOrder(value: unknown): string[] {
 }
 
 /** @internal set a mutable, enumerable property on a target */
-export const setProperty = <T>(target: object, key: PropertyKey, value: T) =>
-	Object.defineProperty(target, key, { value, writable: true, configurable: true, enumerable: true });
+export const setProperty = <T>(target: object, key: PropertyKey, value: T) => {
+	if (Object.isExtensible(target)) {
+		Object.defineProperty(target, key, { value, writable: true, configurable: true, enumerable: true });
+	} else {
+		console.warn(`[tempo] setProperty: Cannot define property '${String(key)}' on non-extensible object`, target);
+	}
+}
+
+/** @internal set multiple mutable, enumerable properties on a target */
+export const setProperties = (target: object, properties: Record<PropertyKey, any>) => {
+	ownEntries(properties)
+		.forEach(([key, value]) => setProperty(target, key, value));
+}
 
 /** @internal return the Prototype parent of an object */
 export const proto = (obj: object) => Object.getPrototypeOf(obj);
@@ -32,7 +45,7 @@ export const create = <T extends object>(obj: object, name: string): T => {
 		throw new TypeError(`[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`);
 
 	return { ...entry } as T;
-};
+}
 
 /** @internal resolve a key to a symbol from Token or sym registries */
 export function getSymbol(key?: string | symbol): symbol {
@@ -89,7 +102,7 @@ export function getLargestUnit(list: any[]): string {
 export function compileRegExp(layout: string | RegExp, state: t.Internal.State, snippet?: Snippet) {
 	// helper function to replace {name} placeholders with their corresponding snippets
 	const matcher = (source: string, d = 0): string => {
-		if (d > 10) return source;													// prevent infinite recursion
+		if (d > 10) return source;															// prevent infinite recursion
 
 		if (source.startsWith('/') && source.endsWith('/'))
 			source = source.substring(1, source.length - 1);			// remove the leading/trailing "/"
@@ -100,16 +113,18 @@ export function compileRegExp(layout: string | RegExp, state: t.Internal.State, 
 			const token = getSymbol(name);								// get the symbol for this {name}
 			const customs = snippet?.[token as keyof Snippet]?.source ?? snippet?.[name as keyof Snippet]?.source;
 			const globals = state.parse.snippet[token as keyof Snippet]?.source ?? state.parse.snippet[name as keyof Snippet]?.source;
-			const defaultLayout = Layout[token as keyof typeof Layout];	// get resolution source (layout)
+			const stateLayout = state.parse.layout[token as keyof Layout] ?? state.parse.layout[name as keyof Layout];
+			const defaultLayout = Layout[token as keyof Layout];	// get resolution source (layout)
 
-			let res = customs ?? globals ?? defaultLayout;								// get the snippet/layout source
+			let res = customs ?? globals ?? stateLayout ?? defaultLayout;								// get the snippet/layout source
 
 			if (isNullish(res) && name.includes('.')) {						// if no definition found, try fallback
 				const prefix = name.split('.')[0];									// get the base token name
 				const pToken = getSymbol(prefix);
 				res = snippet?.[pToken as keyof Snippet]?.source ?? snippet?.[prefix as keyof Snippet]?.source
-					?? state.parse.snippet[pToken as keyof typeof Snippet]?.source ?? state.parse.snippet[prefix as keyof typeof Snippet]?.source
-					?? Layout[pToken as keyof typeof Layout];
+					?? state.parse.snippet[pToken as keyof Snippet]?.source ?? state.parse.snippet[prefix as keyof Snippet]?.source
+					?? state.parse.layout[pToken as keyof Layout] ?? state.parse.layout[prefix as keyof Layout]
+					?? Layout[pToken as keyof Layout];
 			}
 
 			if (res && name.includes('.')) {											// wrap dotted extensions for identification
@@ -120,7 +135,7 @@ export function compileRegExp(layout: string | RegExp, state: t.Internal.State, 
 
 			return (isNullish(res) || res === match)							// if no definition found,
 				? match																							// return the original match
-				: matcher(res, d + 1);													// else recurse to see if snippet contains embedded "{}" pairs
+				: matcher(res, d + 1);															// else recurse to see if snippet contains embedded "{}" pairs
 		});
 	};
 
@@ -174,4 +189,57 @@ export function setPatterns(state: t.Internal.State) {
 
 		state.parse.pattern.set(symbol, compiled);
 	});
+
+}
+
+/**
+ * @internal Normalize a MonthDay configuration value against a base.
+ * @param value The user-supplied value to normalize
+ * @param base The base/default value (e.g., Tempo.MONTH_DAY)
+ */
+export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthDay): t.MonthDay {
+	if (isBoolean(value)) value = { active: value } as t.MonthDay;
+	const warned = new Set<string>();
+
+	// 1. Merge Locales and Layouts (Additive)
+	const localesList = [...new Set([...asArray(base.locales), ...asArray(value.locales)])];
+	const layoutsList = [...new Set([...asArray(base.layouts), ...asArray(value.layouts)])];
+
+	// 2. Merge TimeZones (Deep Additive)
+	const tzs: Record<string, string[]> = { ...base.timezones } as any;
+	if (value.timezones) {
+		Object.entries(value.timezones).forEach(([k, v]) => {
+			try {
+				const normalized = new Intl.Locale(k).baseName;
+				tzs[normalized] = [...new Set([...asArray(tzs[normalized] || []), ...asArray(v)])];
+			} catch {
+				tzs[k] = [...new Set([...asArray(tzs[k] || []), ...asArray(v)])];
+			}
+		});
+	}
+
+	// 3. Resolve to Internal Format
+	const resolvedLocales = localesList.map(mdy => {
+		const intl = new Intl.Locale(mdy);
+		const tzs_intl = (intl as any).getTimeZones?.() ?? [];
+		const fallback = tzs[intl.baseName] ?? [];
+
+		if (tzs_intl.length === 0 && fallback.length === 0 && !warned.has(intl.baseName)) {
+			warned.add(intl.baseName);
+			// Optionally: warn here if needed
+		}
+
+		return {
+			locale: intl.baseName,
+			timeZones: tzs_intl.length > 0 ? tzs_intl : fallback
+		};
+	});
+
+	return {
+		...value,
+		locales: localesList as any,
+		layouts: layoutsList as any,
+		timezones: tzs,
+		resolvedLocales
+	};
 }

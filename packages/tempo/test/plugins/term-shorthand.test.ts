@@ -1,8 +1,6 @@
 import { Tempo } from '#tempo'
 
 describe('Tempo Term Literacy (Namespace Shorthand)', () => {
-	afterEach(() => vi.restoreAllMocks());
-
 	describe('.set() shorthand', () => {
 		test('set("#period.morning") sets to the start of morning', () => {
 			const t = new Tempo('2026-01-01T12:00:00', { sphere: 'north' })
@@ -69,27 +67,16 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 	})
 
 	describe('Error handling', () => {
-		let errorSpy: any;
-
-		beforeEach(() => {
-			errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
-		})
-
-		afterEach(() => {
-			vi.restoreAllMocks()
-		})
-
 		test('invalid term shorthand trips #errored (with catch:true)', () => {
 			const t = new Tempo('2026-01-01', { catch: true }).set('#invalid.term')
 			expect(t.isValid).toBe(false)
-			expect(errorSpy).toHaveBeenCalled()
+			expect(console.error).toHaveBeenCalled()
 		})
 
 		test('invalid range in known term trips #errored (with catch:true)', () => {
 			const t = new Tempo('2026-01-01', { catch: true }).set('#qtr.q99')
 			expect(t.isValid).toBe(false)
-			expect(errorSpy).toHaveBeenCalled()
+			expect(console.error).toHaveBeenCalled()
 		})
 	})
-
 })

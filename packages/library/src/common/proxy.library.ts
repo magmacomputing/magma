@@ -117,8 +117,10 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 					pending.delete(k);
 				}
 				// silent mark to avoid redundant discovery
-				if (Reflect.isExtensible(t) && !Reflect.has(t, k))
+				// Only define if object is extensible and not frozen
+				if (Reflect.isExtensible(t) && !Object.isFrozen(t) && !Reflect.has(t, k)) {
 					Object.defineProperty(t, k, { value: undefined, writable: true, enumerable: false, configurable: true });
+				}
 			}
 
 			const val = Reflect.get(t, k, r);

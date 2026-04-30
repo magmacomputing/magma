@@ -1,4 +1,4 @@
-import { ownEntries } from '#library/primitive.library.js';
+import { $ImmutableSkip } from '#library/symbol.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { type Constructor, type Type, registerType } from '#library/type.library.js';
 
@@ -26,15 +26,17 @@ export function Immutable<T extends Constructor>(value: T, { kind, name, addInit
 
 			addInitializer(() => {																// wait for construction to complete
 				const protect = (obj: object) => {									// protect existing members
-					ownEntries(Object.getOwnPropertyDescriptors(obj))
-						.filter(([name]) => name !== 'constructor')			// dont touch the constructor
-						.forEach(([name, { configurable, writable }]) => {
-							if (configurable) {
-								const update: PropertyDescriptor = { configurable: false };
-								if (writable) update.writable = false;			// only data descriptors have 'writable'
-								Object.defineProperty(obj, name, update);
-							}
-						});
+					const skip = (obj as any)[$ImmutableSkip] ?? (obj as any).$ImmutableSkip ?? (obj.constructor as any)?.[$ImmutableSkip] ?? (obj.constructor as any)?.$ImmutableSkip ?? [];
+					Reflect.ownKeys(obj).forEach(name => {
+						if (name === 'constructor' || (Array.isArray(skip) && skip.some(s => String(s) === String(name)))) return;
+
+						const desc = Object.getOwnPropertyDescriptor(obj, name);
+						if (desc?.configurable) {
+							const update: PropertyDescriptor = { configurable: false };
+							if (desc.writable) update.writable = false;			// only data descriptors have 'writable'
+							Object.defineProperty(obj, name, update);
+						}
+					});
 				};
 
 				protect(value);																			// protect original static members

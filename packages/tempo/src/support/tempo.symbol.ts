@@ -1,6 +1,6 @@
 import { looseIndex } from '#library/object.library.js';
-import { sym as lib, $Target, $Discover, $Extensible, $Inspect, $Logify, $Registry, $Register as $LibRegister, $SerializerRegistry, $Identity } from '#library/symbol.library.js';
-export { $Target, $Discover, $Extensible, $Inspect, $Logify, $Registry, $LibRegister, $SerializerRegistry, $Identity };
+import { sym as lib, $Target, $Discover, $Extensible, $Inspect, $Logify, $Registry, $Register as $LibRegister, $SerializerRegistry, $Identity, $ImmutableSkip } from '#library/symbol.library.js';
+export { $Target, $Discover, $Extensible, $Inspect, $Logify, $Registry, $LibRegister, $SerializerRegistry, $Identity, $ImmutableSkip };
 
 /** check valid Tempo instance */
 export const isTempo = (tempo?: any): tempo is TempoBrand => Boolean(tempo?.[sym.$Identity]);

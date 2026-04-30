@@ -42,6 +42,10 @@ Because `Tempo` is chainable (e.g., `new Tempo('xmas').set({ period: 'afternoon'
 *   `value`: The original argument passed to that step.
 *   `match`: The specific regex pattern or symbol that successfully matched the input.
 *   `groups`: The resolved components (`yy`, `mm`, `dd`, `hh`, etc.) extracted from the match.
+*   `anchor`: The **active reference point** used for this specific match. This provides a "breadcrumb" trail during complex parses where the anchor might shift as components are resolved.
+
+### `this.parse.anchor`
+Returns the **initial reference point** used for the current parsing operation. This is the baseline "Now" against which relative terms (like `next Monday` or `ago`) are calculated.
 
 ### `this.term`
 Returns a collection containing the evaluated results of all registered term plugins for this specific instance.

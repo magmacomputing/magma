@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -208,6 +208,8 @@
   "scripts": {
     "test": "vitest run",
     "test:dist": "cross-env TEST_DIST=true vitest run",
+    "test:ci": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
+    "test:ci:prefilter": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TEMPO_PREFILTER_CI=true vitest run",
     "repl": "tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "bare": "tsx --conditions=development -i --import ./bin/temporal-polyfill.ts",
     "core": "cross-env TEMPO_LITE=true tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/core.ts",
@@ -232,13 +234,14 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.6.0",
+    "@magmacomputing/library": "2.7.0",
     "@rollup/plugin-alias": "^6.0.0",
     "cross-env": "^7.0.3",
     "magic-string": "^0.30.21",
     "markdown-it-mathjax3": "^4.3.2",
     "typedoc": "^0.28.19",
     "typedoc-plugin-markdown": "^4.11.0",
+    "typedoc-vitepress-theme": "^1.1.2",
     "vitepress": "^1.6.4"
   },
   "directories": {

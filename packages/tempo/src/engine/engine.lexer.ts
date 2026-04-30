@@ -1,8 +1,8 @@
 import '#library/temporal.polyfill.js';
-import { isString, isEmpty, isUndefined, isDefined, isTemporal } from '#library/assertion.library.js';
+import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { pad, singular } from '#library/string.library.js';
-import { Match, enums } from '#tempo/support';
+import { Match, enums, isTempo } from '#tempo/support';
 import * as t from '../tempo.type.js';
 
 /**
@@ -44,9 +44,10 @@ function num(groups: Record<string, string | number>) {
 /** conform weekday/month names using prefix matching */
 export function prefix<T extends t.WEEKDAY | t.MONTH>(str: any): T {
 	let value = str;
+
 	if (isString(value)) {
 		const low = value.trim().toLowerCase();
-		if (low === '') return value;
+		if (low === '') return value as T;
 		const match = Object.keys(enums.NUMBER).find(key => key.startsWith(low));
 		if (match) return match as any;
 
@@ -56,6 +57,7 @@ export function prefix<T extends t.WEEKDAY | t.MONTH>(str: any): T {
 			if (found) return found as T;
 		}
 	}
+
 	return value as T;
 }
 
@@ -136,7 +138,13 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 
 /** resolve a date pattern match */
 export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, logger: any, config: any, pivot: number = 75): Temporal.ZonedDateTime {
-	const { mod, nbr = '1', afx, unt, yy, mm, dd } = groups as Lexer.GroupDate;
+
+	const { mod, nbr = '1', afx, unt } = groups as Lexer.GroupDate;
+	// Normalize yy, mm, dd: treat empty string as missing
+	let yy = (typeof groups.yy === 'string' && groups.yy.trim() === '') ? undefined : groups.yy;
+	let mm = (typeof groups.mm === 'string' && groups.mm.trim() === '') ? undefined : groups.mm;
+	let dd = (typeof groups.dd === 'string' && groups.dd.trim() === '') ? undefined : groups.dd;
+
 	if (isEmpty(yy) && isEmpty(mm) && isEmpty(dd) && isUndefined(unt))
 		return dateTime;
 
@@ -145,10 +153,20 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 		return dateTime;
 	}
 
+	// Fallback order: provided -> config.anchor (normalized to Temporal-like) -> dateTime
+	let anchor = config?.anchor;
+	if (isTempo(anchor)) anchor = anchor.toDateTime();
+	if (isInstant(anchor)) anchor = anchor.toZonedDateTimeISO(config?.timeZone || 'UTC');
+	if (!isTemporal(anchor)) anchor = undefined;
+
+	const fallbackYear = isDefined(anchor?.year) ? anchor.year : dateTime.year;
+	const fallbackMonth = isDefined(anchor?.month) ? anchor.month : dateTime.month;
+	const fallbackDay = isDefined(anchor?.day) ? anchor.day : dateTime.day;
+
 	let { year, month, day } = num({
-		year: yy ?? dateTime.year,
-		month: prefix((isString(mm) && mm.trim() === '') ? dateTime.month : (mm ?? dateTime.month)),
-		day: dd ?? dateTime.day,
+		year: yy ?? fallbackYear,
+		month: prefix(mm ?? fallbackMonth),
+		day: dd ?? fallbackDay,
 	} as any);
 
 	if (unt) {

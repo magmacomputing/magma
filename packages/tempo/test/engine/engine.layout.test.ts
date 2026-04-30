@@ -16,7 +16,7 @@ describe('engine.layout resolver', () => {
 		const layout = makeLayout(['x', 'y', 'z']);
 		const resolved = resolveLayoutOrder({
 			layout,
-			mdyLayouts: [['dmy', 'mdy']],
+			monthDayLayouts: [['dmy', 'mdy']],
 			isMonthDay: true,
 		});
 
@@ -28,7 +28,7 @@ describe('engine.layout resolver', () => {
 		const layout = makeLayout(['dmy', 'mdy', 'x']);
 		const resolved = resolveLayoutOrder({
 			layout,
-			mdyLayouts: [['dmy', 'mdy']],
+			monthDayLayouts: [['dmy', 'mdy']],
 			isMonthDay: true,
 		});
 
@@ -39,7 +39,7 @@ describe('engine.layout resolver', () => {
 		const layout = makeLayout(['mdy', 'dmy', 'x']);
 		const resolved = resolveLayoutOrder({
 			layout,
-			mdyLayouts: [['dmy', 'mdy']],
+			monthDayLayouts: [['dmy', 'mdy']],
 			isMonthDay: false,
 		});
 
@@ -50,7 +50,7 @@ describe('engine.layout resolver', () => {
 		const layout = makeLayout(['dmyA', 'mdyA', 'x', 'dmyB', 'mdyB', 'y']);
 		const resolved = resolveLayoutOrder({
 			layout,
-			mdyLayouts: [['dmyA', 'mdyA'], ['dmyB', 'mdyB']],
+			monthDayLayouts: [['dmyA', 'mdyA'], ['dmyB', 'mdyB']],
 			isMonthDay: true,
 		});
 
@@ -61,7 +61,7 @@ describe('engine.layout resolver', () => {
 		const layout = makeLayout(['before', 'dmy', 'mdy', 'after']);
 		const resolved = resolveLayoutOrder({
 			layout,
-			mdyLayouts: [['dmy', 'mdy']],
+			monthDayLayouts: [['dmy', 'mdy']],
 			isMonthDay: true,
 		});
 
@@ -108,7 +108,7 @@ describe('engine.layout resolver', () => {
 		const layout = makeLayout(['dayMonthYear', 'monthDayYear', 'weekDay', 'date', 'time']);
 		const resolved = resolveLayoutOrder({
 			layout,
-			mdyLayouts: [['dayMonthYear', 'monthDayYear']],
+			monthDayLayouts: [['dayMonthYear', 'monthDayYear']],
 			isMonthDay: true,
 			layoutController: {
 				[DEFAULT_LAYOUT_CLASS]: ['wkd', 'dt', 'tm', 'dmy', 'mdy'],

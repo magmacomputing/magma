@@ -255,8 +255,8 @@ describe(`${label} parse`, () => {
     expect(Tempo.parse.snippet[sym]).toBeInstanceOf(RegExp);
   })
 
-  test('parse.mdyLocales is an array', () => {
-    expect(Array.isArray(Tempo.parse.mdyLocales)).toBe(true);
+  test('parse.monthDay.locales is an array', () => {
+    expect(Array.isArray(Tempo.parse.monthDay.locales)).toBe(true);
   })
 
 })

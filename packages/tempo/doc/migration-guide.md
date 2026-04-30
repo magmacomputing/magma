@@ -94,5 +94,25 @@ Season term scope output has been simplified.
 1.  If you previously relied on the Chinese-specific object attached to `term.season` scope output, remove that dependency.
 2.  Resolve Chinese season context by creating a dedicated `Tempo` instance with the appropriate Chinese `timeZone` for the interpretation you need.
 
+## 🔁 Migrating from version 2.7.0 (Grouped Options)
+
+Tempo has rationalized its configuration surface by grouping related options into nested objects. This improves discoverability and allows for easier additive merging across the prototype chain.
+
+### Month-Day (Regional Parsing)
+The individual `mdyLocales` and `mdyLayouts` options have been consolidated into a single `monthDay` object.
+- **v2.6.x:** `new Tempo({ mdyLocales: ['en-US'] })`
+- **v2.7.x:** `new Tempo({ monthDay: { locales: ['en-US'] } })`
+- **Shortcut:** `new Tempo({ monthDay: true })` (enables forced MDY parsing using default locales).
+
+### Relative Time
+The individual `rtfFormat` and `rtfStyle` options have been consolidated into a single `relativeTime` object.
+- **v2.6.x:** `new Tempo({ rtfStyle: 'long' })`
+- **v2.7.x:** `new Tempo({ relativeTime: { style: 'long' } })`
+
+### Action Required:
+Only the deprecated top-level keys `rtfFormat` and `rtfStyle` are still accepted as legacy fallbacks in the current release, handled specifically in the `Tempo` class constructor for backward compatibility. 
+
+In contrast, the old `mdyLocales` and `mdyLayouts` keys are **not** treated as aliases and will be ignored; these must be migrated to the new nested `monthDay` structure. Update your configuration to ensure compatibility with future versions and the Release-C optimization engine. Refer to the `Tempo` constructor for implementation details on legacy alias handling.
+
 ## 🧪 Testing and Stability
 v2.x has been hardened with a 100% pass rate on our regression suite. If you were relying on undocumented "quirks" or bugs in v1.x parsing, you may find that v2.x is more strict and deterministic.
