@@ -46,7 +46,7 @@ function createImmutableWrapper<T extends Constructor>(
  */
 // Hybrid lockdown: lock existing statics for mutation, allow extension
 function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
-	const lockStatics = (ctor: object) => {
+	const lockStatic = (ctor: object) => {
 		Reflect.ownKeys(ctor).forEach(name => {
 			if (name === 'prototype' || name === 'length' || name === 'name' || name === 'constructor') return;
 			if (Array.isArray(skip) && skip.some(s => String(s) === String(name))) return;
@@ -62,11 +62,11 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 	}
 
 	// Lock statics for both original and wrapper
-	lockStatics(value);
-	lockStatics(wrapper);
+	lockStatic(value);
+	lockStatic(wrapper);
 
 	// Lock down all existing prototype properties, but do NOT freeze the prototype object
-	const lockPrototypeProps = (proto: object) => {
+	const lockPrototype = (proto: object) => {
 		if (!proto || typeof proto !== 'object') return;
 		Reflect.ownKeys(proto).forEach(name => {
 			if (name === 'constructor') return;
@@ -81,8 +81,8 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 		});
 	}
 	
-	lockPrototypeProps(value.prototype);
-	lockPrototypeProps(wrapper.prototype);
+	lockPrototype(value.prototype);
+	lockPrototype(wrapper.prototype);
 }
 
 /**
