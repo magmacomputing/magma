@@ -133,7 +133,7 @@ export class Tempo {
 		Tempo.#dbg.debug(config, ...args);
 	}
 
-// ...rest of the class definition remains unchanged...
+	// ...rest of the class definition remains unchanged...
 
 
 	/**
@@ -1094,7 +1094,6 @@ export class Tempo {
 		return proxify(out);
 	}
 
-
 	/** global discovery configuration */
 	static get discovery() {
 		const discovery = this.config.discovery;
@@ -1124,10 +1123,9 @@ export class Tempo {
 		// an `unknown` bridge to assert the combined intersection type so the compiler
 		// treats `Tempo.terms` as array-like and indexable by key.
 		return delegate(list, (key) => {
-			if (isString(key) && !['length', 'map', 'find', 'forEach', 'includes'].includes(key)) {
-				return list.find(t => t.key === key || t.scope === key);
-			}
-			return undefined;
+			return (isString(key) && !['length', 'map', 'find', 'forEach', 'includes'].includes(key))
+				? list.find(t => t.key === key || t.scope === key)
+				: undefined;
 		}) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
 	}
 
@@ -1543,6 +1541,7 @@ export class Tempo {
 	/** current range key for every registered term */
 	get ranges(): Record<string, string> {
 		const res: Record<string, string> = {};
+
 		Tempo.terms.forEach(term => {
 			const val = (this as any).term[term.key];							// access the term-delegate (forces evaluation)
 			if (isString(val)) {
@@ -1550,6 +1549,7 @@ export class Tempo {
 				if (term.scope) res[term.scope] = val;							// alias the string to the scope key
 			}
 		});
+
 		return res;
 	}
 
@@ -1568,7 +1568,8 @@ export class Tempo {
 			enumerable: false, configurable: true
 		});
 
-		return proxify(out) as t.Internal.Config;
+		// return proxify(out) as t.Internal.Config;
+		return out as t.Internal.Config;
 	}
 
 	/** Instance-specific parse rules (merged with global) */
