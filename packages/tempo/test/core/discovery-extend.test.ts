@@ -1,6 +1,9 @@
 import { Tempo } from '#tempo';
 
 describe('Discovery in Extend', () => {
+	beforeEach(() => { Tempo.init() });
+	afterEach(() => { Tempo.init() });
+
 	it('should apply monthDay discovery via extend', () => {
 		Tempo.extend({
 			monthDay: {

@@ -4,7 +4,7 @@ import { Tempo } from '#tempo';
 // Subsequent per-test calls to Tempo.init() will now preserve the prefilter setting.
 const _init = Tempo.init;
 Tempo.init = function (options: any = {}) {
-  return _init.call(Tempo, { ...options, parsePrefilter: true });
+  return _init.call(this, { ...options, parsePrefilter: true });
 };
 
 // Apply the initial forced hydration

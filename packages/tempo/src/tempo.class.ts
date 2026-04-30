@@ -220,7 +220,15 @@ export class Tempo {
 		const { timeZone, locale } = shape.config;
 		const mdy = shape.parse.monthDay;
 		const globalMdy = Tempo.MONTH_DAY as t.MonthDay;
-		const intl = new Intl.Locale(locale);
+
+		let intl: Intl.Locale;
+		try {
+			intl = new Intl.Locale(Tempo.#locale(locale));
+		} catch (e) {
+			Tempo.#dbg.warn(shape.config, `Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, e);
+			intl = new Intl.Locale('en-US');
+		}
+
 		const tz = String(timeZone);
 
 		// Find the resolved timezone list for the current locale (which includes getTimeZones data)
@@ -405,9 +413,15 @@ export class Tempo {
 						shape.parse.parsePrefilter = Boolean(arg.value);
 						break;
 
-					case 'pivot':
-						shape.parse["pivot"] = Number(arg.value);
+					case 'pivot': {
+						const pivot = parseInt(String(arg.value));
+						if (Number.isFinite(pivot) && pivot >= 0 && pivot <= 99) {
+							shape.parse.pivot = pivot;
+						} else {
+							Tempo.#dbg.warn(shape.config, `Invalid pivot value: ${arg.value}. Pivot must be a finite number between 0 and 99.`);
+						}
 						break;
+					}
 
 					case 'config':
 						(this as any)[$setConfig](shape, arg.value as t.Options);
@@ -435,7 +449,7 @@ export class Tempo {
 						break;
 
 					case 'discovery':
-						setProperty(shape.config, 'discovery', isSymbol(optVal) ? Symbol.keyFor(optVal) as string : optVal);
+						setProperty(shape.config, 'discovery', isSymbol(optVal) ? (Symbol.keyFor(optVal) ?? optVal) : optVal);
 						break;
 
 					case 'plugins':

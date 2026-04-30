@@ -80,4 +80,14 @@ describe('Global Discovery (via Configurable Symbol)', () => {
 		const t = new Tempo('2024-05-20');
 		expect((t.fmt as any).custom).toBe('2024!!05!!20');
 	});
+
+	it('should preserve local symbols as discovery keys', () => {
+		const $local = Symbol('localDiscovery');
+		(globalThis as any)[$local] = { options: { locale: 'fr-FR' } };
+
+		Tempo.init({ discovery: $local });
+		expect(Tempo.config.discovery).toBe($local);
+		expect(Tempo.config.locale).toBe('fr-FR');
+		delete (globalThis as any)[$local];
+	});
 });

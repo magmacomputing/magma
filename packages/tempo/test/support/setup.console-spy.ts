@@ -1,3 +1,5 @@
+import { vi, afterAll, beforeEach } from 'vitest';
+
 // Global console suppression for all tests
 // (You can comment out lines to allow specific console methods)
 
@@ -10,11 +12,11 @@ declare global {
 
 /** setup global console spies before all tests */
 globalThis._consoleSpies = [
-  vi.spyOn(console, 'error').mockImplementation(() => {}),
-  vi.spyOn(console, 'warn').mockImplementation(() => {}),
-  vi.spyOn(console, 'debug').mockImplementation(() => {}),
-  vi.spyOn(console, 'log').mockImplementation(() => {}),
-  vi.spyOn(console, 'info').mockImplementation(() => {}),
+  vi.spyOn(console, 'error').mockImplementation(() => { }),
+  vi.spyOn(console, 'warn').mockImplementation(() => { }),
+  vi.spyOn(console, 'debug').mockImplementation(() => { }),
+  vi.spyOn(console, 'log').mockImplementation(() => { }),
+  vi.spyOn(console, 'info').mockImplementation(() => { }),
 ];
 
 /** restore global console spies after all tests */
