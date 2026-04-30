@@ -1,7 +1,7 @@
 import '#library/temporal.polyfill.js';
 
 import { Logify } from '#library/logify.class.js';
-import { Immutable, Serializable } from '#library/class.library.js';
+import { Securable, Immutable, Serializable } from '#library/class.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { secure, proxify, delegate } from '#library/proxy.library.js';
@@ -102,8 +102,17 @@ export class Tempo {
 		return ClassStates.get(this) ?? Tempo.#global;
 	}
 
-	static [$ImmutableSkip] = ['init'];
-	static get $ImmutableSkip() { return ['init']; }
+	static get $ImmutableSkip() {
+		const global = typeof globalThis !== 'undefined' ? globalThis : (window as any);
+		const nodeEnv = typeof global !== 'undefined'
+			&& typeof global.process !== 'undefined'
+			&& global.process.env
+			&& (global.process.env.NODE_ENV === 'test' || global.process.env.CI);
+
+		return (nodeEnv || global.TEMPO_TESTING)
+			? ['init']
+			: []
+	}
 
 	/** @internal brand check to distinguish Tempo objects from other objects */
 	get [$Identity](): true { return true }

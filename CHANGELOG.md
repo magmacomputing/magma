@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-04-30
+
+### Changed
+- **Release D: Pervasive Hard-Freeze Proxies**: Refactored immutability system to use throwing Proxies for all immutable objects, ensuring mutation attempts throw explicit errors in all environments. See plan for architectural details.
+
+### Migration
+- All objects previously frozen with `Object.freeze` are now wrapped in mutation-throwing Proxies. Identity checks (`===`) may behave differently for these objects.
+
 ## [2.7.0] - 2026-04-27
 
 ### Added
