@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+
 import resolve from '@rollup/plugin-node-resolve';
 import MagicString from 'magic-string';
 

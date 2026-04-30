@@ -22,7 +22,7 @@ function resolve(t: Tempo, anchor?: any): any[] {
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['sphere'] });
 
 	list.forEach(itm => {
-		if (isNumber(itm.fiscal)) itm.fiscal += itm.year;
+		if (isNumber(itm.fiscal)) itm.fiscal += isNumber(itm.year) ? itm.year : 0;
 	});
 
 	return list;

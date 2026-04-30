@@ -6,6 +6,8 @@ if (!(globalThis as any).Temporal) {
   (globalThis as any).Temporal = Temporal;
 }
 
+import typedocSidebar from '../doc/api/typedoc-sidebar.json'
+
 export default defineConfig({
   base: '/magma/',
   title: "Tempo",
@@ -20,7 +22,7 @@ export default defineConfig({
     },
     nav: [
       { text: 'Guide', link: '/README' },
-      { text: 'API', link: '/doc/tempo.api' },
+      { text: 'API Reference', link: typedocSidebar[0].items[0].link },
       { text: 'Releases', link: '/doc/releases/' }
     ],
     sidebar: [
@@ -39,6 +41,7 @@ export default defineConfig({
         items: [
           { text: 'Configuration', link: '/doc/tempo.config' },
           { text: 'Smart Parsing', link: '/doc/tempo.parse' },
+          { text: 'Regional Parsing (MDY)', link: '/doc/tempo.month-day' },
           { text: 'Smart Formatting', link: '/doc/tempo.format' },
           { text: 'Modularity', link: '/doc/tempo.modularity' },
           { text: 'Layout Patterns', link: '/doc/tempo.layout' },
@@ -49,8 +52,8 @@ export default defineConfig({
       {
         text: 'Advanced Reference',
         items: [
-          { text: 'API Reference', link: '/doc/tempo.api' },
-          { text: 'Types System', link: '/doc/tempo.types' },
+          { text: 'API Overview', link: '/doc/api/' },
+          { text: 'Technical Reference', link: typedocSidebar[0].items[0].link },
           { text: 'Shorthand Engine', link: '/doc/tempo.shorthand' },
           { text: 'Weekday Engine', link: '/doc/tempo.weekday' },
           { text: 'Debugging', link: '/doc/tempo.debugging' }

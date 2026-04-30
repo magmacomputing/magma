@@ -9,7 +9,6 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should maintain isolated registries for sandboxes', () => {
-		const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 		const MyTempo = Tempo.create({
 			period: {
 				'tea-time': '16:00'
@@ -18,7 +17,6 @@ describe('Sandbox Factory Pattern', () => {
 
 		// The base Tempo should not have 'tea-time'
 		expect(() => new Tempo('tea-time')).toThrow();
-		spy.mockRestore();
 
 		const t = new MyTempo('tea-time');
 		expect(t.hh).toBe(16);
@@ -26,33 +24,25 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should support shadowing global aliases', () => {
-		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		// Global 'noon' is 12:00
+		const EarlyNoon = Tempo.create({
+			period: {
+				'noon': '11:00'
+			}
+		});
 
-		try {
-			// Global 'noon' is 12:00
-			const EarlyNoon = Tempo.create({
-				period: {
-					'noon': '11:00'
-				}
-			});
+		// Original remains unaffected (if not manually reset in a way that changes it)
+		// We expect 12:00 for the base Tempo
+		const t1 = new Tempo('noon');
+		expect(t1.hh).toBe(12);
 
-			// Original remains unaffected (if not manually reset in a way that changes it)
-			// We expect 12:00 for the base Tempo
-			const t1 = new Tempo('noon');
-			expect(t1.hh).toBe(12);
+		const t2 = new EarlyNoon('noon');
+		expect(t2.hh).toBe(11);
 
-			const t2 = new EarlyNoon('noon');
-			expect(t2.hh).toBe(11);
-
-			expect(warnSpy).toHaveBeenCalledWith(
-				expect.stringContaining('Potential period alias collision: "noon" overlaps with existing alias(es): after[ -]?noon')
-			);
-			expect(errSpy).not.toHaveBeenCalled();
-		} finally {
-			warnSpy.mockRestore();
-			errSpy.mockRestore();
-		}
+		expect(console.warn).toHaveBeenCalledWith(
+			expect.stringContaining('Potential period alias collision: "noon" overlaps with existing alias(es): after[ -]?noon')
+		);
+		expect(console.error).not.toHaveBeenCalled();
 	});
 
 	it('should record traceability info in parse results', () => {

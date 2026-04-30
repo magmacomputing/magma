@@ -2,7 +2,7 @@ import { looseIndex } from '#library/object.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { getDateTimeFormat } from '#library/international.library.js';
 
-import { NUMBER, MODE } from './tempo.enum.js';
+import { NUMBER, MODE, MONTH_DAY } from './tempo.enum.js';
 import { Token } from './tempo.symbol.js';
 import type { Options } from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
@@ -94,9 +94,9 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
 	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tzd}?{brk}?',	// calendar/event and clock/period
 	[Token.tmd]: '({tm})(?:(?:{sep}+|T)({dt}))?{tzd}?{brk}?',	// clock/period and calendar/event
-	[Token.ymd]: '({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?',// year-month(-day)
-	[Token.mdy]: '({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?',// month-day(-year)
 	[Token.dmy]: '({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?',// day-month(-year)
+	[Token.mdy]: '({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?',// month-day(-year)
+	[Token.ymd]: '({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?',// year-month(-day)
 	[Token.off]: '{mod}?{dd}{afx}?',													// day of month, with optional offset
 	[Token.rel]: '{nbr}{sep}?{unt}{sep}?{afx}',								// relative duration (e.g. 2 days ago)
 })
@@ -193,9 +193,9 @@ export const Default = secure({
 	/** calendaring system */																	calendar: 'iso8601',
 	/** default timezone if not specified */									timeZone: getDateTimeFormat().timeZone,
 	/** default locale if not specified */										locale: getDateTimeFormat().locale,
-	/** locales that prefer month-day order */								mdyLocales: ['en-US', 'en-AS'],	/** @link https:	//en.wikipedia.org/wiki/Date_format_by_country */
-	/** layouts that need to swap parse-order */							mdyLayouts: [['dayMonthYearShort', 'monthDayYearShort'], ['dayMonthYear', 'monthDayYear']],
+	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
 	/** preferred parse-order of layouts */										layoutOrder: [],
+	/** enable parse planner pre-filtering (Release C feature-flag) */ parsePrefilter: false,
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 } as Options)
 

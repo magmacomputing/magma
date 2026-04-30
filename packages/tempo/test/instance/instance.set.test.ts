@@ -3,10 +3,8 @@ import { Tempo } from '#tempo';
 const label = 'instance.set:';
 
 describe(`${label} set method`, () => {
-  afterEach(() => vi.restoreAllMocks());
 
   test('throws on unknown #term', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => { });
     const t = new Tempo();
     expect(() => t.set({ '#unknown': 1 })).toThrow('Unknown Term identifier');
   });

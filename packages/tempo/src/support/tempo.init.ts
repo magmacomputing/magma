@@ -9,9 +9,9 @@ import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/a
 import { ownEntries } from '#library/primitive.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
-import { setProperty, hasOwn, create, collect, setPatterns, normalizeLayoutOrder } from './tempo.util.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay } from './tempo.util.js';
 import { sym, Token } from './tempo.symbol.js';
-import { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './tempo.default.js';
+import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
 import * as t from '../tempo.type.js';
 import type { Mode } from '../tempo.type.js';
@@ -38,9 +38,9 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		event: Object.assign({}, baseState?.parse.event ?? Event),
 		period: Object.assign({}, baseState?.parse.period ?? Period),
 		ignore: baseState ? { ...baseState.parse.ignore } : Object.fromEntries(asArray(Ignore).map(w => [w, w])),
-		mdyLocales: asArray(baseState?.parse.mdyLocales ?? Default.mdyLocales as any),
-		mdyLayouts: asArray<t.Pair>(baseState?.parse.mdyLayouts ?? Default.mdyLayouts as any),
+		monthDay: resolveMonthDay(baseState?.parse.monthDay ?? {}, Default.monthDay as any),
 		layoutOrder: asArray<string>(baseState?.parse.layoutOrder ?? Default.layoutOrder as any),
+		parsePrefilter: Boolean(baseState?.parse.parsePrefilter ?? Default.parsePrefilter),
 		pivot: (baseState?.parse.pivot ?? Default.pivot) as any,
 		mode: (baseState?.parse.mode ?? Default.mode) as any,
 		lazy: false,
@@ -51,42 +51,42 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	if (isGlobal) {
 		markConfig(Object.assign(state.config, Default));
 		const { timeZone, calendar } = getDateTimeFormat();
-		Object.defineProperties(state.config, {
-			calendar: { value: calendar, enumerable: true, writable: true, configurable: true },
-			timeZone: { value: timeZone, enumerable: true, writable: true, configurable: true },
-			locale: { value: (getDateTimeFormat() as any).locale ?? 'en-US', enumerable: true, writable: true, configurable: true },
-			discovery: { value: Symbol.keyFor(sym.$Tempo) as string, enumerable: true, writable: true, configurable: true },
-			formats: { value: enumify(STATE.FORMAT, false), enumerable: true, writable: true, configurable: true },
-			sphere: { value: getHemisphere(timeZone), enumerable: true, writable: true, configurable: true },
-			get: { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true },
-			scope: { value: 'global', enumerable: true, writable: true, configurable: true },
-			catch: { value: options.catch ?? false, enumerable: true, writable: true, configurable: true }
+		setProperties(state.config, {
+			calendar,
+			timeZone,
+			locale: (getDateTimeFormat() as any).locale ?? 'en-US',
+			discovery: Symbol.keyFor(sym.$Tempo) as string,
+			formats: enumify(STATE.FORMAT, false),
+			sphere: getHemisphere(timeZone),
+			scope: 'global',
+			catch: options.catch ?? false
 		});
+		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 	} else if (baseState) {
 		state.config = markConfig(Object.create(baseState.config));
-		Object.defineProperties(state.config, {
-			calendar: { value: (state.config as any).calendar, enumerable: true, writable: true, configurable: true },
-			timeZone: { value: (state.config as any).timeZone, enumerable: true, writable: true, configurable: true },
-			locale: { value: (state.config as any).locale, enumerable: true, writable: true, configurable: true },
-			discovery: { value: (state.config as any).discovery, enumerable: true, writable: true, configurable: true },
-			formats: { value: (state.config as any).formats, enumerable: true, writable: true, configurable: true },
-			sphere: { value: (state.config as any).sphere, enumerable: true, writable: true, configurable: true },
-			get: { value: (state.config as any).get, enumerable: false, writable: true, configurable: true },
-			scope: { value: 'local', enumerable: true, writable: true, configurable: true },
+		setProperties(state.config, {
+			calendar: (state.config as any).calendar,
+			timeZone: (state.config as any).timeZone,
+			locale: (state.config as any).locale,
+			discovery: (state.config as any).discovery,
+			formats: (state.config as any).formats,
+			sphere: (state.config as any).sphere,
+			scope: 'local'
 		});
+		Object.defineProperty(state.config, 'get', { value: (state.config as any).get, enumerable: false, writable: true, configurable: true });
 		setProperty(state.config, 'catch', options.catch);
 	} else {
 		markConfig(Object.assign(state.config, Default));
-		Object.defineProperties(state.config, {
-			calendar: { value: calendar, enumerable: true, writable: true, configurable: true },
-			timeZone: { value: timeZone, enumerable: true, writable: true, configurable: true },
-			locale: { value: (getDateTimeFormat() as any).locale ?? 'en-US', enumerable: true, writable: true, configurable: true },
-			discovery: { value: Symbol.keyFor(sym.$Tempo) as string, enumerable: true, writable: true, configurable: true },
-			formats: { value: enumify(STATE.FORMAT, false), enumerable: true, writable: true, configurable: true },
-			sphere: { value: getHemisphere(timeZone), enumerable: true, writable: true, configurable: true },
-			get: { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true },
-			scope: { value: 'local', enumerable: true, writable: true, configurable: true },
+		setProperties(state.config, {
+			calendar,
+			timeZone,
+			locale: (getDateTimeFormat() as any).locale ?? 'en-US',
+			discovery: Symbol.keyFor(sym.$Tempo) as string,
+			formats: enumify(STATE.FORMAT, false),
+			sphere: getHemisphere(timeZone),
+			scope: 'local'
 		});
+		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 		if (isDefined(options.catch))
 			setProperty(state.config, 'catch', options.catch);
 	}
@@ -98,6 +98,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	if (isGlobal) runtime.state = state;
 	return state;
 }
+
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
 export function extendState(state: t.Internal.State, options: t.Options) {
@@ -142,6 +143,14 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				state.parse.layoutOrder = normalizeLayoutOrder(arg.value);
 				break;
 
+			case 'monthDay':
+				state.parse.monthDay = resolveMonthDay(arg.value, state.parse.monthDay);
+				break;
+
+			case 'parsePrefilter':
+				state.parse.parsePrefilter = Boolean(arg.value);
+				break;
+
 			case 'timeZone': {
 				const zone = String(arg.value).toLowerCase();
 				const resolvedZone = enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
@@ -158,23 +167,35 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				setProperty(state.config, 'locale', String(arg.value));
 				break;
 
+			case 'discovery':
+				setProperty(state.config, 'discovery', arg.value);
+				break;
+
+			case 'formats':
+				setProperty(state.config, 'formats', arg.value);
+				break;
+
+			case 'sphere':
+				setProperty(state.config, 'sphere', arg.value);
+				break;
+
+			case 'catch':
+				setProperty(state.config, 'catch', Boolean(arg.value));
+				break;
+
 			case 'pivot': {
-				const v = Number(arg.value);
-				if (Number.isInteger(v) && v >= 0) state.parse.pivot = v;
+				const pivot = parseInt(String(arg.value));
+				state.parse.pivot = (Number.isFinite(pivot) && pivot >= 0 && pivot <= 99) ? pivot : Default.pivot!;
 				break;
 			}
 
 			case 'mode':
-				state.parse.mode = String(arg.value) as Mode;
+				state.parse.mode = arg.value;
 				break;
 
-			case 'anchor':
-				state.anchor = arg.value;
+			default:
+				setProperty(state.config, optKey, arg.value);
 				break;
 		}
 	});
-
-	if (patternsDirty) setPatterns(state);
-
-	return state;
 }

@@ -57,7 +57,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	let value, opts: any = {}, unit: any;
 
 	switch (true) {
-		case isString(arg) && enums.ELEMENT.values().includes(singular(arg)):
+		case isString(arg) && enums.ELEMENT.values().includes(singular(arg) as any):
 			unit = arg;
 			({ value, ...opts } = until || {});
 			break;
@@ -115,11 +115,17 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			.join('')
 
 		const locale = (this as any).config['locale'];
-		const rtf = opts['rtfFormat'] || (this as any).config['rtfFormat'];
+		const rtConfig = (this as any).config['relativeTime'];
+		const rtOptions = opts['relativeTime'];
+		
+		const rtf = (typeof rtOptions === 'function' ? rtOptions : rtOptions?.format) 
+			|| (typeof rtConfig === 'function' ? rtConfig : rtConfig?.format)
+			|| opts['rtfFormat'] || (this as any).config['rtfFormat'];
 
 		const getFormatted = (val: number, u: any) => {
+			if (typeof rtf === 'function') return rtf(val, u);
 			if (rtf instanceof Intl.RelativeTimeFormat) return rtf.format(val, u);
-			const style = opts['rtfStyle'] || (this as any).config['rtfStyle'] || 'narrow';
+			const style = rtOptions?.style || rtConfig?.style || opts['rtfStyle'] || (this as any).config['rtfStyle'] || 'narrow';
 			return getRelativeTime(val, u, locale, style);
 		}
 

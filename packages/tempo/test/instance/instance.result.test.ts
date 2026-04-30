@@ -36,4 +36,26 @@ describe(`${label} parse result accumulation`, () => {
     expect(t.parse.result.some(r => r.type === 'Event')).toBe(true);
   });
 
+  test('parse records the anchor used for the operation and individual matches', () => {
+    const anchor = new Tempo('2024-01-01').toDateTime();
+    const t = new Tempo('next Monday', { anchor });
+    expect(t.parse.anchor).toBeDefined();
+    expect(t.parse.anchor?.equals(anchor)).toBe(true);
+    expect(t.parse.result[0].anchor).toBeDefined();
+    expect(t.parse.result[0].anchor?.equals(anchor)).toBe(true);
+  });
+
+  test('deep resolution (xmas at noon) records 5 distinct matches', () => {
+    const t = new Tempo('xmas at noon');
+    // 1. dtm (xmas noon)
+    // 2. Event (xmas -> 25 Dec)
+    // 3. date (25 Dec)
+    // 4. Period (noon -> 12:00)
+    // 5. time (12:00)
+    expect(t.parse.result.length).toBe(5);
+    expect(t.parse.result[0].match).toBe('dateTime');
+    expect(t.parse.result[1].type).toBe('Event');
+    expect(t.parse.result[3].type).toBe('Period');
+  });
+
 });
