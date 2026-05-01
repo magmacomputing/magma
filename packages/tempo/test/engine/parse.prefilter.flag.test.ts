@@ -22,16 +22,16 @@ describe('parse prefilter feature flag', () => {
 		Tempo.init({ preFilter: false });
 		const t = new Tempo('monday', { timeZone: 'UTC', preFilter: true });
 
-		expect(Tempo.parse.preFilter).toBe(false);
-		expect(t.parse.preFilter).toBe(true);
+		expect(Tempo.parse.planner.preFilter).toBe(false);
+		expect(t.parse.planner.preFilter).toBe(true);
 	});
 
 	test('can be disabled per-instance even when global is enabled', () => {
 		Tempo.init({ preFilter: true });
 		const t = new Tempo('monday', { timeZone: 'UTC', preFilter: false });
 
-		expect(Tempo.parse.preFilter).toBe(true);
-		expect(t.parse.preFilter).toBe(false);
+		expect(Tempo.parse.planner.preFilter).toBe(true);
+		expect(t.parse.planner.preFilter).toBe(false);
 	});
 
 	test('emits planner debug telemetry when debug + preFilter are enabled', () => {

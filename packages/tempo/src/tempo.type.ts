@@ -11,7 +11,7 @@ import { sym, type TempoBrand } from '#tempo/support/tempo.symbol.js';
 import * as enums from '#tempo/support/tempo.enum.js';
 import type { Logify } from '#library/logify.class.js';
 import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/tempo.default.js';
-import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue } from '#library/type.library.js';
+import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption } from '#library/type.library.js';
 import type { TermPlugin, Plugin } from '#tempo/plugin/plugin.type.js';
 import type { Token } from '#tempo/support/tempo.symbol.js';
 import type { Tempo } from '#tempo/tempo.class.js';
@@ -41,20 +41,15 @@ export type Groups = Record<string, string>
  * Configuration options for Tempo instances and operations.
  */
 /**
- * Updated Options type to support new layout: { order: string[] } structure.
- * Remove layoutOrder from BaseOptions and add layout?: { order?: string[], preFilter?: boolean }
+ * Updated Options type to support new planner: { layoutOrder: string[] } structure.
+ * Both top-level and grouped options are supported.
  */
-export interface Options extends Omit<Partial<Internal.BaseOptions>, 'layoutOrder'> {
-	layout?: {
-		order?: string[];
-		preFilter?: boolean;
-	} | PatternOption<Pattern>;
+export interface Options extends Partial<Internal.BaseOptions> {
+	planner?: PlannerOptions;
+	intl?: IntlOptions;
+	relativeTime?: RelativeTime | ((value: number, unit: any) => string);
 	[key: string]: any;
 }
-export type PatternOption<T> =
-	| T
-	| Record<string | symbol, T>
-	| Array<PatternOption<T>>;
 
 /**
  * # Plugin
@@ -156,6 +151,11 @@ export interface IntlOptions {
 	/** relative time formatting configuration */							relativeTime?: RelativeTime | ((value: number, unit: any) => string);
 }
 
+export interface PlannerOptions {
+	/** preferred parse-order of layouts */										layoutOrder?: string[];
+	/** enable parse planner pre-filtering */									preFilter?: boolean;
+}
+
 export interface MonthDay {
 	/** locale-names that prefer 'mm-dd-yy' date order */			locales?: string[] | readonly string[];
 	/** swap parse-order of layouts */												layouts?: LayoutPair[] | readonly LayoutPair[];
@@ -172,8 +172,6 @@ export interface Params<T> {
 
 export namespace Internal {
 	export type Registry = Map<symbol, RegExp>
-	export type PatternOptionArray<T> = Array<PatternOption<T>>
-	export type PatternOption<T> = T | Record<string | symbol, T> | PatternOptionArray<T>
 
 	/** the Options object found in a config-module, or passed to a call to Tempo.init({}) or 'new Tempo({})' */
 	export interface BaseOptions {
@@ -188,15 +186,15 @@ export namespace Internal {
 		/** pivot year for two-digit years */										pivot: number;
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
+		/** parse planner configuration (layoutOrder, etc.) */   planner?: PlannerOptions;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
-		/** preferred parse-order of layouts */									layoutOrder: string[];
-		/** enable parse planner pre-filtering */								preFilter: boolean;
-		/** date-time snippets to help compose a Layout */			snippet: Snippet | PatternOption<Pattern>;
-		/** patterns to help parse value */											layout: Layout | PatternOption<Pattern>;
-		/** custom date aliases (events). */										event: Event | PatternOption<Logic>;
-		/** custom time aliases (periods). */										period: Period | PatternOption<Logic>;
+		/** preferred parse-order of layouts */									planner: PlannerOptions;
+		/** date-time snippets to help compose a Layout */			snippet: Snippet | RegistryOption<Pattern>;
+		/** patterns to help parse value */											layout: Layout | RegistryOption<Pattern>;
+		/** custom date aliases (events). */										event: Event | RegistryOption<Logic>;
+		/** custom time aliases (periods). */										period: Period | RegistryOption<Logic>;
 		/** noise words to ignore during parsing. */						ignore: Ignore;
 		/** custom format strings to merge in the FORMAT enum */formats: Property<any>;
 		/** plugins to be automatically extended */							plugins: Plugin | Plugin[];
@@ -241,8 +239,7 @@ export namespace Internal {
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */
 	export interface Parse {
 		/** regional date-parsing configuration */							monthDay: MonthDay;
-		/** preferred parse-order of layouts */									layoutOrder: string[];
-		/** enable parse planner pre-filtering */								preFilter: boolean;
+		/** preferred parse-order of layouts */									planner: PlannerOptions;
 		/** Symbol registry */																	token: Token;
 		/** Tempo snippets to aid in parsing */									snippet: Snippet;
 		/** Tempo layout strings */															layout: Layout;
@@ -263,7 +260,7 @@ export namespace Internal {
 	}
 
 	/** drop the parse-only Options */
-	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "layoutOrder" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
+	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "layoutOrder" | "preFilter" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
 
 	/** Instance configuration derived from supply, storage, and discovery. */
 	export interface Config extends Required<Omit<OptionsKeep, "formats">> {
@@ -278,6 +275,7 @@ export namespace Internal {
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** regional date-parsing configuration */							monthDay?: MonthDay;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
+		/** parse planner configuration (layoutOrder, etc.) */   planner?: PlannerOptions;
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;

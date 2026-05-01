@@ -15,11 +15,13 @@ describe('Discovery in Extend', () => {
 
 	it('should apply relativeTime discovery via extend', () => {
 		Tempo.extend({
-			relativeTime: {
-				style: 'narrow'
+			intl: {
+				relativeTime: {
+					style: 'narrow'
+				}
 			}
 		});
-		expect(Tempo.config.relativeTime.style).toBe('narrow');
+		expect(Tempo.config.intl.relativeTime.style).toBe('narrow');
 	});
 
 	it('should apply formats discovery via extend', () => {
@@ -29,5 +31,16 @@ describe('Discovery in Extend', () => {
 			}
 		});
 		expect(Tempo.formats.customFormat).toBe('{yyyy}-{mm}');
+	});
+
+	it('should apply planner discovery via extend', () => {
+		Tempo.extend({
+			planner: {
+				layoutOrder: ['ymd'],
+				preFilter: true
+			}
+		});
+		expect(Tempo.config.planner.layoutOrder).toContain('ymd');
+		expect(Tempo.config.planner.preFilter).toBe(true);
 	});
 });

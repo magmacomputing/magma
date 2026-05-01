@@ -37,8 +37,10 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		period: Object.assign({}, baseState?.parse.period ?? Period),
 		ignore: baseState ? { ...baseState.parse.ignore } : Object.fromEntries(asArray(Ignore).map(w => [w, w])),
 		monthDay: resolveMonthDay(baseState?.parse.monthDay ?? {}, Default.monthDay as any),
-		layoutOrder: asArray<string>(baseState?.parse.layoutOrder ?? Default.layoutOrder as any),
-		preFilter: Boolean(baseState?.parse.preFilter ?? Default.preFilter),
+		planner: {
+			layoutOrder: asArray<string>(baseState?.parse.planner?.layoutOrder ?? (Default.planner?.layoutOrder ?? (Default as any).layoutOrder)),
+			preFilter: Boolean(baseState?.parse.planner?.preFilter ?? (Default.planner?.preFilter ?? (Default as any).preFilter)),
+		},
 		pivot: (baseState?.parse.pivot ?? Default.pivot) as any,
 		mode: (baseState?.parse.mode ?? Default.mode) as any,
 		lazy: false,
@@ -60,6 +62,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			scope: 'global',
 			catch: options.catch ?? false,
 			intl: {},
+			planner: {},
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 	} else if (baseState) {
@@ -73,6 +76,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			sphere: (state.config as any).sphere,
 			scope: 'local',
 			intl: Object.create((baseState.config as any).intl || {}),
+			planner: Object.create((baseState.config as any).planner || {}),
 		});
 		Object.defineProperty(state.config, 'get', { value: (state.config as any).get, enumerable: false, writable: true, configurable: true });
 		setProperty(state.config, 'catch', options.catch);
@@ -87,6 +91,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			sphere: getHemisphere(timeZone),
 			scope: 'local',
 			intl: {},
+			planner: {},
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 		if (isDefined(options.catch))
@@ -103,6 +108,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
 export function extendState(state: t.Internal.State, options: t.Options) {
+	if (options.planner) console.log('DEBUG: extendState planner:', options.planner);
 	let patternsDirty = false;
 
 	ownEntries(options).forEach(([optKey, optVal]) => {
@@ -141,7 +147,9 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 			}
 
 			case 'layoutOrder':
-				state.parse.layoutOrder = normalizeLayoutOrder(arg.value);
+				state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value);
+				if (!hasOwn(state.config, 'planner')) state.config.planner = Object.create(state.config.planner || {});
+				state.config.planner.layoutOrder = arg.value;
 				break;
 
 			case 'monthDay':
@@ -149,7 +157,9 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				break;
 
 			case 'preFilter':
-				state.parse.preFilter = Boolean(arg.value);
+				state.parse.planner.preFilter = Boolean(arg.value);
+				if (!hasOwn(state.config, 'planner')) state.config.planner = Object.create(state.config.planner || {});
+				state.config.planner.preFilter = state.parse.planner.preFilter;
 				break;
 
 			case 'timeZone': {
@@ -202,6 +212,14 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 			case 'relativeTime':
 				if (!hasOwn(state.config, 'intl')) state.config.intl = Object.create(state.config.intl || {});
 				state.config.intl.relativeTime = { ...state.config.intl.relativeTime, ...arg.value };
+				break;
+
+			case 'planner':
+				if (!hasOwn(state.config, 'planner')) state.config.planner = Object.create(state.config.planner || {});
+				state.config.planner = { ...state.config.planner, ...arg.value };
+				if (isDefined(arg.value.order)) state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value.order);
+				else if (isDefined(arg.value.layoutOrder)) state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value.layoutOrder);
+				if (isDefined(arg.value.preFilter)) state.parse.planner.preFilter = Boolean(arg.value.preFilter);
 				break;
 
 			default:

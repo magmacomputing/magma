@@ -4,6 +4,7 @@ import { getDateTimeFormat } from '#library/international.library.js';
 
 import { NUMBER, MODE, MONTH_DAY } from './tempo.enum.js';
 import { Token } from './tempo.symbol.js';
+import { IntlDefault } from './tempo.intl.js';
 import type { Options } from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
 
@@ -189,13 +190,13 @@ export const Default = secure({
 	/** catch or throw Errors */															catch: false,
 	/** initialization strategy (auto | strict | defer) */		mode: MODE.Auto,
 	/** used to parse two-digit years*/												pivot: 75,					/** @link https:	//en.wikipedia.org/wiki/Date_windowing */
-	/** precision to measure timestamps (ms | us) */					timeStamp: 'ms',
+	/** precision to measure timestamps (ss|ms|us|ns) */			timeStamp: 'ms',
 	/** calendaring system */																	calendar: 'iso8601',
 	/** default timezone if not specified */									timeZone: getDateTimeFormat().timeZone,
 	/** default locale if not specified */										locale: getDateTimeFormat().locale,
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 
 	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
-	/** preferred parse-order of layouts */										layoutOrder: [],
-	/** enable parse planner pre-filtering */									preFilter: false,
+	/** internationalization configuration */									intl: IntlDefault,
+	/** parse planner configuration (layoutOrder, etc.) */		planner: { layoutOrder: [], preFilter: false },
 } as Options)

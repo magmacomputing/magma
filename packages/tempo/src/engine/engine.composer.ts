@@ -97,6 +97,20 @@ export function compose(
 					break;
 				}
 
+				// If it's an integer and we're in 'us' mode, treat as microseconds
+				if (unit === 'us' && Number.isInteger(value)) {
+					onResult?.({ type, value, match: 'Microseconds' });
+					temporal = Temporal.Instant.fromEpochNanoseconds(BigInt(value) * 1_000n);
+					break;
+				}
+
+				// If it's an integer and we're in 'ns' mode, treat as nanoseconds
+				if (unit === 'ns' && Number.isInteger(value)) {
+					onResult?.({ type, value, match: 'Nanoseconds' });
+					temporal = Temporal.Instant.fromEpochNanoseconds(BigInt(value));
+					break;
+				}
+
 				// Otherwise treat as Seconds (with optional decimal nanoseconds)
 				const negative = value < 0;
 				const [seconds = BigInt(0), suffix = BigInt(0)] = value.toString().split('.').map(v => isNumeric(v) ? BigInt(v) : BigInt(0));

@@ -233,7 +233,7 @@ export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
-const configKeys = ['config', 'parse', 'value', 'intl', 'relativeTime', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'formats', 'plugins'] as const;
+const configKeys = ['config', 'parse', 'value', 'intl', 'planner', 'layoutOrder', 'preFilter', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'formats', 'plugins'] as const;
 export const CONFIG = enumify(configKeys, false);
 export type Config = KeyOf<typeof CONFIG>
 
@@ -247,7 +247,7 @@ export const PARSE = enumify(parseKeys, false);
 export type Parse = KeyOf<typeof PARSE>
 
 /** allowed keys for global discovery objects */
-const discoveryKeys = ['options', 'plugins', 'plugin', 'terms', 'term', 'timeZones', 'monthDay', 'intl', 'numbers', 'formats', 'ignore'] as const;
+const discoveryKeys = ['options', 'plugins', 'plugin', 'terms', 'term', 'timeZones', 'monthDay', 'intl', 'planner', 'numbers', 'formats', 'ignore'] as const;
 export const DISCOVERY = enumify(discoveryKeys, false);
 export type Discovery = KeyOf<typeof DISCOVERY>
 
