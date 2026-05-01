@@ -46,7 +46,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	});
 
 	// 2. Establish the base configuration options
-	const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => enums.OPTION.has(key)));
+	const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => enums.CONFIG.has(key)));
 	if (isGlobal) {
 		markConfig(Object.assign(state.config, configDefaults));
 		const { timeZone, calendar } = getDateTimeFormat();

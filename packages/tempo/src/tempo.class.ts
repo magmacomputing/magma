@@ -432,6 +432,7 @@ export class Tempo {
 					}
 
 					case 'config':
+					case 'parse':
 						(this as any)[$setConfig](shape, arg.value as t.Options);
 						break;
 
@@ -1253,7 +1254,8 @@ export class Tempo {
 			get now() { return self.#now },
 			config: self.#local.config,
 			parse: self.#local.parse,
-			OPTION: enums.OPTION,
+			CONFIG: enums.CONFIG,
+			PARSE: enums.PARSE,
 			ZONED_DATE_TIME: enums.ZONED_DATE_TIME
 		}
 	}
@@ -1705,8 +1707,16 @@ export class Tempo {
 		if (keys.some(key => enums.MUTATION.has(key)))
 			return false;
 
-		return keys
-			.some(key => enums.OPTION.has(key));
+		// 2. If it contains any recognized Config or Parse keys, it's definitely an options object
+		if (keys.some(key => enums.CONFIG.has(key) || enums.PARSE.has(key)))
+			return true;
+
+		// 3. If it contains any recognized Date/Time value keys (e.g. year, month, day, hours, minutes), it's likely an input value
+		if (keys.some(key => enums.ZONED_DATE_TIME.has(key) || enums.DURATIONS.has(key)))
+			return false;
+
+		// 4. Otherwise, if it's a non-empty plain object, assume it's for user-defined configuration
+		return keys.length > 0;
 	}
 }
 

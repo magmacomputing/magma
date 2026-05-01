@@ -233,9 +233,9 @@ export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
-const optionKeys = ['value', 'relativeTime', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'formats', 'plugins'] as const;
-export const OPTION = enumify(optionKeys, false);
-export type Option = KeyOf<typeof OPTION>
+const configKeys = ['config', 'parse', 'value', 'relativeTime', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'formats', 'plugins'] as const;
+export const CONFIG = enumify(configKeys, false);
+export type Config = KeyOf<typeof CONFIG>
 
 /** initialization strategies */
 export const MODE = enumify({ Auto: 'auto', Strict: 'strict', Defer: 'defer', }, false);
@@ -273,7 +273,7 @@ export default {
 	ELEMENT,
 	MUTATION,
 	ZONED_DATE_TIME,
-	OPTION,
+	CONFIG,
 	MODE,
 	PARSE,
 	MONTH_DAY,

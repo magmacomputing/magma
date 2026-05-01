@@ -492,12 +492,12 @@ const _ParseEngine = {
 			return false;
 
 		const keys = ownKeys(tempo);
-		if (keys.some(key => state.OPTION.has(key) && key !== 'value'))
+		if (keys.some(key => state.CONFIG.has(key) && !state.ZONED_DATE_TIME.has(key) && key !== 'value'))
 			return false;
 
 		return keys
 			.filter(isString)
-			.every((key: string) => state.ZONED_DATE_TIME.has(key))
+			.some((key: string) => state.ZONED_DATE_TIME.has(key) && !state.CONFIG.has(key))
 	},
 
 	/** accumulate match results */
