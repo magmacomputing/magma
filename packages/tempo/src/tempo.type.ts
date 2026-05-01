@@ -188,7 +188,7 @@ export namespace Internal {
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
 		/** preferred parse-order of layouts */									layoutOrder: string[];
-		/** enable parse planner pre-filtering (Release C feature-flag) */ parsePrefilter: boolean;
+		/** enable parse planner pre-filtering */								preFilter: boolean;
 		/** date-time snippets to help compose a Layout */			snippet: Snippet | PatternOption<Pattern>;
 		/** patterns to help parse value */											layout: Layout | PatternOption<Pattern>;
 		/** custom date aliases (events). */										event: Event | PatternOption<Logic>;
@@ -238,7 +238,7 @@ export namespace Internal {
 	export interface Parse {
 		/** regional date-parsing configuration */							monthDay: MonthDay;
 		/** preferred parse-order of layouts */									layoutOrder: string[];
-		/** enable parse planner pre-filtering */								parsePrefilter: boolean;
+		/** enable parse planner pre-filtering */								preFilter: boolean;
 		/** Symbol registry */																	token: Token;
 		/** Tempo snippets to aid in parsing */									snippet: Snippet;
 		/** Tempo layout strings */															layout: Layout;

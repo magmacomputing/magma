@@ -14,7 +14,6 @@ import { sym, Token } from './tempo.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
 import * as t from '../tempo.type.js';
-import type { Mode } from '../tempo.type.js';
 
 /** @internal Initialise a Tempo state */
 export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State): t.Internal.State {
@@ -23,7 +22,6 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	if (isGlobal && runtime.state && !baseState) return runtime.state;
 
 	const { timeZone, calendar } = getDateTimeFormat();
-
 	const state = {
 		config: {},
 		parse: {}
@@ -40,7 +38,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		ignore: baseState ? { ...baseState.parse.ignore } : Object.fromEntries(asArray(Ignore).map(w => [w, w])),
 		monthDay: resolveMonthDay(baseState?.parse.monthDay ?? {}, Default.monthDay as any),
 		layoutOrder: asArray<string>(baseState?.parse.layoutOrder ?? Default.layoutOrder as any),
-		parsePrefilter: Boolean(baseState?.parse.parsePrefilter ?? Default.parsePrefilter),
+		preFilter: Boolean(baseState?.parse.preFilter ?? Default.preFilter),
 		pivot: (baseState?.parse.pivot ?? Default.pivot) as any,
 		mode: (baseState?.parse.mode ?? Default.mode) as any,
 		lazy: false,
@@ -48,8 +46,9 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	});
 
 	// 2. Establish the base configuration options
+	const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => enums.OPTION.has(key)));
 	if (isGlobal) {
-		markConfig(Object.assign(state.config, Default));
+		markConfig(Object.assign(state.config, configDefaults));
 		const { timeZone, calendar } = getDateTimeFormat();
 		setProperties(state.config, {
 			calendar,
@@ -76,7 +75,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		Object.defineProperty(state.config, 'get', { value: (state.config as any).get, enumerable: false, writable: true, configurable: true });
 		setProperty(state.config, 'catch', options.catch);
 	} else {
-		markConfig(Object.assign(state.config, Default));
+		markConfig(Object.assign(state.config, configDefaults));
 		setProperties(state.config, {
 			calendar,
 			timeZone,
@@ -92,13 +91,12 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	}
 
 	// 3. Initialize registries that need objects
-	state.OPTION = new Set(Object.keys(Default));
+	state.OPTION = new Set(Object.keys(configDefaults));
 	state.ZONED_DATE_TIME = new Set(['year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond', 'offset', 'timeZone', 'calendar']);
 
 	if (isGlobal) runtime.state = state;
 	return state;
 }
-
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
 export function extendState(state: t.Internal.State, options: t.Options) {
@@ -147,8 +145,8 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				state.parse.monthDay = resolveMonthDay(arg.value, state.parse.monthDay);
 				break;
 
-			case 'parsePrefilter':
-				state.parse.parsePrefilter = Boolean(arg.value);
+			case 'preFilter':
+				state.parse.preFilter = Boolean(arg.value);
 				break;
 
 			case 'timeZone': {

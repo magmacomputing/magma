@@ -131,7 +131,7 @@ const _ParseEngine = {
 			const { timeZone: tz2, calendar: cal2 } = state.config;
 			const [targetTz, targetCal] = getTemporalIds(tz2, cal2);
 
-			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal);
+			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal, (m) => _ParseEngine.result(state, m), state.config.timeStamp);
 
 			dateTime = dt;
 			if (timeZone && state) state.config.timeZone = timeZone;

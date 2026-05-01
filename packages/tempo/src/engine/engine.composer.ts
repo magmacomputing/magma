@@ -2,6 +2,7 @@ import { isTempo, Match } from '#tempo/support';
 import { isNumeric, isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
 import type { TemporalObject, TypeValue } from '#library/type.library.js';
 import type { Tempo } from '#tempo/tempo.class.js';
+import * as t from '../tempo.type.js';
 
 /**
  * Logic to compose various input types into a Temporal.ZonedDateTime.  
@@ -12,7 +13,9 @@ export function compose(
 	today: Temporal.ZonedDateTime,
 	tz: Temporal.TimeZoneLike,
 	targetTz: string,
-	targetCal: string
+	targetCal: string,
+	onResult?: (match: any) => void,
+	unit: t.Internal.TimeStamp = 'ms'
 ): { dateTime: Temporal.ZonedDateTime, timeZone?: string | undefined } {
 	let temporal: TemporalObject | Tempo = today;
 	let timeZone: string | undefined;
@@ -22,6 +25,7 @@ export function compose(
 		case 'Void':
 		case 'Empty':
 		case 'Undefined':
+			onResult?.({ type, value });
 			temporal = today;
 			break;
 
@@ -31,6 +35,7 @@ export function compose(
 				const zdt = Temporal.ZonedDateTime.from(`${str}[${tz}]`);
 				timeZone = zdt.timeZoneId;
 				temporal = zdt;
+				onResult?.({ type, value: str, match: 'iso8601' });
 			} catch (err) {
 				if (Match.date.test(value)) {
 					try {
@@ -69,6 +74,7 @@ export function compose(
 			break;
 
 		case 'Date':
+			onResult?.({ type, value });
 			temporal = Temporal.Instant.fromEpochMilliseconds(value.getTime());
 			break;
 
@@ -77,16 +83,33 @@ export function compose(
 				if (Number.isNaN(value) || !Number.isFinite(value))
 					throw new RangeError(`Invalid Tempo number: ${value}`);
 
+				// If it's an integer and we're in 'ms' mode, treat as milliseconds
+				if (unit === 'ms' && Number.isInteger(value)) {
+					onResult?.({ type, value, match: 'Milliseconds' });
+					temporal = Temporal.Instant.fromEpochMilliseconds(value);
+					break;
+				}
+
+				// If it's an integer and we're in 'ss' mode, treat as seconds
+				if (unit === 'ss' && Number.isInteger(value)) {
+					onResult?.({ type, value, match: 'Seconds' });
+					temporal = Temporal.Instant.fromEpochMilliseconds(value * 1_000);
+					break;
+				}
+
+				// Otherwise treat as Seconds (with optional decimal nanoseconds)
 				const negative = value < 0;
 				const [seconds = BigInt(0), suffix = BigInt(0)] = value.toString().split('.').map(v => isNumeric(v) ? BigInt(v) : BigInt(0));
 				let nano = BigInt(suffix.toString().substring(0, 9).padEnd(9, '0'));
 				if (negative && nano > 0n) nano = -nano;
 
+				onResult?.({ type, value, match: 'Seconds' });
 				temporal = Temporal.Instant.fromEpochNanoseconds(seconds * BigInt(1_000_000_000) + nano);
 				break;
 			}
 
 		case 'BigInt':
+			onResult?.({ type, value, match: 'Nanoseconds' });
 			temporal = Temporal.Instant.fromEpochNanoseconds(value);
 			break;
 

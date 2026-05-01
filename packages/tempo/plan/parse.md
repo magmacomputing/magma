@@ -23,3 +23,26 @@ This is particularily more relevant in the Parse-related options, as we give mor
  `plugins`					intended to provide Modules to be added to Tempo (calls Tempo.extend(Module))
 
  # Parse
+`monthDay`,					an object that controls MDY parsing
+`layout`,						an object that describes the configured Layouts
+ `snippet`, 				an object that describes the configured Snippets
+`event`, 						an object that names Date aliases
+`period`,						an object that names Time aliases
+ `ignore`,					an array that names 'words' that can safely be ignored during a string-parse
+ `pivot`,						a number that defines when to 'pivot' a string-date that has only two-digits for the year portion
+ `order`,						an array of Layout names that will override the library-default Layout order
+ `prefilter`, 			a flag that will enable Tempo to filter some strings into different parse-paths
+`mode`							a flag that determines if Tempo will parse a value straight-away or defer until needed.
+
+The above is not an exhaustive list (I do have more to add !), but shows the kind of things that an Option object must consider.
+The Tempo.config (and new Tempo().config) getters will show the config-settings that in place.
+The Tempo.parse (and new Tempo().parse) getters are intended to assist with debugging 'how' a Tempo was derived.
+
+What are the industry standards for large Option objects ?
+Do we break them into nested-groups ?  e.g.  new Tempo({config: {sphere: 'south'}, parse: {order: ['dt','wkd']}})
+(this looks very awkward !)
+Or do we break them into separate arguments ?  e.g.  new Tempo('Monday', {sphere:'south'}, {order: ['dt','wkd']})
+(again, this looks awkward ))
+Or do we allow the user to enter everything as top-level keys, and we sort it out when analyzing the Options ?
+e.g.   new Tempo('Monday', {sphere: 'north', order: ['dt','wkd']}) ?
+(this appears the 'friendliest', but can bombard the User with too many choices ?)

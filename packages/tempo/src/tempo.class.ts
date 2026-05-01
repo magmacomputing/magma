@@ -417,8 +417,8 @@ export class Tempo {
 						shape.parse.layoutOrder = normalizeLayoutOrder(arg.value as NonNullable<t.Options[typeof optKey]>);
 						break;
 
-					case 'parsePrefilter':
-						shape.parse.parsePrefilter = Boolean(arg.value);
+					case 'preFilter':
+						shape.parse.preFilter = Boolean(arg.value);
 						break;
 
 					case 'pivot': {
@@ -476,13 +476,13 @@ export class Tempo {
 							shape.config.relativeTime = { ...shape.config.relativeTime, ...(optVal as any) };
 						break;
 
-					case 'rtfFormat':																	// deprecated alias
-						shape.config.relativeTime = { ...shape.config.relativeTime, format: optVal as Intl.RelativeTimeFormat };
-						break;
+					// case 'rtfFormat':																	// deprecated alias
+					// 	shape.config.relativeTime = { ...shape.config.relativeTime, format: optVal as Intl.RelativeTimeFormat };
+					// 	break;
 
-					case 'rtfStyle':																	// deprecated alias
-						shape.config.relativeTime = { ...shape.config.relativeTime, style: optVal as Intl.RelativeTimeFormatStyle };
-						break;
+					// case 'rtfStyle':																	// deprecated alias
+					// 	shape.config.relativeTime = { ...shape.config.relativeTime, style: optVal as Intl.RelativeTimeFormatStyle };
+					// 	break;
 
 					case 'anchor':
 						break;																					// internal anchor used for relativity parsing
@@ -918,7 +918,6 @@ export class Tempo {
 
 	/** Reset Tempo to its default, built-in registration state */
 	static init(options: t.Options = {}): typeof Tempo {
-
 		if (Tempo.#lifecycle.initialising) return this;
 		Tempo.#lifecycle.initialising = true;
 
@@ -936,8 +935,8 @@ export class Tempo {
 			const parse = state.parse;
 			parse.pattern ??= new Map<symbol, RegExp>();
 			parse.monthDay = resolveMonthDay(Default.monthDay, Tempo.MONTH_DAY);
-			parse.layoutOrder = asArray(Default.layoutOrder as t.Options['layoutOrder']) as string[];
-			parse.parsePrefilter = Boolean(Default.parsePrefilter);
+			parse.layoutOrder = asArray(Default.layoutOrder as t.Options['parseOrder']) as string[];
+			parse.preFilter = Boolean(Default.preFilter);
 			parse.pivot ??= Default.pivot as any;
 			parse.mode ??= Default.mode as any;
 			parse.lazy = false;
@@ -1159,7 +1158,7 @@ export class Tempo {
 			ignore: { ...parse.ignore },
 			monthDay: { ...parse.monthDay },
 			layoutOrder: [...parse.layoutOrder],
-			parsePrefilter: parse.parsePrefilter,
+			preFilter: parse.preFilter,
 			mode: parse.mode
 		});
 	}

@@ -111,8 +111,8 @@ describe('layout matching order', () => {
 		}
 	});
 
-	test('supports layout.order option to customize precedence', () => {
-		Tempo.init({ layout: { order: ['dt', 'wkd'] } });
+	test('supports parse.order option to customize precedence', () => {
+		Tempo.init({ parse: { order: ['dt', 'wkd'] } });
 		const t = new Tempo('monday', { timeZone: 'UTC' });
 
 		expect(Tempo.parse.layout.order).toEqual(['dt', 'wkd']);

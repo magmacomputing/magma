@@ -106,7 +106,8 @@ export const DEFAULTS = {
 				"America/Kentucky/Monticello", "America/Los_Angeles", "America/Louisville", "America/Menominee",
 				"America/Metlakatla", "America/New_York", "America/Nome", "America/North_Dakota/Beulah",
 				"America/North_Dakota/Center", "America/North_Dakota/New_Salem", "America/Phoenix", "America/Sitka",
-				"America/Yakutat", "Pacific/Honolulu"
+				"America/Yakutat", "Pacific/Honolulu",
+				"US/Aleutian", "US/Alaska", "US/Arizona", "US/Central", "US/Eastern", "US/Mountain", "US/Pacific",
 			],
 			'en-AS': [
 				"Pacific/Pago_Pago"
@@ -232,7 +233,7 @@ export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
-const optionKeys = ['value', 'mode', 'monthDay', 'relativeTime', 'layoutOrder', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'pivot', 'sphere', 'timeStamp', 'snippet', 'layout', 'event', 'period', 'formats', 'plugins', 'parsePrefilter'] as const;
+const optionKeys = ['value', 'relativeTime', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'formats', 'plugins'] as const;
 export const OPTION = enumify(optionKeys, false);
 export type Option = KeyOf<typeof OPTION>
 
@@ -241,7 +242,7 @@ export const MODE = enumify({ Auto: 'auto', Strict: 'strict', Defer: 'defer', },
 export type MODE = ValueOf<typeof MODE>
 
 /** allowed keys for internal parse state */
-const parseKeys = ['monthDay', 'layoutOrder', 'formats', 'pivot', 'snippet', 'layout', 'event', 'period', 'anchor', 'value', 'discovery', 'plugins', 'mode', 'parsePrefilter'] as const;
+const parseKeys = ['monthDay', 'layoutOrder', 'mode', 'pivot', 'snippet', 'layout', 'event', 'period', 'anchor', 'preFilter'] as const;
 export const PARSE = enumify(parseKeys, false);
 export type Parse = KeyOf<typeof PARSE>
 
