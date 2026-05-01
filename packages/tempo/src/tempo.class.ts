@@ -470,20 +470,17 @@ export class Tempo {
 						shape.parse.lazy = (optVal === enums.MODE.Defer);	// if defer, set lazy true. if strict, set lazy false. if auto, constructor will decide.
 						break;
 
-					case 'relativeTime':
-						if (isFunction(optVal))
-							shape.config.relativeTime = optVal as any;
-						else if (isObject(optVal))
-							shape.config.relativeTime = { ...shape.config.relativeTime, ...(optVal as any) };
+					case 'intl':
+						shape.config.intl = { ...shape.config.intl, ...(optVal as any) };
 						break;
 
-					// case 'rtfFormat':																	// deprecated alias
-					// 	shape.config.relativeTime = { ...shape.config.relativeTime, format: optVal as Intl.RelativeTimeFormat };
-					// 	break;
-
-					// case 'rtfStyle':																	// deprecated alias
-					// 	shape.config.relativeTime = { ...shape.config.relativeTime, style: optVal as Intl.RelativeTimeFormatStyle };
-					// 	break;
+					case 'relativeTime':
+						if (!hasOwn(shape.config, 'intl')) shape.config.intl = Object.create(shape.config.intl || {});
+						if (isFunction(optVal))
+							shape.config.intl.relativeTime = optVal as any;
+						else if (isObject(optVal))
+							shape.config.intl.relativeTime = { ...shape.config.intl.relativeTime, ...(optVal as any) };
+						break;
 
 					case 'anchor':
 						break;																					// internal anchor used for relativity parsing
@@ -561,9 +558,12 @@ export class Tempo {
 			if (md.layouts) registryUpdate('MONTH_DAY', { layouts: asArray(md.layouts) });
 		}
 
-		// 1d. Process RelativeTime
-		if (discovery.relativeTime)
-			shape.config.relativeTime = { ...shape.config.relativeTime, ...discovery.relativeTime };
+		// 1d. Process Internationalization
+		if (discovery.intl || discovery.relativeTime) {
+			const intl = discovery.intl ?? {};
+			if (discovery.relativeTime) intl.relativeTime = { ...intl.relativeTime, ...(discovery.relativeTime as any) };
+			shape.config.intl = { ...shape.config.intl, ...intl };
+		}
 
 		// 2. Process Terms
 		if ((discovery as any).term) {
@@ -836,9 +836,9 @@ export class Tempo {
 									registryUpdate('MONTH_DAY', val);
 									break;
 
-								case 'relativeTime': {
+								case 'intl': {
 									const internal = (this as any)[$Internal]();
-									internal.config.relativeTime = { ...internal.config.relativeTime, ...val };
+									internal.config.intl = { ...internal.config.intl, ...val };
 									break;
 								}
 							}

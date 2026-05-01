@@ -227,13 +227,13 @@ export type MUTATION = ValueOf<typeof MUTATION>
 export type Mutation = KeyOf<typeof MUTATION>
 
 /** allowed keys for ZonedDateTime-like objects */
-const zonedDateTimeKeys = ['value', 'timeZoneId', 'calendarId', 'monthCode', 'offset', 'timeZone', 'year', 'month', 'day', 'hour', 'minute', 'second', ...elementKeys] as const;
+const zonedDateTimeKeys = ['value', 'timeZoneId', 'calendarId', 'monthCode', 'offset', 'timeZone', 'calendar', 'year', 'month', 'day', 'hour', 'minute', 'second', ...elementKeys] as const;
 export const ZONED_DATE_TIME = enumify(zonedDateTimeKeys, false);
 export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
-const configKeys = ['config', 'parse', 'value', 'relativeTime', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'formats', 'plugins'] as const;
+const configKeys = ['config', 'parse', 'value', 'intl', 'relativeTime', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'formats', 'plugins'] as const;
 export const CONFIG = enumify(configKeys, false);
 export type Config = KeyOf<typeof CONFIG>
 
@@ -247,7 +247,7 @@ export const PARSE = enumify(parseKeys, false);
 export type Parse = KeyOf<typeof PARSE>
 
 /** allowed keys for global discovery objects */
-const discoveryKeys = ['options', 'plugins', 'plugin', 'terms', 'term', 'timeZones', 'monthDay', 'relativeTime', 'numbers', 'formats', 'ignore'] as const;
+const discoveryKeys = ['options', 'plugins', 'plugin', 'terms', 'term', 'timeZones', 'monthDay', 'intl', 'numbers', 'formats', 'ignore'] as const;
 export const DISCOVERY = enumify(discoveryKeys, false);
 export type Discovery = KeyOf<typeof DISCOVERY>
 

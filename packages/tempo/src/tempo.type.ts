@@ -52,9 +52,9 @@ export interface Options extends Omit<Partial<Internal.BaseOptions>, 'layoutOrde
 	[key: string]: any;
 }
 export type PatternOption<T> =
-  | T
-  | Record<string | symbol, T>
-  | Array<PatternOption<T>>;
+	| T
+	| Record<string | symbol, T>
+	| Array<PatternOption<T>>;
 
 /**
  * # Plugin
@@ -152,6 +152,10 @@ export interface RelativeTime {
 	/** Default style for relative time */										style?: Intl.RelativeTimeFormatStyle;
 }
 
+export interface IntlOptions {
+	/** relative time formatting configuration */							relativeTime?: RelativeTime | ((value: number, unit: any) => string);
+}
+
 export interface MonthDay {
 	/** locale-names that prefer 'mm-dd-yy' date order */			locales?: string[] | readonly string[];
 	/** swap parse-order of layouts */												layouts?: LayoutPair[] | readonly LayoutPair[];
@@ -183,7 +187,7 @@ export namespace Internal {
 		/** locale (e.g. en-AU) */															locale: string;
 		/** pivot year for two-digit years */										pivot: number;
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
-		/** relative time formatting configuration */						relativeTime?: RelativeTime | ((value: number, unit: any) => string);
+		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
@@ -273,7 +277,7 @@ export namespace Internal {
 		/** pre-defined config options for Tempo.#global */			options?: Options | (() => Options);
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** regional date-parsing configuration */							monthDay?: MonthDay;
-		/** relative time formatting configuration */						relativeTime?: RelativeTime | ((value: number, unit: any) => string);
+		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;

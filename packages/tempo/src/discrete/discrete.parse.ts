@@ -269,9 +269,9 @@ const _ParseEngine = {
 		const anchorTime = zdt.toPlainTime();
 
 		const orderedPatterns = selectLayoutPatterns(state, trim, {
-			enablePrefilter: state.parse.parsePrefilter === true,
+			enablePrefilter: state.parse.preFilter === true,
 			onPlan: (summary) => {
-				if (state.parse.parsePrefilter !== true || !state.config?.debug) return;
+				if (state.parse.preFilter !== true || !state.config?.debug) return;
 				if (!TempoClass) return;
 
 				const reduced = summary.totalCandidates - summary.selectedCandidates;
@@ -488,7 +488,7 @@ const _ParseEngine = {
 
 	/** check if we've been given a ZonedDateTimeLike object */
 	isZonedDateTimeLike(state: any, tempo: t.DateTime | t.Options | undefined): tempo is Temporal.ZonedDateTimeLike & { value?: any } {
-		if (!isObject(tempo) || isEmpty(tempo))
+		if (!isObject(tempo) || isEmpty(tempo) || (tempo.constructor !== Object && tempo.constructor !== undefined))
 			return false;
 
 		const keys = ownKeys(tempo);

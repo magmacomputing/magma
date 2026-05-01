@@ -58,7 +58,8 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			formats: enumify(STATE.FORMAT, false),
 			sphere: getHemisphere(timeZone),
 			scope: 'global',
-			catch: options.catch ?? false
+			catch: options.catch ?? false,
+			intl: {},
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 	} else if (baseState) {
@@ -70,7 +71,8 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			discovery: (state.config as any).discovery,
 			formats: (state.config as any).formats,
 			sphere: (state.config as any).sphere,
-			scope: 'local'
+			scope: 'local',
+			intl: Object.create((baseState.config as any).intl || {}),
 		});
 		Object.defineProperty(state.config, 'get', { value: (state.config as any).get, enumerable: false, writable: true, configurable: true });
 		setProperty(state.config, 'catch', options.catch);
@@ -83,7 +85,8 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			discovery: Symbol.keyFor(sym.$Tempo) as string,
 			formats: enumify(STATE.FORMAT, false),
 			sphere: getHemisphere(timeZone),
-			scope: 'local'
+			scope: 'local',
+			intl: {},
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 		if (isDefined(options.catch))
@@ -189,6 +192,16 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 			case 'mode':
 				state.parse.mode = arg.value;
+				break;
+
+			case 'intl':
+				if (!isObject(state.config.intl)) setProperty(state.config, 'intl', {});
+				state.config.intl = { ...state.config.intl, ...arg.value };
+				break;
+
+			case 'relativeTime':
+				if (!hasOwn(state.config, 'intl')) state.config.intl = Object.create(state.config.intl || {});
+				state.config.intl.relativeTime = { ...state.config.intl.relativeTime, ...arg.value };
 				break;
 
 			default:
