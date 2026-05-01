@@ -189,6 +189,16 @@ export class Tempo {
 			return;																							// no local change needed
 
 		const src = shape.config.scope === 'global' ? 'g' : 'l';   // 'g'lobal or 'l'ocal (sandbox also uses 'l')
+
+		// Check for alias collisions among period keys
+		const keys = periods.map(([pat]) => pat);
+		for (let i = 0; i < keys.length; i++) {
+			for (let j = i + 1; j < keys.length; j++) {
+				if (Tempo.#isAliasCollision(keys[i], keys[j]))
+					console.warn(`Potential period alias collision: "${keys[i]}" overlaps with existing alias(es): ${keys[j]}`);
+			}
+		}
+
 		const groups = periods
 			.map(([pat, _], idx) => `(?<${src}per${idx}>${pat})`)	// {pattern} is the 1st element of the tuple
 			.join('|')																						// make an 'or' pattern for the period-keys
@@ -239,7 +249,7 @@ export class Tempo {
 
 		const tz = String(timeZone);
 		const activeLocaleData = mdy.resolvedLocales?.find(l => l.locale === intl.baseName || l.locale === intl.language);
-		
+
 		return (activeLocaleData?.timeZones?.includes(tz)) ||
 			(globalMdy.timezones?.[intl.baseName]?.includes(tz)) ||
 			(globalMdy.timezones?.[intl.language]?.includes(tz)) ||
@@ -254,11 +264,11 @@ export class Tempo {
 		const { layouts } = shape.parse.monthDay;
 		if (isEmpty(layouts)) return;
 
-		const isMonthDay = Tempo.#isMonthDay(shape);
+		const isMonthDay = shape.parse.monthDay.isExplicit ? shape.parse.monthDay.active! : Tempo.#isMonthDay(shape);
 		shape.parse.monthDay.active = isMonthDay;
 
-		const layoutController = shape.parse.planner.layoutOrder.length > 0
-			? { [DEFAULT_LAYOUT_CLASS]: [...shape.parse.planner.layoutOrder] }
+		const layoutController = (shape.parse.planner.layoutOrder?.length ?? 0) > 0
+			? { [DEFAULT_LAYOUT_CLASS]: [...shape.parse.planner.layoutOrder!] }
 			: undefined;
 
 		const layout = resolveLayoutOrder({
@@ -317,7 +327,7 @@ export class Tempo {
 
 		// Apply options using extendState
 		extendState(shape, mergedOptions);
-		
+
 		// Side-effects
 		shape.config.sphere = Tempo.#setSphere(shape, mergedOptions);
 		Tempo.#swapLayout(shape);
@@ -743,7 +753,6 @@ export class Tempo {
 
 	/** Reset Tempo to its default, built-in registration state */
 	static init(options: t.Options = {}): typeof Tempo {
-		console.log('DEBUG: Tempo.init called with options:', JSON.stringify(options));
 		if (Tempo.#lifecycle.initialising) return this;
 		Tempo.#lifecycle.initialising = true;
 

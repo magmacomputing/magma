@@ -8,10 +8,6 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 		Tempo.init();
 	});
 
-	afterEach(() => {
-		vi.restoreAllMocks();
-	});
-
 	it('should jump to the start of a term using #term syntax in set()', () => {
 		const t = new Tempo(testDate, { catch: true, sphere: 'north' });
 		const start = t.set({ start: '#quarter' });
@@ -99,7 +95,7 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 		const t = new Tempo(testDate, { catch: true, sphere: 'SOUTH' });
 		expect(t.format('{#qtr}')).toBe('Q4');
 		expect(t.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
-		
+
 		// Also verify all-caps granular matching 'SOUTHSOUTHWEST' works like 'SouthSouthWest'
 		const t2 = new Tempo(testDate, { catch: true, sphere: 'SOUTHSOUTHWEST' });
 		expect(t2.format('{#qtr}')).toBe('Q4');

@@ -183,7 +183,11 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				break;
 
 			case 'formats':
-				setProperty(state.config, 'formats', arg.value);
+				if (state.config.formats?.extend) {
+					state.config.formats = state.config.formats.extend(arg.value) as t.FormatRegistry;
+				} else {
+					setProperty(state.config, 'formats', arg.value);
+				}
 				break;
 
 			case 'sphere':

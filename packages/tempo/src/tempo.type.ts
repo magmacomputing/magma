@@ -161,6 +161,7 @@ export interface MonthDay {
 	/** swap parse-order of layouts */												layouts?: LayoutPair[] | readonly LayoutPair[];
 	/** timezones to use for MDY fallback (per locale) */			timezones?: Record<string, string[] | readonly string[]>;
 	/** indicates if MDY parsing order is currently active */ active?: boolean | undefined;
+	/** @internal indicates if the active flag was explicitly set by the user */ isExplicit?: boolean | undefined;
 	/** @internal resolved locale and timezone metadata */		resolvedLocales?: { locale: string, timeZones: string[] }[];
 }
 
@@ -186,11 +187,10 @@ export namespace Internal {
 		/** pivot year for two-digit years */										pivot: number;
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
-		/** parse planner configuration (layoutOrder, etc.) */   planner?: PlannerOptions;
+		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
-		/** preferred parse-order of layouts */									planner: PlannerOptions;
 		/** date-time snippets to help compose a Layout */			snippet: Snippet | RegistryOption<Pattern>;
 		/** patterns to help parse value */											layout: Layout | RegistryOption<Pattern>;
 		/** custom date aliases (events). */										event: Event | RegistryOption<Logic>;

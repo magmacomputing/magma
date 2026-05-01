@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Migration
 - All objects remain frozen with `Object.freeze`. No mutation-throwing Proxies are used for core objects. Identity checks (`===`) behave as before.
 
+### Added
+- **Parse Planner Configuration**: Introduced `planner.layoutOrder` for parsing precedence and `planner.preFilter` as a replacement for the legacy `parsePrefilter` option.
+
+### Fixed
+- **MonthDay Auto-Detection**: Boolean shortcuts and manual overrides for the `monthDay` option are properly tracked and respected over heuristics.
+- **Sandbox Factory Stability**: Resolved an issue where sandbox-specific period alias collisions were ignored. Added collision warnings.
+- **Symbol Discovery Isolation**: Fixed the options resolution flow so global custom formats from discovery symbols merge correctly without getting wiped.
+
+
 ---
 
 ## [2.7.0] - 2026-04-27
