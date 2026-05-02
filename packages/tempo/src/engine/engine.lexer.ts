@@ -53,7 +53,7 @@ export function prefix<T extends t.WEEKDAY | t.MONTH>(str: any): T {
 
 		// search in weekdays and months
 		for (const dict of [enums.WEEKDAY, enums.MONTH]) {
-			const found = dict.keys().find((key: string) => low.startsWith(key.toLowerCase()));
+			const found = (dict as any).keys().find((key: string) => low.startsWith(key.toLowerCase()));
 			if (found) return found as T;
 		}
 	}
@@ -123,7 +123,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 
 	const weekday = prefix<t.WEEKDAY>(wkd);
 	const { nbr: adjust = 1 } = num({ nbr });
-	const offset = enums.WEEKDAY.keys().findIndex((el: t.WEEKDAY) => el === weekday);
+	const offset = (enums.WEEKDAY as any).keys().findIndex((el: t.WEEKDAY) => el === weekday);
 
 	const days = offset - dateTime.dayOfWeek
 		+ (parseModifier({ mod: mod ?? sfx ?? afx, adjust, offset, period: dateTime.dayOfWeek }) * dateTime.daysInWeek);
@@ -200,8 +200,13 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 	delete groups["nbr"];
 	delete groups["afx"];
 
-	return Temporal.PlainDate.from({ year, month, day }, { overflow: 'constrain' })
-		.toZonedDateTime(dateTime.timeZoneId)
+	const y = Number.isFinite(year) ? year : dateTime.year;
+	const m = Number.isFinite(month) ? month : dateTime.month;
+	const d = Number.isFinite(day) ? day : dateTime.day;
+	const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone;
+
+	return Temporal.PlainDate.from({ year: y, month: m, day: d }, { overflow: 'constrain' })
+		.toZonedDateTime(tz)
 		.withPlainTime(dateTime.toPlainTime());
 }
 

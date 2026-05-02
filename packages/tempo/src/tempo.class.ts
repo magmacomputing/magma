@@ -1421,6 +1421,7 @@ export class Tempo {
 	/** Instance-specific parse rules (merged with global) */
 	get parse(): Internal.Parse {
 		const self: Tempo = unwrap(this);
+		self.#resolve();
 
 		// Return a shadowed view so we can safely inject matches without breaking the freeze on the original state
 		const out = Object.create(self.#local.parse);
