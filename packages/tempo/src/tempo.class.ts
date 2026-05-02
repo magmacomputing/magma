@@ -11,6 +11,7 @@ import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
+import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike } from '#library/assertion.library.js';
 import type { Property, Secure } from '#library/type.library.js';
 import { instant } from '#library/temporal.library.js';
@@ -195,7 +196,7 @@ export class Tempo {
 		for (let i = 0; i < keys.length; i++) {
 			for (let j = i + 1; j < keys.length; j++) {
 				if (Tempo.#isAliasCollision(keys[i], keys[j]))
-					console.warn(`Potential period alias collision: "${keys[i]}" overlaps with existing alias(es): ${keys[j]}`);
+					Tempo.#dbg.warn(`Potential period alias collision: "${keys[i]}" overlaps with existing alias(es): ${keys[j]}`);
 			}
 		}
 
@@ -1013,7 +1014,7 @@ export class Tempo {
 			event: { ...parse.event },
 			period: { ...parse.period },
 			ignore: { ...parse.ignore },
-			monthDay: { ...parse.monthDay },
+			monthDay: clone(parse.monthDay),
 			planner,
 		});
 	}
@@ -1078,7 +1079,6 @@ export class Tempo {
 		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
 		const msg = `Unknown Term identifier: ${term}${hint}`;
 		Tempo.#dbg.error(config, msg);
-		if (config.catch !== true) throw new Error(msg);
 	}
 
 	/** @internal */	static get [$dbg](): Logify { return Tempo.#dbg }
@@ -1212,13 +1212,8 @@ export class Tempo {
 				if (isUndefined(this.#zdt)) {
 					this.#errored = true;
 					const msg = `Tempo parse returned undefined for: ${String(this.#tempo)}`;
-					if (this.#local.config.catch === true) {
-						Tempo.#dbg.error(this.#local.config, msg);
-						this.#zdt = this.#now.toZonedDateTimeISO('UTC');
-					} else {
-						Tempo.#dbg.error(this.#local.config, msg);
-						throw new Error(msg);
-					}
+					Tempo.#dbg.error(this.#local.config, msg);
+					this.#zdt = this.#now.toZonedDateTimeISO('UTC');
 				}
 				secure(this.#local.config);
 				secure(this.#local.parse, new WeakSet(skip));
@@ -1515,7 +1510,6 @@ export class Tempo {
 		if (isUndefined(res)) {
 			const msg = `ParseModule error. Could not parse ${String(tempo)}`;
 			Tempo.#dbg.error(this.#local.config, msg);
-			if (this.#local.config.catch !== true) throw new Error(msg);
 			return undefined as any;
 		}
 		return res;
@@ -1535,7 +1529,6 @@ export class Tempo {
 
 		const msg = 'Tempo ParseModule not loaded. Did you forget to Tempo.extend(ParseModule)?';
 		Tempo.#dbg.error(this.#local.config, msg);
-		if (this.#local.config.catch !== true) throw new Error(msg);
 		return undefined as any;
 	}
 
