@@ -14,8 +14,8 @@ describe('Tempo Core', () => {
 		describe("mode: 'auto' (Default)", () => {
 			it('should auto-switch to lazy mode if input passes Master Guard', () => {
 				const t = new Tempo('2024-01-01');
-				expect(t.config.mode).toBe(Tempo.MODE.Auto);
-				expect(t.config.lazy).toBe(true);
+				expect(t.parse.mode).toBe(Tempo.MODE.Auto);
+				expect(t.parse.lazy).toBe(true);
 				expect(t.yy).toBe(2024);
 				expect(t.yw).toBe(2024);
 			});
@@ -45,10 +45,15 @@ describe('Tempo Core', () => {
 				// 'defer' ignores the guard and skips all validation in the constructor
 				const t = new Tempo('2024-01-01', { mode: Tempo.MODE.Defer, timeZone: 'Invalid/Zone' });
 				expect(t).toBeInstanceOf(Tempo);
-				expect(t.config.lazy).toBe(true);
 
 				// Throws only on access
+				expect(() => t.parse).toThrow();
 				expect(() => t.yy).toThrow();
+			});
+
+			it('should allow introspection of lazy state with valid configuration', () => {
+				const t = new Tempo('2024-01-01', { mode: Tempo.MODE.Defer });
+				expect(t.parse.lazy).toBe(true);
 			});
 		});
 

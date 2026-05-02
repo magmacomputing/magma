@@ -115,7 +115,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			.join('')
 
 		const locale = (this as any).config['locale'];
-		const rtConfig = (this as any).config['relativeTime'];
+		const rtConfig = (this as any).config.intl?.relativeTime;
 		const rtOptions = opts['relativeTime'];
 		
 		const rtf = (typeof rtOptions === 'function' ? rtOptions : rtOptions?.format) 
@@ -125,7 +125,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 		const getFormatted = (val: number, u: any) => {
 			if (typeof rtf === 'function') return rtf(val, u);
 			if (rtf instanceof Intl.RelativeTimeFormat) return rtf.format(val, u);
-			const style = rtOptions?.style || rtConfig?.style || opts['rtfStyle'] || (this as any).config['rtfStyle'] || 'narrow';
+			const style = rtOptions?.style || rtConfig?.style || opts['intl']?.relativeTime?.style || opts['rtfStyle'] || (this as any).config.intl?.relativeTime?.style || (this as any).config['rtfStyle'] || 'narrow';
 			return getRelativeTime(val, u, locale, style);
 		}
 

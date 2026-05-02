@@ -3,7 +3,7 @@ import { COMPASS } from '../../support/tempo.enum.js';
 import type { Tempo } from '../../tempo.class.js';
 
 /** definition of meteorological season ranges */
-const ranges = [
+const groups = defineRange([
 	// Meteorological (North)
 	{ key: 'Spring', day: 1, month: 3, symbol: 'Flower', group: 'meteorological', sphere: COMPASS.North },
 	{ key: 'Summer', day: 1, month: 6, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.North },
@@ -15,10 +15,7 @@ const ranges = [
 	{ key: 'Summer', day: 1, month: 12, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.South },
 	{ key: 'Autumn', day: 1, month: 3, symbol: 'Leaf', group: 'meteorological', sphere: COMPASS.South },
 	{ key: 'Winter', day: 1, month: 6, symbol: 'Snowflake', group: 'meteorological', sphere: COMPASS.South },
-];
-
-/** definition of meteorological season ranges */
-const groups = defineRange(ranges, 'group', 'sphere');
+], 'group', 'sphere');
 
 /** resolve the full candidate list for the current context */
 function resolve(t: Tempo, anchor?: any) {

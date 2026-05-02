@@ -41,6 +41,7 @@ export default defineConfig({
         items: [
           { text: 'Configuration', link: '/doc/tempo.config' },
           { text: 'Smart Parsing', link: '/doc/tempo.parse' },
+          { text: 'Parse Planner', link: '/doc/tempo.planner' },
           { text: 'Regional Parsing (MDY)', link: '/doc/tempo.month-day' },
           { text: 'Smart Formatting', link: '/doc/tempo.format' },
           { text: 'Modularity', link: '/doc/tempo.modularity' },

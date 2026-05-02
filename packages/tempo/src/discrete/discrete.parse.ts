@@ -131,7 +131,7 @@ const _ParseEngine = {
 			const { timeZone: tz2, calendar: cal2 } = state.config;
 			const [targetTz, targetCal] = getTemporalIds(tz2, cal2);
 
-			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal);
+			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal, (m) => _ParseEngine.result(state, m), state.config.timeStamp);
 
 			dateTime = dt;
 			if (timeZone && state) state.config.timeZone = timeZone;
@@ -269,9 +269,9 @@ const _ParseEngine = {
 		const anchorTime = zdt.toPlainTime();
 
 		const orderedPatterns = selectLayoutPatterns(state, trim, {
-			enablePrefilter: state.parse.parsePrefilter === true,
+			enablePrefilter: state.parse.preFilter === true,
 			onPlan: (summary) => {
-				if (state.parse.parsePrefilter !== true || !state.config?.debug) return;
+				if (state.parse.preFilter !== true || !state.config?.debug) return;
 				if (!TempoClass) return;
 
 				const reduced = summary.totalCandidates - summary.selectedCandidates;
@@ -488,16 +488,16 @@ const _ParseEngine = {
 
 	/** check if we've been given a ZonedDateTimeLike object */
 	isZonedDateTimeLike(state: any, tempo: t.DateTime | t.Options | undefined): tempo is Temporal.ZonedDateTimeLike & { value?: any } {
-		if (!isObject(tempo) || isEmpty(tempo))
+		if (!isObject(tempo) || isEmpty(tempo) || (tempo.constructor !== Object && tempo.constructor !== undefined))
 			return false;
 
 		const keys = ownKeys(tempo);
-		if (keys.some(key => state.OPTION.has(key) && key !== 'value'))
+		if (keys.some(key => state.CONFIG.has(key) && !state.ZONED_DATE_TIME.has(key) && key !== 'value'))
 			return false;
 
 		return keys
 			.filter(isString)
-			.every((key: string) => state.ZONED_DATE_TIME.has(key))
+			.some((key: string) => state.ZONED_DATE_TIME.has(key) && !state.CONFIG.has(key))
 	},
 
 	/** accumulate match results */

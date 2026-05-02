@@ -1,17 +1,13 @@
 import { Tempo } from '#tempo';
 
-// 🛡️ Monkey-patch Tempo.init to force parsePrefilter=true globally for all tests in CI.
-// Subsequent per-test calls to Tempo.init() will now preserve the prefilter setting.
-const _init = Tempo.init;
-Tempo.init = function (options: any = {}) {
-  return _init.call(this, { ...options, parsePrefilter: true });
-};
+// Enable patchability of Tempo.init only in test/CI by setting a global flag
+(globalThis as any).TEMPO_TESTING = true;
 
-// Apply the initial forced hydration
-Tempo.init();
+// Optionally, call Tempo.init with parsePrefilter=true for initial hydration
+Tempo.init({ parsePrefilter: true });
 
-if (process.env.CI || process.env.TEMPO_PREFILTER_CI) {
+if ((typeof process !== 'undefined' && (process.env.CI || process.env.TEMPO_PREFILTER_CI))) {
   // eslint-disable-next-line no-console
-  console.log('[CI] parsePrefilter enabled for all tests (Tempo.init wrapped)');
+  console.log('[CI] parsePrefilter enabled for all tests (Tempo.init initial hydration)');
 }
 

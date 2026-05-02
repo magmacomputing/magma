@@ -5,8 +5,8 @@
     "noEmit": true,
     "composite": true,
     "types": [
-      "vitest/globals",
       "node",
+      "vitest/globals",
       "@js-temporal/polyfill"
     ],
     "paths": {

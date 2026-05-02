@@ -126,6 +126,11 @@ const isClassConstructor = (obj: any): boolean => {
 /** generic value which may be NULL */											export type Nullable<T> = T | null;
 /** bottom value */																					export type Nullish = null | undefined | void;
 /** Generic Record */																				export type Property<T> = Record<PropertyKey, T>;
+/** 
+ * Value which may be a single T, a Record of T, or a recursive Array of either.
+ * Used for flexible configuration registries
+ */
+export type RegistryOption<T> = T | Record<string | symbol, T> | Array<RegistryOption<T>>;
 /** Generic Record or Array */															export type Obj = Property<any> | Array<any>
 type SafeRecursion = 50;
 type SafeCount<T, Acc extends any[] = [], Last = LastInUnion<T>> =
