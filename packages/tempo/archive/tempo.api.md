@@ -5,7 +5,7 @@ This document provides a comprehensive technical reference for the `Tempo` class
 ---
 
 - [TypeScript Types Reference](./tempo.types.md)
-- [Tempo Cookbook](./tempo.cookbook.md)
+- [Tempo Cookbook](../doc/tempo.cookbook.md)
 
 ---
 
@@ -67,7 +67,7 @@ Retrieves or registers a `Symbol` for internal token mapping.
 ### `Tempo.ticker(arg1?, arg2?)`
 (Plugin required) Creates a reactive stream of `Tempo` instances at regular intervals. 
 - **Returns:** An `AsyncGenerator` (if no callback) or a `stop` function (if callback provided).
-- **See:** [Tempo Ticker Guide](./tempo.ticker.md) for the full polymorphic signature and usage patterns.
+- **See:** [Tempo Ticker Guide](../doc/tempo.ticker.md) for the full polymorphic signature and usage patterns.
 
 ### `Tempo.regexp(layout, snippet?)`
 Translates a Tempo layout string into a compiled `RegExp`.
@@ -201,5 +201,5 @@ Returns a `Temporal.PlainDateTime` representation.
 
 ::: tip
 **Looking for the full technical details?**  
-For an exhaustive, auto-generated reference of every property, internal type, and class member, see our [Full Technical API Reference](./api/README.md).
+For an exhaustive, auto-generated reference of every property, internal type, and class member, see our [Full Technical API Reference](../doc/api/index.md).
 :::
