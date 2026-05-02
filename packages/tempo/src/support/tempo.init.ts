@@ -191,7 +191,11 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 			case 'relativeTime':
 				if (!hasOwn(state.config, 'intl')) state.config.intl = Object.create(state.config.intl || {});
-				state.config.intl.relativeTime = { ...state.config.intl.relativeTime, ...arg.value };
+				if (typeof arg.value === 'function') {
+					state.config.intl.relativeTime = arg.value;
+				} else {
+					state.config.intl.relativeTime = { ...state.config.intl.relativeTime, ...arg.value };
+				}
 				break;
 
 			case 'planner':

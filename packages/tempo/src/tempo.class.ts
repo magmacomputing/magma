@@ -392,7 +392,13 @@ export class Tempo {
 		// 1d. Process Internationalization
 		if (discovery.intl || discovery.relativeTime) {
 			const intl = discovery.intl ?? {};
-			if (discovery.relativeTime) intl.relativeTime = { ...intl.relativeTime, ...(discovery.relativeTime as any) };
+			if (discovery.relativeTime) {
+				if (typeof discovery.relativeTime === 'function') {
+					intl.relativeTime = discovery.relativeTime;
+				} else {
+					intl.relativeTime = { ...intl.relativeTime, ...(discovery.relativeTime as any) };
+				}
+			}
 			shape.config.intl = { ...shape.config.intl, ...intl };
 		}
 
@@ -996,20 +1002,19 @@ export class Tempo {
 	 */
 	static get parse() {
 		const parse = (this as any)[$Internal]().parse;
-		// const planner = {
-		// 	layoutOrder: [...(parse.planner?.layoutOrder ?? [])],
-		// 	preFilter: parse.planner?.preFilter ?? false
-		// }
+		const planner = {
+			layoutOrder: [...(parse.planner?.layoutOrder ?? [])],
+			preFilter: parse.planner?.preFilter ?? false
+		}
 		return secure({
-			...omit({ ...parse }, 'token'),								// spread primitives like {pivot}
+			...omit({ ...parse }, 'token', 'planner'),								// spread primitives like {pivot}
 			snippet: { ...parse.snippet },												// spread nested objects
 			layout: { ...parse.layout },
 			event: { ...parse.event },
 			period: { ...parse.period },
 			ignore: { ...parse.ignore },
 			monthDay: { ...parse.monthDay },
-			// planner,
-			// mode: parse.mode
+			planner,
 		});
 	}
 
@@ -1553,13 +1558,13 @@ export class Tempo {
 		if (keys.some(key => enums.MUTATION.has(key)))
 			return false;
 
-		// 2. If it contains any recognized Config or Parse keys, it's definitely an options object
+		// 2. If it contains any recognized Date/Time value keys (e.g. year, month, day, hours, minutes), it's likely an input value
+		if (keys.some(key => (enums.ZONED_DATE_TIME.has(key) && !enums.CONFIG.has(key)) || enums.DURATIONS.has(key)))
+			return false;
+
+		// 3. If it contains any recognized Config or Parse keys, it's definitely an options object
 		if (keys.some(key => enums.CONFIG.has(key) || enums.PARSE.has(key)))
 			return true;
-
-		// 3. If it contains any recognized Date/Time value keys (e.g. year, month, day, hours, minutes), it's likely an input value
-		if (keys.some(key => enums.ZONED_DATE_TIME.has(key) || enums.DURATIONS.has(key)))
-			return false;
 
 		// 4. Otherwise, it is a plain object (possibly empty), so we treat it as an options object
 		return true;

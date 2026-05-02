@@ -34,8 +34,12 @@ function num(groups: Record<string, string | number>) {
 				acc[key] = enums.NUMBER[low as t.Number];
 			else if (resolved in enums.MONTH)
 				acc[key] = enums.MONTH[resolved as t.MONTH];
+			else if (resolved in enums.MONTHS)
+				acc[key] = enums.MONTHS[resolved as t.MONTHS];
 			else if (resolved in enums.WEEKDAY)
 				acc[key] = enums.WEEKDAY[resolved as t.WEEKDAY];
+			else if (resolved in enums.WEEKDAYS)
+				acc[key] = enums.WEEKDAYS[resolved as t.WEEKDAYS];
 
 			return acc;
 		}, {} as Record<string, number>);
@@ -52,8 +56,8 @@ export function prefix<T extends t.WEEKDAY | t.MONTH>(str: any): T {
 		if (match) return match as any;
 
 		// search in weekdays and months
-		for (const dict of [enums.WEEKDAY, enums.MONTH]) {
-			const found = (dict as any).keys().find((key: string) => low.startsWith(key.toLowerCase()));
+		for (const dict of [enums.WEEKDAY, enums.WEEKDAYS, enums.MONTH, enums.MONTHS]) {
+			const found = Object.keys(dict).find((key: string) => (key as string).toLowerCase().startsWith(low));
 			if (found) return found as T;
 		}
 	}
@@ -123,7 +127,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 
 	const weekday = prefix<t.WEEKDAY>(wkd);
 	const { nbr: adjust = 1 } = num({ nbr });
-	const offset = (enums.WEEKDAY as any).keys().findIndex((el: t.WEEKDAY) => el === weekday);
+	const offset = enums.WEEKDAY[weekday as t.WEEKDAY] ?? enums.WEEKDAYS[weekday as t.WEEKDAYS];
 
 	const days = offset - dateTime.dayOfWeek
 		+ (parseModifier({ mod: mod ?? sfx ?? afx, adjust, offset, period: dateTime.dayOfWeek }) * dateTime.daysInWeek);
@@ -192,6 +196,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 	const { nbr: adjust = 1 } = num({ nbr });
 	const offset = Number(pad(month) + '.' + pad(day));
 	const period = Number(pad(dateTime.month) + '.' + pad(dateTime.day + 1));
+	const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone;
 
 	year += parseModifier({ mod: mod ?? afx, adjust, offset, period });
 	Object.assign(groups, { yy: year, mm: month, dd: day });
@@ -200,12 +205,10 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 	delete groups["nbr"];
 	delete groups["afx"];
 
-	const y = Number.isFinite(year) ? year : dateTime.year;
-	const m = Number.isFinite(month) ? month : dateTime.month;
-	const d = Number.isFinite(day) ? day : dateTime.day;
-	const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone;
+	if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day))
+		throw new Error(`Invalid Date components: year=${year}, month=${month}, day=${day}`);
 
-	return Temporal.PlainDate.from({ year: y, month: m, day: d }, { overflow: 'constrain' })
+	return Temporal.PlainDate.from({ year, month, day }, { overflow: 'constrain' })
 		.toZonedDateTime(tz)
 		.withPlainTime(dateTime.toPlainTime());
 }
