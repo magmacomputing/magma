@@ -40,7 +40,7 @@ describe('Discovery in Extend', () => {
 				preFilter: true
 			}
 		});
-		expect(Tempo.config.planner.layoutOrder).toContain('ymd');
-		expect(Tempo.config.planner.preFilter).toBe(true);
+		expect(Tempo.parse.planner.layoutOrder).toContain('ymd');
+		expect(Tempo.parse.planner.preFilter).toBe(true);
 	});
 });

@@ -62,24 +62,16 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			scope: 'global',
 			catch: options.catch ?? false,
 			intl: {},
-			planner: {},
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 	} else if (baseState) {
 		state.config = markConfig(Object.create(baseState.config));
 		setProperties(state.config, {
-			calendar: (state.config as any).calendar,
-			timeZone: (state.config as any).timeZone,
-			locale: (state.config as any).locale,
-			discovery: (state.config as any).discovery,
-			formats: (state.config as any).formats,
-			sphere: (state.config as any).sphere,
 			scope: 'local',
+			catch: options.catch ?? (baseState.config as any).catch ?? false,
 			intl: Object.create((baseState.config as any).intl || {}),
-			planner: Object.create((baseState.config as any).planner || {}),
 		});
-		Object.defineProperty(state.config, 'get', { value: (state.config as any).get, enumerable: false, writable: true, configurable: true });
-		setProperty(state.config, 'catch', options.catch);
+		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 	} else {
 		markConfig(Object.assign(state.config, configDefaults));
 		setProperties(state.config, {
@@ -91,7 +83,6 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			sphere: getHemisphere(timeZone),
 			scope: 'local',
 			intl: {},
-			planner: {},
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 		if (isDefined(options.catch))
@@ -108,7 +99,6 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
 export function extendState(state: t.Internal.State, options: t.Options) {
-	if (options.planner) console.log('DEBUG: extendState planner:', options.planner);
 	let patternsDirty = false;
 
 	ownEntries(options).forEach(([optKey, optVal]) => {
@@ -146,27 +136,14 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				break;
 			}
 
-			case 'layoutOrder':
-				state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value);
-				if (!hasOwn(state.config, 'planner')) state.config.planner = Object.create(state.config.planner || {});
-				state.config.planner.layoutOrder = arg.value;
-				break;
-
 			case 'monthDay':
 				state.parse.monthDay = resolveMonthDay(arg.value, state.parse.monthDay);
-				break;
-
-			case 'preFilter':
-				state.parse.planner.preFilter = Boolean(arg.value);
-				if (!hasOwn(state.config, 'planner')) state.config.planner = Object.create(state.config.planner || {});
-				state.config.planner.preFilter = state.parse.planner.preFilter;
 				break;
 
 			case 'timeZone': {
 				const zone = String(arg.value).toLowerCase();
 				const resolvedZone = enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
 				setProperty(state.config, 'timeZone', resolvedZone);
-				setProperty(state.config, 'sphere', getHemisphere(resolvedZone));
 				break;
 			}
 
@@ -191,7 +168,6 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				break;
 
 			case 'sphere':
-				setProperty(state.config, 'sphere', arg.value);
 				break;
 
 			case 'catch':
@@ -219,11 +195,16 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				break;
 
 			case 'planner':
-				if (!hasOwn(state.config, 'planner')) state.config.planner = Object.create(state.config.planner || {});
-				state.config.planner = { ...state.config.planner, ...arg.value };
-				if (isDefined(arg.value.order)) state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value.order);
-				else if (isDefined(arg.value.layoutOrder)) state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value.layoutOrder);
+				if (isDefined(arg.value.layoutOrder)) state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value.layoutOrder);
 				if (isDefined(arg.value.preFilter)) state.parse.planner.preFilter = Boolean(arg.value.preFilter);
+				break;
+
+			case 'layoutOrder':
+				state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value);
+				break;
+
+			case 'preFilter':
+				state.parse.planner.preFilter = Boolean(arg.value);
 				break;
 
 			default:

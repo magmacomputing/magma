@@ -10,10 +10,10 @@ import { enumify } from '#library/enumerate.library.js';
 import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
-import { getType, asType } from '#library/type.library.js';
-import { isEmpty, isDefined, isUndefined, isString, isObject, isRegExp, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isZonedDateTimeLike, isBoolean } from '#library/assertion.library.js';
+import { getType } from '#library/type.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike } from '#library/assertion.library.js';
 import type { Property, Secure } from '#library/type.library.js';
-import { instant, normalizeUtcOffset } from '#library/temporal.library.js';
+import { instant } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
@@ -309,7 +309,18 @@ export class Tempo {
 		if (!left || !right) return false;
 		if (left === right) return true;
 
-		return left.includes(right) || right.includes(left);
+		// Extract the 'core' characters to determine if they conceptually target the same word
+		const getBaseWord = (s: string) => s
+			.replace(/\[[^\]]*\]\?/g, '')	// remove optional character classes (e.g. [ -]?)
+			.replace(/.\?/g, '')			// remove optional single characters (e.g. s?)
+			.replace(/[^a-z0-9]/g, '');		// remove all non-alphanumeric characters (regex metachars, spaces, hyphens)
+
+		const baseLeft = getBaseWord(left);
+		const baseRight = getBaseWord(right);
+
+		if (!baseLeft || !baseRight) return false;
+
+		return baseLeft === baseRight;
 	}
 
 	/**
@@ -329,26 +340,20 @@ export class Tempo {
 		extendState(shape, mergedOptions);
 
 		// Side-effects
-		shape.config.sphere = Tempo.#setSphere(shape, mergedOptions);
+		const newSphere = Tempo.#setSphere(shape, mergedOptions);
+		if (shape.config.scope === 'local') {
+			const parentSphere = Object.getPrototypeOf(shape.config).sphere;
+			if (newSphere !== parentSphere) shape.config.sphere = newSphere;
+		} else {
+			shape.config.sphere = newSphere;
+		}
 		Tempo.#swapLayout(shape);
+
 		if (isDefined(shape.parse.event)) (this as any)[$setEvents](shape);
 		if (isDefined(shape.parse.period)) (this as any)[$setPeriods](shape);
+
 		setPatterns(shape);
 	}
-
-
-
-
-	// /** resolve regional date-parsing configuration */
-	//    /**
-	// 	* Normalize a MonthDay configuration value against the base.
-	// 	* @internal
-	// 	*/
-	//    static resolveMonthDay(value: t.MonthDay | boolean = {}): t.MonthDay {
-	// 	   // Use the shared utility and Tempo.MONTH_DAY as base
-	// 	   // Optionally, warn using #dbg if needed
-	// 	   return resolveMonthDayUtil(value, Tempo.MONTH_DAY);
-	//    }
 
 	/** support "Global Discovery" of user-options */
 	static [$setDiscovery](shape: Internal.State, discovery?: Internal.Discovery) {
@@ -389,6 +394,14 @@ export class Tempo {
 			const intl = discovery.intl ?? {};
 			if (discovery.relativeTime) intl.relativeTime = { ...intl.relativeTime, ...(discovery.relativeTime as any) };
 			shape.config.intl = { ...shape.config.intl, ...intl };
+		}
+
+		// 1e. Process Planner
+		if (isObject(discovery.planner)) {
+			if (isDefined(discovery.planner.layoutOrder))
+				shape.parse.planner.layoutOrder = normalizeLayoutOrder(discovery.planner.layoutOrder as any);
+			if (isDefined(discovery.planner.preFilter))
+				shape.parse.planner.preFilter = Boolean(discovery.planner.preFilter);
 		}
 
 		// 2. Process Terms
@@ -660,21 +673,15 @@ export class Tempo {
 
 								case 'monthDay':
 									registryUpdate('MONTH_DAY', val);
+									(this as any)[$setConfig]((this as any)[$Internal](), { monthDay: val });
 									break;
 
-								case 'intl': {
-									const internal = (this as any)[$Internal]();
-									internal.config.intl = { ...internal.config.intl, ...val };
+								case 'intl':
+								case 'relativeTime':
+								case 'planner':
+								case 'ignore':
+									(this as any)[$setConfig]((this as any)[$Internal](), { [key]: val });
 									break;
-								}
-
-								case 'planner': {
-									const internal = (this as any)[$Internal]();
-									internal.config.planner = { ...internal.config.planner, ...val };
-									if (isDefined(val.layoutOrder)) internal.parse.planner.layoutOrder = normalizeLayoutOrder(val.layoutOrder);
-									if (isDefined(val.preFilter)) internal.parse.planner.preFilter = Boolean(val.preFilter);
-									break;
-								}
 							}
 						});
 
@@ -910,13 +917,18 @@ export class Tempo {
 	/** global Tempo configuration */
 	static get config() {
 		const state = (this as any)[$Internal]();
-		const out = Object.create(Default);
+
+		// Create an object that only contains CONFIG-specific defaults as its prototype,
+		// preventing parse-related keys (like planner, monthDay) from leaking into the config state.
+		const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => enums.CONFIG.has(key)));
+		const out = Object.create(configDefaults);
+
 		const descriptors = omit(Object.getOwnPropertyDescriptors(state.config), 'value', 'anchor', 'result');
 
 		Object.defineProperties(out, descriptors);
 		Object.defineProperty(out, 'toJSON',										// bare-bones: only show global overrides
 			{
-				value: () => Object.fromEntries(Object.entries(out)),															// proxify sees own toJSON, skips allObject
+				value: () => Object.fromEntries(Object.entries(out)),// proxify sees own toJSON, skips allObject
 				enumerable: false, configurable: true
 			});
 		Object.defineProperty(out, sym.$Inspect,
@@ -984,20 +996,20 @@ export class Tempo {
 	 */
 	static get parse() {
 		const parse = (this as any)[$Internal]().parse;
-		const planner = {
-			layoutOrder: [...(parse.planner?.layoutOrder ?? [])],
-			preFilter: parse.planner?.preFilter ?? false
-		};
+		// const planner = {
+		// 	layoutOrder: [...(parse.planner?.layoutOrder ?? [])],
+		// 	preFilter: parse.planner?.preFilter ?? false
+		// }
 		return secure({
-			...omit(parse, 'token', 'planner'),										// spread primitives like {pivot}
+			...omit({ ...parse }, 'token'),								// spread primitives like {pivot}
 			snippet: { ...parse.snippet },												// spread nested objects
 			layout: { ...parse.layout },
 			event: { ...parse.event },
 			period: { ...parse.period },
 			ignore: { ...parse.ignore },
 			monthDay: { ...parse.monthDay },
-			planner,
-			mode: parse.mode
+			// planner,
+			// mode: parse.mode
 		});
 	}
 
@@ -1397,9 +1409,6 @@ export class Tempo {
 		const out = markConfig(Object.create(global));
 		Object.entries(this.#local.config).forEach(([k, v]) => setProperty(out, k, v));
 
-		if (!Object.hasOwn(out, 'mode')) setProperty(out, 'mode', this.#local.parse.mode);
-		if (!Object.hasOwn(out, 'lazy')) setProperty(out, 'lazy', this.#local.parse.lazy);
-
 		Object.defineProperty(out, 'toJSON', {
 			value: () => Object.fromEntries(											// bare-bones: only show local overrides
 				Object.entries(out)),																// proxify sees own toJSON, skips allObject
@@ -1412,13 +1421,12 @@ export class Tempo {
 	/** Instance-specific parse rules (merged with global) */
 	get parse(): Internal.Parse {
 		const self: Tempo = unwrap(this);
-		self.#resolve();
 
 		// Return a shadowed view so we can safely inject matches without breaking the freeze on the original state
 		const out = Object.create(self.#local.parse);
 
 		// Explicitly surface key debug properties as "own" properties for better visibility in consoles/REPLs
-		const keys = ['anchor', 'isAnchored', 'mode', 'pivot'] as const;
+		const keys = ['anchor', 'isAnchored', 'mode', 'lazy', 'pivot'] as const;
 		for (const key of keys) {
 			if (self.#local.parse[key] !== undefined)
 				Object.defineProperty(out, key, { value: self.#local.parse[key], enumerable: true, configurable: true });
@@ -1552,8 +1560,8 @@ export class Tempo {
 		if (keys.some(key => enums.ZONED_DATE_TIME.has(key) || enums.DURATIONS.has(key)))
 			return false;
 
-		// 4. Otherwise, if it's a non-empty plain object, assume it's for user-defined configuration
-		return keys.length > 0;
+		// 4. Otherwise, it is a plain object (possibly empty), so we treat it as an options object
+		return true;
 	}
 }
 

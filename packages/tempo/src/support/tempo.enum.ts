@@ -233,7 +233,7 @@ export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
-const configKeys = ['config', 'parse', 'value', 'intl', 'planner', 'layoutOrder', 'preFilter', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'formats', 'plugins'] as const;
+const configKeys = ['config', 'parse', 'value', 'intl', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'formats', 'plugins'] as const;
 export const CONFIG = enumify(configKeys, false);
 export type Config = KeyOf<typeof CONFIG>
 
@@ -242,12 +242,12 @@ export const MODE = enumify({ Auto: 'auto', Strict: 'strict', Defer: 'defer', },
 export type MODE = ValueOf<typeof MODE>
 
 /** allowed keys for internal parse state */
-const parseKeys = ['monthDay', 'layoutOrder', 'mode', 'pivot', 'snippet', 'layout', 'event', 'period', 'anchor', 'preFilter'] as const;
+const parseKeys = ['monthDay', 'planner', 'layoutOrder', 'preFilter', 'mode', 'pivot', 'snippet', 'layout', 'event', 'period', 'anchor'] as const;
 export const PARSE = enumify(parseKeys, false);
 export type Parse = KeyOf<typeof PARSE>
 
 /** allowed keys for global discovery objects */
-const discoveryKeys = ['options', 'plugins', 'plugin', 'terms', 'term', 'timeZones', 'monthDay', 'intl', 'planner', 'numbers', 'formats', 'ignore'] as const;
+const discoveryKeys = ['options', 'plugins', 'plugin', 'terms', 'term', 'timeZones', 'monthDay', 'intl', 'relativeTime', 'planner', 'numbers', 'formats', 'ignore'] as const;
 export const DISCOVERY = enumify(discoveryKeys, false);
 export type Discovery = KeyOf<typeof DISCOVERY>
 
