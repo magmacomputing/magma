@@ -6,7 +6,6 @@
     "composite": true,
     "lib": [
       "ESNext",
-      "ESNext.Temporal",
       "DOM"
     ],
     "types": [

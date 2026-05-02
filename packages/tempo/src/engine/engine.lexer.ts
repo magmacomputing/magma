@@ -27,38 +27,42 @@ function num(groups: Record<string, string | number>) {
 				return acc;
 			}
 
-			const resolved = prefix(val);
-			const low = isString(resolved) ? resolved.toLowerCase() : '';
+			const num = resolveNumber(val);
+			if (num in enums.NUMBER) {
+				acc[key] = enums.NUMBER[num as t.Number];
+				return acc;
+			}
 
-			if (low in enums.NUMBER)
-				acc[key] = enums.NUMBER[low as t.Number];
-			else if (resolved in enums.MONTH)
-				acc[key] = enums.MONTH[resolved as t.MONTH];
-			else if (resolved in enums.WEEKDAY)
-				acc[key] = enums.WEEKDAY[resolved as t.WEEKDAY];
+			const cal = prefix<t.MONTH | t.MONTHS | t.WEEKDAY | t.WEEKDAYS>(val);
+			if (cal in enums.MONTH) acc[key] = enums.MONTH[cal as t.MONTH];
+			else if (cal in enums.MONTHS) acc[key] = enums.MONTHS[cal as t.MONTHS];
+			else if (cal in enums.WEEKDAY) acc[key] = enums.WEEKDAY[cal as t.WEEKDAY];
+			else if (cal in enums.WEEKDAYS) acc[key] = enums.WEEKDAYS[cal as t.WEEKDAYS];
 
 			return acc;
 		}, {} as Record<string, number>);
 }
 
+/** resolve a number word (0-10) using prefix matching */
+export function resolveNumber(str: any): t.Number | any {
+	if (!isString(str)) return str;
+	const low = str.trim().toLowerCase();
+	return Object.keys(enums.NUMBER).find(key => key.startsWith(low)) ?? str;
+}
+
 /** conform weekday/month names using prefix matching */
-export function prefix<T extends t.WEEKDAY | t.MONTH>(str: any): T {
-	let value = str;
+export function prefix<T extends t.WEEKDAY | t.WEEKDAYS | t.MONTH | t.MONTHS>(str: any): T {
+	if (!isString(str)) return str;
+	const low = str.trim().toLowerCase();
+	if (low === '') return str;
 
-	if (isString(value)) {
-		const low = value.trim().toLowerCase();
-		if (low === '') return value as T;
-		const match = Object.keys(enums.NUMBER).find(key => key.startsWith(low));
-		if (match) return match as any;
-
-		// search in weekdays and months
-		for (const dict of [enums.WEEKDAY, enums.MONTH]) {
-			const found = dict.keys().find((key: string) => low.startsWith(key.toLowerCase()));
-			if (found) return found as T;
-		}
+	// search in weekdays and months
+	for (const dict of [enums.WEEKDAY, enums.WEEKDAYS, enums.MONTH, enums.MONTHS]) {
+		const found = Object.keys(dict).find((key: string) => (key as string).toLowerCase().startsWith(low));
+		if (found) return found as T;
 	}
 
-	return value as T;
+	return str;
 }
 
 /** resolve a relative modifier (+, -, next, ago, etc) */
@@ -121,9 +125,14 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 		return dateTime;
 	}
 
-	const weekday = prefix<t.WEEKDAY>(wkd);
+	const weekday = prefix<t.WEEKDAY | t.WEEKDAYS>(wkd);
 	const { nbr: adjust = 1 } = num({ nbr });
-	const offset = enums.WEEKDAY.keys().findIndex((el: t.WEEKDAY) => el === weekday);
+	const offset = (enums.WEEKDAY as any)[weekday] ?? (enums.WEEKDAYS as any)[weekday];
+
+	if (!Number.isFinite(offset)) {
+		logger.error(config, `Invalid weekday token: "${wkd}"`);
+		return dateTime;
+	}
 
 	const days = offset - dateTime.dayOfWeek
 		+ (parseModifier({ mod: mod ?? sfx ?? afx, adjust, offset, period: dateTime.dayOfWeek }) * dateTime.daysInWeek);
@@ -192,6 +201,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 	const { nbr: adjust = 1 } = num({ nbr });
 	const offset = Number(pad(month) + '.' + pad(day));
 	const period = Number(pad(dateTime.month) + '.' + pad(dateTime.day + 1));
+	const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone;
 
 	year += parseModifier({ mod: mod ?? afx, adjust, offset, period });
 	Object.assign(groups, { yy: year, mm: month, dd: day });
@@ -200,8 +210,13 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 	delete groups["nbr"];
 	delete groups["afx"];
 
+	if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+		logger.error(config, `Invalid Date components: year=${year}, month=${month}, day=${day}`);
+		return dateTime;
+	}
+
 	return Temporal.PlainDate.from({ year, month, day }, { overflow: 'constrain' })
-		.toZonedDateTime(dateTime.timeZoneId)
+		.toZonedDateTime(tz)
 		.withPlainTime(dateTime.toPlainTime());
 }
 
@@ -264,59 +279,3 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 
 	return dateTime;
 }
-
-// /** match an {event} string against a date pattern */
-// function parseEvent(evt: string): t.Groups {
-// 	const groups: t.Groups = {}
-// 	const pats = this.#local.parse.isMonthDay							// first find out if we have a US-format timeZone
-// 		? ['dtm', 'mdy', 'dmy', 'ymd', 'off', 'rel'] as const		// try all layouts to allow composite resolutions
-// 		: ['dtm', 'dmy', 'mdy', 'ymd', 'off', 'rel'] as const
-
-// 	for (const pat of pats) {
-// 		const reg = this.#getPattern(pat);
-
-// 		if (isDefined(reg)) {
-// 			const match = this.#parseMatch(reg, evt);
-
-// 			if (!isEmpty(match)) {
-// 				this.#result({ type: 'Event', value: evt, match: pat, groups: cleanify(match) });
-// 				Object.assign(groups, match);
-// 			}
-// 		}
-
-// 		if (!isEmpty(groups)) break;													// return on the first matched pattern
-// 	}
-
-// 	return groups;																					// overlay the match date-components
-// }
-
-// /** match a {period} string against the time pattern */
-// #parsePeriod(per: string): Tempo.Groups {
-// 	const groups: Tempo.Groups = {}
-// 	const pats = ['tm', 'dtm', 'ymd', 'dmy', 'mdy', 'rel'] as const;
-
-// 	for (const pat of pats) {
-// 		const reg = this.#getPattern(pat);
-// 		if (isDefined(reg)) {
-// 			const match = this.#parseMatch(reg, per);
-// 			if (!isEmpty(match)) {
-// 				this.#result({ type: 'Period', value: per, match: pat, groups: cleanify(match) });
-// 				Object.assign(groups, match);
-// 				break;
-// 			}
-// 		}
-// 	}
-
-// 	return groups;
-// }
-
-
-// /** lookup the RegExp for a given pattern name */
-// #getPattern(pat: string) {
-// 	const reg = this.#local.parse.pattern.get(Tempo.getSymbol(pat));
-
-// 	if (isUndefined(reg))
-// 		Tempo.#dbg.error(this.#local.config, `Cannot find pattern: "${pat}"`);
-
-// 	return reg;
-// }

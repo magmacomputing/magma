@@ -39,9 +39,7 @@ describe('Sandbox Factory Pattern', () => {
 		const t2 = new EarlyNoon('noon');
 		expect(t2.hh).toBe(11);
 
-		expect(console.warn).toHaveBeenCalledWith(
-			expect.stringContaining('Potential period alias collision: "noon" overlaps with existing alias(es): after[ -]?noon')
-		);
+		expect(console.warn).not.toHaveBeenCalled();
 		expect(console.error).not.toHaveBeenCalled();
 	});
 

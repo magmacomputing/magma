@@ -14,7 +14,6 @@ import { sym, Token } from './tempo.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
 import * as t from '../tempo.type.js';
-import type { Mode } from '../tempo.type.js';
 
 /** @internal Initialise a Tempo state */
 export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State): t.Internal.State {
@@ -23,7 +22,6 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	if (isGlobal && runtime.state && !baseState) return runtime.state;
 
 	const { timeZone, calendar } = getDateTimeFormat();
-
 	const state = {
 		config: {},
 		parse: {}
@@ -39,8 +37,10 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		period: Object.assign({}, baseState?.parse.period ?? Period),
 		ignore: baseState ? { ...baseState.parse.ignore } : Object.fromEntries(asArray(Ignore).map(w => [w, w])),
 		monthDay: resolveMonthDay(baseState?.parse.monthDay ?? {}, Default.monthDay as any),
-		layoutOrder: asArray<string>(baseState?.parse.layoutOrder ?? Default.layoutOrder as any),
-		parsePrefilter: Boolean(baseState?.parse.parsePrefilter ?? Default.parsePrefilter),
+		planner: {
+			layoutOrder: asArray<string>(baseState?.parse.planner?.layoutOrder ?? (Default.planner?.layoutOrder ?? (Default as any).layoutOrder)),
+			preFilter: Boolean(baseState?.parse.planner?.preFilter ?? (Default.planner?.preFilter ?? (Default as any).preFilter)),
+		},
 		pivot: (baseState?.parse.pivot ?? Default.pivot) as any,
 		mode: (baseState?.parse.mode ?? Default.mode) as any,
 		lazy: false,
@@ -48,8 +48,9 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	});
 
 	// 2. Establish the base configuration options
+	const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => enums.CONFIG.has(key)));
 	if (isGlobal) {
-		markConfig(Object.assign(state.config, Default));
+		markConfig(Object.assign(state.config, configDefaults));
 		const { timeZone, calendar } = getDateTimeFormat();
 		setProperties(state.config, {
 			calendar,
@@ -59,24 +60,20 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			formats: enumify(STATE.FORMAT, false),
 			sphere: getHemisphere(timeZone),
 			scope: 'global',
-			catch: options.catch ?? false
+			catch: options.catch ?? false,
+			intl: {},
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 	} else if (baseState) {
 		state.config = markConfig(Object.create(baseState.config));
 		setProperties(state.config, {
-			calendar: (state.config as any).calendar,
-			timeZone: (state.config as any).timeZone,
-			locale: (state.config as any).locale,
-			discovery: (state.config as any).discovery,
-			formats: (state.config as any).formats,
-			sphere: (state.config as any).sphere,
-			scope: 'local'
+			scope: 'local',
+			catch: options.catch ?? (baseState.config as any).catch ?? false,
+			intl: Object.create((baseState.config as any).intl || {}),
 		});
-		Object.defineProperty(state.config, 'get', { value: (state.config as any).get, enumerable: false, writable: true, configurable: true });
-		setProperty(state.config, 'catch', options.catch);
+		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 	} else {
-		markConfig(Object.assign(state.config, Default));
+		markConfig(Object.assign(state.config, configDefaults));
 		setProperties(state.config, {
 			calendar,
 			timeZone,
@@ -84,7 +81,8 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			discovery: Symbol.keyFor(sym.$Tempo) as string,
 			formats: enumify(STATE.FORMAT, false),
 			sphere: getHemisphere(timeZone),
-			scope: 'local'
+			scope: 'local',
+			intl: {},
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 		if (isDefined(options.catch))
@@ -92,13 +90,12 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	}
 
 	// 3. Initialize registries that need objects
-	state.OPTION = new Set(Object.keys(Default));
+	state.OPTION = new Set(Object.keys(configDefaults));
 	state.ZONED_DATE_TIME = new Set(['year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond', 'offset', 'timeZone', 'calendar']);
 
 	if (isGlobal) runtime.state = state;
 	return state;
 }
-
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
 export function extendState(state: t.Internal.State, options: t.Options) {
@@ -139,23 +136,14 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				break;
 			}
 
-			case 'layoutOrder':
-				state.parse.layoutOrder = normalizeLayoutOrder(arg.value);
-				break;
-
 			case 'monthDay':
 				state.parse.monthDay = resolveMonthDay(arg.value, state.parse.monthDay);
-				break;
-
-			case 'parsePrefilter':
-				state.parse.parsePrefilter = Boolean(arg.value);
 				break;
 
 			case 'timeZone': {
 				const zone = String(arg.value).toLowerCase();
 				const resolvedZone = enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
 				setProperty(state.config, 'timeZone', resolvedZone);
-				setProperty(state.config, 'sphere', getHemisphere(resolvedZone));
 				break;
 			}
 
@@ -172,11 +160,14 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				break;
 
 			case 'formats':
-				setProperty(state.config, 'formats', arg.value);
+				if (state.config.formats?.extend) {
+					state.config.formats = state.config.formats.extend(arg.value) as t.FormatRegistry;
+				} else {
+					setProperty(state.config, 'formats', arg.value);
+				}
 				break;
 
 			case 'sphere':
-				setProperty(state.config, 'sphere', arg.value);
 				break;
 
 			case 'catch':
@@ -191,6 +182,33 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 			case 'mode':
 				state.parse.mode = arg.value;
+				break;
+
+			case 'intl':
+				if (!isObject(state.config.intl)) setProperty(state.config, 'intl', {});
+				state.config.intl = { ...state.config.intl, ...arg.value };
+				break;
+
+			case 'relativeTime':
+				if (!hasOwn(state.config, 'intl')) state.config.intl = Object.create(state.config.intl || {});
+				if (typeof arg.value === 'function') {
+					state.config.intl.relativeTime = arg.value;
+				} else {
+					state.config.intl.relativeTime = { ...state.config.intl.relativeTime, ...arg.value };
+				}
+				break;
+
+			case 'planner':
+				if (isDefined(arg.value.layoutOrder)) state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value.layoutOrder);
+				if (isDefined(arg.value.preFilter)) state.parse.planner.preFilter = Boolean(arg.value.preFilter);
+				break;
+
+			case 'layoutOrder':
+				state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value);
+				break;
+
+			case 'preFilter':
+				state.parse.planner.preFilter = Boolean(arg.value);
 				break;
 
 			default:

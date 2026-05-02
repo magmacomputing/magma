@@ -3,7 +3,7 @@ import { isBoolean } from '#library/assertion.library.js';
 import { sym, Token } from './tempo.symbol.js';
 import { asType } from '#library/type.library.js';
 import { asArray } from '#library/coercion.library.js';
-import { isSymbol, isUndefined, isString, isRegExp, isNullish, isObject, isEmpty } from '#library/assertion.library.js';
+import { isSymbol, isUndefined, isDefined, isString, isRegExp, isNullish, isObject, isEmpty } from '#library/assertion.library.js';
 import { ownEntries, ownKeys } from '#library/primitive.library.js';
 import { getRuntime } from './tempo.runtime.js';
 import { Match, Snippet, Layout } from './tempo.default.js';
@@ -198,6 +198,7 @@ export function setPatterns(state: t.Internal.State) {
  * @param base The base/default value (e.g., Tempo.MONTH_DAY)
  */
 export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthDay): t.MonthDay {
+	const isExplicit = isBoolean(value) || isDefined((value as t.MonthDay).active);
 	if (isBoolean(value)) value = { active: value } as t.MonthDay;
 	const warned = new Set<string>();
 
@@ -237,6 +238,7 @@ export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthD
 
 	return {
 		...value,
+		isExplicit: isExplicit || (base as any).isExplicit,
 		locales: localesList as any,
 		layouts: layoutsList as any,
 		timezones: tzs,

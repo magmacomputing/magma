@@ -20,7 +20,7 @@ export {
 	TIMEZONE,
 	MUTATION,
 	ZONED_DATE_TIME,
-	OPTION,
+	CONFIG,
 	PARSE,
 	MONTH_DAY,
 	NumericPattern

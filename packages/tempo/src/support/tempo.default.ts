@@ -4,6 +4,7 @@ import { getDateTimeFormat } from '#library/international.library.js';
 
 import { NUMBER, MODE, MONTH_DAY } from './tempo.enum.js';
 import { Token } from './tempo.symbol.js';
+import { IntlDefault } from './tempo.intl.js';
 import type { Options } from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
 
@@ -32,7 +33,7 @@ export const Match = proxify({
 	/** slick shorthand-shifter (e.g. #qtr.>2q2) */						shorthand: /(?:(?:#[\w]+|[\w]+)\.(?:[\+\-\<\>]=?|next|prev|this|last)?(?:[0-9]+)?(?:[\w]*))/,
 	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
 	/** extracted value-only version of a slick shifter */		slickValue: /^(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
-	/** escape special regex characters in a string */				escape: (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+	/** escape special regex characters in a string */				escape: (str: string) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
 	/** numeric-only string detection */											numeric: /^\s*[-+]?\d+(\.\d+)?\s*$/,
 	/** match suspicious nested quantifiers (backtracking) */	backtrack: /(\(.*\)\+|\(.*\)\*|\(.*\)\{.*\})/,
 }, true, false);
@@ -170,7 +171,7 @@ export type Period = typeof Period
  * an {ignore} is a list of noise words to be stripped during parsing.
  */
 /** @internal Tempo Ignore registry */
-export const Ignore = ['at', 'the', 'o-clock', 'o\'clock', 'on', 'in', 'of', 'by', 'for', 'to'] as const;
+export const Ignore = ['at', 'the', 'o-clock', 'o\'clock', 'oclock', 'on', 'in', 'of', 'by', 'for', 'to'] as const;
 /** @internal Tempo Ignore type */
 export type Ignore = string | string[] | (() => string | string[])
 
@@ -189,62 +190,13 @@ export const Default = secure({
 	/** catch or throw Errors */															catch: false,
 	/** initialization strategy (auto | strict | defer) */		mode: MODE.Auto,
 	/** used to parse two-digit years*/												pivot: 75,					/** @link https:	//en.wikipedia.org/wiki/Date_windowing */
-	/** precision to measure timestamps (ms | us) */					timeStamp: 'ms',
+	/** precision to measure timestamps (ss|ms|us|ns) */			timeStamp: 'ms',
 	/** calendaring system */																	calendar: 'iso8601',
 	/** default timezone if not specified */									timeZone: getDateTimeFormat().timeZone,
 	/** default locale if not specified */										locale: getDateTimeFormat().locale,
-	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
-	/** preferred parse-order of layouts */										layoutOrder: [],
-	/** enable parse planner pre-filtering (Release C feature-flag) */ parsePrefilter: false,
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
-} as Options)
 
-/** @internal
- * Fallback for environments which do not robustly support Intl.Locale.getTimeZones()  
- * Keep an eye on this list !  It may become necessary in a future release to allow Users to update this list.  
- */
-export const mdyFallback = {
-	'en-US': [
-		"America/Adak",
-		"America/Anchorage",
-		"America/Boise",
-		"America/Chicago",
-		"America/Denver",
-		"America/Detroit",
-		"America/Indiana/Indianapolis",
-		"America/Indiana/Knox",
-		"America/Indiana/Marengo",
-		"America/Indiana/Petersburg",
-		"America/Indiana/Tell_City",
-		"America/Indiana/Vevay",
-		"America/Indiana/Vincennes",
-		"America/Indiana/Winamac",
-		"America/Indianapolis",
-		"America/Juneau",
-		"America/Kentucky/Louisville",
-		"America/Kentucky/Monticello",
-		"America/Los_Angeles",
-		"America/Louisville",
-		"America/Menominee",
-		"America/Metlakatla",
-		"America/New_York",
-		"America/Nome",
-		"America/North_Dakota/Beulah",
-		"America/North_Dakota/Center",
-		"America/North_Dakota/New_Salem",
-		"America/Phoenix",
-		"America/Sitka",
-		"America/Yakutat",
-		"Pacific/Honolulu",
-		"US/Aleutian",
-		"US/Alaska",
-		"US/Arizona",
-		"US/Central",
-		"US/Eastern",
-		"US/Mountain",
-		"US/Pacific"
-	],
-	'en-AS': [
-		"Pacific/Pago_Pago"
-	]
-} as Record<string, string[]>
+	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
+	/** internationalization configuration */									intl: IntlDefault,
+	/** parse planner configuration (layoutOrder, etc.) */		planner: { layoutOrder: [], preFilter: false },
+} as Options)
