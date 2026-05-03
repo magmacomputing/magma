@@ -121,8 +121,8 @@ export class AliasEngine {
 		// Check for parent collisions using isAliasCollision
 		let parent = this.#parentEngine;
 		while (parent) {
-			const parentMap = type === 'event' ? parent.#eventMap : parent.#periodMap;
-			for (const [parentName, parentTarget] of parentMap.entries()) {
+			const parentAliases = type === 'event' ? parent.getAllEventAliases() : parent.getAllPeriodAliases();
+			for (const [parentName, parentTarget] of Object.entries(parentAliases)) {
 				if (
 					parentTarget !== target &&
 					AliasEngine.isAliasCollision(parentName, name)
@@ -135,6 +135,8 @@ export class AliasEngine {
 					collisionDetected = true;
 				}
 			}
+			// Access parent's parent engine via a public way if possible, or keep it private if safe
+			// Since we're in the same class, we can still use #parentEngine for the chain
 			parent = parent.#parentEngine;
 		}
 
