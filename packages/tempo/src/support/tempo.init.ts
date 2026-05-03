@@ -22,10 +22,10 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	if (isGlobal && runtime.state && !baseState) return runtime.state;
 
 	const { timeZone, calendar } = getDateTimeFormat();
-	const state = {
+	const state = (baseState ? Object.create(baseState) : {
 		config: {},
 		parse: {}
-	} as t.Internal.State
+	}) as t.Internal.State;
 
 	// 1. Establish the base parsing state
 	state.parse = markConfig({

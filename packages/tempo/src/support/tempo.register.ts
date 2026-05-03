@@ -7,7 +7,7 @@ import { sym } from './tempo.symbol.js';
 import type { Property } from '#library/type.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
-import { setProperty } from './tempo.util.js';
+import { hasOwn, setProperty } from './tempo.util.js';
 
 // Import the live enums and their mutable state from the enum module
 import { STATE, REGISTRIES, DEFAULTS } from './tempo.enum.js';
@@ -50,7 +50,7 @@ export function registryReset() {
 						Object.defineProperty(obj, key, desc);
 					} else {
 						// For non-extensible objects, only update if property exists
-						if (Object.prototype.hasOwnProperty.call(obj, key)) {
+						if (hasOwn(obj, key)) {
 							Object.defineProperty(obj, key, desc);
 						} else {
 							console.warn(`[tempo] registryReset: Cannot define property '${String(key)}' on non-extensible object (property does not exist)`, obj);

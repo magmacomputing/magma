@@ -15,6 +15,7 @@ import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject,
 import type { TermPlugin, Plugin } from '#tempo/plugin/plugin.type.js';
 import type { Token } from '#tempo/support/tempo.symbol.js';
 import type { Tempo } from '#tempo/tempo.class.js';
+import { AliasEngine } from './engine/engine.alias.js';
 
 declare global {
 	interface globalThis {
@@ -223,6 +224,7 @@ export namespace Internal {
 		/** @internal current anchor during parsing */					anchor?: Temporal.ZonedDateTime;
 		/** @internal current ZonedDateTime during parsing */		zdt?: Temporal.ZonedDateTime;
 		/** @internal has the parse operation errored? */				errored?: boolean;
+		/** @internal Alias engine for this Tempo instance */		aliasEngine?: AliasEngine;
 	}
 
 	/** debug a Tempo instantiation */
