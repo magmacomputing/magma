@@ -5,7 +5,7 @@
 import { asType } from '#library/type.library.js';
 import type { Logify } from '#library/logify.class.js';
 
-export type AliasTarget = string | Function
+export type AliasTarget = string | number | Function
 
 export interface AliasEngineOptions {
 	parent?: AliasEngine | undefined;
@@ -147,8 +147,9 @@ export class AliasEngine {
 		map.set(name, target);
 	}
 
-	#resolveAlias(name: string, map: Map<string, AliasTarget>, thisArg?: any): string {
+	#resolveAlias(name: string, map: Map<string, AliasTarget>, thisArg?: any): string | number {
 		let currentEngine: AliasEngine | undefined = this;
+		const isEvent = map === this.#eventMap;
 
 		while (currentEngine) {
 			const { type, value } = asType(map.get(name));
@@ -157,15 +158,13 @@ export class AliasEngine {
 					return value.call(thisArg);
 
 				case 'String':
+				case 'Number':
 					return value;
 
 				default:
 					currentEngine = currentEngine.#parentEngine;
-					map = currentEngine
-						? (map === this.#eventMap
-							? currentEngine.#eventMap
-							: currentEngine.#periodMap)
-						: map;
+					if (currentEngine)
+						map = isEvent ? currentEngine.#eventMap : currentEngine.#periodMap;
 			}
 		}
 

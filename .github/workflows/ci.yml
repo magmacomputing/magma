@@ -40,12 +40,57 @@ jobs:
     timeout-minutes: 30
     if: github.ref == 'refs/heads/release-c-layout-order-planner' || github.event.pull_request.base.ref == 'main'
     steps:
+      - name: Print GitHub event context (for debug)
+        run: |
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
+          echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF"
+          echo "GITHUB_BASE_REF: $GITHUB_BASE_REF"
+          echo "github.ref: ${{ github.ref }}"
+          echo "github.event_name: ${{ github.event_name }}"
+          echo "github.head_ref: ${{ github.head_ref }}"
+          echo "github.base_ref: ${{ github.base_ref }}"
+          echo "github.event.pull_request.base.ref: ${{ github.event.pull_request.base.ref }}"
+          echo "github.sha: ${{ github.sha }}"
+          echo "github.repository: ${{ github.repository }}"
+          echo "github.actor: ${{ github.actor }}"
+          echo "github.workflow: ${{ github.workflow }}"
+          echo "github.run_id: ${{ github.run_id }}"
+          echo "github.run_number: ${{ github.run_number }}"
+          echo "github.job: ${{ github.job }}"
+          echo "github.ref_name: ${{ github.ref_name }}"
+          echo "github.ref_type: ${{ github.ref_type }}"
+          echo "github.event: $(cat $GITHUB_EVENT_PATH)"
+        shell: bash
       - uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
+      - name: Install monorepo dependencies
+        run: npm ci
+        working-directory: ${{ github.workspace }}
+      - name: Run all tests with parse.preFilter
+        run: npm test
+        working-directory: packages/tempo
+        env:
+          TEMPO_PREFILTER_CI: 'true'
+      - name: Run end-to-end benchmark
+        run: npx tsx --conditions=development bench/bench.parse.prefilter.e2e.ts > bench-output.json 2> bench-error.log
+        working-directory: packages/tempo
+      - name: Upload benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-parse-prefilter-e2e
+          path: |
+            packages/tempo/bench-output.json
+            packages/tempo/bench-error.log
+      - name: Validate benchmark output
+        run: |
+          node -e "const r=require('./packages/tempo/bench-output.json');if(!r.success){console.error('Benchmark failed:',r.errors);process.exit(1)}else{console.log('Benchmark passed.')}"
+        working-directory: ${{ github.workspace }}
       - name: Install monorepo dependencies
         run: npm ci
         working-directory: ${{ github.workspace }}

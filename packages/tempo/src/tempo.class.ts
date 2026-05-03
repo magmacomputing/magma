@@ -147,7 +147,8 @@ export class Tempo {
 			return;																								// no local change needed
 
 		// Use the correct alias engine: static for global, instance for local, and assign parentEngine for locals
-		const engine = shape.aliasEngine ??= new AliasEngine({ parent: Tempo.#global.aliasEngine, logger: Tempo.#dbg });
+		const proto = Object.getPrototypeOf(shape);
+		const engine = shape.aliasEngine ??= new AliasEngine({ parent: proto.aliasEngine, logger: Tempo.#dbg });
 		engine.clear('event');
 		engine.registerEvents(events);
 
@@ -194,7 +195,8 @@ export class Tempo {
 			return;																								// no local change needed
 
 		// Use the correct alias engine: static for global, instance for local
-		const engine = shape.aliasEngine ??= new AliasEngine({ parent: Tempo.#global.aliasEngine, logger: Tempo.#dbg });
+		const proto = Object.getPrototypeOf(shape);
+		const engine = shape.aliasEngine ??= new AliasEngine({ parent: proto.aliasEngine, logger: Tempo.#dbg });
 		engine.clear('period');
 		engine.registerPeriods(periods);
 
