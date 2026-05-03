@@ -7,6 +7,7 @@ import { delegator } from '#library/proxy.library.js';
 import { isTempo, enums, Match, getRuntime, NumericPattern } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Tempo } from '../tempo.class.js';
+import { hasOwn } from '#tempo/support/tempo.util.js';
 
 declare module '../tempo.class.js' {
 	interface Tempo {
@@ -65,7 +66,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 
 	if (!isZonedDateTime(zdt)) return '';
 
-	let template = (isString(fmt) && formats && (typeof (formats as any).has === 'function' ? (formats as any).has(fmt as string) : Object.prototype.hasOwnProperty.call(formats, fmt as string)))
+	let template = (isString(fmt) && formats && (typeof (formats as any).has === 'function' ? (formats as any).has(fmt as string) : hasOwn(formats, fmt as string)))
 		? (formats as Record<string, string>)[fmt as string]
 		: String(fmt);
 

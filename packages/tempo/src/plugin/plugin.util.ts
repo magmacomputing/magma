@@ -2,6 +2,7 @@ import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from 
 import { secureRef } from '#library/proxy.library.js';
 
 import { sym, getRuntime, isTempo } from '#tempo/support';
+import { hasOwn } from '#tempo/support/tempo.util.js';
 import type { Tempo } from '../tempo.class.js';
 import type { Plugin } from './plugin.type.js';
 
@@ -94,7 +95,7 @@ export const defineModule = <T extends Plugin>(module: T): T => {
  */
 export function attachStatics(TempoClass: any, props: Record<string, any>) {
 	for (const [key, val] of Object.entries(props)) {
-		if (Object.hasOwn(TempoClass, key)) {
+		if (hasOwn(TempoClass, key)) {
 			const msg = `Static name collision on "${key}". Property is already defined on the host class.`;
 			if (isFunction(TempoClass[sym.$logError])) {
 				// use catch:true to report the collision without a fatal throw (supports re-extension in shared environments)
