@@ -8,6 +8,7 @@ import { isTempo, enums, Match, getRuntime, NumericPattern } from '#tempo/suppor
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Tempo } from '../tempo.class.js';
 
+
 declare module '../tempo.class.js' {
 	interface Tempo {
 		/** applies a format to the instance. */								format(fmt: any): any;
@@ -65,7 +66,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 
 	if (!isZonedDateTime(zdt)) return '';
 
-	let template = (isString(fmt) && formats && (typeof (formats as any).has === 'function' ? (formats as any).has(fmt as string) : Object.prototype.hasOwnProperty.call(formats, fmt as string)))
+	let template = (isString(fmt) && formats && (fmt as string in formats))
 		? (formats as Record<string, string>)[fmt as string]
 		: String(fmt);
 

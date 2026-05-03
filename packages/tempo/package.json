@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "2.8.0",
+  "version": "2.9.1",
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -223,7 +223,7 @@
     "build:resolve": "tsx bin/resolve-types.ts",
     "clean": "rm -rf dist && (tsc -b --clean || true)",
     "publish": "npm publish --access public",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build",
     "docs:api": "typedoc",
     "docs:dev": "npm run build && npm run docs:api && vitepress dev",
     "docs:build": "npm run build && npm run docs:api && vitepress build",
@@ -238,7 +238,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.8.0",
+    "@magmacomputing/library": "2.9.1",
     "@rollup/plugin-alias": "^6.0.0",
     "cross-env": "^7.0.3",
     "magic-string": "^0.30.21",

@@ -69,3 +69,4 @@ jobs:
         run: |
           node -e "const r=require('./packages/tempo/bench-output.json');if(!r.success){console.error('Benchmark failed:',r.errors);process.exit(1)}else{console.log('Benchmark passed.')}"
         working-directory: ${{ github.workspace }}
+
