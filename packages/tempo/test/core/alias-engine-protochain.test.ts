@@ -1,8 +1,16 @@
 import { AliasEngine } from '#tempo/engine/engine.alias.js';
 import { Logify } from '#library/logify.class.js';
+import { vi } from 'vitest';
 
 describe('AliasEngine prototype chain (Global → Sandbox → Instance)', () => {
-  const logger = new Logify({ debug: true });
+  const logger = {
+    warn: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    log: vi.fn(),
+    info: vi.fn(),
+    trace: vi.fn()
+  } as unknown as Logify;
 
   // Simulate a global state
   const globalShape = {} as { aliasEngine: AliasEngine };
@@ -38,11 +46,18 @@ describe('AliasEngine prototype chain (Global → Sandbox → Instance)', () => 
   });
 
   it('collision detection traverses the prototype chain', () => {
+    (logger.warn as any).mockClear();
+
     // Register a colliding alias in local
     localShape.aliasEngine.registerEventAlias('globalEvt', 'localShadow');
+
     // Should warn about collision with global
-    // (You may want to spy on logger.warn for a real assertion)
+    expect(logger.warn).toHaveBeenCalled();
+    expect((logger.warn as any).mock.calls[0][0]).toMatch(/Collision detected/i);
+
     expect(localShape.aliasEngine.resolveEventAlias('globalEvt')).toBe('localShadow');
     expect(globalShape.aliasEngine.resolveEventAlias('globalEvt')).toBe('globalValue');
+
+    (logger.warn as any).mockReset();
   });
 });
