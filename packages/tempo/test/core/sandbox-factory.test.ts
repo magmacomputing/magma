@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo';
+import { spies } from '../support/setup.console-spy.js';
 
 describe('Sandbox Factory Pattern', () => {
 	it('should return a subclass when create is called with options', () => {
@@ -24,12 +25,18 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should support shadowing global aliases', () => {
+		const warnCountBefore = spies.warn.mock.calls.length;
+
 		// Global 'noon' is 12:00
 		const EarlyNoon = Tempo.create({
 			period: {
 				'noon': '11:00'
 			}
 		});
+		
+		expect(console.error).not.toHaveBeenCalled();
+		expect(console.warn).toHaveBeenCalled();
+		expect(spies.warn.mock.calls.length).toBe(warnCountBefore + 1);
 
 		// Original remains unaffected (if not manually reset in a way that changes it)
 		// We expect 12:00 for the base Tempo
@@ -38,9 +45,6 @@ describe('Sandbox Factory Pattern', () => {
 
 		const t2 = new EarlyNoon('noon');
 		expect(t2.hh).toBe(11);
-
-		expect(console.warn).not.toHaveBeenCalled();
-		expect(console.error).not.toHaveBeenCalled();
 	});
 
 	it('should record traceability info in parse results', () => {

@@ -13,14 +13,15 @@ import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike } from '#library/assertion.library.js';
-import type { Property, Secure } from '#library/type.library.js';
 import { instant } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
+import type { Property, Secure } from '#library/type.library.js';
 
 import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term.util.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 
+import { AliasEngine } from './engine/engine.alias.js';
 import { resolveMonthDay } from './support/tempo.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './parse/parse.layout.js';
 import { datePattern } from './support/tempo.default.js';
@@ -39,6 +40,7 @@ declare module '#library/type.library.js' {
 /**  */																											const ClassStates = new WeakMap<typeof Tempo, Internal.State>();
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 namespace Internal {
+	// ...existing code...
 	export type State = t.Internal.State;
 	export type Parse = t.Internal.Parse;
 	export type MatchResult = t.Internal.Match;
@@ -134,9 +136,6 @@ export class Tempo {
 		Tempo.#dbg.debug(config, ...args);
 	}
 
-	// ...rest of the class definition remains unchanged...
-
-
 	/**
 	 * {dt} is a layout that combines date-related {snippets} (e.g. dd, mm -or- evt) into a pattern against which a string can be tested.  
 	 * because it will also include a list of events (e.g. 'new_years' | 'xmas'), we need to rebuild {dt} if the user adds a new event
@@ -147,7 +146,12 @@ export class Tempo {
 		if (isLocal(shape) && !hasOwn(shape.parse, 'event') && !hasOwn(shape.parse.monthDay, 'active'))
 			return;																								// no local change needed
 
-		const src = shape.config.scope === 'global' ? 'g' : 'l';			// 'g'lobal or 'l'ocal (sandbox also uses 'l')
+		// Use the correct alias engine: static for global, instance for local, and assign parentEngine for locals
+		const engine = shape.aliasEngine ??= new AliasEngine({ parent: Tempo.#global.aliasEngine, logger: Tempo.#dbg });
+		engine.clear('event');
+		engine.registerEvents(events);
+
+		const src = shape.config.scope === 'global' ? 'g' : 'l';// 'g'lobal or 'l'ocal (sandbox also uses 'l')
 		const groups = events
 			.map(([pat, _], idx) => `(?<${src}evt${idx}>${pat})`)	// assign a number to the pattern
 			.join('|')																						// make an 'Or' pattern for the event-keys
@@ -187,19 +191,14 @@ export class Tempo {
 	static [$setPeriods](shape: Internal.State) {
 		const periods = ownEntries(shape.parse.period, true);
 		if (isLocal(shape) && !hasOwn(shape.parse, 'period'))
-			return;																							// no local change needed
+			return;																								// no local change needed
 
-		const src = shape.config.scope === 'global' ? 'g' : 'l';   // 'g'lobal or 'l'ocal (sandbox also uses 'l')
+		// Use the correct alias engine: static for global, instance for local
+		const engine = shape.aliasEngine ??= new AliasEngine({ parent: Tempo.#global.aliasEngine, logger: Tempo.#dbg });
+		engine.clear('period');
+		engine.registerPeriods(periods);
 
-		// Check for alias collisions among period keys
-		const keys = periods.map(([pat]) => pat);
-		for (let i = 0; i < keys.length; i++) {
-			for (let j = i + 1; j < keys.length; j++) {
-				if (Tempo.#isAliasCollision(keys[i], keys[j]))
-					Tempo.#dbg.warn(`Potential period alias collision: "${keys[i]}" overlaps with existing alias(es): ${keys[j]}`);
-			}
-		}
-
+		const src = shape.config.scope === 'global' ? 'g' : 'l';// 'g'lobal or 'l'ocal (sandbox also uses 'l')
 		const groups = periods
 			.map(([pat, _], idx) => `(?<${src}per${idx}>${pat})`)	// {pattern} is the 1st element of the tuple
 			.join('|')																						// make an 'or' pattern for the period-keys
@@ -300,28 +299,6 @@ export class Tempo {
 			global?.navigator?.language ??												// else navigator.language
 			Default.locale ??																			// else default locale
 			locale																								// cannot determine locale
-	}
-
-	/** detect likely overlap between two alias keys/patterns */
-	static #isAliasCollision(a: string, b: string): boolean {
-		const left = a.trim().toLowerCase();
-		const right = b.trim().toLowerCase();
-
-		if (!left || !right) return false;
-		if (left === right) return true;
-
-		// Extract the 'core' characters to determine if they conceptually target the same word
-		const getBaseWord = (s: string) => s
-			.replace(/\[[^\]]*\]\?/g, '')	// remove optional character classes (e.g. [ -]?)
-			.replace(/.\?/g, '')			// remove optional single characters (e.g. s?)
-			.replace(/[^a-z0-9]/g, '');		// remove all non-alphanumeric characters (regex metachars, spaces, hyphens)
-
-		const baseLeft = getBaseWord(left);
-		const baseRight = getBaseWord(right);
-
-		if (!baseLeft || !baseRight) return false;
-
-		return baseLeft === baseRight;
 	}
 
 	/**
@@ -540,13 +517,6 @@ export class Tempo {
 		return proxify(omit({ ...discovery, scope: 'discovery' }, 'value'));
 	}
 
-	/**
-	 * Unified loader for library extensions.
-	 * 
-	 * @param arg - A `Plugin` function, a `TermPlugin` object (or array), or a `Discovery` object.
-	 * @param options - Optional configuration for a standard `Plugin`.
-	 * @returns The `Tempo` class for chaining.
-	 */
 	/**
 	 * Register a plugin or term extension.
 	 * 
@@ -1271,11 +1241,6 @@ export class Tempo {
 			// shadowing chain (only if extensible)
 			if (Reflect.isExtensible(target))
 				Object.defineProperty(target, name, { get, enumerable: true, configurable: true });
-			// if (Reflect.isExtensible(target)) {
-			// 	const shadow = Object.create(Object.getPrototypeOf(target));
-			// 	Object.defineProperty(shadow, name, { get, enumerable: true, configurable: true });
-			// 	Object.setPrototypeOf(target, shadow);
-			// }
 
 			return get;																						// return getter closure
 		}
@@ -1499,6 +1464,13 @@ export class Tempo {
 		this.#local.parse.planner = { ...classState.parse.planner };				// clone the planner object
 		setProperty(this.#local.parse, 'result', [...(options.result ?? [])]);
 
+		Object.defineProperty(this.#local, 'tempoInstance', {		// Link this instance to its state for static alias access
+			value: this,
+			writable: false,
+			configurable: true,
+			enumerable: false
+		});
+
 		(this.constructor as any)[$setConfig](this.#local, options);									// set #local config
 	}
 
@@ -1623,4 +1595,3 @@ export namespace Tempo {
 
 	export interface Params<T> extends t.Params<T> { }
 }
-
