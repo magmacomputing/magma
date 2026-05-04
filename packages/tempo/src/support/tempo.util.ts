@@ -148,8 +148,6 @@ export function compileRegExp(layout: string | RegExp, state: t.Internal.State, 
 	}
 }
 
-
-
 /** @internal build RegExp patterns into the state */
 export function setPatterns(state: t.Internal.State) {
 	// ensure we have our own isolated mutable containers before mutation
@@ -189,7 +187,6 @@ export function setPatterns(state: t.Internal.State) {
 
 		state.parse.pattern.set(symbol, compiled);
 	});
-
 }
 
 /**

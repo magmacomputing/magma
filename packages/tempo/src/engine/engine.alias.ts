@@ -7,7 +7,6 @@ import type { Logify } from '#library/logify.class.js';
 import * as t from '../tempo.type.js';
 
 export type AliasTarget = string | number | Function
-
 export interface AliasEngineOptions {
 	parent?: AliasEngine | undefined;
 	logger?: Logify | undefined;
@@ -18,51 +17,120 @@ export class AliasEngine {
 	#parentEngine?: AliasEngineOptions["parent"];
 	#logger?: AliasEngineOptions["logger"];
 	#config?: AliasEngineOptions["config"];
-
-	constructor(options: AliasEngineOptions = {}) {
-		this.#parentEngine = options.parent;
-		this.#logger = options.logger;
-		this.#config = options.config;
-	}
-
-	/**
-	 * Detect likely overlap between two alias keys/patterns (moved from Tempo)
-	 */
-	static isAliasCollision(a: string, b: string): boolean {
-		const left = a.trim().toLowerCase();
-		const right = b.trim().toLowerCase();
-
-		if (!left || !right) return false;
-		if (left === right) return true;
-
-		// Extract the 'core' characters to determine if they conceptually target the same word
-		const getBaseWord = (s: string) => s
-			.replace(/\[[^\]]*\]\?/g, '')                         // remove optional character classes (e.g. [ -]?)
-			.replace(/.\?/g, '')                                  // remove optional single characters (e.g. s?)
-			.replace(/[^a-z0-9]/g, '');                           // remove all non-alphanumeric characters (regex metachars, spaces, hyphens)
-
-		const baseLeft = getBaseWord(left);
-		const baseRight = getBaseWord(right);
-
-		if (!baseLeft || !baseRight) return false;
-
-		return baseLeft === baseRight;
-	}
+	#scopePrefix: string;
+	#eventAliasCount: number = 0;
+	#periodAliasCount: number = 0;
 
 	#eventMap: Map<string, AliasTarget> = new Map();
 	#periodMap: Map<string, AliasTarget> = new Map();
 	#eventCollisions: Map<string, AliasTarget[]> = new Map();
 	#periodCollisions: Map<string, AliasTarget[]> = new Map();
 
-	// Event alias management
-	registerEventAlias(name: string, target: AliasTarget): void {
-		this.#registerAliasWithCollision(name, target, this.#eventMap, this.#eventCollisions, 'event');
+	#aliasRegistry: Array<{
+		type: 'event' | 'period',
+		name: string,
+		baseWord: string,
+		target: AliasTarget,
+		index: number,
+		prefix: string,
+		groupName: string
+	}> = [];
+
+	constructor(options: AliasEngineOptions = {}) {
+		this.#parentEngine = options.parent;
+		this.#logger = options.logger;
+		this.#config = options.config;
+		if (!this.#parentEngine) {
+			this.#scopePrefix = '0';
+		} else {
+			this.#scopePrefix = `${Number(this.#parentEngine.#scopePrefix) + 1}`;
+		}
 	}
 
-	registerEvents(events: [string, AliasTarget][]): void {
+	static isAliasCollision(a: string, b: string): boolean {
+		const left = a.trim().toLowerCase();
+		const right = b.trim().toLowerCase();
+		if (!left || !right) return false;
+		if (left === right) return true;
+		const baseLeft = AliasEngine.getBaseWord(left);
+		const baseRight = AliasEngine.getBaseWord(right);
+		if (!baseLeft || !baseRight) return false;
+		return baseLeft === baseRight;
+	}
+
+	static getBaseWord(s: string): string {
+		return s
+			.replace(/\[[^\]]*\]\?/g, '')
+			.replace(/.\?/g, '')
+			.replace(/[^a-z0-9]/g, '');
+	}
+
+	registerEventAlias(name: string, target: AliasTarget): void {
+		this.#registerAliasWithCollision(name, target, this.#eventMap, this.#eventCollisions, 'event');
+		const index = this.#eventAliasCount++;
+		const prefix = this.#scopePrefix;
+		const groupName = `${prefix}evt${index}`;
+		const baseWord = AliasEngine.getBaseWord(name);
+		this.#aliasRegistry.push({ type: 'event', name, baseWord, target, index, prefix, groupName });
+	}
+
+	/**
+	 * Register event aliases and return a regex string representing the full lineage of event aliases up the proto chain.
+	 * Ensures that shadowed/collided baseNames are excluded from parent levels.
+	 */
+	registerEvents(events: [string, AliasTarget][]): string {
 		for (const [name, target] of events)
 			this.registerEventAlias(name, target);
+		const patterns: string[] = [];
+		const seenBaseNames = new Set<string>();
+		let engine: AliasEngine | undefined = this;
+		while (engine) {
+			const localGroups = engine.#aliasRegistry
+				.filter(a => a.type === 'event' && !seenBaseNames.has(a.baseWord))
+				.map(a => {
+					seenBaseNames.add(a.baseWord);
+					return `(?<${a.groupName}>${a.name})`;
+				})
+				.join('|');
+			if (localGroups) patterns.push(`(${localGroups})`);
+			engine = engine.#parentEngine;
+		}
+		return patterns.join('|');
 	}
+
+	registerPeriodAlias(name: string, target: AliasTarget): void {
+		this.#registerAliasWithCollision(name, target, this.#periodMap, this.#periodCollisions, 'period');
+		const index = this.#periodAliasCount++;
+		const prefix = this.#scopePrefix;
+		const groupName = `${prefix}per${index}`;
+		const baseWord = AliasEngine.getBaseWord(name);
+		this.#aliasRegistry.push({ type: 'period', name, baseWord, target, index, prefix, groupName });
+	}
+
+	/**
+	 * Register period aliases and return a regex string representing the full lineage of period aliases up the proto chain.
+	 * Ensures that shadowed/collided baseNames are excluded from parent levels.
+	 */
+	registerPeriods(periods: [string, AliasTarget][]): string {
+		for (const [name, target] of periods)
+			this.registerPeriodAlias(name, target);
+		const patterns: string[] = [];
+		const seenBaseNames = new Set<string>();
+		let engine: AliasEngine | undefined = this;
+		while (engine) {
+			const localGroups = engine.#aliasRegistry
+				.filter(a => a.type === 'period' && !seenBaseNames.has(a.baseWord))
+				.map(a => {
+					seenBaseNames.add(a.baseWord);
+					return `(?<${a.groupName}>${a.name})`;
+				})
+				.join('|');
+			if (localGroups) patterns.push(`(${localGroups})`);
+			engine = engine.#parentEngine;
+		}
+		return patterns.join('|');
+	}
+
 	resolveEventAlias(name: string, thisArg?: any) {
 		return this.#resolveAlias(name, this.#eventMap, thisArg);
 	}
@@ -76,15 +144,6 @@ export class AliasEngine {
 		return Object.fromEntries(this.#eventCollisions.entries());
 	}
 
-	// Period alias management
-	registerPeriodAlias(name: string, target: AliasTarget): void {
-		this.#registerAliasWithCollision(name, target, this.#periodMap, this.#periodCollisions, 'period');
-	}
-
-	registerPeriods(periods: [string, AliasTarget][]): void {
-		for (const [name, target] of periods)
-			this.registerPeriodAlias(name, target);
-	}
 	resolvePeriodAlias(name: string, thisArg?: any) {
 		return this.#resolveAlias(name, this.#periodMap, thisArg);
 	}
@@ -98,7 +157,6 @@ export class AliasEngine {
 		return Object.fromEntries(this.#periodCollisions.entries());
 	}
 
-	// Shared logic
 	#registerAliasWithCollision(
 		name: string,
 		target: AliasTarget,
@@ -125,7 +183,7 @@ export class AliasEngine {
 		// Check for parent collisions using isAliasCollision
 		let parent = this.#parentEngine;
 		while (parent) {
-			const parentAliases = type === 'event' ? parent.getAllEventAliases() : parent.getAllPeriodAliases();
+			const parentAliases = type === 'event' ? parent.getAllEventAliases() : (parent as AliasEngine).getAllPeriodAliases();
 			for (const [parentName, parentTarget] of Object.entries(parentAliases)) {
 				if (
 					parentTarget !== target &&
@@ -139,8 +197,6 @@ export class AliasEngine {
 					collisionDetected = true;
 				}
 			}
-			// Access parent's parent engine via a public way if possible, or keep it private if safe
-			// Since we're in the same class, we can still use #parentEngine for the chain
 			parent = parent.#parentEngine;
 		}
 
@@ -162,18 +218,15 @@ export class AliasEngine {
 			switch (type) {
 				case 'Function':
 					return value.call(thisArg);
-
 				case 'String':
 				case 'Number':
 					return value;
-
 				default:
 					currentEngine = currentEngine.#parentEngine;
 					if (currentEngine)
 						map = isEvent ? currentEngine.#eventMap : currentEngine.#periodMap;
 			}
 		}
-
 		return name;
 	}
 
@@ -181,10 +234,27 @@ export class AliasEngine {
 		if (!type || type === 'event') {
 			this.#eventMap.clear();
 			this.#eventCollisions.clear();
+			this.#aliasRegistry = this.#aliasRegistry.filter(a => a.type !== 'event');
+			this.#eventAliasCount = 0;
 		}
 		if (!type || type === 'period') {
 			this.#periodMap.clear();
 			this.#periodCollisions.clear();
+			this.#aliasRegistry = this.#aliasRegistry.filter(a => a.type !== 'period');
+			this.#periodAliasCount = 0;
 		}
 	}
+
+	getIndexedAliases(type: 'event' | 'period') {
+		return this.#aliasRegistry
+			.filter(a => a.type === type)
+			.map(a => ({
+				name: a.name,
+				target: a.target,
+				index: a.index,
+				prefix: a.prefix,
+				groupName: a.groupName
+			}));
+	}
 }
+
