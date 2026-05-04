@@ -114,9 +114,11 @@ export class AliasEngine {
 	registerPeriods(periods: [string, AliasTarget][]): string {
 		for (const [name, target] of periods)
 			this.registerPeriodAlias(name, target);
+
 		const patterns: string[] = [];
 		const seenBaseNames = new Set<string>();
 		let engine: AliasEngine | undefined = this;
+
 		while (engine) {
 			const localGroups = engine.#aliasRegistry
 				.filter(a => a.type === 'period' && !seenBaseNames.has(a.baseWord))
@@ -128,6 +130,7 @@ export class AliasEngine {
 			if (localGroups) patterns.push(`(${localGroups})`);
 			engine = engine.#parentEngine;
 		}
+
 		return patterns.join('|');
 	}
 
@@ -215,18 +218,22 @@ export class AliasEngine {
 
 		while (currentEngine) {
 			const { type, value } = asType(map.get(name));
+
 			switch (type) {
 				case 'Function':
 					return value.call(thisArg);
+
 				case 'String':
 				case 'Number':
 					return value;
+
 				default:
 					currentEngine = currentEngine.#parentEngine;
 					if (currentEngine)
 						map = isEvent ? currentEngine.#eventMap : currentEngine.#periodMap;
 			}
 		}
+
 		return name;
 	}
 
