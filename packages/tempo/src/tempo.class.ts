@@ -1463,6 +1463,7 @@ export class Tempo {
 	/** setup local 'config' and 'parse' rules (prototype-linked to global) */
 	#setLocal(options: t.Options = {}) {
 		const classState = (this.constructor as any)[$Internal]();
+		this.#local = Object.create(classState);
 		this.#local.config = markConfig(Object.create(classState.config));
 		Object.assign(this.#local.config, { scope: 'local' });
 
