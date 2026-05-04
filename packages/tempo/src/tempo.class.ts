@@ -150,7 +150,7 @@ export class Tempo {
 		const parent = proto(shape);
 		const engine = hasOwn(shape, 'aliasEngine')
 			? shape.aliasEngine!
-			: (shape.aliasEngine = new AliasEngine({ parent: parent.aliasEngine, logger: Tempo.#dbg }));
+			: (shape.aliasEngine = new AliasEngine({ parent: parent.aliasEngine, logger: Tempo.#dbg, config: shape.config }));
 		engine.clear('event');
 		engine.registerEvents(events);
 
@@ -200,7 +200,7 @@ export class Tempo {
 		const parent = proto(shape);
 		const engine = hasOwn(shape, 'aliasEngine')
 			? shape.aliasEngine!
-			: (shape.aliasEngine = new AliasEngine({ parent: parent.aliasEngine, logger: Tempo.#dbg }));
+			: (shape.aliasEngine = new AliasEngine({ parent: parent.aliasEngine, logger: Tempo.#dbg, config: shape.config }));
 		engine.clear('period');
 		engine.registerPeriods(periods);
 
@@ -1093,7 +1093,7 @@ export class Tempo {
 	/** allow for auto-convert of Tempo to BigInt, Number or String */
 	[Symbol.toPrimitive](hint?: 'string' | 'number' | 'default') {
 		switch (hint) {
-			case 'string': return this.toString();								// ISO 8601 string
+			case 'string': return this.toString();								// iso 8601 string
 			case 'number': return this.epoch.ms;									// Unix epoch (milliseconds)
 			default: return this.nano;														// Unix epoch (nanoseconds)
 		}
@@ -1323,9 +1323,9 @@ export class Tempo {
 	}
 
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
-	/** 4-digit ISO week-numbering year */										get yw() { return this.toDateTime().yearOfWeek }
+	/** 4-digit iso week-numbering year */										get yw() { return this.toDateTime().yearOfWeek }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
-	/** ISO week number of the year */												get ww() { return this.toDateTime().weekOfYear as t.ww }
+	/** iso week number of the year */												get ww() { return this.toDateTime().weekOfYear as t.ww }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day }
 	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
@@ -1342,7 +1342,7 @@ export class Tempo {
 	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as t.Month) }
 	/** Short weekday name (e.g., 'Mon') */										get www() { return Tempo.WEEKDAY.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
 	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Tempo.WEEKDAYS.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
-	/** ISO weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
+	/** iso weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
 	/** Nanoseconds since Unix epoch (BigInt) */							get nano() { return this.toDateTime().epochNanoseconds }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
 
@@ -1450,15 +1450,13 @@ export class Tempo {
 
 	/** the current system time localized to this instance. */toNow() { return instant().toZonedDateTimeISO(this.tz).withCalendar(this.cal) }
 	/** the date-time as a standard `Date` object. */					toDate() { return new Date(this.toDateTime().round({ smallestUnit: enums.ELEMENT.ms }).epochMilliseconds) }
-	/**ISO8601 string representation of the date-time. */
+	/** Custom JSON serialization for `JSON.stringify`. */		toJSON() { return { ...this.#local.config, value: this.toString() } }
+	/** iso8601 string representation of the date-time. */
 	toString() {
 		return (this.isValid && !this.#errored)
 			? this.toPlainDateTime().toString({ calendarName: 'never' })
 			: String(this.#tempo ?? '');
 	}
-
-	/** Custom JSON serialization for `JSON.stringify`. */
-	toJSON() { return { ...this.#local.config, value: this.toString() } }
 
 	/** setup local 'config' and 'parse' rules (prototype-linked to global) */
 	#setLocal(options: t.Options = {}) {

@@ -4,21 +4,25 @@
 
 import { asType } from '#library/type.library.js';
 import type { Logify } from '#library/logify.class.js';
+import * as t from '../tempo.type.js';
 
 export type AliasTarget = string | number | Function
 
 export interface AliasEngineOptions {
 	parent?: AliasEngine | undefined;
 	logger?: Logify | undefined;
+	config?: t.Internal.Config | undefined;
 }
 
 export class AliasEngine {
 	#parentEngine?: AliasEngineOptions["parent"];
 	#logger?: AliasEngineOptions["logger"];
+	#config?: AliasEngineOptions["config"];
 
 	constructor(options: AliasEngineOptions = {}) {
 		this.#parentEngine = options.parent;
 		this.#logger = options.logger;
+		this.#config = options.config;
 	}
 
 	/**
@@ -141,7 +145,7 @@ export class AliasEngine {
 		}
 
 		if (collisionDetected && this.#logger) {
-			this.#logger.warn(
+			this.#logger.warn(this.#config,
 				`[AliasEngine] Potential Collision detected for ${type} alias "${name}". Multiple definitions found. This may shadow or overwrite an existing alias.`
 			);
 		}
