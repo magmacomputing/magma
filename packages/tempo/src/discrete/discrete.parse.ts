@@ -291,7 +291,7 @@ const _ParseEngine = {
 			if (isEmpty(groups))
 				continue;
 
-			const hasTime = Object.keys(groups).some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key)) || Object.values(groups).includes('now');
+			const hasTime = Object.keys(groups).some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key) || (Match.named.test(key) && key.endsWith('tm'))) || Object.values(groups).includes('now');
 			_ParseEngine.result(state, { match: symKey.description, value: trim, groups: { ...groups } });
 
 			dateTime = parseZone(groups, dateTime, state.config);
@@ -342,8 +342,8 @@ const _ParseEngine = {
 			let pending: string[];
 
 			// while ((pending = ownKeys(groups).filter(k => (Match.event.test(k) || Match.period.test(k) || k === 'slk') && !resolved.has(k))).length > 0) {
-		while ((pending = ownKeys(groups).filter(k => (aliasEngine?.hasAlias(k) || k === 'slk') && !resolved.has(k))).length > 0) {
-			const key = pending[0];
+			while ((pending = ownKeys(groups).filter(k => (aliasEngine?.hasAlias(k) || k === 'slk' || Match.named.test(k)) && !resolved.has(k))).length > 0) {
+				const key = pending[0];
 
 				if (key === 'slk') {
 					const slk = groups[key];

@@ -17,8 +17,9 @@ const bracket_content = /[^\]]+/;
 export const Match = proxify({
 	/** match all {} pairs, if they start with a word char */	braces: /{([#]?[\w]+(?:\.[\w]+)*)}/g,
 	/** named capture-group, if it starts with a letter */		captures: /\(\?<([a-zA-Z][\w]*)>(.*?)(?<!\\)\)/g,
-	/** event */																							event: /^([gl])?evt(?<idx>[0-9]+)$|^g?dt$/,
-	/** period */																							period: /^([gl])?per(?<idx>[0-9]+)$|^g?tm$/,
+	/** event */																							event: /^evt\d+_\d+$/,
+	/** period */																							period: /^per\d+_\d+$/,
+	/** structural */																					named: /^g?dt$|^g?tm$/,
 	/** two digit year */																			twoDigit: /^[0-9]{2}$/,
 	/** date */																								date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/,
 	/** time */																								time: /^[0-9]{2}:[0-9]{2}(:[0-9]{2})?$/,
