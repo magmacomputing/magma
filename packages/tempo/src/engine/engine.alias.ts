@@ -16,13 +16,13 @@
 
 import type { Nullable } from '#library/type.library.js';
 import type { Logify } from '#library/logify.class.js';
-import * as t from '../tempo.type.js';
 import { isFunction } from '#library';
 import { ownEntries } from '#library/primitive.library.js';
+import * as t from '../tempo.type.js';
 
 export type AliasTarget = string | number | Function
 type AliasType = 'evt' | 'per';
-type AliasKey = `${number}${AliasType}${number}`;
+ type AliasKey = `${AliasType}${number}_${number}`;
 type State = Record<AliasKey, Registry>
 
 export interface AliasEngineOptions {
@@ -86,7 +86,7 @@ export class AliasEngine {
 	 */
 	registerAliases(type: AliasType, events: [string, AliasTarget][]) {
 		for (const [name, target] of events) {
-			const aliasKey = `${this.#depth}${type}${this.#count[type]++}` as AliasKey;
+			const aliasKey = `${type}${this.#depth}_${this.#count[type]++}` as AliasKey;
 			const baseWord = AliasEngine.#getBaseWord(name);
 			const collision = baseWord in this.#words;						// check for collision with existing base words in this engine and parent engines
 

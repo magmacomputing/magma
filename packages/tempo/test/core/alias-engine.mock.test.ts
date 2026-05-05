@@ -1,4 +1,4 @@
-import { AliasEngine } from '../src/engine/engine.alias.js';
+import { AliasEngine } from '../../src/engine/engine.alias.js';
 
 describe('AliasEngine', () => {
   it('assigns correct prefixes and group names for root and children', () => {
@@ -8,9 +8,9 @@ describe('AliasEngine', () => {
     root.registerAliases('evt', [ ['rootEvent', 'rootValue'] ]);
     child1.registerAliases('evt', [ ['child1Event', 'child1Value'] ]);
     child2.registerAliases('evt', [ ['child2Event', 'child2Value'] ]);
-    expect(root.getAliases('evt')[0].key).toBe('0evt0');
-    expect(child1.getAliases('evt')[0].key).toBe('1evt0');
-    expect(child2.getAliases('evt')[0].key).toBe('1evt0');
+    expect(root.getAliases('evt')[0].key).toBe('evt0_0');
+    expect(child1.getAliases('evt')[0].key).toBe('evt1_0');
+    expect(child2.getAliases('evt')[0].key).toBe('evt1_0');
   });
 
   it('returns correct lineage from registerEvents/registerPeriods', () => {
@@ -21,13 +21,13 @@ describe('AliasEngine', () => {
     const periodPattern = root.registerAliases('per', periods);
     const eventLineage = root.getAliases('evt');
     const periodLineage = root.getAliases('per');
-    expect(eventPattern).toBe('(?<0evt0>a)|(?<0evt1>b)');
-    expect(periodPattern).toBe('(?<0per0>x)|(?<0per1>y)');
+    expect(eventPattern).toBe('(?<evt0_0>a)|(?<evt0_1>b)');
+    expect(periodPattern).toBe('(?<per0_0>x)|(?<per0_1>y)');
 
-    expect(eventLineage[0].key).toBe('0evt0');
-    expect(eventLineage[1].key).toBe('0evt1');
-    expect(periodLineage[0].key).toBe('0per0');
-    expect(periodLineage[1].key).toBe('0per1');
+    expect(eventLineage[0].key).toBe('evt0_0');
+    expect(eventLineage[1].key).toBe('evt0_1');
+    expect(periodLineage[0].key).toBe('per0_0');
+    expect(periodLineage[1].key).toBe('per0_1');
   });
 
   it('resolves aliases up the proto chain', () => {
@@ -35,8 +35,8 @@ describe('AliasEngine', () => {
     const child = new AliasEngine({ parent: root });
     root.registerAliases('evt', [ ['rootEvent', 'rootValue'] ]);
     child.registerAliases('evt', [ ['childEvent', 'childValue'] ]);
-    expect(child.resolveAlias('0evt0')).toBe('rootValue');
-    expect(child.resolveAlias('1evt0')).toBe('childValue');
+    expect(child.resolveAlias('evt0_0')).toBe('rootValue');
+    expect(child.resolveAlias('evt1_0')).toBe('childValue');
   });
 
   it('clears aliases correctly', () => {
