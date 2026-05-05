@@ -147,8 +147,12 @@ export class AliasEngine {
 		if (!register) return name;
 
 		return isFunction(register.target)
-			? register.target.call(thisArg)
+			? register.target.call(thisArg).toString()
 			: register.target;
+	}
+
+	getAlias(key: string): Registry | undefined {
+		return this.#state[key as AliasKey];
 	}
 
 	getAliases(type?: AliasType) {

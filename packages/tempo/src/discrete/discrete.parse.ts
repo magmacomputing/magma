@@ -339,15 +339,14 @@ const _ParseEngine = {
 
 		try {
 			const resolved = new Set<string>();
-			let pending: string[];
 
-			// while ((pending = ownKeys(groups).filter(k => (Match.event.test(k) || Match.period.test(k) || k === 'slk') && !resolved.has(k))).length > 0) {
-			while ((pending = ownKeys(groups).filter(k => (aliasEngine?.hasAlias(k) || k === 'slk' || Match.named.test(k)) && !resolved.has(k))).length > 0) {
-				const key = pending[0];
+			for (const key of ownKeys(groups)) {
+				if (resolved.has(key)) continue;
 
 				if (key === 'slk') {
 					const slk = groups[key];
 					const result = resolveTermMutation(TempoClass, state as any, 'set', slk, undefined, dateTime);
+
 					if (result === null) {
 						state.errored = true;
 						resolved.add(key);
@@ -360,30 +359,16 @@ const _ParseEngine = {
 					continue;
 				}
 
-				const isEvent = Match.event.test(key);
-				const isGlobal = key.startsWith('g');
-				const isNamed = key === 'gdt' || key === 'dt' || key === 'gtm' || key === 'tm';
-				const idx = isNamed ? -1 : +(key.match(/\d+$/)?.[0] ?? -1);
-
-				if (isNamed) {
+				if (Match.named.test(key)) {												// remove structural markers
 					resolved.add(key);
 					delete groups[key];
 					continue;
 				}
 
-				const globalParse = isGlobal ? (TempoClass as any)?.[sym.$Internal]?.().parse : undefined;
-				const src = isGlobal
-					? (isEvent ? globalParse?.event : globalParse?.period)
-					: (isEvent ? state.parse.event : state.parse.period);
-				const entry = ownEntries(src, true)[idx];
+				const register = aliasEngine.getAlias(key);
+				if (!register) continue;
 
-				if (!entry) {
-					resolved.add(key);
-					delete groups[key];
-					continue;
-				}
-
-				const aliasKey = entry[0] as string;
+				const aliasKey = register.name;
 				if (resolvingKeys.size > 50 || resolvingKeys.has(aliasKey)) {
 					const msg = `Infinite recursion detected in Tempo resolution for: ${aliasKey}`;
 					state.errored = true;
@@ -396,18 +381,16 @@ const _ParseEngine = {
 				resolvingKeys.add(aliasKey);
 				resolved.add(key);
 
-				const definition = entry[1];
+				const isEvent = register.type === 'evt';
+				const definition = register.target;
 				const isFn = isFunction(definition);
 				let res: string = '';
+
 				if (isFn) {
 					// Provide a lightweight host context that mimics a Tempo instance for the handler
 					const host = {
-						add: (val: any) => {
-							return dateTime.add(val);
-						},
-						subtract: (val: any) => {
-							return dateTime.subtract(val);
-						},
+						add: (val: any) => dateTime.add(val),
+						subtract: (val: any) => dateTime.subtract(val),
 						with: (val: any) => dateTime.with(val),
 						set: (val: any, opt?: any) => {
 							const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
@@ -448,10 +431,12 @@ const _ParseEngine = {
 
 				try {
 					const type = isEvent ? 'Event' : 'Period';
-					const pat = (isEvent ? 'dt' : 'tm');
+					const pat = isEvent ? 'dt' : 'tm';
 					const resolveVal = isFn ? res : definition;
-					const source = isGlobal ? 'global' : 'local';
-					_ParseEngine.result(state, { type, value: entry[0] as any, match: pat, source, groups: { [key]: resolveVal as string } });
+					const depth = parseInt(key.match(/\d+/)?.[0] ?? '0');
+					const source = depth === 0 ? 'global' : 'local';
+
+					_ParseEngine.result(state, { type, value: aliasKey as any, match: pat, source, groups: { [key]: resolveVal as string } });
 
 					// Protect against recursive re-evaluation of same alias
 					if (!isEmpty(res) && res !== String(groups[key])) {
