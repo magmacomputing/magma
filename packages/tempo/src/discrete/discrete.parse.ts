@@ -326,7 +326,7 @@ const _ParseEngine = {
 	/** resolve {event} | {period} to their date | time values (mutates groups) */
 	parseGroups(state: t.Internal.State, groups: t.Groups, dateTime: Temporal.ZonedDateTime, isAnchored: boolean, resolvingKeys: Set<string>): Temporal.ZonedDateTime {
 		const TempoClass = getRuntime().modules['Tempo'];
-		const aliasEngine = state.aliasEngine!;
+		const aliasEngine = state.aliasEngine;
 		const prevAnchor = state.anchor;
 		const prevZdt = state.zdt;
 
@@ -338,34 +338,28 @@ const _ParseEngine = {
 		if (isRoot) state.matches = [];
 
 		try {
-			const resolved = new Set<string>();
-
 			for (const key of ownKeys(groups)) {
-				if (resolved.has(key)) continue;
-
 				if (key === 'slk') {
 					const slk = groups[key];
 					const result = resolveTermMutation(TempoClass, state as any, 'set', slk, undefined, dateTime);
 
 					if (result === null) {
 						state.errored = true;
-						resolved.add(key);
 						delete groups[key];
 						break;
 					}
+
 					dateTime = result;
-					resolved.add(key);
 					delete groups[key];
 					continue;
 				}
 
-				if (Match.named.test(key)) {												// remove structural markers
-					resolved.add(key);
+				if (Match.named.test(key)) { 												// remove structural markers
 					delete groups[key];
 					continue;
 				}
 
-				const register = aliasEngine.getAlias(key);
+				const register = aliasEngine?.getAlias(key);
 				if (!register) continue;
 
 				const aliasKey = register.name;
@@ -373,73 +367,55 @@ const _ParseEngine = {
 					const msg = `Infinite recursion detected in Tempo resolution for: ${aliasKey}`;
 					state.errored = true;
 					if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new RangeError(msg));
-					resolved.add(key);
 					delete groups[key];
 					continue;
 				}
 
 				resolvingKeys.add(aliasKey);
-				resolved.add(key);
 
+				const isFn = isFunction(register.target);
+
+				// Provide a lightweight host context that mimics a Tempo instance for the handler
+				const host = {
+					add: (val: any) => dateTime.add(val),
+					subtract: (val: any) => dateTime.subtract(val),
+					with: (val: any) => dateTime.with(val),
+					set: (val: any, opt?: any) => {
+						const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
+						return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
+					},
+					toNow: () => instant().toZonedDateTimeISO(state.config.timeZone).withCalendar(state.config.calendar),
+					toDateTime: () => dateTime,
+					get hh() { return dateTime.hour },
+					get mi() { return dateTime.minute },
+					get ss() { return dateTime.second },
+					get yy() { return dateTime.year },
+					get mm() { return dateTime.month },
+					get dd() { return dateTime.day },
+					[sym.$Identity]: true,
+					config: state.config
+				};
+
+				const res = String(aliasEngine?.resolveAlias(key as any, host) ?? '');
 				const isEvent = register.type === 'evt';
-				const definition = register.target;
-				const isFn = isFunction(definition);
-				let res: string = '';
-
-				if (isFn) {
-					// Provide a lightweight host context that mimics a Tempo instance for the handler
-					const host = {
-						add: (val: any) => dateTime.add(val),
-						subtract: (val: any) => dateTime.subtract(val),
-						with: (val: any) => dateTime.with(val),
-						set: (val: any, opt?: any) => {
-							const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
-							return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
-						},
-						toNow: () => instant().toZonedDateTimeISO(state.config.timeZone).withCalendar(state.config.calendar),
-						toDateTime: () => dateTime,
-						get hh() { return dateTime.hour },
-						get mi() { return dateTime.minute },
-						get ss() { return dateTime.second },
-						get yy() { return dateTime.year },
-						get mm() { return dateTime.month },
-						get dd() { return dateTime.day },
-						[sym.$Identity]: true,
-						config: state.config
-					};
-
-					const result = (definition as Function).call(host);
-					if (isString(result) && /^(?:[01]?\d|2[0-3]):[0-5]\d$/.test(result)) {
-						const [hourStr, minuteStr] = result.split(':');
-						const hour = Number(hourStr);
-						const minute = Number(minuteStr);
-						dateTime = dateTime.with({ hour, minute, second: 0, millisecond: 0 });
-						res = '';
-					} else if (isTempo(result)) {
-						dateTime = (result as any).toDateTime();
-					} else if (isZonedDateTime(result)) {
-						dateTime = result as Temporal.ZonedDateTime;
-					} else if (isObject(result) && isFunction((result as any).toDateTime)) {
-						dateTime = (result as any).toDateTime();
-					} else {
-						res = isString(result) || isNumeric(result) ? String(result) : '';
-					}
-					state.zdt = dateTime;
-				} else {
-					res = (definition as string);
-				}
 
 				try {
 					const type = isEvent ? 'Event' : 'Period';
 					const pat = isEvent ? 'dt' : 'tm';
-					const resolveVal = isFn ? res : definition;
 					const depth = parseInt(key.match(/\d+/)?.[0] ?? '0');
 					const source = depth === 0 ? 'global' : 'local';
 
-					_ParseEngine.result(state, { type, value: aliasKey as any, match: pat, source, groups: { [key]: resolveVal as string } });
+					_ParseEngine.result(state, { type, value: aliasKey as any, match: pat, source, groups: { [key]: res } });
 
-					// Protect against recursive re-evaluation of same alias
-					if (!isEmpty(res) && res !== String(groups[key])) {
+					// If the alias resolved to a time-snap (hh:mm), we handle it directly
+					if (isFn && Match.clock.test(res)) {
+						const [hourStr, minuteStr] = res.split(':');
+						const hour = Number(hourStr);
+						const minute = Number(minuteStr);
+						dateTime = dateTime.with({ hour, minute, second: 0, millisecond: 0 });
+					}
+					// Otherwise, if it resolved to a new string, we re-parse it
+					else if (!isEmpty(res) && res !== String(groups[key])) {
 						const resolving = new Set(resolvingKeys);
 						resolving.add(aliasKey);
 						// Explicitly propagate anchor for recursive parse
@@ -452,6 +428,7 @@ const _ParseEngine = {
 							dateTime = resMatch.value;
 					}
 				} finally {
+					state.zdt = dateTime;
 					delete groups[key];
 				}
 			}

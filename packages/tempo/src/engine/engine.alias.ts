@@ -16,7 +16,7 @@
 
 import type { Nullable } from '#library/type.library.js';
 import type { Logify } from '#library/logify.class.js';
-import { isFunction } from '#library';
+import { isDefined, isFunction } from '#library';
 import { ownEntries } from '#library/primitive.library.js';
 import * as t from '../tempo.type.js';
 
@@ -146,9 +146,14 @@ export class AliasEngine {
 		const register = this.#state[name];
 		if (!register) return name;
 
-		return isFunction(register.target)
-			? register.target.call(thisArg).toString()
-			: register.target;
+		if (isFunction(register.target)) {
+			const result = register.target.call(thisArg);
+			return isDefined(result)
+				? result.toString()
+				: ''
+		}
+
+		return register.target;
 	}
 
 	getAlias(key: string): Registry | undefined {

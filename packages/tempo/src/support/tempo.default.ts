@@ -23,6 +23,7 @@ export const Match = proxify({
 	/** two digit year */																			twoDigit: /^[0-9]{2}$/,
 	/** date */																								date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/,
 	/** time */																								time: /^[0-9]{2}:[0-9]{2}(:[0-9]{2})?$/,
+	/** clock (HH:mm) */																			clock: /^(?:[01]?\d|2[0-3]):[0-5]\d$/,
 	/** separator characters (/ - . , T) */										separator: /[T\/\-\.\s,]/,
 	/** modifier characters (+-<>=) */												modifier: /[\+\-\<\>][\=]?|this|next|prev|last/,
 	/** offset post keywords (ago|hence) */										affix: /ago|hence|from now/,
