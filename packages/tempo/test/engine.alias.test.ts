@@ -5,43 +5,48 @@ describe('AliasEngine', () => {
     const root = new AliasEngine();
     const child1 = new AliasEngine({ parent: root });
     const child2 = new AliasEngine({ parent: root });
-    root.registerEventAlias('rootEvent', 'rootValue');
-    child1.registerEventAlias('child1Event', 'child1Value');
-    child2.registerEventAlias('child2Event', 'child2Value');
-    expect(root.getIndexedAliases('event')[0].groupName).toBe('0evt0');
-    expect(child1.getIndexedAliases('event')[0].groupName).toBe('1evt0');
-    expect(child2.getIndexedAliases('event')[0].groupName).toBe('1evt0');
+    root.registerAliases('evt', [ ['rootEvent', 'rootValue'] ]);
+    child1.registerAliases('evt', [ ['child1Event', 'child1Value'] ]);
+    child2.registerAliases('evt', [ ['child2Event', 'child2Value'] ]);
+    expect(root.getAliases('evt')[0].key).toBe('0evt0');
+    expect(child1.getAliases('evt')[0].key).toBe('1evt0');
+    expect(child2.getAliases('evt')[0].key).toBe('1evt0');
   });
 
   it('returns correct lineage from registerEvents/registerPeriods', () => {
     const root = new AliasEngine();
     const events = [ ['a', 'A'], ['b', 'B'] ] as [string, string][];
     const periods = [ ['x', 'X'], ['y', 'Y'] ] as [string, string][];
-    const eventLineage = root.registerEvents(events);
-    const periodLineage = root.registerPeriods(periods);
-    expect(eventLineage[0].groupName).toBe('0evt0');
-    expect(eventLineage[1].groupName).toBe('0evt1');
-    expect(periodLineage[0].groupName).toBe('0per0');
-    expect(periodLineage[1].groupName).toBe('0per1');
+    const eventPattern = root.registerAliases('evt', events);
+    const periodPattern = root.registerAliases('per', periods);
+    const eventLineage = root.getAliases('evt');
+    const periodLineage = root.getAliases('per');
+    expect(eventPattern).toBe('(?<0evt0>a)|(?<0evt1>b)');
+    expect(periodPattern).toBe('(?<0per0>x)|(?<0per1>y)');
+
+    expect(eventLineage[0].key).toBe('0evt0');
+    expect(eventLineage[1].key).toBe('0evt1');
+    expect(periodLineage[0].key).toBe('0per0');
+    expect(periodLineage[1].key).toBe('0per1');
   });
 
   it('resolves aliases up the proto chain', () => {
     const root = new AliasEngine();
     const child = new AliasEngine({ parent: root });
-    root.registerEventAlias('rootEvent', 'rootValue');
-    child.registerEventAlias('childEvent', 'childValue');
-    expect(child.resolveEventAlias('rootEvent')).toBe('rootValue');
-    expect(child.resolveEventAlias('childEvent')).toBe('childValue');
+    root.registerAliases('evt', [ ['rootEvent', 'rootValue'] ]);
+    child.registerAliases('evt', [ ['childEvent', 'childValue'] ]);
+    expect(child.resolveAlias('0evt0')).toBe('rootValue');
+    expect(child.resolveAlias('1evt0')).toBe('childValue');
   });
 
   it('clears aliases correctly', () => {
     const root = new AliasEngine();
-    root.registerEventAlias('e1', 'v1');
-    root.registerPeriodAlias('p1', 'v2');
-    root.clear('event');
-    expect(root.getIndexedAliases('event').length).toBe(0);
-    expect(root.getIndexedAliases('period').length).toBe(1);
-    root.clear('period');
-    expect(root.getIndexedAliases('period').length).toBe(0);
+    root.registerAliases('evt', [ ['e1', 'v1'] ]);
+    root.registerAliases('per', [ ['p1', 'v2'] ]);
+    root.clear('evt');
+    expect(root.getAliases('evt').length).toBe(0);
+    expect(root.getAliases('per').length).toBe(1);
+    root.clear('per');
+    expect(root.getAliases('per').length).toBe(0);
   });
 });

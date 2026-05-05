@@ -151,13 +151,12 @@ export class Tempo {
 		const engine = hasOwn(shape, 'aliasEngine')
 			? shape.aliasEngine!
 			: (shape.aliasEngine = new AliasEngine({ parent: parent.aliasEngine, logger: Tempo.#dbg, config: shape.config }));
-		engine.clear('event');
-		engine.registerEvents(events);
+		const groups = engine.registerAliases('evt', events);
 
-		const src = shape.config.scope === 'global' ? 'g' : 'l';// 'g'lobal or 'l'ocal (sandbox also uses 'l')
-		const groups = events
-			.map(([pat, _], idx) => `(?<${src}evt${idx}>${pat})`)	// assign a number to the pattern
-			.join('|')																						// make an 'Or' pattern for the event-keys
+		// const src = shape.config.scope === 'global' ? 'g' : 'l';// 'g'lobal or 'l'ocal (sandbox also uses 'l')
+		// const groups = events
+		// 	.map(([pat, _], idx) => `(?<${src}evt${idx}>${pat})`)	// assign a number to the pattern
+		// 	.join('|')																						// make an 'Or' pattern for the event-keys
 
 		if (groups) {
 			const protoEvt = proto(shape.parse.snippet)[Token.evt]?.source;
@@ -201,13 +200,12 @@ export class Tempo {
 		const engine = hasOwn(shape, 'aliasEngine')
 			? shape.aliasEngine!
 			: (shape.aliasEngine = new AliasEngine({ parent: parent.aliasEngine, logger: Tempo.#dbg, config: shape.config }));
-		engine.clear('period');
-		engine.registerPeriods(periods);
+		const groups = engine.registerAliases('per', periods);
 
-		const src = shape.config.scope === 'global' ? 'g' : 'l';// 'g'lobal or 'l'ocal (sandbox also uses 'l')
-		const groups = periods
-			.map(([pat, _], idx) => `(?<${src}per${idx}>${pat})`)	// {pattern} is the 1st element of the tuple
-			.join('|')																						// make an 'or' pattern for the period-keys
+		// const src = shape.config.scope === 'global' ? 'g' : 'l';// 'g'lobal or 'l'ocal (sandbox also uses 'l')
+		// const groups = periods
+		// 	.map(([pat, _], idx) => `(?<${src}per${idx}>${pat})`)	// {pattern} is the 1st element of the tuple
+		// 	.join('|')																						// make an 'or' pattern for the period-keys
 
 		if (groups) {
 			const protoPer = proto(shape.parse.snippet)[Token.per]?.source;
