@@ -22,7 +22,7 @@ import * as t from '../tempo.type.js';
 
 export type AliasTarget = string | number | Function
 type AliasType = 'evt' | 'per';
- type AliasKey = `${AliasType}${number}_${number}`;
+type AliasKey = `${AliasType}${number}_${number}`;
 type State = Record<AliasKey, Registry>
 
 export interface AliasEngineOptions {
@@ -40,6 +40,15 @@ interface Registry {																				// information about each registered ali
 }
 
 export class AliasEngine {
+	static aliasPattern = /^(evt|per)(\d+)_(\d+)$/;
+
+	static #getBaseWord(s: string): string {
+		return s
+			.replace(/\[[^\]]*\]\?/g, '')
+			.replace(/.\?/g, '')
+			.replace(/[^a-z0-9]/g, '');
+	}
+
 	#parent?: AliasEngineOptions["parent"];
 	#logger?: AliasEngineOptions["logger"];
 	#config?: AliasEngineOptions["config"];
@@ -68,13 +77,6 @@ export class AliasEngine {
 		}
 
 		this.#count = { evt: 0, per: 0 };
-	}
-
-	static #getBaseWord(s: string): string {
-		return s
-			.replace(/\[[^\]]*\]\?/g, '')
-			.replace(/.\?/g, '')
-			.replace(/[^a-z0-9]/g, '');
 	}
 
 	/**
@@ -132,8 +134,12 @@ export class AliasEngine {
 		return patterns.join('|');
 	}
 
-	hasAlias(name: AliasKey) {
-		return name in this.#state;
+	hasAlias(name: string, type?: AliasType) {
+		return !(name in this.#state)
+			? false
+			: type
+				? this.#state[name as AliasKey].type === type
+				: true
 	}
 
 	resolveAlias(name: AliasKey, thisArg?: any) {

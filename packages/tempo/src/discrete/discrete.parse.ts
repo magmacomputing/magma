@@ -326,6 +326,7 @@ const _ParseEngine = {
 	/** resolve {event} | {period} to their date | time values (mutates groups) */
 	parseGroups(state: t.Internal.State, groups: t.Groups, dateTime: Temporal.ZonedDateTime, isAnchored: boolean, resolvingKeys: Set<string>): Temporal.ZonedDateTime {
 		const TempoClass = getRuntime().modules['Tempo'];
+		const aliasEngine = state.aliasEngine!;
 		const prevAnchor = state.anchor;
 		const prevZdt = state.zdt;
 
@@ -340,8 +341,9 @@ const _ParseEngine = {
 			const resolved = new Set<string>();
 			let pending: string[];
 
-			while ((pending = ownKeys(groups).filter(k => (Match.event.test(k) || Match.period.test(k) || k === 'slk') && !resolved.has(k))).length > 0) {
-				const key = pending[0];
+			// while ((pending = ownKeys(groups).filter(k => (Match.event.test(k) || Match.period.test(k) || k === 'slk') && !resolved.has(k))).length > 0) {
+		while ((pending = ownKeys(groups).filter(k => (aliasEngine?.hasAlias(k) || k === 'slk') && !resolved.has(k))).length > 0) {
+			const key = pending[0];
 
 				if (key === 'slk') {
 					const slk = groups[key];
