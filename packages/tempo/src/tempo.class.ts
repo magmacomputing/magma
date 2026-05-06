@@ -1467,7 +1467,7 @@ export class Tempo {
 		this.#local.parse.period = { ...classState.parse.period };
 		this.#local.parse.snippet = { ...classState.parse.snippet };
 		this.#local.parse.planner = {
-			...(classState.parse.planner.layoutOrder ? { layoutOrder: [...asArray<string>(classState.parse.planner.layoutOrder)] } : {}),
+			...(classState.parse.planner.layoutOrder ? { layoutOrder: [...asArray<string | symbol>(classState.parse.planner.layoutOrder)] } : {}),
 			...(isDefined(classState.parse.planner.preFilter) ? { preFilter: Boolean(classState.parse.planner.preFilter) } : {}),
 		};
 		this.#local.parse.monthDay = {

@@ -46,10 +46,10 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			} : {})
 		} : resolveMonthDay({}, Default.monthDay as any),
 		planner: baseState ? {
-			...(baseState.parse.planner.layoutOrder ? { layoutOrder: [...asArray<string>(baseState.parse.planner.layoutOrder)] } : {}),
+			...(baseState.parse.planner.layoutOrder ? { layoutOrder: [...asArray<string | symbol>(baseState.parse.planner.layoutOrder)] } : {}),
 			...(isDefined(baseState.parse.planner.preFilter) ? { preFilter: Boolean(baseState.parse.planner.preFilter) } : {}),
 		} : {
-			layoutOrder: asArray<string>(Default.planner?.layoutOrder ?? (Default as any).layoutOrder),
+			layoutOrder: [...asArray<string | symbol>(Default.planner?.layoutOrder ?? (Default as any).layoutOrder)],
 			preFilter: Boolean(Default.planner?.preFilter ?? (Default as any).preFilter),
 		},
 		pivot: (baseState?.parse.pivot ?? Default.pivot) as any,

@@ -69,7 +69,7 @@ export class AliasEngine {
 	#depth: number;																						// the depth of this engine in the proto chain
 	#count: Record<AliasType, number>;												// count of aliases registered at this level (used for indexing)														
 	#state: State;																						// object that holds alias mappings, collisions, and registry for this engine 
-	#words: Record<string, string>;														// object of base words for collision detection
+	#words: Record<string, AliasKey>;													// object of base words for collision detection
 	#id: number;
 	#version = 0;
 
@@ -78,6 +78,7 @@ export class AliasEngine {
 	}
 	get id() { return this.#id }
 	get parent() { return this.#parent }
+	getWords() { return this.#words }
 
 	constructor(options = {} as AliasEngineOptions) {
 		this.#parent = options.parent ?? null;
@@ -86,8 +87,11 @@ export class AliasEngine {
 		this.#id = AliasEngine.#idCounter++;
 
 		if (this.#parent) {
-			if (!(this.#parent instanceof AliasEngine))
-				this.#logger?.error(this.#config, "Parent engine must be an instance of AliasEngine");
+			if (!(this.#parent instanceof AliasEngine)) {
+				const msg = "Parent engine must be an instance of AliasEngine";
+				this.#logger?.error(this.#config, msg);
+				throw new TypeError(msg);
+			}
 
 			this.#depth = this.#parent.#depth + 1;
 			this.#state = Object.create(this.#parent.#state);			// create a new state object that inherits from the parent engine's state
@@ -114,20 +118,26 @@ export class AliasEngine {
 			const aliasKey = `${type}${this.#depth}_${index}` as AliasKey;
 
 			const baseWord = AliasEngine.#getBaseWord(name);
-			const collision = baseWord in this.#words;						// check for collision with existing base words in this engine and parent engines
+			const existingKey = this.#words[baseWord];
+			const existing = existingKey ? this.getAlias(existingKey) : undefined;
+			const shouldOverwrite = !(existing?.type === 'evt' && type === 'per');
 
-			if (collision && this.#logger)
+			if (this.#logger && baseWord in this.#words) {
 				this.#logger.warn(this.#config,
-					`[AliasEngine] Collision detected for ${type} alias "${name}". This may overwrite an existing alias.`
+					`[AliasEngine] Collision detected for ${type} alias "${name}". ${shouldOverwrite ? 'Overwriting' : 'Preserving'} existing alias.`
 				);
+			}
 
-			this.#words[baseWord] = aliasKey;													// track the base word for collision detection
+			if (shouldOverwrite) {
+				this.#words[baseWord] = aliasKey;
+			}
+
 			this.#state[aliasKey] = {
 				name,																								// plain string or regex-like string
 				target,																							// string, number, or function
 				type,																								// 'evt' or 'per'
 				baseWord,																						// used for collision detection
-				collision,																					// needed ?
+				collision: baseWord in this.#words,
 				depth: this.#depth,
 			}
 		}
@@ -142,14 +152,15 @@ export class AliasEngine {
 	 * it won't be included in the regex patterns of the parent engine,  
 	 * preventing unintended matches and preserving the expected behavior of alias resolution.
 	 */
-	getPatterns(type: AliasType, seenBaseNames = new Set<string>()): string | undefined {
+	getPatterns(type: AliasType, seenBaseNames = new Set<string>(), winnerLookup?: Record<string, AliasKey>): string | undefined {
 		const patterns: string[] = [];
+		const winners = winnerLookup ?? this.#words;
 
 		for (const [alias, register] of ownEntries(this.#state)) {
 			if (register.type === type && !seenBaseNames.has(register.baseWord)) {
 				// Check for cross-type collision priority (Events win over Periods)
 				if (type === 'per') {
-					const winnerKey = this.#words[register.baseWord];
+					const winnerKey = winners[register.baseWord];
 					const winner = this.getAlias(winnerKey);
 					if (winner && winner.type === 'evt') {
 						continue; // Skip period if an event is using the same baseWord
@@ -162,7 +173,7 @@ export class AliasEngine {
 		}
 
 		if (this.#parent) {
-			const parentPatterns = this.#parent.getPatterns(type, seenBaseNames);
+			const parentPatterns = this.#parent.getPatterns(type, seenBaseNames, winners);
 			if (parentPatterns) patterns.push(parentPatterns);
 		}
 

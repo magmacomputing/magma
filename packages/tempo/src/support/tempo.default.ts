@@ -203,10 +203,11 @@ export const Default = secure({
 	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
 	/** internationalization configuration */									intl: IntlDefault,
 	/** parse planner configuration (layoutOrder, etc.) */		planner: {
-		// layoutOrder: [
-		// 	Token.hms, Token.dmy6, Token.mdy6, Token.ymd6, Token.wkd,
-		// 	Token.dt, Token.tm, Token.dtm, Token.tmd, Token.dmy, Token.mdy, Token.ymd,
-		// 	Token.off, Token.rel
-		// ], preFilter: false
+		layoutOrder: [
+			Token.hms, Token.dmy6, Token.mdy6, Token.ymd6, Token.wkd,
+			Token.dt, Token.tm, Token.dtm, Token.tmd, Token.dmy, Token.mdy, Token.ymd,
+			Token.off, Token.rel
+		],
+		preFilter: false
 	},
 } as Options)
