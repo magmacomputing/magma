@@ -28,7 +28,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	}) as t.Internal.State;
 
 	// 1. Establish the base parsing state
-	state.parse = markConfig({
+	const parseState: t.Internal.Parse = {
 		token: Token,
 		result: [],
 		snippet: Object.assign({}, baseState?.parse.snippet ?? Snippet),
@@ -36,10 +36,18 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		event: Object.assign({}, baseState?.parse.event ?? Event),
 		period: Object.assign({}, baseState?.parse.period ?? Period),
 		ignore: baseState ? { ...baseState.parse.ignore } : Object.fromEntries(asArray(Ignore).map(w => [w, w])),
-		monthDay: baseState ? resolveMonthDay({ ...baseState.parse.monthDay }, baseState.parse.monthDay) : resolveMonthDay({}, Default.monthDay as any),
+		monthDay: baseState ? {
+			...baseState.parse.monthDay,
+			locales: [...asArray(baseState.parse.monthDay.locales)],
+			layouts: [...asArray(baseState.parse.monthDay.layouts)],
+			timezones: { ...baseState.parse.monthDay.timezones },
+			...(baseState.parse.monthDay.resolvedLocales ? {
+				resolvedLocales: baseState.parse.monthDay.resolvedLocales.map((l: any) => ({ ...l, timeZones: [...l.timeZones] }))
+			} : {})
+		} : resolveMonthDay({}, Default.monthDay as any),
 		planner: baseState ? {
-			layoutOrder: [...asArray<string>(baseState.parse.planner.layoutOrder)],
-			preFilter: Boolean(baseState.parse.planner.preFilter),
+			...(baseState.parse.planner.layoutOrder ? { layoutOrder: [...asArray<string>(baseState.parse.planner.layoutOrder)] } : {}),
+			...(isDefined(baseState.parse.planner.preFilter) ? { preFilter: Boolean(baseState.parse.planner.preFilter) } : {}),
 		} : {
 			layoutOrder: asArray<string>(Default.planner?.layoutOrder ?? (Default as any).layoutOrder),
 			preFilter: Boolean(Default.planner?.preFilter ?? (Default as any).preFilter),
@@ -48,7 +56,16 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		mode: (baseState?.parse.mode ?? Default.mode) as any,
 		lazy: false,
 		pattern: new Map(baseState?.parse.pattern),
-	});
+		...(baseState ? {
+			...(isDefined(baseState.parse.isAnchored) ? { isAnchored: baseState.parse.isAnchored } : {}),
+			...(isDefined(baseState.parse.anchor) ? { anchor: baseState.parse.anchor } : {}),
+			...(isDefined(baseState.parse.format) ? { format: baseState.parse.format } : {}),
+			...(isDefined(baseState.parse.term) ? { term: baseState.parse.term } : {}),
+			...(isDefined(baseState.parse.guard) ? { guard: baseState.parse.guard } : {}),
+		} : {})
+	};
+
+	state.parse = markConfig(parseState);
 
 	// 2. Establish the base configuration options
 	const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => enums.CONFIG.has(key)));

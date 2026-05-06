@@ -152,6 +152,7 @@ export class Tempo {
 
 		// Sync legacy registry if provided directly
 		if (provided) {
+			if (!hasOwn(shape.parse, field)) (shape.parse as any)[field] = { ...(shape.parse as any)[field] };
 			provided.forEach(([k, v]) => {
 				if (!hasOwn(shape.parse[field] as any, k)) (shape.parse[field] as any)[k as string] = v;
 			});
@@ -184,18 +185,22 @@ export class Tempo {
 			}
 		} else {
 			if (hasOwn(shape.parse.snippet, token)) {
+				if (!hasOwn(shape.parse, 'snippet'))
+					shape.parse.snippet = { ...shape.parse.snippet };
+
 				delete (shape.parse.snippet as any)[token];
 			}
 		}
 	}
 
-	// TODO:  check all Layouts which reference "{evt}" and update them
-	static [$setEvents](shape: Internal.State, provided?: [string, any][]) {
+	static [$setEvents](shape: Internal.State, provided?: [string, any][], rebuild = true) {
 		(this as any)[$setAliases](shape, 'evt', Token.evt, provided);
+		if (rebuild) setPatterns(shape);
 	}
 
-	static [$setPeriods](shape: Internal.State, provided?: [string, any][]) {
+	static [$setPeriods](shape: Internal.State, provided?: [string, any][], rebuild = true) {
 		(this as any)[$setAliases](shape, 'per', Token.per, provided);
+		if (rebuild) setPatterns(shape);
 	}
 
 	/** try to infer hemisphere using the timezone's daylight-savings setting */
@@ -312,8 +317,8 @@ export class Tempo {
 		}
 		Tempo.#swapLayout(shape);
 
-		if (isDefined(shape.parse.event)) (this as any)[$setEvents](shape);
-		if (isDefined(shape.parse.period)) (this as any)[$setPeriods](shape);
+		if (isDefined(shape.parse.event)) (this as any)[$setEvents](shape, undefined, false);
+		if (isDefined(shape.parse.period)) (this as any)[$setPeriods](shape, undefined, false);
 
 		setPatterns(shape);
 	}
@@ -1458,12 +1463,26 @@ export class Tempo {
 		Object.assign(this.#local.config, { scope: 'local' });
 
 		this.#local.parse = markConfig(Object.create(classState.parse));
-		this.#local.parse.planner = Object.create(classState.parse.planner);		// shadow the planner object
-		this.#local.parse.monthDay = Object.create(classState.parse.monthDay);		// shadow the monthDay object
+		this.#local.parse.event = { ...classState.parse.event };
+		this.#local.parse.period = { ...classState.parse.period };
+		this.#local.parse.snippet = { ...classState.parse.snippet };
+		this.#local.parse.planner = {
+			...(classState.parse.planner.layoutOrder ? { layoutOrder: [...asArray<string>(classState.parse.planner.layoutOrder)] } : {}),
+			...(isDefined(classState.parse.planner.preFilter) ? { preFilter: Boolean(classState.parse.planner.preFilter) } : {}),
+		};
+		this.#local.parse.monthDay = {
+			...classState.parse.monthDay,
+			locales: [...asArray(classState.parse.monthDay.locales)],
+			layouts: [...asArray(classState.parse.monthDay.layouts)],
+			timezones: { ...classState.parse.monthDay.timezones },
+			...(classState.parse.monthDay.resolvedLocales ? {
+				resolvedLocales: classState.parse.monthDay.resolvedLocales.map((l: any) => ({ ...l, timeZones: [...l.timeZones] }))
+			} : {})
+		};
 		setProperty(this.#local.parse, 'result', [...(options.result ?? [])]);
 
 		Object.defineProperty(this.#local, 'tempoInstance', {		// Link this instance to its state for static alias access
-			value: this,
+			value: self,
 			writable: false,
 			configurable: true,
 			enumerable: false

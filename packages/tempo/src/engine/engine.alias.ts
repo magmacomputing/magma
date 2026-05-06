@@ -157,7 +157,7 @@ export class AliasEngine {
 				}
 
 				seenBaseNames.add(register.baseWord);
-				patterns.push(`(?<${alias}>${register.name})`);
+				patterns.push(`(?<${alias}>${Match.safeAlias(register.name)})`);
 			}
 		}
 

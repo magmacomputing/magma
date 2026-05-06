@@ -38,7 +38,7 @@ jobs:
     name: Test with parse.preFilter enabled
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: github.ref == 'refs/heads/release-c-layout-order-planner' || github.event.pull_request.base.ref == 'main'
+    if: github.event_name == 'pull_request' && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'release-c-layout-order-planner')
     steps:
       - uses: actions/checkout@v4
       - name: Set up Node.js
