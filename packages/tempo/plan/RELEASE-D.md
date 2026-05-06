@@ -14,11 +14,11 @@ This release focuses on modularizing and refactoring the parsing and pattern-mat
 - [ ] Update documentation and references
 
 ### Alias Resolution Engine Extraction
-- [ ] Extract alias resolution logic to new module
-- [ ] Define interfaces for registration, lookup, collision
-- [ ] Refactor engine and plugins to use new APIs
-- [ ] Add/expand unit tests for alias/collision
-- [ ] Update documentation and references
+- [x] Extract alias resolution logic to new module
+- [x] Define interfaces for registration, lookup, collision
+- [x] Refactor engine and plugins to use new APIs
+- [x] Add/expand unit tests for alias/collision
+- [x] Update documentation and references
 
 ### Guard Builder Extraction (Assessment)
 - [ ] Identify all guard-building/token-ingestion logic

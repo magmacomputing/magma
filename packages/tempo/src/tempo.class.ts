@@ -22,10 +22,11 @@ import { registerTerm, getTermRange } from './plugin/term.util.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 
 import { AliasEngine } from './engine/engine.alias.js';
+import { PatternCompiler } from './engine/engine.pattern.js';
 import { resolveMonthDay } from './support/tempo.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './parse/parse.layout.js';
 import { datePattern } from './support/tempo.default.js';
-import { setProperty, proto, hasOwn, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
+import { setProperty, proto, hasOwn, normalizeLayoutOrder } from './support/tempo.util.js';
 import { sym, markConfig, TermError, getRuntime, init, extendState, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
