@@ -22,6 +22,33 @@ import * as t from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
 
 /**
+ * Provide a lightweight host context that mimics a Tempo instance for functional alias handlers.
+ * @internal
+ */
+function getResolutionContext(state: any, dateTime: Temporal.ZonedDateTime, resolvingKeys: Set<string>) {
+	const TempoClass = getRuntime().modules['Tempo'];
+	return {
+		add: (val: any) => dateTime.add(val),
+		subtract: (val: any) => dateTime.subtract(val),
+		with: (val: any) => dateTime.with(val),
+		set: (val: any, opt?: any) => {
+			const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
+			return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
+		},
+		toNow: () => instant().toZonedDateTimeISO(state.config.timeZone).withCalendar(state.config.calendar),
+		toDateTime: () => dateTime,
+		get hh() { return dateTime.hour },
+		get mi() { return dateTime.minute },
+		get ss() { return dateTime.second },
+		get yy() { return dateTime.year },
+		get mm() { return dateTime.month },
+		get dd() { return dateTime.day },
+		[sym.$Identity]: true,
+		config: state.config
+	};
+}
+
+/**
  * Internal Parse Engine Implementation
  */
 const _ParseEngine = {
@@ -377,29 +404,7 @@ const _ParseEngine = {
 
 				resolvingKeys.add(aliasKey);
 
-				const isFn = isFunction(register.target);
-
-				// Provide a lightweight host context that mimics a Tempo instance for the handler
-				const host = {
-					add: (val: any) => dateTime.add(val),
-					subtract: (val: any) => dateTime.subtract(val),
-					with: (val: any) => dateTime.with(val),
-					set: (val: any, opt?: any) => {
-						const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
-						return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
-					},
-					toNow: () => instant().toZonedDateTimeISO(state.config.timeZone).withCalendar(state.config.calendar),
-					toDateTime: () => dateTime,
-					get hh() { return dateTime.hour },
-					get mi() { return dateTime.minute },
-					get ss() { return dateTime.second },
-					get yy() { return dateTime.year },
-					get mm() { return dateTime.month },
-					get dd() { return dateTime.day },
-					[sym.$Identity]: true,
-					config: state.config
-				};
-
+				const host = getResolutionContext(state, dateTime, resolvingKeys);
 				const res = aliasEngine?.resolveAlias(key as any, host);
 				if (!res) continue;
 
@@ -409,12 +414,8 @@ const _ParseEngine = {
 
 					_ParseEngine.result(state, { type, value: res.key as any, match: pat, source: res.source, groups: { [key]: res.value } });
 
-					// If the alias resolved to a time-snap (hh:mm[:ss]), we handle it directly
-					if (res.isClock) {
-						dateTime = dateTime.withPlainTime(Temporal.PlainTime.from(res.value));
-					}
-					// Otherwise, if it resolved to a new string, we re-parse it
-					else if (!isEmpty(res.value) && res.value !== String(groups[key])) {
+					// If it resolved to a new string, we re-parse it
+					if (!isEmpty(res.value) && res.value !== String(groups[key])) {
 						const resolving = new Set(resolvingKeys);
 						resolving.add(res.key);
 						// Explicitly propagate anchor for recursive parse

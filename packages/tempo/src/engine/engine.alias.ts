@@ -71,6 +71,7 @@ export class AliasEngine {
 	#state: State;																						// object that holds alias mappings, collisions, and registry for this engine 
 	#words: Record<string, string>;														// object of base words for collision detection
 	#id: number;
+	#version = 0;
 
 	get depth() {
 		return this.#depth
@@ -131,6 +132,7 @@ export class AliasEngine {
 			}
 		}
 
+		this.#version++;
 		return this.getPatterns(type);
 	}
 
@@ -158,6 +160,10 @@ export class AliasEngine {
 		}
 
 		return patterns.join('|');
+	}
+
+	getVersion(): number {
+		return this.#version + (this.#parent?.getVersion() ?? 0);
 	}
 
 	hasAlias(name: string, type?: AliasType) {
@@ -196,14 +202,17 @@ export class AliasEngine {
 		return this.#state[key as AliasKey] ?? this.#parent?.getAlias(key);
 	}
 
-	getAliases(type?: AliasType) {
+	getAliases(type?: AliasType, recurse = false) {
 		const aliases = [] as Registry[];
 
-		ownEntries(this.#state)																	// just the entries at this depth
+		ownEntries(this.#state)
 			.filter(([_, register]) => !type || register.type === type)
 			.forEach(([key, register]) => {
 				aliases.push(Object.assign({}, { key }, register));
 			});
+
+		if (recurse && this.#parent)
+			aliases.push(...this.#parent.getAliases(type, true));
 
 		return aliases;
 	}
@@ -216,6 +225,7 @@ export class AliasEngine {
 				delete this.#state[registry as AliasKey];
 			}
 		}
+		this.#version++;
 	}
 
 }

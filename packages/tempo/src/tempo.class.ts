@@ -141,14 +141,21 @@ export class Tempo {
 	 * because it will also include a list of events (e.g. 'new_years' | 'xmas'), we need to rebuild {dt} if the user adds a new event
 	 */
 	// TODO:  check all Layouts which reference "{evt}" and update them
-	static [$setEvents](shape: Internal.State) {
+	static [$setEvents](shape: Internal.State, provided?: [string, any][]) {
 		const parent = proto(shape);
 		const parentEvents = parent.parse?.event ?? {};
 
 		// Identify local additions or overrides
-		const events = ownEntries(shape.parse.event, true).filter(([k, v]) => {
+		const events = provided ?? ownEntries(shape.parse.event, true).filter(([k, v]) => {
 			return !(k in parentEvents) || shape.parse.event[k as string] !== parentEvents[k as string];
 		});
+
+		// Sync legacy registry if provided directly
+		if (provided) {
+			provided.forEach(([k, v]) => {
+				if (!hasOwn(shape.parse.event, k)) shape.parse.event[k as string] = v;
+			});
+		}
 
 		// If no local events, inherit the parent's engine (via prototype) and exit
 		if (events.length === 0 && !hasOwn(shape, 'aliasEngine'))
@@ -197,14 +204,21 @@ export class Tempo {
 	 * because it will also include a list of periods (e.g. 'midnight' | 'afternoon' ), we need to rebuild {tm} if the user adds a new period
 	*/
 	// TODO:  check all Layouts which reference "{per}" and update them
-	static [$setPeriods](shape: Internal.State) {
+	static [$setPeriods](shape: Internal.State, provided?: [string, any][]) {
 		const parent = proto(shape);
 		const parentPeriods = parent.parse?.period ?? {};
 
 		// Identify local additions or overrides
-		const periods = ownEntries(shape.parse.period, true).filter(([k, v]) => {
+		const periods = provided ?? ownEntries(shape.parse.period, true).filter(([k, v]) => {
 			return !(k in parentPeriods) || shape.parse.period[k as string] !== parentPeriods[k as string];
 		});
+
+		// Sync legacy registry if provided directly
+		if (provided) {
+			provided.forEach(([k, v]) => {
+				if (!hasOwn(shape.parse.period, k)) shape.parse.period[k as string] = v;
+			});
+		}
 
 		// If no local periods, inherit the parent's engine (via prototype) and exit
 		if (periods.length === 0 && !hasOwn(shape, 'aliasEngine'))
@@ -468,8 +482,7 @@ export class Tempo {
 			...Object.keys(enums.DURATION),
 			...Object.keys(enums.DURATIONS),
 			...Object.keys(enums.TIMEZONE),
-			...ownKeys((this as any)[$Internal]().parse.event),
-			...ownKeys((this as any)[$Internal]().parse.period),
+			...((this as any)[$Internal]().aliasEngine?.getAliases(undefined, true).map((a: any) => a.name) ?? []),
 			...ownKeys((this as any)[$Internal]().parse.ignore),
 			...ownKeys((this as any)[$Internal]().parse.snippet),
 			...ownKeys((this as any)[$Internal]().parse.layout),
@@ -624,18 +637,23 @@ export class Tempo {
 
 						registerTerm(config);
 
-						// 3. sync with parser registries
+						// 1a. sync with alias engine
 						if (config.scope && config.ranges) {
-							const target = config.scope === 'period' ? (this as any)[sym.$Internal]().parse.period : (config.scope === 'event' ? (this as any)[sym.$Internal]().parse.event : undefined);
-							if (target) {
+							const type = config.scope === 'period' ? 'per' : (config.scope === 'event' ? 'evt' : undefined);
+							if (type) {
+								const aliases: [string, any][] = [];
 								config.ranges.forEach(r => {
-									if (r.key && !target[r.key]) {
+									if (r.key) {
 										const val = isDefined(r.hour) ? `${r.hour}:${pad(r.minute ?? 0)}` : (r.month ? `${pad(r.day ?? 1)} ${Tempo.MONTH.keys()[r.month - 1]}` : undefined);
-										if (val) target[r.key] = val;
+										if (val) aliases.push([r.key, val]);
 									}
 								});
-								if (config.scope === 'period') (this as any)[$setPeriods]((this as any)[sym.$Internal]());
-								if (config.scope === 'event') (this as any)[$setEvents]((this as any)[sym.$Internal]());
+
+								if (aliases.length > 0) {
+									const state = (this as any)[sym.$Internal]();
+									if (type === 'per') (this as any)[$setPeriods](state, aliases);
+									else if (type === 'evt') (this as any)[$setEvents](state, aliases);
+								}
 							}
 						}
 					}
