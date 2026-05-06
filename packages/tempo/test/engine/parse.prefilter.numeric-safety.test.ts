@@ -7,7 +7,7 @@ describe('parse prefilter numeric safety constraints', () => {
 
 	test('keeps integer-like BigInt nanosecond string as early escape', () => {
 		expect(() => new Tempo('1715900000000000000n', { timeZone: 'UTC' }))
-			.toThrow(/Cannot parse Date/i);
+			.toThrow(/Unrecognized or invalid ISO 8601 string: \"1715900000000000000n\"/i);
 	});
 
 	test('number input with less than 8 digits still rejects safely', () => {

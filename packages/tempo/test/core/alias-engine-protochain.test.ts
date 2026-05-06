@@ -29,20 +29,20 @@ describe('AliasEngine prototype chain (Global → Sandbox → Instance)', () => 
 
   it('resolves local, sandbox, and global aliases in correct order', () => {
     // Local should resolve its own
-    expect(localShape.aliasEngine.resolveAlias('evt2_0')).toBe('localValue');
+    expect(localShape.aliasEngine.resolveAlias('evt2_0')?.value).toBe('localValue');
     // Local should resolve sandbox
-    expect(localShape.aliasEngine.resolveAlias('evt1_0')).toBe('sandboxValue');
+    expect(localShape.aliasEngine.resolveAlias('evt1_0')?.value).toBe('sandboxValue');
     // Local should resolve global
-    expect(localShape.aliasEngine.resolveAlias('evt0_0')).toBe('globalValue');
+    expect(localShape.aliasEngine.resolveAlias('evt0_0')?.value).toBe('globalValue');
     // Sandbox should not see local
-    expect(sandboxShape.aliasEngine.resolveAlias('evt2_0')).toBe('evt2_0');
+    expect(sandboxShape.aliasEngine.resolveAlias('evt2_0')).toBeUndefined();
     // Sandbox should resolve its own and global
-    expect(sandboxShape.aliasEngine.resolveAlias('evt1_0')).toBe('sandboxValue');
-    expect(sandboxShape.aliasEngine.resolveAlias('evt0_0')).toBe('globalValue');
+    expect(sandboxShape.aliasEngine.resolveAlias('evt1_0')?.value).toBe('sandboxValue');
+    expect(sandboxShape.aliasEngine.resolveAlias('evt0_0')?.value).toBe('globalValue');
     // Global should only resolve its own
-    expect(globalShape.aliasEngine.resolveAlias('evt0_0')).toBe('globalValue');
-    expect(globalShape.aliasEngine.resolveAlias('evt1_0')).toBe('evt1_0');
-    expect(globalShape.aliasEngine.resolveAlias('evt2_0')).toBe('evt2_0');
+    expect(globalShape.aliasEngine.resolveAlias('evt0_0')?.value).toBe('globalValue');
+    expect(globalShape.aliasEngine.resolveAlias('evt1_0')).toBeUndefined();
+    expect(globalShape.aliasEngine.resolveAlias('evt2_0')).toBeUndefined();
   });
 
   it('collision detection traverses the prototype chain', () => {
@@ -55,8 +55,8 @@ describe('AliasEngine prototype chain (Global → Sandbox → Instance)', () => 
     expect(logger.warn).toHaveBeenCalled();
     expect((logger.warn as any).mock.calls[0][1]).toMatch(/Collision detected/i);
 
-    expect(localShape.aliasEngine.resolveAlias('evt2_1')).toBe('localShadow');
-    expect(globalShape.aliasEngine.resolveAlias('evt0_0')).toBe('globalValue');
+    expect(localShape.aliasEngine.resolveAlias('evt2_1')?.value).toBe('localShadow');
+    expect(globalShape.aliasEngine.resolveAlias('evt0_0')?.value).toBe('globalValue');
 
     (logger.warn as any).mockReset();
   });

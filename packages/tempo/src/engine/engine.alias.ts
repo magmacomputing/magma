@@ -16,7 +16,8 @@
 
 import type { Nullable } from '#library/type.library.js';
 import type { Logify } from '#library/logify.class.js';
-import { isDefined, isFunction } from '#library';
+import { isDefined, isFunction, isZonedDateTime } from '#library/assertion.library.js';
+import { Match } from '#tempo/support';
 import { ownEntries } from '#library/primitive.library.js';
 import * as t from '../tempo.type.js';
 
@@ -24,6 +25,15 @@ export type AliasTarget = string | number | Function
 type AliasType = 'evt' | 'per';
 type AliasKey = `${AliasType}${number}_${number}`;
 type State = Record<AliasKey, Registry>
+
+export interface AliasResult {
+	value: string;
+	key: string;			// The original baseName (e.g. 'noon')
+	type: AliasType;
+	source: 'global' | 'local';
+	isClock: boolean;
+	isFunction: boolean;
+}
 
 export interface AliasEngineOptions {
 	parent?: Nullable<AliasEngine>;
@@ -37,6 +47,7 @@ interface Registry {																				// information about each registered ali
 	type: AliasType;
 	baseWord: string;
 	collision?: boolean;
+	depth: number;
 }
 
 export class AliasEngine {
@@ -116,6 +127,7 @@ export class AliasEngine {
 				type,																								// 'evt' or 'per'
 				baseWord,																						// used for collision detection
 				collision,																					// needed ?
+				depth: this.#depth,
 			}
 		}
 
@@ -128,14 +140,11 @@ export class AliasEngine {
 	 * it won't be included in the regex patterns of the parent engine,  
 	 * preventing unintended matches and preserving the expected behavior of alias resolution.
 	 */
-	getPatterns(type: AliasType, seenBaseNames = new Set<string>()): string {
+	getPatterns(type: AliasType, seenBaseNames = new Set<string>()): string | undefined {
 		const patterns: string[] = [];
 
-		const state = this.#state;
-		for (const alias in state) {
-			const register = state[alias as AliasKey];
-
-			if (!seenBaseNames.has(register.baseWord)) {
+		for (const [alias, register] of ownEntries(this.#state)) {
+			if (register.type === type && !seenBaseNames.has(register.baseWord)) {
 				seenBaseNames.add(register.baseWord);
 
 				if (register.type === type)
@@ -159,18 +168,28 @@ export class AliasEngine {
 				: true
 	}
 
-	resolveAlias(name: AliasKey, thisArg?: any): Nullable<string> {
+	resolveAlias(name: AliasKey, thisArg?: any): AliasResult | undefined {
 		const register = this.getAlias(name);
-		if (!register) return name;
+		if (!register) return undefined;
+
+		let value = '';
+		const isFn = isFunction(register.target);
 
 		if (isFunction(register.target)) {
 			const result = register.target.call(thisArg);
-			return isDefined(result)
-				? result.toString()
-				: ''
+			value = isDefined(result) ? result.toString() : '';
+		} else {
+			value = register.target.toString();
 		}
 
-		return register.target as string;
+		return {
+			value,
+			key: register.name,
+			type: register.type,
+			source: register.depth === 0 ? 'global' : 'local',
+			isClock: Match.clock.test(value),
+			isFunction: isFn
+		};
 	}
 
 	getAlias(key: string): Registry | undefined {

@@ -35,8 +35,8 @@ describe('AliasEngine', () => {
     const child = new AliasEngine({ parent: root });
     root.registerAliases('evt', [ ['rootEvent', 'rootValue'] ]);
     child.registerAliases('evt', [ ['childEvent', 'childValue'] ]);
-    expect(child.resolveAlias('evt0_0')).toBe('rootValue');
-    expect(child.resolveAlias('evt1_0')).toBe('childValue');
+    expect(child.resolveAlias('evt0_0')?.value).toBe('rootValue');
+    expect(child.resolveAlias('evt1_0')?.value).toBe('childValue');
   });
 
   it('clears aliases correctly', () => {

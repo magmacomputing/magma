@@ -114,7 +114,7 @@ describe(`${label}`, () => {
 		// @ts-ignore
 		expect(() => Tempo.ticker(Infinity)).toThrow(/Invalid Tempo number: Infinity/);
 		// @ts-ignore
-		expect(() => Tempo.ticker('not a number')).toThrow(/Cannot parse Date: "not a number"/);
+		expect(() => Tempo.ticker('not a number')).toThrow(/Unrecognized or invalid ISO 8601 string: "not a number"/);
 	});
 
 });

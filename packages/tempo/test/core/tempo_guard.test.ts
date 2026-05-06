@@ -7,7 +7,7 @@ describe('Master Guard Extension', () => {
 
 	it('should rebuild the guard after extension via Discovery', () => {
 		// 1. Initially, '$$$apple$$$' should FAIL the guard and throw immediately
-		expect(() => new Tempo('$$$apple$$$')).toThrow(/Cannot parse Date: "\$\$\$apple\$\$\$"/);
+		expect(() => new Tempo('$$$apple$$$')).toThrow(/Unrecognized or invalid ISO 8601 string: \"\$\$\$apple\$\$\$\"/);
 
 		// 2. Extend with a custom term '$$$apple$$$' via Discovery object
 		Tempo.extend({
@@ -23,12 +23,12 @@ describe('Master Guard Extension', () => {
 		// expect(t.parse.lazy).toBe(true);
 
 		// 4. Accessing a property should now trigger parsing and throw
-		expect(() => t.yy).toThrow(/Cannot parse Date: "\$\$\$apple\$\$\$"/);
+		expect(() => t.yy).toThrow(/Unrecognized or invalid ISO 8601 string: \"\$\$\$apple\$\$\$\"/);
 	});
 
 	it('should rebuild the guard after direct extension', () => {
 		// 1. '@@@banana@@@' fails initially
-		expect(() => new Tempo('@@@banana@@@')).toThrow(/Cannot parse Date: "@@@banana@@@"/);
+		expect(() => new Tempo('@@@banana@@@')).toThrow(/Unrecognized or invalid ISO 8601 string: \"@@@banana@@@\"/);
 
 		// 2. Extend directly
 		Tempo.extend({

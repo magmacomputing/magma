@@ -400,33 +400,27 @@ const _ParseEngine = {
 					config: state.config
 				};
 
-				const res = String(aliasEngine?.resolveAlias(key as any, host) ?? '');
-				const isEvent = register.type === 'evt';
+				const res = aliasEngine?.resolveAlias(key as any, host);
+				if (!res) continue;
 
 				try {
-					const type = isEvent ? 'Event' : 'Period';
-					const pat = isEvent ? 'dt' : 'tm';
-					const depth = parseInt(key.match(/\d+/)?.[0] ?? '0');
-					const source = depth === 0 ? 'global' : 'local';
+					const type = res.type === 'evt' ? 'Event' : 'Period';
+					const pat = res.type === 'evt' ? 'dt' : 'tm';
 
-					_ParseEngine.result(state, { type, value: aliasKey as any, match: pat, source, groups: { [key]: res } });
+					_ParseEngine.result(state, { type, value: res.key as any, match: pat, source: res.source, groups: { [key]: res.value } });
 
 					// If the alias resolved to a time-snap (hh:mm[:ss]), we handle it directly
-					if (isFn && Match.clock.test(res)) {
-						const [hourStr, minuteStr, secondStr = '0'] = res.split(':');
-						const hour = Number(hourStr);
-						const minute = Number(minuteStr);
-						const second = Number(secondStr);
-						dateTime = dateTime.with({ hour, minute, second, millisecond: 0 });
+					if (res.isClock) {
+						dateTime = dateTime.withPlainTime(Temporal.PlainTime.from(res.value));
 					}
 					// Otherwise, if it resolved to a new string, we re-parse it
-					else if (!isEmpty(res) && res !== String(groups[key])) {
+					else if (!isEmpty(res.value) && res.value !== String(groups[key])) {
 						const resolving = new Set(resolvingKeys);
-						resolving.add(aliasKey);
+						resolving.add(res.key);
 						// Explicitly propagate anchor for recursive parse
 						const prevAnchor: any = state.anchor;
 						state.anchor = dateTime;
-						const resMatch = _ParseEngine.parseLayout(state, res, dateTime, true, resolving);
+						const resMatch = _ParseEngine.parseLayout(state, res.value, dateTime, true, resolving);
 						state.anchor = prevAnchor;
 
 						if (resMatch.type === 'Temporal.ZonedDateTime')
