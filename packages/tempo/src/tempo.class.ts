@@ -26,7 +26,7 @@ import { resolveMonthDay } from './support/tempo.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './parse/parse.layout.js';
 import { datePattern } from './support/tempo.default.js';
 import { setProperty, proto, hasOwn, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -140,32 +140,32 @@ export class Tempo {
 	 * {dt} is a layout that combines date-related {snippets} (e.g. dd, mm -or- evt) into a pattern against which a string can be tested.  
 	 * because it will also include a list of events (e.g. 'new_years' | 'xmas'), we need to rebuild {dt} if the user adds a new event
 	 */
-	// TODO:  check all Layouts which reference "{evt}" and update them
-	static [$setEvents](shape: Internal.State, provided?: [string, any][]) {
+	static [$setAliases](shape: Internal.State, kind: 'evt' | 'per', token: any, provided?: [string, any][]) {
+		const field = kind === 'evt' ? 'event' : 'period';
 		const parent = proto(shape);
-		const parentEvents = parent.parse?.event ?? {};
+		const parentMap = parent.parse?.[field] ?? {};
 
 		// Identify local additions or overrides
-		const events = provided ?? ownEntries(shape.parse.event, true).filter(([k, v]) => {
-			return !(k in parentEvents) || shape.parse.event[k as string] !== parentEvents[k as string];
+		const entries = provided ?? ownEntries(shape.parse[field] as any, true).filter(([k, v]) => {
+			return !(k in parentMap) || (shape.parse[field] as any)[k as string] !== parentMap[k as string];
 		});
 
 		// Sync legacy registry if provided directly
 		if (provided) {
 			provided.forEach(([k, v]) => {
-				if (!hasOwn(shape.parse.event, k)) shape.parse.event[k as string] = v;
+				if (!hasOwn(shape.parse[field] as any, k)) (shape.parse[field] as any)[k as string] = v;
 			});
 		}
 
-		// If no local events, inherit the parent's engine (via prototype) and exit
-		if (events.length === 0 && !hasOwn(shape, 'aliasEngine'))
+		// If no local aliases, inherit the parent's engine (via prototype) and exit
+		if (entries.length === 0 && !hasOwn(shape, 'aliasEngine'))
 			return;
 
 		// Use the correct alias engine: static for global, instance for local
 		let engine = shape.aliasEngine;
 
 		// If we have local aliases to register, we MUST have a local engine to avoid polluting the parent
-		if (events.length > 0 && !hasOwn(shape, 'aliasEngine')) {
+		if (!hasOwn(shape, 'aliasEngine')) {
 			engine = shape.aliasEngine = new AliasEngine({
 				parent: parent.aliasEngine,
 				logger: Tempo.#dbg,
@@ -173,94 +173,29 @@ export class Tempo {
 			});
 		}
 
-		// Ensure we have an engine (for the global root)
-		if (!engine) {
-			engine = shape.aliasEngine = new AliasEngine({
-				parent: parent.aliasEngine,
-				logger: Tempo.#dbg,
-				config: shape.config
-			});
-		}
-
-		const groups = engine.registerAliases('evt', events);
+		const groups = engine!.registerAliases(kind, entries as any);
 		if (groups) {
-			const protoEvt = parent.parse?.snippet?.[Token.evt]?.source;
-			if (groups !== protoEvt) {
+			const protoRegex = parent.parse?.snippet?.[token]?.source;
+			if (groups !== protoRegex) {
 				if (!hasOwn(shape.parse, 'snippet'))
 					shape.parse.snippet = { ...shape.parse.snippet };
 
-				setProperty(shape.parse.snippet, Token.evt, new RegExp(groups));
+				setProperty(shape.parse.snippet, token, new RegExp(groups));
 			}
 		} else {
-			// If no groups, ensure we don't have a stale or empty regex that could cause issues
-			if (hasOwn(shape.parse.snippet, Token.evt)) {
-				delete shape.parse.snippet[Token.evt as any];
+			if (hasOwn(shape.parse.snippet, token)) {
+				delete (shape.parse.snippet as any)[token];
 			}
 		}
 	}
 
-	/**
-	 * {tm} is a layout that combines time-related snippets (hh, mi, ss, ff, mer -or- per) into a pattern against which a string can be tested.  
-	 * because it will also include a list of periods (e.g. 'midnight' | 'afternoon' ), we need to rebuild {tm} if the user adds a new period
-	*/
-	// TODO:  check all Layouts which reference "{per}" and update them
+	// TODO:  check all Layouts which reference "{evt}" and update them
+	static [$setEvents](shape: Internal.State, provided?: [string, any][]) {
+		this[$setAliases](shape, 'evt', Token.evt, provided);
+	}
+
 	static [$setPeriods](shape: Internal.State, provided?: [string, any][]) {
-		const parent = proto(shape);
-		const parentPeriods = parent.parse?.period ?? {};
-
-		// Identify local additions or overrides
-		const periods = provided ?? ownEntries(shape.parse.period, true).filter(([k, v]) => {
-			return !(k in parentPeriods) || shape.parse.period[k as string] !== parentPeriods[k as string];
-		});
-
-		// Sync legacy registry if provided directly
-		if (provided) {
-			provided.forEach(([k, v]) => {
-				if (!hasOwn(shape.parse.period, k)) shape.parse.period[k as string] = v;
-			});
-		}
-
-		// If no local periods, inherit the parent's engine (via prototype) and exit
-		if (periods.length === 0 && !hasOwn(shape, 'aliasEngine'))
-			return;
-
-		// Use the correct alias engine: static for global, instance for local
-		let engine = shape.aliasEngine;
-
-		// If we have local aliases to register, we MUST have a local engine to avoid polluting the parent
-		if (periods.length > 0 && !hasOwn(shape, 'aliasEngine')) {
-			engine = shape.aliasEngine = new AliasEngine({
-				parent: parent.aliasEngine,
-				logger: Tempo.#dbg,
-				config: shape.config
-			});
-		}
-
-		// Ensure we have an engine (for the global root)
-		if (!engine) {
-			engine = shape.aliasEngine = new AliasEngine({
-				parent: parent.aliasEngine,
-				logger: Tempo.#dbg,
-				config: shape.config
-			});
-		}
-
-		const groups = engine.registerAliases('per', periods);
-
-		if (groups) {
-			const protoPer = parent.parse?.snippet?.[Token.per]?.source;
-			if (groups !== protoPer) {
-				if (!hasOwn(shape.parse, 'snippet'))
-					shape.parse.snippet = { ...shape.parse.snippet };
-
-				setProperty(shape.parse.snippet, Token.per, new RegExp(groups));
-			}
-		} else {
-			// If no groups, ensure we don't have a stale or empty regex that could cause issues
-			if (hasOwn(shape.parse.snippet, Token.per)) {
-				delete shape.parse.snippet[Token.per as any];
-			}
-		}
+		this[$setAliases](shape, 'per', Token.per, provided);
 	}
 
 	/** try to infer hemisphere using the timezone's daylight-savings setting */
