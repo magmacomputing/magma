@@ -13,7 +13,7 @@ export default defineConfig({
   title: "Tempo",
   description: "The Professional Date-Time Library for Temporal",
   srcDir: '.',
-  srcExclude: ['**/plan/**', '**/archive/**', '**/bench/**', '**/scratch/**', 'CHANGELOG.md', 'CONTRIBUTING.md'],
+  srcExclude: ['**/plan/**', '**/archive/**', '**/bench/**', '**/scratch/**', 'CHANGELOG.md'],
   markdown: {
     math: true
   },

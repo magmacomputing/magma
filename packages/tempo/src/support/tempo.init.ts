@@ -36,8 +36,11 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		event: Object.assign({}, baseState?.parse.event ?? Event),
 		period: Object.assign({}, baseState?.parse.period ?? Period),
 		ignore: baseState ? { ...baseState.parse.ignore } : Object.fromEntries(asArray(Ignore).map(w => [w, w])),
-		monthDay: baseState ? Object.create(baseState.parse.monthDay) : resolveMonthDay({}, Default.monthDay as any),
-		planner: baseState ? Object.create(baseState.parse.planner) : {
+		monthDay: baseState ? resolveMonthDay({ ...baseState.parse.monthDay }, baseState.parse.monthDay) : resolveMonthDay({}, Default.monthDay as any),
+		planner: baseState ? {
+			layoutOrder: [...asArray<string>(baseState.parse.planner.layoutOrder)],
+			preFilter: Boolean(baseState.parse.planner.preFilter),
+		} : {
 			layoutOrder: asArray<string>(Default.planner?.layoutOrder ?? (Default as any).layoutOrder),
 			preFilter: Boolean(Default.planner?.preFilter ?? (Default as any).preFilter),
 		},

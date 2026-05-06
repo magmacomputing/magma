@@ -121,7 +121,7 @@ export class AliasEngine {
 					`[AliasEngine] Collision detected for ${type} alias "${name}". This may overwrite an existing alias.`
 				);
 
-			this.#words[baseWord] = name;													// track the base word for collision detection
+			this.#words[baseWord] = aliasKey;													// track the base word for collision detection
 			this.#state[aliasKey] = {
 				name,																								// plain string or regex-like string
 				target,																							// string, number, or function
@@ -147,10 +147,17 @@ export class AliasEngine {
 
 		for (const [alias, register] of ownEntries(this.#state)) {
 			if (register.type === type && !seenBaseNames.has(register.baseWord)) {
-				seenBaseNames.add(register.baseWord);
+				// Check for cross-type collision priority (Events win over Periods)
+				if (type === 'per') {
+					const winnerKey = this.#words[register.baseWord];
+					const winner = this.getAlias(winnerKey);
+					if (winner && winner.type === 'evt') {
+						continue; // Skip period if an event is using the same baseWord
+					}
+				}
 
-				if (register.type === type)
-					patterns.push(`(?<${alias}>${register.name})`);
+				seenBaseNames.add(register.baseWord);
+				patterns.push(`(?<${alias}>${register.name})`);
 			}
 		}
 
@@ -225,6 +232,16 @@ export class AliasEngine {
 				delete this.#state[registry as AliasKey];
 			}
 		}
+
+		// Rebuild #words and re-calculate counts from remaining state
+		this.#words = Object.create(this.#parent ? (this.#parent as any).#words : null);
+		this.#count = { evt: 0, per: 0 };
+
+		for (const [key, register] of ownEntries(this.#state)) {
+			this.#words[register.baseWord] = key;
+			this.#count[register.type]++;
+		}
+
 		this.#version++;
 	}
 

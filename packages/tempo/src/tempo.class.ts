@@ -191,11 +191,11 @@ export class Tempo {
 
 	// TODO:  check all Layouts which reference "{evt}" and update them
 	static [$setEvents](shape: Internal.State, provided?: [string, any][]) {
-		this[$setAliases](shape, 'evt', Token.evt, provided);
+		(this as any)[$setAliases](shape, 'evt', Token.evt, provided);
 	}
 
 	static [$setPeriods](shape: Internal.State, provided?: [string, any][]) {
-		this[$setAliases](shape, 'per', Token.per, provided);
+		(this as any)[$setAliases](shape, 'per', Token.per, provided);
 	}
 
 	/** try to infer hemisphere using the timezone's daylight-savings setting */

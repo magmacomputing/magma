@@ -77,6 +77,7 @@ export function compose(
 				if (Number.isNaN(value) || !Number.isFinite(value)) {
 					logError(config, `Invalid Tempo number: ${value}`);
 					temporal = today;
+					break;
 				}
 
 				// If it's an integer and we're in 'ms' mode, treat as milliseconds

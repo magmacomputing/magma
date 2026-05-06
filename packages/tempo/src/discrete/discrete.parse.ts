@@ -409,8 +409,15 @@ const _ParseEngine = {
 				if (!res) continue;
 
 				try {
-					const type = res.type === 'evt' ? 'Event' : 'Period';
-					const pat = res.type === 'evt' ? 'dt' : 'tm';
+					const mapped = ({
+						evt: { type: 'Event', pat: 'dt' },
+						per: { type: 'Period', pat: 'tm' }
+					} as const)[res.type as 'evt' | 'per'];
+
+					if (!mapped)
+						throw new Error(`[ParseEngine] Unexpected AliasType: ${res.type}`);
+
+					const { type, pat } = mapped;
 
 					_ParseEngine.result(state, { type, value: res.key as any, match: pat, source: res.source, groups: { [key]: res.value } });
 
