@@ -90,6 +90,7 @@ export class PatternCompiler {
 	 * Re-evaluates all snippets and layouts.
 	 */
 	setPatterns() {
+		this.clearCache();
 		const state = this.#state;
 		// ensure we have our own isolated mutable containers before mutation
 		state.parse.snippet = { ...state.parse.snippet };
@@ -136,4 +137,15 @@ export class PatternCompiler {
 	clearCache() {
 		this.#cache.clear();
 	}
+}
+
+/**
+ * Functional wrapper for the PatternCompiler.
+ * Handles engine instantiation and pattern building for a given state.
+ */
+export function setPatterns(state: t.Internal.State) {
+	if (!state.patternCompiler) {
+		state.patternCompiler = new PatternCompiler({ state });
+	}
+	state.patternCompiler.setPatterns();
 }
