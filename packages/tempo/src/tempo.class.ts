@@ -585,7 +585,17 @@ export class Tempo {
 								const monthKeys = Tempo.MONTH.keys();
 								config.ranges.forEach(r => {
 									if (r.key) {
-										const val = isDefined(r.hour) ? `${r.hour}:${pad(r.minute ?? 0)}` : (r.month ? `${pad(r.day ?? 1)} ${monthKeys[r.month - 1]}` : undefined);
+										let val: string | undefined;
+										if (isDefined(r.hour)) {
+											if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23) {
+												val = `${r.hour}:${pad(r.minute ?? 0)}`;
+											}
+										} else if (r.month) {
+											if (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12) {
+												val = `${pad(r.day ?? 1)} ${monthKeys[r.month - 1]}`;
+											}
+										}
+
 										if (val) aliases.push([r.key, val]);
 									}
 								});
@@ -750,7 +760,7 @@ export class Tempo {
 			const parse = state.parse;
 			parse.pattern ??= new Map<symbol, RegExp>();
 			parse.monthDay = resolveMonthDay(Default.monthDay, Tempo.MONTH_DAY);
-			parse.planner.layoutOrder = asArray((Default.planner?.layoutOrder ?? (Default as any).layoutOrder) as t.Options['parseOrder']) as string[];
+			parse.planner.layoutOrder = asArray<string | symbol>(Default.planner?.layoutOrder ?? (Default as any).layoutOrder);
 			parse.planner.preFilter = Boolean(Default.planner?.preFilter ?? (Default as any).preFilter);
 			parse.pivot ??= Default.pivot as any;
 			parse.mode ??= Default.mode as any;

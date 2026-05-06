@@ -28,7 +28,7 @@ type State = Record<AliasKey, Registry>
 
 export interface AliasResult {
 	value: string;
-	key: string;			// The original baseName (e.g. 'noon')
+	key: string;			// The normalized baseWord (e.g. 'noon')
 	type: AliasType;
 	source: 'global' | 'local';
 	isClock: boolean;
@@ -137,7 +137,7 @@ export class AliasEngine {
 				target,																							// string, number, or function
 				type,																								// 'evt' or 'per'
 				baseWord,																						// used for collision detection
-				collision: baseWord in this.#words,
+				collision: Boolean(existingKey),
 				depth: this.#depth,
 			}
 		}
@@ -185,10 +185,12 @@ export class AliasEngine {
 	}
 
 	hasAlias(name: string, type?: AliasType) {
-		return !(name in this.#state)
+		const baseWord = AliasEngine.#getBaseWord(name);
+		const key = this.#words[baseWord];
+		return !key
 			? false
 			: type
-				? this.#state[name as AliasKey].type === type
+				? this.#state[key].type === type
 				: true
 	}
 
@@ -208,7 +210,7 @@ export class AliasEngine {
 
 		return {
 			value,
-			key: register.name,
+			key: register.baseWord,
 			type: register.type,
 			source: register.depth === 0 ? 'global' : 'local',
 			isClock: Match.clock.test(value),
