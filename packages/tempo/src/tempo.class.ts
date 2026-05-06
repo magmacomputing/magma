@@ -25,8 +25,8 @@ import { AliasEngine } from './engine/engine.alias.js';
 import { resolveMonthDay } from './support/tempo.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './parse/parse.layout.js';
 import { datePattern } from './support/tempo.default.js';
-import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
+import { setProperty, proto, hasOwn, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
+import { sym, markConfig, TermError, getRuntime, init, extendState, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -140,89 +140,67 @@ export class Tempo {
 	 * {dt} is a layout that combines date-related {snippets} (e.g. dd, mm -or- evt) into a pattern against which a string can be tested.  
 	 * because it will also include a list of events (e.g. 'new_years' | 'xmas'), we need to rebuild {dt} if the user adds a new event
 	 */
-	// TODO:  check all Layouts which reference "{evt}" and update them
-	static [$setEvents](shape: Internal.State) {
-		const events = ownEntries(shape.parse.event, true);
-		if (isLocal(shape) && !hasOwn(shape.parse, 'event') && !hasOwn(shape.parse.monthDay, 'active'))
-			return;																								// no local change needed
-
-		// Use the correct alias engine: static for global, instance for local, and assign parentEngine for locals
+	static [$setAliases](shape: Internal.State, kind: 'evt' | 'per', token: any, provided?: [string, any][]) {
+		const field = kind === 'evt' ? 'event' : 'period';
 		const parent = proto(shape);
-		const engine = hasOwn(shape, 'aliasEngine')
-			? shape.aliasEngine!
-			: (shape.aliasEngine = new AliasEngine({ parent: parent.aliasEngine, logger: Tempo.#dbg }));
-		engine.clear('event');
-		engine.registerEvents(events);
+		const parentMap = parent.parse?.[field] ?? {};
 
-		const src = shape.config.scope === 'global' ? 'g' : 'l';// 'g'lobal or 'l'ocal (sandbox also uses 'l')
-		const groups = events
-			.map(([pat, _], idx) => `(?<${src}evt${idx}>${pat})`)	// assign a number to the pattern
-			.join('|')																						// make an 'Or' pattern for the event-keys
+		// Identify local additions or overrides
+		const entries = provided ?? ownEntries(shape.parse[field] as any, true).filter(([k, v]) => {
+			return !(k in parentMap) || (shape.parse[field] as any)[k as string] !== parentMap[k as string];
+		});
 
-		if (groups) {
-			const protoEvt = proto(shape.parse.snippet)[Token.evt]?.source;
-			if (!isLocal(shape) || groups !== protoEvt) {
-				if (isLocal(shape) && !hasOwn(shape.parse, 'snippet'))
-					shape.parse.snippet = create(shape.parse, 'snippet');
-
-				setProperty(shape.parse.snippet, Token.evt, new RegExp(groups));
-			}
-		} else {
-			// If no groups, ensure we don't have a stale or empty regex that could cause issues
-			if (hasOwn(shape.parse.snippet, Token.evt)) {
-				delete shape.parse.snippet[Token.evt as any];
-			}
+		// Sync legacy registry if provided directly
+		if (provided) {
+			if (!hasOwn(shape.parse, field)) (shape.parse as any)[field] = { ...(shape.parse as any)[field] };
+			provided.forEach(([k, v]) => {
+				if (!hasOwn(shape.parse[field] as any, k)) (shape.parse[field] as any)[k as string] = v;
+			});
 		}
 
-		const isMonthDay = Boolean(shape.parse.monthDay.active);
-		const protoDt = proto(shape.parse.layout)[Token.dt] as string;
-		const targetDt = isMonthDay ? datePattern.mdy : datePattern.dmy;
+		// If no local aliases, inherit the parent's engine (via prototype) and exit
+		if (entries.length === 0 && !hasOwn(shape, 'aliasEngine'))
+			return;
 
-		if (!isLocal(shape) || targetDt !== protoDt) {
-			if (isLocal(shape) && !hasOwn(shape.parse, 'layout'))
-				shape.parse.layout = create(shape.parse, 'layout');
+		// Use the correct alias engine: static for global, instance for local
+		let engine = shape.aliasEngine;
 
-			setProperty(shape.parse.layout, Token.dt, targetDt);
+		// If we have local aliases to register, we MUST have a local engine to avoid polluting the parent
+		if (!hasOwn(shape, 'aliasEngine')) {
+			engine = shape.aliasEngine = new AliasEngine({
+				parent: parent.aliasEngine,
+				logger: Tempo.#dbg,
+				config: shape.config
+			});
+		}
+
+		const groups = engine!.registerAliases(kind, entries as any);
+		if (groups) {
+			const protoRegex = parent.parse?.snippet?.[token]?.source;
+			if (groups !== protoRegex) {
+				if (!hasOwn(shape.parse, 'snippet'))
+					shape.parse.snippet = { ...shape.parse.snippet };
+
+				setProperty(shape.parse.snippet, token, new RegExp(groups));
+			}
+		} else {
+			if (hasOwn(shape.parse.snippet, token)) {
+				if (!hasOwn(shape.parse, 'snippet'))
+					shape.parse.snippet = { ...shape.parse.snippet };
+
+				delete (shape.parse.snippet as any)[token];
+			}
 		}
 	}
 
-	/**
-	 * {tm} is a layout that combines time-related snippets (hh, mi, ss, ff, mer -or- per) into a pattern against which a string can be tested.  
-	 * because it will also include a list of periods (e.g. 'midnight' | 'afternoon' ), we need to rebuild {tm} if the user adds a new period
-	*/
-	// TODO:  check all Layouts which reference "{per}" and update them
-	static [$setPeriods](shape: Internal.State) {
-		const periods = ownEntries(shape.parse.period, true);
-		if (isLocal(shape) && !hasOwn(shape.parse, 'period'))
-			return;																								// no local change needed
+	static [$setEvents](shape: Internal.State, provided?: [string, any][], rebuild = true) {
+		(this as any)[$setAliases](shape, 'evt', Token.evt, provided);
+		if (rebuild) setPatterns(shape);
+	}
 
-		// Use the correct alias engine: static for global, instance for local
-		const parent = proto(shape);
-		const engine = hasOwn(shape, 'aliasEngine')
-			? shape.aliasEngine!
-			: (shape.aliasEngine = new AliasEngine({ parent: parent.aliasEngine, logger: Tempo.#dbg }));
-		engine.clear('period');
-		engine.registerPeriods(periods);
-
-		const src = shape.config.scope === 'global' ? 'g' : 'l';// 'g'lobal or 'l'ocal (sandbox also uses 'l')
-		const groups = periods
-			.map(([pat, _], idx) => `(?<${src}per${idx}>${pat})`)	// {pattern} is the 1st element of the tuple
-			.join('|')																						// make an 'or' pattern for the period-keys
-
-		if (groups) {
-			const protoPer = proto(shape.parse.snippet)[Token.per]?.source;
-			if (!isLocal(shape) || groups !== protoPer) {
-				if (isLocal(shape) && !hasOwn(shape.parse, 'snippet'))
-					shape.parse.snippet = create(shape.parse, 'snippet');
-
-				setProperty(shape.parse.snippet, Token.per, new RegExp(groups));
-			}
-		} else {
-			// If no groups, ensure we don't have a stale or empty regex that could cause issues
-			if (hasOwn(shape.parse.snippet, Token.per)) {
-				delete shape.parse.snippet[Token.per as any];
-			}
-		}
+	static [$setPeriods](shape: Internal.State, provided?: [string, any][], rebuild = true) {
+		(this as any)[$setAliases](shape, 'per', Token.per, provided);
+		if (rebuild) setPatterns(shape);
 	}
 
 	/** try to infer hemisphere using the timezone's daylight-savings setting */
@@ -231,8 +209,9 @@ export class Tempo {
 
 		const tz = options.timeZone;
 		if (isDefined(tz)) {
-			if (String(tz).toLowerCase() === 'utc') return undefined;
-			const sphere = getHemisphere(String(tz));
+			const resolvedTz = shape.config.timeZone;
+			if (String(resolvedTz).toLowerCase() === 'utc') return undefined;
+			const sphere = getHemisphere(String(resolvedTz));
 			if (isDefined(sphere)) return sphere;
 		}
 
@@ -272,6 +251,11 @@ export class Tempo {
 
 		const isMonthDay = shape.parse.monthDay.isExplicit ? shape.parse.monthDay.active! : Tempo.#isMonthDay(shape);
 		shape.parse.monthDay.active = isMonthDay;
+
+		// ensure Token.dt matches the local monthDay preference
+		const dt = isMonthDay ? datePattern.mdy : datePattern.dmy;
+		if (shape.parse.layout[Token.dt] !== dt)
+			shape.parse.layout = { ...shape.parse.layout, [Token.dt]: dt };
 
 		const layoutController = (shape.parse.planner.layoutOrder?.length ?? 0) > 0
 			? { [DEFAULT_LAYOUT_CLASS]: [...shape.parse.planner.layoutOrder!] }
@@ -333,8 +317,8 @@ export class Tempo {
 		}
 		Tempo.#swapLayout(shape);
 
-		if (isDefined(shape.parse.event)) (this as any)[$setEvents](shape);
-		if (isDefined(shape.parse.period)) (this as any)[$setPeriods](shape);
+		if (isDefined(shape.parse.event)) (this as any)[$setEvents](shape, undefined, false);
+		if (isDefined(shape.parse.period)) (this as any)[$setPeriods](shape, undefined, false);
 
 		setPatterns(shape);
 	}
@@ -438,8 +422,7 @@ export class Tempo {
 			...Object.keys(enums.DURATION),
 			...Object.keys(enums.DURATIONS),
 			...Object.keys(enums.TIMEZONE),
-			...ownKeys((this as any)[$Internal]().parse.event),
-			...ownKeys((this as any)[$Internal]().parse.period),
+			...((this as any)[$Internal]().aliasEngine?.getAliases(undefined, true).map((a: any) => a.name) ?? []),
 			...ownKeys((this as any)[$Internal]().parse.ignore),
 			...ownKeys((this as any)[$Internal]().parse.snippet),
 			...ownKeys((this as any)[$Internal]().parse.layout),
@@ -594,18 +577,34 @@ export class Tempo {
 
 						registerTerm(config);
 
-						// 3. sync with parser registries
+						// 1a. sync with alias engine
 						if (config.scope && config.ranges) {
-							const target = config.scope === 'period' ? (this as any)[sym.$Internal]().parse.period : (config.scope === 'event' ? (this as any)[sym.$Internal]().parse.event : undefined);
-							if (target) {
+							const type = config.scope === 'period' ? 'per' : (config.scope === 'event' ? 'evt' : undefined);
+							if (type) {
+								const aliases: [string, any][] = [];
+								const monthKeys = Tempo.MONTH.keys();
 								config.ranges.forEach(r => {
-									if (r.key && !target[r.key]) {
-										const val = isDefined(r.hour) ? `${r.hour}:${pad(r.minute ?? 0)}` : (r.month ? `${pad(r.day ?? 1)} ${Tempo.MONTH.keys()[r.month - 1]}` : undefined);
-										if (val) target[r.key] = val;
+									if (r.key) {
+										let val: string | undefined;
+										if (isDefined(r.hour)) {
+											if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23) {
+												val = `${r.hour}:${pad(r.minute ?? 0)}`;
+											}
+										} else if (r.month) {
+											if (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12) {
+												val = `${pad(r.day ?? 1)} ${monthKeys[r.month - 1]}`;
+											}
+										}
+
+										if (val) aliases.push([r.key, val]);
 									}
 								});
-								if (config.scope === 'period') (this as any)[$setPeriods]((this as any)[sym.$Internal]());
-								if (config.scope === 'event') (this as any)[$setEvents]((this as any)[sym.$Internal]());
+
+								if (aliases.length > 0) {
+									const state = (this as any)[$Internal]();
+									if (type === 'per') (this as any)[$setPeriods](state, aliases);
+									else if (type === 'evt') (this as any)[$setEvents](state, aliases);
+								}
 							}
 						}
 					}
@@ -750,6 +749,7 @@ export class Tempo {
 			const rt = getRuntime();
 			rt.state = undefined;																	// force fresh state
 			const state = init();
+			(state as any)._count = 0;
 			if ((this as any)[sym.$IsBase]) {
 				Tempo.#global = state;
 			} else {
@@ -760,7 +760,7 @@ export class Tempo {
 			const parse = state.parse;
 			parse.pattern ??= new Map<symbol, RegExp>();
 			parse.monthDay = resolveMonthDay(Default.monthDay, Tempo.MONTH_DAY);
-			parse.planner.layoutOrder = asArray((Default.planner?.layoutOrder ?? (Default as any).layoutOrder) as t.Options['parseOrder']) as string[];
+			parse.planner.layoutOrder = asArray<string | symbol>(Default.planner?.layoutOrder ?? (Default as any).layoutOrder);
 			parse.planner.preFilter = Boolean(Default.planner?.preFilter ?? (Default as any).preFilter);
 			parse.pivot ??= Default.pivot as any;
 			parse.mode ??= Default.mode as any;
@@ -1030,6 +1030,7 @@ export class Tempo {
 		});
 
 		Tempo.init();																						// synchronously initialize the library
+		getRuntime().logger = Tempo.#dbg;
 	}
 
 	/** constructor tempo */																	#tempo?: t.DateTime;
@@ -1066,7 +1067,7 @@ export class Tempo {
 	 */
 	[$Internal]() {
 		const self: Tempo = unwrap(this);
-		return {
+		const out = {
 			get zdt() { return self.#zdt },
 			set zdt(val: any) { self.#zdt = val },
 			get errored() { return self.#errored },
@@ -1084,16 +1085,21 @@ export class Tempo {
 			get now() { return self.#now },
 			config: self.#local.config,
 			parse: self.#local.parse,
+			aliasEngine: self.#local.aliasEngine,
+			_id: (self.#local as any)._id,
+			tempoInstance: self,
 			CONFIG: enums.CONFIG,
 			PARSE: enums.PARSE,
 			ZONED_DATE_TIME: enums.ZONED_DATE_TIME
 		}
+
+		return out;
 	}
 
 	/** allow for auto-convert of Tempo to BigInt, Number or String */
 	[Symbol.toPrimitive](hint?: 'string' | 'number' | 'default') {
 		switch (hint) {
-			case 'string': return this.toString();								// ISO 8601 string
+			case 'string': return this.toString();								// iso 8601 string
 			case 'number': return this.epoch.ms;									// Unix epoch (milliseconds)
 			default: return this.nano;														// Unix epoch (nanoseconds)
 		}
@@ -1107,7 +1113,6 @@ export class Tempo {
 	get [Symbol.toStringTag]() {															// default string description
 		return 'Tempo';																					// hard-coded to avoid minification mangling
 	}
-
 
 	/**
 	 * Instantiates a new `Tempo` object with configuration only.
@@ -1323,9 +1328,9 @@ export class Tempo {
 	}
 
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
-	/** 4-digit ISO week-numbering year */										get yw() { return this.toDateTime().yearOfWeek }
+	/** 4-digit iso week-numbering year */										get yw() { return this.toDateTime().yearOfWeek }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
-	/** ISO week number of the year */												get ww() { return this.toDateTime().weekOfYear as t.ww }
+	/** iso week number of the year */												get ww() { return this.toDateTime().weekOfYear as t.ww }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day }
 	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
@@ -1342,7 +1347,7 @@ export class Tempo {
 	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as t.Month) }
 	/** Short weekday name (e.g., 'Mon') */										get www() { return Tempo.WEEKDAY.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
 	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Tempo.WEEKDAYS.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
-	/** ISO weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
+	/** iso weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
 	/** Nanoseconds since Unix epoch (BigInt) */							get nano() { return this.toDateTime().epochNanoseconds }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
 
@@ -1450,28 +1455,44 @@ export class Tempo {
 
 	/** the current system time localized to this instance. */toNow() { return instant().toZonedDateTimeISO(this.tz).withCalendar(this.cal) }
 	/** the date-time as a standard `Date` object. */					toDate() { return new Date(this.toDateTime().round({ smallestUnit: enums.ELEMENT.ms }).epochMilliseconds) }
-	/**ISO8601 string representation of the date-time. */
+	/** Custom JSON serialization for `JSON.stringify`. */		toJSON() { return { ...this.#local.config, value: this.toString() } }
+	/** iso8601 string representation of the date-time. */
 	toString() {
 		return (this.isValid && !this.#errored)
 			? this.toPlainDateTime().toString({ calendarName: 'never' })
 			: String(this.#tempo ?? '');
 	}
 
-	/** Custom JSON serialization for `JSON.stringify`. */
-	toJSON() { return { ...this.#local.config, value: this.toString() } }
-
 	/** setup local 'config' and 'parse' rules (prototype-linked to global) */
 	#setLocal(options: t.Options = {}) {
 		const classState = (this.constructor as any)[$Internal]();
+		this.#local = Object.create(classState);
+		(this.#local as any)._id = (this.constructor as any)[$Internal]()._count++;
+		const self = unwrap(this);
 		this.#local.config = markConfig(Object.create(classState.config));
 		Object.assign(this.#local.config, { scope: 'local' });
 
 		this.#local.parse = markConfig(Object.create(classState.parse));
-		this.#local.parse.planner = { ...classState.parse.planner };				// clone the planner object
+		this.#local.parse.event = { ...classState.parse.event };
+		this.#local.parse.period = { ...classState.parse.period };
+		this.#local.parse.snippet = { ...classState.parse.snippet };
+		this.#local.parse.planner = {
+			...(classState.parse.planner.layoutOrder ? { layoutOrder: [...asArray<string | symbol>(classState.parse.planner.layoutOrder)] } : {}),
+			...(isDefined(classState.parse.planner.preFilter) ? { preFilter: Boolean(classState.parse.planner.preFilter) } : {}),
+		};
+		this.#local.parse.monthDay = {
+			...classState.parse.monthDay,
+			locales: [...asArray(classState.parse.monthDay.locales)],
+			layouts: [...asArray(classState.parse.monthDay.layouts)],
+			timezones: { ...classState.parse.monthDay.timezones },
+			...(classState.parse.monthDay.resolvedLocales ? {
+				resolvedLocales: classState.parse.monthDay.resolvedLocales.map((l: any) => ({ ...l, timeZones: [...l.timeZones] }))
+			} : {})
+		};
 		setProperty(this.#local.parse, 'result', [...(options.result ?? [])]);
 
 		Object.defineProperty(this.#local, 'tempoInstance', {		// Link this instance to its state for static alias access
-			value: this,
+			value: self,
 			writable: false,
 			configurable: true,
 			enumerable: false

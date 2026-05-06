@@ -2,185 +2,261 @@
 // Alias Resolution Engine for Tempo
 // Responsible for event/period alias mapping, collision detection, and snippet rebinding
 
-import { asType } from '#library/type.library.js';
+/**
+ * AliasEngine Collision Policy:
+ *
+ * If an Event and a Period alias share the same base word (e.g., 'xmas'),
+ * a warning is logged and only the Event alias is included in the regex pattern for parsing.
+ * This ensures deterministic parsing and avoids ambiguous matches.
+ *
+ * Both aliases may still be registered and resolved, but only the Event alias will be matched
+ * during parsing if a collision occurs. This is a best-effort approach and not entirely risk-free;
+ * users should avoid such collisions when possible.
+ */
+
+import type { Nullable } from '#library/type.library.js';
 import type { Logify } from '#library/logify.class.js';
+import { isDefined, isFunction, isZonedDateTime } from '#library/assertion.library.js';
+import { Match } from '#tempo/support';
+import { ownEntries } from '#library/primitive.library.js';
+import * as t from '../tempo.type.js';
 
 export type AliasTarget = string | number | Function
+type AliasType = 'evt' | 'per';
+type AliasKey = `${AliasType}${number}_${number}`;
+type State = Record<AliasKey, Registry>
+
+export interface AliasResult {
+	value: string;
+	key: string;			// The normalized baseWord (e.g. 'noon')
+	type: AliasType;
+	source: 'global' | 'local';
+	isClock: boolean;
+	isFunction: boolean;
+}
 
 export interface AliasEngineOptions {
-	parent?: AliasEngine | undefined;
-	logger?: Logify | undefined;
+	parent?: Nullable<AliasEngine>;
+	logger?: Nullable<Logify>;
+	config?: Nullable<t.Internal.Config>;
+}
+interface Registry {																				// information about each registered alias
+	key?: AliasKey;
+	name: string;
+	target: AliasTarget;
+	type: AliasType;
+	baseWord: string;
+	collision?: boolean;
+	depth: number;
 }
 
 export class AliasEngine {
-	#parentEngine?: AliasEngineOptions["parent"];
-	#logger?: AliasEngineOptions["logger"];
+	static aliasPattern = /^(evt|per)(\d+)_(\d+)$/;
+	static #idCounter = 0;
 
-	constructor(options: AliasEngineOptions = {}) {
-		this.#parentEngine = options.parent;
+	static #getBaseWord(s: string): string {
+		return s
+			.toLowerCase()
+			.replace(/\[[^\]]*\]\?/g, '')
+			.replace(/.\?/g, '')
+			.replace(/[^a-z0-9]/g, '');
+	}
+
+	#parent?: AliasEngineOptions["parent"];
+	#logger?: AliasEngineOptions["logger"];
+	#config?: AliasEngineOptions["config"];
+
+	#depth: number;																						// the depth of this engine in the proto chain
+	#count: Record<AliasType, number>;												// count of aliases registered at this level (used for indexing)														
+	#state: State;																						// object that holds alias mappings, collisions, and registry for this engine 
+	#words: Record<string, AliasKey>;													// object of base words for collision detection
+	#id: number;
+	#version = 0;
+
+	get depth() {
+		return this.#depth
+	}
+	get id() { return this.#id }
+	get parent() { return this.#parent }
+	getWords() { return this.#words }
+
+	constructor(options = {} as AliasEngineOptions) {
+		this.#parent = options.parent ?? null;
 		this.#logger = options.logger;
+		this.#config = options.config;
+		this.#id = AliasEngine.#idCounter++;
+
+		if (this.#parent) {
+			if (!(this.#parent instanceof AliasEngine)) {
+				const msg = "Parent engine must be an instance of AliasEngine";
+				this.#logger?.error(this.#config, msg);
+				throw new TypeError(msg);
+			}
+
+			this.#depth = this.#parent.#depth + 1;
+			this.#state = Object.create(this.#parent.#state);			// create a new state object that inherits from the parent engine's state
+			this.#words = Object.create(this.#parent.#words);			// create a new words object that inherits from the parent engine's words for collision detection
+		} else {
+			this.#depth = 0;
+			this.#state = Object.create(null);										// initialize an empty state for the root engine (no parent)
+			this.#words = Object.create(null);										// initialize an empty words object for the root engine (no parent)
+		}
+
+		this.#count = { evt: 0, per: 0 };
 	}
 
 	/**
-	 * Detect likely overlap between two alias keys/patterns (moved from Tempo)
+	 * Register aliases and return a regex string representing the full lineage of aliases up the proto chain.  
+	 * Ensures that shadowed/collided baseNames are excluded from parent levels.  
+	 * Note that we track collisions across both Event and Period aliases in the same #words object, since they can
+	 * collide with each other (e.g. "on" could be an event alias and a period alias,  
+	 * which would cause confusion and unintended matches).
 	 */
-	static isAliasCollision(a: string, b: string): boolean {
-		const left = a.trim().toLowerCase();
-		const right = b.trim().toLowerCase();
+	registerAliases(type: AliasType, events: [string, AliasTarget][]) {
+		for (const [name, target] of events) {
+			const index = (this.#count[type]++);
+			const aliasKey = `${type}${this.#depth}_${index}` as AliasKey;
 
-		if (!left || !right) return false;
-		if (left === right) return true;
+			const baseWord = AliasEngine.#getBaseWord(name);
+			const existingKey = this.#words[baseWord];
+			const existing = existingKey ? this.getAlias(existingKey) : undefined;
+			const shouldOverwrite = !(existing?.type === 'evt' && type === 'per');
 
-		// Extract the 'core' characters to determine if they conceptually target the same word
-		const getBaseWord = (s: string) => s
-			.replace(/\[[^\]]*\]\?/g, '')                         // remove optional character classes (e.g. [ -]?)
-			.replace(/.\?/g, '')                                  // remove optional single characters (e.g. s?)
-			.replace(/[^a-z0-9]/g, '');                           // remove all non-alphanumeric characters (regex metachars, spaces, hyphens)
-
-		const baseLeft = getBaseWord(left);
-		const baseRight = getBaseWord(right);
-
-		if (!baseLeft || !baseRight) return false;
-
-		return baseLeft === baseRight;
-	}
-
-	#eventMap: Map<string, AliasTarget> = new Map();
-	#periodMap: Map<string, AliasTarget> = new Map();
-	#eventCollisions: Map<string, AliasTarget[]> = new Map();
-	#periodCollisions: Map<string, AliasTarget[]> = new Map();
-
-	// Event alias management
-	registerEventAlias(name: string, target: AliasTarget): void {
-		this.#registerAliasWithCollision(name, target, this.#eventMap, this.#eventCollisions, 'event');
-	}
-
-	registerEvents(events: [string, AliasTarget][]): void {
-		for (const [name, target] of events)
-			this.registerEventAlias(name, target);
-	}
-	resolveEventAlias(name: string, thisArg?: any) {
-		return this.#resolveAlias(name, this.#eventMap, thisArg);
-	}
-	hasEventAlias(name: string): boolean {
-		return this.#eventMap.has(name);
-	}
-	getAllEventAliases(): Record<string, AliasTarget> {
-		return Object.fromEntries(this.#eventMap.entries());
-	}
-	detectEventCollisions(): Record<string, AliasTarget[]> {
-		return Object.fromEntries(this.#eventCollisions.entries());
-	}
-
-	// Period alias management
-	registerPeriodAlias(name: string, target: AliasTarget): void {
-		this.#registerAliasWithCollision(name, target, this.#periodMap, this.#periodCollisions, 'period');
-	}
-
-	registerPeriods(periods: [string, AliasTarget][]): void {
-		for (const [name, target] of periods)
-			this.registerPeriodAlias(name, target);
-	}
-	resolvePeriodAlias(name: string, thisArg?: any) {
-		return this.#resolveAlias(name, this.#periodMap, thisArg);
-	}
-	hasPeriodAlias(name: string): boolean {
-		return this.#periodMap.has(name);
-	}
-	getAllPeriodAliases(): Record<string, AliasTarget> {
-		return Object.fromEntries(this.#periodMap.entries());
-	}
-	detectPeriodCollisions(): Record<string, AliasTarget[]> {
-		return Object.fromEntries(this.#periodCollisions.entries());
-	}
-
-	// Shared logic
-	#registerAliasWithCollision(
-		name: string,
-		target: AliasTarget,
-		map: Map<string, AliasTarget>,
-		collisions: Map<string, AliasTarget[]>,
-		type: 'event' | 'period'
-	) {
-		let collisionDetected = false;
-		// Check for local collisions using isAliasCollision
-		for (const [existingName, existingTarget] of map.entries()) {
-			if (
-				existingTarget !== target &&
-				AliasEngine.isAliasCollision(existingName, name)
-			) {
-				const existing = collisions.get(existingName) || [];
-				collisions.set(
-					existingName,
-					Array.from(new Set([...existing, target, existingTarget]))
+			if (this.#logger && baseWord in this.#words) {
+				this.#logger.warn(this.#config,
+					`[AliasEngine] Collision detected for ${type} alias "${name}". ${shouldOverwrite ? 'Overwriting' : 'Preserving'} existing alias.`
 				);
-				collisionDetected = true;
+			}
+
+			if (shouldOverwrite) {
+				this.#words[baseWord] = aliasKey;
+			}
+
+			this.#state[aliasKey] = {
+				name,																								// plain string or regex-like string
+				target,																							// string, number, or function
+				type,																								// 'evt' or 'per'
+				baseWord,																						// used for collision detection
+				collision: Boolean(existingKey),
+				depth: this.#depth,
 			}
 		}
 
-		// Check for parent collisions using isAliasCollision
-		let parent = this.#parentEngine;
-		while (parent) {
-			const parentAliases = type === 'event' ? parent.getAllEventAliases() : parent.getAllPeriodAliases();
-			for (const [parentName, parentTarget] of Object.entries(parentAliases)) {
-				if (
-					parentTarget !== target &&
-					AliasEngine.isAliasCollision(parentName, name)
-				) {
-					const parentCollisions = collisions.get(parentName) || [];
-					collisions.set(
-						parentName,
-						Array.from(new Set([...parentCollisions, target, parentTarget]))
-					);
-					collisionDetected = true;
+		this.#version++;
+		return this.getPatterns(type);
+	}
+
+	/**
+	 * Build regex patterns for this engine and all parent engines, excluding shadowed/collided baseNames.  
+	 * This ensures that if an alias is shadowed by a child engine,  
+	 * it won't be included in the regex patterns of the parent engine,  
+	 * preventing unintended matches and preserving the expected behavior of alias resolution.
+	 */
+	getPatterns(type: AliasType, seenBaseNames = new Set<string>(), winnerLookup?: Record<string, AliasKey>): string | undefined {
+		const patterns: string[] = [];
+		const winners = winnerLookup ?? this.#words;
+
+		for (const [alias, register] of ownEntries(this.#state)) {
+			if (register.type === type && !seenBaseNames.has(register.baseWord)) {
+				// Check for cross-type collision priority (Events win over Periods)
+				if (type === 'per') {
+					const winnerKey = winners[register.baseWord];
+					const winner = this.getAlias(winnerKey);
+					if (winner && winner.type === 'evt') {
+						continue; // Skip period if an event is using the same baseWord
+					}
 				}
-			}
-			// Access parent's parent engine via a public way if possible, or keep it private if safe
-			// Since we're in the same class, we can still use #parentEngine for the chain
-			parent = parent.#parentEngine;
-		}
 
-		if (collisionDetected && this.#logger) {
-			this.#logger.warn(
-				`[AliasEngine] Potential Collision detected for ${type} alias "${name}". Multiple definitions found. This may shadow or overwrite an existing alias.`
-			);
-		}
-
-		map.set(name, target);
-	}
-
-	#resolveAlias(name: string, map: Map<string, AliasTarget>, thisArg?: any): string | number {
-		let currentEngine: AliasEngine | undefined = this;
-		const isEvent = map === this.#eventMap;
-
-		while (currentEngine) {
-			const { type, value } = asType(map.get(name));
-			switch (type) {
-				case 'Function':
-					return value.call(thisArg);
-
-				case 'String':
-				case 'Number':
-					return value;
-
-				default:
-					currentEngine = currentEngine.#parentEngine;
-					if (currentEngine)
-						map = isEvent ? currentEngine.#eventMap : currentEngine.#periodMap;
+				seenBaseNames.add(register.baseWord);
+				patterns.push(`(?<${alias}>${Match.safeAlias(register.name)})`);
 			}
 		}
 
-		return name;
+		if (this.#parent) {
+			const parentPatterns = this.#parent.getPatterns(type, seenBaseNames, winners);
+			if (parentPatterns) patterns.push(parentPatterns);
+		}
+
+		return patterns.join('|');
 	}
 
-	clear(type?: 'event' | 'period'): void {
-		if (!type || type === 'event') {
-			this.#eventMap.clear();
-			this.#eventCollisions.clear();
-		}
-		if (!type || type === 'period') {
-			this.#periodMap.clear();
-			this.#periodCollisions.clear();
-		}
+	getVersion(): number {
+		return this.#version + (this.#parent?.getVersion() ?? 0);
 	}
+
+	hasAlias(name: string, type?: AliasType) {
+		const baseWord = AliasEngine.#getBaseWord(name);
+		const key = this.#words[baseWord];
+		return !key
+			? false
+			: type
+				? this.#state[key].type === type
+				: true
+	}
+
+	resolveAlias(name: AliasKey, thisArg?: any): AliasResult | undefined {
+		const register = this.getAlias(name);
+		if (!register) return undefined;
+
+		let value = '';
+		const isFn = isFunction(register.target);
+
+		if (isFunction(register.target)) {
+			const result = register.target.call(thisArg);
+			value = isDefined(result) ? result.toString() : '';
+		} else {
+			value = register.target.toString();
+		}
+
+		return {
+			value,
+			key: register.baseWord,
+			type: register.type,
+			source: register.depth === 0 ? 'global' : 'local',
+			isClock: Match.clock.test(value),
+			isFunction: isFn
+		};
+	}
+
+	getAlias(key: string): Registry | undefined {
+		return this.#state[key as AliasKey] ?? this.#parent?.getAlias(key);
+	}
+
+	getAliases(type?: AliasType, recurse = false) {
+		const aliases = [] as Registry[];
+
+		ownEntries(this.#state)
+			.filter(([_, register]) => !type || register.type === type)
+			.forEach(([key, register]) => {
+				aliases.push(Object.assign({}, { key }, register));
+			});
+
+		if (recurse && this.#parent)
+			aliases.push(...this.#parent.getAliases(type, true));
+
+		return aliases;
+	}
+
+	clear(type: AliasType) {
+		this.#count[type] = 0;
+
+		for (const registry in this.#state) {
+			if (this.#state[registry as AliasKey].type === type) {
+				delete this.#state[registry as AliasKey];
+			}
+		}
+
+		// Rebuild #words and re-calculate counts from remaining state
+		this.#words = Object.create(this.#parent ? (this.#parent as any).#words : null);
+		this.#count = { evt: 0, per: 0 };
+
+		for (const [key, register] of ownEntries(this.#state)) {
+			this.#words[register.baseWord] = key;
+			this.#count[register.type]++;
+		}
+
+		this.#version++;
+	}
+
 }
+

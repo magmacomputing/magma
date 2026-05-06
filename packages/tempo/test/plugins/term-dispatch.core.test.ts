@@ -2,7 +2,7 @@ import { Tempo } from '#tempo/core';
 import '#tempo/parse';
 import '#tempo/mutate';
 import '#tempo/format';
-import '#tempo/term/standard';
+import '#tempo/term';
 
 describe('Term Dispatch Refactor', () => {
 	it('should set term by index (#quarter: 2)', () => {

@@ -2,7 +2,7 @@ import '#library/temporal.polyfill.js';
 import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { pad, singular } from '#library/string.library.js';
-import { Match, enums, isTempo } from '#tempo/support';
+import { Match, enums, isTempo, logError, logWarn } from '#tempo/support';
 import * as t from '../tempo.type.js';
 
 /**
@@ -112,7 +112,7 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
  * 
  * @returns  ZonedDateTime with computed date-offset  
  */
-export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime, logger: any, config: any): Temporal.ZonedDateTime {
+export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any): Temporal.ZonedDateTime {
 	const { wkd, mod, nbr = '1', sfx, afx, ...rest } = groups as Lexer.GroupWkd;
 	if (isUndefined(wkd)) return dateTime;
 
@@ -121,7 +121,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 		return dateTime;
 
 	if (!isEmpty(mod) && !isEmpty(sfx)) {
-		logger.warn(config, `Cannot provide both a modifier '${mod}' and suffix '${sfx}'`);
+		logWarn(config, `Cannot provide both a modifier '${mod}' and suffix '${sfx}'`);
 		return dateTime;
 	}
 
@@ -130,7 +130,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	const offset = (enums.WEEKDAY as any)[weekday] ?? (enums.WEEKDAYS as any)[weekday];
 
 	if (!Number.isFinite(offset)) {
-		logger.error(config, `Invalid weekday token: "${wkd}"`);
+		logError(config, `Invalid weekday token: "${wkd}"`);
 		return dateTime;
 	}
 
@@ -146,7 +146,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 }
 
 /** resolve a date pattern match */
-export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, logger: any, config: any, pivot: number = 75): Temporal.ZonedDateTime {
+export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any, pivot: number = 75): Temporal.ZonedDateTime {
 
 	const { mod, nbr = '1', afx, unt } = groups as Lexer.GroupDate;
 	// Normalize yy, mm, dd: treat empty string as missing
@@ -158,7 +158,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 		return dateTime;
 
 	if (!isEmpty(mod) && !isEmpty(afx)) {
-		logger.warn(config, `Cannot provide both a modifier '${mod}' and suffix '${afx}'`);
+		logWarn(config, `Cannot provide both a modifier '${mod}' and suffix '${afx}'`);
 		return dateTime;
 	}
 
@@ -211,7 +211,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, lo
 	delete groups["afx"];
 
 	if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-		logger.error(config, `Invalid Date components: year=${year}, month=${month}, day=${day}`);
+		logError(config, `Invalid Date components: year=${year}, month=${month}, day=${day}`);
 		return dateTime;
 	}
 

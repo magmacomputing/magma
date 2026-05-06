@@ -22,7 +22,7 @@ describe('Tempo Core', () => {
 
 			it('should fail-fast (strict) if input fails Master Guard', () => {
 				// 'Hello World' fails the guard, so it attempts immediate parsing and throws
-				expect(() => new Tempo('Hello World')).toThrow(/Cannot parse Date/);
+				expect(() => new Tempo('Hello World')).toThrow(/invalid ISO 8601 string/);
 			});
 		});
 

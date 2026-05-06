@@ -17,11 +17,13 @@ const bracket_content = /[^\]]+/;
 export const Match = proxify({
 	/** match all {} pairs, if they start with a word char */	braces: /{([#]?[\w]+(?:\.[\w]+)*)}/g,
 	/** named capture-group, if it starts with a letter */		captures: /\(\?<([a-zA-Z][\w]*)>(.*?)(?<!\\)\)/g,
-	/** event */																							event: /^([gl])?evt(?<idx>[0-9]+)$|^g?dt$/,
-	/** period */																							period: /^([gl])?per(?<idx>[0-9]+)$|^g?tm$/,
+	/** event */																							event: /^evt\d+_\d+$/,
+	/** period */																							period: /^per\d+_\d+$/,
+	/** structural */																					named: /^g?dt$|^g?tm$/,
 	/** two digit year */																			twoDigit: /^[0-9]{2}$/,
-	/** date */																								date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/,
-	/** time */																								time: /^[0-9]{2}:[0-9]{2}(:[0-9]{2})?$/,
+	/** date (ISO 8601) */																		date: /^(?:[+-][0-9]{6}|[0-9]{4})-?(?:0[1-9]|1[0-2])-?(?:0[1-9]|[12][0-9]|3[01])$/,
+	/** time (HH:mm[:ss]) */																	time: /^(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$/,
+	/** clock (HH:mm[:ss][.ffffff]) */												clock: /^(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?(?:\.\d{1,9})?$/,
 	/** separator characters (/ - . , T) */										separator: /[T\/\-\.\s,]/,
 	/** modifier characters (+-<>=) */												modifier: /[\+\-\<\>][\=]?|this|next|prev|last/,
 	/** offset post keywords (ago|hence) */										affix: /ago|hence|from now/,
@@ -34,6 +36,8 @@ export const Match = proxify({
 	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
 	/** extracted value-only version of a slick shifter */		slickValue: /^(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
 	/** escape special regex characters in a string */				escape: (str: string) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+	/** escape only dangerous quantifiers and anchors to prevent backtracking/injection while allowing basic regex */
+	safeAlias: (str: string) => String(str).replace(/[*+{}!^$\\]/g, '\\$&'),
 	/** numeric-only string detection */											numeric: /^\s*[-+]?\d+(\.\d+)?\s*$/,
 	/** match suspicious nested quantifiers (backtracking) */	backtrack: /(\(.*\)\+|\(.*\)\*|\(.*\)\{.*\})/,
 }, true, false);
@@ -115,7 +119,7 @@ export type Layout = typeof Layout
 export const Event = looseIndex<string, string | Function>()({
 	'new.?years? ?eve': '31 Dec',
 	'nye': '31 Dec',
-	'new.?years?( ?day)?': '01 Jan',
+	'new.?years?(?: ?day)?': '01 Jan',
 	'ny': '01 Jan',
 	'christmas ?eve': '24 Dec',
 	'christmas': '25 Dec',
@@ -198,5 +202,12 @@ export const Default = secure({
 
 	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
 	/** internationalization configuration */									intl: IntlDefault,
-	/** parse planner configuration (layoutOrder, etc.) */		planner: { layoutOrder: [], preFilter: false },
+	/** parse planner configuration (layoutOrder, etc.) */		planner: {
+		layoutOrder: [
+			Token.hms, Token.dmy6, Token.mdy6, Token.ymd6, Token.wkd,
+			Token.dt, Token.tm, Token.dtm, Token.tmd, Token.dmy, Token.mdy, Token.ymd,
+			Token.off, Token.rel
+		],
+		preFilter: false
+	},
 } as Options)

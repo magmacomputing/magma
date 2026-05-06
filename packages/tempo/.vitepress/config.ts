@@ -12,7 +12,8 @@ export default defineConfig({
   base: '/magma/',
   title: "Tempo",
   description: "The Professional Date-Time Library for Temporal",
-  srcDir: './doc',
+  srcDir: '.',
+  srcExclude: ['**/plan/**', '**/archive/**', '**/bench/**', '**/scratch/**', 'CHANGELOG.md'],
   markdown: {
     math: true
   },

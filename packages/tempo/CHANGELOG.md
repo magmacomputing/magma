@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+  
+## [2.9.0] - 2026-05-06
+  
+### Added
+- **Centralized Alias Architecture**: Finalized the migration to a unified `AliasEngine`. All event and period aliases are now managed through a centralized registry, providing a single source of truth across global and local contexts.
+- **Rich Alias Results**: Alias resolution now returns a structured `AliasResult` object containing exhaustive metadata, including the source (global/local), type (Event/Period), and specific resolution flags.
+- **Hardened Clock Snapping**: Standardized the resolution path for clock-like aliases (e.g. `8:00`). The engine now ensures absolute sub-second precision clearing (milliseconds, microseconds, and nanoseconds) when snapping to a time-string alias.
+- **Optimized Lifecycle Monitoring**: Implemented a version counter in the `AliasEngine`. Mutation operations now trigger a version increment, allowing `Tempo` instances to efficiently detect registry changes and rebuild internal regex patterns without expensive deep-cloning.
+  
+### Changed
+- **Parser Context Consolidation**: Extracted the "host" facade construction from the main parsing loop into a dedicated `getResolutionContext` helper, improving maintainability and reducing Parser complexity.
+- **Decoupled Term Registration**: Refactored `Tempo.extend` and term-based alias registration to bypass legacy raw registries, while maintaining backward compatibility via a mirrored metadata view.
+  
+### Fixed
+- **Documentation Server Stability**: Resolved VitePress 404 errors by correcting the `srcDir` configuration and implemented `srcExclude` to prevent build failures from dead links in non-documentation folders.
+  
 
 ## [2.8.0] - 2026-04-30
 

@@ -1,6 +1,6 @@
 import '#library/temporal.polyfill.js';
 import { asType } from '#library/type.library.js';
-import { isNull, isString, isObject, isFunction, isZonedDateTime, isInstant, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/assertion.library.js';
+import { isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/assertion.library.js';
 import { asArray, asInteger } from '#library/coercion.library.js';
 import { isNumeric } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
@@ -20,6 +20,33 @@ import { setProperty } from '#tempo/support/tempo.util.js';
 import enums from '../support/tempo.enum.js';
 import * as t from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
+
+/**
+ * Provide a lightweight host context that mimics a Tempo instance for functional alias handlers.
+ * @internal
+ */
+function getResolutionContext(state: any, dateTime: Temporal.ZonedDateTime, resolvingKeys: Set<string>) {
+	const TempoClass = getRuntime().modules['Tempo'];
+	return {
+		add: (val: any) => dateTime.add(val),
+		subtract: (val: any) => dateTime.subtract(val),
+		with: (val: any) => dateTime.with(val),
+		set: (val: any, opt?: any) => {
+			const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
+			return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
+		},
+		toNow: () => instant().toZonedDateTimeISO(state.config.timeZone).withCalendar(state.config.calendar),
+		toDateTime: () => dateTime,
+		get hh() { return dateTime.hour },
+		get mi() { return dateTime.minute },
+		get ss() { return dateTime.second },
+		get yy() { return dateTime.year },
+		get mm() { return dateTime.month },
+		get dd() { return dateTime.day },
+		[sym.$Identity]: true,
+		config: state.config
+	};
+}
 
 /**
  * Internal Parse Engine Implementation
@@ -131,7 +158,7 @@ const _ParseEngine = {
 			const { timeZone: tz2, calendar: cal2 } = state.config;
 			const [targetTz, targetCal] = getTemporalIds(tz2, cal2);
 
-			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal, (m) => _ParseEngine.result(state, m), state.config.timeStamp);
+			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal, (m) => _ParseEngine.result(state, m), state.config.timeStamp, state.config);
 
 			dateTime = dt;
 			if (timeZone && state) state.config.timeZone = timeZone;
@@ -291,13 +318,16 @@ const _ParseEngine = {
 			if (isEmpty(groups))
 				continue;
 
-			const hasTime = Object.keys(groups).some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key)) || Object.values(groups).includes('now');
+			const hasTime = Object.keys(groups)
+				.some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key) || (Match.named.test(key) && key.endsWith('tm'))) || Object.values(groups).includes('now');
 			_ParseEngine.result(state, { match: symKey.description, value: trim, groups: { ...groups } });
 
 			dateTime = parseZone(groups, dateTime, state.config);
 			dateTime = _ParseEngine.parseGroups(state, groups, dateTime, isAnchored, resolvingKeys);
-			dateTime = parseWeekday(groups, dateTime, (TempoClass as any)?.[sym.$dbg], state.config);
-			dateTime = parseDate(groups, dateTime, (TempoClass as any)?.[sym.$dbg], state.config, state.parse["pivot"]);
+			if (state.errored) return arg;
+
+			dateTime = parseWeekday(groups, dateTime, state.config);
+			dateTime = parseDate(groups, dateTime, state.config, state.parse["pivot"]);
 			dateTime = parseTime(groups, dateTime);
 
 			const isChanged = !dateTime.toPlainTime().equals(anchorTime);
@@ -325,7 +355,6 @@ const _ParseEngine = {
 
 	/** resolve {event} | {period} to their date | time values (mutates groups) */
 	parseGroups(state: t.Internal.State, groups: t.Groups, dateTime: Temporal.ZonedDateTime, isAnchored: boolean, resolvingKeys: Set<string>): Temporal.ZonedDateTime {
-		const TempoClass = getRuntime().modules['Tempo'];
 		const prevAnchor = state.anchor;
 		const prevZdt = state.zdt;
 
@@ -336,135 +365,77 @@ const _ParseEngine = {
 		const isRoot = state.parseDepth === 1;
 		if (isRoot) state.matches = [];
 
+		const TempoClass = getRuntime().modules['Tempo'];
+		const aliasEngine = state.aliasEngine ?? (TempoClass as any)?.[sym.$Internal]?.().aliasEngine;
+
 		try {
-			const resolved = new Set<string>();
-			let pending: string[];
-
-			while ((pending = ownKeys(groups).filter(k => (Match.event.test(k) || Match.period.test(k) || k === 'slk') && !resolved.has(k))).length > 0) {
-				const key = pending[0];
-
+			for (const key of ownKeys(groups)) {
 				if (key === 'slk') {
 					const slk = groups[key];
 					const result = resolveTermMutation(TempoClass, state as any, 'set', slk, undefined, dateTime);
+
 					if (result === null) {
 						state.errored = true;
-						resolved.add(key);
 						delete groups[key];
 						break;
 					}
+
 					dateTime = result;
-					resolved.add(key);
 					delete groups[key];
 					continue;
 				}
 
-				const isEvent = Match.event.test(key);
-				const isGlobal = key.startsWith('g');
-				const isNamed = key === 'gdt' || key === 'dt' || key === 'gtm' || key === 'tm';
-				const idx = isNamed ? -1 : +(key.match(/\d+$/)?.[0] ?? -1);
-
-				if (isNamed) {
-					resolved.add(key);
+				if (Match.named.test(key)) { 												// remove structural markers
 					delete groups[key];
 					continue;
 				}
 
-				const globalParse = isGlobal ? (TempoClass as any)?.[sym.$Internal]?.().parse : undefined;
-				const src = isGlobal
-					? (isEvent ? globalParse?.event : globalParse?.period)
-					: (isEvent ? state.parse.event : state.parse.period);
-				const entry = ownEntries(src, true)[idx];
+				const register = aliasEngine?.getAlias(key);
+				if (!register) continue;
 
-				if (!entry) {
-					resolved.add(key);
-					delete groups[key];
-					continue;
-				}
-
-				const aliasKey = entry[0] as string;
+				const aliasKey = register.name;
 				if (resolvingKeys.size > 50 || resolvingKeys.has(aliasKey)) {
 					const msg = `Infinite recursion detected in Tempo resolution for: ${aliasKey}`;
 					state.errored = true;
 					if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new RangeError(msg));
-					resolved.add(key);
 					delete groups[key];
 					continue;
 				}
 
 				resolvingKeys.add(aliasKey);
-				resolved.add(key);
 
-				const definition = entry[1];
-				const isFn = isFunction(definition);
-				let res: string = '';
-				if (isFn) {
-					// Provide a lightweight host context that mimics a Tempo instance for the handler
-					const host = {
-						add: (val: any) => {
-							return dateTime.add(val);
-						},
-						subtract: (val: any) => {
-							return dateTime.subtract(val);
-						},
-						with: (val: any) => dateTime.with(val),
-						set: (val: any, opt?: any) => {
-							const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
-							return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
-						},
-						toNow: () => instant().toZonedDateTimeISO(state.config.timeZone).withCalendar(state.config.calendar),
-						toDateTime: () => dateTime,
-						get hh() { return dateTime.hour },
-						get mi() { return dateTime.minute },
-						get ss() { return dateTime.second },
-						get yy() { return dateTime.year },
-						get mm() { return dateTime.month },
-						get dd() { return dateTime.day },
-						[sym.$Identity]: true,
-						config: state.config
-					};
-
-					const result = (definition as Function).call(host);
-					if (isString(result) && /^(?:[01]?\d|2[0-3]):[0-5]\d$/.test(result)) {
-						const [hourStr, minuteStr] = result.split(':');
-						const hour = Number(hourStr);
-						const minute = Number(minuteStr);
-						dateTime = dateTime.with({ hour, minute, second: 0, millisecond: 0 });
-						res = '';
-					} else if (isTempo(result)) {
-						dateTime = (result as any).toDateTime();
-					} else if (isZonedDateTime(result)) {
-						dateTime = result as Temporal.ZonedDateTime;
-					} else if (isObject(result) && isFunction((result as any).toDateTime)) {
-						dateTime = (result as any).toDateTime();
-					} else {
-						res = isString(result) || isNumeric(result) ? String(result) : '';
-					}
-					state.zdt = dateTime;
-				} else {
-					res = (definition as string);
-				}
+				const host = getResolutionContext(state, dateTime, resolvingKeys);
+				const res = aliasEngine?.resolveAlias(key as any, host);
+				if (!res) continue;
 
 				try {
-					const type = isEvent ? 'Event' : 'Period';
-					const pat = (isEvent ? 'dt' : 'tm');
-					const resolveVal = isFn ? res : definition;
-					const source = isGlobal ? 'global' : 'local';
-					_ParseEngine.result(state, { type, value: entry[0] as any, match: pat, source, groups: { [key]: resolveVal as string } });
+					const mapped = ({
+						evt: { type: 'Event', pat: 'dt' },
+						per: { type: 'Period', pat: 'tm' }
+					} as const)[res.type as 'evt' | 'per'];
 
-					// Protect against recursive re-evaluation of same alias
-					if (!isEmpty(res) && res !== String(groups[key])) {
+					if (!mapped)
+						throw new Error(`[ParseEngine] Unexpected AliasType: ${res.type}`);
+
+					const { type, pat } = mapped;
+
+					_ParseEngine.result(state, { type, value: res.key as any, match: pat, source: res.source, groups: { [key]: res.value } });
+
+					// If it resolved to a new string, we re-parse it
+					if (!isEmpty(res.value) && res.value !== String(groups[key])) {
 						const resolving = new Set(resolvingKeys);
-						resolving.add(aliasKey);
+						resolving.add(res.key);
 						// Explicitly propagate anchor for recursive parse
 						const prevAnchor: any = state.anchor;
 						state.anchor = dateTime;
-						const resMatch = _ParseEngine.parseLayout(state, res, dateTime, true, resolving);
+						const resMatch = _ParseEngine.parseLayout(state, res.value, dateTime, true, resolving);
 						state.anchor = prevAnchor;
 
 						if (resMatch.type === 'Temporal.ZonedDateTime')
 							dateTime = resMatch.value;
 					}
 				} finally {
+					state.zdt = dateTime;
 					delete groups[key];
 				}
 			}
