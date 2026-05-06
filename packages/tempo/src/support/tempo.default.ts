@@ -21,9 +21,9 @@ export const Match = proxify({
 	/** period */																							period: /^per\d+_\d+$/,
 	/** structural */																					named: /^g?dt$|^g?tm$/,
 	/** two digit year */																			twoDigit: /^[0-9]{2}$/,
-	/** date */																								date: /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/,
-	/** time */																								time: /^[0-9]{2}:[0-9]{2}(:[0-9]{2})?$/,
-	/** clock (HH:mm) */																			clock: /^(?:[01]?\d|2[0-3]):[0-5]\d$/,
+	/** date (ISO 8601) */																		date: /^(?:[+-][0-9]{6}|[0-9]{4})-?(?:0[1-9]|1[0-2])-?(?:0[1-9]|[12][0-9]|3[01])$/,
+	/** time (HH:mm[:ss]) */																	time: /^(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$/,
+	/** clock (HH:mm[:ss]) */																	clock: /^(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/,
 	/** separator characters (/ - . , T) */										separator: /[T\/\-\.\s,]/,
 	/** modifier characters (+-<>=) */												modifier: /[\+\-\<\>][\=]?|this|next|prev|last/,
 	/** offset post keywords (ago|hence) */										affix: /ago|hence|from now/,
@@ -117,7 +117,7 @@ export type Layout = typeof Layout
 export const Event = looseIndex<string, string | Function>()({
 	'new.?years? ?eve': '31 Dec',
 	'nye': '31 Dec',
-	'new.?years?( ?day)?': '01 Jan',
+	'new.?years?(?: ?day)?': '01 Jan',
 	'ny': '01 Jan',
 	'christmas ?eve': '24 Dec',
 	'christmas': '25 Dec',
@@ -200,5 +200,11 @@ export const Default = secure({
 
 	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
 	/** internationalization configuration */									intl: IntlDefault,
-	/** parse planner configuration (layoutOrder, etc.) */		planner: { layoutOrder: [], preFilter: false },
+	/** parse planner configuration (layoutOrder, etc.) */		planner: {
+		// layoutOrder: [
+		// 	Token.hms, Token.dmy6, Token.mdy6, Token.ymd6, Token.wkd,
+		// 	Token.dt, Token.tm, Token.dtm, Token.tmd, Token.dmy, Token.mdy, Token.ymd,
+		// 	Token.off, Token.rel
+		// ], preFilter: false
+	},
 } as Options)

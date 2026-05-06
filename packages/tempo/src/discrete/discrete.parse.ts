@@ -131,7 +131,7 @@ const _ParseEngine = {
 			const { timeZone: tz2, calendar: cal2 } = state.config;
 			const [targetTz, targetCal] = getTemporalIds(tz2, cal2);
 
-			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal, (m) => _ParseEngine.result(state, m), state.config.timeStamp);
+			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal, (m) => _ParseEngine.result(state, m), state.config.timeStamp, state.config);
 
 			dateTime = dt;
 			if (timeZone && state) state.config.timeZone = timeZone;
@@ -291,13 +291,16 @@ const _ParseEngine = {
 			if (isEmpty(groups))
 				continue;
 
-			const hasTime = Object.keys(groups).some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key) || (Match.named.test(key) && key.endsWith('tm'))) || Object.values(groups).includes('now');
+			const hasTime = Object.keys(groups)
+				.some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key) || (Match.named.test(key) && key.endsWith('tm'))) || Object.values(groups).includes('now');
 			_ParseEngine.result(state, { match: symKey.description, value: trim, groups: { ...groups } });
 
 			dateTime = parseZone(groups, dateTime, state.config);
 			dateTime = _ParseEngine.parseGroups(state, groups, dateTime, isAnchored, resolvingKeys);
-			dateTime = parseWeekday(groups, dateTime, (TempoClass as any)?.[sym.$dbg], state.config);
-			dateTime = parseDate(groups, dateTime, (TempoClass as any)?.[sym.$dbg], state.config, state.parse["pivot"]);
+			if (state.errored) return arg;
+
+			dateTime = parseWeekday(groups, dateTime, state.config);
+			dateTime = parseDate(groups, dateTime, state.config, state.parse["pivot"]);
 			dateTime = parseTime(groups, dateTime);
 
 			const isChanged = !dateTime.toPlainTime().equals(anchorTime);
@@ -325,8 +328,6 @@ const _ParseEngine = {
 
 	/** resolve {event} | {period} to their date | time values (mutates groups) */
 	parseGroups(state: t.Internal.State, groups: t.Groups, dateTime: Temporal.ZonedDateTime, isAnchored: boolean, resolvingKeys: Set<string>): Temporal.ZonedDateTime {
-		const TempoClass = getRuntime().modules['Tempo'];
-		const aliasEngine = state.aliasEngine;
 		const prevAnchor = state.anchor;
 		const prevZdt = state.zdt;
 
@@ -336,6 +337,9 @@ const _ParseEngine = {
 		state.parseDepth = (state.parseDepth ?? 0) + 1;
 		const isRoot = state.parseDepth === 1;
 		if (isRoot) state.matches = [];
+
+		const TempoClass = getRuntime().modules['Tempo'];
+		const aliasEngine = state.aliasEngine ?? (TempoClass as any)?.[sym.$Internal]?.().aliasEngine;
 
 		try {
 			for (const key of ownKeys(groups)) {
@@ -407,12 +411,13 @@ const _ParseEngine = {
 
 					_ParseEngine.result(state, { type, value: aliasKey as any, match: pat, source, groups: { [key]: res } });
 
-					// If the alias resolved to a time-snap (hh:mm), we handle it directly
+					// If the alias resolved to a time-snap (hh:mm[:ss]), we handle it directly
 					if (isFn && Match.clock.test(res)) {
-						const [hourStr, minuteStr] = res.split(':');
+						const [hourStr, minuteStr, secondStr = '0'] = res.split(':');
 						const hour = Number(hourStr);
 						const minute = Number(minuteStr);
-						dateTime = dateTime.with({ hour, minute, second: 0, millisecond: 0 });
+						const second = Number(secondStr);
+						dateTime = dateTime.with({ hour, minute, second, millisecond: 0 });
 					}
 					// Otherwise, if it resolved to a new string, we re-parse it
 					else if (!isEmpty(res) && res !== String(groups[key])) {

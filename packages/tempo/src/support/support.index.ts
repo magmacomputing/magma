@@ -32,5 +32,5 @@ export { $Tempo, $Register, $Interpreter, $logError, $logDebug, $dbg, $guard, $e
 export { registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
 export { getRuntime, TempoRuntime } from './tempo.runtime.js';
 export { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './tempo.default.js';
-export { SCHEMA, getLargestUnit, setPatterns } from './tempo.util.js';
+export { SCHEMA, getLargestUnit, setPatterns, logError, logWarn, logDebug } from './tempo.util.js';
 export { init, extendState } from './tempo.init.js';

@@ -1,4 +1,4 @@
-import { isTempo, Match } from '#tempo/support';
+import { isTempo, logError } from '#tempo/support';
 import { isNumeric, isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
 import type { TemporalObject, TypeValue } from '#library/type.library.js';
 import type { Tempo } from '#tempo/tempo.class.js';
@@ -15,7 +15,8 @@ export function compose(
 	targetTz: string,
 	targetCal: string,
 	onResult?: (match: any) => void,
-	unit: t.Internal.TimeStamp = 'ms'
+	unit: t.Internal.TimeStamp = 'ms',
+	config?: any
 ): { dateTime: Temporal.ZonedDateTime, timeZone?: string | undefined } {
 	let temporal: TemporalObject | Tempo = today;
 	let timeZone: string | undefined;
@@ -37,18 +38,11 @@ export function compose(
 				temporal = zdt;
 				onResult?.({ type, value: str, match: 'iso8601' });
 			} catch (err) {
-				if (Match.date.test(value)) {
-					try {
-						temporal = Temporal.PlainDate.from(value);
-						break;
-					} catch { /* ignore and fallback */ }
-				}
-
 				try {
-					temporal = Temporal.PlainDateTime.from(value);
+					temporal = Temporal.PlainDateTime.from(value, { overflow: 'constrain' });
 				} catch (err2) {
-					// security check: do not let native Date take a guess on garbage strings
-					throw new Error(`Cannot parse Date: "${value}"`);
+					logError(config, `[Tempo#composer] Unrecognized or invalid ISO 8601 string: "${value}"`);
+					return { dateTime: today };
 				}
 			}
 			break;
@@ -80,8 +74,10 @@ export function compose(
 
 		case 'Number':
 			{
-				if (Number.isNaN(value) || !Number.isFinite(value))
-					throw new RangeError(`Invalid Tempo number: ${value}`);
+				if (Number.isNaN(value) || !Number.isFinite(value)) {
+					logError(config, `Invalid Tempo number: ${value}`);
+					temporal = today;
+				}
 
 				// If it's an integer and we're in 'ms' mode, treat as milliseconds
 				if (unit === 'ms' && Number.isInteger(value)) {
@@ -149,8 +145,10 @@ export function compose(
 			dateTime = temporal.toDateTime().withCalendar(targetCal);
 			break;
 
-		default:
-			throw new Error(`Cannot convert ${type} (value: ${String(temporal)}) to ZonedDateTime`);
+		default: {
+			logError(config, `Cannot convert ${type} (value: ${String(temporal)}) to ZonedDateTime`);
+			return { dateTime: today };
+		}
 	}
 
 	return { dateTime, timeZone };

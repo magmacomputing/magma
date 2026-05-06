@@ -36,10 +36,10 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		event: Object.assign({}, baseState?.parse.event ?? Event),
 		period: Object.assign({}, baseState?.parse.period ?? Period),
 		ignore: baseState ? { ...baseState.parse.ignore } : Object.fromEntries(asArray(Ignore).map(w => [w, w])),
-		monthDay: resolveMonthDay(baseState?.parse.monthDay ?? {}, Default.monthDay as any),
-		planner: {
-			layoutOrder: asArray<string>(baseState?.parse.planner?.layoutOrder ?? (Default.planner?.layoutOrder ?? (Default as any).layoutOrder)),
-			preFilter: Boolean(baseState?.parse.planner?.preFilter ?? (Default.planner?.preFilter ?? (Default as any).preFilter)),
+		monthDay: baseState ? Object.create(baseState.parse.monthDay) : resolveMonthDay({}, Default.monthDay as any),
+		planner: baseState ? Object.create(baseState.parse.planner) : {
+			layoutOrder: asArray<string>(Default.planner?.layoutOrder ?? (Default as any).layoutOrder),
+			preFilter: Boolean(Default.planner?.preFilter ?? (Default as any).preFilter),
 		},
 		pivot: (baseState?.parse.pivot ?? Default.pivot) as any,
 		mode: (baseState?.parse.mode ?? Default.mode) as any,

@@ -25,7 +25,7 @@ import { AliasEngine } from './engine/engine.alias.js';
 import { resolveMonthDay } from './support/tempo.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './parse/parse.layout.js';
 import { datePattern } from './support/tempo.default.js';
-import { setProperty, proto, hasOwn, create, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
+import { setProperty, proto, hasOwn, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
 import { sym, markConfig, TermError, getRuntime, init, extendState, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $buildGuard, $IsBase, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
@@ -142,27 +142,45 @@ export class Tempo {
 	 */
 	// TODO:  check all Layouts which reference "{evt}" and update them
 	static [$setEvents](shape: Internal.State) {
-		const events = ownEntries(shape.parse.event, true);
-		if (isLocal(shape) && !hasOwn(shape.parse, 'event') && !hasOwn(shape.parse.monthDay, 'active'))
-			return;																								// no local change needed
-
-		// Use the correct alias engine: static for global, instance for local, and assign parentEngine for locals
 		const parent = proto(shape);
-		const engine = hasOwn(shape, 'aliasEngine')
-			? shape.aliasEngine!
-			: (shape.aliasEngine = new AliasEngine({ parent: parent.aliasEngine, logger: Tempo.#dbg, config: shape.config }));
+		const parentEvents = parent.parse?.event ?? {};
+
+		// Identify local additions or overrides
+		const events = ownEntries(shape.parse.event, true).filter(([k, v]) => {
+			return !(k in parentEvents) || shape.parse.event[k as string] !== parentEvents[k as string];
+		});
+
+		// If no local events, inherit the parent's engine (via prototype) and exit
+		if (events.length === 0 && !hasOwn(shape, 'aliasEngine'))
+			return;
+
+		// Use the correct alias engine: static for global, instance for local
+		let engine = shape.aliasEngine;
+
+		// If we have local aliases to register, we MUST have a local engine to avoid polluting the parent
+		if (events.length > 0 && !hasOwn(shape, 'aliasEngine')) {
+			engine = shape.aliasEngine = new AliasEngine({
+				parent: parent.aliasEngine,
+				logger: Tempo.#dbg,
+				config: shape.config
+			});
+		}
+
+		// Ensure we have an engine (for the global root)
+		if (!engine) {
+			engine = shape.aliasEngine = new AliasEngine({
+				parent: parent.aliasEngine,
+				logger: Tempo.#dbg,
+				config: shape.config
+			});
+		}
+
 		const groups = engine.registerAliases('evt', events);
-
-		// const src = shape.config.scope === 'global' ? 'g' : 'l';// 'g'lobal or 'l'ocal (sandbox also uses 'l')
-		// const groups = events
-		// 	.map(([pat, _], idx) => `(?<${src}evt${idx}>${pat})`)	// assign a number to the pattern
-		// 	.join('|')																						// make an 'Or' pattern for the event-keys
-
 		if (groups) {
-			const protoEvt = proto(shape.parse.snippet)[Token.evt]?.source;
-			if (!isLocal(shape) || groups !== protoEvt) {
-				if (isLocal(shape) && !hasOwn(shape.parse, 'snippet'))
-					shape.parse.snippet = create(shape.parse, 'snippet');
+			const protoEvt = parent.parse?.snippet?.[Token.evt]?.source;
+			if (groups !== protoEvt) {
+				if (!hasOwn(shape.parse, 'snippet'))
+					shape.parse.snippet = { ...shape.parse.snippet };
 
 				setProperty(shape.parse.snippet, Token.evt, new RegExp(groups));
 			}
@@ -172,17 +190,6 @@ export class Tempo {
 				delete shape.parse.snippet[Token.evt as any];
 			}
 		}
-
-		const isMonthDay = Boolean(shape.parse.monthDay.active);
-		const protoDt = proto(shape.parse.layout)[Token.dt] as string;
-		const targetDt = isMonthDay ? datePattern.mdy : datePattern.dmy;
-
-		if (!isLocal(shape) || targetDt !== protoDt) {
-			if (isLocal(shape) && !hasOwn(shape.parse, 'layout'))
-				shape.parse.layout = create(shape.parse, 'layout');
-
-			setProperty(shape.parse.layout, Token.dt, targetDt);
-		}
 	}
 
 	/**
@@ -191,27 +198,46 @@ export class Tempo {
 	*/
 	// TODO:  check all Layouts which reference "{per}" and update them
 	static [$setPeriods](shape: Internal.State) {
-		const periods = ownEntries(shape.parse.period, true);
-		if (isLocal(shape) && !hasOwn(shape.parse, 'period'))
-			return;																								// no local change needed
+		const parent = proto(shape);
+		const parentPeriods = parent.parse?.period ?? {};
+
+		// Identify local additions or overrides
+		const periods = ownEntries(shape.parse.period, true).filter(([k, v]) => {
+			return !(k in parentPeriods) || shape.parse.period[k as string] !== parentPeriods[k as string];
+		});
+
+		// If no local periods, inherit the parent's engine (via prototype) and exit
+		if (periods.length === 0 && !hasOwn(shape, 'aliasEngine'))
+			return;
 
 		// Use the correct alias engine: static for global, instance for local
-		const parent = proto(shape);
-		const engine = hasOwn(shape, 'aliasEngine')
-			? shape.aliasEngine!
-			: (shape.aliasEngine = new AliasEngine({ parent: parent.aliasEngine, logger: Tempo.#dbg, config: shape.config }));
+		let engine = shape.aliasEngine;
+
+		// If we have local aliases to register, we MUST have a local engine to avoid polluting the parent
+		if (periods.length > 0 && !hasOwn(shape, 'aliasEngine')) {
+			engine = shape.aliasEngine = new AliasEngine({
+				parent: parent.aliasEngine,
+				logger: Tempo.#dbg,
+				config: shape.config
+			});
+		}
+
+		// Ensure we have an engine (for the global root)
+		if (!engine) {
+			engine = shape.aliasEngine = new AliasEngine({
+				parent: parent.aliasEngine,
+				logger: Tempo.#dbg,
+				config: shape.config
+			});
+		}
+
 		const groups = engine.registerAliases('per', periods);
 
-		// const src = shape.config.scope === 'global' ? 'g' : 'l';// 'g'lobal or 'l'ocal (sandbox also uses 'l')
-		// const groups = periods
-		// 	.map(([pat, _], idx) => `(?<${src}per${idx}>${pat})`)	// {pattern} is the 1st element of the tuple
-		// 	.join('|')																						// make an 'or' pattern for the period-keys
-
 		if (groups) {
-			const protoPer = proto(shape.parse.snippet)[Token.per]?.source;
-			if (!isLocal(shape) || groups !== protoPer) {
-				if (isLocal(shape) && !hasOwn(shape.parse, 'snippet'))
-					shape.parse.snippet = create(shape.parse, 'snippet');
+			const protoPer = parent.parse?.snippet?.[Token.per]?.source;
+			if (groups !== protoPer) {
+				if (!hasOwn(shape.parse, 'snippet'))
+					shape.parse.snippet = { ...shape.parse.snippet };
 
 				setProperty(shape.parse.snippet, Token.per, new RegExp(groups));
 			}
@@ -229,8 +255,9 @@ export class Tempo {
 
 		const tz = options.timeZone;
 		if (isDefined(tz)) {
-			if (String(tz).toLowerCase() === 'utc') return undefined;
-			const sphere = getHemisphere(String(tz));
+			const resolvedTz = shape.config.timeZone;
+			if (String(resolvedTz).toLowerCase() === 'utc') return undefined;
+			const sphere = getHemisphere(String(resolvedTz));
 			if (isDefined(sphere)) return sphere;
 		}
 
@@ -270,6 +297,11 @@ export class Tempo {
 
 		const isMonthDay = shape.parse.monthDay.isExplicit ? shape.parse.monthDay.active! : Tempo.#isMonthDay(shape);
 		shape.parse.monthDay.active = isMonthDay;
+
+		// ensure Token.dt matches the local monthDay preference
+		const dt = isMonthDay ? datePattern.mdy : datePattern.dmy;
+		if (shape.parse.layout[Token.dt] !== dt)
+			shape.parse.layout = { ...shape.parse.layout, [Token.dt]: dt };
 
 		const layoutController = (shape.parse.planner.layoutOrder?.length ?? 0) > 0
 			? { [DEFAULT_LAYOUT_CLASS]: [...shape.parse.planner.layoutOrder!] }
@@ -748,6 +780,7 @@ export class Tempo {
 			const rt = getRuntime();
 			rt.state = undefined;																	// force fresh state
 			const state = init();
+			(state as any)._count = 0;
 			if ((this as any)[sym.$IsBase]) {
 				Tempo.#global = state;
 			} else {
@@ -1028,6 +1061,7 @@ export class Tempo {
 		});
 
 		Tempo.init();																						// synchronously initialize the library
+		getRuntime().logger = Tempo.#dbg;
 	}
 
 	/** constructor tempo */																	#tempo?: t.DateTime;
@@ -1064,7 +1098,7 @@ export class Tempo {
 	 */
 	[$Internal]() {
 		const self: Tempo = unwrap(this);
-		return {
+		const out = {
 			get zdt() { return self.#zdt },
 			set zdt(val: any) { self.#zdt = val },
 			get errored() { return self.#errored },
@@ -1082,10 +1116,15 @@ export class Tempo {
 			get now() { return self.#now },
 			config: self.#local.config,
 			parse: self.#local.parse,
+			aliasEngine: self.#local.aliasEngine,
+			_id: (self.#local as any)._id,
+			tempoInstance: self,
 			CONFIG: enums.CONFIG,
 			PARSE: enums.PARSE,
 			ZONED_DATE_TIME: enums.ZONED_DATE_TIME
 		}
+
+		return out;
 	}
 
 	/** allow for auto-convert of Tempo to BigInt, Number or String */
@@ -1105,7 +1144,6 @@ export class Tempo {
 	get [Symbol.toStringTag]() {															// default string description
 		return 'Tempo';																					// hard-coded to avoid minification mangling
 	}
-
 
 	/**
 	 * Instantiates a new `Tempo` object with configuration only.
@@ -1460,11 +1498,14 @@ export class Tempo {
 	#setLocal(options: t.Options = {}) {
 		const classState = (this.constructor as any)[$Internal]();
 		this.#local = Object.create(classState);
+		(this.#local as any)._id = (this.constructor as any)[$Internal]()._count++;
+		const self = unwrap(this);
 		this.#local.config = markConfig(Object.create(classState.config));
 		Object.assign(this.#local.config, { scope: 'local' });
 
 		this.#local.parse = markConfig(Object.create(classState.parse));
-		this.#local.parse.planner = { ...classState.parse.planner };				// clone the planner object
+		this.#local.parse.planner = Object.create(classState.parse.planner);		// shadow the planner object
+		this.#local.parse.monthDay = Object.create(classState.parse.monthDay);		// shadow the monthDay object
 		setProperty(this.#local.parse, 'result', [...(options.result ?? [])]);
 
 		Object.defineProperty(this.#local, 'tempoInstance', {		// Link this instance to its state for static alias access

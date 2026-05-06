@@ -41,9 +41,11 @@ interface Registry {																				// information about each registered ali
 
 export class AliasEngine {
 	static aliasPattern = /^(evt|per)(\d+)_(\d+)$/;
+	static #idCounter = 0;
 
 	static #getBaseWord(s: string): string {
 		return s
+			.toLowerCase()
 			.replace(/\[[^\]]*\]\?/g, '')
 			.replace(/.\?/g, '')
 			.replace(/[^a-z0-9]/g, '');
@@ -57,11 +59,19 @@ export class AliasEngine {
 	#count: Record<AliasType, number>;												// count of aliases registered at this level (used for indexing)														
 	#state: State;																						// object that holds alias mappings, collisions, and registry for this engine 
 	#words: Record<string, string>;														// object of base words for collision detection
+	#id: number;
+
+	get depth() {
+		return this.#depth
+	}
+	get id() { return this.#id }
+	get parent() { return this.#parent }
 
 	constructor(options = {} as AliasEngineOptions) {
 		this.#parent = options.parent ?? null;
 		this.#logger = options.logger;
 		this.#config = options.config;
+		this.#id = AliasEngine.#idCounter++;
 
 		if (this.#parent) {
 			if (!(this.#parent instanceof AliasEngine))
@@ -88,7 +98,9 @@ export class AliasEngine {
 	 */
 	registerAliases(type: AliasType, events: [string, AliasTarget][]) {
 		for (const [name, target] of events) {
-			const aliasKey = `${type}${this.#depth}_${this.#count[type]++}` as AliasKey;
+			const index = (this.#count[type]++);
+			const aliasKey = `${type}${this.#depth}_${index}` as AliasKey;
+
 			const baseWord = AliasEngine.#getBaseWord(name);
 			const collision = baseWord in this.#words;						// check for collision with existing base words in this engine and parent engines
 
@@ -116,12 +128,12 @@ export class AliasEngine {
 	 * it won't be included in the regex patterns of the parent engine,  
 	 * preventing unintended matches and preserving the expected behavior of alias resolution.
 	 */
-	getPatterns(type: AliasType): string {
+	getPatterns(type: AliasType, seenBaseNames = new Set<string>()): string {
 		const patterns: string[] = [];
-		const seenBaseNames = new Set<string>();
 
-		for (const alias in this.#state) {
-			const register = this.#state[alias as AliasKey];
+		const state = this.#state;
+		for (const alias in state) {
+			const register = state[alias as AliasKey];
 
 			if (!seenBaseNames.has(register.baseWord)) {
 				seenBaseNames.add(register.baseWord);
@@ -129,6 +141,11 @@ export class AliasEngine {
 				if (register.type === type)
 					patterns.push(`(?<${alias}>${register.name})`);
 			}
+		}
+
+		if (this.#parent) {
+			const parentPatterns = this.#parent.getPatterns(type, seenBaseNames);
+			if (parentPatterns) patterns.push(parentPatterns);
 		}
 
 		return patterns.join('|');
@@ -142,8 +159,8 @@ export class AliasEngine {
 				: true
 	}
 
-	resolveAlias(name: AliasKey, thisArg?: any) {
-		const register = this.#state[name];
+	resolveAlias(name: AliasKey, thisArg?: any): Nullable<string> {
+		const register = this.getAlias(name);
 		if (!register) return name;
 
 		if (isFunction(register.target)) {
@@ -153,11 +170,11 @@ export class AliasEngine {
 				: ''
 		}
 
-		return register.target;
+		return register.target as string;
 	}
 
 	getAlias(key: string): Registry | undefined {
-		return this.#state[key as AliasKey];
+		return this.#state[key as AliasKey] ?? this.#parent?.getAlias(key);
 	}
 
 	getAliases(type?: AliasType) {
