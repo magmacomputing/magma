@@ -57,7 +57,7 @@ Adds support for semantic terms like `qtr`, `szn`, `zdc`, and `per`. There are t
 #### 1. The Side-Effect (Standard Activation)
 Fastest way to enable all standard terms in a Core environment.
 ```typescript
-import '@magmacomputing/tempo/term/standard'; // One-line activation
+import '@magmacomputing/tempo/term'; // One-line activation
 ```
 
 #### 2. The Explicit Module (Uniform Sync)

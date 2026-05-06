@@ -1,6 +1,6 @@
 import '#library/temporal.polyfill.js';
 import { asType } from '#library/type.library.js';
-import { isNull, isString, isObject, isFunction, isZonedDateTime, isInstant, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/assertion.library.js';
+import { isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/assertion.library.js';
 import { asArray, asInteger } from '#library/coercion.library.js';
 import { isNumeric } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';

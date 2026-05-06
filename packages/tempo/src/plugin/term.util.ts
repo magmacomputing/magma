@@ -1,5 +1,5 @@
-import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
-import { isDefined, isFunction, isString, isUndefined, isNumber } from '#library/assertion.library.js';
+import { toZonedDateTime, toInstant, getTemporalIds, instant } from '#library/temporal.library.js';
+import { isDefined, isFunction, isString, isUndefined, isNumber, isZonedDateTime } from '#library/assertion.library.js';
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { sym, TermError, SCHEMA, getLargestUnit, isTempo, getRuntime } from '#tempo/support';
@@ -50,7 +50,9 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | num
 	const chronological = sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
 	if (chronological.length === 0) return undefined;
 
-	const zdt = anchor ?? (tempo as any).toDateTime();
+	let zdt = anchor ?? (tempo as any).toDateTime();
+	if (!isZonedDateTime(zdt))
+		zdt = instant().toZonedDateTimeISO((tempo as any).config?.timeZone ?? 'UTC');
 
 	// determine the largest unit defined in the range list, and use the unit above it as rollover
 	const unit = getLargestUnit(list);
@@ -69,11 +71,13 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | num
 				obj[u] = (i <= 2) ? 1 : 0;
 			} else {
 				const fallback = (anchor as any)[u];
-				obj[u] = isNumber(fallback) ? fallback : (i <= 2 ? 1 : 0);
+				obj[u] = (isNumber(fallback) && !Number.isNaN(fallback)) ? fallback : (i <= 2 ? 1 : 0);
 			}
 		}
 		// @ts-ignore
-		const resZdt = toZonedDateTime({ ...obj, timeZone: anchor.timeZoneId, calendar: anchor.calendarId });
+		const [timeZone, calendar] = getTemporalIds(anchor.timeZoneId, anchor.calendarId);
+		const resZdt = toZonedDateTime({ ...obj, timeZone, calendar });
+
 		// @ts-ignore
 		return new (getHost(tempo))(resZdt, (tempo as any).config);
 	}

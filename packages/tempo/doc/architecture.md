@@ -130,7 +130,19 @@ The **Guarded-Lazy** strategy ensures that even with hundreds of custom plugins,
 1.  **Longest-Token Matching**: To prevent partial matching (e.g., matching `qtr` inside `quarter`), the guard uses a "Scan-and-Consume" loop that prioritizes the longest available token.
 2.  **Unified Wordlist**: The guard automatically ingests all registered Terms, Timezones, Month names, and Custom Events into a single high-speed lookup Set.
 3.  **High-Speed Gatekeeper**: By avoiding complex backtracking regexes, the gatekeeper provides predictable $O(1)$ performance even as the plugin list grows.
-4.  **Auto-Lazy**: Valid inputs that pass the guard automatically switch the instance to `mode: 'defer'`, deferring the full $O(N)$ parse work until a property is actually read.
+4.  **Versioned Registry (v2.9.0)**: To avoid redundant wordlist rebuilding, the Guard now monitors a `#version` counter on the alias registry. The wordlist is only rebuilt when a mutation actually occurs.
+5.  **Auto-Lazy**: Valid inputs that pass the guard automatically switch the instance to `mode: 'defer'`, deferring the full $O(N)$ parse work until a property is actually read.
+
+---
+
+## 🧩 Centralized Alias Management (v2.9.0)
+As of **v2.9.0**, Tempo has consolidated all Event and Period alias logic into a dedicated **`AliasEngine`**. 
+
+### How it works:
+- **Hierarchical Registry**: Aliases are managed in a prototype-aware chain. A local `Tempo` instance can have its own private aliases that shadow global ones, all while sharing the same underlying resolution logic.
+- **Rich Metadata**: Every resolution returns a structured `AliasResult`, providing the Parser with immediate knowledge of the alias's origin (global vs local), type, and clock-snapping requirements.
+- **Clock Snapping**: Time-based aliases (e.g. `8:00`) are automatically "snapped" to absolute precision, clearing sub-second drift (ms, us, ns) during the resolution phase.
+- **Decoupled Registration**: By moving away from legacy raw objects, the registry is now protected against accidental mutation and supports efficient, version-aware monitoring.
 
 ### 📈 Validation & Performance
 The efficiency of the Master Guard and the success of the Zero-Cost objective have been validated via local benchmarking:

@@ -42,7 +42,7 @@ Hemisphere-aware: southern-hemisphere configs shift the quarter boundaries by si
 const t = new Tempo('15-Feb-2025');
 
 t.term.qtr      // → 'Q1'
-t.term.quarter  // → { key: 'Q1', day: 1, month: 1, fiscal: 2025, sphere: 'North' }
+t.term.quarter  // → { key: 'Q1', day: 1, month: 1, fiscal: 2025, sphere: 'north' }
 ```
 
 ```ts
@@ -54,17 +54,14 @@ t.term.qtr      // → 'Q3'  (southern hemisphere)
 ### `szn` / `season` — Meteorological Seasons
 
 Maps the current date to the appropriate meteorological season.  
-Hemisphere-aware (northern / southern boundaries differ), and the full `season` scope additionally includes the corresponding **Chinese season** for the date.
+Hemisphere-aware (northern / southern boundaries differ).
 
 ```ts
 const t = new Tempo('01-Jul-2025');
 
 t.term.szn      // → 'Winter'  (northern hemisphere)
 t.term.season
-// → { key: 'Winter', day: 22, month: 12, symbol: 'Snowflake', sphere: 'North' }
-
-t.term.season.CN
-// → { key: 'Summer', symbol: 'Sun', ... }
+// → { key: 'Winter', day: 22, month: 12, symbol: 'Snowflake', sphere: 'north' }
 ```
 
 ```ts
@@ -132,7 +129,7 @@ In **Tempo Full**, all standard terms are enabled by default. In **Tempo Core**,
 ### 1. Standard Activation (Recommended)
 The fastest way to enable all built-in terms (`qtr`, `szn`, `zdc`, `per`).
 ```typescript
-import '@magmacomputing/tempo/term/standard'; // One-line side-effect activation
+import '@magmacomputing/tempo/term'; // One-line side-effect activation
 ```
 
 ### 2. Explicit Module (Uniform Sync)
@@ -209,6 +206,14 @@ export const MySeasonTerm = defineTerm({
 
 A `Range` object must include a `key` and any subset of the date-time fields below.  
 `getTermRange` sorts ranges in descending chronological order and returns the **first range whose boundary the instance has reached or passed**.
+
+### 🔄 Sync to Alias Engine
+When a term plugin defines `ranges` with string-based `key` values, Tempo automatically synchronizes these keys with the internal **Alias Engine**. 
+
+*   **Period Scopes**: Ranges defined in a `period` scope (like `midnight` or `morning`) are registered as **Period Aliases**.
+*   **Event Scopes**: Ranges defined in an `event` scope are registered as **Event Aliases**.
+
+This synchronization happens during `Tempo.extend()` and `Tempo.init()`, ensuring that any named range boundaries are immediately available for use in the natural-language parsing engine. For example, if you define a custom term with a range key `"bedtime"`, you can immediately create a new instance using `new Tempo('bedtime')`.
 
 ```ts
 type Range = {

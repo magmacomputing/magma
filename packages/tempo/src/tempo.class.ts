@@ -642,15 +642,16 @@ export class Tempo {
 							const type = config.scope === 'period' ? 'per' : (config.scope === 'event' ? 'evt' : undefined);
 							if (type) {
 								const aliases: [string, any][] = [];
+								const monthKeys = Tempo.MONTH.keys();
 								config.ranges.forEach(r => {
 									if (r.key) {
-										const val = isDefined(r.hour) ? `${r.hour}:${pad(r.minute ?? 0)}` : (r.month ? `${pad(r.day ?? 1)} ${Tempo.MONTH.keys()[r.month - 1]}` : undefined);
+										const val = isDefined(r.hour) ? `${r.hour}:${pad(r.minute ?? 0)}` : (r.month ? `${pad(r.day ?? 1)} ${monthKeys[r.month - 1]}` : undefined);
 										if (val) aliases.push([r.key, val]);
 									}
 								});
 
 								if (aliases.length > 0) {
-									const state = (this as any)[sym.$Internal]();
+									const state = (this as any)[$Internal]();
 									if (type === 'per') (this as any)[$setPeriods](state, aliases);
 									else if (type === 'evt') (this as any)[$setEvents](state, aliases);
 								}

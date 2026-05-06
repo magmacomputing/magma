@@ -24,8 +24,8 @@
   "type": "module",
   "sideEffects": [
     "**/tempo.index.js",
-    "**/plugin/term/standard.index.js",
-    "**/plugin/term/standard.index.ts",
+    "**/plugin/term/term.index.js",
+    "**/plugin/term/term.index.ts",
     "**/plugin/extend/extend.*.js",
     "**/plugin/extend/extend.*.ts",
     "dist/engine/engine.*.js",
@@ -68,10 +68,6 @@
     "#tempo/ticker": {
       "development": "./src/plugin/extend/extend.ticker.ts",
       "default": "./dist/plugin/extend/extend.ticker.js"
-    },
-    "#tempo/term/standard": {
-      "development": "./src/plugin/term/standard.index.ts",
-      "default": "./dist/plugin/term/standard.index.js"
     },
     "#tempo/term": {
       "development": "./src/plugin/term/term.index.ts",
@@ -146,10 +142,6 @@
     "./module/*": {
       "types": "./dist/module/module.*.d.ts",
       "import": "./dist/module/module.*.js"
-    },
-    "./term/standard": {
-      "types": "./dist/plugin/term/standard.index.d.ts",
-      "import": "./dist/plugin/term/standard.index.js"
     },
     "./term/*": {
       "types": "./dist/plugin/term/term.*.d.ts",

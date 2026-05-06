@@ -90,6 +90,7 @@ For granular "Lite" builds, see the [Full Installation Guide](https://magmacompu
 ## ✨ Why Tempo?
 *   **🏗️ Future Standard**: Built natively on the TC39 `Temporal` proposal. Inherit the reliability of the future standard.
 *   **🗣️ Natural Language**: Resolve complex terms like `#quarter.last` or "two days ago" with zero configuration.
+*   **🧠 Functional Aliases**: Extend the parser with custom logic using a powerful resolution context for relative date math.
 *   **🔄 Cycle Persistence**: Shift by semantic terms (Quarters, Seasons) while preserving your relative day-of-period offset.
 *   **⚡ Zero-Cost Parsing**: Lazy evaluation and smart matching ensure instantiation overhead is near-zero.
 *   **🛡️ Monorepo Resilient**: Built for stability in complex environments with proxy-protected registries.

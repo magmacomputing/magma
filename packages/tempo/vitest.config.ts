@@ -35,7 +35,6 @@ export default defineConfig({
     alias: isDist ? [
       { find: /^#tempo\/core$/, replacement: resolve(__dirname, './dist/core.index.js') },
       { find: /^#tempo\/term$/, replacement: resolve(__dirname, './dist/plugin/term/term.index.js') },
-      { find: /^#tempo\/term\/standard$/, replacement: resolve(__dirname, './dist/plugin/term/standard.index.js') },
       { find: /^#tempo\/duration$/, replacement: resolve(__dirname, './dist/module/module.duration.js') },
       { find: /^#tempo\/(parse|format)$/, replacement: resolve(__dirname, './dist/discrete/discrete.$1.js') },
       { find: /^#tempo\/discrete$/, replacement: resolve(__dirname, './dist/discrete/discrete.index.js') },
@@ -56,7 +55,6 @@ export default defineConfig({
     ] : [
       { find: /^#tempo\/core$/, replacement: resolve(__dirname, './src/core.index.ts') },
       { find: /^#tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
-      { find: /^#tempo\/term\/standard$/, replacement: resolve(__dirname, './src/plugin/term/standard.index.ts') },
       { find: /^#tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/$1') },
       { find: /^#tempo\/ticker$/, replacement: resolve(__dirname, './src/plugin/extend/extend.ticker.ts') },
       { find: /^#tempo\/duration$/, replacement: resolve(__dirname, './src/module/module.duration.ts') },
