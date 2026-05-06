@@ -153,7 +153,7 @@ export interface IntlOptions {
 }
 
 export interface PlannerOptions {
-	/** preferred parse-order of layouts */										layoutOrder?: string[];
+	/** preferred parse-order of layouts */										layoutOrder?: (string | symbol)[];
 	/** enable parse planner pre-filtering */									preFilter?: boolean;
 }
 

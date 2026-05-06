@@ -30,6 +30,7 @@ export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termErr
 /** internal static discovery helper */										export const $setDiscovery: unique symbol = Symbol.for('magmacomputing/tempo/setDiscovery') as any;
 /** internal static event builder */											export const $setEvents: unique symbol = Symbol.for('magmacomputing/tempo/setEvents') as any;
 /** internal static period builder */											export const $setPeriods: unique symbol = Symbol.for('magmacomputing/tempo/setPeriods') as any;
+/** internal static alias builder */											export const $setAliases: unique symbol = Symbol.for('magmacomputing/tempo/setAliases') as any;
 /** internal static guard builder */											export const $buildGuard: unique symbol = Symbol.for('magmacomputing/tempo/buildGuard') as any;
 /** internal static base class marker */									export const $IsBase: unique symbol = Symbol.for('magmacomputing/tempo/isBase') as any;
 
@@ -37,7 +38,7 @@ export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termErr
 const local = {
 	$Tempo, $Register, $Interpreter, $logError, $logDebug, $dbg, $guard, $errored,
 	$Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery,
-	$setEvents, $setPeriods, $buildGuard, $IsBase
+	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase
 } as const;
 
 /** @internal Unified Symbol Registry (Inherits from #library via Prototype Chain) */

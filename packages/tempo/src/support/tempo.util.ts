@@ -28,8 +28,25 @@ export const setProperty = <T>(target: object, key: PropertyKey, value: T) => {
 
 /** @internal set multiple mutable, enumerable properties on a target */
 export const setProperties = (target: object, properties: Record<PropertyKey, any>) => {
-	ownEntries(properties)
-		.forEach(([key, value]) => setProperty(target, key, value));
+	ownEntries(properties).forEach(([key, value]) => setProperty(target, key, value));
+}
+
+/** @internal Centralized Error Logger — retrieves the shared Logify instance from the TempoRuntime */
+export function logError(config: any, ...msg: any[]) {
+	const rt = getRuntime();
+	rt.logger?.error(config ?? rt.state?.config, ...msg);
+}
+
+/** @internal Centralized Warning Logger — retrieves the shared Logify instance from the TempoRuntime */
+export function logWarn(config: any, ...msg: any[]) {
+	const rt = getRuntime();
+	rt.logger?.warn(config ?? rt.state?.config, ...msg);
+}
+
+/** @internal Centralized Debug Logger — retrieves the shared Logify instance from the TempoRuntime */
+export function logDebug(config: any, ...msg: any[]) {
+	const rt = getRuntime();
+	rt.logger?.debug(config ?? rt.state?.config, ...msg);
 }
 
 /** @internal return the Prototype parent of an object */
@@ -148,13 +165,11 @@ export function compileRegExp(layout: string | RegExp, state: t.Internal.State, 
 	}
 }
 
-
-
 /** @internal build RegExp patterns into the state */
 export function setPatterns(state: t.Internal.State) {
 	// ensure we have our own isolated mutable containers before mutation
 	state.parse.snippet = { ...state.parse.snippet };
-	state.parse.pattern = new Map(state.parse.pattern);
+	state.parse.pattern = new Map();
 
 	const snippet = state.parse.snippet;
 
@@ -189,7 +204,6 @@ export function setPatterns(state: t.Internal.State) {
 
 		state.parse.pattern.set(symbol, compiled);
 	});
-
 }
 
 /**
@@ -233,7 +247,7 @@ export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthD
 		return {
 			locale: intl.baseName,
 			timeZones: tzs_intl.length > 0 ? tzs_intl : fallback
-		};
+		}
 	});
 
 	return {
@@ -243,5 +257,5 @@ export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthD
 		layouts: layoutsList as any,
 		timezones: tzs,
 		resolvedLocales
-	};
+	}
 }

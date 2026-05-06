@@ -111,7 +111,37 @@ Tempo.init({
 const t = new Tempo('party');
 ```
 
+### 🧠 Functional Alias Context
+When you use a function as an alias value, Tempo provides a powerful **Resolution Context** (the `this` binding). This context mimics a lightweight Tempo instance, allowing you to perform relative date math during resolution.
+
+Available methods in the context:
+*   **`this.add(duration)`**: Add a duration to the current anchor.
+*   **`this.subtract(duration)`**: Subtract a duration.
+*   **`this.with(values)`**: Set specific fields (year, month, day, etc.).
+*   **`this.set(input)`**: Recursively parse another string or value relative to the anchor.
+*   **`this.toNow()`**: Get the current system time.
+*   **`this.toDateTime()`**: Get the current anchor as a native `Temporal.ZonedDateTime`.
+*   **`this.hh`, `this.mi`, `this.ss`**: Accessors for current time units.
+
+#### Example: Complex Functional Alias
+```typescript
+Tempo.init({
+  event: {
+    // Resolve "bedtime" to 10pm on the same day
+    'bedtime': function() {
+      return this.with({ hour: 22, minute: 0, second: 0 });
+    },
+    // Resolve "meeting" to 2 hours after whatever was just parsed
+    'meeting': function() {
+      return this.add({ hours: 2 });
+    }
+  }
+});
+```
+
 ---
 
 ## 🛡️ Performance: The Master Guard
-Tempo uses a "Scan-and-Consume" engine called the **Master Guard**. This allows it to check your input string against dozens of patterns (weekdays, months, custom events) in a single pass, ensuring that parsing remains $O(1)$ relative to the number of plugins you have active.
+Tempo uses a "Scan-and-Consume" engine called the **Master Guard**. This allows it to check your input string against dozens of patterns (weekdays, months, custom events) in a single pass.
+
+In version **2.9.0**, the Master Guard has been optimized with a **Versioned Registry**. The engine now tracks a `#version` counter on the alias registry, ensuring that the guard's pattern list is only rebuilt when a mutation actually occurs. This provides near-instant validation for high-volume parsing tasks.

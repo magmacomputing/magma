@@ -45,6 +45,8 @@ export class TempoRuntime {
 
 	/** persistent global configuration state — mirrors Tempo.#global */
 	state?: Internal.State | undefined;
+	/** centralized diagnostic logger — shared across all Tempo modules */
+	logger?: any | undefined;
 	/** cache for next-available 'usr' Token key */
 	usrCount: number = 0;
 

@@ -1,8 +1,8 @@
 import { Tempo } from '#tempo/core';
 import '#tempo/parse';
+import '#tempo/term';
 import '#tempo/mutate';
 import { FormatModule } from '#tempo/format';
-import '#tempo/term/standard';
 
 Tempo.extend(FormatModule);
 
