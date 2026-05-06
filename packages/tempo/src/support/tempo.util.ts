@@ -4,7 +4,7 @@ import { sym, Token } from './tempo.symbol.js';
 import { asType } from '#library/type.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { isSymbol, isUndefined, isDefined, isString, isRegExp, isNullish, isObject, isEmpty } from '#library/assertion.library.js';
-import { ownEntries, ownKeys } from '#library/primitive.library.js';
+import { ownEntries, ownKeys, unwrap } from '#library/primitive.library.js';
 import { getRuntime } from './tempo.runtime.js';
 import { Match, Snippet, Layout } from './tempo.default.js';
 import enums from './tempo.enum.js';
@@ -49,17 +49,24 @@ export function logDebug(config: any, ...msg: any[]) {
 	rt.logger?.debug(config ?? rt.state?.config, ...msg);
 }
 
-/** @internal return the Prototype parent of an object */
-export const proto = (obj: object) => Object.getPrototypeOf(obj);
+/** @internal check if an object is a proxy */
+export const isProxy = (obj: any): boolean => !!obj && !!(obj as any)[sym.$Target];
 
-/** @internal test object has own property with the given key */
-export const hasOwn = (obj: object, key: PropertyKey) => Object.hasOwn(obj, key);
+/** @internal check if an object has an own property (respects Proxy/Shadowing) */
+export const hasOwn = (obj: any, key: PropertyKey): boolean => {
+	return Object.hasOwn(unwrap(obj), key);
+}
 
-/** @internal create an object based on a prototype */
-export const create = <T extends object>(obj: object, name: string): T => {
+/** @internal get the prototype of an object */
+export const proto = (obj: any): any => Object.getPrototypeOf(unwrap(obj));
+
+/** @internal create a new shadowed object from a prototype */
+export function create<T extends object>(obj: any, name: string): T {
 	const entry = proto(obj)[name];
-	if (!isObject(entry))
-		throw new TypeError(`[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`);
+	if (!isObject(entry)) {
+		logError(null, `[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`);
+		return {} as T;
+	}
 
 	return { ...entry } as T;
 }

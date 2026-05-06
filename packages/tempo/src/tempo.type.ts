@@ -16,7 +16,7 @@ import type { TermPlugin, Plugin } from '#tempo/plugin/plugin.type.js';
 import type { Token } from '#tempo/support/tempo.symbol.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 import { AliasEngine } from './engine/engine.alias.js';
-import { PatternCompiler } from './engine/engine.pattern.js';
+import type { PatternCompiler } from './engine/engine.pattern.js';
 
 declare global {
 	interface globalThis {

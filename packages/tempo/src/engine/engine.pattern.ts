@@ -5,7 +5,7 @@
 import { isRegExp, isNullish, isEmpty, isString } from '#library/assertion.library.js';
 import { ownEntries, ownKeys } from '#library/primitive.library.js';
 import { Match, Snippet, Layout } from '../support/tempo.default.js';
-import { getSymbol, logError } from '../support/tempo.util.js';
+import { getSymbol, hasOwn, logWarn, logError } from '../support/tempo.util.js';
 import { Token } from '../support/tempo.symbol.js';
 import enums from '../support/tempo.enum.js';
 import type * as t from '../tempo.type.js';
@@ -16,7 +16,8 @@ export interface PatternCompilerOptions {
 
 export class PatternCompiler {
 	#state: t.Internal.State;
-	#cache: Map<string, RegExp> = new Map();
+	#globalCache: Map<string, RegExp> = new Map();
+	#snippetCache: WeakMap<Snippet, Map<string, RegExp>> = new WeakMap();
 
 	constructor(options: PatternCompilerOptions) {
 		this.#state = options.state;
@@ -27,61 +28,71 @@ export class PatternCompiler {
 	 * Includes recursive expansion of placeholders using snippet registries.
 	 */
 	compileRegExp(layout: string | RegExp, snippet?: Snippet): RegExp {
+		const state = this.#state;
 		const source = isRegExp(layout) ? layout.source : layout;
-		
-		// Simple cache check for the raw source
-		const cacheKey = `${source}:${snippet ? 'custom' : 'global'}`;
-		if (this.#cache.has(cacheKey)) {
-			return this.#cache.get(cacheKey)!;
+		let cache: Map<string, RegExp>;
+		if (snippet) {
+			if (!this.#snippetCache.has(snippet)) {
+				this.#snippetCache.set(snippet, new Map());
+			}
+			cache = this.#snippetCache.get(snippet)!;
+		} else {
+			cache = this.#globalCache;
+		}
+		if (cache.has(source)) {
+			return cache.get(source)!;
 		}
 
-		const matcher = (src: string, d = 0): string => {
-			if (d > 10) return src; // prevent infinite recursion
+		const matcher = (source: string, d = 0): string => {
+			if (d > 10) {																					// Emit a diagnostic if recursion limit is hit (likely circular placeholder)
+				logWarn?.(this.#state?.config, `[PatternCompiler] Recursion limit exceeded in matcher (d > 10) for src:`, source, `depth:`, d);
+				return source;
+			}
 
-			if (src.startsWith('/') && src.endsWith('/'))
-				src = src.substring(1, src.length - 1);
-			if (src.startsWith('^') && src.endsWith('$'))
-				src = src.substring(1, src.length - 1);
+			if (source.startsWith('/') && source.endsWith('/'))
+				source = source.substring(1, source.length - 1);			// remove the leading/trailing "/"
+			if (source.startsWith('^') && source.endsWith('$'))
+				source = source.substring(1, source.length - 1);			// remove the leading/trailing anchors (^ $)
 
-			return src.replace(new RegExp(Match.braces, 'g'), (match, name) => {
-				const token = getSymbol(name);
+			return source.replace(new RegExp(Match.braces, 'g'), (match, name) => {	// iterate over "{}" pairs in the source string
+				const token = getSymbol(name);								// get the symbol for this {name}
 				const customs = snippet?.[token as keyof Snippet]?.source ?? snippet?.[name as keyof Snippet]?.source;
-				const globals = this.#state.parse.snippet[token as keyof Snippet]?.source ?? this.#state.parse.snippet[name as keyof Snippet]?.source;
-				const stateLayout = this.#state.parse.layout[token as keyof Layout] ?? this.#state.parse.layout[name as keyof Layout];
-				const defaultLayout = Layout[token as keyof Layout];
+				const globals = state.parse.snippet[token as keyof Snippet]?.source ?? state.parse.snippet[name as keyof Snippet]?.source;
+				const stateLayout = state.parse.layout[token as keyof Layout] ?? state.parse.layout[name as keyof Layout];
+				const defaultLayout = Layout[token as keyof Layout];	// get resolution source (layout)
 
-				let res = customs ?? globals ?? stateLayout ?? defaultLayout;
+				let res = customs ?? globals ?? stateLayout ?? defaultLayout;								// get the snippet/layout source
 
-				if (isNullish(res) && name.includes('.')) {
-					const prefix = name.split('.')[0];
+				if (isNullish(res) && name.includes('.')) {						// if no definition found, try fallback
+					const prefix = name.split('.')[0];									// get the base token name
 					const pToken = getSymbol(prefix);
 					res = snippet?.[pToken as keyof Snippet]?.source ?? snippet?.[prefix as keyof Snippet]?.source
-						?? this.#state.parse.snippet[pToken as keyof Snippet]?.source ?? this.#state.parse.snippet[prefix as keyof Snippet]?.source
-						?? this.#state.parse.layout[pToken as keyof Layout] ?? this.#state.parse.layout[prefix as keyof Layout]
+						?? state.parse.snippet[pToken as keyof Snippet]?.source ?? state.parse.snippet[prefix as keyof Snippet]?.source
+						?? state.parse.layout[pToken as keyof Layout] ?? state.parse.layout[prefix as keyof Layout]
 						?? Layout[pToken as keyof Layout];
 				}
 
-				if (res && name.includes('.')) {
+				if (res && name.includes('.')) {											// wrap dotted extensions for identification
 					const safeName = name.replace(/\./g, '_');
 					if (!res.startsWith(`(?<${safeName}>`))
 						res = `(?<${safeName}>${res})`;
 				}
 
-				return (isNullish(res) || res === match)
-					? match
-					: matcher(res, d + 1);
+				return (isNullish(res) || res === match)							// if no definition found,
+					? match																							// return the original match
+					: matcher(res, d + 1);															// else recurse to see if snippet contains embedded "{}" pairs
 			});
 		};
 
 		try {
 			const expanded = matcher(source);
 			const compiled = new RegExp(`^(${expanded})$`, 'i');
-			this.#cache.set(cacheKey, compiled);
+			cache.set(source, compiled);
 			return compiled;
 		} catch (e: any) {
-			const fallback = new RegExp(`^${Match.escape(layout as string)}$`, 'i');
-			this.#cache.set(cacheKey, fallback);
-			return fallback;
+			// Use the computed source for fallback, do not cache fallback, and log error
+			logError?.(e, { context: 'pattern compile failed', pattern: source });
+			return new RegExp(`^${Match.escape(source)}$`, 'i');
 		}
 	}
 
@@ -105,7 +116,7 @@ export class PatternCompiler {
 
 			snippet[Token.nbr] = nbr;
 			snippet[Token.mod] = new RegExp(`((?<mod>${Match.modifier.source})?${nbr.source}? *)`);
-			snippet[Token.afx] = new RegExp(`((s)? (?<afx>${Match.affix.source}))?${snippet[Token.sep].source}?`);
+			snippet[Token.afx] = new RegExp(`((s)? (?<afx>${Match.affix.source}))?${snippet[Token.sep]?.source || ''}?`);
 		}
 
 		// 2. build ignore pattern
@@ -123,7 +134,7 @@ export class PatternCompiler {
 		}
 
 		// 3. build the patterns
-		ownEntries(state.parse.layout).forEach(([key, layout]) => {
+		ownEntries(state.parse.layout, true).forEach(([key, layout]) => {
 			const symbol = getSymbol(key);
 			const compiled = this.compileRegExp(layout, snippet);
 
@@ -135,7 +146,9 @@ export class PatternCompiler {
 	 * Clear the pattern cache.
 	 */
 	clearCache() {
-		this.#cache.clear();
+		this.#globalCache.clear();
+		// WeakMap has no clear(), so re-instantiate to drop all snippet-specific caches
+		this.#snippetCache = new WeakMap();
 	}
 }
 
@@ -144,8 +157,9 @@ export class PatternCompiler {
  * Handles engine instantiation and pattern building for a given state.
  */
 export function setPatterns(state: t.Internal.State) {
-	if (!state.patternCompiler) {
+	// 🛡️ Critical fix: ensure we use an OWN PatternCompiler for each state to avoid cross-pollution
+	if (!hasOwn(state, 'patternCompiler'))
 		state.patternCompiler = new PatternCompiler({ state });
-	}
-	state.patternCompiler.setPatterns();
+
+	state.patternCompiler!.setPatterns();
 }

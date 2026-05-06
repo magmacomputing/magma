@@ -9,7 +9,7 @@ import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/a
 import { ownEntries } from '#library/primitive.library.js';
 
 import { getRuntime } from './tempo.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay } from './tempo.util.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError } from './tempo.util.js';
 import { sym, Token } from './tempo.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './tempo.default.js';
 import enums, { STATE } from './tempo.enum.js';
@@ -141,8 +141,14 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 						if (optKey === 'snippet') {
 							const pattern = isRegExp(v) ? v.source : String(v);
 							// 🛡️ Security Check: Prevent catastrophic backtracking and malicious patterns
-							if (pattern.length > 500) throw new Error(`[Tempo#extend] Snippet pattern too long (max 500 chars).`);
-							if (Match.backtrack.test(pattern)) throw new Error(`[Tempo#extend] Snippet contains suspicious nested quantifiers.`);
+							if (pattern.length > 500) {
+								logError(state.config, `[Tempo#extend] Snippet pattern too long (max 500 chars).`);
+								return new RegExp(Match.escape(pattern));
+							}
+							if (Match.backtrack.test(pattern)) {
+								logError(state.config, `[Tempo#extend] Snippet contains suspicious nested quantifiers.`);
+								return new RegExp(Match.escape(pattern));
+							}
 							return new RegExp(pattern);
 						}
 						return isRegExp(v) ? v.source : v;
