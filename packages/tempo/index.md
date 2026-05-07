@@ -556,11 +556,12 @@ function focusActiveCard() {
 }
 
 .tempo-btn-brand {
-  background-color: var(--vp-c-brand-1);
+  background-color: #3498db;
   color: white;
 }
 .tempo-btn-brand:hover {
-  background-color: var(--vp-c-brand-2);
+  background-color: #2980b9;
+  color: white;
 }
 
 .tempo-btn-alt {

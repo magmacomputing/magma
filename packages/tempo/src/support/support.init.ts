@@ -8,11 +8,11 @@ import { asType } from '#library/type.library.js';
 import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 
-import { getRuntime } from './tempo.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay } from './tempo.util.js';
-import { sym, Token } from './tempo.symbol.js';
-import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './tempo.default.js';
-import enums, { STATE } from './tempo.enum.js';
+import { getRuntime } from './support.runtime.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError } from './support.util.js';
+import { sym, Token } from './support.symbol.js';
+import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
+import enums, { STATE } from './support.enum.js';
 import * as t from '../tempo.type.js';
 
 /** @internal Initialise a Tempo state */
@@ -141,8 +141,14 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 						if (optKey === 'snippet') {
 							const pattern = isRegExp(v) ? v.source : String(v);
 							// 🛡️ Security Check: Prevent catastrophic backtracking and malicious patterns
-							if (pattern.length > 500) throw new Error(`[Tempo#extend] Snippet pattern too long (max 500 chars).`);
-							if (Match.backtrack.test(pattern)) throw new Error(`[Tempo#extend] Snippet contains suspicious nested quantifiers.`);
+							if (pattern.length > 500) {
+								logError(state.config, `[Tempo#extend] Snippet pattern too long (max 500 chars).`);
+								return new RegExp(Match.escape(pattern));
+							}
+							if (Match.backtrack.test(pattern)) {
+								logError(state.config, `[Tempo#extend] Snippet contains suspicious nested quantifiers.`);
+								return new RegExp(Match.escape(pattern));
+							}
 							return new RegExp(pattern);
 						}
 						return isRegExp(v) ? v.source : v;

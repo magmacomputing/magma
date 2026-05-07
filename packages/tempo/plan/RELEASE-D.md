@@ -5,20 +5,21 @@ This release focuses on modularizing and refactoring the parsing and pattern-mat
 
 ## Task Breakdown & Tracking
 
+
 ### Pattern Compiler + Cache Extraction
-- [ ] Extract `compileRegExp`, `setPatterns`, and helpers to new module
-- [ ] Integrate memoization/caching logic as needed
-- [ ] Refactor engine and consumers to use new module
-- [ ] Ensure compatibility with snippet/layout definitions
-- [ ] Add/expand unit tests for pattern logic and cache
-- [ ] Update documentation and references
+- [x] Extract `compileRegExp`, `setPatterns`, and helpers to new module (PatternCompiler)
+- [x] Integrate memoization/caching logic as needed (PatternCompiler cache)
+- [x] Refactor engine and consumers to use new PatternCompiler module
+- [x] Ensure compatibility with snippet/layout definitions
+- [x] Add/expand unit tests for pattern logic and cache
+- [x] Update documentation and references
 
 ### Alias Resolution Engine Extraction
-- [ ] Extract alias resolution logic to new module
-- [ ] Define interfaces for registration, lookup, collision
-- [ ] Refactor engine and plugins to use new APIs
-- [ ] Add/expand unit tests for alias/collision
-- [ ] Update documentation and references
+- [x] Extract alias resolution logic to new module
+- [x] Define interfaces for registration, lookup, collision
+- [x] Refactor engine and plugins to use new APIs
+- [x] Add/expand unit tests for alias/collision
+- [x] Update documentation and references
 
 ### Guard Builder Extraction (Assessment)
 - [ ] Identify all guard-building/token-ingestion logic

@@ -2,9 +2,9 @@ import { looseIndex } from '#library/object.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { getDateTimeFormat } from '#library/international.library.js';
 
-import { NUMBER, MODE, MONTH_DAY } from './tempo.enum.js';
-import { Token } from './tempo.symbol.js';
-import { IntlDefault } from './tempo.intl.js';
+import { NUMBER, MODE, MONTH_DAY } from './support.enum.js';
+import { Token } from './support.symbol.js';
+import { IntlDefault } from './support.intl.js';
 import type { Options } from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
 

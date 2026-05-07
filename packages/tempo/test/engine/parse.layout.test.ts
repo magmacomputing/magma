@@ -3,7 +3,7 @@ import {
 	createLayoutController,
 	resolveLayoutClassificationOrder,
 	resolveLayoutOrder,
-} from '#tempo/parse/parse.layout.js';
+} from '#tempo/engine/engine.layout.js';
 
 const makeLayout = (names: string[]) =>
 	Object.fromEntries(names.map(name => [Symbol(name), name])) as Record<symbol, string>;
@@ -11,7 +11,7 @@ const makeLayout = (names: string[]) =>
 const orderOf = (layout: Record<symbol, string>) =>
 	Reflect.ownKeys(layout).map(key => (key as symbol).description);
 
-describe('engine.layout resolver', () => {
+describe('engine.resolver', () => {
 	test('no-op when no swap pair matches', () => {
 		const layout = makeLayout(['x', 'y', 'z']);
 		const resolved = resolveLayoutOrder({
