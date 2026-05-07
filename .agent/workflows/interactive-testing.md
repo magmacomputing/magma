@@ -6,12 +6,12 @@ To use a NodeJS interactive session to test your Tempo library, you can use the 
 
 // turbo
 ```bash
-npx tsx -i --import ./test/repl.ts
+npx tsx --conditions=development -i --harmony-temporal --import ./bin/repl.ts
 ```
 
 
 ### Purpose
-This command starts a Node.js REPL (Read-Eval-Print Loop) while pre-loading the `Tempo` class and the `Temporal` polyfill into the global scope. This allows you to try different invocations of `Tempo` directly without writing a script.
+This command starts a Node.js REPL (Read-Eval-Print Loop) while pre-loading the `Tempo` class and the `Temporal` support into the global scope. This allows you to try different invocations of `Tempo` directly without writing a script.
 
 ### Usage Examples
 Once the REPL has started, you can run commands like:
@@ -32,4 +32,4 @@ t1.add({ days: 5 }).format('plain');
 ### Why this works
 - `npx tsx`: Uses the `tsx` runner to handle TypeScript files on the fly.
 - `-i`: Explicitly requests an interactive session.
-- `--import ./test/repl.ts`: Loads the helper script before starting the REPL, which attaches `Tempo` to `globalThis`.
+- `--import ./bin/repl.ts`: Loads the helper script before starting the REPL, which attaches `Tempo` to `globalThis`.

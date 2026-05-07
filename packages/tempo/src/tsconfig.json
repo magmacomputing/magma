@@ -22,7 +22,6 @@
       "#tempo/ticker": ["./plugin/extend/extend.ticker.ts"],
       "#tempo/engine/*.js": ["./engine/*.ts"],
       "#tempo/module/*.js": ["./module/*.ts"],
-      "#tempo/parse/*.js": ["./parse/*.ts"],
       "#tempo/plugin/extend/*.js": ["./plugin/extend/*.ts"],
       "#tempo/plugin/term/*.js": ["./plugin/term/*.ts"],
       "#tempo/term/*": ["./plugin/term/term.*.ts"],

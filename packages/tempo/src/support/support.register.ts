@@ -3,14 +3,14 @@ import { isEqual } from '#library/object.library.js';
 import { isDefined, isObject, isSymbol, isUndefined } from '#library/assertion.library.js';
 import { ownKeys } from '#library/primitive.library.js';
 import { unwrap } from '#library/primitive.library.js';
-import { sym } from './tempo.symbol.js';
+import { sym } from './support.symbol.js';
 import type { Property } from '#library/type.library.js';
 
-import { getRuntime } from './tempo.runtime.js';
-import { hasOwn, setProperty } from './tempo.util.js';
+import { getRuntime } from './support.runtime.js';
+import { hasOwn, setProperty } from './support.util.js';
 
 // Import the live enums and their mutable state from the enum module
-import { STATE, REGISTRIES, DEFAULTS } from './tempo.enum.js';
+import { STATE, REGISTRIES, DEFAULTS } from './support.enum.js';
 
 const rt = getRuntime();
 

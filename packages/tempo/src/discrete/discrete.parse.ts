@@ -16,8 +16,8 @@ import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/plugin.type.js';
 import { sym, isTempo, TermError, getRuntime, Match } from '../support/support.index.js';
 import { markConfig, setPatterns, init, extendState } from '../support/support.index.js';
-import { setProperty } from '#tempo/support/tempo.util.js';
-import enums from '../support/tempo.enum.js';
+import { setProperty } from '#tempo/support/support.util.js';
+import enums from '../support/support.enum.js';
 import * as t from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
 

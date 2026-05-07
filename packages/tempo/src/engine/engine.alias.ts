@@ -86,17 +86,14 @@ export class AliasEngine {
 		this.#config = options.config;
 		this.#id = AliasEngine.#idCounter++;
 
-		if (this.#parent) {
-			if (!(this.#parent instanceof AliasEngine)) {
-				const msg = "Parent engine must be an instance of AliasEngine";
-				this.#logger?.error(this.#config, msg);
-				throw new TypeError(msg);
-			}
-
+		if (this.#parent instanceof AliasEngine) {
 			this.#depth = this.#parent.#depth + 1;
 			this.#state = Object.create(this.#parent.#state);			// create a new state object that inherits from the parent engine's state
 			this.#words = Object.create(this.#parent.#words);			// create a new words object that inherits from the parent engine's words for collision detection
 		} else {
+			if (this.#parent)
+				this.#logger?.error(this.#config, "Parent engine must be an instance of AliasEngine");
+
 			this.#depth = 0;
 			this.#state = Object.create(null);										// initialize an empty state for the root engine (no parent)
 			this.#words = Object.create(null);										// initialize an empty words object for the root engine (no parent)

@@ -1,4 +1,4 @@
-import { sym } from './tempo.symbol.js';
+import { sym } from './support.symbol.js';
 import type { TermPlugin, Extension, Plugin } from '../plugin/plugin.type.js';
 import type { Internal } from '../tempo.type.js';
 

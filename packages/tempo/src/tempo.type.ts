@@ -7,15 +7,16 @@
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
 
-import { sym, type TempoBrand } from '#tempo/support/tempo.symbol.js';
-import * as enums from '#tempo/support/tempo.enum.js';
+import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
+import * as enums from '#tempo/support/support.enum.js';
 import type { Logify } from '#library/logify.class.js';
-import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/tempo.default.js';
+import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/support.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption } from '#library/type.library.js';
 import type { TermPlugin, Plugin } from '#tempo/plugin/plugin.type.js';
-import type { Token } from '#tempo/support/tempo.symbol.js';
+import type { Token } from '#tempo/support/support.symbol.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 import { AliasEngine } from './engine/engine.alias.js';
+import type { PatternCompiler } from './engine/engine.pattern.js';
 
 declare global {
 	interface globalThis {
@@ -225,6 +226,7 @@ export namespace Internal {
 		/** @internal current ZonedDateTime during parsing */		zdt?: Temporal.ZonedDateTime;
 		/** @internal has the parse operation errored? */				errored?: boolean;
 		/** @internal Alias engine for this Tempo instance */		aliasEngine?: AliasEngine;
+		/** @internal Pattern compiler for this Tempo instance */	patternCompiler?: PatternCompiler;
 	}
 
 	/** debug a Tempo instantiation */

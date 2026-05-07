@@ -2,7 +2,7 @@ import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from 
 import { secureRef } from '#library/proxy.library.js';
 
 import { sym, getRuntime, isTempo } from '#tempo/support';
-import { hasOwn } from '#tempo/support/tempo.util.js';
+import { hasOwn } from '#tempo/support/support.util.js';
 import type { Tempo } from '../tempo.class.js';
 import type { Plugin } from './plugin.type.js';
 

@@ -22,11 +22,11 @@ import { registerTerm, getTermRange } from './plugin/term.util.js';
 import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 
 import { AliasEngine } from './engine/engine.alias.js';
-import { resolveMonthDay } from './support/tempo.util.js';
-import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './parse/parse.layout.js';
-import { datePattern } from './support/tempo.default.js';
-import { setProperty, proto, hasOwn, compileRegExp, setPatterns, normalizeLayoutOrder } from './support/tempo.util.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
+import { PatternCompiler } from './engine/engine.pattern.js';
+import { resolveMonthDay, setProperty, proto, hasOwn, normalizeLayoutOrder } from './support/support.util.js';
+import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
+import { datePattern } from './support/support.default.js';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -871,7 +871,7 @@ export class Tempo {
 	/** @internal lookup or registers a new `Symbol` for a given key. */
 	static getSymbol(key?: string | symbol) {
 		if (isUndefined(key)) {
-			const usr = `usr.${++Tempo.#usrCount}`;							// allocate a prefixed 'user' key
+			const usr = `usr.${++Tempo.#usrCount}`;								// allocate a prefixed 'user' key
 			return Token[usr] = Symbol(usr);											// add to Symbol register
 		}
 
@@ -885,9 +885,13 @@ export class Tempo {
 		return Token[key as keyof typeof Token] ?? Symbol.for(`$Tempo.${key}`);
 	}
 
-	/** @internal translates {layout} into an anchored, case-insensitive RegExp. */
+	/** translates {layout} into an anchored, case-insensitive RegExp. */
 	static regexp(layout: string | RegExp, snippet?: Snippet) {
-		return compileRegExp(layout, (this as any)[$Internal](), snippet as any);
+		const state = (this as any)[$Internal]();
+
+		state.patternCompiler ??= new PatternCompiler({ state });
+
+		return state.patternCompiler.compileRegExp(layout, snippet as any);
 	}
 
 	/** Compares two `Tempo` instances or date-time values. */
