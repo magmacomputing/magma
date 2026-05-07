@@ -52,12 +52,13 @@ export function resolveLayoutClassificationOrder(layout: Record<symbol, string>,
 	if (preferred.length === 0) return layout;
 
 	const entries = ownEntries(layout) as LayoutEntry[];
-	const byName = new Map<string, LayoutEntry>();
+	const lookup = new Map<string | symbol, LayoutEntry>();
 	entries.forEach(([key, value]) => {
+		lookup.set(key, [key, value]);
 		const description = key.description ?? '';
-		if (description) byName.set(description, [key, value]);
+		if (description) lookup.set(description, [key, value]);
 		const alias = TOKEN_ALIAS.get(key);
-		if (alias) byName.set(alias, [key, value]);
+		if (alias) lookup.set(alias, [key, value]);
 	});
 	const next: LayoutEntry[] = [];
 	const seen = new Set<symbol>();
@@ -69,8 +70,8 @@ export function resolveLayoutClassificationOrder(layout: Record<symbol, string>,
 
 		const resolvedName = !isSym ? (TOKEN_DESCRIPTION_BY_NAME.get(name) ?? name) : undefined;
 		const entry = isSym
-			? (byName.get(description) ?? (alias ? byName.get(alias) : undefined))
-			: (byName.get(resolvedName!) ?? byName.get(name));
+			? (lookup.get(name) ?? lookup.get(description) ?? (alias ? lookup.get(alias) : undefined))
+			: (lookup.get(resolvedName!) ?? lookup.get(name));
 
 		if (!entry) return;
 		if (seen.has(entry[0])) return;

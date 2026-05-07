@@ -160,8 +160,8 @@ export class PatternCompiler {
  */
 export function setPatterns(state: t.Internal.State) {
 	// 🛡️ Critical fix: ensure we use an OWN PatternCompiler for each state to avoid cross-pollution
-	if (!hasOwn(state, 'patternCompiler'))
+	if (!hasOwn(state, 'patternCompiler') || !state.patternCompiler)
 		state.patternCompiler = new PatternCompiler({ state });
 
-	state.patternCompiler!.setPatterns();
+	state.patternCompiler.setPatterns();
 }

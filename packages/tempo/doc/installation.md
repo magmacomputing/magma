@@ -8,7 +8,11 @@
 
 `Temporal` is now at Stage 4 and is expected to land broadly in runtimes soon. To avoid needlessly inflating package size with a dependency that will increasingly become unnecessary, `Tempo` does not bundle a `Temporal` polyfill by default.
 
-As of 13 January 2026, Chrome 144 has shipped `Temporal`, and Firefox 139 also includes native `Temporal` support, while Node.js still does not provide built-in `Temporal` globally. Please verify support in your actual target runtime(s) and add a polyfill only when needed.
+As of 13 January 2026, Chrome 144 has shipped `Temporal`, and Firefox 139 also includes native `Temporal` support.
+
+While Node.js does not yet enable `Temporal` by default, recent versions (Node 20+) support it via the `--harmony-temporal` flag. This allows you to use `Tempo` without an external polyfill package.
+
+Please verify support in your actual target runtime(s) and add a polyfill only when needed.
 
 You can check at runtime with a simple guard:
 
@@ -39,7 +43,15 @@ import { Tempo } from '@magmacomputing/tempo';
 const t = new Tempo('next Friday');
 ```
 
-### Node.js quick-start (if Temporal is not available)
+### Node.js (with Native Temporal)
+
+If you are using Node.js 20+, you can enable native `Temporal` support without installing a polyfill:
+
+```bash
+node --harmony-temporal my-app.js
+```
+
+### Node.js (with Polyfill)
 
 The polyfill import shown here is conditional guidance, not required for all environments.
 
