@@ -91,7 +91,7 @@ export class PatternCompiler {
 			return compiled;
 		} catch (e: any) {
 			// Use the computed source for fallback, do not cache fallback, and log error
-			logError?.(e, { context: 'pattern compile failed', pattern: source });
+			logError({ context: 'pattern compile failed', pattern: source }, e);
 			return new RegExp(`^${Match.escape(source)}$`, 'i');
 		}
 	}

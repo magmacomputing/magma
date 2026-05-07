@@ -134,8 +134,11 @@ If you have local commits on `main` that you haven't pushed yet, you can move th
 # 1. Create a new branch at your current (accidental) commit
 git branch feature/my-feature
 
-# 2. Reset your local 'main' back to where it should be (the remote version)
+# 2. Make sure your local reference to 'origin/main' is up-to-date
+git fetch origin
+# 3. Reset your local 'main' back to where it should be (the remote version)
 git reset --hard origin/main
+# (Fetching first ensures you don't accidentally reset to a stale origin/main reference)
 
 # 3. Switch to your new branch to continue working
 git checkout feature/my-feature
