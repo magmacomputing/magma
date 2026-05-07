@@ -1,13 +1,13 @@
 import { isBoolean } from '#library/assertion.library.js';
 
-import { sym, Token } from './tempo.symbol.js';
+import { sym, Token } from './support.symbol.js';
 import { asType } from '#library/type.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { isSymbol, isUndefined, isDefined, isString, isRegExp, isNullish, isObject, isEmpty } from '#library/assertion.library.js';
 import { ownEntries, ownKeys, unwrap } from '#library/primitive.library.js';
-import { getRuntime } from './tempo.runtime.js';
-import { Match, Snippet, Layout } from './tempo.default.js';
-import enums from './tempo.enum.js';
+import { getRuntime } from './support.runtime.js';
+import { Match, Snippet, Layout } from './support.default.js';
+import enums from './support.enum.js';
 import type * as t from '../tempo.type.js';
 
 /** @internal normalize layout-order options into a clean string array */

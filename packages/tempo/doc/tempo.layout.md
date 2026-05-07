@@ -81,6 +81,18 @@ When crafting raw regex, the following capture groups are used by the engine:
 - `per`: Period string offset
 - `unt`: Relative unit (e.g., `days`, `weeks`)
 
+## Prototyping with `Tempo.regexp()`
+
+You can use the static `Tempo.regexp()` method to "preview" how a layout string will be compiled by the engine. This is useful for testing custom regex logic before applying it to your configuration.
+
+```typescript
+// Expands {dd}, {sep}, {mm}, etc. into a final anchored RegExp
+const regex = Tempo.regexp('{dd}{sep}{mm}{sep}{yy}');
+
+console.log(regex.source); 
+// Output: ^(?<dd>...)(?:...)(?<mm>...)(?:...)(?<yy>...)$
+```
+
 ---
 
 ## Professional Services

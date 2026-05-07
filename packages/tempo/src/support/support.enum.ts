@@ -1,4 +1,4 @@
-import { sym } from './tempo.symbol.js';
+import { sym } from './support.symbol.js';
 import { enumify, Enum } from '#library/enumerate.library.js';
 import { proxify } from '#library/proxy.library.js';
 import { allDescriptors } from '#library/reflection.library.js';

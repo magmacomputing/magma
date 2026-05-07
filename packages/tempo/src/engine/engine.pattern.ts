@@ -4,11 +4,13 @@
 
 import { isRegExp, isNullish, isEmpty, isString } from '#library/assertion.library.js';
 import { ownEntries, ownKeys } from '#library/primitive.library.js';
-import { Match, Snippet, Layout } from '../support/tempo.default.js';
-import { getSymbol, hasOwn, logWarn, logError } from '../support/tempo.util.js';
-import { Token } from '../support/tempo.symbol.js';
-import enums from '../support/tempo.enum.js';
+import { Match, Snippet, Layout } from '../support/support.default.js';
+import { getSymbol, hasOwn, logWarn, logError } from '../support/support.util.js';
+import { Token } from '../support/support.symbol.js';
+import enums from '../support/support.enum.js';
 import type * as t from '../tempo.type.js';
+
+const BRACES_REGEX = new RegExp(Match.braces, 'g');
 
 export interface PatternCompilerOptions {
 	state: t.Internal.State;
@@ -50,21 +52,21 @@ export class PatternCompiler {
 			}
 
 			if (source.startsWith('/') && source.endsWith('/'))
-				source = source.substring(1, source.length - 1);			// remove the leading/trailing "/"
+				source = source.substring(1, source.length - 1);		// remove the leading/trailing "/"
 			if (source.startsWith('^') && source.endsWith('$'))
-				source = source.substring(1, source.length - 1);			// remove the leading/trailing anchors (^ $)
+				source = source.substring(1, source.length - 1);		// remove the leading/trailing anchors (^ $)
 
-			return source.replace(new RegExp(Match.braces, 'g'), (match, name) => {	// iterate over "{}" pairs in the source string
-				const token = getSymbol(name);								// get the symbol for this {name}
+			return source.replace(BRACES_REGEX, (match, name) => {// iterate over "{}" pairs in the source string
+				const token = getSymbol(name);											// get the symbol for this {name}
 				const customs = snippet?.[token as keyof Snippet]?.source ?? snippet?.[name as keyof Snippet]?.source;
 				const globals = state.parse.snippet[token as keyof Snippet]?.source ?? state.parse.snippet[name as keyof Snippet]?.source;
 				const stateLayout = state.parse.layout[token as keyof Layout] ?? state.parse.layout[name as keyof Layout];
-				const defaultLayout = Layout[token as keyof Layout];	// get resolution source (layout)
+				const defaultLayout = Layout[token as keyof Layout];// get resolution source (layout)
 
-				let res = customs ?? globals ?? stateLayout ?? defaultLayout;								// get the snippet/layout source
+				let res = customs ?? globals ?? stateLayout ?? defaultLayout;						// get the snippet/layout source
 
-				if (isNullish(res) && name.includes('.')) {						// if no definition found, try fallback
-					const prefix = name.split('.')[0];									// get the base token name
+				if (isNullish(res) && name.includes('.')) {					// if no definition found, try fallback
+					const prefix = name.split('.')[0];								// get the base token name
 					const pToken = getSymbol(prefix);
 					res = snippet?.[pToken as keyof Snippet]?.source ?? snippet?.[prefix as keyof Snippet]?.source
 						?? state.parse.snippet[pToken as keyof Snippet]?.source ?? state.parse.snippet[prefix as keyof Snippet]?.source
@@ -72,15 +74,15 @@ export class PatternCompiler {
 						?? Layout[pToken as keyof Layout];
 				}
 
-				if (res && name.includes('.')) {											// wrap dotted extensions for identification
+				if (res && name.includes('.')) {										// wrap dotted extensions for identification
 					const safeName = name.replace(/\./g, '_');
 					if (!res.startsWith(`(?<${safeName}>`))
 						res = `(?<${safeName}>${res})`;
 				}
 
-				return (isNullish(res) || res === match)							// if no definition found,
-					? match																							// return the original match
-					: matcher(res, d + 1);															// else recurse to see if snippet contains embedded "{}" pairs
+				return (isNullish(res) || res === match)						// if no definition found,
+					? match																						// return the original match
+					: matcher(res, d + 1);														// else recurse to see if snippet contains embedded "{}" pairs
 			});
 		};
 
@@ -91,7 +93,7 @@ export class PatternCompiler {
 			return compiled;
 		} catch (e: any) {
 			// Use the computed source for fallback, do not cache fallback, and log error
-			logError({ context: 'pattern compile failed', pattern: source }, e);
+			logError(this.#state.config, { context: 'pattern compile failed', pattern: source }, e);
 			return new RegExp(`^${Match.escape(source)}$`, 'i');
 		}
 	}

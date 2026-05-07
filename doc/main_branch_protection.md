@@ -2,10 +2,11 @@
 
 To prevent accidental writes (commits and pushes) to the `main` branch on your local workstation, you can use **Git Hooks**.
 
-## Summary of Changes
-I have already set up local hooks for the `magma` repository:
-1. **`pre-commit`**: Blocks direct commits to the `main` branch.
-2. **`pre-push`**: Blocks pushing changes to the remote `main` branch.
+
+## Example: Local Hooks for Main Branch Protection
+Set up local hooks to:
+1. **`pre-commit`**: Prevent direct commits to the `main` branch.
+2. **`pre-push`**: Prevent pushing changes to the remote `main` branch.
 
 ### How to Override
 If you genuinely need to write to `main` (e.g., for an urgent fix), you have two options:
@@ -137,10 +138,10 @@ git branch feature/my-feature
 # 2. Make sure your local reference to 'origin/main' is up-to-date
 git fetch origin
 # 3. Reset your local 'main' back to where it should be (the remote version)
-git reset --hard origin/main
 # (Fetching first ensures you don't accidentally reset to a stale origin/main reference)
+git reset --hard origin/main
 
-# 3. Switch to your new branch to continue working
+# 4. Switch to your new branch to continue working
 git checkout feature/my-feature
 ```
 

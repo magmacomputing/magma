@@ -8,11 +8,11 @@ import { asType } from '#library/type.library.js';
 import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 
-import { getRuntime } from './tempo.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError } from './tempo.util.js';
-import { sym, Token } from './tempo.symbol.js';
-import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './tempo.default.js';
-import enums, { STATE } from './tempo.enum.js';
+import { getRuntime } from './support.runtime.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError } from './support.util.js';
+import { sym, Token } from './support.symbol.js';
+import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
+import enums, { STATE } from './support.enum.js';
 import * as t from '../tempo.type.js';
 
 /** @internal Initialise a Tempo state */

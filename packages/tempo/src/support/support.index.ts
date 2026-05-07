@@ -24,14 +24,14 @@ export {
 	PARSE,
 	MONTH_DAY,
 	NumericPattern
-} from './tempo.enum.js';
+} from './support.enum.js';
 
 export { markConfig } from '#library/symbol.library.js';
-export { sym, isTempo, Token, TermError, type TempoBrand } from './tempo.symbol.js';
-export { $Tempo, $Register, $Interpreter, $logError, $logDebug, $dbg, $guard, $errored, $Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Identity, $Logify, $Discover, $ImmutableSkip } from './tempo.symbol.js';
-export { registryUpdate, registryReset, onRegistryReset } from './tempo.register.js';
-export { getRuntime, TempoRuntime } from './tempo.runtime.js';
-export { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './tempo.default.js';
-export { SCHEMA, getLargestUnit, logError, logWarn, logDebug } from './tempo.util.js';
+export { sym, isTempo, Token, TermError, type TempoBrand } from './support.symbol.js';
+export { $Tempo, $Register, $Interpreter, $logError, $logDebug, $dbg, $guard, $errored, $Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Identity, $Logify, $Discover, $ImmutableSkip } from './support.symbol.js';
+export { registryUpdate, registryReset, onRegistryReset } from './support.register.js';
+export { getRuntime, TempoRuntime } from './support.runtime.js';
+export { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './support.default.js';
+export { SCHEMA, getLargestUnit, logError, logWarn, logDebug } from './support.util.js';
 export { setPatterns } from '../engine/engine.pattern.js';
-export { init, extendState } from './tempo.init.js';
+export { init, extendState } from './support.init.js';

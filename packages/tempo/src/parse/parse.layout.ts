@@ -1,5 +1,6 @@
 import { ownEntries } from '#library/primitive.library.js';
-import { Token } from '#tempo/support/tempo.symbol.js';
+import { Token } from '#tempo/support/support.symbol.js';
+import { resolveLayoutOrderPure } from '../engine/engine.resolver.js';
 import type * as t from '../tempo.type.js';
 
 export type LayoutEntry = [symbol, string];
@@ -77,22 +78,8 @@ export function resolveLayoutOrder({ layout, monthDayLayouts, isMonthDay, layout
 	 classification ?? DEFAULT_LAYOUT_CLASS,
 	);
 
-		const layouts = ownEntries(ordered) as LayoutEntry[];
-		let changed = false;
-
-	monthDayLayouts.forEach(([dmy, mdy]) => {
-		const idx1 = layouts.findIndex(([key]) => key.description === dmy);
-		const idx2 = layouts.findIndex(([key]) => key.description === mdy);
-
-		if (idx1 === -1 || idx2 === -1) return;
-
-		const swap1 = idx1 < idx2 && isMonthDay;
-		const swap2 = idx1 > idx2 && !isMonthDay;
-		if (swap1 || swap2) {
-			[layouts[idx1], layouts[idx2]] = [layouts[idx2], layouts[idx1]];
-			changed = true;
-		}
-	});
+	const layouts = resolveLayoutOrderPure(ordered, monthDayLayouts, isMonthDay);
+	const changed = layouts.some((entry, idx) => entry[0] !== (ownEntries(ordered)[idx] as LayoutEntry)[0]);
 
 	if (changed) return Object.fromEntries(layouts) as Record<symbol, string>;
 	return ordered;

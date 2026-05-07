@@ -54,8 +54,8 @@
       "default": "./dist/core.index.js"
     },
     "#tempo/enums": {
-      "development": "./src/support/tempo.enum.ts",
-      "default": "./dist/support/tempo.enum.js"
+      "development": "./src/support/support.enum.ts",
+      "default": "./dist/support/support.enum.js"
     },
     "#tempo/duration": {
       "development": "./src/module/module.duration.ts",
@@ -132,8 +132,8 @@
       "import": "./dist/tempo.index.js"
     },
     "./enums": {
-      "types": "./dist/support/tempo.enum.d.ts",
-      "import": "./dist/support/tempo.enum.js"
+      "types": "./dist/support/support.enum.d.ts",
+      "import": "./dist/support/support.enum.js"
     },
     "./extend/*": {
       "types": "./dist/plugin/extend/extend.*.d.ts",
