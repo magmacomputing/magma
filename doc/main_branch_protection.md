@@ -95,9 +95,7 @@ done
 
 ## 🆘 I'm on 'main' and have changes, what do I do?
 
-If you've already made changes on `main` and the hook blocks your commit, **don't panic and don't drop your stash!**
-1. **Stage all changes**: Run `git add .` or `git add -A` to ensure all changes, including new or untracked files, are staged for commit. (Note: `git commit -am` only stages modified files, so explicit staging is recommended to avoid losing new work).
-2. **Commit your work**: Run `git commit -m "Your descriptive message"` to save your staged changes to your local branch history.
+If you've already made changes on `main` and the hook blocks your commit, **don't panic and don't drop your stash!** You can easily move your work to a new branch.
 
 ### The "Magic" Command: Just Create a New Branch
 Git allows you to create and switch to a new branch while keeping your uncommitted changes.

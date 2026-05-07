@@ -828,8 +828,12 @@ export class Tempo {
 	static regexp(layout: string | RegExp, snippet?: Snippet) {
 		const state = (this as any)[$Internal]();
 
+<<<<<<< feature/tempo-pattern-compiler
 		if (!state.patternCompiler || state.patternCompiler.state !== state)
 			state.patternCompiler = new PatternCompiler({ state });
+=======
+		state.patternCompiler ??= new PatternCompiler({ state });
+>>>>>>> main
 
 		return state.patternCompiler.compileRegExp(layout, snippet as any);
 	}
