@@ -28,7 +28,7 @@ export function createMasterGuard(words: (string | symbol)[]): MasterGuard {
 
 	return {
 		test(input: string): boolean {
-			if (!input || typeof input !== 'string') return false;
+			if (!input || !isString(input)) return false;
 
 			let i = 0;
 			const len = input.length;
@@ -73,10 +73,10 @@ export function createMasterGuard(words: (string | symbol)[]): MasterGuard {
 					continue;
 				}
 
-				return false; // No valid match at current position
+				return false;																				// No valid match at current position
 			}
 
 			return true;
 		}
-	};
+	}
 }

@@ -124,13 +124,13 @@ For more implementation details, see [Soft Freeze Strategy](./soft_freeze_strate
 ## ⚡ 3. Master Guard (Guarded-Lazy Strategy)
 Used for: `new Tempo(string | number)`
 
-The **Guarded-Lazy** strategy ensures that even with hundreds of custom plugins, the entry point remains nearly instantaneous. In **v2.0.1**, this was refined for 100% matching reliability.
+The **Guarded-Lazy** strategy ensures that even with hundreds of custom plugins, the entry point remains nearly instantaneous. As of **v2.9.2**, this logic is decoupled into a dedicated `engine.guard.ts` module.
 
 ### How it works:
-1.  **Longest-Token Matching**: To prevent partial matching (e.g., matching `qtr` inside `quarter`), the guard uses a "Scan-and-Consume" loop that prioritizes the longest available token.
+1.  **Longest-Token Matching**: To prevent partial matching (e.g., matching `qtr` inside `quarter`), the guard uses a greedy "Scan-and-Consume" loop that prioritizes the longest available token.
 2.  **Unified Wordlist**: The guard automatically ingests all registered Terms, Timezones, Month names, and Custom Events into a single high-speed lookup Set.
-3.  **High-Speed Gatekeeper**: By avoiding complex backtracking regexes, the gatekeeper provides predictable $O(1)$ performance even as the plugin list grows.
-4.  **Versioned Registry (v2.9.0)**: To avoid redundant wordlist rebuilding, the Guard now monitors a `#version` counter on the alias registry. The wordlist is only rebuilt when a mutation actually occurs.
+3.  **High-Speed Gatekeeper**: By avoiding complex backtracking regexes, the gatekeeper provides predictable $O(1)$ performance regardless of how many plugins are registered.
+4.  **Versioned Registry**: To avoid redundant wordlist rebuilding, the Guard monitors a version counter on the alias registry. The wordlist is only rebuilt when a mutation actually occurs.
 5.  **Auto-Lazy**: Valid inputs that pass the guard automatically switch the instance to `mode: 'defer'`, deferring the full $O(N)$ parse work until a property is actually read.
 
 ---
