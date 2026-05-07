@@ -62,7 +62,13 @@ export const proto = (obj: any): any => Object.getPrototypeOf(unwrap(obj));
 
 /** @internal create a new shadowed object from a prototype */
 export function create<T extends object>(obj: any, name: string): T {
-	const entry = proto(obj)[name];
+	const prototype = proto(obj);
+	if (!isObject(prototype)) {
+		logError(null, `[Tempo#create] Failed to create shadowed object for '${name}'. Proto(obj) is null or not an object.`);
+		return {} as T;
+	}
+
+	const entry = prototype[name];
 	if (!isObject(entry)) {
 		logError(null, `[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`);
 		return {} as T;

@@ -3,7 +3,7 @@ import {
 	createLayoutController,
 	resolveLayoutClassificationOrder,
 	resolveLayoutOrder,
-} from '#tempo/parse/parse.layout.js';
+} from '#tempo/engine/engine.layout.js';
 
 const makeLayout = (names: string[]) =>
 	Object.fromEntries(names.map(name => [Symbol(name), name])) as Record<symbol, string>;

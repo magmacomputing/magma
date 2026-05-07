@@ -30,8 +30,6 @@
     "**/plugin/extend/extend.*.ts",
     "dist/engine/engine.*.js",
     "src/engine/engine.*.ts",
-    "dist/parse/parse.*.js",
-    "src/parse/parse.*.ts",
     "dist/module/module.*.js",
     "src/module/module.*.ts",
     "dist/discrete/discrete.*.js",
@@ -108,10 +106,6 @@
     "#tempo/parse": {
       "development": "./src/discrete/discrete.parse.ts",
       "default": "./dist/discrete/discrete.parse.js"
-    },
-    "#tempo/parse/*.js": {
-      "development": "./src/parse/*.ts",
-      "default": "./dist/parse/*.js"
     },
     "#tempo/format": {
       "development": "./src/discrete/discrete.format.ts",

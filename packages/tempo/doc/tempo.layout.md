@@ -90,7 +90,7 @@ You can use the static `Tempo.regexp()` method to "preview" how a layout string 
 const regex = Tempo.regexp('{dd}{sep}{mm}{sep}{yy}');
 
 console.log(regex.source); 
-// Output: ^(?<dd>...)(?:...)(?<mm>...)(?:...)(?<yy>...)$
+// Output (illustrative): ^((?<dd>...)(?<sep>...)(?<mm>...)(?<sep>...)(?<yy>...))$
 ```
 
 ---

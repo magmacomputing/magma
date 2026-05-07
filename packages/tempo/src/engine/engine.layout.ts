@@ -4,7 +4,7 @@ import { resolveLayoutOrderPure } from './engine.resolver.js';
 import type * as t from '../tempo.type.js';
 
 export type LayoutEntry = [symbol, string];
-export type LayoutController = Record<PropertyKey, string[]>;
+export type LayoutController = Record<PropertyKey, (string | symbol)[]>;
 
 const TOKEN_ALIAS = new Map<symbol, string>(
 	(ownEntries(Token, true) as [string, symbol][]).map(([name, key]) => [key, name])
@@ -63,8 +63,15 @@ export function resolveLayoutClassificationOrder(layout: Record<symbol, string>,
 	const seen = new Set<symbol>();
 
 	preferred.forEach(name => {
-		const resolvedName = TOKEN_DESCRIPTION_BY_NAME.get(name) ?? name;
-		const entry = byName.get(resolvedName) ?? byName.get(name);
+		const isSym = typeof name === 'symbol';
+		const description = isSym ? (name.description ?? '') : '';
+		const alias = isSym ? TOKEN_ALIAS.get(name) : undefined;
+
+		const resolvedName = !isSym ? (TOKEN_DESCRIPTION_BY_NAME.get(name) ?? name) : undefined;
+		const entry = isSym
+			? (byName.get(description) ?? (alias ? byName.get(alias) : undefined))
+			: (byName.get(resolvedName!) ?? byName.get(name));
+
 		if (!entry) return;
 		if (seen.has(entry[0])) return;
 		seen.add(entry[0]);
@@ -95,8 +102,12 @@ export function resolveLayoutOrder({ layout, monthDayLayouts, isMonthDay, layout
 	 classification ?? DEFAULT_LAYOUT_CLASS,
 	);
 
+	const entries = ownEntries(ordered) as LayoutEntry[];
 	const layouts = resolveLayoutOrderPure(ordered, monthDayLayouts, isMonthDay);
-	const changed = layouts.some((entry, idx) => entry[0] !== (ownEntries(ordered)[idx] as LayoutEntry)[0]);
+
+	if (layouts.length !== entries.length) return ordered;
+
+	const changed = layouts.some((entry, idx) => entry[0] !== entries[idx][0]);
 
 	if (changed) return Object.fromEntries(layouts) as Record<symbol, string>;
 	return ordered;

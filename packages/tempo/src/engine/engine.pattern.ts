@@ -47,7 +47,7 @@ export class PatternCompiler {
 
 		const matcher = (source: string, d = 0): string => {
 			if (d > 10) {																					// Emit a diagnostic if recursion limit is hit (likely circular placeholder)
-				logWarn?.(this.#state?.config, `[PatternCompiler] Recursion limit exceeded in matcher (d > 10) for src:`, source, `depth:`, d);
+				logWarn(this.#state.config, `[PatternCompiler] Recursion limit exceeded in matcher (d > 10) for src:`, source, `depth:`, d);
 				return source;
 			}
 
