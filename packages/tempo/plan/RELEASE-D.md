@@ -126,48 +126,36 @@ Modularize all logic related to event/period alias resolution, collision policy,
 - Easier to extend and maintain event/period handling.
 - Improved testability and reliability of alias resolution.
 
-### Guard Builder Extraction — Assessment Outline
+### Guard Builder Extraction (`engine.guard.ts`)
 **Purpose:**
-Evaluate the value and feasibility of extracting all logic related to token ingestion and fast-fail guard rebuild lifecycle into a dedicated module.
+Provides a high-performance scanner for fast-fail validation of layout strings before full regex parsing, ensuring that only plausible input enters the expensive parsing loop.
 
 **Boundaries & Responsibilities:**
-- Would own the process of ingesting tokens and rebuilding fast-fail guards for parsing.
-- Would expose APIs for guard construction, update, and validation.
-- Should integrate with the main engine’s parse pipeline and pattern system.
+- **Token Ingestion**: Owns the logic for ingesting registered aliases and symbols to build a master word list.
+- **Scanning Logic**: Implements a greedy "consume and continue" scanner that handles whitespace, bracketed content (literals), and longest-token matching.
+- **Lifecycle Integration**: Synchronizes with `Tempo.init()` and registry reset events to rebuild the guard state dynamically.
 
-**Assessment Steps:**
-1. Identify all guard-building and token-ingestion logic in `tempo.class.ts` and helpers.
-2. Determine if the logic is sufficiently complex or reused to justify extraction.
-3. If justified, outline module boundaries and migration steps similar to previous extractions.
-4. If not, document reasons for keeping logic inline.
+**Public API:**
+- `createMasterGuard(words: (string | symbol)[]): MasterGuard`: Factory for creating a scanner instance from a list of allowed words.
+- `MasterGuard.test(input: string): boolean`: Predicate that returns `true` if the input is a valid combination of allowed tokens/characters.
 
-**Risks & Mitigations:**
-- Risk: Over-extraction of simple logic. Mitigation: Only extract if complexity or reuse warrants.
-- Risk: Integration issues with parse pipeline. Mitigation: Careful interface design and incremental refactor.
+**Implementation Notes:**
+- Replaces the legacy inline regex-based guard with a dedicated scanner that correctly handles greedy longest-match priorities (e.g., matching "january" as a single token rather than "jan" + "uary").
+- Hardened to reject whitespace-only or empty strings via internal `matchedAny` tracking.
 
-**Expected Improvements (if extracted):**
-- Cleaner separation of guard logic.
-- Easier to test and update guard-building behavior.
-
-### Parse Result Normalizer Extraction — Assessment Outline
+### Parse Result Normalizer Extraction (`engine.normalizer.ts`)
 **Purpose:**
-Evaluate the value and feasibility of extracting all logic related to match accumulation and parse-result shaping/trace output into a dedicated module.
+Centralizes the logic for accumulating raw regex matches and normalizing them into structured `MatchResult` objects, decoupling match-shaping from the core parsing loop.
 
 **Boundaries & Responsibilities:**
-- Would own the process of normalizing parse results and shaping trace/debug output.
-- Would expose APIs for result normalization and trace formatting.
-- Should integrate with the main engine’s parse and debug systems.
+- **Match Normalization**: Maps raw `RegExpExecArray` capture groups back to their original alias keys and values.
+- **Result Accumulation**: Manages the persistent list of results, ensuring that duplicate or overlapping segments are handled consistently.
+- **Contextual Resolution**: Provides a hardened "shadow" context for resolving function-based aliases (e.g. `today`) without triggering infinite recursion.
 
-**Assessment Steps:**
-1. Identify all result normalization and trace output logic in `tempo.class.ts` and helpers.
-2. Determine if the logic is sufficiently complex or reused to justify extraction.
-3. If justified, outline module boundaries and migration steps similar to previous extractions.
-4. If not, document reasons for keeping logic inline.
+**Public API:**
+- `normalizeMatch(match: RegExpExecArray, anchor: ZonedDateTime, context: NormalizerContext): MatchResult`: Transforms a raw regex match into a shaped result object.
+- `accumulateResult(result: MatchResult, registry: MatchResult[]): void`: Utility for merging new results into the existing parsing state.
 
-**Risks & Mitigations:**
-- Risk: Over-extraction of simple logic. Mitigation: Only extract if complexity or reuse warrants.
-- Risk: Integration issues with parse/trace systems. Mitigation: Careful interface design and incremental refactor.
-
-**Expected Improvements (if extracted):**
-- Cleaner separation of result normalization logic.
-- Easier to test and update parse-result shaping and trace output.
+**Implementation Notes:**
+- Includes a spec-resilient `toNow()` implementation that handles V8 harmony property drift.
+- Decouples alias resolution from the main `Tempo` class state, allowing the normalizer to work safely during the bootstrap and parsing phases.

@@ -8,6 +8,13 @@ import { resolveTermMutation } from './engine.term.js';
 import enums from '#tempo/support/support.enum.js';
 import * as t from '../tempo.type.js';
 
+/** 
+ * Maximum depth for recursive alias resolution. 
+ * This ceiling (50) is generous to accommodate complex alias chains while remaining well above 
+ * the PatternCompiler.matcher depth limit (~10), preventing stack overflows during normalization.
+ */
+const MAX_TEMPO_RESOLVE_DEPTH = 50;
+
 /**
  * Context provided to the normalizer to handle recursion and state management.
  */
@@ -124,7 +131,7 @@ export function resolveAliases(
 			if (!register) continue;
 
 			const aliasKey = register.name;
-			if (resolvingKeys.size > 50 || resolvingKeys.has(aliasKey)) {
+			if (resolvingKeys.size > MAX_TEMPO_RESOLVE_DEPTH || resolvingKeys.has(aliasKey)) {
 				const msg = `Infinite recursion detected in Tempo resolution for: ${aliasKey}`;
 				state.errored = true;
 				if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new RangeError(msg));
@@ -155,10 +162,10 @@ export function resolveAliases(
 					const resolving = new Set(resolvingKeys);
 					resolving.add(res.key);
 
-					const prevAnchor: any = state.anchor;
+					const subAnchor: any = state.anchor;
 					state.anchor = dateTime;
 					const resMatch = subParse(res.value, dateTime, resolving);
-					state.anchor = prevAnchor;
+					state.anchor = subAnchor;
 
 					if (resMatch.type === 'Temporal.ZonedDateTime')
 						dateTime = resMatch.value;
@@ -200,6 +207,11 @@ export function accumulateResult(state: t.Internal.State, ...rest: Partial<t.Int
 
 	const res = state.parse.result;
 	if (isDefined(res) && !Object.isFrozen(res)) {
-		if (!res.includes(match)) res.push(match);
+		const isDuplicate = res.some(existing => 
+			existing.match === match.match && 
+			existing.source === match.source && 
+			String(existing.anchor ?? '') === String(match.anchor ?? '')
+		);
+		if (!isDuplicate) res.push(match);
 	}
 }

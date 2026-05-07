@@ -21,7 +21,7 @@ export function compose(
 ): { dateTime: Temporal.ZonedDateTime, timeZone?: string | undefined } {
 	let temporal: TemporalObject | Tempo = today;
 	let timeZone: string | undefined;
-	let dateTime: Temporal.ZonedDateTime = today;
+	let dateTime: Temporal.ZonedDateTime | undefined;
 
 	switch (type) {
 		case 'Void':

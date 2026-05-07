@@ -828,12 +828,8 @@ export class Tempo {
 	static regexp(layout: string | RegExp, snippet?: Snippet) {
 		const state = (this as any)[$Internal]();
 
-<<<<<<< feature/tempo-pattern-compiler
 		if (!state.patternCompiler || state.patternCompiler.state !== state)
 			state.patternCompiler = new PatternCompiler({ state });
-=======
-		state.patternCompiler ??= new PatternCompiler({ state });
->>>>>>> main
 
 		return state.patternCompiler.compileRegExp(layout, snippet as any);
 	}
@@ -985,6 +981,8 @@ export class Tempo {
 	/** constructor options */																#options = {} as t.Options;
 	/** instantiation Temporal Instant */											#now: Temporal.Instant;
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
+	/** memoized TimeZone ID */																#tz?: string;
+	/** memoized Calendar ID */																#cal?: string;
 	/** indicator that the instance failed to parse */				#errored = false;
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
 	/** prebuilt formats, for convenience */									#fmt!: any;
@@ -1129,6 +1127,14 @@ export class Tempo {
 	/** @internal check if a module is loaded */
 	hasModule(name: string): boolean {
 		return (this.constructor as typeof Tempo).hasModule(name);
+	}
+
+	/** returns a [timezone, calendar] tuple derived from the underlying date-time. */
+	#temporalIds(): [string, string] {
+		if (!this.#tz || !this.#cal) {
+			[this.#tz, this.#cal] = getTemporalIds(this.toDateTime());
+		}
+		return [this.#tz, this.#cal];
 	}
 
 	/** Resolve the instance to a Temporal.ZonedDateTime (with optional callback) */
@@ -1288,8 +1294,8 @@ export class Tempo {
 	/** Microseconds of the millisecond (0-999) */						get us() { return this.toDateTime().microsecond as t.us }
 	/** Nanoseconds of the microsecond (0-999) */							get ns() { return this.toDateTime().nanosecond as t.ns }
 	/** Fractional seconds (e.g., 0.123456789) */							get ff() { return +(`0.${pad(this.ms, 3)}${pad(this.us, 3)}${pad(this.ns, 3)}`) }
-	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return getTemporalIds(this.toDateTime())[0] }
-	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return getTemporalIds(this.toDateTime())[1] }
+	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
+	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
 	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[this.#local.config.timeStamp] }
 	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as t.Month) }
 	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as t.Month) }

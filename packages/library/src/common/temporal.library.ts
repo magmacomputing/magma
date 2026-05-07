@@ -4,7 +4,7 @@
 */
 
 import '#library/temporal.polyfill.js';											// ensure Temporal is available
-import { isNumber, isObject, isString, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
+import { isNumber, isObject, isString, isUndefined, isDefined, isZonedDateTime } from '#library/assertion.library.js';
 
 /** return the current Temporal.Now.instant */
 export function instant() {
@@ -84,7 +84,11 @@ export function normaliseFractionalDurations(payload: Record<string, any>) {
  * property-bag or ISO string.
  */
 export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike | string, tz: Temporal.TimeZoneLike = 'UTC'): Temporal.ZonedDateTime {
-	if (isString(bag)) return Temporal.ZonedDateTime.from(`${bag}[${tz}]`);
+	if (isString(bag)) {
+		// Detect existing zone designator: bracketed IANA zone ([...]) or numeric offset (±HH:MM, Z)
+		const hasZone = /\[[^\]]+\]|([+-]\d{2}(:?\d{2})?|Z)$/.test(bag);
+		return Temporal.ZonedDateTime.from(hasZone ? bag : `${bag}[${tz}]`);
+	}
 	return Temporal.ZonedDateTime.from(bag);
 }
 
@@ -112,14 +116,21 @@ export function toInstant(epochNanoseconds: bigint): Temporal.Instant {
  * Accepts either (tz, cal) strings or a single ZonedDateTime-like object.
  * Supports both spec-final (flat) and V8 harmony (nested) structures.
  */
+export function getTemporalIds(zdt: Temporal.ZonedDateTime, cal?: Temporal.CalendarLike): [string, string];
+export function getTemporalIds(tz: Temporal.TimeZoneLike, cal?: Temporal.CalendarLike): [string, string];
 export function getTemporalIds(tzOrZdt: any, cal?: any): [string, string] {
 	const fallbackTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-	const bag = (isZonedDateTime(tzOrZdt) && isUndefined(cal))
-		? tzOrZdt
-		: { timeZone: tzOrZdt, calendar: cal };
 
-	const rawTz = bag.timeZoneId ?? bag.timeZone?.id ?? bag.timeZone;
-	const rawCal = bag.calendarId ?? bag.calendar?.id ?? bag.calendar;
+	let rawTz: any, rawCal: any;
+	if (isZonedDateTime(tzOrZdt)) {
+		// If first arg is ZonedDateTime, use its IDs as source
+		rawTz = tzOrZdt.timeZoneId ?? tzOrZdt.timeZone?.id ?? tzOrZdt.timeZone;
+		// If a second argument is provided, it explicitly overrides the ZonedDateTime's calendar
+		rawCal = isDefined(cal) ? cal : (tzOrZdt.calendarId ?? tzOrZdt.calendar?.id ?? tzOrZdt.calendar);
+	} else {
+		rawTz = tzOrZdt;
+		rawCal = cal;
+	}
 
 	// Helper to extract string ID from potential objects (TimeZone, Calendar, or ZonedDateTime)
 	const toId = (v: any): string => {
