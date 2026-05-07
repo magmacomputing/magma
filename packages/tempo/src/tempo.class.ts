@@ -23,6 +23,7 @@ import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
 
 import { AliasEngine } from './engine/engine.alias.js';
 import { PatternCompiler } from './engine/engine.pattern.js';
+import { createMasterGuard } from './engine/engine.guard.js';
 import { resolveMonthDay, setProperty, proto, hasOwn, normalizeLayoutOrder } from './support/support.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 import { datePattern } from './support/support.default.js';
@@ -93,7 +94,6 @@ export class Tempo {
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
 	/** flag to prevent recursion during init */							static #lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
-	/** Set of allowed lowercased tokens for the Master Guard */		static #allowedTokens: Set<string> = new Set();
 
 	static [$IsBase] = true;
 
@@ -430,70 +430,9 @@ export class Tempo {
 			...Tempo.#terms.map(t => t.key),
 			...Tempo.#terms.map(t => t.scope),
 			...Guard
-		].filter(w => isString(w) || isSymbol(w))
-			.map(w => (isSymbol(w) ? w.description : (w as string))!.toLowerCase())
-			.filter(Boolean);
+		];
 
-		Tempo.#allowedTokens = new Set(wordsList);
-
-		let maxT = 0;
-		for (const w of wordsList) if (w.length > maxT) maxT = w.length;
-		const maxTokenLength = maxT;
-
-		// Define the custom guard logic (Scan-and-Consume)
-		Tempo.#guard = {
-			test(input: string): boolean {
-				if (!input || typeof input !== 'string') return false;
-
-				let i = 0;
-				const len = input.length;
-
-				while (i < len) {
-					const char = input[i];
-
-					// 1. Skip spaces
-					if (char === ' ' || char === '\n' || char === '\t' || char === '\r') {
-						i++;
-						continue;
-					}
-
-					// 2. Try Bracket match (starts with [)
-					if (char === '[') {
-						const sub = input.substring(i);
-						const match = sub.match(Match.bracket);
-						if (match && match.index === 0) {
-							i += match[0].length;
-							continue;
-						}
-					}
-
-					// 3. Try Longest Token match from Set
-					let matched = false;
-					const searchLen = Math.min(maxTokenLength, len - i);
-					const slice = input.substring(i, i + searchLen).toLowerCase();
-
-					for (let l = searchLen; l > 0; l--) {
-						const candidate = slice.substring(0, l);
-						if (Tempo.#allowedTokens.has(candidate)) {
-							i += l;
-							matched = true;
-							break;
-						}
-					}
-					if (matched) continue;
-
-					// 4. Try Fallback char (Match.guard)
-					if (Match.guard.test(char)) {
-						i++;
-						continue;
-					}
-
-					return false; // No valid match at current position
-				}
-
-				return true;
-			}
-		}
+		Tempo.#guard = createMasterGuard(wordsList);
 
 		if ((this as any)[$Internal]() === Tempo.#global) {
 			setPatterns((this as any)[$Internal]());

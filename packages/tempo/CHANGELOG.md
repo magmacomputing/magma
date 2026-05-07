@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   
+## [2.9.2] - 2026-05-07
+
+### Added
+- **Identity-Based Layout Resolution**: Hardened `resolveLayoutClassificationOrder` to support identity-based symbol lookups. This ensures that tokens without descriptions or aliases (such as raw symbols) can be correctly prioritized in preferred layout ordering.
+- **Named Capture for Separators**: Updated the default `{sep}` snippet to use a named capture group `(?<sep>...)`, improving the inspectability of generated regex patterns.
+
+### Changed
+- **Modular Decompression**: Removed the redundant `parse.layout.ts` re-export module and consolidated all layout resolution logic into `engine.layout.ts`. Updated internal Specifiers and test-aliases to point to the new canonical home.
+- **Node.js Harmony Support**: Updated documentation to highlight native `Temporal` support in Node.js 20+ via the `--harmony-temporal` flag, reducing the need for external polyfills in modern server-side environments.
+
+### Fixed
+- **Utility Security Hardening**: Refactored the `create<T>` and `setPatterns` utilities with robust prototype-shadowing guards. These improvements prevent `TypeError` crashes when interacting with null-prototype objects and guarantee `PatternCompiler` state isolation across concurrent Tempo instances.
+- **RegExp Preview Accuracy**: Corrected the documentation example for `Tempo.regexp()` to accurately reflect the anchored outer capture group and named snippet expansions produced by the engine.
+
+## [2.9.1] - 2026-05-07
+
+### Fixed
+- **Support Utility Consolidation**: Completed the rename and migration of internal support utilities to the `@packages/tempo/src/support/` directory.
+- **Pattern Compiler isolated test state**: Fixed state-leakage in `pattern_compiler_optimization.test.ts` by implementing `TempoRuntime.createScoped()` and `init({}, false)` within `beforeEach` hooks.
+
 ## [2.9.0] - 2026-05-06
   
 ### Added

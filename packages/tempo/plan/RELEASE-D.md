@@ -21,11 +21,12 @@ This release focuses on modularizing and refactoring the parsing and pattern-mat
 - [x] Add/expand unit tests for alias/collision
 - [x] Update documentation and references
 
-### Guard Builder Extraction (Assessment)
-- [ ] Identify all guard-building/token-ingestion logic
-- [ ] Assess complexity/reuse for extraction
-- [ ] Outline module boundaries if justified
-- [ ] Document reasons if not extracted
+### Guard Builder Extraction
+- [x] Identify all guard-building/token-ingestion logic
+- [x] Assess complexity/reuse for extraction
+- [x] Outline module boundaries if justified
+- [x] Move "Scan-and-Consume" logic to `engine.guard.ts`
+- [x] Refactor `tempo.class.ts` to use `createMasterGuard`
 
 ### Parse Result Normalizer Extraction (Assessment)
 - [ ] Identify all result normalization/trace logic
