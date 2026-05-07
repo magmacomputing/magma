@@ -28,11 +28,11 @@ This release focuses on modularizing and refactoring the parsing and pattern-mat
 - [x] Move "Scan-and-Consume" logic to `engine.guard.ts`
 - [x] Refactor `tempo.class.ts` to use `createMasterGuard`
 
-### Parse Result Normalizer Extraction (Assessment)
-- [ ] Identify all result normalization/trace logic
-- [ ] Assess complexity/reuse for extraction
-- [ ] Outline module boundaries if justified
-- [ ] Document reasons if not extracted
+### Parse Result Normalizer Extraction
+- [x] Identify all result normalization/trace logic
+- [x] Assess complexity/reuse for extraction
+- [x] Outline module boundaries if justified
+- [x] Extract normalization logic to `engine.normalizer.ts`
 
 ## Expected Improvements and Risks
 

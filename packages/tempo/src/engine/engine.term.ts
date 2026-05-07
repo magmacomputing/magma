@@ -1,4 +1,4 @@
-import { toZonedDateTime, toInstant } from '#library/temporal.library.js';
+import { toZonedDateTime, toInstant, getTemporalIds } from '#library/temporal.library.js';
 import { isDefined, isString, isZonedDateTime, isNumeric } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 
@@ -40,8 +40,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 		return null;
 	}
 
-	const tz = zdt.timeZoneId;
-	const cal = zdt.calendarId;
+	const [tz, cal] = getTemporalIds(zdt);
 
 	// Slick Shorthand Parsing (e.g. #qtr.>2, #zodiac.<)
 	let mod: string | undefined;

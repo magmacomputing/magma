@@ -1,5 +1,6 @@
-import { isTempo, logError } from '#tempo/support';
+import { getTemporalIds } from '#library/temporal.library.js';
 import { isNumeric, isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
+import { isTempo, logError } from '#tempo/support';
 import type { TemporalObject, TypeValue } from '#library/type.library.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 import * as t from '../tempo.type.js';
@@ -20,7 +21,7 @@ export function compose(
 ): { dateTime: Temporal.ZonedDateTime, timeZone?: string | undefined } {
 	let temporal: TemporalObject | Tempo = today;
 	let timeZone: string | undefined;
-	let dateTime: Temporal.ZonedDateTime;
+	let dateTime: Temporal.ZonedDateTime = today;
 
 	switch (type) {
 		case 'Void':
@@ -33,8 +34,8 @@ export function compose(
 		case 'String':
 			try {
 				const str = value.replace(/Z$/, '');
-				const zdt = Temporal.ZonedDateTime.from(`${str}[${tz}]`);
-				timeZone = zdt.timeZoneId;
+				const zdt = Temporal.ZonedDateTime.from(str.includes('[') ? str : `${str}[${tz}]`);
+				timeZone = getTemporalIds(zdt)[0];
 				temporal = zdt;
 				onResult?.({ type, value: str, match: 'iso8601' });
 			} catch (err) {
@@ -152,5 +153,5 @@ export function compose(
 		}
 	}
 
-	return { dateTime, timeZone };
+	return { dateTime: dateTime ?? today, timeZone };
 }

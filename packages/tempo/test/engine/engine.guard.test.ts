@@ -56,6 +56,7 @@ describe('engine.guard (Master Guard)', () => {
 	it('should fail on empty or non-string input', () => {
 		const guard = createMasterGuard(['apple']);
 		expect(guard.test('')).toBe(false);
+		expect(guard.test('   ')).toBe(false);
 		expect(guard.test(null as any)).toBe(false);
 		expect(guard.test(123 as any)).toBe(false);
 	});

@@ -6,10 +6,11 @@ import { isNumeric } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import type { TypeValue } from '#library/type.library.js';
-import { resolveTermMutation, resolveTermValue } from '../engine/engine.term.js';
+
+import { resolveTermValue } from '../engine/engine.term.js';
 import { selectLayoutPatterns } from '../engine/engine.planner.js';
-import { prefix, parseWeekday, parseDate, parseTime, parseZone } from '../engine/engine.lexer.js';
 import { compose } from '../engine/engine.composer.js';
+import { normalizeMatch, accumulateResult } from '../engine/engine.normalizer.js';
 
 import { getRange, getTermRange } from '../plugin/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
@@ -17,36 +18,8 @@ import type { Range, ResolvedRange } from '../plugin/plugin.type.js';
 import { sym, isTempo, TermError, getRuntime, Match } from '../support/support.index.js';
 import { markConfig, setPatterns, init, extendState } from '../support/support.index.js';
 import { setProperty } from '#tempo/support/support.util.js';
-import enums from '../support/support.enum.js';
 import * as t from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
-
-/**
- * Provide a lightweight host context that mimics a Tempo instance for functional alias handlers.
- * @internal
- */
-function getResolutionContext(state: any, dateTime: Temporal.ZonedDateTime, resolvingKeys: Set<string>) {
-	const TempoClass = getRuntime().modules['Tempo'];
-	return {
-		add: (val: any) => dateTime.add(val),
-		subtract: (val: any) => dateTime.subtract(val),
-		with: (val: any) => dateTime.with(val),
-		set: (val: any, opt?: any) => {
-			const res = _ParseEngine.conform(state, val, dateTime, true, resolvingKeys);
-			return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
-		},
-		toNow: () => instant().toZonedDateTimeISO(state.config.timeZone).withCalendar(state.config.calendar),
-		toDateTime: () => dateTime,
-		get hh() { return dateTime.hour },
-		get mi() { return dateTime.minute },
-		get ss() { return dateTime.second },
-		get yy() { return dateTime.year },
-		get mm() { return dateTime.month },
-		get dd() { return dateTime.day },
-		[sym.$Identity]: true,
-		config: state.config
-	};
-}
 
 /**
  * Internal Parse Engine Implementation
@@ -78,19 +51,19 @@ const _ParseEngine = {
 
 		try {
 			const { config } = state;
+			const TempoClass = getRuntime().modules['Tempo'];
+			const terms = getRuntime().pluginsDb.terms;
+
 			const val = dateTime ?? state.anchor ?? state.config.anchor ?? (isTempo(tempo) ? (tempo as any).toDateTime() : (isZonedDateTime(tempo) ? tempo : (isInstant(tempo) ? tempo.toZonedDateTimeISO(config.timeZone) : undefined)));
-			const basis = isTempo(val) ? (val as any).toDateTime() : (isDefined(val) ? val : instant().toZonedDateTimeISO(config.timeZone));
+			const [tz, cal] = getTemporalIds(config.timeZone, config.calendar);
+			const basis = isTempo(val) ? (val as any).toDateTime() : (isDefined(val) ? val : instant().toZonedDateTimeISO(tz).withCalendar(cal));
 			const isAnchored = isDefined(val);
 			if (isRoot) {
 				state.parse.anchor = basis;
 				state.parse.isAnchored = isAnchored;
 			}
 
-			const [tz, cal] = isTempo(basis) ? [(basis as any).tz, (basis as any).cal] : getTemporalIds(basis ?? config.timeZone, basis ?? config.calendar);
-			today = isZonedDateTime(basis) ? basis : (isTempo(basis) ? (basis as any).toDateTime() : (isZonedDateTime(val) ? val : instant().toZonedDateTimeISO(tz).withCalendar(cal)));
-
-			const TempoClass = getRuntime().modules['Tempo'];
-			const terms = getRuntime().pluginsDb.terms;
+			today = basis;
 
 			if (term) {
 				const ident = term.startsWith('#') ? term.slice(1) : term;
@@ -158,7 +131,7 @@ const _ParseEngine = {
 			const { timeZone: tz2, calendar: cal2 } = state.config;
 			const [targetTz, targetCal] = getTemporalIds(tz2, cal2);
 
-			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal, (m) => _ParseEngine.result(state, m), state.config.timeStamp, state.config);
+			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal, (m) => accumulateResult(state, m), state.config.timeStamp, state.config);
 
 			dateTime = dt;
 			if (timeZone && state) state.config.timeZone = timeZone;
@@ -198,13 +171,10 @@ const _ParseEngine = {
 			}
 
 			if (!isEmpty(options)) zdt = zdt.with(options as Temporal.ZonedDateTimeLikeObject);
+			if (timeZone) zdt = zdt.withTimeZone(timeZone);
+			if (calendar) zdt = zdt.withCalendar(calendar);
 
-			if (timeZone)
-				if (isZonedDateTime(zdt)) zdt = zdt.withTimeZone(timeZone);
-			if (calendar)
-				zdt = zdt.withCalendar(calendar);
-
-			_ParseEngine.result(state, { type: 'Temporal.ZonedDateTimeLike', value: zdt, match: 'Temporal.ZonedDateTimeLike' });
+			accumulateResult(state, { type: 'Temporal.ZonedDateTimeLike', value: zdt, match: 'Temporal.ZonedDateTimeLike' });
 
 			return Object.assign(arg, {
 				type: 'Temporal.ZonedDateTime',
@@ -214,8 +184,9 @@ const _ParseEngine = {
 
 		if (isTempo(value)) {
 			const res = (value as any).toDateTime();
-			state.config.timeZone = res.timeZoneId;
-			state.config.calendar = res.calendarId;
+			const [tz, cal] = getTemporalIds(res);
+			state.config.timeZone = tz;
+			state.config.calendar = cal;
 			return Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: res });
 		}
 
@@ -273,11 +244,11 @@ const _ParseEngine = {
 
 		if (type === 'String') {
 			if (isEmpty(trim)) {
-				_ParseEngine.result(state, { type: 'Empty', value: trim, match: 'Empty' });
+				accumulateResult(state, { type: 'Empty', value: trim, match: 'Empty' });
 				return Object.assign(arg, { type: 'Empty' });
 			}
 			if (isIntegerLike(trim)) {
-				_ParseEngine.result(state, { type: 'BigInt', value: asInteger(trim), match: 'BigInt' });
+				accumulateResult(state, { type: 'BigInt', value: asInteger(trim), match: 'BigInt' });
 				return Object.assign(arg, { type: 'BigInt', value: asInteger(trim) });
 			}
 		}
@@ -320,15 +291,15 @@ const _ParseEngine = {
 
 			const hasTime = Object.keys(groups)
 				.some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key) || (Match.named.test(key) && key.endsWith('tm'))) || Object.values(groups).includes('now');
-			_ParseEngine.result(state, { match: symKey.description, value: trim, groups: { ...groups } });
+			accumulateResult(state, { match: symKey.description, value: trim, groups: { ...groups } });
 
-			dateTime = parseZone(groups, dateTime, state.config);
-			dateTime = _ParseEngine.parseGroups(state, groups, dateTime, isAnchored, resolvingKeys);
-			if (state.errored) return arg;
-
-			dateTime = parseWeekday(groups, dateTime, state.config);
-			dateTime = parseDate(groups, dateTime, state.config, state.parse["pivot"]);
-			dateTime = parseTime(groups, dateTime);
+			dateTime = normalizeMatch(groups, dateTime, {
+				state,
+				isAnchored,
+				resolvingKeys,
+				subParse: (v, dt, rk) => _ParseEngine.parseLayout(state, v, dt, true, rk),
+				conform: (v, dt, rk) => _ParseEngine.conform(state, v, dt, true, rk)
+			});
 
 			const isChanged = !dateTime.toPlainTime().equals(anchorTime);
 			if (!isAnchored && !hasTime && !isChanged)
@@ -353,110 +324,6 @@ const _ParseEngine = {
 		return groups as t.Groups;
 	},
 
-	/** resolve {event} | {period} to their date | time values (mutates groups) */
-	parseGroups(state: t.Internal.State, groups: t.Groups, dateTime: Temporal.ZonedDateTime, isAnchored: boolean, resolvingKeys: Set<string>): Temporal.ZonedDateTime {
-		const prevAnchor = state.anchor;
-		const prevZdt = state.zdt;
-
-		state.anchor = dateTime;
-		state.zdt = dateTime;
-
-		state.parseDepth = (state.parseDepth ?? 0) + 1;
-		const isRoot = state.parseDepth === 1;
-		if (isRoot) state.matches = [];
-
-		const TempoClass = getRuntime().modules['Tempo'];
-		const aliasEngine = state.aliasEngine ?? (TempoClass as any)?.[sym.$Internal]?.().aliasEngine;
-
-		try {
-			for (const key of ownKeys(groups)) {
-				if (key === 'slk') {
-					const slk = groups[key];
-					const result = resolveTermMutation(TempoClass, state as any, 'set', slk, undefined, dateTime);
-
-					if (result === null) {
-						state.errored = true;
-						delete groups[key];
-						break;
-					}
-
-					dateTime = result;
-					delete groups[key];
-					continue;
-				}
-
-				if (Match.named.test(key)) { 												// remove structural markers
-					delete groups[key];
-					continue;
-				}
-
-				const register = aliasEngine?.getAlias(key);
-				if (!register) continue;
-
-				const aliasKey = register.name;
-				if (resolvingKeys.size > 50 || resolvingKeys.has(aliasKey)) {
-					const msg = `Infinite recursion detected in Tempo resolution for: ${aliasKey}`;
-					state.errored = true;
-					if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new RangeError(msg));
-					delete groups[key];
-					continue;
-				}
-
-				resolvingKeys.add(aliasKey);
-
-				const host = getResolutionContext(state, dateTime, resolvingKeys);
-				const res = aliasEngine?.resolveAlias(key as any, host);
-				if (!res) continue;
-
-				try {
-					const mapped = ({
-						evt: { type: 'Event', pat: 'dt' },
-						per: { type: 'Period', pat: 'tm' }
-					} as const)[res.type as 'evt' | 'per'];
-
-					if (!mapped)
-						throw new Error(`[ParseEngine] Unexpected AliasType: ${res.type}`);
-
-					const { type, pat } = mapped;
-
-					_ParseEngine.result(state, { type, value: res.key as any, match: pat, source: res.source, groups: { [key]: res.value } });
-
-					// If it resolved to a new string, we re-parse it
-					if (!isEmpty(res.value) && res.value !== String(groups[key])) {
-						const resolving = new Set(resolvingKeys);
-						resolving.add(res.key);
-						// Explicitly propagate anchor for recursive parse
-						const prevAnchor: any = state.anchor;
-						state.anchor = dateTime;
-						const resMatch = _ParseEngine.parseLayout(state, res.value, dateTime, true, resolving);
-						state.anchor = prevAnchor;
-
-						if (resMatch.type === 'Temporal.ZonedDateTime')
-							dateTime = resMatch.value;
-					}
-				} finally {
-					state.zdt = dateTime;
-					delete groups[key];
-				}
-			}
-		} finally {
-			if (isDefined(prevAnchor)) state.anchor = prevAnchor;
-			else delete state.anchor;
-			if (isDefined(prevZdt)) state.zdt = prevZdt;
-			else delete state.zdt;
-			state.parseDepth--;
-			if (state.parseDepth === 0) delete state.matches;
-		}
-
-		if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {
-			const mm = prefix(groups["mm"] as t.MONTH);
-			if (TempoClass) groups["mm"] = (TempoClass as any).MONTH[mm as t.MONTH]!.toString().padStart(2, '0');
-			else if (enums.MONTH[mm as t.MONTH]) groups["mm"] = enums.MONTH[mm as t.MONTH]!.toString().padStart(2, '0');
-		}
-
-		return dateTime;
-	},
-
 	/** check if we've been given a ZonedDateTimeLike object */
 	isZonedDateTimeLike(state: any, tempo: t.DateTime | t.Options | undefined): tempo is Temporal.ZonedDateTimeLike & { value?: any } {
 		if (!isObject(tempo) || isEmpty(tempo) || (tempo.constructor !== Object && tempo.constructor !== undefined))
@@ -470,21 +337,6 @@ const _ParseEngine = {
 			.filter(isString)
 			.some((key: string) => state.ZONED_DATE_TIME.has(key) && !state.CONFIG.has(key))
 	},
-
-	/** accumulate match results */
-	result(state: any, ...rest: Partial<t.Internal.Match>[]) {
-		const match = Object.assign({}, ...rest) as t.Internal.Match;
-
-		if (isDefined(state.parse.anchor))
-			match.anchor = state.parse.anchor;
-
-		if (!isDefined(match.isAnchored) && isDefined(state.parse.isAnchored))
-			match.isAnchored = state.parse.isAnchored;
-
-		const res = state.parse.result;
-		if (isDefined(res) && !Object.isFrozen(res))
-			if (!res.includes(match)) res.push(match);
-	}
 }
 
 const withState = <A extends any[], R>(fn: (state: t.Internal.State, ...args: A) => R) => {
@@ -507,9 +359,8 @@ export const ParseEngine = {
 	conform: withState(_ParseEngine.conform),
 	parseLayout: withState(_ParseEngine.parseLayout),
 	parseMatch: withState(_ParseEngine.parseMatch),
-	parseGroups: withState(_ParseEngine.parseGroups),
 	isZonedDateTimeLike: withState(_ParseEngine.isZonedDateTimeLike),
-	result: withState(_ParseEngine.result)
+	result: withState(accumulateResult)
 };
 
 /**

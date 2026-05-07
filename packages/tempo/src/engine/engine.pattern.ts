@@ -25,6 +25,8 @@ export class PatternCompiler {
 		this.#state = options.state;
 	}
 
+	get state() { return this.#state; }
+
 	/**
 	 * Translates {layout} into an anchored, case-insensitive RegExp.
 	 * Includes recursive expansion of placeholders using snippet registries.

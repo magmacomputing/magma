@@ -16,8 +16,8 @@ export interface MasterGuard {
  */
 export function createMasterGuard(words: (string | symbol)[]): MasterGuard {
 	const wordsList = words
-		.filter(w => isString(w) || isSymbol(w))
-		.map(w => (isSymbol(w) ? w.description : (w as string))!.toLowerCase())
+		.filter(w => isString(w) || (isSymbol(w) && !!w.description))
+		.map(w => (isSymbol(w) ? w.description! : (w as string)).toLowerCase())
 		.filter(Boolean);
 
 	const allowedTokens = new Set(wordsList);
@@ -32,6 +32,7 @@ export function createMasterGuard(words: (string | symbol)[]): MasterGuard {
 
 			let i = 0;
 			const len = input.length;
+			let matchedAny = false;
 
 			while (i < len) {
 				const char = input[i];
@@ -48,6 +49,7 @@ export function createMasterGuard(words: (string | symbol)[]): MasterGuard {
 					const match = sub.match(Match.bracket);
 					if (match && match.index === 0) {
 						i += match[0].length;
+						matchedAny = true;
 						continue;
 					}
 				}
@@ -62,6 +64,7 @@ export function createMasterGuard(words: (string | symbol)[]): MasterGuard {
 					if (allowedTokens.has(candidate)) {
 						i += l;
 						matched = true;
+						matchedAny = true;
 						break;
 					}
 				}
@@ -70,13 +73,14 @@ export function createMasterGuard(words: (string | symbol)[]): MasterGuard {
 				// 4. Try Fallback char (Match.guard)
 				if (Match.guard.test(char)) {
 					i++;
+					matchedAny = true;
 					continue;
 				}
 
 				return false;																				// No valid match at current position
 			}
 
-			return true;
+			return matchedAny;
 		}
-	}
+	};
 }

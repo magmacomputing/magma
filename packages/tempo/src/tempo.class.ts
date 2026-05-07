@@ -13,7 +13,7 @@ import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike } from '#library/assertion.library.js';
-import { instant } from '#library/temporal.library.js';
+import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import type { Property, Secure } from '#library/type.library.js';
 
@@ -828,7 +828,8 @@ export class Tempo {
 	static regexp(layout: string | RegExp, snippet?: Snippet) {
 		const state = (this as any)[$Internal]();
 
-		state.patternCompiler ??= new PatternCompiler({ state });
+		if (!state.patternCompiler || state.patternCompiler.state !== state)
+			state.patternCompiler = new PatternCompiler({ state });
 
 		return state.patternCompiler.compileRegExp(layout, snippet as any);
 	}
@@ -1283,8 +1284,8 @@ export class Tempo {
 	/** Microseconds of the millisecond (0-999) */						get us() { return this.toDateTime().microsecond as t.us }
 	/** Nanoseconds of the microsecond (0-999) */							get ns() { return this.toDateTime().nanosecond as t.ns }
 	/** Fractional seconds (e.g., 0.123456789) */							get ff() { return +(`0.${pad(this.ms, 3)}${pad(this.us, 3)}${pad(this.ns, 3)}`) }
-	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.toDateTime().timeZoneId }
-	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.toDateTime().calendarId }
+	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return getTemporalIds(this.toDateTime())[0] }
+	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return getTemporalIds(this.toDateTime())[1] }
 	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[this.#local.config.timeStamp] }
 	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as t.Month) }
 	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as t.Month) }
@@ -1396,7 +1397,10 @@ export class Tempo {
 	/** returns a Temporal.PlainDateTime representation */		toPlainDateTime() { return this.toDateTime().toPlainDateTime() }
 	/** returns the underlying Temporal.Instant */						toInstant() { return this.toDateTime().toInstant() }
 
-	/** the current system time localized to this instance. */toNow() { return instant().toZonedDateTimeISO(this.tz).withCalendar(this.cal) }
+	/** the current system time localized to this instance. */toNow() {
+		const [tz, cal] = getTemporalIds(this.#local.config.timeZone, this.#local.config.calendar);
+		return instant().toZonedDateTimeISO(tz).withCalendar(cal);
+	}
 	/** the date-time as a standard `Date` object. */					toDate() { return new Date(this.toDateTime().round({ smallestUnit: enums.ELEMENT.ms }).epochMilliseconds) }
 	/** Custom JSON serialization for `JSON.stringify`. */		toJSON() { return { ...this.#local.config, value: this.toString() } }
 	/** iso8601 string representation of the date-time. */
