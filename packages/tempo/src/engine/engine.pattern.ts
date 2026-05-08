@@ -25,6 +25,8 @@ export class PatternCompiler {
 		this.#state = options.state;
 	}
 
+	get state() { return this.#state; }
+
 	/**
 	 * Translates {layout} into an anchored, case-insensitive RegExp.
 	 * Includes recursive expansion of placeholders using snippet registries.
@@ -75,7 +77,8 @@ export class PatternCompiler {
 				}
 
 				if (res && name.includes('.')) {										// wrap dotted extensions for identification
-					const safeName = name.replace(/\./g, '_');
+					let safeName = name.trim().replace(/[^A-Za-z0-9_$]/g, '_');
+					if (!/^[A-Za-z_$]/.test(safeName)) safeName = `_${safeName}`;
 					if (!res.startsWith(`(?<${safeName}>`))
 						res = `(?<${safeName}>${res})`;
 				}

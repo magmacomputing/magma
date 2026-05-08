@@ -1,0 +1,221 @@
+import { isDefined, isEmpty, isZonedDateTime, isNumeric } from '#library/assertion.library.js';
+import type { TypeValue } from '#library/type.library.js';
+import { ownKeys } from '#library/primitive.library.js';
+import { getRuntime, sym, Match } from '#tempo/support';
+import { getTemporalIds, instant } from '#library/temporal.library.js';
+import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './engine.lexer.js';
+import { resolveTermMutation } from './engine.term.js';
+import enums from '#tempo/support/support.enum.js';
+import * as t from '../tempo.type.js';
+
+/** 
+ * Maximum depth for recursive alias resolution. 
+ * This ceiling (50) is generous to accommodate complex alias chains while remaining well above 
+ * the PatternCompiler.matcher depth limit (~10), preventing stack overflows during normalization.
+ */
+const MAX_TEMPO_RESOLVE_DEPTH = 50;
+
+/**
+ * Context provided to the normalizer to handle recursion and state management.
+ */
+export interface NormalizerContext {
+	state: t.Internal.State;
+	isAnchored: boolean;
+	resolvingKeys: Set<string>;
+	subParse: (value: string, dateTime: Temporal.ZonedDateTime, resolvingKeys: Set<string>) => TypeValue<any>;
+	conform: (value: any, dateTime: Temporal.ZonedDateTime, resolvingKeys: Set<string>) => TypeValue<any>;
+}
+
+/**
+ * Provide a lightweight host context that mimics a Tempo instance for functional alias handlers.
+ */
+export function getResolutionContext(ctx: NormalizerContext, dateTime: Temporal.ZonedDateTime) {
+	const { state, resolvingKeys, conform } = ctx;
+	const TempoClass = getRuntime().modules['Tempo'];
+	return {
+		add: (val: any) => dateTime.add(val),
+		subtract: (val: any) => dateTime.subtract(val),
+		with: (val: any) => dateTime.with(val),
+		set: (val: any, opt?: any) => {
+			const res = conform(val, dateTime, resolvingKeys);
+			return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
+		},
+		toNow: () => {
+			const [tz, cal] = getTemporalIds(state.config.timeZone, state.config.calendar);
+			return instant().toZonedDateTimeISO(tz).withCalendar(cal);
+		},
+		get tz() { return getTemporalIds(state.config.timeZone)[0] },
+		get cal() { return getTemporalIds(state.config.timeZone, state.config.calendar)[1] },
+		toDateTime: () => dateTime,
+		get hh() { return dateTime.hour },
+		get mi() { return dateTime.minute },
+		get ss() { return dateTime.second },
+		get yy() { return dateTime.year },
+		get mm() { return dateTime.month },
+		get dd() { return dateTime.day },
+		[sym.$Identity]: true,
+		config: state.config
+	};
+}
+
+/**
+ * Normalize a set of regex groups into a Temporal.ZonedDateTime.
+ */
+export function normalizeMatch(
+	groups: t.Groups,
+	dateTime: Temporal.ZonedDateTime,
+	ctx: NormalizerContext
+): Temporal.ZonedDateTime {
+	const { state, isAnchored } = ctx;
+
+	// 1. Zone
+	dateTime = parseZone(groups, dateTime, state.config);
+
+	// 2. Aliases & Groups
+	dateTime = resolveAliases(groups, dateTime, ctx);
+	if (state.errored) return dateTime;
+
+	// 3. Weekday, Date, Time
+	dateTime = parseWeekday(groups, dateTime, state.config);
+	dateTime = parseDate(groups, dateTime, state.config, state.parse["pivot"]);
+	dateTime = parseTime(groups, dateTime);
+
+	return dateTime;
+}
+
+/**
+ * Resolve {event} | {period} aliases found in the matched groups.
+ */
+export function resolveAliases(
+	groups: t.Groups,
+	dateTime: Temporal.ZonedDateTime,
+	ctx: NormalizerContext
+): Temporal.ZonedDateTime {
+	const { state, resolvingKeys, subParse } = ctx;
+	const prevAnchor = state.anchor;
+	const prevZdt = state.zdt;
+
+	state.anchor = dateTime;
+	state.zdt = dateTime;
+
+	state.parseDepth = (state.parseDepth ?? 0) + 1;
+	const isRoot = state.parseDepth === 1;
+	if (isRoot) state.matches = [];
+
+	const TempoClass = getRuntime().modules['Tempo'];
+	const aliasEngine = state.aliasEngine ?? (TempoClass as any)?.[sym.$Internal]?.().aliasEngine;
+
+	try {
+		for (const key of ownKeys(groups)) {
+			if (key === 'slk') {
+				const slk = groups[key];
+				const result = resolveTermMutation(TempoClass, state as any, 'set', slk, undefined, dateTime);
+
+				if (result === null) {
+					state.errored = true;
+					delete groups[key];
+					break;
+				}
+
+				dateTime = result;
+				delete groups[key];
+				continue;
+			}
+
+			if (Match.named.test(key)) {
+				delete groups[key];
+				continue;
+			}
+
+			const register = aliasEngine?.getAlias(key);
+			if (!register) continue;
+
+			const aliasKey = register.name;
+			if (resolvingKeys.size > MAX_TEMPO_RESOLVE_DEPTH || resolvingKeys.has(aliasKey)) {
+				const msg = `Infinite recursion detected in Tempo resolution for: ${aliasKey}`;
+				state.errored = true;
+				if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new RangeError(msg));
+				delete groups[key];
+				continue;
+			}
+
+			resolvingKeys.add(aliasKey);
+
+			try {
+				const host = getResolutionContext(ctx, dateTime);
+				const res = aliasEngine?.resolveAlias(key as any, host);
+				if (!res) continue;
+
+				try {
+					const mapped = ({
+						evt: { type: 'Event', pat: 'dt' },
+						per: { type: 'Period', pat: 'tm' }
+					} as const)[res.type as 'evt' | 'per'];
+
+					if (!mapped)
+						throw new Error(`[ParseEngine] Unexpected AliasType: ${res.type}`);
+
+					const { type, pat } = mapped;
+
+					accumulateResult(state, { type, value: res.key as any, match: pat, source: res.source, groups: { [key]: res.value } });
+
+					if (!isEmpty(res.value) && res.value !== String(groups[key])) {
+						const resolving = new Set(resolvingKeys);
+						resolving.add(res.key);
+
+						const subAnchor: any = state.anchor;
+						state.anchor = dateTime;
+						const resMatch = subParse(res.value, dateTime, resolving);
+						state.anchor = subAnchor;
+
+						if (resMatch.type === 'Temporal.ZonedDateTime')
+							dateTime = resMatch.value;
+					}
+				} finally {
+					state.zdt = dateTime;
+					delete groups[key];
+				}
+			} finally {
+				resolvingKeys.delete(aliasKey);
+			}
+		}
+	} finally {
+		if (isDefined(prevAnchor)) state.anchor = prevAnchor;
+		else delete state.anchor;
+		if (isDefined(prevZdt)) state.zdt = prevZdt;
+		else delete state.zdt;
+		state.parseDepth--;
+		if (state.parseDepth === 0) delete state.matches;
+	}
+
+	if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {
+		const mm = prefix(groups["mm"] as t.MONTH);
+		if (TempoClass) groups["mm"] = (TempoClass as any).MONTH[mm as t.MONTH]!.toString().padStart(2, '0');
+		else if (enums.MONTH[mm as t.MONTH]) groups["mm"] = enums.MONTH[mm as t.MONTH]!.toString().padStart(2, '0');
+	}
+
+	return dateTime;
+}
+
+/**
+ * Accumulate match results for diagnostic tracing.
+ */
+export function accumulateResult(state: t.Internal.State, ...rest: Partial<t.Internal.Match>[]) {
+	const match = Object.assign({}, ...rest) as t.Internal.Match;
+
+	if (isDefined(state.parse.anchor))
+		match.anchor = state.parse.anchor;
+
+	if (!isDefined(match.isAnchored) && isDefined(state.parse.isAnchored))
+		match.isAnchored = state.parse.isAnchored;
+
+	const res = state.parse.result;
+	if (isDefined(res) && !Object.isFrozen(res)) {
+		const isDuplicate = res.some(existing => 
+			existing.match === match.match && 
+			existing.source === match.source && 
+			String(existing.anchor ?? '') === String(match.anchor ?? '')
+		);
+		if (!isDuplicate) res.push(match);
+	}
+}

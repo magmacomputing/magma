@@ -126,15 +126,15 @@ export default defineConfig({
         },
         {
           find: /^@magmacomputing\/tempo\/parse$/,
-          replacement: fileURLToPath(new URL('../dist/discrete/discrete.parse.js', import.meta.url))
+          replacement: fileURLToPath(new URL('../dist/module/module.parse.js', import.meta.url))
         },
         {
           find: /^@magmacomputing\/tempo\/format$/,
-          replacement: fileURLToPath(new URL('../dist/discrete/discrete.format.js', import.meta.url))
+          replacement: fileURLToPath(new URL('../dist/module/module.format.js', import.meta.url))
         },
         {
-          find: /^@magmacomputing\/tempo\/discrete$/,
-          replacement: fileURLToPath(new URL('../dist/discrete/discrete.index.js', import.meta.url))
+          find: /^@magmacomputing\/tempo\/module$/,
+          replacement: fileURLToPath(new URL('../dist/module/module.index.js', import.meta.url))
         },
         {
           find: /^@magmacomputing\/tempo$/,

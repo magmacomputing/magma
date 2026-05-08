@@ -1,4 +1,4 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../term.util.js';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from './term.util.js';
 import { COMPASS } from '../../support/support.enum.js';
 import { isNumber } from '#library/assertion.library.js';
 import { asArray } from '#library';

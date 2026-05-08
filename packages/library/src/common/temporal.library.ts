@@ -4,7 +4,7 @@
 */
 
 import '#library/temporal.polyfill.js';											// ensure Temporal is available
-import { isNumber, isString } from '#library/assertion.library.js';
+import { isNumber, isObject, isString, isDefined, isZonedDateTime } from '#library/assertion.library.js';
 
 /** return the current Temporal.Now.instant */
 export function instant() {
@@ -36,7 +36,7 @@ export function getOffsets(timeZone: string, year = 2024) {	//** use a fixed ref
 
 /** return whether the given (or current) date is in Daylight Savings */
 export function isDST(date?: Temporal.ZonedDateTime | string, timeZone: string = Intl.DateTimeFormat().resolvedOptions().timeZone) {
-	const zdt = (typeof date === 'string')
+	const zdt = isString(date)
 		? Temporal.ZonedDateTime.from(date)
 		: (date ?? instant().toZonedDateTimeISO(timeZone));
 	const { jan, jul } = getOffsets(zdt.timeZoneId, zdt.year);
@@ -81,9 +81,14 @@ export function normaliseFractionalDurations(payload: Record<string, any>) {
 /**
  * ## toZonedDateTime
  * Create a `Temporal.ZonedDateTime` from a
- * property-bag (year, month, day, …, timeZone, calendar).
+ * property-bag or ISO string.
  */
-export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike & { timeZone: Temporal.TimeZoneLike, calendar?: Temporal.CalendarLike }): Temporal.ZonedDateTime {
+export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike | string, tz: Temporal.TimeZoneLike = 'UTC'): Temporal.ZonedDateTime {
+	if (isString(bag)) {
+		// Detect existing zone designator: bracketed IANA zone ([...]) or numeric offset (±HH:MM, Z)
+		const hasZone = /\[[^\]]+\]|([+-]\d{2}(:?\d{2})?|Z)$/.test(bag);
+		return Temporal.ZonedDateTime.from(hasZone ? bag : `${bag}[${tz}]`);
+	}
 	return Temporal.ZonedDateTime.from(bag);
 }
 
@@ -108,15 +113,40 @@ export function toInstant(epochNanoseconds: bigint): Temporal.Instant {
 /**
  * ## getTemporalIds
  * Normalize TimeZone and Calendar inputs into a [timeZoneId, calendarId] tuple.
+ * Accepts either (tz, cal) strings or a single ZonedDateTime-like object.
+ * Supports both spec-final (flat) and V8 harmony (nested) structures.
  */
-export function getTemporalIds(tz: any, cal: any): [string, string] {
-	const rawTz = isString(tz) ? tz : ((tz as any)?.timeZoneId ?? (tz as any)?.id);
-	const rawCal = isString(cal) ? cal : ((cal as any)?.calendarId ?? (cal as any)?.id);
+export function getTemporalIds(zdt: Temporal.ZonedDateTime, cal?: Temporal.CalendarLike): [string, string];
+export function getTemporalIds(tz: Temporal.TimeZoneLike, cal?: Temporal.CalendarLike): [string, string];
+export function getTemporalIds(tzOrZdt: any, cal?: any): [string, string] {
 	const fallbackTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-	const tzId = (isString(rawTz) && rawTz.trim().length > 0) ? rawTz : fallbackTz;
-	const calId = (isString(rawCal) && rawCal.trim().length > 0) ? rawCal : 'iso8601';
 
-	return [tzId || 'UTC', calId || 'iso8601'];
+	let rawTz: any, rawCal: any;
+	if (isZonedDateTime(tzOrZdt)) {
+		// If first arg is ZonedDateTime, use its IDs as source
+		rawTz = tzOrZdt.timeZoneId ?? tzOrZdt.timeZone?.id ?? tzOrZdt.timeZone;
+		// If a second argument is provided, it explicitly overrides the ZonedDateTime's calendar
+		rawCal = isDefined(cal) ? cal : (tzOrZdt.calendarId ?? tzOrZdt.calendar?.id ?? tzOrZdt.calendar);
+	} else {
+		rawTz = tzOrZdt;
+		rawCal = cal;
+	}
+
+	// Helper to extract string ID from potential objects (TimeZone, Calendar, or ZonedDateTime)
+	const toId = (v: any): string => {
+		if (isString(v)) return v;
+		if (isZonedDateTime(v)) return toId((v as any).timeZoneId ?? (v as any).timeZone?.id ?? (v as any).timeZone);
+		if (isObject(v)) return String((v as any).id ?? (v as any).timeZoneId ?? (v as any).calendarId ?? '');
+		return String(v ?? '');
+	}
+
+	const tzStr = toId(rawTz);
+	const calStr = toId(rawCal);
+
+	const tzId = (tzStr.trim().length > 0 && tzStr !== '[object Object]' && tzStr !== 'undefined') ? tzStr : fallbackTz;
+	const calId = (calStr.trim().length > 0 && calStr !== '[object Object]' && calStr !== 'undefined') ? calStr : 'iso8601';
+
+	return [tzId, calId];
 }
 
 /**

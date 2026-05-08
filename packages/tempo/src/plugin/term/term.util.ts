@@ -3,9 +3,9 @@ import { isDefined, isFunction, isString, isUndefined, isNumber, isZonedDateTime
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { sym, TermError, SCHEMA, getLargestUnit, isTempo, getRuntime } from '#tempo/support';
-import type { Tempo } from '../tempo.class.js';
-import type { TermPlugin, Range, ResolvedRange } from './plugin.type.js';
-import { getHost } from './plugin.util.js';
+import type { Tempo } from '../../tempo.class.js';
+import type { TermPlugin, Range, ResolvedRange } from './term.type.js';
+import { getHost } from '../plugin.util.js';
 
 /**
  * ## defineTerm
@@ -373,7 +373,7 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 			// Normalize year semantics: Treat small offsets as relative to the cycle,
 			// while treating larger numbers as absolute years (e.g. for fixed historical dates).
 			if (isNumber(itm.year)) {
-				clone.year = (itm.year >= -10 && itm.year <= 10) ? itm.year + targetYY : itm.year; // See Range JSDoc in plugin.type.ts (|year| ≤ 10 is relative)
+				clone.year = (itm.year >= -10 && itm.year <= 10) ? itm.year + targetYY : itm.year; // See Range JSDoc in term.type.ts (|year| ≤ 10 is relative)
 			} else {
 				clone.year = targetYY;
 			}

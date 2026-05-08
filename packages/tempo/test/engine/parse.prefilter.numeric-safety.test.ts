@@ -20,7 +20,7 @@ describe('parse prefilter numeric safety constraints', () => {
 		const first = t.parse.result?.[0] as any;
 
 		// Using a delimiter ('-') ensures selectLayoutPatterns() is exercised instead of 
-		// the pure numeric short-circuit (BigInt) in discrete.parse.ts.
+		// the pure numeric short-circuit (BigInt) in module.parse.ts.
 		expect(first?.match).toBe('yearMonthDay');
 		expect(t.yy).toBe(1959);
 		expect(t.mm).toBe(5);
