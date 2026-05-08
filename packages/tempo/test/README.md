@@ -10,7 +10,7 @@ This directory contains the automated test suite for the `@magmacomputing/tempo`
 | **`engine/`** | The internal parsing engine: lexer, planner, layout resolution, and pattern matching. |
 | **`instance/`** | Public methods on the `Tempo` instance (e.g., `add()`, `since()`, `format()`, `set()`). |
 | **`plugins/`** | Extension modules and registries: Terms, Tickers, and Duration modules. |
-| **`discrete/`** | Standalone helper functions that operate independently of a `Tempo` instance. |
+| **`module/`** | Modules (Parse, Format, Duration, Mutate) that can operate on a `Tempo` instance. |
 | **`issues/`** | Regression tests linked to specific bug reports or edge cases. |
 | **`support/`** | Infrastructure, Vitest setup files, and general test utilities. |
 

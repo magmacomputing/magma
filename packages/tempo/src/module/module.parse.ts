@@ -12,9 +12,9 @@ import { selectLayoutPatterns } from '../engine/engine.planner.js';
 import { compose } from '../engine/engine.composer.js';
 import { normalizeMatch, accumulateResult } from '../engine/engine.normalizer.js';
 
-import { getRange, getTermRange } from '../plugin/term.util.js';
+import { getRange, getTermRange } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
-import type { Range, ResolvedRange } from '../plugin/plugin.type.js';
+import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
 import { sym, isTempo, TermError, getRuntime, Match } from '../support/support.index.js';
 import { markConfig, setPatterns, init, extendState } from '../support/support.index.js';
 import { setProperty } from '#tempo/support/support.util.js';

@@ -1,12 +1,11 @@
-import { isObject, isFunction, isDefined, isUndefined, isEmpty, isNumber, isNumeric, isFiniteNumber } from '#library/assertion.library.js';
+import { isObject, isFunction, isDefined, isUndefined, isEmpty, isNumeric, isFiniteNumber } from '#library/assertion.library.js';
 import { Pledge } from '#library/pledge.class.js';
 import { asArray } from '#library/coercion.library.js';
 import { instant, normaliseFractionalDurations } from '#library/temporal.library.js';
 
 import { sym, markConfig, enums } from '#tempo/support';
-import { defineExtension, attachStatics } from '../plugin.util.js'
-import type { Tempo } from '../../tempo.class.js'
-import type { Extension, TempoType } from '../plugin.type.js'
+import { defineExtension, attachStatics, type TempoExtension, type TempoType } from '../plugin.util.js';
+import { Tempo } from '../../tempo.class.js';
 
 declare module '../../tempo.class.js' {
 	namespace Tempo {
@@ -351,9 +350,9 @@ class TickerInstance implements Ticker.Descriptor {
 /**
  * # TickerModule
  */
-export const TickerModule: Extension = defineExtension({
+export const TickerModule: TempoExtension = defineExtension({
 	name: 'TickerModule',
-	install(this: Tempo, TempoClass: TempoType) {
+	install(this: TempoType, TempoClass: TempoType) {
 		attachStatics(TempoClass, {
 			ticker: function (this: TempoType, arg1: any, arg2?: any): Ticker.Instance {
 				const instance = new TickerInstance(this as unknown as TempoType, arg1, arg2);

@@ -5,10 +5,9 @@ import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { getRelativeTime } from '#library/international.library.js';
 
-import { defineInterpreterModule, interpret } from '../plugin/plugin.util.js';
+import { defineInterpreterModule, interpret, type TempoModule } from '../plugin/plugin.util.js';
 import { enums, isTempo } from '#tempo/support';
-import type { Module } from '../plugin/plugin.type.js';
-import type { Tempo } from '../tempo.class.js';
+import { Tempo } from '../tempo.class.js';
 
 declare module '../tempo.class.js' {
 	namespace Tempo {
@@ -158,7 +157,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
  * string -> EDO
  * DurationLikeObject -> EDO (with iso string)
  */
-duration.toDuration = (input: string | Temporal.DurationLikeObject) => {
+(duration as any).toDuration = (input: string | Temporal.DurationLikeObject) => {
 	const dur = Temporal.Duration.from(input);
 	return toDuration(dur);
 }
@@ -166,7 +165,7 @@ duration.toDuration = (input: string | Temporal.DurationLikeObject) => {
 /**
  * Functional Module to attach duration methods to Tempo.
  */
-export const DurationModule: Module = defineInterpreterModule('DurationModule', duration, {
+export const DurationModule: TempoModule = defineInterpreterModule('DurationModule', duration, {
 	duration(this: typeof Tempo, input: any) {
 		return interpret(this, 'DurationModule', 'toDuration', false, input);
 	}

@@ -8,3 +8,4 @@
 
 export * from './plugin.util.js';
 export * from './plugin.type.js';
+export * from './term/term.type.js';

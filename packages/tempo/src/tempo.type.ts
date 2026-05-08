@@ -12,10 +12,11 @@ import * as enums from '#tempo/support/support.enum.js';
 import type { Logify } from '#library/logify.class.js';
 import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/support.default.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption } from '#library/type.library.js';
-import type { TermPlugin, Plugin } from '#tempo/plugin/plugin.type.js';
+import type { TermPlugin } from '#tempo/plugin/term/term.type.js';
+import type { TempoPlugin } from '#tempo/plugin/plugin.util.js';
 import type { Token } from '#tempo/support/support.symbol.js';
 import type { Tempo } from '#tempo/tempo.class.js';
-import { AliasEngine } from './engine/engine.alias.js';
+import type { AliasEngine } from './engine/engine.alias.js';
 import type { PatternCompiler } from './engine/engine.pattern.js';
 
 declare global {
@@ -199,7 +200,7 @@ export namespace Internal {
 		/** custom time aliases (periods). */										period: Period | RegistryOption<Logic>;
 		/** noise words to ignore during parsing. */						ignore: Ignore;
 		/** custom format strings to merge in the FORMAT enum */formats: Property<any>;
-		/** plugins to be automatically extended */							plugins: Plugin | Plugin[];
+		/** plugins to be automatically extended */							plugins: TempoPlugin | TempoPlugin[];
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
@@ -284,7 +285,7 @@ export namespace Internal {
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
 		/** noise words to ignore during parsing via Tempo.ignore() */ ignore?: Ignore
-		/** plugins to be automatically extended via Tempo.extend() */plugins?: Plugin | Plugin[];
+		/** plugins to be automatically extended via Tempo.extend() */plugins?: TempoPlugin | TempoPlugin[];
 	}
 }
 

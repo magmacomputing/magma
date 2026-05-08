@@ -4,7 +4,7 @@
 */
 
 import '#library/temporal.polyfill.js';											// ensure Temporal is available
-import { isNumber, isObject, isString, isUndefined, isDefined, isZonedDateTime } from '#library/assertion.library.js';
+import { isNumber, isObject, isString, isDefined, isZonedDateTime } from '#library/assertion.library.js';
 
 /** return the current Temporal.Now.instant */
 export function instant() {
@@ -36,7 +36,7 @@ export function getOffsets(timeZone: string, year = 2024) {	//** use a fixed ref
 
 /** return whether the given (or current) date is in Daylight Savings */
 export function isDST(date?: Temporal.ZonedDateTime | string, timeZone: string = Intl.DateTimeFormat().resolvedOptions().timeZone) {
-	const zdt = (typeof date === 'string')
+	const zdt = isString(date)
 		? Temporal.ZonedDateTime.from(date)
 		: (date ?? instant().toZonedDateTimeISO(timeZone));
 	const { jan, jul } = getOffsets(zdt.timeZoneId, zdt.year);

@@ -17,9 +17,9 @@ import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import type { Property, Secure } from '#library/type.library.js';
 
-import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
-import { registerTerm, getTermRange } from './plugin/term.util.js';
-import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
+import { registerPlugin, interpret, ensureModule, type TempoPlugin } from './plugin/plugin.util.js'
+import { registerTerm, getTermRange } from './plugin/term/term.util.js';
+import type { TermPlugin } from './plugin/term/term.type.js';
 
 import { AliasEngine } from './engine/engine.alias.js';
 import { PatternCompiler } from './engine/engine.pattern.js';
@@ -37,8 +37,11 @@ declare module '#library/type.library.js' {
 }
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /** current execution context */														const Context = getContext();
-/** return whether the shape is 'local' or 'global' */			const isLocal = (shape: { config: { scope: string } }) => shape.config.scope === 'local';
 /**  */																											const ClassStates = new WeakMap<typeof Tempo, Internal.State>();
+// shortcut functions to common Tempo properties / methods
+/** current timestamp (ts) */																export const getStamp = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).ts) as t.Params<number | bigint>;
+/** create new Tempo */																			export const getTempo = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options)) as t.Params<Tempo>;
+/** format a Tempo */																				export const fmtTempo = ((fmt: string, tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).format(fmt as any)) as Internal.Fmt;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 namespace Internal {
 	// ...existing code...
@@ -48,7 +51,7 @@ namespace Internal {
 	export type Config = t.Internal.Config;
 	export type Discovery = t.Internal.Discovery;
 	export type Registry = t.Internal.Registry;
-	export type PluginContainer = t.Internal.PluginContainer;
+	export interface PluginContainer extends TempoPlugin { }
 
 	export type Fmt = {																					// used for the fmtTempo() shortcut
 		<F extends string>(fmt: F, tempo?: t.DateTime, options?: t.Options): t.FormatType<F>;
@@ -451,14 +454,14 @@ export class Tempo {
 	 * @param plugin - A plugin or term extension to register.
 	 * @param options - Optional configuration for the plugin.
 	 */
-	static extend(plugin: Plugin, options?: t.Options): typeof Tempo;
+	static extend(plugin: TempoPlugin, options?: t.Options): typeof Tempo;
 	/**
 	 * Register an array of plugins or term extensions.
 	 * 
 	 * @param plugins - An array of plugins, terms, or extensions to register.
 	 * @param options - Optional configuration for the plugins.
 	 */
-	static extend(plugins: (Plugin | TermPlugin | any)[], options?: t.Options): typeof Tempo;
+	static extend(plugins: (TempoPlugin | TermPlugin | any)[], options?: t.Options): typeof Tempo;
 	/**
 	 * Register multiple plugins or term extensions.
 	 * 
@@ -503,7 +506,7 @@ export class Tempo {
 					rt.installed.add(name);
 
 					registerPlugin(item);
-					(item as Plugin).install.call(this as any, this);
+					(item as TempoPlugin).install.call(this as any, this);
 				}
 				else if (isObject(item)) {
 					// 1. handle TermPlugin
@@ -1521,10 +1524,6 @@ export class Tempo {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// shortcut functions to common Tempo properties / methods
-/** current timestamp (ts) */	export const getStamp = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).ts) as t.Params<number | bigint>;
-/** create new Tempo */				export const getTempo = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options)) as t.Params<Tempo>;
-/** format a Tempo */					export const fmtTempo = ((fmt: string, tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).format(fmt as any)) as Internal.Fmt;
 
 export namespace Tempo {
 	export type DateTime = t.DateTime;

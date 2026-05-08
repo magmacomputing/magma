@@ -20,8 +20,7 @@ onRegistryReset(() => {
 
 Tempo.extend(core);
 
-export { parse } from './discrete/discrete.parse.js';
-export { format } from './discrete/discrete.format.js';
+export { parse, format } from '#tempo/module';
 export { enums };
 
 export * from './tempo.class.js';

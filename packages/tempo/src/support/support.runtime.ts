@@ -1,5 +1,6 @@
 import { sym } from './support.symbol.js';
-import type { TermPlugin, Extension, Plugin } from '../plugin/plugin.type.js';
+import type { TermPlugin } from '../plugin/term/term.type.js';
+import type { Extension, Plugin } from '../plugin/plugin.type.js';
 import type { Internal } from '../tempo.type.js';
 
 /**

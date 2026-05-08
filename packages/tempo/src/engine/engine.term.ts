@@ -3,12 +3,12 @@ import { isDefined, isString, isZonedDateTime, isNumeric } from '#library/assert
 import { asArray } from '#library/coercion.library.js';
 
 import { TermError, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
-import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin/term.util.js';
+import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin/term/term.util.js';
 import { getHost } from '../plugin/plugin.util.js';
 import { parseModifier } from './engine.lexer.js';
 
 import type { Tempo } from '../tempo.class.js';
-import type { TempoType } from '../plugin/plugin.type.js';
+import type { TempoTermType } from '../plugin/term/term.type.js';
 
 /**
  * Internal helper to safely get the ZonedDateTime from a Tempo instance or raw object
@@ -26,7 +26,7 @@ const toZdt = (v: any): Temporal.ZonedDateTime => isTempo(v) ? v.toDateTime() : 
  * @param zdt - The current ZonedDateTime state
  * @returns The mutated ZonedDateTime
  */
-export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: string, unit: string, offset: any, zdt: Temporal.ZonedDateTime): Temporal.ZonedDateTime | null {
+export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutate: string, unit: string, offset: any, zdt: Temporal.ZonedDateTime): Temporal.ZonedDateTime | null {
 	if (!isZonedDateTime(zdt)) return zdt;
 
 	const [termPart, rangePart] = unit.startsWith('#')
@@ -513,7 +513,7 @@ export function resolveTermMutation(Tempo: TempoType, instance: Tempo, mutate: s
 /**
  * Resolves a term identifier (e.g. '#quarter') to its current value (start of cycle).
  */
-export function resolveTermValue(Tempo: TempoType, instance: Tempo, term: string, zdt: Temporal.ZonedDateTime): Temporal.ZonedDateTime | null {
+export function resolveTermValue(Tempo: TempoTermType, instance: Tempo, term: string, zdt: Temporal.ZonedDateTime): Temporal.ZonedDateTime | null {
 	return resolveTermMutation(Tempo, instance, 'start', term, term, zdt);
 }
 

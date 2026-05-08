@@ -3,7 +3,7 @@ import { singular } from '#library/string.library.js';
 
 import { sym, enums } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
-import { findTermPlugin } from '../plugin/term.util.js';
+import { findTermPlugin } from '../plugin/term/term.util.js';
 import { resolveTermMutation } from '../engine/engine.term.js';
 import type { Tempo } from '../tempo.class.js';
 import type * as t from '../tempo.type.js';
@@ -19,6 +19,7 @@ declare module '#library/type.library.js' {
  */
 function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options = {}) {
 	const state = (this as any)[sym.$Internal]();
+	if (isUndefined(state.mutateDepth)) state.mutateDepth = 0;
 	if (!isZonedDateTime(state.zdt)) return this;
 	const { zdt: selfZdt } = state;
 	const overrides = {
@@ -119,7 +120,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 								case 'add.year': case 'add.month': case 'add.week': case 'add.day':
 								case 'add.hour': case 'add.minute': case 'add.second':
 								case 'add.millisecond': case 'add.microsecond': case 'add.nanosecond':
-									return currZdt.add({ [singular(single) + 's']: offset });
+									return currZdt.add({ [`${single}s`]: offset });
 
 								case 'set.period': case 'set.time': case 'set.date': case 'set.event':
 								case 'set.dow': case 'set.wkd': {
