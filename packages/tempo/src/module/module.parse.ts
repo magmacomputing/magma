@@ -170,9 +170,9 @@ const _ParseEngine = {
 				return undefined as any;
 			}
 
-			if (!isEmpty(options)) zdt = zdt.with(options as Temporal.ZonedDateTimeLikeObject);
 			if (timeZone) zdt = zdt.withTimeZone(timeZone);
 			if (calendar) zdt = zdt.withCalendar(calendar);
+			if (!isEmpty(options)) zdt = zdt.with(options as Temporal.ZonedDateTimeLikeObject);
 
 			accumulateResult(state, { type: 'Temporal.ZonedDateTimeLike', value: zdt, match: 'Temporal.ZonedDateTimeLike' });
 

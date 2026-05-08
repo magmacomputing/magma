@@ -141,38 +141,42 @@ export function resolveAliases(
 
 			resolvingKeys.add(aliasKey);
 
-			const host = getResolutionContext(ctx, dateTime);
-			const res = aliasEngine?.resolveAlias(key as any, host);
-			if (!res) continue;
-
 			try {
-				const mapped = ({
-					evt: { type: 'Event', pat: 'dt' },
-					per: { type: 'Period', pat: 'tm' }
-				} as const)[res.type as 'evt' | 'per'];
+				const host = getResolutionContext(ctx, dateTime);
+				const res = aliasEngine?.resolveAlias(key as any, host);
+				if (!res) continue;
 
-				if (!mapped)
-					throw new Error(`[ParseEngine] Unexpected AliasType: ${res.type}`);
+				try {
+					const mapped = ({
+						evt: { type: 'Event', pat: 'dt' },
+						per: { type: 'Period', pat: 'tm' }
+					} as const)[res.type as 'evt' | 'per'];
 
-				const { type, pat } = mapped;
+					if (!mapped)
+						throw new Error(`[ParseEngine] Unexpected AliasType: ${res.type}`);
 
-				accumulateResult(state, { type, value: res.key as any, match: pat, source: res.source, groups: { [key]: res.value } });
+					const { type, pat } = mapped;
 
-				if (!isEmpty(res.value) && res.value !== String(groups[key])) {
-					const resolving = new Set(resolvingKeys);
-					resolving.add(res.key);
+					accumulateResult(state, { type, value: res.key as any, match: pat, source: res.source, groups: { [key]: res.value } });
 
-					const subAnchor: any = state.anchor;
-					state.anchor = dateTime;
-					const resMatch = subParse(res.value, dateTime, resolving);
-					state.anchor = subAnchor;
+					if (!isEmpty(res.value) && res.value !== String(groups[key])) {
+						const resolving = new Set(resolvingKeys);
+						resolving.add(res.key);
 
-					if (resMatch.type === 'Temporal.ZonedDateTime')
-						dateTime = resMatch.value;
+						const subAnchor: any = state.anchor;
+						state.anchor = dateTime;
+						const resMatch = subParse(res.value, dateTime, resolving);
+						state.anchor = subAnchor;
+
+						if (resMatch.type === 'Temporal.ZonedDateTime')
+							dateTime = resMatch.value;
+					}
+				} finally {
+					state.zdt = dateTime;
+					delete groups[key];
 				}
 			} finally {
-				state.zdt = dateTime;
-				delete groups[key];
+				resolvingKeys.delete(aliasKey);
 			}
 		}
 	} finally {

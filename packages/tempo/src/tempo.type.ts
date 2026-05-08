@@ -210,7 +210,7 @@ export namespace Internal {
 	export type TimeStamp = 'ss' | 'ms' | 'us' | 'ns'
 
 	/** internal metadata for a plugin to track installation */
-	export interface PluginContainer extends Plugin {
+	export interface PluginContainer extends TempoPlugin {
 		installed?: boolean;
 	}
 

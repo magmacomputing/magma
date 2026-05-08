@@ -25,8 +25,10 @@ try {
 		const zdt = Temporal.Now.zonedDateTimeISO();
 		if (typeof zdt.add !== 'function') throw new Error('Incomplete Temporal implementation');
 	}
-} catch (err) {
-	console.warn('Tempo: Native Temporal implementation appears incomplete. Consider loading a polyfill.');
+} catch (err: any) {
+	console.warn('Tempo: Native Temporal implementation appears incomplete. Consider loading a polyfill.', err);
+	if (err?.message !== 'Incomplete Temporal implementation')
+		throw err;
 }
 
 export { }

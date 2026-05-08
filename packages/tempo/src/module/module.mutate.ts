@@ -2,7 +2,7 @@ import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#li
 import { singular } from '#library/string.library.js';
 
 import { sym, enums } from '#tempo/support';
-import { defineInterpreterModule } from '../plugin/plugin.util.js';
+import { defineInterpreterModule, type TempoModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
 import { resolveTermMutation } from '../engine/engine.term.js';
 import type { Tempo } from '../tempo.class.js';
@@ -37,7 +37,6 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 	// Shift the current instance to the target timezone first
 	let zdt = selfZdt.withTimeZone(overrides.timeZone).withCalendar(overrides.calendar);
 	state.parseDepth++;
-	const isRoot = state.parseDepth === 1;
 	const matches = Array.isArray(this.parse?.result) ? Array.from(this.parse.result) : [];
 
 	try {
@@ -211,4 +210,4 @@ const MutateEngine = {
 /**
  * MutateModule registration
  */
-export const MutateModule = defineInterpreterModule('MutateModule', MutateEngine);
+export const MutateModule: TempoModule = defineInterpreterModule('MutateModule', MutateEngine);
