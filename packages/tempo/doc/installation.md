@@ -10,7 +10,11 @@
 
 As of 13 January 2026, Chrome 144 has shipped `Temporal`, and Firefox 139 also includes native `Temporal` support.
 
-While Node.js does not yet enable `Temporal` by default, recent versions (Node 20+) support it via the `--harmony-temporal` flag. This allows you to use `Tempo` without an external polyfill package.
+While Node.js does not yet enable `Temporal` by default, recent versions (Node 20+) support it via the `--harmony-temporal` flag (or `--js-temporal` in newer builds). This allows you to use `Tempo` without an external polyfill package.
+
+::: warning
+Native implementations in Node.js are currently considered experimental and may be incomplete or contain bugs that cause unexpected crashes (e.g., `V8_Fatal` errors in some builds). For mission-critical stability, we strongly recommend using `@js-temporal/polyfill`.
+:::
 
 Please verify support in your actual target runtime(s) and add a polyfill only when needed.
 
@@ -50,6 +54,9 @@ If you are using Node.js 20+, you can enable native `Temporal` support without i
 ```bash
 node --harmony-temporal my-app.js
 ```
+
+> [!WARNING]
+> Use native support with caution. Some Node.js builds contain incomplete Temporal implementations that can crash on complex arithmetic. See [Temporal Polyfill Note](#temporal-polyfill-note) for details.
 
 ### Node.js (with Polyfill)
 

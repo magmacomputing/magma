@@ -125,7 +125,8 @@ git checkout -b feature/my-cool-feature
 git stash pop
 
 # 4. Commit
-git commit -am "My feature changes"
+git add .
+git commit -m "My feature changes"
 ```
 
 ### "I accidentally committed before I added the hook!"
@@ -139,6 +140,9 @@ git branch feature/my-feature
 git fetch origin
 # 3. Reset your local 'main' back to where it should be (the remote version)
 # (Fetching first ensures you don't accidentally reset to a stale origin/main reference)
+# SAFETY CHECK: Verify that your working tree is clean (e.g. `git status`).
+# Stash or commit any uncommitted changes before proceeding!
+# ⚠️ This reset will DISCARD ALL UNCOMMITTED LOCAL CHANGES.
 git reset --hard origin/main
 
 # 4. Switch to your new branch to continue working

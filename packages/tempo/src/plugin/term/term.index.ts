@@ -8,12 +8,12 @@ import { TimelineTerm } from './term.timeline.js'
 
 /** collection of built-in terms for initial registration */
 export const StandardTerms = [QuarterTerm, SeasonTerm, ZodiacTerm, TimelineTerm];
-export { defineTerm, defineRange, getTermRange } from '../term.util.js';
+export { defineTerm, defineRange, getTermRange } from './term.util.js';
 
 /** Aggregator module for all standard Terms */
 export const TermsModule = defineModule({
 	name: 'TermsModule',
-	install(this: Tempo, TempoClass: typeof Tempo) {
+	install(this: typeof Tempo, TempoClass: typeof Tempo) {
 		getRuntime().modules['TermsModule'] = true;							// mark as canonical module
 		onRegistryReset(() => { TempoClass.extend(StandardTerms); });
 		TempoClass.extend(StandardTerms);

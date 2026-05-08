@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "2.9.1",
+  "version": "2.9.2",
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -104,16 +104,16 @@
       "default": "./dist/support/*.js"
     },
     "#tempo/parse": {
-      "development": "./src/discrete/discrete.parse.ts",
-      "default": "./dist/discrete/discrete.parse.js"
+      "development": "./src/module/module.parse.ts",
+      "default": "./dist/module/module.parse.js"
     },
     "#tempo/format": {
-      "development": "./src/discrete/discrete.format.ts",
-      "default": "./dist/discrete/discrete.format.js"
+      "development": "./src/module/module.format.ts",
+      "default": "./dist/module/module.format.js"
     },
-    "#tempo/discrete": {
-      "development": "./src/discrete/discrete.index.ts",
-      "default": "./dist/discrete/discrete.index.js"
+    "#tempo/module": {
+      "development": "./src/module/module.index.ts",
+      "default": "./dist/module/module.index.js"
     },
     "#tempo/*.js": {
       "development": "./src/*.ts",
@@ -161,17 +161,13 @@
       "types": "./dist/module/module.mutate.d.ts",
       "import": "./dist/module/module.mutate.js"
     },
-    "./discrete": {
-      "types": "./dist/discrete/discrete.index.d.ts",
-      "import": "./dist/discrete/discrete.index.js"
-    },
     "./format": {
-      "types": "./dist/discrete/discrete.format.d.ts",
-      "import": "./dist/discrete/discrete.format.js"
+      "types": "./dist/module/module.format.d.ts",
+      "import": "./dist/module/module.format.js"
     },
     "./parse": {
-      "types": "./dist/discrete/discrete.parse.d.ts",
-      "import": "./dist/discrete/discrete.parse.js"
+      "types": "./dist/module/module.parse.d.ts",
+      "import": "./dist/module/module.parse.js"
     },
     "./library": {
       "types": "./dist/library.index.d.ts",
@@ -201,6 +197,7 @@
     "test:ci": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
     "test:ci:prefilter": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TEMPO_PREFILTER_CI=true vitest run",
     "repl": "tsx --conditions=development -i --harmony-temporal --import ./bin/repl.ts",
+    "safe": "tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "bare": "tsx --conditions=development -i --harmony-temporal",
     "core": "cross-env TEMPO_LITE=true tsx --conditions=development -i --harmony-temporal --import ./bin/core.ts",
     "parse": "cross-env TEMPO_LITE=true tsx --conditions=development -i --harmony-temporal --import ./bin/parse.ts",
@@ -224,9 +221,8 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.9.1",
+    "@magmacomputing/library": "2.9.2",
     "@rollup/plugin-alias": "^6.0.0",
-    "cross-env": "^7.0.3",
     "magic-string": "^0.30.21",
     "markdown-it-mathjax3": "^4.3.2",
     "typedoc": "^0.28.19",

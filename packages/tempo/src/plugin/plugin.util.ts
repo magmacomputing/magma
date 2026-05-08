@@ -4,7 +4,12 @@ import { secureRef } from '#library/proxy.library.js';
 import { sym, getRuntime, isTempo } from '#tempo/support';
 import { hasOwn } from '#tempo/support/support.util.js';
 import type { Tempo } from '../tempo.class.js';
-import type { Plugin } from './plugin.type.js';
+import type { Plugin, Module, Extension } from './plugin.type.js';
+
+export type TempoType = typeof Tempo;
+export type TempoPlugin = Plugin<TempoType>;
+export type TempoModule = Module<TempoType>;
+export type TempoExtension = Extension<TempoType>;
 
 export function getHost(t: any): any {
 	const TempoClass = getRuntime().modules['Tempo'];
@@ -83,7 +88,7 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
  * ## defineModule
  * Used to register an internal modularization component.
  */
-export const defineModule = <T extends Plugin>(module: T): T => {
+export const defineModule = <T extends Plugin<TempoType>>(module: T): T => {
 	registerPlugin(module);
 	return module;
 }
@@ -130,7 +135,7 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 export const defineInterpreterModule = (name: string, logic: any, statics?: Record<string, any>) =>
 	defineModule({
 		name,
-		install(this: Tempo, TempoClass: typeof Tempo) {
+		install(this: TempoType, TempoClass: TempoType) {
 			const rt = getRuntime();
 			const modules = rt.modules;
 
@@ -166,7 +171,7 @@ export const defineInterpreterModule = (name: string, logic: any, statics?: Reco
  * ## defineExtension
  * Used to register a class-augmenting extension.
  */
-export const defineExtension = <T extends Plugin>(extension: T): T => {
+export const defineExtension = <T extends Plugin<TempoType>>(extension: T): T => {
 	registerPlugin(extension);
 	return extension;
 }

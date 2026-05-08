@@ -13,16 +13,17 @@ import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike } from '#library/assertion.library.js';
-import { instant } from '#library/temporal.library.js';
+import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import type { Property, Secure } from '#library/type.library.js';
 
-import { registerPlugin, interpret, ensureModule } from './plugin/plugin.util.js'
-import { registerTerm, getTermRange } from './plugin/term.util.js';
-import type { TermPlugin, Plugin } from './plugin/plugin.type.js';
+import { registerPlugin, interpret, ensureModule, type TempoPlugin } from './plugin/plugin.util.js'
+import { registerTerm, getTermRange } from './plugin/term/term.util.js';
+import type { TermPlugin } from './plugin/term/term.type.js';
 
 import { AliasEngine } from './engine/engine.alias.js';
 import { PatternCompiler } from './engine/engine.pattern.js';
+import { createMasterGuard } from './engine/engine.guard.js';
 import { resolveMonthDay, setProperty, proto, hasOwn, normalizeLayoutOrder } from './support/support.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 import { datePattern } from './support/support.default.js';
@@ -36,8 +37,11 @@ declare module '#library/type.library.js' {
 }
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /** current execution context */														const Context = getContext();
-/** return whether the shape is 'local' or 'global' */			const isLocal = (shape: { config: { scope: string } }) => shape.config.scope === 'local';
 /**  */																											const ClassStates = new WeakMap<typeof Tempo, Internal.State>();
+// shortcut functions to common Tempo properties / methods
+/** current timestamp (ts) */																export const getStamp = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).ts) as t.Params<number | bigint>;
+/** create new Tempo */																			export const getTempo = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options)) as t.Params<Tempo>;
+/** format a Tempo */																				export const fmtTempo = ((fmt: string, tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).format(fmt as any)) as Internal.Fmt;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 namespace Internal {
 	// ...existing code...
@@ -47,7 +51,7 @@ namespace Internal {
 	export type Config = t.Internal.Config;
 	export type Discovery = t.Internal.Discovery;
 	export type Registry = t.Internal.Registry;
-	export type PluginContainer = t.Internal.PluginContainer;
+	export interface PluginContainer extends TempoPlugin { }
 
 	export type Fmt = {																					// used for the fmtTempo() shortcut
 		<F extends string>(fmt: F, tempo?: t.DateTime, options?: t.Options): t.FormatType<F>;
@@ -93,7 +97,6 @@ export class Tempo {
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
 	/** flag to prevent recursion during init */							static #lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
-	/** Set of allowed lowercased tokens for the Master Guard */		static #allowedTokens: Set<string> = new Set();
 
 	static [$IsBase] = true;
 
@@ -430,70 +433,9 @@ export class Tempo {
 			...Tempo.#terms.map(t => t.key),
 			...Tempo.#terms.map(t => t.scope),
 			...Guard
-		].filter(w => isString(w) || isSymbol(w))
-			.map(w => (isSymbol(w) ? w.description : (w as string))!.toLowerCase())
-			.filter(Boolean);
+		];
 
-		Tempo.#allowedTokens = new Set(wordsList);
-
-		let maxT = 0;
-		for (const w of wordsList) if (w.length > maxT) maxT = w.length;
-		const maxTokenLength = maxT;
-
-		// Define the custom guard logic (Scan-and-Consume)
-		Tempo.#guard = {
-			test(input: string): boolean {
-				if (!input || typeof input !== 'string') return false;
-
-				let i = 0;
-				const len = input.length;
-
-				while (i < len) {
-					const char = input[i];
-
-					// 1. Skip spaces
-					if (char === ' ' || char === '\n' || char === '\t' || char === '\r') {
-						i++;
-						continue;
-					}
-
-					// 2. Try Bracket match (starts with [)
-					if (char === '[') {
-						const sub = input.substring(i);
-						const match = sub.match(Match.bracket);
-						if (match && match.index === 0) {
-							i += match[0].length;
-							continue;
-						}
-					}
-
-					// 3. Try Longest Token match from Set
-					let matched = false;
-					const searchLen = Math.min(maxTokenLength, len - i);
-					const slice = input.substring(i, i + searchLen).toLowerCase();
-
-					for (let l = searchLen; l > 0; l--) {
-						const candidate = slice.substring(0, l);
-						if (Tempo.#allowedTokens.has(candidate)) {
-							i += l;
-							matched = true;
-							break;
-						}
-					}
-					if (matched) continue;
-
-					// 4. Try Fallback char (Match.guard)
-					if (Match.guard.test(char)) {
-						i++;
-						continue;
-					}
-
-					return false; // No valid match at current position
-				}
-
-				return true;
-			}
-		}
+		Tempo.#guard = createMasterGuard(wordsList);
 
 		if ((this as any)[$Internal]() === Tempo.#global) {
 			setPatterns((this as any)[$Internal]());
@@ -512,14 +454,14 @@ export class Tempo {
 	 * @param plugin - A plugin or term extension to register.
 	 * @param options - Optional configuration for the plugin.
 	 */
-	static extend(plugin: Plugin, options?: t.Options): typeof Tempo;
+	static extend(plugin: TempoPlugin, options?: t.Options): typeof Tempo;
 	/**
 	 * Register an array of plugins or term extensions.
 	 * 
 	 * @param plugins - An array of plugins, terms, or extensions to register.
 	 * @param options - Optional configuration for the plugins.
 	 */
-	static extend(plugins: (Plugin | TermPlugin | any)[], options?: t.Options): typeof Tempo;
+	static extend(plugins: (TempoPlugin | TermPlugin | any)[], options?: t.Options): typeof Tempo;
 	/**
 	 * Register multiple plugins or term extensions.
 	 * 
@@ -564,7 +506,7 @@ export class Tempo {
 					rt.installed.add(name);
 
 					registerPlugin(item);
-					(item as Plugin).install.call(this as any, this);
+					(item as TempoPlugin).install.call(this as any, this);
 				}
 				else if (isObject(item)) {
 					// 1. handle TermPlugin
@@ -889,7 +831,8 @@ export class Tempo {
 	static regexp(layout: string | RegExp, snippet?: Snippet) {
 		const state = (this as any)[$Internal]();
 
-		state.patternCompiler ??= new PatternCompiler({ state });
+		if (!state.patternCompiler || state.patternCompiler.state !== state)
+			state.patternCompiler = new PatternCompiler({ state });
 
 		return state.patternCompiler.compileRegExp(layout, snippet as any);
 	}
@@ -1041,6 +984,8 @@ export class Tempo {
 	/** constructor options */																#options = {} as t.Options;
 	/** instantiation Temporal Instant */											#now: Temporal.Instant;
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
+	/** memoized TimeZone ID */																#tz?: string;
+	/** memoized Calendar ID */																#cal?: string;
 	/** indicator that the instance failed to parse */				#errored = false;
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
 	/** prebuilt formats, for convenience */									#fmt!: any;
@@ -1185,6 +1130,14 @@ export class Tempo {
 	/** @internal check if a module is loaded */
 	hasModule(name: string): boolean {
 		return (this.constructor as typeof Tempo).hasModule(name);
+	}
+
+	/** returns a [timezone, calendar] tuple derived from the underlying date-time. */
+	#temporalIds(): [string, string] {
+		if (!this.#tz || !this.#cal) {
+			[this.#tz, this.#cal] = getTemporalIds(this.toDateTime());
+		}
+		return [this.#tz, this.#cal];
 	}
 
 	/** Resolve the instance to a Temporal.ZonedDateTime (with optional callback) */
@@ -1344,8 +1297,8 @@ export class Tempo {
 	/** Microseconds of the millisecond (0-999) */						get us() { return this.toDateTime().microsecond as t.us }
 	/** Nanoseconds of the microsecond (0-999) */							get ns() { return this.toDateTime().nanosecond as t.ns }
 	/** Fractional seconds (e.g., 0.123456789) */							get ff() { return +(`0.${pad(this.ms, 3)}${pad(this.us, 3)}${pad(this.ns, 3)}`) }
-	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.toDateTime().timeZoneId }
-	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.toDateTime().calendarId }
+	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
+	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
 	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[this.#local.config.timeStamp] }
 	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as t.Month) }
 	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as t.Month) }
@@ -1457,7 +1410,10 @@ export class Tempo {
 	/** returns a Temporal.PlainDateTime representation */		toPlainDateTime() { return this.toDateTime().toPlainDateTime() }
 	/** returns the underlying Temporal.Instant */						toInstant() { return this.toDateTime().toInstant() }
 
-	/** the current system time localized to this instance. */toNow() { return instant().toZonedDateTimeISO(this.tz).withCalendar(this.cal) }
+	/** the current system time localized to this instance. */toNow() {
+		const [tz, cal] = getTemporalIds(this.#local.config.timeZone, this.#local.config.calendar);
+		return instant().toZonedDateTimeISO(tz).withCalendar(cal);
+	}
 	/** the date-time as a standard `Date` object. */					toDate() { return new Date(this.toDateTime().round({ smallestUnit: enums.ELEMENT.ms }).epochMilliseconds) }
 	/** Custom JSON serialization for `JSON.stringify`. */		toJSON() { return { ...this.#local.config, value: this.toString() } }
 	/** iso8601 string representation of the date-time. */
@@ -1568,10 +1524,6 @@ export class Tempo {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// shortcut functions to common Tempo properties / methods
-/** current timestamp (ts) */	export const getStamp = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).ts) as t.Params<number | bigint>;
-/** create new Tempo */				export const getTempo = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options)) as t.Params<Tempo>;
-/** format a Tempo */					export const fmtTempo = ((fmt: string, tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).format(fmt as any)) as Internal.Fmt;
 
 export namespace Tempo {
 	export type DateTime = t.DateTime;

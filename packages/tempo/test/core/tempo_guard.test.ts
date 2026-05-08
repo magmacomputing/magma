@@ -38,7 +38,12 @@ describe('Master Guard Extension', () => {
 
 		// 3. '@@@banana@@@' now passes guard
 		const t = new Tempo('@@@banana@@@');
-		// expect(t.parse.lazy).toBe(true);
+	});
+	
+	it('should permit numeric inputs which bypass the guard', () => {
+		const t = new Tempo(20260507);
 		expect(t).toBeInstanceOf(Tempo);
+		// Accessing a property triggers the parse
+		expect(t.yy).toBe(2026);
 	});
 });

@@ -1,13 +1,13 @@
-import { isString, isObject, isDefined, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
+import { getTemporalIds } from '#library/temporal.library.js';
+import { isString, isObject, isDefined, isUndefined } from '#library/assertion.library.js';
 import { singular } from '#library/string.library.js';
 import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { getRelativeTime } from '#library/international.library.js';
 
-import { defineInterpreterModule, interpret } from '../plugin/plugin.util.js';
+import { defineInterpreterModule, interpret, type TempoModule } from '../plugin/plugin.util.js';
 import { enums, isTempo } from '#tempo/support';
-import type { Module } from '../plugin/plugin.type.js';
-import type { Tempo } from '../tempo.class.js';
+import { Tempo } from '../tempo.class.js';
 
 declare module '../tempo.class.js' {
 	namespace Tempo {
@@ -94,8 +94,11 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	const offset = new (this.constructor as any)(value, { ...opts, anchor: this, mode: enums.MODE.Strict });
 	const offsetZdt = offset.toDateTime();
 
-	const diffZone = selfZdt.timeZoneId !== offsetZdt.timeZoneId;
-	const dur = selfZdt.until(offsetZdt.withCalendar(selfZdt.calendarId), { largestUnit: diffZone ? 'hours' : (unit ?? 'years') });
+	const [selfTz, selfCal] = getTemporalIds(selfZdt);
+	const [offsetTz] = getTemporalIds(offsetZdt);
+
+	const diffZone = selfTz !== offsetTz;
+	const dur = selfZdt.until(offsetZdt.withCalendar(selfCal), { largestUnit: diffZone ? 'hours' : (unit ?? 'years') });
 
 	if (isDefined(unit))
 		unit = `${singular(unit)}s`;
@@ -117,8 +120,8 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 		const locale = (this as any).config['locale'];
 		const rtConfig = (this as any).config.intl?.relativeTime;
 		const rtOptions = opts['relativeTime'];
-		
-		const rtf = (typeof rtOptions === 'function' ? rtOptions : rtOptions?.format) 
+
+		const rtf = (typeof rtOptions === 'function' ? rtOptions : rtOptions?.format)
 			|| (typeof rtConfig === 'function' ? rtConfig : rtConfig?.format)
 			|| opts['rtfFormat'] || (this as any).config['rtfFormat'];
 
@@ -154,7 +157,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
  * string -> EDO
  * DurationLikeObject -> EDO (with iso string)
  */
-duration.toDuration = (input: string | Temporal.DurationLikeObject) => {
+(duration as any).toDuration = (input: string | Temporal.DurationLikeObject) => {
 	const dur = Temporal.Duration.from(input);
 	return toDuration(dur);
 }
@@ -162,7 +165,7 @@ duration.toDuration = (input: string | Temporal.DurationLikeObject) => {
 /**
  * Functional Module to attach duration methods to Tempo.
  */
-export const DurationModule: Module = defineInterpreterModule('DurationModule', duration, {
+export const DurationModule: TempoModule = defineInterpreterModule('DurationModule', duration, {
 	duration(this: typeof Tempo, input: any) {
 		return interpret(this, 'DurationModule', 'toDuration', false, input);
 	}

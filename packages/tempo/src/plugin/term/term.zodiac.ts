@@ -1,4 +1,4 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '../term.util.js';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from './term.util.js';
 import { isNumber } from '#library/assertion.library.js';
 import type { Tempo } from '../../tempo.class.js';
 

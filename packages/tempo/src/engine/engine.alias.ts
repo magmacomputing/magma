@@ -81,19 +81,21 @@ export class AliasEngine {
 	getWords() { return this.#words }
 
 	constructor(options = {} as AliasEngineOptions) {
-		this.#parent = options.parent ?? null;
+		const parent = options.parent;
 		this.#logger = options.logger;
 		this.#config = options.config;
 		this.#id = AliasEngine.#idCounter++;
 
-		if (this.#parent instanceof AliasEngine) {
-			this.#depth = this.#parent.#depth + 1;
-			this.#state = Object.create(this.#parent.#state);			// create a new state object that inherits from the parent engine's state
-			this.#words = Object.create(this.#parent.#words);			// create a new words object that inherits from the parent engine's words for collision detection
+		if (parent instanceof AliasEngine) {
+			this.#parent = parent;
+			this.#depth = parent.#depth + 1;
+			this.#state = Object.create(parent.#state);			// create a new state object that inherits from the parent engine's state
+			this.#words = Object.create(parent.#words);			// create a new words object that inherits from the parent engine's words for collision detection
 		} else {
-			if (this.#parent)
+			if (parent)
 				this.#logger?.error(this.#config, "Parent engine must be an instance of AliasEngine");
 
+			this.#parent = null;
 			this.#depth = 0;
 			this.#state = Object.create(null);										// initialize an empty state for the root engine (no parent)
 			this.#words = Object.create(null);										// initialize an empty words object for the root engine (no parent)

@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   
+## [2.9.2] - 2026-05-08
+
+### Added
+- **Resilient ID Extraction**: Unified `timeZoneId` and `calendarId` extraction into a single spec-resilient helper `getTemporalIds`. This ensures 100% compatibility across both spec-final and Node.js V8 harmony environments by resolving nested property drift (`timeZone.id` vs `timeZoneId`).
+- **Identity-Based Layout Resolution**: Hardened `resolveLayoutClassificationOrder` to support identity-based symbol lookups. This ensures that tokens without descriptions or aliases (such as raw symbols) can be correctly prioritized in preferred layout ordering.
+- **Named Capture for Separators**: Updated the default `{sep}` snippet to use a named capture group `(?<sep>...)`, improving the inspectability of generated regex patterns.
+
+### Changed
+- **Non-Recursive Bootstrap**: Hardened the `toNow()` lifecycle and `today` alias to safely access local configuration without triggering circular parsing dependencies.
+- **Modular Decompression**: Removed the redundant `parse.layout.ts` re-export module and consolidated all layout resolution logic into `engine.layout.ts`. Updated internal Specifiers and test-aliases to point to the new canonical home.
+- **Node.js Harmony Support**: Updated documentation to highlight native `Temporal` support in Node.js 20+ via the `--harmony-temporal` flag, reducing the need for external polyfills in modern server-side environments.
+
+### Fixed
+- **MasterGuard Validation**: Improved the `MasterGuard` scanner to correctly identify and reject whitespace-only strings by implementing explicit match tracking.
+- **Symbol Mapping Safety**: Fixed a potential `TypeError` in `AliasEngine` when mapping Symbols without descriptions by hardening the `wordsList` creation logic.
+- **Utility Security Hardening**: Refactored the `create<T>` and `setPatterns` utilities with robust prototype-shadowing guards. These improvements prevent `TypeError` crashes when interacting with null-prototype objects and guarantee `PatternCompiler` state isolation across concurrent Tempo instances.
+- **PatternCompiler Isolation**: Refactored `Tempo.regexp()` to guarantee `PatternCompiler` isolation per-state, preventing unintended cache leakage across inherited registries.
+- **UI Accessibility**: Updated documentation button styles to use theme variables, ensuring WCAG 2.1 contrast compliance (4.5:1) for all brand elements.
+- **RegExp Preview Accuracy**: Corrected the documentation example for `Tempo.regexp()` to accurately reflect the anchored outer capture group and unique named snippet expansions (`sep`, `sep_1`) produced by the engine.
+
+## [2.9.1] - 2026-05-07
+
+### Fixed
+- **Support Utility Consolidation**: Completed the rename and migration of internal support utilities to the `@packages/tempo/src/support/` directory.
+- **Pattern Compiler isolated test state**: Fixed state-leakage in `pattern_compiler_optimization.test.ts` by implementing `TempoRuntime.createScoped()` and `init({}, false)` within `beforeEach` hooks.
+
 ## [2.9.0] - 2026-05-06
   
 ### Added

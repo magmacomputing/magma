@@ -35,13 +35,13 @@
         "../src/module/module.mutate.ts"
       ],
       "#tempo/format": [
-        "../src/discrete/discrete.format.ts"
+        "../src/module/module.format.ts"
       ],
       "#tempo/parse": [
-        "../src/discrete/discrete.parse.ts"
+        "../src/module/module.parse.ts"
       ],
-      "#tempo/discrete": [
-        "../src/discrete/discrete.index.ts"
+      "#tempo/module": [
+        "../src/module/module.index.ts"
       ],
       "#tempo/ticker": [
         "../src/plugin/extend/extend.ticker.ts"

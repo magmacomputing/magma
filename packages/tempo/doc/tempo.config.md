@@ -150,6 +150,9 @@ Tempo.init({
 | `mode` | `'auto' \| 'strict' \| 'defer'` | `'auto'` | Controls the hydration strategy (e.g., `defer` for Zero-Cost creation). |
 | `silent` | `boolean` | `false` | Suppresses console output. Combined with `catch: true` for silent failover. |
 | `ignore` | `string \| string[]` | `['at']` | List of noise words to be stripped before parsing. |
+| `layoutOrder` | `string[]` | Built-in Order | The sequence in which layouts are attempted during parsing. |
+| `preFilter` | `boolean` | `false` | Enables the Parse Planner to skip irrelevant layouts based on input classification. |
+| `planner` | `PlannerOptions` | `undefined` | Grouped configuration for `layoutOrder` and `preFilter`. |
 
 ---
 
@@ -236,6 +239,36 @@ console.log(t.toString()); // Resolved correctly (noise words stripped)
 **Registry Structure**: The `ignore` registry accepts a **String** or an **Array** of strings. These are converted to a high-performance internal format to support efficient prototype-based shadowing. Note that values provided via `Tempo.init()` or the `new Tempo()` constructor **merge** with the default ignore list rather than replacing it.
 :::
 
+
+---
+
+### 🚀 5.4 Parse Planner & Pre-filtering
+
+For high-performance applications, you can enable the **Parse Planner** to optimize the pattern-matching loop. 
+
+#### `preFilter` (Boolean)
+When enabled, Tempo performs a fast upfront classification of the input string (detecting digits, letters, colons, etc.) and skips layouts that cannot possibly match.
+
+- **Purely numeric inputs**: Skips `event`, `period`, `wkd`, and `rel` layouts.
+- **Alpha-only inputs**: Skips time-heavy layouts like `hms` or `off`.
+- **Colon detected**: Prioritizes time-based layouts (`tm`, `dtm`) to find a match faster.
+
+```javascript
+Tempo.init({ preFilter: true });
+```
+
+#### `layoutOrder` (Array)
+You can manually define the order in which layouts are attempted. This is useful if you know your data primarily uses a specific format (e.g., ISO dates) and want to avoid checking other layouts first.
+
+```javascript
+Tempo.init({ 
+  layoutOrder: ['ymd', 'dt', 'tm', 'rel'] 
+});
+```
+
+::: tip
+**Observability**: Set `debug: true` along with `preFilter: true` to see a detailed "Planner summary" in the console, showing how many layouts were skipped for a given input.
+:::
 
 ---
 
