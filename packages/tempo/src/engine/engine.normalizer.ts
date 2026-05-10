@@ -223,8 +223,10 @@ export function resolveAliases(
 
 	if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {
 		const mm = prefix(groups["mm"] as t.MONTH);
-		if (TempoClass) groups["mm"] = (TempoClass as any).MONTH[mm as t.MONTH]!.toString().padStart(2, '0');
-		else if (enums.MONTH[mm as t.MONTH]) groups["mm"] = enums.MONTH[mm as t.MONTH]!.toString().padStart(2, '0');
+		const monthVal = enums.MONTH[mm];
+
+		if (isDefined(monthVal))
+			groups["mm"] = monthVal.toString().padStart(2, '0');
 	}
 
 	return dateTime;

@@ -33,9 +33,9 @@ function num(groups: Record<string, string | number>) {
 				return acc;
 			}
 
-			const cal = prefix(val);
-			if (cal in enums.MONTH) acc[key] = enums.MONTH[cal as t.MONTH];
-			else if (cal in enums.WEEKDAY) acc[key] = enums.WEEKDAY[cal as t.WEEKDAY];
+			const cal = prefix(val);															// get the three-character prefix for a Weekday/Month
+			if (cal in enums.WEEKDAY) acc[key] = enums.WEEKDAY[cal as t.WEEKDAY];
+			else if (cal in enums.MONTH) acc[key] = enums.MONTH[cal as t.MONTH];
 
 			return acc;
 		}, {} as Record<string, number>);
@@ -48,18 +48,30 @@ export function resolveNumber(str: any): t.Number | any {
 	return Object.keys(enums.NUMBER).find(key => key.startsWith(low)) ?? str;
 }
 
-/** conform weekday names using prefix matching */
+/** conform weekday names (3-characters) using prefix matching */
 export function prefix(str: t.WEEKDAY | t.WEEKDAYS): t.WEEKDAY;
-/** conform month names using prefix matching */
+/** conform month names (3-characters) using prefix matching */
 export function prefix(str: t.MONTH | t.MONTHS): t.MONTH;
-/** conform any string to a weekday/month prefix if possible */
-export function prefix(str: string): t.WEEKDAY | t.MONTH | string;
+/** return original str if not a full weekday/month name */
+export function prefix(str: string): string;
 /** implementation */
 export function prefix(str: any): any {
 	if (!isString(str)) return str;
 
-	const val = str.trim();
-	return val.charAt(0).toUpperCase() + val.slice(1, 3).toLowerCase();
+	const low = str.trim().toLowerCase().substring(0, 3);
+	if (low.length < 2) return str;														// cannot determine ambiguity with less than 3 characters
+	if (low === 'all' || low === 'eve') return 'All';					// handle special case of "all" / "every"
+
+	for (const table of [enums.WEEKDAY, enums.MONTH]) {
+		const match = Object.keys(table).find(key => {
+			const normalized = key.toLowerCase();
+			return normalized.startsWith(low);
+		});
+
+		if (match) return match;
+	}
+
+	return str;
 }
 
 /** resolve a relative modifier (+, -, next, ago, etc) */

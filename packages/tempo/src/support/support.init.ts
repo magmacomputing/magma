@@ -127,6 +127,7 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 	ownEntries(options).forEach(([optKey, optVal]) => {
 		if (isUndefined(optVal)) return;
+
 		state.userProvidedKeys.add(optKey);
 		const arg = asType(optVal);
 
@@ -244,10 +245,13 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 			case 'timeStamp': {
 				const unit = isString(arg.value) ? arg.value : arg.value?.unit;
-				if (unit && !['ss', 'ms', 'us', 'ns'].includes(unit))
-					logError(null, `Invalid timeStamp unit: ${unit}. Expected 'ss', 'ms', 'us', or 'ns'.`);
 
-				setProperty(state.config, optKey, unit ?? arg.value);
+				if (unit && !['ss', 'ms', 'us', 'ns'].includes(unit)) {
+					logError(state.config, `[Tempo#extend] Invalid timeStamp unit: ${String(unit ?? arg.value)}. Expected 'ss', 'ms', 'us', or 'ns'.`);
+					break;
+				}
+
+				setProperty(state.config, optKey, unit);
 				break;
 			}
 

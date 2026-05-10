@@ -93,7 +93,7 @@ export function compose(
 		case 'Number':
 		case 'BigInt':
 			{
-				if (type === 'Number' && (Number.isNaN(value) || !Number.isFinite(value))) {
+				if (type === 'Number' && !Number.isFinite(value)) {
 					logError(config, `Invalid Tempo number: ${value}`);
 					temporal = today;
 					break;
