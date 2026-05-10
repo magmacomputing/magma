@@ -131,9 +131,8 @@ export class AliasEngine {
 				);
 			}
 
-			if (shouldOverwrite) {
+			if (shouldOverwrite)
 				this.#words[baseWord] = aliasKey;
-			}
 
 			this.#state[aliasKey] = {
 				name,																								// plain string or regex-like string
