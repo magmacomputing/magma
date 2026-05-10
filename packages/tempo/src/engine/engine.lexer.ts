@@ -4,7 +4,6 @@ import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { pad, singular } from '#library/string.library.js';
 import { Match, enums, isTempo, logError, logWarn } from '#tempo/support';
 import * as t from '../tempo.type.js';
-import Tempo from '#tempo';
 
 /**
  * Internal Lexer helpers for the Tempo parsing engine.  

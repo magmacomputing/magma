@@ -3,9 +3,19 @@ import { isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#libra
 import type { TemporalObject, TypeValue } from '#library/type.library.js';
 
 import { isTempo, logError } from '#tempo/support';
-import { hasOwn } from '#tempo/support/support.util.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 import * as t from '../tempo.type.js';
+
+/**
+ * # UNIT_LOOKUP
+ * multipliers and labels for numeric precision resolution.
+ */
+const UNIT_LOOKUP: Record<string, { scale: bigint; matchName: string }> = {
+	ss: { scale: 1_000_000_000n, matchName: 'Seconds' },
+	ms: { scale: 1_000_000n, matchName: 'Milliseconds' },
+	us: { scale: 1_000n, matchName: 'Microseconds' },
+	ns: { scale: 1n, matchName: 'Nanoseconds' },
+};
 
 /**
  * Logic to compose various input types into a Temporal.ZonedDateTime.  
@@ -19,11 +29,12 @@ export function compose(
 	targetCal: string,
 	onResult?: (match: any) => void,
 	unit: t.Internal.TimeStamp = 'ms',
-	config?: any
+	config?: any,
+	userProvidedKeys?: Set<string>
 ): { dateTime: Temporal.ZonedDateTime, timeZone?: string | undefined } {
 	const { type, value, zone: derivedTz, calendar: derivedCal } = arg as any;
-	const finalTz = hasOwn(config, 'timeZone') ? targetTz : (derivedTz ?? targetTz);
-	const finalCal = hasOwn(config, 'calendar') ? targetCal : (derivedCal ?? targetCal);
+	const finalTz = userProvidedKeys?.has('timeZone') ? targetTz : (derivedTz ?? targetTz);
+	const finalCal = userProvidedKeys?.has('calendar') ? targetCal : (derivedCal ?? targetCal);
 
 	let temporal: TemporalObject | Tempo = today;
 	let timeZone: string | undefined;
@@ -89,7 +100,17 @@ export function compose(
 				}
 
 				// 📏 Resolve multipliers for nanosecond conversion
-				const scale = unit === 'ss' ? 1_000_000_000n : (unit === 'ms' ? 1_000_000n : (unit === 'us' ? 1_000n : 1n));
+				/**
+				 * 💡 v2.9.3 Migration Note:
+				 * Breaking Change: BigInt inputs now respect the configured 'unit' (default 'ms') 
+				 * instead of being treated as raw nanoseconds.
+				 *
+				 * Example:
+				 *   new Tempo(1000n) // v2.9.2: 1000ns | v2.9.3: 1000ms
+				 *
+				 * Workaround: pass { timeStamp: 'ns' } to restore pre-v2.9.3 semantics.
+				 */
+				const { scale, matchName } = UNIT_LOOKUP[unit] ?? UNIT_LOOKUP.ms;
 				let nano: bigint;
 
 				if (type === 'Number' && !Number.isInteger(value)) {
@@ -111,7 +132,6 @@ export function compose(
 				}
 
 				// 🏷️ Log Result Metadata
-				const matchName = unit === 'ss' ? 'Seconds' : (unit === 'ms' ? 'Milliseconds' : (unit === 'us' ? 'Microseconds' : 'Nanoseconds'));
 				onResult?.({ type, value, match: matchName });
 
 				temporal = Temporal.Instant.fromEpochNanoseconds(nano);

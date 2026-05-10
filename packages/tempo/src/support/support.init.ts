@@ -24,8 +24,12 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	const { timeZone, calendar } = getDateTimeFormat();
 	const state = (baseState ? Object.create(baseState) : {
 		config: {},
-		parse: {}
+		parse: {},
+		userProvidedKeys: new Set<string>()
 	}) as t.Internal.State;
+
+	if (baseState)
+		state.userProvidedKeys = new Set(baseState.userProvidedKeys);
 
 	// 1. Establish the base parsing state
 	const parseState: t.Internal.Parse = {
@@ -123,6 +127,7 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 	ownEntries(options).forEach(([optKey, optVal]) => {
 		if (isUndefined(optVal)) return;
+		state.userProvidedKeys.add(optKey);
 		const arg = asType(optVal);
 
 		switch (optKey) {

@@ -253,6 +253,7 @@ export namespace Internal {
 		/** parsing rules */																		parse: Parse;
 		/** @internal current valid configuration options */		OPTION: Set<string>;
 		/** @internal valid Temporal units for ZonedDateTime */	ZONED_DATE_TIME: Set<string>;
+		/** @internal keys explicitly provided during init */		userProvidedKeys: Set<string>;
 
 		/** @internal current recursion depth during parsing */	parseDepth?: number;
 		/** @internal current matches during parsing */					matches?: Match[];
@@ -270,8 +271,8 @@ export namespace Internal {
 		/** pattern which matched the input */									match?: string | undefined;
 		/** groups from the pattern match */										groups?: Groups;
 		/** was this a nested/anchored parse? */								isAnchored?: boolean;
-		/** where this match came from: 'default', 'global', 'local', or `plugin:${string}` */ source?: MatchSource;
 		/** anchor value used for this match */									anchor?: Temporal.ZonedDateTime;
+		/** where this match came from: 'default', 'global', 'local', or `plugin:${string}` */ source?: MatchSource;
 	} & (TypeValue<any> | MatchExtend)
 
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */

@@ -129,10 +129,9 @@ const _ParseEngine = {
 			const { timeZone: tz2, calendar: cal2 } = state.config;
 			const [targetTz, targetCal] = getTemporalIds(tz2, cal2);
 
-			const { dateTime: dt, timeZone } = compose(res, today, tz, targetTz, targetCal, (m) => accumulateResult(state, m), state.config.timeStamp, state.config);
+			const { dateTime: dt, timeZone } = compose(res as any, today, tz, targetTz, targetCal, (m) => accumulateResult(state, m), state.config.timeStamp, state.config, state.userProvidedKeys);
 
 			dateTime = dt;
-			if (timeZone && state) state.config.timeZone = timeZone;
 
 			if (isZonedDateTime(dateTime) && !state.errored)
 				dateTime = dateTime.withTimeZone(targetTz).withCalendar(targetCal);
@@ -168,7 +167,7 @@ const _ParseEngine = {
 			const termKey = Object.keys(options).find(k => k.startsWith('#'));
 			if (termKey && terms.length === 0) {
 				if (TempoClass) (TempoClass as any)[TermError](state.config, termKey);
-				return undefined as any;
+				return { type: 'Void', value: undefined as any };
 			}
 
 			if (timeZone) zdt = zdt.withTimeZone(timeZone);
@@ -326,8 +325,8 @@ const _ParseEngine = {
 				state,
 				isAnchored,
 				resolvingKeys,
-				subParse: (v, dt, rk) => _ParseEngine.parseLayout(state, v, dt, true, rk),
-				conform: (v, dt, rk) => _ParseEngine.conform(state, v, dt, true, rk)
+				subParse: (v, dt, rk) => _ParseEngine.parseLayout(state, v, dt, true, rk) as any,
+				conform: (v, dt, rk) => _ParseEngine.conform(state, v, dt, true, rk) as any
 			});
 
 			const isChanged = !dateTime.toPlainTime().equals(anchorTime);
@@ -383,7 +382,7 @@ const withState = <A extends any[], R>(fn: (state: t.Internal.State, ...args: A)
 		}
 
 		const res = fn(state, ...callArgs) as any;
-		return (isObject(res) && 'value' in res) ? res.value : res;
+		return (isObject(res) && 'type' in res && 'value' in res) ? res.value : res;
 	}
 }
 

@@ -368,6 +368,9 @@ export class Tempo {
 					intl.relativeTime = discovery.relativeTime;
 				} else if (!(typeof intl.relativeTime === 'function')) {
 					intl.relativeTime = { ...intl.relativeTime, ...discovery.relativeTime };
+				} else {
+					// A function-based relativeTime in 'intl' takes precedence over a shorthand 'relativeTime' object
+					Tempo.#dbg.debug(shape.config, '[Discovery] Shorthand relativeTime object ignored; intl.relativeTime function has precedence.');
 				}
 			}
 			shape.config.intl = { ...shape.config.intl, ...intl };
