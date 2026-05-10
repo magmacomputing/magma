@@ -974,6 +974,11 @@ export class Tempo {
 
 		onRegistryReset(() => {
 			const state = (Tempo as any)[sym.$Internal]();
+			// 🏛️ Clear the root engine to avoid stale state and collision warnings during hard resets
+			if (state.aliasEngine && state.aliasEngine.depth === 0) {
+				state.aliasEngine.clear('evt');
+				state.aliasEngine.clear('per');
+			}
 			(Tempo as any)[$buildGuard]();
 			(Tempo as any)[$setEvents](state, undefined, false);
 			(Tempo as any)[$setPeriods](state, undefined, false);

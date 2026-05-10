@@ -62,6 +62,34 @@ The engine can interpret:
 
 ---
 
+## 🔢 Numeric & Epoch Parsing
+
+Tempo provides robust support for parsing Unix timestamps (Epochs). Unlike standard `Date.parse`, Tempo can interpret epochs in multiple units and handles both `Number` and `BigInt` types.
+
+### Unit Selection
+By default, Tempo treats numbers as **milliseconds**. You can configure this via the `timeStamp` option:
+
+```typescript
+// Default (milliseconds)
+new Tempo(1715900000000).format('{yyyy}-{mm}-{dd}'); // 2024-05-16
+
+// Seconds
+new Tempo(946684800, { timeStamp: 'ss' }).yy; // 2000
+
+// Microseconds / Nanoseconds
+new Tempo(1715900000000000n, { timeStamp: 'us' });
+```
+
+### Smart Epoch Detection
+The parsing engine automatically detects shorter numeric strings (9-10 digits) as valid Epoch candidates when a non-default unit (like `'ss'`) is configured. This ensures that second-based timestamps like `946684800` are correctly interpreted as timestamps rather than being passed to the layout engine.
+
+### Fractional Precision
+Tempo supports fractional numeric inputs across all units with nanosecond precision.
+*   `1.5` (seconds mode) resolves to `1.5` seconds (1500ms).
+*   `100.25` (milliseconds mode) resolves to `100` milliseconds and `250` microseconds.
+
+---
+
 ## 🧩 Modularity: Core vs. Full
 
 The parsing engine is modular. Depending on which version of Tempo you are using, you may need to explicitly enable it:

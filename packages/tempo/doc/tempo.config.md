@@ -134,7 +134,7 @@ Tempo.init({
 | `calendar` | `string` | `'iso8601'` | Default calendar system. |
 | `pivot` | `number` | `75` | Cutoff for parsing two-digit years. |
 | `monthDay` | `MonthDay \| boolean` | `undefined` | Regional date-parsing configuration (grouped). Includes `active`, `locales`, `layouts`, and `timezones`. |
-| `timeStamp`| `'ms' \| 'ns'` | `'ms'` | Precision for timestamps. |
+| `timeStamp`| `'ss' \| 'ms' \| 'us' \| 'ns'` | `'ms'` | Precision for numeric inputs and the `.ts` property. |
 | `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
 | `relativeTime` | `RelativeTime` | `undefined` | Relative time formatting configuration (grouped). |
 | `event` | `Record<string, string \| Function>` | Built-in aliases | Custom date aliases merged into the event registry. |
