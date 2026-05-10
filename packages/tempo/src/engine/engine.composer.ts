@@ -1,7 +1,9 @@
 import { getTemporalIds } from '#library/temporal.library.js';
-import { isNumeric, isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
-import { isTempo, logError } from '#tempo/support';
+import { isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
 import type { TemporalObject, TypeValue } from '#library/type.library.js';
+
+import { isTempo, logError } from '#tempo/support';
+import { hasOwn } from '#tempo/support/support.util.js';
 import type { Tempo } from '#tempo/tempo.class.js';
 import * as t from '../tempo.type.js';
 
@@ -10,7 +12,7 @@ import * as t from '../tempo.type.js';
  * Extracted from Tempo.#parse to reduce core class complexity.
  */
 export function compose(
-	{ type, value }: TypeValue<any>,
+	arg: TypeValue<any>,
 	today: Temporal.ZonedDateTime,
 	tz: Temporal.TimeZoneLike,
 	targetTz: string,
@@ -19,6 +21,10 @@ export function compose(
 	unit: t.Internal.TimeStamp = 'ms',
 	config?: any
 ): { dateTime: Temporal.ZonedDateTime, timeZone?: string | undefined } {
+	const { type, value, zone: derivedTz, calendar: derivedCal } = arg as any;
+	const finalTz = hasOwn(config, 'timeZone') ? targetTz : (derivedTz ?? targetTz);
+	const finalCal = hasOwn(config, 'calendar') ? targetCal : (derivedCal ?? targetCal);
+
 	let temporal: TemporalObject | Tempo = today;
 	let timeZone: string | undefined;
 	let dateTime: Temporal.ZonedDateTime | undefined;
@@ -87,15 +93,18 @@ export function compose(
 				let nano: bigint;
 
 				if (type === 'Number' && !Number.isInteger(value)) {
-					// 🧩 Handle Fractional components (e.g. 123.456 ms)
-					const [wholeStr, fractionStr = '0'] = value.toString().split('.');
-					const whole = BigInt(wholeStr.replace('-', ''));
-					// Normalize fraction to 9 digits (nanosecond resolution)
-					const fraction = BigInt(fractionStr.padEnd(9, '0').substring(0, 9));
+					// Handle fractional numeric inputs (extract whole and fractional parts safely)
+					const absVal = Math.abs(value);
+					let wholeNumber = BigInt(Math.trunc(absVal));
+					let fractionDigits = BigInt(Math.round((absVal - Math.trunc(absVal)) * 1_000_000_000));
 
-					// Formula: (whole * scale) + (fraction * scale / 1,000,000,000)
-					nano = (whole * scale) + (fraction * scale / 1_000_000_000n);
-					if (value < 0) nano = -nano; // Apply sign for negative floats
+					if (fractionDigits === 1_000_000_000n) {
+						wholeNumber += 1n;
+						fractionDigits = 0n;
+					}
+
+					nano = (wholeNumber * 1_000_000_000n + fractionDigits) * scale / 1_000_000_000n;
+					if (value < 0) nano = -nano;
 				} else {
 					// 🔢 Handle Integers
 					nano = BigInt(value) * scale;
@@ -118,19 +127,19 @@ export function compose(
 	// now analyze what kind of Temporal Object we have and convert to ZonedDateTime
 	switch (true) {
 		case isZonedDateTime(temporal):
-			dateTime = temporal.withCalendar(targetCal);
+			dateTime = temporal.withTimeZone(finalTz).withCalendar(finalCal);
 			break;
 
 		case isInstant(temporal):
-			dateTime = temporal.toZonedDateTimeISO(targetTz).withCalendar(targetCal);
+			dateTime = temporal.toZonedDateTimeISO(finalTz).withCalendar(finalCal);
 			break;
 
 		case isPlainDate(temporal) || isPlainDateTime(temporal):
-			dateTime = temporal.toZonedDateTime(targetTz).withCalendar(targetCal);
+			dateTime = temporal.toZonedDateTime(finalTz).withCalendar(finalCal);
 			break;
 
 		case isTempo(temporal):
-			dateTime = temporal.toDateTime().withCalendar(targetCal);
+			dateTime = temporal.toDateTime().withTimeZone(finalTz).withCalendar(finalCal);
 			break;
 
 		default: {

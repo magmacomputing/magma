@@ -1,7 +1,7 @@
 import '#library/temporal.polyfill.js';
 import { asType } from '#library/type.library.js';
 import { isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/assertion.library.js';
-import { asArray, asInteger } from '#library/coercion.library.js';
+import { asArray } from '#library/coercion.library.js';
 import { isNumeric } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
@@ -19,14 +19,13 @@ import { sym, isTempo, TermError, getRuntime, Match } from '../support/support.i
 import { markConfig, setPatterns, init, extendState } from '../support/support.index.js';
 import { setProperty } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
-import type { Tempo } from '../tempo.class.js';
 
 /**
  * Internal Parse Engine Implementation
  */
 const _ParseEngine = {
 	/** parse DateTime input */
-	parse(state: t.Internal.State, tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {
+	parse(state: t.Internal.State, tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string) {
 		if (isNull(tempo)) {
 			state.errored = true;
 			return undefined as any;
@@ -36,7 +35,12 @@ const _ParseEngine = {
 			const { config } = state;
 			const [tz, cal] = getTemporalIds(config.timeZone, config.calendar);
 			const dt = isZonedDateTime(tempo) ? tempo : (tempo as Temporal.Instant).toZonedDateTimeISO(tz);
-			return dt.withTimeZone(tz).withCalendar(cal);
+			return {
+				type: 'Temporal.ZonedDateTime',
+				value: dt.withTimeZone(tz).withCalendar(cal),
+				zone: tz,
+				calendar: cal
+			};
 		}
 
 		state.parseDepth = (state.parseDepth ?? 0) + 1;
@@ -91,7 +95,7 @@ const _ParseEngine = {
 
 					if (item) {
 						const range = (getTermRange(state as any, [item], false, today) as any);
-						if (range?.start) return range.start.toDateTime().withTimeZone(tz).withCalendar(cal);
+						if (range?.start) return { type: 'Temporal.ZonedDateTime', value: range.start.toDateTime().withTimeZone(tz).withCalendar(cal), zone: tz, calendar: cal };
 					}
 					throw new RangeError(`Term index out of range: ${tempo} for ${term}`);
 				}
@@ -100,14 +104,8 @@ const _ParseEngine = {
 					const range = termObj.define.call(state as any, false, today);
 					const list = isUndefined(range) ? [] : asArray(range as Range | Range[]);
 					const current = getTermRange(state as any, list, false, today) as ResolvedRange | undefined;
-					if (current?.start) return current.start.toDateTime().withTimeZone(tz).withCalendar(cal);
+					if (current?.start) return { type: 'Temporal.ZonedDateTime', value: current.start.toDateTime().withTimeZone(tz).withCalendar(cal), zone: tz, calendar: cal };
 				}
-			}
-
-			if (isString(tempo) && tempo.startsWith('#')) {
-				const res = resolveTermValue(TempoClass, state as any, tempo, today);
-				if (isZonedDateTime(res)) return res;
-				return undefined as any;
 			}
 
 			if (isObject(tempo)) {
@@ -139,14 +137,17 @@ const _ParseEngine = {
 			if (isZonedDateTime(dateTime) && !state.errored)
 				dateTime = dateTime.withTimeZone(targetTz).withCalendar(targetCal);
 
-			return (isZonedDateTime(dateTime) && !state.errored) ? dateTime : undefined as any;
+			return Object.assign(res, {
+				type: 'Temporal.ZonedDateTime',
+				value: (isZonedDateTime(dateTime) && !state.errored) ? dateTime : undefined as any
+			});
 		} finally {
 			state.parseDepth--;
 		}
 	},
 
 	/** conform input to a Temporal.ZonedDateTime */
-	conform(state: any, tempo: t.DateTime, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()): TypeValue<any> {
+	conform(state: any, tempo: t.DateTime, dateTime: Temporal.ZonedDateTime, isAnchored = false, resolvingKeys = new Set<string>()) {
 		const arg = asType(tempo);
 		let { type, value } = arg;
 		const TempoClass = getRuntime().modules['Tempo'];
@@ -156,7 +157,7 @@ const _ParseEngine = {
 		if (isTempo(dateTime)) dateTime = dateTime.toDateTime();
 		if (!isZonedDateTime(dateTime)) {
 			if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new TypeError(`Sacred Anchor corrupted: ${String(value)}`));
-			return arg;
+			return { type: 'Void', value: undefined as any };
 		}
 
 		let zdt = dateTime as any;
@@ -176,27 +177,22 @@ const _ParseEngine = {
 
 			accumulateResult(state, { type: 'Temporal.ZonedDateTimeLike', value: zdt, match: 'Temporal.ZonedDateTimeLike' });
 
-			return Object.assign(arg, {
-				type: 'Temporal.ZonedDateTime',
-				value: zdt,
-			})
+			return { type: 'Temporal.ZonedDateTime', value: zdt };
 		}
 
 		if (isTempo(value)) {
 			const res = value.toDateTime();
 			const [tz, cal] = getTemporalIds(res);
-			state.config.timeZone = tz;
-			state.config.calendar = cal;
-			return Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: res });
+			return { type: 'Temporal.ZonedDateTime', value: res, zone: tz, calendar: cal };
 		}
 
 		if (isZonedDateTime(value))
-			return Object.assign(arg, { type: 'Temporal.ZonedDateTime', value });
+			return { type: 'Temporal.ZonedDateTime', value };
 
 		if (isString(value) && value.startsWith('#')) {
 			const res = resolveTermValue(TempoClass, state as any, value, dateTime);
-			if (isZonedDateTime(res)) return Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: res });
-			return arg;
+			if (isZonedDateTime(res)) return { type: 'Temporal.ZonedDateTime', value: res };
+			return { type: 'Void', value: undefined as any };
 		}
 
 		if (isString(value)) {
@@ -256,12 +252,12 @@ const _ParseEngine = {
 		let finalValue: any = value;
 		let finalType: any = type;
 
-		const isLong = (state.config.timeStamp !== 'ms' && trim.length >= 10) || (trim.length >= 12);
+		const isLong = state.config.timeStamp !== 'ms' || trim.length >= 12;
 
 		if (type === 'String' && isNumeric(trim)) {
 			const num = Number(trim);
 			const isBigInt = Number.isInteger(num) && isLong;
-			
+
 			// ⚡ Only short-circuit as Epoch if it's a fractional number or a long integer.
 			// Short integers (like '+6') should fall through to layout matching (e.g. 'offset').
 			if (!Number.isInteger(num) || isBigInt) {
@@ -375,12 +371,19 @@ const _ParseEngine = {
 const withState = <A extends any[], R>(fn: (state: t.Internal.State, ...args: A) => R) => {
 	return function (this: any, ...args: [t.Internal.State, ...A] | A): R {
 		const firstArg = args[0] as t.Internal.State | undefined;
+		let state: t.Internal.State;
+		let callArgs: A;
+
 		if (isObject(firstArg) && isObject(firstArg.config) && isObject(firstArg.parse)) {
-			return fn(firstArg, ...(args.slice(1) as A));
+			state = firstArg;
+			callArgs = args.slice(1) as A;
+		} else {
+			state = (this as any)?.[sym.$Internal]?.() ?? this;
+			callArgs = args as A;
 		}
 
-		const state = (this as any)?.[sym.$Internal]?.() ?? this;
-		return fn(state as t.Internal.State, ...(args as A));
+		const res = fn(state, ...callArgs) as any;
+		return (isObject(res) && 'value' in res) ? res.value : res;
 	}
 }
 

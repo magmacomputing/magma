@@ -14,9 +14,12 @@ describe('24:00 Hour Overflow', () => {
 	});
 
 	it('should handle "24:00" shorthand as beginning of tomorrow', () => {
-		const t = new Tempo('24:00');
-		const tomorrow = Temporal.Now.zonedDateTimeISO().add({ days: 1 }).with({ hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
-		
+		const anchor = Temporal.Now.zonedDateTimeISO();
+		const t = new Tempo('24:00', { anchor });
+		const tomorrow = anchor
+			.add({ days: 1 })
+			.with({ hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
+
 		// We use toDateTime() to get the ZonedDateTime and compare
 		const dt = t.toDateTime();
 		expect(dt.year).toBe(tomorrow.year);
@@ -31,7 +34,7 @@ describe('24:00 Hour Overflow', () => {
 		// 31 Dec 24:00 -> 01 Jan (next year)
 		const t = new Tempo('2024-12-31 24:00');
 		expect(t.format('{yyyy}-{mm}-{dd}')).toBe('2025-01-01');
-		
+
 		// Now test the alias "nye"
 		// If we use "nye 24:00" without a year, it uses the current year
 		const currentYear = Temporal.Now.zonedDateTimeISO().year;

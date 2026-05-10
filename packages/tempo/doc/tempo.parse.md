@@ -112,14 +112,25 @@ const t = new Tempo('party');
 ```
 
 ### 🧠 Functional Alias Context
-When you use a function as an alias value, Tempo provides a powerful **Resolution Context** (the `this` binding). This context is a lightweight "Host" that mimics the Tempo API but operates directly on the raw `Temporal.ZonedDateTime` being parsed. This ensures maximum performance during normalization and avoids circular dependencies.
+Functional Alias Context is a powerful API for creating dynamic, self-referential date definitions. Within an alias function, `this` provides access to the `AliasContext` instance:
 
-Available methods in the context:
-*   **`this.add(duration)`**: Add a duration (object, ISO string, or `#term`) to the current anchor. Returns a new context for chaining.
-*   **`this.set(input)`**: Recursively parse another string or value relative to the anchor. Returns a new context for chaining.
-*   **`this.toNow()`**: Shift the anchor to the current system time. Returns a new context for chaining.
-*   **`this.toDateTime()`**: Escape hatch to get the current anchor as a native `Temporal.ZonedDateTime`.
-*   **`this.hh`, `this.mi`, `this.ss`**: Accessors for current time units.
+- `this.set(input)`: Reset the context to a specific date/time.
+- `this.add(duration)`: Add a Temporal-style duration (e.g. 'P1D').
+- `this.toNow()`: Align context with current system time.
+- `this.toDateTime()`: Resolve the context to a `Temporal.ZonedDateTime`.
+- `this.yy` / `this.mm` / `this.dd`: Access current date components.
+- `this.hh` / `this.mi` / `this.ss`: Access current time components.
+- `this.tz` / `this.cal` / `this.config`: Access instance metadata.
+
+```javascript
+// Example: Dynamic 'meeting' alias
+'meeting': function() {
+    return this.set('2026-05-20').add('PT1H'); // Resolves to 2026-05-20T01:00:00
+},
+'bedtime': function() {
+    return this.set('22:00').toDateTime();
+}
+```
 
 #### Example: Complex Functional Alias
 ```typescript

@@ -237,9 +237,14 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				state.parse.planner.preFilter = Boolean(arg.value);
 				break;
 
-			case 'timeStamp':
-				setProperty(state.config, optKey, arg.value);
+			case 'timeStamp': {
+				const unit = isString(arg.value) ? arg.value : arg.value?.unit;
+				if (unit && !['ss', 'ms', 'us', 'ns'].includes(unit))
+					logError(null, `Invalid timeStamp unit: ${unit}. Expected 'ss', 'ms', 'us', or 'ns'.`);
+
+				setProperty(state.config, optKey, unit ?? arg.value);
 				break;
+			}
 
 			default:
 				setProperty(state.config, optKey, arg.value);

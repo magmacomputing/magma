@@ -54,6 +54,7 @@ export const isProxy = (obj: any): boolean => !!obj && !!(obj as any)[sym.$Targe
 
 /** @internal check if an object has an own property (respects Proxy/Shadowing) */
 export const hasOwn = (obj: any, key: PropertyKey): boolean => {
+	if (isNullish(obj)) return false;
 	return Object.hasOwn(unwrap(obj), key);
 }
 

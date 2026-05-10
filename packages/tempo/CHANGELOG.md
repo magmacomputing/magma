@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ISOString Branded Type**: Added a branded `ISOString` type for clearer representation of `ZonedDateTime` ISO-8601 strings, improving type safety across the library's internal and public APIs.
 
 ### Changed
-- **Dependency Refresh**: Updated internal and external dependencies to their latest compatible versions, including TypeScript 6.0.3 and Vitest 2.1.9, ensuring a more stable and secure development environment.
+- **Dependency Refresh**: Updated Temporal Polyfill to 0.2.1, ensuring a more stable and secure development environment.
 - **Unit Preference Enforcement**: Consolidated numeric resolution logic in `engine.composer.ts` to strictly enforce configured `unit` preferences ('ss', 'ms', 'us', 'ns') for both `Number` and `BigInt` types.
 
 ### Fixed

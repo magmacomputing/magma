@@ -11,9 +11,7 @@ describe('Tempo timestamp configuration resolution', () => {
 
 	test('respects timeStamp: "ms" in constructor options for Number inputs', () => {
 		const t = new Tempo(epochSeconds, { timeStamp: 'ms' });
-		// 10 digits in ms mode should currently NOT short-circuit unless we improve the logic
-		// But wait, I'll update it to expect 1970 if it WAS treated as ms
-		// OR I'll use a 13-digit number for the ms test
+		// Use a 13-digit millisecond timestamp for ms-mode test
 		const msVal = 1715900000000;
 		const t2 = new Tempo(msVal, { timeStamp: 'ms' });
 		expect(t2.epoch.ms).toBe(msVal);

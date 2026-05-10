@@ -40,11 +40,23 @@ describe('Numeric Resolution & Fractional Precision', () => {
 		expect(t.toDateTime().epochMilliseconds).toBe(1500);
 	});
 
-	test('should reject NaN with custom error', () => {
-		// Enable catch: true so logError doesn't throw and we can verify fallback behavior
-		Tempo.init({ catch: true });
-		const t = new Tempo(NaN);
-		expect(t.isValid).toBe(true); // Falls back to 'now'
-		expect(t.parse.result?.[0]?.match).toBeUndefined(); // No match recorded for NaN
+	describe('NaN handling', () => {
+		let originalCatch: boolean;
+
+		beforeEach(() => {
+			originalCatch = Tempo.config.catch;
+		});
+
+		afterEach(() => {
+			Tempo.init({ catch: originalCatch });
+		});
+
+		test('should reject NaN with custom error', () => {
+			// Enable catch: true so logError doesn't throw and we can verify fallback behavior
+			Tempo.init({ catch: true });
+			const t = new Tempo(NaN);
+			expect(t.isValid).toBe(true); // Falls back to 'now'
+			expect(t.parse.result?.[0]?.match).toBeUndefined(); // No match recorded for NaN
+		});
 	});
 });

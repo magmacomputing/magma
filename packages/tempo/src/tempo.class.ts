@@ -366,7 +366,7 @@ export class Tempo {
 			if (discovery.relativeTime) {
 				if (typeof discovery.relativeTime === 'function') {
 					intl.relativeTime = discovery.relativeTime;
-				} else {
+				} else if (!(typeof intl.relativeTime === 'function')) {
 					intl.relativeTime = { ...intl.relativeTime, ...discovery.relativeTime };
 				}
 			}
@@ -973,7 +973,11 @@ export class Tempo {
 		});
 
 		onRegistryReset(() => {
+			const state = (Tempo as any)[sym.$Internal]();
 			(Tempo as any)[$buildGuard]();
+			(Tempo as any)[$setEvents](state, undefined, false);
+			(Tempo as any)[$setPeriods](state, undefined, false);
+			setPatterns(state);
 		});
 
 		Tempo.init();																						// synchronously initialize the library

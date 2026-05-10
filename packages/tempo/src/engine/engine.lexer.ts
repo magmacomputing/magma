@@ -4,6 +4,7 @@ import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { pad, singular } from '#library/string.library.js';
 import { Match, enums, isTempo, logError, logWarn } from '#tempo/support';
 import * as t from '../tempo.type.js';
+import Tempo from '#tempo';
 
 /**
  * Internal Lexer helpers for the Tempo parsing engine.  
@@ -33,11 +34,9 @@ function num(groups: Record<string, string | number>) {
 				return acc;
 			}
 
-			const cal = prefix<t.MONTH | t.MONTHS | t.WEEKDAY | t.WEEKDAYS>(val);
+			const cal = prefix(val);
 			if (cal in enums.MONTH) acc[key] = enums.MONTH[cal as t.MONTH];
-			else if (cal in enums.MONTHS) acc[key] = enums.MONTHS[cal as t.MONTHS];
 			else if (cal in enums.WEEKDAY) acc[key] = enums.WEEKDAY[cal as t.WEEKDAY];
-			else if (cal in enums.WEEKDAYS) acc[key] = enums.WEEKDAYS[cal as t.WEEKDAYS];
 
 			return acc;
 		}, {} as Record<string, number>);
@@ -54,21 +53,14 @@ export function resolveNumber(str: any): t.Number | any {
 export function prefix(str: t.WEEKDAY | t.WEEKDAYS): t.WEEKDAY;
 /** conform month names using prefix matching */
 export function prefix(str: t.MONTH | t.MONTHS): t.MONTH;
-/** conform names using prefix matching with a specific return hint */
-export function prefix<T extends string>(str: T | string): T;
+/** conform any string to a weekday/month prefix if possible */
+export function prefix(str: string): t.WEEKDAY | t.MONTH | string;
 /** implementation */
 export function prefix(str: any): any {
 	if (!isString(str)) return str;
-	const low = str.trim().toLowerCase();
-	if (low === '') return str;
 
-	// search in weekdays and months
-	for (const dict of [enums.WEEKDAY, enums.WEEKDAYS, enums.MONTH, enums.MONTHS]) {
-		const found = Object.keys(dict).find((key: string) => (key as string).toLowerCase().startsWith(low));
-		if (found) return found;
-	}
-
-	return str;
+	const val = str.trim();
+	return val.charAt(0).toUpperCase() + val.slice(1, 3).toLowerCase();
 }
 
 /** resolve a relative modifier (+, -, next, ago, etc) */
@@ -88,17 +80,17 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
 			return -adjust;
 		case '<':
 		case 'ago':
-			return (period <= offset) ? -adjust : -(adjust - 1)
+			return (period <= offset) ? -adjust : -(adjust - 1);
 		case '<=':
 		case '-=':
-			return (period < offset) ? -adjust : -(adjust - 1)
+			return (period < offset) ? -adjust : -(adjust - 1);
 		case '>':
 		case 'hence':
 		case 'from now':
-			return (period >= offset) ? adjust : (adjust - 1)
+			return (period >= offset) ? adjust : (adjust - 1);
 		case '>=':
 		case '+=':
-			return (period > offset) ? adjust : (adjust - 1)
+			return (period > offset) ? adjust : (adjust - 1);
 		default:
 			return 0;
 	}
@@ -131,7 +123,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 		return dateTime;
 	}
 
-	const weekday = prefix<t.WEEKDAY | t.WEEKDAYS>(wkd);
+	const weekday = prefix(wkd);
 	const { nbr: adjust = 1 } = num({ nbr });
 	const offset = (enums.WEEKDAY as any)[weekday] ?? (enums.WEEKDAYS as any)[weekday];
 
@@ -156,9 +148,9 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 
 	const { mod, nbr = '1', afx, unt } = groups as Lexer.GroupDate;
 	// Normalize yy, mm, dd: treat empty string as missing
-	let yy = (typeof groups.yy === 'string' && groups.yy.trim() === '') ? undefined : groups.yy;
-	let mm = (typeof groups.mm === 'string' && groups.mm.trim() === '') ? undefined : groups.mm;
-	let dd = (typeof groups.dd === 'string' && groups.dd.trim() === '') ? undefined : groups.dd;
+	const yy = (typeof groups.yy === 'string' && groups.yy.trim() === '') ? undefined : groups.yy;
+	const mm = (typeof groups.mm === 'string' && groups.mm.trim() === '') ? undefined : groups.mm;
+	const dd = (typeof groups.dd === 'string' && groups.dd.trim() === '') ? undefined : groups.dd;
 
 	if (isEmpty(yy) && isEmpty(mm) && isEmpty(dd) && isUndefined(unt))
 		return dateTime;
@@ -174,13 +166,13 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	if (isInstant(anchor)) anchor = anchor.toZonedDateTimeISO(config?.timeZone || 'UTC');
 	if (!isTemporal(anchor)) anchor = undefined;
 
-	const fallbackYear = isDefined(anchor?.year) ? anchor.year : dateTime.year;
-	const fallbackMonth = isDefined(anchor?.month) ? anchor.month : dateTime.month;
-	const fallbackDay = isDefined(anchor?.day) ? anchor.day : dateTime.day;
+	const fallbackYear: number = isDefined(anchor?.year) ? anchor.year : dateTime.year;
+	const fallbackMonth: number = isDefined(anchor?.month) ? anchor.month : dateTime.month;
+	const fallbackDay: number = isDefined(anchor?.day) ? anchor.day : dateTime.day;
 
 	let { year, month, day } = num({
 		year: yy ?? fallbackYear,
-		month: prefix(mm ?? fallbackMonth),
+		month: mm ?? fallbackMonth,
 		day: dd ?? fallbackDay,
 	} as any);
 

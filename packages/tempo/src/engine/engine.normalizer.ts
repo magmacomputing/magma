@@ -131,7 +131,14 @@ export function resolveAliases(
 
 	try {
 		for (const key of ownKeys(groups)) {
-			if (filter && !filter.some(f => key === f || key.startsWith(f))) continue;
+			if (filter) {
+				const isMatch = filter.some(f => {
+					const alias = aliasEngine?.getAlias(key);
+					if (key === f || (alias && (alias.type === f || alias.groupName === f))) return true;
+					return key.startsWith(f);
+				});
+				if (!isMatch) continue;
+			}
 
 			if (key === 'slk') {
 				const slk = groups[key];
