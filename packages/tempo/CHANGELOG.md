@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   
-## [2.9.3] - 2026-05-10
+## [2.9.3] - 2026-05-11
 
 ### Added
 - **Generalized Fractional Resolution**: Numeric inputs (`Number`, `BigInt`) now support fractional components across all units (`ss`, `ms`, `us`, `ns`) with nanosecond precision. The resolution engine now utilizes absolute BigInt math to ensure deterministic results regardless of sign.
