@@ -183,19 +183,24 @@ const _ParseEngine = {
 		}
 
 		if (isTempo(value)) {
-			const res = (value as any).toDateTime();
+			const res = value.toDateTime();
 			const [tz, cal] = getTemporalIds(res);
 			state.config.timeZone = tz;
 			state.config.calendar = cal;
 			return Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: res });
 		}
 
-		if (isZonedDateTime(value)) {
+		if (isZonedDateTime(value))
 			return Object.assign(arg, { type: 'Temporal.ZonedDateTime', value });
+
+		if (isString(value) && value.startsWith('#')) {
+			const res = resolveTermValue(TempoClass, state as any, value, dateTime);
+			if (isZonedDateTime(res)) return Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: res });
+			return arg;
 		}
 
 		if (isString(value)) {
-			let trim = (value as string).trim();
+			let trim = value.trim();
 			if (state.parse.ignorePattern) {
 				// Clone the RegExp: global/sticky flags maintain `lastIndex` state, which
 				// cannot be mutated when `state.parse` is frozen (e.g. on a sandbox instance).
@@ -222,7 +227,7 @@ const _ParseEngine = {
 				const bypass = local.some(key => lowTrim.includes(String(key).toLowerCase()));
 				if (!bypass) return arg;
 			}
-			value = trim; // Update value for downstream parsing
+			value = trim;																					// Update value for downstream parsing
 		}
 
 		const res = _ParseEngine.parseLayout(state, value as string | number, dateTime, isAnchored, resolvingKeys);
@@ -242,23 +247,51 @@ const _ParseEngine = {
 			return arg;
 		}
 
-		if (type === 'String') {
-			if (isEmpty(trim)) {
-				accumulateResult(state, { type: 'Empty', value: trim, match: 'Empty' });
-				return Object.assign(arg, { type: 'Empty' });
-			}
-			if (isIntegerLike(trim)) {
-				accumulateResult(state, { type: 'BigInt', value: asInteger(trim), match: 'BigInt' });
-				return Object.assign(arg, { type: 'BigInt', value: asInteger(trim) });
+		if (type === 'String' && isEmpty(trim)) {
+			accumulateResult(state, { type: 'Empty', value: trim, match: 'Empty' });
+			return Object.assign(arg, { type: 'Empty' });
+		}
+
+		let isEpoch = false;
+		let finalValue: any = value;
+		let finalType: any = type;
+
+		const isLong = (state.config.timeStamp !== 'ms' && trim.length >= 10) || (trim.length >= 12);
+
+		if (type === 'String' && isNumeric(trim)) {
+			const num = Number(trim);
+			const isBigInt = Number.isInteger(num) && isLong;
+			
+			// ⚡ Only short-circuit as Epoch if it's a fractional number or a long integer.
+			// Short integers (like '+6') should fall through to layout matching (e.g. 'offset').
+			if (!Number.isInteger(num) || isBigInt) {
+				isEpoch = true;
+				finalValue = isBigInt ? BigInt(trim) : num;
+				finalType = isBigInt ? 'BigInt' : 'Number';
 			}
 		}
-		else {
+		else if (type === 'BigInt') {
+			isEpoch = true;
+		}
+		else if (type === 'Number') {
 			if (Number.isNaN(value) || !Number.isFinite(value)) return arg;
-			if (trim.length <= 7) {
+
+			if (!Number.isInteger(value) || isLong) {
+				isEpoch = true;
+				finalValue = Number.isInteger(value) ? BigInt(value) : value;
+				finalType = Number.isInteger(value) ? 'BigInt' : 'Number';
+			}
+			else if (trim.length <= 7) {
 				const msg = 'Cannot safely interpret number with less than 8-digits: use string instead';
 				if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new TypeError(msg));
 				return arg;
 			}
+		}
+
+		if (isEpoch) {
+			const match = { type: finalType, value: finalValue, match: 'Epoch' } as any;
+			accumulateResult(state, match);
+			return Object.assign(arg, match);
 		}
 
 		if (!isZonedDateTime(dateTime)) return arg;

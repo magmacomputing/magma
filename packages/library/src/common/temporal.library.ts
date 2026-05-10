@@ -123,10 +123,11 @@ export function getTemporalIds(tzOrZdt: any, cal?: any): [string, string] {
 
 	let rawTz: any, rawCal: any;
 	if (isZonedDateTime(tzOrZdt)) {
+		const raw = tzOrZdt as any;															// this is support the missing func. in v8harmony Temporal
 		// If first arg is ZonedDateTime, use its IDs as source
-		rawTz = tzOrZdt.timeZoneId ?? tzOrZdt.timeZone?.id ?? tzOrZdt.timeZone;
+		rawTz = raw.timeZoneId ?? raw.timeZone?.id ?? raw.timeZone;
 		// If a second argument is provided, it explicitly overrides the ZonedDateTime's calendar
-		rawCal = isDefined(cal) ? cal : (tzOrZdt.calendarId ?? tzOrZdt.calendar?.id ?? tzOrZdt.calendar);
+		rawCal = isDefined(cal) ? cal : (raw.calendarId ?? raw.calendar?.id ?? raw.calendar);
 	} else {
 		rawTz = tzOrZdt;
 		rawCal = cal;

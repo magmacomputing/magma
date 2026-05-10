@@ -11,7 +11,7 @@ import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
 import type { Logify } from '#library/logify.class.js';
 import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/support.default.js';
-import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption } from '#library/type.library.js';
+import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded } from '#library/type.library.js';
 import type { TermPlugin } from '#tempo/plugin/term/term.type.js';
 import type { TempoPlugin } from '#tempo/plugin/plugin.util.js';
 import type { Token } from '#tempo/support/support.symbol.js';
@@ -31,11 +31,44 @@ declare global {
 	}
 }
 
+/** A string representing a Temporal.ZonedDateTime in ISO 8601 format (e.g. 2026-05-10T10:26:04+10:00[Australia/Sydney]) */
+export type ISOString = Branded<string, 'ISO8601'>;
+
 /** the value that Tempo will attempt to interpret as a valid ISO date / time */
-export type DateTime = string | number | bigint | Date | Tempo | TempoBrand | TemporalObject | Temporal.ZonedDateTimeLike | undefined | null;
+export type DateTime = ISOString | string | number | bigint | Date | Tempo | TempoBrand | TemporalObject | Temporal.ZonedDateTimeLike | undefined | null;
 
 export type Pattern = string | RegExp
-export type Logic = string | number | Function
+/**
+ * AliasContext: a lightweight, chainable host that mimics a Tempo instance.
+ * Used as the 'this' context within Functional Aliases (Events and Periods).
+ */
+export interface AliasContext {
+	/** add a duration or Term to the current state and return a new context */
+	add(value: DateTime | string | Record<string, any>, options?: Options): AliasContext;
+	/** set the current state to a new value (alias, date, or Term) and return a new context */
+	set(value: DateTime | string, options?: Options): AliasContext;
+	/** reset the context to the current system time ('now') */
+	toNow(): AliasContext;
+	/** return the current state as a raw Temporal.ZonedDateTime */
+	toDateTime(): Temporal.ZonedDateTime;
+	/** return the ISO string representation of the current state */
+	toString(): ISOString;
+
+	/** Year number */                      readonly yy: number;
+	/** Month number (1-12) */              readonly mm: IntRange<1, 12>;
+	/** Day of month (1-31) */              readonly dd: IntRange<1, 31>;
+	/** Hour (0-23) */                      readonly hh: IntRange<0, 23>;
+	/** Minute (0-59) */                    readonly mi: IntRange<0, 59>;
+	/** Second (0-59) */                    readonly ss: IntRange<0, 59>;
+	/** IANA TimeZone identifier */         readonly tz: string;
+	/** Calendar identifier */              readonly cal: string;
+	/** Current configuration state */      readonly config: Internal.Config;
+}
+
+/** Function-based alias handler for Events and Periods */
+export type AliasFunction = (this: AliasContext) => DateTime | AliasContext;
+
+export type Logic = string | number | AliasFunction;
 export type Pair = [string, string] | readonly [string, string]
 export type LayoutPair = Pair | string[] | readonly string[]
 export type Groups = Record<string, string>
@@ -279,12 +312,14 @@ export namespace Internal {
 		/** pre-defined config options for Tempo.#global */			options?: Options | (() => Options);
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** regional date-parsing configuration */							monthDay?: MonthDay;
-		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
-		/** parse planner configuration (layoutOrder, etc.) */   planner?: PlannerOptions;
+		/** relative time configuration (shorthand) */					relativeTime?: RelativeTime | ((value: number, unit: any) => string);
+		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
+		/** @deprecated use 'terms' */													term?: TermPlugin;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
+		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
-		/** noise words to ignore during parsing via Tempo.ignore() */ ignore?: Ignore
+		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: TempoPlugin | TempoPlugin[];
 	}
 }

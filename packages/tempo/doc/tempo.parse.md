@@ -94,7 +94,7 @@ Tempo achieves this by dynamically checking if your current `timeZone` is associ
 
 ```typescript
 const us = new Tempo('04012026', { timeZone: 'America/New_York' }); // Apr 1
-const au = new Tempo('04012026', { timeZone: 'Australia/Sydney' });  // Jan 4
+const au = new Tempo('04012026', { timeZone: 'Australia/Sydney' }); // Jan 4
 ```
 
 ### Custom Aliases (Events & Periods)
@@ -112,15 +112,13 @@ const t = new Tempo('party');
 ```
 
 ### 🧠 Functional Alias Context
-When you use a function as an alias value, Tempo provides a powerful **Resolution Context** (the `this` binding). This context mimics a lightweight Tempo instance, allowing you to perform relative date math during resolution.
+When you use a function as an alias value, Tempo provides a powerful **Resolution Context** (the `this` binding). This context is a lightweight "Host" that mimics the Tempo API but operates directly on the raw `Temporal.ZonedDateTime` being parsed. This ensures maximum performance during normalization and avoids circular dependencies.
 
 Available methods in the context:
-*   **`this.add(duration)`**: Add a duration to the current anchor.
-*   **`this.subtract(duration)`**: Subtract a duration.
-*   **`this.with(values)`**: Set specific fields (year, month, day, etc.).
-*   **`this.set(input)`**: Recursively parse another string or value relative to the anchor.
-*   **`this.toNow()`**: Get the current system time.
-*   **`this.toDateTime()`**: Get the current anchor as a native `Temporal.ZonedDateTime`.
+*   **`this.add(duration)`**: Add a duration (object, ISO string, or `#term`) to the current anchor. Returns a new context for chaining.
+*   **`this.set(input)`**: Recursively parse another string or value relative to the anchor. Returns a new context for chaining.
+*   **`this.toNow()`**: Shift the anchor to the current system time. Returns a new context for chaining.
+*   **`this.toDateTime()`**: Escape hatch to get the current anchor as a native `Temporal.ZonedDateTime`.
 *   **`this.hh`, `this.mi`, `this.ss`**: Accessors for current time units.
 
 #### Example: Complex Functional Alias
@@ -129,7 +127,7 @@ Tempo.init({
   event: {
     // Resolve "bedtime" to 10pm on the same day
     'bedtime': function() {
-      return this.with({ hour: 22, minute: 0, second: 0 });
+      return this.set({ hour: 22, minute: 0, second: 0 });
     },
     // Resolve "meeting" to 2 hours after whatever was just parsed
     'meeting': function() {

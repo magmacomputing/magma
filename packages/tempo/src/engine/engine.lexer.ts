@@ -50,8 +50,14 @@ export function resolveNumber(str: any): t.Number | any {
 	return Object.keys(enums.NUMBER).find(key => key.startsWith(low)) ?? str;
 }
 
-/** conform weekday/month names using prefix matching */
-export function prefix<T extends t.WEEKDAY | t.WEEKDAYS | t.MONTH | t.MONTHS>(str: any): T {
+/** conform weekday names using prefix matching */
+export function prefix(str: t.WEEKDAY | t.WEEKDAYS): t.WEEKDAY;
+/** conform month names using prefix matching */
+export function prefix(str: t.MONTH | t.MONTHS): t.MONTH;
+/** conform names using prefix matching with a specific return hint */
+export function prefix<T extends string>(str: T | string): T;
+/** implementation */
+export function prefix(str: any): any {
 	if (!isString(str)) return str;
 	const low = str.trim().toLowerCase();
 	if (low === '') return str;
@@ -59,7 +65,7 @@ export function prefix<T extends t.WEEKDAY | t.WEEKDAYS | t.MONTH | t.MONTHS>(st
 	// search in weekdays and months
 	for (const dict of [enums.WEEKDAY, enums.WEEKDAYS, enums.MONTH, enums.MONTHS]) {
 		const found = Object.keys(dict).find((key: string) => (key as string).toLowerCase().startsWith(low));
-		if (found) return found as T;
+		if (found) return found;
 	}
 
 	return str;

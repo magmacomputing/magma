@@ -1,13 +1,11 @@
 import { looseIndex } from '#library/object.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { getDateTimeFormat } from '#library/international.library.js';
-import { getTemporalIds } from '#library/temporal.library.js';
 
 import { NUMBER, MODE, MONTH_DAY } from './support.enum.js';
 import { Token } from './support.symbol.js';
 import { IntlDefault } from './support.intl.js';
-import type { Options } from '../tempo.type.js';
-import type { Tempo } from '../tempo.class.js';
+import type { Options, AliasContext } from '../tempo.type.js';
 
 /** characters allowed inside timezone/calendar brackets */
 const bracket_content = /[^\]]+/;
@@ -23,8 +21,8 @@ export const Match = proxify({
 	/** structural */																					named: /^g?dt$|^g?tm$/,
 	/** two digit year */																			twoDigit: /^[0-9]{2}$/,
 	/** date (ISO 8601) */																		date: /^(?:[+-][0-9]{6}|[0-9]{4})-?(?:0[1-9]|1[0-2])-?(?:0[1-9]|[12][0-9]|3[01])$/,
-	/** time (HH:mm[:ss]) */																	time: /^(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?$/,
-	/** clock (HH:mm[:ss][.ffffff]) */												clock: /^(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?(?:\.\d{1,9})?$/,
+	/** time (HH:mm[:ss]) */																	time: /^(?:[01][0-9]|2[0-4]):[0-5][0-9](?::[0-5][0-9])?$/,
+	/** clock (HH:mm[:ss][.ffffff]) */												clock: /^(?:[01]?\d|2[0-4]):[0-5]\d(?::[0-5]\d)?(?:\.\d{1,9})?$/,
 	/** separator characters (/ - . , T) */										separator: /[T\/\-\.\s,]/,
 	/** modifier characters (+-<>=) */												modifier: /[\+\-\<\>][\=]?|this|next|prev|last/,
 	/** offset post keywords (ago|hence) */										affix: /ago|hence|from now/,
@@ -126,21 +124,21 @@ export const Event = looseIndex<string, string | Function>()({
 	'christmas': '25 Dec',
 	'xmas ?eve': '24 Dec',
 	'xmas': '25 Dec',
-	'now': function (this: Tempo) { return this.toNow() },
-	'today': function (this: Tempo) {
+	'now': function (this: AliasContext) { return this.toNow() },
+	'today': function (this: AliasContext) {
 		// ABSOLUTE: Snaps to the current system date
-		const { year, month, day } = this.toNow();
+		const { yy: year, mm: month, dd: day } = this.toNow();
 		return this.toDateTime().with({ year, month, day });
 	},
-	'tomorrow': function (this: Tempo) {
+	'tomorrow': function (this: AliasContext) {
 		// RELATIVE: Offsets the current anchor by one day
 		return this.add({ days: 1 });
 	},
-	'yesterday': function (this: Tempo) {
+	'yesterday': function (this: AliasContext) {
 		// RELATIVE: Offsets the current anchor by one day
 		return this.add({ days: -1 });
 	},
-	'fortnight': function (this: Tempo) {
+	'fortnight': function (this: AliasContext) {
 		// RELATIVE: Offsets the current anchor by two weeks
 		return this.add({ weeks: 2 });
 	},
@@ -165,7 +163,7 @@ export const Period = looseIndex<string, string | Function>()({
 	'after[ -]?noon': '3:00pm',
 	'evening': '18:00',
 	'night': '20:00',
-	'half[ -]?hour': function (this: Tempo) {
+	'half[ -]?hour': function (this: AliasContext) {
 		return `${this.hh}:30`;
 	},
 })

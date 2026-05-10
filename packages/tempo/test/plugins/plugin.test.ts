@@ -6,7 +6,7 @@ describe('Tempo Plugin System', () => {
 	test('should extend Tempo with a static method', () => {
 		const staticPlugin: Plugin = {
 			name: 'StaticPlugin',
-			install(this: Tempo, TempoClass) {
+			install(TempoClass) {
 				(TempoClass as any).staticMethod = () => 'static';
 			},
 		};
@@ -18,7 +18,7 @@ describe('Tempo Plugin System', () => {
 	test('should extend Tempo with an instance method', () => {
 		const instancePlugin: Plugin = {
 			name: 'InstancePlugin',
-			install(this: Tempo, TempoClass) {
+			install(TempoClass) {
 				(TempoClass.prototype as any).instanceMethod = function () {
 					return 'instance';
 				};
@@ -84,7 +84,7 @@ describe('Tempo Plugin System', () => {
 		// 2. Try to add new (should succeed)
 		const newPlugin: Plugin = {
 			name: 'NewPlugin',
-			install(this: Tempo, TempoClass) {
+			install(TempoClass) {
 				(TempoClass as any).freshMethod = () => 'fresh';
 			},
 		};

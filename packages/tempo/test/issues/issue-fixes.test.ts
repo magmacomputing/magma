@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo'
+import { AliasContext } from '#tempo/tempo.type.js';
 
 // Use a private test symbol to avoid trashing global scope
 const $TestTempo = Symbol.for('TestIssueFixesDiscovery')
@@ -39,7 +40,7 @@ describe('Tempo Issue Fixes', () => {
     test('dynamic period alias with `this` binding (e.g. half-hour)', () => {
       Tempo.init({
         period: {
-          'half-hour': function (this: Tempo) {
+          'half-hour': function (this: AliasContext) {
             return `${this.hh}:30`
           }
         }

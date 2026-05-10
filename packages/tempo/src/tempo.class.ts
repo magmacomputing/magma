@@ -348,13 +348,13 @@ export class Tempo {
 		if (discovery.monthDay) {
 			const md = discovery.monthDay;
 			if (md.timezones) {
-				const mdyTzs = Object.fromEntries(
+				const zones = Object.fromEntries(
 					ownEntries(md.timezones, true).map(([k, v]) => {
 						try { return [new Intl.Locale(String(k)).baseName, v] }
 						catch { return [String(k), v] }
 					})
 				);
-				registryUpdate('MONTH_DAY', { timezones: mdyTzs });
+				registryUpdate('MONTH_DAY', { timezones: zones });
 			}
 			if (md.locales) registryUpdate('MONTH_DAY', { locales: asArray(md.locales) });
 			if (md.layouts) registryUpdate('MONTH_DAY', { layouts: asArray(md.layouts) });
@@ -362,12 +362,12 @@ export class Tempo {
 
 		// 1d. Process Internationalization
 		if (discovery.intl || discovery.relativeTime) {
-			const intl = discovery.intl ?? {};
+			const intl: t.IntlOptions = { ...discovery.intl };
 			if (discovery.relativeTime) {
 				if (typeof discovery.relativeTime === 'function') {
 					intl.relativeTime = discovery.relativeTime;
 				} else {
-					intl.relativeTime = { ...intl.relativeTime, ...(discovery.relativeTime as any) };
+					intl.relativeTime = { ...intl.relativeTime, ...discovery.relativeTime };
 				}
 			}
 			shape.config.intl = { ...shape.config.intl, ...intl };
@@ -382,8 +382,8 @@ export class Tempo {
 		}
 
 		// 2. Process Terms
-		if ((discovery as any).term) {
-			discovery.terms = [...asArray(discovery.terms || []), ...asArray((discovery as any).term)];
+		if (discovery.term) {
+			discovery.terms = [...asArray(discovery.terms || []), ...asArray(discovery.term)];
 			Tempo.#dbg.warn(shape.config, 'Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
 		}
 		if (discovery.terms)

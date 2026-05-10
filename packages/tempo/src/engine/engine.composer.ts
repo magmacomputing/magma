@@ -74,56 +74,42 @@ export function compose(
 			break;
 
 		case 'Number':
+		case 'BigInt':
 			{
-				if (Number.isNaN(value) || !Number.isFinite(value)) {
+				if (type === 'Number' && (Number.isNaN(value) || !Number.isFinite(value))) {
 					logError(config, `Invalid Tempo number: ${value}`);
 					temporal = today;
 					break;
 				}
 
-				// If it's an integer and we're in 'ms' mode, treat as milliseconds
-				if (unit === 'ms' && Number.isInteger(value)) {
-					onResult?.({ type, value, match: 'Milliseconds' });
-					temporal = Temporal.Instant.fromEpochMilliseconds(value);
-					break;
+				// 📏 Resolve multipliers for nanosecond conversion
+				const scale = unit === 'ss' ? 1_000_000_000n : (unit === 'ms' ? 1_000_000n : (unit === 'us' ? 1_000n : 1n));
+				let nano: bigint;
+
+				if (type === 'Number' && !Number.isInteger(value)) {
+					// 🧩 Handle Fractional components (e.g. 123.456 ms)
+					const [wholeStr, fractionStr = '0'] = value.toString().split('.');
+					const whole = BigInt(wholeStr.replace('-', ''));
+					// Normalize fraction to 9 digits (nanosecond resolution)
+					const fraction = BigInt(fractionStr.padEnd(9, '0').substring(0, 9));
+
+					// Formula: (whole * scale) + (fraction * scale / 1,000,000,000)
+					nano = (whole * scale) + (fraction * scale / 1_000_000_000n);
+					if (value < 0) nano = -nano; // Apply sign for negative floats
+				} else {
+					// 🔢 Handle Integers
+					nano = BigInt(value) * scale;
 				}
 
-				// If it's an integer and we're in 'ss' mode, treat as seconds
-				if (unit === 'ss' && Number.isInteger(value)) {
-					onResult?.({ type, value, match: 'Seconds' });
-					temporal = Temporal.Instant.fromEpochMilliseconds(value * 1_000);
-					break;
-				}
+				// 🏷️ Log Result Metadata
+				const matchName = unit === 'ss' ? 'Seconds' : (unit === 'ms' ? 'Milliseconds' : (unit === 'us' ? 'Microseconds' : 'Nanoseconds'));
+				onResult?.({ type, value, match: matchName });
 
-				// If it's an integer and we're in 'us' mode, treat as microseconds
-				if (unit === 'us' && Number.isInteger(value)) {
-					onResult?.({ type, value, match: 'Microseconds' });
-					temporal = Temporal.Instant.fromEpochNanoseconds(BigInt(value) * 1_000n);
-					break;
-				}
-
-				// If it's an integer and we're in 'ns' mode, treat as nanoseconds
-				if (unit === 'ns' && Number.isInteger(value)) {
-					onResult?.({ type, value, match: 'Nanoseconds' });
-					temporal = Temporal.Instant.fromEpochNanoseconds(BigInt(value));
-					break;
-				}
-
-				// Otherwise treat as Seconds (with optional decimal nanoseconds)
-				const negative = value < 0;
-				const [seconds = BigInt(0), suffix = BigInt(0)] = value.toString().split('.').map(v => isNumeric(v) ? BigInt(v) : BigInt(0));
-				let nano = BigInt(suffix.toString().substring(0, 9).padEnd(9, '0'));
-				if (negative && nano > 0n) nano = -nano;
-
-				onResult?.({ type, value, match: 'Seconds' });
-				temporal = Temporal.Instant.fromEpochNanoseconds(seconds * BigInt(1_000_000_000) + nano);
+				temporal = Temporal.Instant.fromEpochNanoseconds(nano);
 				break;
 			}
 
-		case 'BigInt':
-			onResult?.({ type, value, match: 'Nanoseconds' });
-			temporal = Temporal.Instant.fromEpochNanoseconds(value);
-			break;
+
 
 		default:
 			break;

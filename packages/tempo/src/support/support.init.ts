@@ -237,9 +237,14 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				state.parse.planner.preFilter = Boolean(arg.value);
 				break;
 
+			case 'timeStamp':
+				setProperty(state.config, optKey, arg.value);
+				break;
+
 			default:
 				setProperty(state.config, optKey, arg.value);
 				break;
+
 		}
 	});
 }
