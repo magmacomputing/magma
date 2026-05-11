@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   
+## [2.9.3] - 2026-05-11
+
+### Added
+- **Generalized Fractional Resolution**: Numeric inputs (`Number`, `BigInt`) now support fractional components across all units (`ss`, `ms`, `us`, `ns`) with nanosecond precision. The resolution engine now utilizes absolute BigInt math to ensure deterministic results regardless of sign.
+- **Hardened AliasContext Interface**: Introduced a strongly-typed, chainable context (`this`) for functional aliases, providing API parity with the `Tempo` class. This includes full support for `yy`, `mm`, `dd`, `hh`, `mi`, `ss`, `tz`, `cal`, and `config` properties.
+- **ISOString Branded Type**: Added a branded `ISOString` type for clearer representation of `ZonedDateTime` ISO-8601 strings, improving type safety across the library's internal and public APIs.
+- **Shorter Epoch Support**: Numeric strings with 9-10 digits are now correctly classified as Epoch timestamps when a non-default unit (e.g., `'ss'`) is configured. This enables parsing of second-based timestamps like `946684800` without requiring manual padding.
+
+### Changed
+- **Dependency Refresh**: Updated Temporal Polyfill to 0.2.1, ensuring a more stable and secure development environment.
+- **Unit Preference Enforcement**: Consolidated numeric resolution logic in `engine.composer.ts` to strictly enforce configured `unit` preferences ('ss', 'ms', 'us', 'ns') for both `Number` and `BigInt` types.
+- **Lexer Prefix Reliability**: Optimized and hardened the `prefix()` helper in `engine.lexer.ts` to provide faster, type-safe string transformations for weekday and month formatting.
+
+### Fixed
+- **State Mutation Safety**: Refactored the internal parsing engine to eliminate side-effect mutations on the global configuration state during resolution. This ensures that `parse()` results are deterministic and do not leak transient metadata into subsequent calls.
+- **Priority-Based Configuration**: Hardened the configuration resolution in `engine.composer.ts` to strictly prioritize explicit caller overrides (e.g., `timeZone`, `calendar`) over metadata derived from input objects, ensuring that methods like `.toDateTime(zdt, { timeZone: 'UTC' })` always honor the provided override.
+- **Registry Initialization Resilience**: Updated the `onRegistryReset` hook in `tempo.class.ts` to automatically re-hydrate computed snippets (e.g., `tomorrow`, `noon`) after a registry reset. This resolves matching failures in testing environments where registries are cleared between runs.
+- **withState Wrapper Hardening**: Fixed an unwrapping bug in the `withState` utility that caused standalone `parse()` calls to return internal `TypeValue` wrappers instead of raw `ZonedDateTime` results when passed an explicit state object.
+- **Numeric Validation Ordering**: Reordered the resolution logic in `engine.composer.ts` to ensure `NaN` and non-finite numbers are caught before type conversion, preventing native `RangeError` crashes.
+- **Parser Epoch Short-circuit**: Refined the epoch detection in `module.parse.ts` to correctly identify all fractional numbers as timestamps, bypassing the layout engine and preventing "Unknown Term" resolution errors.
+- **Functional Alias Property Parity**: Added missing `year`, `month`, and `day` aliases to the `AliasContext` (mapped to `yy`, `mm`, `dd`) to ensure compatibility with standard `Tempo` getters.
+- **Timestamp Configuration Persistence**: Fixed configuration propagation by ensuring `timeStamp` is explicitly handled within `extendState` in `support.init.ts` for consistent state persistence across Tempo instances.
+- **Epoch Parsing Precedence**: Implemented a short-circuit in `parseLayout` to prioritize epoch interpretation for large numeric inputs, preventing their misidentification as layout patterns.
+- **Normalizer Memory Management**: Resolved state leakage in `engine.normalizer.ts` by ensuring alias keys are correctly cleaned up in the `resolvingKeys` set via `try/finally` blocks.
+- **ZonedDateTime Mutation Order**: Fixed `ZonedDateTime` mutation ordering in `module.parse.ts` to ensure time zone and calendar application precedes wall-clock property updates, preventing incorrect wall-clock values during zone shifts.
+- **Type Safety Hardening**: Eliminated DOM interface collisions in `tempo.type.ts` by correcting `PluginContainer` inheritance, improving type safety and preventing namespace pollution.
+- **Documentation Build Stability**: Stabilized the documentation build environment by resolving peer dependency resolution errors between VitePress and `markdown-it-mathjax3`.
+
 ## [2.9.2] - 2026-05-08
 
 ### Added

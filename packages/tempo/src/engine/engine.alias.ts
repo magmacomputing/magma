@@ -113,12 +113,16 @@ export class AliasEngine {
 	 */
 	registerAliases(type: AliasType, events: [string, AliasTarget][]) {
 		for (const [name, target] of events) {
-			const index = (this.#count[type]++);
-			const aliasKey = `${type}${this.#depth}_${index}` as AliasKey;
-
 			const baseWord = AliasEngine.#getBaseWord(name);
 			const existingKey = this.#words[baseWord];
 			const existing = existingKey ? this.getAlias(existingKey) : undefined;
+
+			// Skip identical re-registrations at the same depth to avoid redundant warnings and state growth
+			if (existing && existing.type === type && existing.target === target && existing.name === name && existing.depth === this.#depth)
+				continue;
+
+			const index = (this.#count[type]++);
+			const aliasKey = `${type}${this.#depth}_${index}` as AliasKey;
 			const shouldOverwrite = !(existing?.type === 'evt' && type === 'per');
 
 			if (this.#logger && baseWord in this.#words) {
@@ -127,9 +131,8 @@ export class AliasEngine {
 				);
 			}
 
-			if (shouldOverwrite) {
+			if (shouldOverwrite)
 				this.#words[baseWord] = aliasKey;
-			}
 
 			this.#state[aliasKey] = {
 				name,																								// plain string or regex-like string

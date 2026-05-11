@@ -1,24 +1,41 @@
 import { getTemporalIds } from '#library/temporal.library.js';
-import { isNumeric, isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
-import { isTempo, logError } from '#tempo/support';
+import { isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
 import type { TemporalObject, TypeValue } from '#library/type.library.js';
+
+import { isTempo, logError } from '#tempo/support';
 import type { Tempo } from '#tempo/tempo.class.js';
 import * as t from '../tempo.type.js';
+
+/**
+ * # UNIT_LOOKUP
+ * multipliers and labels for numeric precision resolution.
+ */
+const UNIT_LOOKUP: Record<string, { scale: bigint; matchName: string }> = {
+	ss: { scale: 1_000_000_000n, matchName: 'Seconds' },
+	ms: { scale: 1_000_000n, matchName: 'Milliseconds' },
+	us: { scale: 1_000n, matchName: 'Microseconds' },
+	ns: { scale: 1n, matchName: 'Nanoseconds' },
+};
 
 /**
  * Logic to compose various input types into a Temporal.ZonedDateTime.  
  * Extracted from Tempo.#parse to reduce core class complexity.
  */
 export function compose(
-	{ type, value }: TypeValue<any>,
+	arg: TypeValue<any>,
 	today: Temporal.ZonedDateTime,
 	tz: Temporal.TimeZoneLike,
 	targetTz: string,
 	targetCal: string,
 	onResult?: (match: any) => void,
 	unit: t.Internal.TimeStamp = 'ms',
-	config?: any
+	config?: any,
+	userProvidedKeys?: Set<string>
 ): { dateTime: Temporal.ZonedDateTime, timeZone?: string | undefined } {
+	const { type, value, zone: derivedTz, calendar: derivedCal } = arg as any;
+	const finalTz = userProvidedKeys?.has('timeZone') ? targetTz : (derivedTz ?? targetTz);
+	const finalCal = userProvidedKeys?.has('calendar') ? targetCal : (derivedCal ?? targetCal);
+
 	let temporal: TemporalObject | Tempo = today;
 	let timeZone: string | undefined;
 	let dateTime: Temporal.ZonedDateTime | undefined;
@@ -74,56 +91,54 @@ export function compose(
 			break;
 
 		case 'Number':
+		case 'BigInt':
 			{
-				if (Number.isNaN(value) || !Number.isFinite(value)) {
+				if (type === 'Number' && !Number.isFinite(value)) {
 					logError(config, `Invalid Tempo number: ${value}`);
 					temporal = today;
 					break;
 				}
 
-				// If it's an integer and we're in 'ms' mode, treat as milliseconds
-				if (unit === 'ms' && Number.isInteger(value)) {
-					onResult?.({ type, value, match: 'Milliseconds' });
-					temporal = Temporal.Instant.fromEpochMilliseconds(value);
-					break;
+				// 📏 Resolve multipliers for nanosecond conversion
+				/**
+				 * 💡 v2.9.3 Migration Note:
+				 * Breaking Change: BigInt inputs now respect the configured 'unit' (default 'ms') 
+				 * instead of being treated as raw nanoseconds.
+				 *
+				 * Example:
+				 *   new Tempo(1000n) // v2.9.2: 1000ns | v2.9.3: 1000ms
+				 *
+				 * Workaround: pass { timeStamp: 'ns' } to restore pre-v2.9.3 semantics.
+				 */
+				const { scale, matchName } = UNIT_LOOKUP[unit] ?? UNIT_LOOKUP.ms;
+				let nano: bigint;
+
+				if (type === 'Number' && !Number.isInteger(value)) {
+					// Handle fractional numeric inputs (extract whole and fractional parts safely)
+					const absVal = Math.abs(value);
+					let wholeNumber = BigInt(Math.trunc(absVal));
+					let fractionDigits = BigInt(Math.round((absVal - Math.trunc(absVal)) * 1_000_000_000));
+
+					if (fractionDigits === 1_000_000_000n) {
+						wholeNumber += 1n;
+						fractionDigits = 0n;
+					}
+
+					nano = (wholeNumber * 1_000_000_000n + fractionDigits) * scale / 1_000_000_000n;
+					if (value < 0) nano = -nano;
+				} else {
+					// 🔢 Handle Integers
+					nano = BigInt(value) * scale;
 				}
 
-				// If it's an integer and we're in 'ss' mode, treat as seconds
-				if (unit === 'ss' && Number.isInteger(value)) {
-					onResult?.({ type, value, match: 'Seconds' });
-					temporal = Temporal.Instant.fromEpochMilliseconds(value * 1_000);
-					break;
-				}
+				// 🏷️ Log Result Metadata
+				onResult?.({ type, value, match: matchName });
 
-				// If it's an integer and we're in 'us' mode, treat as microseconds
-				if (unit === 'us' && Number.isInteger(value)) {
-					onResult?.({ type, value, match: 'Microseconds' });
-					temporal = Temporal.Instant.fromEpochNanoseconds(BigInt(value) * 1_000n);
-					break;
-				}
-
-				// If it's an integer and we're in 'ns' mode, treat as nanoseconds
-				if (unit === 'ns' && Number.isInteger(value)) {
-					onResult?.({ type, value, match: 'Nanoseconds' });
-					temporal = Temporal.Instant.fromEpochNanoseconds(BigInt(value));
-					break;
-				}
-
-				// Otherwise treat as Seconds (with optional decimal nanoseconds)
-				const negative = value < 0;
-				const [seconds = BigInt(0), suffix = BigInt(0)] = value.toString().split('.').map(v => isNumeric(v) ? BigInt(v) : BigInt(0));
-				let nano = BigInt(suffix.toString().substring(0, 9).padEnd(9, '0'));
-				if (negative && nano > 0n) nano = -nano;
-
-				onResult?.({ type, value, match: 'Seconds' });
-				temporal = Temporal.Instant.fromEpochNanoseconds(seconds * BigInt(1_000_000_000) + nano);
+				temporal = Temporal.Instant.fromEpochNanoseconds(nano);
 				break;
 			}
 
-		case 'BigInt':
-			onResult?.({ type, value, match: 'Nanoseconds' });
-			temporal = Temporal.Instant.fromEpochNanoseconds(value);
-			break;
+
 
 		default:
 			break;
@@ -132,19 +147,19 @@ export function compose(
 	// now analyze what kind of Temporal Object we have and convert to ZonedDateTime
 	switch (true) {
 		case isZonedDateTime(temporal):
-			dateTime = temporal.withCalendar(targetCal);
+			dateTime = temporal.withTimeZone(finalTz).withCalendar(finalCal);
 			break;
 
 		case isInstant(temporal):
-			dateTime = temporal.toZonedDateTimeISO(targetTz).withCalendar(targetCal);
+			dateTime = temporal.toZonedDateTimeISO(finalTz).withCalendar(finalCal);
 			break;
 
 		case isPlainDate(temporal) || isPlainDateTime(temporal):
-			dateTime = temporal.toZonedDateTime(targetTz).withCalendar(targetCal);
+			dateTime = temporal.toZonedDateTime(finalTz).withCalendar(finalCal);
 			break;
 
 		case isTempo(temporal):
-			dateTime = temporal.toDateTime().withCalendar(targetCal);
+			dateTime = temporal.toDateTime().withTimeZone(finalTz).withCalendar(finalCal);
 			break;
 
 		default: {

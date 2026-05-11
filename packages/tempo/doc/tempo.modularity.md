@@ -52,7 +52,7 @@ Handles string parsing and token extraction. This is included automatically in t
 Adds support for reactive time-pulsing via the static `Tempo.ticker()` method.
 
 ### Terms Module (@magmacomputing/tempo/term)
-Adds support for semantic terms like `qtr`, `szn`, `zdc`, and `per`. There are three ways to enable terms:
+Adds support for semantic terms like `quarter`, `season`, `zodiac`, and `period`. There are three ways to enable terms:
 
 #### 1. The Side-Effect (Standard Activation)
 Fastest way to enable all standard terms in a Core environment.

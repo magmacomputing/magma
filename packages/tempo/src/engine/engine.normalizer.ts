@@ -1,8 +1,9 @@
-import { isDefined, isEmpty, isZonedDateTime, isNumeric } from '#library/assertion.library.js';
-import type { TypeValue } from '#library/type.library.js';
-import { ownKeys } from '#library/primitive.library.js';
-import { getRuntime, sym, Match } from '#tempo/support';
+import { isDefined, isEmpty, isZonedDateTime, isNumeric, isString } from '#library/assertion.library.js';
 import { getTemporalIds, instant } from '#library/temporal.library.js';
+import { ownKeys } from '#library/primitive.library.js';
+import type { TypeValue } from '#library/type.library.js';
+
+import { getRuntime, sym, Match } from '#tempo/support';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './engine.lexer.js';
 import { resolveTermMutation } from './engine.term.js';
 import enums from '#tempo/support/support.enum.js';
@@ -29,33 +30,47 @@ export interface NormalizerContext {
 /**
  * Provide a lightweight host context that mimics a Tempo instance for functional alias handlers.
  */
-export function getResolutionContext(ctx: NormalizerContext, dateTime: Temporal.ZonedDateTime) {
+export function getAliasContext(ctx: NormalizerContext, dateTime: Temporal.ZonedDateTime): t.AliasContext {
 	const { state, resolvingKeys, conform } = ctx;
-	const TempoClass = getRuntime().modules['Tempo'];
-	return {
-		add: (val: any) => dateTime.add(val),
-		subtract: (val: any) => dateTime.subtract(val),
-		with: (val: any) => dateTime.with(val),
+	const [tz, cal] = getTemporalIds(state.config.timeZone, state.config.calendar);
+
+	const host = {
+		add: (val: any, opt?: any) => {
+			let nextZdt = dateTime;
+			const nextCtx = opt ? { ...ctx, state: { ...state, config: { ...state.config, ...opt } } } : ctx;
+
+			if (isString(val) && val.startsWith('#')) {
+				const TempoClass = getRuntime().modules['Tempo'];
+				const res = resolveTermMutation(TempoClass, nextCtx.state as any, 'add', val, 1, nextZdt);
+				if (isZonedDateTime(res)) nextZdt = res;
+			} else {
+				nextZdt = nextZdt.add(val);
+			}
+
+			return getAliasContext(nextCtx as any, nextZdt);
+		},
 		set: (val: any, opt?: any) => {
 			const res = conform(val, dateTime, resolvingKeys);
-			return (TempoClass as any)?.from(isZonedDateTime(res.value) ? res.value : dateTime, { ...state.config, ...opt });
+			const nextZdt = isZonedDateTime(res.value) ? res.value : dateTime;
+			const nextCtx = opt ? { ...ctx, state: { ...state, config: { ...state.config, ...opt } } } : ctx;
+			return getAliasContext(nextCtx as any, nextZdt);
 		},
-		toNow: () => {
-			const [tz, cal] = getTemporalIds(state.config.timeZone, state.config.calendar);
-			return instant().toZonedDateTimeISO(tz).withCalendar(cal);
-		},
-		get tz() { return getTemporalIds(state.config.timeZone)[0] },
-		get cal() { return getTemporalIds(state.config.timeZone, state.config.calendar)[1] },
+		toNow: () => getAliasContext(ctx, instant().toZonedDateTimeISO(tz).withCalendar(cal)),
 		toDateTime: () => dateTime,
-		get hh() { return dateTime.hour },
-		get mi() { return dateTime.minute },
-		get ss() { return dateTime.second },
+		toString: () => dateTime.toString() as t.ISOString,
 		get yy() { return dateTime.year },
 		get mm() { return dateTime.month },
 		get dd() { return dateTime.day },
+		get hh() { return dateTime.hour },
+		get mi() { return dateTime.minute },
+		get ss() { return dateTime.second },
+		get tz() { return tz },
+		get cal() { return cal },
+		config: state.config,
 		[sym.$Identity]: true,
-		config: state.config
-	};
+	} as t.AliasContext
+
+	return host;
 }
 
 /**
@@ -71,13 +86,21 @@ export function normalizeMatch(
 	// 1. Zone
 	dateTime = parseZone(groups, dateTime, state.config);
 
-	// 2. Aliases & Groups
-	dateTime = resolveAliases(groups, dateTime, ctx);
+	// 2. Event Aliases & Slick Shifters (Early)
+	// These provide the base date/anchor for subsequent parsing
+	dateTime = resolveAliases(groups, dateTime, ctx, ['evt', 'slk']);
 	if (state.errored) return dateTime;
 
-	// 3. Weekday, Date, Time
+	// 3. Weekday, Date
 	dateTime = parseWeekday(groups, dateTime, state.config);
 	dateTime = parseDate(groups, dateTime, state.config, state.parse["pivot"]);
+
+	// 4. Period Aliases (Late)
+	// These may overflow (e.g. 24:00) and should be applied to the explicit date
+	dateTime = resolveAliases(groups, dateTime, ctx, ['per']);
+	if (state.errored) return dateTime;
+
+	// 5. Time
 	dateTime = parseTime(groups, dateTime);
 
 	return dateTime;
@@ -89,7 +112,8 @@ export function normalizeMatch(
 export function resolveAliases(
 	groups: t.Groups,
 	dateTime: Temporal.ZonedDateTime,
-	ctx: NormalizerContext
+	ctx: NormalizerContext,
+	filter?: string[]
 ): Temporal.ZonedDateTime {
 	const { state, resolvingKeys, subParse } = ctx;
 	const prevAnchor = state.anchor;
@@ -107,6 +131,15 @@ export function resolveAliases(
 
 	try {
 		for (const key of ownKeys(groups)) {
+			if (filter) {
+				const isMatch = filter.some(f => {
+					const alias = aliasEngine?.getAlias(key);
+					if (key === f || (alias && (alias.type === f || alias.groupName === f))) return true;
+					return key.startsWith(f);
+				});
+				if (!isMatch) continue;
+			}
+
 			if (key === 'slk') {
 				const slk = groups[key];
 				const result = resolveTermMutation(TempoClass, state as any, 'set', slk, undefined, dateTime);
@@ -142,7 +175,7 @@ export function resolveAliases(
 			resolvingKeys.add(aliasKey);
 
 			try {
-				const host = getResolutionContext(ctx, dateTime);
+				const host = getAliasContext(ctx, dateTime);
 				const res = aliasEngine?.resolveAlias(key as any, host);
 				if (!res) continue;
 
@@ -190,8 +223,10 @@ export function resolveAliases(
 
 	if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {
 		const mm = prefix(groups["mm"] as t.MONTH);
-		if (TempoClass) groups["mm"] = (TempoClass as any).MONTH[mm as t.MONTH]!.toString().padStart(2, '0');
-		else if (enums.MONTH[mm as t.MONTH]) groups["mm"] = enums.MONTH[mm as t.MONTH]!.toString().padStart(2, '0');
+		const monthVal = enums.MONTH[mm];
+
+		if (isDefined(monthVal))
+			groups["mm"] = monthVal.toString().padStart(2, '0');
 	}
 
 	return dateTime;
@@ -211,9 +246,9 @@ export function accumulateResult(state: t.Internal.State, ...rest: Partial<t.Int
 
 	const res = state.parse.result;
 	if (isDefined(res) && !Object.isFrozen(res)) {
-		const isDuplicate = res.some(existing => 
-			existing.match === match.match && 
-			existing.source === match.source && 
+		const isDuplicate = res.some(existing =>
+			existing.match === match.match &&
+			existing.source === match.source &&
 			String(existing.anchor ?? '') === String(match.anchor ?? '')
 		);
 		if (!isDuplicate) res.push(match);

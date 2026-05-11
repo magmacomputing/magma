@@ -114,5 +114,28 @@ Only the deprecated top-level keys `rtfFormat` and `rtfStyle` are still accepted
 
 In contrast, the old `mdyLocales` and `mdyLayouts` keys are **not** treated as aliases and will be ignored; these must be migrated to the new nested `monthDay` structure. Update your configuration to ensure compatibility with future versions and the Release-C optimization engine. Refer to the `Tempo` constructor for implementation details on legacy alias handling.
 
+## 🔁 Migrating to version 2.9.3
+
+### 📏 BigInt Precision Resolution
+A breaking change was introduced to harmonize `BigInt` handling with numeric inputs.
+
+- **Pre-v2.9.3:** `BigInt` inputs were always treated as raw nanoseconds, regardless of the `timeStamp` configuration.
+- **v2.9.3+:** `BigInt` inputs now respect the configured `unit` (default `'ms'`).
+
+#### Example:
+```javascript
+// Before v2.9.3
+new Tempo(1000n).ts; // 1000 (nanoseconds)
+
+// After v2.9.3
+new Tempo(1000n).ts; // 1000 (milliseconds)
+```
+
+#### Action Required:
+If you previously relied on `BigInt` being treated as nanoseconds, you must now explicitly set the `timeStamp` unit to `'ns'`:
+```javascript
+new Tempo(1000n, { timeStamp: 'ns' });
+```
+
 ## 🧪 Testing and Stability
 v2.x has been hardened with a 100% pass rate on our regression suite. If you were relying on undocumented "quirks" or bugs in v1.x parsing, you may find that v2.x is more strict and deterministic.

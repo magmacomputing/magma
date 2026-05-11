@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "2.9.2",
+  "version": "2.9.3",
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -31,9 +31,7 @@
     "dist/engine/engine.*.js",
     "src/engine/engine.*.ts",
     "dist/module/module.*.js",
-    "src/module/module.*.ts",
-    "dist/discrete/discrete.*.js",
-    "src/discrete/discrete.*.ts"
+    "src/module/module.*.ts"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
@@ -196,8 +194,8 @@
     "test:dist": "cross-env TEST_DIST=true vitest run",
     "test:ci": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
     "test:ci:prefilter": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TEMPO_PREFILTER_CI=true vitest run",
-    "repl": "tsx --conditions=development -i --harmony-temporal --import ./bin/repl.ts",
-    "safe": "tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
+    "repl": "tsx --conditions=development -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
+    "node": "tsx --conditions=development -i --harmony-temporal --import ./bin/repl.ts",
     "bare": "tsx --conditions=development -i --harmony-temporal",
     "core": "cross-env TEMPO_LITE=true tsx --conditions=development -i --harmony-temporal --import ./bin/core.ts",
     "parse": "cross-env TEMPO_LITE=true tsx --conditions=development -i --harmony-temporal --import ./bin/parse.ts",
@@ -221,10 +219,9 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.9.2",
+    "@magmacomputing/library": "2.9.3",
     "@rollup/plugin-alias": "^6.0.0",
     "magic-string": "^0.30.21",
-    "markdown-it-mathjax3": "^4.3.2",
     "typedoc": "^0.28.19",
     "typedoc-plugin-markdown": "^4.11.0",
     "typedoc-vitepress-theme": "^1.1.2",

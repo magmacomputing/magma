@@ -33,11 +33,9 @@ function num(groups: Record<string, string | number>) {
 				return acc;
 			}
 
-			const cal = prefix<t.MONTH | t.MONTHS | t.WEEKDAY | t.WEEKDAYS>(val);
-			if (cal in enums.MONTH) acc[key] = enums.MONTH[cal as t.MONTH];
-			else if (cal in enums.MONTHS) acc[key] = enums.MONTHS[cal as t.MONTHS];
-			else if (cal in enums.WEEKDAY) acc[key] = enums.WEEKDAY[cal as t.WEEKDAY];
-			else if (cal in enums.WEEKDAYS) acc[key] = enums.WEEKDAYS[cal as t.WEEKDAYS];
+			const cal = prefix(val);															// get the three-character prefix for a Weekday/Month
+			if (cal in enums.WEEKDAY) acc[key] = enums.WEEKDAY[cal as t.WEEKDAY];
+			else if (cal in enums.MONTH) acc[key] = enums.MONTH[cal as t.MONTH];
 
 			return acc;
 		}, {} as Record<string, number>);
@@ -50,16 +48,27 @@ export function resolveNumber(str: any): t.Number | any {
 	return Object.keys(enums.NUMBER).find(key => key.startsWith(low)) ?? str;
 }
 
-/** conform weekday/month names using prefix matching */
-export function prefix<T extends t.WEEKDAY | t.WEEKDAYS | t.MONTH | t.MONTHS>(str: any): T {
+/** conform weekday names (3-characters) using prefix matching */
+export function prefix(str: t.WEEKDAY | t.WEEKDAYS): t.WEEKDAY;
+/** conform month names (3-characters) using prefix matching */
+export function prefix(str: t.MONTH | t.MONTHS): t.MONTH;
+/** return original str if not a full weekday/month name */
+export function prefix(str: string): string;
+/** implementation */
+export function prefix(str: any): any {
 	if (!isString(str)) return str;
-	const low = str.trim().toLowerCase();
-	if (low === '') return str;
 
-	// search in weekdays and months
-	for (const dict of [enums.WEEKDAY, enums.WEEKDAYS, enums.MONTH, enums.MONTHS]) {
-		const found = Object.keys(dict).find((key: string) => (key as string).toLowerCase().startsWith(low));
-		if (found) return found as T;
+	const low = str.trim().toLowerCase().substring(0, 3);
+	if (low.length < 2) return str;														// cannot determine ambiguity with less than 3 characters
+	if (low === 'all' || low === 'eve') return 'All';					// handle special case of "all" / "every"
+
+	for (const table of [enums.WEEKDAY, enums.MONTH]) {
+		const match = Object.keys(table).find(key => {
+			const normalized = key.toLowerCase();
+			return normalized.startsWith(low);
+		});
+
+		if (match) return match;
 	}
 
 	return str;
@@ -82,17 +91,17 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
 			return -adjust;
 		case '<':
 		case 'ago':
-			return (period <= offset) ? -adjust : -(adjust - 1)
+			return (period <= offset) ? -adjust : -(adjust - 1);
 		case '<=':
 		case '-=':
-			return (period < offset) ? -adjust : -(adjust - 1)
+			return (period < offset) ? -adjust : -(adjust - 1);
 		case '>':
 		case 'hence':
 		case 'from now':
-			return (period >= offset) ? adjust : (adjust - 1)
+			return (period >= offset) ? adjust : (adjust - 1);
 		case '>=':
 		case '+=':
-			return (period > offset) ? adjust : (adjust - 1)
+			return (period > offset) ? adjust : (adjust - 1);
 		default:
 			return 0;
 	}
@@ -125,7 +134,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 		return dateTime;
 	}
 
-	const weekday = prefix<t.WEEKDAY | t.WEEKDAYS>(wkd);
+	const weekday = prefix(wkd);
 	const { nbr: adjust = 1 } = num({ nbr });
 	const offset = (enums.WEEKDAY as any)[weekday] ?? (enums.WEEKDAYS as any)[weekday];
 
@@ -150,9 +159,9 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 
 	const { mod, nbr = '1', afx, unt } = groups as Lexer.GroupDate;
 	// Normalize yy, mm, dd: treat empty string as missing
-	let yy = (typeof groups.yy === 'string' && groups.yy.trim() === '') ? undefined : groups.yy;
-	let mm = (typeof groups.mm === 'string' && groups.mm.trim() === '') ? undefined : groups.mm;
-	let dd = (typeof groups.dd === 'string' && groups.dd.trim() === '') ? undefined : groups.dd;
+	const yy = (typeof groups.yy === 'string' && groups.yy.trim() === '') ? undefined : groups.yy;
+	const mm = (typeof groups.mm === 'string' && groups.mm.trim() === '') ? undefined : groups.mm;
+	const dd = (typeof groups.dd === 'string' && groups.dd.trim() === '') ? undefined : groups.dd;
 
 	if (isEmpty(yy) && isEmpty(mm) && isEmpty(dd) && isUndefined(unt))
 		return dateTime;
@@ -168,13 +177,13 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	if (isInstant(anchor)) anchor = anchor.toZonedDateTimeISO(config?.timeZone || 'UTC');
 	if (!isTemporal(anchor)) anchor = undefined;
 
-	const fallbackYear = isDefined(anchor?.year) ? anchor.year : dateTime.year;
-	const fallbackMonth = isDefined(anchor?.month) ? anchor.month : dateTime.month;
-	const fallbackDay = isDefined(anchor?.day) ? anchor.day : dateTime.day;
+	const fallbackYear: number = isDefined(anchor?.year) ? anchor.year : dateTime.year;
+	const fallbackMonth: number = isDefined(anchor?.month) ? anchor.month : dateTime.month;
+	const fallbackDay: number = isDefined(anchor?.day) ? anchor.day : dateTime.day;
 
 	let { year, month, day } = num({
 		year: yy ?? fallbackYear,
-		month: prefix(mm ?? fallbackMonth),
+		month: mm ?? fallbackMonth,
 		day: dd ?? fallbackDay,
 	} as any);
 

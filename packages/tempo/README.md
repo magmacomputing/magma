@@ -103,7 +103,7 @@ For granular "Lite" builds, see the [Full Installation Guide](https://magmacompu
 For a deeper dive into the API, architecture, and advanced features:
 
 *   **[Official Documentation Website](https://magmacomputing.github.io/magma/)** — Tutorials, interactive demos, and "Getting Started" guides.
-*   **[Full API Reference Guide](https://magmacomputing.github.io/magma/doc/tempo.api)** — Detailed technical documentation for every class and method.
+*   **[Full API Reference Guide](https://magmacomputing.github.io/magma/doc/api/)** — Detailed technical documentation for every class and method.
 
 ---
 
