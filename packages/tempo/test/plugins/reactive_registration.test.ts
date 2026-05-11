@@ -12,7 +12,7 @@ describe('Tempo Reactive Registration', () => {
 		// Mock a late-registering plugin
 		const myLatePlugin: Plugin = {
 			name: 'LateDiscovery',
-			install(this: Tempo, TempoClass) {
+			install(TempoClass) {
 				(TempoClass as any).lateMethod = () => 'it works!'
 			},
 		}

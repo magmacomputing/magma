@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo'
+import type { AliasContext } from '#tempo/tempo.type.js';
 
 // Use a private test symbol to avoid trashing global scope
 const $TestTempo = Symbol.for('TestIssueFixesDiscovery')
@@ -39,7 +40,7 @@ describe('Tempo Issue Fixes', () => {
     test('dynamic period alias with `this` binding (e.g. half-hour)', () => {
       Tempo.init({
         period: {
-          'half-hour': function (this: Tempo) {
+          'half-hour': function (this: AliasContext) {
             return `${this.hh}:30`
           }
         }
@@ -175,6 +176,25 @@ describe('Tempo Issue Fixes', () => {
       const t = new Tempo('blah', { event, anchor: today.toDateTime() })
       expect(t.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-20')
       expect(t.format('{hh}:{mi}')).toBe('22:00')
+    })
+  })
+
+  describe('Epoch Parsing Logic', () => {
+    test('treats short numeric string as Epoch when non-ms unit is configured', () => {
+      // 946684800 is 2000-01-01T00:00:00Z in seconds
+      const t = new Tempo('946684800', { timeStamp: 'ss', timeZone: 'UTC' })
+      expect(t.yy).toBe(2000)
+      expect(t.mm).toBe(1)
+      expect(t.dd).toBe(1)
+    })
+
+    test('treats long numeric string as Epoch with default ms unit', () => {
+      // 1715900000000 is 2024-05-16T22:53:20.000Z in milliseconds
+      const t = new Tempo('1715900000000', { timeZone: 'UTC' })
+      expect(t.yy).toBe(2024)
+      expect(t.mm).toBe(5)
+      expect(t.dd).toBe(16)
+      expect(t.hh).toBe(22)
     })
   })
 })

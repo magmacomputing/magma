@@ -10,9 +10,9 @@ export const isPrimitive = (obj?: unknown): obj is Primitive => isType(obj, 'Str
 export const isReference = (obj?: unknown): obj is Object => !isPrimitive(obj);
 export const isIterable = <T>(obj: unknown): obj is Iterable<T> => Symbol.iterator in Object(obj) && !isString(obj);
 
-export const isString = <T>(obj: T): obj is T & string => isType(obj, 'String');
-export const isNumber = <T>(obj: T): obj is T & number => isType(obj, 'Number');
-export const isFiniteNumber = <T>(obj?: T): obj is Extract<T, number> => isType(obj, 'Number') && isFinite(obj as number);
+export const isString = (obj: unknown): obj is string => isType<string>(obj, 'String');
+export const isNumber = (obj: unknown): obj is number => isType<number>(obj, 'Number');
+export const isFiniteNumber = (obj: unknown): obj is number => isType<number>(obj, 'Number') && isFinite(obj as number);
 
 /** test if can convert String to Numeric */
 export function isNumeric(str?: any): boolean {
@@ -28,33 +28,33 @@ export function isNumeric(str?: any): boolean {
 		default: return false;
 	}
 }
-export const isInteger = <T>(obj?: T): obj is Extract<T, bigint> => isType(obj, 'BigInt');
-export const isIntegerLike = <T>(obj?: T): obj is Extract<T, string> => isType(obj, 'String') && /^-?[0-9]+n$/.test(obj as string);
-export const isDigit = <T>(obj?: T): obj is Extract<T, number | bigint> => isType(obj, 'Number', 'BigInt');
-export const isBoolean = <T>(obj?: T): obj is Extract<T, boolean> => isType(obj, 'Boolean');
-export const isArray = <T>(obj: T): obj is T & any[] => isType(obj, 'Array');
-export const isArrayLike = <T>(obj: any): obj is ArrayLike<T> => protoType(obj) === 'Object' && 'length' in obj && Object.keys(obj).every(key => key === 'length' || !isNaN(Number(key)));
-export const isObject = <T>(obj: T): obj is T & Property<any> => isType(obj, 'Object');
-export const isDate = <T>(obj: T): obj is T & Date => isType(obj, 'Date');
-export const isRegExp = <T>(obj?: T): obj is Extract<T, RegExp> => isType(obj, 'RegExp');
-export const isRegExpLike = <T>(obj?: T): obj is Extract<T, string> => isType(obj, 'String') && /^\/.*\/$/.test(obj as string);
-export const isSymbol = <T>(obj?: T): obj is Extract<T, symbol> => isType(obj, 'Symbol');
-export const isSymbolFor = <T>(obj?: T): obj is Extract<T, symbol> => isType<symbol>(obj, 'Symbol') && Symbol.keyFor(obj) !== undefined;
-export const isPropertyKey = (obj?: unknown): obj is PropertyKey => isType<PropertyKey>(obj, 'String', 'Number', 'Symbol');
+export const isInteger = (obj: unknown): obj is bigint => isType<bigint>(obj, 'BigInt');
+export const isIntegerLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && /^-?[0-9]+n$/.test(obj as string);
+export const isDigit = (obj: unknown): obj is number | bigint => isType<number | bigint>(obj, 'Number', 'BigInt');
+export const isBoolean = (obj: unknown): obj is boolean => isType<boolean>(obj, 'Boolean');
+export const isArray = <T = any>(obj: unknown): obj is T[] => isType<T[]>(obj, 'Array');
+export const isArrayLike = <T = any>(obj: any): obj is ArrayLike<T> => protoType(obj) === 'Object' && 'length' in obj && Object.keys(obj).every(key => key === 'length' || !isNaN(Number(key)));
+export const isObject = <T = any>(obj: unknown): obj is Property<T> => isType<Property<T>>(obj, 'Object');
+export const isDate = (obj: unknown): obj is Date => isType<Date>(obj, 'Date');
+export const isRegExp = (obj: unknown): obj is RegExp => isType<RegExp>(obj, 'RegExp');
+export const isRegExpLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && /^\/.*\/$/.test(obj as string);
+export const isSymbol = (obj: unknown): obj is symbol => isType<symbol>(obj, 'Symbol');
+export const isSymbolFor = (obj: unknown): obj is symbol => isType<symbol>(obj, 'Symbol') && Symbol.keyFor(obj as symbol) !== undefined;
+export const isPropertyKey = (obj: unknown): obj is PropertyKey => isType<PropertyKey>(obj, 'String', 'Number', 'Symbol');
 
-export const isNull = <T>(obj: T): obj is T & null => isType(obj, 'Null');
-export const isNullish = <T>(obj: T): obj is T & Nullish => isType<undefined | null | void>(obj, 'Null', 'Undefined', 'Void', 'Empty');
-export const isUndefined = <T>(obj: T): obj is T & undefined => isType<undefined>(obj, 'Undefined', 'Void', 'Empty');
+export const isNull = (obj: unknown): obj is null => isType<null>(obj, 'Null');
+export const isNullish = (obj: unknown): obj is Nullish => isType<Nullish>(obj, 'Null', 'Undefined', 'Void', 'Empty');
+export const isUndefined = (obj: unknown): obj is undefined => isType<undefined>(obj, 'Undefined', 'Void', 'Empty');
 export const isDefined = <T>(obj: T): obj is NonNullable<T> => !isNullish(obj);
 
-export const isClass = <T>(obj?: T): obj is Extract<T, Function> => isType(obj, 'Class');
-export const isFunction = <T>(obj?: T): obj is Extract<T, Function> => isType(obj, 'Function', 'AsyncFunction');
-export const isPromise = <T>(obj?: T): obj is Extract<T, Promise<any>> => isType(obj, 'Promise');
-export const isMap = <T>(obj: T): obj is T & Map<any, any> => isType(obj, 'Map');
-export const isSet = <T>(obj: T): obj is T & Set<any> => isType(obj, 'Set');
-export const isError = <T>(err?: T): err is Extract<T, Error> => isType(err, 'Error');
+export const isClass = (obj: unknown): obj is Function => isType<Function>(obj, 'Class');
+export const isFunction = (obj: unknown): obj is Function => isType<Function>(obj, 'Function', 'AsyncFunction');
+export const isPromise = <T = any>(obj: unknown): obj is Promise<T> => isType<Promise<T>>(obj, 'Promise');
+export const isMap = <T = any, K = any>(obj: unknown): obj is Map<K, T> => isType<Map<K, T>>(obj, 'Map');
+export const isSet = <T = any>(obj: unknown): obj is Set<T> => isType<Set<T>>(obj, 'Set');
+export const isError = (err: unknown): err is Error => isType<Error>(err, 'Error');
 
-export const isTemporal = <T>(obj: T): obj is Extract<T, Temporals> => protoType(obj).startsWith('Temporal.') || (!!(globalThis as any).Temporal && (
+export const isTemporal = (obj: unknown): obj is Temporals => protoType(obj).startsWith('Temporal.') || (!!(globalThis as any).Temporal && (
 	(obj as any) instanceof (globalThis as any).Temporal.Instant ||
 	(obj as any) instanceof (globalThis as any).Temporal.ZonedDateTime ||
 	(obj as any) instanceof (globalThis as any).Temporal.PlainDate ||
@@ -65,27 +65,27 @@ export const isTemporal = <T>(obj: T): obj is Extract<T, Temporals> => protoType
 	(obj as any) instanceof (globalThis as any).Temporal.PlainMonthDay
 ));
 
-export const isInstant = <T>(obj: T): obj is Extract<T, Temporal.Instant> => isType(obj, 'Temporal.Instant') || (!!(globalThis as any).Temporal?.Instant && (obj as any) instanceof (globalThis as any).Temporal.Instant) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.Instant') || (!!obj && typeof (obj as any).toZonedDateTimeISO === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone));
-export const isZonedDateTime = <T>(obj: T): obj is Extract<T, Temporal.ZonedDateTime> => isType(obj, 'Temporal.ZonedDateTime') || (!!(globalThis as any).Temporal?.ZonedDateTime && (obj as any) instanceof (globalThis as any).Temporal.ZonedDateTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.ZonedDateTime') || (!!obj && typeof (obj as any).toInstant === 'function' && (isDefined((obj as any).timeZoneId) || isDefined((obj as any).timeZone)));
-export const isPlainDate = <T>(obj: T): obj is Extract<T, Temporal.PlainDate> => isType(obj, 'Temporal.PlainDate') || (!!(globalThis as any).Temporal?.PlainDate && (obj as any) instanceof (globalThis as any).Temporal.PlainDate) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainDate') || (!!obj && typeof (obj as any).toZonedDateTime === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone) && isDefined((obj as any).daysInMonth) && isUndefined((obj as any).hour) && isUndefined((obj as any).minute) && isUndefined((obj as any).second) && isUndefined((obj as any).nanosecond));
-export const isPlainTime = <T>(obj: T): obj is Extract<T, Temporal.PlainTime> => isType(obj, 'Temporal.PlainTime') || (!!(globalThis as any).Temporal?.PlainTime && (obj as any) instanceof (globalThis as any).Temporal.PlainTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainTime') || (!!obj && typeof (obj as any).toPlainDateTime === 'function' && isUndefined((obj as any).daysInMonth));
-export const isPlainDateTime = <T>(obj: T): obj is Extract<T, Temporal.PlainDateTime> => isType(obj, 'Temporal.PlainDateTime') || (!!(globalThis as any).Temporal?.PlainDateTime && (obj as any) instanceof (globalThis as any).Temporal.PlainDateTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainDateTime') || (!!obj && typeof (obj as any).toZonedDateTime === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone) && (isDefined((obj as any).hour) || isDefined((obj as any).minute) || isDefined((obj as any).second) || isDefined((obj as any).nanosecond)));
-export const isDuration = <T>(obj: T): obj is Extract<T, Temporal.Duration> => isType(obj, 'Temporal.Duration') || (!!(globalThis as any).Temporal?.Duration && (obj as any) instanceof (globalThis as any).Temporal.Duration) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.Duration');
-export const isDurationLike = <T>(obj: T): obj is Extract<T, Temporal.DurationLike | string | Temporal.Duration> => isString(obj) || isDuration(obj) || (isObject(obj) && (
+export const isInstant = (obj: unknown): obj is Temporal.Instant => isType<Temporal.Instant>(obj, 'Temporal.Instant') || (!!(globalThis as any).Temporal?.Instant && (obj as any) instanceof (globalThis as any).Temporal.Instant) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.Instant') || (!!obj && typeof (obj as any).toZonedDateTimeISO === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone));
+export const isZonedDateTime = (obj: unknown): obj is Temporal.ZonedDateTime => isType<Temporal.ZonedDateTime>(obj, 'Temporal.ZonedDateTime') || (!!(globalThis as any).Temporal?.ZonedDateTime && (obj as any) instanceof (globalThis as any).Temporal.ZonedDateTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.ZonedDateTime') || (!!obj && typeof (obj as any).toInstant === 'function' && (isDefined((obj as any).timeZoneId) || isDefined((obj as any).timeZone)));
+export const isPlainDate = (obj: unknown): obj is Temporal.PlainDate => isType<Temporal.PlainDate>(obj, 'Temporal.PlainDate') || (!!(globalThis as any).Temporal?.PlainDate && (obj as any) instanceof (globalThis as any).Temporal.PlainDate) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainDate') || (!!obj && typeof (obj as any).toZonedDateTime === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone) && isDefined((obj as any).daysInMonth) && isUndefined((obj as any).hour) && isUndefined((obj as any).minute) && isUndefined((obj as any).second) && isUndefined((obj as any).nanosecond));
+export const isPlainTime = (obj: unknown): obj is Temporal.PlainTime => isType<Temporal.PlainTime>(obj, 'Temporal.PlainTime') || (!!(globalThis as any).Temporal?.PlainTime && (obj as any) instanceof (globalThis as any).Temporal.PlainTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainTime') || (!!obj && typeof (obj as any).toPlainDateTime === 'function' && isUndefined((obj as any).daysInMonth));
+export const isPlainDateTime = (obj: unknown): obj is Temporal.PlainDateTime => isType<Temporal.PlainDateTime>(obj, 'Temporal.PlainDateTime') || (!!(globalThis as any).Temporal?.PlainDateTime && (obj as any) instanceof (globalThis as any).Temporal.PlainDateTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainDateTime') || (!!obj && typeof (obj as any).toZonedDateTime === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone) && (isDefined((obj as any).hour) || isDefined((obj as any).minute) || isDefined((obj as any).second) || isDefined((obj as any).nanosecond)));
+export const isDuration = (obj: unknown): obj is Temporal.Duration => isType<Temporal.Duration>(obj, 'Temporal.Duration') || (!!(globalThis as any).Temporal?.Duration && (obj as any) instanceof (globalThis as any).Temporal.Duration) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.Duration');
+export const isDurationLike = (obj: unknown): obj is Temporal.DurationLike | string | Temporal.Duration => isString(obj) || isDuration(obj) || (isObject(obj) && (
 	'years' in obj || 'months' in obj || 'weeks' in obj || 'days' in obj ||
 	'hours' in obj || 'minutes' in obj || 'seconds' in obj ||
 	'milliseconds' in obj || 'microseconds' in obj || 'nanoseconds' in obj
 ));
-export const isZonedDateTimeLike = <T>(obj: T): obj is Extract<T, Temporal.ZonedDateTimeLike | string | Temporal.ZonedDateTime> => isString(obj) || isZonedDateTime(obj) || (isObject(obj) && (
+export const isZonedDateTimeLike = (obj: unknown): obj is Temporal.ZonedDateTimeLike | string | Temporal.ZonedDateTime => isString(obj) || isZonedDateTime(obj) || (isObject(obj) && (
 	'year' in obj || 'month' in obj || 'day' in obj || 'hour' in obj || 'minute' in obj || 'second' in obj ||
 	'millisecond' in obj || 'microsecond' in obj || 'nanosecond' in obj || 'monthCode' in obj || 'offset' in obj || 'timeZone' in obj || 'calendar' in obj
 ));
-export const isPlainYearMonth = <T>(obj: T): obj is Extract<T, Temporal.PlainYearMonth> => isType(obj, 'Temporal.PlainYearMonth') || (!!(globalThis as any).Temporal?.PlainYearMonth && (obj as any) instanceof (globalThis as any).Temporal.PlainYearMonth);
-export const isPlainMonthDay = <T>(obj: T): obj is Extract<T, Temporal.PlainMonthDay> => isType(obj, 'Temporal.PlainMonthDay') || (!!(globalThis as any).Temporal?.PlainMonthDay && (obj as any) instanceof (globalThis as any).Temporal.PlainMonthDay);
+export const isPlainYearMonth = (obj: unknown): obj is Temporal.PlainYearMonth => isType<Temporal.PlainYearMonth>(obj, 'Temporal.PlainYearMonth') || (!!(globalThis as any).Temporal?.PlainYearMonth && (obj as any) instanceof (globalThis as any).Temporal.PlainYearMonth);
+export const isPlainMonthDay = (obj: unknown): obj is Temporal.PlainMonthDay => isType<Temporal.PlainMonthDay>(obj, 'Temporal.PlainMonthDay') || (!!(globalThis as any).Temporal?.PlainMonthDay && (obj as any) instanceof (globalThis as any).Temporal.PlainMonthDay);
 
 // non-standard Objects
-export const isEnum = <T, E extends Property<any>>(obj?: T): obj is Extract<T, GetType<'Enumify', E>> => isType(obj, 'Enumify');
-export const isPledge = <T, P = any>(obj?: T): obj is Extract<T, GetType<'Pledge', P>> => isType(obj, 'Pledge');
+export const isEnum = <E extends Property<any>>(obj: unknown): obj is GetType<'Enumify', E> => isType<GetType<'Enumify', E>>(obj, 'Enumify');
+export const isPledge = <P = any>(obj: unknown): obj is GetType<'Pledge', P> => isType<GetType<'Pledge', P>>(obj, 'Pledge');
 
 /** assert value for secure() */
 export const isExtensible = (obj: any): obj is any => !!(obj?.[sym.$Extensible]);

@@ -24,8 +24,12 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	const { timeZone, calendar } = getDateTimeFormat();
 	const state = (baseState ? Object.create(baseState) : {
 		config: {},
-		parse: {}
+		parse: {},
+		userProvidedKeys: new Set<string>()
 	}) as t.Internal.State;
+
+	if (baseState)
+		state.userProvidedKeys = new Set(baseState.userProvidedKeys);
 
 	// 1. Establish the base parsing state
 	const parseState: t.Internal.Parse = {
@@ -123,6 +127,8 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 	ownEntries(options).forEach(([optKey, optVal]) => {
 		if (isUndefined(optVal)) return;
+
+		state.userProvidedKeys.add(optKey);
 		const arg = asType(optVal);
 
 		switch (optKey) {
@@ -237,9 +243,22 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				state.parse.planner.preFilter = Boolean(arg.value);
 				break;
 
+			case 'timeStamp': {
+				const unit = (isString(arg.value) ? arg.value : arg.value?.unit)?.trim()?.toLowerCase();
+
+				if (isUndefined(unit) || !['ss', 'ms', 'us', 'ns'].includes(unit)) {
+					logError(state.config, `[Tempo#extend] Invalid timeStamp unit: ${String(unit ?? arg.value)}. Expected 'ss', 'ms', 'us', or 'ns'.`);
+					break;
+				}
+
+				setProperty(state.config, optKey, unit);
+				break;
+			}
+
 			default:
 				setProperty(state.config, optKey, arg.value);
 				break;
+
 		}
 	});
 }

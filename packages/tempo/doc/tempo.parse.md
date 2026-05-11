@@ -62,6 +62,34 @@ The engine can interpret:
 
 ---
 
+## 🔢 Numeric & Epoch Parsing
+
+Tempo provides robust support for parsing Unix timestamps (Epochs). Unlike standard `Date.parse`, Tempo can interpret epochs in multiple units and handles both `Number` and `BigInt` types.
+
+### Unit Selection
+By default, Tempo treats numbers as **milliseconds**. You can configure this via the `timeStamp` option:
+
+```typescript
+// Default (milliseconds)
+new Tempo(1715900000000).format('{yyyy}-{mm}-{dd}'); // 2024-05-16
+
+// Seconds
+new Tempo(946684800, { timeStamp: 'ss' }).yy; // 2000
+
+// Microseconds / Nanoseconds
+new Tempo(1715900000000000n, { timeStamp: 'us' });
+```
+
+### Smart Epoch Detection
+The parsing engine automatically detects shorter numeric strings (9-10 digits) as valid Epoch candidates when a non-default unit (like `'ss'`) is configured. This ensures that second-based timestamps like `946684800` are correctly interpreted as timestamps rather than being passed to the layout engine.
+
+### Fractional Precision
+Tempo supports fractional numeric inputs across all units with nanosecond precision.
+*   `1.5` (seconds mode) resolves to `1.5` seconds (1500ms).
+*   `100.25` (milliseconds mode) resolves to `100` milliseconds and `250` microseconds.
+
+---
+
 ## 🧩 Modularity: Core vs. Full
 
 The parsing engine is modular. Depending on which version of Tempo you are using, you may need to explicitly enable it:
@@ -94,7 +122,7 @@ Tempo achieves this by dynamically checking if your current `timeZone` is associ
 
 ```typescript
 const us = new Tempo('04012026', { timeZone: 'America/New_York' }); // Apr 1
-const au = new Tempo('04012026', { timeZone: 'Australia/Sydney' });  // Jan 4
+const au = new Tempo('04012026', { timeZone: 'Australia/Sydney' }); // Jan 4
 ```
 
 ### Custom Aliases (Events & Periods)
@@ -112,16 +140,25 @@ const t = new Tempo('party');
 ```
 
 ### 🧠 Functional Alias Context
-When you use a function as an alias value, Tempo provides a powerful **Resolution Context** (the `this` binding). This context mimics a lightweight Tempo instance, allowing you to perform relative date math during resolution.
+Functional Alias Context is a powerful API for creating dynamic, self-referential date definitions. Within an alias function, `this` provides access to the `AliasContext` instance:
 
-Available methods in the context:
-*   **`this.add(duration)`**: Add a duration to the current anchor.
-*   **`this.subtract(duration)`**: Subtract a duration.
-*   **`this.with(values)`**: Set specific fields (year, month, day, etc.).
-*   **`this.set(input)`**: Recursively parse another string or value relative to the anchor.
-*   **`this.toNow()`**: Get the current system time.
-*   **`this.toDateTime()`**: Get the current anchor as a native `Temporal.ZonedDateTime`.
-*   **`this.hh`, `this.mi`, `this.ss`**: Accessors for current time units.
+- `this.set(input)`: Reset the context to a specific date/time.
+- `this.add(duration)`: Add a Temporal-style duration (e.g. 'P1D').
+- `this.toNow()`: Align context with current system time.
+- `this.toDateTime()`: Resolve the context to a `Temporal.ZonedDateTime`.
+- `this.yy` / `this.mm` / `this.dd`: Access current date components.
+- `this.hh` / `this.mi` / `this.ss`: Access current time components.
+- `this.tz` / `this.cal` / `this.config`: Access instance metadata.
+
+```javascript
+// Example: Dynamic 'meeting' alias
+'meeting': function() {
+    return this.set('2026-05-20').add('PT1H'); // Resolves to 2026-05-20T01:00:00
+},
+'bedtime': function() {
+    return this.set('22:00').toDateTime();
+}
+```
 
 #### Example: Complex Functional Alias
 ```typescript
@@ -129,7 +166,7 @@ Tempo.init({
   event: {
     // Resolve "bedtime" to 10pm on the same day
     'bedtime': function() {
-      return this.with({ hour: 22, minute: 0, second: 0 });
+      return this.set({ hour: 22, minute: 0, second: 0 });
     },
     // Resolve "meeting" to 2 hours after whatever was just parsed
     'meeting': function() {

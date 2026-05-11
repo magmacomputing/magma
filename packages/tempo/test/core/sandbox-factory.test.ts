@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo';
+import type { AliasContext } from '#tempo/tempo.type.js';
 import { spies } from '../support/setup.console-spy.js';
 
 describe('Sandbox Factory Pattern', () => {
@@ -33,7 +34,7 @@ describe('Sandbox Factory Pattern', () => {
 				'noon': '11:00'
 			}
 		});
-		
+
 		expect(console.error).not.toHaveBeenCalled();
 		expect(console.warn).toHaveBeenCalled();
 		expect(spies.warn.mock.calls.length).toBe(warnCountBefore + 1);
@@ -50,7 +51,7 @@ describe('Sandbox Factory Pattern', () => {
 	it('should record traceability info in parse results', () => {
 		const MyTempo = Tempo.create({
 			period: {
-				'half-hour': function (this: Tempo) { return `${this.hh}:30` }
+				'half-hour': function (this: AliasContext) { return `${this.hh}:30` }
 			}
 		});
 
