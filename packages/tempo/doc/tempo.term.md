@@ -57,11 +57,11 @@ Maps the current date to the appropriate meteorological season.
 Hemisphere-aware (northern / southern boundaries differ).
 
 ```ts
-const t = new Tempo('01-Jul-2025');
+const t = new Tempo('01-Jul-2025', { sphere: 'south' });
 
-t.term.szn      // → 'Winter'  (northern hemisphere)
+t.term.szn      // → 'Winter'  (southern hemisphere)
 t.term.season
-// → { key: 'Winter', day: 22, month: 12, symbol: 'Snowflake', sphere: 'north' }
+// → { key: 'Winter', day: 1, month: 6, symbol: 'Snowflake', sphere: 'south' }
 ```
 
 ```ts
@@ -166,6 +166,10 @@ const ranges = defineRange([
   { key: 'Summer', month: 6,  sphere: enums.COMPASS.North },
   { key: 'Autumn', month: 9,  sphere: enums.COMPASS.North },
   { key: 'Winter', month: 12, sphere: enums.COMPASS.North },
+  { key: 'Spring', month: 9,  sphere: enums.COMPASS.South },
+  { key: 'Summer', month: 12, sphere: enums.COMPASS.South },
+  { key: 'Autumn', month: 3,  sphere: enums.COMPASS.South },
+  { key: 'Winter', month: 6,  sphere: enums.COMPASS.South },
 ], 'sphere');
 
 /** 2. Resolve the candidate list for the current anchor/context */
@@ -253,7 +257,7 @@ Tempo.init({
   fiscalYearStart: 7 // e.g., July
 });
 
-// 2. Define a term that uses this custom option
+// 2. Define a term that uses this custom property
 Tempo.extend({
   key: 'cfy',
   scope: 'fiscal',
