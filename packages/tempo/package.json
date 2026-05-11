@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "2.9.3",
+  "version": "2.10.0",
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -219,7 +219,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.9.3",
+    "@magmacomputing/library": "2.10.0",
     "@rollup/plugin-alias": "^6.0.0",
     "magic-string": "^0.30.21",
     "typedoc": "^0.28.19",

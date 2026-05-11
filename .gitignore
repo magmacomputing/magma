@@ -49,3 +49,9 @@ Thumbs.db
 **/.vitepress/cache/
 **/.vitepress/dist/
 **/doc/api/
+
+# Secrets and credentials
+.env
+.env.*
+.npmrc (global/local if they contain tokens)
+! .npmrc (the one we created is safe as it uses variables)

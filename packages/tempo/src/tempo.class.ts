@@ -515,7 +515,18 @@ export class Tempo {
 					// 1. handle TermPlugin
 					if (isString((item as any).key) && isFunction((item as any).define)) {
 						const config = item as TermPlugin;
-						if (Tempo.#termMap.has(config.key)) return;
+						const state = (this as any)[$Internal]();
+
+						if (Tempo.#termMap.get(config.key) === config) return;
+						if (Tempo.#termMap.has(config.key)) {
+							Tempo[$logError](state.config, `[Tempo#extend] Term collision on key: "${config.key}". Registration aborted.`);
+							return;
+						}
+						if (config.scope && Tempo.#termMap.get(config.scope) === config) { /* continue */ }
+						else if (config.scope && Tempo.#termMap.has(config.scope)) {
+							Tempo[$logError](state.config, `[Tempo#extend] Term collision on scope: "${config.scope}". Registration aborted.`);
+							return;
+						}
 
 						Tempo.#termMap.set(config.key, config);
 						if (config.scope) Tempo.#termMap.set(config.scope, config);
