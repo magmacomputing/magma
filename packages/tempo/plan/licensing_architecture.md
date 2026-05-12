@@ -1,48 +1,74 @@
-# Tempo Licensing Architecture (v2.9.4 Proposal)
+# Tempo Licensing Architecture & Plugin Strategy
 
 ## Objective
-Enable a robust, secure, and flexible licensing mechanism for premium Tempo plugins without bloating the core engine or compromising user security.
+Implement a secure, user-friendly licensing system for Tempo plugins that enables monetization and IP protection without creating high friction for developers.
 
-## Architectural Decisions
+## The "No-PAT" Distribution Model
+To eliminate developer friction (configuring registries/PATs), all plugins are distributed via the public npmjs registry.
 
-### 1. Separation of Concerns
-- **Core Tempo**: Acts only as a "Parking Spot" for the license string. It does NOT contain logic for decoding JWTs or verifying signatures.
-- **Plugins**: House all enforcement logic. The plugin's `install()` method is responsible for fetching the license from the state and validating it.
+- **Storage**: Private source code resides in Magma Computing's GitHub organization.
+- **Distribution**: Plugins are built, minified, and obfuscated before being published as public packages under the `@magmacomputing` scope (e.g., `@magmacomputing/plugin-term`).
+- **Access**: Anyone can `npm install`, but functionality is gated by the "Tempo Activation Key" (JWT).
+- **Free Tier**: The "Astrological Sign" plugin serves as a free reference implementation for users to test the activation and support model.
 
-### 2. Internal State Branching
-To prevent sensitive license keys from appearing in diagnostic logs:
-- **Location**: The license will reside in a separate branch of the internal state (e.g., `state.auth` or directly on `state.license`).
-- **Isolation**: It must NOT be part of the `config` or `parse` objects, which are frequently passed to `Logify` for debugging.
+## Activation & Validation
 
-### 3. Cascade of License Discovery
-The engine will look for a license key in the following order:
+### 1. The Tempo Activation Key (JWT)
+The key is a JSON Web Token issued to the customer. It supports three tiers of usage:
+
+| Claim | Standard/Trial | Enterprise/Distribution |
+| :--- | :--- | :--- |
+| `aud` (Audience) | Array of domains (e.g. `["localhost", "site.com"]`) | `"*"` (Wildcard - works on any domain) |
+| `exp` (Expiry) | Unix timestamp (e.g. 1 year from issue) | `0` (Perpetual - never expires) |
+| `jti` | Unique ID for revocation | Unique ID for revocation |
+
+### 2. Cascade of License Discovery
+Plugins will look for the activation key in the following order:
 1. **Explicit**: `Tempo.init({ license: '...' })`
 2. **Discovery**: `globalThis[TEMPO_DISCOVERY].license`
 3. **Environment**: `process.env.TEMPO_LICENSE` (Server-side)
 4. **Storage**: `localStorage.getItem('tempo_license')` (Client-side)
 
-## Security & Risks
-- **XSS**: Keys in `localStorage` are vulnerable; documentation must warn users to prefer secure server-side injection where possible.
-- **Leakage**: Even with separate branching, we must ensure internal state dumps (for support) redact this branch by default.
+### 3. Verification Logic
+- **Domain Locking**: The plugin verifies `window.location.hostname` against the `aud` claim (unless `aud` is `*`).
+- **Grace Period**: If a key is expired, the plugin enters a 7-day "Grace Period," allowing full functionality while emitting a `console.warn`.
+- **Revocation**:
+    - Plugins fetch a **Signed Revocation List** (JWS) from Magma's servers every **7 days**.
+    - The fetch is shared across all Tempo plugins to minimize overhead.
+    - If offline, the plugin "Fails Open" and relies on the JWT's internal expiry.
+    - The list is self-cleaning; keys are removed once they naturally expire.
 
-## Remote Invalidation & Revocation
+### 4. The License "Wallet" (Discovery & Persistence)
+To prevent "Token Fatigue" and the need to re-supply keys, Tempo and its plugins treat the environment as a persistent wallet.
 
-Since Tempo is designed for offline-first stability, we avoid a "mandatory phone-home" on every instance. Instead, we propose the following strategies for invalidating compromised licenses:
+- **One Key, Many Scopes**: A single JWT can contain multiple plugin identifiers in its `scope` claim (e.g., `scope: ["term", "ticker"]`).
+- **Global Discovery (Browser)**: Developers can define `window.__TEMPO_DISCOVERY__ = { license: '...' }` at the very top of their HTML. Any Tempo instance or plugin will automatically "hydrate" from this global wallet.
+- **Internal Stashing**: Once a license is discovered or provided via `init()`, Tempo core caches it in its internal static state. This ensures that a plugin imported in a different module (or a secondary Tempo instance) can still find the active license without being explicitly passed a key.
+- **Cross-Session Persistence**: If a valid license is detected, the plugin can optionally persist it to `localStorage`. This allows subsequent user sessions to remain "Activated" even if the developer removes the explicit key from a specific page.
 
-### 1. Short-lived JWTs (Rotation)
-- Issue licenses with 30- or 90-day expiry.
-- Use a lightweight refresh mechanism to update the license during application build or bootstrap.
-- **Benefit**: Naturally limits the window of exposure for any single leaked key.
+### 5. Revocation Infrastructure (The Control Tower)
+To maintain security without manual intervention on the customer side:
 
-### 2. Revocation Lists (Blacklisting)
-- Plugins can periodically fetch a `revoked.json` list of blacklisted JWT IDs (`jti`).
-- If a breach is detected, the `jti` is added to the list, and the plugin disables itself upon the next update/fetch.
+- **Host**: `api.magmacomputing.com.au`
+- **Endpoint**: `/tempo/v1/revoked.jws` (Versioned for future-proofing).
+- **Format**: The list is a Signed JWS. Plugins verify it using an embedded Public Key.
+- **Management**: 
+    - A local `registry/` folder in the private `tempo-plugin` repo tracks the revocation state.
+    - CLI tools (`npm run license:revoke`) handle the signing and deployment of the updated JWS to the production host.
+- **Security**: The **Private Key** for signing is stored as a GH Secret and never committed. The **Public Key** is baked into the obfuscated plugin source.
+- **Fail-Safe**: If the endpoint is unreachable, plugins "Fail Open" and rely on the internal JWT expiry to ensure no service disruption for legitimate users.
 
-### 3. Graceful Fallback
-- If a license is invalid or expired, the plugin should not crash the application.
-- **Behavior**: Downgrade to "Limited" mode, log a warning, but ensure the core Tempo engine continues to function.
+## Implementation Roadmap
 
-## Next Steps (v2.9.4)
-- Add `license` to `Internal.State` and `BaseOptions`.
-- Update `support.init.ts` to implement the Discovery Cascade.
-- Provide a reference implementation in the `tempo-plugin` mono-repo showing how to decode a JWT using Tempo's native date utilities.
+### Phase 1: Support Infrastructure
+- [ ] Add `license` to `Internal.State` and `BaseOptions` in Tempo Core.
+- [ ] Implement the Discovery Cascade and Shared Revocation Service.
+- [ ] Ensure `Logify` and internal state dumps redact the `state.license` branch.
+
+### Phase 2: Reference Plugin (Astro)
+- [ ] Create the `@magmacomputing/plugin-astro` workspace.
+- [ ] Implement JWS signature verification and JWT decoding.
+- [ ] Set up the obfuscated build pipeline for public npmjs distribution.
+
+### Phase 3: Commercial Plugins
+- [ ] Roll out `term`, `ticker`, and other premium extensions using the proven Astro model.
