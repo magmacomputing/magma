@@ -21,9 +21,5 @@ export const TermsModule = defineModule({
 });
 
 // Side-effect: Automatically register all standard terms when this barrel is imported
-Tempo.extend(TermsModule);
+// (Moved to tempo.index.ts to avoid circular dependency issues)
 
-// Resilience: Ensure terms are restored after a registry reset
-onRegistryReset(() => {
-	Tempo.extend(TermsModule);
-});

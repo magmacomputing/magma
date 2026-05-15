@@ -2,11 +2,13 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+import alias from '@rollup/plugin-alias';
 import resolve from '@rollup/plugin-node-resolve';
 import MagicString from 'magic-string';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.join(__dirname, 'dist');
+const licensePath = path.resolve(__dirname, '../../../tempo-plugin/packages/_core/dist/index.js');
 
 /**
  * Rollup Configuration for Tempo
@@ -57,6 +59,7 @@ export default [
 				exports: 'named',
 				sourcemap: false,
 				indent: '\t',
+				inlineDynamicImports: true,
 				globals: {
 					'@js-temporal/polyfill': 'Temporal'
 				}
@@ -66,10 +69,16 @@ export default [
 				format: 'es',
 				sourcemap: false,
 				indent: '\t',
+				inlineDynamicImports: true,
 			}
 		],
 		external: ['@js-temporal/polyfill'],
 		plugins: [
+			alias({
+				entries: [
+					{ find: '#tempo/license', replacement: licensePath }
+				]
+			}),
 			resolve({ extensions: ['.js'] }),
 			indentFix()
 		],
@@ -95,6 +104,11 @@ export default [
 			}
 		},
 		plugins: [
+			alias({
+				entries: [
+					{ find: '#tempo/license', replacement: licensePath }
+				]
+			}),
 			// We DO want to resolve @magmacomputing/library and bundle it into lib/ 
 			// because it's a workspace sibling and part of our distribution logic.
 			// But we EXCLUDE tslib (above) as it's a standard external dependency.

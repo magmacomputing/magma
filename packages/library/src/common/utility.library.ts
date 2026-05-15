@@ -5,6 +5,16 @@ import type { Secure, ValueOf } from '#library/type.library.js';
 
 /** General utility functions */
 
+/** fast, unverified decode of a JWT payload */
+export const decodeJWT = <T = any>(jwt: string): T | null => {
+	try {
+		const part = jwt.split('.')[1];
+		if (!part) return null;
+		const payload = typeof atob === 'function' ? atob(part) : Buffer.from(part, 'base64').toString();
+		return JSON.parse(payload);
+	} catch { return null; }
+}
+
 /** analyze the Call Stack to determine calling Function's name */
 export const getCaller = () => {
 	const stackTrace = new Error().stack											// only tested in latest FF and Chrome
@@ -61,6 +71,9 @@ export const getContext = (): Context => {
 	if (isDefined(global.process?.versions?.node))
 		return { global, type: CONTEXT.NodeJS };
 
+	if (isDefined(global.Deno))
+		return { global, type: CONTEXT.Deno };
+
 	return { global, type: CONTEXT.Unknown };
 }
 
@@ -85,7 +98,7 @@ export function deepFreeze<const T extends object>(obj: T, options?: { skip?: We
 export function deepFreeze<const T extends object>(obj: T, options?: { skip?: WeakSet<object> } | WeakSet<object>, seen: WeakSet<object> = new WeakSet<object>()): Secure<T> {
 	// Support both old and new signatures for backward compatibility
 	const skip = (options instanceof WeakSet) ? options : (options?.skip ?? EMPTY_SKIP);
-	
+
 	if (isPrimitive(obj) || Object.isFrozen(obj) || seen.has(obj) || skip.has(obj))
 		return obj as Secure<T>;
 

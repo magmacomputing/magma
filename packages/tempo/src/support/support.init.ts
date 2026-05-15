@@ -6,14 +6,20 @@ import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { asType } from '#library/type.library.js';
 import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/assertion.library.js';
+import { Pledge } from '#library/pledge.class.js';
 import { ownEntries } from '#library/primitive.library.js';
+import { decodeJWT } from '#library/utility.library.js';
+import { getStorage } from '#library/storage.library.js';
 
 import { getRuntime } from './support.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError } from './support.util.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, logWarn } from './support.util.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
-import enums, { STATE } from './support.enum.js';
+import { STATE, LICENSE } from './support.enum.js';
+
+import enums from './support.enum.js';
 import * as t from '../tempo.type.js';
+import type { Internal } from '../tempo.type.js';
 
 /** @internal Initialise a Tempo state */
 export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State): t.Internal.State {
@@ -117,8 +123,63 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	state.OPTION = new Set(Object.keys(configDefaults));
 	state.ZONED_DATE_TIME = new Set(['year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond', 'offset', 'timeZone', 'calendar']);
 
-	if (isGlobal) runtime.state = state;
+	if (isGlobal) {
+		runtime.state = state;
+
+		// 4. Discovery Cascade (License)
+		let key = options.license;
+		if (!key) key = getStorage('TEMPO_LICENSE');
+		if (!key) {
+			const discovery = state.config.discovery;
+			const symKey = isString(discovery) ? Symbol.for(discovery) : discovery;
+			const disc = (globalThis as any)[symKey as any];
+			key = disc?.license || disc?.options?.license;
+		}
+		if (!key) key = (globalThis as any).TEMPO_LICENSE;
+
+		if (key) setLicense(state, key);
+	}
 	return state;
+}
+
+/** @internal helper to synchronously set the optimistic license state */
+function setLicense(state: t.Internal.State, key: string) {
+	const runtime = getRuntime();
+	if (key && runtime.license.key !== key) {
+		const claims = decodeJWT(key);
+		runtime.license.key = key;
+		runtime.license.status = LICENSE.Pending;
+		runtime.license.scopes = claims?.permissions || {};
+
+		if (claims?.exp) runtime.license.expires = claims.exp;
+		if (claims?.iat) runtime.license.issuedAt = claims.iat;
+		if (claims?.iss) runtime.license.issuer = claims.iss;
+		if (claims?.sub) runtime.license.subject = claims.sub;
+		if (claims?.aud) runtime.license.audience = claims.aud;
+		if (claims?.jti) runtime.license.jti = claims.jti;
+		delete runtime.license.error; // 🚿 Clear previous error state
+
+		runtime.license.jws = new Pledge<Internal.LicensingModule>({
+			tag: 'license',
+			onResolve: (m) => {
+				const validator = new m.Validator(runtime.license.key!);
+				validator.verify().then((res: any) => {
+					runtime.license.status = res.status;
+					runtime.license.scopes = res.scopes;
+					delete runtime.license.error; // 🚿 Clear error on every reckoning attempt
+					if (res.error) runtime.license.error = res.error;
+					if (res.expires) runtime.license.expires = res.expires;
+					if (res.issuedAt) runtime.license.issuedAt = res.issuedAt;
+					if (res.issuer) runtime.license.issuer = res.issuer;
+					if (res.jti) runtime.license.jti = res.jti;
+					if (res.error) runtime.license.error = res.error;
+
+					if ([LICENSE.Revoked, LICENSE.Invalid].includes(res.status))
+						logWarn(state.config, `⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`);
+				});
+			}
+		});
+	}
 }
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
@@ -200,6 +261,7 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				break;
 
 			case 'sphere':
+				setProperty(state.config, 'sphere', arg.value);
 				break;
 
 			case 'catch':
@@ -252,6 +314,17 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				}
 
 				setProperty(state.config, optKey, unit);
+				break;
+			}
+
+			case 'license': {
+				const runtime = getRuntime();
+				if (state !== runtime.state) {
+					logWarn(state.config, `[Tempo#extend] Licensing is a global-only feature and cannot be set on local instances.`);
+					break;
+				}
+				const key = String(arg.value);
+				setLicense(state, key);
 				break;
 			}
 

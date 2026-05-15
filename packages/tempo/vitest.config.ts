@@ -49,6 +49,7 @@ export default defineConfig({
       { find: /^#tempo\/support$/, replacement: resolve(__dirname, './dist/support/support.index.js') },
       { find: /^#tempo\/(.*)\.js$/, replacement: resolve(__dirname, './dist/$1.js') },
       { find: /^#tempo$/, replacement: resolve(__dirname, './dist/tempo.index.js') },
+      { find: /^#tempo\/license$/, replacement: resolve(__dirname, '../../../tempo-plugin/packages/_core/dist/index.js') },
       { find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/dist/common/$1.js') },
       { find: /^#library$/, replacement: resolve(__dirname, '../library/dist/common.index.js') },
     ] : [
@@ -69,6 +70,7 @@ export default defineConfig({
       { find: /^#tempo\/support$/, replacement: resolve(__dirname, './src/support/support.index.ts') },
       { find: /^#tempo\/(.*)\.js$/, replacement: resolve(__dirname, './src/$1.ts') },
       { find: /^#tempo$/, replacement: resolve(__dirname, './src/tempo.index.ts') },
+      { find: /^#tempo\/license$/, replacement: resolve(__dirname, '../../../tempo-plugin/packages/_core/src/index.ts') },
       { find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/$1.ts') },
       { find: /^#library$/, replacement: resolve(__dirname, '../library/src/common.index.ts') },
     ]

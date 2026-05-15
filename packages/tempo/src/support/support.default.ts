@@ -198,6 +198,7 @@ export const Default = secure({
 	/** default timezone if not specified */									timeZone: getDateTimeFormat().timeZone,
 	/** default locale if not specified */										locale: getDateTimeFormat().locale,
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
+	// /** license key for premium plugins */										license: '',
 
 	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
 	/** internationalization configuration */									intl: IntlDefault,

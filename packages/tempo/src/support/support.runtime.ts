@@ -1,4 +1,5 @@
 import { sym } from './support.symbol.js';
+import { LICENSE } from './support.enum.js';
 import type { TermPlugin } from '../plugin/term/term.type.js';
 import type { Extension, Plugin } from '../plugin/plugin.type.js';
 import type { Internal } from '../tempo.type.js';
@@ -43,6 +44,9 @@ export class TempoRuntime {
 	 * Kept as a plain object (not a secureRef) so callers can push() into the arrays.
 	*/
 	readonly pluginsDb: { terms: TermPlugin[]; plugins: Plugin[] } = { terms: [], plugins: [] };
+
+	/** current license state */
+	readonly license: Internal.LicenseState = { status: LICENSE.None, scopes: {} };
 
 	/** persistent global configuration state — mirrors Tempo.#global */
 	state?: Internal.State | undefined;
@@ -126,9 +130,11 @@ let localFallbackRuntime: TempoRuntime | undefined;
  */
 export function getRuntime(): TempoRuntime {
 	const existing = (globalThis as any)[sym.$Bridge];
-	if (existing && existing[sym.$RuntimeBrand] === true) return existing;
+	if (existing && existing[sym.$RuntimeBrand] === true)
+		return existing;
 
-	if (localFallbackRuntime) return localFallbackRuntime;
+	if (localFallbackRuntime)
+		return localFallbackRuntime;
 
 	const rt = new TempoRuntime();
 

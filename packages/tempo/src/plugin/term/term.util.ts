@@ -2,7 +2,9 @@ import { toZonedDateTime, toInstant, getTemporalIds, instant } from '#library/te
 import { isDefined, isFunction, isString, isUndefined, isNumber, isZonedDateTime } from '#library/assertion.library.js';
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
-import { sym, TermError, SCHEMA, getLargestUnit, isTempo, getRuntime } from '#tempo/support';
+import { sym, TermError, isTempo } from '../../support/support.symbol.js';
+import { getRuntime } from '../../support/support.runtime.js';
+import { SCHEMA, getLargestUnit } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange } from './term.type.js';
 import { getHost } from '../plugin.util.js';

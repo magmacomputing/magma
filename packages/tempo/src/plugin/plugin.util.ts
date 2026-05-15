@@ -1,7 +1,8 @@
 import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from '#library/assertion.library.js';
 import { secureRef } from '#library/proxy.library.js';
 
-import { sym, getRuntime, isTempo } from '#tempo/support';
+import { sym, isTempo } from '../support/support.symbol.js';
+import { getRuntime } from '../support/support.runtime.js';
 import { hasOwn } from '#tempo/support/support.util.js';
 import type { Tempo } from '../tempo.class.js';
 import type { Plugin, Module, Extension } from './plugin.type.js';
@@ -88,7 +89,7 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
  * ## defineModule
  * Used to register an internal modularization component.
  */
-export const defineModule = <T extends Plugin<TempoType>>(module: T): T => {
+export function defineModule<T extends Plugin<TempoType>>(module: T): T {
 	registerPlugin(module);
 	return module;
 }
@@ -132,8 +133,8 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
  * ## defineInterpreterModule
  * Used to register a module that attaches methods to the Tempo sym.$Interpreter registry.
  */
-export const defineInterpreterModule = (name: string, logic: any, statics?: Record<string, any>) =>
-	defineModule({
+export function defineInterpreterModule(name: string, logic: any, statics?: Record<string, any>) {
+	return defineModule({
 		name,
 		install(this: TempoType, TempoClass: TempoType) {
 			const rt = getRuntime();
@@ -166,12 +167,13 @@ export const defineInterpreterModule = (name: string, logic: any, statics?: Reco
 			if (isDefined(statics)) attachStatics(TempoClass, statics);
 		},
 	});
+}
 
 /**
  * ## defineExtension
  * Used to register a class-augmenting extension.
  */
-export const defineExtension = <T extends Plugin<TempoType>>(extension: T): T => {
+export function defineExtension<T extends Plugin<TempoType>>(extension: T): T {
 	registerPlugin(extension);
 	return extension;
 }
