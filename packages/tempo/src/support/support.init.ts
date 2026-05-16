@@ -128,13 +128,11 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 
 		// 4. Discovery Cascade (License)
 		let key = options.license;
-		if (!key) key = getStorage('TEMPO_LICENSE');
 		if (!key) {
-			const discovery = state.config.discovery;
-			const symKey = isString(discovery) ? Symbol.for(discovery) : discovery;
-			const disc = (globalThis as any)[symKey as any];
-			key = disc?.license || disc?.options?.license;
+			const discovery = (globalThis as any).__TEMPO_DISCOVERY__;
+			key = discovery?.license || discovery?.options?.license;
 		}
+		if (!key) key = getStorage('TEMPO_LICENSE');
 		if (!key) key = (globalThis as any).TEMPO_LICENSE;
 
 		if (key) setLicense(state, key);
@@ -145,7 +143,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 /** @internal helper to synchronously set the optimistic license state */
 function setLicense(state: t.Internal.State, key: string) {
 	const runtime = getRuntime();
-	if (key && runtime.license.key !== key) {
+	if (key) {
 		const claims = decodeJWT(key);
 		runtime.license.key = key;
 		runtime.license.status = LICENSE.Pending;
@@ -159,11 +157,15 @@ function setLicense(state: t.Internal.State, key: string) {
 		if (claims?.jti) runtime.license.jti = claims.jti;
 		delete runtime.license.error; // 🚿 Clear previous error state
 
+		const initialJti = runtime.license.jti;
 		runtime.license.jws = new Pledge<Internal.LicensingModule>({
 			tag: 'license',
 			onResolve: (m) => {
 				const validator = new m.Validator(runtime.license.key!);
 				validator.verify().then((res: any) => {
+					// 🛡️ Race Condition Guard: Only apply results if the JTI hasn't changed since we started
+					if (runtime.license.jti !== initialJti) return;
+
 					runtime.license.status = res.status;
 					runtime.license.scopes = res.scopes;
 					delete runtime.license.error; // 🚿 Clear error on every reckoning attempt
@@ -172,10 +174,14 @@ function setLicense(state: t.Internal.State, key: string) {
 					if (res.issuedAt) runtime.license.issuedAt = res.issuedAt;
 					if (res.issuer) runtime.license.issuer = res.issuer;
 					if (res.jti) runtime.license.jti = res.jti;
-					if (res.error) runtime.license.error = res.error;
 
 					if ([LICENSE.Revoked, LICENSE.Invalid].includes(res.status))
 						logWarn(state.config, `⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`);
+				}).catch((err: any) => {
+					if (runtime.license.jti !== initialJti) return;
+					runtime.license.status = LICENSE.Invalid;
+					runtime.license.error = err?.message || 'Verification rejected';
+					logWarn(state.config, `⚠️ Tempo Licensing: ${runtime.license.error}`);
 				});
 			}
 		});

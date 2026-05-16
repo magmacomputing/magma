@@ -29,7 +29,7 @@
       "#tempo/term/*": [ "./plugin/term/term.*.ts" ],
       "#tempo/support": [ "./support/support.index.ts" ],
       "#tempo/support/*": [ "./support/*" ],
-      "#tempo/license": [ "../../../../tempo-plugin/packages/_core/src/index.ts" ],
+      "#tempo/license": [ "../../../../tempo-plugin/packages/@core/src/index.ts" ],
       "#tempo/*": [ "./*" ]
     }
   },
@@ -38,11 +38,7 @@
     "**/*.d.ts"
   ],
   "references": [
-    {
-      "path": "../../library/src"
-    },
-    {
-      "path": "../../../../tempo-plugin/packages/_core"
-    }
+    { "path": "../../library/src" },
+    { "path": "../../../../tempo-plugin/packages/@core" }
   ]
 }

@@ -34,7 +34,7 @@ The following upcoming monorepos and workspaces will depend on the shared `@magm
 ## Implementation Roadmap
 
 1. **Phase 1: Library Infrastructure**
-    - Set up private registry authentication.
+    - Set up NPM_TOKEN secrets for GitHub Actions (public npmjs).
     - Finalize `@magmacomputing/library` build pipeline.
 
 2. **Phase 2: Tempo Refactor**

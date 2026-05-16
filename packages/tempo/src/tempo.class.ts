@@ -1293,17 +1293,16 @@ export class Tempo {
 				if (!ensureModule(this, 'TermsModule')) return undefined;
 
 				// 🛡️ Lazy Proxy Guard (Licensing)
-				const rt = getRuntime();
-				if (([LICENSE.Revoked, LICENSE.Expired, LICENSE.Invalid] as readonly string[]).includes(rt.license.status) && hasOwn(rt.license.scopes, key)) {
-					const msg = `License for premium term '${key}' is ${rt.license.status}. Access denied.`;
-					Tempo.#dbg.warn(this.#local.config, msg);
-					return undefined;
-				}
+				if (this.#isBlocked(key)) return undefined;
 
 				const term = Tempo.#termMap.get(key);
 				if (term) {
 					const isKeyOnly = term.key === key;
 					const define = (keyOnly: boolean) => {
+						// 🛡️ Resolution Guard (Licensing)
+						// We check again to handle the transition from Pending -> Revoked/Expired
+						if (getRuntime().license.status !== LICENSE.Active && this.#isBlocked(key)) return undefined;
+
 						try {
 							const result = term.define.call(this, keyOnly);
 							const res = Array.isArray(result) ? getTermRange(this, result, keyOnly) : result;
@@ -1315,8 +1314,10 @@ export class Tempo {
 								throw err;
 							}
 						}
+
 						return undefined;
-					};
+					}
+
 					return this.#setLazy(target, key, define, isKeyOnly)?.();
 				}
 			}
@@ -1337,6 +1338,9 @@ export class Tempo {
 		} else {
 			Tempo.#terms.forEach(term => {
 				const define = (keyOnly: boolean, anchor?: any) => {
+					// 🛡️ Resolution Guard (Licensing)
+					if (getRuntime().license.status !== LICENSE.Active && this.#isBlocked(term.key)) return undefined;
+
 					try {
 						const res = term.resolve ? term.resolve.call(this, anchor) : term.define.call(this, keyOnly, anchor);
 						const out = (getTermRange(this, (Array.isArray(res) ? (res as any) : [res]), keyOnly, anchor) as any);
@@ -1592,6 +1596,19 @@ export class Tempo {
 
 		// 4. Otherwise, it is a plain object (possibly empty), so we treat it as an options object
 		return true;
+	}
+
+	#isBlocked(key: string): boolean {
+		const rt = getRuntime();
+		const blocked = [LICENSE.Revoked, LICENSE.Expired, LICENSE.Invalid] as readonly string[];
+
+		if (blocked.includes(rt.license.status) && hasOwn(rt.license.scopes, key)) {
+			const msg = `License for premium term '${key}' is ${rt.license.status}. Access denied.`;
+			Tempo.#dbg.warn(this.#local.config, msg);
+			return true;
+		}
+
+		return false;
 	}
 }
 

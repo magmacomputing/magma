@@ -1,6 +1,7 @@
 import type { Prettify, Property } from '#library/type.library.js';
 import type { Tempo } from '../../tempo.class.js';
 import { TermError } from '#tempo/support';
+import * as enums from '#tempo/support/support.enum.js';
 
 /**
  * ## TempoTermType
@@ -29,7 +30,7 @@ export interface TermPlugin {
  * Augmented TermPlugin metadata including licensing state.
  */
 export interface PremiumPlugin extends Omit<TermPlugin, 'define' | 'resolve'> {
-	status?: string;
+	status?: enums.LICENSE;
 	expires?: number;
 	updated?: string;
 }

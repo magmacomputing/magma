@@ -4,11 +4,14 @@ import { fileURLToPath } from 'node:url';
 
 import alias from '@rollup/plugin-alias';
 import resolve from '@rollup/plugin-node-resolve';
+import esbuild from 'rollup-plugin-esbuild';
+import JavaScriptObfuscator from 'javascript-obfuscator';
 import MagicString from 'magic-string';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.join(__dirname, 'dist');
-const licensePath = path.resolve(__dirname, '../../../tempo-plugin/packages/_core/dist/index.js');
+// we use "_core" to not confuse npm: name can only contain URL-friendly characters.
+const licensePath = '@magmacomputing/tempo-plugin-_core';
 
 /**
  * Rollup Configuration for Tempo
@@ -79,8 +82,11 @@ export default [
 					{ find: '#tempo/license', replacement: licensePath }
 				]
 			}),
-			resolve({ extensions: ['.js'] }),
-			indentFix()
+			resolve({ extensions: ['.js', '.ts'] }),
+			esbuild({
+				target: 'esnext',
+				minify: false,
+			})
 		],
 	},
 	{
@@ -94,14 +100,47 @@ export default [
 			preserveModulesRoot: distPath,
 			sourcemap: false,
 			indent: '\t',
-			// Map library imports to lib/ for browser-ready granular ESM
 			entryFileNames: (chunkInfo) => {
-				if (!chunkInfo.facadeModuleId) return '[name].js';
-				const rel = path.relative(__dirname, chunkInfo.facadeModuleId);
+				const id = chunkInfo.facadeModuleId;
+				if (!id) return '[name].js';
+
+				const ext = path.extname(id);
+				const name = path.basename(id, ext);
+
+				// 🛡️ Redirect licensing core and cryptographic dependencies (jose) to lic/
+				if (id.includes('tempo-plugin/packages/@core') || id.includes('node_modules/jose'))
+					return `lic/${name}.js`;
+
+				// 🛡️ Redirect TypeScript helpers (tslib) to ts/
+				if (id.includes('node_modules/tslib'))
+					return `ts/${name}.js`;
+
+				// Map library imports to lib/ for browser-ready granular ESM
+				const rel = path.relative(__dirname, id);
+				if (id.includes('magma/packages/library') || rel.startsWith('../library'))
+					return `lib/${name}.js`;
+
 				return (rel.startsWith('..') || rel.includes('node_modules'))
-					? 'lib/' + path.basename(chunkInfo.facadeModuleId, '.js') + '.js'
+					? `lib/${name}.js`
 					: '[name].js';
-			}
+			},
+			plugins: [
+				{
+					name: 'obfuscator',
+					renderChunk(code, chunk) {
+						if (chunk.fileName === 'lic/index.js') {
+							return {
+								code: JavaScriptObfuscator.obfuscate(code, {
+									compact: true,
+									identifierNamesGenerator: 'mangled',
+									unicodeEscapeSequence: false
+								}).getObfuscatedCode(),
+								map: null
+							}
+						}
+					}
+				}
+			]
 		},
 		plugins: [
 			alias({
@@ -112,9 +151,13 @@ export default [
 			// We DO want to resolve @magmacomputing/library and bundle it into lib/ 
 			// because it's a workspace sibling and part of our distribution logic.
 			// But we EXCLUDE tslib (above) as it's a standard external dependency.
-			resolve({ 
-				extensions: ['.js'],
-				moduleDirectories: ['node_modules'] 
+			resolve({
+				extensions: ['.js', '.ts'],
+				moduleDirectories: ['node_modules']
+			}),
+			esbuild({
+				target: 'esnext',
+				minify: false,
 			}),
 			indentFix()
 		],

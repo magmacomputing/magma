@@ -1,13 +1,35 @@
-import { vi } from 'vitest';
 import { Tempo } from '#tempo';
-import { getRuntime } from '#tempo/support/support.runtime.js';
 import { LICENSE } from '#tempo/support/support.enum.js';
+import { getRuntime, resetRuntimeForTesting } from '#tempo/support/support.runtime.js';
+import { base64Encode } from '#library';
+
+// 🛡️ Hoist the license module mock to module scope for Vitest
+// We mock both the source alias and the resolved distribution path to cover both test modes.
+vi.mock('#tempo/license', () => {
+	const verify = vi.fn().mockResolvedValue({
+		status: 'active',
+		scopes: { astro: {} }
+	});
+	const Validator = vi.fn().mockImplementation(() => ({ verify }));
+	return { Validator };
+});
+
+vi.mock('../../dist/lic/index.js', () => {
+	const verify = vi.fn().mockResolvedValue({
+		status: 'active',
+		scopes: { astro: {} }
+	});
+	const Validator = vi.fn().mockImplementation(() => ({ verify }));
+	return { Validator };
+});
+
+const isDist = process.env.TEST_DIST === 'true';
+const licenseModule = isDist ? '../../dist/lic/index.js' : '#tempo/license';
 
 describe('Tempo Licensing Strategy', () => {
 	beforeEach(() => {
 		// 🏛️ Hard reset the global runtime to ensure test isolation
-		const rt = getRuntime();
-		delete (rt as any).state;
+		resetRuntimeForTesting();
 
 		vi.clearAllMocks();
 	});
@@ -24,7 +46,7 @@ describe('Tempo Licensing Strategy', () => {
 			jti: 'test-token-123'
 		}
 		// Mock a JWT structure (header.payload.signature)
-		const mockToken = `header.${Buffer.from(JSON.stringify(payload)).toString('base64')}.signature`;
+		const mockToken = `header.${base64Encode(JSON.stringify(payload))}.signature`;
 
 		Tempo.init({ license: mockToken });
 		const rt = getRuntime();
@@ -39,7 +61,6 @@ describe('Tempo Licensing Strategy', () => {
 		expect(rt.license.expires).toBe(2000000000);
 
 		// 2. Verify that Tempo.terms shows the claimed "Premium" status even before registration
-		// This confirms that the engine is aware of the license's intent.
 		const terms = Tempo.terms;
 		const astro = terms.find((t: any) => t.key === 'astro');
 
@@ -50,7 +71,7 @@ describe('Tempo Licensing Strategy', () => {
 
 	test('Licensing Reckoning (Pledge) is established during init', () => {
 		const payload = { permissions: { test: {} } };
-		const mockToken = `a.${Buffer.from(JSON.stringify(payload)).toString('base64')}.c`;
+		const mockToken = `a.${base64Encode(JSON.stringify(payload))}.c`;
 
 		Tempo.init({ license: mockToken });
 
@@ -77,7 +98,7 @@ describe('Tempo Licensing Strategy', () => {
 
 	test('License state is global and persists across local instances', () => {
 		const payload = { permissions: { global: {} } };
-		const mockToken = `a.${Buffer.from(JSON.stringify(payload)).toString('base64')}.c`;
+		const mockToken = `a.${base64Encode(JSON.stringify(payload))}.c`;
 
 		Tempo.init({ license: mockToken });
 
@@ -85,14 +106,13 @@ describe('Tempo Licensing Strategy', () => {
 		const local = new Tempo();
 
 		// Local instance should reflect the global license state via its runtime bridge
-		// Note: license state isn't copied to local.config, but accessed via global getters.
 		expect(Tempo.license.status).toBe(LICENSE.Pending);
 		expect(Tempo.license.key).toBe(mockToken);
 	});
 
 	test('Discovery cascade: picks up license from globalThis.TEMPO_LICENSE', () => {
 		const payload = { permissions: { discovered: {} } };
-		const mockToken = `a.${Buffer.from(JSON.stringify(payload)).toString('base64')}.c`;
+		const mockToken = `a.${base64Encode(JSON.stringify(payload))}.c`;
 
 		// Set global variable
 		(globalThis as any).TEMPO_LICENSE = mockToken;
@@ -109,22 +129,7 @@ describe('Tempo Licensing Strategy', () => {
 
 	test('Full Reckoning: transitions from Pending to Active via mock license module', async () => {
 		const payload = { permissions: { astro: {} } };
-		const mockToken = `a.${Buffer.from(JSON.stringify(payload)).toString('base64')}.c`;
-
-		// 1. Mock the dynamic import of #tempo/license
-		vi.mock('#tempo/license', () => {
-			return {
-				Validator: class {
-					constructor(public key: string) { }
-					async verify() {
-						return {
-							status: 'active',
-							scopes: { astro: {} }
-						};
-					}
-				}
-			}
-		});
+		const mockToken = `a.${base64Encode(JSON.stringify(payload))}.c`;
 
 		Tempo.init({ license: mockToken });
 		const rt = getRuntime();
@@ -135,33 +140,71 @@ describe('Tempo Licensing Strategy', () => {
 		// 2. Wait for the Pledge to resolve and the validator logic to trigger
 		await rt.license.jws;
 
-		// Give the .then() block in support.init.ts a tick to finish updating state
-		await new Promise(r => setTimeout(r, 0));
+		// 🛡️ Deterministic wait for the state transition
+		await vi.waitFor(() => expect(rt.license.status).toBe(LICENSE.Active));
 
 		// Verify state after reckoning
-		expect(rt.license.status).toBe(LICENSE.Active);
 		const astro = Tempo.terms.find((t: any) => t.key === 'astro');
 		expect(astro?.status).toBe(LICENSE.Active);
 	});
 
 	test('Full Reckoning: handles Revoked status correctly', async () => {
 		const payload = { permissions: { weather: {} } };
-		const mockToken = `a.${Buffer.from(JSON.stringify(payload)).toString('base64')}.c`;
+		const mockToken = `a.${base64Encode(JSON.stringify(payload))}.c`;
 
 		// Update mock for this specific test
-		vi.mocked(await import('#tempo/license')).Validator.prototype.verify = async () => ({
-			status: 'revoked',
-			scopes: {},
-			error: 'License has been revoked'
-		});
+		const { Validator } = await import(licenseModule as any);
+		vi.mocked(Validator).mockReturnValue({
+			verify: vi.fn().mockResolvedValue({
+				status: 'revoked',
+				scopes: {},
+				error: 'License has been revoked'
+			})
+		} as any);
 
 		Tempo.init({ license: mockToken });
 		const rt = getRuntime();
 
 		await rt.license.jws;
-		await new Promise(r => setTimeout(r, 0));
+		await vi.waitFor(() => expect(rt.license.status).toBe(LICENSE.Revoked));
 
 		expect(rt.license.status).toBe(LICENSE.Revoked);
 		expect(rt.license.error).toBe('License has been revoked');
+	});
+
+	test('Eager Discovery Guard: blocks premium plugins when license is revoked', async () => {
+		// 1. Mock a revoked license for 'premium' scope
+		const payload = { permissions: { premium: {} } };
+		const mockToken = `a.${base64Encode(JSON.stringify(payload))}.c`;
+
+		const { Validator } = await import(licenseModule as any);
+		vi.mocked(Validator).mockReturnValue({
+			verify: vi.fn().mockResolvedValue({
+				status: 'revoked',
+				scopes: { premium: {} },
+				error: 'Access denied'
+			})
+		} as any);
+
+		Tempo.init({ license: mockToken });
+
+		// 2. Register a plugin that belongs to the 'premium' scope
+		Tempo.extend([{
+			key: 'premium',
+			description: 'A premium term',
+			define: () => 'result'
+		}]);
+
+		const rt = getRuntime();
+		await rt.license.jws;
+		await vi.waitFor(() => expect(rt.license.status).toBe(LICENSE.Revoked));
+
+		expect(rt.license.status).toBe(LICENSE.Revoked);
+
+		// 3. Try to access the premium term on a NEW instance (which triggers eager discovery by default in tests)
+		const t = new Tempo();
+
+		// It should be undefined because the guard blocked it in #discover
+		expect((t as any).premium).toBeUndefined();
 	});
 });

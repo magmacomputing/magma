@@ -163,3 +163,23 @@ export function getRuntime(): TempoRuntime {
 
 	return rt;
 }
+
+/**
+ * @internal
+ * Force-reset the runtime state for testing.
+ * This clears the internal state and license trackers to ensure test isolation.
+ */
+export function resetRuntimeForTesting(): void {
+	const rt = getRuntime();
+	rt.state = undefined;
+	const lic = rt.license as any;
+	lic.status = LICENSE.None;
+	lic.scopes = {};
+	delete lic.key;
+	delete lic.jti;
+	delete lic.issuer;
+	delete lic.expires;
+	delete lic.jws;
+	delete lic.error;
+	rt.usrCount = 0;
+}

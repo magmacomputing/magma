@@ -221,9 +221,12 @@
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
     "@magmacomputing/library": "2.10.0",
-    "@magmacomputing/tempo-plugin-_core": "file:../../../tempo-plugin/packages/_core",
+    "@magmacomputing/tempo-plugin-_core": "file:../../../tempo-plugin/packages/@core",
     "@rollup/plugin-alias": "^6.0.0",
+    "esbuild": "^0.25.12",
+    "javascript-obfuscator": "^5.4.2",
     "magic-string": "^0.30.21",
+    "rollup-plugin-esbuild": "^6.2.1",
     "typedoc": "^0.28.19",
     "typedoc-plugin-markdown": "^4.11.0",
     "typedoc-vitepress-theme": "^1.1.2",

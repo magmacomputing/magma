@@ -1,4 +1,4 @@
-Now that we have the 'Plugin' architecture, we need to determine how this will merge into a Tempo v2 strategy..
+Now that we have the 'Plugin' architecture, we need to determine how this will merge into the Tempo v2 strategy.
 
 (All of the scenarios below assume the user has already installed Tempo and the desired Plugins)
 $ npm install @magmacomputing/tempo
@@ -41,10 +41,11 @@ To keep `Tempo.init()` synchronous and the UX instantaneous, Tempo uses an optim
 
 Tempo will search for a license key in the following order (from most explicit to most global):
 
-1. **Programmatic**: `Tempo.init({ license: '...' })`
-2. **Environment**: `process.env.TEMPO_LICENSE` (Node.js environments)
-3. **Configuration File**: `.temporc` or `tempo.config.json` (CWD)
-4. **Global Variable**: `globalThis.TEMPO_LICENSE` (Browser/Universal)
+1. **Explicit**: `Tempo.init({ license: '...' })`
+2. **Discovery**: `globalThis.__TEMPO_DISCOVERY__.license`
+3. **Environment**: `process.env.TEMPO_LICENSE`
+4. **Configuration**: `.temporc` or `tempo.config.json`
+5. **Global**: `globalThis.TEMPO_LICENSE` (Legacy / Convenience)
 
 #### Scalability & 3rd-Party Plugin Support
 
@@ -58,7 +59,7 @@ The "Decoupled Gatekeeper" architecture is designed to scale into a **Licensing 
 
 Here is the UX I am hoping to create for our Users:
 
-###Scenario 1
+### Scenario 1
 The user has *not* purchased a License Key
 ```typescript
 import {Tempo} from '@magmacomputing/tempo';

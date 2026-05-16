@@ -15,6 +15,20 @@ export const decodeJWT = <T = any>(jwt: string): T | null => {
 	} catch { return null; }
 }
 
+/** portable base64 encoder for universal support */
+export const base64Encode = (input: string): string => {
+	if (typeof Buffer !== 'undefined')
+		return Buffer.from(input).toString('base64');
+
+	const bytes = new TextEncoder().encode(input);
+	let binary = '';
+
+	for (let i = 0; i < bytes.byteLength; i++)
+		binary += String.fromCharCode(bytes[i]);
+
+	return btoa(binary);
+}
+
 /** analyze the Call Stack to determine calling Function's name */
 export const getCaller = () => {
 	const stackTrace = new Error().stack											// only tested in latest FF and Chrome

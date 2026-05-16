@@ -25,9 +25,10 @@ The key is a JSON Web Token issued to the customer. It supports three tiers of u
 ### 2. Cascade of License Discovery
 Plugins will look for the activation key in the following order:
 1. **Explicit**: `Tempo.init({ license: '...' })`
-2. **Discovery**: `globalThis[TEMPO_DISCOVERY].license`
+2. **Discovery**: `globalThis.__TEMPO_DISCOVERY__.license`
 3. **Environment**: `process.env.TEMPO_LICENSE` (Server-side)
-4. **Storage**: `localStorage.getItem('tempo_license')` (Client-side)
+4. **Configuration**: `.temporc` or `tempo.config.json` (CWD)
+5. **Storage**: `localStorage.getItem('tempo_license')` (Client-side)
 
 ### 3. Verification Logic
 - **Domain Locking**: The plugin verifies `window.location.hostname` against the `aud` claim (unless `aud` is `*`).
@@ -44,7 +45,13 @@ To prevent "Token Fatigue" and the need to re-supply keys, Tempo and its plugins
 - **One Key, Many Scopes**: A single JWT can contain multiple plugin identifiers in its `scope` claim (e.g., `scope: ["term", "ticker"]`).
 - **Global Discovery (Browser)**: Developers can define `window.__TEMPO_DISCOVERY__ = { license: '...' }` at the very top of their HTML. Any Tempo instance or plugin will automatically "hydrate" from this global wallet.
 - **Internal Stashing**: Once a license is discovered or provided via `init()`, Tempo core caches it in its internal static state. This ensures that a plugin imported in a different module (or a secondary Tempo instance) can still find the active license without being explicitly passed a key.
-- **Cross-Session Persistence**: If a valid license is detected, the plugin can optionally persist it to `localStorage`. This allows subsequent user sessions to remain "Activated" even if the developer removes the explicit key from a specific page.
+- **Cross-Session Persistence (Opt-in & Unsafe)**: By default, Tempo avoids `localStorage` due to XSS token-theft risks. Persistence is **opt-in** via the `enableCrossSessionPersistence` flag.
+    - **Recommended**: Use memory or `sessionStorage` for sensitive keys.
+    - **Mitigation Checklist**:
+        - Implement strict Content Security Policy (CSP).
+        - Use HttpOnly cookies for token delivery where possible.
+        - Ensure rigorous input sanitization.
+        - Use short TTLs and rotate/revoke tokens frequently.
 
 ### 5. Revocation Infrastructure (The Control Tower)
 To maintain security without manual intervention on the customer side:
