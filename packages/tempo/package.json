@@ -21,6 +21,9 @@
     "fluent",
     "parsing"
   ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
   "type": "module",
   "sideEffects": [
     "**/tempo.index.js",
@@ -113,7 +116,7 @@
       "development": "./src/module/module.index.ts",
       "default": "./dist/module/module.index.js"
     },
-    "#tempo/license": "@magmacomputing/tempo-plugin-_core",
+    "#tempo/license": "./src/support/support.license.ts",
     "#tempo/*.js": {
       "development": "./src/*.ts",
       "default": "./dist/*.js"
@@ -200,12 +203,12 @@
     "bare": "tsx --conditions=development -i --harmony-temporal",
     "core": "cross-env TEMPO_LITE=true tsx --conditions=development -i --harmony-temporal --import ./bin/core.ts",
     "parse": "cross-env TEMPO_LITE=true tsx --conditions=development -i --harmony-temporal --import ./bin/parse.ts",
-    "build": "npm run clean && tsc -b && npm run build:bundle && npm run build:resolve",
+    "build": "npm run clean && tsc -b && npm run build:bundle && npm run build:resolve && if [ ! -f dist/lic/index.js ]; then echo '🚨 ERROR: dist/lic/index.js is missing from dist!'; exit 1; fi",
     "build:bundle": "rollup -c",
     "build:resolve": "tsx bin/resolve-types.ts",
     "clean": "rm -rf dist && (tsc -b --clean || true)",
     "publish": "npm publish --access public",
-    "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build",
+    "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && if [ -z \"$TEMPO_LICENSE_PATH\" ] || [ ! -f \"$TEMPO_LICENSE_PATH\" ]; then echo '🚨 ERROR: TEMPO_LICENSE_PATH is missing or invalid. Cannot publish Premium build.'; exit 1; fi && npm run build",
     "docs:api": "typedoc",
     "docs:dev": "npm run build && npm run docs:api && vitepress dev",
     "docs:build": "npm run build && npm run docs:api && vitepress build",
@@ -221,7 +224,6 @@
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
     "@magmacomputing/library": "2.10.0",
-    "@magmacomputing/tempo-plugin-_core": "file:./test/support/license-stub-pkg",
     "@rollup/plugin-alias": "^6.0.0",
     "esbuild": "^0.25.12",
     "javascript-obfuscator": "^5.4.2",

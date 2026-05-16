@@ -10,7 +10,9 @@ export const decodeJWT = <T = any>(jwt: string): T | null => {
 	try {
 		const part = jwt.split('.')[1];
 		if (!part) return null;
-		const payload = typeof atob === 'function' ? atob(part) : Buffer.from(part, 'base64').toString();
+		// 🛡️ Base64URL Normalization: replace -/_ with +/ and add padding
+		const base64 = part.replace(/-/g, '+').replace(/_/g, '/').padEnd(part.length + (4 - part.length % 4) % 4, '=');
+		const payload = typeof atob === 'function' ? atob(base64) : Buffer.from(base64, 'base64').toString();
 		return JSON.parse(payload);
 	} catch { return null; }
 }
@@ -82,11 +84,11 @@ export const getContext = (): Context => {
 	if (isDefined(global.window?.document))
 		return { global, type: CONTEXT.Browser };
 
-	if (isDefined(global.process?.versions?.node))
-		return { global, type: CONTEXT.NodeJS };
-
 	if (isDefined(global.Deno))
 		return { global, type: CONTEXT.Deno };
+
+	if (isDefined(global.process?.versions?.node))
+		return { global, type: CONTEXT.NodeJS };
 
 	return { global, type: CONTEXT.Unknown };
 }

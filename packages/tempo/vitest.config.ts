@@ -10,9 +10,9 @@ const polyfill = resolve(__dirname, './bin/temporal-polyfill.ts');
 const ciPrefilterSetup = resolve(__dirname, './test/support/ci.prefilter.setup.ts');
 const consoleSpySetup = resolve(__dirname, './test/support/setup.console-spy.ts');
 
-const licensePath = resolve(__dirname, '../../../tempo-plugin/packages/@core/src/index.ts');
-const licenseStub = resolve(__dirname, './test/support/license-stub-pkg/index.ts');
-const useStub = !fs.existsSync(licensePath);
+const licensePremium = process.env.TEMPO_LICENSE_PATH;
+const licenseDefault = resolve(__dirname, './src/support/support.license.ts');
+const isPremiumAvailable = !!(licensePremium && fs.existsSync(licensePremium));
 
 export default defineConfig({
   plugins: [],
@@ -57,7 +57,7 @@ export default defineConfig({
       { find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/dist/common/$1.js') },
       { find: /^#library$/, replacement: resolve(__dirname, '../library/dist/common.index.js') },
     ] : [
-      { find: /^#tempo\/license$/, replacement: useStub ? licenseStub : licensePath },
+      { find: /^#tempo\/license$/, replacement: isPremiumAvailable ? (licensePremium as string) : licenseDefault },
       { find: /^#tempo\/core$/, replacement: resolve(__dirname, './src/core.index.ts') },
       { find: /^#tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
       { find: /^#tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/$1') },

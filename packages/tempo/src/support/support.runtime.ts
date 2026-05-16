@@ -171,12 +171,15 @@ export function getRuntime(): TempoRuntime {
  */
 export function resetRuntimeForTesting(): void {
 	const rt = getRuntime();
+	// 🛡️ Race Condition Guard: Bump JTI to invalidate pending async reckonings
+	rt.license.jti = Math.random().toString(36).slice(2);
+
 	rt.state = undefined;
 	const lic = rt.license as any;
 	lic.status = LICENSE.None;
 	lic.scopes = {};
 	delete lic.key;
-	delete lic.jti;
+	// We keep the jti we just set as the "new" marker
 	delete lic.issuer;
 	delete lic.expires;
 	delete lic.jws;

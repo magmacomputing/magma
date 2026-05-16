@@ -8,13 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.10.0] - 2026-05-11
 
 ### Added
-- **Licensing Architecture**: Implemented a complete licensing system with JWT validation, JWS-based revocation checks, and a public `Tempo.license` API for state management.
-- **CI Dependency Fallback**: Introduced a local licensing stub and CI-aware aliasing in Vitest and Rollup to ensure the repository remains standalone and buildable in public CI environments.
+- **Licensing Architecture**: Implemented a standalone "No-Op" licensing engine (`support.license.ts`) in the public core. This ensures the repository is 100% buildable and testable by the community without private dependencies.
+- **Automatic Premium Injection**: Optimized the build pipeline (Rollup/Vitest) to automatically detect and inject the proprietary licensing engine from a side-by-side repository during official builds.
 - **Portable Encoding**: Migrated `base64Encode` to the shared library for universal, environment-agnostic token handling.
 
 ### Changed
-- **Hardened Licensing Resolution**: Updated the term resolution pipeline with a JTI-based race-condition guard and a late-binding resolution guard to securely handle `Pending` to `Revoked` state transitions.
-- **Cross-Repo Build Pipeline**: Optimized Rollup and Vitest configurations to conditionally resolve external licensing modules, streamlining local development while preserving CI stability.
+- **Hardened Licensing Resolution**: Updated the term resolution pipeline with a dual-identity race-condition guard (JTI + Key) and a late-binding resolution guard to securely handle `Pending` to `Revoked` state transitions.
+- **Decoupled CI Resolution**: Eliminated the need for private registries or stubs in GitHub Actions by utilizing the internal No-Op engine for standard test runs.
 - **Term Collision Enforcement**: Term plugin registration now throws a fatal error on naming collisions (key/scope) to prevent silent configuration failures.
 
 ## [2.9.3] - 2026-05-11

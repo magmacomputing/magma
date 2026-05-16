@@ -11,10 +11,13 @@ import MagicString from 'magic-string';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.join(__dirname, 'dist');
 // we use "_core" to not confuse npm: name can only contain URL-friendly characters.
-const licenseReal = '../../../tempo-plugin/packages/@core';
-const licenseStub = './test/support/license-stub-pkg';
-const useStub = !fs.existsSync(path.resolve(__dirname, licenseReal));
-const licensePath = useStub ? licenseStub : licenseReal;
+const licensePremium = process.env.TEMPO_LICENSE_PATH;
+const licenseDefault = path.resolve(__dirname, './src/support/support.license.ts');
+const isPremiumAvailable = !!(licensePremium && fs.existsSync(licensePremium));
+const licensePath = isPremiumAvailable ? licensePremium : licenseDefault;
+
+console.log(`\n📦 Building Tempo [${isPremiumAvailable ? '💎 PREMIUM' : '🍃 COMMUNITY'}]`);
+if (isPremiumAvailable) console.log(`🛡️  Engine: ${licensePath}\n`);
 
 /**
  * Rollup Configuration for Tempo
@@ -110,9 +113,9 @@ export default [
 				const ext = path.extname(id);
 				const name = path.basename(id, ext);
 
-				// 🛡️ Redirect licensing core and cryptographic dependencies (jose) to lic/
-				if (id.includes('tempo-plugin/packages/@core') || id.includes('license-stub-pkg') || id.includes('node_modules/jose'))
-					return `lic/${name}.js`;
+				// 🛡️ Redirect licensing core (Premium or No-Op) and cryptographic dependencies (jose) to lic/
+				if (id.includes('tempo-plugin-@core') || id.includes('support.license.ts') || id.includes('node_modules/jose'))
+					return `lic/index.js`;
 
 				// 🛡️ Redirect TypeScript helpers (tslib) to ts/
 				if (id.includes('node_modules/tslib'))
@@ -120,12 +123,23 @@ export default [
 
 				// Map library imports to lib/ for browser-ready granular ESM
 				const rel = path.relative(__dirname, id);
-				if (id.includes('magma/packages/library') || rel.startsWith('../library'))
-					return `lib/${name}.js`;
+				const normalizedRel = rel.replace(/\\/g, '/'); // Ensure forward slashes
+				
+				if (id.includes('magma/packages/library') || rel.startsWith('../library')) {
+					// Extract path context after /library/src/ or similar
+					const match = normalizedRel.match(/library\/(?:src|dist\/common)\/(.*)$/);
+					const modulePath = match ? path.dirname(match[1]) : '.';
+					const dir = modulePath === '.' ? '' : modulePath + '/';
+					return `lib/${dir}${name}.js`;
+				}
 
-				return (rel.startsWith('..') || rel.includes('node_modules'))
-					? `lib/${name}.js`
-					: '[name].js';
+				if (rel.startsWith('..') || rel.includes('node_modules')) {
+					const modulePath = path.dirname(normalizedRel.replace(/^\.\.\//, ''));
+					const dir = modulePath === '.' ? '' : modulePath + '/';
+					return `lib/${dir}${name}.js`;
+				}
+
+				return '[name].js';
 			},
 			plugins: [
 				{

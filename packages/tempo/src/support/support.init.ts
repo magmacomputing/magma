@@ -158,13 +158,14 @@ function setLicense(state: t.Internal.State, key: string) {
 		delete runtime.license.error; // 🚿 Clear previous error state
 
 		const initialJti = runtime.license.jti;
+		const initialKey = runtime.license.key;
 		runtime.license.jws = new Pledge<Internal.LicensingModule>({
 			tag: 'license',
 			onResolve: (m) => {
 				const validator = new m.Validator(runtime.license.key!);
 				validator.verify().then((res: any) => {
-					// 🛡️ Race Condition Guard: Only apply results if the JTI hasn't changed since we started
-					if (runtime.license.jti !== initialJti) return;
+					// 🛡️ Race Condition Guard: Only apply results if identity (JTI + Key) hasn't changed since we started
+					if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
 
 					runtime.license.status = res.status;
 					runtime.license.scopes = res.scopes;
@@ -178,7 +179,7 @@ function setLicense(state: t.Internal.State, key: string) {
 					if ([LICENSE.Revoked, LICENSE.Invalid].includes(res.status))
 						logWarn(state.config, `⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`);
 				}).catch((err: any) => {
-					if (runtime.license.jti !== initialJti) return;
+					if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
 					runtime.license.status = LICENSE.Invalid;
 					runtime.license.error = err?.message || 'Verification rejected';
 					logWarn(state.config, `⚠️ Tempo Licensing: ${runtime.license.error}`);
