@@ -11,7 +11,10 @@ import MagicString from 'magic-string';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.join(__dirname, 'dist');
 // we use "_core" to not confuse npm: name can only contain URL-friendly characters.
-const licensePath = '@magmacomputing/tempo-plugin-_core';
+const licenseReal = '../../../tempo-plugin/packages/@core';
+const licenseStub = './test/support/license-stub-pkg';
+const useStub = !fs.existsSync(path.resolve(__dirname, licenseReal));
+const licensePath = useStub ? licenseStub : licenseReal;
 
 /**
  * Rollup Configuration for Tempo
@@ -108,7 +111,7 @@ export default [
 				const name = path.basename(id, ext);
 
 				// 🛡️ Redirect licensing core and cryptographic dependencies (jose) to lic/
-				if (id.includes('tempo-plugin/packages/@core') || id.includes('node_modules/jose'))
+				if (id.includes('tempo-plugin/packages/@core') || id.includes('license-stub-pkg') || id.includes('node_modules/jose'))
 					return `lic/${name}.js`;
 
 				// 🛡️ Redirect TypeScript helpers (tslib) to ts/

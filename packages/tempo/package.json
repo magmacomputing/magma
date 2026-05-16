@@ -221,7 +221,7 @@
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
     "@magmacomputing/library": "2.10.0",
-    "@magmacomputing/tempo-plugin-_core": "file:../../../tempo-plugin/packages/@core",
+    "@magmacomputing/tempo-plugin-_core": "file:./test/support/license-stub-pkg",
     "@rollup/plugin-alias": "^6.0.0",
     "esbuild": "^0.25.12",
     "javascript-obfuscator": "^5.4.2",

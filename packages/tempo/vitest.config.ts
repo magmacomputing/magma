@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import fs from 'node:fs';
 import { defineConfig } from 'vitest/config';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -8,6 +9,10 @@ const isDist = process.env.TEST_DIST === 'true';
 const polyfill = resolve(__dirname, './bin/temporal-polyfill.ts');
 const ciPrefilterSetup = resolve(__dirname, './test/support/ci.prefilter.setup.ts');
 const consoleSpySetup = resolve(__dirname, './test/support/setup.console-spy.ts');
+
+const licensePath = resolve(__dirname, '../../../tempo-plugin/packages/@core/src/index.ts');
+const licenseStub = resolve(__dirname, './test/support/license-stub-pkg/index.ts');
+const useStub = !fs.existsSync(licensePath);
 
 export default defineConfig({
   plugins: [],
@@ -52,6 +57,7 @@ export default defineConfig({
       { find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/dist/common/$1.js') },
       { find: /^#library$/, replacement: resolve(__dirname, '../library/dist/common.index.js') },
     ] : [
+      { find: /^#tempo\/license$/, replacement: useStub ? licenseStub : licensePath },
       { find: /^#tempo\/core$/, replacement: resolve(__dirname, './src/core.index.ts') },
       { find: /^#tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
       { find: /^#tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/$1') },
