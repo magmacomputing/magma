@@ -65,7 +65,7 @@ const t = new Tempo('01-Jul-2025');
 
 t.term.szn      // → 'Summer'  (northern hemisphere)
 t.term.season
-// → { key: 'Summer', day: 1, month: 6, symbol: 'Snowflake', sphere: 'north' }
+// → { key: 'Summer', day: 1, month: 6, symbol: 'Sun', sphere: 'north' }
 ```
 
 ```ts

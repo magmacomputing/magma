@@ -205,7 +205,7 @@ The object returned by `Tempo.ticker()` (or an instance of the `Ticker` class) i
 | `[Symbol.asyncDispose]` | Standard async cleanup for `await using` blocks. |
 | `[Symbol.asyncIterator]` | Standard async iteration support (for `for await` loops). |
 
-## Reporting & Registry
+## Reporting & Registry {#reporting-registry}
 
 The `Ticker` class maintains a static registry of all currently active Tickers. This is useful for debugging, monitoring, or cleanup checks.
 

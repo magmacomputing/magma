@@ -11,10 +11,14 @@ To demonstrate the power of the Terms engine and the seamless License Key integr
 This extension calculates the exact astronomical season (Equinoxes and Solstices) for any date using the **Jean Meeus polynomial algorithm**. Because it is a true astronomical calculation rather than a fixed calendar date, it precisely determines the exact minute the sun crosses the celestial equator. It is also **hemisphere-aware**: by configuring your Tempo instance with a `sphere` (e.g., `sphere: 'south'`), the plugin accurately flips the Vernal Equinox from Spring to Autumn.
 
 ::: info Meteorological vs Astronomical
-Unlike Tempo's built-in **Meteorological** `season` Term—which rigidly snaps to the 1st day of calendar months—this **Astronomical** plugin calculates the dynamic, true solar boundaries that shift slightly year-over-year.
+Unlike Tempo's built-in **Meteorological** `season` Term — which rigidly snaps to the 1st day of calendar months — this **Astronomical** plugin calculates the dynamic, true solar boundaries that shift slightly year-over-year.
 :::
 
 It introduces the `astro` Term, giving you access to both a short identifier (`t.term.astro`) and a rich metadata object (`t.term.astronomy`):
+
+::: tip Prerequisites
+The following preview assumes that `Tempo` has been initialized with a valid license and the Astro plugin has been successfully registered. See **Applying Your License Key** below for full setup instructions.
+:::
 
 ```typescript
 const t = new Tempo('2026-04-10', { sphere: 'north' });
@@ -58,23 +62,23 @@ If you are running Tempo in a client-side browser environment or prefer explicit
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
+import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
 
 // 1. Initialize the core engine with your license key
 Tempo.init({
-  licenseKey: 'key...'
+  license: 'key...'
 });
 
 // 2. Extend Tempo with the premium plugin
-import { AstroSeasonTerm } from '@magmacomputing/term-plugin-astro'; 
-Tempo.extend(AstroSeasonTerm);
+Tempo.extend(AstroTerm);
 
 // 3. The premium Term is unlocked and ready to use!
 const t = new Tempo('21-Mar-2026');
 
-console.log(t.term.astro);        
+console.log(t.term.astro);
 // → 'Spring'
 
-console.log(t.term.astronomy); 
+console.log(t.term.astronomy);
 // → { key: 'Spring', year: 2026, month: 3, day: 20, hour: 14, minute: 45, ... }
 ```
 

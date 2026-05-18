@@ -3,19 +3,16 @@
  * This is the default no-op implementation for the public repository.
  * For premium builds, this is swapped for the proprietary engine during rollup.
  */
-type CommunityLicenseVerification = {
-	status: 'active';
-	scopes: { community: true };
-	error: null;
-}
 
 export class Validator {
 	constructor(public key: string) { }
-	async verify(): Promise<CommunityLicenseVerification> {
+	async verify() {
 		return {
-			status: 'active', // Default to active for community use
-			scopes: { community: true },
-			error: null
-		};
+			status: 'active' as const,
+			scopes: {} as Record<string, { exp?: number; updated_at?: number }>,
+		}
+	}
+	async syncRevocation(_jwsUrl: string, _currentJti: string): Promise<boolean> {
+		return false; // No revocation checking in community edition
 	}
 }

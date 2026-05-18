@@ -26,7 +26,7 @@
 			"#tempo/plugin/extend/*.js": [ "../src/plugin/extend/*.ts" ],
 			"#tempo/plugin/term/*.js": [ "../src/plugin/term/*.ts" ],
 			"#tempo/term/*": [ "../src/plugin/term/term.*.ts" ],
-			"#tempo/license": [ "../../../../tempo-plugin/packages/@core/src/index.ts" ],
+			"#tempo/license": [ "../src/support/support.license.ts" ],
 			"#tempo/*": [ "../src/*" ]
 		}
 	},

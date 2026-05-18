@@ -88,19 +88,21 @@ const duration = now.until(target); // Returns a complex Duration object
 ```
 
 **Tempo 🚀**
-Tempo understands natural language targets and can easily format the resulting difference to match your needs.
+Tempo understands natural language targets and can format the resulting difference flexibly. `t.until()` and `t.since()` have distinct return types:
 
 ```javascript
 const t = new Tempo();
 
-// Return a precise floating-point number by specifying a unit
-t.until('3pm', 'minutes');      // → 5.046264992345
-t.until('xmas', 'days');        // → 289.58470466349036
+// t.until(target, unit) → number (precise floating-point)
+t.until('afternoon', 'minutes'); // → 302.57749424408334
+t.until('xmas', 'days');         // → 289
 
-// If no unit is provided, it returns a Duration object
-t.until('xmas');                // → { years: 0, months: 9, days: 14, ... }
+// t.until(target)       → Tempo.Duration object (with .iso, .years, .days, … fields)
+t.until('xmas');         // → { iso: "P289DT14H22M9.102S", years: 0, months: 9, days: 14, ... }
 
-// Human-readable 'time ago' string formatting
-t.since('yesterday', 'days');   // → "1d ago"
-t.since('yesterday afternoon'); // → "-P1DT9H32M19.402S" (ISO string format)
+// t.since(target, unit) → human-readable string via Intl.RelativeTimeFormat
+t.since('yesterday', 'days');    // → "1d ago"
+
+// t.since(target)       → ISO 8601 Duration string
+t.since('yesterday afternoon');  // → "-P1DT9H32M19.402S"
 ```
