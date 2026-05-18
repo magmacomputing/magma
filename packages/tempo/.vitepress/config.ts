@@ -46,10 +46,16 @@ export default defineConfig({
           { text: 'Parse Planner', link: '/doc/tempo.planner' },
           { text: 'Regional Parsing (MDY)', link: '/doc/tempo.month-day' },
           { text: 'Smart Formatting', link: '/doc/tempo.format' },
+          { text: 'Layout Patterns', link: '/doc/tempo.layout' }
+        ]
+      },
+      {
+        text: 'Extensions & Plugins',
+        items: [
           { text: 'Modularity', link: '/doc/tempo.modularity' },
-          { text: 'Layout Patterns', link: '/doc/tempo.layout' },
           { text: 'Terms System', link: '/doc/tempo.term' },
-          { text: 'Ticker Plugin', link: '/doc/tempo.ticker' }
+          { text: 'Ticker Plugin', link: '/doc/tempo.ticker' },
+          { text: 'License Keys', link: '/doc/tempo.license' }
         ]
       },
       {

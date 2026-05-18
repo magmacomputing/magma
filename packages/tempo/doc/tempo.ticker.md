@@ -4,7 +4,7 @@
 
 ## Installation
 
-To use the ticker, you can import the module as a side effect or import the `TickerModule` directly. The side-effect import (`import '@magmacomputing/tempo/ticker'`) registers the `Tempo.ticker` method automatically, while importing the `TickerModule` explicitly requires you to call `Tempo.extend(TickerModule)` to register it with the core library:
+To use the Ticker, you can import the module as a side effect or import the `TickerModule` directly. The side-effect import (`import '@magmacomputing/tempo/ticker'`) registers the `Tempo.ticker` method automatically, while importing the `TickerModule` explicitly requires you to call `Tempo.extend(TickerModule)` to register it with the core library:
 
 ```typescript
 // Pattern A: One-line activation (Side effect)
@@ -18,7 +18,7 @@ Tempo.extend(TickerModule);
 ```
 
 ### Direct Access
-If you need to access the [Reporting & Registry](#reporting--registry) API (like `Ticker.active`), you should import the `Ticker` namespace:
+If you need to access the [Reporting & Registry](#reporting-registry) API (like `Ticker.active`), you should import the `Ticker` namespace:
 
 ```typescript
 import { Ticker } from '@magmacomputing/tempo/ticker';
@@ -28,7 +28,7 @@ console.log(Ticker.active);
 
 ## 🚀 Enhancements
 
-The ticker now supports a unified **Options** object, enabling professional resource management and semantic duration-based intervals.
+The Ticker supports a unified **Options** object, enabling professional resource management and semantic duration-based intervals.
 
 ### 1. Semantic Intervals (Duration Objects)
 Instead of raw numeric seconds, you can use `DurationLike` objects for clarity. This is especially powerful for variable-length intervals like **months**.
@@ -80,7 +80,7 @@ await using daily = Tempo.ticker({
 ```
 
 ### 5. Backwards Tickers (Countdowns)
-By providing a **negative** interval, you can create a ticker that moves backwards in time. 
+By providing a **negative** interval, you can create a Ticker that moves backwards in time. 
 
 ```typescript
 // Count down from 10 seconds, moving backwards 1s at a time
@@ -94,7 +94,7 @@ using countdown = Tempo.ticker({ seconds: -1, seed: "00:00:10" }, (t, stop) => {
 
 ### 1. Resource Management (Recommended)
 
-Using the `using` and `await using` keywords ensures that tickers are automatically stopped when they go out of scope.
+Using the `using` and `await using` keywords ensures that Tickers are automatically stopped when they go out of scope.
 
 ```typescript
 // Pattern A: Automatic cleanup for callback-based ticker
@@ -113,7 +113,7 @@ Using the `using` and `await using` keywords ensures that tickers are automatica
 
 ### 2. Manual Control (Programmatic Stop)
 
-If you are not using the `using` or `await using` keywords, or if you need to stop the ticker from outside its own loop (e.g., in a separate event handler), you can manually call the `stop()` method on the ticker object.
+If you are not using the `using` or `await using` keywords, or if you need to stop the Ticker from outside its own loop (e.g., in a separate event handler), you can manually call the `stop()` method on the Ticker object.
 
 ```typescript
 // Pattern A: Stop a callback-based ticker
@@ -149,7 +149,7 @@ ticker.on('stop', (t) => console.log('Ticker stopped at:', t.fmt.weekTime));
 For `'stop'` listeners, the `stop` callback argument is included for signature consistency; however, invoking it after stop has already occurred is a no-op.
 
 ### 4. Manual Pulsing (.pulse)
-In some scenarios, you may want to drive a ticker manually (e.g., from a UI event or a WebSocket message) while still benefiting from the ticker's internal state management and listeners.
+In some scenarios, you may want to drive a Ticker manually (e.g., from a UI event or a WebSocket message) while still benefiting from the Ticker's internal state management and listeners.
 
 ```typescript
 const ticker = Tempo.ticker({ seconds: 1 }); // Still has a 1s duration logic
@@ -157,33 +157,16 @@ const ticker = Tempo.ticker({ seconds: 1 }); // Still has a 1s duration logic
 ticker.pulse(); // Manually advance and notify listeners
 ```
 
-### 5. Reporting & Management
-The `Ticker` class provides a centralized way to monitor all active (non-stopped) tickers. This is essential for debugging and ensuring that resources are properly disposed.
 
-#### Ticker.active
-A static getter that returns an array of snapshots for every live ticker.
-
-```typescript
-import { Ticker } from '@magmacomputing/tempo/ticker';
-
-// Monitor all active tickers
-const monitoring = Ticker.active;
-
-console.log(`There are ${monitoring.length} active tickers.`);
-
-monitoring.forEach(({ ticks, next, interval }) => {
-  console.log(`- Pulsed ${ticks} times. Next at: ${next}. Interval:`, interval);
-});
-```
 
 ## 🧟 Zombie Tickers (Warning)
 
-In a Node.js environment, `Tempo.ticker()` uses background timers (`setTimeout`) to drive its pulses. If you do not explicitly stop a ticker, it becomes a **"Zombie Ticker"** that continues to run indefinitely, even if the variable that created it has gone out of scope.
+In a Node.js environment, `Tempo.ticker()` uses background timers (`setTimeout`) to drive its pulses. If you do not explicitly stop a Ticker, it becomes a **"Zombie Ticker"** that continues to run indefinitely, even if the variable that created it has gone out of scope.
 
 ### The Risks:
-- **Process Hangs**: Node.js will not exit a process if there are active timers. Undisposed tickers are a common cause of "mysterious hangs" at the end of test runs.
-- **Test Inconsistency**: Leaked tickers can continue to fire while subsequent tests are running, leading to flaky assertions and "impossible" state changes.
-- **Memory Leaks**: Each active ticker maintains closures that prevent garbage collection of the `Tempo` instance and its listeners.
+- **Process Hangs**: Node.js will not exit a process if there are active timers. Undisposed Tickers are a common cause of "mysterious hangs" at the end of test runs.
+- **Test Inconsistency**: Leaked Tickers can continue to fire while subsequent tests are running, leading to flaky assertions and "impossible" state changes.
+- **Memory Leaks**: Each active Ticker maintains closures that prevent garbage collection of the `Tempo` instance and its listeners.
 
 ### The Solution:
 Always use the **Disposer Pattern** (`using` or `await using`) or a `try...finally` block to guarantee cleanup:
@@ -217,17 +200,17 @@ The object returned by `Tempo.ticker()` (or an instance of the `Ticker` class) i
 | `on(event, cb)` | Registers a listener for the `'pulse'`, `'stop'`, or `'catch'` events. |
 | `pulse()` | Manually triggers a pulse, advances state, and notifies listeners. Returns the new `Tempo`. |
 | `info` | Read-only getter returning `{ next, ticks, limit, interval, stopped }`. |
-| `stop()` | Stops the ticker, clears active timers, and immediately resolves any pending async iteration Promises. |
+| `stop()` | Stops the Ticker, clears active timers, and immediately resolves any pending async iteration Promises. |
 | `[Symbol.dispose]` | Standard cleanup for `using` blocks. |
 | `[Symbol.asyncDispose]` | Standard async cleanup for `await using` blocks. |
 | `[Symbol.asyncIterator]` | Standard async iteration support (for `for await` loops). |
 
-## 📊 Reporting & Registry
+## Reporting & Registry
 
-The `Ticker` class maintains a static registry of all currently active tickers. This is useful for debugging, monitoring, or cleanup checks.
+The `Ticker` class maintains a static registry of all currently active Tickers. This is useful for debugging, monitoring, or cleanup checks.
 
 ### `Ticker.active`
-A static getter that returns an array of [`Ticker.Snapshot`](#tickersnapshot) objects for all active (non-stopped) tickers.
+A static getter that returns an array of [`Ticker.Snapshot`](#tickersnapshot) objects for all active (non-stopped) Tickers.
 
 ```typescript
 import { Ticker } from '@magmacomputing/tempo/ticker';
@@ -254,14 +237,14 @@ type Snapshot = {
 
 ## 🎯 One-Shot Ticker (Meeting Alerts)
 
-You can use the ticker as a "one-shot" timer for specific events by simply specifying a **seed** value. This is perfect for setting up a single alert (e.g., for a meeting) that cleans itself up immediately after firing.
+You can use the Ticker as a "one-shot" timer for specific events by simply specifying a **seed** value. This is perfect for setting up a single alert (e.g., for a meeting) that cleans itself up immediately after firing.
 
 ::: tip
 **Seed-Only Logic**: Providing a `seed` (as a string or in an options object) without any other duration-based keys (`seconds`, `minutes`, etc.) or a `limit` implies a `limit: 1`. 
 
-Effectively, `Tempo.ticker('Fri 10am')` and `Tempo.ticker({ seed: 'Fri 10am' })` and `Tempo.ticker({ seed: 'Fri 10am', limit: 1 })` are all treated as one-shot tickers.
+Effectively, `Tempo.ticker('Fri 10am')` and `Tempo.ticker({ seed: 'Fri 10am' })` and `Tempo.ticker({ seed: 'Fri 10am', limit: 1 })` are all treated as one-shot Tickers.
 
-**Inclusive Boundaries**: Termination conditions (`limit` and `until`) are **inclusive**. A ticker with `limit: 1` will pulse exactly once before stopping.
+**Inclusive Boundaries**: Termination conditions (`limit` and `until`) are **inclusive**. A Ticker with `limit: 1` will pulse exactly once before stopping.
 :::
 
 ```typescript
@@ -289,12 +272,12 @@ Tempo.ticker({
 :::
 
 ::: warning
-While `limit: 1` handles the stop condition automatically, always remember that if you are using long-running tickers without a limit, you **must** use the [Disposer Pattern](#zombie-tickers-warning) or manual `stop()` to avoid memory leaks and zombie processes.
+While `limit: 1` handles the stop condition automatically, always remember that if you are using long-running Tickers without a limit, you **must** use the [Disposer Pattern](#zombie-tickers-warning) or manual `stop()` to avoid memory leaks and zombie processes.
 :::
 
 ## 🧭 Advanced: Syncing Multiple Clocks
 
-If you need to show multiple timezones on a dashboard, avoid creating multiple tickers. Instead, use a single **Master Ticker** to drive all views. This prevents "drift" between the clocks and is much more efficient.
+If you need to show multiple timezones on a dashboard, avoid creating multiple Tickers. Instead, use a single **Master Ticker** to drive all views. This prevents "drift" between the clocks and is much more efficient.
 
 ### Using Signals (Recommended)
 

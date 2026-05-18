@@ -44,6 +44,16 @@ if (fs.existsSync(LIC_SRC_DIR)) {
   licFiles.forEach(file => {
     fs.copyFileSync(path.join(LIC_SRC_DIR, file), path.join(LIC_DEST_DIR, file));
   });
+} else {
+  console.warn(`\n⚠️  WARNING: External license directory not found: ${LIC_SRC_DIR}`);
+  console.warn(`⚠️  Creating fallback minimal types in ${LIC_DEST_DIR}\n`);
+  if (!fs.existsSync(LIC_DEST_DIR)) fs.mkdirSync(LIC_DEST_DIR, { recursive: true });
+  const fallbackSrc = path.join(DIST_DIR, 'support', 'support.license.d.ts');
+  if (fs.existsSync(fallbackSrc)) {
+    fs.copyFileSync(fallbackSrc, path.join(LIC_DEST_DIR, 'index.d.ts'));
+  } else {
+    fs.writeFileSync(path.join(LIC_DEST_DIR, 'index.d.ts'), 'export {};\n');
+  }
 }
 
 // 4. Walk through all .d.ts files in dist/ to rewrite aliases

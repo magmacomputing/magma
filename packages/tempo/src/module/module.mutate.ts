@@ -1,5 +1,6 @@
 import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
 import { singular } from '#library/string.library.js';
+import { normaliseFractionalDurations } from '#library/temporal.library.js';
 
 import { sym, enums } from '#tempo/support';
 import { defineInterpreterModule, type TempoModule } from '../plugin/plugin.util.js';
@@ -50,7 +51,10 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 			}
 			// 2. Mutation Object
 			else if (isObject(args) && args.constructor === Object) {
-				zdt = Object.entries(args ?? {})
+				const payload = { ...args };												// Clone to avoid mutating the user's object directly
+				normaliseFractionalDurations(payload);
+
+				zdt = Object.entries(payload)
 					.reduce<Temporal.ZonedDateTime>((currZdt, [key, adjust]) => {
 						if (key === 'timeZone' || key === 'calendar') return currZdt;
 

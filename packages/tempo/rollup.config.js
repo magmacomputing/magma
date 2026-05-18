@@ -11,9 +11,13 @@ import MagicString from 'magic-string';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.join(__dirname, 'dist');
 // we use "_core" to not confuse npm: name can only contain URL-friendly characters.
-const licensePremium = process.env.TEMPO_LICENSE_PATH;
+const licensePremium = process.env.TEMPO_LICENSE_PATH ? path.resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
 const licenseDefault = path.resolve(__dirname, './src/support/support.license.ts');
-const isPremiumAvailable = !!(licensePremium && fs.existsSync(licensePremium));
+const isPremiumAvailable = !!(
+	licensePremium &&
+	fs.existsSync(licensePremium) &&
+	fs.existsSync(path.resolve(path.dirname(licensePremium), '../tsconfig.json'))
+);
 const licensePath = isPremiumAvailable ? licensePremium : licenseDefault;
 
 console.log(`\n📦 Building Tempo [${isPremiumAvailable ? '💎 PREMIUM' : '🍃 COMMUNITY'}]`);
@@ -114,7 +118,7 @@ export default [
 				const name = path.basename(id, ext);
 
 				// 🛡️ Redirect licensing core (Premium or No-Op) and cryptographic dependencies (jose) to lic/
-				if (id.includes('tempo-plugin-@core') || id.includes('support.license.ts') || id.includes('node_modules/jose'))
+				if (id.includes('tempo-plugin') || id.includes('support.license.ts') || id.includes('node_modules/jose'))
 					return `lic/index.js`;
 
 				// 🛡️ Redirect TypeScript helpers (tslib) to ts/

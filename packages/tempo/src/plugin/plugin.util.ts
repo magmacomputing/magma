@@ -194,3 +194,20 @@ export function registerPlugin(plugin: any) {
 
 	return plugin;
 }
+
+/**
+ * ## definePremiumPlugin
+ * Helper to register a premium plugin (Module/Extension) and enforce commercial licensing at install time.
+ */
+export function definePremiumPlugin<T extends Plugin<TempoType>>(key: string, plugin: T): T {
+	const originalInstall = plugin.install;
+	plugin.install = function (this: TempoType, t: TempoType) {
+		const rt = getRuntime();
+		if (rt.license.status !== 'active' || !hasOwn(rt.license.scopes, key)) {
+			throw new Error(`[${key}] Premium plugin requires a valid commercial license. Status: ${rt.license.status}`);
+		}
+		return originalInstall.call(this, t);
+	}
+	return registerPlugin(plugin);
+}
+

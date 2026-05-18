@@ -32,7 +32,7 @@ t.set({ '#qtr': 2 }); // Aligns to the start of the 2nd quarter of the current y
 ### C. Structural Mode (Key Shorthand)
 **Used in:** `.set()`.  
 **Pattern:** `{ start: '#namespace', end: '#namespace' }`  
-**Best for:** Snapping a date to the precise boundaries of its current term.
+**Best for:** Snapping a date to the precise boundaries of its current Term.
 
 ```javascript
 t.set({ start: '#qtr' }); // Snaps to the exact start of the current quarter
@@ -49,11 +49,11 @@ Modifiers control the direction and inclusivity of the search.
 | :--- | :--- | :--- |
 | `>` | **Forward (Exclusive)** | Finds the next boundary strictly *after* the current time. |
 | `<` | **Backward (Exclusive)** | Finds the previous boundary strictly *before* the current time. |
-| `>=` | **Forward (Inclusive)** | Returns the current term if it contains the cursor; otherwise, the next. |
-| `<=` | **Backward (Inclusive)** | Returns the current term if it contains the cursor; otherwise, the previous. |
+| `>=` | **Forward (Inclusive)** | Returns the current Term if it contains the cursor; otherwise, the next. |
+| `<=` | **Backward (Inclusive)** | Returns the current Term if it contains the cursor; otherwise, the previous. |
 | `+` | **Relative Future** | Alias for `>`. |
 | `-` | **Relative Past** | Alias for `<`. |
-| `this` | **Identity** | Resolves the term currently containing the cursor. |
+| `this` | **Identity** | Resolves the Term currently containing the cursor. |
 
 ---
 
@@ -71,14 +71,14 @@ When you use a shifter like `>q1`, Tempo uses **Chronological Momentum**. It ign
 
 ## 4. The "Cycle Preservation" Guarantee
 
-One of Tempo's premium features is its ability to maintain your **relative offset** when shifting across terms.
+One of Tempo's premium features is its ability to maintain your **relative offset** when shifting across Terms.
 
 If you are 45% of the way through a **Morning** period and you call `t.add({ '#period': 1 })`, Tempo doesn't just add a fixed number of hours. It:
 1.  Determines your relative percentage/offset within the current Morning.
 2.  Finds the boundaries of the *next* registered period (e.g., Afternoon).
 3.  Calculates the same 45% point within that new period.
 
-This ensures that "shifting by a quarter" or "shifting by a period" feels mathematically correct even when those terms have different durations.
+This ensures that "shifting by a quarter" or "shifting by a period" feels mathematically correct even when those Terms have different durations.
 
 ---
 
@@ -102,6 +102,6 @@ The [Range-Keys](#5-development-constraints) rule does not reserve `-` even thou
 
 ## 6. Best Practices
 
-- **Explicit Spheres**: Always set `sphere: 'north'` or `'south'` in your config if using seasonal terms.
+- **Explicit Spheres**: Always set `sphere: 'north'` or `'south'` in your config if using seasonal Terms.
 - **Method Intent**: Use **String shorthand** for "Jumping" to boundaries and **Object shorthand** for "Shifting" relative to your current time.
 - **Fail-Safe**: Use `catch: true` in your global config to allow shorthand resolution to fail silently (returning a `void` instance) instead of throwing.

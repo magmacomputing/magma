@@ -98,7 +98,7 @@ Tempo looks for the following structure:
 | :--- | :--- | :--- |
 | `options` | `Options \| (() => Options)` | Configuration options merged into global state. |
 | `plugins` | `Plugin \| Plugin[]` | Modular plugin(s) to be extended onto Tempo automatically. |
-| `terms` | `TermPlugin \| TermPlugin[]` | Custom term plugin to be registered. |
+| `terms` | `TermPlugin \| TermPlugin[]` | Custom Term plugin to be registered. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
 | `numbers` | `Record<string, number>` | Custom number-word aliases merged into the NUMBER registry. |
 | `formats` | `Record<string, string>` | Custom format strings to be merged into `Tempo.FORMAT`. |
@@ -197,7 +197,7 @@ const delivery = new Tempo('deadline'); // Parsed using your custom logic, adds 
 
 ### ⚡ 5.2 Deferring Initialization (`mode: 'defer'`)
 
-By default (`mode: 'auto'`), Tempo uses the **Master Guard** to determine if a string can be lazily evaluated. For exceptionally high-volume scenarios where you may be creating thousands of Tempo instances but only using them for calculations (not formats or terms), you can force a standard lazy behavior using `mode: 'defer'`.
+By default (`mode: 'auto'`), Tempo uses the **Master Guard** to determine if a string can be lazily evaluated. For exceptionally high-volume scenarios where you may be creating thousands of Tempo instances but only using them for calculations (not formats or Terms), you can force a standard lazy behavior using `mode: 'defer'`.
 
 When `mode: 'defer'` is set, the registry-discovery logic is deferred until the first time you access a property on `t.fmt` or `t.term`.
 

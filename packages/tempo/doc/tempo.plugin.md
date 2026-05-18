@@ -1,6 +1,6 @@
 # Extending Tempo with Plugin
 
-Tempo is designed with a "lean core" philosophy. Whilst it provides robust date-time manipulation and parsing out of the box, advanced functionality (like reactive tickers or domain-specific business logic) is added through a flexible **Plugin System**.
+Tempo is designed with a "lean core" philosophy. Whilst it provides robust date-time manipulation and parsing out of the box, advanced functionality (like reactive Tickers or domain-specific business logic) is added through a flexible **Plugin System**.
 
 To manually register a plugin, use the static `extend` method. This is typically used for "opt-in" features or when you need to provide specific configuration to a plugin factory.
 
@@ -99,9 +99,8 @@ Tempo.init();                                         // 3. Discover and activat
 const pulse = Tempo.ticker(1); 
 ```
 
-::: info
-**Import Order**: While older versions of Tempo were sensitive to import order, current versions handle sequencing robustly. `Tempo.init()` is automatically called during bootstrap to ensure all discovered plugin are integrated. If you dynamically load plugin later, you can call `Tempo.init()` manually to refresh the registry.
-:::
+> [!NOTE] Import Order
+> While older versions of Tempo were sensitive to import order, current versions handle sequencing robustly. `Tempo.init()` is automatically called during bootstrap to ensure all discovered plugin are integrated. If you dynamically load plugin later, you can call `Tempo.init()` manually to refresh the registry.
 
 ---
 
@@ -153,10 +152,10 @@ This pattern ensures that Tempo remains robust in production environments while 
 ### 6. Term Key/Scope Collisions
 If your plugin registers a **Term** (`key` / optional `scope`), keep both identifiers globally unique.
 
-- Avoid reusing an existing term `key` (e.g., another plugin already uses `qtr`).
+- Avoid reusing an existing Term `key` (e.g., another plugin already uses `qtr`).
 - Avoid reusing an existing `scope` alias (e.g., another plugin already uses `quarter`).
 
-Current behavior is not ideal for collisions: duplicate term keys are ignored, while scope alias resolution is order-dependent and can shadow another term. Treat collisions as unsupported and choose unique names to ensure deterministic behavior.
+Current behavior is not ideal for collisions: duplicate Term keys are ignored, while scope alias resolution is order-dependent and can shadow another Term. Treat collisions as unsupported and choose unique names to ensure deterministic behavior.
 
 ## Advanced Pattern: Stateful Classes & Callable Proxies
 
@@ -247,6 +246,21 @@ import { PluginB } from './plugin.b.js';
 export const MyFeatureModule = defineModule((TempoClass, options) => {
   TempoClass.extend([PluginA, PluginB]);
 });
+```
+
+### Commercial & Premium Plugins
+If you are distributing a commercial plugin that requires a valid Tempo license to run, use the **`definePremiumPlugin`** wrapper. This automatically injects licensing validation into the plugin's `install` lifecycle, guaranteeing that the plugin will only execute if the user has provided a valid, active license key via `Tempo.init()` that grants the requested scope.
+
+```typescript
+// index.ts
+import { defineModule, definePremiumPlugin } from '@magmacomputing/tempo/plugin';
+
+const CoreModule = defineModule((TempoClass, options) => {
+  TempoClass.prototype.myPremiumMethod = function() { ... }
+});
+
+// Wrap the module and specify the required license scope key
+export const MyPremiumModule = definePremiumPlugin('my_premium_scope', CoreModule);
 ```
 
 ---

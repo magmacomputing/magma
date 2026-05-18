@@ -10,9 +10,13 @@ const polyfill = resolve(__dirname, './bin/temporal-polyfill.ts');
 const ciPrefilterSetup = resolve(__dirname, './test/support/ci.prefilter.setup.ts');
 const consoleSpySetup = resolve(__dirname, './test/support/setup.console-spy.ts');
 
-const licensePremium = process.env.TEMPO_LICENSE_PATH;
+const licensePremium = process.env.TEMPO_LICENSE_PATH ? resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
 const licenseDefault = resolve(__dirname, './src/support/support.license.ts');
-const isPremiumAvailable = !!(licensePremium && fs.existsSync(licensePremium));
+const isPremiumAvailable = !!(
+  licensePremium &&
+  fs.existsSync(licensePremium) &&
+  fs.existsSync(resolve(dirname(licensePremium), '../tsconfig.json'))
+);
 
 export default defineConfig({
   plugins: [],

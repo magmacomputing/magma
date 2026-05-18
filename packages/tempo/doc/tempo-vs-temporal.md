@@ -6,7 +6,7 @@ To enhance (not replace) Temporal's strictness, Tempo adds:
 * flexibility (through its parsing engine and output formatting),
 * convenience (through its many getters and methods),
 * configurability (through its dynamic aliases (events, periods)),
-* business logic (through its lazy-loaded plugin system (terms))
+* business logic (through its lazy-loaded plugin system (Terms))
 
 Here is a side-by-side comparison of how you achieve the same outcomes, as well as things Tempo can do that native Temporal cannot easily.
 
@@ -49,39 +49,58 @@ t.fmt.date;                               // Output: "2026-01-24"
 
 ### 3. Business Logic & Complex Terms
 
-Native Temporal deals with standard calendar units (days, months, years). Tempo extends this with business-aware concepts, relative querying, and rich getters.
+Native Temporal deals strictly with standard calendar units (days, months, years). If you need to map a date to domain-specific business logic (like a fiscal quarter or a meteorological season), you have to write and maintain your own math utilities.
 
 **Native Temporal 🐢**
 ```javascript
 const date = Temporal.Now.plainDateISO();
-// To find if it's a weekend, you need:
-const isWeekend = date.dayOfWeek === 6 || date.dayOfWeek === 7;
 
-// To find the fiscal/calendar quarter... write your own math logic
+// To find the fiscal/calendar quarter... 
+const month = date.month;
+const fiscalQuarter = `Q${Math.ceil(month / 3)}`; // Manual math
+
+// What if your fiscal year starts in July? Or you need meteorological seasons?
+// Write more complex utility functions and import them everywhere.
 ```
 
 **Tempo 🚀**
-This is a perfect example of where Tempo adds business logic (something that Temporal does not do).
-To add a 'term' that defines 'isWeekend' to Tempo, you would write a plugin that defines the term.  
-From that point, the plugin is available to new Tempo instances.
+Tempo solves this elegantly using the **Terms** plugin system. Terms are lazy-loaded plugins that evaluate the current date against semantic boundaries without adding memory bloat.
 
-See the section on [plugin](tempo.term.md) for more information.
-
-```typescript
+```javascript
 const t = new Tempo();
-const isWeekend = t.term.isWeekend;             // through plugin
 
-// Built-in complex terms via plugin
-t.term.qtr; // returns calculated 'fiscal quarter' based on current instance (date and hemisphere) e.g., 'Q1'
-t.term.szn; // returns calculated 'meteorological season' based on current instance (date and hemisphere) e.g., 'Summer'
+// Built-in complex Terms via the standard plugin
+t.term.qtr; // → 'Q1' (Calculates fiscal quarter)
+t.term.szn; // → 'Summer' (Calculates meteorological season, respecting hemisphere)
+```
 
-// Time since/until (native Temporal only returns Duration objects, not strings)
+For more information on adding your own business logic, see the [Terms Guide](tempo.term.md).
 
-t.until('3pm','minutes');       // 5.046264992345
+### 4. Relative Time & Duration Strings
 
-t.until('xmas', 'days');        // "289.58470466349036"
-t.until('xmas');                // if no 'unit' provided, then duration object "{years:0, months:9, ... }"
+Calculating the difference between two dates in native Temporal is mathematically sound, but it strictly returns a `Temporal.Duration` object. Tempo gives you the flexibility to return a `Duration` object, a precise floating-point number, or a human-readable string.
 
-t.since('yesterday', 'days');   // unit-argument determines granularity "1d ago"
-t.since('yesterday afternoon'); // if no 'unit' provided, then duration string "-P1DT9H32M19.402536059S"
+**Native Temporal 🐢**
+```javascript
+const now = Temporal.Now.plainDateTimeISO();
+const target = Temporal.PlainDateTime.from('2026-12-25T00:00:00');
+const duration = now.until(target); // Returns a complex Duration object
+```
+
+**Tempo 🚀**
+Tempo understands natural language targets and can easily format the resulting difference to match your needs.
+
+```javascript
+const t = new Tempo();
+
+// Return a precise floating-point number by specifying a unit
+t.until('3pm', 'minutes');      // → 5.046264992345
+t.until('xmas', 'days');        // → 289.58470466349036
+
+// If no unit is provided, it returns a Duration object
+t.until('xmas');                // → { years: 0, months: 9, days: 14, ... }
+
+// Human-readable 'time ago' string formatting
+t.since('yesterday', 'days');   // → "1d ago"
+t.since('yesterday afternoon'); // → "-P1DT9H32M19.402S" (ISO string format)
 ```

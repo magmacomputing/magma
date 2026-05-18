@@ -116,7 +116,10 @@
       "development": "./src/module/module.index.ts",
       "default": "./dist/module/module.index.js"
     },
-    "#tempo/license": "./src/support/support.license.ts",
+    "#tempo/license": {
+      "development": "./src/support/support.license.ts",
+      "default": "./dist/support/support.license.js"
+    },
     "#tempo/*.js": {
       "development": "./src/*.ts",
       "default": "./dist/*.js"
