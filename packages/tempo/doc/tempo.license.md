@@ -82,6 +82,14 @@ console.log(t.term.astronomy);
 // → { key: 'Spring', year: 2026, month: 3, day: 20, hour: 14, minute: 45, ... }
 ```
 
+::: tip ESM Hoisting & Registration Order
+In standard JavaScript (ESM) environments, `import` statements are hoisted and executed before any regular code. 
+
+Because of this, the plugin's automatic self-registration runs *before* your synchronous `Tempo.init({ license: '...' })` call. Since `Tempo.init()` resets the active registry, you **must explicitly call `Tempo.extend(AstroTerm)` after initialization** (as shown in Step 2 above) to re-register the plugin into the licensed registry.
+
+Alternatively, you can initialize Tempo in a separate entry/bootstrap file (e.g., `bootstrap.ts`) before loading the rest of your application.
+:::
+
 ## 🤝 Commercialize Your Own Plugin
 
 Are you a developer who has built an incredibly useful, domain-specific Tempo plugin (e.g., medical billing cycles, legal discovery windows, complex religious calendars)? 
