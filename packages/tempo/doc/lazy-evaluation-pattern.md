@@ -62,6 +62,6 @@ As of **v2.1.2**, Tempo uses a **Proxy-Delegator** that combines the security of
 1. **Lazy by Default**: Properties are only evaluated when accessed, keeping the constructor near-instant.
 2. **Memoized Evaluation**: Once accessed (e.g., `t.term.quarter`), the result is "baked" into the instance using `Object.defineProperty`.
 3. **$O(1)$ Performance**: Every access *after* the first is a direct property lookup—no Proxy traps, no prototype traversal.
-4. **Transparent Discovery**: Because properties are enumerable, `console.log(t.term)` or `JSON.stringify` will trigger the evaluation of all registered terms at once, providing a perfect "snapshot" of the instance state.
+4. **Transparent Discovery**: Because properties are enumerable, `console.log(t.term)` or `JSON.stringify` will trigger the evaluation of all registered Terms at once, providing a perfect "snapshot" of the instance state.
 
 To prevent diagnostic noise during these full-evaluation events, initialize Tempo with **`silent: true`**.

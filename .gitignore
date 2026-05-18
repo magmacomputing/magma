@@ -49,3 +49,10 @@ Thumbs.db
 **/.vitepress/cache/
 **/.vitepress/dist/
 **/doc/api/
+
+# Secrets and credentials
+.env
+.env.*
+.npmrc.local
+.npmrc
+!.npmrc

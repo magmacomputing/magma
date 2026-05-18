@@ -5,7 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.10.0] - 2026-05-11
+
+### Added
+- **Licensing Architecture Preparation**: Initial work to support licensed plugins and features.
+
+### Changed
+- **Term Collision Enforcement**: Term plugin registration now throws a fatal error on naming collisions (key/scope) to prevent silent configuration failures.
+
+## [2.9.3] - 2026-05-11
+
+### Added
+- **Fractional Resolution**: Numeric inputs now support fractional components with nanosecond precision using BigInt math.
+- **Hardened AliasContext**: Improved chainable context for functional aliases with full API parity.
+- **Epoch Support**: Enhanced detection for 9-10 digit Epoch timestamps.
+
+### Fixed
+- **Mutation Safety**: Eliminated side-effects on global configuration during parsing.
+- **Normalizer Memory**: Fixed state leakage in alias resolution.
 
 ## [2.8.0] - 2026-04-30
 

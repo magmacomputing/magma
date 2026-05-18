@@ -20,7 +20,7 @@ p.resolve('Success!');
 const result = await p.promise;
 
 // Note: resolve/reject are idempotent. Calling them on an already-settled 
-// pledge is safe; it will log a warning but won't change the state.
+// `Pledge` is safe; it will log a warning but won't change the state.
 ```
 
 ## 2. Then-ability

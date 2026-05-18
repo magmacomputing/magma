@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   
+## [2.10.0] - 2026-05-11
+
+### Added
+- **Licensing Architecture**: Implemented a standalone "No-Op" licensing engine (`support.license.ts`) in the public core. This ensures the repository is 100% buildable and testable by the community without private dependencies.
+- **Automatic Premium Injection**: Optimized the build pipeline (Rollup/Vitest) to automatically detect and inject the proprietary licensing engine from a side-by-side repository during official builds.
+- **Portable Encoding**: Migrated `base64Encode` to the shared library for universal, environment-agnostic token handling.
+
+### Changed
+- **Hardened Licensing Resolution**: Updated the term resolution pipeline with a dual-identity race-condition guard (JTI + Key) and a late-binding resolution guard to securely handle `Pending` to `Revoked` state transitions.
+- **Decoupled CI Resolution**: Eliminated the need for private registries or stubs in GitHub Actions by utilizing the internal No-Op engine for standard test runs.
+- **Term Collision Enforcement**: Term plugin registration now throws a fatal error on naming collisions (key/scope) to prevent silent configuration failures.
+
 ## [2.9.3] - 2026-05-11
 
 ### Added

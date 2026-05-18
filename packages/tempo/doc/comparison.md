@@ -8,25 +8,25 @@ If you are choosing a date library today, you are likely looking at **Day.js**, 
 
 ## At a Glance
 
-| Feature | Tempo 💎 | Day.js / Moment | Luxon | date-fns |
-| :--- | :--- | :--- | :--- | :--- |
-| **Foundation** | **Native Temporal** | Legacy `Date` | Legacy `Intl` + `Date` | Legacy `Date` |
-| **Precision** | **Nanoseconds** | Milliseconds | Milliseconds | Milliseconds |
-| **Parsing** | **Human-Centric** | Strict / Plugin | Strict | Modular / Strict |
-| **Business Logic** | **Terms System** | Manual Math | Manual Math | Manual Math |
-| **Time Zones** | **First-Class** | Plugin-based | Built-in | Separate Lib |
-| **Future-Proof** | **100% (Native)** | Deprecated/Legacy | Legacy Bridge | Legacy Bridge |
+| Feature | Tempo 💎 | Raw Temporal API | Day.js / Moment | Luxon | date-fns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Foundation** | **Native Temporal** | Native Temporal | Legacy `Date` | Legacy `Intl` + `Date` | Legacy `Date` |
+| **Precision** | **Nanoseconds** | Nanoseconds | Milliseconds | Milliseconds | Milliseconds |
+| **Parsing** | **Human-Centric** | Strict ISO Only | Strict / Plugin | Strict | Modular / Strict |
+| **Business Logic** | **Terms System** | Manual Math | Manual Math | Manual Math | Manual Math |
+| **Time Zones** | **First-Class** | First-Class | Plugin-based | Built-in | Separate Lib |
+| **Future-Proof** | **100% (Native)** | 100% (Native) | Deprecated/Legacy | Legacy Bridge | Legacy Bridge |
 
 ---
 
 ## 💎 Why Tempo Wins
 
 ### 1. The "Terms" Engine (Business Intelligence)
-Most libraries stop at "adding 2 days." Tempo introduces the **Terms** system, allowing you to encode domain-specific logic (Fiscal Quarters, Meteorological Seasons, Academic Terms, Zodiac Signs) directly into the tempo `term` object. 
+Most libraries stop at "adding 2 days." Tempo introduces the **Terms** system, allowing you to encode domain-specific logic (Fiscal Quarters, Meteorological Seasons, Academic terms, Zodiac Signs) directly into the tempo `term` object. 
 > *Competition:* You have to write custom utility functions and import them everywhere.
 
 ### 2. Human-Centric Parsing
-Day.js and Luxon are quite strict. If your string isn't in exactly the right format, they fail. Tempo’s **Snippet & Layout** engine is designed to be "forgiving" and human-centric, handling relative dates like "next Friday" or "Christmas" out of the box.
+Day.js and Luxon are quite strict. If your string isn't in exactly the right format, they fail. Tempo’s **Snippet & Layout** engine is designed to be forgiving, extensible, and human-centric, handling relative dates like `"next Friday"` or `"Christmas"` out of the box.
 > *Competition:* Often requires an external library like `Chrono` or complex regex boilerplate.
 
 ### 3. Nanosecond Precision

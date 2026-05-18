@@ -17,7 +17,7 @@ Returns the collection of current *global* configuration settings that act as th
 Returns the collection of *initial*, out-of-the-box defaults that `Tempo` ships with, unaffected by any modifications made via [Global Discovery](../README.md#global-discovery) or [`Tempo.init()`](./tempo.config.md).
 
 ### `Tempo.terms`
-Returns an array of all currently registered term plugins. This is useful to verify which plugins have been loaded via [`Tempo.extend()`](./tempo.plugin.md).
+Returns an array of all currently registered Term plugins. This is useful to verify which plugins have been loaded via [`Tempo.extend()`](./tempo.plugin.md).
 
 ### `Tempo.properties`
 Returns an array of the available static getters on the `Tempo` class.
@@ -45,10 +45,10 @@ Because `Tempo` is chainable (e.g., `new Tempo('xmas').set({ period: 'afternoon'
 *   `anchor`: The **active reference point** used for this specific match. This provides a "breadcrumb" trail during complex parses where the anchor might shift as components are resolved.
 
 ### `this.parse.anchor`
-Returns the **initial reference point** used for the current parsing operation. This is the baseline "Now" against which relative terms (like `next Monday` or `ago`) are calculated.
+Returns the **initial reference point** used for the current parsing operation. This is the baseline "Now" against which relative Terms (like `next Monday` or `ago`) are calculated.
 
 ### `this.term`
-Returns a collection containing the evaluated results of all registered term plugins for this specific instance.
+Returns a collection containing the evaluated results of all registered Term plugins for this specific instance.
 
 ### `this.fmt`
 Returns a collection containing the pre-calculated string outputs for all currently registered formatting codes.

@@ -24,12 +24,6 @@
       ],
       "#server/*": [
         "./src/server/*"
-      ],
-      "#tempo": [
-        "../tempo/src/tempo.index.ts"
-      ],
-      "#tempo/*": [
-        "../tempo/src/*"
       ]
     }
   },

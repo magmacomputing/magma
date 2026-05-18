@@ -31,8 +31,8 @@ import '@magmacomputing/tempo/ticker';
 ## 🗓️ Term Logic Refactor
 The way Terms (Quarters, Seasons, Zodiacs, etc.) are handled has been unified.
 
-- **v1.x:** Some term properties were ad-hoc on the instance.
-- **v2.x:** All term logic is centralized under the `.term` property or accessible via the `#` shorthand in `.set()` and `.add()`.
+- **v1.x:** Some Term properties were ad-hoc on the instance.
+- **v2.x:** All Term logic is centralized under the `.term` property or accessible via the `#` shorthand in `.set()` and `.add()`.
 
 Example of new syntax:
 ```javascript
@@ -88,7 +88,7 @@ As Tempo grows, it has become much more efficient for our developers to logicall
 
 ## 🔁 Migrating from version 2.6.0
 
-Season term scope output has been simplified.
+Season Term scope output has been simplified.
 
 **Action Required**:
 1.  If you previously relied on the Chinese-specific object attached to `term.season` scope output, remove that dependency.

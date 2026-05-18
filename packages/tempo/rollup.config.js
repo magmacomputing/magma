@@ -2,11 +2,26 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+import alias from '@rollup/plugin-alias';
 import resolve from '@rollup/plugin-node-resolve';
+import esbuild from 'rollup-plugin-esbuild';
+import JavaScriptObfuscator from 'javascript-obfuscator';
 import MagicString from 'magic-string';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.join(__dirname, 'dist');
+// we use "_core" to not confuse npm: name can only contain URL-friendly characters.
+const licensePremium = process.env.TEMPO_LICENSE_PATH ? path.resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
+const licenseDefault = path.resolve(__dirname, './src/support/support.license.ts');
+const isPremiumAvailable = !!(
+	licensePremium &&
+	fs.existsSync(licensePremium) &&
+	fs.existsSync(path.resolve(path.dirname(licensePremium), '../tsconfig.json'))
+);
+const licensePath = isPremiumAvailable ? licensePremium : licenseDefault;
+
+console.log(`\n📦 Building Tempo [${isPremiumAvailable ? '💎 PREMIUM' : '🍃 COMMUNITY'}]`);
+if (isPremiumAvailable) console.log(`🛡️  Engine: ${licensePath}\n`);
 
 /**
  * Rollup Configuration for Tempo
@@ -35,18 +50,44 @@ function getFiles(dir, suffix = '.js') {
 	return files;
 }
 
-// Generate a map of entry points from all files in dist (after tsc has run)
+// Generate a map of entry points, EXCLUDING the license module because we build it separately
 const entryPoints = Object.fromEntries(
-	getFiles(distPath).map(file => [
-		path.relative(distPath, file).replace(/\.js$/, ''),
-		file
-	])
+	getFiles(distPath)
+		.map(file => [path.relative(distPath, file).replace(/\.js$/, ''), file])
+		.filter(([key]) => key !== 'support/support.license')
 );
 
-// Force inclusion of the full library for testing/distribution parity
-// We resolve this relative to this config file's directory
-
 export default [
+	// 1. 🛡️ LICENSE MONOLITH
+	// Bundles 'jose' and the license logic into a single heavily obfuscated file
+	{
+		input: licensePath,
+		output: {
+			file: 'dist/support/support.license.js', // Overwrites the tsc output stealthily
+			format: 'es',
+			sourcemap: false
+		},
+		external: ['@js-temporal/polyfill'],
+		plugins: [
+			resolve({ extensions: ['.js', '.ts'], moduleDirectories: ['node_modules'] }),
+			esbuild({ target: 'esnext', minify: false }),
+			{
+				name: 'obfuscator',
+				renderChunk(code) {
+					return {
+						code: JavaScriptObfuscator.obfuscate(code, {
+							compact: true,
+							identifierNamesGenerator: 'mangled',
+							unicodeEscapeSequence: false
+						}).getObfuscatedCode(),
+						map: null
+					}
+				}
+			}
+		]
+	},
+
+	// 2. 🌐 GLOBAL IIFE BUNDLE
 	{
 		input: path.join(distPath, 'tempo.entry.js'),
 		output: [
@@ -57,6 +98,7 @@ export default [
 				exports: 'named',
 				sourcemap: false,
 				indent: '\t',
+				inlineDynamicImports: true,
 				globals: {
 					'@js-temporal/polyfill': 'Temporal'
 				}
@@ -66,18 +108,28 @@ export default [
 				format: 'es',
 				sourcemap: false,
 				indent: '\t',
+				inlineDynamicImports: true,
 			}
 		],
 		external: ['@js-temporal/polyfill'],
 		plugins: [
-			resolve({ extensions: ['.js'] }),
-			indentFix()
+			alias({
+				entries: [
+					// Pull in the already-obfuscated monolith!
+					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/support/support.license.js') }
+				]
+			}),
+			resolve({ extensions: ['.js', '.ts'] }),
+			esbuild({ target: 'esnext', minify: false })
 		],
 	},
+
+	// 3. 🧩 GRANULAR ESM
 	{
 		input: entryPoints,
-		// Keep dependencies external for granular distribution
-		external: ['@js-temporal/polyfill'],
+		// Keep dependencies external. Marking #tempo/license as external leaves the import statement intact
+		// so Node.js will resolve it naturally at runtime via package.json imports!
+		external: ['@js-temporal/polyfill', '#tempo/license'],
 		output: {
 			dir: 'dist',
 			format: 'es',
@@ -85,23 +137,45 @@ export default [
 			preserveModulesRoot: distPath,
 			sourcemap: false,
 			indent: '\t',
-			// Map library imports to lib/ for browser-ready granular ESM
 			entryFileNames: (chunkInfo) => {
-				if (!chunkInfo.facadeModuleId) return '[name].js';
-				const rel = path.relative(__dirname, chunkInfo.facadeModuleId);
-				return (rel.startsWith('..') || rel.includes('node_modules'))
-					? 'lib/' + path.basename(chunkInfo.facadeModuleId, '.js') + '.js'
-					: '[name].js';
+				const id = chunkInfo.facadeModuleId;
+				if (!id) return '[name].js';
+
+				const ext = path.extname(id);
+				const name = path.basename(id, ext);
+
+				// 🛡️ Redirect TypeScript helpers (tslib) to ts/
+				if (id.includes('node_modules/tslib'))
+					return `ts/${name}.js`;
+
+				// Map library imports to lib/ for browser-ready granular ESM
+				const rel = path.relative(__dirname, id);
+				const normalizedRel = rel.replace(/\\/g, '/'); // Ensure forward slashes
+				
+				if (id.includes('magma/packages/library') || rel.startsWith('../library')) {
+					const match = normalizedRel.match(/library\/(?:src|dist\/common)\/(.*)$/);
+					const modulePath = match ? path.dirname(match[1]) : '.';
+					const dir = modulePath === '.' ? '' : modulePath + '/';
+					return `lib/${dir}${name}.js`;
+				}
+
+				if (rel.startsWith('..') || rel.includes('node_modules')) {
+					const sanitized = normalizedRel.replace(/^(\.\.\/)+/, '');
+					const modulePath = path.dirname(sanitized);
+					const dir = modulePath === '.' ? '' : modulePath + '/';
+					return `lib/${dir}${name}.js`;
+				}
+
+				return '[name].js';
 			}
 		},
 		plugins: [
 			// We DO want to resolve @magmacomputing/library and bundle it into lib/ 
-			// because it's a workspace sibling and part of our distribution logic.
-			// But we EXCLUDE tslib (above) as it's a standard external dependency.
-			resolve({ 
-				extensions: ['.js'],
-				moduleDirectories: ['node_modules'] 
+			resolve({
+				extensions: ['.js', '.ts'],
+				moduleDirectories: ['node_modules']
 			}),
+			esbuild({ target: 'esnext', minify: false }),
 			indentFix()
 		],
 	}

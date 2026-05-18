@@ -23,6 +23,7 @@ export {
 	CONFIG,
 	PARSE,
 	MONTH_DAY,
+	LICENSE,
 	NumericPattern
 } from './support.enum.js';
 
