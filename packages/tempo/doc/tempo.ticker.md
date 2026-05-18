@@ -159,7 +159,7 @@ ticker.pulse(); // Manually advance and notify listeners
 
 
 
-## 🧟 Zombie Tickers (Warning)
+## 🧟 Zombie Tickers (Warning) {#zombie-tickers-warning}
 
 In a Node.js environment, `Tempo.ticker()` uses background timers (`setTimeout`) to drive its pulses. If you do not explicitly stop a Ticker, it becomes a **"Zombie Ticker"** that continues to run indefinitely, even if the variable that created it has gone out of scope.
 

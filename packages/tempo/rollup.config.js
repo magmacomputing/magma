@@ -160,7 +160,8 @@ export default [
 				}
 
 				if (rel.startsWith('..') || rel.includes('node_modules')) {
-					const modulePath = path.dirname(normalizedRel.replace(/^\.\.\//, ''));
+					const sanitized = normalizedRel.replace(/^(\.\.\/)+/, '');
+					const modulePath = path.dirname(sanitized);
 					const dir = modulePath === '.' ? '' : modulePath + '/';
 					return `lib/${dir}${name}.js`;
 				}
