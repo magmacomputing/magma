@@ -206,7 +206,7 @@
     "bare": "tsx --conditions=development -i --harmony-temporal",
     "core": "cross-env TEMPO_LITE=true tsx --conditions=development -i --harmony-temporal --import ./bin/core.ts",
     "parse": "cross-env TEMPO_LITE=true tsx --conditions=development -i --harmony-temporal --import ./bin/parse.ts",
-    "build": "npm run clean && tsc -b && npm run build:bundle && npm run build:resolve && if [ ! -f dist/lic/index.js ]; then echo '🚨 ERROR: dist/lic/index.js is missing from dist!'; exit 1; fi",
+    "build": "npm run clean && tsc -b && npm run build:bundle && npm run build:resolve && if [ ! -f dist/support/support.license.js ]; then echo '🚨 ERROR: dist/support/support.license.js is missing from dist!'; exit 1; fi",
     "build:bundle": "rollup -c",
     "build:resolve": "tsx bin/resolve-types.ts",
     "clean": "rm -rf dist && (tsc -b --clean || true)",

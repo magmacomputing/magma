@@ -4,7 +4,6 @@ import { getRuntime, resetRuntimeForTesting } from '#tempo/support/support.runti
 import { base64Encode } from '#library';
 
 // 🛡️ Hoist the license module mock to module scope for Vitest
-// We mock both the source alias and the resolved distribution path to cover both test modes.
 vi.mock('#tempo/license', () => {
 	const verify = vi.fn().mockResolvedValue({
 		status: 'active',
@@ -14,17 +13,7 @@ vi.mock('#tempo/license', () => {
 	return { Validator };
 });
 
-vi.mock('../../dist/lic/index.js', () => {
-	const verify = vi.fn().mockResolvedValue({
-		status: 'active',
-		scopes: { astro: {} }
-	});
-	const Validator = vi.fn().mockImplementation(() => ({ verify }));
-	return { Validator };
-});
-
-const isDist = process.env.TEST_DIST === 'true';
-const licenseModule = isDist ? '../../dist/lic/index.js' : '#tempo/license';
+const licenseModule = '#tempo/license';
 
 describe('Tempo Licensing Strategy', () => {
 	beforeEach(() => {

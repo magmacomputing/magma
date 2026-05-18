@@ -50,18 +50,44 @@ function getFiles(dir, suffix = '.js') {
 	return files;
 }
 
-// Generate a map of entry points from all files in dist (after tsc has run)
+// Generate a map of entry points, EXCLUDING the license module because we build it separately
 const entryPoints = Object.fromEntries(
-	getFiles(distPath).map(file => [
-		path.relative(distPath, file).replace(/\.js$/, ''),
-		file
-	])
+	getFiles(distPath)
+		.map(file => [path.relative(distPath, file).replace(/\.js$/, ''), file])
+		.filter(([key]) => key !== 'support/support.license')
 );
 
-// Force inclusion of the full library for testing/distribution parity
-// We resolve this relative to this config file's directory
-
 export default [
+	// 1. 🛡️ LICENSE MONOLITH
+	// Bundles 'jose' and the license logic into a single heavily obfuscated file
+	{
+		input: licensePath,
+		output: {
+			file: 'dist/support/support.license.js', // Overwrites the tsc output stealthily
+			format: 'es',
+			sourcemap: false
+		},
+		external: ['@js-temporal/polyfill'],
+		plugins: [
+			resolve({ extensions: ['.js', '.ts'], moduleDirectories: ['node_modules'] }),
+			esbuild({ target: 'esnext', minify: false }),
+			{
+				name: 'obfuscator',
+				renderChunk(code) {
+					return {
+						code: JavaScriptObfuscator.obfuscate(code, {
+							compact: true,
+							identifierNamesGenerator: 'mangled',
+							unicodeEscapeSequence: false
+						}).getObfuscatedCode(),
+						map: null
+					}
+				}
+			}
+		]
+	},
+
+	// 2. 🌐 GLOBAL IIFE BUNDLE
 	{
 		input: path.join(distPath, 'tempo.entry.js'),
 		output: [
@@ -89,20 +115,21 @@ export default [
 		plugins: [
 			alias({
 				entries: [
-					{ find: '#tempo/license', replacement: licensePath }
+					// Pull in the already-obfuscated monolith!
+					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/support/support.license.js') }
 				]
 			}),
 			resolve({ extensions: ['.js', '.ts'] }),
-			esbuild({
-				target: 'esnext',
-				minify: false,
-			})
+			esbuild({ target: 'esnext', minify: false })
 		],
 	},
+
+	// 3. 🧩 GRANULAR ESM
 	{
 		input: entryPoints,
-		// Keep dependencies external for granular distribution
-		external: ['@js-temporal/polyfill'],
+		// Keep dependencies external. Marking #tempo/license as external leaves the import statement intact
+		// so Node.js will resolve it naturally at runtime via package.json imports!
+		external: ['@js-temporal/polyfill', '#tempo/license'],
 		output: {
 			dir: 'dist',
 			format: 'es',
@@ -117,10 +144,6 @@ export default [
 				const ext = path.extname(id);
 				const name = path.basename(id, ext);
 
-				// 🛡️ Redirect licensing core (Premium or No-Op) and cryptographic dependencies (jose) to lic/
-				if (id.includes('tempo-plugin') || id.includes('support.license.ts') || id.includes('node_modules/jose'))
-					return `lic/index.js`;
-
 				// 🛡️ Redirect TypeScript helpers (tslib) to ts/
 				if (id.includes('node_modules/tslib'))
 					return `ts/${name}.js`;
@@ -130,7 +153,6 @@ export default [
 				const normalizedRel = rel.replace(/\\/g, '/'); // Ensure forward slashes
 				
 				if (id.includes('magma/packages/library') || rel.startsWith('../library')) {
-					// Extract path context after /library/src/ or similar
 					const match = normalizedRel.match(/library\/(?:src|dist\/common)\/(.*)$/);
 					const modulePath = match ? path.dirname(match[1]) : '.';
 					const dir = modulePath === '.' ? '' : modulePath + '/';
@@ -144,42 +166,15 @@ export default [
 				}
 
 				return '[name].js';
-			},
-			plugins: [
-				{
-					name: 'obfuscator',
-					renderChunk(code, chunk) {
-						if (chunk.fileName === 'lic/index.js') {
-							return {
-								code: JavaScriptObfuscator.obfuscate(code, {
-									compact: true,
-									identifierNamesGenerator: 'mangled',
-									unicodeEscapeSequence: false
-								}).getObfuscatedCode(),
-								map: null
-							}
-						}
-					}
-				}
-			]
+			}
 		},
 		plugins: [
-			alias({
-				entries: [
-					{ find: '#tempo/license', replacement: licensePath }
-				]
-			}),
 			// We DO want to resolve @magmacomputing/library and bundle it into lib/ 
-			// because it's a workspace sibling and part of our distribution logic.
-			// But we EXCLUDE tslib (above) as it's a standard external dependency.
 			resolve({
 				extensions: ['.js', '.ts'],
 				moduleDirectories: ['node_modules']
 			}),
-			esbuild({
-				target: 'esnext',
-				minify: false,
-			}),
+			esbuild({ target: 'esnext', minify: false }),
 			indentFix()
 		],
 	}
