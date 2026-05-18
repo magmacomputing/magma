@@ -6,18 +6,21 @@
  *
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
+import type { Pledge } from '#library/pledge.class.js';
+import type { Logify } from '#library/logify.class.js';
+import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded } from '#library/type.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
-import type { Logify } from '#library/logify.class.js';
 import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/support.default.js';
-import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded } from '#library/type.library.js';
-import type { TermPlugin } from '#tempo/plugin/term/term.type.js';
-import type { TempoPlugin } from '#tempo/plugin/plugin.util.js';
 import type { Token } from '#tempo/support/support.symbol.js';
-import type { Tempo } from '#tempo/tempo.class.js';
+
 import type { AliasEngine } from './engine/engine.alias.js';
 import type { PatternCompiler } from './engine/engine.pattern.js';
+
+import type { TermPlugin } from '#tempo/plugin/term/term.type.js';
+import type { TempoPlugin } from '#tempo/plugin/plugin.util.js';
+import type { Tempo } from '#tempo/tempo.class.js';
 
 declare global {
 	interface globalThis {
@@ -237,6 +240,7 @@ export namespace Internal {
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
+		/** license key for premium features */									license?: string | undefined;
 	}
 
 	/** high-precision precision to measure timestamps (ms | us) */
@@ -302,7 +306,8 @@ export namespace Internal {
 	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "layoutOrder" | "preFilter" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
 
 	/** Instance configuration derived from supply, storage, and discovery. */
-	export interface Config extends Required<Omit<OptionsKeep, "formats">> {
+	export interface Config extends Required<Omit<OptionsKeep, "formats" | "license">> {
+		/** license key for premium features */									license?: string;
 		/** configuration (global | local) */										scope: 'global' | 'local';
 		/** pre-configured format strings */										formats: FormatRegistry;
 		/** index-signature */																	readonly [key: string]: any;
@@ -322,6 +327,44 @@ export namespace Internal {
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: TempoPlugin | TempoPlugin[];
+	}
+
+	export interface LicenseScope {
+		exp?: number;
+		updated_at?: number;
+	}
+
+	/** structure of the verified license reckoning */
+	export interface ValidationResult {
+		status: enums.LICENSE;
+		scopes: Record<string, Internal.LicenseScope>;
+		expires?: number | string;
+		issuedAt?: number;
+		issuer?: string;
+		jti?: string;
+		error?: string;
+	}
+
+	/** structure of the dynamic #tempo/license chunk */
+	export interface LicensingModule {
+		Validator: new (jwt: string) => {
+			verify(): Promise<ValidationResult>;
+			syncRevocation(jwsUrl: string, currentJti: string): Promise<boolean>;
+		};
+	}
+
+	export interface LicenseState {
+		status: enums.LICENSE;
+		key?: string;
+		scopes: Record<string, Internal.LicenseScope>;
+		jws?: Pledge<Internal.LicensingModule>;
+		expires?: number | string;
+		issuedAt?: number;
+		issuer?: string;
+		subject?: string;
+		audience?: string;
+		jti?: string;
+		error?: string;
 	}
 }
 

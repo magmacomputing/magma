@@ -50,9 +50,10 @@ export function getStorage<T>(key?: string, dflt?: T): T | undefined {
 
 		case CONTEXT.NodeJS:
 			store = context.global.process.env[key];
-			if (key === '$Tempo' && !store) {
-				// skip debug log for production/test clean-up
-			}
+			break;
+
+		case CONTEXT.Deno:
+			store = context.global.Deno.env.get(key);
 			break;
 
 		case CONTEXT.GoogleAppsScript:

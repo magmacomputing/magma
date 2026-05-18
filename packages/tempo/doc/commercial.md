@@ -23,9 +23,11 @@ For mission-critical applications, we provide priority support, security auditin
 
 ## 💎 Premium Extensions
 
-In addition to our open-source core, we offer a suite of **Premium Plugins** that are available via a private NPM registry or commercial license. These extensions provide advanced logic for enterprise-scale requirements.
+In addition to our open-source core, we offer a suite of **Premium Plugins** published directly to the standard public NPM registry (`npmjs.com`), secured by a commercial License Key. These extensions provide advanced, proprietary logic for enterprise-scale requirements.
 
-**[Browse the Plugin Marketplace](./tempo.plugin.md)**
+More details on browsing the 'Tempo Store' will be provided soon...
+
+For details on how to unlock and use these features, see our [License Key Guide](./tempo.license.md).
 
 ---
 

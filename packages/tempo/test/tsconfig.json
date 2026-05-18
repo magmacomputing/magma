@@ -1,77 +1,39 @@
 {
-  "extends": "../../../tsconfig.base.json",
-  "compilerOptions": {
-    "rootDir": "..",
-    "noEmit": true,
-    "composite": true,
-    "types": [
-      "node",
-      "vitest/globals",
-      "@js-temporal/polyfill"
-    ],
-    "paths": {
-      "#library": [
-        "../../library/src/common.index.ts"
-      ],
-      "#library/*": [
-        "../../library/src/common/*"
-      ],
-      "#browser/*": [
-        "../../library/src/browser/*"
-      ],
-      "#server/*": [
-        "../../library/src/server/*"
-      ],
-      "#tempo": [
-        "../src/tempo.index.ts"
-      ],
-      "#tempo/core": [
-        "../src/core.index.ts"
-      ],
-      "#tempo/duration": [
-        "../src/module/module.duration.ts"
-      ],
-      "#tempo/mutate": [
-        "../src/module/module.mutate.ts"
-      ],
-      "#tempo/format": [
-        "../src/module/module.format.ts"
-      ],
-      "#tempo/parse": [
-        "../src/module/module.parse.ts"
-      ],
-      "#tempo/module": [
-        "../src/module/module.index.ts"
-      ],
-      "#tempo/ticker": [
-        "../src/plugin/extend/extend.ticker.ts"
-      ],
-      "#tempo/engine/*.js": [
-        "../src/engine/*.ts"
-      ],
-      "#tempo/module/*.js": [
-        "../src/module/*.ts"
-      ],
-      "#tempo/plugin/extend/*.js": [
-        "../src/plugin/extend/*.ts"
-      ],
-      "#tempo/plugin/term/*.js": [
-        "../src/plugin/term/*.ts"
-      ],
-      "#tempo/term/*": [
-        "../src/plugin/term/term.*.ts"
-      ],
-      "#tempo/*": [
-        "../src/*"
-      ]
-    }
-  },
-  "include": [
-    "**/*.ts"
-  ],
-  "references": [
-    {
-      "path": "../src/tsconfig.json"
-    }
-  ]
+	"extends": "../../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": "..",
+		"noEmit": true,
+		"composite": true,
+		"types": [
+			"node",
+			"vitest/globals"
+		],
+		"paths": {
+			"#library": [ "../../library/src/common.index.ts" ],
+			"#library/*": [ "../../library/src/common/*" ],
+			"#browser/*": [ "../../library/src/browser/*" ],
+			"#server/*": [ "../../library/src/server/*" ],
+			"#tempo": [ "../src/tempo.index.ts" ],
+			"#tempo/core": [ "../src/core.index.ts" ],
+			"#tempo/duration": [ "../src/module/module.duration.ts" ],
+			"#tempo/mutate": [ "../src/module/module.mutate.ts" ],
+			"#tempo/format": [ "../src/module/module.format.ts" ],
+			"#tempo/parse": [ "../src/module/module.parse.ts" ],
+			"#tempo/module": [ "../src/module/module.index.ts" ],
+			"#tempo/ticker": [ "../src/plugin/extend/extend.ticker.ts" ],
+			"#tempo/engine/*.js": [ "../src/engine/*.ts" ],
+			"#tempo/module/*.js": [ "../src/module/*.ts" ],
+			"#tempo/plugin/extend/*.js": [ "../src/plugin/extend/*.ts" ],
+			"#tempo/plugin/term/*.js": [ "../src/plugin/term/*.ts" ],
+			"#tempo/term/*": [ "../src/plugin/term/term.*.ts" ],
+			"#tempo/license": [ "../src/support/support.license.ts" ],
+			"#tempo/*": [ "../src/*" ]
+		}
+	},
+	"include": [
+		"**/*.ts"
+	],
+	"references": [
+		{ "path": "../src/tsconfig.json" }
+	]
 }

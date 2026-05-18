@@ -12,12 +12,12 @@ new Tempo('25-Dec-2024').term.season     // ← computed on first access, cached
 ```
 
 ::: tip
-**Transparent Discovery**: As of **v2.0.1**, all term properties are **enumerable**. Whilst modern `console.log` environments (like Node.js) will typically display these as `[Getter]` to preserve laziness, they *are* visible to property-scanning tools. This means a serializer (like `JSON.stringify`) or a deep-clone utility **will** trigger the eager evaluation of *every* registered term at once. To prevent terminal noise during these events (e.g., for invalid dates), initialize Tempo with **`silent: true`**.
+**Transparent Discovery**: As of **v2.0.1**, all Term properties are **enumerable**. Whilst modern `console.log` environments (like Node.js) will typically display these as `[Getter]` to preserve laziness, they *are* visible to property-scanning tools. This means a serializer (like `JSON.stringify`) or a deep-clone utility **will** trigger the eager evaluation of *every* registered Term at once. To prevent terminal noise during these events (e.g., for invalid dates), initialize Tempo with **`silent: true`**.
 :::
 
 ## What a Term Does
 
-A term plugin answers a single question:
+A Term plugin answers a single question:
 
 > *"Where does this `Tempo` instance sit within a pre-defined date-time range?"*
 
@@ -32,6 +32,10 @@ Plugin expose two views of that result via the `Tempo.term` object:
 The `<key>` and `<scope>` are defined by the plugin author, where the intent of the `<key>` is to provide a short identifier value, and the intent of the `<scope>` is to provide the full matching range object.
 
 ## Provided Plugin
+
+::: info
+The examples given below for Fiscal Quarters and Meteorological Seasons assume a Northern Hemisphere configuration (sphere: 'north'), unless they explicitly state otherwise.
+:::
 
 ### `qtr` / `quarter` — Fiscal Quarters
 
@@ -57,11 +61,11 @@ Maps the current date to the appropriate meteorological season.
 Hemisphere-aware (northern / southern boundaries differ).
 
 ```ts
-const t = new Tempo('01-Jul-2025', { sphere: 'south' });
+const t = new Tempo('01-Jul-2025');
 
-t.term.szn      // → 'Winter'  (southern hemisphere)
+t.term.szn      // → 'Summer'  (northern hemisphere)
 t.term.season
-// → { key: 'Winter', day: 1, month: 6, symbol: 'Snowflake', sphere: 'south' }
+// → { key: 'Summer', day: 1, month: 6, symbol: 'Sun', sphere: 'north' }
 ```
 
 ```ts
@@ -124,10 +128,10 @@ Tempo.terms
 
 ## Activating Terms
 
-In **Tempo Full**, all standard terms are enabled by default. In **Tempo Core**, you have three ways to opt-in:
+In **Tempo Full**, all standard Terms are enabled by default. In **Tempo Core**, you have three ways to opt-in:
 
 ### 1. Standard Activation (Recommended)
-The fastest way to enable all built-in terms (`qtr`, `szn`, `zdc`, `per`).
+The fastest way to enable all built-in Terms (`qtr`, `szn`, `zdc`, `per`).
 ```typescript
 import '@magmacomputing/tempo/term'; // One-line side-effect activation
 ```
@@ -142,7 +146,7 @@ Tempo.extend(TermsModule);
 ```
 
 ### 3. Surgical Opt-in (Maximum Lite)
-Best for maximum bundle-size optimization—you only load the specific terms you use.
+Best for maximum bundle-size optimization—you only load the specific Terms you use.
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
 import { QuarterTerm } from '@magmacomputing/tempo/term/quarter';
@@ -152,7 +156,9 @@ Tempo.extend(QuarterTerm);
 
 ## How to Define a Term Plugin
 
-A term plugin is ideally created using the **`defineTerm`** factory function provided by the library. This ensures correct type-inference and automatically handles registration during the discovery phase.
+A Term plugin is ideally created using the **`defineTerm`** factory function provided by the library. This ensures correct type-inference and automatically handles registration during the discovery phase.
+
+For commercial plugins that require a valid license to execute, use the **`definePremiumTerm`** factory instead. This wrapper automatically intercepts property evaluations and validates the `license` state in the global Tempo registry, securely guarding your plugin's functionality.
 
 ### Plugin Definition
 
@@ -212,12 +218,12 @@ A `Range` object must include a `key` and any subset of the date-time fields bel
 `getTermRange` sorts ranges in descending chronological order and returns the **first range whose boundary the instance has reached or passed**.
 
 ### 🔄 Sync to Alias Engine
-When a term plugin defines `ranges` with string-based `key` values, Tempo automatically synchronizes these keys with the internal **Alias Engine**. 
+When a Term plugin defines `ranges` with string-based `key` values, Tempo automatically synchronizes these keys with the internal **Alias Engine**. 
 
 *   **Period Scopes**: Ranges defined in a `period` scope (like `midnight` or `morning`) are registered as **Period Aliases**.
 *   **Event Scopes**: Ranges defined in an `event` scope are registered as **Event Aliases**.
 
-This synchronization happens during `Tempo.extend()` and `Tempo.init()`, ensuring that any named range boundaries are immediately available for use in the natural-language parsing engine. For example, if you define a custom term with a range key `"bedtime"`, you can immediately create a new instance using `new Tempo('bedtime')`.
+This synchronization happens during `Tempo.extend()` and `Tempo.init()`, ensuring that any named range boundaries are immediately available for use in the natural-language parsing engine. For example, if you define a custom Term with a range key `"bedtime"`, you can immediately create a new instance using `new Tempo('bedtime')`.
 
 ```ts
 type Range = {
@@ -235,7 +241,7 @@ type Range = {
 
 ### Registering the plugin
 
-Use the static **`Tempo.extend()`** method. This allows you to add terms dynamically without modifying the library source.
+Use the static **`Tempo.extend()`** method. This allows you to add Terms dynamically without modifying the library source.
 
 ```ts
 import { Tempo } from '@magmacomputing/tempo/core';
@@ -245,11 +251,11 @@ import { MySeasonTerm } from './term.myseason.js';
 Tempo.extend(MySeasonTerm);
 ```
 
-Every `Tempo` instance created after that point will have the custom term available.
+Every `Tempo` instance created after that point will have the custom Term available.
 
 ### Using Custom Configuration in Terms
 
-Since `Tempo` preserves non-standard configuration options in its internal `config` object, you can use `Tempo.init()` to provide values that your custom term plugin can later reference.
+Since `Tempo` preserves non-standard configuration options in its internal `config` object, you can use `Tempo.init()` to provide values that your custom Term plugin can later reference.
 
 ```ts
 // 1. Initialize with a custom 'business' config option
@@ -306,7 +312,7 @@ return keyOnly ? 'MyTerm' : {
 ```
 
 ## 🕒 Terms in Tickers
-Any term that provides `start` and `end` boundaries can be used to drive a `Tempo.ticker`. This is ideal for logic that doesn't follow a fixed duration (like seasons or fiscal quarters).
+Any Term that provides `start` and `end` boundaries can be used to drive a `Tempo.ticker`. This is ideal for logic that doesn't follow a fixed duration (like seasons or fiscal quarters).
 
 ```ts
 // Pulse every time a new fiscal quarter begins
@@ -324,14 +330,14 @@ To ensure a custom `Term` plugin integrates fully with Tempo, follow these guide
 1.  **Static `ranges` Export**: Always include the `ranges` property in your `defineTerm` configuration. This enables **programmatic discovery** via `Tempo.terms` and allows the Ticker to automatically calculate next-pulse intervals.
 2.  **Metadata-First Boundaries**: If your plugin handles multiple sets (e.g. hemispheres or cultural calendars), avoid using array indices like `ranges[0]`. Instead, add marker fields like **`sphere`** or **`group`** to each range object and use `.filter()` inside your `define` function.
 3.  **Memoization Safety**: Keep the `define` function pure. It will only be called once per instance access.
-4.  **Math Readiness**: Always use `getTermRange` or provide boundaries. Without them, users cannot use your term in `add()`, `set()`, or `ticker()`.
-5.  **Key consistency**: It is valid to remap the returned scope `key` (for example, `cfy` -> `FY2024`) when that is the semantic value your term represents. Be intentional and keep it consistent with your `ranges` lookup and consumer expectations.
-6.  **Unique Names**: Keep `key` and `scope` globally unique across all registered terms. Collisions are unsupported and may produce order-dependent lookups.
+4.  **Math Readiness**: Always use `getTermRange` or provide boundaries. Without them, users cannot use your Term in `add()`, `set()`, or `ticker()`.
+5.  **Key consistency**: It is valid to remap the returned scope `key` (for example, `cfy` -> `FY2024`) when that is the semantic value your Term represents. Be intentional and keep it consistent with your `ranges` lookup and consumer expectations.
+6.  **Unique Names**: Keep `key` and `scope` globally unique across all registered Terms. Collisions are unsupported and may produce order-dependent lookups.
 
 ## 🧭 Best Practices: Idempotency & Side-Effects
 
 ::: warning
-Because term lookups are **memoized** (cached) on the instance, the `define` function must be **pure and idempotent**. It should only depend on the current `Tempo` instance state and its configuration (`this.config`).
+Because Term lookups are **memoized** (cached) on the instance, the `define` function must be **pure and idempotent**. It should only depend on the current `Tempo` instance state and its configuration (`this.config`).
 
-**Never apply side-effects** or modify external state within a term definition. The function is only guaranteed to run once per instance access; subsequent reads will return the cached value directly without re-executing your logic.
+**Never apply side-effects** or modify external state within a Term definition. The function is only guaranteed to run once per instance access; subsequent reads will return the cached value directly without re-executing your logic.
 :::

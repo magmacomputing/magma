@@ -21,7 +21,7 @@ console.log(zdt.toString()); // 2026-04-28T15:00:00+10:00[Australia/Sydney]
 *   **Strict by Default**: The standalone function defaults to `mode: 'strict'`, ensuring that it won't "guess" if the input is ambiguous.
 
 ::: warning
-**Terms and Standalone Parsing**: Standalone `parse()` supports all standard natural language patterns but does not resolve **Global Terms** or aliases unless they are part of the core pattern registry. For full term-dispatch and instance-aware resolution, use the `Tempo` class.
+**Terms and Standalone Parsing**: Standalone `parse()` supports all standard natural language patterns but does not resolve **Global Terms** or aliases unless they are part of the core pattern registry. For full Term-dispatch and instance-aware resolution, use the `Tempo` class.
 :::
 
 ### ⚠️ Standalone vs. Class-Based

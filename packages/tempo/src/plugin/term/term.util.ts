@@ -2,7 +2,9 @@ import { toZonedDateTime, toInstant, getTemporalIds, instant } from '#library/te
 import { isDefined, isFunction, isString, isUndefined, isNumber, isZonedDateTime } from '#library/assertion.library.js';
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
-import { sym, TermError, SCHEMA, getLargestUnit, isTempo, getRuntime } from '#tempo/support';
+import { sym, TermError, isTempo } from '../../support/support.symbol.js';
+import { getRuntime } from '../../support/support.runtime.js';
+import { SCHEMA, getLargestUnit } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange } from './term.type.js';
 import { getHost } from '../plugin.util.js';
@@ -14,6 +16,38 @@ import { getHost } from '../plugin.util.js';
 export const defineTerm = <T extends TermPlugin>(term: T): T => {
 	registerTerm(term);
 	return term;
+}
+
+/**
+ * ## definePremiumTerm
+ * Helper to register a premium Term plugin, automatically enforcing commercial licensing.
+ */
+export const definePremiumTerm = <T extends TermPlugin>(pluginDef: T): T => {
+	const originalResolve = pluginDef.resolve;
+	const originalDefine = pluginDef.define;
+
+	const assertPremium = function (t: Tempo, key: string) {
+		const term = (t.constructor as any).terms[key];
+		if (!term || term.status !== 'active') {
+			throw new Error(`[${key}] Premium plugin requires a valid commercial license. Status: ${term?.status}`);
+		}
+	}
+
+	if (originalResolve) {
+		pluginDef.resolve = function (this: Tempo, anchor?: any) {
+			assertPremium(this, pluginDef.key);
+			return originalResolve.call(this, anchor);
+		}
+	}
+
+	if (originalDefine) {
+		pluginDef.define = function (this: Tempo, keyOnly?: boolean, anchor?: any) {
+			assertPremium(this, pluginDef.key);
+			return originalDefine.call(this, keyOnly, anchor);
+		}
+	}
+
+	return defineTerm(pluginDef);
 }
 
 /**

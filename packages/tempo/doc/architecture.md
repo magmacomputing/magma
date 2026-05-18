@@ -49,7 +49,7 @@ Tempo employs two distinct methodologies for protecting its internal state. Thes
 | :--- | :--- | :--- |
 | **Primary Target** | `Tempo.#term`, `Tempo.#fmt` (Instance State) | `NUMBER`, `FORMAT` (Global Registries) |
 | **Scope** | **Instance-Specific**: Unique to every separate `new Tempo()` call. | **Global-Shared**: One single source of truth used by all instances. |
-| **Primary Goal** | **Performance**: Avoid computing expensive terms (e.g., `qtr` or `szn`) until they are needed, | **Extensibility**: Allow plugins to safely append new data to registries at runtime. |
+| **Primary Goal** | **Performance**: Avoid computing expensive Terms (e.g., `qtr` or `szn`) until they are needed, | **Extensibility**: Allow plugins to safely append new data to registries at runtime. |
 | **Mechanism** | `Object.create(proto)` + Prototype Shadowing. | `new Proxy(target)` + Symbol-bypass. |
 | **Why this one?** | **Memory Efficiency**: Thousands of instances share the same base prototype. | **Reference Stability**: Shared registries must stay at the same object reference. |
 
@@ -59,10 +59,10 @@ Tempo employs two distinct methodologies for protecting its internal state. Thes
 Tempo is built with a **"Performance First"** mindset, specifically targeting the overhead of the class constructor. In high-frequency applications (like Tickers or real-time Dashboards), creating thousands of objects must be nearly as cheap as a primitive assignment.
 
 This objective is achieved through two primary architectural pillars:
-1.  **Lazy Evaluation ([Section 1](#1-lazy-evaluation-shadowing))**: Deferring the expensive work of string parsing and term computation until the first property access.
+1.  **Lazy Evaluation ([Section 1](#1-lazy-evaluation-shadowing))**: Deferring the expensive work of string parsing and Term computation until the first property access.
 2.  **Master Guard ([Section 3](#3-master-guard-fast-fail-sync-point))**: Implementing a high-speed "fast-fail" gatekeeper to instantly reject invalid inputs when parsing *is* eventually triggered.
 
-Together, these ensure that `new Tempo()` maintains an $O(1)$ constructor execution time by deferring $O(N)$ full-parse work until the first property access, regardless of how many plugins or custom terms are registered in the global system.
+Together, these ensure that `new Tempo()` maintains an $O(1)$ constructor execution time by deferring $O(N)$ full-parse work until the first property access, regardless of how many plugins or custom Terms are registered in the global system.
 
 ---
 
@@ -94,7 +94,7 @@ The **Instance Shadowing** pattern is designed for massive scale. When a library
 
 ### How it works:
 - **Stage 0**: All instances initially point to the same base `#term` object containing un-evaluated getters.
-- **Stage 1**: When a term (e.g., `.qtr`) is accessed, the value is computed once.
+- **Stage 1**: When a Term (e.g., `.qtr`) is accessed, the value is computed once.
 - **Stage 2**: Tempo uses a **Generic Lazy Delegator** Proxy (via `getLazyDelegator`) which catches property access and evaluates it on-demand.
 - **Result**: The JS engine executes lookups via an optimized Proxy handler, making lookups nearly as fast as raw property access while keeping the state strictly immutable.
 
@@ -162,7 +162,7 @@ Tempo maintains system-wide synchronization through a private, Symbol-based hook
 ### Reactive Registration
 When a plugin is imported via a side-effect (`import '@magmacomputing/tempo/ticker'`), it triggers a **`sym.$Register`** hook. 
 - **Auto-Sync**: The `Tempo` class listens for these hooks and automatically updates its internal registries.
-- **Guard Rebuild**: Every time a new term or layout is registered, the **Master Guard** is automatically rebuilt to include the new tokens, ensuring the "Zero-Cost Constructor" always stays up to date.
+- **Guard Rebuild**: Every time a new Term or layout is registered, the **Master Guard** is automatically rebuilt to include the new tokens, ensuring the "Zero-Cost Constructor" always stays up to date.
 
 ### Disposable Engine (`Symbol.dispose`)
 The `Tempo` class implements the explicit resource management pattern. 

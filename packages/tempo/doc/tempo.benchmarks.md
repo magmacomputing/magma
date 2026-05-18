@@ -19,7 +19,7 @@ Timings were captured over **1,000 iterations** to measure micro-overhead and co
 
 ### 1. Proxy-Delegator Delegation ($O(1)$)
 
-By using a **Proxy-Delegator** pattern, the constructor returns near-instantly without populating the formatting (`fmt`) or term (`term`) objects. These registries are only discovered and memoized on the first property access.
+By using a **Proxy-Delegator** pattern, the constructor returns near-instantly without populating the formatting (`fmt`) or Term (`term`) objects. These registries are only discovered and memoized on the first property access.
 
 - **Gain**: ~65% reduction in instantiation overhead.
 - **v2.1.2 Update**: The Scan-and-Consume guard further stabilizes the "Zero-Cost Constructor" by ensuring that even with massive plugin lists, the entry-point remains $O(1)$.

@@ -25,19 +25,20 @@ export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termErr
 /** hardened globalThis bridge key for the TempoRuntime */	export const $Bridge: unique symbol = Symbol.for('magmacomputing/tempo/runtime') as any;
 /** cross-bundle brand check for TempoRuntime */						export const $RuntimeBrand: unique symbol = Symbol.for('magmacomputing/tempo/runtime/brand') as any;
 /** branding for explicit PropertyDescriptors */						export const $Descriptor: unique symbol = Symbol.for('magmacomputing/tempo/descriptor') as any;
+/** key for License State */																export const $License: unique symbol = Symbol.for('magmacomputing/tempo/license') as any;
 
-/** internal static config helper */												export const $setConfig: unique symbol = Symbol.for('magmacomputing/tempo/setConfig') as any;
-/** internal static discovery helper */											export const $setDiscovery: unique symbol = Symbol.for('magmacomputing/tempo/setDiscovery') as any;
-/** internal static event builder */												export const $setEvents: unique symbol = Symbol.for('magmacomputing/tempo/setEvents') as any;
-/** internal static period builder */												export const $setPeriods: unique symbol = Symbol.for('magmacomputing/tempo/setPeriods') as any;
-/** internal static alias builder */												export const $setAliases: unique symbol = Symbol.for('magmacomputing/tempo/setAliases') as any;
-/** internal static guard builder */												export const $buildGuard: unique symbol = Symbol.for('magmacomputing/tempo/buildGuard') as any;
-/** internal static base class marker */										export const $IsBase: unique symbol = Symbol.for('magmacomputing/tempo/isBase') as any;
+/** @internal static config helper */												export const $setConfig: unique symbol = Symbol.for('magmacomputing/tempo/setConfig') as any;
+/** @internal static discovery helper */										export const $setDiscovery: unique symbol = Symbol.for('magmacomputing/tempo/setDiscovery') as any;
+/** @internal static event builder */												export const $setEvents: unique symbol = Symbol.for('magmacomputing/tempo/setEvents') as any;
+/** @internal static period builder */											export const $setPeriods: unique symbol = Symbol.for('magmacomputing/tempo/setPeriods') as any;
+/** @internal static alias builder */												export const $setAliases: unique symbol = Symbol.for('magmacomputing/tempo/setAliases') as any;
+/** @internal static guard builder */												export const $buildGuard: unique symbol = Symbol.for('magmacomputing/tempo/buildGuard') as any;
+/** @internal static base class marker */										export const $IsBase: unique symbol = Symbol.for('magmacomputing/tempo/isBase') as any;
 
 /** @internal Tempo Symbol Registry (Local Keys) */
 const local = {
 	$Tempo, $Register, $Interpreter, $logError, $logDebug, $dbg, $guard, $errored,
-	$Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery,
+	$Internal, $Bridge, $RuntimeBrand, $Descriptor, $License, $setConfig, $setDiscovery,
 	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase
 } as const;
 

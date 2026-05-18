@@ -52,10 +52,10 @@ Handles string parsing and token extraction. This is included automatically in t
 Adds support for reactive time-pulsing via the static `Tempo.ticker()` method.
 
 ### Terms Module (@magmacomputing/tempo/term)
-Adds support for semantic terms like `quarter`, `season`, `zodiac`, and `period`. There are three ways to enable terms:
+Adds support for semantic Terms like `quarter`, `season`, `zodiac`, and `period`. There are three ways to enable Terms:
 
 #### 1. The Side-Effect (Standard Activation)
-Fastest way to enable all standard terms in a Core environment.
+Fastest way to enable all standard Terms in a Core environment.
 ```typescript
 import '@magmacomputing/tempo/term'; // One-line activation
 ```
@@ -106,7 +106,7 @@ There is a subtle but important distinction between how features are activated i
 *   **`Tempo.init()`**: This is **Discovery-Driven**. It scans the global environment for any plugins that were imported via side effects (e.g., `import '@magmacomputing/tempo/ticker'`) and hydrates the engine all at once.
 
 ::: danger
-**The Initialization Lifecycle**: `Tempo.init()` performs a **full state refresh**. It resets configuration, term registries, and formatting maps to defaults before re-applying all currently discovered plugins. To ensure your custom logic is managed correctly, always use `Tempo.extend()` or encapsulate changes within a formal plugin.
+**The Initialization Lifecycle**: `Tempo.init()` performs a **full state refresh**. It resets configuration, Term registries, and formatting maps to defaults before re-applying all currently discovered plugins. To ensure your custom logic is managed correctly, always use `Tempo.extend()` or encapsulate changes within a formal plugin.
 :::
 
 **The Side-Effect Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** automatically appear on the `Tempo` class. Because `Tempo.init()` short-circuits once state already exists, re-calling it will not load those late modules. Use `Tempo.extend()` explicitly to activate late-loaded modules instead of trying to re-run `Tempo.init()`.

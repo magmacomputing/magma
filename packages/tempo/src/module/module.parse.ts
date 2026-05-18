@@ -251,7 +251,10 @@ const _ParseEngine = {
 		let finalValue: any = value;
 		let finalType: any = type;
 
-		const isLong = state.config.timeStamp !== 'ms' || trim.length >= 12;
+		const isExplicitUnit = state.userProvidedKeys?.has('timeStamp');
+		const isLong = trim.length >= 12 ||
+			(state.config.timeStamp === 'ss' && trim.length >= 9) ||
+			(isExplicitUnit && trim.length >= 9);
 
 		if (type === 'String' && isNumeric(trim)) {
 			const num = Number(trim);

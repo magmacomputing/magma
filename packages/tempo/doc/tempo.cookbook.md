@@ -132,7 +132,7 @@ console.log(`${daysLeft} days remaining`);
 ```
 
 ### Precision Manipulation (`end` vs `mid`)
-When using `.set()` with a term anchor (like `#qtr`), you can specify whether to land on the inclusive end or the exact center.
+When using `.set()` with a Term anchor (like `#qtr`), you can specify whether to land on the inclusive end or the exact center.
 ```typescript
 // Lands on 30-Sep 23:59:59.999... (Inclusive End)
 const qtrEnd = new Tempo().set({ end: '#qtr' });
@@ -205,14 +205,14 @@ console.log(new Tempo({ timeZone: 'Australia/Sydney' }).term.szn); // "Winter"
 ```
 
 ### Unified Term Math
-Tempo allows you to shift dates by semantic "steps" while preserving your relative position within the term.
+Tempo allows you to shift dates by semantic "steps" while preserving your relative position within the Term.
 ```typescript
 const t1 = new Tempo('2024-05-15'); // Middle of Q2
 const t2 = t1.add({ '#quarter': 1 }); // Middle of Q3: "2024-08-14" (approx)
 ```
 
 ### Semantic Formatting
-Use specific term tokens like `{#quarter}` or `{#season}` to automatically embed a Term's label (or key) into a format string.
+Use specific Term tokens like `{#quarter}` or `{#season}` to automatically embed a Term's label (or key) into a format string.
 ```typescript
 const t = new Tempo();
 console.log(t.format('We are currently in the {#quarter}')); // "We are currently in the First Quarter"
@@ -225,7 +225,7 @@ The examples below use the `using` and `await using` syntax, which require **Typ
 :::
 
 ### Subscription Billing (Recurring Payments)
-Use a `seed` to anchor your subscription to a specific day, then use a month-based ticker.
+Use a `seed` to anchor your subscription to a specific day, then use a month-based Ticker.
 
 ```typescript
 // Anchor to the 15th of the month
@@ -268,7 +268,7 @@ using dailyTicker = Tempo.ticker({ '#period': 'morning' }, (t) => {
 ```
 
 ### Manual Sync (Action-Triggered)
-Sometimes you want a ticker's logic but need to trigger it from an external event.
+Sometimes you want a Ticker's logic but need to trigger it from an external event.
 
 ```typescript
 const heartbeat = Tempo.ticker({ seconds: 5 });
