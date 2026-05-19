@@ -4,7 +4,7 @@ import { Logify } from '#library/logify.class.js';
 import { Immutable, Serializable } from '#library/class.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
-import { secure, proxify, delegate } from '#library/proxy.library.js';
+import { secure, proxify, delegate, indexedArray } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { enumify } from '#library/enumerate.library.js';
 import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
@@ -947,14 +947,8 @@ export class Tempo {
 			}
 		});
 
-		// `delegate` returns an array-like proxy that also supports string lookups; use
-		// an `unknown` bridge to assert the combined intersection type so the compiler
 		// treats `Tempo.terms` as array-like and indexable by key.
-		return delegate(list, (key) => {
-			return (isString(key) && !['length', 'map', 'find', 'forEach', 'includes'].includes(key))
-				? list.find(t => t.key === key || t.scope === key)
-				: undefined;
-		}) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
+		return indexedArray(list, key => list.find(t => t.key === key || t.scope === key)) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
 	}
 
 	/** static Tempo.formats (registry) */
