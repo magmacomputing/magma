@@ -41,13 +41,13 @@ console.log(t.term.astronomy);
 
 **How to get it:**
 1. Run `npm install @magmacomputing/tempo-plugin-astro` in your project.
-2. Send us an email at [contact@magmacomputing.com.au](mailto:contact@magmacomputing.com.au) with your preferred email address, and we will issue a **one-year expiry key** straight to your inbox.
+2. Send us an email at [tempo-keys@magmacomputing.com.au](mailto:tempo-keys@magmacomputing.com.au) with your preferred email address, and we will issue a **one-year expiry key** straight to your inbox.
 
 ## ⚙️ Applying Your License Key
 
-Once you receive your License Key, you must provide it to your Tempo-enabled codebase so the engine can verify and unlock the premium features. 
+Once you receive your License Key, you must provide it to your Tempo-enabled codebase so the engine can verify and unlock the premium features.
 
-There are two supported ways to provide your key:
+There are three supported ways to provide your key:
 
 ### 1. Environment Variable (Recommended for Node/SSR)
 The easiest method for backend or server-side rendered environments is to expose the key via an environment variable. Tempo will automatically detect it during initialization.
@@ -57,38 +57,86 @@ The easiest method for backend or server-side rendered environments is to expose
 export TEMPO_LICENSE_KEY="ey..."
 ```
 
+Then in your application, simply import Tempo and the plugin via side-effect. Because the license key is automatically discovered from the environment variable, no manual initialization is required:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo/core';
+import '@magmacomputing/tempo-plugin-astro'; // Automatically registers AstroTerm
+
+const t = new Tempo('21-Mar-2026');
+console.log(t.term.astro);
+// → 'Vernal'
+```
+
 ### 2. Programmatic Initialization (Recommended for Browsers)
-If you are running Tempo in a client-side browser environment or prefer explicit configuration, you can pass the key directly into the `Tempo.init()` method before instantiating any dates or registering the premium plugins.
+If you are running Tempo in a client-side browser environment or prefer explicit configuration, you can pass the license key and any premium plugins directly into the `Tempo.init()` method.
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
 import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
 
-// 1. Initialize the core engine with your license key
+// Initialize the core engine and register the plugin in one step
 Tempo.init({
-  license: 'ey...'
+  license: 'ey...',
+  plugins: [AstroTerm]
 });
 
-// 2. Extend Tempo with the premium plugin
-Tempo.extend(AstroTerm);
-
-// 3. The premium Term is unlocked and ready to use!
+// The premium Term is unlocked and ready to use!
 const t = new Tempo('21-Mar-2026');
 
 console.log(t.term.astro);
-// → 'Spring'
+// → 'Vernal'
 
 console.log(t.term.astronomy);
-// → { key: 'Spring', year: 2026, month: 3, day: 20, hour: 14, minute: 45, ... }
+// → { key: 'Vernal', season: 'Spring', year: 2026, month: 3, day: 20, hour: 14, minute: 45, ... }
 ```
 
 ::: tip ESM Hoisting & Registration Order
-In standard JavaScript (ESM) environments, `import` statements are hoisted and executed before any regular code. 
+In standard JavaScript (ESM) environments, `import` statements are hoisted and executed before any regular code.
 
-Because of this, the plugin's automatic self-registration runs *before* your synchronous `Tempo.init({ license: '...' })` call. Since `Tempo.init()` resets the active registry, you **must explicitly call `Tempo.extend(AstroTerm)` after initialization** (as shown in Step 2 above) to re-register the plugin into the licensed registry.
+Because of this, any automatic self-registration from a plugin runs *before* your synchronous `Tempo.init()` call. Since `Tempo.init()` resets the active registry, the self-registration will be wiped out.
 
-Alternatively, you can initialize Tempo in a separate entry/bootstrap file (e.g., `bootstrap.ts`) before loading the rest of your application.
+Passing plugins directly into the `plugins` configuration array in `Tempo.init()` (as shown above) is the cleanest way to guarantee proper registration order. Alternatively, you can call `Tempo.extend(AstroTerm)` explicitly after calling `Tempo.init()`.
 :::
+
+### 3. Global Context (Fallback for specific browser environments)
+
+This is a browser-native variation of Method 1. While Method 1 targets the process-level environment (`process.env`) available in Node/SSR, this method sets the key on the JavaScript `globalThis` object (which maps to `window` in browsers), enabling the same auto-discovery behaviour without any build-time configuration.
+
+**Use this method in the following scenarios:**
+
+#### Direct `<script>` Tag Loading (No Bundler)
+Set the key in an inline script *before* loading the Tempo bundle from a CDN or local file:
+
+```html
+<script>
+  window.TEMPO_LICENSE_KEY = "ey...";
+</script>
+<script type="module" src="/js/tempo.bundle.js"></script>
+<script type="module" src="/js/tempo-plugin-astro.js"></script>
+```
+
+#### Frontend Bundlers without `process.env` Polyfills
+Modern browser bundlers (e.g., Vite) do not inject Node's `process` object by default. Assign the key to `globalThis` in your entry file *before* importing Tempo:
+
+```typescript
+// entry.ts — must run before any Tempo import
+globalThis.TEMPO_LICENSE_KEY = import.meta.env.VITE_TEMPO_LICENSE_KEY;
+
+// Now safe to import — license auto-discovered
+import { Tempo } from '@magmacomputing/tempo/core';
+import '@magmacomputing/tempo-plugin-astro';
+```
+
+#### Micro-frontends / Shared Global Space
+In architectures where multiple independently-bundled applications share a single browser tab, set the key once in the host container. All dynamically-loaded sub-applications will auto-discover it without needing individual configuration:
+
+```typescript
+// host-container.ts
+globalThis.TEMPO_LICENSE_KEY = 'ey...';
+
+// Sub-apps loaded later will automatically run in licensed mode
+```
 
 ## 📡 Network Requests & Offline Behavior
 
