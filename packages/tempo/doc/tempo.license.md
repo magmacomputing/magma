@@ -54,7 +54,7 @@ The easiest method for backend or server-side rendered environments is to expose
 
 ```bash
 # Set this in your deployment environment or .env file
-export TEMPO_LICENSE_KEY="key..."
+export TEMPO_LICENSE_KEY="ey..."
 ```
 
 ### 2. Programmatic Initialization (Recommended for Browsers)
@@ -66,7 +66,7 @@ import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
 
 // 1. Initialize the core engine with your license key
 Tempo.init({
-  license: 'key...'
+  license: 'ey...'
 });
 
 // 2. Extend Tempo with the premium plugin

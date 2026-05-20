@@ -16,11 +16,33 @@ vi.mock('#tempo/license', () => {
 const licenseModule = '#tempo/license';
 
 describe('Tempo Licensing Strategy', () => {
+	let originalLicenseEnv: string | undefined;
+	let originalLicenseKeyEnv: string | undefined;
+
 	beforeEach(() => {
+		originalLicenseEnv = process.env.TEMPO_LICENSE;
+		originalLicenseKeyEnv = process.env.TEMPO_LICENSE_KEY;
+		delete process.env.TEMPO_LICENSE;
+		delete process.env.TEMPO_LICENSE_KEY;
+
 		// 🏛️ Hard reset the global runtime to ensure test isolation
 		resetRuntimeForTesting();
 
 		vi.clearAllMocks();
+	});
+
+	afterEach(() => {
+		if (originalLicenseEnv !== undefined) {
+			process.env.TEMPO_LICENSE = originalLicenseEnv;
+		} else {
+			delete process.env.TEMPO_LICENSE;
+		}
+
+		if (originalLicenseKeyEnv !== undefined) {
+			process.env.TEMPO_LICENSE_KEY = originalLicenseKeyEnv;
+		} else {
+			delete process.env.TEMPO_LICENSE_KEY;
+		}
 	});
 
 	test('Tempo is ready-to-receive a license via init options', () => {
@@ -113,6 +135,40 @@ describe('Tempo Licensing Strategy', () => {
 			expect(rt.license.scopes).toHaveProperty('discovered');
 		} finally {
 			delete (globalThis as any).TEMPO_LICENSE;
+		}
+	});
+
+	test('Discovery cascade: picks up license from globalThis.TEMPO_LICENSE_KEY', () => {
+		const payload = { permissions: { discovered_key: {} } };
+		const mockToken = `a.${base64Encode(JSON.stringify(payload))}.c`;
+
+		// Set global variable
+		(globalThis as any).TEMPO_LICENSE_KEY = mockToken;
+
+		try {
+			Tempo.init();
+			const rt = getRuntime();
+			expect(rt.license.key).toBe(mockToken);
+			expect(rt.license.scopes).toHaveProperty('discovered_key');
+		} finally {
+			delete (globalThis as any).TEMPO_LICENSE_KEY;
+		}
+	});
+
+	test('Discovery cascade: picks up license from process.env.TEMPO_LICENSE_KEY', () => {
+		const payload = { permissions: { env_key: {} } };
+		const mockToken = `a.${base64Encode(JSON.stringify(payload))}.c`;
+
+		// Set env variable
+		process.env.TEMPO_LICENSE_KEY = mockToken;
+
+		try {
+			Tempo.init();
+			const rt = getRuntime();
+			expect(rt.license.key).toBe(mockToken);
+			expect(rt.license.scopes).toHaveProperty('env_key');
+		} finally {
+			delete process.env.TEMPO_LICENSE_KEY;
 		}
 	});
 

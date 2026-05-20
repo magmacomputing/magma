@@ -80,6 +80,21 @@ For more information on adding your own business logic, see the [Terms Guide](te
 
 Calculating the difference between two dates in native Temporal is mathematically sound, but it strictly returns a `Temporal.Duration` object. Tempo gives you the flexibility to return a `Duration` object, a precise floating-point number, or a human-readable string.
 
+Tempo also provides a built-in **log-stamp** format for dropping a compact, sortable timestamp into a log entry:
+
+```javascript
+const t = new Tempo();
+t.fmt.logStamp;  // → "20260520T135519.623319620"
+//                      ^^^^^^^^ ^^^^^^ ^^^^^^^^^
+//                      date     time   sub-seconds (nanosecond precision)
+```
+
+This format (`Tempo.FORMAT.logStamp`) is configurable via `Tempo.init`:
+```javascript
+Tempo.init({ formats: { logStamp: '{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}' } });
+new Tempo().fmt.logStamp;  // → "2026-05-20 13:55:19"
+```
+
 **Native Temporal 🐢**
 ```javascript
 const now = Temporal.Now.plainDateTimeISO();
@@ -93,12 +108,13 @@ Tempo understands natural language targets and can format the resulting differen
 ```javascript
 const t = new Tempo();
 
-// t.until(target, unit) → number (precise floating-point)
-t.until('afternoon', 'minutes'); // → 302.57749424408334
-t.until('xmas', 'days');         // → 289
+// t.until(target, unit) → number
+t.until('afternoon', 'minutes'); // → 84.45  (fractional: 'afternoon' has a fixed time, e.g. 13:00)
+t.until('xmas', 'days');         // → 219    (whole number — see note below)
+t.until('xmas', 'weeks');        // → 31.28  (fractional — weeks don't divide evenly into days)
 
 // t.until(target)       → Tempo.Duration object (with .iso, .years, .days, … fields)
-t.until('xmas');         // → { iso: "P289DT14H22M9.102S", years: 0, months: 9, days: 14, ... }
+t.until('xmas');         // → { iso: "P219DT0H0M0S", years: 0, months: 7, days: 4, ... }
 
 // t.since(target, unit) → human-readable string via Intl.RelativeTimeFormat
 t.since('yesterday', 'days');    // → "1d ago"
@@ -106,3 +122,20 @@ t.since('yesterday', 'days');    // → "1d ago"
 // t.since(target)       → ISO 8601 Duration string
 t.since('yesterday afternoon');  // → "-P1DT9H32M19.402S"
 ```
+
+> **💡 Date-only targets inherit the current time.**
+> When a target resolves to a **date without a time component** (e.g. `'xmas'`, `'tomorrow'`, `'next friday'`),
+> Tempo copies the current time-of-day from the anchor into the target. This means:
+>
+> - `t.until('xmas', 'days')` → a **whole number** — the time components cancel out exactly.
+> - `t.until('xmas', 'hours')` → a **whole number** — same reason.
+> - `t.until('xmas', 'weeks')` → **fractional** — 219 days does not divide evenly into weeks.
+>
+> This matches natural-language intuition: *"How many days until Christmas?"* expects `219`, not `219.43`.
+> If you need the precise elapsed duration including sub-day components, omit the unit:
+> ```javascript
+> t.until('xmas'); // → { days: 219, hours: 0, minutes: 0, seconds: 0, ... }
+> ```
+>
+> Targets with an **explicit time** (e.g. `'afternoon'`, `'9am'`, `'2026-12-25T08:00'`) always produce
+> fractional values because the target time differs from the anchor's current time-of-day.
