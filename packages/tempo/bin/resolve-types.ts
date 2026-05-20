@@ -13,7 +13,7 @@ const DIST_DIR = path.resolve('dist');
 const LIB_SRC_DIR = path.resolve('../library/dist/common');
 const LIB_DEST_DIR = path.resolve(DIST_DIR, 'lib');
 
-const LIC_SRC_DIR = path.resolve('../../../tempo-plugin/packages/@core/dist');
+const LIC_SRC_DIR = path.resolve('../../../tempo-plugin/internal/@core/dist');
 const LIC_DEST_DIR = path.resolve(DIST_DIR, 'lic');
 
 console.log('Resolving type definitions...');
