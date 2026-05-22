@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Security Hardening**: Redacted the raw JWT key from the public `Tempo.license` snapshot to prevent accidental exposure of credentials in debug logs.
 
 ### Fixed
-- **License Snapshot Resilience**: Implemented a safety guard in `Tempo.license` to normalize `raw.scopes` prior to iteration, eliminating potential runtime exceptions when scopes are absent.
+- **License Snapshot Resilience**: Implemented a safety guard in `Tempo.license` to normalize `raw.scopes` before iteration, eliminating potential runtime exceptions when scopes are absent.
 - **Cross-Platform Build Stability**: Updated the `resolve-types.ts` build script to utilize Node's native `fileURLToPath` for deterministic `__dirname` resolution across all operating systems.
 - **Local Dev Extensibility**: Allowed `LIC_SRC_DIR` to be overridden via environment variables in the type resolution script, supporting customized development workflows while maintaining strict production fallbacks.
   
