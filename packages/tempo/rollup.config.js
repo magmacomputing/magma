@@ -20,8 +20,16 @@ const isPremiumAvailable = !!(
 );
 const licensePath = isPremiumAvailable ? licensePremium : licenseDefault;
 
-console.log(`\n📦 Building Tempo [${isPremiumAvailable ? '💎 PREMIUM' : '🍃 COMMUNITY'}]`);
-if (isPremiumAvailable) console.log(`🛡️  Engine: ${licensePath}\n`);
+if (isPremiumAvailable) {
+	console.log('\n\x1b[45m\x1b[37m\x1b[1m =========================================== \x1b[0m');
+	console.log('\x1b[45m\x1b[37m\x1b[1m        📦 BUILDING TEMPO: 💎 PREMIUM        \x1b[0m');
+	console.log('\x1b[45m\x1b[37m\x1b[1m =========================================== \x1b[0m');
+	console.log(`\x1b[35m🛡️  Engine: ${licensePath}\x1b[0m\n`);
+} else {
+	console.log('\n\x1b[42m\x1b[30m\x1b[1m =========================================== \x1b[0m');
+	console.log('\x1b[42m\x1b[30m\x1b[1m       📦 BUILDING TEMPO: 🍃 COMMUNITY       \x1b[0m');
+	console.log('\x1b[42m\x1b[30m\x1b[1m =========================================== \x1b[0m\n');
+}
 
 /**
  * Rollup Configuration for Tempo

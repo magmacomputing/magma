@@ -5,9 +5,9 @@ A collection of recipes for solving common date and time challenges using Tempo.
 ## Table of Contents
 1. [The Basics](#the-basics)
 2. [Parsing Challenges](#parsing-challenges)
-3. [Manipulation & Calculations](#manipulation--calculations)
-4. [Timezones & Locales](#timezones--locales)
-5. [Business Logic & Terms](#business-logic--terms)
+3. [Manipulation and Calculations](#manipulation-and-calculations)
+4. [Timezones and Locales](#timezones-and-locales)
+5. [Business Logic and Terms](#business-logic-and-terms)
 6. [Interoperability](#interoperability)
 
 ---
@@ -37,7 +37,7 @@ if (t.isValid) {
 }
 ```
 
-### Global Configuration & Initialization
+### Global Configuration and Initialization
 You can initialize global defaults that apply to all future `Tempo` instances.
 ```typescript
 Tempo.init({
@@ -108,7 +108,7 @@ new Tempo(1716163200000000000n);  // Nanoseconds
 
 ---
 
-## Manipulation & Calculations
+## Manipulation and Calculations
 
 ### Add or Subtract Time
 Tempo instances are immutable; `add()` returns a new instance.
@@ -143,7 +143,7 @@ const qtrMid = new Tempo().set({ mid: '#qtr' });
 
 ---
 
-## Timezones & Locales
+## Timezones and Locales
 
 ### Convert Time to Another Zone
 ```typescript
@@ -175,7 +175,7 @@ for (const entry of logEntries) {
 
 ---
 
-## Business Logic & Terms
+## Business Logic and Terms
 
 ### Is it the weekend?
 ```typescript
@@ -297,7 +297,7 @@ const tempo = new Tempo(new Date());
 ```typescript
 const zdt = new Tempo().toDateTime();  // Temporal.ZonedDateTime
 const instant = new Tempo().toInstant(); // Temporal.Instant
-const pDate = new Tempo().toPlainDate(); // Temporal.PlainDate
+const pdt = new Tempo().toPlainDate(); // Temporal.PlainDate
 ```
 
 ### Sorting an array of Tempos

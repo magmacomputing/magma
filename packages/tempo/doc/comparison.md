@@ -13,6 +13,7 @@ If you are choosing a date library today, you are likely looking at **Day.js**, 
 | **Foundation** | **Native Temporal** | Native Temporal | Legacy `Date` | Legacy `Intl` + `Date` | Legacy `Date` |
 | **Precision** | **Nanoseconds** | Nanoseconds | Milliseconds | Milliseconds | Milliseconds |
 | **Parsing** | **Human-Centric** | Strict ISO Only | Strict / Plugin | Strict | Modular / Strict |
+| **Formatting** | **Smart Tokens & Getters** | Verbose `Intl` Only | Token-Based (Moment style) | Token-Based (Unicode) | Token-Based (Unicode helper) |
 | **Business Logic** | **Terms System** | Manual Math | Manual Math | Manual Math | Manual Math |
 | **Time Zones** | **First-Class** | First-Class | Plugin-based | Built-in | Separate Lib |
 | **Future-Proof** | **100% (Native)** | 100% (Native) | Deprecated/Legacy | Legacy Bridge | Legacy Bridge |
@@ -22,7 +23,7 @@ If you are choosing a date library today, you are likely looking at **Day.js**, 
 ## 💎 Why Tempo Wins
 
 ### 1. The "Terms" Engine (Business Intelligence)
-Most libraries stop at "adding 2 days." Tempo introduces the **Terms** system, allowing you to encode domain-specific logic (Fiscal Quarters, Meteorological Seasons, Academic terms, Zodiac Signs) directly into the tempo `term` object. 
+Most libraries stop at "adding 2 days." Tempo introduces the **Terms** system, allowing you to encode domain-specific logic (Fiscal Quarters, Meteorological Seasons, Academic terms, Zodiac Signs) directly into the Tempo `term` object. 
 > *Competition:* You have to write custom utility functions and import them everywhere.
 
 ### 2. Human-Centric Parsing
@@ -35,6 +36,12 @@ Native `Date` (and thus Day.js/Luxon/date-fns) is limited to milliseconds. For h
 
 ### 4. Zero "Leaky Abstractions"
 When you use a legacy library, you are often fighting the weirdness of the 1995 `Date` object (like months being 0-indexed). Tempo is built on `Temporal`, which was designed from the ground up to be mathematically sound and developer-friendly.
+
+### 5. Intelligent Formatting & Shorthands
+While native Temporal is highly precise, formatting dates for a UI in native Temporal is extremely verbose. It relies entirely on the native `Intl` API, requiring you to construct complex option objects or use long `.toLocaleString()` boilerplate just to output simple strings.
+
+Tempo solves this by offering a **Smart Token Engine** (using `{yyyy}-{mm}-{dd}` placeholders) alongside built-in, highly optimized format getters like `.fmt.date`, `.fmt.time`, or `.fmt.dateTime`. In addition, Tempo automatically memoizes internal formatters under the hood, delivering top-tier performance without developer boilerplate.
+> *Competition:* Raw Temporal requires verbose `Intl` configurations; legacy libraries require large plugins or separate helper imports.
 
 ---
 

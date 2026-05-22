@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   
+## [2.10.1] - 2026-05-22
+
+### Added
+- **Build Pipeline Visuals**: Upgraded the `rollup.config.js` build output with high-visibility, color-coded ANSI banners to clearly distinguish between `PREMIUM` and `COMMUNITY` build targets.
+
+### Changed
+- **Discovery Architecture**: Deprecated and purged the legacy `__TEMPO_DISCOVERY__` global discovery approach in favor of a strict `TEMPO_LICENSE_KEY` and Symbol-based registry pipeline.
+- **Security Hardening**: Redacted the raw JWT key from the public `Tempo.license` snapshot to prevent accidental exposure of credentials in debug logs.
+
+### Fixed
+- **License Snapshot Resilience**: Implemented a safety guard in `Tempo.license` to normalize `raw.scopes` before iteration, eliminating potential runtime exceptions when scopes are absent.
+- **Cross-Platform Build Stability**: Updated the `resolve-types.ts` build script to utilize Node's native `fileURLToPath` for deterministic `__dirname` resolution across all operating systems.
+- **Local Dev Extensibility**: Allowed `LIC_SRC_DIR` to be overridden via environment variables in the type resolution script, supporting customized development workflows while maintaining strict production fallbacks.
+  
 ## [2.10.0] - 2026-05-11
 
 ### Added

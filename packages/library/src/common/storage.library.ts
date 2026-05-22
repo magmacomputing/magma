@@ -65,7 +65,7 @@ export function getStorage<T>(key?: string, dflt?: T): T | undefined {
 	}
 
 	return isString(store)
-		? objectify<T>(store)																	// rebuild object from its stringified representation
+		? objectify<T>(store)																		// rebuild object from its stringified representation
 		: dflt;
 }
 
@@ -85,6 +85,12 @@ export function setStorage<T>(key: string, val?: T) {
 			set
 				? (context.global.process.env[key] = stash)
 				: (delete context.global.process.env[key])
+			break;
+
+		case CONTEXT.Deno:
+			set
+				? context.global.Deno.env.set(key, stash)
+				: context.global.Deno.env.delete(key);
 			break;
 
 		case CONTEXT.GoogleAppsScript:
