@@ -41,7 +41,7 @@ console.log(t.term.astronomy);
 
 **How to get it:**
 1. Run `npm install @magmacomputing/tempo-plugin-astro` in your project.
-2. Send us an email at [tempo-keys@magmacomputing.com.au](mailto:tempo-keys@magmacomputing.com.au) with your preferred email address, and we will issue a **one-year expiry key** straight to your inbox.
+2. Visit [magmacomputing.com.au/tempo/license.html](https://magmacomputing.com.au/tempo/license.html) to request your **one-year expiry key**, which will be instantly issued to your inbox.
 
 ## ⚙️ Applying Your License Key
 
