@@ -4,7 +4,7 @@ import { Logify } from '#library/logify.class.js';
 import { Immutable, Serializable } from '#library/class.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
-import { secure, proxify, delegate } from '#library/proxy.library.js';
+import { secure, proxify, delegate, indexedArray } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { enumify } from '#library/enumerate.library.js';
 import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
@@ -94,7 +94,28 @@ export class Tempo {
 	/** Tempo state for the global configuration */						static #global = {} as Internal.State;
 	/** cache for next-available 'usr' Token key */						static #usrCount = 0;
 	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return getRuntime().pluginsDb.terms }
-	/** global license state */																static get license() { return getRuntime().license }
+	/** @internal raw license state */												static get #license() { return getRuntime().license }
+	/** human-readable formatted license state */							static get license() {
+		const { jws, key, ...raw } = Tempo.#license;						// omit internal Pledge and JWT string from user-facing snapshot
+		const ss = { timeStamp: 'ss' } as const;								// JWT timestamps are always in seconds (RFC 7519)
+		const scopesSource = (raw.scopes && typeof raw.scopes === 'object') ? raw.scopes : {};
+		const scopes = Object.fromEntries(
+			Object.entries(scopesSource).map(([key, scope]) => {
+				const s = scope as any;
+				return [key, {
+					...s,
+					...(typeof s.exp === 'number' && { exp: new Tempo(s.exp, ss).fmt.weekTime }),
+					...(typeof s.updated_at === 'number' && { updated_at: new Tempo(s.updated_at, ss).fmt.weekTime }),
+				}];
+			})
+		);
+		return secure({
+			...raw,
+			scopes,
+			...(typeof raw.expires === 'number' && { expires: new Tempo(raw.expires, ss).fmt.weekTime }),
+			...(typeof raw.issuedAt === 'number' && { issuedAt: new Tempo(raw.issuedAt, ss).fmt.weekTime }),
+		});
+	}
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
 	/** flag to prevent recursion during init */							static #lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
 	/** Master Guard predicate (implements RegExp-like interface) */static #guard: { test(str: string): boolean } = { test: () => true };
@@ -947,14 +968,8 @@ export class Tempo {
 			}
 		});
 
-		// `delegate` returns an array-like proxy that also supports string lookups; use
-		// an `unknown` bridge to assert the combined intersection type so the compiler
 		// treats `Tempo.terms` as array-like and indexable by key.
-		return delegate(list, (key) => {
-			return (isString(key) && !['length', 'map', 'find', 'forEach', 'includes'].includes(key))
-				? list.find(t => t.key === key || t.scope === key)
-				: undefined;
-		}) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
+		return indexedArray(list, key => list.find(t => t.key === key || t.scope === key)) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
 	}
 
 	/** static Tempo.formats (registry) */

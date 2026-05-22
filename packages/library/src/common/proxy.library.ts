@@ -2,7 +2,7 @@ import { sym } from '#library/symbol.library.js';
 import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { unwrap } from '#library/primitive.library.js';
-import { isFunction, isSymbol, isDefined } from '#library/assertion.library.js';
+import { isString, isFunction, isSymbol, isDefined } from '#library/assertion.library.js';
 import { registerType, type Constructor } from '#library/type.library.js';
 
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
@@ -171,4 +171,22 @@ export function secure<const T extends object>(obj: T, skip = new WeakSet<object
 export function delegator<K extends string | symbol>(keys: K[] | Record<K, any>, fn: (prop: K) => any): Record<K, any> {
 	const keyList = Array.isArray(keys) ? keys : Reflect.ownKeys(keys) as K[];
 	return factory({} as any, { keys: keyList, onGet: fn as any, frozen: true });
+}
+
+/**
+ * ## indexedArray
+ * Augments a standard array with a Proxy-based lookup delegate.
+ * Allows index/enumerable array methods to function natively (e.g. map, filter, [0], length),
+ * while redirecting non-numeric string keys to a custom finder function to lookup items.
+ */
+export function indexedArray<T extends object>(
+	list: T[],
+	finder: (key: string) => T | undefined,
+	readonly = true
+): T[] & Record<string, T> {
+	return delegate(list, (key) => {
+		return (isString(key) && key !== 'length' && !(key in Array.prototype) && isNaN(Number(key)))
+			? finder(key)
+			: undefined;
+	}, readonly) as any;
 }

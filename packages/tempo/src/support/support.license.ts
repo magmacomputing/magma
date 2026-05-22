@@ -1,3 +1,5 @@
+import { decodeJWT } from '#library/utility.library.js';
+
 /**
  * # Tempo Licensing Engine (Open Core)
  * This is the default no-op implementation for the public repository.
@@ -7,9 +9,10 @@
 export class Validator {
 	constructor(public key: string) { }
 	async verify() {
+		const claims = decodeJWT(this.key);
 		return {
 			status: 'active' as const,
-			scopes: {} as Record<string, { exp?: number; updated_at?: number }>,
+			scopes: (claims?.permissions || {}) as Record<string, { exp?: number; updated_at?: number }>,
 		}
 	}
 	async syncRevocation(_jwsUrl: string, _currentJti: string): Promise<boolean> {
