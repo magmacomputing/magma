@@ -17,11 +17,7 @@ const LIB_DEST_DIR = path.resolve(DIST_DIR, 'lib');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LIC_SRC_DIR = process.env.LIC_SRC_DIR || path.resolve(__dirname, '../../../../tempo-plugin/internal/@core/dist');
 
-if (!fs.existsSync(LIC_SRC_DIR)) {
-  console.error(`\n⚠️  ERROR: External license directory not found: ${LIC_SRC_DIR}`);
-  console.error(`⚠️  Cannot build premium module without proprietary @core types.\n`);
-  process.exit(1);
-}
+const isPremiumAvailable = fs.existsSync(LIC_SRC_DIR);
 
 const LIC_DEST_DIR = path.resolve(DIST_DIR, 'lic');
 
@@ -48,10 +44,19 @@ usedModules.forEach(mod => {
 
 // 4. Copy licensing core types
 if (!fs.existsSync(LIC_DEST_DIR)) fs.mkdirSync(LIC_DEST_DIR, { recursive: true });
-const licFiles = fs.readdirSync(LIC_SRC_DIR).filter(f => f.endsWith('.d.ts'));
-licFiles.forEach(file => {
-  fs.copyFileSync(path.join(LIC_SRC_DIR, file), path.join(LIC_DEST_DIR, file));
-});
+
+if (isPremiumAvailable) {
+  const licFiles = fs.readdirSync(LIC_SRC_DIR).filter(f => f.endsWith('.d.ts'));
+  licFiles.forEach(file => {
+    fs.copyFileSync(path.join(LIC_SRC_DIR, file), path.join(LIC_DEST_DIR, file));
+  });
+} else {
+  console.log('ℹ️  Premium licensing not found. Falling back to Open Core types.');
+  const defaultLicType = path.resolve(DIST_DIR, 'support/support.license.d.ts');
+  if (fs.existsSync(defaultLicType)) {
+    fs.copyFileSync(defaultLicType, path.join(LIC_DEST_DIR, 'index.d.ts'));
+  }
+}
 
 // 5. Walk through all .d.ts files in dist/ to rewrite aliases
 function walk(dir: string) {
