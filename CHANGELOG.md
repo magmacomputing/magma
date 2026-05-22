@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.2] - 2026-05-22
+
+### Fixed
+- **Open Core Build Fallback**: Updated the `build:resolve` script to gracefully fallback to Open Core licensing types when the proprietary `@core` module is unavailable, resolving CI build failures in public GitHub Actions environments.
+
 ## [2.10.0] - 2026-05-11
 
 ### Added
