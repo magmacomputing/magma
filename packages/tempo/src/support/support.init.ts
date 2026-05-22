@@ -128,13 +128,8 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 
 		// 4. Discovery Cascade (License)
 		let key = options.license;
-		if (!key) {
-			const discovery = (globalThis as any).__TEMPO_DISCOVERY__;
-			key = discovery?.license || discovery?.options?.license;
-		}
-		// if (!key) key = getStorage('TEMPO_LICENSE');
+
 		if (!key) key = getStorage('TEMPO_LICENSE_KEY');
-		// if (!key) key = (globalThis as any).TEMPO_LICENSE;
 		if (!key) key = (globalThis as any).TEMPO_LICENSE_KEY;
 
 		if (key) setLicense(state, key);

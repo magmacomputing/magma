@@ -13,7 +13,15 @@ const DIST_DIR = path.resolve('dist');
 const LIB_SRC_DIR = path.resolve('../library/dist/common');
 const LIB_DEST_DIR = path.resolve(DIST_DIR, 'lib');
 
-const LIC_SRC_DIR = path.resolve('../../../tempo-plugin/internal/@core/dist');
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const LIC_SRC_DIR = path.resolve(__dirname, '../../../../tempo-plugin/internal/@core/dist');
+
+if (!fs.existsSync(LIC_SRC_DIR)) {
+  console.error(`\n⚠️  ERROR: External license directory not found: ${LIC_SRC_DIR}`);
+  console.error(`⚠️  Cannot build premium module without proprietary @core types.\n`);
+  process.exit(1);
+}
+
 const LIC_DEST_DIR = path.resolve(DIST_DIR, 'lic');
 
 console.log('Resolving type definitions...');
@@ -38,25 +46,13 @@ usedModules.forEach(mod => {
 });
 
 // 4. Copy licensing core types
-if (fs.existsSync(LIC_SRC_DIR)) {
-  if (!fs.existsSync(LIC_DEST_DIR)) fs.mkdirSync(LIC_DEST_DIR, { recursive: true });
-  const licFiles = fs.readdirSync(LIC_SRC_DIR).filter(f => f.endsWith('.d.ts'));
-  licFiles.forEach(file => {
-    fs.copyFileSync(path.join(LIC_SRC_DIR, file), path.join(LIC_DEST_DIR, file));
-  });
-} else {
-  console.warn(`\n⚠️  WARNING: External license directory not found: ${LIC_SRC_DIR}`);
-  console.warn(`⚠️  Creating fallback minimal types in ${LIC_DEST_DIR}\n`);
-  if (!fs.existsSync(LIC_DEST_DIR)) fs.mkdirSync(LIC_DEST_DIR, { recursive: true });
-  const fallbackSrc = path.join(DIST_DIR, 'support', 'support.license.d.ts');
-  if (fs.existsSync(fallbackSrc)) {
-    fs.copyFileSync(fallbackSrc, path.join(LIC_DEST_DIR, 'index.d.ts'));
-  } else {
-    fs.writeFileSync(path.join(LIC_DEST_DIR, 'index.d.ts'), 'export {};\n');
-  }
-}
+if (!fs.existsSync(LIC_DEST_DIR)) fs.mkdirSync(LIC_DEST_DIR, { recursive: true });
+const licFiles = fs.readdirSync(LIC_SRC_DIR).filter(f => f.endsWith('.d.ts'));
+licFiles.forEach(file => {
+  fs.copyFileSync(path.join(LIC_SRC_DIR, file), path.join(LIC_DEST_DIR, file));
+});
 
-// 4. Walk through all .d.ts files in dist/ to rewrite aliases
+// 5. Walk through all .d.ts files in dist/ to rewrite aliases
 function walk(dir: string) {
   const files = fs.readdirSync(dir);
   for (const file of files) {

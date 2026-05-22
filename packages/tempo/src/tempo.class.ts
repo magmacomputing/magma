@@ -96,7 +96,7 @@ export class Tempo {
 	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return getRuntime().pluginsDb.terms }
 	/** @internal raw license state */												static get #license() { return getRuntime().license }
 	/** human-readable formatted license state */							static get license() {
-		const { jws, ...raw } = Tempo.#license;									// omit internal Pledge from user-facing snapshot
+		const { jws, key, ...raw } = Tempo.#license;						// omit internal Pledge and JWT string from user-facing snapshot
 		const ss = { timeStamp: 'ss' } as const;								// JWT timestamps are always in seconds (RFC 7519)
 		const scopes = Object.fromEntries(
 			Object.entries(raw.scopes).map(([key, scope]) => {

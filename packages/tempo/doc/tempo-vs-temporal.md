@@ -40,7 +40,7 @@ date.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }
 
 **Tempo 🚀**
 ```javascript
-const t = new Tempo();
+const t = new Tempo('2026-01-24T12:00:00');
 
 // Use the format method to create custom formats, or use the pre-built getters (on the 'fmt' property)
 t.format('{dd} {mmm} {yyyy}');            // Output: "24 Jan 2026"
@@ -67,11 +67,11 @@ const fiscalQuarter = `Q${Math.ceil(month / 3)}`; // Manual math
 Tempo solves this elegantly using the **Terms** plugin system. Terms are lazy-loaded plugins that evaluate the current date against semantic boundaries without adding memory bloat.
 
 ```javascript
-const t = new Tempo();
+const t = new Tempo('2026-01-24T12:00:00', { sphere: 'north' });
 
 // Built-in complex Terms via the standard plugin
 t.term.qtr; // → 'Q1' (Calculates fiscal quarter)
-t.term.szn; // → 'Summer' (Calculates meteorological season, respecting hemisphere)
+t.term.szn; // → 'Winter' (Calculates meteorological season, respecting hemisphere)
 ```
 
 For more information on adding your own business logic, see the [Terms Guide](tempo.term.md).
@@ -83,16 +83,16 @@ Calculating the difference between two dates in native Temporal is mathematicall
 Tempo also provides a built-in **log-stamp** format for dropping a compact, sortable timestamp into a log entry:
 
 ```javascript
-const t = new Tempo();
+const t = new Tempo('2026-05-20T13:55:19.623319620');
 t.fmt.logStamp;  // → "20260520T135519.623319620"
-//                      ^^^^^^^^ ^^^^^^ ^^^^^^^^^
-//                      date     time   sub-seconds (nanosecond precision)
+//                     ^^^^^^^^ ^^^^^^ ^^^^^^^^^
+//                     date     time   sub-seconds (nanosecond precision)
 ```
 
 This format (`Tempo.FORMAT.logStamp`) is configurable via `Tempo.init`:
 ```javascript
 Tempo.init({ formats: { logStamp: '{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}' } });
-new Tempo().fmt.logStamp;  // → "2026-05-20 13:55:19"
+new Tempo('2026-05-20T13:55:19.623319620').fmt.logStamp;  // → "2026-05-20 13:55:19"
 ```
 
 **Native Temporal 🐢**
@@ -106,12 +106,15 @@ const duration = now.until(target); // Returns a complex Duration object
 Tempo understands natural language targets and can format the resulting difference flexibly. `t.until()` and `t.since()` have distinct return types:
 
 ```javascript
-const t = new Tempo();
+const t = new Tempo('2026-05-20T11:35:33');
+const t2 = new Tempo('2026-05-22T11:35:33');
 
 // t.until(target, unit) → number
 t.until('afternoon', 'minutes'); // → 84.45  (fractional: 'afternoon' has a fixed time, e.g. 13:00)
 t.until('xmas', 'days');         // → 219    (whole number — see note below)
 t.until('xmas', 'weeks');        // → 31.28  (fractional — weeks don't divide evenly into days)
+t.until(t2, 'hours');            // → 48     (targets can also be other Tempo instances)
+t.until(Temporal.Now.plainDateISO(), 'days');  // → 1     (same day = 1 day)
 
 // t.until(target)       → Tempo.Duration object (with .iso, .years, .days, … fields)
 t.until('xmas');         // → { iso: "P219DT0H0M0S", years: 0, months: 7, days: 4, ... }
