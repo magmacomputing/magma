@@ -98,8 +98,9 @@ export class Tempo {
 	/** human-readable formatted license state */							static get license() {
 		const { jws, key, ...raw } = Tempo.#license;						// omit internal Pledge and JWT string from user-facing snapshot
 		const ss = { timeStamp: 'ss' } as const;								// JWT timestamps are always in seconds (RFC 7519)
+		const scopesSource = (raw.scopes && typeof raw.scopes === 'object') ? raw.scopes : {};
 		const scopes = Object.fromEntries(
-			Object.entries(raw.scopes).map(([key, scope]) => {
+			Object.entries(scopesSource).map(([key, scope]) => {
 				const s = scope as any;
 				return [key, {
 					...s,

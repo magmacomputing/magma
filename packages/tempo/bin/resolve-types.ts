@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * resolve-types.ts
@@ -13,8 +14,8 @@ const DIST_DIR = path.resolve('dist');
 const LIB_SRC_DIR = path.resolve('../library/dist/common');
 const LIB_DEST_DIR = path.resolve(DIST_DIR, 'lib');
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
-const LIC_SRC_DIR = path.resolve(__dirname, '../../../../tempo-plugin/internal/@core/dist');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const LIC_SRC_DIR = process.env.LIC_SRC_DIR || path.resolve(__dirname, '../../../../tempo-plugin/internal/@core/dist');
 
 if (!fs.existsSync(LIC_SRC_DIR)) {
   console.error(`\n⚠️  ERROR: External license directory not found: ${LIC_SRC_DIR}`);
