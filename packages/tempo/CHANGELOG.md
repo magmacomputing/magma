@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.10.2] - Unreleased
 
 ### Added
-- *(New features will be documented here)*
+- **Duration Mathematics**: Introduced the `.balance()` method to `Tempo.Duration` objects to allow intelligent mathematical roll-up of duration units (e.g., converting 365 days into 1 year), with support for both strict calendar math and nominal overrides (`{ nominal: true }`).
+- **Duration Formatting**: Introduced the `.format()` method to `Tempo.Duration` objects, utilizing `Intl.NumberFormat` to generate highly localized absolute duration strings based on the largest non-zero unit.
+- **Cascading Configuration**: Added `numberFormat` to the `IntlOptions` interface, allowing developers to set global formatting defaults (like `unitDisplay: 'short'`) via `Tempo.init()` that seamlessly cascade down to all `.format()` calls.
   
 ## [2.10.1] - 2026-05-22
 

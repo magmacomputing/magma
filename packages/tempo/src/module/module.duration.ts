@@ -37,8 +37,8 @@ declare module '#library/type.library.js' {
 /**
  * Convert a Temporal.Duration to a full Tempo.Duration object (EDO).
  */
-function toDuration(dur: Temporal.Duration): Tempo.Duration {
-	return getAccessors(dur)
+function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: string, numberFormat?: any } = {}): Tempo.Duration {
+	const edo = getAccessors(dur)
 		.reduce((acc, d) => Object.assign(acc, ifDefined({ [d]: (dur as any)[d] })),
 			{
 				iso: dur.toString(),
@@ -46,6 +46,79 @@ function toDuration(dur: Temporal.Duration): Tempo.Duration {
 				blank: dur.blank,
 				unit: undefined
 			} as Tempo.Duration);
+
+	Object.defineProperty(edo, 'balance', {
+		value: function (opts: any = {}) {
+			const { nominal, largestUnit = 'year', relativeTo: customAnchor } = opts;
+
+			if (nominal) {
+				// Mathematical mapping logic
+				let { years, months, weeks, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds } = dur;
+				let totalDays = days + weeks * 7 + months * 30 + years * 365;
+
+				years = Math.floor(totalDays / 365);
+				totalDays %= 365;
+
+				months = Math.floor(totalDays / 30);
+				totalDays %= 30;
+
+				weeks = Math.floor(totalDays / 7);
+				totalDays %= 7;
+
+				days = totalDays;
+
+				const newDur = Temporal.Duration.from({
+					years, months, weeks, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds,
+					sign: dur.sign
+				});
+				return toDuration(newDur, { ...ctx, relativeTo: customAnchor || ctx.relativeTo });
+			}
+
+			// Strict Temporal balancing
+			const anchor = customAnchor || ctx.relativeTo;
+			if (!anchor) throw new Error("A relativeTo anchor is required for strict balancing. Pass an anchor or use { nominal: true } for mathematical balancing.");
+
+			const balanced = dur.round({ largestUnit, relativeTo: anchor });
+			return toDuration(balanced, { ...ctx, relativeTo: anchor });
+		},
+		enumerable: false
+	});
+
+	Object.defineProperty(edo, 'format', {
+		value: function (opts: any = {}) {
+			const { locales, ...intlOpts } = opts;
+
+			// Find the largest non-zero unit to format.
+			let val = 0;
+			let u = '';
+			if (this.years) { val = this.years; u = 'year'; }
+			else if (this.months) { val = this.months; u = 'month'; }
+			else if (this.weeks) { val = this.weeks; u = 'week'; }
+			else if (this.days) { val = this.days; u = 'day'; }
+			else if (this.hours) { val = this.hours; u = 'hour'; }
+			else if (this.minutes) { val = this.minutes; u = 'minute'; }
+			else if (this.seconds) { val = this.seconds; u = 'second'; }
+
+			if (!u) return '0';																		// or some fallback
+
+			if (typeof ctx.numberFormat === 'function') {
+				return ctx.numberFormat(val, u);
+			}
+
+			const formatter = new Intl.NumberFormat(locales || ctx.locale || (typeof navigator !== 'undefined' ? navigator.language : 'en-US'), {
+				style: 'unit',
+				unit: u,
+				unitDisplay: 'long',
+				...(ctx.numberFormat || {}),
+				...intlOpts
+			});
+
+			return formatter.format(val);
+		},
+		enumerable: false
+	});
+
+	return edo;
 }
 
 /**
@@ -104,7 +177,9 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 		unit = `${singular(unit)}s`;
 
 	if (isUndefined(unit) || since) {
-		const res = toDuration(dur);
+		const locale = (this as any)?.config?.locale;
+		const numberFormat = opts['intl']?.numberFormat || (this as any)?.config?.intl?.numberFormat;
+		const res = toDuration(dur, { relativeTo: selfZdt, locale, numberFormat });
 		if (unit) res.unit = unit;
 
 		if (!since) return res;
@@ -116,8 +191,6 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			.map(Math.abs)
 			.map(nbr => nbr.toString().padStart(3, '0'))
 			.join('')
-
-		const locale = (this as any).config['locale'];
 		const rtConfig = (this as any).config.intl?.relativeTime;
 		const rtOptions = opts['relativeTime'];
 
@@ -157,9 +230,9 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
  * string -> EDO
  * DurationLikeObject -> EDO (with iso string)
  */
-(duration as any).toDuration = (input: string | Temporal.DurationLikeObject) => {
+(duration as any).toDuration = (input: string | Temporal.DurationLikeObject, ctx?: any) => {
 	const dur = Temporal.Duration.from(input);
-	return toDuration(dur);
+	return toDuration(dur, ctx);
 }
 
 /**
