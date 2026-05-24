@@ -803,15 +803,18 @@ export class Tempo {
 				Tempo.#dbg.info(this.config, 'Tempo:', state.config);
 
 			Tempo.#lifecycle.ready = true;
-			setPatterns(state);										// rebuild the global patterns (Master Guard etc)
+			setPatterns(state);																		// rebuild the global patterns (Master Guard etc)
 
 			// 🏛️ Licensing Reckoning (Background Verification)
 			if (rt.license.jws?.isPending) {
+				const jws = rt.license.jws;
 				import('#tempo/license')
-					.then(m => rt.license.jws?.resolve(m))
+					.then(m => jws.resolve(m))
 					.catch(err => {
-						rt.license.status = LICENSE.None;
-						rt.license.jws?.reject(err);
+						// If the stored JWS is still the same (i.e. we haven't set a new one since), then clear the status
+						if (rt.license.jws === jws)
+							rt.license.status = LICENSE.None;
+						jws.reject(err);
 					});
 			}
 

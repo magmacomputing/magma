@@ -1,9 +1,9 @@
 import { getTemporalIds } from '#library/temporal.library.js';
-import { isString, isObject, isDefined, isUndefined } from '#library/assertion.library.js';
+import { isString, isObject, isDefined, isUndefined, isFunction } from '#library/assertion.library.js';
 import { singular } from '#library/string.library.js';
 import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
-import { getRelativeTime } from '#library/international.library.js';
+import { getRelativeTime, formatNumber } from '#library/international.library.js';
 
 import { defineInterpreterModule, interpret, type TempoModule } from '../plugin/plugin.util.js';
 import { enums, isTempo } from '#tempo/support';
@@ -71,14 +71,17 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 					years, months, weeks, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds,
 					sign: dur.sign
 				});
+
 				return toDuration(newDur, { ...ctx, relativeTo: customAnchor || ctx.relativeTo });
 			}
 
 			// Strict Temporal balancing
 			const anchor = customAnchor || ctx.relativeTo;
-			if (!anchor) throw new Error("A relativeTo anchor is required for strict balancing. Pass an anchor or use { nominal: true } for mathematical balancing.");
+			if (!anchor)
+				throw new Error("A relativeTo anchor is required for strict balancing. Pass an anchor or use { nominal: true } for mathematical balancing.");
 
 			const balanced = dur.round({ largestUnit, relativeTo: anchor });
+
 			return toDuration(balanced, { ...ctx, relativeTo: anchor });
 		},
 		enumerable: false
@@ -101,19 +104,17 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 
 			if (!u) return '0';																		// or some fallback
 
-			if (typeof ctx.numberFormat === 'function') {
+			if (isFunction(ctx.numberFormat))
 				return ctx.numberFormat(val, u);
-			}
 
-			const formatter = new Intl.NumberFormat(locales || ctx.locale || (typeof navigator !== 'undefined' ? navigator.language : 'en-US'), {
+			const locale = locales || ctx.locale;
+			return formatNumber(val, locale, {
 				style: 'unit',
 				unit: u,
 				unitDisplay: 'long',
 				...(ctx.numberFormat || {}),
 				...intlOpts
 			});
-
-			return formatter.format(val);
 		},
 		enumerable: false
 	});
@@ -194,15 +195,16 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 		const rtConfig = (this as any).config.intl?.relativeTime;
 		const rtOptions = opts['relativeTime'];
 
-		const rtf = (typeof rtOptions === 'function' ? rtOptions : rtOptions?.format)
-			|| (typeof rtConfig === 'function' ? rtConfig : rtConfig?.format)
+		const rtf = (isFunction(rtOptions) ? rtOptions : rtOptions?.format)
+			|| (isFunction(rtConfig) ? rtConfig : rtConfig?.format)
 			|| opts['rtfFormat'] || (this as any).config['rtfFormat'];
 
 		const getFormatted = (val: number, u: any) => {
-			if (typeof rtf === 'function') return rtf(val, u);
-			if (rtf instanceof Intl.RelativeTimeFormat) return rtf.format(val, u);
+			const su = singular(u);
+			if (isFunction(rtf)) return rtf(val, su);
+			if (rtf instanceof Intl.RelativeTimeFormat) return rtf.format(val, su);
 			const style = rtOptions?.style || rtConfig?.style || opts['intl']?.relativeTime?.style || opts['rtfStyle'] || (this as any).config.intl?.relativeTime?.style || (this as any).config['rtfStyle'] || 'narrow';
-			return getRelativeTime(val, u, locale, style);
+			return getRelativeTime(val, su as Intl.RelativeTimeFormatUnit, locale, style);
 		}
 
 		switch (res.unit) {
@@ -240,6 +242,10 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
  */
 export const DurationModule: TempoModule = defineInterpreterModule('DurationModule', duration, {
 	duration(this: typeof Tempo, input: any) {
-		return interpret(this, 'DurationModule', 'toDuration', false, input);
+		const ctx = {
+			locale: this.config?.locale,
+			numberFormat: this.config?.intl?.numberFormat
+		};
+		return interpret(this, 'DurationModule', 'toDuration', false, input, ctx);
 	}
 });

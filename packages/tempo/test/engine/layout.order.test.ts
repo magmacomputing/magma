@@ -2,7 +2,7 @@ import { Tempo } from '#tempo';
 
 describe('layout matching order', () => {
 	beforeEach(() => {
-		Tempo.init();
+		Tempo.init({ locale: 'en-US' });
 	});
 
 	test('uses month-day-year first for US timezone on compact 8-digit input', () => {

@@ -3,6 +3,10 @@ import { Tempo } from '#tempo';
 const label = 'instance.since:';
 
 describe(`${label} since method`, () => {
+	beforeEach(() => {
+		Tempo.init({ locale: 'en-US' });
+	});
+
 	test('calculates time elapsed from a past date', () => {
 		const t1 = new Tempo('2024-01-01T12:00:00');
 		const t2 = new Tempo('2024-01-01T14:30:00');
