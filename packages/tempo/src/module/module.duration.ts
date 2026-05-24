@@ -56,14 +56,14 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 				let { years, months, weeks, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds } = dur;
 				let totalDays = days + weeks * 7 + months * 30 + years * 365;
 
-				years = Math.floor(totalDays / 365);
-				totalDays %= 365;
+				years = Math.trunc(totalDays / 365);
+				totalDays -= years * 365;
 
-				months = Math.floor(totalDays / 30);
-				totalDays %= 30;
+				months = Math.trunc(totalDays / 30);
+				totalDays -= months * 30;
 
-				weeks = Math.floor(totalDays / 7);
-				totalDays %= 7;
+				weeks = Math.trunc(totalDays / 7);
+				totalDays -= weeks * 7;
 
 				days = totalDays;
 
@@ -101,6 +101,9 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 			else if (this.hours) { val = this.hours; u = 'hour'; }
 			else if (this.minutes) { val = this.minutes; u = 'minute'; }
 			else if (this.seconds) { val = this.seconds; u = 'second'; }
+			else if (this.milliseconds) { val = this.milliseconds; u = 'millisecond'; }
+			else if (this.microseconds) { val = this.microseconds; u = 'microsecond'; }
+			else if (this.nanoseconds) { val = this.nanoseconds; u = 'nanosecond'; }
 
 			if (!u) return '0';																		// or some fallback
 
