@@ -2,7 +2,7 @@ import { Tempo } from '#tempo';
 
 describe('compact hhmiss parsing', () => {
 	beforeEach(() => {
-		Tempo.init();
+		Tempo.init({ locale: 'en-US' });
 	});
 
 	test('parses 093015 as 09:30:15', () => {

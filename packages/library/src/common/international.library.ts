@@ -16,6 +16,11 @@ const getDTF = memoizeFunction((locale?: string) => {
 	return new Intl.DateTimeFormat(locale);
 });
 
+/** memoized helper for Intl.NumberFormat instances */
+const getNF = memoizeFunction((locale?: string, options?: Intl.NumberFormatOptions) => {
+	return new Intl.NumberFormat(locale, options);
+});
+
 /**
  * International Cookbook  
  * (using 'Intl' namespace objects)
@@ -50,6 +55,24 @@ export function formatList(list: string[], locale?: string, type: Intl.ListForma
 		return getLF(locale, type, style).format(list);
 	} catch (e) {
 		return list.join(', ');
+	}
+}
+
+/** return a localized number string */
+export function formatNumber(value: number, locale?: string, options?: Intl.NumberFormatOptions) {
+	try {
+		return getNF(locale, options).format(value);
+	} catch (e) {
+		return value.toString();
+	}
+}
+
+/** return a localized unit string (e.g., '2 days') */
+export function formatUnit(value: number, unit: string, locale?: string, unitDisplay: Intl.NumberFormatOptions['unitDisplay'] = 'long') {
+	try {
+		return getNF(locale, { style: 'unit', unit, unitDisplay }).format(value);
+	} catch (e) {
+		return `${value} ${unit}`;
 	}
 }
 

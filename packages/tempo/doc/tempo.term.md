@@ -158,7 +158,7 @@ Tempo.extend(QuarterTerm);
 
 A Term plugin is ideally created using the **`defineTerm`** factory function provided by the library. This ensures correct type-inference and automatically handles registration during the discovery phase.
 
-For commercial plugins that require a valid license to execute, use the **`definePremiumTerm`** factory instead. This wrapper automatically intercepts property evaluations and validates the `license` state in the global Tempo registry, securely guarding your plugin's functionality.
+If you are developing a commercial plugin and require license enforcement, simply build your logic using the standard `defineTerm` factory. Once ready for the marketplace, contact Magma Computing to have our proprietary licensing and cryptographic verification engine wrapped around your plugin prior to distribution.
 
 ### Plugin Definition
 

@@ -125,8 +125,8 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	const { wkd, mod, nbr = '1', sfx, afx, ...rest } = groups as Lexer.GroupWkd;
 	if (isUndefined(wkd)) return dateTime;
 
-	const time = ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'] as const;
-	if (!ownKeys(rest).every(key => (time as ReadonlyArray<string>).includes(key as string)))
+	const time = ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'] as ReadonlyArray<string>;
+	if (!ownKeys(rest).every(key => time.includes(key) || key.startsWith('per')))
 		return dateTime;
 
 	if (!isEmpty(mod) && !isEmpty(sfx)) {

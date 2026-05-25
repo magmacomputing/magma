@@ -147,7 +147,10 @@ export type us = IntRange<0, 999>
 export type ns = IntRange<0, 999>
 export type ww = IntRange<1, 53>
 
-export type Duration = NonOptional<Temporal.DurationLikeObject> & Record<"iso", string> & Record<"sign", number> & Record<"blank", boolean> & Record<"unit", string | undefined>
+export type Duration = NonOptional<Temporal.DurationLikeObject> & Record<"iso", string> & Record<"sign", number> & Record<"blank", boolean> & Record<"unit", string | undefined> & { 
+	balance(opts?: { nominal?: boolean; relativeTo?: any; largestUnit?: Unit | string }): Duration; 
+	format(opts?: Intl.NumberFormatOptions & { locales?: string | string[] }): string;
+}
 
 /** pre-configured format strings */
 export type OwnFormat = enums.OwnFormat;
@@ -188,6 +191,7 @@ export interface RelativeTime {
 
 export interface IntlOptions {
 	/** relative time formatting configuration */							relativeTime?: RelativeTime | ((value: number, unit: any) => string);
+	/** absolute unit duration formatting configuration */		numberFormat?: Intl.NumberFormatOptions | ((value: number, unit: any) => string);
 }
 
 export interface PlannerOptions {

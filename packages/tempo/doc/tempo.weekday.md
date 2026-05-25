@@ -12,10 +12,9 @@ You can provide the short or full name of a Weekday.
 - `Wed`, `Wednesday`
 - `Sun`, `Sunday`
 
-When no modifier is provided, Tempo defaults to the Weekday in the **current week**.
-
 ### 2. Symbolic Modifiers
-Symbols can be used to indicate relative weeks or specific directions in time.
+Symbols can be used to indicate relative weeks or specific directions in time.  
+When no modifier is provided, Tempo defaults to the Weekday in the **current week**.
 
 | Modifier | Meaning | Example | Results in... |
 | :--- | :--- | :--- | :--- |
@@ -51,8 +50,8 @@ You can also specify the direction of time using a suffix.
 You can append time information to a Weekday string. Tempo will parse the Weekday first and then apply the time to that specific date.
 
 - `Mon 10:00am`
-- `Friday noon`
-- `Wed 15:30:00`
+- `>Friday noon`
+- `<3 Wed 15:30:00`
 
 ## How it Works
 1. **Normalization**: Weekday names are normalized to their 3-letter proper-case prefix (e.g., `monday` -> `Mon`).

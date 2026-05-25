@@ -2,7 +2,7 @@ import { Tempo } from '#tempo';
 
 describe('Slick Shorthand Resolution', () => {
   beforeEach(() => {
-    Tempo.init({ timeZone: 'UTC', sphere: 'north' });
+    Tempo.init({ timeZone: 'UTC', sphere: 'north', locale: 'en-US' });
   });
 
   it('move to next specific quarter (#qtr.>q2)', () => {

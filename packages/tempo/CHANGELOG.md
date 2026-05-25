@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.11.0] - 2026-05-25
+
+### Added
+- **Duration Mathematics**: Introduced the `.balance()` method to `Tempo.Duration` objects to allow intelligent mathematical roll-up of duration units (e.g., converting 365 days into 1 year), with support for both strict calendar math and nominal overrides (`{ nominal: true }`).
+- **Duration Formatting**: Introduced the `.format()` method to `Tempo.Duration` objects. This uses a shared, memoized `#library` implementation of `Intl.NumberFormat` to generate highly localized, plural-aware duration strings with excellent performance and robust cross-environment execution (no `navigator` dependencies).
+- **Cascading Configuration**: Added `numberFormat` to the `IntlOptions` interface, allowing developers to set global formatting defaults (like `unitDisplay: 'short'`) via `Tempo.init()` that seamlessly cascade down to all `.format()` calls.
+
+### Fixed
+- **Parsing**: Resolved an engine edge-case where combining relative weekday modifiers with string-based period aliases (e.g., `<3 Wed afternoon`) would cause the parser to prematurely abort the relative offset, instead applying the period to the current system date.
   
 ## [2.10.1] - 2026-05-22
 
