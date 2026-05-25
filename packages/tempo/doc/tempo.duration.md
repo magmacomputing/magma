@@ -28,7 +28,7 @@ const duration = now.until(xmas);
 now.until('afternoon', 'minutes'); // → 84.45  (fractional: 'afternoon' has a fixed time)
 now.until('xmas', 'days');         // → 219    (whole number — see note below)
 now.until('xmas', 'weeks');        // → 31.28  (fractional — weeks don't divide evenly into days)
-now.until(Tempo.Now(), 'hours');   // → 48     (targets can also be Temporal/Tempo instances)
+now.until(Tempo.now(), 'hours');   // → 48     (targets can also be Temporal/Tempo instances)
 ```
 
 ::: tip Date-only targets inherit the current time
@@ -41,23 +41,24 @@ When a target resolves to a **date without a time component** (e.g. `'xmas'`, `'
 This matches natural-language intuition: *"How many days until Christmas?"* expects `219`, not `219.43`. Targets with an **explicit time** (e.g. `'afternoon'`, `'9am'`) always produce fractional values because the target time differs from the anchor's current time-of-day.
 :::
 
-::: warning Return Types
-If you call `.until()` **without** a unit, it returns a `Tempo.Duration` object, onto which you can chain `.balance()` and `.format()` (see below). 
-If you provide a unit (like `'days'`), it returns a primitive JavaScript `Number`. Calling `.balance()` on a Number will throw an error.
-:::
-
 ### `.since()`
 Calculates the time elapsed *since* a past date. By default, it returns a human-readable localized string (powered by `Intl.RelativeTimeFormat`).
 
 ```javascript
+const now = new Tempo({ locale: 'en-US' });
 const birthday = new Tempo('1990-05-10');
 
 // 1. Returns localized relative string based on the given unit
-birthday.since('now', 'years');  // → "36 years ago" (depending on locale)
-birthday.since('now', 'days');   // → "13,150 days ago"
+now.since(birthday, 'years');  // → "36 years ago" (depending on locale)
+now.since(birthday, 'days');   // → "13,150 days ago"
 
-// 2. Returns an ISO 8601 Duration String if no unit is provided
-birthday.since('yesterday');     // → "-P35Y11M29DT9H32M19.402S"
+// 2. Pass a custom formatter for natural language output (e.g. "yesterday")
+const yesterday = now.add({ days: -1 });
+const autoFormat = new Intl.RelativeTimeFormat('en-US', { numeric: 'auto' });
+now.since(yesterday, { unit: 'days', intl: { relativeTime: { format: autoFormat } } }); // → "yesterday"
+
+// 3. Returns an ISO 8601 Duration String if no unit is provided
+now.since(birthday);     // → "-P36Y..."
 ```
 
 ::: info Return Type
@@ -76,6 +77,11 @@ console.log(dur.days); // 15
 ```
 
 ## Intelligent Balancing
+
+::: warning Return Types
+If you call `.until()` **without** a unit, it returns a `Tempo.Duration` object, onto which you can chain `.balance()` and `.format()` (see below). 
+If you provide a unit (like `'days'`), it returns a primitive JavaScript `Number`. Calling `.balance()` on a Number will throw an error.
+:::
 
 Sometimes you have a raw number of days (e.g. `365 days`) and you want to mathematically "balance" it into larger units (like `1 year`). Tempo provides the `.balance()` method directly on the Duration object.
 
