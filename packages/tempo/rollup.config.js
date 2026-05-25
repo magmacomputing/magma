@@ -10,7 +10,7 @@ import MagicString from 'magic-string';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.join(__dirname, 'dist');
-// we use "_core" to not confuse npm: name can only contain URL-friendly characters.
+
 const licensePremium = process.env.TEMPO_LICENSE_PATH ? path.resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
 const licenseDefault = path.resolve(__dirname, './src/support/support.license.ts');
 const isPremiumAvailable = !!(
@@ -159,7 +159,7 @@ export default [
 				// Map library imports to lib/ for browser-ready granular ESM
 				const rel = path.relative(__dirname, id);
 				const normalizedRel = rel.replace(/\\/g, '/'); // Ensure forward slashes
-				
+
 				if (id.includes('magma/packages/library') || rel.startsWith('../library')) {
 					const match = normalizedRel.match(/library\/(?:src|dist\/common)\/(.*)$/);
 					const modulePath = match ? path.dirname(match[1]) : '.';
