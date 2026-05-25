@@ -25,10 +25,10 @@ const xmas = new Tempo('2026-12-25');
 const duration = now.until(xmas);
 
 // 2. Or, calculate relative to a specific unit (returns a primitive Number)
-now.until('afternoon', 'minutes'); // → 84.45  (fractional: 'afternoon' has a fixed time)
-now.until('xmas', 'days');         // → 219    (whole number — see note below)
-now.until('xmas', 'weeks');        // → 31.28  (fractional — weeks don't divide evenly into days)
-now.until(Tempo.now(), 'hours');   // → 48     (targets can also be Temporal/Tempo instances)
+now.until('afternoon', 'minutes'); // → ~84.45 (example output: fractional)
+now.until('xmas', 'days');         // → ~219   (example output: whole number — see note below)
+now.until('xmas', 'weeks');        // → ~31.28 (example output: fractional)
+now.until(now.add({ days: 2 }), 'hours'); // → 48 (targets can also be Temporal/Tempo instances)
 ```
 
 ::: tip Date-only targets inherit the current time
@@ -45,20 +45,21 @@ This matches natural-language intuition: *"How many days until Christmas?"* expe
 Calculates the time elapsed *since* a past date. By default, it returns a human-readable localized string (powered by `Intl.RelativeTimeFormat`).
 
 ```javascript
-const now = new Tempo({ locale: 'en-US' });
+const anchor = new Tempo('2026-05-10', { locale: 'en-US' });
 const birthday = new Tempo('1990-05-10');
 
 // 1. Returns localized relative string based on the given unit
-now.since(birthday, 'years');  // → "36 years ago" (depending on locale)
-now.since(birthday, 'days');   // → "13,150 days ago"
+// Note: Tempo uses a compact ('narrow') Intl style by default
+anchor.since(birthday, 'years');  // → "36y ago" (deterministic)
+anchor.since(birthday, 'days');   // → "13,149d ago" (deterministic)
 
 // 2. Pass a custom formatter for natural language output (e.g. "yesterday")
-const yesterday = now.add({ days: -1 });
+const yesterday = anchor.add({ days: -1 });
 const autoFormat = new Intl.RelativeTimeFormat('en-US', { numeric: 'auto' });
-now.since(yesterday, { unit: 'days', intl: { relativeTime: { format: autoFormat } } }); // → "yesterday"
+anchor.since(yesterday, { unit: 'days', intl: { relativeTime: { format: autoFormat } } }); // → "yesterday"
 
 // 3. Returns an ISO 8601 Duration String if no unit is provided
-now.since(birthday);     // → "-P36Y..."
+anchor.since(birthday);     // → "-P36Y..."
 ```
 
 ::: info Return Type
