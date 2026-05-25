@@ -19,38 +19,6 @@ export const defineTerm = <T extends TermPlugin>(term: T): T => {
 }
 
 /**
- * ## definePremiumTerm
- * Helper to register a premium Term plugin, automatically enforcing commercial licensing.
- */
-export const definePremiumTerm = <T extends TermPlugin>(pluginDef: T): T => {
-	const originalResolve = pluginDef.resolve;
-	const originalDefine = pluginDef.define;
-
-	const assertPremium = function (t: Tempo, key: string) {
-		const term = (t.constructor as any).terms[key];
-		if (!term || term.status !== 'active') {
-			throw new Error(`[${key}] Premium plugin requires a valid commercial license. Status: ${term?.status}`);
-		}
-	}
-
-	if (originalResolve) {
-		pluginDef.resolve = function (this: Tempo, anchor?: any) {
-			assertPremium(this, pluginDef.key);
-			return originalResolve.call(this, anchor);
-		}
-	}
-
-	if (originalDefine) {
-		pluginDef.define = function (this: Tempo, keyOnly?: boolean, anchor?: any) {
-			assertPremium(this, pluginDef.key);
-			return originalDefine.call(this, keyOnly, anchor);
-		}
-	}
-
-	return defineTerm(pluginDef);
-}
-
-/**
  * ## findTermPlugin
  * Find a Term plugin by key, scope, or sub-key.
  */

@@ -9,10 +9,13 @@ import { decodeJWT } from '#library/utility.library.js';
 export class Validator {
 	constructor(public key: string) { }
 	async verify() {
+		// Decodes but DOES NOT verify the signature. 
+		// Cannot safely unlock Premium Plugins without cryptographic proof.
 		const claims = decodeJWT(this.key);
 		return {
-			status: 'active' as const,
-			scopes: (claims?.permissions || {}) as Record<string, { exp?: number; updated_at?: number }>,
+			status: 'invalid' as const,
+			scopes: {},
+			error: 'Cryptographic engine missing. Premium plugins cannot be validated by the Community Build.',
 		}
 	}
 	async syncRevocation(_jwsUrl: string, _currentJti: string): Promise<boolean> {

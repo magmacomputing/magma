@@ -1,11 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 /**
  * resolve-types.ts
  * 
- * Post-build utility to handle Type Definitions (#library -> lib/)
+ * Post-build utility to handle Type Definitions (#library -> dist/lib/)
  * - Synchronizes used library types into dist/lib/
  * - Rewrites path aliases in all .d.ts files
  */
@@ -14,19 +13,11 @@ const DIST_DIR = path.resolve('dist');
 const LIB_SRC_DIR = path.resolve('../library/dist/common');
 const LIB_DEST_DIR = path.resolve(DIST_DIR, 'lib');
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const LIC_SRC_DIR = process.env.LIC_SRC_DIR || path.resolve(__dirname, '../../../../tempo-plugin/internal/@core/dist');
-
-const isPremiumAvailable = fs.existsSync(LIC_SRC_DIR);
-
-const LIC_DEST_DIR = path.resolve(DIST_DIR, 'lic');
-
 console.log('Resolving type definitions...');
 
 // 1. Ensure lib directory exists
-if (!fs.existsSync(LIB_DEST_DIR)) {
+if (!fs.existsSync(LIB_DEST_DIR))
   fs.mkdirSync(LIB_DEST_DIR, { recursive: true });
-}
 
 // 2. Identify used library modules from Rollup's JS output
 const usedModules = fs.readdirSync(LIB_DEST_DIR)
@@ -37,28 +28,11 @@ const usedModules = fs.readdirSync(LIB_DEST_DIR)
 usedModules.forEach(mod => {
   const src = path.join(LIB_SRC_DIR, `${mod}.d.ts`);
   const dest = path.join(LIB_DEST_DIR, `${mod}.d.ts`);
-  if (fs.existsSync(src)) {
+  if (fs.existsSync(src))
     fs.copyFileSync(src, dest);
-  }
 });
 
-// 4. Copy licensing core types
-if (!fs.existsSync(LIC_DEST_DIR)) fs.mkdirSync(LIC_DEST_DIR, { recursive: true });
-
-if (isPremiumAvailable) {
-  const licFiles = fs.readdirSync(LIC_SRC_DIR).filter(f => f.endsWith('.d.ts'));
-  licFiles.forEach(file => {
-    fs.copyFileSync(path.join(LIC_SRC_DIR, file), path.join(LIC_DEST_DIR, file));
-  });
-} else {
-  console.log('ℹ️  Premium licensing not found. Falling back to Open Core types.');
-  const defaultLicType = path.resolve(DIST_DIR, 'support/support.license.d.ts');
-  if (fs.existsSync(defaultLicType)) {
-    fs.copyFileSync(defaultLicType, path.join(LIC_DEST_DIR, 'index.d.ts'));
-  }
-}
-
-// 5. Walk through all .d.ts files in dist/ to rewrite aliases
+// 4. Walk through all .d.ts files in dist/ to rewrite aliases
 function walk(dir: string) {
   const files = fs.readdirSync(dir);
   for (const file of files) {
@@ -89,26 +63,20 @@ function rewrite(filePath: string) {
   }
 
   // Handle #tempo/license resolution
-  let licReplacement: string;
-  const isInsideLic = relToDist.startsWith('lic');
-  if (isInsideLic) {
-    licReplacement = './';
-  } else {
-    let prefix = '';
-    for (let i = 0; i < depth; i++) prefix += '../';
-    licReplacement = `${prefix || './'}lic/`;
-  }
+  let prefix = '';
+  for (let i = 0; i < depth; i++) prefix += '../';
+  let licReplacement = `${prefix || './'}support/support.license.js`;
 
   const updatedContent = content
-    .replace(/#library\/([^"')]+\.js)/g, (match, libPath) => {
+    .replace(/#library\/([^"')]+\.js)/g, (_, libPath) => {
       // NOTE: We use path.basename here because the @magmacomputing/library distribution 
       // is currently flat (dist/common/*.js), and our resolve process flattens all 
       // used library modules into the local dist/lib/ directory.
       const fileName = path.basename(libPath);
       return `${replacement}${fileName}`;
     })
-    .replace(/#library(['"])/g, (match, quote) => `${replacement}index.js${quote}`)
-    .replace(/#tempo\/license(['"])/g, (match, quote) => `${licReplacement}index.js${quote}`);
+    .replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`)
+    .replace(/#tempo\/license(['"])/g, (_, quote) => `${licReplacement}${quote}`);
 
   if (content !== updatedContent) {
     fs.writeFileSync(filePath, updatedContent);

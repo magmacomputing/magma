@@ -137,6 +137,7 @@ Tempo.init({
 | `timeStamp`| `'ss' \| 'ms' \| 'us' \| 'ns'` | `'ms'` | Precision for numeric inputs and the `.ts` property. |
 | `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
 | `relativeTime` | `RelativeTime` | `undefined` | Relative time formatting configuration (grouped). |
+| `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping both `relativeTime` and `numberFormat`. |
 | `event` | `Record<string, string \| Function>` | Built-in aliases | Custom date aliases merged into the event registry. |
 | `period` | `Record<string, string \| Function>` | Built-in aliases | Custom time aliases merged into the period registry. |
 | `snippet` | `Record<string, string \| RegExp>` | Built-in snippets | Custom snippet patterns used to compose parse layouts. |

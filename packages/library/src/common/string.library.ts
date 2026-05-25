@@ -140,3 +140,15 @@ export const pad = (nbr: string | number | bigint = 0, len = 2, fill?: string | 
 export const padString = (str: string | number | bigint, pad = 6) =>
 	(isNumeric(str) ? asNumber(str).toFixed(2).toString() : str.toString() ?? '').padStart(pad, '\u007F');
 
+/** 
+ * Reconstructs a string from an array of char codes.
+ * Useful for hiding strings from minifiers and reverse-engineers.
+ */
+export const reveal = (codes: number[]): string => codes.map(c => String.fromCharCode(c)).join('');
+
+/**
+ * Converts a string into an array of char codes.
+ * Useful as a developer utility to generate the array to paste into `reveal()`.
+ */
+export const conceal = (str: string): number[] => str.split('').map(c => c.charCodeAt(0));
+

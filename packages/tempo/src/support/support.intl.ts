@@ -33,11 +33,11 @@ export function resolveIntl(value: IntlOptions = {}, base: IntlOptions = IntlDef
 	const result = { ...base } as Record<string, any>;
 
 	Object.entries(value).forEach(([k, v]) => {
-		if (k === 'relativeTime' && typeof v === 'object' && v !== null && typeof v !== 'function') {
-			const current = result.relativeTime;
+		if ((k === 'relativeTime' || k === 'numberFormat') && typeof v === 'object' && v !== null && typeof v !== 'function') {
+			const current = result[k];
 			const isObj = (val: any) => typeof val === 'object' && val !== null && typeof val !== 'function';
 
-			result.relativeTime = {
+			result[k] = {
 				...(isObj(current) ? current as object : {}),
 				...v as any
 			};

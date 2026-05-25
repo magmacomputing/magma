@@ -249,19 +249,10 @@ export const MyFeatureModule = defineModule((TempoClass, options) => {
 ```
 
 ### Commercial & Premium Plugins
-If you are distributing a commercial plugin that requires a valid Tempo license to run, use the **`definePremiumPlugin`** wrapper. This automatically injects licensing validation into the plugin's `install` lifecycle, guaranteeing that the plugin will only execute if the user has provided a valid, active license key via `Tempo.init()` that grants the requested scope.
 
-```typescript
-// index.ts
-import { defineModule, definePremiumPlugin } from '@magmacomputing/tempo/plugin';
+If you have built a powerful plugin and wish to distribute it commercially, you do not need to implement your own licensing engine. Build your plugin using the standard `defineModule` or `definePlugin` wrappers.
 
-const CoreModule = defineModule((TempoClass, options) => {
-  TempoClass.prototype.myPremiumMethod = function() { ... }
-});
-
-// Wrap the module and specify the required license scope key
-export const MyPremiumModule = definePremiumPlugin('my_premium_scope', CoreModule);
-```
+Once your plugin is ready for the marketplace, **[Contact Magma Computing](https://github.com/magmacomputing)**. We can inject our proprietary licensing and cryptographic verification engine directly into your build pipeline, ensuring your plugin is securely gated and protected from unauthorized use.
 
 ---
 
