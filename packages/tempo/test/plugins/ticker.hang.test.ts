@@ -2,6 +2,9 @@ import { Tempo } from '#tempo';
 import '#tempo/plugin/extend/extend.ticker.js';
 
 describe('Ticker Pledge Refactor Verification', () => {
+    beforeEach(() => {
+        Tempo.init();
+    });
 
     test('should terminate async iteration immediately when stop() is called (Pledge)', async () => {
         const t = Tempo.ticker({ seconds: 1 });

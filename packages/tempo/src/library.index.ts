@@ -9,3 +9,5 @@ export { Cipher } from '#library/cipher.class.js';
 export { enumify, type Enum } from '#library/enumerate.library.js';
 export { proxify } from '#library/proxy.library.js';
 export { stringify, objectify, cloneify } from '#library/serialize.library.js';
+
+export type { OwnOf, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';

@@ -196,7 +196,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			.map(nbr => nbr.toString().padStart(3, '0'))
 			.join('')
 		const rtConfig = (this as any).config.intl?.relativeTime;
-		const rtOptions = opts['relativeTime'];
+		const rtOptions = opts['intl']?.relativeTime || opts['relativeTime'];
 
 		const rtf = (isFunction(rtOptions) ? rtOptions : rtOptions?.format)
 			|| (isFunction(rtConfig) ? rtConfig : rtConfig?.format)

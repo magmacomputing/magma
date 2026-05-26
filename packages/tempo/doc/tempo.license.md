@@ -41,7 +41,7 @@ console.log(t.term.astronomy);
 
 **How to get it:**
 1. Run `npm install @magmacomputing/tempo-plugin-astro` in your project.
-2. Visit [magmacomputing.com.au/tempo/license.html](https://magmacomputing.com.au/tempo/license.html) to request your **one-year expiry key**, which will be instantly issued to your inbox.
+2. Visit [registry.magmacomputing.com.au/tempo/](https://registry.magmacomputing.com.au/tempo/) to request your **one-year expiry key**, which will be instantly issued to your inbox.
 
 ## ⚙️ Applying Your License Key
 
@@ -143,7 +143,7 @@ globalThis.TEMPO_LICENSE_KEY = 'ey...';
 To verify license validity and prevent abuse, Tempo's licensing engine performs background synchronization with our revocation registry:
 
 * **Outbound Request:** When a license key is active, Tempo asynchronously fetches a cryptographically signed revocation list (JWS).
-* **Endpoint:** `https://api.magmacomputing.com.au/tempo/v1/revoked.jws` (useful for configuring Content Security Policies (CSP) or egress firewall rules).
+* **Endpoint:** `https://registry.magmacomputing.com.au/tempo/v1/revoked.jws` (useful for configuring Content Security Policies (CSP) or egress firewall rules).
 * **Frequency:** The revocation check occurs once every **7 days**. The last-checked state is cached to avoid redundant network traffic on subsequent startups.
 * **Offline Resilience (Fail-Open):** If your application is offline, behind a strict firewall, or the registry server is temporarily unreachable, the validation **fails open**. Tempo logs a warning in the console but continues to grant access to premium features (relying on the local cryptographic expiration of the JWT).
 

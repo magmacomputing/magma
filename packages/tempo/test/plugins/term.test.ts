@@ -6,6 +6,9 @@ const label = 'term:';
  * Test the Tempo term plugins
  */
 describe(`${label}`, () => {
+  beforeEach(() => {
+    Tempo.init();
+  });
 
   test(`${label} check for the {quarter} plugin`, () => {
     const qtr = Tempo.terms.find(({ key }: any) => key === 'qtr');
