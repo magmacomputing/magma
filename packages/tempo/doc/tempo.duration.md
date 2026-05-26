@@ -72,9 +72,9 @@ When you call `until()` (or `Tempo.duration()`), Tempo returns an Extended Data 
 
 ```javascript
 const dur = Tempo.duration('P1Y2M15D');
-console.log(dur.years); // 1
-console.log(dur.months); // 2
-console.log(dur.days); // 15
+console.log(dur.years);   // 1
+console.log(dur.months);  // 2
+console.log(dur.days);    // 15
 ```
 
 ## Intelligent Balancing
@@ -86,12 +86,22 @@ If you provide a unit (like `'days'`), it returns a primitive JavaScript `Number
 
 Sometimes you have a raw number of days (e.g. `365 days`) and you want to mathematically "balance" it into larger units (like `1 year`). Tempo provides the `.balance()` method directly on the Duration object.
 
+::: tip When to use .balance()
+Because Tempo injects `{ largestUnit: 'years' }` by default, `.until()` is usually perfectly balanced out of the box. However, you will still need to chain `.balance()` in three specific scenarios:
+1. **Raw Durations:** When you manually construct an unbalanced duration (e.g., `Tempo.duration({ days: 365 })`).
+2. **Cross-Timezone Math:** If you run `.until()` between two *different* timezones, Tempo restricts the result to `hours` to prevent calendar ambiguity. Chaining `.balance()` forces the rollup into Years/Months.
+3. **Nominal Math:** When you want to force commercial math (`{ nominal: true }`) instead of strict calendar math.
+:::
+
 ### Strict Calendar Math
-By default, `.balance()` uses the `relativeTo` anchor captured during `.until()` to perform perfect calendar math.
+By default, `.balance()` uses a `relativeTo` anchor to perform perfect calendar math.
 
 ```javascript
-// Automatically balances 365 days into exactly "1 year" (or 11mo 30d if a leap year!)
-const balanced = new Tempo().until('xmas').balance();
+// A manually created duration is unbalanced by default: { days: 365 }
+const rawDuration = Tempo.duration({ days: 365 });
+
+// Balance it using an anchor: safely converts it to { years: 1 } (or 11mo 30d if a leap year!)
+const balanced = rawDuration.balance({ relativeTo: '2026-01-01' });
 ```
 
 ### Nominal (Commercial) Math
@@ -103,6 +113,21 @@ You can pass `{ nominal: true }` to mathematically force `365 days = 1 year`, `3
 const commercialDur = Tempo.duration({ days: 365 }).balance({ nominal: true });
 console.log(commercialDur.years); // 1
 console.log(commercialDur.days);  // 0
+```
+
+### Balancing Downwards (Un-balancing)
+You can also force a duration to roll *downwards* into smaller units by specifying a `largestUnit`. This is incredibly useful for UI countdown timers (e.g., displaying "48 Hours" instead of "2 Days") or per-diem billing calculations where you need to know exactly how many days are in a specific year.
+
+```javascript
+const yearlyLicense = Tempo.duration({ years: 1 });
+
+// Un-balance the year down into exact days (365 or 366 depending on the anchor)
+const exactDays = yearlyLicense.balance({ 
+  largestUnit: 'days', 
+  relativeTo: '2024-01-01' 
+});
+
+console.log(exactDays.days); // 366 (2024 is a leap year!)
 ```
 
 ## Formatting Absolute Durations
