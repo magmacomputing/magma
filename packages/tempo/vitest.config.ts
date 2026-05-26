@@ -63,6 +63,9 @@ export default defineConfig({
       { find: /^#library$/, replacement: resolve(__dirname, '../library/dist/common.index.js') },
     ] : [
       { find: /^#tempo\/license$/, replacement: isPremiumAvailable ? (licensePremium as string) : licenseDefault },
+      { find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './src/plugin/plugin.index.ts') },
+      { find: /^@magmacomputing\/tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
+      { find: /^@magmacomputing\/tempo\/core$/, replacement: resolve(__dirname, './src/core.index.ts') },
       { find: /^#tempo\/core$/, replacement: resolve(__dirname, './src/core.index.ts') },
       { find: /^#tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
       { find: /^#tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/$1') },
