@@ -2,9 +2,9 @@ import { Tempo } from '#tempo';
 import '#tempo/plugin/extend/extend.ticker.js';
 
 describe('Tempo.ticker Options & Enhancements', () => {
-	    beforeEach(() => {
-        Tempo.init();
-    });
+	beforeEach(() => {
+		Tempo.init();
+	});
 
 	test('ticker with limit (callback)', async () => {
 		let count = 0;
