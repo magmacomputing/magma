@@ -49,7 +49,7 @@ function rewrite(filePath: string) {
   const content = fs.readFileSync(filePath, 'utf8');
   const relToDist = path.relative(DIST_DIR, filePath);
   const depth = relToDist.split(path.sep).length - 1;
-  const isInsideLib = relToDist.startsWith('lib');
+  const isInsideLib = relToDist.startsWith(`lib${path.sep}`);
 
   let replacement: string;
   if (isInsideLib) {

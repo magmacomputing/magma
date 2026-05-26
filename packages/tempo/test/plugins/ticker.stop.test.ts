@@ -2,6 +2,11 @@ import { Tempo } from '#tempo';
 import '#tempo/plugin/extend/extend.ticker.js';
 
 describe('Ticker Stop Listener', () => {
+	beforeEach(() => {
+		Tempo.init();
+	});
+
+
 	it('should register and invoke stop listeners with pulse callback signature', () => {
 		let calls = 0;
 		let receivedTempo: any;

@@ -1,6 +1,10 @@
 import { Tempo } from '#tempo'
 
 describe('Tempo Term Literacy (Namespace Shorthand)', () => {
+	beforeEach(() => {
+		Tempo.init();
+	});
+
 	describe('.set() shorthand', () => {
 		test('set("#period.morning") sets to the start of morning', () => {
 			const t = new Tempo('2026-01-01T12:00:00', { sphere: 'north' })

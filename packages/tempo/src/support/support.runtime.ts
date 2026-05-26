@@ -79,19 +79,29 @@ export class TempoRuntime {
 	/**
 	 * Record a Term in the discovery database.
 	 * Validates the shape before storing so malformed entries cannot corrupt state.
+	 * Replaces existing terms with the same key to support HMR and test module cache resets.
 	 */
 	addTerm(term: TermPlugin): void {
 		if (!term || typeof term.key !== 'string') return;
-		if (!this.pluginsDb.terms.some(t => t.key === term.key))
-			this.pluginsDb.terms.push(term);
+		const idx = this.pluginsDb.terms.findIndex(t => t.key === term.key);
+		if (idx >= 0) this.pluginsDb.terms[idx] = term;
+		else this.pluginsDb.terms.push(term);
 	}
 
 	/**
 	 * Record a Plugin in the discovery database.
 	 * Guards against duplicate entries.
+	 * Replaces existing plugins with the same name to support HMR and test module cache resets.
 	 */
 	addPlugin(plugin: any): void {
 		if (!plugin) return;
+		if (plugin.name) {
+			const idx = this.pluginsDb.plugins.findIndex(p => p.name === plugin.name);
+			if (idx >= 0) {
+				this.pluginsDb.plugins[idx] = plugin;
+				return;
+			}
+		}
 		if (!this.pluginsDb.plugins.includes(plugin))
 			this.pluginsDb.plugins.push(plugin);
 	}

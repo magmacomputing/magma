@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.1] - 2026-05-26
+
+### Added
+- **ISO 8601 Convenience Getter**: Added the `.iso` getter to `Tempo` instances to provide a fast, familiar, and UTC-safe mechanism for retrieving the standard ISO 8601 string representation (analogous to `Date.toISOString()`).
+- **Type Utilities Export**: Exported `KeyOf`, `ValueOf`, `OwnOf`, and `EntryOf` type utilities in `library.index.ts` to provide cleaner TypeScript typing for downstream consumers utilizing `enumify`.
+
+### Fixed
+- **Build Pipeline Path Resolution**: Fixed a critical path-resolution bug in the `resolve-types.ts` script where `library.index.d.ts` was incorrectly identified as being inside the `lib/` directory. This ensures proper `.d.ts` generation and restores JSDoc/typings for downstream consumers.
+- **Documentation Domains**: Updated all premium extension documentation (`tempo.license.md`) and internal plugins to use the centralized `registry.magmacomputing.com.au` domain for license verification and the UI portal.
+
 ## [2.11.0] - 2026-05-25
 
 ### Added

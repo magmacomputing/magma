@@ -2,6 +2,9 @@ import { Tempo } from '#tempo';
 import { Ticker } from '#tempo/plugin/extend/extend.ticker.js';
 
 describe('Ticker Management (Static Registry)', () => {
+    beforeEach(() => {
+        Tempo.init();
+    });
 
 	it('should track active tickers in the registry', async () => {
 		const initialCount = Ticker.active.length;
