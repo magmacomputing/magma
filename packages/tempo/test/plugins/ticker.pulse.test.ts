@@ -2,6 +2,10 @@ import { Tempo } from '#tempo';
 import '#tempo/plugin/extend/extend.ticker.js';
 
 describe('Ticker Pulse Behavior', () => {
+    beforeEach(() => {
+        Tempo.init();
+    });
+
     test('limit: 1 should result in 1 pulse currently', async () => {
         let count = 0;
         const t = Tempo.ticker({ seconds: 0.1, limit: 1 }, () => count++);

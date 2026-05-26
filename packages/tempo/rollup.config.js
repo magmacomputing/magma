@@ -75,7 +75,13 @@ export default [
 			format: 'es',
 			sourcemap: false
 		},
-		external: ['@js-temporal/polyfill'],
+		external: [
+			'@js-temporal/polyfill',
+			/^@magmacomputing\/tempo/,
+			/^@magmacomputing\/library/,
+			/^#library/,
+			/^#tempo/
+		],
 		plugins: [
 			resolve({ extensions: ['.js', '.ts'], moduleDirectories: ['node_modules'] }),
 			esbuild({ target: 'esnext', minify: false }),

@@ -12,8 +12,13 @@ export const Registry = (globalThis as any)[sym.$SerializerRegistry] ??= new Map
 export const registerSerializable = (name: string, cls: Function) => {
 	const key = name.startsWith('$') ? name : `$${name}`;
 
-	if (Registry.has(key))
-		throw new Error(`[registerSerializable] Collision: '${key}' is already registered with ${Registry.get(key)?.name || 'anonymous constructor'}`);
+	if (Registry.has(key)) {
+		const existingCls = Registry.get(key);
+		if (existingCls === cls || existingCls?.toString() === cls.toString()) {
+			return; // Silently allow idempotent dual-registration
+		}
+		throw new Error(`[registerSerializable] Collision: '${key}' is already registered with ${existingCls?.name || 'anonymous constructor'}`);
+	}
 
 	Registry.set(key, cls);
 }
