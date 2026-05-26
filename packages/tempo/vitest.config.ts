@@ -42,6 +42,7 @@ export default defineConfig({
   },
   resolve: {
     alias: isDist ? [
+      { find: /^#tempo\/license$/, replacement: resolve(__dirname, './dist/support/support.license.js') },
       { find: /^#tempo\/core$/, replacement: resolve(__dirname, './dist/core.index.js') },
       { find: /^#tempo\/term$/, replacement: resolve(__dirname, './dist/plugin/term/term.index.js') },
       { find: /^#tempo\/duration$/, replacement: resolve(__dirname, './dist/module/module.duration.js') },
