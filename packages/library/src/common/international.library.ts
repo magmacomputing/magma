@@ -21,6 +21,11 @@ const getNF = memoizeFunction((locale?: string, options?: Intl.NumberFormatOptio
 	return new Intl.NumberFormat(locale, options);
 });
 
+/** memoized helper for Intl.DurationFormat instances */
+const getDF = memoizeFunction((locale?: string, options?: any) => {
+	return new (Intl as any).DurationFormat(locale, options);
+});
+
 /**
  * International Cookbook  
  * (using 'Intl' namespace objects)
@@ -55,6 +60,15 @@ export function formatList(list: string[], locale?: string, type: Intl.ListForma
 		return getLF(locale, type, style).format(list);
 	} catch (e) {
 		return list.join(', ');
+	}
+}
+
+/** return a localized duration string natively (using Intl.DurationFormat) */
+export function formatDuration(duration: any, locale?: string, options?: any) {
+	try {
+		return getDF(locale, options).format(duration);
+	} catch (e) {
+		return ''; // This shouldn't be relied on if calling code does a feature check first, but it's safe
 	}
 }
 

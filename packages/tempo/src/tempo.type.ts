@@ -86,6 +86,7 @@ export type Groups = Record<string, string>
 export interface Options extends Partial<Internal.BaseOptions> {
 	planner?: PlannerOptions;
 	intl?: IntlOptions;
+	/** @deprecated will be removed in v3.0.0; use `intl.relativeTimeFormat` instead */
 	relativeTime?: RelativeTime | ((value: number, unit: any) => string);
 	[key: string]: any;
 }
@@ -147,8 +148,8 @@ export type us = IntRange<0, 999>
 export type ns = IntRange<0, 999>
 export type ww = IntRange<1, 53>
 
-export type Duration = NonOptional<Temporal.DurationLikeObject> & Record<"iso", string> & Record<"sign", number> & Record<"blank", boolean> & Record<"unit", string | undefined> & { 
-	balance(opts?: { nominal?: boolean; relativeTo?: any; largestUnit?: Unit | string }): Duration; 
+export type Duration = NonOptional<Temporal.DurationLikeObject> & Record<"iso", string> & Record<"sign", number> & Record<"blank", boolean> & Record<"unit", string | undefined> & {
+	balance(opts?: { nominal?: boolean; relativeTo?: any; largestUnit?: Unit | string }): Duration;
 	format(opts?: Intl.NumberFormatOptions & { locales?: string | string[] }): string;
 }
 
@@ -190,7 +191,9 @@ export interface RelativeTime {
 }
 
 export interface IntlOptions {
-	/** relative time formatting configuration */							relativeTime?: RelativeTime | ((value: number, unit: any) => string);
+	/** @deprecated will be removed in v3.0.0; use `relativeTimeFormat` instead */			relativeTime?: RelativeTime | ((value: number, unit: any) => string);
+	/** relative time formatting configuration */							relativeTimeFormat?: RelativeTime | ((value: number, unit: any) => string);
+	/** multi-unit duration formatting configuration */				durationFormat?: any | ((duration: any) => string);
 	/** absolute unit duration formatting configuration */		numberFormat?: Intl.NumberFormatOptions | ((value: number, unit: any) => string);
 }
 
@@ -322,7 +325,7 @@ export namespace Internal {
 		/** pre-defined config options for Tempo.#global */			options?: Options | (() => Options);
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** regional date-parsing configuration */							monthDay?: MonthDay;
-		/** relative time configuration (shorthand) */					relativeTime?: RelativeTime | ((value: number, unit: any) => string);
+		/** @deprecated will be removed in v3.0.0; use `intl.relativeTimeFormat` instead */	relativeTime?: RelativeTime | ((value: number, unit: any) => string);
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** @deprecated use 'terms' */													term?: TermPlugin;

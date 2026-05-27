@@ -23,12 +23,12 @@ describe('Duration EDO Balance and Format', () => {
     expect(() => dur.balance()).not.toThrow();
   });
 
-  test('format() uses Intl.NumberFormat to render the largest unit', () => {
+  test('format() natively formats multi-unit durations', () => {
     const dur1 = Tempo.duration({ days: 365 });
     expect(dur1.format({ locales: 'en-US' })).toBe('365 days');
 
     const dur2 = Tempo.duration({ years: 1, days: 5 });
-    expect(dur2.format({ locales: 'en-US' })).toBe('1 year');
+    expect(dur2.format({ locales: 'en-US' })).toBe('1 yr, 5 days');
   });
 
   test('format() respects cascading numberFormat config', () => {

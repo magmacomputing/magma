@@ -137,5 +137,15 @@ If you previously relied on `BigInt` being treated as nanoseconds, you must now 
 new Tempo(1000n, { timeStamp: 'ns' });
 ```
 
+## 🔁 Upcoming Deprecations (v3.0.0)
+
+### Internationalization Naming
+To better align with ECMAScript standards (specifically `Intl.RelativeTimeFormat`), the `relativeTime` configuration option inside `intl` is deprecated.
+
+- **Deprecated:** `new Tempo({ intl: { relativeTime: { style: 'long' } } })`
+- **Recommended:** `new Tempo({ intl: { relativeTimeFormat: { style: 'long' } } })`
+
+Currently, `relativeTime` is still supported and will automatically sync with `relativeTimeFormat`, but it will be entirely removed in Tempo v3.0.0. Please update your configurations.
+
 ## 🧪 Testing and Stability
 v2.x has been hardened with a 100% pass rate on our regression suite. If you were relying on undocumented "quirks" or bugs in v1.x parsing, you may find that v2.x is more strict and deterministic.

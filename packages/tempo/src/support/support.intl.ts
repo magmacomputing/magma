@@ -2,8 +2,11 @@ import type { IntlOptions } from '../tempo.type.js';
 
 /** @internal baseline Intl settings */
 export const IntlDefault: IntlOptions = {
-	relativeTime: {
+	relativeTimeFormat: {
 		style: 'narrow',
+	},
+	durationFormat: {
+		style: 'long',
 	}
 }
 
@@ -33,7 +36,7 @@ export function resolveIntl(value: IntlOptions = {}, base: IntlOptions = IntlDef
 	const result = { ...base } as Record<string, any>;
 
 	Object.entries(value).forEach(([k, v]) => {
-		if ((k === 'relativeTime' || k === 'numberFormat') && typeof v === 'object' && v !== null && typeof v !== 'function') {
+		if ((k === 'relativeTime' || k === 'relativeTimeFormat' || k === 'numberFormat' || k === 'durationFormat') && typeof v === 'object' && v !== null && typeof v !== 'function') {
 			const current = result[k];
 			const isObj = (val: any) => typeof val === 'object' && val !== null && typeof val !== 'function';
 
@@ -45,6 +48,13 @@ export function resolveIntl(value: IntlOptions = {}, base: IntlOptions = IntlDef
 			result[k] = v;
 		}
 	});
+
+	// Sync relativeTime and relativeTimeFormat (with precedence to relativeTimeFormat)
+	if (result.relativeTimeFormat !== undefined) {
+		result.relativeTime = result.relativeTimeFormat;
+	} else if (result.relativeTime !== undefined) {
+		result.relativeTimeFormat = result.relativeTime;
+	}
 
 	return result;
 }

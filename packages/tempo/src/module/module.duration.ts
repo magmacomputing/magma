@@ -3,7 +3,7 @@ import { isString, isObject, isDefined, isUndefined, isFunction } from '#library
 import { singular } from '#library/string.library.js';
 import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
-import { getRelativeTime, formatNumber } from '#library/international.library.js';
+import { getRelativeTime, formatNumber, formatDuration, formatList } from '#library/international.library.js';
 
 import { defineInterpreterModule, interpret, type TempoModule } from '../plugin/plugin.util.js';
 import { enums, isTempo } from '#tempo/support';
@@ -37,7 +37,7 @@ declare module '#library/type.library.js' {
 /**
  * Convert a Temporal.Duration to a full Tempo.Duration object (EDO).
  */
-function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: string, numberFormat?: any } = {}): Tempo.Duration {
+function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: string, numberFormat?: any, durationFormat?: any } = {}): Tempo.Duration {
 	const edo = getAccessors(dur)
 		.reduce((acc, d) => Object.assign(acc, ifDefined({ [d]: (dur as any)[d] })),
 			{
@@ -90,34 +90,38 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 	Object.defineProperty(edo, 'format', {
 		value: function (opts: any = {}) {
 			const { locales, ...intlOpts } = opts;
-
-			// Find the largest non-zero unit to format.
-			let val = 0;
-			let u = '';
-			if (this.years) { val = this.years; u = 'year'; }
-			else if (this.months) { val = this.months; u = 'month'; }
-			else if (this.weeks) { val = this.weeks; u = 'week'; }
-			else if (this.days) { val = this.days; u = 'day'; }
-			else if (this.hours) { val = this.hours; u = 'hour'; }
-			else if (this.minutes) { val = this.minutes; u = 'minute'; }
-			else if (this.seconds) { val = this.seconds; u = 'second'; }
-			else if (this.milliseconds) { val = this.milliseconds; u = 'millisecond'; }
-			else if (this.microseconds) { val = this.microseconds; u = 'microsecond'; }
-			else if (this.nanoseconds) { val = this.nanoseconds; u = 'nanosecond'; }
-
-			if (!u) return '0';																		// or some fallback
-
-			if (isFunction(ctx.numberFormat))
-				return ctx.numberFormat(val, u);
-
 			const locale = locales || ctx.locale;
-			return formatNumber(val, locale, {
-				style: 'unit',
-				unit: u,
-				unitDisplay: 'long',
-				...(ctx.numberFormat || {}),
-				...intlOpts
-			});
+
+			if (isFunction(ctx.durationFormat))
+				return ctx.durationFormat(this);
+
+			// 1. Native Intl.DurationFormat
+			if ('DurationFormat' in Intl)
+				return formatDuration(this, locale, { ...(ctx.durationFormat || {}), ...intlOpts });
+
+			// 2. Fallback Polyfill (combine all non-zero units)
+			const units = ['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds', 'nanoseconds'] as const;
+			const parts: string[] = [];
+
+			for (const u of units) {
+				const val = this[u];
+				if (val) {
+					const unitName = singular(u);											// singularize unit name (e.g., 'years' -> 'year')
+					parts.push(
+						formatNumber(val, locale, {
+							style: 'unit',
+							unit: unitName,
+							unitDisplay: 'long',
+							...(ctx.numberFormat || {}),
+							...intlOpts
+						})
+					);
+				}
+			}
+
+			if (parts.length === 0) return '0';										// fallback for completely empty duration
+
+			return formatList(parts, locale, 'conjunction', 'long');
 		},
 		enumerable: false
 	});
@@ -183,7 +187,8 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	if (isUndefined(unit) || since) {
 		const locale = (this as any)?.config?.locale;
 		const numberFormat = opts['intl']?.numberFormat || (this as any)?.config?.intl?.numberFormat;
-		const res = toDuration(dur, { relativeTo: selfZdt, locale, numberFormat });
+		const durationFormat = opts['intl']?.durationFormat || (this as any)?.config?.intl?.durationFormat;
+		const res = toDuration(dur, { relativeTo: selfZdt, locale, numberFormat, durationFormat });
 		if (unit) res.unit = unit;
 
 		if (!since) return res;
@@ -195,8 +200,8 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			.map(Math.abs)
 			.map(nbr => nbr.toString().padStart(3, '0'))
 			.join('')
-		const rtConfig = (this as any).config.intl?.relativeTime;
-		const rtOptions = opts['intl']?.relativeTime || opts['relativeTime'];
+		const rtConfig = (this as any).config.intl?.relativeTimeFormat || (this as any).config.intl?.relativeTime;
+		const rtOptions = opts['intl']?.relativeTimeFormat || opts['intl']?.relativeTime || opts['relativeTime'];
 
 		const rtf = (isFunction(rtOptions) ? rtOptions : rtOptions?.format)
 			|| (isFunction(rtConfig) ? rtConfig : rtConfig?.format)
@@ -206,7 +211,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			const su = singular(u);
 			if (isFunction(rtf)) return rtf(val, su);
 			if (rtf instanceof Intl.RelativeTimeFormat) return rtf.format(val, su);
-			const style = rtOptions?.style || rtConfig?.style || opts['intl']?.relativeTime?.style || opts['rtfStyle'] || (this as any).config.intl?.relativeTime?.style || (this as any).config['rtfStyle'] || 'narrow';
+			const style = rtOptions?.style || rtConfig?.style || opts['intl']?.relativeTimeFormat?.style || opts['intl']?.relativeTime?.style || opts['rtfStyle'] || (this as any).config.intl?.relativeTimeFormat?.style || (this as any).config.intl?.relativeTime?.style || (this as any).config['rtfStyle'] || 'narrow';
 			return getRelativeTime(val, su as Intl.RelativeTimeFormatUnit, locale, style);
 		}
 

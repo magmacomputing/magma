@@ -169,7 +169,7 @@ console.log(t.since()); // "1d ago" (narrow style)
 const rtf = new Intl.RelativeTimeFormat('fr', { style: 'long' });
 for (const entry of logEntries) {
   // Use the new grouped API: pass the formatter's format function
-  console.log(new Tempo(entry.ts).since(null, { relativeTime: rtf.format.bind(rtf) }));
+  console.log(new Tempo(entry.ts).since(null, { relativeTimeFormat: rtf.format.bind(rtf) }));
 }
 ```
 

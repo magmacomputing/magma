@@ -385,15 +385,22 @@ export class Tempo {
 		// 1d. Process Internationalization
 		if (discovery.intl || discovery.relativeTime) {
 			const intl: t.IntlOptions = { ...discovery.intl };
-			if (discovery.relativeTime) {
-				if (typeof discovery.relativeTime === 'function') {
-					intl.relativeTime = discovery.relativeTime;
-				} else if (!(typeof intl.relativeTime === 'function')) {
-					intl.relativeTime = { ...intl.relativeTime, ...discovery.relativeTime };
+			const shorthand = discovery.relativeTime;
+			if (shorthand) {
+				if (isFunction(shorthand)) {
+					intl.relativeTimeFormat = shorthand;
+				} else if (!(isFunction(intl.relativeTimeFormat) || isFunction(intl.relativeTime))) {
+					intl.relativeTimeFormat = { ...intl.relativeTime, ...intl.relativeTimeFormat, ...(discovery.relativeTime as any) };
 				} else {
-					// A function-based relativeTime in 'intl' takes precedence over a shorthand 'relativeTime' object
-					Tempo.#dbg.debug(shape.config, '[Discovery] Shorthand relativeTime object ignored; intl.relativeTime function has precedence.');
+					// A function-based relativeTimeFormat in 'intl' takes precedence over a shorthand object
+					Tempo.#dbg.debug(shape.config, '[Discovery] Shorthand relativeTime object ignored; intl.relativeTimeFormat function has precedence.');
 				}
+			}
+			// Sync legacy support
+			if (intl.relativeTimeFormat !== undefined) {
+				intl.relativeTime = intl.relativeTimeFormat;
+			} else if (intl.relativeTime !== undefined) {
+				intl.relativeTimeFormat = intl.relativeTime;
 			}
 			shape.config.intl = { ...shape.config.intl, ...intl };
 		}

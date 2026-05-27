@@ -136,8 +136,7 @@ Tempo.init({
 | `monthDay` | `MonthDay \| boolean` | `undefined` | Regional date-parsing configuration (grouped). Includes `active`, `locales`, `layouts`, and `timezones`. |
 | `timeStamp`| `'ss' \| 'ms' \| 'us' \| 'ns'` | `'ms'` | Precision for numeric inputs and the `.ts` property. |
 | `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
-| `relativeTime` | `RelativeTime` | `undefined` | Relative time formatting configuration (grouped). |
-| `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping both `relativeTime` and `numberFormat`. |
+| `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
 | `event` | `Record<string, string \| Function>` | Built-in aliases | Custom date aliases merged into the event registry. |
 | `period` | `Record<string, string \| Function>` | Built-in aliases | Custom time aliases merged into the period registry. |
 | `snippet` | `Record<string, string \| RegExp>` | Built-in snippets | Custom snippet patterns used to compose parse layouts. |
@@ -151,8 +150,6 @@ Tempo.init({
 | `mode` | `'auto' \| 'strict' \| 'defer'` | `'auto'` | Controls the hydration strategy (e.g., `defer` for Zero-Cost creation). |
 | `silent` | `boolean` | `false` | Suppresses console output. Combined with `catch: true` for silent failover. |
 | `ignore` | `string \| string[]` | `['at']` | List of noise words to be stripped before parsing. |
-| `layoutOrder` | `string[]` | Built-in Order | The sequence in which layouts are attempted during parsing. |
-| `preFilter` | `boolean` | `false` | Enables the Parse Planner to skip irrelevant layouts based on input classification. |
 | `planner` | `PlannerOptions` | `undefined` | Grouped configuration for `layoutOrder` and `preFilter`. |
 
 ---
