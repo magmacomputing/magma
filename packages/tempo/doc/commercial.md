@@ -27,7 +27,7 @@ In addition to our open-source core, we offer a suite of **Premium Plugins** pub
 
 More details on browsing the 'Tempo Store' will be provided soon...
 
-For details on how to unlock and use these features, see our [License Key Guide](./tempo.license.md).
+For details on how to unlock and use these features, see our [License Key Guide](https://magmacomputing.github.io/tempo-plugin-docs/).
 
 ---
 
