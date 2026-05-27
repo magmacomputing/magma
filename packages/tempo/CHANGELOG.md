@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.2] - 2026-05-27
+
+### Changed
+- **Module Resolution Stability**: Removed `"development"` conditions from the `packages/tempo/package.json` `imports` map. This prevents downstream test runners (like Vitest) from attempting to resolve internal `#tempo` imports to `.ts` source files when importing the published NPM package, resolving `ERR_MODULE_NOT_FOUND` and `ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING` errors. Consumers now gracefully fall back to compiled `.js` files in `dist/`.
+
 ## [2.11.1] - 2026-05-26
 
 ### Added

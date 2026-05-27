@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "2.11.1",
+  "version": "2.11.2",
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -45,83 +45,63 @@
     "#library": "@magmacomputing/library",
     "#library/*.js": "@magmacomputing/library/common/*.js",
     "#tempo": {
-      "development": "./src/tempo.index.ts",
       "default": "./dist/tempo.index.js"
     },
     "#tempo/core": {
-      "development": "./src/core.index.ts",
       "default": "./dist/core.index.js"
     },
     "#tempo/enums": {
-      "development": "./src/support/support.enum.ts",
       "default": "./dist/support/support.enum.js"
     },
     "#tempo/duration": {
-      "development": "./src/module/module.duration.ts",
       "default": "./dist/module/module.duration.js"
     },
     "#tempo/mutate": {
-      "development": "./src/module/module.mutate.ts",
       "default": "./dist/module/module.mutate.js"
     },
     "#tempo/ticker": {
-      "development": "./src/plugin/extend/extend.ticker.ts",
       "default": "./dist/plugin/extend/extend.ticker.js"
     },
     "#tempo/term": {
-      "development": "./src/plugin/term/term.index.ts",
       "default": "./dist/plugin/term/term.index.js"
     },
     "#tempo/term/*": {
-      "development": "./src/plugin/term/term.*.ts",
       "default": "./dist/plugin/term/term.*.js"
     },
     "#tempo/plugin/plugin.*.js": {
-      "development": "./src/plugin/plugin.*.ts",
       "default": "./dist/plugin/plugin.*.js"
     },
     "#tempo/plugin/extend/*.js": {
-      "development": "./src/plugin/extend/*.ts",
       "default": "./dist/plugin/extend/*.js"
     },
     "#tempo/engine/*.js": {
-      "development": "./src/engine/*.ts",
       "default": "./dist/engine/*.js"
     },
     "#tempo/module/*.js": {
-      "development": "./src/module/*.ts",
       "default": "./dist/module/*.js"
     },
     "#tempo/plugin/term/*.js": {
-      "development": "./src/plugin/term/*.ts",
       "default": "./dist/plugin/term/*.js"
     },
     "#tempo/support": {
-      "development": "./src/support/support.index.ts",
       "default": "./dist/support/support.index.js"
     },
     "#tempo/support/*.js": {
-      "development": "./src/support/*.ts",
       "default": "./dist/support/*.js"
     },
     "#tempo/parse": {
-      "development": "./src/module/module.parse.ts",
       "default": "./dist/module/module.parse.js"
     },
     "#tempo/format": {
-      "development": "./src/module/module.format.ts",
       "default": "./dist/module/module.format.js"
     },
     "#tempo/module": {
-      "development": "./src/module/module.index.ts",
       "default": "./dist/module/module.index.js"
     },
     "#tempo/license": {
-      "development": "./src/support/support.license.ts",
       "default": "./dist/support/support.license.js"
     },
     "#tempo/*.js": {
-      "development": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },
@@ -227,7 +207,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "2.11.1",
+    "@magmacomputing/library": "2.11.2",
     "@rollup/plugin-alias": "^6.0.0",
     "esbuild": "^0.25.12",
     "javascript-obfuscator": "^5.4.2",
