@@ -56,7 +56,7 @@ anchor.since(birthday, 'days');   // → "13,149d ago" (deterministic)
 // 2. Pass a custom formatter for natural language output (e.g. "yesterday")
 const yesterday = anchor.add({ days: -1 });
 const autoFormat = new Intl.RelativeTimeFormat('en-US', { numeric: 'auto' });
-anchor.since(yesterday, { unit: 'days', intl: { relativeTimeFormat: { format: autoFormat } } }); // → "yesterday"
+anchor.since(yesterday, { unit: 'days', intl: { relativeTimeFormat: autoFormat.format.bind(autoFormat) } }); // → "yesterday"
 
 // 3. Returns an ISO 8601 Duration String if no unit is provided
 anchor.since(birthday);     // → "-P36Y..."

@@ -351,7 +351,7 @@ export namespace Internal {
 	export interface LicensingModule {
 		Validator: new (jwt: string) => {
 			verify(): Promise<ValidationResult>;
-			syncRevocation(jwsUrl: string, currentJti: string): Promise<boolean>;
+			syncRevocation(jwsUrl: string, currentJti: string): Promise<{ revoked: boolean, success: boolean }>;
 		};
 	}
 

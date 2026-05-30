@@ -113,7 +113,6 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 							unit: unitName,
 							unitDisplay: 'long',
 							...(ctx.numberFormat || {}),
-							...intlOpts
 						})
 					);
 				}
@@ -252,7 +251,8 @@ export const DurationModule: TempoModule = defineInterpreterModule('DurationModu
 	duration(this: typeof Tempo, input: any) {
 		const ctx = {
 			locale: this.config?.locale,
-			numberFormat: this.config?.intl?.numberFormat
+			numberFormat: this.config?.intl?.numberFormat,
+			durationFormat: this.config?.intl?.durationFormat,
 		};
 		return interpret(this, 'DurationModule', 'toDuration', false, input, ctx);
 	}

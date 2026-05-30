@@ -18,7 +18,7 @@ export class Validator {
 			error: 'Cryptographic engine missing. Premium plugins cannot be validated by the Community Build.',
 		}
 	}
-	async syncRevocation(_jwsUrl: string, _currentJti: string): Promise<boolean> {
-		return false; // No revocation checking in community edition
+	async syncRevocation(_jwsUrl: string, _currentJti: string): Promise<{ revoked: boolean, success: boolean }> {
+		return { revoked: false, success: false }; // No revocation checking in community edition
 	}
 }

@@ -65,11 +65,7 @@ export function formatList(list: string[], locale?: string, type: Intl.ListForma
 
 /** return a localized duration string natively (using Intl.DurationFormat) */
 export function formatDuration(duration: any, locale?: string, options?: any) {
-	try {
-		return getDF(locale, options).format(duration);
-	} catch (e) {
-		return ''; // This shouldn't be relied on if calling code does a feature check first, but it's safe
-	}
+	return getDF(locale, options).format(duration);
 }
 
 /** return a localized number string */

@@ -383,8 +383,16 @@ export class Tempo {
 		}
 
 		// 1d. Process Internationalization
-		if (discovery.intl)
-			shape.config.intl = { ...shape.config.intl, ...discovery.intl };
+		if (discovery.intl) {
+			shape.config.intl = shape.config.intl || {};
+			for (const [key, val] of Object.entries(discovery.intl)) {
+				if (isObject(val) && isObject((shape.config.intl as any)[key])) {
+					(shape.config.intl as any)[key] = { ...(shape.config.intl as any)[key], ...val };
+				} else {
+					(shape.config.intl as any)[key] = val;
+				}
+			}
+		}
 
 		// 1e. Process Planner
 		if (isObject(discovery.planner)) {

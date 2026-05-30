@@ -179,7 +179,7 @@ export type FORMAT = typeof FORMAT;
 export type Format = LooseUnion<KeyOf<typeof FORMAT> & string>
 
 /** patterns that return a number */
-export const NumericPattern = ['{yyyy}{ww}', '{yyyy}{mm}', '{yyyy}{mm}{dd}', '{yyww}', '{yw}{ww}', '{yw}'] as const;
+export const NumericPattern = ['{yyyy}{ww}', '{yyyy}{mm}', '{yyyy}{mm}{dd}', '{yyww}', '{yw}{ww}', '{yw}', '{ymd}', '{ymd6}'] as const;
 export type NumericPattern = typeof NumericPattern[number]
 
 /** pre-configured format strings */

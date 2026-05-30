@@ -94,8 +94,8 @@ Tempo.extend(FormatModule);
 | `{wkd}` | Full Weekday Name | `Saturday` |
 | `{www}` | Short Weekday Name | `Sat` |
 | `{dow}` | Day of Week (1-7) | `6` |
-| `{ww}` | Week of Year | `17` |
-| `{WW}` | Ordinal Week of Year | `17th` |
+| `{ww}` | Week of Year | `43` |
+| `{WW}` | Ordinal Week of Year | `43rd` |
 | `{hh}` | 2-digit Hour (24h) | `15` |
 | `{HH}` | 2-digit Hour (12h) | `03` |
 | `{mer}` | am/pm marker | `pm` |

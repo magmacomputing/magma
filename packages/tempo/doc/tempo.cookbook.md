@@ -224,6 +224,21 @@ console.log(t.format('We are currently in the {#quarter}')); // "We are currentl
 The examples below use the `using` and `await using` syntax, which require **TypeScript 5.2+** and a runtime that supports **TC39 Explicit Resource Management**.
 :::
 
+### ⚠️ Ticker Plugin Initialization
+
+The Ticker engine is a premium feature. Before using `Tempo.ticker()` in the examples below, you must import the plugin, initialize Tempo with your valid license, and extend it with the `TickerModule`.
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { TickerModule } from '@magmacomputing/tempo-plugin-ticker';
+
+// 1. Initialize with your JWT license
+Tempo.init({ license: 'YOUR_JWT_LICENSE_HERE' });
+
+// 2. Extend Tempo with the Ticker Module
+Tempo.extend(TickerModule);
+```
+
 ### Subscription Billing (Recurring Payments)
 Use a `seed` to anchor your subscription to a specific day, then use a month-based Ticker.
 

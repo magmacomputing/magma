@@ -244,7 +244,7 @@ console.log(t.toString()); // Resolved correctly (noise words stripped)
 
 For high-performance applications, you can enable the **Parse Planner** to optimize the pattern-matching loop. 
 
-#### `preFilter` (Boolean)
+#### `planner.preFilter` (Boolean)
 When enabled, Tempo performs a fast upfront classification of the input string (detecting digits, letters, colons, etc.) and skips layouts that cannot possibly match.
 
 - **Purely numeric inputs**: Skips `event`, `period`, `wkd`, and `rel` layouts.
@@ -252,20 +252,22 @@ When enabled, Tempo performs a fast upfront classification of the input string (
 - **Colon detected**: Prioritizes time-based layouts (`tm`, `dtm`) to find a match faster.
 
 ```javascript
-Tempo.init({ preFilter: true });
+Tempo.init({ 
+  planner: { preFilter: true } 
+});
 ```
 
-#### `layoutOrder` (Array)
+#### `planner.layoutOrder` (Array)
 You can manually define the order in which layouts are attempted. This is useful if you know your data primarily uses a specific format (e.g., ISO dates) and want to avoid checking other layouts first.
 
 ```javascript
 Tempo.init({ 
-  layoutOrder: ['ymd', 'dt', 'tm', 'rel'] 
+  planner: { layoutOrder: ['ymd', 'dt', 'tm', 'rel'] } 
 });
 ```
 
 ::: tip
-**Observability**: Set `debug: true` along with `preFilter: true` to see a detailed "Planner summary" in the console, showing how many layouts were skipped for a given input.
+**Observability**: Set `debug: true` along with `planner.preFilter` to see a detailed "Planner summary" in the console, showing how many layouts were skipped for a given input.
 :::
 
 ---
