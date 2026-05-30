@@ -1,3 +1,22 @@
+# ⚠️ Migrating to Tempo v3.x
+
+Tempo v3.x finalizes the plugin ecosystem by extracting advanced features into standalone, licensed packages.
+
+## 🔁 Migrating from version 2.x to 3.0.0 (Ticker Extraction)
+
+The `TickerModule` has been extracted from the core open-source repository into a standalone premium plugin.
+
+**Action Required**:
+1. If you use `Tempo.ticker()`, you must now install `@magmacomputing/tempo-plugin-ticker` alongside `@magmacomputing/tempo`.
+2. Visit the [Tempo License Registry](https://registry.magmacomputing.com.au) to obtain your free license key to activate the plugin.
+3. Import and register the plugin in your application initialization:
+   ```javascript
+   import { Tempo } from '@magmacomputing/tempo';
+   import { TickerModule } from '@magmacomputing/tempo-plugin-ticker';
+
+   Tempo.extend(TickerModule);
+   ```
+
 # ⚠️ Migrating to Tempo v2.x
 
 Tempo v2.x introduces architectural improvements and a more modular engine. While we strive for backward compatibility, there are some key changes to consider when upgrading from v1.x.
@@ -105,14 +124,14 @@ The individual `mdyLocales` and `mdyLayouts` options have been consolidated into
 - **Shortcut:** `new Tempo({ monthDay: true })` (enables forced MDY parsing using default locales).
 
 ### Relative Time
-The individual `rtfFormat` and `rtfStyle` options have been consolidated into a single `relativeTime` object.
+The individual `rtfFormat` and `rtfStyle` options have been consolidated into a single `relativeTimeFormat` object.
 - **v2.6.x:** `new Tempo({ rtfStyle: 'long' })`
-- **v2.7.x:** `new Tempo({ relativeTime: { style: 'long' } })`
+- **v2.7.x:** `new Tempo({ relativeTimeFormat: { style: 'long' } })`
 
 ### Action Required:
 Only the deprecated top-level keys `rtfFormat` and `rtfStyle` are still accepted as legacy fallbacks in the current release, handled specifically in the `Tempo` class constructor for backward compatibility. 
 
-In contrast, the old `mdyLocales` and `mdyLayouts` keys are **not** treated as aliases and will be ignored; these must be migrated to the new nested `monthDay` structure. Update your configuration to ensure compatibility with future versions and the Release-C optimization engine. Refer to the `Tempo` constructor for implementation details on legacy alias handling.
+In contrast, the old `mdyLocales` and `mdyLayouts` keys are **not** treated as aliases and will be ignored; these must be migrated to the new nested `monthDay` structure. Update your configuration to ensure compatibility with future versions and the optimization engine. Refer to the `Tempo` constructor for implementation details on legacy alias handling.
 
 ## 🔁 Migrating to version 2.9.3
 

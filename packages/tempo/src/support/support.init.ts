@@ -287,15 +287,6 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				state.config.intl = { ...state.config.intl, ...arg.value };
 				break;
 
-			case 'relativeTime':
-				if (!hasOwn(state.config, 'intl')) state.config.intl = Object.create(state.config.intl || {});
-				if (typeof arg.value === 'function') {
-					state.config.intl.relativeTime = arg.value;
-				} else {
-					state.config.intl.relativeTime = { ...state.config.intl.relativeTime, ...arg.value };
-				}
-				break;
-
 			case 'planner':
 				if (isDefined(arg.value.layoutOrder)) state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value.layoutOrder);
 				if (isDefined(arg.value.preFilter)) state.parse.planner.preFilter = Boolean(arg.value.preFilter);

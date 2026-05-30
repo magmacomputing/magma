@@ -86,8 +86,6 @@ export type Groups = Record<string, string>
 export interface Options extends Partial<Internal.BaseOptions> {
 	planner?: PlannerOptions;
 	intl?: IntlOptions;
-	/** @deprecated will be removed in v3.0.0; use `intl.relativeTimeFormat` instead */
-	relativeTime?: RelativeTime | ((value: number, unit: any) => string);
 	[key: string]: any;
 }
 
@@ -191,7 +189,6 @@ export interface RelativeTime {
 }
 
 export interface IntlOptions {
-	/** @deprecated will be removed in v3.0.0; use `relativeTimeFormat` instead */			relativeTime?: RelativeTime | ((value: number, unit: any) => string);
 	/** relative time formatting configuration */							relativeTimeFormat?: RelativeTime | ((value: number, unit: any) => string);
 	/** multi-unit duration formatting configuration */				durationFormat?: any | ((duration: any) => string);
 	/** absolute unit duration formatting configuration */		numberFormat?: Intl.NumberFormatOptions | ((value: number, unit: any) => string);
@@ -325,10 +322,8 @@ export namespace Internal {
 		/** pre-defined config options for Tempo.#global */			options?: Options | (() => Options);
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** regional date-parsing configuration */							monthDay?: MonthDay;
-		/** @deprecated will be removed in v3.0.0; use `intl.relativeTimeFormat` instead */	relativeTime?: RelativeTime | ((value: number, unit: any) => string);
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
-		/** @deprecated use 'terms' */													term?: TermPlugin;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;

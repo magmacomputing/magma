@@ -57,11 +57,12 @@ export const Match = proxify({
 export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.yy]: /(?<yy>[0-9]{2}(?:[0-9]{2})?)/,								// year must be exactly 2 or 4 digits
 	[Token.mm]: /(?<mm>[0 ]?[1-9]|1[0-2]|Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)/,	// month-name (abbrev or full) or month-number 01-12; leading '0' or space only (not \s — tab/newline are not valid padding)
-	[Token.dd]: /(?<dd>[0 ]?[1-9]|[12][0-9]|3[01])(?:\s?(?:st|nd|rd|th))?/,	// day-number 01-31; leading '0' or space only (not \s — tab/newline are not valid padding)
+	[Token.dd]: /(?<dd>[0 ]?[1-9]|[12][0-9]|3[01]){ord}?/,		// day-number 01-31; leading '0' or space only (not \s — tab/newline are not valid padding)
 	[Token.hh]: /(?<hh>2[0-4]|[01]?[0-9])/,										// hour 00-24; CAUTION: in non-anchored use '25' partially matches as '2' via [01]?[0-9] — always use within anchored layouts; single-digit hours (e.g. '9') are intentionally supported
 	[Token.mi]: /(\:(?<mi>[0-5][0-9]))/,											// minute-number 00-59
 	[Token.ss]: /(\:(?<ss>[0-5][0-9]))/,											// seconds-number 00-59
 	[Token.ff]: /(\.(?<ff>[0-9]{1,9}))/,											// fractional-seconds up-to 9-digits
+	[Token.ord]: /(?:\s?(?:st|nd|rd|th))/,										// optional ordinal suffix
 	[Token.mer]: /(\s*(?<mer>am|pm))/,												// meridiem suffix (am,pm)
 	[Token.sfx]: /((?:{sep}+|T)({tm}){tzd}?)/,								// time-pattern suffix 'T {tm} Z'; NOTE: {tm} resolves via Layout fallback in compileRegExp (cross-registry dependency: Snippet → Layout)
 	[Token.wkd]: /(?<wkd>Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)/,	// day-name (abbrev or full)
@@ -183,6 +184,7 @@ export const Guard = [
 	'am', 'pm', 'ago', 'hence', 'this', 'next', 'prev', 'last', 'from', 'now', 'today', 'yesterday', 'tomorrow', 'start', 'mid', 'end',
 	'year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond',
 	'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds', 'nanoseconds',
+	'st', 'nd', 'rd', 'th',
 	'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
 	'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays'
 ] as const;
@@ -198,8 +200,6 @@ export const Default = secure({
 	/** default timezone if not specified */									timeZone: getDateTimeFormat().timeZone,
 	/** default locale if not specified */										locale: getDateTimeFormat().locale,
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
-	// /** license key for premium plugins */										license: '',
-
 	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
 	/** internationalization configuration */									intl: IntlDefault,
 	/** parse planner configuration (layoutOrder, etc.) */		planner: {

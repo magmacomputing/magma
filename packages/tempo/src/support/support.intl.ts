@@ -1,4 +1,5 @@
 import type { IntlOptions } from '../tempo.type.js';
+import { isObject } from '#library/assertion.library.js';
 
 /** @internal baseline Intl settings */
 export const IntlDefault: IntlOptions = {
@@ -34,27 +35,22 @@ export function probeMDY(locale: string): boolean {
  */
 export function resolveIntl(value: IntlOptions = {}, base: IntlOptions = IntlDefault): IntlOptions {
 	const result = { ...base } as Record<string, any>;
+	const intls = ['relativeTimeFormat', 'numberFormat', 'durationFormat'];
 
-	Object.entries(value).forEach(([k, v]) => {
-		if ((k === 'relativeTime' || k === 'relativeTimeFormat' || k === 'numberFormat' || k === 'durationFormat') && typeof v === 'object' && v !== null && typeof v !== 'function') {
-			const current = result[k];
-			const isObj = (val: any) => typeof val === 'object' && val !== null && typeof val !== 'function';
+	Object
+		.entries(value)
+		.forEach(([k, v]) => {
+			if (intls.includes(k) && isObject(v)) {
+				const current = result[k];
 
-			result[k] = {
-				...(isObj(current) ? current as object : {}),
-				...v as any
-			};
-		} else {
-			result[k] = v;
-		}
-	});
-
-	// Sync relativeTime and relativeTimeFormat (with precedence to relativeTimeFormat)
-	if (result.relativeTimeFormat !== undefined) {
-		result.relativeTime = result.relativeTimeFormat;
-	} else if (result.relativeTime !== undefined) {
-		result.relativeTimeFormat = result.relativeTime;
-	}
+				result[k] = {
+					...(isObject(current) ? current as object : {}),
+					...v as any
+				};
+			} else {
+				result[k] = v;
+			}
+		});
 
 	return result;
 }

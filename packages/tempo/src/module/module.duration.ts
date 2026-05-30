@@ -200,8 +200,8 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			.map(Math.abs)
 			.map(nbr => nbr.toString().padStart(3, '0'))
 			.join('')
-		const rtConfig = (this as any).config.intl?.relativeTimeFormat || (this as any).config.intl?.relativeTime;
-		const rtOptions = opts['intl']?.relativeTimeFormat || opts['intl']?.relativeTime || opts['relativeTime'];
+		const rtConfig = (this as any).config.intl?.relativeTimeFormat;
+		const rtOptions = opts['intl']?.relativeTimeFormat;
 
 		const rtf = (isFunction(rtOptions) ? rtOptions : rtOptions?.format)
 			|| (isFunction(rtConfig) ? rtConfig : rtConfig?.format)
@@ -211,7 +211,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			const su = singular(u);
 			if (isFunction(rtf)) return rtf(val, su);
 			if (rtf instanceof Intl.RelativeTimeFormat) return rtf.format(val, su);
-			const style = rtOptions?.style || rtConfig?.style || opts['intl']?.relativeTimeFormat?.style || opts['intl']?.relativeTime?.style || opts['rtfStyle'] || (this as any).config.intl?.relativeTimeFormat?.style || (this as any).config.intl?.relativeTime?.style || (this as any).config['rtfStyle'] || 'narrow';
+			const style = rtOptions?.style || rtConfig?.style || opts['intl']?.relativeTimeFormat?.style || opts['rtfStyle'] || (this as any).config.intl?.relativeTimeFormat?.style || (this as any).config['rtfStyle'] || 'narrow';
 			return getRelativeTime(val, su as Intl.RelativeTimeFormatUnit, locale, style);
 		}
 

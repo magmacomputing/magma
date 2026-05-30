@@ -59,6 +59,7 @@ export const Token = looseIndex<string, symbol>()({
 	/** year */																								yy: Symbol('yy'),
 	/** ISO yearOfWeek */																			yw: Symbol('yw'),
 	/** month */																							mm: Symbol('mm'),
+	/** ordinal suffix */																			ord: Symbol('ord'),
 	/** day */																								dd: Symbol('dd'),
 	/** hour */																								hh: Symbol('hh'),
 	/** minute */																							mi: Symbol('mi'),

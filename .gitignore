@@ -56,3 +56,6 @@ Thumbs.db
 .npmrc.local
 .npmrc
 !.npmrc
+
+# Local Proprietary Symlinks
+/packages/tempo/premium

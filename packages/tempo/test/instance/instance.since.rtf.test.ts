@@ -9,7 +9,7 @@ describe('instance.since relative formatting', () => {
 		const t1 = new Tempo('2024-01-01T12:00:00');
 		const t2 = new Tempo('2024-01-01T14:30:00');
 
-		const res = t2.since(t1, { unit: 'hours', relativeTime: { style: 'long' } });
+		const res = t2.since(t1, { unit: 'hours', intl: { relativeTimeFormat: { style: 'long' } } });
 		expect(res).toMatch(/2 hours ago/i);
 	});
 
@@ -17,7 +17,7 @@ describe('instance.since relative formatting', () => {
 		const t1 = new Tempo('2024-01-01T12:00:00');
 		const t2 = new Tempo('2024-01-01T14:30:00');
 
-		const res = t2.since(t1, { unit: 'hours', relativeTime: { style: 'short' } });
+		const res = t2.since(t1, { unit: 'hours', intl: { relativeTimeFormat: { style: 'short' } } });
 		expect(res).toMatch(/2 hrs?\. ago/i);
 	});
 
@@ -26,7 +26,7 @@ describe('instance.since relative formatting', () => {
 		const t2 = new Tempo('2024-01-01T14:30:00');
 
 		const rtf = new Intl.RelativeTimeFormat('fr', { style: 'long' });
-		const res = t2.since(t1, { unit: 'hours', relativeTime: { format: rtf } });
+		const res = t2.since(t1, { unit: 'hours', intl: { relativeTimeFormat: { format: rtf } } });
 
 		// French long for 2 hours ago: "il y a 2 heures"
 		expect(res).toMatch(/il y a 2 heures/i);
@@ -34,7 +34,7 @@ describe('instance.since relative formatting', () => {
 
 	test('inherits relativeTime.style from instance configuration', () => {
 		const t1 = new Tempo('2024-01-01T12:00:00');
-		const t = new Tempo('2024-01-01T14:30:00', { relativeTime: { style: 'long' } });
+		const t = new Tempo('2024-01-01T14:30:00', { intl: { relativeTimeFormat: { style: 'long' } } });
 
 		const res = t.since(t1, 'hours');
 		expect(res).toMatch(/2 hours ago/i);
@@ -43,7 +43,7 @@ describe('instance.since relative formatting', () => {
 	test('inherits relativeTime.format from instance configuration', () => {
 		const t1 = new Tempo('2024-01-01T12:00:00');
 		const rtf = new Intl.RelativeTimeFormat('fr', { style: 'long' });
-		const t = new Tempo('2024-01-01T14:30:00', { relativeTime: { format: rtf } });
+		const t = new Tempo('2024-01-01T14:30:00', { intl: { relativeTimeFormat: { format: rtf } } });
 
 		const res = t.since(t1, 'hours');
 		expect(res).toMatch(/il y a 2 heures/i);

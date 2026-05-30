@@ -383,27 +383,8 @@ export class Tempo {
 		}
 
 		// 1d. Process Internationalization
-		if (discovery.intl || discovery.relativeTime) {
-			const intl: t.IntlOptions = { ...discovery.intl };
-			const shorthand = discovery.relativeTime;
-			if (shorthand) {
-				if (isFunction(shorthand)) {
-					intl.relativeTimeFormat = shorthand;
-				} else if (!(isFunction(intl.relativeTimeFormat) || isFunction(intl.relativeTime))) {
-					intl.relativeTimeFormat = { ...intl.relativeTime, ...intl.relativeTimeFormat, ...(discovery.relativeTime as any) };
-				} else {
-					// A function-based relativeTimeFormat in 'intl' takes precedence over a shorthand object
-					Tempo.#dbg.debug(shape.config, '[Discovery] Shorthand relativeTime object ignored; intl.relativeTimeFormat function has precedence.');
-				}
-			}
-			// Sync legacy support
-			if (intl.relativeTimeFormat !== undefined) {
-				intl.relativeTime = intl.relativeTimeFormat;
-			} else if (intl.relativeTime !== undefined) {
-				intl.relativeTimeFormat = intl.relativeTime;
-			}
-			shape.config.intl = { ...shape.config.intl, ...intl };
-		}
+		if (discovery.intl)
+			shape.config.intl = { ...shape.config.intl, ...discovery.intl };
 
 		// 1e. Process Planner
 		if (isObject(discovery.planner)) {
@@ -414,10 +395,6 @@ export class Tempo {
 		}
 
 		// 2. Process Terms
-		if (discovery.term) {
-			discovery.terms = [...asArray(discovery.terms || []), ...asArray(discovery.term)];
-			Tempo.#dbg.warn(shape.config, 'Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
-		}
 		if (discovery.terms)
 			this.extend(asArray(discovery.terms));
 
@@ -644,7 +621,6 @@ export class Tempo {
 									break;
 
 								case 'intl':
-								case 'relativeTime':
 								case 'planner':
 								case 'ignore':
 									this[$setConfig](this[$Internal](), { [key]: val });
@@ -1408,7 +1384,7 @@ export class Tempo {
 	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Tempo.WEEKDAYS.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
 	/** iso weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
 	/** Nanoseconds since Unix epoch (BigInt) */							get nano() { return this.toDateTime().epochNanoseconds }
-	/** Standard ISO 8601 string in UTC */										get iso() { return this.toDate().toISOString() }
+	/** Standard ISO 8601 string in UTC */										get iso() { return this.toDateTime().toInstant().toString() }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
 
 	/** list of registered terms and their available range keys */

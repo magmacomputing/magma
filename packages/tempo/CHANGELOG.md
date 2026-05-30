@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-05-29
+
+### Changed (Breaking)
+- **Ticker Extraction**: The `TickerModule` has been extracted from the core Tempo library into a standalone, licensed premium plugin (`@magmacomputing/tempo-plugin-ticker`). It is no longer bundled with the open-source distribution. 
+- **ISO Getter Precision**: The `.iso` property getter has been upgraded from native `Date.toISOString()` to Temporal's `Instant.toString()`. This provides full ISO 8601 nanosecond precision and omits fractional seconds when they evaluate to exactly zero. 
+
+### Added
+- **Compact Date Tokens**: Added `{dmy}`, `{mdy}`, and `{ymd}` to the `FormatModule` for generating 8-digit compact date strings (e.g. `24102026`).
+- **Ordinal Format Tokens**: Added uppercase `{DAY}`, `{WW}`, and `{MM}` to the `FormatModule` which generate the ordinal string representation (e.g. `24th`, `1st`, `2nd`).
+- **Compact Time Rename**: Renamed the `{hhmiss}` token to `{hms}` in the `FormatModule` for consistency with other token styles.
+### Migration
+- If you used `Tempo.ticker()`, you must now install `@magmacomputing/tempo-plugin-ticker` and register it. A migration stub is currently left in place that will throw an error with directions to the Tempo Registry to obtain your license key.
+
 ## [2.11.2] - 2026-05-27
 
 ### Changed
