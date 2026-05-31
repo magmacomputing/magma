@@ -7,7 +7,9 @@ import { decodeJWT } from '#library/utility.library.js';
  */
 
 export class Validator {
-	constructor(public key: string) { }
+	constructor(public key: string) {
+		console.warn('Tempo Community Edition: License keys are ignored. Premium plugins cannot be validated without the cryptographic engine.');
+	}
 	async verify() {
 		// Decodes but DOES NOT verify the signature. 
 		// Cannot safely unlock Premium Plugins without cryptographic proof.
