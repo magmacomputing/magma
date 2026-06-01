@@ -42,7 +42,6 @@ describe('AliasEngine', () => {
 		const localEngine = new AliasEngine({ parent: globalEngine, logger });
 		localEngine.registerAliases('evt', [['xmas', '24-Dec']]);
 		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Collision detected'), undefined);
-		warnSpy.mockRestore();
 	});
 
 	it('warns on local collision', () => {
@@ -50,7 +49,6 @@ describe('AliasEngine', () => {
 		const engine = new AliasEngine({ logger });
 		engine.registerAliases('evt', [['xmas', '25-Dec'], ['xmas', '24-Dec']]);
 		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Collision detected'), undefined);
-		warnSpy.mockRestore();
 	});
 
 	it('registers and resolves batch aliases', () => {
@@ -81,7 +79,6 @@ describe('AliasEngine', () => {
 		engine.registerAliases('evt', [['xmas( )?eve', '24-Dec'], ['xmas eve', '24-Dec']]);
 		// Should treat "xmas eve" and "xmas( )?eve" as same base word
 		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Collision detected'), undefined);
-		warnSpy.mockRestore();
 	});
 
 	it('does not warn on non-colliding aliases', () => {
@@ -89,7 +86,6 @@ describe('AliasEngine', () => {
 		const engine = new AliasEngine({ logger });
 		engine.registerAliases('evt', [['xmas', '25-Dec'], ['bday', '20-May']]);
 		expect(warnSpy).not.toHaveBeenCalled();
-		warnSpy.mockRestore();
 	});
 
 	it('resolves to parent after clear', () => {

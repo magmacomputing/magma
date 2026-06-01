@@ -1,14 +1,29 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
+import swc from 'unplugin-swc';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDist = process.env.TEST_DIST === 'true';
 
 export default defineConfig({
+  esbuild: false,
+  oxc: false,
+  plugins: [
+    swc.vite({
+      jsc: {
+        target: 'es2022',
+        parser: { syntax: 'typescript', decorators: true },
+        transform: { decoratorVersion: '2023-11' },
+      },
+    }),
+  ],
   test: {
     name: 'Library: Full',
     globals: true,
+    pool: 'forks',
+    maxWorkers: 2,
+    slowTestThreshold: 2_000,
     environment: 'node',
     include: ['test/**/*.{test,spec}.ts'],
     setupFiles: [resolve(__dirname, '../tempo/bin/temporal-polyfill.ts')],

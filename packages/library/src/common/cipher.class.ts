@@ -13,19 +13,19 @@ const keys = {
 	TypeKey: 'AES-GCM',
 } as const
 
+const _cryptoKey = subtle.generateKey({ name: keys.TypeKey, length: 128 }, false, ['encrypt', 'decrypt']);
+const _vector = crypto.getRandomValues(new Uint8Array(16));
+const _asymmetricKey = subtle.generateKey({
+	name: keys.SignKey,
+	modulusLength: 2048,
+	publicExponent: new Uint8Array([1, 0, 1]),
+	hash: { name: keys.Algorithm },
+}, false, ['sign', 'verify']);
+
 /** Static-only cryptographic methods */
 @Immutable
 @Static																										// prevent instantiation
 export class Cipher {
-	static #cryptoKey = subtle.generateKey({ name: keys.TypeKey, length: 128 }, false, ['encrypt', 'decrypt']);
-	static #vector = crypto.getRandomValues(new Uint8Array(16));
-	static #asymmetricKey = subtle.generateKey({
-		name: keys.SignKey,
-		modulusLength: 2048,
-		publicExponent: new Uint8Array([1, 0, 1]),
-		hash: { name: keys.Algorithm },
-	}, false, ['sign', 'verify']);
-
 	/** random UUID */
 	static randomKey = () => crypto.randomUUID().split('-')[0];
 
@@ -74,20 +74,20 @@ export class Cipher {
 	static decodeBuffer = (buf: Uint16Array) => new TextDecoder(keys.Encoding).decode(buf);
 
 	static encrypt = async (data: any) =>
-		subtle.encrypt({ name: keys.TypeKey, iv: Cipher.#vector }, await Cipher.#cryptoKey, Cipher.encodeBuffer(data))
+		subtle.encrypt({ name: keys.TypeKey, iv: _vector }, await _cryptoKey, Cipher.encodeBuffer(data))
 			.then(result => new Uint16Array(result))
 			.then(Cipher.decodeBuffer);
 
 	static decrypt = async (secret: Promise<ArrayBuffer>) =>
-		subtle.decrypt({ name: keys.TypeKey, iv: Cipher.#vector }, await Cipher.#cryptoKey, await secret)
+		subtle.decrypt({ name: keys.TypeKey, iv: _vector }, await _cryptoKey, await secret)
 			.then(result => new Uint16Array(result))
 			.then(Cipher.decodeBuffer);
 
 	static sign = async (doc: any) =>
-		subtle.sign(keys.SignKey, (await Cipher.#asymmetricKey).privateKey!, Cipher.encodeBuffer(doc))
+		subtle.sign(keys.SignKey, (await _asymmetricKey).privateKey!, Cipher.encodeBuffer(doc))
 			.then(result => new Uint16Array(result))
 			.then(Cipher.decodeBuffer);
 
 	static verify = async (signature: Promise<ArrayBuffer>, doc: any) =>
-		subtle.verify(keys.SignKey, (await Cipher.#asymmetricKey).publicKey!, await signature, Cipher.encodeBuffer(doc));
+		subtle.verify(keys.SignKey, (await _asymmetricKey).publicKey!, await signature, Cipher.encodeBuffer(doc));
 }

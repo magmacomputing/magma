@@ -1,7 +1,9 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import fs from 'node:fs';
+
 import { defineConfig } from 'vitest/config';
+import swc from 'unplugin-swc';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDist = process.env.TEST_DIST === 'true';
@@ -12,33 +14,38 @@ const consoleSpySetup = resolve(__dirname, './test/support/setup.console-spy.ts'
 
 const licensePremium = process.env.TEMPO_LICENSE_PATH ? resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
 const licenseDefault = resolve(__dirname, './src/support/support.license.ts');
-const isPremiumAvailable = !!(
+const isPremiumAvailable = Boolean(
   licensePremium &&
   fs.existsSync(licensePremium) &&
   fs.existsSync(resolve(dirname(licensePremium), '../tsconfig.json'))
 );
 
 export default defineConfig({
-  plugins: [],
+  esbuild: false,
+  oxc: false,
+  plugins: [
+    swc.vite({
+      jsc: {
+        target: 'es2022',
+        parser: { syntax: 'typescript', decorators: true },
+        transform: { decoratorVersion: '2023-11' },
+      },
+    }),
+  ],
   test: {
     globals: true,
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        minForks: 1,
-        maxForks: 2,
-      },
-    },
+    maxWorkers: 2,
+    slowTestThreshold: 2_000,
+    include: ['test/**/*.{test,spec}.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/test/**/*.core.test.ts',
+      '**/test/**/*.lazy.test.ts'
+    ],
     setupFiles: process.env.TEMPO_PREFILTER_CI === 'true'
       ? [polyfill, consoleSpySetup, ciPrefilterSetup]
       : [polyfill, consoleSpySetup],
-    // *.core.test.ts and *.lazy.test.ts assert plugin-isolation behaviour
-    // (e.g. "DurationModule not loaded").  The ciPrefilterSetup imports '#tempo'
-    // (full build) which side-effects modules into the runtime, making those
-    // assertions impossible to satisfy.  They run in the standard test job.
-    exclude: process.env.TEMPO_PREFILTER_CI === 'true'
-      ? ['**/*.core.test.ts', '**/*.lazy.test.ts', '**/node_modules/**']
-      : ['**/node_modules/**'],
   },
   resolve: {
     alias: isDist ? [

@@ -164,7 +164,7 @@ export default [
 
 				// Map library imports to lib/ for browser-ready granular ESM
 				const rel = path.relative(__dirname, id);
-				const normalizedRel = rel.replace(/\\/g, '/'); // Ensure forward slashes
+				const normalizedRel = rel.replace(/\\/g, '/');			// Ensure forward slashes
 
 				if (id.includes('magma/packages/library') || rel.startsWith('../library')) {
 					const match = normalizedRel.match(/library\/(?:src|dist\/common)\/(.*)$/);

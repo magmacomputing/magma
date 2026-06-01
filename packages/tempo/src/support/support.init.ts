@@ -156,9 +156,9 @@ function setLicense(state: t.Internal.State, key: string) {
 
 		const initialJti = runtime.license.jti;
 		const initialKey = runtime.license.key;
-		runtime.license.jws = new Pledge<Internal.LicensingModule>({
+		const argObj = {
 			tag: 'license',
-			onResolve: (m) => {
+			onResolve: (m: any) => {
 				const validator = new m.Validator(runtime.license.key!);
 				validator.verify().then((res: any) => {
 					// 🛡️ Race Condition Guard: Only apply results if identity (JTI + Key) hasn't changed since we started
@@ -182,7 +182,8 @@ function setLicense(state: t.Internal.State, key: string) {
 					logWarn(state.config, `⚠️ Tempo Licensing: ${runtime.license.error}`);
 				});
 			}
-		});
+		};
+		runtime.license.jws = new Pledge<Internal.LicensingModule>(argObj as any);
 	}
 }
 

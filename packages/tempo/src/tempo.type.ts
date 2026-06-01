@@ -240,7 +240,7 @@ export namespace Internal {
 		/** custom time aliases (periods). */										period: Period | RegistryOption<Logic>;
 		/** noise words to ignore during parsing. */						ignore: Ignore;
 		/** custom format strings to merge in the FORMAT enum */formats: Property<any>;
-		/** plugins to be automatically extended */							plugins: TempoPlugin | TempoPlugin[];
+		/** plugins to be automatically extended */							plugins: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
@@ -328,7 +328,7 @@ export namespace Internal {
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
-		/** plugins to be automatically extended via Tempo.extend() */plugins?: TempoPlugin | TempoPlugin[];
+		/** plugins to be automatically extended via Tempo.extend() */plugins?: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
 	}
 
 	export interface LicenseScope {

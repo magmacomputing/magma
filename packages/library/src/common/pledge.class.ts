@@ -13,6 +13,14 @@ declare module '#library/type.library.js' {
 	}
 }
 
+const _dbg = new Logify('Pledge');
+let _static = {} as Pledge.Constructor;
+const _STATE = secure({
+	Pending: Symbol('pending'),
+	Resolved: Symbol('resolved'),
+	Rejected: Symbol('rejected')
+});
+
 /**
  * Wrap a Promise's resolve/reject/finally methods for later fulfilment.  
  * with useful methods for tracking the state of the Promise, chaining fulfilment, etc.  
@@ -25,32 +33,26 @@ declare module '#library/type.library.js' {
 export class Pledge<T> {
 	#pledge: PromiseWithResolvers<T>;
 	#status = {} as Pledge.Status<T>;
-	static #dbg = new Logify('Pledge');
-	static #static = {} as Pledge.Constructor;
 
-	static STATE = secure({
-		Pending: Symbol('pending'),
-		Resolved: Symbol('resolved'),
-		Rejected: Symbol('rejected')
-	})
+	static get STATE() { return _STATE; }
 
 	/** initialize future Pledge instances */
 	static init(arg?: Pledge.Constructor | string) {
 		if (isObject(arg)) {
 			if (isEmpty(arg))
-				Pledge.#static = {};																// reset static values
+				_static = {};																// reset static values
 
-			markConfig(Pledge.#static);
-			Object.assign(Pledge.#static,
+			markConfig(_static);
+			Object.assign(_static,
 				ifDefined({ tag: arg.tag, debug: arg.debug, catch: arg.catch, silent: arg.silent }),
 				ifDefined({ onResolve: arg.onResolve, onReject: arg.onReject, onSettle: arg.onSettle, }),
 			)
 		} else {
-			markConfig(Pledge.#static);
-			Object.assign(Pledge.#static, ifDefined({ tag: arg, }));
+			markConfig(_static);
+			Object.assign(_static, ifDefined({ tag: arg, }));
 		}
 
-		Pledge.#dbg.debug(Pledge.#static, Pledge.#static);
+		_dbg.debug(_static, _static);
 
 		return Pledge.status;
 	}
@@ -59,26 +61,26 @@ export class Pledge<T> {
 	static [Symbol.dispose]() { Pledge.init({}) }
 
 	static get status() {
-		return Pledge.#static as Pledge.Status<typeof Pledge>;
+		return _static as Pledge.Status<typeof Pledge>;
 	}
 
 	constructor(arg?: Pledge.Constructor | string) {
 		const opts = isObject(arg) ? arg : { tag: arg as string };
-		const config = { ...Pledge.#static, ...ifDefined({ tag: opts.tag, debug: opts.debug, catch: opts.catch, silent: opts.silent }) };
+		const config = { ..._static, ...ifDefined({ tag: opts.tag, debug: opts.debug, catch: opts.catch, silent: opts.silent }) };
 
 		this.#pledge = Promise.withResolvers();
-		this.#status = markConfig({ state: Pledge.STATE.Pending, ...config });
+		this.#status = markConfig({ state: _STATE.Pending, ...config });
 
-		const onResolve = asArray(Pledge.#static.onResolve).concat(asArray(opts.onResolve));
-		const onReject = asArray(Pledge.#static.onReject).concat(asArray(opts.onReject));
-		const onSettle = asArray(Pledge.#static.onSettle).concat(asArray(opts.onSettle));
+		const onResolve = asArray(_static.onResolve).concat(asArray(opts.onResolve));
+		const onReject = asArray(_static.onReject).concat(asArray(opts.onReject));
+		const onSettle = asArray(_static.onSettle).concat(asArray(opts.onSettle));
 
 		const runSafely = <A extends any[]>(callbacks: ((...args: A) => any)[], ...args: A) => {
 			callbacks.forEach(cb => {
 				try {
 					cb(...args);
 				} catch (err) {
-					Pledge.#dbg.warn(this.#status, 'Pledge callback failed', err);
+					_dbg.warn(this.#status, 'Pledge callback failed', err);
 				}
 			});
 		}
@@ -91,7 +93,7 @@ export class Pledge<T> {
 			this.#pledge.promise.finally(() => runSafely(onSettle));
 
 		if (this.#status.catch)
-			this.#pledge.promise.catch(err => Pledge.#dbg.warn(this.#status, err));
+			this.#pledge.promise.catch(err => _dbg.warn(this.#status, err));
 	}
 
 	get [Symbol.toStringTag]() {
@@ -116,16 +118,16 @@ export class Pledge<T> {
 	}
 
 	get isPending() {
-		return this.#status.state === Pledge.STATE.Pending;
+		return this.#status.state === _STATE.Pending;
 	}
 	get isResolved() {
-		return this.#status.state === Pledge.STATE.Resolved;
+		return this.#status.state === _STATE.Resolved;
 	}
 	get isRejected() {
-		return this.#status.state === Pledge.STATE.Rejected;
+		return this.#status.state === _STATE.Rejected;
 	}
 	get isSettled() {
-		return this.#status.state !== Pledge.STATE.Pending;
+		return this.#status.state !== _STATE.Pending;
 	}
 
 	toString() {
@@ -135,11 +137,11 @@ export class Pledge<T> {
 	resolve(value: T) {
 		if (this.isPending) {
 			this.#status.settled = value;
-			this.#status.state = Pledge.STATE.Resolved;
-			Pledge.#dbg.debug(this.#status, 'Resolved');					// debug
+			this.#status.state = _STATE.Resolved;
+			_dbg.debug(this.#status, 'Resolved');					// debug
 			this.#pledge.resolve(value);													// resolve
 		}
-		else Pledge.#dbg.warn(this.#status, `Pledge was already ${this.state}`);
+		else _dbg.warn(this.#status, `Pledge was already ${this.state}`);
 
 		return this.#pledge.promise;
 	}
@@ -147,11 +149,11 @@ export class Pledge<T> {
 	reject(error: any) {
 		if (this.isPending) {
 			this.#status.error = error;
-			this.#status.state = Pledge.STATE.Rejected;
-			Pledge.#dbg.debug(this.#status, 'Rejected', error);		// debug
+			this.#status.state = _STATE.Rejected;
+			_dbg.debug(this.#status, 'Rejected', error);		// debug
 			this.#pledge.reject(error);														// reject
 		}
-		else Pledge.#dbg.warn(this.#status, `Pledge was already ${this.state}`);
+		else _dbg.warn(this.#status, `Pledge was already ${this.state}`);
 
 		return this.#pledge.promise;
 	}

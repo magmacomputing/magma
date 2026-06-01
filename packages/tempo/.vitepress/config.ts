@@ -51,12 +51,12 @@ export default defineConfig({
         ]
       },
       {
-        text: 'Extensions & Plugins',
+        text: 'Extensions & Terms',
         items: [
           { text: 'Modularity', link: '/doc/tempo.modularity' },
-          { text: 'Terms System', link: '/doc/tempo.term' },
-          { text: 'Ticker Plugin', link: '/doc/tempo.ticker' },
-          { text: 'Premium Plugins ↗', link: 'https://magmacomputing.github.io/tempo-plugin-docs/' }
+          { text: 'Terms Plugins', link: '/doc/tempo.term' },
+          { text: 'Extension Plugins', link: '/doc/tempo.extension' },
+          { text: 'Premium Plugins ↗', link: 'https://magmacomputing.github.io/tempo-plugin-docs/' },
         ]
       },
       {
@@ -118,6 +118,11 @@ export default defineConfig({
     },
     esbuild: {
       target: 'esnext'
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        target: 'esnext'
+      }
     },
     resolve: {
       conditions: ['development', 'module', 'browser', 'import', 'default'],

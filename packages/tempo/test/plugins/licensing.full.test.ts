@@ -9,7 +9,7 @@ vi.mock('#tempo/license', () => {
 		status: 'active',
 		scopes: { astro: {} }
 	});
-	const Validator = vi.fn().mockImplementation(() => ({ verify }));
+	const Validator = vi.fn().mockImplementation(function() { return { verify }; });
 	return { Validator };
 });
 
@@ -173,12 +173,14 @@ describe('Tempo Licensing Strategy', () => {
 
 		// Update mock for this specific test
 		const { Validator } = await import(licenseModule as any);
-		vi.mocked(Validator).mockReturnValue({
-			verify: vi.fn().mockResolvedValue({
-				status: 'revoked',
-				scopes: {},
-				error: 'License has been revoked'
-			})
+		vi.mocked(Validator).mockImplementation(function() {
+                        return {
+			        verify: vi.fn().mockResolvedValue({
+				        status: 'revoked',
+				        scopes: {},
+				        error: 'License has been revoked'
+			        })
+                        };
 		} as any);
 
 		Tempo.init({ license: mockToken });
@@ -197,12 +199,14 @@ describe('Tempo Licensing Strategy', () => {
 		const mockToken = `a.${base64Encode(JSON.stringify(payload))}.c`;
 
 		const { Validator } = await import(licenseModule as any);
-		vi.mocked(Validator).mockReturnValue({
-			verify: vi.fn().mockResolvedValue({
-				status: 'revoked',
-				scopes: { premium: {} },
-				error: 'Access denied'
-			})
+		vi.mocked(Validator).mockImplementation(function() {
+                        return {
+			        verify: vi.fn().mockResolvedValue({
+				        status: 'revoked',
+				        scopes: { premium: {} },
+				        error: 'Access denied'
+			        })
+                        };
 		} as any);
 
 		Tempo.init({ license: mockToken });
@@ -215,6 +219,7 @@ describe('Tempo Licensing Strategy', () => {
 		}]);
 
 		const rt = getRuntime();
+		await rt.license.jws;
 		await rt.license.jws;
 		await vi.waitFor(() => expect(rt.license.status).toBe(LICENSE.Revoked));
 

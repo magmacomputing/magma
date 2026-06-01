@@ -52,9 +52,9 @@ interface Registry {																				// information about each registered ali
 
 export class AliasEngine {
 	static aliasPattern = /^(evt|per)(\d+)_(\d+)$/;
-	static #idCounter = 0;
+	private static _idCounter = 0;
 
-	static #getBaseWord(s: string): string {
+	private static _getBaseWord(s: string): string {
 		return s
 			.toLowerCase()
 			.replace(/\[[^\]]*\]\?/g, '')
@@ -84,7 +84,7 @@ export class AliasEngine {
 		const parent = options.parent;
 		this.#logger = options.logger;
 		this.#config = options.config;
-		this.#id = AliasEngine.#idCounter++;
+		this.#id = AliasEngine._idCounter++;
 
 		if (parent instanceof AliasEngine) {
 			this.#parent = parent;
@@ -113,7 +113,7 @@ export class AliasEngine {
 	 */
 	registerAliases(type: AliasType, events: [string, AliasTarget][]) {
 		for (const [name, target] of events) {
-			const baseWord = AliasEngine.#getBaseWord(name);
+			const baseWord = AliasEngine._getBaseWord(name);
 			const existingKey = this.#words[baseWord];
 			const existing = existingKey ? this.getAlias(existingKey) : undefined;
 
@@ -187,7 +187,7 @@ export class AliasEngine {
 	}
 
 	hasAlias(name: string, type?: AliasType) {
-		const baseWord = AliasEngine.#getBaseWord(name);
+		const baseWord = AliasEngine._getBaseWord(name);
 		const key = this.#words[baseWord];
 		return !key
 			? false

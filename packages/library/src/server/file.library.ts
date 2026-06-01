@@ -15,7 +15,7 @@ export class File {
 	 * @throws {Error} If path traversal is detected
 	 * @returns The resolved absolute path
 	 */
-	static #resolvePath(filename: string): string {
+	private static _resolvePath(filename: string): string {
 		if (path.isAbsolute(filename)) {
 			throw new Error(`Absolute paths are not allowed: ${filename}`);
 		}
@@ -33,7 +33,7 @@ export class File {
 
 	static read = (file: string): Promise<string | number> => new Promise<string | number>((resolve, reject) => {
 		try {
-			const target = File.#resolvePath(file);
+			const target = File._resolvePath(file);
 			fs.readFile(target, File.encoding, (err, data) => {
 				if (err)
 					return (err.code === 'ENOENT')
@@ -49,7 +49,7 @@ export class File {
 
 	static write = (file: string, doc: string | NodeJS.ArrayBufferView) => new Promise<string | NodeJS.ArrayBufferView>((resolve, reject) => {
 		try {
-			const target = File.#resolvePath(file);
+			const target = File._resolvePath(file);
 			fs.writeFile(target, doc, File.encoding, (err => err ? reject(err) : resolve(doc)));
 		} catch (err) {
 			reject(err);
@@ -58,7 +58,7 @@ export class File {
 
 	static exist = (file: string) => new Promise<boolean>((resolve, reject) => {
 		try {
-			const target = File.#resolvePath(file);
+			const target = File._resolvePath(file);
 			fs.access(target, (err =>
 				err && err.code !== 'ENOENT'
 					? reject(err)																			// anything other than 'file not-exists'
@@ -71,7 +71,7 @@ export class File {
 
 	static remove = (file: string) => new Promise<void>((resolve, reject) => {
 		try {
-			const target = File.#resolvePath(file);
+			const target = File._resolvePath(file);
 			fs.unlink(target, (err =>
 				err && err.code !== 'ENOENT'
 					? reject(err)																			// anything other than 'file not-exists'

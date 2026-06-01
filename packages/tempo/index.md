@@ -103,14 +103,10 @@ let initPromise = (async () => {
       registry.has = () => false
     }
 
-    const [{ Tempo }, { TickerModule }] = await Promise.all([
-      import('@magmacomputing/tempo'),
-      import('@magmacomputing/tempo/ticker'),
-    ])
+    const { Tempo } = await import('@magmacomputing/tempo')
 
     if (import.meta.env.DEV) registry.has = originalHas
     
-    if (!Tempo.ticker) Tempo.extend(TickerModule)
     Tempo.init()
     
     return Tempo
@@ -143,7 +139,10 @@ async function startTicker() {
     
     if (isManualTickerPaused.value) return
     
-    ticker = Tempo.ticker({ seconds: 1, seed: { timeZone: selectedTz.value } }, sync)
+    ticker = {
+      _id: setInterval(() => sync(new Tempo({ timeZone: selectedTz.value })), 1000),
+      stop() { clearInterval(this._id) }
+    }
   } catch (e) {
     timeStr.value = `Error: ${e.message || 'Unknown'}`
     const fallback = () => {
