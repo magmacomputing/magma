@@ -222,7 +222,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	delete groups["afx"];
 
 	if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-		logError(`Invalid Date components: year=${year}, config, month=${month}, day=${day}`);
+		logError(`Invalid Date components: year=${year}, month=${month}, day=${day}`, config);
 		return dateTime;
 	}
 

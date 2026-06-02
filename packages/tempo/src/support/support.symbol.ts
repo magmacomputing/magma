@@ -5,7 +5,7 @@ export { $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $LibR
 
 
 /** check valid Tempo instance */
-export const isTempo = (tempo?: any): tempo is TempoBrand => isDefined(tempo?.[sym.$Identity]);
+export const isTempo = (tempo?: any): tempo is TempoBrand => tempo?.[sym.$Identity] === true;
 
 /**
  * Centralized registry for all Tempo-specific Global Symbols.

@@ -9,7 +9,7 @@ export interface BoundaryContext {
 	catch?: boolean | undefined;
 
 	/** 
-	 * If true, suppresses the logger output when catch is true.
+	 * If true, suppresses telemetry/logging for `raise()` regardless of whether the error is rethrown or swallowed.
 	 */
 	silent?: boolean | undefined;
 

@@ -240,7 +240,7 @@ export class Tempo {
 		try {
 			intl = new Intl.Locale(Tempo._locale(locale));
 		} catch (e) {
-			logWarn(e, `Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, shape.config);
+			logWarn(`Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, shape.config, e);
 			intl = new Intl.Locale('en-US');
 		}
 
@@ -782,7 +782,6 @@ export class Tempo {
 			if (Context.type === CONTEXT.Browser || options.debug === LOG.Trace)
 				logDebug('Tempo:', this.config, state.config);
 
-			_lifecycle.ready = true;
 			setPatterns(state);																		// rebuild the global patterns (Master Guard etc)
 
 			// 🏛️ Licensing Reckoning (Background Verification)
@@ -798,12 +797,15 @@ export class Tempo {
 					});
 			}
 
+			_lifecycle.ready = true;
+			return this;
+		} catch (err) {
+			_lifecycle.ready = false;
+			throw err;
 		} finally {
 			_lifecycle.initialising = false;
 			_lifecycle.bootstrap = false;
 		}
-
-		return this
 	}
 
 	/** explicitly enable/disable "catch" mode for internal errors */

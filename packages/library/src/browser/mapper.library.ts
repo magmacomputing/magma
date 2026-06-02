@@ -24,7 +24,7 @@ interface MapStore {																				// a localStorage object
 	georesponse: google.maps.GeocoderResponse & { error?: Error["message"] };
 }
 
-const defaults = { catch: true, debug: 3 } as MapOpts;			// default Options
+const defaults = { catch: true, debug: 0 } as MapOpts;			// default Options
 const context = getContext();																// browser / nodejs / google-apps
 const mapStore = {} as MapStore;														// static object to hold last position
 const MAP_KEY = '_map_';																		// localStorage key

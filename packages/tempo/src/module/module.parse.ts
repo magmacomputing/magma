@@ -314,14 +314,18 @@ const _ParseEngine = {
 			}
 		});
 
-		logTrace(`[ParseEngine] Selected layouts: ${orderedPatterns.map(p => p[0].description).join(', ')}`, state.config);
+		if (state.config?.debug === 'trace' || state.config?.debug === 5) {
+			logTrace(`[ParseEngine] Selected layouts: ${orderedPatterns.map(p => p[0].description).join(', ')}`, state.config);
+		}
 
 		for (const [symKey, pat] of orderedPatterns) {
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
 			if (isEmpty(groups))
 				continue;
 
-			logTrace(`[ParseEngine] Matched layout '${symKey.description}' with groups: ${JSON.stringify(groups)}`, state.config);
+			if (state.config?.debug === 'trace' || state.config?.debug === 5) {
+				logTrace(`[ParseEngine] Matched layout '${symKey.description}' with groups: ${JSON.stringify(groups)}`, state.config);
+			}
 
 			const hasTime = Object.keys(groups)
 				.some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key) || (Match.named.test(key) && key.endsWith('tm'))) || Object.values(groups).includes('now');

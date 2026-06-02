@@ -205,8 +205,8 @@ export type Instance = { type: Type, class: Constructor }		// allow for Class in
 export const registerType = (cls: Constructor, type?: Type) => {
 	if (typeof cls !== 'function') return;
 
-	const tag = getSafeTag(cls);															// toStringTag is the source-of-truth, if present
-	const name = (tag ?? type ?? cls.name) as Type;
+	const tag = getSafeTag(cls);
+	const name = (type ?? tag ?? cls.name) as Type;
 
 	if (name && !['Object', 'Function', ''].includes(name as string)) {
 		if (!registry.some(inst => inst.class === cls))

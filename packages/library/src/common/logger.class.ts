@@ -52,8 +52,15 @@ export class Logger {
 
 	#emit(method: typeof Method[keyof typeof Method], ...msg: any[]) {
 		let config: any;
-		if (msg.length > 0 && isObject(msg[0]) && msg[0][sym.$LogConfig])
-			config = msg.shift();
+		if (msg.length > 0 && isObject(msg[0])) {
+			try {
+				if (msg[0][sym.$LogConfig]) {
+					config = msg.shift();
+				}
+			} catch {
+				// Ignore access errors on proxies/getters
+			}
+		}
 
 		let activeLevel = this.level;
 		if (config) {

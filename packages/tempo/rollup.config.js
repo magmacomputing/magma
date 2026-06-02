@@ -13,10 +13,22 @@ const distPath = path.join(__dirname, 'dist');
 
 const licensePremium = process.env.TEMPO_LICENSE_PATH ? path.resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
 const licenseDefault = path.resolve(__dirname, './src/support/support.license.ts');
-const isPremiumAvailable = !!(
+
+const foundTsconfigPath = (() => {
+	if (!licensePremium) return '';
+	let dir = path.dirname(licensePremium);
+	while (dir !== path.resolve(dir, '..')) {
+		const p = path.resolve(dir, 'tsconfig.json');
+		if (fs.existsSync(p)) return p;
+		dir = path.resolve(dir, '..');
+	}
+	return '';
+})();
+
+const isPremiumAvailable = Boolean(
 	licensePremium &&
 	fs.existsSync(licensePremium) &&
-	fs.existsSync(path.resolve(path.dirname(licensePremium), '../tsconfig.json'))
+	fs.existsSync(foundTsconfigPath)
 );
 const licensePath = isPremiumAvailable ? licensePremium : licenseDefault;
 

@@ -12,8 +12,8 @@ import type { Constructor, Type } from '#library/type.library.js';
  * Safely extracts the class name from Symbol.toStringTag (if present) to prevent 
  * minifiers and compilers from mangling the registered class name.
  */
-function getClassName<T extends Constructor>(value: T, contextName: string | symbol | undefined): string {
-	return getSafeTag(value) ?? String(contextName);
+function getClassName<T extends Constructor>(value: T, contextName: string | symbol | undefined): string | undefined {
+	return getSafeTag(value) ?? (contextName === undefined ? (value.name || undefined) : String(contextName));
 }
 
 /**
@@ -21,21 +21,24 @@ function getClassName<T extends Constructor>(value: T, contextName: string | sym
  */
 function createImmutableWrapper<T extends Constructor>(
 	value: T,
-	name: string,
+	name: string | undefined,
 	addInitializer: (fn: () => void) => void,
 	immutabilityStrategy: (instance: any) => any							// either Object.freeze or secure (Proxy) strategy
 ): T {
+	const safeName = name || value.name || 'Anonymous';
 	const wrapper = {
-		[name]: class extends value {
+		[safeName]: class extends value {
 			constructor(...args: any[]) {
 				super(...args);
 				return immutabilityStrategy(this);
 			}
 		}
-	}[name] as T;
+	}[safeName] as T;
 
-	registerType(value, `${name}_original` as Type);
-	registerType(wrapper, name as Type);
+	if (name) {
+		registerType(value, `${name}_original` as Type);
+		registerType(wrapper, name as Type);
+	}
 
 	addInitializer(() => {
 		const skip = (value as any)[$ImmutableSkip]
@@ -123,11 +126,15 @@ export function Immutable<T extends Constructor>(value: T, { kind, name, addInit
 export function Serializable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
 
-	registerType(value, finalName as Type);
+	if (finalName) {
+		registerType(value, finalName as Type);
+	}
 
 	switch (kind) {
 		case 'class':
-			addInitializer(() => registerSerializable(finalName, value));// register the class for serialization, via its toString() method
+			if (finalName) {
+				addInitializer(() => registerSerializable(finalName, value));// register the class for serialization, via its toString() method
+			}
 
 			return value;
 
@@ -142,17 +149,20 @@ export function Static<T extends Constructor>(value: T, { kind, name }: ClassDec
 
 	switch (kind) {
 		case 'class':
+			const safeName = finalName || value.name || 'Anonymous';
 			const wrapper = {
-				[finalName]: class extends value {
+				[safeName]: class extends value {
 					constructor(...args: any[]) {
 						super(...args);
-						throw new TypeError(`${finalName} is not a constructor`);
+						throw new TypeError(`${safeName} is not a constructor`);
 					}
 				}
-			}[finalName] as T;
+			}[safeName] as T;
 
-			registerType(value, `${finalName}_original` as Type);			// register the original class definition
-			registerType(wrapper, finalName as Type);									// register the wrapper as the authoritative definition
+			if (finalName) {
+				registerType(value, `${finalName}_original` as Type);			// register the original class definition
+				registerType(wrapper, finalName as Type);									// register the wrapper as the authoritative definition
+			}
 
 			return wrapper;
 

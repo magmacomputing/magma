@@ -60,7 +60,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 
 						try {
 							if (++state.mutateDepth > 100) {
-								logError(`Infinite recursion detected in mutation engine for key: ${key}, this.config, adjust: ${adjust}, depth: ${state.mutateDepth}`);
+								logError(`Infinite recursion detected in mutation engine for key: ${key}, adjust: ${adjust}, depth: ${state.mutateDepth}`, this.config);
 								state.errored = true;
 								return currZdt;
 							}
@@ -163,7 +163,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 									return currZdt.round({ smallestUnit: offset as any, roundingMode: 'ceil' }).subtract({ nanoseconds: 1 });
 
 								default:
-									logError(`Unexpected method(${op}), this.config, unit(${key}) and offset(${adjust})`);
+									logError(`Unexpected method(${op}), unit(${key}) and offset(${adjust})`, this.config);
 									state.errored = true;
 									return currZdt;
 							}

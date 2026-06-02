@@ -305,7 +305,7 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				const unit = (isString(arg.value) ? arg.value : arg.value?.unit)?.trim()?.toLowerCase();
 
 				if (isUndefined(unit) || !['ss', 'ms', 'us', 'ns'].includes(unit)) {
-					logError(`[Tempo#extend] Invalid timeStamp unit: ${String(unit ?? arg.value)}. Expected 'ss', state.config, 'ms', 'us', or 'ns'.`);
+					logError(`[Tempo#extend] Invalid timeStamp unit: ${String(unit ?? arg.value)}. Expected 'ss', 'ms', 'us', or 'ns'.`, state.config);
 					break;
 				}
 

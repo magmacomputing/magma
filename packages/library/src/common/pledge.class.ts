@@ -61,7 +61,7 @@ export class Pledge<T> {
 	static [Symbol.dispose]() { Pledge.init({}) }
 
 	static get status() {
-		return _static as Pledge.Status<typeof Pledge>;
+		return { ..._static, state: _STATE.Pending } as Pledge.Status<typeof Pledge>;
 	}
 
 	constructor(arg?: Pledge.Constructor | string) {

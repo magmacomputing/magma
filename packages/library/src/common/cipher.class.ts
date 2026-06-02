@@ -14,7 +14,6 @@ const keys = {
 } as const
 
 const _cryptoKey = subtle.generateKey({ name: keys.TypeKey, length: 128 }, false, ['encrypt', 'decrypt']);
-const _vector = crypto.getRandomValues(new Uint8Array(16));
 const _asymmetricKey = subtle.generateKey({
 	name: keys.SignKey,
 	modulusLength: 2048,
@@ -73,15 +72,24 @@ export class Cipher {
 	static encodeBuffer = (str: string) => new Uint16Array(new TextEncoder().encode(str));
 	static decodeBuffer = (buf: Uint16Array) => new TextDecoder(keys.Encoding).decode(buf);
 
-	static encrypt = async (data: any) =>
-		subtle.encrypt({ name: keys.TypeKey, iv: _vector }, await _cryptoKey, Cipher.encodeBuffer(data))
-			.then(result => new Uint16Array(result))
-			.then(Cipher.decodeBuffer);
+	static encrypt = async (data: any) => {
+		const iv = crypto.getRandomValues(new Uint8Array(16));
+		const cipherBuf = await subtle.encrypt({ name: keys.TypeKey, iv }, await _cryptoKey, Cipher.encodeBuffer(data));
+		const combined = new Uint8Array(16 + cipherBuf.byteLength);
+		combined.set(iv, 0);
+		combined.set(new Uint8Array(cipherBuf), 16);
+		return Cipher.decodeBuffer(new Uint16Array(combined.buffer));
+	}
 
-	static decrypt = async (secret: Promise<ArrayBuffer>) =>
-		subtle.decrypt({ name: keys.TypeKey, iv: _vector }, await _cryptoKey, await secret)
+	static decrypt = async (secret: Promise<ArrayBuffer> | ArrayBuffer | Uint16Array) => {
+		const buf = await secret;
+		const uint8 = new Uint8Array(buf instanceof Uint16Array ? buf.buffer : buf);
+		const iv = uint8.slice(0, 16);
+		const data = uint8.slice(16);
+		return subtle.decrypt({ name: keys.TypeKey, iv }, await _cryptoKey, data)
 			.then(result => new Uint16Array(result))
 			.then(Cipher.decodeBuffer);
+	}
 
 	static sign = async (doc: any) =>
 		subtle.sign(keys.SignKey, (await _asymmetricKey).privateKey!, Cipher.encodeBuffer(doc))

@@ -68,7 +68,7 @@ export const BusinessDaysPlugin = defineExtension({
 });
 ```
 
-Notice how we drop into `.toDateTime()` to access the raw `Temporal.PlainDateTime` object? This is a common pattern in plugins when you need to access raw calendar properties (like `dayOfWeek`, `dayOfYear`, or `daysInMonth`) without triggering unnecessary string formatting.
+Notice how we drop into `.toDateTime()` to access the raw zone-aware `Temporal.ZonedDateTime` object? This is a common pattern in plugins when you need to access raw calendar properties (like `dayOfWeek`, `dayOfYear`, or `daysInMonth`) while preserving zone information without triggering unnecessary string formatting.
 
 ## 3. TypeScript Module Augmentation
 
