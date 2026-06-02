@@ -196,7 +196,8 @@
     "docs:api": "typedoc",
     "docs:dev": "npm run build && npm run docs:api && vitepress dev",
     "docs:build": "npm run build && npm run docs:api && vitepress build",
-    "docs:preview": "vitepress preview"
+    "docs:preview": "vitepress preview",
+    "docs:push": "bash ./bin/push-docs.sh"
   },
   "files": [
     "dist/",
