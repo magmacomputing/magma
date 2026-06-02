@@ -85,8 +85,10 @@ export class Logger {
 			})
 			.filter(s => !isEmpty(s)).join(' ');
 
-		if (!isEmpty(output))
-			(console as any)[method](`${this.#namespace} ${output}`);
+		if (!isEmpty(output)) {
+			const consoleMethod = method === Method.Trace ? 'debug' : method;
+			(console as any)[consoleMethod](`${this.#namespace} ${output}`);
+		}
 	}
 
 	/** console.log */		log = (...msg: any[]) => this.#emit(Method.Log, ...msg);

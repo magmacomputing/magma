@@ -2,7 +2,7 @@ import { getTemporalIds } from '#library/temporal.library.js';
 import { isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
 import type { TemporalObject, TypeValue } from '#library/type.library.js';
 
-import { isTempo, logError } from '#tempo/support';
+import { isTempo, logError, logTrace } from '#tempo/support';
 import type { Tempo } from '#tempo/tempo.class.js';
 import * as t from '../tempo.type.js';
 
@@ -168,5 +168,6 @@ export function compose(
 		}
 	}
 
+	logTrace(`[Composer] Composed final DateTime: ${dateTime?.toString()}`, config);
 	return { dateTime: dateTime ?? today, timeZone };
 }

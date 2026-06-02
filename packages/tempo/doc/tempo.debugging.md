@@ -63,18 +63,20 @@ If you simply need to see the value represented in different primitive formats, 
 
 ## Debugging and Console Logging
 
-Tempo has an internal logging utility (`Tempo.#dbg`) that responds to specific configuration flags.
+Tempo utilizes a central **Diagnostic Engine** (replacing the legacy Logify strategy) that respects configuration flags to provide structured output without polluting the console.
 
 ### The `debug` Flag
-When instantiating a `Tempo`, you can pass `{ debug: 5 }` in the options object.
+When instantiating a `Tempo`, or globally via `Tempo.init()`, you can pass `{ debug: 'trace' }` in the options object.
 ```typescript
-const t = new Tempo('next Friday', { debug: 5 });
+const t = new Tempo('next Friday', { debug: 'trace' });
 ```
-When this flag is enabled, Tempo will output detailed `console.info` logs during instantiation, including:
-*   The raw input being parsed.
-*   The regex pattern that matched it.
-*   The raw groups extracted before mutation logic.
-*   The final, conformed groups applied to the `Temporal.ZonedDateTime`.
+When this flag is enabled, Tempo's Diagnostic Engine will output detailed `console.trace` logs during parsing. These traces provide a deep-dive look into the Parse Engine's resolution logic, including:
+*   The prioritized layout regex patterns evaluated against the string.
+*   The raw regex groups extracted (e.g., specific day offsets, localized term mappings).
+*   The intermediate steps in temporal normalization (e.g., resolving aliases, computing time and date).
+*   The absolute temporal coordinates composed before final instantiation.
+
+*Note: The Diagnostic Engine evaluates the `debug` setting before serializing any string interpolations, guaranteeing zero-cost execution overhead for standard users who do not request trace-level diagnostics.*
 
 ### The `catch` Flag
 By default, `Tempo` is designed to be resilient. If it encounters parsing errors or invalid inputs, it will gracefully fallback.

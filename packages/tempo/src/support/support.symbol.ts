@@ -1,9 +1,11 @@
 import { looseIndex } from '#library/object.library.js';
+import { isDefined } from '#library/assertion.library.js';
 import { sym as lib, $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register as $LibRegister, $SerializerRegistry, $Identity, $ImmutableSkip } from '#library/symbol.library.js';
 export { $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $LibRegister, $SerializerRegistry, $Identity, $ImmutableSkip };
 
+
 /** check valid Tempo instance */
-export const isTempo = (tempo?: any): tempo is TempoBrand => Boolean(tempo?.[sym.$Identity]);
+export const isTempo = (tempo?: any): tempo is TempoBrand => isDefined(tempo?.[sym.$Identity]);
 
 /**
  * Centralized registry for all Tempo-specific Global Symbols.

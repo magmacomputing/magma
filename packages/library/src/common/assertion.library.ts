@@ -52,9 +52,9 @@ export const isFunction = (obj: unknown): obj is Function => isType<Function>(ob
 export const isPromise = <T = any>(obj: unknown): obj is Promise<T> => isType<Promise<T>>(obj, 'Promise');
 export const isMap = <T = any, K = any>(obj: unknown): obj is Map<K, T> => isType<Map<K, T>>(obj, 'Map');
 export const isSet = <T = any>(obj: unknown): obj is Set<T> => isType<Set<T>>(obj, 'Set');
-export const isError = (err: unknown): err is Error => isType<Error>(err, 'Error');
+export const isError = <E extends Error = Error>(err: unknown, constructor?: new (...args: any[]) => E): err is E => isType<E>(err, 'Error') && (constructor ? err instanceof constructor : true);
 
-export const isTemporal = (obj: unknown): obj is Temporals => protoType(obj).startsWith('Temporal.') || (!!(globalThis as any).Temporal && (
+export const isTemporal = (obj: unknown): obj is Temporals => protoType(obj).startsWith('Temporal.') || (isDefined((globalThis as any).Temporal) && (
 	(obj as any) instanceof (globalThis as any).Temporal.Instant ||
 	(obj as any) instanceof (globalThis as any).Temporal.ZonedDateTime ||
 	(obj as any) instanceof (globalThis as any).Temporal.PlainDate ||
@@ -65,12 +65,12 @@ export const isTemporal = (obj: unknown): obj is Temporals => protoType(obj).sta
 	(obj as any) instanceof (globalThis as any).Temporal.PlainMonthDay
 ));
 
-export const isInstant = (obj: unknown): obj is Temporal.Instant => isType<Temporal.Instant>(obj, 'Temporal.Instant') || (!!(globalThis as any).Temporal?.Instant && (obj as any) instanceof (globalThis as any).Temporal.Instant) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.Instant') || (!!obj && typeof (obj as any).toZonedDateTimeISO === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone));
-export const isZonedDateTime = (obj: unknown): obj is Temporal.ZonedDateTime => isType<Temporal.ZonedDateTime>(obj, 'Temporal.ZonedDateTime') || (!!(globalThis as any).Temporal?.ZonedDateTime && (obj as any) instanceof (globalThis as any).Temporal.ZonedDateTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.ZonedDateTime') || (!!obj && typeof (obj as any).toInstant === 'function' && (isDefined((obj as any).timeZoneId) || isDefined((obj as any).timeZone)));
-export const isPlainDate = (obj: unknown): obj is Temporal.PlainDate => isType<Temporal.PlainDate>(obj, 'Temporal.PlainDate') || (!!(globalThis as any).Temporal?.PlainDate && (obj as any) instanceof (globalThis as any).Temporal.PlainDate) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainDate') || (!!obj && typeof (obj as any).toZonedDateTime === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone) && isDefined((obj as any).daysInMonth) && isUndefined((obj as any).hour) && isUndefined((obj as any).minute) && isUndefined((obj as any).second) && isUndefined((obj as any).nanosecond));
-export const isPlainTime = (obj: unknown): obj is Temporal.PlainTime => isType<Temporal.PlainTime>(obj, 'Temporal.PlainTime') || (!!(globalThis as any).Temporal?.PlainTime && (obj as any) instanceof (globalThis as any).Temporal.PlainTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainTime') || (!!obj && typeof (obj as any).toPlainDateTime === 'function' && isUndefined((obj as any).daysInMonth));
-export const isPlainDateTime = (obj: unknown): obj is Temporal.PlainDateTime => isType<Temporal.PlainDateTime>(obj, 'Temporal.PlainDateTime') || (!!(globalThis as any).Temporal?.PlainDateTime && (obj as any) instanceof (globalThis as any).Temporal.PlainDateTime) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainDateTime') || (!!obj && typeof (obj as any).toZonedDateTime === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone) && (isDefined((obj as any).hour) || isDefined((obj as any).minute) || isDefined((obj as any).second) || isDefined((obj as any).nanosecond)));
-export const isDuration = (obj: unknown): obj is Temporal.Duration => isType<Temporal.Duration>(obj, 'Temporal.Duration') || (!!(globalThis as any).Temporal?.Duration && (obj as any) instanceof (globalThis as any).Temporal.Duration) || (!!obj && (obj as any)[Symbol.toStringTag] === 'Temporal.Duration');
+export const isInstant = (obj: unknown): obj is Temporal.Instant => isType<Temporal.Instant>(obj, 'Temporal.Instant') || (isDefined((globalThis as any).Temporal?.Instant) && (obj as any) instanceof (globalThis as any).Temporal.Instant) || (isDefined(obj) && (obj as any)[Symbol.toStringTag] === 'Temporal.Instant') || (isDefined(obj) && typeof (obj as any).toZonedDateTimeISO === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone));
+export const isZonedDateTime = (obj: unknown): obj is Temporal.ZonedDateTime => isType<Temporal.ZonedDateTime>(obj, 'Temporal.ZonedDateTime') || (isDefined((globalThis as any).Temporal?.ZonedDateTime) && (obj as any) instanceof (globalThis as any).Temporal.ZonedDateTime) || (isDefined(obj) && (obj as any)[Symbol.toStringTag] === 'Temporal.ZonedDateTime') || (isDefined(obj) && typeof (obj as any).toInstant === 'function' && (isDefined((obj as any).timeZoneId) || isDefined((obj as any).timeZone)));
+export const isPlainDate = (obj: unknown): obj is Temporal.PlainDate => isType<Temporal.PlainDate>(obj, 'Temporal.PlainDate') || (isDefined((globalThis as any).Temporal?.PlainDate) && (obj as any) instanceof (globalThis as any).Temporal.PlainDate) || (isDefined(obj) && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainDate') || (isDefined(obj) && typeof (obj as any).toZonedDateTime === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone) && isDefined((obj as any).daysInMonth) && isUndefined((obj as any).hour) && isUndefined((obj as any).minute) && isUndefined((obj as any).second) && isUndefined((obj as any).nanosecond));
+export const isPlainTime = (obj: unknown): obj is Temporal.PlainTime => isType<Temporal.PlainTime>(obj, 'Temporal.PlainTime') || (isDefined((globalThis as any).Temporal?.PlainTime) && (obj as any) instanceof (globalThis as any).Temporal.PlainTime) || (isDefined(obj) && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainTime') || (isDefined(obj) && typeof (obj as any).toPlainDateTime === 'function' && isUndefined((obj as any).daysInMonth));
+export const isPlainDateTime = (obj: unknown): obj is Temporal.PlainDateTime => isType<Temporal.PlainDateTime>(obj, 'Temporal.PlainDateTime') || (isDefined((globalThis as any).Temporal?.PlainDateTime) && (obj as any) instanceof (globalThis as any).Temporal.PlainDateTime) || (isDefined(obj) && (obj as any)[Symbol.toStringTag] === 'Temporal.PlainDateTime') || (isDefined(obj) && typeof (obj as any).toZonedDateTime === 'function' && isUndefined((obj as any).timeZoneId) && isUndefined((obj as any).timeZone) && (isDefined((obj as any).hour) || isDefined((obj as any).minute) || isDefined((obj as any).second) || isDefined((obj as any).nanosecond)));
+export const isDuration = (obj: unknown): obj is Temporal.Duration => isType<Temporal.Duration>(obj, 'Temporal.Duration') || (isDefined((globalThis as any).Temporal?.Duration) && (obj as any) instanceof (globalThis as any).Temporal.Duration) || (isDefined(obj) && (obj as any)[Symbol.toStringTag] === 'Temporal.Duration');
 export const isDurationLike = (obj: unknown): obj is Temporal.DurationLike | string | Temporal.Duration => isString(obj) || isDuration(obj) || (isObject(obj) && (
 	'years' in obj || 'months' in obj || 'weeks' in obj || 'days' in obj ||
 	'hours' in obj || 'minutes' in obj || 'seconds' in obj ||
@@ -80,16 +80,16 @@ export const isZonedDateTimeLike = (obj: unknown): obj is Temporal.ZonedDateTime
 	'year' in obj || 'month' in obj || 'day' in obj || 'hour' in obj || 'minute' in obj || 'second' in obj ||
 	'millisecond' in obj || 'microsecond' in obj || 'nanosecond' in obj || 'monthCode' in obj || 'offset' in obj || 'timeZone' in obj || 'calendar' in obj
 ));
-export const isPlainYearMonth = (obj: unknown): obj is Temporal.PlainYearMonth => isType<Temporal.PlainYearMonth>(obj, 'Temporal.PlainYearMonth') || (!!(globalThis as any).Temporal?.PlainYearMonth && (obj as any) instanceof (globalThis as any).Temporal.PlainYearMonth);
-export const isPlainMonthDay = (obj: unknown): obj is Temporal.PlainMonthDay => isType<Temporal.PlainMonthDay>(obj, 'Temporal.PlainMonthDay') || (!!(globalThis as any).Temporal?.PlainMonthDay && (obj as any) instanceof (globalThis as any).Temporal.PlainMonthDay);
+export const isPlainYearMonth = (obj: unknown): obj is Temporal.PlainYearMonth => isType<Temporal.PlainYearMonth>(obj, 'Temporal.PlainYearMonth') || (isDefined((globalThis as any).Temporal?.PlainYearMonth) && (obj as any) instanceof (globalThis as any).Temporal.PlainYearMonth);
+export const isPlainMonthDay = (obj: unknown): obj is Temporal.PlainMonthDay => isType<Temporal.PlainMonthDay>(obj, 'Temporal.PlainMonthDay') || (isDefined((globalThis as any).Temporal?.PlainMonthDay) && (obj as any) instanceof (globalThis as any).Temporal.PlainMonthDay);
 
 // non-standard Objects
 export const isEnum = <E extends Property<any>>(obj: unknown): obj is GetType<'Enumify', E> => isType<GetType<'Enumify', E>>(obj, 'Enumify');
 export const isPledge = <P = any>(obj: unknown): obj is GetType<'Pledge', P> => isType<GetType<'Pledge', P>>(obj, 'Pledge');
 
 /** assert value for secure() */
-export const isExtensible = (obj: any): obj is any => !!(obj?.[sym.$Extensible]);
-export const isTarget = (obj: any): obj is any => !!(obj?.[sym.$Target]);
+export const isExtensible = (obj: any): obj is any => isDefined(obj?.[sym.$Extensible]);
+export const isTarget = (obj: any): obj is any => isDefined(obj?.[sym.$Target]);
 
 /** object has no values */
 export const isEmpty = <T>(obj?: T) => false

@@ -267,7 +267,7 @@ Tempo.init({
 ```
 
 ::: tip
-**Observability**: Set `debug: 5` along with `planner.preFilter` to see a detailed "Planner summary" in the console, showing how many layouts were skipped for a given input.
+**Observability**: Set `debug: 'trace'` along with `planner.preFilter` to see a detailed "Planner summary" in the console, showing how many layouts were skipped for a given input.
 :::
 
 ---
@@ -283,7 +283,7 @@ Tempo.init({
 | **Instance** | 🥇 Highest | Ad-hoc overrides for specific calculations. |
 
 ::: tip
-**Observability**: When `debug: 5` is set, Tempo logs its discovery path to the console (e.g., "Global Discovery found via Symbol"), making it easy to trace exactly where a setting originated.
+**Observability**: When `debug: 'trace'` is set, Tempo logs its discovery path to the console (e.g., "Global Discovery found via Symbol"), making it easy to trace exactly where a setting originated.
 :::
 
 ::: info

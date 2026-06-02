@@ -69,16 +69,33 @@ export const logError = raise;
 
 /** @internal Centralized Warning Logger */
 export function logWarn(msg: any, config: any = {}, ...extraMsg: any[]) {
-	if (!config?.silent) logTempo.warn(concatMsg([msg, ...extraMsg]));
+	if (!config?.silent) {
+		const outMsg = concatMsg([msg, ...extraMsg]);
+		if (config[sym.$LogConfig]) logTempo.warn(config, outMsg);
+		else logTempo.warn(outMsg);
+	}
 }
 
 /** @internal Centralized Debug Logger */
 export function logDebug(msg: any, config: any = {}, ...extraMsg: any[]) {
-	if (!config?.silent) logTempo.debug(concatMsg([msg, ...extraMsg]));
+	if (!config?.silent) {
+		const outMsg = concatMsg([msg, ...extraMsg]);
+		if (config[sym.$LogConfig]) logTempo.debug(config, outMsg);
+		else logTempo.debug(outMsg);
+	}
+}
+
+/** @internal Centralized Trace Logger */
+export function logTrace(msg: any, config: any = {}, ...extraMsg: any[]) {
+	if (!config?.silent) {
+		const outMsg = concatMsg([msg, ...extraMsg]);
+		if (config[sym.$LogConfig]) logTempo.trace(config, outMsg);
+		else logTempo.trace(outMsg);
+	}
 }
 
 /** @internal check if an object is a proxy */
-export const isProxy = (obj: any): boolean => !!obj && !!(obj as any)[sym.$Target];
+export const isProxy = (obj: any): boolean => isDefined(obj?.[sym.$Target]);
 
 /** @internal check if an object has an own property (respects Proxy/Shadowing) */
 export const hasOwn = (obj: any, key: PropertyKey): boolean => {

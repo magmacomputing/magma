@@ -125,7 +125,7 @@ Tempo.extend({
 
 Using `Tempo.extend()` ensures that the library safely bypasses the "Soft Freeze" protection and that all internal caches (like the Master Guard) are correctly synchronized.
 
-### 5. Error Handling & The Logify Pattern
+### 5. Error Handling & The Diagnostic Engine
 When building plugin that perform complex parsing or logic, follow Tempo's **"Fail-fast by Default"** principle.
 
 - **Strict Mode (Default)**: If your plugin encounters a terminal error (e.g., invalid input that cannot be recovered), you should `throw` a descriptive error.

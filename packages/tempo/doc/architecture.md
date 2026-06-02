@@ -26,8 +26,8 @@ The property descriptor is `enumerable: false, configurable: false, writable: fa
 
 To solve the "Split-Brain" issue inherent in monorepo development (where multiple instances of the same library might be loaded), Tempo utilizes a **Shared Global Registry**. By leveraging `Symbol.for('magmacomputing/library/registry')` on `globalThis`, all versions of the Tempo and Library packages share a unified type-identification engine. This ensures that classes are correctly identified as constructors even when loaded across different module boundaries.
 
-## 🕵️ Decoupled Logging (Logify)
-Tempo uses **Logify**, a diagnostic engine that leverages private Symbols to avoid polluting the public console or object state.
+## 🕵️ Decoupled Logging
+Tempo uses a centralized, functional diagnostic engine (via `logError` / `logWarn` utilities) that relies on private context to avoid polluting the public console or object state. This ensures that parsing telemetry does not clash with application logic.
 - **Context-Aware**: Logs track their discovery path (e.g., "Applied via Global Discovery").
 - **Zero-Footprint**: When `debug: 0`, the logging overhead is mathematically eliminated.
 - **Symbol-Gated**: Diagnostic metadata is attached via `Symbol.for($LogConfig)`, making it invisible to standard iteration (`Object.keys`) and serialization (`JSON.stringify`).

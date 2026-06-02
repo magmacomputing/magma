@@ -1008,7 +1008,7 @@ export class Tempo {
 	/** allow instanceof to work across module boundaries via the local brand symbol */
 	static [$Identity] = true;
 	static [Symbol.hasInstance](instance: any) {
-		return Boolean(instance?.[$Identity])
+		return isDefined(instance?.[$Identity])
 	}
 
 	/** check if a supplied variable is a valid Tempo instance */

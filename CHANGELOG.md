@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Robust License Validation**: Hardened runtime integrity for Tempo Pro plugins to enhance state security and prevent tampering.
 - **Edition Boundaries**: Added proactive runtime warnings for unlicensed attempts, establishing strict boundaries between the Community and Proprietary editions.
 - **Extension Resolution**: Stabilized module resolution for plugins by migrating to `defineExtension` and correcting internal export paths.
+- **Logging Subsystem Decoupling**: Fully decoupled the internal parsing and error boundaries from the legacy `Logify` architecture, enabling zero-cost trace instrumentation.
+- **Diagnostic Consistency**: Standardized fatal exceptions by introducing the `TempoError` class for internal invariant violations, and unified all console output through the centralized diagnostic bus (`logWarn`).
 - **Documentation**: Clarified API behavior for the Duration engine (especially `.since()` return types) and relative time math. Improved visibility and navigation for the Tempo License Registry and installation guides.
 
 ### Fixed

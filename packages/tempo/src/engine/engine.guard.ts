@@ -1,4 +1,4 @@
-import { isString, isSymbol } from '#library/assertion.library.js';
+import { isString, isSymbol, isDefined } from '#library/assertion.library.js';
 import { Match } from '#tempo/support/support.default.js';
 
 /**
@@ -16,7 +16,7 @@ export interface MasterGuard {
  */
 export function createMasterGuard(words: (string | symbol)[]): MasterGuard {
 	const wordsList = words
-		.filter(w => isString(w) || (isSymbol(w) && !!w.description))
+		.filter(w => isString(w) || (isSymbol(w) && isDefined(w.description)))
 		.map(w => (isSymbol(w) ? w.description! : (w as string)).toLowerCase())
 		.filter(Boolean);
 

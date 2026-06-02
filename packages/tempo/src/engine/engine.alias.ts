@@ -136,7 +136,7 @@ export class AliasEngine {
 				target,																							// string, number, or function
 				type,																								// 'evt' or 'per'
 				baseWord,																						// used for collision detection
-				collision: Boolean(existingKey),
+				collision: isDefined(existingKey),
 				depth: this.#depth,
 			}
 		}
