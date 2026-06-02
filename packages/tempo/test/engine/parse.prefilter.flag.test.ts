@@ -35,7 +35,7 @@ describe('parse prefilter feature flag', () => {
 	});
 
 	test('emits planner debug telemetry when debug + preFilter are enabled', () => {
-		Tempo.init({ debug: true, preFilter: true });
+		Tempo.init({ debug: 5, preFilter: true });
 		const t = new Tempo('2 days ago', { timeZone: 'UTC' });
 		expect(t.parse.result?.[0]?.match).toBe('relativeOffset');
 		expect(console.debug).toHaveBeenCalled();

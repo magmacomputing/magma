@@ -4,6 +4,7 @@
 
 export * from './common/array.library.js';
 export * from './common/assertion.library.js';
+export * from './common/boundary.library.js';
 export * from './common/buffer.library.js';
 export * from './common/cipher.class.js';
 export * from './common/class.library.js';
@@ -11,7 +12,7 @@ export * from './common/coercion.library.js';
 export * from './common/enumerate.library.js';
 export * from './common/function.library.js';
 export * from './common/international.library.js';
-export * from './common/logify.class.js';
+export * from './common/logger.class.js';
 export * from './common/number.library.js';
 export * from './common/object.library.js';
 export * from './common/pledge.class.js';

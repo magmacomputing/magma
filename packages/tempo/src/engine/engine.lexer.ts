@@ -130,7 +130,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 		return dateTime;
 
 	if (!isEmpty(mod) && !isEmpty(sfx)) {
-		logWarn(config, `Cannot provide both a modifier '${mod}' and suffix '${sfx}'`);
+		logWarn(`Cannot provide both a modifier '${mod}' and suffix '${sfx}'`, config);
 		return dateTime;
 	}
 
@@ -139,7 +139,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	const offset = (enums.WEEKDAY as any)[weekday] ?? (enums.WEEKDAYS as any)[weekday];
 
 	if (!Number.isFinite(offset)) {
-		logError(config, `Invalid weekday token: "${wkd}"`);
+		logError(`Invalid weekday token: "${wkd}"`, config);
 		return dateTime;
 	}
 
@@ -167,7 +167,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		return dateTime;
 
 	if (!isEmpty(mod) && !isEmpty(afx)) {
-		logWarn(config, `Cannot provide both a modifier '${mod}' and suffix '${afx}'`);
+		logWarn(`Cannot provide both a modifier '${mod}' and suffix '${afx}'`, config);
 		return dateTime;
 	}
 
@@ -220,7 +220,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	delete groups["afx"];
 
 	if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-		logError(config, `Invalid Date components: year=${year}, month=${month}, day=${day}`);
+		logError(`Invalid Date components: year=${year}, config, month=${month}, day=${day}`);
 		return dateTime;
 	}
 

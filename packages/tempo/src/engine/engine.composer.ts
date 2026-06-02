@@ -59,7 +59,7 @@ export function compose(
 				try {
 					temporal = Temporal.PlainDateTime.from(value, { overflow: 'constrain' });
 				} catch (err2) {
-					logError(config, `[Tempo#composer] Unrecognized or invalid ISO 8601 string: "${value}"`);
+					logError(`[Tempo#composer] Unrecognized or invalid ISO 8601 string: "${value}"`, config);
 					return { dateTime: today };
 				}
 			}
@@ -94,7 +94,7 @@ export function compose(
 		case 'BigInt':
 			{
 				if (type === 'Number' && !Number.isFinite(value)) {
-					logError(config, `Invalid Tempo number: ${value}`);
+					logError(`Invalid Tempo number: ${value}`, config);
 					temporal = today;
 					break;
 				}
@@ -163,7 +163,7 @@ export function compose(
 			break;
 
 		default: {
-			logError(config, `Cannot convert ${type} (value: ${String(temporal)}) to ZonedDateTime`);
+			logError(`Cannot convert ${type} (value: ${String(temporal)}) to ZonedDateTime`, config);
 			return { dateTime: today };
 		}
 	}

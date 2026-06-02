@@ -1,4 +1,4 @@
-import { Logify } from '#library/logify.class.js';
+import { Logger, type DebugLevel } from '#library/logger.class.js';
 import { markConfig } from '#library/symbol.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { ifDefined } from '#library/object.library.js';
@@ -13,7 +13,7 @@ declare module '#library/type.library.js' {
 	}
 }
 
-const _dbg = new Logify('Pledge');
+const _dbg = new Logger('[Pledge]');
 let _static = {} as Pledge.Constructor;
 const _STATE = secure({
 	Pending: Symbol('pending'),
@@ -177,9 +177,9 @@ export namespace Pledge {
 		onResolve?: Pledge.Resolve | Pledge.Resolve[] | undefined;
 		onReject?: Pledge.Reject | Pledge.Reject[] | undefined;
 		onSettle?: Pledge.Settle | Pledge.Settle[] | undefined;
-		debug?: Logify.Constructor["debug"];
-		catch?: Logify.Constructor["catch"];
-		silent?: Logify.Constructor["silent"];
+		debug?: DebugLevel;
+		catch?: boolean;
+		silent?: boolean;
 	}
 
 	export interface Status<T> {

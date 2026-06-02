@@ -37,7 +37,7 @@ try {
 function runE2E(enablePrefilter: boolean, iterations: number) {
 	Tempo.init({
 		parsePrefilter: enablePrefilter,
-		debug: false,
+		debug: 0,
 		catch: true,
 		timeZone: 'UTC',
 	});

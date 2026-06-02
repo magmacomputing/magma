@@ -3,15 +3,16 @@ import { CONTEXT, getContext } from '#library/utility.library.js';
 import { isNullish } from '#library/assertion.library.js';
 import { instant } from '#library/temporal.library.js';
 import { getHemisphere } from '#library/international.library.js';
+import type { DebugLevel } from '#library/logger.class.js';
 
-import { Logify } from '#library/logify.class.js';
+import { Logger } from '#library/logger.class.js';
 import type { WebStore } from '#browser/webstore.class.js';
 
 // Various functions to allow geolocating a user-device via the browser.
 
 interface MapOpts {
 	catch?: boolean;																					// intercept Promise reject() as resolve() (default: true)
-	debug?: boolean;																					// console.log some checkpoints
+	debug?: DebugLevel;																				// console.log some checkpoints
 }
 
 /**
@@ -23,11 +24,11 @@ interface MapStore {																				// a localStorage object
 	georesponse: google.maps.GeocoderResponse & { error?: Error["message"] };
 }
 
-const defaults = { catch: true, debug: false } as MapOpts;	// default Options
-const context = getContext();															// browser / nodejs / google-apps
+const defaults = { catch: true, debug: 3 } as MapOpts;			// default Options
+const context = getContext();																// browser / nodejs / google-apps
 const mapStore = {} as MapStore;														// static object to hold last position
 const MAP_KEY = '_map_';																		// localStorage key
-const log = new Logify('Mapper');
+const log = new Logger('[Mapper]');
 
 const store = await new Promise<void | WebStore>((resolve, reject) => {
 	if (context.type === CONTEXT.Browser) {
@@ -35,7 +36,7 @@ const store = await new Promise<void | WebStore>((resolve, reject) => {
 			.then(({ WebStore }) => {
 				const local = new WebStore('local');
 				Object.assign(mapStore, local.get(MAP_KEY, {}));		// fetch the previous MAP_KEY coordinates
-				resolve(local);																		// localStorage wrapper
+				resolve(local);																			// localStorage wrapper
 			})
 			.catch(reject)
 	}

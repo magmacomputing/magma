@@ -33,9 +33,7 @@ export default defineConfig({
         items: [
           { text: 'Introduction', link: '/README' },
           { text: 'Installation', link: '/doc/installation' },
-          { text: 'Cookbook', link: '/doc/tempo.cookbook' },
-          { text: 'Migration Guide', link: '/doc/migration-guide' },
-          { text: 'Release Notes', link: '/doc/releases/' }
+          { text: 'Cookbook', link: '/doc/tempo.cookbook' }
         ]
       },
       {
@@ -98,8 +96,10 @@ export default defineConfig({
         ]
       },
       {
-        text: 'Services & Support',
+        text: 'Project & Support',
         items: [
+          { text: 'Migration Guide', link: '/doc/migration-guide' },
+          { text: 'Release Notes', link: '/doc/releases/' },
           { text: 'Professional Services', link: '/doc/commercial' }
         ]
       }

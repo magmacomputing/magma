@@ -1,4 +1,5 @@
 import { decodeJWT } from '#library/utility.library.js';
+import { logWarn } from './support.util.js';
 
 /**
  * # Tempo Licensing Engine (Open Core)
@@ -8,7 +9,7 @@ import { decodeJWT } from '#library/utility.library.js';
 
 export class Validator {
 	constructor(public key: string) {
-		console.warn('Tempo Community Edition: License keys are ignored. Premium plugins cannot be validated without the cryptographic engine.');
+		logWarn('Tempo Community Edition: License keys are ignored. Premium plugins cannot be validated without the cryptographic engine.');
 	}
 	async verify() {
 		// Decodes but DOES NOT verify the signature. 

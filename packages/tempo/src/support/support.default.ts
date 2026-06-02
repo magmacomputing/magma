@@ -1,6 +1,7 @@
 import { looseIndex } from '#library/object.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { getDateTimeFormat } from '#library/international.library.js';
+import { LOG } from '#library/logger.class.js';
 
 import { NUMBER, MODE, MONTH_DAY } from './support.enum.js';
 import { Token } from './support.symbol.js';
@@ -191,7 +192,7 @@ export const Guard = [
 
 /** @internal Tempo Default options */
 export const Default = secure({
-	/** log to console */																			debug: false,
+	/** log to console */																			debug: LOG.Info,
 	/** catch or throw Errors */															catch: false,
 	/** initialization strategy (auto | strict | defer) */		mode: MODE.Auto,
 	/** used to parse two-digit years*/												pivot: 75,					/** @link https:	//en.wikipedia.org/wiki/Date_windowing */

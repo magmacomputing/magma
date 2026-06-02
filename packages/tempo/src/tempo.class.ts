@@ -1,6 +1,5 @@
 import '#library/temporal.polyfill.js';
 
-import { Logify } from '#library/logify.class.js';
 import { Immutable, Serializable } from '#library/class.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
@@ -15,6 +14,7 @@ import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
+import { LOG } from '#library/logger.class.js';
 import type { Property, Secure } from '#library/type.library.js';
 
 import { registerPlugin, interpret, ensureModule, type TempoPlugin } from './plugin/plugin.util.js'
@@ -27,7 +27,7 @@ import { createMasterGuard } from './engine/engine.guard.js';
 import { resolveMonthDay, setProperty, proto, hasOwn, normalizeLayoutOrder } from './support/support.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $logError, $logDebug, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $Logify, $errored, $dbg, $guard, $Discover, $setDiscovery } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -65,8 +65,7 @@ namespace Internal {
  * A powerful wrapper around `Temporal.ZonedDateTime` for flexible parsing and intuitive manipulation of date-time objects.
  * Bridges the gap between raw string/number inputs and the strict requirements of the ECMAScript Temporal API.
  */
-/** Logify for internal errors and debug logs */
-const _dbg = new Logify('Tempo', { debug: Default?.debug ?? false, catch: Default?.catch ?? false });
+
 /** Tempo state for the global configuration */
 let _global = {} as Internal.State;
 /** cache for next-available 'usr' Token key */
@@ -149,24 +148,6 @@ export class Tempo {
 	/** @internal brand check to distinguish Tempo objects from other objects */
 	get [$Identity](): true { return true }
 
-	/** @internal handle internal errors using the global config */
-	static [$logError](...msg: any[]): void {
-		const provided = (isObject(msg[0]) && (msg[0] as any)[$Logify] === true) ? msg.shift() : undefined;
-		const global = this[$Internal]().config;
-		const config = markConfig(Object.create(global));
-		if (provided) Object.entries(provided).forEach(([k, v]) => setProperty(config, k, v));
-		markConfig(config);                                     // ensure config is marked for Logify
-		_dbg.error(config, ...msg);
-	}
-
-	/** @internal handle internal debug logs */
-	static [$logDebug](...args: any[]): void {
-		const provided = (isObject(args[0]) && (args[0] as any)[$Logify] === true) ? args.shift() : undefined;
-		const global = this[$Internal]().config;
-		const config = markConfig(Object.create(global));
-		if (provided) Object.entries(provided).forEach(([k, v]) => setProperty(config, k, v));
-		_dbg.debug(config, ...args);
-	}
 
 	/**
 	 * {dt} is a layout that combines date-related {snippets} (e.g. dd, mm -or- evt) into a pattern against which a string can be tested.  
@@ -201,7 +182,6 @@ export class Tempo {
 		if (!hasOwn(shape, 'aliasEngine')) {
 			engine = shape.aliasEngine = new AliasEngine({
 				parent: parent.aliasEngine,
-				logger: _dbg,
 				config: shape.config
 			});
 		}
@@ -260,7 +240,7 @@ export class Tempo {
 		try {
 			intl = new Intl.Locale(Tempo._locale(locale));
 		} catch (e) {
-			_dbg.warn(shape.config, `Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, e);
+			logWarn(e, `Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, shape.config);
 			intl = new Intl.Locale('en-US');
 		}
 
@@ -303,7 +283,7 @@ export class Tempo {
 		if (layout !== shape.parse.layout)
 			shape.parse.layout = layout as Layout;
 
-		_dbg.debug(shape.config, `Resolved layout order: ${getLayoutOrder(layout).join(' -> ')}`);
+		logDebug(`Resolved layout order: ${getLayoutOrder(layout).join(' -> ')}`, shape.config);
 	}
 
 	/** get first Canonical name of a supplied locale */
@@ -513,7 +493,7 @@ export class Tempo {
 					} catch (e: any) {
 						const msg = (e?.message ?? '').toLowerCase();
 						if (msg.includes('constructor') || msg.includes('class') || (e instanceof TypeError) || isClass(arg)) {
-							_dbg.warn(this[$Internal]().config, `Misidentified class in plugin registration: ${(arg as any).name}`, e.stack ?? e);
+							logWarn(`Misidentified class in plugin registration: ${(arg as any).name}`, this[$Internal]().config, e.stack ?? e);
 						} else {
 							throw e;
 						}
@@ -524,7 +504,7 @@ export class Tempo {
 					const name = (item as any).name;
 					const rt = getRuntime();
 					if (rt.installed.has(name)) {
-						_dbg.debug(this[$Internal]().config, `Plugin already installed by name: ${name}`);
+						logDebug(`Plugin already installed by name: ${name}`, this[$Internal]().config);
 						return;
 					}
 					rt.installed.add(name);
@@ -540,12 +520,12 @@ export class Tempo {
 
 						if (Tempo._termMap.get(config.key) === config) return;
 						if (Tempo._termMap.has(config.key)) {
-							Tempo[$logError](state.config, `[Tempo#extend] Term collision on key: "${config.key}". Registration aborted.`);
+							logError(`[Tempo#extend] Term collision on key: "${config.key}". Registration aborted.`, state.config);
 							return;
 						}
 						if (config.scope && Tempo._termMap.get(config.scope) === config) { /* continue */ }
 						else if (config.scope && Tempo._termMap.has(config.scope)) {
-							Tempo[$logError](state.config, `[Tempo#extend] Term collision on scope: "${config.scope}". Registration aborted.`);
+							logError(`[Tempo#extend] Term collision on scope: "${config.scope}". Registration aborted.`, state.config);
 							return;
 						}
 
@@ -590,7 +570,7 @@ export class Tempo {
 						const discovery = item as any
 						if (discovery.term) {
 							discovery.terms = [...asArray(discovery.terms || []), ...asArray(discovery.term)];
-							_dbg.warn(this[$Internal]().config, 'Legacy "term" key in Discovery is deprecated. Please use "terms" instead.');
+							logWarn('Legacy "term" key in Discovery is deprecated. Please use "terms" instead.', this[$Internal]().config);
 						}
 						if (discovery.plugin) {
 							discovery.plugins = [...asArray(discovery.plugins || []), ...asArray(discovery.plugin)];
@@ -722,6 +702,8 @@ export class Tempo {
 		_lifecycle.initialising = true;
 
 		try {
+			setLogLevel(options.debug ?? Default?.debug ?? LOG.Info);
+
 			const rt = getRuntime();
 			rt.state = undefined;																	// force fresh state
 			const state = init(options);
@@ -797,8 +779,8 @@ export class Tempo {
 
 			if (options.plugins) this.extend(options.plugins);		// ensure init-plugins are processed before 'ready'
 
-			if (Context.type === CONTEXT.Browser || options.debug === true)
-				_dbg.info(this.config, 'Tempo:', state.config);
+			if (Context.type === CONTEXT.Browser || options.debug === LOG.Trace)
+				logDebug('Tempo:', this.config, state.config);
 
 			_lifecycle.ready = true;
 			setPatterns(state);																		// rebuild the global patterns (Master Guard etc)
@@ -1054,7 +1036,7 @@ export class Tempo {
 		});
 
 		Tempo.init();																						// synchronously initialize the library
-		getRuntime().logger = _dbg;
+		getRuntime().logger = logTempo;
 	}
 
 	/** constructor tempo */																	#tempo?: t.DateTime;
@@ -1071,7 +1053,7 @@ export class Tempo {
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
 	/** current mutation depth to manage infinite recursion */#mutateDepth = 0;
 	/** instance values to complement static values */				#local = {
-		/** instance configuration */															config: { [$Logify]: true } as unknown as Internal.Config,
+		/** instance configuration */															config: { [$LogConfig]: true } as unknown as Internal.Config,
 		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.MatchResult[] } as Internal.Parse
 	} as Internal.State;
 
@@ -1081,10 +1063,9 @@ export class Tempo {
 	/** @internal */	static [TermError](config: Internal.Config, term: string): void {
 		const hint = Tempo._terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
 		const msg = `Unknown Term identifier: ${term}${hint}`;
-		_dbg.error(config, msg);
+		logError(msg, config);
 	}
 
-	/** @internal */	static get [$dbg](): Logify { return _dbg }
 	/** @internal */	static get [$guard]() { return _guard }
 
 	/** 
@@ -1230,7 +1211,7 @@ export class Tempo {
 				if (isUndefined(this.#zdt)) {
 					this.#errored = true;
 					const msg = `Tempo parse returned undefined for: ${String(this.#tempo)}`;
-					_dbg.error(this.#local.config, msg);
+					logError(msg, this.#local.config);
 					this.#zdt = now;
 				}
 				secure(this.#local.config);
@@ -1239,10 +1220,10 @@ export class Tempo {
 				this.#errored = true;																// mark as errored
 				const msg = `Cannot create Tempo: ${(err as Error).message}\n${(err as Error).stack}`;
 				if (this.#local.config.catch === true) {
-					_dbg.error(this.#local.config, msg);				// log as error if in catch-mode
+					logError(msg, this.#local.config);				// log as error if in catch-mode
 					this.#zdt = now;
 				} else {
-					_dbg.error(this.#local.config, err, msg);		// log as error then re-throw
+					logError((err as Error), this.#local.config, msg);		// log as error then re-throw
 					throw err;
 				}
 			}
@@ -1270,7 +1251,7 @@ export class Tempo {
 						} catch (e: any) {
 							const msg = (e?.message ?? '').toLowerCase();
 							if (msg.includes('constructor') || msg.includes('class') || (e instanceof TypeError) || isClass(define)) {
-								_dbg.warn(this.#local.config, `Misidentified class in delegator evaluate: ${String(define)}`, e.stack ?? e);
+								logWarn(`Misidentified class in delegator evaluate: ${String(define)}`, this.#local.config, e.stack ?? e);
 								memo = define;
 							} else {
 								throw e;
@@ -1327,7 +1308,7 @@ export class Tempo {
 							return isObject(res) ? secure(res) : res;
 						} catch (err: any) {
 							if (err.message.includes('Class constructor')) {
-								_dbg.warn(this.#local.config, `Misidentified class in term definition: ${key}`, err.stack ?? err);
+								logWarn(`Misidentified class in term definition: ${key}`, this.#local.config, err.stack ?? err);
 							} else {
 								throw err;
 							}
@@ -1365,7 +1346,7 @@ export class Tempo {
 						return isObject(out) ? secure(out) : out;
 					} catch (err: any) {
 						if (err.message.includes('Class constructor')) {
-							_dbg.warn(this.#local.config, `Misidentified class in term discovery: ${term.key}`, err.stack ?? err);
+							logWarn(`Misidentified class in term discovery: ${term.key}`, this.#local.config, err.stack ?? err);
 						} else {
 							throw err;
 						}
@@ -1563,7 +1544,7 @@ export class Tempo {
 		const res = interpret(this, 'ParseModule', 'parse', false, tempo, dateTime, term);
 		if (isUndefined(res)) {
 			const msg = `ParseModule error. Could not parse ${String(tempo)}`;
-			_dbg.error(this.#local.config, msg);
+			logError(msg, this.#local.config);
 			return undefined as any;
 		}
 		return res;
@@ -1582,7 +1563,7 @@ export class Tempo {
 		if (isUndefined(tempo) || isEmpty(tempo)) return dateTime ?? instant().toZonedDateTimeISO(this.#local.config.timeZone);
 
 		const msg = 'Tempo ParseModule not loaded. Did you forget to Tempo.extend(ParseModule)?';
-		_dbg.error(this.#local.config, msg);
+		logError(msg, this.#local.config);
 		return undefined as any;
 	}
 
@@ -1623,7 +1604,7 @@ export class Tempo {
 
 		if (blocked.includes(rt.license.status) && hasOwn(rt.license.scopes, key)) {
 			const msg = `License for premium term '${key}' is ${rt.license.status}. Access denied.`;
-			_dbg.warn(this.#local.config, msg);
+			logWarn(msg, this.#local.config);
 			return true;
 		}
 

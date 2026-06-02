@@ -25,8 +25,8 @@ describe('Static Symbol.dispose', () => {
 
 	test('Pledge static dispose resets static state', () => {
 		// 1. Set a non-default static config
-		Pledge.init({ debug: true, silent: true, tag: 'TestPledge' });
-		expect(Pledge.status.debug).toBe(true);
+		Pledge.init({ debug: 5, silent: true, tag: 'TestPledge' });
+		expect(Pledge.status.debug).toBe(5);
 		expect(Pledge.status.tag).toBe('TestPledge');
 
 		// 2. Dispose

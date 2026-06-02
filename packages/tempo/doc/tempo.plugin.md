@@ -279,7 +279,7 @@ Tempo.extend(HolidayPlugin({
 Tempo.extend(
   [PluginA, PluginB], 
   PluginC, 
-  { debug: true } // applied to A, B, and C
+  { debug: 5 } // applied to A, B, and C
 );
 ```
 

@@ -121,7 +121,7 @@ Tempo.init({
   timeZone: 'Australia/Sydney',
   locale: 'en-AU',
   pivot: 80,
-  debug: false
+  debug: 0
 });
 ```
 
@@ -145,7 +145,7 @@ Tempo.init({
 | `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. Unlike core init options such as `snippet`, `layout`, `event`, or `period`, these values are not merged into internal state via `extendState`; `Tempo.init()` applies each plugin with `Tempo.extend(p)`, so plugin authors should treat them as instance/class augmentations rather than internal-state merges. |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
-| `debug` | `boolean \| number` | `false` | Controls log verbosity. `true` maps to `LOG.Debug`, `false` maps to `LOG.Info`, and numeric values map directly to `LOG` levels (`0=Off ... 5=Trace`). |
+| `debug` | `number \| string` | `'info'` | Controls log verbosity via direct `LOG` levels (`0=Off ... 5=Trace`) or string labels (`'trace'`, `'info'`, etc). |
 | `catch` | `boolean` | `false` | If true, invalid inputs return a Void instance instead of throwing. |
 | `mode` | `'auto' \| 'strict' \| 'defer'` | `'auto'` | Controls the hydration strategy (e.g., `defer` for Zero-Cost creation). |
 | `silent` | `boolean` | `false` | Suppresses console output. Combined with `catch: true` for silent failover. |
@@ -155,7 +155,7 @@ Tempo.init({
 ---
 
 ::: info
-`debug` currently accepts only `boolean` or numeric level values. String labels like `'trace'` are not supported.
+`debug` accepts numeric level values (`0` through `5`) or lowercase string labels (`'off'`, `'error'`, `'warn'`, `'info'`, `'debug'`, `'trace'`).
 :::
 
 ## 4. Instance-Level Overrides
@@ -267,7 +267,7 @@ Tempo.init({
 ```
 
 ::: tip
-**Observability**: Set `debug: true` along with `planner.preFilter` to see a detailed "Planner summary" in the console, showing how many layouts were skipped for a given input.
+**Observability**: Set `debug: 5` along with `planner.preFilter` to see a detailed "Planner summary" in the console, showing how many layouts were skipped for a given input.
 :::
 
 ---
@@ -283,7 +283,7 @@ Tempo.init({
 | **Instance** | 🥇 Highest | Ad-hoc overrides for specific calculations. |
 
 ::: tip
-**Observability**: When `debug: true` is set, Tempo logs its discovery path to the console (e.g., "Global Discovery found via Symbol"), making it easy to trace exactly where a setting originated.
+**Observability**: When `debug: 5` is set, Tempo logs its discovery path to the console (e.g., "Global Discovery found via Symbol"), making it easy to trace exactly where a setting originated.
 :::
 
 ::: info

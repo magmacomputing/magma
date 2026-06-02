@@ -159,6 +159,12 @@ new Tempo(1000n, { timeStamp: 'ns' });
 
 ## 🔁 Removed Features (v3.0.0)
 
+### Deprecated Boolean Debug Flag
+The `debug` configuration property no longer accepts `boolean` values. It has been strictly typed to accept numeric verbosity levels matching the internal `LOG` enum, or lowercase string labels (e.g. `'trace'`, `'info'`).
+
+- **Removed:** `new Tempo({ debug: true })`
+- **Recommended:** `new Tempo({ debug: 5 })`, `new Tempo({ debug: 'trace' })`, or `new Tempo({ debug: LOG.Trace })` (for maximum trace verbosity).
+
 ### Internationalization Naming
 To better align with ECMAScript standards (specifically `Intl.RelativeTimeFormat`), the `relativeTime` configuration option inside `intl` is no longer supported in v3.0.0.
 

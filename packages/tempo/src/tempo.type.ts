@@ -7,7 +7,7 @@
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
 import type { Pledge } from '#library/pledge.class.js';
-import type { Logify } from '#library/logify.class.js';
+import type { DebugLevel } from '#library/logger.class.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded } from '#library/type.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
@@ -221,9 +221,9 @@ export namespace Internal {
 	export interface BaseOptions {
 		/** localStorage key */																	store: string;
 		/** globalThis Discovery Symbol */											discovery: string | symbol | Discovery;
-		/** additional console.log for tracking */							debug: Logify.Constructor["debug"];
-		/** catch or throw Errors */														catch: Logify.Constructor["catch"];
-		/** suppress console output during catch */							silent: Logify.Constructor["silent"];
+		/** additional console.log for tracking */							debug: DebugLevel;
+		/** catch or throw Errors */														catch: boolean;
+		/** suppress console output during catch */							silent: boolean;
 		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
 		/** Temporal calendar */																calendar: Temporal.CalendarLike;
 		/** locale (e.g. en-AU) */															locale: string;

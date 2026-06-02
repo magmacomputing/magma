@@ -174,12 +174,12 @@ function setLicense(state: t.Internal.State, key: string) {
 					if (res.jti) runtime.license.jti = res.jti;
 
 					if ([LICENSE.Revoked, LICENSE.Invalid].includes(res.status))
-						logWarn(state.config, `⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`);
+						logWarn(`⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`, state.config);
 				}).catch((err: any) => {
 					if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
 					runtime.license.status = LICENSE.Invalid;
 					runtime.license.error = err?.message || 'Verification rejected';
-					logWarn(state.config, `⚠️ Tempo Licensing: ${runtime.license.error}`);
+					logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
 				});
 			}
 		};
@@ -214,11 +214,11 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 							const pattern = isRegExp(v) ? v.source : String(v);
 							// 🛡️ Security Check: Prevent catastrophic backtracking and malicious patterns
 							if (pattern.length > 500) {
-								logError(state.config, `[Tempo#extend] Snippet pattern too long (max 500 chars).`);
+								logError(`[Tempo#extend] Snippet pattern too long (max 500 chars).`, state.config);
 								return new RegExp(Match.escape(pattern));
 							}
 							if (Match.backtrack.test(pattern)) {
-								logError(state.config, `[Tempo#extend] Snippet contains suspicious nested quantifiers.`);
+								logError(`[Tempo#extend] Snippet contains suspicious nested quantifiers.`, state.config);
 								return new RegExp(Match.escape(pattern));
 							}
 							return new RegExp(pattern);
@@ -305,7 +305,7 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				const unit = (isString(arg.value) ? arg.value : arg.value?.unit)?.trim()?.toLowerCase();
 
 				if (isUndefined(unit) || !['ss', 'ms', 'us', 'ns'].includes(unit)) {
-					logError(state.config, `[Tempo#extend] Invalid timeStamp unit: ${String(unit ?? arg.value)}. Expected 'ss', 'ms', 'us', or 'ns'.`);
+					logError(`[Tempo#extend] Invalid timeStamp unit: ${String(unit ?? arg.value)}. Expected 'ss', state.config, 'ms', 'us', or 'ns'.`);
 					break;
 				}
 
@@ -316,7 +316,7 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 			case 'license': {
 				const runtime = getRuntime();
 				if (state !== runtime.state) {
-					logWarn(state.config, `[Tempo#extend] Licensing is a global-only feature and cannot be set on local instances.`);
+					logWarn(`[Tempo#extend] Licensing is a global-only feature and cannot be set on local instances.`, state.config);
 					break;
 				}
 				const key = String(arg.value);

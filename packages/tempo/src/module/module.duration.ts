@@ -6,7 +6,7 @@ import { ifDefined } from '#library/object.library.js';
 import { getRelativeTime, formatNumber, formatDuration, formatList } from '#library/international.library.js';
 
 import { defineInterpreterModule, interpret, type TempoModule } from '../plugin/plugin.util.js';
-import { enums, isTempo } from '#tempo/support';
+import { enums, isTempo, TempoError } from '#tempo/support';
 import { Tempo } from '../tempo.class.js';
 
 declare module '../tempo.class.js' {
@@ -78,7 +78,7 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 			// Strict Temporal balancing
 			const anchor = customAnchor || ctx.relativeTo;
 			if (!anchor)
-				throw new Error("A relativeTo anchor is required for strict balancing. Pass an anchor or use { nominal: true } for mathematical balancing.");
+				throw new TempoError("A relativeTo anchor is required for strict balancing. Pass an anchor or use { nominal: true } for mathematical balancing.");
 
 			const balanced = dur.round({ largestUnit, relativeTo: anchor });
 

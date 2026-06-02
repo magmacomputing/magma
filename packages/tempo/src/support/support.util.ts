@@ -1,13 +1,13 @@
-import { isBoolean } from '#library/assertion.library.js';
+import { isBoolean, isError } from '#library/assertion.library.js';
+import { Logger, LOG, parseLogLevel, type DebugLevel } from '#library/logger.class.js';
+import { raise as boundaryRaise } from '#library/boundary.library.js';
 
 import { sym, Token } from './support.symbol.js';
 import { asType } from '#library/type.library.js';
 import { asArray } from '#library/coercion.library.js';
-import { isSymbol, isUndefined, isDefined, isString, isRegExp, isNullish, isObject, isEmpty } from '#library/assertion.library.js';
-import { ownEntries, ownKeys, unwrap } from '#library/primitive.library.js';
+import { isSymbol, isUndefined, isDefined, isString, isNullish, isObject } from '#library/assertion.library.js';
+import { ownEntries, unwrap } from '#library/primitive.library.js';
 import { getRuntime } from './support.runtime.js';
-import { Match, Snippet, Layout } from './support.default.js';
-import enums from './support.enum.js';
 import type * as t from '../tempo.type.js';
 
 /** @internal normalize layout-order options into a clean string array */
@@ -22,7 +22,7 @@ export const setProperty = <T>(target: object, key: PropertyKey, value: T) => {
 	if (Object.isExtensible(target)) {
 		Object.defineProperty(target, key, { value, writable: true, configurable: true, enumerable: true });
 	} else {
-		console.warn(`[tempo] setProperty: Cannot define property '${String(key)}' on non-extensible object`, target);
+		logWarn(`[tempo] setProperty: Cannot define property '${String(key)}' on non-extensible object`, {}, target);
 	}
 }
 
@@ -31,22 +31,50 @@ export const setProperties = (target: object, properties: Record<PropertyKey, an
 	ownEntries(properties).forEach(([key, value]) => setProperty(target, key, value));
 }
 
-/** @internal Centralized Error Logger — retrieves the shared Logify instance from the TempoRuntime */
-export function logError(config: any, ...msg: any[]) {
-	const rt = getRuntime();
-	rt.logger?.error(config ?? rt.state?.config, ...msg);
+export const logTempo = new Logger('Tempo');
+export const logParse = new Logger('Tempo:Parse');
+export const logEngine = new Logger('Tempo:Engine');
+
+const loggers = [logTempo, logParse, logEngine];
+
+/** @internal Centralized setter for global verbosity */
+export function setLogLevel(debug?: DebugLevel) {
+	const level = parseLogLevel(debug, LOG.Info);
+	loggers.forEach(l => l.level = level);
 }
 
-/** @internal Centralized Warning Logger — retrieves the shared Logify instance from the TempoRuntime */
-export function logWarn(config: any, ...msg: any[]) {
-	const rt = getRuntime();
-	rt.logger?.warn(config ?? rt.state?.config, ...msg);
+/** @internal Concatenate multiple arguments into a single string for logging */
+const concatMsg = (msg: any[]) => msg.map(m => isError(m) ? m.message : String(m)).join(' ');
+
+/** @internal Centralized Error Boundary — evaluates config.catch and logs automatically */
+export function raise(err: Error | string, config: any = {}, ...msg: any[]) {
+	// Combine extra messages if multiple are provided
+	if (msg.length > 0) {
+		const text = concatMsg(msg);
+		err = isString(err) ? new Error(`${err} ${text}`) : err;
+		if (isError(err) && typeof err.message === 'string' && text) {
+			err.message = `${err.message} ${text}`;
+		}
+	}
+
+	boundaryRaise(err, {
+		catch: config?.catch ?? false,
+		silent: config?.silent ?? false,
+		logger: logTempo
+	});
 }
 
-/** @internal Centralized Debug Logger — retrieves the shared Logify instance from the TempoRuntime */
-export function logDebug(config: any, ...msg: any[]) {
-	const rt = getRuntime();
-	rt.logger?.debug(config ?? rt.state?.config, ...msg);
+/** @internal Wrapper for legacy logError calls */
+export const logError = raise;
+
+/** @internal Centralized Warning Logger */
+export function logWarn(msg: any, config: any = {}, ...extraMsg: any[]) {
+	if (!config?.silent) logTempo.warn(concatMsg([msg, ...extraMsg]));
+}
+
+/** @internal Centralized Debug Logger */
+export function logDebug(msg: any, config: any = {}, ...extraMsg: any[]) {
+	if (!config?.silent) logTempo.debug(concatMsg([msg, ...extraMsg]));
 }
 
 /** @internal check if an object is a proxy */
@@ -65,13 +93,13 @@ export const proto = (obj: any): any => Object.getPrototypeOf(unwrap(obj));
 export function create<T extends object>(obj: any, name: string): T {
 	const prototype = proto(obj);
 	if (!isObject(prototype)) {
-		logError(null, `[Tempo#create] Failed to create shadowed object for '${name}'. Proto(obj) is null or not an object.`);
+		logError(`[Tempo#create] Failed to create shadowed object for '${name}'. Proto(obj) is null or not an object.`, null);
 		return {} as T;
 	}
 
 	const entry = prototype[name];
 	if (!isObject(entry)) {
-		logError(null, `[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`);
+		logError(`[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`, null);
 		return {} as T;
 	}
 

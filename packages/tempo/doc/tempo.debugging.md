@@ -66,9 +66,9 @@ If you simply need to see the value represented in different primitive formats, 
 Tempo has an internal logging utility (`Tempo.#dbg`) that responds to specific configuration flags.
 
 ### The `debug` Flag
-When instantiating a `Tempo`, you can pass `{ debug: true }` in the options object.
+When instantiating a `Tempo`, you can pass `{ debug: 5 }` in the options object.
 ```typescript
-const t = new Tempo('next Friday', { debug: true });
+const t = new Tempo('next Friday', { debug: 5 });
 ```
 When this flag is enabled, Tempo will output detailed `console.info` logs during instantiation, including:
 *   The raw input being parsed.
@@ -90,7 +90,7 @@ const t = new Tempo('invalid string', { catch: false });
 Tempo uses a **Master Guard** to avoid the expensive regex parsing phase for strings that are obviously not date-time inputs. If you find that a string is not being parsed as expected, it's possible that the guard is Rejecting it.
 
 1.  **Check characters**: The guard only allows digits, common symbols (`-`, `:`, `.`, `T`, `Z`, `/`, `+`, `#`), space, and standard Latin characters.
-2.  **Use `debug: true`**: If a string passes the guard but fails the parser, you will see "conformed groups" logs. If you see *nothing* and the input is returned as-is (falling back to a timestamp interpretation), then the guard likely rejected the string.
+2.  **Use `debug: 5`**: If a string passes the guard but fails the parser, you will see "conformed groups" logs. If you see *nothing* and the input is returned as-is (falling back to a timestamp interpretation), then the guard likely rejected the string.
 3.  **Invalid String fallback**: If the guard rejects a string and it cannot be parsed as a numeric timestamp, it will result in an Invalid instance (see below).
 
 ---

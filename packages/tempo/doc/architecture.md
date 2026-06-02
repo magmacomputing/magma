@@ -29,8 +29,8 @@ To solve the "Split-Brain" issue inherent in monorepo development (where multipl
 ## 🕵️ Decoupled Logging (Logify)
 Tempo uses **Logify**, a diagnostic engine that leverages private Symbols to avoid polluting the public console or object state.
 - **Context-Aware**: Logs track their discovery path (e.g., "Applied via Global Discovery").
-- **Zero-Footprint**: When `debug: false`, the logging overhead is mathematically eliminated.
-- **Symbol-Gated**: Diagnostic metadata is attached via `Symbol.for($Logify)`, making it invisible to standard iteration (`Object.keys`) and serialization (`JSON.stringify`).
+- **Zero-Footprint**: When `debug: 0`, the logging overhead is mathematically eliminated.
+- **Symbol-Gated**: Diagnostic metadata is attached via `Symbol.for($LogConfig)`, making it invisible to standard iteration (`Object.keys`) and serialization (`JSON.stringify`).
 
 ## 🛡️ Hardened Functional Resolution
 The engine implements a "Fail-Safe" execution pattern for functional inputs, automatically recovering from misidentified types—such as ES6 classes wrapped in defensive Proxies or circular dependency deadlocks.
