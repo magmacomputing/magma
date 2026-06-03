@@ -97,6 +97,6 @@ console.log(regex.source);
 
 ## Professional Services
 
-If your project involves specialized terminology, complex financial calendars, or legacy application log formats, the **Magma Computing** team offers professional services to design and test custom `Tempo` Layouts optimized for your business needs. 
+If your project involves specialized terminology, complex financial calendars, or legacy application log formats, the **Magma Computing Solutions** team offers professional services to design and test custom `Tempo` Layouts optimized for your business needs. 
 
-Contact us at [Magma Computing](https://github.com/magmacomputing).
+Contact us at [Magma Computing Solutions](https://github.com/magmacomputing).

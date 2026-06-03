@@ -250,7 +250,7 @@ export const MyFeatureModule = defineModule((TempoClass, options) => {
 
 If you have built a powerful plugin and wish to distribute it commercially, you do not need to implement your own licensing engine. Build your plugin using the standard `defineModule` or `defineExtension` wrappers.
 
-Once your plugin is ready for the marketplace, **[Contact Magma Computing](https://github.com/magmacomputing)**. We can inject our proprietary licensing and cryptographic verification engine directly into your build pipeline, ensuring your plugin is securely gated and protected from unauthorized use.
+Once your plugin is ready for the marketplace, **[Contact Magma Computing Solutions](https://github.com/magmacomputing)**. We can inject our proprietary licensing and cryptographic verification engine directly into your build pipeline, ensuring your plugin is securely gated and protected from unauthorized use.
 
 ---
 
@@ -289,7 +289,7 @@ Tempo.extend(
 
 If you have a complex business requirement or need a high-performance plugin built to professional standards, we can help. Our team can design, implement, and verify custom Tempo extensions tailored to your specific domain.
 
-**[Contact Magma Computing](https://github.com/magmacomputing)** to discuss your requirements.
+**[Contact Magma Computing Solutions](https://github.com/magmacomputing)** to discuss your requirements.
 
 - [Extension Plugin Guide](./tempo.extension.md): Learn the "Tempo-way" to write a prototype extension (like Business Days).
 - [Tempo Terms Guide](./tempo.term.md): Documentation on the "Memoized Lookup" pattern for business logic.

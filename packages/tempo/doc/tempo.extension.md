@@ -142,4 +142,4 @@ const nextBiz = t.addBusinessDays(2);
 ---
 
 > [!TIP] Need something more complex?
-> If you need to build advanced scheduling engines, AsyncGenerators, or precision arithmetic tools that you plan to distribute commercially, check out our **[Premium Plugin Registry ↗](https://magmacomputing.github.io/tempo-plugin-docs/)** for inspiration, or contact Magma Computing for professional plugin development.
+> If you need to build advanced scheduling engines, AsyncGenerators, or precision arithmetic tools that you plan to distribute commercially, check out our **[Premium Plugin Registry ↗](https://magmacomputing.github.io/tempo-plugin-docs/)** for inspiration, or contact Magma Computing Solutions for professional plugin development.

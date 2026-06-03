@@ -25,6 +25,9 @@ const foundTsconfigPath = (() => {
 	return '';
 })();
 
+if (licensePremium && !foundTsconfigPath)
+	throw new Error(`TEMPO_LICENSE_PATH is set to ${licensePremium} but no ancestor tsconfig.json was found.`);
+
 const isPremiumAvailable = Boolean(
 	licensePremium &&
 	fs.existsSync(licensePremium) &&

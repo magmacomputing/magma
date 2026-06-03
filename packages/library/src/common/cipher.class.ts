@@ -23,7 +23,7 @@ const _asymmetricKey = subtle.generateKey({
 
 /** Static-only cryptographic methods */
 @Immutable
-@Static																										// prevent instantiation
+@Static																											// prevent instantiation
 export class Cipher {
 	/** random UUID */
 	static randomKey = () => crypto.randomUUID().split('-')[0];
@@ -38,10 +38,10 @@ export class Cipher {
 
 	/** encode object into base64 */
 	static encodeBase64 = (buf: unknown) => {
-		const str = stringify(buf);														// first, stringify the incoming buffer
+		const str = stringify(buf);															// first, stringify the incoming buffer
 		const uint8 = strToUTF8Arr(str);												// convert to Uint8Array
 
-		return base64EncArr(uint8);														// convert to string
+		return base64EncArr(uint8);															// convert to string
 	}
 
 	static hmac = async (source: string | Object, secret: string, alg = 'SHA-512', len?: number) => {
@@ -78,12 +78,12 @@ export class Cipher {
 		const combined = new Uint8Array(16 + cipherBuf.byteLength);
 		combined.set(iv, 0);
 		combined.set(new Uint8Array(cipherBuf), 16);
-		return Cipher.decodeBuffer(new Uint16Array(combined.buffer));
+		return base64EncArr(combined);
 	}
 
-	static decrypt = async (secret: Promise<ArrayBuffer> | ArrayBuffer | Uint16Array) => {
-		const buf = await secret;
-		const uint8 = new Uint8Array(buf instanceof Uint16Array ? buf.buffer : buf);
+	static decrypt = async (secret: Promise<string> | string) => {
+		const str = await secret;
+		const uint8 = base64DecToArr(str);
 		const iv = uint8.slice(0, 16);
 		const data = uint8.slice(16);
 		return subtle.decrypt({ name: keys.TypeKey, iv }, await _cryptoKey, data)

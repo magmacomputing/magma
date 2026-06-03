@@ -3,8 +3,8 @@
 set -e
 
 # Define the paths that constitute "documentation" in this repository/package.
-# Since this script runs from within packages/tempo, paths are relative to this directory.
-DOC_PATHS="doc/ img/ index.md typedoc.json .vitepress/"
+TEMPO_ROOT="$(git rev-parse --show-toplevel)/packages/tempo"
+DOC_PATHS="$TEMPO_ROOT/doc/ $TEMPO_ROOT/img/ $TEMPO_ROOT/index.md $TEMPO_ROOT/typedoc.json $TEMPO_ROOT/.vitepress/"
 
 CURRENT_BRANCH=$(git branch --show-current)
 
@@ -23,7 +23,7 @@ echo "Switching to main branch..."
 git checkout main
 
 echo "Pulling latest main..."
-git pull origin main
+git pull --ff-only origin main
 
 echo "Applying doc changes from $CURRENT_BRANCH to main..."
 # Checkout only the doc files from the branch

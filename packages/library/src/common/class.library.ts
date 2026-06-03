@@ -25,7 +25,7 @@ function createImmutableWrapper<T extends Constructor>(
 	addInitializer: (fn: () => void) => void,
 	immutabilityStrategy: (instance: any) => any							// either Object.freeze or secure (Proxy) strategy
 ): T {
-	const safeName = name || value.name || 'Anonymous';
+	const safeName = name || 'Anonymous';
 	const wrapper = {
 		[safeName]: class extends value {
 			constructor(...args: any[]) {
@@ -126,15 +126,13 @@ export function Immutable<T extends Constructor>(value: T, { kind, name, addInit
 export function Serializable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
 
-	if (finalName) {
+	if (finalName)
 		registerType(value, finalName as Type);
-	}
 
 	switch (kind) {
 		case 'class':
-			if (finalName) {
+			if (finalName)
 				addInitializer(() => registerSerializable(finalName, value));// register the class for serialization, via its toString() method
-			}
 
 			return value;
 
@@ -145,11 +143,11 @@ export function Serializable<T extends Constructor>(value: T, { kind, name, addI
 
 /** make a Class not instantiable */
 export function Static<T extends Constructor>(value: T, { kind, name }: ClassDecoratorContext<T>): T | void {
-	const finalName = getClassName(value, name);
+	const finalName = getClassName(value, name) as Type;
 
 	switch (kind) {
-		case 'class':
-			const safeName = finalName || value.name || 'Anonymous';
+		case 'class': {
+			const safeName = finalName || 'Anonymous';
 			const wrapper = {
 				[safeName]: class extends value {
 					constructor(...args: any[]) {
@@ -160,11 +158,12 @@ export function Static<T extends Constructor>(value: T, { kind, name }: ClassDec
 			}[safeName] as T;
 
 			if (finalName) {
-				registerType(value, `${finalName}_original` as Type);			// register the original class definition
-				registerType(wrapper, finalName as Type);									// register the wrapper as the authoritative definition
+				registerType(value, `${finalName}_original` as Type)// register the original class definition
+				registerType(wrapper, finalName);										// register the wrapper as the authoritative definition
 			}
 
 			return wrapper;
+		}
 
 		default:
 			throw new Error(`@Static decorating unknown 'kind': ${kind} (${name})`);
