@@ -1,6 +1,5 @@
 import { Tempo, enums } from '#tempo';
 import { stringify, objectify, enumify, getType, Pledge } from '#library';
-import '#tempo/ticker';
 
 // pre-load Tempo to the global scope for ease of use in the REPL
 Object.assign(globalThis, { Tempo, getType, stringify, objectify, enumify, enums, Pledge });

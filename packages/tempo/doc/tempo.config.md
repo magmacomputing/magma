@@ -24,6 +24,42 @@ This strategy prevents accidental state corruption while maintaining the flexibl
 
 ---
 
+## 🏆 Best Practice: The `tempo.config.ts` Pattern
+
+Rather than scattering `Tempo.init()` or `Tempo.extend()` calls throughout your application, the recommended best practice is to centralize your environment setup into a single `tempo.config.ts` (or `.js`) file. 
+
+This mirrors modern ecosystem standards (like `vite.config.ts` or `tailwind.config.js`) and ensures that plugins, timezones, and custom aliases are consistently applied before any domain logic executes.
+
+```typescript
+// tempo.config.ts
+import { Tempo } from '@magmacomputing/tempo';
+import { CronModule } from '@magmacomputing/tempo-plugin-cron';
+import { SLAModule } from '@magmacomputing/tempo-plugin-sla';
+
+export const GlobalTempoConfig = {
+  timeZone: 'Australia/Sydney', // Set your baseline timezone
+  plugins: [CronModule, SLAModule], // Register enterprise plugins
+  period: { 
+    'market-open': '09:30',
+    'market-close': '16:00' 
+  }
+}
+
+// Bootstrap the global environment
+Tempo.init(GlobalTempoConfig);
+```
+
+You can then import this file at the very top of your application's entry point (e.g., `main.ts` or `index.js`) to guarantee the configuration is locked in before any other files import `Tempo`.
+
+```typescript
+// main.ts
+import './tempo.config.ts'; 
+import { App } from './app.js';
+// ...
+```
+
+---
+
 ## 1. Persistent Configuration (`$Tempo`)
 
 The first layer Tempo checks after its own internal defaults is persistent storage. This is ideal for "sticky" settings like a user's preferred timezone or locale that should persist across sessions without a database.

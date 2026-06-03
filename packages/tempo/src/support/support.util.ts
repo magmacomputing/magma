@@ -3,7 +3,7 @@ import { Logger, LOG, parseLogLevel, type DebugLevel } from '#library/logger.cla
 import { raise as boundaryRaise } from '#library/boundary.library.js';
 
 import { sym, Token } from './support.symbol.js';
-import { asType } from '#library/type.library.js';
+import { asType, getType } from '#library/type.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { isSymbol, isUndefined, isDefined, isString, isNullish, isObject } from '#library/assertion.library.js';
 import { ownEntries, unwrap } from '#library/primitive.library.js';
@@ -52,7 +52,7 @@ export function raise(err: Error | string, config: any = {}, ...msg: any[]) {
 	if (msg.length > 0) {
 		const text = concatMsg(msg);
 		err = isString(err) ? new Error(`${err} ${text}`) : err;
-		if (isError(err) && typeof err.message === 'string' && text) {
+		if (isError(err) && isString(err.message) && text) {
 			err.message = `${err.message} ${text}`;
 		}
 	}
@@ -116,7 +116,7 @@ export function create<T extends object>(obj: any, name: string): T {
 
 	const entry = prototype[name];
 	if (!isObject(entry)) {
-		logError(`[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`, null);
+		logError(`[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${getType(entry)}).`, null);
 		return {} as T;
 	}
 

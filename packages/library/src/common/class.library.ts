@@ -1,5 +1,6 @@
 import { $ImmutableSkip } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
+import { isReference } from '#library/assertion.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { registerType, getSafeTag } from '#library/type.library.js';
 import type { Constructor, Type } from '#library/type.library.js';
@@ -77,7 +78,7 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 
 	// Lock down all existing prototype properties, but do NOT freeze the prototype object
 	const lockPrototype = (proto: object) => {
-		if (!proto || typeof proto !== 'object') return;
+		if (!isReference(proto)) return;
 		Reflect.ownKeys(proto).forEach(name => {
 			if (name === 'constructor') return;
 			if (Array.isArray(skip) && skip.some(s => String(s) === String(name))) return;

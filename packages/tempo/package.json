@@ -59,9 +59,6 @@
     "#tempo/mutate": {
       "default": "./dist/module/module.mutate.js"
     },
-    "#tempo/ticker": {
-      "default": "./dist/plugin/extend/extend.ticker.js"
-    },
     "#tempo/term": {
       "default": "./dist/plugin/term/term.index.js"
     },
@@ -133,10 +130,6 @@
     "./plugin/*": {
       "types": "./dist/plugin/*.d.ts",
       "import": "./dist/plugin/*.js"
-    },
-    "./ticker": {
-      "types": "./dist/plugin/extend/extend.ticker.d.ts",
-      "import": "./dist/plugin/extend/extend.ticker.js"
     },
     "./duration": {
       "types": "./dist/module/module.duration.d.ts",

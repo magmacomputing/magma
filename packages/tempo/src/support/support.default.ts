@@ -209,6 +209,6 @@ export const Default = secure({
 			Token.dt, Token.tm, Token.dtm, Token.tmd, Token.dmy, Token.mdy, Token.ymd,
 			Token.off, Token.rel
 		],
-		preFilter: false
+		preFilter: true
 	},
 } as Options)

@@ -1,4 +1,4 @@
-import { selectLayoutPatterns } from '../src/engine/engine.planner.ts';
+import { selectLayoutPatterns } from '../src/engine/engine.planner.js';
 import { performance } from 'node:perf_hooks';
 
 const layoutNames = [

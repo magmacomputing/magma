@@ -11,7 +11,7 @@ import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
-import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike } from '#library/assertion.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isError } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import { LOG } from '#library/logger.class.js';
@@ -354,6 +354,8 @@ export class Tempo {
 			registryUpdate('NUMBER', discovery.numbers);
 
 		// 1c. Process MDY settings
+		let opts = discovery.options || {}
+
 		if (discovery.monthDay) {
 			const md = discovery.monthDay;
 			if (md.timezones) {
@@ -367,27 +369,14 @@ export class Tempo {
 			}
 			if (md.locales) registryUpdate('MONTH_DAY', { locales: asArray(md.locales) });
 			if (md.layouts) registryUpdate('MONTH_DAY', { layouts: asArray(md.layouts) });
+			opts = { ...opts, monthDay: md };
 		}
 
 		// 1d. Process Internationalization
-		if (discovery.intl) {
-			shape.config.intl = shape.config.intl || {};
-			for (const [key, val] of Object.entries(discovery.intl)) {
-				if (isObject(val) && isObject((shape.config.intl as any)[key])) {
-					(shape.config.intl as any)[key] = { ...(shape.config.intl as any)[key], ...val };
-				} else {
-					(shape.config.intl as any)[key] = val;
-				}
-			}
-		}
+		if (discovery.intl) opts = { ...opts, intl: discovery.intl };
 
 		// 1e. Process Planner
-		if (isObject(discovery.planner)) {
-			if (isDefined(discovery.planner.layoutOrder))
-				shape.parse.planner.layoutOrder = normalizeLayoutOrder(discovery.planner.layoutOrder as any);
-			if (isDefined(discovery.planner.preFilter))
-				shape.parse.planner.preFilter = Boolean(discovery.planner.preFilter);
-		}
+		if (isObject(discovery.planner)) opts = { ...opts, planner: discovery.planner };
 
 		// 2. Process Terms
 		if (discovery.terms)
@@ -404,11 +393,11 @@ export class Tempo {
 			asArray(discovery.plugins).forEach(p => this.extend(p));
 
 		// 5. Process Options
-		let opts = discovery.options || {}
 		if (discovery.ignore) {
 			const ignore = isFunction(discovery.ignore) ? discovery.ignore() : discovery.ignore;
 			opts = { ...opts, ignore };
 		}
+
 		const res = isFunction(opts) ? opts() : opts;
 
 		if (shape === _global) {
@@ -568,65 +557,13 @@ export class Tempo {
 					// 2. handle Discovery object (container)
 					else {
 						const discovery = item as any
-						if (discovery.term) {
-							discovery.terms = [...asArray(discovery.terms || []), ...asArray(discovery.term)];
-							logWarn('Legacy "term" key in Discovery is deprecated. Please use "terms" instead.', this[$Internal]().config);
-						}
-						if (discovery.plugin) {
-							discovery.plugins = [...asArray(discovery.plugins || []), ...asArray(discovery.plugin)];
-						}
-
-						DISCOVERY.keys().forEach(key => {
-							const val = discovery[key];
-							if (!isDefined(val)) return;
-
-							switch (key) {
-								case 'options':
-									this[$setConfig](this[$Internal](), val);
-									break;
-
-								case 'plugins':
-									this.extend(val, discovery.options);
-									break;
-
-								case 'terms':
-									this.extend(val);
-									break;
-
-								case 'numbers':
-									registryUpdate('NUMBER', val);
-									break;
-
-								case 'timeZones': {
-									const tzs = Object.fromEntries(ownEntries(val).map(([k, v]) => [k.toString().toLowerCase(), v]));
-									registryUpdate('TIMEZONE', tzs);
-									break;
-								}
-
-								case 'formats': {
-									const internal = this[$Internal]();
-									internal.config.formats = internal.config.formats.extend(val) as t.FormatRegistry;
-									registryUpdate('FORMAT', val);
-									break;
-								}
-
-								case 'monthDay':
-									registryUpdate('MONTH_DAY', val);
-									this[$setConfig](this[$Internal](), { monthDay: val });
-									break;
-
-								case 'intl':
-								case 'planner':
-								case 'ignore':
-									this[$setConfig](this[$Internal](), { [key]: val });
-									break;
-							}
-						});
+						const opts = this[$setDiscovery](this[$Internal](), discovery);
+						if (!isEmpty(opts)) this[$setConfig](this[$Internal](), opts);
 
 						// only trigger init if we're assigning a new discovery object to a symbol
 						if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
-							const discovery = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
-							const discoverySymbol = isString(discovery) ? Symbol.for(discovery) : (isSymbol(discovery) && !Symbol.keyFor(discovery) ? Symbol('TempoSandbox') : discovery);
+							const discoveryArg = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
+							const discoverySymbol = isString(discoveryArg) ? Symbol.for(discoveryArg) : (isSymbol(discoveryArg) && !Symbol.keyFor(discoveryArg) ? Symbol('TempoSandbox') : discoveryArg);
 
 							if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item) {
 								(globalThis as Record<symbol, any>)[discoverySymbol as symbol] = item;
@@ -637,12 +574,12 @@ export class Tempo {
 				}
 			})
 		} finally {
-			_lifecycle.extendDepth--;												// decrement the re-entrant nesting counter
+			_lifecycle.extendDepth--;															// decrement the re-entrant nesting counter
 		}
 
 		if (_lifecycle.extendDepth === 0) {
 			this[$buildGuard]();
-			setPatterns(this[$Internal]());							// rebuild the global patterns
+			setPatterns(this[$Internal]());												// rebuild the global patterns
 		}
 
 		return this;
@@ -683,14 +620,9 @@ export class Tempo {
 				discovery: normalizedDiscovery as any,
 				catch: options.catch ?? false
 			},
+			(SandboxTempo as any)[$setDiscovery](state, data),
 			{ ...options, discovery: normalizedDiscovery }
 		);
-
-		// If the sandbox was provided with monthDay discovery, resolve and apply it to the isolated state
-		if (isObject(options.discovery) && options.discovery.monthDay) {
-			const discoveryMD = resolveMonthDay(options.discovery.monthDay, Tempo.MONTH_DAY);
-			state.parse.monthDay = { ...state.parse.monthDay, ...discoveryMD };
-		}
 
 		Object.freeze(SandboxTempo);
 		return SandboxTempo as unknown as typeof Tempo;
@@ -1020,7 +952,7 @@ export class Tempo {
 
 	static {																									// Static initialization block to sequence the bootstrap phase
 		// Define the reactive register hook
-		getRuntime().setHook($Register, (plugin: Plugin | Plugin[]) => {
+		getRuntime().setHook($Register, (plugin: TempoPlugin | TempoPlugin[]) => {
 			if (!Tempo.isExtending) Tempo.extend(plugin)
 		});
 
@@ -1415,7 +1347,7 @@ export class Tempo {
 
 	/** current Tempo configuration */
 	get config() {
-		const global = this[$Internal]().config;
+		const global = (this as any)[$Internal]().config;
 		const out = markConfig(Object.create(global));
 		Object.entries(this.#local.config).forEach(([k, v]) => setProperty(out, k, v));
 

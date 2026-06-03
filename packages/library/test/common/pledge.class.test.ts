@@ -65,7 +65,7 @@ describe('Pledge', () => {
 		}
 	});
 
-	test('callback failures warn at default debug level (indirect Logify integration)', async () => {
+	test('callback failures warn at default debug level (indirect Diagnostic Engine integration)', async () => {
 		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 		const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
 
@@ -89,7 +89,7 @@ describe('Pledge', () => {
 		}
 	});
 
-	test('numeric debug level gates callback warning logs (indirect Logify integration)', async () => {
+	test('numeric debug level gates callback warning logs (indirect Diagnostic Engine integration)', async () => {
 		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
 		try {

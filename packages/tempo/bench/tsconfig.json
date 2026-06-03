@@ -30,7 +30,8 @@
 		}
 	},
 	"include": [
-		"**/*.ts"
+		"**/*.ts",
+		"../bin/**/*.ts"
 	],
 	"references": [
 		{ "path": "../src/tsconfig.json" }

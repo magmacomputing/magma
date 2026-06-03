@@ -119,7 +119,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 			case 'tz': return zdt.timeZoneId;
 			default: {
 				if (token.startsWith('#') && isTempo(obj)) {
-					const res = (obj as Tempo).term[token.slice(1)];
+					const res = (obj as unknown as Tempo).term[token.slice(1)];
 					if (isObject(res)) return res.label ?? res.key ?? `{${token}}`;
 					return res ?? `{${token}}`;
 				}

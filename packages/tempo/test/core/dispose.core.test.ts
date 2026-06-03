@@ -1,10 +1,9 @@
 import { Tempo } from '#tempo/core';
 import { Pledge } from '#library/pledge.class.js';
-import { TickerModule } from '#tempo/ticker';
 import { FormatModule } from '#tempo/format';
 import { MutateModule } from '#tempo/mutate';
 
-Tempo.extend(TickerModule, FormatModule, MutateModule);
+Tempo.extend(FormatModule, MutateModule);
 
 describe('Static Symbol.dispose', () => {
 

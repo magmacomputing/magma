@@ -69,8 +69,8 @@ export class Cipher {
 		return toHex(Array.from(new Uint8Array(hash)), len);
 	}
 
-	static encodeBuffer = (str: string) => new Uint16Array(new TextEncoder().encode(str));
-	static decodeBuffer = (buf: Uint16Array) => new TextDecoder(keys.Encoding).decode(buf);
+	static encodeBuffer = (str: string) => new TextEncoder().encode(str);
+	static decodeBuffer = (buf: Uint8Array | ArrayBuffer) => new TextDecoder(keys.Encoding).decode(buf);
 
 	static encrypt = async (data: any) => {
 		const iv = crypto.getRandomValues(new Uint8Array(16));
@@ -87,13 +87,13 @@ export class Cipher {
 		const iv = uint8.slice(0, 16);
 		const data = uint8.slice(16);
 		return subtle.decrypt({ name: keys.TypeKey, iv }, await _cryptoKey, data)
-			.then(result => new Uint16Array(result))
+			.then(result => new Uint8Array(result))
 			.then(Cipher.decodeBuffer);
 	}
 
 	static sign = async (doc: any) =>
 		subtle.sign(keys.SignKey, (await _asymmetricKey).privateKey!, Cipher.encodeBuffer(doc))
-			.then(result => new Uint16Array(result))
+			.then(result => new Uint8Array(result))
 			.then(Cipher.decodeBuffer);
 
 	static verify = async (signature: Promise<ArrayBuffer>, doc: any) =>

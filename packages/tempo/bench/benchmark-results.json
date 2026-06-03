@@ -1,0 +1,42 @@
+{
+  "results": [
+    {
+      "name": "Native Date",
+      "totalTimeMs": 0.64,
+      "opsPerSec": 5485094,
+      "successCount": 2000,
+      "failureCount": 1500,
+      "successRate": "57.1%",
+      "heapUsedDeltaMb": "0.39"
+    },
+    {
+      "name": "Tempo (mode: auto)",
+      "totalTimeMs": 2726.79,
+      "opsPerSec": 1284,
+      "successCount": 2500,
+      "failureCount": 1000,
+      "successRate": "71.4%",
+      "heapUsedDeltaMb": "108.84"
+    },
+    {
+      "name": "Tempo (mode: defer)",
+      "totalTimeMs": 2467.03,
+      "opsPerSec": 1419,
+      "successCount": 2500,
+      "failureCount": 1000,
+      "successRate": "71.4%",
+      "heapUsedDeltaMb": "-36.27"
+    },
+    {
+      "name": "Tempo (mode: strict)",
+      "totalTimeMs": 2451.85,
+      "opsPerSec": 1427,
+      "successCount": 2500,
+      "failureCount": 1000,
+      "successRate": "71.4%",
+      "heapUsedDeltaMb": "26.10"
+    }
+  ],
+  "size": 7,
+  "ops": 3500
+}

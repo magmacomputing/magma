@@ -54,7 +54,7 @@ export function sortBy<T extends Property<T>>(...keys: (PropertyKey | SortBy)[])
 				switch (true) {
 					case isNumber(valueA) && isNumber(valueB):
 					case isDate(valueA) && isDate(valueB):
-					case isObject(valueA) && isObject(valueB) && typeof valueA.valueOf() === 'number' && typeof valueB.valueOf() === 'number':
+					case isObject(valueA) && isObject(valueB) && isNumber(valueA.valueOf()) && isNumber(valueB.valueOf()):
 						result = (dir as any) * ((valueA as any) - (valueB as any));
 						break;
 

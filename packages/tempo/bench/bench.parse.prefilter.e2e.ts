@@ -1,5 +1,5 @@
-import '../bin/temporal-polyfill.ts';
-import { Tempo } from '../src/tempo.index.ts';
+import '../bin/temporal-polyfill.js';
+import { Tempo } from '../src/tempo.index.js';
 import { performance } from 'node:perf_hooks';
 
 import fs from 'fs';
@@ -11,7 +11,7 @@ const layoutKeys = new Set([
 	'yearMonthDay', 'offset', 'relativeOffset'
 ]);
 try {
-	corpus = fs.readFileSync(new URL('./bench.parse.prefilter.ts', import.meta.url), 'utf-8')
+	corpus = fs.readFileSync(new URL('./bench.parse.prefilter', import.meta.url), 'utf-8')
 		.split(/\n/)
 		.filter(line => line.trim().startsWith("'") && line.includes(','))
 		.map(line => line.replace(/['",]/g, '').trim())
@@ -86,7 +86,7 @@ const result = {
 		minChecksum: 1 // dummy threshold, adjust as needed
 	},
 	success: true,
-	errors: []
+	errors: [] as string[]
 };
 
 if (timingDeltaPct > result.thresholds.maxTimingDeltaPct) {

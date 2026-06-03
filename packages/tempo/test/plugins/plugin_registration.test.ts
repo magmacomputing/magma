@@ -1,29 +1,24 @@
 import { Tempo } from '#tempo';
-import { getRuntime } from '#tempo/support/support.runtime.js';
-import { TickerModule } from '#tempo/ticker';
+import { defineExtension } from '#tempo/plugin/plugin.util.js';
 
-describe('Ticker Registration / Initialization', () => {
+const DummyModule = defineExtension({
+	name: 'DummyModule',
+	install(TempoClass: any) {
+		TempoClass.dummy = true;
+	}
+});
 
-	test('TickerModule should be auto-registered on import', () => {
-		// 1. TickerModule was imported above, so it should be in the runtime's pluginsDb.
-		const db = getRuntime().pluginsDb;
-		expect(db).toBeDefined();
-		expect(db.plugins).toContain(TickerModule);
-
-		// 2. We must call init() to "activate" the registered plugins
-		Tempo.init();
-		expect(Tempo.ticker).toBeDefined();
-	});
-
+describe('Plugin Registration / Initialization', () => {
 	test('Plugins should survive Tempo.init() reset', () => {
 		// 1. Verify installed
+		Tempo.extend(DummyModule);
 		Tempo.init();
-		expect(Tempo.ticker).toBeDefined();
+		expect((Tempo as any).dummy).toBe(true);
 
 		// 2. Perform a hard reset (empty init)
 		Tempo.init();
 
 		// 3. Verify it's STILL installed (init() should have re-extended from $Plugins)
-		expect(Tempo.ticker).toBeDefined();
+		expect((Tempo as any).dummy).toBe(true);
 	});
 });

@@ -16,7 +16,7 @@ describe('Proof: Enumerable + Silent Mode', () => {
 		Object.keys(t.term);
 
 		// Even though getters were triggered and some definitely failed (invalid date),
-		// Logify.silent should have prevented any console output.
+		// Diagnostic Engine silent should have prevented any console output.
 		expect(console.error).not.toHaveBeenCalled();
 		expect(console.warn).not.toHaveBeenCalled();
 	});
@@ -24,7 +24,7 @@ describe('Proof: Enumerable + Silent Mode', () => {
 	it('should still show errors when NOT in silent mode (baseline check)', () => {
 		const t = new Tempo('Invalid Date', { catch: true, silent: false });
 
-		// Trigger a failure (which calls Logify.catch with {catch: true})
+		// Trigger a failure (which calls Logger with {catch: true})
 		try { t.term.quarter } catch (e) { }
 
 		expect(console.error).toHaveBeenCalled();

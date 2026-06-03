@@ -35,9 +35,6 @@
       "#tempo/discrete": [
         "../src/discrete/discrete.index.ts"
       ],
-      "#tempo/ticker": [
-        "../src/plugin/extend/extend.ticker.ts"
-      ],
       "#tempo/term/*": [
         "../src/plugin/term/term.*.ts"
       ],
