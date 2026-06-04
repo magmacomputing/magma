@@ -77,13 +77,11 @@ function getFiles(dir, suffix = '.js') {
 const entryPoints = Object.fromEntries(
 	getFiles(distPath)
 		.map(file => [path.relative(distPath, file).replace(/\.js$/, ''), file])
-		.filter(([key]) => key !== 'support/support.license')
+		.filter(([key]) => !isPremiumAvailable || key !== 'support/support.license')
 );
 
 export default [
-	// 1. 🛡️ LICENSE MONOLITH
-	// Bundles 'jose' and the license logic into a single heavily obfuscated file
-	{
+	...(isPremiumAvailable ? [{
 		input: licensePath,
 		output: {
 			file: 'dist/support/support.license.js', // Overwrites the tsc output stealthily
@@ -114,7 +112,7 @@ export default [
 				}
 			}
 		]
-	},
+	}] : []),
 
 	// 2. 🌐 GLOBAL IIFE BUNDLE
 	{

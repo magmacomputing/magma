@@ -25,3 +25,36 @@ export class Validator {
 		return { revoked: false, success: false }; // No revocation checking in community edition
 	}
 }
+
+export function definePremiumPlugin<T>(key: string, plugin: T): T {
+	logWarn(`Tempo Community Edition: Premium plugin '${key}' loaded without commercial validation engine.`);
+	(plugin as any).install = function () {
+		throw new Error(`[${key}] Premium plugin requires a valid commercial license. Status: invalid`);
+	}
+	return plugin;
+}
+
+export function definePremiumTerm<T>(pluginDef: T): T {
+	logWarn(`Tempo Community Edition: Premium term '${(pluginDef as any).key}' loaded without commercial validation engine.`);
+	const key = (pluginDef as any).key;
+	const originalResolve = (pluginDef as any).resolve;
+	const originalDefine = (pluginDef as any).define;
+
+	const throwLicense = function () {
+		throw new Error(`[${key}] Premium plugin requires a valid commercial license. Status: invalid`);
+	}
+
+	if (originalResolve) {
+		(pluginDef as any).resolve = function (this: any, term: string) {
+			throwLicense();
+		}
+	}
+
+	if (originalDefine) {
+		(pluginDef as any).define = function (this: any, term: string, value: any) {
+			throwLicense();
+		}
+	}
+
+	return pluginDef;
+}

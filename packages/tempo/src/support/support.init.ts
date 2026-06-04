@@ -164,7 +164,14 @@ function setLicense(state: t.Internal.State, key: string) {
 					// 🛡️ Race Condition Guard: Only apply results if identity (JTI + Key) hasn't changed since we started
 					if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
 
-					runtime.license.status = res.status;
+					const desc = res.status?.description ?? String(res.status);
+					const statusMap: Record<string, any> = {
+						'active': LICENSE.Active,
+						'expired': LICENSE.Expired,
+						'revoked': LICENSE.Revoked,
+						'invalid': LICENSE.Invalid
+					};
+					runtime.license.status = statusMap[desc || ''] ?? res.status;
 					runtime.license.scopes = res.scopes;
 					delete runtime.license.error; // 🚿 Clear error on every reckoning attempt
 					if (res.error) runtime.license.error = res.error;
