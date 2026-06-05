@@ -28,9 +28,12 @@ export class Validator {
 
 export function definePremiumPlugin<T>(key: string, plugin: T): T {
 	logWarn(`Tempo Community Edition: Premium plugin '${key}' loaded without commercial validation engine.`);
-	(plugin as any).install = function () {
+	const throwLicense = function () {
 		throw new Error(`[${key}] Premium plugin requires a valid commercial license. Status: invalid`);
 	}
+	if ((plugin as any).install) (plugin as any).install = throwLicense;
+	if ((plugin as any).define) (plugin as any).define = throwLicense;
+	if ((plugin as any).resolve) (plugin as any).resolve = throwLicense;
 	return plugin;
 }
 

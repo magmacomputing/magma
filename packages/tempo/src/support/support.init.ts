@@ -182,6 +182,16 @@ function setLicense(state: t.Internal.State, key: string) {
 
 					if ([LICENSE.Revoked, LICENSE.Invalid].includes(res.status))
 						logWarn(`⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`, state.config);
+						
+					if (res.revocationPromise) {
+						res.revocationPromise.then((isRevoked: boolean) => {
+							if (isRevoked && runtime.license.jti === initialJti && runtime.license.key === initialKey) {
+								runtime.license.status = LICENSE.Revoked;
+								runtime.license.error = 'License has been revoked by the issuer.';
+								logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
+							}
+						}).catch(() => { /* silent fail-safe */ });
+					}
 				}).catch((err: any) => {
 					if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
 					runtime.license.status = LICENSE.Invalid;

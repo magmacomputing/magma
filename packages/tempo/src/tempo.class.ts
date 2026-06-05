@@ -117,6 +117,7 @@ export class Tempo {
 		);
 		return secure({
 			...raw,
+			status: ['expired', 'revoked', 'invalid', 'none', 'unauthorized'].includes(raw.status) ? raw.status : 'active',
 			scopes,
 			...(typeof raw.expires === 'number' && { expires: new Tempo(raw.expires, ss).fmt.weekTime }),
 			...(typeof raw.issuedAt === 'number' && { issuedAt: new Tempo(raw.issuedAt, ss).fmt.weekTime }),
