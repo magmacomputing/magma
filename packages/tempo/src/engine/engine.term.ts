@@ -53,7 +53,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		const slick = slickStr.match(Match.slick) || (isString(offset) ? offset.match(Match.slickValue) : null);
 		const { groups } = (slick || {}) as any;
 		if (groups) {
-			const hasMod = !!groups.sh_mod;
+			const hasMod = isDefined(groups.sh_mod);
 			const hasNbr = isNumeric(groups.sh_nbr);
 			mod = hasMod ? groups.sh_mod : undefined;
 			nbr = hasNbr ? Number(groups.sh_nbr) : 1;
@@ -64,7 +64,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 
 	// 0. Handle relative .add() — preserving position within the target range
 	if (mutate === 'add') {
-		const slickParsed = !!slickStr;
+		const slickParsed = isDefined(slickStr);
 		const directional = mod && !['this', '>=', '<='].includes(mod);
 		const numericOffset = !directional && isNumeric(offset);
 

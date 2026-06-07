@@ -3,7 +3,7 @@ import { getTemporalIds, instant } from '#library/temporal.library.js';
 import { ownKeys } from '#library/primitive.library.js';
 import type { TypeValue } from '#library/type.library.js';
 
-import { getRuntime, sym, Match } from '#tempo/support';
+import { getRuntime, sym, Match, logError, logDebug, TempoError } from '#tempo/support';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './engine.lexer.js';
 import { resolveTermMutation } from './engine.term.js';
 import enums from '#tempo/support/support.enum.js';
@@ -167,7 +167,7 @@ export function resolveAliases(
 			if (resolvingKeys.size > MAX_TEMPO_RESOLVE_DEPTH || resolvingKeys.has(aliasKey)) {
 				const msg = `Infinite recursion detected in Tempo resolution for: ${aliasKey}`;
 				state.errored = true;
-				if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new RangeError(msg));
+				logError(new RangeError(msg), state.config);
 				delete groups[key];
 				continue;
 			}
@@ -178,6 +178,8 @@ export function resolveAliases(
 				const host = getAliasContext(ctx, dateTime);
 				const res = aliasEngine?.resolveAlias(key as any, host);
 				if (!res) continue;
+				
+				logDebug(`[Normalizer] Resolved alias '${aliasKey}'`, state.config);
 
 				try {
 					const mapped = ({
@@ -186,7 +188,7 @@ export function resolveAliases(
 					} as const)[res.type as 'evt' | 'per'];
 
 					if (!mapped)
-						throw new Error(`[ParseEngine] Unexpected AliasType: ${res.type}`);
+						throw new TempoError(`[ParseEngine] Unexpected AliasType: ${res.type}`);
 
 					const { type, pat } = mapped;
 
@@ -225,8 +227,10 @@ export function resolveAliases(
 		const mm = prefix(groups["mm"] as t.MONTH);
 		const monthVal = enums.MONTH[mm];
 
-		if (isDefined(monthVal))
+		if (isDefined(monthVal)) {
 			groups["mm"] = monthVal.toString().padStart(2, '0');
+			logDebug(`[Normalizer] Normalized month string '${mm}' to ${groups["mm"]}`, state.config);
+		}
 	}
 
 	return dateTime;

@@ -2,7 +2,7 @@ import '#library/temporal.polyfill.js';
 import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { pad, singular } from '#library/string.library.js';
-import { Match, enums, isTempo, logError, logWarn } from '#tempo/support';
+import { Match, enums, isTempo, logError, logWarn, logDebug } from '#tempo/support';
 import * as t from '../tempo.type.js';
 
 /**
@@ -130,7 +130,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 		return dateTime;
 
 	if (!isEmpty(mod) && !isEmpty(sfx)) {
-		logWarn(config, `Cannot provide both a modifier '${mod}' and suffix '${sfx}'`);
+		logWarn(`Cannot provide both a modifier '${mod}' and suffix '${sfx}'`, config);
 		return dateTime;
 	}
 
@@ -139,7 +139,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	const offset = (enums.WEEKDAY as any)[weekday] ?? (enums.WEEKDAYS as any)[weekday];
 
 	if (!Number.isFinite(offset)) {
-		logError(config, `Invalid weekday token: "${wkd}"`);
+		logError(`Invalid weekday token: "${wkd}"`, config);
 		return dateTime;
 	}
 
@@ -151,7 +151,9 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	delete groups["nbr"];
 	delete groups["sfx"];
 
-	return dateTime.add({ days });
+	const finalDateTime = dateTime.add({ days });
+	logDebug(`[Lexer] Applied weekday offset of ${days} days`, config);
+	return finalDateTime;
 }
 
 /** resolve a date pattern match */
@@ -167,7 +169,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		return dateTime;
 
 	if (!isEmpty(mod) && !isEmpty(afx)) {
-		logWarn(config, `Cannot provide both a modifier '${mod}' and suffix '${afx}'`);
+		logWarn(`Cannot provide both a modifier '${mod}' and suffix '${afx}'`, config);
 		return dateTime;
 	}
 
@@ -220,13 +222,16 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	delete groups["afx"];
 
 	if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-		logError(config, `Invalid Date components: year=${year}, month=${month}, day=${day}`);
+		logError(`Invalid Date components: year=${year}, month=${month}, day=${day}`, config);
 		return dateTime;
 	}
 
-	return Temporal.PlainDate.from({ year, month, day }, { overflow: 'constrain' })
+	const finalDateTime = Temporal.PlainDate.from({ year, month, day }, { overflow: 'constrain' })
 		.toZonedDateTime(tz)
 		.withPlainTime(dateTime.toPlainTime());
+
+	logDebug(`[Lexer] Resolved Date components to ${year}-${month}-${day}`, config);
+	return finalDateTime;
 }
 
 /** resolve a time pattern match */
@@ -251,7 +256,9 @@ export function parseTime(groups: t.Groups = {}, dateTime: Temporal.ZonedDateTim
 	if (groups["mer"]?.toLowerCase() === 'am' && hh >= 12)
 		hh -= 12;
 
-	return dateTime.withPlainTime({ hour: hh, minute: mi, second: ss, millisecond: ms, microsecond: us, nanosecond: ns });
+	const finalDateTime = dateTime.withPlainTime({ hour: hh, minute: mi, second: ss, millisecond: ms, microsecond: us, nanosecond: ns });
+	logDebug(`[Lexer] Resolved Time components to ${pad(hh)}:${pad(mi)}:${pad(ss)}`, undefined);
+	return finalDateTime;
 }
 
 /**
@@ -285,6 +292,9 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	delete groups["brk"];
 	delete groups["cal"];
 	delete groups["tzd"];
+
+	if (zone || cal)
+		logDebug(`[Lexer] Applied Zone/Calendar adjustments: Zone=${zone ?? 'unchanged'}, Calendar=${cal ?? 'unchanged'}`, config);
 
 	return dateTime;
 }

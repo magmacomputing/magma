@@ -18,21 +18,17 @@ Tempo.extend(HolidayModule({ region: 'US-NY' }));
 
 ---
 
-The most efficient way to author a plugin is using the `definePlugin` factory. This helper automatically handles the internal registration logic, making your plugin available as soon as it is imported (via side effect).
+The most efficient way to author a plugin is using the `defineExtension` factory. This helper automatically handles the internal registration logic, making your plugin available as soon as it is imported (via side effect).
 
 ## Example Plugin
 
 ```typescript
-import { definePlugin } from '@magmacomputing/tempo/plugin';
+import { defineExtension } from '@magmacomputing/tempo/plugin';
 
-export const MyPlugin = definePlugin((TempoClass, options, factory) => {
-  /**
-  * TempoClass: The internal Tempo class (for static methods)
-  * options:    The global configuration object
-  * factory:    A helper to create new Tempo instances without 'new'
-   */
-
-  // 1. Add a static method
+export const MyPlugin = defineExtension({
+  name: 'MyPlugin',
+  install(TempoClass: any) {
+    // 1. Add a static method
   TempoClass.myStaticMethod = () => { /* ... */ };
 
   // 2. Add an instance method (on the prototype)
@@ -87,7 +83,7 @@ declare module '@magmacomputing/tempo/core' {
 
 ---
 
-Modern Tempo plugin are designed to be "plug-and-play." By using the `definePlugin` factory, a plugin registers itself with the global Tempo registry as soon as it's imported.
+Modern Tempo plugin are designed to be "plug-and-play." By using the `defineExtension` factory, a plugin registers itself with the global Tempo registry as soon as it's imported.
 
 ```typescript
 import '@magmacomputing/tempo/ticker';                // 1. Module self-registers via side-effect
@@ -129,7 +125,7 @@ Tempo.extend({
 
 Using `Tempo.extend()` ensures that the library safely bypasses the "Soft Freeze" protection and that all internal caches (like the Master Guard) are correctly synchronized.
 
-### 5. Error Handling & The Logify Pattern
+### 5. Error Handling & The Diagnostic Engine
 When building plugin that perform complex parsing or logic, follow Tempo's **"Fail-fast by Default"** principle.
 
 - **Strict Mode (Default)**: If your plugin encounters a terminal error (e.g., invalid input that cannot be recovered), you should `throw` a descriptive error.
@@ -193,12 +189,14 @@ class MyPluginInstance implements MyPluginTypes.Descriptor {
 ```
 
 ### 3. Wrap with a Proxy in the Factory
-Use a `Proxy` in your `definePlugin` factory to handle the callability trap. This allows your plugin to act as a function (the shortcut) and an object (the stateful class) simultaneously.
+Use a `Proxy` in your `defineExtension` factory to handle the callability trap. This allows your plugin to act as a function (the shortcut) and an object (the stateful class) simultaneously.
 
 ```typescript
-export const MyPlugin = definePlugin((TempoClass, options, factory) => {
-  (TempoClass as any).myTool = function(arg1: any): MyPluginTypes.Instance {
-    const instance = new MyPluginInstance(arg1);
+export const MyPlugin = defineExtension({
+  name: 'MyPlugin',
+  install(TempoClass: any) {
+    TempoClass.myTool = function(arg1: any): MyPluginTypes.Instance {
+      const instance = new MyPluginInstance(arg1);
     
     const proxy = new Proxy((() => instance.doSomething()) as any, {
       get: (_, prop) => {
@@ -250,9 +248,34 @@ export const MyFeatureModule = defineModule((TempoClass, options) => {
 
 ### Commercial & Premium Plugins
 
-If you have built a powerful plugin and wish to distribute it commercially, you do not need to implement your own licensing engine. Build your plugin using the standard `defineModule` or `definePlugin` wrappers.
+If you have built a powerful plugin and wish to distribute it commercially, you do not need to implement your own licensing engine. Build your plugin using the standard `defineModule` or `defineExtension` wrappers.
 
-Once your plugin is ready for the marketplace, **[Contact Magma Computing](https://github.com/magmacomputing)**. We can inject our proprietary licensing and cryptographic verification engine directly into your build pipeline, ensuring your plugin is securely gated and protected from unauthorized use.
+Once your plugin is ready for the marketplace, **[Contact Magma Computing Solutions](https://github.com/magmacomputing)**. We can inject our proprietary licensing and cryptographic verification engine directly into your build pipeline, ensuring your plugin is securely gated and protected from unauthorized use.
+
+### Safely Loading Premium Plugins
+
+When using a commercially licensed premium plugin, the cryptographic verification of your license key happens securely in the background. Because of this, you should always wait for the validation engine to settle before executing premium features, especially during application boot.
+
+Use `Tempo.ready()` to safely wait for the cryptographic engine:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { PremiumPlugin } from 'tempo-plugin-premium';
+
+// 1. Initialize Tempo with your license key
+Tempo.init({ 
+  license: process.env.TEMPO_LICENSE,
+  plugins: [PremiumPlugin] 
+});
+
+async function boot() {
+  // 2. Wait for the background engine to verify the signature
+  await Tempo.ready();
+  
+  // 3. 100% safe to execute the premium plugin synchronously
+  const result = Tempo.premiumFeature();
+}
+```
 
 ---
 
@@ -281,7 +304,7 @@ Tempo.extend(HolidayPlugin({
 Tempo.extend(
   [PluginA, PluginB], 
   PluginC, 
-  { debug: true } // applied to A, B, and C
+  { debug: 5 } // applied to A, B, and C
 );
 ```
 
@@ -291,7 +314,7 @@ Tempo.extend(
 
 If you have a complex business requirement or need a high-performance plugin built to professional standards, we can help. Our team can design, implement, and verify custom Tempo extensions tailored to your specific domain.
 
-**[Contact Magma Computing](https://github.com/magmacomputing)** to discuss your requirements.
+**[Contact Magma Computing Solutions](https://github.com/magmacomputing)** to discuss your requirements.
 
-- [Tempo Ticker Guide](./tempo.ticker.md): A deep dive into an "Async Generator" based plugin.
+- [Extension Plugin Guide](./tempo.extension.md): Learn the "Tempo-way" to write a prototype extension (like Business Days).
 - [Tempo Terms Guide](./tempo.term.md): Documentation on the "Memoized Lookup" pattern for business logic.

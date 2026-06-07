@@ -103,4 +103,19 @@ describe('Sandbox Factory Pattern', () => {
 
 		expect(Sandbox1.terms).toEqual(Sandbox2.terms);
 	});
+
+	it('should support full discovery payloads (formats, timeZones) in create()', () => {
+		const discovery = {
+			formats: {
+				'sandboxed_fmt': '{dd}/{mm}/{yyyy}'
+			},
+			timeZones: {
+				'sandbox_tz': 'Australia/Sydney'
+			}
+		};
+		const Sandbox = Tempo.create({ discovery });
+		
+		const t = new Sandbox('2026-06-03 12:00:00', { timeZone: 'sandbox_tz' });
+		expect(t.format('sandboxed_fmt')).toBe('03/06/2026');
+	});
 });

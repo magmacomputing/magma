@@ -15,17 +15,17 @@ type STORAGE = ValueOf<typeof STORAGE>
  * Refactored for lazy-initialization to ensure side-effect free imports.
  */
 export class WebStore {
-	static #localInstance?: WebStore;
-	static #sessionInstance?: WebStore;
+	private static _localInstance?: WebStore;
+	private static _sessionInstance?: WebStore;
 
 	/** Lazy getter for localStorage wrapper */
 	static get local() {
-		return WebStore.#localInstance ??= new WebStore(STORAGE.Local);
+		return WebStore._localInstance ??= new WebStore(STORAGE.Local);
 	}
 
 	/** Lazy getter for sessionStorage wrapper */
 	static get session() {
-		return WebStore.#sessionInstance ??= new WebStore(STORAGE.Session);
+		return WebStore._sessionInstance ??= new WebStore(STORAGE.Session);
 	}
 
 	#type: STORAGE;

@@ -11,7 +11,6 @@
     "@magmacomputing/tempo/mutate": "./dist/module/module.mutate.js",
     "@magmacomputing/tempo/plugin": "./dist/plugin/plugin.index.js",
     "@magmacomputing/tempo/format": "./dist/discrete/discrete.format.js",
-    "@magmacomputing/tempo/ticker": "./dist/plugin/extend/extend.ticker.js",
     "@magmacomputing/tempo/library": "./dist/library.index.js"
   }
 }

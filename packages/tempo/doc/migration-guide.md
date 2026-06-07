@@ -1,3 +1,23 @@
+# ⚠️ Migrating to Tempo v3.x
+
+Tempo v3.x finalizes the plugin ecosystem by extracting advanced features into standalone, licensed packages.
+
+## 🔁 Migrating from version 2.x to 3.0.0 (Ticker Extraction)
+
+The `TickerModule` has been extracted from the core open-source repository into a standalone premium plugin.
+
+**Action Required**:
+1. If you use `Tempo.ticker()`, you must now install `@magmacomputing/tempo-plugin-ticker` alongside `@magmacomputing/tempo`.
+2. Visit the [Tempo License Registry](https://registry.magmacomputing.com.au) to obtain your free license key to activate the plugin.
+3. Import and register the plugin in your application initialization:
+   ```javascript
+   import { Tempo } from '@magmacomputing/tempo';
+   import { TickerModule } from '@magmacomputing/tempo-plugin-ticker';
+
+   Tempo.init({ license: 'YOUR_JWT_KEY' });
+   Tempo.extend(TickerModule);
+   ```
+
 # ⚠️ Migrating to Tempo v2.x
 
 Tempo v2.x introduces architectural improvements and a more modular engine. While we strive for backward compatibility, there are some key changes to consider when upgrading from v1.x.
@@ -105,14 +125,14 @@ The individual `mdyLocales` and `mdyLayouts` options have been consolidated into
 - **Shortcut:** `new Tempo({ monthDay: true })` (enables forced MDY parsing using default locales).
 
 ### Relative Time
-The individual `rtfFormat` and `rtfStyle` options have been consolidated into a single `relativeTime` object.
+The individual `rtfFormat` and `rtfStyle` options have been consolidated into a single `relativeTimeFormat` object.
 - **v2.6.x:** `new Tempo({ rtfStyle: 'long' })`
-- **v2.7.x:** `new Tempo({ relativeTime: { style: 'long' } })`
+- **v2.7.x:** `new Tempo({ relativeTimeFormat: { style: 'long' } })`
 
 ### Action Required:
 Only the deprecated top-level keys `rtfFormat` and `rtfStyle` are still accepted as legacy fallbacks in the current release, handled specifically in the `Tempo` class constructor for backward compatibility. 
 
-In contrast, the old `mdyLocales` and `mdyLayouts` keys are **not** treated as aliases and will be ignored; these must be migrated to the new nested `monthDay` structure. Update your configuration to ensure compatibility with future versions and the Release-C optimization engine. Refer to the `Tempo` constructor for implementation details on legacy alias handling.
+In contrast, the old `mdyLocales` and `mdyLayouts` keys are **not** treated as aliases and will be ignored; these must be migrated to the new nested `monthDay` structure. Update your configuration to ensure compatibility with future versions and the optimization engine. Refer to the `Tempo` constructor for implementation details on legacy alias handling.
 
 ## 🔁 Migrating to version 2.9.3
 
@@ -136,6 +156,22 @@ If you previously relied on `BigInt` being treated as nanoseconds, you must now 
 ```javascript
 new Tempo(1000n, { timeStamp: 'ns' });
 ```
+
+## 🔁 Removed Features (v3.0.0)
+
+### Deprecated Boolean Debug Flag
+The `debug` configuration property no longer accepts `boolean` values. It has been strictly typed to accept numeric verbosity levels matching the internal `LOG` enum, or lowercase string labels (e.g. `'trace'`, `'info'`).
+
+- **Removed:** `new Tempo({ debug: true })`
+- **Recommended:** `new Tempo({ debug: 4 })`, `new Tempo({ debug: 'debug' })`, or `new Tempo({ debug: LOG.Debug })` (for parsing verbosity).
+
+### Internationalization Naming
+To better align with ECMAScript standards (specifically `Intl.RelativeTimeFormat`), the `relativeTime` configuration option inside `intl` is no longer supported in v3.0.0.
+
+- **Removed:** `new Tempo({ intl: { relativeTime: { style: 'long' } } })`
+- **Recommended:** `new Tempo({ intl: { relativeTimeFormat: { style: 'long' } } })`
+
+Please migrate your configurations from `relativeTime` to `relativeTimeFormat`.
 
 ## 🧪 Testing and Stability
 v2.x has been hardened with a 100% pass rate on our regression suite. If you were relying on undocumented "quirks" or bugs in v1.x parsing, you may find that v2.x is more strict and deterministic.

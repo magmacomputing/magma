@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-06-07
+
+### Added
+- **Tempo Registry Integration**: Moving towards deeper, centralized integration with the Tempo Registry infrastructure to streamline community and proprietary plugin distribution.
+- **Modernized Duration Engine**: Introduced the chainable `.balance()` method to intelligently normalize temporal intervals (e.g., converting 365 days seamlessly into 1 year).
+- **Duration Formatting**: Added a localized `.format()` method utilizing `Intl.DurationFormat` (with `Intl.NumberFormat` fallback support) for plural-aware, human-readable duration strings. Added `durationFormat` and `numberFormat` into `IntlOptions` to support global, instance-level, and method-level formatting overrides.
+- **Enterprise Plugins Scaffolding**: Initial architectural scaffolding for upcoming enterprise `Cron` and `SLA` plugins, including a performant asynchronous `preloadHolidays` pattern for synchronous holiday-aware calculations.
+
+### Changed
+- **Ticker Plugin Licensing**: The `Ticker` plugin has transitioned to a licensed model. It remains completely free to use, but now requires validation via the Tempo Registry ecosystem.
+- **Robust License Validation**: Hardened runtime integrity for Tempo Pro plugins to enhance state security and prevent tampering.
+- **Edition Boundaries**: Added proactive runtime warnings for unlicensed attempts, establishing strict boundaries between the Community and Proprietary editions.
+- **Extension Resolution**: Stabilized module resolution for plugins by migrating to `defineExtension` and correcting internal export paths.
+- **Logging Subsystem Decoupling**: Fully decoupled the internal parsing and error boundaries from the legacy `Logify` architecture, enabling zero-cost trace instrumentation.
+- **Diagnostic Consistency**: Standardized fatal exceptions by introducing the `TempoError` class for internal invariant violations, and unified all console output through the centralized diagnostic bus (`logWarn`).
+- **Documentation**: Clarified API behavior for the Duration engine (especially `.since()` return types) and relative time math. Improved visibility and navigation for the Tempo License Registry and installation guides.
+
+### Fixed
+- **Module & Key Collisions**: Fixed registry authentication double-initialization bugs and terminal key registration collisions (e.g., the `[Tempo#extend] Term collision on key: "qtr"` error).
+- **Ticker Plugin Stabilization**: Resolved lifecycle issues and nailed down the Ticker plugin architecture and API behavior.
+
 ## [2.11.0] - 2026-05-25
 
 ### Fixed

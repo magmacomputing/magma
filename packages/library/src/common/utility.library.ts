@@ -5,32 +5,6 @@ import type { Secure, ValueOf } from '#library/type.library.js';
 
 /** General utility functions */
 
-/** fast, unverified decode of a JWT payload */
-export const decodeJWT = <T = any>(jwt: string): T | null => {
-	try {
-		const part = jwt.split('.')[1];
-		if (!part) return null;
-		// 🛡️ Base64URL Normalization: replace -/_ with +/ and add padding
-		const base64 = part.replace(/-/g, '+').replace(/_/g, '/').padEnd(part.length + (4 - part.length % 4) % 4, '=');
-		const payload = typeof atob === 'function' ? atob(base64) : Buffer.from(base64, 'base64').toString();
-		return JSON.parse(payload);
-	} catch { return null; }
-}
-
-/** portable base64 encoder for universal support */
-export const base64Encode = (input: string): string => {
-	if (typeof Buffer !== 'undefined')
-		return Buffer.from(input).toString('base64');
-
-	const bytes = new TextEncoder().encode(input);
-	let binary = '';
-
-	for (let i = 0; i < bytes.byteLength; i++)
-		binary += String.fromCharCode(bytes[i]);
-
-	return btoa(binary);
-}
-
 /** analyze the Call Stack to determine calling Function's name */
 export const getCaller = () => {
 	const stackTrace = new Error().stack											// only tested in latest FF and Chrome
@@ -49,7 +23,7 @@ export const getScript = (nbr = 1) => {
 	const stackTrace = new Error().stack
 		?.match(/([^ \n\(@])*([a-z]*:\/\/\/?)*?[a-z0-9\/\\]*\.js/ig)
 		?.[nbr]
-	return decodeURI(stackTrace ?? '');											// decodeURI is needed to handle spaces in file-names
+	return decodeURI(stackTrace ?? '');												// decodeURI is needed to handle spaces in file-names
 }
 
 /**

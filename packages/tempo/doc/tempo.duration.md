@@ -56,15 +56,11 @@ anchor.since(birthday, 'days');   // → "13,149d ago" (deterministic)
 // 2. Pass a custom formatter for natural language output (e.g. "yesterday")
 const yesterday = anchor.add({ days: -1 });
 const autoFormat = new Intl.RelativeTimeFormat('en-US', { numeric: 'auto' });
-anchor.since(yesterday, { unit: 'days', intl: { relativeTime: { format: autoFormat } } }); // → "yesterday"
+anchor.since(yesterday, { unit: 'days', intl: { relativeTimeFormat: autoFormat.format.bind(autoFormat) } }); // → "yesterday"
 
 // 3. Returns an ISO 8601 Duration String if no unit is provided
 anchor.since(birthday);     // → "-P36Y..."
 ```
-
-::: info Return Type
-Because `.since()` automatically renders a localized string, it returns a primitive JavaScript `String`. Therefore, chaining `.balance()` or `.format()` (see below) onto `.since()` is not possible and will throw an error.
-:::
 
 ## The Duration Object (EDO)
 
@@ -134,27 +130,28 @@ console.log(exactDays.days); // 366 (2024 is a leap year!)
 
 Once you have a balanced duration, you can instantly render it as a highly localized, plural-aware string using the `.format()` method.
 
-`.format()` automatically looks for the largest non-zero unit and uses `Intl.NumberFormat` to translate it perfectly into the user's language.
+`.format()` natively uses `Intl.DurationFormat` (or a robust multi-unit polyfill) to render all non-zero units perfectly into the user's language.
 
 ```javascript
-// Perfect for SaaS Pricing Cards!
-const formatted = Tempo.duration({ days: 365 })
+// Perfect for detailed countdowns or SaaS dashboards!
+const formatted = Tempo.duration({ days: 395, hours: 4 })
+  // 'nominal: true' uses 365d/yr and 30d/mo math, so no relativeTo anchor is needed
   .balance({ nominal: true })
   .format();
 
-console.log(formatted); // "1 year" (or "1 año", "1 an" depending on navigator.language)
+console.log(formatted); // "1 year, 1 month, and 4 hours" (or localized equivalent)
 ```
 
 ### Global Configuration
-You can also define default formatting options globally by adding `numberFormat` into your `Tempo.init` configuration.
+You can also define default formatting options globally by adding `durationFormat` into your `Tempo.init` configuration.
 
 ```javascript
 Tempo.init({
   intl: {
-    numberFormat: { unitDisplay: 'short' } // e.g. "1 yr" instead of "1 year"
+    durationFormat: { style: 'short' } // e.g. "1 yr, 1 mth, 4 hr" instead of long-form
   }
 });
 
 // Now, all format calls will automatically use 'short' display
-const shortDur = Tempo.duration('P1Y').format(); // "1 yr"
+const shortDur = Tempo.duration('P1Y1M').format(); // "1 yr, 1 mth"
 ```

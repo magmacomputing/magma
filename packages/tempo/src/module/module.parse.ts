@@ -1,6 +1,7 @@
 import '#library/temporal.polyfill.js';
 import { asType } from '#library/type.library.js';
-import { isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/assertion.library.js';
+import { LOG } from '#library/logger.class.js';
+import { isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { isNumeric } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
@@ -15,9 +16,9 @@ import { normalizeMatch, accumulateResult } from '../engine/engine.normalizer.js
 import { getRange, getTermRange } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
-import { sym, isTempo, TermError, getRuntime, Match } from '../support/support.index.js';
+import { sym, isTempo, TermError, getRuntime, Match, TempoError } from '../support/support.index.js';
 import { markConfig, setPatterns, init, extendState } from '../support/support.index.js';
-import { setProperty } from '#tempo/support/support.util.js';
+import { setProperty, logError, logDebug } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
 
 /**
@@ -113,8 +114,8 @@ const _ParseEngine = {
 				if (termKey) {
 					if (isUndefined(term)) {
 						const msg = `Unsupported Syntax: Term-based mutations (#) cannot be passed to the constructor. Use new Tempo().set(${JSON.stringify(tempo)}) instead.`;
-						if (TempoClass) (TempoClass as any)[sym.$logError](state.config, msg);
-						throw new Error(msg);
+						logError(msg, state.config);
+						throw new TempoError(msg);
 					}
 					if (terms.length === 0) {
 						if (TempoClass) (TempoClass as any)[TermError](state.config, termKey);
@@ -155,7 +156,7 @@ const _ParseEngine = {
 
 		if (isTempo(dateTime)) dateTime = dateTime.toDateTime();
 		if (!isZonedDateTime(dateTime)) {
-			if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new TypeError(`Sacred Anchor corrupted: ${String(value)}`));
+			logError(new TypeError(`Sacred Anchor corrupted: ${String(value)}`), state.config);
 			return { type: 'Void', value: undefined as any };
 		}
 
@@ -238,7 +239,7 @@ const _ParseEngine = {
 		const TempoClass = getRuntime().modules['Tempo'];
 
 		if (resolving.size >= 100) {
-			if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new RangeError(`Infinite recursion detected in layout resolution for: ${String(value)}`));
+			logError(new RangeError(`Infinite recursion detected in layout resolution for: ${String(value)}`), state.config);
 			return arg;
 		}
 
@@ -281,7 +282,7 @@ const _ParseEngine = {
 			}
 			else if (trim.length <= 7) {
 				const msg = 'Cannot safely interpret number with less than 8-digits: use string instead';
-				if (TempoClass) (TempoClass as any)[sym.$logError](state.config, new TypeError(msg));
+				logError(new TypeError(msg), state.config);
 				return arg;
 			}
 		}
@@ -301,13 +302,12 @@ const _ParseEngine = {
 			enablePrefilter: state.parse.preFilter === true,
 			onPlan: (summary) => {
 				if (state.parse.preFilter !== true || !state.config?.debug) return;
-				if (!TempoClass) return;
-
 				const reduced = summary.totalCandidates - summary.selectedCandidates;
 				if (reduced <= 0 && !summary.fallbackToFull) return;
 
-				(TempoClass as any)[sym.$logDebug](state.config,
+				logDebug(
 					`Planner summary: selected ${summary.selectedCandidates}/${summary.totalCandidates}`,
+					state.config,
 					`rules=${summary.rulesApplied.join(',') || 'none'}`,
 					`fallback=${summary.fallbackToFull}`,
 					`input="${summary.inputClass.trim}"`
@@ -315,10 +315,16 @@ const _ParseEngine = {
 			}
 		});
 
+		if (state.config?.debug === LOG.Debug)
+			logDebug(`[ParseEngine] Selected layouts: ${orderedPatterns.map(p => p[0].description).join(', ')}`, state.config);
+
 		for (const [symKey, pat] of orderedPatterns) {
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
 			if (isEmpty(groups))
 				continue;
+
+			if (state.config?.debug === LOG.Debug)
+				logDebug(`[ParseEngine] Matched layout '${symKey.description}' with groups: ${JSON.stringify(groups)}`, state.config);
 
 			const hasTime = Object.keys(groups)
 				.some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key) || (Match.named.test(key) && key.endsWith('tm'))) || Object.values(groups).includes('now');

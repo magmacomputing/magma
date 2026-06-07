@@ -1,4 +1,5 @@
 import { ownEntries } from '#library/primitive.library.js';
+import { isDefined } from '#library/assertion.library.js';
 import type * as t from '../tempo.type.js';
 
 const AGO_HENCE_RE = /\b(ago|hence|from\s+now|prior)\b/i;
@@ -139,7 +140,7 @@ export function selectLayoutPatterns(
 				: (state.parse.token?.[String(layoutKey)] as symbol | undefined);
 			return [symKey, symKey ? state.parse.pattern.get(symKey) : undefined] as const;
 		})
-		.filter((entry): entry is readonly [symbol, RegExp] => Boolean(entry[0] && entry[1]));
+		.filter((entry): entry is readonly [symbol, RegExp] => isDefined(entry[0]) && isDefined(entry[1]));
 
 	if (options.enablePrefilter !== true) {
 		if (wantsPlan) {

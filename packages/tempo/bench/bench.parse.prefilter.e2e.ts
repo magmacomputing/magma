@@ -1,5 +1,5 @@
-import '../bin/temporal-polyfill.ts';
-import { Tempo } from '../src/tempo.index.ts';
+import '../bin/temporal-polyfill.js';
+import { Tempo } from '../src/tempo.index.js';
 import { performance } from 'node:perf_hooks';
 
 import fs from 'fs';
@@ -37,7 +37,7 @@ try {
 function runE2E(enablePrefilter: boolean, iterations: number) {
 	Tempo.init({
 		parsePrefilter: enablePrefilter,
-		debug: false,
+		debug: 0,
 		catch: true,
 		timeZone: 'UTC',
 	});
@@ -86,7 +86,7 @@ const result = {
 		minChecksum: 1 // dummy threshold, adjust as needed
 	},
 	success: true,
-	errors: []
+	errors: [] as string[]
 };
 
 if (timingDeltaPct > result.thresholds.maxTimingDeltaPct) {

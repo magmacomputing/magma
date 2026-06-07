@@ -112,17 +112,17 @@ describe('Tempo Issue Fixes', () => {
     test('set() accepts two arguments (value, options)', () => {
       const t = new Tempo('2024-05-20 10:00', { timeZone: 'UTC' })
       // This would have failed before
-      const shifted = t.set('tomorrow', { timeZone: 'America/New_York', debug: false })
+      const shifted = t.set('tomorrow', { timeZone: 'America/New_York', debug: 0 })
       expect(shifted.tz).toBe('America/New_York')
       expect(shifted.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-21')
     })
 
-    test('set() with debug: true preserves behavior and flags', () => {
+    test('set() with debug: 5 preserves behavior and flags', () => {
       const t = new Tempo('2024-05-20 10:00', { timeZone: 'UTC' })
-      const shifted = t.set('tomorrow', { timeZone: 'America/New_York', debug: true })
+      const shifted = t.set('tomorrow', { timeZone: 'America/New_York', debug: 5 })
       expect(shifted.tz).toBe('America/New_York')
       expect(shifted.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-21')
-      expect(shifted.config.debug).toBe(true)
+      expect(shifted.config.debug).toBe(5)
     })
 
     test('add() accepts a duration payload', () => {

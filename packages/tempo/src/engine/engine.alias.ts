@@ -15,9 +15,8 @@
  */
 
 import type { Nullable } from '#library/type.library.js';
-import type { Logify } from '#library/logify.class.js';
-import { isDefined, isFunction, isZonedDateTime } from '#library/assertion.library.js';
-import { Match } from '#tempo/support';
+import { isDefined, isFunction } from '#library/assertion.library.js';
+import { Match, logError, logWarn } from '#tempo/support';
 import { ownEntries } from '#library/primitive.library.js';
 import * as t from '../tempo.type.js';
 
@@ -28,7 +27,7 @@ type State = Record<AliasKey, Registry>
 
 export interface AliasResult {
 	value: string;
-	key: string;			// The normalized baseWord (e.g. 'noon')
+	key: string;																							// the normalized baseWord (e.g. 'noon')
 	type: AliasType;
 	source: 'global' | 'local';
 	isClock: boolean;
@@ -37,7 +36,6 @@ export interface AliasResult {
 
 export interface AliasEngineOptions {
 	parent?: Nullable<AliasEngine>;
-	logger?: Nullable<Logify>;
 	config?: Nullable<t.Internal.Config>;
 }
 interface Registry {																				// information about each registered alias
@@ -52,9 +50,9 @@ interface Registry {																				// information about each registered ali
 
 export class AliasEngine {
 	static aliasPattern = /^(evt|per)(\d+)_(\d+)$/;
-	static #idCounter = 0;
+	private static _idCounter = 0;
 
-	static #getBaseWord(s: string): string {
+	private static _getBaseWord(s: string): string {
 		return s
 			.toLowerCase()
 			.replace(/\[[^\]]*\]\?/g, '')
@@ -63,7 +61,6 @@ export class AliasEngine {
 	}
 
 	#parent?: AliasEngineOptions["parent"];
-	#logger?: AliasEngineOptions["logger"];
 	#config?: AliasEngineOptions["config"];
 
 	#depth: number;																						// the depth of this engine in the proto chain
@@ -82,18 +79,17 @@ export class AliasEngine {
 
 	constructor(options = {} as AliasEngineOptions) {
 		const parent = options.parent;
-		this.#logger = options.logger;
 		this.#config = options.config;
-		this.#id = AliasEngine.#idCounter++;
+		this.#id = AliasEngine._idCounter++;
 
 		if (parent instanceof AliasEngine) {
 			this.#parent = parent;
 			this.#depth = parent.#depth + 1;
-			this.#state = Object.create(parent.#state);			// create a new state object that inherits from the parent engine's state
-			this.#words = Object.create(parent.#words);			// create a new words object that inherits from the parent engine's words for collision detection
+			this.#state = Object.create(parent.#state);						// create a new state object that inherits from the parent engine's state
+			this.#words = Object.create(parent.#words);						// create a new words object that inherits from the parent engine's words for collision detection
 		} else {
 			if (parent)
-				this.#logger?.error(this.#config, "Parent engine must be an instance of AliasEngine");
+				logError("Parent engine must be an instance of AliasEngine", this.#config);
 
 			this.#parent = null;
 			this.#depth = 0;
@@ -113,7 +109,7 @@ export class AliasEngine {
 	 */
 	registerAliases(type: AliasType, events: [string, AliasTarget][]) {
 		for (const [name, target] of events) {
-			const baseWord = AliasEngine.#getBaseWord(name);
+			const baseWord = AliasEngine._getBaseWord(name);
 			const existingKey = this.#words[baseWord];
 			const existing = existingKey ? this.getAlias(existingKey) : undefined;
 
@@ -125,9 +121,10 @@ export class AliasEngine {
 			const aliasKey = `${type}${this.#depth}_${index}` as AliasKey;
 			const shouldOverwrite = !(existing?.type === 'evt' && type === 'per');
 
-			if (this.#logger && baseWord in this.#words) {
-				this.#logger.warn(this.#config,
-					`[AliasEngine] Collision detected for ${type} alias "${name}". ${shouldOverwrite ? 'Overwriting' : 'Preserving'} existing alias.`
+			if (baseWord in this.#words) {
+				logWarn(
+					`[AliasEngine] Collision detected for ${type} alias "${name}". ${shouldOverwrite ? 'Overwriting' : 'Preserving'} existing alias.`,
+					this.#config
 				);
 			}
 
@@ -139,7 +136,7 @@ export class AliasEngine {
 				target,																							// string, number, or function
 				type,																								// 'evt' or 'per'
 				baseWord,																						// used for collision detection
-				collision: Boolean(existingKey),
+				collision: isDefined(existingKey),
 				depth: this.#depth,
 			}
 		}
@@ -187,7 +184,7 @@ export class AliasEngine {
 	}
 
 	hasAlias(name: string, type?: AliasType) {
-		const baseWord = AliasEngine.#getBaseWord(name);
+		const baseWord = AliasEngine._getBaseWord(name);
 		const key = this.#words[baseWord];
 		return !key
 			? false

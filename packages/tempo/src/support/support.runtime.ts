@@ -179,7 +179,7 @@ export function getRuntime(): TempoRuntime {
  * Force-reset the runtime state for testing.
  * This clears the internal state and license trackers to ensure test isolation.
  */
-export function resetRuntimeForTesting(): void {
+export function resetRuntime(): void {
 	const rt = getRuntime();
 	// 🛡️ Race Condition Guard: Bump JTI to invalidate pending async reckonings
 	rt.license.jti = Math.random().toString(36).slice(2);

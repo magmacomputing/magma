@@ -1,9 +1,11 @@
 import { looseIndex } from '#library/object.library.js';
-import { sym as lib, $Target, $Discover, $Extensible, $Inspect, $Logify, $Registry, $Register as $LibRegister, $SerializerRegistry, $Identity, $ImmutableSkip } from '#library/symbol.library.js';
-export { $Target, $Discover, $Extensible, $Inspect, $Logify, $Registry, $LibRegister, $SerializerRegistry, $Identity, $ImmutableSkip };
+import { isDefined } from '#library/assertion.library.js';
+import { sym as lib, $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register as $LibRegister, $SerializerRegistry, $Identity, $ImmutableSkip } from '#library/symbol.library.js';
+export { $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $LibRegister, $SerializerRegistry, $Identity, $ImmutableSkip };
+
 
 /** check valid Tempo instance */
-export const isTempo = (tempo?: any): tempo is TempoBrand => Boolean(tempo?.[sym.$Identity]);
+export const isTempo = (tempo?: any): tempo is TempoBrand => tempo?.[sym.$Identity] === true;
 
 /**
  * Centralized registry for all Tempo-specific Global Symbols.
@@ -16,9 +18,7 @@ export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termErr
 /** key for Global Discovery of Tempo configuration */			export const $Tempo: unique symbol = Symbol.for('$Tempo') as any;
 /** key for Reactive Plugin Registration */									export const $Register: unique symbol = Symbol.for('magmacomputing/tempo/register') as any;
 /** key for Internal Interpreter Service */									export const $Interpreter: unique symbol = Symbol.for('magmacomputing/tempo/interpreter') as any;
-/** key for contextual Error Logging */											export const $logError: unique symbol = Symbol.for('magmacomputing/tempo/logError') as any;
-/** key for contextual Debug Logging */											export const $logDebug: unique symbol = Symbol.for('magmacomputing/tempo/logDebug') as any;
-/** key for contextual Debugger */													export const $dbg: unique symbol = Symbol.for('magmacomputing/tempo/dbg') as any;
+
 /** key for Master Guard */																	export const $guard: unique symbol = Symbol.for('magmacomputing/tempo/guard') as any;
 /** internal key for signaling pre-errored state */					export const $errored: unique symbol = Symbol.for('magmacomputing/tempo/errored') as any;
 /** internal key for accessing private instance state */		export const $Internal: unique symbol = Symbol.for('magmacomputing/tempo/internal') as any;
@@ -37,7 +37,7 @@ export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termErr
 
 /** @internal Tempo Symbol Registry (Local Keys) */
 const local = {
-	$Tempo, $Register, $Interpreter, $logError, $logDebug, $dbg, $guard, $errored,
+	$Tempo, $Register, $Interpreter, $guard, $errored,
 	$Internal, $Bridge, $RuntimeBrand, $Descriptor, $License, $setConfig, $setDiscovery,
 	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase
 } as const;
@@ -59,6 +59,7 @@ export const Token = looseIndex<string, symbol>()({
 	/** year */																								yy: Symbol('yy'),
 	/** ISO yearOfWeek */																			yw: Symbol('yw'),
 	/** month */																							mm: Symbol('mm'),
+	/** ordinal suffix */																			ord: Symbol('ord'),
 	/** day */																								dd: Symbol('dd'),
 	/** hour */																								hh: Symbol('hh'),
 	/** minute */																							mi: Symbol('mi'),

@@ -1,6 +1,6 @@
 import '#library/temporal.polyfill.js';
 import { enumify } from '#library/enumerate.library.js';
-import { asArray } from '#library/coercion.library.js';
+import { asArray, asError } from '#library/coercion.library.js';
 import { getDateTimeFormat, getHemisphere } from '#library/international.library.js';
 import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
@@ -8,11 +8,12 @@ import { asType } from '#library/type.library.js';
 import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/assertion.library.js';
 import { Pledge } from '#library/pledge.class.js';
 import { ownEntries } from '#library/primitive.library.js';
-import { decodeJWT } from '#library/utility.library.js';
+import { decodeJWT } from '#library/webtoken.library.js';
 import { getStorage } from '#library/storage.library.js';
+import { parseLogLevel } from '#library/logger.class.js';
 
 import { getRuntime } from './support.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, logWarn } from './support.util.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, logWarn, logDebug, isSyncToken } from './support.util.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
 import { STATE, LICENSE } from './support.enum.js';
@@ -144,7 +145,7 @@ function setLicense(state: t.Internal.State, key: string) {
 		const claims = decodeJWT(key);
 		runtime.license.key = key;
 		runtime.license.status = LICENSE.Pending;
-		runtime.license.scopes = claims?.permissions || {};
+		runtime.license.scopes = claims?.scopes || {};
 
 		if (claims?.exp) runtime.license.expires = claims.exp;
 		if (claims?.iat) runtime.license.issuedAt = claims.iat;
@@ -156,33 +157,47 @@ function setLicense(state: t.Internal.State, key: string) {
 
 		const initialJti = runtime.license.jti;
 		const initialKey = runtime.license.key;
-		runtime.license.jws = new Pledge<Internal.LicensingModule>({
+		const argObj = {
 			tag: 'license',
-			onResolve: (m) => {
-				const validator = new m.Validator(runtime.license.key!);
-				validator.verify().then((res: any) => {
-					// 🛡️ Race Condition Guard: Only apply results if identity (JTI + Key) hasn't changed since we started
-					if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
+			onResolve: (res: any) => {
+				// 🛡️ Race Condition Guard
+				if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
 
-					runtime.license.status = res.status;
-					runtime.license.scopes = res.scopes;
-					delete runtime.license.error; // 🚿 Clear error on every reckoning attempt
-					if (res.error) runtime.license.error = res.error;
-					if (res.expires) runtime.license.expires = res.expires;
-					if (res.issuedAt) runtime.license.issuedAt = res.issuedAt;
-					if (res.issuer) runtime.license.issuer = res.issuer;
-					if (res.jti) runtime.license.jti = res.jti;
+				const isValidStatus = isSyncToken(res.status) || LICENSE.values().includes(res.status);
+				runtime.license.status = isValidStatus ? res.status : LICENSE.Invalid;
+				runtime.license.scopes = isObject(res.scopes) ? res.scopes : {};
+				delete runtime.license.error; // 🚿 Clear error on every reckoning attempt
+				if (res.error) runtime.license.error = res.error;
+				if (res.expires) runtime.license.expires = res.expires;
+				if (res.issuedAt) runtime.license.issuedAt = res.issuedAt;
+				if (res.issuer) runtime.license.issuer = res.issuer;
+				if (res.jti) runtime.license.jti = res.jti;
 
-					if ([LICENSE.Revoked, LICENSE.Invalid].includes(res.status))
-						logWarn(state.config, `⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`);
-				}).catch((err: any) => {
-					if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
-					runtime.license.status = LICENSE.Invalid;
-					runtime.license.error = err?.message || 'Verification rejected';
-					logWarn(state.config, `⚠️ Tempo Licensing: ${runtime.license.error}`);
-				});
+				if ([LICENSE.Revoked, LICENSE.Invalid].includes(res.status))
+					logWarn(`⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`, state.config);
+
+				if (res.revocationPromise) {
+					res.revocationPromise.then((isRevoked: boolean) => {
+						if (isRevoked && runtime.license.jti === initialJti && runtime.license.key === initialKey) {
+							runtime.license.status = LICENSE.Revoked;
+							runtime.license.error = 'License has been revoked by the issuer.';
+							logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
+						}
+					}).catch((err: unknown) => {
+						const { message } = asError(err);
+						logDebug(`Tempo Licensing: Background revocation check failed for JTI ${initialJti} - ${message}`, state.config);
+					});
+				}
+			},
+			onReject: (err: unknown) => {
+				if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
+				const error = asError(err);
+				runtime.license.status = LICENSE.Invalid;
+				runtime.license.error = error.message || 'Verification rejected';
+				logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
 			}
-		});
+		}
+		runtime.license.jws = new Pledge<Internal.ValidationResult>(argObj as any);
 	}
 }
 
@@ -213,11 +228,11 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 							const pattern = isRegExp(v) ? v.source : String(v);
 							// 🛡️ Security Check: Prevent catastrophic backtracking and malicious patterns
 							if (pattern.length > 500) {
-								logError(state.config, `[Tempo#extend] Snippet pattern too long (max 500 chars).`);
+								logError(`[Tempo#extend] Snippet pattern too long (max 500 chars).`, state.config);
 								return new RegExp(Match.escape(pattern));
 							}
 							if (Match.backtrack.test(pattern)) {
-								logError(state.config, `[Tempo#extend] Snippet contains suspicious nested quantifiers.`);
+								logError(`[Tempo#extend] Snippet contains suspicious nested quantifiers.`, state.config);
 								return new RegExp(Match.escape(pattern));
 							}
 							return new RegExp(pattern);
@@ -239,7 +254,7 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 			case 'timeZone': {
 				const zone = String(arg.value).toLowerCase();
-				const resolvedZone = enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
+				const resolvedZone = options.timeZones?.[zone] ?? state.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
 				setProperty(state.config, 'timeZone', resolvedZone);
 				break;
 			}
@@ -287,15 +302,6 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				state.config.intl = { ...state.config.intl, ...arg.value };
 				break;
 
-			case 'relativeTime':
-				if (!hasOwn(state.config, 'intl')) state.config.intl = Object.create(state.config.intl || {});
-				if (typeof arg.value === 'function') {
-					state.config.intl.relativeTime = arg.value;
-				} else {
-					state.config.intl.relativeTime = { ...state.config.intl.relativeTime, ...arg.value };
-				}
-				break;
-
 			case 'planner':
 				if (isDefined(arg.value.layoutOrder)) state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value.layoutOrder);
 				if (isDefined(arg.value.preFilter)) state.parse.planner.preFilter = Boolean(arg.value.preFilter);
@@ -313,7 +319,7 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				const unit = (isString(arg.value) ? arg.value : arg.value?.unit)?.trim()?.toLowerCase();
 
 				if (isUndefined(unit) || !['ss', 'ms', 'us', 'ns'].includes(unit)) {
-					logError(state.config, `[Tempo#extend] Invalid timeStamp unit: ${String(unit ?? arg.value)}. Expected 'ss', 'ms', 'us', or 'ns'.`);
+					logError(`[Tempo#extend] Invalid timeStamp unit: ${String(unit ?? arg.value)}. Expected 'ss', 'ms', 'us', or 'ns'.`, state.config);
 					break;
 				}
 
@@ -324,13 +330,17 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 			case 'license': {
 				const runtime = getRuntime();
 				if (state !== runtime.state) {
-					logWarn(state.config, `[Tempo#extend] Licensing is a global-only feature and cannot be set on local instances.`);
+					logWarn(`[Tempo#extend] Licensing is a global-only feature and cannot be set on local instances.`, state.config);
 					break;
 				}
 				const key = String(arg.value);
 				setLicense(state, key);
 				break;
 			}
+
+			case 'debug':
+				setProperty(state.config, 'debug', parseLogLevel(arg.value));
+				break;
 
 			default:
 				setProperty(state.config, optKey, arg.value);

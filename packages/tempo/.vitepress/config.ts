@@ -33,9 +33,7 @@ export default defineConfig({
         items: [
           { text: 'Introduction', link: '/README' },
           { text: 'Installation', link: '/doc/installation' },
-          { text: 'Cookbook', link: '/doc/tempo.cookbook' },
-          { text: 'Migration Guide', link: '/doc/migration-guide' },
-          { text: 'Release Notes', link: '/doc/releases/' }
+          { text: 'Cookbook', link: '/doc/tempo.cookbook' }
         ]
       },
       {
@@ -51,12 +49,12 @@ export default defineConfig({
         ]
       },
       {
-        text: 'Extensions & Plugins',
+        text: 'Extensions & Terms',
         items: [
           { text: 'Modularity', link: '/doc/tempo.modularity' },
-          { text: 'Terms System', link: '/doc/tempo.term' },
-          { text: 'Ticker Plugin', link: '/doc/tempo.ticker' },
-          { text: 'Premium Plugins ↗', link: 'https://magmacomputing.github.io/tempo-plugin-docs/' }
+          { text: 'Terms Plugins', link: '/doc/tempo.plugin' },
+          { text: 'Extension Plugins', link: '/doc/tempo.extension' },
+          { text: 'Premium Plugins ↗', link: 'https://magmacomputing.github.io/tempo-plugin-docs/' },
         ]
       },
       {
@@ -98,8 +96,10 @@ export default defineConfig({
         ]
       },
       {
-        text: 'Services & Support',
+        text: 'Project & Support',
         items: [
+          { text: 'Migration Guide', link: '/doc/migration-guide' },
+          { text: 'Release Notes', link: '/doc/releases/' },
           { text: 'Professional Services', link: '/doc/commercial' }
         ]
       }
@@ -118,6 +118,11 @@ export default defineConfig({
     },
     esbuild: {
       target: 'esnext'
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        target: 'esnext'
+      }
     },
     resolve: {
       conditions: ['development', 'module', 'browser', 'import', 'default'],

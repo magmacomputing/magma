@@ -1,5 +1,6 @@
 import '#library/temporal.polyfill.js';
 import { pad } from '#library/string.library.js';
+import { suffix } from '#library/number.library.js';
 import { ifNumeric } from '#library/coercion.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined } from '#library/assertion.library.js';
 import { delegator } from '#library/proxy.library.js';
@@ -94,6 +95,9 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 			case 'wkd': return enums.WEEKDAYS.keyOf(zdt.dayOfWeek as any);
 			case 'www': return enums.WEEKDAY.keyOf(zdt.dayOfWeek as any);
 			case 'ww': return pad(zdt.weekOfYear);
+			case 'DAY': return suffix(zdt.day);
+			case 'WW': return suffix(zdt.weekOfYear);
+			case 'MM': return suffix(zdt.month);
 			case 'hh': return pad(zdt.hour);
 			case 'HH': return pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12);
 			case 'mer': return zdt.hour >= 12 ? 'pm' : 'am';
@@ -104,7 +108,10 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 			case 'us': return pad(zdt.microsecond, 3);
 			case 'ns': return pad(zdt.nanosecond, 3);
 			case 'ff': return `${pad(zdt.millisecond, 3)}${pad(zdt.microsecond, 3)}${pad(zdt.nanosecond, 3)}`;
-			case 'hhmiss': return `${pad(zdt.hour)}${pad(zdt.minute)}${pad(zdt.second)}`;
+			case 'dmy': return `${pad(zdt.day)}${pad(zdt.month)}${pad(zdt.year, 4)}`;
+			case 'mdy': return `${pad(zdt.month)}${pad(zdt.day)}${pad(zdt.year, 4)}`;
+			case 'ymd': return `${pad(zdt.year, 4)}${pad(zdt.month)}${pad(zdt.day)}`;
+			case 'hms': return `${pad(zdt.hour)}${pad(zdt.minute)}${pad(zdt.second)}`;
 			case 'ts': return ((config?.timeStamp ?? 'ms') === 'ss')
 				? Math.trunc(zdt.epochMilliseconds / 1000).toString()
 				: zdt.epochMilliseconds.toString();
@@ -112,7 +119,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 			case 'tz': return zdt.timeZoneId;
 			default: {
 				if (token.startsWith('#') && isTempo(obj)) {
-					const res = (obj as Tempo).term[token.slice(1)];
+					const res = (obj as unknown as Tempo).term[token.slice(1)];
 					if (isObject(res)) return res.label ?? res.key ?? `{${token}}`;
 					return res ?? `{${token}}`;
 				}

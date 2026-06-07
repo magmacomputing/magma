@@ -1,10 +1,9 @@
 import { Tempo } from '#tempo/core';
 import { Pledge } from '#library/pledge.class.js';
-import { TickerModule } from '#tempo/ticker';
 import { FormatModule } from '#tempo/format';
 import { MutateModule } from '#tempo/mutate';
 
-Tempo.extend(TickerModule, FormatModule, MutateModule);
+Tempo.extend(FormatModule, MutateModule);
 
 describe('Static Symbol.dispose', () => {
 
@@ -25,8 +24,8 @@ describe('Static Symbol.dispose', () => {
 
 	test('Pledge static dispose resets static state', () => {
 		// 1. Set a non-default static config
-		Pledge.init({ debug: true, silent: true, tag: 'TestPledge' });
-		expect(Pledge.status.debug).toBe(true);
+		Pledge.init({ debug: 5, silent: true, tag: 'TestPledge' });
+		expect(Pledge.status.debug).toBe(5);
 		expect(Pledge.status.tag).toBe('TestPledge');
 
 		// 2. Dispose
@@ -38,84 +37,6 @@ describe('Static Symbol.dispose', () => {
 			expect(Pledge.status.tag).toBeUndefined();
 		}
 	});
-
-});
-
-describe('Ticker Symbol.dispose', () => {
-
-	test('Ticker callback returns a disposable function', async () => {
-		let count = 0;
-		const stop = Tempo.ticker(0.05, () => { count++ });
-
-		expect(typeof stop).toBe('function');
-
-		if (typeof Symbol.dispose === 'symbol') {
-			expect(stop[Symbol.dispose]).toBeDefined();
-			expect(typeof stop[Symbol.dispose]).toBe('function');
-
-			// Use the dispose method instead of calling the function directly
-			stop[Symbol.dispose]();
-
-			const finalCount = count;
-			await new Promise(resolve => setTimeout(resolve, 150));
-			expect(count).toBe(finalCount);											// Should have stopped
-		} else {
-			stop();																							// Fallback for environments without the symbol
-		}
-	});
-
-	test('Ticker generator returns an async disposable', async () => {
-		const ticker = Tempo.ticker(0.02);
-
-		if (typeof Symbol.asyncDispose === 'symbol') {
-			expect((ticker as any)[Symbol.asyncDispose]).toBeDefined();
-			expect(typeof (ticker as any)[Symbol.asyncDispose]).toBe('function');
-
-			let i = 0;
-			for await (const t of ticker) {
-				expect(t).toBeDefined();
-				if (++i === 2) break;
-			}
-
-			// Explicitly call asyncDispose (though break does it via .return())
-			await ticker[Symbol.asyncDispose]();
-
-			const result = await ticker.next();
-			expect(result.done).toBe(true);
-		}
-	});
-
-	test('Ticker callback seeding (Virtual Clock)', async () => {
-		const seed = '2024-01-01T00:00:00';
-		const results: string[] = [];
-		const stop = Tempo.ticker({ seed, seconds: 0.05 }, (t) => {
-			results.push(t.format('sortTime') as string);
-		});
-
-		await new Promise(resolve => setTimeout(resolve, 125));	// Should have 3 ticks (0ms: seed, 50ms: +50, 100ms: +100)
-		stop();
-
-		expect(results[0]).toBe(new Tempo(seed).format('sortTime'));
-		expect(results[1]).toBe(new Tempo(seed).add({ milliseconds: 50 }).format('sortTime'));
-		expect(results[2]).toBe(new Tempo(seed).add({ milliseconds: 100 }).format('sortTime'));
-	});
-
-	test('Ticker generator seeding (Virtual Clock)', async () => {
-		const seed = '2024-01-01T00:00:00';
-		const ticker = Tempo.ticker({ seed, seconds: 0.05 });
-		const results: string[] = [];
-
-		let i = 0;
-		for await (const t of ticker) {
-			results.push(t.format('sortTime') as string);
-			if (++i === 3) break;
-		}
-
-		expect(results[0]).toBe(new Tempo(seed).format('sortTime'));
-		expect(results[1]).toBe(new Tempo(seed).add({ milliseconds: 50 }).format('sortTime'));
-		expect(results[2]).toBe(new Tempo(seed).add({ milliseconds: 100 }).format('sortTime'));
-	});
-
 	test('Tempo static dispose resets global config (using syntax)', () => {
 		const systemTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		{
@@ -125,21 +46,6 @@ describe('Ticker Symbol.dispose', () => {
 		}
 		// Should be reset to system default after block
 		expect(Tempo.config.timeZone).toBe(systemTZ);
-	});
-
-	test('Ticker generator (await using syntax)', async () => {
-		const seed = '2024-01-01T12:00:00';
-		const results: string[] = [];
-		{
-			await using ticker = Tempo.ticker({ seed, seconds: 0.02 });
-			let i = 0;
-			for await (const t of ticker) {
-				results.push(t.format('sortTime') as string);
-				if (++i === 2) break;
-			}
-		}
-		expect(results.length).toBe(2);
-		expect(results[0]).toBe(new Tempo(seed).format('sortTime'));
 	});
 
 });

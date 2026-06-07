@@ -20,7 +20,6 @@
 			"#tempo/format": [ "../src/module/module.format.ts" ],
 			"#tempo/parse": [ "../src/module/module.parse.ts" ],
 			"#tempo/module": [ "../src/module/module.index.ts" ],
-			"#tempo/ticker": [ "../src/plugin/extend/extend.ticker.ts" ],
 			"#tempo/engine/*.js": [ "../src/engine/*.ts" ],
 			"#tempo/module/*.js": [ "../src/module/*.ts" ],
 			"#tempo/plugin/extend/*.js": [ "../src/plugin/extend/*.ts" ],

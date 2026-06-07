@@ -1,31 +1,31 @@
 import { AliasEngine } from '#tempo/engine/engine.alias.js';
-import { Logify } from '#library/logify.class.js';
-import { vi } from 'vitest';
+import { logTempo } from '#tempo/support/support.util.js';
 
 describe('AliasEngine prototype chain (Global → Sandbox → Instance)', () => {
-  const logger = {
-    warn: vi.fn(),
-    debug: vi.fn(),
-    error: vi.fn(),
-    log: vi.fn(),
-    info: vi.fn(),
-    trace: vi.fn()
-  } as unknown as Logify;
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
-  // Simulate a global state
-  const globalShape = {} as { aliasEngine: AliasEngine };
-  globalShape.aliasEngine = new AliasEngine({ logger });
-  globalShape.aliasEngine.registerAliases('evt', [ ['globalEvt', 'globalValue'] ]);
+  let globalShape!: { aliasEngine: AliasEngine };
+  let sandboxShape!: { aliasEngine: AliasEngine };
+  let localShape!: { aliasEngine: AliasEngine };
 
-  // Simulate a sandbox state inheriting from global
-  const sandboxShape = Object.create(globalShape);
-  sandboxShape.aliasEngine = new AliasEngine({ parent: globalShape.aliasEngine, logger });
-  sandboxShape.aliasEngine.registerAliases('evt', [ ['sandboxEvt', 'sandboxValue'] ]);
+  beforeEach(() => {
+    // Simulate a global state
+    globalShape = {} as { aliasEngine: AliasEngine };
+    globalShape.aliasEngine = new AliasEngine();
+    globalShape.aliasEngine.registerAliases('evt', [['globalEvt', 'globalValue']]);
 
-  // Simulate a local/instance state inheriting from sandbox
-  const localShape = Object.create(sandboxShape);
-  localShape.aliasEngine = new AliasEngine({ parent: sandboxShape.aliasEngine, logger });
-  localShape.aliasEngine.registerAliases('evt', [ ['localEvt', 'localValue'] ]);
+    // Simulate a sandbox state inheriting from global
+    sandboxShape = Object.create(globalShape);
+    sandboxShape.aliasEngine = new AliasEngine({ parent: globalShape.aliasEngine });
+    sandboxShape.aliasEngine.registerAliases('evt', [['sandboxEvt', 'sandboxValue']]);
+
+    // Simulate a local/instance state inheriting from sandbox
+    localShape = Object.create(sandboxShape);
+    localShape.aliasEngine = new AliasEngine({ parent: sandboxShape.aliasEngine });
+    localShape.aliasEngine.registerAliases('evt', [['localEvt', 'localValue']]);
+  });
 
   it('resolves local, sandbox, and global aliases in correct order', () => {
     // Local should resolve its own
@@ -46,18 +46,15 @@ describe('AliasEngine prototype chain (Global → Sandbox → Instance)', () => 
   });
 
   it('collision detection traverses the prototype chain', () => {
-    (logger.warn as any).mockClear();
+    const warnSpy = vi.spyOn(logTempo, 'warn');
 
     // Register a colliding alias in local
-    localShape.aliasEngine.registerAliases('evt', [ ['globalEvt', 'localShadow'] ]);
+    localShape.aliasEngine.registerAliases('evt', [['globalEvt', 'localShadow']]);
 
     // Should warn about collision with global
-    expect(logger.warn).toHaveBeenCalled();
-    expect((logger.warn as any).mock.calls[0][1]).toMatch(/Collision detected/i);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Collision detected'));
 
     expect(localShape.aliasEngine.resolveAlias('evt2_1')?.value).toBe('localShadow');
     expect(globalShape.aliasEngine.resolveAlias('evt0_0')?.value).toBe('globalValue');
-
-    (logger.warn as any).mockReset();
   });
 });

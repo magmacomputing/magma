@@ -1,4 +1,5 @@
 import { secure } from '#library/proxy.library.js';
+import { isInteger, isFunction, isReference, isMap, isSet } from '#library/assertion.library.js';
 import type { Property } from '#library/type.library.js';
 
 // https://medium.com/codex/currying-in-typescript-ca5226c85b85
@@ -38,15 +39,15 @@ type Curry<Args extends any[], Res> =
 function serialize(val: any, seen = new WeakSet()): string {
 	return JSON.stringify(val, function (this: any, key: string, value: any) {
 		if (value === undefined) return '\u0000__undefined__\u0000';
-		if (typeof value === 'bigint') return `bigint:${value}`;
-		if (typeof value === 'function') return `function:${value.name || 'anonymous'}`;
+		if (isInteger(value)) return `bigint:${value}`;
+		if (isFunction(value)) return `function:${value.name || 'anonymous'}`;
 
-		if (value !== null && typeof value === 'object') {
+		if (isReference(value)) {
 			if (seen.has(value)) return '<Circular>';
 			seen.add(value);
 
-			if (value instanceof Map) return `map:[${Array.from(value.entries()).map(e => serialize(e, seen)).sort().join(',')}]`;
-			if (value instanceof Set) return `set:[${Array.from(value).map(v => serialize(v, seen)).sort().join(',')}]`;
+			if (isMap(value)) return `map:[${Array.from(value.entries()).map(e => serialize(e, seen)).sort().join(',')}]`;
+			if (isSet(value)) return `set:[${Array.from(value).map(v => serialize(v, seen)).sort().join(',')}]`;
 		}
 		return value;
 	});

@@ -87,18 +87,25 @@ Tempo.extend(FormatModule);
 | `{mon}` | Full Month Name | `October` |
 | `{mmm}` | Short Month Name | `Oct` |
 | `{mm}` | 2-digit Month | `10` |
+| `{MM}` | Ordinal Month | `10th` |
 | `{dd}` | 2-digit Day | `24` |
 | `{day}` | Unpadded Day | `24` (or `9`) |
+| `{DAY}` | Ordinal Day | `24th` (or `9th`) |
 | `{wkd}` | Full Weekday Name | `Saturday` |
 | `{www}` | Short Weekday Name | `Sat` |
 | `{dow}` | Day of Week (1-7) | `6` |
+| `{ww}` | Week of Year | `43` |
+| `{WW}` | Ordinal Week of Year | `43rd` |
 | `{hh}` | 2-digit Hour (24h) | `15` |
 | `{HH}` | 2-digit Hour (12h) | `03` |
 | `{mer}` | am/pm marker | `pm` |
 | `{MER}` | AM/PM marker | `PM` |
 | `{mi}` | Minutes | `30` |
 | `{ss}` | Seconds | `45` |
-| `{hhmiss}` | Compact Time (24h) | `153045` |
+| `{dmy}` | Compact Date (ddmmyyyy) | `24102026` |
+| `{mdy}` | Compact Date (mmddyyyy) | `10242026` |
+| `{ymd}` | Compact Date (yyyymmdd) | `20261024` |
+| `{hms}` | Compact Time (24h) | `153045` |
 | `{ms}` | 3-digit Milliseconds | `123` |
 | `{us}` | 3-digit Microseconds | `456` |
 | `{ns}` | 3-digit Nanoseconds | `789` |

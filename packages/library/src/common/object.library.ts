@@ -1,5 +1,6 @@
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
-import { isObject, isArray, isReference, isFunction, isDefined, isNullish, isMap, isSet } from '#library/assertion.library.js';
+import { isObject, isArray, isFunction, isDefined, isNullish, isMap, isSet } from '#library/assertion.library.js';
+import { getType } from '#library/type.library.js';
 import type { Extend, Property } from '#library/type.library.js';
 
 /** remove quotes around property names */
@@ -26,7 +27,7 @@ export const asObject = <T>(obj?: Record<PropertyKey, any>) => {
 export const isEqual = (a: any, b: any): boolean => {
 	if (a === b) return true;
 	if (isNullish(a) || isNullish(b)) return a === b;
-	if (typeof a !== typeof b) return false;
+	if (getType(a) !== getType(b)) return false;
 
 	if (isArray(a) && isArray(b)) {
 		const left = a as any[], right = b as any[];

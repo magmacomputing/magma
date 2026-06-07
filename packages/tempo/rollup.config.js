@@ -13,10 +13,25 @@ const distPath = path.join(__dirname, 'dist');
 
 const licensePremium = process.env.TEMPO_LICENSE_PATH ? path.resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
 const licenseDefault = path.resolve(__dirname, './src/support/support.license.ts');
-const isPremiumAvailable = !!(
+
+const foundTsconfigPath = (() => {
+	if (!licensePremium) return '';
+	let dir = path.dirname(licensePremium);
+	while (dir !== path.resolve(dir, '..')) {
+		const p = path.resolve(dir, 'tsconfig.json');
+		if (fs.existsSync(p)) return p;
+		dir = path.resolve(dir, '..');
+	}
+	return '';
+})();
+
+if (licensePremium && !foundTsconfigPath)
+	throw new Error(`TEMPO_LICENSE_PATH is set to ${licensePremium} but no ancestor tsconfig.json was found.`);
+
+const isPremiumAvailable = Boolean(
 	licensePremium &&
 	fs.existsSync(licensePremium) &&
-	fs.existsSync(path.resolve(path.dirname(licensePremium), '../tsconfig.json'))
+	fs.existsSync(foundTsconfigPath)
 );
 const licensePath = isPremiumAvailable ? licensePremium : licenseDefault;
 
@@ -62,13 +77,11 @@ function getFiles(dir, suffix = '.js') {
 const entryPoints = Object.fromEntries(
 	getFiles(distPath)
 		.map(file => [path.relative(distPath, file).replace(/\.js$/, ''), file])
-		.filter(([key]) => key !== 'support/support.license')
+		.filter(([key]) => !isPremiumAvailable || key !== 'support/support.license')
 );
 
 export default [
-	// 1. 🛡️ LICENSE MONOLITH
-	// Bundles 'jose' and the license logic into a single heavily obfuscated file
-	{
+	...(isPremiumAvailable ? [{
 		input: licensePath,
 		output: {
 			file: 'dist/support/support.license.js', // Overwrites the tsc output stealthily
@@ -99,7 +112,7 @@ export default [
 				}
 			}
 		]
-	},
+	}] : []),
 
 	// 2. 🌐 GLOBAL IIFE BUNDLE
 	{
@@ -164,7 +177,7 @@ export default [
 
 				// Map library imports to lib/ for browser-ready granular ESM
 				const rel = path.relative(__dirname, id);
-				const normalizedRel = rel.replace(/\\/g, '/'); // Ensure forward slashes
+				const normalizedRel = rel.replace(/\\/g, '/');			// Ensure forward slashes
 
 				if (id.includes('magma/packages/library') || rel.startsWith('../library')) {
 					const match = normalizedRel.match(/library\/(?:src|dist\/common)\/(.*)$/);

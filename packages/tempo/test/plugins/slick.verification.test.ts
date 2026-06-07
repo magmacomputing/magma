@@ -1,5 +1,4 @@
 import { Tempo } from '#tempo';
-import '#tempo/ticker';
 
 describe('Tempo Shorthand Suite (Comprehensive)', () => {
 	beforeEach(() => {
@@ -48,25 +47,6 @@ describe('Tempo Shorthand Suite (Comprehensive)', () => {
 			const t = new Tempo('2024-04-15T10:00:00'); // Midmorning
 			const next = t.set('#per.>');
 			expect(next.format('{#per}')).toBe('midday'); // Midday is 12:00
-		});
-	});
-
-	describe('Ticker Shorthand Integration', () => {
-		test('ticker with shorthand interval ({ "#qtr": ">" })', () => {
-			const t = new Tempo('2024-12-25');
-			const tick = Tempo.ticker({ seed: t, '#qtr': '>' });
-			const pulse1 = tick.pulse();
-			expect(pulse1.format('{yyyy}-{mm}-{dd} ({#qtr})')).toBe('2025-01-01 (Q3)');
-			const pulse2 = tick.pulse();
-			expect(pulse2.format('{yyyy}-{mm}-{dd} ({#qtr})')).toBe('2025-04-01 (Q4)');
-		});
-
-		test('ticker with multi-step shorthand ({ "#season": ">2" })', () => {
-			const t = new Tempo('2024-12-25'); // Summer
-			const tick = Tempo.ticker({ seed: t, '#season': '>2' });
-			const pulse1 = tick.pulse();
-			// Summer -> Autumn -> Winter
-			expect(pulse1.format('{#season}')).toBe('Winter');
 		});
 	});
 

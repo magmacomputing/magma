@@ -87,5 +87,5 @@ This ensures that while the library is extensible, its fundamental logic remains
 ---
 
 ::: info
-**v2.1.2 Update**: The Soft Freeze is now tightly integrated with **Logify**. Internal state updates bypass the Proxy using a private Symbol, allowing the engine to remain "Silent" while performing complex transactional updates during the discovery phase.
+**v2.1.2 Update**: The Soft Freeze is now tightly integrated with the **Diagnostic Engine**. Internal state updates bypass the Proxy using a private Symbol, allowing the engine to remain "Silent" while performing complex transactional updates during the discovery phase.
 :::

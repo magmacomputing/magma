@@ -1,13 +1,14 @@
-import { isBoolean } from '#library/assertion.library.js';
+import { isBoolean, isError } from '#library/assertion.library.js';
+import { Logger, LOG, parseLogLevel, type DebugLevel } from '#library/logger.class.js';
+import { raise as boundaryRaise } from '#library/boundary.library.js';
 
 import { sym, Token } from './support.symbol.js';
-import { asType } from '#library/type.library.js';
-import { asArray } from '#library/coercion.library.js';
-import { isSymbol, isUndefined, isDefined, isString, isRegExp, isNullish, isObject, isEmpty } from '#library/assertion.library.js';
-import { ownEntries, ownKeys, unwrap } from '#library/primitive.library.js';
+import { asType, getType } from '#library/type.library.js';
+import { asArray, asError } from '#library/coercion.library.js';
+import { isSymbol, isUndefined, isDefined, isString, isNullish, isObject } from '#library/assertion.library.js';
+import { ownEntries, unwrap } from '#library/primitive.library.js';
 import { getRuntime } from './support.runtime.js';
-import { Match, Snippet, Layout } from './support.default.js';
-import enums from './support.enum.js';
+import { LICENSE } from './support.enum.js';
 import type * as t from '../tempo.type.js';
 
 /** @internal normalize layout-order options into a clean string array */
@@ -22,7 +23,7 @@ export const setProperty = <T>(target: object, key: PropertyKey, value: T) => {
 	if (Object.isExtensible(target)) {
 		Object.defineProperty(target, key, { value, writable: true, configurable: true, enumerable: true });
 	} else {
-		console.warn(`[tempo] setProperty: Cannot define property '${String(key)}' on non-extensible object`, target);
+		logWarn(`[tempo] setProperty: Cannot define property '${String(key)}' on non-extensible object`, {}, target);
 	}
 }
 
@@ -31,26 +32,59 @@ export const setProperties = (target: object, properties: Record<PropertyKey, an
 	ownEntries(properties).forEach(([key, value]) => setProperty(target, key, value));
 }
 
-/** @internal Centralized Error Logger — retrieves the shared Logify instance from the TempoRuntime */
-export function logError(config: any, ...msg: any[]) {
-	const rt = getRuntime();
-	rt.logger?.error(config ?? rt.state?.config, ...msg);
+export const logTempo = new Logger('Tempo');
+export const logParse = new Logger('Tempo:Parse');
+export const logEngine = new Logger('Tempo:Engine');
+
+const loggers = [logTempo, logParse, logEngine];
+
+/** @internal Centralized setter for global verbosity */
+export function setLogLevel(debug?: DebugLevel) {
+	const level = parseLogLevel(debug, LOG.Info);
+	loggers.forEach(l => l.level = level);
 }
 
-/** @internal Centralized Warning Logger — retrieves the shared Logify instance from the TempoRuntime */
-export function logWarn(config: any, ...msg: any[]) {
-	const rt = getRuntime();
-	rt.logger?.warn(config ?? rt.state?.config, ...msg);
+/** @internal Concatenate multiple arguments into a single string for logging */
+const concatMsg = (msg: any[]) => msg.map(m => isError(m) ? m.message : String(m)).join(' ');
+
+/** @internal Centralized Error Boundary — evaluates config.catch and logs automatically */
+export function raise(err: Error | string | unknown, config: any = {}, ...msg: any[]) {
+	const error = asError(err);
+
+	if (msg.length > 0) {
+		const text = concatMsg(msg);
+		if (text) error.message = `${error.message} ${text}`;
+	}
+
+	boundaryRaise(error, {
+		catch: config?.catch ?? false,
+		silent: config?.silent ?? false,
+		logger: logTempo
+	});
 }
 
-/** @internal Centralized Debug Logger — retrieves the shared Logify instance from the TempoRuntime */
-export function logDebug(config: any, ...msg: any[]) {
-	const rt = getRuntime();
-	rt.logger?.debug(config ?? rt.state?.config, ...msg);
-}
+/** @internal Wrapper for legacy logError calls */
+export const logError = raise;
+
+const createLogger = (level: 'warn' | 'debug' | 'trace') =>
+	(msg: any, config: any = {}, ...extraMsg: any[]) => {
+		if (!config?.silent) {
+			if (config[sym.$LogConfig]) logTempo[level](config, msg, ...extraMsg);
+			else logTempo[level](msg, ...extraMsg);
+		}
+	};
+
+/** @internal Centralized Warning Logger */
+export const logWarn = createLogger('warn');
+
+/** @internal Centralized Debug Logger */
+export const logDebug = createLogger('debug');
+
+/** @internal Centralized Trace Logger */
+export const logTrace = createLogger('trace');
 
 /** @internal check if an object is a proxy */
-export const isProxy = (obj: any): boolean => !!obj && !!(obj as any)[sym.$Target];
+export const isProxy = (obj: any): boolean => isDefined(obj?.[sym.$Target]);
 
 /** @internal check if an object has an own property (respects Proxy/Shadowing) */
 export const hasOwn = (obj: any, key: PropertyKey): boolean => {
@@ -65,13 +99,13 @@ export const proto = (obj: any): any => Object.getPrototypeOf(unwrap(obj));
 export function create<T extends object>(obj: any, name: string): T {
 	const prototype = proto(obj);
 	if (!isObject(prototype)) {
-		logError(null, `[Tempo#create] Failed to create shadowed object for '${name}'. Proto(obj) is null or not an object.`);
+		logError(`[Tempo#create] Failed to create shadowed object for '${name}'. Proto(obj) is null or not an object.`, null);
 		return {} as T;
 	}
 
 	const entry = prototype[name];
 	if (!isObject(entry)) {
-		logError(null, `[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${typeof entry}).`);
+		logError(`[Tempo#create] Failed to create shadowed object for '${name}'. The prototype entry from proto(obj) is missing or not an object (received: ${getType(entry)}).`, null);
 		return {} as T;
 	}
 
@@ -181,4 +215,16 @@ export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthD
 		timezones: tzs,
 		resolvedLocales
 	}
+}
+/** @internal identify valid sync tokens */
+export function isSyncToken(status: any): status is string {
+	return isString(status) && /^[0-9a-f]{8}$/.test(status);
+}
+
+/** @internal resolve licensing state to standard 'active' state */
+export function resolveDisplayStatus(status: string): string {
+	const raw = isSyncToken(status)
+		? LICENSE.Active
+		: String(status) as LICENSE
+	return LICENSE.values().includes(raw) ? raw : LICENSE.Unknown;
 }

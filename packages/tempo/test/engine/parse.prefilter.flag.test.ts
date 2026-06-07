@@ -5,8 +5,8 @@ describe('parse prefilter feature flag', () => {
 		Tempo.init();
 	});
 
-	test.skipIf(process.env.TEMPO_PREFILTER_CI === 'true')('defaults to disabled', () => {
-		expect(Tempo.parse.planner.preFilter).toBe(false);
+	test.skipIf(process.env.TEMPO_PREFILTER_CI === 'true')('defaults to enabled', () => {
+		expect(Tempo.parse.planner.preFilter).toBe(true);
 	});
 
 	test('can be enabled globally via Tempo.init', () => {
@@ -18,15 +18,7 @@ describe('parse prefilter feature flag', () => {
 		expect(t.parse.result?.[0]?.match).toBe('relativeOffset');
 	});
 
-	test.skipIf(process.env.TEMPO_PREFILTER_CI === 'true')('can be enabled per-instance without changing global setting', () => {
-		Tempo.init({ preFilter: false });
-		const t = new Tempo('monday', { timeZone: 'UTC', preFilter: true });
-
-		expect(Tempo.parse.planner.preFilter).toBe(false);
-		expect(t.parse.planner.preFilter).toBe(true);
-	});
-
-	test('can be disabled per-instance even when global is enabled', () => {
+	test.skipIf(process.env.TEMPO_PREFILTER_CI === 'true')('can be disabled per-instance without changing global setting', () => {
 		Tempo.init({ preFilter: true });
 		const t = new Tempo('monday', { timeZone: 'UTC', preFilter: false });
 
@@ -34,8 +26,16 @@ describe('parse prefilter feature flag', () => {
 		expect(t.parse.planner.preFilter).toBe(false);
 	});
 
+	test('can be enabled per-instance even when global is disabled', () => {
+		Tempo.init({ preFilter: false });
+		const t = new Tempo('monday', { timeZone: 'UTC', preFilter: true });
+
+		expect(Tempo.parse.planner.preFilter).toBe(false);
+		expect(t.parse.planner.preFilter).toBe(true);
+	});
+
 	test('emits planner debug telemetry when debug + preFilter are enabled', () => {
-		Tempo.init({ debug: true, preFilter: true });
+		Tempo.init({ debug: 5, preFilter: true });
 		const t = new Tempo('2 days ago', { timeZone: 'UTC' });
 		expect(t.parse.result?.[0]?.match).toBe('relativeOffset');
 		expect(console.debug).toHaveBeenCalled();

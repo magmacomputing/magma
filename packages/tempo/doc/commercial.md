@@ -1,6 +1,6 @@
-# 🤝 Magma Computing: Professional Services
+# 🤝 Magma Computing Solutions: Professional Services
 
-Tempo is a high-performance, precision date-time library maintained by **Magma Computing**. We offer a range of professional services and private extensions to help teams build robust, time-sensitive applications.
+Tempo is a high-performance, precision date-time library maintained by **Magma Computing Solutions**. We offer a range of professional services and private extensions to help teams build robust, time-sensitive applications.
 
 ## 🚀 Our Services
 

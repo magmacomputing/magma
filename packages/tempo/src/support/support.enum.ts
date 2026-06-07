@@ -82,11 +82,11 @@ export const DEFAULTS = {
 		/** useful for readable month and day */								dayMonth: '{dd}-{mmm}',
 		/** useful for readable year, month and day */					dayDate: '{dd}-{mmm}-{yyyy}',
 		/** display with Time */																dayTime: '{dd}-{mmm}-{yyyy} {hh}:{mi}:{ss}',
-		/** useful for stamping logs */													logStamp: '{yyyy}{mm}{dd}T{hhmiss}.{ff}',
+		/** useful for stamping logs */													logStamp: '{ymd}T{hms}.{ff}',
 		/** useful for sorting display-strings */								sortTime: '{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}',
 		/** useful for sorting week order */										yearWeek: '{yw}{ww}',
 		/** useful for sorting month order */										yearMonth: '{yyyy}{mm}',
-		/** useful for sorting date order */										yearMonthDay: '{yyyy}{mm}{dd}',
+		/** useful for sorting date order */										yearMonthDay: '{ymd}',
 		/** just Date portion */																date: '{yyyy}-{mm}-{dd}',
 		/** just Time portion */																time: '{hh}:{mi}:{ss}',
 	},
@@ -179,7 +179,7 @@ export type FORMAT = typeof FORMAT;
 export type Format = LooseUnion<KeyOf<typeof FORMAT> & string>
 
 /** patterns that return a number */
-export const NumericPattern = ['{yyyy}{ww}', '{yyyy}{mm}', '{yyyy}{mm}{dd}', '{yyww}', '{yw}{ww}', '{yw}'] as const;
+export const NumericPattern = ['{yyyy}{ww}', '{yyyy}{mm}', '{yyyy}{mm}{dd}', '{yyww}', '{yw}{ww}', '{yw}', '{ymd}', '{ymd6}'] as const;
 export type NumericPattern = typeof NumericPattern[number]
 
 /** pre-configured format strings */
@@ -247,7 +247,7 @@ export const PARSE = enumify(parseKeys, false);
 export type Parse = KeyOf<typeof PARSE>
 
 /** allowed keys for global discovery objects */
-const discoveryKeys = ['options', 'plugins', 'plugin', 'terms', 'term', 'timeZones', 'monthDay', 'intl', 'relativeTime', 'planner', 'numbers', 'formats', 'ignore'] as const;
+const discoveryKeys = ['options', 'plugins', 'terms', 'timeZones', 'monthDay', 'intl', 'planner', 'numbers', 'formats', 'ignore'] as const;
 export const DISCOVERY = enumify(discoveryKeys, false);
 export type Discovery = KeyOf<typeof DISCOVERY>
 
@@ -259,6 +259,8 @@ export const LICENSE = enumify({
 	Expired: 'expired',
 	Revoked: 'revoked',
 	Invalid: 'invalid',
+	Unauthorized: 'unauthorized',
+	Unknown: 'unknown',
 }, false);
 export type LICENSE = ValueOf<typeof LICENSE>
 

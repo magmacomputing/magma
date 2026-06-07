@@ -9,6 +9,15 @@ export const protoType = (obj?: unknown) => {
 	return Object.prototype.toString.call(raw).slice(8, -1) as Type;
 }
 
+/** Safely extract Symbol.toStringTag, guarding against dynamic getters that throw */
+export const getSafeTag = (obj: any): string | undefined => {
+	try {
+		const tag = obj?.[Symbol.toStringTag] ?? obj?.prototype?.[Symbol.toStringTag];
+		if (typeof tag === 'string') return tag;
+	} catch { }
+	return undefined;
+}
+
 /** 
  * # getType
  * return an object's type as a ProperCase string.  
@@ -75,7 +84,7 @@ const isClassConstructor = (obj: any): boolean => {
 	// This is a high-performance check to immediately classify arrow functions as non-classes.
 	if (!('prototype' in raw)) return false;
 	const name = (raw as any)?.name;
-	const tag = raw?.[Symbol.toStringTag] ?? raw?.prototype?.[Symbol.toStringTag];
+	const tag = getSafeTag(raw);
 
 	// Absolute bypass for branded identities (using universal brand)
 	if (raw?.[sym.$Identity] || raw?.prototype?.[sym.$Identity]) {
@@ -194,8 +203,10 @@ export type Instance = { type: Type, class: Constructor }		// allow for Class in
  * @NOTE Custom types must augment `TypeValueMap` to be recognized by the type system!
  */
 export const registerType = (cls: Constructor, type?: Type) => {
-	const tag = (cls.prototype as any)?.[Symbol.toStringTag];	// toStringTag is the source-of-truth, if present
-	const name = (tag ?? type ?? cls.name) as Type;
+	if (typeof cls !== 'function') return;
+
+	const tag = getSafeTag(cls);
+	const name = (type ?? tag ?? cls.name) as Type;
 
 	if (name && !['Object', 'Function', ''].includes(name as string)) {
 		if (!registry.some(inst => inst.class === cls))

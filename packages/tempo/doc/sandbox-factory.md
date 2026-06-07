@@ -11,6 +11,16 @@ Historically, `Tempo.init()` modified the global library state. This meant that:
 ## The Solution
 `Tempo.create()` returns a **derived sandboxed class** with its own isolated configuration, registry, and plugin state. Each sandbox inherits from the caller, but runs with independent internal state.
 
+### Lifecycle Methods
+To understand when to use `Tempo.create()`, it helps to contrast it with the other initialization methods:
+
+- **`Tempo.init({ options })`**
+  **Concept:** Hard-reset to "out-of-the-box" factory defaults, then apply the provided configuration globally. All previous plugins, terms, and custom formats are purged.
+- **`Tempo.extend({ options })`**
+  **Concept:** Additive mutation. Keep all existing global settings, plugins, and formats intact, but merge in new configurations.
+- **`Tempo.create({ options })`**
+  **Concept:** Sandbox Factory. Clone the current global state (inheriting all currently loaded plugins and settings), but branch it off into a brand new, isolated class. Any future changes made to this Sandbox will not affect the global `Tempo`, and vice-versa.
+
 ### Example: Creating a Sandbox
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -66,4 +76,4 @@ Sandboxed classes created via `Tempo.create()` are protected by the same `@Immut
 ## Best Practices
 1. **Create Once**: Create your application-specific Sandbox once and export it as your primary entry point.
 2. **Prefer Sandboxes for Custom Aliases**: Avoid modifying the base `Tempo` class if your app is intended to be used as a library.
-3. **Use Debug Mode**: When developing new aliases, set `debug: true` to receive console warnings about naming collisions.
+3. **Use Debug Mode**: When developing new aliases, set `debug: 'debug'` to receive console warnings about naming collisions.

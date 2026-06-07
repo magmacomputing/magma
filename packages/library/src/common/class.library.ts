@@ -1,32 +1,45 @@
 import { $ImmutableSkip } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
+import { isReference } from '#library/assertion.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
-import { type Constructor, type Type, registerType } from '#library/type.library.js';
+import { registerType, getSafeTag } from '#library/type.library.js';
+import type { Constructor, Type } from '#library/type.library.js';
 
 /**
  * Some interesting Class Decorators 
  */
 
 /**
+ * Safely extracts the class name from Symbol.toStringTag (if present) to prevent 
+ * minifiers and compilers from mangling the registered class name.
+ */
+function getClassName<T extends Constructor>(value: T, contextName: string | symbol | undefined): string | undefined {
+	return getSafeTag(value) ?? (contextName === undefined ? (value.name || undefined) : String(contextName));
+}
+
+/**
  * Shared helper to create an immutable or secure class wrapper  
  */
 function createImmutableWrapper<T extends Constructor>(
 	value: T,
-	name: string,
+	name: string | undefined,
 	addInitializer: (fn: () => void) => void,
 	immutabilityStrategy: (instance: any) => any							// either Object.freeze or secure (Proxy) strategy
 ): T {
+	const safeName = name || 'Anonymous';
 	const wrapper = {
-		[name]: class extends value {
+		[safeName]: class extends value {
 			constructor(...args: any[]) {
 				super(...args);
 				return immutabilityStrategy(this);
 			}
 		}
-	}[name] as T;
+	}[safeName] as T;
 
-	registerType(value, `${name}_original` as Type);
-	registerType(wrapper, name as Type);
+	if (name) {
+		registerType(value, `${name}_original` as Type);
+		registerType(wrapper, name as Type);
+	}
 
 	addInitializer(() => {
 		const skip = (value as any)[$ImmutableSkip]
@@ -65,7 +78,7 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 
 	// Lock down all existing prototype properties, but do NOT freeze the prototype object
 	const lockPrototype = (proto: object) => {
-		if (!proto || typeof proto !== 'object') return;
+		if (!isReference(proto)) return;
 		Reflect.ownKeys(proto).forEach(name => {
 			if (name === 'constructor') return;
 			if (Array.isArray(skip) && skip.some(s => String(s) === String(name))) return;
@@ -78,7 +91,7 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 				Object.defineProperty(proto, name, { ...desc, ...update });
 		});
 	}
-	
+
 	lockPrototype(value.prototype);
 	lockPrototype(wrapper.prototype);
 }
@@ -87,11 +100,11 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
  * Decorator to secure a class with a mutation-throwing Proxy (noisy immutability)
  */
 export function Securable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
-	name = String(name);
+	const finalName = getClassName(value, name);
 
 	switch (kind) {
 		case 'class':
-			return createImmutableWrapper(value, name, addInitializer, secure);
+			return createImmutableWrapper(value, finalName, addInitializer, secure);
 		default:
 			throw new Error(`@Securable decorating unknown 'kind': ${kind} (${name})`);
 	}
@@ -99,11 +112,11 @@ export function Securable<T extends Constructor>(value: T, { kind, name, addInit
 
 /** decorator to freeze a Class to prevent modification (silent immutability) */
 export function Immutable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
-	name = String(name);
+	const finalName = getClassName(value, name);
 
 	switch (kind) {
 		case 'class':
-			return createImmutableWrapper(value, name, addInitializer, (instance) => { Object.freeze(instance); return instance; });
+			return createImmutableWrapper(value, finalName, addInitializer, (instance) => { Object.freeze(instance); return instance; });
 
 		default:
 			throw new Error(`@Immutable decorating unknown 'kind': ${kind} (${name})`);
@@ -112,12 +125,15 @@ export function Immutable<T extends Constructor>(value: T, { kind, name, addInit
 
 /** register a Class for serialization */
 export function Serializable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
-	name = String(name);																			// cast as String
-	registerType(value, name as Type);
+	const finalName = getClassName(value, name);
+
+	if (finalName)
+		registerType(value, finalName as Type);
 
 	switch (kind) {
 		case 'class':
-			addInitializer(() => registerSerializable(name, value));// register the class for serialization, via its toString() method
+			if (finalName)
+				addInitializer(() => registerSerializable(finalName, value));// register the class for serialization, via its toString() method
 
 			return value;
 
@@ -128,23 +144,27 @@ export function Serializable<T extends Constructor>(value: T, { kind, name, addI
 
 /** make a Class not instantiable */
 export function Static<T extends Constructor>(value: T, { kind, name }: ClassDecoratorContext<T>): T | void {
-	name = String(name);
+	const finalName = getClassName(value, name) as Type;
 
 	switch (kind) {
-		case 'class':
+		case 'class': {
+			const safeName = finalName || 'Anonymous';
 			const wrapper = {
-				[name]: class extends value {
+				[safeName]: class extends value {
 					constructor(...args: any[]) {
 						super(...args);
-						throw new TypeError(`${name} is not a constructor`);
+						throw new TypeError(`${safeName} is not a constructor`);
 					}
 				}
-			}[name] as T;
+			}[safeName] as T;
 
-			registerType(value, `${name}_original` as Type);			// register the original class definition
-			registerType(wrapper, name as Type);									// register the wrapper as the authoritative definition
+			if (finalName) {
+				registerType(value, `${finalName}_original` as Type)// register the original class definition
+				registerType(wrapper, finalName);										// register the wrapper as the authoritative definition
+			}
 
 			return wrapper;
+		}
 
 		default:
 			throw new Error(`@Static decorating unknown 'kind': ${kind} (${name})`);

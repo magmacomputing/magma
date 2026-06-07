@@ -1,10 +1,10 @@
 import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from '#library/assertion.library.js';
-import { reveal } from '#library/string.library.js';
 import { secureRef } from '#library/proxy.library.js';
 
 import { sym, isTempo } from '../support/support.symbol.js';
+import { TempoError } from '../support/support.error.js';
 import { getRuntime } from '../support/support.runtime.js';
-import { hasOwn } from '#tempo/support/support.util.js';
+import { hasOwn, logError } from '#tempo/support/support.util.js';
 import type { Tempo } from '../tempo.class.js';
 import type { Plugin, Module, Extension } from './plugin.type.js';
 
@@ -38,11 +38,11 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 	if (!isDefined(hostLogic) && !isTermsLoaded) {
 		const baseName = mod.endsWith('Module') ? mod.slice(0, -6) : mod;
 		const msg = `${mod} not loaded. (Did you forget to Tempo.extend(${mod}) or import '#tempo/${baseName.toLowerCase()}'?)`;
-		if (!silent && isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
+		if (!silent) logError(msg, t?.config);
 
 		if (silent) return false;
 		if (t?.config?.catch === true) return false;
-		throw new Error(msg);
+		throw new TempoError(msg);
 	}
 	return true;
 }
@@ -78,8 +78,8 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
 		}
 
 		const msg = `${module} method '${String(methodOrFallback)}' not found`;
-		if (isFunction(host?.[sym.$logError])) host[sym.$logError](t?.config, msg);
-		throw new Error(msg);
+		logError(msg, t?.config);
+		throw new TempoError(msg);
 	}
 
 	// 4. Execute the logic
@@ -104,10 +104,8 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 	for (const [key, val] of Object.entries(props)) {
 		if (hasOwn(TempoClass, key)) {
 			const msg = `Static name collision on "${key}". Property is already defined on the host class.`;
-			if (isFunction(TempoClass[sym.$logError])) {
-				// use catch:true to report the collision without a fatal throw (supports re-extension in shared environments)
-				TempoClass[sym.$logError]({ ...TempoClass.config, catch: true }, msg);
-			}
+			// use catch:true to report the collision without a fatal throw (supports re-extension in shared environments)
+			logError(msg, { ...TempoClass?.config, catch: true });
 			// console.error(msg);
 			continue;
 		}
@@ -145,7 +143,7 @@ export function defineInterpreterModule(name: string, logic: any, statics?: Reco
 			if (isUndefined(modules[name])) {
 				modules[name] = logic;
 			} else if (modules[name] !== logic) {
-				throw new Error(`Tempo Security: Core Module clash for '${name}'. Logic is already defined.`);
+				throw new TempoError(`Tempo Security: Core Module clash for '${name}'. Logic is already defined.`);
 			}
 
 			// 2. Fallback for legacy class-local access
@@ -159,7 +157,7 @@ export function defineInterpreterModule(name: string, logic: any, statics?: Reco
 			}
 
 			if (isDefined((TempoClass as any)[sym.$Interpreter][name])) {
-				if ((TempoClass as any)[sym.$Interpreter][name] !== logic) throw new Error(`Tempo Interpreter Module clash: '${name}' logic is already defined.`);
+				if ((TempoClass as any)[sym.$Interpreter][name] !== logic) throw new TempoError(`Tempo Interpreter Module clash: '${name}' logic is already defined.`);
 			} else {
 				(TempoClass as any)[sym.$Interpreter][name] = logic;
 			}

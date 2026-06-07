@@ -24,6 +24,42 @@ This strategy prevents accidental state corruption while maintaining the flexibl
 
 ---
 
+## 🏆 Best Practice: The `tempo.config.ts` Pattern
+
+Rather than scattering `Tempo.init()` or `Tempo.extend()` calls throughout your application, the recommended best practice is to centralize your environment setup into a single `tempo.config.ts` (or `.js`) file. 
+
+This mirrors modern ecosystem standards (like `vite.config.ts` or `tailwind.config.js`) and ensures that plugins, timezones, and custom aliases are consistently applied before any domain logic executes.
+
+```typescript
+// tempo.config.ts
+import { Tempo } from '@magmacomputing/tempo';
+import { CronModule } from '@magmacomputing/tempo-plugin-cron';
+import { SLAModule } from '@magmacomputing/tempo-plugin-sla';
+
+export const GlobalTempoConfig = {
+  timeZone: 'Australia/Sydney', // Set your baseline timezone
+  plugins: [CronModule, SLAModule], // Register enterprise plugins
+  period: { 
+    'market-open': '09:30',
+    'market-close': '16:00' 
+  }
+}
+
+// Bootstrap the global environment
+Tempo.init(GlobalTempoConfig);
+```
+
+You can then import this file at the very top of your application's entry point (e.g., `main.ts` or `index.js`) to guarantee the configuration is locked in before any other files import `Tempo`.
+
+```typescript
+// main.ts
+import './tempo.config.ts'; 
+import { App } from './app.js';
+// ...
+```
+
+---
+
 ## 1. Persistent Configuration (`$Tempo`)
 
 The first layer Tempo checks after its own internal defaults is persistent storage. This is ideal for "sticky" settings like a user's preferred timezone or locale that should persist across sessions without a database.
@@ -121,7 +157,7 @@ Tempo.init({
   timeZone: 'Australia/Sydney',
   locale: 'en-AU',
   pivot: 80,
-  debug: false
+  debug: 0
 });
 ```
 
@@ -136,8 +172,7 @@ Tempo.init({
 | `monthDay` | `MonthDay \| boolean` | `undefined` | Regional date-parsing configuration (grouped). Includes `active`, `locales`, `layouts`, and `timezones`. |
 | `timeStamp`| `'ss' \| 'ms' \| 'us' \| 'ns'` | `'ms'` | Precision for numeric inputs and the `.ts` property. |
 | `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
-| `relativeTime` | `RelativeTime` | `undefined` | Relative time formatting configuration (grouped). |
-| `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping both `relativeTime` and `numberFormat`. |
+| `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
 | `event` | `Record<string, string \| Function>` | Built-in aliases | Custom date aliases merged into the event registry. |
 | `period` | `Record<string, string \| Function>` | Built-in aliases | Custom time aliases merged into the period registry. |
 | `snippet` | `Record<string, string \| RegExp>` | Built-in snippets | Custom snippet patterns used to compose parse layouts. |
@@ -146,19 +181,17 @@ Tempo.init({
 | `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. Unlike core init options such as `snippet`, `layout`, `event`, or `period`, these values are not merged into internal state via `extendState`; `Tempo.init()` applies each plugin with `Tempo.extend(p)`, so plugin authors should treat them as instance/class augmentations rather than internal-state merges. |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
-| `debug` | `boolean \| number` | `false` | Controls log verbosity. `true` maps to `LOG.Debug`, `false` maps to `LOG.Info`, and numeric values map directly to `LOG` levels (`0=Off ... 5=Trace`). |
+| `debug` | `number \| string` | `'info'` | Controls log verbosity via direct `LOG` levels (`0=Off ... 5=Trace`) or string labels (`'trace'`, `'info'`, etc). |
 | `catch` | `boolean` | `false` | If true, invalid inputs return a Void instance instead of throwing. |
 | `mode` | `'auto' \| 'strict' \| 'defer'` | `'auto'` | Controls the hydration strategy (e.g., `defer` for Zero-Cost creation). |
 | `silent` | `boolean` | `false` | Suppresses console output. Combined with `catch: true` for silent failover. |
 | `ignore` | `string \| string[]` | `['at']` | List of noise words to be stripped before parsing. |
-| `layoutOrder` | `string[]` | Built-in Order | The sequence in which layouts are attempted during parsing. |
-| `preFilter` | `boolean` | `false` | Enables the Parse Planner to skip irrelevant layouts based on input classification. |
 | `planner` | `PlannerOptions` | `undefined` | Grouped configuration for `layoutOrder` and `preFilter`. |
 
 ---
 
 ::: info
-`debug` currently accepts only `boolean` or numeric level values. String labels like `'trace'` are not supported.
+`debug` accepts numeric level values (`0` through `5`) or lowercase string labels (`'off'`, `'error'`, `'warn'`, `'info'`, `'debug'`, `'trace'`).
 :::
 
 ## 4. Instance-Level Overrides
@@ -247,7 +280,7 @@ console.log(t.toString()); // Resolved correctly (noise words stripped)
 
 For high-performance applications, you can enable the **Parse Planner** to optimize the pattern-matching loop. 
 
-#### `preFilter` (Boolean)
+#### `planner.preFilter` (Boolean)
 When enabled, Tempo performs a fast upfront classification of the input string (detecting digits, letters, colons, etc.) and skips layouts that cannot possibly match.
 
 - **Purely numeric inputs**: Skips `event`, `period`, `wkd`, and `rel` layouts.
@@ -255,20 +288,22 @@ When enabled, Tempo performs a fast upfront classification of the input string (
 - **Colon detected**: Prioritizes time-based layouts (`tm`, `dtm`) to find a match faster.
 
 ```javascript
-Tempo.init({ preFilter: true });
+Tempo.init({ 
+  planner: { preFilter: true } 
+});
 ```
 
-#### `layoutOrder` (Array)
+#### `planner.layoutOrder` (Array)
 You can manually define the order in which layouts are attempted. This is useful if you know your data primarily uses a specific format (e.g., ISO dates) and want to avoid checking other layouts first.
 
 ```javascript
 Tempo.init({ 
-  layoutOrder: ['ymd', 'dt', 'tm', 'rel'] 
+  planner: { layoutOrder: ['ymd', 'dt', 'tm', 'rel'] } 
 });
 ```
 
 ::: tip
-**Observability**: Set `debug: true` along with `preFilter: true` to see a detailed "Planner summary" in the console, showing how many layouts were skipped for a given input.
+**Observability**: Set `debug: 'debug'` along with `planner.preFilter` to see a detailed "Planner summary" in the console, showing how many layouts were skipped for a given input.
 :::
 
 ---
@@ -284,7 +319,7 @@ Tempo.init({
 | **Instance** | 🥇 Highest | Ad-hoc overrides for specific calculations. |
 
 ::: tip
-**Observability**: When `debug: true` is set, Tempo logs its discovery path to the console (e.g., "Global Discovery found via Symbol"), making it easy to trace exactly where a setting originated.
+**Observability**: When `debug: 'debug'` is set, Tempo logs its discovery path to the console (e.g., "Global Discovery found via Symbol"), making it easy to trace exactly where a setting originated.
 :::
 
 ::: info

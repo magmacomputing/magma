@@ -2,7 +2,7 @@ import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#li
 import { singular } from '#library/string.library.js';
 import { normaliseFractionalDurations } from '#library/temporal.library.js';
 
-import { sym, enums } from '#tempo/support';
+import { sym, enums, logError } from '#tempo/support';
 import { defineInterpreterModule, type TempoModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
 import { resolveTermMutation } from '../engine/engine.term.js';
@@ -59,10 +59,8 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 						if (key === 'timeZone' || key === 'calendar') return currZdt;
 
 						try {
-							// @ts-ignore - access to mutation guard
 							if (++state.mutateDepth > 100) {
-								// @ts-ignore - access to static logger
-								(this.constructor as any)[sym.$logError](this.config, `Infinite recursion detected in mutation engine for key: ${key}, adjust: ${adjust}, depth: ${state.mutateDepth}`);
+								logError(`Infinite recursion detected in mutation engine for key: ${key}, adjust: ${adjust}, depth: ${state.mutateDepth}`, this.config);
 								state.errored = true;
 								return currZdt;
 							}
@@ -70,7 +68,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 							const { mutate: op, offset, single, term } = ((key, adjust, type) => {
 								const isTerm = key.startsWith('#');
 								if (type === 'add') {
-									const isTermPlugin = !isTerm && !!findTermPlugin(key as string);
+									const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string));
 									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(key as string);
 									return {
 										mutate: 'add',
@@ -89,7 +87,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 										return { mutate: key as any, offset: val, single: isTermVal ? 'term' : singular(val), term: isTermVal ? val : undefined };
 									}
 									default: {
-										const isTermPlugin = !isTerm && !!findTermPlugin(key as string);
+										const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string));
 										const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(key as string);
 										return {
 											mutate: 'set',
@@ -165,33 +163,27 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 									return currZdt.round({ smallestUnit: offset as any, roundingMode: 'ceil' }).subtract({ nanoseconds: 1 });
 
 								default:
-									// @ts-ignore
-									(this.constructor as any)[sym.$logError](this.config, `Unexpected method(${op}), unit(${key}) and offset(${adjust})`);
+									logError(`Unexpected method(${op}), unit(${key}) and offset(${adjust})`, this.config);
 									state.errored = true;
 									return currZdt;
 							}
 						} finally {
-							// @ts-ignore
 							state.mutateDepth--;
 						}
 					}, zdt);
 			}
 			else {
 				// 3. Return a new instance with the final state
-				// @ts-ignore - access to private constructor/state
 				return new (this.constructor as any)(args, { ...state.options, ...this.config, ...options, anchor: zdt, [sym.$Internal]: { ...state, matches } });
 			}
 		}
 
 		if (state.errored) {
-			// @ts-ignore - access to private constructor fallback
 			return new (this.constructor as any)(null, { ...state.options, ...overrides, ...options, [sym.$Internal]: { ...state, matches } });
 		}
 
-		// @ts-ignore
 		matches.push({ type: 'Mutation', value: zdt, match: 'mutation' });
 
-		// @ts-ignore
 		return new (this.constructor as any)(zdt, { ...state.options, ...overrides, ...options, anchor: zdt, [sym.$Internal]: { ...state, matches } });
 
 	} finally {

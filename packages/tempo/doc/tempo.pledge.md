@@ -59,7 +59,7 @@ Each `Pledge` can be assigned a `tag` string. This tag is included in logs and e
 
 ```typescript
 // Enable debug logging for this instance
-const p = new Pledge({ tag: 'DatabaseQuery', debug: true });
+const p = new Pledge({ tag: 'DatabaseQuery', debug: 5 });
 
 // If p is rejected, the tag will be included in the trace
 p.reject('Timeout');
@@ -71,7 +71,7 @@ You can set global defaults for all future `Pledge` instances using `Pledge.init
 
 ```typescript
 Pledge.init({
-  debug: true,
+  debug: 5,
   onSettle: () => GlobalSpinner.stop()
 });
 ```

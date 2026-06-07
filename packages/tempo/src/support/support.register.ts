@@ -7,7 +7,7 @@ import { sym } from './support.symbol.js';
 import type { Property } from '#library/type.library.js';
 
 import { getRuntime } from './support.runtime.js';
-import { hasOwn, setProperty } from './support.util.js';
+import { hasOwn, setProperty, logWarn } from './support.util.js';
 
 // Import the live enums and their mutable state from the enum module
 import { STATE, REGISTRIES, DEFAULTS } from './support.enum.js';
@@ -53,7 +53,7 @@ export function registryReset() {
 						if (hasOwn(obj, key)) {
 							Object.defineProperty(obj, key, desc);
 						} else {
-							console.warn(`[tempo] registryReset: Cannot define property '${String(key)}' on non-extensible object (property does not exist)`, obj);
+							logWarn(`[tempo] registryReset: Cannot define property '${String(key)}' on non-extensible object (property does not exist)`, {}, obj);
 						}
 					}
 				});

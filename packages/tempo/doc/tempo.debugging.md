@@ -63,18 +63,20 @@ If you simply need to see the value represented in different primitive formats, 
 
 ## Debugging and Console Logging
 
-Tempo has an internal logging utility (`Tempo.#dbg`) that responds to specific configuration flags.
+Tempo utilizes a central **Diagnostic Engine** (replacing the legacy Logify strategy) that respects configuration flags to provide structured output without polluting the console.
 
 ### The `debug` Flag
-When instantiating a `Tempo`, you can pass `{ debug: true }` in the options object.
+When instantiating a `Tempo`, or globally via `Tempo.init()`, you can pass `{ debug: 'debug' }` in the options object.
 ```typescript
-const t = new Tempo('next Friday', { debug: true });
+const t = new Tempo('next Friday', { debug: 'debug' });
 ```
-When this flag is enabled, Tempo will output detailed `console.info` logs during instantiation, including:
-*   The raw input being parsed.
-*   The regex pattern that matched it.
-*   The raw groups extracted before mutation logic.
-*   The final, conformed groups applied to the `Temporal.ZonedDateTime`.
+When this flag is enabled, Tempo's Diagnostic Engine will output detailed `console.debug` logs during parsing. These logs provide a deep-dive look into the Parse Engine's resolution logic, including:
+*   The prioritized layout regex patterns evaluated against the string.
+*   The raw regex groups extracted (e.g., specific day offsets, localized term mappings).
+*   The intermediate steps in temporal normalization (e.g., resolving aliases, computing time and date).
+*   The absolute temporal coordinates composed before final instantiation.
+
+*Note: The Diagnostic Engine evaluates the `debug` setting before serializing any string interpolations, guaranteeing zero-cost execution overhead for standard users who do not request debug-level diagnostics.*
 
 ### The `catch` Flag
 By default, `Tempo` is designed to be resilient. If it encounters parsing errors or invalid inputs, it will gracefully fallback.
@@ -90,7 +92,7 @@ const t = new Tempo('invalid string', { catch: false });
 Tempo uses a **Master Guard** to avoid the expensive regex parsing phase for strings that are obviously not date-time inputs. If you find that a string is not being parsed as expected, it's possible that the guard is Rejecting it.
 
 1.  **Check characters**: The guard only allows digits, common symbols (`-`, `:`, `.`, `T`, `Z`, `/`, `+`, `#`), space, and standard Latin characters.
-2.  **Use `debug: true`**: If a string passes the guard but fails the parser, you will see "conformed groups" logs. If you see *nothing* and the input is returned as-is (falling back to a timestamp interpretation), then the guard likely rejected the string.
+2.  **Use `debug: 5`**: If a string passes the guard but fails the parser, you will see "conformed groups" logs. If you see *nothing* and the input is returned as-is (falling back to a timestamp interpretation), then the guard likely rejected the string.
 3.  **Invalid String fallback**: If the guard rejects a string and it cannot be parsed as a numeric timestamp, it will result in an Invalid instance (see below).
 
 ---

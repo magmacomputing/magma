@@ -12,8 +12,8 @@ export const toHex = (num: TValues<number> = [], len?: number) =>
 		.substring(0, len ?? Number.MAX_SAFE_INTEGER)
 
 /** apply an Ordinal suffix */
-export const suffix = (idx: number) => {
-	const str = String(idx ?? '');														// so we can check 'endsWith'
+export const suffix = (idx: number = 0) => {
+	const str = String(idx);
 
 	switch (true) {
 		case str.endsWith('1') && !str.endsWith('11'):

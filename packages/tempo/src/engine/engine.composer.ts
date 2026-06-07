@@ -2,7 +2,7 @@ import { getTemporalIds } from '#library/temporal.library.js';
 import { isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
 import type { TemporalObject, TypeValue } from '#library/type.library.js';
 
-import { isTempo, logError } from '#tempo/support';
+import { isTempo, logError, logDebug } from '#tempo/support';
 import type { Tempo } from '#tempo/tempo.class.js';
 import * as t from '../tempo.type.js';
 
@@ -59,7 +59,7 @@ export function compose(
 				try {
 					temporal = Temporal.PlainDateTime.from(value, { overflow: 'constrain' });
 				} catch (err2) {
-					logError(config, `[Tempo#composer] Unrecognized or invalid ISO 8601 string: "${value}"`);
+					logError(`[Tempo#composer] Unrecognized or invalid ISO 8601 string: "${value}"`, config);
 					return { dateTime: today };
 				}
 			}
@@ -94,7 +94,7 @@ export function compose(
 		case 'BigInt':
 			{
 				if (type === 'Number' && !Number.isFinite(value)) {
-					logError(config, `Invalid Tempo number: ${value}`);
+					logError(`Invalid Tempo number: ${value}`, config);
 					temporal = today;
 					break;
 				}
@@ -163,10 +163,11 @@ export function compose(
 			break;
 
 		default: {
-			logError(config, `Cannot convert ${type} (value: ${String(temporal)}) to ZonedDateTime`);
+			logError(`Cannot convert ${type} (value: ${String(temporal)}) to ZonedDateTime`, config);
 			return { dateTime: today };
 		}
 	}
 
+	logDebug(`[Composer] Composed final DateTime: ${dateTime?.toString()}`, config);
 	return { dateTime: dateTime ?? today, timeZone };
 }

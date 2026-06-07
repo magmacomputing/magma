@@ -7,7 +7,7 @@
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
 import type { Pledge } from '#library/pledge.class.js';
-import type { Logify } from '#library/logify.class.js';
+import type { DebugLevel } from '#library/logger.class.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded } from '#library/type.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
@@ -86,7 +86,6 @@ export type Groups = Record<string, string>
 export interface Options extends Partial<Internal.BaseOptions> {
 	planner?: PlannerOptions;
 	intl?: IntlOptions;
-	relativeTime?: RelativeTime | ((value: number, unit: any) => string);
 	[key: string]: any;
 }
 
@@ -147,8 +146,8 @@ export type us = IntRange<0, 999>
 export type ns = IntRange<0, 999>
 export type ww = IntRange<1, 53>
 
-export type Duration = NonOptional<Temporal.DurationLikeObject> & Record<"iso", string> & Record<"sign", number> & Record<"blank", boolean> & Record<"unit", string | undefined> & { 
-	balance(opts?: { nominal?: boolean; relativeTo?: any; largestUnit?: Unit | string }): Duration; 
+export type Duration = NonOptional<Temporal.DurationLikeObject> & Record<"iso", string> & Record<"sign", number> & Record<"blank", boolean> & Record<"unit", string | undefined> & {
+	balance(opts?: { nominal?: boolean; relativeTo?: any; largestUnit?: Unit | string }): Duration;
 	format(opts?: Intl.NumberFormatOptions & { locales?: string | string[] }): string;
 }
 
@@ -190,7 +189,8 @@ export interface RelativeTime {
 }
 
 export interface IntlOptions {
-	/** relative time formatting configuration */							relativeTime?: RelativeTime | ((value: number, unit: any) => string);
+	/** relative time formatting configuration */							relativeTimeFormat?: RelativeTime | ((value: number, unit: any) => string);
+	/** multi-unit duration formatting configuration */				durationFormat?: any | ((duration: any) => string);
 	/** absolute unit duration formatting configuration */		numberFormat?: Intl.NumberFormatOptions | ((value: number, unit: any) => string);
 }
 
@@ -221,9 +221,9 @@ export namespace Internal {
 	export interface BaseOptions {
 		/** localStorage key */																	store: string;
 		/** globalThis Discovery Symbol */											discovery: string | symbol | Discovery;
-		/** additional console.log for tracking */							debug: Logify.Constructor["debug"];
-		/** catch or throw Errors */														catch: Logify.Constructor["catch"];
-		/** suppress console output during catch */							silent: Logify.Constructor["silent"];
+		/** additional console.log for tracking */							debug: DebugLevel;
+		/** catch or throw Errors */														catch: boolean;
+		/** suppress console output during catch */							silent: boolean;
 		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
 		/** Temporal calendar */																calendar: Temporal.CalendarLike;
 		/** locale (e.g. en-AU) */															locale: string;
@@ -240,7 +240,7 @@ export namespace Internal {
 		/** custom time aliases (periods). */										period: Period | RegistryOption<Logic>;
 		/** noise words to ignore during parsing. */						ignore: Ignore;
 		/** custom format strings to merge in the FORMAT enum */formats: Property<any>;
-		/** plugins to be automatically extended */							plugins: TempoPlugin | TempoPlugin[];
+		/** plugins to be automatically extended */							plugins: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
@@ -322,15 +322,13 @@ export namespace Internal {
 		/** pre-defined config options for Tempo.#global */			options?: Options | (() => Options);
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** regional date-parsing configuration */							monthDay?: MonthDay;
-		/** relative time configuration (shorthand) */					relativeTime?: RelativeTime | ((value: number, unit: any) => string);
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
-		/** @deprecated use 'terms' */													term?: TermPlugin;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
 		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
-		/** plugins to be automatically extended via Tempo.extend() */plugins?: TempoPlugin | TempoPlugin[];
+		/** plugins to be automatically extended via Tempo.extend() */plugins?: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
 	}
 
 	export interface LicenseScope {
@@ -353,7 +351,7 @@ export namespace Internal {
 	export interface LicensingModule {
 		Validator: new (jwt: string) => {
 			verify(): Promise<ValidationResult>;
-			syncRevocation(jwsUrl: string, currentJti: string): Promise<boolean>;
+			syncRevocation(jwsUrl: string, currentJti: string): Promise<{ revoked: boolean, success: boolean }>;
 		};
 	}
 
@@ -361,7 +359,7 @@ export namespace Internal {
 		status: enums.LICENSE;
 		key?: string;
 		scopes: Record<string, Internal.LicenseScope>;
-		jws?: Pledge<Internal.LicensingModule>;
+		jws?: Pledge<Internal.ValidationResult>;
 		expires?: number | string;
 		issuedAt?: number;
 		issuer?: string;

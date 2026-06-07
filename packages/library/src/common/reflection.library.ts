@@ -1,13 +1,13 @@
 import { distinct, ownKeys, ownEntries } from '#library/primitive.library.js';
 import { asType, getType } from '#library/type.library.js';
-import { isEmpty, isFunction, isPrimitive } from '#library/assertion.library.js';
+import { isEmpty, isFunction, isPrimitive, isReference } from '#library/assertion.library.js';
 import type { Obj, KeyOf, Primitives } from '#library/type.library.js';
 
 /** mutate Object | Array by excluding values with specified primitive 'types' */
 export function exclude<T extends Obj>(obj: T, ...types: (Primitives | Lowercase<Primitives>)[]) {
 	const exclusions = distinct(types.map(item => item.toLowerCase())) as typeof types;
 
-	if (obj && typeof obj === 'object') {											// only works on Objects and Arrays
+	if (isReference(obj)) {																		// only works on Objects and Arrays
 		const keys = [] as KeyOf<T>[];
 
 		(ownEntries(obj) as [KeyOf<T>, Obj][])

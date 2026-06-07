@@ -26,7 +26,7 @@ A convenience type for registering events: `[Tapper.EVENT, Tapper.Callback]`.
 ### `MapOpts`
 Options for mapping functions:
 - `catch?: boolean` (Interprets Promise reject as resolve)
-- `debug?: boolean` (Enables logging)
+- `debug?: number` (A non-negative integer determining verbosity scale: `0` = no debug output, larger values increase verbosity: `1` = errors, `2` = warnings, `3` = info, `4` = verbose, `5` = trace. Expected range is `0–5`. Default is `0`. Example usage: `{ debug: 0 }` for silent, `{ debug: 5 }` for maximum diagnostics. Replaces the older boolean `debug` flag.)
 
 ### `MapStore`
 Internal interface for cached geolocation and geocoder results.

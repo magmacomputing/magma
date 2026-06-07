@@ -62,7 +62,7 @@ Tempo.init({
 
 When `monthDay.active` is true, Tempo performs two main actions:
 
-1.  **Pattern Selection**: The `{dt}` placeholder (used in the default `dateTime` layout) is switched from the `dayMonthYear` pattern to the `monthDayYear` pattern.
+1.  **Pattern Selection**: The `{dt}` composite-snippet (used in the default `dateTime` layout) is switched from the `dayMonthYear` pattern to the `monthDayYear` pattern.
 2.  **Layout Swapping**: The internal order of tried layouts is adjusted. For example, the `monthDayYear` layout is moved ahead of `dayMonthYear` in the priority list.
 
 This ensures that even complex or non-standard strings are interpreted according to the regional preference.
