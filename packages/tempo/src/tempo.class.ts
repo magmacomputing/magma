@@ -897,20 +897,6 @@ export class Tempo {
 			return item;
 		});
 
-		// Also include "claimed" scopes that aren't yet registered as plugins
-		ownEntries(rt.license.scopes).forEach(([scope, meta]) => {
-			if (!list.some(t => t.key === scope)) {
-				list.push({
-					key: scope,
-					scope,
-					status: resolveDisplayStatus(rt.license.status),
-					expires: meta.exp ?? rt.license.expires,
-					updated: meta.updated_at,
-					description: `Premium plugin (${scope})`
-				});
-			}
-		});
-
 		// treats `Tempo.terms` as array-like and indexable by key.
 		return indexedArray(list, key => list.find(t => t.key === key || t.scope === key)) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
 	}
