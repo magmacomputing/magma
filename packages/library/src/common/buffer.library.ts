@@ -1,17 +1,16 @@
 import { stringify, objectify } from '#library/serialize.library.js';
-import { isDefined } from './assertion.library.js';
 
 const CHUNK_SIZE = 8192;
 
-/** encode string into a Uint8Array */
-export const encodeBuffer = (str: string) => new TextEncoder().encode(str);
+/** serialize any object and encode string into a Uint8Array */
+export const encodeBuffer = (str: any) => new TextEncoder().encode(stringify(str));
 
 /** decode a Uint8Array back to a string */
 export const decodeBuffer = (buf: Uint8Array | ArrayBuffer, encoding = 'utf-8') => new TextDecoder(encoding).decode(buf);
 
 /** encode a raw Uint8Array into a Base64 string natively */
 export const bufferToBase64 = (buffer: Uint8Array) => {
-	if (isDefined(Buffer))
+	if (typeof Buffer !== 'undefined')
 		return Buffer.from(buffer).toString('base64');
 
 	let binary = '';
@@ -23,7 +22,7 @@ export const bufferToBase64 = (buffer: Uint8Array) => {
 
 /** decode a Base64 string into a raw Uint8Array natively */
 export const base64ToBuffer = (base64: string) => {
-	if (isDefined(Buffer))
+	if (typeof Buffer !== 'undefined')
 		return new Uint8Array(Buffer.from(base64, 'base64'));
 
 	const binary = atob(base64);

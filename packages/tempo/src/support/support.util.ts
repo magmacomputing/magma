@@ -8,6 +8,7 @@ import { asArray, asError } from '#library/coercion.library.js';
 import { isSymbol, isUndefined, isDefined, isString, isNullish, isObject } from '#library/assertion.library.js';
 import { ownEntries, unwrap } from '#library/primitive.library.js';
 import { getRuntime } from './support.runtime.js';
+import { LICENSE } from './support.enum.js';
 import type * as t from '../tempo.type.js';
 
 /** @internal normalize layout-order options into a clean string array */
@@ -214,4 +215,10 @@ export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthD
 		timezones: tzs,
 		resolvedLocales
 	}
+}
+
+/** @internal resolve proprietary license checksums to standard 'active' state */
+export function resolveDisplayStatus(status: symbol | string): string {
+	const raw = String(status) as LICENSE;
+	return LICENSE.values().includes(raw) ? raw : LICENSE.Active;
 }

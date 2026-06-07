@@ -2,6 +2,7 @@ import { toZonedDateTime, toInstant, getTemporalIds, instant } from '#library/te
 import { isDefined, isFunction, isString, isUndefined, isNumber, isZonedDateTime } from '#library/assertion.library.js';
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
+import { asError } from '#library/coercion.library.js';
 import { sym, TermError, isTempo } from '../../support/support.symbol.js';
 import { getRuntime } from '../../support/support.runtime.js';
 import { SCHEMA, getLargestUnit } from '../../support/support.util.js';
@@ -156,11 +157,12 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Ra
 		} else {
 			res = isFunction(term.resolve) ? term.resolve.call(t) : term.define.call(t, false);
 		}
-	} catch (err: any) {
-		if (err.message.includes('Class constructor')) {
+	} catch (err: unknown) {
+		const error = asError(err);
+		if (error.message.includes('Class constructor'))
 			return [];
-		}
-		throw err;
+
+		throw error;
 	}
 
 	let list = (res == null) ? [] : (Array.isArray(res) ? res : [res]);

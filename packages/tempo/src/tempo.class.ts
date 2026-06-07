@@ -1,7 +1,7 @@
 import '#library/temporal.polyfill.js';
 
 import { Immutable, Serializable } from '#library/class.library.js';
-import { asArray } from '#library/coercion.library.js';
+import { asArray, asError } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
@@ -11,7 +11,7 @@ import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
-import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isError } from '#library/assertion.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isError, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import { LOG } from '#library/logger.class.js';
@@ -24,7 +24,7 @@ import type { TermPlugin, PremiumPlugin } from './plugin/term/term.type.js';
 import { AliasEngine } from './engine/engine.alias.js';
 import { PatternCompiler } from './engine/engine.pattern.js';
 import { createMasterGuard } from './engine/engine.guard.js';
-import { resolveMonthDay, setProperty, proto, hasOwn, normalizeLayoutOrder } from './support/support.util.js';
+import { resolveMonthDay, setProperty, proto, hasOwn, resolveDisplayStatus } from './support/support.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 import { datePattern } from './support/support.default.js';
 import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel } from '#tempo/support';
@@ -102,23 +102,23 @@ export class Tempo {
 	/** human-readable formatted license state */							static get license() {
 		const { jws, key, ...raw } = Tempo._license;						// omit internal Pledge and JWT string from user-facing snapshot
 		const ss = { timeStamp: 'ss' } as const;								// JWT timestamps are always in seconds (RFC 7519)
-		const scopesSource = (raw.scopes && typeof raw.scopes === 'object') ? raw.scopes : {};
+		const scopesSource = (raw.scopes && isObject(raw.scopes)) ? raw.scopes : {};
 		const scopes = Object.fromEntries(
 			Object.entries(scopesSource).map(([key, scope]) => {
 				const s = scope as any;
 				return [key, {
 					...s,
-					...(typeof s.exp === 'number' && { exp: new Tempo(s.exp, ss).fmt.weekTime }),
-					...(typeof s.updated_at === 'number' && { updated_at: new Tempo(s.updated_at, ss).fmt.weekTime }),
+					...(isNumber(s.exp) && { exp: new Tempo(s.exp, ss).fmt.weekTime }),
+					...(isNumber(s.updated_at) && { updated_at: new Tempo(s.updated_at, ss).fmt.weekTime }),
 				}];
 			})
 		);
 		return secure({
 			...raw,
-			status: ['expired', 'revoked', 'invalid', 'none', 'unauthorized'].includes(raw.status) ? raw.status : 'active',
+			status: resolveDisplayStatus(raw.status),
 			scopes,
-			...(typeof raw.expires === 'number' && { expires: new Tempo(raw.expires, ss).fmt.weekTime }),
-			...(typeof raw.issuedAt === 'number' && { issuedAt: new Tempo(raw.issuedAt, ss).fmt.weekTime }),
+			...(isNumber(raw.expires) && { expires: new Tempo(raw.expires, ss).fmt.weekTime }),
+			...(isNumber(raw.issuedAt) && { issuedAt: new Tempo(raw.issuedAt, ss).fmt.weekTime }),
 		});
 	}
 	/** mapping of terms to their resolved values */					private static _termMap: Map<string, TermPlugin> = new Map();
@@ -634,6 +634,20 @@ export class Tempo {
 		return SandboxTempo as unknown as typeof Tempo;
 	}
 
+	/** 
+	 * Wait for the background licensing and validation engine to finish settling.
+	 * Resolves immediately if no license key or validation is pending.
+	 * @returns The final, human-readable license status ('none', 'active', 'expired', etc.)
+	 */
+	static async ready(): Promise<string> {
+		const rt = getRuntime();
+		const jws = rt.license?.jws;
+		if (jws) {
+			try { await jws; } catch { /* fail-safe */ }
+		}
+		return resolveDisplayStatus(rt.license.status);
+	}
+
 	/** Reset Tempo to its default, built-in registration state */
 	static init(options: t.Options = {}): typeof Tempo {
 		if (_lifecycle.initialising) return this;
@@ -876,7 +890,7 @@ export class Tempo {
 			const item = { ...rest } as any;
 			if (hasOwn(rt.license.scopes, rest.key)) {
 				const meta = rt.license.scopes[rest.key];
-				item.status = rt.license.status;
+				item.status = resolveDisplayStatus(rt.license.status);
 				item.expires = meta.exp ?? rt.license.expires;
 				if (meta.updated_at) item.updated = meta.updated_at;
 			}
@@ -889,7 +903,7 @@ export class Tempo {
 				list.push({
 					key: scope,
 					scope,
-					status: rt.license.status,
+					status: resolveDisplayStatus(rt.license.status),
 					expires: meta.exp ?? rt.license.expires,
 					updated: meta.updated_at,
 					description: `Premium plugin (${scope})`
@@ -1252,11 +1266,12 @@ export class Tempo {
 							const result = term.define.call(this, keyOnly);
 							const res = Array.isArray(result) ? getTermRange(this, result, keyOnly) : result;
 							return isObject(res) ? secure(res) : res;
-						} catch (err: any) {
-							if (err.message.includes('Class constructor')) {
-								logWarn(`Misidentified class in term definition: ${key}`, this.#local.config, err.stack ?? err);
+						} catch (err: unknown) {
+							const error = asError(err);
+							if (error.message.includes('Class constructor')) {
+								logWarn(`Misidentified class in term definition: ${key}`, this.#local.config, error.stack ?? error);
 							} else {
-								throw err;
+								throw error;
 							}
 						}
 
@@ -1290,11 +1305,12 @@ export class Tempo {
 						const res = term.resolve ? term.resolve.call(this, anchor) : term.define.call(this, keyOnly, anchor);
 						const out = (getTermRange(this, (Array.isArray(res) ? (res as any) : [res]), keyOnly, anchor) as any);
 						return isObject(out) ? secure(out) : out;
-					} catch (err: any) {
-						if (err.message.includes('Class constructor')) {
-							logWarn(`Misidentified class in term discovery: ${term.key}`, this.#local.config, err.stack ?? err);
+					} catch (err: unknown) {
+						const error = asError(err);
+						if (error.message.includes('Class constructor')) {
+							logWarn(`Misidentified class in term discovery: ${term.key}`, this.#local.config, error.stack ?? error);
 						} else {
-							throw err;
+							throw error;
 						}
 					}
 				};

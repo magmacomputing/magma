@@ -15,7 +15,7 @@ export class Validator {
 	async verify() {
 		// Decodes but DOES NOT verify the signature. 
 		// Cannot safely unlock Premium Plugins without cryptographic proof.
-		const claims = decodeJWT(this.key);
+		decodeJWT(this.key);
 		return {
 			status: 'invalid' as const,
 			scopes: {},

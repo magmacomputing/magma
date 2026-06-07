@@ -1,5 +1,4 @@
-import { base64ToBuffer, bufferToBase64, encodeBuffer } from './buffer.library.js';
-import { isFunction } from './assertion.library.js';
+import { base64ToBuffer, bufferToBase64, encodeBuffer, decodeBuffer } from './buffer.library.js';
 import { Logger } from './logger.class.js';
 import { keys } from './cipher.library.js';
 
@@ -17,7 +16,8 @@ export const decodeJWT = <T = any>(jwt: string): T | null => {
 
 		// 🛡️ Base64URL Normalization: replace -/_ with +/ and add padding
 		const base64 = part.replace(/-/g, '+').replace(/_/g, '/').padEnd(part.length + (4 - part.length % 4) % 4, '=');
-		const payload = isFunction(atob) ? atob(base64) : Buffer.from(base64, 'base64').toString();
+		const bytes = base64ToBuffer(base64);
+		const payload = decodeBuffer(bytes);
 
 		return JSON.parse(payload);
 	} catch { return null; }
@@ -35,7 +35,8 @@ export const verifyJWS = async (token: string, publicKey: CryptoKey): Promise<bo
 		// Base64url to Base64 normalization
 		const signatureBase64 = signatureBase64url
 			.replace(/-/g, '+')
-			.replace(/_/g, '/');
+			.replace(/_/g, '/')
+			.padEnd(signatureBase64url.length + (4 - signatureBase64url.length % 4) % 4, '=');
 		const signatureBytes = base64ToBuffer(signatureBase64);
 
 		// crypto.subtle.verify takes signature, key, data

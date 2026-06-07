@@ -1,6 +1,6 @@
 import '#library/temporal.polyfill.js';
 import { enumify } from '#library/enumerate.library.js';
-import { asArray } from '#library/coercion.library.js';
+import { asArray, asError } from '#library/coercion.library.js';
 import { getDateTimeFormat, getHemisphere } from '#library/international.library.js';
 import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
@@ -13,7 +13,7 @@ import { getStorage } from '#library/storage.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 
 import { getRuntime } from './support.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, logWarn } from './support.util.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, logWarn, logDebug } from './support.util.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
 import { STATE, LICENSE } from './support.enum.js';
@@ -163,14 +163,7 @@ function setLicense(state: t.Internal.State, key: string) {
 				// 🛡️ Race Condition Guard
 				if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
 
-				const desc = res.status?.description ?? (res.status == null ? '' : String(res.status));
-				const statusMap: Record<string, any> = {
-					'active': LICENSE.Active,
-					'expired': LICENSE.Expired,
-					'revoked': LICENSE.Revoked,
-					'invalid': LICENSE.Invalid
-				};
-				runtime.license.status = statusMap[desc] ?? res.status ?? LICENSE.Invalid;
+				runtime.license.status = res.status ?? LICENSE.Invalid;
 				runtime.license.scopes = res.scopes;
 				delete runtime.license.error; // 🚿 Clear error on every reckoning attempt
 				if (res.error) runtime.license.error = res.error;
@@ -189,16 +182,20 @@ function setLicense(state: t.Internal.State, key: string) {
 							runtime.license.error = 'License has been revoked by the issuer.';
 							logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
 						}
-					}).catch(() => { /* silent fail-safe */ });
+					}).catch((err: unknown) => {
+						const { message } = asError(err);
+						logDebug(`Tempo Licensing: Background revocation check failed for JTI ${initialJti} - ${message}`, state.config);
+					});
 				}
 			},
-			onReject: (err: any) => {
+			onReject: (err: unknown) => {
 				if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
+				const error = asError(err);
 				runtime.license.status = LICENSE.Invalid;
-				runtime.license.error = err?.message || 'Verification rejected';
+				runtime.license.error = error.message || 'Verification rejected';
 				logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
 			}
-		};
+		}
 		runtime.license.jws = new Pledge<Internal.ValidationResult>(argObj as any);
 	}
 }

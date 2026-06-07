@@ -1,6 +1,6 @@
 import { toHex } from '#library/number.library.js';
 import { asString, asError } from '#library/coercion.library.js';
-import { isError } from '#library/assertion.library.js';
+import { isError, isString } from '#library/assertion.library.js';
 import { bufferToBase64, base64ToBuffer, encodeBuffer, decodeBuffer } from '#library/buffer.library.js';
 
 const crypto = globalThis.crypto;
@@ -86,16 +86,15 @@ export const sign = async (doc: any) => {
 	if (!keypair.privateKey) throw new Error('Cipher: Missing private key');
 
 	return subtle.sign(keys.SignKey, keypair.privateKey, encodeBuffer(doc))
-		.then(result => new Uint8Array(result))
-		.then(decodeBuffer);
+		.then(result => new Uint8Array(result));
 }
 
-export const verify = async (signature: Promise<ArrayBuffer>, doc: any) => {
+export const verify = async (signature: Promise<ArrayBuffer> | ArrayBuffer | Uint8Array, doc: any) => {
 	const [buffer, keypair] = await Promise.all([signature, _asymmetricKey]);
 	if (isError(keypair)) throw new Error(`Cipher: Key generation failed: ${keypair.message}`, { cause: keypair });
 	if (!keypair.publicKey) throw new Error('Cipher: Missing public key');
 
-	return subtle.verify(keys.SignKey, keypair.publicKey, buffer, encodeBuffer(doc));
+	return subtle.verify(keys.SignKey, keypair.publicKey, buffer as BufferSource, encodeBuffer(doc));
 }
 
 export const importPublicKey = async (pem: string): Promise<CryptoKey> => {

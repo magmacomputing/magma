@@ -1,6 +1,6 @@
 import { clone, stringify } from '#library/serialize.library.js';
 import { asType } from '#library/type.library.js';
-import { isIntegerLike, isArrayLike, isDefined, isInteger, isIterable, isNullish, isString, isUndefined, isNumber, isNumeric } from '#library/assertion.library.js';
+import { isIntegerLike, isArrayLike, isDefined, isInteger, isIterable, isNullish, isString, isUndefined, isNumber, isNumeric, isError, isObject } from '#library/assertion.library.js';
 
 /** Coerce {value} into {value[]} ( if not already ), with optional {fill} Object */
 export function asArray<T>(arr: Exclude<ArrayLike<T>, string> | undefined): T[];
@@ -68,6 +68,14 @@ export const nullishToEmpty = <T>(obj: T) => obj ?? '';
 export const nullishToValue = <T, R>(obj: T, value: R) => obj ?? value;
 
 /** coerce an unknown value into an Error instance */
-export function asError(err: unknown): Error {
-	return err instanceof Error ? err : new Error(String(err));
+export function asError(err: unknown): Error & { code?: string | number } {
+	if (isError(err)) return err as Error & { code?: string | number };
+
+	const error = new Error(isObject(err) && isString(err.message) ? err.message : String(err));
+	if (isObject(err)) {
+		error.name = isString(err.name) ? err.name : 'Error';
+		if ('code' in err && (isString(err.code) || isNumber(err.code))) (error as any).code = err.code;
+		if ('stack' in err && isString(err.stack)) error.stack = err.stack;
+	}
+	return error as Error & { code?: string | number };
 }

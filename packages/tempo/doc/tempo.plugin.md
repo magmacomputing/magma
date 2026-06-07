@@ -252,6 +252,31 @@ If you have built a powerful plugin and wish to distribute it commercially, you 
 
 Once your plugin is ready for the marketplace, **[Contact Magma Computing Solutions](https://github.com/magmacomputing)**. We can inject our proprietary licensing and cryptographic verification engine directly into your build pipeline, ensuring your plugin is securely gated and protected from unauthorized use.
 
+### Safely Loading Premium Plugins
+
+When using a commercially licensed premium plugin, the cryptographic verification of your license key happens securely in the background. Because of this, you should always wait for the validation engine to settle before executing premium features, especially during application boot.
+
+Use `Tempo.ready()` to safely wait for the cryptographic engine:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { PremiumPlugin } from 'tempo-plugin-premium';
+
+// 1. Initialize Tempo with your license key
+Tempo.init({ 
+  license: process.env.TEMPO_LICENSE,
+  plugins: [PremiumPlugin] 
+});
+
+async function boot() {
+  // 2. Wait for the background engine to verify the signature
+  await Tempo.ready();
+  
+  // 3. 100% safe to execute the premium plugin synchronously
+  const result = Tempo.premiumFeature();
+}
+```
+
 ---
 
 ## Consuming a Plugin
