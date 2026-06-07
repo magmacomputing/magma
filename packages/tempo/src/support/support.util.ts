@@ -51,10 +51,9 @@ export function raise(err: Error | string, config: any = {}, ...msg: any[]) {
 	// Combine extra messages if multiple are provided
 	if (msg.length > 0) {
 		const text = concatMsg(msg);
-		err = isString(err) ? new Error(`${err} ${text}`) : err;
-		if (isError(err) && isString(err.message) && text) {
+		err = isString(err) ? new Error(err) : err;
+		if (isError(err) && isString(err.message) && text)
 			err.message = `${err.message} ${text}`;
-		}
 	}
 
 	boundaryRaise(err, {
@@ -67,32 +66,23 @@ export function raise(err: Error | string, config: any = {}, ...msg: any[]) {
 /** @internal Wrapper for legacy logError calls */
 export const logError = raise;
 
+const createLogger = (level: 'warn' | 'debug' | 'trace') =>
+	(msg: any, config: any = {}, ...extraMsg: any[]) => {
+		if (!config?.silent) {
+			const outMsg = concatMsg([msg, ...extraMsg]);
+			if (config[sym.$LogConfig]) logTempo[level](config, outMsg);
+			else logTempo[level](outMsg);
+		}
+	};
+
 /** @internal Centralized Warning Logger */
-export function logWarn(msg: any, config: any = {}, ...extraMsg: any[]) {
-	if (!config?.silent) {
-		const outMsg = concatMsg([msg, ...extraMsg]);
-		if (config[sym.$LogConfig]) logTempo.warn(config, outMsg);
-		else logTempo.warn(outMsg);
-	}
-}
+export const logWarn = createLogger('warn');
 
 /** @internal Centralized Debug Logger */
-export function logDebug(msg: any, config: any = {}, ...extraMsg: any[]) {
-	if (!config?.silent) {
-		const outMsg = concatMsg([msg, ...extraMsg]);
-		if (config[sym.$LogConfig]) logTempo.debug(config, outMsg);
-		else logTempo.debug(outMsg);
-	}
-}
+export const logDebug = createLogger('debug');
 
 /** @internal Centralized Trace Logger */
-export function logTrace(msg: any, config: any = {}, ...extraMsg: any[]) {
-	if (!config?.silent) {
-		const outMsg = concatMsg([msg, ...extraMsg]);
-		if (config[sym.$LogConfig]) logTempo.trace(config, outMsg);
-		else logTempo.trace(outMsg);
-	}
-}
+export const logTrace = createLogger('trace');
 
 /** @internal check if an object is a proxy */
 export const isProxy = (obj: any): boolean => isDefined(obj?.[sym.$Target]);

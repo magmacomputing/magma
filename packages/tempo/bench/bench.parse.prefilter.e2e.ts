@@ -11,7 +11,7 @@ const layoutKeys = new Set([
 	'yearMonthDay', 'offset', 'relativeOffset'
 ]);
 try {
-	corpus = fs.readFileSync(new URL('./bench.parse.prefilter', import.meta.url), 'utf-8')
+	corpus = fs.readFileSync(new URL('./bench.parse.prefilter.ts', import.meta.url), 'utf-8')
 		.split(/\n/)
 		.filter(line => line.trim().startsWith("'") && line.includes(','))
 		.map(line => line.replace(/['",]/g, '').trim())

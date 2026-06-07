@@ -143,6 +143,10 @@
       "types": "./dist/module/module.format.d.ts",
       "import": "./dist/module/module.format.js"
     },
+    "./ticker": {
+      "types": "./dist/plugin/extend/extend.ticker.d.ts",
+      "import": "./dist/plugin/extend/extend.ticker.js"
+    },
     "./parse": {
       "types": "./dist/module/module.parse.d.ts",
       "import": "./dist/module/module.parse.js"

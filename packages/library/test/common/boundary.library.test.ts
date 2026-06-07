@@ -15,18 +15,18 @@ describe('Boundary Library', () => {
 
 	it('should throw immediately if no catch is specified', () => {
 		expect(() => raise('Test Exception')).toThrow('Test Exception');
-		expect(consoleSpy).toHaveBeenCalledWith('[Boundary] Test Exception');
+		expect(consoleSpy).toHaveBeenCalledWith('[Boundary]', expect.any(Error));
 	});
 
 	it('should log to custom logger if provided', () => {
 		expect(() => raise('Test Exception', { logger: mockLogger })).toThrow('Test Exception');
-		expect(mockLogger.error).toHaveBeenCalledWith('Test Exception');
+		expect(mockLogger.error).toHaveBeenCalledWith(expect.any(Error));
 		expect(consoleSpy).not.toHaveBeenCalled();
 	});
 
 	it('should swallow the error if catch is true', () => {
 		expect(() => raise('Handled Exception', { catch: true })).not.toThrow();
-		expect(consoleSpy).toHaveBeenCalledWith('[Boundary] Handled Exception');
+		expect(consoleSpy).toHaveBeenCalledWith('[Boundary]', expect.any(Error));
 	});
 
 	it('should completely suppress output if silent is true', () => {

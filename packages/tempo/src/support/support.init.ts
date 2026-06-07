@@ -8,8 +8,9 @@ import { asType } from '#library/type.library.js';
 import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/assertion.library.js';
 import { Pledge } from '#library/pledge.class.js';
 import { ownEntries } from '#library/primitive.library.js';
-import { decodeJWT } from '#library/utility.library.js';
+import { decodeJWT } from '#library/webtoken.library.js';
 import { getStorage } from '#library/storage.library.js';
+import { parseLogLevel } from '#library/logger.class.js';
 
 import { getRuntime } from './support.runtime.js';
 import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, logWarn } from './support.util.js';
@@ -144,7 +145,7 @@ function setLicense(state: t.Internal.State, key: string) {
 		const claims = decodeJWT(key);
 		runtime.license.key = key;
 		runtime.license.status = LICENSE.Pending;
-		runtime.license.scopes = claims?.permissions || {};
+		runtime.license.scopes = claims?.scopes || {};
 
 		if (claims?.exp) runtime.license.expires = claims.exp;
 		if (claims?.iat) runtime.license.issuedAt = claims.iat;
@@ -164,14 +165,14 @@ function setLicense(state: t.Internal.State, key: string) {
 					// 🛡️ Race Condition Guard: Only apply results if identity (JTI + Key) hasn't changed since we started
 					if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
 
-					const desc = res.status?.description ?? String(res.status);
+					const desc = res.status?.description ?? (res.status == null ? '' : String(res.status));
 					const statusMap: Record<string, any> = {
 						'active': LICENSE.Active,
 						'expired': LICENSE.Expired,
 						'revoked': LICENSE.Revoked,
 						'invalid': LICENSE.Invalid
 					};
-					runtime.license.status = statusMap[desc || ''] ?? res.status;
+					runtime.license.status = statusMap[desc] ?? LICENSE.Invalid;
 					runtime.license.scopes = res.scopes;
 					delete runtime.license.error; // 🚿 Clear error on every reckoning attempt
 					if (res.error) runtime.license.error = res.error;
@@ -257,7 +258,7 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 			case 'timeZone': {
 				const zone = String(arg.value).toLowerCase();
-				const resolvedZone = enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
+				const resolvedZone = options.timeZones?.[zone] ?? state.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
 				setProperty(state.config, 'timeZone', resolvedZone);
 				break;
 			}
@@ -340,6 +341,10 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				setLicense(state, key);
 				break;
 			}
+
+			case 'debug':
+				setProperty(state.config, 'debug', parseLogLevel(arg.value));
+				break;
 
 			default:
 				setProperty(state.config, optKey, arg.value);

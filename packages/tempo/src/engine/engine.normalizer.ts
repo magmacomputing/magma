@@ -3,7 +3,7 @@ import { getTemporalIds, instant } from '#library/temporal.library.js';
 import { ownKeys } from '#library/primitive.library.js';
 import type { TypeValue } from '#library/type.library.js';
 
-import { getRuntime, sym, Match, logError, logTrace, TempoError } from '#tempo/support';
+import { getRuntime, sym, Match, logError, logDebug, TempoError } from '#tempo/support';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './engine.lexer.js';
 import { resolveTermMutation } from './engine.term.js';
 import enums from '#tempo/support/support.enum.js';
@@ -179,7 +179,7 @@ export function resolveAliases(
 				const res = aliasEngine?.resolveAlias(key as any, host);
 				if (!res) continue;
 				
-				logTrace(`[Normalizer] Resolved alias '${aliasKey}'`, state.config);
+				logDebug(`[Normalizer] Resolved alias '${aliasKey}'`, state.config);
 
 				try {
 					const mapped = ({
@@ -229,7 +229,7 @@ export function resolveAliases(
 
 		if (isDefined(monthVal)) {
 			groups["mm"] = monthVal.toString().padStart(2, '0');
-			logTrace(`[Normalizer] Normalized month string '${mm}' to ${groups["mm"]}`, state.config);
+			logDebug(`[Normalizer] Normalized month string '${mm}' to ${groups["mm"]}`, state.config);
 		}
 	}
 

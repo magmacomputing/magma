@@ -1,6 +1,6 @@
-import { Buffer } from 'node:buffer';
+import { decodeJWT } from '../common/webtoken.library.js';
 
-const MAX_TOKEN_LENGTH = 8192;														// 8 KB
+const MAX_TOKEN_LENGTH = 8192;															// 8 KB
 const MAX_PAYLOAD_LENGTH = 4096;														// 4 KB
 
 /**
@@ -16,35 +16,20 @@ const MAX_PAYLOAD_LENGTH = 4096;														// 4 KB
  * @returns The parsed JSON payload of the JWT
  */
 export const decodeJWTPayload = <T = unknown>(token: string): T => {
-	if (token.length > MAX_TOKEN_LENGTH) {
+	if (token.length > MAX_TOKEN_LENGTH)
 		throw new Error('JWT too large: Incoming token exceeds maximum length.');
-	}
 
 	const segments = token.split('.');
 
-	if (segments.length !== 3) {
+	if (segments.length !== 3)
 		throw new Error('Invalid JWT format: Expected 3 segments (header.payload.signature)');
-	}
 
-	if (segments[1].length > MAX_PAYLOAD_LENGTH) {
+	if (segments[1].length > MAX_PAYLOAD_LENGTH)
 		throw new Error('JWT payload too large: Encoded segment exceeds maximum length.');
-	}
 
-	try {
-		let payload = segments[1]
-			.replace(/-/g, '+')
-			.replace(/_/g, '/');
+	const decoded = decodeJWT<T>(token);
+	if (!decoded)
+		throw new Error('Invalid JWT payload: Decoding failed');
 
-		// Handle missing base64 padding
-		while (payload.length % 4 !== 0)
-			payload += '=';
-
-		if (payload.length > MAX_PAYLOAD_LENGTH + 4) {								// final check on padded payload
-			throw new Error('JWT payload too large: Final payload exceeds maximum length.');
-		}
-
-		return JSON.parse(Buffer.from(payload, 'base64').toString()) as unknown as T;
-	} catch (err) {
-		throw new Error(`Invalid JWT payload: ${(err as Error).message}`);
-	}
-};
+	return decoded;
+}

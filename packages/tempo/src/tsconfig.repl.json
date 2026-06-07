@@ -27,7 +27,6 @@
       "#tempo/support": [ "./support/support.index.ts" ],
       "#tempo/support/*": [ "./support/*" ],
       "#tempo/license": [
-        "../premium/src/index.ts",
         "./support/support.license.ts"
       ],
       "@magmacomputing/tempo": [ "./tempo.index.ts" ],

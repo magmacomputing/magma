@@ -59,3 +59,6 @@ Thumbs.db
 
 # Local Proprietary Symlinks
 /packages/tempo/premium
+
+# Benchmarks
+benchmark-results.json

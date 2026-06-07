@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-06-07
+
+### Added
+- **Native Cryptography & Buffers (`cipher`, `webtoken`, `buffer`)**: Completely overhauled and consolidated the cryptographic primitives and buffer management into tree-shakeable functions (`cipher.library.js`, `webtoken.library.js`, and `buffer.library.js`). Replaced legacy bit-shifting polyfills with blazingly fast native implementations (`TextEncoder`, `TextDecoder`, and native Base64 runtime bindings). Established a strict unidirectional dependency graph (`serialize` ➡️ `buffer` ➡️ `cipher`) and removed redundant exports, providing a highly optimized, zero-dependency native JWS/JWT validation suite across the ecosystem.
+
 ## [2.11.0] - 2026-05-25
 
 ### Added

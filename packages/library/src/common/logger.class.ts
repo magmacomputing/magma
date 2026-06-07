@@ -30,7 +30,7 @@ const Level = {
 } as const;
 
 export function parseLogLevel(level?: DebugLevel, fallback: LOG = LOG.Info): LOG {
-	if (isNumber(level)) return level as LOG;
+	if (isNumber(level)) return (level >= LOG.Off && level <= LOG.Trace) ? level as LOG : fallback;
 	if (isString(level)) return Level[level.toLowerCase() as Method] ?? fallback;
 	return fallback;
 }
@@ -93,7 +93,7 @@ export class Logger {
 			.filter(s => !isEmpty(s)).join(' ');
 
 		if (!isEmpty(output)) {
-			const consoleMethod = method === Method.Trace ? 'debug' : method;
+			const consoleMethod = method;
 			(console as any)[consoleMethod](`${this.#namespace} ${output}`);
 		}
 	}

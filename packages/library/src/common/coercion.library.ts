@@ -34,11 +34,11 @@ export function asInteger<T extends string | number | bigint>(str?: T) {
 
 	switch (arg.type) {
 		case 'BigInt':
-			return arg.value;																		// already a BigInt
+			return arg.value;																			// already a BigInt
 		case 'Number':
-			return BigInt(Math.trunc(arg.value));								// cast as BigInt
+			return BigInt(Math.trunc(arg.value));									// cast as BigInt
 		case 'String':
-			return (isIntegerLike(arg.value))										// String representation of a BigInt
+			return (isIntegerLike(arg.value))											// String representation of a BigInt
 				? BigInt(arg.value.slice(0, -1))										// get rid of trailing 'n'
 				: BigInt(arg.value);
 		default:
@@ -52,17 +52,22 @@ export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
 		case isInteger(str):																		// BigInt → Number
 			return Number(str);
 
-		case isNumber(str):																		// Number → as-is
+		case isNumber(str):																			// Number → as-is
 			return str;
 
 		case isNumeric(str) && (!str?.toString().startsWith('0') || stripZero):
-			return asNumber(str);																// numeric String → Number
+			return asNumber(str);																	// numeric String → Number
 
 		default:
-			return str as string;																// non-numeric String → as-is
+			return str as string;																	// non-numeric String → as-is
 	}
 }
 
 export const nullishToZero = <T>(obj: T) => obj ?? 0;
 export const nullishToEmpty = <T>(obj: T) => obj ?? '';
 export const nullishToValue = <T, R>(obj: T, value: R) => obj ?? value;
+
+/** coerce an unknown value into an Error instance */
+export function asError(err: unknown): Error {
+	return err instanceof Error ? err : new Error(String(err));
+}

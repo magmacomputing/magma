@@ -1,5 +1,6 @@
 import { getOffsets } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
+import { isFunction } from '#library/assertion.library.js';
 
 /** memoized helper for Intl.RelativeTimeFormat instances */
 const getRTF = memoizeFunction((locale?: string, style: Intl.RelativeTimeFormatStyle = 'narrow') => {
@@ -23,7 +24,13 @@ const getNF = memoizeFunction((locale?: string, options?: Intl.NumberFormatOptio
 
 /** memoized helper for Intl.DurationFormat instances */
 const getDF = memoizeFunction((locale?: string, options?: any) => {
-	return new (Intl as any).DurationFormat(locale, options);
+	try {
+		const df = new (Intl as any).DurationFormat(locale, options);
+		if (isFunction(df.format)) return df;
+		throw new Error('No format method');
+	} catch (e) {
+		return { format: (duration: any) => String(duration) };
+	}
 });
 
 /**

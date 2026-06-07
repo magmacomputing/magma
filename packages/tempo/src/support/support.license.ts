@@ -1,4 +1,5 @@
-import { decodeJWT } from '#library/utility.library.js';
+import { isFunction } from '#library/assertion.library.js';
+import { decodeJWT } from '#library/webtoken.library.js';
 import { logWarn } from './support.util.js';
 
 /**
@@ -31,6 +32,7 @@ export function definePremiumPlugin<T>(key: string, plugin: T): T {
 	const throwLicense = function () {
 		throw new Error(`[${key}] Premium plugin requires a valid commercial license. Status: invalid`);
 	}
+	if (isFunction(plugin)) return throwLicense as unknown as T;
 	if ((plugin as any).install) (plugin as any).install = throwLicense;
 	if ((plugin as any).define) (plugin as any).define = throwLicense;
 	if ((plugin as any).resolve) (plugin as any).resolve = throwLicense;

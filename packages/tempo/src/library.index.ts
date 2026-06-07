@@ -5,7 +5,8 @@
  */
 
 export { Pledge } from '#library/pledge.class.js';
-export { Cipher } from '#library/cipher.class.js';
+export * as cipher from '#library/cipher.library.js';
+export * as webToken from '#library/webtoken.library.js';
 export { enumify, type Enum } from '#library/enumerate.library.js';
 export { proxify } from '#library/proxy.library.js';
 export { stringify, objectify, cloneify } from '#library/serialize.library.js';

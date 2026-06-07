@@ -2,7 +2,7 @@ import '#library/temporal.polyfill.js';
 import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { pad, singular } from '#library/string.library.js';
-import { Match, enums, isTempo, logError, logWarn, logTrace } from '#tempo/support';
+import { Match, enums, isTempo, logError, logWarn, logDebug } from '#tempo/support';
 import * as t from '../tempo.type.js';
 
 /**
@@ -152,7 +152,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	delete groups["sfx"];
 
 	const finalDateTime = dateTime.add({ days });
-	logTrace(`[Lexer] Applied weekday offset of ${days} days`, config);
+	logDebug(`[Lexer] Applied weekday offset of ${days} days`, config);
 	return finalDateTime;
 }
 
@@ -230,7 +230,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		.toZonedDateTime(tz)
 		.withPlainTime(dateTime.toPlainTime());
 
-	logTrace(`[Lexer] Resolved Date components to ${year}-${month}-${day}`, config);
+	logDebug(`[Lexer] Resolved Date components to ${year}-${month}-${day}`, config);
 	return finalDateTime;
 }
 
@@ -257,7 +257,7 @@ export function parseTime(groups: t.Groups = {}, dateTime: Temporal.ZonedDateTim
 		hh -= 12;
 
 	const finalDateTime = dateTime.withPlainTime({ hour: hh, minute: mi, second: ss, millisecond: ms, microsecond: us, nanosecond: ns });
-	logTrace(`[Lexer] Resolved Time components to ${pad(hh)}:${pad(mi)}:${pad(ss)}`, undefined);
+	logDebug(`[Lexer] Resolved Time components to ${pad(hh)}:${pad(mi)}:${pad(ss)}`, undefined);
 	return finalDateTime;
 }
 
@@ -294,7 +294,7 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	delete groups["tzd"];
 
 	if (zone || cal)
-		logTrace(`[Lexer] Applied Zone/Calendar adjustments: Zone=${zone ?? 'unchanged'}, Calendar=${cal ?? 'unchanged'}`, config);
+		logDebug(`[Lexer] Applied Zone/Calendar adjustments: Zone=${zone ?? 'unchanged'}, Calendar=${cal ?? 'unchanged'}`, config);
 
 	return dateTime;
 }

@@ -29,9 +29,9 @@ export function raise(err: Error | string, context: BoundaryContext = {}): void 
 	// 1. Output the error telemetry
 	if (!context.silent) {
 		if (context.logger) {
-			context.logger.error(error.message);
+			context.logger.error(error);
 		} else {
-			console.error(`[Boundary] ${error.message}`);
+			console.error('[Boundary]', error);
 		}
 	}
 

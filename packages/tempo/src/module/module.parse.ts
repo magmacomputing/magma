@@ -1,6 +1,7 @@
 import '#library/temporal.polyfill.js';
 import { asType } from '#library/type.library.js';
-import { isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isIntegerLike, isEmpty } from '#library/assertion.library.js';
+import { LOG } from '#library/logger.class.js';
+import { isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { isNumeric } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
@@ -17,7 +18,7 @@ import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
 import { sym, isTempo, TermError, getRuntime, Match, TempoError } from '../support/support.index.js';
 import { markConfig, setPatterns, init, extendState } from '../support/support.index.js';
-import { setProperty, logError, logDebug, logTrace } from '#tempo/support/support.util.js';
+import { setProperty, logError, logDebug } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
 
 /**
@@ -314,18 +315,16 @@ const _ParseEngine = {
 			}
 		});
 
-		if (state.config?.debug === 'trace' || state.config?.debug === 5) {
-			logTrace(`[ParseEngine] Selected layouts: ${orderedPatterns.map(p => p[0].description).join(', ')}`, state.config);
-		}
+		if (state.config?.debug === LOG.Debug)
+			logDebug(`[ParseEngine] Selected layouts: ${orderedPatterns.map(p => p[0].description).join(', ')}`, state.config);
 
 		for (const [symKey, pat] of orderedPatterns) {
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
 			if (isEmpty(groups))
 				continue;
 
-			if (state.config?.debug === 'trace' || state.config?.debug === 5) {
-				logTrace(`[ParseEngine] Matched layout '${symKey.description}' with groups: ${JSON.stringify(groups)}`, state.config);
-			}
+			if (state.config?.debug === LOG.Debug)
+				logDebug(`[ParseEngine] Matched layout '${symKey.description}' with groups: ${JSON.stringify(groups)}`, state.config);
 
 			const hasTime = Object.keys(groups)
 				.some(key => ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'].includes(key) || Match.period.test(key) || (Match.named.test(key) && key.endsWith('tm'))) || Object.values(groups).includes('now');

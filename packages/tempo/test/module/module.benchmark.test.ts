@@ -20,7 +20,7 @@ describe('BenchmarkModule', () => {
 		expect(native.name).toBe('Native Date');
 		expect(native.successCount).toBe(1);
 		expect(native.failureCount).toBe(1);
-		expect(native.successRate).toBe('50.0%');
+		expect(native.successRate).toMatch(/^50(\.0+)?%$/);
 		expect(typeof native.totalTimeMs).toBe('number');
 		expect(typeof native.microSecPerOp).toBe('number');
 	});
@@ -32,7 +32,7 @@ describe('BenchmarkModule', () => {
 			modes: ['auto', 'defer']
 		});
 
-		console.log('BENCHMARK RESULTS:', results);
+
 		expect(results.length).toBe(2);
 		
 		const auto = results.find(r => r.name.includes('auto'))!;

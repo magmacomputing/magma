@@ -72,8 +72,6 @@ let _global = {} as Internal.State;
 let _usrCount = 0;
 /** flag to prevent recursion during init */
 const _lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
-/** Master Guard predicate (implements RegExp-like interface) */
-let _guard: { test(str: string): boolean } = { test: () => true };
 
 @Serializable
 @Immutable
@@ -125,7 +123,7 @@ export class Tempo {
 	}
 	/** mapping of terms to their resolved values */					private static _termMap: Map<string, TermPlugin> = new Map();
 
-	/** Master Guard predicate (implements RegExp-like interface) */private static _guard: { test(str: string): boolean } = { test: () => true };
+	/** Master Guard predicate (implements RegExp-like interface) */static get [$guard]() { return (this[$Internal]() as any)[$guard] ?? { test: () => true }; }
 
 	static [$IsBase] = true;
 
@@ -342,23 +340,27 @@ export class Tempo {
 
 		markConfig(discovery);																	// auto-mark the discovery object
 
+		const isSandbox = shape !== _global;
+		let opts = discovery.options || {}
+
 		// 1. Process TimeZones (normalize to lowercase for lookup)
 		if (discovery.timeZones) {
 			const tzs = Object.fromEntries(
 				ownEntries(discovery.timeZones, true).map(([k, v]) => [String(k).toLowerCase(), v])
 			);
-			registryUpdate('TIMEZONE', tzs);
+			if (isSandbox) opts = { ...opts, timeZones: tzs };
+			else registryUpdate('TIMEZONE', tzs);
 		}
 
 		// 1b. Process Numbers
-		if (discovery.numbers)
-			registryUpdate('NUMBER', discovery.numbers);
+		if (discovery.numbers) {
+			if (isSandbox) opts = { ...opts, numbers: discovery.numbers };
+			else registryUpdate('NUMBER', discovery.numbers);
+		}
 
 		// 1c. Process MDY settings
-		let opts = discovery.options || {}
-
 		if (discovery.monthDay) {
-			const md = discovery.monthDay;
+			let md = discovery.monthDay;
 			if (md.timezones) {
 				const zones = Object.fromEntries(
 					ownEntries(md.timezones, true).map(([k, v]) => {
@@ -366,10 +368,13 @@ export class Tempo {
 						catch { return [String(k), v] }
 					})
 				);
-				registryUpdate('MONTH_DAY', { timezones: zones });
+				if (isSandbox) md = { ...md, timezones: zones };
+				else registryUpdate('MONTH_DAY', { timezones: zones });
 			}
-			if (md.locales) registryUpdate('MONTH_DAY', { locales: asArray(md.locales) });
-			if (md.layouts) registryUpdate('MONTH_DAY', { layouts: asArray(md.layouts) });
+			if (!isSandbox) {
+				if (md.locales) registryUpdate('MONTH_DAY', { locales: asArray(md.locales) });
+				if (md.layouts) registryUpdate('MONTH_DAY', { layouts: asArray(md.layouts) });
+			}
 			opts = { ...opts, monthDay: md };
 		}
 
@@ -386,7 +391,7 @@ export class Tempo {
 		// 3. Process Formats
 		if (discovery.formats) {
 			shape.config.formats = shape.config.formats.extend(discovery.formats) as t.FormatRegistry;
-			registryUpdate('FORMAT', discovery.formats);
+			if (!isSandbox) registryUpdate('FORMAT', discovery.formats);
 		}
 
 		// 4. Process Plugins
@@ -429,7 +434,7 @@ export class Tempo {
 			...Guard
 		];
 
-		_guard = createMasterGuard(wordsList);
+		(this[$Internal]() as any)[$guard] = createMasterGuard(wordsList);
 
 		if (this[$Internal]() === _global) {
 			setPatterns(this[$Internal]());
@@ -710,9 +715,11 @@ export class Tempo {
 				options,																						// explicit options from the call
 			)
 
+			setLogLevel(state.config.debug ?? options.debug ?? Default?.debug ?? LOG.Info);
+
 			if (options.plugins) this.extend(options.plugins);		// ensure init-plugins are processed before 'ready'
 
-			if (Context.type === CONTEXT.Browser || options.debug === LOG.Trace)
+			if (Context.type === CONTEXT.Browser || state.config.debug === LOG.Debug)
 				logDebug('Tempo:', this.config, state.config);
 
 			setPatterns(state);																		// rebuild the global patterns (Master Guard etc)
@@ -1001,7 +1008,7 @@ export class Tempo {
 		logError(msg, config);
 	}
 
-	/** @internal */	static get [$guard]() { return _guard }
+
 
 	/** 
 	 * @internal Internal access to instance private state.
@@ -1087,7 +1094,7 @@ export class Tempo {
 		// 🏛️ Initialization Strategy ('auto' | 'strict' | 'defer')
 		if (mode === Tempo.MODE.Defer) this.#local.parse.lazy = true;
 		else if (mode === Tempo.MODE.Strict) this.#local.parse.lazy = false;
-		else if (isString(this.#tempo) && !isEmpty(input) && _guard.test(trimAll(input))) {
+		else if (isString(this.#tempo) && !isEmpty(input) && (this.constructor as typeof Tempo)[$guard].test(trimAll(input))) {
 			this.#local.parse.lazy = true;												// auto-switch to lazy-mode for valid strings
 		}
 
