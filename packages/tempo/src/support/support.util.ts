@@ -4,7 +4,7 @@ import { raise as boundaryRaise } from '#library/boundary.library.js';
 
 import { sym, Token } from './support.symbol.js';
 import { asType, getType } from '#library/type.library.js';
-import { asArray } from '#library/coercion.library.js';
+import { asArray, asError } from '#library/coercion.library.js';
 import { isSymbol, isUndefined, isDefined, isString, isNullish, isObject } from '#library/assertion.library.js';
 import { ownEntries, unwrap } from '#library/primitive.library.js';
 import { getRuntime } from './support.runtime.js';
@@ -47,16 +47,15 @@ export function setLogLevel(debug?: DebugLevel) {
 const concatMsg = (msg: any[]) => msg.map(m => isError(m) ? m.message : String(m)).join(' ');
 
 /** @internal Centralized Error Boundary — evaluates config.catch and logs automatically */
-export function raise(err: Error | string, config: any = {}, ...msg: any[]) {
-	// Combine extra messages if multiple are provided
+export function raise(err: Error | string | unknown, config: any = {}, ...msg: any[]) {
+	const error = asError(err);
+
 	if (msg.length > 0) {
 		const text = concatMsg(msg);
-		err = isString(err) ? new Error(err) : err;
-		if (isError(err) && isString(err.message) && text)
-			err.message = `${err.message} ${text}`;
+		if (text) error.message = `${error.message} ${text}`;
 	}
 
-	boundaryRaise(err, {
+	boundaryRaise(error, {
 		catch: config?.catch ?? false,
 		silent: config?.silent ?? false,
 		logger: logTempo
@@ -69,9 +68,8 @@ export const logError = raise;
 const createLogger = (level: 'warn' | 'debug' | 'trace') =>
 	(msg: any, config: any = {}, ...extraMsg: any[]) => {
 		if (!config?.silent) {
-			const outMsg = concatMsg([msg, ...extraMsg]);
-			if (config[sym.$LogConfig]) logTempo[level](config, outMsg);
-			else logTempo[level](outMsg);
+			if (config[sym.$LogConfig]) logTempo[level](config, msg, ...extraMsg);
+			else logTempo[level](msg, ...extraMsg);
 		}
 	};
 

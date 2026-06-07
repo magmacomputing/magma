@@ -728,7 +728,11 @@ export class Tempo {
 			if (rt.license.jws?.isPending) {
 				const jws = rt.license.jws;
 				import('#tempo/license')
-					.then(m => jws.resolve(m))
+					.then(async m => {
+						const validator = new m.Validator(rt.license.key!);
+						const res = await validator.verify();
+						jws.resolve(res);
+					})
 					.catch(err => {
 						// If the stored JWS is still the same (i.e. we haven't set a new one since), then clear the status
 						if (rt.license.jws === jws)

@@ -159,49 +159,47 @@ function setLicense(state: t.Internal.State, key: string) {
 		const initialKey = runtime.license.key;
 		const argObj = {
 			tag: 'license',
-			onResolve: (m: any) => {
-				const validator = new m.Validator(runtime.license.key!);
-				validator.verify().then((res: any) => {
-					// 🛡️ Race Condition Guard: Only apply results if identity (JTI + Key) hasn't changed since we started
-					if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
+			onResolve: (res: any) => {
+				// 🛡️ Race Condition Guard
+				if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
 
-					const desc = res.status?.description ?? (res.status == null ? '' : String(res.status));
-					const statusMap: Record<string, any> = {
-						'active': LICENSE.Active,
-						'expired': LICENSE.Expired,
-						'revoked': LICENSE.Revoked,
-						'invalid': LICENSE.Invalid
-					};
-					runtime.license.status = statusMap[desc] ?? LICENSE.Invalid;
-					runtime.license.scopes = res.scopes;
-					delete runtime.license.error; // 🚿 Clear error on every reckoning attempt
-					if (res.error) runtime.license.error = res.error;
-					if (res.expires) runtime.license.expires = res.expires;
-					if (res.issuedAt) runtime.license.issuedAt = res.issuedAt;
-					if (res.issuer) runtime.license.issuer = res.issuer;
-					if (res.jti) runtime.license.jti = res.jti;
+				const desc = res.status?.description ?? (res.status == null ? '' : String(res.status));
+				const statusMap: Record<string, any> = {
+					'active': LICENSE.Active,
+					'expired': LICENSE.Expired,
+					'revoked': LICENSE.Revoked,
+					'invalid': LICENSE.Invalid
+				};
+				runtime.license.status = statusMap[desc] ?? res.status ?? LICENSE.Invalid;
+				runtime.license.scopes = res.scopes;
+				delete runtime.license.error; // 🚿 Clear error on every reckoning attempt
+				if (res.error) runtime.license.error = res.error;
+				if (res.expires) runtime.license.expires = res.expires;
+				if (res.issuedAt) runtime.license.issuedAt = res.issuedAt;
+				if (res.issuer) runtime.license.issuer = res.issuer;
+				if (res.jti) runtime.license.jti = res.jti;
 
-					if ([LICENSE.Revoked, LICENSE.Invalid].includes(res.status))
-						logWarn(`⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`, state.config);
-						
-					if (res.revocationPromise) {
-						res.revocationPromise.then((isRevoked: boolean) => {
-							if (isRevoked && runtime.license.jti === initialJti && runtime.license.key === initialKey) {
-								runtime.license.status = LICENSE.Revoked;
-								runtime.license.error = 'License has been revoked by the issuer.';
-								logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
-							}
-						}).catch(() => { /* silent fail-safe */ });
-					}
-				}).catch((err: any) => {
-					if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
-					runtime.license.status = LICENSE.Invalid;
-					runtime.license.error = err?.message || 'Verification rejected';
-					logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
-				});
+				if ([LICENSE.Revoked, LICENSE.Invalid].includes(res.status))
+					logWarn(`⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`, state.config);
+
+				if (res.revocationPromise) {
+					res.revocationPromise.then((isRevoked: boolean) => {
+						if (isRevoked && runtime.license.jti === initialJti && runtime.license.key === initialKey) {
+							runtime.license.status = LICENSE.Revoked;
+							runtime.license.error = 'License has been revoked by the issuer.';
+							logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
+						}
+					}).catch(() => { /* silent fail-safe */ });
+				}
+			},
+			onReject: (err: any) => {
+				if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
+				runtime.license.status = LICENSE.Invalid;
+				runtime.license.error = err?.message || 'Verification rejected';
+				logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
 			}
 		};
-		runtime.license.jws = new Pledge<Internal.LicensingModule>(argObj as any);
+		runtime.license.jws = new Pledge<Internal.ValidationResult>(argObj as any);
 	}
 }
 

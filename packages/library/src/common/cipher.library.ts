@@ -119,3 +119,15 @@ export const importPublicKey = async (pem: string): Promise<CryptoKey> => {
 		['verify']
 	);
 }
+
+export const generateKeyPair = async (): Promise<CryptoKeyPair> => {
+	return subtle.generateKey({
+		name: keys.SignKey,
+		modulusLength: 2048,
+		publicExponent: new Uint8Array([1, 0, 1]),
+		hash: { name: keys.Algorithm },
+	},
+		true,
+		['sign', 'verify']
+	);
+}

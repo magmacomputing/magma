@@ -1,9 +1,13 @@
-import { base64ToBuffer } from './buffer.library.js';
+import { base64ToBuffer, bufferToBase64, encodeBuffer } from './buffer.library.js';
 import { isFunction } from './assertion.library.js';
 import { Logger } from './logger.class.js';
 import { keys } from './cipher.library.js';
 
 const logger = new Logger('WebToken');
+
+const formatBase64Url = (base64: string) => base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+const toBase64Url = (str: string) => formatBase64Url(bufferToBase64(encodeBuffer(str)));
+const bufToBase64Url = (buf: Uint8Array) => formatBase64Url(bufferToBase64(buf));
 
 /** fast, unverified decode of a JWT payload */
 export const decodeJWT = <T = any>(jwt: string): T | null => {
@@ -36,7 +40,7 @@ export const verifyJWS = async (token: string, publicKey: CryptoKey): Promise<bo
 
 		// crypto.subtle.verify takes signature, key, data
 		const crypto = globalThis.crypto;
-		const dataBytes = new TextEncoder().encode(signedData);
+		const dataBytes = encodeBuffer(signedData);
 
 		return await crypto.subtle.verify(
 			keys.SignKey,
@@ -47,5 +51,27 @@ export const verifyJWS = async (token: string, publicKey: CryptoKey): Promise<bo
 	} catch (e: any) {
 		logger.error('VERIFY_ERROR:', e.stack);
 		return false;
+	}
+}
+
+/** natively sign a JSON Web Signature */
+export const signJWS = async (payload: object, privateKey: CryptoKey, headers: object = { alg: 'RS256', typ: 'JWT' }): Promise<string> => {
+	try {
+		const header64 = toBase64Url(JSON.stringify(headers));
+		const payload64 = toBase64Url(JSON.stringify(payload));
+
+		const unsignedToken = `${header64}.${payload64}`;
+		const dataBytes = encodeBuffer(unsignedToken);
+
+		const signatureBytes = await globalThis.crypto.subtle.sign(
+			keys.SignKey,
+			privateKey,
+			dataBytes
+		);
+
+		return `${unsignedToken}.${bufToBase64Url(new Uint8Array(signatureBytes))}`;
+	} catch (e: any) {
+		logger.error('SIGN_ERROR:', e.stack);
+		throw e;
 	}
 }

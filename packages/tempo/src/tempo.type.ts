@@ -359,7 +359,7 @@ export namespace Internal {
 		status: enums.LICENSE;
 		key?: string;
 		scopes: Record<string, Internal.LicenseScope>;
-		jws?: Pledge<Internal.LicensingModule>;
+		jws?: Pledge<Internal.ValidationResult>;
 		expires?: number | string;
 		issuedAt?: number;
 		issuer?: string;
