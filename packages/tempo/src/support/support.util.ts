@@ -216,9 +216,15 @@ export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthD
 		resolvedLocales
 	}
 }
+/** @internal identify valid sync tokens */
+export function isSyncToken(status: any): status is string {
+	return isString(status) && /^[0-9a-f]{8}$/.test(status);
+}
 
-/** @internal resolve proprietary license checksums to standard 'active' state */
-export function resolveDisplayStatus(status: symbol | string): string {
-	const raw = String(status) as LICENSE;
-	return LICENSE.values().includes(raw) ? raw : LICENSE.Active;
+/** @internal resolve licensing state to standard 'active' state */
+export function resolveDisplayStatus(status: string): string {
+	const raw = isSyncToken(status)
+		? LICENSE.Active
+		: String(status) as LICENSE
+	return LICENSE.values().includes(raw) ? raw : LICENSE.Unknown;
 }

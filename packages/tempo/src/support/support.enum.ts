@@ -260,6 +260,7 @@ export const LICENSE = enumify({
 	Revoked: 'revoked',
 	Invalid: 'invalid',
 	Unauthorized: 'unauthorized',
+	Unknown: 'unknown',
 }, false);
 export type LICENSE = ValueOf<typeof LICENSE>
 

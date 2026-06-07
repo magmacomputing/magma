@@ -13,7 +13,7 @@ import { getStorage } from '#library/storage.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 
 import { getRuntime } from './support.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, logWarn, logDebug } from './support.util.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, logWarn, logDebug, isSyncToken } from './support.util.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
 import { STATE, LICENSE } from './support.enum.js';
@@ -163,8 +163,9 @@ function setLicense(state: t.Internal.State, key: string) {
 				// 🛡️ Race Condition Guard
 				if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
 
-				runtime.license.status = res.status ?? LICENSE.Invalid;
-				runtime.license.scopes = res.scopes;
+				const isValidStatus = isSyncToken(res.status) || LICENSE.values().includes(res.status);
+				runtime.license.status = isValidStatus ? res.status : LICENSE.Invalid;
+				runtime.license.scopes = isObject(res.scopes) ? res.scopes : {};
 				delete runtime.license.error; // 🚿 Clear error on every reckoning attempt
 				if (res.error) runtime.license.error = res.error;
 				if (res.expires) runtime.license.expires = res.expires;
