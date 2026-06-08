@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Term Scope Isolation**: Fixed a bug where the `Tempo.terms` getter would inappropriately sweep all licensed scopes (including modules and extensions like `ticker`) into the Terms array. `Tempo.terms` now strictly returns only the registered, queryable Term plugins, while preserving raw scopes in `Tempo.license.scopes`.
-- **Security Hardening**: Obfuscated the internal integrity hash terminology (`isSyncToken`) to prevent malicious actors from trivially identifying and bypassing the proprietary Open-Core Ghost-Trap architecture.
 
 ## [3.0.0] - 2026-06-07
 

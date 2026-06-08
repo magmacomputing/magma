@@ -24,10 +24,13 @@ import type { TermPlugin, PremiumPlugin } from './plugin/term/term.type.js';
 import { AliasEngine } from './engine/engine.alias.js';
 import { PatternCompiler } from './engine/engine.pattern.js';
 import { createMasterGuard } from './engine/engine.guard.js';
-import { resolveMonthDay, setProperty, proto, hasOwn, resolveDisplayStatus } from './support/support.util.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
+
+import { setLicense } from './support/support.init.js';
+import { resolveMonthDay, setProperty, proto, hasOwn, resolveDisplayStatus } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Match, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel } from '#tempo/support';
+import { TEMPO_VERSION } from './tempo.version.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -96,8 +99,10 @@ export class Tempo {
 
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !_lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return _lifecycle.extendDepth > 0 }
+	/** the version of this Tempo build (stamped at build-time from package.json) */
+	static get version() { return TEMPO_VERSION }
 
-	/** mutable list of registered term plugins */						private static get _terms(): TermPlugin[] { return getRuntime().pluginsDb.terms }
+	/** mutable list of registered term plugins */						private static get _terms(): TermPlugin[] { return this[$Internal]().pluginsDb.terms }
 	/** @internal raw license state */												private static get _license() { return getRuntime().license }
 	/** human-readable formatted license state */							static get license() {
 		const { jws, key, ...raw } = Tempo._license;						// omit internal Pledge and JWT string from user-facing snapshot
@@ -469,11 +474,13 @@ export class Tempo {
 	static extend(...args: any[]): typeof Tempo;
 	static extend(...args: any[]): typeof Tempo {
 		let options = (args.length > 1 && isObject(args[args.length - 1]) && !isFunction(args[args.length - 1]) && !isDefined(args[args.length - 1].key)) ? args.pop() : undefined;
+		if (options?.license) setLicense(this[$Internal](), options.license);
+
 		const items = args.flat(Infinity);
 
 		if (isEmpty(items)) return this;
 
-		_lifecycle.extendDepth++;													// increment the re-entrant nesting counter
+		_lifecycle.extendDepth++;																// increment the re-entrant nesting counter
 		try {
 			items.forEach(item => {
 				const arg = item as any;
@@ -482,7 +489,7 @@ export class Tempo {
 					if (rt.installed.has(arg)) return;
 					rt.installed.add(arg);														// mark as installed (BEFORE side-effects)
 
-					registerPlugin(arg);
+					registerPlugin(arg, this[$Internal]());
 					try {
 						(arg as any)(this, options, (val: any) => new this(val));
 					} catch (e: any) {
@@ -504,7 +511,7 @@ export class Tempo {
 					}
 					rt.installed.add(name);
 
-					registerPlugin(item);
+					registerPlugin(item, this[$Internal]());
 					(item as TempoPlugin).install.call(this as any, this);
 				}
 				else if (isObject(item)) {
@@ -527,7 +534,7 @@ export class Tempo {
 						Tempo._termMap.set(config.key, config);
 						if (config.scope) Tempo._termMap.set(config.scope, config);
 
-						registerTerm(config);
+						registerTerm(config, this[$Internal]());
 
 						// 1a. sync with alias engine
 						if (config.scope && config.ranges) {
@@ -724,7 +731,7 @@ export class Tempo {
 			},
 				{ store: storeKey, discovery: normalizedDiscovery, scope: 'global' },
 				this.readStore(storeKey),														// allow for storage-values to overwrite
-				this[$setDiscovery](state, rt.pluginsDb as any),		// persistent library extensions
+				this[$setDiscovery](state, state.pluginsDb as any),	// persistent library extensions
 				this[$setDiscovery](state, userDiscovery),					// user Discovery (Configuration bootstrapping)
 				options,																						// explicit options from the call
 			)
@@ -741,7 +748,7 @@ export class Tempo {
 			// 🏛️ Licensing Reckoning (Background Verification)
 			if (rt.license.jws?.isPending) {
 				const jws = rt.license.jws;
-				import('#tempo/license')
+				import('./support/support.license.js')
 					.then(async m => {
 						const validator = new m.Validator(rt.license.key!);
 						const res = await validator.verify();
@@ -786,7 +793,7 @@ export class Tempo {
 	static hasModule(name: string): boolean {
 		const rt = getRuntime();
 		const mod = name === 'term' ? 'TermsModule' : name;
-		return isDefined(rt.modules[mod]) || rt.installed.has(mod) || rt.pluginsDb.plugins.some(p => p.name === mod);
+		return isDefined(rt.modules[mod]) || rt.installed.has(mod) || this[$Internal]().pluginsDb.plugins.some(p => p.name === mod);
 	}
 
 	/** @internal Reads options from persistent storage (e.g., localStorage). */
@@ -802,7 +809,7 @@ export class Tempo {
 	/** @internal lookup or registers a new `Symbol` for a given key. */
 	static getSymbol(key?: string | symbol) {
 		if (isUndefined(key)) {
-			const usr = `usr.${++_usrCount}`;								// allocate a prefixed 'user' key
+			const usr = `usr.${++_usrCount}`;											// allocate a prefixed 'user' key
 			return Token[usr] = Symbol(usr);											// add to Symbol register
 		}
 
@@ -897,8 +904,26 @@ export class Tempo {
 			return item;
 		});
 
+		// 📋 Synthetic stubs: surface JWT-claimed scopes that haven't been registered yet
+		const registeredKeys = new Set(list.map((t: any) => t.key));
+		const licenseStatus = rt.license.status;
+		if (licenseStatus && licenseStatus !== 'none') {
+			for (const [scopeKey, meta] of Object.entries(rt.license.scopes || {})) {
+				if (!registeredKeys.has(scopeKey)) {
+					const m = meta as any;
+					list.push({
+						key: scopeKey,
+						description: `Premium plugin (uninstalled)`,
+						status: resolveDisplayStatus(licenseStatus),
+						expires: m?.exp ?? rt.license.expires,
+						...(m?.updated_at && { updated: m.updated_at }),
+					} as any);
+				}
+			}
+		}
+
 		// treats `Tempo.terms` as array-like and indexable by key.
-		return indexedArray(list, key => list.find(t => t.key === key || t.scope === key)) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
+		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key)) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
 	}
 
 	/** static Tempo.formats (registry) */
@@ -1039,6 +1064,7 @@ export class Tempo {
 			config: self.#local.config,
 			parse: self.#local.parse,
 			userProvidedKeys: self.#local.userProvidedKeys,
+			pluginsDb: self.#local.pluginsDb,
 			aliasEngine: self.#local.aliasEngine,
 			_id: (self.#local as any)._id,
 			tempoInstance: self,

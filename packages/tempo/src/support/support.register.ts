@@ -64,8 +64,10 @@ export function registryReset() {
 		clearCache(state);
 	});
 
-	rt.pluginsDb.terms.length = 0;
-	rt.pluginsDb.plugins.length = 0;
+	if (rt.state) {
+		rt.state.pluginsDb.terms.length = 0;
+		rt.state.pluginsDb.plugins.length = 0;
+	}
 	rt.extensions.length = 0;
 
 	// Trigger all registered reset hooks

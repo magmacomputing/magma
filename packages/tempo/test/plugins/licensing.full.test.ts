@@ -3,17 +3,27 @@ import { LICENSE } from '#tempo/support/support.enum.js';
 import { getRuntime, resetRuntime } from '#tempo/support/support.runtime.js';
 import { encodeBase64 } from '#library';
 
-// 🛡️ Hoist the license module mock to module scope for Vitest
-vi.mock('#tempo/license', () => {
-	const verify = vi.fn().mockResolvedValue({
-		status: 'active',
-		scopes: { astro: {} }
-	});
-	const Validator = vi.fn().mockImplementation(function () { return { verify }; });
-	return { Validator };
+// vi.hoisted runs before all imports are processed, making these available to hoisted vi.mock calls
+const { licenseModulePath, mockFactory } = vi.hoisted(() => {
+	// Must use require() here — ES `import` bindings are not yet initialized when vi.hoisted runs
+	const path = require('node:path') as typeof import('node:path');
+	// Use .js to match the dynamic import('./support/support.license.js') specifier in tempo.class.ts
+	const licenseModulePath = path.resolve(__dirname, '../../src/support/support.license.js');
+	const mockFactory = () => {
+		const verify = vi.fn().mockResolvedValue({
+			status: 'active',
+			scopes: { astro: {} }
+		});
+		const Validator = vi.fn().mockImplementation(function () { return { verify }; });
+		return { Validator };
+	};
+	return { licenseModulePath, mockFactory };
 });
 
-const licenseModule = '#tempo/license';
+// 🛡️ Mock both the alias path (#tempo/license) and the resolved absolute path for the
+// dynamic import('./support/support.license.js') used in tempo.class.ts (browser-safe relative path)
+vi.mock('#tempo/license', mockFactory);
+vi.mock(licenseModulePath, mockFactory);
 
 describe('Tempo Licensing Strategy', () => {
 	let originalLicenseKeyEnv: string | undefined;
@@ -155,7 +165,7 @@ describe('Tempo Licensing Strategy', () => {
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
 		Tempo.init({ license: mockToken });
-		
+
 		// Wait for the Pledge to resolve and the validator logic to trigger
 		await getRuntime().license.jws;
 		await vi.waitFor(() => expect(getRuntime().license.status).toBe(LICENSE.Active));
@@ -175,7 +185,7 @@ describe('Tempo Licensing Strategy', () => {
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
 		// Update mock for this specific test
-		const { Validator } = await import(licenseModule as any);
+		const { Validator } = await import(licenseModulePath as any);
 		vi.mocked(Validator).mockImplementation(function () {
 			return {
 				verify: vi.fn().mockResolvedValue({
@@ -201,7 +211,7 @@ describe('Tempo Licensing Strategy', () => {
 		const payload = { scopes: { premium: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
-		const { Validator } = await import(licenseModule as any);
+		const { Validator } = await import(licenseModulePath as any);
 		vi.mocked(Validator).mockImplementation(function () {
 			return {
 				verify: vi.fn().mockResolvedValue({

@@ -270,6 +270,7 @@ export namespace Internal {
 		/** @internal has the parse operation errored? */				errored?: boolean;
 		/** @internal Alias engine for this Tempo instance */		aliasEngine?: AliasEngine;
 		/** @internal Pattern compiler for this Tempo instance */	patternCompiler?: PatternCompiler;
+		/** @internal database of plugins scoped to this state */pluginsDb: { terms: TermPlugin[]; plugins: TempoPlugin[] };
 	}
 
 	/** debug a Tempo instantiation */

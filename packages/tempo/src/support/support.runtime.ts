@@ -39,11 +39,6 @@ export class TempoRuntime {
 	readonly installed: Set<any> = new Set();
 	/** decentralized reset hooks — fired on every registryReset() call */
 	readonly resetHooks: Set<() => void> = new Set();
-	/**
-	 * Persistent plugin/term discovery database.
-	 * Kept as a plain object (not a secureRef) so callers can push() into the arrays.
-	*/
-	readonly pluginsDb: { terms: TermPlugin[]; plugins: Plugin[] } = { terms: [], plugins: [] };
 
 	/** current license state */
 	readonly license: Internal.LicenseState = { status: LICENSE.None, scopes: {} };
@@ -81,11 +76,11 @@ export class TempoRuntime {
 	 * Validates the shape before storing so malformed entries cannot corrupt state.
 	 * Replaces existing terms with the same key to support HMR and test module cache resets.
 	 */
-	addTerm(term: TermPlugin): void {
+	addTerm(state: Internal.State, term: TermPlugin): void {
 		if (!term || typeof term.key !== 'string') return;
-		const idx = this.pluginsDb.terms.findIndex(t => t.key === term.key);
-		if (idx >= 0) this.pluginsDb.terms[idx] = term;
-		else this.pluginsDb.terms.push(term);
+		const idx = state.pluginsDb.terms.findIndex(t => t.key === term.key);
+		if (idx >= 0) state.pluginsDb.terms[idx] = term;
+		else state.pluginsDb.terms.push(term);
 	}
 
 	/**
@@ -93,17 +88,17 @@ export class TempoRuntime {
 	 * Guards against duplicate entries.
 	 * Replaces existing plugins with the same name to support HMR and test module cache resets.
 	 */
-	addPlugin(plugin: any): void {
+	addPlugin(state: Internal.State, plugin: any): void {
 		if (!plugin) return;
 		if (plugin.name) {
-			const idx = this.pluginsDb.plugins.findIndex(p => p.name === plugin.name);
+			const idx = state.pluginsDb.plugins.findIndex(p => p.name === plugin.name);
 			if (idx >= 0) {
-				this.pluginsDb.plugins[idx] = plugin;
+				state.pluginsDb.plugins[idx] = plugin;
 				return;
 			}
 		}
-		if (!this.pluginsDb.plugins.includes(plugin))
-			this.pluginsDb.plugins.push(plugin);
+		if (!state.pluginsDb.plugins.includes(plugin))
+			state.pluginsDb.plugins.push(plugin);
 	}
 
 	/**

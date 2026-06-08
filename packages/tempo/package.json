@@ -187,6 +187,8 @@
     "build": "npm run clean && tsc -b && npm run build:bundle && npm run build:resolve",
     "build:bundle": "rollup -c",
     "build:resolve": "tsx bin/resolve-types.ts",
+    "build:version": "node bin/update-version.mjs",
+    "prebuild": "npm run build:version",
     "clean": "rm -rf dist && (tsc -b --clean || true)",
     "publish": "npm publish --access public",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && if [ -z \"$TEMPO_LICENSE_PATH\" ] || [ ! -f \"$TEMPO_LICENSE_PATH\" ]; then echo '🚨 ERROR: TEMPO_LICENSE_PATH is missing or invalid. Cannot publish Premium build.'; exit 1; fi && npm run build",

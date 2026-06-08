@@ -5,7 +5,7 @@ import { getDateTimeFormat, getHemisphere } from '#library/international.library
 import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { asType } from '#library/type.library.js';
-import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/assertion.library.js';
+import { isString, isObject, isUndefined, isDefined, isRegExp, isNumber } from '#library/assertion.library.js';
 import { Pledge } from '#library/pledge.class.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { decodeJWT } from '#library/webtoken.library.js';
@@ -32,11 +32,17 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	const state = (baseState ? Object.create(baseState) : {
 		config: {},
 		parse: {},
+		pluginsDb: { terms: [], plugins: [] },
 		userProvidedKeys: new Set<string>()
 	}) as t.Internal.State;
 
-	if (baseState)
+	if (baseState) {
 		state.userProvidedKeys = new Set(baseState.userProvidedKeys);
+		state.pluginsDb = {
+			terms: [...baseState.pluginsDb.terms],
+			plugins: [...baseState.pluginsDb.plugins]
+		};
+	}
 
 	// 1. Establish the base parsing state
 	const parseState: t.Internal.Parse = {
@@ -138,8 +144,49 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	return state;
 }
 
+/** @internal Fallback expiry warning window when issuedAt is unknown (30 days in seconds) */
+const EXPIRY_FALLBACK_WINDOW_S = 30 * 24 * 60 * 60;
+
+/**
+ * @internal
+ * Emit a logWarn for any license claim (top-level or per-scope) that is approaching expiry.
+ *
+ * **Warning window**: once 75% of the license lifetime has elapsed.
+ * If `issuedAt` is unavailable the fallback window is 30 days before expiry.
+ * This is called both after cryptographic verification and during the 7-day revocation check,
+ * so the reminder repeats on each scheduled interval while the key remains in the danger zone.
+ */
+export function warnIfExpiringSoon(license: Internal.LicenseState, config: any): void {
+	const nowS = Math.floor(Date.now() / 1_000);
+
+	const checkExpiry = (label: string, expS: number | undefined, iatS: number | undefined) => {
+		if (!expS) return;
+		const remainingS = expS - nowS;
+		if (remainingS <= 0) return;														// already expired — other logic handles this
+
+		const windowS = iatS
+			? (expS - iatS) * 0.25																// 25% of total duration remaining = 75% elapsed
+			: EXPIRY_FALLBACK_WINDOW_S;
+
+		if (remainingS <= windowS) {
+			const days = Math.ceil(remainingS / 86_400);
+			const plural = days === 1 ? 'day' : 'days';
+			logWarn(`⏳ Tempo Licensing: ${label} expires in ${days} ${plural} — visit https://registry.magmacomputing.com.au to renew.`, config);
+		}
+	};
+
+	// 1. Check the top-level license expiry (only when still a raw epoch number, not a formatted string)
+	checkExpiry('License key', isNumber(license.expires) ? license.expires : undefined, license.issuedAt);
+
+	// 2. Check each per-scope expiry (may differ from the top-level key)
+	for (const [scopeKey, meta] of Object.entries(license.scopes || {})) {
+		const m = meta as any;
+		if (m?.exp) checkExpiry(`Scope '${scopeKey}'`, m.exp, m.iat ?? license.issuedAt);
+	}
+}
+
 /** @internal helper to synchronously set the optimistic license state */
-function setLicense(state: t.Internal.State, key: string) {
+export function setLicense(state: t.Internal.State, key: string) {
 	const runtime = getRuntime();
 	if (key) {
 		const claims = decodeJWT(key);
@@ -175,6 +222,8 @@ function setLicense(state: t.Internal.State, key: string) {
 
 				if ([LICENSE.Revoked, LICENSE.Invalid].includes(res.status))
 					logWarn(`⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`, state.config);
+				else
+					warnIfExpiringSoon(runtime.license, state.config);
 
 				if (res.revocationPromise) {
 					res.revocationPromise.then((isRevoked: boolean) => {
@@ -182,6 +231,9 @@ function setLicense(state: t.Internal.State, key: string) {
 							runtime.license.status = LICENSE.Revoked;
 							runtime.license.error = 'License has been revoked by the issuer.';
 							logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
+						} else {
+							// 🔔 Repeat expiry warning on each scheduled revocation check (7-day cadence)
+							warnIfExpiringSoon(runtime.license, state.config);
 						}
 					}).catch((err: unknown) => {
 						const { message } = asError(err);

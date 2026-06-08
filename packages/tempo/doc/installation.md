@@ -104,9 +104,8 @@ Add this to your `<head>` to resolve the dependencies:
 <script type="importmap">
 {
   "imports": {
-    "jsbi": "https://cdn.jsdelivr.net/npm/jsbi@4.3.0/dist/jsbi.mjs",
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.esm.js"
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js"
   }
 }
 </script>
@@ -134,7 +133,7 @@ If you aren't using ESM or just want a simple `<script>` tag for rapid prototypi
 <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.umd.js"></script>
 
 <!-- Load the Tempo Global Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.js"></script>
 
 <script>
   const t = new Tempo('now');
@@ -168,5 +167,5 @@ When using the Lite build, the `Tempo` class will have almost no methods (like `
 
 We recommend pinning your versions in production environments to ensure stability. 
 
-*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/...` (Locks to major version 2)
+*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/...` (Locks to major version 3)
 *   **Latest**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/...` (Omit the version string to always receive the latest release. Note that JSDelivr will resolve a missing version tag to the latest published release).

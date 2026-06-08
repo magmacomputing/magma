@@ -29,11 +29,12 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 	const rt = getRuntime();
 	const mod = module === 'term' ? 'TermsModule' : module;
 	const hostLogic = (rt.modules as any)[mod];
+	const state = host[sym.$Internal]?.() || rt.state;
 
 	// terms fallback only applies when the canonical module entry actually exists in the discovery database
-	const isTermsLoaded = (mod === 'TermsModule') &&
-		(isDefined(hostLogic) || rt.installed.has('TermsModule') || rt.pluginsDb.plugins.some(p => p.name === 'TermsModule')) &&
-		rt.pluginsDb.terms.length > 0;
+	const isTermsLoaded = (mod === 'TermsModule') && state &&
+		(isDefined(hostLogic) || rt.installed.has('TermsModule') || state.pluginsDb.plugins.some((p: any) => p.name === 'TermsModule')) &&
+		state.pluginsDb.terms.length > 0;
 
 	if (!isDefined(hostLogic) && !isTermsLoaded) {
 		const baseName = mod.endsWith('Module') ? mod.slice(0, -6) : mod;
@@ -181,14 +182,14 @@ export function defineExtension<T extends Plugin<TempoType>>(extension: T): T {
  * ## registerPlugin
  * Registration hook for general plugins.
  */
-export function registerPlugin(plugin: any) {
+export function registerPlugin(plugin: any, state?: any) {
 	const rt = getRuntime();
 
-	// Validate and persist in the runtime's discovery database.
-	rt.addPlugin(plugin);
+	// Validate and persist in the state's discovery database.
+	if (state) rt.addPlugin(state, plugin);
+	else if (rt.state) rt.addPlugin(rt.state, plugin);
 
 	rt.addExtension(plugin);
-
 	rt.emit(sym.$Register, plugin);
 
 	return plugin;
