@@ -5,10 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.1] - 2026-06-07
+## [3.0.1] - 2026-06-11
+
+### Changed
+- **Node Engine Constraint**: Clarified the Node.js requirement in `package.json` to `>=20.0.0`. While Tempo supports native `Temporal` in Node 22+, due to known instabilities in Node 22.0.x native Temporal, using Node 20+ with a polyfill like `@js-temporal/polyfill` is highly recommended.
+- **Browser Compatibility Checks**: Established a fully automated headless browser test suite (`@vitest/browser`) using WebdriverIO to guarantee that Granular ESM bundles resolve dynamically imported relative paths natively. Browser compatibility is now enforced as a `prepublishOnly` lifecycle gate.
 
 ### Fixed
 - **Term Scope Isolation**: Fixed a bug where the `Tempo.terms` getter would inappropriately sweep all licensed scopes (including modules and extensions like `ticker`) into the Terms array. `Tempo.terms` now strictly returns only the registered, queryable Term plugins, while preserving raw scopes in `Tempo.license.scopes`.
+- **Background Validation Leaks**: Resolved asynchronous test leakage in the licensing test suites by ensuring all background cryptographic verification pledges are explicitly awaited during test teardown.
 
 ## [3.0.0] - 2026-06-07
 

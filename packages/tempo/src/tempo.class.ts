@@ -391,9 +391,6 @@ export class Tempo {
 		// 1e. Process Planner
 		if (isObject(discovery.planner)) opts = { ...opts, planner: discovery.planner };
 
-		// // 1f. Pass license key through to extendState so hot-swap and sandbox isolation work
-		// if (discovery.license) opts = { ...opts, license: discovery.license };
-
 		// 2. Process Terms
 		if (discovery.terms)
 			this.extend(asArray(discovery.terms));

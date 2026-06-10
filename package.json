@@ -3,7 +3,7 @@
   "version": "3.0.1",
   "private": true,
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=20.0.0"
   },
   "description": "Magma Computing Monorepo",
   "repository": {
@@ -35,15 +35,20 @@
     "@types/hammerjs": "^2.0.46",
     "@types/jquery": "^4.0.0",
     "@types/node": "^25.9.1",
+    "@vitest/browser": "^4.1.8",
+    "@vitest/browser-playwright": "^4.1.8",
+    "@vitest/browser-webdriverio": "^4.1.8",
     "@vitest/ui": "^4.1.7",
     "cross-env": "^10.1.0",
     "markdown-it-mathjax3": "^4.3.2",
+    "playwright": "^1.60.0",
     "rollup": "^4.60.4",
     "tslib": "^2.8.1",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "unplugin-swc": "^1.5.9",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.7",
+    "webdriverio": "^9.27.2"
   },
   "overrides": {
     "esbuild": "^0.28.0"

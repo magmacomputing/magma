@@ -4,31 +4,19 @@ import { getRuntime, resetRuntime } from '#tempo/support/support.runtime.js';
 import { encodeBase64 } from '#library';
 
 // vi.hoisted runs before all imports are processed, making these available to hoisted vi.mock calls
-const { licenseModulePath, mockFactory, getVerifyFn } = vi.hoisted(() => {
+const { licenseModulePath, mockFactory } = vi.hoisted(() => {
 	// Must use require() here — ES `import` bindings are not yet initialized when vi.hoisted runs
 	const path = require('node:path') as typeof import('node:path');
 	// Use .ts to match the resolved path of the #tempo/license alias (src/plugin/license/license.validator.ts)
 	const licenseModulePath = path.resolve(__dirname, '../../src/plugin/license/license.validator.ts');
 
-	// A shared, mutable reference to the verify implementation.
-	// Both vi.mock() factories point at this ref so per-test overrides are visible to both
-	// the '#tempo/license' import (used by license.manager.ts) and the licenseModulePath import.
-	let currentVerify = vi.fn().mockResolvedValue({
-		status: 'active',
-		scopes: { astro: {} }
-	});
-
 	const mockFactory = () => {
-		const Validator = vi.fn().mockImplementation(function () {
-			return { verify: (...args: any[]) => currentVerify(...args) };
-		});
+		const verify = vi.fn().mockResolvedValue({ status: 'active', scopes: { astro: {} } });
+		const Validator = vi.fn().mockImplementation(function () { return { verify }; });
 		return { Validator };
 	};
 
-	const getVerifyFn = () => currentVerify;
-	const setVerifyFn = (fn: ReturnType<typeof vi.fn>) => { (currentVerify as any) = fn; };
-
-	return { licenseModulePath, mockFactory, getVerifyFn, setVerifyFn };
+	return { licenseModulePath, mockFactory };
 });
 
 // 🛡️ Mock the license module via its alias AND the resolved absolute .ts path so that

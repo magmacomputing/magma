@@ -53,7 +53,8 @@ export default defineConfig({
 		exclude: [
 			'**/node_modules/**',
 			'**/test/**/*.core.test.ts',
-			'**/test/**/*.lazy.test.ts'
+			'**/test/**/*.lazy.test.ts',
+			'**/test/browser/**'
 		],
 		setupFiles: process.env.TEMPO_PREFILTER_CI === 'true'
 			? [polyfill, consoleSpySetup, ciPrefilterSetup]
@@ -62,7 +63,6 @@ export default defineConfig({
 	resolve: {
 		alias: isDist ? [
 			{ find: /^#tempo\/license$/, replacement: resolve(__dirname, './dist/plugin/license/license.validator.js') },
-			{ find: resolve(__dirname, './dist/plugin/license/license.validator.js'), replacement: resolve(__dirname, './dist/plugin/license/license.validator.js') },
 			{ find: /^#tempo\/core$/, replacement: resolve(__dirname, './dist/core.index.js') },
 			{ find: /^#tempo\/term$/, replacement: resolve(__dirname, './dist/plugin/term/term.index.js') },
 			{ find: /^#tempo\/duration$/, replacement: resolve(__dirname, './dist/module/module.duration.js') },
