@@ -7,8 +7,8 @@ import { encodeBase64 } from '#library';
 const { licenseModulePath, mockFactory, getVerifyFn } = vi.hoisted(() => {
 	// Must use require() here — ES `import` bindings are not yet initialized when vi.hoisted runs
 	const path = require('node:path') as typeof import('node:path');
-	// Use .ts to match the resolved path of the #tempo/license alias (src/license/license.validator.ts)
-	const licenseModulePath = path.resolve(__dirname, '../../src/license/license.validator.ts');
+	// Use .ts to match the resolved path of the #tempo/license alias (src/plugin/license/license.validator.ts)
+	const licenseModulePath = path.resolve(__dirname, '../../src/plugin/license/license.validator.ts');
 
 	// A shared, mutable reference to the verify implementation.
 	// Both vi.mock() factories point at this ref so per-test overrides are visible to both
@@ -70,7 +70,7 @@ describe('Tempo Licensing Strategy', () => {
 		}
 	});
 
-	test('Tempo is ready-to-receive a license via init options', () => {
+	test('Tempo is ready-to-receive a license via init options', async () => {
 		const payload = {
 			iss: 'Magma Computing',
 			scopes: {
@@ -103,9 +103,11 @@ describe('Tempo Licensing Strategy', () => {
 		expect(astro).toBeDefined();
 		expect(astro?.description).toContain('Premium plugin');
 		expect(astro?.status).toBe(LICENSE.Pending);
+		
+		await getRuntime().license.jws;
 	});
 
-	test('Licensing Reckoning (Pledge) is established during init', () => {
+	test('Licensing Reckoning (Pledge) is established during init', async () => {
 		const payload = { scopes: { test: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
@@ -117,6 +119,8 @@ describe('Tempo Licensing Strategy', () => {
 		expect(rt.license.jws).toBeDefined();
 		expect(rt.license.jws?.isPending).toBe(true);
 		expect(rt.license.jws?.status.tag).toBe('license');
+		
+		await rt.license.jws;
 	});
 
 	test('Tempo handles invalid tokens gracefully (optimistic phase)', async () => {
@@ -131,6 +135,8 @@ describe('Tempo Licensing Strategy', () => {
 
 		// Scopes should be empty because decode failed
 		expect(rt.license.scopes).toEqual({});
+		
+		await rt.license.jws;
 	});
 
 	test('License state is global and persists across local instances', async () => {
@@ -174,7 +180,7 @@ describe('Tempo Licensing Strategy', () => {
 		expect((Tempo.license as any).status).toBe(originalStatus);
 	});
 
-	test('Discovery cascade: picks up license from globalThis.TEMPO_LICENSE_KEY', () => {
+	test('Discovery cascade: picks up license from globalThis.TEMPO_LICENSE_KEY', async () => {
 		const payload = { scopes: { discovered_key: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
@@ -186,12 +192,14 @@ describe('Tempo Licensing Strategy', () => {
 			const rt = getRuntime();
 			expect(rt.license.key).toBe(mockToken);
 			expect(rt.license.scopes).toHaveProperty('discovered_key');
+			
+			await rt.license.jws;
 		} finally {
 			delete (globalThis as any).TEMPO_LICENSE_KEY;
 		}
 	});
 
-	test('Discovery cascade: picks up license from process.env.TEMPO_LICENSE_KEY', () => {
+	test('Discovery cascade: picks up license from process.env.TEMPO_LICENSE_KEY', async () => {
 		const payload = { scopes: { env_key: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
@@ -203,6 +211,8 @@ describe('Tempo Licensing Strategy', () => {
 			const rt = getRuntime();
 			expect(rt.license.key).toBe(mockToken);
 			expect(rt.license.scopes).toHaveProperty('env_key');
+			
+			await rt.license.jws;
 		} finally {
 			delete process.env.TEMPO_LICENSE_KEY;
 		}

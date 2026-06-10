@@ -2,14 +2,14 @@ import { Pledge } from '#library/pledge.class.js';
 import { decodeJWT } from '#library/webtoken.library.js';
 import { secure } from '#library/proxy.library.js';
 import { asError } from '#library/coercion.library.js';
-import { isObject, isNumber } from '#library/assertion.library.js';
+import { isObject, isNumber, isFunction } from '#library/assertion.library.js';
 
-import { isSyncToken } from '../support/support.util.js';
-import { logWarn, logDebug } from '../support/support.util.js';
-import { LICENSE } from '../support/support.enum.js';
-import { getRuntime } from '../support/support.runtime.js';
+import { isSyncToken } from '../../support/support.util.js';
+import { logWarn, logDebug } from '../../support/support.util.js';
+import { LICENSE } from '../../support/support.enum.js';
+import { getRuntime } from '../../support/support.runtime.js';
 
-import type { Internal } from '../tempo.type.js';
+import type { Internal } from '../../tempo.type.js';
 
 let stateLicenseCache: WeakMap<Internal.State, Internal.LicenseState> = new WeakMap();
 const logMessage = 'Tempo Licensing:';
@@ -36,10 +36,6 @@ export function ensureLicenseState(state: Internal.State): Internal.LicenseState
 	return license;
 }
 
-export function resetLicenseStates(): void {
-	stateLicenseCache = new WeakMap();
-}
-
 export function getLicenseSnapshot(state: Internal.State): Internal.LicenseState {
 	const license = getLicenseState(state);
 	const snapshot: Internal.LicenseState = {
@@ -54,8 +50,8 @@ export function getLicenseSnapshot(state: Internal.State): Internal.LicenseState
 function disposePendingLicense(license?: Internal.LicenseState): void {
 	const jws = license?.jws as any;
 	if (jws && jws.isPending) {
-		if (jws.promise && typeof jws.promise.catch === 'function')
-			jws.promise.catch(() => {});
+		if (jws.promise && isFunction(jws.promise.catch))
+			jws.promise.catch(() => { });
 		// Do not explicitly reject stale license promises during teardown.
 		// The stale pledge already has onReject/onResolve handlers and state
 		// guards that will ignore later results based on JTI/key mismatch.

@@ -32,7 +32,7 @@
       "#tempo/term/*": [ "./plugin/term/term.*.ts" ],
       "#tempo/support": [ "./support/support.index.ts" ],
       "#tempo/support/*": [ "./support/*" ],
-      "#tempo/license": [ "./support/support.license.ts" ],
+      "#tempo/license": [ "./plugin/license/license.validator.ts" ],
       "#tempo/*": [ "./*" ]
     }
   },

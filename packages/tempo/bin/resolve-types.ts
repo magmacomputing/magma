@@ -65,7 +65,7 @@ function rewrite(filePath: string) {
   // Handle #tempo/license resolution
   let prefix = '';
   for (let i = 0; i < depth; i++) prefix += '../';
-  let licReplacement = `${prefix || './'}support/support.license.js`;
+  let licReplacement = `${prefix || './'}license/license.validator.js`;
 
   const updatedContent = content
     .replace(/#library\/([^"')]+\.js)/g, (_, libPath) => {

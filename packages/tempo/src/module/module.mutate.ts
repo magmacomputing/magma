@@ -68,7 +68,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 							const { mutate: op, offset, single, term } = ((key, adjust, type) => {
 								const isTerm = key.startsWith('#');
 								if (type === 'add') {
-									const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string));
+									const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string, state));
 									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(key as string);
 									return {
 										mutate: 'add',
@@ -87,7 +87,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 										return { mutate: key as any, offset: val, single: isTermVal ? 'term' : singular(val), term: isTermVal ? val : undefined };
 									}
 									default: {
-										const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string));
+										const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string, state));
 										const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(key as string);
 										return {
 											mutate: 'set',

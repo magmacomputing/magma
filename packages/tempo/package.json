@@ -99,7 +99,7 @@
       "default": "./dist/module/module.index.js"
     },
     "#tempo/license": {
-      "default": "./dist/license/license.validator.js"
+      "default": "./dist/plugin/license/license.validator.js"
     },
     "#tempo/*.js": {
       "default": "./dist/*.js"

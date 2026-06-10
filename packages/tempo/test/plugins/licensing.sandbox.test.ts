@@ -1,13 +1,13 @@
 import { Tempo } from '#tempo';
 import { LICENSE } from '#tempo/support/support.enum.js';
 import { getRuntime, resetRuntime } from '#tempo/support/support.runtime.js';
-import { encodeBase64 } from '#library';
 import { $Internal } from '#tempo/support';
+import { encodeBase64 } from '#library';
 
 // ─── Mock the license validator (same pattern as licensing.full.test.ts) ───────
 const { licenseModulePath, mockFactory } = vi.hoisted(() => {
 	const path = require('node:path') as typeof import('node:path');
-	const licenseModulePath = path.resolve(__dirname, '../../src/license/license.validator.js');
+	const licenseModulePath = path.resolve(__dirname, '../../src/plugin/license/license.validator.ts');
 	const mockFactory = () => {
 		const verify = vi.fn().mockResolvedValue({ status: 'active', scopes: { premium: {} } });
 		const Validator = vi.fn().mockImplementation(function () { return { verify }; });
@@ -50,7 +50,7 @@ describe('License: Hot-swap (a) and Sandbox Isolation (b)', () => {
 	// ─── (a) GLOBAL HOT-SWAP ─────────────────────────────────────────────────
 
 	describe('(a) Global hot-swap via Tempo.extend({ license })', () => {
-		it('replaces the global license key and enters Pending state', () => {
+		it('replaces the global license key and enters Pending state', async () => {
 			Tempo.init();
 			const token = makeToken({ scopes: { pro: {} }, jti: 'hot-1' });
 
@@ -61,9 +61,11 @@ describe('License: Hot-swap (a) and Sandbox Isolation (b)', () => {
 			expect(rt.license.key).toBe(token);
 			expect(rt.license.status).toBe(LICENSE.Pending);
 			expect(rt.license.scopes).toHaveProperty('pro');
+
+			await rt.license.jws;
 		});
 
-		it('a second hot-swap replaces the first (key and scopes update immediately)', () => {
+		it('a second hot-swap replaces the first (key and scopes update immediately)', async () => {
 			Tempo.init();
 			const token1 = makeToken({ scopes: { s1: {} }, jti: 'race-1' });
 			const token2 = makeToken({ scopes: { s2: {} }, jti: 'race-2' });
@@ -77,9 +79,11 @@ describe('License: Hot-swap (a) and Sandbox Isolation (b)', () => {
 			expect(rt.license.jti).toBe('race-2');
 			expect(rt.license.scopes).toHaveProperty('s2');
 			expect(rt.license.scopes).not.toHaveProperty('s1');
+
+			await rt.license.jws;
 		});
 
-		it('hot-swap creates a new Pledge for background validation', () => {
+		it('hot-swap creates a new Pledge for background validation', async () => {
 			Tempo.init();
 			const token = makeToken({ scopes: { pro: {} }, jti: 'pledge-1' });
 
@@ -88,13 +92,15 @@ describe('License: Hot-swap (a) and Sandbox Isolation (b)', () => {
 			const rt = getRuntime();
 			expect(rt.license.jws).toBeDefined();
 			expect(rt.license.jws?.isPending).toBe(true);
+
+			await rt.license.jws;
 		});
 	});
 
 	// ─── (b) SANDBOX ISOLATION ───────────────────────────────────────────────
 
 	describe('(b) Sandbox isolation via Tempo.create({ license })', () => {
-		it('sandbox license does NOT touch runtime.license', () => {
+		it('sandbox license does NOT touch runtime.license', async () => {
 			Tempo.init();
 			const token = makeToken({ scopes: { sandbox_scope: {} }, jti: 'sb-1' });
 
@@ -105,9 +111,11 @@ describe('License: Hot-swap (a) and Sandbox Isolation (b)', () => {
 			expect(rt.license.key).toBeUndefined();
 			expect(rt.license.status).toBe(LICENSE.None);
 			expect(rt.license.scopes).not.toHaveProperty('sandbox_scope');
+
+			await (X as any)[$Internal]().license.jws;
 		});
 
-		it('sandbox carries its own LicenseState on state.license', () => {
+		it('sandbox carries its own LicenseState on state.license', async () => {
 			Tempo.init();
 			const token = makeToken({ scopes: { local_scope: {} }, jti: 'sb-2' });
 
@@ -118,9 +126,11 @@ describe('License: Hot-swap (a) and Sandbox Isolation (b)', () => {
 			expect(state.license.key).toBe(token);
 			expect(state.license.status).toBe(LICENSE.Pending);
 			expect(state.license.scopes).toHaveProperty('local_scope');
+
+			await state.license.jws;
 		});
 
-		it('sandbox remains independent after a later global license hot-swap', () => {
+		it('sandbox remains independent after a later global license hot-swap', async () => {
 			Tempo.init();
 			const sandboxToken = makeToken({ scopes: { sandbox_scope: {} }, jti: 'sb-hot-swap' });
 			const globalToken = makeToken({ scopes: { global_only: {} }, jti: 'g-hot-swap' });
@@ -132,9 +142,12 @@ describe('License: Hot-swap (a) and Sandbox Isolation (b)', () => {
 			expect((X.license as any).scopes).toHaveProperty('sandbox_scope');
 			expect(getRuntime().license.jti).toBe('g-hot-swap');
 			expect(getRuntime().license.scopes).toHaveProperty('global_only');
+
+			await (X as any)[$Internal]().license.jws;
+			await getRuntime().license.jws;
 		});
 
-		it('X.license getter reads from sandbox-local state, not global', () => {
+		it('X.license getter reads from sandbox-local state, not global', async () => {
 			Tempo.init();
 			const globalToken = makeToken({ scopes: { global_only: {} }, jti: 'g-1' });
 			Tempo.extend({ license: globalToken } as any);
@@ -149,6 +162,9 @@ describe('License: Hot-swap (a) and Sandbox Isolation (b)', () => {
 
 			// Global Tempo reports global license
 			expect(getRuntime().license.jti).toBe('g-1');
+
+			await (X as any)[$Internal]().license.jws;
+			await getRuntime().license.jws;
 		});
 
 		it('sandbox license transitions to Active independently', async () => {
@@ -177,9 +193,11 @@ describe('License: Hot-swap (a) and Sandbox Isolation (b)', () => {
 			expect(state.license.scopes).toHaveProperty('v2');
 			// Global license is still untouched
 			expect(getRuntime().license.key).toBeUndefined();
+
+			await state.license.jws;
 		});
 
-		it('two independent sandboxes each carry isolated license state', () => {
+		it('two independent sandboxes each carry isolated license state', async () => {
 			Tempo.init();
 			const tokenA = makeToken({ scopes: { a: {} }, jti: 'a-1' });
 			const tokenB = makeToken({ scopes: { b: {} }, jti: 'b-1' });
@@ -194,6 +212,9 @@ describe('License: Hot-swap (a) and Sandbox Isolation (b)', () => {
 			expect(stateB.license.jti).toBe('b-1');
 			// Neither affects the global
 			expect(getRuntime().license.key).toBeUndefined();
+
+			await stateA.license.jws;
+			await stateB.license.jws;
 		});
 	});
 });

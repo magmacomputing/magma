@@ -1,6 +1,6 @@
 import { isFunction } from '#library/assertion.library.js';
 import { decodeJWT } from '#library/webtoken.library.js';
-import { logWarn } from './support.util.js';
+import { logWarn } from '../../support/support.util.js';
 
 /**
  * # Tempo Licensing Engine (Open Core)
@@ -12,6 +12,7 @@ export class Validator {
 	constructor(public key: string) {
 		logWarn('Tempo Community Edition: License keys are ignored. Premium plugins cannot be validated without the cryptographic engine.');
 	}
+
 	async verify() {
 		// Decodes but DOES NOT verify the signature. 
 		// Cannot safely unlock Premium Plugins without cryptographic proof.
@@ -22,6 +23,7 @@ export class Validator {
 			error: 'Cryptographic engine missing. Premium plugins cannot be validated by the Community Build.',
 		}
 	}
+
 	async syncRevocation(_jwsUrl: string, _currentJti: string): Promise<{ revoked: boolean, success: boolean }> {
 		return { revoked: false, success: false }; // No revocation checking in community edition
 	}
@@ -32,6 +34,7 @@ export function definePremiumPlugin<T>(key: string, plugin: T): T {
 	const throwLicense = function () {
 		throw new Error(`[${key}] Premium plugin requires a valid commercial license. Status: invalid`);
 	}
+
 	if (isFunction(plugin)) return throwLicense as unknown as T;
 	if ((plugin as any).install) (plugin as any).install = throwLicense;
 	if ((plugin as any).define) (plugin as any).define = throwLicense;

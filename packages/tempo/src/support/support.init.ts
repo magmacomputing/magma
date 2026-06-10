@@ -1,19 +1,19 @@
 import '#library/temporal.polyfill.js';
 import { enumify } from '#library/enumerate.library.js';
-import { asArray, asError } from '#library/coercion.library.js';
+import { asArray } from '#library/coercion.library.js';
 import { getDateTimeFormat, getHemisphere } from '#library/international.library.js';
 import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { asType } from '#library/type.library.js';
-import { isString, isObject, isUndefined, isDefined, isRegExp, isNumber } from '#library/assertion.library.js';
-import { Pledge } from '#library/pledge.class.js';
+import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/assertion.library.js';
+import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries } from '#library/primitive.library.js';
-import { decodeJWT } from '#library/webtoken.library.js';
 import { getStorage } from '#library/storage.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 
 import { getRuntime } from './support.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, logWarn, logDebug, isSyncToken } from './support.util.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError } from './support.util.js';
+import { setLicense } from '../plugin/license/license.manager.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
 import { STATE, LICENSE } from './support.enum.js';
@@ -38,6 +38,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 
 	if (baseState) {
 		state.userProvidedKeys = new Set(baseState.userProvidedKeys);
+		state.installed = new ScopedSet(runtime.installed);	// sandbox: delegates has() to global, isolates add()
 		state.pluginsDb = {
 			terms: [...baseState.pluginsDb.terms],
 			plugins: [...baseState.pluginsDb.plugins]
@@ -142,115 +143,6 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		if (key) setLicense(state, key);
 	}
 	return state;
-}
-
-/** @internal Fallback expiry warning window when issuedAt is unknown (30 days in seconds) */
-const EXPIRY_FALLBACK_WINDOW_S = 30 * 24 * 60 * 60;
-
-/**
- * @internal
- * Emit a logWarn for any license claim (top-level or per-scope) that is approaching expiry.
- *
- * **Warning window**: once 75% of the license lifetime has elapsed.
- * If `issuedAt` is unavailable the fallback window is 30 days before expiry.
- * This is called both after cryptographic verification and during the 7-day revocation check,
- * so the reminder repeats on each scheduled interval while the key remains in the danger zone.
- */
-export function warnIfExpiringSoon(license: Internal.LicenseState, config: any): void {
-	const nowS = Math.floor(Date.now() / 1_000);
-
-	const checkExpiry = (label: string, expS: number | undefined, iatS: number | undefined) => {
-		if (!expS) return;
-		const remainingS = expS - nowS;
-		if (remainingS <= 0) return;														// already expired — other logic handles this
-
-		const windowS = iatS
-			? (expS - iatS) * 0.25																// 25% of total duration remaining = 75% elapsed
-			: EXPIRY_FALLBACK_WINDOW_S;
-
-		if (remainingS <= windowS) {
-			const days = Math.ceil(remainingS / 86_400);
-			const plural = days === 1 ? 'day' : 'days';
-			logWarn(`⏳ Tempo Licensing: ${label} expires in ${days} ${plural} — visit https://registry.magmacomputing.com.au to renew.`, config);
-		}
-	};
-
-	// 1. Check the top-level license expiry (only when still a raw epoch number, not a formatted string)
-	checkExpiry('License key', isNumber(license.expires) ? license.expires : undefined, license.issuedAt);
-
-	// 2. Check each per-scope expiry (may differ from the top-level key)
-	for (const [scopeKey, meta] of Object.entries(license.scopes || {})) {
-		const m = meta as any;
-		if (m?.exp) checkExpiry(`Scope '${scopeKey}'`, m.exp, m.iat ?? license.issuedAt);
-	}
-}
-
-/** @internal helper to synchronously set the optimistic license state */
-export function setLicense(state: t.Internal.State, key: string) {
-	const runtime = getRuntime();
-	if (key) {
-		const claims = decodeJWT(key);
-		runtime.license.key = key;
-		runtime.license.status = LICENSE.Pending;
-		runtime.license.scopes = claims?.scopes || {};
-
-		if (claims?.exp) runtime.license.expires = claims.exp;
-		if (claims?.iat) runtime.license.issuedAt = claims.iat;
-		if (claims?.iss) runtime.license.issuer = claims.iss;
-		if (claims?.sub) runtime.license.subject = claims.sub;
-		if (claims?.aud) runtime.license.audience = claims.aud;
-		if (claims?.jti) runtime.license.jti = claims.jti;
-		delete runtime.license.error; // 🚿 Clear previous error state
-
-		const initialJti = runtime.license.jti;
-		const initialKey = runtime.license.key;
-		const argObj = {
-			tag: 'license',
-			onResolve: (res: any) => {
-				// 🛡️ Race Condition Guard
-				if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
-
-				const isValidStatus = isSyncToken(res.status) || LICENSE.values().includes(res.status);
-				runtime.license.status = isValidStatus ? res.status : LICENSE.Invalid;
-				runtime.license.scopes = isObject(res.scopes) ? res.scopes : {};
-				delete runtime.license.error; // 🚿 Clear error on every reckoning attempt
-				if (res.error) runtime.license.error = res.error;
-				if (res.expires) runtime.license.expires = res.expires;
-				if (res.issuedAt) runtime.license.issuedAt = res.issuedAt;
-				if (res.issuer) runtime.license.issuer = res.issuer;
-				if (res.jti) runtime.license.jti = res.jti;
-
-				if ([LICENSE.Revoked, LICENSE.Invalid].includes(res.status))
-					logWarn(`⚠️ Tempo Licensing: ${res.error || 'Verification failed'}`, state.config);
-				else
-					warnIfExpiringSoon(runtime.license, state.config);
-
-				if (res.revocationPromise) {
-					res.revocationPromise.then((isRevoked: boolean) => {
-						if (isRevoked && runtime.license.jti === initialJti && runtime.license.key === initialKey) {
-							runtime.license.status = LICENSE.Revoked;
-							runtime.license.error = 'License has been revoked by the issuer.';
-							logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
-						} else {
-							// 🔔 Repeat expiry warning on each scheduled revocation check (7-day cadence)
-							warnIfExpiringSoon(runtime.license, state.config);
-						}
-					}).catch((err: unknown) => {
-						const { message } = asError(err);
-						logDebug(`Tempo Licensing: Background revocation check failed for JTI ${initialJti} - ${message}`, state.config);
-					});
-				}
-			},
-			onReject: (err: unknown) => {
-				if (runtime.license.jti !== initialJti || runtime.license.key !== initialKey) return;
-				const error = asError(err);
-				runtime.license.status = LICENSE.Invalid;
-				runtime.license.error = error.message || 'Verification rejected';
-				logWarn(`⚠️ Tempo Licensing: ${runtime.license.error}`, state.config);
-			}
-		}
-		runtime.license.jws = new Pledge<Internal.ValidationResult>(argObj as any);
-	}
 }
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
@@ -380,11 +272,6 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 			}
 
 			case 'license': {
-				const runtime = getRuntime();
-				if (state !== runtime.state) {
-					logWarn(`[Tempo#extend] Licensing is a global-only feature and cannot be set on local instances.`, state.config);
-					break;
-				}
 				const key = String(arg.value);
 				setLicense(state, key);
 				break;

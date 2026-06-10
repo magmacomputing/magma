@@ -12,7 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.join(__dirname, 'dist');
 
 const licensePremium = process.env.TEMPO_LICENSE_PATH ? path.resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
-const licenseDefault = path.resolve(__dirname, './src/support/support.license.ts');
+const licenseDefault = path.resolve(__dirname, './src/plugin/license/license.validator.ts');
 
 const foundTsconfigPath = (() => {
 	if (!licensePremium) return '';
@@ -77,14 +77,14 @@ function getFiles(dir, suffix = '.js') {
 const entryPoints = Object.fromEntries(
 	getFiles(distPath)
 		.map(file => [path.relative(distPath, file).replace(/\.js$/, ''), file])
-		.filter(([key]) => !isPremiumAvailable || key !== 'support/support.license')
+		.filter(([key]) => !isPremiumAvailable || key !== 'license/license.validator')
 );
 
 export default [
 	...(isPremiumAvailable ? [{
 		input: licensePath,
 		output: {
-			file: 'dist/support/support.license.js', // Overwrites the tsc output stealthily
+			file: 'dist/license/license.validator.js', // Overwrites the tsc output stealthily
 			format: 'es',
 			sourcemap: false
 		},
@@ -143,7 +143,7 @@ export default [
 			alias({
 				entries: [
 					// Pull in the already-obfuscated monolith!
-					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/support/support.license.js') }
+					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') }
 				]
 			}),
 			resolve({ extensions: ['.js', '.ts'] }),

@@ -38,7 +38,8 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 
 	if (!isDefined(hostLogic) && !isTermsLoaded) {
 		const baseName = mod.endsWith('Module') ? mod.slice(0, -6) : mod;
-		const msg = `${mod} not loaded. (Did you forget to Tempo.extend(${mod}) or import '#tempo/${baseName.toLowerCase()}'?)`;
+		const importPath = baseName === 'Terms' ? 'term' : baseName.toLowerCase();
+		const msg = `${mod} not loaded. (Did you forget to Tempo.extend(${mod}) or import '#tempo/${importPath}' / '@magmacomputing/tempo/${importPath}'?)`;
 		if (!silent) logError(msg, t?.config);
 
 		if (silent) return false;
@@ -189,8 +190,15 @@ export function registerPlugin(plugin: any, state?: any) {
 	if (state) rt.addPlugin(state, plugin);
 	else if (rt.state) rt.addPlugin(rt.state, plugin);
 
-	rt.addExtension(plugin);
+	// Only persist to the global extension list for global-state registrations.
+	// Sandbox registrations (state !== rt.state) are tracked in the sandbox's
+	// ScopedSet and must not bleed into the global rt.extensions array.
+	const targetState = state ?? rt.state;
+	if (!targetState || targetState === rt.state) {
+		rt.addExtension(plugin);
+	}
 	rt.emit(sym.$Register, plugin);
 
 	return plugin;
 }
+

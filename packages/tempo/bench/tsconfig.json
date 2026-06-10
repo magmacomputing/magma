@@ -25,7 +25,7 @@
 			"#tempo/plugin/extend/*.js": [ "../src/plugin/extend/*.ts" ],
 			"#tempo/plugin/term/*.js": [ "../src/plugin/term/*.ts" ],
 			"#tempo/term/*": [ "../src/plugin/term/term.*.ts" ],
-			"#tempo/license": [ "../src/support/support.license.ts" ],
+		"#tempo/license": [ "../src/plugin/license/license.validator.ts" ],
 			"#tempo/*": [ "../src/*" ]
 		}
 	},

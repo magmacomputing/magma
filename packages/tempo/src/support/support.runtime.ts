@@ -1,8 +1,10 @@
 import { sym } from './support.symbol.js';
 import { LICENSE } from './support.enum.js';
 import type { TermPlugin } from '../plugin/term/term.type.js';
-import type { Extension, Plugin } from '../plugin/plugin.type.js';
+import type { Extension } from '../plugin/plugin.type.js';
 import type { Internal } from '../tempo.type.js';
+
+
 
 /**
  * # TempoRuntime
@@ -35,7 +37,8 @@ export class TempoRuntime {
 	readonly extensions: Extension[] = [];
 	/** raw named-module map — consumed by REGISTRY */
 	readonly modules: Record<string, any> = {};
-	/** set of installed plugin identifiers — consumed by REGISTRY */
+	/** set of installed plugin identifiers — consumed by REGISTRY.
+	 * For sandbox states this will be a `ScopedSet` parented to this global set. */
 	readonly installed: Set<any> = new Set();
 	/** decentralized reset hooks — fired on every registryReset() call */
 	readonly resetHooks: Set<() => void> = new Set();
@@ -179,7 +182,16 @@ export function resetRuntime(): void {
 	// 🛡️ Race Condition Guard: Bump JTI to invalidate pending async reckonings
 	rt.license.jti = Math.random().toString(36).slice(2);
 
+	const oldJws = (rt.license as any).jws as any;
+	if (oldJws && oldJws.isPending) {
+		if (oldJws.promise && typeof oldJws.promise.catch === 'function')
+			oldJws.promise.catch(() => { });
+		// Leave the stale runtime pledge to settle naturally.
+		// Its internal handlers and JTI guard will ignore stale validation results.
+	}
+
 	rt.state = undefined;
+
 	const lic = rt.license as any;
 	lic.status = LICENSE.None;
 	lic.scopes = {};

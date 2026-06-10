@@ -16,7 +16,8 @@ import { normalizeMatch, accumulateResult } from '../engine/engine.normalizer.js
 import { getRange, getTermRange } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
-import { sym, isTempo, TermError, getRuntime, Match, TempoError } from '../support/support.index.js';
+
+import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods } from '../support/support.index.js';
 import { markConfig, setPatterns, init, extendState } from '../support/support.index.js';
 import { setProperty, logError, logDebug } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
@@ -454,6 +455,13 @@ export function parse(value: t.DateTime, options: t.Options = {}): Temporal.Zone
 
 	// Apply options
 	extendState(state, localOptions);
+
+	// Register event/period aliases for standalone state before compiling patterns
+	const TempoClass = runtime.modules['Tempo'];
+	if (TempoClass) {
+		(TempoClass as any)[$setEvents](state, undefined, false);
+		(TempoClass as any)[$setPeriods](state, undefined, false);
+	}
 
 	// Compile RegEx patterns
 	setPatterns(state);

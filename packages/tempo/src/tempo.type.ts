@@ -8,6 +8,7 @@
  */
 import type { Pledge } from '#library/pledge.class.js';
 import type { DebugLevel } from '#library/logger.class.js';
+import type { ScopedSet } from '#library/scopedset.class.js';
 import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded } from '#library/type.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
@@ -271,6 +272,8 @@ export namespace Internal {
 		/** @internal Alias engine for this Tempo instance */		aliasEngine?: AliasEngine;
 		/** @internal Pattern compiler for this Tempo instance */	patternCompiler?: PatternCompiler;
 		/** @internal database of plugins scoped to this state */pluginsDb: { terms: TermPlugin[]; plugins: TempoPlugin[] };
+		/** @internal installed-plugin dedup tracker; a ScopedSet for sandboxes (delegates has() to global rt.installed), undefined for the global state */installed?: Set<any> | ScopedSet<any>;
+		/** @internal sandbox-local license state; runtime license is centralized on TempoRuntime */license?: Internal.LicenseState;
 	}
 
 	/** debug a Tempo instantiation */

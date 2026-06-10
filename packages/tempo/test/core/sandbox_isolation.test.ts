@@ -25,7 +25,7 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 	it('sandbox state carries a ScopedSet for its installed tracker', () => {
 		const X = Tempo.create({});
 		const state = (X as any)[$Internal]();
-		expect(state.installed).toBeInstanceOf(ScopedSet);
+		expect(state.installed.constructor.name).toBe('ScopedSet');
 	});
 
 	it('global state has no scoped installed tracker (falls back to rt.installed)', () => {
