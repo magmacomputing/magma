@@ -27,8 +27,24 @@ export const TimelineTerm = defineTerm({
 		return resolve(this, anchor);
 	},
 
-	/** determine where the current Tempo instance fits within the above range */
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
 		return getTermRange(this, resolve(this, anchor), keyOnly, anchor);
 	}
 });
+
+declare module '../../tempo.class.js' {
+	interface TempoTermRegistry {
+		per: 'midnight' | 'early' | 'morning' | 'midmorning' | 'midday' | 'afternoon' | 'evening' | 'night';
+		period: {
+			key: 'midnight' | 'early' | 'morning' | 'midmorning' | 'midday' | 'afternoon' | 'evening' | 'night';
+			group: 'standard';
+			hour: number;
+			minute?: number;
+			second?: number;
+			millisecond?: number;
+			microsecond?: number;
+			nanosecond?: number;
+		};
+	}
+}
+

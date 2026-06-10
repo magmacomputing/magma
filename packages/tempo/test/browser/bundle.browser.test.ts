@@ -1,5 +1,4 @@
 
-
 test('Granular ESM loads and initializes natively in browser', async () => {
 	// Import the Granular ESM bundle
 	const m = await import('../../dist/tempo.index.js');

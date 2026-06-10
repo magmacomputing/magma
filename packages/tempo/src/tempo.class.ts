@@ -1441,7 +1441,7 @@ export class Tempo {
 		return out as t.Internal.Parse;
 	}
 
-	/** Keyed results for all resolved terms */								get term() { return this.#term }
+	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term }
 	/** Formatted results for all pre-defined format codes */ get fmt() { return this.#fmt }
 	/** units since epoch */																	get epoch() {
 		return secure({
@@ -1603,6 +1603,10 @@ export class Tempo {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+export interface TempoTermRegistry {
+	[key: string]: any;
+}
 
 export namespace Tempo {
 	export type DateTime = t.DateTime;

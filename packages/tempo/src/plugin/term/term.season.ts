@@ -1,20 +1,20 @@
 import { getTermRange, defineTerm, defineRange, resolveCycleWindow } from './term.util.js';
-import { COMPASS } from '../../support/support.enum.js';
+import { SEASON, COMPASS } from '../../support/support.enum.js';
 import type { Tempo } from '../../tempo.class.js';
 
 /** definition of meteorological season ranges */
 const groups = defineRange([
 	// Meteorological (North)
-	{ key: 'Spring', day: 1, month: 3, symbol: 'Flower', group: 'meteorological', sphere: COMPASS.North },
-	{ key: 'Summer', day: 1, month: 6, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.North },
-	{ key: 'Autumn', day: 1, month: 9, symbol: 'Leaf', group: 'meteorological', sphere: COMPASS.North },
-	{ key: 'Winter', day: 1, month: 12, symbol: 'Snowflake', group: 'meteorological', sphere: COMPASS.North },
+	{ key: SEASON.Spring, day: 1, month: 3, symbol: 'Flower', group: 'meteorological', sphere: COMPASS.North },
+	{ key: SEASON.Summer, day: 1, month: 6, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.North },
+	{ key: SEASON.Autumn, day: 1, month: 9, symbol: 'Leaf', group: 'meteorological', sphere: COMPASS.North },
+	{ key: SEASON.Winter, day: 1, month: 12, symbol: 'Snowflake', group: 'meteorological', sphere: COMPASS.North },
 
 	// Meteorological (South)
-	{ key: 'Spring', day: 1, month: 9, symbol: 'Flower', group: 'meteorological', sphere: COMPASS.South },
-	{ key: 'Summer', day: 1, month: 12, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.South },
-	{ key: 'Autumn', day: 1, month: 3, symbol: 'Leaf', group: 'meteorological', sphere: COMPASS.South },
-	{ key: 'Winter', day: 1, month: 6, symbol: 'Snowflake', group: 'meteorological', sphere: COMPASS.South },
+	{ key: SEASON.Spring, day: 1, month: 9, symbol: 'Flower', group: 'meteorological', sphere: COMPASS.South },
+	{ key: SEASON.Summer, day: 1, month: 12, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.South },
+	{ key: SEASON.Autumn, day: 1, month: 3, symbol: 'Leaf', group: 'meteorological', sphere: COMPASS.South },
+	{ key: SEASON.Winter, day: 1, month: 6, symbol: 'Snowflake', group: 'meteorological', sphere: COMPASS.South },
 ], 'group', 'sphere');
 
 /** resolve the full candidate list for the current context */
@@ -38,8 +38,22 @@ export const SeasonTerm = defineTerm({
 		return resolve(this, anchor);
 	},
 
-	/** determine where the current Tempo instance fits within the above range */
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
 		return getTermRange(this, resolve(this, anchor), keyOnly, anchor);
 	}
 });
+
+declare module '../../tempo.class.js' {
+	interface TempoTermRegistry {
+		szn: SEASON;
+		season: {
+			key: SEASON;
+			symbol: 'Flower' | 'Sun' | 'Leaf' | 'Snowflake';
+			group: 'meteorological';
+			sphere: COMPASS;
+			day: number;
+			month: number;
+		};
+	}
+}
+

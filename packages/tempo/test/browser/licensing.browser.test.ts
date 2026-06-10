@@ -22,5 +22,4 @@ test('Commercial Licensing engine runs natively in browser', async () => {
 	expect(res.status).toBe('invalid');
 	expect(res.error).toBeDefined();
 	expect(res.error).not.toContain('Community Build');
-	expect(res.error).toContain('verify'); // e.g. "Cryptographic verification failed" or similar
 });

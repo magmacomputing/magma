@@ -96,3 +96,25 @@ function getChineseZodiac(year: number) {
 		yinYang: yinYang
 	}
 }
+
+declare module '../../tempo.class.js' {
+	interface TempoTermRegistry {
+		zdc: 'Aries' | 'Taurus' | 'Gemini' | 'Cancer' | 'Leo' | 'Virgo' | 'Libra' | 'Scorpio' | 'Sagittarius' | 'Capricorn' | 'Aquarius' | 'Pisces';
+		zodiac: {
+			key: 'Aries' | 'Taurus' | 'Gemini' | 'Cancer' | 'Leo' | 'Virgo' | 'Libra' | 'Scorpio' | 'Sagittarius' | 'Capricorn' | 'Aquarius' | 'Pisces';
+			symbol: 'Ram' | 'Bull' | 'Twins' | 'Crab' | 'Lion' | 'Virgin' | 'Scales' | 'Scorpion' | 'Archer' | 'Goat' | 'Water Bearer' | 'Fish';
+			trait: string;
+			group: 'western';
+			day: number;
+			month: number;
+			year?: number;
+			CN?: {
+				animal: string;
+				traits: string;
+				element: string;
+				yinYang: string;
+			};
+		};
+	}
+}
+
