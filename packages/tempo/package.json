@@ -177,10 +177,10 @@
     }
   },
   "scripts": {
-    "test": "vitest run",
-    "test:dist": "cross-env TEST_DIST=true vitest run",
-    "test:ci": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
-    "test:ci:prefilter": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TEMPO_PREFILTER_CI=true vitest run",
+    "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run",
+    "test:dist": "cross-env TEMPO_LICENSE_KEY=\"\" TEST_DIST=true vitest run",
+    "test:ci": "cross-env TEMPO_LICENSE_KEY=\"\" TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
+    "test:ci:prefilter": "cross-env TEMPO_LICENSE_KEY=\"\" TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TEMPO_PREFILTER_CI=true vitest run",
     "repl": "tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:dist": "tsx -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:node": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/repl.ts",

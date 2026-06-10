@@ -14,7 +14,7 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "vitest run",
+    "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run",
     "build:tempo": "npm run build --workspace=@magmacomputing/tempo",
     "build:library": "npm run build --workspace=@magmacomputing/library",
     "clean": "tsc -b --clean",
@@ -26,7 +26,7 @@
     "docs:build": "npm run docs:build --workspace=@magmacomputing/tempo",
     "docs:preview": "npm run docs:preview --workspace=@magmacomputing/tempo",
     "docs:push": "npm run docs:push --workspace=@magmacomputing/tempo",
-    "test:dist": "npm run build:library && npm run build:tempo && cross-env TEST_DIST=true vitest run"
+    "test:dist": "npm run build:library && npm run build:tempo && cross-env TEMPO_LICENSE_KEY=\"\" TEST_DIST=true vitest run"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",

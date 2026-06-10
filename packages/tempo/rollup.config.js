@@ -77,14 +77,14 @@ function getFiles(dir, suffix = '.js') {
 const entryPoints = Object.fromEntries(
 	getFiles(distPath)
 		.map(file => [path.relative(distPath, file).replace(/\.js$/, ''), file])
-		.filter(([key]) => !isPremiumAvailable || key !== 'license/license.validator')
+		.filter(([key]) => !isPremiumAvailable || key !== 'plugin/license/license.validator')
 );
 
 export default [
 	...(isPremiumAvailable ? [{
 		input: licensePath,
 		output: {
-			file: 'dist/license/license.validator.js', // Overwrites the tsc output stealthily
+			file: 'dist/plugin/license/license.validator.js', // Overwrites the tsc output stealthily
 			format: 'es',
 			sourcemap: false
 		},
