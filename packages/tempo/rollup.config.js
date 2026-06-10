@@ -154,9 +154,8 @@ export default [
 	// 3. 🧩 GRANULAR ESM
 	{
 		input: entryPoints,
-		// Keep dependencies external. Marking #tempo/license as external leaves the import statement intact
-		// so Node.js will resolve it naturally at runtime via package.json imports!
-		external: ['@js-temporal/polyfill', '#tempo/license'],
+		// Keep dependencies external. Resolving #tempo/license via alias forces Rollup to rewrite the dynamic import to a native relative path!
+		external: ['@js-temporal/polyfill'],
 		output: {
 			dir: 'dist',
 			format: 'es',
@@ -197,6 +196,11 @@ export default [
 			}
 		},
 		plugins: [
+			alias({
+				entries: [
+					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') }
+				]
+			}),
 			// We DO want to resolve @magmacomputing/library and bundle it into lib/ 
 			resolve({
 				extensions: ['.js', '.ts'],
