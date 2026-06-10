@@ -28,6 +28,22 @@ describe('Pledge', () => {
 		await expect(p.promise).rejects.toThrow('Pledge disposed');
 	});
 
+	test('dispose does not trigger unhandled rejection', async () => {
+		const unhandled: any[] = [];
+		const listener = (error: any) => { unhandled.push(error); };
+		process.on('unhandledRejection', listener);
+
+		try {
+			const p = new Pledge();
+			p[Symbol.dispose]();
+			await Promise.resolve();
+			await Promise.resolve();
+			expect(unhandled).toHaveLength(0);
+		} finally {
+			process.off('unhandledRejection', listener);
+		}
+	});
+
 	test('callbacks', async () => {
 		const onResolve = vi.fn();
 		const onReject = vi.fn();

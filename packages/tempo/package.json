@@ -1,6 +1,9 @@
 {
   "name": "@magmacomputing/tempo",
   "version": "3.0.1",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -96,7 +99,7 @@
       "default": "./dist/module/module.index.js"
     },
     "#tempo/license": {
-      "default": "./dist/support/support.license.js"
+      "default": "./dist/license/license.validator.js"
     },
     "#tempo/*.js": {
       "default": "./dist/*.js"

@@ -101,8 +101,14 @@ export class Pledge<T> {
 	}
 
 	[Symbol.dispose]() {
-		if (this.isPending)
+		if (this.isPending) {
+			try {
+				this.promise.catch(() => {});
+			} catch {
+				// best-effort; preserve disposal semantics even if promise is unavailable
+			}
 			this.reject(new Error(`Pledge disposed`));						// dispose
+		}
 	}
 
 	get status() {
@@ -138,10 +144,10 @@ export class Pledge<T> {
 		if (this.isPending) {
 			this.#status.settled = value;
 			this.#status.state = _STATE.Resolved;
-			_dbg.debug(this.#status, 'Resolved');					// debug
+			_dbg.debug(this.#status, 'Resolved');									// debug
 			this.#pledge.resolve(value);													// resolve
 		}
-		else _dbg.warn(this.#status, `Pledge was already ${this.state}`);
+		// else _dbg.warn(this.#status, `Pledge was already ${this.state}`);
 
 		return this.#pledge.promise;
 	}
@@ -150,10 +156,10 @@ export class Pledge<T> {
 		if (this.isPending) {
 			this.#status.error = error;
 			this.#status.state = _STATE.Rejected;
-			_dbg.debug(this.#status, 'Rejected', error);		// debug
+			_dbg.debug(this.#status, 'Rejected', error);					// debug
 			this.#pledge.reject(error);														// reject
 		}
-		else _dbg.warn(this.#status, `Pledge was already ${this.state}`);
+		// else _dbg.warn(this.#status, `Pledge was already ${this.state}`);
 
 		return this.#pledge.promise;
 	}

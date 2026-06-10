@@ -4,38 +4,62 @@ import { getRuntime, resetRuntime } from '#tempo/support/support.runtime.js';
 import { encodeBase64 } from '#library';
 
 // vi.hoisted runs before all imports are processed, making these available to hoisted vi.mock calls
-const { licenseModulePath, mockFactory } = vi.hoisted(() => {
+const { licenseModulePath, mockFactory, getVerifyFn } = vi.hoisted(() => {
 	// Must use require() here — ES `import` bindings are not yet initialized when vi.hoisted runs
 	const path = require('node:path') as typeof import('node:path');
-	// Use .js to match the dynamic import('./support/support.license.js') specifier in tempo.class.ts
-	const licenseModulePath = path.resolve(__dirname, '../../src/support/support.license.js');
+	// Use .ts to match the resolved path of the #tempo/license alias (src/license/license.validator.ts)
+	const licenseModulePath = path.resolve(__dirname, '../../src/license/license.validator.ts');
+
+	// A shared, mutable reference to the verify implementation.
+	// Both vi.mock() factories point at this ref so per-test overrides are visible to both
+	// the '#tempo/license' import (used by license.manager.ts) and the licenseModulePath import.
+	let currentVerify = vi.fn().mockResolvedValue({
+		status: 'active',
+		scopes: { astro: {} }
+	});
+
 	const mockFactory = () => {
-		const verify = vi.fn().mockResolvedValue({
-			status: 'active',
-			scopes: { astro: {} }
+		const Validator = vi.fn().mockImplementation(function () {
+			return { verify: (...args: any[]) => currentVerify(...args) };
 		});
-		const Validator = vi.fn().mockImplementation(function () { return { verify }; });
 		return { Validator };
 	};
-	return { licenseModulePath, mockFactory };
+
+	const getVerifyFn = () => currentVerify;
+	const setVerifyFn = (fn: ReturnType<typeof vi.fn>) => { (currentVerify as any) = fn; };
+
+	return { licenseModulePath, mockFactory, getVerifyFn, setVerifyFn };
 });
 
-// 🛡️ Mock both the alias path (#tempo/license) and the resolved absolute path for the
-// dynamic import('./support/support.license.js') used in tempo.class.ts (browser-safe relative path)
+// 🛡️ Mock the license module via its alias AND the resolved absolute .ts path so that
+// both validateLicenseState (which uses '#tempo/license') and direct imports of licenseModulePath
+// in tests hit the same shared mock factory.
 vi.mock('#tempo/license', mockFactory);
 vi.mock(licenseModulePath, mockFactory);
 
 describe('Tempo Licensing Strategy', () => {
 	let originalLicenseKeyEnv: string | undefined;
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		originalLicenseKeyEnv = process.env.TEMPO_LICENSE_KEY;
 		delete process.env.TEMPO_LICENSE_KEY;
 
 		// 🏛️ Hard reset the global runtime to ensure test isolation
 		resetRuntime();
 
+		// Clear call history first, then restore the default mock implementation.
+		// Order matters: clearAllMocks() resets implementations too, so the restore must come after.
 		vi.clearAllMocks();
+
+		// 🔄 Restore Validator mock to the default 'active' implementation before each test.
+		// Tests that override Validator (e.g. Revoked tests) would otherwise bleed into
+		// subsequent tests since vi.clearAllMocks() only clears history, not implementations.
+		const { Validator } = await import('#tempo/license' as any);
+		vi.mocked(Validator).mockImplementation(function () {
+			return {
+				verify: vi.fn().mockResolvedValue({ status: 'active', scopes: { astro: {} } })
+			};
+		});
 	});
 
 	afterEach(() => {
@@ -126,6 +150,30 @@ describe('Tempo Licensing Strategy', () => {
 		expect((Tempo.license as any).key).toBeUndefined();
 	});
 
+	test('Tempo.license returns a safe external snapshot and omits internal jws', async () => {
+		const payload = { scopes: { astro: {} }, jti: 'snapshot-1' };
+		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
+
+		Tempo.init({ license: mockToken });
+		const rt = getRuntime();
+		await rt.license.jws;
+		await vi.waitFor(() => expect(rt.license.status).toBe(LICENSE.Active));
+
+		const snapshot = Tempo.license as any;
+		expect(snapshot).not.toBe(rt.license);
+		expect(snapshot.jws).toBeUndefined();
+		expect(snapshot.key).toBeUndefined();
+		expect(getRuntime().license.key).toBe(mockToken);
+
+		const originalStatus = snapshot.status;
+		try { snapshot.status = LICENSE.None } catch {
+			// secure proxy may reject external mutation attempts
+		}
+
+		expect(getRuntime().license.status).toBe(originalStatus);
+		expect((Tempo.license as any).status).toBe(originalStatus);
+	});
+
 	test('Discovery cascade: picks up license from globalThis.TEMPO_LICENSE_KEY', () => {
 		const payload = { scopes: { discovered_key: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
@@ -184,8 +232,10 @@ describe('Tempo Licensing Strategy', () => {
 		const payload = { scopes: { weather: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
-		// Update mock for this specific test
-		const { Validator } = await import(licenseModulePath as any);
+		// Override the shared verify ref so BOTH '#tempo/license' and licenseModulePath
+		// mocks return 'revoked'. This avoids the split-brain problem where the .js-path
+		// module and the .ts alias are separate Vitest module instances.
+		const { Validator } = await import('#tempo/license' as any);
 		vi.mocked(Validator).mockImplementation(function () {
 			return {
 				verify: vi.fn().mockResolvedValue({
@@ -211,7 +261,7 @@ describe('Tempo Licensing Strategy', () => {
 		const payload = { scopes: { premium: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
-		const { Validator } = await import(licenseModulePath as any);
+		const { Validator } = await import('#tempo/license' as any);
 		vi.mocked(Validator).mockImplementation(function () {
 			return {
 				verify: vi.fn().mockResolvedValue({
