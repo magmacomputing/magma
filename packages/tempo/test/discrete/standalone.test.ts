@@ -8,7 +8,7 @@ describe('Tempo: Standalone Utilities', () => {
 
 	beforeAll(() => {
 		// Save current state to restore later
-		prevState = { ...getRuntime().state?.config };
+		prevState = getRuntime().state;
 		// Initialize the standard patterns and layouts for the standalone parser
 		// Force UTC for deterministic testing of Instant projection
 		init({ timeZone: 'UTC' });
@@ -16,7 +16,7 @@ describe('Tempo: Standalone Utilities', () => {
 
 	afterAll(() => {
 		// Restore previous state
-		init(prevState);
+		init(prevState?.config ?? {}, true, prevState);
 	});
 
 	describe('format()', () => {
