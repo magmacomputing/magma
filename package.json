@@ -55,6 +55,8 @@
   },
   "allowScripts": {
     "esbuild": true,
-    "@swc/core": true
+    "@swc/core": true,
+    "edgedriver@6.3.0": true,
+    "geckodriver@6.1.0": true
   }
 }
