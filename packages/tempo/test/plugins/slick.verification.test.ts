@@ -42,11 +42,11 @@ describe('Tempo Shorthand Suite (Comprehensive)', () => {
 		});
 	});
 
-	describe('Timeline Shorthand (#per)', () => {
-		test('next daily period (#per.>)', () => {
+	describe('Timeline Shorthand (#tod)', () => {
+		test('next time of day (#tod.>)', () => {
 			const t = new Tempo('2024-04-15T10:00:00'); // Midmorning
-			const next = t.set('#per.>');
-			expect(next.format('{#per}')).toBe('midday'); // Midday is 12:00
+			const next = t.set('#tod.>');
+			expect(next.format('{#tod}')).toBe('Midday'); // Midday is 12:00
 		});
 	});
 

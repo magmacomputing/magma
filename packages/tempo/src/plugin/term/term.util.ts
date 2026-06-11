@@ -3,6 +3,7 @@ import { isDefined, isFunction, isString, isUndefined, isNumber, isZonedDateTime
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { asError } from '#library/coercion.library.js';
+import { deepFreeze } from '#library/utility.library.js';
 
 import { getHost } from '../plugin.util.js';
 import { sym, TermError, isTempo } from '../../support/support.symbol.js';
@@ -17,7 +18,7 @@ import type { TermPlugin, Range, ResolvedRange } from './term.type.js';
  */
 export const defineTerm = <T extends TermPlugin>(term: T): T => {
 	registerTerm(term);
-	return term;
+	return deepFreeze(term) as T;
 }
 
 /**
@@ -47,7 +48,7 @@ export function findTermPlugin(ident: string, state?: any): TermPlugin | undefin
  * Factory to normalize and group Term ranges for efficient lookup.
  */
 export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) {
-	return byKey(ranges, ...keys);
+	return secure(byKey(ranges, ...keys));
 }
 
 /**

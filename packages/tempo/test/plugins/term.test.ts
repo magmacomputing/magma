@@ -33,9 +33,9 @@ describe(`${label}`, () => {
 
   test(`${label} check the {daily} term`, () => {
     const tempo = new Tempo('1pm');
-    const period = tempo.term.per;													// evaluate {per} on tempo.term
+    const tod = tempo.term.tod;													    // evaluate {tod} on tempo.term
 
-    expect(period)
-      .toBe('midday')
+    expect(tod)
+      .toBe('Midday')
   })
 })

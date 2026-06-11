@@ -3,14 +3,14 @@ import type { Tempo } from '../../tempo.class.js';
 
 /** definition of daily time periods */
 const groups = defineRange([
-	{ key: 'midnight', hour: 0, group: 'standard' },
-	{ key: 'early', hour: 4, group: 'standard' },
-	{ key: 'morning', hour: 8, group: 'standard' },
-	{ key: 'midmorning', hour: 10, group: 'standard' },
-	{ key: 'midday', hour: 12, group: 'standard' },
-	{ key: 'afternoon', hour: 15, minute: 30, group: 'standard' },
-	{ key: 'evening', hour: 18, group: 'standard' },
-	{ key: 'night', hour: 20, group: 'standard' },
+	{ key: 'Midnight', hour: 0, group: 'standard' },
+	{ key: 'Early', hour: 4, group: 'standard' },
+	{ key: 'Morning', hour: 8, group: 'standard' },
+	{ key: 'Midmorning', hour: 10, group: 'standard' },
+	{ key: 'Midday', hour: 12, group: 'standard' },
+	{ key: 'Afternoon', hour: 15, minute: 30, group: 'standard' },
+	{ key: 'Evening', hour: 18, group: 'standard' },
+	{ key: 'Night', hour: 20, group: 'standard' },
 ], 'group');
 
 function resolve(t: Tempo, anchor?: any) {
@@ -18,8 +18,8 @@ function resolve(t: Tempo, anchor?: any) {
 }
 
 export const TimelineTerm = defineTerm({
-	key: 'per',
-	scope: 'period',
+	key: 'tod',
+	scope: 'timeOfDay',
 	description: 'Daily time period',
 	groups,
 
@@ -34,16 +34,12 @@ export const TimelineTerm = defineTerm({
 
 declare module '../../tempo.class.js' {
 	interface TempoTermRegistry {
-		per: 'midnight' | 'early' | 'morning' | 'midmorning' | 'midday' | 'afternoon' | 'evening' | 'night';
-		period: {
-			key: 'midnight' | 'early' | 'morning' | 'midmorning' | 'midday' | 'afternoon' | 'evening' | 'night';
+		tod: 'Midnight' | 'Early' | 'Morning' | 'Midmorning' | 'Midday' | 'Afternoon' | 'Evening' | 'Night';
+		timeOfDay: {
+			key: 'Midnight' | 'Early' | 'Morning' | 'Midmorning' | 'Midday' | 'Afternoon' | 'Evening' | 'Night';
 			group: 'standard';
 			hour: number;
 			minute?: number;
-			second?: number;
-			millisecond?: number;
-			microsecond?: number;
-			nanosecond?: number;
 		};
 	}
 }
