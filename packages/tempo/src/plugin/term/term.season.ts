@@ -53,6 +53,8 @@ declare module '../../tempo.class.js' {
 			sphere: COMPASS;
 			day: number;
 			month: number;
+			start: Tempo;
+			end: Tempo;
 		};
 	}
 }

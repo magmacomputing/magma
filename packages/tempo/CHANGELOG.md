@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Term Scope Isolation**: Fixed a bug where the `Tempo.terms` getter would inappropriately sweep all licensed scopes (including modules and extensions like `ticker`) into the Terms array. `Tempo.terms` now strictly returns only the registered, queryable Term plugins, while preserving raw scopes in `Tempo.license.scopes`.
 - **Background Validation Leaks**: Resolved asynchronous test leakage in the licensing test suites by ensuring all background cryptographic verification pledges are explicitly awaited during test teardown.
+- **TimelineTerm Naming Collision**: Renamed the `TimelineTerm` shorthand key (`per`) and scope (`period`) to `tod` and `timeOfDay` respectively to definitively resolve semantic collisions with the native layout Period alias engine (`{per}`).
+- **Registry Type Completeness**: Added `start` and `end` boundary types (as `Tempo` instances) to the `TempoTermRegistry` augmentations for all core terms (`quarter`, `season`, `zodiac`, `timeOfDay`), correctly reflecting the dynamic boundaries injected by the resolver.
+- **Zodiac Typings**: Tightened the `yinYang` property typing in the `ZodiacTerm` payload from `string` to a literal union `'Yin' | 'Yang'`.
+
+### Security
+- **Immutability Hardening**: Locked down Term plugin registration (`defineTerm`) using native `deepFreeze()` and Term boundary ranges (`defineRange`) using the `secure()` Proxy. This guarantees that internal boundaries and metadata cannot be inadvertently mutated by rogue extensions or user code.
+
+### Standardization
+- **Semantic Casing Standardization**: Standardized Term ranges (e.g. `TimelineTerm`, `SeasonTerm`, `QuarterTerm`) to explicitly use CapInit (TitleCase) for their presentational `key` identifiers (e.g., `'Midnight'`, `'Morning'`) while explicitly retaining lowercase representations for internal `scope` and `group` variables.
 
 ## [3.0.0] - 2026-06-07
 

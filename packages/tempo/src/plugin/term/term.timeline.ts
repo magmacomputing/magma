@@ -40,6 +40,8 @@ declare module '../../tempo.class.js' {
 			group: 'standard';
 			hour: number;
 			minute?: number;
+			start: Tempo;
+			end: Tempo;
 		};
 	}
 }
