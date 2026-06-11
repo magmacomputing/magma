@@ -160,7 +160,7 @@ To use Premium Plugins via static CDN, you must map the core library, its subpat
     
     "#tempo/license": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/plugin/license/license.validator.js",
 
-    "@magmacomputing/tempo-plugin-astro": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@1.0.0/dist/index.js",
+    "`@magmacomputing/tempo-plugin-astro`": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@1.1.6/dist/index.js",
     "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@1.0.4/dist/index.js"
   }
 }
