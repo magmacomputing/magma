@@ -34,7 +34,7 @@ export function format(obj: Temporal.ZonedDateTime | any, fmt: string | symbol):
 export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol): string | number | any {
 	const state = getRuntime().state;
 	const config = isTempo(obj) ? obj.config : state?.config;
-	const formats = Object.assign(Object.create(enums.FORMAT), config?.formats);
+	const formats = Object.assign({}, enums.FORMAT, config?.formats);
 	const tz = config?.timeZone ?? 'UTC';
 
 	let zdt: any;

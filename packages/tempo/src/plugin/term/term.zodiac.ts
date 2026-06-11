@@ -19,18 +19,18 @@ const groups = defineRange([
 	{ key: 'Pisces', day: 19, month: 2, symbol: 'Fish', trait: 'Compassionate and artistic, deeply intuitive', group: 'western' },
 
 	// Chinese (Animal) - @link http://www.creativeartsguild.org/images/uploads/categories/12_Chinese_Zodiac_Signs.pdf
-	{ key: 'Rat', traits: 'Quick-witted, resourceful', group: 'animal' } as any,
-	{ key: 'Ox', traits: 'Diligent, dependable', group: 'animal' } as any,
-	{ key: 'Tiger', traits: 'Brave, confident', group: 'animal' } as any,
-	{ key: 'Rabbit', traits: 'Quiet, elegant', group: 'animal' } as any,
-	{ key: 'Dragon', traits: 'Confident, intelligent', group: 'animal' } as any,
-	{ key: 'Snake', traits: 'Enigmatic, intelligent', group: 'animal' } as any,
-	{ key: 'Horse', traits: 'Animated, active', group: 'animal' } as any,
-	{ key: 'Goat', traits: 'Gentle, shy', group: 'animal' } as any,
-	{ key: 'Monkey', traits: 'Smart, curious', group: 'animal' } as any,
-	{ key: 'Rooster', traits: 'Observant, hardworking', group: 'animal' } as any,
-	{ key: 'Dog', traits: 'Loyal, honest', group: 'animal' } as any,
-	{ key: 'Pig', traits: 'Compassionate, generous', group: 'animal' } as any,
+	{ key: 'Rat', trait: 'Quick-witted, resourceful', group: 'animal' } as any,
+	{ key: 'Ox', trait: 'Diligent, dependable', group: 'animal' } as any,
+	{ key: 'Tiger', trait: 'Brave, confident', group: 'animal' } as any,
+	{ key: 'Rabbit', trait: 'Quiet, elegant', group: 'animal' } as any,
+	{ key: 'Dragon', trait: 'Confident, intelligent', group: 'animal' } as any,
+	{ key: 'Snake', trait: 'Enigmatic, intelligent', group: 'animal' } as any,
+	{ key: 'Horse', trait: 'Animated, active', group: 'animal' } as any,
+	{ key: 'Goat', trait: 'Gentle, shy', group: 'animal' } as any,
+	{ key: 'Monkey', trait: 'Smart, curious', group: 'animal' } as any,
+	{ key: 'Rooster', trait: 'Observant, hardworking', group: 'animal' } as any,
+	{ key: 'Dog', trait: 'Loyal, honest', group: 'animal' } as any,
+	{ key: 'Pig', trait: 'Compassionate, generous', group: 'animal' } as any,
 
 	// Chinese (Element) - @link https://www.timeanddate.com/calendar/aboutelements.html
 	{ key: 'Wood', group: 'element' } as any,
@@ -82,7 +82,7 @@ function getChineseZodiac(year: number) {
 
 	const animalIndex = ((year - 4) % 12 + 12) % 12;
 	const elementIndex = Math.floor((((year - 4) % 10) + 10) % 10 / 2);
-	const yinYang = year % 2 === 0 ? 'Yang' : 'Yin';
+	const yinYang: 'Yin' | 'Yang' = year % 2 === 0 ? 'Yang' : 'Yin';
 
 	const animal = animals[animalIndex];
 	const element = elements[elementIndex];
@@ -91,8 +91,30 @@ function getChineseZodiac(year: number) {
 
 	return {
 		animal: animal.key,
-		traits: (animal as any).traits,
+		trait: (animal as any).trait,
 		element: element.key,
 		yinYang: yinYang
 	}
 }
+
+declare module '../../tempo.class.js' {
+	interface TempoTermRegistry {
+		zdc: 'Aries' | 'Taurus' | 'Gemini' | 'Cancer' | 'Leo' | 'Virgo' | 'Libra' | 'Scorpio' | 'Sagittarius' | 'Capricorn' | 'Aquarius' | 'Pisces';
+		zodiac: {
+			key: 'Aries' | 'Taurus' | 'Gemini' | 'Cancer' | 'Leo' | 'Virgo' | 'Libra' | 'Scorpio' | 'Sagittarius' | 'Capricorn' | 'Aquarius' | 'Pisces';
+			symbol: 'Ram' | 'Bull' | 'Twins' | 'Crab' | 'Lion' | 'Virgin' | 'Scales' | 'Scorpion' | 'Archer' | 'Goat' | 'Water Bearer' | 'Fish';
+			trait: string;
+			group: 'western';
+			day: number;
+			month: number;
+			year?: number;
+			CN?: {
+				animal: string;
+				trait: string;
+				element: string;
+				yinYang: 'Yin' | 'Yang';
+			};
+		};
+	}
+}
+

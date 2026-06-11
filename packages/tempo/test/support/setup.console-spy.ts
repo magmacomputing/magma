@@ -1,4 +1,4 @@
-import { vi, afterAll, beforeEach } from 'vitest';
+import { resetRuntime } from '#tempo/support/support.runtime.js';
 
 // Named spies for each console method
 export const spies = {
@@ -10,7 +10,12 @@ export const spies = {
 }
 
 beforeEach(() => {
+  resetRuntime();
   Object.values(spies).forEach(spy => spy.mockClear());
+});
+
+afterEach(() => {
+  resetRuntime();
 });
 
 afterAll(() => {

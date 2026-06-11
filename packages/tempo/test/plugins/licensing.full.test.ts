@@ -3,29 +3,51 @@ import { LICENSE } from '#tempo/support/support.enum.js';
 import { getRuntime, resetRuntime } from '#tempo/support/support.runtime.js';
 import { encodeBase64 } from '#library';
 
-// 🛡️ Hoist the license module mock to module scope for Vitest
-vi.mock('#tempo/license', () => {
-	const verify = vi.fn().mockResolvedValue({
-		status: 'active',
-		scopes: { astro: {} }
-	});
-	const Validator = vi.fn().mockImplementation(function () { return { verify }; });
-	return { Validator };
+// vi.hoisted runs before all imports are processed, making these available to hoisted vi.mock calls
+const { licenseModulePath, mockFactory } = vi.hoisted(() => {
+	// Must use require() here — ES `import` bindings are not yet initialized when vi.hoisted runs
+	const path = require('node:path') as typeof import('node:path');
+	// Use .ts to match the resolved path of the #tempo/license alias (src/plugin/license/license.validator.ts)
+	const licenseModulePath = path.resolve(__dirname, '../../src/plugin/license/license.validator.ts');
+
+	const mockFactory = () => {
+		const verify = vi.fn().mockResolvedValue({ status: 'active', scopes: { astro: {} } });
+		const Validator = vi.fn().mockImplementation(function () { return { verify }; });
+		return { Validator };
+	};
+
+	return { licenseModulePath, mockFactory };
 });
 
-const licenseModule = '#tempo/license';
+// 🛡️ Mock the license module via its alias AND the resolved absolute .ts path so that
+// both validateLicenseState (which uses '#tempo/license') and direct imports of licenseModulePath
+// in tests hit the same shared mock factory.
+vi.mock('#tempo/license', mockFactory);
+vi.mock(licenseModulePath, mockFactory);
 
 describe('Tempo Licensing Strategy', () => {
 	let originalLicenseKeyEnv: string | undefined;
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		originalLicenseKeyEnv = process.env.TEMPO_LICENSE_KEY;
 		delete process.env.TEMPO_LICENSE_KEY;
 
 		// 🏛️ Hard reset the global runtime to ensure test isolation
 		resetRuntime();
 
+		// Clear call history first, then restore the default mock implementation.
+		// Order matters: clearAllMocks() resets implementations too, so the restore must come after.
 		vi.clearAllMocks();
+
+		// 🔄 Restore Validator mock to the default 'active' implementation before each test.
+		// Tests that override Validator (e.g. Revoked tests) would otherwise bleed into
+		// subsequent tests since vi.clearAllMocks() only clears history, not implementations.
+		const { Validator } = await import('#tempo/license' as any);
+		vi.mocked(Validator).mockImplementation(function () {
+			return {
+				verify: vi.fn().mockResolvedValue({ status: 'active', scopes: { astro: {} } })
+			};
+		});
 	});
 
 	afterEach(() => {
@@ -36,7 +58,7 @@ describe('Tempo Licensing Strategy', () => {
 		}
 	});
 
-	test('Tempo is ready-to-receive a license via init options', () => {
+	test('Tempo is ready-to-receive a license via init options', async () => {
 		const payload = {
 			iss: 'Magma Computing',
 			scopes: {
@@ -69,9 +91,11 @@ describe('Tempo Licensing Strategy', () => {
 		expect(astro).toBeDefined();
 		expect(astro?.description).toContain('Premium plugin');
 		expect(astro?.status).toBe(LICENSE.Pending);
+		
+		await getRuntime().license.jws;
 	});
 
-	test('Licensing Reckoning (Pledge) is established during init', () => {
+	test('Licensing Reckoning (Pledge) is established during init', async () => {
 		const payload = { scopes: { test: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
@@ -83,6 +107,8 @@ describe('Tempo Licensing Strategy', () => {
 		expect(rt.license.jws).toBeDefined();
 		expect(rt.license.jws?.isPending).toBe(true);
 		expect(rt.license.jws?.status.tag).toBe('license');
+		
+		await rt.license.jws;
 	});
 
 	test('Tempo handles invalid tokens gracefully (optimistic phase)', async () => {
@@ -97,6 +123,8 @@ describe('Tempo Licensing Strategy', () => {
 
 		// Scopes should be empty because decode failed
 		expect(rt.license.scopes).toEqual({});
+		
+		await rt.license.jws;
 	});
 
 	test('License state is global and persists across local instances', async () => {
@@ -116,7 +144,31 @@ describe('Tempo Licensing Strategy', () => {
 		expect((Tempo.license as any).key).toBeUndefined();
 	});
 
-	test('Discovery cascade: picks up license from globalThis.TEMPO_LICENSE_KEY', () => {
+	test('Tempo.license returns a safe external snapshot and omits internal jws', async () => {
+		const payload = { scopes: { astro: {} }, jti: 'snapshot-1' };
+		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
+
+		Tempo.init({ license: mockToken });
+		const rt = getRuntime();
+		await rt.license.jws;
+		await vi.waitFor(() => expect(rt.license.status).toBe(LICENSE.Active));
+
+		const snapshot = Tempo.license as any;
+		expect(snapshot).not.toBe(rt.license);
+		expect(snapshot.jws).toBeUndefined();
+		expect(snapshot.key).toBeUndefined();
+		expect(getRuntime().license.key).toBe(mockToken);
+
+		const originalStatus = snapshot.status;
+		try { snapshot.status = LICENSE.None } catch {
+			// secure proxy may reject external mutation attempts
+		}
+
+		expect(getRuntime().license.status).toBe(originalStatus);
+		expect((Tempo.license as any).status).toBe(originalStatus);
+	});
+
+	test('Discovery cascade: picks up license from globalThis.TEMPO_LICENSE_KEY', async () => {
 		const payload = { scopes: { discovered_key: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
@@ -128,12 +180,14 @@ describe('Tempo Licensing Strategy', () => {
 			const rt = getRuntime();
 			expect(rt.license.key).toBe(mockToken);
 			expect(rt.license.scopes).toHaveProperty('discovered_key');
+			
+			await rt.license.jws;
 		} finally {
 			delete (globalThis as any).TEMPO_LICENSE_KEY;
 		}
 	});
 
-	test('Discovery cascade: picks up license from process.env.TEMPO_LICENSE_KEY', () => {
+	test('Discovery cascade: picks up license from process.env.TEMPO_LICENSE_KEY', async () => {
 		const payload = { scopes: { env_key: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
@@ -145,6 +199,8 @@ describe('Tempo Licensing Strategy', () => {
 			const rt = getRuntime();
 			expect(rt.license.key).toBe(mockToken);
 			expect(rt.license.scopes).toHaveProperty('env_key');
+			
+			await rt.license.jws;
 		} finally {
 			delete process.env.TEMPO_LICENSE_KEY;
 		}
@@ -155,7 +211,7 @@ describe('Tempo Licensing Strategy', () => {
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
 		Tempo.init({ license: mockToken });
-		
+
 		// Wait for the Pledge to resolve and the validator logic to trigger
 		await getRuntime().license.jws;
 		await vi.waitFor(() => expect(getRuntime().license.status).toBe(LICENSE.Active));
@@ -174,8 +230,10 @@ describe('Tempo Licensing Strategy', () => {
 		const payload = { scopes: { weather: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
-		// Update mock for this specific test
-		const { Validator } = await import(licenseModule as any);
+		// Override the shared verify ref so BOTH '#tempo/license' and licenseModulePath
+		// mocks return 'revoked'. This avoids the split-brain problem where the .js-path
+		// module and the .ts alias are separate Vitest module instances.
+		const { Validator } = await import('#tempo/license' as any);
 		vi.mocked(Validator).mockImplementation(function () {
 			return {
 				verify: vi.fn().mockResolvedValue({
@@ -201,7 +259,7 @@ describe('Tempo Licensing Strategy', () => {
 		const payload = { scopes: { premium: {} } };
 		const mockToken = `a.${encodeBase64(JSON.stringify(payload))}.c`;
 
-		const { Validator } = await import(licenseModule as any);
+		const { Validator } = await import('#tempo/license' as any);
 		vi.mocked(Validator).mockImplementation(function () {
 			return {
 				verify: vi.fn().mockResolvedValue({

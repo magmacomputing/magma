@@ -27,7 +27,7 @@
       "#tempo/support": [ "./support/support.index.ts" ],
       "#tempo/support/*": [ "./support/*" ],
       "#tempo/license": [
-        "./support/support.license.ts"
+        "./plugin/license/license.validator.ts"
       ],
       "@magmacomputing/tempo": [ "./tempo.index.ts" ],
       "@magmacomputing/tempo/plugin": [ "./plugin/plugin.index.ts" ],

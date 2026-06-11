@@ -90,26 +90,26 @@ t.term.zodiac.CN
 // → { animal: 'Snake', traits: 'Wise, intuitive', element: 'Wood', yinYang: 'Yin' }
 ```
 
-### `per` / `period` — Daily Time Periods
+### `tod` / `timeOfDay` — Daily Time Periods
 
 Classifies the time of day into a named period based on a pre-defined range.
 
 | Key | Starts at |
 |---|---|
-| `midnight` | 00:00 |
-| `early` | 04:00 |
-| `morning` | 08:00 |
-| `midmorning` | 10:00 |
-| `midday` | 12:00 |
-| `afternoon` | 15:30 |
-| `evening` | 18:00 |
-| `night` | 20:00 |
+| `Midnight` | 00:00 |
+| `Early` | 04:00 |
+| `Morning` | 08:00 |
+| `Midmorning` | 10:00 |
+| `Midday` | 12:00 |
+| `Afternoon` | 15:30 |
+| `Evening` | 18:00 |
+| `Night` | 20:00 |
 
 ```ts
 const t = new Tempo('1pm');
 
-t.term.per      // → 'midday'
-t.term.period   // → { key: 'midday', hour: 12 }
+t.term.tod      // → 'Midday'
+t.term.timeOfDay   // → { key: 'Midday', hour: 12, group: 'standard' }
 ```
 
 ## Inspecting Registered Terms
@@ -122,7 +122,7 @@ Tempo.terms
 //     { key: 'qtr', scope: 'quarter',  description: 'Fiscal Quarter' },
 //     { key: 'szn', scope: 'season',   description: 'Meteorological season' },
 //     { key: 'zdc', scope: 'zodiac',   description: 'Astrological Zodiac sign' },
-//     { key: 'per', scope: 'period',   description: 'Daily time period' },
+//     { key: 'tod', scope: 'timeOfDay',   description: 'Daily time period' },
 //   ]
 ```
 
@@ -131,7 +131,7 @@ Tempo.terms
 In **Tempo Full**, all standard Terms are enabled by default. In **Tempo Core**, you have three ways to opt-in:
 
 ### 1. Standard Activation (Recommended)
-The fastest way to enable all built-in Terms (`qtr`, `szn`, `zdc`, `per`).
+The fastest way to enable all built-in Terms (`qtr`, `szn`, `zdc`, `tod`).
 ```typescript
 import '@magmacomputing/tempo/term'; // One-line side-effect activation
 ```
@@ -333,6 +333,23 @@ To ensure a custom `Term` plugin integrates fully with Tempo, follow these guide
 4.  **Math Readiness**: Always use `getTermRange` or provide boundaries. Without them, users cannot use your Term in `add()`, `set()`, or `ticker()`.
 5.  **Key consistency**: It is valid to remap the returned scope `key` (for example, `cfy` -> `FY2024`) when that is the semantic value your Term represents. Be intentional and keep it consistent with your `ranges` lookup and consumer expectations.
 6.  **Unique Names**: Keep `key` and `scope` globally unique across all registered Terms. Collisions are unsupported and may produce order-dependent lookups.
+7.  **Semantic Casing**: To provide a predictable developer experience, adhere to the following casing standards for your `Term` and `Range` fields:
+    *   **Lower-case**: Internal identifiers (Term `key` and `scope`) and marker fields (e.g., `group`, `sphere`, `id`).
+    *   **CapInit / TitleCase**: Presentational identifiers (e.g., Range `key` or `symbol`, like `'Q1'` or `'Spring'`). This ensures `t.term.season.key` returns a properly capitalized string.
+    *   **Free-form text**: Longer descriptive fields (e.g., `label`, `description`, `trait`).
+8.  **IDE Autocomplete (Interface Augmentation)**: To provide a world-class developer experience, always augment the global `TempoTermRegistry` interface with your custom keys and payload types. This ensures IDEs can provide strict type-checking and autocomplete when users access `t.term.myKey`.
+    ```ts
+    declare module '@magmacomputing/tempo/core' {
+      interface TempoTermRegistry {
+        szn: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+        season: {
+          key: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+          symbol: string;
+          // ...
+        }
+      }
+    }
+    ```
 
 ## 🧭 Best Practices: Idempotency & Side-Effects
 

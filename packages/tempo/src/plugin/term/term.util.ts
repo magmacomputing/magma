@@ -3,12 +3,14 @@ import { isDefined, isFunction, isString, isUndefined, isNumber, isZonedDateTime
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { asError } from '#library/coercion.library.js';
+import { deepFreeze } from '#library/utility.library.js';
+
+import { getHost } from '../plugin.util.js';
 import { sym, TermError, isTempo } from '../../support/support.symbol.js';
 import { getRuntime } from '../../support/support.runtime.js';
 import { SCHEMA, getLargestUnit } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange } from './term.type.js';
-import { getHost } from '../plugin.util.js';
 
 /**
  * ## defineTerm
@@ -16,19 +18,22 @@ import { getHost } from '../plugin.util.js';
  */
 export const defineTerm = <T extends TermPlugin>(term: T): T => {
 	registerTerm(term);
-	return term;
+	return deepFreeze(term) as T;
 }
 
 /**
  * ## findTermPlugin
  * Find a Term plugin by key, scope, or sub-key.
  */
-export function findTermPlugin(ident: string): TermPlugin | undefined {
+export function findTermPlugin(ident: string, state?: any): TermPlugin | undefined {
 	if (!isString(ident)) return undefined;
 	const id = (ident.startsWith('#') ? ident.slice(1) : ident).toLowerCase();
 	const [termPart] = id.split('.');
 
-	return getRuntime().pluginsDb.terms.find((t: TermPlugin) => {
+	const st = state ?? getRuntime().state;
+	if (!st) return undefined;
+
+	return st.pluginsDb.terms.find((t: TermPlugin) => {
 		if (t.key?.toLowerCase() === termPart || t.scope?.toLowerCase() === termPart) return true;
 		if (t.groups) {
 			const list = Array.isArray(t.groups) ? t.groups : Object.values(t.groups).flat(Infinity) as Range[];
@@ -43,7 +48,7 @@ export function findTermPlugin(ident: string): TermPlugin | undefined {
  * Factory to normalize and group Term ranges for efficient lookup.
  */
 export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) {
-	return byKey(ranges, ...keys);
+	return secure(byKey(ranges, ...keys));
 }
 
 /**
@@ -392,11 +397,12 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
  * ## registerTerm
  * Registration hook for Term plugins.
  */
-export function registerTerm(term: TermPlugin) {
+export function registerTerm(term: TermPlugin, state?: any) {
 	const rt = getRuntime();
 
-	// Validate and persist in the runtime's discovery database.
-	rt.addTerm(term);
+	// Validate and persist in the state's discovery database.
+	if (state) rt.addTerm(state, term);
+	else if (rt.state) rt.addTerm(rt.state, term);
 
 	rt.emit(sym.$Register, term);
 }

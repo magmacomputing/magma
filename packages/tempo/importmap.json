@@ -1,16 +1,11 @@
 {
   "imports": {
-    "jsbi": "https://cdn.jsdelivr.net/npm/jsbi@4.3.0/dist/jsbi.mjs",
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
-    "@magmacomputing/tempo": "./dist/tempo.index.js",
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js",
     "@magmacomputing/tempo/core": "./dist/core.index.js",
-    "@magmacomputing/tempo/enums": "./dist/support/tempo.enum.js",
-    "@magmacomputing/tempo/parse": "./dist/discrete/discrete.parse.js",
-    "@magmacomputing/tempo/discrete": "./dist/discrete/discrete.index.js",
     "@magmacomputing/tempo/duration": "./dist/module/module.duration.js",
     "@magmacomputing/tempo/mutate": "./dist/module/module.mutate.js",
     "@magmacomputing/tempo/plugin": "./dist/plugin/plugin.index.js",
-    "@magmacomputing/tempo/format": "./dist/discrete/discrete.format.js",
     "@magmacomputing/tempo/library": "./dist/library.index.js"
   }
 }

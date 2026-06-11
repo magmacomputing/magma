@@ -43,10 +43,10 @@ describe(`${label} instance t.terms`, () => {
     expect(t.terms.zodiac).toContain('Pisces');
   });
 
-  test('returns available range keys for period (Timeline)', () => {
+  test('returns available range keys for timeOfDay (Timeline)', () => {
     const t = new Tempo();
-    expect(t.terms.period).toContain('morning');
-    expect(t.terms.period).toContain('night');
+    expect(t.terms.timeOfDay).toContain('Morning');
+    expect(t.terms.timeOfDay).toContain('Night');
   });
 });
 

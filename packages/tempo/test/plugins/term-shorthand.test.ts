@@ -6,9 +6,9 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 	});
 
 	describe('.set() shorthand', () => {
-		test('set("#period.morning") sets to the start of morning', () => {
+		test('set("#timeOfDay.Morning") sets to the start of morning', () => {
 			const t = new Tempo('2026-01-01T12:00:00', { sphere: 'north' })
-			const res = t.set('#period.morning')
+			const res = t.set('#timeOfDay.Morning')
 			expect(res.hh).toBe(8)
 			expect(res.mi).toBe(0)
 		})
@@ -29,9 +29,9 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 			expect(res.dd).toBe(1)
 		})
 
-		test('set({ start: "#period.night" }) sets explicitly to start of current night', () => {
+		test('set({ start: "#timeOfDay.Night" }) sets explicitly to start of current night', () => {
 			const t = new Tempo('2026-01-01T12:00:00', { sphere: 'north' })
-			const res = t.set({ start: '#period.night' })
+			const res = t.set({ start: '#timeOfDay.Night' })
 			// Jan 1 12:00. The current night started at Jan 1 20:00 (since it hasn't happened yet today, it looks back)
 			// Wait, the logic for 'current range' should find the range that contains the current time, or the last one if we are between.
 			// At 12:00, the last night start was Dec 31 20:00.
@@ -49,9 +49,9 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 			expect(res.dd).toBe(3)
 		})
 
-		test('add({ "#period.morning": 2 }) moves two mornings ahead', () => {
+		test('add({ "#timeOfDay.Morning": 2 }) moves two mornings ahead', () => {
 			const t = new Tempo('2026-01-01T09:00:00', { sphere: 'north' })	// 1 hr into morning (starts 08:00)
-			const res = t.add({ '#period.morning': 2 })
+			const res = t.add({ '#timeOfDay.Morning': 2 })
 			// Jan 2 08:00 + 1hr = Jan 2 09:00
 			// Jan 3 08:00 + 1hr = Jan 3 09:00
 			expect(res.dd).toBe(3)

@@ -29,15 +29,17 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 	const rt = getRuntime();
 	const mod = module === 'term' ? 'TermsModule' : module;
 	const hostLogic = (rt.modules as any)[mod];
+	const state = host[sym.$Internal]?.() || rt.state;
 
 	// terms fallback only applies when the canonical module entry actually exists in the discovery database
-	const isTermsLoaded = (mod === 'TermsModule') &&
-		(isDefined(hostLogic) || rt.installed.has('TermsModule') || rt.pluginsDb.plugins.some(p => p.name === 'TermsModule')) &&
-		rt.pluginsDb.terms.length > 0;
+	const isTermsLoaded = (mod === 'TermsModule') && state &&
+		(isDefined(hostLogic) || rt.installed.has('TermsModule') || state.pluginsDb.plugins.some((p: any) => p.name === 'TermsModule')) &&
+		state.pluginsDb.terms.length > 0;
 
 	if (!isDefined(hostLogic) && !isTermsLoaded) {
 		const baseName = mod.endsWith('Module') ? mod.slice(0, -6) : mod;
-		const msg = `${mod} not loaded. (Did you forget to Tempo.extend(${mod}) or import '#tempo/${baseName.toLowerCase()}'?)`;
+		const importPath = baseName === 'Terms' ? 'term' : baseName.toLowerCase();
+		const msg = `${mod} not loaded. (Did you forget to Tempo.extend(${mod}) or import '#tempo/${importPath}' / '@magmacomputing/tempo/${importPath}'?)`;
 		if (!silent) logError(msg, t?.config);
 
 		if (silent) return false;
@@ -181,15 +183,22 @@ export function defineExtension<T extends Plugin<TempoType>>(extension: T): T {
  * ## registerPlugin
  * Registration hook for general plugins.
  */
-export function registerPlugin(plugin: any) {
+export function registerPlugin(plugin: any, state?: any) {
 	const rt = getRuntime();
 
-	// Validate and persist in the runtime's discovery database.
-	rt.addPlugin(plugin);
+	// Validate and persist in the state's discovery database.
+	if (state) rt.addPlugin(state, plugin);
+	else if (rt.state) rt.addPlugin(rt.state, plugin);
 
-	rt.addExtension(plugin);
-
+	// Only persist to the global extension list for global-state registrations.
+	// Sandbox registrations (state !== rt.state) are tracked in the sandbox's
+	// ScopedSet and must not bleed into the global rt.extensions array.
+	const targetState = state ?? rt.state;
+	if (!targetState || targetState === rt.state) {
+		rt.addExtension(plugin);
+	}
 	rt.emit(sym.$Register, plugin);
 
 	return plugin;
 }
+

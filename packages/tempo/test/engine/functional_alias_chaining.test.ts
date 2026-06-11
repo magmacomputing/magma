@@ -15,7 +15,7 @@ describe('Functional Alias Chaining & Host Context', () => {
 				},
 				// 3. Term in set()
 				'term.set': function (this: t.AliasContext) {
-					return this.set('#per.morning');
+					return this.set('#timeOfDay.Morning');
 				},
 				// 4. Config override in set() - Verifying parity inside the alias
 				'config.set': function (this: t.AliasContext) {

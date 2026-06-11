@@ -47,3 +47,19 @@ export const QuarterTerm = defineTerm({
 		return getTermRange(this, asArray(res), keyOnly, anchor) as any;
 	}
 });
+
+declare module '../../tempo.class.js' {
+	interface TempoTermRegistry {
+		qtr: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+		quarter: {
+			key: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+			label: 'First Quarter' | 'Second Quarter' | 'Third Quarter' | 'Fourth Quarter';
+			fiscal: number;
+			sphere: COMPASS;
+			day: number;
+			month: number;
+			year?: number;
+		};
+	}
+}
+

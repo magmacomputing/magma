@@ -2,7 +2,7 @@ import { toZonedDateTime, toInstant, getTemporalIds } from '#library/temporal.li
 import { isDefined, isString, isZonedDateTime, isNumeric } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 
-import { TermError, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
+import { sym, TermError, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
 import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin/term/term.util.js';
 import { getHost } from '../plugin/plugin.util.js';
 import { parseModifier } from './engine.lexer.js';
@@ -33,7 +33,10 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		? unit.slice(1).split('.')
 		: [unit, undefined];
 
-	const termObj = findTermPlugin(termPart);
+	const state = isTempo(instance)
+		? (instance as any)[sym.$Internal]?.()
+		: (instance as any);
+	const termObj = findTermPlugin(termPart, state);
 
 	if (!termObj) {
 		Tempo?.[TermError]?.(instance.config, unit);

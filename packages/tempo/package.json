@@ -1,6 +1,9 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.0.0",
+  "version": "3.0.1",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -96,7 +99,7 @@
       "default": "./dist/module/module.index.js"
     },
     "#tempo/license": {
-      "default": "./dist/support/support.license.js"
+      "default": "./dist/plugin/license/license.validator.js"
     },
     "#tempo/*.js": {
       "default": "./dist/*.js"
@@ -174,10 +177,11 @@
     }
   },
   "scripts": {
-    "test": "vitest run",
-    "test:dist": "cross-env TEST_DIST=true vitest run",
-    "test:ci": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
-    "test:ci:prefilter": "cross-env TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TEMPO_PREFILTER_CI=true vitest run",
+    "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run",
+    "test:dist": "cross-env TEMPO_LICENSE_KEY=\"\" TEST_DIST=true vitest run",
+    "test:browser": "vitest run -c vitest.browser.config.ts",
+    "test:ci": "cross-env TEMPO_LICENSE_KEY=\"\" TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
+    "test:ci:prefilter": "cross-env TEMPO_LICENSE_KEY=\"\" TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TEMPO_PREFILTER_CI=true vitest run",
     "repl": "tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:dist": "tsx -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:node": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/repl.ts",
@@ -187,6 +191,8 @@
     "build": "npm run clean && tsc -b && npm run build:bundle && npm run build:resolve",
     "build:bundle": "rollup -c",
     "build:resolve": "tsx bin/resolve-types.ts",
+    "build:version": "node bin/update-version.mjs",
+    "prebuild": "npm run build:version",
     "clean": "rm -rf dist && (tsc -b --clean || true)",
     "publish": "npm publish --access public",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && if [ -z \"$TEMPO_LICENSE_PATH\" ] || [ ! -f \"$TEMPO_LICENSE_PATH\" ]; then echo '🚨 ERROR: TEMPO_LICENSE_PATH is missing or invalid. Cannot publish Premium build.'; exit 1; fi && npm run build",
@@ -205,7 +211,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "3.0.0",
+    "@magmacomputing/library": "3.0.1",
     "@rollup/plugin-alias": "^6.0.0",
     "javascript-obfuscator": "^5.4.3",
     "magic-string": "^0.30.21",

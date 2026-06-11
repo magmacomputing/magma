@@ -1,8 +1,10 @@
 import { sym } from './support.symbol.js';
 import { LICENSE } from './support.enum.js';
 import type { TermPlugin } from '../plugin/term/term.type.js';
-import type { Extension, Plugin } from '../plugin/plugin.type.js';
+import type { Extension } from '../plugin/plugin.type.js';
 import type { Internal } from '../tempo.type.js';
+
+
 
 /**
  * # TempoRuntime
@@ -35,15 +37,11 @@ export class TempoRuntime {
 	readonly extensions: Extension[] = [];
 	/** raw named-module map — consumed by REGISTRY */
 	readonly modules: Record<string, any> = {};
-	/** set of installed plugin identifiers — consumed by REGISTRY */
+	/** set of installed plugin identifiers — consumed by REGISTRY.
+	 * For sandbox states this will be a `ScopedSet` parented to this global set. */
 	readonly installed: Set<any> = new Set();
 	/** decentralized reset hooks — fired on every registryReset() call */
 	readonly resetHooks: Set<() => void> = new Set();
-	/**
-	 * Persistent plugin/term discovery database.
-	 * Kept as a plain object (not a secureRef) so callers can push() into the arrays.
-	*/
-	readonly pluginsDb: { terms: TermPlugin[]; plugins: Plugin[] } = { terms: [], plugins: [] };
 
 	/** current license state */
 	readonly license: Internal.LicenseState = { status: LICENSE.None, scopes: {} };
@@ -81,11 +79,11 @@ export class TempoRuntime {
 	 * Validates the shape before storing so malformed entries cannot corrupt state.
 	 * Replaces existing terms with the same key to support HMR and test module cache resets.
 	 */
-	addTerm(term: TermPlugin): void {
+	addTerm(state: Internal.State, term: TermPlugin): void {
 		if (!term || typeof term.key !== 'string') return;
-		const idx = this.pluginsDb.terms.findIndex(t => t.key === term.key);
-		if (idx >= 0) this.pluginsDb.terms[idx] = term;
-		else this.pluginsDb.terms.push(term);
+		const idx = state.pluginsDb.terms.findIndex(t => t.key === term.key);
+		if (idx >= 0) state.pluginsDb.terms[idx] = term;
+		else state.pluginsDb.terms.push(term);
 	}
 
 	/**
@@ -93,17 +91,17 @@ export class TempoRuntime {
 	 * Guards against duplicate entries.
 	 * Replaces existing plugins with the same name to support HMR and test module cache resets.
 	 */
-	addPlugin(plugin: any): void {
+	addPlugin(state: Internal.State, plugin: any): void {
 		if (!plugin) return;
 		if (plugin.name) {
-			const idx = this.pluginsDb.plugins.findIndex(p => p.name === plugin.name);
+			const idx = state.pluginsDb.plugins.findIndex(p => p.name === plugin.name);
 			if (idx >= 0) {
-				this.pluginsDb.plugins[idx] = plugin;
+				state.pluginsDb.plugins[idx] = plugin;
 				return;
 			}
 		}
-		if (!this.pluginsDb.plugins.includes(plugin))
-			this.pluginsDb.plugins.push(plugin);
+		if (!state.pluginsDb.plugins.includes(plugin))
+			state.pluginsDb.plugins.push(plugin);
 	}
 
 	/**
@@ -184,7 +182,16 @@ export function resetRuntime(): void {
 	// 🛡️ Race Condition Guard: Bump JTI to invalidate pending async reckonings
 	rt.license.jti = Math.random().toString(36).slice(2);
 
+	const oldJws = (rt.license as any).jws as any;
+	if (oldJws && oldJws.isPending) {
+		if (oldJws.promise && typeof oldJws.promise.catch === 'function')
+			oldJws.promise.catch(() => { });
+		// Leave the stale runtime pledge to settle naturally.
+		// Its internal handlers and JTI guard will ignore stale validation results.
+	}
+
 	rt.state = undefined;
+
 	const lic = rt.license as any;
 	lic.status = LICENSE.None;
 	lic.scopes = {};

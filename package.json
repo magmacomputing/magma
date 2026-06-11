@@ -1,7 +1,10 @@
 {
   "name": "tempo-monorepo",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "description": "Magma Computing Monorepo",
   "repository": {
     "type": "git",
@@ -11,7 +14,7 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "vitest run",
+    "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run",
     "build:tempo": "npm run build --workspace=@magmacomputing/tempo",
     "build:library": "npm run build --workspace=@magmacomputing/library",
     "clean": "tsc -b --clean",
@@ -23,7 +26,7 @@
     "docs:build": "npm run docs:build --workspace=@magmacomputing/tempo",
     "docs:preview": "npm run docs:preview --workspace=@magmacomputing/tempo",
     "docs:push": "npm run docs:push --workspace=@magmacomputing/tempo",
-    "test:dist": "npm run build:library && npm run build:tempo && cross-env TEST_DIST=true vitest run"
+    "test:dist": "npm run build:library && npm run build:tempo && cross-env TEMPO_LICENSE_KEY=\"\" TEST_DIST=true vitest run"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
@@ -32,21 +35,28 @@
     "@types/hammerjs": "^2.0.46",
     "@types/jquery": "^4.0.0",
     "@types/node": "^25.9.1",
+    "@vitest/browser": "^4.1.8",
+    "@vitest/browser-playwright": "^4.1.8",
+    "@vitest/browser-webdriverio": "^4.1.8",
     "@vitest/ui": "^4.1.7",
     "cross-env": "^10.1.0",
     "markdown-it-mathjax3": "^4.3.2",
+    "playwright": "^1.60.0",
     "rollup": "^4.60.4",
     "tslib": "^2.8.1",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "unplugin-swc": "^1.5.9",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.7",
+    "webdriverio": "^9.27.2"
   },
   "overrides": {
     "esbuild": "^0.28.0"
   },
   "allowScripts": {
     "esbuild": true,
-    "@swc/core": true
+    "@swc/core": true,
+    "edgedriver@6.3.0": true,
+    "geckodriver@6.1.0": true
   }
 }

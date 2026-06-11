@@ -4,6 +4,7 @@ env:
   TZ: America/New_York
   LANG: en_US.UTF-8
   LC_ALL: en_US.UTF-8
+  TEMPO_LICENSE_KEY: ""
 
 on:
   push:

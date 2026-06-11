@@ -16,7 +16,8 @@ import { normalizeMatch, accumulateResult } from '../engine/engine.normalizer.js
 import { getRange, getTermRange } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
-import { sym, isTempo, TermError, getRuntime, Match, TempoError } from '../support/support.index.js';
+
+import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods } from '../support/support.index.js';
 import { markConfig, setPatterns, init, extendState } from '../support/support.index.js';
 import { setProperty, logError, logDebug } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
@@ -57,7 +58,7 @@ const _ParseEngine = {
 		try {
 			const { config } = state;
 			const TempoClass = getRuntime().modules['Tempo'];
-			const terms = getRuntime().pluginsDb.terms;
+			const terms = state.pluginsDb.terms;
 
 			const val = dateTime ?? state.anchor ?? state.config.anchor ?? (isTempo(tempo) ? (tempo as any).toDateTime() : (isZonedDateTime(tempo) ? tempo : (isInstant(tempo) ? tempo.toZonedDateTimeISO(config.timeZone) : undefined)));
 			const [tz, cal] = getTemporalIds(config.timeZone, config.calendar);
@@ -151,7 +152,7 @@ const _ParseEngine = {
 		const arg = asType(tempo);
 		let { type, value } = arg;
 		const TempoClass = getRuntime().modules['Tempo'];
-		const terms = getRuntime().pluginsDb.terms;
+		const terms = state.pluginsDb.terms;
 
 
 		if (isTempo(dateTime)) dateTime = dateTime.toDateTime();
@@ -177,22 +178,22 @@ const _ParseEngine = {
 
 			accumulateResult(state, { type: 'Temporal.ZonedDateTimeLike', value: zdt, match: 'Temporal.ZonedDateTimeLike' });
 
-			return { type: 'Temporal.ZonedDateTime', value: zdt };
+			return { type: 'Temporal.ZonedDateTime', value: zdt }
 		}
 
 		if (isTempo(value)) {
 			const res = value.toDateTime();
 			const [tz, cal] = getTemporalIds(res);
-			return { type: 'Temporal.ZonedDateTime', value: res, zone: tz, calendar: cal };
+			return { type: 'Temporal.ZonedDateTime', value: res, zone: tz, calendar: cal }
 		}
 
 		if (isZonedDateTime(value))
-			return { type: 'Temporal.ZonedDateTime', value };
+			return { type: 'Temporal.ZonedDateTime', value }
 
 		if (isString(value) && value.startsWith('#')) {
 			const res = resolveTermValue(TempoClass, state as any, value, dateTime);
-			if (isZonedDateTime(res)) return { type: 'Temporal.ZonedDateTime', value: res };
-			return { type: 'Void', value: undefined as any };
+			if (isZonedDateTime(res)) return { type: 'Temporal.ZonedDateTime', value: res }
+			return { type: 'Void', value: undefined as any }
 		}
 
 		if (isString(value)) {
@@ -217,7 +218,8 @@ const _ParseEngine = {
 						curr = Object.getPrototypeOf(curr);
 					}
 					return res;
-				};
+				}
+
 				const local = [...keys(state.parse.event), ...keys(state.parse.period)];
 				const lowTrim = trim.toLowerCase();
 				const bypass = local.some(key => lowTrim.includes(String(key).toLowerCase()));
@@ -385,8 +387,11 @@ const withState = <A extends any[], R>(fn: (state: t.Internal.State, ...args: A)
 		if (isObject(firstArg) && isObject(firstArg.config) && isObject(firstArg.parse)) {
 			state = firstArg;
 			callArgs = args.slice(1) as A;
+		} else if (isObject(firstArg) && firstArg.constructor && typeof (firstArg.constructor as any)[sym.$Internal] === 'function') {
+			state = (firstArg.constructor as any)[sym.$Internal]();
+			callArgs = args.slice(1) as A;
 		} else {
-			state = (this as any)?.[sym.$Internal]?.() ?? this;
+			state = (this as any)?.[sym.$Internal]?.() ?? getRuntime().state;
 			callArgs = args as A;
 		}
 
@@ -405,7 +410,7 @@ export const ParseEngine = {
 	parseMatch: withState(_ParseEngine.parseMatch),
 	isZonedDateTimeLike: withState(_ParseEngine.isZonedDateTimeLike),
 	result: withState(accumulateResult)
-};
+}
 
 /**
  * # ParseModule
@@ -450,6 +455,13 @@ export function parse(value: t.DateTime, options: t.Options = {}): Temporal.Zone
 
 	// Apply options
 	extendState(state, localOptions);
+
+	// Register event/period aliases for standalone state before compiling patterns
+	const TempoClass = runtime.modules['Tempo'];
+	if (TempoClass) {
+		(TempoClass as any)[$setEvents](state, undefined, false);
+		(TempoClass as any)[$setPeriods](state, undefined, false);
+	}
 
 	// Compile RegEx patterns
 	setPatterns(state);

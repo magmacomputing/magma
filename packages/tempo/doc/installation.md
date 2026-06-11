@@ -8,12 +8,12 @@
 
 `Temporal` is now at Stage 4 and is expected to land broadly in runtimes soon. To avoid needlessly inflating package size with a dependency that will increasingly become unnecessary, `Tempo` does not bundle a `Temporal` polyfill by default.
 
-As of 13 January 2026, Chrome 144 has shipped `Temporal`, and Firefox 139 also includes native `Temporal` support.
+As of 13 January 2026, Chrome 144 has shipped `Temporal`, and Firefox 139 also includes native `Temporal` support. You can verify browser support at https://caniuse.com/temporal.
 
-While Node.js does not yet enable `Temporal` by default, recent versions (Node 20+) support it via the `--harmony-temporal` flag (or `--js-temporal` in newer builds). This allows you to use `Tempo` without an external polyfill package.
+Node.js 26.0.0+ ships native `Temporal` fully enabled by default. Older Node versions may still require an external polyfill or experimental flags depending on the V8 version.
 
 ::: warning
-Native implementations in Node.js are currently considered experimental and may be incomplete or contain bugs that cause unexpected crashes (e.g., `V8_Fatal` errors in some builds). For mission-critical stability, we strongly recommend using `@js-temporal/polyfill`.
+Older Node.js releases that ship `Temporal` behind a feature flag may still have incomplete or experimental implementations. For mission-critical stability in those older environments, we strongly recommend using `@js-temporal/polyfill`.
 :::
 
 Please verify support in your actual target runtime(s) and add a polyfill only when needed.
@@ -49,14 +49,16 @@ const t = new Tempo('next Friday');
 
 ### Node.js (with Native Temporal)
 
-If you are using Node.js 20+, you can enable native `Temporal` support without installing a polyfill:
+If you are using Node.js 26.0.0 or later, native `Temporal` is fully supported and enabled by default.
+
+For older Node.js releases that still ship `Temporal` behind a flag, you can enable it with:
 
 ```bash
 node --harmony-temporal my-app.js
 ```
 
 > [!WARNING]
-> Use native support with caution. Some Node.js builds contain incomplete Temporal implementations that can crash on complex arithmetic. See [Temporal Polyfill Note](#temporal-polyfill-note) for details.
+> Older Node.js releases that require `--harmony-temporal` may still have incomplete Temporal support. See [Temporal Polyfill Note](#temporal-polyfill-note) for details.
 
 ### Node.js (with Polyfill)
 
@@ -104,9 +106,8 @@ Add this to your `<head>` to resolve the dependencies:
 <script type="importmap">
 {
   "imports": {
-    "jsbi": "https://cdn.jsdelivr.net/npm/jsbi@4.3.0/dist/jsbi.mjs",
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.esm.js"
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js"
   }
 }
 </script>
@@ -134,7 +135,7 @@ If you aren't using ESM or just want a simple `<script>` tag for rapid prototypi
 <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.umd.js"></script>
 
 <!-- Load the Tempo Global Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.js"></script>
 
 <script>
   const t = new Tempo('now');
@@ -168,5 +169,5 @@ When using the Lite build, the `Tempo` class will have almost no methods (like `
 
 We recommend pinning your versions in production environments to ensure stability. 
 
-*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/...` (Locks to major version 2)
+*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/...` (Locks to major version 3)
 *   **Latest**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/...` (Omit the version string to always receive the latest release. Note that JSDelivr will resolve a missing version tag to the latest published release).

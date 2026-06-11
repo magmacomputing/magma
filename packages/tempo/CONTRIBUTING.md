@@ -12,7 +12,7 @@ Tempo uses several advanced JavaScript patterns that contributors should be fami
 ## 🛠️ Local Development
 
 ### Prerequisites
-- **Node.js 20+** (Tempo requires native `Temporal` support or a robust environment).
+- **Node.js 20+** (Tempo requires native `Temporal` support or a robust environment; Node 22.0.x native Temporal has known instabilities, so a polyfill like `@js-temporal/polyfill` is highly recommended).
 - **npm v9+** (For monorepo workspace support).
 
 ### Setup
@@ -33,6 +33,8 @@ npm run build -w @magmacomputing/tempo
 We use **Vitest** for our test suite. All new features or bug fixes must include corresponding tests.
 
 - **Run all tests**: `npm run test`
+- **Run distribution tests**: `npm run test:dist` (Tests the compiled `dist/` bundles)
+- **Run browser compatibility tests**: `npm run test:browser` (Requires Chrome/Chromium for headless WebdriverIO execution)
 - **Watch mode**: `npm run dev`
 - **Coverage**: `npm run coverage`
 

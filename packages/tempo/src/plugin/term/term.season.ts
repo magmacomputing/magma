@@ -38,8 +38,22 @@ export const SeasonTerm = defineTerm({
 		return resolve(this, anchor);
 	},
 
-	/** determine where the current Tempo instance fits within the above range */
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
 		return getTermRange(this, resolve(this, anchor), keyOnly, anchor);
 	}
 });
+
+declare module '../../tempo.class.js' {
+	interface TempoTermRegistry {
+		szn: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+		season: {
+			key: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+			symbol: 'Flower' | 'Sun' | 'Leaf' | 'Snowflake';
+			group: 'meteorological';
+			sphere: COMPASS;
+			day: number;
+			month: number;
+		};
+	}
+}
+
