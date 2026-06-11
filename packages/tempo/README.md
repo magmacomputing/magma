@@ -64,25 +64,31 @@ deno add npm:@magmacomputing/tempo      # deno
 ```
 
 <details>
-<summary><b>🌐 Browser & Lite Environments</b></summary>
+<summary><b>🌐 Browser & Native Environments</b></summary>
 
-For modern browsers using **Import Maps**:
+For standard usage natively in the browser, use the pre-optimized **Global ESM Bundle**. It includes the entire core engine in a single file:
+
 ```html
 <script type="importmap">
 {
   "imports": {
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.esm.js"
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js"
   }
 }
 </script>
+
+<script type="module">
+  import '@js-temporal/polyfill';
+  import { Tempo } from '@magmacomputing/tempo';
+  
+  const t = new Tempo('next Friday');
+</script>
 ```
 
-For rapid prototyping without a package manager (UMD):
-```html
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.js"></script>
-```
+> **Advanced Usage (Plugins & CDNs)**
+> If you need to use **Tempo Premium Plugins** natively in the browser, require granular module resolution, or want to use on-the-fly bundling CDNs (like `esm.sh`), please see our comprehensive [**Browser Installation Guide**](./doc/installation.md) for detailed import map configurations.
 
-For granular "Lite" builds, see the [Full Installation Guide](https://magmacomputing.github.io/magma/doc/installation).
 </details>
 
 ---
