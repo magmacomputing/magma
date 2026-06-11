@@ -127,13 +127,27 @@ The easiest way to use Tempo natively in the browser is via the pre-optimized ES
 
 ### 2. Smart CDNs (The "Best-of-Both-Worlds")
 
-If you want to use **external plugins** natively in the browser *without* configuring massive import maps, use an on-the-fly bundling CDN like [esm.sh](https://esm.sh). It reads the package resolution rules and bundles dependencies automatically. You do not need an import map!
+If you want to use **Premium Plugins** natively in the browser *without* configuring the massive granular import map required by static CDNs, use an on-the-fly bundling CDN like [esm.sh](https://esm.sh). It reads the package resolution rules and bundles the complex internal dependencies automatically. 
+
+While you *could* import directly from the URL everywhere, the best practice is to use a tiny, simple import map just for your top-level packages. This allows you to keep your actual application code clean and standard:
 
 ```html
+<!-- 1. A tiny import map for your clean shortcuts -->
+<script type="importmap">
+{
+  "imports": {
+    "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@3.0.1",
+    "@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@1.0.4"
+  }
+}
+</script>
+
+<!-- 2. Your Application Code -->
 <script type="module">
-  // esm.sh automatically resolves subpaths and bundles dependencies on the fly
-  import { Tempo } from 'https://esm.sh/@magmacomputing/tempo@3.0.1';
-  import { TickerModule } from 'https://esm.sh/@magmacomputing/tempo-plugin-ticker@1.0.4';
+  // You can use standard bare specifiers thanks to the tiny import map above.
+  // esm.sh handles all the complex internal plugin routing behind the scenes!
+  import { Tempo } from '@magmacomputing/tempo';
+  import { TickerModule } from '@magmacomputing/tempo-plugin-ticker';
 
   Tempo.extend(TickerModule);
 </script>
@@ -141,7 +155,7 @@ If you want to use **external plugins** natively in the browser *without* config
 
 ### 3. Granular ESM (Advanced Plugin Architecture)
 
-If you are strictly using a static CDN (like jsdelivr) and require external plugins, you must use the Granular ESM distribution. The bundled engine drops internal builder-utilities to keep the global scope clean, but plugins require them to resolve their own dependencies.
+If you are strictly using a static CDN (like jsdelivr) and require Premium Plugins, you must use the Granular ESM distribution. The bundled engine drops internal builder-utilities to keep the global scope clean, but plugins require them to resolve their own dependencies.
 
 To use Premium Plugins via static CDN, you must map the core library, its subpaths, and the internal licensing module directly to their granular equivalents:
 
@@ -149,6 +163,7 @@ To use Premium Plugins via static CDN, you must map the core library, its subpat
 <script type="importmap">
 {
   "imports": {
+    "tslib": "https://cdn.jsdelivr.net/npm/tslib@2.8.1/tslib.es6.mjs",
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
 
     "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/tempo.index.js",
@@ -160,7 +175,7 @@ To use Premium Plugins via static CDN, you must map the core library, its subpat
     
     "#tempo/license": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/plugin/license/license.validator.js",
 
-    "`@magmacomputing/tempo-plugin-astro`": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@1.1.6/dist/index.js",
+    "@magmacomputing/tempo-plugin-astro": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@1.1.6/dist/index.js",
     "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@1.0.4/dist/index.js"
   }
 }

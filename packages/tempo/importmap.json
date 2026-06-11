@@ -1,5 +1,7 @@
 {
+  "_comment": "This JSON is the sanctioned browser import map for this package. Entries using './dist/...' MUST resolve relative to where this JSON is hosted (typically alongside the package's dist folder). Note that '#tempo/license' is an internal/private specifier used at runtime, which is why it differs from the public '@magmacomputing/' exports.",
   "imports": {
+    "tslib": "https://cdn.jsdelivr.net/npm/tslib@2.8.1/tslib.es6.mjs",
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
     "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js",
     "@magmacomputing/tempo/core": "./dist/core.index.js",
