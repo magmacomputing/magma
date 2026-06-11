@@ -59,6 +59,8 @@ declare module '../../tempo.class.js' {
 			day: number;
 			month: number;
 			year?: number;
+			start: Tempo;
+			end: Tempo;
 		};
 	}
 }
