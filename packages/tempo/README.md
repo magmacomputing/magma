@@ -64,25 +64,74 @@ deno add npm:@magmacomputing/tempo      # deno
 ```
 
 <details>
-<summary><b>🌐 Browser & Lite Environments</b></summary>
+<summary><b>🌐 Browser & Native Environments</b></summary>
 
-For modern browsers using **Import Maps**:
+Tempo provides multiple native browser distribution formats. Here is the quick breakdown of which approach to use:
+- **Standard Usage** (No plugins): Use the Global Bundle.
+- **Plugins without a bundler**: Use **esm.sh** (Easiest) OR use Granular Import Maps (Hardest, but maximum control).
+- **Plugins with a bundler** (Vite/Webpack): Do nothing. Your bundler handles the resolution automatically.
+
+#### 1. The Global Bundle (Standard Usage)
+The easiest way to use Tempo natively in the browser is via the pre-optimized ESM bundle. It includes the entire core engine in a single file, eliminating network waterfall effects.
+
 ```html
 <script type="importmap">
 {
   "imports": {
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.esm.js"
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js"
   }
 }
 </script>
 ```
 
-For rapid prototyping without a package manager (UMD):
+#### 2. Smart CDNs (The "Best-of-Both-Worlds")
+If you want to use **external plugins** natively in the browser *without* configuring massive import maps, use an on-the-fly bundling CDN like [esm.sh](https://esm.sh). It reads the package resolution rules and bundles dependencies automatically. You do not need an import map!
+
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@2/dist/tempo.bundle.js"></script>
+<script type="module">
+  // esm.sh automatically resolves subpaths and bundles dependencies on the fly
+  import { Tempo } from 'https://esm.sh/@magmacomputing/tempo@3.0.1';
+  import { TickerModule } from 'https://esm.sh/@magmacomputing/tempo-plugin-ticker@1.0.4';
+
+  Tempo.extend(TickerModule);
+</script>
 ```
 
-For granular "Lite" builds, see the [Full Installation Guide](https://magmacomputing.github.io/magma/doc/installation).
+#### 3. Granular ESM (Advanced Plugin Architecture)
+If you are strictly using a static CDN (like jsdelivr) and require external plugins, you must use the Granular ESM distribution. The bundled engine drops internal builder-utilities to keep the global scope clean, but plugins require them to resolve their own dependencies.
+
+To use Premium Plugins via static CDN, you must map the core library, its subpaths, and the internal licensing module directly to their granular equivalents:
+
+```html
+<script type="importmap">
+{
+  "imports": {
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
+
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/tempo.index.js",
+    "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/core.index.js",
+    "@magmacomputing/tempo/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/library.index.js",
+    "@magmacomputing/tempo/plugin": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/plugin/plugin.index.js",
+    "@magmacomputing/tempo/enums": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/support/support.enum.js",
+    "@magmacomputing/tempo/term": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/plugin/term/term.index.js",
+    
+    "#tempo/license": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/plugin/license/license.validator.js",
+
+    "@magmacomputing/tempo-plugin-astro": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@1.1.6/dist/index.js",
+    "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@1.0.4/dist/index.js"
+  }
+}
+</script>
+```
+
+*(Note: When resolving version caching issues on jsdelivr, use explicit patch versions like `@3.0.1` instead of `@3`)*
+
+#### UMD (Rapid Prototyping)
+For rapid prototyping without a package manager or module scope:
+```html
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.js"></script>
+```
 </details>
 
 ---

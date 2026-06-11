@@ -93,27 +93,28 @@ const t = new Tempo();
 
 ---
 
-## 🌐 Browser (Modern ESM)
+## 🌐 Browser & Native Environments
 
-For browser environments that support **Import Maps**, you can use the granular ESM modules. This is the recommended way to use Tempo in the browser as it allows for better caching and modularity.
+Tempo provides multiple native browser distribution formats. Here is the quick breakdown of which approach to use:
+- **Standard Usage** (No plugins): Use the Global Bundle.
+- **Plugins without a bundler**: Use **esm.sh** (Easiest) OR use Granular Import Maps (Hardest, but maximum control).
+- **Plugins with a bundler** (Vite/Webpack): Do nothing. Your bundler handles the resolution automatically.
 
-### 1. Import Map Setup
-Add this to your `<head>` to resolve the dependencies:
+### 1. The Global Bundle (Standard Usage)
 
-> Note: If you are self-hosting Tempo files, use the shipped `packages/tempo/importmap.json` as-is for your installed version instead of hand-authoring `dist/` paths.
+The easiest way to use Tempo natively in the browser is via the pre-optimized ESM bundle. It includes the entire core engine in a single file, eliminating network waterfall effects.
 
 ```html
 <script type="importmap">
 {
   "imports": {
-    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
     "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js"
   }
 }
 </script>
 ```
 
-### 2. Implementation
 ```html
 <script type="module">
   import '@js-temporal/polyfill';
@@ -124,15 +125,60 @@ Add this to your `<head>` to resolve the dependencies:
 </script>
 ```
 
+### 2. Smart CDNs (The "Best-of-Both-Worlds")
+
+If you want to use **external plugins** natively in the browser *without* configuring massive import maps, use an on-the-fly bundling CDN like [esm.sh](https://esm.sh). It reads the package resolution rules and bundles dependencies automatically. You do not need an import map!
+
+```html
+<script type="module">
+  // esm.sh automatically resolves subpaths and bundles dependencies on the fly
+  import { Tempo } from 'https://esm.sh/@magmacomputing/tempo@3.0.1';
+  import { TickerModule } from 'https://esm.sh/@magmacomputing/tempo-plugin-ticker@1.0.4';
+
+  Tempo.extend(TickerModule);
+</script>
+```
+
+### 3. Granular ESM (Advanced Plugin Architecture)
+
+If you are strictly using a static CDN (like jsdelivr) and require external plugins, you must use the Granular ESM distribution. The bundled engine drops internal builder-utilities to keep the global scope clean, but plugins require them to resolve their own dependencies.
+
+To use Premium Plugins via static CDN, you must map the core library, its subpaths, and the internal licensing module directly to their granular equivalents:
+
+```html
+<script type="importmap">
+{
+  "imports": {
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
+
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/tempo.index.js",
+    "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/core.index.js",
+    "@magmacomputing/tempo/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/library.index.js",
+    "@magmacomputing/tempo/plugin": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/plugin/plugin.index.js",
+    "@magmacomputing/tempo/enums": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/support/support.enum.js",
+    "@magmacomputing/tempo/term": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/plugin/term/term.index.js",
+    
+    "#tempo/license": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.0.1/dist/plugin/license/license.validator.js",
+
+    "@magmacomputing/tempo-plugin-astro": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@1.0.0/dist/index.js",
+    "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@1.0.4/dist/index.js"
+  }
+}
+</script>
+```
+
+> [!WARNING] Cache Busting
+> The jsdelivr CDN aggressively caches major version tags (like `@3`). When relying on precise granular resolution for plugins, it is highly recommended to use explicit patch versions (like `@3.0.1`) to avoid fetching mismatched or outdated sub-modules.
+
 ---
 
-## 📦 Browser (Legacy / Global Bundle)
+## 📦 Browser (UMD / Global Variable)
 
 If you aren't using ESM or just want a simple `<script>` tag for rapid prototyping, use the UMD global bundle. This attaches `Tempo` to the `window` object.
 
 ```html
 <!-- Load the Temporal Polyfill first -->
-<script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.umd.js"></script>
 
 <!-- Load the Tempo Global Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.js"></script>
