@@ -19,7 +19,7 @@ export function getLicenseState(state: Internal.State): Internal.LicenseState {
 	if (state === runtime.state)
 		return runtime.license;
 
-	return stateLicenseCache.get(state) ?? ensureLicenseState(state);
+	return stateLicenseCache.get(state) ?? runtime.license;
 }
 
 export function ensureLicenseState(state: Internal.State): Internal.LicenseState {
