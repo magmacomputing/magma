@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Plugin Licensing Engine**: Resolved race conditions and dynamic module resolution issues that caused CI test failures during Premium license validation.
 - **Dependency Compatibility**: Removed the dependency on `isNumber` within the `@core` licensing engine to ensure backward compatibility and prevent `TypeError`s when validating licenses against earlier plugin environments.
 
-## [3.0.0] - 2026-06-07### Added
+## [3.0.0] - 2026-06-07
+
+### Added
 - **Tempo Registry Integration**: Moving towards deeper, centralized integration with the Tempo Registry infrastructure to streamline community and proprietary plugin distribution.
 - **Modernized Duration Engine**: Introduced the chainable `.balance()` method to intelligently normalize temporal intervals (e.g., converting 365 days seamlessly into 1 year).
 - **Duration Formatting**: Added a localized `.format()` method utilizing `Intl.DurationFormat` (with `Intl.NumberFormat` fallback support) for plural-aware, human-readable duration strings. Added `durationFormat` and `numberFormat` into `IntlOptions` to support global, instance-level, and method-level formatting overrides.
