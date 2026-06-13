@@ -14,16 +14,6 @@ Settings are loaded in the following order (where later stages override earlier 
 
 ---
 
-## 🔒 Registry Protection (Soft Freeze)
-
-- **Read-Only Proxy**: Core registries (`TIMEZONE`, `FORMAT`, etc.) are returned as read-only proxies. Any attempt to directly assign to them will fail.
-- **Controlled Extension**: To update a registry, you must use `Tempo.extend()` or `Tempo.init()`. This ensures internal caches (like the Master Guard regex) are synchronized.
-- **Atomic Updates**: Multiple extensions are batched, ensuring that the parsing engine is only rebuilt once per change.
-
-This strategy prevents accidental state corruption while maintaining the flexible, extensible nature of the library.
-
----
-
 ## 🏆 Best Practice: The `tempo.config.ts` Pattern
 
 Rather than scattering `Tempo.init()` or `Tempo.extend()` calls throughout your application, the recommended best practice is to centralize your environment setup into a single `tempo.config.ts` (or `.js`) file. 
