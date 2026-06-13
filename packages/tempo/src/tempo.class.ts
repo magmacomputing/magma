@@ -294,13 +294,10 @@ export class Tempo {
 
 	/** get first Canonical name of a supplied locale */
 	private static _locale = (locale?: string) => {
+		const global = Context.global;
 		let language: string | undefined;
 
-		try {																										// lookup locale
-			language = canonicalLocale(locale!);
-		} catch (error) { }																			// catch unknown locale
-
-		const global = Context.global;
+		if (locale) language = canonicalLocale(locale);
 
 		return language ??
 			global?.navigator?.languages?.[0] ??									// fallback to current first navigator.languages[]
@@ -320,7 +317,6 @@ export class Tempo {
 			? Object.assign(Tempo.readStore(storeKey), providedOptions)
 			: providedOptions;
 
-		console.log('[$setConfig] providedOptions:', providedOptions, 'mergedOptions:', mergedOptions, 'isEmpty:', isEmpty(mergedOptions));
 		if (isEmpty(mergedOptions)) return;
 
 		// Apply options using extendState
@@ -636,6 +632,7 @@ export class Tempo {
 	static create(options: t.Options = {}): typeof Tempo {
 		const SandboxTempo = class extends (this as any) {
 			static [Symbol.toStringTag] = 'TempoSandbox';
+			static [$IsBase] = false;
 		}
 
 		const discovery = options.discovery;
@@ -702,10 +699,13 @@ export class Tempo {
 			setLogLevel(options.debug ?? Default?.debug ?? LOG.Info);
 
 			const rt = getRuntime();
-			rt.state = undefined;																	// force fresh state
-			const state = init(options);
+			const isBase = !!this[$IsBase];
+			if (isBase) rt.state = undefined;											// force fresh state
+
+			const baseState = isBase ? undefined : Object.getPrototypeOf(this)[$Internal]();
+			const state = init(options, isBase, baseState);
 			(state as any)._count = 0;
-			if (this[$IsBase]) {
+			if (isBase) {
 				_global = state;
 			} else {
 				ClassStates.set(this, state);

@@ -101,7 +101,7 @@ new Tempo('tomorrow afternoon');
 
 ::: tip
 **Looking for Internationalized Parsing?**  
-Tempo can automatically translate months, weekdays, and relative terms (like 'yesterday', 'today', 'tomorrow') into foreign languages using your `locale` configuration. See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.
+Tempo can automatically translate months, weekdays, and relative terms (like 'yesterday', 'today', 'tomorrow') into foreign languages using your `locale` configuration. This requires enabling the parser option `parse: { localize: true }` (or the top-level `localize: true` flag) alongside your locale setting. See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.
 :::
 
 ### Parsing Unix Timestamps
