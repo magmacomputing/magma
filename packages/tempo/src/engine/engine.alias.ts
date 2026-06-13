@@ -82,9 +82,9 @@ export class AliasEngine {
 		this.#config = options.config;
 		this.#id = AliasEngine._idCounter++;
 
-		if (isObject(parent) && 'registerAliases' in parent) {
-			this.#parent = parent as AliasEngine;
-			this.#depth = (parent as AliasEngine).depth + 1;
+		if (parent instanceof AliasEngine) {
+			this.#parent = parent;
+			this.#depth = parent.depth + 1;
 			this.#state = Object.create((parent as any).#state);	// create a new state object that inherits from the parent engine's state
 			this.#words = Object.create((parent as any).#words);	// create a new words object that inherits from the parent engine's words for collision detection
 		} else {

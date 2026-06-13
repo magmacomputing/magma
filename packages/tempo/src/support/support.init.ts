@@ -155,6 +155,22 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 export function extendState(state: t.Internal.State, options: t.Options): boolean {
 	let patternsDirty = false;
 
+	const clearLocalization = () => {
+		if (state.parse.localeMap) {
+			delete state.parse.localeMap;
+			state.parse.snippet[Token.mm as any] = Snippet[Token.mm as any];
+			state.parse.snippet[Token.wkd as any] = Snippet[Token.wkd as any];
+
+			if ((state.parse as any).localizedEvents) {
+				(state.parse as any).localizedEvents.forEach((k: string) => {
+					delete state.parse.event[k];
+				});
+				delete (state.parse as any).localizedEvents;
+			}
+			patternsDirty = true;
+		}
+	}
+
 	ownEntries(options).forEach(([optKey, optVal]) => {
 		if (isUndefined(optVal)) return;
 
@@ -215,8 +231,10 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 			case 'locale': {
 				const resolvedLocale = canonicalLocale(String(arg.value));
-				if (resolvedLocale)
+				if (resolvedLocale) {
 					setProperty(state.config, 'locale', resolvedLocale);
+					if (resolvedLocale.split('-')[0] === 'en') clearLocalization();
+				}
 				break;
 			}
 
@@ -225,13 +243,20 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'parse':
-				if (isObject(arg.value)) Object.assign(state.parse, arg.value);
+				if (isObject(arg.value)) {
+					Object.assign(state.parse, arg.value);
+					if (!isObject(state.config.parse)) setProperty(state.config, 'parse', {});
+					Object.assign(state.config.parse, arg.value);
+				}
 				break;
 
 			case 'localize':
 				if (!isObject(state.config.format)) setProperty(state.config, 'format', {});
-				state.config.format.localize = Boolean(arg.value);
+				state.config.format!.localize = Boolean(arg.value);
+				if (!isObject(state.config.parse)) setProperty(state.config, 'parse', {});
+				state.config.parse!.localize = Boolean(arg.value);
 				state.parse.localize = Boolean(arg.value);
+				if (!state.parse.localize) clearLocalization();
 				break;
 
 			case 'discovery':
@@ -349,6 +374,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 			if (!isEmpty(events)) {
 				Object.assign(state.parse.event, events);
+				(state.parse as any).localizedEvents = Object.keys(events);
 
 				// Register new localized aliases with the AliasEngine
 				if (state.aliasEngine) {

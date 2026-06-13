@@ -1,6 +1,5 @@
 import { parse } from '#tempo/parse';
 import { Tempo } from '#tempo';
-import { Temporal } from '@js-temporal/polyfill';
 import { registryReset } from '#tempo/support';
 
 beforeEach(() => {

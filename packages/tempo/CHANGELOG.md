@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Optimized Intl Instantiation**: Refactored `Intl.DateTimeFormat` and `Intl.RelativeTimeFormat` creation using memoized helpers (`getDTF`, `getRTF`) across the formatting engine, drastically reducing object instantiation overhead during rapid format evaluations.
-- **Term Localization Precedence**: Upgraded the Term formatting resolution pipeline to support falling back across a strict precedence: Global Registry > Plugin Bundled Dictionary > Plugin Default Label.
+- **Term Localization Precedence**: Upgraded the Term formatting resolution pipeline to support falling back across a strict precedence: Global Registry > Plugin Bundled Dictionary > term's existing label/value.
 - **Plugin Localization Capabilities**: Refactored the `TimeOfDay` plugin (and underlying range resolution logic) to natively bundle and evaluate custom `locale` objects across languages without requiring external overrides in order to demonstrate the new `parse: { localize: true }` capability.
 
 ## [3.0.2] - 2026-06-12

@@ -1,8 +1,9 @@
-import { Temporal } from '@js-temporal/polyfill';
 import { Tempo } from '#tempo';
+import { resetRuntime } from '#tempo/support';
 
 describe('Localized Parsing', () => {
 	beforeEach(() => {
+		resetRuntime();
 		Tempo.init({ mode: 'strict', timeZone: 'UTC', calendar: 'iso8601' });
 	});
 

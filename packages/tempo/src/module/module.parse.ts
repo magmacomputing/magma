@@ -68,7 +68,12 @@ const _ParseEngine = {
 			else if (isDefined(val)) {
 				const safeConfig = { ...state.config };
 				delete safeConfig.anchor;
-				basis = TempoClass ? (TempoClass as any).from(val, safeConfig).toDateTime() : instant().toZonedDateTimeISO(tz).withCalendar(cal);
+				if (TempoClass) {
+					basis = (TempoClass as any).from(val, safeConfig).toDateTime();
+				} else {
+					const ms = val instanceof Date ? val.getTime() : (typeof val === 'number' || typeof val === 'bigint' ? Number(val) : new Date(String(val)).getTime());
+					basis = Temporal.Instant.fromEpochMilliseconds(ms || Date.now()).toZonedDateTimeISO(tz).withCalendar(cal);
+				}
 			} else {
 				basis = instant().toZonedDateTimeISO(tz).withCalendar(cal);
 			}

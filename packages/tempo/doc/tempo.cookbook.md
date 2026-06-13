@@ -99,18 +99,10 @@ new Tempo('2 weeks ago');
 new Tempo('tomorrow afternoon');
 ```
 
-### Auto-Localized Parsing
-You can instruct Tempo to automatically generate language-specific parsing rules based on your `locale`. This enables parsing of translated months, weekdays, and relative events!
-
-```typescript
-Tempo.init({ locale: 'fr-FR', parse: { localize: true } });
-
-// Natively understand French input out-of-the-box!
-new Tempo('demain');            // parses as "tomorrow"
-new Tempo('15 fevrier 2026');   // parses as "15 February 2026"
-new Tempo('vendredi prochain'); // parses as "next Friday"
-```
-*Note: Localized parsing is heavily optimized and automatically strips accents (e.g. `fevrier` matches `février`), providing resilient fuzzy-matching for user input.*
+::: tip
+**Looking for Internationalized Parsing?**  
+Tempo can automatically translate months, weekdays, and relative terms (like 'yesterday', 'today', 'tomorrow') into foreign languages using your `locale` configuration. See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.
+:::
 
 ### Parsing Unix Timestamps
 Tempo handles both milliseconds (Number) and nanoseconds (BigInt).

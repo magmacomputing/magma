@@ -111,9 +111,9 @@ Tempo.extend(ParseModule);
 
 ---
 
-## 🌍 TimeZone & Locale Awareness
+## 🌍 Internationalization, TimeZone & Locale
 
-Tempo uses your configuration to resolve ambiguous dates.
+Tempo uses your configuration to intelligently parse ambiguous dates and foreign languages.
 
 ### US-Style Dates (`MM/DD/YYYY`)
 If you parse a numeric string like `04012026`, Tempo uses your `timeZone` to decide if it means **April 1st** (US) or **4th of January** (UK/AU).
@@ -124,6 +124,31 @@ Tempo achieves this by dynamically checking if your current `timeZone` is associ
 const us = new Tempo('04012026', { timeZone: 'America/New_York' }); // Apr 1
 const au = new Tempo('04012026', { timeZone: 'Australia/Sydney' }); // Jan 4
 ```
+
+### Internationalized Parsing (Locales)
+Tempo can be instructed to automatically generate language-specific parsing rules based on your `locale`. This enables parsing of translated months, weekdays, and relative events out-of-the-box!
+
+```typescript
+Tempo.init({ locale: 'fr-FR', parse: { localize: true } });
+
+// Natively understand French input out-of-the-box!
+new Tempo('demain');            // parses as "tomorrow"
+new Tempo('15 fevrier 2026');   // parses as "15 February 2026"
+new Tempo('vendredi prochain'); // parses as "next Friday"
+```
+
+#### How it Works & Accent Normalization
+When `parse: { localize: true }` is enabled, Tempo uses the native `Intl` API to pre-generate lists of Months, Weekdays, and Relative terms ("yesterday", "today", "tomorrow").
+
+It also automatically **normalizes and strips accents** from these generated rules. This means that if a user types `fevrier` (without the accent), it will still successfully fuzzy-match against the strictly translated `février`.
+
+#### ⚠️ Current Limitations (What is NOT Available)
+While `Intl` provides a robust foundation for month and weekday translations, there are limits to auto-localization:
+*   **English Affixes**: Grammatical connector words like "ago", "next", "last", "in", and "from now" are heavily English-biased syntax rules. `Intl` does not provide translations for these parsing connectors, meaning `2 days ago` will only parse correctly if the keyword `ago` is used.
+*   **Time Units**: Words representing time units ("days", "weeks", "months") inside natural language strings are currently English-only.
+*   **Grammar Structure**: The parser expects sequences matching standard English formats (e.g., `[value] [unit] [affix]`). Highly inflected languages or completely different phrase structures might fail to parse.
+
+To bridge these gaps, you can register **Custom Aliases** (see below) to map foreign syntax to specific relative offsets manually!
 
 ### Custom Aliases (Events & Periods)
 You can teach the parser new words:

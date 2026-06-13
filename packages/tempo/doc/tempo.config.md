@@ -42,6 +42,11 @@ Tempo.init(GlobalTempoConfig);
 
 You can then import this file at the very top of your application's entry point (e.g., `main.ts` or `index.js`) to guarantee the configuration is locked in before any other files import `Tempo`.
 
+::: tip
+**Looking to configure Internationalization?**  
+Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Auto-Localization Formatting](./tempo.cookbook.md#auto-localization) guides for configuration details.
+:::
+
 ```typescript
 // main.ts
 import './tempo.config.ts'; 
