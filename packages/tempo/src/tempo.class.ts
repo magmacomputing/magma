@@ -294,13 +294,10 @@ export class Tempo {
 
 	/** get first Canonical name of a supplied locale */
 	private static _locale = (locale?: string) => {
+		const global = Context.global;
 		let language: string | undefined;
 
-		try {																										// lookup locale
-			language = canonicalLocale(locale!);
-		} catch (error) { }																			// catch unknown locale
-
-		const global = Context.global;
+		if (locale) language = canonicalLocale(locale);
 
 		return language ??
 			global?.navigator?.languages?.[0] ??									// fallback to current first navigator.languages[]
@@ -323,7 +320,8 @@ export class Tempo {
 		if (isEmpty(mergedOptions)) return;
 
 		// Apply options using extendState
-		extendState(shape, mergedOptions);
+		const patternsDirty = extendState(shape, mergedOptions);
+		if (patternsDirty) setPatterns(shape);
 
 		// Side-effects
 		const newSphere = Tempo._setSphere(shape, mergedOptions);
@@ -395,10 +393,21 @@ export class Tempo {
 		if (discovery.terms)
 			this.extend(asArray(discovery.terms));
 
-		// 3. Process Formats
-		if (discovery.formats) {
-			shape.config.formats = shape.config.formats.extend(discovery.formats) as t.FormatRegistry;
-			if (!isSandbox) registryUpdate('FORMAT', discovery.formats);
+		// 3. Process Registry
+		let registryOpts = discovery.registry ?? {};
+
+		if (discovery.formats)
+			registryOpts = { ...registryOpts, formats: discovery.formats };
+
+		if (discovery.locales)
+			registryOpts = { ...registryOpts, locales: discovery.locales };
+
+		if (Object.keys(registryOpts).length > 0) {
+			opts = { ...opts, registry: registryOpts };
+			if (!isSandbox) {
+				if (registryOpts.formats) registryUpdate('FORMAT', registryOpts.formats);
+				if (registryOpts.locales) registryUpdate('LOCALE', registryOpts.locales);
+			}
 		}
 
 		// 4. Process Plugins
@@ -623,6 +632,7 @@ export class Tempo {
 	static create(options: t.Options = {}): typeof Tempo {
 		const SandboxTempo = class extends (this as any) {
 			static [Symbol.toStringTag] = 'TempoSandbox';
+			static [$IsBase] = false;
 		}
 
 		const discovery = options.discovery;
@@ -689,10 +699,13 @@ export class Tempo {
 			setLogLevel(options.debug ?? Default?.debug ?? LOG.Info);
 
 			const rt = getRuntime();
-			rt.state = undefined;																	// force fresh state
-			const state = init(options);
+			const isBase = !!this[$IsBase];
+			if (isBase) rt.state = undefined;											// force fresh state
+
+			const baseState = isBase ? undefined : Object.getPrototypeOf(this)[$Internal]();
+			const state = init(options, isBase, baseState);
 			(state as any)._count = 0;
-			if (this[$IsBase]) {
+			if (isBase) {
 				_global = state;
 			} else {
 				ClassStates.set(this, state);
@@ -750,7 +763,11 @@ export class Tempo {
 				timeZone,
 				locale,
 				discovery: normalizedDiscovery,
-				formats: config.formats ?? enumify(STATE.FORMAT, false),
+				format: config.format ?? { localize: config.localize ?? false },
+				registry: {
+					formats: config.registry?.formats ?? config.formats ?? enumify(STATE.FORMAT, false),
+					locales: config.registry?.locales ?? config.locales ?? proxify(STATE.LOCALE, true, true)
+				},
 				scope: 'global',
 				catch: options.catch ?? config.catch ?? false
 			},
@@ -938,9 +955,14 @@ export class Tempo {
 		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key)) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
 	}
 
-	/** static Tempo.formats (registry) */
+	/** static Tempo.registry */
+	static get registry() {
+		return Tempo.config.registry;
+	}
+
+	/** @deprecated Use Tempo.registry.formats instead */
 	static get formats() {
-		return Tempo.config.formats;
+		return Tempo.config.registry.formats;
 	}
 
 	/** static Tempo properties getter */
@@ -1270,7 +1292,7 @@ export class Tempo {
 			// discovery phase
 			if (host === 'fmt') {
 				if (!ensureModule(this, 'FormatModule')) return undefined;
-				if (isDefined(this.#local.config.formats[key]))
+				if (isDefined(this.#local.config.registry.formats[key]))
 					return this.#setLazy(target, key, () => this.format(key as t.Format))?.();
 			} else {
 				if (!ensureModule(this, 'TermsModule')) return undefined;
@@ -1316,7 +1338,7 @@ export class Tempo {
 	#discover(host: 'term' | 'fmt', target: any) {
 		if (!_lifecycle.ready) return;
 		if (host === 'fmt') {
-			ownKeys(this.#local.config.formats).forEach(key => {
+			ownKeys(this.#local.config.registry.formats).forEach(key => {
 				if (isString(key)) this.#setLazy(target, key, () => this.format(key as t.Format));
 			});
 		} else {
@@ -1495,6 +1517,8 @@ export class Tempo {
 		(this.#local as any)._id = (this.constructor as any)[$Internal]()._count++;
 		const self = unwrap(this);
 		this.#local.config = markConfig(Object.create(classState.config));
+		if (classState.config.registry) this.#local.config.registry = Object.create(classState.config.registry);
+		if (classState.config.format) this.#local.config.format = Object.create(classState.config.format);
 		Object.assign(this.#local.config, { scope: 'local' });
 
 		this.#local.parse = markConfig(Object.create(classState.parse));

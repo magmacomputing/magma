@@ -113,7 +113,8 @@ export const DEFAULTS = {
 				"Pacific/Pago_Pago"
 			]
 		}
-	}
+	},
+	LOCALE: {} as Record<string, Record<string, string | Function>>,
 } as const;
 
 /** @internal Centralized mutable state for all extendable registries */
@@ -125,6 +126,7 @@ export const STATE = {
 	FORMAT: allDescriptors(DEFAULTS.FORMAT),
 	LIMIT: allDescriptors(DEFAULTS.LIMIT),
 	MONTH_DAY: allDescriptors(DEFAULTS.MONTH_DAY),
+	LOCALE: allDescriptors(DEFAULTS.LOCALE),
 }
 
 const defineExtensible = (target: any) => Object.defineProperty(target, sym.$Extensible, { value: true, enumerable: false, configurable: false, writable: false });
@@ -134,6 +136,7 @@ defineExtensible(STATE.TIMEZONE);
 defineExtensible(STATE.DURATION);
 defineExtensible(STATE.DURATIONS);
 defineExtensible(STATE.MONTH_DAY);
+defineExtensible(STATE.LOCALE);
 
 /** Gregorian calendar week-days (short-form) */
 export const WEEKDAY = enumify(['All', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
@@ -203,6 +206,9 @@ export const LIMIT = proxify(STATE.LIMIT, true, false);
 /** regional month-day-year parsing settings */
 export const MONTH_DAY = proxify(STATE.MONTH_DAY, true, false);
 
+/** localized dictionary translations */
+export const LOCALE = proxify(STATE.LOCALE, true, true);
+
 /** date-time element tokens */
 const elementKeys = ['yy', 'mm', 'ww', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
 export const ELEMENT = enumify({
@@ -233,7 +239,7 @@ export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
-const configKeys = ['config', 'parse', 'value', 'intl', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'formats', 'plugins'] as const;
+const configKeys = ['config', 'parse', 'value', 'intl', 'store', 'discovery', 'debug', 'catch', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'formats', 'plugins', 'locales'] as const;
 export const CONFIG = enumify(configKeys, false);
 export type Config = KeyOf<typeof CONFIG>
 
@@ -266,7 +272,7 @@ export type LICENSE = ValueOf<typeof LICENSE>
 
 /** @internal LIVE Registries mapping (STATE key -> Enum/Proxy) */
 export const REGISTRIES: Record<string, any> = {
-	NUMBER, DURATION, TIMEZONE, DURATIONS, FORMAT, LIMIT, MONTH_DAY,
+	NUMBER, DURATION, TIMEZONE, DURATIONS, FORMAT, LIMIT, MONTH_DAY, LOCALE
 }
 
 /** public-reachable enums */
@@ -291,4 +297,5 @@ export default {
 	PARSE,
 	MONTH_DAY,
 	LICENSE,
+	LOCALE,
 }

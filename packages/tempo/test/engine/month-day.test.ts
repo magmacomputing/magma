@@ -1,8 +1,4 @@
 import { Tempo } from '#tempo';
-import { ParseModule } from '#tempo/parse';
-
-// Ensure ParseModule is loaded for date component parsing
-Tempo.extend(ParseModule);
 
 describe('Tempo: Month-Day Parsing (Ambiguity Support)', () => {
 

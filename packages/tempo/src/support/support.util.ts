@@ -7,6 +7,8 @@ import { asType, getType } from '#library/type.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
 import { isSymbol, isUndefined, isDefined, isString, isNullish, isObject } from '#library/assertion.library.js';
 import { ownEntries, unwrap } from '#library/primitive.library.js';
+import { memoizeFunction } from '#library/function.library.js';
+import { getDTF } from '#library/international.library.js';
 import { getRuntime } from './support.runtime.js';
 import { LICENSE } from './support.enum.js';
 import type * as t from '../tempo.type.js';
@@ -228,3 +230,99 @@ export function resolveDisplayStatus(status: string): string {
 		: String(status) as LICENSE
 	return LICENSE.values().includes(raw) ? raw : LICENSE.Unknown;
 }
+
+/** @internal generate localized snippets for months, weekdays, and relative events */
+export const generateLocalizedSnippets = memoizeFunction((locale: string) => {
+	const map: Record<string, number> = {};
+	const mon: string[] = [];
+	const mmm: string[] = [];
+	const wkd: string[] = [];
+	const www: string[] = [];
+	const events: Record<string, string> = {};
+
+	const dtOptions: Intl.DateTimeFormatOptions = { timeZone: 'UTC' };
+	const monthLongFormat = getDTF(locale, { ...dtOptions, month: 'long' });
+	const monthShortFormat = getDTF(locale, { ...dtOptions, month: 'short' });
+	
+	const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	const optionalPunctuation = (s: string) => s.replace(/\\?\.$/, '\\.?');
+	const normalizeKey = (s: string) => s.replace(/\.$/, '').toLowerCase();
+	const removeAccents = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+	const addEntry = (str: string, index: number, longList: string[], shortList?: string[]) => {
+		const key = normalizeKey(str);
+		const unaccented = removeAccents(key);
+		
+		map[key] = index;
+		if (unaccented !== key) map[unaccented] = index;
+
+		longList.push(optionalPunctuation(escapeRegex(str)));
+		if (unaccented !== key) {
+			longList.push(optionalPunctuation(escapeRegex(unaccented)));
+		}
+		if (shortList) {
+			shortList.push(optionalPunctuation(escapeRegex(str)));
+			if (unaccented !== key) {
+				shortList.push(optionalPunctuation(escapeRegex(unaccented)));
+			}
+		}
+	};
+
+	for (let m = 0; m < 12; m++) {
+		const date = new Date(Date.UTC(2024, m, 15));
+		const longStr = monthLongFormat.format(date).toLowerCase();
+		const shortStr = monthShortFormat.format(date).toLowerCase();
+
+		addEntry(longStr, m + 1, mon, mmm);
+		if (shortStr !== longStr) addEntry(shortStr, m + 1, mmm);
+	}
+
+	const weekdayLongFormat = getDTF(locale, { ...dtOptions, weekday: 'long' });
+	const weekdayShortFormat = getDTF(locale, { ...dtOptions, weekday: 'short' });
+
+
+
+	// 2024-01-01 is Monday (1). 2024-01-07 is Sunday (7).
+	for (let d = 1; d <= 7; d++) {
+		const date = new Date(Date.UTC(2024, 0, d));
+		const longStr = weekdayLongFormat.format(date).toLowerCase();
+		const shortStr = weekdayShortFormat.format(date).toLowerCase();
+
+		addEntry(longStr, d, wkd, www);
+		if (shortStr !== longStr) addEntry(shortStr, d, www);
+	}
+
+	try {
+		const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+		const yesterday = rtf.format(-1, 'day').toLowerCase();
+		const today = rtf.format(0, 'day').toLowerCase();
+		const tomorrow = rtf.format(1, 'day').toLowerCase();
+
+		const addEvent = (val: string, logic: string) => {
+			if (!val) return;
+			events[val] = logic;
+			const unaccented = removeAccents(val);
+			if (unaccented !== val) events[unaccented] = logic;
+		};
+
+		addEvent(yesterday, 'yesterday');
+		addEvent(today, 'today');
+		addEvent(tomorrow, 'tomorrow');
+	} catch {
+		// safe fallback if RelativeTimeFormat is unsupported
+	}
+
+	const sortByLength = (a: string, b: string) => b.length - a.length;
+	const dedup = (arr: string[]) => [...new Set(arr)];
+
+	return {
+		snippets: {
+			mon: dedup(mon).sort(sortByLength).join('|'),
+			mmm: dedup([...mon, ...mmm]).sort(sortByLength).join('|'),
+			wkd: dedup(wkd).sort(sortByLength).join('|'),
+			www: dedup([...wkd, ...www]).sort(sortByLength).join('|')
+		},
+		events,
+		localeMap: map
+	};
+});

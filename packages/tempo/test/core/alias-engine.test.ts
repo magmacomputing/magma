@@ -1,6 +1,5 @@
 import { AliasEngine } from '#tempo/engine/engine.alias.js';
 import { logTempo } from '#tempo/support/support.util.js';
-import { vi, afterEach } from 'vitest';
 
 describe('AliasEngine', () => {
 	afterEach(() => {
@@ -9,9 +8,9 @@ describe('AliasEngine', () => {
 	it('registers and resolves string and function aliases', () => {
 		const engine = new AliasEngine();
 		engine.registerAliases('evt', [['foo', 'bar']]);
- 		expect(engine.resolveAlias('evt0_0')?.value).toBe('bar');
+		expect(engine.resolveAlias('evt0_0')?.value).toBe('bar');
 		engine.registerAliases('per', [['noon', function () { return '12:00'; }]]);
- 		expect(engine.resolveAlias('per0_0')?.value).toBe('12:00');
+		expect(engine.resolveAlias('per0_0')?.value).toBe('12:00');
 		expect(engine.resolveAlias('per0_0')?.isClock).toBe(true);
 	});
 

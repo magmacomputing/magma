@@ -40,6 +40,7 @@ export default defineConfig({
         text: 'Core Concepts',
         items: [
           { text: 'Configuration', link: '/doc/tempo.config' },
+          { text: 'Registries', link: '/doc/tempo.registry' },
           { text: 'Smart Parsing', link: '/doc/tempo.parse' },
           { text: 'Parse Planner', link: '/doc/tempo.planner' },
           { text: 'Regional Parsing (MDY)', link: '/doc/tempo.month-day' },

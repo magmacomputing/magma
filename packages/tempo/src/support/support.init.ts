@@ -1,26 +1,25 @@
 import '#library/temporal.polyfill.js';
 import { enumify } from '#library/enumerate.library.js';
 import { asArray } from '#library/coercion.library.js';
-import { getDateTimeFormat, getHemisphere } from '#library/international.library.js';
+import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { asType } from '#library/type.library.js';
-import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/assertion.library.js';
+import { isString, isObject, isUndefined, isDefined, isRegExp, isEmpty } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { getStorage } from '#library/storage.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 
 import { getRuntime } from './support.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError } from './support.util.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, generateLocalizedSnippets } from './support.util.js';
 import { setLicense } from '../plugin/license/license.manager.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
-import { STATE, LICENSE } from './support.enum.js';
+import { STATE } from './support.enum.js';
 
 import enums from './support.enum.js';
 import * as t from '../tempo.type.js';
-import type { Internal } from '../tempo.type.js';
 
 /** @internal Initialise a Tempo state */
 export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State): t.Internal.State {
@@ -37,6 +36,10 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	}) as t.Internal.State;
 
 	if (baseState) {
+		state.config = Object.create(baseState.config);
+		if (baseState.config.registry) state.config.registry = Object.create(baseState.config.registry);
+		if (baseState.config.format) state.config.format = Object.create(baseState.config.format);
+		state.parse = Object.create(baseState.parse);
 		state.userProvidedKeys = new Set(baseState.userProvidedKeys);
 		state.installed = new ScopedSet(runtime.installed);	// sandbox: delegates has() to global, isolates add()
 		state.pluginsDb = {
@@ -104,6 +107,9 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 	} else if (baseState) {
 		state.config = markConfig(Object.create(baseState.config));
+		if (baseState.config.registry) state.config.registry = Object.create(baseState.config.registry);
+		if (baseState.config.format) state.config.format = Object.create(baseState.config.format);
+		state.parse = Object.create(baseState.parse);
 		setProperties(state.config, {
 			scope: 'local',
 			catch: options.catch ?? (baseState.config as any).catch ?? false,
@@ -146,8 +152,24 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 }
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
-export function extendState(state: t.Internal.State, options: t.Options) {
+export function extendState(state: t.Internal.State, options: t.Options): boolean {
 	let patternsDirty = false;
+
+	const clearLocalization = () => {
+		if (state.parse.localeMap) {
+			delete state.parse.localeMap;
+			state.parse.snippet[Token.mm as any] = Snippet[Token.mm as any];
+			state.parse.snippet[Token.wkd as any] = Snippet[Token.wkd as any];
+
+			if ((state.parse as any).localizedEvents) {
+				(state.parse as any).localizedEvents.forEach((k: string) => {
+					delete state.parse.event[k];
+				});
+				delete (state.parse as any).localizedEvents;
+			}
+			patternsDirty = true;
+		}
+	}
 
 	ownEntries(options).forEach(([optKey, optVal]) => {
 		if (isUndefined(optVal)) return;
@@ -207,19 +229,69 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				setProperty(state.config, 'calendar', String(arg.value));
 				break;
 
-			case 'locale':
-				setProperty(state.config, 'locale', String(arg.value));
+			case 'locale': {
+				const resolvedLocale = canonicalLocale(String(arg.value));
+				if (resolvedLocale) {
+					setProperty(state.config, 'locale', resolvedLocale);
+					if (resolvedLocale.split('-')[0] === 'en') clearLocalization();
+				}
+				break;
+			}
+
+			case 'format':
+				if (isObject(arg.value)) state.config.format = { ...(state.config.format || {}), ...arg.value };
+				break;
+
+			case 'parse':
+				if (isObject(arg.value)) {
+					Object.assign(state.parse, arg.value);
+					if (!isObject(state.config.parse)) setProperty(state.config, 'parse', {});
+					Object.assign(state.config.parse, arg.value);
+				}
+				break;
+
+			case 'localize':
+				if (!isObject(state.config.format)) setProperty(state.config, 'format', {});
+				state.config.format!.localize = Boolean(arg.value);
+				if (!isObject(state.config.parse)) setProperty(state.config, 'parse', {});
+				state.config.parse!.localize = Boolean(arg.value);
+				state.parse.localize = Boolean(arg.value);
+				if (!state.parse.localize) clearLocalization();
 				break;
 
 			case 'discovery':
 				setProperty(state.config, 'discovery', arg.value);
 				break;
 
+			case 'registry':
+				if (isObject(arg.value)) {
+					if (!state.config.registry) state.config.registry = {} as any;
+					if (arg.value.formats) {
+						if (state.config.registry.formats?.extend) state.config.registry.formats = state.config.registry.formats.extend(arg.value.formats) as t.FormatRegistry;
+						else setProperty(state.config.registry, 'formats', arg.value.formats);
+					}
+					if (arg.value.locales) {
+						if ((state.config.registry.locales as any)?.extend) state.config.registry.locales = (state.config.registry.locales as any).extend(arg.value.locales);
+						else setProperty(state.config.registry, 'locales', arg.value.locales);
+					}
+				}
+				break;
+
 			case 'formats':
-				if (state.config.formats?.extend) {
-					state.config.formats = state.config.formats.extend(arg.value) as t.FormatRegistry;
+				if (!state.config.registry) state.config.registry = {} as any;
+				if (state.config.registry.formats?.extend) {
+					state.config.registry.formats = state.config.registry.formats.extend(arg.value) as t.FormatRegistry;
 				} else {
-					setProperty(state.config, 'formats', arg.value);
+					setProperty(state.config.registry, 'formats', arg.value);
+				}
+				break;
+
+			case 'locales':
+				if (!state.config.registry) state.config.registry = {} as any;
+				if ((state.config.registry.locales as any)?.extend) {
+					state.config.registry.locales = (state.config.registry.locales as any).extend(arg.value);
+				} else {
+					setProperty(state.config.registry, 'locales', arg.value);
 				}
 				break;
 
@@ -287,4 +359,37 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 		}
 	});
+
+	const locale = state.config.locale;
+	if (locale && state.parse.localize) {
+		const lang = locale.split('-')[0];
+		if (lang !== 'en') {
+			const { snippets, localeMap, events } = generateLocalizedSnippets(locale);
+			state.parse.localeMap = localeMap;
+			Object.assign(state.parse.snippet, snippets);
+
+			// Map to exact lexer Tokens to override default layout placeholders
+			state.parse.snippet[Token.mm as any] = new RegExp(`(?<mm>[0 ]?[1-9]|1[0-2]|${snippets.mmm})`, 'i');
+			state.parse.snippet[Token.wkd as any] = new RegExp(`(?<wkd>${snippets.www})`, 'i');
+
+			if (!isEmpty(events)) {
+				Object.assign(state.parse.event, events);
+				(state.parse as any).localizedEvents = Object.keys(events);
+
+				// Register new localized aliases with the AliasEngine
+				if (state.aliasEngine) {
+					// Ensure we don't corrupt global state if we are a local instance
+					if (state.config.scope === 'local' && state.aliasEngine.depth === 0) {
+						if (typeof state.aliasEngine.fork === 'function') {
+							state.aliasEngine = state.aliasEngine.fork(state.config);
+						}
+					}
+					state.aliasEngine.registerAliases('evt', ownEntries(events));
+				}
+			}
+			patternsDirty = true;
+		}
+	}
+
+	return patternsDirty;
 }

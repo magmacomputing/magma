@@ -8,9 +8,9 @@ describe('Meridiem (AM/PM) parsing and formatting', () => {
 			expect(new Tempo('2024-05-20 15:00').format('{mer}')).toBe('pm');
 		})
 
-		test('uppercase meridiem {MER}', () => {
-			expect(new Tempo('2024-05-20 03:00').format('{MER}')).toBe('AM');
-			expect(new Tempo('2024-05-20 15:00').format('{MER}')).toBe('PM');
+		test('uppercase meridiem {mer:upper}', () => {
+			expect(new Tempo('2024-05-20 03:00').format('{mer:upper}')).toBe('AM');
+			expect(new Tempo('2024-05-20 15:00').format('{mer:upper}')).toBe('PM');
 		})
 
 		test('12-hour clock with meridiem', () => {

@@ -17,8 +17,7 @@ import { getRange, getTermRange } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
 
-import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods } from '../support/support.index.js';
-import { markConfig, setPatterns, init, extendState } from '../support/support.index.js';
+import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState } from '#tempo/support';
 import { setProperty, logError, logDebug } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
 
@@ -62,7 +61,23 @@ const _ParseEngine = {
 
 			const val = dateTime ?? state.anchor ?? state.config.anchor ?? (isTempo(tempo) ? (tempo as any).toDateTime() : (isZonedDateTime(tempo) ? tempo : (isInstant(tempo) ? tempo.toZonedDateTimeISO(config.timeZone) : undefined)));
 			const [tz, cal] = getTemporalIds(config.timeZone, config.calendar);
-			const basis = isTempo(val) ? (val as any).toDateTime() : (isDefined(val) ? val : instant().toZonedDateTimeISO(tz).withCalendar(cal));
+
+			let basis: Temporal.ZonedDateTime;
+			if (isTempo(val)) basis = (val as any).toDateTime();
+			else if (isZonedDateTime(val)) basis = val;
+			else if (isDefined(val)) {
+				const safeConfig = { ...state.config };
+				delete safeConfig.anchor;
+				if (TempoClass) {
+					basis = (TempoClass as any).from(val, safeConfig).toDateTime();
+				} else {
+					const ms = val instanceof Date ? val.getTime() : (typeof val === 'number' || typeof val === 'bigint' ? Number(val) : new Date(String(val)).getTime());
+					basis = Temporal.Instant.fromEpochMilliseconds(ms || Date.now()).toZonedDateTimeISO(tz).withCalendar(cal);
+				}
+			} else {
+				basis = instant().toZonedDateTimeISO(tz).withCalendar(cal);
+			}
+
 			const isAnchored = isDefined(val);
 			if (isRoot) {
 				state.parse.anchor = basis;
@@ -154,7 +169,6 @@ const _ParseEngine = {
 		const TempoClass = getRuntime().modules['Tempo'];
 		const terms = state.pluginsDb.terms;
 
-
 		if (isTempo(dateTime)) dateTime = dateTime.toDateTime();
 		if (!isZonedDateTime(dateTime)) {
 			logError(new TypeError(`Sacred Anchor corrupted: ${String(value)}`), state.config);
@@ -207,7 +221,12 @@ const _ParseEngine = {
 				trim = trim.replace(pat, ' ').replace(Match.spaces, ' ').trim();
 			}
 
-			const guard = (TempoClass as any)?.[sym.$guard]?.test(trim) ?? true;
+			let guard = (TempoClass as any)?.[sym.$guard]?.test(trim) ?? true;
+
+			// 🛡️ Bypass the strict global guard if the current instance is using localized parsing
+			if (!guard && state.parse.localize) {
+				guard = true;
+			}
 
 			if (!guard) {
 				const keys = (obj: any) => {
@@ -322,6 +341,8 @@ const _ParseEngine = {
 
 		for (const [symKey, pat] of orderedPatterns) {
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
+
+
 			if (isEmpty(groups))
 				continue;
 
@@ -343,6 +364,8 @@ const _ParseEngine = {
 			const isChanged = !dateTime.toPlainTime().equals(anchorTime);
 			if (!isAnchored && !hasTime && !isChanged)
 				dateTime = dateTime.withPlainTime('00:00:00');
+
+
 
 			if (isZonedDateTime(dateTime))
 				Object.assign(arg, { type: 'Temporal.ZonedDateTime', value: dateTime, match: symKey.description, groups });

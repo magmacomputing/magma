@@ -13,8 +13,8 @@ const getLF = memoizeFunction((locale?: string, type: Intl.ListFormatType = 'con
 });
 
 /** memoized helper for Intl.DateTimeFormat instances */
-const getDTF = memoizeFunction((locale?: string) => {
-	return new Intl.DateTimeFormat(locale);
+export const getDTF = memoizeFunction((locale?: string, options?: Intl.DateTimeFormatOptions) => {
+	return new Intl.DateTimeFormat(locale, options);
 });
 
 /** memoized helper for Intl.NumberFormat instances */
@@ -43,12 +43,13 @@ export function getDateTimeFormat() {
 	return getDTF().resolvedOptions();
 }
 
-/** return the canonicalized locale string */
-export function canonicalLocale(locale: string) {
+/** return the canonicalized locale string, or undefined if invalid */
+export function canonicalLocale(locale: string): string | undefined {
 	try {
 		return Intl.getCanonicalLocales(locale.replace(/_/g, '-'))[0];
 	} catch (e) {
-		return locale;
+		console.warn(`[Tempo] dropping invalid locale: '${locale}'`, e);
+		return undefined;
 	}
 }
 
@@ -81,6 +82,16 @@ export function formatNumber(value: number, locale?: string, options?: Intl.Numb
 		return getNF(locale, options).format(value);
 	} catch (e) {
 		return value.toString();
+	}
+}
+
+/** return a localized day period string (e.g., 'AM', 'PM', 'de la mañana') */
+export function formatDayPeriod(value: number, locale?: string, options?: Intl.DateTimeFormatOptions) {
+	try {
+		const parts = getDTF(locale, options).formatToParts(value);
+		return parts.find(p => p.type === 'dayPeriod')?.value;
+	} catch (e) {
+		return undefined;
 	}
 }
 

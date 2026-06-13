@@ -111,9 +111,9 @@ Tempo.extend(ParseModule);
 
 ---
 
-## 🌍 TimeZone & Locale Awareness
+## 🌍 Internationalization, TimeZone & Locale
 
-Tempo uses your configuration to resolve ambiguous dates.
+Tempo uses your configuration to intelligently parse ambiguous dates and foreign languages.
 
 ### US-Style Dates (`MM/DD/YYYY`)
 If you parse a numeric string like `04012026`, Tempo uses your `timeZone` to decide if it means **April 1st** (US) or **4th of January** (UK/AU).
@@ -125,18 +125,49 @@ const us = new Tempo('04012026', { timeZone: 'America/New_York' }); // Apr 1
 const au = new Tempo('04012026', { timeZone: 'Australia/Sydney' }); // Jan 4
 ```
 
+### Internationalized Parsing (Locales)
+Tempo can be instructed to automatically generate language-specific parsing rules based on your `locale`. This enables parsing of translated months, weekdays, and relative events out-of-the-box!
+
+```typescript
+Tempo.init({ locale: 'fr-FR', parse: { localize: true } });
+
+// Natively understand French dates and core events!
+new Tempo('demain');            // parses as "tomorrow"
+new Tempo('15 fevrier 2026');   // parses as "15 February 2026"
+new Tempo('vendredi');          // parses as the closest "Friday"
+```
+
+#### How it Works & Accent Normalization
+When `parse: { localize: true }` is enabled, Tempo uses the native `Intl` API to pre-generate lists of Months, Weekdays, and Relative terms ("yesterday", "today", "tomorrow").
+
+It also automatically **normalizes and strips accents** from these generated rules. This means that if a user types `fevrier` (without the accent), it will still successfully fuzzy-match against the strictly translated `février`.
+
+#### ⚠️ Current Limitations (What is NOT Available)
+While `Intl` provides a robust foundation for month and weekday translations, there are limits to auto-localization:
+*   **English Affixes**: Grammatical connector words like "ago", "next", "last", "in", and "from now" are heavily English-biased syntax rules. `Intl` does not provide translations for these parsing connectors. When using the `Tempo` constructor with `parse: { localize: true }`, a relative string like `2 days ago` or `next Friday` will only parse correctly if the English connector keywords (`ago`, `next`) are used, unless Custom Aliases are used to bridge the gap.
+*   **Time Units**: Words representing time units ("days", "weeks", "months") inside natural language strings are currently English-only.
+*   **Grammar Structure**: The parser expects sequences matching standard English formats (e.g., `[value] [unit] [affix]`). Highly inflected languages or completely different phrase structures might fail to parse.
+
+To bridge these gaps, you can register **Custom Aliases** (see below) to map foreign syntax to specific relative offsets manually!
+
 ### Custom Aliases (Events & Periods)
-You can teach the parser new words:
+You can teach the parser new words or entire foreign phrases to bridge translation gaps:
 
 ```typescript
 Tempo.init({
+  locale: 'fr-FR',
+  parse: { localize: true },
   event: {
+    // Map a full foreign phrase directly to an English-equivalent relative string
+    'vendredi prochain': () => 'next Friday',
+    // Or standard static events
     'launch': '2026-12-01',
     'party': () => 'next Friday 8pm'
   }
 });
 
-const t = new Tempo('party');
+const t1 = new Tempo('vendredi prochain'); // Parses accurately to next Friday
+const t2 = new Tempo('party');
 ```
 
 ### 🧠 Functional Alias Context

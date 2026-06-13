@@ -14,16 +14,6 @@ Settings are loaded in the following order (where later stages override earlier 
 
 ---
 
-## 🔒 Registry Protection (Soft Freeze)
-
-- **Read-Only Proxy**: Core registries (`TIMEZONE`, `FORMAT`, etc.) are returned as read-only proxies. Any attempt to directly assign to them will fail.
-- **Controlled Extension**: To update a registry, you must use `Tempo.extend()` or `Tempo.init()`. This ensures internal caches (like the Master Guard regex) are synchronized.
-- **Atomic Updates**: Multiple extensions are batched, ensuring that the parsing engine is only rebuilt once per change.
-
-This strategy prevents accidental state corruption while maintaining the flexible, extensible nature of the library.
-
----
-
 ## 🏆 Best Practice: The `tempo.config.ts` Pattern
 
 Rather than scattering `Tempo.init()` or `Tempo.extend()` calls throughout your application, the recommended best practice is to centralize your environment setup into a single `tempo.config.ts` (or `.js`) file. 
@@ -37,7 +27,8 @@ import { CronModule } from '@magmacomputing/tempo-plugin-cron';
 import { SLAModule } from '@magmacomputing/tempo-plugin-sla';
 
 export const GlobalTempoConfig = {
-  timeZone: 'Australia/Sydney', // Set your baseline timezone
+  timeZone: 'Australia/Sydney',     // Set your baseline timezone
+  license: 'eyJhbGciOiJIUzI1...',   // JWT Commercial License for Premium Plugins
   plugins: [CronModule, SLAModule], // Register enterprise plugins
   period: { 
     'market-open': '09:30',
@@ -50,6 +41,11 @@ Tempo.init(GlobalTempoConfig);
 ```
 
 You can then import this file at the very top of your application's entry point (e.g., `main.ts` or `index.js`) to guarantee the configuration is locked in before any other files import `Tempo`.
+
+::: tip
+**Looking to configure Internationalization?**  
+Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Auto-Localization Formatting](./tempo.cookbook.md#auto-localization) guides for configuration details.
+:::
 
 ```typescript
 // main.ts
@@ -67,12 +63,12 @@ The first layer Tempo checks after its own internal defaults is persistent stora
 ```javascript
 // Write a preference to localStorage under the default key ('$Tempo')
 Tempo.writeStore({ timeZone:'Australia/Sydney' });
-// Write a preference to localStorage under the key 'userSettings'
-Tempo.writeStore({ timeZone: 'America/New_York' }, 'userSettings');
+// Write a preference to localStorage under the key 'mySettings'
+Tempo.writeStore({ timeZone: 'America/New_York' }, 'mySettings');
 
-// On the next page load or session, Tempo will use the default store ('$Tempo') automatically
-// or to apply a different store on the next page load or session, initialize with that store:
-Tempo.init({ store: 'userSettings' });
+// Later, or in another file, initialize Tempo pointing to that key
+// It will automatically read 'America/New_York' and apply it
+Tempo.init({ store: 'mySettings' });
 ```
 
 ---
@@ -93,12 +89,12 @@ By default, the key is `Symbol.for('$Tempo')`.
 
 ```javascript
 // Must run before the first Tempo module is evaluated
-globalThis[Symbol.for('$Tempo')] = {
+globalThis[Symbol.for('$Tempo')] = Object.freeze({
   options: { timeZone: 'Europe/Paris' },
   timeZones: { MYTZ: 'Asia/Dubai' },
-  formats: { myFormat: '{dd}!!{mm}!!{yyyy}' },
+  registry: { formats: { myFormat: '{dd}!!{mm}!!{yyyy}' } },
   terms: [myCustomTermPlugin]
-};
+});
 
 // Load Tempo after the discovery object is in place
 const { Tempo } = await import('@magmacomputing/tempo');
@@ -117,12 +113,13 @@ import { Tempo } from '@magmacomputing/tempo';
 Tempo.extend({
   options: { timeZone: 'Europe/Paris' },
   timeZones: { MYTZ: 'Asia/Dubai' },
-  formats: { myFormat: '{dd}!!{mm}!!{yyyy}' },
+  registry: { formats: { myFormat: '{dd}!!{mm}!!{yyyy}' } },
   terms: [myCustomTermPlugin]
 });
 ```
 
 ### Security and Ergonomics Notes
+- **Tamper Prevention**: When utilizing Global Discovery in a shared environment (like micro-frontends), it is highly recommended to `Object.freeze()` your configuration. Tempo only reads from this object, so freezing it prevents third-party scripts from injecting unauthorized plugins before Tempo boots up.
 - Global Discovery is convenient for host-controlled bootstraps and cross-bundle handoff.
 - `Tempo.extend(...)` is usually safer in app code because configuration is explicit, local, and easier to trace.
 - Use Global Discovery when you must configure `Tempo` before the first `Tempo` import executes.
@@ -137,12 +134,8 @@ Tempo looks for the following structure:
 | `terms` | `TermPlugin \| TermPlugin[]` | Custom Term plugin to be registered. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
 | `numbers` | `Record<string, number>` | Custom number-word aliases merged into the NUMBER registry. |
-| `formats` | `Record<string, string>` | Custom format strings to be merged into `Tempo.FORMAT`. |
+| `registry` | `{ formats?: Record<string, string>, locales?: Record<string, any> }` | Custom configuration for internal dictionary registries. |
 | `ignore` | `string \| string[] \| (() => string \| string[])` | Additional noise words to merge into parser ignore rules. |
-
-::: info
-Legacy discovery key `term` (singular) is still accepted for backward compatibility, but `terms` is the supported contract key.
-:::
 
 ---
 
@@ -177,7 +170,8 @@ Tempo.init({
 | `period` | `Record<string, string \| Function>` | Built-in aliases | Custom time aliases merged into the period registry. |
 | `snippet` | `Record<string, string \| RegExp>` | Built-in snippets | Custom snippet patterns used to compose parse layouts. |
 | `layout` | `Record<string, string \| RegExp>` | Built-in layouts | Custom parse layouts for date/time pattern matching. |
-| `formats` | `Record<string, string>` | Built-in formats | Named format aliases merged into `Tempo.FORMAT`. |
+| `registry` | `{ formats?, locales? }` | Built-in registries | Internal dictionary mappings (e.g., custom format tokens or localization dictionaries). |
+| `format` | `{ localize?: boolean }` | `{ localize: false }` | Formatting behavior preferences, such as enabling auto-localization. |
 | `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. Unlike core init options such as `snippet`, `layout`, `event`, or `period`, these values are not merged into internal state via `extendState`; `Tempo.init()` applies each plugin with `Tempo.extend(p)`, so plugin authors should treat them as instance/class augmentations rather than internal-state merges. |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
@@ -326,29 +320,3 @@ Tempo.init({
 **Hidden Keys**: The `tempo.config` getter excludes internal properties like `anchor` and input-only properties like `value` to keep the public API clean. These properties are still used internally for relative date resolution and instance hydration.
 :::
 
----
-
-## 📅 TIMEZONE Registry
-Tempo includes a built-in registry of common timezone abbreviations. These are stored in the `TIMEZONE` export.
-
-| Alias | IANA Identifier |
-| :--- | :--- |
-| `utc` | `UTC` |
-| `gmt` | `Europe/London` |
-| `est` | `America/New_York` |
-| `cst` | `America/Chicago` |
-| `mst` | `America/Denver` |
-| `pst` | `America/Los_Angeles` |
-| `aest` | `Australia/Sydney` |
-| `acst` | `Australia/Adelaide` |
-| `awst` | `Australia/Perth` |
-| `nzt` | `Pacific/Auckland` |
-| `cet` | `Europe/Paris` |
-| `eet` | `Europe/Helsinki` |
-| `ist` | `Asia/Kolkata` |
-| `npt` | `Asia/Kathmandu` |
-| `jst` | `Asia/Tokyo` |
-
-::: tip
-You can extend this list or override existing aliases using `Tempo.extend({ timeZones: { ... } })`.
-:::
