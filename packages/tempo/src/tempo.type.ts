@@ -232,6 +232,7 @@ export namespace Internal {
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
+		/** formatting engine configuration */									format?: { localize?: boolean };
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
@@ -240,7 +241,8 @@ export namespace Internal {
 		/** custom date aliases (events). */										event: Event | RegistryOption<Logic>;
 		/** custom time aliases (periods). */										period: Period | RegistryOption<Logic>;
 		/** noise words to ignore during parsing. */						ignore: Ignore;
-		/** custom format strings to merge in the FORMAT enum */formats: Property<any>;
+		/** @deprecated Provide configuration inside `registry: { formats: ... }` */ formats: Property<any>;
+		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>> };
 		/** plugins to be automatically extended */							plugins: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;
@@ -314,10 +316,11 @@ export namespace Internal {
 	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "layoutOrder" | "preFilter" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
 
 	/** Instance configuration derived from supply, storage, and discovery. */
-	export interface Config extends Required<Omit<OptionsKeep, "formats" | "license">> {
+	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "license">> {
 		/** license key for premium features */									license?: string;
 		/** configuration (global | local) */										scope: 'global' | 'local';
-		/** pre-configured format strings */										formats: FormatRegistry;
+		/** formatting engine configuration */									format: { localize?: boolean };
+		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>> };
 		/** index-signature */																	readonly [key: string]: any;
 	}
 
@@ -330,7 +333,10 @@ export namespace Internal {
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
-		/** custom format strings to merge in the FORMAT dictionary */formats?: Property<any>;
+		/** formatting engine configuration */									format?: { localize?: boolean };
+		/** @deprecated Provide configuration inside `registry: { formats: ... }` */formats?: Property<any>;
+		/** @deprecated Provide configuration inside `registry: { locales: ... }` */locales?: Record<string, Record<string, string | Function>>;
+		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>> };
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
 	}

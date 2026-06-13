@@ -2,7 +2,8 @@ import '#library/temporal.polyfill.js';
 import { pad } from '#library/string.library.js';
 import { suffix } from '#library/number.library.js';
 import { ifNumeric } from '#library/coercion.library.js';
-import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined } from '#library/assertion.library.js';
+import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction } from '#library/assertion.library.js';
+import { formatDayPeriod } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
 import { isTempo, enums, Match, getRuntime, NumericPattern } from '#tempo/support';
@@ -34,7 +35,7 @@ export function format(obj: Temporal.ZonedDateTime | any, fmt: string | symbol):
 export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol): string | number | any {
 	const state = getRuntime().state;
 	const config = isTempo(obj) ? obj.config : state?.config;
-	const formats = Object.assign({}, enums.FORMAT, config?.formats);
+	const formats = Object.assign({}, enums.FORMAT, config?.registry?.formats);
 	const tz = config?.timeZone ?? 'UTC';
 
 	let zdt: any;
@@ -49,7 +50,11 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 			zdt = (obj as any).toZonedDateTimeISO(tz);
 			break;
 		case isString(obj):
-			zdt = (obj as any).includes('[') ? Temporal.ZonedDateTime.from(obj as any) : ((obj as any).includes('T') ? Temporal.PlainDateTime.from(obj as any).toZonedDateTime(tz) : Temporal.PlainDate.from(obj as any).toZonedDateTime(tz));
+			zdt = (obj as any).includes('[')
+				? Temporal.ZonedDateTime.from(obj as any)
+				: ((obj as any).includes('T')
+					? Temporal.PlainDateTime.from(obj as any).toZonedDateTime(tz)
+					: Temporal.PlainDate.from(obj as any).toZonedDateTime(tz));
 			break;
 		case isPlainDateTime(obj):
 		case isPlainDate(obj):
@@ -72,7 +77,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 		: String(fmt);
 
 	// auto-meridiem: if {HH} is present and {mer} is absent, append it after the last time component
-	if (template.includes('{HH}') && !template.includes('{mer}') && !template.includes('{MER}')) {
+	if (template.includes('{HH}') && !template.toLowerCase().includes('{mer')) {
 		const index = Math.max(template.lastIndexOf('{HH}'), template.lastIndexOf('{mi}'), template.lastIndexOf('{ss}'));
 		if (index !== -1) {
 			const end = template.indexOf('}', index) + 1;
@@ -80,55 +85,136 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 		}
 	}
 
-	const result = template.replace(new RegExp(Match.braces, 'g'), (_match: string, token: string) => {
+	const result = template.replace(new RegExp(Match.formatBraces, 'g'), (_match: string, fullToken: string) => {
+		const [token, ...modifiers] = fullToken.split(':');
+
+		if (config?.format?.localize && !modifiers.includes('locale'))
+			modifiers.unshift('locale');
+
+		let res: any;
+
 		switch (token) {
-			case 'yyyy': return pad(zdt.year, 4);
-			case 'yy': return pad(zdt.year % 100);
-			case 'yw': return pad(zdt.yearOfWeek, 4);
-			case 'yyww': return pad(zdt.yearOfWeek, 4) + pad(zdt.weekOfYear);
-			case 'mm': return pad(zdt.month);
-			case 'mon': return enums.MONTHS.keyOf(zdt.month as any);
-			case 'mmm': return enums.MONTH.keyOf(zdt.month as any);
-			case 'dd': return pad(zdt.day);
-			case 'day': return zdt.day.toString();
-			case 'dow': return zdt.dayOfWeek.toString();
-			case 'wkd': return enums.WEEKDAYS.keyOf(zdt.dayOfWeek as any);
-			case 'www': return enums.WEEKDAY.keyOf(zdt.dayOfWeek as any);
-			case 'ww': return pad(zdt.weekOfYear);
-			case 'DAY': return suffix(zdt.day);
-			case 'WW': return suffix(zdt.weekOfYear);
-			case 'MM': return suffix(zdt.month);
-			case 'hh': return pad(zdt.hour);
-			case 'HH': return pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12);
-			case 'mer': return zdt.hour >= 12 ? 'pm' : 'am';
-			case 'MER': return zdt.hour >= 12 ? 'PM' : 'AM';
-			case 'mi': return pad(zdt.minute);
-			case 'ss': return pad(zdt.second);
-			case 'ms': return pad(zdt.millisecond, 3);
-			case 'us': return pad(zdt.microsecond, 3);
-			case 'ns': return pad(zdt.nanosecond, 3);
-			case 'ff': return `${pad(zdt.millisecond, 3)}${pad(zdt.microsecond, 3)}${pad(zdt.nanosecond, 3)}`;
-			case 'dmy': return `${pad(zdt.day)}${pad(zdt.month)}${pad(zdt.year, 4)}`;
-			case 'mdy': return `${pad(zdt.month)}${pad(zdt.day)}${pad(zdt.year, 4)}`;
-			case 'ymd': return `${pad(zdt.year, 4)}${pad(zdt.month)}${pad(zdt.day)}`;
-			case 'hms': return `${pad(zdt.hour)}${pad(zdt.minute)}${pad(zdt.second)}`;
-			case 'ts': return ((config?.timeStamp ?? 'ms') === 'ss')
+			case 'yyyy': res = pad(zdt.year, 4); break;
+			case 'yy': res = pad(zdt.year % 100); break;
+			case 'yw': res = pad(zdt.yearOfWeek, 4); break;
+			case 'yyww': res = pad(zdt.yearOfWeek, 4) + pad(zdt.weekOfYear); break;
+			case 'mm': res = pad(zdt.month); break;
+			case 'mon': res = enums.MONTHS.keyOf(zdt.month as any); break;
+			case 'mmm': res = enums.MONTH.keyOf(zdt.month as any); break;
+			case 'dd': res = pad(zdt.day); break;
+			case 'day': res = zdt.day.toString(); break;
+			case 'dow': res = zdt.dayOfWeek.toString(); break;
+			case 'wkd': res = enums.WEEKDAYS.keyOf(zdt.dayOfWeek as any); break;
+			case 'www': res = enums.WEEKDAY.keyOf(zdt.dayOfWeek as any); break;
+			case 'ww': res = pad(zdt.weekOfYear); break;
+			case 'DAY': res = suffix(zdt.day); break;
+			case 'WW': res = suffix(zdt.weekOfYear); break;
+			case 'MM': res = suffix(zdt.month); break;
+			case 'hh': res = pad(zdt.hour); break;
+			case 'HH': res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12); break;
+			case 'mer': res = zdt.hour >= 12 ? 'pm' : 'am'; break;
+			case 'MER': res = zdt.hour >= 12 ? 'PM' : 'AM'; break;
+			case 'mi': res = pad(zdt.minute); break;
+			case 'ss': res = pad(zdt.second); break;
+			case 'ms': res = pad(zdt.millisecond, 3); break;
+			case 'us': res = pad(zdt.microsecond, 3); break;
+			case 'ns': res = pad(zdt.nanosecond, 3); break;
+			case 'ff': res = `${pad(zdt.millisecond, 3)}${pad(zdt.microsecond, 3)}${pad(zdt.nanosecond, 3)}`; break;
+			case 'dmy': res = `${pad(zdt.day)}${pad(zdt.month)}${pad(zdt.year, 4)}`; break;
+			case 'mdy': res = `${pad(zdt.month)}${pad(zdt.day)}${pad(zdt.year, 4)}`; break;
+			case 'ymd': res = `${pad(zdt.year, 4)}${pad(zdt.month)}${pad(zdt.day)}`; break;
+			case 'hms': res = `${pad(zdt.hour)}${pad(zdt.minute)}${pad(zdt.second)}`; break;
+			case 'ts': res = ((config?.timeStamp ?? 'ms') === 'ss')
 				? Math.trunc(zdt.epochMilliseconds / 1000).toString()
-				: zdt.epochMilliseconds.toString();
-			case 'nano': return zdt.epochNanoseconds.toString();
-			case 'tz': return zdt.timeZoneId;
+				: zdt.epochMilliseconds.toString(); break;
+			case 'nano': res = zdt.epochNanoseconds.toString(); break;
+			case 'tz': res = zdt.timeZoneId; break;
 			default: {
 				if (token.startsWith('#') && isTempo(obj)) {
-					const res = (obj as unknown as Tempo).term[token.slice(1)];
-					if (isObject(res)) return res.label ?? res.key ?? `{${token}}`;
-					return res ?? `{${token}}`;
+					const termObj = (obj as unknown as Tempo).term[token.slice(1)];
+					if (isObject(termObj)) {
+						res = termObj.label ?? termObj.key ?? `{${token}}`;
+					} else {
+						res = termObj ?? `{${token}}`;
+					}
+				} else {
+					res = `{${token}}`;
 				}
-				return `{${token}}`;
+				break;
 			}
 		}
+
+		if (res === `{${token}}` || modifiers.length === 0) return res;
+
+		for (const mod of modifiers) {
+			switch (mod.toLowerCase()) {
+				case 'lower':
+					res = String(res).toLocaleLowerCase(config?.locale);
+					break;
+				case 'upper':
+					res = String(res).toLocaleUpperCase(config?.locale);
+					break;
+				case 'title': {
+					const str = String(res);
+					res = str.charAt(0).toLocaleUpperCase(config?.locale) + str.slice(1).toLocaleLowerCase(config?.locale);
+					break;
+				}
+				case 'ord':
+					res = suffix(parseInt(String(res), 10));
+					break;
+				case 'locale': {
+					try {
+						if (token.startsWith('#') && isTempo(obj)) {
+							const termKey = token.slice(1);
+							const termName = termKey.split('.')[0];
+							const termVal = (obj as unknown as Tempo).term[termKey];
+							const plugin = (obj.constructor as any)._termMap?.get(termName);
+
+							if (plugin) {
+								const lang = config?.locale?.split('-')[0] ?? 'en';
+								let locRes: any;
+								const valStr = String(termVal);
+
+								// 1. Global Registry (user override)
+								if (config?.registry?.locales?.[lang]?.[valStr])
+									locRes = config.registry.locales[lang][valStr];
+
+								// 2. Term's Bundled Dictionary (plugin default)
+								else {
+									const flatGroups = Array.isArray(plugin.groups) ? plugin.groups : (isObject(plugin.groups) ? Object.values(plugin.groups).flat() : []);
+									const group = flatGroups.find((g: any) => g.key === valStr);
+									if (group && isObject(group.locale))
+										locRes = group.locale[lang] ?? group.locale.en;
+
+								}
+
+								// 3. Execution or Assignment
+								if (isDefined(locRes))
+									res = isFunction(locRes) ? locRes(config?.locale) : locRes;
+							}
+						} else {
+							const dtOptions = config?.intl?.dateTimeFormat ?? {};
+							if (token === 'mon') res = zdt.toLocaleString(config?.locale, { ...dtOptions, month: 'long' });
+							else if (token === 'mmm') res = zdt.toLocaleString(config?.locale, { ...dtOptions, month: 'short' });
+							else if (token === 'wkd') res = zdt.toLocaleString(config?.locale, { ...dtOptions, weekday: 'long' });
+							else if (token === 'www') res = zdt.toLocaleString(config?.locale, { ...dtOptions, weekday: 'short' });
+							else if (token === 'mer') {
+								const period = formatDayPeriod(zdt.epochMilliseconds, config?.locale, { ...dtOptions, hour: 'numeric', hour12: true, timeZone: tz });
+								if (period) res = period;
+							}
+						}
+					} catch (e) {
+						// Fallback to the current base token string
+					}
+					break;
+				}
+			}
+		}
+
+		return res;
 	});
 
-	const tokens = template.match(new RegExp(Match.braces, 'g'));
+	const tokens = template.match(new RegExp(Match.formatBraces, 'g'));
 	const isNumericOutput = (NumericPattern as readonly string[]).includes(template as any) || (tokens && tokens.length > 1 && /^[0-9]+$/.test(result));
 	return (isNumericOutput ? ifNumeric(result, true) : result) as any;
 }

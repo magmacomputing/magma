@@ -218,6 +218,70 @@ const t = new Tempo();
 console.log(t.format('We are currently in the {#quarter}')); // "We are currently in the First Quarter"
 ```
 
+### Format Modifiers & Localization
+Format strings support chained colon-modifiers (`:modifier`) to dynamically change the presentation casing or delegate to the native `Intl` API!
+
+*   `:lower` (Lowercase)
+*   `:upper` (Uppercase)
+*   `:title` (Titlecase)
+*   `:ord` (Ordinal suffix, e.g. "th", "st", "nd")
+*   `:locale` (Delegates deeply localized tokens like `{mon}` or `{wkd}` directly to `Intl.DateTimeFormat`)
+
+Modifiers can be stacked endlessly to get the exact presentation required:
+```typescript
+const t = new Tempo('2024-05-15 15:30', { locale: 'fr-FR' });
+
+t.format('{mon:upper}');        // "MAY" (Default English TitleCase -> UpperCase)
+t.format('{mon:locale}');       // "mai" (Native French Intl output)
+t.format('{mon:locale:upper} {dd:ord}'); // "MAI 15e"
+t.format('{#tod:lower}');       // "afternoon" (Modifies the native TitleCase Term plugin)
+t.format('{mer:upper}');        // "PM" (Replaces the legacy {MER} token)
+```
+
+#### Auto-Localization
+To avoid repeatedly typing `:locale` on every token, you can set `localize: true` in your global `Tempo.config`. This will automatically append the `:locale` modifier (prior to casing modifiers) for all format evaluations:
+```typescript
+Tempo.config({ locale: 'fr-FR', localize: true });
+const t = new Tempo('2024-05-15 15:30');
+
+// Automatically localized!
+t.format('{mon:upper}'); // "MAI"
+t.format('{#tod}');      // "Après-midi"
+```
+
+#### Global LOCALE Registry
+The easiest way to augment or override translations globally is via the `locales` configuration option. Translations added here will apply to *any* plugin that resolves the specified key:
+```typescript
+Tempo.config({
+    locales: {
+        fr: {
+            morning: 'Matinée',
+            afternoon: 'Après-midi',
+            // Supports functions for dynamic resolution!
+            ordinal: (n) => n === 1 ? '1er' : `${n}e`
+        }
+    }
+});
+
+const t = new Tempo('2024-05-15 10:30', { locale: 'fr-FR' });
+console.log(t.format('{#tod:locale}')); // "Matinée"
+```
+
+#### Term Bundled Dictionary
+Plugin authors can optionally bundle a `locale` dictionary directly into their custom Term definition:
+```typescript
+Tempo.addTerm({
+    key: 'shift',
+    label: 'Shift',
+    locale: {
+        es: 'Turno',
+        de: 'Schicht'
+    },
+    // ... logic
+});
+```
+*Note: A user's Global `locales` config will always take precedence over a plugin's bundled dictionary.*
+
 ---
 
 ::: info
@@ -273,11 +337,11 @@ for await (const t of quarterly) {
 Automatically update a UI when a daily time period (e.g., 'morning' or 'afternoon') changes.
 
 ```typescript
-using shiftTicker = Tempo.ticker({ '#period': 1 }, (t) => {
-  document.body.className = `shift-${t.term.per}`;
+using shiftTicker = Tempo.ticker({ '#timeOfDay': 1 }, (t) => {
+  document.body.className = `shift-${t.term.tod}`;
 });
 
-using dailyTicker = Tempo.ticker({ '#period': 'morning' }, (t) => {
+using dailyTicker = Tempo.ticker({ '#timeOfDay': 'morning' }, (t) => {
   document.body.className = `morning-has-broken`;
 });
 ```
@@ -319,4 +383,23 @@ const pdt = new Tempo().toPlainDate(); // Temporal.PlainDate
 ```typescript
 const dates = [new Tempo('tomorrow'), new Tempo('yesterday'), new Tempo('today')];
 dates.sort(Tempo.compare); // Sorts chronologically
+```
+
+### Registry and Formats Configurations
+You can extend the built-in registries (e.g. `formats`, `locales`) and toggle formatting preferences using the nested `registry` and `format` properties.
+
+```typescript
+Tempo.init({
+  registry: {
+    formats: {
+      'customDate': '{yyyy}-{mm}-{dd} {HH}:{mi}'
+    }
+  },
+  format: {
+    localize: true // Enable automatic localized number formatting
+  }
+});
+
+const t = new Tempo('2026-06-03 14:30');
+console.log(t.format('customDate')); // "2026-06-03 14:30"
 ```

@@ -16,6 +16,7 @@ const bracket_content = /[^\]]+/;
 /** @internal Tempo Match patterns */
 export const Match = proxify({
 	/** match all {} pairs, if they start with a word char */	braces: /{([#]?[\w]+(?:\.[\w]+)*)}/g,
+	/** match {} pairs for formatting, allowing optional chained :modifiers */	formatBraces: /{([#]?[\w]+(?:\.[\w]+)*(?:\:[a-zA-Z]+)*)}/g,
 	/** named capture-group, if it starts with a letter */		captures: /\(\?<([a-zA-Z][\w]*)>(.*?)(?<!\\)\)/g,
 	/** event */																							event: /^evt\d+_\d+$/,
 	/** period */																							period: /^per\d+_\d+$/,

@@ -19,6 +19,7 @@ export interface TermPlugin {
 	key: string;
 	scope?: string;
 	description?: string;
+	locale?: Record<string, string | Function>;
 	groups?: any;
 	ranges?: any[];
 	resolve?: (this: Tempo, anchor?: any) => Range[];
@@ -76,6 +77,7 @@ export type ResolvedRange = Range & {
 	end: Tempo;
 	scope?: string;
 	label?: string;
+	locale?: Record<string, string | Function>;
 	unit?: string;
 	rollover?: string;
 	[str: string]: any;

@@ -56,9 +56,9 @@ describe('Tempo.format() refinements', () => {
       expect(tPM.format('{HH} {mer}')).toBe('10 pm');
     })
 
-    it('does not add am/pm if {MER} is already present', () => {
-      expect(tAM.format('{HH} {MER}')).toBe('10 AM');
-      expect(tPM.format('{HH} {MER}')).toBe('10 PM');
+    it('does not add am/pm if {mer:upper} is already present', () => {
+      expect(tAM.format('{HH} {mer:upper}')).toBe('10 AM');
+      expect(tPM.format('{HH} {mer:upper}')).toBe('10 PM');
     })
 
     it('does not add am/pm for {hh} (24-hour)', () => {
@@ -67,6 +67,25 @@ describe('Tempo.format() refinements', () => {
 
     it('handles non-time tokens in between', () => {
       expect(tAM.format('{HH} on {mon}')).toBe('10am on May');
+    })
+  })
+
+  describe('auto-localize', () => {
+    const t = new Tempo('2024-05-20T10:00:00Z', { locale: 'fr-FR', format: { localize: true } });
+
+    it('should evaluate non-localized tokens normally', () => {
+      expect(t.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-20');
+      expect(t.format('{hh}:{mi}')).toBe('10:00');
+    })
+
+    it('should automatically localize native Intls', () => {
+      expect(t.format('{mon}')).toBe('mai');        // instead of 'May'
+      expect(t.format('{www}')).toBe('lun.');       // instead of 'Mon'
+      expect(t.format('{mon:upper}')).toBe('MAI');  // casing correctly applied after localization
+    })
+
+    it('should automatically localize Terms', () => {
+      expect(t.format('{#tod}')).toBe('Milieu de la matinée');
     })
   })
 })

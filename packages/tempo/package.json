@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.0.3",
+  "version": "3.1.0",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -182,7 +182,7 @@
     "test:browser": "vitest run -c vitest.browser.config.ts",
     "test:ci": "cross-env TEMPO_LICENSE_KEY=\"\" TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
     "test:ci:prefilter": "cross-env TEMPO_LICENSE_KEY=\"\" TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TEMPO_PREFILTER_CI=true vitest run",
-    "repl": "tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
+    "repl": "cross-env TEMPO_LICENSE_KEY=\"\" tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:dist": "tsx -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:node": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/repl.ts",
     "repl:bare": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal",
@@ -211,7 +211,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "3.0.3",
+    "@magmacomputing/library": "3.1.0",
     "@rollup/plugin-alias": "^6.0.0",
     "javascript-obfuscator": "^5.4.3",
     "magic-string": "^0.30.21",

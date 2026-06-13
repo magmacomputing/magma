@@ -37,6 +37,10 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	}) as t.Internal.State;
 
 	if (baseState) {
+		state.config = Object.create(baseState.config);
+		if (baseState.config.registry) state.config.registry = Object.create(baseState.config.registry);
+		if (baseState.config.format) state.config.format = Object.create(baseState.config.format);
+		state.parse = Object.create(baseState.parse);
 		state.userProvidedKeys = new Set(baseState.userProvidedKeys);
 		state.installed = new ScopedSet(runtime.installed);	// sandbox: delegates has() to global, isolates add()
 		state.pluginsDb = {
@@ -211,15 +215,43 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				setProperty(state.config, 'locale', String(arg.value));
 				break;
 
+			case 'format':
+				if (isObject(arg.value)) state.config.format = { ...(state.config.format || {}), ...arg.value };
+				break;
+
 			case 'discovery':
 				setProperty(state.config, 'discovery', arg.value);
 				break;
 
+			case 'registry':
+				if (isObject(arg.value)) {
+					if (!state.config.registry) state.config.registry = {} as any;
+					if (arg.value.formats) {
+						if (state.config.registry.formats?.extend) state.config.registry.formats = state.config.registry.formats.extend(arg.value.formats) as t.FormatRegistry;
+						else setProperty(state.config.registry, 'formats', arg.value.formats);
+					}
+					if (arg.value.locales) {
+						if ((state.config.registry.locales as any)?.extend) state.config.registry.locales = (state.config.registry.locales as any).extend(arg.value.locales);
+						else setProperty(state.config.registry, 'locales', arg.value.locales);
+					}
+				}
+				break;
+
 			case 'formats':
-				if (state.config.formats?.extend) {
-					state.config.formats = state.config.formats.extend(arg.value) as t.FormatRegistry;
+				if (!state.config.registry) state.config.registry = {} as any;
+				if (state.config.registry.formats?.extend) {
+					state.config.registry.formats = state.config.registry.formats.extend(arg.value) as t.FormatRegistry;
 				} else {
-					setProperty(state.config, 'formats', arg.value);
+					setProperty(state.config.registry, 'formats', arg.value);
+				}
+				break;
+
+			case 'locales':
+				if (!state.config.registry) state.config.registry = {} as any;
+				if ((state.config.registry.locales as any)?.extend) {
+					state.config.registry.locales = (state.config.registry.locales as any).extend(arg.value);
+				} else {
+					setProperty(state.config.registry, 'locales', arg.value);
 				}
 				break;
 

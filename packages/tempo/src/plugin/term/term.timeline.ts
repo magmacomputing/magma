@@ -3,14 +3,14 @@ import type { Tempo } from '../../tempo.class.js';
 
 /** definition of daily time periods */
 const groups = defineRange([
-	{ key: 'Midnight', hour: 0, group: 'standard' },
-	{ key: 'Early', hour: 4, group: 'standard' },
-	{ key: 'Morning', hour: 8, group: 'standard' },
-	{ key: 'Midmorning', hour: 10, group: 'standard' },
-	{ key: 'Midday', hour: 12, group: 'standard' },
-	{ key: 'Afternoon', hour: 15, minute: 30, group: 'standard' },
-	{ key: 'Evening', hour: 18, group: 'standard' },
-	{ key: 'Night', hour: 20, group: 'standard' },
+	{ key: 'Midnight', locale: { fr: 'Minuit', es: 'Medianoche', de: 'Mitternacht' }, hour: 0, group: 'standard' },
+	{ key: 'Early', locale: { fr: 'Tôt', es: 'Temprano', de: 'Früh' }, hour: 4, group: 'standard' },
+	{ key: 'Morning', locale: { fr: 'Matin', es: 'Mañana', de: 'Morgen' }, hour: 8, group: 'standard' },
+	{ key: 'Midmorning', locale: { fr: 'Milieu de la matinée', es: 'Media mañana', de: 'Vormittag' }, hour: 10, group: 'standard' },
+	{ key: 'Midday', locale: { fr: 'Midi', es: 'Mediodía', de: 'Mittag' }, hour: 12, group: 'standard' },
+	{ key: 'Afternoon', locale: { fr: 'Après-midi', es: 'Tarde', de: 'Nachmittag' }, hour: 15, minute: 30, group: 'standard' },
+	{ key: 'Evening', locale: { fr: 'Soir', es: 'Noche', de: 'Abend' }, hour: 18, group: 'standard' },
+	{ key: 'Night', locale: { fr: 'Nuit', es: 'Noche', de: 'Nacht' }, hour: 20, group: 'standard' },
 ], 'group');
 
 function resolve(t: Tempo, anchor?: any) {

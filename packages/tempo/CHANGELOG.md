@@ -1,9 +1,30 @@
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [3.1.0] - 2026-06-13
+
+### Added
+- `registry: { formats, locales }` namespaces to `Tempo.init()` and `Tempo` instance configurations.
+- `format: { localize }` namespace to options for toggling localizing formats.
+- `Tempo.registry` static accessor for retrieving the active registry configurations.
+- **Chained Formatting Modifiers**: Introduced a powerful format modifier engine (e.g. `{mon:locale:upper}`) allowing dynamic casing (`:upper`, `:lower`, `:title`), ordinal suffixes (`:ord`), and deep localization (`:locale`) directly within template strings.
+- **Global LOCALE Registry**: Implemented a global `STATE.LOCALE` registry (`Tempo.config({ registry: { locales: { ... } } })`) to provide centralized, context-aware translations.
+- **Auto-Localization**: Added a `format: { localize: true }` global configuration flag that automatically applies the `:locale` modifier to all formatting tokens behind the scenes.
+
+### Deprecated
+- Top-level `formats` configuration key. Use `registry: { formats: ... }` instead.
+- `Tempo.formats` static accessor. Use `Tempo.registry.formats` instead.
+
+
+### Changed
+- **Optimized Intl Instantiation**: Refactored `Intl.DateTimeFormat` and `Intl.RelativeTimeFormat` creation using memoized helpers (`getDTF`, `getRTF`) across the formatting engine, drastically reducing object instantiation overhead during rapid format evaluations.
+- **Term Localization Precedence**: Upgraded the Term formatting resolution pipeline to support falling back across a strict precedence: Global Registry > Plugin Bundled Dictionary > Plugin Default Label.
+- **Plugin Localization Capabilities**: Refactored the `TimeOfDay` plugin (and underlying range resolution logic) to natively bundle and evaluate custom `locale` objects across languages without requiring external overrides.
 
 ## [3.0.2] - 2026-06-12
 
