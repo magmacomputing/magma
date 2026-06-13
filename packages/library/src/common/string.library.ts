@@ -14,21 +14,30 @@ import { isString, isObject, isNumeric, assertCondition, assertString } from '#l
  */
 export function trimAll(str: string | number, pat?: RegExp) {
 	return str
-		.toString()																						// coerce to String
+		.toString()																							// coerce to String
 		.replace(pat!, '')																			// remove regexp, if supplied
 		.replace(/\t/g, ' ')																		// replace <tab> with <space>
 		.replace(/(\r\n|\n|\r)/g, ' ')													// replace <return> & <newline>
 		.replace(/\s{2,}/g, ' ')																// trim multiple <space>
-		.trim()																								// leading/trailing <space>
+		.trim()																									// leading/trailing <space>
 }
 
 /** every word has its first letter capitalized */
 export function toProperCase<T extends string>(...str: T[]) {
 	return str
-		.flat()																								// in case {str} was already an array
+		.flat()																									// in case {str} was already an array
 		.map(text => text.replace(/\w\S*/g,
 			word => word.charAt(0).toUpperCase() + word.substring(1).toLowerCase()))
 		.join(' ') as T
+}
+
+/** only the first letter of the entire string is capitalized (locale-aware) */
+export function toTitleCase(str: string, locale?: string): string {
+	try {
+		return str.charAt(0).toLocaleUpperCase(locale) + str.slice(1).toLocaleLowerCase(locale);
+	} catch {
+		return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+	}
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

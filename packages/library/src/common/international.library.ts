@@ -43,12 +43,13 @@ export function getDateTimeFormat() {
 	return getDTF().resolvedOptions();
 }
 
-/** return the canonicalized locale string */
-export function canonicalLocale(locale: string) {
+/** return the canonicalized locale string, or undefined if invalid */
+export function canonicalLocale(locale: string): string | undefined {
 	try {
 		return Intl.getCanonicalLocales(locale.replace(/_/g, '-'))[0];
 	} catch (e) {
-		return locale;
+		console.warn(`[Tempo] dropping invalid locale: '${locale}'`, e);
+		return undefined;
 	}
 }
 

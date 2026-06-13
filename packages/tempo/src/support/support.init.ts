@@ -1,7 +1,7 @@
 import '#library/temporal.polyfill.js';
 import { enumify } from '#library/enumerate.library.js';
 import { asArray } from '#library/coercion.library.js';
-import { getDateTimeFormat, getHemisphere } from '#library/international.library.js';
+import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { asType } from '#library/type.library.js';
@@ -16,11 +16,10 @@ import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrd
 import { setLicense } from '../plugin/license/license.manager.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
-import { STATE, LICENSE } from './support.enum.js';
+import { STATE } from './support.enum.js';
 
 import enums from './support.enum.js';
 import * as t from '../tempo.type.js';
-import type { Internal } from '../tempo.type.js';
 
 /** @internal Initialise a Tempo state */
 export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State): t.Internal.State {
@@ -108,6 +107,9 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 	} else if (baseState) {
 		state.config = markConfig(Object.create(baseState.config));
+		if (baseState.config.registry) state.config.registry = Object.create(baseState.config.registry);
+		if (baseState.config.format) state.config.format = Object.create(baseState.config.format);
+		state.parse = Object.create(baseState.parse);
 		setProperties(state.config, {
 			scope: 'local',
 			catch: options.catch ?? (baseState.config as any).catch ?? false,
@@ -211,9 +213,12 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 				setProperty(state.config, 'calendar', String(arg.value));
 				break;
 
-			case 'locale':
-				setProperty(state.config, 'locale', String(arg.value));
+			case 'locale': {
+				const resolvedLocale = canonicalLocale(String(arg.value));
+				if (resolvedLocale)
+					setProperty(state.config, 'locale', resolvedLocale);
 				break;
+			}
 
 			case 'format':
 				if (isObject(arg.value)) state.config.format = { ...(state.config.format || {}), ...arg.value };

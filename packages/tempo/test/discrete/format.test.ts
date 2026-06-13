@@ -86,6 +86,7 @@ describe('Tempo.format() refinements', () => {
 
     it('should automatically localize Terms', () => {
       expect(t.format('{#tod}')).toBe('Milieu de la matinée');
+      expect(t.format('{#timeOfDay}')).toBe('Milieu de la matinée');
     })
   })
 })

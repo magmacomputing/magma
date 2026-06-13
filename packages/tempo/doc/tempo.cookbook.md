@@ -239,9 +239,9 @@ t.format('{mer:upper}');        // "PM" (Replaces the legacy {MER} token)
 ```
 
 #### Auto-Localization
-To avoid repeatedly typing `:locale` on every token, you can set `localize: true` in your global `Tempo.config`. This will automatically append the `:locale` modifier (prior to casing modifiers) for all format evaluations:
+To avoid repeatedly typing `:locale` on every token, you can set `format: { localize: true }` in your global `Tempo.config`. This will automatically append the `:locale` modifier (prior to casing modifiers) for all format evaluations:
 ```typescript
-Tempo.config({ locale: 'fr-FR', localize: true });
+Tempo.config({ locale: 'fr-FR', format: { localize: true } });
 const t = new Tempo('2024-05-15 15:30');
 
 // Automatically localized!

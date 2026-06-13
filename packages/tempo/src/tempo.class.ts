@@ -762,9 +762,9 @@ export class Tempo {
 				locale,
 				discovery: normalizedDiscovery,
 				format: config.format ?? { localize: config.localize ?? false },
-				registry: config.registry ?? {
-					formats: config.formats ?? enumify(STATE.FORMAT, false),
-					locales: config.locales ?? proxify(STATE.LOCALE, true, true)
+				registry: {
+					formats: config.registry?.formats ?? config.formats ?? enumify(STATE.FORMAT, false),
+					locales: config.registry?.locales ?? config.locales ?? proxify(STATE.LOCALE, true, true)
 				},
 				scope: 'global',
 				catch: options.catch ?? config.catch ?? false

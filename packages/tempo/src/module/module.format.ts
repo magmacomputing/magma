@@ -1,5 +1,5 @@
 import '#library/temporal.polyfill.js';
-import { pad } from '#library/string.library.js';
+import { pad, toTitleCase } from '#library/string.library.js';
 import { suffix } from '#library/number.library.js';
 import { ifNumeric } from '#library/coercion.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction } from '#library/assertion.library.js';
@@ -154,11 +154,9 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 				case 'upper':
 					res = String(res).toLocaleUpperCase(config?.locale);
 					break;
-				case 'title': {
-					const str = String(res);
-					res = str.charAt(0).toLocaleUpperCase(config?.locale) + str.slice(1).toLocaleLowerCase(config?.locale);
+				case 'title':
+					res = toTitleCase(String(res), config?.locale);
 					break;
-				}
 				case 'ord':
 					res = suffix(parseInt(String(res), 10));
 					break;
@@ -167,13 +165,21 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 						if (token.startsWith('#') && isTempo(obj)) {
 							const termKey = token.slice(1);
 							const termName = termKey.split('.')[0];
-							const termVal = (obj as unknown as Tempo).term[termKey];
 							const plugin = (obj.constructor as any)._termMap?.get(termName);
 
 							if (plugin) {
+								const termVal = (obj as unknown as Tempo).term[termKey];
 								const lang = config?.locale?.split('-')[0] ?? 'en';
 								let locRes: any;
-								const valStr = String(termVal);
+								let valStr: string;
+								let baseKey: string | undefined;
+
+								if (isObject(termVal)) {
+									valStr = String(termVal.label ?? termVal.key ?? termVal.id);
+									baseKey = String(termVal.key ?? termVal.id);
+								} else {
+									valStr = String(termVal);
+								}
 
 								// 1. Global Registry (user override)
 								if (config?.registry?.locales?.[lang]?.[valStr])
@@ -181,8 +187,9 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 
 								// 2. Term's Bundled Dictionary (plugin default)
 								else {
+									const searchKey = baseKey ?? valStr;
 									const flatGroups = Array.isArray(plugin.groups) ? plugin.groups : (isObject(plugin.groups) ? Object.values(plugin.groups).flat() : []);
-									const group = flatGroups.find((g: any) => g.key === valStr);
+									const group = flatGroups.find((g: any) => g.key === searchKey);
 									if (group && isObject(group.locale))
 										locRes = group.locale[lang] ?? group.locale.en;
 
