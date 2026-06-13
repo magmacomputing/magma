@@ -231,8 +231,10 @@ export namespace Internal {
 		/** pivot year for two-digit years */										pivot: number;
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
+		/** top-level shortcut to enable `parse.localize` and `format.localize` */ localize?: boolean;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** formatting engine configuration */									format?: { localize?: boolean };
+		/** parsing engine configuration */											parse?: { localize?: boolean };
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
@@ -310,16 +312,19 @@ export namespace Internal {
 		/** @internal lazy delegator for terms */								term?: any;
 		/** @internal localized Master Guard scanner */					guard?: { test(str: string): boolean };
 		/** @internal localized Noise Word scanner */						ignorePattern?: RegExp;
+		/** @internal flag for localized parsing */							localize?: boolean;
+		/** @internal reverse-lookup map for localized parsing */localeMap?: Record<string, number>;
 	}
 
 	/** drop the parse-only Options */
 	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "layoutOrder" | "preFilter" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
 
 	/** Instance configuration derived from supply, storage, and discovery. */
-	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "license">> {
+	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "license" | "localize">> {
 		/** license key for premium features */									license?: string;
 		/** configuration (global | local) */										scope: 'global' | 'local';
 		/** formatting engine configuration */									format: { localize?: boolean };
+		/** parsing engine configuration */											parse: { localize?: boolean };
 		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>> };
 		/** index-signature */																	readonly [key: string]: any;
 	}
@@ -333,7 +338,9 @@ export namespace Internal {
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
+		/** top-level shortcut to enable localization */				localize?: boolean;
 		/** formatting engine configuration */									format?: { localize?: boolean };
+		/** parsing engine configuration */											parse?: { localize?: boolean };
 		/** @deprecated Provide configuration inside `registry: { formats: ... }` */formats?: Property<any>;
 		/** @deprecated Provide configuration inside `registry: { locales: ... }` */locales?: Record<string, Record<string, string | Function>>;
 		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>> };

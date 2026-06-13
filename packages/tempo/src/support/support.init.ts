@@ -5,14 +5,14 @@ import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/inte
 import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { asType } from '#library/type.library.js';
-import { isString, isObject, isUndefined, isDefined, isRegExp } from '#library/assertion.library.js';
+import { isString, isObject, isUndefined, isDefined, isRegExp, isEmpty } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { getStorage } from '#library/storage.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 
 import { getRuntime } from './support.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError } from './support.util.js';
+import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, generateLocalizedSnippets } from './support.util.js';
 import { setLicense } from '../plugin/license/license.manager.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
@@ -152,7 +152,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 }
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
-export function extendState(state: t.Internal.State, options: t.Options) {
+export function extendState(state: t.Internal.State, options: t.Options): boolean {
 	let patternsDirty = false;
 
 	ownEntries(options).forEach(([optKey, optVal]) => {
@@ -222,6 +222,16 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 			case 'format':
 				if (isObject(arg.value)) state.config.format = { ...(state.config.format || {}), ...arg.value };
+				break;
+
+			case 'parse':
+				if (isObject(arg.value)) Object.assign(state.parse, arg.value);
+				break;
+
+			case 'localize':
+				if (!isObject(state.config.format)) setProperty(state.config, 'format', {});
+				state.config.format.localize = Boolean(arg.value);
+				state.parse.localize = Boolean(arg.value);
 				break;
 
 			case 'discovery':
@@ -324,4 +334,36 @@ export function extendState(state: t.Internal.State, options: t.Options) {
 
 		}
 	});
+
+	const locale = state.config.locale;
+	if (locale && state.parse.localize) {
+		const lang = locale.split('-')[0];
+		if (lang !== 'en') {
+			const { snippets, localeMap, events } = generateLocalizedSnippets(locale);
+			state.parse.localeMap = localeMap;
+			Object.assign(state.parse.snippet, snippets);
+
+			// Map to exact lexer Tokens to override default layout placeholders
+			state.parse.snippet[Token.mm as any] = new RegExp(`(?<mm>[0 ]?[1-9]|1[0-2]|${snippets.mmm})`, 'i');
+			state.parse.snippet[Token.wkd as any] = new RegExp(`(?<wkd>${snippets.www})`, 'i');
+
+			if (!isEmpty(events)) {
+				Object.assign(state.parse.event, events);
+
+				// Register new localized aliases with the AliasEngine
+				if (state.aliasEngine) {
+					// Ensure we don't corrupt global state if we are a local instance
+					if (state.config.scope === 'local' && state.aliasEngine.depth === 0) {
+						if (typeof state.aliasEngine.fork === 'function') {
+							state.aliasEngine = state.aliasEngine.fork(state.config);
+						}
+					}
+					state.aliasEngine.registerAliases('evt', ownEntries(events));
+				}
+			}
+			patternsDirty = true;
+		}
+	}
+
+	return patternsDirty;
 }

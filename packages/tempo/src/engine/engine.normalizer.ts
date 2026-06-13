@@ -92,6 +92,15 @@ export function normalizeMatch(
 	if (state.errored) return dateTime;
 
 	// 3. Weekday, Date
+	if (isDefined(groups["wkd"]) && !isNumeric(groups["wkd"])) {
+		const rawWkd = String(groups["wkd"]).replace(/\.$/, '').toLowerCase();
+		const mappedWkd = state.parse.localeMap?.[rawWkd];
+		if (isDefined(mappedWkd)) {
+			const engWkd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][mappedWkd - 1];
+			groups["wkd"] = engWkd;
+			logDebug(`[Normalizer] Normalized localized weekday string '${rawWkd}' to '${engWkd}'`, state.config);
+		}
+	}
 	dateTime = parseWeekday(groups, dateTime, state.config);
 	dateTime = parseDate(groups, dateTime, state.config, state.parse["pivot"]);
 
@@ -224,12 +233,20 @@ export function resolveAliases(
 	}
 
 	if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {
-		const mm = prefix(groups["mm"] as t.MONTH);
-		const monthVal = enums.MONTH[mm];
+		const rawMm = String(groups["mm"]).replace(/\.$/, '').toLowerCase();
+		const mappedMm = state.parse.localeMap?.[rawMm];
+		
+		if (isDefined(mappedMm)) {
+			groups["mm"] = mappedMm.toString().padStart(2, '0');
+			logDebug(`[Normalizer] Normalized localized month string '${groups["mm"]}'`, state.config);
+		} else {
+			const mm = prefix(groups["mm"] as t.MONTH);
+			const monthVal = enums.MONTH[mm];
 
-		if (isDefined(monthVal)) {
-			groups["mm"] = monthVal.toString().padStart(2, '0');
-			logDebug(`[Normalizer] Normalized month string '${mm}' to ${groups["mm"]}`, state.config);
+			if (isDefined(monthVal)) {
+				groups["mm"] = monthVal.toString().padStart(2, '0');
+				logDebug(`[Normalizer] Normalized month string '${mm}' to ${groups["mm"]}`, state.config);
+			}
 		}
 	}
 

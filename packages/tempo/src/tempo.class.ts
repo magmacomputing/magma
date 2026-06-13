@@ -320,10 +320,12 @@ export class Tempo {
 			? Object.assign(Tempo.readStore(storeKey), providedOptions)
 			: providedOptions;
 
+		console.log('[$setConfig] providedOptions:', providedOptions, 'mergedOptions:', mergedOptions, 'isEmpty:', isEmpty(mergedOptions));
 		if (isEmpty(mergedOptions)) return;
 
 		// Apply options using extendState
-		extendState(shape, mergedOptions);
+		const patternsDirty = extendState(shape, mergedOptions);
+		if (patternsDirty) setPatterns(shape);
 
 		// Side-effects
 		const newSphere = Tempo._setSphere(shape, mergedOptions);

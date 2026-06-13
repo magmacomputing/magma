@@ -99,6 +99,19 @@ new Tempo('2 weeks ago');
 new Tempo('tomorrow afternoon');
 ```
 
+### Auto-Localized Parsing
+You can instruct Tempo to automatically generate language-specific parsing rules based on your `locale`. This enables parsing of translated months, weekdays, and relative events!
+
+```typescript
+Tempo.init({ locale: 'fr-FR', parse: { localize: true } });
+
+// Natively understand French input out-of-the-box!
+new Tempo('demain');            // parses as "tomorrow"
+new Tempo('15 fevrier 2026');   // parses as "15 February 2026"
+new Tempo('vendredi prochain'); // parses as "next Friday"
+```
+*Note: Localized parsing is heavily optimized and automatically strips accents (e.g. `fevrier` matches `février`), providing resilient fuzzy-matching for user input.*
+
 ### Parsing Unix Timestamps
 Tempo handles both milliseconds (Number) and nanoseconds (BigInt).
 ```typescript
@@ -239,9 +252,9 @@ t.format('{mer:upper}');        // "PM" (Replaces the legacy {MER} token)
 ```
 
 #### Auto-Localization
-To avoid repeatedly typing `:locale` on every token, you can set `format: { localize: true }` in your global `Tempo.config`. This will automatically append the `:locale` modifier (prior to casing modifiers) for all format evaluations:
+To avoid repeatedly typing `:locale` on every token, you can set `format: { localize: true }` in your global `Tempo.init()`. This will automatically append the `:locale` modifier (before casing modifiers) for all format evaluations:
 ```typescript
-Tempo.config({ locale: 'fr-FR', format: { localize: true } });
+Tempo.init({ locale: 'fr-FR', format: { localize: true } });
 const t = new Tempo('2024-05-15 15:30');
 
 // Automatically localized!
@@ -252,13 +265,16 @@ t.format('{#tod}');      // "Après-midi"
 #### Global LOCALE Registry
 The easiest way to augment or override translations globally is via the `locales` configuration option. Translations added here will apply to *any* plugin that resolves the specified key:
 ```typescript
-Tempo.config({
-    locales: {
-        fr: {
-            morning: 'Matinée',
-            afternoon: 'Après-midi',
-            // Supports functions for dynamic resolution!
-            ordinal: (n) => n === 1 ? '1er' : `${n}e`
+Tempo.init({
+    locale: 'fr-FR',
+    registry: {
+        locales: {
+            fr: {
+                morning: 'Matinée',
+                afternoon: 'Après-midi',
+                // Supports functions for dynamic resolution!
+                ordinal: (n) => n === 1 ? '1er' : `${n}e`
+            }
         }
     }
 });

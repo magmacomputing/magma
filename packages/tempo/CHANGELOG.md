@@ -13,8 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `format: { localize }` namespace to options for toggling localizing formats.
 - `Tempo.registry` static accessor for retrieving the active registry configurations.
 - **Chained Formatting Modifiers**: Introduced a powerful format modifier engine (e.g. `{mon:locale:upper}`) allowing dynamic casing (`:upper`, `:lower`, `:title`), ordinal suffixes (`:ord`), and deep localization (`:locale`) directly within template strings.
-- **Global LOCALE Registry**: Implemented a global `STATE.LOCALE` registry (`Tempo.config({ registry: { locales: { ... } } })`) to provide centralized, context-aware translations.
+- **Global LOCALE Registry**: Implemented a global `STATE.LOCALE` registry (`Tempo.init({ locale: 'fr-FR', registry: { locales: { ... } } })`) to provide centralized, context-aware translations.
 - **Auto-Localization**: Added a `format: { localize: true }` global configuration flag that automatically applies the `:locale` modifier to all formatting tokens behind the scenes.
+- **Internationalized Parsing**: Implemented robust localized parsing capabilities natively into Tempo. By opting in via `Tempo.init({ locale: 'fr-FR', parse: { localize: true } })`, Tempo automatically registers localized variants for months, weekdays, and relative terms (yesterday, today, tomorrow) based on your configured `locale`. This engine dynamically strips accents (so "février" and "fevrier" both match safely), ensuring resilient fuzzy-matching for user input out-of-the-box.
 
 ### Deprecated
 - Top-level `formats` configuration key. Use `registry: { formats: ... }` instead.
@@ -24,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Optimized Intl Instantiation**: Refactored `Intl.DateTimeFormat` and `Intl.RelativeTimeFormat` creation using memoized helpers (`getDTF`, `getRTF`) across the formatting engine, drastically reducing object instantiation overhead during rapid format evaluations.
 - **Term Localization Precedence**: Upgraded the Term formatting resolution pipeline to support falling back across a strict precedence: Global Registry > Plugin Bundled Dictionary > Plugin Default Label.
-- **Plugin Localization Capabilities**: Refactored the `TimeOfDay` plugin (and underlying range resolution logic) to natively bundle and evaluate custom `locale` objects across languages without requiring external overrides.
+- **Plugin Localization Capabilities**: Refactored the `TimeOfDay` plugin (and underlying range resolution logic) to natively bundle and evaluate custom `locale` objects across languages without requiring external overrides in order to demonstrate the new `parse: { localize: true }` capability.
 
 ## [3.0.2] - 2026-06-12
 

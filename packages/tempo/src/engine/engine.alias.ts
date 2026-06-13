@@ -15,7 +15,7 @@
  */
 
 import type { Nullable } from '#library/type.library.js';
-import { isDefined, isFunction } from '#library/assertion.library.js';
+import { isDefined, isFunction, isObject } from '#library/assertion.library.js';
 import { Match, logError, logWarn } from '#tempo/support';
 import { ownEntries } from '#library/primitive.library.js';
 import * as t from '../tempo.type.js';
@@ -82,11 +82,11 @@ export class AliasEngine {
 		this.#config = options.config;
 		this.#id = AliasEngine._idCounter++;
 
-		if (parent instanceof AliasEngine) {
-			this.#parent = parent;
-			this.#depth = parent.#depth + 1;
-			this.#state = Object.create(parent.#state);						// create a new state object that inherits from the parent engine's state
-			this.#words = Object.create(parent.#words);						// create a new words object that inherits from the parent engine's words for collision detection
+		if (isObject(parent) && 'registerAliases' in parent) {
+			this.#parent = parent as AliasEngine;
+			this.#depth = (parent as AliasEngine).depth + 1;
+			this.#state = Object.create((parent as any).#state);	// create a new state object that inherits from the parent engine's state
+			this.#words = Object.create((parent as any).#words);	// create a new words object that inherits from the parent engine's words for collision detection
 		} else {
 			if (parent)
 				logError("Parent engine must be an instance of AliasEngine", this.#config);
@@ -98,6 +98,10 @@ export class AliasEngine {
 		}
 
 		this.#count = { evt: 0, per: 0 };
+	}
+
+	fork(config?: Nullable<t.Internal.Config>): AliasEngine {
+		return new AliasEngine({ parent: this, config: config ?? this.#config ?? null });
 	}
 
 	/**
