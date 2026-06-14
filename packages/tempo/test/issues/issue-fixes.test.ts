@@ -34,7 +34,7 @@ describe('Tempo Issue Fixes', () => {
       const expectedDate = new Tempo().add({ days: -1 }).format('{yyyy}-{mm}-{dd}')
 
       expect(t.format('{yyyy}-{mm}-{dd}')).toBe(expectedDate)
-      expect(t.format('{HH}:{mi}:{ss}')).toBe('03:00:00pm')
+      expect(t.format('{h12}:{mi}:{ss}')).toBe('03:00:00pm')
     })
 
     test('dynamic period alias with `this` binding (e.g. half-hour)', () => {

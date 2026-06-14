@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2026-06-14
+
+### Added
+- **Dynamic Format Options**: The `.format()` method on `Tempo` instances now natively accepts an optional configuration object (e.g., `{ locale: 'fr-FR' }`) as its second argument, aligning its signature with native `Intl` overrides.
+
+### Changed
+- **Zero-Padded Documentation**: Refined format token documentation to explicitly refer to fixed-length representations as "Zero-padded" (e.g., "Zero-padded Month"), clarifying the exact behavior of the `:raw` modifier.
+- **Strict ISO Vocabulary**: Updated documentation for `{dow}`, `{ww}`, and `{yw}` to explicitly designate them as ISO standards, removing ambiguity with native JavaScript `Date` offsets.
+
 ## [3.1.0] - 2026-06-13
 
 ### Added

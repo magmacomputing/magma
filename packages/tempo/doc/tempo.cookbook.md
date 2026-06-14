@@ -400,7 +400,7 @@ You can extend the built-in registries (e.g. `formats`, `locales`) and toggle fo
 Tempo.init({
   registry: {
     formats: {
-      'customDate': '{yyyy}-{mm}-{dd} {HH}:{mi}'
+      'customDate': '{yyyy}-{mm}-{dd} {h12}:{mi}'
     }
   },
   format: {

@@ -13,7 +13,7 @@ import type { Tempo } from '../tempo.class.js';
 
 declare module '../tempo.class.js' {
 	interface Tempo {
-		/** applies a format to the instance. */								format(fmt: any): any;
+		/** applies a format to the instance. */								format(fmt: any, options?: any): any;
 	}
 }
 
@@ -30,11 +30,22 @@ declare module '../tempo.class.js' {
  * const stamp = format().logStamp; // defaults to 'Now'
  */
 export function format(obj?: Temporal.ZonedDateTime | any): any;
-export function format(obj: Temporal.ZonedDateTime | any, fmt: NumericPattern): number;
-export function format(obj: Temporal.ZonedDateTime | any, fmt: string | symbol): string;
-export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol): string | number | any {
+export function format(obj: Temporal.ZonedDateTime | any, fmt: NumericPattern, options?: any): number;
+export function format(obj: Temporal.ZonedDateTime | any, fmt: string | symbol, options?: any): string;
+export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol, options?: any): string | number | any {
 	const state = getRuntime().state;
-	const config = isTempo(obj) ? obj.config : state?.config;
+	const baseConfig = isTempo(obj) ? obj.config : state?.config;
+	let config = baseConfig;
+	if (options) {
+		config = { ...baseConfig, ...options };
+		if (options.intl) config.intl = { ...baseConfig?.intl, ...options.intl };
+		if (options.format) config.format = { ...baseConfig?.format, ...options.format };
+		if (options.registry) {
+			config.registry = { ...baseConfig?.registry, ...options.registry };
+			if (options.registry.formats) config.registry.formats = { ...baseConfig?.registry?.formats, ...options.registry.formats };
+			if (options.registry.locales) config.registry.locales = { ...baseConfig?.registry?.locales, ...options.registry.locales };
+		}
+	}
 	const formats = Object.assign({}, enums.FORMAT, config?.registry?.formats);
 	const tz = config?.timeZone ?? 'UTC';
 
@@ -76,12 +87,36 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 		? (formats as Record<string, string>)[fmt as string]
 		: String(fmt);
 
-	// auto-meridiem: if {HH} is present and {mer} is absent, append it after the last time component
-	if (template.includes('{HH}') && !template.toLowerCase().includes('{mer')) {
-		const index = Math.max(template.lastIndexOf('{HH}'), template.lastIndexOf('{mi}'), template.lastIndexOf('{ss}'));
-		if (index !== -1) {
-			const end = template.indexOf('}', index) + 1;
-			template = template.slice(0, end) + '{mer}' + template.slice(end);
+	// auto-meridiem: if {h12} or {HH} is present and {mer} is absent, append it after the last time component
+	if (/(?:\{h12|\{HH)/.test(template) && !template.toLowerCase().includes('{mer')) {
+		const hMatch = template.match(/\{(h12|HH)[^}]*\}/);
+		let merMod = '';
+		let skipMeridiem = false;
+		if (hMatch) {
+			const modifiers = hMatch[0].toLowerCase();
+			if (modifiers.includes('raw')) skipMeridiem = true;
+			if (modifiers.includes('upper')) merMod = ':upper';
+			else if (modifiers.includes('lower')) merMod = ':lower';
+
+			if (modifiers.includes('locale')) merMod += ':locale';
+		}
+
+		if (!skipMeridiem) {
+			const hIndex = Math.max(template.search(/\{h12[^}]*\}/), template.search(/\{HH[^}]*\}/));
+			const miIndex = template.lastIndexOf('{mi}');
+			const ssIndex = template.lastIndexOf('{ss}');
+			const subIndex = Math.max(
+				template.lastIndexOf('{ms}'),
+				template.lastIndexOf('{us}'),
+				template.lastIndexOf('{ns}'),
+				template.lastIndexOf('{ff}')
+			);
+			const index = Math.max(hIndex, miIndex, ssIndex, subIndex);
+
+			if (index !== -1) {
+				const end = template.indexOf('}', index) + 1;
+				template = template.slice(0, end) + `{mer${merMod}}` + template.slice(end);
+			}
 		}
 	}
 
@@ -111,6 +146,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 			case 'WW': res = suffix(zdt.weekOfYear); break;
 			case 'MM': res = suffix(zdt.month); break;
 			case 'hh': res = pad(zdt.hour); break;
+			case 'h12':
 			case 'HH': res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12); break;
 			case 'mer': res = zdt.hour >= 12 ? 'pm' : 'am'; break;
 			case 'MER': res = zdt.hour >= 12 ? 'PM' : 'AM'; break;
@@ -129,6 +165,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 				: zdt.epochMilliseconds.toString(); break;
 			case 'nano': res = zdt.epochNanoseconds.toString(); break;
 			case 'tz': res = zdt.timeZoneId; break;
+			case 'cal': res = zdt.calendarId; break;
 			default: {
 				if (token.startsWith('#') && isTempo(obj)) {
 					const termObj = (obj as unknown as Tempo).term[token.slice(1)];
@@ -159,6 +196,10 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 					break;
 				case 'ord':
 					res = suffix(parseInt(String(res), 10));
+					break;
+				case 'raw':
+					if (/^[0-9]+$/.test(String(res)))
+						res = parseInt(String(res), 10).toString();
 					break;
 				case 'locale': {
 					try {
@@ -230,7 +271,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
  * Format Module Plugin
  */
 // @ts-ignore
-export const FormatModule: Tempo.Module = defineInterpreterModule('FormatModule', function (this: Tempo, fmt: any) {
+export const FormatModule: Tempo.Module = defineInterpreterModule('FormatModule', function (this: Tempo, fmt: any, options?: any) {
 	if (!this.isValid) return '' as unknown as any;
-	return format(this, fmt);
+	return format(this, fmt, options);
 });

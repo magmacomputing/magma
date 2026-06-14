@@ -13,7 +13,7 @@ describe(`${label} format method`, () => {
 
   test('formats with 12-hour clock and meridiem', () => {
     const t = new Tempo('2024-05-20 15:30:00');
-    expect(t.format('{HH}:{mi}{mer}')).toBe('03:30pm');
+    expect(t.format('{h12}:{mi}{mer}')).toBe('03:30pm');
   });
 
   test('accesses term properties via {term.xxx}', () => {
