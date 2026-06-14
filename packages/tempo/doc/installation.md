@@ -121,7 +121,7 @@ The easiest way to use Tempo natively in the browser is via the pre-optimized ES
   import { Tempo } from '@magmacomputing/tempo';
   
   const t = new Tempo('tomorrow');
-  console.log(t.format('{mon} {day}'));
+  console.log(t.format('{mon} {dd:ord}'));
 </script>
 ```
 

@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -211,7 +211,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "3.1.0",
+    "@magmacomputing/library": "*",
     "@rollup/plugin-alias": "^6.0.0",
     "javascript-obfuscator": "^5.4.3",
     "magic-string": "^0.30.21",

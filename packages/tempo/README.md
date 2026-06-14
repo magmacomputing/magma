@@ -48,7 +48,7 @@ const diff = event.until('2026-12-25');
 console.log(diff.iso); // P2M2D
 
 // 📝 Beautiful Formatting
-console.log(event.format('{mon} {day}, {yyyy}')); // October 23, 2026
+console.log(event.format('{mon} {dd:ord}, {yyyy}')); // October 23rd, 2026
 ```
 
 ---

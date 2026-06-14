@@ -32,33 +32,74 @@ describe('Tempo.format() refinements', () => {
     expect(typeof t3.format('{yw}{ww}')).toBe('number');
   })
 
+  it('accepts an options object as the second argument to override configuration', () => {
+    const t3 = new Tempo('2024-10-05T10:30:45', { locale: 'en-US' });
+    // The default locale is en-US which outputs English. We override it to fr-FR here.
+    expect(t3.format('{mon:locale}', { locale: 'fr-FR' })).toBe('octobre');
+  })
+
   describe('auto-meridiem', () => {
     const tAM = new Tempo('2024-05-20T10:30:45');
     const tPM = new Tempo('2024-05-20T22:30:45');
 
-    it('adds am/pm after {HH}', () => {
-      expect(tAM.format('{HH}')).toBe('10am');
-      expect(tPM.format('{HH}')).toBe('10pm');
+    it('adds am/pm after {h12}', () => {
+      expect(tAM.format('{h12}')).toBe('10am');
+      expect(tPM.format('{h12}')).toBe('10pm');
     })
 
-    it('adds am/pm after {mi} if it follow {HH}', () => {
-      expect(tAM.format('{HH}:{mi}')).toBe('10:30am');
-      expect(tPM.format('{HH}:{mi}')).toBe('10:30pm');
+    it('adds am/pm after {mi} if it follow {h12}', () => {
+      expect(tAM.format('{h12}:{mi}')).toBe('10:30am');
+      expect(tPM.format('{h12}:{mi}')).toBe('10:30pm');
     })
 
-    it('adds am/pm after {ss} if it follows {HH}', () => {
-      expect(tAM.format('{HH}:{mi}:{ss}')).toBe('10:30:45am');
-      expect(tPM.format('{HH}:{mi}:{ss}')).toBe('10:30:45pm');
+    it('adds AM/PM after {mi} if {h12:upper} is used', () => {
+      expect(tAM.format('{h12:upper}:{mi}')).toBe('10:30AM');
+      expect(tPM.format('{h12:upper}:{mi}')).toBe('10:30PM');
+    })
+
+    it('adds am/pm after {mi} if {h12:lower} is used', () => {
+      expect(tAM.format('{h12:lower}:{mi}')).toBe('10:30am');
+      expect(tPM.format('{h12:lower}:{mi}')).toBe('10:30pm');
+    })
+
+    it('adds am/pm after {ss} if it follows {h12}', () => {
+      expect(tAM.format('{h12}:{mi}:{ss}')).toBe('10:30:45am');
+      expect(tPM.format('{h12}:{mi}:{ss}')).toBe('10:30:45pm');
+    })
+
+    it('adds am/pm after sub-seconds ({ms}, {us}, {ns}, {ff}) if it follows {h12}', () => {
+      expect(tAM.format('{h12}:{mi}:{ss}.{ms}')).toBe('10:30:45.000am');
+      expect(tPM.format('{h12}:{mi}:{ss}.{ff}')).toBe('10:30:45.000000000pm');
+    })
+
+    it('does not add am/pm if :raw modifier is used on {h12}', () => {
+      expect(tAM.format('{h12:raw}:{mi}')).toBe('10:30');
+      expect(tPM.format('{h12:raw}:{mi}')).toBe('10:30');
+    })
+
+    it('strips leading zeros from any numeric token when :raw is used', () => {
+      const tPad = new Tempo('2024-05-09T03:05:07.042Z');
+      expect(tPad.format('{mm:raw}')).toBe('5');
+      expect(tPad.format('{dd:raw}')).toBe('9');
+      expect(tPad.format('{hh:raw}')).toBe('3');
+      expect(tPad.format('{mi:raw}')).toBe('5');
+      expect(tPad.format('{ss:raw}')).toBe('7');
+      expect(tPad.format('{ms:raw}')).toBe('42');
+      expect(tPad.format('{h12:raw}')).toBe('3');
+    })
+
+    it('supports the {cal} token for calendar tracking', () => {
+      expect(tAM.format('{cal}')).toBe('gregory');
     })
 
     it('does not add am/pm if {mer} is already present', () => {
-      expect(tAM.format('{HH} {mer}')).toBe('10 am');
-      expect(tPM.format('{HH} {mer}')).toBe('10 pm');
+      expect(tAM.format('{h12} {mer}')).toBe('10 am');
+      expect(tPM.format('{h12} {mer}')).toBe('10 pm');
     })
 
     it('does not add am/pm if {mer:upper} is already present', () => {
-      expect(tAM.format('{HH} {mer:upper}')).toBe('10 AM');
-      expect(tPM.format('{HH} {mer:upper}')).toBe('10 PM');
+      expect(tAM.format('{h12} {mer:upper}')).toBe('10 AM');
+      expect(tPM.format('{h12} {mer:upper}')).toBe('10 PM');
     })
 
     it('does not add am/pm for {hh} (24-hour)', () => {
@@ -66,7 +107,12 @@ describe('Tempo.format() refinements', () => {
     })
 
     it('handles non-time tokens in between', () => {
-      expect(tAM.format('{HH} on {mon}')).toBe('10am on May');
+      expect(tAM.format('{h12} on {mon}')).toBe('10am on May');
+    })
+
+    it('supports {HH} for backward compatibility', () => {
+      expect(tAM.format('{HH}:{mi}')).toBe('10:30am');
+      expect(tPM.format('{HH}:{mi}')).toBe('10:30pm');
     })
   })
 
