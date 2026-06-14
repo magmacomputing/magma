@@ -12,7 +12,7 @@ In v3.1.0+, you can access active registries using the static `Tempo.registry` g
 import { Tempo } from '@magmacomputing/tempo';
 
 console.log(Tempo.registry.formats);
-// { '{iso}': '{yyyy}-{mm}-{dd}T{h12}:{mi}:{ss}', ... }
+// { '{iso}': '{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}', ... }
 ```
 
 ::: warning

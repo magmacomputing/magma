@@ -398,16 +398,17 @@ You can extend the built-in registries (e.g. `formats`, `locales`) and toggle fo
 
 ```typescript
 Tempo.init({
+  locale: 'fr-FR',
   registry: {
     formats: {
-      'customDate': '{yyyy}-{mm}-{dd} {h12}:{mi}'
+      'customDate': '{dd} {mon:upper} {yyyy} - {h12}:{mi}'
     }
   },
   format: {
-    localize: true // Enable automatic localized number formatting
+    localize: true // Automatically applies the :locale modifier to {mon}
   }
 });
 
 const t = new Tempo('2026-06-03 14:30');
-console.log(t.format('customDate')); // "2026-06-03 14:30"
+console.log(t.format('customDate')); // "03 JUIN 2026 - 02:30pm"
 ```

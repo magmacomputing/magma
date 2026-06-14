@@ -49,14 +49,23 @@ export function asInteger<T extends string | number | bigint>(str?: T) {
 /** return as Number if possible, else original String */
 export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
 	switch (true) {
-		case isInteger(str):																		// BigInt → Number
-			return Number(str);
+		case isInteger(str): {
+			const big = str as bigint;
+			if (big > BigInt(Number.MAX_SAFE_INTEGER) || big < BigInt(Number.MIN_SAFE_INTEGER)) return big;
+			return Number(big);
+		}
 
-		case isNumber(str):																			// Number → as-is
+		case isNumber(str):
 			return str;
 
-		case isNumeric(str) && (!str?.toString().startsWith('0') || stripZero):
-			return asNumber(str);																	// numeric String → Number
+		case isNumeric(str) && (!str?.toString().startsWith('0') || stripZero): {
+			const numStr = String(str);
+			if (/^-?[0-9]+$/.test(numStr)) {
+				const big = BigInt(numStr);
+				if (big > BigInt(Number.MAX_SAFE_INTEGER) || big < BigInt(Number.MIN_SAFE_INTEGER)) return big;
+			}
+			return asNumber(str);
+		}
 
 		default:
 			return str as string;																	// non-numeric String → as-is

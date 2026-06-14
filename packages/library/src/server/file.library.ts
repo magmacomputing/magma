@@ -31,7 +31,7 @@ export class File {
 		return targetPath;
 	}
 
-	static read = (file: string): Promise<string | number> => new Promise<string | number>((resolve, reject) => {
+	static read = (file: string): Promise<string | number | bigint> => new Promise<string | number | bigint>((resolve, reject) => {
 		try {
 			const target = File._resolvePath(file);
 			fs.readFile(target, File.encoding, (err, data) => {

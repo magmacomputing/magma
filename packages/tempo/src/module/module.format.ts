@@ -102,14 +102,18 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 		}
 
 		if (!skipMeridiem) {
-			const hIndex = Math.max(template.search(/\{h12[^}]*\}/), template.search(/\{HH[^}]*\}/));
-			const miIndex = template.lastIndexOf('{mi}');
-			const ssIndex = template.lastIndexOf('{ss}');
+			const lastSearch = (rgx: RegExp) => {
+				const matches = [...template.matchAll(rgx)];
+				return matches.length ? matches[matches.length - 1].index! : -1;
+			}
+			const hIndex = Math.max(lastSearch(/\{h12[^}]*\}/g), lastSearch(/\{HH[^}]*\}/g));
+			const miIndex = lastSearch(/\{mi[^}]*\}/g);
+			const ssIndex = lastSearch(/\{ss[^}]*\}/g);
 			const subIndex = Math.max(
-				template.lastIndexOf('{ms}'),
-				template.lastIndexOf('{us}'),
-				template.lastIndexOf('{ns}'),
-				template.lastIndexOf('{ff}')
+				lastSearch(/\{ms[^}]*\}/g),
+				lastSearch(/\{us[^}]*\}/g),
+				lastSearch(/\{ns[^}]*\}/g),
+				lastSearch(/\{ff[^}]*\}/g)
 			);
 			const index = Math.max(hIndex, miIndex, ssIndex, subIndex);
 
@@ -199,7 +203,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 					break;
 				case 'raw':
 					if (/^[0-9]+$/.test(String(res)))
-						res = parseInt(String(res), 10).toString();
+						res = BigInt(String(res)).toString();
 					break;
 				case 'locale': {
 					try {

@@ -109,7 +109,7 @@ Tempo.extend(FormatModule);
 | `{ns}` | Zero-padded Nanoseconds (3-digit) | `789` |
 | `{ff}` | Fractional Seconds | `123456789` |
 | `{ts}` | Unix Timestamp | `1792843200000` |
-| `{nano}` | Nanosecond Timestamp | `1792843200000000000n` |
+| `{nano}` | Nanosecond Timestamp | `1792843200000000000` |
 | `{tz}` | Time Zone ID | `Australia/Sydney` |
 | `{cal}` | Calendar System | `iso8601` |
 
@@ -126,7 +126,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:locale` | String | Resolves term via localization dictionary | `{mon:locale}` → `octobre` |
 
 ### 🔄 Automatic Meridiem
-If your format string contains `{h12}` (12-hour clock) but lacks a `{mer}` or `{mer:upper}` token, Tempo will automatically append a `{mer}` token with the same modifiers as the `{h12}` token after the last time component to ensure the time remains unambiguous.
+If your format string contains `{h12}` (12-hour clock) but lacks a `{mer}` token, Tempo will automatically append a `{mer}` token with the same modifiers as the `{h12}` token after the last time component to ensure the time remains unambiguous.
 
 *(If you explicitly want a 12-hour digit without an auto-appended meridiem, use the `:raw` modifier: `{h12:raw}`)*
 
@@ -134,17 +134,27 @@ If your format string contains `{h12}` (12-hour clock) but lacks a `{mer}` or `{
 > **Why `{h12}`?** In most date libraries, `{hh}` means 12-hour and `{HH}` means 24-hour time. However, Tempo standardizes `{hh}` on the default 24-hour expectation (with `{h12}` serving as the specific 12-hour override). This keeps all token definitions, and their corresponding time getters, fully lowercase and semantic. 
 
 ```typescript
-t.format('{h12}:{mi}');       // "03:30pm" (auto-appended pm)
-t.format('{h12:upper}:{mi}'); // "03:30PM" (auto-appended PM)
+t.format('{h12}:{mi}');           // "03:30pm" (auto-append meridiem)
+t.format('{h12:upper}:{mi}');     // "03:30PM" (auto-append meridiem)
+t.format('{h12:raw}:{mi}');       // "3:30"    (no meridiem added)
+t.format('{h12:raw}:{mi} {mer}'); // "3:30 am" (blank + meridiem added manually)
 ```
 
 ### 🔢 Numeric Resolution
-If your format string consists *only* of numeric tokens (e.g., `{yyyy}{mm}{dd}`), the `format()` function will return a **Number** instead of a string. This is useful for generating sortable keys or IDs.
+If your format string consists *only* of numeric tokens (e.g., `{yyyy}{mm}{dd}`), the `format()` function will automatically coerce the output to a numeric primitive instead of a string. This is useful for generating sortable keys or IDs. 
+
+For standard lengths, it returns a **Number**. However, if the resulting value exceeds JavaScript's `Number.MAX_SAFE_INTEGER` (such as the `{nano}` token), Tempo safely upgrades the return type to a **BigInt** to prevent precision loss.
 
 ```typescript
+// Standard Numeric Format -> Number
 const key = t.format('{yyyy}{mm}{dd}');
 console.log(typeof key); // "number"
 console.log(key);        // 20261024
+
+// Large Numeric Format -> BigInt
+const epoch = t.format('{nano}');
+console.log(typeof epoch); // "bigint"
+console.log(epoch);        // 1792843200000000000n
 ```
 
 ### 📝 Common Formatting Examples
