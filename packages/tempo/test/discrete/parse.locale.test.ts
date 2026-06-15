@@ -57,7 +57,29 @@ describe('Localized Parsing', () => {
 		expect(() => new Tempo('15 janv. 2024', { locale: 'fr-FR' })).toThrow();
 	});
 
-	it('should fail to parse English dates if localized parsing is active for French', () => {
-		expect(() => new Tempo('15 January 2024', { locale: 'fr-FR', localize: true })).toThrow();
+	it('should preserve English dates even if localized parsing is active for French', () => {
+		const t = new Tempo('15 January 2024', { locale: 'fr-FR', localize: true });
+		expect(t.isValid).toBe(true);
+		expect(t.mm).toBe(1);
+	});
+
+	it('should parse both French and Spanish dates when an array of locales is provided', () => {
+		const t1 = new Tempo('15 février 2024', { locale: ['fr-FR', 'es-ES'], localize: true });
+		expect(t1.isValid).toBe(true);
+		expect(t1.mm).toBe(2);
+
+		const t2 = new Tempo('15 febrero 2024', { locale: ['fr-FR', 'es-ES'], localize: true });
+		expect(t2.isValid).toBe(true);
+		expect(t2.mm).toBe(2);
+	});
+
+	it('should parse English dates when en-US is included in the locale array', () => {
+		const t1 = new Tempo('15 January 2024', { locale: ['fr-FR', 'en-US'], localize: true });
+		expect(t1.isValid).toBe(true);
+		expect(t1.mm).toBe(1);
+		
+		const t2 = new Tempo('15 janvier 2024', { locale: ['fr-FR', 'en-US'], localize: true });
+		expect(t2.isValid).toBe(true);
+		expect(t2.mm).toBe(1);
 	});
 });

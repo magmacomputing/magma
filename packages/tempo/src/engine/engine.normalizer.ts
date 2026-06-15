@@ -94,11 +94,12 @@ export function normalizeMatch(
 	// 3. Weekday, Date
 	if (isDefined(groups["wkd"]) && !isNumeric(groups["wkd"])) {
 		const rawWkd = String(groups["wkd"]).replace(/\.$/, '').toLowerCase();
-		const mappedWkd = state.parse.localeMap?.[rawWkd];
+		const mappedWkd = state.parse.weekdayMap?.[rawWkd];
 		if (isDefined(mappedWkd)) {
-			const engWkd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][mappedWkd - 1];
+			const engWkd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][mappedWkd.value - 1];
 			groups["wkd"] = engWkd;
 			logDebug(`[Normalizer] Normalized localized weekday string '${rawWkd}' to '${engWkd}'`, state.config);
+			accumulateResult(state, { type: 'Weekday' as any, value: mappedWkd.value as any, match: rawWkd, locale: mappedWkd.locale });
 		}
 	}
 	dateTime = parseWeekday(groups, dateTime, state.config);
@@ -234,11 +235,12 @@ export function resolveAliases(
 
 	if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {
 		const rawMm = String(groups["mm"]).replace(/\.$/, '').toLowerCase();
-		const mappedMm = state.parse.localeMap?.[rawMm];
+		const mappedMm = state.parse.monthMap?.[rawMm];
 		
 		if (isDefined(mappedMm)) {
-			groups["mm"] = mappedMm.toString().padStart(2, '0');
+			groups["mm"] = mappedMm.value.toString().padStart(2, '0');
 			logDebug(`[Normalizer] Normalized localized month string '${groups["mm"]}'`, state.config);
+			accumulateResult(state, { type: 'Month' as any, value: mappedMm.value as any, match: rawMm, locale: mappedMm.locale });
 		} else {
 			const mm = prefix(groups["mm"] as t.MONTH);
 			const monthVal = enums.MONTH[mm];

@@ -294,17 +294,19 @@ export class Tempo {
 	}
 
 	/** get first Canonical name of a supplied locale */
-	private static _locale = (locale?: string) => {
+	private static _locale = (locale?: string | string[]) => {
 		const global = Context.global;
 		let language: string | undefined;
+		
+		const primaryLocale = Array.isArray(locale) ? locale[0] : locale;
 
-		if (locale) language = canonicalLocale(locale);
+		if (primaryLocale) language = canonicalLocale(primaryLocale);
 
 		return language ??
 			global?.navigator?.languages?.[0] ??									// fallback to current first navigator.languages[]
 			global?.navigator?.language ??												// else navigator.language
 			Default.locale ??																			// else default locale
-			locale																								// cannot determine locale
+			primaryLocale																					// cannot determine locale
 	}
 
 	/**

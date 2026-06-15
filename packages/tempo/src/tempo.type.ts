@@ -227,7 +227,7 @@ export namespace Internal {
 		/** suppress console output during catch */							silent: boolean;
 		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
 		/** Temporal calendar */																calendar: Temporal.CalendarLike;
-		/** locale (e.g. en-AU) */															locale: string;
+		/** locale (e.g. en-AU) */															locale: string | string[];
 		/** pivot year for two-digit years */										pivot: number;
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
@@ -289,6 +289,7 @@ export namespace Internal {
 		/** was this a nested/anchored parse? */								isAnchored?: boolean;
 		/** anchor value used for this match */									anchor?: Temporal.ZonedDateTime;
 		/** where this match came from: 'default', 'global', 'local', or `plugin:${string}` */ source?: MatchSource;
+		/** the language/locale this term matched against */		locale?: string;
 	} & (TypeValue<any> | MatchExtend)
 
 	/** Debugging results of a parse operation. See `doc/tempo.api.md`. */
@@ -313,7 +314,8 @@ export namespace Internal {
 		/** @internal localized Master Guard scanner */					guard?: { test(str: string): boolean };
 		/** @internal localized Noise Word scanner */						ignorePattern?: RegExp;
 		/** @internal flag for localized parsing */							localize?: boolean;
-		/** @internal reverse-lookup map for localized parsing */localeMap?: Record<string, number>;
+		/** @internal reverse-lookup map for localized months */monthMap?: Record<string, { value: number; locale: string }>;
+		/** @internal reverse-lookup map for localized weekdays */weekdayMap?: Record<string, { value: number; locale: string }>;
 	}
 
 	/** drop the parse-only Options */

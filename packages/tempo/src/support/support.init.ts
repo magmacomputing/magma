@@ -156,8 +156,9 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 	let patternsDirty = false;
 
 	const clearLocalization = () => {
-		if (state.parse.localeMap) {
-			delete state.parse.localeMap;
+		if (state.parse.monthMap || state.parse.weekdayMap) {
+			delete state.parse.monthMap;
+			delete state.parse.weekdayMap;
 			state.parse.snippet[Token.mm as any] = Snippet[Token.mm as any];
 			state.parse.snippet[Token.wkd as any] = Snippet[Token.wkd as any];
 
@@ -230,10 +231,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'locale': {
-				const resolvedLocale = canonicalLocale(String(arg.value));
-				if (resolvedLocale) {
-					setProperty(state.config, 'locale', resolvedLocale);
-					if (resolvedLocale.split('-')[0] === 'en') clearLocalization();
+				const resolvedLocales = asArray(arg.value).map(l => canonicalLocale(String(l))).filter(Boolean) as string[];
+				if (resolvedLocales.length > 0) {
+					const finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
+					setProperty(state.config, 'locale', finalLocale);
+					if (resolvedLocales.length === 1 && resolvedLocales[0].split('-')[0] === 'en') clearLocalization();
 				}
 				break;
 			}
@@ -362,15 +364,18 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 	const locale = state.config.locale;
 	if (locale && state.parse.localize) {
-		const lang = locale.split('-')[0];
-		if (lang !== 'en') {
-			const { snippets, localeMap, events } = generateLocalizedSnippets(locale);
-			state.parse.localeMap = localeMap;
+		const locales = asArray(locale);
+		if (locales.length > 0 && !locales.every(l => l.split('-')[0] === 'en')) {
+			const { snippets, monthMap, weekdayMap, events } = generateLocalizedSnippets(locales);
+			state.parse.monthMap = monthMap;
+			state.parse.weekdayMap = weekdayMap;
 			Object.assign(state.parse.snippet, snippets);
 
 			// Map to exact lexer Tokens to override default layout placeholders
-			state.parse.snippet[Token.mm as any] = new RegExp(`(?<mm>[0 ]?[1-9]|1[0-2]|${snippets.mmm})`, 'i');
-			state.parse.snippet[Token.wkd as any] = new RegExp(`(?<wkd>${snippets.www})`, 'i');
+			const defaultMm = Snippet[Token.mm as any].source.replace(/^\(\?<mm>|\)$/g, '');
+			const defaultWkd = Snippet[Token.wkd as any].source.replace(/^\(\?<wkd>|\)$/g, '');
+			state.parse.snippet[Token.mm as any] = new RegExp(`(?<mm>${defaultMm}|${snippets.mmm})`, 'i');
+			state.parse.snippet[Token.wkd as any] = new RegExp(`(?<wkd>${defaultWkd}|${snippets.www})`, 'i');
 
 			if (!isEmpty(events)) {
 				Object.assign(state.parse.event, events);
