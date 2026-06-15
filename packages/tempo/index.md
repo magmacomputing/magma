@@ -6,7 +6,7 @@ layout: home
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { withBase } from 'vitepress'
 
-const logoUrl = withBase('/logo.svg')
+const logoUrl = withBase('/tempo-logo.svg')
 const getStartedUrl = withBase('/README')
 
 // --- Clock State ---

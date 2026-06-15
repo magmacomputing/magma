@@ -160,7 +160,7 @@ For detailed timing results and methodology, see [Performance Benchmarks](./temp
 Tempo maintains system-wide synchronization through a private, Symbol-based hook system.
 
 ### Reactive Registration
-When a plugin is imported via a side-effect (`import '@magmacomputing/tempo/ticker'`), it triggers a **`sym.$Register`** hook. 
+When a plugin is imported via a side-effect (`import '@magmacomputing/tempo/duration'`), it triggers a **`sym.$Register`** hook. 
 - **Auto-Sync**: The `Tempo` class listens for these hooks and automatically updates its internal registries.
 - **Guard Rebuild**: Every time a new Term or layout is registered, the **Master Guard** is automatically rebuilt to include the new tokens, ensuring the "Zero-Cost Constructor" always stays up to date.
 

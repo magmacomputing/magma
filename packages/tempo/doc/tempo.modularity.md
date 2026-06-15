@@ -24,8 +24,7 @@ import { MutateModule } from '@magmacomputing/tempo/mutate';
 import { ParseModule } from '@magmacomputing/tempo/parse';
 import { TermsModule } from '@magmacomputing/tempo/term';
 
-// and an optional ticker module (for reactive time pulsing)
-import { TickerModule } from '@magmacomputing/tempo/ticker';
+
 
 // Individual extension...
 Tempo.extend(DurationModule);
@@ -48,8 +47,7 @@ Adds support for the `.add()` and `.set()` instance methods, enabling time manip
 ### Parse Module (@magmacomputing/tempo/parse)
 Handles string parsing and token extraction. This is included automatically in the `full` package, but must be explicitly opted-in when using `core`.
 
-### Ticker Module (@magmacomputing/tempo/ticker)
-Adds support for reactive time-pulsing via the static `Tempo.ticker()` method.
+
 
 ### Terms Module (@magmacomputing/tempo/term)
 Adds support for semantic Terms like `quarter`, `season`, `zodiac`, and `period`. There are three ways to enable Terms:
@@ -103,7 +101,7 @@ export const MyModule = defineModule((TempoClass, options) => {
 There is a subtle but important distinction between how features are activated in Core mode:
 
 *   **`Tempo.extend(Module)`**: This is **Immediate and Explicit**. It applies the module to the class exactly when the line is executed. This is the recommended pattern for modular applications.
-*   **`Tempo.init()`**: This is **Discovery-Driven**. It scans the global environment for any plugins that were imported via side effects (e.g., `import '@magmacomputing/tempo/ticker'`) and hydrates the engine all at once.
+*   **`Tempo.init()`**: This is **Discovery-Driven**. It scans the global environment for any plugins that were imported via side effects (e.g., `import '@magmacomputing/tempo/term'`) and hydrates the engine all at once.
 
 ::: danger
 **The Initialization Lifecycle**: `Tempo.init()` performs a **full state refresh**. It resets configuration, Term registries, and formatting maps to defaults before re-applying all currently discovered plugins. To ensure your custom logic is managed correctly, always use `Tempo.extend()` or encapsulate changes within a formal plugin.

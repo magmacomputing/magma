@@ -8,7 +8,16 @@ The `TickerModule` has been extracted from the core open-source repository into 
 
 **Action Required**:
 1. If you use `Tempo.ticker()`, you must now install `@magmacomputing/tempo-plugin-ticker` alongside `@magmacomputing/tempo`.
-2. Visit the [Tempo License Registry](https://registry.magmacomputing.com.au) to obtain your free license key to activate the plugin.
+2. **Activate your License**: Obtain your free JWT license key.
+   <div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
+     <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
+       <img src="https://registry.magmacomputing.com.au/registry-logo.svg" width="48" height="48" alt="Tempo License Registry" style="margin: 0;" />
+     </a>
+     <div>
+       <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
+       Manage your subscriptions and retrieve your license key.
+     </div>
+   </div>
 3. Import and register the plugin in your application initialization:
    ```javascript
    import { Tempo } from '@magmacomputing/tempo';

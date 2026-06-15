@@ -17,8 +17,11 @@ export default defineConfig({
   markdown: {
     math: true
   },
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/magma/tempo-logo.svg' }]
+  ],
   themeConfig: {
-    logo: '/logo.svg',
+    logo: '/tempo-logo.svg',
     search: {
       provider: 'local'
     },

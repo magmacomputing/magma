@@ -2,7 +2,7 @@
   <tbody>
     <tr>
       <td width="100" valign="top">
-        <img src="./img/logo.svg" width="90" height="90" alt="Tempo Logo">
+        <img src="./img/tempo-logo.svg" width="90" height="90" alt="Tempo Logo">
       </td>
       <td valign="middle">
         <h1 style="border-bottom: none; margin-bottom: 0;">Tempo</h1>
@@ -95,6 +95,7 @@ For standard usage natively in the browser, use the pre-optimized **Global ESM B
 
 ## ✨ Why Tempo?
 *   **🏗️ Future Standard**: Built natively on the TC39 `Temporal` proposal. Inherit the reliability of the future standard.
+*   **🌍 Zero-Bundle Localization**: Best-in-class multi-language parsing and formatting powered natively by the `Intl` API—no massive static locale dictionaries required.
 *   **🗣️ Natural Language**: Resolve complex terms like "two days ago" with zero configuration.
 *   **🧠 Functional Aliases**: Extend the parser with custom logic using a powerful resolution context for relative date math.
 *   **🔄 Cycle Persistence**: Shift by semantic terms (Quarters, Seasons) while preserving your relative day-of-period offset.

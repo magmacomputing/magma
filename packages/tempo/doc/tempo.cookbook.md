@@ -290,6 +290,60 @@ Tempo.addTerm({
 ```
 *Note: A user's Global `locales` config will always take precedence over a plugin's bundled dictionary.*
 
+#### Complex Native Intl Formatting
+
+While Tempo's template tokens (`{dd}`, `{mon}`, etc.) combined with the `:locale` modifier are incredibly powerful for structured formats, there are times when you want the full power of the native `Intl.DateTimeFormat` API for complete, culturally-specific sentence formatting (like Arabic numerals or full-length descriptive dates). 
+
+Because Tempo's philosophy is to "humanize" the rigid `Temporal` API, you can pass an `Intl.DateTimeFormatOptions` object *directly* into the `.format()` method. Tempo will automatically align the internal timezone and calendar constraints for you, bypassing the strict `RangeError` and `TypeError` exceptions that the native spec normally throws.
+
+**Tempo vs Temporal (Side-by-Side):**
+
+```typescript
+const arabicConfig = {
+  locale: 'ar-EG',
+  timeZone: 'Africa/Cairo',
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  numberingSystem: 'arab'
+}
+
+// 🔴 Native Temporal (Strict & Verbose)
+// 1. You must carefully parse the date using the correct Temporal factory.
+// 2. You must manually shift the timezone before formatting, or it throws an exception!
+const nativeStr = Temporal.PlainDateTime
+  .from('2024-12-25T14:30:00')
+  .toZonedDateTime('UTC')
+  .withTimeZone('Africa/Cairo')
+  .toLocaleString('ar-EG', arabicConfig);
+
+// 🟢 Tempo (Humanized)
+// Automatically handles the parsing, shifts constraints, and safely delegates to Intl!
+const tempoStr = new Tempo('2024-12-25 14:30')
+  .format(arabicConfig);
+
+console.log(tempoStr); // "الأربعاء، ٢٥ ديسمبر ٢٠٢٤"
+```
+
+```typescript
+// Example: Japanese Reiwa Era formatting
+const t = new Tempo('2024-12-25 14:30');
+
+const japaneseConfig = {
+  locale: 'ja-JP-u-ca-japanese',
+  timeZone: 'Asia/Tokyo',
+  calendar: 'japanese',
+  era: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+}
+
+console.log(t.format(japaneseConfig));
+// Output: "令和6年12月25日"
+```
+
 ---
 
 ::: info
@@ -299,6 +353,16 @@ The examples below use the `using` and `await using` syntax, which require **Typ
 ### ⚠️ Ticker Plugin Initialization
 
 The Ticker engine is a premium feature. Before using `Tempo.ticker()` in the examples below, you must import the plugin, initialize Tempo with your valid license, and extend it with the `TickerModule`.
+
+<div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
+  <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
+    <img src="https://registry.magmacomputing.com.au/registry-logo.svg" width="48" height="48" alt="Tempo License Registry" style="margin: 0;" />
+  </a>
+  <div>
+    <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
+    Manage your subscriptions and retrieve your license key.
+  </div>
+</div>
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';

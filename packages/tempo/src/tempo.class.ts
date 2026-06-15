@@ -60,6 +60,7 @@ namespace Internal {
 	export type Fmt = {																					// used for the fmtTempo() shortcut
 		<F extends string>(fmt: F, tempo?: t.DateTime, options?: t.Options): t.FormatType<F>;
 		<F extends string>(fmt: F, options: t.Options): t.FormatType<F>;
+		(options: Intl.DateTimeFormatOptions & { timeZone?: string; calendar?: string }): string;
 	}
 }
 

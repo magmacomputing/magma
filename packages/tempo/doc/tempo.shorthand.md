@@ -7,7 +7,7 @@ The Tempo Shorthand Engine (the "Slick" engine) provides a powerful, namespace-b
 Shorthand behavior changes depending on whether you provide a **String**, an **Object**, or a **Structural Key**.
 
 ### A. Navigation Mode (String Shorthand)
-**Used in:** `.set()`, `.add()`, `.until()`, `.since()`, and the Ticker.  
+**Used in:** `.set()`, `.add()`, `.until()`, and `.since()`.  
 **Pattern:** `#[namespace].[modifier][repeat][range]`  
 **Best for:** Jumping to specific boundaries (e.g., "the start of the next Q1").
 

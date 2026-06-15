@@ -189,9 +189,9 @@ export type NumericPattern = typeof NumericPattern[number]
 export type OwnFormat = Mutable<OwnOf<typeof FORMAT>>
 
 /** mapping of format names to instance-resolutions (string | number) */
-export type FormatType<K extends PropertyKey> = K extends keyof OwnFormat
+export type FormatType<K extends PropertyKey> = K extends '{nano}' ? bigint : K extends keyof OwnFormat
 	? (OwnFormat[K] extends NumericPattern ? number : string)
-	: K extends NumericPattern ? number : string | number;
+	: K extends NumericPattern ? number : string | number | bigint;
 
 /** mapping of format names to instance-resolutions (string | number) */
 export type Formats = {
