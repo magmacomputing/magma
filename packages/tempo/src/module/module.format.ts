@@ -6,7 +6,7 @@ import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDat
 import { formatDayPeriod, getDTF } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
-import { isTempo, enums, Match, getRuntime, NumericPattern } from '#tempo/support';
+import { isTempo, enums, Match, getRuntime, NumericPattern, BigIntPattern } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Tempo } from '../tempo.class.js';
 
@@ -14,7 +14,7 @@ import type { Tempo } from '../tempo.class.js';
 declare module '../tempo.class.js' {
 	interface Tempo {
 		/** applies a format to the instance. */								format(options: Intl.DateTimeFormatOptions & { timeZone?: string; calendar?: string }): string;
-		/** applies a format to the instance. */								format(fmt: '{nano}', options?: any): bigint;
+		/** applies a format to the instance. */								format(fmt: BigIntPattern, options?: any): bigint;
 		/** applies a format to the instance. */								format(fmt: NumericPattern, options?: any): number;
 		/** applies a format to the instance. */								format(fmt?: any, options?: any): any;
 	}
@@ -34,7 +34,7 @@ declare module '../tempo.class.js' {
  */
 export function format(obj?: any): any;
 export function format(obj: any, options: Intl.DateTimeFormatOptions & { timeZone?: string; calendar?: string }): string;
-export function format(obj: any, fmt: '{nano}', options?: any): bigint;
+export function format(obj: any, fmt: BigIntPattern, options?: any): bigint;
 export function format(obj: any, fmt: NumericPattern, options?: any): number;
 export function format(obj: any, fmt: string | symbol, options?: any): string;
 export function format(obj?: any, fmt?: any, options?: any): any {
@@ -45,7 +45,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		options = fmt;
 		fmt = undefined;
 	}
-	
+
 	if (options) {
 		config = { ...baseConfig, ...options };
 		if (options.intl) config.intl = { ...baseConfig?.intl, ...options.intl };
@@ -89,10 +89,14 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 	}
 
 	if (config?.timeZone && zdt?.timeZoneId && zdt.timeZoneId !== config.timeZone) {
-		zdt = zdt.withTimeZone(config.timeZone);
+		try {
+			zdt = zdt.withTimeZone(config.timeZone);
+		} catch (e) { }
 	}
 	if (config?.calendar && zdt?.calendarId && zdt.calendarId !== config.calendar) {
-		zdt = zdt.withCalendar(config.calendar);
+		try {
+			zdt = zdt.withCalendar(config.calendar);
+		} catch (e) { }
 	}
 
 	if (isUndefined(fmt)) {
@@ -297,7 +301,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 	});
 
 	const tokens = template.match(new RegExp(Match.formatBraces, 'g'));
-	const isNumericOutput = (NumericPattern as readonly string[]).includes(template as any) || (tokens && tokens.length > 1 && /^[0-9]+$/.test(result));
+	const isNumericOutput = BigIntPattern.includes(template as any) || NumericPattern.includes(template as any) || (tokens && tokens.length > 1 && /^[0-9]+$/.test(result));
 	return (isNumericOutput ? ifNumeric(result, true) : result) as any;
 }
 

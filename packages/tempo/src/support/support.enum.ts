@@ -185,11 +185,15 @@ export type Format = LooseUnion<KeyOf<typeof FORMAT> & string>
 export const NumericPattern = ['{yyyy}{ww}', '{yyyy}{mm}', '{yyyy}{mm}{dd}', '{yyww}', '{yw}{ww}', '{yw}', '{ymd}', '{ymd6}'] as const;
 export type NumericPattern = typeof NumericPattern[number]
 
+/** patterns that return a bigint */
+export const BigIntPattern = ['{nano}'] as const;
+export type BigIntPattern = typeof BigIntPattern[number]
+
 /** pre-configured format strings */
 export type OwnFormat = Mutable<OwnOf<typeof FORMAT>>
 
 /** mapping of format names to instance-resolutions (string | number) */
-export type FormatType<K extends PropertyKey> = K extends '{nano}' ? bigint : K extends keyof OwnFormat
+export type FormatType<K extends PropertyKey> = K extends BigIntPattern ? bigint : K extends keyof OwnFormat
 	? (OwnFormat[K] extends NumericPattern ? number : string)
 	: K extends NumericPattern ? number : string | number | bigint;
 

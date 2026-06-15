@@ -34,12 +34,37 @@ describe(`${label} format method`, () => {
 
   test('formats with pre-defined full names', () => {
     const t = new Tempo('2024-05-20');
-    // mon/mmm are for month names. wkd/www are for weekday names.
-    // In current implementation:
-    // mon -> short (May), mmm -> short (May) [actually both same for May]
-    // wkd -> short (Mon), www -> short (Mon)
     expect(t.format('{mmm}')).toBe('May');
     expect(t.format('{www}')).toBe('Mon');
+  });
+
+  test('formats {nano} as a BigInt', () => {
+    const t = new Tempo('2024-05-20');
+    const nano = t.format('{nano}');
+    expect(typeof nano).toBe('bigint');
+    expect(nano).toBeGreaterThan(0n);
+  });
+
+  test('delegates format(options) directly to native Intl and handles strict Temporal bounds', () => {
+    const t = new Tempo('2024-12-25 14:30');
+    
+    const arabicConfig = {
+      locale: 'ar-EG',
+      timeZone: 'Africa/Cairo',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      numberingSystem: 'arab'
+    };
+
+    // The format module should extract locale, shift the ZonedDateTime, and gracefully
+    // fallback or pass through the options without crashing on the Temporal timeZone mismatch constraint.
+    const result = t.format(arabicConfig);
+    
+    // Check that it's a non-empty string and contains expected formatting (checking roughly for Arabic string content)
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(5);
   });
 
 });

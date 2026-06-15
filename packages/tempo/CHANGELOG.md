@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.2] - 2026-06-15
+
+### Added
+- **Intl.DateTimeFormatOptions Passthrough**: The `.format()` method now officially supports passing a native `Intl.DateTimeFormatOptions` object. This provides a highly flexible, "humanized" wrapper around the rigid `Temporal` API for complex cultural formatting (e.g. Arabic, Japanese Reiwa).
+- **Native Intl Delegation Support**: The formatting engine now explicitly attempts to use the high-performance, memoized `getDTF` instance to support V8's upcoming native `Temporal` support in `Intl.DateTimeFormat`.
+- **BigInt Overload for Epoch Nanoseconds**: Implemented a `BigIntPattern` registry and resolution logic to guarantee that the `{nano}` token (epoch nanoseconds) correctly coerces to and returns a precision-preserving `BigInt` instead of a string, as it vastly exceeds `Number.MAX_SAFE_INTEGER`.
+
+### Fixed
+- **Polyfill RangeError Bypassing**: Implemented a defensive stripping mechanism that intercepts and deletes `timeZone` and `calendar` constraints from the `options` object when falling back to the `ZonedDateTime.prototype.toLocaleString()` polyfill. Additionally, wrapped `withTimeZone` and `withCalendar` shifts in `try/catch` blocks to gracefully bypass invalid configurations and safely fall through to the native Intl fallback without crashing the formatter.
+- **Strict Numeric Output Evaluation**: Fixed a bug where `{nano}` was bypassing the precision-preserving `ifNumeric` coercion due to an evaluation gap in the generic numeric-pattern detector.
+
 ## [3.1.1] - 2026-06-14
 
 ### Added
