@@ -235,7 +235,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				if (resolvedLocales.length > 0) {
 					const finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
 					setProperty(state.config, 'locale', finalLocale);
-					if (resolvedLocales.length === 1 && resolvedLocales[0].split('-')[0] === 'en') clearLocalization();
+					if (resolvedLocales.every(locale => locale.split('-')[0] === 'en')) clearLocalization();
 				}
 				break;
 			}
@@ -393,6 +393,8 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				}
 			}
 			patternsDirty = true;
+		} else if (locales.length > 0) {
+			clearLocalization();
 		}
 	}
 
