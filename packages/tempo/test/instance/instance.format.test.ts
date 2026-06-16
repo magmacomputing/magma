@@ -46,7 +46,7 @@ describe(`${label} format method`, () => {
   });
 
   test('delegates format(options) directly to native Intl and handles strict Temporal bounds', () => {
-    const t = new Tempo('2024-12-25 14:30');
+    const t = new Tempo('2024-12-25T14:30:00Z');
     
     const arabicConfig = {
       locale: 'ar-EG',
@@ -65,7 +65,7 @@ describe(`${label} format method`, () => {
   });
 
   test('delegates format(options) directly to native Intl for Japanese Reiwa era formatting', () => {
-    const t = new Tempo('2024-12-25 14:30');
+    const t = new Tempo('2024-12-25T14:30:00Z');
     
     const japaneseConfig = {
       locale: 'ja-JP-u-ca-japanese',

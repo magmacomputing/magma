@@ -368,29 +368,20 @@ Tempo.init({ license: 'YOUR_JWT_LICENSE_HERE' });
 Tempo.extend(TickerModule);
 ```
 
-### Subscription Billing (Recurring Payments)
-Use a `seed` to anchor your subscription to a specific day, then use a month-based Ticker.
+### Interval-Based Ticker (Recurring Billing)
+Use a `seed` to anchor your ticker to a specific day, then use a month-based interval:
 
 ```typescript
-// Anchor to the 15th of the month
 await using billing = Tempo.ticker({ 
   months: 1, 
   seed: '2024-01-15' 
 }, (t) => processPayment(t));
-
-// -- OR --
-
-// Manual alternative for environments without 'await using' support:
-const billing = Tempo.ticker({ months: 1, seed: '2024-01-15' }, (t) => processPayment(t));
-// ... later ...
-await billing[Symbol.asyncDispose](); // Explicitly clean up resources
 ```
 
-### Fiscal Quarter Reporting
-Drive internal reporting cycles precisely when a new quarter begins.
+### Term-Driven Ticker (Fiscal Quarter Reporting)
+Drive internal reporting cycles precisely when a new quarter begins:
 
 ```typescript
-// Shift automatically to the start of the current quarter
 await using quarterly = Tempo.ticker({ '#quarter': 1 });
 
 for await (const t of quarterly) {
@@ -398,34 +389,7 @@ for await (const t of quarterly) {
 }
 ```
 
-### Daily Shift Management
-Automatically update a UI when a daily time period (e.g., 'morning' or 'afternoon') changes.
-
-```typescript
-using shiftTicker = Tempo.ticker({ '#timeOfDay': 1 }, (t) => {
-  document.body.className = `shift-${t.term.tod}`;
-});
-
-using dailyTicker = Tempo.ticker({ '#timeOfDay': 'morning' }, (t) => {
-  document.body.className = `morning-has-broken`;
-});
-```
-
-### Manual Sync (Action-Triggered)
-Sometimes you want a Ticker's logic but need to trigger it from an external event.
-
-```typescript
-const heartbeat = Tempo.ticker({ seconds: 5 });
-
-// Manually trigger a pulse from a UI button or WebSocket
-button.onclick = () => {
-  const t = heartbeat.pulse();
-  console.log(`Manual pulse triggered at: ${t}`);
-};
-
-// Ensure cleanup on page unload or component unmount
-window.onunload = () => heartbeat.stop();
-```
+*The Ticker plugin supports many more patterns including manual sync, daily shift management, and explicit resource disposal. See the [Ticker Plugin Documentation](https://magmacomputing.github.io/tempo-plugin-docs/ticker/) for full capability details.*
 
 ---
 
