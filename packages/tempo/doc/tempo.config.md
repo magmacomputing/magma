@@ -239,7 +239,7 @@ const t = new Tempo('now', { mode: 'defer' });
 console.log(t.format('{yyyy}')); // Discovery triggers NOW, only once.
 ```
 
-When initialized this way, no registries are built upfront. The constructor returns in $O(1)$ time.
+When initialized this way, no registries are built upfront. The constructor returns in `O(1)` time.
 
 ::: tip
 **Zero-Cost Constructor**: Combining the **Master Guard** (automatic) and the **`defer`** mode allows Tempo to satisfy the "Zero-Cost Constructor" requirement for mass-processing applications.
