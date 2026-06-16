@@ -11,7 +11,7 @@ describe('Tempo Infinite Loop Protection', () => {
       loopA: 'loopB',
       loopB: 'loopA'
     }
-    const t = new Tempo('loopA', { event, catch: true })
+    const t = new Tempo('loopA', { registry: { events: event }, catch: true })
 
     expect(t.toString()).toBe('loopA')
     expect(console.error).toHaveBeenCalled();
@@ -24,7 +24,7 @@ describe('Tempo Infinite Loop Protection', () => {
       event[`step${i}`] = `step${i + 1}`
     }
 
-    const t = new Tempo('step0', { event, catch: true })
+    const t = new Tempo('step0', { registry: { events: event }, catch: true })
     expect(t.toString()).toBe('step0')
     expect(console.error).toHaveBeenCalled();
   })

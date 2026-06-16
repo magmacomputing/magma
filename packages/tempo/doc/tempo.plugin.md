@@ -1,4 +1,4 @@
-# Extending Tempo with Plugin
+# Extending Tempo with Plugins
 
 Tempo is designed with a "lean core" philosophy. Whilst it provides robust date-time manipulation and parsing out of the box, advanced functionality (like reactive Tickers or domain-specific business logic) is added through a flexible **Plugin System**.
 
@@ -34,7 +34,7 @@ export const MyPlugin = defineExtension({
   // 2. Add an instance method (on the prototype)
   TempoClass.prototype.toHoliday = function() {
     return factory(this.add({ days: 1 }));
-  };
+  }
 });
 ```
 
@@ -85,11 +85,25 @@ declare module '@magmacomputing/tempo/core' {
 
 Modern Tempo plugin are designed to be "plug-and-play." By using the `defineExtension` factory, a plugin registers itself with the global Tempo registry as soon as it's imported.
 
+::: warning
+**Premium Plugin Example**: The example below uses the `@magmacomputing/tempo-plugin-ticker` plugin, which is a commercial extension. You must provide a valid `license` key during initialization to activate it.
+
+<div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
+  <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
+    <img src="https://registry.magmacomputing.com.au/registry-logo.svg" width="48" height="48" alt="Tempo License Registry" style="margin: 0;" />
+  </a>
+  <div>
+    <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
+    Manage your subscriptions and retrieve your license key.
+  </div>
+</div>
+:::
+
 ```typescript
-import '@magmacomputing/tempo/ticker';                // 1. Module self-registers via side-effect
+import '@magmacomputing/tempo-plugin-ticker';         // 1. Module self-registers via side-effect
 import { Tempo } from '@magmacomputing/tempo/core';   // 2. Load the `lite` engine
 
-Tempo.init();                                         // 3. Discover and activate all imported plugin
+Tempo.init({ license: 'YOUR_JWT_KEY' });              // 3. Discover, verify, and activate all imported plugin
 
 // Ticker is now available on the core Tempo class!
 const pulse = Tempo.ticker(1); 
@@ -119,7 +133,7 @@ Instead, use **`Tempo.extend()`** to add new data. This is the only supported wa
 ```typescript
 Tempo.extend({
   timeZones: { 'UTC+13': 'Pacific/Auckland' },
-  formats: { 'myCode': '{yy}{mm}{dd}' }
+  registry: { formats: { 'myCode': '{yy}{mm}{dd}' } }
 });
 ```
 

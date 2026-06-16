@@ -12,20 +12,20 @@ describe('Localized Parsing', () => {
 	});
 
 	it('should parse French months correctly when localized parsing is enabled', () => {
-		const t = new Tempo('15 janv. 2024', { locale: 'fr-FR', localize: true });
+		const t = new Tempo('15 janv. 2024', { locale: 'fr-FR' });
 
 		expect(t.isValid).toBe(true);
 		expect(t.mm).toBe(1);
 		expect(t.dd).toBe(15);
 		expect(t.yy).toBe(2024);
 
-		const t2 = new Tempo('15 février 2024', { locale: 'fr-FR', localize: true });
+		const t2 = new Tempo('15 février 2024', { locale: 'fr-FR' });
 		expect(t2.isValid).toBe(true);
 		expect(t2.mm).toBe(2);
 	});
 
 	it('should parse French months without trailing punctuation', () => {
-		const t = new Tempo('15 janv 2024', { locale: 'fr-FR', localize: true });
+		const t = new Tempo('15 janv 2024', { locale: 'fr-FR' });
 		expect(t.isValid).toBe(true);
 		expect(t.mm).toBe(1);
 	});
@@ -33,31 +33,49 @@ describe('Localized Parsing', () => {
 	it('should parse French weekdays correctly', () => {
 		// 15 Jan 2024 is a Monday (lundi)
 		// We expect parsing "mercredi" (Wednesday) without a date to resolve to the current week's Wednesday.
-		const t = new Tempo('mercredi', { locale: 'fr-FR', localize: true, anchor: '2024-01-15T12:00:00+00:00[UTC]' });
+		const t = new Tempo('mercredi', { locale: 'fr-FR', anchor: '2024-01-15T12:00:00+00:00[UTC]' });
 		expect(t.isValid).toBe(true);
 		expect(t.dow).toBe(3); // Wednesday
 	});
 
 	it('should parse French relative events (yesterday, today, tomorrow)', () => {
-		const t1 = new Tempo('hier', { locale: 'fr-FR', localize: true, anchor: '2024-01-15T12:00:00+00:00[UTC]' });
+		const t1 = new Tempo('hier', { locale: 'fr-FR', anchor: '2024-01-15T12:00:00+00:00[UTC]' });
 		expect(t1.isValid).toBe(true);
 		expect(t1.day).toBe(14);
 
-		const t2 = new Tempo("aujourd’hui", { locale: 'fr-FR', localize: true, anchor: '2024-01-15T12:00:00+00:00[UTC]' });
+		const t2 = new Tempo("aujourd’hui", { locale: 'fr-FR', anchor: '2024-01-15T12:00:00+00:00[UTC]' });
 		expect(t2.isValid).toBe(true);
 		const currentDay = Temporal.Now.zonedDateTimeISO('UTC').day;
 		expect(t2.day).toBe(currentDay);
 
-		const t3 = new Tempo('demain', { locale: 'fr-FR', localize: true, anchor: '2024-01-15T12:00:00+00:00[UTC]' });
+		const t3 = new Tempo('demain', { locale: 'fr-FR', anchor: '2024-01-15T12:00:00+00:00[UTC]' });
 		expect(t3.isValid).toBe(true);
 		expect(t3.day).toBe(16);
 	});
 
-	it('should NOT parse French dates if localize is false (default)', () => {
-		expect(() => new Tempo('15 janv. 2024', { locale: 'fr-FR' })).toThrow();
+	it('should preserve English dates even if localized parsing is active for French', () => {
+		const t = new Tempo('15 January 2024', { locale: 'fr-FR' });
+		expect(t.isValid).toBe(true);
+		expect(t.mm).toBe(1);
 	});
 
-	it('should fail to parse English dates if localized parsing is active for French', () => {
-		expect(() => new Tempo('15 January 2024', { locale: 'fr-FR', localize: true })).toThrow();
+	it('should parse both French and Spanish dates when an array of locales is provided', () => {
+		const t1 = new Tempo('15 février 2024', { locale: ['fr-FR', 'es-ES'] });
+		expect(t1.isValid).toBe(true);
+		expect(t1.mm).toBe(2);
+
+		const t2 = new Tempo('15 febrero 2024', { locale: ['fr-FR', 'es-ES'] });
+		expect(t2.isValid).toBe(true);
+		expect(t2.mm).toBe(2);
+	});
+
+	it('should parse English dates when en-US is included in the locale array', () => {
+		const t1 = new Tempo('15 January 2024', { locale: ['fr-FR', 'en-US'] });
+		expect(t1.isValid).toBe(true);
+		expect(t1.mm).toBe(1);
+		
+		const t2 = new Tempo('15 janvier 2024', { locale: ['fr-FR', 'en-US'] });
+		expect(t2.isValid).toBe(true);
+		expect(t2.mm).toBe(1);
 	});
 });

@@ -2,8 +2,13 @@ import { defineConfig } from 'vitepress'
 import { fileURLToPath } from 'node:url'
 import { Temporal } from '@js-temporal/polyfill'
 
-if (!(globalThis as any).Temporal) {
-  (globalThis as any).Temporal = Temporal;
+if (typeof (globalThis as any).Temporal === 'undefined') {
+  Object.defineProperty(globalThis, 'Temporal', {
+    value: Temporal,
+    enumerable: false,
+    configurable: true,
+    writable: true,
+  });
 }
 
 import typedocSidebar from '../doc/api/typedoc-sidebar.json'
@@ -14,11 +19,11 @@ export default defineConfig({
   description: "The Professional Date-Time Library for Temporal",
   srcDir: '.',
   srcExclude: ['**/plan/**', '**/archive/**', '**/bench/**', '**/scratch/**', 'CHANGELOG.md'],
-  markdown: {
-    math: true
-  },
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/magma/tempo-logo.svg' }]
+  ],
   themeConfig: {
-    logo: '/logo.svg',
+    logo: '/tempo-logo.svg',
     search: {
       provider: 'local'
     },
@@ -63,6 +68,7 @@ export default defineConfig({
         items: [
           { text: 'API Overview', link: '/doc/api/' },
           { text: 'Technical Reference', link: typedocSidebar[0].items[0].link },
+          { text: 'The Role of Locale', link: '/doc/tempo.locale' },
           { text: 'Shorthand Engine', link: '/doc/tempo.shorthand' },
           { text: 'Weekday Engine', link: '/doc/tempo.weekday' },
           { text: 'Debugging', link: '/doc/tempo.debugging' }
@@ -115,7 +121,8 @@ export default defineConfig({
   },
   vite: {
     build: {
-      target: 'es2022'
+      target: 'es2022',
+      chunkSizeWarningLimit: 2000
     },
     esbuild: {
       target: 'esnext'

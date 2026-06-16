@@ -38,7 +38,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	if (baseState) {
 		state.config = Object.create(baseState.config);
 		if (baseState.config.registry) state.config.registry = Object.create(baseState.config.registry);
-		if (baseState.config.format) state.config.format = Object.create(baseState.config.format);
+
 		state.parse = Object.create(baseState.parse);
 		state.userProvidedKeys = new Set(baseState.userProvidedKeys);
 		state.installed = new ScopedSet(runtime.installed);	// sandbox: delegates has() to global, isolates add()
@@ -108,7 +108,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	} else if (baseState) {
 		state.config = markConfig(Object.create(baseState.config));
 		if (baseState.config.registry) state.config.registry = Object.create(baseState.config.registry);
-		if (baseState.config.format) state.config.format = Object.create(baseState.config.format);
+
 		state.parse = Object.create(baseState.parse);
 		setProperties(state.config, {
 			scope: 'local',
@@ -156,8 +156,9 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 	let patternsDirty = false;
 
 	const clearLocalization = () => {
-		if (state.parse.localeMap) {
-			delete state.parse.localeMap;
+		if (state.parse.monthMap || state.parse.weekdayMap) {
+			delete state.parse.monthMap;
+			delete state.parse.weekdayMap;
 			state.parse.snippet[Token.mm as any] = Snippet[Token.mm as any];
 			state.parse.snippet[Token.wkd as any] = Snippet[Token.wkd as any];
 
@@ -178,42 +179,6 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 		const arg = asType(optVal);
 
 		switch (optKey) {
-			case 'snippet':
-			case 'layout':
-			case 'event':
-			case 'period':
-			case 'ignore': {
-				patternsDirty = true;
-				if (!hasOwn(state.parse, optKey))
-					state.parse[optKey] = create(state.parse, optKey);
-
-				const rule = state.parse[optKey];
-				if (['snippet', 'layout'].includes(optKey)) {
-					collect(rule, arg.value, (v: any) => {
-						if (optKey === 'snippet') {
-							const pattern = isRegExp(v) ? v.source : String(v);
-							// 🛡️ Security Check: Prevent catastrophic backtracking and malicious patterns
-							if (pattern.length > 500) {
-								logError(`[Tempo#extend] Snippet pattern too long (max 500 chars).`, state.config);
-								return new RegExp(Match.escape(pattern));
-							}
-							if (Match.backtrack.test(pattern)) {
-								logError(`[Tempo#extend] Snippet contains suspicious nested quantifiers.`, state.config);
-								return new RegExp(Match.escape(pattern));
-							}
-							return new RegExp(pattern);
-						}
-						return isRegExp(v) ? v.source : v;
-					});
-				} else {
-					asArray(arg.value).forEach(elm => {
-						if (isObject(elm)) Object.assign(rule, elm);
-						else if (isString(elm)) Object.assign(rule, { [elm]: elm });
-					})
-				}
-				break;
-			}
-
 			case 'monthDay':
 				state.parse.monthDay = resolveMonthDay(arg.value, state.parse.monthDay);
 				break;
@@ -230,34 +195,14 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'locale': {
-				const resolvedLocale = canonicalLocale(String(arg.value));
-				if (resolvedLocale) {
-					setProperty(state.config, 'locale', resolvedLocale);
-					if (resolvedLocale.split('-')[0] === 'en') clearLocalization();
+				const resolvedLocales = asArray(arg.value).map(l => canonicalLocale(String(l))).filter(Boolean) as string[];
+				if (resolvedLocales.length > 0) {
+					const finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
+					setProperty(state.config, 'locale', finalLocale);
+					if (resolvedLocales.every(locale => locale.split('-')[0] === 'en')) clearLocalization();
 				}
 				break;
 			}
-
-			case 'format':
-				if (isObject(arg.value)) state.config.format = { ...(state.config.format || {}), ...arg.value };
-				break;
-
-			case 'parse':
-				if (isObject(arg.value)) {
-					Object.assign(state.parse, arg.value);
-					if (!isObject(state.config.parse)) setProperty(state.config, 'parse', {});
-					Object.assign(state.config.parse, arg.value);
-				}
-				break;
-
-			case 'localize':
-				if (!isObject(state.config.format)) setProperty(state.config, 'format', {});
-				state.config.format!.localize = Boolean(arg.value);
-				if (!isObject(state.config.parse)) setProperty(state.config, 'parse', {});
-				state.config.parse!.localize = Boolean(arg.value);
-				state.parse.localize = Boolean(arg.value);
-				if (!state.parse.localize) clearLocalization();
-				break;
 
 			case 'discovery':
 				setProperty(state.config, 'discovery', arg.value);
@@ -274,24 +219,53 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						if ((state.config.registry.locales as any)?.extend) state.config.registry.locales = (state.config.registry.locales as any).extend(arg.value.locales);
 						else setProperty(state.config.registry, 'locales', arg.value.locales);
 					}
-				}
-				break;
 
-			case 'formats':
-				if (!state.config.registry) state.config.registry = {} as any;
-				if (state.config.registry.formats?.extend) {
-					state.config.registry.formats = state.config.registry.formats.extend(arg.value) as t.FormatRegistry;
-				} else {
-					setProperty(state.config.registry, 'formats', arg.value);
-				}
-				break;
+					const parseMap: Record<string, 'snippet' | 'layout' | 'event' | 'period' | 'ignore'> = {
+						snippets: 'snippet',
+						layouts: 'layout',
+						events: 'event',
+						periods: 'period',
+						ignores: 'ignore'
+					};
 
-			case 'locales':
-				if (!state.config.registry) state.config.registry = {} as any;
-				if ((state.config.registry.locales as any)?.extend) {
-					state.config.registry.locales = (state.config.registry.locales as any).extend(arg.value);
-				} else {
-					setProperty(state.config.registry, 'locales', arg.value);
+					ownEntries(arg.value).forEach(([k, v]) => {
+						if (isString(k) && k in parseMap) {
+							const targetKey = parseMap[k];
+							state.userProvidedKeys.add(targetKey);
+							patternsDirty = true;
+							if (!hasOwn(state.parse, targetKey))
+								state.parse[targetKey] = create(state.parse, targetKey);
+
+							const rule = state.parse[targetKey];
+							if (['snippet', 'layout'].includes(targetKey)) {
+								collect(rule, v, (val: any) => {
+									if (targetKey === 'snippet') {
+										// ReDoS Mitigation: Snippet patterns should be kept as simple as possible.
+										// While length limits and backtrack detection offer baseline protection, 
+										// residual risk remains from crafted patterns that evade these checks.
+										// If snippets are ever sourced from untrusted configuration inputs, consider
+										// implementing a timeout wrapper around the RegExp constructor call for defense-in-depth.
+										const pattern = isRegExp(val) ? val.source : String(val);
+										if (pattern.length > 500) {
+											logError(`[Tempo#extend] Snippet pattern too long (max 500 chars).`, state.config);
+											return new RegExp(Match.escape(pattern));
+										}
+										if (Match.backtrack.test(pattern)) {
+											logError(`[Tempo#extend] Snippet contains suspicious nested quantifiers.`, state.config);
+											return new RegExp(Match.escape(pattern));
+										}
+										return new RegExp(pattern);
+									}
+									return isRegExp(val) ? val.source : val;
+								});
+							} else {
+								asArray(v).forEach(elm => {
+									if (isObject(elm)) Object.assign(rule, elm);
+									else if (isString(elm)) Object.assign(rule, { [elm]: elm });
+								});
+							}
+						}
+					});
 				}
 				break;
 
@@ -361,16 +335,19 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 	});
 
 	const locale = state.config.locale;
-	if (locale && state.parse.localize) {
-		const lang = locale.split('-')[0];
-		if (lang !== 'en') {
-			const { snippets, localeMap, events } = generateLocalizedSnippets(locale);
-			state.parse.localeMap = localeMap;
+	if (locale) {
+		const locales = asArray(locale);
+		if (locales.length > 0 && !locales.every(l => l.split('-')[0] === 'en')) {
+			const { snippets, monthMap, weekdayMap, events } = generateLocalizedSnippets(locales);
+			state.parse.monthMap = monthMap;
+			state.parse.weekdayMap = weekdayMap;
 			Object.assign(state.parse.snippet, snippets);
 
 			// Map to exact lexer Tokens to override default layout placeholders
-			state.parse.snippet[Token.mm as any] = new RegExp(`(?<mm>[0 ]?[1-9]|1[0-2]|${snippets.mmm})`, 'i');
-			state.parse.snippet[Token.wkd as any] = new RegExp(`(?<wkd>${snippets.www})`, 'i');
+			const defaultMm = Snippet[Token.mm as any].source.replace(/^\(\?<mm>|\)$/g, '');
+			const defaultWkd = Snippet[Token.wkd as any].source.replace(/^\(\?<wkd>|\)$/g, '');
+			state.parse.snippet[Token.mm as any] = new RegExp(`(?<mm>${defaultMm}|${snippets.mmm})`, 'i');
+			state.parse.snippet[Token.wkd as any] = new RegExp(`(?<wkd>${defaultWkd}|${snippets.www})`, 'i');
 
 			if (!isEmpty(events)) {
 				Object.assign(state.parse.event, events);
@@ -388,6 +365,8 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				}
 			}
 			patternsDirty = true;
+		} else if (locales.length > 0) {
+			clearLocalization();
 		}
 	}
 

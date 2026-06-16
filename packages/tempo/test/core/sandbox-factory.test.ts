@@ -12,8 +12,10 @@ describe('Sandbox Factory Pattern', () => {
 
 	it('should maintain isolated registries for sandboxes', () => {
 		const MyTempo = Tempo.create({
-			period: {
-				'tea-time': '16:00'
+			registry: {
+				periods: {
+					'tea-time': '16:00'
+				}
 			}
 		});
 
@@ -30,8 +32,10 @@ describe('Sandbox Factory Pattern', () => {
 
 		// Global 'noon' is 12:00
 		const EarlyNoon = Tempo.create({
-			period: {
-				'noon': '11:00'
+			registry: {
+				periods: {
+					'noon': '11:00'
+				}
 			}
 		});
 
@@ -50,8 +54,10 @@ describe('Sandbox Factory Pattern', () => {
 
 	it('should record traceability info in parse results', () => {
 		const MyTempo = Tempo.create({
-			period: {
-				'half-hour': function (this: AliasContext) { return `${this.hh}:30` }
+			registry: {
+				periods: {
+					'half-hour': function (this: AliasContext) { return `${this.hh}:30` }
+				}
 			}
 		});
 
@@ -66,15 +72,19 @@ describe('Sandbox Factory Pattern', () => {
 
 	it('should allow instance-specific overrides to shadow sandbox aliases', () => {
 		const MyTempo = Tempo.create({
-			period: {
-				'break': '10:00'
+			registry: {
+				periods: {
+					'break': '10:00'
+				}
 			}
 		});
 
 		// Sandwich break at 11:00 for this specific instance
 		const t = new MyTempo('break', {
-			period: {
-				'break': '11:00'
+			registry: {
+				periods: {
+					'break': '11:00'
+				}
 			}
 		});
 

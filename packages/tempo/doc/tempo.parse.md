@@ -128,14 +128,19 @@ const au = new Tempo('04012026', { timeZone: 'Australia/Sydney' }); // Jan 4
 ### Internationalized Parsing (Locales)
 Tempo can be instructed to automatically generate language-specific parsing rules based on your `locale`. This enables parsing of translated months, weekdays, and relative events out-of-the-box!
 
-```typescript
-Tempo.init({ locale: 'fr-FR', parse: { localize: true } });
+You can provide either a single locale string or an **array of locales** to parse multiple languages simultaneously:
 
-// Natively understand French dates and core events!
-new Tempo('demain');            // parses as "tomorrow"
-new Tempo('15 fevrier 2026');   // parses as "15 February 2026"
+```typescript
+Tempo.init({ locale: ['fr-FR', 'es-ES'] });
+
+// Natively understand French, Spanish, AND English dates!
+new Tempo('15 fevrier 2026');   // parses as "15 February 2026" (French)
+new Tempo('15 febrero 2026');   // parses as "15 February 2026" (Spanish)
 new Tempo('vendredi');          // parses as the closest "Friday"
 ```
+
+> [!WARNING]
+> **Cross-Locale Collisions**: In a multi-lingual lexer, if two languages share the exact same abbreviation/word for *different* dates (e.g. if "mai" meant May in French but March in another language), the parser will resolve a collision using **"Last-One-Wins"** logic based on your array order. The language that appears *last* in the `locale` array takes priority. Be deliberate in your array ordering to safely prioritize your primary language fallback!
 
 #### How it Works & Accent Normalization
 When `parse: { localize: true }` is enabled, Tempo uses the native `Intl` API to pre-generate lists of Months, Weekdays, and Relative terms ("yesterday", "today", "tomorrow").
@@ -157,12 +162,14 @@ You can teach the parser new words or entire foreign phrases to bridge translati
 Tempo.init({
   locale: 'fr-FR',
   parse: { localize: true },
-  event: {
-    // Map a full foreign phrase directly to an English-equivalent relative string
-    'vendredi prochain': () => 'next Friday',
-    // Or standard static events
-    'launch': '2026-12-01',
-    'party': () => 'next Friday 8pm'
+  registry: {
+    events: {
+      // Map a full foreign phrase directly to an English-equivalent relative string
+      'vendredi prochain': 'next Friday',
+      // Or standard static events
+      'launch': '2026-12-01',
+      'party': () => 'next Friday 8pm'
+    }
   }
 });
 
@@ -194,14 +201,16 @@ Functional Alias Context is a powerful API for creating dynamic, self-referentia
 #### Example: Complex Functional Alias
 ```typescript
 Tempo.init({
-  event: {
-    // Resolve "bedtime" to 10pm on the same day
-    'bedtime': function() {
-      return this.set({ hour: 22, minute: 0, second: 0 });
-    },
-    // Resolve "meeting" to 2 hours after whatever was just parsed
-    'meeting': function() {
-      return this.add({ hours: 2 });
+  registry: {
+    events: {
+      // Resolve "bedtime" to 10pm on the same day
+      'bedtime': function() {
+        return this.set({ hour: 22, minute: 0, second: 0 });
+      },
+      // Resolve "meeting" to 2 hours after whatever was just parsed
+      'meeting': function() {
+        return this.add({ hours: 2 });
+      }
     }
   }
 });

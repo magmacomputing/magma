@@ -1,4 +1,4 @@
-# Month-Day Parsing Order
+# Ambiguity Resolution (Month-Day Parsing)
 
 Tempo provides sophisticated support for resolving ambiguous date formats, specifically the conflict between **Month-Day-Year** (common in the US) and **Day-Month-Year** (common in most of the rest of the world).
 
@@ -73,3 +73,45 @@ If a date is being parsed in the wrong order:
 1.  Check the `t.parse.monthDay.active` property to see if detection was successful.
 2.  Ensure the `monthDay.layouts` registry includes the layouts you are using (default pairs cover most common formats).
 3.  Use the `monthDay: { active: true }` override to verify that the patterns themselves match your input.
+
+## Parsing "Ambiguous" Digits (US vs UK)
+
+When processing numeric-only strings (like `04012026`), Tempo uses your timezone to decide if it means April 1st or January 4th.
+
+```typescript
+// US Context (en-US)
+const us = new Tempo('04012026', { timeZone: 'America/New_York' }); 
+console.log(us.format('{mon} {dd}')); // "April 01"
+
+// UK/Elsewhere Context (en-GB)
+const uk = new Tempo('04012026', { timeZone: 'Europe/London' });
+console.log(uk.format('{mon} {dd}')); // "January 04"
+```
+
+For digits-only input, Tempo checks the most likely compact interpretation first:
+
+- A **6-digit string** is *always* validated as compact time first (`hhmiss`) regardless of `timeZone`—this validation is timezone-independent. Only if validation fails does Tempo then try compact date layouts (like `ddmmyy` or `mmddyy`), where `timeZone` decides month-day vs day-month order.
+- An **8-digit string** is checked as a compact date, with month-day-year vs day-month-year decided by the active Region/`timeZone` as described above.
+
+To avoid ambiguity completely, prefer separators whenever you control the input format:
+- Use `09:30:15` instead of `093015`.
+- Use `2026-04-01`, `04/01/2026`, or `01/04/2026` instead of `04012026`.
+
+## Forcing Resolution via the Parse Planner
+
+If you need extreme, deterministic control over the priority of layout patterns (bypassing auto-detection completely), you can configure the Parse Planner's `layoutOrder`.
+
+When a `layoutOrder` is provided, those specific layouts are pushed to the top of the parsing queue.
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+
+// Forcing explicit priority
+Tempo.init({
+  planner: {
+    layoutOrder: ['iso', 'dmy', 'mdy'] // Try ISO, then Day-Month, then Month-Day
+  }
+});
+```
+
+*For more details on parse optimization, see the [Parse Planner Guide](./tempo.planner.md).*

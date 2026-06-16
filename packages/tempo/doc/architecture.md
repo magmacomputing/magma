@@ -18,7 +18,7 @@ The property descriptor is `enumerable: false, configurable: false, writable: fa
 
 **Benefits:**
 - **Reduced global footprint** — one slot instead of seven.
-- **Centralised hardening** — input validation (`addTerm`, `addPlugin`) and hook management (`setRegisterHook`, `fireRegisterHook`) live in one place.
+- **Centralised hardening** — input validation (`Tempo.extend`) and hook management (`setRegisterHook`, `fireRegisterHook`) live in one place.
 - **Scoped runtimes (Experimental)** — `TempoRuntime.createScoped()` returns a fresh, isolated runtime for clean test isolation without `globalThis` manipulation. This remains an experimental internal feature and is not yet fully threaded through all core utilities. Unlike the primary runtime, a scoped runtime is not pinned to `globalThis`, does not receive the hardened `defineProperty` protections, and relies on the returned lexical reference instead of the shared `getRuntime()` / `globalThis[BRIDGE]` path. Implementation examples of this test-scoping pattern can be found in [plugin_registration.test.ts](../test/plugin_registration.test.ts) and [duration.core.test.ts](../test/duration.core.test.ts).
 - **Multi-bundle / HMR safety** — `getRuntime()` checks `globalThis[BRIDGE]` before constructing, so two bundle copies of Tempo always share the same runtime object, preserving the original split-brain guarantee.
 
@@ -62,7 +62,7 @@ This objective is achieved through two primary architectural pillars:
 1.  **Lazy Evaluation ([Section 1](#1-lazy-evaluation-shadowing))**: Deferring the expensive work of string parsing and Term computation until the first property access.
 2.  **Master Guard ([Section 3](#3-master-guard-fast-fail-sync-point))**: Implementing a high-speed "fast-fail" gatekeeper to instantly reject invalid inputs when parsing *is* eventually triggered.
 
-Together, these ensure that `new Tempo()` maintains an $O(1)$ constructor execution time by deferring $O(N)$ full-parse work until the first property access, regardless of how many plugins or custom Terms are registered in the global system.
+Together, these ensure that `new Tempo()` maintains an `O(1)` constructor execution time by deferring `O(N)` full-parse work until the first property access, regardless of how many plugins or custom Terms are registered in the global system.
 
 ---
 
@@ -83,7 +83,7 @@ A delegator Proxy is a Proxy wrapper whose traps forward operations to an intern
 ### 🛡️ Iteration Notes
 - **`Object.keys` / `for...in` / object spread**: Operate on enumerable keys exposed by the delegator target after discovery.
 - **`[Symbol.iterator]`**: Still provides explicit iterator semantics where implemented.
-- **`Tempo.formats` & `Tempo.terms`**: These static getters continue to provide a registry-wide view of available keys across the system, independent of per-instance memoization state.
+- **`Tempo.registry.formats` & `Tempo.registry.terms`**: These static getters continue to provide a registry-wide view of available keys across the system, independent of per-instance memoization state.
 
 ---
 
@@ -129,9 +129,9 @@ The **Guarded-Lazy** strategy ensures that even with hundreds of custom plugins,
 ### How it works:
 1.  **Longest-Token Matching**: To prevent partial matching (e.g., matching `qtr` inside `quarter`), the guard uses a greedy "Scan-and-Consume" loop that prioritizes the longest available token.
 2.  **Unified Wordlist**: The guard automatically ingests all registered Terms, Timezones, Month names, and Custom Events into a single high-speed lookup Set.
-3.  **High-Speed Gatekeeper**: By avoiding complex backtracking regexes, the gatekeeper provides predictable $O(1)$ performance regardless of how many plugins are registered.
+3.  **High-Speed Gatekeeper**: By avoiding complex backtracking regexes, the gatekeeper provides predictable `O(1)` performance regardless of how many plugins are registered.
 4.  **Versioned Registry**: To avoid redundant wordlist rebuilding, the Guard monitors a version counter on the alias registry. The wordlist is only rebuilt when a mutation actually occurs.
-5.  **Auto-Lazy**: Valid inputs that pass the guard automatically switch the instance to `mode: 'defer'`, deferring the full $O(N)$ parse work until a property is actually read.
+5.  **Auto-Lazy**: Valid inputs that pass the guard automatically switch the instance to `mode: 'defer'`, deferring the full `O(N)` parse work until a property is actually read.
 
 ---
 
@@ -160,7 +160,7 @@ For detailed timing results and methodology, see [Performance Benchmarks](./temp
 Tempo maintains system-wide synchronization through a private, Symbol-based hook system.
 
 ### Reactive Registration
-When a plugin is imported via a side-effect (`import '@magmacomputing/tempo/ticker'`), it triggers a **`sym.$Register`** hook. 
+When a plugin is imported via a side-effect (`import '@magmacomputing/tempo/duration'`), it triggers a **`sym.$Register`** hook. 
 - **Auto-Sync**: The `Tempo` class listens for these hooks and automatically updates its internal registries.
 - **Guard Rebuild**: Every time a new Term or layout is registered, the **Master Guard** is automatically rebuilt to include the new tokens, ensuring the "Zero-Cost Constructor" always stays up to date.
 

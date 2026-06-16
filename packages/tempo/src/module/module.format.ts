@@ -3,17 +3,20 @@ import { pad, toTitleCase } from '#library/string.library.js';
 import { suffix } from '#library/number.library.js';
 import { ifNumeric } from '#library/coercion.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction } from '#library/assertion.library.js';
-import { formatDayPeriod } from '#library/international.library.js';
+import { formatDayPeriod, getDTF } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
-import { isTempo, enums, Match, getRuntime, NumericPattern } from '#tempo/support';
+import { isTempo, enums, Match, getRuntime, NumericPattern, BigIntPattern } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Tempo } from '../tempo.class.js';
 
 
 declare module '../tempo.class.js' {
 	interface Tempo {
-		/** applies a format to the instance. */								format(fmt: any, options?: any): any;
+		/** applies a format to the instance. */								format(options: Intl.DateTimeFormatOptions & { timeZone?: string; calendar?: string }): string;
+		/** applies a format to the instance. */								format(fmt: BigIntPattern, options?: any): bigint;
+		/** applies a format to the instance. */								format(fmt: NumericPattern, options?: any): number;
+		/** applies a format to the instance. */								format(fmt?: any, options?: any): any;
 	}
 }
 
@@ -29,17 +32,24 @@ declare module '../tempo.class.js' {
  * const weekDate = format(zdt).weekDate;
  * const stamp = format().logStamp; // defaults to 'Now'
  */
-export function format(obj?: Temporal.ZonedDateTime | any): any;
-export function format(obj: Temporal.ZonedDateTime | any, fmt: NumericPattern, options?: any): number;
-export function format(obj: Temporal.ZonedDateTime | any, fmt: string | symbol, options?: any): string;
-export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol, options?: any): string | number | any {
+export function format(obj?: any): any;
+export function format(obj: any, options: Intl.DateTimeFormatOptions & { timeZone?: string; calendar?: string }): string;
+export function format(obj: any, fmt: BigIntPattern, options?: any): bigint;
+export function format(obj: any, fmt: NumericPattern, options?: any): number;
+export function format(obj: any, fmt: string | symbol, options?: any): string;
+export function format(obj?: any, fmt?: any, options?: any): any {
 	const state = getRuntime().state;
 	const baseConfig = isTempo(obj) ? obj.config : state?.config;
 	let config = baseConfig;
+	if (isObject(fmt) && isUndefined(options)) {
+		options = fmt;
+		fmt = undefined;
+	}
+
 	if (options) {
 		config = { ...baseConfig, ...options };
 		if (options.intl) config.intl = { ...baseConfig?.intl, ...options.intl };
-		if (options.format) config.format = { ...baseConfig?.format, ...options.format };
+
 		if (options.registry) {
 			config.registry = { ...baseConfig?.registry, ...options.registry };
 			if (options.registry.formats) config.registry.formats = { ...baseConfig?.registry?.formats, ...options.registry.formats };
@@ -78,8 +88,33 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 			zdt = obj;
 	}
 
-	if (isUndefined(fmt))
+	if (config?.timeZone && zdt?.timeZoneId && zdt.timeZoneId !== config.timeZone) {
+		try {
+			zdt = zdt.withTimeZone(config.timeZone);
+		} catch (e) { }
+	}
+	if (config?.calendar && zdt?.calendarId && zdt.calendarId !== config.calendar) {
+		try {
+			zdt = zdt.withCalendar(config.calendar);
+		} catch (e) { }
+	}
+
+	if (isUndefined(fmt)) {
+		if (options) {
+			try {
+				// Defensive performance boost: Once V8 natively supports Temporal, this memoized instance will succeed.
+				return getDTF(config?.locale, options).format(zdt);
+			} catch (e) {
+				// Fallback: Node < 22 lacks native Temporal support in Intl, so we format the epoch.
+				const fallbackOptions = { timeZone: zdt.timeZoneId, ...options };
+				if (zdt.calendarId !== 'iso8601' && !fallbackOptions.calendar)
+					fallbackOptions.calendar = zdt.calendarId;
+
+				return getDTF(config?.locale, fallbackOptions).format(zdt.epochMilliseconds);
+			}
+		}
 		return delegator(formats, (prop) => format(zdt, prop));
+	}
 
 	if (!isZonedDateTime(zdt)) return '';
 
@@ -126,10 +161,6 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 
 	const result = template.replace(new RegExp(Match.formatBraces, 'g'), (_match: string, fullToken: string) => {
 		const [token, ...modifiers] = fullToken.split(':');
-
-		if (config?.format?.localize && !modifiers.includes('locale'))
-			modifiers.unshift('locale');
-
 		let res: any;
 
 		switch (token) {
@@ -214,7 +245,8 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 
 							if (plugin) {
 								const termVal = (obj as unknown as Tempo).term[termKey];
-								const lang = config?.locale?.split('-')[0] ?? 'en';
+								const localeStr = Array.isArray(config?.locale) ? config.locale[0] : config?.locale;
+								const lang = localeStr?.split('-')[0] ?? 'en';
 								let locRes: any;
 								let valStr: string;
 								let baseKey: string | undefined;
@@ -267,7 +299,7 @@ export function format(obj?: Temporal.ZonedDateTime | any, fmt?: string | symbol
 	});
 
 	const tokens = template.match(new RegExp(Match.formatBraces, 'g'));
-	const isNumericOutput = (NumericPattern as readonly string[]).includes(template as any) || (tokens && tokens.length > 1 && /^[0-9]+$/.test(result));
+	const isNumericOutput = BigIntPattern.includes(template as any) || NumericPattern.includes(template as any) || (tokens && tokens.length > 1 && /^[0-9]+$/.test(result));
 	return (isNumericOutput ? ifNumeric(result, true) : result) as any;
 }
 

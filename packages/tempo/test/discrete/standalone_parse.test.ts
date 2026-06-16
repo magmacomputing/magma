@@ -41,8 +41,10 @@ test('standalone parse: strict mode (ambiguous input)', () => {
 test('standalone parse: shared state with Tempo class', () => {
 	// Register a custom event via Tempo
 	Tempo.init({
-		event: {
-			'party-time': '2025-12-31T23:59:59'
+		registry: {
+			events: {
+				'party-time': '2025-12-31T23:59:59'
+			}
 		}
 	});
 

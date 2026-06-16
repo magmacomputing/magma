@@ -6,6 +6,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-06-16
+
+### 🔒 Security & Licensing
+- **Domain-Locked Licensing**: Stabilized the premium plugin licensing engine with a robust domain-locked validation mechanism in the `@core` validator.
+
+### 📚 Documentation & Ecosystem
+- **SSR Hydration Fixes**: Fixed `Temporal is not defined` crashes during VitePress SSR builds by enforcing global polyfill initialization in `.vitepress/config.ts`.
+- **Navigation Enhancements**: Integrated the new Internationalization (`tempo.locale.md`) guides into the primary VitePress sidebar.
+- **MathPlugin Removal**: Removed the heavy `math: true` Markdown plugin from the documentation pipeline and migrated all computational complexity notations (e.g., `O(1)`) to standard inline code to prevent Vue compiler crashes and reduce client bundle sizes.
+
+### Added
+- **Multi-lingual Parsing**: The `locale` configuration property now officially accepts an array of strings (`string | string[]`). This enables the `ParseModule` to intelligently extract terminology from multiple languages simultaneously, generating a single, high-performance, deduplicated RegExp engine capable of parsing dates from any of the specified locales interchangeably.
+- **O(1) Locale Traceability**: Upgraded the internal dictionary architecture so that `monthMap` and `weekdayMap` store strict objects `{ value, locale }` instead of raw numeric indices. This allows the Normalizer to resolve the winning language of a matched token in pure `O(1)` time without any expensive Regex sub-capture scanning, automatically injecting the originating `locale` into the `t.Parse.result` debugging array!
+- **Intl.DateTimeFormatOptions Passthrough**: The `.format()` method now officially supports passing a native `Intl.DateTimeFormatOptions` object. This provides a highly flexible, "humanized" wrapper around the rigid `Temporal` API for complex cultural formatting (e.g. Arabic, Japanese Reiwa).
+- **Native Intl Delegation Support**: The formatting engine now explicitly attempts to use the high-performance, memoized `getDTF` instance to support V8's upcoming native `Temporal` support in `Intl.DateTimeFormat`.
+- **BigInt Overload for Epoch Nanoseconds**: Implemented a `BigIntPattern` registry and resolution logic to guarantee that the `{nano}` token (epoch nanoseconds) correctly coerces to and returns a precision-preserving `BigInt` instead of a string, as it vastly exceeds `Number.MAX_SAFE_INTEGER`.
+
+### Changed
+- **Parser Map Safety**: To support multi-lingual lexing securely, the internal reverse-lookup `localeMap` has been architecturally split into distinct `monthMap` and `weekdayMap` dictionaries. This eliminates the risk of cross-locale abbreviation collisions (e.g., if "mai" is a month in one language but a weekday in another), guaranteeing completely safe parsing determinism.
+
+### Fixed
+- **Polyfill RangeError Bypassing**: Implemented a defensive stripping mechanism that intercepts and deletes `timeZone` and `calendar` constraints from the `options` object when falling back to the `ZonedDateTime.prototype.toLocaleString()` polyfill. Additionally, wrapped `withTimeZone` and `withCalendar` shifts in `try/catch` blocks to gracefully bypass invalid configurations and safely fall through to the native Intl fallback without crashing the formatter.
+- **Strict Numeric Output Evaluation**: Fixed a bug where `{nano}` was bypassing the precision-preserving `ifNumeric` coercion due to an evaluation gap in the generic numeric-pattern detector.
+
 ## [3.1.1] - 2026-06-14
 
 ### Added

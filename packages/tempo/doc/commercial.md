@@ -10,6 +10,16 @@ Need a specialized plugin for your industry? We design and implement high-perfor
 - **Production Timelines**: Complex shift-based scheduling and resource allocation generators.
 - **Custom Terms**: Domain-specific date ranges (e.g., academic years, retail seasons, or medical billing cycles).
 
+<div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
+  <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
+    <img src="https://registry.magmacomputing.com.au/registry-logo.svg" width="48" height="48" alt="Tempo License Registry" style="margin: 0;" />
+  </a>
+  <div>
+    <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
+    Manage your subscriptions and retrieve your license key.
+  </div>
+</div>
+
 ### 🏛️ Architecture & Migration Consulting
 Transitioning from legacy libraries like **Moment.js** or **Luxon**? Our team can:
 - Audit your existing date-time logic for `Temporal` compatibility.

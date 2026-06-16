@@ -44,8 +44,10 @@ Tempo comes with several pre-configured format aliases. You can also define your
 
 ```typescript
 Tempo.init({
-  formats: {
-    'fancy': '{mon} the {dd:ord} day of {yyyy}'
+  registry: {
+    formats: {
+      'fancy': '{mon} the {dd:ord} day of {yyyy}'
+    }
   }
 });
 

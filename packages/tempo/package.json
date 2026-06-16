@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -20,9 +20,14 @@
     "temporal",
     "date",
     "time",
-    "immutable",
+    "parsing",
+    "formatting",
+    "i18n",
+    "localization",
+    "relative",
     "fluent",
-    "parsing"
+    "immutable",
+    "extensible"
   ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"

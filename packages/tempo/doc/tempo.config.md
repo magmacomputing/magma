@@ -30,9 +30,11 @@ export const GlobalTempoConfig = {
   timeZone: 'Australia/Sydney',     // Set your baseline timezone
   license: 'eyJhbGciOiJIUzI1...',   // JWT Commercial License for Premium Plugins
   plugins: [CronModule, SLAModule], // Register enterprise plugins
-  period: { 
-    'market-open': '09:30',
-    'market-close': '16:00' 
+  registry: {
+    periods: { 
+      'market-open': '09:30',
+      'market-close': '16:00' 
+    }
   }
 }
 
@@ -44,7 +46,7 @@ You can then import this file at the very top of your application's entry point 
 
 ::: tip
 **Looking to configure Internationalization?**  
-Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Auto-Localization Formatting](./tempo.cookbook.md#auto-localization) guides for configuration details.
+Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See [The Role of Locale](./tempo.locale.md) for a general guide, and the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Auto-Localization Formatting](./tempo.cookbook.md#auto-localization) guides for configuration details.
 :::
 
 ```typescript
@@ -166,20 +168,14 @@ Tempo.init({
 | `timeStamp`| `'ss' \| 'ms' \| 'us' \| 'ns'` | `'ms'` | Precision for numeric inputs and the `.ts` property. |
 | `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
-| `event` | `Record<string, string \| Function>` | Built-in aliases | Custom date aliases merged into the event registry. |
-| `period` | `Record<string, string \| Function>` | Built-in aliases | Custom time aliases merged into the period registry. |
-| `snippet` | `Record<string, string \| RegExp>` | Built-in snippets | Custom snippet patterns used to compose parse layouts. |
-| `layout` | `Record<string, string \| RegExp>` | Built-in layouts | Custom parse layouts for date/time pattern matching. |
-| `registry` | `{ formats?, locales? }` | Built-in registries | Internal dictionary mappings (e.g., custom format tokens or localization dictionaries). |
-| `format` | `{ localize?: boolean }` | `{ localize: false }` | Formatting behavior preferences, such as enabling auto-localization. |
-| `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. Unlike core init options such as `snippet`, `layout`, `event`, or `period`, these values are not merged into internal state via `extendState`; `Tempo.init()` applies each plugin with `Tempo.extend(p)`, so plugin authors should treat them as instance/class augmentations rather than internal-state merges. |
+| `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, parsing logic, localization). |
+| `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. Unlike `registry` options, these values are not merged into internal state via `extendState`; `Tempo.init()` applies each plugin with `Tempo.extend(p)`, so plugin authors should treat them as instance/class augmentations rather than internal-state merges. |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
 | `debug` | `number \| string` | `'info'` | Controls log verbosity via direct `LOG` levels (`0=Off ... 5=Trace`) or string labels (`'trace'`, `'info'`, etc). |
 | `catch` | `boolean` | `false` | If true, invalid inputs return a Void instance instead of throwing. |
 | `mode` | `'auto' \| 'strict' \| 'defer'` | `'auto'` | Controls the hydration strategy (e.g., `defer` for Zero-Cost creation). |
 | `silent` | `boolean` | `false` | Suppresses console output. Combined with `catch: true` for silent failover. |
-| `ignore` | `string \| string[]` | `['at']` | List of noise words to be stripped before parsing. |
 | `planner` | `PlannerOptions` | `undefined` | Grouped configuration for `layoutOrder` and `preFilter`. |
 
 ---
@@ -210,13 +206,15 @@ You can extend Tempo's intelligence by supplying custom **Events** (date aliases
 
 ```javascript
 Tempo.init({
-  event: {
-    'launch date': '2026-05-20',
-    'deadline': function () { return this.add({ days: 30 }) }
-  },
-  period: {
-    'tea time': '15:00',
-    'mid[ -]?after[ -]?noon': '16:00',  // regex-like key for 'mid after noon' or 'mid-after-noon' etc
+  registry: {
+    events: {
+      'launch date': '2026-05-20',
+      'deadline': function () { return this.add({ days: 30 }) }
+    },
+    periods: {
+      'tea time': '15:00',
+      'mid[ -]?after[ -]?noon': '16:00',  // regex-like key for 'mid after noon' or 'mid-after-noon' etc
+    }
   }
 })
 
@@ -236,7 +234,7 @@ const t = new Tempo('now', { mode: 'defer' });
 console.log(t.format('{yyyy}')); // Discovery triggers NOW, only once.
 ```
 
-When initialized this way, no registries are built upfront. The constructor returns in $O(1)$ time.
+When initialized this way, no registries are built upfront. The constructor returns in `O(1)` time.
 
 ::: tip
 **Zero-Cost Constructor**: Combining the **Master Guard** (automatic) and the **`defer`** mode allows Tempo to satisfy the "Zero-Cost Constructor" requirement for mass-processing applications.
@@ -252,12 +250,12 @@ By default, Tempo ignores the word **"at"** (e.g., `"Friday at 3pm"` becomes `"F
 ```javascript
 // Extend globally via Tempo.init()
 // This adds 'the' and 'o-clock' to the existing default list (['at'])
-Tempo.init({ ignore: ['the', 'o-clock'] });
+Tempo.init({ registry: { ignores: ['the', 'o-clock'] } });
 
 // Use in a specific instance via the Tempo constructor (new Tempo(...))
 // This instance will ignore 'at', 'the', and 'o-clock'
 const t = new Tempo('next Friday at 3 o-clock', { 
-  ignore: 'o-clock' 
+  registry: { ignores: 'o-clock' }
 }); 
 
 console.log(t.toString()); // Resolved correctly (noise words stripped)

@@ -8,7 +8,7 @@ Timings were captured over **1,000 iterations** to measure micro-overhead and co
 
 | Method | Total Time | µs / op | Notes |
 | :--- | :--- | :--- | :--- |
-| **Default (Lazy Proxy)** | 523.14ms | **523.14µs** | Current $O(1)$ constructor. |
+| **Default (Lazy Proxy)** | 523.14ms | **523.14µs** | Current `O(1)` constructor. |
 | **Eager Simulation** | 1394.51ms | **1394.51µs** | **~2.7x slower** (simulating pre-refactor impact). |
 | **Fast-Fail @sync** | 359.04ms | **359.04µs** | Rejected instantly by the Master Guard. |
 | **Object.create Baseline** | 0.22ms | 0.22µs | Raw JS overhead for comparison. |
@@ -17,18 +17,18 @@ Timings were captured over **1,000 iterations** to measure micro-overhead and co
 
 ## 🏗️ Architectural Impact
 
-### 1. Proxy-Delegator Delegation ($O(1)$)
+### 1. Proxy-Delegator Delegation (`O(1)`)
 
 By using a **Proxy-Delegator** pattern, the constructor returns near-instantly without populating the formatting (`fmt`) or Term (`term`) objects. These registries are only discovered and memoized on the first property access.
 
 - **Gain**: ~65% reduction in instantiation overhead.
-- **v2.1.2 Update**: The Scan-and-Consume guard further stabilizes the "Zero-Cost Constructor" by ensuring that even with massive plugin lists, the entry-point remains $O(1)$.
+- **v2.1.2 Update**: The Scan-and-Consume guard further stabilizes the "Zero-Cost Constructor" by ensuring that even with massive plugin lists, the entry-point remains `O(1)`.
 
 ### 2. The Master Guard (Fast-Fail)
 
 The static `#guard` regex acts as a rapid "Sync Point." 
 
-- **Efficiency**: Strings that do not contain valid date-time characters are rejected in $O(1)$ time.
+- **Efficiency**: Strings that do not contain valid date-time characters are rejected in `O(1)` time.
 - **Performance**: Validating a string against the guard is ~30% faster than a full parsing cycle, even for simple ISO strings.
 
 ---
@@ -38,11 +38,11 @@ The static `#guard` regex acts as a rapid "Sync Point."
 The benchmark script used `performance.now()` within a Vitest environment to ensure accurate module resolution and internal alias support (`#library`).
 
 1. **Lazy Creation**: Creates a `new Tempo('2024-05-20')` without accessing any properties.
-2. **Eager Simulation**: Creates a `new Tempo()` and manually triggers discovery on 5 core properties to simulate $O(N)$ initialization.
+2. **Eager Simulation**: Creates a `new Tempo()` and manually triggers discovery on 5 core properties to simulate `O(N)` initialization.
 3. **Invalid Parse**: Passes a string that fails the Master Guard (e.g., includes emojis or exotic symbols) to measure rejection speed.
 
 ::: info
-These benchmarks represent the library's performance under Node.js v22+. Results may vary based on the JS engine (V8, JavaScriptCore, etc.) but the $O(1)$ complexity remains constant.
+These benchmarks represent the library's performance under Node.js v22+. Results may vary based on the JS engine (V8, JavaScriptCore, etc.) but the `O(1)` complexity remains constant.
 :::
 
 ---
@@ -96,6 +96,6 @@ When evaluated against a mixed dataset (Strict ISO, US Localized, Timestamps, an
 
 #### 🔍 Key Takeaways
 
-1. **Sub-Millisecond Rich Parsing**: While native `Date` has raw C++ V8 speed (0.18 µs), it sacrifices reliability and formatting, failing entirely on localized formats like `10/31/2026`. Tempo achieves a robust **71% success rate** while still maintaining blazing fast **sub-millisecond (~0.7ms)** parsing speeds! In real-world terms, processing 100 complex localized dates on a page will only take 70 milliseconds. 
-2. **Defer Mode is Highly Optimized**: Looking at the memory overhead (`heapUsedDeltaMb`), `defer` mode actually resulted in a *negative* memory delta (`-36.27 MB`), meaning it allowed the V8 Garbage Collector to clean up memory faster than we were allocating the Proxy instances!
+1. **Sub-Millisecond Rich Parsing**: While native `Date` has raw native engine speed (0.18 µs), it sacrifices reliability and formatting, failing entirely on localized formats like `10/31/2026`. Tempo achieves a robust **71% success rate** while still maintaining blazing fast **sub-millisecond (~0.7ms)** parsing speeds! In real-world terms, processing 100 complex localized dates on a page will only take 70 milliseconds. 
+2. **Defer Mode is Highly Optimized**: Looking at the memory overhead (`heapUsedDeltaMb`), `defer` mode actually resulted in a *negative* memory delta (`-36.27 MB`), meaning it allowed the JavaScript Garbage Collector to clean up memory faster than we were allocating the Proxy instances!
 3. **Adapt This Test**: The runner script used to generate these results is available in the `bench/runner.test.ts` directory. You can use it as a scaffold to test Tempo against your own unique datasets.

@@ -39,9 +39,11 @@ describe('Tempo Issue Fixes', () => {
 
     test('dynamic period alias with `this` binding (e.g. half-hour)', () => {
       Tempo.init({
-        period: {
-          'half-hour': function (this: AliasContext) {
-            return `${this.hh}:30`
+        registry: {
+          periods: {
+            'half-hour': function (this: AliasContext) {
+              return `${this.hh}:30`
+            }
           }
         }
       })
@@ -155,7 +157,7 @@ describe('Tempo Issue Fixes', () => {
       const today = new Tempo('2024-05-20')
       const event = { blah: '20-May' }
       // @ts-ignore
-      const t = new Tempo('blah 10pm', { event, anchor: today.toDateTime() })
+      const t = new Tempo('blah 10pm', { registry: { events: event }, anchor: today.toDateTime() })
       expect(t.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-20')
       expect(t.format('{hh}:{mi}')).toBe('22:00')
     })
@@ -164,7 +166,7 @@ describe('Tempo Issue Fixes', () => {
       const today = new Tempo('2024-05-20')
       const period = { bedtime: function (this: any) { return this.set({ hour: 23 }) } }
       // @ts-ignore
-      const t = new Tempo('2024-05-20 bedtime', { period, anchor: today.toDateTime() })
+      const t = new Tempo('2024-05-20 bedtime', { registry: { periods: period }, anchor: today.toDateTime() })
       expect(t.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-20')
       expect(t.format('{hh}:{mi}')).toBe('23:00')
     })
@@ -173,7 +175,7 @@ describe('Tempo Issue Fixes', () => {
       const today = new Tempo('2024-05-20')
       const event = { blah: '20-May 10pm' }
       // @ts-ignore
-      const t = new Tempo('blah', { event, anchor: today.toDateTime() })
+      const t = new Tempo('blah', { registry: { events: event }, anchor: today.toDateTime() })
       expect(t.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-20')
       expect(t.format('{hh}:{mi}')).toBe('22:00')
     })

@@ -60,6 +60,7 @@ namespace Internal {
 	export type Fmt = {																					// used for the fmtTempo() shortcut
 		<F extends string>(fmt: F, tempo?: t.DateTime, options?: t.Options): t.FormatType<F>;
 		<F extends string>(fmt: F, options: t.Options): t.FormatType<F>;
+		(options: Intl.DateTimeFormatOptions & { timeZone?: string; calendar?: string }): string;
 	}
 }
 
@@ -293,17 +294,19 @@ export class Tempo {
 	}
 
 	/** get first Canonical name of a supplied locale */
-	private static _locale = (locale?: string) => {
+	private static _locale = (locale?: string | string[]) => {
 		const global = Context.global;
 		let language: string | undefined;
+		
+		const primaryLocale = Array.isArray(locale) ? locale[0] : locale;
 
-		if (locale) language = canonicalLocale(locale);
+		if (primaryLocale) language = canonicalLocale(primaryLocale);
 
 		return language ??
 			global?.navigator?.languages?.[0] ??									// fallback to current first navigator.languages[]
 			global?.navigator?.language ??												// else navigator.language
 			Default.locale ??																			// else default locale
-			locale																								// cannot determine locale
+			primaryLocale																					// cannot determine locale
 	}
 
 	/**
@@ -763,7 +766,6 @@ export class Tempo {
 				timeZone,
 				locale,
 				discovery: normalizedDiscovery,
-				format: config.format ?? { localize: config.localize ?? false },
 				registry: {
 					formats: config.registry?.formats ?? config.formats ?? enumify(STATE.FORMAT, false),
 					locales: config.registry?.locales ?? config.locales ?? proxify(STATE.LOCALE, true, true)
@@ -1518,7 +1520,7 @@ export class Tempo {
 		const self = unwrap(this);
 		this.#local.config = markConfig(Object.create(classState.config));
 		if (classState.config.registry) this.#local.config.registry = Object.create(classState.config.registry);
-		if (classState.config.format) this.#local.config.format = Object.create(classState.config.format);
+
 		Object.assign(this.#local.config, { scope: 'local' });
 
 		this.#local.parse = markConfig(Object.create(classState.parse));

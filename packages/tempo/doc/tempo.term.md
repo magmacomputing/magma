@@ -311,18 +311,6 @@ return keyOnly ? 'MyTerm' : {
 };
 ```
 
-## 🕒 Terms in Tickers
-Any Term that provides `start` and `end` boundaries can be used to drive a `Tempo.ticker`. This is ideal for logic that doesn't follow a fixed duration (like seasons or fiscal quarters).
-
-```ts
-// Pulse every time a new fiscal quarter begins
-await using quarterly = Tempo.ticker({ '#quarter': 1 });
-
-for await (const t of quarterly) {
-  console.log(`Pulsing at Quarter Start: ${t.format('{yyyy}-{#qtr}')}`);
-}
-```
-
 ## 🛠️ Developer Guide: Best Practices
 
 To ensure a custom `Term` plugin integrates fully with Tempo, follow these guidelines:

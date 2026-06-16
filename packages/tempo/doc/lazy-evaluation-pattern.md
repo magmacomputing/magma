@@ -4,17 +4,17 @@ When building complex JavaScript libraries (like date-time utilities), exposing 
 
 But what if the base object is strictly **immutable** (via `Object.freeze`)? 
 
-This article details a highly optimized $O(1)$ pattern for securely lazy-evaluating properties on immutable objects using a Proxy-based delegator and private fields.
+This article details a highly optimized `O(1)` pattern for securely lazy-evaluating properties on immutable objects using a Proxy-based delegator and private fields.
 
 ## The Problem: Mutating Frozen State
 
 A traditional lazy evaluation approach destroys and recreates the properties on the parent object. If the parent object is `Object.freeze()`'d for security (preventing API consumers from tampering with state), you cannot simply `Object.defineProperty` to overwrite the getter with a literal value.
 
-To get around freezing, you might try taking all property descriptors, wiping the object, mapping the other getters to a new object, adding the evaluated value, and calling `Object.freeze()` on the new object. This operation runs in $O(N)$ time every single time *any* getter is accessed.
+To get around freezing, you might try taking all property descriptors, wiping the object, mapping the other getters to a new object, adding the evaluated value, and calling `Object.freeze()` on the new object. This operation runs in `O(N)` time every single time *any* getter is accessed.
 
 ## The Solution: Proxy-Delegator with Memoization
 
-Tempo achieves lazy evaluation in $O(1)$ time using a **Delegator Proxy** that memoizes results back onto the target object.
+Tempo achieves lazy evaluation in `O(1)` time using a **Delegator Proxy** that memoizes results back onto the target object.
 
 ```javascript
 #setLazy(target, name, defineFunction) {
@@ -61,7 +61,7 @@ As of **v2.1.2**, Tempo uses a **Proxy-Delegator** that combines the security of
 
 1. **Lazy by Default**: Properties are only evaluated when accessed, keeping the constructor near-instant.
 2. **Memoized Evaluation**: Once accessed (e.g., `t.term.quarter`), the result is "baked" into the instance using `Object.defineProperty`.
-3. **$O(1)$ Performance**: Every access *after* the first is a direct property lookup—no Proxy traps, no prototype traversal.
+3. **`O(1)` Performance**: Every access *after* the first is a direct property lookup—no Proxy traps, no prototype traversal.
 4. **Transparent Discovery**: Because properties are enumerable, `console.log(t.term)` or `JSON.stringify` will trigger the evaluation of all registered Terms at once, providing a perfect "snapshot" of the instance state.
 
 To prevent diagnostic noise during these full-evaluation events, initialize Tempo with **`silent: true`**.

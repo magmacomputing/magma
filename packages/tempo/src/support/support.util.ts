@@ -232,8 +232,10 @@ export function resolveDisplayStatus(status: string): string {
 }
 
 /** @internal generate localized snippets for months, weekdays, and relative events */
-export const generateLocalizedSnippets = memoizeFunction((locale: string) => {
-	const map: Record<string, number> = {};
+const _generateLocalizedSnippets = memoizeFunction((localeKey: string) => {
+	const locales = localeKey.split(',');
+	const monthMap: Record<string, { value: number; locale: string }> = {};
+	const weekdayMap: Record<string, { value: number; locale: string }> = {};
 	const mon: string[] = [];
 	const mmm: string[] = [];
 	const wkd: string[] = [];
@@ -241,20 +243,17 @@ export const generateLocalizedSnippets = memoizeFunction((locale: string) => {
 	const events: Record<string, string> = {};
 
 	const dtOptions: Intl.DateTimeFormatOptions = { timeZone: 'UTC' };
-	const monthLongFormat = getDTF(locale, { ...dtOptions, month: 'long' });
-	const monthShortFormat = getDTF(locale, { ...dtOptions, month: 'short' });
-	
 	const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	const optionalPunctuation = (s: string) => s.replace(/\\?\.$/, '\\.?');
 	const normalizeKey = (s: string) => s.replace(/\.$/, '').toLowerCase();
 	const removeAccents = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-	const addEntry = (str: string, index: number, longList: string[], shortList?: string[]) => {
+	const addEntry = (map: Record<string, { value: number; locale: string }>, locale: string, str: string, index: number, longList: string[], shortList?: string[]) => {
 		const key = normalizeKey(str);
 		const unaccented = removeAccents(key);
 		
-		map[key] = index;
-		if (unaccented !== key) map[unaccented] = index;
+		map[key] = { value: index, locale };
+		if (unaccented !== key) map[unaccented] = { value: index, locale };
 
 		longList.push(optionalPunctuation(escapeRegex(str)));
 		if (unaccented !== key) {
@@ -268,48 +267,51 @@ export const generateLocalizedSnippets = memoizeFunction((locale: string) => {
 		}
 	};
 
-	for (let m = 0; m < 12; m++) {
-		const date = new Date(Date.UTC(2024, m, 15));
-		const longStr = monthLongFormat.format(date).toLowerCase();
-		const shortStr = monthShortFormat.format(date).toLowerCase();
+	for (const locale of locales) {
+		const monthLongFormat = getDTF(locale, { ...dtOptions, month: 'long' });
+		const monthShortFormat = getDTF(locale, { ...dtOptions, month: 'short' });
 
-		addEntry(longStr, m + 1, mon, mmm);
-		if (shortStr !== longStr) addEntry(shortStr, m + 1, mmm);
-	}
+		for (let m = 0; m < 12; m++) {
+			const date = new Date(Date.UTC(2024, m, 15));
+			const longStr = monthLongFormat.format(date).toLowerCase();
+			const shortStr = monthShortFormat.format(date).toLowerCase();
 
-	const weekdayLongFormat = getDTF(locale, { ...dtOptions, weekday: 'long' });
-	const weekdayShortFormat = getDTF(locale, { ...dtOptions, weekday: 'short' });
+			addEntry(monthMap, locale, longStr, m + 1, mon, mmm);
+			if (shortStr !== longStr) addEntry(monthMap, locale, shortStr, m + 1, mmm);
+		}
 
+		const weekdayLongFormat = getDTF(locale, { ...dtOptions, weekday: 'long' });
+		const weekdayShortFormat = getDTF(locale, { ...dtOptions, weekday: 'short' });
 
+		// 2024-01-01 is Monday (1). 2024-01-07 is Sunday (7).
+		for (let d = 1; d <= 7; d++) {
+			const date = new Date(Date.UTC(2024, 0, d));
+			const longStr = weekdayLongFormat.format(date).toLowerCase();
+			const shortStr = weekdayShortFormat.format(date).toLowerCase();
 
-	// 2024-01-01 is Monday (1). 2024-01-07 is Sunday (7).
-	for (let d = 1; d <= 7; d++) {
-		const date = new Date(Date.UTC(2024, 0, d));
-		const longStr = weekdayLongFormat.format(date).toLowerCase();
-		const shortStr = weekdayShortFormat.format(date).toLowerCase();
+			addEntry(weekdayMap, locale, longStr, d, wkd, www);
+			if (shortStr !== longStr) addEntry(weekdayMap, locale, shortStr, d, www);
+		}
 
-		addEntry(longStr, d, wkd, www);
-		if (shortStr !== longStr) addEntry(shortStr, d, www);
-	}
+		try {
+			const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+			const yesterday = rtf.format(-1, 'day').toLowerCase();
+			const today = rtf.format(0, 'day').toLowerCase();
+			const tomorrow = rtf.format(1, 'day').toLowerCase();
 
-	try {
-		const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
-		const yesterday = rtf.format(-1, 'day').toLowerCase();
-		const today = rtf.format(0, 'day').toLowerCase();
-		const tomorrow = rtf.format(1, 'day').toLowerCase();
+			const addEvent = (val: string, logic: string) => {
+				if (!val) return;
+				events[val] = logic;
+				const unaccented = removeAccents(val);
+				if (unaccented !== val) events[unaccented] = logic;
+			};
 
-		const addEvent = (val: string, logic: string) => {
-			if (!val) return;
-			events[val] = logic;
-			const unaccented = removeAccents(val);
-			if (unaccented !== val) events[unaccented] = logic;
-		};
-
-		addEvent(yesterday, 'yesterday');
-		addEvent(today, 'today');
-		addEvent(tomorrow, 'tomorrow');
-	} catch {
-		// safe fallback if RelativeTimeFormat is unsupported
+			addEvent(yesterday, 'yesterday');
+			addEvent(today, 'today');
+			addEvent(tomorrow, 'tomorrow');
+		} catch {
+			// safe fallback if RelativeTimeFormat is unsupported
+		}
 	}
 
 	const sortByLength = (a: string, b: string) => b.length - a.length;
@@ -323,6 +325,9 @@ export const generateLocalizedSnippets = memoizeFunction((locale: string) => {
 			www: dedup([...wkd, ...www]).sort(sortByLength).join('|')
 		},
 		events,
-		localeMap: map
+		monthMap,
+		weekdayMap
 	};
 });
+
+export const generateLocalizedSnippets = (locales: string | string[]) => _generateLocalizedSnippets(asArray(locales).join(','));

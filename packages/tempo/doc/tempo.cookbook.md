@@ -26,7 +26,7 @@ Use the placeholder syntax in the `.format()` method.
 ```typescript
 const t = new Tempo('2024-12-25');
 t.format('{dd} {mon} {yyyy}'); // "25 December 2024"
-t.format('{hh}:{mi} {mer}');   // "12:00 am"
+t.format('{h12}:{mi} {mer}');   // "12:00 am"
 ```
 
 ### How do I check if a date is valid?
@@ -53,7 +53,8 @@ Settings are inherited from library defaults, persistent storage, and your provi
 ## Parsing Challenges
 
 ### Parsing "Ambiguous" Digits (US vs UK)
-Tempo uses your timezone to decide if `04012026` is April 1st or January 4th.
+Tempo uses your active timezone (or configured layout priorities) to resolve ambiguous dates like `04012026` (April 1st vs January 4th).
+
 ```typescript
 // US Context (en-US)
 const us = new Tempo('04012026', { timeZone: 'America/New_York' }); 
@@ -64,31 +65,7 @@ const uk = new Tempo('04012026', { timeZone: 'Europe/London' });
 console.log(uk.format('{mon} {dd}')); // "January 04"
 ```
 
-For digits-only input, Tempo checks the most likely compact interpretation first:
-
-- A `6`-digit string is **always** validated as compact time first (`hhmiss`) **regardless of `timeZone`**—this validation is timezone-independent. Only if validation fails does Tempo then try compact date layouts (like `ddmmyy` or `mmddyy`), where `timeZone` decides month-day vs day-month order.
-- An `8`-digit string is checked as a compact date, with month-day-year vs day-month-year decided by `timeZone`.
-
-```typescript
-const time = new Tempo('093015', { timeZone: 'UTC' });
-console.log(time.format('{hh}:{mi}:{ss}')); // "09:30:15"
-
-const shortDate = new Tempo('310559', { timeZone: 'Europe/London' });
-console.log(shortDate.format('{yyyy}-{mm}-{dd}')); // "1959-05-31"
-
-// Two-digit years use Tempo's sliding `pivot` window (default `pivot: 75`): values at/after the computed pivot map to the previous century (so `59` -> `1959` here), and you can change this via constructor/parser options like `new Tempo(input, { pivot: 50, timeZone: 'Europe/London' })`.
-
-const usDate = new Tempo('04012026', { timeZone: 'America/New_York' });
-console.log(usDate.format('{yyyy}-{mm}-{dd}')); // "2026-04-01"
-
-const ukDate = new Tempo('04012026', { timeZone: 'Europe/London' });
-console.log(ukDate.format('{yyyy}-{mm}-{dd}')); // "2026-01-04"
-```
-
-To avoid ambiguity, prefer separators whenever you control the input format:
-
-- Use `09:30:15` instead of `093015`.
-- Use `2026-04-01`, `04/01/2026`, or `01/04/2026` instead of `04012026`.
+*For a detailed breakdown of how Tempo evaluates ambiguous inputs, handles 6-digit vs 8-digit compact strings, and how to explicitly override layout detection, read the [Ambiguity Resolution Guide](./tempo.month-day.md).*
 
 ### Handling Relative Strings
 Tempo natively understands human-readable offsets.
@@ -101,7 +78,14 @@ new Tempo('tomorrow afternoon');
 
 ::: tip
 **Looking for Internationalized Parsing?**  
-Tempo can automatically translate months, weekdays, and relative terms (like 'yesterday', 'today', 'tomorrow') into foreign languages using your `locale` configuration. This requires enabling the parser option `parse: { localize: true }` (or the top-level `localize: true` flag) alongside your locale setting. See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.
+Tempo can automatically translate months, weekdays, and relative terms (like 'yesterday', 'today', 'tomorrow') into foreign languages using your `locale` configuration. This is automatically enabled whenever you provide a non-English `locale` setting.
+
+```typescript
+const t = new Tempo('15 fevrier 2026', { locale: 'fr-FR' });
+console.log(t.format('{mon}')); // "February"
+```
+
+*See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.*
 :::
 
 ### Parsing Unix Timestamps
@@ -173,8 +157,8 @@ console.log(t.since()); // "1d ago" (narrow style)
 // For maximum performance in tight loops, pass a pre-allocated formatter
 const rtf = new Intl.RelativeTimeFormat('fr', { style: 'long' });
 for (const entry of logEntries) {
-  // Use the new grouped API: pass the formatter's format function
-  console.log(new Tempo(entry.ts).since(null, { relativeTimeFormat: rtf.format.bind(rtf) }));
+  // Use the new grouped API: pass the formatter's format function directly as an option
+  console.log(new Tempo(entry.ts).since({ intl: { relativeTimeFormat: rtf.format.bind(rtf) } }));
 }
 ```
 
@@ -240,19 +224,26 @@ t.format('{mon:upper}');        // "MAY" (Default English TitleCase -> UpperCase
 t.format('{mon:locale}');       // "mai" (Native French Intl output)
 t.format('{mon:locale:upper} {dd:ord}'); // "MAI 15e"
 t.format('{#tod:lower}');       // "afternoon" (Modifies the native TitleCase Term plugin)
-t.format('{mer:upper}');        // "PM" (Replaces the legacy {MER} token)
+t.format('{mer:upper}');        // "PM" (Some users prefer uppercase meridiem)
 ```
 
-#### Auto-Localization
-To avoid repeatedly typing `:locale` on every token, you can set `format: { localize: true }` in your global `Tempo.init()`. This will automatically append the `:locale` modifier (before casing modifiers) for all format evaluations:
+::: tip
+**Tired of typing `:locale`?**  
+If you find yourself repeatedly writing `:locale` for the same date structure, save it to the global **FORMATS** registry! This creates a clean, reusable shortcut:
 ```typescript
-Tempo.init({ locale: 'fr-FR', format: { localize: true } });
-const t = new Tempo('2024-05-15 15:30');
+Tempo.init({
+    registry: {
+        formats: {
+            'ui-date': '{wkd:locale}, {dd:raw} {mon:locale} {yyyy}'
+        }
+    }
+});
 
-// Automatically localized!
-t.format('{mon:upper}'); // "MAI"
-t.format('{#tod}');      // "Après-midi"
+t.format('ui-date'); // Resolved with all modifiers intact!
 ```
+
+*Note: Format keys are resolved case-sensitively from the global `registry.formats` object. An error will be thrown if the requested key is not found in the registry.*
+:::
 
 #### Global LOCALE Registry
 The easiest way to augment or override translations globally is via the `locales` configuration option. Translations added here will apply to *any* plugin that resolves the specified key:
@@ -278,17 +269,73 @@ console.log(t.format('{#tod:locale}')); // "Matinée"
 #### Term Bundled Dictionary
 Plugin authors can optionally bundle a `locale` dictionary directly into their custom Term definition:
 ```typescript
-Tempo.addTerm({
-    key: 'shift',
-    label: 'Shift',
-    locale: {
-        es: 'Turno',
-        de: 'Schicht'
-    },
-    // ... logic
+Tempo.extend({
+    terms: [{
+        key: 'shift',
+        label: 'Shift',
+        locale: {
+            es: 'Turno',
+            de: 'Schicht'
+        },
+        // ... logic
+    }]
 });
 ```
 *Note: A user's Global `locales` config will always take precedence over a plugin's bundled dictionary.*
+
+#### Complex Native Intl Formatting
+
+While Tempo's template tokens (`{dd}`, `{mon}`, etc.) combined with the `:locale` modifier are incredibly powerful for structured formats, there are times when you want the full power of the native `Intl.DateTimeFormat` API for complete, culturally-specific sentence formatting (like Arabic numerals or full-length descriptive dates). 
+
+Because Tempo's philosophy is to "humanize" the rigid `Temporal` API, you can pass an `Intl.DateTimeFormatOptions` object *directly* into the `.format()` method. Tempo will automatically align the internal timezone and calendar constraints for you, bypassing the strict `RangeError` and `TypeError` exceptions that the native spec normally throws.
+
+**Tempo vs Temporal (Side-by-Side):**
+
+```typescript
+const arabicConfig = {
+  locale: 'ar-EG',
+  timeZone: 'Africa/Cairo',
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  numberingSystem: 'arab'
+}
+
+// 🔴 Native Temporal (Strict & Verbose)
+// 1. You must carefully parse the date using the correct Temporal factory.
+// 2. You must manually shift the timezone before formatting, or it throws an exception!
+const nativeStr = Temporal.PlainDateTime
+  .from('2024-12-25T14:30:00')
+  .toZonedDateTime('UTC')
+  .withTimeZone('Africa/Cairo')
+  .toLocaleString('ar-EG', arabicConfig);
+
+// 🟢 Tempo (Humanized)
+// Automatically handles the parsing, shifts constraints, and safely delegates to Intl!
+const tempoStr = new Tempo('2024-12-25 14:30')
+  .format(arabicConfig);
+
+console.log(tempoStr); // "الأربعاء، ٢٥ ديسمبر ٢٠٢٤"
+```
+
+```typescript
+// Example: Japanese Reiwa Era formatting
+const t = new Tempo('2024-12-25 14:30');
+
+const japaneseConfig = {
+  locale: 'ja-JP-u-ca-japanese',
+  timeZone: 'Asia/Tokyo',
+  calendar: 'japanese',
+  era: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+}
+
+console.log(t.format(japaneseConfig));
+// Output: "令和6年12月25日"
+```
 
 ---
 
@@ -299,6 +346,16 @@ The examples below use the `using` and `await using` syntax, which require **Typ
 ### ⚠️ Ticker Plugin Initialization
 
 The Ticker engine is a premium feature. Before using `Tempo.ticker()` in the examples below, you must import the plugin, initialize Tempo with your valid license, and extend it with the `TickerModule`.
+
+<div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
+  <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
+    <img src="https://registry.magmacomputing.com.au/registry-logo.svg" width="48" height="48" alt="Tempo License Registry" style="margin: 0;" />
+  </a>
+  <div>
+    <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
+    Manage your subscriptions and retrieve your license key.
+  </div>
+</div>
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -311,29 +368,20 @@ Tempo.init({ license: 'YOUR_JWT_LICENSE_HERE' });
 Tempo.extend(TickerModule);
 ```
 
-### Subscription Billing (Recurring Payments)
-Use a `seed` to anchor your subscription to a specific day, then use a month-based Ticker.
+### Interval-Based Ticker (Recurring Billing)
+Use a `seed` to anchor your ticker to a specific day, then use a month-based interval:
 
 ```typescript
-// Anchor to the 15th of the month
 await using billing = Tempo.ticker({ 
   months: 1, 
   seed: '2024-01-15' 
 }, (t) => processPayment(t));
-
-// -- OR --
-
-// Manual alternative for environments without 'await using' support:
-const billing = Tempo.ticker({ months: 1, seed: '2024-01-15' }, (t) => processPayment(t));
-// ... later ...
-await billing[Symbol.asyncDispose](); // Explicitly clean up resources
 ```
 
-### Fiscal Quarter Reporting
-Drive internal reporting cycles precisely when a new quarter begins.
+### Term-Driven Ticker (Fiscal Quarter Reporting)
+Drive internal reporting cycles precisely when a new quarter begins:
 
 ```typescript
-// Shift automatically to the start of the current quarter
 await using quarterly = Tempo.ticker({ '#quarter': 1 });
 
 for await (const t of quarterly) {
@@ -341,34 +389,7 @@ for await (const t of quarterly) {
 }
 ```
 
-### Daily Shift Management
-Automatically update a UI when a daily time period (e.g., 'morning' or 'afternoon') changes.
-
-```typescript
-using shiftTicker = Tempo.ticker({ '#timeOfDay': 1 }, (t) => {
-  document.body.className = `shift-${t.term.tod}`;
-});
-
-using dailyTicker = Tempo.ticker({ '#timeOfDay': 'morning' }, (t) => {
-  document.body.className = `morning-has-broken`;
-});
-```
-
-### Manual Sync (Action-Triggered)
-Sometimes you want a Ticker's logic but need to trigger it from an external event.
-
-```typescript
-const heartbeat = Tempo.ticker({ seconds: 5 });
-
-// Manually trigger a pulse from a UI button or WebSocket
-button.onclick = () => {
-  const t = heartbeat.pulse();
-  console.log(`Manual pulse triggered at: ${t}`);
-};
-
-// Ensure cleanup on page unload or component unmount
-window.onunload = () => heartbeat.stop();
-```
+*The Ticker plugin supports many more patterns including manual sync, daily shift management, and explicit resource disposal. See the [Ticker Plugin Documentation](https://magmacomputing.github.io/tempo-plugin-docs/ticker/) for full capability details.*
 
 ---
 
