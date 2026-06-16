@@ -105,11 +105,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				// Defensive performance boost: Once V8 natively supports Temporal, this memoized instance will succeed.
 				return getDTF(config?.locale, options).format(zdt);
 			} catch (e) {
-				// Fallback: Polyfills override toLocaleString but rigidly reject timeZone and calendar options
-				const safeOptions = { ...options };
-				delete safeOptions.timeZone;
-				delete safeOptions.calendar;
-				return zdt.toLocaleString(config?.locale, safeOptions);
+				// Fallback: Node < 22 lacks native Temporal support in Intl, so we format the epoch.
+				const fallbackOptions = { timeZone: zdt.timeZoneId, ...options };
+				if (zdt.calendarId !== 'iso8601' && !fallbackOptions.calendar)
+					fallbackOptions.calendar = zdt.calendarId;
+
+				return getDTF(config?.locale, fallbackOptions).format(zdt.epochMilliseconds);
 			}
 		}
 		return delegator(formats, (prop) => format(zdt, prop));
@@ -244,7 +245,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 							if (plugin) {
 								const termVal = (obj as unknown as Tempo).term[termKey];
-								const lang = config?.locale?.split('-')[0] ?? 'en';
+								const localeStr = Array.isArray(config?.locale) ? config.locale[0] : config?.locale;
+								const lang = localeStr?.split('-')[0] ?? 'en';
 								let locRes: any;
 								let valStr: string;
 								let baseKey: string | undefined;

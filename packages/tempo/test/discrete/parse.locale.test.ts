@@ -12,20 +12,20 @@ describe('Localized Parsing', () => {
 	});
 
 	it('should parse French months correctly when localized parsing is enabled', () => {
-		const t = new Tempo('15 janv. 2024', { locale: 'fr-FR', localize: true });
+		const t = new Tempo('15 janv. 2024', { locale: 'fr-FR' });
 
 		expect(t.isValid).toBe(true);
 		expect(t.mm).toBe(1);
 		expect(t.dd).toBe(15);
 		expect(t.yy).toBe(2024);
 
-		const t2 = new Tempo('15 février 2024', { locale: 'fr-FR', localize: true });
+		const t2 = new Tempo('15 février 2024', { locale: 'fr-FR' });
 		expect(t2.isValid).toBe(true);
 		expect(t2.mm).toBe(2);
 	});
 
 	it('should parse French months without trailing punctuation', () => {
-		const t = new Tempo('15 janv 2024', { locale: 'fr-FR', localize: true });
+		const t = new Tempo('15 janv 2024', { locale: 'fr-FR' });
 		expect(t.isValid).toBe(true);
 		expect(t.mm).toBe(1);
 	});

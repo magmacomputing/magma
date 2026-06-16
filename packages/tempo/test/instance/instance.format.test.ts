@@ -61,10 +61,24 @@ describe(`${label} format method`, () => {
     // The format module should extract locale, shift the ZonedDateTime, and gracefully
     // fallback or pass through the options without crashing on the Temporal timeZone mismatch constraint.
     const result = t.format(arabicConfig);
+    expect(result).toBe('الأربعاء، ٢٥ ديسمبر ٢٠٢٤');
+  });
+
+  test('delegates format(options) directly to native Intl for Japanese Reiwa era formatting', () => {
+    const t = new Tempo('2024-12-25 14:30');
     
-    // Check that it's a non-empty string and contains expected formatting (checking roughly for Arabic string content)
-    expect(typeof result).toBe('string');
-    expect(result.length).toBeGreaterThan(5);
+    const japaneseConfig = {
+      locale: 'ja-JP-u-ca-japanese',
+      timeZone: 'Asia/Tokyo',
+      calendar: 'japanese',
+      era: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    };
+
+    const result = t.format(japaneseConfig);
+    expect(result).toBe('令和6年12月25日');
   });
 
 });

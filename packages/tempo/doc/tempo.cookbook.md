@@ -26,7 +26,7 @@ Use the placeholder syntax in the `.format()` method.
 ```typescript
 const t = new Tempo('2024-12-25');
 t.format('{dd} {mon} {yyyy}'); // "25 December 2024"
-t.format('{hh}:{mi} {mer}');   // "12:00 am"
+t.format('{h12}:{mi} {mer}');   // "12:00 am"
 ```
 
 ### How do I check if a date is valid?
@@ -82,7 +82,7 @@ Tempo can automatically translate months, weekdays, and relative terms (like 'ye
 
 ```typescript
 const t = new Tempo('15 fevrier 2026', { locale: 'fr-FR' });
-console.log(t.format('MMMM')); // "February"
+console.log(t.format('{mon}')); // "February"
 ```
 
 *See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.*
@@ -157,8 +157,8 @@ console.log(t.since()); // "1d ago" (narrow style)
 // For maximum performance in tight loops, pass a pre-allocated formatter
 const rtf = new Intl.RelativeTimeFormat('fr', { style: 'long' });
 for (const entry of logEntries) {
-  // Use the new grouped API: pass the formatter's format function
-  console.log(new Tempo(entry.ts).since(null, { relativeTimeFormat: rtf.format.bind(rtf) }));
+  // Use the new grouped API: pass the formatter's format function directly as an option
+  console.log(new Tempo(entry.ts).since({ intl: { relativeTimeFormat: rtf.format.bind(rtf) } }));
 }
 ```
 
@@ -234,13 +234,15 @@ If you find yourself repeatedly writing `:locale` for the same date structure, s
 Tempo.init({
     registry: {
         formats: {
-            'ui-date': '{wkd:locale}, {dd} {mon:locale} {yyyy}'
+            'ui-date': '{wkd:locale}, {dd:raw} {mon:locale} {yyyy}'
         }
     }
 });
 
 t.format('ui-date'); // Resolved with all modifiers intact!
 ```
+
+*Note: Format keys are resolved case-sensitively from the global `registry.formats` object. An error will be thrown if the requested key is not found in the registry.*
 :::
 
 #### Global LOCALE Registry
@@ -267,14 +269,16 @@ console.log(t.format('{#tod:locale}')); // "Matinée"
 #### Term Bundled Dictionary
 Plugin authors can optionally bundle a `locale` dictionary directly into their custom Term definition:
 ```typescript
-Tempo.addTerm({
-    key: 'shift',
-    label: 'Shift',
-    locale: {
-        es: 'Turno',
-        de: 'Schicht'
-    },
-    // ... logic
+Tempo.extend({
+    terms: [{
+        key: 'shift',
+        label: 'Shift',
+        locale: {
+            es: 'Turno',
+            de: 'Schicht'
+        },
+        // ... logic
+    }]
 });
 ```
 *Note: A user's Global `locales` config will always take precedence over a plugin's bundled dictionary.*

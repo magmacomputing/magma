@@ -58,7 +58,7 @@ ts.fmt.logStamp;  // → "20260520T135519.623319620"
 
 This format (`Tempo.FORMAT.logStamp`) is globally configurable via `Tempo.init`:
 ```javascript
-Tempo.init({ formats: { logStamp: '{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}' } });
+Tempo.init({ registry: { formats: { logStamp: '{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}' } } });
 new Tempo('2026-05-20T13:55:19.623319620').fmt.logStamp;  // → "2026-05-20 13:55:19"
 ```
 

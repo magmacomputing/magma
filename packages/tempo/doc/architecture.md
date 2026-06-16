@@ -18,7 +18,7 @@ The property descriptor is `enumerable: false, configurable: false, writable: fa
 
 **Benefits:**
 - **Reduced global footprint** — one slot instead of seven.
-- **Centralised hardening** — input validation (`addTerm`, `addPlugin`) and hook management (`setRegisterHook`, `fireRegisterHook`) live in one place.
+- **Centralised hardening** — input validation (`Tempo.extend`) and hook management (`setRegisterHook`, `fireRegisterHook`) live in one place.
 - **Scoped runtimes (Experimental)** — `TempoRuntime.createScoped()` returns a fresh, isolated runtime for clean test isolation without `globalThis` manipulation. This remains an experimental internal feature and is not yet fully threaded through all core utilities. Unlike the primary runtime, a scoped runtime is not pinned to `globalThis`, does not receive the hardened `defineProperty` protections, and relies on the returned lexical reference instead of the shared `getRuntime()` / `globalThis[BRIDGE]` path. Implementation examples of this test-scoping pattern can be found in [plugin_registration.test.ts](../test/plugin_registration.test.ts) and [duration.core.test.ts](../test/duration.core.test.ts).
 - **Multi-bundle / HMR safety** — `getRuntime()` checks `globalThis[BRIDGE]` before constructing, so two bundle copies of Tempo always share the same runtime object, preserving the original split-brain guarantee.
 
@@ -83,7 +83,7 @@ A delegator Proxy is a Proxy wrapper whose traps forward operations to an intern
 ### 🛡️ Iteration Notes
 - **`Object.keys` / `for...in` / object spread**: Operate on enumerable keys exposed by the delegator target after discovery.
 - **`[Symbol.iterator]`**: Still provides explicit iterator semantics where implemented.
-- **`Tempo.formats` & `Tempo.terms`**: These static getters continue to provide a registry-wide view of available keys across the system, independent of per-instance memoization state.
+- **`Tempo.registry.formats` & `Tempo.registry.terms`**: These static getters continue to provide a registry-wide view of available keys across the system, independent of per-instance memoization state.
 
 ---
 

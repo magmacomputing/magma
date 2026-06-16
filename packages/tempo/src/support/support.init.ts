@@ -240,6 +240,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 							if (['snippet', 'layout'].includes(targetKey)) {
 								collect(rule, v, (val: any) => {
 									if (targetKey === 'snippet') {
+										// ReDoS Mitigation: Snippet patterns should be kept as simple as possible.
+										// While length limits and backtrack detection offer baseline protection, 
+										// residual risk remains from crafted patterns that evade these checks.
+										// If snippets are ever sourced from untrusted configuration inputs, consider
+										// implementing a timeout wrapper around the RegExp constructor call for defense-in-depth.
 										const pattern = isRegExp(val) ? val.source : String(val);
 										if (pattern.length > 500) {
 											logError(`[Tempo#extend] Snippet pattern too long (max 500 chars).`, state.config);

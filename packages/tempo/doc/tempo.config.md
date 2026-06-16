@@ -168,19 +168,14 @@ Tempo.init({
 | `timeStamp`| `'ss' \| 'ms' \| 'us' \| 'ns'` | `'ms'` | Precision for numeric inputs and the `.ts` property. |
 | `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
-| `event` | `Record<string, string \| Function>` | Built-in aliases | Custom date aliases merged into the event registry. |
-| `period` | `Record<string, string \| Function>` | Built-in aliases | Custom time aliases merged into the period registry. |
-| `snippet` | `Record<string, string \| RegExp>` | Built-in snippets | Custom snippet patterns used to compose parse layouts. |
-| `layout` | `Record<string, string \| RegExp>` | Built-in layouts | Custom parse layouts for date/time pattern matching. |
-| `registry` | `{ formats?, locales? }` | Built-in registries | Internal dictionary mappings (e.g., custom format tokens or localization dictionaries). |
-| `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. Unlike core init options such as `snippet`, `layout`, `event`, or `period`, these values are not merged into internal state via `extendState`; `Tempo.init()` applies each plugin with `Tempo.extend(p)`, so plugin authors should treat them as instance/class augmentations rather than internal-state merges. |
+| `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, parsing logic, localization). |
+| `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. Unlike `registry` options, these values are not merged into internal state via `extendState`; `Tempo.init()` applies each plugin with `Tempo.extend(p)`, so plugin authors should treat them as instance/class augmentations rather than internal-state merges. |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
 | `debug` | `number \| string` | `'info'` | Controls log verbosity via direct `LOG` levels (`0=Off ... 5=Trace`) or string labels (`'trace'`, `'info'`, etc). |
 | `catch` | `boolean` | `false` | If true, invalid inputs return a Void instance instead of throwing. |
 | `mode` | `'auto' \| 'strict' \| 'defer'` | `'auto'` | Controls the hydration strategy (e.g., `defer` for Zero-Cost creation). |
 | `silent` | `boolean` | `false` | Suppresses console output. Combined with `catch: true` for silent failover. |
-| `ignore` | `string \| string[]` | `['at']` | List of noise words to be stripped before parsing. |
 | `planner` | `PlannerOptions` | `undefined` | Grouped configuration for `layoutOrder` and `preFilter`. |
 
 ---

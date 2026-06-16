@@ -1,4 +1,4 @@
-# Extending Tempo with Plugin
+# Extending Tempo with Plugins
 
 Tempo is designed with a "lean core" philosophy. Whilst it provides robust date-time manipulation and parsing out of the box, advanced functionality (like reactive Tickers or domain-specific business logic) is added through a flexible **Plugin System**.
 
@@ -34,7 +34,7 @@ export const MyPlugin = defineExtension({
   // 2. Add an instance method (on the prototype)
   TempoClass.prototype.toHoliday = function() {
     return factory(this.add({ days: 1 }));
-  };
+  }
 });
 ```
 
@@ -133,7 +133,7 @@ Instead, use **`Tempo.extend()`** to add new data. This is the only supported wa
 ```typescript
 Tempo.extend({
   timeZones: { 'UTC+13': 'Pacific/Auckland' },
-  formats: { 'myCode': '{yy}{mm}{dd}' }
+  registry: { formats: { 'myCode': '{yy}{mm}{dd}' } }
 });
 ```
 

@@ -6,16 +6,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.0.0] - 2026-06-16
-
-### 🚨 Breaking Changes
-- **Configuration Namespace Enforcement**: Removed all legacy root-level property access that was deprecated during the `v3.x` lifecycle.
-- **Removed Static Accessors**: `Tempo.formats` has been completely removed. You must use `Tempo.registry.formats` instead.
-- **Removed Top-Level Configuration Options**: `formats` configuration key has been entirely removed from the `Options` and `Discovery` interfaces. You must use `registry: { formats: ... }` instead.
-
-### 🏗️ Internal Architecture
-- **Namespace-Only Configurations**: The internal `Config` state mapping now exclusively enforces nested schema access without mapping wrappers.
-- **Registry Consolidation (Phase 1)**: Initiated the transition of remaining data dictionaries (`event`, `period`, `snippet`, `layout`, `timeZones`, `numbers`) into the `registry` namespace to fully separate data stores from module settings.
+## [3.2.0] - 2026-06-16
 
 ### 🔒 Security & Licensing
 - **Domain-Locked Licensing**: Stabilized the premium plugin licensing engine with a robust domain-locked validation mechanism in the `@core` validator.
@@ -23,9 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 📚 Documentation & Ecosystem
 - **SSR Hydration Fixes**: Fixed `Temporal is not defined` crashes during VitePress SSR builds by enforcing global polyfill initialization in `.vitepress/config.ts`.
 - **Navigation Enhancements**: Integrated the new Internationalization (`tempo.locale.md`) guides into the primary VitePress sidebar.
-- **MathPlugin Removal**: Removed the heavy `math: true` Markdown plugin from the documentation pipeline and migrated all computational complexity notations (e.g., `$O(1)$`) to standard inline code to prevent Vue compiler crashes and reduce client bundle sizes.
-
-## [3.2.0] - 2026-06-15
+- **MathPlugin Removal**: Removed the heavy `math: true` Markdown plugin from the documentation pipeline and migrated all computational complexity notations (e.g., `O(1)`) to standard inline code to prevent Vue compiler crashes and reduce client bundle sizes.
 
 ### Added
 - **Multi-lingual Parsing**: The `locale` configuration property now officially accepts an array of strings (`string | string[]`). This enables the `ParseModule` to intelligently extract terminology from multiple languages simultaneously, generating a single, high-performance, deduplicated RegExp engine capable of parsing dates from any of the specified locales interchangeably.

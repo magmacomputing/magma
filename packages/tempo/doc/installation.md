@@ -109,7 +109,7 @@ The easiest way to use Tempo natively in the browser is via the pre-optimized ES
 {
   "imports": {
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.bundle.esm.js"
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js"
   }
 }
 </script>
@@ -136,7 +136,7 @@ While you *could* import directly from the URL everywhere, the best practice is 
 <script type="importmap">
 {
   "imports": {
-    "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@4.0.0",
+    "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@3.2.0",
     "@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@1.0.4"
   }
 }
@@ -166,14 +166,14 @@ To use Premium Plugins via static CDN, you must map the core library, its subpat
     "tslib": "https://cdn.jsdelivr.net/npm/tslib@2.8.1/tslib.es6.mjs",
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
 
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4.0.0/dist/tempo.index.js",
-    "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4.0.0/dist/core.index.js",
-    "@magmacomputing/tempo/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4.0.0/dist/library.index.js",
-    "@magmacomputing/tempo/plugin": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4.0.0/dist/plugin/plugin.index.js",
-    "@magmacomputing/tempo/enums": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4.0.0/dist/support/support.enum.js",
-    "@magmacomputing/tempo/term": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4.0.0/dist/plugin/term/term.index.js",
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/tempo.index.js",
+    "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/core.index.js",
+    "@magmacomputing/tempo/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/library.index.js",
+    "@magmacomputing/tempo/plugin": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/plugin/plugin.index.js",
+    "@magmacomputing/tempo/enums": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/support/support.enum.js",
+    "@magmacomputing/tempo/term": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/plugin/term/term.index.js",
     
-    "#tempo/license": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4.0.0/dist/plugin/license/license.validator.js",
+    "#tempo/license": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/plugin/license/license.validator.js",
 
     "@magmacomputing/tempo-plugin-astro": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@1.1.6/dist/index.js",
     "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@1.0.4/dist/index.js"
@@ -196,7 +196,7 @@ If you aren't using ESM or just want a simple `<script>` tag for rapid prototypi
 <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.umd.js"></script>
 
 <!-- Load the Tempo Global Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.js"></script>
 
 <script>
   const t = new Tempo('now');
@@ -230,5 +230,5 @@ When using the Lite build, the `Tempo` class will have almost no methods (like `
 
 We recommend pinning your versions in production environments to ensure stability. 
 
-*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/...` (Locks to major version 3)
+*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/...` (Locks to major version 3)
 *   **Latest**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/...` (Omit the version string to always receive the latest release. Note that JSDelivr will resolve a missing version tag to the latest published release).
