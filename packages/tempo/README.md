@@ -73,7 +73,7 @@ For standard usage natively in the browser, use the pre-optimized **Global ESM B
 {
   "imports": {
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js"
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.bundle.esm.js"
   }
 }
 </script>

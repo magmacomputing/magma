@@ -4,7 +4,8 @@ import type * as t from '#tempo/tempo.type.js';
 describe('Functional Alias Chaining & Host Context', () => {
 	beforeAll(() => {
 		Tempo.init({
-			event: {
+			registry: {
+				events: {
 				// 1. Basic Chaining: add then set
 				'chain.add.set': function (this: t.AliasContext) {
 					return this.add({ days: 1 }).set('2026-05-20');
@@ -34,6 +35,7 @@ describe('Functional Alias Chaining & Host Context', () => {
 				// 6. Multi-chain with fixed anchor
 				'multi.chain': function (this: t.AliasContext) {
 					return this.set('2026-01-01').add({ hours: 1 }).add({ minutes: 30 });
+				}
 				}
 			}
 		});

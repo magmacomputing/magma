@@ -116,23 +116,23 @@ describe('Tempo.format() refinements', () => {
     })
   })
 
-  describe('auto-localize', () => {
-    const t = new Tempo('2024-05-20T10:00:00Z', { locale: 'fr-FR', format: { localize: true } });
+  describe('manual-localize', () => {
+    const t = new Tempo('2024-05-20T10:00:00Z', { locale: 'fr-FR' });
 
     it('should evaluate non-localized tokens normally', () => {
       expect(t.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-20');
       expect(t.format('{hh}:{mi}')).toBe('10:00');
     })
 
-    it('should automatically localize native Intls', () => {
-      expect(t.format('{mon}')).toBe('mai');        // instead of 'May'
-      expect(t.format('{www}')).toBe('lun.');       // instead of 'Mon'
-      expect(t.format('{mon:upper}')).toBe('MAI');  // casing correctly applied after localization
+    it('should localize native Intls when :locale is provided', () => {
+      expect(t.format('{mon:locale}')).toBe('mai');        // instead of 'May'
+      expect(t.format('{www:locale}')).toBe('lun.');       // instead of 'Mon'
+      expect(t.format('{mon:locale:upper}')).toBe('MAI');  // casing correctly applied after localization
     })
 
-    it('should automatically localize Terms', () => {
-      expect(t.format('{#tod}')).toBe('Milieu de la matinée');
-      expect(t.format('{#timeOfDay}')).toBe('Milieu de la matinée');
+    it('should localize Terms when :locale is provided', () => {
+      expect(t.format('{#tod:locale}')).toBe('Milieu de la matinée');
+      expect(t.format('{#timeOfDay:locale}')).toBe('Milieu de la matinée');
     })
   })
 })

@@ -30,9 +30,11 @@ export const GlobalTempoConfig = {
   timeZone: 'Australia/Sydney',     // Set your baseline timezone
   license: 'eyJhbGciOiJIUzI1...',   // JWT Commercial License for Premium Plugins
   plugins: [CronModule, SLAModule], // Register enterprise plugins
-  period: { 
-    'market-open': '09:30',
-    'market-close': '16:00' 
+  registry: {
+    periods: { 
+      'market-open': '09:30',
+      'market-close': '16:00' 
+    }
   }
 }
 
@@ -44,7 +46,7 @@ You can then import this file at the very top of your application's entry point 
 
 ::: tip
 **Looking to configure Internationalization?**  
-Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Auto-Localization Formatting](./tempo.cookbook.md#auto-localization) guides for configuration details.
+Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See [The Role of Locale](./tempo.locale.md) for a general guide, and the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Auto-Localization Formatting](./tempo.cookbook.md#auto-localization) guides for configuration details.
 :::
 
 ```typescript
@@ -171,7 +173,6 @@ Tempo.init({
 | `snippet` | `Record<string, string \| RegExp>` | Built-in snippets | Custom snippet patterns used to compose parse layouts. |
 | `layout` | `Record<string, string \| RegExp>` | Built-in layouts | Custom parse layouts for date/time pattern matching. |
 | `registry` | `{ formats?, locales? }` | Built-in registries | Internal dictionary mappings (e.g., custom format tokens or localization dictionaries). |
-| `format` | `{ localize?: boolean }` | `{ localize: false }` | Formatting behavior preferences, such as enabling auto-localization. |
 | `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. Unlike core init options such as `snippet`, `layout`, `event`, or `period`, these values are not merged into internal state via `extendState`; `Tempo.init()` applies each plugin with `Tempo.extend(p)`, so plugin authors should treat them as instance/class augmentations rather than internal-state merges. |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
@@ -210,13 +211,15 @@ You can extend Tempo's intelligence by supplying custom **Events** (date aliases
 
 ```javascript
 Tempo.init({
-  event: {
-    'launch date': '2026-05-20',
-    'deadline': function () { return this.add({ days: 30 }) }
-  },
-  period: {
-    'tea time': '15:00',
-    'mid[ -]?after[ -]?noon': '16:00',  // regex-like key for 'mid after noon' or 'mid-after-noon' etc
+  registry: {
+    events: {
+      'launch date': '2026-05-20',
+      'deadline': function () { return this.add({ days: 30 }) }
+    },
+    periods: {
+      'tea time': '15:00',
+      'mid[ -]?after[ -]?noon': '16:00',  // regex-like key for 'mid after noon' or 'mid-after-noon' etc
+    }
   }
 })
 
@@ -252,12 +255,12 @@ By default, Tempo ignores the word **"at"** (e.g., `"Friday at 3pm"` becomes `"F
 ```javascript
 // Extend globally via Tempo.init()
 // This adds 'the' and 'o-clock' to the existing default list (['at'])
-Tempo.init({ ignore: ['the', 'o-clock'] });
+Tempo.init({ registry: { ignores: ['the', 'o-clock'] } });
 
 // Use in a specific instance via the Tempo constructor (new Tempo(...))
 // This instance will ignore 'at', 'the', and 'o-clock'
 const t = new Tempo('next Friday at 3 o-clock', { 
-  ignore: 'o-clock' 
+  registry: { ignores: 'o-clock' }
 }); 
 
 console.log(t.toString()); // Resolved correctly (noise words stripped)

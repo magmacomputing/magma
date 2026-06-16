@@ -53,7 +53,8 @@ Settings are inherited from library defaults, persistent storage, and your provi
 ## Parsing Challenges
 
 ### Parsing "Ambiguous" Digits (US vs UK)
-Tempo uses your timezone to decide if `04012026` is April 1st or January 4th.
+Tempo uses your active timezone (or configured layout priorities) to resolve ambiguous dates like `04012026` (April 1st vs January 4th).
+
 ```typescript
 // US Context (en-US)
 const us = new Tempo('04012026', { timeZone: 'America/New_York' }); 
@@ -64,31 +65,7 @@ const uk = new Tempo('04012026', { timeZone: 'Europe/London' });
 console.log(uk.format('{mon} {dd}')); // "January 04"
 ```
 
-For digits-only input, Tempo checks the most likely compact interpretation first:
-
-- A `6`-digit string is **always** validated as compact time first (`hhmiss`) **regardless of `timeZone`**—this validation is timezone-independent. Only if validation fails does Tempo then try compact date layouts (like `ddmmyy` or `mmddyy`), where `timeZone` decides month-day vs day-month order.
-- An `8`-digit string is checked as a compact date, with month-day-year vs day-month-year decided by `timeZone`.
-
-```typescript
-const time = new Tempo('093015', { timeZone: 'UTC' });
-console.log(time.format('{hh}:{mi}:{ss}')); // "09:30:15"
-
-const shortDate = new Tempo('310559', { timeZone: 'Europe/London' });
-console.log(shortDate.format('{yyyy}-{mm}-{dd}')); // "1959-05-31"
-
-// Two-digit years use Tempo's sliding `pivot` window (default `pivot: 75`): values at/after the computed pivot map to the previous century (so `59` -> `1959` here), and you can change this via constructor/parser options like `new Tempo(input, { pivot: 50, timeZone: 'Europe/London' })`.
-
-const usDate = new Tempo('04012026', { timeZone: 'America/New_York' });
-console.log(usDate.format('{yyyy}-{mm}-{dd}')); // "2026-04-01"
-
-const ukDate = new Tempo('04012026', { timeZone: 'Europe/London' });
-console.log(ukDate.format('{yyyy}-{mm}-{dd}')); // "2026-01-04"
-```
-
-To avoid ambiguity, prefer separators whenever you control the input format:
-
-- Use `09:30:15` instead of `093015`.
-- Use `2026-04-01`, `04/01/2026`, or `01/04/2026` instead of `04012026`.
+*For a detailed breakdown of how Tempo evaluates ambiguous inputs, handles 6-digit vs 8-digit compact strings, and how to explicitly override layout detection, read the [Ambiguity Resolution Guide](./tempo.month-day.md).*
 
 ### Handling Relative Strings
 Tempo natively understands human-readable offsets.
@@ -101,7 +78,14 @@ new Tempo('tomorrow afternoon');
 
 ::: tip
 **Looking for Internationalized Parsing?**  
-Tempo can automatically translate months, weekdays, and relative terms (like 'yesterday', 'today', 'tomorrow') into foreign languages using your `locale` configuration. This requires enabling the parser option `parse: { localize: true }` (or the top-level `localize: true` flag) alongside your locale setting. See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.
+Tempo can automatically translate months, weekdays, and relative terms (like 'yesterday', 'today', 'tomorrow') into foreign languages using your `locale` configuration. This is automatically enabled whenever you provide a non-English `locale` setting.
+
+```typescript
+const t = new Tempo('15 fevrier 2026', { locale: 'fr-FR' });
+console.log(t.format('MMMM')); // "February"
+```
+
+*See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.*
 :::
 
 ### Parsing Unix Timestamps
@@ -240,19 +224,24 @@ t.format('{mon:upper}');        // "MAY" (Default English TitleCase -> UpperCase
 t.format('{mon:locale}');       // "mai" (Native French Intl output)
 t.format('{mon:locale:upper} {dd:ord}'); // "MAI 15e"
 t.format('{#tod:lower}');       // "afternoon" (Modifies the native TitleCase Term plugin)
-t.format('{mer:upper}');        // "PM" (Replaces the legacy {MER} token)
+t.format('{mer:upper}');        // "PM" (Some users prefer uppercase meridiem)
 ```
 
-#### Auto-Localization
-To avoid repeatedly typing `:locale` on every token, you can set `format: { localize: true }` in your global `Tempo.init()`. This will automatically append the `:locale` modifier (before casing modifiers) for all format evaluations:
+::: tip
+**Tired of typing `:locale`?**  
+If you find yourself repeatedly writing `:locale` for the same date structure, save it to the global **FORMATS** registry! This creates a clean, reusable shortcut:
 ```typescript
-Tempo.init({ locale: 'fr-FR', format: { localize: true } });
-const t = new Tempo('2024-05-15 15:30');
+Tempo.init({
+    registry: {
+        formats: {
+            'ui-date': '{wkd:locale}, {dd} {mon:locale} {yyyy}'
+        }
+    }
+});
 
-// Automatically localized!
-t.format('{mon:upper}'); // "MAI"
-t.format('{#tod}');      // "Après-midi"
+t.format('ui-date'); // Resolved with all modifiers intact!
 ```
+:::
 
 #### Global LOCALE Registry
 The easiest way to augment or override translations globally is via the `locales` configuration option. Translations added here will apply to *any* plugin that resolves the specified key:

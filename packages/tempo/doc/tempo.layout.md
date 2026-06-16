@@ -57,8 +57,10 @@ You can supply your own parsing tokens to Tempo globally via `Tempo.init()` or l
 
 ```typescript
 Tempo.init({
-  layout: {
-    'myCustomFormat': '{dd}{sep}?{mm}{sep}?{yy}'
+  registry: {
+    layouts: {
+      'myCustomFormat': '{dd}{sep}?{mm}{sep}?{yy}'
+    }
   }
 });
 
@@ -68,7 +70,7 @@ const t = new Tempo('20-05-2024'); // Parsed using 'myCustomFormat'
 ### Instance-Specific Layout
 
 ```typescript
-const t = new Tempo('20240520', { layout: '{yy}{mm}{dd}' });
+const t = new Tempo('20240520', { registry: { layouts: '{yy}{mm}{dd}' } });
 ```
 
 ## Advanced Capture Groups

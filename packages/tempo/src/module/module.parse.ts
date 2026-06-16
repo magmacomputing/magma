@@ -224,7 +224,7 @@ const _ParseEngine = {
 			let guard = (TempoClass as any)?.[sym.$guard]?.test(trim) ?? true;
 
 			// 🛡️ Bypass the strict global guard if the current instance is using localized parsing
-			if (!guard && state.parse.localize) {
+			if (!guard && !isEmpty(state.parse.monthMap)) {
 				guard = true;
 			}
 

@@ -49,7 +49,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 	if (options) {
 		config = { ...baseConfig, ...options };
 		if (options.intl) config.intl = { ...baseConfig?.intl, ...options.intl };
-		if (options.format) config.format = { ...baseConfig?.format, ...options.format };
+
 		if (options.registry) {
 			config.registry = { ...baseConfig?.registry, ...options.registry };
 			if (options.registry.formats) config.registry.formats = { ...baseConfig?.registry?.formats, ...options.registry.formats };
@@ -160,10 +160,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	const result = template.replace(new RegExp(Match.formatBraces, 'g'), (_match: string, fullToken: string) => {
 		const [token, ...modifiers] = fullToken.split(':');
-
-		if (config?.format?.localize && !modifiers.includes('locale'))
-			modifiers.unshift('locale');
-
 		let res: any;
 
 		switch (token) {

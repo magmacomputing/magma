@@ -766,7 +766,6 @@ export class Tempo {
 				timeZone,
 				locale,
 				discovery: normalizedDiscovery,
-				format: config.format ?? { localize: config.localize ?? false },
 				registry: {
 					formats: config.registry?.formats ?? config.formats ?? enumify(STATE.FORMAT, false),
 					locales: config.registry?.locales ?? config.locales ?? proxify(STATE.LOCALE, true, true)
@@ -1521,7 +1520,7 @@ export class Tempo {
 		const self = unwrap(this);
 		this.#local.config = markConfig(Object.create(classState.config));
 		if (classState.config.registry) this.#local.config.registry = Object.create(classState.config.registry);
-		if (classState.config.format) this.#local.config.format = Object.create(classState.config.format);
+
 		Object.assign(this.#local.config, { scope: 'local' });
 
 		this.#local.parse = markConfig(Object.create(classState.parse));

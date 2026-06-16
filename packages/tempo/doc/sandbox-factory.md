@@ -27,9 +27,11 @@ import { Tempo } from '@magmacomputing/tempo';
 
 // Create a specialized Sandbox for a Financial app
 const FinTempo = Tempo.create({
-  period: {
-    'market-open': '09:30',
-    'market-close': '16:00'
+  registry: {
+    periods: {
+      'market-open': '09:30',
+      'market-close': '16:00'
+    }
   }
 });
 

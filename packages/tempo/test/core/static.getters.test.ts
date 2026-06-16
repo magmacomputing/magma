@@ -250,7 +250,7 @@ describe(`${label} parse`, () => {
   })
 
   test('parse updates after Tempo.init() with new snippet', () => {
-    Tempo.init({ snippet: { mySnip: 'myVal' } });
+    Tempo.init({ registry: { snippets: { mySnip: 'myVal' } } });
     const sym = Tempo.getSymbol('mySnip');
     expect(Tempo.parse.snippet[sym]).toBeInstanceOf(RegExp);
   })

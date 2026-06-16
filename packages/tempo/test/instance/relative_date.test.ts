@@ -5,9 +5,11 @@ describe('Tempo smoke tests', () => {
   beforeAll(() => {
     // Define a dynamic event for testing binding
     Tempo.init({
-      event: {
-        'my.birthday': function (this: AliasContext) {
-          return '2026-05-20';
+      registry: {
+        events: {
+          'my.birthday': function (this: AliasContext) {
+            return '2026-05-20';
+          }
         }
       }
     });

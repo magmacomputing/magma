@@ -96,6 +96,6 @@ When evaluated against a mixed dataset (Strict ISO, US Localized, Timestamps, an
 
 #### 🔍 Key Takeaways
 
-1. **Sub-Millisecond Rich Parsing**: While native `Date` has raw C++ V8 speed (0.18 µs), it sacrifices reliability and formatting, failing entirely on localized formats like `10/31/2026`. Tempo achieves a robust **71% success rate** while still maintaining blazing fast **sub-millisecond (~0.7ms)** parsing speeds! In real-world terms, processing 100 complex localized dates on a page will only take 70 milliseconds. 
-2. **Defer Mode is Highly Optimized**: Looking at the memory overhead (`heapUsedDeltaMb`), `defer` mode actually resulted in a *negative* memory delta (`-36.27 MB`), meaning it allowed the V8 Garbage Collector to clean up memory faster than we were allocating the Proxy instances!
+1. **Sub-Millisecond Rich Parsing**: While native `Date` has raw native engine speed (0.18 µs), it sacrifices reliability and formatting, failing entirely on localized formats like `10/31/2026`. Tempo achieves a robust **71% success rate** while still maintaining blazing fast **sub-millisecond (~0.7ms)** parsing speeds! In real-world terms, processing 100 complex localized dates on a page will only take 70 milliseconds. 
+2. **Defer Mode is Highly Optimized**: Looking at the memory overhead (`heapUsedDeltaMb`), `defer` mode actually resulted in a *negative* memory delta (`-36.27 MB`), meaning it allowed the JavaScript Garbage Collector to clean up memory faster than we were allocating the Proxy instances!
 3. **Adapt This Test**: The runner script used to generate these results is available in the `bench/runner.test.ts` directory. You can use it as a scaffold to test Tempo against your own unique datasets.

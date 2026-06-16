@@ -231,20 +231,19 @@ export namespace Internal {
 		/** pivot year for two-digit years */										pivot: number;
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
-		/** top-level shortcut to enable `parse.localize` and `format.localize` */ localize?: boolean;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
-		/** formatting engine configuration */									format?: { localize?: boolean };
-		/** parsing engine configuration */											parse?: { localize?: boolean };
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
-		/** date-time snippets to help compose a Layout */			snippet: Snippet | RegistryOption<Pattern>;
-		/** patterns to help parse value */											layout: Layout | RegistryOption<Pattern>;
-		/** custom date aliases (events). */										event: Event | RegistryOption<Logic>;
-		/** custom time aliases (periods). */										period: Period | RegistryOption<Logic>;
-		/** noise words to ignore during parsing. */						ignore: Ignore;
-		/** @deprecated Provide configuration inside `registry: { formats: ... }` */ formats: Property<any>;
-		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>> };
+		/** custom data augmentation registries */							registry?: { 
+			formats?: Property<any>;
+			locales?: Record<string, Record<string, string | Function>>;
+			snippets?: Snippet | RegistryOption<Pattern>;
+			layouts?: Layout | RegistryOption<Pattern>;
+			events?: Event | RegistryOption<Logic>;
+			periods?: Period | RegistryOption<Logic>;
+			ignores?: Ignore;
+		};
 		/** plugins to be automatically extended */							plugins: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;
@@ -313,7 +312,6 @@ export namespace Internal {
 		/** @internal lazy delegator for terms */								term?: any;
 		/** @internal localized Master Guard scanner */					guard?: { test(str: string): boolean };
 		/** @internal localized Noise Word scanner */						ignorePattern?: RegExp;
-		/** @internal flag for localized parsing */							localize?: boolean;
 		/** @internal reverse-lookup map for localized months */monthMap?: Record<string, { value: number; locale: string }>;
 		/** @internal reverse-lookup map for localized weekdays */weekdayMap?: Record<string, { value: number; locale: string }>;
 	}
@@ -325,8 +323,6 @@ export namespace Internal {
 	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "license" | "localize">> {
 		/** license key for premium features */									license?: string;
 		/** configuration (global | local) */										scope: 'global' | 'local';
-		/** formatting engine configuration */									format: { localize?: boolean };
-		/** parsing engine configuration */											parse: { localize?: boolean };
 		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>> };
 		/** index-signature */																	readonly [key: string]: any;
 	}
@@ -340,9 +336,6 @@ export namespace Internal {
 		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
-		/** top-level shortcut to enable localization */				localize?: boolean;
-		/** formatting engine configuration */									format?: { localize?: boolean };
-		/** parsing engine configuration */											parse?: { localize?: boolean };
 		/** @deprecated Provide configuration inside `registry: { formats: ... }` */formats?: Property<any>;
 		/** @deprecated Provide configuration inside `registry: { locales: ... }` */locales?: Record<string, Record<string, string | Function>>;
 		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>> };

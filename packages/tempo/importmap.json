@@ -3,7 +3,7 @@
   "imports": {
     "tslib": "https://cdn.jsdelivr.net/npm/tslib@2.8.1/tslib.es6.mjs",
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js",
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.bundle.esm.js",
     "@magmacomputing/tempo/core": "./dist/core.index.js",
     "@magmacomputing/tempo/duration": "./dist/module/module.duration.js",
     "@magmacomputing/tempo/mutate": "./dist/module/module.mutate.js",

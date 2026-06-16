@@ -58,8 +58,10 @@ describe('Global Configuration Discovery', () => {
 	test('Tempo discovers global options for events and periods', () => {
 		(globalThis as any)[$TestTempo] = {
 			options: {
-				event: { 'global launch': '2026-10-01' },
-				period: { 'global teatime': '15:30' }
+				registry: {
+					events: { 'global launch': '2026-10-01' },
+					periods: { 'global teatime': '15:30' }
+				}
 			}
 		}
 
