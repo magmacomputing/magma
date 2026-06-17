@@ -69,6 +69,47 @@ console.log(t.format({ dateStyle: 'full', locale: 'de-DE' }));
 
 *For more details on formatting features, see the [Format Guide](./tempo.format.md).*
 
+### Global LOCALE Registry
+The easiest way to augment or override translations globally is via the `locales` configuration option. Translations added here will apply to *any* plugin that resolves the specified key:
+```typescript
+Tempo.init({
+    locale: 'fr-FR',
+    registry: {
+        locales: {
+            fr: {
+                morning: 'Matinée',
+                afternoon: 'Après-midi',
+                // Supports native Intl.PluralRules objects for ordinals!
+                ordinal: { one: 'er', other: 'e' }
+            }
+        }
+    }
+});
+
+const t = new Tempo('2024-05-15 10:30', { locale: 'fr-FR' });
+console.log(t.format('{#tod:locale}')); // "Matinée"
+console.log(t.format('{dd:ord}'));      // "15e"
+```
+
+> [!NOTE]
+> **Ordinal Localization**: While the `:locale` modifier automatically delegates to native APIs for months and weekdays, the `:ord` modifier **requires** a dictionary in the global `locales` registry for non-English languages. If no `ordinal` dictionary is found, Tempo will fall back to English suffixes (`st`, `nd`, `rd`, `th`). By providing a "Plural Object" mapping as shown above, Tempo natively evaluates the active `Intl.PluralRules` category and automatically appends the correct suffix!
+
+### Term Bundled Dictionary
+Plugin authors can optionally bundle a `locale` dictionary directly into their custom Term definition:
+```typescript
+Tempo.extend({
+    terms: [{
+        key: 'shift',
+        label: 'Shift',
+        locale: {
+            es: 'Turno',
+            de: 'Schicht'
+        },
+        // ... logic
+    }]
+});
+```
+*Note: A user's Global `locales` config will always take precedence over a plugin's bundled dictionary.*
 ---
 
 ## Initialization & Fallbacks

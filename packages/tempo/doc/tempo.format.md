@@ -99,18 +99,18 @@ Tempo.extend(FormatModule);
 | `{ww}` | Zero-padded ISO Week of Year | `43` |
 | `{hh}` | Zero-padded Hour (24h) | `15` |
 | `{h12}` | Zero-padded Hour (12h) plus meridiem | `03pm` |
-| `{mer}` | am/pm marker | `pm` |
+| `{mer}` | am/pm meridiem marker | `pm` |
 | `{mi}` | Zero-padded Minutes | `30` |
 | `{ss}` | Zero-padded Seconds | `45` |
+| `{ms}` | Zero-padded Milliseconds (3-digit) | `123` |
+| `{us}` | Zero-padded Microseconds (3-digit) | `456` |
+| `{ns}` | Zero-padded Nanoseconds (3-digit) | `789` |
+| `{ff}` | Fractional Seconds (9-digit) | `123456789` |
+| `{ts}` | Unix Timestamp | `1792843200000` |
 | `{dmy}` | Compact Date (ddmmyyyy) | `24102026` |
 | `{mdy}` | Compact Date (mmddyyyy) | `10242026` |
 | `{ymd}` | Compact Date (yyyymmdd) | `20261024` |
 | `{hms}` | Compact Time (24h) | `153045` |
-| `{ms}` | Zero-padded Milliseconds (3-digit) | `123` |
-| `{us}` | Zero-padded Microseconds (3-digit) | `456` |
-| `{ns}` | Zero-padded Nanoseconds (3-digit) | `789` |
-| `{ff}` | Fractional Seconds | `123456789` |
-| `{ts}` | Unix Timestamp | `1792843200000` |
 | `{nano}` | Nanosecond Timestamp | `1792843200000000000` |
 | `{tz}` | Time Zone ID | `Australia/Sydney` |
 | `{cal}` | Calendar System | `iso8601` |
@@ -120,8 +120,8 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 
 | Modifier | Target | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `:raw` | Number | Unpadded number, no meridiem | `{hh:raw}` → `3` |
-| `:ord` | Number | Appends an ordinal suffix (unpadded) | `{dd:ord}` → `24th` |
+| `:raw` | Number | Unpadded number with no meridiem | `{h12:raw}` → `3` |
+| `:ord` | Number | Unpadded number with ordinal suffix | `{dd:ord}` → `24th` |
 | `:upper` | String | Converts to uppercase | `{mer:upper}` → `PM` |
 | `:lower` | String | Converts to lowercase | `{mon:lower}` → `october` |
 | `:title` | String | Converts to titlecase | `{mon:locale:title}` → `Octobre` |
@@ -136,10 +136,10 @@ If your format string contains `{h12}` (12-hour clock) but lacks a `{mer}` token
 > **Why `{h12}`?** In most date libraries, `{hh}` means 12-hour and `{HH}` means 24-hour time. However, Tempo standardizes `{hh}` on the default 24-hour expectation (with `{h12}` serving as the specific 12-hour override). This keeps all token definitions, and their corresponding time getters, fully lowercase and semantic. 
 
 ```typescript
-t.format('{h12}:{mi}');           // "03:30pm" (auto-append meridiem)
-t.format('{h12:upper}:{mi}');     // "03:30PM" (auto-append meridiem)
+t.format('{h12}:{mi}');           // "03:30pm" (auto-append standard meridiem)
+t.format('{h12:upper}:{mi}');     // "03:30PM" (auto-append modified meridiem)
 t.format('{h12:raw}:{mi}');       // "3:30"    (no meridiem added)
-t.format('{h12:raw}:{mi} {mer}'); // "3:30 am" (blank + meridiem added manually)
+t.format('{h12:raw}:{mi} {mer}'); // "3:30 am" (space + meridiem added manually)
 ```
 
 ### 🔢 Numeric Resolution
@@ -176,4 +176,60 @@ t.format('{wkd}, {mmm} {dd:raw}, {yyyy} @ {h12}:{mi}');
 // Forcing fully lowercase strings
 t.format('{wkd:lower} afternoon'); 
 // "monday afternoon"
+```
+
+---
+
+## 🌍 Complex Native Intl Formatting
+
+While Tempo's template tokens (`{dd}`, `{mon}`, etc.) combined with the `:locale` modifier are incredibly powerful for structured formats, there are times when you want the full power of the native `Intl.DateTimeFormat` API for complete, culturally-specific sentence formatting (like Arabic numerals or full-length descriptive dates). 
+
+Because Tempo's philosophy is to "humanize" the rigid `Temporal` API, you can pass an `Intl.DateTimeFormatOptions` object *directly* into the `.format()` method. Tempo will automatically align the internal timezone and calendar constraints for you, bypassing the strict `RangeError` and `TypeError` exceptions that the native spec normally throws.
+
+**Tempo vs Temporal (Side-by-Side):**
+
+```typescript
+const arabicConfig = {
+  locale: 'ar-EG',
+  timeZone: 'Africa/Cairo',
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  numberingSystem: 'arab'
+}
+
+// 🔴 Native Temporal (Strict & Verbose)
+// 1. You must carefully parse the date using the correct Temporal factory.
+// 2. You must manually shift the timezone before formatting, or it throws an exception!
+const nativeStr = Temporal.PlainDateTime
+  .from('2024-12-25T14:30:00')
+  .toZonedDateTime('UTC')
+  .withTimeZone('Africa/Cairo')
+  .toLocaleString('ar-EG', arabicConfig);
+
+// 🟢 Tempo (Humanized)
+// Automatically handles the parsing, shifts constraints, and safely delegates to Intl!
+const tempoStr = new Tempo('2024-12-25 14:30')
+  .format(arabicConfig);
+
+console.log(tempoStr); // "الأربعاء، ٢٥ ديسمبر ٢٠٢٤"
+```
+
+```typescript
+// Example: Japanese Reiwa Era formatting
+const t = new Tempo('2024-12-25 14:30');
+
+const japaneseConfig = {
+  locale: 'ja-JP-u-ca-japanese',
+  timeZone: 'Asia/Tokyo',
+  calendar: 'japanese',
+  era: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+}
+
+console.log(t.format(japaneseConfig));
+// Output: "令和6年12月25日"
 ```
