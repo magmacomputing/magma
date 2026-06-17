@@ -25,8 +25,8 @@ console.log(now.toString());
 Use the placeholder syntax in the `.format()` method.
 ```typescript
 const t = new Tempo('2024-12-25');
-t.format('{dd} {mon} {yyyy}'); // "25 December 2024"
-t.format('{h12}:{mi} {mer}');   // "12:00 am"
+t.format('{dd} {mon} {yyyy}');  // "25 December 2024"
+t.format('{h12}:{mi}');         // "12:00am"
 ```
 
 ### How do I check if a date is valid?
@@ -38,6 +38,10 @@ if (t.isValid) {
 ```
 
 ### Global Configuration and Initialization
+
+> [!WARNING]
+> **REPL Users Beware**: `Tempo.init()` is strictly idempotent. It is designed to run exactly once at application boot to prevent late-loaded modules from destroying global state. If you are testing multiple code samples in a continuous REPL session, subsequent calls to `Tempo.init()` will silently abort. Use **`Tempo.extend({ ... })`** instead in these examples to hot-load configuration into an active environment!
+
 You can initialize global defaults that apply to all future `Tempo` instances.
 ```typescript
 Tempo.init({
@@ -65,7 +69,7 @@ const uk = new Tempo('04012026', { timeZone: 'Europe/London' });
 console.log(uk.format('{mon} {dd}')); // "January 04"
 ```
 
-*For a detailed breakdown of how Tempo evaluates ambiguous inputs, handles 6-digit vs 8-digit compact strings, and how to explicitly override layout detection, read the [Ambiguity Resolution Guide](./tempo.month-day.md).*
+*For a detailed breakdown of how Tempo evaluates these ambiguous compact formats and how to explicitly override layout detection, read the [Ambiguity Resolution Guide](./tempo.month-day.md).*
 
 ### Handling Relative Strings
 Tempo natively understands human-readable offsets.
@@ -75,18 +79,6 @@ new Tempo('next Friday');
 new Tempo('2 weeks ago');
 new Tempo('tomorrow afternoon');
 ```
-
-::: tip
-**Looking for Internationalized Parsing?**  
-Tempo can automatically translate months, weekdays, and relative terms (like 'yesterday', 'today', 'tomorrow') into foreign languages using your `locale` configuration. This is automatically enabled whenever you provide a non-English `locale` setting.
-
-```typescript
-const t = new Tempo('15 fevrier 2026', { locale: 'fr-FR' });
-console.log(t.format('{mon}')); // "February"
-```
-
-*See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.*
-:::
 
 ### Parsing Unix Timestamps
 Tempo handles both milliseconds (Number) and nanoseconds (BigInt).
@@ -104,30 +96,44 @@ Tempo instances are immutable; `add()` returns a new instance.
 ```typescript
 const deadline = new Tempo().add({ days: 7, hours: 2 });
 const past = new Tempo().add({ months: -1 });
+
+// You can also step by semantic Terms using the `#` prefix!
+const t1 = new Tempo('2024-05-15'); // Middle of Q2
+const t2 = t1.add({ '#quarter': 1 }); // Middle of Q3: "2024-08-14" (approx)
 ```
 
-### How do I jump to Term boundaries?
-Use the `#` prefix with `start` or `end` to jump to semantic boundaries like Quarters or Seasons.
+### Jumping to Boundaries (`start`, `mid`, `end`)
+The `.set()` method allows you to jump to the boundaries of native units (like months or years) or semantic Terms (using the `#` prefix). You can specify whether to land on the inclusive start, inclusive end, or the exact center.
 ```typescript
-const qtrStart = new Tempo().set({ start: '#quarter' });
-const sznEnd = new Tempo().set({ end: '#season' });
+// Native Units
+const monthStart = new Tempo().set({ start: 'month' });
+
+// Semantic Terms (Lands on 30-Sep 23:59:59.999... Inclusive End)
+const qtrEnd = new Tempo().set({ end: '#quarter' });
+
+// Lands on the arithmetic nanosecond midpoint of the period
+const qtrMid = new Tempo().set({ mid: '#quarter' });
 ```
 
-### How long until a deadline?
+### How long until a deadline? (`until`)
 ```typescript
 const t = new Tempo();
 const daysLeft = t.until('2025-01-01', 'days');
 console.log(`${daysLeft} days remaining`);
 ```
 
-### Precision Manipulation (`end` vs `mid`)
-When using `.set()` with a Term anchor (like `#qtr`), you can specify whether to land on the inclusive end or the exact center.
+### High-Performance Relative Time (`since`)
+Tempo memoizes `Intl.RelativeTimeFormat` objects internally for efficiency.
 ```typescript
-// Lands on 30-Sep 23:59:59.999... (Inclusive End)
-const qtrEnd = new Tempo().set({ end: '#qtr' });
+const t = new Tempo('yesterday');
+console.log(t.since()); // "1d ago" (narrow style)
 
-// Lands on the arithmetic nanosecond midpoint of the period
-const qtrMid = new Tempo().set({ mid: '#qtr' });
+// For maximum performance in tight loops, pass a pre-allocated formatter
+const rtf = new Intl.RelativeTimeFormat('fr', { style: 'long' });
+for (const entry of logEntries) {
+  // Use the new grouped API: pass the formatter's format function directly as an option
+  console.log(new Tempo(entry.ts).since({ intl: { relativeTimeFormat: rtf.format.bind(rtf) } }));
+}
 ```
 
 ---
@@ -148,19 +154,17 @@ console.log(london.format('{hh}:{mi}')); // "15:00"
 const utcNow = new Tempo({ timeZone: 'UTC' });
 ```
 
-### High-Performance Relative Time (`since`)
-Tempo memoizes `Intl.RelativeTimeFormat` objects internally for efficiency.
-```typescript
-const t = new Tempo('yesterday');
-console.log(t.since()); // "1d ago" (narrow style)
+::: tip
+**Looking for Internationalized Parsing?**  
+Tempo can automatically translate months, weekdays, and relative terms (like 'yesterday', 'today', 'tomorrow') into foreign languages using your `locale` configuration. This is automatically enabled whenever you provide a non-English `locale` setting.
 
-// For maximum performance in tight loops, pass a pre-allocated formatter
-const rtf = new Intl.RelativeTimeFormat('fr', { style: 'long' });
-for (const entry of logEntries) {
-  // Use the new grouped API: pass the formatter's format function directly as an option
-  console.log(new Tempo(entry.ts).since({ intl: { relativeTimeFormat: rtf.format.bind(rtf) } }));
-}
+```typescript
+const t = new Tempo('15 fevrier 2026', { locale: 'fr-FR' });
+console.log(t.format('{mon}')); // "February"
 ```
+
+*See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.*
+:::
 
 ---
 
@@ -193,13 +197,6 @@ console.log(new Tempo({ timeZone: 'America/New_York' }).term.szn); // "Summer"
 console.log(new Tempo({ timeZone: 'Australia/Sydney' }).term.szn); // "Winter"
 ```
 
-### Unified Term Math
-Tempo allows you to shift dates by semantic "steps" while preserving your relative position within the Term.
-```typescript
-const t1 = new Tempo('2024-05-15'); // Middle of Q2
-const t2 = t1.add({ '#quarter': 1 }); // Middle of Q3: "2024-08-14" (approx)
-```
-
 ### Semantic Formatting
 Use specific Term tokens like `{#quarter}` or `{#season}` to automatically embed a Term's label (or key) into a format string.
 ```typescript
@@ -222,7 +219,7 @@ const t = new Tempo('2024-05-15 15:30', { locale: 'fr-FR' });
 
 t.format('{mon:upper}');        // "MAY" (Default English TitleCase -> UpperCase)
 t.format('{mon:locale}');       // "mai" (Native French Intl output)
-t.format('{mon:locale:upper} {dd:ord}'); // "MAI 15e"
+t.format('{mon:locale:upper} {dd}'); // "MAI 15" (Native French Intl output)
 t.format('{#tod:lower}');       // "afternoon" (Modifies the native TitleCase Term plugin)
 t.format('{mer:upper}');        // "PM" (Some users prefer uppercase meridiem)
 ```
@@ -232,6 +229,7 @@ t.format('{mer:upper}');        // "PM" (Some users prefer uppercase meridiem)
 If you find yourself repeatedly writing `:locale` for the same date structure, save it to the global **FORMATS** registry! This creates a clean, reusable shortcut:
 ```typescript
 Tempo.init({
+    locale: 'fr-FR',
     registry: {
         formats: {
             'ui-date': '{wkd:locale}, {dd:raw} {mon:locale} {yyyy}'
@@ -255,16 +253,20 @@ Tempo.init({
             fr: {
                 morning: 'Matinée',
                 afternoon: 'Après-midi',
-                // Supports functions for dynamic resolution!
-                ordinal: (n) => n === 1 ? '1er' : `${n}e`
+                // Supports native Intl.PluralRules objects for ordinals!
+                ordinal: { one: 'er', other: 'e' }
             }
         }
     }
 });
 
-const t = new Tempo('2024-05-15 10:30', { locale: 'fr-FR' });
+const t = new Tempo('2024-05-15 10:30');
 console.log(t.format('{#tod:locale}')); // "Matinée"
+console.log(t.format('{dd:ord}'));      // "15e"
 ```
+
+> [!NOTE]
+> **Ordinal Localization**: While the `:locale` modifier automatically delegates to native APIs for months and weekdays, the `:ord` modifier **requires** a dictionary in the global `locales` registry for non-English languages. If no `ordinal` dictionary is found, Tempo will fall back to English suffixes (`st`, `nd`, `rd`, `th`). By providing a "Plural Object" mapping as shown above, Tempo natively evaluates the active `Intl.PluralRules` category and automatically appends the correct suffix!
 
 #### Term Bundled Dictionary
 Plugin authors can optionally bundle a `locale` dictionary directly into their custom Term definition:
@@ -424,9 +426,6 @@ Tempo.init({
     formats: {
       'customDate': '{dd} {mon:upper} {yyyy} - {h12}:{mi}'
     }
-  },
-  format: {
-    localize: true // Automatically applies the :locale modifier to {mon}
   }
 });
 

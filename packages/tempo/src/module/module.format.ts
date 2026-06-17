@@ -3,7 +3,7 @@ import { pad, toTitleCase } from '#library/string.library.js';
 import { suffix } from '#library/number.library.js';
 import { ifNumeric } from '#library/coercion.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction } from '#library/assertion.library.js';
-import { formatDayPeriod, getDTF } from '#library/international.library.js';
+import { formatDayPeriod, getDTF, getPR } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
 import { isTempo, enums, Match, getRuntime, NumericPattern, BigIntPattern } from '#tempo/support';
@@ -229,9 +229,23 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'title':
 					res = toTitleCase(String(res), config?.locale);
 					break;
-				case 'ord':
-					res = suffix(parseInt(String(res), 10));
+				case 'ord': {
+					const val = parseInt(String(res), 10);
+					const localeStr = Array.isArray(config?.locale) ? config.locale[0] : config?.locale;
+					const lang = localeStr?.split('-')[0] ?? 'en';
+					const dict = config?.registry?.locales?.[lang]?.['ordinal'];
+
+					if (isObject(dict)) {
+						const pr = getPR(config?.locale, { type: 'ordinal' });
+						const category = pr.select(val);
+						res = `${val}${dict[category] ?? dict.other ?? ''}`;
+					} else if (isFunction(dict)) {
+						res = dict(val);
+					} else {
+						res = suffix(val);
+					}
 					break;
+				}
 				case 'raw':
 					if (/^[0-9]+$/.test(String(res)))
 						res = BigInt(String(res)).toString();

@@ -117,8 +117,8 @@ export class AliasEngine {
 			const existingKey = this.#words[baseWord];
 			const existing = existingKey ? this.getAlias(existingKey) : undefined;
 
-			// Skip identical re-registrations at the same depth to avoid redundant warnings and state growth
-			if (existing && existing.type === type && existing.target === target && existing.name === name && existing.depth === this.#depth)
+			// Skip identical re-registrations across the entire prototype chain to avoid redundant warnings and state growth
+			if (existing && existing.type === type && existing.target === target && existing.name === name)
 				continue;
 
 			const index = (this.#count[type]++);

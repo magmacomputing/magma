@@ -17,6 +17,15 @@ export const getDTF = memoizeFunction((locale?: string, options?: Intl.DateTimeF
 	return new Intl.DateTimeFormat(locale, options);
 });
 
+/** memoized helper for Intl.PluralRules instances */
+export const getPR = memoizeFunction((locale?: string, options?: Intl.PluralRulesOptions) => {
+	try {
+		return new Intl.PluralRules(locale, options);
+	} catch (e) {
+		return { select: () => 'other' } as unknown as Intl.PluralRules;
+	}
+});
+
 /** memoized helper for Intl.NumberFormat instances */
 const getNF = memoizeFunction((locale?: string, options?: Intl.NumberFormatOptions) => {
 	return new Intl.NumberFormat(locale, options);
