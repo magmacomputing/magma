@@ -238,7 +238,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					if (isObject(dict)) {
 						const pr = getPR(config?.locale, { type: 'ordinal' });
 						const category = pr.select(val);
-						res = `${val}${dict[category] ?? dict.other ?? ''}`;
+						res = `${val}${dict[category] ?? dict.other ?? suffix(val)}`;
 					} else if (isFunction(dict)) {
 						res = dict(val);
 					} else {

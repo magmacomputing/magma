@@ -46,7 +46,7 @@ You can then import this file at the very top of your application's entry point 
 
 ::: tip
 **Looking to configure Internationalization?**  
-Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See [The Role of Locale](./tempo.locale.md) for a general guide, and the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Auto-Localization Formatting](./tempo.cookbook.md#auto-localization) guides for configuration details.
+Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See [The Role of Locale](./tempo.locale.md) for a general guide, and the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Format Modifiers & Localization](./tempo.cookbook.md#format-modifiers--localization) guides for configuration details.
 :::
 
 ```typescript
@@ -132,7 +132,7 @@ Tempo looks for the following structure:
 | Property | Type | Description |
 | :--- | :--- | :--- |
 | `options` | `Options \| (() => Options)` | Configuration options merged into global state. |
-| `intl` | `IntlOptions` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat` and `durationFormat`. |
+| `intl` | `IntlOptions` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, `durationFormat`, and `dateTimeFormat`. |
 | `plugins` | `Plugin \| Plugin[]` | Modular plugin(s) (including `TermPlugin`s) to be extended onto Tempo automatically. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
 | `numbers` | `Record<string, number>` | Custom number-word aliases merged into the NUMBER registry. |

@@ -18,7 +18,7 @@ export const getDTF = memoizeFunction((locale?: string, options?: Intl.DateTimeF
 });
 
 /** memoized helper for Intl.PluralRules instances */
-export const getPR = memoizeFunction((locale?: string, options?: Intl.PluralRulesOptions) => {
+export const getPR = memoizeFunction((locale?: Intl.LocalesArgument, options?: Intl.PluralRulesOptions) => {
 	try {
 		return new Intl.PluralRules(locale, options);
 	} catch (e) {
