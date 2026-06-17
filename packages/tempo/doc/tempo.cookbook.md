@@ -8,7 +8,8 @@ A collection of recipes for solving common date and time challenges using Tempo.
 3. [Manipulation and Calculations](#manipulation-and-calculations)
 4. [Timezones and Locales](#timezones-and-locales)
 5. [Business Logic and Terms](#business-logic-and-terms)
-6. [Interoperability](#interoperability)
+6. [Formatting and Localization](#formatting-and-localization)
+7. [Interoperability](#interoperability)
 
 ---
 
@@ -154,17 +155,6 @@ console.log(london.format('{hh}:{mi}')); // "15:00"
 const utcNow = new Tempo({ timeZone: 'UTC' });
 ```
 
-::: tip
-**Looking for Internationalized Parsing?**  
-Tempo can automatically translate months, weekdays, and relative terms (like 'yesterday', 'today', 'tomorrow') into foreign languages using your `locale` configuration. This is automatically enabled whenever you provide a non-English `locale` setting.
-
-```typescript
-const t = new Tempo('15 fevrier 2026', { locale: 'fr-FR' });
-console.log(t.format('{mon}')); // "February"
-```
-
-*See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.*
-:::
 
 ---
 
@@ -196,6 +186,10 @@ console.log(london.term.szn); // "Summer"
 console.log(new Tempo({ timeZone: 'America/New_York' }).term.szn); // "Summer"
 console.log(new Tempo({ timeZone: 'Australia/Sydney' }).term.szn); // "Winter"
 ```
+
+---
+
+## Formatting and Localization
 
 ### Semantic Formatting
 Use specific Term tokens like `{#quarter}` or `{#season}` to automatically embed a Term's label (or key) into a format string.
@@ -260,7 +254,7 @@ Tempo.init({
     }
 });
 
-const t = new Tempo('2024-05-15 10:30');
+const t = new Tempo('2024-05-15 10:30', { locale: 'fr-FR' });
 console.log(t.format('{#tod:locale}')); // "Matinée"
 console.log(t.format('{dd:ord}'));      // "15e"
 ```
@@ -338,6 +332,18 @@ const japaneseConfig = {
 console.log(t.format(japaneseConfig));
 // Output: "令和6年12月25日"
 ```
+
+::: tip
+**Looking for Internationalized Parsing?**  
+Just like formatting, Tempo can also *parse* foreign languages! Tempo can automatically translate months, weekdays, and relative terms (like 'yesterday', 'today', 'tomorrow') out of user input strings using your `locale` configuration. This is automatically enabled whenever you provide a non-English `locale` setting.
+
+```typescript
+const t = new Tempo('15 fevrier 2026', { locale: 'fr-FR' });
+console.log(t.format('{mon}')); // "February"
+```
+
+*See the [Smart Parsing Guide](./tempo.parse.md#internationalized-parsing-locales) for full documentation and current capabilities.*
+:::
 
 ---
 

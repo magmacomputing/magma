@@ -132,12 +132,11 @@ Tempo looks for the following structure:
 | Property | Type | Description |
 | :--- | :--- | :--- |
 | `options` | `Options \| (() => Options)` | Configuration options merged into global state. |
-| `plugins` | `Plugin \| Plugin[]` | Modular plugin(s) to be extended onto Tempo automatically. |
-| `terms` | `TermPlugin \| TermPlugin[]` | Custom Term plugin to be registered. |
+| `intl` | `IntlOptions` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat` and `durationFormat`. |
+| `plugins` | `Plugin \| Plugin[]` | Modular plugin(s) (including `TermPlugin`s) to be extended onto Tempo automatically. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
 | `numbers` | `Record<string, number>` | Custom number-word aliases merged into the NUMBER registry. |
-| `registry` | `{ formats?: Record<string, string>, locales?: Record<string, any> }` | Custom configuration for internal dictionary registries. |
-| `ignore` | `string \| string[] \| (() => string \| string[])` | Additional noise words to merge into parser ignore rules. |
+| `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores? }` | Custom configuration for internal dictionary registries. |
 
 ---
 
