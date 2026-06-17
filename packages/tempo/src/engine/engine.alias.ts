@@ -112,25 +112,27 @@ export class AliasEngine {
 	 * which would cause confusion and unintended matches).
 	 */
 	registerAliases(type: AliasType, events: [string, AliasTarget][]) {
+		let mutated = false;
+
 		for (const [name, target] of events) {
 			const baseWord = AliasEngine._getBaseWord(name);
 			const existingKey = this.#words[baseWord];
 			const existing = existingKey ? this.getAlias(existingKey) : undefined;
 
-			// Skip identical re-registrations at the same depth to avoid redundant warnings and state growth
-			if (existing && existing.type === type && existing.target === target && existing.name === name && existing.depth === this.#depth)
+			// Skip identical re-registrations across the entire prototype chain to avoid redundant warnings and state growth
+			if (this.getAliases(type, true).some(a => a.target === target && a.name === name))
 				continue;
 
+			mutated = true;
 			const index = (this.#count[type]++);
 			const aliasKey = `${type}${this.#depth}_${index}` as AliasKey;
 			const shouldOverwrite = !(existing?.type === 'evt' && type === 'per');
 
-			if (baseWord in this.#words) {
+			if (baseWord in this.#words)
 				logWarn(
 					`[AliasEngine] Collision detected for ${type} alias "${name}". ${shouldOverwrite ? 'Overwriting' : 'Preserving'} existing alias.`,
 					this.#config
 				);
-			}
 
 			if (shouldOverwrite)
 				this.#words[baseWord] = aliasKey;
@@ -145,7 +147,9 @@ export class AliasEngine {
 			}
 		}
 
-		this.#version++;
+		if (mutated)
+			this.#version++;
+
 		return this.getPatterns(type);
 	}
 

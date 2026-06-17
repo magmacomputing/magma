@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1] - 2026-06-17
+
+### Added
+- **Ordinal Localization Fallback**: Implemented support for non-English `Intl.PluralRules` dictionaries. If an `ordinal` dictionary is provided in the global `locales` registry, Tempo natively evaluates the active plural category (e.g., `'one'`, `'other'`) and appends the correct localized suffix instead of defaulting to English.
+
+### Changed
+- **Documentation Restructuring**: Extensively reorganized the `tempo.cookbook.md` to group related functionality (e.g. merging `add()` math, grouping `.set()` boundaries, and isolating Timezones & Locales) for a more intuitive developer reading experience.
+- **Clarified Configuration Topology**: Updated `tempo.config.md` to remove outdated top-level keys (`ignore`, `terms`) from the Discovery Contract and explicitly document the availability of the `intl.durationFormat` option.
+
+### Fixed
+- **REPL Idempotency Warnings**: Added explicit warnings in the cookbook regarding `Tempo.init()`'s strict idempotency. `Tempo.init()` is designed to abort silently on subsequent calls to protect global state; `Tempo.extend()` must be used to hot-load configuration in continuous REPL environments.
+- **Sandbox Alias Collisions**: Hardened the `AliasEngine` collision detection to skip redundant alias registrations across the entire prototype chain, eliminating unnecessary console warnings during sandboxed `Tempo.init` invocations.
+
 ## [3.2.0] - 2026-06-16
 
 ### 🔒 Security & Licensing

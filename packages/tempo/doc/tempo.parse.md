@@ -143,14 +143,14 @@ new Tempo('vendredi');          // parses as the closest "Friday"
 > **Cross-Locale Collisions**: In a multi-lingual lexer, if two languages share the exact same abbreviation/word for *different* dates (e.g. if "mai" meant May in French but March in another language), the parser will resolve a collision using **"Last-One-Wins"** logic based on your array order. The language that appears *last* in the `locale` array takes priority. Be deliberate in your array ordering to safely prioritize your primary language fallback!
 
 #### How it Works & Accent Normalization
-When `parse: { localize: true }` is enabled, Tempo uses the native `Intl` API to pre-generate lists of Months, Weekdays, and Relative terms ("yesterday", "today", "tomorrow").
+When non-English locales are provided, Tempo automatically uses the native `Intl` API to pre-generate lists of Months, Weekdays, and Relative terms ("yesterday", "today", "tomorrow").
 
 It also automatically **normalizes and strips accents** from these generated rules. This means that if a user types `fevrier` (without the accent), it will still successfully fuzzy-match against the strictly translated `février`.
 
 #### ⚠️ Current Limitations (What is NOT Available)
 While `Intl` provides a robust foundation for month and weekday translations, there are limits to auto-localization:
-*   **English Affixes**: Grammatical connector words like "ago", "next", "last", "in", and "from now" are heavily English-biased syntax rules. `Intl` does not provide translations for these parsing connectors. When using the `Tempo` constructor with `parse: { localize: true }`, a relative string like `2 days ago` or `next Friday` will only parse correctly if the English connector keywords (`ago`, `next`) are used, unless Custom Aliases are used to bridge the gap.
-*   **Time Units**: Words representing time units ("days", "weeks", "months") inside natural language strings are currently English-only.
+*   **English Affixes**: Grammatical connector words like "ago", "next", "last", "in", and "from now" are heavily English-biased syntax rules. `Intl` does not provide translations for these parsing connectors. When parsing non-English languages, a relative string like `2 days ago` or `next Friday` will only parse correctly if the English connector keywords (`ago`, `next`) are used, unless Custom Aliases are used to bridge the gap.
+*   **Duration Units**: Words representing duration units ("days", "weeks", "months", "hours") inside natural language strings are currently English-only.
 *   **Grammar Structure**: The parser expects sequences matching standard English formats (e.g., `[value] [unit] [affix]`). Highly inflected languages or completely different phrase structures might fail to parse.
 
 To bridge these gaps, you can register **Custom Aliases** (see below) to map foreign syntax to specific relative offsets manually!
@@ -161,7 +161,6 @@ You can teach the parser new words or entire foreign phrases to bridge translati
 ```typescript
 Tempo.init({
   locale: 'fr-FR',
-  parse: { localize: true },
   registry: {
     events: {
       // Map a full foreign phrase directly to an English-equivalent relative string
