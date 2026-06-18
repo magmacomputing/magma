@@ -7,7 +7,7 @@ describe(`${label} format method`, () => {
   test('formats with standard tokens', () => {
     const t = new Tempo('2024-05-20 15:30:00');
     expect(t.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-20');
-    // hh is 24-hour hour. HH is 12-hour hour.
+    // hh is 24-hour hour. h12 is 12-hour hour.
     expect(t.format('{hh}:{mi}')).toBe('15:30');
   });
 
@@ -47,7 +47,7 @@ describe(`${label} format method`, () => {
 
   test('delegates format(options) directly to native Intl and handles strict Temporal bounds', () => {
     const t = new Tempo('2024-12-25T14:30:00Z');
-    
+
     const arabicConfig = {
       locale: 'ar-EG',
       timeZone: 'Africa/Cairo',
@@ -66,7 +66,7 @@ describe(`${label} format method`, () => {
 
   test('delegates format(options) directly to native Intl for Japanese Reiwa era formatting', () => {
     const t = new Tempo('2024-12-25T14:30:00Z');
-    
+
     const japaneseConfig = {
       locale: 'ja-JP-u-ca-japanese',
       timeZone: 'Asia/Tokyo',

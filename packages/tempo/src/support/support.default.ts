@@ -5,8 +5,7 @@ import { LOG } from '#library/logger.class.js';
 
 import { NUMBER, MODE, MONTH_DAY } from './support.enum.js';
 import { Token } from './support.symbol.js';
-import { IntlDefault } from './support.intl.js';
-import type { Options, AliasContext } from '../tempo.type.js';
+import type { Options, AliasContext, IntlOptions } from '../tempo.type.js';
 
 /** characters allowed inside timezone/calendar brackets */
 const bracket_content = /[^\]]+/;
@@ -190,6 +189,16 @@ export const Guard = [
 	'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
 	'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays'
 ] as const;
+
+/** @internal baseline Intl settings */
+export const IntlDefault: IntlOptions = {
+	relativeTimeFormat: {
+		style: 'narrow',
+	},
+	durationFormat: {
+		style: 'long',
+	}
+}
 
 /** @internal Tempo Default options */
 export const Default = secure({

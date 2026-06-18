@@ -1,9 +1,10 @@
 import '#library/temporal.polyfill.js';
 import { pad, toTitleCase } from '#library/string.library.js';
+import { deepMerge } from '#library/object.library.js';
 import { suffix } from '#library/number.library.js';
 import { ifNumeric } from '#library/coercion.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction } from '#library/assertion.library.js';
-import { formatDayPeriod, getDTF, getPR } from '#library/international.library.js';
+import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
 import { isTempo, enums, Match, getRuntime, NumericPattern, BigIntPattern } from '#tempo/support';
@@ -48,7 +49,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	if (options) {
 		config = { ...baseConfig, ...options };
-		if (options.intl) config.intl = { ...baseConfig?.intl, ...options.intl };
+		if (options.intl) config.intl = deepMerge(baseConfig?.intl || {}, options.intl);
 
 		if (options.registry) {
 			config.registry = { ...baseConfig?.registry, ...options.registry };
@@ -122,9 +123,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		? (formats as Record<string, string>)[fmt as string]
 		: String(fmt);
 
-	// auto-meridiem: if {h12} or {HH} is present and {mer} is absent, append it after the last time component
-	if (/(?:\{h12|\{HH)/.test(template) && !template.toLowerCase().includes('{mer')) {
-		const hMatch = template.match(/\{(h12|HH)[^}]*\}/);
+	// auto-meridiem: if {h12} is present and {mer} is absent, append it after the last time component
+	if (template.includes('{h12') && !template.includes('{mer')) {
+		const hMatch = template.match(/\{h12[^}]*\}/);
 		let merMod = '';
 		let skipMeridiem = false;
 		if (hMatch) {
@@ -141,7 +142,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				const matches = [...template.matchAll(rgx)];
 				return matches.length ? matches[matches.length - 1].index! : -1;
 			}
-			const hIndex = Math.max(lastSearch(/\{h12[^}]*\}/g), lastSearch(/\{HH[^}]*\}/g));
+			const hIndex = lastSearch(/\{h12[^}]*\}/g);
 			const miIndex = lastSearch(/\{mi[^}]*\}/g);
 			const ssIndex = lastSearch(/\{ss[^}]*\}/g);
 			const subIndex = Math.max(
@@ -166,8 +167,13 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		switch (token) {
 			case 'yyyy': res = pad(zdt.year, 4); break;
 			case 'yy': res = pad(zdt.year % 100); break;
-			case 'yw': res = pad(zdt.yearOfWeek, 4); break;
-			case 'yyww': res = pad(zdt.yearOfWeek, 4) + pad(zdt.weekOfYear); break;
+			case 'yw': res = pad(getISOWeekOfYear(zdt).yearOfWeek, 4); break;
+			case 'ww': case 'wy': res = pad(getISOWeekOfYear(zdt).weekOfYear); break;
+			case 'yyww': case 'yywy': {
+				const { weekOfYear, yearOfWeek } = getISOWeekOfYear(zdt);
+				res = pad(yearOfWeek, 4) + pad(weekOfYear);
+				break;
+			}
 			case 'mm': res = pad(zdt.month); break;
 			case 'mon': res = enums.MONTHS.keyOf(zdt.month as any); break;
 			case 'mmm': res = enums.MONTH.keyOf(zdt.month as any); break;
@@ -176,15 +182,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'dow': res = zdt.dayOfWeek.toString(); break;
 			case 'wkd': res = enums.WEEKDAYS.keyOf(zdt.dayOfWeek as any); break;
 			case 'www': res = enums.WEEKDAY.keyOf(zdt.dayOfWeek as any); break;
-			case 'ww': res = pad(zdt.weekOfYear); break;
-			case 'DAY': res = suffix(zdt.day); break;
-			case 'WW': res = suffix(zdt.weekOfYear); break;
-			case 'MM': res = suffix(zdt.month); break;
-			case 'hh': res = pad(zdt.hour); break;
-			case 'h12':
-			case 'HH': res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12); break;
+			case 'h24': case 'hh': res = pad(zdt.hour); break;
+			case 'h12': res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12); break;
 			case 'mer': res = zdt.hour >= 12 ? 'pm' : 'am'; break;
-			case 'MER': res = zdt.hour >= 12 ? 'PM' : 'AM'; break;
 			case 'mi': res = pad(zdt.minute); break;
 			case 'ss': res = pad(zdt.second); break;
 			case 'ms': res = pad(zdt.millisecond, 3); break;
@@ -194,6 +194,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'dmy': res = `${pad(zdt.day)}${pad(zdt.month)}${pad(zdt.year, 4)}`; break;
 			case 'mdy': res = `${pad(zdt.month)}${pad(zdt.day)}${pad(zdt.year, 4)}`; break;
 			case 'ymd': res = `${pad(zdt.year, 4)}${pad(zdt.month)}${pad(zdt.day)}`; break;
+			case 'dmy6': res = `${pad(zdt.day)}${pad(zdt.month)}${pad(zdt.year % 100)}`; break;
+			case 'mdy6': res = `${pad(zdt.month)}${pad(zdt.day)}${pad(zdt.year % 100)}`; break;
+			case 'ymd6': res = `${pad(zdt.year % 100)}${pad(zdt.month)}${pad(zdt.day)}`; break;
 			case 'hms': res = `${pad(zdt.hour)}${pad(zdt.minute)}${pad(zdt.second)}`; break;
 			case 'ts': res = ((config?.timeStamp ?? 'ms') === 'ss')
 				? Math.trunc(zdt.epochMilliseconds / 1000).toString()

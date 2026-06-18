@@ -145,6 +145,8 @@ export type ss = IntRange<0, 60>
 export type ms = IntRange<0, 999>
 export type us = IntRange<0, 999>
 export type ns = IntRange<0, 999>
+export type wy = IntRange<1, 53>
+/** @deprecated use `wy` */
 export type ww = IntRange<1, 53>
 
 export type Duration = NonOptional<Temporal.DurationLikeObject> & Record<"iso", string> & Record<"sign", number> & Record<"blank", boolean> & Record<"unit", string | undefined> & {

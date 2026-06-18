@@ -13,7 +13,7 @@ import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isError, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
-import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
+import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear } from '#library/international.library.js';
 import { LOG } from '#library/logger.class.js';
 import type { Property, Secure } from '#library/type.library.js';
 
@@ -1373,9 +1373,10 @@ export class Tempo {
 	}
 
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
-	/** 4-digit iso week-numbering year */										get yw() { return this.toDateTime().yearOfWeek }
+	/** 4-digit iso week-numbering year */										get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
-	/** iso week number of the year */												get ww() { return this.toDateTime().weekOfYear as t.ww }
+	/** iso week number of the year */												get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/** @deprecated use `wy` */																get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day }
 	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
@@ -1667,7 +1668,9 @@ export namespace Tempo {
 	export type ms = t.ms;
 	export type us = t.us;
 	export type ns = t.ns;
-	export type ww = t.ww;
+	export type wy = t.wy;
+	/** @deprecated use `wy` */
+	export type ww = t.wy;
 
 	export type Duration = t.Duration;
 

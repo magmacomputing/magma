@@ -84,7 +84,7 @@ export const DEFAULTS = {
 		/** display with Time */																dayTime: '{dd}-{mmm}-{yyyy} {hh}:{mi}:{ss}',
 		/** useful for stamping logs */													logStamp: '{ymd}T{hms}.{ff}',
 		/** useful for sorting display-strings */								sortTime: '{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}',
-		/** useful for sorting week order */										yearWeek: '{yw}{ww}',
+		/** useful for sorting week order */										yearWeek: '{yw}{wy}',
 		/** useful for sorting month order */										yearMonth: '{yyyy}{mm}',
 		/** useful for sorting date order */										yearMonthDay: '{ymd}',
 		/** just Date portion */																date: '{yyyy}-{mm}-{dd}',
@@ -182,7 +182,7 @@ export type FORMAT = typeof FORMAT;
 export type Format = LooseUnion<KeyOf<typeof FORMAT> & string>
 
 /** patterns that return a number */
-export const NumericPattern = ['{yyyy}{ww}', '{yyyy}{mm}', '{yyyy}{mm}{dd}', '{yyww}', '{yw}{ww}', '{yw}', '{ymd}', '{ymd6}'] as const;
+export const NumericPattern = ['{yyyy}{wy}', '{yyyy}{mm}', '{yyyy}{mm}{dd}', '{yywy}', '{yw}{wy}', '{yw}', '{ymd}', '{ymd6}', '{hms}', '{ff}', '{dmy}', '{dmy6}', '{mdy}', '{mdy6}'] as const;
 export type NumericPattern = typeof NumericPattern[number]
 
 /** patterns that return a bigint */
@@ -214,11 +214,11 @@ export const MONTH_DAY = proxify(STATE.MONTH_DAY, true, false);
 export const LOCALE = proxify(STATE.LOCALE, true, true);
 
 /** date-time element tokens */
-const elementKeys = ['yy', 'mm', 'ww', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
+const elementKeys = ['yy', 'mm', 'wy', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
 export const ELEMENT = enumify({
 	yy: 'year',
 	mm: 'month',
-	ww: 'week',
+	wy: 'week',
 	dd: 'day',
 	hh: 'hour',
 	mi: 'minute',

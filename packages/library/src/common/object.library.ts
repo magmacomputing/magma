@@ -107,6 +107,25 @@ export const pluck = <T, K extends keyof T>(objs: T[], key: K): T[K][] =>
 export const extend = <T extends {}, U>(obj: T, ...objs: U[]) =>
 	Object.assign(obj, ...objs) as T;
 
+/** recursively deep-merge objects */
+export const deepMerge = <T extends Record<PropertyKey, any>>(...objects: Partial<T>[]): T => {
+	return objects.reduce((prev, obj) => {
+		if (!isObject(obj)) return prev;
+
+		Object.entries(obj).forEach(([key, value]) => {
+			if (key === '__proto__' || key === 'constructor' || key === 'prototype') return;
+			const pVal = prev[key];
+			if (isObject(pVal) && isObject(value)) {
+				prev[key as keyof T] = deepMerge(pVal, value) as any;
+			} else {
+				prev[key as keyof T] = value as any;
+			}
+		});
+
+		return prev;
+	}, {} as any) as T;
+}
+
 export const countProperties = (obj = {}) =>
 	ownKeys(obj).length
 
