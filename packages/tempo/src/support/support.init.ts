@@ -4,6 +4,7 @@ import { asArray } from '#library/coercion.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
 import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
+import { deepMerge } from '#library/object.library.js';
 import { asType } from '#library/type.library.js';
 import { isString, isObject, isUndefined, isDefined, isRegExp, isEmpty } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
@@ -289,7 +290,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 			case 'intl':
 				if (!isObject(state.config.intl)) setProperty(state.config, 'intl', {});
-				state.config.intl = { ...state.config.intl, ...arg.value };
+				state.config.intl = deepMerge(state.config.intl, arg.value);
 				break;
 
 			case 'planner':

@@ -87,8 +87,9 @@ Tempo.extend(FormatModule);
 | :--- | :--- | :--- |
 | `{yyyy}` | 4-digit Year | `2026` |
 | `{yy}` | 2-digit Year | `26` |
+| `{yywy}` | ISO Year & Week | `202617` |
 | `{yw}` | ISO Year of Week | `2026` |
-| `{yyww}` | ISO Year & Week | `202617` |
+| `{wy}` | Zero-padded ISO Week of Year | `43` |
 | `{mon}` | Full Month Name | `October` |
 | `{mmm}` | Short Month Name | `Oct` |
 | `{mm}` | Zero-padded Month | `10` |
@@ -96,9 +97,8 @@ Tempo.extend(FormatModule);
 | `{wkd}` | Full Weekday Name | `Saturday` |
 | `{www}` | Short Weekday Name | `Sat` |
 | `{dow}` | ISO Day of Week (1=Mon, 7=Sun) | `6` |
-| `{ww}` | Zero-padded ISO Week of Year | `43` |
 | `{hh}` | Zero-padded Hour (24h) | `15` |
-| `{h24}` | Zero-padded Hour (24h) | `15` |
+| `{h24}` | Zero-padded Hour synonym (24h) | `15` |
 | `{h12}` | Zero-padded Hour (12h) plus meridiem | `03pm` |
 | `{mer}` | am/pm meridiem marker | `pm` |
 | `{mi}` | Zero-padded Minutes | `30` |
@@ -111,6 +111,9 @@ Tempo.extend(FormatModule);
 | `{dmy}` | Compact Date (ddmmyyyy) | `24102026` |
 | `{mdy}` | Compact Date (mmddyyyy) | `10242026` |
 | `{ymd}` | Compact Date (yyyymmdd) | `20261024` |
+| `{dmy6}` | Compact 6-digit Date (ddmmyy) | `241026` |
+| `{mdy6}` | Compact 6-digit Date (mmddyy) | `102426` |
+| `{ymd6}` | Compact 6-digit Date (yymmdd) | `261024` |
 | `{hms}` | Compact Time (24h) | `153045` |
 | `{nano}` | Nanosecond Timestamp | `1792843200000000000` |
 | `{tz}` | Time Zone ID | `Australia/Sydney` |

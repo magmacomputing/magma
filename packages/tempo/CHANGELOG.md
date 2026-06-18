@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.2.2] - 2026-06-18
 
+### Added
+- **New Format Tokens**: Added support for 6-digit compact date formatting tokens (`{dmy6}`, `{mdy6}`, `{ymd6}`) and short-year bounds (`{yywy}`, `{yyww}`).
+
+### Changed
+- **ISO Week Renaming**: Renamed the `{ww}` token to `{wy}` to provide better semantic alignment with week-of-year calculations and resolve ambiguity with structural tokens.
+
 ### Removed
 - **Redundant Format Tokens**: Removed uppercase format tokens (`{MER}`, `{HH}`, `{DAY}`, `{WW}`, `{MM}`) from the engine to strictly enforce the token modifier pattern (e.g., `{mer:upper}`, `{h24}`, `{dd:ord}`). This eliminates ambiguity and ensures all output routes securely through the `Intl` localization engine.
 

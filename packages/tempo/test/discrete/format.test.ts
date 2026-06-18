@@ -109,11 +109,6 @@ describe('Tempo.format() refinements', () => {
     it('handles non-time tokens in between', () => {
       expect(tAM.format('{h12} on {mon}')).toBe('10am on May');
     })
-
-    it('supports {HH} for backward compatibility', () => {
-      expect(tAM.format('{HH}:{mi}')).toBe('10:30am');
-      expect(tPM.format('{HH}:{mi}')).toBe('10:30pm');
-    })
   })
 
   describe('manual-localize', () => {

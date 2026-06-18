@@ -1376,6 +1376,7 @@ export class Tempo {
 	/** 4-digit iso week-numbering year */										get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** iso week number of the year */												get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/** @deprecated use `wy` */																get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day }
 	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
@@ -1668,6 +1669,8 @@ export namespace Tempo {
 	export type us = t.us;
 	export type ns = t.ns;
 	export type wy = t.wy;
+	/** @deprecated use `wy` */
+	export type ww = t.wy;
 
 	export type Duration = t.Duration;
 

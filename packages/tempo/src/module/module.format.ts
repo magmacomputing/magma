@@ -1,9 +1,10 @@
 import '#library/temporal.polyfill.js';
 import { pad, toTitleCase } from '#library/string.library.js';
+import { deepMerge } from '#library/object.library.js';
 import { suffix } from '#library/number.library.js';
 import { ifNumeric } from '#library/coercion.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction } from '#library/assertion.library.js';
-import { formatDayPeriod, getDTF, getPR } from '#library/international.library.js';
+import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
 import { isTempo, enums, Match, getRuntime, NumericPattern, BigIntPattern } from '#tempo/support';
@@ -48,7 +49,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	if (options) {
 		config = { ...baseConfig, ...options };
-		if (options.intl) config.intl = { ...baseConfig?.intl, ...options.intl };
+		if (options.intl) config.intl = deepMerge(baseConfig?.intl || {}, options.intl);
 
 		if (options.registry) {
 			config.registry = { ...baseConfig?.registry, ...options.registry };
@@ -166,8 +167,13 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		switch (token) {
 			case 'yyyy': res = pad(zdt.year, 4); break;
 			case 'yy': res = pad(zdt.year % 100); break;
-			case 'yw': res = pad(zdt.yearOfWeek, 4); break;
-			case 'yyww': case 'yywy': res = pad(zdt.yearOfWeek, 4) + pad(zdt.weekOfYear); break;
+			case 'yw': res = pad(getISOWeekOfYear(zdt).yearOfWeek, 4); break;
+			case 'ww': case 'wy': res = pad(getISOWeekOfYear(zdt).weekOfYear); break;
+			case 'yyww': case 'yywy': {
+				const { weekOfYear, yearOfWeek } = getISOWeekOfYear(zdt);
+				res = pad(yearOfWeek, 4) + pad(weekOfYear);
+				break;
+			}
 			case 'mm': res = pad(zdt.month); break;
 			case 'mon': res = enums.MONTHS.keyOf(zdt.month as any); break;
 			case 'mmm': res = enums.MONTH.keyOf(zdt.month as any); break;
@@ -176,7 +182,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'dow': res = zdt.dayOfWeek.toString(); break;
 			case 'wkd': res = enums.WEEKDAYS.keyOf(zdt.dayOfWeek as any); break;
 			case 'www': res = enums.WEEKDAY.keyOf(zdt.dayOfWeek as any); break;
-			case 'ww': case 'wy': res = pad(zdt.weekOfYear); break;
 			case 'h24': case 'hh': res = pad(zdt.hour); break;
 			case 'h12': res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12); break;
 			case 'mer': res = zdt.hour >= 12 ? 'pm' : 'am'; break;

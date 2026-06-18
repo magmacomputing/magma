@@ -152,7 +152,8 @@ export function getISOWeekOfYear(zdt: input): result {
 
 	// Since Temporal.ZonedDateTime is passed in, we can safely extract the PlainDate
 	// to avoid crossing daylight saving boundaries when adding/subtracting days.
-	const pd = isFunction(zdt.toPlainDate) ? zdt.toPlainDate() : Temporal.PlainDate.from(zdt);
+	// Normalize to ISO 8601 calendar because properties like dayOfYear/dayOfWeek are calendar-dependent.
+	const pd = (isFunction(zdt.toPlainDate) ? zdt.toPlainDate() : Temporal.PlainDate.from(zdt)).withCalendar('iso8601');
 
 	// ISO week date algorithm: weeks start on Monday, and the first week of the year contains the first Thursday.
 	// Find the nearest Thursday to the current date.
@@ -166,4 +167,21 @@ export function getISOWeekOfYear(zdt: input): result {
 	const weekOfYear = Math.ceil(nearestThursday.dayOfYear / 7);
 
 	return { weekOfYear, yearOfWeek };
+}
+
+/**
+ * Probe the runtime to see if the locale defaults to Month-Day-Year order.
+ * @example
+ * probeMDY('en-US') // true
+ * probeMDY('en-GB') // false
+ */
+export function probeMDY(locale: string): boolean {
+	try {
+		// Use Dec 24th to check if '12' comes first
+		const date = new Date(2024, 11, 24);
+		const parts = new Intl.DateTimeFormat(locale).formatToParts(date);
+		return parts[0].type === 'month' && parts[0].value === '12';
+	} catch {
+		return false;
+	}
 }
