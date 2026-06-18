@@ -98,6 +98,7 @@ Tempo.extend(FormatModule);
 | `{dow}` | ISO Day of Week (1=Mon, 7=Sun) | `6` |
 | `{ww}` | Zero-padded ISO Week of Year | `43` |
 | `{hh}` | Zero-padded Hour (24h) | `15` |
+| `{h24}` | Zero-padded Hour (24h) | `15` |
 | `{h12}` | Zero-padded Hour (12h) plus meridiem | `03pm` |
 | `{mer}` | am/pm meridiem marker | `pm` |
 | `{mi}` | Zero-padded Minutes | `30` |
@@ -133,7 +134,7 @@ If your format string contains `{h12}` (12-hour clock) but lacks a `{mer}` token
 *(If you explicitly want a 12-hour digit without an auto-appended meridiem, use the `:raw` modifier: `{h12:raw}`)*
 
 > [!NOTE]
-> **Why `{h12}`?** In most date libraries, `{hh}` means 12-hour and `{HH}` means 24-hour time. However, Tempo standardizes `{hh}` on the default 24-hour expectation (with `{h12}` serving as the specific 12-hour override). This keeps all token definitions, and their corresponding time getters, fully lowercase and semantic. 
+> **Why `{h12}` and `{h24}`?** In other date libraries, `{hh}` could mean 12-hour and `{HH}` means 24-hour time. This is confusing and error-prone. Tempo standardizes `{hh}` on the default 24-hour expectation, but provides explicit `{h12}` and `{h24}` tokens to completely eliminate ambiguity. This keeps all token definitions fully lowercase and semantic, without relying on uppercase variations like `{HH}`. 
 
 ```typescript
 t.format('{h12}:{mi}');           // "03:30pm" (auto-append standard meridiem)

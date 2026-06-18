@@ -1,6 +1,6 @@
 import { getOffsets } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
-import { isFunction } from '#library/assertion.library.js';
+import { isFunction, isDefined } from '#library/assertion.library.js';
 
 /** memoized helper for Intl.RelativeTimeFormat instances */
 const getRTF = memoizeFunction((locale?: string, style: Intl.RelativeTimeFormatStyle = 'narrow') => {
@@ -130,4 +130,40 @@ export function getHemisphere(timeZone: string = getDateTimeFormat().timeZone) {
 	} catch (e) {
 		return undefined;
 	}
+}
+
+type input = {
+	toPlainDate?: () => any,
+	year: number, month: number, day: number, dayOfWeek: number,
+	weekOfYear?: number | undefined, yearOfWeek?: number | undefined
+}
+type result = { weekOfYear: number, yearOfWeek: number };
+/**
+ * Polyfill fallback for ISO 8601 Week of Year and Year of Week.
+ * 
+ * Introduced because highly experimental native browser implementations of the Temporal API 
+ * (e.g., Chrome/Firefox behind flags) currently return `undefined` for `weekOfYear` and `yearOfWeek` 
+ * on ZonedDateTime objects. The TC39 spec moved toward calendar-dependent definitions, 
+ * causing divergence between the @js-temporal/polyfill (which returns numbers) and native browsers (which return undefined).
+ */
+export function getISOWeekOfYear(zdt: input): result {
+	if (isDefined(zdt.weekOfYear) && isDefined(zdt.yearOfWeek))
+		return { weekOfYear: zdt.weekOfYear, yearOfWeek: zdt.yearOfWeek };
+
+	// Since Temporal.ZonedDateTime is passed in, we can safely extract the PlainDate
+	// to avoid crossing daylight saving boundaries when adding/subtracting days.
+	const pd = isFunction(zdt.toPlainDate) ? zdt.toPlainDate() : Temporal.PlainDate.from(zdt);
+
+	// ISO week date algorithm: weeks start on Monday, and the first week of the year contains the first Thursday.
+	// Find the nearest Thursday to the current date.
+	const shift = 4 - pd.dayOfWeek;
+	const nearestThursday = shift >= 0 ? pd.add({ days: shift }) : pd.subtract({ days: -shift });
+
+	// The calendar year of that nearest Thursday is the ISO week-numbering year
+	const yearOfWeek = nearestThursday.year;
+
+	// The week number is exactly the nearest Thursday's dayOfYear divided by 7
+	const weekOfYear = Math.ceil(nearestThursday.dayOfYear / 7);
+
+	return { weekOfYear, yearOfWeek };
 }
