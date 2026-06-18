@@ -12,7 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **New Format Tokens**: Added support for 6-digit compact date formatting tokens (`{dmy6}`, `{mdy6}`, `{ymd6}`) and short-year bounds (`{yywy}`, `{yyww}`).
 
 ### Changed
+- **Intl Configuration**: Completely overhauled the `options.intl` resolution pipeline. Replaced brittle shallow-spread assignment with a robust, recursive `deepMerge` utility to prevent nested configuration clobbering (e.g. `dateTimeFormat` vs `relativeTimeFormat`).
 - **ISO Week Renaming**: Renamed the `{ww}` token to `{wy}` to provide better semantic alignment with week-of-year calculations and resolve ambiguity with structural tokens.
+
+### Fixed
+- **Configuration Security**: Hardened recursive object manipulation utilities (`deepMerge` and `deepFreeze`) against Prototype Mutation and Prototype Freezing Denial of Service (DoS) vulnerabilities by strictly guarding against `__proto__`, `constructor`, and `prototype` keys during object traversals.
 
 ### Removed
 - **Redundant Format Tokens**: Removed uppercase format tokens (`{MER}`, `{HH}`, `{DAY}`, `{WW}`, `{MM}`) from the engine to strictly enforce the token modifier pattern (e.g., `{mer:upper}`, `{h24}`, `{dd:ord}`). This eliminates ambiguity and ensures all output routes securely through the `Intl` localization engine.

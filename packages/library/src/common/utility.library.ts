@@ -1,4 +1,4 @@
-import { ownValues } from '#library/primitive.library.js';
+import { ownEntries } from '#library/primitive.library.js';
 import { isDefined, isPrimitive } from '#library/assertion.library.js';
 import { sym } from '#library/symbol.library.js';
 import type { Secure, ValueOf } from '#library/type.library.js';
@@ -100,7 +100,10 @@ export function deepFreeze<const T extends object>(obj: T, options?: { skip?: We
 
 	seen.add(obj);
 
-	ownValues(obj as any).forEach(val => deepFreeze(val, { skip }, seen));
+	ownEntries(obj as any).forEach(([key, val]) => {
+		if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype')
+			deepFreeze(val, { skip }, seen);
+	});
 
 	return Object.freeze(obj) as Secure<T>;
 }

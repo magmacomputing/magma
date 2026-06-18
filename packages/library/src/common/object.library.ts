@@ -113,6 +113,7 @@ export const deepMerge = <T extends Record<PropertyKey, any>>(...objects: Partia
 		if (!isObject(obj)) return prev;
 
 		Object.entries(obj).forEach(([key, value]) => {
+			if (key === '__proto__' || key === 'constructor' || key === 'prototype') return;
 			const pVal = prev[key];
 			if (isObject(pVal) && isObject(value)) {
 				prev[key as keyof T] = deepMerge(pVal, value) as any;
