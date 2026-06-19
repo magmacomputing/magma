@@ -81,6 +81,8 @@ const t = new Tempo('next Friday');
 
 Tempo is a native ESM package and works perfectly with Deno. You can add it via the `deno add` command which will resolve it from the npm registry.
 
+As of Deno 2.7, the Temporal API is fully stabilized and enabled by default. You no longer need to pass the --unstable-temporal flag to use it.
+
 ```bash
 deno add npm:@magmacomputing/tempo
 ```
@@ -127,7 +129,7 @@ The easiest way to use Tempo natively in the browser is via the pre-optimized ES
 
 ### 2. Smart CDNs (The "Best-of-Both-Worlds")
 
-If you want to use **Premium Plugins** natively in the browser *without* configuring the massive granular import map required by static CDNs, use an on-the-fly bundling CDN like [esm.sh](https://esm.sh). It reads the package resolution rules and bundles the complex internal dependencies automatically. 
+If you want to use **Tempo Premium Plugins** natively in the browser *without* configuring the massive granular import map required by static CDNs, use an on-the-fly bundling CDN like [esm.sh](https://esm.sh). It reads the package resolution rules and bundles the complex internal dependencies automatically. 
 
 While you *could* import directly from the URL everywhere, the best practice is to use a tiny, simple import map just for your top-level packages. This allows you to keep your actual application code clean and standard:
 
@@ -155,9 +157,9 @@ While you *could* import directly from the URL everywhere, the best practice is 
 
 ### 3. Granular ESM (Advanced Plugin Architecture)
 
-If you are strictly using a static CDN (like jsdelivr) and require Premium Plugins, you must use the Granular ESM distribution. The bundled engine drops internal builder-utilities to keep the global scope clean, but plugins require them to resolve their own dependencies.
+If you are strictly using a static CDN (like jsdelivr) and require Tempo Premium Plugins, you must use the Granular ESM distribution. The bundled engine drops internal builder-utilities to keep the global scope clean, but plugins require them to resolve their own dependencies.
 
-To use Premium Plugins via static CDN, you must map the core library, its subpaths, and the internal licensing module directly to their granular equivalents:
+To use Tempo Plugins via static CDN, you must map the core library, its subpaths, and the internal licensing module directly to their granular equivalents:
 
 ```html
 <script type="importmap">

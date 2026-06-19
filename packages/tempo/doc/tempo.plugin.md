@@ -39,14 +39,14 @@ export const MyPlugin = defineExtension({
 ```
 
 ## Manual Registration Pattern
-If you prefer not to use the factory (e.g. for plugin that should *not* self-register), you can export a plain function with the `Tempo.Plugin` signature:
+If you prefer not to use the factory (e.g. for plugins that should *not* self-register), you can export a plain function with the `Tempo.Plugin` signature:
 
 ```typescript
 import type { Tempo } from '@magmacomputing/tempo/core';
 
 export const ManualPlugin: Tempo.Plugin = (TempoClass, options, factory) => {
   // ... implementation ...
-};
+}
 ```
 
 ## Type Safety (TypeScript)
@@ -83,7 +83,7 @@ declare module '@magmacomputing/tempo/core' {
 
 ---
 
-Modern Tempo plugin are designed to be "plug-and-play." By using the `defineExtension` factory, a plugin registers itself with the global Tempo registry as soon as it's imported.
+Modern Tempo plugins are designed to be "plug-and-play." By using the `defineExtension` factory, a plugin registers itself with the global Tempo registry as soon as it's imported.
 
 ::: warning
 **Premium Plugin Example**: The example below uses the `@magmacomputing/tempo-plugin-ticker` plugin, which is a commercial extension. You must provide a valid `license` key during initialization to activate it.
@@ -103,21 +103,21 @@ Modern Tempo plugin are designed to be "plug-and-play." By using the `defineExte
 import '@magmacomputing/tempo-plugin-ticker';         // 1. Module self-registers via side-effect
 import { Tempo } from '@magmacomputing/tempo/core';   // 2. Load the `lite` engine
 
-Tempo.init({ license: 'YOUR_JWT_KEY' });              // 3. Discover, verify, and activate all imported plugin
+Tempo.init({ license: 'YOUR_JWT_KEY' });              // 3. Discover, verify, and activate all imported plugins
 
 // Ticker is now available on the core Tempo class!
 const pulse = Tempo.ticker(1); 
 ```
 
 > [!NOTE] Import Order
-> While older versions of Tempo were sensitive to import order, current versions handle sequencing robustly. `Tempo.init()` is automatically called during bootstrap to ensure all discovered plugin are integrated. If you dynamically load plugin later, you can call `Tempo.init()` manually to refresh the registry.
+> While older versions of Tempo were sensitive to import order, current versions handle sequencing robustly. `Tempo.init()` is automatically called during bootstrap to ensure all discovered plugins are integrated. If you dynamically load plugins later, you can call `Tempo.init()` manually to refresh the registry.
 
 ---
 
 ## Best Practices
 
 ### 1. Selective Immobility
-The core methods of Tempo (like `add`, `set`, `format`) are **protected**. The `extend()` system will prevent you from accidentally overwriting these essential behaviors, ensuring the library remains stable even when heavily customized.
+The core methods of Tempo (like `add`, `set`, `format`) are **protected**. The `extend()` system will prevent you from accidentally overwriting these essential behaviors. By standardizing plugins through the Tempo module system, the entire library remains small and fast, whilst offering unbounded domain-specific customization.
 
 ### 2. Immutability
 When adding instance methods that "modify" the date, always follow the Tempo pattern of returning a **new instance**. Use the provided `factory` function to wrap the resulting `Temporal` object back into a `Tempo` instance.
@@ -140,7 +140,7 @@ Tempo.extend({
 Using `Tempo.extend()` ensures that the library safely bypasses the "Soft Freeze" protection and that all internal caches (like the Master Guard) are correctly synchronized.
 
 ### 5. Error Handling & The Diagnostic Engine
-When building plugin that perform complex parsing or logic, follow Tempo's **"Fail-fast by Default"** principle.
+When building plugins that perform complex parsing or logic, follow Tempo's **"Fail-fast by Default"** principle.
 
 - **Strict Mode (Default)**: If your plugin encounters a terminal error (e.g., invalid input that cannot be recovered), you should `throw` a descriptive error.
 - **Catch Mode**: Respect the user's `catch` configuration. If `this.config.catch` is `true`, instead of throwing, you should log a warning using `this.warn()` and return a sensible fallback (or the original input).
@@ -169,7 +169,7 @@ Current behavior is not ideal for collisions: duplicate Term keys are ignored, w
 
 ## Advanced Pattern: Stateful Classes & Callable Proxies
 
-For complex plugin (like the **Ticker**) that need to maintain internal state across multiple calls or provide both a class interface and a "shortcut" function, use the **Stateful Class + Proxy** pattern.
+For complex plugins (like the **Ticker**) that need to maintain internal state across multiple calls or provide both a class interface and a "shortcut" function, use the **Stateful Class + Proxy** pattern.
 
 ### 1. Define a Dedicated Types Namespace
 Avoid polluting the global `Tempo` namespace. Instead, create a dedicated `Types` namespace for your plugin's internal and public signatures. This prevents "Used before declaration" errors and name-shading.
@@ -233,7 +233,7 @@ export const MyPlugin = defineExtension({
 To make your plugin available to the community, package it as a standard NPM module. 
 
 ### Plugin Factories (with Options)
-If your plugin requires its own configuration, export a **factory function** that returns the `Tempo.Plugin` function. This is the cleanest pattern for "marketplace" plugin.
+If your plugin requires its own configuration, export a **factory function** that returns the `Tempo.Plugin` function. This is the cleanest pattern for "marketplace" plugins.
 
 ```typescript
 // tempo-plugin-holiday/index.ts
@@ -311,7 +311,7 @@ Tempo.extend(HolidayPlugin({
 
 ## Bulk Registration
 
-`Tempo.extend()` supports **rest parameters** and **arrays**, allowing you to register multiple plugin in a single call. If the last argument is a plain object (and not a plugin/term), it is treated as a shared configuration for all plugin in that batch.
+`Tempo.extend()` supports **rest parameters** and **arrays**, allowing you to register multiple plugins in a single call. If the last argument is a plain object (and not a plugin/term), it is treated as a shared configuration for all plugins in that batch.
 
 ```ts
 // Mix and match arrays and individual arguments

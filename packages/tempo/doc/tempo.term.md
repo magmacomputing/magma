@@ -114,7 +114,7 @@ t.term.timeOfDay   // → { key: 'Midday', hour: 12, group: 'standard' }
 
 ## Inspecting Registered Terms
 
-The static `Tempo.terms` getter returns a read-only list of all registered plugin:
+The static `Tempo.terms` getter returns a read-only list of all registered plugins:
 
 ```ts
 Tempo.terms
