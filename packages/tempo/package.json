@@ -4,6 +4,9 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "bin": {
+    "tempo": "./bin/tempo.js"
+  },
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -208,8 +211,10 @@
     "docs:push": "bash ./bin/push-docs.sh"
   },
   "files": [
+    "bin/",
     "dist/",
-    "img/"
+    "img/",
+    "template/"
   ],
   "dependencies": {
     "tslib": "^2.8.1"

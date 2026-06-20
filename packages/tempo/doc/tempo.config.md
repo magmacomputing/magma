@@ -20,13 +20,17 @@ Rather than scattering `Tempo.init()` or `Tempo.extend()` calls throughout your 
 
 This mirrors modern ecosystem standards (like `vite.config.ts` or `tailwind.config.js`) and ensures that plugins, timezones, and custom aliases are consistently applied before any domain logic executes.
 
+::: info
+**Target Environment**: This automatic configuration discovery pattern relies on Node.js file system capabilities and is designed for Server, Fullstack, or Bundled environments (like Vite or Webpack). If you are using Tempo via a `<script>` tag in a pure Browser environment, skip to [Explicit Initialization](#3-explicit-initialization-tempo-init) to configure Tempo synchronously!
+:::
+
 ```typescript
 // tempo.config.ts
-import { Tempo } from '@magmacomputing/tempo';
+import { defineConfig } from '@magmacomputing/tempo';
 import { CronModule } from '@magmacomputing/tempo-plugin-cron';
 import { SLAModule } from '@magmacomputing/tempo-plugin-sla';
 
-export const GlobalTempoConfig = {
+export default defineConfig({
   timeZone: 'Australia/Sydney',     // Set your baseline timezone
   license: 'eyJhbGciOiJIUzI1...',   // JWT Commercial License for Premium Plugins
   plugins: [CronModule, SLAModule], // Register enterprise plugins
@@ -36,25 +40,41 @@ export const GlobalTempoConfig = {
       'market-close': '16:00' 
     }
   }
-}
-
-// Bootstrap the global environment
-Tempo.init(GlobalTempoConfig);
+});
 ```
 
-You can then import this file at the very top of your application's entry point (e.g., `main.ts` or `index.js`) to guarantee the configuration is locked in before any other files import `Tempo`.
+You can then bootstrap this environment at the very top of your application's entry point (e.g., `main.ts` or `index.js`) to guarantee the configuration is locked in before any other files run:
+
+```typescript
+// main.ts
+import { Tempo } from '@magmacomputing/tempo';
+
+// Automatically discovers and loads 'tempo.config.ts'
+await Tempo.bootstrap(); 
+
+import { App } from './app.js';
+// ...
+```
+### Benefits vs. Drawbacks
+
+Using `tempo.config.ts` is the modern standard, but it introduces specific architectural tradeoffs due to Node.js ES Module constraints.
+
+#### 🌟 Benefits
+- **TypeScript Autocomplete**: Using `defineConfig` provides instant IDE intellisense and type-safety for all configuration options.
+- **Plugin Execution**: You can import and instantiate plugins directly inside the configuration file, keeping your application logic clean.
+- **Dynamic Configuration**: Enables runtime logic (e.g., `debug: process.env.NODE_ENV !== 'production'`) that strict JSON cannot provide.
+
+#### ⚠️ Drawbacks
+- **Asynchronous Requirement**: Because `tempo.config.ts` is evaluated as an ES Module, the JavaScript engine *forces* it to be loaded asynchronously via dynamic `import()`. This means you **must** use `await Tempo.bootstrap()` instead of the synchronous `Tempo.init()`.
+
+#### 🛑 Risks
+- **Node.js Environment Only**: The `bootstrap()` automatic file discovery relies on Node.js (`fs`, `path`). If you are running strictly in a browser (e.g., via CDN without a bundler), automatic discovery will safely abort, and `bootstrap()` will simply act as a pass-through to `Tempo.init()`. In these environments, you must bundle your config or manually pass your options to `Tempo.init(options)`.
+- **Floating Promises**: You must ensure you actually `await` the bootstrap call. If you forget the `await` keyword, your application will continue booting before Tempo finishes reading your config file, leading to race conditions where early instances use default settings.
 
 ::: tip
 **Looking to configure Internationalization?**  
 Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See [The Role of Locale](./tempo.locale.md) for a general guide, and the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Format Modifiers & Localization](./tempo.cookbook.md#format-modifiers--localization) guides for configuration details.
 :::
-
-```typescript
-// main.ts
-import './tempo.config.ts'; 
-import { App } from './app.js';
-// ...
-```
 
 ---
 

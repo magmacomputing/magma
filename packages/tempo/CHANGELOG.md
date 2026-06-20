@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.3] - 2026-06-20
+
+### Added
+- **Centralized Configuration**: Introduced `tempo.config.ts` and `tempo.config.js` discovery.
+- **Async Bootstrap**: Added `Tempo.bootstrap()` for safe, asynchronous ES Module configuration resolution without breaking the synchronous `Tempo.init()` API.
+- **CLI Scaffolding**: Added an `npx @magmacomputing/tempo scaffold:all` CLI tool to easily bootstrap `tempo.config.ts` and HTML sandboxes into projects.
+
+### Changed
+- **Zero-Dependency Resolution**: Implemented custom filesystem traversal to ensure robust config discovery without adding external dependencies (e.g., `cosmiconfig`).
+
 ## [3.2.2] - 2026-06-18
 
 ### Added

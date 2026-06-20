@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hello Tempo</title>
+  <!-- 
+    This is the sanctioned browser import map for Tempo.
+    Note: For production, you may want to bundle these or serve them from your own infrastructure.
+  -->
+  <script type="importmap">
+  {
+    "imports": {
+      "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
+      "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js",
+      "@magmacomputing/tempo/core": "./node_modules/@magmacomputing/tempo/dist/core.index.js",
+      "@magmacomputing/tempo/duration": "./node_modules/@magmacomputing/tempo/dist/module/module.duration.js",
+      "@magmacomputing/tempo/mutate": "./node_modules/@magmacomputing/tempo/dist/module/module.mutate.js",
+      "@magmacomputing/tempo/plugin": "./node_modules/@magmacomputing/tempo/dist/plugin/plugin.index.js",
+      "@magmacomputing/tempo/library": "./node_modules/@magmacomputing/tempo/dist/library.index.js",
+      "@magmacomputing/tempo/enums": "./node_modules/@magmacomputing/tempo/dist/support/support.enum.js",
+      "#tempo/license": "./node_modules/@magmacomputing/tempo/dist/plugin/license/license.validator.js"
+    }
+  }
+  </script>
+</head>
+
+<body style="font-family: sans-serif; padding: 2rem;">
+  <h1>Tempo Hello World</h1>
+  <div id="output" style="padding: 1rem; background: #f0f0f0; border-radius: 8px;">
+    Initializing Tempo...
+  </div>
+
+  <script type="module">
+    import { Tempo } from '@magmacomputing/tempo';
+
+    async function bootstrap() {
+      const output = document.getElementById('output');
+      try {
+        // Initialize the Tempo engine. 
+        // This will automatically look for 'tempo.config.ts' in modern environments, 
+        // or you can pass config options directly to Tempo.init() instead.
+        await Tempo.bootstrap();
+
+        const now = new Tempo();
+        const formatted = now.format('{wkd}, {mon} {dd}, {yyyy} at {hh}:{mi}:{ss} {mer}');
+
+        output.innerHTML = `
+          <strong>Success!</strong> Tempo is initialized.<br><br>
+          Current Local Time: <span style="color: blue;">${formatted}</span>
+        `;
+      } catch (err) {
+        output.innerHTML = `<strong style="color: red;">Error initializing Tempo:</strong> ${err.message}`;
+        console.error(err);
+      }
+    }
+
+    bootstrap();
+  </script>
+</body>
+
+</html>

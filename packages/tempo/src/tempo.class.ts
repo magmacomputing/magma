@@ -693,6 +693,18 @@ export class Tempo {
 		return resolveDisplayStatus(rt.license.status);
 	}
 
+	/** 
+	 * Automatically discovers and loads configuration from `tempo.config.*`
+	 * before initializing the engine.
+	 */
+	static async bootstrap(options?: { cwd?: string, configFile?: string }): Promise<typeof Tempo> {
+		const { resolveConfig } = await import('./config/resolveConfig.js');
+		const config = await resolveConfig(options);
+		this.init(config || {});
+		await this.ready();
+		return this;
+	}
+
 	/** Reset Tempo to its default, built-in registration state */
 	static init(options: t.Options = {}): typeof Tempo {
 		if (_lifecycle.initialising) return this;
