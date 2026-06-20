@@ -21,7 +21,7 @@ Rather than scattering `Tempo.init()` or `Tempo.extend()` calls throughout your 
 This mirrors modern ecosystem standards (like `vite.config.ts` or `tailwind.config.js`) and ensures that plugins, timezones, and custom aliases are consistently applied before any domain logic executes.
 
 ::: info
-**Target Environment**: This automatic configuration discovery pattern relies on Node.js file system capabilities and is designed for Server, Fullstack, or Bundled environments (like Vite or Webpack). If you are using Tempo via a `<script>` tag in a pure Browser environment, skip to [Explicit Initialization](#3-explicit-initialization-tempo-init) to configure Tempo synchronously!
+**Target Environment**: This automatic configuration discovery pattern relies on Node.js file system capabilities and is designed for Server, Fullstack, or Bundled environments (like Vite or Webpack). If you are using Tempo via a `<script>` tag in a pure Browser environment, skip to [Explicit Initialization](#3-explicit-initialization-tempoinit) to configure Tempo synchronously!
 :::
 
 ```typescript
@@ -52,7 +52,8 @@ import { Tempo } from '@magmacomputing/tempo';
 // Automatically discovers and loads 'tempo.config.ts'
 await Tempo.bootstrap(); 
 
-import { App } from './app.js';
+// Dynamic import ensures domain logic loads ONLY AFTER configuration is complete
+const { App } = await import('./app.js');
 // ...
 ```
 ### Benefits vs. Drawbacks

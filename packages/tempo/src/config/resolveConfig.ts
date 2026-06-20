@@ -7,6 +7,10 @@ declare const process: any;
 /**
  * Automatically discovers and loads a tempo.config.* file by traversing upwards
  * from the current working directory until a package.json is found.
+ * 
+ * Note: TypeScript config files require Bun, Deno, or Node.js with a TypeScript
+ * loader such as tsx, since vanilla Node.js cannot dynamically import TypeScript
+ * files without a loader.
  */
 export async function resolveConfig(options?: { cwd?: string, configFile?: string }): Promise<Options | undefined> {
 	// Skip discovery if not in a Node/Deno/Bun environment
@@ -28,7 +32,7 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 
 		const loadFile = async (configPath: string, ext: string) => {
 			if (ext === '.json') {
-				const content = fs.readFileSync(configPath, 'utf8');
+				const content = await fs.promises.readFile(configPath, 'utf8');
 				return JSON.parse(content) as Options;
 			} else {
 				// Use pathToFileURL to safely load absolute paths on Windows
@@ -66,7 +70,7 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 						return await loadFile(configPath, ext);
 					} catch (err) {
 						console.warn(`[Tempo] Found config file at ${configPath} but failed to load it:`, err);
-						return undefined;
+						continue;
 					}
 				}
 			}

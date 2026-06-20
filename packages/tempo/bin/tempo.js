@@ -45,6 +45,14 @@ if (command === 'scaffold:config') {
 } else if (command === 'scaffold:html') {
 	safelyCopy('index.sample.html', 'index.html', 'Created index.html boilerplate');
 } else if (command === 'scaffold:all') {
+	const configExists = fs.existsSync(path.join(cwd, 'tempo.config.ts'));
+	const htmlExists = fs.existsSync(path.join(cwd, 'index.html'));
+	if (configExists || htmlExists) {
+		const existingFiles = [configExists ? 'tempo.config.ts' : null, htmlExists ? 'index.html' : null].filter(Boolean).join(' and ');
+		console.error(`\x1b[31m[Tempo Scaffold] Aborted.\x1b[0m File(s) already exist: ${existingFiles}`);
+		console.error(`We refused to overwrite your existing file(s). If you want to scaffold new ones, please delete the existing file(s) first.`);
+		process.exit(1);
+	}
 	safelyCopy('tempo.config.sample.ts', 'tempo.config.ts', 'Created tempo.config.ts');
 	safelyCopy('index.sample.html', 'index.html', 'Created index.html boilerplate');
 } else {

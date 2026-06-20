@@ -46,12 +46,29 @@
         const now = new Tempo();
         const formatted = now.format('{wkd}, {mon} {dd}, {yyyy} at {hh}:{mi}:{ss} {mer}');
 
-        output.innerHTML = `
-          <strong>Success!</strong> Tempo is initialized.<br><br>
-          Current Local Time: <span style="color: blue;">${formatted}</span>
-        `;
+        output.textContent = '';
+        const strong = document.createElement('strong');
+        strong.textContent = 'Success!';
+        const br1 = document.createElement('br');
+        const br2 = document.createElement('br');
+        const span = document.createElement('span');
+        span.style.color = 'blue';
+        span.textContent = formatted;
+
+        output.appendChild(strong);
+        output.appendChild(document.createTextNode(' Tempo is initialized.'));
+        output.appendChild(br1);
+        output.appendChild(br2);
+        output.appendChild(document.createTextNode('\n          Current Local Time: '));
+        output.appendChild(span);
       } catch (err) {
-        output.innerHTML = `<strong style="color: red;">Error initializing Tempo:</strong> ${err.message}`;
+        output.textContent = '';
+        const strongErr = document.createElement('strong');
+        strongErr.style.color = 'red';
+        strongErr.textContent = 'Error initializing Tempo:';
+        
+        output.appendChild(strongErr);
+        output.appendChild(document.createTextNode(` ${err.message}`));
         console.error(err);
       }
     }
