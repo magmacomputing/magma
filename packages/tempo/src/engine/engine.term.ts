@@ -53,12 +53,42 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 
 	const slickStr = (rangePart ? unit : (isString(offset) ? offset : undefined));
 	if (slickStr) {
-		const slick = slickStr.match(Match.slick) || (isString(offset) ? offset.match(Match.slickValue) : null);
+		let matchSlick = Match.slick;
+		let matchSlickValue = Match.slickValue;
+		if (state.config.registry?.modifiers) {
+			const symbols = ['+', '-', '<', '<=', '>', '>=', '='];
+			const words = new Set<string>();
+			symbols.forEach(sym => {
+				const mapped = state.config.registry!.modifiers![sym];
+				if (mapped) (Array.isArray(mapped) ? mapped : [mapped]).forEach(w => words.add(w));
+			});
+			if (words.size > 0) {
+				const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+				escapedWords.sort((a, b) => b.length - a.length);
+				const wordPattern = escapedWords.join('|');
+				// Preserve the original term group (including # prefix) from Match.slick; only extend mod alternation
+				matchSlick = new RegExp(`^(?<sh_term>#[\\w]+|[\\w]+)\\.(?<sh_mod>[\\+\\-\\<\\>]=?|${wordPattern})?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\\w]*)$`);
+				matchSlickValue = new RegExp(`^(?<sh_mod>[\\+\\-\\<\\>]=?|${wordPattern})?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\\w]*)$`);
+			}
+		}
+
+		const slick = slickStr.match(matchSlick) || (isString(offset) ? offset.match(matchSlickValue) : null);
 		const { groups } = (slick || {}) as any;
 		if (groups) {
 			const hasMod = isDefined(groups.sh_mod);
 			const hasNbr = isNumeric(groups.sh_nbr);
 			mod = hasMod ? groups.sh_mod : undefined;
+
+			if (mod && state.config.registry?.modifiers) {
+				const norm = mod.toLowerCase().trim();
+				for (const [sym, words] of Object.entries(state.config.registry.modifiers)) {
+					if ((words as string[]).includes(norm)) {
+						mod = sym;
+						break;
+					}
+				}
+			}
+
 			nbr = hasNbr ? Number(groups.sh_nbr) : 1;
 			rKey = (groups.sh_unit && groups.sh_unit.length > 0) ? groups.sh_unit : (hasMod ? undefined : rKey);
 			numericOnly = hasNbr && !hasMod;
@@ -312,7 +342,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			// Treat explicit modifiers and + / - as shifters. Numeric repeat counts
 			// without an explicit modifier (e.g. `2q2`) are handled as inclusive
 			// searches and should not be treated as shifters.
-			const isShifter = (mod === '>' || mod === '<' || mod === 'next' || mod === 'prev' || mod === 'last' || mod === '+' || mod === '-');
+			const isShifter = (mod === '>' || mod === '<' || mod === '+' || mod === '-');
 
 			const compare = (r: any) => {
 				const start = toZdt(r.start).epochNanoseconds as bigint;
@@ -328,7 +358,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 					const res = parseModifier({
 						mod: mod as any, adjust: 1, offset: Number(cursor / 1000000n),
 						period: Number((mod === '-') ? end / 1000000n : start / 1000000n)
-					});
+					}, state.config);
 					match = res !== 0;
 				} else {																						// Absolute Search or Inclusive mod
 					const offset = Number(cursor / 1000000n);
@@ -338,7 +368,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 						const res = parseModifier({
 							mod: mod as any, adjust: 1, offset,
 							period: Number(start / 1000000n)
-						});
+						}, state.config);
 						match = res === 0;
 					}
 				}

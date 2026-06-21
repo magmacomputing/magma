@@ -157,7 +157,7 @@ Tempo looks for the following structure:
 | `plugins` | `Plugin \| Plugin[]` | Modular plugin(s) (including `TermPlugin`s) to be extended onto Tempo automatically. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
 | `numbers` | `Record<string, number>` | Custom number-word aliases merged into the NUMBER registry. |
-| `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores? }` | Custom configuration for internal dictionary registries. |
+| `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Custom configuration for internal dictionary registries. |
 
 ---
 
@@ -188,7 +188,7 @@ Tempo.init({
 | `timeStamp`| `'ss' \| 'ms' \| 'us' \| 'ns'` | `'ms'` | Precision for numeric inputs and the `.ts` property. |
 | `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
-| `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, parsing logic, localization). |
+| `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, parsing logic, localization). |
 | `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. Unlike `registry` options, these values are not merged into internal state via `extendState`; `Tempo.init()` applies each plugin with `Tempo.extend(p)`, so plugin authors should treat them as instance/class augmentations rather than internal-state merges. |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |

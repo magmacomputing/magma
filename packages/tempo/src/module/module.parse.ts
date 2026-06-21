@@ -224,8 +224,14 @@ const _ParseEngine = {
 			let guard = (TempoClass as any)?.[sym.$guard]?.test(trim) ?? true;
 
 			// 🛡️ Bypass the strict global guard if the current instance is using localized parsing
-			if (!guard && !isEmpty(state.parse.monthMap)) {
+			if (!guard && (!isEmpty(state.parse.monthMap) || !isEmpty(state.parse.weekdayMap)))
 				guard = true;
+
+			// Also bypass if the input itself matches a registered modifier word (e.g. localized 'prochain', 'siguiente')
+			if (!guard && state.config.registry?.modifiers) {
+				const modWords = (Object.values(state.config.registry.modifiers) as string[][]).flat();
+				if (modWords.some(w => trim.toLowerCase().includes(w.toLowerCase())))
+					guard = true;
 			}
 
 			if (!guard) {
@@ -341,7 +347,6 @@ const _ParseEngine = {
 
 		for (const [symKey, pat] of orderedPatterns) {
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
-
 
 			if (isEmpty(groups))
 				continue;

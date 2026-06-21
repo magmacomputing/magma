@@ -120,8 +120,32 @@ export class PatternCompiler {
 			const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a, b) => b.length - a.length).join('|')})`);
 
 			snippet[Token.nbr] = nbr;
-			snippet[Token.mod] = new RegExp(`((?<mod>${Match.modifier.source})?${nbr.source}? *)`);
-			snippet[Token.afx] = new RegExp(`((s)? (?<afx>${Match.affix.source}))?${snippet[Token.sep]?.source || ''}?`);
+			
+			let modPattern = Match.modifier.source;
+			let afxPattern = Match.modifier.source;
+			if (state.config.registry?.modifiers) {
+				const symbols = ['+', '-', '<', '<=', '>', '>=', '='];
+				const words = new Set<string>();
+				symbols.forEach(sym => {
+					const mapped = state.config.registry!.modifiers![sym];
+					if (mapped) (Array.isArray(mapped) ? mapped : [mapped]).forEach(w => words.add(w));
+				});
+				if (words.size > 0) {
+					const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+					escapedWords.sort((a, b) => b.length - a.length);
+					const wordPattern = escapedWords.join('|');
+					modPattern = `[\\+\\-\\<\\>][\\=]?|${wordPattern}`;
+					afxPattern = `[\\+\\-\\<\\>][\\=]?|${wordPattern}`;
+					
+					const op = `[\\+\\-\\<\\>]=?`;
+					const terms = `(?:#[\\w]+|[\\w]+)`;
+					const units = `(?:[\\w]*)`;
+					snippet[Token.slk as any] = new RegExp(`(?:${terms}\\.(?:${op}|${wordPattern})?(?:[0-9]+)?${units})`, 'i');
+				}
+			}
+
+			snippet[Token.mod] = new RegExp(`((?<mod>${modPattern})? *)`, 'i');
+			snippet[Token.afx] = new RegExp(`((s)? (?<afx>${afxPattern}))?${snippet[Token.sep]?.source || ''}?`, 'i');
 		}
 
 		// 2. build ignore pattern

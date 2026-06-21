@@ -22,19 +22,18 @@ export const Match = proxify({
 	/** structural */																					named: /^g?dt$|^g?tm$/,
 	/** two digit year */																			twoDigit: /^[0-9]{2}$/,
 	/** date (ISO 8601) */																		date: /^(?:[+-][0-9]{6}|[0-9]{4})-?(?:0[1-9]|1[0-2])-?(?:0[1-9]|[12][0-9]|3[01])$/,
-	/** time (HH:mm[:ss]) */																	time: /^(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?|24:00(?::00)?$/,
-	/** clock (HH:mm[:ss][.ffffff]) */												clock: /^(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?(?:\.\d{1,9})?|24:00(?::00)?(?:\.0{1,9})?$/,
+	/** time (hh:mi[:ss]) */																	time: /^(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9])?|24:00(?::00)?$/,
+	/** clock (hh:mi[:ss][.ffffff]) */												clock: /^(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?(?:\.\d{1,9})?|24:00(?::00)?(?:\.0{1,9})?$/,
 	/** separator characters (/ - . , T) */										separator: /[T\/\-\.\s,]/,
-	/** modifier characters (+-<>=) */												modifier: /[\+\-\<\>][\=]?|this|next|prev|last/,
-	/** offset post keywords (ago|hence) */										affix: /ago|hence|from now/,
+	/** modifier characters (+-<>=) */												modifier: /[\+\-\<\>][\=]?/,
 	/** strip out these characters from a string */						strips: /\(|\)/g,
 	/** whitespace characters */															spaces: /\s+/g,
 	/** Z character */																				zed: /^Z$/,
 	/** base guard characters (digits and common symbols) */	guard: /[\d\s\-\.\:T\/Z\+\-\(\)\,\=\#\<\>]/i,
 	/** bracketed content (timezone/calendar) */							bracket: /\[[^\]]+\]/i,
-	/** slick shorthand-shifter (e.g. #qtr.>2q2) */						shorthand: /(?:(?:#[\w]+|[\w]+)\.(?:[\+\-\<\>]=?|next|prev|this|last)?(?:[0-9]+)?(?:[\w]*))/,
-	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
-	/** extracted value-only version of a slick shifter */		slickValue: /^(?<sh_mod>[\+\-\<\>]=?|next|prev|this|last)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
+	/** slick shorthand-shifter (e.g. #qtr.>2q2) */						shorthand: /(?:(?:#[\w]+|[\w]+)\.(?:[\+\-\<\>]=?)?(?:[0-9]+)?(?:[\w]*))/,
+	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>]=?)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
+	/** extracted value-only version of a slick shifter */		slickValue: /^(?<sh_mod>[\+\-\<\>]=?)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
 	/** escape special regex characters in a string */				escape: (str: string) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
 	/** escape only dangerous quantifiers and anchors to prevent backtracking/injection while allowing basic regex */
 	safeAlias: (str: string) => String(str).replace(/[*+{}!^$\\]/g, '\\$&'),
@@ -63,18 +62,18 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.mi]: /(\:(?<mi>[0-5][0-9]))/,											// minute-number 00-59
 	[Token.ss]: /(\:(?<ss>[0-5][0-9]))/,											// seconds-number 00-59
 	[Token.ff]: /(\.(?<ff>[0-9]{1,9}))/,											// fractional-seconds up-to 9-digits
-	[Token.ord]: /(?:\s?(?:st|nd|rd|th))/,										// optional ordinal suffix
+	[Token.ord]: /(?:\s?(?:st|nd|rd|th|e|er|re|ème|eme))?/i,	// optional ordinal suffix
 	[Token.mer]: /(\s*(?<mer>am|pm))/,												// meridiem suffix (am,pm)
 	[Token.sfx]: /((?:{sep}+|T)({tm}){tzd}?)/,								// time-pattern suffix 'T {tm} Z'; NOTE: {tm} resolves via Layout fallback in compileRegExp (cross-registry dependency: Snippet → Layout)
 	[Token.wkd]: /(?<wkd>Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)/,	// day-name (abbrev or full)
 	[Token.tzd]: /(?<tzd>Z|(?:\+(?:(?:0[0-9]|1[0-3]):?[0-5][0-9]|14:?00)|-(?:(?:0[0-9]|1[0-1]):?[0-5][0-9]|12:?00)))/,	// time-zone offset +14:00 to -12:00; colon optional throughout (including boundary values UTC+14 and UTC-12)
 	[Token.nbr]: new RegExp(`(?<nbr>[0-9]+|${Object.keys(NUMBER).map(w => Match.escape(w)).join('|')})`),	// modifier count; number-word keys are regex-escaped at construction time (setPatterns() also re-escapes, but defence-in-depth)
-	[Token.afx]: new RegExp(`((s)? (?<afx>${Match.affix.source}))?{sep}?`),	// affix optional plural 's' and (ago|hence)
-	[Token.mod]: new RegExp(`((?<mod>${Match.modifier.source})?{nbr}? *)`),	// modifier (+,-,<,<=,>,>=) plus optional count; CAUTION: all sub-components are optional so this snippet always matches the empty string — standard layouts all use {mod}? to reflect this
+	[Token.afx]: new RegExp(`((s)? (?<afx>${Match.modifier.source}))?{sep}?`),	// affix optional plural 's' and (ago|hence)
+	[Token.mod]: new RegExp(`((?<mod>${Match.modifier.source})? *)`),
 	[Token.sep]: new RegExp(`(?:${Match.separator.source})`),	// date-input separator character "/\\-., " (non-capture group)
 	[Token.unt]: /(?<unt>year|month|week|day|hour|minute|second|millisecond)(?:s)?/,	// useful for '2 days ago' etc
 	[Token.brk]: new RegExp(`(\\[(?<brk>${bracket_content.source})\\](?:\\[(?<cal>${bracket_content.source})\\])?)?`),	// timezone/calendar brackets [...]
-	[Token.slk]: new RegExp(`${Match.shorthand.source}`),			// shorthand shifter
+	[Token.slk]: new RegExp(Match.shorthand.source),					// shorthand shifter
 })
 /** @internal Tempo Snippet type */
 export type Snippet = typeof Snippet
@@ -85,8 +84,8 @@ export type Snippet = typeof Snippet
  */
 /** @internal Layout components for date resolution */
 export const datePattern = {
-	dmy: '({dd}{sep}?{mm}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk})|{wkd})',
-	mdy: '({mm}{sep}?{dd}({sep}?{yy})?|{mod}?({evt})|(?<slk>{slk})|{wkd})'
+	dmy: '{mod}?(?:{dd}{sep}?{mm}({sep}?{yy})?|{evt}|(?<slk>{slk})|{wkd}){afx}?',
+	mdy: '{mod}?(?:{mm}{sep}?{dd}({sep}?{yy})?|{evt}|(?<slk>{slk})|{wkd}){afx}?'
 }
 
 /** @internal Tempo Layout registry */
@@ -95,14 +94,14 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.dmy6]: '(?<dd>0[1-9]|[12][0-9]|3[01])(?<mm>0[1-9]|1[0-2])(?<yy>[0-9]{2})',// compact date (ddmmyy)
 	[Token.mdy6]: '(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])(?<yy>[0-9]{2})',// compact date (mmddyy)
 	[Token.ymd6]: '(?<yy>[0-9]{2})(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])',// compact date (yymmdd)
-	[Token.wkd]: '{mod}?{wkd}{afx}?{sfx}?',										// weekday-only layout; MUST precede {dt} (which also matches bare weekday names via its {wkd} alternative)
+	[Token.wkd]: '{mod}?{nbr}?{wkd}{afx}?{sfx}?',							// weekday-only layout; MUST precede {dt} (which also matches bare weekday names via its {wkd} alternative)
 	[Token.dt]: datePattern.dmy,															// calendar, event, slick or weekday
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
 	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tzd}?{brk}?',	// calendar/event and clock/period
 	[Token.tmd]: '({tm})(?:(?:{sep}+|T)({dt}))?{tzd}?{brk}?',	// clock/period and calendar/event
-	[Token.dmy]: '({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{sfx}?{brk}?',// day-month(-year)
-	[Token.mdy]: '({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{sfx}?{brk}?',// month-day(-year)
-	[Token.ymd]: '({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{sfx}?{brk}?',// year-month(-day)
+	[Token.dmy]: '{mod}?({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{afx}?{sfx}?{brk}?',// day-month(-year)
+	[Token.mdy]: '{mod}?({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{afx}?{sfx}?{brk}?',// month-day(-year)
+	[Token.ymd]: '{mod}?({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{afx}?{sfx}?{brk}?',// year-month(-day)
 	[Token.off]: '{mod}?{dd}{afx}?',													// day of month, with optional offset
 	[Token.rel]: '{nbr}{sep}?{unt}{sep}?{afx}',								// relative duration (e.g. 2 days ago)
 })
@@ -213,6 +212,19 @@ export const Default = secure({
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
 	/** internationalization configuration */									intl: IntlDefault,
+	/** global data augmentation registries */								registry: {
+		formats: {},
+		locales: {},
+		modifiers: {
+			'+': ['next', 'hence', 'from now'],
+			'-': ['ago', 'last', 'prev'],
+			'=': ['this'],
+			'<': [],
+			'>': [],
+			'<=': [],
+			'>=': [],
+		}
+	},
 	/** parse planner configuration (layoutOrder, etc.) */		planner: {
 		layoutOrder: [
 			Token.hms, Token.dmy6, Token.mdy6, Token.ymd6, Token.wkd,
