@@ -6,6 +6,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-06-21
+
+### Added
+- **Localization Modifier Registry**: Modifiers (e.g., "next", "last", "this") can now be localized via the `registry.modifiers` configuration. This allows defining custom words for temporal shifts (e.g., `'>': ['prochain']`) which seamlessly integrate with standard parsing and `#` shorthand syntaxes.
+
+### Changed
+- **Unified Registry Architecture**: Moved the top-level `modifiers` configuration key under the `registry` namespace (`registry: { modifiers }`) to maintain architectural consistency with formats and locales. Deep-merging ensures English default keywords remain active alongside custom localized additions.
+- **Lexer Token Cleanups**: Stripped hardcoded English keywords out of all internal Match regular expressions (`Match.modifier`, `Match.shorthand`, `Match.slick`), standardizing the engine on the symbolic modifiers (`>`, `<`, `=`, `+`, `-`).
+
+### Fixed
+- **Pre-filter Guard Numeric Safety**: Refined the guard-bypass logic to trigger *only* when the input string actually contains a registered modifier keyword, restoring proper strictness and fixing numeric-safety validation gaps for nanosecond epoch inputs.
+- **Lazy Evaluation Delegation**: Fixed a regression in format lazy-loading where built-in formats (like `{date}` or `{time}`) were temporarily eclipsed by empty registry instances.
+- **Trailing Affix Collisions**: Added explicit safety checks and warnings when a date unit is passed both a leading modifier and a trailing affix (e.g., "next May ago").
+
+## [3.2.3] - 2026-06-20
+- **Centralized Configuration**: Introduced `tempo.config.ts` and `tempo.config.js` discovery.
+- **Async Bootstrap**: Added `Tempo.bootstrap()` for safe, asynchronous ES Module configuration resolution without breaking the synchronous `Tempo.init()` API.
+- **CLI Scaffolding**: Added an `npx @magmacomputing/tempo scaffold:all` CLI tool to easily bootstrap `tempo.config.ts` and HTML sandboxes into projects.
+
+### Changed
+- **Zero-Dependency Resolution**: Implemented custom filesystem traversal to ensure robust config discovery without adding external dependencies (e.g., `cosmiconfig`).
+
 ## [3.2.2] - 2026-06-18
 
 ### Added

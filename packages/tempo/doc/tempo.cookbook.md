@@ -75,6 +75,26 @@ new Tempo('2 weeks ago');
 new Tempo('tomorrow afternoon');
 ```
 
+### Localized Parsing Modifiers
+Tempo allows you to localize term modifiers (like `next`, `last`, `this`) by defining them in the `registry.modifiers` configuration. This lets you seamlessly mix localized terms into your relative string parsing and even use them in the `#` shorthand navigation engine!
+
+```typescript
+Tempo.init({
+  locale: 'fr-FR',                // Natively translates months & weekdays
+  registry: {
+    modifiers: {
+      '>': ['prochain', 'suivant'],
+      '<': ['dernier', 'passé'],
+      '=': ['ce', 'cette']
+    }
+  }
+});
+
+new Tempo('next Friday');         // English always works natively
+new Tempo('vendredi prochain');   // Pure French localized string!
+new Tempo('#qtr.dernier');        // Localized shorthand navigation
+```
+
 ### Parsing Unix Timestamps
 Tempo handles both milliseconds (Number) and nanoseconds (BigInt).
 ```typescript

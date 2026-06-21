@@ -1,8 +1,11 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.2.3",
+  "version": "3.3.0",
   "engines": {
     "node": ">=20.0.0"
+  },
+  "bin": {
+    "tempo": "./bin/tempo.js"
   },
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
@@ -208,8 +211,10 @@
     "docs:push": "bash ./bin/push-docs.sh"
   },
   "files": [
+    "bin/tempo.js",
     "dist/",
-    "img/"
+    "img/",
+    "template/"
   ],
   "dependencies": {
     "tslib": "^2.8.1"

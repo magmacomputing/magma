@@ -240,6 +240,7 @@ export namespace Internal {
 		/** custom data augmentation registries */							registry?: { 
 			formats?: Property<any>;
 			locales?: Record<string, Record<string, string | Function>>;
+			modifiers?: Record<string, string | string[]>;
 			snippets?: Snippet | RegistryOption<Pattern>;
 			layouts?: Layout | RegistryOption<Pattern>;
 			events?: Event | RegistryOption<Logic>;
@@ -324,8 +325,8 @@ export namespace Internal {
 	/** Instance configuration derived from supply, storage, and discovery. */
 	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "license" | "localize">> {
 		/** license key for premium features */									license?: string;
-		/** configuration (global | local) */										scope: 'global' | 'local';
-		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>> };
+		/** scope for configuration mutations */								scope: 'global' | 'local';
+		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]> };
 		/** index-signature */																	readonly [key: string]: any;
 	}
 
@@ -340,7 +341,7 @@ export namespace Internal {
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
 		/** @deprecated Provide configuration inside `registry: { formats: ... }` */formats?: Property<any>;
 		/** @deprecated Provide configuration inside `registry: { locales: ... }` */locales?: Record<string, Record<string, string | Function>>;
-		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>> };
+		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]> };
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
 	}

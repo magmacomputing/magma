@@ -297,7 +297,7 @@ export class Tempo {
 	private static _locale = (locale?: string | string[]) => {
 		const global = Context.global;
 		let language: string | undefined;
-		
+
 		const primaryLocale = Array.isArray(locale) ? locale[0] : locale;
 
 		if (primaryLocale) language = canonicalLocale(primaryLocale);
@@ -324,7 +324,11 @@ export class Tempo {
 
 		// Apply options using extendState
 		const patternsDirty = extendState(shape, mergedOptions);
-		if (patternsDirty) setPatterns(shape);
+		let needsRebuild = patternsDirty;
+
+		if (patternsDirty && shape.config.scope === 'local') {
+			this[$buildGuard](shape);
+		}
 
 		// Side-effects
 		const newSphere = Tempo._setSphere(shape, mergedOptions);
@@ -334,12 +338,22 @@ export class Tempo {
 		} else {
 			shape.config.sphere = newSphere;
 		}
+
+		const oldLayout = shape.parse.layout;
 		Tempo._swapLayout(shape);
+		if (oldLayout !== shape.parse.layout) needsRebuild = true;
 
-		if (isDefined(shape.parse.event)) this[$setEvents](shape, undefined, false);
-		if (isDefined(shape.parse.period)) this[$setPeriods](shape, undefined, false);
+		if (isDefined(shape.parse.event)) {
+			this[$setEvents](shape, undefined, false);
+			needsRebuild = true;
+		}
+		if (isDefined(shape.parse.period)) {
+			this[$setPeriods](shape, undefined, false);
+			needsRebuild = true;
+		}
 
-		setPatterns(shape);
+		if (needsRebuild)
+			setPatterns(shape);
 	}
 
 	/** support "Global Discovery" of user-options */
@@ -433,7 +447,8 @@ export class Tempo {
 		return res;
 	}
 
-	static [$buildGuard]() {
+	static [$buildGuard](targetState?: Internal.State) {
+		const state = targetState ?? this[$Internal]();
 		const wordsList = [
 			...Object.keys(enums.NUMBER),
 			...Object.keys(enums.WEEKDAY),
@@ -443,21 +458,27 @@ export class Tempo {
 			...Object.keys(enums.DURATION),
 			...Object.keys(enums.DURATIONS),
 			...Object.keys(enums.TIMEZONE),
-			...(this[$Internal]().aliasEngine?.getAliases(undefined, true).map((a: any) => a.name) ?? []),
-			...ownKeys(this[$Internal]().parse.ignore),
-			...ownKeys(this[$Internal]().parse.snippet),
-			...ownKeys(this[$Internal]().parse.layout),
+			...(state.aliasEngine?.getAliases(undefined, true).map((a: any) => a.name) ?? []),
+			...ownKeys(state.parse.ignore),
+			...ownKeys(state.parse.snippet),
+			...ownKeys(state.parse.layout),
 			...[Token.slk],
 			...Tempo._terms.map(t => t.key),
 			...Tempo._terms.map(t => t.scope),
-			...Guard
+			...Guard,
+			...(state.config.registry?.modifiers ? Object.values(state.config.registry.modifiers).flat() : [])
 		];
 
-		(this[$Internal]() as any)[$guard] = createMasterGuard(wordsList);
+		const guard = createMasterGuard(wordsList);
 
-		if (this[$Internal]() === _global) {
-			setPatterns(this[$Internal]());
+		if (targetState) {
+			targetState.parse.guard = guard as any;
+		} else {
+			(this[$Internal]() as any)[$guard] = guard;
 		}
+
+		if (!targetState && this[$Internal]() === _global)
+			setPatterns(this[$Internal]());
 	}
 
 	/** @internal resolve a global discovery config object by symbol key */
@@ -691,6 +712,18 @@ export class Tempo {
 			try { await jws; } catch { /* fail-safe */ }
 		}
 		return resolveDisplayStatus(rt.license.status);
+	}
+
+	/** 
+	 * Automatically discovers and loads configuration from `tempo.config.*`
+	 * before initializing the engine.
+	 */
+	static async bootstrap(options?: { cwd?: string, configFile?: string }): Promise<typeof Tempo> {
+		const { resolveConfig } = await import('./config/resolveConfig.js');
+		const config = await resolveConfig(options);
+		this.init(config || {});
+		await this.ready();
+		return this;
 	}
 
 	/** Reset Tempo to its default, built-in registration state */
@@ -964,7 +997,11 @@ export class Tempo {
 
 	/** @deprecated Use Tempo.registry.formats instead */
 	static get formats() {
-		return Tempo.config.registry.formats;
+		// Extend built-in enums.FORMAT with any user-registered formats, preserving Enum methods (.keys(), .values(), etc.)
+		const userFormats = Tempo.config.registry?.formats;
+		return (userFormats && Object.keys(userFormats).length > 0)
+			? enums.FORMAT.extend(userFormats, false)
+			: enums.FORMAT;
 	}
 
 	/** static Tempo properties getter */
@@ -1156,13 +1193,13 @@ export class Tempo {
 
 		const { mode } = this.#local.parse;
 		const input = String(this.#tempo ?? '');
+		const guard = this.#local.parse.guard || (this.constructor as typeof Tempo)[$guard];
 
 		// 🏛️ Initialization Strategy ('auto' | 'strict' | 'defer')
 		if (mode === Tempo.MODE.Defer) this.#local.parse.lazy = true;
 		else if (mode === Tempo.MODE.Strict) this.#local.parse.lazy = false;
-		else if (isString(this.#tempo) && !isEmpty(input) && (this.constructor as typeof Tempo)[$guard].test(trimAll(input))) {
+		else if (isString(this.#tempo) && !isEmpty(input) && guard.test(trimAll(input)))
 			this.#local.parse.lazy = true;												// auto-switch to lazy-mode for valid strings
-		}
 
 		this.#fmt = this.#setDelegator('fmt');									// initialize the format-delegator
 		this.#term = this.#setDelegator('term');								// initialize the term-delegator
@@ -1294,7 +1331,8 @@ export class Tempo {
 			// discovery phase
 			if (host === 'fmt') {
 				if (!ensureModule(this, 'FormatModule')) return undefined;
-				if (isDefined(this.#local.config.registry.formats[key]))
+				const allFormats = Object.assign({}, enums.FORMAT, this.#local.config.registry?.formats);
+				if (isDefined(allFormats[key]))
 					return this.#setLazy(target, key, () => this.format(key as t.Format))?.();
 			} else {
 				if (!ensureModule(this, 'TermsModule')) return undefined;
@@ -1340,7 +1378,8 @@ export class Tempo {
 	#discover(host: 'term' | 'fmt', target: any) {
 		if (!_lifecycle.ready) return;
 		if (host === 'fmt') {
-			ownKeys(this.#local.config.registry.formats).forEach(key => {
+			const allFormats = Object.assign({}, enums.FORMAT, this.#local.config.registry?.formats);
+			ownKeys(allFormats).forEach(key => {
 				if (isString(key)) this.#setLazy(target, key, () => this.format(key as t.Format));
 			});
 		} else {

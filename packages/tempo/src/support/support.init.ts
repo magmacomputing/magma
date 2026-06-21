@@ -93,6 +93,14 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => enums.CONFIG.has(key)));
 	if (isGlobal) {
 		markConfig(Object.assign(state.config, configDefaults));
+		// Unfreeze the registry sub-object so that extendState can write into it at runtime.
+		// Default.registry is frozen (via secure()), so we need a mutable shallow clone.
+		if (state.config.registry) {
+			state.config.registry = {
+				...state.config.registry,
+				modifiers: { ...(state.config.registry.modifiers ?? {}) }
+			}
+		}
 		const { timeZone, calendar } = getDateTimeFormat();
 		setProperties(state.config, {
 			calendar,
@@ -119,6 +127,13 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 	} else {
 		markConfig(Object.assign(state.config, configDefaults));
+		// Unfreeze the registry sub-object so that extendState can write into it at runtime.
+		if (state.config.registry) {
+			state.config.registry = {
+				...state.config.registry,
+				modifiers: { ...(state.config.registry.modifiers ?? {}) }
+			}
+		}
 		setProperties(state.config, {
 			calendar,
 			timeZone,
@@ -220,6 +235,23 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						if ((state.config.registry.locales as any)?.extend) state.config.registry.locales = (state.config.registry.locales as any).extend(arg.value.locales);
 						else setProperty(state.config.registry, 'locales', arg.value.locales);
 					}
+					if (arg.value.modifiers) {
+						// Deep-merge user modifiers with existing defaults so English keywords remain active
+						const existing = state.config.registry.modifiers ?? {};
+						const merged: Record<string, string[]> = {};
+
+						// normalize existing defaults into arrays
+						for (const [op, words] of Object.entries(existing))
+							merged[op] = [...asArray<string>(words as any)];
+
+						// merge incoming user modifiers
+						for (const [op, words] of Object.entries(arg.value.modifiers)) {
+							const current = merged[op] ?? [];
+							merged[op] = [...new Set([...current, ...asArray<string>(words as any)])];
+						}
+
+						setProperty(state.config.registry, 'modifiers', merged);
+					}
 
 					const parseMap: Record<string, 'snippet' | 'layout' | 'event' | 'period' | 'ignore'> = {
 						snippets: 'snippet',
@@ -227,7 +259,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						events: 'event',
 						periods: 'period',
 						ignores: 'ignore'
-					};
+					}
 
 					ownEntries(arg.value).forEach(([k, v]) => {
 						if (isString(k) && k in parseMap) {

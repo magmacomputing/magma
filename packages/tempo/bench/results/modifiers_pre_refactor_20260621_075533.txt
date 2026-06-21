@@ -1,0 +1,27 @@
+Criteria: Pre Tempo Modifiers refactor
+=============================================
+Tempo Modifier Benchmark (100,000 iterations)
+=============================================
+
+[Prefix Weekday]
+  Expression : "next Friday"
+  Duration   : 1300.42 ms
+  Speed      : 76,898 ops/sec
+
+[Relative Offset]
+  Expression : "3 days ago"
+  Duration   : 1265.60 ms
+  Speed      : 79,014 ops/sec
+
+[Complex Expression]
+  Expression : "next Friday at 5:00pm"
+  Duration   : 1580.71 ms
+  Speed      : 63,263 ops/sec
+
+[Baseline Date]
+  Expression : "2025-01-01"
+  Duration   : 1657.52 ms
+  Speed      : 60,331 ops/sec
+
+Benchmark complete.
+

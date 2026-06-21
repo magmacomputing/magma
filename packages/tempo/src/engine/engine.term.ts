@@ -5,7 +5,7 @@ import { asArray } from '#library/coercion.library.js';
 import { sym, TermError, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
 import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin/term/term.util.js';
 import { getHost } from '../plugin/plugin.util.js';
-import { parseModifier } from './engine.lexer.js';
+import { parseModifier, normalizeModifier } from './engine.lexer.js';
 
 import type { Tempo } from '../tempo.class.js';
 import type { TempoTermType } from '../plugin/term/term.type.js';
@@ -29,19 +29,22 @@ const toZdt = (v: any): Temporal.ZonedDateTime => isTempo(v) ? v.toDateTime() : 
 export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutate: string, unit: string, offset: any, zdt: Temporal.ZonedDateTime): Temporal.ZonedDateTime | null {
 	if (!isZonedDateTime(zdt)) return zdt;
 
-	const [termPart, rangePart] = unit.startsWith('#')
-		? unit.slice(1).split('.')
-		: [unit, undefined];
+	let termPart = unit;
+	let rangePart: string | undefined;
+	if (unit.startsWith('#')) {
+		const parts = unit.slice(1).split('.');
+		termPart = parts[0];
+		if (parts.length > 1) rangePart = parts.slice(1).join('.');
+	} else if (unit.includes('.')) {
+		const parts = unit.split('.');
+		termPart = parts[0];
+		if (parts.length > 1) rangePart = parts.slice(1).join('.');
+	}
 
 	const state = isTempo(instance)
 		? (instance as any)[sym.$Internal]?.()
 		: (instance as any);
 	const termObj = findTermPlugin(termPart, state);
-
-	if (!termObj) {
-		Tempo?.[TermError]?.(instance.config, unit);
-		return null;
-	}
 
 	const [tz, cal] = getTemporalIds(zdt);
 
@@ -53,16 +56,84 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 
 	const slickStr = (rangePart ? unit : (isString(offset) ? offset : undefined));
 	if (slickStr) {
-		const slick = slickStr.match(Match.slick) || (isString(offset) ? offset.match(Match.slickValue) : null);
+		let matchSlick = Match.slick;
+		let matchSlickValue = Match.slickValue;
+		if (state.config.registry?.modifiers) {
+			const symbols = ['+', '-', '<', '<=', '>', '>=', '='];
+			const words = new Set<string>();
+			symbols.forEach(sym => {
+				const mapped = state.config.registry!.modifiers![sym];
+				if (mapped) (Array.isArray(mapped) ? mapped : [mapped]).forEach(w => words.add(w));
+			});
+			if (words.size > 0) {
+				const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+				escapedWords.sort((a, b) => b.length - a.length);
+				const wordPattern = escapedWords.join('|');
+				// Preserve the original term group (including # prefix) from Match.slick; only extend mod alternation
+				matchSlick = new RegExp(`^(?<sh_term>#[\\w]+|[\\w]+)\\.(?<sh_mod>[\\+\\-\\<\\>]=?|${wordPattern})?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\\w]*)$`);
+				matchSlickValue = new RegExp(`^(?<sh_mod>[\\+\\-\\<\\>]=?|${wordPattern})?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\\w]*)$`);
+			}
+		}
+
+		const slick = slickStr.match(matchSlick) || (isString(offset) ? offset.match(matchSlickValue) : null);
 		const { groups } = (slick || {}) as any;
 		if (groups) {
 			const hasMod = isDefined(groups.sh_mod);
 			const hasNbr = isNumeric(groups.sh_nbr);
 			mod = hasMod ? groups.sh_mod : undefined;
+
+			if (mod && state.config.registry?.modifiers)
+				mod = normalizeModifier(mod, state.config);
+
 			nbr = hasNbr ? Number(groups.sh_nbr) : 1;
 			rKey = (groups.sh_unit && groups.sh_unit.length > 0) ? groups.sh_unit : (hasMod ? undefined : rKey);
 			numericOnly = hasNbr && !hasMod;
 		}
+	}
+
+	if (!termObj) {
+		const termNorm = termPart.toLowerCase();
+		const mappedWkd = state.parse?.weekdayMap?.[termNorm];
+		let wkdValue = mappedWkd?.value;
+
+		if (wkdValue === undefined) {
+			const engWkd = ['xxx', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+			const idx = engWkd.findIndex(w => termNorm.startsWith(w));
+			if (idx !== -1) wkdValue = idx;
+		}
+
+		if (wkdValue !== undefined && mod) {
+			const targetDow = wkdValue;
+			const currentDow = zdt.dayOfWeek;
+			let diff = 0;
+
+			if (mod === '>' || mod === 'next') {
+				diff = (targetDow - currentDow + 7) % 7 || 7;
+			} else if (mod === '<' || mod === 'last' || mod === 'prev') {
+				diff = -((currentDow - targetDow + 7) % 7 || 7);
+			} else if (mod === '>=') {
+				diff = (targetDow - currentDow + 7) % 7;
+			} else if (mod === '<=') {
+				diff = -((currentDow - targetDow + 7) % 7);
+			} else if (mod === '=') {
+				diff = (targetDow - currentDow + 7) % 7;
+			} else {
+				Tempo?.[TermError]?.(instance.config, unit);
+				return null;
+			}
+
+			if (nbr > 1) {
+				if (diff > 0) diff += (nbr - 1) * 7;
+				else if (diff < 0) diff -= (nbr - 1) * 7;
+				else if (diff === 0 && (mod === '>=' || mod === '<=')) {
+					diff = mod === '>=' ? (nbr - 1) * 7 : -(nbr - 1) * 7;
+				}
+			}
+			return zdt.add({ days: diff }).withTimeZone(tz).withCalendar(cal);
+		}
+
+		Tempo?.[TermError]?.(instance.config, unit);
+		return null;
 	}
 
 	// 0. Handle relative .add() — preserving position within the target range
@@ -312,7 +383,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			// Treat explicit modifiers and + / - as shifters. Numeric repeat counts
 			// without an explicit modifier (e.g. `2q2`) are handled as inclusive
 			// searches and should not be treated as shifters.
-			const isShifter = (mod === '>' || mod === '<' || mod === 'next' || mod === 'prev' || mod === 'last' || mod === '+' || mod === '-');
+			const isShifter = (mod === '>' || mod === '<' || mod === '>=' || mod === '<=' || mod === '+' || mod === '-');
 
 			const compare = (r: any) => {
 				const start = toZdt(r.start).epochNanoseconds as bigint;
@@ -328,7 +399,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 					const res = parseModifier({
 						mod: mod as any, adjust: 1, offset: Number(cursor / 1000000n),
 						period: Number((mod === '-') ? end / 1000000n : start / 1000000n)
-					});
+					}, state.config);
 					match = res !== 0;
 				} else {																						// Absolute Search or Inclusive mod
 					const offset = Number(cursor / 1000000n);
@@ -338,7 +409,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 						const res = parseModifier({
 							mod: mod as any, adjust: 1, offset,
 							period: Number(start / 1000000n)
-						});
+						}, state.config);
 						match = res === 0;
 					}
 				}
@@ -363,6 +434,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 					const start = toZdt(m.start).epochNanoseconds;
 					const end = toZdt(m.end).epochNanoseconds;
 					const cursor = jump.epochNanoseconds;
+					if (mod === '>=' || mod === '<=') return true;
 					if (direction > 0) return start >= cursor;
 					return end <= cursor;
 				});

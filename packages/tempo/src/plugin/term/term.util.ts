@@ -342,7 +342,7 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 
 	// Ensure chronological order for reliable anchor/window calculation
 	list = [...list]; // Defensive copy to avoid mutating the original template
-	sortKey(list, 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
+	sortKey(list, 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
 
 	// 2. Resolve Window (Sub-Yearly vs Yearly)
 	const unit = getLargestUnit(list);

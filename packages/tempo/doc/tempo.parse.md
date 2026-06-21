@@ -149,11 +149,10 @@ It also automatically **normalizes and strips accents** from these generated rul
 
 #### ⚠️ Current Limitations (What is NOT Available)
 While `Intl` provides a robust foundation for month and weekday translations, there are limits to auto-localization:
-*   **English Affixes**: Grammatical connector words like "ago", "next", "last", "in", and "from now" are heavily English-biased syntax rules. `Intl` does not provide translations for these parsing connectors. When parsing non-English languages, a relative string like `2 days ago` or `next Friday` will only parse correctly if the English connector keywords (`ago`, `next`) are used, unless Custom Aliases are used to bridge the gap.
 *   **Duration Units**: Words representing duration units ("days", "weeks", "months", "hours") inside natural language strings are currently English-only.
 *   **Grammar Structure**: The parser expects sequences matching standard English formats (e.g., `[value] [unit] [affix]`). Highly inflected languages or completely different phrase structures might fail to parse.
 
-To bridge these gaps, you can register **Custom Aliases** (see below) to map foreign syntax to specific relative offsets manually!
+To bridge these gaps, you can register **Custom Aliases** (see below) or define custom localized keywords in `registry.modifiers`.
 
 ### Custom Aliases (Events & Periods)
 You can teach the parser new words or entire foreign phrases to bridge translation gaps:
@@ -164,7 +163,7 @@ Tempo.init({
   registry: {
     events: {
       // Map a full foreign phrase directly to an English-equivalent relative string
-      'vendredi prochain': 'next Friday',
+      'le lendemain': 'tomorrow',
       // Or standard static events
       'launch': '2026-12-01',
       'party': () => 'next Friday 8pm'
@@ -172,7 +171,7 @@ Tempo.init({
   }
 });
 
-const t1 = new Tempo('vendredi prochain'); // Parses accurately to next Friday
+const t1 = new Tempo('le lendemain'); // Parses accurately to tomorrow
 const t2 = new Tempo('party');
 ```
 

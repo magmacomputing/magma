@@ -1,4 +1,5 @@
 import { getTermRange, defineTerm, defineRange, resolveCycleWindow } from './term.util.js';
+import { logWarn } from '../../support/support.util.js';
 import { COMPASS } from '../../support/support.enum.js';
 import type { Tempo } from '../../tempo.class.js';
 
@@ -19,6 +20,11 @@ const groups = defineRange([
 
 /** resolve the full candidate list for the current context */
 function resolve(t: Tempo, anchor?: any) {
+	if (t.config.sphere === undefined && anchor?.sphere === undefined) {
+		logWarn(`[tempo] SeasonTerm requires 'sphere' configuration (e.g. Tempo.init({ sphere: 'north' }) or { sphere: 'south' }).`, t.config);
+		return [];
+	}
+
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['group', 'sphere'], group: 'meteorological' });
 
 	return list;

@@ -22,6 +22,7 @@ Tempo.extend(core);
 
 export { parse, format } from '#tempo/module';
 export { enums };
+export { defineConfig } from './config/defineConfig.js';
 
 export * from './tempo.class.js';
 export default Tempo;

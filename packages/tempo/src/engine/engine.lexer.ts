@@ -1,6 +1,8 @@
 import '#library/temporal.polyfill.js';
 import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
+import { asArray } from '#library/coercion.library.js';
+
 import { pad, singular } from '#library/string.library.js';
 import { Match, enums, isTempo, logError, logWarn, logDebug } from '#tempo/support';
 import * as t from '../tempo.type.js';
@@ -74,30 +76,39 @@ export function prefix(str: any): any {
 	return str;
 }
 
-/** resolve a relative modifier (+, -, next, ago, etc) */
-export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifier) {
+/** resolve a relative modifier (+, -, <, >, =, etc) */
+export function normalizeModifier(mod: string, config: any = {}): string {
+	if (mod && config?.registry?.modifiers) {
+		const norm = mod.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+		for (const [sym, words] of Object.entries(config.registry.modifiers)) {
+			if (asArray(words as string[])
+				.map(w => w.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, ""))
+				.includes(norm)) {
+				return sym;
+			}
+		}
+	}
+	return mod;
+}
+
+export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifier, config: any = {}) {
 	adjust = Math.abs(adjust);
+	mod = normalizeModifier(mod as string, config) as any;
+
 	switch (mod) {
-		case void 0:
+		case undefined:
 		case '=':
-		case 'this':
 			return 0
 		case '+':
-		case 'next':
 			return adjust;
 		case '-':
-		case 'prev':
-		case 'last':
 			return -adjust;
 		case '<':
-		case 'ago':
 			return (period <= offset) ? -adjust : -(adjust - 1);
 		case '<=':
 		case '-=':
 			return (period < offset) ? -adjust : -(adjust - 1);
 		case '>':
-		case 'hence':
-		case 'from now':
 			return (period >= offset) ? adjust : (adjust - 1);
 		case '>=':
 		case '+=':
@@ -144,7 +155,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	}
 
 	const days = offset - dateTime.dayOfWeek
-		+ (parseModifier({ mod: mod ?? sfx ?? afx, adjust, offset, period: dateTime.dayOfWeek }) * dateTime.daysInWeek);
+		+ (parseModifier({ mod: mod ?? sfx ?? afx, adjust, offset, period: dateTime.dayOfWeek }, config) * dateTime.daysInWeek);
 
 	delete groups["wkd"];
 	delete groups["mod"];
@@ -160,16 +171,16 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any, pivot: number = 75): Temporal.ZonedDateTime {
 
 	const { mod, nbr = '1', afx, unt } = groups as Lexer.GroupDate;
-	// Normalize yy, mm, dd: treat empty string as missing
-	const yy = (typeof groups.yy === 'string' && groups.yy.trim() === '') ? undefined : groups.yy;
-	const mm = (typeof groups.mm === 'string' && groups.mm.trim() === '') ? undefined : groups.mm;
-	const dd = (typeof groups.dd === 'string' && groups.dd.trim() === '') ? undefined : groups.dd;
+	// Normalize yy, mm, dd: treat empty captures as missing (regex groups yield '' for optional unmatched groups)
+	const yy = groups.yy || undefined;
+	const mm = groups.mm || undefined;
+	const dd = groups.dd || undefined;
 
 	if (isEmpty(yy) && isEmpty(mm) && isEmpty(dd) && isUndefined(unt))
 		return dateTime;
 
 	if (!isEmpty(mod) && !isEmpty(afx)) {
-		logWarn(`Cannot provide both a modifier '${mod}' and suffix '${afx}'`, config);
+		logWarn(`A date unit cannot have both a leading modifier ('${mod}') and a trailing affix ('${afx}') — use one or the other`, config);
 		return dateTime;
 	}
 
@@ -191,7 +202,8 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 
 	if (unt) {
 		const { nbr: adjust = 1 } = num({ nbr });
-		const direction = (mod === '<' || mod === '-' || afx === 'ago') ? -1 : 1;
+		const dir = parseModifier({ mod: mod ?? afx, adjust: 1, offset: 0, period: 0 }, config);
+		const direction = dir < 0 ? -1 : 1;
 		const plural = `${singular(unt)}s`;
 		dateTime = dateTime.add({ [plural]: adjust * direction } as any);
 
@@ -214,7 +226,8 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	const period = Number(pad(dateTime.month) + '.' + pad(dateTime.day + 1));
 	const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone;
 
-	year += parseModifier({ mod: mod ?? afx, adjust, offset, period });
+	const pmRes = parseModifier({ mod: mod ?? afx, adjust, offset, period }, config);
+	year += pmRes;
 	Object.assign(groups, { yy: year, mm: month, dd: day });
 
 	delete groups["mod"];
