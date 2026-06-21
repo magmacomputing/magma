@@ -64,7 +64,7 @@ Tempo intelligently resolves ambiguous dates like `04012026` based on your timez
 const us = new Tempo('04012026', { timeZone: 'America/New_York' }); 
 console.log(us.format('{mon} {dd}')); // "April 01"
 ```
-👉 **Learn More:** [Ambiguity Resolution Guide](./tempo.month-day.md)
+👉 **Learn More:** [Ambiguity Resolution Guide](./tempo.parse.md)
 
 ### Handling Relative Strings
 Tempo natively understands human-readable offsets.

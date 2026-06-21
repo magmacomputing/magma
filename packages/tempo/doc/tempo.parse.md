@@ -125,6 +125,36 @@ const us = new Tempo('04012026', { timeZone: 'America/New_York' }); // Apr 1
 const au = new Tempo('04012026', { timeZone: 'Australia/Sydney' }); // Jan 4
 ```
 
+#### Parsing "Ambiguous" Digits (6 vs 8)
+When processing numeric-only strings, the length determines the ambiguity rules:
+- A **6-digit string** is *always* validated as compact time first (`hhmiss`) regardless of `timeZone`. Only if time validation fails does Tempo try compact date layouts (`ddmmyy` or `mmddyy`).
+- An **8-digit string** is checked as a compact date first, with month-day-year vs day-month-year decided by the active Region/`timeZone`.
+
+To avoid ambiguity completely, prefer separators whenever you control the input format (e.g., `2026-04-01`, `04/01/2026`, or `01/04/2026`).
+
+#### Manual Resolution Override
+If you want to bypass the timezone detection, you can explicitly force the parser to use Month-Day logic:
+```typescript
+// Force MDY parsing
+const t = new Tempo('04/01/2023', { monthDay: true }); 
+
+// Force DMY parsing
+const t3 = new Tempo('04/01/2023', { monthDay: { active: false } });
+```
+
+#### Customizing the `MONTH_DAY` Registry
+The global `MONTH_DAY` registry defines the default rules for detection. You can augment this to support additional custom regions:
+```typescript
+Tempo.init({
+  monthDay: {
+    locales: ['en-CA'], // Add Canada to the MDY preference list
+    timezones: {
+      'en-CA': ['America/Toronto', 'America/Vancouver']
+    }
+  }
+});
+```
+
 ### Internationalized Parsing (Locales)
 Tempo can be instructed to automatically generate language-specific parsing rules based on your `locale`. This enables parsing of translated months, weekdays, and relative events out-of-the-box!
 

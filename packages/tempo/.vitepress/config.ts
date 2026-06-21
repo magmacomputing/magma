@@ -48,7 +48,6 @@ export default defineConfig({
           { text: 'Registries', link: '/doc/tempo.registry' },
           { text: 'Smart Parsing', link: '/doc/tempo.parse' },
           { text: 'Parse Planner', link: '/doc/tempo.planner' },
-          { text: 'Regional Parsing (MDY)', link: '/doc/tempo.month-day' },
           { text: 'Smart Formatting', link: '/doc/tempo.format' },
           { text: 'Layout Patterns', link: '/doc/tempo.layout' },
           { text: 'Duration Logic', link: '/doc/tempo.duration' }

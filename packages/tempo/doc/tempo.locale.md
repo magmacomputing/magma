@@ -19,7 +19,7 @@ Tempo uses the active `locale` as a critical piece of metadata to resolve this:
 - It cross-references the locale's region or language against the internal `MONTH_DAY` registry to check its preferred layout.
 - If the locale inherently prefers `MDY` (like in the United States), Tempo dynamically swaps its parsing order to attempt `Month-Day-Year` patterns *before* it attempts `Day-Month-Year` patterns.
 
-*For deeper details on layout configurations and ambiguous digits, see the [Ambiguity Resolution Guide](./tempo.month-day.md).*
+*For deeper details on layout configurations and ambiguous digits, see the [Ambiguity Resolution Guide](./tempo.parse.md).*
 
 ---
 
