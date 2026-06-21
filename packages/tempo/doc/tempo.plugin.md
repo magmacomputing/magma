@@ -144,6 +144,7 @@ When building plugins that perform complex parsing or logic, follow Tempo's **"F
 
 - **Strict Mode (Default)**: If your plugin encounters a terminal error (e.g., invalid input that cannot be recovered), you should `throw` a descriptive error.
 - **Catch Mode**: Respect the user's `catch` configuration. If `this.config.catch` is `true`, instead of throwing, you should log a warning using `this.warn()` and return a sensible fallback (or the original input).
+- **Configuration Dependencies**: *You* are responsible for managing missing configuration keys that your plugin depends on. The core engine will not validate your plugin's specific requirements. If a required config key is missing (e.g., `sphere` for a Season plugin), either provide a reasonable default fallback value or warn the user explicitly using `this.warn()`. Do not make assumptions that lead to silent failures.
 
 ```typescript
 // Example within a plugin instance method

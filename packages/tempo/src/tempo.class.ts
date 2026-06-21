@@ -324,10 +324,10 @@ export class Tempo {
 
 		// Apply options using extendState
 		const patternsDirty = extendState(shape, mergedOptions);
-		if (patternsDirty) {
-			setPatterns(shape);
-			if (shape.config.scope === 'local')
-				this[$buildGuard](shape);
+		let needsRebuild = patternsDirty;
+
+		if (patternsDirty && shape.config.scope === 'local') {
+			this[$buildGuard](shape);
 		}
 
 		// Side-effects
@@ -338,12 +338,22 @@ export class Tempo {
 		} else {
 			shape.config.sphere = newSphere;
 		}
+
+		const oldLayout = shape.parse.layout;
 		Tempo._swapLayout(shape);
+		if (oldLayout !== shape.parse.layout) needsRebuild = true;
 
-		if (isDefined(shape.parse.event)) this[$setEvents](shape, undefined, false);
-		if (isDefined(shape.parse.period)) this[$setPeriods](shape, undefined, false);
+		if (isDefined(shape.parse.event)) {
+			this[$setEvents](shape, undefined, false);
+			needsRebuild = true;
+		}
+		if (isDefined(shape.parse.period)) {
+			this[$setPeriods](shape, undefined, false);
+			needsRebuild = true;
+		}
 
-		setPatterns(shape);
+		if (needsRebuild)
+			setPatterns(shape);
 	}
 
 	/** support "Global Discovery" of user-options */
@@ -467,9 +477,8 @@ export class Tempo {
 			(this[$Internal]() as any)[$guard] = guard;
 		}
 
-		if (this[$Internal]() === _global) {
+		if (!targetState && this[$Internal]() === _global)
 			setPatterns(this[$Internal]());
-		}
 	}
 
 	/** @internal resolve a global discovery config object by symbol key */

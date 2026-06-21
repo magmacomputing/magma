@@ -1,6 +1,7 @@
 import '#library/temporal.polyfill.js';
 import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
+import { asArray } from '#library/coercion.library.js';
 
 import { pad, singular } from '#library/string.library.js';
 import { Match, enums, isTempo, logError, logWarn, logDebug } from '#tempo/support';
@@ -76,17 +77,23 @@ export function prefix(str: any): any {
 }
 
 /** resolve a relative modifier (+, -, <, >, =, etc) */
-export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifier, config: any = {}) {
-	adjust = Math.abs(adjust);
+export function normalizeModifier(mod: string, config: any = {}): string {
 	if (mod && config?.registry?.modifiers) {
 		const norm = mod.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
 		for (const [sym, words] of Object.entries(config.registry.modifiers)) {
-			if ((words as string[]).map(w => w.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "")).includes(norm)) {
-				mod = sym as t.Modifier;
-				break;
+			if (asArray(words as string[])
+				.map(w => w.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, ""))
+				.includes(norm)) {
+				return sym;
 			}
 		}
 	}
+	return mod;
+}
+
+export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifier, config: any = {}) {
+	adjust = Math.abs(adjust);
+	mod = normalizeModifier(mod as string, config) as any;
 
 	switch (mod) {
 		case undefined:

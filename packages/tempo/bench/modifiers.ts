@@ -4,10 +4,17 @@ import { Tempo } from '../src/tempo.class.js';
 const ITERATIONS = 100_000;
 
 function runBenchmark(name: string, expression: string) {
+	Tempo.init({ debug: 0, catch: true, timeZone: 'UTC' });
+
+	// Warm-up pass for JIT stabilization
+	const warmupIterations = Math.min(ITERATIONS, 1000);
+	for (let i = 0; i < warmupIterations; i++)
+		new Tempo(expression, { catch: true });
+
 	const start = performance.now();
-	for (let i = 0; i < ITERATIONS; i++) {
+	for (let i = 0; i < ITERATIONS; i++)
 		new Tempo(expression);
-	}
+
 	const end = performance.now();
 	const duration = end - start;
 	const opsPerSec = Math.round((ITERATIONS / duration) * 1000);

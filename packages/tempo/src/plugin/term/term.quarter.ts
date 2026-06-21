@@ -1,4 +1,5 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from './term.util.js';
+import { logWarn } from '../../support/support.util.js';
 import { COMPASS } from '../../support/support.enum.js';
 import { isNumber } from '#library/assertion.library.js';
 import { asArray } from '#library';
@@ -19,6 +20,11 @@ const groups = defineRange([
 
 /** resolve the full candidate list for the current context */
 function resolve(t: Tempo, anchor?: any): any[] {
+	if (t.config.sphere === undefined && anchor?.sphere === undefined) {
+		logWarn(`[tempo] QuarterTerm requires 'sphere' configuration (e.g. Tempo.init({ sphere: 'north' }) or { sphere: 'south' }).`, t.config);
+		return [];
+	}
+
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['sphere'] });
 
 	list.forEach(itm => {

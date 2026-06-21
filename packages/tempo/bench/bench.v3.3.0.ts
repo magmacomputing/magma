@@ -3,8 +3,8 @@
  *
  * Compares three configurations:
  *   A. Baseline: stock Tempo, same corpus as pre-refactor
- *   B. Localized modifiers: registry.modifiers + locale:'fr-FR' active
- *   C. English relative strings through the new modifier path
+ *   B. Module-based comparison using BenchmarkModule across auto/defer/strict modes
+ *   C. Localized fr-FR modifiers through the new registry.modifiers code path
  */
 import '../bin/temporal-polyfill.js';
 import { Tempo } from '../src/tempo.index.js';
