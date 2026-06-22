@@ -1,4 +1,5 @@
 import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
+import { asArray } from '#library/coercion.library.js';
 import { singular } from '#library/string.library.js';
 import { normaliseFractionalDurations } from '#library/temporal.library.js';
 
@@ -60,6 +61,12 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 						if (key === 'timeZone' || key === 'calendar') return currZdt;
 
 						try {
+							if (++state.mutateDepth > 100) {
+								logError(`Infinite recursion detected in mutation engine for key: ${key}, adjust: ${adjust}, depth: ${state.mutateDepth}`, this.config);
+								state.errored = true;
+								return currZdt;
+							}
+
 							if (type === 'set' && isString(adjust)) {
 								const validMap: Record<string, string> = { year: 'yy', month: 'mm', week: 'ww', day: 'dd', hour: 'hh', minute: 'mi', second: 'ss' };
 								const mapped = validMap[singular(key)];
@@ -78,12 +85,18 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 								}
 
 								let matchSlickValue = Match.slickValue;
+								const backwardWords = new Set<string>();
 								if (state.config.registry?.modifiers) {
 									const symbols = ['+', '-', '<', '<=', '>', '>=', '='];
 									const words = new Set<string>();
 									symbols.forEach(sym => {
 										const mapped = state.config.registry!.modifiers![sym];
-										if (mapped) (Array.isArray(mapped) ? mapped : [mapped]).forEach(w => words.add(w));
+										if (mapped) {
+											asArray(mapped).forEach(w => {
+												words.add(w);
+												if (sym === '<' || sym === '<=' || sym === '-') backwardWords.add(w);
+											});
+										}
 									});
 									if (words.size > 0) {
 										const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
@@ -121,18 +134,13 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 								}
 
 								let nbr = sh_nbr ? Number(sh_nbr) : 1;
-								if (sh_mod === '<' || sh_mod === '-' || sh_mod === 'prev' || sh_mod === 'last') nbr = -nbr;
+								if (sh_mod === '<' || sh_mod === '-' || sh_mod === 'prev' || sh_mod === 'last' || backwardWords.has(sh_mod)) nbr = -nbr;
 
 								const unitMap: Record<string, string> = {
 									yy: 'years', mm: 'months', ww: 'weeks', dd: 'days',
 									hh: 'hours', mi: 'minutes', ss: 'seconds'
 								};
 								return currZdt.add({ [unitMap[key]]: nbr });
-							}
-							if (++state.mutateDepth > 100) {
-								logError(`Infinite recursion detected in mutation engine for key: ${key}, adjust: ${adjust}, depth: ${state.mutateDepth}`, this.config);
-								state.errored = true;
-								return currZdt;
 							}
 
 							const { mutate: op, offset, single, term } = ((key, adjust, type) => {

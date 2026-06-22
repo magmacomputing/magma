@@ -1,7 +1,7 @@
 # Snippet Keys for Slick Object Mutations
 
 ## Status
-- Proposed for a future release (not scheduled in the current release).
+- Implemented and released in v3.3.1.
 - Intent: Evaluate introducing Snippet/Format Token keys to `.set()` specifically for Slick relative mutations, avoiding union types on standard duration keys.
 
 ## Context
@@ -63,7 +63,7 @@ t1.set({ wkd: '>Fri' }).set({ mm: '>3' });
 
 ### Double Negation & Math Synonyms
 How does the parser handle `{ mm: '>-2' }`?
-- **Analysis:** Mathematically, advancing by a negative number is stepping backwards. `>-2` should evaluate exactly the same as `<2` (and similarly `<-2` = `>2`).
+- **Analysis:** Mathematically, advancing by a negative number is stepping backwards. `>-2` should evaluate the same as `<2` (and similarly `<-2` = `>2`).
 - **Recommendation:** The Slick parser must natively support negative numbers and handle the mathematical synonym logic gracefully without failing.
 
 ### The `{ tzd: '+10:00' }` Edge Case

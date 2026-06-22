@@ -122,11 +122,11 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				return null;
 			}
 
-			if (nbr > 1) {
-				if (diff > 0) diff += (nbr - 1) * 7;
-				else if (diff < 0) diff -= (nbr - 1) * 7;
+			if (nbr > 1 || nbr < -1) {
+				if (diff > 0) diff += (nbr > 0 ? nbr - 1 : nbr) * 7;
+				else if (diff < 0) diff -= (nbr > 0 ? nbr - 1 : nbr) * 7;
 				else if (diff === 0 && (mod === '>=' || mod === '<=')) {
-					diff = mod === '>=' ? (nbr - 1) * 7 : -(nbr - 1) * 7;
+					diff = mod === '>=' ? (nbr > 0 ? nbr - 1 : nbr + 1) * 7 : -(nbr > 0 ? nbr - 1 : nbr + 1) * 7;
 				}
 			}
 			return zdt.add({ days: diff }).withTimeZone(tz).withCalendar(cal);
