@@ -1,124 +1,90 @@
-# Slick Syntax Extension for Duration Keys
+# Snippet Keys for Slick Object Mutations
 
 ## Status
 - Proposed for a future release (not scheduled in the current release).
-- Intent: evaluate design and rollout without breaking existing term-based Slick behavior.
+- Intent: Evaluate introducing Snippet/Format Token keys to `.set()` specifically for Slick relative mutations, avoiding union types on standard duration keys.
 
 ## Context
-Today, Slick Syntax is centered on Term mutation resolution (for example `#term` and `#term.modifier` forms).
-Mutation routing for object inputs currently distinguishes:
-- Term-style mutations (`#...` or discovered term plugins)
-- Standard unit mutations (`year`, `month`, `week`, `day`, etc.)
-- Parser-backed set operations (`period`, `event`, `time`, `date`, `dow`, `wkd`)
+Today, Slick Syntax is centered on Term mutation resolution (for example `#term` and `#term.modifier` forms). 
+We previously considered adding Slick string support to standard duration keys (e.g., `month: '>5'`), but this introduces significant typing issues in TypeScript (forcing `number | string` union types) and runtime parsing ambiguity.
 
-This creates an opportunity to support human-friendly modifier strings on selected duration/unit keys.
+By introducing **Snippet Keys** (Format Tokens) as the exclusive keys for Slick string operations, we establish perfect separation of concerns:
+- **Absolute Assignment:** Uses standard duration keys (e.g., `{ month: 5 }`). Strictly typed as `number`.
+- **Relative Slick Math:** Uses snippet keys (e.g., `{ mm: '>5' }`). Strictly typed as `string`.
 
 ## Goal
-Allow selected non-term mutation keys to accept Slick-style strings, starting with the most intuitive use-cases.
+Allow developers to use a core subset of Tempo's Format Tokens (Snippet keys) within `.set()` to perform powerful, relative Slick mutations. We explicitly exclude this functionality from `.add()` to preserve the architectural separation between assignment/navigation (`.set()`) and simple arithmetic (`.add()`).
 
-Example candidate syntax:
-- `t1.set({ week: ">2Mon" })`
-`t1.set({ week: ">2Mon" })` - advances to the 2nd following Monday.
+Supported subset of Snippet keys:
+- `yy` (Year)
+- `mm` (Month)
+- `ww` (Week - *New addition needed*)
+- `dd` (Day)
+- `hh` (Hour)
+- `mi` (Minute - Note: intentionally distinct from `minute` to prevent `m`/`M` ambiguity)
+- `ss` (Second)
+- `wkd` (Weekday)
 
-## Key Architectural Principle
-Keep two concepts distinct:
-- Term Slick: range-based/cycle-aware term navigation.
-- Unit Slick: field-oriented mutation grammar interpreted per key.
+*(Note: We intentionally exclude format-only tokens like `ord`, `ff`, `mer`, `sfx`, `nbr`, `afx`, `mod`, `sep`, `unt`, `brk`, `slk`)*
 
-Do not merge these conceptually into one generic resolver until semantics are explicit and deterministic per key.
+## Example Syntax & Payload Types
+Different keys expect slightly different string payloads:
+- **Numeric Keys (`yy`, `mm`, `dd`, `ww`, `hh`, `mi`, `ss`):** Expect a shift operator and an optional number (defaulting to 1). Example: `{ yy: '>' }` (implies 1 year forward) or `{ dd: '>5' }`.
+- **Named Keys (`wkd`):** Expect a shift operator, an optional number, and an optional name. Example: `{ wkd: '>' }` (implies 1 weekday forward) or `{ wkd: '>2fri' }`.
 
-## Why Not Full Unification Immediately
-Term ranges and unit fields have different semantics:
-- Terms represent named cyclical windows.
-- Duration keys represent arithmetic or calendar-field operations.
-
-A single generic parser without key-scoped rules risks ambiguous behavior and regressions.
-
-## Proposed Direction
-Introduce key-scoped Slick handling for duration/unit keys in phases.
-
-### Phase 1 (Recommended First Step)
-Add Slick support for weekday-style keys only:
-- `wkd`
-- `dow`
-
-Illustrative Phase 1 examples:
 ```javascript
-// assign by weekday name (short/full)
-t1.set({ wkd: 'Mon' });
-t1.set({ wkd: 'Monday' });
+// Set the absolute month to December, then advance to the next Friday
+t1.set({ month: 12, wkd: '>Fri' });
 
-// relative token: move to the next occurrence of the current weekday
-t1.set({ dow: 'next' });
-
-// numeric-relative offset: advance N weekdays
-t1.set({ dow: '>2' });
+// Advance 3 months, then find the 2nd following Monday
+t1.set({ mm: '>3', wkd: '>2Mon' });
 ```
 
-Rationale:
-- Strong existing parser support for weekday-relative logic.
-- Lowest ambiguity.
-- High utility for natural expressions.
+## Key Architectural Principles
+### 1. Pure Types
+The TypeScript compiler remains happy. Standard keys (`month`, `day`) are strictly numeric. Snippet keys (`mm`, `dd`) are strictly strings containing Slick syntax.
 
-### Phase 2
-Evaluate `week` key support with explicit semantics.
+### 2. Alignment with Term Slick Syntax
+The proposed syntax does not depart from established styles; it fully harmonizes with existing Term Slick syntax. Just as `#year.>` implies exactly 1 year forward, an optional number in `{ yy: '>' }` perfectly mirrors that convention without stepping on any toes.
 
-Possible contract (to validate):
-- `">2Mon"` means advance to the second following Monday using a defined week anchor policy.
+### 3. Execution Order and Linter Warnings
+Because JavaScript execution relies on object key insertion order, there is a risk that auto-formatters (like ESLint's `sort-keys`) might alphabetize keys on save, silently breaking sequential date math.
+**Our Posture:** We process the keys in JS insertion order. We will explicitly document this behavior with a disclaimer: *"If you use an auto-formatter that sorts object keys alphabetically, complex multi-key math may break. For guaranteed deterministic order, stick with `.set()` chaining."*
 
-Must define:
-- What is the anchor week?
-- How cross-boundary transitions are counted.
-- Whether current-week matches are included/excluded.
+```javascript
+// Vulnerable to auto-formatters:
+t1.set({ wkd: '>Fri', mm: '>3' });
 
-### Phase 3 (Optional)
-Evaluate month/year key Slick forms only after policies are formalized for overflow and day clamping.
+// Safe and recommended:
+t1.set({ wkd: '>Fri' }).set({ mm: '>3' });
+```
 
-## Suggested Semantics Guardrails
-- Parse grammar should be key-aware, not global.
-- Unsupported key+pattern combinations should throw descriptive errors.
-  - Illustrative template (invalid pattern for `month` key): `Invalid Slick pattern for key "month": ">>3". Expected numeric offset or supported month-token form.`
-  - Illustrative template (unsupported week-anchor modifier): `Unsupported week-anchor modifier for key "week": "^Mon". Supported modifiers are ">", ">=", "<", "<=" with a valid weekday anchor.`
-  - These are illustrative templates for consistent feedback when throwing key+pattern validation errors in Slick syntax parsing logic.
-- Keep existing numeric/object mutation behavior unchanged.
-- Preserve term Slick behavior exactly unless explicitly version-gated.
+## Open Questions & Edge Cases
 
-## Compatibility & Risk Notes
-- Main risk: user confusion between term and unit semantics when both accept similar modifiers.
-- Mitigation:
-  - Explicit per-key docs and examples.
-  - Validation errors for unsupported combinations.
-  - Incremental rollout with tests per key.
-  - Backward compatibility: Scan for existing Slick patterns that could collide with new unit-key syntax, add compatibility tests for known legacy patterns, and use a staged deprecation/rollout strategy (for example opt-in flag + warnings before default-on behavior).
-  - Performance: Measure parser impact in hot paths, publish benchmark/profile results, and add mitigation tactics such as caching parse results and fast-path guards for common valid forms.
+### Double Negation & Math Synonyms
+How does the parser handle `{ mm: '>-2' }`?
+- **Analysis:** Mathematically, advancing by a negative number is stepping backwards. `>-2` should evaluate exactly the same as `<2` (and similarly `<-2` = `>2`).
+- **Recommendation:** The Slick parser must natively support negative numbers and handle the mathematical synonym logic gracefully without failing.
 
-## Testing Strategy (Future)
-- Add table-driven tests for each supported key (`wkd`, `dow`, `week`).
-- For each key (`wkd`, `dow`, `week`), include explicit edge-case categories:
-  - DST transitions (spring-forward/fall-back behavior).
-  - Leap-year boundaries (Feb 29 <-> Feb 28).
-  - End-of-month rollovers (for example Jan 31 -> Feb 28/29).
-  - Cross-year transitions (Dec -> Jan).
-- For each edge-case category, include timezone-sensitive variants.
-- Add regression tests proving existing Slick term behavior is unchanged.
+### The `{ tzd: '+10:00' }` Edge Case
+Can we support explicitly mutating the `timeZone` of the instance using a special syntax like `{ tzd: '+10:00' }`?
+- **Analysis:** This would allow a user to instantly shift a Tempo instance to a different timezone offset (e.g., for a dashboard tracking East Coast and West Coast clocks). However, setting absolute timezones via an object mutation crosses a conceptual boundary (mutating context vs mutating time).
+- **Recommendation:** Do not include `tzd` in the initial `SLICK_KEYS` implementation. Users can already achieve this cleanly without Slick syntax by using standard properties (e.g., passing `{ timeZone: '+10:00' }` directly if supported, or cloning the instance).
 
-## Open Questions
-1. Should `week` Slick be interpreted relative to current date, start-of-week, or nearest matching weekday?
-2. Should symbolic modifiers (`>`, `>=`, `<`, `<=`) map exactly to current term Slick semantics?
-  - Recommended answer (Question 2): Yes. Symbolic modifiers (`>`, `>=`, `<`, `<=`) should map exactly to current term Slick semantics to preserve consistency and reduce cognitive load for existing users.
-  - Justification: Reusing established modifier behavior minimizes migration friction, strengthens backward-compatibility expectations, and avoids introducing a second mental model for nearly identical syntax.
-  - Action item (implementation/testing): Codify an explicit operator mapping table shared between term and unit Slick paths, and add parity tests plus backward-compatibility regression tests proving modifier behavior is unchanged.
-3. Do we allow number words (`two`) in unit Slick counts, or numbers only?
-4. Should this ship behind a parse/mutate option flag first?
+## Proposed Direction & Phasing
 
-## Recommendation
-### Timeline & Priority (Optional)
-- Priority: Medium
-- Estimated effort:
-  - Phase 1 (`wkd`/`dow`): ~2-3 days (spec + implementation + tests + docs)
-  - Phase 2 (`week`): ~3-5 days due to additional semantic complexity
+### Phase 1: Core Snippet Implementation
+1. Add `ww` (weeks) to the internal mapping to round out the duration subset.
+2. Introduce a dedicated type/constant (e.g., a `SLICK_KEYS` array) to systematically define valid keys and cleanly generalize the `conform()` mapping.
+3. Update the `conform()` engine to accept the core subset (`yy, mm, ww, dd, hh, mi, ss, wkd`) as strictly strings.
+4. Route these specific keys directly to the Slick regex parser.
+5. Add clear validation errors: e.g., if a user passes `'>5'` to `month`, throw `"For relative Slick math, use the 'mm' snippet key instead of 'month'."`
 
-Proceed with a conservative, phased implementation:
-1. Formal spec for `wkd`/`dow` first.
-2. Implement + test + document.
-3. Evaluate `week` syntax (`">2Mon"`) after semantics are signed off.
+### Phase 2: Documentation & Testing
+1. Add table-driven tests for each supported snippet key.
+2. Ensure test cases comprehensively cover **negative shifts** as well (e.g., `<1`, `<2wkd` to step backwards).
+3. Ensure chaining tests prove out deterministic behavior.
+4. Update the cookbook with the ESLint/Prettier chaining warning.
+
+### Phase 3 (Future): Evaluate `tzd`
+Revisit `{ tzd: '>1' }` once the core snippet slick logic has stabilized.
