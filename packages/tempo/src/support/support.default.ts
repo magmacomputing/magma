@@ -32,8 +32,8 @@ export const Match = proxify({
 	/** base guard characters (digits and common symbols) */	guard: /[\d\s\-\.\:T\/Z\+\-\(\)\,\=\#\<\>]/i,
 	/** bracketed content (timezone/calendar) */							bracket: /\[[^\]]+\]/i,
 	/** slick shorthand-shifter (e.g. #qtr.>2q2) */						shorthand: /(?:(?:#[\w]+|[\w]+)\.(?:[\+\-\<\>]=?)?(?:[0-9]+)?(?:[\w]*))/,
-	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>]=?)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
-	/** extracted value-only version of a slick shifter */		slickValue: /^(?<sh_mod>[\+\-\<\>]=?)?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\w]*)$/,
+	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>\=]=?)?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\w]*)$/,
+	/** extracted value-only version of a slick shifter */		slickValue: /^(?<sh_mod>[\+\-\<\>\=]=?)?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\w]*)$/,
 	/** escape special regex characters in a string */				escape: (str: string) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
 	/** escape only dangerous quantifiers and anchors to prevent backtracking/injection while allowing basic regex */
 	safeAlias: (str: string) => String(str).replace(/[*+{}!^$\\]/g, '\\$&'),
@@ -57,6 +57,7 @@ export const Match = proxify({
 export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.yy]: /(?<yy>[0-9]{2}(?:[0-9]{2})?)/,								// year must be exactly 2 or 4 digits
 	[Token.mm]: /(?<mm>[0 ]?[1-9]|1[0-2]|Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)/,	// month-name (abbrev or full) or month-number 01-12; leading '0' or space only (not \s — tab/newline are not valid padding)
+	[Token.ww]: /(?<ww>0?[1-9]|[1-4][0-9]|5[0-3])/,						// week-number 01-53
 	[Token.dd]: /(?<dd>[0 ]?[1-9]|[12][0-9]|3[01]){ord}?/,		// day-number 01-31; leading '0' or space only (not \s — tab/newline are not valid padding)
 	[Token.hh]: /(?<hh>2[0-4]|[01]?[0-9])/,										// hour 00-24; CAUTION: in non-anchored use '25' partially matches as '2' via [01]?[0-9] — always use within anchored layouts; single-digit hours (e.g. '9') are intentionally supported
 	[Token.mi]: /(\:(?<mi>[0-5][0-9]))/,											// minute-number 00-59
@@ -178,6 +179,10 @@ export type Period = typeof Period
 export const Ignore = ['at', 'the', 'o-clock', 'o\'clock', 'oclock', 'on', 'in', 'of', 'by', 'for', 'to'] as const;
 /** @internal Tempo Ignore type */
 export type Ignore = string | string[] | (() => string | string[])
+
+/** @internal valid keys for Slick Object mutations */
+export const SLICK_KEYS = ['yy', 'mm', 'ww', 'dd', 'hh', 'mi', 'ss', 'wkd'] as const;
+export type SLICK_KEYS = typeof SLICK_KEYS
 
 /** @internal Tempo Master Guard list */
 export const Guard = [

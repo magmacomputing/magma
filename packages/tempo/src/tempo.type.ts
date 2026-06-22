@@ -13,7 +13,7 @@ import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject,
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
-import type { Snippet, Layout, Event, Period, Ignore } from '#tempo/support/support.default.js';
+import { SLICK_KEYS, type Snippet, type Layout, type Event, type Period, type Ignore } from '#tempo/support/support.default.js';
 import type { Token } from '#tempo/support/support.symbol.js';
 
 import type { AliasEngine } from './engine/engine.alias.js';
@@ -128,7 +128,10 @@ export type SetFields = {
 } & {
 	[K in 'date' | 'time' | 'event' | 'period']?: string;
 }
-export type MutateSet = Prettify<SetFields & {
+export type SlickKey = SLICK_KEYS[number];
+export type SlickOffset = { [K in SlickKey]?: string };
+
+export type MutateSet = Prettify<SetFields & SlickOffset & {
 	timeZone?: Temporal.TimeZoneLike;
 	calendar?: Temporal.CalendarLike;
 } & TermOffset> | DateTime
@@ -237,16 +240,16 @@ export namespace Internal {
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
-		/** custom data augmentation registries */							registry?: { 
-			formats?: Property<any>;
-			locales?: Record<string, Record<string, string | Function>>;
-			modifiers?: Record<string, string | string[]>;
-			snippets?: Snippet | RegistryOption<Pattern>;
-			layouts?: Layout | RegistryOption<Pattern>;
-			events?: Event | RegistryOption<Logic>;
-			periods?: Period | RegistryOption<Logic>;
-			ignores?: Ignore;
-		};
+		/** custom data augmentation registries */							registry?: {
+		formats?: Property<any>;
+		locales?: Record<string, Record<string, string | Function>>;
+		modifiers?: Record<string, string | string[]>;
+		snippets?: Snippet | RegistryOption<Pattern>;
+		layouts?: Layout | RegistryOption<Pattern>;
+		events?: Event | RegistryOption<Logic>;
+		periods?: Period | RegistryOption<Logic>;
+		ignores?: Ignore;
+	};
 		/** plugins to be automatically extended */							plugins: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;

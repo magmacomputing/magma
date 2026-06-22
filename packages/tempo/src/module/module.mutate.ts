@@ -1,11 +1,13 @@
 import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
+import { asArray } from '#library/coercion.library.js';
 import { singular } from '#library/string.library.js';
 import { normaliseFractionalDurations } from '#library/temporal.library.js';
 
-import { sym, enums, logError } from '#tempo/support';
+import { sym, enums, logError, Match } from '#tempo/support';
+import { SLICK_KEYS } from '#tempo/support/support.default.js';
+import { resolveTermMutation } from '../engine/engine.term.js';
 import { defineInterpreterModule, type TempoModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
-import { resolveTermMutation } from '../engine/engine.term.js';
 import type { Tempo } from '../tempo.class.js';
 import type * as t from '../tempo.type.js';
 
@@ -63,6 +65,82 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 								logError(`Infinite recursion detected in mutation engine for key: ${key}, adjust: ${adjust}, depth: ${state.mutateDepth}`, this.config);
 								state.errored = true;
 								return currZdt;
+							}
+
+							if (type === 'set' && isString(adjust)) {
+								const validMap: Record<string, string> = { year: 'yy', month: 'mm', week: 'ww', day: 'dd', hour: 'hh', minute: 'mi', second: 'ss' };
+								const mapped = validMap[singular(key)];
+								if (mapped) {
+									logError(`For relative Slick math, use the '${mapped}' snippet key instead of '${key}'.`, this.config);
+									state.errored = true;
+									return currZdt;
+								}
+							}
+
+							if (type === 'set' && SLICK_KEYS.includes(key as any)) {
+								if (!isString(adjust)) {
+									logError(`Slick key '${key}' expects a string payload (e.g. '>1').`, this.config);
+									state.errored = true;
+									return currZdt;
+								}
+
+								let matchSlickValue = Match.slickValue;
+								const backwardWords = new Set<string>();
+								if (state.config.registry?.modifiers) {
+									const symbols = ['+', '-', '<', '<=', '>', '>=', '='];
+									const words = new Set<string>();
+									symbols.forEach(sym => {
+										const mapped = state.config.registry!.modifiers![sym];
+										if (mapped) {
+											asArray(mapped).forEach(w => {
+												words.add(w);
+												if (sym === '<' || sym === '<=' || sym === '-') backwardWords.add(w);
+											});
+										}
+									});
+									if (words.size > 0) {
+										const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+										escapedWords.sort((a, b) => b.length - a.length);
+										const wordPattern = escapedWords.join('|');
+										matchSlickValue = new RegExp(`^(?<sh_mod>[\\+\\-\\<\\>\\=]=?|${wordPattern})?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\\w]*)$`);
+									}
+								}
+
+								const slick = adjust.match(matchSlickValue);
+								if (!slick || !slick.groups) {
+									logError(`Invalid slick syntax '${adjust}' for key '${key}'.`, this.config);
+									state.errored = true;
+									return currZdt;
+								}
+
+								let { sh_mod, sh_nbr, sh_unit } = slick.groups;
+
+								if (key === 'wkd') {
+									if (!sh_unit) {
+										logError(`Slick key 'wkd' requires a weekday name (e.g. '>Fri').`, this.config);
+										state.errored = true;
+										return currZdt;
+									}
+									const offsetStr = (sh_mod || '>') + (sh_nbr || '');
+									const res = resolveTermMutation((this.constructor as any), this, 'set', sh_unit, offsetStr, currZdt);
+									if (res === null) state.errored = true;
+									return res ?? currZdt;
+								}
+
+								if (!sh_mod) {
+									logError(`Slick math requires a shift operator (e.g. '>', '<') for key '${key}'.`, this.config);
+									state.errored = true;
+									return currZdt;
+								}
+
+								let nbr = sh_nbr ? Number(sh_nbr) : 1;
+								if (sh_mod === '<' || sh_mod === '-' || sh_mod === 'prev' || sh_mod === 'last' || backwardWords.has(sh_mod)) nbr = -nbr;
+
+								const unitMap: Record<string, string> = {
+									yy: 'years', mm: 'months', ww: 'weeks', dd: 'days',
+									hh: 'hours', mi: 'minutes', ss: 'seconds'
+								};
+								return currZdt.add({ [unitMap[key]]: nbr });
 							}
 
 							const { mutate: op, offset, single, term } = ((key, adjust, type) => {

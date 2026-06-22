@@ -70,8 +70,8 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				escapedWords.sort((a, b) => b.length - a.length);
 				const wordPattern = escapedWords.join('|');
 				// Preserve the original term group (including # prefix) from Match.slick; only extend mod alternation
-				matchSlick = new RegExp(`^(?<sh_term>#[\\w]+|[\\w]+)\\.(?<sh_mod>[\\+\\-\\<\\>]=?|${wordPattern})?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\\w]*)$`);
-				matchSlickValue = new RegExp(`^(?<sh_mod>[\\+\\-\\<\\>]=?|${wordPattern})?(?<sh_nbr>[0-9]+)?(?<sh_unit>[\\w]*)$`);
+				matchSlick = new RegExp(`^(?<sh_term>#[\\w]+|[\\w]+)\\.(?<sh_mod>[\\+\\-\\<\\>\\=]=?|${wordPattern})?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\\w]*)$`);
+				matchSlickValue = new RegExp(`^(?<sh_mod>[\\+\\-\\<\\>\\=]=?|${wordPattern})?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\\w]*)$`);
 			}
 		}
 
@@ -107,9 +107,9 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			const currentDow = zdt.dayOfWeek;
 			let diff = 0;
 
-			if (mod === '>' || mod === 'next') {
+			if (mod === '>' || mod === 'next' || mod === '+') {
 				diff = (targetDow - currentDow + 7) % 7 || 7;
-			} else if (mod === '<' || mod === 'last' || mod === 'prev') {
+			} else if (mod === '<' || mod === 'last' || mod === 'prev' || mod === '-') {
 				diff = -((currentDow - targetDow + 7) % 7 || 7);
 			} else if (mod === '>=') {
 				diff = (targetDow - currentDow + 7) % 7;
@@ -122,11 +122,11 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				return null;
 			}
 
-			if (nbr > 1) {
-				if (diff > 0) diff += (nbr - 1) * 7;
-				else if (diff < 0) diff -= (nbr - 1) * 7;
+			if (nbr > 1 || nbr < -1) {
+				if (diff > 0) diff += (nbr > 0 ? nbr - 1 : nbr) * 7;
+				else if (diff < 0) diff -= (nbr > 0 ? nbr - 1 : nbr) * 7;
 				else if (diff === 0 && (mod === '>=' || mod === '<=')) {
-					diff = mod === '>=' ? (nbr - 1) * 7 : -(nbr - 1) * 7;
+					diff = mod === '>=' ? (nbr > 0 ? nbr - 1 : nbr + 1) * 7 : -(nbr > 0 ? nbr - 1 : nbr + 1) * 7;
 				}
 			}
 			return zdt.add({ days: diff }).withTimeZone(tz).withCalendar(cal);
