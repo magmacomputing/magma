@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.1] - 2026-06-22
+
+### Added
+- **Slick Object Mutation API**: The `.set()` mutation engine now supports a "Slick-style" API for relative date/time navigation using object properties. You can now pass snippet-based keys with directional string payloads (e.g., `{ wkd: '>Fri' }` or `{ mm: '>-2' }`) directly to `Tempo.set()`.
+- **`ww` Token**: Added native `ww` (weeks) snippet token for relative week-based mutation math (e.g. `{ ww: '>1' }`).
+- **Extended Shorthand Modifiers**: Expanded the Slick Regex parser to natively support double-negation synonyms (`>-2` is correctly interpreted as backwards two steps), equality/anchor logic (`>=`, `<=`, `=`), and `+` and `-` as aliases for `>` and `<` within semantic loops (like `wkd`).
+
+### Changed
+- **Strict Key Validation**: Hardened the `conform()` layer to throw helpful console errors when users accidentally pass directional strings to standard keys (e.g. `t.set({ month: '>5' })`), politely redirecting them to the correct Slick property (`{ mm: '>5' }`).
+
 ## [3.3.0] - 2026-06-21
 
 ### Added

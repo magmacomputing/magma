@@ -130,6 +130,40 @@ const qtrEnd = new Tempo().set({ end: '#quarter' });
 const qtrMid = new Tempo().set({ mid: '#quarter' });
 ```
 
+### Slick Object Mutations
+You can navigate relative to your current date by using Slick Shorthand operators inside `.set()`. Use the snippet shorthand keys (`yy`, `mm`, `ww`, `dd`, `wkd`, etc.) and provide a string payload containing a directional modifier:
+
+```typescript
+const t = new Tempo('2024-05-20'); // Monday
+
+// Jump forward two months
+t.set({ mm: '>2' }); // July 20th
+
+// Jump to the next Friday
+t.set({ wkd: '>Fri' }); // May 24th
+
+// Jump to the previous Wednesday
+t.set({ wkd: '<Wed' }); // May 15th
+```
+
+Because `.set()` processes keys in insertion order, you can now effortlessly combine **absolute assignments** and **Slick shifts** in a single pass to build complex boundaries:
+
+```typescript
+// Jump 2 months forward, find the next Friday, and set the time to 10:30 AM
+const t2 = t.set({ 
+  mm: '>2', 
+  wkd: '>Fri', 
+  hour: 10, 
+  minute: 30 
+});
+```
+
+::: warning ⚠️ ESLint `sort-keys` Warning
+Because mixed object payloads execute strictly in the order they are defined, you must be careful if you use aggressive automated linters (like ESLint's `sort-keys` auto-fixer). If your linter alphabetically re-orders your properties, your math will execute in the wrong order! If your codebase forces alphabetical object keys, stick to chaining: `t.set({ mm: '>2' }).set({ wkd: '>Fri' })`.
+:::
+
+This syntax fully supports advanced shifting (e.g. `<=`, `>=`), double-negations (`>-2`), and localized modifier aliases, providing a clean programmatic interface for date construction.
+
 ### How long until a deadline? (`until`)
 ```typescript
 const t = new Tempo();
