@@ -164,6 +164,10 @@ Because mixed object payloads execute strictly in the order they are defined, yo
 
 This syntax fully supports advanced shifting (e.g. `<=`, `>=`), double-negations (`>-2`), and localized modifier aliases, providing a clean programmatic interface for date construction.
 
+::: info 💡 Why can't I use Slick modifiers on timezones (`tzd`)?
+Changing a timezone (`tzd` or `timeZone`) does not traverse the timeline—it merely changes the local representation of the exact same absolute moment in time. Because no temporal displacement occurs, applying directional Slick modifiers (like `>`) to a timezone is logically invalid and unsupported.
+:::
+
 ### How long until a deadline? (`until`)
 ```typescript
 const t = new Tempo();
