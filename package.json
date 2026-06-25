@@ -1,6 +1,6 @@
 {
   "name": "tempo-monorepo",
-  "version": "3.3.3",
+  "version": "3.4.0",
   "private": true,
   "engines": {
     "node": ">=20.0.0"
@@ -34,14 +34,14 @@
     "@types/google.maps": "^3.65.2",
     "@types/hammerjs": "^2.0.46",
     "@types/jquery": "^4.0.0",
-    "@types/node": "^26.0.0",
+    "@types/node": "^26.0.1",
     "@vitest/browser": "^4.1.8",
     "@vitest/browser-playwright": "^4.1.8",
     "@vitest/browser-webdriverio": "^4.1.8",
     "@vitest/ui": "^4.1.7",
     "cross-env": "^10.1.0",
     "markdown-it-mathjax3": "^5.2.0",
-    "playwright": "^1.61.0",
+    "playwright": "^1.61.1",
     "rollup": "^4.62.2",
     "tslib": "^2.8.1",
     "tsx": "^4.22.3",
