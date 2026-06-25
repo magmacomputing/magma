@@ -276,6 +276,31 @@ t.format('ui-date'); // Resolved with all modifiers intact!
 *Note: Format keys are resolved case-sensitively from the global `registry.formats` object. An error will be thrown if the requested key is not found in the registry.*
 :::
 
+### Custom Format Tokens
+Need a completely custom format behavior? You can define dynamic token evaluators in the registry that receive the `zdt` (Temporal.ZonedDateTime) instance and a context object, giving you full native access to `Intl` formatting or custom logic.
+
+```typescript
+Tempo.init({
+    locale: 'fr-FR',
+    registry: {
+        tokens: {
+            // A simple math-based token
+            'myDay': (zdt) => zdt.day - 1,
+            
+            // A deeply localized custom token using native Intl
+            'wkd-fr': (zdt, { config }) => {
+                const dtOptions = config?.intl?.dateTimeFormat ?? {};
+                return zdt.toLocaleString(config?.locale ?? 'en', { ...dtOptions, weekday: 'long' });
+            }
+        }
+    }
+});
+
+const t = new Tempo('2024-05-20');
+t.format('{myDay}');  // "19"
+t.format('{wkd-fr}'); // "lundi"
+```
+
 👉 **Learn More:** 
 - [Smart Formatting Guide](./tempo.format.md)
 - [The Role of Locale](./tempo.locale.md)

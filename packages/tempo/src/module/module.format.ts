@@ -191,9 +191,18 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'us': res = pad(zdt.microsecond, 3); break;
 			case 'ns': res = pad(zdt.nanosecond, 3); break;
 			case 'ff': res = `${pad(zdt.millisecond, 3)}${pad(zdt.microsecond, 3)}${pad(zdt.nanosecond, 3)}`; break;
-			case 'dmy': res = `${pad(zdt.day)}${pad(zdt.month)}${pad(zdt.year, 4)}`; break;
-			case 'mdy': res = `${pad(zdt.month)}${pad(zdt.day)}${pad(zdt.year, 4)}`; break;
-			case 'ymd': res = `${pad(zdt.year, 4)}${pad(zdt.month)}${pad(zdt.day)}`; break;
+			case 'dmy':
+			case 'mdy':
+			case 'ymd': {
+				const isShort = modifiers.includes('yy') || modifiers.includes('year');
+				const y = pad(isShort ? zdt.year % 100 : zdt.year, isShort ? 2 : 4);
+				const m = pad(zdt.month);
+				const d = pad(zdt.day);
+				if (token === 'dmy') res = `${d}${m}${y}`;
+				else if (token === 'mdy') res = `${m}${d}${y}`;
+				else res = `${y}${m}${d}`;
+				break;
+			}
 			case 'dmy6': res = `${pad(zdt.day)}${pad(zdt.month)}${pad(zdt.year % 100)}`; break;
 			case 'mdy6': res = `${pad(zdt.month)}${pad(zdt.day)}${pad(zdt.year % 100)}`; break;
 			case 'ymd6': res = `${pad(zdt.year % 100)}${pad(zdt.month)}${pad(zdt.day)}`; break;
@@ -205,7 +214,10 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'tz': res = zdt.timeZoneId; break;
 			case 'cal': res = zdt.calendarId; break;
 			default: {
-				if (token.startsWith('#') && isTempo(obj)) {
+				const customTokenFn = (config?.registry as any)?.tokens?.[token];
+				if (isFunction(customTokenFn)) {
+					res = customTokenFn(zdt, { modifiers, config });
+				} else if (token.startsWith('#') && isTempo(obj)) {
 					const termObj = (obj as unknown as Tempo).term[token.slice(1)];
 					if (isObject(termObj)) {
 						res = termObj.label ?? termObj.key ?? `{${token}}`;

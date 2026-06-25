@@ -75,10 +75,52 @@ describe(`${label} format method`, () => {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    };
+    }
 
     const result = t.format(japaneseConfig);
     expect(result).toBe('令和6年12月25日');
+  });
+
+  test('evaluates dynamic tokens from config.registry.tokens', () => {
+    const t = new Tempo('2024-05-20');
+    const options = {
+      registry: {
+        tokens: {
+          myDay: (zdt, { modifiers }) => {
+            if (modifiers.includes('upper')) return String(zdt.day).toUpperCase() + ' UPPER';
+            return String(zdt.day - 1);
+          }
+        }
+      }
+    } as Tempo.Options
+    expect(t.format('{myDay}', options)).toBe('19');
+    expect(t.format('{myDay:upper}', options)).toBe('20 UPPER');
+  });
+
+  test('prevents core tokens from being overridden by registry', () => {
+    const t = new Tempo('2024-05-20', {
+      registry: {
+        tokens: {
+          mm: () => 'HACKED',
+          yyyy: () => 'HACKED'
+        }
+      }
+    });
+    // Should still return original standard formatting
+    expect(t.format('{yyyy}-{mm}')).toBe('2024-05');
+  });
+
+  test('formats compound tokens dmy, mdy, ymd with :yy or :year modifiers', () => {
+    const t = new Tempo('2024-05-20');
+    expect(t.format('{dmy}')).toBe(20052024);
+    expect(t.format('{dmy:yy}')).toBe('200524');
+    expect(t.format('{dmy:year}')).toBe('200524');
+
+    expect(t.format('{mdy}')).toBe(5202024);
+    expect(t.format('{mdy:yy}')).toBe('052024');
+
+    expect(t.format('{ymd}')).toBe(20240520);
+    expect(t.format('{ymd:yy}')).toBe('240520');
   });
 
 });

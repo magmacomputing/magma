@@ -130,6 +130,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:lower` | String | Converts to lowercase | `{mon:lower}` → `october` |
 | `:title` | String | Converts to titlecase | `{mon:locale:title}` → `Octobre` |
 | `:locale` | String | Resolves term via localization dictionary | `{mon:locale}` → `octobre` |
+| `:yy` | Compound Date | Truncates the internal year component to 2 digits | `{dmy:yy}` → `241026` |
 
 ### 🔄 Automatic Meridiem
 If your format string contains `{h12}` (12-hour clock) but lacks a `{mer}` token, Tempo will automatically append a `{mer}` token with the same modifiers as the `{h12}` token after the last time component to ensure the time remains unambiguous.

@@ -244,6 +244,7 @@ export namespace Internal {
 		formats?: Property<any>;
 		locales?: Record<string, Record<string, string | Function>>;
 		modifiers?: Record<string, string | string[]>;
+		tokens?: Record<string, (zdt: any, context: { modifiers: string[], config: Internal.Config }) => string | number | bigint>;
 		snippets?: Snippet | RegistryOption<Pattern>;
 		layouts?: Layout | RegistryOption<Pattern>;
 		events?: Event | RegistryOption<Logic>;
@@ -329,7 +330,7 @@ export namespace Internal {
 	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "license" | "localize">> {
 		/** license key for premium features */									license?: string;
 		/** scope for configuration mutations */								scope: 'global' | 'local';
-		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]> };
+		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, (zdt: any, context: { modifiers: string[], config: Internal.Config }) => string | number | bigint> };
 		/** index-signature */																	readonly [key: string]: any;
 	}
 
@@ -344,7 +345,7 @@ export namespace Internal {
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
 		/** @deprecated Provide configuration inside `registry: { formats: ... }` */formats?: Property<any>;
 		/** @deprecated Provide configuration inside `registry: { locales: ... }` */locales?: Record<string, Record<string, string | Function>>;
-		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]> };
+		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, (zdt: any, context: { modifiers: string[], config: Internal.Config }) => string | number | bigint> };
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
 		/** plugins to be automatically extended via Tempo.extend() */plugins?: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
 	}
