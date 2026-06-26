@@ -89,10 +89,8 @@ export const logTrace = createLogger('trace');
 export const isProxy = (obj: any): boolean => isDefined(obj?.[sym.$Target]);
 
 /** @internal check if an object has an own property (respects Proxy/Shadowing) */
-export const hasOwn = (obj: any, key: PropertyKey): boolean => {
-	if (isNullish(obj)) return false;
-	return Object.hasOwn(unwrap(obj), key);
-}
+export const hasOwn = (obj: any, key: PropertyKey): boolean =>
+	isNullish(obj) ? false : Object.hasOwn(unwrap(obj), key);
 
 /** @internal get the prototype of an object */
 export const proto = (obj: any): any => Object.getPrototypeOf(unwrap(obj));
@@ -251,7 +249,7 @@ const _generateLocalizedSnippets = memoizeFunction((localeKey: string) => {
 	const addEntry = (map: Record<string, { value: number; locale: string }>, locale: string, str: string, index: number, longList: string[], shortList?: string[]) => {
 		const key = normalizeKey(str);
 		const unaccented = removeAccents(key);
-		
+
 		map[key] = { value: index, locale };
 		if (unaccented !== key) map[unaccented] = { value: index, locale };
 

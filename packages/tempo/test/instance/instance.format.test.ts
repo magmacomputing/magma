@@ -118,9 +118,11 @@ describe(`${label} format method`, () => {
 
     expect(t.format('{mdy}')).toBe(5202024);
     expect(t.format('{mdy:yy}')).toBe('052024');
+    expect(t.format('{mdy:year}')).toBe('052024');
 
     expect(t.format('{ymd}')).toBe(20240520);
     expect(t.format('{ymd:yy}')).toBe('240520');
+    expect(t.format('{ymd:year}')).toBe('240520');
   });
 
 });
