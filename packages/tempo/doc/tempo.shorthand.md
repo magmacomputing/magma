@@ -13,7 +13,7 @@ Shorthand behavior changes depending on whether you provide a **String**, an **O
 
 ```javascript
 t.set('#qtr.>q1'); // Snaps to the start of the next available Q1
-t.add('#period.next'); // Jumps to the start of the next defined period
+t.add('#timeOfDay.next'); // Jumps to the start of the next defined period
 ```
 
 ### B. Relational Mode (Object Shorthand)
@@ -73,7 +73,7 @@ When you use a shifter like `>q1`, Tempo uses **Chronological Momentum**. It ign
 
 One of Tempo's premium features is its ability to maintain your **relative offset** when shifting across Terms.
 
-If you are 45% of the way through a **Morning** period and you call `t.add({ '#period': 1 })`, Tempo doesn't just add a fixed number of hours. It:
+If you are 45% of the way through a **Morning** period and you call `t.add({ '#timeOfDay': 1 })`, Tempo doesn't just add a fixed number of hours. It:
 1.  Determines your relative percentage/offset within the current Morning.
 2.  Finds the boundaries of the *next* registered period (e.g., Afternoon).
 3.  Calculates the same 45% point within that new period.

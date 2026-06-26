@@ -47,7 +47,6 @@ export default defineConfig({
           { text: 'Configuration', link: '/doc/tempo.config' },
           { text: 'Registries', link: '/doc/tempo.registry' },
           { text: 'Smart Parsing', link: '/doc/tempo.parse' },
-          { text: 'Parse Planner', link: '/doc/tempo.planner' },
           { text: 'Smart Formatting', link: '/doc/tempo.format' },
           { text: 'Layout Patterns', link: '/doc/tempo.layout' },
           { text: 'Duration Logic', link: '/doc/tempo.duration' }
@@ -67,6 +66,7 @@ export default defineConfig({
         items: [
           { text: 'API Overview', link: '/doc/api/' },
           { text: 'Technical Reference', link: typedocSidebar[0].items[0].link },
+          { text: 'Parse Planner', link: '/doc/tempo.planner' },
           { text: 'The Role of Locale', link: '/doc/tempo.locale' },
           { text: 'Shorthand Engine', link: '/doc/tempo.shorthand' },
           { text: 'Weekday Engine', link: '/doc/tempo.weekday' },
