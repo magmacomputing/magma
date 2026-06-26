@@ -111,9 +111,6 @@ Tempo.extend(FormatModule);
 | `{dmy}` | Compact Date (ddmmyyyy) | `24102026` |
 | `{mdy}` | Compact Date (mmddyyyy) | `10242026` |
 | `{ymd}` | Compact Date (yyyymmdd) | `20261024` |
-| `{dmy6}` | Compact 6-digit Date (ddmmyy) | `241026` |
-| `{mdy6}` | Compact 6-digit Date (mmddyy) | `102426` |
-| `{ymd6}` | Compact 6-digit Date (yymmdd) | `261024` |
 | `{hms}` | Compact Time (24h) | `153045` |
 | `{nano}` | Nanosecond Timestamp | `1792843200000000000` |
 | `{tz}` | Time Zone ID | `Australia/Sydney` |

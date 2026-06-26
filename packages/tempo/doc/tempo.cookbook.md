@@ -245,6 +245,7 @@ Format strings support chained colon-modifiers (`:modifier`) to dynamically chan
 *   `:title` (Titlecase)
 *   `:ord` (Ordinal suffix, e.g. "th", "st", "nd")
 *   `:locale` (Delegates deeply localized tokens like `{mon}` or `{wkd}` directly to `Intl.DateTimeFormat`)
+*   `:yy` (Truncates the year component to 2 digits for compound date tokens)
 
 Modifiers can be stacked endlessly to get the exact presentation required:
 ```typescript
@@ -255,6 +256,7 @@ t.format('{mon:locale}');       // "mai" (Native French Intl output)
 t.format('{mon:locale:upper} {dd}'); // "MAI 15" (Native French Intl output)
 t.format('{#tod:lower}');       // "afternoon" (Modifies the native TitleCase Term plugin)
 t.format('{mer:upper}');        // "PM" (Some users prefer uppercase meridiem)
+t.format('{dmy:yy}');           // "150524" (Uses the 2-digit year modifier on the compact date)
 ```
 
 ::: tip
