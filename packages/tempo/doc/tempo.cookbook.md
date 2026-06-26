@@ -164,6 +164,10 @@ Because mixed object payloads execute strictly in the order they are defined, yo
 
 This syntax fully supports advanced shifting (e.g. `<=`, `>=`), double-negations (`>-2`), and localized modifier aliases, providing a clean programmatic interface for date construction.
 
+::: info 💡 Why can't I use Slick modifiers on timezones (`tzd`)?
+Changing a timezone (`tzd` or `timeZone`) does not traverse the timeline—it merely changes the local representation of the exact same absolute moment in time. Because no temporal displacement occurs, applying directional Slick modifiers (like `>`) to a timezone is logically invalid and unsupported.
+:::
+
 ### How long until a deadline? (`until`)
 ```typescript
 const t = new Tempo();
@@ -271,6 +275,31 @@ t.format('ui-date'); // Resolved with all modifiers intact!
 
 *Note: Format keys are resolved case-sensitively from the global `registry.formats` object. An error will be thrown if the requested key is not found in the registry.*
 :::
+
+### Custom Format Tokens
+Need a completely custom format behavior? You can define dynamic token evaluators in the registry that receive the `zdt` (Temporal.ZonedDateTime) instance and a context object, giving you full native access to `Intl` formatting or custom logic.
+
+```typescript
+Tempo.init({
+    locale: 'fr-FR',
+    registry: {
+        tokens: {
+            // A simple math-based token
+            'myDay': (zdt) => zdt.day - 1,
+            
+            // A deeply localized custom token using native Intl
+            'wkd-fr': (zdt, { config }) => {
+                const dtOptions = config?.intl?.dateTimeFormat ?? {};
+                return zdt.toLocaleString(config?.locale ?? 'en', { ...dtOptions, weekday: 'long' });
+            }
+        }
+    }
+});
+
+const t = new Tempo('2024-05-20');
+t.format('{myDay}');  // "19"
+t.format('{wkd-fr}'); // "lundi"
+```
 
 👉 **Learn More:** 
 - [Smart Formatting Guide](./tempo.format.md)

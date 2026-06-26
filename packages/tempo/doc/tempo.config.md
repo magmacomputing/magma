@@ -157,7 +157,7 @@ Tempo looks for the following structure:
 | `plugins` | `Plugin \| Plugin[]` | Modular plugin(s) (including `TermPlugin`s) to be extended onto Tempo automatically. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
 | `numbers` | `Record<string, number>` | Custom number-word aliases merged into the NUMBER registry. |
-| `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Custom configuration for internal dictionary registries. |
+| `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores?, modifiers?, tokens? }` | Custom configuration for internal dictionary registries. |
 
 ---
 

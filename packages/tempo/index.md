@@ -55,7 +55,7 @@ const features = [
   { title: 'Zero-Cost', details: 'Lazy evaluation and smart matching ensure instantiation overhead is near-zero.', icon: '⚡' },
   { title: 'tomorrow at noon', details: 'Semantic parsing for events and periods. Resolve human-readable strings with zero configuration.', icon: '🎯' },
   { title: 'Cycle Persistence', details: 'Shift by semantic terms while preserving your relative day-of-period offset.', icon: '🔄' },
-  { title: 'Tempo.ticker()', details: 'State-of-the-art timing engine with AsyncGenerator support and auto-adjusting TimeZones.', icon: '⏱️' },
+  { title: 'Tempo.ticker()', details: 'Premium Plugin: State-of-the-art timing engine with AsyncGenerator support and native Daylight Saving Time resolution.', icon: '⏱️' },
   { title: 'Temporal Inside', details: 'Built on the ECMAScript Temporal API. Inherit the reliability of the future standard.', icon: '🏗️' },
   { title: 'Monorepo Resilient', details: 'Built for stability in complex environments with proxy-protected registries.', icon: '🛡️' },
   { title: 'Tree-Shakable', details: 'Keep your bundle light. Only import the modules you need—from Fiscal calendars to pulsing Tickers.', icon: '📦' },

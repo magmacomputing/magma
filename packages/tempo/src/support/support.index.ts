@@ -34,7 +34,7 @@ export { $Tempo, $Register, $Interpreter, $guard, $errored, $Internal, $Bridge, 
 export { registryUpdate, registryReset, onRegistryReset } from './support.register.js';
 export { getRuntime, resetRuntime, TempoRuntime } from './support.runtime.js';
 export { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './support.default.js';
-export { SCHEMA, getLargestUnit, logError, logWarn, logDebug, logTrace, setLogLevel, logTempo } from './support.util.js';
+export { SCHEMA, getLargestUnit, logError, logWarn, logDebug, logTrace, setLogLevel, logTempo, hasOwn } from './support.util.js';
 export { setPatterns } from '../engine/engine.pattern.js';
 export { init, extendState } from './support.init.js';
 export { TempoError } from './support.error.js';

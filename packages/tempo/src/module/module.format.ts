@@ -7,7 +7,7 @@ import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDat
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
-import { isTempo, enums, Match, getRuntime, NumericPattern, BigIntPattern } from '#tempo/support';
+import { isTempo, enums, Match, getRuntime, NumericPattern, BigIntPattern, hasOwn } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Tempo } from '../tempo.class.js';
 
@@ -55,6 +55,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			config.registry = { ...baseConfig?.registry, ...options.registry };
 			if (options.registry.formats) config.registry.formats = { ...baseConfig?.registry?.formats, ...options.registry.formats };
 			if (options.registry.locales) config.registry.locales = { ...baseConfig?.registry?.locales, ...options.registry.locales };
+			if (options.registry.tokens) config.registry.tokens = { ...baseConfig?.registry?.tokens, ...options.registry.tokens };
 		}
 	}
 	const formats = Object.assign({}, enums.FORMAT, config?.registry?.formats);
@@ -191,11 +192,23 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'us': res = pad(zdt.microsecond, 3); break;
 			case 'ns': res = pad(zdt.nanosecond, 3); break;
 			case 'ff': res = `${pad(zdt.millisecond, 3)}${pad(zdt.microsecond, 3)}${pad(zdt.nanosecond, 3)}`; break;
-			case 'dmy': res = `${pad(zdt.day)}${pad(zdt.month)}${pad(zdt.year, 4)}`; break;
-			case 'mdy': res = `${pad(zdt.month)}${pad(zdt.day)}${pad(zdt.year, 4)}`; break;
-			case 'ymd': res = `${pad(zdt.year, 4)}${pad(zdt.month)}${pad(zdt.day)}`; break;
+			case 'dmy':
+			case 'mdy':
+			case 'ymd': {
+				const isShort = modifiers.includes('yy') || modifiers.includes('year');
+				const y = pad(isShort ? zdt.year % 100 : zdt.year, isShort ? 2 : 4);
+				const m = pad(zdt.month);
+				const d = pad(zdt.day);
+				if (token === 'dmy') res = `${d}${m}${y}`;
+				else if (token === 'mdy') res = `${m}${d}${y}`;
+				else res = `${y}${m}${d}`;
+				break;
+			}
+			/** @deprecated Use {dmy:yy} modifier instead */
 			case 'dmy6': res = `${pad(zdt.day)}${pad(zdt.month)}${pad(zdt.year % 100)}`; break;
+			/** @deprecated Use {mdy:yy} modifier instead */
 			case 'mdy6': res = `${pad(zdt.month)}${pad(zdt.day)}${pad(zdt.year % 100)}`; break;
+			/** @deprecated Use {ymd:yy} modifier instead */
 			case 'ymd6': res = `${pad(zdt.year % 100)}${pad(zdt.month)}${pad(zdt.day)}`; break;
 			case 'hms': res = `${pad(zdt.hour)}${pad(zdt.minute)}${pad(zdt.second)}`; break;
 			case 'ts': res = ((config?.timeStamp ?? 'ms') === 'ss')
@@ -205,7 +218,11 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'tz': res = zdt.timeZoneId; break;
 			case 'cal': res = zdt.calendarId; break;
 			default: {
-				if (token.startsWith('#') && isTempo(obj)) {
+				const customTokens = (config?.registry as any)?.tokens ?? {};
+				const customTokenFn = customTokens[token];
+				if (hasOwn(customTokens, token) && isFunction(customTokenFn)) {
+					res = customTokenFn(zdt, { modifiers, config });
+				} else if (token.startsWith('#') && isTempo(obj)) {
 					const termObj = (obj as unknown as Tempo).term[token.slice(1)];
 					if (isObject(termObj)) {
 						res = termObj.label ?? termObj.key ?? `{${token}}`;
