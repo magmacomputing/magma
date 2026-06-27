@@ -87,7 +87,7 @@ For standard usage natively in the browser, use the pre-optimized **Global ESM B
 ```
 
 > **Advanced Usage (Tempo Plugins & CDNs)**
-> If you need to use **Tempo Premium Plugins** natively in the browser, require granular module resolution, or want to use on-the-fly bundling CDNs (like `esm.sh`), please see our comprehensive [**Browser Installation Guide**](./doc/installation.md) for detailed import map configurations.
+> If you need to use **Tempo Premium Plugins** natively in the browser, require granular module resolution, or want to use on-the-fly bundling CDNs (like `esm.sh`), please see our comprehensive [**Installation Guide**](https://magmacomputing.github.io/magma/doc/installation.html) for detailed import map configurations.
 
 </details>
 

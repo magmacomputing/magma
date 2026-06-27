@@ -6,17 +6,11 @@
 
 `Tempo` expects the host environment to provide `Temporal`, either through native runtime support or a user-supplied polyfill.
 
-`Temporal` is now at Stage 4 and is expected to land broadly in runtimes soon. To avoid needlessly inflating package size with a dependency that will increasingly become unnecessary, `Tempo` does not bundle a `Temporal` polyfill by default.
-
-As of 13 January 2026, Chrome 144 has shipped `Temporal`, and Firefox 139 also includes native `Temporal` support. You can verify browser support at https://caniuse.com/temporal.
-
-Node.js 26.0.0+ ships native `Temporal` fully enabled by default. Older Node versions may still require an external polyfill or experimental flags depending on the underlying engine version.
+`Temporal` has reached Stage 4 of the [TC39 standards process](https://tc39.es/proposal-temporal/) (the committee that evolves JavaScript) and is shipping natively in modern environments (Node.js 26+, Deno 2.7+, Chrome 144+, Firefox 139+). You can verify current browser support at [caniuse.com/temporal](https://caniuse.com/temporal). To avoid needlessly inflating package sizes for modern apps, `Tempo` does not bundle a `Temporal` polyfill by default.
 
 ::: warning
-Older Node.js releases that ship `Temporal` behind a feature flag may still have incomplete or experimental implementations. For mission-critical stability in those older environments, we strongly recommend using `@js-temporal/polyfill`.
+Older Node.js releases that ship `Temporal` behind a feature flag (`--harmony-temporal`) may have incomplete implementations. For stability in those older environments, we strongly recommend using `@js-temporal/polyfill` instead of the native flag.
 :::
-
-Please verify support in your actual target runtime(s) and add a polyfill only when needed.
 
 You can check at runtime with a simple guard:
 
@@ -57,8 +51,7 @@ For older Node.js releases that still ship `Temporal` behind a flag, you can ena
 node --harmony-temporal my-app.js
 ```
 
-> [!WARNING]
-> Older Node.js releases that require `--harmony-temporal` may still have incomplete Temporal support. See [Temporal Polyfill Note](#temporal-polyfill-note) for details.
+*(Note: See the [Temporal Polyfill Note](#temporal-polyfill-note) for warnings about using this flag in production)*
 
 ### Node.js (with Polyfill)
 
@@ -154,6 +147,19 @@ While you *could* import directly from the URL everywhere, the best practice is 
   Tempo.extend(TickerModule);
 </script>
 ```
+
+<details>
+<summary><b>⚠️ Trade-offs of using Smart CDNs in Production</b></summary>
+
+While `esm.sh` is fantastic for prototyping and reducing import map complexity, there are architectural trade-offs to consider before using it in a mission-critical production environment:
+
+1. **Network Waterfalls:** The browser must fetch the module, parse it, and then fetch its nested dependencies sequentially. This can slow down page load times compared to a fully bundled application.
+2. **Uptime Dependency:** You are introducing a critical third-party dependency into your runtime. If the CDN experiences routing issues, your application could break for end-users.
+3. **Sub-dependency Version Floating:** `esm.sh` automatically resolves sub-dependencies based on semver constraints. If a sub-dependency introduces an accidental breaking change, it could affect your app.
+4. **Suboptimal Tree Shaking:** The browser will download the entire module graph for that package; you cannot easily tree-shake unused exports as you can with a dedicated bundler like Vite or Webpack.
+5. **Environment Parity:** Handling development versus production environments (like `process.env.NODE_ENV`) requires query parameters (e.g., `?dev`), which complicates deployment.
+
+</details>
 
 ### 3. Granular ESM (Advanced Plugin Architecture)
 
