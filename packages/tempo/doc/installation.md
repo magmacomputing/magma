@@ -6,10 +6,10 @@
 
 `Tempo` expects the host environment to provide `Temporal`, either through native runtime support or a user-supplied polyfill.
 
-`Temporal` has reached Stage 4 of the [TC39 standards process](https://tc39.es/proposal-temporal/) (the committee that evolves JavaScript) and is shipping natively in modern browser environments (Deno 2.7+, Chrome 144+, Firefox 139+). For Node.js, native unflagged support is slated for the upcoming Node.js 26 release, but it can currently be tested via the `--harmony-temporal` flag. You can verify current browser support at [caniuse.com/temporal](https://caniuse.com/temporal). To avoid needlessly inflating package sizes for modern apps, `Tempo` does not bundle a `Temporal` polyfill by default.
+`Temporal` has reached Stage 4 of the [TC39 standards process](https://tc39.es/proposal-temporal/) (the committee that evolves JavaScript) and is shipping natively in modern browser environments (Deno 2.7+, Chrome 144+, Firefox 139+). For Node.js, native unflagged support is planned for a future release, but it can currently be tested via the `--harmony-temporal` flag. You can verify current browser support at [caniuse.com/temporal](https://caniuse.com/temporal). To avoid needlessly inflating package sizes for modern apps, `Tempo` does not bundle a `Temporal` polyfill by default.
 
 ::: warning
-Node.js environments prior to version 26 that ship `Temporal` behind a feature flag (`--harmony-temporal`) may have incomplete implementations. For stability, we strongly recommend using `@js-temporal/polyfill` instead of the native flag until you upgrade to an official unflagged release.
+Node.js environments that ship `Temporal` behind a feature flag (`--harmony-temporal`) may have incomplete implementations. For stability, we strongly recommend using `@js-temporal/polyfill` instead of the native flag until you upgrade to an official unflagged release.
 :::
 
 You can check at runtime with a simple guard:
@@ -43,9 +43,9 @@ const t = new Tempo('next Friday');
 
 ### Node.js (with Native Temporal)
 
-If you are using Node.js 26.0.0 or later, native `Temporal` is fully supported and enabled by default.
+When native unflagged `Temporal` support is officially released in Node.js, it will be fully supported and enabled by default.
 
-For older Node.js releases that still ship `Temporal` behind a flag, you can enable it with:
+For current Node.js releases that still ship `Temporal` behind a flag, you can enable it with:
 
 ```bash
 node --harmony-temporal my-app.js
@@ -132,7 +132,7 @@ While you *could* import directly from the URL everywhere, the best practice is 
 <script type="importmap">
 {
   "imports": {
-    "@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0",
+    "@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
     "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@3",
     "@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@1"
   }

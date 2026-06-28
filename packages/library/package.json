@@ -9,9 +9,7 @@
     "url": "git+https://github.com/magmacomputing/magma.git",
     "directory": "packages/library"
   },
-  "publishConfig": {
-    "access": "public"
-  },
+  "private": true,
   "homepage": "https://github.com/magmacomputing/magma/tree/main/packages/library#readme",
   "bugs": {
     "url": "https://github.com/magmacomputing/magma/issues"
