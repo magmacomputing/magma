@@ -573,7 +573,8 @@ export class Tempo {
 						if (Tempo._termMap.get(config.key) === config) return;
 						if (Tempo._termMap.has(config.key)) {
 							const existing = Tempo._termMap.get(config.key);
-							if (existing?.scope === config.scope && existing?.description === config.description) {
+							const rangesMatch = JSON.stringify(existing?.ranges) === JSON.stringify(config.ranges);
+							if (existing?.scope === config.scope && existing?.description === config.description && rangesMatch) {
 								logDebug(`[Tempo#extend] Duplicate term registration ignored for key: "${config.key}"`, state.config);
 								return;
 							}
@@ -583,7 +584,8 @@ export class Tempo {
 						if (config.scope && Tempo._termMap.get(config.scope) === config) { /* continue */ }
 						else if (config.scope && Tempo._termMap.has(config.scope)) {
 							const existingScope = Tempo._termMap.get(config.scope);
-							if (existingScope?.key === config.key && existingScope?.description === config.description) {
+							const rangesMatch = JSON.stringify(existingScope?.ranges) === JSON.stringify(config.ranges);
+							if (existingScope?.key === config.key && existingScope?.description === config.description && rangesMatch) {
 								/* continue */
 							} else {
 								logError(`[Tempo#extend] Term collision on scope: "${config.scope}". Registration aborted.`, state.config);
