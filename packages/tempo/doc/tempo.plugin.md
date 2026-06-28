@@ -1,6 +1,6 @@
 # Extending Tempo with Plugins
 
-Tempo is designed with a "lean core" philosophy. Whilst it provides robust date-time manipulation and parsing out of the box, advanced functionality (like reactive Tickers or domain-specific business logic) is added through a flexible **Plugin System**.
+Tempo is designed with a "lean core" philosophy. While it provides robust date-time manipulation and parsing out of the box, advanced functionality (like reactive Tickers or domain-specific business logic) is added through a flexible **Plugin System**.
 
 To manually register a plugin, use the static `extend` method. This is typically used for "opt-in" features or when you need to provide specific configuration to a plugin factory.
 
@@ -23,7 +23,7 @@ The most efficient way to author a plugin is using the `defineExtension` factory
 ## Example Plugin
 
 ```typescript
-import { defineExtension } from '@magmacomputing/tempo/plugin';
+import { defineExtension } from '@magmacomputing/tempo/plugin-api';
 
 export const MyPlugin = defineExtension({
   name: 'MyPlugin',
@@ -117,7 +117,7 @@ const pulse = Tempo.ticker(1);
 ## Best Practices
 
 ### 1. Selective Immobility
-The core methods of Tempo (like `add`, `set`, `format`) are **protected**. The `extend()` system will prevent you from accidentally overwriting these essential behaviors. By standardizing plugins through the Tempo module system, the entire library remains small and fast, whilst offering unbounded domain-specific customization.
+The core methods of Tempo (like `add`, `set`, `format`) are **protected**. The `extend()` system will prevent you from accidentally overwriting these essential behaviors. By standardizing plugins through the Tempo module system, the entire library remains small and fast, while offering unbounded domain-specific customization.
 
 ### 2. Immutability
 When adding instance methods that "modify" the date, always follow the Tempo pattern of returning a **new instance**. Use the provided `factory` function to wrap the resulting `Temporal` object back into a `Tempo` instance.
@@ -161,7 +161,7 @@ if (errorCondition) {
 This pattern ensures that Tempo remains robust in production environments while providing strict validation during development.
 
 ### 6. Term Key/Scope Collisions
-If your plugin registers a **Term** (`key` / optional `scope`), keep both identifiers globally unique.
+If your plugin registers a **Term** (`key` and optional `scope`), keep both identifiers globally unique.
 
 - Avoid reusing an existing Term `key` (e.g., another plugin already uses `qtr`).
 - Avoid reusing an existing `scope` alias (e.g., another plugin already uses `quarter`).
@@ -238,7 +238,7 @@ If your plugin requires its own configuration, export a **factory function** tha
 
 ```typescript
 // tempo-plugin-holiday/index.ts
-import { defineModule } from '@magmacomputing/tempo/plugin';
+import { defineModule } from '@magmacomputing/tempo/plugin-api';
 
 export const HolidayModule = (pluginOptions = {}) => {
   return defineModule((TempoClass, tempoOptions, factory) => {
@@ -252,7 +252,7 @@ If your plugin provides multiple related components (like the `TermsModule`), wr
 
 ```typescript
 // index.ts
-import { defineModule } from '@magmacomputing/tempo/plugin';
+import { defineModule } from '@magmacomputing/tempo/plugin-api';
 import { PluginA } from './plugin.a.js';
 import { PluginB } from './plugin.b.js';
 

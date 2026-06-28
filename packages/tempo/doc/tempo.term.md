@@ -12,7 +12,7 @@ new Tempo('25-Dec-2024').term.season     // ← computed on first access, cached
 ```
 
 ::: tip
-**Transparent Discovery**: As of **v2.0.1**, all Term properties are **enumerable**. Whilst modern `console.log` environments (like Node.js) will typically display these as `[Getter]` to preserve laziness, they *are* visible to property-scanning tools. This means a serializer (like `JSON.stringify`) or a deep-clone utility **will** trigger the eager evaluation of *every* registered Term at once. To prevent terminal noise during these events (e.g., for invalid dates), initialize Tempo with **`silent: true`**.
+**Transparent Discovery**: As of **v2.0.1**, all Term properties are **enumerable**. While modern `console.log` environments (like Node.js) will typically display these as `[Getter]` to preserve laziness, they *are* visible to property-scanning tools. This means a serializer (like `JSON.stringify`) or a deep-clone utility **will** trigger the eager evaluation of *every* registered Term at once. To prevent terminal noise during these events (e.g., for invalid dates), initialize Tempo with **`silent: true`**.
 :::
 
 ## What a Term Does

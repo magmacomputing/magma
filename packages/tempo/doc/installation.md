@@ -91,9 +91,10 @@ const t = new Tempo();
 ## 🌐 Browser & Native Environments
 
 Tempo provides multiple native browser distribution formats. Here is the quick breakdown of which approach to use:
-- **Standard Usage** (No plugins): Use the Global Bundle.
-- **Plugins without a bundler**: Use **esm.sh** (Easiest) OR use Granular Import Maps (Hardest, but maximum control).
+- **Standard Usage** (No plugins): Use the Native ESM Bundle.
+- **Plugins without a bundler**: Use **Smart CDNs** (Easiest setup) OR **Static CDNs** (Best production performance).
 - **Plugins with a bundler** (Vite/Webpack): Do nothing. Your bundler handles the resolution automatically.
+- **Non-ESM Environments**: Use the UMD Global Variable approach.
 
 ### 1. The Global Bundle (Standard Usage)
 
@@ -124,13 +125,14 @@ The easiest way to use Tempo natively in the browser is via the pre-optimized ES
 
 If you want the absolute easiest setup for **Tempo Premium Plugins** natively in the browser, use an on-the-fly bundling CDN like [esm.sh](https://esm.sh). Smart CDNs act like a Node environment—they read the package resolution rules and resolve nested dependencies automatically, meaning you don't have to map any internal subpaths.
 
-Whilst you *could* import directly from the URL everywhere, the best practice is to use a tiny import map for your top-level packages to keep your application code clean:
+While you *could* import directly from the URL everywhere, the best practice is to use a tiny import map for your top-level packages to keep your application code clean:
 
 ```html
 <!-- 1. A tiny import map for your clean shortcuts -->
 <script type="importmap">
 {
   "imports": {
+    "@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0",
     "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@3",
     "@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@1"
   }
@@ -141,6 +143,7 @@ Whilst you *could* import directly from the URL everywhere, the best practice is
 <script type="module">
   // You can use standard bare specifiers thanks to the tiny import map above.
   // esm.sh handles all the complex internal plugin routing behind the scenes!
+  import '@js-temporal/polyfill';
   import { Tempo } from '@magmacomputing/tempo';
   import { TickerModule } from '@magmacomputing/tempo-plugin-ticker';
 
