@@ -134,7 +134,7 @@ While you *could* import directly from the URL everywhere, the best practice is 
   "imports": {
     "@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
     "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@3",
-    "@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@1"
+    "@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@2"
   }
 }
 </script>
@@ -177,8 +177,8 @@ To use **Tempo Premium Plugins** via a static CDN, you simply need to explicitly
     "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.index.js",
     "@magmacomputing/tempo/plugin-api": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/plugin-api.index.js",
 
-    "@magmacomputing/tempo-plugin-astro": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@1/dist/index.js",
-    "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@1/dist/index.js"
+    "@magmacomputing/tempo-plugin-astro": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@2/dist/index.js",
+    "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@2/dist/index.js"
   }
 }
 </script>
