@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.1] - 2026-06-28
+
+### Fixed
+- **Term Registration Resilience**: Hardened `Tempo.extend` with structural deduplication to safely ignore redundant registrations of identical core terms. This prevents edge-case term collisions (e.g., `qtr`) in mixed module-loader environments like Vitest where Node ESM and Vite may evaluate plugins multiple times.
+
 ## [3.5.0] - 2026-06-28
 
 ### Added

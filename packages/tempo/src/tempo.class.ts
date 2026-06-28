@@ -572,13 +572,25 @@ export class Tempo {
 
 						if (Tempo._termMap.get(config.key) === config) return;
 						if (Tempo._termMap.has(config.key)) {
+							const existing = Tempo._termMap.get(config.key);
+							const rangesMatch = JSON.stringify(existing?.ranges) === JSON.stringify(config.ranges);
+							if (existing?.scope === config.scope && existing?.description === config.description && rangesMatch) {
+								logDebug(`[Tempo#extend] Duplicate term registration ignored for key: "${config.key}"`, state.config);
+								return;
+							}
 							logError(`[Tempo#extend] Term collision on key: "${config.key}". Registration aborted.`, state.config);
 							return;
 						}
 						if (config.scope && Tempo._termMap.get(config.scope) === config) { /* continue */ }
 						else if (config.scope && Tempo._termMap.has(config.scope)) {
-							logError(`[Tempo#extend] Term collision on scope: "${config.scope}". Registration aborted.`, state.config);
-							return;
+							const existingScope = Tempo._termMap.get(config.scope);
+							const rangesMatch = JSON.stringify(existingScope?.ranges) === JSON.stringify(config.ranges);
+							if (existingScope?.key === config.key && existingScope?.description === config.description && rangesMatch) {
+								/* continue */
+							} else {
+								logError(`[Tempo#extend] Term collision on scope: "${config.scope}". Registration aborted.`, state.config);
+								return;
+							}
 						}
 
 						Tempo._termMap.set(config.key, config);
@@ -596,13 +608,11 @@ export class Tempo {
 									if (r.key) {
 										let val: string | undefined;
 										if (isDefined(r.hour)) {
-											if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23) {
+											if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23)
 												val = `${r.hour}:${pad(r.minute ?? 0)}`;
-											}
 										} else if (r.month) {
-											if (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12) {
+											if (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12)
 												val = `${pad(r.day ?? 1)} ${monthKeys[r.month - 1]}`;
-											}
 										}
 
 										if (val) aliases.push([r.key, val]);
