@@ -606,13 +606,11 @@ export class Tempo {
 									if (r.key) {
 										let val: string | undefined;
 										if (isDefined(r.hour)) {
-											if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23) {
+											if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23)
 												val = `${r.hour}:${pad(r.minute ?? 0)}`;
-											}
 										} else if (r.month) {
-											if (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12) {
+											if (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12)
 												val = `${pad(r.day ?? 1)} ${monthKeys[r.month - 1]}`;
-											}
 										}
 
 										if (val) aliases.push([r.key, val]);
