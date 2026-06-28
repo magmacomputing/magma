@@ -572,13 +572,23 @@ export class Tempo {
 
 						if (Tempo._termMap.get(config.key) === config) return;
 						if (Tempo._termMap.has(config.key)) {
+							const existing = Tempo._termMap.get(config.key);
+							if (existing?.scope === config.scope && existing?.description === config.description) {
+								logDebug(`[Tempo#extend] Duplicate term registration ignored for key: "${config.key}"`, state.config);
+								return;
+							}
 							logError(`[Tempo#extend] Term collision on key: "${config.key}". Registration aborted.`, state.config);
 							return;
 						}
 						if (config.scope && Tempo._termMap.get(config.scope) === config) { /* continue */ }
 						else if (config.scope && Tempo._termMap.has(config.scope)) {
-							logError(`[Tempo#extend] Term collision on scope: "${config.scope}". Registration aborted.`, state.config);
-							return;
+							const existingScope = Tempo._termMap.get(config.scope);
+							if (existingScope?.key === config.key && existingScope?.description === config.description) {
+								/* continue */
+							} else {
+								logError(`[Tempo#extend] Term collision on scope: "${config.scope}". Registration aborted.`, state.config);
+								return;
+							}
 						}
 
 						Tempo._termMap.set(config.key, config);
