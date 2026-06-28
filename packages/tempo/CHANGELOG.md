@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] - 2026-06-28
+
+### Added
+- **Unified Plugin API Barrel**: Introduced `@magmacomputing/tempo/plugin-api` barrel export. This centralizes all plugin-authoring utilities (`defineModule`, `defineExtension`, `defineTerm`, etc.) and internal types into a single, highly discoverable endpoint. This architecture significantly cleans up application-level code and documentation by separating end-user imports from Plugin Developer imports.
+- **Strict Peer Dependency Validation**: Tempo Plugins now enforce strict `peerDependencies` on the new `plugin-api` barrel export, ensuring robust resolution for complex environments (like Smart CDNs or Vite) while preventing duplicate instances of internal utility functions.
+
+### Changed
+- **Documentation Overhaul**: Updated the installation documentation and template sandboxes (`index.sample.html`) to natively utilize the new `plugin-api` barrel. Refined CDN strategies into two clear paths: "Smart CDNs" (for rapid prototyping) and "Static CDNs" (for production builds using manual import maps).
+- **Temporal Native Support Roadmap**: Updated documentation to use evergreen wording for upcoming Node.js native unflagged `Temporal` support, removing explicit version claims (like Node.js 26) to future-proof the guides against shifting ECMAScript release timelines.
+
 ## [3.4.0] - 2026-06-26
 
 ### Added
