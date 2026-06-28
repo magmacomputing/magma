@@ -238,26 +238,17 @@ console.log(t.format('We are currently in the {#quarter}')); // "We are currentl
 ```
 
 ### Format Modifiers & Localization
-Format strings support chained colon-modifiers (`:modifier`) to dynamically change the presentation casing or delegate to the native `Intl` API!
+Format strings support chained colon-modifiers (e.g., `:upper`, `:locale`, `:ord`) to dynamically change the presentation casing or delegate to the native `Intl` API. You can stack them to get the exact presentation required!
 
-*   `:lower` (Lowercase)
-*   `:upper` (Uppercase)
-*   `:title` (Titlecase)
-*   `:ord` (Ordinal suffix, e.g. "th", "st", "nd")
-*   `:locale` (Delegates deeply localized tokens like `{mon}` or `{wkd}` directly to `Intl.DateTimeFormat`)
-*   `:yy` (Truncates the year component to 2 digits for compound date tokens)
-
-Modifiers can be stacked endlessly to get the exact presentation required:
 ```typescript
 const t = new Tempo('2024-05-15 15:30', { locale: 'fr-FR' });
 
-t.format('{mon:upper}');        // "MAY" (Default English TitleCase -> UpperCase)
-t.format('{mon:locale}');       // "mai" (Native French Intl output)
+t.format('{mon:upper}');             // "MAY" (English Default -> UpperCase)
+t.format('{mon:locale}');            // "mai" (Native French Intl output)
 t.format('{mon:locale:upper} {dd}'); // "MAI 15" (Native French Intl output)
-t.format('{#tod:lower}');       // "afternoon" (Modifies the native TitleCase Term plugin)
-t.format('{mer:upper}');        // "PM" (Some users prefer uppercase meridiem)
-t.format('{dmy:yy}');           // "150524" (Uses the 2-digit year modifier on the compact date)
 ```
+
+👉 **Learn More:** See the [Smart Formatting Guide](./tempo.format.md) for the complete list of available modifiers.
 
 ::: tip
 **Tired of typing `:locale`?**  

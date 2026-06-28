@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/library",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "description": "Shared utility library for Tempo",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -9,9 +9,7 @@
     "url": "git+https://github.com/magmacomputing/magma.git",
     "directory": "packages/library"
   },
-  "publishConfig": {
-    "access": "public"
-  },
+  "private": true,
   "homepage": "https://github.com/magmacomputing/magma/tree/main/packages/library#readme",
   "bugs": {
     "url": "https://github.com/magmacomputing/magma/issues"

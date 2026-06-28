@@ -8,19 +8,17 @@
   <!-- 
     This is the sanctioned browser import map for Tempo.
     Note: For production, you may want to bundle these or serve them from your own infrastructure.
+    
+    The '@js-temporal/polyfill' mapping is provided if your environment does not yet natively support Temporal.
+    The '@magmacomputing/tempo/plugin-api' mapping is optional and is only required 
+    if you choose to install and use Tempo Premium Plugins later.
   -->
   <script type="importmap">
   {
     "imports": {
-      "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
-      "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js",
-      "@magmacomputing/tempo/core": "./node_modules/@magmacomputing/tempo/dist/core.index.js",
-      "@magmacomputing/tempo/duration": "./node_modules/@magmacomputing/tempo/dist/module/module.duration.js",
-      "@magmacomputing/tempo/mutate": "./node_modules/@magmacomputing/tempo/dist/module/module.mutate.js",
-      "@magmacomputing/tempo/plugin": "./node_modules/@magmacomputing/tempo/dist/plugin/plugin.index.js",
-      "@magmacomputing/tempo/library": "./node_modules/@magmacomputing/tempo/dist/library.index.js",
-      "@magmacomputing/tempo/enums": "./node_modules/@magmacomputing/tempo/dist/support/support.enum.js",
-      "#tempo/license": "./node_modules/@magmacomputing/tempo/dist/plugin/license/license.validator.js"
+      "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
+      "@magmacomputing/tempo": "./node_modules/@magmacomputing/tempo/dist/tempo.index.js",
+      "@magmacomputing/tempo/plugin-api": "./node_modules/@magmacomputing/tempo/dist/plugin-api.index.js"
     }
   }
   </script>
@@ -33,6 +31,7 @@
   </div>
 
   <script type="module">
+    // import '@js-temporal/polyfill'; // Uncomment if your environment lacks native Temporal support
     import { Tempo } from '@magmacomputing/tempo';
 
     async function bootstrap() {

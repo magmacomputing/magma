@@ -6,17 +6,11 @@
 
 `Tempo` expects the host environment to provide `Temporal`, either through native runtime support or a user-supplied polyfill.
 
-`Temporal` is now at Stage 4 and is expected to land broadly in runtimes soon. To avoid needlessly inflating package size with a dependency that will increasingly become unnecessary, `Tempo` does not bundle a `Temporal` polyfill by default.
-
-As of 13 January 2026, Chrome 144 has shipped `Temporal`, and Firefox 139 also includes native `Temporal` support. You can verify browser support at https://caniuse.com/temporal.
-
-Node.js 26.0.0+ ships native `Temporal` fully enabled by default. Older Node versions may still require an external polyfill or experimental flags depending on the underlying engine version.
+`Temporal` has reached Stage 4 of the [TC39 standards process](https://tc39.es/proposal-temporal/) (the committee that evolves JavaScript) and is shipping natively in modern browser environments (Deno 2.7+, Chrome 144+, Firefox 139+). For Node.js, native unflagged support is planned for a future release, but it can currently be tested via the `--harmony-temporal` flag. You can verify current browser support at [caniuse.com/temporal](https://caniuse.com/temporal). To avoid needlessly inflating package sizes for modern apps, `Tempo` does not bundle a `Temporal` polyfill by default.
 
 ::: warning
-Older Node.js releases that ship `Temporal` behind a feature flag may still have incomplete or experimental implementations. For mission-critical stability in those older environments, we strongly recommend using `@js-temporal/polyfill`.
+Node.js environments that ship `Temporal` behind a feature flag (`--harmony-temporal`) may have incomplete implementations. For stability, we strongly recommend using `@js-temporal/polyfill` instead of the native flag until you upgrade to an official unflagged release.
 :::
-
-Please verify support in your actual target runtime(s) and add a polyfill only when needed.
 
 You can check at runtime with a simple guard:
 
@@ -49,16 +43,15 @@ const t = new Tempo('next Friday');
 
 ### Node.js (with Native Temporal)
 
-If you are using Node.js 26.0.0 or later, native `Temporal` is fully supported and enabled by default.
+When native unflagged `Temporal` support is officially released in Node.js, it will be fully supported and enabled by default.
 
-For older Node.js releases that still ship `Temporal` behind a flag, you can enable it with:
+For current Node.js releases that still ship `Temporal` behind a flag, you can enable it with:
 
 ```bash
 node --harmony-temporal my-app.js
 ```
 
-> [!WARNING]
-> Older Node.js releases that require `--harmony-temporal` may still have incomplete Temporal support. See [Temporal Polyfill Note](#temporal-polyfill-note) for details.
+*(Note: See the [Temporal Polyfill Note](#temporal-polyfill-note) for warnings about using this flag in production)*
 
 ### Node.js (with Polyfill)
 
@@ -98,9 +91,10 @@ const t = new Tempo();
 ## 🌐 Browser & Native Environments
 
 Tempo provides multiple native browser distribution formats. Here is the quick breakdown of which approach to use:
-- **Standard Usage** (No plugins): Use the Global Bundle.
-- **Plugins without a bundler**: Use **esm.sh** (Easiest) OR use Granular Import Maps (Hardest, but maximum control).
+- **Standard Usage** (No plugins): Use the Native ESM Bundle.
+- **Plugins without a bundler**: Use **Smart CDNs** (Easiest setup) OR **Static CDNs** (Best production performance).
 - **Plugins with a bundler** (Vite/Webpack): Do nothing. Your bundler handles the resolution automatically.
+- **Non-ESM Environments**: Use the UMD Global Variable approach.
 
 ### 1. The Global Bundle (Standard Usage)
 
@@ -129,17 +123,18 @@ The easiest way to use Tempo natively in the browser is via the pre-optimized ES
 
 ### 2. Smart CDNs (The "Best-of-Both-Worlds")
 
-If you want to use **Tempo Premium Plugins** natively in the browser *without* configuring the massive granular import map required by static CDNs, use an on-the-fly bundling CDN like [esm.sh](https://esm.sh). It reads the package resolution rules and bundles the complex internal dependencies automatically. 
+If you want the absolute easiest setup for **Tempo Premium Plugins** natively in the browser, use an on-the-fly bundling CDN like [esm.sh](https://esm.sh). Smart CDNs act like a Node environment—they read the package resolution rules and resolve nested dependencies automatically, meaning you don't have to map any internal subpaths.
 
-While you *could* import directly from the URL everywhere, the best practice is to use a tiny, simple import map just for your top-level packages. This allows you to keep your actual application code clean and standard:
+While you *could* import directly from the URL everywhere, the best practice is to use a tiny import map for your top-level packages to keep your application code clean:
 
 ```html
 <!-- 1. A tiny import map for your clean shortcuts -->
 <script type="importmap">
 {
   "imports": {
-    "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@3.2.0",
-    "@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@1.0.4"
+    "@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
+    "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@3",
+    "@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@1"
   }
 }
 </script>
@@ -148,6 +143,7 @@ While you *could* import directly from the URL everywhere, the best practice is 
 <script type="module">
   // You can use standard bare specifiers thanks to the tiny import map above.
   // esm.sh handles all the complex internal plugin routing behind the scenes!
+  import '@js-temporal/polyfill';
   import { Tempo } from '@magmacomputing/tempo';
   import { TickerModule } from '@magmacomputing/tempo-plugin-ticker';
 
@@ -155,37 +151,41 @@ While you *could* import directly from the URL everywhere, the best practice is 
 </script>
 ```
 
-### 3. Granular ESM (Advanced Plugin Architecture)
+<details>
+<summary><b>⚠️ Trade-offs of using Smart CDNs in Production</b></summary>
 
-If you are strictly using a static CDN (like jsdelivr) and require Tempo Premium Plugins, you must use the Granular ESM distribution. The bundled engine drops internal builder-utilities to keep the global scope clean, but plugins require them to resolve their own dependencies.
+While `esm.sh` is fantastic for prototyping and reducing import map complexity, there are architectural trade-offs to consider before using it in a mission-critical production environment:
 
-To use Tempo Plugins via static CDN, you must map the core library, its subpaths, and the internal licensing module directly to their granular equivalents:
+1. **Network Waterfalls:** The browser must fetch the module, parse it, and then fetch its nested dependencies sequentially. This can slow down page load times compared to a fully bundled application.
+2. **Uptime Dependency:** You are introducing a critical third-party dependency into your runtime. If the CDN experiences routing issues, your application could break for end-users.
+3. **Sub-dependency Version Floating:** `esm.sh` automatically resolves sub-dependencies based on semver constraints. If a sub-dependency introduces an accidental breaking change, it could affect your app.
+4. **Suboptimal Tree Shaking:** The browser will download the entire module graph for that package; you cannot easily tree-shake unused exports as you can with a dedicated bundler like Vite or Webpack.
+5. **Environment Parity:** Handling development versus production environments (like `process.env.NODE_ENV`) requires query parameters (e.g., `?dev`), which complicates deployment.
+
+</details>
+
+### 3. Static CDNs (Production-Ready)
+
+For production environments where uptime and load speeds are critical, you should use a static file CDN (like jsdelivr). Because static CDNs serve raw files without compiling them on the fly, they are significantly faster and more reliable than Smart CDNs.
+
+To use **Tempo Premium Plugins** via a static CDN, you simply need to explicitly map the unified `plugin-api` subpath so the browser knows how to resolve the internal connections:
 
 ```html
 <script type="importmap">
 {
   "imports": {
-    "tslib": "https://cdn.jsdelivr.net/npm/tslib@2.8.1/tslib.es6.mjs",
-    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.index.js",
+    "@magmacomputing/tempo/plugin-api": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/plugin-api.index.js",
 
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/tempo.index.js",
-    "@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/core.index.js",
-    "@magmacomputing/tempo/library": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/library.index.js",
-    "@magmacomputing/tempo/plugin": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/plugin/plugin.index.js",
-    "@magmacomputing/tempo/enums": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/support/support.enum.js",
-    "@magmacomputing/tempo/term": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/plugin/term/term.index.js",
-    
-    "#tempo/license": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3.2.0/dist/plugin/license/license.validator.js",
-
-    "@magmacomputing/tempo-plugin-astro": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@1.1.6/dist/index.js",
-    "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@1.0.4/dist/index.js"
+    "@magmacomputing/tempo-plugin-astro": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@1/dist/index.js",
+    "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@1/dist/index.js"
   }
 }
 </script>
 ```
 
 > [!WARNING] Cache Busting
-> The jsdelivr CDN aggressively caches major version tags (like `@3`). When relying on precise granular resolution for plugins, it is highly recommended to use explicit patch versions (like `@3.0.1`) to avoid fetching mismatched or outdated sub-modules.
+> The jsdelivr CDN aggressively caches major version tags (like `@3`). When relying on precise module resolution for plugins, it is highly recommended to use explicit patch versions (like `@3.0.1`) to avoid fetching mismatched or outdated sub-modules.
 
 ---
 
