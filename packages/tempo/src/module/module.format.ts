@@ -312,10 +312,11 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 							}
 						} else {
 							const dtOptions = config?.intl?.dateTimeFormat ?? {};
-							if (token === 'mon') res = zdt.toLocaleString(config?.locale, { ...dtOptions, month: 'long' });
-							else if (token === 'mmm') res = zdt.toLocaleString(config?.locale, { ...dtOptions, month: 'short' });
-							else if (token === 'wkd') res = zdt.toLocaleString(config?.locale, { ...dtOptions, weekday: 'long' });
-							else if (token === 'www') res = zdt.toLocaleString(config?.locale, { ...dtOptions, weekday: 'short' });
+							const tzOpts = { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
+							if (token === 'mon') res = getDTF(config?.locale, { ...tzOpts, month: 'long' }).format(zdt.epochMilliseconds);
+							else if (token === 'mmm') res = getDTF(config?.locale, { ...tzOpts, month: 'short' }).format(zdt.epochMilliseconds);
+							else if (token === 'wkd') res = getDTF(config?.locale, { ...tzOpts, weekday: 'long' }).format(zdt.epochMilliseconds);
+							else if (token === 'www') res = getDTF(config?.locale, { ...tzOpts, weekday: 'short' }).format(zdt.epochMilliseconds);
 							else if (token === 'mer') {
 								const period = formatDayPeriod(zdt.epochMilliseconds, config?.locale, { ...dtOptions, hour: 'numeric', hour12: true, timeZone: tz });
 								if (period) res = period;
@@ -326,6 +327,29 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					}
 					break;
 				}
+				case 'z':
+					if (token === 'tz') res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
+					break;
+				case 'zz':
+					if (token === 'tz') res = zdt.offset;
+					break;
+				case 'zzz':
+					if (token === 'tz') res = zdt.offset.replace(':', '');
+					break;
+				case 'zzzz':
+					if (token === 'tz') {
+						const dtOptions = config?.intl?.dateTimeFormat ?? {};
+						const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: 'short' }).formatToParts(zdt.epochMilliseconds);
+						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
+					}
+					break;
+				case 'zzzzz':
+					if (token === 'tz') {
+						const dtOptions = config?.intl?.dateTimeFormat ?? {};
+						const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: 'long' }).formatToParts(zdt.epochMilliseconds);
+						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
+					}
+					break;
 			}
 		}
 

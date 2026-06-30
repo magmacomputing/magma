@@ -128,6 +128,11 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:title` | String | Converts to titlecase | `{mon:locale:title}` → `Octobre` |
 | `:locale` | String | Resolves term via localization dictionary | `{mon:locale}` → `octobre` |
 | `:yy` | Compound Date | Truncates the internal year component to 2 digits | `{dmy:yy}` → `241026` |
+| `:z` | `{tz}` | Narrow timezone offset | `{tz:z}` → `+10` |
+| `:zz` | `{tz}` | Short timezone offset | `{tz:zz}` → `+10:00` |
+| `:zzz` | `{tz}` | Techie timezone offset | `{tz:zzz}` → `+1000` |
+| `:zzzz` | `{tz}` | Short localized timezone name (fallback: ID) | `{tz:zzzz}` → `AEST` |
+| `:zzzzz` | `{tz}` | Long localized timezone name (fallback: ID) | `{tz:zzzzz}` → `Australian Eastern Standard Time` |
 
 ### 🔄 Automatic Meridiem
 If your format string contains `{h12}` (12-hour clock) but lacks a `{mer}` token, Tempo will automatically append a `{mer}` token with the same modifiers as the `{h12}` token after the last time component to ensure the time remains unambiguous.
@@ -135,7 +140,7 @@ If your format string contains `{h12}` (12-hour clock) but lacks a `{mer}` token
 *(If you explicitly want a 12-hour digit without an auto-appended meridiem, use the `:raw` modifier: `{h12:raw}`)*
 
 > [!NOTE]
-> **Why `{h12}` and `{h24}`?** In other date libraries, `{hh}` could mean 12-hour and `{HH}` means 24-hour time. This is confusing and error-prone. Tempo standardizes `{hh}` on the default 24-hour expectation, but provides explicit `{h12}` and `{h24}` tokens to completely eliminate ambiguity. This keeps all token definitions fully lowercase and semantic, without relying on uppercase variations like `{HH}`. 
+> **Why `{h12}` and `{h24}`?** In other date libraries, `{hh}` could mean 12-hour and `{HH}` could mean 24-hour time. This is confusing and error-prone. Tempo standardizes `{hh}` on the default 24-hour expectation, but provides explicit `{h12}` and `{h24}` tokens to completely eliminate ambiguity. This keeps all token definitions fully lowercase and semantic, without relying on uppercase variations like `{HH}`. 
 
 ```typescript
 t.format('{h12}:{mi}');           // "03:30pm" (auto-append standard meridiem)
