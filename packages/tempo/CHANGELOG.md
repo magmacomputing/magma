@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.2]
+
+### Added
+- **Minified Global Bundles**: The build pipeline now natively produces highly optimized, minified IIFE bundles (`*.min.js`) for both Tempo Core and all Community Plugins, significantly reducing payload size for developers using CDN `<script>` tags.
+- **Unified Global Namespace**: Re-architected the browser-global export strategy. Both the core library and all `<script>` tag plugins now elegantly attach to a single, collision-free `window.Magma` namespace (e.g., `window.Magma.Tempo` and `window.Magma.plugins.astro`), dramatically improving developer experience and eliminating global variable pollution.
+
 ## [3.5.1] - 2026-06-28
 
 ### Fixed

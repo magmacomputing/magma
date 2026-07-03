@@ -58,7 +58,7 @@ export default defineConfig({
           { text: 'Modularity', link: '/doc/tempo.modularity' },
           { text: 'Terms Plugins', link: '/doc/tempo.plugin' },
           { text: 'Extension Plugins', link: '/doc/tempo.extension' },
-          { text: 'Premium Plugins ↗', link: 'https://magmacomputing.github.io/tempo-plugin-docs/' },
+          { text: 'Plugin Ecosystem', link: '/doc/ecosystem' }
         ]
       },
       {

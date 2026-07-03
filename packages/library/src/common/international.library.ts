@@ -3,8 +3,8 @@ import { memoizeFunction } from '#library/function.library.js';
 import { isFunction, isDefined } from '#library/assertion.library.js';
 
 /** memoized helper for Intl.RelativeTimeFormat instances */
-const getRTF = memoizeFunction((locale?: string, style: Intl.RelativeTimeFormatStyle = 'narrow') => {
-	return new Intl.RelativeTimeFormat(locale, { style });
+const getRTF = memoizeFunction((locale?: string, style: Intl.RelativeTimeFormatStyle = 'narrow', numeric: Intl.RelativeTimeFormatNumeric = 'always') => {
+	return new Intl.RelativeTimeFormat(locale, { style, numeric });
 });
 
 /** memoized helper for Intl.ListFormat instances */
@@ -63,9 +63,9 @@ export function canonicalLocale(locale: string): string | undefined {
 }
 
 /** return a localized relative time string (e.g., 'in 2 days') */
-export function getRelativeTime(value: number, unit: Intl.RelativeTimeFormatUnit, locale?: string, style: Intl.RelativeTimeFormatStyle = 'narrow') {
+export function getRelativeTime(value: number, unit: Intl.RelativeTimeFormatUnit, locale?: string, style: Intl.RelativeTimeFormatStyle = 'narrow', numeric: Intl.RelativeTimeFormatNumeric = 'always') {
 	try {
-		return getRTF(locale, style).format(value, unit);
+		return getRTF(locale, style, numeric).format(value, unit);
 	} catch (e) {
 		return `${value} ${unit}`;
 	}
