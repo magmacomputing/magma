@@ -238,6 +238,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 		if (res === `{${token}}` || modifiers.length === 0) return res;
 
+		const dtOptions = config?.intl?.dateTimeFormat ?? {};
+
 		for (const mod of modifiers) {
 			switch (mod.toLowerCase()) {
 				case 'lower':
@@ -311,7 +313,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 									res = isFunction(locRes) ? locRes(config?.locale) : locRes;
 							}
 						} else {
-							const dtOptions = config?.intl?.dateTimeFormat ?? {};
 							const tzOpts = { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
 							if (token === 'mon') res = getDTF(config?.locale, { ...tzOpts, month: 'long' }).format(zdt.epochMilliseconds);
 							else if (token === 'mmm') res = getDTF(config?.locale, { ...tzOpts, month: 'short' }).format(zdt.epochMilliseconds);
@@ -338,14 +339,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					break;
 				case 'zzzz':
 					if (token === 'tz') {
-						const dtOptions = config?.intl?.dateTimeFormat ?? {};
 						const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: 'short' }).formatToParts(zdt.epochMilliseconds);
 						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
 					}
 					break;
 				case 'zzzzz':
 					if (token === 'tz') {
-						const dtOptions = config?.intl?.dateTimeFormat ?? {};
 						const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: 'long' }).formatToParts(zdt.epochMilliseconds);
 						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
 					}
