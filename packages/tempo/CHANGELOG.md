@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Minified Global Bundles**: The build pipeline now natively produces highly optimized, minified IIFE bundles (`*.min.js`) for both Tempo Core and all Community Plugins, significantly reducing payload size for developers using CDN `<script>` tags.
 - **Unified Global Namespace**: Re-architected the browser-global export strategy. Both the core library and all `<script>` tag plugins now elegantly attach to a single, collision-free `window.Magma` namespace (e.g., `window.Magma.Tempo` and `window.Magma.plugins.astro`), dramatically improving developer experience and eliminating global variable pollution.
 
+### Fixed
+- **Module Augmentation Typings**: Hardened the "batteries-included" `tempo.index.ts` entry point by explicitly exporting core module types (e.g. `DurationModule`, `FormatModule`). This forces TypeScript to preserve their module augmentations in the compiled `.d.ts` bundle, guaranteeing that methods like `.until()` and `.since()` correctly appear in IDE autocomplete out-of-the-box.
+
 ## [3.5.1] - 2026-06-28
 
 ### Fixed
