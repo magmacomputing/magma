@@ -31,6 +31,12 @@
 
 
 
+<div align="center">
+  <a href="https://stackblitz.com/edit/vitejs-vite-4uqmmr1i?file=src%2Fmain.ts&terminal=dev">
+    <img src="https://developer.stackblitz.com/img/open_in_stackblitz.svg" alt="Open in StackBlitz" height="36">
+  </a>
+</div>
+
 ---
 
 ## ⚡ Quick Start
