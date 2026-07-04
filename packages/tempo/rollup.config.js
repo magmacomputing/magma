@@ -121,7 +121,7 @@ export default [
 			{
 				file: 'dist/tempo.bundle.js',
 				format: 'iife',
-				name: '_TempoExport',
+				name: 'Magma',
 				exports: 'named',
 				sourcemap: false,
 				indent: '\t',
@@ -148,6 +148,43 @@ export default [
 			}),
 			resolve({ extensions: ['.js', '.ts'] }),
 			esbuild({ target: 'esnext', minify: false })
+		],
+	},
+
+	// 2b. 🌐 MINIFIED GLOBAL IIFE BUNDLE
+	{
+		input: path.join(distPath, 'tempo.entry.js'),
+		output: [
+			{
+				file: 'dist/tempo.bundle.min.js',
+				format: 'iife',
+				name: 'Magma',
+				exports: 'named',
+				sourcemap: true,
+				indent: '\t',
+				inlineDynamicImports: true,
+				globals: {
+					'@js-temporal/polyfill': 'Temporal'
+				}
+			},
+			{
+				file: 'dist/tempo.bundle.esm.min.js',
+				format: 'es',
+				sourcemap: true,
+				indent: '\t',
+				inlineDynamicImports: true,
+			}
+		],
+		external: ['@js-temporal/polyfill'],
+		plugins: [
+			alias({
+				entries: [
+					// Pull in the already-obfuscated monolith!
+					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') }
+				]
+			}),
+			resolve({ extensions: ['.js', '.ts'] }),
+			esbuild({ target: 'esnext', minify: true })
 		],
 	},
 

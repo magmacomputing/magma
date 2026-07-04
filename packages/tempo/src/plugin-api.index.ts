@@ -15,5 +15,6 @@ export * from './library.index.js';
 export * from './plugin/plugin.index.js';
 export * from './support/support.enum.js';
 export * from './plugin/term/term.index.js';
+export { defineTerm, defineRange, getTermRange } from './plugin/term/term.index.js';
 
 export * from '#tempo/license';

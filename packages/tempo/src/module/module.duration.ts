@@ -206,12 +206,18 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			|| (isFunction(rtConfig) ? rtConfig : rtConfig?.format)
 			|| opts['rtfFormat'] || (this as any).config['rtfFormat'];
 
+		const getOpt = (key: string, legacy: string, def: string) => 
+			rtOptions?.[key] || rtConfig?.[key] || opts[legacy] || (this as any).config[legacy] || def;
+
 		const getFormatted = (val: number, u: any) => {
 			const su = singular(u);
 			if (isFunction(rtf)) return rtf(val, su);
 			if (rtf instanceof Intl.RelativeTimeFormat) return rtf.format(val, su);
-			const style = rtOptions?.style || rtConfig?.style || opts['intl']?.relativeTimeFormat?.style || opts['rtfStyle'] || (this as any).config.intl?.relativeTimeFormat?.style || (this as any).config['rtfStyle'] || 'narrow';
-			return getRelativeTime(val, su as Intl.RelativeTimeFormatUnit, locale, style);
+			
+			const style = getOpt('style', 'rtfStyle', 'narrow');
+			const numeric = getOpt('numeric', 'rtfNumeric', 'always');
+			
+			return getRelativeTime(val, su as Intl.RelativeTimeFormatUnit, locale, style, numeric);
 		}
 
 		switch (res.unit) {

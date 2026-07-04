@@ -189,19 +189,29 @@ To use **Tempo Premium Plugins** via a static CDN, you simply need to explicitly
 
 ---
 
-## 📦 Browser (UMD / Global Variable)
+## 📦 Browser (Global Variable / Plugins)
 
-If you aren't using ESM or just want a simple `<script>` tag for rapid prototyping, use the UMD global bundle. This attaches `Tempo` to the `window` object.
+If you aren't using ESM or just want a simple `<script>` tag for rapid prototyping, use our unified `Magma` global bundles. This clean approach ensures all plugins share a single, collision-free namespace on the `window` object.
 
 ```html
-<!-- Load the Temporal Polyfill first -->
+<!-- 1. Load the Temporal Polyfill first -->
 <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.umd.js"></script>
 
-<!-- Load the Tempo Global Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.js"></script>
+<!-- 2. Load the Tempo Global Bundle (Creates window.Magma) -->
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.min.js"></script>
+
+<!-- 3. Load any Community Plugins (Attaches to window.Magma.plugins) -->
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@2/dist/index.global.min.js"></script>
 
 <script>
-  const t = new Tempo('now');
+  // 1. Extract what you need from the Magma namespace
+  const { Tempo, plugins } = Magma;
+  
+  // 2. Extend the core engine
+  Tempo.extend(plugins.astro);
+
+  // 3. Create your instance!
+  const t = new Tempo('next friday');
   console.log(t.toString());
 </script>
 ```
