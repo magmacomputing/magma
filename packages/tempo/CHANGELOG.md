@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.3] - 2026-07-05
+
+### Added
+- **Flexible Epoch Getters**: Added a static `Tempo.epoch` getter that perfectly mirrors the instance `.epoch` property, enabling direct retrieval of current Unix timestamps (e.g. `Tempo.epoch.ss`).
+- **Static Now Modifiers**: Extended the static `Tempo.now(unit)` method to accept optional string units (`'ns'`, `'us'`, `'ms'`, `'ss'`), defaulting to nanosecond precision for strict backwards compatibility.
+
+### Changed
+- **DRY Refactoring**: Centralized instance and static `epoch` property calculations to a single internal static helper, ensuring absolute uniformity of mathematical transformations across the core library.
+
 ## [3.5.2] - 2026-07-04
 
 ### Added
