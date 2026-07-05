@@ -25,8 +25,19 @@ type Config = {
 	/** response wrapper (eg.  "alert({hello:'there'})" */		prefix?: string;
 }
 
+export class HttpError extends Error {
+	constructor(
+		public status: number,
+		public statusText: string,
+		public body: any
+	) {
+		super(`${status}: ${statusText}`);
+		this.name = 'HttpError';
+	}
+}
+
 /** get data from a resource-url */
-export const httpRequest = <T>(url: string | URL, init = {} as RequestInit, config = {} as Config) => {
+export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, config = {} as Config) => {
 	const signallingInit = {
 		...init,
 		signal: init.signal
@@ -37,20 +48,30 @@ export const httpRequest = <T>(url: string | URL, init = {} as RequestInit, conf
 	return fetch(url, signallingInit)													// caller will handle the 'catch' if error
 		.then(async res => {
 			if (res.ok) {
+				const contentType = res.headers.get('Content-Type') || '';
+				const isJson = contentType.includes('application/json');
+
 				if (config.prefix) {
-					const text = await res.text();										// read raw text first
-					const json = text.startsWith(config.prefix)				// if it starts with the specified prefix
-						? text.substring(config.prefix.length).replace(/\);?$/, '')	// then strip the prefix AND any trailing closure
-						: text;
+					const rawPrefixText = await res.text();						// read raw text first
+					const json = rawPrefixText.startsWith(config.prefix)				// if it starts with the specified prefix
+						? rawPrefixText.substring(config.prefix.length).replace(/\);?$/, '')	// then strip the prefix AND any trailing closure
+						: rawPrefixText;
 
 					return JSON.parse(json) as T;											// parse the unwrapped string
 				}
 
-				const json = await res.json();											// default JSON parsing
-				return json as T;
+				return await (isJson
+					? res.json()																			// default JSON parsing
+					: res.text()) as T;
 			}
 
-			throw new Error(`${res.status}: ${res.statusText}`);	// fetch not successful
+			let errorBody: any = null;
+			try {
+				const errorText = await res.text();
+				try { errorBody = JSON.parse(errorText); } catch { errorBody = errorText; }
+			} catch { }
+
+			throw new HttpError(res.status, res.statusText, errorBody);	// fetch not successful
 		})
 }
 
@@ -58,7 +79,7 @@ export const httpRequest = <T>(url: string | URL, init = {} as RequestInit, conf
  * get Response headers only (no data).  
  * useful for just checking that a URL exists  
  */
-export const headRequest = (url: string | URL) => {
+export const fetchHead = (url: string | URL) => {
 	const signal = AbortSignal.timeout(TWO_SECONDS);
 	const init = { method: METHOD.Head, signal }							// only interested in verifying that url responds
 
