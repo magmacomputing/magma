@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2026-07-05
+
+### Added
+- **Shorthand Mutation Keys**: Added native support for Tempo's shorthand format tokens (e.g., `mi`, `ss`, `yy`, `ww`) across both `.add()` and `.set()` mutations, streamlining developer experience and aligning TypeScript definitions with the underlying runtime engine.
+- **Shorthand Duration Keys**: Expanded shorthand token support directly into the `DurationModule`. You can now seamlessly use shorthand keys for duration instantiation (`Tempo.duration({ mi: 5 })`), comparisons (`t.until(other, 'mi')`), and strict balancing (`t.until(other).balance({ largestUnit: 'mi' })`), bringing total API consistency across the core library.
+
 ## [3.5.3] - 2026-07-05
 
 ### Added

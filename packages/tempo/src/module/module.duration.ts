@@ -8,6 +8,7 @@ import { getRelativeTime, formatNumber, formatDuration, formatList } from '#libr
 import { defineInterpreterModule, interpret, type TempoModule } from '../plugin/plugin.util.js';
 import { enums, isTempo, TempoError } from '#tempo/support';
 import { Tempo } from '../tempo.class.js';
+import type * as t from '../tempo.type.js';
 
 declare module '../tempo.class.js' {
 	namespace Tempo {
@@ -80,7 +81,11 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 			if (!anchor)
 				throw new TempoError("A relativeTo anchor is required for strict balancing. Pass an anchor or use { nominal: true } for mathematical balancing.");
 
-			const balanced = dur.round({ largestUnit, relativeTo: anchor });
+			let temporalUnit = largestUnit;
+			if (temporalUnit === 'ww') temporalUnit = 'weeks';
+			else if (temporalUnit in enums.ELEMENT) temporalUnit = `${enums.ELEMENT[temporalUnit as t.Element]}s`;
+
+			const balanced = dur.round({ largestUnit: temporalUnit, relativeTo: anchor });
 
 			return toDuration(balanced, { ...ctx, relativeTo: anchor });
 		},
@@ -137,7 +142,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	let value, opts: any = {}, unit: any;
 
 	switch (true) {
-		case isString(arg) && enums.ELEMENT.values().includes(singular(arg) as any):
+		case isString(arg) && (enums.ELEMENT.values().includes(singular(arg) as any) || arg in enums.ELEMENT || arg === 'ww'):
 			unit = arg;
 			({ value, ...opts } = until || {});
 			break;
@@ -177,11 +182,18 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	const [selfTz, selfCal] = getTemporalIds(selfZdt);
 	const [offsetTz] = getTemporalIds(offsetZdt);
 
+	let temporalUnit = unit;
+	if (isDefined(temporalUnit)) {
+		if (temporalUnit === 'ww') temporalUnit = 'weeks';
+		else if (temporalUnit in enums.ELEMENT) temporalUnit = `${enums.ELEMENT[temporalUnit as t.Element]}s`;
+		else temporalUnit = `${singular(temporalUnit)}s`;
+	}
+
 	const diffZone = selfTz !== offsetTz;
-	const dur = selfZdt.until(offsetZdt.withCalendar(selfCal), { largestUnit: diffZone ? 'hours' : (unit ?? 'years') });
+	const dur = selfZdt.until(offsetZdt.withCalendar(selfCal), { largestUnit: diffZone ? 'hours' : (temporalUnit ?? 'years') });
 
 	if (isDefined(unit))
-		unit = `${singular(unit)}s`;
+		unit = temporalUnit;
 
 	if (isUndefined(unit) || since) {
 		const locale = (this as any)?.config?.locale;
@@ -246,7 +258,18 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
  * DurationLikeObject -> EDO (with iso string)
  */
 (duration as any).toDuration = (input: string | Temporal.DurationLikeObject, ctx?: any) => {
-	const dur = Temporal.Duration.from(input);
+	let mappedInput: any = input;
+	if (isObject(input)) {
+		mappedInput = { ...input };
+		for (const [k, v] of Object.entries(input)) {
+			if (k === 'ww') { mappedInput['weeks'] = v; delete mappedInput[k]; }
+			else if (k in enums.ELEMENT) {
+				mappedInput[`${enums.ELEMENT[k as t.Element]}s`] = v;
+				delete mappedInput[k];
+			}
+		}
+	}
+	const dur = Temporal.Duration.from(mappedInput);
 	return toDuration(dur, ctx);
 }
 

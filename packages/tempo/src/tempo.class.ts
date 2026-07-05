@@ -1452,8 +1452,8 @@ export class Tempo {
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** iso week number of the year */												get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** @deprecated use `wy` */																get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
-	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day }
-	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day }
+	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
+	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day as t.dd }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
 	/** Minutes of the hour (0-59) */													get mi() { return this.toDateTime().minute as t.mi }
 	/** Seconds of the minute (0-59) */												get ss() { return this.toDateTime().second as t.ss }

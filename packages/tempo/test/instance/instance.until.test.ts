@@ -11,6 +11,14 @@ describe(`${label} until method`, () => {
 		expect(t1.until(t2, 'minutes')).toBe(150);
 	});
 
+	test('calculates duration in shorthand units', () => {
+		const t1 = new Tempo('2024-01-01T12:00:00');
+		const t2 = new Tempo('2024-01-01T14:30:00');
+		
+		expect(t1.until(t2, 'hh')).toBe(2.5);
+		expect(t1.until(t2, 'mi')).toBe(150);
+	});
+
 	test('calculates duration to a string date', () => {
 		const t = new Tempo('2024-01-01T00:00:00');
 		expect(t.until('2024-01-02T00:00:00', 'hours')).toBe(24);

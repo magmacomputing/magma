@@ -99,7 +99,7 @@ export interface Options extends Partial<Internal.BaseOptions> {
 
 /** Configuration to use for #until() and #since() argument */
 export type DateTimeUnit = Temporal.DateUnit | Temporal.TimeUnit
-export type Unit = DateTimeUnit | Plural<DateTimeUnit>
+export type Unit = DateTimeUnit | Plural<DateTimeUnit> | Element | 'ww'
 export type Units = Plural<DateTimeUnit>;
 export type BaseDuration = Record<Units, number>;
 /**
@@ -131,17 +131,32 @@ export type SetFields = {
 export type SlickKey = SLICK_KEYS[number];
 export type SlickOffset = { [K in SlickKey]?: string };
 
-export type MutateSet = Prettify<SetFields & SlickOffset & {
+export type MutateShorthand = {
+	yy?: string | number;
+	mm?: string | number;
+	ww?: string;
+	dd?: string | number;
+	hh?: string | number;
+	mi?: string | number;
+	ss?: string | number;
+	ms?: number;
+	us?: number;
+	ns?: number;
+	wkd?: string;
+};
+
+export type MutateSet = Prettify<SetFields & MutateShorthand & {
 	timeZone?: Temporal.TimeZoneLike;
 	calendar?: Temporal.CalendarLike;
 } & TermOffset> | DateTime
 export type AddUnits = { [K in Unit]?: number };
-export type MutateAdd = Prettify<AddUnits & TermOffset> | DateTime
+export type MutateAdd = Prettify<AddUnits & { [K in Element | 'ww']?: number } & TermOffset> | DateTime
 
 export type Modifier = '=' | '-' | '+' | '<' | '<=' | '-=' | '>' | '>=' | '+=' | 'this' | 'next' | 'prev' | 'last' | 'first' | undefined
 export type Relative = 'ago' | 'hence' | 'prior' | 'from now'
 
 export type mm = IntRange<0, 12>
+export type dd = IntRange<1, 31>
 export type hh = IntRange<0, 24>
 export type mi = IntRange<0, 60>
 export type ss = IntRange<0, 60>
