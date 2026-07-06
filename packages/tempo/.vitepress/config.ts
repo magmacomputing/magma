@@ -53,11 +53,12 @@ export default defineConfig({
         ]
       },
       {
-        text: 'Extensions & Terms',
+        text: 'Plugins & Terms',
         items: [
           { text: 'Modularity', link: '/doc/tempo.modularity' },
-          { text: 'Terms Plugins', link: '/doc/tempo.plugin' },
-          { text: 'Extension Plugins', link: '/doc/tempo.extension' },
+          { text: 'Plugin Architecture', link: '/doc/tempo.plugin' },
+          { text: 'Term Plugins', link: '/doc/tempo.term' },
+          { text: 'Creating a Custom Plugin', link: '/doc/tempo.extension' },
           { text: 'Plugin Ecosystem', link: '/doc/ecosystem' }
         ]
       },
