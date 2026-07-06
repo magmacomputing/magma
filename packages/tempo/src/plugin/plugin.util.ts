@@ -181,6 +181,13 @@ export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T {
 }
 
 /**
+ * @deprecated Use `definePlugin` instead. Retained for backwards compatibility.
+ */
+export function defineExtension<T extends Plugin<TempoType>>(plugin: T): T {
+	return definePlugin(plugin);
+}
+
+/**
  * ## registerPlugin
  * Registration hook for general plugins.
  */

@@ -177,6 +177,7 @@ export type OneKey<K extends keyof any, V, KK extends keyof any = K> =
 		{ [Q in keyof O]: O[Q] } : never
 	}[K]
 
+/** @deprecated natively supported by modern IDEs via hover verbosity. Slated for removal in v4.0.0 */
 export type Prettify<T> = { [K in keyof T]: T[K]; } & {}
 export type ParseInt<T> = T extends `${infer N extends number}` ? N : never
 export type Plural<T extends string> = `${T}s`;
@@ -402,15 +403,14 @@ export type Secure<T> = T extends Primitive | Function | Date | RegExp | Error |
 	? SecureObject<T>
 	: T
 export interface SecureArray<T> extends ReadonlyArray<Secure<T>> { }
-export type SecureObject<T> = { readonly [K in keyof T]: Secure<T[K]> };
+export type SecureObject<T> = { readonly [K in keyof T]: Secure<T[K]> }
 
 type LooseString = (string & {})
-type LooseSymbol = (symbol & {})
 type LooseProperty = (PropertyKey & {})
 
 // https://www.youtube.com/watch?v=lraHlXpuhKs&t=43s
 /** Loose union */
-export type LooseUnion<T extends string> = T | LooseString
+export type LooseUnion<T> = T | LooseString
 /** Loose property key */
 export type LooseKey<K extends PropertyKey = string> = K | LooseProperty
 // /** Loose auto-complete */

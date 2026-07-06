@@ -214,11 +214,12 @@ export const MONTH_DAY = proxify(STATE.MONTH_DAY, true, false);
 export const LOCALE = proxify(STATE.LOCALE, true, true);
 
 /** date-time element tokens */
-const elementKeys = ['yy', 'mm', 'wy', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
+const elementKeys = ['yy', 'mm', 'wy', 'ww', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
 export const ELEMENT = enumify({
 	yy: 'year',
 	mm: 'month',
 	wy: 'week',
+	ww: 'week',
 	dd: 'day',
 	hh: 'hour',
 	mi: 'minute',

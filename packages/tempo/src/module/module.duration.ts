@@ -35,6 +35,15 @@ declare module '#library/type.library.js' {
 	}
 }
 
+/** 
+ * Maps shorthand units (via enums.ELEMENT) to standard plural unit names.
+ */
+function resolveElementUnit(unit: string): string | undefined {
+	return (enums.ELEMENT.has(unit))
+		? `${enums.ELEMENT[unit as t.Element]}s`
+		: undefined;
+}
+
 /**
  * Convert a Temporal.Duration to a full Tempo.Duration object (EDO).
  */
@@ -81,9 +90,7 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 			if (!anchor)
 				throw new TempoError("A relativeTo anchor is required for strict balancing. Pass an anchor or use { nominal: true } for mathematical balancing.");
 
-			let temporalUnit = largestUnit;
-			if (temporalUnit === 'ww') temporalUnit = 'weeks';
-			else if (temporalUnit in enums.ELEMENT) temporalUnit = `${enums.ELEMENT[temporalUnit as t.Element]}s`;
+			const temporalUnit = resolveElementUnit(largestUnit as string) ?? largestUnit;
 
 			const balanced = dur.round({ largestUnit: temporalUnit, relativeTo: anchor });
 
@@ -135,14 +142,13 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 
 /**
  * Internal implementation of Tempo.until and Tempo.since  
- * (moved out of tempo.class.ts to reduce core bundle size)
  */
 function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) {
 	const since = type === 'since';
 	let value, opts: any = {}, unit: any;
 
 	switch (true) {
-		case isString(arg) && (enums.ELEMENT.values().includes(singular(arg) as any) || arg in enums.ELEMENT || arg === 'ww'):
+		case isString(arg) && (enums.ELEMENT.values().includes(singular(arg) as any) || enums.ELEMENT.has(arg)):
 			unit = arg;
 			({ value, ...opts } = until || {});
 			break;
@@ -184,9 +190,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 
 	let temporalUnit = unit;
 	if (isDefined(temporalUnit)) {
-		if (temporalUnit === 'ww') temporalUnit = 'weeks';
-		else if (temporalUnit in enums.ELEMENT) temporalUnit = `${enums.ELEMENT[temporalUnit as t.Element]}s`;
-		else temporalUnit = `${singular(temporalUnit)}s`;
+		temporalUnit = resolveElementUnit(temporalUnit as string) ?? `${singular(temporalUnit)}s`;
 	}
 
 	const diffZone = selfTz !== offsetTz;
@@ -218,17 +222,17 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			|| (isFunction(rtConfig) ? rtConfig : rtConfig?.format)
 			|| opts['rtfFormat'] || (this as any).config['rtfFormat'];
 
-		const getOpt = (key: string, legacy: string, def: string) => 
+		const getOpt = (key: string, legacy: string, def: string) =>
 			rtOptions?.[key] || rtConfig?.[key] || opts[legacy] || (this as any).config[legacy] || def;
 
 		const getFormatted = (val: number, u: any) => {
 			const su = singular(u);
 			if (isFunction(rtf)) return rtf(val, su);
 			if (rtf instanceof Intl.RelativeTimeFormat) return rtf.format(val, su);
-			
+
 			const style = getOpt('style', 'rtfStyle', 'narrow');
 			const numeric = getOpt('numeric', 'rtfNumeric', 'always');
-			
+
 			return getRelativeTime(val, su as Intl.RelativeTimeFormatUnit, locale, style, numeric);
 		}
 
@@ -262,9 +266,9 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	if (isObject(input)) {
 		mappedInput = { ...input };
 		for (const [k, v] of Object.entries(input)) {
-			if (k === 'ww') { mappedInput['weeks'] = v; delete mappedInput[k]; }
-			else if (k in enums.ELEMENT) {
-				mappedInput[`${enums.ELEMENT[k as t.Element]}s`] = v;
+			const resolved = resolveElementUnit(k);
+			if (resolved) {
+				mappedInput[resolved] = v;
 				delete mappedInput[k];
 			}
 		}

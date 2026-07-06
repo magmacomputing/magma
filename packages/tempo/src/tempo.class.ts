@@ -449,6 +449,9 @@ export class Tempo {
 
 	static [$buildGuard](targetState?: Internal.State) {
 		const state = targetState ?? this[$Internal]();
+		// Note: We MUST use Object.keys() here instead of enums.XXX.keys() because this static guard 
+		// executes during module initialization. Circular dependencies mean the enumify methods 
+		// (like .keys()) may not be fully attached to the prototype yet!
 		const wordsList = [
 			...Object.keys(enums.NUMBER),
 			...Object.keys(enums.WEEKDAY),

@@ -207,7 +207,7 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 								case 'add.yy': case 'add.mm': case 'add.dd': case 'add.hh':
 								case 'add.mi': case 'add.ss': case 'add.ms': case 'add.us': case 'add.ns':
 								case 'add.wy': case 'add.ww': {
-									const value = single === 'ww' ? 'week' : enums.ELEMENT[single as t.Element];
+									const value = enums.ELEMENT[single as t.Element];
 									return currZdt.add({ [`${value}s`]: offset });
 								}
 

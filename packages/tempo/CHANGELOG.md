@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shorthand Mutation Keys**: Added native support for Tempo's shorthand format tokens (e.g., `mi`, `ss`, `yy`, `ww`) across both `.add()` and `.set()` mutations, streamlining developer experience and aligning TypeScript definitions with the underlying runtime engine.
 - **Shorthand Duration Keys**: Expanded shorthand token support directly into the `DurationModule`. You can now seamlessly use shorthand keys for duration instantiation (`Tempo.duration({ mi: 5 })`), comparisons (`t.until(other, 'mi')`), and strict balancing (`t.until(other).balance({ largestUnit: 'mi' })`), bringing total API consistency across the core library.
 
+### Changed
+- **Enum Performance Optimization**: Upgraded internal dictionary traversals across the parsing engine to utilize native, memoized `.keys()` methods provided by the `enumify` registry, eliminating the overhead of standard `Object.keys()` iterations.
+
+### Fixed
+- **Prototype Bleed Vulnerability**: Replaced `in` operator checks with secure `.has()` methods across the core engine and duration parser, ensuring strict enum member validation and completely eliminating the risk of arbitrary property or method-based prototype leakage.
+
 ## [3.5.3] - 2026-07-05
 
 ### Added

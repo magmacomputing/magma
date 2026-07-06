@@ -1,6 +1,6 @@
 import type { ValueOf } from '#library/type.library.js';
 
-const TWO_SECONDS = 2000;																	// default time-out for requests, in milliseconds
+const TWO_SECONDS = 2_000;																	// default time-out for requests, in milliseconds
 
 export const HTTP = {
 	Ok: 200,
@@ -88,6 +88,6 @@ export const fetchHead = (url: string | URL) => {
 			if (ok || status === HTTP.Forbidden)									// forbidden, but at least we know url responds
 				return { status, headers }
 
-			throw new Error(`${status}: ${statusText}`);					// fetch not successful
+			throw new HttpError(status, statusText, null);				// fetch not successful
 		})
 }
