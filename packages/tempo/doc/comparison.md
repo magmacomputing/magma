@@ -16,7 +16,7 @@ If you are choosing a date library today, you are likely looking at **Day.js**, 
 | **Formatting** | **Smart Tokens & Getters** | Verbose `Intl` Only | Token-Based (Moment style) | Token-Based (Unicode) | Token-Based (Unicode helper) |
 | **Business Logic** | **Terms System** | Manual Math | Manual Math | Manual Math | Manual Math |
 | **Time Zones** | **First-Class** | First-Class | Plugin-based | Built-in | Separate Lib |
-| **Future-Proof** | **100% (Native)** | 100% (Native) | Deprecated/Legacy | Legacy Bridge | Legacy Bridge |
+| **Future-Proof** | **100% (Native)** | 100% (Native) | Maintenance Mode | Planned Sunset | Transitioning |
 
 ---
 
@@ -45,10 +45,23 @@ Tempo solves this by offering a **Smart Token Engine** (using `{yyyy}-{mm}-{dd}`
 
 ---
 
+## The Temporal Transition Strategy
+
+As JavaScript transitions natively to the Temporal API, the existing ecosystem is taking different paths. This presents a unique opportunity for new, Temporal-first architectures like Tempo:
+
+- **Luxon:** The creators have explicitly stated they [plan to sunset Luxon](https://github.com/moment/luxon/discussions/970) as Temporal adoption grows, eventually becoming "a distant memory."
+- **Day.js:** Architecturally bound to the legacy `Date` object to [maintain its <2kB size](https://github.com/iamkun/dayjs) and Moment.js compatibility. It cannot evolve to support native Temporal objects and will remain a tool for legacy codebases.
+- **date-fns:** Transforming into a companion utility kit tailored around native Temporal objects (evidenced by their bridging project, [`date-fns/interim`](https://github.com/date-fns/interim)), while maintaining dual support for legacy `Date`.
+
+Because Luxon is bowing out and Day.js cannot evolve architecturally without losing its identity, **Tempo** steps in as the premier, dedicated premium wrapper built *specifically* for the Temporal era from day one.
+
+---
+
 ## Which should you choose?
 
-- **Choose Day.js if:** You have a legacy codebase and need a tiny <2KB patch for simple tasks.
-- **Choose Luxon if:** You need a mature, stable bridge while you wait for your environment to support Temporal.
-- **Choose Tempo if:** You want to build on the **future of JavaScript**, you need **high precision**, or your app requires **complex business-date logic** that other libraries make difficult.
+- **Choose Day.js if:** You have a legacy codebase and need a tiny <2KB patch for simple tasks, and are comfortable using a library in maintenance mode.
+- **Choose Luxon if:** You need a stable bridge for environments that don't yet support Temporal, but keep in mind it is actively planning for sunset.
+- **Choose date-fns if:** You prefer using functional utilities to manipulate native Temporal objects, rather than a comprehensive class-based wrapper.
+- **Choose Tempo if:** You want a premium, Temporal-first architecture that provides **high precision**, **human-centric parsing**, and the ability to model **complex business-date logic** directly into your application.
 
 [**Ready to start? See the Quick Start Guide →**](../README.md#🛠️-quick-start)
