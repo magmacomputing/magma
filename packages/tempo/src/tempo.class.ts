@@ -449,6 +449,9 @@ export class Tempo {
 
 	static [$buildGuard](targetState?: Internal.State) {
 		const state = targetState ?? this[$Internal]();
+		// Note: We MUST use Object.keys() here instead of enums.XXX.keys() because this static guard 
+		// executes during module initialization. Circular dependencies mean the enumify methods 
+		// (like .keys()) may not be fully attached to the prototype yet!
 		const wordsList = [
 			...Object.keys(enums.NUMBER),
 			...Object.keys(enums.WEEKDAY),
@@ -960,7 +963,33 @@ export class Tempo {
 	static from(tempo: t.DateTime | undefined, options?: t.Options): Tempo;
 	static from(tempo?: t.DateTime | t.Options, options?: t.Options) { return new this(tempo as NonNullable<t.DateTime>, options); }
 
-	static now() { return instant().epochNanoseconds; }
+	static now(unit: Exclude<Tempo.TimeStamp, 'ns'>): number;
+	static now(unit?: Extract<Tempo.TimeStamp, 'ns'>): bigint;
+	static now(unit?: Tempo.TimeStamp): number | bigint {
+		const inst = instant();
+		switch (unit) {
+			case 'ss': return Math.trunc(inst.epochMilliseconds / 1_000);
+			case 'ms': return inst.epochMilliseconds;
+			case 'us': return Number(inst.epochNanoseconds / BigInt(1_000));
+			case 'ns':
+			default: return inst.epochNanoseconds;
+		}
+	}
+
+	static #getEpoch(inst: { epochMilliseconds: number, epochNanoseconds: bigint }) {
+		return secure({
+			/** seconds since epoch */														ss: Math.trunc(inst.epochMilliseconds / 1_000),
+			/** milliseconds since epoch */												ms: inst.epochMilliseconds,
+			/** microseconds since epoch */												us: Number(inst.epochNanoseconds / BigInt(1_000)),
+			/** nanoseconds since epoch */												ns: inst.epochNanoseconds,
+		});
+	}
+
+	/** static units since Unix epoch */
+	static get epoch() {
+		return this.#getEpoch(instant());
+	}
+
 	/** get the current system Instant */
 	static get instant() { return Temporal.Instant.fromEpochNanoseconds(this.now()) }
 
@@ -1426,8 +1455,8 @@ export class Tempo {
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** iso week number of the year */												get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** @deprecated use `wy` */																get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
-	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day }
-	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day }
+	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
+	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day as t.dd }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
 	/** Minutes of the hour (0-59) */													get mi() { return this.toDateTime().minute as t.mi }
 	/** Seconds of the minute (0-59) */												get ss() { return this.toDateTime().second as t.ss }
@@ -1517,14 +1546,7 @@ export class Tempo {
 
 	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term }
 	/** Formatted results for all pre-defined format codes */ get fmt() { return this.#fmt }
-	/** units since epoch */																	get epoch() {
-		return secure({
-			/** seconds since epoch */														ss: Math.trunc(this.toDateTime().epochMilliseconds / 1_000),
-			/** milliseconds since epoch */												ms: this.toDateTime().epochMilliseconds,
-			/** microseconds since epoch */												us: Number(this.toDateTime().epochNanoseconds / BigInt(1_000)),
-			/** nanoseconds since epoch */												ns: this.toDateTime().epochNanoseconds,
-		})
-	}
+	/** units since epoch for this date-time instance */			get epoch() { return Tempo.#getEpoch(this.toDateTime()); }
 
 	/**
 	 * @Immutable class decorators wrap the class but leave internal lexical bindings pointing to the original, undecorated class.  
@@ -1721,6 +1743,7 @@ export namespace Tempo {
 	/** @deprecated use `wy` */
 	export type ww = t.wy;
 
+	export type TimeStamp = t.Internal.TimeStamp;
 	export type Duration = t.Duration;
 
 	export type WEEKDAY = t.WEEKDAY;

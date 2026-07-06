@@ -74,7 +74,10 @@ export const isDuration = (obj: unknown): obj is Temporal.Duration => isType<Tem
 export const isDurationLike = (obj: unknown): obj is Temporal.DurationLike | string | Temporal.Duration => isString(obj) || isDuration(obj) || (isObject(obj) && (
 	'years' in obj || 'months' in obj || 'weeks' in obj || 'days' in obj ||
 	'hours' in obj || 'minutes' in obj || 'seconds' in obj ||
-	'milliseconds' in obj || 'microseconds' in obj || 'nanoseconds' in obj
+	'milliseconds' in obj || 'microseconds' in obj || 'nanoseconds' in obj ||
+	'yy' in obj || 'mm' in obj || 'ww' in obj || 'dd' in obj ||
+	'hh' in obj || 'mi' in obj || 'ss' in obj ||
+	'ms' in obj || 'us' in obj || 'ns' in obj
 ));
 export const isZonedDateTimeLike = (obj: unknown): obj is Temporal.ZonedDateTimeLike | string | Temporal.ZonedDateTime => isString(obj) || isZonedDateTime(obj) || (isObject(obj) && (
 	'year' in obj || 'month' in obj || 'day' in obj || 'hour' in obj || 'minute' in obj || 'second' in obj ||

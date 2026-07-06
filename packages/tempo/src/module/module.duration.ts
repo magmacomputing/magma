@@ -8,6 +8,7 @@ import { getRelativeTime, formatNumber, formatDuration, formatList } from '#libr
 import { defineInterpreterModule, interpret, type TempoModule } from '../plugin/plugin.util.js';
 import { enums, isTempo, TempoError } from '#tempo/support';
 import { Tempo } from '../tempo.class.js';
+import type * as t from '../tempo.type.js';
 
 declare module '../tempo.class.js' {
 	namespace Tempo {
@@ -32,6 +33,15 @@ declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
 		'Tempo.Duration': { type: 'Tempo.Duration', value: Tempo.Duration };
 	}
+}
+
+/** 
+ * Maps shorthand units (via enums.ELEMENT) to standard plural unit names.
+ */
+function resolveElementUnit(unit: string): string | undefined {
+	return (enums.ELEMENT.has(unit))
+		? `${enums.ELEMENT[unit as t.Element]}s`
+		: undefined;
 }
 
 /**
@@ -80,7 +90,9 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 			if (!anchor)
 				throw new TempoError("A relativeTo anchor is required for strict balancing. Pass an anchor or use { nominal: true } for mathematical balancing.");
 
-			const balanced = dur.round({ largestUnit, relativeTo: anchor });
+			const temporalUnit = resolveElementUnit(largestUnit as string) ?? largestUnit;
+
+			const balanced = dur.round({ largestUnit: temporalUnit, relativeTo: anchor });
 
 			return toDuration(balanced, { ...ctx, relativeTo: anchor });
 		},
@@ -130,14 +142,13 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 
 /**
  * Internal implementation of Tempo.until and Tempo.since  
- * (moved out of tempo.class.ts to reduce core bundle size)
  */
 function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) {
 	const since = type === 'since';
 	let value, opts: any = {}, unit: any;
 
 	switch (true) {
-		case isString(arg) && enums.ELEMENT.values().includes(singular(arg) as any):
+		case isString(arg) && (enums.ELEMENT.values().includes(singular(arg) as any) || enums.ELEMENT.has(arg)):
 			unit = arg;
 			({ value, ...opts } = until || {});
 			break;
@@ -177,11 +188,16 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	const [selfTz, selfCal] = getTemporalIds(selfZdt);
 	const [offsetTz] = getTemporalIds(offsetZdt);
 
+	let temporalUnit = unit;
+	if (isDefined(temporalUnit)) {
+		temporalUnit = resolveElementUnit(temporalUnit as string) ?? `${singular(temporalUnit)}s`;
+	}
+
 	const diffZone = selfTz !== offsetTz;
-	const dur = selfZdt.until(offsetZdt.withCalendar(selfCal), { largestUnit: diffZone ? 'hours' : (unit ?? 'years') });
+	const dur = selfZdt.until(offsetZdt.withCalendar(selfCal), { largestUnit: diffZone ? 'hours' : (temporalUnit ?? 'years') });
 
 	if (isDefined(unit))
-		unit = `${singular(unit)}s`;
+		unit = temporalUnit;
 
 	if (isUndefined(unit) || since) {
 		const locale = (this as any)?.config?.locale;
@@ -206,17 +222,17 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			|| (isFunction(rtConfig) ? rtConfig : rtConfig?.format)
 			|| opts['rtfFormat'] || (this as any).config['rtfFormat'];
 
-		const getOpt = (key: string, legacy: string, def: string) => 
+		const getOpt = (key: string, legacy: string, def: string) =>
 			rtOptions?.[key] || rtConfig?.[key] || opts[legacy] || (this as any).config[legacy] || def;
 
 		const getFormatted = (val: number, u: any) => {
 			const su = singular(u);
 			if (isFunction(rtf)) return rtf(val, su);
 			if (rtf instanceof Intl.RelativeTimeFormat) return rtf.format(val, su);
-			
+
 			const style = getOpt('style', 'rtfStyle', 'narrow');
 			const numeric = getOpt('numeric', 'rtfNumeric', 'always');
-			
+
 			return getRelativeTime(val, su as Intl.RelativeTimeFormatUnit, locale, style, numeric);
 		}
 
@@ -246,7 +262,18 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
  * DurationLikeObject -> EDO (with iso string)
  */
 (duration as any).toDuration = (input: string | Temporal.DurationLikeObject, ctx?: any) => {
-	const dur = Temporal.Duration.from(input);
+	let mappedInput: any = input;
+	if (isObject(input)) {
+		mappedInput = { ...input };
+		for (const [k, v] of Object.entries(input)) {
+			const resolved = resolveElementUnit(k);
+			if (resolved) {
+				mappedInput[resolved] = v;
+				delete mappedInput[k];
+			}
+		}
+	}
+	const dur = Temporal.Duration.from(mappedInput);
 	return toDuration(dur, ctx);
 }
 

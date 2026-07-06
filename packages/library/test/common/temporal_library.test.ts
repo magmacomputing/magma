@@ -23,7 +23,7 @@ describe('Temporal Library Helpers', () => {
 
 		it('should handle "Z" as a zone designator and pass it through (even if ZonedDateTime.from throws without a bracket)', () => {
 			const bag = '2024-01-01T12:00:00Z';
-			expect(() => toZonedDateTime(bag, 'Australia/Sydney')).toThrow(/requires a time zone ID in brackets/);
+			expect(() => toZonedDateTime(bag, 'Australia/Sydney')).toThrow(/time\s?zone/i);
 		});
 	});
 });

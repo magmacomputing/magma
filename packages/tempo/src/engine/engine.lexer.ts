@@ -30,14 +30,14 @@ function num(groups: Record<string, string | number>) {
 			}
 
 			const num = resolveNumber(val);
-			if (num in enums.NUMBER) {
+			if (enums.NUMBER.has(num)) {
 				acc[key] = enums.NUMBER[num as t.Number];
 				return acc;
 			}
 
 			const cal = prefix(val);															// get the three-character prefix for a Weekday/Month
-			if (cal in enums.WEEKDAY) acc[key] = enums.WEEKDAY[cal as t.WEEKDAY];
-			else if (cal in enums.MONTH) acc[key] = enums.MONTH[cal as t.MONTH];
+			if (enums.WEEKDAY.has(cal)) acc[key] = enums.WEEKDAY[cal as t.WEEKDAY];
+			else if (enums.MONTH.has(cal)) acc[key] = enums.MONTH[cal as t.MONTH];
 
 			return acc;
 		}, {} as Record<string, number>);
@@ -47,7 +47,7 @@ function num(groups: Record<string, string | number>) {
 export function resolveNumber(str: any): t.Number | any {
 	if (!isString(str)) return str;
 	const low = str.trim().toLowerCase();
-	return Object.keys(enums.NUMBER).find(key => key.startsWith(low)) ?? str;
+	return enums.NUMBER.keys().find(key => key.startsWith(low)) ?? str;
 }
 
 /** conform weekday names (3-characters) using prefix matching */
@@ -65,7 +65,7 @@ export function prefix(str: any): any {
 	if (low === 'all' || low === 'eve') return 'All';					// handle special case of "all" / "every"
 
 	for (const table of [enums.WEEKDAY, enums.MONTH]) {
-		const match = Object.keys(table).find(key => {
+		const match = table.keys().find(key => {
 			const normalized = key.toLowerCase();
 			return normalized.startsWith(low);
 		});

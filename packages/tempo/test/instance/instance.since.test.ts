@@ -14,6 +14,14 @@ describe(`${label} since method`, () => {
 		expect(t2.since(t1, 'hours')).toMatch(/2h ago/i);
 	});
 
+	test('calculates time elapsed in shorthand units', () => {
+		const t1 = new Tempo('2024-01-01T12:00:00');
+		const t2 = new Tempo('2024-01-01T14:30:00');
+
+		expect(t2.since(t1, 'hh')).toMatch(/2h ago/i);
+		expect(t2.since(t1, 'mi')).toMatch(/150m ago/i);
+	});
+
 	test('calculates time elapsed from a string date', () => {
 		const t = new Tempo('2024-01-02T00:00:00');
 		expect(t.since('2024-01-01T00:00:00', 'hours')).toMatch(/24h ago/i);

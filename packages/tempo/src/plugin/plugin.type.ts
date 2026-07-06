@@ -18,6 +18,7 @@ export interface Module<T = any> extends Plugin<T> {
 /**
  * ## Extension
  * Type for Extension plugins.
+ * @deprecated Use `Plugin` instead.
  */
 export interface Extension<T = any> extends Plugin<T> {
 	[key: string]: any;

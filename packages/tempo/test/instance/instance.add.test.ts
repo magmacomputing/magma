@@ -12,6 +12,14 @@ describe(`${label} add method`, () => {
     expect(t2.dd).toBe(20);
   });
 
+  test('handles shorthand mutation keys (e.g. mi, ss)', () => {
+    const t = new Tempo('2024-01-01T12:00:00');
+    const t2 = t.add({ mi: 15, ss: 30, ww: 1 });
+    expect(t2.mi).toBe(15);
+    expect(t2.ss).toBe(30);
+    expect(t2.dd).toBe(8); // 1 week added
+  });
+
   test('adds months correctly', () => {
     const t = new Tempo('2024-05-20');
     const t2 = t.add({ month: 3 });

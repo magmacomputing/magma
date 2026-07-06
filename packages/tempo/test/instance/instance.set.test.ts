@@ -17,6 +17,17 @@ describe(`${label} set method`, () => {
 		expect(t2.dd).toBe(25);
 	});
 
+	test('sets atomic shorthand units correctly (e.g. mi, ss)', () => {
+		const t = new Tempo('2024-05-20T12:00:00');
+		const t2 = t.set({ yy: 2025, mm: 12, dd: 25, hh: 15, mi: 30, ss: 45 });
+		expect(t2.yy).toBe(2025);
+		expect(t2.mm).toBe(12);
+		expect(t2.dd).toBe(25);
+		expect(t2.hh).toBe(15);
+		expect(t2.mi).toBe(30);
+		expect(t2.ss).toBe(45);
+	});
+
 	test('sets via parsing string (e.g. period)', () => {
 		const t = new Tempo('2024-05-20 08:00');
 		const t2 = t.set({ event: 'afternoon' });							  // afternoon -> 15:00 usually
@@ -89,9 +100,9 @@ describe(`${label} set method`, () => {
 				expect(() => t.set({ year: '<1' } as any)).toThrow('For relative Slick math, use the \'yy\' snippet key instead of \'year\'');
 			});
 
-			test('rejects non-string slick key payloads', () => {
+			test('rejects non-string wkd key payload', () => {
 				const t = new Tempo('2024-05-20');
-				expect(() => t.set({ mm: 5 } as any)).toThrow('Slick key \'mm\' expects a string payload');
+				expect(() => t.set({ wkd: 5 } as any)).toThrow('Slick key \'wkd\' requires a weekday name');
 			});
 
 			test('rejects invalid slick math syntax without modifier', () => {

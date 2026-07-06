@@ -9,7 +9,7 @@
 import type { Pledge } from '#library/pledge.class.js';
 import type { DebugLevel } from '#library/logger.class.js';
 import type { ScopedSet } from '#library/scopedset.class.js';
-import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded } from '#library/type.library.js';
+import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion } from '#library/type.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
@@ -99,7 +99,7 @@ export interface Options extends Partial<Internal.BaseOptions> {
 
 /** Configuration to use for #until() and #since() argument */
 export type DateTimeUnit = Temporal.DateUnit | Temporal.TimeUnit
-export type Unit = DateTimeUnit | Plural<DateTimeUnit>
+export type Unit = DateTimeUnit | Plural<DateTimeUnit> | Element
 export type Units = Plural<DateTimeUnit>;
 export type BaseDuration = Record<Units, number>;
 /**
@@ -131,26 +131,44 @@ export type SetFields = {
 export type SlickKey = SLICK_KEYS[number];
 export type SlickOffset = { [K in SlickKey]?: string };
 
-export type MutateSet = Prettify<SetFields & SlickOffset & {
+export type MutateShorthand = {
+	yy?: LooseUnion<number>;
+	mm?: LooseUnion<mm>;
+	wy?: LooseUnion<wy>;
+	ww?: LooseUnion<wy>;
+	dd?: LooseUnion<dd>;
+	hh?: LooseUnion<hh>;
+	mi?: LooseUnion<mi>;
+	ss?: LooseUnion<ss>;
+	ms?: LooseUnion<ms>;
+	us?: LooseUnion<us>;
+	ns?: LooseUnion<ns>;
+	wkd?: LooseUnion<wkd>;
+}
+
+export type MutateSet = SetFields & MutateShorthand & {
 	timeZone?: Temporal.TimeZoneLike;
 	calendar?: Temporal.CalendarLike;
-} & TermOffset> | DateTime
+} & TermOffset | DateTime
 export type AddUnits = { [K in Unit]?: number };
-export type MutateAdd = Prettify<AddUnits & TermOffset> | DateTime
+export type MutateAdd = AddUnits & { [K in Element]?: number } & TermOffset | DateTime
 
 export type Modifier = '=' | '-' | '+' | '<' | '<=' | '-=' | '>' | '>=' | '+=' | 'this' | 'next' | 'prev' | 'last' | 'first' | undefined
 export type Relative = 'ago' | 'hence' | 'prior' | 'from now'
 
-export type mm = IntRange<0, 12>
-export type hh = IntRange<0, 24>
-export type mi = IntRange<0, 60>
-export type ss = IntRange<0, 60>
+export type mm = IntRange<1, 12>
+export type dd = IntRange<1, 31>
+export type hh = IntRange<0, 23>
+export type mi = IntRange<0, 59>
+export type ss = IntRange<0, 59>
 export type ms = IntRange<0, 999>
 export type us = IntRange<0, 999>
 export type ns = IntRange<0, 999>
+/** ISO 8601 week number (1-53) */
 export type wy = IntRange<1, 53>
-/** @deprecated use `wy` */
+/** alias for `wy` */
 export type ww = IntRange<1, 53>
+export type wkd = IntRange<1, 7>
 
 export type Duration = NonOptional<Temporal.DurationLikeObject> & Record<"iso", string> & Record<"sign", number> & Record<"blank", boolean> & Record<"unit", string | undefined> & {
 	balance(opts?: { nominal?: boolean; relativeTo?: any; largestUnit?: Unit | string }): Duration;

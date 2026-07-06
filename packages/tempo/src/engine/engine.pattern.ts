@@ -116,7 +116,7 @@ export class PatternCompiler {
 
 		// 1. ensure numeric snippets are current
 		if (enums?.NUMBER) {
-			const keys = Object.keys(enums.NUMBER).map(w => Match.escape(w));
+			const keys = enums.NUMBER.keys().map(w => Match.escape(w));
 			const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a, b) => b.length - a.length).join('|')})`);
 
 			snippet[Token.nbr] = nbr;

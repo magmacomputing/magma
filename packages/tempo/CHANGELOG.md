@@ -6,6 +6,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2026-07-05
+
+### Added
+- **Shorthand Mutation Keys**: Added native support for Tempo's shorthand format tokens (e.g., `mi`, `ss`, `yy`, `ww`) across both `.add()` and `.set()` mutations, streamlining developer experience and aligning TypeScript definitions with the underlying runtime engine.
+- **Shorthand Duration Keys**: Expanded shorthand token support directly into the `DurationModule`. You can now seamlessly use shorthand keys for duration instantiation (`Tempo.duration({ mi: 5 })`), comparisons (`t.until(other, 'mi')`), and strict balancing (`t.until(other).balance({ largestUnit: 'mi' })`), bringing total API consistency across the core library.
+
+### Changed
+- **Enum Performance Optimization**: Upgraded internal dictionary traversals across the parsing engine to utilize native, memoized `.keys()` methods provided by the `enumify` registry, eliminating the overhead of standard `Object.keys()` iterations.
+
+### Fixed
+- **Prototype Bleed Vulnerability**: Replaced `in` operator checks with secure `.has()` methods across the core engine and duration parser, ensuring strict enum member validation and completely eliminating the risk of arbitrary property or method-based prototype leakage.
+
+## [3.5.3] - 2026-07-05
+
+### Added
+- **Flexible Epoch Getters**: Added a static `Tempo.epoch` getter that perfectly mirrors the instance `.epoch` property, enabling direct retrieval of current Unix timestamps (e.g. `Tempo.epoch.ss`).
+- **Static Now Modifiers**: Extended the static `Tempo.now(unit)` method to accept optional string units (`'ns'`, `'us'`, `'ms'`, `'ss'`), defaulting to nanosecond precision for strict backwards compatibility.
+
+### Changed
+- **DRY Refactoring**: Centralized instance and static `epoch` property calculations to a single internal static helper, ensuring absolute uniformity of mathematical transformations across the core library.
+
 ## [3.5.2] - 2026-07-04
 
 ### Added
@@ -24,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.5.0] - 2026-06-28
 
 ### Added
-- **Unified Plugin API Barrel**: Introduced `@magmacomputing/tempo/plugin-api` barrel export. This centralizes all plugin-authoring utilities (`defineModule`, `defineExtension`, `defineTerm`, etc.) and internal types into a single, highly discoverable endpoint. This architecture significantly cleans up application-level code and documentation by separating end-user imports from Plugin Developer imports.
+- **Unified Plugin API Barrel**: Introduced `@magmacomputing/tempo/plugin-api` barrel export. This centralizes all plugin-authoring utilities (`defineModule`, `definePlugin`, `defineTerm`, etc.) and internal types into a single, highly discoverable endpoint. This architecture significantly cleans up application-level code and documentation by separating end-user imports from Plugin Developer imports.
 - **Strict Peer Dependency Validation**: Tempo Plugins now enforce strict `peerDependencies` on the new `plugin-api` barrel export, ensuring robust resolution for complex environments (like Smart CDNs or Vite) while preventing duplicate instances of internal utility functions.
 
 ### Changed
@@ -465,7 +486,7 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 ## [2.2.2] - 2026-04-18
 
 ### Fixed
-- **Plugin Infrastructure Preservation**: Refactored the Rollup configuration to treat all library files as public entry points. This prevents critical utilities (like `defineExtension`) from being tree-shaken during the build process, ensuring that modular plugins can register correctly.
+- **Plugin Infrastructure Preservation**: Refactored the Rollup configuration to treat all library files as public entry points. This prevents critical utilities (like `definePlugin`) from being tree-shaken during the build process, ensuring that modular plugins can register correctly.
 - **API Surface Hardening**: Explicitly exported all registration and utility helpers (`defineModule`, `defineTerm`, etc.) from the main entry point to guarantee their availability for third-party extensions.
 - **Documentation Build Stability**: Updated the documentation configuration to utilize pre-compiled `dist/` assets. This resolves runtime `SyntaxError` issues in the browser caused by the presence of modern TC39 decorators in the raw TypeScript source files.
 - **Decorator Transpilation**: Refactored utility functions to ensure standard function declarations are used where appropriate, improving the reliability of the transpilation phase.

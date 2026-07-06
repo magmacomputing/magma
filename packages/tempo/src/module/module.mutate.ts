@@ -79,68 +79,71 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 
 							if (type === 'set' && SLICK_KEYS.includes(key as any)) {
 								if (!isString(adjust)) {
-									logError(`Slick key '${key}' expects a string payload (e.g. '>1').`, this.config);
-									state.errored = true;
-									return currZdt;
-								}
-
-								let matchSlickValue = Match.slickValue;
-								const backwardWords = new Set<string>();
-								if (state.config.registry?.modifiers) {
-									const symbols = ['+', '-', '<', '<=', '>', '>=', '='];
-									const words = new Set<string>();
-									symbols.forEach(sym => {
-										const mapped = state.config.registry!.modifiers![sym];
-										if (mapped) {
-											asArray(mapped).forEach(w => {
-												words.add(w);
-												if (sym === '<' || sym === '<=' || sym === '-') backwardWords.add(w);
-											});
-										}
-									});
-									if (words.size > 0) {
-										const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-										escapedWords.sort((a, b) => b.length - a.length);
-										const wordPattern = escapedWords.join('|');
-										matchSlickValue = new RegExp(`^(?<sh_mod>[\\+\\-\\<\\>\\=]=?|${wordPattern})?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\\w]*)$`);
-									}
-								}
-
-								const slick = adjust.match(matchSlickValue);
-								if (!slick || !slick.groups) {
-									logError(`Invalid slick syntax '${adjust}' for key '${key}'.`, this.config);
-									state.errored = true;
-									return currZdt;
-								}
-
-								let { sh_mod, sh_nbr, sh_unit } = slick.groups;
-
-								if (key === 'wkd') {
-									if (!sh_unit) {
+									if (key === 'wkd') {
 										logError(`Slick key 'wkd' requires a weekday name (e.g. '>Fri').`, this.config);
 										state.errored = true;
 										return currZdt;
 									}
-									const offsetStr = (sh_mod || '>') + (sh_nbr || '');
-									const res = resolveTermMutation((this.constructor as any), this, 'set', sh_unit, offsetStr, currZdt);
-									if (res === null) state.errored = true;
-									return res ?? currZdt;
+								} else {
+
+									let matchSlickValue = Match.slickValue;
+									const backwardWords = new Set<string>();
+									if (state.config.registry?.modifiers) {
+										const symbols = ['+', '-', '<', '<=', '>', '>=', '='];
+										const words = new Set<string>();
+										symbols.forEach(sym => {
+											const mapped = state.config.registry!.modifiers![sym];
+											if (mapped) {
+												asArray(mapped).forEach(w => {
+													words.add(w);
+													if (sym === '<' || sym === '<=' || sym === '-') backwardWords.add(w);
+												});
+											}
+										});
+										if (words.size > 0) {
+											const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+											escapedWords.sort((a, b) => b.length - a.length);
+											const wordPattern = escapedWords.join('|');
+											matchSlickValue = new RegExp(`^(?<sh_mod>[\\+\\-\\<\\>\\=]=?|${wordPattern})?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\\w]*)$`);
+										}
+									}
+
+									const slick = adjust.match(matchSlickValue);
+									if (!slick || !slick.groups) {
+										logError(`Invalid slick syntax '${adjust}' for key '${key}'.`, this.config);
+										state.errored = true;
+										return currZdt;
+									}
+
+									let { sh_mod, sh_nbr, sh_unit } = slick.groups;
+
+									if (key === 'wkd') {
+										if (!sh_unit) {
+											logError(`Slick key 'wkd' requires a weekday name (e.g. '>Fri').`, this.config);
+											state.errored = true;
+											return currZdt;
+										}
+										const offsetStr = (sh_mod || '>') + (sh_nbr || '');
+										const res = resolveTermMutation((this.constructor as any), this, 'set', sh_unit, offsetStr, currZdt);
+										if (res === null) state.errored = true;
+										return res ?? currZdt;
+									}
+
+									if (!sh_mod) {
+										logError(`Slick math requires a shift operator (e.g. '>', '<') for key '${key}'.`, this.config);
+										state.errored = true;
+										return currZdt;
+									}
+
+									let nbr = sh_nbr ? Number(sh_nbr) : 1;
+									if (sh_mod === '<' || sh_mod === '-' || sh_mod === 'prev' || sh_mod === 'last' || backwardWords.has(sh_mod)) nbr = -nbr;
+
+									const unitMap: Record<string, string> = {
+										yy: 'years', mm: 'months', ww: 'weeks', dd: 'days',
+										hh: 'hours', mi: 'minutes', ss: 'seconds'
+									};
+									return currZdt.add({ [unitMap[key]]: nbr });
 								}
-
-								if (!sh_mod) {
-									logError(`Slick math requires a shift operator (e.g. '>', '<') for key '${key}'.`, this.config);
-									state.errored = true;
-									return currZdt;
-								}
-
-								let nbr = sh_nbr ? Number(sh_nbr) : 1;
-								if (sh_mod === '<' || sh_mod === '-' || sh_mod === 'prev' || sh_mod === 'last' || backwardWords.has(sh_mod)) nbr = -nbr;
-
-								const unitMap: Record<string, string> = {
-									yy: 'years', mm: 'months', ww: 'weeks', dd: 'days',
-									hh: 'hours', mi: 'minutes', ss: 'seconds'
-								};
-								return currZdt.add({ [unitMap[key]]: nbr });
 							}
 
 							const { mutate: op, offset, single, term } = ((key, adjust, type) => {
@@ -200,6 +203,13 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 								case 'add.hour': case 'add.minute': case 'add.second':
 								case 'add.millisecond': case 'add.microsecond': case 'add.nanosecond':
 									return currZdt.add({ [`${single}s`]: offset });
+
+								case 'add.yy': case 'add.mm': case 'add.dd': case 'add.hh':
+								case 'add.mi': case 'add.ss': case 'add.ms': case 'add.us': case 'add.ns':
+								case 'add.wy': case 'add.ww': {
+									const value = enums.ELEMENT[single as t.Element];
+									return currZdt.add({ [`${value}s`]: offset });
+								}
 
 								case 'set.period': case 'set.time': case 'set.date': case 'set.event':
 								case 'set.dow': case 'set.wkd': {

@@ -11,6 +11,7 @@ import type { Plugin, Module, Extension } from './plugin.type.js';
 export type TempoType = typeof Tempo;
 export type TempoPlugin = Plugin<TempoType>;
 export type TempoModule = Module<TempoType>;
+/** @deprecated Use `TempoPlugin` instead. */
 export type TempoExtension = Extension<TempoType>;
 
 export function getHost(t: any): any {
@@ -171,12 +172,19 @@ export function defineInterpreterModule(name: string, logic: any, statics?: Reco
 }
 
 /**
- * ## defineExtension
- * Used to register a class-augmenting extension.
+ * ## definePlugin
+ * Used to register a plugin.
  */
-export function defineExtension<T extends Plugin<TempoType>>(extension: T): T {
-	registerPlugin(extension);
-	return extension;
+export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T {
+	registerPlugin(plugin);
+	return plugin;
+}
+
+/**
+ * @deprecated Use `definePlugin` instead. Retained for backwards compatibility.
+ */
+export function defineExtension<T extends Plugin<TempoType>>(plugin: T): T {
+	return definePlugin(plugin);
 }
 
 /**
