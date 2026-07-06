@@ -134,6 +134,7 @@ export type SlickOffset = { [K in SlickKey]?: string };
 export type MutateShorthand = {
 	yy?: LooseUnion<number>;
 	mm?: LooseUnion<mm>;
+	wy?: LooseUnion<wy>;
 	ww?: LooseUnion<wy>;
 	dd?: LooseUnion<dd>;
 	hh?: LooseUnion<hh>;
@@ -157,9 +158,9 @@ export type Relative = 'ago' | 'hence' | 'prior' | 'from now'
 
 export type mm = IntRange<1, 12>
 export type dd = IntRange<1, 31>
-export type hh = IntRange<0, 24>
-export type mi = IntRange<0, 60>
-export type ss = IntRange<0, 60>
+export type hh = IntRange<0, 23>
+export type mi = IntRange<0, 59>
+export type ss = IntRange<0, 59>
 export type ms = IntRange<0, 999>
 export type us = IntRange<0, 999>
 export type ns = IntRange<0, 999>
