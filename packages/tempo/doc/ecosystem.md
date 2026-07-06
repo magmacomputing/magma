@@ -13,5 +13,5 @@ Browse the live catalog below to discover extensions for scheduling, calendar ma
 ::: tip Submit Your Own Plugin!
 Have you built something amazing for Tempo? We want to see it! 
 
-You can have your own packages listed in this live catalog. Simply build your extension using `defineExtension()` or `defineTerm()` and publish it to NPM with the `"tempo-plugin"` keyword. Open an Issue on our GitHub repository with a link to your package, and we'll review it for inclusion in the global registry!
+You can have your own packages listed in this live catalog. Simply build your extension using `definePlugin()` or `defineTerm()` and publish it to NPM with the `"tempo-plugin"` keyword. Open an Issue on our GitHub repository with a link to your package, and we'll review it for inclusion in the global registry!
 :::

@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.5.0] - 2026-06-28
 
 ### Added
-- **Unified Plugin API Barrel**: Introduced `@magmacomputing/tempo/plugin-api` barrel export. This centralizes all plugin-authoring utilities (`defineModule`, `defineExtension`, `defineTerm`, etc.) and internal types into a single, highly discoverable endpoint. This architecture significantly cleans up application-level code and documentation by separating end-user imports from Plugin Developer imports.
+- **Unified Plugin API Barrel**: Introduced `@magmacomputing/tempo/plugin-api` barrel export. This centralizes all plugin-authoring utilities (`defineModule`, `definePlugin`, `defineTerm`, etc.) and internal types into a single, highly discoverable endpoint. This architecture significantly cleans up application-level code and documentation by separating end-user imports from Plugin Developer imports.
 - **Strict Peer Dependency Validation**: Tempo Plugins now enforce strict `peerDependencies` on the new `plugin-api` barrel export, ensuring robust resolution for complex environments (like Smart CDNs or Vite) while preventing duplicate instances of internal utility functions.
 
 ### Changed
@@ -480,7 +480,7 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 ## [2.2.2] - 2026-04-18
 
 ### Fixed
-- **Plugin Infrastructure Preservation**: Refactored the Rollup configuration to treat all library files as public entry points. This prevents critical utilities (like `defineExtension`) from being tree-shaken during the build process, ensuring that modular plugins can register correctly.
+- **Plugin Infrastructure Preservation**: Refactored the Rollup configuration to treat all library files as public entry points. This prevents critical utilities (like `definePlugin`) from being tree-shaken during the build process, ensuring that modular plugins can register correctly.
 - **API Surface Hardening**: Explicitly exported all registration and utility helpers (`defineModule`, `defineTerm`, etc.) from the main entry point to guarantee their availability for third-party extensions.
 - **Documentation Build Stability**: Updated the documentation configuration to utilize pre-compiled `dist/` assets. This resolves runtime `SyntaxError` issues in the browser caused by the presence of modern TC39 decorators in the raw TypeScript source files.
 - **Decorator Transpilation**: Refactored utility functions to ensure standard function declarations are used where appropriate, improving the reliability of the transpilation phase.

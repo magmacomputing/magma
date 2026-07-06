@@ -2,52 +2,35 @@
 
 Tempo is designed with a "lean core" philosophy. While it provides robust date-time manipulation and parsing out of the box, advanced functionality (like reactive Tickers or domain-specific business logic) is added through a flexible **Plugin System**.
 
+In the Tempo ecosystem, a **Plugin** is the universal overarching term for any feature added to the core library. To make authoring plugins easy and consistent, Tempo provides two specialized factory functions:
+
+1. **`definePlugin`**: The standard factory for general-purpose features (e.g., adding prototype instance methods, static tools, or altering configuration).
+2. **`defineTerm`**: A specialized factory exclusively for defining temporal vocabulary constraints (a "Term" is technically just a highly-opinionated "Plugin" focused on date ranges and schedules).
+
 To manually register a plugin, use the static `extend` method. This is typically used for "opt-in" features or when you need to provide specific configuration to a plugin factory.
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
 import { MyPlugin } from './my-plugin.js';
-import { HolidayModule } from './my-holiday-plugin.js';
+import { HolidayPlugin } from './my-holiday-plugin.js';
 
 // Manual registration
 Tempo.extend(MyPlugin);
 
 // Registration with a Factory (providing options)
-Tempo.extend(HolidayModule({ region: 'US-NY' }));
+Tempo.extend(HolidayPlugin({ region: 'US-NY' }));
 ```
 
 ---
 
-The most efficient way to author a plugin is using the `defineExtension` factory. This helper automatically handles the internal registration logic, making your plugin available as soon as it is imported (via side effect).
+## 1. Creating a Custom Plugin
 
-## Example Plugin
+Tempo provides a dedicated step-by-step guide for developers wishing to author their own general-purpose plugins. 
 
-```typescript
-import { defineExtension } from '@magmacomputing/tempo/plugin-api';
-
-export const MyPlugin = defineExtension({
-  name: 'MyPlugin',
-  install(TempoClass: any) {
-    // 1. Add a static method
-  TempoClass.myStaticMethod = () => { /* ... */ };
-
-  // 2. Add an instance method (on the prototype)
-  TempoClass.prototype.toHoliday = function() {
-    return factory(this.add({ days: 1 }));
-  }
-});
-```
-
-## Manual Registration Pattern
-If you prefer not to use the factory (e.g. for plugins that should *not* self-register), you can export a plain function with the `Tempo.Plugin` signature:
-
-```typescript
-import type { Tempo } from '@magmacomputing/tempo/core';
-
-export const ManualPlugin: Tempo.Plugin = (TempoClass, options, factory) => {
-  // ... implementation ...
-}
-```
+👉 **[Read the Custom Plugin Guide (tempo.extension.md)](./tempo.extension.md)** to learn how to:
+- Use the `definePlugin` factory
+- Safely extend the `TempoClass.prototype`
+- Build a full `BusinessDaysPlugin` from scratch
 
 ## Type Safety (TypeScript)
 
@@ -83,10 +66,10 @@ declare module '@magmacomputing/tempo/core' {
 
 ---
 
-Modern Tempo plugins are designed to be "plug-and-play." By using the `defineExtension` factory, a plugin registers itself with the global Tempo registry as soon as it's imported.
+Modern Tempo plugins are designed to be "plug-and-play." By using the `definePlugin` factory, a plugin registers itself with the global Tempo registry as soon as it's imported.
 
 ::: warning
-**Premium Plugin Example**: The example below uses the `@magmacomputing/tempo-plugin-ticker` plugin, which is a commercial extension. You must provide a valid `license` key during initialization to activate it.
+**Premium Plugin Example**: The example below uses the `@magmacomputing/tempo-plugin-ticker` plugin, which is a commercial plugin. You must provide a valid `license` key during initialization to activate it.
 
 <div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
   <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
@@ -120,26 +103,12 @@ const pulse = Tempo.ticker(1);
 The core methods of Tempo (like `add`, `set`, `format`) are **protected**. The `extend()` system will prevent you from accidentally overwriting these essential behaviors. By standardizing plugins through the Tempo module system, the entire library remains small and fast, while offering unbounded domain-specific customization.
 
 ### 2. Immutability
-When adding instance methods that "modify" the date, always follow the Tempo pattern of returning a **new instance**. Use the provided `factory` function to wrap the resulting `Temporal` object back into a `Tempo` instance.
+When adding instance methods that "modify" the date, always follow the Tempo pattern of returning a **new instance**. Do not mutate `this`. Rely on the core methods (like `this.add()`) inside your plugin, as they automatically guarantee a fresh, cloned instance.
 
 ### 3. Namespace Respect
-When adding many related methods, consider grouping them under a single property (e.g., `tempo.term.xyz` or `tempo.it.abc`) to keep the root `Tempo` interface clean and avoid collisions with future core updates.
+If your plugin provides many related methods, consider grouping them under a single namespace property on the instance (e.g., `tempo.holiday.isPublic()` rather than `tempo.isPublicHoliday()`). This keeps the root `Tempo` interface clean and minimizes the risk of naming collisions with other plugins or future core updates.
 
-### 4. Extending Core Registries
-As of **v2.0.1**, Tempo's core registries (`NUMBER`, `TIMEZONE`, `FORMAT`) are protected by a **Soft Freeze** layer. You cannot directly assign new values to them (e.g., `Tempo.TIMEZONE.myZone = '...'` will fail).
-
-Instead, use **`Tempo.extend()`** to add new data. This is the only supported way to add custom options, formats, or several timezone aliases at once.
-
-```typescript
-Tempo.extend({
-  timeZones: { 'UTC+13': 'Pacific/Auckland' },
-  registry: { formats: { 'myCode': '{yy}{mm}{dd}' } }
-});
-```
-
-Using `Tempo.extend()` ensures that the library safely bypasses the "Soft Freeze" protection and that all internal caches (like the Master Guard) are correctly synchronized.
-
-### 5. Error Handling & The Diagnostic Engine
+### 4. Error Handling & The Diagnostic Engine
 When building plugins that perform complex parsing or logic, follow Tempo's **"Fail-fast by Default"** principle.
 
 - **Strict Mode (Default)**: If your plugin encounters a terminal error (e.g., invalid input that cannot be recovered), you should `throw` a descriptive error.
@@ -159,14 +128,6 @@ if (errorCondition) {
 ```
 
 This pattern ensures that Tempo remains robust in production environments while providing strict validation during development.
-
-### 6. Term Key/Scope Collisions
-If your plugin registers a **Term** (`key` and optional `scope`), keep both identifiers globally unique.
-
-- Avoid reusing an existing Term `key` (e.g., another plugin already uses `qtr`).
-- Avoid reusing an existing `scope` alias (e.g., another plugin already uses `quarter`).
-
-Current behavior is not ideal for collisions: duplicate Term keys are ignored, while scope alias resolution is order-dependent and can shadow another Term. Treat collisions as unsupported and choose unique names to ensure deterministic behavior.
 
 ## Advanced Pattern: Stateful Classes & Callable Proxies
 
@@ -195,6 +156,9 @@ Use a standard class to manage your state. This keeps your logic decoupled from 
 class MyPluginInstance implements MyPluginTypes.Descriptor {
   #self!: MyPluginTypes.Instance;
   
+  // The developer writes this bootstrap method to save a reference to the Proxy.
+  // This is required so the class can return the Proxy (for method chaining) 
+  // instead of returning 'this' (which would be the un-proxied, non-callable instance).
   bootstrap(proxy: MyPluginTypes.Instance) {
     this.#self = proxy;
     return this.#self;
@@ -204,26 +168,26 @@ class MyPluginInstance implements MyPluginTypes.Descriptor {
 ```
 
 ### 3. Wrap with a Proxy in the Factory
-Use a `Proxy` in your `defineExtension` factory to handle the callability trap. This allows your plugin to act as a function (the shortcut) and an object (the stateful class) simultaneously.
+Use a `Proxy` in your `definePlugin` factory to handle the callability trap. This allows your plugin to act as a function (the shortcut) and an object (the stateful class) simultaneously.
 
 ```typescript
-export const MyPlugin = defineExtension({
+export const MyPlugin: TempoPlugin = definePlugin({
   name: 'MyPlugin',
-  install(TempoClass: any) {
+  install(TempoClass) {
     TempoClass.myTool = function(arg1: any): MyPluginTypes.Instance {
       const instance = new MyPluginInstance(arg1);
     
-    const proxy = new Proxy((() => instance.doSomething()) as any, {
-      get: (_, prop) => {
-        // Map proxy properties to instance methods
-        if (prop in instance) return (instance as any)[prop].bind(instance);
-        return (instance as any)[prop];
-      },
-      apply: (target) => target()
-    }) as unknown as MyPluginTypes.Instance;
+      const proxy = new Proxy((() => instance.doSomething()) as any, {
+        get: (_, prop) => {
+          // Map proxy properties to instance methods
+          if (prop in instance) return (instance as any)[prop].bind(instance);
+          return (instance as any)[prop];
+        },
+        apply: (target) => target()
+      }) as unknown as MyPluginTypes.Instance;
 
-    return instance.bootstrap(proxy);
-  };
+      return instance.bootstrap(proxy);
+    };
 });
 ```
 
@@ -240,7 +204,7 @@ If your plugin requires its own configuration, export a **factory function** tha
 // tempo-plugin-holiday/index.ts
 import { defineModule } from '@magmacomputing/tempo/plugin-api';
 
-export const HolidayModule = (pluginOptions = {}) => {
+export const HolidayPlugin = (pluginOptions = {}) => {
   return defineModule((TempoClass, tempoOptions, factory) => {
     // ... use pluginOptions here ...
   });
@@ -248,7 +212,7 @@ export const HolidayModule = (pluginOptions = {}) => {
 ```
 
 ### The Module Aggregator Pattern
-If your plugin provides multiple related components (like the `TermsModule`), wrap them in an aggregator module to provide a uniform activation experience for the user.
+If your plugin provides multiple related components, wrap them in an aggregator module to provide a uniform activation experience for the user.
 
 ```typescript
 // index.ts
@@ -256,14 +220,14 @@ import { defineModule } from '@magmacomputing/tempo/plugin-api';
 import { PluginA } from './plugin.a.js';
 import { PluginB } from './plugin.b.js';
 
-export const MyFeatureModule = defineModule((TempoClass, options) => {
+export const MyFeaturePlugin = defineModule((TempoClass, options) => {
   TempoClass.extend([PluginA, PluginB]);
 });
 ```
 
 ### Commercial & Premium Plugins
 
-If you have built a powerful plugin and wish to distribute it commercially, you do not need to implement your own licensing engine. Build your plugin using the standard `defineModule` or `defineExtension` wrappers.
+If you have built a powerful plugin and wish to distribute it commercially, you do not need to implement your own licensing engine. Build your plugin using the standard `definePlugin` wrappers.
 
 Once your plugin is ready for the marketplace, **[Contact Magma Computing Solutions](https://github.com/magmacomputing)**. We can inject our proprietary licensing and cryptographic verification engine directly into your build pipeline, ensuring your plugin is securely gated and protected from unauthorized use.
 
@@ -296,7 +260,7 @@ async function boot() {
 
 ## Consuming a Plugin
 
-For developers using your extension, the process should be as simple as a single import and one call to `extend()`.
+For developers using your plugin, the process should be as simple as a single import and one call to `extend()`.
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -327,9 +291,9 @@ Tempo.extend(
 
 ## 🤝 Need Help Writing a Plugin?
 
-If you have a complex business requirement or need a high-performance plugin built to professional standards, we can help. Our team can design, implement, and verify custom Tempo extensions tailored to your specific domain.
+If you have a complex business requirement or need a high-performance plugin built to professional standards, we can help. Our team can design, implement, and verify custom Tempo plugins tailored to your specific domain.
 
 **[Contact Magma Computing Solutions](https://github.com/magmacomputing)** to discuss your requirements.
 
-- [Extension Plugin Guide](./tempo.extension.md): Learn the "Tempo-way" to write a prototype extension (like Business Days).
+- [General Plugin Guide](./tempo.extension.md): Learn the "Tempo-way" to write a prototype plugin (like Business Days).
 - [Tempo Terms Guide](./tempo.term.md): Documentation on the "Memoized Lookup" pattern for business logic.

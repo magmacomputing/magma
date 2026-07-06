@@ -158,7 +158,7 @@ Tempo.extend(QuarterTerm);
 
 A Term plugin is ideally created using the **`defineTerm`** factory function provided by the library. This ensures correct type-inference and automatically handles registration during the discovery phase.
 
-If you are developing a commercial plugin and require license enforcement, simply build your logic using the standard `defineTerm` factory. Once ready for the marketplace, contact Magma Computing Solutions to have our proprietary licensing and cryptographic verification engine wrapped around your plugin prior to distribution.
+If you are developing a commercial plugin and require license enforcement, simply build your logic using the standard `defineTerm` factory. Once ready for the marketplace, **[contact Magma Computing Solutions](https://github.com/magmacomputing)** to have our proprietary licensing and cryptographic verification engine wrapped around your plugin prior to distribution.
 
 ### Plugin Definition
 
@@ -189,10 +189,10 @@ function resolve(t: Tempo, anchor?: any): any[] {
 }
 
 /** 3. The Plugin Object */
-export const MySeasonTerm = defineTerm({
-    key: 'szn',
-    scope: 'season',
-    description: 'Custom seasonal range',
+export const MyRetailSeasonTerm = defineTerm({
+    key: 'rsn',
+    scope: 'retailSeason',
+    description: 'Custom retail seasonal range',
     ranges,
 
     /** Optional: Used for multi-cycle discovery & traversals */
@@ -245,10 +245,10 @@ Use the static **`Tempo.extend()`** method. This allows you to add Terms dynamic
 
 ```ts
 import { Tempo } from '@magmacomputing/tempo/core';
-import { MySeasonTerm } from './term.myseason.js';
+import { MyRetailSeasonTerm } from './term.myretailseason.js';
 
 // Register the term plugin
-Tempo.extend(MySeasonTerm);
+Tempo.extend(MyRetailSeasonTerm);
 ```
 
 Every `Tempo` instance created after that point will have the custom Term available.
@@ -311,6 +311,13 @@ return keyOnly ? 'MyTerm' : {
 };
 ```
 
+### Multi-Cycle Discovery & Traversals (The `resolve` method)
+The `define` method only returns a *single* boundary (the one the instance currently falls into). But what happens if a user wants to traverse forward by three boundaries (`t.add({ '#rsn': 3 })`)? Or what if the `Ticker` engine needs to discover virtual deadlines across multiple years?
+
+To enable this, your plugin can optionally provide a **`resolve(anchor)`** method. This method should return the *complete array of boundaries* for a given cycle (e.g., all the retail seasons in a given year). 
+
+When the core engine needs to mathematically "step" through boundaries across multiple years, it repeatedly calls your `resolve` method with different `anchor` dates (e.g., shifting the year forward) to discover future/past boundaries seamlessly!
+
 ## 🛠️ Developer Guide: Best Practices
 
 To ensure a custom `Term` plugin integrates fully with Tempo, follow these guidelines:
@@ -320,7 +327,7 @@ To ensure a custom `Term` plugin integrates fully with Tempo, follow these guide
 3.  **Memoization Safety**: Keep the `define` function pure. It will only be called once per instance access.
 4.  **Math Readiness**: Always use `getTermRange` or provide boundaries. Without them, users cannot use your Term in `add()`, `set()`, or `ticker()`.
 5.  **Key consistency**: It is valid to remap the returned scope `key` (for example, `cfy` -> `FY2024`) when that is the semantic value your Term represents. Be intentional and keep it consistent with your `ranges` lookup and consumer expectations.
-6.  **Unique Names**: Keep `key` and `scope` globally unique across all registered Terms. Collisions are unsupported and may produce order-dependent lookups.
+6.  **Unique Names & Collisions**: Keep `key` and `scope` globally unique across all registered Terms. Avoid reusing an existing Term `key` (e.g., another plugin already uses `qtr`) or `scope` alias. Current behavior is not ideal for collisions: duplicate Term keys are ignored, while scope alias resolution is order-dependent and can shadow another Term. Treat collisions as unsupported and choose unique names to ensure deterministic behavior.
 7.  **Semantic Casing**: To provide a predictable developer experience, adhere to the following casing standards for your `Term` and `Range` fields:
     *   **Lower-case**: Internal identifiers (Term `key` and `scope`) and marker fields (e.g., `group`, `sphere`, `id`).
     *   **CapInit / TitleCase**: Presentational identifiers (e.g., Range `key` or `symbol`, like `'Q1'` or `'Spring'`). This ensures `t.term.season.key` returns a properly capitalized string.
@@ -329,8 +336,8 @@ To ensure a custom `Term` plugin integrates fully with Tempo, follow these guide
     ```ts
     declare module '@magmacomputing/tempo/core' {
       interface TempoTermRegistry {
-        szn: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
-        season: {
+        rsn: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+        retailSeason: {
           key: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
           symbol: string;
           // ...

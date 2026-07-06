@@ -1,8 +1,8 @@
-# Creating an Extension Plugin
+# Creating a Custom Plugin
 
-While [Term Plugins](./tempo.term.md) are excellent for providing static, memoized data (like astrological signs or fiscal quarters), **Extension Plugins** allow you to fundamentally enhance the `Tempo` class with entirely new methods and behaviors.
+While [Term Plugins](./tempo.term.md) are excellent for providing static, memoized data (like astrological signs or fiscal quarters), a general **Plugin** allows you to fundamentally enhance the `Tempo` class with entirely new methods and behaviors.
 
-This guide will teach you the "Tempo-way" of authoring an Extension Plugin by building a classic, real-world example: **The Business Days Extension**.
+This guide will teach you the "Tempo-way" of authoring a custom plugin by building a classic, real-world example: **The Business Days Plugin**.
 
 ## The Goal
 
@@ -15,18 +15,17 @@ console.log(t.addBusinessDays(2).format('{www}')); // Output: 'Tue'
 
 ---
 
-## 1. The `defineExtension` Factory
+## 1. The `definePlugin` Factory
 
-The safest and most efficient way to author a plugin is using the `defineExtension` factory. This handles the internal registration automatically.
+The safest and most efficient way to author a plugin is using the `definePlugin` factory. This handles the internal registration automatically.
 
 ```typescript
 // src/index.ts
-import { defineExtension } from '@magmacomputing/tempo/plugin';
-import type { Tempo } from '@magmacomputing/tempo/core';
+import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin-api';
 
-export const BusinessDaysPlugin = defineExtension({
+export const BusinessDaysPlugin: TempoPlugin = definePlugin({
   name: 'BusinessDaysPlugin',
-  install(TempoClass: any) {
+  install(TempoClass) {
     // Plugin implementation goes here!
   }
 });
@@ -42,9 +41,9 @@ To add an instance method, you extend the `TempoClass.prototype`.
 Let's implement our `.addBusinessDays()` logic:
 
 ```typescript
-export const BusinessDaysPlugin = defineExtension({
+export const BusinessDaysPlugin: TempoPlugin = definePlugin({
   name: 'BusinessDaysPlugin',
-  install(TempoClass: any) {
+  install(TempoClass) {
     TempoClass.prototype.addBusinessDays = function(days: number = 1) {
       let next = this;
       const direction = days >= 0 ? 1 : -1;
@@ -56,7 +55,7 @@ export const BusinessDaysPlugin = defineExtension({
         next = next.add({ days: direction });
         
         // Only count Monday-Friday as a valid jump
-        if (next.toDateTime().dayOfWeek <= 5) {
+        if (next.dow <= TempoClass.WEEKDAY.Fri) {
           remaining--;
         }
       }
@@ -68,7 +67,9 @@ export const BusinessDaysPlugin = defineExtension({
 });
 ```
 
-Notice how we drop into `.toDateTime()` to access the raw zone-aware `Temporal.ZonedDateTime` object? This is a common pattern in plugins when you need to access raw calendar properties (like `dayOfWeek`, `dayOfYear`, or `daysInMonth`) while preserving zone information without triggering unnecessary string formatting.
+Notice how we used the `next.dow` getter to easily read the Day Of Week? Tempo instances have many lightweight getters (like `.yy`, `.mm`, `.dd`, `.hh`) built-in.
+
+However, if you ever need to calculate advanced calendar math (like `dayOfYear`, `daysInMonth`, or `weeksInYear`), you can drop into `this.toDateTime()` to access the raw, underlying `Temporal.ZonedDateTime` object.
 
 ## 3. TypeScript Module Augmentation
 
@@ -78,7 +79,7 @@ You must declare this augmentation in the same file that exports your plugin:
 
 ```typescript
 // src/index.ts
-import { defineExtension } from '@magmacomputing/tempo/plugin';
+import { definePlugin } from '@magmacomputing/tempo/plugin-api';
 
 // ... (plugin implementation) ...
 
@@ -92,17 +93,17 @@ declare module '@magmacomputing/tempo/core' {
 
 ## 4. Packing it as a Configurable Module
 
-Sometimes, you want your plugin to accept options (e.g., passing in a custom array of public holidays to skip). To do this, wrap your `defineExtension` call in a standard factory function:
+Sometimes, you want your plugin to accept options (e.g., passing in a custom array of public holidays to skip). To do this, wrap your `definePlugin` call in a standard factory function:
 
 ```typescript
 export type BusinessDayOptions = {
   skipHolidays?: boolean;
 };
 
-export const BusinessDaysModule = (pluginOptions: BusinessDayOptions = {}) => {
-  return defineExtension({
-    name: 'BusinessDaysModule',
-    install(TempoClass: any) {
+export const BusinessDaysPlugin = (pluginOptions: BusinessDayOptions = {}): TempoPlugin => {
+  return definePlugin({
+    name: 'BusinessDaysPlugin',
+    install(TempoClass) {
       TempoClass.prototype.addBusinessDays = function(days: number = 1) {
         let next = this;
         const direction = days >= 0 ? 1 : -1;
@@ -110,7 +111,7 @@ export const BusinessDaysModule = (pluginOptions: BusinessDayOptions = {}) => {
         
         while (remaining > 0) {
           next = next.add({ days: direction });
-          if (next.toDateTime().dayOfWeek <= 5) {
+          if (next.dow <= TempoClass.WEEKDAY.Fri) {
             // We can now use 'pluginOptions' in our logic!
             if (!pluginOptions.skipHolidays /* || !isHoliday(next) */) {
                remaining--;
@@ -127,13 +128,13 @@ export const BusinessDaysModule = (pluginOptions: BusinessDayOptions = {}) => {
 
 ## Consuming the Plugin
 
-Your users can now import and register your extension elegantly:
+Your users can now import and register your plugin elegantly:
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
-import { BusinessDaysModule } from 'my-business-days-plugin';
+import { BusinessDaysPlugin } from 'my-business-days-plugin';
 
-Tempo.extend(BusinessDaysModule({ skipHolidays: true }));
+Tempo.extend(BusinessDaysPlugin({ skipHolidays: true }));
 
 const t = new Tempo();
 const nextBiz = t.addBusinessDays(2);

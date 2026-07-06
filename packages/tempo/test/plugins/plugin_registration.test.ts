@@ -1,8 +1,8 @@
 import { Tempo } from '#tempo';
-import { defineExtension } from '#tempo/plugin/plugin.util.js';
+import { definePlugin } from '#tempo/plugin/plugin.util.js';
 
-const DummyModule = defineExtension({
-	name: 'DummyModule',
+const DummyPlugin = definePlugin({
+	name: 'DummyPlugin',
 	install(TempoClass: any) {
 		TempoClass.dummy = true;
 	}
@@ -11,7 +11,7 @@ const DummyModule = defineExtension({
 describe('Plugin Registration / Initialization', () => {
 	test('Plugins should survive Tempo.init() reset', () => {
 		// 1. Verify installed
-		Tempo.extend(DummyModule);
+		Tempo.extend(DummyPlugin);
 		Tempo.init();
 		expect((Tempo as any).dummy).toBe(true);
 
