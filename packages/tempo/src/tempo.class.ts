@@ -1661,9 +1661,24 @@ export class Tempo {
 			// preserve parse result history when creating new instance from an existing one
 			return [tempo, Object.assign({ result: [...tempo.parse.result] }, options)];
 
-		return this.#isOptions(tempo)
-			? [tempo.value, Object.assign({}, tempo)]
-			: [tempo, options];
+		let mappedTempo = tempo as t.DateTime;
+		if (isObject(tempo) && isDurationLike(tempo)) {
+			const record = { ...(tempo as unknown as Record<string, unknown>) };
+			let hasMapped = false;
+			for (const [k, v] of Object.entries(record)) {
+				const resolved = enums.ELEMENT.has(k) ? `${enums.ELEMENT[k as t.Element]}s` : undefined;
+				if (resolved) {
+					record[resolved] = v;
+					delete record[k];
+					hasMapped = true;
+				}
+			}
+			if (hasMapped) mappedTempo = record as t.DateTime;
+		}
+
+		return this.#isOptions(mappedTempo)
+			? [mappedTempo.value, Object.assign({}, mappedTempo)]
+			: [mappedTempo, options];
 	}
 
 	/** check if we've been given a Tempo Options object */
