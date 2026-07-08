@@ -377,6 +377,7 @@ export namespace Internal {
 	/** structure of the verified license reckoning */
 	export interface ValidationResult {
 		status: enums.LICENSE;
+		role?: string;
 		scopes: Record<string, Internal.LicenseScope>;
 		expires?: number | string;
 		issuedAt?: number;
@@ -396,6 +397,7 @@ export namespace Internal {
 	export interface LicenseState {
 		status: enums.LICENSE;
 		key?: string;
+		role?: string;
 		scopes: Record<string, Internal.LicenseScope>;
 		jws?: Pledge<Internal.ValidationResult>;
 		expires?: number | string;
