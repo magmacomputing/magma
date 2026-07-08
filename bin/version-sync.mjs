@@ -10,12 +10,17 @@ if (!version) {
 console.log(`\n🔄 Syncing version ${version} to workspaces...`);
 
 try {
-	execSync(
-		`npm version ${version} -w @magmacomputing/tempo -w @magmacomputing/library --no-git-tag-version`,
-		{ stdio: 'inherit' }
-	);
-	console.log(`✅ Version successfully synced to ${version} across workspaces!\n`);
+	const workspaces = ['@magmacomputing/tempo', '@magmacomputing/library'];
+	for (const ws of workspaces) {
+		try {
+			execSync(`npm version ${version} -w ${ws} --no-git-tag-version`, { stdio: 'inherit' });
+			console.log(`✅ Synced ${ws} to ${version}`);
+		} catch (error) {
+			console.warn(`⚠️ Bypassed ${ws} (likely already at ${version} or not found).`);
+		}
+	}
+	console.log(`\n🎉 Version sync complete!\n`);
 } catch (error) {
-	console.error('Failed to sync versions.', error);
+	console.error('Fatal error during sync.', error);
 	process.exit(1);
 }

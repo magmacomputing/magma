@@ -101,12 +101,16 @@ export class Tempo {
 
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !_lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return _lifecycle.extendDepth > 0 }
-	/** the version of this Tempo build (stamped at build-time from package.json) */
-	static get version() { return TEMPO_VERSION }
 
-	/** mutable list of registered term plugins */						private static get _terms(): TermPlugin[] { return this[$Internal]().pluginsDb.terms }
+	static #versions: Record<string, string> = { Tempo: TEMPO_VERSION };
+	/** the active versions of Tempo and any registered plugins or modules */
+	static get versions() { return Object.freeze({ ...Tempo.#versions }) as Readonly<Record<string, string>>; }
+	/** the version of this Tempo build (stamped at build-time from package.json) */
+	static get version() { return Tempo.#versions['Tempo']; }
+
+	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return this[$Internal]().pluginsDb.terms }
 	/** @internal raw license state — sandbox-aware: reads sandbox-local license if present, otherwise global */
-	private static get _license() { return getLicenseState(this[$Internal]()); }
+	static get #license() { return getLicenseState(this[$Internal]()); }
 	/** human-readable formatted license state */							static get license() {
 		const { jws, key, ...raw } = getLicenseSnapshot(this[$Internal]());						// omit internal Pledge and JWT string from user-facing snapshot
 		const ss = { timeStamp: 'ss' } as const;								// JWT timestamps are always in seconds (RFC 7519)
@@ -129,7 +133,7 @@ export class Tempo {
 			...(isNumber(raw.issuedAt) && { issuedAt: new Tempo(raw.issuedAt, ss).fmt.weekTime }),
 		});
 	}
-	/** mapping of terms to their resolved values */					private static _termMap: Map<string, TermPlugin> = new Map();
+	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
 
 	/** Master Guard predicate (implements RegExp-like interface) */static get [$guard]() { return (this[$Internal]() as any)[$guard] ?? { test: () => true }; }
 
@@ -223,7 +227,7 @@ export class Tempo {
 	}
 
 	/** try to infer hemisphere using the timezone's daylight-savings setting */
-	private static _setSphere = (shape: Internal.State, options: t.Options) => {
+	static #setSphere = (shape: Internal.State, options: t.Options) => {
 		if (isDefined(options.sphere)) return options.sphere;
 
 		const tz = options.timeZone;
@@ -238,14 +242,14 @@ export class Tempo {
 	}
 
 	/** determine if we have a {timeZone} which prefers {mdy} date-order */
-	private static _isMonthDay(shape: Internal.State) {
+	static #isMonthDay(shape: Internal.State) {
 		const { timeZone, locale } = shape.config;
 		const mdy = shape.parse.monthDay;
 		const globalMdy = Tempo.MONTH_DAY as t.MonthDay;
 
 		let intl: Intl.Locale;
 		try {
-			intl = new Intl.Locale(Tempo._locale(locale));
+			intl = new Intl.Locale(Tempo.#locale(locale));
 		} catch (e) {
 			logWarn(`Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, shape.config, e);
 			intl = new Intl.Locale('en-US');
@@ -264,11 +268,11 @@ export class Tempo {
 	 * swap parsing-order of layouts to suit different timeZones  
 	 * this allows the parser to try to interpret '04012023' as Apr-01-2023 before trying 04-Jan-2023  
 	 */
-	private static _swapLayout(shape: Internal.State) {
+	static #swapLayout(shape: Internal.State) {
 		const { layouts } = shape.parse.monthDay;
 		if (isEmpty(layouts)) return;
 
-		const isMonthDay = shape.parse.monthDay.isExplicit ? shape.parse.monthDay.active! : Tempo._isMonthDay(shape);
+		const isMonthDay = shape.parse.monthDay.isExplicit ? shape.parse.monthDay.active! : Tempo.#isMonthDay(shape);
 		shape.parse.monthDay.active = isMonthDay;
 
 		// ensure Token.dt matches the local monthDay preference
@@ -294,7 +298,7 @@ export class Tempo {
 	}
 
 	/** get first Canonical name of a supplied locale */
-	private static _locale = (locale?: string | string[]) => {
+	static #locale = (locale?: string | string[]) => {
 		const global = Context.global;
 		let language: string | undefined;
 
@@ -331,7 +335,7 @@ export class Tempo {
 		}
 
 		// Side-effects
-		const newSphere = Tempo._setSphere(shape, mergedOptions);
+		const newSphere = Tempo.#setSphere(shape, mergedOptions);
 		if (shape.config.scope === 'local') {
 			const parentSphere = Object.getPrototypeOf(shape.config).sphere;
 			if (newSphere !== parentSphere) shape.config.sphere = newSphere;
@@ -340,7 +344,7 @@ export class Tempo {
 		}
 
 		const oldLayout = shape.parse.layout;
-		Tempo._swapLayout(shape);
+		Tempo.#swapLayout(shape);
 		if (oldLayout !== shape.parse.layout) needsRebuild = true;
 
 		if (isDefined(shape.parse.event)) {
@@ -466,8 +470,8 @@ export class Tempo {
 			...ownKeys(state.parse.snippet),
 			...ownKeys(state.parse.layout),
 			...[Token.slk],
-			...Tempo._terms.map(t => t.key),
-			...Tempo._terms.map(t => t.scope),
+			...Tempo.#terms.map(t => t.key),
+			...Tempo.#terms.map(t => t.scope),
 			...Guard,
 			...(state.config.registry?.modifiers ? Object.values(state.config.registry.modifiers).flat() : [])
 		];
@@ -485,7 +489,7 @@ export class Tempo {
 	}
 
 	/** @internal resolve a global discovery config object by symbol key */
-	private static _getConfig(sym: symbol) {
+	static #getConfig(sym: symbol) {
 		const discovery = (globalThis as Record<symbol, any>)[sym];
 		return proxify(omit({ ...discovery, scope: 'discovery' }, 'value'));
 	}
@@ -565,6 +569,7 @@ export class Tempo {
 					installed.add(name);
 
 					registerPlugin(item, state);
+					if ((item as any).version) Tempo.#versions[name] = (item as any).version;
 					(item as TempoPlugin).install.call(this as any, this);
 				}
 				else if (isObject(item)) {
@@ -573,9 +578,9 @@ export class Tempo {
 						const config = item as TermPlugin;
 						const state = this[$Internal]();
 
-						if (Tempo._termMap.get(config.key) === config) return;
-						if (Tempo._termMap.has(config.key)) {
-							const existing = Tempo._termMap.get(config.key);
+						if (Tempo.#termMap.get(config.key) === config) return;
+						if (Tempo.#termMap.has(config.key)) {
+							const existing = Tempo.#termMap.get(config.key);
 							const rangesMatch = JSON.stringify(existing?.ranges) === JSON.stringify(config.ranges);
 							if (existing?.scope === config.scope && existing?.description === config.description && rangesMatch) {
 								logDebug(`[Tempo#extend] Duplicate term registration ignored for key: "${config.key}"`, state.config);
@@ -584,9 +589,9 @@ export class Tempo {
 							logError(`[Tempo#extend] Term collision on key: "${config.key}". Registration aborted.`, state.config);
 							return;
 						}
-						if (config.scope && Tempo._termMap.get(config.scope) === config) { /* continue */ }
-						else if (config.scope && Tempo._termMap.has(config.scope)) {
-							const existingScope = Tempo._termMap.get(config.scope);
+						if (config.scope && Tempo.#termMap.get(config.scope) === config) { /* continue */ }
+						else if (config.scope && Tempo.#termMap.has(config.scope)) {
+							const existingScope = Tempo.#termMap.get(config.scope);
 							const rangesMatch = JSON.stringify(existingScope?.ranges) === JSON.stringify(config.ranges);
 							if (existingScope?.key === config.key && existingScope?.description === config.description && rangesMatch) {
 								/* continue */
@@ -596,8 +601,9 @@ export class Tempo {
 							}
 						}
 
-						Tempo._termMap.set(config.key, config);
-						if (config.scope) Tempo._termMap.set(config.scope, config);
+						Tempo.#termMap.set(config.key, config);
+						if (config.scope) Tempo.#termMap.set(config.scope, config);
+						if (config.version) Tempo.#versions[`${config.key}Term`] = config.version;
 
 						registerTerm(config, this[$Internal]());
 
@@ -789,7 +795,7 @@ export class Tempo {
 
 			// Resolve locale if missing or invalid
 			const currentLocale = config.locale;
-			const locale = (!currentLocale || currentLocale === 'en-US') ? Tempo._locale(currentLocale) : currentLocale;
+			const locale = (!currentLocale || currentLocale === 'en-US') ? Tempo.#locale(currentLocale) : currentLocale;
 
 			if (!hasOwn(config, 'get')) {
 				Object.defineProperty(config, 'get', {
@@ -798,12 +804,12 @@ export class Tempo {
 				});
 			}
 
-			_usrCount = 0;																	// reset user-key counter
+			_usrCount = 0;																				// reset user-key counter
 			for (const key of Object.keys(Token))									// purge user-allocated Tokens
 				if (key.startsWith('usr.'))													// only remove 'usr.' prefixed keys
 					delete Token[key];
 
-			Tempo._termMap.clear();																// clear term lookup map
+			Tempo.#termMap.clear();																// clear term lookup map
 			registryReset();																			// purge formats and numbers
 
 			// 3. Apply configuration via unified setters (non-destructive merge)
@@ -949,7 +955,7 @@ export class Tempo {
 	static get discovery() {
 		const discovery = this.config.discovery;
 		const sym = isString(discovery) ? Symbol.for(discovery) : discovery;
-		return Tempo._getConfig(sym as symbol);
+		return Tempo.#getConfig(sym as symbol);
 	}
 
 	static get options() {
@@ -996,7 +1002,7 @@ export class Tempo {
 	/** static Tempo.terms (registry) */
 	static get terms(): Secure<PremiumPlugin[]> & Record<string, PremiumPlugin> {
 		const rt = getRuntime();
-		const list = Tempo._terms.map(({ define, resolve, ...rest }) => {
+		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => {
 			const item = { ...rest } as any;
 			if (hasOwn(rt.license.scopes, rest.key)) {
 				const meta = rt.license.scopes[rest.key];
@@ -1144,7 +1150,7 @@ export class Tempo {
 	static [$errored] = $errored;
 
 	/** @internal */	static [TermError](config: Internal.Config, term: string): void {
-		const hint = Tempo._terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
+		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
 		const msg = `Unknown Term identifier: ${term}${hint}`;
 		logError(msg, config);
 	}
@@ -1379,7 +1385,7 @@ export class Tempo {
 				// 🛡️ Lazy Proxy Guard (Licensing)
 				if (this.#isBlocked(key)) return undefined;
 
-				const term = Tempo._termMap.get(key);
+				const term = Tempo.#termMap.get(key);
 				if (term) {
 					const isKeyOnly = term.key === key;
 					const define = (keyOnly: boolean) => {
@@ -1422,7 +1428,7 @@ export class Tempo {
 				if (isString(key)) this.#setLazy(target, key, () => this.format(key as t.Format));
 			});
 		} else {
-			Tempo._terms.forEach(term => {
+			Tempo.#terms.forEach(term => {
 				const define = (keyOnly: boolean, anchor?: any) => {
 					// 🛡️ Resolution Guard (Licensing)
 					if (getRuntime().license.status !== LICENSE.Active && this.#isBlocked(term.key)) return undefined;

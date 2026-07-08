@@ -4,6 +4,7 @@
  */
 export interface Plugin<T = any> {
 	name: string;
+	version?: string;
 	install: (this: T, t: T) => void;
 }
 

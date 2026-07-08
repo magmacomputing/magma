@@ -11,12 +11,14 @@ import { getRuntime } from '../../support/support.runtime.js';
 import { SCHEMA, getLargestUnit } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange } from './term.type.js';
+import { TEMPO_VERSION } from '../../tempo.version.js';
 
 /**
  * ## defineTerm
  * Helper to register a Term plugin.
  */
 export const defineTerm = <T extends TermPlugin>(term: T): T => {
+	if (!term.version) term.version = TEMPO_VERSION;
 	registerTerm(term);
 	return deepFreeze(term) as T;
 }

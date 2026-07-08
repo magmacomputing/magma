@@ -6,13 +6,12 @@ import { TempoError } from '../support/support.error.js';
 import { getRuntime } from '../support/support.runtime.js';
 import { hasOwn, logError } from '#tempo/support/support.util.js';
 import type { Tempo } from '../tempo.class.js';
-import type { Plugin, Module, Extension } from './plugin.type.js';
+import type { Plugin, Module } from './plugin.type.js';
+import { TEMPO_VERSION } from '../tempo.version.js';
 
 export type TempoType = typeof Tempo;
 export type TempoPlugin = Plugin<TempoType>;
 export type TempoModule = Module<TempoType>;
-/** @deprecated Use `TempoPlugin` instead. */
-export type TempoExtension = Extension<TempoType>;
 
 export function getHost(t: any): any {
 	const TempoClass = getRuntime().modules['Tempo'];
@@ -138,6 +137,7 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 export function defineInterpreterModule(name: string, logic: any, statics?: Record<string, any>) {
 	return defineModule({
 		name,
+		version: TEMPO_VERSION,
 		install(this: TempoType, TempoClass: TempoType) {
 			const rt = getRuntime();
 			const modules = rt.modules;
