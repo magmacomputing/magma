@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.0] - 2026-07-08
+
+### Added
+- **Runtime Versioning Registry**: Introduced a secure, static `Tempo.versions` registry. This provides zero-burden runtime observability of all loaded core modules and community plugins.
+- **Automated Plugin Versioning**: Community plugins now automatically inject their version via a custom ESBuild virtual module pipeline, eliminating the need for magic strings. Internal bundled terms (like `QuarterTerm`) seamlessly inherit the core `TEMPO_VERSION`.
+
+### Changed
+- **Internal Privacy Modernization**: Refactored internal runtime registries (including `_termMap` and other internal configuration variables) to utilize strict ECMAScript private fields (`#`), ensuring complete architectural security against prototype tampering.
+
 ## [3.6.1] - 2026-07-06
 
 ### Fixed

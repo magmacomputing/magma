@@ -7,8 +7,9 @@ import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDat
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
-import { isTempo, enums, Match, getRuntime, NumericPattern, BigIntPattern, hasOwn } from '#tempo/support';
+import { isTempo, enums, Match, getRuntime, NumericPattern, BigIntPattern, hasOwn, $Internal } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
+import { findTermPlugin } from '../plugin/term/term.util.js';
 import type { Tempo } from '../tempo.class.js';
 
 
@@ -277,7 +278,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						if (token.startsWith('#') && isTempo(obj)) {
 							const termKey = token.slice(1);
 							const termName = termKey.split('.')[0];
-							const plugin = (obj.constructor as any)._termMap?.get(termName);
+							const plugin = findTermPlugin(termName, (obj.constructor as any)[$Internal]());
 
 							if (plugin) {
 								const termVal = (obj as unknown as Tempo).term[termKey];

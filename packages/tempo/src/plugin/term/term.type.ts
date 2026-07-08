@@ -17,6 +17,7 @@ export type TempoTermType = typeof Tempo & {
  */
 export interface TermPlugin {
 	key: string;
+	version?: string;
 	scope?: string;
 	description?: string;
 	locale?: Record<string, string | Function>;
