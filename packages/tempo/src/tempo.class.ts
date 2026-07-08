@@ -569,7 +569,10 @@ export class Tempo {
 					installed.add(name);
 
 					registerPlugin(item, state);
-					if ((item as any).version) Tempo.#versions[name] = (item as any).version;
+					if ((item as any).version) {
+						const suffix = name.endsWith('Plugin') || name.endsWith('Module') ? '' : 'Plugin';
+						Tempo.#versions[`${name}${suffix}`] = (item as any).version;
+					}
 					(item as TempoPlugin).install.call(this as any, this);
 				}
 				else if (isObject(item)) {
@@ -603,7 +606,11 @@ export class Tempo {
 
 						Tempo.#termMap.set(config.key, config);
 						if (config.scope) Tempo.#termMap.set(config.scope, config);
-						if (config.version) Tempo.#versions[`${config.key}Term`] = config.version;
+						
+						if (config.version) {
+							const name = config.scope || config.key;
+							Tempo.#versions[`${name}Term`] = config.version;
+						}
 
 						registerTerm(config, this[$Internal]());
 
