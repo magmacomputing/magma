@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.1] - 2026-07-08
+
+### Fixed
+- **License Admin Isolation**: Restructured the commercial licensing JWT payload to isolate administrative privileges (like `tempo-adm`) into a dedicated root-level `role` claim. This prevents internal admin flags from polluting the `scopes` dictionary and erroneously surfacing as "uninstalled premium plugins" in the `Tempo.terms` registry UI.
+
 ## [3.7.0] - 2026-07-08
 
 ### Added

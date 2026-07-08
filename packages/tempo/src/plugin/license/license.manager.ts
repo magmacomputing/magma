@@ -67,6 +67,8 @@ export function setLicense(state: Internal.State, key: string): void {
 		license.key = key;
 		license.status = LICENSE.Pending;
 		license.scopes = claims?.scopes || {};
+		if (claims?.role) license.role = claims.role;
+		else delete license.role;
 
 		if (claims?.exp) license.expires = claims.exp;
 		if (claims?.iat) license.issuedAt = claims.iat;
@@ -86,6 +88,8 @@ export function setLicense(state: Internal.State, key: string): void {
 				const isValidStatus = isSyncToken(res.status) || LICENSE.values().includes(res.status);
 				license.status = isValidStatus ? res.status : LICENSE.Invalid;
 				license.scopes = isObject(res.scopes) ? res.scopes : {};
+				if (res.role) license.role = res.role;
+				else delete license.role;
 				delete (license as any).error;
 				if (res.error) license.error = res.error;
 				if (res.expires) license.expires = res.expires;
