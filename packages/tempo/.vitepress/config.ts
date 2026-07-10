@@ -98,7 +98,7 @@ export default defineConfig({
         items: [
           { text: 'Contribution Guide', link: '/CONTRIBUTING' },
           { text: 'Comparison', link: '/doc/comparison' },
-          { text: 'Tempo vs Temporal', link: '/doc/tempo-vs-temporal' },
+          { text: 'Extending Temporal', link: '/doc/extending-temporal' },
           { text: 'Project Vision', link: '/doc/vision' }
         ]
       },
