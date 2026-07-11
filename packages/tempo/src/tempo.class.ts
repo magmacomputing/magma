@@ -1280,6 +1280,8 @@ export class Tempo {
 		}
 
 		if (!this.#local.parse.lazy) this.#resolve();						// attempt to interpret immediately (if not lazy)
+
+		return Object.freeze(this) as this;
 	}
 
 	/** explicitly enable/disable "catch" mode for this instance */

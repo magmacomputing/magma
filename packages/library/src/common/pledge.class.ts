@@ -103,6 +103,8 @@ export class Pledge<T> {
 
 		if (this.#status.catch)
 			this.#pledge.promise.catch(err => _dbg.warn(this.#status, err));
+
+		return Object.freeze(this) as this;
 	}
 
 	get [Symbol.toStringTag]() {
