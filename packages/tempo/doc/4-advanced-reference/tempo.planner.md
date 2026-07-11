@@ -8,7 +8,7 @@ These options are nested under the `planner` property when configuring Tempo.
 
 By default, Tempo searches through a variety of date layouts (like ISO 8601, European, American, etc.) to understand user input. The `layoutOrder` configuration allows you to explicitly list which layout patterns should be evaluated first, prioritizing formats that you expect most often. 
 
-This leads to performance gains and gives you deterministic control when overriding [Ambiguity Resolution](./tempo.parse.md) heuristics (e.g. forcing `mdy` over `dmy`).
+This leads to performance gains and gives you deterministic control when overriding [Ambiguity Resolution](../2-core-concepts/tempo.parse.md) heuristics (e.g. forcing `mdy` over `dmy`).
 
 ```ts
 import { Tempo } from '@magmacomputing/tempo';

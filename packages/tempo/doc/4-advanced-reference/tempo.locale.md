@@ -19,7 +19,7 @@ Tempo uses the active `locale` as a critical piece of metadata to resolve this:
 - It cross-references the locale's region or language against the internal `MONTH_DAY` registry to check its preferred layout.
 - If the locale inherently prefers `MDY` (like in the United States), Tempo dynamically swaps its parsing order to attempt `Month-Day-Year` patterns *before* it attempts `Day-Month-Year` patterns.
 
-*For deeper details on layout configurations and ambiguous digits, see the [Ambiguity Resolution Guide](./tempo.parse.md).*
+*For deeper details on layout configurations and ambiguous digits, see the [Ambiguity Resolution Guide](../2-core-concepts/tempo.parse.md).*
 
 ---
 
@@ -44,7 +44,7 @@ const a = new Tempo('15 janvier 2024'); // Matches French
 const b = new Tempo('el próximo lunes'); // Matches Spanish
 ```
 
-*For more details on setting up and optimizing international parsing, see [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales).*
+*For more details on setting up and optimizing international parsing, see [Internationalized Parsing](../2-core-concepts/tempo.parse.md#internationalized-parsing-locales).*
 
 ---
 
@@ -67,7 +67,7 @@ console.log(t.format({ dateStyle: 'full', locale: 'de-DE' }));
 // "Donnerstag, 15. Februar 2024"
 ```
 
-*For more details on formatting features, see the [Format Guide](./tempo.format.md).*
+*For more details on formatting features, see the [Format Guide](../2-core-concepts/tempo.format.md).*
 
 ### Global LOCALE Registry
 The easiest way to augment or override translations globally is via the `locales` configuration option. Translations added here will apply to *any* plugin that resolves the specified key:

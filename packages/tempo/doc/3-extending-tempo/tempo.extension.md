@@ -4,6 +4,10 @@ While [Term Plugins](./tempo.term.md) are excellent for providing static, memoiz
 
 This guide will teach you the "Tempo-way" of authoring a custom plugin by building a classic, real-world example: **The Business Days Plugin**.
 
+> [!TIP] Adding a group of properties?
+> If you are building a plugin that adds multiple related properties or methods (like `.finance.taxYear` and `.finance.fiscalQuarter`), you should use the `defineNamespace` factory instead! It automatically lazy-loads your methods and prevents prototype pollution. 
+> 👉 **[Read the Namespace Guide](./tempo.namespace.md)**
+
 ## The Goal
 
 We want to add an `.addBusinessDays()` method to the Tempo instance that adds or subtracts a specific number of working days (defaulting to 1), skipping weekends automatically.

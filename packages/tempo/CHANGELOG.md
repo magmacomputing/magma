@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] - 2026-07-11
+
+### Added
+- **Namespace Architecture (`defineNamespace`)**: Officially launched the new Namespace Plugin architecture. This provides a clean mechanism to attach grouped API surfaces (like `t.finance.*`) onto the core Tempo instance without polluting the global scope or the natural-language parsing engine.
+- **Strict Plugin Discrimination**: Core registration utilities (`definePlugin`, `defineTerm`, `defineModule`, `defineNamespace`) now strictly inject a discriminator `type` key (`'plugin' | 'term' | 'module' | 'namespace'`). This ensures internal registries and debugging tools can accurately categorize plugins without relying on loose structural sniffing.
+- **Finance Sandbox (`@magmacomputing/tempo-plugin-finance`)**: Introduced the community `finance` package as the official reference implementation for Namespace plugins, complete with best-practice dual-build (ESM/DTS) architectures using `tsup`.
+
+### Changed
+- **Documentation Architecture**: Completely overhauled the documentation repository to utilize a strictly-numbered directory structure (`1-getting-started`, `2-core-concepts`, etc.) that mirrors the VitePress UI 1:1, drastically reducing maintenance overhead and eliminating orphaned files.
+
 ## [3.7.1] - 2026-07-08
 
 ### Fixed

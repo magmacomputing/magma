@@ -64,4 +64,4 @@ Because Luxon is bowing out and Day.js cannot evolve architecturally without los
 - **Choose date-fns if:** You prefer using functional utilities to manipulate native Temporal objects, rather than a comprehensive class-based wrapper.
 - **Choose Tempo if:** You want a premium, Temporal-first architecture that provides **high precision**, **human-centric parsing**, and the ability to model **complex business-date logic** directly into your application.
 
-[**Ready to start? See the Quick Start Guide →**](../README.md#🛠️-quick-start)
+[**Ready to start? See the Quick Start Guide →**](../../README.md#🛠️-quick-start)

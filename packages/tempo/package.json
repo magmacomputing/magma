@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.7.1",
+  "version": "3.8.0",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -201,12 +201,12 @@
     "repl:bare": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal",
     "repl:core": "cross-env TEMPO_LITE=true tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/core.ts",
     "parse": "cross-env TEMPO_LITE=true tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/parse.ts",
-    "build": "npm run clean && tsc -b && npm run build:bundle && npm run build:resolve",
+    "build": "npm run clean && node ../../node_modules/typescript-7/bin/tsc -b && npm run build:bundle && npm run build:resolve",
     "build:bundle": "rollup -c",
     "build:resolve": "tsx bin/resolve-types.ts",
     "build:version": "node bin/update-version.mjs",
     "prebuild": "npm run build:version",
-    "clean": "rm -rf dist && (tsc -b --clean || true)",
+    "clean": "rm -rf dist && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && if [ -z \"$TEMPO_LICENSE_PATH\" ] || [ ! -f \"$TEMPO_LICENSE_PATH\" ]; then echo '🚨 ERROR: TEMPO_LICENSE_PATH is missing or invalid. Cannot publish Premium build.'; exit 1; fi && npm run build",
     "docs:api": "typedoc",
     "docs:dev": "npm run build && npm run docs:api && vitepress dev",

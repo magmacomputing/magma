@@ -74,7 +74,7 @@ Using `tempo.config.ts` is the modern standard, but it introduces specific archi
 
 ::: tip
 **Looking to configure Internationalization?**  
-Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See [The Role of Locale](./tempo.locale.md) for a general guide, and the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Format Modifiers & Localization](./tempo.cookbook.md#format-modifiers--localization) guides for configuration details.
+Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See [The Role of Locale](../4-advanced-reference/tempo.locale.md) for a general guide, and the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Format Modifiers & Localization](../1-getting-started/tempo.cookbook.md#format-modifiers--localization) guides for configuration details.
 :::
 
 ---

@@ -1,5 +1,5 @@
-import { isFunction, isString, isUndefined, isClass, isObject, isDefined } from '#library/assertion.library.js';
-import { secureRef } from '#library/proxy.library.js';
+import { isFunction, isString, isUndefined, isClass, isObject, isDefined, isSymbol } from '#library/assertion.library.js';
+import { secureRef, delegate } from '#library/proxy.library.js';
 
 import { sym, isTempo } from '../support/support.symbol.js';
 import { TempoError } from '../support/support.error.js';
@@ -92,9 +92,10 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
  * ## defineModule
  * Used to register an internal modularization component.
  */
-export function defineModule<T extends Plugin<TempoType>>(module: T): T {
-	registerPlugin(module);
-	return module;
+export function defineModule<T extends Plugin<TempoType>>(module: T): T & { type: 'module' } {
+	const result = Object.assign(module, { type: 'module' } as const);
+	registerPlugin(result);
+	return result;
 }
 
 /**
@@ -175,9 +176,10 @@ export function defineInterpreterModule(name: string, logic: any, statics?: Reco
  * ## definePlugin
  * Used to register a plugin.
  */
-export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T {
-	registerPlugin(plugin);
-	return plugin;
+export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T & { type: 'plugin' } {
+	const result = Object.assign(plugin, { type: 'plugin' } as const);
+	registerPlugin(result);
+	return result;
 }
 
 /**
@@ -210,3 +212,48 @@ export function registerPlugin(plugin: any, state?: any) {
 	return plugin;
 }
 
+export type NamespaceConfig = {
+	name: string | symbol;
+	version?: string;
+	resolvers: Record<string | symbol, (tempo: Tempo) => any>;
+};
+
+/**
+ * ## defineNamespace
+ * Creates a lazy-loaded property namespace on the Tempo instance.
+ */
+export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> & { type: 'namespace' } {
+	if (isSymbol(config.name) && !config.name.description)
+		throw new TempoError('Tempo Security: Symbol namespaces must have a description.');
+
+	const namespaceStr = isSymbol(config.name)
+		? (Symbol.keyFor(config.name) ? `@@${Symbol.keyFor(config.name)}` : `@${config.name.description}`)
+		: config.name;
+
+	const pluginName = `${namespaceStr}Namespace`;
+
+	const plugin = definePlugin({
+		name: pluginName,
+		version: config.version ?? TEMPO_VERSION,
+		install(this: TempoType, TempoClass: TempoType, options?: any) {
+			Object.defineProperty(TempoClass.prototype, config.name, {
+				get() {
+					const cacheKey = isSymbol(config.name) ? config.name : `_${String(config.name)}`;
+					if (!this[cacheKey]) {
+						const target = Object.create(null);
+						this[cacheKey] = delegate(target, (key) => {
+							const resolver = config.resolvers[key as keyof typeof config.resolvers];
+							if (resolver) return resolver(this);
+							return undefined;
+						}, true);
+					}
+					return this[cacheKey];
+				},
+				configurable: true,
+				enumerable: false
+			});
+		}
+	});
+
+	return Object.assign(plugin, { type: 'namespace' } as const) as unknown as Plugin<TempoType> & { type: 'namespace' };
+}

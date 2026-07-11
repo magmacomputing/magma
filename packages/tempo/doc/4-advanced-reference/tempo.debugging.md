@@ -14,10 +14,10 @@ Before an instance is even created, you can inspect the static state of the `Tem
 Returns the collection of current *global* configuration settings that act as the default for all new `Tempo` instances. This includes properties like the default `locale`, `timeZone`, and formatting layouts.
 
 ### `Tempo.default`
-Returns the collection of *initial*, out-of-the-box defaults that `Tempo` ships with, unaffected by any modifications made via [Global Discovery](../README.md#global-discovery) or [`Tempo.init()`](./tempo.config.md).
+Returns the collection of *initial*, out-of-the-box defaults that `Tempo` ships with, unaffected by any modifications made via [Global Discovery](../../README.md#global-discovery) or [`Tempo.init()`](../2-core-concepts/tempo.config.md).
 
 ### `Tempo.terms`
-Returns an array of all currently registered Term plugins. This is useful to verify which plugins have been loaded via [`Tempo.extend()`](./tempo.plugin.md).
+Returns an array of all currently registered Term plugins. This is useful to verify which plugins have been loaded via [`Tempo.extend()`](../3-extending-tempo/tempo.plugin.md).
 
 ### `Tempo.properties`
 Returns an array of the available static getters on the `Tempo` class.

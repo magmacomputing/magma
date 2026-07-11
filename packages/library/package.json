@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/library",
-  "version": "3.7.1",
+  "version": "3.8.0",
   "description": "Shared utility library for Tempo",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -87,8 +87,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "tsc -b",
-    "clean": "tsc -b --clean",
+    "build": "node ../../node_modules/typescript-7/bin/tsc -b",
+    "clean": "node ../../node_modules/typescript-7/bin/tsc -b --clean",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"
   },
   "dependencies": {

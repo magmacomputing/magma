@@ -52,7 +52,7 @@ Tempo.init({
   silent: true
 });
 ```
-👉 **Learn More:** [Configuration Guide](./tempo.config.md)
+👉 **Learn More:** [Configuration Guide](../2-core-concepts/tempo.config.md)
 
 ---
 
@@ -64,7 +64,7 @@ Tempo intelligently resolves ambiguous dates like `04012026` based on your timez
 const us = new Tempo('04012026', { timeZone: 'America/New_York' }); 
 console.log(us.format('{mon} {dd}')); // "April 01"
 ```
-👉 **Learn More:** [Ambiguity Resolution Guide](./tempo.parse.md)
+👉 **Learn More:** [Ambiguity Resolution Guide](../2-core-concepts/tempo.parse.md)
 
 ### Handling Relative Strings
 Tempo natively understands human-readable offsets.
@@ -248,7 +248,7 @@ t.format('{mon:locale}');            // "mai" (Native French Intl output)
 t.format('{mon:locale:upper} {dd}'); // "MAI 15" (Native French Intl output)
 ```
 
-👉 **Learn More:** See the [Smart Formatting Guide](./tempo.format.md) for the complete list of available modifiers.
+👉 **Learn More:** See the [Smart Formatting Guide](../2-core-concepts/tempo.format.md) for the complete list of available modifiers.
 
 ::: tip
 **Tired of typing `:locale`?**  
@@ -295,9 +295,9 @@ t.format('{wkd-fr}'); // "lundi"
 ```
 
 👉 **Learn More:** 
-- [Smart Formatting Guide](./tempo.format.md)
-- [The Role of Locale](./tempo.locale.md)
-- [Smart Parsing Guide](./tempo.parse.md)
+- [Smart Formatting Guide](../2-core-concepts/tempo.format.md)
+- [The Role of Locale](../4-advanced-reference/tempo.locale.md)
+- [Smart Parsing Guide](../2-core-concepts/tempo.parse.md)
 
 ---
 

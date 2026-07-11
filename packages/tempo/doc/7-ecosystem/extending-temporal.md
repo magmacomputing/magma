@@ -30,7 +30,7 @@ new Tempo('2026/01/24');                  // Parses perfectly
 new Tempo('next Friday');                 // Parses relative natural language perfectly
 ```
 
-For more information on handling natural language and complex strings, read the dedicated **[Parsing Guide](tempo.parse.md)**.
+For more information on handling natural language and complex strings, read the dedicated **[Parsing Guide](../2-core-concepts/tempo.parse.md)**.
 
 ### 2. Formatting: Verbose vs. Expressive Tokens
 
@@ -51,7 +51,7 @@ t.format('{dd} {mmm} {yyyy}');            // Output: "24 Jan 2026"
 t.fmt.date;                               // Output: "2026-01-24"
 ```
 
-For comprehensive examples of localized output and custom layouts, read the dedicated **[Formatting Guide](tempo.format.md)**.
+For comprehensive examples of localized output and custom layouts, read the dedicated **[Formatting Guide](../2-core-concepts/tempo.format.md)**.
 
 ### 3. Extensibility: Domain-Specific Logic
 
@@ -87,7 +87,7 @@ t.term.qtr; // → 'Q1' (Calculates fiscal quarter)
 t.term.szn; // → 'Winter' (Calculates meteorological season, respecting hemisphere)
 ```
 
-For more information on adding your own domain-specific logic, read the dedicated **[Terms Guide](tempo.term.md)**.
+For more information on adding your own domain-specific logic, read the dedicated **[Terms Guide](../3-extending-tempo/tempo.term.md)**.
 
 ### 4. Duration Logic: Strict Math vs. Human Readable
 
@@ -126,4 +126,4 @@ t.since('last Friday', 'days'); // → "3 days ago"
 - `t.until()` returns a highly functional Extended Data Object (EDO) or a precise decimal number depending on your arguments.
 - `t.since()` leverages `Intl.RelativeTimeFormat` to instantly return human-readable relative strings (like "3 days ago").
 
-For comprehensive examples of duration mathematics, intelligent balancing, and localization formatting, read the dedicated **[Duration Logic Guide](tempo.duration.md)**.
+For comprehensive examples of duration mathematics, intelligent balancing, and localization formatting, read the dedicated **[Duration Logic Guide](../2-core-concepts/tempo.duration.md)**.

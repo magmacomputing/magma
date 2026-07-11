@@ -515,12 +515,13 @@ export class Tempo {
 	 */
 	static extend(...args: any[]): typeof Tempo;
 	static extend(...args: any[]): typeof Tempo {
-		let options = (args.length > 1 && isObject(args[args.length - 1]) && !Array.isArray(args[args.length - 1]) && !isFunction(args[args.length - 1]) && !isDefined(args[args.length - 1].key)) ? args.pop() : undefined;
-		if (!options && args.length === 1 && isObject(args[0]) && !Array.isArray(args[0]) && !isFunction(args[0]) && !isString((args[0] as any).name) && !isDefined((args[0] as any).key)) {
-			const isDiscovery = Object.keys(args[0]).some(k => DISCOVERY.has(k as any));
-			if (!isDiscovery)
-				options = args.pop();
-		}
+		const isOptionsArg = (arg: any) =>
+			isObject(arg) &&
+			!isString(arg.name) &&
+			!isDefined(arg.key) &&
+			!Object.keys(arg).some(k => DISCOVERY.has(k as any));
+
+		let options = (args.length > 0 && isOptionsArg(args[args.length - 1])) ? args.pop() : undefined;
 		const licenseKey = options?.license || (args.length === 1 && isObject(args[0]) ? args[0].license : undefined);
 		if (licenseKey) {
 			const state = this[$Internal]();
@@ -556,9 +557,10 @@ export class Tempo {
 						}
 					}
 				}
-				else if (isObject(item) && isString((item as any).name) && isFunction((item as any).install)) {
+				else if (isObject(item) && ((item as any).type === 'plugin' || (item as any).type === 'namespace' || (item as any).type === 'module' || (isString((item as any).name) && isFunction((item as any).install)))) {
 					// Plugin object form { name, install }
 					const name = (item as any).name;
+					const type = (item as any).type;
 					const state = this[$Internal]();
 					const rt = getRuntime();
 					const installed = state.installed ?? rt.installed;	// ScopedSet for sandboxes, global Set for Tempo
@@ -570,14 +572,19 @@ export class Tempo {
 
 					registerPlugin(item, state);
 					if ((item as any).version) {
-						const suffix = name.endsWith('Plugin') || name.endsWith('Module') ? '' : 'Plugin';
-						Tempo.#versions[`${name}${suffix}`] = (item as any).version;
+						let suffix = '';
+						if (type === 'plugin') suffix = 'Plugin';
+						else if (type === 'namespace') suffix = 'Namespace';
+						else if (type === 'module') suffix = 'Module';
+						else suffix = 'Plugin';
+
+						Tempo.#versions[`${name}${name.endsWith(suffix) ? '' : suffix}`] = (item as any).version;
 					}
 					(item as TempoPlugin).install.call(this as any, this);
 				}
 				else if (isObject(item)) {
 					// 1. handle TermPlugin
-					if (isString((item as any).key) && isFunction((item as any).define)) {
+					if (item.type === 'term' || (isString(item.key) && isFunction(item.define))) {
 						const config = item as TermPlugin;
 						const state = this[$Internal]();
 
@@ -606,7 +613,7 @@ export class Tempo {
 
 						Tempo.#termMap.set(config.key, config);
 						if (config.scope) Tempo.#termMap.set(config.scope, config);
-						
+
 						if (config.version) {
 							const name = config.scope || config.key;
 							Tempo.#versions[`${name}Term`] = config.version;

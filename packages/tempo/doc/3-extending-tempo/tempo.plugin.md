@@ -6,6 +6,7 @@ In the Tempo ecosystem, a **Plugin** is the universal overarching term for any f
 
 1. **`definePlugin`**: The standard factory for general-purpose features (e.g., adding prototype instance methods, static tools, or altering configuration).
 2. **`defineTerm`**: A specialized factory exclusively for defining temporal vocabulary constraints (a "Term" is technically just a highly-opinionated "Plugin" focused on date ranges and schedules).
+3. **`defineNamespace`**: A factory for creating lazily-evaluated property landing pads (e.g., `Tempo().finance.taxYear`).
 
 To manually register a plugin, use the static `extend` method. This is typically used for "opt-in" features or when you need to provide specific configuration to a plugin factory.
 
@@ -106,7 +107,10 @@ The core methods of Tempo (like `add`, `set`, `format`) are **protected**. The `
 When adding instance methods that "modify" the date, always follow the Tempo pattern of returning a **new instance**. Do not mutate `this`. Rely on the core methods (like `this.add()`) inside your plugin, as they automatically guarantee a fresh, cloned instance.
 
 ### 3. Namespace Respect
-If your plugin provides many related methods, consider grouping them under a single namespace property on the instance (e.g., `tempo.holiday.isPublic()` rather than `tempo.isPublicHoliday()`). This keeps the root `Tempo` interface clean and minimizes the risk of naming collisions with other plugins or future core updates.
+If your plugin provides many related methods, consider grouping them under a single namespace property on the instance (e.g., `tempo.holiday.isPublic()` rather than `tempo.isPublicHoliday()`). This keeps the root `Tempo` interface clean and minimizes the risk of naming collisions. 
+
+Instead of manually building these namespaces on the prototype, Tempo provides the `defineNamespace` factory to automate lazy-evaluation. 
+👉 **[Read the Namespace Guide](./tempo.namespace.md)** to learn more.
 
 ### 4. Error Handling & The Diagnostic Engine
 When building plugins that perform complex parsing or logic, follow Tempo's **"Fail-fast by Default"** principle.
@@ -129,69 +133,21 @@ if (errorCondition) {
 
 This pattern ensures that Tempo remains robust in production environments while providing strict validation during development.
 
-## Advanced Pattern: Stateful Classes & Callable Proxies
+## Alternative: Standalone Functions (`tempo-fns`)
 
-For complex plugins (like the **Ticker**) that need to maintain internal state across multiple calls or provide both a class interface and a "shortcut" function, use the **Stateful Class + Proxy** pattern.
+The JavaScript ecosystem is divided between two architectural preferences: **Chained Fluent APIs** (like Tempo Plugins) and **Pure Standalone Functions** (for aggressive tree-shaking).
 
-### 1. Define a Dedicated Types Namespace
-Avoid polluting the global `Tempo` namespace. Instead, create a dedicated `Types` namespace for your plugin's internal and public signatures. This prevents "Used before declaration" errors and name-shading.
-
-```typescript
-export namespace MyPluginTypes {
-  export type Options = { ... }
-  export interface Descriptor extends AsyncGenerator<Tempo, any> {
-    doSomething(): void;
-  }
-  // The final public interface (callable as a function)
-  export interface Instance extends Descriptor {
-    (): void
-  }
-}
-```
-
-### 2. Implement the Logic in a Class
-Use a standard class to manage your state. This keeps your logic decoupled from the Proxy and the core engine.
+To support teams that mandate strict 0kb bundle-impacts and functional programming paradigms, Magma Computing provides the **`@magmacomputing/tempo-fns`** library.
 
 ```typescript
-class MyPluginInstance implements MyPluginTypes.Descriptor {
-  #self!: MyPluginTypes.Instance;
-  
-  // The developer writes this bootstrap method to save a reference to the Proxy.
-  // This is required so the class can return the Proxy (for method chaining) 
-  // instead of returning 'this' (which would be the un-proxied, non-callable instance).
-  bootstrap(proxy: MyPluginTypes.Instance) {
-    this.#self = proxy;
-    return this.#self;
-  }
-  // ... implement Descriptor methods ...
-}
+// The Pure, Tree-shakeable approach:
+import { isLeapYear } from '@magmacomputing/tempo-fns';
+import { Tempo } from '@magmacomputing/tempo/core';
+
+if (isLeapYear(new Tempo('2024-01-01'))) { ... }
 ```
 
-### 3. Wrap with a Proxy in the Factory
-Use a `Proxy` in your `definePlugin` factory to handle the callability trap. This allows your plugin to act as a function (the shortcut) and an object (the stateful class) simultaneously.
-
-```typescript
-export const MyPlugin: TempoPlugin = definePlugin({
-  name: 'MyPlugin',
-  install(TempoClass) {
-    TempoClass.myTool = function(arg1: any): MyPluginTypes.Instance {
-      const instance = new MyPluginInstance(arg1);
-    
-      const proxy = new Proxy((() => instance.doSomething()) as any, {
-        get: (_, prop) => {
-          // Map proxy properties to instance methods
-          if (prop in instance) return (instance as any)[prop].bind(instance);
-          return (instance as any)[prop];
-        },
-        apply: (target) => target()
-      }) as unknown as MyPluginTypes.Instance;
-
-      return instance.bootstrap(proxy);
-    };
-});
-```
-
----
+When building complex logic, consider whether it belongs as a core Plugin extension, or as a standalone utility in `tempo-fns` (or a hybrid wrapper of both!).
 
 ## Distributing Your Plugin
 
