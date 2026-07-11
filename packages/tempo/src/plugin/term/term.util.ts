@@ -18,8 +18,11 @@ import { TEMPO_VERSION } from '../../tempo.version.js';
  * Helper to register a Term plugin.
  */
 export const defineTerm = <T extends TermPlugin>(term: T): T & { type: 'term' } => {
-	if (!term.version) term.version = TEMPO_VERSION;
-	const result = Object.assign(term, { type: 'term' } as const);
+	const result = {
+		...term,
+		type: 'term' as const,
+		version: term.version ?? TEMPO_VERSION
+	} as T & { type: 'term' };
 	registerTerm(result);
 	return deepFreeze(result) as T & { type: 'term' };
 }

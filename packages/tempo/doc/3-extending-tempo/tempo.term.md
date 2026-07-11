@@ -29,6 +29,7 @@ Plugin expose two views of that result via the `Tempo.term` object:
 |---|---|
 | `tempo.term.<key>` | A short identifier string (e.g. `'qtr'`, `'szn'`, `'zdc'`) |
 | `tempo.term.<scope>` | The full matching range object, with all metadata fields (e.g. `key`, `day`, `month`, `year`, `sphere`, etc.) |
+
 The `<key>` and `<scope>` are defined by the plugin author, where the intent of the `<key>` is to provide a short identifier value, and the intent of the `<scope>` is to provide the full matching range object.
 
 ## Provided Plugin

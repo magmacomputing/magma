@@ -112,6 +112,42 @@ console.log(t.finance.isFiscalYearStart(7)); // true
 
 ---
 
+## The Dual Architecture (OOP vs FP)
+
+When building a Namespace plugin, you'll naturally face a choice between **Object-Oriented Programming (OOP)** and **Functional Programming (FP)**. 
+
+*   **The Namespace (OOP)**: `t.finance.isFiscalYearStart()`
+    *   *Pros:* Incredible Developer Experience (DX). You get instant IDE autocomplete, and the `Tempo` object automatically carries your timezone and locale context.
+    *   *Cons:* Extending Tempo means the entire namespace is attached to the prototype. It is not fully tree-shakeable.
+*   **The Functional Approach (FP)**: `isFiscalYearStart(t)`
+    *   *Pros:* 100% tree-shakeable. Developers only import exactly the functions they need. Zero prototype pollution.
+    *   *Cons:* Less discoverable. Developers must pass the `Tempo` object as the first argument manually.
+
+### The Best of Both Worlds
+A world-class plugin doesn't force developers to choose—it provides both! You can write all your logic as **pure functions first**, and then use `defineNamespace` to wrap those functions for OOP users.
+
+```typescript
+// 1. The Pure Functions (The FP layer)
+export function isFiscalYearStart(t: Tempo, startMonth: number = 1): boolean {
+    return t.mm === startMonth && t.dd === 1; 
+}
+export function nextTaxYear(t: Tempo): Tempo { ... }
+
+// 2. The Namespace Wrapper (The OOP layer)
+export const FinancePlugin = defineNamespace({
+    name: 'finance',
+    resolvers: {
+        // We simply wrap our pure functions and inject the 'tempo' context!
+        isFiscalYearStart: (tempo: Tempo) => (startMonth?: number) => isFiscalYearStart(tempo, startMonth),
+        nextTaxYear: (tempo: Tempo) => () => nextTaxYear(tempo)
+    }
+});
+```
+
+Because of this interleaving, developers can choose their preferred architecture based on their project needs (e.g. rapid prototyping with `t.finance.x` vs. strict bundle optimization with `isFiscalYearStart(t)`).
+
+---
+
 ## Advanced: Symbol Namespaces
 
 If you are building a highly-specialized internal plugin and want to mathematically guarantee zero naming collisions, you can use a `Symbol` as your namespace key!

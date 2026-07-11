@@ -12,10 +12,10 @@ Modern developers expect a "warm" API for common tasks. Native Temporal requires
 Data in the real world is messy. Tempo's **Layout** and **Snippet** engine allows developers to interpret human-readable strings, aliases, and custom formats without writing complex, custom utility functions. It turns "today" or "Christmas" into machine-exact time points effortlessly.
 
 ### 3. Business Intelligence via Plugin
-Tempo extends beyond simple date arithmetic through its **Terms** system. By providing declarative access to complex calculations—such as fiscal quarters, meteorological seasons, and zodiac signs, Tempo moves domain-specific logic out of the application code and into a reusable, extensible plugin architecture.
+Tempo extends beyond simple date arithmetic through its **Terms** system. By providing declarative access to complex calculations—such as fiscal quarters, meteorological seasons, and zodiac signs—Tempo moves domain-specific logic out of the application code and into a reusable, extensible plugin architecture.
 
 ### 4. Lean but Robust
-Tempo is designed to be a thin, highly capable layer. It prioritizes a lightweight API surface for the developer while maintaining robust internal logic to handle the complexities of timezones, calendars, and durations
+Tempo is designed to be a thin, highly capable layer. It prioritizes a lightweight API surface for the developer while maintaining robust internal logic to handle the complexities of timezones, calendars, and durations.
 
 ## Conclusion
 Tempo is not intended to replace Temporal, but to humanize it. It is the tool for developers who want the future of JavaScript dates today, without the overhead of building their own high-level utility library from scratch.

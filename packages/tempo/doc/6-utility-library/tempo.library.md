@@ -10,7 +10,7 @@ This document serves as an index summarizing these core library features.
 
 ## 1. Enumerators (`enumify`)
 
-Tempo uses a custom utility called `enumify` to create heavily-protected, iteratable enum-like objects instead of relying on native TypeScript enums.
+Tempo uses a custom utility called `enumify` to create heavily-protected, iterable enum-like objects instead of relying on native TypeScript enums.
 
 This allows for structural typing, easy iteration (`.keys()`, `.values()`), and runtime safety without the overhead or compilation quirks of standard TS Enums.
 
@@ -38,7 +38,7 @@ To ensure safe data persistence across `localStorage`, `IndexedDB`, or network b
 
 Tempo utilizes several custom TypeScript class decorators internally to enforce class behaviors such as strict immutability and preventing instantiation.
 
-Because Tempo's build target is currently ES2022, this decorator functionality is transpiled away into standard Javascript functions by the compiler rather than using native ECMAScript decorators. Our aim is to transition these to first-class native features once Javascript engines natively support the ECMAScript decorator proposal.
+Because Tempo's build target is currently ES2022, this decorator functionality is transpiled away into standard JavaScript functions by the compiler rather than using native ECMAScript decorators. Our aim is to transition these to first-class native features once JavaScript engines natively support the ECMAScript decorator proposal.
 
 👉 **[Read the full Decorators Guide](./tempo.decorators.md)** for details on the specific decorators used within the codebase.
 

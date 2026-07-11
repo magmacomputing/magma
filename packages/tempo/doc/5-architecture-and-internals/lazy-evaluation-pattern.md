@@ -18,10 +18,12 @@ Tempo achieves lazy evaluation in `O(1)` time using a **Delegator Proxy** that m
 
 ```javascript
 #setLazy(target, name, defineFunction) {
+    // Note: The `target` object must remain unfrozen so we can memoize properties onto it.
+    // It is kept secure by being stored in a private field (e.g., `#term`).
     const get = () => {
         const value = defineFunction.call(this); // Evaluate the value
         
-        // Memoize the value by defining it as a static property on the target
+        // Memoize the value by defining it as a static property on the mutable target
         Object.defineProperty(target, name, {
             value,
             enumerable: true,
@@ -42,8 +44,8 @@ Tempo achieves lazy evaluation in `O(1)` time using a **Delegator Proxy** that m
 1. **Proxy Entry Point:** 
    Tempo uses a single Proxy (the `delegate` helper) to catch the very first access to a property. This Proxy doesn't store state; it just routes the request to the lazy evaluator.
    
-2. **Private Fields Bypass the Freeze:**
-   The internal containers (`#term`, `#fmt`) are private fields. Native JS Private Fields don't exist as properties on the object; they are internal engine slots. Thus, even if the `Tempo` instance is frozen, we can still update the *internal* state of the container objects.
+2. **Private Fields Keep the Mutable Target Secure:**
+   The internal containers (`#term`, `#fmt`) are private fields. Native JS Private Fields don't exist as public properties on the object. Thus, even if the public `Tempo` instance is frozen, we can safely keep the *internal* target objects unfrozen to allow for memoization without exposing them to tampering.
 
 3. **Innate JS Engine Optimizations:**
    Once a property (e.g., `.quarter`) is evaluated, it is "baked" into the target object as a standard value property. Subsequent lookups bypass the Proxy and the getter entirely. The JS engine treats it as a raw property access, which is the fastest possible operation in JavaScript.

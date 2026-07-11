@@ -519,7 +519,12 @@ export class Tempo {
 			isObject(arg) &&
 			!isString(arg.name) &&
 			!isDefined(arg.key) &&
-			!Object.keys(arg).some(k => DISCOVERY.has(k as any));
+			!('timeZones' in arg) &&
+			!('numbers' in arg) &&
+			!('terms' in arg) &&
+			!('formats' in arg) &&
+			!('locales' in arg) &&
+			!('options' in arg);
 
 		let options = (args.length > 0 && isOptionsArg(args[args.length - 1])) ? args.pop() : undefined;
 		const licenseKey = options?.license || (args.length === 1 && isObject(args[0]) ? args[0].license : undefined);
@@ -531,7 +536,6 @@ export class Tempo {
 		}
 
 		const items = args.flat(Infinity);
-
 		if (isEmpty(items)) return this;
 
 		_lifecycle.extendDepth++;																// increment the re-entrant nesting counter
@@ -557,7 +561,7 @@ export class Tempo {
 						}
 					}
 				}
-				else if (isObject(item) && ((item as any).type === 'plugin' || (item as any).type === 'namespace' || (item as any).type === 'module' || (isString((item as any).name) && isFunction((item as any).install)))) {
+				else if (isObject(item) && isFunction(item.install) && (item.type === 'plugin' || item.type === 'namespace' || item.type === 'module' || isString(item.name))) {
 					// Plugin object form { name, install }
 					const name = (item as any).name;
 					const type = (item as any).type;

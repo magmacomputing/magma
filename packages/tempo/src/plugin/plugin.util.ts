@@ -241,11 +241,17 @@ export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> & { 
 					const cacheKey = isSymbol(config.name) ? config.name : `_${String(config.name)}`;
 					if (!this[cacheKey]) {
 						const target = Object.create(null);
-						this[cacheKey] = delegate(target, (key) => {
+						const proxy = delegate(target, (key) => {
 							const resolver = config.resolvers[key as keyof typeof config.resolvers];
 							if (resolver) return resolver(this);
 							return undefined;
 						}, true);
+						Object.defineProperty(this, cacheKey, {
+							value: proxy,
+							writable: true,
+							configurable: true,
+							enumerable: false
+						});
 					}
 					return this[cacheKey];
 				},

@@ -58,13 +58,13 @@ Tempo employs two distinct methodologies for protecting its internal state. Thes
 ## ⚡ The "Zero-Cost Constructor" Objective
 Tempo is built with a militant **"Performance First"** mindset, specifically targeting the computational overhead of the class constructor. In high-frequency applications (like Tickers or real-time Dashboards), creating thousands of objects must be nearly as computationally cheap as primitive assignments.
 
-**Status: Achieved.** We successfully meet the Zero-Cost objective. Benchmarks demonstrate an `O(1)` instantiation overhead of ~523µs, and a fast-fail rejection speed of ~359µs. 
+**Status: Achieved.** We successfully meet the Zero-Cost objective under stable conditions. Benchmarks demonstrate an instantiation overhead of ~523µs, and a fast-fail rejection speed of ~359µs (steady-state results after warm-up on the documented hardware setup). 
 
 This objective is achieved through two primary architectural pillars:
 1. **Lazy Evaluation ([Section 1](#1-lazy-evaluation-shadowing))**: Deferring the computationally expensive work of string parsing and Term calculation until the first strict property access.
 2. **Master Guard ([Section 3](#3-master-guard-fast-fail-sync-point))**: Implementing a high-speed "fast-fail" gatekeeper to instantly reject invalid inputs before parsing logic is engaged.
 
-Together, these pillars guarantee that `new Tempo()` maintains an `O(1)` constructor execution time by completely deferring `O(N)` parsing workloads, regardless of the density of registered plugins or custom terms.
+Together, these pillars help ensure that `new Tempo()` maintains an extremely fast constructor execution time by completely deferring standard parsing workloads. However, note that these costs can depend on input scanning length and registry-mutation-driven wordlist rebuilds, meaning performance is not universally input- or registry-independent.
 
 ---
 

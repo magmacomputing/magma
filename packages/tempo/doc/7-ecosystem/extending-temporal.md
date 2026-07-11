@@ -12,7 +12,7 @@ To complement Temporal's explicit strictness, Tempo adds:
 
 Here is a side-by-side comparison demonstrating how Tempo drastically reduces boilerplate for standard operations, while unlocking capabilities that are difficult to achieve with native Temporal alone.
 
-### 1. Parsing: Strict vs. Intelligent
+## 1. Parsing: Strict vs. Intelligent
 
 Temporal only accepts strict ISO 8601 strings. If you have user input, database dumps, or human-readable dates, you have to write your own parser first. Tempo handles it out-of-the-box.
 
@@ -32,7 +32,7 @@ new Tempo('next Friday');                 // Parses relative natural language pe
 
 For more information on handling natural language and complex strings, read the dedicated **[Parsing Guide](../2-core-concepts/tempo.parse.md)**.
 
-### 2. Formatting: Verbose vs. Expressive Tokens
+## 2. Formatting: Verbose vs. Expressive Tokens
 
 Temporal relies on the `Intl.DateTimeFormat` API for formatting. While powerful for localization, it is incredibly verbose for simple, specific string outputs.
 
@@ -53,7 +53,7 @@ t.fmt.date;                               // Output: "2026-01-24"
 
 For comprehensive examples of localized output and custom layouts, read the dedicated **[Formatting Guide](../2-core-concepts/tempo.format.md)**.
 
-### 3. Extensibility: Domain-Specific Logic
+## 3. Extensibility: Domain-Specific Logic
 
 Native Temporal deals strictly with standard calendar units (days, months, years). If you need to map a date to domain-specific logic (like a fiscal quarter or a meteorological season), you have to write and maintain your own math utilities.
 
@@ -89,7 +89,7 @@ t.term.szn; // → 'Winter' (Calculates meteorological season, respecting hemisp
 
 For more information on adding your own domain-specific logic, read the dedicated **[Terms Guide](../3-extending-tempo/tempo.term.md)**.
 
-### 4. Duration Logic: Strict Math vs. Human Readable
+## 4. Duration Logic: Strict Math vs. Human Readable
 
 Calculating the difference between two dates in native Temporal is mathematically sound, but it strictly returns a `Temporal.Duration` object. Tempo gives you the flexibility to return a `Duration` object, a precise floating-point number, or a human-readable string.
 
@@ -102,9 +102,10 @@ const now = Temporal.Now.plainDateISO();
 const target = Temporal.PlainDate.from('2026-12-25');
 now.until(target); // → Returns a complex Duration object
 
-// 2. Format a past date into a human-readable string
+// 2. Format a past date into a human-readable string (relative to a fixed point)
+const refDate = Temporal.PlainDate.from('2026-07-09');
 const pastDate = Temporal.PlainDate.from('2026-07-06');
-const diff = pastDate.until(now, { largestUnit: 'days' });
+const diff = pastDate.until(refDate, { largestUnit: 'days' });
 const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 rtf.format(-Math.abs(diff.days), 'day'); // → "3 days ago"
 ```
@@ -120,7 +121,8 @@ t.until('2026-12-25').duration; // → The underlying Temporal.Duration object
 t.until('2026-12-25', 'days');  // → 219
 
 // 2. .since() instantly returns human-readable relative strings
-t.since('last Friday', 'days'); // → "3 days ago"
+const t2 = new Tempo('2026-07-09');
+t2.since('2026-07-06', 'days'); // → "3 days ago"
 ```
 
 - `t.until()` returns a highly functional Extended Data Object (EDO) or a precise decimal number depending on your arguments.

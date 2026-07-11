@@ -35,7 +35,7 @@ Tempo.extend({
 
 ## 📅 TIMEZONE Registry
 
-Tempo includes a built-in registry of common timezone abbreviations. This allows users to pass simple strings like `AEST` instead of full IANA time zone identifiers (`Australia/Sydney`).
+Tempo includes a built-in registry of common timezone abbreviations. **These aliases map to DST-aware regional IANA zones, not fixed UTC offsets.** For example, `gmt` maps to `Europe/London` and `est` maps to `America/New_York`, which means they will automatically adjust to British Summer Time (BST) or Eastern Daylight Time (EDT) seasonally. If your application strictly requires a literal fixed offset (e.g., standard EST year-round), you should use an appropriate fixed-offset zone instead of these regional aliases.
 
 | Alias | IANA Identifier |
 | :--- | :--- |
@@ -74,3 +74,10 @@ Tempo leverages several other internal data dictionaries to parse and format dat
 - **Numbers**: Word-to-number dictionaries (e.g., `"one" -> 1`).
 
 *(Note: The overarching architectural goal for v4.0.0 is to consolidate all remaining dictionaries fully into the `registry` namespace to separate data from behavior.)*
+
+### Registry Merge Contracts
+
+Tempo applies different merge behaviors depending on how you inject registry data:
+
+- **`Tempo.init()` & Plugin Discovery**: These methods apply an **additive-only** merge strategy. They will deeply merge new keys into the registries, but they will **preserve existing root keys** (they do not override built-in core definitions or previously established configurations).
+- **`Tempo.extend()`**: This is an **explicit override**. When you pass an options object to `Tempo.extend()`, it takes strict precedence. It will deeply merge *and* safely overwrite existing registry keys, making it the proper tool for forcefully changing standard behaviors.

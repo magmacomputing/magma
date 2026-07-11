@@ -3,7 +3,7 @@
 Tempo includes a few custom TypeScript decorators that help enforce class behaviors such as immutability, serialization registration, and preventing instantiation.
 
 > **Note on ES2022 Target & Transpilation**
-> Currently, the TypeScript compiler target for Tempo is set to ES2022. Because native ECMAScript decorators are still maturing across Javascript engines, TypeScript transpiles these decorators away into standard function calls in the emitted Javascript code. Our long-term aim is to bring these decorators to first-class, native Javascript items once the ECMAScript decorator proposal is fully mature and widely implemented in engines without requiring down-level transpilation.
+> Currently, the TypeScript compiler target for Tempo is set to ES2022. Because native ECMAScript decorators are still maturing across JavaScript engines, TypeScript transpiles these decorators away into standard function calls in the emitted JavaScript code. Our long-term aim is to bring these decorators to first-class, native JavaScript items once the ECMAScript decorator proposal is fully mature and widely implemented in engines without requiring down-level transpilation.
 
 <br>
 

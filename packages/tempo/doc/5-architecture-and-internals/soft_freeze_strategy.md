@@ -58,11 +58,11 @@ export function proxify<T extends object>(target: T, frozen = true, lock = froze
 The `enumify` utility uses Soft Freeze by default for registries that are intended to be extensible.
 
 ```typescript
-export function enumify(list, frozen = true) {
+export function enumify(list, frozen = false) {
     const target = Object.create(proto, descriptors);
     
-    // Default to Soft Freeze (frozen=true, lock=false)
-    // if 'frozen' is passed as false, it signals 'extensible library registry'
+    // By defaulting to frozen=false, we create a Soft Freeze (proxy is frozen, target is not locked).
+    // This allows extensible library registries to be safely updated via the private symbol.
     return proxify(target, true, frozen); 
 }
 ```

@@ -44,7 +44,7 @@ const t2 = new FinTempo('market-open'); // Success: 09:30
 When using sandboxes, it's important to know which configuration resolved an input. Tempo now records the **source** of every match in the `parse.result` array.
 
 ### Hierarchy of Resolution
-When a conflict occurs (e.g., you redefine "noon"), Tempo uses a **"Last One Wins"** strategy:
+When a conflict occurs (e.g., you redefine "noon"), Tempo resolves it by checking layers from **highest priority to lowest priority**:
 1. **Local (Instance)**: Options passed to `new Tempo(val, options)`.
 2. **Sandbox (Factory)**: Options passed to `Tempo.create(options)`.
 3. **Plugins**: Aliases registered via `Tempo.extend()`.

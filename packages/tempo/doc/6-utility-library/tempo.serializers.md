@@ -54,7 +54,7 @@ const detachedCopy = cloneify(richData);
 Why not just use `JSON.parse(JSON.stringify(obj))` or `structuredClone()`?
 
 * **Preservation of Rich Types:** `JSON.stringify()` instantly throws a `TypeError` if it encounters a `BigInt`. It silently strips `undefined`, reduces `Date` to a dumb string, and mangles `Set`/`Map` into empty `{}` objects. Tempo's `stringify` preserves all of these.
-* **Fallback for `structuredClone`:** While `structuredClone` is great, it is not universally available in older environments and still drops functions. `cloneify` gives you a guaranteed deep-clone that resurrects your precise types reliably.
+* **Fallback for `structuredClone`:** While `structuredClone` is great, it is not universally available in older environments and throws an error if it encounters functions. `cloneify` gives you a guaranteed deep-clone that resurrects your precise types reliably.
 * **Safe Encoding:** Strings are natively URI-encoded for control characters, ensuring safe stashing in fragile WebStorage or cache environments without injection/corruption vulnerabilities.
 * **Class Registration:** User-defined classes can be resurrected after stringification if they are decorated with Tempo's `@Serialize()` registry.
 

@@ -83,7 +83,7 @@ Pledge.init();
 
 ## 6. Automatic Cleanup (Symbol.dispose)
 
-`Pledge` implements the `Disposable` interface. If a `Pledge` goes out of scope while still pending, it will automatically reject to prevent "hanging" async operations.
+`Pledge` implements the `Disposable` interface. You can automatically reject a pending pledge at the end of a scope by declaring it with the `using` keyword, or by explicitly invoking `[Symbol.dispose]()`. Ordinary block exit (without `using`) or garbage collection will not trigger disposal.
 
 ```typescript
 {

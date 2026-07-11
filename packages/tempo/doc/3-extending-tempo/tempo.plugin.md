@@ -141,10 +141,10 @@ To support teams that mandate strict 0kb bundle-impacts and functional programmi
 
 ```typescript
 // The Pure, Tree-shakeable approach:
-import { isLeapYear } from '@magmacomputing/tempo-fns';
+import { isFirstDayOfMonth } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo/core';
 
-if (isLeapYear(new Tempo('2024-01-01'))) { ... }
+if (isFirstDayOfMonth(new Tempo('2024-01-01'))) { ... }
 ```
 
 When building complex logic, consider whether it belongs as a core Plugin extension, or as a standalone utility in `tempo-fns` (or a hybrid wrapper of both!).

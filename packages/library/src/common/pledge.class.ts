@@ -68,7 +68,16 @@ export class Pledge<T> {
 		const opts = isObject(arg) ? arg : { tag: arg as string };
 		const config = { ..._static, ...ifDefined({ tag: opts.tag, debug: opts.debug, catch: opts.catch, silent: opts.silent }) };
 
-		this.#pledge = Promise.withResolvers();
+		if (Promise.withResolvers) {
+			this.#pledge = Promise.withResolvers();
+		} else {
+			let res: any, rej: any;
+			const promise = new Promise<T>((resolve, reject) => {
+				res = resolve;
+				rej = reject;
+			});
+			this.#pledge = { promise, resolve: res, reject: rej };
+		}
 		this.#status = markConfig({ state: _STATE.Pending, ...config });
 
 		const onResolve = asArray(_static.onResolve).concat(asArray(opts.onResolve));
