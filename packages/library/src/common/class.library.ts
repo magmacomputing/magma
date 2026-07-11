@@ -19,6 +19,12 @@ function getClassName<T extends Constructor>(value: T, contextName: string | sym
 
 /**
  * Shared helper to create an immutable or secure class wrapper  
+ * 
+ * @note **Workaround:** Due to ES decorator down-leveling issues with `__esDecorate` 
+ * in TS 7.0 + esbuild (when targeting ES2022), the wrapper's `immutabilityStrategy` 
+ * fails to capture the final subclass state in some bundled distributions. 
+ * As a temporary workaround, consuming classes must also explicitly return 
+ * `Object.freeze(this) as this;` at the end of their own constructors.
  */
 function createImmutableWrapper<T extends Constructor>(
 	value: T,
@@ -97,7 +103,11 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 }
 
 /**
- * Decorator to secure a class with a mutation-throwing Proxy (noisy immutability)
+ * Decorator to secure a class with a mutation-throwing Proxy (noisy immutability).
+ * 
+ * @note **Workaround:** Due to ES decorator down-leveling issues in TS 7.0 / esbuild,
+ * users must temporarily append `return Object.freeze(this) as this;` (or the `secure` equivalent)
+ * to their constructors to ensure immutability is maintained across production boundaries.
  */
 export function Securable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
@@ -110,7 +120,13 @@ export function Securable<T extends Constructor>(value: T, { kind, name, addInit
 	}
 }
 
-/** decorator to freeze a Class to prevent modification (silent immutability) */
+/** 
+ * Decorator to freeze a Class to prevent modification (silent immutability).
+ * 
+ * @note **Workaround:** Due to ES decorator down-leveling issues in TS 7.0 / esbuild,
+ * users must temporarily append `return Object.freeze(this) as this;` to their 
+ * constructors to ensure immutability is maintained across production boundaries.
+ */
 export function Immutable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
 
