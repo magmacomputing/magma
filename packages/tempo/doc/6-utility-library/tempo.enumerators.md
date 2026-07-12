@@ -84,16 +84,6 @@ const allKeys = STATUS.keys();     // ['Pending', 'Active', 'Resolved', 'Archive
 const isActive = STATUS.has('Active'); // true
 const value = STATUS.Resolved;      // 2
 ```
-or import from the explicit enums subpath export
-```typescript
-import { enums } from '@magmacomputing/tempo/enums';
-
-const {COMPASS, MONTH} = enums;
-
-const direction = COMPASS.North; // 'north'
-const monthIndex = MONTH.Feb;    // 2 (since 'All' was index 0)
-```
-
 or import only the enum you need in a single line:
 ```typescript
 import { COMPASS, MONTH } from '@magmacomputing/tempo/enums';

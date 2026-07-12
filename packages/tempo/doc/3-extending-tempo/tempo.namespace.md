@@ -170,10 +170,12 @@ export const SecretPlugin = defineNamespace({
 ```typescript
 // Consumer's code
 import { Tempo } from '@magmacomputing/tempo/core';
+import { FormatModule } from '@magmacomputing/tempo/format';
 // The consumer must import BOTH the Plugin (to extend Tempo) and the Symbol (to access the namespace)
 import { SecretPlugin, InternalTools } from './secret.js';
 
-Tempo.extend(SecretPlugin);
+// Register both modules so tempo.format() is available for the audit method
+Tempo.extend(FormatModule, SecretPlugin);
 
 const t = new Tempo();
 t[InternalTools].audit();

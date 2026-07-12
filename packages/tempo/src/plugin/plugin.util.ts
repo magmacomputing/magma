@@ -92,10 +92,10 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
  * ## defineModule
  * Used to register an internal modularization component.
  */
-export function defineModule<T extends Plugin<TempoType>>(module: T): T & { type: 'module' } {
-	const result = Object.assign(module, { type: 'module' } as const);
+export function defineModule<T extends Plugin<TempoType>>(module: T): T {
+	const result = { ...module, [sym.$PluginType]: 'module' };
 	registerPlugin(result);
-	return result;
+	return result as unknown as T;
 }
 
 /**
@@ -176,10 +176,10 @@ export function defineInterpreterModule(name: string, logic: any, statics?: Reco
  * ## definePlugin
  * Used to register a plugin.
  */
-export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T & { type: 'plugin' } {
-	const result = Object.assign(plugin, { type: 'plugin' } as const);
+export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T {
+	const result = { ...plugin, [sym.$PluginType]: 'plugin' };
 	registerPlugin(result);
-	return result;
+	return result as unknown as T;
 }
 
 /**
@@ -222,7 +222,7 @@ export type NamespaceConfig = {
  * ## defineNamespace
  * Creates a lazy-loaded property namespace on the Tempo instance.
  */
-export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> & { type: 'namespace' } {
+export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> {
 	if (isSymbol(config.name) && !config.name.description)
 		throw new TempoError('Tempo Security: Symbol namespaces must have a description.');
 
@@ -246,12 +246,16 @@ export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> & { 
 							if (resolver) return resolver(this);
 							return undefined;
 						}, true);
-						Object.defineProperty(this, cacheKey, {
-							value: proxy,
-							writable: true,
-							configurable: true,
-							enumerable: false
-						});
+						if (Reflect.isExtensible(this)) {
+							Object.defineProperty(this, cacheKey, {
+								value: proxy,
+								writable: true,
+								configurable: true,
+								enumerable: false
+							});
+						} else {
+							return proxy;
+						}
 					}
 					return this[cacheKey];
 				},
@@ -261,5 +265,6 @@ export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> & { 
 		}
 	});
 
-	return Object.assign(plugin, { type: 'namespace' } as const) as unknown as Plugin<TempoType> & { type: 'namespace' };
+	const result = { ...plugin, [sym.$PluginType]: 'namespace' };
+	return result as unknown as Plugin<TempoType>;
 }

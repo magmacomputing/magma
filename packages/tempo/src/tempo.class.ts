@@ -561,114 +561,145 @@ export class Tempo {
 						}
 					}
 				}
-				else if (isObject(item) && isFunction(item.install) && (item.type === 'plugin' || item.type === 'namespace' || item.type === 'module' || isString(item.name))) {
-					// Plugin object form { name, install }
-					const name = (item as any).name;
-					const type = (item as any).type;
-					const state = this[$Internal]();
-					const rt = getRuntime();
-					const installed = state.installed ?? rt.installed;	// ScopedSet for sandboxes, global Set for Tempo
-					if (installed.has(name)) {
-						logDebug(`Plugin already installed by name: ${name}`, state.config);
-						return;
-					}
-					installed.add(name);
-
-					registerPlugin(item, state);
-					if ((item as any).version && isString(name)) {
-						let suffix = '';
-						if (type === 'plugin') suffix = 'Plugin';
-						else if (type === 'namespace') suffix = 'Namespace';
-						else if (type === 'module') suffix = 'Module';
-						else suffix = 'Plugin';
-
-						Tempo.#versions[`${name}${name.endsWith(suffix) ? '' : suffix}`] = (item as any).version;
-					}
-					(item as TempoPlugin).install.call(this as any, this, options);
-				}
 				else if (isObject(item)) {
-					// 1. handle TermPlugin
-					if (item.type === 'term' || (isString(item.key) && isFunction(item.define))) {
-						const config = item as TermPlugin;
-						const state = this[$Internal]();
+					let pluginType = item[sym.$PluginType];
 
-						if (Tempo.#termMap.get(config.key) === config) return;
-						if (Tempo.#termMap.has(config.key)) {
-							const existing = Tempo.#termMap.get(config.key);
-							const rangesMatch = JSON.stringify(existing?.ranges) === JSON.stringify(config.ranges);
-							if (existing?.scope === config.scope && existing?.description === config.description && rangesMatch) {
-								logDebug(`[Tempo#extend] Duplicate term registration ignored for key: "${config.key}"`, state.config);
+					/** @deprecated Legacy structural typing fallback. Will be removed in v4.0.0 */
+					if (!pluginType) {
+						if (isFunction(item.install) && (item.type === 'plugin' || item.type === 'namespace' || item.type === 'module' || isString(item.name))) {
+							pluginType = item.type || 'plugin';
+						} else if (item.type === 'term' || (isString(item.key) && isFunction(item.define))) {
+							pluginType = 'term';
+						}
+					}
+
+					const assertContract = (isValid: boolean, msg: string) => {
+						if (!isValid) {
+							const config = this[$Internal]().config;
+							if (config.catch) {
+								logError(msg, config);
+								return false;
+							}
+							throw new TypeError(msg);
+						}
+						return true;
+					}
+
+					switch (pluginType) {
+						case 'plugin':
+						case 'namespace':
+						case 'module': {
+							if (!assertContract(isFunction(item.install), `[Tempo] Invalid ${pluginType} object: missing 'install()' method.`)) return;
+
+							const name = (item as any).name;
+							const state = this[$Internal]();
+							const rt = getRuntime();
+							const installed = state.installed ?? rt.installed;	// ScopedSet for sandboxes, global Set for Tempo
+							if (installed.has(name)) {
+								logDebug(`Plugin already installed by name: ${name}`, state.config);
 								return;
 							}
-							logError(`[Tempo#extend] Term collision on key: "${config.key}". Registration aborted.`, state.config);
-							return;
+							installed.add(name);
+
+							registerPlugin(item, state);
+							if (item.version && isString(name)) {
+								let suffix = '';
+								if (pluginType === 'plugin') suffix = 'Plugin';
+								else if (pluginType === 'namespace') suffix = 'Namespace';
+								else if (pluginType === 'module') suffix = 'Module';
+								else suffix = 'Plugin';
+
+								Tempo.#versions[`${name}${name.endsWith(suffix) ? '' : suffix}`] = item.version;
+							}
+							(item as TempoPlugin).install.call(this, this, options);
+							break;
 						}
-						if (config.scope && Tempo.#termMap.get(config.scope) === config) { /* continue */ }
-						else if (config.scope && Tempo.#termMap.has(config.scope)) {
-							const existingScope = Tempo.#termMap.get(config.scope);
-							const rangesMatch = JSON.stringify(existingScope?.ranges) === JSON.stringify(config.ranges);
-							if (existingScope?.key === config.key && existingScope?.description === config.description && rangesMatch) {
-								/* continue */
-							} else {
-								logError(`[Tempo#extend] Term collision on scope: "${config.scope}". Registration aborted.`, state.config);
+						case 'term': {
+							if (!assertContract(isFunction(item.define), `[Tempo] Invalid term object: missing 'define()' method.`)) return;
+
+							const config = item as TermPlugin;
+							const state = this[$Internal]();
+
+							if (Tempo.#termMap.get(config.key) === config) return;
+							if (Tempo.#termMap.has(config.key)) {
+								const existing = Tempo.#termMap.get(config.key);
+								const rangesMatch = JSON.stringify(existing?.ranges) === JSON.stringify(config.ranges);
+								if (existing?.scope === config.scope && existing?.description === config.description && rangesMatch) {
+									logDebug(`[Tempo#extend] Duplicate term registration ignored for key: "${config.key}"`, state.config);
+									return;
+								}
+								logError(`[Tempo#extend] Term collision on key: "${config.key}". Registration aborted.`, state.config);
 								return;
 							}
-						}
-
-						Tempo.#termMap.set(config.key, config);
-						if (config.scope) Tempo.#termMap.set(config.scope, config);
-
-						if (config.version) {
-							const name = config.scope || config.key;
-							Tempo.#versions[`${name}Term`] = config.version;
-						}
-
-						registerTerm(config, this[$Internal]());
-
-						// 1a. sync with alias engine
-						if (config.scope && config.ranges) {
-							const type = config.scope === 'period' ? 'per' : (config.scope === 'event' ? 'evt' : undefined);
-							if (type) {
-								const aliases: [string, any][] = [];
-								const monthKeys = Tempo.MONTH.keys();
-								config.ranges.forEach(r => {
-									if (r.key) {
-										let val: string | undefined;
-										if (isDefined(r.hour)) {
-											if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23)
-												val = `${r.hour}:${pad(r.minute ?? 0)}`;
-										} else if (r.month) {
-											if (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12)
-												val = `${pad(r.day ?? 1)} ${monthKeys[r.month - 1]}`;
-										}
-
-										if (val) aliases.push([r.key, val]);
-									}
-								});
-
-								if (aliases.length > 0) {
-									const state = this[$Internal]();
-									if (type === 'per') this[$setPeriods](state, aliases);
-									else if (type === 'evt') this[$setEvents](state, aliases);
+							if (config.scope && Tempo.#termMap.get(config.scope) === config) { /* continue */ }
+							else if (config.scope && Tempo.#termMap.has(config.scope)) {
+								const existingScope = Tempo.#termMap.get(config.scope);
+								const rangesMatch = JSON.stringify(existingScope?.ranges) === JSON.stringify(config.ranges);
+								if (existingScope?.key === config.key && existingScope?.description === config.description && rangesMatch) {
+									/* continue */
+								} else {
+									logError(`[Tempo#extend] Term collision on scope: "${config.scope}". Registration aborted.`, state.config);
+									return;
 								}
 							}
-						}
-					}
-					// 2. handle Discovery object (container)
-					else {
-						const discovery = item as any
-						const opts = this[$setDiscovery](this[$Internal](), discovery);
-						if (!isEmpty(opts)) this[$setConfig](this[$Internal](), opts);
 
-						// only trigger init if we're assigning a new discovery object to a symbol
-						if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
-							const discoveryArg = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
-							const discoverySymbol = isString(discoveryArg) ? Symbol.for(discoveryArg) : (isSymbol(discoveryArg) && !Symbol.keyFor(discoveryArg) ? Symbol('TempoSandbox') : discoveryArg);
+							Tempo.#termMap.set(config.key, config);
+							if (config.scope) Tempo.#termMap.set(config.scope, config);
 
-							if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item) {
-								(globalThis as Record<symbol, any>)[discoverySymbol as symbol] = item;
-								this[$setConfig](this[$Internal](), { discovery: discoverySymbol })
+							if (config.version) {
+								const name = config.scope || config.key;
+								Tempo.#versions[`${name}Term`] = config.version;
 							}
+
+							registerTerm(config, this[$Internal]());
+
+							// 1a. sync with alias engine
+							if (config.scope && config.ranges) {
+								const type = config.scope === 'period' ? 'per' : (config.scope === 'event' ? 'evt' : undefined);
+								if (type) {
+									const aliases: [string, any][] = [];
+									const monthKeys = Tempo.MONTH.keys();
+									config.ranges.forEach(r => {
+										if (r.key) {
+											let val: string | undefined;
+											if (isDefined(r.hour)) {
+												if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23)
+													val = `${r.hour}:${pad(r.minute ?? 0)}`;
+											} else if (r.month) {
+												if (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12)
+													val = `${pad(r.day ?? 1)} ${monthKeys[r.month - 1]}`;
+											}
+
+											if (val) aliases.push([r.key, val]);
+										}
+									});
+
+									if (aliases.length > 0) {
+										const state = this[$Internal]();
+										if (type === 'per') this[$setPeriods](state, aliases);
+										else if (type === 'evt') this[$setEvents](state, aliases);
+									}
+								}
+							}
+							break;
+						}
+						default: {
+							// Safe fallback to Discovery Object parsing
+							const discovery = item as any
+							const opts = this[$setDiscovery](this[$Internal](), discovery);
+							if (!isEmpty(opts)) this[$setConfig](this[$Internal](), opts);
+
+							// only trigger init if we're assigning a new discovery object to a symbol
+							if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
+								const discoveryArg = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
+								const discoverySymbol = isString(discoveryArg) ? Symbol.for(discoveryArg) : (isSymbol(discoveryArg) && !Symbol.keyFor(discoveryArg) ? Symbol('TempoSandbox') : discoveryArg);
+
+								if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item) {
+									(globalThis as Record<symbol, any>)[discoverySymbol as symbol] = item;
+									this[$setConfig](this[$Internal](), { discovery: discoverySymbol })
+								}
+							}
+							break;
 						}
 					}
 				}

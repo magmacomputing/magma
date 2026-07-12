@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 import alias from '@rollup/plugin-alias';
 import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
-import esbuild from 'rollup-plugin-esbuild';
 import JavaScriptObfuscator from 'javascript-obfuscator';
 import MagicString from 'magic-string';
 
@@ -98,7 +97,6 @@ export default [
 		],
 		plugins: [
 			resolve({ extensions: ['.js', '.ts'], moduleDirectories: ['node_modules'] }),
-			esbuild({ target: 'esnext', minify: false }),
 			{
 				name: 'obfuscator',
 				renderChunk(code) {

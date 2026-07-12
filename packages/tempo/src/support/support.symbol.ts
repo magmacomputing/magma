@@ -26,6 +26,7 @@ export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termErr
 /** cross-bundle brand check for TempoRuntime */						export const $RuntimeBrand: unique symbol = Symbol.for('magmacomputing/tempo/runtime/brand') as any;
 /** branding for explicit PropertyDescriptors */						export const $Descriptor: unique symbol = Symbol.for('magmacomputing/tempo/descriptor') as any;
 /** key for License State */																export const $License: unique symbol = Symbol.for('magmacomputing/tempo/license') as any;
+/** key for Plugin Discrimination */												export const $PluginType: unique symbol = Symbol.for('magmacomputing/tempo/pluginType') as any;
 
 /** @internal static config helper */												export const $setConfig: unique symbol = Symbol.for('magmacomputing/tempo/setConfig') as any;
 /** @internal static discovery helper */										export const $setDiscovery: unique symbol = Symbol.for('magmacomputing/tempo/setDiscovery') as any;
@@ -39,7 +40,7 @@ export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termErr
 const local = {
 	$Tempo, $Register, $Interpreter, $guard, $errored,
 	$Internal, $Bridge, $RuntimeBrand, $Descriptor, $License, $setConfig, $setDiscovery,
-	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase
+	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $PluginType
 } as const;
 
 /** @internal Unified Symbol Registry (Inherits from #library via Prototype Chain) */

@@ -1,4 +1,4 @@
-import { isFirstDayOfMonth } from '../src/isFirstDayOfMonth.js';
+import { isFirstDayOfMonth } from '../src/calendar/isFirstDayOfMonth.js';
 import { Tempo } from '@magmacomputing/tempo';
 
 describe('isFirstDayOfMonth', () => {

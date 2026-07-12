@@ -7,8 +7,8 @@ export { isFirstDayOfMonth } from './calendar/isFirstDayOfMonth.js';
 export { getISOWeekOfYear } from './calendar/getISOWeekOfYear.js';
 
 // --- Scheduling ---
-export { nextCron } from './scheduling/cron.js';
-export { prevCron } from './scheduling/cron.js';
+// export { nextCron } from './scheduling/cron.js';
+// export { prevCron } from './scheduling/cron.js';
 export { Interval } from './scheduling/Interval.js';
 
 // --- Timezone & Location ---

@@ -10,9 +10,9 @@ If you only need Tempo's "Smart" parsing but want to keep your project lightweig
 import { parse } from '@magmacomputing/tempo/parse';
 
 // Returns a native Temporal.ZonedDateTime
-const zdt = parse('next Tuesday at 3pm', { timeZone: 'Australia/Sydney' });
+const zdt = parse('May 20, 2026 at 3pm', { timeZone: 'Australia/Sydney' });
 
-console.log(zdt.toString()); // 2026-04-28T15:00:00+10:00[Australia/Sydney]
+console.log(zdt.toString()); // 2026-05-20T15:00:00+10:00[Australia/Sydney]
 ```
 
 ### Why use Standalone Parse?
@@ -49,7 +49,7 @@ When using the `Tempo` class, parsing is handled automatically by the constructo
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
-const t = new Tempo('2 days ago');
+const t = new Tempo('May 20, 2026');
 ```
 
 ### Supported Formats

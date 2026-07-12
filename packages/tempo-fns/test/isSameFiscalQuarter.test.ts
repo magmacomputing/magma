@@ -1,4 +1,4 @@
-import { isSameFiscalQuarter } from '../src/isSameFiscalQuarter.js';
+import { isSameFiscalQuarter } from '../src/business/isSameFiscalQuarter.js';
 import { Tempo } from '@magmacomputing/tempo';
 
 describe('isSameFiscalQuarter', () => {

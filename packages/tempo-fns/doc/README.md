@@ -42,6 +42,6 @@ If you aren't using a bundler (like Vite, Webpack, or Rollup), we provide a pre-
 <script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-fns/dist/tempo-fns.global.js"></script>
 <script>
   // Access functions via the TempoFns global
-  TempoFns.isFirstDayOfMonth(new Tempo());
+  TempoFns.isFirstDayOfMonth(Temporal.Now.plainDateISO());
 </script>
 ```

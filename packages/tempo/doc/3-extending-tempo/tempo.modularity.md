@@ -92,6 +92,22 @@ export const MyModule = defineModule((TempoClass, options) => {
 });
 ```
 
+To ensure TypeScript recognizes your new methods without throwing augmentation errors (such as `TS2669`), you must properly declare the module augmentation in a `.d.ts` file alongside an explicit import:
+
+```typescript
+// my-module.d.ts
+import '@magmacomputing/tempo';
+
+declare module '@magmacomputing/tempo' {
+    interface Tempo {
+        sayHello(): string;
+    }
+    namespace Tempo {
+        export function greet(): string;
+    }
+}
+```
+
 ::: warning
 **Dual Module Hazard**: If you are using `@magmacomputing/tempo/core` and `@magmacomputing/tempo` in the same project, ensure you use the `development` condition or consistent import paths to avoid registering the same classes twice.
 :::

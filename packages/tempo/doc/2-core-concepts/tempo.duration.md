@@ -18,16 +18,16 @@ Calculates the time remaining from the Tempo instance *until* a future date.
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
 
-const now = new Tempo();
+const now = new Tempo('2026-05-10T08:00:00');
 const xmas = new Tempo('2026-12-25');
 
 // 1. Return an Extended Data Object (EDO)
 const duration = now.until(xmas);
 
 // 2. Or, calculate relative to a specific unit (returns a primitive Number)
-now.until('afternoon', 'minutes'); // → ~84.45 (example output: fractional)
-now.until('xmas', 'days');         // → ~219   (example output: whole number — see note below)
-now.until('xmas', 'weeks');        // → ~31.28 (example output: fractional)
+now.until('afternoon', 'minutes'); // → 420    (example output: exactly 7 hours)
+now.until('xmas', 'days');         // → 229    (example output: whole number — see note below)
+now.until('xmas', 'weeks');        // → ~32.71 (example output: fractional)
 now.until(now.add({ days: 2 }), 'hours'); // → 48 (targets can also be Temporal/Tempo instances)
 ```
 
@@ -36,9 +36,9 @@ When a target resolves to a **date without a time component** (e.g. `'xmas'`, `'
 
 - `t.until('xmas', 'days')` → a **whole number** — the time components cancel out exactly.
 - `t.until('xmas', 'hours')` → a **whole number** — same reason.
-- `t.until('xmas', 'weeks')` → **fractional** — 219 days does not divide evenly into weeks.
+- `t.until('xmas', 'weeks')` → **fractional** — 229 days does not divide evenly into weeks.
 
-This matches natural-language intuition: *"How many days until Christmas?"* expects `219`, not `219.43`. Targets with an **explicit time** (e.g. `'afternoon'`, `'9am'`) always produce fractional values because the target time differs from the anchor's current time-of-day.
+This matches natural-language intuition: *"How many days until Christmas?"* expects `229`, not `229.43`. Targets with an **explicit time** (e.g. `'afternoon'`, `'9am'`) produce fractional values if the target time differs from the anchor's current time-of-day.
 :::
 
 ### `.since()`

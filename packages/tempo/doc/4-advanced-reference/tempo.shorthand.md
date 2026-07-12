@@ -13,7 +13,7 @@ Shorthand behavior changes depending on whether you provide a **String**, an **O
 
 ```javascript
 t.set('#qtr.>q1'); // Snaps to the start of the next available Q1
-t.add('#timeOfDay.next'); // Jumps to the start of the next defined period
+t.add('#timeOfDay.>afternoon'); // Jumps to the start of the next Afternoon period
 ```
 
 ### B. Relational Mode (Object Shorthand)

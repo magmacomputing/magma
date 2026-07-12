@@ -1,20 +1,29 @@
 import type { Tempo } from '@magmacomputing/tempo';
 
 export class Interval {
-	start: Tempo;
-	end: Tempo;
+	readonly #start: Tempo;
+	readonly #end: Tempo;
 
 	constructor(start: Tempo, end: Tempo) {
 		const startNs = start.epoch.ns;
 		const endNs = end.epoch.ns;
 
 		if (endNs < startNs) {
-			this.start = end;
-			this.end = start;
+			this.#start = end;
+			this.#end = start;
 		} else {
-			this.start = start;
-			this.end = end;
+			this.#start = start;
+			this.#end = end;
 		}
+		Object.freeze(this);
+	}
+
+	get start(): Tempo {
+		return this.#start;
+	}
+
+	get end(): Tempo {
+		return this.#end;
 	}
 
 	/** Returns true if the specified Tempo instance is within this interval */

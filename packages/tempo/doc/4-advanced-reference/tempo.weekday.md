@@ -25,6 +25,15 @@ When no modifier is provided, Tempo defaults to the Weekday in the **current wee
 | `>=` | Subsequent to | `>=Fri` | The Friday immediately following (or equal to) today |
 | `>` | Subsequent to (strict) | `>Sat` | The Saturday strictly after today |
 
+### Strict vs Inclusive Boundaries
+The difference between `<` (strict) and `<=` (inclusive) is only relevant when you evaluate a string on the exact same weekday you are targeting.
+
+For example, if today is **Wednesday**:
+```typescript
+new Tempo('<Wed')  // → returns LAST Wednesday (strictly before today)
+new Tempo('<=Wed') // → returns TODAY (inclusive match)
+```
+
 ### 3. Keyword Modifiers
 Keywords can be used for more natural language-like inputs.
 

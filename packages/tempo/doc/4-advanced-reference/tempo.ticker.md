@@ -8,4 +8,4 @@ Because it uses advanced JavaScript `AsyncGenerator` patterns and is designed fo
 
 To view the documentation, install the plugin, and generate a license token, please visit the official Tempo Registry:
 
-**[Explore the Tempo Ticker Plugin ↗](https://magmacomputing.github.io/tempo-plugin-docs/)**
+**[Explore the Tempo Ticker Plugin ↗](https://registry.magmacomputing.com.au)**

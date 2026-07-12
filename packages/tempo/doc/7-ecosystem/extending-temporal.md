@@ -114,7 +114,7 @@ rtf.format(-Math.abs(diff.days), 'day'); // → "3 days ago"
 Tempo understands natural language targets and provides multiple ways to measure and format the resulting elapsed time. 
 
 ```javascript
-const t = new Tempo();
+const t = new Tempo('2026-05-20T08:00:00');
 
 // 1. .until() returns an EDO or a precise number
 t.until('2026-12-25').duration; // → The underlying Temporal.Duration object

@@ -6,7 +6,7 @@
 
 `Tempo` expects the host environment to provide `Temporal`, either through native runtime support or a user-supplied polyfill.
 
-`Temporal` has reached Stage 4 of the [TC39 standards process](https://tc39.es/proposal-temporal/) (the committee that evolves JavaScript) and is shipping natively in modern browser environments (Deno 2.7+, Chrome 144+, Firefox 139+). For Node.js, native unflagged support is planned for a future release, but it can currently be tested via the `--harmony-temporal` flag. You can verify current browser support at [caniuse.com/temporal](https://caniuse.com/temporal). To avoid needlessly inflating package sizes for modern apps, `Tempo` does not bundle a `Temporal` polyfill by default.
+`Temporal` has reached Stage 4 of the [TC39 standards process](https://tc39.es/proposal-temporal/) (the committee that evolves JavaScript) and is shipping natively in modern environments (Deno 2.7+, Node.js 26+, Chrome 144+, Firefox 139+). Note that Safari/iOS currently do not support Temporal natively and require a polyfill. You can verify current browser support at [caniuse.com/temporal](https://caniuse.com/temporal). To avoid needlessly inflating package sizes for modern apps, `Tempo` does not bundle a `Temporal` polyfill by default.
 
 ::: warning
 Node.js environments that ship `Temporal` behind a feature flag (`--harmony-temporal`) may have incomplete implementations. For stability, we strongly recommend using `@js-temporal/polyfill` instead of the native flag until you upgrade to an official unflagged release.
@@ -43,15 +43,11 @@ const t = new Tempo('next Friday');
 
 ### Node.js (with Native Temporal)
 
-When native unflagged `Temporal` support is officially released in Node.js, it will be fully supported and enabled by default.
-
-For current Node.js releases that still ship `Temporal` behind a flag, you can enable it with:
+Native unflagged `Temporal` support is available in Node.js 26+ and is enabled by default.
 
 ```bash
-node --harmony-temporal my-app.js
+node my-app.js
 ```
-
-*(Note: See the [Temporal Polyfill Note](#temporal-polyfill-note) for warnings about using this flag in production)*
 
 ### Node.js (with Polyfill)
 
@@ -174,6 +170,7 @@ To use **Tempo Premium Plugins** via a static CDN, you simply need to explicitly
 <script type="importmap">
 {
   "imports": {
+    "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
     "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.index.js",
     "@magmacomputing/tempo/plugin-api": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/plugin-api.index.js",
 

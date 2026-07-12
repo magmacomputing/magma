@@ -129,8 +129,8 @@ The **Guarded-Lazy** strategy ensures that even under the weight of hundreds of 
 
 ### How it works:
 1. **Longest-Token Matching**: To prevent fractional matching (e.g., matching `qtr` inside `quarter`), the guard executes a greedy "Scan-and-Consume" loop that strongly prioritizes the longest available token match.
-2. **Unified Wordlist**: The guard systematically ingests all registered Terms, Timezones, Month names, and Custom Events into a single `O(1)` Set lookup.
-3. **High-Speed Gatekeeper**: By eliminating complex backtracking regular expressions, the gatekeeper provides deterministic `O(1)` performance regardless of the depth of registered plugins.
+2. **Unified Wordlist**: The guard systematically ingests all registered Terms, Timezones, Month names, and Custom Events into a single `O(1)` Set lookup (average token-lookup performance *after* cache construction).
+3. **High-Speed Gatekeeper**: By eliminating complex backtracking regular expressions, the gatekeeper provides deterministic `O(1)` average lookup performance regardless of the depth of registered plugins. Note that overall validation time is bounded by the string length during the scan-and-consume phase, plus occasional `O(N)` cache rebuild costs when the underlying registry mutates.
 4. **Versioned Registry**: To avoid catastrophic redundant wordlist rebuilding, the Guard strictly monitors a version counter on the alias registry. The wordlist is dynamically rebuilt *only* when a valid mutation occurs.
 5. **Auto-Lazy**: Valid inputs that successfully clear the guard automatically shift the instance to `mode: 'defer'`, completely deferring the heavy `O(N)` parsing work until a property is strictly read.
 

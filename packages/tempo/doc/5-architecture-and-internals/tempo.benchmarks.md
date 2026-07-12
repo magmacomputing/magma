@@ -26,9 +26,9 @@ By using a **Proxy-Delegator** pattern, the constructor returns near-instantly w
 
 ### 2. The Master Guard (Fast-Fail)
 
-The static `#guard` regex acts as a rapid "Sync Point." 
+The dynamic `#guard` acts as a rapid scan-and-consume gatekeeper.
 
-- **Efficiency**: Strings that do not contain valid date-time characters are rejected in `O(1)` time.
+- **Efficiency**: Invalid inputs are rapidly rejected via a fast greedy scan, bounding failure costs tightly to string length.
 - **Performance**: Validating a string against the guard is ~30% faster than a full parsing cycle, even for simple ISO strings.
 
 ---
@@ -97,5 +97,5 @@ When evaluated against a mixed dataset (Strict ISO, US Localized, Timestamps, an
 #### 🔍 Key Takeaways
 
 1. **Sub-Millisecond Rich Parsing**: While native `Date` has raw native engine speed (0.18 µs), it sacrifices reliability and formatting, failing entirely on localized formats like `10/31/2026`. Tempo achieves a robust **71% success rate** while still maintaining blazing fast **sub-millisecond (~0.7ms)** parsing speeds! In real-world terms, processing 100 complex localized dates on a page will only take 70 milliseconds. 
-2. **Defer Mode is Highly Optimized**: Looking at the memory overhead (`heapUsedDeltaMb`), `defer` mode actually resulted in a *negative* memory delta (`-36.27 MB`), meaning it allowed the JavaScript Garbage Collector to clean up memory faster than we were allocating the Proxy instances!
+2. **Defer Mode is Highly Optimized**: Looking at the memory overhead (`heapUsedDeltaMb`), `defer` mode actually resulted in a *negative* memory delta (`-36.27 MB`). Note that this is simply an observed lower end-of-run heap measurement due to incidental GC timing, but demonstrates the inherently low memory pressure of deferred initialization.
 3. **Adapt This Test**: The runner script used to generate these results is available in the `bench/runner.test.ts` directory. You can use it as a scaffold to test Tempo against your own unique datasets.

@@ -4,7 +4,7 @@ We are building a vibrant ecosystem of developers who are passionate about moder
 
 ## Contributing
 
-We welcome community contributions! Whether it's a new astrological utility or a fix to an existing cron parser, please check out our [Contributing Guide](https://github.com/magmacomputing/magma/blob/main/packages/tempo/CONTRIBUTING.md) to get started.
+We welcome community contributions! Whether it's a new astrological utility or a fix to an existing cron parser, please check out our [Contributing Guide](https://github.com/magmacomputing/magma/blob/main/packages/tempo-fns/CONTRIBUTING.md) to get started.
 
 ## Issues & Support
 

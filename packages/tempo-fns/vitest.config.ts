@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import swc from 'unplugin-swc';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const polyfill = resolve(__dirname, '../tempo/bin/temporal-polyfill.ts');
+const polyfill = resolve(__dirname, './test/setup.ts');
 
 export default defineConfig({
 	esbuild: false,
