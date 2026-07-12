@@ -65,4 +65,18 @@ describe('Interval', () => {
 		expect(union!.start.epoch.ns).toBe(new Tempo('2026-07-01').epoch.ns);
 		expect(union!.end.epoch.ns).toBe(new Tempo('2026-07-15').epoch.ns);
 	});
+
+	it('intersection should return null if not overlapping', () => {
+		const i1 = new Interval(new Tempo('2026-07-01'), new Tempo('2026-07-10'));
+		const i2 = new Interval(new Tempo('2026-07-15'), new Tempo('2026-07-20'));
+		
+		expect(i1.intersection(i2)).toBeNull();
+	});
+
+	it('union should return null if not overlapping and not abutting', () => {
+		const i1 = new Interval(new Tempo('2026-07-01'), new Tempo('2026-07-10'));
+		const i2 = new Interval(new Tempo('2026-07-15'), new Tempo('2026-07-20'));
+		
+		expect(i1.union(i2)).toBeNull();
+	});
 });

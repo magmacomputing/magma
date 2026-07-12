@@ -5,6 +5,7 @@ interface TemporalLike {
 	day: number;
 }
 
+/** Determines if the given date falls on the first day of the month. */
 export const isFirstDayOfMonth = (input: TemporalLike | Tempo): boolean => {
 	// Tempo exposes `.day` directly, making it natively compatible 
 	// with Temporal's duck-typing!

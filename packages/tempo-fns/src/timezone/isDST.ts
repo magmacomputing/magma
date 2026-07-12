@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { getOffsets } from './getOffsets.js';
 
-/** return whether the given (or current) date is in Daylight Savings */
+/** Determines whether the given date is in Daylight Savings Time (DST). */
 export function isDST(date?: Temporal.ZonedDateTime | string, timeZone: string = Intl.DateTimeFormat().resolvedOptions().timeZone) {
 	let zdt: Temporal.ZonedDateTime;
 

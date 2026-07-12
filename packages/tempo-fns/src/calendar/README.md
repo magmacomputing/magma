@@ -28,3 +28,17 @@ import { isFirstDayOfMonth } from '@magmacomputing/tempo-fns/calendar';
 
 isFirstDayOfMonth(new Tempo('2026-03-01')); // Returns: true
 ```
+
+### `getPublicHolidays`
+Fetches a list of public holidays for a specific region and year from the Nager.Date API.
+
+```typescript
+function getPublicHolidays(year?: number, region?: string): Promise<PublicHoliday[]>;
+```
+**Example:**
+```typescript
+import { getPublicHolidays } from '@magmacomputing/tempo-fns/calendar';
+
+const holidays = await getPublicHolidays(2026, 'US');
+console.log(holidays[0].name); // "New Year's Day"
+```

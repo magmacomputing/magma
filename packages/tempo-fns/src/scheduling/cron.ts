@@ -22,21 +22,29 @@ function parseCronField(field: string, min: number, max: number): CronField {
 		if (part.includes('/')) {
 			const [range, stepStr] = part.split('/');
 			const step = parseInt(stepStr, 10);
+			if (isNaN(step) || step <= 0)
+				throw new Error(`[Tempo-Fns] Invalid step value: ${stepStr}`);
+
 			let start = min;
 			let end = max;
 			if (range !== '*') {
 				const rangeParts = range.split('-');
 				start = parseInt(rangeParts[0], 10);
 				end = rangeParts.length > 1 ? parseInt(rangeParts[1], 10) : start;
+				if (start > end)
+					throw new Error(`[Tempo-Fns] Invalid range: ${range}`);
+
 			}
 			for (let i = start; i <= end; i += step) {
 				allowed.add(i);
 			}
 		} else if (part.includes('-')) {
 			const [start, end] = part.split('-').map(Number);
-			for (let i = start; i <= end; i++) {
+			if (start > end)
+				throw new Error(`[Tempo-Fns] Invalid range: ${part}`);
+
+			for (let i = start; i <= end; i++)
 				allowed.add(i);
-			}
 		} else {
 			allowed.add(parseInt(part, 10));
 		}
@@ -61,7 +69,7 @@ export function parseCron(pattern: string): CronSchedule {
 
 function matchesDay(schedule: CronSchedule, current: Temporal.ZonedDateTime): boolean {
 	const domMatch = schedule.daysOfMonth.allowed.has(current.day);
-	const dow = current.dayOfWeek; 
+	const dow = current.dayOfWeek;
 	const dowMatch = schedule.daysOfWeek.allowed.has(dow) || (dow === 7 && schedule.daysOfWeek.allowed.has(0));
 
 	if (schedule.daysOfMonth.restricted && schedule.daysOfWeek.restricted) {

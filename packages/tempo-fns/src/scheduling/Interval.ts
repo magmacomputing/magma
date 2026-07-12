@@ -2,12 +2,13 @@ import type { Tempo } from '@magmacomputing/tempo';
 
 export type TemporalPoint = Tempo | { epochNanoseconds: bigint };
 
-function getNs(point: any): bigint {
-	if (point?.epoch?.ns !== undefined) return point.epoch.ns as bigint;
-	if (point?.epochNanoseconds !== undefined) return point.epochNanoseconds as bigint;
+function getNs(point: TemporalPoint | unknown): bigint {
+	const ns = (point as any)?.epoch?.ns ?? (point as any)?.epochNanoseconds;
+	if (typeof ns === 'bigint') return ns;
 	throw new TypeError('Invalid TemporalPoint: missing epoch.ns or epochNanoseconds');
 }
 
+/** Represents a continuous span of time with start and end boundaries, supporting set operations. */
 export class Interval<T extends TemporalPoint = TemporalPoint> {
 	readonly #start: T;
 	readonly #end: T;
@@ -51,18 +52,18 @@ export class Interval<T extends TemporalPoint = TemporalPoint> {
 	}
 
 	/** Returns the intersection of this interval and another, or null if they do not overlap */
-	intersection(other: Interval<T>): Interval<T> | null {
+	intersection(other: Interval<any>): Interval<T> | null {
 		if (!this.overlaps(other)) return null;
-		const maxStart = getNs(this.start) > getNs(other.start) ? this.start : other.start;
-		const minEnd = getNs(this.end) < getNs(other.end) ? this.end : other.end;
+		const maxStart = getNs(this.start) > getNs(other.start) ? this.start : (other.start as T);
+		const minEnd = getNs(this.end) < getNs(other.end) ? this.end : (other.end as T);
 		return new Interval<T>(maxStart, minEnd);
 	}
 
 	/** Returns the union of this interval and another, or null if they do not overlap/abut */
-	union(other: Interval<T>): Interval<T> | null {
+	union(other: Interval<any>): Interval<T> | null {
 		if (!this.overlaps(other) && !this.abuts(other)) return null;
-		const minStart = getNs(this.start) < getNs(other.start) ? this.start : other.start;
-		const maxEnd = getNs(this.end) > getNs(other.end) ? this.end : other.end;
+		const minStart = getNs(this.start) < getNs(other.start) ? this.start : (other.start as T);
+		const maxEnd = getNs(this.end) > getNs(other.end) ? this.end : (other.end as T);
 		return new Interval<T>(minStart, maxEnd);
 	}
 }

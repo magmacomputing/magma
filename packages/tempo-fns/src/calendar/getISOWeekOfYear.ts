@@ -1,4 +1,4 @@
-/** compute the ISO week number and ISO week-numbering year for a given ZonedDateTime */
+/** Computes the ISO week number and ISO week-numbering year for a given date. */
 export function getISOWeekOfYear(zdt: any) {
 	const pd = (zdt.toPlainDate ? zdt.toPlainDate() : zdt).withCalendar('iso8601');
 

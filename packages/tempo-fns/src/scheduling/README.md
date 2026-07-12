@@ -20,17 +20,17 @@ const next = nextCron(now, '30 9 * * 1-5'); // 9:30 AM, Mon-Fri
 ```
 
 ### `Interval`
-Advanced recurring scheduling loop with precision drift-correction.
+Represents a continuous span of time with start and end boundaries, supporting set operations like intersections and unions.
 
 ```typescript
 class Interval<T extends TemporalPoint = TemporalPoint> {
-  constructor(
-    start: T, 
-    durationObj: Record<string, number>, 
-    factory: (iso: string) => T
-  );
-  next(): IteratorResult<T>;
-  [Symbol.iterator](): IterableIterator<T>;
+  constructor(start: T, end: T);
+  
+  contains(point: TemporalPoint): boolean;
+  overlaps(other: Interval<any>): boolean;
+  abuts(other: Interval<any>): boolean;
+  intersection(other: Interval<T>): Interval<T> | null;
+  union(other: Interval<T>): Interval<T> | null;
 }
 ```
 **Example:**
@@ -38,11 +38,14 @@ class Interval<T extends TemporalPoint = TemporalPoint> {
 import { Interval } from '@magmacomputing/tempo-fns/scheduling';
 import { Tempo } from '@magmacomputing/tempo';
 
-const start = new Tempo('2026-01-01T00:00:00');
-const daily = new Interval(start, { days: 1 }, (iso) => new Tempo(iso));
+const start = new Tempo('2026-01-01T08:00');
+const end = new Tempo('2026-01-01T17:00');
+const shift = new Interval(start, end);
 
-for (const date of daily) {
-  console.log(date.toString());
-  if (date.year > 2026) break;
-}
+const meetingStart = new Tempo('2026-01-01T14:00');
+const meetingEnd = new Tempo('2026-01-01T15:00');
+const meeting = new Interval(meetingStart, meetingEnd);
+
+console.log(shift.contains(meetingStart)); // true
+console.log(shift.overlaps(meeting)); // true
 ```
