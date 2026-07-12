@@ -4,6 +4,15 @@
   "description": "Tree-shakeable functional utilities for the Temporal API",
   "author": "Magma Computing Solutions",
   "license": "MIT",
+  "keywords": [
+    "temporal",
+    "date-fns",
+    "polyfill",
+    "calendar",
+    "time",
+    "scheduling",
+    "cron"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/magmacomputing/magma.git",
