@@ -77,7 +77,8 @@ Tempo leverages several other internal data dictionaries to parse and format dat
 
 ### Registry Merge Contracts
 
-Tempo applies different merge behaviors depending on how you inject registry data:
+The core internal `registryUpdate()` utility applies an **additive-only** merge strategy. It deeply merges new keys into the registries but safely preserves existing root keys (preventing accidental overrides of built-in definitions).
 
-- **`Tempo.init()` & Plugin Discovery**: These methods apply an **additive-only** merge strategy. They will deeply merge new keys into the registries, but they will **preserve existing root keys** (they do not override built-in core definitions or previously established configurations).
-- **`Tempo.extend()`**: This is an **explicit override**. When you pass an options object to `Tempo.extend()`, it takes strict precedence. It will deeply merge *and* safely overwrite existing registry keys, making it the proper tool for forcefully changing standard behaviors.
+When you pass an options object to `Tempo.extend()`, it acts differently depending on the data type:
+- **Enum/Proxy-Backed Registries:** For explicitly wrapped structures (like `formats` and `locales`), `Tempo.extend()` can be used to forcefully shadow existing entries, making it the proper tool to change standard behaviors.
+- **General Registries:** It does not provide a blanket, universal overwrite mechanism for the entire registry system.

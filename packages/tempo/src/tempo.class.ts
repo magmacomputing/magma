@@ -526,7 +526,7 @@ export class Tempo {
 			!('locales' in arg) &&
 			!('options' in arg);
 
-		let options = (args.length > 0 && isOptionsArg(args[args.length - 1])) ? args.pop() : undefined;
+		let options = (args.length > 1 && isOptionsArg(args[args.length - 1])) ? args.pop() : undefined;
 		const licenseKey = options?.license || (args.length === 1 && isObject(args[0]) ? args[0].license : undefined);
 		if (licenseKey) {
 			const state = this[$Internal]();
@@ -584,7 +584,7 @@ export class Tempo {
 
 						Tempo.#versions[`${name}${name.endsWith(suffix) ? '' : suffix}`] = (item as any).version;
 					}
-					(item as TempoPlugin).install.call(this as any, this);
+					(item as TempoPlugin).install.call(this as any, this, options);
 				}
 				else if (isObject(item)) {
 					// 1. handle TermPlugin
