@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-fns",
-  "version": "3.7.1",
+  "version": "0.1.0",
   "description": "Tree-shakeable functional utilities for the Temporal API",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -32,7 +32,9 @@
     "build:esm": "tsc -b",
     "build:global": "rollup -c",
     "clean": "rm -rf dist && (tsc -b --clean || true)",
-    "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"
+    "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build",
+    "docs:dev": "node ./bin/sync-docs.mjs && vitepress dev doc",
+    "docs:build": "node ./bin/sync-docs.mjs && vitepress build doc"
   },
   "peerDependencies": {
     "@magmacomputing/tempo": "^3.7.0"
@@ -44,7 +46,8 @@
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^16.0.3",
-    "rollup": "^4.62.2"
-  },
-  "dependencies": {}
+    "rollup": "^4.62.2",
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.39"
+  }
 }

@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Finance Sandbox (`@magmacomputing/tempo-plugin-finance`)**: Introduced the community `finance` package as the official reference implementation for Namespace plugins, complete with best-practice dual-build (ESM/DTS) architectures using `tsup`.
 
 ### Changed
+- **Build Pipeline Optimization**: Completely removed `esbuild` from the core transpilation pipeline in favor of a pure `tsc` + `Rollup` + `terser` architecture. This eliminates double-transpilation penalties, resulting in a cleaner, more efficient `dist/` build.
+- **TypeScript 7.0 Decorator Mitigations**: Uncovered a significant bug in TS 7.0's ES2022 `__esDecorate` down-leveling where transpiled class expressions drop decorator replacements. Maintained the `Object.freeze` constructor workarounds across the ecosystem to ensure full immutability compliance while tracking upstream compiler patches.
 - **Documentation Architecture**: Completely overhauled the documentation repository to utilize a strictly-numbered directory structure (`1-getting-started`, `2-core-concepts`, etc.) that mirrors the VitePress UI 1:1, drastically reducing maintenance overhead and eliminating orphaned files.
 
 ## [3.7.1] - 2026-07-08

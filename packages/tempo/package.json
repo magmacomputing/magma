@@ -229,6 +229,8 @@
     "@js-temporal/polyfill": "^0.5.1",
     "@magmacomputing/library": "*",
     "@rollup/plugin-alias": "^6.0.0",
+    "@rollup/plugin-terser": "^1.0.0",
+    "@rollup/plugin-typescript": "^12.3.0",
     "javascript-obfuscator": "^5.4.3",
     "magic-string": "^0.30.21",
     "rollup-plugin-esbuild": "^6.2.1",

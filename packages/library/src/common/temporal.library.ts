@@ -26,7 +26,10 @@ export function epoch() {
 	return instant().epochNanoseconds;
 }
 
-/** return the January and July offsets (nanoseconds) for a given timezone and year */
+/** 
+ * return the January and July offsets (nanoseconds) for a given timezone and year 
+ * @note also maintained in `tempo-fns` — please sync changes
+ */
 export function getOffsets(timeZone: string, year = 2024) {	//** use a fixed reference-year (2024) for stability */
 	const jan = Temporal.PlainDate.from({ year, month: 1, day: 1 }).toZonedDateTime(timeZone).offsetNanoseconds;
 	const jul = Temporal.PlainDate.from({ year, month: 7, day: 1 }).toZonedDateTime(timeZone).offsetNanoseconds;
@@ -34,7 +37,10 @@ export function getOffsets(timeZone: string, year = 2024) {	//** use a fixed ref
 	return { jan, jul };
 }
 
-/** return whether the given (or current) date is in Daylight Savings */
+/** 
+ * return whether the given (or current) date is in Daylight Savings 
+ * @note also maintained in `tempo-fns` — please sync changes
+ */
 export function isDST(date?: Temporal.ZonedDateTime | string, timeZone: string = Intl.DateTimeFormat().resolvedOptions().timeZone) {
 	const zdt = isString(date)
 		? Temporal.ZonedDateTime.from(date)
@@ -48,6 +54,7 @@ export function isDST(date?: Temporal.ZonedDateTime | string, timeZone: string =
  * Temporal rejects fractional Duration values, so normalise 
  * fractional parts downwards, e.g. { seconds: 0.1 } → { milliseconds: 100 }.
  * Mutates the provided duration object.
+ * @note also maintained in `tempo-fns` — please sync changes
  */
 export function normaliseFractionalDurations(payload: Record<string, any>) {
 	const SCALE: [string, string, number][] = [
@@ -155,6 +162,7 @@ export function getTemporalIds(tzOrZdt: any, cal?: any): [string, string] {
  * Convert informal UTC offset strings into the `±HH:MM` format required by Temporal.
  * Accepts forms like `'UTC+8'`, `'UTC-9'`, `'UTC+08:00'`, `'UTC-05:30'`.
  * Returns the input unchanged if it does not match the UTC± pattern.
+ * @note also maintained in `tempo-fns` — please sync changes
  */
 export function normalizeUtcOffset(zone: string): string {
 	const match = /^UTC([+-])(\d{1,2})(?::(\d{2}))?$/i.exec(zone);

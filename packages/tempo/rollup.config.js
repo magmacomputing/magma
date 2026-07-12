@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import alias from '@rollup/plugin-alias';
 import resolve from '@rollup/plugin-node-resolve';
+import terser from '@rollup/plugin-terser';
 import esbuild from 'rollup-plugin-esbuild';
 import JavaScriptObfuscator from 'javascript-obfuscator';
 import MagicString from 'magic-string';
@@ -146,8 +147,7 @@ export default [
 					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') }
 				]
 			}),
-			resolve({ extensions: ['.js', '.ts'] }),
-			esbuild({ target: 'esnext', minify: false })
+			resolve({ extensions: ['.js', '.ts'] })
 		],
 	},
 
@@ -184,7 +184,7 @@ export default [
 				]
 			}),
 			resolve({ extensions: ['.js', '.ts'] }),
-			esbuild({ target: 'esnext', minify: true })
+			terser()
 		],
 	},
 
@@ -243,7 +243,6 @@ export default [
 				extensions: ['.js', '.ts'],
 				moduleDirectories: ['node_modules']
 			}),
-			esbuild({ target: 'esnext', minify: false }),
 			indentFix()
 		],
 	}

@@ -114,7 +114,7 @@ export class Pledge<T> {
 	[Symbol.dispose]() {
 		if (this.isPending) {
 			try {
-				this.promise.catch(() => {});
+				this.promise.catch(() => { });
 			} catch {
 				// best-effort; preserve disposal semantics even if promise is unavailable
 			}
