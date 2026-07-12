@@ -231,40 +231,47 @@ export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> {
 		: config.name;
 
 	const pluginName = `${namespaceStr}Namespace`;
+	const weakCache = new WeakMap<object, any>();
 
-	const plugin = definePlugin({
+	const plugin = {
 		name: pluginName,
 		version: config.version ?? TEMPO_VERSION,
+		[sym.$PluginType]: 'namespace',
 		install(this: TempoType, TempoClass: TempoType, options?: any) {
 			Object.defineProperty(TempoClass.prototype, config.name, {
 				get() {
-					const cacheKey = isSymbol(config.name) ? config.name : `_${String(config.name)}`;
-					if (!this[cacheKey]) {
-						const target = Object.create(null);
-						const proxy = delegate(target, (key) => {
-							const resolver = config.resolvers[key as keyof typeof config.resolvers];
-							if (resolver) return resolver(this);
-							return undefined;
-						}, true);
-						if (Reflect.isExtensible(this)) {
-							Object.defineProperty(this, cacheKey, {
-								value: proxy,
-								writable: true,
-								configurable: true,
-								enumerable: false
-							});
-						} else {
-							return proxy;
-						}
+					const cacheKey = isSymbol(config.name) ? namespaceStr : `_${namespaceStr}`;
+					const isExtensible = Reflect.isExtensible(this);
+
+					if (!isExtensible && weakCache.has(this)) return weakCache.get(this);
+					if (isExtensible && this[cacheKey]) return this[cacheKey];
+
+					const target = Object.create(null);
+					const proxy = delegate(target, (key) => {
+						const resolver = config.resolvers[key as keyof typeof config.resolvers];
+						if (resolver) return resolver(this);
+						return undefined;
+					}, true);
+
+					if (isExtensible) {
+						Object.defineProperty(this, cacheKey, {
+							value: proxy,
+							writable: true,
+							configurable: true,
+							enumerable: false
+						});
+					} else {
+						weakCache.set(this, proxy);
 					}
-					return this[cacheKey];
+					
+					return proxy;
 				},
 				configurable: true,
 				enumerable: false
 			});
 		}
-	});
+	} as unknown as Plugin<TempoType>;
 
-	const result = { ...plugin, [sym.$PluginType]: 'namespace' };
-	return result as unknown as Plugin<TempoType>;
+	registerPlugin(plugin);
+	return plugin;
 }

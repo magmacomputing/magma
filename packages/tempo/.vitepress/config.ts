@@ -92,7 +92,7 @@ export default defineConfig({
           { text: 'Enumerators', link: '/doc/6-utility-library/tempo.enumerators' },
           { text: 'Serializers', link: '/doc/6-utility-library/tempo.serializers' },
           { text: 'Decorators', link: '/doc/6-utility-library/tempo.decorators' },
-          { text: 'Advanced Promises (Pledge)', link: '/doc/6-utility-library/tempo.pledge' },
+          { text: 'Advanced Promises (Pledge)', link: '/doc/6-utility-library/tempo.pledge' }
         ]
       },
       {
