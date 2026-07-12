@@ -30,7 +30,8 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/README' },
       { text: 'API Reference', link: typedocSidebar[0].items[0].link },
-      { text: 'Releases', link: '/doc/8-project-and-support/releases/' }
+      { text: 'Releases', link: '/doc/8-project-and-support/releases/' },
+      { text: 'Tempo-Fns', link: 'https://magmacomputing.github.io/magma/tempo-fns/' }
     ],
     sidebar: [
       {

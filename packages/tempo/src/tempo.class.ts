@@ -575,7 +575,7 @@ export class Tempo {
 					installed.add(name);
 
 					registerPlugin(item, state);
-					if ((item as any).version) {
+					if ((item as any).version && isString(name)) {
 						let suffix = '';
 						if (type === 'plugin') suffix = 'Plugin';
 						else if (type === 'namespace') suffix = 'Namespace';
@@ -703,9 +703,8 @@ export class Tempo {
 
 		let data: any = { options: { ...options, discovery: normalizedDiscovery }, scope: 'sandbox' };
 
-		if (isObject(options.discovery) && !isSymbol(options.discovery)) {
+		if (isObject(options.discovery) && !isSymbol(options.discovery))
 			data = { ...data, ...options.discovery as any };
-		}
 
 		(globalThis as any)[normalizedDiscovery as any] = data;
 
