@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import alias from '@rollup/plugin-alias';
 import resolve from '@rollup/plugin-node-resolve';
+import ts from 'typescript';
 import terser from '@rollup/plugin-terser';
 import JavaScriptObfuscator from 'javascript-obfuscator';
 import MagicString from 'magic-string';
@@ -96,6 +97,24 @@ export default [
 			/^#tempo/
 		],
 		plugins: [
+			{
+				name: 'manual-typescript',
+				transform(code, id) {
+					if (!id.endsWith('.ts')) return null;
+					return {
+						code: ts.transpileModule(code, {
+							compilerOptions: { 
+								target: ts.ScriptTarget.ESNext, 
+								module: ts.ModuleKind.ESNext,
+								moduleResolution: ts.ModuleResolutionKind.NodeJs,
+								sourceMap: false,
+								declaration: false
+							}
+						}).outputText,
+						map: null
+					};
+				}
+			},
 			resolve({ extensions: ['.js', '.ts'], moduleDirectories: ['node_modules'] }),
 			{
 				name: 'obfuscator',
