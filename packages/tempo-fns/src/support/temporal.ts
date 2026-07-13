@@ -7,7 +7,7 @@ export type { TemporalType as Temporal };
  * while maintaining full type safety.
  */
 export const getTemporal = (): typeof TemporalType => {
-	// @ts-ignore - Check for global Temporal
+	// @ts-expect-error - Check for global Temporal
 	if (typeof Temporal !== 'undefined') return Temporal;
 
 	if (typeof globalThis !== 'undefined' && 'Temporal' in globalThis)

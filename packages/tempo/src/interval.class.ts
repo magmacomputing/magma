@@ -40,6 +40,10 @@ export class Interval<T extends TemporalPoint = TemporalPoint> {
 		return Object.freeze(this) as this;
 	}
 
+	get [Symbol.toStringTag]() {
+		return 'Tempo.Interval';
+	}
+
 	get start(): T | null {
 		return this.#start;
 	}

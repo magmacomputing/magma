@@ -33,7 +33,12 @@ export const getPublicHolidays = async (
 	// If a subdivision like 'AU-NSW' is provided, we extract the country code 'AU'.
 	const countryCode = resolvedRegion.split('-')[0].toUpperCase();
 
+	if (!/^[A-Z]{2}$/.test(countryCode))
+		throw new Error(`[tempo-fns] Invalid region code: '${resolvedRegion}'. Expected a 2-letter ISO 3166-1 country code.`);
+
 	const response = await fetchWithTimeout(`${holidayURL}/${year}/${countryCode}`, 2000);
+	if (!response.ok)
+		throw new Error(`[tempo-fns] Failed to fetch holidays: HTTP ${response.status} ${response.statusText}`);
 	const data = await response.json();
 
 	holidaysCache.set(cacheKey, data);

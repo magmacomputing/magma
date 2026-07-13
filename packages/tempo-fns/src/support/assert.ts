@@ -60,3 +60,10 @@ export function isPlainDateTime(arg: any): arg is Temporal.PlainDateTime {
 export function isDuration(arg: any): arg is Temporal.Duration {
 	return isObject(arg) && arg[Symbol.toStringTag] === 'Temporal.Duration';
 }
+
+/**
+ * Checks if the given argument is a Tempo.Interval.
+ */
+export function isInterval(arg: any): boolean {
+	return isObject(arg) && arg[Symbol.toStringTag] === 'Tempo.Interval';
+}
