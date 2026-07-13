@@ -6,12 +6,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] - 2026-07-11
+
+### Fixed
+- **Plugin Argument Parsing**: Hardened `Tempo.extend` parsing logic to ensure single-argument discovery objects are not falsely popped as `options`, and fixed a bug where `options` were dropped during the Namespace Plugin `.install()` lifecycle.
+- **Registry Merge Contracts**: Corrected documentation in `tempo.registry.md` to accurately define `registryUpdate()` as additive-only, clarifying that `Tempo.extend()` only shadows explicitly wrapped proxy dictionaries (like `formats`).
+
+### Added
+- **Interval Primitive**: Introduced `Interval` as a core primitive in the `@magmacomputing/tempo` package, accessible statically via `Tempo.Interval` or as a decoupled named export. Provides robust `overlaps`, `abuts`, `contains`, `union`, and `intersection` capabilities for native Temporal and Tempo objects.
+- **Namespace Architecture (`defineNamespace`)**: Officially launched the new Namespace Plugin architecture. This provides a clean mechanism to attach grouped API surfaces (like `t.finance.*`) onto the core Tempo instance without polluting the global scope or the natural-language parsing engine.
+- **Strict Plugin Discrimination**: Core registration utilities (`definePlugin`, `defineTerm`, `defineModule`, `defineNamespace`) now strictly inject a discriminator `type` key (`'plugin' | 'term' | 'module' | 'namespace'`). This ensures internal registries and debugging tools can accurately categorize plugins without relying on loose structural sniffing.
+- **Finance Sandbox (`@magmacomputing/tempo-plugin-finance`)**: Introduced the community `finance` package as the official reference implementation for Namespace plugins, complete with best-practice dual-build (ESM/DTS) architectures using `tsup`.
+
+### Changed
+- **Build Pipeline Optimization**: Completely removed `esbuild` from the core transpilation pipeline in favor of a pure `tsc` + `Rollup` + `terser` architecture. This eliminates double-transpilation penalties, resulting in a cleaner, more efficient `dist/` build.
+- **TypeScript 7.0 Decorator Mitigations**: Uncovered a significant bug in TS 7.0's ES2022 `__esDecorate` down-leveling where transpiled class expressions drop decorator replacements. Maintained the `Object.freeze` constructor workarounds across the ecosystem to ensure full immutability compliance while tracking upstream compiler patches.
+- **Documentation Architecture**: Completely overhauled the documentation repository to utilize a strictly-numbered directory structure (`1-getting-started`, `2-core-concepts`, etc.) that mirrors the VitePress UI 1:1, drastically reducing maintenance overhead and eliminating orphaned files.
+
 ## [3.7.1] - 2026-07-08
 
 ### Fixed
 - **License Admin Isolation**: Restructured the commercial licensing JWT payload to isolate administrative privileges (like `tempo-adm`) into a dedicated root-level `role` claim. This prevents internal admin flags from polluting the `scopes` dictionary and erroneously surfacing as "uninstalled premium plugins" in the `Tempo.terms` registry UI.
 
 ## [3.7.0] - 2026-07-08
+
+### Fixed
 
 ### Added
 - **Runtime Versioning Registry**: Introduced a secure, static `Tempo.versions` registry. This provides zero-burden runtime observability of all loaded core modules and community plugins.
@@ -27,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.6.0] - 2026-07-05
 
+### Fixed
+
 ### Added
 - **Shorthand Mutation Keys**: Added native support for Tempo's shorthand format tokens (e.g., `mi`, `ss`, `yy`, `ww`) across both `.add()` and `.set()` mutations, streamlining developer experience and aligning TypeScript definitions with the underlying runtime engine.
 - **Shorthand Duration Keys**: Expanded shorthand token support directly into the `DurationModule`. You can now seamlessly use shorthand keys for duration instantiation (`Tempo.duration({ mi: 5 })`), comparisons (`t.until(other, 'mi')`), and strict balancing (`t.until(other).balance({ largestUnit: 'mi' })`), bringing total API consistency across the core library.
@@ -39,6 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.5.3] - 2026-07-05
 
+### Fixed
+
 ### Added
 - **Flexible Epoch Getters**: Added a static `Tempo.epoch` getter that perfectly mirrors the instance `.epoch` property, enabling direct retrieval of current Unix timestamps (e.g. `Tempo.epoch.ss`).
 - **Static Now Modifiers**: Extended the static `Tempo.now(unit)` method to accept optional string units (`'ns'`, `'us'`, `'ms'`, `'ss'`), defaulting to nanosecond precision for strict backwards compatibility.
@@ -47,6 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DRY Refactoring**: Centralized instance and static `epoch` property calculations to a single internal static helper, ensuring absolute uniformity of mathematical transformations across the core library.
 
 ## [3.5.2] - 2026-07-04
+
+### Fixed
 
 ### Added
 - **Minified Global Bundles**: The build pipeline now natively produces highly optimized, minified IIFE bundles (`*.min.js`) for both Tempo Core and all Community Plugins, significantly reducing payload size for developers using CDN `<script>` tags.
@@ -63,6 +88,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.5.0] - 2026-06-28
 
+### Fixed
+
 ### Added
 - **Unified Plugin API Barrel**: Introduced `@magmacomputing/tempo/plugin-api` barrel export. This centralizes all plugin-authoring utilities (`defineModule`, `definePlugin`, `defineTerm`, etc.) and internal types into a single, highly discoverable endpoint. This architecture significantly cleans up application-level code and documentation by separating end-user imports from Plugin Developer imports.
 - **Strict Peer Dependency Validation**: Tempo Plugins now enforce strict `peerDependencies` on the new `plugin-api` barrel export, ensuring robust resolution for complex environments (like Smart CDNs or Vite) while preventing duplicate instances of internal utility functions.
@@ -72,6 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Temporal Native Support Roadmap**: Updated documentation to use evergreen wording for upcoming Node.js native unflagged `Temporal` support, removing explicit version claims (like Node.js 26) to future-proof the guides against shifting ECMAScript release timelines.
 
 ## [3.4.0] - 2026-06-26
+
+### Fixed
 
 ### Added
 - **Dynamic Format Tokens**: You can now define custom format evaluators in the global registry via `registry.tokens`. Custom tokens receive the native `Temporal.ZonedDateTime` instance and a `context` payload containing configuration and chained modifiers, allowing for completely custom parsing or seamless `Intl` delegation.
@@ -87,6 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.3.1] - 2026-06-22
 
+### Fixed
+
 ### Added
 - **Slick Object Mutation API**: The `.set()` mutation engine now supports a "Slick-style" API for relative date/time navigation using object properties. You can now pass snippet-based keys with directional string payloads (e.g., `{ wkd: '>Fri' }` or `{ mm: '>-2' }`) directly to `Tempo.set()`.
 - **`ww` Token**: Added native `ww` (weeks) snippet token for relative week-based mutation math (e.g. `{ ww: '>1' }`).
@@ -96,6 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Strict Key Validation**: Hardened the `conform()` layer to throw helpful console errors when users accidentally pass directional strings to standard keys (e.g. `t.set({ month: '>5' })`), politely redirecting them to the correct Slick property (`{ mm: '>5' }`).
 
 ## [3.3.0] - 2026-06-21
+
+### Fixed
 
 ### Added
 - **Localization Modifier Registry**: Modifiers (e.g., "next", "last", "this") can now be localized via the `registry.modifiers` configuration. This allows defining custom words for temporal shifts (e.g., `'>': ['prochain']`) which seamlessly integrate with standard parsing and `#` shorthand syntaxes.
@@ -119,6 +152,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.2.2] - 2026-06-18
 
+### Fixed
+
 ### Added
 - **New Format Tokens**: Added support for 6-digit compact date formatting tokens (`{dmy6}`, `{mdy6}`, `{ymd6}`) and short-year bounds (`{yywy}`, `{yyww}`).
 
@@ -133,6 +168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Redundant Format Tokens**: Removed uppercase format tokens (`{MER}`, `{HH}`, `{DAY}`, `{WW}`, `{MM}`) from the engine to strictly enforce the token modifier pattern (e.g., `{mer:upper}`, `{h24}`, `{dd:ord}`). This eliminates ambiguity and ensures all output routes securely through the `Intl` localization engine.
 
 ## [3.2.1] - 2026-06-17
+
+### Fixed
 
 ### Added
 - **Ordinal Localization Fallback**: Implemented support for non-English `Intl.PluralRules` dictionaries. If an `ordinal` dictionary is provided in the global `locales` registry, Tempo natively evaluates the active plural category (e.g., `'one'`, `'other'`) and appends the correct localized suffix instead of defaulting to English.
@@ -155,6 +192,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Navigation Enhancements**: Integrated the new Internationalization (`tempo.locale.md`) guides into the primary VitePress sidebar.
 - **MathPlugin Removal**: Removed the heavy `math: true` Markdown plugin from the documentation pipeline and migrated all computational complexity notations (e.g., `O(1)`) to standard inline code to prevent Vue compiler crashes and reduce client bundle sizes.
 
+### Fixed
+
 ### Added
 - **Multi-lingual Parsing**: The `locale` configuration property now officially accepts an array of strings (`string | string[]`). This enables the `ParseModule` to intelligently extract terminology from multiple languages simultaneously, generating a single, high-performance, deduplicated RegExp engine capable of parsing dates from any of the specified locales interchangeably.
 - **O(1) Locale Traceability**: Upgraded the internal dictionary architecture so that `monthMap` and `weekdayMap` store strict objects `{ value, locale }` instead of raw numeric indices. This allows the Normalizer to resolve the winning language of a matched token in pure `O(1)` time without any expensive Regex sub-capture scanning, automatically injecting the originating `locale` into the `t.Parse.result` debugging array!
@@ -171,6 +210,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.1.1] - 2026-06-14
 
+### Fixed
+
 ### Added
 - **Tokens & Modifiers**: Added `{h12}` for 12-hour clock output with automatic meridiem injection, `{cal}` for calendar system resolution, and the `:raw` modifier for stripping leading zeros and suppressing auto-meridiem.
 - **Dynamic Format Options**: The `.format()` method on `Tempo` instances now natively accepts an optional configuration object (e.g., `{ locale: 'fr-FR' }`) as its second argument, aligning its signature with native `Intl` overrides.
@@ -181,6 +222,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Strict ISO Vocabulary**: Updated documentation for `{dow}`, `{ww}`, and `{yw}` to explicitly designate them as ISO standards, removing ambiguity with native JavaScript `Date` offsets.
 
 ## [3.1.0] - 2026-06-13
+
+### Fixed
 
 ### Added
 - `registry: { formats, locales }` namespaces to `Tempo.init()` and `Tempo` instance configurations.
@@ -239,6 +282,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configuration Parsing Unification**: Refactored the core configuration pipeline by routing `Tempo.init()`, `Tempo.extend()`, and `Tempo.create()` through a unified `[$setDiscovery]` parser. This removes 50 lines of duplicate parsing logic and significantly improves architectural consistency.
 - **Feature-Complete Sandboxes**: Sandboxes instantiated via `Tempo.create()` now process their full `options.discovery` payload through the unified parser. This enables sandboxes to safely inherit and isolate localized plugins, custom formats, timeZones, and ignore rules, rather than just `monthDay` inheritance.
 
+### Fixed
+
 ### Added
 - **Developer Benchmarks**: Introduced the `BenchmarkModule`, a decoupled utility for stress-testing and benchmarking Tempo parsing speeds and memory overhead against custom production datasets in any environment (Node.js or Browser).
 - **Compact Date Tokens**: Added `{dmy}`, `{mdy}`, and `{ymd}` to the `FormatModule` for generating 8-digit compact date strings (e.g. `24102026`).
@@ -255,6 +300,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.11.1] - 2026-05-26
 
+### Fixed
+
 ### Added
 - **ISO 8601 Convenience Getter**: Added the `.iso` getter to `Tempo` instances to provide a fast, familiar, and UTC-safe mechanism for retrieving the standard ISO 8601 string representation (analogous to `Date.toISOString()`).
 - **Type Utilities Export**: Exported `KeyOf`, `ValueOf`, `OwnOf`, and `EntryOf` type utilities in `library.index.ts` to provide cleaner TypeScript typing for downstream consumers utilizing `enumify`.
@@ -265,6 +312,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.11.0] - 2026-05-25
 
+### Fixed
+
 ### Added
 - **Duration Mathematics**: Introduced the `.balance()` method to `Tempo.Duration` objects to allow intelligent mathematical roll-up of duration units (e.g., converting 365 days into 1 year), with support for both strict calendar math and nominal overrides (`{ nominal: true }`).
 - **Duration Formatting**: Introduced the `.format()` method to `Tempo.Duration` objects. This uses a shared, memoized `#library` implementation of `Intl.NumberFormat` to generate highly localized, plural-aware duration strings with excellent performance and robust cross-environment execution (no `navigator` dependencies).
@@ -274,6 +323,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Parsing**: Resolved an engine edge-case where combining relative weekday modifiers with string-based period aliases (e.g., `<3 Wed afternoon`) would cause the parser to prematurely abort the relative offset, instead applying the period to the current system date.
   
 ## [2.10.1] - 2026-05-22
+
+### Fixed
 
 ### Added
 - **Build Pipeline Visuals**: Upgraded the `rollup.config.js` build output with high-visibility, color-coded ANSI banners to clearly distinguish between `PREMIUM` and `COMMUNITY` build targets.
@@ -289,6 +340,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   
 ## [2.10.0] - 2026-05-11
 
+### Fixed
+
 ### Added
 - **Licensing Architecture**: Implemented a standalone "No-Op" licensing engine (`support.license.ts`) in the public core. This ensures the repository is 100% buildable and testable by the community without private dependencies.
 - **Automatic Premium Injection**: Optimized the build pipeline (Rollup/Vitest) to automatically detect and inject the proprietary licensing engine from a side-by-side repository during official builds.
@@ -300,6 +353,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Term Collision Enforcement**: Term plugin registration now throws a fatal error on naming collisions (key/scope) to prevent silent configuration failures.
 
 ## [2.9.3] - 2026-05-11
+
+### Fixed
 
 ### Added
 - **Generalized Fractional Resolution**: Numeric inputs (`Number`, `BigInt`) now support fractional components across all units (`ss`, `ms`, `us`, `ns`) with nanosecond precision. The resolution engine now utilizes absolute BigInt math to ensure deterministic results regardless of sign.
@@ -329,6 +384,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.9.2] - 2026-05-08
 
+### Fixed
+
 ### Added
 - **Resilient ID Extraction**: Unified `timeZoneId` and `calendarId` extraction into a single spec-resilient helper `getTemporalIds`. This ensures 100% compatibility across both spec-final and Node.js V8 harmony environments by resolving nested property drift (`timeZone.id` vs `timeZoneId`).
 - **Identity-Based Layout Resolution**: Hardened `resolveLayoutClassificationOrder` to support identity-based symbol lookups. This ensures that tokens without descriptions or aliases (such as raw symbols) can be correctly prioritized in preferred layout ordering.
@@ -355,6 +412,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.9.0] - 2026-05-06
   
+### Fixed
+
 ### Added
 - **Centralized Alias Architecture**: Finalized the migration to a unified `AliasEngine`. All event and period aliases are now managed through a centralized registry, providing a single source of truth across global and local contexts.
 - **Rich Alias Results**: Alias resolution now returns a structured `AliasResult` object containing exhaustive metadata, including the source (global/local), type (Event/Period), and specific resolution flags.
@@ -377,6 +436,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Migration
 - All objects remain frozen with `Object.freeze`. No mutation-throwing Proxies are used for core objects. Identity checks (`===`) behave as before.
 
+### Fixed
+
 ### Added
 - **Parse Planner Configuration**: Introduced `planner.layoutOrder` for parsing precedence and `planner.preFilter` as a replacement for the legacy `parsePrefilter` option.
 
@@ -390,6 +451,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.7.0] - 2026-04-27
 
+### Fixed
+
 ### Added
 - **Grouped Configuration Options**: Consolidated `monthDay` and `relativeTime` options into nested objects.
 - **Internal layout detection**: Added `isMonthDay` detection for improved regional layout resolution.
@@ -401,6 +464,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Intl.Locale Debugging**: Enhanced diagnostic logging for locale resolution.
 
 ## [2.6.0] - 2026-04-25
+
+### Fixed
 
 ### Added
 - **Standardized UTC Offsets**: Added `normalizeUtcOffset` utility for transforming informal UTC-offset strings.
@@ -414,6 +479,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Layout Pattern Resolution**: Fixed ordering to respect intended sequence.
 
 ## [2.5.0] - 2026-04-24
+
+### Fixed
 
 ### Added
 - **Layout Order Resolver Module**: Extracted layout-ordering decision logic from the Tempo class into a dedicated `engine.layout` module (`src/engine/engine.layout.ts`). This module provides deterministic functions for resolving parse layout order based on locale preference and maintains existing pair-swap semantics.
@@ -435,6 +502,8 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 
 ## [2.3.0] - 2026-04-22
 
+### Fixed
+
 ### Added
 - **Standalone Parse Support**: Enhanced the `ParseModule` to support standalone parsing of textual dates (including names like "Jan") without requiring a bound host class instance.
 - **Backtracking Security**: Implemented suspicious quantifier detection (`Match.backtrack`) in the snippet registry to prevent catastrophic backtracking and malicious regex patterns.
@@ -451,6 +520,8 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 
 ## [2.2.6] - 2026-04-20
 
+### Fixed
+
 ### Added
 - **Isomorphic Export Support**: Enhanced the `dist/tempo.bundle.esm.js` to provide both a default export and a named `{ Tempo }` export, ensuring the exact same import syntax works seamlessly across Node.js and browser environments.
 
@@ -459,6 +530,8 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 - **Documentation Formatting**: Corrected orphaned script blocks and added missing headers to the `Tempo.md` guide for better readability.
 
 ## [2.2.5] - 2026-04-20
+
+### Fixed
 
 ### Added
 - **Cross-Bundle Singleton Stability**: Implemented a symbol-based brand check for `TempoRuntime` to ensure reliable singleton resolution even when multiple versions of the library are loaded.
@@ -482,6 +555,8 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 - **Verification Dashboard**: Synchronized the browser verification dashboard with current build artifacts.
 
 ## [2.2.3] - 2026-04-19
+
+### Fixed
 
 ### Added
 - **Dual-Bundle Strategy**: Modernized the Rollup configuration to produce both a "batteries-included" ESM bundle (`tempo.bundle.esm.js`) and a classic IIFE bundle (`tempo.bundle.js`).
@@ -512,6 +587,8 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 
 ## [2.1.2] - 2026-04-14
 
+### Fixed
+
 ### Added
 - **Slick Shorthand Engine**: Finalized and stabilized the high-performance term-shorthand syntax (`#namespace.modifier`). Advanced temporal navigation (e.g. `#qtr.>2q1`) is now fully supported across `.set()`, `.add()`, `.until()`, and `.since()`.
 - **Inclusive Range Shifters**: Introduced `>=` and `<=` modifiers to the "Slick" engine. These shifters are strictly inclusive, allowing the current term to be matched if it contains the cursor, providing a deterministic "current or next" resolution pattern.
@@ -533,6 +610,8 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 
 ## [2.1.1] - 2026-04-12
 
+### Fixed
+
 ### Added
 - **Constructor Protection**: Implemented a strict guard against passing term-based mutation objects (`#`) directly to the `Tempo` constructor. The engine now explicitly rejects these inputs and directs users to the appropriate `.set()` or `.add()` methods for instance transformation.
 - **Unified Term Errors**: Centralized term-resolution error logic into a shared static helper, ensuring consistent "Helpful Hint" messaging for missing plugins across the constructor, mutation engine, and parser.
@@ -551,6 +630,8 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 
 ## [2.1.0] - 2026-04-11
 
+### Fixed
+
 ### Added
 - **TimeZone Offset Support**: Formally verified and documented support for `+HH:MM` and `-HH:MM` ISO-8601 fixed-offset strings in the `timeZone` configuration.
 - **Browser Reference Map**: Included a comprehensive [importmap.json](./importmap.json) in the package root to provide a standard mapping for bare module specifiers in browser environments.
@@ -566,6 +647,8 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 ---
 
 ## [2.0.1] - 2026-04-03
+
+### Fixed
 
 ### Added
 - **Ticker Stability Guard**: Implemented a 10,000-iteration safety break in `resolveTermShift` to prevent infinite loops when resolving malformed or non-advancing custom terms.
@@ -588,6 +671,8 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 ---
 
 ## [2.0.0] - 2026-03-30
+
+### Fixed
 
 ### Added
 - **Zero-Cost Constructor**: Optimized the instantiation path to $O(1)$ by deferring all parsing and property registration until the first property access.

@@ -5,9 +5,9 @@ Thank you for your interest in contributing to Tempo! This project is a professi
 ## 🏗️ Project Architecture
 
 Tempo uses several advanced JavaScript patterns that contributors should be familiar with:
-- **[Proxy-Delegators](./doc/lazy-evaluation-pattern.md)**: For $O(1)$ lazy evaluation of instance properties.
-- **[Soft Freeze](./doc/soft_freeze_strategy.md)**: For secure but extensible global registries.
-- **[Diagnostic Engine](./doc/architecture.md)**: For decoupled, symbol-based diagnostic logging.
+- **[Proxy-Delegators](./doc/5-architecture-and-internals/lazy-evaluation-pattern.md)**: For $O(1)$ lazy evaluation of instance properties.
+- **[Soft Freeze](./doc/5-architecture-and-internals/soft_freeze_strategy.md)**: For secure but extensible global registries.
+- **[Diagnostic Engine](./doc/5-architecture-and-internals/architecture.md)**: For decoupled, symbol-based diagnostic logging.
 
 ## 🛠️ Local Development
 

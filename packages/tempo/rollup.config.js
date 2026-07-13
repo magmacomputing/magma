@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 import alias from '@rollup/plugin-alias';
 import resolve from '@rollup/plugin-node-resolve';
-import esbuild from 'rollup-plugin-esbuild';
+import ts from 'typescript';
+import terser from '@rollup/plugin-terser';
 import JavaScriptObfuscator from 'javascript-obfuscator';
 import MagicString from 'magic-string';
 
@@ -96,8 +97,36 @@ export default [
 			/^#tempo/
 		],
 		plugins: [
+			{
+				name: 'manual-typescript',
+				transform(code, id) {
+					if (!id.endsWith('.ts')) return null;
+					const result = ts.transpileModule(code, {
+						compilerOptions: { 
+							target: ts.ScriptTarget.ESNext, 
+							module: ts.ModuleKind.ESNext,
+							moduleResolution: ts.ModuleResolutionKind.NodeJs,
+							sourceMap: false,
+							declaration: false
+						}
+					});
+
+					if (result.diagnostics && result.diagnostics.length > 0) {
+						const formatted = ts.formatDiagnosticsWithColorAndContext(result.diagnostics, {
+							getCurrentDirectory: () => process.cwd(),
+							getCanonicalFileName: (fileName) => fileName,
+							getNewLine: () => ts.sys ? ts.sys.newLine : '\n'
+						});
+						this.error(`TypeScript compilation failed in ${id}:\n${formatted}`);
+					}
+
+					return {
+						code: result.outputText,
+						map: null
+					};
+				}
+			},
 			resolve({ extensions: ['.js', '.ts'], moduleDirectories: ['node_modules'] }),
-			esbuild({ target: 'esnext', minify: false }),
 			{
 				name: 'obfuscator',
 				renderChunk(code) {
@@ -146,8 +175,7 @@ export default [
 					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') }
 				]
 			}),
-			resolve({ extensions: ['.js', '.ts'] }),
-			esbuild({ target: 'esnext', minify: false })
+			resolve({ extensions: ['.js', '.ts'] })
 		],
 	},
 
@@ -184,7 +212,7 @@ export default [
 				]
 			}),
 			resolve({ extensions: ['.js', '.ts'] }),
-			esbuild({ target: 'esnext', minify: true })
+			terser()
 		],
 	},
 
@@ -243,7 +271,6 @@ export default [
 				extensions: ['.js', '.ts'],
 				moduleDirectories: ['node_modules']
 			}),
-			esbuild({ target: 'esnext', minify: false }),
 			indentFix()
 		],
 	}

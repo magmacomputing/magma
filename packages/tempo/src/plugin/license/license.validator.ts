@@ -1,6 +1,7 @@
 import { isFunction } from '#library/assertion.library.js';
 import { decodeJWT } from '#library/webtoken.library.js';
 import { logWarn } from '../../support/support.util.js';
+import { sym } from '../../support/support.symbol.js';
 
 /**
  * # Tempo Licensing Engine (Open Core)
@@ -35,10 +36,15 @@ export function definePremiumPlugin<T>(key: string, plugin: T): T {
 		throw new Error(`[${key}] Premium plugin requires a valid commercial license. Status: invalid`);
 	}
 
-	if (isFunction(plugin)) return throwLicense as unknown as T;
+	if (isFunction(plugin)) {
+		(throwLicense as any)[sym.$PluginType] = 'plugin';
+		return throwLicense as unknown as T;
+	}
 	if ((plugin as any).install) (plugin as any).install = throwLicense;
 	if ((plugin as any).define) (plugin as any).define = throwLicense;
 	if ((plugin as any).resolve) (plugin as any).resolve = throwLicense;
+	
+	(plugin as any)[sym.$PluginType] = 'plugin';
 	return plugin;
 }
 
@@ -64,5 +70,6 @@ export function definePremiumTerm<T>(pluginDef: T): T {
 		}
 	}
 
+	(pluginDef as any)[sym.$PluginType] = 'term';
 	return pluginDef;
 }

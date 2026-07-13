@@ -1,5 +1,8 @@
 import { Tempo } from '#tempo';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('Tempo.bootstrap()', () => {
 	afterEach(() => {
@@ -8,7 +11,7 @@ describe('Tempo.bootstrap()', () => {
 
 	it('should dynamically discover and load a configuration file', async () => {
 		// Resolve the fixture directory from the workspace root
-		const fixtureDir = path.resolve('./test/core/__fixtures__/config');
+		const fixtureDir = path.resolve(__dirname, '__fixtures__/config');
 
 		await Tempo.bootstrap({ cwd: fixtureDir });
 
@@ -20,7 +23,7 @@ describe('Tempo.bootstrap()', () => {
 	});
 
 	it('should allow explicitly passing a configFile', async () => {
-		const fixtureDir = path.resolve('./test/core/__fixtures__/config');
+		const fixtureDir = path.resolve(__dirname, '__fixtures__/config');
 
 		// Pass the explicit file path
 		await Tempo.bootstrap({ configFile: path.join(fixtureDir, 'tempo.config.js') });

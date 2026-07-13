@@ -6,6 +6,7 @@ describe('Discovery in Extend', () => {
 
 	it('should apply monthDay discovery via extend', () => {
 		Tempo.extend({
+			options: {},
 			monthDay: {
 				locales: ['custom-locale']
 			}
@@ -15,6 +16,7 @@ describe('Discovery in Extend', () => {
 
 	it('should apply relativeTime discovery via extend', () => {
 		Tempo.extend({
+			options: {},
 			intl: {
 				relativeTime: {
 					style: 'narrow'
@@ -26,15 +28,17 @@ describe('Discovery in Extend', () => {
 
 	it('should apply formats discovery via extend', () => {
 		Tempo.extend({
+			options: {},
 			formats: {
 				customFormat: '{yyyy}-{mm}'
 			}
 		});
-		expect(Tempo.formats.customFormat).toBe('{yyyy}-{mm}');
+		expect(Tempo.registry.formats.customFormat).toBe('{yyyy}-{mm}');
 	});
 
 	it('should apply planner discovery via extend', () => {
 		Tempo.extend({
+			options: {},
 			planner: {
 				layoutOrder: ['ymd'],
 				preFilter: true

@@ -1,6 +1,6 @@
 import { $ImmutableSkip } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
-import { isReference } from '#library/assertion.library.js';
+import { isReference, isUndefined } from '#library/assertion.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { registerType, getSafeTag } from '#library/type.library.js';
 import type { Constructor, Type } from '#library/type.library.js';
@@ -14,11 +14,18 @@ import type { Constructor, Type } from '#library/type.library.js';
  * minifiers and compilers from mangling the registered class name.
  */
 function getClassName<T extends Constructor>(value: T, contextName: string | symbol | undefined): string | undefined {
-	return getSafeTag(value) ?? (contextName === undefined ? (value.name || undefined) : String(contextName));
+	return getSafeTag(value) ?? (isUndefined(contextName) ? (value.name || undefined) : String(contextName));
 }
 
 /**
  * Shared helper to create an immutable or secure class wrapper  
+ * 
+ * @note **Workaround:** When TS 7.0 (targeting ES2022) emits its `__esDecorate` IIFE, aggressive 
+ * bundlers and minifiers (like `Rollup`, `Terser`, or `esbuild`) frequently compress the variable 
+ * declarations into chained assignments (e.g. `var Class = _classThis = class`). This breaks JS 
+ * evaluation order and overwrites the decorated wrapper with the original class. 
+ * As a permanent defense against these bundler mutations, consuming classes must explicitly return 
+ * `Object.freeze(this) as this;` at the end of their own constructors.
  */
 function createImmutableWrapper<T extends Constructor>(
 	value: T,
@@ -97,7 +104,11 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 }
 
 /**
- * Decorator to secure a class with a mutation-throwing Proxy (noisy immutability)
+ * Decorator to secure a class with a mutation-throwing Proxy (noisy immutability).
+ * 
+ * @note **Workaround:** To protect against aggressive bundlers (Rollup/Terser) mutating the TS 7.0 
+ * ES2022 decorator IIFE structure, users must append `return Object.freeze(this) as this;` 
+ * (or the `secure` equivalent) to their constructors to ensure immutability survives production bundling.
  */
 export function Securable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
@@ -110,7 +121,13 @@ export function Securable<T extends Constructor>(value: T, { kind, name, addInit
 	}
 }
 
-/** decorator to freeze a Class to prevent modification (silent immutability) */
+/** 
+ * Decorator to freeze a Class to prevent modification (silent immutability).
+ * 
+ * @note **Workaround:** To protect against aggressive bundlers (Rollup/Terser) mutating the TS 7.0 
+ * ES2022 decorator IIFE structure, users must append `return Object.freeze(this) as this;` to their 
+ * constructors to ensure immutability survives production bundling.
+ */
 export function Immutable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
 

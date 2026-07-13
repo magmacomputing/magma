@@ -68,7 +68,16 @@ export class Pledge<T> {
 		const opts = isObject(arg) ? arg : { tag: arg as string };
 		const config = { ..._static, ...ifDefined({ tag: opts.tag, debug: opts.debug, catch: opts.catch, silent: opts.silent }) };
 
-		this.#pledge = Promise.withResolvers();
+		if (Promise.withResolvers) {
+			this.#pledge = Promise.withResolvers();
+		} else {
+			let res: any, rej: any;
+			const promise = new Promise<T>((resolve, reject) => {
+				res = resolve;
+				rej = reject;
+			});
+			this.#pledge = { promise, resolve: res, reject: rej };
+		}
 		this.#status = markConfig({ state: _STATE.Pending, ...config });
 
 		const onResolve = asArray(_static.onResolve).concat(asArray(opts.onResolve));
@@ -94,6 +103,8 @@ export class Pledge<T> {
 
 		if (this.#status.catch)
 			this.#pledge.promise.catch(err => _dbg.warn(this.#status, err));
+
+		return Object.freeze(this) as this;
 	}
 
 	get [Symbol.toStringTag]() {
@@ -103,7 +114,7 @@ export class Pledge<T> {
 	[Symbol.dispose]() {
 		if (this.isPending) {
 			try {
-				this.promise.catch(() => {});
+				this.promise.catch(() => { });
 			} catch {
 				// best-effort; preserve disposal semantics even if promise is unavailable
 			}

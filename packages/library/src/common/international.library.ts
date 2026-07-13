@@ -113,7 +113,11 @@ export function formatUnit(value: number, unit: string, locale?: string, unitDis
 	}
 }
 
-/** try to infer hemisphere using the timezone's daylight-savings setting */
+/** 
+ * try to infer hemisphere using the timezone's daylight-savings setting 
+ * @note This implementation intentionally differs from the version in `tempo-fns` 
+ * (including specific fallback and return behaviors). Do not directly synchronize them.
+ */
 export function getHemisphere(timeZone: string = getDateTimeFormat().timeZone) {
 	try {
 		const { jan, jul } = getOffsets(timeZone);							// using default reference-year (2024) for stability
@@ -145,6 +149,8 @@ type result = { weekOfYear: number, yearOfWeek: number };
  * (e.g., Chrome/Firefox behind flags) currently return `undefined` for `weekOfYear` and `yearOfWeek` 
  * on ZonedDateTime objects. The TC39 spec moved toward calendar-dependent definitions, 
  * causing divergence between the @js-temporal/polyfill (which returns numbers) and native browsers (which return undefined).
+ * @note This implementation intentionally differs from the version in `tempo-fns` 
+ * (including specific fallback and return behaviors). Do not directly synchronize them.
  */
 export function getISOWeekOfYear(zdt: input): result {
 	if (isDefined(zdt.weekOfYear) && isDefined(zdt.yearOfWeek))

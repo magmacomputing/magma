@@ -30,36 +30,39 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/README' },
       { text: 'API Reference', link: typedocSidebar[0].items[0].link },
-      { text: 'Releases', link: '/doc/releases/' }
+      { text: 'Releases', link: '/doc/8-project-and-support/releases/' },
+      { text: 'Tempo-Fns', link: 'https://magmacomputing.github.io/magma/tempo-fns/' }
     ],
     sidebar: [
       {
         text: 'Getting Started',
         items: [
           { text: 'Introduction', link: '/README' },
-          { text: 'Installation', link: '/doc/installation' },
-          { text: 'Cookbook', link: '/doc/tempo.cookbook' }
+          { text: 'Installation', link: '/doc/1-getting-started/installation' },
+          { text: 'Cookbook', link: '/doc/1-getting-started/tempo.cookbook' }
         ]
       },
       {
         text: 'Core Concepts',
         items: [
-          { text: 'Configuration', link: '/doc/tempo.config' },
-          { text: 'Registries', link: '/doc/tempo.registry' },
-          { text: 'Smart Parsing', link: '/doc/tempo.parse' },
-          { text: 'Smart Formatting', link: '/doc/tempo.format' },
-          { text: 'Layout Patterns', link: '/doc/tempo.layout' },
-          { text: 'Duration Logic', link: '/doc/tempo.duration' }
+          { text: 'Configuration', link: '/doc/2-core-concepts/tempo.config' },
+          { text: 'Registries', link: '/doc/2-core-concepts/tempo.registry' },
+          { text: 'Smart Parsing', link: '/doc/2-core-concepts/tempo.parse' },
+          { text: 'Smart Formatting', link: '/doc/2-core-concepts/tempo.format' },
+          { text: 'Layout Patterns', link: '/doc/2-core-concepts/tempo.layout' },
+          { text: 'Duration Logic', link: '/doc/2-core-concepts/tempo.duration' },
+          { text: 'Intervals', link: '/doc/2-core-concepts/tempo.interval' }
         ]
       },
       {
-        text: 'Plugins & Terms',
+        text: 'Extending Tempo',
         items: [
-          { text: 'Modularity', link: '/doc/tempo.modularity' },
-          { text: 'Plugin Architecture', link: '/doc/tempo.plugin' },
-          { text: 'Term Plugins', link: '/doc/tempo.term' },
-          { text: 'Creating a Custom Plugin', link: '/doc/tempo.extension' },
-          { text: 'Plugin Ecosystem', link: '/doc/ecosystem' }
+          { text: 'Modules', link: '/doc/3-extending-tempo/tempo.modularity' },
+          { text: 'Plugins', link: '/doc/3-extending-tempo/tempo.plugin' },
+          { text: 'Terms', link: '/doc/3-extending-tempo/tempo.term' },
+          { text: 'Namespaces', link: '/doc/3-extending-tempo/tempo.namespace' },
+          { text: 'Creating Custom Plugins', link: '/doc/3-extending-tempo/tempo.extension' },
+          { text: 'Plugin Ecosystem', link: '/doc/3-extending-tempo/ecosystem' }
         ]
       },
       {
@@ -67,47 +70,47 @@ export default defineConfig({
         items: [
           { text: 'API Overview', link: '/doc/api/' },
           { text: 'Technical Reference', link: typedocSidebar[0].items[0].link },
-          { text: 'Parse Planner', link: '/doc/tempo.planner' },
-          { text: 'The Role of Locale', link: '/doc/tempo.locale' },
-          { text: 'Shorthand Engine', link: '/doc/tempo.shorthand' },
-          { text: 'Weekday Engine', link: '/doc/tempo.weekday' },
-          { text: 'Debugging', link: '/doc/tempo.debugging' }
+          { text: 'Parse Planner', link: '/doc/4-advanced-reference/tempo.planner' },
+          { text: 'The Role of Locale', link: '/doc/4-advanced-reference/tempo.locale' },
+          { text: 'Shorthand Engine', link: '/doc/4-advanced-reference/tempo.shorthand' },
+          { text: 'Weekday Engine', link: '/doc/4-advanced-reference/tempo.weekday' },
+          { text: 'Debugging', link: '/doc/4-advanced-reference/tempo.debugging' }
         ]
       },
       {
         text: 'Architecture & Internals',
         items: [
-          { text: 'Core Architecture', link: '/doc/architecture' },
-          { text: 'Soft Freeze Strategy', link: '/doc/soft_freeze_strategy' },
-          { text: 'Lazy Evaluation', link: '/doc/lazy-evaluation-pattern' },
-          { text: 'Performance Benchmarks', link: '/doc/tempo.benchmarks' }
+          { text: 'Core Architecture', link: '/doc/5-architecture-and-internals/architecture' },
+          { text: 'Soft Freeze Strategy', link: '/doc/5-architecture-and-internals/soft_freeze_strategy' },
+          { text: 'Lazy Evaluation', link: '/doc/5-architecture-and-internals/lazy-evaluation-pattern' },
+          { text: 'Performance Benchmarks', link: '/doc/5-architecture-and-internals/tempo.benchmarks' }
         ]
       },
       {
         text: 'Utility Library',
         items: [
-          { text: 'Library Overview', link: '/doc/tempo.library' },
-          { text: 'Enumerators', link: '/doc/tempo.enumerators' },
-          { text: 'Serializers', link: '/doc/tempo.serializers' },
-          { text: 'Decorators', link: '/doc/tempo.decorators' },
-          { text: 'Advanced Promises (Pledge)', link: '/doc/tempo.pledge' },
+          { text: 'Library Overview', link: '/doc/6-utility-library/tempo.library' },
+          { text: 'Enumerators', link: '/doc/6-utility-library/tempo.enumerators' },
+          { text: 'Serializers', link: '/doc/6-utility-library/tempo.serializers' },
+          { text: 'Decorators', link: '/doc/6-utility-library/tempo.decorators' },
+          { text: 'Advanced Promises (Pledge)', link: '/doc/6-utility-library/tempo.pledge' }
         ]
       },
       {
         text: 'Ecosystem',
         items: [
           { text: 'Contribution Guide', link: '/CONTRIBUTING' },
-          { text: 'Comparison', link: '/doc/comparison' },
-          { text: 'Tempo vs Temporal', link: '/doc/tempo-vs-temporal' },
-          { text: 'Project Vision', link: '/doc/vision' }
+          { text: 'Comparison', link: '/doc/7-ecosystem/comparison' },
+          { text: 'Extending Temporal', link: '/doc/7-ecosystem/extending-temporal' },
+          { text: 'Project Vision', link: '/doc/7-ecosystem/vision' }
         ]
       },
       {
         text: 'Project & Support',
         items: [
-          { text: 'Migration Guide', link: '/doc/migration-guide' },
-          { text: 'Release Notes', link: '/doc/releases/' },
-          { text: 'Professional Services', link: '/doc/commercial' }
+          { text: 'Migration Guide', link: '/doc/8-project-and-support/migration-guide' },
+          { text: 'Release Notes', link: '/doc/8-project-and-support/releases/' },
+          { text: 'Professional Services', link: '/doc/8-project-and-support/commercial' }
         ]
       }
     ],
