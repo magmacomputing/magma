@@ -24,7 +24,7 @@ Represents a continuous span of time with start and end boundaries, supporting s
 
 ```typescript
 class Interval<T extends TemporalPoint = TemporalPoint> {
-  constructor(start: T, end: T);
+  constructor(start: T | null, end: T | null);
   
   contains(point: TemporalPoint): boolean;
   overlaps(other: Interval<any>): boolean;

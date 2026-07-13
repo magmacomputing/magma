@@ -46,7 +46,8 @@
     "docs:build": "node ./bin/sync-docs.mjs && vitepress build doc"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^3.7.0"
+    "@magmacomputing/tempo": "^3.7.0",
+    "@js-temporal/polyfill": "^0.4.4"
   },
   "peerDependenciesMeta": {
     "@magmacomputing/tempo": {

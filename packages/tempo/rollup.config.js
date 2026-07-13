@@ -101,16 +101,27 @@ export default [
 				name: 'manual-typescript',
 				transform(code, id) {
 					if (!id.endsWith('.ts')) return null;
+					const result = ts.transpileModule(code, {
+						compilerOptions: { 
+							target: ts.ScriptTarget.ESNext, 
+							module: ts.ModuleKind.ESNext,
+							moduleResolution: ts.ModuleResolutionKind.NodeJs,
+							sourceMap: false,
+							declaration: false
+						}
+					});
+
+					if (result.diagnostics && result.diagnostics.length > 0) {
+						const formatted = ts.formatDiagnosticsWithColorAndContext(result.diagnostics, {
+							getCurrentDirectory: () => process.cwd(),
+							getCanonicalFileName: (fileName) => fileName,
+							getNewLine: () => ts.sys ? ts.sys.newLine : '\n'
+						});
+						this.error(`TypeScript compilation failed in ${id}:\n${formatted}`);
+					}
+
 					return {
-						code: ts.transpileModule(code, {
-							compilerOptions: { 
-								target: ts.ScriptTarget.ESNext, 
-								module: ts.ModuleKind.ESNext,
-								moduleResolution: ts.ModuleResolutionKind.NodeJs,
-								sourceMap: false,
-								declaration: false
-							}
-						}).outputText,
+						code: result.outputText,
 						map: null
 					};
 				}

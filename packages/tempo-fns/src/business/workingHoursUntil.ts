@@ -1,6 +1,7 @@
-import type { Tempo } from '@magmacomputing/tempo/core';
 import { getPublicHolidays } from '../calendar/getPublicHolidays.js';
-import { getLocale } from '../support/intl.js';
+import { getLocale, isTempo, getTemporal } from '../support/index.js';
+import type { Temporal } from '../support/index.js';
+import type { Tempo } from '@magmacomputing/tempo/core';
 
 /** Configuration options for the workingHoursUntil SLA calculation. */
 export type SLAOptions = {
@@ -18,16 +19,11 @@ export type SLAOptions = {
 const remoteHolidaysCache: Map<string, string[]> = new Map();
 
 /** 
- * Calculates the exact number of SLA-eligible working hours from this date until the deadline.
+ * Calculates the exact number of SLA-eligible working hours from the start date until the deadline.
  */
-export const workingHoursUntil = function (this: Tempo, deadline: Tempo.DateTime, options?: SLAOptions): number {
-	const startZdt = this.toDateTime();
-
-	// If it has .toDateTime(), it's already a Tempo instance. Otherwise, let Tempo parse the string/Temporal object.
-	const endTempo = typeof (deadline as any).toDateTime === 'function'
-		? (deadline as Tempo)
-		: this.set(deadline as any);
-	const endZdt = endTempo.toDateTime();
+export const workingHoursUntil = function (start: Tempo | Temporal.ZonedDateTime, deadline: Tempo | Temporal.ZonedDateTime, options?: SLAOptions): number {
+	const startZdt = isTempo(start) ? start.toDateTime() : start;
+	const endZdt = isTempo(deadline) ? deadline.toDateTime() : deadline;
 
 	let current = startZdt;
 	let target = endZdt;
@@ -61,7 +57,9 @@ export const workingHoursUntil = function (this: Tempo, deadline: Tempo.DateTime
 
 	let totalNs = 0n;
 
-	while (Temporal.PlainDate.compare(iterDate, targetDate) <= 0) {
+	const TemporalAPI = getTemporal();
+
+	while (TemporalAPI.PlainDate.compare(iterDate, targetDate) <= 0) {
 		const isWeekend = iterDate.dayOfWeek === 6 || iterDate.dayOfWeek === 7;
 		const yyyy = iterDate.year.toString().padStart(4, '0');
 		const mm = iterDate.month.toString().padStart(2, '0');
@@ -91,7 +89,7 @@ export const workingHoursUntil = function (this: Tempo, deadline: Tempo.DateTime
 }
 
 /** Preloads and caches holiday data for a region and year. */
-export const preloadHolidays = async (region?: string, year: number = Temporal.Now.plainDateISO().year): Promise<void> => {
+export const preloadHolidays = async (region?: string, year: number = getTemporal().Now.plainDateISO().year): Promise<void> => {
 	const resolvedRegion = region || getLocale().region || 'US';
 	const cacheKey = `${resolvedRegion}-${year}`;
 
@@ -105,14 +103,5 @@ export const preloadHolidays = async (region?: string, year: number = Temporal.N
 	} catch (error) {
 		console.warn(`[tempo-fns] Failed to fetch holidays for ${cacheKey}, falling back to none:`, error);
 		remoteHolidaysCache.set(cacheKey, []);
-	}
-}
-
-declare module '@magmacomputing/tempo/core' {
-	interface Tempo {
-		/** 
-		 * Calculates the exact number of SLA-eligible working hours from this date until the deadline. 
-		 */
-		workingHoursUntil(deadline: Tempo.DateTime, options?: SLAOptions): number;
 	}
 }

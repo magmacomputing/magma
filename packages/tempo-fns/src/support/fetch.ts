@@ -9,10 +9,11 @@ export const fetchWithTimeout = async (url: string, timeoutMs = 2000, options: R
 		? AbortSignal.any([options.signal, controller.signal])
 		: controller.signal;
 
-	const response = await fetch(url, { ...options, signal });
-	clearTimeout(timeoutId);
-
-	if (!response.ok) throw new Error(`API returned ${response.status} for ${url}`);
-
-	return response;
+	try {
+		const response = await fetch(url, { ...options, signal });
+		if (!response.ok) throw new Error(`API returned ${response.status} for ${url}`);
+		return response;
+	} finally {
+		clearTimeout(timeoutId);
+	}
 }

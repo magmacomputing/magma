@@ -36,7 +36,10 @@ export function definePremiumPlugin<T>(key: string, plugin: T): T {
 		throw new Error(`[${key}] Premium plugin requires a valid commercial license. Status: invalid`);
 	}
 
-	if (isFunction(plugin)) return throwLicense as unknown as T;
+	if (isFunction(plugin)) {
+		(throwLicense as any)[sym.$PluginType] = 'plugin';
+		return throwLicense as unknown as T;
+	}
 	if ((plugin as any).install) (plugin as any).install = throwLicense;
 	if ((plugin as any).define) (plugin as any).define = throwLicense;
 	if ((plugin as any).resolve) (plugin as any).resolve = throwLicense;

@@ -1,7 +1,6 @@
-import { fetchWithTimeout } from '../support/fetch.js';
-import { getLocale } from '../support/intl.js';
+import { fetchWithTimeout, getLocale, getTemporal } from '../support/index.js';
 
-export const holidayURL = 'https://date.nager.at/api/v3/PublicHolidays';
+const holidayURL = 'https://date.nager.at/api/v3/PublicHolidays';
 
 /** Represents a public holiday payload returned from the Nager.Date API. */
 export type PublicHoliday = {
@@ -22,7 +21,7 @@ const holidaysCache = new Map<string, PublicHoliday[]>();
  * Fetches public holidays for a given year and region from the Nager.Date API.
  */
 export const getPublicHolidays = async (
-	year: number = Temporal.Now.plainDateISO().year,
+	year: number = getTemporal().Now.plainDateISO().year,
 	region?: string
 ): Promise<PublicHoliday[]> => {
 	const resolvedRegion = region || getLocale().region || 'US';
@@ -33,7 +32,7 @@ export const getPublicHolidays = async (
 	// Nager.Date expects a 2-letter ISO 3166-1 alpha-2 country code (e.g. 'US', not 'en-US' or 'US-NY').
 	// If a subdivision like 'AU-NSW' is provided, we extract the country code 'AU'.
 	const countryCode = resolvedRegion.split('-')[0].toUpperCase();
-	
+
 	const response = await fetchWithTimeout(`${holidayURL}/${year}/${countryCode}`, 2000);
 	const data = await response.json();
 
