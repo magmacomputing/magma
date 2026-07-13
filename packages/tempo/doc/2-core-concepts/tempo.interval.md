@@ -9,19 +9,19 @@ The official [ECMAScript Temporal proposal](https://tc39.es/proposal-temporal/do
 You can access the `Interval` class either statically through the `Tempo` namespace (for developer convenience) or as a decoupled named export (for strict tree-shaking).
 
 ### 1. The Ergonomic Approach (Attached to Tempo)
-The easiest way to use `Interval` is directly from the `Tempo` class.
+The easiest way to use `Interval` is directly from the `Tempo` class. When instantiated this way, `Tempo.Interval` automatically intercepts its arguments and parses them through the `Tempo` constructor. This means you can pass standard strings, Temporal objects, or `Date` objects directly without wrapping them yourself!
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
 const meeting = new Tempo.Interval(
-  new Tempo('2026-07-15T14:00:00Z'),
-  new Tempo('2026-07-15T15:00:00Z')
+  '2026-07-15T14:00:00Z',
+  '2026-07-15T15:00:00Z'
 );
 ```
 
 ### 2. The Purist Approach (Tree-Shakeable Export)
-If you are strictly using native `Temporal` polyfill objects and want to avoid bundling the entire `Tempo` class, you can import `Interval` directly.
+If you are strictly using native `Temporal` polyfill objects and want to avoid bundling the entire `Tempo` class, you can import `Interval` directly. The pure `Interval` class has stricter requirements: it relies on simple duck-typing and requires the arguments to be pre-instantiated objects that expose an `epochNanoseconds` or `epoch.ns` property.
 
 ```typescript
 import { Interval } from '@magmacomputing/tempo';
@@ -32,7 +32,15 @@ const meeting = new Interval(
   Temporal.Instant.from('2026-07-15T15:00:00Z')
 );
 ```
-*Note: Because `Interval` uses duck-typing to read `epochNanoseconds`, it natively supports all Temporal point-in-time types (`Instant`, `ZonedDateTime`, etc.) right out of the box.*
+*Note: Because `Interval` uses duck-typing to read `epochNanoseconds`, it natively supports all Temporal point-in-time types (`Instant`, `ZonedDateTime`, etc.) and `Tempo` instances right out of the box.*
+
+### Open-Ended Boundaries
+Both `Tempo.Interval` and the pure `Interval` class fully support open-ended time spans! Just pass `null` for the `start` or `end` parameter.
+
+```typescript
+const fromNowOn = new Tempo.Interval(Tempo.now(), null);
+const untilThen = new Interval(null, Temporal.Instant.from('2026-07-15T14:00:00Z'));
+```
 
 ## Set Operations
 
