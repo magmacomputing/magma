@@ -32,6 +32,7 @@ import { resolveMonthDay, setProperty, proto, hasOwn, resolveDisplayStatus } fro
 import { datePattern } from './support/support.default.js';
 import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
+import { Interval } from './interval.class.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -78,9 +79,18 @@ let _usrCount = 0;
 /** flag to prevent recursion during init */
 const _lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
 
+const intervalProxyHandler: ProxyHandler<typeof Interval> = {
+	construct(target, args: any[]) {
+		const parse = (arg: t.DateTime | null) => arg === null ? null : (arg instanceof Tempo ? arg : new Tempo(arg));
+		return new (target as any)(parse(args[0]), parse(args[1]));
+	}
+};
+
 @Serializable
 @Immutable
 export class Tempo {
+	/** Interval class for checking overlaps and bounds between Temporal points */	static Interval = new Proxy(Interval, intervalProxyHandler) as unknown as new (start: t.DateTime | null, end: t.DateTime | null) => Interval<Tempo>;
+
 	/** Weekday names (short-form) */													static get WEEKDAY() { return enums.WEEKDAY }
 	/** Weekday names (long-form) */													static get WEEKDAYS() { return enums.WEEKDAYS }
 	/** Month names (short-form) */														static get MONTH() { return enums.MONTH }

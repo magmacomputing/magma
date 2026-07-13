@@ -31,5 +31,6 @@ export type * from '#tempo/mutate';
 export type * from '#tempo/duration';
 export type * from '#tempo/term';
 
+export { Interval } from './interval.class.js';
 export * from './tempo.class.js';
 export default Tempo;

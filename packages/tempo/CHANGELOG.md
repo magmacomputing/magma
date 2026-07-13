@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Registry Merge Contracts**: Corrected documentation in `tempo.registry.md` to accurately define `registryUpdate()` as additive-only, clarifying that `Tempo.extend()` only shadows explicitly wrapped proxy dictionaries (like `formats`).
 
 ### Added
+- **Interval Primitive**: Introduced `Interval` as a core primitive in the `@magmacomputing/tempo` package, accessible statically via `Tempo.Interval` or as a decoupled named export. Provides robust `overlaps`, `abuts`, `contains`, `union`, and `intersection` capabilities for native Temporal and Tempo objects.
 - **Namespace Architecture (`defineNamespace`)**: Officially launched the new Namespace Plugin architecture. This provides a clean mechanism to attach grouped API surfaces (like `t.finance.*`) onto the core Tempo instance without polluting the global scope or the natural-language parsing engine.
 - **Strict Plugin Discrimination**: Core registration utilities (`definePlugin`, `defineTerm`, `defineModule`, `defineNamespace`) now strictly inject a discriminator `type` key (`'plugin' | 'term' | 'module' | 'namespace'`). This ensures internal registries and debugging tools can accurately categorize plugins without relying on loose structural sniffing.
 - **Finance Sandbox (`@magmacomputing/tempo-plugin-finance`)**: Introduced the community `finance` package as the official reference implementation for Namespace plugins, complete with best-practice dual-build (ESM/DTS) architectures using `tsup`.

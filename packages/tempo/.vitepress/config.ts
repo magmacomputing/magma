@@ -50,7 +50,8 @@ export default defineConfig({
           { text: 'Smart Parsing', link: '/doc/2-core-concepts/tempo.parse' },
           { text: 'Smart Formatting', link: '/doc/2-core-concepts/tempo.format' },
           { text: 'Layout Patterns', link: '/doc/2-core-concepts/tempo.layout' },
-          { text: 'Duration Logic', link: '/doc/2-core-concepts/tempo.duration' }
+          { text: 'Duration Logic', link: '/doc/2-core-concepts/tempo.duration' },
+          { text: 'Intervals', link: '/doc/2-core-concepts/tempo.interval' }
         ]
       },
       {

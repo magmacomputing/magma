@@ -12,5 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Business Functions**: `workingHoursUntil`, `isSameFiscalQuarter`.
 - **Calendar Functions**: `getISOWeekOfYear`, `isFirstDayOfMonth`.
 - **Duration Functions**: `normaliseFractionalDurations`.
-- **Scheduling Functions**: `nextCron`, `prevCron`, `Interval`.
+- **Scheduling Functions**: `nextCron`, `prevCron`.
+- **Interval Provision**: `Interval` is provided by the Tempo core and is transparently re-exported from `@magmacomputing/tempo`.
 - **Timezone Functions**: `isDST`, `getOffsets`, `getHemisphere`, `normalizeUtcOffset`.
