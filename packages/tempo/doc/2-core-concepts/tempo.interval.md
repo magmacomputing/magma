@@ -42,6 +42,19 @@ const fromNowOn = new Tempo.Interval(Tempo.now(), null);
 const untilThen = new Interval(null, Temporal.Instant.from('2026-07-15T14:00:00Z'));
 ```
 
+## Properties
+
+Every `Interval` provides four read-only properties to access its boundaries.
+
+### `start` & `end`
+These properties return the exact original objects that were used to create the interval (e.g., the `Tempo` instances or `Temporal.ZonedDateTime` objects). If the boundary is open-ended, they return `null`. Use these when you need to format the date, extract calendar components (like month or year), or apply timezone logic.
+
+### `startNs` & `endNs`
+These properties return the raw `BigInt` epoch nanoseconds of the boundaries. If a boundary is open-ended (`null`), these properties will automatically return the absolute limits of the timeline (Year 1000 or Year 9999). 
+
+> [!TIP]
+> **Performance:** When writing custom logic, sorting algorithms, or mathematical overlap checks, always use `startNs` and `endNs`! Comparing raw `BigInt` nanoseconds is thousands of times faster than comparing or mutating Temporal objects.
+
 ## Set Operations
 
 The `Interval` class provides powerful, lightning-fast methods for evaluating time ranges.
