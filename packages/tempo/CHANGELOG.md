@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.9.0] - 2026-07-14
 
 ### Added
+- **Era Parsing Engine**: Upgraded the `ParseModule` and Lexer to natively support parsing historical and future era dates with explicit markers (e.g. `200 BC`, `BC 200`, `2026 CE`). Supports both leading and trailing formats and flawlessly converts to the astronomical ISO 8601 year.
 - **Era Formatting & Getters**: Added native support for the `{era}` formatting token (resolves to localized BC/AD or BCE/CE). Introduced `.era` and `.eraYear` getters on the core `Tempo` class for zero-cost access to historical date components.
 - **Auto-Meridiem Spacing**: Implemented the `:space` modifier for the `{h12}` formatting token (e.g., `{h12:space:dots}`). This enables typographically correct spacing before automatically injected meridiems (e.g., `"10:30 a.m."`).
 

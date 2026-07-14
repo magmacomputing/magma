@@ -189,6 +189,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				}).formatToParts(zdt.epochMilliseconds).find(p => p.type === 'era')?.value ?? '';
 				break;
 			}
+			case 'eraYear':
+				res = (zdt.eraYear ?? Math.abs(zdt.year <= 0 ? zdt.year - 1 : zdt.year)).toString();
+				break;
 			case 'mm': res = pad(zdt.month); break;
 			case 'mon': res = enums.MONTHS.keyOf(zdt.month as any); break;
 			case 'mmm': res = enums.MONTH.keyOf(zdt.month as any); break;
@@ -287,7 +290,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						res = BigInt(String(res)).toString();
 					break;
 				case 'dots': {
-					if (token === 'mer')
+					if (token === 'mer' || token === 'era')
 						res = String(res).split('').join('.') + '.';
 					break;
 				}

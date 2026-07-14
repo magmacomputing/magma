@@ -55,7 +55,7 @@ export const Match = proxify({
 // Note: computed Components ('evt', 'per') are added during 'Tempo.init()' (for static) and/or 'new Tempo()' (per instance)
 /** @internal Tempo Snippet registry */
 export const Snippet = looseIndex<symbol, RegExp>()({
-	[Token.yy]: /(?<yy>[0-9]{2}(?:[0-9]{2})?)/,								// year must be exactly 2 or 4 digits
+	[Token.yy]: /(?<yy>[0-9]{1,4})/,													// year must be 1 to 4 digits
 	[Token.mm]: /(?<mm>[0 ]?[1-9]|1[0-2]|Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)/,	// month-name (abbrev or full) or month-number 01-12; leading '0' or space only (not \s — tab/newline are not valid padding)
 	[Token.ww]: /(?<ww>0?[1-9]|[1-4][0-9]|5[0-3])/,						// week-number 01-53
 	[Token.dd]: /(?<dd>[0 ]?[1-9]|[12][0-9]|3[01]){ord}?/,		// day-number 01-31; leading '0' or space only (not \s — tab/newline are not valid padding)
@@ -72,9 +72,10 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.afx]: new RegExp(`((s)? (?<afx>${Match.modifier.source}))?{sep}?`),	// affix optional plural 's' and (ago|hence)
 	[Token.mod]: new RegExp(`((?<mod>${Match.modifier.source})? *)`),
 	[Token.sep]: new RegExp(`(?:${Match.separator.source})`),	// date-input separator character "/\\-., " (non-capture group)
-	[Token.unt]: /(?<unt>year|month|week|day|hour|minute|second|millisecond)(?:s)?/,	// useful for '2 days ago' etc
+	[Token.unt]: /(?<unt>year|month|week|day|hour|minute|second|millisecond|microsecond|nanosecond)(?:s)?/,	// useful for '2 days ago' etc
 	[Token.brk]: new RegExp(`(\\[(?<brk>${bracket_content.source})\\](?:\\[(?<cal>${bracket_content.source})\\])?)?`),	// timezone/calendar brackets [...]
 	[Token.slk]: new RegExp(Match.shorthand.source),					// shorthand shifter
+	[Token.era]: /(?:\s*(?<era>b\.?c\.?e\.?|c\.?e\.?|b\.?c\.?|a\.?d\.?))/i,	// historical era designation
 })
 /** @internal Tempo Snippet type */
 export type Snippet = typeof Snippet
@@ -100,11 +101,13 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
 	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tzd}?{brk}?',	// calendar/event and clock/period
 	[Token.tmd]: '({tm})(?:(?:{sep}+|T)({dt}))?{tzd}?{brk}?',	// clock/period and calendar/event
-	[Token.dmy]: '{mod}?({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{afx}?{sfx}?{brk}?',// day-month(-year)
-	[Token.mdy]: '{mod}?({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{afx}?{sfx}?{brk}?',// month-day(-year)
-	[Token.ymd]: '{mod}?({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{afx}?{sfx}?{brk}?',// year-month(-day)
+	[Token.dmy]: '{mod}?({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{era}?{afx}?{sfx}?{brk}?',// day-month(-year)
+	[Token.mdy]: '{mod}?({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{era}?{afx}?{sfx}?{brk}?',// month-day(-year)
+	[Token.ymd]: '{mod}?({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{era}?{afx}?{sfx}?{brk}?',// year-month(-day)
 	[Token.off]: '{mod}?{dd}{afx}?',													// day of month, with optional offset
 	[Token.rel]: '{nbr}{sep}?{unt}{sep}?{afx}',								// relative duration (e.g. 2 days ago)
+	[Token.ye]: '{mod}?{yy}{era}',														// explicit year and era (e.g. 200 BC)
+	[Token.ey]: '{mod}?{era}{sep}?{yy}',											// explicit leading era and year (e.g. BC 200)
 })
 /** @internal Tempo Layout type */
 export type Layout = typeof Layout
@@ -191,7 +194,8 @@ export const Guard = [
 	'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds', 'nanoseconds',
 	'st', 'nd', 'rd', 'th',
 	'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-	'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays'
+	'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays',
+	'bc', 'bce', 'ad', 'ce'
 ] as const;
 
 /** @internal baseline Intl settings */
@@ -232,7 +236,7 @@ export const Default = secure({
 	},
 	/** parse planner configuration (layoutOrder, etc.) */		planner: {
 		layoutOrder: [
-			Token.hms, Token.dmy6, Token.mdy6, Token.ymd6, Token.wkd,
+			Token.hms, Token.dmy6, Token.mdy6, Token.ymd6, Token.wkd, Token.ye, Token.ey,
 			Token.dt, Token.tm, Token.dtm, Token.tmd, Token.dmy, Token.mdy, Token.ymd,
 			Token.off, Token.rel
 		],

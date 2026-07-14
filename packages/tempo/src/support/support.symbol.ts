@@ -79,6 +79,7 @@ export const Token = looseIndex<string, symbol>()({
 	/** Tempo event */																				evt: Symbol('evt'),
 	/** Tempo period */																				per: Symbol('per'),
 	/** time zone offset */																		tzd: Symbol('tzd'),
+	/** historical era */																			era: Symbol('era'),
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Layout Symbols
 	/** date */																								dt: Symbol('date'),
 	/** time */																								tm: Symbol('time'),
@@ -95,5 +96,7 @@ export const Token = looseIndex<string, symbol>()({
 	/** weekDay */																						wkd: Symbol('weekDay'),
 	/** relative offset (years, days, hours, etc) */					rel: Symbol('relativeOffset'),
 	/** timezone/calendar brackets */													brk: Symbol('brackets'),
+	/** year and era */																				ye: Symbol('yearEra'),
+	/** era and year (leading) */															ey: Symbol('eraYearLeading'),
 });
 export type Token = typeof Token;
