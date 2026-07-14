@@ -31,6 +31,18 @@ describe('Era Parsing Engine', () => {
 		expect(t.era).toMatch(/gregory/i); // depending on how era getter is implemented
 	});
 
+	test('parses year and era (trailing b.c.)', () => {
+		const t = new Tempo('200 b.c.');
+		expect(t.yy).toBe(-199);
+		expect(t.era).toMatch(/gregory-inverse/i);
+	});
+
+	test('parses year and era (trailing a.d.)', () => {
+		const t = new Tempo('1 a.d.');
+		expect(t.yy).toBe(1);
+		expect(t.era).toMatch(/gregory/i);
+	});
+
 	test('parses year and era (trailing CE)', () => {
 		const t = new Tempo('2026 CE');
 		expect(t.yy).toBe(2026);

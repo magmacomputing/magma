@@ -3,7 +3,7 @@ import { isDefined } from '#library/assertion.library.js';
 import type * as t from '../tempo.type.js';
 
 const AGO_HENCE_RE = /\b(ago|hence|from\s+now|prior)\b/i;
-const ERA_RE = /\b(bc|bce|ad|ce)\b/i;
+const ERA_RE = /(?:^|\s)(b\.?c\.?(?:e\.?)?|a\.?d\.?|c\.?e\.?)(?:\s|$)/i;
 const CLASS_CACHE_LIMIT = 256;
 const classCache = new Map<string, ParseInputClass>();
 

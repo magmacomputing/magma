@@ -291,7 +291,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					break;
 				case 'dots': {
 					if (token === 'mer' || token === 'era')
-						res = String(res).split('').join('.') + '.';
+						res = String(res).replace(/\./g, '').split('').join('.') + '.';
 					break;
 				}
 				case 'locale': {

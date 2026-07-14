@@ -177,7 +177,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	let dd = groups.dd || undefined;
 
 	if (era) {
-		const isBCE = /bce?|bc/i.test(era);
+		const isBCE = /b\.?c\.?(?:e\.?)?|bc/i.test(era);
 		if (isBCE && yy) {
 			yy = String(-(Number(yy) - 1));
 		}

@@ -195,7 +195,7 @@ export const Guard = [
 	'st', 'nd', 'rd', 'th',
 	'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
 	'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays',
-	'bc', 'bce', 'ad', 'ce'
+	'bc', 'bce', 'ad', 'ce', 'b.c.', 'b.c.e.', 'a.d.', 'c.e.'
 ] as const;
 
 /** @internal baseline Intl settings */
