@@ -29,8 +29,7 @@ async function runBenchmark() {
 
 	console.log('\n[2] Parallel Batch Processing (Atomics/SAB if available)');
 	const startBatch = performance.now();
-	// @ts-ignore
-	const batchResult = await Tempo.batch(epochs, { weeks: 1 } as any);
+	const batchResult = await (Tempo as any).batch(epochs, 'add', { weeks: 1 } as any);
 	const endBatch = performance.now();
 	console.log(`Batch Time: ${(endBatch - startBatch).toFixed(2)}ms`);
 	

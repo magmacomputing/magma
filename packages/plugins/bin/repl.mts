@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Tempo, enums } from '@magmacomputing/tempo';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -42,7 +42,7 @@ for (const plugin of plugins) {
 	if (fs.existsSync(indexPath)) {
 		try {
 			// Convert to file:// URL for safe dynamic import on Windows/Linux
-			const mod = await import(`file://${indexPath}`);
+			const mod = await import(pathToFileURL(indexPath).href);
 			let loadedCount = 0;
 
 			for (const key in mod) {

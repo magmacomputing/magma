@@ -6,8 +6,14 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "paths": {
-      "#internal/license": ["../../internal/license/src/index.ts"]
-    }
+      "#internal/license": [
+        "../../internal/license/src/index.ts"
+      ]
+    },
+    "types": [
+      "node",
+      "vitest/globals"
+    ]
   },
   "include": [
     "src"

@@ -4,9 +4,11 @@ import { FormatModule } from '@magmacomputing/tempo/format';
 import { SnapPlugin } from '../src/index.js';
 
 describe('Snap Plugin', () => {
-	it('should snap to the nearest 15 minutes', () => {
+	beforeAll(() => {
 		Tempo.extend(MutateModule, FormatModule, SnapPlugin);
+	});
 
+	it('should snap to the nearest 15 minutes', () => {
 		// Create a time at 14:08
 		const t = new Tempo('2026-06-01T14:08:00');
 

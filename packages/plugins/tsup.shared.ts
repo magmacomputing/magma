@@ -57,11 +57,11 @@ export const sharedConfig: Options = {
 
 					if (isApi) {
 						contents += `import { definePlugin as originalPlugin, defineTerm as originalTerm } from '${args.pluginData.originalPath}';\n`;
-						contents += `export const definePlugin = (config) => originalPlugin({ version: "${version}", ...config });\n`;
-						contents += `export const defineTerm = (config) => originalTerm({ version: "${version}", ...config });\n`;
+						contents += `export const definePlugin = (config) => originalPlugin({ ...config, version: "${version}" });\n`;
+						contents += `export const defineTerm = (config) => originalTerm({ ...config, version: "${version}" });\n`;
 					} else {
 						contents += `import { definePlugin as originalPlugin } from '${args.pluginData.originalPath}';\n`;
-						contents += `export const definePlugin = (config) => originalPlugin({ version: "${version}", ...config });\n`;
+						contents += `export const definePlugin = (config) => originalPlugin({ ...config, version: "${version}" });\n`;
 					}
 
 					return {

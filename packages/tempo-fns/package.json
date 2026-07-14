@@ -40,7 +40,7 @@
     "build": "npm run clean && npm run build:esm && npm run build:global",
     "build:esm": "tsc -b",
     "build:global": "rollup -c",
-    "clean": "rm -rf dist && (tsc -b --clean || true)",
+    "clean": "magma-cli rm dist && (tsc -b --clean || true)",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build",
     "docs:dev": "node ./bin/sync-docs.mjs && vitepress dev doc",
     "docs:build": "node ./bin/sync-docs.mjs && vitepress build doc"

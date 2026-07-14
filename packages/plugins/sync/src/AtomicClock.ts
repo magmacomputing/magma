@@ -24,7 +24,7 @@ export class AtomicClock {
 			throw new Error('[Tempo#sync] SharedArrayBuffer is not available in this environment. Ensure COOP/COEP headers are set, or use Node.js.');
 		}
 
-		// Allocate 8 bytes for a 64-bit integer (epoch in milliseconds)
+		// Allocate 8 bytes for a 64-bit integer (epoch in nanoseconds)
 		this.#buffer = new SharedArrayBuffer(8);
 		this.#view = new BigInt64Array(this.#buffer);
 		this.#interval = options.interval ?? 10;

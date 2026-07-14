@@ -13,7 +13,7 @@ describe('Batch Plugin', () => {
 		const epochs = [startEpoch, startEpoch + 1000];
 
 		// This will crash on Node 24 because the spawned worker isolate lacks the JS polyfill
-		const result = await (Tempo as any).batch(epochs, { weeks: 1 });
+		const result = await (Tempo as any).batch(epochs, 'add', { weeks: 1 });
 
 		expect(result).toHaveLength(2);
 	});

@@ -6,6 +6,7 @@ declare module '@magmacomputing/tempo' {
 		astro: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
 		astronomy: {
 			key: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
+			strict: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
 			season: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
 			sphere: Tempo.COMPASS;
 			event: 'Equinox' | 'Solstice';

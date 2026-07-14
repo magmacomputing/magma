@@ -1,7 +1,6 @@
 {
   "name": "@magmacomputing/tempo-plugin-batch",
   "version": "1.0.0",
-  "private": true,
   "description": "Tempo community plugin bringing C-level parallelization to massive date arrays via SharedArrayBuffer and Worker Threads.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,7 +17,6 @@
   },
   "scripts": {
     "build": "tsup && tsc",
-    "postbuild": "rm -rf dist/src",
     "pretest": "npm run build",
     "test": "vitest run -c ../../test/vitest.community.ts",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"

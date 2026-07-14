@@ -40,8 +40,8 @@ export const SnapPlugin = definePlugin({
 			const key = providedKeys[0];
 			let step = opts[key as keyof SnapOptions] as number;
 
-			if (step === 0) {
-				const err = new Error(`Snap step cannot be zero.`);
+			if (!Number.isFinite(step) || step === 0) {
+				const err = new Error(`Snap step cannot be zero or non-finite.`);
 				if (this.config?.catch) {
 					console.error(`[Tempo] Error: ${err.message}`);
 					return this;
@@ -61,7 +61,7 @@ export const SnapPlugin = definePlugin({
 				case 'hh':
 				case 'hour':
 				case 'hours': {
-					const fractionalHour = base.hh + (base.mi / 60) + (base.ss / 3_600);
+					const fractionalHour = base.hh + (base.mi / 60) + (base.ss / 3_600) + (base.ms / 3_600_000) + (base.us / 3_600_000_000) + (base.ns / 3_600_000_000_000);
 					const roundedHour = calculateRounded(fractionalHour, step, direction);
 					const diff = roundedHour - base.hh;
 
@@ -74,7 +74,7 @@ export const SnapPlugin = definePlugin({
 				case 'mi':
 				case 'minute':
 				case 'minutes': {
-					const fractionalMinute = base.mi + (base.ss / 60) + (base.ms / 60_000);
+					const fractionalMinute = base.mi + (base.ss / 60) + (base.ms / 60_000) + (base.us / 60_000_000) + (base.ns / 60_000_000_000);
 					const roundedMinute = calculateRounded(fractionalMinute, step, direction);
 					const diff = roundedMinute - base.mi;
 
@@ -87,7 +87,7 @@ export const SnapPlugin = definePlugin({
 				case 'ss':
 				case 'second':
 				case 'seconds': {
-					const fractionalSecond = base.ss + (base.ms / 1_000);
+					const fractionalSecond = base.ss + (base.ms / 1_000) + (base.us / 1_000_000) + (base.ns / 1_000_000_000);
 					const roundedSecond = calculateRounded(fractionalSecond, step, direction);
 					const diff = roundedSecond - base.ss;
 
