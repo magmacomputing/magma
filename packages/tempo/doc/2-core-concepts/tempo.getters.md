@@ -15,7 +15,7 @@ The `Tempo` class provides an extensive array of zero-cost getters that allow yo
 | `.dd` | `number` | Day of the month (1-31) | `24` |
 | `.day` | `number` | Alias for `.dd` | `24` |
 | `.era` | `string` | Localized era string | `'ce'`, `'bce'`, `'ad'`, `'bc'` |
-| `.eraYear` | `number` | Positive integer year within the current `.era` | `2026`, `4` |
+| `.eon` | `number` | Positive integer year within the current `.era` | `2026`, `4` |
 
 ## ⏱️ Time Properties
 

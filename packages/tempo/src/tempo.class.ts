@@ -1518,7 +1518,8 @@ export class Tempo {
 
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
 	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return this.toDateTime().era; }
-	/** Year within the era (positive integer) */							get eraYear() { return this.toDateTime().eraYear; }
+	/** Year within the era (positive integer) */							get eon() { return this.toDateTime().eraYear; }
+	/** @hidden */																						get eraYear() { return this.toDateTime().eraYear; }
 	/** 4-digit iso week-numbering year */										get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** iso week number of the year */												get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }

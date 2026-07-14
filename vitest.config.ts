@@ -48,6 +48,14 @@ export default defineConfig({
           include: ['packages/library/test/**/*.{test,spec}.ts'],
           exclude: ['**/node_modules/**'],
         }
+      },
+      {
+        test: {
+          name: 'Plugins',
+          include: ['packages/plugins/*/test/**/*.{test,spec}.ts'],
+          exclude: ['**/node_modules/**'],
+          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
+        }
       }
     ],
     alias: [

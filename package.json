@@ -11,16 +11,19 @@
     "url": "https://github.com/magmacomputing/magma.git"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "packages/plugins/*"
   ],
   "scripts": {
     "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run",
     "build:tempo": "npm run build --workspace=@magmacomputing/tempo",
     "build:library": "npm run build --workspace=@magmacomputing/library",
+    "build:plugins": "npm run build --workspaces --if-present",
     "clean": "node node_modules/typescript-7/bin/tsc -b --clean",
     "version:bump": "node bin/version-bump.mjs",
     "version:sync": "node bin/version-sync.mjs",
     "repl": "npm run repl --workspace=@magmacomputing/tempo",
+    "repl:plugins": "node packages/plugins/bin/repl.mjs",
     "repl:dist": "npm run repl:dist --workspace=@magmacomputing/tempo",
     "core": "npm run core --workspace=@magmacomputing/tempo",
     "docs:dev": "npm run docs:dev --workspace=@magmacomputing/tempo",

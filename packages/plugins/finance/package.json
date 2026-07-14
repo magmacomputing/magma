@@ -1,0 +1,35 @@
+{
+	"name": "@magmacomputing/tempo-plugin-finance",
+	"version": "1.0.0",
+	"description": "Tempo Community Plugin: Finance namespace and fiscal year utilities",
+	"main": "dist/index.js",
+	"module": "dist/index.mjs",
+	"types": "dist/index.d.ts",
+	"scripts": {
+		"build": "tsup && tsc",
+		"postbuild": "rm -rf dist/src",
+		"prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build",
+		"test": "vitest run -c ../../test/vitest.community.ts"
+	},
+	"keywords": [
+		"tempo",
+		"tempo-plugin",
+		"magmacomputing",
+		"temporal",
+		"plugin",
+		"finance",
+		"fiscal"
+	],
+	"author": "Magma Computing",
+	"license": "MIT",
+	"tempo": {
+		"plan": "community"
+	},
+	"peerDependencies": {
+		"@magmacomputing/tempo": "^3.8.0"
+	},
+	"devDependencies": {
+		"@magmacomputing/tempo": "workspace:*",
+		"vitest": "^1.0.0"
+	}
+}

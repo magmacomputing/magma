@@ -87,7 +87,7 @@ Tempo.extend(FormatModule);
 | :--- | :--- | :--- |
 | `{yyyy}` | 4-digit Year | `2026` |
 | `{yy}` | 2-digit Year | `26` |
-| `{eraYear}` | Absolute Year within Era | `200` |
+| `{eon}` | Absolute Year within Era | `200` |
 | `{era}` | Era Designator (e.g., AD/BC, CE/BCE) | `AD` |
 | `{yywy}` | ISO Year & Week | `202617` |
 | `{yw}` | ISO Year of Week | `2026` |

@@ -177,8 +177,12 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	let dd = groups.dd || undefined;
 
 	if (era) {
+		if (isUndefined(yy)) {
+			logError(`[Tempo#lexer] Cannot resolve era '${era}' without an explicit year`, config);
+			return dateTime;
+		}
 		const isBCE = /b\.?c\.?(?:e\.?)?|bc/i.test(era);
-		if (isBCE && yy) {
+		if (isBCE) {
 			yy = String(-(Number(yy) - 1));
 		}
 		if (isUndefined(mm) && isUndefined(dd)) {

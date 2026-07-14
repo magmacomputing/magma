@@ -189,7 +189,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				}).formatToParts(zdt.epochMilliseconds).find(p => p.type === 'era')?.value ?? '';
 				break;
 			}
-			case 'eraYear':
+			case 'eon':
 				res = (zdt.eraYear ?? Math.abs(zdt.year <= 0 ? zdt.year - 1 : zdt.year)).toString();
 				break;
 			case 'mm': res = pad(zdt.month); break;

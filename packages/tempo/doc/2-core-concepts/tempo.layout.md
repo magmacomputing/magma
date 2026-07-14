@@ -24,6 +24,7 @@ Snippets represent specific date or time units. When arranged in a layout, they 
 | `{ss}` | Second (prefixed by `:`) | `:[0-5][0-9]` |
 | `{ff}` | Fraction (prefixed by `.`) | `\.[0-9]{1,9}` |
 | `{wkd}` | Weekday (Mon-Sun) | Name strings |
+| `{era}` | Historical era marker | `BC`, `a.d.`, `c.e.`, etc. |
 | `{tzd}` | Time zone offset | `Z` or `±hh:mm` |
 | `{sep}` | Separator character | `/`, `-`, `.`, `,`, or ` ` |
 | `{mod}` | Modifier and count | `+`, `-`, `next`, `prev` |
@@ -49,7 +50,10 @@ Snippets represent specific date or time units. When arranged in a layout, they 
 | `dmy` | `{www}?{dd}{sep}?{mm}({sep}{yy})?{sfx}?{brk}?` | Day-month(-year) |
 | `mdy` | `{www}?{mm}{sep}?{dd}({sep}{yy})?{sfx}?{brk}?` | Month-day(-year) |
 | `ymd` | `{www}?{yy}{sep}?{mm}({sep}{dd})?{sfx}?{brk}?` | Year-month(-day) |
+| `ye` | `{mod}?{yy}{era}` | Explicit year and era (e.g., 200 BC) |
+| `ey` | `{mod}?{era}{sep}?{yy}` | Explicit leading era and year (e.g., BC 200) |
 | `unt` | `{nbr}{sep}?{unt}{sep}?{afx}` | Relative duration |
+
 
 ## Customizing Layouts
 

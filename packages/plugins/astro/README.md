@@ -1,0 +1,61 @@
+![Tempo Plugin](https://magmacomputing.github.io/tempo-plugin-docs/plugin-logo.svg)
+
+# @magmacomputing/tempo-plugin-astro
+
+[![npm version](https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-astro?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo-plugin-astro)
+[![npm peer dependency version](https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-astro/peer/@magmacomputing/tempo?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo)
+[![License](https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-astro?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo-plugin-astro)
+
+This is a Community plugin for the [Tempo](https://github.com/magmacomputing/magma) library that provides precise astronomical events (Equinoxes and Solstices) and maps them to traditional season names based on hemisphere.
+
+## Installation
+
+```bash
+npm install @magmacomputing/tempo-plugin-astro
+```
+
+## Usage
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
+
+// Pass the plugin to `Tempo.init` to register it into the runtime.
+Tempo.init({ 
+  plugins: [AstroTerm] 
+});
+
+const t = new Tempo('2026-03-20');
+
+// Get the Astronomical Event mapping
+console.log(t.term.astro);
+// Output: 'Vernal'
+```
+
+### Response Payload
+
+When resolving the term, the plugin intelligently returns the correct astronomical event and its corresponding traditional season based on your configured hemisphere (`sphere`):
+
+```javascript
+{
+  key: 'Vernal',     // Flips to 'Autumnal' if sphere is set to 'south'
+  season: 'Spring',  // Flips to 'Autumn' if sphere is set to 'south'
+  sphere: 'north',   // Flips to 'south' if sphere is set to 'south'
+  event: 'Equinox',
+  group: 'astronomy',
+  year: 2026,
+  month: 3,
+  // ...
+}
+```
+
+> **Did you know?**
+> `t.term.astronomy.season` returns the *Astronomical* season calculated by the precise timing of solstices and equinoxes. This will often differ from `t.term.season` in the core library, which uses standard Meteorological/Civil calendar boundaries (e.g., 1st of the month).
+
+## Documentation
+
+For full API reference, advanced configuration, and detailed explanations of the astronomical calculations, please visit the official **[Astro Plugin Documentation ↗](https://magmacomputing.github.io/tempo-plugin-docs/astro)**.
+
+## Licensing
+
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
