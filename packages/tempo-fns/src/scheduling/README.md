@@ -36,14 +36,14 @@ class Interval<T extends TemporalPoint = TemporalPoint> {
 **Example:**
 ```typescript
 import { Interval } from '@magmacomputing/tempo-fns/scheduling';
-import { Tempo } from '@magmacomputing/tempo';
+import { Temporal } from '@js-temporal/polyfill';
 
-const start = new Tempo('2026-01-01T08:00');
-const end = new Tempo('2026-01-01T17:00');
+const start = Temporal.Instant.from('2026-01-01T08:00:00Z');
+const end = Temporal.Instant.from('2026-01-01T17:00:00Z');
 const shift = new Interval(start, end);
 
-const meetingStart = new Tempo('2026-01-01T14:00');
-const meetingEnd = new Tempo('2026-01-01T15:00');
+const meetingStart = Temporal.Instant.from('2026-01-01T14:00:00Z');
+const meetingEnd = Temporal.Instant.from('2026-01-01T15:00:00Z');
 const meeting = new Interval(meetingStart, meetingEnd);
 
 console.log(shift.contains(meetingStart)); // true

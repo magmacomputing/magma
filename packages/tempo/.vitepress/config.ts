@@ -47,6 +47,7 @@ export default defineConfig({
         items: [
           { text: 'Configuration', link: '/doc/2-core-concepts/tempo.config' },
           { text: 'Registries', link: '/doc/2-core-concepts/tempo.registry' },
+          { text: 'Core Getters', link: '/doc/2-core-concepts/tempo.getters' },
           { text: 'Smart Parsing', link: '/doc/2-core-concepts/tempo.parse' },
           { text: 'Smart Formatting', link: '/doc/2-core-concepts/tempo.format' },
           { text: 'Layout Patterns', link: '/doc/2-core-concepts/tempo.layout' },

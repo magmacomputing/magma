@@ -133,10 +133,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		if (hMatch) {
 			const modifiers = hMatch[0].toLowerCase();
 			if (modifiers.includes('raw')) skipMeridiem = true;
-			if (modifiers.includes('upper')) merMod = ':upper';
-			else if (modifiers.includes('lower')) merMod = ':lower';
 
+			if (modifiers.includes('upper')) merMod += ':upper';
+			if (modifiers.includes('lower')) merMod += ':lower';
+			if (modifiers.includes('dots')) merMod += ':dots';
 			if (modifiers.includes('locale')) merMod += ':locale';
+			if (modifiers.includes('space')) merMod += ':space';
 		}
 
 		if (!skipMeridiem) {
@@ -157,7 +159,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 			if (index !== -1) {
 				const end = template.indexOf('}', index) + 1;
-				template = template.slice(0, end) + `{mer${merMod}}` + template.slice(end);
+				const prefix = merMod.includes(':space') ? ' ' : '';
+				const cleanMod = merMod.replace(/:space/g, '');
+				template = template.slice(0, end) + `${prefix}{mer${cleanMod}}` + template.slice(end);
 			}
 		}
 	}
@@ -174,6 +178,15 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'yyww': case 'yywy': {
 				const { weekOfYear, yearOfWeek } = getISOWeekOfYear(zdt);
 				res = pad(yearOfWeek, 4) + pad(weekOfYear);
+				break;
+			}
+			case 'era': {
+				const dtfOptions = (config?.intl?.dateTimeFormat || {}) as any;
+				res = getDTF(config?.locale, {
+					timeZone: zdt.timeZoneId,
+					calendar: zdt.calendarId,
+					era: dtfOptions.era ?? 'short'
+				}).formatToParts(zdt.epochMilliseconds).find(p => p.type === 'era')?.value ?? '';
 				break;
 			}
 			case 'mm': res = pad(zdt.month); break;
@@ -273,6 +286,11 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					if (/^[0-9]+$/.test(String(res)))
 						res = BigInt(String(res)).toString();
 					break;
+				case 'dots': {
+					if (token === 'mer')
+						res = String(res).split('').join('.') + '.';
+					break;
+				}
 				case 'locale': {
 					try {
 						if (token.startsWith('#') && isTempo(obj)) {
