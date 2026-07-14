@@ -29,7 +29,7 @@
 		"@magmacomputing/tempo": "^3.8.0"
 	},
 	"devDependencies": {
-		"@magmacomputing/tempo": "workspace:*",
+		"@magmacomputing/tempo": "^3.6.1",
 		"vitest": "^1.0.0"
 	}
 }

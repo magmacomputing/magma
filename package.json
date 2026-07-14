@@ -48,6 +48,7 @@
     "playwright": "^1.61.1",
     "rollup": "^4.62.2",
     "tslib": "^2.8.1",
+    "tsup": "^8.5.1",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "typescript-7": "npm:typescript@^7.0.2",

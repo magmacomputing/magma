@@ -28,9 +28,7 @@
     "vendorVariantId": "tempo-plugin-snap",
     "plan": "community"
   },
-  "devDependencies": {
-    "@magmacomputing/tempo-plugin-core": "*"
-  },
+  "devDependencies": {},
   "keywords": [
     "tempo",
     "tempo-plugin",
