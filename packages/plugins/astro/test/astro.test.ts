@@ -1,11 +1,12 @@
-import { Tempo } from '@magmacomputing/tempo/core';
+import { Tempo } from '@magmacomputing/tempo';
 import { ParseModule } from '@magmacomputing/tempo/parse';
 import { AstroTerm } from '../src/index.js';
 
 describe('Astro Plugin (Term Implementation)', () => {
 
 	beforeEach(() => {
-		Tempo.init({ plugins: [ParseModule, AstroTerm] });
+		// Bypass monorepo dual-package (src vs dist) type hazard for test plugins
+		Tempo.init({ plugins: [ParseModule as any, AstroTerm as any] });
 	});
 
 	it('should register "astro" and "astronomy" terms', () => {
@@ -59,6 +60,29 @@ describe('Astro Plugin (Term Implementation)', () => {
 			});
 
 			expect(tempo.term.astro).toBe('Winter');
+		});
+	});
+
+	describe('Meeus Range Enforcement', () => {
+
+		it('should succeed for boundary year -999 (which evaluates -1000)', () => {
+			const tempo = new Tempo(undefined, { timeZone: 'UTC', sphere: 'north' }).set({ yy: -999, mm: 1, dd: 1 });
+			expect(() => tempo.term.astro).not.toThrow();
+		});
+
+		it('should succeed for boundary year 2999 (which evaluates 3000)', () => {
+			const tempo = new Tempo(undefined, { timeZone: 'UTC', sphere: 'north' }).set({ yy: 2999, mm: 1, dd: 1 });
+			expect(() => tempo.term.astro).not.toThrow();
+		});
+
+		it('should throw RangeError for year outside the lower bounds (-1000 evaluates -1001)', () => {
+			const tempo = new Tempo(undefined, { timeZone: 'UTC', sphere: 'north' }).set({ yy: -1000, mm: 1, dd: 1 });
+			expect(() => tempo.term.astro).toThrow(/supported Meeus calculation range/);
+		});
+
+		it('should throw RangeError for year outside the upper bounds (3000 evaluates 3001)', () => {
+			const tempo = new Tempo(undefined, { timeZone: 'UTC', sphere: 'north' }).set({ yy: 3000, mm: 1, dd: 1 });
+			expect(() => tempo.term.astro).toThrow(/supported Meeus calculation range/);
 		});
 	});
 });

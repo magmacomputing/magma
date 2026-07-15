@@ -14,6 +14,7 @@ export interface BatchOptions {
 	 * Number of threads to use. Defaults to the number of logical CPUs.
 	 */
 	threads?: number;
+	rehydrate?: boolean;
 }
 
 /**
@@ -100,7 +101,6 @@ export class BatchOrchestrator {
 			result[i] = outputView[i];
 		}
 
-		// (Optional) Rehydrate logic would go here if options.rehydrate === true
 		return result;
 	}
 

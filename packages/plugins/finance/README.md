@@ -1,12 +1,8 @@
 # @magmacomputing/tempo-plugin-finance
 
-<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 2rem;">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-finance"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-finance?style=flat-square" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-finance/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version"></a>
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-finance"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-finance?style=flat-square" alt="License"></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready"></a>
-  <a href="https://magmacomputing.github.io/magma/9-plugins/finance.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation"></a>
-</div>
+<p align="center">
+  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-finance"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-finance?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-finance/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-finance"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-finance?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/9-plugins/finance.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
+</p>
 
 A specialized namespace plugin for Tempo that provides fiscal year and financial date utilities.
 

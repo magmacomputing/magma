@@ -12,6 +12,7 @@ if (command === 'rm') {
 			fs.rmSync(fullPath, { recursive: true, force: true });
 		} catch (err) {
 			console.error(`Failed to remove ${fullPath}:`, err.message);
+			process.exitCode = 1;
 		}
 	}
 } else {

@@ -1625,10 +1625,19 @@ export class Tempo {
 	 */
 	/** @internal */																					get #Tempo() { return this.constructor as typeof Tempo; }
 
-	/** apply a custom format. */															format<K extends t.Format>(fmt: K, options?: any) { return this.#resolve(() => interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt, options)); }
+	/** apply a custom format. */															format(fmt?: any, options?: any): any { return this.#resolve(() => interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt, options)); }
 
-	/** time duration until another date-time */							until(arg0?: any, arg1?: any): any { return this.#resolve(() => interpret(this, 'DurationModule', undefined, false, 'until', arg0, arg1) ?? this); }
-	/** time elapsed since another date-time */								since(arg0?: any, arg1?: any): any { return this.#resolve(() => interpret(this, 'DurationModule', undefined, false, 'since', arg0, arg1) ?? this); }
+	/** time duration until another date-time */
+	until(dateTimeOrOpts?: t.DateTime | t.Options, opts?: t.Options): t.Duration;
+	until(unit: t.Unit, opts?: t.Options): number;
+	until(dateTimeOrOpts: t.DateTime | t.Options, unit: t.Unit): number;
+	until(arg0?: any, arg1?: any): any { return this.#resolve(() => interpret(this, 'DurationModule', undefined, false, 'until', arg0, arg1) ?? this); }
+
+	/** time elapsed since another date-time */
+	since(dateTimeOrOpts?: t.DateTime | t.Options, opts?: t.Options): t.Duration;
+	since(unit: t.Unit, opts?: t.Options): number;
+	since(dateTimeOrOpts: t.DateTime | t.Options, unit: t.Unit): number;
+	since(arg0?: any, arg1?: any): any { return this.#resolve(() => interpret(this, 'DurationModule', undefined, false, 'since', arg0, arg1) ?? this); }
 
 	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'add', false, tempo, options) ?? this); }
 	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.MutateSet, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this); }

@@ -20,5 +20,5 @@ This directory exists solely so that the monorepo's documentation generation pip
   <div>
     <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
     Manage your subscriptions and retrieve your license key.
-  </div> 
+  </div>
 </div>

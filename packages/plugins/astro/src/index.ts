@@ -35,9 +35,16 @@ const scope = 'astronomy';
 
 /**
  * ## calculateAstroMoment
- * Polynomial approximation for Equinoxes and Solstices (Jean Meeus algorithm).
+ * Polynomial approximation for Equinoxes and Solstices (Jean Meeus algorithm, Ch 27).
+ * Supported year range: -1000 to +3000.
+ *
+ * NOTE: This is a mean-polynomial approximation that does not include the 
+ * periodic higher-order terms for exact apparent calculations.
  */
 function calculateAstroMoment(year: number, quarter: ASTRO, timeZone: string) {
+	if (year < -1000 || year > 3000)
+		throw new RangeError(`AstroTerm: Year ${year} is outside the supported Meeus calculation range (-1000 to +3000).`);
+
 	const y = (year - 2_000) / 1_000;
 	let jde: number;
 

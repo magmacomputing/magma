@@ -2,12 +2,9 @@
 
 # @magmacomputing/tempo-plugin-snap
 
-<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 2rem;">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-snap"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-snap?style=flat-square" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-snap/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version"></a>
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-snap"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-snap?style=flat-square" alt="License"></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready"></a>
-</div>
+<p align="center">
+  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-snap"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-snap?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-snap/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-snap"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-snap?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+</p>
 
 A Community plugin for the [Tempo](https://github.com/magmacomputing/magma) library that provides robust time rounding and snapping functionality (e.g., snapping to the nearest 15 minutes or 1 hour block) for calendar and scheduling applications.
 

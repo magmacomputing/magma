@@ -2,6 +2,11 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-astro` project will be documented in this file.
 
+## [2.1.2] - 2026-07-15
+
+### Fixed
+- Fixed an issue where the polynomial algorithm could return mathematical garbage for years outside the Jean Meeus limit. It now strictly enforces the `-1000` to `+3000` year bounds by throwing a `RangeError`.
+
 ## [2.1.0] - 2026-07-02
 
 ### Changed

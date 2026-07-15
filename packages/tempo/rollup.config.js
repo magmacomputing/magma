@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import alias from '@rollup/plugin-alias';
 import resolve from '@rollup/plugin-node-resolve';
-import { transformSync } from 'esbuild';
+import { transform } from 'esbuild';
 import terser from '@rollup/plugin-terser';
 import JavaScriptObfuscator from 'javascript-obfuscator';
 import MagicString from 'magic-string';
@@ -99,11 +99,11 @@ export default [
 		plugins: [
 			{
 				name: 'manual-typescript',
-				transform(code, id) {
+				async transform(code, id) {
 					if (!id.endsWith('.ts')) return null;
 					
 					try {
-						const result = transformSync(code, {
+						const result = await transform(code, {
 							loader: 'ts',
 							target: 'esnext',
 							format: 'esm',
