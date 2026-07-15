@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation Alignment**: Cleaned up `tempo.config.md` to remove deprecated module references, perfectly aligning examples with the `tempo-workspace` ecosystem (`FinancePlugin` and `AstroTerm`).
 - **Getter Documentation**: Created `tempo.getters.md` as the definitive, educational conceptual guide for utilizing Tempo's zero-cost evaluation getters.
 
+### Fixed
+- **Core Typings**: Resolved `any` leakage in `Tempo` core methods by injecting strict overloads for `until()` and `since()` directly into `tempo.class.ts`, ensuring full IDE type-inference flows through to `.format()`.
+- **Documentation Badges**: Standardized the Shields.io badge layout across the monorepo to use `<p>` tags with `inline-block` styling, fixing horizontal alignment issues caused by VitePress CSS overrides and eliminating malformed HTML `<table>` hydration errors.
+
 ## [3.8.0] - 2026-07-11
 
 ### Fixed
