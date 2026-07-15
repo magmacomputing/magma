@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import alias from '@rollup/plugin-alias';
 import resolve from '@rollup/plugin-node-resolve';
-import ts from 'typescript';
+import { transform } from 'esbuild';
 import terser from '@rollup/plugin-terser';
 import JavaScriptObfuscator from 'javascript-obfuscator';
 import MagicString from 'magic-string';
@@ -99,31 +99,24 @@ export default [
 		plugins: [
 			{
 				name: 'manual-typescript',
-				transform(code, id) {
+				async transform(code, id) {
 					if (!id.endsWith('.ts')) return null;
-					const result = ts.transpileModule(code, {
-						compilerOptions: { 
-							target: ts.ScriptTarget.ESNext, 
-							module: ts.ModuleKind.ESNext,
-							moduleResolution: ts.ModuleResolutionKind.NodeJs,
-							sourceMap: false,
-							declaration: false
-						}
-					});
-
-					if (result.diagnostics && result.diagnostics.length > 0) {
-						const formatted = ts.formatDiagnosticsWithColorAndContext(result.diagnostics, {
-							getCurrentDirectory: () => process.cwd(),
-							getCanonicalFileName: (fileName) => fileName,
-							getNewLine: () => ts.sys ? ts.sys.newLine : '\n'
+					
+					try {
+						const result = await transform(code, {
+							loader: 'ts',
+							target: 'esnext',
+							format: 'esm',
+							sourcemap: false
 						});
-						this.error(`TypeScript compilation failed in ${id}:\n${formatted}`);
-					}
 
-					return {
-						code: result.outputText,
-						map: null
-					};
+						return {
+							code: result.code,
+							map: null
+						};
+					} catch (err) {
+						this.error(`esbuild compilation failed in ${id}:\n${err.message}`);
+					}
 				}
 			},
 			resolve({ extensions: ['.js', '.ts'], moduleDirectories: ['node_modules'] }),

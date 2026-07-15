@@ -3,6 +3,7 @@ import { isDefined } from '#library/assertion.library.js';
 import type * as t from '../tempo.type.js';
 
 const AGO_HENCE_RE = /\b(ago|hence|from\s+now|prior)\b/i;
+const ERA_RE = /(?:^|\s)(b\.?c\.?(?:e\.?)?|a\.?d\.?|c\.?e\.?)(?:\s|$)/i;
 const CLASS_CACHE_LIMIT = 256;
 const classCache = new Map<string, ParseInputClass>();
 
@@ -34,6 +35,7 @@ export interface ParseInputClass {
 	isAlphaOnly: boolean;
 	isSixDigits: boolean;
 	isEightDigits: boolean;
+	hasEra: boolean;
 }
 
 export interface SelectLayoutPatternsOptions {
@@ -64,6 +66,8 @@ const LAYOUT = {
 	ymd: 'yearMonthDay',
 	off: 'offset',
 	rel: 'relativeOffset',
+	ye: 'yearEra',
+	ey: 'eraYearLeading',
 } as const;
 
 const COMPACT_SIX = new Set<string>([LAYOUT.hms, LAYOUT.dmy6, LAYOUT.mdy6, LAYOUT.ymd6]);
@@ -71,6 +75,7 @@ const COMPACT_EIGHT = new Set<string>([LAYOUT.dt, LAYOUT.dmy, LAYOUT.mdy, LAYOUT
 const ALPHA_EXCLUDE = new Set<string>([LAYOUT.hms, LAYOUT.dmy6, LAYOUT.mdy6, LAYOUT.ymd6, LAYOUT.off]);
 const NUMERIC_EXCLUDE = new Set<string>([LAYOUT.wkd, LAYOUT.rel]);
 const COLON_BIAS = new Set<string>([LAYOUT.tm, LAYOUT.tmd, LAYOUT.dtm]);
+const ERA_BIAS = new Set<string>([LAYOUT.ye, LAYOUT.ey, LAYOUT.dmy, LAYOUT.mdy, LAYOUT.ymd]);
 
 /**
  * Classify raw parse input once so later planner phases can choose candidate layouts.
@@ -108,6 +113,7 @@ export function classifyParseInput(value: string | number): ParseInputClass {
 	const isSixDigits = isPureNumeric && length === 6;
 	const isEightDigits = isPureNumeric && length === 8;
 	const hasAgoHence = hasLetters && AGO_HENCE_RE.test(trim);
+	const hasEra = hasLetters && ERA_RE.test(trim);
 
 	return {
 		trim,
@@ -121,6 +127,7 @@ export function classifyParseInput(value: string | number): ParseInputClass {
 		isAlphaOnly,
 		isSixDigits,
 		isEightDigits,
+		hasEra,
 	}
 }
 
@@ -163,6 +170,7 @@ export function selectLayoutPatterns(
 	const isEightDigits = cls.isEightDigits;
 	const isPureNumeric = cls.isPureNumeric;
 	const hasColon = cls.hasColon;
+	const hasEra = cls.hasEra;
 
 	let rulesApplied: string[] | undefined;
 	if (wantsPlan) {
@@ -173,10 +181,12 @@ export function selectLayoutPatterns(
 		if (isEightDigits) rulesApplied.push('isEightDigits');
 		if (isPureNumeric) rulesApplied.push('isPureNumeric');
 		if (hasColon) rulesApplied.push('hasColon');
+		if (hasEra) rulesApplied.push('hasEra');
 	}
 
 	const selected: Array<readonly [symbol, RegExp]> = [];
 	const timeBiased: Array<readonly [symbol, RegExp]> = [];
+	const eraBiased: Array<readonly [symbol, RegExp]> = [];
 
 	for (const entry of ordered) {
 		const desc = entry[0].description ?? '';
@@ -193,12 +203,19 @@ export function selectLayoutPatterns(
 
 		if (!include) continue;
 
-		if (hasColon && COLON_BIAS.has(desc)) timeBiased.push(entry);
+		if (hasEra && ERA_BIAS.has(desc)) eraBiased.push(entry);
+		else if (hasColon && COLON_BIAS.has(desc)) timeBiased.push(entry);
 		else selected.push(entry);
 	}
 
 	let next = selected;
-	if (hasColon && timeBiased.length > 0) {
+	if (hasEra && eraBiased.length > 0) {
+		next = eraBiased;
+		if (hasColon && timeBiased.length > 0) {
+			for (const entry of timeBiased) next.push(entry);
+		}
+		for (const entry of selected) next.push(entry);
+	} else if (hasColon && timeBiased.length > 0) {
 		next = timeBiased;
 		for (const entry of selected) next.push(entry);
 	}

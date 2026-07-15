@@ -62,6 +62,22 @@ describe('Tempo.format() refinements', () => {
       expect(tPM.format('{h12:lower}:{mi}')).toBe('10:30pm');
     })
 
+    it('adds a.m./p.m. if {h12:dots} is used', () => {
+      expect(tAM.format('{h12:dots}:{mi}')).toBe('10:30a.m.');
+      expect(tPM.format('{h12:dots}:{mi}')).toBe('10:30p.m.');
+    })
+
+    it('adds A.M./P.M. if {h12:upper:dots} is used', () => {
+      expect(tAM.format('{h12:upper:dots}:{mi}')).toBe('10:30A.M.');
+      expect(tPM.format('{h12:upper:dots}:{mi}')).toBe('10:30P.M.');
+    })
+
+    it('injects a space if :space is used', () => {
+      expect(tAM.format('{h12:space:dots}:{mi}')).toBe('10:30 a.m.');
+      expect(tPM.format('{h12:space:dots}:{mi}')).toBe('10:30 p.m.');
+      expect(tPM.format('{h12:space:upper:dots}:{mi}')).toBe('10:30 P.M.');
+    })
+
     it('adds am/pm after {ss} if it follows {h12}', () => {
       expect(tAM.format('{h12}:{mi}:{ss}')).toBe('10:30:45am');
       expect(tPM.format('{h12}:{mi}:{ss}')).toBe('10:30:45pm');
@@ -102,6 +118,12 @@ describe('Tempo.format() refinements', () => {
       expect(tPM.format('{h12} {mer:upper}')).toBe('10 PM');
     })
 
+    it('formats explicitly with {mer:dots}', () => {
+      expect(tAM.format('{h12} {mer:dots}')).toBe('10 a.m.');
+      expect(tPM.format('{h12} {mer:dots}')).toBe('10 p.m.');
+      expect(tAM.format('{h12} {mer:upper:dots}')).toBe('10 A.M.');
+    })
+
     it('does not add am/pm for {hh} (24-hour)', () => {
       expect(tPM.format('{hh}:{mi}')).toBe('22:30');
     })
@@ -128,6 +150,18 @@ describe('Tempo.format() refinements', () => {
     it('should localize Terms when :locale is provided', () => {
       expect(t.format('{#tod:locale}')).toBe('Milieu de la matinée');
       expect(t.format('{#timeOfDay:locale}')).toBe('Milieu de la matinée');
+    })
+  })
+  
+  describe('era-formatting', () => {
+    it('supports the {era} token with BCE dates', () => {
+      const bce = new Tempo('-000100-05-20T10:00:00Z');
+      expect(bce.format('{era}')).toMatch(/BC|BCE/i);
+    })
+
+    it('supports the {era} token with CE dates', () => {
+      const ce = new Tempo('2024-05-20T10:00:00Z');
+      expect(ce.format('{era}')).toMatch(/AD|CE/i);
     })
   })
 })

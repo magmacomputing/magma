@@ -307,7 +307,7 @@ The examples below use the `using` and `await using` syntax, which require **Typ
 
 ### Ticker Plugin
 The Ticker engine is a premium feature. 
-👉 **Learn More:** [Ticker Plugin Documentation](https://magmacomputing.github.io/tempo-plugin-docs/ticker/)
+👉 **Learn More:** [Ticker Plugin Documentation](../9-plugins/ticker.md)
 
 
 ### Interval-Based Ticker (Recurring Billing)

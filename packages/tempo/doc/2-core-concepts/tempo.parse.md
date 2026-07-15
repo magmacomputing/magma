@@ -60,6 +60,17 @@ The engine can interpret:
 *   **Numbers/BigInt**: Unix timestamps in milliseconds or nanoseconds.
 *   **Temporal Objects**: `ZonedDateTime`, `PlainDate`, `PlainDateTime`.
 
+### Historical Era Parsing
+Tempo natively supports parsing historical and future dates with era designations such as `BC`, `BCE`, `AD`, and `CE`. 
+It correctly resolves both trailing (`200 BC`) and leading (`BC 200`) formats.
+
+> [!WARNING]
+> **Era Parsing Assumptions**
+> When parsing dates with eras, be aware of the following architectural rules:
+> 1. **Implicit Defaults**: If no era is explicitly provided in the string, Tempo safely assumes `CE` (Common Era).
+> 2. **Missing Months/Days**: If a historical era string like `"200 BC"` is parsed without a month or day, Tempo anchors the missing components to **January 1st** of that astronomical year (i.e., `-199-01-01`).
+> 3. **Calendar Systems**: Era parsing and conversion to astronomical years is strictly restricted to the **ISO/Gregorian** calendar system. This mathematically means `1 BC` becomes astronomical year `0`, and `200 BC` becomes year `-199`.
+
 ---
 
 ## 🔢 Numeric & Epoch Parsing

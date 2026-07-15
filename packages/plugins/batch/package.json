@@ -1,0 +1,51 @@
+{
+  "name": "@magmacomputing/tempo-plugin-batch",
+  "version": "1.0.0",
+  "description": "Tempo community plugin bringing C-level parallelization to massive date arrays via SharedArrayBuffer and Worker Threads.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && tsc",
+    "pretest": "npm run build",
+    "test": "vitest run -c ../../test/vitest.community.ts",
+    "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"
+  },
+  "tempo": {
+    "vendorVariantId": "tempo-plugin-batch",
+    "plan": "community"
+  },
+  "peerDependencies": {
+    "@magmacomputing/tempo": "^3.6.1"
+  },
+  "devDependencies": {
+    "@js-temporal/polyfill": "^0.5.1"
+  },
+  "keywords": [
+    "tempo",
+    "tempo-plugin",
+    "magmacomputing",
+    "batch",
+    "parallel",
+    "threads",
+    "worker",
+    "performance"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  }
+}

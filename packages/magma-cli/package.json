@@ -1,0 +1,9 @@
+{
+  "name": "@magmacomputing/magma-cli",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "magma-cli": "./index.js"
+  }
+}

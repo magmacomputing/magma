@@ -35,15 +35,15 @@ class Interval<T extends TemporalPoint = TemporalPoint> {
 ```
 **Example:**
 ```typescript
-import { Interval } from '@magmacomputing/tempo-fns/scheduling';
-import { Tempo } from '@magmacomputing/tempo';
+import { Interval } from '@magmacomputing/tempo';
+import { Temporal } from '@js-temporal/polyfill'; // or native Temporal in Node 22+
 
-const start = new Tempo('2026-01-01T08:00');
-const end = new Tempo('2026-01-01T17:00');
+const start = Temporal.ZonedDateTime.from('2026-01-01T08:00[UTC]');
+const end = Temporal.ZonedDateTime.from('2026-01-01T17:00[UTC]');
 const shift = new Interval(start, end);
 
-const meetingStart = new Tempo('2026-01-01T14:00');
-const meetingEnd = new Tempo('2026-01-01T15:00');
+const meetingStart = Temporal.ZonedDateTime.from('2026-01-01T14:00[UTC]');
+const meetingEnd = Temporal.ZonedDateTime.from('2026-01-01T15:00[UTC]');
 const meeting = new Interval(meetingStart, meetingEnd);
 
 console.log(shift.contains(meetingStart)); // true

@@ -87,6 +87,8 @@ Tempo.extend(FormatModule);
 | :--- | :--- | :--- |
 | `{yyyy}` | 4-digit Year | `2026` |
 | `{yy}` | 2-digit Year | `26` |
+| `{eon}` | Absolute Year within Era | `200` |
+| `{era}` | Era Designator (e.g., AD/BC, CE/BCE) | `AD` |
 | `{yywy}` | ISO Year & Week | `202617` |
 | `{yw}` | ISO Year of Week | `2026` |
 | `{wy}` | Zero-padded ISO Week of Year | `43` |
@@ -126,6 +128,8 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:upper` | String | Converts to uppercase | `{mer:upper}` → `PM` |
 | `:lower` | String | Converts to lowercase | `{mon:lower}` → `october` |
 | `:title` | String | Converts to titlecase | `{mon:locale:title}` → `Octobre` |
+| `:dots` | String | Injects periods (useful for abbreviations) | `{mer:lower:dots}` → `a.m.` |
+| `:space`| String | Injects a leading space (used by `{h12}` auto-meridiem) | `{h12:space:dots}` → `03:30 a.m.` |
 | `:locale` | String | Resolves term via localization dictionary | `{mon:locale}` → `octobre` |
 | `:yy` | Compound Date | Truncates the internal year component to 2 digits | `{dmy:yy}` → `241026` |
 | `:z` | `{tz}` | Narrow timezone offset | `{tz:z}` → `+10` |
@@ -145,8 +149,10 @@ If your format string contains `{h12}` (12-hour clock) but lacks a `{mer}` token
 ```typescript
 t.format('{h12}:{mi}');           // "03:30pm" (auto-append standard meridiem)
 t.format('{h12:upper}:{mi}');     // "03:30PM" (auto-append modified meridiem)
+t.format('{h12:dots}:{mi}');      // "03:30a.m." (auto-append meridiem with dots)
+t.format('{h12:space:dots}:{mi}');// "03:30 a.m." (auto-append meridiem with leading space)
 t.format('{h12:raw}:{mi}');       // "3:30"    (no meridiem added)
-t.format('{h12:raw}:{mi} {mer}'); // "3:30 am" (space + meridiem added manually)
+t.format('{h12:raw}:{mi} {mer}'); // "3:30 am" (manual space + meridiem)
 ```
 
 ### 🔢 Numeric Resolution

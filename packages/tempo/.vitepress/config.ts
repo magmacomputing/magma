@@ -47,6 +47,7 @@ export default defineConfig({
         items: [
           { text: 'Configuration', link: '/doc/2-core-concepts/tempo.config' },
           { text: 'Registries', link: '/doc/2-core-concepts/tempo.registry' },
+          { text: 'Core Getters', link: '/doc/2-core-concepts/tempo.getters' },
           { text: 'Smart Parsing', link: '/doc/2-core-concepts/tempo.parse' },
           { text: 'Smart Formatting', link: '/doc/2-core-concepts/tempo.format' },
           { text: 'Layout Patterns', link: '/doc/2-core-concepts/tempo.layout' },
@@ -70,6 +71,7 @@ export default defineConfig({
         items: [
           { text: 'API Overview', link: '/doc/api/' },
           { text: 'Technical Reference', link: typedocSidebar[0].items[0].link },
+          { text: 'Sandbox Factory', link: '/doc/4-advanced-reference/sandbox-factory' },
           { text: 'Parse Planner', link: '/doc/4-advanced-reference/tempo.planner' },
           { text: 'The Role of Locale', link: '/doc/4-advanced-reference/tempo.locale' },
           { text: 'Shorthand Engine', link: '/doc/4-advanced-reference/tempo.shorthand' },

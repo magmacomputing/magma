@@ -170,11 +170,27 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 /** resolve a date pattern match */
 export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any, pivot: number = 75): Temporal.ZonedDateTime {
 
-	const { mod, nbr = '1', afx, unt } = groups as Lexer.GroupDate;
+	const { mod, nbr = '1', afx, unt, era } = groups as Lexer.GroupDate & { era?: string };
 	// Normalize yy, mm, dd: treat empty captures as missing (regex groups yield '' for optional unmatched groups)
-	const yy = groups.yy || undefined;
-	const mm = groups.mm || undefined;
-	const dd = groups.dd || undefined;
+	let yy = groups.yy || undefined;
+	let mm = groups.mm || undefined;
+	let dd = groups.dd || undefined;
+
+	if (era) {
+		if (isUndefined(yy)) {
+			logError(`[Tempo#lexer] Cannot resolve era '${era}' without an explicit year`, config);
+			return dateTime;
+		}
+		const isBCE = /b\.?c\.?(?:e\.?)?|bc/i.test(era);
+		if (isBCE) {
+			yy = String(-(Number(yy) - 1));
+		}
+		if (isUndefined(mm) && isUndefined(dd)) {
+			mm = '1';
+			dd = '1';
+		}
+		delete groups["era"];
+	}
 
 	if (isEmpty(yy) && isEmpty(mm) && isEmpty(dd) && isUndefined(unt))
 		return dateTime;

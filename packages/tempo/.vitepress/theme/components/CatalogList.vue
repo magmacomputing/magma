@@ -8,6 +8,7 @@ interface Plugin {
   packageName: string;
   price: number;
   status: string;
+  plan: string;
 }
 
 const plugins = ref<Plugin[]>([])
@@ -28,7 +29,8 @@ onMounted(async () => {
           description: fields.description?.stringValue || '',
           packageName: fields.packageName?.stringValue || '',
           price: parseInt(fields.price?.integerValue || '0'),
-          status: fields.status?.stringValue || 'active'
+          status: fields.status?.stringValue || 'active',
+          plan: fields.plan?.stringValue || 'community'
         }
       })
     }
@@ -39,13 +41,12 @@ onMounted(async () => {
   }
 })
 
-const communityPlugins = computed(() => plugins.value.filter(p => p.price === 0 && p.status === 'active'));
-const premiumPlugins = computed(() => plugins.value.filter(p => p.price > 0 && p.status === 'active'));
+const communityPlugins = computed(() => plugins.value.filter(p => p.plan === 'community' && p.status === 'active'));
+const premiumPlugins = computed(() => plugins.value.filter(p => p.plan !== 'community' && p.status === 'active'));
 const comingSoonPlugins = computed(() => plugins.value.filter(p => p.status === 'coming_soon'));
 
 const copyInstall = (pkgName: string) => {
   navigator.clipboard.writeText(`npm install ${pkgName}`);
-  alert(`Copied: npm install ${pkgName}`);
 }
 </script>
 
@@ -65,7 +66,7 @@ const copyInstall = (pkgName: string) => {
             <button @click="copyInstall(plugin.packageName)" class="btn icon-btn" title="Copy install command">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
             </button>
-            <a :href="`https://www.npmjs.com/package/${plugin.packageName}`" target="_blank" class="btn btn-secondary icon-btn" title="View Documentation">
+            <a :href="`../9-plugins/${plugin.id}`" class="btn btn-secondary icon-btn" title="View Documentation">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </div>
@@ -74,14 +75,28 @@ const copyInstall = (pkgName: string) => {
       
       <h2 id="premium">Premium Plugins</h2>
       <p>Enterprise-grade extensions. A cryptographic license token is required.</p>
+      
+      <div style="display: flex; align-items: center; gap: 16px; margin: 16px 0; padding: 16px; background-color: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-brand); border-radius: 8px;">
+        <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
+          <img src="https://registry.magmacomputing.com.au/registry-logo.svg" width="48" height="48" alt="Tempo License Registry" style="margin: 0;" />
+        </a>
+        <div>
+          <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
+          Manage your subscriptions and retrieve your license key.
+        </div> 
+      </div>
+
       <div class="grid">
         <div v-for="plugin in premiumPlugins" :key="plugin.id" class="card premium-card">
           <div class="badge">Premium</div>
           <h3>{{ plugin.name }}</h3>
           <p>{{ plugin.description }}</p>
           <div class="actions" style="display: flex; gap: 0.5rem; align-items: center;">
-            <a href="https://registry.magmacomputing.com.au" target="_blank" class="btn primary" style="flex: 1;">Get a License</a>
-            <a :href="`https://www.npmjs.com/package/${plugin.packageName}`" target="_blank" class="btn btn-secondary icon-btn" title="View Documentation">
+            <code>npm install {{ plugin.packageName }}</code>
+            <button @click="copyInstall(plugin.packageName)" class="btn icon-btn" title="Copy install command">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+            <a :href="`../9-plugins/${plugin.id}`" class="btn btn-secondary icon-btn" title="View Documentation">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
           </div>
