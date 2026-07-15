@@ -28,7 +28,7 @@
 		"@magmacomputing/tempo": "^3.8.0"
 	},
 	"devDependencies": {
-		"@magmacomputing/tempo": "^3.6.1",
+		"@magmacomputing/tempo": "^3.8.0",
 		"vitest": "^1.0.0"
 	}
 }

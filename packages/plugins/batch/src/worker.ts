@@ -18,8 +18,8 @@ async function run() {
 				// For this prototype, we assume the operation is an add operation (e.g. "+1w").
 				// We get the mutated epoch number and put it back into the buffer.
 				const t = new Tempo(epoch);
-				(t as any).add(operation);
-				outputView[i] = t.epoch.ms;
+				const resultT = t.add(operation);
+				outputView[i] = resultT.epoch.ms;
 			}
 			parentPort.postMessage({ status: 'done' });
 
@@ -30,8 +30,8 @@ async function run() {
 			for (let i = 0; i < chunk.length; i++) {
 				const epoch = chunk[i];
 				const t = new Tempo(epoch);
-				(t as any).add(operation);
-				result[i] = t.epoch.ms;
+				const resultT = t.add(operation);
+				result[i] = resultT.epoch.ms;
 			}
 
 			parentPort.postMessage({ status: 'done', result });

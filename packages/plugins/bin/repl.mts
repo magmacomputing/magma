@@ -19,7 +19,7 @@ if (!mockToken) {
     } catch (e) { /* ignore */ }
 }
 
-if (mockToken) {
+if (process.env.TEST_MODE) {
     if (!process.env.TEMPO_REVOCATION_URL) process.env.TEMPO_REVOCATION_URL = 'mock';
     if (!process.env.TEMPO_REVOCATION_JWS) process.env.TEMPO_REVOCATION_JWS = '{"revoked":[]}';
 }
@@ -29,7 +29,7 @@ Tempo.init(mockToken ? { license: mockToken } : {});
 console.log(`\n\x1b[38;2;252;194;1m\x1b[1m ⏳ Tempo \x1b[0m\x1b[38;2;45;212;191m Plugin Testing REPL initialized.\x1b[0m\n`);
 
 // Auto-discover and load compiled plugins from packages/*/dist/index.js
-const packagesDir = path.join(__dirname, '../packages');
+const packagesDir = path.join(__dirname, '..');
 const plugins = fs.readdirSync(packagesDir, { withFileTypes: true })
 	.filter(dirent => dirent.isDirectory() && !dirent.name.startsWith('@'))
 	.map(dirent => dirent.name)

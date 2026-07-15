@@ -2,9 +2,12 @@
 
 # @magmacomputing/tempo-plugin-sync
 
-[![npm version](https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-sync?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo-plugin-sync)
-[![npm peer dependency version](https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-sync/peer/@magmacomputing/tempo?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo)
-[![License](https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-sync?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo-plugin-sync)
+<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-bottom: 2rem;">
+  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-sync"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-sync?style=flat-square" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-sync/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version"></a>
+  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-sync"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-sync?style=flat-square" alt="License"></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready"></a>
+</div>
 
 This is a Community plugin for the [Tempo](https://github.com/magmacomputing/magma) library that provides lock-free, nanosecond-accurate cross-thread time synchronization using `SharedArrayBuffer` and `Atomics`.
 

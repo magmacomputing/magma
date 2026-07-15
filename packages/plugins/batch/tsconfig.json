@@ -5,9 +5,6 @@
     "rootDir": "./src",
     "declaration": true,
     "emitDeclarationOnly": true,
-    "paths": {
-      "#internal/license": ["../../internal/license/src/index.ts"]
-    },
     "types": ["node"]
   },
   "include": [

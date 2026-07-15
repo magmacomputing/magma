@@ -14,11 +14,6 @@ export interface BatchOptions {
 	 * Number of threads to use. Defaults to the number of logical CPUs.
 	 */
 	threads?: number;
-	/**
-	 * Whether to rehydrate the result into an array of Tempo instances.
-	 * If false (default), returns an array of raw epoch numbers.
-	 */
-	rehydrate?: boolean;
 }
 
 /**
@@ -28,12 +23,18 @@ export class BatchOrchestrator {
 	/**
 	 * Transforms an array of epochs using a worker pool.
 	 * @param epochs Array of raw millisecond epoch numbers.
-	 * @param operation The tempo mutation string (e.g. '+1w') or format string (e.g. 'YYYY-MM-DD').
+	 * @param operation The tempo mutation string (e.g. '+1w').
 	 * @param options Execution options.
-	 * @returns Array of transformed epochs or strings.
+	 * @returns Array of transformed epochs.
 	 */
 	static async transform(epochs: number[], operation: string, options: BatchOptions = {}): Promise<any[]> {
 		if (epochs.length === 0) return [];
+
+		if (options.threads !== undefined) {
+			if (!Number.isInteger(options.threads) || options.threads <= 0) {
+				throw new Error("options.threads must be a positive integer");
+			}
+		}
 
 		const threadCount = options.threads ?? os.cpus().length;
 		const chunkSize = Math.ceil(epochs.length / threadCount);

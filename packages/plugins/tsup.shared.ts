@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -38,8 +39,7 @@ export const sharedConfig: Options = {
 			setup(build) {
 				build.onResolve({ filter: /^@magmacomputing\/tempo\/(plugin|plugin-api)$/ }, (args) => {
 					// Prevent infinite loop: if the importer is our virtual module, let standard resolution (or license-alias) handle it
-					// Make it external here so it doesn't actually get bundled despite our noExternal override.
-					if (args.namespace === 'auto-inject-version') return { path: args.path, external: true };
+					if (args.namespace === 'auto-inject-version') return;
 					return { path: args.path, namespace: 'auto-inject-version', pluginData: { originalPath: args.path } };
 				});
 
@@ -81,7 +81,8 @@ export const sharedConfig: Options = {
 				const globals: Record<string, string> = {
 					'@js-temporal/polyfill': 'Temporal',
 					'@magmacomputing/tempo': 'Magma.Tempo',
-					'@magmacomputing/tempo/plugin-api': 'Magma.pluginApi'
+					'@magmacomputing/tempo/plugin-api': 'Magma.pluginApi',
+					'@magmacomputing/tempo/plugin': 'Magma.plugin'
 				};
 
 				build.onResolve({ filter: /^(?:@js-temporal\/polyfill|@magmacomputing\/tempo.*)$/ }, args => {
