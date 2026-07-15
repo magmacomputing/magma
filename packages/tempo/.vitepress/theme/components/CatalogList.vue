@@ -9,6 +9,7 @@ interface Plugin {
   price: number;
   status: string;
   plan: string;
+  version: string;
 }
 
 const plugins = ref<Plugin[]>([])
@@ -30,7 +31,8 @@ onMounted(async () => {
           packageName: fields.packageName?.stringValue || '',
           price: parseInt(fields.price?.integerValue || '0'),
           status: fields.status?.stringValue || 'active',
-          plan: fields.plan?.stringValue || 'community'
+          plan: fields.plan?.stringValue || 'community',
+          version: fields.release?.mapValue?.fields?.version?.stringValue || '',
         }
       })
     }
@@ -59,7 +61,10 @@ const copyInstall = (pkgName: string) => {
       <p>These plugins are free, open-source extensions that do not require a license token.</p>
       <div class="grid">
         <div v-for="plugin in communityPlugins" :key="plugin.id" class="card">
-          <h3>{{ plugin.name }}</h3>
+          <div class="card-title">
+            <h3>{{ plugin.name }}</h3>
+            <span v-if="plugin.version" class="card-version">v{{ plugin.version }}</span>
+          </div>
           <p>{{ plugin.description }}</p>
           <div class="actions" style="display: flex; gap: 0.5rem; align-items: center;">
             <code>npm install {{ plugin.packageName }}</code>
@@ -89,7 +94,10 @@ const copyInstall = (pkgName: string) => {
       <div class="grid">
         <div v-for="plugin in premiumPlugins" :key="plugin.id" class="card premium-card">
           <div class="badge">Premium</div>
-          <h3>{{ plugin.name }}</h3>
+          <div class="card-title">
+            <h3>{{ plugin.name }}</h3>
+            <span v-if="plugin.version" class="card-version">v{{ plugin.version }}</span>
+          </div>
           <p>{{ plugin.description }}</p>
           <div class="actions" style="display: flex; gap: 0.5rem; align-items: center;">
             <code>npm install {{ plugin.packageName }}</code>
@@ -106,7 +114,10 @@ const copyInstall = (pkgName: string) => {
       <h2 id="coming-soon" v-if="comingSoonPlugins.length > 0">Coming Soon</h2>
       <div class="grid">
         <div v-for="plugin in comingSoonPlugins" :key="plugin.id" class="card disabled">
-          <h3>{{ plugin.name }}</h3>
+          <div class="card-title">
+            <h3>{{ plugin.name }}</h3>
+            <span v-if="plugin.version" class="card-version">v{{ plugin.version }}</span>
+          </div>
           <p>{{ plugin.description }}</p>
         </div>
       </div>
@@ -133,10 +144,24 @@ const copyInstall = (pkgName: string) => {
   display: flex;
   flex-direction: column;
 }
+.card-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
 .card h3 {
   margin-top: 0;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
   font-size: 1.25rem;
+}
+.card-version {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--vp-c-text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .card p {
   flex-grow: 1;

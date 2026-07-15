@@ -1,6 +1,6 @@
-import { defineConfig } from 'vitest/config'
 import path, { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { defineConfig } from 'vitest/config'
 import swc from 'unplugin-swc'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -61,14 +61,13 @@ export default defineConfig({
     alias: [
       { find: /^#library\/(browser|server|common)\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/src/$1/$2.ts') },
       { find: /^#library\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/$1.ts') },
-      { find: /^#tempo\/plugins\/plugin\.util\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugins/plugin.util.ts') },
-      { find: /^#tempo\/plugins\/plugin\.type\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugins/plugin.type.ts') },
+      { find: /^#tempo\/plugins\/plugin\.(util|type)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugins/plugin.$1.ts') },
       { find: /^#tempo\/plugins\/plugin\.(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugins/extend/plugin.$1.ts') },
       { find: /^#tempo\/core$/, replacement: path.resolve(__dirname, './packages/tempo/src/core.index.ts') },
-      { find: /^#tempo\/(parse|format)$/, replacement: path.resolve(__dirname, './packages/tempo/src/discrete/discrete.$1.ts') },
-      { find: /^#tempo\/discrete$/, replacement: path.resolve(__dirname, './packages/tempo/src/discrete/discrete.index.ts') },
-      { find: /^#tempo\/tempo\.class\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/tempo.index.ts') },
+      { find: /^#tempo\/(parse|format|mutate|duration)$/, replacement: path.resolve(__dirname, './packages/tempo/src/module/module.$1.ts') },
       { find: /^#tempo\/support$/, replacement: path.resolve(__dirname, './packages/tempo/src/support/support.index.ts') },
+      { find: /^#tempo\/module$/, replacement: path.resolve(__dirname, './packages/tempo/src/module/module.index.ts') },
+      { find: /^#tempo\/tempo\.class\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/tempo.index.ts') },
       { find: /^#tempo\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/$1.ts') },
       { find: /^#tempo\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/src/$1.ts') }
     ]

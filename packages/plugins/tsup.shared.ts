@@ -108,10 +108,10 @@ export const sharedConfig: Options = {
 					const pkgPath = path.resolve(process.cwd(), 'package.json');
 					if (fs.existsSync(pkgPath)) {
 						const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-						const pricing = pkg?.tempo?.pricing;
+						const plan = pkg?.tempo?.plan;
 
 						// If the package explicitly declares the 'community' pricing tier, skip the license wrapper
-						if (pricing === 'community')
+						if (plan === 'community')
 							return; // Community plugin, do not apply license wrapper
 					}
 

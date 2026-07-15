@@ -8,7 +8,7 @@
 	"scripts": {
 		"build": "tsup && tsc",
 		"prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build",
-		"test": "vitest run -c ../../test/vitest.community.ts"
+		"test": "vitest run -c ../vitest.shared.ts"
 	},
 	"keywords": [
 		"tempo",
