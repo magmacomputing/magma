@@ -12,6 +12,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: none
+
 jobs:
   library:
     name: Library Tests
@@ -19,6 +22,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -35,6 +40,8 @@ jobs:
     needs: library
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -52,6 +59,8 @@ jobs:
     needs: tempo
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -59,7 +68,7 @@ jobs:
       - name: Install monorepo dependencies
         run: npm ci
       - name: Run plugin tests
-        run: npm test --workspaces --if-present
+        run: npm test --if-present --workspace=@magmacomputing/tempo-plugin-snap --workspace=@magmacomputing/tempo-plugin-batch --workspace=@magmacomputing/tempo-plugin-finance --workspace=@magmacomputing/tempo-plugin-astro --workspace=@magmacomputing/tempo-plugin-sync --workspace=@magmacomputing/tempo-plugin-ticker
         working-directory: packages/plugins
 
   functions:
@@ -69,6 +78,8 @@ jobs:
     needs: tempo
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

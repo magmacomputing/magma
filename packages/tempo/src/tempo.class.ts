@@ -1625,15 +1625,7 @@ export class Tempo {
 	 */
 	/** @internal */																					get #Tempo() { return this.constructor as typeof Tempo; }
 
-	// /** apply a custom format. */															format(fmt?: any, options?: any): string | number | bigint { return this.#resolve(() => interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt, options)); }
-/** apply a custom format. */																format<S extends string>(
-		fmt: string extends S
-			? S																										// variable string — no validation, accept as-is
-			: string extends t.ValidateFormat<S>
-			? S																										// ValidateFormat<S> is `string` → all tokens valid, accept
-			: t.ValidateFormat<S>,																// ValidateFormat<S> is an error literal → mismatch forces IDE error
-		options?: any
-	): string | number | bigint { return this.#resolve(() => interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt, options)); }
+	/** apply a custom format. */																	format(fmt?: any, options?: any): string | number | bigint { return this.#resolve(() => interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt, options)); }
 	/** time duration until another date-time */
 	until(dateTimeOrOpts?: t.DateTime | t.Options, opts?: t.Options): t.Duration;
 	until(unit: t.Unit, opts?: t.Options): number;

@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.9.0] - 2026-07-14
+## [3.9.0] - 2026-07-16
 
 ### Added
 - **Era Parsing Engine**: Upgraded the `ParseModule` and Lexer to natively support parsing historical and future era dates with explicit markers (e.g. `200 BC`, `BC 200`, `2026 CE`). Supports both leading and trailing formats and flawlessly converts to the astronomical ISO 8601 year.

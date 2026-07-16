@@ -97,7 +97,7 @@ While the native Temporal API gives you perfect primitives (`ZonedDateTime`, `Pl
 ### The Missing Domain Layer
 
 *   **🏗️ Future Standard**: Built natively on the TC39 `Temporal` proposal. Inherit the reliability of the future standard.
-*   **🧩 Premium Ecosystem**: Don't build temporal math from scratch. Drop in our cryptographically-secured plugins for Astronomical seasons (`astro`) and atomic state syncing (`sync`).
+*   **🧩 Premium Ecosystem**: Don't build temporal math from scratch. Drop in our plugins for Astronomical seasons (`astro`) and atomic state syncing (`sync`).
 *   **🌍 Zero-Bundle Localization**: Best-in-class multi-language parsing and formatting powered natively by the `Intl` API—no massive static locale dictionaries required.
 *   **🗣️ Natural Language**: Resolve complex terms like "two days ago" with zero configuration.
 *   **🧠 Functional Aliases**: Extend the parser with custom logic using a powerful resolution context for relative date math.

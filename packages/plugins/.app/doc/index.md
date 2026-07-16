@@ -25,7 +25,7 @@ All premium plugins are distributed as public scoped packages on the standard np
 ```bash
 npm install @magmacomputing/tempo-plugin-ticker
 ```
-
+7
 ## 3. Activation
 
 Although the packages are publicly installable, they require your valid license key at runtime. If no valid license key is detected, the premium features will fail-safe to `undefined`. 
@@ -43,7 +43,7 @@ Then in your application, you can simply import Tempo and the plugin via side-ef
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker'; // Automatically registers TickerPlugi 
+import '@magmacomputing/tempo-plugin-ticker'; // Automatically registers TickerPlugin
 
 const t = new Tempo();
 console.log(t.tickers); // Unlocked and ready!
@@ -55,18 +55,18 @@ Pass the key explicitly when initializing Tempo. Since static imports are hoiste
 #### Option 1: Pass via Init Options (Recommended)
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import { TickerPlugi  } from '@magmacomputing/tempo-plugin-ticker';
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 Tempo.init({
   license: 'eyJhbGciOiJSUzI1NiJ9...',
-  plugins: [TickerPlugi ]
+  plugins: [TickerPlugin]
 });
 ```
 
 #### Option 2: Explicit Extension
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import { TickerPlugi  } from '@magmacomputing/tempo-plugin-ticker';
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 // 1. Initialize core Tempo with your license
 Tempo.init({
@@ -74,7 +74,7 @@ Tempo.init({
 });
 
 // 2. Register the plugin
-Tempo.extend(TickerPlugi );
+Tempo.extend(TickerPlugin);
 ```
 
 ### Method C: Global Context (Fallback for specific bundlers/environments)
@@ -95,15 +95,29 @@ If you are loading Tempo directly from a CDN or local file using `<script>` tags
 ```
 
 #### 2. Frontend Bundlers without `process.env` Polyfills
-Modern browser bundlers (e.g., Vite) do not inject Node's `process` object by default. If you prefer to avoid configuring build-time env replacements or `dotenv` plugins, assign the key to `globalThis` in your entry file *before* importing Tempo:
+Modern browser bundlers (e.g., Vite) do not inject Node's `process` object by default. If you prefer to avoid configuring build-time env replacements or `dotenv` plugins, assign the key to `globalThis` in your entry file and use dynamic imports to ensure the key is set before Tempo initializes:
 
 ```javascript
-// entry.js — must run before any Tempo import
+// entry.js
 globalThis.TEMPO_LICENSE_KEY = import.meta.env.VITE_TEMPO_LICENSE_KEY;
 
-// Now safe to import
+// Use dynamic imports so the key is set before Tempo's static initializer runs
+const { Tempo } = await import('@magmacomputing/tempo');
+const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
+
+Tempo.init({ plugins: [TickerPlugin] });
+```
+
+Alternatively, pass the license key explicitly via `Tempo.init()` after your static imports:
+
+```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker';
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+
+Tempo.init({
+  license: import.meta.env.VITE_TEMPO_LICENSE_KEY,
+  plugins: [TickerPlugin]
+});
 ```
 
 #### 3. Micro-frontends / Shared Global Space
@@ -123,7 +137,7 @@ To verify license validity and prevent abuse, Tempo's licensing engine performs 
 * **Outbound Request:** When a license key is active, Tempo asynchronously fetches a cryptographically signed revocation list (JWS).
 * **Endpoint:** `https://registry.magmacomputing.com.au/tempo/v1/revoked.jws` (useful for configuring Content Security Policies (CSP) or egress firewall rules).
 * **Frequency:** The revocation check occurs once every **7 days**. The last-checked state is cached to avoid redundant network traffic on subsequent startups.
-* **Offline Resilience (Fail-Open):** If your application is offline, behind a strict firewall, or the registry server is temporarily unreachable, the validation **fails open**. Tempo logs a warning in the console but continues to grant access to premium features (relying on the local cryptographic expiration of the JWT).
+* **Offline Resilience (Fail-Open):** If your application is offline, behind a strict firewall, or the registry server is temporarily unreachable, the validation **fails open**. Tempo emits a debug-level log entry but continues to grant access to premium features (relying on the local cryptographic expiration of the JWT).
 
 ## 5. Commercialize Your Own Plugin
 

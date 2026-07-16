@@ -31,7 +31,7 @@ declare module '../tempo.class.js' {
 				: import('../tempo.type.js').ValidateFormat<S>,	// ValidateFormat<S> is an error literal → mismatch forces IDE error
 			options?: any
 		): string | number | bigint;
-		/** applies a format to the instance. */									format(fmt?: any, options?: any): any;
+		/** applies a format to the instance (zero-argument — returns a pre-built format proxy). */	format(): string | number | bigint;
 	}
 }
 

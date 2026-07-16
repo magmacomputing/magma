@@ -38,19 +38,6 @@ export const sharedConfig: Options = {
 	clean: true,
 	esbuildPlugins: [
 		{
-			// For ESM builds, keep @magmacomputing/tempo/plugin* external so all plugins
-			// share one runtime singleton and avoid registerSerializable collisions.
-			// IIFE builds are exempt — they need fully self-contained bundles.
-			name: 'esm-external',
-			setup(build) {
-				if (build.initialOptions?.format === 'iife') return;
-
-				build.onResolve({ filter: /^@magmacomputing\/tempo\/(plugin|plugin-api)$/ }, () => {
-					return { external: true };
-				});
-			}
-		},
-		{
 			name: 'auto-inject-version',
 			setup(build) {
 				build.onResolve({ filter: /^@magmacomputing\/tempo\/(plugin|plugin-api)$/ }, (args) => {
@@ -134,6 +121,20 @@ export const sharedConfig: Options = {
 					return { path: path.resolve(__dirname, 'internal/license/src/plugin.api.ts') };
 				});
 			}
-		}
+		},
+		{
+			// For ESM builds, keep @magmacomputing/tempo/plugin* external so all plugins
+			// share one runtime singleton and avoid registerSerializable collisions.
+			// IIFE builds are exempt — they need fully self-contained bundles.
+			// NOTE: placed last so auto-inject-version and license-alias hooks run first.
+			name: 'esm-external',
+			setup(build) {
+				if (build.initialOptions?.format === 'iife') return;
+
+				build.onResolve({ filter: /^@magmacomputing\/tempo\/(plugin|plugin-api)$/ }, () => {
+					return { external: true };
+				});
+			}
+		},
 	]
 }
