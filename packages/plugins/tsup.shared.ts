@@ -21,6 +21,9 @@ if (fs.existsSync(pkgPath)) {
 export const sharedConfig: Options = {
 	format: ['esm', 'iife'],
 	globalName: `Magma.plugins.${pkgName}`,
+	// @magmacomputing/tempo/plugin* is inlined only for IIFE (self-contained browser bundle).
+	// For ESM the 'esm-external' plugin below re-marks them as external so all plugins
+	// share a single runtime copy and avoid registerSerializable singleton collisions.
 	noExternal: [/^@magmacomputing\/tempo\/(plugin|plugin-api)$/],
 	outExtension({ format }) {
 		return {
@@ -34,6 +37,19 @@ export const sharedConfig: Options = {
 	},
 	clean: true,
 	esbuildPlugins: [
+		{
+			// For ESM builds, keep @magmacomputing/tempo/plugin* external so all plugins
+			// share one runtime singleton and avoid registerSerializable collisions.
+			// IIFE builds are exempt — they need fully self-contained bundles.
+			name: 'esm-external',
+			setup(build) {
+				if (build.initialOptions?.format === 'iife') return;
+
+				build.onResolve({ filter: /^@magmacomputing\/tempo\/(plugin|plugin-api)$/ }, () => {
+					return { external: true };
+				});
+			}
+		},
 		{
 			name: 'auto-inject-version',
 			setup(build) {
@@ -110,7 +126,7 @@ export const sharedConfig: Options = {
 						const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 						const plan = pkg?.tempo?.plan;
 
-						// If the package explicitly declares the 'community' pricing tier, skip the license wrapper
+						// If the package explicitly declares plan: 'community', skip the license wrapper
 						if (plan === 'community')
 							return; // Community plugin, do not apply license wrapper
 					}

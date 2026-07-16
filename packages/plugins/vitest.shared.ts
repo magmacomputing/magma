@@ -27,8 +27,8 @@ export default defineConfig({
 		alias: [
 			{ find: /^#library\/(browser|server|common)\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/$1/$2.ts') },
 			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/$1.ts') },
-			{ find: /^#tempo\/plugins\/plugin\.(util|type)\.js$/, replacement: resolve(__dirname, '../tempo/src/plugins/plugin.$1.ts') },
-			{ find: /^#tempo\/plugins\/plugin\.(.*)\.js$/, replacement: resolve(__dirname, '../tempo/src/plugins/extend/plugin.$1.ts') },
+			{ find: /^#tempo\/plugin\.(util|type)\.js$/, replacement: resolve(__dirname, '../tempo/src/plugin/plugin.$1.ts') },
+			{ find: /^#tempo\/plugin\.(.*)\.js$/, replacement: resolve(__dirname, '../tempo/src/plugin/extend/plugin.$1.ts') },
 			{ find: /^#tempo\/(parse|format|mutate|duration)$/, replacement: resolve(__dirname, '../tempo/src/module/module.$1.ts') },
 			{ find: /^#tempo\/core$/, replacement: resolve(__dirname, '../tempo/src/core.index.ts') },
 			{ find: /^#tempo\/module$/, replacement: resolve(__dirname, '../tempo/src/module/module.index.ts') },

@@ -187,6 +187,80 @@ export type Format = enums.Format;
 export type FormatRegistry = enums.FormatEnum;
 export type FormatType<K extends PropertyKey> = enums.FormatType<K>;
 
+/**
+ * Augment this interface in your plugin or app to register additional
+ * format tokens for compile-time validation via `ValidateFormat`.
+ *
+ * @example
+ * // In a plugin's .d.ts:
+ * declare module '@magmacomputing/tempo' {
+ *   interface TempoFormatTokens {
+ *     'fiscal.quarter': true;
+ *   }
+ * }
+ */
+export interface TempoFormatTokens {
+	// ── year / week ───────────────────────────────────
+	yyyy: true; yy: true; yw: true;
+	// ── week-of-year ─────────────────────────────────
+	ww: true; wy: true; yywy: true; yyww: true;
+	// ── era / eon ─────────────────────────────────────
+	era: true; eon: true;
+	// ── month ─────────────────────────────────────────
+	mm: true; mon: true; mmm: true;
+	// ── day ───────────────────────────────────────────
+	dd: true; day: true; dow: true; wkd: true; www: true;
+	// ── hour / minute / second ────────────────────────
+	hh: true; h24: true; h12: true; mer: true;
+	mi: true; ss: true;
+	// ── sub-second ────────────────────────────────────
+	ms: true; us: true; ns: true; ff: true;
+	// ── composite date/time ───────────────────────────
+	ymd: true; dmy: true; mdy: true; hms: true;
+	// ── legacy composites (deprecated, still supported) ──
+	ymd6: true; dmy6: true; mdy6: true;
+	// ── timestamp / zone / calendar ───────────────────
+	ts: true; nano: true; tz: true; cal: true;
+}
+
+/** All statically-known base token names (derived from TempoFormatTokens). */
+type _CoreToken = keyof TempoFormatTokens;
+
+/**
+ * Accepted token shapes inside a `{…}` brace pair:
+ * - a core token alone: `{yyyy}`
+ * - a core token with one or more modifiers: `{dd:ord}`, `{tz:zzzzz}`
+ * - a term-plugin key (always accepted, cannot be statically known): `{#season.key}`
+ */
+type _ValidToken = _CoreToken | `${_CoreToken}:${string}` | `#${string}`;
+
+/**
+ * Compile-time validator for Tempo format strings.
+ *
+ * - Recursively walks every `{token}` brace-pair in the string.
+ * - Accepts any token in `TempoFormatTokens`, modifier suffixes (`{dd:ord}`),
+ *   and term-plugin keys (`{#season.key}`).
+ * - When `S` is a plain `string` variable (not a literal) validation is skipped
+ *   to avoid false positives.
+ * - Returns a descriptive error literal when an unknown token is found, which
+ *   surfaces as a readable type error in the IDE.
+ *
+ * @example
+ * // Valid — no IDE error
+ * tempo.format('{www}, {dd} {mmm} {yyyy}');
+ *
+ * // Invalid — IDE highlights the bad token
+ * tempo.format('{mon} {dy}');
+ * //                    ^^ Type '"❌ '{dy}' is not a valid Tempo format token"'
+ */
+export type ValidateFormat<S extends string> =
+	string extends S ? string																	// S widened to string (variable) — skip
+	: S extends `${string}{${infer T}}${infer Rest}`
+	? T extends _ValidToken
+	? ValidateFormat<Rest>																		// valid token, recurse into tail
+	: `❌ '{${T}}' is not a valid Tempo format token`		 			// bad token — surfaced as IDE error
+	: string;																									// no more braces — valid
+
 export type WEEKDAY = enums.WEEKDAY
 export type WEEKDAYS = enums.WEEKDAYS
 export type MONTH = enums.MONTH

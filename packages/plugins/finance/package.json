@@ -1,6 +1,7 @@
 {
 	"name": "@magmacomputing/tempo-plugin-finance",
 	"version": "1.0.0",
+	"type": "module",
 	"description": "Tempo Community Plugin: Finance namespace and fiscal year utilities",
 	"main": "dist/index.js",
 	"module": "dist/index.mjs",

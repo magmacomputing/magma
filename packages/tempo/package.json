@@ -46,7 +46,9 @@
     "dist/engine/engine.*.js",
     "src/engine/engine.*.ts",
     "dist/module/module.*.js",
-    "src/module/module.*.ts"
+    "src/module/module.*.ts",
+    "dist/lib/temporal.polyfill.js",
+    "dist/lib/temporal.library.js"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",

@@ -1,5 +1,10 @@
 import { Temporal } from '@js-temporal/polyfill';
 
-Object.assign(globalThis, { Temporal });
-
-// console.log('✅ Temporal Polyfill Loaded:', Temporal.Now.instant().toString());
+if (typeof globalThis.Temporal === 'undefined') {
+	Object.defineProperty(globalThis, 'Temporal', {
+		value: Temporal,
+		enumerable: false,
+		configurable: true,
+		writable: true,
+	});
+}

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import repl from 'node:repl';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Tempo, enums } from '@magmacomputing/tempo';
 
@@ -9,19 +10,19 @@ let mockToken = process.env.TEMPO_LICENSE_KEY || undefined;
 
 // Fallback manual .env loading since tsx CLI proxy might drop Node native args
 if (!mockToken) {
-    try {
-        const envPath = path.join(__dirname, '../.env');
-        if (fs.existsSync(envPath)) {
-            const envContent = fs.readFileSync(envPath, 'utf8');
-            const match = envContent.match(/^TEMPO_LICENSE_KEY=(.*)$/m);
-            if (match) mockToken = match[1].trim();
-        }
-    } catch (e) { /* ignore */ }
+	try {
+		const envPath = path.join(__dirname, '../.env');
+		if (fs.existsSync(envPath)) {
+			const envContent = fs.readFileSync(envPath, 'utf8');
+			const match = envContent.match(/^TEMPO_LICENSE_KEY=(.*)$/m);
+			if (match) mockToken = match[1].trim();
+		}
+	} catch (e) { /* ignore */ }
 }
 
 if (process.env.TEST_MODE) {
-    if (!process.env.TEMPO_REVOCATION_URL) process.env.TEMPO_REVOCATION_URL = 'mock';
-    if (!process.env.TEMPO_REVOCATION_JWS) process.env.TEMPO_REVOCATION_JWS = '{"revoked":[]}';
+	if (!process.env.TEMPO_REVOCATION_URL) process.env.TEMPO_REVOCATION_URL = 'mock';
+	if (!process.env.TEMPO_REVOCATION_JWS) process.env.TEMPO_REVOCATION_JWS = '{"revoked":[]}';
 }
 
 Tempo.init(mockToken ? { license: mockToken } : {});
@@ -32,7 +33,9 @@ console.log(`\n\x1b[38;2;252;194;1m\x1b[1m ⏳ Tempo \x1b[0m\x1b[38;2;45;212;191
 const packagesDir = path.join(__dirname, '..');
 const plugins = fs.readdirSync(packagesDir, { withFileTypes: true })
 	.filter(dirent => dirent.isDirectory() && !dirent.name.startsWith('@'))
-	.map(dirent => dirent.name)
+	.map(dirent => dirent.name);
+
+const globals: Record<string, unknown> = { Tempo, enums };
 
 for (const plugin of plugins) {
 	let indexPath = path.join(packagesDir, plugin, 'dist/index.mjs');
@@ -48,13 +51,13 @@ for (const plugin of plugins) {
 			for (const key in mod) {
 				if (key.endsWith('Term') || key.endsWith('Plugin') || key.endsWith('Module')) {
 					console.log(`\x1b[32m✔ Loaded plugin from ${plugin}:\x1b[0m ${key}`);
+					globals[key] = mod[key];
 					loadedCount++;
 				}
 			}
 
-			if (loadedCount === 0) {
+			if (loadedCount === 0)
 				console.log(`\x1b[33m⚠ No standard *Term, *Plugin, or *Module exports found in ${plugin} dist.\x1b[0m`);
-			}
 		} catch (err: any) {
 			console.error(`\x1b[31m✖ Failed to load plugin ${plugin}:\x1b[0m ${err.message}`);
 		}
@@ -65,6 +68,12 @@ for (const plugin of plugins) {
 
 console.log('');
 
-// Expose Tempo globally
-Object.assign(globalThis, { Tempo, enums });
+// Inject all globals into globalThis, then open an interactive REPL session
+Object.assign(globalThis, globals);
 
+const globalNames = Object.keys(globals).join(', ');
+console.log(`\x1b[90mGlobals: \x1b[0m\x1b[33m${globalNames}\x1b[0m`);
+console.log(`\x1b[90mType .exit or Ctrl+C twice to quit.\x1b[0m\n`);
+
+const server = repl.start({ prompt: '\x1b[38;2;252;194;1m⏳ tempo>\x1b[0m ' });
+Object.assign(server.context, globals);
