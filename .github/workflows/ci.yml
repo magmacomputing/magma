@@ -87,4 +87,4 @@ jobs:
       - name: Install monorepo dependencies
         run: npm ci
       - name: Run functions tests
-        run: npm test --workspace=@magmacomputing/tempo-fns
+        run: npm test --workspace=@magmacomputing/functions

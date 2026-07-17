@@ -5,7 +5,7 @@ on:
     # Trigger only on changes to tempo package or this workflow
     paths:
       - 'packages/tempo/**'
-      - 'packages/tempo-fns/**'
+      - 'packages/functions/**'
       - '.github/workflows/deploy-docs.yml'
       - 'package.json'
       - 'package-lock.json'
@@ -52,12 +52,12 @@ jobs:
         run: npm run docs:build --workspace=@magmacomputing/tempo
 
       - name: Build Tempo-Fns Docs
-        run: npm run docs:build --workspace=@magmacomputing/tempo-fns
+        run: npm run docs:build --workspace=@magmacomputing/functions
 
       - name: Merge Documentation Sites
         run: |
-          mkdir -p packages/tempo/.vitepress/dist/tempo-fns
-          cp -r packages/tempo-fns/doc/.vitepress/dist/* packages/tempo/.vitepress/dist/tempo-fns/
+          mkdir -p packages/tempo/.vitepress/dist/functions
+          cp -r packages/functions/doc/.vitepress/dist/* packages/tempo/.vitepress/dist/functions/
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
