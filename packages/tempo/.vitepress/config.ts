@@ -31,7 +31,7 @@ export default defineConfig({
       { text: 'Guide', link: '/README' },
       { text: 'API Reference', link: typedocSidebar[0].items[0].link },
       { text: 'Releases', link: '/doc/8-project-and-support/releases/' },
-      { text: 'Tempo-Fns', link: 'https://magmacomputing.github.io/magma/tempo-fns/' }
+      { text: 'Functions ↗', link: 'https://magmacomputing.github.io/magma/functions/' }
     ],
     sidebar: [
       {
@@ -110,6 +110,7 @@ export default defineConfig({
       {
         text: 'Project & Support',
         items: [
+          { text: 'License Key Guide', link: '/doc/9-plugins/_setup.index' },
           { text: 'Migration Guide', link: '/doc/8-project-and-support/migration-guide' },
           { text: 'Release Notes', link: '/doc/8-project-and-support/releases/' },
           { text: 'Professional Services', link: '/doc/8-project-and-support/commercial' }
@@ -122,6 +123,34 @@ export default defineConfig({
     footer: {
       message: 'Released under the MIT License.',
       copyright: 'Copyright © 2026-present Magma Computing'
+    }
+  },
+  markdown: {
+    config: (md) => {
+      // Dynamically rewrite source links to the harvested plugin documents
+      const defaultRender = md.renderer.rules.link_open || function (tokens, idx, options, env, self) {
+        return self.renderToken(tokens, idx, options);
+      }
+
+      md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+        const token = tokens[idx];
+        const hrefIndex = token.attrIndex('href');
+        if (hrefIndex >= 0) {
+          const hrefAttr = token.attrs![hrefIndex];
+          const href = hrefAttr[1];
+          // Match paths like ../../../plugins/ticker/doc/index.md or similar
+          const match = href.match(/(?:\.\.\/)+plugins\/([^\/]+)\/doc\/([^/]+)\.md(?:([#?].*))?/);
+          if (match) {
+            // Normalise: replace leading dot with underscore (mirrors harvest-plugins.mjs)
+            // e.g. '.setup' -> '_setup', 'ticker' -> 'ticker'
+            // Using '_' (not stripping) avoids silent collision between '.setup/' and 'setup/'.
+            const pluginId = match[1].replace(/^\./, '_');
+            // Rewrite the href to point to the absolute harvested VitePress path
+            hrefAttr[1] = `/doc/9-plugins/${pluginId}.${match[2]}.md${match[3] || ''}`;
+          }
+        }
+        return defaultRender(tokens, idx, options, env, self);
+      }
     }
   },
   vite: {

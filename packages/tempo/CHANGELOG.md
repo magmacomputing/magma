@@ -6,7 +6,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.9.0] - 2026-07-14
+## [3.9.1] - 2026-07-17
+
+### Added
+- **Format Type Validation**: Implemented compile-time IDE validation for Tempo's `.format()` string templates using a recursive template literal type validator (`ValidateFormat`). Augmented this with an extensible `TempoFormatTokens` interface, allowing plugins to register custom tokens (like `{term.quarter}`) without core modifications or type errors.
+
+### Changed
+- **Documentation Navigation**: Restructured the VitePress navigation sidebar to include a dedicated **License Key Guide** section, prominently surfacing the guide for premium plugins. 
+- **Plugin Harvesting Pipeline**: Refactored the `harvest-plugins.mjs` build script to support modular multi-file plugin documentation. Implemented a robust `_` prefixing strategy (e.g., `.setup` -> `_setup`) and explicit directory collision detection to prevent silent overwrites in the flattened `9-plugins/` VitePress routing namespace.
+
+### Fixed
+- **CI Workspace Resolution**: Fixed a critical build failure in the GitHub Actions CI where isolated test runners (`plugins`, `functions`) failed with `Failed to resolve entry for package "@magmacomputing/tempo"`. The CI now explicitly builds the core packages (`npm run build:tempo`) prior to executing downstream workspace tests.
+- **CI Security Hardening**: Upgraded `.github/workflows/ci.yml` by explicitly setting `persist-credentials: false` on all checkout steps and implementing strict top-level `permissions` blocks following the principle of least privilege.
+
+## [3.9.0] - 2026-07-16
 
 ### Added
 - **Era Parsing Engine**: Upgraded the `ParseModule` and Lexer to natively support parsing historical and future era dates with explicit markers (e.g. `200 BC`, `BC 200`, `2026 CE`). Supports both leading and trailing formats and flawlessly converts to the astronomical ISO 8601 year.

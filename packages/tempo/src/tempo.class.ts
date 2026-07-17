@@ -1625,8 +1625,7 @@ export class Tempo {
 	 */
 	/** @internal */																					get #Tempo() { return this.constructor as typeof Tempo; }
 
-	/** apply a custom format. */															format(fmt?: any, options?: any): any { return this.#resolve(() => interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt, options)); }
-
+	/** apply a custom format. */																	format(fmt?: any, options?: any): string | number | bigint { return this.#resolve(() => interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt, options)); }
 	/** time duration until another date-time */
 	until(dateTimeOrOpts?: t.DateTime | t.Options, opts?: t.Options): t.Duration;
 	until(unit: t.Unit, opts?: t.Options): number;
@@ -1808,6 +1807,7 @@ export namespace Tempo {
 
 	export interface BaseOptions extends t.Internal.BaseOptions { }
 	export type Options = t.Options;
+	export interface FormatOptions extends t.FormatOptions { }
 
 	/** Configuration to use for #until() and #since() argument */
 	export type Unit = t.Unit;

@@ -12,13 +12,26 @@ import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
 import type { Tempo } from '../tempo.class.js';
 
-
 declare module '../tempo.class.js' {
 	interface Tempo {
-		/** applies a format to the instance. */								format(options: Intl.DateTimeFormatOptions & { timeZone?: string; calendar?: string }): string;
-		/** applies a format to the instance. */								format(fmt: BigIntPattern, options?: any): bigint;
-		/** applies a format to the instance. */								format(fmt: NumericPattern, options?: any): number;
-		/** applies a format to the instance. */								format(fmt?: any, options?: any): any;
+		/** applies a format to the instance. */									format(options: import('../tempo.type.js').FormatOptions): string;
+		/** applies a format to the instance. */									format(fmt: BigIntPattern, options?: any): bigint;
+		/** applies a format to the instance. */									format(fmt: NumericPattern, options?: any): number;
+		/**
+		 * Applies a format to the instance.
+		 * Format strings are validated at compile time — any unrecognised `{token}`
+		 * will produce an IDE error showing the bad token name.
+		 * @see {@link import('../tempo.type.js').TempoFormatTokens} to extend the token set.
+		 */
+		format<S extends string>(
+			fmt: string extends S
+				? S																							// variable string — no validation, accept as-is
+				: string extends import('../tempo.type.js').ValidateFormat<S>
+				? S																						// ValidateFormat<S> is `string` → all tokens valid, accept
+				: import('../tempo.type.js').ValidateFormat<S>,	// ValidateFormat<S> is an error literal → mismatch forces IDE error
+			options?: any
+		): string | number | bigint;
+		/** applies a format to the instance (zero-argument — returns a pre-built format proxy). */	format(): string | number | bigint;
 	}
 }
 
@@ -35,7 +48,7 @@ declare module '../tempo.class.js' {
  * const stamp = format().logStamp; // defaults to 'Now'
  */
 export function format(obj?: any): any;
-export function format(obj: any, options: Intl.DateTimeFormatOptions & { timeZone?: string; calendar?: string }): string;
+export function format(obj: any, options: import('../tempo.type.js').FormatOptions): string;
 export function format(obj: any, fmt: BigIntPattern, options?: any): bigint;
 export function format(obj: any, fmt: NumericPattern, options?: any): number;
 export function format(obj: any, fmt: string | symbol, options?: any): string;

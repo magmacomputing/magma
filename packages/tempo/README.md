@@ -97,7 +97,7 @@ While the native Temporal API gives you perfect primitives (`ZonedDateTime`, `Pl
 ### The Missing Domain Layer
 
 *   **🏗️ Future Standard**: Built natively on the TC39 `Temporal` proposal. Inherit the reliability of the future standard.
-*   **🧩 Premium Ecosystem**: Don't build temporal math from scratch. Drop in our cryptographically-secured plugins for Astronomical seasons (`astro`) and atomic state syncing (`sync`).
+*   **🧩 Premium Ecosystem**: Don't build temporal math from scratch. Drop in our plugins for Astronomical seasons (`astro`) and atomic state syncing (`sync`).
 *   **🌍 Zero-Bundle Localization**: Best-in-class multi-language parsing and formatting powered natively by the `Intl` API—no massive static locale dictionaries required.
 *   **🗣️ Natural Language**: Resolve complex terms like "two days ago" with zero configuration.
 *   **🧠 Functional Aliases**: Extend the parser with custom logic using a powerful resolution context for relative date math.
@@ -114,6 +114,19 @@ For a deeper dive into the API, architecture, and advanced features:
 
 *   **[Official Documentation Website](https://magmacomputing.github.io/magma/)** — Tutorials, interactive demos, and "Getting Started" guides.
 *   **[Full API Reference Guide](https://magmacomputing.github.io/magma/doc/api/)** — Detailed technical documentation for every class and method.
+
+---
+
+## 🧰 The Tempo Ecosystem
+
+Tempo is the core library, but the ecosystem extends further:
+
+| Package | Description |
+| :--- | :--- |
+| **[`@magmacomputing/tempo`](https://www.npmjs.com/package/@magmacomputing/tempo)** | Core library — parsing, formatting, natural-language engine |
+| **[`@magmacomputing/tempo-fns`](https://www.npmjs.com/package/@magmacomputing/tempo-fns)** | Pure functional utilities built on native Temporal & Tempo — tree-shakeable helpers for calendars, business logic, and scheduling &nbsp; [![Docs](https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square)](https://magmacomputing.github.io/magma/functions/) |
+| **[`@magmacomputing/tempo-plugin-*`](https://www.npmjs.com/search?q=%40magmacomputing%2Ftempo-plugin)** | Premium & community plugins — Ticker, Astro, Finance, Sync, Snap and more &nbsp; [![Ecosystem](https://img.shields.io/badge/Browse-Plugin%20Ecosystem-blueviolet?logo=npm&style=flat-square)](./doc/3-extending-tempo/ecosystem.md) |
+
 
 ---
 

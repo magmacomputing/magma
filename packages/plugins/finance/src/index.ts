@@ -1,4 +1,4 @@
-import { defineNamespace } from '@magmacomputing/tempo/plugin';
+import { defineNamespace, type TempoPlugin } from '@magmacomputing/tempo/plugin';
 import type { Tempo } from '@magmacomputing/tempo';
 
 // -----------------------------------------------------------------------------
@@ -15,7 +15,7 @@ export const isFiscalYearStart = (tempo: Tempo) => () => tempo.mm === 1 && tempo
 // Wrap the functions in a Namespace Plugin so they can be injected directly 
 // onto the Tempo instance (e.g., `t.finance.taxYear`) for a fluent experience.
 // -----------------------------------------------------------------------------
-export const FinancePlugin = defineNamespace({
+export const FinancePlugin: TempoPlugin = defineNamespace({
 	name: 'finance',
 	resolvers: {
 		fiscalQuarter,

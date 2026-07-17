@@ -133,21 +133,21 @@ if (errorCondition) {
 
 This pattern ensures that Tempo remains robust in production environments while providing strict validation during development.
 
-## Alternative: Standalone Functions (`tempo-fns`)
+## Alternative: Standalone Functions (`functions`)
 
 The JavaScript ecosystem is divided between two architectural preferences: **Chained Fluent APIs** (like Tempo Plugins) and **Pure Standalone Functions** (for aggressive tree-shaking).
 
-To support teams that mandate strict 0kb bundle-impacts and functional programming paradigms, Magma Computing provides the **`@magmacomputing/tempo-fns`** library.
+To support teams that mandate strict 0kb bundle-impacts and functional programming paradigms, Magma Computing provides the **`@magmacomputing/functions`** library.
 
 ```typescript
 // The Pure, Tree-shakeable approach:
-import { isFirstDayOfMonth } from '@magmacomputing/tempo-fns';
+import { isFirstDayOfMonth } from '@magmacomputing/functions';
 import { Tempo } from '@magmacomputing/tempo/core';
 
 if (isFirstDayOfMonth(new Tempo('2024-01-01'))) { ... }
 ```
 
-When building complex logic, consider whether it belongs as a core Plugin extension, or as a standalone utility in `tempo-fns` (or a hybrid wrapper of both!).
+When building complex logic, consider whether it belongs as a core Plugin extension, or as a standalone utility in `functions` (or a hybrid wrapper of both!).
 
 ## Distributing Your Plugin
 

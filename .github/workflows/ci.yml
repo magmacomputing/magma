@@ -8,31 +8,87 @@ env:
 
 on:
   push:
-    branches:
-      - main
-      - release-c-layout-order-planner
+    branches: [main]
   pull_request:
-    branches:
-      - main
-      - release-c-layout-order-planner
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  test:
-    name: Standard Tests
+  library:
+    name: Library Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
       - name: Install monorepo dependencies
         run: npm ci
-        working-directory: ${{ github.workspace }}
+      - name: Run library tests
+        run: npm test --workspace=@magmacomputing/library
+
+  tempo:
+    name: Standard Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: library
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install monorepo dependencies
+        run: npm ci
       - name: Run standard tests
         run: npm test
         working-directory: packages/tempo
 
+  plugins:
+    name: Plugin Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: tempo
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install monorepo dependencies
+        run: npm ci
+      - name: Build Core
+        run: npm run build:tempo
+      - name: Run plugin tests
+        run: npm test --if-present --workspace=@magmacomputing/tempo-plugin-snap --workspace=@magmacomputing/tempo-plugin-batch --workspace=@magmacomputing/tempo-plugin-finance --workspace=@magmacomputing/tempo-plugin-astro --workspace=@magmacomputing/tempo-plugin-sync --workspace=@magmacomputing/tempo-plugin-ticker
+        working-directory: packages/plugins
 
+  functions:
+    name: Functions Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: tempo
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install monorepo dependencies
+        run: npm ci
+      - name: Build Core
+        run: npm run build:tempo
+      - name: Run functions tests
+        run: npm test --workspace=@magmacomputing/tempo-fns

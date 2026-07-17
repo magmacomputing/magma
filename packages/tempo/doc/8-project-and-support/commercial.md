@@ -35,9 +35,7 @@ For mission-critical applications, we provide priority support, security auditin
 
 In addition to our open-source core, we offer a suite of **Premium Plugins** published directly to the standard public NPM registry (`npmjs.com`), secured by a commercial License Key. These extensions provide advanced, proprietary logic for enterprise-scale requirements.
 
-More details on browsing the 'Tempo Store' will be provided soon...
-
-For details on how to unlock and use these features, see our [License Key Guide](https://magmacomputing.github.io/tempo-plugin-docs/).
+For details on how to unlock and use these features, see our [License Key Guide](../../../plugins/.setup/doc/index.md).
 
 ---
 
