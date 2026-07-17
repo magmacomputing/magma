@@ -2,7 +2,7 @@
   <tbody>
     <tr>
       <td width="100" valign="top">
-        <img src="./img/tempo-logo.svg" width="90" height="90" alt="Tempo Logo">
+        <img src="https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/img/tempo-logo.svg" width="90" height="90" alt="Tempo Logo">
       </td>
       <td valign="middle">
         <h1 style="border-bottom: none; margin-bottom: 0;">Tempo</h1>
@@ -125,7 +125,7 @@ Tempo is the core library, but the ecosystem extends further:
 | :--- | :--- |
 | **[`@magmacomputing/tempo`](https://www.npmjs.com/package/@magmacomputing/tempo)** | Core library — parsing, formatting, natural-language engine |
 | **[`@magmacomputing/tempo-fns`](https://www.npmjs.com/package/@magmacomputing/tempo-fns)** | Pure functional utilities built on native Temporal & Tempo — tree-shakeable helpers for calendars, business logic, and scheduling &nbsp; [![Docs](https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square)](https://magmacomputing.github.io/magma/functions/) |
-| **[`@magmacomputing/tempo-plugin-*`](https://www.npmjs.com/search?q=%40magmacomputing%2Ftempo-plugin)** | Premium & community plugins — Ticker, Astro, Finance, Sync, Snap and more &nbsp; [![Ecosystem](https://img.shields.io/badge/Browse-Plugin%20Ecosystem-blueviolet?logo=npm&style=flat-square)](./doc/3-extending-tempo/ecosystem.md) |
+| **[`@magmacomputing/tempo-plugin-*`](https://www.npmjs.com/search?q=%40magmacomputing%2Ftempo-plugin)** | Premium & community plugins — Ticker, Astro, Finance, Sync, Snap and more &nbsp; [![Ecosystem](https://img.shields.io/badge/Browse-Plugin%20Ecosystem-blueviolet?logo=npm&style=flat-square)](https://magmacomputing.github.io/magma/doc/3-extending-tempo/ecosystem) |
 
 
 ---
