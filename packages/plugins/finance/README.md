@@ -35,7 +35,7 @@ console.log(t.finance.isFiscalYearStart()); // false
 
 ## Documentation
 
-Full documentation available at [https://magmacomputing.github.io/tempo-plugin-docs/finance](https://magmacomputing.github.io/tempo-plugin-docs/finance).
+Full documentation available at [https://magmacomputing.github.io/magma/doc/9-plugins/finance](https://magmacomputing.github.io/magma/doc/9-plugins/finance).
 
 ## Licensing
 

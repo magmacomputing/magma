@@ -1,4 +1,4 @@
-![Tempo Plugin](https://magmacomputing.github.io/tempo-plugin-docs/plugin-logo.svg)
+![Tempo Plugin](https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/img/tempo-logo.svg)
 
 # @magmacomputing/tempo-plugin-batch
 

@@ -1,4 +1,4 @@
-![Tempo Plugin](https://magmacomputing.github.io/tempo-plugin-docs/plugin-logo.svg)
+![Tempo Plugin](https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/img/tempo-logo.svg)
 
 # @magmacomputing/tempo-plugin-astro
 
@@ -56,7 +56,7 @@ When resolving the term, the plugin intelligently returns the correct astronomic
 
 ## Documentation
 
-For full API reference, advanced configuration, and detailed explanations of the astronomical calculations, please visit the official **[Astro Plugin Documentation ↗](https://magmacomputing.github.io/tempo-plugin-docs/astro)**.
+For full API reference, advanced configuration, and detailed explanations of the astronomical calculations, please visit the official **[Astro Plugin Documentation ↗](https://magmacomputing.github.io/magma/doc/9-plugins/astro)**.
 
 ## Licensing
 
