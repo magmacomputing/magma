@@ -13,7 +13,7 @@ function normaliseFractionalDurations(
 ```
 **Example:**
 ```typescript
-import { normaliseFractionalDurations } from '@magmacomputing/functions/duration';
+import { normaliseFractionalDurations } from '@magmacomputing/tempo-fns';
 
 normaliseFractionalDurations({ hours: 1.5 }); 
 // Returns: { hours: 1, minutes: 30 }

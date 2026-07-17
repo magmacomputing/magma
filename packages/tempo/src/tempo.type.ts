@@ -287,6 +287,12 @@ export interface RelativeTime {
 	/** Default style for relative time */										style?: Intl.RelativeTimeFormatStyle;
 }
 
+export interface FormatOptions extends Intl.DateTimeFormatOptions {
+	timeZone?: string;
+	calendar?: string;
+	locale?: string | string[];
+}
+
 export interface IntlOptions {
 	/** relative time formatting configuration */							relativeTimeFormat?: RelativeTime | ((value: number, unit: any) => string);
 	/** multi-unit duration formatting configuration */				durationFormat?: any | ((duration: any) => string);

@@ -12,7 +12,7 @@ const mockStorage: Storage = {
 	key: (_index: number) => null,
 	removeItem: (_key: string) => { },
 	setItem: (_key: string, _value: string) => { },
-}
+};
 
 /** safely attempt to retrieve a Storage object from the global context */
 const getSafeStorage = (name: 'localStorage' | 'sessionStorage' = 'localStorage'): Storage => {
@@ -21,7 +21,7 @@ const getSafeStorage = (name: 'localStorage' | 'sessionStorage' = 'localStorage'
 	} catch {
 		return mockStorage;
 	}
-}
+};
 
 let storage = context.type === CONTEXT.Browser
 	? getSafeStorage()

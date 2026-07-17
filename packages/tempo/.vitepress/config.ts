@@ -139,14 +139,14 @@ export default defineConfig({
           const hrefAttr = token.attrs![hrefIndex];
           const href = hrefAttr[1];
           // Match paths like ../../../plugins/ticker/doc/index.md or similar
-          const match = href.match(/(?:\.\.\/)+plugins\/([^\/]+)\/doc\/([^/]+)\.md/);
+          const match = href.match(/(?:\.\.\/)+plugins\/([^\/]+)\/doc\/([^/]+)\.md(?:([#?].*))?/);
           if (match) {
             // Normalise: replace leading dot with underscore (mirrors harvest-plugins.mjs)
             // e.g. '.setup' -> '_setup', 'ticker' -> 'ticker'
             // Using '_' (not stripping) avoids silent collision between '.setup/' and 'setup/'.
             const pluginId = match[1].replace(/^\./, '_');
             // Rewrite the href to point to the absolute harvested VitePress path
-            hrefAttr[1] = `/doc/9-plugins/${pluginId}.${match[2]}.md`;
+            hrefAttr[1] = `/doc/9-plugins/${pluginId}.${match[2]}.md${match[3] || ''}`;
           }
         }
         return defaultRender(tokens, idx, options, env, self);

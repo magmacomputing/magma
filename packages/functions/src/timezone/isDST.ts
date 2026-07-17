@@ -10,7 +10,11 @@ export function isDST(date?: Temporal.ZonedDateTime | string, timeZone: string =
 		try {
 			zdt = TemporalAPI.Instant.from(date).toZonedDateTimeISO(timeZone);
 		} catch {
-			zdt = TemporalAPI.PlainDate.from(date).toZonedDateTime(timeZone);
+			try {
+				zdt = TemporalAPI.PlainDateTime.from(date).toZonedDateTime(timeZone);
+			} catch {
+				zdt = TemporalAPI.PlainDate.from(date).toZonedDateTime(timeZone);
+			}
 		}
 	} else {
 		zdt = date ?? TemporalAPI.Now.zonedDateTimeISO(timeZone);

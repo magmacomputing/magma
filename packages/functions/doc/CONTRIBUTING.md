@@ -1,6 +1,6 @@
-# Contributing to `functions`
+# Contributing to `tempo-fns`
 
-Welcome to `@magmacomputing/functions`! We are thrilled that you want to contribute to the ecosystem. 
+Welcome to `@magmacomputing/tempo-fns`! We are thrilled that you want to contribute to the ecosystem. 
 
 This library acts as a granular, tree-shakeable collection of utility functions designed to make working with dates easier for the modern web. Our goal is to provide a seamless bridge for users migrating from legacy tools (like Moment.js or `date-fns`), introducing them to the raw power of the Temporal API and the `@magmacomputing/tempo` ecosystem.
 
@@ -15,7 +15,7 @@ We categorize utility functions into two distinct buckets. You must determine wh
 ### A. Temporal-Only Functions
 These functions rely strictly on standard date calculations and duck-typing native properties (like `.day`, `.month`, `.year`). 
 - **Requirement**: They MUST accept raw `Temporal` primitives (or a polymorphic duck-typed interface) alongside `Tempo` instances.
-- **Why?**: This allows standard `Temporal` API users to download and use `functions` *without* being forced to adopt `Tempo`.
+- **Why?**: This allows standard `Temporal` API users to download and use `tempo-fns` *without* being forced to adopt `Tempo`.
 - **Example**: `isFirstDayOfMonth(input: TemporalLike | Tempo)` simply checks `input.day === 1`, which natively works for both objects!
 
 ### B. Tempo-Enhanced Functions
@@ -28,7 +28,7 @@ These functions perform complex business intelligence calculations (like fiscal 
 
 ## 2. No Polyfills Provided
 
-**CRITICAL RULE**: `functions` is a pure utility library. **We do not bundle or provide a Temporal polyfill.**
+**CRITICAL RULE**: `tempo-fns` is a pure utility library. **We do not bundle or provide a Temporal polyfill.**
 
 - It is the **consumer's responsibility** to ensure their environment supports Temporal natively (Node 26+, modern browsers) or to provide their own polyfill (like `@js-temporal/polyfill`).
 - Do not add any polyfills to `dependencies` in `package.json`. 

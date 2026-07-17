@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-07-12
 
 ### Added
-- **Initial Release**: Launch of `@magmacomputing/functions`, providing a comprehensive suite of pure functional utilities designed for the JavaScript Temporal API.
+- **Initial Release**: Launch of `@magmacomputing/tempo-fns`, providing a comprehensive suite of pure functional utilities designed for the JavaScript Temporal API.
 - **Business Functions**: `workingHoursUntil`, `isSameFiscalQuarter`.
 - **Calendar Functions**: `getISOWeekOfYear`, `isFirstDayOfMonth`.
 - **Duration Functions**: `normaliseFractionalDurations`.

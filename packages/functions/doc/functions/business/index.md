@@ -16,7 +16,7 @@ function workingHoursUntil(
 **Example:**
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { workingHoursUntil } from '@magmacomputing/functions/business';
+import { workingHoursUntil } from '@magmacomputing/tempo-fns';
 
 Tempo.prototype.workingHoursUntil = workingHoursUntil;
 
@@ -34,7 +34,7 @@ function isSameFiscalQuarter(date1: Tempo, date2: Tempo): boolean;
 ```
 **Example:**
 ```typescript
-import { isSameFiscalQuarter } from '@magmacomputing/functions/business';
+import { isSameFiscalQuarter } from '@magmacomputing/tempo-fns';
 
 const d1 = new Tempo('2026-01-15');
 const d2 = new Tempo('2026-03-31');

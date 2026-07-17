@@ -19,7 +19,8 @@ export function normaliseFractionalDurations(payload: Record<string, any>) {
 			const whole = Math.trunc(v);
 			const frac = v - whole;
 			if (whole) payload[big] = whole; else delete payload[big];
-			payload[small] = (payload[small] ?? 0) + Math.round(frac * factor);
+			const addition = small === 'nanoseconds' ? Math.round(frac * factor) : (frac * factor);
+			payload[small] = (payload[small] ?? 0) + addition;
 		}
 	}
 

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-	title: "functions",
+	title: "tempo-fns",
 	description: "The standard functional library for Temporal.",
 	base: "/magma/functions/",
 	vite: {

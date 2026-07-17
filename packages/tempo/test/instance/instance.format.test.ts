@@ -1,5 +1,12 @@
 import { Tempo } from '#tempo';
 
+declare module '../../src/tempo.type.js' {
+  export interface TempoFormatTokens {
+    myDay: string;
+  }
+}
+
+
 const label = 'instance.format:';
 
 describe(`${label} format method`, () => {
@@ -7,7 +14,7 @@ describe(`${label} format method`, () => {
   test('formats with standard tokens', () => {
     const t = new Tempo('2024-05-20 15:30:00');
     expect(t.format('{yyyy}-{mm}-{dd}')).toBe('2024-05-20');
-    // hh is 24-hour hour. h12 is 12-hour hour.
+    // hh is 24-hour. h12 is 12-hour.
     expect(t.format('{hh}:{mi}')).toBe('15:30');
   });
 
@@ -56,11 +63,11 @@ describe(`${label} format method`, () => {
       month: 'long',
       day: 'numeric',
       numberingSystem: 'arab'
-    };
+    } as Tempo.FormatOptions;
 
     // The format module should extract locale, shift the ZonedDateTime, and gracefully
     // fallback or pass through the options without crashing on the Temporal timeZone mismatch constraint.
-    const result = t.format(arabicConfig as any);
+    const result = t.format(arabicConfig);
     expect(result).toBe('الأربعاء، ٢٥ ديسمبر ٢٠٢٤');
   });
 
@@ -75,9 +82,9 @@ describe(`${label} format method`, () => {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    }
+    } as Tempo.FormatOptions
 
-    const result = t.format(japaneseConfig as any);
+    const result = t.format(japaneseConfig);
     expect(result).toBe('令和6年12月25日');
   });
 
@@ -93,8 +100,8 @@ describe(`${label} format method`, () => {
         }
       }
     } as Tempo.Options
-    expect(t.format('{myDay}' as string, options)).toBe('19');
-    expect(t.format('{myDay:upper}' as string, options)).toBe('20 UPPER');
+    expect(t.format('{myDay}', options)).toBe('19');
+    expect(t.format('{myDay:upper}', options)).toBe('20 UPPER');
   });
 
   test('prevents core tokens from being overridden by registry', () => {

@@ -11,7 +11,7 @@ function getISOWeekOfYear(zdt: Temporal.ZonedDateTime | Tempo): number;
 ```
 **Example:**
 ```typescript
-import { getISOWeekOfYear } from '@magmacomputing/functions/calendar';
+import { getISOWeekOfYear } from '@magmacomputing/tempo-fns';
 
 getISOWeekOfYear(new Tempo('2026-01-01')); // Returns: 1
 ```
@@ -24,7 +24,7 @@ function isFirstDayOfMonth(input: { day: number } | Tempo): boolean;
 ```
 **Example:**
 ```typescript
-import { isFirstDayOfMonth } from '@magmacomputing/functions/calendar';
+import { isFirstDayOfMonth } from '@magmacomputing/tempo-fns';
 
 isFirstDayOfMonth(new Tempo('2026-03-01')); // Returns: true
 ```
@@ -37,7 +37,7 @@ function getPublicHolidays(year?: number, region?: string): Promise<PublicHolida
 ```
 **Example:**
 ```typescript
-import { getPublicHolidays } from '@magmacomputing/functions/calendar';
+import { getPublicHolidays } from '@magmacomputing/tempo-fns';
 
 const holidays = await getPublicHolidays(2026, 'US');
 console.log(holidays[0].name); // "New Year's Day"

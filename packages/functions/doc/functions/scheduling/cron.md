@@ -10,7 +10,7 @@ Finds the next occurrence of a cron pattern starting from (and excluding) the cu
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { nextCron } from '@magmacomputing/functions';
+import { nextCron } from '@magmacomputing/tempo-fns';
 
 const start = new Tempo('2026-07-01T08:00:00Z');
 // Every 5 minutes between 9 AM and 5 PM, Monday-Friday
@@ -25,7 +25,7 @@ Finds the previous occurrence of a cron pattern starting from (and excluding) th
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { prevCron } from '@magmacomputing/functions';
+import { prevCron } from '@magmacomputing/tempo-fns';
 
 const start = new Tempo('2026-07-01T18:00:00Z');
 // Every 5 minutes between 9 AM and 5 PM, Monday-Friday
@@ -39,7 +39,7 @@ console.log(prev.format('{hhmiss}')); // '17:55:00'
 Exposes the internal tokenizer, returning a strongly typed `CronSchedule` dictionary representing allowed numeric values per-field.
 
 ```typescript
-import { parseCron } from '@magmacomputing/functions';
+import { parseCron } from '@magmacomputing/tempo-fns';
 
 const schedule = parseCron('*/5 9-17 * * 1-5');
 console.log(schedule.minutes.allowed.has(5)); // true

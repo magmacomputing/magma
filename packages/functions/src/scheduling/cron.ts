@@ -23,7 +23,7 @@ function parseCronField(field: string, min: number, max: number): CronField {
 			const [range, stepStr] = part.split('/');
 			const step = parseInt(stepStr, 10);
 			if (isNaN(step) || step <= 0)
-				throw new Error(`[Tempo-Fns] Invalid step value: ${stepStr}`);
+				throw new Error(`[tempo-fns] Invalid step value: ${stepStr}`);
 
 			let start = min;
 			let end = max;
@@ -32,7 +32,7 @@ function parseCronField(field: string, min: number, max: number): CronField {
 				start = parseInt(rangeParts[0], 10);
 				end = rangeParts.length > 1 ? parseInt(rangeParts[1], 10) : start;
 				if (start > end)
-					throw new Error(`[Tempo-Fns] Invalid range: ${range}`);
+					throw new Error(`[tempo-fns] Invalid range: ${range}`);
 
 			}
 			for (let i = start; i <= end; i += step) {
@@ -41,7 +41,7 @@ function parseCronField(field: string, min: number, max: number): CronField {
 		} else if (part.includes('-')) {
 			const [start, end] = part.split('-').map(Number);
 			if (start > end)
-				throw new Error(`[Tempo-Fns] Invalid range: ${part}`);
+				throw new Error(`[tempo-fns] Invalid range: ${part}`);
 
 			for (let i = start; i <= end; i++)
 				allowed.add(i);
@@ -55,7 +55,7 @@ function parseCronField(field: string, min: number, max: number): CronField {
 export function parseCron(pattern: string): CronSchedule {
 	const fields = pattern.trim().split(/\s+/);
 	if (fields.length !== 5) {
-		throw new Error('[Tempo-Fns] Invalid cron pattern. Expected 5 fields (min, hr, dom, mon, dow).');
+		throw new Error('[tempo-fns] Invalid cron pattern. Expected 5 fields (min, hr, dom, mon, dow).');
 	}
 
 	return {
@@ -86,7 +86,9 @@ export function nextCron(tempo: Tempo, pattern: string): Tempo {
 	// Start searching from the next minute, operating directly on Temporal.ZonedDateTime for performance
 	let current = tempo.toDateTime().add({ minutes: 1 }).with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
 
-	for (let i = 0; i < 5 * 366; i++) { // Max iterations to prevent infinite loops (5 years max approx)
+	const maxLimit = current.add({ years: 5 }).epochNanoseconds;
+	for (;;) { // Max iterations to prevent infinite loops (5 years max approx)
+		if (current.epochNanoseconds > maxLimit) throw new Error('[tempo-fns] Could not find next cron match within 5 years.');
 		if (!schedule.months.allowed.has(current.month)) {
 			current = current.add({ months: 1 }).with({ day: 1, hour: 0, minute: 0 });
 			continue;
@@ -109,8 +111,6 @@ export function nextCron(tempo: Tempo, pattern: string): Tempo {
 
 		return tempo.set(current);
 	}
-
-	throw new Error('[Tempo-Fns] Could not find next cron match within 5 years.');
 }
 
 /**
@@ -121,7 +121,9 @@ export function prevCron(tempo: Tempo, pattern: string): Tempo {
 	// Start searching from the previous minute
 	let current = tempo.toDateTime().subtract({ minutes: 1 }).with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
 
-	for (let i = 0; i < 5 * 366; i++) {
+	const minLimit = current.subtract({ years: 5 }).epochNanoseconds;
+	for (;;) {
+		if (current.epochNanoseconds < minLimit) throw new Error('[tempo-fns] Could not find previous cron match within 5 years.');
 		if (!schedule.months.allowed.has(current.month)) {
 			current = current.subtract({ months: 1 });
 			current = current.with({ day: current.daysInMonth, hour: 23, minute: 59 });
@@ -145,6 +147,4 @@ export function prevCron(tempo: Tempo, pattern: string): Tempo {
 
 		return tempo.set(current);
 	}
-
-	throw new Error('[Tempo-Fns] Could not find previous cron match within 5 years.');
 }

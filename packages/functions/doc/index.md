@@ -14,7 +14,7 @@ const getStartedUrl = withBase('/functions/')
     <div class="tempo-hero-left">
       <div class="tempo-title-row">
         <img :src="logoUrl" class="tempo-hero-logo" alt="functions Logo">
-        <h1 class="tempo-hero-name">functions</h1>
+        <h1 class="tempo-hero-name">tempo-fns</h1>
       </div>
       <div class="tempo-tagline-row">
         <p class="tempo-hero-tagline">Pure, modern, and tree-shakable date-time utilities.</p>
@@ -142,15 +142,15 @@ const getStartedUrl = withBase('/functions/')
 
 ## Designed for the ECMAScript Ecosystem
 
-`functions` is a comprehensive suite of **pure, functional date-time utilities** built exclusively for the modern JavaScript and TypeScript ecosystem. 
+`tempo-fns` is a comprehensive suite of **pure, functional date-time utilities** built exclusively for the modern JavaScript and TypeScript ecosystem. 
 
 Designed to seamlessly augment the new [ECMAScript Temporal API](https://tc39.es/proposal-temporal/docs/), this library delivers the advanced calendar, scheduling, and timezone logic that modern web applications demand—without polluting your bundles.
 
-### Why `functions`?
+### Why `tempo-fns`?
 - **100% Pure Functions:** Every utility is a pure, standalone function. No mutated state, no side effects.
 - **Aggressively Tree-Shakable:** Keep your bundle footprint tiny. Only import exactly what you need. If you only need `isSameFiscalQuarter`, that's the only code that ships to your users.
-- **Native Temporal Integration:** No legacy `Date` objects. `functions` is built from the ground up to consume, calculate, and return native `Temporal` instances.
+- **Native Temporal Integration:** No legacy `Date` objects. `tempo-fns` is built from the ground up to consume, calculate, and return native `Temporal` instances.
 
-Whether you're building complex financial SLA calculators, recurring cron-based scheduling systems, or simply need robust calendar math, `functions` provides the modern, professional tooling you need to ship with confidence.
+Whether you're building complex financial SLA calculators, recurring cron-based scheduling systems, or simply need robust calendar math, `tempo-fns` provides the modern, professional tooling you need to ship with confidence.
 
 </div>

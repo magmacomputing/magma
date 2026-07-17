@@ -1,4 +1,4 @@
-import { definePlugin } from '@magmacomputing/tempo/plugin-api';
+import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin-api';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
 type SnapKey = 
@@ -18,7 +18,7 @@ type OneKey<K extends keyof any, V, KK extends keyof any = K> =
 
 type SnapOptions = OneKey<SnapKey, number> & { direction?: 'up' | 'down' };
 
-export const SnapPlugin = definePlugin({
+export const SnapPlugin: TempoPlugin = definePlugin({
 	name: 'snap',
 	install(TempoClass: any) {
 		TempoClass.prototype.snap = function (this: Tempo, options?: SnapOptions) {

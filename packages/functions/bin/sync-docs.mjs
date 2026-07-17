@@ -7,7 +7,7 @@ const srcDir = path.resolve(__dirname, '../src');
 const docFunctionsDir = path.resolve(__dirname, '../doc/functions');
 
 const categories = fs.readdirSync(srcDir, { withFileTypes: true })
-	.filter(dirent => dirent.isDirectory())
+	.filter(dirent => dirent.isDirectory() && !dirent.name.startsWith('.') && dirent.name !== 'support')
 	.map(dirent => dirent.name);
 
 let syncedCount = 0;

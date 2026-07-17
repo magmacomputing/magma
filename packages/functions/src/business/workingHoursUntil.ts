@@ -39,7 +39,7 @@ export const workingHoursUntil = function (start: Tempo | Temporal.ZonedDateTime
 	const endWorkHour = options?.endHour ?? 17;
 
 	if (startWorkHour >= endWorkHour)
-		throw new Error('[Tempo-Fns] startHour must be strictly less than endHour');
+		throw new Error('[functions] startHour must be strictly less than endHour');
 
 	const holidaysList = [...(options?.holidays ?? [])];
 	if (options?.region) {

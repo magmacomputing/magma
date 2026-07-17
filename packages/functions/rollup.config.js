@@ -5,7 +5,7 @@ export default {
 	output: {
 		file: 'dist/tempo-fns.global.js',
 		format: 'iife',
-		name: 'TempoFns',
+		name: 'Functions',
 		globals: {
 			'@magmacomputing/tempo': 'Tempo'
 		}

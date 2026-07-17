@@ -14,7 +14,7 @@ import type { Tempo } from '../tempo.class.js';
 
 declare module '../tempo.class.js' {
 	interface Tempo {
-		/** applies a format to the instance. */									format(options: Intl.DateTimeFormatOptions & { timeZone?: string; calendar?: string }): string;
+		/** applies a format to the instance. */									format(options: import('../tempo.type.js').FormatOptions): string;
 		/** applies a format to the instance. */									format(fmt: BigIntPattern, options?: any): bigint;
 		/** applies a format to the instance. */									format(fmt: NumericPattern, options?: any): number;
 		/**
@@ -48,7 +48,7 @@ declare module '../tempo.class.js' {
  * const stamp = format().logStamp; // defaults to 'Now'
  */
 export function format(obj?: any): any;
-export function format(obj: any, options: Intl.DateTimeFormatOptions & { timeZone?: string; calendar?: string }): string;
+export function format(obj: any, options: import('../tempo.type.js').FormatOptions): string;
 export function format(obj: any, fmt: BigIntPattern, options?: any): bigint;
 export function format(obj: any, fmt: NumericPattern, options?: any): number;
 export function format(obj: any, fmt: string | symbol, options?: any): string;

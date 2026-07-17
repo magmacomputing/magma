@@ -42,11 +42,11 @@ for (const plugin of plugins) {
 
     // Rewrite internal sibling links within the same plugin's doc/ folder
     // Maps: ./other.md -> ./[pluginId].other.md
-    content = content.replace(/\]\(\.\/([^/]+)\.md\)/g, `](./${pluginId}.$1.md)`);
+    content = content.replace(/\]\(\.\/([^/]+)\.md(?:([#?][^)]*))?\)/g, `](./${pluginId}.$1.md$2)`);
 
     // Rewrite cross-plugin relative links so they work in VitePress
     // Maps: ../../[plugin-dir]/doc/[filename].md -> ./[normalised-pluginId].[filename].md
-    content = content.replace(/\]\(\.\.\/\.\.\/([^/]+)\/doc\/([^/]+)\.md\)/g, (_m, p, f) => `](./${p.replace(/^\./, '_')}.${f}.md)`);
+    content = content.replace(/\]\(\.\.\/\.\.\/([^/]+)\/doc\/([^/]+)\.md(?:([#?][^)]*))?\)/g, (_m, p, f, q) => `](./${p.replace(/^\./, '_')}.${f}.md${q || ''})`);
 
     const basename = path.basename(file, '.md');
     const outName = `${pluginId}.${basename}.md`;

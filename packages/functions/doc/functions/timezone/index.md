@@ -14,7 +14,7 @@ function isDST(
 ```
 **Example:**
 ```typescript
-import { isDST } from '@magmacomputing/functions/timezone';
+import { isDST } from '@magmacomputing/tempo-fns';
 
 isDST('2026-07-01T12:00:00', 'America/New_York'); // Returns: true
 ```
@@ -27,7 +27,7 @@ function getOffsets(timeZone: string, year?: number): number[];
 ```
 **Example:**
 ```typescript
-import { getOffsets } from '@magmacomputing/functions/timezone';
+import { getOffsets } from '@magmacomputing/tempo-fns';
 
 getOffsets('Australia/Sydney'); 
 // Returns array of offset changes for the year
@@ -41,7 +41,7 @@ function getHemisphere(timeZone?: string): 'N' | 'S' | 'E' | undefined;
 ```
 **Example:**
 ```typescript
-import { getHemisphere } from '@magmacomputing/functions/timezone';
+import { getHemisphere } from '@magmacomputing/tempo-fns';
 
 getHemisphere('America/New_York'); // Returns: 'N'
 ```
@@ -54,7 +54,7 @@ function normalizeUtcOffset(zone: string): string;
 ```
 **Example:**
 ```typescript
-import { normalizeUtcOffset } from '@magmacomputing/functions/timezone';
+import { normalizeUtcOffset } from '@magmacomputing/tempo-fns';
 
 normalizeUtcOffset('UTC+10'); // Returns: '+10:00'
 ```
