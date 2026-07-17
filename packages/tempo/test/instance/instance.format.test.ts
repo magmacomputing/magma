@@ -60,7 +60,7 @@ describe(`${label} format method`, () => {
 
     // The format module should extract locale, shift the ZonedDateTime, and gracefully
     // fallback or pass through the options without crashing on the Temporal timeZone mismatch constraint.
-    const result = t.format(arabicConfig);
+    const result = t.format(arabicConfig as any);
     expect(result).toBe('الأربعاء، ٢٥ ديسمبر ٢٠٢٤');
   });
 
@@ -77,7 +77,7 @@ describe(`${label} format method`, () => {
       day: 'numeric'
     }
 
-    const result = t.format(japaneseConfig);
+    const result = t.format(japaneseConfig as any);
     expect(result).toBe('令和6年12月25日');
   });
 
@@ -93,8 +93,8 @@ describe(`${label} format method`, () => {
         }
       }
     } as Tempo.Options
-    expect(t.format('{myDay}', options)).toBe('19');
-    expect(t.format('{myDay:upper}', options)).toBe('20 UPPER');
+    expect(t.format('{myDay}' as string, options)).toBe('19');
+    expect(t.format('{myDay:upper}' as string, options)).toBe('20 UPPER');
   });
 
   test('prevents core tokens from being overridden by registry', () => {

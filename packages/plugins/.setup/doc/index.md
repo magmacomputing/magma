@@ -43,7 +43,7 @@ Then in your application, you can simply import Tempo and the plugin via side-ef
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker'; // Automatically registers TickerModule
+import '@magmacomputing/tempo-plugin-ticker'; // Automatically registers TickerPlugin
 
 const t = new Tempo();
 console.log(t.tickers); // Unlocked and ready!
@@ -55,18 +55,18 @@ Pass the key explicitly when initializing Tempo. Since static imports are hoiste
 #### Option 1: Pass via Init Options (Recommended)
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import { TickerModule } from '@magmacomputing/tempo-plugin-ticker';
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 Tempo.init({
   license: 'eyJhbGciOiJSUzI1NiJ9...',
-  plugins: [TickerModule]
+  plugins: [TickerPlugin]
 });
 ```
 
 #### Option 2: Explicit Extension
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import { TickerModule } from '@magmacomputing/tempo-plugin-ticker';
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 // 1. Initialize core Tempo with your license
 Tempo.init({
@@ -74,7 +74,7 @@ Tempo.init({
 });
 
 // 2. Register the plugin
-Tempo.extend(TickerModule);
+Tempo.extend(TickerPlugin);
 ```
 
 ### Method C: Global Context (Fallback for specific bundlers/environments)
@@ -103,20 +103,20 @@ globalThis.TEMPO_LICENSE_KEY = import.meta.env.VITE_TEMPO_LICENSE_KEY;
 
 // Use dynamic imports so the key is set before Tempo's static initializer runs
 const { Tempo } = await import('@magmacomputing/tempo');
-const { TickerModule } = await import('@magmacomputing/tempo-plugin-ticker');
+const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
 
-Tempo.init({ plugins: [TickerModule] });
+Tempo.init({ plugins: [TickerPlugin] });
 ```
 
 Alternatively, pass the license key explicitly via `Tempo.init()` after your static imports:
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import { TickerModule } from '@magmacomputing/tempo-plugin-ticker';
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 Tempo.init({
   license: import.meta.env.VITE_TEMPO_LICENSE_KEY,
-  plugins: [TickerModule]
+  plugins: [TickerPlugin]
 });
 ```
 

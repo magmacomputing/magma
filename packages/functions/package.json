@@ -22,9 +22,9 @@
   "sideEffects": false,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "browser": "dist/functions.global.js",
-  "unpkg": "dist/functions.global.js",
-  "jsdelivr": "dist/functions.global.js",
+  "browser": "dist/tempo-fns.global.js",
+  "unpkg": "dist/tempo-fns.global.js",
+  "jsdelivr": "dist/tempo-fns.global.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

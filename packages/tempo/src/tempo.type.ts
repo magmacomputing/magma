@@ -232,7 +232,7 @@ type _CoreToken = keyof TempoFormatTokens;
  * - a core token with one or more modifiers: `{dd:ord}`, `{tz:zzzzz}`
  * - a term-plugin key (always accepted, cannot be statically known): `{#season.key}`
  */
-type _ValidToken = _CoreToken | `${_CoreToken}:${string}` | `#${string}`;
+type _ValidToken = _CoreToken | `${_CoreToken}:${string}` | `#${string}` | `term.${string}`;
 
 /**
  * Compile-time validator for Tempo format strings.
@@ -255,10 +255,11 @@ type _ValidToken = _CoreToken | `${_CoreToken}:${string}` | `#${string}`;
  */
 export type ValidateFormat<S extends string> =
 	string extends S ? string																	// S widened to string (variable) — skip
+	: S extends `${string}\\${string}` ? string								// escaped braces present — skip validation
 	: S extends `${string}{${infer T}}${infer Rest}`
 	? T extends _ValidToken
 	? ValidateFormat<Rest>																		// valid token, recurse into tail
-	: `❌ '{${T}}' is not a valid Tempo format token`		 			// bad token — surfaced as IDE error
+	: `❌ '{${T}}' is not a valid Tempo format token`		 		// bad token — surfaced as IDE error
 	: string;																									// no more braces — valid
 
 export type WEEKDAY = enums.WEEKDAY
