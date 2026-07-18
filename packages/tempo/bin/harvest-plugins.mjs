@@ -14,28 +14,28 @@ fs.mkdirSync(targetDir, { recursive: true });
 // Track normalised plugin IDs to detect collisions early (e.g. both '.setup/' and 'setup/' present)
 const usedPluginIds = new Map(); // pluginId -> original directory name
 
-const plugins = fs.readdirSync(pluginsDir);
-for (const plugin of plugins) {
-  const docDir = path.join(pluginsDir, plugin, 'doc');
-  if (!fs.existsSync(docDir)) continue;
+const nodeModulesDir = path.resolve(__dirname, '../../../node_modules/@magmacomputing');
+
+function harvest(dir, pluginDirName, pluginId, isExternal = false) {
+  const docDir = path.join(dir, pluginDirName, 'doc');
+  if (!fs.existsSync(docDir)) return;
 
   const files = fs.readdirSync(docDir).filter(f => f.endsWith('.md'));
-  if (files.length === 0) continue;
-
-  // Normalise plugin directory name for use as a VitePress-safe filename segment:
-  // Leading dots are replaced with underscores to avoid router issues and prevent
-  // silent collision between e.g. '.setup/' and 'setup/' (would both strip to 'setup').
-  const pluginId = plugin.replace(/^\./, '_');
+  if (files.length === 0) return;
 
   if (usedPluginIds.has(pluginId)) {
+    if (isExternal) {
+      // Local plugin takes precedence over node_modules, just skip.
+      return;
+    }
     const conflict = usedPluginIds.get(pluginId);
     throw new Error(
       `harvest-plugins: name collision detected!\n` +
-      `  Both '${conflict}' and '${plugin}' normalise to pluginId '${pluginId}'.\n` +
+      `  Both '${conflict}' and '${pluginDirName}' normalise to pluginId '${pluginId}'.\n` +
       `  Rename one of the plugin directories to resolve the conflict.`
     );
   }
-  usedPluginIds.set(pluginId, plugin);
+  usedPluginIds.set(pluginId, pluginDirName);
 
   for (const file of files) {
     let content = fs.readFileSync(path.join(docDir, file), 'utf8');
@@ -51,6 +51,26 @@ for (const plugin of plugins) {
     const basename = path.basename(file, '.md');
     const outName = `${pluginId}.${basename}.md`;
     fs.writeFileSync(path.join(targetDir, outName), content);
-    console.log(`Harvested docs for plugin: ${plugin} (${file} -> ${outName})`);
+    console.log(`Harvested docs for plugin: ${pluginId} (${file} -> ${outName})`);
+  }
+}
+
+// 1. Harvest from local mono-repo plugins
+if (fs.existsSync(pluginsDir)) {
+  const plugins = fs.readdirSync(pluginsDir);
+  for (const plugin of plugins) {
+    const pluginId = plugin.replace(/^\./, '_');
+    harvest(pluginsDir, plugin, pluginId);
+  }
+}
+
+// 2. Harvest from node_modules/@magmacomputing (Dependabot NPM packages)
+if (fs.existsSync(nodeModulesDir)) {
+  const modules = fs.readdirSync(nodeModulesDir);
+  for (const mod of modules) {
+    if (mod.startsWith('tempo-plugin-')) {
+      const pluginId = mod.replace('tempo-plugin-', '');
+      harvest(nodeModulesDir, mod, pluginId, true);
+    }
   }
 }
