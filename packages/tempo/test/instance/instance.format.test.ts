@@ -45,11 +45,11 @@ describe(`${label} format method`, () => {
     expect(t.format('{www}')).toBe('Mon');
   });
 
-  test('formats {nano} as a BigInt', () => {
+  test('formats {nano} as a string', () => {
     const t = new Tempo('2024-05-20');
     const nano = t.format('{nano}');
-    expect(typeof nano).toBe('bigint');
-    expect(nano).toBeGreaterThan(0n);
+    expect(typeof nano).toBe('string');
+    expect(nano).toMatch(/^[0-9]+$/);
   });
 
   test('delegates format(options) directly to native Intl and handles strict Temporal bounds', () => {
@@ -119,15 +119,15 @@ describe(`${label} format method`, () => {
 
   test('formats compound tokens dmy, mdy, ymd with :yy or :year modifiers', () => {
     const t = new Tempo('2024-05-20');
-    expect(t.format('{dmy}')).toBe(20052024);
+    expect(t.format('{dmy}')).toBe('20052024');
     expect(t.format('{dmy:yy}')).toBe('200524');
     expect(t.format('{dmy:year}')).toBe('200524');
 
-    expect(t.format('{mdy}')).toBe(5202024);
+    expect(t.format('{mdy}')).toBe('05202024');
     expect(t.format('{mdy:yy}')).toBe('052024');
     expect(t.format('{mdy:year}')).toBe('052024');
 
-    expect(t.format('{ymd}')).toBe(20240520);
+    expect(t.format('{ymd}')).toBe('20240520');
     expect(t.format('{ymd:yy}')).toBe('240520');
     expect(t.format('{ymd:year}')).toBe('240520');
   });

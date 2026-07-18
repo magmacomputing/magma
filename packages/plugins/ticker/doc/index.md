@@ -34,7 +34,7 @@ Tempo.init({
   plugins: [TickerPlugin] 
 });
 
-// You can now access Ticker-based execution loops through the Tempo API:
+// You can access Ticker-based execution loops through the Tempo API:
 const ticker = Tempo.ticker({ seconds: 1 });
 ```
 
@@ -66,12 +66,14 @@ await using quarterly = Tempo.ticker({ '#quarter': 1 });
 ```
 
 ### 2. Term-Based Intervals
-Ticker intervals can now be driven by any registered **Term**. This is powerful for syncing with business cycles or daily shifts.
+Ticker intervals can be driven by any registered **Term**. This is powerful for syncing with business cycles or daily shifts.
+
+> **Snapping vs Shifting:** Use directional shorthands (like `>`) to snap pulses exactly to the **boundaries** of the term (e.g., the very start of the morning). Using numeric values (like `1`) performs a relative shift, which preserves your current time-offset into the next period (e.g. two hours into a time-period will always be two hours into the next time-period).
 
 ```typescript
-// Pulse at the start of every 'morning', 'afternoon', etc.
-using shiftTicker = Tempo.ticker({ '#period': 1 }, (t) => {
-  console.log(`New period started: ${t.term.per}`);
+// Snap and pulse exactly at the start of every 'morning', 'afternoon', etc.
+using shiftTicker = Tempo.ticker({ '#timeOfDay': '>' }, (t) => {
+  console.log(`New period started: ${t.term.tod}`);
 });
 ```
 

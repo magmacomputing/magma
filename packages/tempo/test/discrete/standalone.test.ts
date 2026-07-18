@@ -27,16 +27,16 @@ describe('Tempo: Standalone Utilities', () => {
 			expect(res).toBe('2026-04-22');
 		});
 
-		it('should return a number for numeric-only patterns', () => {
+		it('should return a string for numeric-only patterns', () => {
 			const res = format(zdt, '{yyyy}{mm}{dd}');
-			expect(typeof res).toBe('number');
-			expect(res).toBe(20260422);
+			expect(typeof res).toBe('string');
+			expect(res).toBe('20260422');
 		});
 
-		it('should return a number for ad-hoc numeric-only patterns (generic detection)', () => {
+		it('should return a string for ad-hoc numeric-only patterns (generic detection)', () => {
 			const res = format(zdt, '{mm}{dd}');
-			expect(typeof res).toBe('number');
-			expect(res).toBe(422); // 0422
+			expect(typeof res).toBe('string');
+			expect(res).toBe('0422'); // 0422
 		});
 
 		it('should return a Queriable Proxy when called without a template', () => {
@@ -83,9 +83,9 @@ describe('Tempo: Standalone Utilities', () => {
 
 		it('should default to "Now" when called with no arguments', () => {
 			const res = format();
-			// Numeric return for yearMonthDay
-			expect(typeof res.yearMonthDay).toBe('number');
-			expect(String(res.yearMonthDay)).toMatch(/^\d{8}$/);
+			// String return for yearMonthDay
+			expect(typeof res.yearMonthDay).toBe('string');
+			expect(res.yearMonthDay).toMatch(/^\d{8}$/);
 		});
 	});
 

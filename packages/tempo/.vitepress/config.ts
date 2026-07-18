@@ -46,12 +46,11 @@ export default defineConfig({
         text: 'Core Concepts',
         items: [
           { text: 'Configuration', link: '/doc/2-core-concepts/tempo.config' },
-          { text: 'Registries', link: '/doc/2-core-concepts/tempo.registry' },
           { text: 'Core Getters', link: '/doc/2-core-concepts/tempo.getters' },
           { text: 'Smart Parsing', link: '/doc/2-core-concepts/tempo.parse' },
           { text: 'Smart Formatting', link: '/doc/2-core-concepts/tempo.format' },
-          { text: 'Layout Patterns', link: '/doc/2-core-concepts/tempo.layout' },
           { text: 'Duration Logic', link: '/doc/2-core-concepts/tempo.duration' },
+          { text: 'Mutation & Math', link: '/doc/2-core-concepts/tempo.mutate' },
           { text: 'Intervals', link: '/doc/2-core-concepts/tempo.interval' }
         ]
       },
@@ -59,7 +58,9 @@ export default defineConfig({
         text: 'Extending Tempo',
         items: [
           { text: 'Modules', link: '/doc/3-extending-tempo/tempo.modularity' },
+          { text: 'Registries', link: '/doc/3-extending-tempo/tempo.registry' },
           { text: 'Plugins', link: '/doc/3-extending-tempo/tempo.plugin' },
+          { text: 'Layout Patterns', link: '/doc/3-extending-tempo/tempo.layout' },
           { text: 'Terms', link: '/doc/3-extending-tempo/tempo.term' },
           { text: 'Namespaces', link: '/doc/3-extending-tempo/tempo.namespace' },
           { text: 'Creating Custom Plugins', link: '/doc/3-extending-tempo/tempo.extension' },

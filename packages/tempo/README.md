@@ -26,6 +26,13 @@
 ## ⚡ Quick Start
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
+import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
+
+// 🔌 Instantly Extensible (with deterministic defaults)
+Tempo.init({ 
+  plugins: [AstroPlugin],
+  timeZone: 'America/New_York'
+});
 
 // 🎯 Natural Language Parsing (Deterministic anchor)
 const event = new Tempo('next Friday 3pm', { anchor: '2026-10-15' });
@@ -39,6 +46,9 @@ console.log(diff.iso); // P2M2D
 
 // 📝 Beautiful Formatting
 console.log(event.format('{mon} {dd:ord}, {yyyy}')); // October 23rd, 2026
+
+// 🌌 Domain Logic (via Plugin)
+console.log(event.term.astronomy.season); // 'Autumn'
 ```
 
 ---
@@ -105,6 +115,7 @@ While the native Temporal API gives you perfect primitives (`ZonedDateTime`, `Pl
 *   **⚡ Zero-Cost Parsing**: Lazy evaluation and smart matching ensure instantiation overhead is near-zero.
 *   **🛡️ Monorepo Resilient**: Built for stability in complex environments with proxy-protected registries.
 *   **📦 Tree-Shakable**: Keep your bundle light. Only load what you need—from Fiscal calendars to high-performance Tickers.
+*   **🪶 Ultra Lightweight**: Tempo itself is incredibly lean. While the required `Temporal` polyfill adds weight today, it can be dropped entirely the moment JavaScript environments natively adopt the Stage 4 standard.
 
 ---
 
@@ -121,11 +132,11 @@ For a deeper dive into the API, architecture, and advanced features:
 
 Tempo is the core library, but the ecosystem extends further:
 
-| Package | Description |
-| :--- | :--- |
-| **[`@magmacomputing/tempo`](https://www.npmjs.com/package/@magmacomputing/tempo)** | Core library — parsing, formatting, natural-language engine |
-| **[`@magmacomputing/tempo-fns`](https://www.npmjs.com/package/@magmacomputing/tempo-fns)** | Pure functional utilities built on native Temporal & Tempo — tree-shakeable helpers for calendars, business logic, and scheduling &nbsp; [![Docs](https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square)](https://magmacomputing.github.io/magma/functions/) |
-| **[`@magmacomputing/tempo-plugin-*`](https://www.npmjs.com/search?q=%40magmacomputing%2Ftempo-plugin)** | Premium & community plugins — Ticker, Astro, Finance, Sync, Snap and more &nbsp; [![Ecosystem](https://img.shields.io/badge/Browse-Plugin%20Ecosystem-blueviolet?logo=npm&style=flat-square)](https://magmacomputing.github.io/magma/doc/3-extending-tempo/ecosystem) |
+| Package | Description | Resources |
+| :--- | :--- | :--- |
+| **[`@magmacomputing/tempo`](https://www.npmjs.com/package/@magmacomputing/tempo)** | Core library — parsing, formatting, natural-language engine | [![Docs](https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square)](https://magmacomputing.github.io/magma/) |
+| **[`@magmacomputing/tempo-fns`](https://www.npmjs.com/package/@magmacomputing/tempo-fns)** | Pure functional utilities built on native Temporal & Tempo — tree-shakeable helpers | [![Docs](https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square)](https://magmacomputing.github.io/magma/functions/) |
+| **[`@magmacomputing/tempo-plugin-*`](https://www.npmjs.com/search?q=%40magmacomputing%2Ftempo-plugin)** | Premium & community plugins — Ticker, Astro, Finance, Sync, Snap and more | [![Ecosystem](https://img.shields.io/badge/Browse-Plugin%20Ecosystem-blueviolet?logo=npm&style=flat-square)](https://magmacomputing.github.io/magma/doc/3-extending-tempo/ecosystem) |
 
 
 ---

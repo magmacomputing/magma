@@ -2,36 +2,35 @@ import '#library/temporal.polyfill.js';
 import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix } from '#library/number.library.js';
-import { ifNumeric } from '#library/coercion.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction } from '#library/assertion.library.js';
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
-import { isTempo, enums, Match, getRuntime, NumericPattern, BigIntPattern, hasOwn, $Internal } from '#tempo/support';
+import { isTempo, enums, Match, getRuntime, hasOwn, $Internal } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
+import type { FormatOptions, ValidateFormat, TempoFormatTokens } from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
 
 declare module '../tempo.class.js' {
 	interface Tempo {
-		/** applies a format to the instance. */									format(options: import('../tempo.type.js').FormatOptions): string;
-		/** applies a format to the instance. */									format(fmt: BigIntPattern, options?: any): bigint;
-		/** applies a format to the instance. */									format(fmt: NumericPattern, options?: any): number;
+		/** applies a format to the instance. */								format(options: FormatOptions): string;
+
 		/**
 		 * Applies a format to the instance.
 		 * Format strings are validated at compile time — any unrecognised `{token}`
 		 * will produce an IDE error showing the bad token name.
-		 * @see {@link import('../tempo.type.js').TempoFormatTokens} to extend the token set.
+		 * @see {@link TempoFormatTokens} to extend the token set.
 		 */
 		format<S extends string>(
 			fmt: string extends S
-				? S																							// variable string — no validation, accept as-is
-				: string extends import('../tempo.type.js').ValidateFormat<S>
-				? S																						// ValidateFormat<S> is `string` → all tokens valid, accept
-				: import('../tempo.type.js').ValidateFormat<S>,	// ValidateFormat<S> is an error literal → mismatch forces IDE error
+				? S																									// variable string — no validation, accept as-is
+				: string extends ValidateFormat<S>
+				? S																									// ValidateFormat<S> is `string` → all tokens valid, accept
+				: ValidateFormat<S>,	// ValidateFormat<S> is an error literal → mismatch forces IDE error
 			options?: any
-		): string | number | bigint;
-		/** applies a format to the instance (zero-argument — returns a pre-built format proxy). */	format(): string | number | bigint;
+		): string;
+		/** applies a format to the instance (zero-argument — returns a pre-built format proxy). */	format(): string;
 	}
 }
 
@@ -48,9 +47,8 @@ declare module '../tempo.class.js' {
  * const stamp = format().logStamp; // defaults to 'Now'
  */
 export function format(obj?: any): any;
-export function format(obj: any, options: import('../tempo.type.js').FormatOptions): string;
-export function format(obj: any, fmt: BigIntPattern, options?: any): bigint;
-export function format(obj: any, fmt: NumericPattern, options?: any): number;
+export function format(obj: any, options: FormatOptions): string;
+
 export function format(obj: any, fmt: string | symbol, options?: any): string;
 export function format(obj?: any, fmt?: any, options?: any): any {
 	const state = getRuntime().state;
@@ -390,9 +388,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		return res;
 	});
 
-	const tokens = template.match(new RegExp(Match.formatBraces, 'g'));
-	const isNumericOutput = BigIntPattern.includes(template as any) || NumericPattern.includes(template as any) || (tokens && tokens.length > 1 && /^[0-9]+$/.test(result));
-	return (isNumericOutput ? ifNumeric(result, true) : result) as any;
+	return result as any;
 }
 
 /**
