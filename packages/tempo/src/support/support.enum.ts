@@ -177,33 +177,17 @@ export const DURATIONS = enumify(STATE.DURATIONS, false);
 export type DURATIONS = KeyOf<typeof DURATIONS>
 
 /** common format aliases */
-export const FORMAT = looseIndex<string, string | number>()(enumify(STATE.FORMAT, false));
+export const FORMAT = looseIndex<string, string>()(enumify(STATE.FORMAT, false));
 export type FORMAT = typeof FORMAT;
 export type Format = LooseUnion<KeyOf<typeof FORMAT> & string>
 
-/** patterns that return a number */
-export const NumericPattern = ['{yyyy}{wy}', '{yyyy}{mm}', '{yyyy}{mm}{dd}', '{yywy}', '{yw}{wy}', '{yw}', '{ymd}', '{ymd6}', '{hms}', '{ff}', '{dmy}', '{dmy6}', '{mdy}', '{mdy6}'] as const;
-export type NumericPattern = typeof NumericPattern[number]
-
-/** patterns that return a bigint */
-export const BigIntPattern = ['{nano}'] as const;
-export type BigIntPattern = typeof BigIntPattern[number]
-
-/** pre-configured format strings */
-export type OwnFormat = Mutable<OwnOf<typeof FORMAT>>
-
-/** mapping of format names to instance-resolutions (string | number) */
-export type FormatType<K extends PropertyKey> = K extends BigIntPattern ? bigint : K extends keyof OwnFormat
-	? (OwnFormat[K] extends NumericPattern ? number : string)
-	: K extends NumericPattern ? number : string | number | bigint;
-
-/** mapping of format names to instance-resolutions (string | number) */
+/** mapping of format names to instance-resolutions */
 export type Formats = {
-	[K in keyof OwnFormat]: FormatType<K>;
-} & Record<string, string | number>;
+	[K in keyof OwnOf<typeof FORMAT>]: string;
+} & Record<string, string>;
 
 /** Enum registry of format strings */
-export type FormatEnum = Enum.wrap<OwnFormat & Record<string, string | number>>;
+export type FormatEnum = Enum.wrap<Formats>;
 
 export const LIMIT = proxify(STATE.LIMIT, true, false);
 

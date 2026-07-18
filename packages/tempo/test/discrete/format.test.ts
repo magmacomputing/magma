@@ -3,16 +3,16 @@ import { Tempo } from '#tempo';
 describe('Tempo.format() refinements', () => {
   const t = new Tempo('2024-05-20T10:00:00Z');
 
-  it('should return a number for named numeric formats', () => {
+  it('should return a string for named numeric formats', () => {
     const yw = t.format('yearWeek');
-    expect(typeof yw).toBe('number');
-    expect(yw).toBe(202421);
+    expect(typeof yw).toBe('string');
+    expect(yw).toBe('202421');
   })
 
-  it('should return a number for raw numeric patterns', () => {
+  it('should return a string for raw numeric patterns', () => {
     const val = t.format('{yyyy}{mm}{dd}');
-    expect(typeof val).toBe('number');
-    expect(val).toBe(20240520);
+    expect(typeof val).toBe('string');
+    expect(val).toBe('20240520');
   })
 
   it('should return a string for formats with leading zeros (if not explicitly numeric)', () => {
@@ -28,8 +28,8 @@ describe('Tempo.format() refinements', () => {
   it('should handle yw for ISO year', () => {
     const t3 = new Tempo('2024-12-30');										// Monday, Week 1 of 2025
     expect(t3.yw).toBe(2025);
-    expect(t3.format('{yw}{ww}')).toBe(202501);
-    expect(typeof t3.format('{yw}{ww}')).toBe('number');
+    expect(t3.format('{yw}{ww}')).toBe('202501');
+    expect(typeof t3.format('{yw}{ww}')).toBe('string');
   })
 
   it('accepts an options object as the second argument to override configuration', () => {

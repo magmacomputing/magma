@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.3] - 2026-07-18
+
+### Added
+- **Core Concepts Documentation**: Added a new `Mutation & Math` (`tempo.mutate.md`) guide to the Core Concepts section to explicitly document `.add()` and `.set()` immutability, chainability, and the design decision to omit a dedicated `.subtract()` method.
+
+### Changed
+- **Documentation Architecture**: Relocated `tempo.registry.md` and `tempo.layout.md` from Core Concepts to Extending Tempo to better reflect their advanced, extensibility-focused usage patterns.
+- **README Updates**: Added `AstroPlugin` initialization examples, an "Ultra Lightweight" architecture bullet, and restructured the ecosystem markdown table for cleaner VitePress rendering.
+
+### Fixed
+- **Format Leading Zeros**: Fixed a data-corruption bug in `Tempo.format()` where numeric-looking tokens (e.g., `{dd}`, `{mm}`) were implicitly cast to numbers, stripping their leading zeros. The `.format()` method now strictly adheres to a string-only return contract, ensuring zero-padded tokens retain their exact formatting. Removed `NumericPattern` and `BigIntPattern` complexity and simplified internal casting logic.
+- **VitePress UI**: Fixed a CSS variable reference in the `CatalogList.vue` component, mapping the install badge background to `--vp-c-danger-1` instead of `--vp-c-brand`.
+
 ## [3.9.1] - 2026-07-17
 
 ### Added

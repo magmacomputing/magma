@@ -24,8 +24,6 @@ export {
 	PARSE,
 	MONTH_DAY,
 	LICENSE,
-	NumericPattern,
-	BigIntPattern,
 } from './support.enum.js';
 
 export { markConfig } from '#library/symbol.library.js';

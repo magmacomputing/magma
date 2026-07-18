@@ -214,7 +214,7 @@ const copyInstall = (pkgName: string) => {
   position: absolute;
   top: -10px;
   right: 15px;
-  background: var(--vp-c-brand);
+  background: var(--vp-c-danger-1, #ef4444);
   color: white;
   padding: 2px 8px;
   border-radius: 12px;

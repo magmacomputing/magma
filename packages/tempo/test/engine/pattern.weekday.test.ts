@@ -9,7 +9,7 @@ function formatDate(date: Date) {
     day = ('0' + date.getDate()).slice(-2),
     year = date.getFullYear();
 
-  return Number(`${year}${month}${day}`);
+  return `${year}${month}${day}`;
 }
 
 /**

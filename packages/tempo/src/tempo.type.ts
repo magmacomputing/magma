@@ -175,17 +175,13 @@ export type Duration = NonOptional<Temporal.DurationLikeObject> & Record<"iso", 
 	format(opts?: Intl.NumberFormatOptions & { locales?: string | string[] }): string;
 }
 
-/** pre-configured format strings */
-export type OwnFormat = enums.OwnFormat;
-
-/** mapping of format names to instance-resolutions (string | number) */
+/** mapping of format names to instance-resolutions (string) */
 export type Formats = enums.Formats;
 
 /** Union of all known format strings */
 export type Format = enums.Format;
 /** Enum registry of format strings */
 export type FormatRegistry = enums.FormatEnum;
-export type FormatType<K extends PropertyKey> = enums.FormatType<K>;
 
 /**
  * Augment this interface in your plugin or app to register additional
@@ -280,7 +276,6 @@ export type Month = enums.Month
 export type Element = enums.Element
 export type Number = enums.Number
 export type Mode = enums.MODE
-export type NumericPattern = typeof enums.NumericPattern[number];
 
 export interface RelativeTime {
 	/** Pre-configured relative time formatter */							format?: Intl.RelativeTimeFormat;
