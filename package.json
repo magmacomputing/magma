@@ -1,6 +1,6 @@
 {
   "name": "tempo-monorepo",
-  "version": "3.9.1",
+  "version": "3.9.3",
   "private": true,
   "engines": {
     "node": ">=20.0.0"
