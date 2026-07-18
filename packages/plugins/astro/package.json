@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-plugin-astro",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "Tempo plugin that calculates precise astronomical seasons (solstices & equinoxes) using the Jean Meeus algorithm — hemisphere-aware, sub-minute accuracy",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

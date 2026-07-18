@@ -1,6 +1,6 @@
 {
 	"name": "@magmacomputing/tempo-plugin-finance",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"type": "module",
 	"description": "Tempo Community Plugin: Finance namespace and fiscal year utilities",
 	"main": "dist/index.js",
@@ -22,7 +22,19 @@
 	],
 	"author": "Magma Computing",
 	"license": "MIT",
+	"files": [
+		"dist",
+		"src",
+		"README.md",
+		"CHANGELOG.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"registry": "https://registry.npmjs.org/",
+		"access": "public"
+	},
 	"tempo": {
+		"vendorVariantId": "tempo-plugin-finance",
 		"plan": "community"
 	},
 	"peerDependencies": {
@@ -31,5 +43,11 @@
 	"devDependencies": {
 		"@magmacomputing/tempo": "^3.8.0",
 		"vitest": "^1.0.0"
+	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
 	}
 }
