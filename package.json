@@ -1,6 +1,6 @@
 {
   "name": "tempo-monorepo",
-  "version": "3.9.3",
+  "version": "3.10.0",
   "private": true,
   "engines": {
     "node": ">=20.0.0"
@@ -22,6 +22,7 @@
     "clean": "node node_modules/typescript-7/bin/tsc -b --clean",
     "version:bump": "node bin/version-bump.mjs",
     "version:sync": "node bin/version-sync.mjs",
+    "catalog:sync": "node packages/plugins/.bin/catalog-sync.mjs",
     "repl": "npm run repl --workspace=@magmacomputing/tempo",
     "repl:plugins": "tsx --import ./packages/plugins/.bin/temporal-polyfill.mts ./packages/plugins/.bin/repl.mts",
     "repl:dist": "npm run repl:dist --workspace=@magmacomputing/tempo",

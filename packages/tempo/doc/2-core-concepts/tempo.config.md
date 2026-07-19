@@ -27,13 +27,13 @@ This mirrors modern ecosystem standards (like `vite.config.ts` or `tailwind.conf
 ```typescript
 // tempo.config.ts
 import { defineConfig } from '@magmacomputing/tempo';
-import { FinancePlugin } from '@magmacomputing/tempo-plugin-finance';
-import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
+import { FinanceNamespace } from '@magmacomputing/tempo-plugin-finance';
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 export default defineConfig({
   timeZone: 'Australia/Sydney',     // Set your baseline timezone
-  license: 'eyJhbGciOiJIUzI1...',   // JWT Commercial License for Premium Plugins
-  plugins: [FinancePlugin, AstroTerm], // Register plugins
+  license: 'eyJhbGciOiJIUzI1...',   // JWT License Key for Premium Plugins
+  plugins: [FinanceNamespace, TickerPlugin], // Register plugins
   registry: {
     periods: { 
       'market-open': '09:30',

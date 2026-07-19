@@ -1,9 +1,9 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { FinancePlugin } from '../src/index.js';
+import { FinanceNamespace } from '../src/index.js';
 
 describe('Finance Namespace', () => {
 	it('should lazy load the finance properties', () => {
-		Tempo.extend(FinancePlugin);
+		Tempo.extend(FinanceNamespace);
 
 		const t1 = new Tempo('2024-02-15');
 		expect(t1.finance.fiscalQuarter).toBe(1);

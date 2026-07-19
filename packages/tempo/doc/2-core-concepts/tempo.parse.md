@@ -195,6 +195,26 @@ While `Intl` provides a robust foundation for month and weekday translations, th
 
 To bridge these gaps, you can register **Custom Aliases** (see below) or define custom localized keywords in `registry.modifiers`.
 
+### Localized Parsing Modifiers
+Tempo allows you to localize term modifiers (like `next`, `last`, `this`) by defining them in the `registry.modifiers` configuration. This lets you seamlessly mix localized terms into your relative string parsing and even use them in the `#` shorthand navigation engine!
+
+```typescript
+Tempo.init({
+  locale: 'fr-FR',                // Natively translates months & weekdays
+  registry: {
+    modifiers: {
+      '>': ['prochain', 'suivant'],
+      '<': ['dernier', 'passé'],
+      '=': ['ce', 'cette']
+    }
+  }
+});
+
+new Tempo('next Friday');         // English always works natively
+new Tempo('vendredi prochain');   // Pure French localized string!
+new Tempo('#qtr.dernier');        // Localized shorthand navigation
+```
+
 ### Custom Aliases (Events & Periods)
 You can teach the parser new words or entire foreign phrases to bridge translation gaps:
 

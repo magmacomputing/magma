@@ -131,12 +131,17 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:dots` | String | Injects periods (useful for abbreviations) | `{mer:lower:dots}` → `a.m.` |
 | `:space`| String | Injects a leading space (used by `{h12}` auto-meridiem) | `{h12:space:dots}` → `03:30 a.m.` |
 | `:locale` | String | Resolves term via localization dictionary | `{mon:locale}` → `octobre` |
+| `:short` | String | Yields a short or abbreviated style | `{mon:short}` → `Oct` |
+| `:long` | String | Yields a full-length style | `{mon:long}` → `October` |
 | `:yy` | Compound Date | Truncates the internal year component to 2 digits | `{dmy:yy}` → `241026` |
-| `:z` | `{tz}` | Narrow timezone offset | `{tz:z}` → `+10` |
-| `:zz` | `{tz}` | Short timezone offset | `{tz:zz}` → `+10:00` |
-| `:zzz` | `{tz}` | Techie timezone offset | `{tz:zzz}` → `+1000` |
-| `:zzzz` | `{tz}` | Short localized timezone name (fallback: ID) | `{tz:zzzz}` → `AEST` |
-| `:zzzzz` | `{tz}` | Long localized timezone name (fallback: ID) | `{tz:zzzzz}` → `Australian Eastern Standard Time` |
+| `:offset` | `{tz}` | Full numeric timezone offset | `{tz:offset}` → `+10:00` |
+| `:offsetShort` | `{tz}` | Narrow numeric timezone offset | `{tz:offsetShort}` → `+10` |
+| `:offsetCompact` | `{tz}` | Compact numeric timezone offset | `{tz:offsetCompact}` → `+1000` |
+
+> [!TIP]
+> **Implicit Localization Bridge**
+> The `:short` and `:long` styling modifiers act as an automatic bridge to the browser's native `Intl` API! 
+> By default, core tokens like `{mon}` or `{wkd}` run at zero-cost using Tempo's lightning-fast internal enums (yielding English results). If you want a localized string, you don't need to explicitly chain the `:locale` modifier. Simply using a styling modifier like `{mon:long}` will automatically translate the string using the instance's configured locale!
 
 ### 🔄 Automatic Meridiem
 If your format string contains `{h12}` (12-hour clock) but lacks a `{mer}` token, Tempo will automatically append a `{mer}` token with the same modifiers as the `{h12}` token after the last time component to ensure the time remains unambiguous.
@@ -245,4 +250,35 @@ const japaneseConfig = {
 
 console.log(t.format(japaneseConfig));
 // Output: "令和6年12月25日"
+```
+
+---
+
+## 🛠️ Custom Format Tokens
+Need a completely custom format behavior? You can define dynamic token evaluators in the global registry that receive the `zdt` (`Temporal.ZonedDateTime`) instance and a context object, giving you full native access to `Intl` formatting or custom logic.
+
+> [!NOTE]
+> **Why native `ZonedDateTime` instead of a `Tempo` instance?**
+> The formatting engine is highly modular and designed to be tree-shakable via the standalone `format()` utility. By injecting native Temporal objects, custom tokens remain extremely fast, portable, and zero-overhead. If you absolutely need access to Tempo's syntactic sugar inside your token evaluator, you can simply re-wrap the object on the fly: `const t = new Tempo(zdt);`
+
+```typescript
+Tempo.init({
+    locale: 'fr-FR',
+    registry: {
+        tokens: {
+            // A simple math-based token
+            'myDay': (zdt) => String(zdt.day - 1),
+            
+            // A deeply localized custom token using native Intl
+            'wkd-fr': (zdt, { config }) => {
+                const dtOptions = config?.intl?.dateTimeFormat ?? {};
+                return zdt.toLocaleString(config?.locale ?? 'en', { ...dtOptions, weekday: 'long' });
+            }
+        }
+    }
+});
+
+const t = new Tempo('2024-05-20');
+t.format('{myDay}');  // "19"
+t.format('{wkd-fr}'); // "lundi"
 ```

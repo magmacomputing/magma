@@ -252,6 +252,10 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 						setProperty(state.config.registry, 'modifiers', merged);
 					}
+					if (arg.value.tokens) {
+						const existing = state.config.registry.tokens ?? {};
+						setProperty(state.config.registry, 'tokens', { ...existing, ...arg.value.tokens });
+					}
 
 					const parseMap: Record<string, 'snippet' | 'layout' | 'event' | 'period' | 'ignore'> = {
 						snippets: 'snippet',

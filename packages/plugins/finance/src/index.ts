@@ -15,7 +15,7 @@ export const isFiscalYearStart = (tempo: Tempo) => () => tempo.mm === 1 && tempo
 // Wrap the functions in a Namespace Plugin so they can be injected directly 
 // onto the Tempo instance (e.g., `t.finance.taxYear`) for a fluent experience.
 // -----------------------------------------------------------------------------
-export const FinancePlugin: TempoPlugin = defineNamespace({
+export const FinanceNamespace: TempoPlugin = defineNamespace({
 	name: 'finance',
 	resolvers: {
 		fiscalQuarter,

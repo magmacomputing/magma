@@ -4,7 +4,7 @@ Tempo v3.x finalizes the plugin ecosystem by extracting advanced features into s
 
 ## 🔁 Migrating from version 2.x to 3.0.0 (Ticker Extraction)
 
-The `TickerModule` has been extracted from the core open-source repository into a standalone premium plugin.
+The `TickerPlugin` has been extracted from the core open-source repository into a standalone premium plugin.
 
 **Action Required**:
 1. If you use `Tempo.ticker()`, you must now install `@magmacomputing/tempo-plugin-ticker` alongside `@magmacomputing/tempo`.
@@ -21,10 +21,10 @@ The `TickerModule` has been extracted from the core open-source repository into 
 3. Import and register the plugin in your application initialization:
    ```javascript
    import { Tempo } from '@magmacomputing/tempo';
-   import { TickerModule } from '@magmacomputing/tempo-plugin-ticker';
+   import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
    Tempo.init({ license: 'YOUR_JWT_KEY' });
-   Tempo.extend(TickerModule);
+   Tempo.extend(TickerPlugin);
    ```
 
 # ⚠️ Migrating to Tempo v2.x

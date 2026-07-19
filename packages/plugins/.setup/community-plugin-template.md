@@ -8,6 +8,33 @@ Ensure the plugin's `package.json` contains the correct community configuration:
 
 - **Version**: Set to a fresh semantic version (e.g., `"1.0.0"` for the first release).
 - **License**: Must strictly be `"MIT"`.
+- **Type**: Set `"type": "module"`.
+- **Files**: Include the published files array:
+  ```json
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ]
+  ```
+- **PublishConfig**: Configure public npm publishing:
+  ```json
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  }
+  ```
+- **Exports**: Define exports with types and import entrypoints:
+  ```json
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  }
+  ```
 - **Scripts**: 
   - Ensure `"build": "tsup && tsc"` and `"postbuild": "rm -rf dist/src"` are present.
   - Include the prepublish safeguard: `"prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"`.
