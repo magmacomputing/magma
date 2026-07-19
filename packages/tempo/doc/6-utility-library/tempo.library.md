@@ -56,4 +56,18 @@ Tempo provides a specialized wrapper around `Promise.withResolvers()` called `Pl
 
 👉 **[Read the full Pledge Guide](./tempo.pledge.md)** for advanced usage with callbacks, debugging tags, and lifecycle management.
 
+<br>
 
+## 5. Exhaustive API Reference
+
+> [!NOTE]
+> These are isolated, standalone utility functions and classes developed internally to support our various applications. They are entirely free to use and are documented here as a convenience reference for our users.
+
+While some of these utilities may be used internally by the Tempo library, many are completely independent (such as the browser and server-specific functions). They do not declare external dependencies, keeping them lightweight and portable.
+
+The library is split into domain-specific modules:
+- **Browser**: Functions and classes that rely on browser APIs (e.g., `window`, `localStorage`, `Geolocation`).
+- **Server**: Node.js specific utilities (e.g., file system access, server-side JWT decoding).
+- **Common** *(coming soon)*: Runtime-agnostic utilities shared across all environments.
+
+You can browse the full API reference in the sidebar below this section.

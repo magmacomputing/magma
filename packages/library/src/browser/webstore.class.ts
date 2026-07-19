@@ -13,17 +13,32 @@ type STORAGE = ValueOf<typeof STORAGE>
 /**
  * Wrapper around local / session Browser Storage.
  * Refactored for lazy-initialization to ensure side-effect free imports.
+ * 
+ * @example
+ * ```ts
+ * const store = WebStore.local;
+ * store.set('user', { id: 1, name: 'Alice' });
+ * const user = store.get('user');
+ * ```
  */
 export class WebStore {
 	private static _localInstance?: WebStore;
 	private static _sessionInstance?: WebStore;
 
-	/** Lazy getter for localStorage wrapper */
+	/** 
+	 * Lazy getter for the localStorage wrapper instance.
+	 * 
+	 * @returns The WebStore instance for localStorage
+	 */
 	static get local() {
 		return WebStore._localInstance ??= new WebStore(STORAGE.Local);
 	}
 
-	/** Lazy getter for sessionStorage wrapper */
+	/** 
+	 * Lazy getter for the sessionStorage wrapper instance.
+	 * 
+	 * @returns The WebStore instance for sessionStorage
+	 */
 	static get session() {
 		return WebStore._sessionInstance ??= new WebStore(STORAGE.Session);
 	}
@@ -43,8 +58,13 @@ export class WebStore {
 		this.#type = storage;
 	}
 
-	public get<T>(key: PropertyKey): T | null;
-	public get<T>(key: PropertyKey, dflt: T): T;
+	/**
+	 * Retrieve a value from storage, optionally providing a default.
+	 * 
+	 * @param key - The property key to retrieve
+	 * @param dflt - An optional default value if the key does not exist
+	 * @returns The parsed object from storage, or the default/null if not found
+	 */
 	public get<T>(key: PropertyKey, dflt?: T) {
 		const str = this.#storage.getItem(stringify(key));
 		return isString(str)
@@ -52,6 +72,14 @@ export class WebStore {
 			: (dflt ?? null)
 	}
 
+	/**
+	 * Store or merge a value into storage for a given key.
+	 * 
+	 * @param key - The property key to set. If nullish, clears the store.
+	 * @param obj - The value to store
+	 * @param opt - Options (merge behavior)
+	 * @returns The WebStore instance for chaining
+	 */
 	public set(key?: PropertyKey, obj?: unknown, opt = { merge: true }) {
 		if (isNullish(key))																		// synonym for 'clear'
 			return this.clear();
@@ -99,27 +127,56 @@ export class WebStore {
 		}
 	}
 
+	/**
+	 * Clear all items from this storage instance.
+	 * 
+	 * @returns The WebStore instance for chaining
+	 */
 	public clear() {
 		this.#storage.clear();
 		return this;
 	}
 
+	/**
+	 * Delete specific keys from storage.
+	 * 
+	 * @param keys - The keys to remove
+	 * @returns The WebStore instance for chaining
+	 */
 	public del(...keys: PropertyKey[]) {											// list of keys to remove
 		keys
 			.forEach(key => this.#storage.removeItem(stringify(key)))
 		return this;
 	}
 
+	/**
+	 * Get an array of keys currently in storage. If specific keys are provided, filters by those.
+	 * 
+	 * @param keys - Optional keys to filter by
+	 * @returns An array of string/symbol keys
+	 */
 	public keys(...keys: PropertyKey[]) {											// list of keys (or all)
 		return this.entries(...keys)
 			.map(([key,]) => key)
 	}
 
+	/**
+	 * Get an array of values currently in storage.
+	 * 
+	 * @param keys - Optional keys to retrieve values for
+	 * @returns An array of parsed values
+	 */
 	public values<T>(...keys: PropertyKey[]) {								// list of keys (or all) to lookup
 		return this.entries<T>(...keys)
 			.map(([, val]) => val)
 	}
 
+	/**
+	 * Get an array of [key, value] entries currently in storage.
+	 * 
+	 * @param keys - Optional keys to filter the entries by
+	 * @returns An array of key-value tuples
+	 */
 	public entries<T>(...keys: PropertyKey[]) {								// list of keys (or all) to lookup
 		const wanted = new Set(keys.map(key => stringify(key)));
 
@@ -128,6 +185,12 @@ export class WebStore {
 			.filter(([key]) => isEmpty(keys) || wanted.has(stringify(key)))
 	}
 
+	/**
+	 * Populate the storage from an existing object map.
+	 * 
+	 * @param store - The object/dictionary to populate from
+	 * @returns The WebStore instance for chaining
+	 */
 	public from(store: Property<any>) {
 		ownEntries(store)
 			.forEach(([key, val]) => this.set(key, val))

@@ -4,6 +4,10 @@ import * as path from 'node:path';
 
 import { ifNumeric } from '#library/coercion.library.js';
 
+/**
+ * A utility class for sandboxed file operations within a temporary directory.
+ * Prevents path traversal and forces all operations to occur in os.tmpdir().
+ */
 export class File {
 	static tmpDir = os.tmpdir();
 	static encoding: BufferEncoding = 'utf8';
@@ -31,6 +35,16 @@ export class File {
 		return targetPath;
 	}
 
+	/**
+	 * Read a file's contents from the temporary directory.
+	 * 
+	 * @param file - The filename to read
+	 * @returns A promise resolving to the file contents (coerced to number/bigint if applicable)
+	 * @example
+	 * ```ts
+	 * const content = await File.read('data.txt');
+	 * ```
+	 */
 	static read = (file: string): Promise<string | number | bigint> => new Promise<string | number | bigint>((resolve, reject) => {
 		try {
 			const target = File._resolvePath(file);
@@ -47,6 +61,17 @@ export class File {
 		}
 	})
 
+	/**
+	 * Write content to a file in the temporary directory.
+	 * 
+	 * @param file - The filename to write to
+	 * @param doc - The content to write
+	 * @returns A promise resolving to the written content
+	 * @example
+	 * ```ts
+	 * await File.write('output.json', '{"status":"ok"}');
+	 * ```
+	 */
 	static write = (file: string, doc: string | NodeJS.ArrayBufferView) => new Promise<string | NodeJS.ArrayBufferView>((resolve, reject) => {
 		try {
 			const target = File._resolvePath(file);
@@ -56,6 +81,16 @@ export class File {
 		}
 	})
 
+	/**
+	 * Check if a file exists in the temporary directory.
+	 * 
+	 * @param file - The filename to check
+	 * @returns A promise resolving to true if the file exists, false otherwise
+	 * @example
+	 * ```ts
+	 * const hasConfig = await File.exist('config.json');
+	 * ```
+	 */
 	static exist = (file: string) => new Promise<boolean>((resolve, reject) => {
 		try {
 			const target = File._resolvePath(file);
@@ -69,6 +104,16 @@ export class File {
 		}
 	})
 
+	/**
+	 * Remove a file from the temporary directory.
+	 * 
+	 * @param file - The filename to remove
+	 * @returns A promise resolving when the file is deleted
+	 * @example
+	 * ```ts
+	 * await File.remove('temp-data.txt');
+	 * ```
+	 */
 	static remove = (file: string) => new Promise<void>((resolve, reject) => {
 		try {
 			const target = File._resolvePath(file);

@@ -1,0 +1,20 @@
+{
+  "entryPoints": [
+    "../library/src/browser.index.ts",
+    "../library/src/server.index.ts"
+  ],
+  "out": "doc/api/library",
+  "tsconfig": "../library/tsconfig.json",
+  "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+  "hideBreadcrumbs": true,
+  "hidePageTitle": true,
+  "disableSources": true,
+  "parametersFormat": "table",
+  "outputFileStrategy": "members",
+  "flattenOutputFiles": true,
+  "expandObjects": true,
+  "useCodeBlocks": true,
+  "readme": "none",
+  "excludeInternal": true,
+  "githubPages": false
+}
