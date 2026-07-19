@@ -33,7 +33,7 @@ For mission-critical applications, we provide priority support, security auditin
 
 ## 💎 Premium Extensions
 
-In addition to our open-source core, we offer a suite of **Premium Plugins** published directly to the standard public NPM registry (`npmjs.com`), secured by a commercial License Key. These extensions provide advanced, proprietary logic for enterprise-scale requirements.
+In addition to our open-source core, we offer a suite of **Premium Plugins** published directly to the standard public NPM registry (`npmjs.com`), secured by a cryptographic License Key. These extensions provide advanced, proprietary logic for enterprise-scale requirements.
 
 For details on how to unlock and use these features, see our [License Key Guide](../../../plugins/.setup/doc/index.md).
 

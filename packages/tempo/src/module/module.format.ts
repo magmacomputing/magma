@@ -361,6 +361,38 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					}
 					break;
 				}
+				case 'short':
+				case 'long':
+				case 'shortoffset':
+				case 'longoffset':
+				case 'shortgeneric':
+				case 'longgeneric': {
+					const modKey = mod.toLowerCase();
+					if (token === 'tz') {
+						const styleMap: Record<string, any> = { short: 'short', long: 'long', shortoffset: 'shortOffset', longoffset: 'longOffset', shortgeneric: 'shortGeneric', longgeneric: 'longGeneric' };
+						const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: styleMap[modKey] }).formatToParts(zdt.epochMilliseconds);
+						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
+					} else if (token === 'mon' || token === 'mmm') {
+						if (modKey === 'short' || modKey === 'long') res = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, month: modKey }).format(zdt.epochMilliseconds);
+					} else if (token === 'wkd' || token === 'www') {
+						if (modKey === 'short' || modKey === 'long') res = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, weekday: modKey }).format(zdt.epochMilliseconds);
+					} else if (token === 'era') {
+						if (modKey === 'short' || modKey === 'long') {
+							const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, era: modKey }).formatToParts(zdt.epochMilliseconds);
+							res = parts.find(p => p.type === 'era')?.value ?? res;
+						}
+					}
+					break;
+				}
+				case 'offset':
+					if (token === 'tz') res = zdt.offset;
+					break;
+				case 'offsetshort':
+					if (token === 'tz') res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
+					break;
+				case 'offsetcompact':
+					if (token === 'tz') res = zdt.offset.replace(':', '');
+					break;
 				case 'z':
 					if (token === 'tz') res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
 					break;

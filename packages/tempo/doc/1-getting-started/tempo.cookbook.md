@@ -75,25 +75,7 @@ new Tempo('2 weeks ago');
 new Tempo('tomorrow afternoon');
 ```
 
-### Localized Parsing Modifiers
-Tempo allows you to localize term modifiers (like `next`, `last`, `this`) by defining them in the `registry.modifiers` configuration. This lets you seamlessly mix localized terms into your relative string parsing and even use them in the `#` shorthand navigation engine!
-
-```typescript
-Tempo.init({
-  locale: 'fr-FR',                // Natively translates months & weekdays
-  registry: {
-    modifiers: {
-      '>': ['prochain', 'suivant'],
-      '<': ['dernier', 'passé'],
-      '=': ['ce', 'cette']
-    }
-  }
-});
-
-new Tempo('next Friday');         // English always works natively
-new Tempo('vendredi prochain');   // Pure French localized string!
-new Tempo('#qtr.dernier');        // Localized shorthand navigation
-```
+👉 **Learn More:** You can seamlessly localize relative phrases (e.g. `next` to `prochain`) by reading the [Internationalized Parsing Guide](../2-core-concepts/tempo.parse.md#internationalized-parsing-locales).
 
 ### Parsing Unix Timestamps
 Tempo handles both milliseconds (Number) and nanoseconds (BigInt).
@@ -131,42 +113,15 @@ const qtrMid = new Tempo().set({ mid: '#quarter' });
 ```
 
 ### Slick Object Mutations
-You can navigate relative to your current date by using Slick Shorthand operators inside `.set()`. Use the snippet shorthand keys (`yy`, `mm`, `ww`, `dd`, `wkd`, etc.) and provide a string payload containing a directional modifier:
+You can navigate relative to your current date by using Slick Shorthand operators directly inside `.set()`. Use the snippet shorthand keys (`yy`, `mm`, `ww`, `dd`, `wkd`, etc.) and provide a string payload containing a directional modifier:
 
 ```typescript
 const t = new Tempo('2024-05-20'); // Monday
-
-// Jump forward two months
-t.set({ mm: '>2' }); // July 20th
-
-// Jump to the next Friday
-t.set({ wkd: '>Fri' }); // May 24th
-
-// Jump to the previous Wednesday
-t.set({ wkd: '<Wed' }); // May 15th
+t.set({ mm: '>2' });               // July 20th
+t.set({ wkd: '>Fri' });            // May 24th
 ```
 
-Because `.set()` processes keys in insertion order, you can now effortlessly combine **absolute assignments** and **Slick shifts** in a single pass to build complex boundaries:
-
-```typescript
-// Jump 2 months forward, find the next Friday, and set the time to 10:30 AM
-const t2 = t.set({ 
-  mm: '>2', 
-  wkd: '>Fri', 
-  hour: 10, 
-  minute: 30 
-});
-```
-
-::: warning ⚠️ ESLint `sort-keys` Warning
-Because mixed object payloads execute strictly in the order they are defined, you must be careful if you use aggressive automated linters (like ESLint's `sort-keys` auto-fixer). If your linter alphabetically re-orders your properties, your math will execute in the wrong order! If your codebase forces alphabetical object keys, stick to chaining: `t.set({ mm: '>2' }).set({ wkd: '>Fri' })`.
-:::
-
-This syntax fully supports advanced shifting (e.g. `<=`, `>=`), double-negations (`>-2`), and localized modifier aliases, providing a clean programmatic interface for date construction.
-
-::: info 💡 Why can't I use Slick modifiers on timezones (`tzd`)?
-Changing a timezone (`tzd` or `timeZone`) does not traverse the timeline—it merely changes the local representation of the exact same absolute moment in time. Because no temporal displacement occurs, applying directional Slick modifiers (like `>`) to a timezone is logically invalid and unsupported.
-:::
+👉 **Learn More:** To read about advanced chaining, order-of-operations, and architectural limitations, see the [Slick Object Mutations Deep Dive](../2-core-concepts/tempo.mutate.md#slick-object-mutations).
 
 ### How long until a deadline? (`until`)
 ```typescript
@@ -244,21 +199,21 @@ Format strings support chained colon-modifiers (e.g., `:upper`, `:locale`, `:ord
 const t = new Tempo('2024-05-15 15:30', { locale: 'fr-FR' });
 
 t.format('{mon:upper}');             // "MAY" (English Default -> UpperCase)
-t.format('{mon:locale}');            // "mai" (Native French Intl output)
-t.format('{mon:locale:upper} {dd}'); // "MAI 15" (Native French Intl output)
+t.format('{mon:long}');              // "mai" (Native French Intl output via styling bridge)
+t.format('{mon:long:upper} {dd}');   // "MAI 15" (Native French Intl output)
 ```
 
 👉 **Learn More:** See the [Smart Formatting Guide](../2-core-concepts/tempo.format.md) for the complete list of available modifiers.
 
 ::: tip
-**Tired of typing `:locale`?**  
-If you find yourself repeatedly writing `:locale` for the same date structure, save it to the global **FORMATS** registry! This creates a clean, reusable shortcut:
+**Tired of typing styling modifiers?**  
+If you find yourself repeatedly writing `:long` or `:short` for the same localized date structure, save it to the global **FORMATS** registry! This creates a clean, reusable shortcut:
 ```typescript
 Tempo.init({
     locale: 'fr-FR',
     registry: {
         formats: {
-            'ui-date': '{wkd:locale}, {dd:raw} {mon:locale} {yyyy}'
+            'ui-date': '{wkd:long}, {dd:raw} {mon:long} {yyyy}'
         }
     }
 });
@@ -266,33 +221,10 @@ Tempo.init({
 t.format('ui-date'); // Resolved with all modifiers intact!
 ```
 
-*Note: Format keys are resolved case-sensitively from the global `registry.formats` object. An error will be thrown if the requested key is not found in the registry.*
+*Note: Format keys are resolved case-sensitively from the global `registry.formats` object. If the requested key is not found, Tempo will simply treat the provided string as a literal layout string rather than throwing an error.*
 :::
 
-### Custom Format Tokens
-Need a completely custom format behavior? You can define dynamic token evaluators in the registry that receive the `zdt` (Temporal.ZonedDateTime) instance and a context object, giving you full native access to `Intl` formatting or custom logic.
-
-```typescript
-Tempo.init({
-    locale: 'fr-FR',
-    registry: {
-        tokens: {
-            // A simple math-based token
-            'myDay': (zdt) => zdt.day - 1,
-            
-            // A deeply localized custom token using native Intl
-            'wkd-fr': (zdt, { config }) => {
-                const dtOptions = config?.intl?.dateTimeFormat ?? {};
-                return zdt.toLocaleString(config?.locale ?? 'en', { ...dtOptions, weekday: 'long' });
-            }
-        }
-    }
-});
-
-const t = new Tempo('2024-05-20');
-t.format('{myDay}');  // "19"
-t.format('{wkd-fr}'); // "lundi"
-```
+👉 **Learn More:** To build custom zero-overhead logic evaluators (like Fiscal Years or native Intl bridges), read the [Custom Format Tokens Deep Dive](../2-core-concepts/tempo.format.md#custom-format-tokens).
 
 👉 **Learn More:** 
 - [Smart Formatting Guide](../2-core-concepts/tempo.format.md)
@@ -301,35 +233,19 @@ t.format('{wkd-fr}'); // "lundi"
 
 ---
 
-::: info
-The examples below use the `using` and `await using` syntax, which require **TypeScript 5.2+** and a runtime that supports **TC39 Explicit Resource Management**.
-:::
-
 ### Ticker Plugin
-The Ticker engine is a premium feature. 
-👉 **Learn More:** [Ticker Plugin Documentation](../../../plugins/ticker/doc/index.md)
-
-
-### Interval-Based Ticker (Recurring Billing)
-Use a `seed` to anchor your ticker to a specific day, then use a month-based interval:
+The Ticker engine is a premium plugin for precisely driving business logic (like recurring billing or reporting cycles) on specific date boundaries.
 
 ```typescript
-await using billing = Tempo.ticker({ 
-  months: 1, 
-  seed: '2024-01-15' 
-}, (t) => processPayment(t));
-```
-
-### Term-Driven Ticker (Fiscal Quarter Reporting)
-Drive internal reporting cycles precisely when a new quarter begins:
-
-```typescript
+// Drive internal reporting precisely when a new quarter begins
 await using quarterly = Tempo.ticker({ '#quarter': 1 });
 
 for await (const t of quarterly) {
   generateReport(t.term.qtr);
 }
 ```
+
+👉 **Learn More:** See the [Ticker Plugin Documentation](../../../plugins/ticker/doc/index.md) for detailed configuration, term-driven intervals, and `await using` syntax requirements.
 
 
 ---

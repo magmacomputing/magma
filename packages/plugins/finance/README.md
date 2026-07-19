@@ -18,10 +18,10 @@ npm install @magmacomputing/tempo-plugin-finance
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { FinancePlugin } from '@magmacomputing/tempo-plugin-finance';
+import { FinanceNamespace } from '@magmacomputing/tempo-plugin-finance';
 
 // Register the namespace
-Tempo.extend(FinancePlugin);
+Tempo.extend(FinanceNamespace);
 
 const t = new Tempo('2024-07-01');
 

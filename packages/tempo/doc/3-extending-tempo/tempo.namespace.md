@@ -18,7 +18,7 @@ Let's build a `finance` plugin. We want to add a `.finance` namespace that provi
 import { defineNamespace } from '@magmacomputing/tempo/plugin-api';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
-export const FinancePlugin = defineNamespace({
+export const FinanceNamespace = defineNamespace({
   // 1. Define the property name where this namespace will live on the Tempo instance
   name: 'finance',
   
@@ -77,7 +77,7 @@ Just like standard plugins, you must inform TypeScript about your new namespace 
 // finance.ts
 import { defineNamespace } from '@magmacomputing/tempo/plugin-api';
 
-// ... (FinancePlugin implementation) ...
+// ... (FinanceNamespace implementation) ...
 
 declare module '@magmacomputing/tempo/core' {
   interface Tempo {
@@ -96,10 +96,10 @@ Developers can now import your plugin, register it once, and enjoy your clean, i
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
-import { FinancePlugin } from './finance.js';
+import { FinanceNamespace } from './finance.js';
 
-// Register the namespace
-Tempo.extend(FinancePlugin);
+// Extend the core Tempo engine
+Tempo.extend(FinanceNamespace);
 
 const t = new Tempo('2024-07-01');
 
@@ -134,7 +134,7 @@ export function isFiscalYearStart(t: Tempo, startMonth: number = 1): boolean {
 export function nextTaxYear(t: Tempo): Tempo { ... }
 
 // 2. The Namespace Wrapper (The OOP layer)
-export const FinancePlugin = defineNamespace({
+export const FinanceNamespace = defineNamespace({
     name: 'finance',
     resolvers: {
         // We simply wrap our pure functions and inject the 'tempo' context!

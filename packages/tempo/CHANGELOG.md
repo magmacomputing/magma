@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Auto-Meridiem Spacing**: Implemented the `:space` modifier for the `{h12}` formatting token (e.g., `{h12:space:dots}`). This enables typographically correct spacing before automatically injected meridiems (e.g., `"10:30 a.m."`).
 
 ### Changed
-- **Documentation Alignment**: Cleaned up `tempo.config.md` to remove deprecated module references, perfectly aligning examples with the `tempo-workspace` ecosystem (`FinancePlugin` and `AstroTerm`).
+- **Documentation Alignment**: Cleaned up `tempo.config.md` to remove deprecated module references, perfectly aligning examples with the `tempo-workspace` ecosystem (`FinanceNamespace` and `AstroTerm`).
 - **Getter Documentation**: Created `tempo.getters.md` as the definitive, educational conceptual guide for utilizing Tempo's zero-cost evaluation getters.
 
 ### Fixed

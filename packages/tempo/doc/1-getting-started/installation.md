@@ -119,7 +119,7 @@ The easiest way to use Tempo natively in the browser is via the pre-optimized ES
 
 ### 2. Smart CDNs (The "Best-of-Both-Worlds")
 
-If you want the absolute easiest setup for **Tempo Premium Plugins** natively in the browser, use an on-the-fly bundling CDN like [esm.sh](https://esm.sh). Smart CDNs act like a Node environment—they read the package resolution rules and resolve nested dependencies automatically, meaning you don't have to map any internal subpaths.
+If you want the absolute easiest setup for **Tempo Plugins** natively in the browser, use an on-the-fly bundling CDN like [esm.sh](https://esm.sh). Smart CDNs act like a Node environment—they read the package resolution rules and resolve nested dependencies automatically, meaning you don't have to map any internal subpaths.
 
 While you *could* import directly from the URL everywhere, the best practice is to use a tiny import map for your top-level packages to keep your application code clean:
 
@@ -141,9 +141,10 @@ While you *could* import directly from the URL everywhere, the best practice is 
   // esm.sh handles all the complex internal plugin routing behind the scenes!
   import '@js-temporal/polyfill';
   import { Tempo } from '@magmacomputing/tempo';
-  import { TickerModule } from '@magmacomputing/tempo-plugin-ticker';
+  import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
-  Tempo.extend(TickerModule);
+  Tempo.init({ license: 'YOUR_JWT_KEY' });
+  Tempo.extend(TickerPlugin);
 </script>
 ```
 
@@ -164,7 +165,7 @@ While `esm.sh` is fantastic for prototyping and reducing import map complexity, 
 
 For production environments where uptime and load speeds are critical, you should use a static file CDN (like jsdelivr). Because static CDNs serve raw files without compiling them on the fly, they are significantly faster and more reliable than Smart CDNs.
 
-To use **Tempo Premium Plugins** via a static CDN, you simply need to explicitly map the unified `plugin-api` subpath so the browser knows how to resolve the internal connections:
+To use **Tempo Plugins** via a static CDN, you simply need to explicitly map the unified `plugin-api` subpath so the browser knows how to resolve the internal connections:
 
 ```html
 <script type="importmap">

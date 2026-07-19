@@ -1,0 +1,50 @@
+[
+  {
+    "id": "astro",
+    "name": "Astro Plugin",
+    "description": "Tempo plugin that calculates precise astronomical seasons (solstices & equinoxes) using the Jean Meeus algorithm — hemisphere-aware, sub-minute accuracy",
+    "packageName": "@magmacomputing/tempo-plugin-astro",
+    "plan": "community",
+    "status": "active"
+  },
+  {
+    "id": "batch",
+    "name": "Batch Plugin",
+    "description": "Tempo community plugin bringing C-level parallelization to massive date arrays via SharedArrayBuffer and Worker Threads.",
+    "packageName": "@magmacomputing/tempo-plugin-batch",
+    "plan": "community",
+    "status": "active"
+  },
+  {
+    "id": "finance",
+    "name": "Finance Plugin",
+    "description": "Tempo Community Plugin: Finance namespace and fiscal year utilities",
+    "packageName": "@magmacomputing/tempo-plugin-finance",
+    "plan": "community",
+    "status": "active"
+  },
+  {
+    "id": "snap",
+    "name": "Snap Plugin",
+    "description": "Snap time to blocks",
+    "packageName": "@magmacomputing/tempo-plugin-snap",
+    "plan": "community",
+    "status": "active"
+  },
+  {
+    "id": "sync",
+    "name": "Sync Plugin",
+    "description": "Tempo community plugin providing lock-free, highly precise cross-thread synchronization via SharedArrayBuffer and Atomics.",
+    "packageName": "@magmacomputing/tempo-plugin-sync",
+    "plan": "community",
+    "status": "active"
+  },
+  {
+    "id": "ticker",
+    "name": "Ticker Plugin",
+    "description": "Tempo plugin that provides a high-performance continuous execution loop (Ticker) based on temporal mathematics.",
+    "packageName": "@magmacomputing/tempo-plugin-ticker",
+    "plan": "pro",
+    "status": "active"
+  }
+]

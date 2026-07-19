@@ -50,6 +50,40 @@ t.set('start.month');         // Start of the current month
 t.set('end.year');            // End of the current year
 ```
 
+### Slick Object Mutations
+
+You can also navigate relative to your current date by using Slick Shorthand operators directly inside the `.set()` object payload. Use the snippet shorthand keys (`yy`, `mm`, `ww`, `dd`, `wkd`, etc.) and provide a string payload containing a directional modifier:
+
+```typescript
+const t = new Tempo('2024-05-20'); // Monday
+
+// Jump forward two months
+t.set({ mm: '>2' }); // July 20th
+
+// Jump to the next Friday
+t.set({ wkd: '>Fri' }); // May 24th
+```
+
+Because `.set()` processes keys in insertion order, you can now effortlessly combine **absolute assignments** and **Slick shifts** in a single pass to build complex boundaries:
+
+```typescript
+// Jump 2 months forward, find the next Friday, and set the time to 10:30 AM
+const t2 = t.set({ 
+  mm: '>2', 
+  wkd: '>Fri', 
+  hour: 10, 
+  minute: 30 
+});
+```
+
+::: warning ⚠️ ESLint `sort-keys` Warning
+Because mixed object payloads execute strictly in the order they are defined, you must be careful if you use aggressive automated linters (like ESLint's `sort-keys` auto-fixer). If your linter alphabetically re-orders your properties, your math will execute in the wrong order! If your codebase forces alphabetical object keys, stick to chaining: `t.set({ mm: '>2' }).set({ wkd: '>Fri' })`.
+:::
+
+::: info 💡 Why can't I use Slick modifiers on timezones (`tzd`)?
+Changing a timezone (`tzd` or `timeZone`) does not traverse the timeline—it merely changes the local representation of the exact same absolute moment in time. Because no temporal displacement occurs, applying directional Slick modifiers (like `>`) to a timezone is logically invalid and unsupported.
+:::
+
 ## Chainability
 
 Because all mutations return a new instance, you can safely chain `.add()` and `.set()` methods together to perform complex temporal logic in a single, readable line.

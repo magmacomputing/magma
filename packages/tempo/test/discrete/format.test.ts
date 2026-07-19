@@ -152,6 +152,25 @@ describe('Tempo.format() refinements', () => {
       expect(t.format('{#timeOfDay:locale}')).toBe('Milieu de la matinée');
     })
   })
+
+  describe('styling-modifiers', () => {
+    const t = new Tempo('2024-05-20T10:00:00[America/New_York]', { locale: 'fr-FR' });
+
+    it('should implicitly localize natively formatted tokens', () => {
+      expect(t.format('{mon:short}')).toBe('mai'); // fr-FR short month
+      expect(t.format('{mon:long}')).toBe('mai');  // fr-FR long month
+      expect(t.format('{mon:long}')).toBe(t.format('{mon:locale}')); // Proves redundancy
+      expect(t.format('{wkd:long}')).toBe('lundi'); // fr-FR long weekday
+      expect(t.format('{wkd:long}')).toBe(t.format('{wkd:locale}'));
+    })
+
+    it('should resolve timezone styling correctly', () => {
+      expect(t.format('{tz:short}')).toBe('UTC−4'); 
+      expect(t.format('{tz:long}')).toBe('heure d’été de l’Est nord-américain'); 
+      expect(t.format('{tz:offset}')).toBe('-04:00');
+      expect(t.format('{tz:offsetcompact}')).toBe('-0400');
+    })
+  })
   
   describe('era-formatting', () => {
     it('supports the {era} token with BCE dates', () => {
@@ -162,6 +181,22 @@ describe('Tempo.format() refinements', () => {
     it('supports the {era} token with CE dates', () => {
       const ce = new Tempo('2024-05-20T10:00:00Z');
       expect(ce.format('{era}')).toMatch(/AD|CE/i);
+    })
+  })
+  
+  describe('custom-format-tokens', () => {
+    it('supports registering and evaluating custom tokens via configuration', () => {
+      const t = new Tempo('2024-05-20', {
+        registry: {
+          tokens: {
+            myCustomDay: (zdt: any) => String(zdt.day + 100)
+          }
+        }
+      });
+      expect(t.format('{myCustomDay}' as any)).toBe('120');
+      
+      // Fallback behavior for non-existent custom tokens
+      expect(t.format('{nonExistent}' as any)).toBe('{nonExistent}');
     })
   })
 })

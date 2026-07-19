@@ -8,6 +8,14 @@ In the Tempo ecosystem, a **Plugin** is the universal overarching term for any f
 2. **`defineTerm`**: A specialized factory exclusively for defining temporal vocabulary constraints (a "Term" is technically just a highly-opinionated "Plugin" focused on date ranges and schedules).
 3. **`defineNamespace`**: A factory for creating lazily-evaluated property landing pads (e.g., `Tempo().finance.taxYear`).
 
+## Naming Convention Standard
+To provide a consistent and intuitive developer experience, the exported symbol of your plugin should use a suffix that directly matches the factory used to construct it. This makes it instantly obvious to consumers how the extension will attach to the Tempo core:
+- Built with `definePlugin` ➡️ **`[Name]Plugin`** (e.g., `TickerPlugin`)
+- Built with `defineTerm` ➡️ **`[Name]Term`** (e.g., `AstroTerm`)
+- Built with `defineNamespace` ➡️ **`[Name]Namespace`** (e.g., `FinanceNamespace`)
+
+*(Note: The `Module` suffix and `defineModule` factory are strictly reserved for Tempo's core internal injection APIs like `ParseModule` and should not be used by external plugins.)*
+
 To manually register a plugin, use the static `extend` method. This is typically used for "opt-in" features or when you need to provide specific configuration to a plugin factory.
 
 ```typescript
@@ -70,7 +78,7 @@ declare module '@magmacomputing/tempo/core' {
 Modern Tempo plugins are designed to be "plug-and-play." By using the `definePlugin` factory, a plugin registers itself with the global Tempo registry as soon as it's imported.
 
 ::: warning
-**Premium Plugin Example**: The example below uses the `@magmacomputing/tempo-plugin-ticker` plugin, which is a commercial plugin. You must provide a valid `license` key during initialization to activate it.
+**Premium Plugin Example**: The example below uses the `@magmacomputing/tempo-plugin-ticker` plugin, which is a premium plugin. You must provide a valid `license` key during initialization to activate it.
 
 <div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
   <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
@@ -158,10 +166,10 @@ If your plugin requires its own configuration, export a **factory function** tha
 
 ```typescript
 // tempo-plugin-holiday/index.ts
-import { defineModule } from '@magmacomputing/tempo/plugin-api';
+import { definePlugin } from '@magmacomputing/tempo/plugin-api';
 
 export const HolidayPlugin = (pluginOptions = {}) => {
-  return defineModule((TempoClass, tempoOptions, factory) => {
+  return definePlugin((TempoClass, tempoOptions, factory) => {
     // ... use pluginOptions here ...
   });
 };
@@ -172,24 +180,24 @@ If your plugin provides multiple related components, wrap them in an aggregator 
 
 ```typescript
 // index.ts
-import { defineModule } from '@magmacomputing/tempo/plugin-api';
+import { definePlugin } from '@magmacomputing/tempo/plugin-api';
 import { PluginA } from './plugin.a.js';
 import { PluginB } from './plugin.b.js';
 
-export const MyFeaturePlugin = defineModule((TempoClass, options) => {
+export const MyFeaturePlugin = definePlugin((TempoClass, options) => {
   TempoClass.extend([PluginA, PluginB]);
 });
 ```
 
-### Commercial & Premium Plugins
+### Premium Plugins
 
-If you have built a powerful plugin and wish to distribute it commercially, you do not need to implement your own licensing engine. Build your plugin using the standard `definePlugin` wrappers.
+If you wish to distribute a Premium Plugin, you do not need to implement your own licensing engine. Build your plugin using the standard `definePlugin` wrappers.
 
 Once your plugin is ready for the marketplace, **[Contact Magma Computing Solutions](https://github.com/magmacomputing)**. We can inject our proprietary licensing and cryptographic verification engine directly into your build pipeline, ensuring your plugin is securely gated and protected from unauthorized use.
 
 ### Safely Loading Premium Plugins
 
-When using a commercially licensed premium plugin, the cryptographic verification of your license key happens securely in the background. Because of this, you should always wait for the validation engine to settle before executing premium features, especially during application boot.
+When using a licensed premium plugin, the cryptographic verification of your license key happens securely in the background. Because of this, you should always wait for the validation engine to settle before executing premium features, especially during application boot.
 
 Use `Tempo.ready()` to safely wait for the cryptographic engine:
 
