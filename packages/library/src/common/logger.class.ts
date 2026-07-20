@@ -29,6 +29,17 @@ const Level = {
 	[Method.Trace]: LOG.Trace,
 } as const;
 
+/**
+ * Parses a debug level (numeric or string) into a strongly-typed LOG enumeration value.
+ * 
+ * @param level - The log level to parse
+ * @param fallback - The default log level to return if parsing fails (default: Info)
+ * @returns The resolved LOG enumeration value
+ * @example
+ * ```ts
+ * parseLogLevel('debug'); // LOG.Debug
+ * ```
+ */
 export function parseLogLevel(level?: DebugLevel, fallback: LOG = LOG.Info): LOG {
 	if (isNumber(level)) return (level >= LOG.Off && level <= LOG.Trace) ? level as LOG : fallback;
 	if (isString(level)) return Level[level.toLowerCase() as Method] ?? fallback;
@@ -37,7 +48,14 @@ export function parseLogLevel(level?: DebugLevel, fallback: LOG = LOG.Info): LOG
 
 /**
  * A lightweight, dependency-free namespaced logger.
- * Decoupled from error handling and boundaries.
+ * Decoupled from error handling and boundaries, utilizing standard `console` methods.
+ * Supports configurable log levels and structured object output.
+ * 
+ * @example
+ * ```ts
+ * const log = new Logger('App', LOG.Debug);
+ * log.info('Started'); // [App] Started
+ * ```
  */
 export class Logger {
 	#namespace: string;

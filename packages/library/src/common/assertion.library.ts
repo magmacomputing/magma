@@ -2,7 +2,17 @@ import { sym } from '#library/symbol.library.js';
 import { getType, protoType, asType } from '#library/type.library.js';
 import type { Type, Primitive, Nullish, Temporals, Property, GetType } from '#library/type.library.js';
 
-/** assert value is one of a list of Types */
+/**
+ * Asserts if a value matches one of the provided types from the Type system.
+ * 
+ * @param obj - The value to check
+ * @param types - The list of valid Types
+ * @returns True if the value matches one of the specified types
+ * @example
+ * ```ts
+ * if (isType<string>(value, 'String', 'Number')) { ... }
+ * ```
+ */
 export const isType = <T>(obj: unknown, ...types: Type[]): obj is T => types.includes(getType(obj));
 
 /** Type-Guards: assert \<obj> is of \<type> */
@@ -14,7 +24,18 @@ export const isString = (obj: unknown): obj is string => isType<string>(obj, 'St
 export const isNumber = (obj: unknown): obj is number => isType<number>(obj, 'Number');
 export const isFiniteNumber = (obj: unknown): obj is number => isType<number>(obj, 'Number') && isFinite(obj as number);
 
-/** test if can convert String to Numeric */
+/**
+ * Tests if a value can be safely converted to a numeric value.
+ * Handles strings, numbers, and BigInts, verifying finite properties and valid formats.
+ * 
+ * @param str - The value to test
+ * @returns True if the value can be evaluated numerically
+ * @example
+ * ```ts
+ * isNumeric('123'); // true
+ * isNumeric('abc'); // false
+ * ```
+ */
 export function isNumeric(str?: any): boolean {
 	const type = typeof str;
 	switch (type) {
@@ -94,7 +115,18 @@ export const isPledge = <P = any>(obj: unknown): obj is GetType<'Pledge', P> => 
 export const isExtensible = (obj: any): obj is any => isDefined(obj?.[sym.$Extensible]);
 export const isTarget = (obj: any): obj is any => isDefined(obj?.[sym.$Target]);
 
-/** object has no values */
+/**
+ * Checks if a value is effectively empty.
+ * Returns true for nullish values, empty objects, empty strings, NaN, empty arrays, and empty sets/maps.
+ * 
+ * @param obj - The value to check
+ * @returns True if the value is empty
+ * @example
+ * ```ts
+ * isEmpty([]); // true
+ * isEmpty({ a: 1 }); // false
+ * ```
+ */
 export const isEmpty = <T>(obj?: T) => false
 	|| isNullish(obj)
 	|| (isObject(obj) && (Reflect.ownKeys(obj).length === 0))
@@ -104,9 +136,34 @@ export const isEmpty = <T>(obj?: T) => false
 	|| (isSet(obj) && (obj.size === 0))
 	|| (isMap(obj) && (obj.size === 0))
 
+/**
+ * Asserts a condition is true, otherwise throws an Error.
+ * 
+ * @param condition - The boolean condition that must be true
+ * @param message - The error message to throw if the condition is false
+ * @throws {Error} If the condition evaluates to false
+ * @example
+ * ```ts
+ * assertCondition(user.isLoggedIn, 'User must be logged in');
+ * ```
+ */
 export function assertCondition(condition: boolean, message?: string): asserts condition {
 	if (!condition)
 		throw new Error(message);
 }
+
+/**
+ * Asserts a value is a string, otherwise throws an Error.
+ * 
+ * @param str - The value to assert as a string
+ * @throws {Error} If the value is not a string
+ */
 export function assertString(str: unknown): asserts str is string { assertCondition(isString(str), `Invalid string: ${str}`) };
+
+/**
+ * A TypeScript exhaustiveness check that throws an error if reached at runtime.
+ * 
+ * @param val - The value that should never exist
+ * @throws {Error} Always throws an error
+ */
 export function assertNever(val: never): asserts val is never { throw new Error(`Unexpected object: ${val}`) };

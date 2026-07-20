@@ -8,7 +8,17 @@ const formatBase64Url = (base64: string) => base64.replace(/\+/g, '-').replace(/
 const toBase64Url = (str: string) => formatBase64Url(bufferToBase64(encodeBuffer(str)));
 const bufToBase64Url = (buf: Uint8Array) => formatBase64Url(bufferToBase64(buf));
 
-/** fast, unverified decode of a JWT payload */
+/**
+ * Performs a fast, unverified decode of a JSON Web Token (JWT) payload.
+ * Does not verify the signature. Use only for reading public claims.
+ * 
+ * @param jwt - The JWT string to decode
+ * @returns The parsed payload object, or null if decoding fails
+ * @example
+ * ```ts
+ * const payload = decodeJWT<MyClaims>(token);
+ * ```
+ */
 export const decodeJWT = <T = any>(jwt: string): T | null => {
 	try {
 		const part = jwt.split('.')[1];
@@ -23,7 +33,13 @@ export const decodeJWT = <T = any>(jwt: string): T | null => {
 	} catch { return null; }
 }
 
-/** verify a JSON Web Signature */
+/**
+ * Verifies a JSON Web Signature (JWS) against a provided public key.
+ * 
+ * @param token - The JWS string to verify
+ * @param publicKey - The CryptoKey used for verification
+ * @returns A promise resolving to true if the signature is valid
+ */
 export const verifyJWS = async (token: string, publicKey: CryptoKey): Promise<boolean> => {
 	try {
 		const parts = token.split('.');
@@ -55,7 +71,14 @@ export const verifyJWS = async (token: string, publicKey: CryptoKey): Promise<bo
 	}
 }
 
-/** natively sign a JSON Web Signature */
+/**
+ * Natively signs a JSON Web Signature (JWS) payload using the Web Crypto API.
+ * 
+ * @param payload - The payload object to sign
+ * @param privateKey - The CryptoKey used for signing
+ * @param headers - Optional JWS headers (default: `{ alg: 'RS256', typ: 'JWT' }`)
+ * @returns A promise resolving to the signed JWS string
+ */
 export const signJWS = async (payload: object, privateKey: CryptoKey, headers: object = { alg: 'RS256', typ: 'JWT' }): Promise<string> => {
 	try {
 		const header64 = toBase64Url(JSON.stringify(headers));

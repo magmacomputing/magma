@@ -3,7 +3,17 @@ import { asType, getType } from '#library/type.library.js';
 import { isEmpty, isFunction, isPrimitive, isReference } from '#library/assertion.library.js';
 import type { Obj, KeyOf, Primitives } from '#library/type.library.js';
 
-/** mutate Object | Array by excluding values with specified primitive 'types' */
+/**
+ * Mutates an object or array by deleting properties that match specified primitive types.
+ * 
+ * @param obj - The object or array to mutate
+ * @param types - The primitive types to exclude (e.g., 'Function', 'String')
+ * @returns The mutated object reference
+ * @example
+ * ```ts
+ * exclude({ a: 1, b: () => {} }, 'Function'); // { a: 1 }
+ * ```
+ */
 export function exclude<T extends Obj>(obj: T, ...types: (Primitives | Lowercase<Primitives>)[]) {
 	const exclusions = distinct(types.map(item => item.toLowerCase())) as typeof types;
 
@@ -28,7 +38,18 @@ export function exclude<T extends Obj>(obj: T, ...types: (Primitives | Lowercase
 	return obj;																								// return Object reference, even though Object has been mutated
 }
 
-/** mutate Object | Array reference with properties removed */
+/**
+ * Mutates an object or array by removing specified properties or indices.
+ * If no keys are provided, it removes all properties (like a clear operation).
+ * 
+ * @param obj - The object or array to mutate
+ * @param keys - The keys or indices to omit
+ * @returns The mutated object reference
+ * @example
+ * ```ts
+ * omit({ a: 1, b: 2 }, 'a'); // { b: 2 }
+ * ```
+ */
 export function omit<T extends Obj>(obj: T): T							// TODO: consider including Map and Set objects ??
 export function omit<T extends Obj>(obj: T, ...keys: PropertyKey[]): T
 export function omit<T extends Obj>(obj: T, ...keys: PropertyKey[]) {
@@ -54,32 +75,90 @@ export function omit<T extends Obj>(obj: T, ...keys: PropertyKey[]) {
 	return value;																							// return Object reference, even though Object has been mutated
 }
 
-/** remove all ownKeys from an Object | Array */
+/**
+ * Removes all own properties from an object or array.
+ * 
+ * @param obj - The object or array to purge
+ * @returns The mutated object reference
+ * @example
+ * ```ts
+ * purge({ a: 1 }); // {}
+ * ```
+ */
 export function purge<T extends Obj>(obj: T) {
 	return omit(obj);
 }
 
-/** reset Object */
+/**
+ * Resets an object by purging all its existing own properties and replacing them
+ * with the properties from another object.
+ * 
+ * @param orig - The original object to reset
+ * @param obj - The object containing the new properties
+ * @returns The mutated original object reference
+ * @example
+ * ```ts
+ * reset(target, { newProp: 1 });
+ * ```
+ */
 export function reset<T extends Obj>(orig: T, obj?: T) {
 	return Object.assign(purge(orig), { ...obj });
 }
 
-/** return an Object containing all 'own' and 'inherited' enumerable properties */
+/**
+ * Returns a new object containing all 'own' and 'inherited' enumerable properties 
+ * from the prototype chain of the provided object.
+ * 
+ * @param json - The object to extract properties from
+ * @returns A plain object containing the flattened properties
+ * @example
+ * ```ts
+ * const flat = allObject(myInstance);
+ * ```
+ */
 export function allObject<T extends Obj>(json: T) {
 	return Object.fromEntries(ownEntries(json, true));
 }
 
-/** create a new object and shadow-copy all own-descriptors from the source */
+/**
+ * Creates a new object and shadow-copies all own-descriptors (including getters/setters)
+ * from the source object.
+ * 
+ * @param source - The object to copy descriptors from
+ * @returns A new object with identical descriptors
+ * @example
+ * ```ts
+ * const clone = allDescriptors(source);
+ * ```
+ */
 export const allDescriptors = <T extends object>(source: T) => {
 	return Object.defineProperties({}, Object.getOwnPropertyDescriptors(source)) as T;
 }
 
-/** get a string-array of 'getter' names for an object */
+/**
+ * Retrieves a distinct array of 'getter' names from an object and its prototype chain.
+ * 
+ * @param obj - The object to inspect
+ * @returns An array of property keys that have getter functions
+ * @example
+ * ```ts
+ * const getters = getAccessors(myInstance);
+ * ```
+ */
 export const getAccessors = (obj: any = {}) => {
 	return ownAccessors(obj, 'get');
 }
 
-/** get a string-array of 'setter' names for an object */
+/**
+ * Retrieves a distinct array of 'setter' names from an object and its prototype chain.
+ * 
+ * @param obj - The object to inspect
+ * @returns An array of property keys that have setter functions
+ * @example
+ * ```ts
+ * const setters = setAccessors(myInstance);
+ * ```
+ */
 export const setAccessors = (obj: any = {}) => {
 	return ownAccessors(obj, 'set');
 }
@@ -116,9 +195,16 @@ const ownAccessors = (obj: any = {}, type: 'get' | 'set') => {
 }
 
 /**
- * Define a lazy method on a prototype that reifies itself upon first access.  
- * This allows heavy logic to be deferred (or even loaded via plugin)  
- * while maintaining a clean, synchronous public API.
+ * Defines a lazy method on a prototype that reifies (shadows) itself upon first access.
+ * This allows heavy logic to be deferred while maintaining a clean, synchronous public API.
+ * 
+ * @param target - The prototype or object to define the method on
+ * @param key - The method name
+ * @param factory - A function returning the actual method implementation
+ * @example
+ * ```ts
+ * lazyMethod(MyClass.prototype, 'heavy', () => function() { return 42; });
+ * ```
  */
 export function lazyMethod<T extends object>(target: T, key: PropertyKey, factory: (this: T) => Function) {
 	Object.defineProperty(target, key, {

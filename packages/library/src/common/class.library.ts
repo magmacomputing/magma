@@ -20,7 +20,7 @@ function getClassName<T extends Constructor>(value: T, contextName: string | sym
 /**
  * Shared helper to create an immutable or secure class wrapper  
  * 
- * @note **Workaround:** When TS 7.0 (targeting ES2022) emits its `__esDecorate` IIFE, aggressive 
+ * @remarks **Workaround:** When TS 7.0 (targeting ES2022) emits its `__esDecorate` IIFE, aggressive 
  * bundlers and minifiers (like `Rollup`, `Terser`, or `esbuild`) frequently compress the variable 
  * declarations into chained assignments (e.g. `var Class = _classThis = class`). This breaks JS 
  * evaluation order and overwrites the decorated wrapper with the original class. 
@@ -104,11 +104,22 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 }
 
 /**
- * Decorator to secure a class with a mutation-throwing Proxy (noisy immutability).
+ * A class decorator that secures a class instance with a mutation-throwing Proxy.
+ * Provides "noisy immutability" by throwing an error if modifications are attempted.
  * 
- * @note **Workaround:** To protect against aggressive bundlers (Rollup/Terser) mutating the TS 7.0 
+ * @remarks
+ * **Workaround:** To protect against aggressive bundlers (Rollup/Terser) mutating the TS 7.0 
  * ES2022 decorator IIFE structure, users must append `return Object.freeze(this) as this;` 
  * (or the `secure` equivalent) to their constructors to ensure immutability survives production bundling.
+ * 
+ * @param value - The class constructor to secure
+ * @param context - The decorator context
+ * @returns The secured class wrapper
+ * @example
+ * ```ts
+ * @Securable
+ * class Config { ... }
+ * ```
  */
 export function Securable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
@@ -122,11 +133,22 @@ export function Securable<T extends Constructor>(value: T, { kind, name, addInit
 }
 
 /** 
- * Decorator to freeze a Class to prevent modification (silent immutability).
+ * A class decorator that freezes a class instance to prevent modification.
+ * Provides "silent immutability" by silently ignoring modifications in non-strict mode.
  * 
- * @note **Workaround:** To protect against aggressive bundlers (Rollup/Terser) mutating the TS 7.0 
+ * @remarks
+ * **Workaround:** To protect against aggressive bundlers (Rollup/Terser) mutating the TS 7.0 
  * ES2022 decorator IIFE structure, users must append `return Object.freeze(this) as this;` to their 
  * constructors to ensure immutability survives production bundling.
+ * 
+ * @param value - The class constructor to freeze
+ * @param context - The decorator context
+ * @returns The immutable class wrapper
+ * @example
+ * ```ts
+ * @Immutable
+ * class Config { ... }
+ * ```
  */
 export function Immutable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
@@ -140,7 +162,18 @@ export function Immutable<T extends Constructor>(value: T, { kind, name, addInit
 	}
 }
 
-/** register a Class for serialization */
+/**
+ * A class decorator that registers a class for serialization with the runtime type system.
+ * 
+ * @param value - The class constructor to register
+ * @param context - The decorator context
+ * @returns The original class constructor
+ * @example
+ * ```ts
+ * @Serializable
+ * class DataModel { ... }
+ * ```
+ */
 export function Serializable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
 
@@ -159,7 +192,19 @@ export function Serializable<T extends Constructor>(value: T, { kind, name, addI
 	}
 }
 
-/** make a Class not instantiable */
+/**
+ * A class decorator that prevents instantiation of the class.
+ * Useful for grouping static methods together without allowing instances to be created.
+ * 
+ * @param value - The class constructor to make static
+ * @param context - The decorator context
+ * @returns A wrapper that throws a TypeError when instantiated
+ * @example
+ * ```ts
+ * @Static
+ * class MathUtils { ... }
+ * ```
+ */
 export function Static<T extends Constructor>(value: T, { kind, name }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name) as Type;
 

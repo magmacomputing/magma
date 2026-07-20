@@ -1,11 +1,15 @@
 {
   "entryPoints": [
+    "../library/src/common.index.ts",
     "../library/src/browser.index.ts",
     "../library/src/server.index.ts"
   ],
   "out": "doc/api/library",
   "tsconfig": "../library/tsconfig.json",
-  "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+  "plugin": [
+    "typedoc-plugin-markdown",
+    "typedoc-vitepress-theme"
+  ],
   "hideBreadcrumbs": true,
   "hidePageTitle": true,
   "disableSources": true,

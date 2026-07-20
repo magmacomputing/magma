@@ -47,12 +47,31 @@ const getDF = memoizeFunction((locale?: string, options?: any) => {
  * (using 'Intl' namespace objects)
  */
 
-/** return the system's current TimeZone, Calendar, and Locale */
+/**
+ * Retrieves the system's current TimeZone, Calendar, and Locale information
+ * by resolving the default `Intl.DateTimeFormat` options.
+ * 
+ * @returns The resolved DateTimeFormat options
+ * @example
+ * ```ts
+ * const { timeZone, locale } = getDateTimeFormat();
+ * ```
+ */
 export function getDateTimeFormat() {
 	return getDTF().resolvedOptions();
 }
 
-/** return the canonicalized locale string, or undefined if invalid */
+/**
+ * Returns the canonicalized locale string, or undefined if the locale is invalid.
+ * Uses `Intl.getCanonicalLocales` for strict validation.
+ * 
+ * @param locale - The locale string to validate (e.g., 'en_US' or 'en-US')
+ * @returns The canonical locale string, or undefined on failure
+ * @example
+ * ```ts
+ * canonicalLocale('en_US'); // 'en-US'
+ * ```
+ */
 export function canonicalLocale(locale: string): string | undefined {
 	try {
 		return Intl.getCanonicalLocales(locale.replace(/_/g, '-'))[0];
@@ -62,7 +81,21 @@ export function canonicalLocale(locale: string): string | undefined {
 	}
 }
 
-/** return a localized relative time string (e.g., 'in 2 days') */
+/**
+ * Returns a localized relative time string using `Intl.RelativeTimeFormat`.
+ * Falls back to a basic string representation if formatting fails.
+ * 
+ * @param value - The numeric value to format (e.g., 2)
+ * @param unit - The time unit (e.g., 'days', 'hours')
+ * @param locale - Optional locale string
+ * @param style - The formatting style (default: 'narrow')
+ * @param numeric - The numeric formatting preference (default: 'always')
+ * @returns The localized relative time string
+ * @example
+ * ```ts
+ * getRelativeTime(2, 'days', 'en'); // 'in 2 days'
+ * ```
+ */
 export function getRelativeTime(value: number, unit: Intl.RelativeTimeFormatUnit, locale?: string, style: Intl.RelativeTimeFormatStyle = 'narrow', numeric: Intl.RelativeTimeFormatNumeric = 'always') {
 	try {
 		return getRTF(locale, style, numeric).format(value, unit);
@@ -71,7 +104,20 @@ export function getRelativeTime(value: number, unit: Intl.RelativeTimeFormatUnit
 	}
 }
 
-/** return a localized list string (e.g., 'A, B, and C') */
+/**
+ * Returns a localized list string using `Intl.ListFormat`.
+ * Falls back to a simple comma-joined string if formatting fails.
+ * 
+ * @param list - The array of strings to format
+ * @param locale - Optional locale string
+ * @param type - The list format type (default: 'conjunction')
+ * @param style - The list format style (default: 'long')
+ * @returns The localized list string
+ * @example
+ * ```ts
+ * formatList(['A', 'B', 'C'], 'en'); // 'A, B, and C'
+ * ```
+ */
 export function formatList(list: string[], locale?: string, type: Intl.ListFormatType = 'conjunction', style: Intl.ListFormatStyle = 'long') {
 	try {
 		return getLF(locale, type, style).format(list);
@@ -80,12 +126,31 @@ export function formatList(list: string[], locale?: string, type: Intl.ListForma
 	}
 }
 
-/** return a localized duration string natively (using Intl.DurationFormat) */
+/**
+ * Returns a localized duration string using `Intl.DurationFormat`.
+ * Note: Requires an environment that supports `Intl.DurationFormat`.
+ * 
+ * @param duration - The duration object or value to format
+ * @param locale - Optional locale string
+ * @param options - Optional format configuration
+ * @returns The localized duration string
+ */
 export function formatDuration(duration: any, locale?: string, options?: any) {
 	return getDF(locale, options).format(duration);
 }
 
-/** return a localized number string */
+/**
+ * Returns a localized number string using `Intl.NumberFormat`.
+ * 
+ * @param value - The numeric value to format
+ * @param locale - Optional locale string
+ * @param options - Optional format configuration
+ * @returns The localized number string
+ * @example
+ * ```ts
+ * formatNumber(1234.5, 'de-DE'); // '1.234,5'
+ * ```
+ */
 export function formatNumber(value: number, locale?: string, options?: Intl.NumberFormatOptions) {
 	try {
 		return getNF(locale, options).format(value);
@@ -94,7 +159,15 @@ export function formatNumber(value: number, locale?: string, options?: Intl.Numb
 	}
 }
 
-/** return a localized day period string (e.g., 'AM', 'PM', 'de la mañana') */
+/**
+ * Returns a localized day period string using `Intl.DateTimeFormat`.
+ * Extracts the 'dayPeriod' token from the formatted parts.
+ * 
+ * @param value - The numeric epoch time value
+ * @param locale - Optional locale string
+ * @param options - Optional format configuration
+ * @returns The localized day period string (e.g., 'AM', 'PM', 'de la mañana')
+ */
 export function formatDayPeriod(value: number, locale?: string, options?: Intl.DateTimeFormatOptions) {
 	try {
 		const parts = getDTF(locale, options).formatToParts(value);
@@ -114,8 +187,29 @@ export function formatUnit(value: number, unit: string, locale?: string, unitDis
 }
 
 /** 
+ * Formats a numeric value as a localized currency string.
+ * 
+ * @param str - The numeric value or string to format
+ * @param scale - The maximum number of fractional digits (default: 2)
+ * @param currency - The ISO 4217 currency code (default: 'AUD')
+ * @param locale - Optional locale string (defaults to system locale)
+ * @returns The localized currency string
+ * @example
+ * ```ts
+ * formatCurrency(1234.5, 2, 'USD'); // '$1,234.50'
+ * ```
+ */
+export function formatCurrency(str: string | number, scale = 2, currency = 'AUD', locale?: string) {
+	try {
+		return getNF(locale, { style: 'currency', currency, maximumFractionDigits: scale }).format(Number(str) || 0);
+	} catch (e) {
+		return `${currency} ${str}`;
+	}
+}
+
+/** 
  * try to infer hemisphere using the timezone's daylight-savings setting 
- * @note This implementation intentionally differs from the version in `tempo-fns` 
+ * @remarks This implementation intentionally differs from the version in `tempo-fns` 
  * (including specific fallback and return behaviors). Do not directly synchronize them.
  */
 export function getHemisphere(timeZone: string = getDateTimeFormat().timeZone) {
@@ -143,14 +237,19 @@ type input = {
 }
 type result = { weekOfYear: number, yearOfWeek: number };
 /**
- * Polyfill fallback for ISO 8601 Week of Year and Year of Week.
+ * Polyfill fallback for ISO 8601 Week of Year and Year of Week calculations.
  * 
  * Introduced because highly experimental native browser implementations of the Temporal API 
  * (e.g., Chrome/Firefox behind flags) currently return `undefined` for `weekOfYear` and `yearOfWeek` 
  * on ZonedDateTime objects. The TC39 spec moved toward calendar-dependent definitions, 
  * causing divergence between the @js-temporal/polyfill (which returns numbers) and native browsers (which return undefined).
- * @note This implementation intentionally differs from the version in `tempo-fns` 
- * (including specific fallback and return behaviors). Do not directly synchronize them.
+ * 
+ * @param zdt - The ZonedDateTime or matching input object
+ * @returns An object containing the weekOfYear and yearOfWeek
+ * @example
+ * ```ts
+ * const { weekOfYear } = getISOWeekOfYear(Temporal.Now.zonedDateTimeISO());
+ * ```
  */
 export function getISOWeekOfYear(zdt: input): result {
 	if (isDefined(zdt.weekOfYear) && isDefined(zdt.yearOfWeek))
@@ -176,10 +275,16 @@ export function getISOWeekOfYear(zdt: input): result {
 }
 
 /**
- * Probe the runtime to see if the locale defaults to Month-Day-Year order.
+ * Probes the runtime to see if the locale defaults to Month-Day-Year (MDY) order.
+ * Useful for resolving ambiguous dates like '12/11/2024'.
+ * 
+ * @param locale - The locale string to probe
+ * @returns True if the locale uses MDY format, false otherwise
  * @example
+ * ```ts
  * probeMDY('en-US') // true
  * probeMDY('en-GB') // false
+ * ```
  */
 export function probeMDY(locale: string): boolean {
 	try {

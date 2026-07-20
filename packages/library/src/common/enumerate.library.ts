@@ -70,16 +70,19 @@ function value(val: any) {
 }
 
 /**
- * # Enumify
- * create a Proxy-based Registry (Enum) from an Object or Array.  
- * Enums are immutable (frozen) and provide methods for iteration, search, and extension.  
+ * Creates a Proxy-based Registry (Enum) from an Object or Array.
+ * Enums are immutable (frozen) and provide methods for iteration, search, and extension.
+ * Arrays are converted to zero-indexed objects (e.g., `['A']` becomes `{ A: 0 }`).
  * 
+ * @param list - The array or object to convert into an Enum
+ * @param frozen - Whether to freeze the resulting Enum (default: true)
+ * @returns An immutable Enumify registry object
  * @example
- * ```typescript
+ * ```ts
  * const Status = enumify(['Active', 'Inactive', 'Pending']);
- * console.log(Status.Active);															// 0
- * console.log(Status.has('Active'));												// true
- * console.log(Status.keys());															// ['Active', 'Inactive', 'Pending']
+ * console.log(Status.Active);       // 0
+ * console.log(Status.has('Active'));// true
+ * console.log(Status.keys());       // ['Active', 'Inactive', 'Pending']
  * ```
  */
 export function enumify<const T extends readonly any[]>(list: T, frozen?: boolean): Enum.wrap<Index<T>>;
@@ -111,7 +114,10 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 	return proxify(target, true, frozen);										// proxy is ALWAYS frozen (read-only), but target is only 'locked' if requested
 }
 
-/** create an entry in the Serialization Registry to describe how to rebuild an Enum */
+/**
+ * A class wrapper for Enumify to register it with the serialization system.
+ * Allows Enums to be properly serialized and deserialized.
+ */
 @Serializable
 export class Enumify {
 	constructor(list: Property<any>) {

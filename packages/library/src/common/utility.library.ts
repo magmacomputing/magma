@@ -5,7 +5,15 @@ import type { Secure, ValueOf } from '#library/type.library.js';
 
 /** General utility functions */
 
-/** analyze the Call Stack to determine calling Function's name */
+/**
+ * Analyzes the Call Stack to determine the calling function's name.
+ * 
+ * @returns The name of the calling function, or undefined if unresolvable
+ * @example
+ * ```ts
+ * function myFunc() { console.log(getCaller()); } // 'myFunc'
+ * ```
+ */
 export const getCaller = () => {
 	const stackTrace = new Error().stack											// only tested in latest FF and Chrome
 		?.split('\n')
@@ -18,7 +26,16 @@ export const getCaller = () => {
 	return (callerName[1] === 'new') ? callerName[2] : callerName[1].split('.')[0];
 }
 
-/** analyze the Call Stack to determine calling Function's name */
+/**
+ * Analyzes the Call Stack to determine the calling script's URI.
+ * 
+ * @param nbr - The stack depth to inspect (default: 1)
+ * @returns The URI of the calling script
+ * @example
+ * ```ts
+ * const scriptUrl = getScript();
+ * ```
+ */
 export const getScript = (nbr = 1) => {
 	const stackTrace = new Error().stack
 		?.match(/([^ \n\(@])*([a-z]*:\/\/\/?)*?[a-z0-9\/\\]*\.js/ig)
@@ -27,12 +44,16 @@ export const getScript = (nbr = 1) => {
 }
 
 /**
- * introduce a wait-timer that will Error() on timeout.  
- * best used with Promise.race([xxx(), sleep()]  
- * @param msg			string to display on a timeout 
- * @param timeout	how many milliseconds to sleep (default 2-seconds)  
- * @returns				Promise\<void>  
- * @see Context.Browser
+ * Introduces a wait-timer that will reject with an Error on timeout.
+ * Best used with `Promise.race([myTask(), sleep()])`.
+ * 
+ * @param msg - The string to display on a timeout (default: 'sleep: timed out')
+ * @param timeout - The number of milliseconds to sleep (default: 2000)
+ * @returns A Promise that rejects after the specified timeout
+ * @example
+ * ```ts
+ * await Promise.race([fetchData(), sleep('Fetch timeout', 5000)]);
+ * ```
  */
 export const sleep = (msg = 'sleep: timed out', timeout = 2000) =>
 	new Promise<Error>((_, reject) => setTimeout(() => reject(new Error(msg)), timeout));
@@ -48,7 +69,17 @@ export const CONTEXT = {
 export type CONTEXT = ValueOf<typeof CONTEXT>
 type Context = { global: any, type: CONTEXT }
 
-/** determine JavaScript environment context */
+/**
+ * Determines the current JavaScript environment context.
+ * Useful for branching logic based on the runtime environment.
+ * 
+ * @returns An object containing the global scope reference and the CONTEXT type enum
+ * @example
+ * ```ts
+ * const { type } = getContext();
+ * if (type === CONTEXT.Browser) { ... }
+ * ```
+ */
 export const getContext = (): Context => {
 	const global = globalThis as any;
 
