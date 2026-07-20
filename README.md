@@ -15,6 +15,7 @@ All technical documentation has been moved into the respective package directori
 
 - **Tempo Docs**: [packages/tempo/doc/](./packages/tempo/doc/)
 - **Visual Assets**: [packages/tempo/img/](./packages/tempo/img/)
+- **Project & Architecture Docs**: [doc/](./doc/)
 
 ## 💖 Community & Support
 

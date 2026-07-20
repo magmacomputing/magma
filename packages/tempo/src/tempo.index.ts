@@ -1,3 +1,10 @@
+/**
+ * Tempo Core Engine (Main Entry)
+ * 
+ * This is the primary export barrel for the `@magmacomputing/tempo` package.
+ * It registers the "batteries-included" modules (Parse, Format, Mutate, Duration, Terms)
+ * and exports the initialized `Tempo` class alongside core types and utilities.
+ */
 import { Tempo } from './tempo.class.js';
 import { onRegistryReset, enums } from '#tempo/support';
 

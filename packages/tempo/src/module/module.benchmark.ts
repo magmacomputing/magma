@@ -1,6 +1,3 @@
-import { Tempo } from '#tempo';
-import type { Options } from '#tempo/tempo.type.js';
-
 import { getContext, CONTEXT } from '#library/utility.library.js';
 
 export interface BenchmarkConfig {
@@ -41,7 +38,7 @@ export class BenchmarkModule {
 		// Helper to measure memory (Node.js only)
 		const getHeap = (): number => type === CONTEXT.NodeJS && global.process?.memoryUsage ? global.process.memoryUsage().heapUsed : 0;
 		// Helper to measure time (Performance API if available, else Date)
-		const getTime = (): number => typeof global.performance !== 'undefined' ? global.performance.now() : Date.now();
+		const getTime = (): number => global.performance !== 'undefined' ? global.performance.now() : Date.now();
 
 		// Baseline (Native Date)
 		if (config.baseline) {
