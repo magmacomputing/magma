@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-fns",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tree-shakeable functional utilities for the Temporal API",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -13,6 +13,10 @@
     "scheduling",
     "cron"
   ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/magmacomputing/magma.git",
@@ -20,6 +24,12 @@
   },
   "type": "module",
   "sideEffects": false,
+  "files": [
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "dist/"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "browser": "dist/tempo-fns.global.js",
