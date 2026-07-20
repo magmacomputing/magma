@@ -1,9 +1,7 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from './term.util.js';
-import { logWarn } from '../../support/support.util.js';
-import { COMPASS } from '../../support/support.enum.js';
-import { isNumber } from '#library/assertion.library.js';
-import { asArray } from '#library';
-import type { Tempo } from '../../tempo.class.js';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, COMPASS } from '@magmacomputing/tempo/plugin-api';
+import { logWarn } from '@magmacomputing/tempo/plugin-api';
+import { isNumber, asArray } from '@magmacomputing/library';
+import type { Tempo } from '@magmacomputing/tempo';
 
 /** definition of fiscal quarter ranges */
 const groups = defineRange([
@@ -27,7 +25,7 @@ function resolve(t: Tempo, anchor?: any): any[] {
 
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['sphere'] });
 
-	list.forEach(itm => {
+	list.forEach((itm: any) => {
 		if (isNumber(itm.fiscal)) itm.fiscal += isNumber(itm.year) ? itm.year : 0;
 	});
 
@@ -54,7 +52,7 @@ export const QuarterTerm = defineTerm({
 	}
 });
 
-declare module '../../tempo.class.js' {
+declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
 		qtr: 'Q1' | 'Q2' | 'Q3' | 'Q4';
 		quarter: {

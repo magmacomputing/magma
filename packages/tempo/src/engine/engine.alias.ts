@@ -128,11 +128,12 @@ export class AliasEngine {
 			const aliasKey = `${type}${this.#depth}_${index}` as AliasKey;
 			const shouldOverwrite = !(existing?.type === 'evt' && type === 'per');
 
-			if (baseWord in this.#words)
+			if (baseWord in this.#words) {
 				logWarn(
 					`[AliasEngine] Collision detected for ${type} alias "${name}". ${shouldOverwrite ? 'Overwriting' : 'Preserving'} existing alias.`,
 					this.#config
 				);
+			}
 
 			if (shouldOverwrite)
 				this.#words[baseWord] = aliasKey;

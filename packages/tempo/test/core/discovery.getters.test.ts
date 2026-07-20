@@ -3,7 +3,9 @@ import { Tempo } from '#tempo';
 const label = 'discovery.getters:';
 
 describe(`${label} static Tempo.terms`, () => {
-  beforeEach(() => { Tempo.init() });
+  beforeEach(() => {
+    Tempo.init();
+  });
 
   test('supports key-based lookup (e.g. qtr)', () => {
     expect(Tempo.terms.qtr).toBeDefined();

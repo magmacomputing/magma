@@ -34,8 +34,14 @@ export default defineConfig({
 			{ find: /^#tempo\/module$/, replacement: resolve(__dirname, '../tempo/src/module/module.index.ts') },
 			{ find: /^#tempo\/support$/, replacement: resolve(__dirname, '../tempo/src/support/support.index.ts') },
 			{ find: /^#tempo\/tempo\.class\.js$/, replacement: resolve(__dirname, '../tempo/src/tempo.index.ts') },
+			{ find: /^#tempo\/std$/, replacement: resolve(__dirname, '../plugins/.std/src/index.ts') },
+			{ find: /^#tempo\/license$/, replacement: resolve(__dirname, '../tempo/src/plugin/license/license.validator.ts') },
 			{ find: /^#tempo\/(.*)\.js$/, replacement: resolve(__dirname, '../tempo/src/$1.ts') },
-			{ find: /^#tempo\/(.*)$/, replacement: resolve(__dirname, '../tempo/src/$1.ts') }
+			{ find: /^#tempo\/(.*)$/, replacement: resolve(__dirname, '../tempo/src/$1.ts') },
+			{ find: /^#tempo$/, replacement: resolve(__dirname, '../tempo/src/tempo.index.ts') },
+			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(__dirname, '../tempo/src/plugin-api.index.ts') },
+			{ find: /^@magmacomputing\/tempo$/, replacement: resolve(__dirname, '../tempo/src/tempo.index.ts') },
+			{ find: /^@magmacomputing\/tempo\/(.*)$/, replacement: resolve(__dirname, '../tempo/src/$1.ts') }
 		]
 	}
 });

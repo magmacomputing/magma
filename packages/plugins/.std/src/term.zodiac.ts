@@ -1,6 +1,6 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from './term.util.js';
-import { isNumber } from '#library/assertion.library.js';
-import type { Tempo } from '../../tempo.class.js';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '@magmacomputing/tempo/plugin-api';
+import { isNumber } from '@magmacomputing/library';
+import type { Tempo } from '@magmacomputing/tempo';
 
 /** definition of astrological zodiac ranges */
 const groups = defineRange([
@@ -45,7 +45,7 @@ function resolve(t: Tempo, anchor?: any) {
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['group'], group: 'western' });
 
 	// calculate the Chinese Zodiac based on the year of the candidate sign
-	list.forEach(itm => {
+	list.forEach((itm: any) => {
 		const year = itm.year ?? (anchor?.year);
 		if (isNumber(year)) itm['CN'] = getChineseZodiac(year);
 	});
@@ -97,7 +97,7 @@ function getChineseZodiac(year: number) {
 	}
 }
 
-declare module '../../tempo.class.js' {
+declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
 		zdc: 'Aries' | 'Taurus' | 'Gemini' | 'Cancer' | 'Leo' | 'Virgo' | 'Libra' | 'Scorpio' | 'Sagittarius' | 'Capricorn' | 'Aquarius' | 'Pisces';
 		zodiac: {

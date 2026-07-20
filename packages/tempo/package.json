@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.10.0",
+  "version": "3.10.1",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -39,8 +39,6 @@
   "type": "module",
   "sideEffects": [
     "**/tempo.index.js",
-    "**/plugin/term/term.index.js",
-    "**/plugin/term/term.index.ts",
     "**/plugin/extend/extend.*.js",
     "**/plugin/extend/extend.*.ts",
     "dist/engine/engine.*.js",
@@ -60,6 +58,9 @@
     "#library/*.js": "@magmacomputing/library/common/*.js",
     "#tempo": {
       "default": "./dist/tempo.index.js"
+    },
+    "#tempo/std": {
+      "default": "./dist/term/index.js"
     },
     "#tempo/core": {
       "default": "./dist/core.index.js"
@@ -136,6 +137,26 @@
     "./term/*": {
       "types": "./dist/plugin/term/term.*.d.ts",
       "import": "./dist/plugin/term/term.*.js"
+    },
+    "./term/standard": {
+      "types": "./dist/term/index.d.ts",
+      "import": "./dist/term/index.js"
+    },
+    "./term/quarter": {
+      "types": "./dist/term/term.quarter.d.ts",
+      "import": "./dist/term/term.quarter.js"
+    },
+    "./term/season": {
+      "types": "./dist/term/term.season.d.ts",
+      "import": "./dist/term/term.season.js"
+    },
+    "./term/zodiac": {
+      "types": "./dist/term/term.zodiac.d.ts",
+      "import": "./dist/term/term.zodiac.js"
+    },
+    "./term/timeline": {
+      "types": "./dist/term/term.timeline.d.ts",
+      "import": "./dist/term/term.timeline.js"
     },
     "./plugin": {
       "types": "./dist/plugin/plugin.index.d.ts",

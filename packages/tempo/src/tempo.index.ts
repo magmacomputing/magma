@@ -6,7 +6,17 @@ import { FormatModule } from '#tempo/format';
 
 import { MutateModule } from '#tempo/mutate';
 import { DurationModule } from '#tempo/duration';
-import { TermsModule } from '#tempo/term';
+import { StandardTerms } from '#tempo/std';
+import { defineModule } from './plugin/plugin.util.js';
+
+export const TermsModule = defineModule({
+	name: 'TermsModule',
+	install(this: typeof Tempo, TempoClass: typeof Tempo) {
+		getRuntime().modules['TermsModule'] = true;
+		onRegistryReset(() => { TempoClass.extend(StandardTerms); });
+		TempoClass.extend(StandardTerms);
+	},
+});
 import { getRuntime } from '#tempo/support';
 
 // Batteries Included: Register standard modules
