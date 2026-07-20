@@ -2,7 +2,7 @@
   <tbody>
     <tr>
       <td width="100" valign="top">
-        <img src="../img/functions-logo.svg" width="90" height="90" alt="@magmacomputing/tempo-fns">
+        <img src="./img/functions-logo.svg" width="90" height="90" alt="@magmacomputing/tempo-fns">
       </td>
       <td valign="middle">
         <h1 style="border-bottom: none; margin-bottom: 0;"><code>@magmacomputing/tempo-fns</code></h1>
