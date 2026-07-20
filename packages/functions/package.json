@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-fns",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Tree-shakeable functional utilities for the Temporal API",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -28,7 +28,8 @@
     "README.md",
     "CHANGELOG.md",
     "LICENSE",
-    "dist/"
+    "dist/",
+    "img/"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
