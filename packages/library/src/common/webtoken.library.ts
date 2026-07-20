@@ -10,7 +10,9 @@ const bufToBase64Url = (buf: Uint8Array) => formatBase64Url(bufferToBase64(buf))
 
 /**
  * Performs a fast, unverified decode of a JSON Web Token (JWT) payload.
- * Does not verify the signature. Use only for reading public claims.
+ * The payload is unverified and attacker-controlled. Use only for reading public
+ * claims and must not be used for authentication, authorization, or any other
+ * security decision.
  * 
  * @param jwt - The JWT string to decode
  * @returns The parsed payload object, or null if decoding fails

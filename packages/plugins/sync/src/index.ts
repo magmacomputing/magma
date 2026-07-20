@@ -8,7 +8,7 @@ declare module '@magmacomputing/tempo' {
 	namespace Tempo {
 		const sync: {
 			/** Starts the master atomic clock on the current thread. */
-			startClock(options?: ClockOptions): void;
+			startClock(options?: ClockOptions): AtomicClock;
 			/** Stops the master atomic clock. */
 			stopClock(): void;
 			/** Gets the SharedArrayBuffer from the master clock. */
@@ -38,13 +38,14 @@ export const SyncPlugin: TempoPlugin = definePlugin({
 			 * Starts the master atomic clock on the current thread.
 			 * Only call this once on the main thread.
 			 */
-			startClock(options?: ClockOptions): void {
+			startClock(options?: ClockOptions): AtomicClock {
 				if (_globalClock) {
 					_globalClock.start();
-					return;
+					return _globalClock;
 				}
 				_globalClock = new AtomicClock(options);
 				_globalClock.start();
+				return _globalClock;
 			},
 
 			/**

@@ -158,8 +158,8 @@ export function toInstant(epochNanoseconds: bigint): Temporal.Instant {
  * @param cal - The optional Calendar string if `tzOrZdt` is a timezone
  * @returns A tuple of `[timeZoneId, calendarId]`
  */
-export function getTemporalIds(zdt: Temporal.ZonedDateTime, cal?: Temporal.CalendarLike): [string, string];
-export function getTemporalIds(tz: Temporal.TimeZoneLike, cal?: Temporal.CalendarLike): [string, string];
+export function getTemporalIds(tzOrZdt: Temporal.ZonedDateTime, cal?: Temporal.CalendarLike): [string, string];
+export function getTemporalIds(tzOrZdt: Temporal.TimeZoneLike, cal?: Temporal.CalendarLike): [string, string];
 export function getTemporalIds(tzOrZdt: any, cal?: any): [string, string] {
 	const fallbackTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 

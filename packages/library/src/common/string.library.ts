@@ -281,7 +281,7 @@ export const pad = (nbr: string | number | bigint = 0, len = 2, fill?: string | 
  * @returns The right-aligned padded string
  */
 export const padString = (str: string | number | bigint, pad = 6) =>
-	(isNumeric(str) ? asNumber(str).toFixed(2).toString() : str.toString() ?? '').padStart(pad, '\u007F');
+	(isNumeric(str) ? asNumber(str).toFixed(2).toString() : str.toString() ?? '').padStart(pad, '\u00A0');
 
 /** 
  * Reconstructs a string from an array of char codes.

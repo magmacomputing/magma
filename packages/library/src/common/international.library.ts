@@ -208,7 +208,7 @@ export function formatCurrency(str: string | number, scale = 2, currency = 'AUD'
 }
 
 /** 
- * try to infer hemisphere using the timezone's daylight-savings setting 
+ * Try to infer hemisphere using the timezone's daylight-savings setting.
  * @remarks This implementation intentionally differs from the version in `tempo-fns` 
  * (including specific fallback and return behaviors). Do not directly synchronize them.
  */

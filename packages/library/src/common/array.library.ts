@@ -132,6 +132,7 @@ export function byKey<T extends Property<any>>(arr: T[], grpFn: GroupFn<T>): Rec
  * const groups = byKey(users, 'department', 'role');
  * ```
  */
+export function byKey<T extends Property<any>>(arr: T[], key1: keyof T, ...keys: (keyof T)[]): Record<PropertyKey, T[]>;
 export function byKey<T extends Property<any>>(arr: T[], ...keys: (keyof T)[]): Record<PropertyKey, T[]>;
 export function byKey<T extends Property<any>>(arr: T[], fnKey: GroupFn<T> | keyof T, ...keys: (keyof T)[]) {
 	if (isFunction(fnKey))
@@ -171,6 +172,7 @@ export function byLkp<T extends Property<any>>(arr: T[], grpFn: GroupFn<T>): Rec
  * const latest = byLkp(events, 'type');
  * ```
  */
+export function byLkp<T extends Property<any>>(arr: T[], key1: keyof T, ...keys: (keyof T)[]): Record<PropertyKey, T>;
 export function byLkp<T extends Property<any>>(arr: T[], ...keys: (keyof T)[]): Record<keyof T, T>;
 export function byLkp<T extends Property<any>>(arr: T[], fnKey: GroupFn<T> | keyof T, ...keys: (keyof T)[]) {
 	const group = isFunction(fnKey)
