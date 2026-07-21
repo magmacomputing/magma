@@ -272,6 +272,7 @@ export interface TypeValueMap<T = any> {
 	WeakRef: { type: 'WeakRef', value: any };
 	Symbol: { type: 'Symbol', value: symbol };
 	Error: { type: 'Error', value: Error };
+	Module: { type: 'Module', value: any };
 
 	Temporal: { type: 'Temporal', value: Temporals };
 	'Temporal.Instant': { type: 'Temporal.Instant', value: Temporal.Instant };

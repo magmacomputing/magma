@@ -46,7 +46,7 @@ if (isType(val, 'String', 'Number')) {
 Sort complex collections of objects by multiple fields with ease.
 
 ```typescript
-import { sortKey } from '@magmacomputing/library/common/array';
+import { sortKey } from '@magmacomputing/library/array';
 
 const users = [
   { name: 'Alice', age: 30 },
@@ -62,7 +62,7 @@ const sorted = sortKey(users, 'name', { field: 'age', dir: 'desc' });
 Unlike standard `JSON.stringify`, Magma's serialization handles complex types like `Temporal` and `BigInt` out of the box.
 
 ```typescript
-import { stringify, parse } from '@magmacomputing/library/common/serialize';
+import { stringify, objectify } from '@magmacomputing/library/serialize';
 
 const data = {
   at: Temporal.Now.instant(),
@@ -71,7 +71,7 @@ const data = {
 };
 
 const json = stringify(data);
-const restored = parse(json); // Fully restored types!
+const restored = objectify(json); // Fully restored types!
 ```
 
 ---
