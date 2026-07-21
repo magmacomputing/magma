@@ -57,15 +57,18 @@
     "docs:build": "node ./bin/sync-docs.mjs && vitepress build doc"
   },
   "peerDependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
     "@magmacomputing/tempo": "^3.7.0"
   },
   "peerDependenciesMeta": {
+    "@js-temporal/polyfill": {
+      "optional": true
+    },
     "@magmacomputing/tempo": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@js-temporal/polyfill": "^0.5.1",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "rollup": "^4.62.2",
     "vitepress": "^1.6.4",
