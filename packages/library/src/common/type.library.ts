@@ -145,9 +145,9 @@ const isClassConstructor = (obj: any): boolean => {
 	return false;
 }
 
-/** infer T of a `<T | T[]>` */																export type TValue<T> = T extends Array<infer A> ? A : NonNullable<T>;
-/** cast `<T | undefined>` as `<T | T[]>` */										export type TValues<T> = TValue<T> | Array<TValue<T>> | Extract<T, undefined>;
-/** cast `<T | T[]>` as `T[]` */																export type TArray<T> = Array<TValue<T>>;
+/** infer T of a `<T | T[]>` */															export type TValue<T> = T extends Array<infer A> ? A : NonNullable<T>;
+/** cast `<T | undefined>` as `<T | T[]>` */								export type TValues<T> = TValue<T> | Array<TValue<T>> | Extract<T, undefined>;
+/** cast `<T | T[]>` as `T[]` */														export type TArray<T> = Array<TValue<T>>;
 
 /** generic value which may be NULL */											export type Nullable<T> = T | null;
 /** bottom value */																					export type Nullish = null | undefined | void;
@@ -162,7 +162,7 @@ type SafeRecursion = 50;
 type SafeCount<T, Acc extends any[] = [], Last = LastInUnion<T>> =
 	Acc['length'] extends SafeRecursion ? number :						// limit of recursive depth
 	0 extends (1 & T) ? number :															// detect 'number'
-	[T] extends [never] ? Acc['length'] :										// detect 'never'
+	[T] extends [never] ? Acc['length'] :											// detect 'never'
 	SafeCount<Exclude<T, Last>, [...Acc, any]>								// count remaining
 
 /** Own properties of an Array, Object, Map or Enum */
@@ -362,11 +362,11 @@ type Length<T extends string, Count extends number[] = []> =
 
 type Compare<First extends number, Second extends number, Count extends number[] = []> =
 	First extends Second
-	? 0																											// equal
+	? 0																												// equal
 	: Count["length"] extends First
 	? -1																											// first less than second
 	: Count["length"] extends Second
-	? 1																											// first more than second
+	? 1																												// first more than second
 	: Compare<First, Second, [...Count, 0]>
 
 export type MaxLength<T extends string, Max extends number> =
@@ -395,11 +395,11 @@ export type Substring<U extends string, Max extends number, Start extends number
 type Substr<U, Max, Start, Str extends string = '', Offset extends number[] = [0]> =
 	U extends `${infer NextChar}${infer Rest}`								// if there is a next-char (and optional trail-chars)
 	? Offset["length"] extends Start													// if offset beginning of U reached
-	? Length<Str> extends Max																// if length of Str is equal to Max
-	? Str																										// return Str, all done
-	: Substr<Rest, Start, Max, `${Str}${NextChar}`, Offset>	// else Str less than Max; recurse & append NextChar to Str
-	: Substr<Rest, Start, Max, Str, [...Offset, 0]>					// else offset not reached; recurse & increment offset-Count
-	: Str																										// else no more chars; return Str
+	? Length<Str> extends Max																	// if length of Str is equal to Max
+	? Str																											// return Str, all done
+	: Substr<Rest, Start, Max, `${Str}${NextChar}`, Offset>		// else Str less than Max; recurse & append NextChar to Str
+	: Substr<Rest, Start, Max, Str, [...Offset, 0]>						// else offset not reached; recurse & increment offset-Count
+	: Str																											// else no more chars; return Str
 
 // https://stackoverflow.com/questions/69571110/how-to-turn-union-into-a-tuple-in-typescript
 // UnionToIntersection<A | B> = A & B
@@ -417,7 +417,7 @@ type LastInUnion<U> = UnionToIntersection<U extends unknown ? (x: U) => 0 : neve
  * usage: `UnionToTuple<A | B>` = `[A, B]`
  */
 export type UnionToTuple<T, Acc extends any[] = [], Last = LastInUnion<T>> =
-	Acc['length'] extends SafeRecursion ? T[] :							// limit of recursive depth
+	Acc['length'] extends SafeRecursion ? T[] :								// limit of recursive depth
 	[T] extends [never] ? Acc :
 	UnionToTuple<Exclude<T, Last>, [Last, ...Acc]>
 
