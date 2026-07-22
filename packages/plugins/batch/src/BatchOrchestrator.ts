@@ -14,6 +14,10 @@ export interface BatchOptions {
 	 * Number of threads to use. Defaults to the number of logical CPUs.
 	 */
 	threads?: number;
+	/**
+	 * If true, the output array will contain hydrated Tempo instances instead of raw epoch numbers.
+	 * Default is false (returns raw epochs for maximum performance).
+	 */
 	rehydrate?: boolean;
 }
 

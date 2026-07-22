@@ -8,7 +8,16 @@ import type { Obj, Type } from '#library/type.library.js';
 
 export const Registry = (globalThis as any)[sym.$SerializerRegistry] ??= new Map<string, Function>();
 
-/** register a Class for serialization */
+/**
+ * Registers a Class for custom serialization and deserialization.
+ * 
+ * @param name - The string identifier for the class (automatically prefixed with '$' if missing)
+ * @param cls - The class constructor to register
+ * @example
+ * ```ts
+ * registerSerializable('MyClass', MyClass);
+ * ```
+ */
 export const registerSerializable = (name: string, cls: Function) => {
 	const key = name.startsWith('$') ? name : `$${name}`;
 
@@ -26,7 +35,18 @@ export const registerSerializable = (name: string, cls: Function) => {
 // be aware that 'structuredClone' preserves \<undefined> values...  
 // and JSON.stringify() does not
 
-/** make a deep-copy, using standard browser or JSON functions */
+/**
+ * Performs a deep copy using the native `structuredClone` (if available), 
+ * falling back to a `cleanify` JSON strategy otherwise.
+ * 
+ * @param obj - The object to clone
+ * @param opts - Optional structuredClone transfer options
+ * @returns A deep copy of the object
+ * @example
+ * ```ts
+ * const copy = clone(original);
+ * ```
+ */
 export function clone<T>(obj: T, opts?: { transfer: any[] }) {
 	try {
 		return globalThis.structuredClone(obj, opts);
@@ -35,7 +55,17 @@ export function clone<T>(obj: T, opts?: { transfer: any[] }) {
 	}
 }
 
-/** return a copy. remove unsupported values (e.g. \<undefined>, function) */
+/**
+ * Returns a JSON-clean copy of an object by stringifying and re-parsing.
+ * This inherently removes unsupported values like functions and `undefined`.
+ * 
+ * @param obj - The object to clean
+ * @returns A clean, JSON-compatible object
+ * @example
+ * ```ts
+ * const clean = cleanify({ a: 1, b: undefined }); // { a: 1 }
+ * ```
+ */
 export function cleanify<T>(obj: T) {
 	try {
 		return JSON.parse(JSON.stringify(obj)) as T;						// run any toString() methods
@@ -45,7 +75,18 @@ export function cleanify<T>(obj: T) {
 	}
 }
 
-/** deep-copy an Object, and optionally replace \<undefined> fields with a Sentinel function call	*/
+/**
+ * Deep-copies an Object, optionally replacing `<undefined>` fields 
+ * with a Sentinel function call. Leverages `stringify` and `objectify`.
+ * 
+ * @param obj - The object to cloneify
+ * @param sentinel - An optional function to handle reconstructed undefined values
+ * @returns The deep-copied object
+ * @example
+ * ```ts
+ * const safeCopy = cloneify(original, () => null);
+ * ```
+ */
 export function cloneify<T>(obj: T, sentinel?: Function): T {
 	try {
 		return objectify(stringify(obj), sentinel) as T;
@@ -139,8 +180,16 @@ function toSymbol(value: PropertyKey) {
  */
 
 /**
- * serialize Objects for string-safe stashing in WebStorage, Cache, etc  
- * uses JSON.stringify where available, else returns stringified single key:value Object '{[$type]: value}'  
+ * Serializes objects for string-safe stashing in WebStorage, Cache, etc.
+ * Uses `JSON.stringify` where available, else returns a stringified 
+ * single key:value object (e.g., `{ "$BigInt": "123" }`) for custom types.
+ * 
+ * @param obj - The object to stringify
+ * @returns The safely stringified representation
+ * @example
+ * ```ts
+ * stringify(123n); // '{"$BigInt":"123"}'
+ * ```
  */
 export function stringify<T>(obj: T) {
 	return stringize(obj, false);
@@ -239,7 +288,18 @@ function stringize<T>(obj: T, recurse = true): string {		// hide the second para
 	}
 }
 
-/** rebuild an Object from its stringified representation */
+/**
+ * Rebuilds an Object from its `stringify`'d string representation.
+ * Handles custom single key:value type definitions automatically.
+ * 
+ * @param str - The string to parse
+ * @param sentinel - Optional function to handle reconstructing undefined/void values
+ * @returns The deserialized object or original string if parsing fails
+ * @example
+ * ```ts
+ * const obj = objectify('{"$BigInt":"123"}'); // 123n
+ * ```
+ */
 export function objectify<T>(str: any, sentinel?: Function): T {
 	if (!isString(str))
 		return str;																						// skip parsing

@@ -106,8 +106,8 @@ function resolveDateBoundary(t: Tempo, anchor?: any) {
 }
 
 /**
- * ## AstroTerm
- * Exposes precise astronomical calculations as a standard Tempo scope.
+ * Exposes precise astronomical calculations (equinoxes and solstices)
+ * as a standard Tempo scope.
  */
 export const AstroTerm = defineTerm({
 	key,

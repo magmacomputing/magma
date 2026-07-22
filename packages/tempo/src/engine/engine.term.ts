@@ -136,16 +136,17 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		return null;
 	}
 
-	// 0. Handle relative .add() — preserving position within the target range
-	if (mutate === 'add') {
+	// 0. Handle relative .add() or .subtract() — preserving position within the target range
+	if (mutate === 'add' || mutate === 'subtract') {
 		const slickParsed = isDefined(slickStr);
 		const directional = mod && !['this', '>=', '<='].includes(mod);
 		const numericOffset = !directional && isNumeric(offset);
 
 		if (directional || numericOffset || (slickParsed && !mod)) {
-			const shiftDir = directional
+			let shiftDir = directional
 				? ((mod!.includes('<') || mod!.includes('-') || mod === 'prev' || mod === 'last') ? -1 : 1)
 				: (numericOffset ? Math.sign(Number(offset) || 1) : 1);
+			if (mutate === 'subtract') shiftDir *= -1;
 			const addCount = directional
 				? nbr
 				: (numericOffset ? Math.abs(Number(offset) || 1) : nbr);

@@ -19,13 +19,20 @@ export const getSafeTag = (obj: any): string | undefined => {
 }
 
 /** 
- * # getType
- * return an object's type as a ProperCase string.  
- * if instance, return Class name.
+ * Returns an object's type as a ProperCase string (e.g., 'String', 'Number', 'Array').
+ * If the object is a registered class instance, returns its class name.
  * 
- * @NOTE Load-Order Dependency:
- * Consumers must import modules that call registerType() (such as Tempo) 
- * before calling getType() to ensure custom types are correctly identified.
+ * @remarks
+ * **Load-Order Dependency:** Consumers must import modules that call `registerType()` 
+ * before calling `getType()` to ensure custom types are correctly identified.
+ * 
+ * @param obj - The value to determine the type of
+ * @param instances - Optional list of additional custom instances to check against
+ * @returns The string representation of the object's type
+ * @example
+ * ```ts
+ * getType([]); // 'Array'
+ * ```
  */
 export const getType = (obj?: any, ...instances: Instance[]): Type => {
 	const raw = (obj as any)?.[sym.$Target] ?? obj;						// bypass Proxy traps
@@ -59,12 +66,22 @@ export const getType = (obj?: any, ...instances: Instance[]): Type => {
 	}
 }
 
-/** return TypeValue<T> object */
+/**
+ * Wraps a value in a TypeValue object containing both its determined type and the original value.
+ * 
+ * @param value - The value to wrap
+ * @param instances - Optional list of additional custom instances to check against for typing
+ * @returns A TypeValue wrapper object
+ * @example
+ * ```ts
+ * const wrapper = asType('hello'); // { type: 'String', value: 'hello' }
+ * ```
+ */
 export const asType = <T>(value?: T, ...instances: Instance[]) => ({ type: getType(value, ...instances), value } as TypeValue<T>);
 
 /** 
- * # resetRegistry
- * Clear the global type registry for test isolation and deterministic behavior.
+ * Clears the global type registry.
+ * Primarily used for test isolation and ensuring deterministic behavior between test suites.
  */
 export const resetRegistry = () => {
 	registry.length = 0;
@@ -200,8 +217,17 @@ export type Constructor<T = any> = new (...args: any[]) => T;
 export type Instance = { type: Type, class: Constructor }		// allow for Class instance re-naming (to avoid minification mangling issues)
 
 /** 
- * register a class with the runtime type system.
- * @NOTE Custom types must augment `TypeValueMap` to be recognized by the type system!
+ * Registers a class constructor with the runtime type system.
+ * 
+ * @remarks
+ * Custom types must augment `TypeValueMap` to be strictly recognized by the TypeScript compiler.
+ * 
+ * @param cls - The class constructor to register
+ * @param type - Optional explicit type name to register the class under
+ * @example
+ * ```ts
+ * registerType(MyCustomClass, 'MyCustomType');
+ * ```
  */
 export const registerType = (cls: Constructor, type?: Type) => {
 	if (typeof cls !== 'function') return;
@@ -216,7 +242,7 @@ export const registerType = (cls: Constructor, type?: Type) => {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-export type Temporals = typeof Temporal extends { Now: any } ? Exclude<keyof typeof Temporal, 'Now'> : never;
+export type Temporals = 'Instant' | 'ZonedDateTime' | 'PlainDateTime' | 'PlainDate' | 'PlainTime' | 'PlainYearMonth' | 'PlainMonthDay' | 'Duration';
 export type TemporalObject = Temporal.PlainDate | Temporal.PlainTime | Temporal.PlainDateTime | Temporal.ZonedDateTime | Temporal.Instant | Temporal.Duration;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -246,6 +272,7 @@ export interface TypeValueMap<T = any> {
 	WeakRef: { type: 'WeakRef', value: any };
 	Symbol: { type: 'Symbol', value: symbol };
 	Error: { type: 'Error', value: Error };
+	Module: { type: 'Module', value: any };
 
 	Temporal: { type: 'Temporal', value: Temporals };
 	'Temporal.Instant': { type: 'Temporal.Instant', value: Temporal.Instant };

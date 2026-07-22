@@ -1,0 +1,14 @@
+{
+  "name": "@magmacomputing/tempo-std",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standard built-in Terms for @magmacomputing/tempo (showcase implementation — not published separately)",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run -c ../vitest.shared.ts"
+  },
+  "peerDependencies": {
+    "@magmacomputing/tempo": "^3.9.x"
+  }
+}

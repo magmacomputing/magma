@@ -1,3 +1,5 @@
+![Tempo Plugin](/plugin-logo.svg)
+
 # @magmacomputing/tempo-plugin-finance
 
 <p align="center">

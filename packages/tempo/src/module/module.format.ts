@@ -36,7 +36,7 @@ declare module '../tempo.class.js' {
 
 /**
  * Standalone Formatter
- * Returns a formatted string or number from a Temporal.ZonedDateTime or Tempo instance.
+ * Returns a formatted string from a Temporal.ZonedDateTime or Tempo instance.
  *
  * @example
  * import { format } from '@magmacomputing/tempo/format';

@@ -18,9 +18,9 @@ declare module '#library/type.library.js' {
 }
 
 /**
- * MutateModule logic for Tempo.add and Tempo.set
+ * MutateModule logic for Tempo.add, Tempo.subtract, and Tempo.set
  */
-function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options = {}) {
+function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, options: t.Options = {}) {
 	const state = (this as any)[sym.$Internal]();
 	if (isUndefined(state.mutateDepth)) state.mutateDepth = 0;
 	if (!isZonedDateTime(state.zdt)) return this;
@@ -46,8 +46,8 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 		if (isDefined(args)) {
 			// 1. Shorthand String
 			if (isString(args) && args.startsWith('#')) {
-				const resolveType = type === 'add' ? 'add' : 'start';
-				const res = resolveTermMutation((this.constructor as any), this, resolveType, args, (type === 'add' ? 1 : args), zdt);
+				const resolveType = (type === 'add' || type === 'subtract') ? type : 'start';
+				const res = resolveTermMutation((this.constructor as any), this, resolveType, args, ((type === 'add' || type === 'subtract') ? 1 : args), zdt);
 				if (res === null) state.errored = true;
 				else zdt = res;
 			}
@@ -148,11 +148,11 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 
 							const { mutate: op, offset, single, term } = ((key, adjust, type) => {
 								const isTerm = key.startsWith('#');
-								if (type === 'add') {
+								if (type === 'add' || type === 'subtract') {
 									const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string, state));
 									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(key as string);
 									return {
-										mutate: 'add',
+										mutate: type,
 										offset: adjust,
 										single: isTerm || (isTermPlugin && !isStandard) ? 'term' : singular(key),
 										term: isTerm ? (key as string) : (isTermPlugin ? key : undefined)
@@ -202,13 +202,19 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 								case 'add.year': case 'add.month': case 'add.week': case 'add.day':
 								case 'add.hour': case 'add.minute': case 'add.second':
 								case 'add.millisecond': case 'add.microsecond': case 'add.nanosecond':
-									return currZdt.add({ [`${single}s`]: offset });
+								case 'subtract.year': case 'subtract.month': case 'subtract.week': case 'subtract.day':
+								case 'subtract.hour': case 'subtract.minute': case 'subtract.second':
+								case 'subtract.millisecond': case 'subtract.microsecond': case 'subtract.nanosecond':
+									return op === 'subtract' ? currZdt.subtract({ [`${single}s`]: offset }) : currZdt.add({ [`${single}s`]: offset });
 
 								case 'add.yy': case 'add.mm': case 'add.dd': case 'add.hh':
 								case 'add.mi': case 'add.ss': case 'add.ms': case 'add.us': case 'add.ns':
-								case 'add.wy': case 'add.ww': {
+								case 'add.wy': case 'add.ww':
+								case 'subtract.yy': case 'subtract.mm': case 'subtract.dd': case 'subtract.hh':
+								case 'subtract.mi': case 'subtract.ss': case 'subtract.ms': case 'subtract.us': case 'subtract.ns':
+								case 'subtract.wy': case 'subtract.ww': {
 									const value = enums.ELEMENT[single as t.Element];
-									return currZdt.add({ [`${value}s`]: offset });
+									return op === 'subtract' ? currZdt.subtract({ [`${value}s`]: offset }) : currZdt.add({ [`${value}s`]: offset });
 								}
 
 								case 'set.period': case 'set.time': case 'set.date': case 'set.event':
@@ -285,6 +291,12 @@ function mutate(this: Tempo, type: 'add' | 'set', args?: any, options: t.Options
 const MutateEngine = {
 	add(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'add', args, options);
+	},
+	subtract(this: Tempo, args?: any, options: t.Options = {}) {
+		return mutate.call(this, 'subtract', args, options);
+	},
+	sub(this: Tempo, args?: any, options: t.Options = {}) {
+		return mutate.call(this, 'subtract', args, options);
 	},
 	set(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'set', args, options);

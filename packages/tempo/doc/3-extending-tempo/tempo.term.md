@@ -147,7 +147,7 @@ Tempo.extend(TermsModule);
 ```
 
 ### 3. Surgical Opt-in (Maximum Lite)
-Best for maximum bundle-size optimization—you only load the specific Terms you use.
+Best for maximum bundle-size optimization—you only load the specific Terms you use. Note that specific standard terms have their own dedicated sub-paths natively bundled within the main package.
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
 import { QuarterTerm } from '@magmacomputing/tempo/term/quarter';
@@ -335,7 +335,8 @@ To ensure a custom `Term` plugin integrates fully with Tempo, follow these guide
     *   **Free-form text**: Longer descriptive fields (e.g., `label`, `description`, `trait`).
 8.  **IDE Autocomplete (Interface Augmentation)**: To provide a world-class developer experience, always augment the global `TempoTermRegistry` interface with your custom keys and payload types. This ensures IDEs can provide strict type-checking and autocomplete when users access `t.term.myKey`.
     ```ts
-    declare module '@magmacomputing/tempo/core' {
+    // IDE Autocomplete (Interface Augmentation)
+    declare module '@magmacomputing/tempo' {
       interface TempoTermRegistry {
         rsn: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
         retailSeason: {

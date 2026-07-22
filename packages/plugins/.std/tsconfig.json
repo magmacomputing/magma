@@ -1,0 +1,20 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "noEmit": false,
+    "paths": {
+      "@magmacomputing/tempo/plugin-api": ["../../tempo/src/plugin-api.index.ts"],
+      "@magmacomputing/tempo": ["../../tempo/src/tempo.index.ts"],
+      "@magmacomputing/library": ["../../library/src/common.index.ts"],
+      "#library/*": ["../../library/src/common/*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../../library/src" },
+    { "path": "../../tempo/src" }
+  ]
+}

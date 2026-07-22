@@ -1,4 +1,4 @@
-import { asType } from '#library/type.library.js';
+import { asType, getType } from '#library/type.library.js';
 import { isNumber } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
@@ -70,36 +70,39 @@ function value(val: any) {
 }
 
 /**
- * # Enumify
- * create a Proxy-based Registry (Enum) from an Object or Array.  
- * Enums are immutable (frozen) and provide methods for iteration, search, and extension.  
+ * Creates a Proxy-based Registry (Enum) from an Object or Array.
+ * Enums are immutable (frozen) and provide methods for iteration, search, and extension.
+ * Arrays are converted to zero-indexed objects (e.g., `['A']` becomes `{ A: 0 }`).
  * 
+ * @param list - The array or object to convert into an Enum
+ * @param frozen - Whether to freeze the resulting Enum (default: true)
+ * @returns An immutable Enumify registry object
  * @example
- * ```typescript
+ * ```ts
  * const Status = enumify(['Active', 'Inactive', 'Pending']);
- * console.log(Status.Active);															// 0
- * console.log(Status.has('Active'));												// true
- * console.log(Status.keys());															// ['Active', 'Inactive', 'Pending']
+ * console.log(Status.Active);       // 0
+ * console.log(Status.has('Active'));// true
+ * console.log(Status.keys());       // ['Active', 'Inactive', 'Pending']
  * ```
  */
 export function enumify<const T extends readonly any[]>(list: T, frozen?: boolean): Enum.wrap<Index<T>>;
 export function enumify<const T extends Property<any>>(list: T, frozen?: boolean): Enum.wrap<T>;
 export function enumify<T>(this: any, list: T, frozen = true): any {
-	const proto = (this && Object.prototype.toString.call(this).slice(8, -1) !== 'Module') ? this : ENUM;
+	const proto = (this && getType(this) !== 'Module') ? this : ENUM;
+	const target = Object.create(proto);
 	const arg = asType(list);
-	let stash = {};
 
 	switch (arg.type) {
 		case 'Enumify':
 		case 'Object':
-			Object.assign(stash, arg.value);
+			Object.assign(target, arg.value);
 			break;
 
 		case 'Array':
 			(arg.value as string[]).forEach((key, index) => {
 				if (isNumber(key))
 					throw new Error('Enumify: numeric keys are not supported');
-				Object.assign(stash, { [key]: index });
+				target[key] = index;
 			});
 			break;
 
@@ -107,11 +110,13 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 			throw new Error(`Enumify: invalid argument type: ${arg.type}`);
 	}
 
-	const target = Object.create(proto, Object.getOwnPropertyDescriptors(stash));
-	return proxify(target, true, frozen);										// proxy is ALWAYS frozen (read-only), but target is only 'locked' if requested
+	return proxify(target, true, frozen);											// proxy is ALWAYS frozen (read-only), but target is only 'locked' if requested
 }
 
-/** create an entry in the Serialization Registry to describe how to rebuild an Enum */
+/**
+ * A class wrapper for Enumify to register it with the serialization system.
+ * Allows Enums to be properly serialized and deserialized.
+ */
 @Serializable
 export class Enumify {
 	constructor(list: Property<any>) {

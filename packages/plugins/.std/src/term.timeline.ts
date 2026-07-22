@@ -1,5 +1,5 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from './term.util.js';
-import type { Tempo } from '../../tempo.class.js';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '@magmacomputing/tempo/plugin-api';
+import type { Tempo } from '@magmacomputing/tempo';
 
 /** definition of daily time periods */
 const groups = defineRange([
@@ -32,7 +32,7 @@ export const TimelineTerm = defineTerm({
 	}
 });
 
-declare module '../../tempo.class.js' {
+declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
 		tod: 'Midnight' | 'Early' | 'Morning' | 'Midmorning' | 'Midday' | 'Afternoon' | 'Evening' | 'Night';
 		timeOfDay: {

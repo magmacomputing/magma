@@ -68,7 +68,7 @@ Tempo.extend(TermsModule);
 ```
 
 #### 3. The Surgical Strike (Data-Only)
-Best for maximum bundle-size optimization by picking only what you need.
+Best for maximum bundle-size optimization by picking only what you need. Note that specific standard terms have their own dedicated sub-paths natively bundled within the main package.
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
 import { QuarterTerm } from '@magmacomputing/tempo/term/quarter';

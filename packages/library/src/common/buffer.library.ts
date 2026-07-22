@@ -2,13 +2,42 @@ import { stringify, objectify } from '#library/serialize.library.js';
 
 const CHUNK_SIZE = 8192;
 
-/** serialize any object and encode string into a Uint8Array */
+/**
+ * Serializes any object to a string and encodes it into a Uint8Array.
+ * 
+ * @param str - The object or string to serialize and encode
+ * @returns A Uint8Array containing the encoded data
+ * @example
+ * ```ts
+ * const buf = encodeBuffer({ a: 1 });
+ * ```
+ */
 export const encodeBuffer = (str: any) => new TextEncoder().encode(stringify(str));
 
-/** decode a Uint8Array back to a string */
+/**
+ * Decodes a Uint8Array or ArrayBuffer back into a string.
+ * 
+ * @param buf - The buffer to decode
+ * @param encoding - The text encoding to use (default: 'utf-8')
+ * @returns The decoded string
+ * @example
+ * ```ts
+ * const str = decodeBuffer(buf);
+ * ```
+ */
 export const decodeBuffer = (buf: Uint8Array | ArrayBuffer, encoding = 'utf-8') => new TextDecoder(encoding).decode(buf);
 
-/** encode a raw Uint8Array into a Base64 string natively */
+/**
+ * Encodes a raw Uint8Array into a Base64 string.
+ * Uses native `Buffer` in Node.js and fallbacks to `btoa` in browsers.
+ * 
+ * @param buffer - The raw Uint8Array to encode
+ * @returns The Base64 string representation
+ * @example
+ * ```ts
+ * const b64 = bufferToBase64(new Uint8Array([104, 105]));
+ * ```
+ */
 export const bufferToBase64 = (buffer: Uint8Array) => {
 	if (typeof Buffer !== 'undefined')
 		return Buffer.from(buffer).toString('base64');
@@ -20,7 +49,17 @@ export const bufferToBase64 = (buffer: Uint8Array) => {
 	return btoa(binary);
 }
 
-/** decode a Base64 string into a raw Uint8Array natively */
+/**
+ * Decodes a Base64 string into a raw Uint8Array.
+ * Uses native `Buffer` in Node.js and fallbacks to `atob` in browsers.
+ * 
+ * @param base64 - The Base64 string to decode
+ * @returns A Uint8Array of the decoded data
+ * @example
+ * ```ts
+ * const buf = base64ToBuffer('aGk=');
+ * ```
+ */
 export const base64ToBuffer = (base64: string) => {
 	if (typeof Buffer !== 'undefined')
 		return new Uint8Array(Buffer.from(base64, 'base64'));
@@ -34,14 +73,32 @@ export const base64ToBuffer = (base64: string) => {
 	return bytes;
 }
 
-/** serialize any object and encode it to Base64 */
+/**
+ * Serializes any object, encodes it to a buffer, and outputs a Base64 string.
+ * 
+ * @param input - The object to serialize and encode
+ * @returns A Base64 string representation of the serialized object
+ * @example
+ * ```ts
+ * const token = encodeBase64({ user: 'michael' });
+ * ```
+ */
 export const encodeBase64 = (input: unknown): string => {
 	const str = stringify(input);
 
 	return bufferToBase64(encodeBuffer(str));
 }
 
-/** decode a Base64 string and deserialize it back into an object */
+/**
+ * Decodes a Base64 string and deserializes it back into a typed object.
+ * 
+ * @param base64 - The Base64 string to decode
+ * @returns The deserialized object
+ * @example
+ * ```ts
+ * const obj = decodeBase64<User>(token);
+ * ```
+ */
 export const decodeBase64 = <T>(base64 = ''): T => {
 	const uint8 = base64ToBuffer(base64);
 	const str = decodeBuffer(uint8);

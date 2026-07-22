@@ -33,6 +33,7 @@
       "#tempo/support": [ "./support/support.index.ts" ],
       "#tempo/support/*": [ "./support/*" ],
       "#tempo/license": [ "./plugin/license/license.validator.ts" ],
+      "#tempo/std": [ "./plugin/term/std.d.ts" ],
       "#tempo/*": [ "./*" ]
     }
   },

@@ -160,23 +160,6 @@ t.format('{h12:raw}:{mi}');       // "3:30"    (no meridiem added)
 t.format('{h12:raw}:{mi} {mer}'); // "3:30 am" (manual space + meridiem)
 ```
 
-### 🔢 Numeric Resolution
-If your format string consists *only* of numeric tokens (e.g., `{yyyy}{mm}{dd}`), the `format()` function will automatically coerce the output to a numeric primitive instead of a string. This is useful for generating sortable keys or IDs. 
-
-For standard lengths, it returns a **Number**. However, if the resulting value exceeds JavaScript's `Number.MAX_SAFE_INTEGER` (such as the `{nano}` token), Tempo safely upgrades the return type to a **BigInt** to prevent precision loss.
-
-```typescript
-// Standard Numeric Format -> Number
-const key = t.format('{yyyy}{mm}{dd}');
-console.log(typeof key); // "number"
-console.log(key);        // 20261024
-
-// Large Numeric Format -> BigInt
-const epoch = t.format('{nano}');
-console.log(typeof epoch); // "bigint"
-console.log(epoch);        // 1792843200000000000n
-```
-
 ### 📝 Common Formatting Examples
 Here are a few real-world examples demonstrating how tokens and modifiers can be composed together to build readable sentences and structured strings.
 

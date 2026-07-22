@@ -9,7 +9,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDist = process.env.TEST_DIST === 'true';
 
 const polyfill = resolve(__dirname, './bin/temporal-polyfill.ts');
-const ciPrefilterSetup = resolve(__dirname, './test/support/ci.prefilter.setup.ts');
 const consoleSpySetup = resolve(__dirname, './test/support/setup.console-spy.ts');
 
 const licensePremium = process.env.TEMPO_LICENSE_PATH ? resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
@@ -56,9 +55,7 @@ export default defineConfig({
 			'**/test/**/*.lazy.test.ts',
 			'**/test/browser/**'
 		],
-		setupFiles: process.env.TEMPO_PREFILTER_CI === 'true'
-			? [polyfill, consoleSpySetup, ciPrefilterSetup]
-			: [polyfill, consoleSpySetup],
+		setupFiles: [polyfill, consoleSpySetup],
 	},
 	resolve: {
 		alias: isDist ? [
@@ -75,10 +72,12 @@ export default defineConfig({
 			{ find: /^#tempo\/module\/(.*)\.js$/, replacement: resolve(__dirname, './dist/module/$1.js') },
 			{ find: /^#tempo\/plugin\/term\/(.*)\.js$/, replacement: resolve(__dirname, './dist/plugin/term/$1.js') },
 			{ find: /^#tempo\/(.*)\.js$/, replacement: resolve(__dirname, './dist/$1.js') },
+			{ find: /^#tempo\/std$/, replacement: resolve(__dirname, './dist/term/index.js') },
 			{ find: /^#tempo$/, replacement: resolve(__dirname, './dist/tempo.index.js') },
 			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/dist/common/$1.js') },
 			{ find: /^#library$/, replacement: resolve(__dirname, '../library/dist/common.index.js') },
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './dist/plugin/plugin.index.js') },
+			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(__dirname, './dist/plugin-api.index.js') },
 			{ find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: resolve(__dirname, './dist/plugin/$1.js') },
 			{ find: /^@magmacomputing\/tempo\/term$/, replacement: resolve(__dirname, './dist/plugin/term/term.index.js') },
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(__dirname, './dist/plugin/term/term.$1.js') },
@@ -90,6 +89,7 @@ export default defineConfig({
 			{ find: resolve(__dirname, './src/plugin/license/license.validator.ts'), replacement: isPremiumAvailable ? (licensePremium as string) : licenseDefault },
 			{ find: resolve(__dirname, './src/plugin/license/license.validator.js'), replacement: isPremiumAvailable ? (licensePremium as string) : licenseDefault },
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './src/plugin/plugin.index.ts') },
+			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(__dirname, './src/plugin-api.index.ts') },
 			{ find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: resolve(__dirname, './src/plugin/$1.ts') },
 			{ find: /^@magmacomputing\/tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/term.$1.ts') },
@@ -108,6 +108,7 @@ export default defineConfig({
 			{ find: /^#tempo\/module\/(.*)\.js$/, replacement: resolve(__dirname, './src/module/$1.ts') },
 			{ find: /^#tempo\/plugin\/term\/(.*)\.js$/, replacement: resolve(__dirname, './src/plugin/term/$1.ts') },
 			{ find: /^#tempo\/(.*)\.js$/, replacement: resolve(__dirname, './src/$1.ts') },
+			{ find: /^#tempo\/std$/, replacement: resolve(__dirname, '../plugins/.std/src/index.ts') },
 			{ find: /^#tempo$/, replacement: resolve(__dirname, './src/tempo.index.ts') },
 			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/$1.ts') },
 			{ find: /^#library$/, replacement: resolve(__dirname, '../library/src/common.index.ts') },

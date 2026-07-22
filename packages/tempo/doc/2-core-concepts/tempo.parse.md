@@ -250,7 +250,7 @@ Functional Alias Context is a powerful API for creating dynamic, self-referentia
 ```javascript
 // Example: Dynamic 'meeting' alias
 'meeting': function() {
-    return this.set('2026-05-20').add('PT1H'); // Resolves to 2026-05-20T01:00:00
+    return this.set('2026-05-20').add({ hours: 1 }); // Resolves to 2026-05-20T01:00:00
 },
 'bedtime': function() {
     return this.set('22:00').toDateTime();

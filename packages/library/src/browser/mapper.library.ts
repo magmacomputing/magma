@@ -44,10 +44,14 @@ const store = await new Promise<void | WebStore>((resolve, reject) => {
 })
 
 /**
- * attempt geolocation.getCurrentPosition()  
- * -> if user allows, then return geo-coordinates  
- * -> if not allowed, then set error = GeolocationPositionError  
- * -> if not support, then set error = NOT_SUPPORTED
+ * Attempt geolocation via navigator.getCurrentPosition().
+ * 
+ * @param opts - Options for the geolocation attempt
+ * @returns A promise resolving to the device's coordinates
+ * @example
+ * ```ts
+ * const pos = await geoLocation();
+ * ```
  */
 export const geoLocation = (opts = {} as MapOpts) =>
 	new Promise<MapStore["geolocation"]>((resolve, reject) => {
@@ -90,7 +94,16 @@ export const geoLocation = (opts = {} as MapOpts) =>
 			store?.set(MAP_KEY, mapStore);												// stash currentPosition to localStorage
 		})
 
-/** format coordinates as a GeocoderRequest["location"] object */
+/** 
+ * Format coordinates as a GeocoderRequest["location"] object.
+ * 
+ * @param coords - Optional coordinates to format; defaults to current location
+ * @returns A promise resolving to a GeocoderRequest
+ * @example
+ * ```ts
+ * const req = await geoCoords();
+ * ```
+ */
 export const geoCoords = (coords?: google.maps.GeocoderRequest) =>
 	new Promise<google.maps.GeocoderRequest | null>((resolve, reject) => {
 		if (!isNullish(coords))
@@ -107,7 +120,17 @@ export const geoCoords = (coords?: google.maps.GeocoderRequest) =>
 
 // the following functions need the Map API enabled on the web-site's index page
 // https://developers.google.com/maps/documentation/javascript/load-maps-js-api
-/** Make a 'maps' request on google API */
+/** 
+ * Make a 'maps' request to the Google Geocoding API.
+ * 
+ * @param coords - Coordinates to query
+ * @param opts - Request options
+ * @returns A promise resolving to the geocoder response
+ * @example
+ * ```ts
+ * const res = await mapQuery({ location: { lat: 0, lng: 0 } });
+ * ```
+ */
 export const mapQuery = (coords?: google.maps.GeocoderRequest, opts = {} as MapOpts) =>
 	new Promise<MapStore["georesponse"]>((resolve, reject) => {
 		opts = Object.assign({}, defaults, opts);
@@ -153,8 +176,16 @@ export const mapQuery = (coords?: google.maps.GeocoderRequest, opts = {} as MapO
 		})
 
 /**
- * get Hemisphere ('north' | 'south' | null)  
- * for supplied coordinates (else query current geolocation)
+ * Get Hemisphere ('north' | 'south' | null) for supplied coordinates
+ * or current geolocation if none supplied.
+ * 
+ * @param coords - Optional coordinates
+ * @param opts - Request options
+ * @returns A promise resolving to the hemisphere string
+ * @example
+ * ```ts
+ * const sphere = await mapHemisphere();
+ * ```
  */
 export const mapHemisphere = (coords?: google.maps.GeocoderRequest, opts = {} as MapOpts) =>
 	mapQuery(coords, opts)																					// ask Google
@@ -183,8 +214,15 @@ export const mapHemisphere = (coords?: google.maps.GeocoderRequest, opts = {} as
 		})
 
 /**
- * query google-maps for a best-guess address at supplied {lat,lng} co-ordinates  
- * (default current location)
+ * Query google-maps for a best-guess address at supplied {lat,lng} coordinates.
+ * 
+ * @param coords - Optional coordinates; defaults to current location
+ * @param opts - Request options
+ * @returns A promise resolving to the best-guess address object
+ * @example
+ * ```ts
+ * const address = await mapAddress();
+ * ```
  */
 export const mapAddress = (coords?: google.maps.GeocoderRequest, opts = {} as MapOpts) =>
 	mapQuery(coords, opts)

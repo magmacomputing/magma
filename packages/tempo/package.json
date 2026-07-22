@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.10.0",
+  "version": "3.10.1",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -39,8 +39,6 @@
   "type": "module",
   "sideEffects": [
     "**/tempo.index.js",
-    "**/plugin/term/term.index.js",
-    "**/plugin/term/term.index.ts",
     "**/plugin/extend/extend.*.js",
     "**/plugin/extend/extend.*.ts",
     "dist/engine/engine.*.js",
@@ -60,6 +58,9 @@
     "#library/*.js": "@magmacomputing/library/common/*.js",
     "#tempo": {
       "default": "./dist/tempo.index.js"
+    },
+    "#tempo/std": {
+      "default": "./dist/term/index.js"
     },
     "#tempo/core": {
       "default": "./dist/core.index.js"
@@ -137,6 +138,26 @@
       "types": "./dist/plugin/term/term.*.d.ts",
       "import": "./dist/plugin/term/term.*.js"
     },
+    "./term/standard": {
+      "types": "./dist/term/index.d.ts",
+      "import": "./dist/term/index.js"
+    },
+    "./term/quarter": {
+      "types": "./dist/term/term.quarter.d.ts",
+      "import": "./dist/term/term.quarter.js"
+    },
+    "./term/season": {
+      "types": "./dist/term/term.season.d.ts",
+      "import": "./dist/term/term.season.js"
+    },
+    "./term/zodiac": {
+      "types": "./dist/term/term.zodiac.d.ts",
+      "import": "./dist/term/term.zodiac.js"
+    },
+    "./term/timeline": {
+      "types": "./dist/term/term.timeline.d.ts",
+      "import": "./dist/term/term.timeline.js"
+    },
     "./plugin": {
       "types": "./dist/plugin/plugin.index.d.ts",
       "import": "./dist/plugin/plugin.index.js"
@@ -209,7 +230,7 @@
     "prebuild": "npm run build:version",
     "clean": "magma-cli rm dist && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && if [ -z \"$TEMPO_LICENSE_PATH\" ] || [ ! -f \"$TEMPO_LICENSE_PATH\" ]; then echo '🚨 ERROR: TEMPO_LICENSE_PATH is missing or invalid. Cannot publish Premium build.'; exit 1; fi && npm run build",
-    "docs:api": "typedoc",
+    "docs:api": "typedoc && typedoc --options typedoc.library.json",
     "docs:dev": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && vitepress dev",
     "docs:build": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && vitepress build",
     "docs:preview": "vitepress preview",

@@ -1,9 +1,9 @@
 # Mutation & Math
 
-Tempo's API for modifying instances is intentionally microscopic. Rather than bloating the prototype with dozens of distinct methods (`.add()`, `.subtract()`, `.startOf()`, etc.), Tempo provides unified utilities that natively support intuitive shorthand strings.
+Tempo's API for modifying instances is intentionally microscopic. Rather than bloating the prototype with dozens of distinct methods (`.addDays()`, `.subMonths()`, `.startOf()`, etc.), Tempo provides unified utilities that natively support intuitive shorthand strings.
 
 > [!IMPORTANT] Immutability & Chainability
-> All mutation methods in Tempo (`.add()`, `.set()`) are strictly **immutable**. They never modify the original instance. Instead, they evaluate the change and return a **new `Tempo` instance**, ensuring absolute safety and allowing for predictable method chaining.
+> All mutation methods in Tempo (`.add()`, `.subtract()`, `.set()`) are strictly **immutable**. They never modify the original instance. Instead, they evaluate the change and return a **new `Tempo` instance**, ensuring absolute safety and allowing for predictable method chaining.
 
 ## The `.add()` Method
 
@@ -14,23 +14,19 @@ const t = tempo();
 t.add({ days: 5 });           // Adds 5 days
 ```
 
-### Where is `.subtract()`?
+## The `.subtract()` Method
 
-> [!NOTE] Design Choice
-> **Where is `.subtract()`?**
-> Tempo keeps its core API intentionally microscopic. Because `.add()` natively supports negative durations and Tempo's Slick math provides directional operators (e.g., `t.add('<5d')` or `t.add({ days: -5 })`), a separate `.subtract()` method is mathematically redundant. We chose a smaller bundle size over duplicate methods.
+The `.subtract()` method returns a new `Tempo` instance shifted backwards by a specific amount.
 
-You can subtract time simply by using negative values:
+```typescript
+t.subtract({ days: 5 });      // Subtracts 5 days
+```
+
+You can also use negative values if you prefer:
 
 ```typescript
 t.add({ days: -5 });          // Subtracts 5 days
-```
-
-Or using **[Slick Math](../4-advanced-reference/tempo.shorthand.md)**:
-
-```typescript
-t.add('>5d');                 // Adds 5 days
-t.add('<5d');                 // Subtracts 5 days
+t.subtract({ days: -5 });     // Adds 5 days (double negative)
 ```
 
 ## The `.set()` Method
@@ -46,8 +42,8 @@ t.set({ year: 2026, month: 1 }); // Sets to January 2026
 [Slick Math](../4-advanced-reference/tempo.shorthand.md) also works inside `.set()` for boundary navigation:
 
 ```typescript
-t.set('start.month');         // Start of the current month
-t.set('end.year');            // End of the current year
+t.set({ start: 'month' });    // Start of the current month
+t.set({ end: 'year' });       // End of the current year
 ```
 
 ### Slick Object Mutations
@@ -90,9 +86,10 @@ Because all mutations return a new instance, you can safely chain `.add()` and `
 
 ```typescript
 const endOfQ1 = t
-  .set('start.year')          // Snap to January 1st
-  .add('>3mm')                // Shift forward 3 months (to April 1st)
-  .set('end.month');          // Snap to April 30th at 23:59:59.999
+  .set({ start: 'year' })     // Snap to January 1st
+  .add({ months: 3 })         // Shift forward 3 months (to April 1st)
+  .subtract({ days: 1 })      // Step back exactly one day (March 31st)
+  .set({ end: 'month' });     // Snap to March 31st at 23:59:59.999
 ```
 
 ## Relational vs. Navigation Shifting

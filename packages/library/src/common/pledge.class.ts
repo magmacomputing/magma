@@ -22,12 +22,16 @@ const _STATE = secure({
 });
 
 /**
- * Wrap a Promise's resolve/reject/finally methods for later fulfilment.  
- * with useful methods for tracking the state of the Promise, chaining fulfilment, etc.  
- ```
-	new Pledge<T>({tag: string, onResolve?: () => void, onReject?: () => void, onSettle?: () => void})
-	new Pledge<T>(tag?: string)
- ```
+ * A lightweight wrapper around Promises (utilizing `Promise.withResolvers`) 
+ * that exposes `resolve`, `reject`, and state-tracking methods.
+ * Useful for deferred execution and managing asynchronous lifecycles.
+ * 
+ * @example
+ * ```ts
+ * const p = new Pledge<string>('MyPledge');
+ * p.resolve('Success!');
+ * await p.promise; // 'Success!'
+ * ```
  */
 @Immutable
 export class Pledge<T> {
@@ -36,7 +40,12 @@ export class Pledge<T> {
 
 	static get STATE() { return _STATE; }
 
-	/** initialize future Pledge instances */
+	/** 
+	 * Initializes global defaults for all future Pledge instances.
+	 * 
+	 * @param arg - The global configuration or tag
+	 * @returns The updated static status configuration
+	 */
 	static init(arg?: Pledge.Constructor | string) {
 		if (isObject(arg)) {
 			if (isEmpty(arg))
@@ -64,6 +73,11 @@ export class Pledge<T> {
 		return { ..._static, state: _STATE.Pending } as Pledge.Status<typeof Pledge>;
 	}
 
+	/**
+	 * Creates a new Pledge instance.
+	 * 
+	 * @param arg - An optional configuration object or string tag
+	 */
 	constructor(arg?: Pledge.Constructor | string) {
 		const opts = isObject(arg) ? arg : { tag: arg as string };
 		const config = { ..._static, ...ifDefined({ tag: opts.tag, debug: opts.debug, catch: opts.catch, silent: opts.silent }) };
@@ -151,6 +165,12 @@ export class Pledge<T> {
 		return JSON.stringify(this.status);
 	}
 
+	/**
+	 * Resolves the underlying promise.
+	 * 
+	 * @param value - The value to resolve the promise with
+	 * @returns The internal promise
+	 */
 	resolve(value: T) {
 		if (this.isPending) {
 			this.#status.settled = value;
@@ -163,6 +183,12 @@ export class Pledge<T> {
 		return this.#pledge.promise;
 	}
 
+	/**
+	 * Rejects the underlying promise.
+	 * 
+	 * @param error - The reason for rejection
+	 * @returns The internal promise
+	 */
 	reject(error: any) {
 		if (this.isPending) {
 			this.#status.error = error;
@@ -175,7 +201,14 @@ export class Pledge<T> {
 		return this.#pledge.promise;
 	}
 
-	/** make Pledge 'then-able' by forwarding to internal promise */
+	/**
+	 * Makes the Pledge 'then-able', allowing it to be directly awaited 
+	 * or chained like a standard Promise.
+	 * 
+	 * @param onfulfilled - Callback for when the pledge resolves
+	 * @param onrejected - Callback for when the pledge rejects
+	 * @returns A new promise representing the chained execution
+	 */
 	then<TResult1 = T, TResult2 = never>(
 		onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null,
 		onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null

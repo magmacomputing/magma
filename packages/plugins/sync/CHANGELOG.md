@@ -2,6 +2,11 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-sync` project will be documented in this file.
 
+## [1.0.3] - 2026-07-20
+
+### Fixed
+- **API Alignment**: Aligned the `startClock` implementation with its documented usage by ensuring it correctly returns the `AtomicClock` instance, allowing consumers to directly read the clock buffer.
+
 ## [1.0.0] - 2026-06-29
 
 ### Added

@@ -1,3 +1,9 @@
+/**
+ * Internal Support & Diagnostics
+ * 
+ * Centralizes the internal support infrastructure (enums, symbols, logging, configurations).
+ * These exports are primarily consumed by core modules or advanced Plugin API integrations.
+ */
 export {
 	default as enums,
 	STATE,

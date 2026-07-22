@@ -53,7 +53,17 @@ function serialize(val: any, seen = new WeakSet()): string {
 	});
 }
 
-/** curry a Function to allow partial calls */
+/**
+ * Curries a function to allow partial application of its arguments.
+ * 
+ * @param fn - The original function to curry
+ * @returns A curried version of the function
+ * @example
+ * ```ts
+ * const add = curry((a: number, b: number) => a + b);
+ * add(1)(2); // 3
+ * ```
+ */
 export function curry<Args extends any[], Res>(fn: (...args: Args) => Res): Curry<Args, Res> {
 	return function curried(...args: any[]): any {
 		return (args.length >= fn.length)
@@ -62,7 +72,16 @@ export function curry<Args extends any[], Res>(fn: (...args: Args) => Res): Curr
 	} as Curry<Args, Res>;
 }
 
-/** generic function to memoize repeated function calls */
+/**
+ * Memoizes a function, caching its return values based on serialized arguments.
+ * 
+ * @param fn - The function to memoize
+ * @returns A memoized version of the function
+ * @example
+ * ```ts
+ * const expensive = memoizeFunction((a, b) => a * b);
+ * ```
+ */
 export function memoizeFunction<F extends (...args: any[]) => any>(fn: F): F {
 	const cache = new Map<string, ReturnType<F>>();						// using a Map for better key handling than plain objects
 
@@ -79,12 +98,31 @@ export function memoizeFunction<F extends (...args: any[]) => any>(fn: F): F {
 
 const wm = new WeakMap<object, Map<string, any>>();
 
-/** manually clear the memoization cache for an object */
+/**
+ * Manually clears the memoization cache for an object instance.
+ * 
+ * @param obj - The object whose cache should be cleared
+ * @example
+ * ```ts
+ * clearCache(myInstance);
+ * ```
+ */
 export function clearCache(obj: object) {
 	wm.delete(obj);
 }
 
-/** define a Descriptor for an Object's memoized-method */
+/**
+ * Defines a PropertyDescriptor for an object's memoized method.
+ * Caches the results of method calls on a per-instance basis.
+ * 
+ * @param name - The name of the method
+ * @param fn - The method implementation
+ * @returns A PropertyDescriptor containing the memoization logic
+ * @example
+ * ```ts
+ * Object.defineProperty(target, 'calc', memoizeMethod('calc', () => 42));
+ * ```
+ */
 export function memoizeMethod<Context = Property<any>, T = any>(name: PropertyKey, fn: (this: Context, ...args: any[]) => T) {
 	return {
 		enumerable: false,

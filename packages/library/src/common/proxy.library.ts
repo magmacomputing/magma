@@ -147,37 +147,102 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 	return result;
 }
 
-/** Stealth Proxy pattern to allow for on-demand lazy property discovery and registration */
+/**
+ * Creates a Stealth Proxy pattern to allow for on-demand lazy property discovery and registration.
+ * Provides deep-freezing and bounding capabilities depending on options.
+ * 
+ * @param target - The object to proxify
+ * @param frozen - Whether the proxy should throw on mutation (default: true)
+ * @param lock - Whether to deep-freeze the underlying target (default: frozen)
+ * @param skip - A WeakSet of objects to skip during deep-freeze
+ * @returns The proxified object
+ * @example
+ * ```ts
+ * const p = proxify({ a: 1 });
+ * ```
+ */
 export function proxify<T extends object>(target: T, frozen = true, lock = frozen, skip = new WeakSet<object>()) {
 	return factory(target, { frozen, lock, skip, bind: frozen });
 }
 
-/** Create a dynamic Proxy where property access is forwarded to a discovery callback */
+/**
+ * Creates a dynamic Proxy where property access is forwarded to a discovery callback.
+ * Useful for virtual objects and lazy-loading data.
+ * 
+ * @param target - The base object
+ * @param onGet - Callback fired when an unknown property is accessed
+ * @param readonly - Whether the proxy should prevent mutations (default: true)
+ * @returns The delegated Proxy
+ * @example
+ * ```ts
+ * const d = delegate({}, (key) => console.log('Requested:', key));
+ * ```
+ */
 export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, readonly = true) {
 	return factory(target, { onGet, frozen: readonly });
 }
 
-/** Wrap an object in a protective Proxy that allows extension but prevents modification */
+/**
+ * Wraps an object in a protective Proxy that allows extension (adding new keys) 
+ * but prevents modification or deletion of existing keys.
+ * 
+ * @param target - The object to secure
+ * @returns The append-only secured Proxy
+ * @example
+ * ```ts
+ * const ref = secureRef({ initial: 1 });
+ * ```
+ */
 export function secureRef<T extends object>(target: T): T {
 	return factory(target, { appendOnly: true });
 }
 
-/** Deep-freeze an object and wrap it in a loudly-throwing read-only Proxy */
+/**
+ * Deep-freezes an object and wraps it in a loudly-throwing read-only Proxy.
+ * Provides the highest level of noisy immutability.
+ * 
+ * @param obj - The object to secure
+ * @param skip - A WeakSet of objects to skip during deep-freeze
+ * @returns The securely frozen Proxy
+ * @example
+ * ```ts
+ * const safe = secure({ apiKey: '123' });
+ * ```
+ */
 export function secure<const T extends object>(obj: T, skip = new WeakSet<object>()): T {
 	return factory(obj, { frozen: true, lock: true, skip, bind: true });
 }
 
-/** Create a virtual Proxy where fixed keys are mapped to a callback function */
+/**
+ * Creates a virtual Proxy where fixed keys are mapped to a callback function.
+ * 
+ * @param keys - The array of allowed keys (or an object whose ownKeys will be used)
+ * @param fn - The callback fired when a key is accessed
+ * @returns The virtual delegator object
+ * @example
+ * ```ts
+ * const v = delegator(['a', 'b'], (key) => key.toUpperCase());
+ * ```
+ */
 export function delegator<K extends string | symbol>(keys: K[] | Record<K, any>, fn: (prop: K) => any): Record<K, any> {
 	const keyList = Array.isArray(keys) ? keys : Reflect.ownKeys(keys) as K[];
 	return factory({} as any, { keys: keyList, onGet: fn as any, frozen: true });
 }
 
 /**
- * ## indexedArray
  * Augments a standard array with a Proxy-based lookup delegate.
- * Allows index/enumerable array methods to function natively (e.g. map, filter, [0], length),
+ * Allows index/enumerable array methods to function natively (e.g., map, filter, length),
  * while redirecting non-numeric string keys to a custom finder function to lookup items.
+ * 
+ * @param list - The array to augment
+ * @param finder - The lookup function for non-numeric keys
+ * @param readonly - Whether the array should be read-only (default: true)
+ * @returns The augmented array with record-like string indexing
+ * @example
+ * ```ts
+ * const arr = indexedArray([{ id: 'a' }], key => list.find(x => x.id === key));
+ * arr['a']; // { id: 'a' }
+ * ```
  */
 export function indexedArray<T extends object>(
 	list: T[],

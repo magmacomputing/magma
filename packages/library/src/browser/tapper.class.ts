@@ -3,8 +3,13 @@ import { isEmpty, isFunction } from '#library/assertion.library.js';
 import type { ValueOf } from '#library/type.library.js';
 
 /**
- * A Wrapper Class around HammerJS.  
- * manages single/double/triple Tap events
+ * A Wrapper Class around HammerJS.
+ * Manages single, double, and triple tap events on a given element.
+ * 
+ * @example
+ * ```ts
+ * const tapper = new Tapper('#my-button', [Tapper.EVENT.SingleTap, () => console.log('Tapped!')]);
+ * ```
  */
 export class Tapper {
 	static EVENT = enumify({
@@ -49,7 +54,12 @@ export class Tapper {
 		self.on(...setup);
 	}
 
-	/** list of callbacks to fire on 'singleTap', or tuple of events/callbacks to fire */
+	/** 
+	 * Register a list of callbacks to fire on 'singleTap', or a tuple of events/callbacks to fire.
+	 * 
+	 * @param events - Callbacks for singleTap or Tuples of [Event, Callback]
+	 * @returns The Tapper instance for chaining
+	 */
 	on(...events: (Tapper.Callback | Tapper.Tuple)[]) {
 		events
 			.forEach(arg => {
@@ -66,7 +76,12 @@ export class Tapper {
 		return this;
 	}
 
-	/** stop event listeners (default is 'all' listeners on this instance) */
+	/** 
+	 * Stop event listeners. Defaults to 'all' listeners on this instance if none specified.
+	 * 
+	 * @param events - Specific events to stop listening for
+	 * @returns The Tapper instance for chaining
+	 */
 	off(...events: Tapper.EVENT[]) {
 		if (isEmpty(events))
 			events.push(...Tapper.EVENT.values());
@@ -77,6 +92,13 @@ export class Tapper {
 		return this;
 	}
 
+	/**
+	 * Enable or disable specific event listeners (or all if none specified).
+	 * 
+	 * @param enable - Whether to enable or disable the events
+	 * @param events - Specific events to target
+	 * @returns The Tapper instance for chaining
+	 */
 	enable(enable = true, ...events: Tapper.EVENT[]) {
 		if (isEmpty(events))
 			events.push(...Tapper.EVENT.values());
@@ -89,7 +111,11 @@ export class Tapper {
 		return this;
 	}
 
-	/** list details about this instance */
+	/** 
+	 * List details about the active Hammer instances managed by this Tapper.
+	 * 
+	 * @returns Array of Hammer instance details
+	 */
 	list() {
 		return this.#hammer.map((hammer: any) => ({
 			element: hammer.element,
@@ -97,12 +123,18 @@ export class Tapper {
 		}))
 	}
 
-	/** stop all event listeners on this instance */
+	/** 
+	 * Stop all event listeners on this instance.
+	 * 
+	 * @returns The Tapper instance for chaining
+	 */
 	clear() {
 		return this.off();
 	}
 
-	/** detach Tapper Manager */
+	/** 
+	 * Detach and destroy all underlying Hammer instances.
+	 */
 	destroy() {
 		this.#hammer.forEach(hammer => hammer.destroy());
 	}
