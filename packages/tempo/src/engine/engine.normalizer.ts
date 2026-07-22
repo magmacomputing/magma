@@ -49,6 +49,23 @@ export function getAliasContext(ctx: NormalizerContext, dateTime: Temporal.Zoned
 
 			return getAliasContext(nextCtx as any, nextZdt);
 		},
+		subtract: (val: any, opt?: any) => {
+			let nextZdt = dateTime;
+			const nextCtx = opt ? { ...ctx, state: { ...state, config: { ...state.config, ...opt } } } : ctx;
+
+			if (isString(val) && val.startsWith('#')) {
+				const TempoClass = getRuntime().modules['Tempo'];
+				const res = resolveTermMutation(TempoClass, nextCtx.state as any, 'subtract', val, 1, nextZdt);
+				if (isZonedDateTime(res)) nextZdt = res;
+			} else {
+				nextZdt = nextZdt.subtract(val);
+			}
+
+			return getAliasContext(nextCtx as any, nextZdt);
+		},
+		sub(val: any, opt?: any) {
+			return this.subtract(val, opt);
+		},
 		set: (val: any, opt?: any) => {
 			const res = conform(val, dateTime, resolvingKeys);
 			const nextZdt = isZonedDateTime(res.value) ? res.value : dateTime;
