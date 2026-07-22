@@ -107,7 +107,7 @@ const EMPTY_SKIP = new WeakSet<object>();
  * @param obj - The object to freeze
  * @param options - Optional configuration
  * @param options.skip - Externally owned WeakSet of objects to skip during freezing; not mutated by this function (caller responsible for lifecycle)
- * @returns The frozen object with Secure<T> type
+ * @returns The frozen object with `Secure<T>` type
  * 
  * @remarks
  * - Internally maintains a `seen` WeakSet to track visited objects and prevent infinite recursion
