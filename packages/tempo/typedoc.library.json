@@ -1,24 +1,15 @@
 {
+  "name": "Library API",
   "entryPoints": [
     "../library/src/common.index.ts",
     "../library/src/browser.index.ts",
     "../library/src/server.index.ts"
   ],
-  "out": "doc/api/library",
+  "out": "public/api/library",
   "tsconfig": "../library/tsconfig.json",
-  "plugin": [
-    "typedoc-plugin-markdown",
-    "typedoc-vitepress-theme"
-  ],
-  "hideBreadcrumbs": true,
-  "hidePageTitle": true,
-  "disableSources": true,
-  "parametersFormat": "table",
-  "outputFileStrategy": "members",
-  "flattenOutputFiles": true,
-  "expandObjects": true,
-  "useCodeBlocks": true,
-  "readme": "none",
+  "plugin": [],
   "excludeInternal": true,
-  "githubPages": false
+  "navigationLinks": {
+    "⬅ Back to Guides": "/magma/"
+  }
 }

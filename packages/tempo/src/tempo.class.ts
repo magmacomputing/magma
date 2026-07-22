@@ -30,7 +30,7 @@ import { validateLicenseState, getLicenseSnapshot, setLicense, getLicenseState }
 
 import { resolveMonthDay, setProperty, proto, hasOwn, resolveDisplayStatus } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, logError, logDebug, logWarn, logTempo, setLogLevel } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import { Interval } from './interval.class.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -145,8 +145,9 @@ export class Tempo {
 	}
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
 
-	/** Master Guard predicate (implements RegExp-like interface) */static get [$guard]() { return (this[$Internal]() as any)[$guard] ?? { test: () => true }; }
+	/** @internal Master Guard predicate (implements RegExp-like interface) */static get [$guard]() { return (this[$Internal]() as any)[$guard] ?? { test: () => true }; }
 
+	/** @internal */
 	static [$IsBase] = true;
 
 	/** @internal Static access to global private state. */
@@ -154,7 +155,8 @@ export class Tempo {
 		return ClassStates.get(this) ?? _global;
 	}
 
-	static get $ImmutableSkip() {
+	/** @internal */
+	static get [$ImmutableSkip]() {
 		const global = typeof globalThis !== 'undefined' ? globalThis : (window as any);
 		const nodeEnv = typeof global !== 'undefined'
 			&& typeof global.process !== 'undefined'
@@ -171,6 +173,7 @@ export class Tempo {
 
 
 	/**
+	 * @internal
 	 * {dt} is a layout that combines date-related {snippets} (e.g. dd, mm -or- evt) into a pattern against which a string can be tested.  
 	 * because it will also include a list of events (e.g. 'new_years' | 'xmas'), we need to rebuild {dt} if the user adds a new event
 	 */
@@ -226,11 +229,13 @@ export class Tempo {
 		}
 	}
 
+	/** @internal */
 	static [$setEvents](shape: Internal.State, provided?: [string, any][], rebuild = true) {
 		this[$setAliases](shape, 'evt', Token.evt, provided);
 		if (rebuild) setPatterns(shape);
 	}
 
+	/** @internal */
 	static [$setPeriods](shape: Internal.State, provided?: [string, any][], rebuild = true) {
 		this[$setAliases](shape, 'per', Token.per, provided);
 		if (rebuild) setPatterns(shape);
@@ -327,6 +332,7 @@ export class Tempo {
 	 * conform input of Snippet / Layout / Event / Period options  
 	 * This is needed because we allow the user to flexibly provide detail as {[key]:val} or {[key]:val}[] or [key,val][]  
 	 */
+	/** @internal */
 	static [$setConfig](shape: Internal.State, ...options: t.Options[]) {
 		const providedOptions: t.Options = Object.assign({}, ...options);
 		const storeKey = providedOptions.store;
@@ -371,6 +377,7 @@ export class Tempo {
 	}
 
 	/** support "Global Discovery" of user-options */
+	/** @internal */
 	static [$setDiscovery](shape: Internal.State, discovery?: Internal.Discovery) {
 		if (!isObject(discovery)) return {}
 
@@ -461,6 +468,7 @@ export class Tempo {
 		return res;
 	}
 
+	/** @internal */
 	static [$buildGuard](targetState?: Internal.State) {
 		const state = targetState ?? this[$Internal]();
 		// Note: We MUST use Object.keys() here instead of enums.XXX.keys() because this static guard 
@@ -1153,6 +1161,7 @@ export class Tempo {
 	}
 
 	/** allow instanceof to work across module boundaries via the local brand symbol */
+	/** @internal */
 	static [$Identity] = true;
 	static [Symbol.hasInstance](instance: any) {
 		return isDefined(instance?.[$Identity])
@@ -1194,7 +1203,7 @@ export class Tempo {
 	/** memoized Calendar ID */																#cal?: string;
 	/** indicator that the instance failed to parse */				#errored = false;
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
-	/** prebuilt formats, for convenience */									#fmt!: any;
+	/** prebuilt formats, for convenience */									#fmt!: Record<string, string>;
 	/** mapping of terms to their resolved values */					#term!: any;
 	/** a collection of parse rule-matches */									#matches: Internal.MatchResult[] | undefined;
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
@@ -1266,7 +1275,7 @@ export class Tempo {
 		return ownEntries(this.#fmt, true)[Symbol.iterator]();	// instance Iterator over tuple of FormatType[]
 	}
 
-	get [Symbol.toStringTag]() {															// default string description
+	get [Symbol.toStringTag](): 'Tempo' {											// default string description
 		return 'Tempo';																					// hard-coded to avoid minification mangling
 	}
 
@@ -1614,7 +1623,7 @@ export class Tempo {
 	}
 
 	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term }
-	/** Formatted results for all pre-defined format codes */ get fmt() { return this.#fmt }
+	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string> { return this.#fmt }
 	/** units since epoch for this date-time instance */			get epoch() { return Tempo.#getEpoch(this.toDateTime()); }
 
 	/**
