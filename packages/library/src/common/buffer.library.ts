@@ -96,7 +96,7 @@ export const encodeBase64 = (input: unknown): string => {
  * @returns The deserialized object
  * @example
  * ```ts
- * const obj = decodeBase64<User>(token);
+ * const obj = decodeBase64`<User>`(token);
  * ```
  */
 export const decodeBase64 = <T>(base64 = ''): T => {

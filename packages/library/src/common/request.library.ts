@@ -46,7 +46,7 @@ export class HttpError extends Error {
  * @returns A promise resolving to the parsed response body
  * @example
  * ```ts
- * const data = await fetchRequest<MyData>('https://api.example.com');
+ * const data = await fetchRequest`<MyData>`('https://api.example.com');
  * ```
  */
 export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, config = {} as Config) => {

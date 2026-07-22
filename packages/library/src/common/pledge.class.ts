@@ -28,7 +28,7 @@ const _STATE = secure({
  * 
  * @example
  * ```ts
- * const p = new Pledge<string>('MyPledge');
+ * const p = new Pledge`<string>`('MyPledge');
  * p.resolve('Success!');
  * await p.promise; // 'Success!'
  * ```

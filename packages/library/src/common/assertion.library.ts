@@ -10,12 +10,12 @@ import type { Type, Primitive, Nullish, Temporals, Property, GetType } from '#li
  * @returns True if the value matches one of the specified types
  * @example
  * ```ts
- * if (isType<string>(value, 'String', 'Number')) { ... }
+ * if (isType`<string>`(value, 'String', 'Number')) { ... }
  * ```
  */
 export const isType = <T>(obj: unknown, ...types: Type[]): obj is T => types.includes(getType(obj));
 
-/** Type-Guards: assert \<obj> is of \<type> */
+/** Type-Guards: assert `<obj>` is of `<type>` */
 export const isPrimitive = (obj?: unknown): obj is Primitive => isType(obj, 'String', 'Number', 'BigInt', 'Boolean', 'Symbol', 'Undefined', 'Void', 'Null', 'Empty');
 export const isReference = (obj?: unknown): obj is Object => !isPrimitive(obj);
 export const isIterable = <T>(obj: unknown): obj is Iterable<T> => Symbol.iterator in Object(obj) && !isString(obj);

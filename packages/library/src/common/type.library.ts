@@ -145,9 +145,9 @@ const isClassConstructor = (obj: any): boolean => {
 	return false;
 }
 
-/** infer T of a <T | T[]> */																export type TValue<T> = T extends Array<infer A> ? A : NonNullable<T>;
-/** cast <T | undefined> as <T | T[]> */										export type TValues<T> = TValue<T> | Array<TValue<T>> | Extract<T, undefined>;
-/** cast <T | T[]> as T[] */																export type TArray<T> = Array<TValue<T>>;
+/** infer T of a `<T | T[]>` */																export type TValue<T> = T extends Array<infer A> ? A : NonNullable<T>;
+/** cast `<T | undefined>` as `<T | T[]>` */										export type TValues<T> = TValue<T> | Array<TValue<T>> | Extract<T, undefined>;
+/** cast `<T | T[]>` as `T[]` */																export type TArray<T> = Array<TValue<T>>;
 
 /** generic value which may be NULL */											export type Nullable<T> = T | null;
 /** bottom value */																					export type Nullish = null | undefined | void;
@@ -323,7 +323,7 @@ export type Entry<T extends Property<any>> =
 	? [`${number}`, U]
 	: ObjectEntry<T>
 
-/** Object.entries<T> as [number,T][] */
+/** `Object.entries<T>` as `[number,T][]` */
 export type Entries<T extends Property<T>> = ReadonlyArray<Entry<T>>
 /** invert key-value object */
 export type Inverse<T> = { [K in keyof T as (T[K] & PropertyKey)]: K }
@@ -379,7 +379,7 @@ export type InRange<T extends string, Min extends number, Max extends number> =
 
 /**
  * return a substring of a string-type  
- * eg: Substr<Monday|Tuesday|Wednesday, 3> returns Mon|Tue|Wed  
+ * eg: `Substr<Monday|Tuesday|Wednesday, 3>` returns Mon|Tue|Wed  
  * U is the original string union  
  * Max is the number of chars to return  
  * Start is the offset (starting from '1')  
@@ -414,7 +414,7 @@ type LastInUnion<U> = UnionToIntersection<U extends unknown ? (x: U) => 0 : neve
 
 /**
  * convert a Union to a Tuple.  
- * usage: UnionToTuple<A | B> = [A, B]
+ * usage: `UnionToTuple<A | B>` = `[A, B]`
  */
 export type UnionToTuple<T, Acc extends any[] = [], Last = LastInUnion<T>> =
 	Acc['length'] extends SafeRecursion ? T[] :							// limit of recursive depth

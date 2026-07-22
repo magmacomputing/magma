@@ -17,7 +17,7 @@ const MAX_PAYLOAD_LENGTH = 4096;														// 4 KB
  * @returns The parsed JSON payload of the JWT
  * @example
  * ```ts
- * const payload = decodeJWTPayload<MyPayloadType>(token);
+ * const payload = decodeJWTPayload`<MyPayloadType>`(token);
  * ```
  */
 export const decodeJWTPayload = <T = unknown>(token: string): T => {

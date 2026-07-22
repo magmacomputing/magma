@@ -51,7 +51,7 @@ export function clone<T>(obj: T, opts?: { transfer: any[] }) {
 	try {
 		return globalThis.structuredClone(obj, opts);
 	} catch {
-		return cleanify(obj);																	// fallback to JSON functions
+		return cleanify(obj);																		// fallback to JSON functions
 	}
 }
 

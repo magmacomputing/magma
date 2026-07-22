@@ -18,7 +18,7 @@ const bufToBase64Url = (buf: Uint8Array) => formatBase64Url(bufferToBase64(buf))
  * @returns The parsed payload object, or null if decoding fails
  * @example
  * ```ts
- * const payload = decodeJWT<MyClaims>(token);
+ * const payload = decodeJWT`<MyClaims>`(token);
  * ```
  */
 export const decodeJWT = <T = any>(jwt: string): T | null => {
