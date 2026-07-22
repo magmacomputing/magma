@@ -49,6 +49,10 @@ export type Pattern = string | RegExp
 export interface AliasContext {
 	/** add a duration or Term to the current state and return a new context */
 	add(value: DateTime | string | Record<string, any>, options?: Options): AliasContext;
+	/** subtract a duration or Term from the current state and return a new context */
+	subtract(value: DateTime | string | Record<string, any>, options?: Options): AliasContext;
+	/** @hidden */
+	sub(value: DateTime | string | Record<string, any>, options?: Options): AliasContext;
 	/** set the current state to a new value (alias, date, or Term) and return a new context */
 	set(value: DateTime | string, options?: Options): AliasContext;
 	/** reset the context to the current system time ('now') */

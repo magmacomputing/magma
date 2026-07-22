@@ -22,6 +22,13 @@ export interface BoundaryContext {
 /**
  * Global Error Boundary Utility.
  * Decouples the decision to throw an error from the act of logging it.
+ * 
+ * @param err - The Error object or error string to raise
+ * @param context - Optional boundary context configuration
+ * @example
+ * ```ts
+ * raise('Invalid input', { catch: true, logger: myLogger });
+ * ```
  */
 export function raise(err: Error | string, context: BoundaryContext = {}): void {
 	const error = isString(err) ? new Error(err) : err;

@@ -6,6 +6,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.10.1] - 2026-07-20
+
+### Changed
+- **Internal Std Refactor**: Stabilized the `Tempo` core plugin architecture by migrating the built-in standard terms (`qtr`, `season`, `zodiac`, `timeline`) into a dedicated `.std` workspace. Modernized internal build pipelines and decoupled core library from plugin-specific source dependencies.
+
+### Fixed
+- **Library Array Grouping**: Expanded `byKey` and `byLkp` utility functions in the shared library to correctly support generic typings for required key arguments via new overload signatures.
+- **Library String Padding**: Fixed a bug where `padString` inadvertently used a DEL character (`\u007F`) instead of the correct non-breaking space (`\u00A0`) for right-alignment.
+- **Library JWT Security**: Hardened JSDoc warnings in `decodeJWT` to strictly advise developers that it performs unverified claims parsing and is unsuitable for authentication decisions.
+
+## [3.10.0] - 2026-07-19
+
+### Added
+- **Format Token Modifiers**: Introduced new capabilities for chained formatting modifiers.
+- **Custom Format Tokens**: Completed the Custom Format Tokens implementation, allowing developers to build custom zero-overhead logic evaluators (like native Intl bridges).
+
+### Changed
+- **Documentation Architecture**: Architectural deep-dives (Localized Parsing, Slick Mutations, Custom Tokens) have been extracted from the Cookbook into specialized Core Concepts guides (e.g. `tempo.parse.md`, `tempo.mutate.md`, `tempo.format.md`) to provide a punchier onboarding experience.
+- **Documentation Alignment**: Cleaned up `tempo.config.md` to remove deprecated module references, perfectly aligning examples with the `tempo-workspace` ecosystem (`FinanceNamespace` and `AstroTerm`).
+- **Getter Documentation**: Created `tempo.getters.md` as the definitive, educational conceptual guide for utilizing Tempo's zero-cost evaluation getters.
+
+### Fixed
+- **Format modifiers**: Implemented the `:space` modifier for the `{h12}` formatting token. This enables typographically correct spacing before automatically injected meridiems (e.g., `"10:30 a.m."`).
+
 ## [3.9.3] - 2026-07-18
 
 ### Added

@@ -41,6 +41,7 @@ describe('AliasEngine', () => {
 		const warnSpy = vi.spyOn(logTempo, 'warn');
 		const engine = new AliasEngine();
 		engine.registerAliases('evt', [['xmas', '25-Dec'], ['xmas', '24-Dec']]);
+
 		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Collision detected'));
 	});
 

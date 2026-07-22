@@ -1,7 +1,18 @@
 import { asArray, asNumber, ifNumeric } from '#library/coercion.library.js';
 import type { TValues } from '#library/type.library.js';
 
-/** show Hex value of a number */
+/**
+ * Converts a number or array of numbers into a contiguous hexadecimal string.
+ * Flattens nested arrays and filters out non-integers.
+ * 
+ * @param num - The number(s) to convert
+ * @param len - Optional maximum length of the resulting string
+ * @returns The hexadecimal string representation
+ * @example
+ * ```ts
+ * toHex([255, 16]); // 'ff10'
+ * ```
+ */
 export const toHex = (num: TValues<number> = [], len?: number) =>
 	asArray(num)																							// ensure array
 		.flat(1_000_000)																				// flatten any arrays to arbitrary depth
@@ -11,7 +22,17 @@ export const toHex = (num: TValues<number> = [], len?: number) =>
 		.toLowerCase()
 		.substring(0, len ?? Number.MAX_SAFE_INTEGER)
 
-/** apply an Ordinal suffix */
+/**
+ * Appends an ordinal suffix (st, nd, rd, th) to a number.
+ * 
+ * @param idx - The number to format (defaults to 0)
+ * @returns The number formatted as a string with its ordinal suffix
+ * @example
+ * ```ts
+ * suffix(1); // '1st'
+ * suffix(23); // '23rd'
+ * ```
+ */
 export const suffix = (idx: number = 0) => {
 	const str = String(idx);
 
@@ -27,22 +48,48 @@ export const suffix = (idx: number = 0) => {
 	}
 }
 
-/** split a value into an array */
+/**
+ * Splits a number or string by a delimiter and parses the chunks.
+ * 
+ * @param nbr - The value to split
+ * @param chr - The delimiter character (default: '.')
+ * @param zero - Whether to strip leading zeros during numeric conversion (default: true)
+ * @returns An array of parsed numeric or string chunks
+ * @example
+ * ```ts
+ * split('12.34'); // [12, 34]
+ * ```
+ */
 export function split<T extends number>(nbr: T, chr?: string, zero?: boolean): number[];
 export function split<T extends string>(nbr: T, chr?: string, zero?: boolean): (string | number)[];
 export function split<T extends string | number>(nbr?: T, chr: string = '.', zero: boolean = true): any[] {
 	return nbr?.toString().split(chr).map(val => ifNumeric(val, zero))
 		|| []
-};
+}
 
-/** fix a string to set decimal precision */
+/**
+ * Formats a number to a fixed number of decimal places.
+ * 
+ * @param nbr - The number or string to format
+ * @param max - The maximum number of decimal places (default: 2)
+ * @returns The fixed-precision string representation
+ * @example
+ * ```ts
+ * fix(12.3456, 2); // '12.35'
+ * ```
+ */
 export const fix = (nbr: string | number = 0, max = 2) =>
 	asNumber(nbr).toFixed(max);
 
-/** remove ':' from an HH:MI string, return as number */
+/**
+ * Removes the colon from an HH:MI time string and returns it as a number.
+ * 
+ * @param hhmi - The time string (e.g., '14:30')
+ * @returns The numeric representation (e.g., 1430)
+ * @example
+ * ```ts
+ * asTime('14:30'); // 1430
+ * ```
+ */
 export const asTime = (hhmi: string | number) =>
 	Number(String(hhmi).replace(':', ''));
-
-/** format a value as currency */
-export const asCurrency = (str: string | number, scale = 2, currency = 'AUD') =>
-	asNumber(str).toLocaleString(undefined, { style: 'currency', currency, maximumFractionDigits: scale });

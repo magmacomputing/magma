@@ -17,70 +17,82 @@ console.log('Resolving type definitions...');
 
 // 1. Ensure lib directory exists
 if (!fs.existsSync(LIB_DEST_DIR))
-  fs.mkdirSync(LIB_DEST_DIR, { recursive: true });
+	fs.mkdirSync(LIB_DEST_DIR, { recursive: true });
 
 // 2. Identify used library modules from Rollup's JS output
 const usedModules = fs.readdirSync(LIB_DEST_DIR)
-  .filter(f => f.endsWith('.js'))
-  .map(f => f.slice(0, -3));
+	.filter(f => f.endsWith('.js'))
+	.map(f => f.slice(0, -3));
 
 // 3. Copy corresponding .d.ts files from library
 usedModules.forEach(mod => {
-  const src = path.join(LIB_SRC_DIR, `${mod}.d.ts`);
-  const dest = path.join(LIB_DEST_DIR, `${mod}.d.ts`);
-  if (fs.existsSync(src))
-    fs.copyFileSync(src, dest);
+	const src = path.join(LIB_SRC_DIR, `${mod}.d.ts`);
+	const dest = path.join(LIB_DEST_DIR, `${mod}.d.ts`);
+	if (fs.existsSync(src))
+		fs.copyFileSync(src, dest);
 });
 
 // 4. Walk through all .d.ts files in dist/ to rewrite aliases
 function walk(dir: string) {
-  const files = fs.readdirSync(dir);
-  for (const file of files) {
-    const fullPath = path.join(dir, file);
-    if (fs.statSync(fullPath).isDirectory()) {
-      walk(fullPath);
-    } else if (file.endsWith('.d.ts')) {
-      rewrite(fullPath);
-    }
-  }
+	const files = fs.readdirSync(dir);
+	for (const file of files) {
+		const fullPath = path.join(dir, file);
+		if (fs.statSync(fullPath).isDirectory()) {
+			walk(fullPath);
+		} else if (file.endsWith('.d.ts')) {
+			rewrite(fullPath);
+		}
+	}
 }
 
 function rewrite(filePath: string) {
-  const content = fs.readFileSync(filePath, 'utf8');
-  const relToDist = path.relative(DIST_DIR, filePath);
-  const depth = relToDist.split(path.sep).length - 1;
-  const isInsideLib = relToDist.startsWith(`lib${path.sep}`);
+	const content = fs.readFileSync(filePath, 'utf8');
+	const relToDist = path.relative(DIST_DIR, filePath);
+	const depth = relToDist.split(path.sep).length - 1;
+	const isInsideLib = relToDist.startsWith(`lib${path.sep}`);
 
-  let replacement: string;
-  if (isInsideLib) {
-    // If inside lib/, #library/ becomes ./
-    replacement = './';
-  } else {
-    // If at root (or elsewhere), #library/ becomes ./lib/ (with relative prefix)
-    let prefix = '';
-    for (let i = 0; i < depth; i++) prefix += '../';
-    replacement = `${prefix || './'}lib/`;
-  }
+	let replacement: string;
+	if (isInsideLib) {
+		// If inside lib/, #library/ becomes ./
+		replacement = './';
+	} else {
+		// If at root (or elsewhere), #library/ becomes ./lib/ (with relative prefix)
+		let prefix = '';
+		for (let i = 0; i < depth; i++) prefix += '../';
+		replacement = `${prefix || './'}lib/`;
+	}
 
-  // Handle #tempo/license resolution
-  let prefix = '';
-  for (let i = 0; i < depth; i++) prefix += '../';
-  let licReplacement = `${prefix || './'}plugin/license/license.validator.js`;
+	// Handle #tempo/license resolution
+	let prefix = '';
+	for (let i = 0; i < depth; i++) prefix += '../';
+	let licReplacement = `${prefix || './'}plugin/license/license.validator.js`;
 
-  const updatedContent = content
-    .replace(/#library\/([^"')]+\.js)/g, (_, libPath) => {
-      // NOTE: We use path.basename here because the @magmacomputing/library distribution 
-      // is currently flat (dist/common/*.js), and our resolve process flattens all 
-      // used library modules into the local dist/lib/ directory.
-      const fileName = path.basename(libPath);
-      return `${replacement}${fileName}`;
-    })
-    .replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`)
-    .replace(/#tempo\/license(['"])/g, (_, quote) => `${licReplacement}${quote}`);
+	const updatedContent = content
+		.replace(/#library\/([^"')]+\.js)/g, (_, libPath) => {
+			// NOTE: We use path.basename here because the @magmacomputing/library distribution 
+			// is currently flat (dist/common/*.js), and our resolve process flattens all 
+			// used library modules into the local dist/lib/ directory.
+			const fileName = path.basename(libPath);
+			return `${replacement}${fileName}`;
+		})
+		.replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`)
+		.replace(/#tempo\/license(['"])/g, (_, quote) => `${licReplacement}${quote}`);
 
-  if (content !== updatedContent) {
-    fs.writeFileSync(filePath, updatedContent);
-  }
+	if (content !== updatedContent) {
+		fs.writeFileSync(filePath, updatedContent);
+	}
+}
+
+// 5. Copy .std types to dist/term/
+const STD_SRC_DIR = path.resolve('../plugins/.std/dist');
+const STD_DEST_DIR = path.resolve(DIST_DIR, 'term');
+
+if (fs.existsSync(STD_SRC_DIR)) {
+	if (!fs.existsSync(STD_DEST_DIR)) fs.mkdirSync(STD_DEST_DIR, { recursive: true });
+	const stdFiles = fs.readdirSync(STD_SRC_DIR).filter(f => f.endsWith('.d.ts'));
+	stdFiles.forEach(f => {
+		fs.copyFileSync(path.join(STD_SRC_DIR, f), path.join(STD_DEST_DIR, f));
+	});
 }
 
 walk(DIST_DIR);

@@ -1,7 +1,6 @@
 import { Tempo } from '@magmacomputing/tempo';
 
 /**
- * # AtomicReader
  * The client reader that reads the synchronized time from a SharedArrayBuffer.
  * This should be instantiated in Web Workers or worker_threads.
  */

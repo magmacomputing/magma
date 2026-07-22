@@ -1,12 +1,11 @@
 /**
- * ## ScopedSet
  * A lightweight `Set`-compatible container that delegates `has()` lookups to a
  * parent Set/ScopedSet, but confines `add()` writes to its own-local storage.
  *
  * This mirrors JavaScript prototype-chain semantics:
- * - A plugin registered globally is **visible** to all sandboxes via `has()`.
- * - A plugin registered in a sandbox is **isolated** from the global scope;
- *   the global `rt.installed` is never written to by sandbox `extend()` calls.
+ * - Values added to the parent are **visible** to the child via `has()`.
+ * - Values added to the child are **isolated** from the parent;
+ *   the parent Set is never modified by child `add()` calls.
  *
  * @example
  * const global = new Set(['a']);

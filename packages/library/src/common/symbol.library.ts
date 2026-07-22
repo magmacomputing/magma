@@ -18,7 +18,17 @@ export const sym = {
 	$Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register, $SerializerRegistry, $Identity, $ImmutableSkip
 } as const;
 
-/** identify and mark a logging configuration object */
+/**
+ * Identifies and marks an object as a logging configuration object using a global symbol.
+ * This allows the library to securely differentiate configs from regular objects.
+ * 
+ * @param obj - The configuration object to mark
+ * @returns The marked object
+ * @example
+ * ```ts
+ * const cfg = markConfig({ level: 'debug' });
+ * ```
+ */
 export function markConfig<T extends object>(obj: T): T {
 	if (!(obj as any)[sym.$LogConfig] && Object.isExtensible(obj))
 		Object.defineProperty(obj, sym.$LogConfig, { value: true, enumerable: false, writable: true, configurable: true });

@@ -36,7 +36,19 @@ export class HttpError extends Error {
 	}
 }
 
-/** get data from a resource-url */
+/**
+ * Performs an HTTP fetch request with built-in timeout, JSON parsing, and custom prefix handling.
+ * Automatically throws an `HttpError` if the response is not `ok`.
+ * 
+ * @param url - The resource URL to fetch
+ * @param init - Optional RequestInit configuration
+ * @param config - Optional configuration including timeout and prefix stripping
+ * @returns A promise resolving to the parsed response body
+ * @example
+ * ```ts
+ * const data = await fetchRequest<MyData>('https://api.example.com');
+ * ```
+ */
 export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, config = {} as Config) => {
 	const signallingInit = {
 		...init,
@@ -76,8 +88,15 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 }
 
 /**
- * get Response headers only (no data).  
- * useful for just checking that a URL exists  
+ * Performs an HTTP HEAD request to retrieve response headers without the body.
+ * Useful for verifying URL existence or checking metadata.
+ * 
+ * @param url - The resource URL to check
+ * @returns A promise resolving to the response status and headers
+ * @example
+ * ```ts
+ * const { status } = await fetchHead('https://example.com');
+ * ```
  */
 export const fetchHead = (url: string | URL) => {
 	const signal = AbortSignal.timeout(TWO_SECONDS);

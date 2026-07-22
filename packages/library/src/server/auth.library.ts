@@ -6,7 +6,8 @@ const MAX_PAYLOAD_LENGTH = 4096;														// 4 KB
 /**
  * Decodes a JWT payload without verifying its signature.
  * 
- * @WARNING This function does NOT perform signature verification.
+ * @remarks
+ * **WARNING:** This function does NOT perform signature verification.
  * It strictly decodes the payload for inspection. To ensure the integrity
  * and authenticity of the token, you MUST verify the signature using
  * a trusted library (e.g., jsonwebtoken) and your secret/public key.
@@ -14,6 +15,10 @@ const MAX_PAYLOAD_LENGTH = 4096;														// 4 KB
  * @param token - The JWT string to decode
  * @throws {Error} If the token is malformed or the payload cannot be parsed
  * @returns The parsed JSON payload of the JWT
+ * @example
+ * ```ts
+ * const payload = decodeJWTPayload<MyPayloadType>(token);
+ * ```
  */
 export const decodeJWTPayload = <T = unknown>(token: string): T => {
 	if (token.length > MAX_TOKEN_LENGTH)

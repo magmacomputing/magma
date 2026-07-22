@@ -16,8 +16,17 @@ type OneKey<K extends keyof any, V, KK extends keyof any = K> =
 		{ [Q in keyof O]: O[Q] } : never
 	}[K];
 
+/**
+ * Configuration options for snapping a Tempo instance.
+ * Accepts exactly one time component key mapped to a numeric step value,
+ * alongside an optional rounding direction.
+ */
 type SnapOptions = OneKey<SnapKey, number> & { direction?: 'up' | 'down' };
 
+/**
+ * The Snap Plugin.
+ * Installs the `snap()` method onto Tempo instances, allowing time to be rounded to specific intervals.
+ */
 export const SnapPlugin: TempoPlugin = definePlugin({
 	name: 'snap',
 	install(TempoClass: any) {
@@ -153,9 +162,14 @@ declare module '@magmacomputing/tempo/core' {
 		/** 
 		 * Snaps the time to the nearest given interval for the specified unit.
 		 * 
-		 * @example t.snap() // Snaps to nearest 15 minutes (default)
-		 * @example t.snap({ hh: 1 }) // Snaps to nearest hour
-		 * @example t.snap({ ss: 30 }) // Snaps to nearest 30 seconds
+		 * @param options - The snapping configuration including the time component, step value, and rounding direction.
+		 * @returns A new snapped Tempo instance.
+		 * @example
+		 * ```ts
+		 * t.snap() // Snaps to nearest 15 minutes (default)
+		 * t.snap({ hh: 1 }) // Snaps to nearest hour
+		 * t.snap({ ss: 30 }) // Snaps to nearest 30 seconds
+		 * ```
 		 */
 		snap(options?: SnapOptions): Tempo;
 	}

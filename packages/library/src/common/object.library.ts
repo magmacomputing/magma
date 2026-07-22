@@ -3,14 +3,34 @@ import { isObject, isArray, isFunction, isDefined, isNullish, isMap, isSet } fro
 import { getType } from '#library/type.library.js';
 import type { Extend, Property } from '#library/type.library.js';
 
-/** remove quotes around property names */
+/**
+ * Serializes an object to JSON and removes quotes around property names.
+ * Useful for generating loosely formatted string representations of objects.
+ * 
+ * @param obj - The object to un-quote
+ * @returns A stringified JSON representation without quotes around keys
+ * @example
+ * ```ts
+ * unQuoteObj({ a: 1 }); // '{a: 1}'
+ * ```
+ */
 export const unQuoteObj = (obj: any) => {
 	return JSON.stringify(obj)
 		?.replace(/"([^"]+)":/g, '$1: ')
 		?.replace(/,/g, ', ')
 }
 
-/** copy enumerable properties to a new Object */
+/**
+ * Recursively copies enumerable properties of an object into a new object.
+ * Returns the original value if it is not an object or is nullish.
+ * 
+ * @param obj - The object to copy
+ * @returns A new object with the copied properties
+ * @example
+ * ```ts
+ * const copy = asObject({ a: 1 });
+ * ```
+ */
 export const asObject = <T>(obj?: Record<PropertyKey, any>) => {
 	if (isNullish(obj) || !isObject(obj))
 		return obj as T;
@@ -23,7 +43,18 @@ export const asObject = <T>(obj?: Record<PropertyKey, any>) => {
 	return temp as T;
 }
 
-/** deep-compare object and array values for equality */
+/**
+ * Performs a deep comparison between two values to determine if they are equivalent.
+ * Supports primitives, arrays, maps, sets, and plain objects.
+ * 
+ * @param a - The first value to compare
+ * @param b - The second value to compare
+ * @returns True if the values are deeply equal
+ * @example
+ * ```ts
+ * isEqual({ a: 1 }, { a: 1 }); // true
+ * ```
+ */
 export const isEqual = (a: any, b: any): boolean => {
 	if (a === b) return true;
 	if (isNullish(a) || isNullish(b)) return a === b;
@@ -63,7 +94,17 @@ export const isEqual = (a: any, b: any): boolean => {
 	return false;
 }
 
-/** find all methods on an Object */
+/**
+ * Finds all method names on an object.
+ * 
+ * @param obj - The object to inspect
+ * @param all - Whether to traverse the prototype chain (default: false)
+ * @returns An array of property keys corresponding to functions
+ * @example
+ * ```ts
+ * const methods = getMethods(myClassInstance);
+ * ```
+ */
 export const getMethods = (obj: any, all = false) => {
 	const properties = new Set<PropertyKey>();
 	let currentObj = obj;
@@ -78,7 +119,16 @@ export const getMethods = (obj: any, all = false) => {
 		.filter(key => isFunction(obj[key]));
 }
 
-/** extract only defined values from Object */
+/**
+ * Extracts a new object containing only the properties with defined (non-undefined) values.
+ * 
+ * @param obj - The object to extract from
+ * @returns A new object without undefined values
+ * @example
+ * ```ts
+ * const clean = ifDefined({ a: 1, b: undefined }); // { a: 1 }
+ * ```
+ */
 export function ifDefined<T extends Property<any>>(obj: T) {
 	return ownEntries(obj)
 		.reduce((acc, [key, val]) => {
@@ -88,7 +138,17 @@ export function ifDefined<T extends Property<any>>(obj: T) {
 		}, {} as T)
 }
 
-/** extract a subset of keys from an object */
+/**
+ * Creates a new object composed of the picked object properties.
+ * 
+ * @param obj - The source object
+ * @param keys - The property names to pick
+ * @returns A new object containing only the picked properties
+ * @example
+ * ```ts
+ * const subset = pick({ a: 1, b: 2, c: 3 }, 'a', 'c'); // { a: 1, c: 3 }
+ * ```
+ */
 export const pick = <T extends Property<T>, K extends string>(obj: T, ...keys: K[]): Partial<T> => {
 	const ownKeys = Object.getOwnPropertyNames(obj);
 
@@ -99,15 +159,46 @@ export const pick = <T extends Property<T>, K extends string>(obj: T, ...keys: K
 	}, {} as T);
 }
 
-/** extract a named key from an array of objects */
+/**
+ * Extracts a specified named key from an array of objects.
+ * 
+ * @param objs - The array of objects
+ * @param key - The property key to extract
+ * @returns An array of the extracted property values
+ * @example
+ * ```ts
+ * const ids = pluck([{ id: 1 }, { id: 2 }], 'id'); // [1, 2]
+ * ```
+ */
 export const pluck = <T, K extends keyof T>(objs: T[], key: K): T[K][] =>
 	objs.map(obj => obj[key]);
 
-/** extend an object with the properties of another */
+/**
+ * Extends a target object with the properties of one or more source objects.
+ * Uses `Object.assign` internally.
+ * 
+ * @param obj - The target object
+ * @param objs - The source objects
+ * @returns The extended target object
+ * @example
+ * ```ts
+ * const ext = extend({ a: 1 }, { b: 2 }); // { a: 1, b: 2 }
+ * ```
+ */
 export const extend = <T extends {}, U>(obj: T, ...objs: U[]) =>
 	Object.assign(obj, ...objs) as T;
 
-/** recursively deep-merge objects */
+/**
+ * Recursively deeply merges multiple objects into a single new object.
+ * Does not mutate the source objects.
+ * 
+ * @param objects - The objects to merge
+ * @returns A new deeply merged object
+ * @example
+ * ```ts
+ * const merged = deepMerge({ a: { x: 1 } }, { a: { y: 2 } }); // { a: { x: 1, y: 2 } }
+ * ```
+ */
 export const deepMerge = <T extends Record<PropertyKey, any>>(...objects: Partial<T>[]): T => {
 	return objects.reduce((prev, obj) => {
 		if (!isObject(obj)) return prev;
@@ -126,6 +217,16 @@ export const deepMerge = <T extends Record<PropertyKey, any>>(...objects: Partia
 	}, {} as any) as T;
 }
 
+/**
+ * Returns the count of enumerable own properties on an object.
+ * 
+ * @param obj - The object to count properties of
+ * @returns The number of properties
+ * @example
+ * ```ts
+ * const count = countProperties({ a: 1, b: 2 }); // 2
+ * ```
+ */
 export const countProperties = (obj = {}) =>
 	ownKeys(obj).length
 

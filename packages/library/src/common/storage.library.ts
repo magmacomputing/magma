@@ -27,13 +27,29 @@ let storage = context.type === CONTEXT.Browser
 	? getSafeStorage()
 	: mockStorage;
 
-/** select local | session storage */
+/**
+ * Selects the active browser storage mechanism (localStorage or sessionStorage).
+ * 
+ * @param store - The storage type to use (default: 'local')
+ * @returns The selected Storage object
+ */
 export function selStorage(store: 'local' | 'session' = 'local') {
 	const name = (store + 'Storage') as `${typeof store}Storage`;
 	return storage = getSafeStorage(name);
 }
 
-/** get storage */
+/**
+ * Retrieves a value from the active storage mechanism across any runtime environment
+ * (Browser, NodeJS, Deno, GoogleAppsScript). Rebuilds serialized objects automatically.
+ * 
+ * @param key - The storage key to lookup
+ * @param dflt - The fallback value if the key does not exist
+ * @returns The deserialized value, or the default value
+ * @example
+ * ```ts
+ * const user = getStorage<{ name: string }>('user', { name: 'Guest' });
+ * ```
+ */
 export function getStorage<T>(): T;
 export function getStorage<T>(key: string): T | undefined;
 export function getStorage<T>(key: string | undefined, dflt?: T): T;
@@ -69,7 +85,18 @@ export function getStorage<T>(key?: string, dflt?: T): T | undefined {
 		: dflt;
 }
 
-/** set / delete storage */
+/**
+ * Sets or deletes a value in the active storage mechanism across any runtime environment.
+ * Automatically serializes objects for safe storage.
+ * 
+ * @param key - The storage key to set
+ * @param val - The value to store (if undefined, the key is deleted)
+ * @example
+ * ```ts
+ * setStorage('user', { name: 'Alice' });
+ * setStorage('user', undefined); // deletes 'user'
+ * ```
+ */
 export function setStorage<T>(key: string, val?: T) {
 	const stash = isDefined(val) ? stringify(val) : undefined;
 	const set = isDefined(stash);

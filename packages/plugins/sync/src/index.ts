@@ -7,10 +7,15 @@ export { AtomicClock, AtomicReader, ClockOptions };
 declare module '@magmacomputing/tempo' {
 	namespace Tempo {
 		const sync: {
-			startClock(options?: ClockOptions): void;
+			/** Starts the master atomic clock on the current thread. */
+			startClock(options?: ClockOptions): AtomicClock;
+			/** Stops the master atomic clock. */
 			stopClock(): void;
+			/** Gets the SharedArrayBuffer from the master clock. */
 			getBuffer(): SharedArrayBuffer;
+			/** Synchronously reads the exact time from the provided SharedArrayBuffer. */
 			now(buffer: SharedArrayBuffer): number;
+			/** Synchronously reads the time and returns a new Tempo instance. */
 			getTempo(buffer: SharedArrayBuffer): Tempo;
 		}
 	}
@@ -18,6 +23,10 @@ declare module '@magmacomputing/tempo' {
 
 let _globalClock: AtomicClock | null = null;
 
+/**
+ * The Sync Plugin.
+ * Exposes `Tempo.sync` for synchronizing time across multiple threads using SharedArrayBuffers.
+ */
 export const SyncPlugin: TempoPlugin = definePlugin({
 	name: 'sync',
 	install(TempoRef: any) {
@@ -29,13 +38,14 @@ export const SyncPlugin: TempoPlugin = definePlugin({
 			 * Starts the master atomic clock on the current thread.
 			 * Only call this once on the main thread.
 			 */
-			startClock(options?: ClockOptions): void {
+			startClock(options?: ClockOptions): AtomicClock {
 				if (_globalClock) {
 					_globalClock.start();
-					return;
+					return _globalClock;
 				}
 				_globalClock = new AtomicClock(options);
 				_globalClock.start();
+				return _globalClock;
 			},
 
 			/**

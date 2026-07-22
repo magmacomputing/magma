@@ -1,6 +1,3 @@
-import { Tempo } from '#tempo';
-import type { Options } from '#tempo/tempo.type.js';
-
 import { getContext, CONTEXT } from '#library/utility.library.js';
 
 export interface BenchmarkConfig {

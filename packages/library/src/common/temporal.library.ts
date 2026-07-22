@@ -6,29 +6,50 @@
 import '#library/temporal.polyfill.js';											// ensure Temporal is available
 import { isNumber, isObject, isString, isDefined, isZonedDateTime } from '#library/assertion.library.js';
 
-/** return the current Temporal.Now.instant */
+/**
+ * Returns the current instant in time using `Temporal.Now.instant()`.
+ * 
+ * @returns The current Temporal.Instant
+ */
 export function instant() {
 	return Temporal.Now.instant();
 }
 
-/** return the current Temporal.Now.plainDateISO */
+/**
+ * Returns the current plain date (ISO calendar) for the given timezone.
+ * 
+ * @param timeZone - The time zone to use (default: system local timezone)
+ * @returns The current Temporal.PlainDate
+ */
 export function today(timeZone: string = Intl.DateTimeFormat().resolvedOptions().timeZone) {
 	return Temporal.Now.plainDateISO(timeZone);
 }
 
-/** return the current Unix timestamp (seconds) */
+/**
+ * Returns the current Unix timestamp in seconds.
+ * 
+ * @returns The current Unix timestamp (seconds)
+ */
 export function unix() {
 	return Math.trunc(instant().epochMilliseconds / 1_000);
 }
 
-/** return the current Unix timestamp (nanoseconds) */
+/**
+ * Returns the current Unix timestamp in nanoseconds.
+ * 
+ * @returns The current Unix timestamp (nanoseconds)
+ */
 export function epoch() {
 	return instant().epochNanoseconds;
 }
 
 /** 
- * return the January and July offsets (nanoseconds) for a given timezone and year 
- * @note also maintained in `tempo-fns` — please sync changes
+ * Returns the January and July offsets (in nanoseconds) for a given timezone and year.
+ * Used for inferring daylight saving time and hemisphere characteristics.
+ * 
+ * @param timeZone - The IANA timezone string
+ * @param year - The reference year to calculate offsets for (default: 2024 for stability)
+ * @returns An object containing the `jan` and `jul` offsets
  */
 export function getOffsets(timeZone: string, year = 2024) {	//** use a fixed reference-year (2024) for stability */
 	const jan = Temporal.PlainDate.from({ year, month: 1, day: 1 }).toZonedDateTime(timeZone).offsetNanoseconds;
@@ -38,8 +59,11 @@ export function getOffsets(timeZone: string, year = 2024) {	//** use a fixed ref
 }
 
 /** 
- * return whether the given (or current) date is in Daylight Savings 
- * @note also maintained in `tempo-fns` — please sync changes
+ * Determines whether the given (or current) date is observing Daylight Saving Time.
+ * 
+ * @param date - Optional ZonedDateTime or ISO string to check
+ * @param timeZone - The timezone to use if creating a new date (default: system local)
+ * @returns True if the date is in DST, false otherwise
  */
 export function isDST(date?: Temporal.ZonedDateTime | string, timeZone: string = Intl.DateTimeFormat().resolvedOptions().timeZone) {
 	const zdt = isString(date)
@@ -51,10 +75,13 @@ export function isDST(date?: Temporal.ZonedDateTime | string, timeZone: string =
 }
 
 /**
- * Temporal rejects fractional Duration values, so normalise 
- * fractional parts downwards, e.g. { seconds: 0.1 } → { milliseconds: 100 }.
+ * Normalizes fractional duration values downwards to smaller units.
+ * Temporal rejects fractional Duration values (e.g., `{ seconds: 0.1 }`),
+ * so this function converts them (e.g., to `{ milliseconds: 100 }`).
  * Mutates the provided duration object.
- * @note also maintained in `tempo-fns` — please sync changes
+ * 
+ * @param payload - The record object containing duration properties
+ * @returns The mutated duration record
  */
 export function normaliseFractionalDurations(payload: Record<string, any>) {
 	const SCALE: [string, string, number][] = [
@@ -86,9 +113,12 @@ export function normaliseFractionalDurations(payload: Record<string, any>) {
 // ─────────────────────────────────────────────────
 
 /**
- * ## toZonedDateTime
- * Create a `Temporal.ZonedDateTime` from a
- * property-bag or ISO string.
+ * Creates a `Temporal.ZonedDateTime` from a property-bag or ISO string.
+ * Automatically injects the specified timezone if missing from the string.
+ * 
+ * @param bag - The property bag or ISO string to convert
+ * @param tz - The fallback timezone (default: 'UTC')
+ * @returns The created Temporal.ZonedDateTime
  */
 export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike | string, tz: Temporal.TimeZoneLike = 'UTC'): Temporal.ZonedDateTime {
 	if (isString(bag)) {
@@ -100,31 +130,36 @@ export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike | string, tz: Te
 }
 
 /**
- * ## toPlainDate
- * Create a `Temporal.PlainDate` from a
- * property-bag or ISO string.
+ * Creates a `Temporal.PlainDate` from a property-bag or ISO string.
+ * 
+ * @param bag - The property bag or ISO string to convert
+ * @returns The created Temporal.PlainDate
  */
 export function toPlainDate(bag: Temporal.PlainDateLike | string): Temporal.PlainDate {
 	return Temporal.PlainDate.from(bag);
 }
 
 /**
- * ## toInstant
- * Create a `Temporal.Instant` from epoch
- * nanoseconds (bigint).
+ * Creates a `Temporal.Instant` from epoch nanoseconds.
+ * 
+ * @param epochNanoseconds - The bigint representing nanoseconds since the UNIX epoch
+ * @returns The created Temporal.Instant
  */
 export function toInstant(epochNanoseconds: bigint): Temporal.Instant {
 	return Temporal.Instant.fromEpochNanoseconds(epochNanoseconds);
 }
 
 /**
- * ## getTemporalIds
- * Normalize TimeZone and Calendar inputs into a [timeZoneId, calendarId] tuple.
- * Accepts either (tz, cal) strings or a single ZonedDateTime-like object.
- * Supports both spec-final (flat) and V8 harmony (nested) structures.
+ * Normalizes TimeZone and Calendar inputs into a `[timeZoneId, calendarId]` tuple.
+ * Accepts either `(tz, cal)` strings or a single ZonedDateTime-like object.
+ * Supports both spec-final (flat) and V8 harmony (nested) Temporal structures.
+ * 
+ * @param tzOrZdt - The TimeZone string, Calendar string, or ZonedDateTime object
+ * @param cal - The optional Calendar string if `tzOrZdt` is a timezone
+ * @returns A tuple of `[timeZoneId, calendarId]`
  */
-export function getTemporalIds(zdt: Temporal.ZonedDateTime, cal?: Temporal.CalendarLike): [string, string];
-export function getTemporalIds(tz: Temporal.TimeZoneLike, cal?: Temporal.CalendarLike): [string, string];
+export function getTemporalIds(tzOrZdt: Temporal.ZonedDateTime, cal?: Temporal.CalendarLike): [string, string];
+export function getTemporalIds(tzOrZdt: Temporal.TimeZoneLike, cal?: Temporal.CalendarLike): [string, string];
 export function getTemporalIds(tzOrZdt: any, cal?: any): [string, string] {
 	const fallbackTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
@@ -158,11 +193,12 @@ export function getTemporalIds(tzOrZdt: any, cal?: any): [string, string] {
 }
 
 /**
- * ## normalizeUtcOffset
- * Convert informal UTC offset strings into the `±HH:MM` format required by Temporal.
+ * Converts informal UTC offset strings into the `±HH:MM` format required by Temporal.
  * Accepts forms like `'UTC+8'`, `'UTC-9'`, `'UTC+08:00'`, `'UTC-05:30'`.
  * Returns the input unchanged if it does not match the UTC± pattern.
- * @note also maintained in `tempo-fns` — please sync changes
+ * 
+ * @param zone - The informal offset string
+ * @returns The normalized offset string
  */
 export function normalizeUtcOffset(zone: string): string {
 	const match = /^UTC([+-])(\d{1,2})(?::(\d{2}))?$/i.exec(zone);

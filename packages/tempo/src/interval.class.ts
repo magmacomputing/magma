@@ -3,9 +3,7 @@ import { Immutable } from '#library/class.library.js';
 
 export type TemporalPoint = Tempo | { epochNanoseconds: bigint };
 
-// Tempo limits (Year 1000 to Year 9999) used for open-ended boundaries
-const MIN_TEMPO = -30610224000000000000n;
-const MAX_TEMPO = 253402300799999999999n;
+// Tempo uses native JavaScript Infinity and -Infinity for open-ended boundaries
 
 function getNs(point: TemporalPoint | unknown): bigint {
 	const ns = (point as any)?.epoch?.ns ?? (point as any)?.epochNanoseconds;
@@ -18,12 +16,12 @@ function getNs(point: TemporalPoint | unknown): bigint {
 export class Interval<T extends TemporalPoint = TemporalPoint> {
 	readonly #start: T | null;
 	readonly #end: T | null;
-	readonly #startNs: bigint;
-	readonly #endNs: bigint;
+	readonly #startNs: bigint | number;
+	readonly #endNs: bigint | number;
 
 	constructor(start: T | null, end: T | null) {
-		const startNs = start === null ? MIN_TEMPO : getNs(start);
-		const endNs = end === null ? MAX_TEMPO : getNs(end);
+		const startNs = start === null ? -Infinity : getNs(start);
+		const endNs = end === null ? Infinity : getNs(end);
 
 		if (endNs < startNs) {
 			this.#start = end;
@@ -52,11 +50,11 @@ export class Interval<T extends TemporalPoint = TemporalPoint> {
 		return this.#end;
 	}
 
-	get startNs(): bigint {
+	get startNs(): bigint | number {
 		return this.#startNs;
 	}
 
-	get endNs(): bigint {
+	get endNs(): bigint | number {
 		return this.#endNs;
 	}
 

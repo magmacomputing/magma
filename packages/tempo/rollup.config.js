@@ -81,6 +81,15 @@ const entryPoints = Object.fromEntries(
 		.filter(([key]) => !isPremiumAvailable || key !== 'plugin/license/license.validator')
 );
 
+const stdDir = path.resolve(__dirname, '../plugins/.std/dist');
+if (fs.existsSync(stdDir)) {
+	const stdFiles = getFiles(stdDir, '.js');
+	for (const file of stdFiles) {
+		const rel = path.relative(stdDir, file).replace(/\.js$/, '');
+		entryPoints[`term/${rel}`] = file;
+	}
+}
+
 export default [
 	...(isPremiumAvailable ? [{
 		input: licensePath,
@@ -165,7 +174,8 @@ export default [
 			alias({
 				entries: [
 					// Pull in the already-obfuscated monolith!
-					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') }
+					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') },
+					{ find: '#tempo/std', replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') }
 				]
 			}),
 			resolve({ extensions: ['.js', '.ts'] })
@@ -201,7 +211,8 @@ export default [
 			alias({
 				entries: [
 					// Pull in the already-obfuscated monolith!
-					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') }
+					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') },
+					{ find: '#tempo/std', replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') }
 				]
 			}),
 			resolve({ extensions: ['.js', '.ts'] }),
@@ -243,6 +254,13 @@ export default [
 					return `lib/${dir}${name}.js`;
 				}
 
+				if (id.includes('magma/packages/plugins/.std') || rel.startsWith('../plugins/.std')) {
+					const match = normalizedRel.match(/plugins\/\.std\/(?:src|dist)\/(.*)$/);
+					const modulePath = match ? path.dirname(match[1]) : '.';
+					const dir = modulePath === '.' ? '' : modulePath + '/';
+					return `term/${dir}${name}.js`;
+				}
+
 				if (rel.startsWith('..') || rel.includes('node_modules')) {
 					const sanitized = normalizedRel.replace(/^(\.\.\/)+/, '');
 					const modulePath = path.dirname(sanitized);
@@ -256,7 +274,8 @@ export default [
 		plugins: [
 			alias({
 				entries: [
-					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') }
+					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') },
+					{ find: '#tempo/std', replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') }
 				]
 			}),
 			// We DO want to resolve @magmacomputing/library and bundle it into lib/ 

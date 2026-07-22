@@ -9,7 +9,6 @@ export interface ClockOptions {
 }
 
 /**
- * # AtomicClock
  * The master clock that continuously writes the current system time to a SharedArrayBuffer.
  * This should only be instantiated once on the main thread (or a master worker).
  */

@@ -1,7 +1,5 @@
-import { getTermRange, defineTerm, defineRange, resolveCycleWindow } from './term.util.js';
-import { logWarn } from '../../support/support.util.js';
-import { COMPASS } from '../../support/support.enum.js';
-import type { Tempo } from '../../tempo.class.js';
+import { getTermRange, defineTerm, defineRange, resolveCycleWindow, logWarn, COMPASS } from '@magmacomputing/tempo/plugin-api';
+import type { Tempo } from '@magmacomputing/tempo';
 
 /** definition of meteorological season ranges */
 const groups = defineRange([
@@ -49,7 +47,7 @@ export const SeasonTerm = defineTerm({
 	}
 });
 
-declare module '../../tempo.class.js' {
+declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
 		szn: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
 		season: {
