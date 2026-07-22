@@ -39,11 +39,11 @@ t.set({ year: 2026, month: 1 }); // Sets to January 2026
 
 ### Navigating to Boundaries
 
-[Slick Math](../4-advanced-reference/tempo.shorthand.md) also works inside `.set()` for boundary navigation:
+You can snap to boundaries using native units, or use [Slick Structural Keys](../4-advanced-reference/tempo.shorthand.md) to navigate custom terminology cycles:
 
 ```typescript
-t.set({ start: 'month' });    // Start of the current month
-t.set({ end: 'year' });       // End of the current year
+t.set({ start: 'month' });    // Native: Start of the current month
+t.set({ end: '#qtr' });       // Slick: End of the current quarter
 ```
 
 ### Slick Object Mutations

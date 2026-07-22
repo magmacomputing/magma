@@ -7,7 +7,7 @@ The Tempo Shorthand Engine (the "Slick" engine) provides a powerful, namespace-b
 Shorthand behavior changes depending on whether you provide a **String**, an **Object**, or a **Structural Key**.
 
 ### A. Navigation Mode (String Shorthand)
-**Used in:** `.set()`, `.add()`, `.until()`, and `.since()`.  
+**Used in:** `.set()`, `.add()`, `.subtract()`, `.until()`, and `.since()`.  
 **Pattern:** `#[namespace].[modifier][repeat][range]`  
 **Best for:** Jumping to specific boundaries (e.g., "the start of the next Q1").
 
@@ -17,13 +17,14 @@ t.add('#timeOfDay.>afternoon'); // Jumps to the start of the next Afternoon peri
 ```
 
 ### B. Relational Mode (Object Shorthand)
-**Used in:** `.add()` and `.set()`.  
+**Used in:** `.add()`, `.subtract()`, and `.set()`.  
 **Pattern:** `{ '#namespace': value }`  
 **Best for:** Shifting by semantic "steps" while preserving your relative position.
 
 ```javascript
-// Relational Add: Preserves your offset within the cycle
-t.add({ '#qtr': 1 }); // If you are 20 days into Q1, you resolve to 20 days into Q2.
+// Relational Add & Subtract: Preserves your offset within the cycle
+t.add({ '#qtr': 1 });      // If you are 20 days into Q1, you resolve to 20 days into Q2.
+t.subtract({ '#qtr': 1 }); // Resolves backwards to 20 days into the previous Quarter.
 
 // Relational Set: Absolute index alignment
 t.set({ '#qtr': 2 }); // Aligns to the start of the 2nd quarter of the current year
