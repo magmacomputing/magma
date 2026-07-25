@@ -212,6 +212,7 @@ export const IntlDefault: IntlOptions = {
 export const Default = secure({
 	/** log to console */																			debug: LOG.Info,
 	/** catch or throw Errors */															catch: false,
+	/** suppress console output during catch */								silent: false,
 	/** initialization strategy (auto | strict | defer) */		mode: MODE.Auto,
 	/** used to parse two-digit years*/												pivot: 75,					/** @link https:	//en.wikipedia.org/wiki/Date_windowing */
 	/** precision to measure timestamps (ss|ms|us|ns) */			timeStamp: 'ms',
