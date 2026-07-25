@@ -97,8 +97,9 @@ describe('AI Parsing Plugin', () => {
 					'x-ratelimit-remaining-tokens': '4950'
 				})
 			}));
-			await parseAI('Thanksgiving', { force: true });
 		}
+
+		await parseAI('Thanksgiving', { force: true });
 
 		const limits = getAiRateLimits();
 		expect(limits).not.toBeNull();
@@ -210,8 +211,15 @@ describe('AI Parsing Plugin', () => {
 
 		it('should update BoundedCache options via initAI', () => {
 			const cache = new BoundedCache(1000, 3600000);
+			initAI({ cache });
+
 			initAI({ maxCacheSize: 50, cacheTtl: 5000 });
+			expect(cache.maxSize).toBe(50);
+			expect(cache.ttl).toBe(5000);
+
 			initAI({ maxCacheSize: 5, cacheTtl: 100 });
+			expect(cache.maxSize).toBe(5);
+			expect(cache.ttl).toBe(100);
 		});
 
 		it('should normalize cache keys (whitespace & case) for clearAiCache', () => {

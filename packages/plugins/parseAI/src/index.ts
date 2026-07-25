@@ -204,6 +204,12 @@ export async function parseAI(
   "reasoning": "Step-by-step calendar math from the Current Time to determine the target date.",
   "iso": "The final local ISO 8601 string (e.g., YYYY-MM-DDThh:mm:ss) WITHOUT a timezone offset or 'Z' suffix, or 'INVALID' if ambiguous."
 }
+
+Ambiguity Rules:
+- "next [weekday/unit]": Evaluate as the immediate next chronological occurrence after Current Time.
+- "last [weekday/unit]" / "previous [weekday/unit]": Evaluate as the most recent past occurrence prior to Current Time.
+- "this [weekday]": Evaluate as the occurrence of that weekday in the current calendar week containing Current Time.
+
 Do not include markdown blocks, explanations, or any text outside the JSON.`;
 
         if (isDebug)

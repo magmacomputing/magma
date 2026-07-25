@@ -32,12 +32,13 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 			this.delete(key);
 			return undefined;
 		}
-		const val = super.get(key);
-		if (val !== undefined) {
+		if (super.has(key)) {
+			const val = super.get(key) as V;
 			super.delete(key);
 			super.set(key, val);
+			return val;
 		}
-		return val;
+		return undefined;
 	}
 
 	override has(key: K): boolean {

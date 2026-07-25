@@ -32,4 +32,12 @@ Passing the `Locale` is absolutely critical for the LLM to know whether "11/12" 
 
 To ensure deterministic behavior, the LLM is instructed to *only* return strict ISO 8601 strings. 
 
-The plugin executes the network request, the LLM returns a local ISO string without a timezone offset or 'Z' suffix (like `"2026-11-26T00:00:00"`), and the plugin immediately passes that string back into the native `new Tempo()` constructor. The provider response must omit timezone suffixes to match the local ISO contract enforced by `parseAI`. The developer seamlessly receives a valid, native `Tempo` instance. This completely eliminates LLM hallucination risk on AST construction, creating a perfect decoupled bridge between AI text generation and deterministic date-math.
+The plugin executes the network request, the LLM returns a local ISO string without a timezone offset or 'Z' suffix (like `"2026-11-26T00:00:00"`), and the plugin immediately passes that string back into the native `new Tempo()` constructor. The provider response must omit timezone suffixes to match the local ISO contract enforced by `parseAI`. The developer seamlessly receives a valid, native `Tempo` instance. This eliminates AST-construction ambiguity, creating a decoupled bridge between AI text generation and native Tempo conversion.
+
+### Relative Date Ambiguity Tie-Breakers
+
+To eliminate model variance on idioms like "Next Friday" or "Last Tuesday", the plugin enforces static system prompt ambiguity rules:
+* `"next [weekday/unit]"`: Evaluated as the immediate next chronological occurrence after `Current Time`.
+* `"last [weekday/unit]"` / `"previous [weekday/unit]"`: Evaluated as the most recent past occurrence prior to `Current Time`.
+* `"this [weekday]"`: Evaluated as the occurrence within the current calendar week containing `Current Time`.
+
