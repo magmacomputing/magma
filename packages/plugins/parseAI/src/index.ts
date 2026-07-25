@@ -4,6 +4,9 @@ import type * as t from '@magmacomputing/tempo';
 import { TempoAiError } from './error.js';
 export { TempoAiError } from './error.js';
 
+import { BoundedCache } from './cache.js';
+export { BoundedCache } from './cache.js';
+
 export * from './parseAI.type.js';
 import type { AiConfig, AiRateLimits, AiProvider } from './parseAI.type.js';
 
@@ -14,26 +17,30 @@ const _state: {
   limits: AiRateLimits | null;
 } = {
   config: {},
-  cache: new Map(),
+  cache: new BoundedCache(),
   limits: null,
 }
 
 const DEFAULT_PROVIDERS: Record<string, Partial<AiProvider>> = {
   groq: {
     url: 'https://api.groq.com/openai/v1/chat/completions',
-    model: 'llama-3.1-8b-instant'
+    model: 'llama-3.3-70b-versatile',
+    tokenParam: 'max_tokens'
   },
   openai: {
     url: 'https://api.openai.com/v1/chat/completions',
-    model: 'gpt-5.4-mini'
+    model: 'gpt-5.4-mini',
+    tokenParam: 'max_completion_tokens'
   },
   gemini: {
     url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-    model: 'gemini-1.5-flash'
+    model: 'gemini-1.5-flash',
+    tokenParam: 'max_tokens'
   },
   mistral: {
     url: 'https://api.mistral.ai/v1/chat/completions',
-    model: 'mistral-small-latest'
+    model: 'mistral-small-latest',
+    tokenParam: 'max_tokens'
   }
 }
 
@@ -61,7 +68,17 @@ export function initAI(config: AiConfig): void {
 
   if (config.cache) {
     _state.cache = config.cache;
+  } else if (_state.cache instanceof BoundedCache) {
+    if (config.maxCacheSize !== undefined) _state.cache.maxSize = config.maxCacheSize;
+    if (config.cacheTtl !== undefined) _state.cache.ttl = config.cacheTtl;
   }
+}
+
+/**
+ * Helper to normalize string input for cache key matching.
+ */
+function normalizeCacheInput(input: string): string {
+  return input.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 /**
@@ -74,9 +91,10 @@ export function initAI(config: AiConfig): void {
 export function clearAiCache(input: string | string[]): void {
   const inputs = Array.isArray(input) ? input : [input];
   for (const i of inputs) {
-    const prefix = `${i}::`;
+    const normalized = normalizeCacheInput(i);
+    const prefix = `${normalized}::`;
     for (const key of _state.cache.keys()) {
-      if (key.startsWith(prefix) || key === i /* legacy fallback */) {
+      if (key.toLowerCase().startsWith(prefix) || key.toLowerCase() === normalized || key === i /* legacy fallback */) {
         _state.cache.delete(key);
       }
     }
@@ -151,10 +169,11 @@ export async function parseAI(
       anchorStr = options?.anchor || new Tempo().toString();
     }
 
-    // The cache key salts the string with the anchor's Calendar Date. 
-    // This allows "tomorrow" to hit the cache all day, but cleanly miss when midnight strikes!
+    // The cache key salts the normalized string with the anchor's Calendar Date and resolved context (TZ/Cal/Loc/Sph). 
+    // This allows "tomorrow" to hit the cache all day, but cleanly miss when midnight strikes or context changes!
+    const normalizedStr = normalizeCacheInput(str);
     const cacheSalt = new Tempo(anchorStr, { ...options, timeZone: tz, calendar: cal, locale: loc, sphere: sph }).format('{yyyy}-{mm}-{dd}');
-    const cacheKey = `${str}::${cacheSalt}`;
+    const cacheKey = `${normalizedStr}::${cacheSalt}::${tz}::${cal}::${loc}::${sph}`;
 
     // 3. Check Cache
     if (!options?.force && options?.cache !== false && _state.cache.has(cacheKey)) {
@@ -190,27 +209,44 @@ Do not include markdown blocks, explanations, or any text outside the JSON.`;
         if (isDebug)
           console.log(`[parseAI] Sending to ${provider.id}:`, { system: `${systemPrompt}\n${contextString}`, user: str });
 
-        const isNewOpenAi = model.startsWith('gpt-5') || model.startsWith('o1') || model.startsWith('o3');
-        const tokenLimit = isNewOpenAi ? { max_completion_tokens: 250 } : { max_tokens: 250 };
+        const tokenParam = provider.tokenParam
+          || (provider.options?.max_completion_tokens !== undefined ? 'max_completion_tokens' : undefined)
+          || (provider.options?.max_tokens !== undefined ? 'max_tokens' : undefined)
+          || 'max_tokens';
+        const tokenLimit = { [tokenParam]: 250 };
 
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${provider.key}`
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [
-              { role: 'system', content: `${systemPrompt}\n${contextString}` },
-              { role: 'user', content: str }
-            ],
-            temperature: 0,
-            ...tokenLimit,
-            response_format: { type: "json_object" },
-            ...provider.options
-          })
-        });
+        const controller = new AbortController();
+        const timeoutMs = provider.options?.timeout ?? 15000;
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        let response: Response;
+        try {
+          response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${provider.key}`
+            },
+            body: JSON.stringify({
+              model: model,
+              messages: [
+                { role: 'system', content: `${systemPrompt}\n${contextString}` },
+                { role: 'user', content: str }
+              ],
+              temperature: 0,
+              ...tokenLimit,
+              response_format: { type: "json_object" },
+              ...provider.options
+            }),
+            signal: controller.signal
+          });
+        } catch (fetchErr: any) {
+          lastError = fetchErr;
+          if (isDebug) console.warn(`[parseAI] Provider ${provider.id} fetch failed or timed out:`, fetchErr?.message || fetchErr);
+          continue;
+        } finally {
+          clearTimeout(timeoutId);
+        }
 
         // Parse rate limits from headers
         const remReq = response.headers.get('x-ratelimit-remaining-requests');
@@ -241,12 +277,16 @@ Do not include markdown blocks, explanations, or any text outside the JSON.`;
         }
 
         const data = await response.json();
-        const content = data.choices[0].message.content.trim();
+        const rawContent = data?.choices?.[0]?.message?.content;
+        if (typeof rawContent !== 'string')
+          throw new TempoAiError(`Provider ${provider.id} returned invalid or missing response content payload.`, 422);
+
+        const content = rawContent.trim();
 
         if (isDebug)
           console.log(`[parseAI] Received from ${provider.id}:`, content);
 
-        let parsedData;
+        let parsedData: any;
         try {
           const cleanContent = content.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
           parsedData = JSON.parse(cleanContent);
@@ -254,7 +294,10 @@ Do not include markdown blocks, explanations, or any text outside the JSON.`;
           throw new TempoAiError('AI returned invalid JSON.', 422);
         }
 
-        const isoContent = parsedData.iso;
+        const isoContent = parsedData?.iso;
+
+        if (typeof isoContent !== 'string')
+          throw new TempoAiError('AI returned a payload missing the "iso" string field.', 422);
 
         if (isoContent === 'INVALID')
           throw new TempoAiError('AI could not parse the string.', 422);

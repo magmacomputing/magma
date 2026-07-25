@@ -1203,7 +1203,7 @@ export class Tempo {
 	/** memoized Calendar ID */																#cal?: string;
 	/** indicator that the instance failed to parse */				#errored = false;
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
-	/** prebuilt formats, for convenience */									#fmt!: Record<string, string>;
+	/** prebuilt formats, for convenience */									#fmt!: Record<string, string | undefined>;
 	/** mapping of terms to their resolved values */					#term!: any;
 	/** a collection of parse rule-matches */									#matches: Internal.MatchResult[] | undefined;
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
@@ -1623,7 +1623,7 @@ export class Tempo {
 	}
 
 	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term }
-	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string> { return this.#fmt }
+	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#fmt }
 	/** units since epoch for this date-time instance */			get epoch() { return Tempo.#getEpoch(this.toDateTime()); }
 
 	/**

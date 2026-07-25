@@ -15,7 +15,7 @@ Tempo community plugin for LLM-powered natural language parsing.
 This plugin bridges the gap between deterministic date-math and unstructured NLP inputs, utilizing large language models (like Gemini, Groq, or OpenAI) to safely and asynchronously parse complex natural language expressions into `Tempo` instances.
 
 > **Note**: This plugin is **not** a silver-bullet replacement for all your parsing needs! `Tempo.parse()` natively handles structured dates and formats phenomenally well using its Aliases, Layouts, and Snippets. The `parseAI` plugin is specifically designed to be an alternative path for handling completely unstructured, conversational human language that would otherwise be impossible to Regex.
-
+>
 > **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle. BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, you must use a proxy service.
 
 ## Installation
@@ -34,7 +34,7 @@ initAI({
   providers: [
     { id: 'openai', key: process.env.OPENAI_API_KEY, model: 'gpt-5.4-mini' },
   ],
-  debug: true // (Optional) Enable verbose console logging
+  debug: true // (Development-only) Enable verbose console logging
 });
 ```
 
@@ -53,7 +53,7 @@ clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");
 When building your LLM queries, it is often useful to see exactly how `parseAI` is routing your data. 
 
 **Global Debugging**
-Passing `debug: true` into `initAI` will globally log the exact system prompt, localized context string, and stringified JSON response returned by the LLM. It will also log when a string is resolved purely natively or served from the cache!
+Passing `debug: true` into `initAI` is intended for **development environments only**. It will globally log system prompts, localized context, and raw LLM responses to the console. Because prompts, context, and responses may contain user-supplied or sensitive data, disable `debug: true` or redact sensitive logs in production.
 
 **Forced Evaluation**
 If a relative query (like `"Next Friday"`) is perfectly intercepted by the native `Tempo` layout engine, but the anchor context inheritance is returning an undesired timezone, you can forcefully bypass the deterministic engine and the cache by passing `force: true`:

@@ -81,13 +81,14 @@ const dt = await parseAI("Q3_START", { force: true });
 ```
 
 ### Extensible Caching (Enterprise)
-For edge environments (like Cloudflare Workers) or Server-Side Rendering (SSR) applications where the memory cache resets on every request, the plugin supports custom cache adapters!
+For edge environments or custom application architectures, the plugin supports custom cache implementations!
 
-You can provide any object that implements the standard `Map` interface (`get`, `set`, `has`, `delete`), allowing you to back the plugin with Redis or an Edge KV store!
+You can provide any object that implements the standard **synchronous** `Map<string, string>` interface (`get`, `set`, `has`, `delete`). Note that all cache adapter methods must execute synchronously, as the internal cache lookup engine does not await promise-returning cache operations.
 
 ```typescript
+// Custom synchronous cache implementation
 initAI({
   providers: [{ id: 'groq', key: '...' }],
-  cache: new MyRedisAdapter()
+  cache: new MyCustomSyncCache()
 });
 ```

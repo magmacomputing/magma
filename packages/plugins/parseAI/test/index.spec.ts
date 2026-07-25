@@ -1,21 +1,25 @@
-import { parseAI, initAI, clearAiCache, getAiRateLimits, TempoAiError } from '../src/index.js';
+import { parseAI, initAI, clearAiCache, getAiRateLimits, TempoAiError, BoundedCache } from '../src/index.js';
 import { Tempo } from '@magmacomputing/tempo';
 
 describe('AI Parsing Plugin', () => {
-	const hasKey = Boolean(process.env.OPENAI_API_KEY);
-
-	beforeAll(() => {
-		if (hasKey) {
-			initAI({
-				providers: [{ id: 'openai', key: process.env.OPENAI_API_KEY! }]
-			});
-		}
-	});
+	const liveApiKey = process.env.GROQ_API_KEY ?? process.env.OPENAI_API_KEY;
+	const liveProviderId = process.env.GROQ_API_KEY ? 'groq' : 'openai';
+	const isLiveTest = Boolean(process.env.LIVE_AI_TEST && liveApiKey);
 
 	beforeEach(() => {
 		// Suppress expected native parsing errors from polluting the test output
 		vi.spyOn(console, 'error').mockImplementation(() => { });
 		vi.spyOn(console, 'warn').mockImplementation(() => { });
+
+		if (isLiveTest) {
+			initAI({
+				providers: [{ id: liveProviderId, key: liveApiKey! }]
+			});
+		} else {
+			initAI({
+				providers: [{ id: 'groq', key: 'mock-key-for-unit-testing' }]
+			});
+		}
 	});
 
 	afterEach(() => {
@@ -30,13 +34,24 @@ describe('AI Parsing Plugin', () => {
 	});
 
 	it('should throw TempoAiError if no key is configured and AI is needed', async () => {
-		if (!hasKey) {
-			await expect(parseAI('Next Thanksgiving')).rejects.toThrow(TempoAiError);
-			await expect(parseAI('Next Thanksgiving')).rejects.toThrow('No AI providers configured.');
-		}
+		initAI({ providers: [] });
+		await expect(parseAI('Next Thanksgiving')).rejects.toThrow(TempoAiError);
+		await expect(parseAI('Next Thanksgiving')).rejects.toThrow('No AI providers configured.');
 	});
 
-	it.runIf(hasKey)('should parse natural language successfully', async () => {
+	it('should parse natural language successfully', async () => {
+		if (!isLiveTest) {
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"reasoning":"Two days after December 1st", "iso":"2026-12-03T00:00:00"}' } }]
+			}), {
+				status: 200,
+				headers: new Headers({
+					'x-ratelimit-remaining-requests': '99',
+					'x-ratelimit-remaining-tokens': '4950'
+				})
+			}));
+		}
+
 		// Provide a strict anchor so we can assert the result deterministically
 		const anchorDate = '2026-05-10T12:00:00Z';
 		const result = await parseAI('Two days after December 1st', { anchor: anchorDate, timeZone: 'UTC' });
@@ -46,21 +61,45 @@ describe('AI Parsing Plugin', () => {
 		expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-12-03');
 	});
 
-	it.runIf(hasKey)('should cache the result', async () => {
+	it('should cache the result', async () => {
 		const anchorDate = '2026-05-10T12:00:00Z';
 		// Clear cache first
 		clearAiCache('Two days after December 1st');
 
-		// First parse (hits network)
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		if (!isLiveTest) {
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"reasoning":"Two days after December 1st", "iso":"2026-12-03T00:00:00"}' } }]
+			}), { status: 200 }));
+		}
+
+		// First parse (hits network or mock)
 		const dt1 = await parseAI('Two days after December 1st', { anchor: anchorDate, timeZone: 'UTC' });
 		expect(dt1.format('{yyyy}-{mm}-{dd}')).toBe('2026-12-03');
 
 		// Second parse (hits cache instantly)
 		const dt2 = await parseAI('Two days after December 1st', { anchor: anchorDate, timeZone: 'UTC' });
 		expect(dt2.format('{yyyy}-{mm}-{dd}')).toBe('2026-12-03');
+
+		if (!isLiveTest) {
+			expect(fetchSpy).toHaveBeenCalledTimes(1);
+		}
 	});
 
-	it.runIf(hasKey)('should expose rate limits after a request', () => {
+	it('should expose rate limits after a request', async () => {
+		if (!isLiveTest) {
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"reasoning":"Test date", "iso":"2026-11-26T00:00:00"}' } }]
+			}), {
+				status: 200,
+				headers: new Headers({
+					'x-ratelimit-remaining-requests': '99',
+					'x-ratelimit-remaining-tokens': '4950'
+				})
+			}));
+			await parseAI('Thanksgiving', { force: true });
+		}
+
 		const limits = getAiRateLimits();
 		expect(limits).not.toBeNull();
 		expect(limits?.remainingRequests).toBeDefined();
@@ -80,7 +119,7 @@ describe('AI Parsing Plugin', () => {
 
 			// The last error in the loop should bubble up
 			try {
-				await parseAI('Thanksgiving');
+				await parseAI('Thanksgiving', { force: true });
 				expect.unreachable('Should have thrown an error');
 			} catch (err: any) {
 				expect(err).toBeInstanceOf(TempoAiError);
@@ -119,7 +158,7 @@ describe('AI Parsing Plugin', () => {
 				})
 			}));
 
-			const result = await parseAI('Thanksgiving');
+			const result = await parseAI('Thanksgiving', { force: true });
 
 			expect(fetchSpy).toHaveBeenCalledTimes(2);
 			expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-26');
@@ -130,4 +169,78 @@ describe('AI Parsing Plugin', () => {
 			expect(limits?.remainingTokens).toBe(5000);
 		});
 	});
+
+	describe('BoundedCache & Eviction', () => {
+		it('should enforce maxCacheSize when inserting items beyond capacity', () => {
+			const cache = new BoundedCache(3);
+			cache.set('key1', 'val1');
+			cache.set('key2', 'val2');
+			cache.set('key3', 'val3');
+			expect(cache.size).toBe(3);
+
+			cache.set('key4', 'val4');
+			expect(cache.size).toBe(3);
+			expect(cache.has('key1')).toBe(false);
+			expect(cache.has('key4')).toBe(true);
+		});
+
+		it('should evict expired items based on TTL', async () => {
+			const cache = new BoundedCache(100, 50); // 50ms TTL
+			cache.set('tempKey', 'tempVal');
+			expect(cache.has('tempKey')).toBe(true);
+
+			await new Promise(resolve => setTimeout(resolve, 60));
+
+			expect(cache.has('tempKey')).toBe(false);
+			expect(cache.get('tempKey')).toBeUndefined();
+			expect(Array.from(cache.keys())).not.toContain('tempKey');
+		});
+
+		it('should preserve clearAiCache functionality', () => {
+			const cache = new BoundedCache(100);
+			cache.set('Thanksgiving::2026-05-10', '2026-11-26T00:00:00Z');
+			cache.set('Christmas::2026-05-10', '2026-12-25T00:00:00Z');
+
+			initAI({ cache });
+			clearAiCache('Thanksgiving');
+
+			expect(cache.has('Thanksgiving::2026-05-10')).toBe(false);
+			expect(cache.has('Christmas::2026-05-10')).toBe(true);
+		});
+
+		it('should update BoundedCache options via initAI', () => {
+			const cache = new BoundedCache(1000, 3600000);
+			initAI({ maxCacheSize: 50, cacheTtl: 5000 });
+			initAI({ maxCacheSize: 5, cacheTtl: 100 });
+		});
+
+		it('should normalize cache keys (whitespace & case) for clearAiCache', () => {
+			const cache = new BoundedCache(100);
+			cache.set('thanksgiving::2026-05-10', '2026-11-26T00:00:00Z');
+
+			initAI({ cache });
+			clearAiCache('   THANKSGIVING   ');
+			expect(cache.has('thanksgiving::2026-05-10')).toBe(false);
+		});
+	});
+
+	describe('Configurable Token Parameter', () => {
+		it('should use specified tokenParam in provider request payload', async () => {
+			const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"reasoning":"test", "iso":"2026-12-25T00:00:00Z"}' } }]
+			}), { status: 200 }));
+
+			initAI({
+				providers: [{ id: 'custom-llm', key: 'test-key', url: 'https://api.custom.com/v1/chat', model: 'custom-model', tokenParam: 'max_tokens' }]
+			});
+
+			await parseAI('some random unparseable string', { force: true });
+
+			expect(fetchSpy).toHaveBeenCalled();
+			const callBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+			expect(callBody.max_tokens).toBe(250);
+			expect(callBody.max_completion_tokens).toBeUndefined();
+		});
+	});
 });
+
