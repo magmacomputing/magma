@@ -49,6 +49,7 @@ Thumbs.db
 **/.vitepress/cache/
 **/.vitepress/dist/
 **/doc/api/
+**/public/api/
 **/doc/9-plugins/
 # Secrets and credentials
 .env

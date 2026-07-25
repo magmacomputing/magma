@@ -1,5 +1,5 @@
 import { asType, getType } from '#library/type.library.js';
-import { isNumber } from '#library/assertion.library.js';
+import { isNumber, isFunction } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable } from '#library/class.library.js';
@@ -70,27 +70,25 @@ function value(val: any) {
 }
 
 /**
- * Creates a Proxy-based Registry (Enum) from an Object or Array.
- * Enums are immutable (frozen) and provide methods for iteration, search, and extension.
- * Arrays are converted to zero-indexed objects (e.g., `['A']` becomes `{ A: 0 }`).
+ * # Enumify
+ * create a Proxy-based Registry (Enum) from an Object or Array.  
+ * Enums are immutable (frozen) and provide methods for iteration, search, and extension.  
  * 
- * @param list - The array or object to convert into an Enum
- * @param frozen - Whether to freeze the resulting Enum (default: true)
- * @returns An immutable Enumify registry object
  * @example
- * ```ts
+ * ```typescript
  * const Status = enumify(['Active', 'Inactive', 'Pending']);
- * console.log(Status.Active);       // 0
- * console.log(Status.has('Active'));// true
- * console.log(Status.keys());       // ['Active', 'Inactive', 'Pending']
+ * console.log(Status.Active);															// 0
+ * console.log(Status.has('Active'));												// true
+ * console.log(Status.keys());															// ['Active', 'Inactive', 'Pending']
  * ```
  */
 export function enumify<const T extends readonly any[]>(list: T, frozen?: boolean): Enum.wrap<Index<T>>;
 export function enumify<const T extends Property<any>>(list: T, frozen?: boolean): Enum.wrap<T>;
 export function enumify<T>(this: any, list: T, frozen = true): any {
-	const proto = (this && getType(this) !== 'Module') ? this : ENUM;
-	const target = Object.create(proto);
+	const type = getType(this);
+	const proto = (type !== 'Module' && isFunction(this?.has)) ? this : ENUM;
 	const arg = asType(list);
+	const target = Object.create(proto);
 
 	switch (arg.type) {
 		case 'Enumify':
@@ -113,10 +111,7 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 	return proxify(target, true, frozen);											// proxy is ALWAYS frozen (read-only), but target is only 'locked' if requested
 }
 
-/**
- * A class wrapper for Enumify to register it with the serialization system.
- * Allows Enums to be properly serialized and deserialized.
- */
+/** create an entry in the Serialization Registry to describe how to rebuild an Enum */
 @Serializable
 export class Enumify {
 	constructor(list: Property<any>) {

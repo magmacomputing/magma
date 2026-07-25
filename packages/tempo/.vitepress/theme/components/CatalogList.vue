@@ -16,8 +16,8 @@ import catalogData from '../data/catalog.json';
 
 const plugins = ref<Plugin[]>(catalogData as unknown as Plugin[]);
 
-const communityPlugins = computed(() => plugins.value.filter(p => p.plan === 'community' && p.status === 'active'));
-const premiumPlugins = computed(() => plugins.value.filter(p => p.plan !== 'community' && p.status === 'active'));
+const communityPlugins = computed(() => plugins.value.filter(p => p.plan === 'community' && (p.status === 'active' || p.status === 'experimental')));
+const premiumPlugins = computed(() => plugins.value.filter(p => p.plan !== 'community' && (p.status === 'active' || p.status === 'experimental')));
 const comingSoonPlugins = computed(() => plugins.value.filter(p => p.status === 'coming_soon'));
 
 const copiedPkg = ref<string | null>(null);
@@ -39,7 +39,8 @@ const copyInstall = (pkgName: string) => {
       <h2 id="community">Community Plugins</h2>
       <p>These plugins are free, open-source extensions that do not require a license token.</p>
       <div class="grid">
-        <div v-for="plugin in communityPlugins" :key="plugin.id" class="card">
+        <div v-for="plugin in communityPlugins" :key="plugin.id" class="card" :class="{'experimental-card': plugin.status === 'experimental'}">
+          <div v-if="plugin.status === 'experimental'" class="badge experimental-badge">Experimental</div>
           <div class="card-title">
             <h3>{{ plugin.name }}</h3>
             <span v-if="plugin.version" class="card-version">v{{ plugin.version }}</span>
@@ -75,8 +76,9 @@ const copyInstall = (pkgName: string) => {
       </div>
 
       <div class="grid">
-        <div v-for="plugin in premiumPlugins" :key="plugin.id" class="card premium-card">
+        <div v-for="plugin in premiumPlugins" :key="plugin.id" class="card premium-card" :class="{'experimental-card': plugin.status === 'experimental'}">
           <div class="badge">Premium</div>
+          <div v-if="plugin.status === 'experimental'" class="badge experimental-badge" style="right: 85px;">Experimental</div>
           <div class="card-title">
             <h3>{{ plugin.name }}</h3>
             <span v-if="plugin.version" class="card-version">v{{ plugin.version }}</span>
@@ -100,7 +102,8 @@ const copyInstall = (pkgName: string) => {
       
       <h2 id="coming-soon" v-if="comingSoonPlugins.length > 0">Coming Soon</h2>
       <div class="grid">
-        <div v-for="plugin in comingSoonPlugins" :key="plugin.id" class="card disabled">
+        <div v-for="plugin in comingSoonPlugins" :key="plugin.id" class="card disabled" :class="{'experimental-card': plugin.status === 'experimental'}">
+          <div v-if="plugin.status === 'experimental'" class="badge experimental-badge">Experimental</div>
           <div class="card-title">
             <h3>{{ plugin.name }}</h3>
             <span v-if="plugin.version" class="card-version">v{{ plugin.version }}</span>
@@ -197,6 +200,9 @@ const copyInstall = (pkgName: string) => {
   border-color: var(--vp-c-brand);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
+.experimental-card {
+  border-color: var(--vp-c-warning-1, #f59e0b);
+}
 .badge {
   position: absolute;
   top: -10px;
@@ -207,6 +213,9 @@ const copyInstall = (pkgName: string) => {
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: bold;
+}
+.experimental-badge {
+  background: var(--vp-c-warning-1, #f59e0b);
 }
 .btn-secondary {
   background-color: var(--vp-c-bg-soft);

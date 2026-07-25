@@ -36,7 +36,7 @@ Ensure the plugin's `package.json` contains the correct community configuration:
   }
   ```
 - **Scripts**: 
-  - Ensure `"build": "tsup && tsc"` and `"postbuild": "rm -rf dist/src"` are present.
+  - Ensure `"build": "tsup && tsc"` is present.
   - Include the prepublish safeguard: `"prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"`.
   - Include the correct test script: `"test": "vitest run -c ../vitest.shared.ts"`.
 - **Keywords**: Ensure relevant keywords are present (`tempo`, `tempo-plugin`, `magmacomputing`, `temporal`, `plugin`, etc.).
@@ -55,6 +55,9 @@ export default defineConfig({
 	entry: ['src/index.ts'],
 });
 ```
+
+> [!CAUTION]
+> **Never manually override the `format` property** in your `tsup.config.ts` (e.g., `format: ['esm', 'cjs']`). The monorepo's `sharedConfig` is specifically tailored to generate strict ES Modules (`.js`) and Browser IIFE bundles (`.global.min.js`). Adding `'cjs'` will cause the build pipeline to silently overwrite your ESM bundle, breaking Node.js module resolution for users!
 
 And a root `tsconfig.json` that outputs type declarations:
 
@@ -109,3 +112,25 @@ Community plugins must follow a uniform documentation standard.
 
 - Rely strictly on open core extensions (`definePlugin`, `defineTerm`).
 - While optional, it is highly recommended to provide a short `description` when using `defineTerm` (e.g., `description: 'My custom term'`) so it appears in the `Tempo.terms` registry.
+
+## 6. TypeScript Documentation (TSDoc)
+
+All exported components (functions, interfaces, classes, and types) must be properly documented using the standard Magma TSDoc format. This ensures rich intellisense tooltips for developers utilizing the plugin.
+
+### Format Rules
+- Start the block with `/**`
+- Provide a markdown header containing the component name (e.g., `* ## MyComponent`)
+- Include a descriptive summary
+- Document all parameters using `@param` and return types using `@returns`
+
+**Example:**
+```typescript
+/**
+ * ## myExportedFunction
+ * A brief description of what this function does.
+ * 
+ * @param input - The input value to process
+ * @returns The successfully processed result
+ */
+export function myExportedFunction(input: string): string { ... }
+```

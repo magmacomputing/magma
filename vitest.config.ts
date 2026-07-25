@@ -50,6 +50,7 @@ export default defineConfig({
         }
       },
       {
+        extends: './packages/tempo/vitest.config.ts',
         test: {
           name: 'Plugins',
           include: ['packages/plugins/*/test/**/*.{test,spec}.ts'],

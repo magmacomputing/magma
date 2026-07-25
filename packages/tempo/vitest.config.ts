@@ -83,6 +83,7 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(__dirname, './dist/plugin/term/term.$1.js') },
 			{ find: /^@magmacomputing\/tempo\/core$/, replacement: resolve(__dirname, './dist/core.index.js') },
 			{ find: /^@magmacomputing\/tempo\/library$/, replacement: resolve(__dirname, './dist/library.index.js') },
+			{ find: /^@magmacomputing\/tempo$/, replacement: resolve(__dirname, './dist/tempo.index.js') },
 		] : [
 			{ find: /^#tempo\/license$/, replacement: isPremiumAvailable ? (licensePremium as string) : licenseDefault },
 			// Also alias the relative path used by the dynamic import in tempo.class.ts, so vi.mock('#tempo/license') intercepts it
@@ -95,6 +96,7 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/term.$1.ts') },
 			{ find: /^@magmacomputing\/tempo\/core$/, replacement: resolve(__dirname, './src/core.index.ts') },
 			{ find: /^@magmacomputing\/tempo\/library$/, replacement: resolve(__dirname, './src/library.index.ts') },
+			{ find: /^@magmacomputing\/tempo$/, replacement: resolve(__dirname, './src/tempo.index.ts') },
 			{ find: /^#tempo\/core$/, replacement: resolve(__dirname, './src/core.index.ts') },
 			{ find: /^#tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
 			{ find: /^#tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/$1') },

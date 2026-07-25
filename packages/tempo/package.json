@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.10.1",
+  "version": "3.10.2",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -258,8 +258,6 @@
     "javascript-obfuscator": "^5.4.3",
     "magic-string": "^0.30.21",
     "typedoc": "^0.28.19",
-    "typedoc-plugin-markdown": "^4.11.0",
-    "typedoc-vitepress-theme": "^1.1.2",
     "vitepress": "^1.6.4"
   },
   "directories": {

@@ -46,16 +46,53 @@ describe('enumify stealth proxy', () => {
     expect(EXTENDED.values()).toEqual([1, 20, 3]);
   });
 
-  it('should support Symbol keys in enums', () => {
-    const sym = Symbol('test');
-    const MyEnum = enumify({
-      [sym]: 'symbol-value',
-      standard: 'string-value'
-    });
+	it('should support Symbol keys in enums', () => {
+		const sym = Symbol('test');
+		const MyEnum = enumify({
+			[sym]: 'symbol-value',
+			standard: 'string-value'
+		});
 
-    expect(MyEnum.keys()).toContain(sym);
-    expect(MyEnum.has(sym)).toBe(true);
-    expect((MyEnum as any)[sym]).toBe('symbol-value');
-    expect(MyEnum.entries().find(([key]) => key === sym)).toBeDefined();
-  });
+		expect(MyEnum.keys()).toContain(sym);
+		expect(MyEnum.has(sym)).toBe(true);
+		expect((MyEnum as any)[sym]).toBe('symbol-value');
+		expect(MyEnum.entries().find(([key]) => key === sym)).toBeDefined();
+	});
+
+	describe('caller-context branching', () => {
+		it('should use safe enum prototype when called with invalid Module context', () => {
+			const invalidModuleContext = Object.create(null, {
+				[Symbol.toStringTag]: { value: 'Module' },
+				has: { value: () => true }
+			});
+
+			const result = enumify.call(invalidModuleContext, { A: 1, B: 2 });
+
+			expect(result.A).toBe(1);
+			expect(result.B).toBe(2);
+			expect(result.keys()).toEqual(['A', 'B']);
+			expect(result.values()).toEqual([1, 2]);
+			expect(result.has('A')).toBe(true);
+			expect(result.count()).toBe(2);
+			expect(Object.getPrototypeOf(result)).not.toBe(invalidModuleContext);
+		});
+
+		it('should inherit and expose expected enum methods during normal enum extend flow', () => {
+			const BASE = enumify({ A: 1, B: 2 });
+			const EXTENDED = BASE.extend({ C: 3 });
+
+			expect(EXTENDED.A).toBe(1);
+			expect(EXTENDED.B).toBe(2);
+			expect(EXTENDED.C).toBe(3);
+			expect(EXTENDED.keys()).toEqual(['A', 'B', 'C']);
+			expect(EXTENDED.values()).toEqual([1, 2, 3]);
+			expect(EXTENDED.entries()).toEqual([['A', 1], ['B', 2], ['C', 3]]);
+			expect(EXTENDED.has('A')).toBe(true);
+			expect(EXTENDED.has('C')).toBe(true);
+			expect(EXTENDED.count()).toBe(3);
+			expect(EXTENDED.invert()).toEqual({ '1': 'A', '2': 'B', '3': 'C' });
+			expect(typeof EXTENDED.extend).toBe('function');
+		});
+	});
 });
+

@@ -11,7 +11,7 @@ function getNs(point: TemporalPoint | unknown): bigint {
 	throw new TypeError('Invalid TemporalPoint: missing epoch.ns or epochNanoseconds');
 }
 
-/** Represents a continuous span of time with start and end boundaries, supporting set operations. */
+/** Represents a continuous span of time with optional start and end boundaries, supporting set operations. */
 @Immutable
 export class Interval<T extends TemporalPoint = TemporalPoint> {
 	readonly #start: T | null;

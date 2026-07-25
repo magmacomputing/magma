@@ -11,8 +11,6 @@ if (typeof (globalThis as any).Temporal === 'undefined') {
   });
 }
 
-import typedocSidebar from '../doc/api/typedoc-sidebar.json'
-import librarySidebar from '../doc/api/library/typedoc-sidebar.json'
 
 export default defineConfig({
   base: '/magma/',
@@ -30,7 +28,7 @@ export default defineConfig({
     },
     nav: [
       { text: 'Guide', link: '/README' },
-      { text: 'API Reference', link: typedocSidebar[0].items[0].link },
+      { text: 'API Reference', link: '/api/index.html', target: '_self' },
       { text: 'Releases', link: '/doc/8-project-and-support/releases/' },
       { text: 'Functions ↗', link: 'https://magmacomputing.github.io/magma/functions/' }
     ],
@@ -72,7 +70,7 @@ export default defineConfig({
         text: 'Advanced Reference',
         items: [
           { text: 'API Overview', link: '/doc/api/' },
-          { text: 'Technical Reference', link: typedocSidebar[0].items[0].link },
+          { text: 'Technical Reference', link: '/api/index.html', target: '_self' },
           { text: 'Sandbox Factory', link: '/doc/4-advanced-reference/sandbox-factory' },
           { text: 'Parse Planner', link: '/doc/4-advanced-reference/tempo.planner' },
           { text: 'The Role of Locale', link: '/doc/4-advanced-reference/tempo.locale' },
@@ -98,11 +96,7 @@ export default defineConfig({
           { text: 'Serializers', link: '/doc/6-utility-library/tempo.serializers' },
           { text: 'Decorators', link: '/doc/6-utility-library/tempo.decorators' },
           { text: 'Advanced Promises (Pledge)', link: '/doc/6-utility-library/tempo.pledge' },
-          {
-            text: 'Library API',
-            collapsed: true,
-            items: librarySidebar
-          }
+          { text: 'Library API', link: '/api/library/index.html', target: '_self' }
         ]
       },
       {
