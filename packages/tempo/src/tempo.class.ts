@@ -26,11 +26,11 @@ import { PatternCompiler } from './engine/engine.pattern.js';
 import { createMasterGuard } from './engine/engine.guard.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 
-import { validateLicenseState, getLicenseSnapshot, setLicense, getLicenseState } from './plugin/license/license.manager.js';
+import { validateLicenseState, getLicenseSnapshot, setLicense, getLicenseState, updateScopeStatus } from './plugin/license/license.manager.js';
 
 import { resolveMonthDay, setProperty, proto, hasOwn, resolveDisplayStatus } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, logError, logDebug, logWarn, logTempo, setLogLevel } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, $updateScopeStatus, logError, logDebug, logWarn, logTempo, setLogLevel } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import { Interval } from './interval.class.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -142,6 +142,11 @@ export class Tempo {
 			...(isNumber(raw.expires) && { expires: new Tempo(raw.expires, ss).fmt.weekTime }),
 			...(isNumber(raw.issuedAt) && { issuedAt: new Tempo(raw.issuedAt, ss).fmt.weekTime }),
 		});
+	}
+
+	/** @internal programmatically update status of a license scope (e.g. when network response determines revocation) */
+	static [$updateScopeStatus](scopeKey: string, status: string, error?: string): void {
+		updateScopeStatus(this[$Internal](), scopeKey, status, error);
 	}
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
 

@@ -47,6 +47,33 @@ export function getLicenseSnapshot(state: Internal.State): Internal.LicenseState
 	return secure(snapshot);
 }
 
+export function updateScopeStatus(state: Internal.State, scopeKey: string, status: string, error?: string): void {
+	const license = getLicenseState(state);
+	if (!license || !license.scopes) return;
+
+	const scopes = { ...license.scopes } as Record<string, any>;
+	if (scopes[scopeKey]) {
+		scopes[scopeKey] = {
+			...scopes[scopeKey],
+			status,
+			...(error ? { error } : {})
+		}
+	} else {
+		scopes[scopeKey] = {
+			status,
+			...(error ? { error } : {})
+		}
+	}
+
+	license.scopes = scopes;
+
+	const activeScopes = Object.values(scopes).filter((s: any) => s && s.status !== LICENSE.Revoked && s.status !== 'revoked');
+	if (activeScopes.length === 0 && Object.keys(scopes).length > 0) {
+		license.status = LICENSE.Revoked;
+		if (error) license.error = error;
+	}
+}
+
 function disposePendingLicense(license?: Internal.LicenseState): void {
 	const jws = license?.jws as any;
 	if (jws && jws.isPending) {
@@ -102,7 +129,10 @@ export function setLicense(state: Internal.State, key: string): void {
 				else
 					warnIfExpiringSoon(license, state.config);
 
-				if (res.revocationPromise) {
+				const scopesList = Object.values(license.scopes || {});
+				const shouldSkipRevocation = scopesList.length > 0 && scopesList.every((s: any) => s?.skipRevocationCheck === true);
+
+				if (res.revocationPromise && !shouldSkipRevocation) {
 					res.revocationPromise.then((isRevoked: boolean) => {
 						if (isRevoked && license.jti === initialJti && license.key === initialKey) {
 							license.status = LICENSE.Revoked;
