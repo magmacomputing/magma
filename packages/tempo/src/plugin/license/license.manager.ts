@@ -132,19 +132,27 @@ export function setLicense(state: Internal.State, key: string): void {
 				const scopesList = Object.values(license.scopes || {});
 				const shouldSkipRevocation = scopesList.length > 0 && scopesList.every((s: any) => s?.skipRevocationCheck === true);
 
-				if (res.revocationPromise && !shouldSkipRevocation) {
-					res.revocationPromise.then((isRevoked: boolean) => {
-						if (isRevoked && license.jti === initialJti && license.key === initialKey) {
-							license.status = LICENSE.Revoked;
-							license.error = 'License has been revoked by the issuer.';
-							logWarn(`⚠️ ${logMessage} ${license.error}`, state.config);
-						} else {
-							warnIfExpiringSoon(license, state.config);
-						}
-					}).catch((err: unknown) => {
-						const { message } = asError(err);
-						logDebug(`${logMessage} Background revocation check failed for JTI ${initialJti} - ${message}`, state.config);
-					});
+				if (!shouldSkipRevocation && (res.revocationPromise || res.getRevocationPromise)) {
+					const promise = typeof res.getRevocationPromise === 'function'
+						? res.getRevocationPromise()
+						: typeof res.revocationPromise === 'function'
+							? res.revocationPromise()
+							: res.revocationPromise;
+
+					if (promise && typeof promise.then === 'function') {
+						promise.then((isRevoked: boolean) => {
+							if (isRevoked && license.jti === initialJti && license.key === initialKey) {
+								license.status = LICENSE.Revoked;
+								license.error = 'License has been revoked by the issuer.';
+								logWarn(`⚠️ ${logMessage} ${license.error}`, state.config);
+							} else {
+								warnIfExpiringSoon(license, state.config);
+							}
+						}).catch((err: unknown) => {
+							const { message } = asError(err);
+							logDebug(`${logMessage} Background revocation check failed for JTI ${initialJti} - ${message}`, state.config);
+						});
+					}
 				}
 			},
 			onReject: (err: unknown) => {

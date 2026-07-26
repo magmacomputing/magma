@@ -73,7 +73,7 @@ describe('Phase 1 Core Tempo Licensing Engine Enhancements', () => {
 		expect(rt.license.status).toBe(LICENSE.Revoked);
 	});
 
-	test('bypasses background revocation promise when ALL scopes have skipRevocationCheck: true', async () => {
+	test('bypasses background revocation promise factory when ALL scopes have skipRevocationCheck: true', async () => {
 		const payload = {
 			iss: 'Magma Computing',
 			scopes: {
@@ -83,11 +83,11 @@ describe('Phase 1 Core Tempo Licensing Engine Enhancements', () => {
 		}
 		const mockToken = `h.${encodeBase64(JSON.stringify(payload))}.s`;
 
-		const revocationFn = vi.fn().mockResolvedValue(true);
+		const revocationSpy = vi.fn().mockResolvedValue(true);
 		setMockResult({
 			status: 'active',
 			scopes: payload.scopes,
-			revocationPromise: revocationFn()
+			getRevocationPromise: revocationSpy
 		});
 
 		Tempo.init({ license: mockToken });
@@ -96,7 +96,8 @@ describe('Phase 1 Core Tempo Licensing Engine Enhancements', () => {
 		await rt.license.jws;
 		await new Promise(r => setTimeout(r, 20));
 
-		// Revocation function should NOT have triggered license status mutation to Revoked because skipRevocationCheck is true
+		// Lazy revocation factory spy should NOT be invoked because skipRevocationCheck is true
+		expect(revocationSpy).not.toHaveBeenCalled();
 		expect(rt.license.status).toBe(LICENSE.Active);
 	});
 
@@ -111,10 +112,11 @@ describe('Phase 1 Core Tempo Licensing Engine Enhancements', () => {
 		}
 		const mockToken = `h.${encodeBase64(JSON.stringify(payload))}.s`;
 
+		const revocationSpy = vi.fn().mockResolvedValue(true);
 		setMockResult({
 			status: 'active',
 			scopes: payload.scopes,
-			revocationPromise: Promise.resolve(true) // Revoked background response!
+			getRevocationPromise: revocationSpy
 		});
 
 		Tempo.init({ license: mockToken });
@@ -123,7 +125,8 @@ describe('Phase 1 Core Tempo Licensing Engine Enhancements', () => {
 		await rt.license.jws;
 		await vi.waitFor(() => expect(rt.license.status).toBe(LICENSE.Revoked));
 
-		// Revocation promise SHOULD run because ticker scope requires client-side background polling!
+		// Revocation factory spy SHOULD be invoked because ticker scope requires client-side background polling!
+		expect(revocationSpy).toHaveBeenCalledTimes(1);
 		expect(rt.license.status).toBe(LICENSE.Revoked);
 		expect(rt.license.error).toContain('revoked');
 	});
