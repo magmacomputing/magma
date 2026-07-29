@@ -29,19 +29,24 @@ By default, Tempo parses structural English abbreviations (e.g., `Jan`, `Feb`, `
 
 When you nominate a non-English `locale` (or an array of locales like `['fr-FR', 'es-ES']`):
 - Tempo asks the native ECMAScript `Intl` API how to spell months, weekdays, and relative events (like "tomorrow" or "yesterday") in the specified languages.
-- It dynamically compiles new, high-performance Regular Expressions containing these localized abbreviations.
-- It injects these new patterns into its lexer, allowing Tempo to instantly understand strings like `'15 Janvier 2024'` or `'el próximo lunes'`.
+- It dynamically compiles new, high-performance Regular Expressions containing these localized abbreviations (and automatically handles accent variations, matching both `próximo` and `proximo`).
+- It injects these patterns into its lexer, allowing Tempo to instantly understand strings like `'15 Janvier 2024'` or `'15 febrero 2024'`.
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
-// Tempo learns French and Spanish at runtime!
+// Tempo learns French and Spanish months & weekdays at runtime!
+// Custom relative modifier keywords ('próximo') and noise articles ('el') can be registered in the registry.
 Tempo.init({ 
-  locale: ['fr-FR', 'es-ES'] 
+  locale: ['fr-FR', 'es-ES'],
+  registry: {
+    modifiers: { '+': ['próximo', 'proximo', 'siguiente'] },
+    ignores: ['el', 'la', 'los', 'las']
+  }
 });
 
-const a = new Tempo('15 janvier 2024'); // Matches French
-const b = new Tempo('el próximo lunes'); // Matches Spanish
+const a = new Tempo('15 janvier 2024');  // Matches French
+const b = new Tempo('el próximo lunes');  // Matches Spanish ("next Monday")
 ```
 
 *For more details on setting up and optimizing international parsing, see [Internationalized Parsing](../2-core-concepts/tempo.parse.md#internationalized-parsing-locales).*

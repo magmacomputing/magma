@@ -118,12 +118,11 @@ export class Tempo {
 	/** the version of this Tempo build (stamped at build-time from package.json) */
 	static get version() { return Tempo.#versions['Tempo']; }
 
-	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return this[$Internal]().pluginsDb.terms }
-	/** @internal raw license state — sandbox-aware: reads sandbox-local license if present, otherwise global */
-	static get #license() { return getLicenseState(this[$Internal]()); }
-	/** human-readable formatted license state */							static get license() {
-		const { jws, key, ...raw } = getLicenseSnapshot(this[$Internal]());						// omit internal Pledge and JWT string from user-facing snapshot
-		const ss = { timeStamp: 'ss' } as const;								// JWT timestamps are always in seconds (RFC 7519)
+	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return Tempo[$Internal]().pluginsDb.terms }
+	/** @internal format raw license snapshot into human-readable license object */
+	static #formatLicense(state: Internal.State) {
+		const { jws, key, ...raw } = getLicenseSnapshot(state);
+		const ss = { timeStamp: 'ss' } as const;
 		const scopesSource = (raw.scopes && isObject(raw.scopes)) ? raw.scopes : {};
 		const scopes = Object.fromEntries(
 			Object.entries(scopesSource).map(([key, scope]) => {
@@ -142,6 +141,11 @@ export class Tempo {
 			...(isNumber(raw.expires) && { expires: new Tempo(raw.expires, ss).fmt.weekTime }),
 			...(isNumber(raw.issuedAt) && { issuedAt: new Tempo(raw.issuedAt, ss).fmt.weekTime }),
 		});
+	}
+
+	/** human-readable formatted license state */
+	static get license() {
+		return Tempo.#formatLicense(this[$Internal]());
 	}
 
 	/** @internal programmatically update status of a license scope (e.g. when network response determines revocation) */
@@ -1064,11 +1068,11 @@ export class Tempo {
 
 	/** static units since Unix epoch */
 	static get epoch() {
-		return this.#getEpoch(instant());
+		return Tempo.#getEpoch(instant());
 	}
 
 	/** get the current system Instant */
-	static get instant() { return Temporal.Instant.fromEpochNanoseconds(this.now()) }
+	static get instant() { return Temporal.Instant.fromEpochNanoseconds(Tempo.now()) }
 
 	/** static Tempo.terms (registry) */
 	static get terms(): Secure<PremiumPlugin[]> & Record<string, PremiumPlugin> {
@@ -1202,14 +1206,14 @@ export class Tempo {
 
 	/** constructor tempo */																	#tempo?: t.DateTime;
 	/** constructor options */																#options = {} as t.Options;
-	/** instantiation Temporal Instant */											#now: Temporal.Instant;
+	/** instantiation Temporal Instant */											#instant?: Temporal.Instant;
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
 	/** memoized TimeZone ID */																#tz?: string;
 	/** memoized Calendar ID */																#cal?: string;
 	/** indicator that the instance failed to parse */				#errored = false;
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
-	/** prebuilt formats, for convenience */									#fmt!: Record<string, string | undefined>;
-	/** mapping of terms to their resolved values */					#term!: any;
+	/** prebuilt formats, for convenience */									#fmt?: Record<string, string | undefined>;
+	/** mapping of terms to their resolved values */					#term?: any;
 	/** a collection of parse rule-matches */									#matches: Internal.MatchResult[] | undefined;
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
 	/** current mutation depth to manage infinite recursion */#mutateDepth = 0;
@@ -1277,7 +1281,7 @@ export class Tempo {
 
 	/** iterate over instance formats */
 	[Symbol.iterator]() {
-		return ownEntries(this.#fmt, true)[Symbol.iterator]();	// instance Iterator over tuple of FormatType[]
+		return ownEntries(this.fmt, true)[Symbol.iterator]();		// instance Iterator over tuple of FormatType[]
 	}
 
 	get [Symbol.toStringTag](): 'Tempo' {											// default string description
@@ -1298,7 +1302,6 @@ export class Tempo {
 	 */
 	constructor(tempo: t.DateTime, options?: t.Options);
 	constructor(tempo?: t.DateTime | t.Options, options: t.Options = {}) {
-		this.#now = instant();																	// stash current Instant
 		[this.#tempo, this.#options] = this.#swap(tempo, options);// swap arguments around
 
 		if (isZonedDateTime(this.#tempo)) this.#zdt = this.#tempo;
@@ -1318,8 +1321,6 @@ export class Tempo {
 		else if (isString(this.#tempo) && !isEmpty(input) && guard.test(trimAll(input)))
 			this.#local.parse.lazy = true;												// auto-switch to lazy-mode for valid strings
 
-		this.#fmt = this.#setDelegator('fmt');									// initialize the format-delegator
-		this.#term = this.#setDelegator('term');								// initialize the term-delegator
 		this.#anchor = this.#options.anchor;
 
 		// 🧬 Unified State Hand-off (from clone / mutate)
@@ -1627,8 +1628,8 @@ export class Tempo {
 		return out as t.Internal.Parse;
 	}
 
-	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term }
-	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#fmt }
+	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term ??= this.#setDelegator('term'); }
+	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#fmt ??= this.#setDelegator('fmt'); }
 	/** units since epoch for this date-time instance */			get epoch() { return Tempo.#getEpoch(this.toDateTime()); }
 
 	/**
@@ -1638,6 +1639,7 @@ export class Tempo {
 	 * rather than using `new Tempo(..)`.  
 	 */
 	/** @internal */																					get #Tempo() { return this.constructor as typeof Tempo; }
+	/** @internal */																					get #now(): Temporal.Instant { return this.#instant ??= instant(); }
 
 	/** apply a custom format. */															format(fmt?: any, options?: any): string { return this.#resolve(() => interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt, options)) as string; }
 	/** time duration until another date-time */

@@ -42,7 +42,7 @@ describe('AI Parsing Plugin', () => {
 	it('should parse natural language successfully', async () => {
 		if (!isLiveTest) {
 			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
-				choices: [{ message: { content: '{"reasoning":"Two days after December 1st", "iso":"2026-12-03T00:00:00"}' } }]
+				choices: [{ message: { content: '{"reasoning":"The Friday after Thanksgiving", "iso":"2026-11-27T00:00:00"}' } }]
 			}), {
 				status: 200,
 				headers: new Headers({
@@ -54,32 +54,32 @@ describe('AI Parsing Plugin', () => {
 
 		// Provide a strict anchor so we can assert the result deterministically
 		const anchorDate = '2026-05-10T12:00:00Z';
-		const result = await parseAI('Two days after December 1st', { anchor: anchorDate, timeZone: 'UTC' });
+		const result = await parseAI('The Friday after Thanksgiving', { anchor: anchorDate, timeZone: 'UTC' });
 
 		expect(result).toBeInstanceOf(Tempo);
 		expect(result.isValid).toBe(true);
-		expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-12-03');
+		expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-27');
 	});
 
 	it('should cache the result', async () => {
 		const anchorDate = '2026-05-10T12:00:00Z';
 		// Clear cache first
-		clearAiCache('Two days after December 1st');
+		clearAiCache('The Friday after Thanksgiving');
 
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
 		if (!isLiveTest) {
 			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
-				choices: [{ message: { content: '{"reasoning":"Two days after December 1st", "iso":"2026-12-03T00:00:00"}' } }]
+				choices: [{ message: { content: '{"reasoning":"The Friday after Thanksgiving", "iso":"2026-11-27T00:00:00"}' } }]
 			}), { status: 200 }));
 		}
 
 		// First parse (hits network or mock)
-		const dt1 = await parseAI('Two days after December 1st', { anchor: anchorDate, timeZone: 'UTC' });
-		expect(dt1.format('{yyyy}-{mm}-{dd}')).toBe('2026-12-03');
+		const dt1 = await parseAI('The Friday after Thanksgiving', { anchor: anchorDate, timeZone: 'UTC' });
+		expect(dt1.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-27');
 
 		// Second parse (hits cache instantly)
-		const dt2 = await parseAI('Two days after December 1st', { anchor: anchorDate, timeZone: 'UTC' });
-		expect(dt2.format('{yyyy}-{mm}-{dd}')).toBe('2026-12-03');
+		const dt2 = await parseAI('The Friday after Thanksgiving', { anchor: anchorDate, timeZone: 'UTC' });
+		expect(dt2.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-27');
 
 		if (!isLiveTest) {
 			expect(fetchSpy).toHaveBeenCalledTimes(1);

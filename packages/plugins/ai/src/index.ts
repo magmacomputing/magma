@@ -144,7 +144,7 @@ export async function parseAI(
         const native = new Tempo(str, { ...options, silent: true });
         if (native.isValid) {
           if (isDebug) console.log(`[parseAI] Resolved natively: "${str}"`);
-          results.push(new Tempo(str, options));
+          results.push(native);
           continue;
         }
       } catch {
@@ -161,7 +161,7 @@ export async function parseAI(
       sph = options!.sphere || options!.anchor.config.sphere;
       anchorStr = options!.anchor.toString();
     } else {
-      const resolvedConfig = new Tempo().config;
+      const resolvedConfig = Tempo.config;
       tz = options?.timeZone || resolvedConfig.timeZone;
       cal = options?.calendar || resolvedConfig.calendar;
       loc = options?.locale || resolvedConfig.locale;
@@ -169,22 +169,24 @@ export async function parseAI(
       anchorStr = options?.anchor || new Tempo().toString();
     }
 
+    // Establish single anchor Tempo instance for cache salting and context prompt
+    const anchorTempo = new Tempo(anchorStr, { ...options, timeZone: tz, calendar: cal, locale: loc, sphere: sph });
+
     // The cache key salts the normalized string with the anchor's Calendar Date and resolved context (TZ/Cal/Loc/Sph). 
     // This allows "tomorrow" to hit the cache all day, but cleanly miss when midnight strikes or context changes!
     const normalizedStr = normalizeCacheInput(str);
-    const cacheSalt = new Tempo(anchorStr, { ...options, timeZone: tz, calendar: cal, locale: loc, sphere: sph }).format('{yyyy}-{mm}-{dd}');
+    const cacheSalt = anchorTempo.format('{yyyy}-{mm}-{dd}');
     const cacheKey = `${normalizedStr}::${cacheSalt}::${tz}::${cal}::${loc}::${sph}`;
 
     // 3. Check Cache
     if (!options?.force && options?.cache !== false && _state.cache.has(cacheKey)) {
       const cachedIso = _state.cache.get(cacheKey)!;
-      if (isDebug) console.log(`[parseAI] Cache hit for "${str}":`, cachedIso);
+      if (isDebug) console.log(`[tempo-plugin-ai] Cache hit for "${str}":`, cachedIso);
       results.push(new Tempo(cachedIso, options));
       continue;
     }
 
     // 4. Construct LLM Context
-    const anchorTempo = new Tempo(anchorStr, { ...options, timeZone: tz, calendar: cal, locale: loc, sphere: sph });
     let contextString = `Current Time: ${anchorTempo.format('{yyyy}-{mm}-{dd} ({wkd}) {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}.`;
 
     // 5. LLM Network Fetch with Fallback Loop
@@ -213,7 +215,7 @@ Ambiguity Rules:
 Do not include markdown blocks, explanations, or any text outside the JSON.`;
 
         if (isDebug)
-          console.log(`[parseAI] Sending to ${provider.id}:`, { system: `${systemPrompt}\n${contextString}`, user: str });
+          console.log(`[tempo-plugin-ai] Sending to ${provider.id}:`, { system: `${systemPrompt}\n${contextString}`, user: str });
 
         const tokenParam = provider.tokenParam
           || (provider.options?.max_completion_tokens !== undefined ? 'max_completion_tokens' : undefined)
@@ -248,7 +250,7 @@ Do not include markdown blocks, explanations, or any text outside the JSON.`;
           });
         } catch (fetchErr: any) {
           lastError = fetchErr;
-          if (isDebug) console.warn(`[parseAI] Provider ${provider.id} fetch failed or timed out:`, fetchErr?.message || fetchErr);
+          if (isDebug) console.warn(`[tempo-plugin-ai] Provider ${provider.id} fetch failed or timed out:`, fetchErr?.message || fetchErr);
           continue;
         } finally {
           clearTimeout(timeoutId);
@@ -290,7 +292,7 @@ Do not include markdown blocks, explanations, or any text outside the JSON.`;
         const content = rawContent.trim();
 
         if (isDebug)
-          console.log(`[parseAI] Received from ${provider.id}:`, content);
+          console.log(`[tempo-plugin-ai] Received from ${provider.id}:`, content);
 
         let parsedData: any;
         try {

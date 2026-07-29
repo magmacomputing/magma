@@ -78,4 +78,27 @@ describe('Localized Parsing', () => {
 		expect(t2.isValid).toBe(true);
 		expect(t2.mm).toBe(1);
 	});
+
+	it('test Spanish el próximo lunes', () => {
+		Tempo.init({ 
+			locale: ['fr-FR', 'es-ES'],
+			registry: {
+				modifiers: {
+					'+': ['próximo', 'proximo', 'siguiente']
+				},
+				ignores: ['el', 'la', 'los', 'las']
+			}
+		});
+		const t1 = new Tempo('lunes');
+		expect(t1.isValid).toBe(true);
+
+		const t2 = new Tempo('próximo lunes');
+		expect(t2.isValid).toBe(true);
+
+		const t3 = new Tempo('el próximo lunes');
+		expect(t3.isValid).toBe(true);
+
+		const t4 = new Tempo('el proximo lunes');
+		expect(t4.isValid).toBe(true);
+	});
 });
