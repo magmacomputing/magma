@@ -230,6 +230,41 @@ describe('AI Parsing Plugin', () => {
 			clearAiCache('   THANKSGIVING   ');
 			expect(cache.has('thanksgiving::2026-05-10')).toBe(false);
 		});
+
+		it('should resolve static un-salted user glossary terms without hitting network or expiring', async () => {
+			const glossary = new Map<string, string>([
+				['easter sunday 2026', '2026-04-05T00:00:00Z'],
+				['q4 freeze 2026', '2026-11-01T00:00:00Z']
+			]);
+
+			initAI({ cache: glossary });
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+			// Two-tier lookup hits un-salted normalized static key directly
+			const result = await parseAI('Easter Sunday 2026');
+			expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-04-05');
+			expect(fetchSpy).not.toHaveBeenCalled();
+		});
+
+		it('should protect static un-salted keys set via setStatic from TTL and LRU maxCacheSize eviction in BoundedCache', async () => {
+			const cache = new BoundedCache(2, 50); // maxSize 2, TTL 50ms
+			cache.setStatic('easter sunday 2026', '2026-04-05T00:00:00Z'); // Static key
+			cache.set('temp1::2026-05-10', '2026-05-10T00:00:00Z');  // Salted key
+			cache.set('temp2::2026-05-10', '2026-05-10T00:00:00Z');  // Salted key, pushes total to 3
+
+			// LRU capacity check: should evict oldest salted key ('temp1::2026-05-10'), preserving static 'easter sunday 2026'
+			expect(cache.has('easter sunday 2026')).toBe(true);
+			expect(cache.has('temp1::2026-05-10')).toBe(false);
+
+			// Wait for TTL expiration
+			await new Promise(resolve => setTimeout(resolve, 60));
+
+			// Salted key expires, static key remains intact
+			expect(cache.has('temp2::2026-05-10')).toBe(false);
+			expect(cache.has('easter sunday 2026')).toBe(true);
+			expect(cache.get('easter sunday 2026')).toBe('2026-04-05T00:00:00Z');
+		});
 	});
 
 	describe('Configurable Token Parameter', () => {

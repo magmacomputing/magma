@@ -178,9 +178,19 @@ export async function parseAI(
     const cacheSalt = anchorTempo.format('{yyyy}-{mm}-{dd}');
     const cacheKey = `${normalizedStr}::${cacheSalt}::${tz}::${cal}::${loc}::${sph}`;
 
-    // 3. Check Cache
-    if (!options?.force && options?.cache !== false && _state.cache.has(cacheKey)) {
-      const cachedIso = _state.cache.get(cacheKey)!;
+    // 3. Check Cache (Two-Tier Lookup: Date-Salted Key first, then Un-Salted Normalized Key)
+    let cachedIso: string | undefined;
+    if (!options?.force && options?.cache !== false) {
+      if (_state.cache.has(cacheKey)) {
+        cachedIso = _state.cache.get(cacheKey);
+      } else if (_state.cache.has(normalizedStr)) {
+        cachedIso = _state.cache.get(normalizedStr);
+      } else if (_state.cache.has(str)) {
+        cachedIso = _state.cache.get(str);
+      }
+    }
+
+    if (cachedIso) {
       if (isDebug) console.log(`[tempo-plugin-ai] Cache hit for "${str}":`, cachedIso);
       results.push(new Tempo(cachedIso, options));
       continue;

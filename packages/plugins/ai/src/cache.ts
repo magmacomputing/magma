@@ -4,6 +4,7 @@
  */
 export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	#timestamps = new Map<K, number>();
+	#staticKeys = new Set<K>();
 	maxSize: number;
 	ttl: number;
 
@@ -14,6 +15,7 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	}
 
 	#isExpired(key: K): boolean {
+		if (this.#staticKeys.has(key)) return false;
 		const time = this.#timestamps.get(key);
 		if (time === undefined) return false;
 		return Date.now() - time > this.ttl;
@@ -22,9 +24,17 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	evictExpired(): void {
 		const now = Date.now();
 		for (const [key, time] of this.#timestamps.entries()) {
-			if (now - time > this.ttl)
+			if (!this.#staticKeys.has(key) && now - time > this.ttl)
 				this.delete(key);
 		}
+	}
+
+	setStatic(key: K, value: V): this {
+		if (super.has(key)) super.delete(key);
+		super.set(key, value);
+		this.#timestamps.delete(key);
+		this.#staticKeys.add(key);
+		return this;
 	}
 
 	override get(key: K): V | undefined {
@@ -56,15 +66,19 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 			super.delete(key);
 
 		super.set(key, value);
+		this.#staticKeys.delete(key);
 		this.#timestamps.set(key, Date.now());
 
 		while (this.size > this.maxSize) {
-			const oldestKey = super.keys().next().value;
-			if (oldestKey !== undefined) {
-				this.delete(oldestKey);
-			} else {
-				break;
+			let evicted = false;
+			for (const k of super.keys()) {
+				if (!this.#staticKeys.has(k)) {
+					this.delete(k);
+					evicted = true;
+					break;
+				}
 			}
+			if (!evicted) break;
 		}
 
 		return this;
@@ -72,11 +86,13 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 
 	override delete(key: K): boolean {
 		this.#timestamps.delete(key);
+		this.#staticKeys.delete(key);
 		return super.delete(key);
 	}
 
 	override clear(): void {
 		this.#timestamps.clear();
+		this.#staticKeys.clear();
 		super.clear();
 	}
 
