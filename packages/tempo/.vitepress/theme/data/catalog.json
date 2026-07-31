@@ -51,7 +51,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
     "status": "experimental",
-    "version": ""
+    "version": "0.2.0"
   },
   {
     "id": "ticker",

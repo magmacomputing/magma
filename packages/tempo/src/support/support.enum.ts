@@ -228,13 +228,21 @@ export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
-const configKeys = ['config', 'parse', 'value', 'intl', 'store', 'discovery', 'debug', 'catch', 'silent', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'registry', 'plugins'] as const;
+const configKeys = ['config', 'parse', 'value', 'intl', 'store', 'discovery', 'debug', 'catch', 'silent', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'registry', 'plugins', 'cache'] as const;
 export const CONFIG = enumify(configKeys, false);
 export type Config = KeyOf<typeof CONFIG>
 
 /** initialization strategies */
 export const MODE = enumify({ Auto: 'auto', Strict: 'strict', Defer: 'defer', }, false);
 export type MODE = ValueOf<typeof MODE>
+
+/** cache operation modes */
+export const CACHE = enumify({
+	Off: false,
+	On: true,
+	Refresh: 'refresh',
+}, false);
+export type CACHE = ValueOf<typeof CACHE>
 
 /** allowed keys for internal parse state */
 const parseKeys = ['monthDay', 'planner', 'layoutOrder', 'preFilter', 'mode', 'pivot', 'snippet', 'layout', 'event', 'period', 'anchor'] as const;
@@ -283,6 +291,7 @@ export default {
 	ZONED_DATE_TIME,
 	CONFIG,
 	MODE,
+	CACHE,
 	PARSE,
 	MONTH_DAY,
 	LICENSE,

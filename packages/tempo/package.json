@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.10.3",
+  "version": "3.11.0",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -210,6 +210,10 @@
     "./plugin-api": {
       "types": "./dist/plugin-api.index.d.ts",
       "import": "./dist/plugin-api.index.js"
+    },
+    "./support": {
+      "types": "./dist/support/support.index.d.ts",
+      "import": "./dist/support/support.index.js"
     }
   },
   "scripts": {

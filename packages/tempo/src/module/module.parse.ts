@@ -17,9 +17,19 @@ import { getRange, getTermRange } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
 
-import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState } from '#tempo/support';
+import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums } from '#tempo/support';
 import { setProperty, logError, logDebug } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
+
+function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Internal.State): string {
+	const norm = str.trim().toLowerCase();
+	const dateSalt = today.toPlainDate().toString();
+	const tz = String(state.config.timeZone || 'UTC');
+	const cal = String(state.config.calendar || 'iso8601');
+	const loc = Array.isArray(state.config.locale) ? state.config.locale.join(',') : String(state.config.locale || 'en-US');
+	const sph = String(state.config.sphere || 'north');
+	return `${norm}::${dateSalt}::${tz}::${cal}::${loc}::${sph}`;
+}
 
 /**
  * Internal Parse Engine Implementation
@@ -153,6 +163,11 @@ const _ParseEngine = {
 			if (isZonedDateTime(dateTime) && !state.errored)
 				dateTime = dateTime.withTimeZone(targetTz).withCalendar(targetCal);
 
+			if ((state.config.cache === true || state.config.cache === enums.CACHE.On || state.config.cache === enums.CACHE.Refresh || state.config.cache === 'refresh') && isString(tempo) && isZonedDateTime(dateTime) && !state.errored) {
+				const cacheKey = buildCacheKey(tempo, today, state);
+				state.cache?.set(cacheKey, dateTime.toString());
+			}
+
 			return Object.assign(res, {
 				type: 'Temporal.ZonedDateTime',
 				value: (isZonedDateTime(dateTime) && !state.errored) ? dateTime : undefined as any
@@ -212,6 +227,28 @@ const _ParseEngine = {
 
 		if (isString(value)) {
 			let trim = value.trim();
+			const normVal = trim.toLowerCase();
+
+			// 1. Static Glossary Check
+			if (state.cache?.isStatic(normVal)) {
+				const staticTarget = state.cache.get(normVal);
+				if (staticTarget) {
+					accumulateResult(state, { match: 'CacheHit', value: trim, source: 'glossary' as any });
+					return { type: 'String', value: staticTarget };
+				}
+			}
+
+			// 2. Dynamic Parse Cache Check
+			const cacheOpt = state.config.cache;
+			if (cacheOpt === true || cacheOpt === enums.CACHE.On) {
+				const cacheKey = buildCacheKey(trim, dateTime, state);
+				const cachedIso = state.cache?.get(cacheKey);
+				if (cachedIso) {
+					accumulateResult(state, { match: 'CacheHit', value: trim, source: 'parseCache' as any });
+					return { type: 'String', value: cachedIso };
+				}
+			}
+
 			if (state.parse.ignorePattern) {
 				// Clone the RegExp: global/sticky flags maintain `lastIndex` state, which
 				// cannot be mutated when `state.parse` is frozen (e.g. on a sandbox instance).

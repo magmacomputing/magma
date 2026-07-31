@@ -30,7 +30,7 @@ import { validateLicenseState, getLicenseSnapshot, setLicense, getLicenseState, 
 
 import { resolveMonthDay, setProperty, proto, hasOwn, resolveDisplayStatus } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, $updateScopeStatus, logError, logDebug, logWarn, logTempo, setLogLevel } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, $updateScopeStatus, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import { Interval } from './interval.class.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -107,6 +107,7 @@ export class Tempo {
 	/** TimeZone aliases */																		static get TIMEZONE() { return enums.TIMEZONE }
 	/** regional date-parsing configuration */								static get MONTH_DAY() { return enums.MONTH_DAY }
 	/** initialization strategies */													static get MODE() { return enums.MODE }
+	/** cache operation modes */                              static get CACHE() { return enums.CACHE }
 	/** some useful Dates */																	static get LIMIT() { return enums.LIMIT }
 
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !_lifecycle.ready }
@@ -117,6 +118,10 @@ export class Tempo {
 	static get versions() { return Object.freeze({ ...Tempo.#versions }) as Readonly<Record<string, string>>; }
 	/** the version of this Tempo build (stamped at build-time from package.json) */
 	static get version() { return Tempo.#versions['Tempo']; }
+	/** high-performance in-memory cache facade for glossary and dynamic parse results */
+	static get cache() {
+		return createCacheFacade(() => this[$Internal]());
+	}
 
 	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return Tempo[$Internal]().pluginsDb.terms }
 	/** @internal format raw license snapshot into human-readable license object */
@@ -166,9 +171,8 @@ export class Tempo {
 
 	/** @internal */
 	static get [$ImmutableSkip]() {
-		const global = typeof globalThis !== 'undefined' ? globalThis : (window as any);
-		const nodeEnv = typeof global !== 'undefined'
-			&& typeof global.process !== 'undefined'
+		const global = isDefined(globalThis) ? globalThis : (window as any);
+		const nodeEnv = isDefined(global.process)
 			&& global.process.env
 			&& (global.process.env.NODE_ENV === 'test' || global.process.env.CI);
 
@@ -829,11 +833,12 @@ export class Tempo {
 			setLogLevel(options.debug ?? Default?.debug ?? LOG.Info);
 
 			const rt = getRuntime();
+			const prevCache = rt.state?.cache;
 			const isBase = !!this[$IsBase];
-			if (isBase) rt.state = undefined;											// force fresh state
+			if (isBase) rt.state = undefined;
 
 			const baseState = isBase ? undefined : Object.getPrototypeOf(this)[$Internal]();
-			const state = init(options, isBase, baseState);
+			const state = init(options, isBase, baseState, prevCache);
 			(state as any)._count = 0;
 			if (isBase) {
 				_global = state;
@@ -1267,7 +1272,7 @@ export class Tempo {
 			ZONED_DATE_TIME: enums.ZONED_DATE_TIME
 		}
 
-		return out;
+		return Object.setPrototypeOf(out, self.#local);
 	}
 
 	/** allow for auto-convert of Tempo to BigInt, Number or String */
@@ -1683,7 +1688,6 @@ export class Tempo {
 	#setLocal(options: t.Options = {}) {
 		const classState = (this.constructor as any)[$Internal]();
 		this.#local = Object.create(classState);
-		(this.#local as any)._id = (this.constructor as any)[$Internal]()._count++;
 		const self = unwrap(this);
 		this.#local.config = markConfig(Object.create(classState.config));
 		if (classState.config.registry) this.#local.config.registry = Object.create(classState.config.registry);

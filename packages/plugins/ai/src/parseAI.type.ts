@@ -28,10 +28,6 @@ export interface AiConfig {
 	providers?: AiProvider[] | undefined;
 	/** Optional custom cache implementation for storing parsed strings */
 	cache?: Map<string, string> | undefined;
-	/** Maximum number of entries allowed in the default cache (default: 1000) */
-	maxCacheSize?: number | undefined;
-	/** Time to live in milliseconds for default cache entries (default: 24 hours) */
-	cacheTtl?: number | undefined;
 	/** If true, logs the spoon-fed LLM context prompt and raw LLM response to the console */
 	debug?: boolean | undefined;
 }

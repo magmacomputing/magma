@@ -6,7 +6,7 @@ import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { asType } from '#library/type.library.js';
-import { isString, isObject, isUndefined, isDefined, isRegExp, isEmpty } from '#library/assertion.library.js';
+import { isString, isObject, isUndefined, isDefined, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { getStorage } from '#library/storage.library.js';
@@ -20,13 +20,31 @@ import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './suppor
 import { STATE } from './support.enum.js';
 
 import enums from './support.enum.js';
+import { BoundedCache } from './support.cache.js';
 import * as t from '../tempo.type.js';
 
 /** @internal Initialise a Tempo state */
-export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State): t.Internal.State {
+export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State, prevCache?: BoundedCache): t.Internal.State {
 	const runtime = getRuntime();
 	// Global init is intentionally idempotent after first hydration; late-loaded modules must use Tempo.extend().
-	if (isGlobal && runtime.state && !baseState) return runtime.state;
+	if (isGlobal && runtime.state && !baseState) {
+		if (!runtime.state.cache)
+			runtime.state.cache = new BoundedCache(1000, 24 * 60 * 60 * 1000);
+
+		if (options.cache) {
+			const isBoundedCacheObj = Boolean((options.cache as any)?.isBoundedCache || options.cache instanceof BoundedCache);
+			if (isBoundedCacheObj) {
+				runtime.state.cache = options.cache as BoundedCache;
+			} else if (options.cache instanceof Map || isFunction((options.cache as any).entries)) {
+				for (const [k, v] of (options.cache as any).entries())
+					runtime.state.cache.setStatic(String(k).trim().toLowerCase(), String(v));
+			} else {
+				if (isDefined(options.cache?.maxSize)) runtime.state.cache.maxSize = options.cache.maxSize;
+				if (isDefined(options.cache?.ttl)) runtime.state.cache.ttl = options.cache.ttl;
+			}
+		}
+		return runtime.state;
+	}
 
 	const { timeZone, calendar } = getDateTimeFormat();
 	const state = (baseState ? Object.create(baseState) : {
@@ -47,6 +65,27 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			terms: [...baseState.pluginsDb.terms],
 			plugins: [...baseState.pluginsDb.plugins]
 		};
+	}
+
+	const isBoundedCacheOpt = Boolean((options.cache as any)?.isBoundedCache || options.cache instanceof BoundedCache);
+	if (isBoundedCacheOpt) {
+		state.cache = options.cache as BoundedCache;
+	} else if (options.cache instanceof Map || (options.cache && isFunction((options.cache as any).entries))) {
+		const targetCache = baseState?.cache ?? runtime.state?.cache ?? prevCache ?? new BoundedCache();
+		for (const [k, v] of (options.cache as any).entries())
+			targetCache.setStatic(String(k).trim().toLowerCase(), String(v));
+		state.cache = targetCache;
+	} else {
+		const targetCache = baseState?.cache ?? runtime.state?.cache ?? prevCache;
+		if (targetCache && (targetCache.isBoundedCache || targetCache instanceof BoundedCache)) {
+			if (isDefined(options.cache?.maxSize)) targetCache.maxSize = options.cache.maxSize;
+			if (isDefined(options.cache?.ttl)) targetCache.ttl = options.cache.ttl;
+			state.cache = targetCache;
+		} else {
+			const maxSize = options.cache?.maxSize ?? 1000;
+			const ttl = options.cache?.ttl ?? (24 * 60 * 60 * 1000);
+			state.cache = new BoundedCache(maxSize, ttl);
+		}
 	}
 
 	// 1. Establish the base parsing state
@@ -364,6 +403,15 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				setProperty(state.config, 'debug', parseLogLevel(arg.value));
 				break;
 
+			case 'cache':
+				if (isObject(arg.value)) {
+					if (arg.value.maxSize !== undefined) state.cache.maxSize = arg.value.maxSize;
+					if (arg.value.ttl !== undefined) state.cache.ttl = arg.value.ttl;
+				} else {
+					setProperty(state.config, 'cache', arg.value);
+				}
+				break;
+
 			default:
 				setProperty(state.config, optKey, arg.value);
 				break;
@@ -394,9 +442,8 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				if (state.aliasEngine) {
 					// Ensure we don't corrupt global state if we are a local instance
 					if (state.config.scope === 'local' && state.aliasEngine.depth === 0) {
-						if (typeof state.aliasEngine.fork === 'function') {
+						if (isFunction(state.aliasEngine.fork))
 							state.aliasEngine = state.aliasEngine.fork(state.config);
-						}
 					}
 					state.aliasEngine.registerAliases('evt', ownEntries(events));
 				}

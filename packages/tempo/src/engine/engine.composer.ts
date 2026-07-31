@@ -51,7 +51,14 @@ export function compose(
 		case 'String':
 			try {
 				const str = value.replace(/Z$/, '');
-				const zdt = Temporal.ZonedDateTime.from(str.includes('[') ? str : `${str}[${tz}]`);
+				let zdt: Temporal.ZonedDateTime;
+				if (str.includes('[')) {
+					zdt = Temporal.ZonedDateTime.from(str);
+				} else if (/[+-]\d{2}:\d{2}/.test(str)) {
+					zdt = Temporal.ZonedDateTime.from(`${str}[${tz}]`);
+				} else {
+					zdt = Temporal.PlainDateTime.from(str, { overflow: 'constrain' }).toZonedDateTime(tz);
+				}
 				timeZone = getTemporalIds(zdt)[0];
 				temporal = zdt;
 				onResult?.({ type, value: str, match: 'iso8601' });

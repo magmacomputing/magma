@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.0] - 2026-07-31
+
+### Added
+- **Centralized Cache Engine (`Tempo.cache`)**: Introduced a unified `BoundedCache` singleton managing date resolution caching with LRU capacity eviction (`maxSize`), TTL expiration (`ttl`), and static immortal glossary isolation.
+- **Glossary Seeding**: `Tempo.init({ cache: customMap })` appends pre-resolved terms as static immortal keys exempt from LRU and TTL eviction.
+- **Cache Management Documentation**: Scaffolded the `tempo.cache.md` Core Concepts guide detailing cache topology, non-destructive appending, decision matrix (Glossary vs Aliases vs Layouts), opt-in vs automatic behavior, and AI plugin integration.
+
+### Changed
+- **Decoupled Plugin Cache Topology**: Cleaned up `parseAI` cache configuration by delegating capacity and TTL settings to `Tempo.init()`, establishing `Tempo.cache` as the single source of truth across the monorepo.
+
 ## [3.10.3] - 2026-07-29
 
 ### Performance

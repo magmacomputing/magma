@@ -1,11 +1,7 @@
 import { Tempo } from '@magmacomputing/tempo';
-import type * as t from '@magmacomputing/tempo';
 
 import { TempoAiError } from './error.js';
 export { TempoAiError } from './error.js';
-
-import { BoundedCache } from './cache.js';
-export { BoundedCache } from './cache.js';
 
 export * from './parseAI.type.js';
 import type { AiConfig, AiRateLimits, AiProvider } from './parseAI.type.js';
@@ -13,11 +9,9 @@ import type { AiConfig, AiRateLimits, AiProvider } from './parseAI.type.js';
 // Global module state
 const _state: {
   config: AiConfig;
-  cache: Map<string, string>;
   limits: AiRateLimits | null;
 } = {
   config: {},
-  cache: new BoundedCache(),
   limits: null,
 }
 
@@ -52,25 +46,22 @@ const DEFAULT_PROVIDERS: Record<string, Partial<AiProvider>> = {
  * @param config - The plugin configuration (providers and optional cache)
  */
 export function initAI(config: AiConfig): void {
-  const resolvedProviders = (config.providers || []).map(p => {
+  const resolvedProviders = config.providers ? config.providers.map(p => {
     const defaults = DEFAULT_PROVIDERS[p.id] || DEFAULT_PROVIDERS.openai;
     return {
       ...defaults,
       ...p
     } as AiProvider;
-  });
+  }) : _state.config.providers;
 
   _state.config = {
     ..._state.config,
     ...config,
-    providers: resolvedProviders
+    providers: resolvedProviders || []
   };
 
   if (config.cache) {
-    _state.cache = config.cache;
-  } else if (_state.cache instanceof BoundedCache) {
-    if (config.maxCacheSize !== undefined) _state.cache.maxSize = config.maxCacheSize;
-    if (config.cacheTtl !== undefined) _state.cache.ttl = config.cacheTtl;
+    Tempo.init({ cache: config.cache as any });
   }
 }
 
@@ -83,7 +74,7 @@ function normalizeCacheInput(input: string): string {
 
 /**
  * ## clearAiCache
- * Explicitly evicts a natural language key or array of keys from the local AI cache.
+ * Explicitly evicts a natural language key or array of keys from the Tempo cache.
  * Useful for purging incorrectly parsed strings.
  * 
  * @param input - The raw natural language string(s) to remove from the cache
@@ -93,11 +84,9 @@ export function clearAiCache(input: string | string[]): void {
   for (const i of inputs) {
     const normalized = normalizeCacheInput(i);
     const prefix = `${normalized}::`;
-    for (const key of _state.cache.keys()) {
-      if (key.toLowerCase().startsWith(prefix) || key.toLowerCase() === normalized || key === i /* legacy fallback */) {
-        _state.cache.delete(key);
-      }
-    }
+    Tempo.cache.delete(normalized);
+    Tempo.cache.delete(i);
+    Tempo.cache.deletePrefix(prefix);
   }
 }
 
@@ -181,12 +170,12 @@ export async function parseAI(
     // 3. Check Cache (Two-Tier Lookup: Date-Salted Key first, then Un-Salted Normalized Key)
     let cachedIso: string | undefined;
     if (!options?.force && options?.cache !== false) {
-      if (_state.cache.has(cacheKey)) {
-        cachedIso = _state.cache.get(cacheKey);
-      } else if (_state.cache.has(normalizedStr)) {
-        cachedIso = _state.cache.get(normalizedStr);
-      } else if (_state.cache.has(str)) {
-        cachedIso = _state.cache.get(str);
+      if (Tempo.cache.has(cacheKey)) {
+        cachedIso = Tempo.cache.get(cacheKey);
+      } else if (Tempo.cache.has(normalizedStr)) {
+        cachedIso = Tempo.cache.get(normalizedStr);
+      } else if (Tempo.cache.has(str)) {
+        cachedIso = Tempo.cache.get(str);
       }
     }
 
@@ -337,7 +326,7 @@ Do not include markdown blocks, explanations, or any text outside the JSON.`;
 
     // 6. Cache result and push
     if (options?.cache !== false)
-      _state.cache.set(cacheKey, parsedIso);
+      Tempo.cache.set(cacheKey, parsedIso);
 
     results.push(new Tempo(parsedIso, options));
   }

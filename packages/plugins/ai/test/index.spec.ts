@@ -1,4 +1,5 @@
-import { parseAI, initAI, clearAiCache, getAiRateLimits, TempoAiError, BoundedCache } from '../src/index.js';
+import { parseAI, initAI, clearAiCache, getAiRateLimits, TempoAiError } from '../src/index.js';
+import { BoundedCache } from '@magmacomputing/tempo/support';
 import { Tempo } from '@magmacomputing/tempo';
 
 describe('AI Parsing Plugin', () => {
@@ -209,15 +210,15 @@ describe('AI Parsing Plugin', () => {
 			expect(cache.has('Christmas::2026-05-10')).toBe(true);
 		});
 
-		it('should update BoundedCache options via initAI', () => {
+		it('should update BoundedCache options via Tempo.init', () => {
 			const cache = new BoundedCache(1000, 3600000);
 			initAI({ cache });
 
-			initAI({ maxCacheSize: 50, cacheTtl: 5000 });
+			Tempo.init({ cache: { maxSize: 50, ttl: 5000 } });
 			expect(cache.maxSize).toBe(50);
 			expect(cache.ttl).toBe(5000);
 
-			initAI({ maxCacheSize: 5, cacheTtl: 100 });
+			Tempo.init({ cache: { maxSize: 5, ttl: 100 } });
 			expect(cache.maxSize).toBe(5);
 			expect(cache.ttl).toBe(100);
 		});
