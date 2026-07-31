@@ -150,11 +150,11 @@ export async function parseAI(
       sph = options!.sphere || options!.anchor.config.sphere;
       anchorStr = options!.anchor.toString();
     } else {
-      const resolvedConfig = Tempo.config;
-      tz = options?.timeZone || resolvedConfig.timeZone;
-      cal = options?.calendar || resolvedConfig.calendar;
-      loc = options?.locale || resolvedConfig.locale;
-      sph = options?.sphere || resolvedConfig.sphere;
+      const resolvedOptions = Tempo.options;
+      tz = options?.timeZone || resolvedOptions.timeZone;
+      cal = options?.calendar || resolvedOptions.calendar;
+      loc = options?.locale || resolvedOptions.locale;
+      sph = options?.sphere || resolvedOptions.sphere;
       anchorStr = options?.anchor || new Tempo().toString();
     }
 
@@ -256,30 +256,47 @@ Do not include markdown blocks, explanations, or any text outside the JSON.`;
         }
 
         // Parse rate limits from headers
-        const remReq = response.headers.get('x-ratelimit-remaining-requests');
-        const remTok = response.headers.get('x-ratelimit-remaining-tokens');
-        const resetTok = response.headers.get('x-ratelimit-reset-tokens');
+        const remReqHeader = response.headers.get('x-ratelimit-remaining-requests');
+        const remTokHeader = response.headers.get('x-ratelimit-remaining-tokens');
+        const resetTokHeader = response.headers.get('x-ratelimit-reset-tokens');
 
-        if (remReq || remTok) {
-          let addString = '1 hour';
-          if (resetTok) {
-            const val = parseFloat(resetTok);
-            if (resetTok.endsWith('ms')) addString = `${val} milliseconds`;
-            else if (resetTok.endsWith('s')) addString = `${val} seconds`;
-            else if (resetTok.endsWith('m')) addString = `${val} minutes`;
-            else addString = `${val} seconds`;
+        if (remReqHeader !== null || remTokHeader !== null || resetTokHeader !== null) {
+          const reqNum = remReqHeader !== null ? parseInt(remReqHeader, 10) : NaN;
+          const tokNum = remTokHeader !== null ? parseInt(remTokHeader, 10) : NaN;
+
+          const parsedReq = Number.isNaN(reqNum) ? null : reqNum;
+          const parsedTok = Number.isNaN(tokNum) ? null : tokNum;
+
+          let resetAtTempo: Tempo | null = null;
+          if (resetTokHeader) {
+            const val = parseFloat(resetTokHeader);
+            if (!Number.isNaN(val)) {
+              let addString = `${val} seconds`;
+              if (resetTokHeader.endsWith('ms')) addString = `${val} milliseconds`;
+              else if (resetTokHeader.endsWith('s')) addString = `${val} seconds`;
+              else if (resetTokHeader.endsWith('m')) addString = `${val} minutes`;
+
+              try {
+                const t = new Tempo().add(addString);
+                if (t.isValid) resetAtTempo = t;
+              } catch {
+                resetAtTempo = null;
+              }
+            }
           }
 
-          _state.limits = {
-            remainingRequests: remReq ? parseInt(remReq, 10) : 999,
-            remainingTokens: remTok ? parseInt(remTok, 10) : 99999,
-            resetAt: new Tempo().add(addString)
-          };
+          if (parsedReq !== null || parsedTok !== null || resetAtTempo !== null) {
+            _state.limits = {
+              remainingRequests: parsedReq,
+              remainingTokens: parsedTok,
+              resetAt: resetAtTempo
+            };
+          }
         }
 
         if (!response.ok) {
           const errorText = await response.text();
-          const resetTime = _state.limits?.resetAt;
+          const resetTime = _state.limits?.resetAt ?? undefined;
           throw new TempoAiError(`Provider ${provider.id} failed with status ${response.status}. Details: ${errorText}`, response.status, resetTime);
         }
 

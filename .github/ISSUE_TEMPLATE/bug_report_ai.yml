@@ -1,0 +1,73 @@
+name: "🐛 Bug Report: parseAI Plugin"
+description: Report an issue or unexpected date parsing result with the parseAI plugin
+title: "[parseAI]: "
+labels: ["bug", "plugin:ai", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping refine `@magmacomputing/tempo-plugin-ai`! Since this plugin is currently experimental, detailed reproduction details help us stabilize context resolution and prompt engineering.
+
+  - type: input
+    id: environment
+    attributes:
+      label: Version & Environment
+      placeholder: "e.g., tempo-plugin-ai v0.2.0, tempo v3.11.0, Node.js v20.11"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: AI Provider
+      options:
+        - OpenAI (gpt-4o / gpt-4o-mini / gpt-5.4-mini)
+        - Azure OpenAI
+        - Custom LLM Proxy
+        - Native Fallback
+    validations:
+      required: true
+
+  - type: textarea
+    id: input_query
+    attributes:
+      label: Natural Language Input Phrase
+      description: What string was passed to parseAI()?
+      placeholder: 'e.g. "The penultimate Tuesday before Thanksgiving in 2026"'
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context & Options
+      description: Provide relevant options (timeZone, locale, calendar, anchor date, etc.).
+      placeholder: '{ timeZone: "America/New_York", anchor: "2026-11-01" }'
+    validations:
+      required: false
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected vs. Actual Result
+      placeholder: |
+        Expected: 2026-11-17T00:00:00-05:00
+        Actual: 2026-11-24T00:00:00-05:00 (or TempoAiError)
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal Reproduction Code
+      description: Include a snippet showing initAI() and parseAI() invocations.
+      render: typescript
+      placeholder: |
+        import { Tempo } from '@magmacomputing/tempo';
+        import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
+
+        initAI({
+          providers: [{ id: 'openai', key: '...' }]
+        });
+
+        const res = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");

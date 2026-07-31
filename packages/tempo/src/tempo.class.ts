@@ -1371,8 +1371,6 @@ export class Tempo {
 
 	/** Resolve the instance to a Temporal.ZonedDateTime (with optional callback) */
 	#resolve<T>(cb?: (zdt: Temporal.ZonedDateTime) => T): T | Temporal.ZonedDateTime {
-		const now = this.#now.toZonedDateTimeISO('UTC');
-
 		if (!this.#zdt) {
 			try {
 				const skip = [this.#local.parse.format, this.#local.parse.term, this.#local.parse.result]
@@ -1382,7 +1380,7 @@ export class Tempo {
 					this.#errored = true;
 					const msg = `Tempo parse returned undefined for: ${String(this.#tempo)}`;
 					logError(msg, this.#local.config);
-					this.#zdt = now;
+					this.#zdt = this.#now.toZonedDateTimeISO('UTC');
 				}
 				secure(this.#local.config);
 				secure(this.#local.parse, new WeakSet(skip));
@@ -1391,7 +1389,7 @@ export class Tempo {
 				const msg = `Cannot create Tempo: ${(err as Error).message}\n${(err as Error).stack}`;
 				if (this.#local.config.catch === true) {
 					logError(msg, this.#local.config);				// log as error if in catch-mode
-					this.#zdt = now;
+					this.#zdt = this.#now.toZonedDateTimeISO('UTC');
 				} else {
 					logError((err as Error), this.#local.config, msg);		// log as error then re-throw
 					throw err;
@@ -1399,7 +1397,7 @@ export class Tempo {
 			}
 		}
 
-		const zdt = isZonedDateTime(this.#zdt) ? this.#zdt : now;
+		const zdt = isZonedDateTime(this.#zdt) ? this.#zdt : this.#now.toZonedDateTimeISO('UTC');
 		return cb?.(zdt) ?? zdt;
 	}
 

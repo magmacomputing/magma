@@ -89,16 +89,30 @@ describe('Localized Parsing', () => {
 				ignores: ['el', 'la', 'los', 'las']
 			}
 		});
-		const t1 = new Tempo('lunes');
+		const anchor = '2026-07-31T12:00:00+00:00[UTC]';
+
+		const t1 = new Tempo('lunes', { anchor });
 		expect(t1.isValid).toBe(true);
 
-		const t2 = new Tempo('próximo lunes');
+		const t2 = new Tempo('próximo lunes', { anchor });
 		expect(t2.isValid).toBe(true);
+		expect(t2.dow).toBe(1);
+		expect(t2.yy).toBe(2026);
+		expect(t2.mm).toBe(8);
+		expect(t2.dd).toBe(3);
 
-		const t3 = new Tempo('el próximo lunes');
+		const t3 = new Tempo('el próximo lunes', { anchor });
 		expect(t3.isValid).toBe(true);
+		expect(t3.dow).toBe(1);
+		expect(t3.yy).toBe(2026);
+		expect(t3.mm).toBe(8);
+		expect(t3.dd).toBe(3);
 
-		const t4 = new Tempo('el proximo lunes');
+		const t4 = new Tempo('el proximo lunes', { anchor });
 		expect(t4.isValid).toBe(true);
+		expect(t4.dow).toBe(1);
+		expect(t4.yy).toBe(2026);
+		expect(t4.mm).toBe(8);
+		expect(t4.dd).toBe(3);
 	});
 });

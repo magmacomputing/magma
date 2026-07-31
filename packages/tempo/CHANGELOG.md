@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.10.3] - 2026-07-29
 
 ### Performance
-- **Zero-Overhead Instantiation (~40–60% Speedup)**: Re-architected `Tempo` instance construction by introducing lazy evaluation for core private properties:
+- **Zero-Overhead Instantiation**: Re-architected `Tempo` instance construction by introducing lazy evaluation for core private properties:
   - **Lazy Instant (`#now`)**: Deferred system clock acquisition (`Temporal.Instant.fromEpochNanoseconds`) so that `instant()` is only fetched when relative duration math or parsing fallbacks require it. Passing explicit date strings or objects skips system clock calls entirely.
   - **Lazy Delegators (`#fmt` & `#term`)**: Deferred creation of Proxy delegator objects until `.fmt` or `.term` properties are explicitly accessed.
   - **`Interval` Acceleration**: `Tempo.Interval` and boundary set operations (`overlaps`, `contains`, `intersection`, `union`) automatically benefit from the reduced instantiation overhead.

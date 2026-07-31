@@ -68,7 +68,13 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 			this.delete(key);
 			return undefined;
 		}
-		return super.get(key);
+		if (!super.has(key)) return undefined;
+		const val = super.get(key)!;
+		super.delete(key);
+		super.set(key, val);
+		if (!this.#staticKeys.has(key))
+			this.#timestamps.set(key, Date.now());
+		return val;
 	}
 
 	override has(key: K): boolean {
@@ -77,6 +83,16 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 			return false;
 		}
 		return super.has(key);
+	}
+
+	override get size(): number {
+		this.evictExpired();
+		return super.size;
+	}
+
+	override forEach(callbackfn: (value: V, key: K, map: Map<K, V>) => void, thisArg?: any): void {
+		this.evictExpired();
+		super.forEach(callbackfn, thisArg);
 	}
 
 	override set(key: K, value: V): this {
@@ -90,12 +106,16 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 
 		while (this.size > this.maxSize) {
 			let evicted = false;
-			for (const k of super.keys()) {
+			const keysIter = super.keys();
+			let res = keysIter.next();
+			while (!res.done) {
+				const k = res.value;
 				if (!this.#staticKeys.has(k)) {
 					this.delete(k);
 					evicted = true;
 					break;
 				}
+				res = keysIter.next();
 			}
 			if (!evicted) break;
 		}
@@ -126,7 +146,7 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	/**
 	 * Purge cache entries.
 	 * If `count` is specified, evicts up to `count` oldest non-static entries.
-	 * If omitted, clears all non-static entries.
+	 * If omitted, clears all entries, including static entries.
 	 */
 	override clear(count?: number): void {
 		if (count === undefined) {
@@ -182,48 +202,40 @@ export function createCacheFacade(getState: () => t.Internal.State) {
 	return secure({
 		get(key: string) {
 			const normalized = String(key).trim().toLowerCase();
-			return getState().cache?.get(normalized);
+			return getState().cache.get(normalized);
 		},
 		has(key: string) {
 			const normalized = String(key).trim().toLowerCase();
-			return getState().cache?.has(normalized) ?? false;
+			return getState().cache.has(normalized);
 		},
 		set(key: string, value: string) {
 			const normalized = String(key).trim().toLowerCase();
-			getState().cache?.set(normalized, String(value));
+			getState().cache.set(normalized, String(value));
 			return this;
 		},
 		setStatic(key: string, value: string) {
 			const normalized = String(key).trim().toLowerCase();
-			getState().cache?.setStatic(normalized, String(value));
+			getState().cache.setStatic(normalized, String(value));
 			return this;
 		},
 		delete(key: string) {
 			const normalized = String(key).trim().toLowerCase();
-			return getState().cache?.delete(normalized) ?? false;
+			return getState().cache.delete(normalized);
 		},
 		deletePrefix(prefix: string) {
 			const normalizedPrefix = String(prefix).trim().toLowerCase();
-			const cache = getState().cache;
-			if (!cache) return 0;
-			let count = 0;
-			for (const key of Array.from(cache.keys())) {
-				if (isString(key) && key.toLowerCase().startsWith(normalizedPrefix))
-					cache.delete(key);
-				count++;
-			}
-			return count;
+			return getState().cache.deletePrefix(normalizedPrefix);
 		},
 		clear(count?: number) {
-			getState().cache?.clear(count);
+			getState().cache.clear(count);
 		},
 		entries() {
-			return getState().cache?.entries() ?? [][Symbol.iterator]();
+			return getState().cache.entries();
 		},
 		fromEntries(entries: Iterable<readonly [string, string]>) {
 			for (const [k, v] of entries) {
 				const normalized = String(k).trim().toLowerCase();
-				getState().cache?.set(normalized, String(v));
+				getState().cache.set(normalized, String(v));
 			}
 			return this;
 		}

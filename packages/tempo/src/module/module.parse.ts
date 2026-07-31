@@ -165,7 +165,7 @@ const _ParseEngine = {
 
 			if ((state.config.cache === true || state.config.cache === enums.CACHE.On || state.config.cache === enums.CACHE.Refresh || state.config.cache === 'refresh') && isString(tempo) && isZonedDateTime(dateTime) && !state.errored) {
 				const cacheKey = buildCacheKey(tempo, today, state);
-				state.cache?.set(cacheKey, dateTime.toString());
+				state.cache.set(cacheKey, dateTime.toString());
 			}
 
 			return Object.assign(res, {
@@ -230,7 +230,7 @@ const _ParseEngine = {
 			const normVal = trim.toLowerCase();
 
 			// 1. Static Glossary Check
-			if (state.cache?.isStatic(normVal)) {
+			if (state.cache.isStatic(normVal)) {
 				const staticTarget = state.cache.get(normVal);
 				if (staticTarget) {
 					accumulateResult(state, { match: 'CacheHit', value: trim, source: 'glossary' as any });
@@ -242,7 +242,7 @@ const _ParseEngine = {
 			const cacheOpt = state.config.cache;
 			if (cacheOpt === true || cacheOpt === enums.CACHE.On) {
 				const cacheKey = buildCacheKey(trim, dateTime, state);
-				const cachedIso = state.cache?.get(cacheKey);
+				const cachedIso = state.cache.get(cacheKey);
 				if (cachedIso) {
 					accumulateResult(state, { match: 'CacheHit', value: trim, source: 'parseCache' as any });
 					return { type: 'String', value: cachedIso };

@@ -16,10 +16,10 @@ A collection of recipes for solving common date and time challenges using Tempo.
 ## The Basics
 
 ### How do I get the current date and time?
-By default, the constructor returns "now".
+When invoked without arguments, the constructor initializes to the current date and time.
 ```typescript
 const now = new Tempo();
-console.log(now.toString());
+console.log(now.toString()); // e.g. "2026-07-31T14:42:11+10:00[Australia/Sydney]"
 ```
 
 ### Get "Now" in UTC

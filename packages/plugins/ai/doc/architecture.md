@@ -11,9 +11,9 @@ import { initAI } from '@magmacomputing/tempo-plugin-ai';
 
 initAI({
   providers: [
-    { id: 'groq', key: process.env.GROQ_API_KEY },
-    { id: 'gemini', key: process.env.GEMINI_API_KEY },
-    { id: 'openai', key: process.env.OPENAI_API_KEY }
+    ...(process.env.GROQ_API_KEY ? [{ id: 'groq', key: process.env.GROQ_API_KEY }] : []),
+    ...(process.env.GEMINI_API_KEY ? [{ id: 'gemini', key: process.env.GEMINI_API_KEY }] : []),
+    ...(process.env.OPENAI_API_KEY ? [{ id: 'openai', key: process.env.OPENAI_API_KEY }] : [])
   ]
 });
 ```
@@ -25,14 +25,16 @@ However, you can explicitly override URLs, models, and inject arbitrary LLM para
 ```typescript
 initAI({
   providers: [
-    // 1. Enterprise Azure OpenAI
-    { 
+    // 1. Enterprise Azure OpenAI (via Entra ID Bearer token or backend proxy wrapper)
+    // Note: BYOK requests send 'Authorization: Bearer <key>'. When connecting to Azure OpenAI,
+    // supply an Entra ID bearer token as provider.key or route through an Azure API gateway.
+    ...(process.env.AZURE_ENTRA_BEARER_TOKEN ? [{ 
       id: 'openai', 
-      key: process.env.AZURE_API_KEY,
+      key: process.env.AZURE_ENTRA_BEARER_TOKEN,
       url: 'https://my-enterprise.openai.azure.com/v1/chat/completions',
       model: 'gpt-4o',
       options: { temperature: 0.2, seed: 42 }
-    },
+    }] : []),
     // 2. Local Open-Source Models (e.g. Ollama)
     { 
       id: 'local', 

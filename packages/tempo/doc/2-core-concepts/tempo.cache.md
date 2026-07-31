@@ -83,10 +83,10 @@ import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
 initAI({ providers: [...] });
 
 // First lookup: Triggers LLM call -> Stores ISO result in Tempo.cache
-const t1 = await parseAI("1st Tuesday in March 2026 at 3pm");
+const t1 = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
 
 // Second lookup: Instantly resolves from Tempo.cache (O(1) local hit, $0 cost)
-const t2 = new Tempo("1st Tuesday in March 2026 at 3pm");
+const t2 = new Tempo("The penultimate Tuesday before Thanksgiving in 2026");
 ```
 
 ### Two-Tier Resolution Architecture

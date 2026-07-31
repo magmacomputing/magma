@@ -8,8 +8,8 @@
 
 > [!WARNING]
 > **🧪 EXPERIMENTAL PLUGIN**
-> This plugin relies on Generative AI. While it uses strict JSON schemas and validation to force deterministic outputs, LLMs (especially smaller models) can still hallucinate complex calendar math. We are actively collecting feedback on prompt engineering and model reliability. Please report any strange behavior or unexpected hallucinations on the [Magma GitHub Issues](https://github.com/magmacomputing/magma/issues) page!
-
+> This plugin relies on Generative AI. While it uses strict JSON schemas and validation to force deterministic outputs, LLMs (especially smaller models) can still hallucinate complex calendar math. We are actively collecting feedback on prompt engineering and model reliability. Please report any strange behavior or unexpected hallucinations on the [Magma GitHub Bug Report Form](https://github.com/magmacomputing/magma/issues/new?template=bug_report_ai.yml)!
+>
 > [!CAUTION]
 > **LLM Output Disclaimer**: Magma Computing Solutions and the Tempo core maintainers provide `@magmacomputing/tempo-plugin-ai` "as-is" without warranty of any kind. Large Language Models are probabilistic text generators, not deterministic calculators. Developers and organization operators are solely responsible for validating AI-generated date and time outputs before relying on them in financial, legal, medical, or time-critical production systems.
 
@@ -69,12 +69,12 @@ When building your LLM queries, it is often useful to see exactly how `parseAI` 
 Passing `debug: true` into `initAI` is intended for **development environments only**. It will globally log system prompts, localized context, and raw LLM responses to the console. Because prompts, context, and responses may contain user-supplied or sensitive data, disable `debug: true` or redact sensitive logs in production.
 
 **Forced Evaluation**
-If a relative query (like `"The Friday after Thanksgiving"`) is intercepted by the native `Tempo` layout engine, but the anchor context inheritance is returning an undesired timezone, you can forcefully bypass the deterministic engine and the cache by passing `force: true`:
+If a relative phrase (like `"Next Friday"`) would normally be resolved by the native `Tempo` engine or read from existing cache, you can skip native pre-parsing and cache lookups by passing `force: true`. The resulting LLM response is still written to `Tempo.cache` for subsequent lookups:
 
 ```typescript
-const dt = await parseAI("The Friday after Thanksgiving", { 
+const dt = await parseAI("Next Friday", { 
   anchor: '2026-09-01T00:00:00Z', 
-  force: true, // Bypasses native parsers & cache; forces a network LLM request!
+  force: true, // Skips native pre-parsing & cache lookup; forces an LLM request (result is cached)
   debug: true  // Overrides the global debug flag for this specific request
 });
 ```

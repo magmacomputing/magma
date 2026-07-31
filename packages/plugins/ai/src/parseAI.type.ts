@@ -38,10 +38,10 @@ export interface AiConfig {
  * of the most recent LLM proxy request.
  */
 export interface AiRateLimits {
-	/** Number of remaining requests allowed in the current time window */
-	remainingRequests: number;
-	/** Number of remaining tokens allowed in the current time window */
-	remainingTokens: number;
-	/** A Tempo instance representing the exact time the limits reset */
-	resetAt: Tempo;
+	/** Number of remaining requests allowed in the current time window, or null if unknown */
+	remainingRequests: number | null;
+	/** Number of remaining tokens allowed in the current time window, or null if unknown */
+	remainingTokens: number | null;
+	/** A Tempo instance representing the exact time the limits reset, or null if unknown */
+	resetAt: Tempo | null;
 }

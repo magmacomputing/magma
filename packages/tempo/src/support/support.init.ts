@@ -23,26 +23,34 @@ import enums from './support.enum.js';
 import { BoundedCache } from './support.cache.js';
 import * as t from '../tempo.type.js';
 
+function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
+	const isBoundedCacheOpt = Boolean(optionsCache?.isBoundedCache || optionsCache instanceof BoundedCache);
+	if (isBoundedCacheOpt) {
+		return optionsCache as BoundedCache;
+	} else if (optionsCache instanceof Map || (optionsCache && isFunction((optionsCache as any).entries))) {
+		const targetCache = existingCache ?? new BoundedCache();
+		for (const [k, v] of (optionsCache as any).entries())
+			targetCache.setStatic(String(k).trim().toLowerCase(), String(v));
+		return targetCache;
+	} else {
+		if (existingCache && (existingCache.isBoundedCache || existingCache instanceof BoundedCache)) {
+			if (isDefined(optionsCache?.maxSize)) existingCache.maxSize = optionsCache.maxSize;
+			if (isDefined(optionsCache?.ttl)) existingCache.ttl = optionsCache.ttl;
+			return existingCache;
+		} else {
+			const maxSize = optionsCache?.maxSize ?? 1000;
+			const ttl = optionsCache?.ttl ?? (24 * 60 * 60 * 1000);
+			return new BoundedCache(maxSize, ttl);
+		}
+	}
+}
+
 /** @internal Initialise a Tempo state */
 export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State, prevCache?: BoundedCache): t.Internal.State {
 	const runtime = getRuntime();
 	// Global init is intentionally idempotent after first hydration; late-loaded modules must use Tempo.extend().
 	if (isGlobal && runtime.state && !baseState) {
-		if (!runtime.state.cache)
-			runtime.state.cache = new BoundedCache(1000, 24 * 60 * 60 * 1000);
-
-		if (options.cache) {
-			const isBoundedCacheObj = Boolean((options.cache as any)?.isBoundedCache || options.cache instanceof BoundedCache);
-			if (isBoundedCacheObj) {
-				runtime.state.cache = options.cache as BoundedCache;
-			} else if (options.cache instanceof Map || isFunction((options.cache as any).entries)) {
-				for (const [k, v] of (options.cache as any).entries())
-					runtime.state.cache.setStatic(String(k).trim().toLowerCase(), String(v));
-			} else {
-				if (isDefined(options.cache?.maxSize)) runtime.state.cache.maxSize = options.cache.maxSize;
-				if (isDefined(options.cache?.ttl)) runtime.state.cache.ttl = options.cache.ttl;
-			}
-		}
+		runtime.state.cache = resolveCache(options.cache, runtime.state.cache);
 		return runtime.state;
 	}
 
@@ -67,26 +75,8 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		};
 	}
 
-	const isBoundedCacheOpt = Boolean((options.cache as any)?.isBoundedCache || options.cache instanceof BoundedCache);
-	if (isBoundedCacheOpt) {
-		state.cache = options.cache as BoundedCache;
-	} else if (options.cache instanceof Map || (options.cache && isFunction((options.cache as any).entries))) {
-		const targetCache = baseState?.cache ?? runtime.state?.cache ?? prevCache ?? new BoundedCache();
-		for (const [k, v] of (options.cache as any).entries())
-			targetCache.setStatic(String(k).trim().toLowerCase(), String(v));
-		state.cache = targetCache;
-	} else {
-		const targetCache = baseState?.cache ?? runtime.state?.cache ?? prevCache;
-		if (targetCache && (targetCache.isBoundedCache || targetCache instanceof BoundedCache)) {
-			if (isDefined(options.cache?.maxSize)) targetCache.maxSize = options.cache.maxSize;
-			if (isDefined(options.cache?.ttl)) targetCache.ttl = options.cache.ttl;
-			state.cache = targetCache;
-		} else {
-			const maxSize = options.cache?.maxSize ?? 1000;
-			const ttl = options.cache?.ttl ?? (24 * 60 * 60 * 1000);
-			state.cache = new BoundedCache(maxSize, ttl);
-		}
-	}
+	const targetCache = baseState?.cache ?? runtime.state?.cache ?? prevCache;
+	state.cache = resolveCache(options.cache, targetCache);
 
 	// 1. Establish the base parsing state
 	const parseState: t.Internal.Parse = {

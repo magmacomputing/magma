@@ -19,6 +19,23 @@ describe('Tempo Core Caching Architecture', () => {
 			expect(cache.size).toBe(2);
 		});
 
+		it('should update recency when calling get() so accessed items avoid eviction', () => {
+			const cache = new BoundedCache<string, string>(2, 10000);
+			cache.set('a', '1');
+			cache.set('b', '2');
+
+			// Read 'a' to make it most recently used
+			expect(cache.get('a')).toBe('1');
+
+			// Insert 'c'. 'b' should be evicted because 'a' was refreshed by get()
+			cache.set('c', '3');
+
+			expect(cache.has('b')).toBe(false);
+			expect(cache.get('a')).toBe('1');
+			expect(cache.get('c')).toBe('3');
+			expect(cache.size).toBe(2);
+		});
+
 		it('should protect static keys from LRU capacity eviction', () => {
 			const cache = new BoundedCache<string, string>(2, 10000);
 			cache.setStatic('static_term', 'IMMORTAL');

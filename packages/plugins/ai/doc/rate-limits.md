@@ -53,14 +53,14 @@ This is by design for three critical reasons:
 3. **Deterministic Safety**: LLMs are language models, not arrays. If you pass 50 strings, smaller models often hallucinate and return 49 strings, completely breaking your array indexing. By querying sequentially, we guarantee a strict 1:1 mapping and ensure one invalid string doesn't crash the entire batch.
 
 > [!WARNING]  
-> **Granular Time Gotcha**: The cache key is automatically salted with the **calendar date** (`yyyy-mm-dd`) of execution. This brilliantly protects relative day queries (like `"The Friday after Thanksgiving"`) because the cache automatically misses as soon as midnight strikes! However, if you pass `force: true` for granular time-relative phrases, the calendar date salt is not enough to prevent staleness on a long-running server.
+> **Granular Time Gotcha**: The cache key is automatically salted with the **calendar date** (`yyyy-mm-dd`) of the execution anchor. By default this uses the system execution date, but when `options.anchor` is explicitly set, it uses the caller-provided anchor date. Note that keeping a fixed anchor date retains the same cache key across midnight boundaries, so an automatic midnight cache miss is not guaranteed.
 
-### Bypassing Cache for Dynamic Queries
-If you are intentionally parsing dynamic phrases and your server is long-running, you should explicitly disable caching for that specific query to ensure it is re-evaluated:
+### Bypassing Cache & Forcing Network Requests
+Passing `cache: false` disables reading and writing to the cache, but native pre-parsing may still resolve standard phrases. To guarantee an LLM provider request while disabling caching of the response, combine `force: true` with `cache: false`:
 
 ```typescript
-// The LLM will ALWAYS be queried, and the result will NOT be cached
-const dt = await parseAI("The last Friday before Christmas", { cache: false });
+// Forces an LLM network request and prevents reading or writing to cache
+const dt = await parseAI("The last Friday before Christmas", { force: true, cache: false });
 ```
 
 ### Evicting Bad Parses

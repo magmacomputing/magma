@@ -8,10 +8,6 @@ describe('AI Parsing Plugin', () => {
 	const isLiveTest = Boolean(process.env.LIVE_AI_TEST && liveApiKey);
 
 	beforeEach(() => {
-		// Suppress expected native parsing errors from polluting the test output
-		vi.spyOn(console, 'error').mockImplementation(() => { });
-		vi.spyOn(console, 'warn').mockImplementation(() => { });
-
 		if (isLiveTest) {
 			initAI({
 				providers: [{ id: liveProviderId, key: liveApiKey! }]
@@ -24,7 +20,7 @@ describe('AI Parsing Plugin', () => {
 	});
 
 	afterEach(() => {
-		vi.restoreAllMocks();
+		vi.clearAllMocks();
 	});
 
 	it('should fall back to native parsing first', async () => {
@@ -55,7 +51,7 @@ describe('AI Parsing Plugin', () => {
 
 		// Provide a strict anchor so we can assert the result deterministically
 		const anchorDate = '2026-05-10T12:00:00Z';
-		const result = await parseAI('The Friday after Thanksgiving', { anchor: anchorDate, timeZone: 'UTC' });
+		const result = await parseAI('The Friday after Thanksgiving', { anchor: anchorDate, timeZone: 'UTC', force: true });
 
 		expect(result).toBeInstanceOf(Tempo);
 		expect(result.isValid).toBe(true);
@@ -95,7 +91,8 @@ describe('AI Parsing Plugin', () => {
 				status: 200,
 				headers: new Headers({
 					'x-ratelimit-remaining-requests': '99',
-					'x-ratelimit-remaining-tokens': '4950'
+					'x-ratelimit-remaining-tokens': '4950',
+					'x-ratelimit-reset-tokens': '60s'
 				})
 			}));
 		}

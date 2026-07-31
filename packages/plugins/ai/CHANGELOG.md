@@ -26,4 +26,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial scaffolding of the AI natural language parsing plugin.
 - Functional exports for `parseAI`, `initAI`, and `clearAiCache`.
-- Initial fallback-routing logic (mocked proxy).
+- Initial provider fallback-routing engine supporting HTTP requests to configured LLM provider endpoints.
