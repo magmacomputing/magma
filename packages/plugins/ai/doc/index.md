@@ -15,15 +15,15 @@
 
 Tempo community plugin for LLM-powered natural language parsing.
 
-This plugin bridges the gap between deterministic date-math and unstructured NLP inputs, utilizing large language models (like Gemini, Groq, or OpenAI) to safely and asynchronously parse complex natural language expressions into `Tempo` instances.
+This plugin bridges the gap between deterministic date-math and unstructured NLP inputs, utilizing large language models (like Gemini, Groq, or OpenAI) to safely and asynchronously parse, format, and process complex natural language temporal expressions into `Tempo` instances.
 
-> **Note**: This plugin is **not** a silver-bullet replacement for all your parsing needs! `Tempo.parse()` natively handles structured dates and formats phenomenally well using its Aliases, Layouts, and Snippets. The `parseAI` plugin is specifically designed to be an alternative path for handling completely unstructured, conversational human language that would otherwise be impossible to Regex.
+> **Note**: This plugin is **not** a silver-bullet replacement for all your parsing needs! `Tempo.parse()` natively handles structured dates and formats phenomenally well using its Aliases, Layouts, and Snippets. The Tempo AI plugin is specifically designed to be an alternative path for handling completely unstructured, conversational human language that would otherwise be impossible to Regex.
 >
 > **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle. BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, you must use a proxy service.
 
 ## Ideal Use-Cases
 
-Good `parseAI` candidates represent unstructured, conversational, or event-driven natural language expressions that are impossible to Regex or parse with standard relative offset rules:
+Good AI function candidates (such as `parseAI`) represent unstructured, conversational, or event-driven natural language expressions that are impossible to Regex or parse with standard relative offset rules:
 
 - **Holiday & Relative Calendar Math**: `"The Friday after Thanksgiving"`, `"The penultimate Tuesday before Christmas"`
 - **Named Cultural / Event Terms**: `"Star Wars Day at 5pm"`, `"A fortnight after Labor Day"`
@@ -61,9 +61,24 @@ const dt1 = await parseAI("The penultimate Tuesday before Thanksgiving in 2026")
 clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");
 ```
 
+## Execution Modes & Multi-Provider Options
+
+The AI plugin supports multi-provider execution strategies (`fallback`, `race`, `consensus`) and confidence filtering on per-request options:
+
+```typescript
+// 1. Race mode: send concurrent requests to all providers, returning the fastest valid response
+const fastest = await parseAI("Third Friday of October", { mode: 'race' });
+
+// 2. Consensus mode: query providers concurrently and boost confidence when outputs agree
+const agreed = await parseAI("The penultimate Tuesday before Thanksgiving", { 
+  mode: 'consensus',
+  minConfidence: 0.85 // Require at least 0.85 confidence threshold
+});
+```
+
 ## Debugging & Forced Evaluation
 
-When building your LLM queries, it is often useful to see exactly how `parseAI` is routing your data. 
+When building your LLM queries, it is often useful to see exactly how AI functions route your data. 
 
 **Global Debugging**
 Passing `debug: true` into `initAI` is intended for **development environments only**. It will globally log system prompts, localized context, and raw LLM responses to the console. Because prompts, context, and responses may contain user-supplied or sensitive data, disable `debug: true` or redact sensitive logs in production.

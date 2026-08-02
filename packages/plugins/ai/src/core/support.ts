@@ -1,7 +1,16 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { TempoAiError } from './error.js';
+import { RESERVED_PROVIDER_IDS } from './config.js';
+import { updateRateLimitsFromResponse, _state } from './init.js';
 import type { AiProvider, TempoAiMeta } from './types.js';
-import { updateRateLimitsFromResponse } from './init.js';
+
+export function assertNoReservedProviderId(providers: Partial<AiProvider>[]): void {
+  for (const p of providers) {
+    if (p.id && RESERVED_PROVIDER_IDS.has(p.id.toLowerCase())) {
+      throw new TempoAiError(`Provider ID '${p.id}' is a reserved keyword in parseAI.`, 400);
+    }
+  }
+}
 
 export function normalizeCacheInput(input: string): string {
   return input.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -14,10 +23,11 @@ export function getNamespacedCacheKey(namespace: string, key: string): string {
 export function attachAiMeta(instance: Tempo, meta: TempoAiMeta): Tempo {
   const frozenMeta = Object.freeze(meta);
   return new Proxy(instance, {
-    get(target, prop, receiver) {
+    get(target, prop, _receiver) {
       if (prop === 'ai') return frozenMeta;
       if (prop === 'isValid') {
-        if (meta.confidence === 0.0 || meta.rawIso === 'INVALID' || meta.ambiguous === true || !target.isValid) return false;
+        if (meta.confidence === 0.0 || meta.rawIso === 'INVALID' || meta.ambiguous === true || !target.isValid)
+          return false;
       }
       const val = Reflect.get(target, prop, target);
       if (typeof val === 'function') return val.bind(target);
@@ -32,7 +42,7 @@ export function attachAiMeta(instance: Tempo, meta: TempoAiMeta): Tempo {
         return {
           value: frozenMeta,
           writable: false,
-          configurable: false,
+          configurable: true,
           enumerable: true
         };
       }
@@ -52,7 +62,7 @@ export async function fetchFromProvider(
   contextString: string,
   isDebug: boolean,
   parentSignal?: AbortSignal
-): Promise<{ rawContent: string; providerId: string }> {
+): Promise<{ rawContent: string; providerId: string; rateLimits: ReturnType<typeof updateRateLimitsFromResponse> }> {
   const url = provider.url!;
   const model = provider.model!;
 
@@ -119,6 +129,7 @@ Do not include markdown blocks or any text outside the JSON.`;
     if (!response.ok) {
       const errorText = await response.text();
       const resetTime = limits?.resetAt ?? undefined;
+      _state.limits = limits;
       throw new TempoAiError(`Provider ${provider.id} failed with status ${response.status}. Details: ${errorText}`, response.status, resetTime);
     }
 
@@ -130,7 +141,7 @@ Do not include markdown blocks or any text outside the JSON.`;
     if (isDebug)
       console.log(`[tempo-plugin-ai] Received from ${provider.id}:`, rawContent);
 
-    return { rawContent: rawContent.trim(), providerId: provider.id };
+    return { rawContent: rawContent.trim(), providerId: provider.id, rateLimits: limits };
   } finally {
     clearTimeout(timeoutId);
     if (parentSignal) {

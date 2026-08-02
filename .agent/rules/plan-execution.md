@@ -7,5 +7,6 @@ During standard interactive conversations, code discussions, and step-by-step re
 
 ## 2. Autonomous Background Execution (AFK / `/ok` Mode)
 When the user explicitly approves an implementation plan for autonomous background execution (e.g. by typing `/ok` or clicking "Ok to proceed"):
-- Set `SafeToAutoRun: true` on execution tools.
-- Prefer using terminal shell operations (`run_command` with `SafeToAutoRun: true`) for batch file modifications and test execution to ensure unblocked execution while the user is away.
+- Validate approval state, verify the identity of the currently approved implementation plan, and validate command scope prior to enabling `SafeToAutoRun` or invoking `run_command`.
+- Destructive commands or actions with external side effects must remain interactive unless explicitly authorized in the approved plan.
+- For non-destructive operations covered by the approved plan, set `SafeToAutoRun: true` and use terminal shell operations (`run_command`) or file tools for unblocked execution.

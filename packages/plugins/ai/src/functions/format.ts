@@ -1,6 +1,7 @@
 import type { Tempo } from '@magmacomputing/tempo';
 
 /**
+ * @internal Draft implementation scaffolded for v0.3.0 roadmap.
  * ## formatAI (Upcoming Export)
  * Formats a `Tempo` instance into human-friendly, contextual narrative text 
  * tailored to specific UI tones, relative time frames, or business domains.

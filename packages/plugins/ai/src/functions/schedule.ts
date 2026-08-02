@@ -6,6 +6,7 @@ export interface TempoInterval {
 }
 
 /**
+ * @internal Draft implementation scaffolded for v0.3.0 roadmap.
  * ## scheduleAI (Upcoming Export)
  * Resolves natural language scheduling prompts against working hours, existing calendar 
  * events, and timezones into an optimal start/end `Tempo` interval.

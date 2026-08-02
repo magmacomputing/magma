@@ -20,7 +20,7 @@ describe('AI Parsing Plugin', () => {
 	});
 
 	afterEach(() => {
-		vi.clearAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	it('should fall back to native parsing first and attach .ai metadata', async () => {
@@ -37,6 +37,20 @@ describe('AI Parsing Plugin', () => {
 	it('should throw TempoAiError if reserved provider ID "native" or "cache" is used in initAI', () => {
 		expect(() => initAI({ providers: [{ id: 'native', key: '123' }] })).toThrow(TempoAiError);
 		expect(() => initAI({ providers: [{ id: 'cache', key: '123' }] })).toThrow(TempoAiError);
+	});
+
+	it('should canonicalize Gemini provider ID and use gemini-3.6-flash model by default', async () => {
+		initAI({
+			providers: [{ id: 'Gemini', key: 'mock-gemini-key' }]
+		});
+		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{ message: { content: '{"iso":"2026-12-25T00:00:00"}' } }]
+		}), { status: 200 }));
+
+		await parseAI('Christmas 2026', { force: true });
+		expect(fetchSpy).toHaveBeenCalled();
+		const body = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+		expect(body.model).toBe('gemini-3.6-flash');
 	});
 
 	it('should throw TempoAiError if no key is configured and AI is needed', async () => {
@@ -412,7 +426,6 @@ describe('AI Parsing Plugin', () => {
 			expect(fetchSpy).not.toHaveBeenCalled();
 		});
 	});
-});
 
 	describe('Rate Limit & Reset Header Parsing Hardening', () => {
 		it('should correctly parse compound reset duration strings like 4m12s and 1h30m', async () => {
@@ -472,6 +485,25 @@ describe('AI Parsing Plugin', () => {
 			expect(getAiRateLimits()).toBeNull();
 		});
 
+		it('should parse HTTP-date format Retry-After header strings into valid Tempo resetAt', async () => {
+			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+			const httpDateStr = 'Wed, 21 Oct 2026 07:28:00 GMT';
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), {
+				status: 200,
+				headers: new Headers({
+					'retry-after': httpDateStr
+				})
+			}));
+
+			await parseAI('Thanksgiving 2026', { force: true });
+			expect(getAiRateLimits()?.resetAt).toBeDefined();
+			expect(getAiRateLimits()?.resetAt?.isValid).toBe(true);
+		});
+
 		it('should ignore invalid or malformed duration strings without throwing or crashing', async () => {
 			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
@@ -493,3 +525,4 @@ describe('AI Parsing Plugin', () => {
 			expect(getAiRateLimits()).toBeNull();
 		});
 	});
+});

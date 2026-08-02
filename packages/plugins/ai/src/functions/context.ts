@@ -6,6 +6,7 @@ export interface TempoContext {
 }
 
 /**
+ * @internal Draft implementation scaffolded for v0.3.0 roadmap.
  * ## contextAI (Upcoming Export)
  * Infers `timeZone`, `locale`, and preferred `calendar` system from ambiguous location strings, 
  * user bios, or context descriptions.
@@ -22,6 +23,3 @@ export interface TempoContext {
 export async function contextAI(_text: string, _options?: Record<string, any>): Promise<TempoContext> {
   throw new Error('contextAI is not yet implemented in tempo-plugin-ai.');
 }
-
-/** Alias for contextAI */
-export const inferContextAI = contextAI;

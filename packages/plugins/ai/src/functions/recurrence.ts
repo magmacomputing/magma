@@ -6,6 +6,7 @@ export interface TempoRecurrenceRule {
 }
 
 /**
+ * @internal Draft implementation scaffolded for v0.3.0 roadmap.
  * ## recurrenceAI (Upcoming Export)
  * Translates natural language descriptions of complex repeating schedules into 
  * structured RRULE strings and `Tempo` date generators.

@@ -1,8 +1,7 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { TempoAiError } from './error.js';
-import { RESERVED_PROVIDER_IDS, DEFAULT_PROVIDERS } from './config.js';
+import { DEFAULT_PROVIDERS } from './config.js';
+import { normalizeCacheInput, assertNoReservedProviderId } from './support.js';
 import type { AiConfig, AiRateLimits, AiProvider } from './types.js';
-import { normalizeCacheInput } from './support.js';
 
 export const _state: {
   config: AiConfig;
@@ -10,14 +9,15 @@ export const _state: {
 } = {
   config: {},
   limits: null,
-};
+}
 
 export function initAI(config: AiConfig): void {
+  if (config.providers)
+    assertNoReservedProviderId(config.providers);
+
   const resolvedProviders = config.providers ? config.providers.map(p => {
-    if (RESERVED_PROVIDER_IDS.has(p.id.toLowerCase())) {
-      throw new TempoAiError(`Provider ID '${p.id}' is a reserved keyword in parseAI.`, 400);
-    }
-    const defaults = DEFAULT_PROVIDERS[p.id] || DEFAULT_PROVIDERS.openai;
+    const normalizedId = p.id?.toLowerCase() ?? '';
+    const defaults = DEFAULT_PROVIDERS[normalizedId] || DEFAULT_PROVIDERS.openai;
     return {
       ...defaults,
       ...p
@@ -97,6 +97,16 @@ export function parseResetHeaderToTempo(resetHeader: string): Tempo | null {
     }
   }
 
+  // Case 3: HTTP-date string (e.g., 'Wed, 21 Oct 2026 07:28:00 GMT')
+  if (/GMT|UTC|\d{2}:\d{2}:\d{2}/i.test(trimmed)) {
+    try {
+      const t = new Tempo(trimmed, { catch: true });
+      return t.isValid ? t : null;
+    } catch {
+      return null;
+    }
+  }
+
   return null;
 }
 
@@ -117,19 +127,16 @@ export function parseRateLimitsFromResponse(response: Response): AiRateLimits | 
   const parsedTok = Number.isNaN(tokNum) ? null : tokNum;
   const resetAtTempo = resetTokHeader ? parseResetHeaderToTempo(resetTokHeader) : null;
 
-  if (parsedReq === null && parsedTok === null && resetAtTempo === null) {
+  if (parsedReq === null && parsedTok === null && resetAtTempo === null)
     return null;
-  }
 
   return {
     remainingRequests: parsedReq,
     remainingTokens: parsedTok,
     resetAt: resetAtTempo
-  };
+  }
 }
 
 export function updateRateLimitsFromResponse(response: Response): AiRateLimits | null {
-  const limits = parseRateLimitsFromResponse(response);
-  _state.limits = limits;
-  return limits;
+  return parseRateLimitsFromResponse(response);
 }

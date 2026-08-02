@@ -36,7 +36,7 @@ export const DEFAULT_PROVIDERS: Readonly<Record<string, Readonly<Partial<AiProvi
 	}),
 	gemini: Object.freeze({
 		url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-		model: 'gemini-1.5-flash',
+		model: 'gemini-3.6-flash',
 		tokenParam: 'max_tokens'
 	}),
 	mistral: Object.freeze({

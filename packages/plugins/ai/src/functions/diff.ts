@@ -9,6 +9,7 @@ export interface TempoAiDiffResult {
 }
 
 /**
+ * @internal Draft implementation scaffolded for v0.3.0 roadmap.
  * ## diffAI (Upcoming Export)
  * Expresses the delta between two timestamps or `Tempo` instances in human, business, 
  * or operational terms.

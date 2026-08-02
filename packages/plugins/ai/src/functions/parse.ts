@@ -1,9 +1,9 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { TempoAiError } from '../core/error.js';
-import { AiMode, RESERVED_PROVIDER_IDS } from '../core/config.js';
+import { AiMode } from '../core/config.js';
 import type { AiParseOptions } from '../core/types.js';
 import { _state } from '../core/init.js';
-import { normalizeCacheInput, attachAiMeta, fetchFromProvider } from '../core/support.js';
+import { normalizeCacheInput, attachAiMeta, fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
 
 async function parseSingleInput(str: string, options?: AiParseOptions): Promise<Tempo> {
   const isDebug = options?.debug ?? _state.config.debug ?? false;
@@ -60,9 +60,10 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
   if (!force) {
     try {
       const native = new Tempo(str, { ...coreOptions, silent: true });
-      const internal = (native as any)[Symbol.for('$Tempo.internal')] || (native as any).$Internal?.();
-      const hasNativeMatches = (internal?.matches && internal.matches.length > 0)
-        || /^\d{4}-\d{2}-\d{2}/.test(str.trim());
+      const hasNativeMatches = Tempo.cache.has(str)
+        || Tempo.cache.has(normalizedStr)
+        || /^\d{4}-\d{2}-\d{2}/.test(str.trim())
+        || native.isValid;
 
       if (native.isValid && hasNativeMatches) {
         if (isDebug) console.log(`[parseAI] Resolved natively: "${str}"`);
@@ -81,40 +82,35 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
     }
   }
 
-  const contextString = `Current Time: ${anchorTempo.format('{yyyy}-{mm}-{dd} ({wkd}) {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}.`;
+  const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}.`;
 
   const availableProviders = providers || _state.config.providers;
-  if (!availableProviders || availableProviders.length === 0) {
+  if (!availableProviders || availableProviders.length === 0)
     throw new TempoAiError('No AI providers configured. Please call initAI().', 400);
-  }
 
-  for (const p of availableProviders) {
-    if (RESERVED_PROVIDER_IDS.has(p.id.toLowerCase())) {
-      throw new TempoAiError(`Provider ID '${p.id}' is a reserved keyword in parseAI.`, 400);
-    }
-  }
+  assertNoReservedProviderId(availableProviders);
 
   const mode = aiMode || AiMode.Fallback;
-  let successfulResult: { parsedData: any; providerId: string } | null = null;
+  let successfulResult: { parsedData: any; providerId: string; rateLimits?: any } | null = null;
 
   if (mode === AiMode.Fallback) {
     let lastError: any = null;
-    let bestCandidate: { parsedData: any; providerId: string } | null = null;
+    let bestCandidate: { parsedData: any; providerId: string; rateLimits?: any } | null = null;
 
     for (const provider of availableProviders) {
       try {
-        const { rawContent, providerId } = await fetchFromProvider(provider, str, contextString, isDebug);
+        const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug);
         const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
         const parsedData = JSON.parse(cleanContent);
 
         const candidateConfidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : (parsedData?.iso === 'INVALID' ? 0.0 : 1.0);
 
         if (!bestCandidate || candidateConfidence > (bestCandidate.parsedData?.confidence ?? 0)) {
-          bestCandidate = { parsedData, providerId };
+          bestCandidate = { parsedData, providerId, rateLimits };
         }
 
         if (minConfidence === undefined || candidateConfidence >= minConfidence) {
-          successfulResult = { parsedData, providerId };
+          successfulResult = { parsedData, providerId, rateLimits };
           break;
         }
 
@@ -139,9 +135,9 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
     const parentController = new AbortController();
     try {
       const promises = availableProviders.map(async (provider) => {
-        const { rawContent, providerId } = await fetchFromProvider(provider, str, contextString, isDebug, parentController.signal);
+        const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug, parentController.signal);
         const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
-        return { parsedData: JSON.parse(cleanContent), providerId };
+        return { parsedData: JSON.parse(cleanContent), providerId, rateLimits };
       });
       successfulResult = await Promise.race(promises);
       parentController.abort();
@@ -152,14 +148,14 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
   } else if (mode === AiMode.Consensus) {
     const promises = availableProviders.map(async (provider) => {
-      const { rawContent, providerId } = await fetchFromProvider(provider, str, contextString, isDebug);
+      const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug);
       const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
-      return { parsedData: JSON.parse(cleanContent), providerId };
+      return { parsedData: JSON.parse(cleanContent), providerId, rateLimits };
     });
 
     const settled = await Promise.allSettled(promises);
     const fulfilled = settled
-      .filter((s): s is PromiseFulfilledResult<{ parsedData: any; providerId: string }> => s.status === 'fulfilled')
+      .filter((s): s is PromiseFulfilledResult<{ parsedData: any; providerId: string; rateLimits: any }> => s.status === 'fulfilled')
       .map(s => s.value);
 
     if (fulfilled.length === 0) {
@@ -180,7 +176,8 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
             confidence: 1.0,
             ambiguous: false
           },
-          providerId: 'consensus'
+          providerId: AiMode.Consensus,
+          rateLimits: fulfilled[0].rateLimits
         };
       } else {
         const sorted = [...fulfilled].sort((a, b) => (b.parsedData?.confidence ?? 0) - (a.parsedData?.confidence ?? 0));
@@ -189,11 +186,14 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
             ...sorted[0].parsedData,
             ambiguous: true
           },
-          providerId: sorted[0].providerId
+          providerId: sorted[0].providerId,
+          rateLimits: sorted[0].rateLimits
         };
       }
     }
   }
+
+  _state.limits = successfulResult?.rateLimits ?? null;
 
   const { parsedData, providerId } = successfulResult!;
   const rawIso = typeof parsedData?.iso === 'string' ? parsedData.iso : 'INVALID';

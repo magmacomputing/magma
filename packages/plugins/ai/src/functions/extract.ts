@@ -8,6 +8,7 @@ export interface TempoEvent {
 }
 
 /**
+ * @internal Draft implementation scaffolded for v0.3.0 roadmap.
  * ## extractAI (Upcoming Export)
  * Scans unstructured text (emails, transcripts, task notes) and extracts all 
  * embedded temporal entities, deadlines, and events into structured `TempoEvent` records.
