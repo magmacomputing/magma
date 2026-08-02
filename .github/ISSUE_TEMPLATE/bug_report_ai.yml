@@ -60,14 +60,15 @@ body:
     id: reproduction
     attributes:
       label: Minimal Reproduction Code
-      description: Include a snippet showing initAI() and parseAI() invocations.
+      description: Include a snippet showing initAI() and parseAI() invocations. DO NOT include real API keys or private endpoints!
       render: typescript
       placeholder: |
         import { Tempo } from '@magmacomputing/tempo';
         import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
 
+        // DO NOT INCLUDE REAL API KEYS OR PRIVATE ENDPOINTS BELOW
         initAI({
-          providers: [{ id: 'openai', key: '...' }]
+          providers: [{ id: 'openai', key: 'YOUR_API_KEY_HERE' }]
         });
 
         const res = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");

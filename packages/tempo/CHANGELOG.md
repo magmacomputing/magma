@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Decoupled Plugin Cache Topology**: Cleaned up `parseAI` cache configuration by delegating capacity and TTL settings to `Tempo.init()`, establishing `Tempo.cache` as the single source of truth across the monorepo.
+- **Hardened AI Plugin Architecture**: Hardened `parseAI` integration for `@magmacomputing/tempo-plugin-ai`, adding support for index-locked parallel batching, multi-stream provider execution strategies (`AiMode`), `softErrors` error boundaries, and proxy-wrapped `.ai` metadata attachment on frozen `Tempo` instances.
 
 ## [3.10.3] - 2026-07-29
 

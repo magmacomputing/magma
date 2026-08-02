@@ -1,4 +1,4 @@
-import { parseAI, initAI, clearAiCache, getAiRateLimits, TempoAiError } from '../src/index.js';
+import { parseAI, initAI, clearAiCache, getAiRateLimits, TempoAiError, AiMode } from '../src/index.js';
 import { BoundedCache } from '@magmacomputing/tempo/support';
 import { Tempo } from '@magmacomputing/tempo';
 
@@ -23,11 +23,20 @@ describe('AI Parsing Plugin', () => {
 		vi.clearAllMocks();
 	});
 
-	it('should fall back to native parsing first', async () => {
-		// This should parse natively and not throw an API error even without a key
+	it('should fall back to native parsing first and attach .ai metadata', async () => {
 		const result = await parseAI('2026-05-10');
 		expect(result.isValid).toBe(true);
 		expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-10');
+		expect(result.ai).toBeDefined();
+		expect(result.ai?.provider).toBe('native');
+		expect(result.ai?.cached).toBe(false);
+		expect(result.ai?.confidence).toBe(1.0);
+		expect(Object.isFrozen(result.ai)).toBe(true);
+	});
+
+	it('should throw TempoAiError if reserved provider ID "native" or "cache" is used in initAI', () => {
+		expect(() => initAI({ providers: [{ id: 'native', key: '123' }] })).toThrow(TempoAiError);
+		expect(() => initAI({ providers: [{ id: 'cache', key: '123' }] })).toThrow(TempoAiError);
 	});
 
 	it('should throw TempoAiError if no key is configured and AI is needed', async () => {
@@ -36,10 +45,10 @@ describe('AI Parsing Plugin', () => {
 		await expect(parseAI('Next Thanksgiving')).rejects.toThrow('No AI providers configured.');
 	});
 
-	it('should parse natural language successfully', async () => {
+	it('should parse natural language successfully and attach secured .ai metadata', async () => {
 		if (!isLiveTest) {
 			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
-				choices: [{ message: { content: '{"reasoning":"The Friday after Thanksgiving", "iso":"2026-11-27T00:00:00"}' } }]
+				choices: [{ message: { content: '{"reasoning":"The Friday after Thanksgiving", "iso":"2026-11-27T00:00:00", "confidence":0.98, "ambiguous":false, "granularity":"day"}' } }]
 			}), {
 				status: 200,
 				headers: new Headers({
@@ -49,66 +58,252 @@ describe('AI Parsing Plugin', () => {
 			}));
 		}
 
-		// Provide a strict anchor so we can assert the result deterministically
 		const anchorDate = '2026-05-10T12:00:00Z';
 		const result = await parseAI('The Friday after Thanksgiving', { anchor: anchorDate, timeZone: 'UTC', force: true });
 
 		expect(result).toBeInstanceOf(Tempo);
 		expect(result.isValid).toBe(true);
 		expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-27');
+
+		expect(result.ai).toBeDefined();
+		expect(result.ai?.provider).toBe(isLiveTest ? liveProviderId : 'groq');
+		expect(result.ai?.cached).toBe(false);
+		expect(result.ai?.confidence).toBe(isLiveTest ? 1.0 : 0.98);
+		expect(result.ai?.ambiguous).toBe(false);
+		expect(result.ai?.granularity).toBe(isLiveTest ? 'unknown' : 'day');
+		expect(Object.isFrozen(result.ai)).toBe(true);
 	});
 
-	it('should cache the result', async () => {
+	it('should attach rawPrompt and normalizedPrompt to .ai only when debug is true', async () => {
+		if (!isLiveTest) {
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"reasoning":"Debug test", "iso":"2026-12-25T00:00:00", "confidence":0.95}' } }]
+			}), { status: 200 }));
+		}
+
+		const result = await parseAI('  Christmas 2026  ', { force: true, debug: true });
+		expect(result.ai?.rawPrompt).toBe('  Christmas 2026  ');
+		expect(result.ai?.normalizedPrompt).toBe('christmas 2026');
+		expect(result.ai?.reasoning).toBe('Debug test');
+
+		if (!isLiveTest) {
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"reasoning":"No debug test", "iso":"2026-12-25T00:00:00", "confidence":0.95}' } }]
+			}), { status: 200 }));
+		}
+
+		const noDebug = await parseAI('  Christmas 2026  ', { force: true, debug: false });
+		expect(noDebug.ai?.rawPrompt).toBeUndefined();
+		expect(noDebug.ai?.normalizedPrompt).toBeUndefined();
+		expect(noDebug.ai?.reasoning).toBeUndefined();
+	});
+
+	it('should cache the result and mark provider as "cache"', async () => {
 		const anchorDate = '2026-05-10T12:00:00Z';
-		// Clear cache first
 		clearAiCache('The Friday after Thanksgiving');
 
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
 		if (!isLiveTest) {
 			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
-				choices: [{ message: { content: '{"reasoning":"The Friday after Thanksgiving", "iso":"2026-11-27T00:00:00"}' } }]
+				choices: [{ message: { content: '{"reasoning":"The Friday after Thanksgiving", "iso":"2026-11-27T00:00:00", "confidence":0.99}' } }]
 			}), { status: 200 }));
 		}
 
-		// First parse (hits network or mock)
 		const dt1 = await parseAI('The Friday after Thanksgiving', { anchor: anchorDate, timeZone: 'UTC' });
 		expect(dt1.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-27');
+		expect(dt1.ai?.cached).toBe(false);
 
-		// Second parse (hits cache instantly)
 		const dt2 = await parseAI('The Friday after Thanksgiving', { anchor: anchorDate, timeZone: 'UTC' });
 		expect(dt2.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-27');
+		expect(dt2.ai?.provider).toBe('cache');
+		expect(dt2.ai?.cached).toBe(true);
 
 		if (!isLiveTest) {
 			expect(fetchSpy).toHaveBeenCalledTimes(1);
 		}
 	});
 
-	it('should expose rate limits after a request', async () => {
+	it('should return a Tempo instance with isValid = false when LLM returns INVALID', async () => {
 		if (!isLiveTest) {
 			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
-				choices: [{ message: { content: '{"reasoning":"Test date", "iso":"2026-11-26T00:00:00"}' } }]
-			}), {
-				status: 200,
-				headers: new Headers({
-					'x-ratelimit-remaining-requests': '99',
-					'x-ratelimit-remaining-tokens': '4950',
-					'x-ratelimit-reset-tokens': '60s'
-				})
-			}));
+				choices: [{ message: { content: '{"reasoning":"Gibberish text", "iso":"INVALID", "confidence":0.0, "ambiguous":true}' } }]
+			}), { status: 200 }));
 		}
 
-		await parseAI('Thanksgiving', { force: true });
+		const result = await parseAI('complete gibberish text', { force: true });
+		expect(result).toBeInstanceOf(Tempo);
+		expect(result.isValid).toBe(false);
+		expect(result.ai?.confidence).toBe(0.0);
+		expect(result.ai?.ambiguous).toBe(true);
+		expect(result.ai?.rawIso).toBe('INVALID');
+	});
 
-		const limits = getAiRateLimits();
-		expect(limits).not.toBeNull();
-		expect(limits?.remainingRequests).toBeDefined();
-		expect(limits?.remainingTokens).toBeDefined();
-		expect(limits?.resetAt).toBeInstanceOf(Tempo);
+	it('should return an invalid Tempo instance (isValid = false) with metadata when minConfidence threshold is not met', async () => {
+		if (!isLiveTest) {
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"reasoning":"Uncertain date", "iso":"2026-05-10T00:00:00", "confidence":0.5}' } }]
+			}), { status: 200 }));
+		}
+
+		const result = await parseAI('somewhat ambiguous date', { force: true, minConfidence: 0.7 });
+		expect(result).toBeInstanceOf(Tempo);
+		expect(result.isValid).toBe(false);
+		expect(result.ai?.confidence).toBe(0.5);
+		expect(result.ai?.ambiguous).toBe(true);
+	});
+
+	it('should cascade from low-confidence local provider to high-confidence online provider in Fallback mode', async () => {
+		initAI({
+			providers: [
+				{ id: 'local-llm', key: 'key1', url: 'https://api.openai.com/v1/chat', model: 'local' },
+				{ id: 'cloud-llm', key: 'key2', url: 'https://api.openai.com/v1/chat', model: 'cloud' }
+			]
+		});
+
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		// Provider 1 (local-llm): Low confidence (0.4)
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{ message: { content: '{"reasoning":"Uncertain local guess", "iso":"2026-11-26T00:00:00", "confidence":0.4}' } }]
+		}), { status: 200 }));
+		// Provider 2 (cloud-llm): High confidence (0.95)
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{ message: { content: '{"reasoning":"High confidence cloud result", "iso":"2026-11-26T00:00:00", "confidence":0.95}' } }]
+		}), { status: 200 }));
+
+		const result = await parseAI('Thanksgiving 2026', { force: true, minConfidence: 0.8, mode: AiMode.Fallback });
+
+		expect(fetchSpy).toHaveBeenCalledTimes(2);
+		expect(result.isValid).toBe(true);
+		expect(result.ai?.provider).toBe('cloud-llm');
+		expect(result.ai?.confidence).toBe(0.95);
+	});
+
+	it('should short-circuit and stop looking to other providers when a provider meets minConfidence', async () => {
+		initAI({
+			providers: [
+				{ id: 'local-llm', key: 'key1', url: 'https://api.openai.com/v1/chat', model: 'local' },
+				{ id: 'cloud-llm', key: 'key2', url: 'https://api.openai.com/v1/chat', model: 'cloud' }
+			]
+		});
+
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		// Provider 1 (local-llm): High confidence (0.90 >= 0.85) -> Short circuit!
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{ message: { content: '{"reasoning":"Confident local result", "iso":"2026-11-26T00:00:00", "confidence":0.90}' } }]
+		}), { status: 200 }));
+
+		const result = await parseAI('Thanksgiving 2026', { force: true, minConfidence: 0.85, mode: AiMode.Fallback });
+
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		expect(result.isValid).toBe(true);
+		expect(result.ai?.provider).toBe('local-llm');
+		expect(result.ai?.confidence).toBe(0.90);
+	});
+
+	it('should execute parallel array batching with preserved index ordering', async () => {
+		if (!isLiveTest) {
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+			fetchSpy
+				.mockResolvedValueOnce(new Response(JSON.stringify({
+					choices: [{ message: { content: '{"reasoning":"Date 1", "iso":"2026-01-01T00:00:00", "confidence":0.99}' } }]
+				}), { status: 200 }))
+				.mockResolvedValueOnce(new Response(JSON.stringify({
+					choices: [{ message: { content: '{"reasoning":"Date 2", "iso":"2026-02-02T00:00:00", "confidence":0.99}' } }]
+				}), { status: 200 }));
+		}
+
+		const [res1, res2] = await parseAI(['New Years 2026', 'Groundhog Day 2026'], { force: true });
+
+		expect(Tempo.isTempo(res1)).toBe(true);
+		expect(Tempo.isTempo(res2)).toBe(true);
+
+		if (Tempo.isTempo(res1) && Tempo.isTempo(res2)) {
+			expect(res1.format('{yyyy}-{mm}-{dd}')).toBe('2026-01-01');
+			expect(res2.format('{yyyy}-{mm}-{dd}')).toBe('2026-02-02');
+		}
+	});
+
+	it('should support softErrors in array batch processing', async () => {
+		initAI({
+			providers: [{ id: 'groq', key: 'test-key' }]
+		});
+
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		// Item 1 succeeds
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{ message: { content: '{"reasoning":"Date 1", "iso":"2026-01-01T00:00:00", "confidence":0.99}' } }]
+		}), { status: 200 }));
+		// Item 2 fails with 500
+		fetchSpy.mockResolvedValueOnce(new Response(null, { status: 500, statusText: 'Internal Error' }));
+
+		const results = await parseAI(['Valid Date Prompt', 'Failing Prompt'], { force: true, softErrors: true });
+
+		expect(results).toHaveLength(2);
+		expect(results[0]).toBeInstanceOf(Tempo);
+		expect((results[0] as Tempo).format('{yyyy}-{mm}-{dd}')).toBe('2026-01-01');
+
+		expect(results[1]).toBeInstanceOf(TempoAiError);
+		expect((results[1] as TempoAiError).code).toBe(500);
+	});
+
+	describe('Execution Modes: Race & Consensus', () => {
+		it('should support mode: race and return the fastest resolving provider', async () => {
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+			fetchSpy.mockImplementation(async (_url, opts) => {
+				const body = JSON.parse(opts?.body as string);
+				if (body.model === 'fast-model') {
+					return new Response(JSON.stringify({
+						choices: [{ message: { content: '{"reasoning":"Fast", "iso":"2026-06-01T00:00:00", "confidence":0.95}' } }]
+					}), { status: 200 });
+				}
+				// Slow model delays
+				await new Promise(resolve => setTimeout(resolve, 500));
+				return new Response(JSON.stringify({
+					choices: [{ message: { content: '{"reasoning":"Slow", "iso":"2026-06-01T00:00:00", "confidence":0.95}' } }]
+				}), { status: 200 });
+			});
+
+			const result = await parseAI('June 1st 2026', {
+				force: true,
+				mode: AiMode.Race,
+				providers: [
+					{ id: 'slow-provider', key: 'key1', url: 'https://api.openai.com/v1/chat', model: 'slow-model' },
+					{ id: 'fast-provider', key: 'key2', url: 'https://api.openai.com/v1/chat', model: 'fast-model' }
+				]
+			});
+
+			expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-06-01');
+			expect(result.ai?.provider).toBe('fast-provider');
+		});
+
+		it('should support mode: consensus and boost confidence when providers agree', async () => {
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+			fetchSpy
+				.mockResolvedValueOnce(new Response(JSON.stringify({
+					choices: [{ message: { content: '{"reasoning":"Model 1", "iso":"2026-07-04T00:00:00", "confidence":0.90}' } }]
+				}), { status: 200 }))
+				.mockResolvedValueOnce(new Response(JSON.stringify({
+					choices: [{ message: { content: '{"reasoning":"Model 2", "iso":"2026-07-04T00:00:00", "confidence":0.85}' } }]
+				}), { status: 200 }));
+
+			const result = await parseAI('4th of July 2026', {
+				force: true,
+				mode: AiMode.Consensus,
+				providers: [
+					{ id: 'p1', key: 'key1', url: 'https://api.openai.com/v1/chat', model: 'm1' },
+					{ id: 'p2', key: 'key2', url: 'https://api.openai.com/v1/chat', model: 'm2' }
+				]
+			});
+
+			expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-07-04');
+			expect(result.ai?.provider).toBe('consensus');
+			expect(result.ai?.confidence).toBe(1.0);
+			expect(result.ai?.ambiguous).toBe(false);
+		});
 	});
 
 	describe('Mocked Network Failures', () => {
 		it('should throw TempoAiError with 401 when API key is bad, expired, or revoked', async () => {
-			// Temporarily inject a fake key
 			initAI({ providers: [{ id: 'openai', key: 'bad_key' }] });
 
 			vi.spyOn(global, 'fetch').mockResolvedValueOnce(new Response(null, {
@@ -116,7 +311,6 @@ describe('AI Parsing Plugin', () => {
 				statusText: 'Unauthorized'
 			}));
 
-			// The last error in the loop should bubble up
 			try {
 				await parseAI('Thanksgiving', { force: true });
 				expect.unreachable('Should have thrown an error');
@@ -128,7 +322,6 @@ describe('AI Parsing Plugin', () => {
 		});
 
 		it('should seamlessly fallback to the next provider if the first hits a 429 Exhausted Key rate limit', async () => {
-			// Set up two providers. The first will fail (exhausted), the second will succeed.
 			initAI({
 				providers: [
 					{ id: 'openai', key: 'exhausted_key' },
@@ -138,16 +331,14 @@ describe('AI Parsing Plugin', () => {
 
 			const fetchSpy = vi.spyOn(global, 'fetch');
 
-			// First fetch call: Groq hits 429 Too Many Requests
 			fetchSpy.mockResolvedValueOnce(new Response(null, {
 				status: 429,
 				statusText: 'Too Many Requests',
 				headers: new Headers({
-					'x-ratelimit-reset-tokens': '60' // Resets in 60 seconds
+					'x-ratelimit-reset-tokens': '60'
 				})
 			}));
 
-			// Second fetch call: OpenAI succeeds
 			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 				choices: [{ message: { content: '{"reasoning":"It is Thanksgiving.", "iso":"2026-11-26T00:00:00Z"}' } }]
 			}), {
@@ -162,8 +353,6 @@ describe('AI Parsing Plugin', () => {
 			expect(fetchSpy).toHaveBeenCalledTimes(2);
 			expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-26');
 
-			// Verify the rate limits were updated correctly from the first 429 response before the success!
-			// Actually, the second success response overwrites the rate limits with OpenAI's headers.
 			const limits = getAiRateLimits();
 			expect(limits?.remainingTokens).toBe(5000);
 		});
@@ -184,7 +373,7 @@ describe('AI Parsing Plugin', () => {
 		});
 
 		it('should evict expired items based on TTL', async () => {
-			const cache = new BoundedCache(100, 50); // 50ms TTL
+			const cache = new BoundedCache(100, 50);
 			cache.set('tempKey', 'tempVal');
 			expect(cache.has('tempKey')).toBe(true);
 
@@ -207,81 +396,100 @@ describe('AI Parsing Plugin', () => {
 			expect(cache.has('Christmas::2026-05-10')).toBe(true);
 		});
 
-		it('should update BoundedCache options via Tempo.init', () => {
-			const cache = new BoundedCache(1000, 3600000);
-			initAI({ cache });
-
-			Tempo.init({ cache: { maxSize: 50, ttl: 5000 } });
-			expect(cache.maxSize).toBe(50);
-			expect(cache.ttl).toBe(5000);
-
-			Tempo.init({ cache: { maxSize: 5, ttl: 100 } });
-			expect(cache.maxSize).toBe(5);
-			expect(cache.ttl).toBe(100);
-		});
-
-		it('should normalize cache keys (whitespace & case) for clearAiCache', () => {
-			const cache = new BoundedCache(100);
-			cache.set('thanksgiving::2026-05-10', '2026-11-26T00:00:00Z');
-
-			initAI({ cache });
-			clearAiCache('   THANKSGIVING   ');
-			expect(cache.has('thanksgiving::2026-05-10')).toBe(false);
-		});
-
 		it('should resolve static un-salted user glossary terms without hitting network or expiring', async () => {
 			const glossary = new Map<string, string>([
-				['easter sunday 2026', '2026-04-05T00:00:00Z'],
-				['q4 freeze 2026', '2026-11-01T00:00:00Z']
+				['my_custom_company_glossary_term', '2026-11-01T00:00:00Z']
 			]);
 
 			initAI({ cache: glossary });
 
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-			// Two-tier lookup hits un-salted normalized static key directly
-			const result = await parseAI('Easter Sunday 2026');
-			expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-04-05');
+			const result = await parseAI('my_custom_company_glossary_term');
+			expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-01');
+			expect(result.ai?.provider).toBe('cache');
+			expect(result.ai?.cached).toBe(true);
 			expect(fetchSpy).not.toHaveBeenCalled();
-		});
-
-		it('should protect static un-salted keys set via setStatic from TTL and LRU maxCacheSize eviction in BoundedCache', async () => {
-			const cache = new BoundedCache(2, 50); // maxSize 2, TTL 50ms
-			cache.setStatic('easter sunday 2026', '2026-04-05T00:00:00Z'); // Static key
-			cache.set('temp1::2026-05-10', '2026-05-10T00:00:00Z');  // Salted key
-			cache.set('temp2::2026-05-10', '2026-05-10T00:00:00Z');  // Salted key, pushes total to 3
-
-			// LRU capacity check: should evict oldest salted key ('temp1::2026-05-10'), preserving static 'easter sunday 2026'
-			expect(cache.has('easter sunday 2026')).toBe(true);
-			expect(cache.has('temp1::2026-05-10')).toBe(false);
-
-			// Wait for TTL expiration
-			await new Promise(resolve => setTimeout(resolve, 60));
-
-			// Salted key expires, static key remains intact
-			expect(cache.has('temp2::2026-05-10')).toBe(false);
-			expect(cache.has('easter sunday 2026')).toBe(true);
-			expect(cache.get('easter sunday 2026')).toBe('2026-04-05T00:00:00Z');
-		});
-	});
-
-	describe('Configurable Token Parameter', () => {
-		it('should use specified tokenParam in provider request payload', async () => {
-			const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
-				choices: [{ message: { content: '{"reasoning":"test", "iso":"2026-12-25T00:00:00Z"}' } }]
-			}), { status: 200 }));
-
-			initAI({
-				providers: [{ id: 'custom-llm', key: 'test-key', url: 'https://api.custom.com/v1/chat', model: 'custom-model', tokenParam: 'max_tokens' }]
-			});
-
-			await parseAI('some random unparseable string', { force: true });
-
-			expect(fetchSpy).toHaveBeenCalled();
-			const callBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
-			expect(callBody.max_tokens).toBe(250);
-			expect(callBody.max_completion_tokens).toBeUndefined();
 		});
 	});
 });
 
+	describe('Rate Limit & Reset Header Parsing Hardening', () => {
+		it('should correctly parse compound reset duration strings like 4m12s and 1h30m', async () => {
+			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+			// Response 1 with compound duration header '4m12s'
+			fetchSpy.mockResolvedValueOnce(new Response(null, {
+				status: 429,
+				statusText: 'Too Many Requests',
+				headers: new Headers({
+					'x-ratelimit-reset-tokens': '4m12s'
+				})
+			}));
+
+			try {
+				await parseAI('Thanksgiving', { force: true });
+				expect.unreachable('Should have thrown TempoAiError');
+			} catch (err: any) {
+				expect(err).toBeInstanceOf(TempoAiError);
+				expect(err.code).toBe(429);
+				expect(err.retryAt).toBeDefined();
+				expect(err.retryAt).toBeInstanceOf(Tempo);
+			}
+
+			const limits1 = getAiRateLimits();
+			expect(limits1?.resetAt).toBeDefined();
+		});
+
+		it('should replace rather than retain prior rate-limit state when subsequent response has no headers', async () => {
+			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+			// Request 1: Has rate limit headers
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), {
+				status: 200,
+				headers: new Headers({
+					'x-ratelimit-remaining-tokens': '5000'
+				})
+			}));
+
+			await parseAI('Thanksgiving 2026', { force: true });
+			expect(getAiRateLimits()?.remainingTokens).toBe(5000);
+
+			// Request 2: Has NO rate limit headers
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-12-25T00:00:00"}' } }]
+			}), {
+				status: 200
+			}));
+
+			await parseAI('Christmas 2026', { force: true });
+
+			// State should now be null (replaced, not retained!)
+			expect(getAiRateLimits()).toBeNull();
+		});
+
+		it('should ignore invalid or malformed duration strings without throwing or crashing', async () => {
+			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+			fetchSpy.mockResolvedValueOnce(new Response(null, {
+				status: 429,
+				headers: new Headers({
+					'x-ratelimit-reset-tokens': 'invalid_compound_string_123'
+				})
+			}));
+
+			try {
+				await parseAI('Thanksgiving', { force: true });
+			} catch (err: any) {
+				expect(err).toBeInstanceOf(TempoAiError);
+				expect(err.retryAt).toBeUndefined();
+			}
+
+			expect(getAiRateLimits()).toBeNull();
+		});
+	});

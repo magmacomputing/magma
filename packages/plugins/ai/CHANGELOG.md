@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-07-30
 
 ### Added
+- **Parallel Array Batching & Index Locking**: Concurrently processes array prompt inputs via `Promise.all` (or `Promise.allSettled` when `softErrors: true`) with guaranteed index-locked alignment between inputs and output arrays.
+- **Multi-Stream Provider Execution Modes (`AiMode`)**: Added `mode` options (`AiMode.Fallback`, `AiMode.Race`, `AiMode.Consensus`) for fine-grained control over provider routing, speculative racing, and multi-LLM consensus verification with confidence boosting.
+- **Runtime Configuration Module (`parseAI.config.ts`)**: Extracted `AiMode`, `RESERVED_PROVIDER_IDS`, and `DEFAULT_PROVIDERS` into a runtime module adhering to Tempo's monorepo `as const` object map and `Object.freeze()` immutability standards.
+- **Secured `.ai` Metadata Interceptor**: Proxy-based `.ai` metadata injection for frozen `Tempo` instances, preserving private class field access while exposing provider resolution lineage, ambiguity metrics, and PII-isolated debugging fields (`debug: true`).
+- **Semantic LLM Failure & Soft Error Handling**: Opt-in `softErrors: true` for returning `TempoAiError` objects directly within batch output arrays without throwing, and graceful mapping of LLM `"INVALID"` responses to `isValid = false` `Tempo` instances.
 - **Centralized Caching Integration**: Powered by core Tempo's centralized `BoundedCache` singleton (`Tempo.cache`) enforcing memory safety, capacity-bounded LRU eviction (`maxSize`), time-to-live expiration (`ttl`), and static immortal glossary isolation.
 - **Multi-Provider Fallback Routing**: Robust failover loop across configured LLM providers (`groq`, `openai`, `gemini`, `mistral`, or custom endpoints). Supports custom `tokenParam` mappings (`max_tokens` vs `max_completion_tokens`) and request timeout control via `AbortController`.
 - **Rate Limit Tracking (`getAiRateLimits`)**: Inspects provider HTTP response headers (`x-ratelimit-remaining-requests`, `x-ratelimit-remaining-tokens`, `x-ratelimit-reset-tokens`) and exposes real-time quota status via `getAiRateLimits()`, including a `resetAt` `Tempo` timestamp.
