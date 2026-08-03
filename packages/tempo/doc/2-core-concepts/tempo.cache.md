@@ -6,11 +6,11 @@
 
 ## 🏛️ Centralized Cache Architecture
 
-All date resolution caching—whether triggered by core `Tempo` parsing or plugins like `parseAI`—is managed centrally by `Tempo.cache`. 
+All date resolution caching—whether triggered by core `Tempo` parsing or the Tempo AI plugin (`parseAI`, `formatAI`, `contextAI`)—is managed centrally by `Tempo.cache`. 
 
-::: info Cache Behavior: Core Tempo vs. parseAI
+::: info Cache Behavior: Core Tempo vs. Tempo AI Plugin
 * **Core Tempo**: Caching is **opt-in**. Core date parsing executes at sub-microsecond speeds using standard regex matching. `Tempo.cache` is consulted when you seed a static glossary or enable caching.
-* **`parseAI` Plugin**: Caching is **automatic**. To eliminate network latency (~500ms+) and avoid redundant LLM API billing, `parseAI` automatically checks `Tempo.cache` before sending requests and caches every successful LLM resolution.
+* **Tempo AI Plugin**: Caching is **automatic**. To eliminate network latency (~500ms+) and avoid redundant LLM API billing, AI functions (like `parseAI`) automatically check `Tempo.cache` before sending network requests and cache every successful LLM resolution.
 :::
 
 ### Cache Topology & Configuration
@@ -72,9 +72,9 @@ Tempo provides multiple mechanisms for augmenting parsing intelligence. Choosing
 
 ---
 
-## 🤖 `parseAI` Plugin Cache Integration
+## 🤖 AI Plugin Cache Integration (`@magmacomputing/tempo-plugin-ai`)
 
-The `@magmacomputing/tempo-plugin-ai` plugin works hand-in-hand with `Tempo.cache` to reduce LLM API calls and costs:
+The `@magmacomputing/tempo-plugin-ai` plugin works hand-in-hand with `Tempo.cache` to reduce LLM API calls and costs across AI functions:
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';

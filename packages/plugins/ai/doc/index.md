@@ -51,7 +51,7 @@ initAI({
 });
 ```
 
-> **Tip**: `initAI` is fully re-callable! You can call it multiple times during your application's lifecycle to hot-swap API keys or update your fallback providers mid-stream without restarting your server.
+> **Tip**: `initAI` is fully re-callable! You can invoke it multiple times during your application's lifecycle to hot-swap API keys or update your fallback providers mid-stream without restarting your server.
 
 ```typescript
 // Parse a complex natural language string!
@@ -66,10 +66,16 @@ clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");
 The AI plugin supports multi-provider execution strategies (`fallback`, `race`, `consensus`) and confidence filtering on per-request options:
 
 ```typescript
-// 1. Race mode: send concurrent requests to all providers, returning the fastest valid response
+// 1. Fallback mode (default): query providers sequentially in array order until one succeeds
+const fallback = await parseAI("First Monday of November", { 
+  mode: 'fallback', // Default strategy if omitted
+  minConfidence: 0.8 // Require at least 0.8 confidence threshold
+});
+
+// 2. Race mode: send concurrent requests to all providers, returning the fastest valid response
 const fastest = await parseAI("Third Friday of October", { mode: 'race' });
 
-// 2. Consensus mode: query providers concurrently and boost confidence when outputs agree
+// 3. Consensus mode: query providers concurrently and boost confidence when outputs agree
 const agreed = await parseAI("The penultimate Tuesday before Thanksgiving", { 
   mode: 'consensus',
   minConfidence: 0.85 // Require at least 0.85 confidence threshold
