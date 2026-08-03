@@ -28,6 +28,7 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/README' },
       { text: 'API Reference', link: '/api/index.html', target: '_self' },
+      { text: 'Library API', link: '/api/library/index.html', target: '_self' },
       { text: 'Releases', link: '/doc/8-project-and-support/releases/' },
       { text: 'Functions ↗', link: 'https://magmacomputing.github.io/magma/functions/' }
     ],
@@ -69,7 +70,6 @@ export default defineConfig({
       {
         text: 'Advanced Reference',
         items: [
-          { text: 'Technical Reference', link: '/api/index.html', target: '_self' },
           { text: 'Sandbox Factory', link: '/doc/4-advanced-reference/sandbox-factory' },
           { text: 'Parse Planner', link: '/doc/4-advanced-reference/tempo.planner' },
           { text: 'The Role of Locale', link: '/doc/4-advanced-reference/tempo.locale' },
@@ -94,8 +94,7 @@ export default defineConfig({
           { text: 'Enumerators', link: '/doc/6-utility-library/tempo.enumerators' },
           { text: 'Serializers', link: '/doc/6-utility-library/tempo.serializers' },
           { text: 'Decorators', link: '/doc/6-utility-library/tempo.decorators' },
-          { text: 'Advanced Promises (Pledge)', link: '/doc/6-utility-library/tempo.pledge' },
-          { text: 'Library API', link: '/api/library/index.html', target: '_self' }
+          { text: 'Advanced Promises (Pledge)', link: '/doc/6-utility-library/tempo.pledge' }
         ]
       },
       {
