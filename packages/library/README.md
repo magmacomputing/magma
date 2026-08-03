@@ -1,6 +1,9 @@
-# <img src="https://raw.githubusercontent.com/google/material-design-icons/master/png/action/book/materialicons/48dp/2x/baseline_book_black_48dp.png" width="48px" style="vertical-align:middle;"> <span style="font-size:2.5em; vertical-align:middle;">Magma Library</span>
+# <img src="https://raw.githubusercontent.com/google/material-design-icons/master/png/action/book/materialicons/48dp/2x/baseline_book_black_48dp.png" width="48px" style="vertical-align:middle;"> <span style="font-size:2.5em; vertical-align:middle;">Magma Library (Internal Reference)</span>
 
-**@magmacomputing/library** is a premium, high-performance, and platform-agnostic utility belt. It provides a comprehensive suite of tools for type-safe development, advanced data manipulation, and secure operations across Browser and Node.js environments.
+> [!NOTE]
+> **Internal Reference Package**: `packages/library` is an internal monorepo utility suite used across Tempo packages. It is **not** published as a standalone package on npm, and is provided in the documentation as a reference guide for internal architectural utilities and shared routines.
+
+**Magma Library** provides platform-agnostic utilities for type-safe development, data manipulation, and asynchronous operations across Browser and Node.js environments.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript Ready](https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -31,7 +34,7 @@ The library is organized into specialized modules, each designed for maximum eff
 The `getType` utility provides human-readable, proper-cased type names, even for custom classes that have been registered.
 
 ```typescript
-import { getType, isType } from '@magmacomputing/library/common';
+import { getType, isType } from '@magmacomputing/tempo/library';
 
 getType([]);            // "Array"
 getType(new Map());     // "Map"
@@ -46,7 +49,7 @@ if (isType(val, 'String', 'Number')) {
 Sort complex collections of objects by multiple fields with ease.
 
 ```typescript
-import { sortKey } from '@magmacomputing/library/array';
+import { sortKey } from '@magmacomputing/tempo/library';
 
 const users = [
   { name: 'Alice', age: 30 },
@@ -62,7 +65,7 @@ const sorted = sortKey(users, 'name', { field: 'age', dir: 'desc' });
 Unlike standard `JSON.stringify`, Magma's serialization handles complex types like `Temporal` and `BigInt` out of the box.
 
 ```typescript
-import { stringify, objectify } from '@magmacomputing/library/serialize';
+import { stringify, objectify } from '@magmacomputing/tempo/library';
 
 const data = {
   at: Temporal.Now.instant(),
