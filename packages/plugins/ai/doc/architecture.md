@@ -19,7 +19,7 @@ initAI({
 ```
 
 ### Advanced Configuration (Custom Models & LLM Options)
-By default, standard providers automatically map to their optimal APIs and models (e.g., `'gemini'` maps to `gemini-1.5-flash`). 
+By default, standard providers automatically map to their optimal APIs and default models. 
 However, you can explicitly override URLs, models, and inject arbitrary LLM parameters (like `temperature`) for power-user control!
 
 ```typescript
@@ -32,7 +32,7 @@ initAI({
       id: 'openai', 
       key: process.env.AZURE_ENTRA_BEARER_TOKEN,
       url: 'https://my-enterprise.openai.azure.com/v1/chat/completions',
-      model: 'gpt-4o',
+      model: 'your-enterprise-model',
       options: { temperature: 0.2, seed: 42 }
     }] : []),
     // 2. Local Open-Source Models (e.g. Ollama)
@@ -40,7 +40,7 @@ initAI({
       id: 'local', 
       key: 'no-key-needed',
       url: 'http://localhost:11434/v1/chat/completions',
-      model: 'llama3.1:8b'
+      model: 'your-local-model'
     }
   ]
 });
@@ -48,7 +48,7 @@ initAI({
 
 ### Frontend Security Warning
 > [!CAUTION]
-> **Never** expose a raw LLM API key in a client-side browser bundle (like React or Vue). If a developer hardcodes a BYOK key into a public website, anyone can extract it, spam it, and exhaust the developer's quota or get the account permanently banned. BYOK keys are *only* safe on backend servers.
+> **Never** expose a raw LLM API key in a client-side browser bundle (like React or Vue) or store it in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). Any Cross-Site Scripting (XSS) vulnerability, compromised NPM package, or malicious browser extension can easily inspect client-side storage and steal secret keys, leading to quota exhaustion, billing fraud, or permanent provider bans. BYOK keys are *only* safe on backend servers or edge workers.
 
 ## The Proxy Architecture
 

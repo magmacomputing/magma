@@ -26,7 +26,7 @@ const tokyoDt = await parseAI("The second Sunday of May", { locale: 'ja-JP', tim
 Passing the `Locale` is absolutely critical for the LLM to know whether "11/12" means November 12th (US format) or 11th of December (UK/EU format). The plugin handles this transparently based on your standard Tempo configuration!
 
 > [!WARNING]
-> **Calendar Math Hallucinations**: LLMs are language predictors, not calculators. While they excel at parsing conversational times (like `"tomorrow at 5pm"`), smaller open-source models (like 8B parameter variants) are notoriously bad at complex, cross-year calendar math. For example, asking an 8B model for `"Thanksgiving in 2026"` will often result in a hallucinated day of the week because the model doesn't natively compute "the fourth Thursday of November 2026." If your application relies on heavy holiday logic or complex multi-year math, you *must* use a frontier model (like `gpt-4o` or `claude-3.5-sonnet`) or rely on deterministic plugins instead of AI.
+> **Calendar Math Hallucinations**: LLMs are language predictors, not calculators. While they excel at parsing conversational times (like `"tomorrow at 5pm"`), smaller models are notoriously prone to hallucinations on complex, cross-year calendar math. For example, asking a lightweight model for `"Thanksgiving in 2026"` may result in a hallucinated day of the week because the model doesn't natively compute "the fourth Thursday of November 2026." If your application relies on heavy holiday logic or complex multi-year math, you *must* use a capable frontier model or rely on deterministic plugins instead of AI.
 
 ## The Decoupled Output Bridge
 

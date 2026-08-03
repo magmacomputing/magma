@@ -19,7 +19,7 @@ This plugin bridges the gap between deterministic date-math and unstructured NLP
 
 > **Note**: This plugin is **not** a silver-bullet replacement for all your parsing needs! `Tempo.parse()` natively handles structured dates and formats phenomenally well using its Aliases, Layouts, and Snippets. The Tempo AI plugin is specifically designed to be an alternative path for handling completely unstructured, conversational human language that would otherwise be impossible to Regex.
 >
-> **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle. BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, you must use a proxy service.
+> **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). Client-side storage is vulnerable to XSS attacks, malicious scripts, and browser extension extraction, which can result in API key theft and quota abuse. BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, you must route requests through a secure backend proxy service.
 
 ## Ideal Use-Cases
 
@@ -45,7 +45,7 @@ import { parseAI, initAI, clearAiCache } from '@magmacomputing/tempo-plugin-ai';
 // Initialize with your BYOK API Key
 initAI({
   providers: [
-    { id: 'openai', key: process.env.OPENAI_API_KEY, model: 'gpt-5.4-mini' },
+    { id: 'openai', key: process.env.OPENAI_API_KEY, model: 'your-preferred-model' },
   ],
   debug: true // (Development-only) Enable verbose console logging
 });

@@ -52,7 +52,7 @@ The `Tempo` class provides an extensive array of zero-cost getters that allow yo
 | :--- | :--- | :--- | :--- |
 | `.tz` | `string` | IANA Time Zone ID | `'Australia/Sydney'` |
 | `.cal` | `string` | Temporal Calendar ID | `'iso8601'` |
-| `.ts` | `number` | Unix timestamp (precision based on config) | `1792843200000` |
+| `.ts` | `number \| bigint` | Unix timestamp (`number` for `ss`/`ms`/`us`, `bigint` for `ns`) | `1792843200000` |
 | `.nano` | `bigint` | Nanoseconds since Unix epoch | `1792843200000000000n` |
 | `.iso` | `string` | Standard ISO 8601 string (RFC 3339) in UTC | `'2026-10-24T04:30:00Z'` |
 | `.isValid`| `boolean`| `true` if the underlying date-time is valid | `true` |
