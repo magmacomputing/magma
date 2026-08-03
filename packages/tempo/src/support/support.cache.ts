@@ -186,6 +186,14 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 		return super[Symbol.iterator]();
 	}
 
+	/**
+	 * Returns a plain key-value object of all active non-expired cache entries.
+	 */
+	toJSON(): Record<string, V> {
+		this.evictExpired();
+		return Object.fromEntries(this.entries()) as Record<string, V>;
+	}
+
 	static fromEntries<K = string, V = string>(entries: Iterable<readonly [K, V]>, maxSize = 1000, ttl = 24 * 60 * 60 * 1000): BoundedCache<K, V> {
 		const cache = new BoundedCache<K, V>(maxSize, ttl);
 		for (const [k, v] of entries) {
@@ -238,6 +246,10 @@ export function createCacheFacade(getState: () => t.Internal.State) {
 				getState().cache.set(normalized, String(v));
 			}
 			return this;
+		},
+		toJSON() {
+			return getState().cache.toJSON();
 		}
 	});
 }
+

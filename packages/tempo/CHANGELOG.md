@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.1] - 2026-08-03
+
+### Added
+- **Cache Serialization (`toJSON`)**: Added native `toJSON()` serialization support to `BoundedCache` and the `Tempo.cache` facade object. Calling `Tempo.cache.toJSON()` or `JSON.stringify(Tempo.cache)` now cleanly converts active, non-expired in-memory cache entries into a plain key-value JavaScript object.
+
 ## [3.11.0] - 2026-07-31
 
 ### Added

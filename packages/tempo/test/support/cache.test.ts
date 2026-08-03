@@ -75,6 +75,14 @@ describe('Tempo Core Caching Architecture', () => {
 			expect(cache.has('k2')).toBe(false);
 			expect(cache.has('k3')).toBe(true);
 		});
+		it('should serialize to JSON object via toJSON()', () => {
+			const cache = new BoundedCache<string, string>(10, 10000);
+			cache.set('k1', 'v1');
+			cache.set('k2', 'v2');
+
+			expect(cache.toJSON()).toEqual({ k1: 'v1', k2: 'v2' });
+			expect(JSON.stringify(cache)).toBe('{"k1":"v1","k2":"v2"}');
+		});
 	});
 
 	describe('Tempo.CACHE Enum & Facade', () => {
@@ -84,14 +92,18 @@ describe('Tempo Core Caching Architecture', () => {
 			expect(Tempo.CACHE.Refresh).toBe('refresh');
 		});
 
-		it('should expose normalized Tempo.cache facade methods', () => {
+		it('should expose normalized Tempo.cache facade methods and serialize via toJSON()', () => {
 			Tempo.cache.set('  MY_TERM  ', '2026-05-10');
 			expect(Tempo.cache.has('my_term')).toBe(true);
 			expect(Tempo.cache.get('my_term')).toBe('2026-05-10');
 
+			expect(Tempo.cache.toJSON()).toEqual({ my_term: '2026-05-10' });
+			expect(JSON.stringify(Tempo.cache)).toBe('{"my_term":"2026-05-10"}');
+
 			Tempo.cache.delete('MY_TERM');
 			expect(Tempo.cache.has('my_term')).toBe(false);
 		});
+
 
 		it('should resolve static glossary terms instantly and record glossary source in parse result', () => {
 			Tempo.cache.setStatic('eoy_party', '2026-12-31T18:00:00');
