@@ -10,7 +10,7 @@ Tempo community plugin for LLM-powered natural language parsing.
 
 This plugin bridges the gap between deterministic date-math and unstructured NLP inputs, utilizing large language models (like Gemini, Groq, or OpenAI) to safely and asynchronously parse complex natural language expressions into `Tempo` instances.
 
-> **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle. BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, you must use a proxy service.
+> **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). Client-side storage is vulnerable to XSS attacks, malicious scripts, and browser extension extraction, which can result in API key theft and quota abuse. BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, you must route requests through a secure backend proxy service.
 >
 > **LLM Output Disclaimer**: Large Language Models are probabilistic text generators, not deterministic calculators. Magma Computing Solutions and Tempo core maintainers provide `@magmacomputing/tempo-plugin-ai` "as-is". Developers and organizations are solely responsible for validating AI-generated date and time outputs before relying on them in financial, legal, medical, or time-critical production systems.
 

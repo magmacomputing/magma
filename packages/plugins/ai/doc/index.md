@@ -19,7 +19,7 @@ This plugin bridges the gap between deterministic date-math and unstructured NLP
 
 > **Note**: This plugin is **not** a silver-bullet replacement for all your parsing needs! `Tempo.parse()` natively handles structured dates and formats phenomenally well using its Aliases, Layouts, and Snippets. The Tempo AI plugin is specifically designed to be an alternative path for handling completely unstructured, conversational human language that would otherwise be impossible to Regex.
 >
-> **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle. BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, you must use a proxy service.
+> **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). Client-side storage is vulnerable to XSS attacks, malicious scripts, and browser extension extraction, which can result in API key theft and quota abuse. BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, you must route requests through a secure backend proxy service.
 
 ## Ideal Use-Cases
 
@@ -45,13 +45,13 @@ import { parseAI, initAI, clearAiCache } from '@magmacomputing/tempo-plugin-ai';
 // Initialize with your BYOK API Key
 initAI({
   providers: [
-    { id: 'openai', key: process.env.OPENAI_API_KEY, model: 'gpt-5.4-mini' },
+    { id: 'openai', key: process.env.OPENAI_API_KEY, model: 'your-preferred-model' },
   ],
   debug: true // (Development-only) Enable verbose console logging
 });
 ```
 
-> **Tip**: `initAI` is fully re-callable! You can call it multiple times during your application's lifecycle to hot-swap API keys or update your fallback providers mid-stream without restarting your server.
+> **Tip**: `initAI` is fully re-callable! You can invoke it multiple times during your application's lifecycle to hot-swap API keys or update your fallback providers mid-stream without restarting your server.
 
 ```typescript
 // Parse a complex natural language string!
@@ -66,10 +66,16 @@ clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");
 The AI plugin supports multi-provider execution strategies (`fallback`, `race`, `consensus`) and confidence filtering on per-request options:
 
 ```typescript
-// 1. Race mode: send concurrent requests to all providers, returning the fastest valid response
+// 1. Fallback mode (default): query providers sequentially in array order until one succeeds
+const fallback = await parseAI("First Monday of November", { 
+  mode: 'fallback', // Default strategy if omitted
+  minConfidence: 0.8 // Require at least 0.8 confidence threshold
+});
+
+// 2. Race mode: send concurrent requests to all providers, returning the fastest valid response
 const fastest = await parseAI("Third Friday of October", { mode: 'race' });
 
-// 2. Consensus mode: query providers concurrently and boost confidence when outputs agree
+// 3. Consensus mode: query providers concurrently and boost confidence when outputs agree
 const agreed = await parseAI("The penultimate Tuesday before Thanksgiving", { 
   mode: 'consensus',
   minConfidence: 0.85 // Require at least 0.85 confidence threshold

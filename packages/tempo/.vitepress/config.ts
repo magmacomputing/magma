@@ -22,7 +22,6 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/magma/tempo-logo.svg' }]
   ],
   themeConfig: {
-    logo: '/tempo-logo.svg',
     search: {
       provider: 'local'
     },
@@ -70,7 +69,6 @@ export default defineConfig({
       {
         text: 'Advanced Reference',
         items: [
-          { text: 'API Overview', link: '/doc/api/' },
           { text: 'Technical Reference', link: '/api/index.html', target: '_self' },
           { text: 'Sandbox Factory', link: '/doc/4-advanced-reference/sandbox-factory' },
           { text: 'Parse Planner', link: '/doc/4-advanced-reference/tempo.planner' },

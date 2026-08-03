@@ -124,7 +124,7 @@ While the native Temporal API gives you perfect primitives (`ZonedDateTime`, `Pl
 For a deeper dive into the API, architecture, and advanced features:
 
 *   **[Official Documentation Website](https://magmacomputing.github.io/magma/)** — Tutorials, interactive demos, and "Getting Started" guides.
-*   **[Full API Reference Guide](https://magmacomputing.github.io/magma/doc/api/)** — Detailed technical documentation for every class and method.
+*   **[Full API Reference Guide](https://magmacomputing.github.io/magma/api/index.html)** — Detailed technical documentation for every class and method.
 
 ---
 

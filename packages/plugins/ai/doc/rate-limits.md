@@ -41,15 +41,15 @@ try {
 
 ## Cache Management
 
-By default, the plugin maintains an internal `Map` of strings to their respective ISO 8601 results to drastically reduce LLM API calls and latency on repetitive queries. 
+By default, Tempo AI functions integrate directly with `Tempo.cache` (`BoundedCache`) to store pre-resolved ISO 8601 results, drastically reducing LLM API calls and network latency on repetitive queries. 
 
 ### Array Processing & Token Economics
 
 When you pass an array of inputs to AI functions (such as `parseAI`), the plugin intentionally does **not** batch them into a single massive LLM request. Instead, it iterates through the array and processes each item individually. 
 
 This is by design for three critical reasons:
-1. **Cache Efficiency**: Individual processing allows the plugin to instantly resolve duplicate strings against the local cache, saving massive amounts of API tokens. If you pass an array of 10,000 dates, but only 1,000 are unique, the plugin only makes 1,000 requests. 
-2. **Token Economics**: A single request consumes ~100 tokens (System Prompt + User String + Output ISO). Given that frontier models cost pennies per million tokens, the risk of array-misalignment bugs (see below) far outweighs the negligible savings of batching system prompts.
+1. **Cache Efficiency**: Individual processing allows AI functions to instantly resolve duplicate strings against `Tempo.cache`, saving massive amounts of API tokens. If you pass an array of 10,000 dates, but only 1,000 are unique, only 1,000 network requests are made. 
+2. **Token Economics**: A single request consumes ~100 tokens (System Prompt + User String + Output ISO). Given that frontier models cost cents per million tokens, the risk of array-misalignment bugs (see below) far outweighs the negligible savings of batching system prompts.
 3. **Deterministic Safety**: LLMs are language models, not arrays. If you pass 50 strings, smaller models often hallucinate and return 49 strings, completely breaking your array indexing. By querying sequentially, we guarantee a strict 1:1 mapping and ensure one invalid string doesn't crash the entire batch.
 
 > [!WARNING]  
@@ -109,9 +109,9 @@ const dt = await parseAI("Q3_START", { force: true });
 ```
 
 ### Extensible Caching (Enterprise)
-For edge environments or custom application architectures, the plugin supports custom cache implementations!
+For edge environments or custom application architectures, you can provide custom cache instances via `initAI({ cache })` or `Tempo.init({ cache })`!
 
-You can provide any object that implements the standard **synchronous** `Map<string, string>` interface (`get`, `set`, `has`, `delete`). Note that all cache adapter methods must execute synchronously, as the internal cache lookup engine does not await promise-returning cache operations.
+You can provide any object that implements the standard **synchronous** `Map<string, string>` interface (`get`, `set`, `has`, `delete`). Note that all cache adapter methods must execute synchronously, as the cache lookup engine does not await promise-returning cache operations.
 
 ```typescript
 // Custom synchronous cache implementation
