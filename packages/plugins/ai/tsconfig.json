@@ -5,7 +5,8 @@
     "rootDir": "./src",
     "declaration": true,
     "emitDeclarationOnly": true,
-    "types": ["node"]
+    "types": ["node"],
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "src"

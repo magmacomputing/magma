@@ -6,6 +6,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.0] - 2026-07-31
+
+### Added
+- **Centralized Cache Engine (`Tempo.cache`)**: Introduced a unified `BoundedCache` singleton managing date resolution caching with LRU capacity eviction (`maxSize`), TTL expiration (`ttl`), and static immortal glossary isolation.
+- **Glossary Seeding**: `Tempo.init({ cache: customMap })` appends pre-resolved terms as static immortal keys exempt from LRU and TTL eviction.
+- **Cache Management Documentation**: Scaffolded the `tempo.cache.md` Core Concepts guide detailing cache topology, non-destructive appending, decision matrix (Glossary vs Aliases vs Layouts), opt-in vs automatic behavior, and AI plugin integration.
+
+### Changed
+- **Decoupled Plugin Cache Topology**: Cleaned up `parseAI` cache configuration by delegating capacity and TTL settings to `Tempo.init()`, establishing `Tempo.cache` as the single source of truth across the monorepo.
+- **Hardened AI Plugin Architecture**: Hardened `parseAI` integration for `@magmacomputing/tempo-plugin-ai`, adding support for index-locked parallel batching, multi-stream provider execution strategies (`AiMode`), `softErrors` error boundaries, and proxy-wrapped `.ai` metadata attachment on frozen `Tempo` instances.
+
+## [3.10.3] - 2026-07-29
+
+### Performance
+- **Zero-Overhead Instantiation**: Re-architected `Tempo` instance construction by introducing lazy evaluation for core private properties:
+  - **Lazy Instant (`#now`)**: Deferred system clock acquisition (`Temporal.Instant.fromEpochNanoseconds`) so that `instant()` is only fetched when relative duration math or parsing fallbacks require it. Passing explicit date strings or objects skips system clock calls entirely.
+  - **Lazy Delegators (`#fmt` & `#term`)**: Deferred creation of Proxy delegator objects until `.fmt` or `.term` properties are explicitly accessed.
+  - **`Interval` Acceleration**: `Tempo.Interval` and boundary set operations (`overlaps`, `contains`, `intersection`, `union`) automatically benefit from the reduced instantiation overhead.
+
 ## [3.10.2] - 2026-07-25
 
 ### Added

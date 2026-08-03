@@ -13,6 +13,7 @@ import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject,
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
+import { BoundedCache } from '#tempo/support/support.cache.js';
 import { SLICK_KEYS, type Snippet, type Layout, type Event, type Period, type Ignore } from '#tempo/support/support.default.js';
 import type { Token } from '#tempo/support/support.symbol.js';
 
@@ -381,6 +382,7 @@ export namespace Internal {
 		/** @internal Alias engine for this Tempo instance */		aliasEngine?: AliasEngine;
 		/** @internal Pattern compiler for this Tempo instance */	patternCompiler?: PatternCompiler;
 		/** @internal database of plugins scoped to this state */pluginsDb: { terms: TermPlugin[]; plugins: TempoPlugin[] };
+		/** @internal internal cache engine for static terms and string parses */cache: BoundedCache<string, string>;
 		/** @internal installed-plugin dedup tracker; a ScopedSet for sandboxes (delegates has() to global rt.installed), undefined for the global state */installed?: Set<any> | ScopedSet<any>;
 		/** @internal sandbox-local license state; runtime license is centralized on TempoRuntime */license?: Internal.LicenseState;
 	}

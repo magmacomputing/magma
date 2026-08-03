@@ -4,4 +4,5 @@ import { sharedConfig } from '../tsup.shared.js';
 export default defineConfig({
 	...sharedConfig,
 	entry: ['src/index.ts'],
+	dts: true,
 });

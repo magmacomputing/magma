@@ -5,7 +5,7 @@ When using third-party AI APIs, your application is subject to strict rate limit
 The plugin automatically tracks these limits by reading the standard `x-ratelimit-*` HTTP headers returned by providers like OpenAI and Groq. 
 
 ## Tracking Quota Real-time
-To expose this data without ruining the clean `Promise<Tempo>` return type of the parse method, the plugin provides a dedicated utility function: `getAiRateLimits()`.
+To expose this data without ruining the clean return signatures of Tempo AI functions, the plugin provides a dedicated utility function: `getAiRateLimits()`.
 
 ```typescript
 import { getAiRateLimits } from '@magmacomputing/tempo-plugin-ai';
@@ -45,7 +45,7 @@ By default, the plugin maintains an internal `Map` of strings to their respectiv
 
 ### Array Processing & Token Economics
 
-When you pass an array of strings to `parseAI`, the plugin intentionally does **not** batch them into a single massive LLM request. Instead, it iterates through the array and processes each string individually. 
+When you pass an array of inputs to AI functions (such as `parseAI`), the plugin intentionally does **not** batch them into a single massive LLM request. Instead, it iterates through the array and processes each item individually. 
 
 This is by design for three critical reasons:
 1. **Cache Efficiency**: Individual processing allows the plugin to instantly resolve duplicate strings against the local cache, saving massive amounts of API tokens. If you pass an array of 10,000 dates, but only 1,000 are unique, the plugin only makes 1,000 requests. 
@@ -53,14 +53,42 @@ This is by design for three critical reasons:
 3. **Deterministic Safety**: LLMs are language models, not arrays. If you pass 50 strings, smaller models often hallucinate and return 49 strings, completely breaking your array indexing. By querying sequentially, we guarantee a strict 1:1 mapping and ensure one invalid string doesn't crash the entire batch.
 
 > [!WARNING]  
-> **Granular Time Gotcha**: The cache key is automatically salted with the **calendar date** (`yyyy-mm-dd`) of execution. This brilliantly protects relative day queries (like `"tomorrow"`) because the cache automatically misses as soon as midnight strikes! However, if you are parsing granular, time-relative phrases (like `"in 5 minutes"` or `"next hour"`), the calendar date salt is not enough to prevent staleness on a long-running server.
+> **Granular Time Gotcha**: The cache key is automatically salted with the **calendar date** (`yyyy-mm-dd`) of the execution anchor. By default this uses the system execution date, but when `options.anchor` is explicitly set, it uses the caller-provided anchor date. Note that keeping a fixed anchor date retains the same cache key across midnight boundaries, so an automatic midnight cache miss is not guaranteed.
 
-### Bypassing Cache for Relative Times
-If you are intentionally parsing highly granular relative times (like `"in 5 minutes"`) and your server is long-running, you should explicitly disable caching for that specific query to ensure it is evaluated against real-world time:
+### Soft Errors in Array Batches
+
+When processing arrays of inputs, an unparseable input or provider failure on one item will throw an error by default, stopping execution. Passing `softErrors: true` allows AI functions to return invalid `Tempo` instances (`isValid === false`) for failing items while completing the rest of the array:
 
 ```typescript
-// The LLM will ALWAYS be queried, and the result will NOT be cached
-const dt = await parseAI("in 5 minutes", { cache: false });
+const dates = await parseAI(["Thanksgiving 2026", "INVALID_PROMPT_STRING"], { softErrors: true });
+console.log(dates[0].isValid); // true
+console.log(dates[1].isValid); // false
+```
+
+### Static Glossary Seeding
+
+In addition to dynamic cache lookups, `initAI` can be initialized with a pre-seeded `BoundedCache` or synchronous `Map` containing immortal static business terms (e.g. company glossaries). Static entries bypass TTL expiration and LLM network requests:
+
+```typescript
+const glossary = new Map([
+  ['fiscal_q3_start', '2026-07-01T00:00:00Z'],
+  ['annual_shutdown', '2026-12-24T00:00:00Z']
+]);
+
+initAI({
+  providers: [{ id: 'openai', key: process.env.OPENAI_API_KEY }],
+  cache: glossary
+});
+
+const start = await parseAI('fiscal_q3_start'); // Resolves instantly from static cache without hitting network!
+```
+
+### Bypassing Cache & Forcing Network Requests
+Passing `cache: false` disables reading and writing to the cache, but native pre-parsing may still resolve standard phrases. To guarantee an LLM provider request while disabling caching of the response, combine `force: true` with `cache: false`:
+
+```typescript
+// Forces an LLM network request and prevents reading or writing to cache
+const dt = await parseAI("The last Friday before Christmas", { force: true, cache: false });
 ```
 
 ### Evicting Bad Parses

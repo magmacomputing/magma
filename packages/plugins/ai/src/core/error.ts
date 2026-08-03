@@ -2,7 +2,7 @@ import type { Tempo } from '@magmacomputing/tempo';
 
 /**
  * ## TempoAiError
- * A specialized Error thrown during AI-driven parsing when network fetches fail, 
+ * A specialized Error thrown during AI-driven operations when network fetches fail, 
  * timeouts occur, or rate limits are exceeded.
  */
 export class TempoAiError extends Error {

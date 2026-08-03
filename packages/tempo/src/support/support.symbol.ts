@@ -35,12 +35,13 @@ export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termErr
 /** @internal static alias builder */												export const $setAliases: unique symbol = Symbol.for('magmacomputing/tempo/setAliases') as any;
 /** @internal static guard builder */												export const $buildGuard: unique symbol = Symbol.for('magmacomputing/tempo/buildGuard') as any;
 /** @internal static base class marker */										export const $IsBase: unique symbol = Symbol.for('magmacomputing/tempo/isBase') as any;
+/** @internal static license scope status mutator */				export const $updateScopeStatus: unique symbol = Symbol.for('magmacomputing/tempo/updateScopeStatus') as any;
 
 /** @internal Tempo Symbol Registry (Local Keys) */
 const local = {
 	$Tempo, $Register, $Interpreter, $guard, $errored,
 	$Internal, $Bridge, $RuntimeBrand, $Descriptor, $License, $setConfig, $setDiscovery,
-	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $PluginType
+	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $PluginType, $updateScopeStatus
 } as const;
 
 /** @internal Unified Symbol Registry (Inherits from #library via Prototype Chain) */

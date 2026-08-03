@@ -1,6 +1,6 @@
 {
   "name": "tempo-monorepo",
-  "version": "3.10.2",
+  "version": "3.11.0",
   "private": true,
   "engines": {
     "node": ">=20.0.0"
@@ -36,10 +36,10 @@
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
     "@rollup/plugin-node-resolve": "^16.0.3",
-    "@types/google.maps": "^3.65.2",
+    "@types/google.maps": "^3.65.3",
     "@types/hammerjs": "^2.0.46",
     "@types/jquery": "^4.0.0",
-    "@types/node": "^26.0.1",
+    "@types/node": "^26.1.2",
     "@vitest/browser": "^4.1.8",
     "@vitest/browser-playwright": "^4.1.8",
     "@vitest/browser-webdriverio": "^4.1.8",
@@ -63,9 +63,9 @@
   "allowScripts": {
     "edgedriver@6.3.0": true,
     "geckodriver@6.1.0": true,
-    "@swc/core@1.15.41": true,
     "esbuild@0.28.1": true,
-    "esbuild@0.21.5": true
+    "esbuild@0.21.5": true,
+    "@swc/core@1.15.43": true
   },
   "dependencies": {
     "typescript-7": "npm:typescript@^7.0.2"

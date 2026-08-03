@@ -45,6 +45,7 @@ export default defineConfig({
         text: 'Core Concepts',
         items: [
           { text: 'Configuration', link: '/doc/2-core-concepts/tempo.config' },
+          { text: 'Cache Management', link: '/doc/2-core-concepts/tempo.cache' },
           { text: 'Core Getters', link: '/doc/2-core-concepts/tempo.getters' },
           { text: 'Smart Parsing', link: '/doc/2-core-concepts/tempo.parse' },
           { text: 'Smart Formatting', link: '/doc/2-core-concepts/tempo.format' },

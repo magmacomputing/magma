@@ -6,7 +6,7 @@ import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { asType } from '#library/type.library.js';
-import { isString, isObject, isUndefined, isDefined, isRegExp, isEmpty } from '#library/assertion.library.js';
+import { isString, isObject, isUndefined, isDefined, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { getStorage } from '#library/storage.library.js';
@@ -20,13 +20,39 @@ import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './suppor
 import { STATE } from './support.enum.js';
 
 import enums from './support.enum.js';
+import { BoundedCache } from './support.cache.js';
 import * as t from '../tempo.type.js';
 
+function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
+	const isBoundedCacheOpt = Boolean(optionsCache?.isBoundedCache || optionsCache instanceof BoundedCache);
+	if (isBoundedCacheOpt) {
+		return optionsCache as BoundedCache;
+	} else if (optionsCache instanceof Map || (optionsCache && isFunction((optionsCache as any).entries))) {
+		const targetCache = existingCache ?? new BoundedCache();
+		for (const [k, v] of (optionsCache as any).entries())
+			targetCache.setStatic(String(k).trim().toLowerCase(), String(v));
+		return targetCache;
+	} else {
+		if (existingCache && (existingCache.isBoundedCache || existingCache instanceof BoundedCache)) {
+			if (isDefined(optionsCache?.maxSize)) existingCache.maxSize = optionsCache.maxSize;
+			if (isDefined(optionsCache?.ttl)) existingCache.ttl = optionsCache.ttl;
+			return existingCache;
+		} else {
+			const maxSize = optionsCache?.maxSize ?? 1000;
+			const ttl = optionsCache?.ttl ?? (24 * 60 * 60 * 1000);
+			return new BoundedCache(maxSize, ttl);
+		}
+	}
+}
+
 /** @internal Initialise a Tempo state */
-export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State): t.Internal.State {
+export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State, prevCache?: BoundedCache): t.Internal.State {
 	const runtime = getRuntime();
 	// Global init is intentionally idempotent after first hydration; late-loaded modules must use Tempo.extend().
-	if (isGlobal && runtime.state && !baseState) return runtime.state;
+	if (isGlobal && runtime.state && !baseState) {
+		runtime.state.cache = resolveCache(options.cache, runtime.state.cache);
+		return runtime.state;
+	}
 
 	const { timeZone, calendar } = getDateTimeFormat();
 	const state = (baseState ? Object.create(baseState) : {
@@ -48,6 +74,9 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			plugins: [...baseState.pluginsDb.plugins]
 		};
 	}
+
+	const targetCache = baseState?.cache ?? runtime.state?.cache ?? prevCache;
+	state.cache = resolveCache(options.cache, targetCache);
 
 	// 1. Establish the base parsing state
 	const parseState: t.Internal.Parse = {
@@ -364,6 +393,15 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				setProperty(state.config, 'debug', parseLogLevel(arg.value));
 				break;
 
+			case 'cache':
+				if (isObject(arg.value)) {
+					if (arg.value.maxSize !== undefined) state.cache.maxSize = arg.value.maxSize;
+					if (arg.value.ttl !== undefined) state.cache.ttl = arg.value.ttl;
+				} else {
+					setProperty(state.config, 'cache', arg.value);
+				}
+				break;
+
 			default:
 				setProperty(state.config, optKey, arg.value);
 				break;
@@ -394,9 +432,8 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				if (state.aliasEngine) {
 					// Ensure we don't corrupt global state if we are a local instance
 					if (state.config.scope === 'local' && state.aliasEngine.depth === 0) {
-						if (typeof state.aliasEngine.fork === 'function') {
+						if (isFunction(state.aliasEngine.fork))
 							state.aliasEngine = state.aliasEngine.fork(state.config);
-						}
 					}
 					state.aliasEngine.registerAliases('evt', ownEntries(events));
 				}

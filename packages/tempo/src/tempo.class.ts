@@ -26,11 +26,11 @@ import { PatternCompiler } from './engine/engine.pattern.js';
 import { createMasterGuard } from './engine/engine.guard.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 
-import { validateLicenseState, getLicenseSnapshot, setLicense, getLicenseState } from './plugin/license/license.manager.js';
+import { validateLicenseState, getLicenseSnapshot, setLicense, getLicenseState, updateScopeStatus } from './plugin/license/license.manager.js';
 
 import { resolveMonthDay, setProperty, proto, hasOwn, resolveDisplayStatus } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, logError, logDebug, logWarn, logTempo, setLogLevel } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, $updateScopeStatus, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import { Interval } from './interval.class.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -107,6 +107,7 @@ export class Tempo {
 	/** TimeZone aliases */																		static get TIMEZONE() { return enums.TIMEZONE }
 	/** regional date-parsing configuration */								static get MONTH_DAY() { return enums.MONTH_DAY }
 	/** initialization strategies */													static get MODE() { return enums.MODE }
+	/** cache operation modes */                              static get CACHE() { return enums.CACHE }
 	/** some useful Dates */																	static get LIMIT() { return enums.LIMIT }
 
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !_lifecycle.ready }
@@ -117,13 +118,16 @@ export class Tempo {
 	static get versions() { return Object.freeze({ ...Tempo.#versions }) as Readonly<Record<string, string>>; }
 	/** the version of this Tempo build (stamped at build-time from package.json) */
 	static get version() { return Tempo.#versions['Tempo']; }
+	/** high-performance in-memory cache facade for glossary and dynamic parse results */
+	static get cache() {
+		return createCacheFacade(() => this[$Internal]());
+	}
 
-	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return this[$Internal]().pluginsDb.terms }
-	/** @internal raw license state — sandbox-aware: reads sandbox-local license if present, otherwise global */
-	static get #license() { return getLicenseState(this[$Internal]()); }
-	/** human-readable formatted license state */							static get license() {
-		const { jws, key, ...raw } = getLicenseSnapshot(this[$Internal]());						// omit internal Pledge and JWT string from user-facing snapshot
-		const ss = { timeStamp: 'ss' } as const;								// JWT timestamps are always in seconds (RFC 7519)
+	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return Tempo[$Internal]().pluginsDb.terms }
+	/** @internal format raw license snapshot into human-readable license object */
+	static #formatLicense(state: Internal.State) {
+		const { jws, key, ...raw } = getLicenseSnapshot(state);
+		const ss = { timeStamp: 'ss' } as const;
 		const scopesSource = (raw.scopes && isObject(raw.scopes)) ? raw.scopes : {};
 		const scopes = Object.fromEntries(
 			Object.entries(scopesSource).map(([key, scope]) => {
@@ -143,6 +147,16 @@ export class Tempo {
 			...(isNumber(raw.issuedAt) && { issuedAt: new Tempo(raw.issuedAt, ss).fmt.weekTime }),
 		});
 	}
+
+	/** human-readable formatted license state */
+	static get license() {
+		return Tempo.#formatLicense(this[$Internal]());
+	}
+
+	/** @internal programmatically update status of a license scope (e.g. when network response determines revocation) */
+	static [$updateScopeStatus](scopeKey: string, status: string, error?: string): void {
+		updateScopeStatus(this[$Internal](), scopeKey, status, error);
+	}
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
 
 	/** @internal Master Guard predicate (implements RegExp-like interface) */static get [$guard]() { return (this[$Internal]() as any)[$guard] ?? { test: () => true }; }
@@ -157,9 +171,8 @@ export class Tempo {
 
 	/** @internal */
 	static get [$ImmutableSkip]() {
-		const global = typeof globalThis !== 'undefined' ? globalThis : (window as any);
-		const nodeEnv = typeof global !== 'undefined'
-			&& typeof global.process !== 'undefined'
+		const global = isDefined(globalThis) ? globalThis : (window as any);
+		const nodeEnv = isDefined(global.process)
 			&& global.process.env
 			&& (global.process.env.NODE_ENV === 'test' || global.process.env.CI);
 
@@ -820,11 +833,12 @@ export class Tempo {
 			setLogLevel(options.debug ?? Default?.debug ?? LOG.Info);
 
 			const rt = getRuntime();
+			const prevCache = rt.state?.cache;
 			const isBase = !!this[$IsBase];
-			if (isBase) rt.state = undefined;											// force fresh state
+			if (isBase) rt.state = undefined;
 
 			const baseState = isBase ? undefined : Object.getPrototypeOf(this)[$Internal]();
-			const state = init(options, isBase, baseState);
+			const state = init(options, isBase, baseState, prevCache);
 			(state as any)._count = 0;
 			if (isBase) {
 				_global = state;
@@ -1059,11 +1073,11 @@ export class Tempo {
 
 	/** static units since Unix epoch */
 	static get epoch() {
-		return this.#getEpoch(instant());
+		return Tempo.#getEpoch(instant());
 	}
 
 	/** get the current system Instant */
-	static get instant() { return Temporal.Instant.fromEpochNanoseconds(this.now()) }
+	static get instant() { return Temporal.Instant.fromEpochNanoseconds(Tempo.now()) }
 
 	/** static Tempo.terms (registry) */
 	static get terms(): Secure<PremiumPlugin[]> & Record<string, PremiumPlugin> {
@@ -1197,14 +1211,14 @@ export class Tempo {
 
 	/** constructor tempo */																	#tempo?: t.DateTime;
 	/** constructor options */																#options = {} as t.Options;
-	/** instantiation Temporal Instant */											#now: Temporal.Instant;
+	/** instantiation Temporal Instant */											#instant?: Temporal.Instant;
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
 	/** memoized TimeZone ID */																#tz?: string;
 	/** memoized Calendar ID */																#cal?: string;
 	/** indicator that the instance failed to parse */				#errored = false;
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
-	/** prebuilt formats, for convenience */									#fmt!: Record<string, string | undefined>;
-	/** mapping of terms to their resolved values */					#term!: any;
+	/** prebuilt formats, for convenience */									#fmt?: Record<string, string | undefined>;
+	/** mapping of terms to their resolved values */					#term?: any;
 	/** a collection of parse rule-matches */									#matches: Internal.MatchResult[] | undefined;
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
 	/** current mutation depth to manage infinite recursion */#mutateDepth = 0;
@@ -1258,7 +1272,7 @@ export class Tempo {
 			ZONED_DATE_TIME: enums.ZONED_DATE_TIME
 		}
 
-		return out;
+		return Object.setPrototypeOf(out, self.#local);
 	}
 
 	/** allow for auto-convert of Tempo to BigInt, Number or String */
@@ -1272,7 +1286,7 @@ export class Tempo {
 
 	/** iterate over instance formats */
 	[Symbol.iterator]() {
-		return ownEntries(this.#fmt, true)[Symbol.iterator]();	// instance Iterator over tuple of FormatType[]
+		return ownEntries(this.fmt, true)[Symbol.iterator]();		// instance Iterator over tuple of FormatType[]
 	}
 
 	get [Symbol.toStringTag](): 'Tempo' {											// default string description
@@ -1293,7 +1307,6 @@ export class Tempo {
 	 */
 	constructor(tempo: t.DateTime, options?: t.Options);
 	constructor(tempo?: t.DateTime | t.Options, options: t.Options = {}) {
-		this.#now = instant();																	// stash current Instant
 		[this.#tempo, this.#options] = this.#swap(tempo, options);// swap arguments around
 
 		if (isZonedDateTime(this.#tempo)) this.#zdt = this.#tempo;
@@ -1313,8 +1326,6 @@ export class Tempo {
 		else if (isString(this.#tempo) && !isEmpty(input) && guard.test(trimAll(input)))
 			this.#local.parse.lazy = true;												// auto-switch to lazy-mode for valid strings
 
-		this.#fmt = this.#setDelegator('fmt');									// initialize the format-delegator
-		this.#term = this.#setDelegator('term');								// initialize the term-delegator
 		this.#anchor = this.#options.anchor;
 
 		// 🧬 Unified State Hand-off (from clone / mutate)
@@ -1360,8 +1371,6 @@ export class Tempo {
 
 	/** Resolve the instance to a Temporal.ZonedDateTime (with optional callback) */
 	#resolve<T>(cb?: (zdt: Temporal.ZonedDateTime) => T): T | Temporal.ZonedDateTime {
-		const now = this.#now.toZonedDateTimeISO('UTC');
-
 		if (!this.#zdt) {
 			try {
 				const skip = [this.#local.parse.format, this.#local.parse.term, this.#local.parse.result]
@@ -1371,7 +1380,7 @@ export class Tempo {
 					this.#errored = true;
 					const msg = `Tempo parse returned undefined for: ${String(this.#tempo)}`;
 					logError(msg, this.#local.config);
-					this.#zdt = now;
+					this.#zdt = this.#now.toZonedDateTimeISO('UTC');
 				}
 				secure(this.#local.config);
 				secure(this.#local.parse, new WeakSet(skip));
@@ -1380,7 +1389,7 @@ export class Tempo {
 				const msg = `Cannot create Tempo: ${(err as Error).message}\n${(err as Error).stack}`;
 				if (this.#local.config.catch === true) {
 					logError(msg, this.#local.config);				// log as error if in catch-mode
-					this.#zdt = now;
+					this.#zdt = this.#now.toZonedDateTimeISO('UTC');
 				} else {
 					logError((err as Error), this.#local.config, msg);		// log as error then re-throw
 					throw err;
@@ -1388,7 +1397,7 @@ export class Tempo {
 			}
 		}
 
-		const zdt = isZonedDateTime(this.#zdt) ? this.#zdt : now;
+		const zdt = isZonedDateTime(this.#zdt) ? this.#zdt : this.#now.toZonedDateTimeISO('UTC');
 		return cb?.(zdt) ?? zdt;
 	}
 
@@ -1622,8 +1631,8 @@ export class Tempo {
 		return out as t.Internal.Parse;
 	}
 
-	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term }
-	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#fmt }
+	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term ??= this.#setDelegator('term'); }
+	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#fmt ??= this.#setDelegator('fmt'); }
 	/** units since epoch for this date-time instance */			get epoch() { return Tempo.#getEpoch(this.toDateTime()); }
 
 	/**
@@ -1633,6 +1642,7 @@ export class Tempo {
 	 * rather than using `new Tempo(..)`.  
 	 */
 	/** @internal */																					get #Tempo() { return this.constructor as typeof Tempo; }
+	/** @internal */																					get #now(): Temporal.Instant { return this.#instant ??= instant(); }
 
 	/** apply a custom format. */															format(fmt?: any, options?: any): string { return this.#resolve(() => interpret(this, 'FormatModule', () => `{${String(fmt)}}`, false, fmt, options)) as string; }
 	/** time duration until another date-time */
@@ -1676,7 +1686,6 @@ export class Tempo {
 	#setLocal(options: t.Options = {}) {
 		const classState = (this.constructor as any)[$Internal]();
 		this.#local = Object.create(classState);
-		(this.#local as any)._id = (this.constructor as any)[$Internal]()._count++;
 		const self = unwrap(this);
 		this.#local.config = markConfig(Object.create(classState.config));
 		if (classState.config.registry) this.#local.config.registry = Object.create(classState.config.registry);
