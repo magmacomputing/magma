@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/google/material-design-icons/master/png/action/book/materialicons/48dp/2x/baseline_book_black_48dp.png" width="48px" style="vertical-align:middle;"> <span style="font-size:2.5em; vertical-align:middle;">Magma Library (Internal Reference)</span>
+# <img src="https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/library-logo.svg" width="48" height="48" style="vertical-align:middle; display:inline-block; margin-right:8px;" alt="Tempo Library Logo" /> Magma Library (Internal Reference)
 
 > [!NOTE]
 > **Internal Reference Package**: `packages/library` is an internal monorepo utility suite used across Tempo packages. It is **not** published as a standalone package on npm, and is provided in the documentation as a reference guide for internal architectural utilities and shared routines.

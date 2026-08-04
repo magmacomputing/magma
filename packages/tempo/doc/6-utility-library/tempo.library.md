@@ -1,3 +1,5 @@
+![Tempo Library](/library-logo.svg)
+
 # Tempo Library Functionality
 
 While Tempo is primarily a Date-Time engine, it relies on several custom utilities under the hood to handle data structures, deep cloning, and serialization safely. 

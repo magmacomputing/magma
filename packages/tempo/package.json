@@ -234,7 +234,7 @@
     "prebuild": "npm run build:version",
     "clean": "magma-cli rm dist && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && if [ -z \"$TEMPO_LICENSE_PATH\" ] || [ ! -f \"$TEMPO_LICENSE_PATH\" ]; then echo '🚨 ERROR: TEMPO_LICENSE_PATH is missing or invalid. Cannot publish Premium build.'; exit 1; fi && npm run build",
-    "docs:api": "typedoc && typedoc --options typedoc.library.json",
+    "docs:api": "typedoc && typedoc --options typedoc.library.json && node bin/expand-typedoc.mjs",
     "docs:dev": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && vitepress dev",
     "docs:build": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && vitepress build",
     "docs:preview": "vitepress preview",
