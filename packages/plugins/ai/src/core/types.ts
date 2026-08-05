@@ -67,6 +67,8 @@ export interface AiProvider {
 	tokenParam?: string | undefined;
 	/** Optional cache TTL override in milliseconds for entries produced by this provider */
 	ttl?: number | undefined;
+	/** Optional HTTP request timeout override in milliseconds for requests to this provider */
+	timeout?: number | undefined;
 	/** Optional LLM parameters (e.g. temperature, max_tokens, top_p) */
 	options?: Record<string, any>;
 }

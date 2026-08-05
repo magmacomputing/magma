@@ -134,4 +134,60 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 		const { _state } = await import('../src/core/init.js');
 		expect(_state.config.providers?.[0].model).toBe(DEFAULT_PROVIDERS.openai.model);
 	});
+
+	it('should retain fetchDefaults hook results alongside remote manifest resolution', async () => {
+		const mockManifest = {
+			version: '1.0',
+			providers: {
+				groq: { model: 'remote-manifest-groq-model' }
+			}
+		};
+
+		vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(JSON.stringify(mockManifest), { status: 200 })
+		);
+
+		await initAI({
+			providers: [{ id: 'groq', key: 'test-key' }],
+			fetchDefaults: async () => ({ timeout: 5000, ttl: 9999 })
+		});
+
+		const { _state } = await import('../src/core/init.js');
+		expect(_state.config.providers?.[0].model).toBe('remote-manifest-groq-model');
+		expect(_state.config.providers?.[0].timeout).toBe(5000);
+		expect(_state.config.providers?.[0].ttl).toBe(9999);
+	});
+
+	it('should prevent older async initAI invocation from overwriting newer provider state via revision tracking', async () => {
+		let resolveManifest1: (value: any) => void;
+		const manifestPromise1 = new Promise(res => { resolveManifest1 = res; });
+
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy
+			.mockImplementationOnce(() => manifestPromise1 as any)
+			.mockResolvedValueOnce(new Response(JSON.stringify({ providers: { groq: { model: 'invocation-2-model' } } }), { status: 200 }));
+
+		// Start invocation 1 (which hangs on manifest resolution)
+		const initPromise1 = initAI({
+			remoteConfigUrl: 'https://tempo.magmacomputing.com.au/manifest-1.json',
+			providers: [{ id: 'groq', key: 'key-invocation-1' }]
+		});
+
+		// Synchronously start invocation 2 (newer)
+		const initPromise2 = initAI({
+			remoteConfigUrl: 'https://tempo.magmacomputing.com.au/manifest-2.json',
+			providers: [{ id: 'groq', key: 'key-invocation-2' }]
+		});
+		await initPromise2;
+
+		const { _state } = await import('../src/core/init.js');
+		expect(_state.config.providers?.[0].key).toBe('key-invocation-2');
+
+		// Resolve slow invocation 1
+		resolveManifest1!(new Response(JSON.stringify({ providers: { groq: { model: 'stale-model' } } }), { status: 200 }));
+		await initPromise1;
+
+		// Verify state was NOT overwritten by stale invocation 1
+		expect(_state.config.providers?.[0].key).toBe('key-invocation-2');
+	});
 });

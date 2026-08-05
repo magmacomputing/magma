@@ -107,7 +107,7 @@ Do not include markdown blocks or any text outside the JSON.`;
   const tokenLimit = { [tokenParam]: 250 };
 
   const controller = new AbortController();
-  const timeoutMs = timeoutOverride ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
+  const timeoutMs = timeoutOverride ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const onParentAbort = () => controller.abort();

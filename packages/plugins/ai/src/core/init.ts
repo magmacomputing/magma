@@ -7,15 +7,18 @@ import type { AiConfig, AiRateLimits, AiProvider } from './types.js';
 export const _state: {
   config: AiConfig;
   limits: AiRateLimits | null;
+  revision: number;
 } = {
   config: {},
   limits: null,
+  revision: 0,
 }
 
 export function initAI(config: AiConfig): Promise<void> {
   if (config.providers)
     assertNoReservedProviderId(config.providers);
 
+  const currentRevision = ++_state.revision;
   const remoteUrl = config.remoteConfigUrl ?? _state.config.remoteConfigUrl;
 
   const resolveSyncProviders = (providers?: AiProvider[]) => {
@@ -42,6 +45,14 @@ export function initAI(config: AiConfig): Promise<void> {
   }
 
   return (async () => {
+    if (remoteUrl !== false) {
+      try {
+        await loadRemoteManifest(remoteUrl, undefined, config.debug ?? _state.config.debug);
+      } catch { }
+    }
+
+    if (_state.revision !== currentRevision) return;
+
     if (config.fetchDefaults && config.providers) {
       const asyncProviders = await Promise.all(config.providers.map(async p => {
         const normalizedId = p.id?.toLowerCase() ?? '';
@@ -56,14 +67,11 @@ export function initAI(config: AiConfig): Promise<void> {
           ...p
         } as AiProvider;
       }));
-      _state.config.providers = asyncProviders;
-    }
-
-    if (remoteUrl !== false) {
-      try {
-        await loadRemoteManifest(remoteUrl, undefined, config.debug ?? _state.config.debug);
-        _state.config.providers = resolveSyncProviders(config.providers ?? _state.config.providers);
-      } catch { }
+      if (_state.revision === currentRevision)
+        _state.config.providers = asyncProviders;
+    } else if (config.providers) {
+      if (_state.revision === currentRevision)
+        _state.config.providers = resolveSyncProviders(config.providers);
     }
   })();
 }
