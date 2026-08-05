@@ -1,0 +1,74 @@
+# Tempo: Immutable Date-Time Engine & AI Syntax Rules
+
+> Tempo is a lightweight, immutable JavaScript/TypeScript date-time library built around the native ECMAScript Temporal API proposal. It provides type-safe parsing, formatting, relative time arithmetic, and extensible layout matching across Browser and Node.js environments.
+
+## Core Architectural Rules & Philosophy
+- **Temporal Engine**: Tempo expects native `Temporal` in modern runtimes or uses `@js-temporal/polyfill` when necessary. Never instantiate legacy JavaScript `Date`.
+- **Strict Immutability**: `Tempo` instances are completely frozen. All mutating operations (`add`, `subtract`, `with`, `startOf`, `endOf`) return a brand-new `Tempo` object.
+- **Zero-Cost Getter Proxies**: Properties like `.year`, `.month`, `.day`, `.hour`, `.minute`, `.second`, `.millisecond`, `.microsecond`, `.nanosecond` are live getters proxying the underlying `Temporal` state.
+- **Plugin Architecture**: Core functions can be extended via `Tempo.extend(Plugin)`. License validation occurs via `Tempo.init(...)`.
+
+## Formatting & Parsing Tokens
+| Token | Description | Sample Output |
+| :--- | :--- | :--- |
+| `{yy}` | Year (2 or 4 digits) | `2026`, `26` |
+| `{mon}` | Month name (Full or Abbreviated) | `August`, `Aug` |
+| `{mm}` | Month number (01-12) | `08` |
+| `{dd}` | Day of month (01-31) | `04` |
+| `{hh}` | Hour (00-24) | `15` |
+| `{mi}` | Minute (00-59) | `30` |
+| `{ss}` | Second (00-59) | `00` |
+| `{wkd}` | Weekday name | `Tuesday`, `Tue` |
+| `{tzd}` | Time zone offset / identifier | `Z`, `+10:00`, `Australia/Sydney` |
+| `{yw}` | ISO Week-Year number | `W32` |
+| `{unt}` | Time unit keyword | `day`, `month`, `year` |
+
+## Key Module Links
+- [Full Documentation Concatenation](/llms-full.txt): Complete raw markdown documentation for RAG ingestion.
+- [Layout Patterns & Regex Snippets](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/3-extending-tempo/tempo.layout.md): Guide to writing regex layouts and snippets.
+- [Plugin Development](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/3-extending-tempo/tempo.plugin.md): Rules for extending Tempo via plugins.
+- [Utility Library](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/6-utility-library/tempo.library.md): Type detection, serialization (`stringify`/`objectify`), and `Pledge`.
+
+## Common Code Snippets
+
+### Quick Setup & Basic Usage
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+
+// Create from current instant or ISO string
+const t = Tempo.from('2026-08-04T15:30:00Z');
+
+// Format using layout tokens
+t.format('{mon} {dd}, {yy}'); // "August 04, 2026"
+
+// Immutably manipulate date
+const nextWeek = t.add({ days: 7 });
+```
+
+### Smart Parsing & Shorthand Expressions
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+
+// 1. Natural language & relative shorthand expressions
+const t1 = Tempo.from('next friday');
+const t2 = Tempo.from('start of month');
+const t3 = Tempo.from('+3 days');
+
+// 2. Flexible date parsing
+const t4 = Tempo.parse('2026-08-04T15:30:00+10:00');
+```
+
+### Custom Layout Registration & Parsing
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+
+// Register custom snippet & layout pattern via config
+Tempo.config({
+  layouts: {
+    us_date: '{mm}/{dd}/{yy}'
+  }
+});
+
+// Parse string using registered layout
+const parsed = Tempo.parse('08/04/2026', 'us_date');
+```

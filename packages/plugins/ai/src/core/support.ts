@@ -61,7 +61,8 @@ export async function fetchFromProvider(
   str: string,
   contextString: string,
   isDebug: boolean,
-  parentSignal?: AbortSignal
+  parentSignal?: AbortSignal,
+  timeoutOverride?: number
 ): Promise<{ rawContent: string; providerId: string; rateLimits: ReturnType<typeof updateRateLimitsFromResponse> }> {
   const url = provider.url!;
   const model = provider.model!;
@@ -94,7 +95,7 @@ Do not include markdown blocks or any text outside the JSON.`;
   const tokenLimit = { [tokenParam]: 250 };
 
   const controller = new AbortController();
-  const timeoutMs = provider.options?.timeout ?? 15000;
+  const timeoutMs = timeoutOverride ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const onParentAbort = () => controller.abort();

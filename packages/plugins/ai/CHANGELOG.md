@@ -5,6 +5,21 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-04
+
+### Added
+- **3-Tier Timeout Resolution Hierarchy**: Introduced flexible, multi-level request timeout control for LLM API queries to prevent network hangs and ensure predictable SLAs:
+  1. *Call-site override*: `parseAI(input, { timeout: 3000 })`
+  2. *Provider-specific override*: `{ id: 'groq', options: { timeout: 2000 } }`
+  3. *Global baseline default*: `initAI({ timeout: 5000 })` (falls back to default 15,000ms).
+- **Timeout-Triggered Provider Cascade**: Stalled or slow provider requests trigger an `AbortSignal` cancellation, allowing `AiMode.Fallback` to instantly cascade to secondary providers and `AiMode.Race` to clean up lagging request promises.
+- **Request-Locked `.ai.limits` Metadata**: Attached `limits` (`remainingRequests`, `remainingTokens`, `resetAt`) directly to the `.ai` metadata container (`TempoAiMeta`) of returned `Tempo` instances, locking HTTP header rate-limit snapshots to individual requests and preventing concurrency overwrites.
+- **Async Storage Adapters (`AiCacheAdapter`)**: Introduced custom storage engine support (`AiCacheAdapter`) in `initAI` and `parseAI` for distributed serverless environments (e.g. Upstash Redis, Cloudflare KV, Memcached).
+- **Cascading Cache TTL Hierarchy**: Implemented strict 4-tier TTL resolution (`options.ttl` > `provider.ttl` > `global config.ttl` > default 1 hour) for fine-grained cache entry expiration control.
+- **Fail-Open Storage Resilience**: Custom cache adapter errors during `get()` or `set()` operations fail open silently to direct LLM resolution, preserving application request uptime.
+- **Dynamic Remote Provider Manifest (`loadRemoteManifest`)**: Lazily fetches remote provider defaults (`providers.v1.json`) on initialization with a 1500ms timeout and automatic air-gapped fallback to compiled `DEFAULT_PROVIDERS`.
+- **Cache Eviction Synchronization**: Enhanced `clearAiCache()` to flush matching keys and prefixes across both `Tempo.cache` and custom `AiCacheAdapter` storage engines.
+
 ## [0.2.0] - 2026-07-30
 
 ### Added

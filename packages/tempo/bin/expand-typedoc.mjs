@@ -6,33 +6,49 @@ import ts from 'typescript';
 const __filename = fileURLToPath(import.meta.url);
 const tempoDir = path.dirname(path.dirname(__filename));
 const libraryDir = path.resolve(tempoDir, '../library');
-const htmlOutputDir = path.resolve(tempoDir, 'public/api/library/types');
 
-console.log('🔍 Running Phase 3: TypeDoc Compiler API Type Expansion Post-Processor...');
+console.log('🔍 Running TypeDoc Compiler API Type Expansion Post-Processor...');
 
-// 1. Load TypeScript program for @magmacomputing/library
-const entryPoints = [
-	path.resolve(libraryDir, 'src/common.index.ts'),
-	path.resolve(libraryDir, 'src/browser.index.ts'),
-	path.resolve(libraryDir, 'src/server.index.ts')
+const targets = [
+	{
+		name: '@magmacomputing/library',
+		dir: libraryDir,
+		entryPoints: [
+			path.resolve(libraryDir, 'src/common.index.ts'),
+			path.resolve(libraryDir, 'src/browser.index.ts'),
+			path.resolve(libraryDir, 'src/server.index.ts')
+		],
+		tsconfigPath: path.resolve(libraryDir, 'tsconfig.json'),
+		htmlOutputDir: path.resolve(tempoDir, 'public/api/library/types')
+	},
+	{
+		name: '@magmacomputing/tempo',
+		dir: tempoDir,
+		entryPoints: [
+			path.resolve(tempoDir, 'src/tempo.index.ts')
+		],
+		tsconfigPath: path.resolve(tempoDir, 'tsconfig.build.json'),
+		htmlOutputDir: path.resolve(tempoDir, 'public/api/types')
+	}
 ];
 
-const tsconfigPath = path.resolve(libraryDir, 'tsconfig.json');
-const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
-const parsedCmd = ts.parseJsonConfigFileContent(configFile.config, ts.sys, libraryDir);
+for (const target of targets) {
+	if (!fs.existsSync(target.htmlOutputDir)) {
+		console.warn(`⚠️ Skipping ${target.name}: HTML output directory does not exist yet (${target.htmlOutputDir})`);
+		continue;
+	}
 
-const program = ts.createProgram(entryPoints, parsedCmd.options);
-const checker = program.getTypeChecker();
+	const configFile = ts.readConfigFile(target.tsconfigPath, ts.sys.readFile);
+	const parsedCmd = ts.parseJsonConfigFileContent(configFile.config, ts.sys, target.dir);
 
-// 2. Map of typeName -> expanded type declaration string
-const typeMap = new Map();
+	const program = ts.createProgram(target.entryPoints, parsedCmd.options);
+	const checker = program.getTypeChecker();
+	const typeMap = new Map();
 
-for (const sourceFile of program.getSourceFiles()) {
-	if (sourceFile.isDeclarationFile) continue;
-
-	ts.forEachChild(sourceFile, (node) => {
+	function visit(node, currentNamespace = '') {
 		if (ts.isTypeAliasDeclaration(node) && node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) {
 			const typeName = node.name.text;
+			const fullKey = currentNamespace ? `${currentNamespace}.${typeName}` : typeName;
 			const rhsNode = node.type;
 			const rhsType = checker.getTypeAtLocation(rhsNode);
 
@@ -44,7 +60,6 @@ for (const sourceFile of program.getSourceFiles()) {
 				ts.TypeFormatFlags.AllowUniqueESSymbolType
 			);
 
-			// Fallback to node.type.getText() if typeToString returns the typeAlias identifier itself
 			if (expanded === typeName || expanded.startsWith(`${typeName}<`)) {
 				expanded = rhsNode.getText();
 			}
@@ -53,34 +68,40 @@ for (const sourceFile of program.getSourceFiles()) {
 			const fullSignature = typeParams ? `${typeName}<${typeParams}> = ${expanded}` : `${typeName} = ${expanded}`;
 
 			typeMap.set(typeName, fullSignature);
+			typeMap.set(fullKey, fullSignature);
+		} else if (ts.isModuleDeclaration(node) && node.body) {
+			const nsName = node.name.text;
+			const nextNs = currentNamespace ? `${currentNamespace}.${nsName}` : nsName;
+			ts.forEachChild(node.body, child => visit(child, nextNs));
 		}
-	});
-}
+	}
 
-console.log(`Found ${typeMap.size} exported type aliases from @magmacomputing/library source.`);
+	for (const sourceFile of program.getSourceFiles()) {
+		if (sourceFile.isDeclarationFile) continue;
+		ts.forEachChild(sourceFile, node => visit(node));
+	}
 
-// 3. Scan generated HTML files in public/api/library/types/
-if (!fs.existsSync(htmlOutputDir)) {
-	console.error(`❌ Output directory ${htmlOutputDir} does not exist. Run TypeDoc first.`);
-	process.exit(1);
-}
+	console.log(`Found ${typeMap.size} type alias mappings for ${target.name}.`);
 
-const htmlFiles = fs.readdirSync(htmlOutputDir).filter(f => f.endsWith('.html'));
-let processedCount = 0;
+	const htmlFiles = fs.readdirSync(target.htmlOutputDir).filter(f => f.endsWith('.html'));
+	let processedCount = 0;
 
-for (const file of htmlFiles) {
-	const filePath = path.join(htmlOutputDir, file);
-	let html = fs.readFileSync(filePath, 'utf-8');
+	for (const file of htmlFiles) {
+		const filePath = path.join(target.htmlOutputDir, file);
+		let html = fs.readFileSync(filePath, 'utf-8');
 
-	// Extract the type alias name from filename or page title (e.g. common.index.CountOf.html -> CountOf)
-	const match = file.match(/common\.index\.([A-Za-z0-9_$]+)\.html$/);
-	if (!match) continue;
+		// Extract type identifier from filename e.g.:
+		// - common.index.CountOf.html -> CountOf
+		// - Tempo.DateTime.html -> Tempo.DateTime or DateTime
+		// - Tempo.WEEKDAY-1.html -> Tempo.WEEKDAY or WEEKDAY
+		const cleanName = file.replace(/\.html$/, '').replace(/-\d+$/, '');
+		const parts = cleanName.split('.');
+		const typeName = parts[parts.length - 1];
 
-	const typeName = match[1];
-	const expandedSig = typeMap.get(typeName);
+		const expandedSig = typeMap.get(cleanName) || typeMap.get(typeName);
 
-	if (expandedSig) {
-		const injectionHtml = `
+		if (expandedSig && !html.includes('expanded-type-details')) {
+			const injectionHtml = `
 <details class="tsd-accordion expanded-type-details" style="margin-top: 12px; margin-bottom: 16px; border: 1px solid var(--color-accent, #3b82f6); border-radius: 6px; padding: 8px 12px; background: rgba(59, 130, 246, 0.05);" open>
   <summary class="tsd-accordion-summary" style="cursor: pointer; font-weight: 600; color: var(--color-accent, #3b82f6); font-size: 0.9em; display: flex; align-items: center; gap: 6px;">
     <span>🔍 Expanded Type Evaluation (Compiler API)</span>
@@ -91,18 +112,18 @@ for (const file of htmlFiles) {
 </details>
 `;
 
-		// Inject directly after <div class="tsd-signature">...</div>
-		const signatureEndIdx = html.indexOf('</div>', html.indexOf('class="tsd-signature"'));
-		if (signatureEndIdx !== -1) {
-			const insertPos = signatureEndIdx + 6;
-			html = html.slice(0, insertPos) + injectionHtml + html.slice(insertPos);
-			fs.writeFileSync(filePath, html, 'utf-8');
-			processedCount++;
+			const signatureEndIdx = html.indexOf('</div>', html.indexOf('class="tsd-signature"'));
+			if (signatureEndIdx !== -1) {
+				const insertPos = signatureEndIdx + 6;
+				html = html.slice(0, insertPos) + injectionHtml + html.slice(insertPos);
+				fs.writeFileSync(filePath, html, 'utf-8');
+				processedCount++;
+			}
 		}
 	}
-}
 
-console.log(`✅ Injected expanded type definitions into ${processedCount} HTML pages in public/api/library/types/`);
+	console.log(`✅ Injected expanded type definitions into ${processedCount} HTML pages in ${path.relative(tempoDir, target.htmlOutputDir)}`);
+}
 
 function escapeHtml(str) {
 	return str

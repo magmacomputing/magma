@@ -40,11 +40,25 @@ initAI({
       id: 'local', 
       key: 'no-key-needed',
       url: 'http://localhost:11434/v1/chat/completions',
-      model: 'your-local-model'
+      model: 'your-local-model',
+      options: { timeout: 5000 } // Custom provider-level timeout (5s)
     }
   ]
 });
 ```
+
+### Dynamic Provider Manifests & Air-Gapped Fallback
+
+By default, `@magmacomputing/tempo-plugin-ai` lazily fetches provider defaults (model IDs, endpoints, token parameter keys) from `https://tempo.magmacomputing.com.au/providers.v1.json` once per application lifecycle.
+
+- **Fail-Open & Air-Gapped Fallback**: If the network request fails, times out (1500ms limit), or the application is running offline or in an air-gapped environment, `initAI()` automatically and silently falls back to compiled local defaults (`DEFAULT_PROVIDERS`).
+- **Disabling Remote Manifest**: Pass `remoteConfigUrl: false` to disable remote manifest fetching entirely:
+  ```typescript
+  initAI({
+    providers: [{ id: 'groq', key: process.env.GROQ_API_KEY! }],
+    remoteConfigUrl: false // Disable remote manifest fetching
+  });
+  ```
 
 ### Frontend Security Warning
 > [!CAUTION]

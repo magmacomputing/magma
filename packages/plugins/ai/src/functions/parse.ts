@@ -9,7 +9,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
   const isDebug = options?.debug ?? _state.config.debug ?? false;
   const normalizedStr = normalizeCacheInput(str);
 
-  const { force, debug, mode: aiMode, providers, minConfidence, softErrors, cache: aiCacheOption, ...coreOptions } = options || {};
+  const { force, debug, mode: aiMode, providers, minConfidence, softErrors, cache: aiCacheOption, timeout: callTimeout, ...coreOptions } = options || {};
 
   let tz: string, cal: string, loc: string, sph: string, anchorStr: string;
   if (Tempo.isTempo(options?.anchor)) {
@@ -30,15 +30,37 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
   const anchorTempo = new Tempo(anchorStr, { ...coreOptions, timeZone: tz, calendar: cal, locale: loc, sphere: sph as any });
   const cacheSalt = anchorTempo.format('{yyyy}-{mm}-{dd}');
   const cacheKey = `${normalizedStr}::${cacheSalt}::${tz}::${cal}::${loc}::${sph}`;
+  const adapter = options?.cacheAdapter ?? _state.config.cacheAdapter;
 
   let cachedIso: string | undefined;
   if (!force && aiCacheOption !== false) {
-    if (Tempo.cache.has(cacheKey)) {
-      cachedIso = Tempo.cache.get(cacheKey);
-    } else if (Tempo.cache.has(normalizedStr)) {
-      cachedIso = Tempo.cache.get(normalizedStr);
-    } else if (Tempo.cache.has(str)) {
-      cachedIso = Tempo.cache.get(str);
+    if (adapter) {
+      try {
+        const val1 = await adapter.get(cacheKey);
+        if (val1) {
+          cachedIso = val1;
+        } else {
+          const val2 = await adapter.get(normalizedStr);
+          if (val2) {
+            cachedIso = val2;
+          } else {
+            const val3 = await adapter.get(str);
+            if (val3) cachedIso = val3;
+          }
+        }
+      } catch (err: any) {
+        if (isDebug) console.log('[tempo-plugin-ai] Cache adapter read error:', err?.message);
+      }
+    }
+
+    if (!cachedIso) {
+      if (Tempo.cache.has(cacheKey)) {
+        cachedIso = Tempo.cache.get(cacheKey);
+      } else if (Tempo.cache.has(normalizedStr)) {
+        cachedIso = Tempo.cache.get(normalizedStr);
+      } else if (Tempo.cache.has(str)) {
+        cachedIso = Tempo.cache.get(str);
+      }
     }
   }
 
@@ -99,7 +121,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
     for (const provider of availableProviders) {
       try {
-        const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug);
+        const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug, undefined, callTimeout);
         const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
         const parsedData = JSON.parse(cleanContent);
 
@@ -135,7 +157,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
     const parentController = new AbortController();
     try {
       const promises = availableProviders.map(async (provider) => {
-        const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug, parentController.signal);
+        const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug, parentController.signal, callTimeout);
         const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
         return { parsedData: JSON.parse(cleanContent), providerId, rateLimits };
       });
@@ -148,7 +170,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
   } else if (mode === AiMode.Consensus) {
     const promises = availableProviders.map(async (provider) => {
-      const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug);
+      const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug, undefined, callTimeout);
       const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
       return { parsedData: JSON.parse(cleanContent), providerId, rateLimits };
     });
@@ -195,7 +217,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
   _state.limits = successfulResult?.rateLimits ?? null;
 
-  const { parsedData, providerId } = successfulResult!;
+  const { parsedData, providerId, rateLimits } = successfulResult!;
   const rawIso = typeof parsedData?.iso === 'string' ? parsedData.iso : 'INVALID';
   const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : (rawIso === 'INVALID' ? 0.0 : 1.0);
   const ambiguous = Boolean(parsedData?.ambiguous || rawIso === 'INVALID');
@@ -215,13 +237,26 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
       rawIso: rawIso === 'INVALID' ? 'INVALID' : rawIso,
       reasoning: isDebug ? reasoning : undefined,
       rawPrompt: isDebug ? str : undefined,
-      normalizedPrompt: isDebug ? normalizedStr : undefined
+      normalizedPrompt: isDebug ? normalizedStr : undefined,
+      limits: rateLimits ?? undefined
     });
   }
 
   const parsedIso = `${rawIso.replace(/Z$/i, '')}[${tz}]`;
 
+  // Determine TTL hierarchy: options.ttl > provider.ttl > global config.ttl > 3600000 (1 hour)
+  const winningProvider = availableProviders.find(p => p.id === providerId);
+  const resolvedTtl = options?.ttl ?? winningProvider?.ttl ?? _state.config.ttl ?? 3600000;
+
   if (aiCacheOption !== false) {
+    if (adapter) {
+      try {
+        const res = adapter.set(cacheKey, parsedIso, resolvedTtl);
+        if (res instanceof Promise) await res;
+      } catch (err: any) {
+        if (isDebug) console.log('[tempo-plugin-ai] Cache adapter write error:', err?.message);
+      }
+    }
     Tempo.cache.set(cacheKey, parsedIso);
   }
 
@@ -235,7 +270,8 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
     rawIso,
     reasoning: isDebug ? reasoning : undefined,
     rawPrompt: isDebug ? str : undefined,
-    normalizedPrompt: isDebug ? normalizedStr : undefined
+    normalizedPrompt: isDebug ? normalizedStr : undefined,
+    limits: rateLimits ?? undefined
   });
 }
 

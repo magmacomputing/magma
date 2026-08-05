@@ -2,6 +2,7 @@
 export { TempoAiError } from './core/error.js';
 export * from './core/types.js';
 export * from './core/config.js';
+export { loadRemoteManifest, resetManifestCache, DEFAULT_REMOTE_MANIFEST_URL } from './core/manifest.js';
 export { initAI, clearAiCache, getAiRateLimits } from './core/init.js';
 
 // AI Function Handlers

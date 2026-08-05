@@ -82,6 +82,23 @@ const agreed = await parseAI("The penultimate Tuesday before Thanksgiving", {
 });
 ```
 
+## Timeout Controls & SLAs
+
+Prevent hanging requests using the 3-tier timeout hierarchy (`call-site` > `provider` > `global` > `default 15s`):
+
+```typescript
+// Global timeout across all AI requests
+initAI({
+  providers: [
+    { id: 'groq', key: process.env.GROQ_API_KEY, options: { timeout: 2000 } } // 2s timeout for fast provider
+  ],
+  timeout: 5000 // 5s global default timeout
+});
+
+// Hard 3-second SLA override for a specific call-site
+const dt = await parseAI("Next Tuesday at 4pm", { timeout: 3000 });
+```
+
 ## Debugging & Forced Evaluation
 
 When building your LLM queries, it is often useful to see exactly how AI functions route your data. 

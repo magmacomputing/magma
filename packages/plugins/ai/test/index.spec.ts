@@ -8,6 +8,10 @@ describe('AI Parsing Plugin', () => {
 	const isLiveTest = Boolean(process.env.LIVE_AI_TEST && liveApiKey);
 
 	beforeEach(() => {
+		vi.spyOn(console, 'warn').mockImplementation(() => {});
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+		vi.spyOn(console, 'log').mockImplementation(() => {});
+
 		if (isLiveTest) {
 			initAI({
 				providers: [{ id: liveProviderId, key: liveApiKey! }]
@@ -20,7 +24,7 @@ describe('AI Parsing Plugin', () => {
 	});
 
 	afterEach(() => {
-		vi.restoreAllMocks();
+		vi.clearAllMocks();
 	});
 
 	it('should fall back to native parsing first and attach .ai metadata', async () => {
@@ -502,6 +506,26 @@ describe('AI Parsing Plugin', () => {
 			await parseAI('Thanksgiving 2026', { force: true });
 			expect(getAiRateLimits()?.resetAt).toBeDefined();
 			expect(getAiRateLimits()?.resetAt?.isValid).toBe(true);
+		});
+
+		it('should attach limits snapshot directly to the returned Tempo instance .ai property', async () => {
+			initAI({ providers: [{ id: 'groq', key: 'test-key' }] });
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), {
+				status: 200,
+				headers: new Headers({
+					'x-ratelimit-remaining-requests': '499',
+					'x-ratelimit-remaining-tokens': '99500'
+				})
+			}));
+
+			const result = await parseAI('Thanksgiving 2026', { force: true });
+			expect(result.ai?.limits).toBeDefined();
+			expect(result.ai?.limits?.remainingRequests).toBe(499);
+			expect(result.ai?.limits?.remainingTokens).toBe(99500);
 		});
 
 		it('should ignore invalid or malformed duration strings without throwing or crashing', async () => {

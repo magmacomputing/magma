@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Tempo Full Bundle Test</title>
+	<title>Tempo esm.sh Test</title>
 	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 	<style>
 		:root {
@@ -203,10 +203,11 @@
 	<div class="container">
 		<div class="glass-card">
 			<h1>Tempo</h1>
-			<div class="subtitle">Full Bundle Test</div>
+			<div class="subtitle">esm.sh Smart CDN Test</div>
 			
 			<div class="code-block">
-				<code><span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo'</span>;
+				<code><span class="keyword">import</span> <span class="string">'@js-temporal/polyfill'</span>;
+<span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo'</span>;
 
 <span class="keyword">const</span> t = <span class="keyword">new</span> <span class="type">Tempo</span>(<span class="string">'next friday'</span>);
 t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span>);</code>
@@ -226,9 +227,8 @@ t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span
 	<script type="importmap">
 	{
 		"imports": {
-			"jsbi": "https://cdn.jsdelivr.net/npm/jsbi@4.3.0/dist/jsbi.mjs",
-			"@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4.0.0/dist/tempo.bundle.esm.js",
-			"@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js"
+			"@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
+			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@3"
 		}
 	}
 	</script>

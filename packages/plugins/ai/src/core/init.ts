@@ -1,5 +1,6 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { DEFAULT_PROVIDERS } from './config.js';
+
+import { getResolvedProviderDefaults, loadRemoteManifest } from './manifest.js';
 import { normalizeCacheInput, assertNoReservedProviderId } from './support.js';
 import type { AiConfig, AiRateLimits, AiProvider } from './types.js';
 
@@ -15,9 +16,14 @@ export function initAI(config: AiConfig): void {
   if (config.providers)
     assertNoReservedProviderId(config.providers);
 
+  const remoteUrl = config.remoteConfigUrl ?? _state.config.remoteConfigUrl;
+
+  if (remoteUrl !== false)
+    loadRemoteManifest(remoteUrl, undefined, config.debug ?? _state.config.debug).catch(() => { });
+
   const resolvedProviders = config.providers ? config.providers.map(p => {
     const normalizedId = p.id?.toLowerCase() ?? '';
-    const defaults = DEFAULT_PROVIDERS[normalizedId] || DEFAULT_PROVIDERS.openai;
+    const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
     return {
       ...defaults,
       ...p
@@ -31,11 +37,23 @@ export function initAI(config: AiConfig): void {
   };
 
   if (config.cache) {
-    Tempo.init({ cache: config.cache as any });
+    Tempo.init({ cache: config.cache, silent: true });
   }
 }
 
-export function clearAiCache(input: string | string[]): void {
+export function clearAiCache(input?: string | string[]): void {
+  const adapter = _state.config.cacheAdapter;
+
+  if (!input) {
+    if (adapter?.clear) {
+      try {
+        const res = adapter.clear();
+        if (res instanceof Promise) res.catch(() => {});
+      } catch {}
+    }
+    return;
+  }
+
   const inputs = Array.isArray(input) ? input : [input];
   for (const i of inputs) {
     const normalized = normalizeCacheInput(i);
@@ -43,6 +61,21 @@ export function clearAiCache(input: string | string[]): void {
     Tempo.cache.delete(normalized);
     Tempo.cache.delete(i);
     Tempo.cache.deletePrefix(prefix);
+
+    if (adapter) {
+      try {
+        if (adapter.delete) {
+          const res1 = adapter.delete(normalized);
+          if (res1 instanceof Promise) res1.catch(() => {});
+          const res2 = adapter.delete(i);
+          if (res2 instanceof Promise) res2.catch(() => {});
+        }
+        if (adapter.clear) {
+          const resClear = adapter.clear(prefix);
+          if (resClear instanceof Promise) resClear.catch(() => {});
+        }
+      } catch {}
+    }
   }
 }
 

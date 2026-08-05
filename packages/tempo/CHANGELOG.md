@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Cache Serialization (`toJSON`)**: Added native `toJSON()` serialization support to `BoundedCache` and the `Tempo.cache` facade object. Calling `Tempo.cache.toJSON()` or `JSON.stringify(Tempo.cache)` now cleanly converts active, non-expired in-memory cache entries into a plain key-value JavaScript object.
+- **AI Context & IDE Integration (`llms.txt`)**: Published official standardized `llms.txt` and `llms-full.txt` context bundles at `https://tempo.magmacomputing.com.au` to enable zero-hallucination code generation for IDE tools (Cursor, VS Code / GitHub Copilot, Antigravity) and web AI interfaces (ChatGPT, Claude, Gemini).
+- **Automated Doc Harvester**: Created `bin/generate-llms-txt.mjs` monorepo build script integrated into `npm run docs:build` to harvest all 56 markdown documentation files into a unified `llms-full.txt` corpus.
+- **AI Documentation Guide**: Added a dedicated `AI & IDE Integration` guide (`doc/1-getting-started/ai-integration.md`) featured directly in the primary VitePress navigation sidebar under Getting Started.
 
 ## [3.11.0] - 2026-07-31
 
