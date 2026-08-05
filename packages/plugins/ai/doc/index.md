@@ -42,8 +42,8 @@ npm install @magmacomputing/tempo-plugin-ai
 ```typescript
 import { parseAI, initAI, clearAiCache } from '@magmacomputing/tempo-plugin-ai';
 
-// Initialize with your BYOK API Key
-initAI({
+// Initialize with your BYOK API Key (await is optional if guaranteeing remote manifest resolution)
+await initAI({
   providers: [
     { id: 'openai', key: process.env.OPENAI_API_KEY, model: 'your-preferred-model' },
   ],
@@ -51,7 +51,7 @@ initAI({
 });
 ```
 
-> **Tip**: `initAI` is fully re-callable! You can invoke it multiple times during your application's lifecycle to hot-swap API keys or update your fallback providers mid-stream without restarting your server.
+> **Tip**: `initAI` returns a `Promise<void>` and is fully re-callable! Calling it synchronously without `await` instantly initializes local defaults so you can call `parseAI` immediately, while `await initAI()` guarantees that remote provider manifest overrides are fetched and applied before proceeding.
 
 ```typescript
 // Parse a complex natural language string!

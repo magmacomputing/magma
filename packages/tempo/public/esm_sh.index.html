@@ -26,7 +26,8 @@
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			overflow: hidden;
+			overflow-x: hidden;
+			overflow-y: auto;
 		}
 
 		.blob {
@@ -105,7 +106,7 @@
 		}
 
 		.subtitle {
-			color: var(--secondary);
+			color: #c4b5fd;
 			font-size: 0.9rem;
 			font-weight: 600;
 			text-transform: uppercase;
@@ -228,7 +229,7 @@ t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span
 	{
 		"imports": {
 			"@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
-			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@3"
+			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@3.11.1"
 		}
 	}
 	</script>

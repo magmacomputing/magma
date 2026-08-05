@@ -15,10 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Timeout-Triggered Provider Cascade**: Stalled or slow provider requests trigger an `AbortSignal` cancellation, allowing `AiMode.Fallback` to instantly cascade to secondary providers and `AiMode.Race` to clean up lagging request promises.
 - **Request-Locked `.ai.limits` Metadata**: Attached `limits` (`remainingRequests`, `remainingTokens`, `resetAt`) directly to the `.ai` metadata container (`TempoAiMeta`) of returned `Tempo` instances, locking HTTP header rate-limit snapshots to individual requests and preventing concurrency overwrites.
 - **Async Storage Adapters (`AiCacheAdapter`)**: Introduced custom storage engine support (`AiCacheAdapter`) in `initAI` and `parseAI` for distributed serverless environments (e.g. Upstash Redis, Cloudflare KV, Memcached).
-- **Cascading Cache TTL Hierarchy**: Implemented strict 4-tier TTL resolution (`options.ttl` > `provider.ttl` > `global config.ttl` > default 1 hour) for fine-grained cache entry expiration control.
+- **Cascading Cache TTL Hierarchy**: Implemented strict 4-tier TTL resolution (`options.ttl` > `provider.ttl` > `global config.ttl` > default 1 hour) for fine-grained cache entry expiration control on stores enforcing TTL.
 - **Fail-Open Storage Resilience**: Custom cache adapter errors during `get()` or `set()` operations fail open silently to direct LLM resolution, preserving application request uptime.
 - **Dynamic Remote Provider Manifest (`loadRemoteManifest`)**: Lazily fetches remote provider defaults (`providers.v1.json`) on initialization with a 1500ms timeout and automatic air-gapped fallback to compiled `DEFAULT_PROVIDERS`.
-- **Cache Eviction Synchronization**: Enhanced `clearAiCache()` to flush matching keys and prefixes across both `Tempo.cache` and custom `AiCacheAdapter` storage engines.
+- **Cache Eviction Synchronization**: Enhanced `clearAiCache()` to flush matching keys and prefixes across both `Tempo.cache` and custom `AiCacheAdapter` storage engines, returning `Promise<void>` to await async adapter eviction.
 
 ## [0.2.0] - 2026-07-30
 

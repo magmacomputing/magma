@@ -52,7 +52,7 @@ clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");
 * 🤖 **Multi-Provider Routing**: Native support for Groq, OpenAI, Gemini, Mistral, and local Ollama nodes with automatic fallback.
 * 🌐 **Dynamic Provider Manifest**: Model IDs and endpoints are lazily updated via hosted JSON manifests with 1500ms fail-open air-gapped fallbacks.
 * ⚡ **Two-Tier Caching**: Combines fast local in-memory LRU caching (`BoundedCache`) with optional async storage adapters (`AiCacheAdapter` for Redis / Cloudflare KV).
-* ⏱️ **Cascading TTL Policies**: Granular TTL control at call-site, provider, or global levels.
+* ⏱️ **Cascading TTL Policies**: Granular TTL control at call-site, provider, or global levels for TTL-enforcing storage adapters (built-in `Tempo.cache` maintains its independently configured TTL).
 * 🛡️ **Fail-Safe Confidence Bounds**: Configurable `minConfidence` thresholds and array batch processing with soft-error handling.
 
 ---

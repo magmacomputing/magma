@@ -9,7 +9,7 @@
  * Called automatically by `npm run prebuild`.
  */
 import pkg from '../package.json' with { type: 'json' };
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,5 +28,13 @@ export const TEMPO_VERSION = '${version}';
 `;
 
 writeFileSync(versionFile, content, 'utf-8');
+
+const esmHtmlFile = resolve(__dirname, '../public/esm_sh.index.html');
+if (existsSync(esmHtmlFile)) {
+	let html = readFileSync(esmHtmlFile, 'utf-8');
+	html = html.replace(/https:\/\/esm\.sh\/@magmacomputing\/tempo@[^\"]+/, `https://esm.sh/@magmacomputing/tempo@${version}`);
+	writeFileSync(esmHtmlFile, html, 'utf-8');
+}
+
 console.log(`✅ Tempo version stamped: ${version}`);
 

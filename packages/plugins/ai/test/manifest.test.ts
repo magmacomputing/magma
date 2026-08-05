@@ -107,10 +107,7 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 			new Response(JSON.stringify(mockManifest), { status: 200 })
 		);
 
-		// Pre-load manifest
-		await loadRemoteManifest(DEFAULT_REMOTE_MANIFEST_URL);
-
-		initAI({
+		await initAI({
 			providers: [{ id: 'groq', key: 'test-key' }]
 		});
 
@@ -130,9 +127,7 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 			new Response(JSON.stringify(mockManifest), { status: 200 })
 		);
 
-		await loadRemoteManifest(DEFAULT_REMOTE_MANIFEST_URL);
-
-		initAI({
+		await initAI({
 			providers: [{ id: 'openai', key: 'test-key' }]
 		});
 

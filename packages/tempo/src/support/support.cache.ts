@@ -188,10 +188,16 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 
 	/**
 	 * Returns a plain key-value object of all active non-expired cache entries.
+	 * Filters out non-string keys to prevent lossy key conversions or collisions (e.g. numeric 1 vs string "1").
 	 */
 	toJSON(): Record<string, V> {
 		this.evictExpired();
-		return Object.fromEntries(this.entries()) as Record<string, V>;
+		const stringEntries: [string, V][] = [];
+		for (const [k, v] of super.entries()) {
+			if (typeof k === 'string')
+				stringEntries.push([k, v]);
+		}
+		return Object.fromEntries(stringEntries) as Record<string, V>;
 	}
 
 	static fromEntries<K = string, V = string>(entries: Iterable<readonly [K, V]>, maxSize = 1000, ttl = 24 * 60 * 60 * 1000): BoundedCache<K, V> {

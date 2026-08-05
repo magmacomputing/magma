@@ -67,6 +67,18 @@ export async function fetchFromProvider(
   const url = provider.url!;
   const model = provider.model!;
 
+  if (!url || typeof url !== 'string')
+    throw new TempoAiError(`Provider ${provider.id} missing valid endpoint URL.`, 400);
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')))
+      throw new TempoAiError(`Provider ${provider.id} endpoint URL '${url}' must use secure HTTPS protocol.`, 400);
+  } catch (err: any) {
+    if (err instanceof TempoAiError) throw err;
+    throw new TempoAiError(`Provider ${provider.id} has invalid endpoint URL '${url}'.`, 400);
+  }
+
   const systemPrompt = `You are a high-performance date parser. Read the user's string and the provided context. Return ONLY a valid JSON object matching this exact schema:
 {
   "reasoning": "Step-by-step calendar math from Current Time.",
@@ -107,6 +119,7 @@ Do not include markdown blocks or any text outside the JSON.`;
   try {
     const response = await fetch(url, {
       method: 'POST',
+      redirect: 'error',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${provider.key}`

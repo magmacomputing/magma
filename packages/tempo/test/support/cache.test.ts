@@ -83,6 +83,15 @@ describe('Tempo Core Caching Architecture', () => {
 			expect(cache.toJSON()).toEqual({ k1: 'v1', k2: 'v2' });
 			expect(JSON.stringify(cache)).toBe('{"k1":"v1","k2":"v2"}');
 		});
+
+		it('should prevent lossy key conversion and silent key merging in toJSON() for distinct numeric and string keys', () => {
+			const cache = new BoundedCache<any, string>(10, 10000);
+			cache.set(1, 'numeric_one');
+			cache.set('1', 'string_one');
+
+			const json = cache.toJSON();
+			expect(json).toEqual({ '1': 'string_one' });
+		});
 	});
 
 	describe('Tempo.CACHE Enum & Facade', () => {

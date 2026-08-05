@@ -109,7 +109,7 @@ When prompting AI assistants (Cursor, GitHub Copilot, ChatGPT, Claude) to write 
 2. **Explicit Token Request**: Ask the LLM to use Tempo's standard snippet tokens (`{yy}`, `{mon}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tzd}`) rather than raw, un-anchored regular expressions.
 3. **Example AI Prompt**:
    ```text
-   "Using https://tempo.magmacomputing.com.au/llms.txt, register a custom layout for strings like 'Q3 2026' using Tempo.config({ layouts: { ... } }) and snippet tokens."
+   "Using https://tempo.magmacomputing.com.au/llms.txt, register a custom layout for strings like 'Q3 2026' using Tempo.init({ registry: { layouts: { ... } } }) and snippet tokens."
    ```
 
 ---

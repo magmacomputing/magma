@@ -51,6 +51,15 @@ initAI({
 
 By default, `@magmacomputing/tempo-plugin-ai` lazily fetches provider defaults (model IDs, endpoints, token parameter keys) from `https://tempo.magmacomputing.com.au/providers.v1.json` once per application lifecycle.
 
+- **Async Resolution & Promise Lifecycle**: `initAI()` returns a `Promise<void>`.
+  - **Synchronous Fire-and-Forget**: Calling `initAI(...)` synchronously without `await` immediately initializes system state with compiled local provider defaults (`DEFAULT_PROVIDERS`). You can execute `parseAI()` immediately on the next line without blocking. The remote manifest is fetched in the background and transparently updates provider defaults once received.
+  - **Guaranteed Remote Resolution**: If your application strictly requires remote provider defaults to be resolved before executing your first AI request, you can `await initAI(...)`:
+    ```typescript
+    // Await guaranteed remote manifest completion before proceeding
+    await initAI({
+      providers: [{ id: 'groq', key: process.env.GROQ_API_KEY! }]
+    });
+    ```
 - **Fail-Open & Air-Gapped Fallback**: If the network request fails, times out (1500ms limit), or the application is running offline or in an air-gapped environment, `initAI()` automatically and silently falls back to compiled local defaults (`DEFAULT_PROVIDERS`).
 - **Disabling Remote Manifest**: Pass `remoteConfigUrl: false` to disable remote manifest fetching entirely:
   ```typescript

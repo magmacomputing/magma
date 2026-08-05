@@ -9,7 +9,7 @@ The plugin automatically tracks these limits by reading the standard `x-ratelimi
 Quota and rate-limit metadata can be inspected in two convenient ways:
 
 ### 1. Request-Locked Instance Metadata (`dt.ai.limits`)
-Every `Tempo` instance returned by `parseAI` includes a frozen `.ai.limits` snapshot representing the exact rate limit state returned by the provider HTTP headers for *that specific request*:
+Every `Tempo` instance returned by `parseAI` includes a frozen `.ai.limits` snapshot representing the rate limit state returned by provider HTTP headers for *that specific request*. Note that `.ai.limits` is guaranteed only for provider-backed network requests where rate-limit headers are returned by the selected provider; results resolved via native parsing (`provider: 'native'`) or cache hits (`provider: 'cache'`) may omit `.ai.limits` (`undefined`).
 
 ```typescript
 const dt = await parseAI("The third Friday of next month");
@@ -135,15 +135,21 @@ import { Redis } from '@upstash/redis';
 
 const redis = new Redis({ url: process.env.UPSTASH_URL!, token: process.env.UPSTASH_TOKEN! });
 
-// Implement custom async Redis storage adapter
+// Implement custom async Redis storage adapter with namespacing & prefix deletion support
 const redisAdapter: AiCacheAdapter = {
-  get: async (key) => (await redis.get<string>(key)) ?? undefined,
+  get: async (key) => (await redis.get<string>(`tempo:ai:${key}`)) ?? undefined,
   set: async (key, value, ttlMs) => {
-    if (ttlMs) await redis.set(key, value, { px: ttlMs });
-    else await redis.set(key, value);
+    if (ttlMs) await redis.set(`tempo:ai:${key}`, value, { px: ttlMs });
+    else await redis.set(`tempo:ai:${key}`, value);
   },
-  delete: async (key) => { await redis.del(key); },
-  clear: async () => { /* optional prefix wipe */ }
+  delete: async (key) => {
+    await redis.del(`tempo:ai:${key}`);
+  },
+  clear: async (prefix) => {
+    const pattern = prefix ? `tempo:ai:${prefix}*` : `tempo:ai:*`;
+    const keys = await redis.keys(pattern);
+    if (keys.length > 0) await redis.del(...keys);
+  }
 };
 
 initAI({

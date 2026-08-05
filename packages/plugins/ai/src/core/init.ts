@@ -12,44 +12,72 @@ export const _state: {
   limits: null,
 }
 
-export function initAI(config: AiConfig): void {
+export function initAI(config: AiConfig): Promise<void> {
   if (config.providers)
     assertNoReservedProviderId(config.providers);
 
   const remoteUrl = config.remoteConfigUrl ?? _state.config.remoteConfigUrl;
 
-  if (remoteUrl !== false)
-    loadRemoteManifest(remoteUrl, undefined, config.debug ?? _state.config.debug).catch(() => { });
+  const resolveSyncProviders = (providers?: AiProvider[]) => {
+    if (!providers) return _state.config.providers;
+    return providers.map(p => {
+      const normalizedId = p.id?.toLowerCase() ?? '';
+      const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
+      return {
+        ...defaults,
+        ...p
+      } as AiProvider;
+    });
+  }
 
-  const resolvedProviders = config.providers ? config.providers.map(p => {
-    const normalizedId = p.id?.toLowerCase() ?? '';
-    const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
-    return {
-      ...defaults,
-      ...p
-    } as AiProvider;
-  }) : _state.config.providers;
-
+  // Synchronously update _state.config for immediate availability
   _state.config = {
     ..._state.config,
     ...config,
-    providers: resolvedProviders || []
+    providers: resolveSyncProviders(config.providers) || []
   };
 
   if (config.cache) {
     Tempo.init({ cache: config.cache, silent: true });
   }
+
+  return (async () => {
+    if (config.fetchDefaults && config.providers) {
+      const asyncProviders = await Promise.all(config.providers.map(async p => {
+        const normalizedId = p.id?.toLowerCase() ?? '';
+        const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
+        let hookOptions: Partial<AiProvider> | null = null;
+        try {
+          hookOptions = await config.fetchDefaults!(normalizedId);
+        } catch { }
+        return {
+          ...defaults,
+          ...(hookOptions ?? {}),
+          ...p
+        } as AiProvider;
+      }));
+      _state.config.providers = asyncProviders;
+    }
+
+    if (remoteUrl !== false) {
+      try {
+        await loadRemoteManifest(remoteUrl, undefined, config.debug ?? _state.config.debug);
+        _state.config.providers = resolveSyncProviders(config.providers ?? _state.config.providers);
+      } catch { }
+    }
+  })();
 }
 
-export function clearAiCache(input?: string | string[]): void {
+export async function clearAiCache(input?: string | string[]): Promise<void> {
   const adapter = _state.config.cacheAdapter;
 
   if (!input) {
+    Tempo.cache.clear();
     if (adapter?.clear) {
       try {
         const res = adapter.clear();
-        if (res instanceof Promise) res.catch(() => {});
-      } catch {}
+        if (res instanceof Promise) await res.catch(() => { });
+      } catch { }
     }
     return;
   }
@@ -66,15 +94,15 @@ export function clearAiCache(input?: string | string[]): void {
       try {
         if (adapter.delete) {
           const res1 = adapter.delete(normalized);
-          if (res1 instanceof Promise) res1.catch(() => {});
+          if (res1 instanceof Promise) await res1.catch(() => { });
           const res2 = adapter.delete(i);
-          if (res2 instanceof Promise) res2.catch(() => {});
+          if (res2 instanceof Promise) await res2.catch(() => { });
         }
         if (adapter.clear) {
           const resClear = adapter.clear(prefix);
-          if (resClear instanceof Promise) resClear.catch(() => {});
+          if (resClear instanceof Promise) await resClear.catch(() => { });
         }
-      } catch {}
+      } catch { }
     }
   }
 }

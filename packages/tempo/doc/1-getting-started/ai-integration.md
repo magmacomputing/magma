@@ -53,19 +53,21 @@ For web-based LLM interfaces, reference or copy-paste the full, un-truncated doc
 
 ## 🛠️ Prompting AI for Custom Layout Extensions
 
-When asking AI assistants to generate custom layout patterns for parsing unique date-time formats, instruct the model to use Tempo's configuration syntax (`Tempo.config({ layouts: { ... } })`) and named capture tokens (`{yy}`, `{mon}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tzd}`).
+When asking AI assistants to generate custom layout patterns for parsing unique date-time formats, instruct the model to use Tempo's configuration syntax (`Tempo.init({ registry: { layouts: { ... } } })`) and named capture tokens (`{yy}`, `{mon}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tzd}`).
 
 ### Sample Prompt:
-> *"Using the rules from https://tempo.magmacomputing.com.au/llms.txt, register a custom Tempo layout for fiscal quarters (e.g., 'Q3 2026') using `Tempo.config({ layouts: { ... } })` and parse a date using `Tempo.parse()`."*
+> *"Using the rules from https://tempo.magmacomputing.com.au/llms.txt, register a custom Tempo layout for fiscal quarters (e.g., 'Q3 2026') using `Tempo.init({ registry: { layouts: { ... } } })` and parse a date using `Tempo.parse()`."*
 
 ### Generated Code (Actual Tempo Syntax):
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
 // 1. Register custom layout pattern using snippet tokens
-Tempo.config({
-  layouts: {
-    fiscal_quarter: 'Q{nbr} {yy}'
+Tempo.init({
+  registry: {
+    layouts: {
+      fiscal_quarter: 'Q{nbr} {yy}'
+    }
   }
 });
 
