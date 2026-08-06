@@ -62,7 +62,8 @@ export async function fetchFromProvider(
   contextString: string,
   isDebug: boolean,
   parentSignal?: AbortSignal,
-  timeoutOverride?: number
+  timeoutOverride?: number,
+  customSystemPrompt?: string
 ): Promise<{ rawContent: string; providerId: string; rateLimits: ReturnType<typeof updateRateLimitsFromResponse> }> {
   const url = provider.url!;
   const model = provider.model!;
@@ -79,7 +80,7 @@ export async function fetchFromProvider(
     throw new TempoAiError(`Provider ${provider.id} has invalid endpoint URL '${url}'.`, 400);
   }
 
-  const systemPrompt = `You are a high-performance date parser. Read the user's string and the provided context. Return ONLY a valid JSON object matching this exact schema:
+  const defaultSystemPrompt = `You are a high-performance date parser. Read the user's string and the provided context. Return ONLY a valid JSON object matching this exact schema:
 {
   "reasoning": "Step-by-step calendar math from Current Time.",
   "iso": "Local ISO 8601 string (YYYY-MM-DDThh:mm:ss) without offset or Z suffix, or 'INVALID' if ambiguous/unparseable.",
@@ -96,6 +97,8 @@ Ambiguity Rules:
 - "granularity": Primary time precision level ('year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'unknown').
 
 Do not include markdown blocks or any text outside the JSON.`;
+
+  const systemPrompt = customSystemPrompt ?? defaultSystemPrompt;
 
 	if (isDebug)
 		console.log(`[tempo-plugin-ai] Querying provider '${provider.id}' (model: ${model})...`);

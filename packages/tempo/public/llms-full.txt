@@ -2607,13 +2607,11 @@ declare module '@magmacomputing/tempo' {
 There is a subtle but important distinction between how features are activated in Core mode:
 
 *   **`Tempo.extend(Module)`**: This is **Immediate and Explicit**. It applies the module to the class exactly when the line is executed. This is the recommended pattern for modular applications.
-*   **`Tempo.init()`**: This is **Discovery-Driven**. It scans the global environment for any plugins that were imported via side effects (e.g., `import '@magmacomputing/tempo/term'`) and hydrates the engine all at once.
+*   **`Tempo.init()`**: Establishes global baseline configuration at application startup and accepts explicit plugin registrations via `Tempo.init({ plugins: [...] })`.
 
-::: danger
-**The Initialization Lifecycle**: `Tempo.init()` performs a **full state refresh**. It resets configuration, Term registries, and formatting maps to defaults before re-applying all currently discovered plugins. To ensure your custom logic is managed correctly, always use `Tempo.extend()` or encapsulate changes within a formal plugin.
+::: note
+**Idempotent Initialization Lifecycle**: `Tempo.init()` is designed to establish baseline configuration once during startup. To register additional plugins dynamically after initialization, use `Tempo.extend(...)` rather than calling `Tempo.init()` again.
 :::
-
-**The Side-Effect Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** automatically appear on the `Tempo` class. Because `Tempo.init()` short-circuits once state already exists, re-calling it will not load those late modules. Use `Tempo.extend()` explicitly to activate late-loaded modules instead of trying to re-run `Tempo.init()`.
 
 
 
@@ -2920,17 +2918,20 @@ Modern Tempo plugins are designed to be "plug-and-play." By using the `definePlu
 :::
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ticker';         // 1. Module self-registers via side-effect
-import { Tempo } from '@magmacomputing/tempo/core';   // 2. Load the `lite` engine
+import { Tempo } from '@magmacomputing/tempo/core';   // 1. Load the `lite` engine
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker'; // 2. Import the plugin
 
-Tempo.init({ license: 'YOUR_JWT_KEY' });              // 3. Discover, verify, and activate all imported plugins
+Tempo.init({ 
+  license: 'YOUR_JWT_KEY',
+  plugins: [TickerPlugin]                             // 3. Register and activate plugin during init
+});
 
 // Ticker is now available on the core Tempo class!
 const pulse = Tempo.ticker(1); 
 ```
 
-> [!NOTE] Import Order
-> While older versions of Tempo were sensitive to import order, current versions handle sequencing robustly. `Tempo.init()` is automatically called during bootstrap to ensure all discovered plugins are integrated. If you dynamically load plugins later, you can call `Tempo.init()` manually to refresh the registry.
+> [!NOTE] Dynamic Extension
+> `Tempo.init()` establishes baseline configuration at startup and accepts a `plugins` array for explicit registration. To dynamically register plugins loaded later at runtime, use `Tempo.extend(Plugin)` directly rather than re-running `Tempo.init()`.
 
 ---
 
@@ -6868,63 +6869,96 @@ console.log(dt.ai);
 > [!CAUTION]
 > **LLM Output Disclaimer**: Magma Computing Solutions and the Tempo core maintainers provide `@magmacomputing/tempo-plugin-ai` "as-is" without warranty of any kind. Large Language Models are probabilistic text generators, not deterministic calculators. Developers and organization operators are solely responsible for validating AI-generated date and time outputs before relying on them in financial, legal, medical, or time-critical production systems.
 
-Tempo community plugin for LLM-powered natural language parsing.
+Tempo community plugin for LLM-powered natural language date parsing, schedule compilation, and temporal processing.
 
 This plugin bridges the gap between deterministic date-math and unstructured NLP inputs, utilizing large language models (like Gemini, Groq, or OpenAI) to safely and asynchronously parse, format, and process complex natural language temporal expressions into `Tempo` instances.
 
-> **Note**: This plugin is **not** a silver-bullet replacement for all your parsing needs! `Tempo.parse()` natively handles structured dates and formats phenomenally well using its Aliases, Layouts, and Snippets. The Tempo AI plugin is specifically designed to be an alternative path for handling completely unstructured, conversational human language that would otherwise be impossible to Regex.
->
-> **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). Client-side storage is vulnerable to XSS attacks, malicious scripts, and browser extension extraction, which can result in API key theft and quota abuse. BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, you must route requests through a secure backend proxy service.
+> **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, route requests through a secure backend proxy service.
 
-## Ideal Use-Cases
-
-Good AI function candidates (such as `parseAI`) represent unstructured, conversational, or event-driven natural language expressions that are impossible to Regex or parse with standard relative offset rules:
-
-- **Holiday & Relative Calendar Math**: `"The Friday after Thanksgiving"`, `"The penultimate Tuesday before Christmas"`
-- **Named Cultural / Event Terms**: `"Star Wars Day at 5pm"`, `"A fortnight after Labor Day"`
-- **Conversational Relative Terms**: `"The last working day of Q3"`, `"Midday on the summer solstice"`
-
-> **Avoid Simple Offsets**: Phrases like `"in 5 minutes"`, `"tomorrow"`, or `"next Friday"` are natively intercepted and resolved by core `Tempo` without calling the LLM (unless `force: true` is passed).
-
-## Installation
+## Installation & Quickstart
 
 ```bash
 npm install @magmacomputing/tempo-plugin-ai
 ```
 
-## Setup & Usage
+```typescript
+import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
+
+// Initialize provider farm (Node/SSR backend)
+await initAI({
+  providers: [{ id: 'groq', key: process.env.GROQ_API_KEY }]
+});
+
+// Parse natural language temporal expressions
+const dt = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
+console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
+```
+
+## AI Function Catalog
+
+| Function | Input | Output | Guide |
+| :--- | :--- | :--- | :--- |
+| **`initAI`** | Configuration object | `Promise<void>` | [Initialization & Provider Farm Guide](./ai.init.md) |
+| **`parseAI`** | Unstructured text string | `Promise<Tempo>` | [Point-in-Time Parsing Guide](./ai.parse.md) |
+| **`recurrenceAI`** | Natural language schedule OR RFC 5545 RRULE string | `Promise<TempoRecurrenceResult>` | [Recurrence & Schedules Guide](./ai.recurrence.md) |
+
+## Architecture & Infrastructure Guides
+
+> [!IMPORTANT]
+> **Production Recommendation**: Due to the complexities of LLM APIs, including caching gotchas, context injection, rate limits, and calendar math hallucinations, we politely but firmly recommend reading the dedicated guides below before deploying this plugin in a production environment. 
+
+Explore the architecture and security guides:
+- [Provider Architecture & Security](./ai.architecture.md) (BYOK vs Proxy patterns, Frontend Security)
+- [Context & Natural Language Parsing](./ai.context.md) (How Timezone and Locale are injected)
+- [Rate Limits & Cache Management](./ai.rate-limits.md) (Tracking API quotas, handling 429 errors, and custom Redis caches)
+
+## Licensing
+
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
+
+
+<!-- END DOCUMENT: 9-plugins/ai.index.md -->
+
+---
+
+
+<!-- START DOCUMENT: 9-plugins/ai.init.md -->
+# Document: 9-plugins/ai.init.md
+
+# `initAI` — Provider Initialization & Farm Configuration
+
+`initAI()` sets up the global configuration for `@magmacomputing/tempo-plugin-ai`, managing provider authentication, multi-provider execution modes, global SLAs/timeouts, and caching strategies.
+
+## Basic Usage
 
 ```typescript
-import { parseAI, initAI, clearAiCache } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
 
-// Initialize with your BYOK API Key (await is optional if guaranteeing remote manifest resolution)
+// Initialize with BYOK (Bring Your Own Key) provider credentials
 await initAI({
   providers: [
-    { id: 'openai', key: process.env.OPENAI_API_KEY, model: 'your-preferred-model' },
+    { id: 'groq', key: process.env.GROQ_API_KEY },
+    { id: 'openai', key: process.env.OPENAI_API_KEY, model: 'gpt-4o' }
   ],
-  debug: true // (Development-only) Enable verbose console logging
+  timeout: 5000, // 5-second global SLA default
+  debug: true    // Enable operational trace logging (development-only)
 });
 ```
 
 > **Tip**: `initAI` returns a `Promise<void>` and is fully re-callable! Calling it synchronously without `await` instantly initializes local defaults so you can call `parseAI` immediately, while `await initAI()` guarantees that remote provider manifest overrides are fetched and applied before proceeding.
 
-```typescript
-// Parse a complex natural language string!
-const dt1 = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
-
-// Evict bad parses from the cache
-clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");
-```
-
 ## Execution Modes & Multi-Provider Options
 
-The AI plugin supports multi-provider execution strategies (`fallback`, `race`, `consensus`) and confidence filtering on per-request options:
+The AI plugin supports three multi-provider execution strategies (`fallback`, `race`, `consensus`):
 
 ```typescript
 // 1. Fallback mode (default): query providers sequentially in array order until one succeeds
-const fallback = await parseAI("First Monday of November", { 
-  mode: 'fallback', // Default strategy if omitted
-  minConfidence: 0.8 // Require at least 0.8 confidence threshold
+initAI({
+  mode: 'fallback',
+  providers: [
+    { id: 'groq', key: process.env.GROQ_API_KEY },    // Primary provider
+    { id: 'openai', key: process.env.OPENAI_API_KEY } // Fallback provider
+  ]
 });
 
 // 2. Race mode: send concurrent requests to all providers, returning the fastest valid response
@@ -6933,7 +6967,7 @@ const fastest = await parseAI("Third Friday of October", { mode: 'race' });
 // 3. Consensus mode: query providers concurrently and boost confidence when outputs agree
 const agreed = await parseAI("The penultimate Tuesday before Thanksgiving", { 
   mode: 'consensus',
-  minConfidence: 0.85 // Require at least 0.85 confidence threshold
+  minConfidence: 0.85
 });
 ```
 
@@ -6942,7 +6976,6 @@ const agreed = await parseAI("The penultimate Tuesday before Thanksgiving", {
 Prevent hanging requests using the 3-tier timeout hierarchy (`call-site` > `provider` > `global` > `default 15s`):
 
 ```typescript
-// Global timeout across all AI requests
 initAI({
   providers: [
     { id: 'groq', key: process.env.GROQ_API_KEY, options: { timeout: 2000 } } // 2s timeout for fast provider
@@ -6954,40 +6987,136 @@ initAI({
 const dt = await parseAI("Next Tuesday at 4pm", { timeout: 3000 });
 ```
 
-## Debugging & Forced Evaluation
+## Operational Trace Logging & Debugging
 
-When building your LLM queries, it is often useful to see exactly how AI functions route your data. 
+**Operational Trace Logging**
+Passing `debug: true` into `initAI` (or setting `{ debug: true }` on a per-request options object) outputs concise operational trace logs (prefixed with `[tempo-plugin-ai]`) to the developer console for monitoring provider fallback decisions and execution timing.
 
-**Global Debugging**
-Passing `debug: true` into `initAI` is intended for **development environments only**. It will globally log system prompts, localized context, and raw LLM responses to the console. Because prompts, context, and responses may contain user-supplied or sensitive data, disable `debug: true` or redact sensitive logs in production.
+Detailed diagnostic context—including `rawPrompt`, `normalizedPrompt`, `reasoning`, confidence scores, and rate limit snapshots—is attached directly to the returned `Tempo` instance via the `.ai` property when `debug: true` is enabled.
 
-**Forced Evaluation**
-If a relative phrase (like `"Next Friday"`) would normally be resolved by the native `Tempo` engine or read from existing cache, you can skip native pre-parsing and cache lookups by passing `force: true`. The resulting LLM response is still written to `Tempo.cache` for subsequent lookups:
+> [!WARNING]
+> **Diagnostic Security Notice**: Inspecting or exposing the `.ai` metadata property (such as `rawPrompt` or `reasoning`) in public UI components or client-side telemetry may expose raw user inputs. Ensure sensitive diagnostic fields on `Tempo.ai` are sanitized before forwarding instances to external monitoring tools.
+
+## Configuration Options Reference
 
 ```typescript
-const dt = await parseAI("Next Friday", { 
-  anchor: '2026-09-01T00:00:00Z', 
-  force: true, // Skips native pre-parsing & cache lookup; forces an LLM request (result is cached)
-  debug: true  // Overrides the global debug flag for this specific request
+export interface AiConfig {
+  /** List of configured AI providers */
+  providers?: AiProvider[];
+  /** Default execution mode across providers ('fallback' | 'race' | 'consensus') */
+  mode?: 'fallback' | 'race' | 'consensus';
+  /** Global SLA timeout in milliseconds */
+  timeout?: number;
+  /** Global debug flag for operational trace logging */
+  debug?: boolean;
+  /** Synchronous Map or BoundedCache for static glossary terms */
+  cache?: Map<string, string>;
+  /** Custom cache adapter for distributed storage (e.g. Redis, KV) */
+  cacheAdapter?: AiCacheAdapter;
+}
+```
+
+
+<!-- END DOCUMENT: 9-plugins/ai.init.md -->
+
+---
+
+
+<!-- START DOCUMENT: 9-plugins/ai.parse.md -->
+# Document: 9-plugins/ai.parse.md
+
+# `parseAI` — Natural Language Point-in-Time Parsing
+
+`parseAI()` is the primary entry point for converting complex, unstructured natural language date/time expressions into deterministic `Tempo` instances.
+
+## Basic Usage
+
+```typescript
+import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
+
+// Initialize AI providers
+await initAI({
+  providers: [
+    { id: 'groq', key: process.env.GROQ_API_KEY }
+  ]
+});
+
+// Parse natural language
+const dt = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
+
+console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
+console.log(dt.ai?.confidence);             // 0.98
+```
+
+## Options & Overrides
+
+`parseAI(input, options)` accepts per-request options:
+
+```typescript
+const dt = await parseAI("Third Friday of October", {
+  anchor: '2026-05-10T12:00:00Z', // Anchor date for relative calculations
+  timeZone: 'Australia/Sydney',   // Context timezone
+  locale: 'en-AU',                // Context locale
+  minConfidence: 0.85,            // Require at least 0.85 confidence score
+  timeout: 3000,                  // 3-second SLA call-site timeout
+  force: true,                    // Skip native pre-parsing & cache lookup
+  debug: true                     // Enable operational trace logging & .ai metadata
 });
 ```
 
-## Documentation Topics
+## Multi-Provider Execution Modes
 
-> [!IMPORTANT]
-> **Production Recommendation**: Due to the complexities of LLM APIs, including caching gotchas, context injection, rate limits, and calendar math hallucinations, we politely but firmly recommend reading the three dedicated guides below before deploying this plugin in a production environment. 
+`parseAI` supports three execution strategies across your configured provider farm:
 
-To learn more about configuring and optimizing the AI Plugin, check out the dedicated guides:
-- [Provider Architecture & Security](./ai.architecture.md) (BYOK vs Proxy patterns, Frontend Security)
-- [Context & Natural Language Parsing](./ai.context.md) (How Timezone and Locale are injected)
-- [Rate Limits & Cache Management](./ai.rate-limits.md) (Tracking API quotas, handling 429 errors, and custom Redis caches)
+1. **Fallback (default)**: Queries providers sequentially in array order until one satisfies the confidence threshold.
+2. **Race (`mode: 'race'`)**: Sends requests concurrently to all providers, returning the fastest valid response.
+3. **Consensus (`mode: 'consensus'`)**: Queries providers concurrently, boosting confidence when outputs agree across providers.
 
-## Licensing
+```typescript
+// Consensus mode across multiple providers
+const agreed = await parseAI("First Monday of November", {
+  mode: 'consensus',
+  providers: [
+    { id: 'groq', key: process.env.GROQ_API_KEY },
+    { id: 'openai', key: process.env.OPENAI_API_KEY }
+  ]
+});
+```
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
+## Batch Array Parsing
+
+Pass an array of prompts to process multiple queries in parallel while preserving index ordering:
+
+```typescript
+const [dt1, dt2] = await parseAI([
+  "New Years Day 2026",
+  "Groundhog Day 2026"
+]);
+
+console.log(dt1.format('{yyyy}-{mm}-{dd}')); // 2026-01-01
+console.log(dt2.format('{yyyy}-{mm}-{dd}')); // 2026-02-02
+```
+
+## Diagnostic Metadata (`.ai`)
+
+When a date is parsed, a frozen diagnostic metadata object is attached to the returned `Tempo` instance:
+
+```typescript
+console.log(dt.ai);
+/*
+{
+  provider: 'groq',
+  cached: false,
+  confidence: 0.98,
+  ambiguous: false,
+  granularity: 'day',
+  rawIso: '2026-11-17T00:00:00'
+}
+*/
+```
 
 
-<!-- END DOCUMENT: 9-plugins/ai.index.md -->
+<!-- END DOCUMENT: 9-plugins/ai.parse.md -->
 
 ---
 
@@ -7144,8 +7273,12 @@ const redisAdapter: AiCacheAdapter = {
   },
   clear: async (prefix) => {
     const pattern = prefix ? `tempo:ai:${prefix}*` : `tempo:ai:*`;
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) await redis.del(...keys);
+    let cursor = '0';
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, { match: pattern, count: 100 });
+      cursor = nextCursor;
+      if (keys.length > 0) await redis.del(...keys);
+    } while (cursor !== '0');
   }
 };
 
@@ -7173,6 +7306,123 @@ Custom storage adapter calls (`adapter.get` and `adapter.set`) are wrapped in sa
 
 
 <!-- END DOCUMENT: 9-plugins/ai.rate-limits.md -->
+
+---
+
+
+<!-- START DOCUMENT: 9-plugins/ai.recurrence.md -->
+# Document: 9-plugins/ai.recurrence.md
+
+# `recurrenceAI` — Recurrence Rules & Schedule Translation
+
+`recurrenceAI()` provides multi-directional translation between natural language repeating schedule descriptions (*"Every 2nd Tuesday of the month at 3pm"*) and RFC 5545 **RRULE strings**, generating paged `Tempo` instance batches on demand.
+
+## Basic Usage
+
+```typescript
+import { recurrenceAI, initAI } from '@magmacomputing/tempo-plugin-ai';
+
+// 1. Initialize provider configuration
+await initAI({
+  providers: [{ id: 'groq', key: process.env.GROQ_API_KEY }]
+});
+
+// 2. Natural Language Input (human-in -> RRule & Tempo batches out)
+const result = await recurrenceAI("Every 2 weeks on Friday at 9am", {
+  locale: 'fr-FR',  // Output localized human summary
+  count: 5          // Default batch size
+});
+
+console.log(result.rrule);     // "FREQ=WEEKLY;INTERVAL=2;BYDAY=FR;BYHOUR=9"
+console.log(result.summary);   // "Chaque 2 semaines le vendredi à 09:00"
+console.log(result.isFinite);  // false (recurs indefinitely)
+console.log(result.size);      // Infinity
+```
+
+## Stateful Paged Batching (`.take(n)`)
+
+`recurrenceAI` maintains an internal date cursor. Calling `.take(n)` repeatedly returns consecutive batches of `Tempo` instances:
+
+```typescript
+// Fetch initial batch of 5 items
+const batch1 = result.take(5);
+console.log(batch1.length); // 5
+
+// Fetch NEXT batch of 5 items starting right where batch 1 left off
+const batch2 = result.take(5);
+console.log(batch2.length); // 5
+```
+
+When a finite schedule (e.g. `COUNT=10`) completes, `.take(n)` returns an empty array `[]` to signal exhaustion:
+
+```typescript
+const finiteResult = await recurrenceAI("FREQ=MONTHLY;BYDAY=1MO;COUNT=2");
+
+const b1 = finiteResult.take(2); // [ Tempo(Month 1), Tempo(Month 2) ]
+const b2 = finiteResult.take(2); // [] (Exhausted)
+```
+
+## Native RRULE Parsing (Zero Network Overhead)
+
+Passing a raw RFC 5545 RRULE string directly to `recurrenceAI` bypasses network LLM calls entirely (`provider: 'rrule-parser'`), functioning as an instant native parser:
+
+```typescript
+const native = await recurrenceAI("FREQ=MONTHLY;BYDAY=1MO;COUNT=12");
+
+console.log(native.provider); // "rrule-parser" (Instant native resolution)
+console.log(native.isFinite); // true
+console.log(native.size);     // 12
+```
+
+## Lazy Iteration (`for...of`)
+
+`TempoRecurrenceResult` implements `[Symbol.iterator]`, allowing lazy iteration over occurrences up to the batch limit (`count: 5` by default). 
+
+When iterating over open-ended schedules (`isFinite === false`), build a `break` termination clause into the loop:
+
+```typescript
+const schedule = await recurrenceAI("Every Friday");
+
+for (const occurrence of schedule) {
+  // Always include a termination condition for open-ended schedules
+  if (occurrence.year > 2028) break;
+
+  console.log(occurrence.format('{yyyy}-{mm}-{dd}'));
+}
+```
+
+## Result Interface
+
+```typescript
+export interface TempoRecurrenceResult {
+  /** Standard RFC 5545 RRULE string (e.g. 'FREQ=WEEKLY;BYDAY=TU') */
+  rrule: string;
+  
+  /** Localized human-friendly schedule summary */
+  summary: string;
+  
+  /** True if schedule has an explicit end date or count limit; false if infinite */
+  isFinite: boolean;
+  
+  /** Total count of occurrences if finite, or Infinity (Number.POSITIVE_INFINITY) */
+  size: number;
+  
+  /** Advances cursor and returns the next batch of N Tempo instances */
+  take(count?: number): Tempo[];
+  
+  /** Lazy generator yielding Tempo instances */
+  [Symbol.iterator](): Generator<Tempo, void, unknown>;
+  
+  /** Confidence score (0.0 to 1.0) */
+  confidence: number;
+  
+  /** Provider ID responsible for processing or 'rrule-parser' */
+  provider: string;
+}
+```
+
+
+<!-- END DOCUMENT: 9-plugins/ai.recurrence.md -->
 
 ---
 

@@ -84,8 +84,87 @@ describe('AI Recurrence Plugin (recurrenceAI)', () => {
 		expect(batch).toHaveLength(5);
 		expect(batch[0]).toBeInstanceOf(Tempo);
 
+		// Assert request body receives ONLY recurrence schema without date-parser iso schema
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		const requestBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+		const systemPrompt = requestBody.messages[0].content;
+		expect(systemPrompt).toContain('You are a calendar recurrence compiler.');
+		expect(systemPrompt).toContain('"rrule": "Standard RFC 5545 RRULE string');
+		expect(systemPrompt).not.toContain('You are a high-performance date parser.');
+		expect(systemPrompt).not.toContain('"iso":');
+
 		// Verify iterator yields 5 items
 		const iterated = Array.from(result);
 		expect(iterated).toHaveLength(5);
+	});
+
+	it('should support provider race and consensus execution modes in recurrenceAI', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockImplementation(async () => new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						rrule: 'FREQ=WEEKLY;BYDAY=FR',
+						summary: 'Every Friday',
+						confidence: 0.98
+					})
+				}
+			}]
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const resRace = await recurrenceAI('Every Friday', {
+			mode: 'race',
+			providers: [
+				{ id: 'groq', key: 'key-1', url: 'https://api.groq.com/v1/chat/completions', model: 'llama-3.3-70b-versatile' },
+				{ id: 'openai', key: 'key-2', url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o' }
+			]
+		});
+		expect(resRace.rrule).toBe('FREQ=WEEKLY;BYDAY=FR');
+
+		const resConsensus = await recurrenceAI('Every Friday', {
+			mode: 'consensus',
+			providers: [
+				{ id: 'groq', key: 'key-1', url: 'https://api.groq.com/v1/chat/completions', model: 'llama-3.3-70b-versatile' },
+				{ id: 'openai', key: 'key-2', url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o' }
+			]
+		});
+		expect(resConsensus.rrule).toBe('FREQ=WEEKLY;BYDAY=FR');
+		expect(resConsensus.provider).toBe('consensus');
+	});
+
+	it('should honor minConfidence threshold and throw TempoAiError if confidence is low', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						rrule: 'FREQ=DAILY',
+						summary: 'Uncertain daily',
+						confidence: 0.4
+					})
+				}
+			}]
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		await expect(recurrenceAI('Uncertain repeat prompt', { minConfidence: 0.8 }))
+			.rejects.toThrow(/confidence \(0.4\) is below the required threshold of 0.8/i);
+	});
+
+	it('should evaluate RFC 5545 RRULE occurrences applying after and before windows', async () => {
+		const rruleStr = 'FREQ=DAILY;COUNT=10';
+		const anchor = new Tempo('2026-08-01T09:00:00Z');
+		const result = await recurrenceAI(rruleStr, {
+			anchor,
+			after: '2026-08-03T00:00:00Z',
+			before: '2026-08-06T00:00:00Z'
+		});
+
+		expect(result.isFinite).toBe(true);
+		const items = result.take(10);
+		expect(items.length).toBeGreaterThan(0);
+		for (const item of items) {
+			expect(item >= new Tempo('2026-08-03T00:00:00Z')).toBe(true);
+			expect(item <= new Tempo('2026-08-06T00:00:00Z')).toBe(true);
+		}
 	});
 });

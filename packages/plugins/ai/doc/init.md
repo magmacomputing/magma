@@ -82,7 +82,9 @@ export interface AiConfig {
   timeout?: number;
   /** Global debug flag for operational trace logging */
   debug?: boolean;
+  /** Synchronous Map or BoundedCache for static glossary terms */
+  cache?: Map<string, string>;
   /** Custom cache adapter for distributed storage (e.g. Redis, KV) */
-  cache?: AiCacheAdapter;
+  cacheAdapter?: AiCacheAdapter;
 }
 ```

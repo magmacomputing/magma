@@ -7,7 +7,12 @@
 ```typescript
 import { recurrenceAI, initAI } from '@magmacomputing/tempo-plugin-ai';
 
-// 1. Natural Language Input (human-in -> RRule & Tempo batches out)
+// 1. Initialize provider configuration
+await initAI({
+  providers: [{ id: 'groq', key: process.env.GROQ_API_KEY }]
+});
+
+// 2. Natural Language Input (human-in -> RRule & Tempo batches out)
 const result = await recurrenceAI("Every 2 weeks on Friday at 9am", {
   locale: 'fr-FR',  // Output localized human summary
   count: 5          // Default batch size

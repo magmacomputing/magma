@@ -190,5 +190,5 @@ export interface TempoRecurrenceResult {
 	/** Provider ID responsible for processing or 'rrule-parser' for native RRULE inputs */
 	provider: string;
 	/** Reasoning / explanation of the recurrence pattern */
-	reasoning?: string;
+	reasoning?: string | undefined;
 }

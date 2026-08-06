@@ -92,17 +92,20 @@ Modern Tempo plugins are designed to be "plug-and-play." By using the `definePlu
 :::
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ticker';         // 1. Module self-registers via side-effect
-import { Tempo } from '@magmacomputing/tempo/core';   // 2. Load the `lite` engine
+import { Tempo } from '@magmacomputing/tempo/core';   // 1. Load the `lite` engine
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker'; // 2. Import the plugin
 
-Tempo.init({ license: 'YOUR_JWT_KEY' });              // 3. Discover, verify, and activate all imported plugins
+Tempo.init({ 
+  license: 'YOUR_JWT_KEY',
+  plugins: [TickerPlugin]                             // 3. Register and activate plugin during init
+});
 
 // Ticker is now available on the core Tempo class!
 const pulse = Tempo.ticker(1); 
 ```
 
-> [!NOTE] Import Order
-> While older versions of Tempo were sensitive to import order, current versions handle sequencing robustly. `Tempo.init()` is automatically called during bootstrap to ensure all discovered plugins are integrated. If you dynamically load plugins later, you can call `Tempo.init()` manually to refresh the registry.
+> [!NOTE] Dynamic Extension
+> `Tempo.init()` establishes baseline configuration at startup and accepts a `plugins` array for explicit registration. To dynamically register plugins loaded later at runtime, use `Tempo.extend(Plugin)` directly rather than re-running `Tempo.init()`.
 
 ---
 
