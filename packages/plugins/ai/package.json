@@ -25,7 +25,7 @@
     "plan": "community"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^3.11.0"
+    "@magmacomputing/tempo": "^3.11.1"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1"

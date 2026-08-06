@@ -26,5 +26,6 @@ export * from './common/symbol.library.js';
 export * from './common/type.library.js';
 export * from './common/temporal.polyfill.js';
 export * from './common/temporal.library.js';
+export * from './common/rrule.library.js';
 export * from './common/utility.library.js';
 export * from './common/webtoken.library.js';

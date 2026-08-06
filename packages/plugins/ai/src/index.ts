@@ -11,7 +11,8 @@ export { initAI, clearAiCache, getAiRateLimits, getAiConfig } from './core/init.
 
 // AI Function Handlers
 export { parseAI } from './functions/parse.js';
-export { recurrenceAI, isRRuleString } from './functions/recurrence.js';
+export { recurrenceAI } from './functions/recurrence.js';
+export { isRRuleString } from '@magmacomputing/library';
 
 /*
  * ============================================================================
