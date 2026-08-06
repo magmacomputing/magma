@@ -23,9 +23,11 @@ interface ParsedRRule {
 	interval: number;
 	count?: number | undefined;
 	until?: Tempo | undefined;
+	byMonth?: number[] | undefined;
 	byDay?: Array<{ nth?: number | undefined; day: string }> | undefined;
 	byHour?: number[] | undefined;
 	byMinute?: number[] | undefined;
+	bySetPos?: number[] | undefined;
 }
 
 function parseRRule(rrule: string): ParsedRRule {
@@ -34,35 +36,77 @@ function parseRRule(rrule: string): ParsedRRule {
 	let interval = 1;
 	let count: number | undefined;
 	let until: Tempo | undefined;
+	let byMonth: number[] | undefined;
 	let byDay: Array<{ nth?: number | undefined; day: string }> | undefined;
 	let byHour: number[] | undefined;
 	let byMinute: number[] | undefined;
+	let bySetPos: number[] | undefined;
 
 	for (const part of parts) {
 		const [key, val] = part.split('=');
 		if (!key || !val) continue;
 		const k = key.toUpperCase();
-		if (k === 'FREQ') freq = val.toUpperCase();
-		else if (k === 'INTERVAL') interval = Math.max(1, parseInt(val, 10) || 1);
-		else if (k === 'COUNT') count = parseInt(val, 10);
-		else if (k === 'UNTIL') {
-			const uStr = val.replace(/^(\d{4})(\d{2})(\d{2})T?(\d{2})?(\d{2})?(\d{2})?Z?$/, '$1-$2-$3T$4:$5:$6');
-			until = new Tempo(uStr);
+		const trimmedVal = val.trim();
+
+		if (k === 'FREQ') {
+			freq = trimmedVal.toUpperCase();
+		} else if (k === 'INTERVAL') {
+			const parsed = parseInt(trimmedVal, 10);
+			interval = !isNaN(parsed) && parsed > 0 ? parsed : 1;
+		} else if (k === 'COUNT') {
+			const parsed = parseInt(trimmedVal, 10);
+			count = !isNaN(parsed) && parsed > 0 ? parsed : undefined;
+		} else if (k === 'UNTIL') {
+			if (/^\d{8}$/.test(trimmedVal)) {
+				const year = trimmedVal.slice(0, 4);
+				const month = trimmedVal.slice(4, 6);
+				const day = trimmedVal.slice(6, 8);
+				until = new Tempo(`${year}-${month}-${day}T23:59:59Z`);
+			} else {
+				const uStr = trimmedVal.replace(/^(\d{4})(\d{2})(\d{2})T?(\d{2})?(\d{2})?(\d{2})?Z?$/, '$1-$2-$3T$4:$5:$6');
+				const t = new Tempo(uStr);
+				until = t.isValid ? t : undefined;
+			}
+		} else if (k === 'BYMONTH') {
+			const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(v => !isNaN(v) && v >= 1 && v <= 12);
+			if (items.length > 0) byMonth = items;
 		} else if (k === 'BYDAY') {
-			byDay = val.split(',').map(item => {
+			const items = trimmedVal.split(',').map(item => {
 				const m = item.match(/^([+-]?\d+)?([A-Z]{2})$/i);
 				const nthVal = m && m[1] ? parseInt(m[1], 10) : undefined;
 				const dayVal = m ? m[2].toUpperCase() : item.toUpperCase();
-				return { nth: nthVal, day: dayVal };
-			});
+				return { nth: nthVal !== undefined && !isNaN(nthVal) ? nthVal : undefined, day: dayVal };
+			}).filter(d => DAY_MAP[d.day] !== undefined);
+			if (items.length > 0) byDay = items;
 		} else if (k === 'BYHOUR') {
-			byHour = val.split(',').map(v => parseInt(v, 10));
+			const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(v => !isNaN(v) && v >= 0 && v <= 23);
+			if (items.length > 0) byHour = items;
 		} else if (k === 'BYMINUTE') {
-			byMinute = val.split(',').map(v => parseInt(v, 10));
+			const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(v => !isNaN(v) && v >= 0 && v <= 59);
+			if (items.length > 0) byMinute = items;
+		} else if (k === 'BYSETPOS') {
+			const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(v => !isNaN(v));
+			if (items.length > 0) bySetPos = items;
 		}
 	}
 
-	return { freq, interval, count, until, byDay, byHour, byMinute };
+	return { freq, interval, count, until, byMonth, byDay, byHour, byMinute, bySetPos };
+}
+
+function getMonthNum(t: Tempo): number {
+	return parseInt(t.format('{mm}'), 10);
+}
+
+function getHourNum(t: Tempo): number {
+	return parseInt(t.format('{hh}'), 10);
+}
+
+function getMinuteNum(t: Tempo): number {
+	return parseInt(t.format('{mi}'), 10);
+}
+
+function getDaysInMonth(year: number, month: number): number {
+	return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
 function expandOccurrences(rrule: string, anchor: Tempo, options?: { count?: number; after?: any; before?: any }): Tempo[] {
@@ -73,59 +117,131 @@ function expandOccurrences(rrule: string, anchor: Tempo, options?: { count?: num
 	const results: Tempo[] = [];
 	const maxToFetch = rule.count !== undefined ? rule.count : (options?.count ?? 100);
 
-	let countProduced = 0;
+	let totalGeneratedFromAnchor = 0;
+	let resultsCount = 0;
 	let step = 0;
 	const MAX_STEPS = 1000;
 
-	while (countProduced < maxToFetch && step < MAX_STEPS) {
-		let cand: Tempo;
+	while (resultsCount < maxToFetch && step < MAX_STEPS) {
+		let periodBases: Tempo[] = [];
 
 		if (rule.freq === 'DAILY') {
-			cand = anchor.add(`${step * rule.interval} days`);
+			periodBases = [anchor.add(`${step * rule.interval} days`)];
 		} else if (rule.freq === 'WEEKLY') {
-			cand = anchor.add(`${step * rule.interval} weeks`);
+			const weekBase = anchor.add(`${step * rule.interval} weeks`);
 			if (rule.byDay && rule.byDay.length > 0) {
-				const targetDay = DAY_MAP[rule.byDay[0].day] ?? 1;
-				const diff = (targetDay - cand.dow + 7) % 7;
-				cand = cand.add(`${diff} days`);
+				periodBases = rule.byDay.map(bd => {
+					const targetDay = DAY_MAP[bd.day] ?? 1;
+					const diff = (targetDay - weekBase.dow + 7) % 7;
+					return weekBase.add(`${diff} days`);
+				});
+			} else {
+				periodBases = [weekBase];
 			}
 		} else if (rule.freq === 'MONTHLY') {
-			const baseMonth = anchor.add(`${step * rule.interval} months`);
+			const monthBase = anchor.add(`${step * rule.interval} months`);
+			const yearStr = monthBase.format('{yyyy}');
+			const monthStr = monthBase.format('{mm}');
+			const daysInMonth = getDaysInMonth(parseInt(yearStr, 10), parseInt(monthStr, 10));
+
 			if (rule.byDay && rule.byDay.length > 0) {
-				const { nth, day } = rule.byDay[0];
-				const targetDay = DAY_MAP[day] ?? 1;
-				const firstOfMonth = new Tempo(`${baseMonth.format('{yyyy}-{mm}')}-01`);
-				let firstOcc = (targetDay - firstOfMonth.dow + 7) % 7 + 1;
-				if (nth && nth > 1) {
-					firstOcc += (nth - 1) * 7;
+				const candidateDays: Tempo[] = [];
+				for (const bd of rule.byDay) {
+					const targetDow = DAY_MAP[bd.day] ?? 1;
+					const matchingDates: Tempo[] = [];
+					for (let d = 1; d <= daysInMonth; d++) {
+						const dateStr = `${yearStr}-${monthStr}-${String(d).padStart(2, '0')}T${anchor.format('{hh}:{mi}:{ss}')}`;
+						const t = new Tempo(dateStr);
+						if (t.dow === targetDow) {
+							matchingDates.push(t);
+						}
+					}
+
+					if (bd.nth !== undefined) {
+						if (bd.nth > 0 && bd.nth <= matchingDates.length) {
+							candidateDays.push(matchingDates[bd.nth - 1]);
+						} else if (bd.nth < 0 && Math.abs(bd.nth) <= matchingDates.length) {
+							candidateDays.push(matchingDates[matchingDates.length + bd.nth]);
+						}
+					} else {
+						candidateDays.push(...matchingDates);
+					}
 				}
-				cand = new Tempo(`${baseMonth.format('{yyyy}-{mm}')}-${String(firstOcc).padStart(2, '0')}T${anchor.format('{hh}:{mi}:{ss}')}`);
+				periodBases = candidateDays;
 			} else {
-				cand = baseMonth;
+				periodBases = [monthBase];
 			}
 		} else if (rule.freq === 'YEARLY') {
-			cand = anchor.add(`${step * rule.interval} years`);
+			periodBases = [anchor.add(`${step * rule.interval} years`)];
 		} else {
-			cand = anchor.add(`${step * rule.interval} days`);
+			periodBases = [anchor.add(`${step * rule.interval} days`)];
 		}
 
-		if (rule.byHour && rule.byHour.length > 0) {
-			cand = cand.set({ hour: rule.byHour[0] });
+		// Filter period bases by BYMONTH if specified
+		if (rule.byMonth && rule.byMonth.length > 0) {
+			periodBases = periodBases.filter(b => rule.byMonth!.includes(getMonthNum(b)));
 		}
-		if (rule.byMinute && rule.byMinute.length > 0) {
-			cand = cand.set({ minute: rule.byMinute[0] });
+
+		// Cartesian expansion for BYHOUR and BYMINUTE
+		const periodCandidates: Tempo[] = [];
+		for (const base of periodBases) {
+			const hours = rule.byHour && rule.byHour.length > 0 ? rule.byHour : [getHourNum(base)];
+			const minutes = rule.byMinute && rule.byMinute.length > 0 ? rule.byMinute : [getMinuteNum(base)];
+
+			for (const h of hours) {
+				for (const m of minutes) {
+					periodCandidates.push(base.set({ hour: h, minute: m }));
+				}
+			}
+		}
+
+		// Apply BYSETPOS if specified
+		let finalPeriodCandidates = periodCandidates;
+		if (rule.bySetPos && rule.bySetPos.length > 0 && periodCandidates.length > 0) {
+			finalPeriodCandidates = [];
+			for (const pos of rule.bySetPos) {
+				if (pos > 0 && pos <= periodCandidates.length) {
+					finalPeriodCandidates.push(periodCandidates[pos - 1]);
+				} else if (pos < 0 && Math.abs(pos) <= periodCandidates.length) {
+					finalPeriodCandidates.push(periodCandidates[periodCandidates.length + pos]);
+				}
+			}
 		}
 
 		step++;
 
-		if (afterTempo && cand < afterTempo) continue;
-		if (beforeTempo && cand > beforeTempo) break;
-		if (rule.until && cand > rule.until) break;
+		// Evaluate candidates sequentially with COUNT and window filtering
+		let stopSeries = false;
+		for (const cand of finalPeriodCandidates) {
+			totalGeneratedFromAnchor++;
 
-		results.push(cand);
-		countProduced++;
+			if (rule.until && cand > rule.until) {
+				stopSeries = true;
+				break;
+			}
+			if (rule.count !== undefined && totalGeneratedFromAnchor > rule.count) {
+				stopSeries = true;
+				break;
+			}
+			if (beforeTempo && cand > beforeTempo) {
+				stopSeries = true;
+				break;
+			}
 
-		if (rule.count !== undefined && countProduced >= rule.count) break;
+			if (afterTempo && cand < afterTempo) {
+				continue;
+			}
+
+			results.push(cand);
+			resultsCount++;
+
+			if (resultsCount >= maxToFetch) {
+				stopSeries = true;
+				break;
+			}
+		}
+
+		if (stopSeries) break;
 	}
 
 	return results;
@@ -152,31 +268,46 @@ function createRecurrenceResult(
 		sizeLimit = Number.POSITIVE_INFINITY;
 	}
 
+	const cachedOccurrences: Tempo[] = [];
 	let offsetCursor = 0;
+	let fullyExpanded = false;
+
+	const ensureCached = (neededCount: number): void => {
+		if (fullyExpanded || cachedOccurrences.length >= neededCount) return;
+		const fresh = expandOccurrences(rruleStr, anchorTempo, {
+			count: neededCount,
+			after: options?.after,
+			before: options?.before
+		});
+		cachedOccurrences.length = 0;
+		cachedOccurrences.push(...fresh);
+		if (fresh.length < neededCount) {
+			fullyExpanded = true;
+		}
+	};
 
 	const take = (count?: number): Tempo[] => {
 		const fetchCount = count ?? defaultBatchSize;
 		if (isFinite && offsetCursor >= sizeLimit) return [];
 		const actualCount = isFinite ? Math.min(fetchCount, sizeLimit - offsetCursor) : fetchCount;
 		if (actualCount <= 0) return [];
-		const expanded = expandOccurrences(rruleStr, anchorTempo, {
-			count: offsetCursor + actualCount,
-			after: options?.after,
-			before: options?.before
-		});
-		const batch = expanded.slice(offsetCursor, offsetCursor + actualCount);
+
+		const needed = offsetCursor + actualCount;
+		ensureCached(needed);
+
+		const batch = cachedOccurrences.slice(offsetCursor, offsetCursor + actualCount);
 		offsetCursor += batch.length;
 		return batch;
 	};
 
-	function* createIterator(batchSize: number): Generator<Tempo, void, unknown> {
-		const expanded = expandOccurrences(rruleStr, anchorTempo, {
-			count: isFinite ? Math.min(batchSize, sizeLimit) : batchSize,
-			after: options?.after,
-			before: options?.before
-		});
-		for (const item of expanded) {
-			yield item;
+	function* createIterator(): Generator<Tempo, void, unknown> {
+		let index = 0;
+		const maxYield = isFinite ? sizeLimit : defaultBatchSize;
+		while (index < maxYield) {
+			ensureCached(index + 1);
+			if (index >= cachedOccurrences.length) break;
+			yield cachedOccurrences[index];
+			index++;
 		}
 	}
 
@@ -186,7 +317,7 @@ function createRecurrenceResult(
 		isFinite,
 		size: sizeLimit,
 		take,
-		[Symbol.iterator]: () => createIterator(defaultBatchSize),
+		[Symbol.iterator]: () => createIterator(),
 		confidence,
 		provider: providerId,
 		reasoning
@@ -239,6 +370,10 @@ export async function recurrenceAI(
 	assertNoReservedProviderId(availableProviders);
 
 	const mode = options?.mode || _state.config.mode || AiMode.Fallback;
+	if (mode !== AiMode.Fallback && mode !== AiMode.Race && mode !== AiMode.Consensus) {
+		throw new TempoAiError(`Invalid execution mode: '${mode}'. Supported modes are 'fallback', 'race', 'consensus'.`, 400);
+	}
+
 	const effectiveMinConfidence = options?.minConfidence ?? _state.config.minConfidence;
 	const callTimeout = options?.timeout;
 	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}.`;
@@ -317,6 +452,10 @@ Do not include markdown blocks or text outside the JSON.`;
 				const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
 				return { parsedData: JSON.parse(cleanContent), providerId, rateLimits };
 			});
+
+			// Attach no-op rejection handler to suppress unhandled promise warnings on aborted/slower requests
+			promises.forEach(p => p.catch(() => {}));
+
 			successfulResult = await Promise.race(promises);
 			parentController.abort();
 		} catch (err: any) {
@@ -374,10 +513,18 @@ Do not include markdown blocks or text outside the JSON.`;
 		}
 	}
 
-	_state.limits = successfulResult?.rateLimits ?? null;
+	if (!successfulResult) {
+		throw lastError || new TempoAiError('All configured AI providers failed.', 500);
+	}
 
-	const { parsedData, providerId } = successfulResult!;
-	const rruleStr = typeof parsedData?.rrule === 'string' ? parsedData.rrule.trim() : 'FREQ=DAILY';
+	_state.limits = successfulResult.rateLimits ?? null;
+
+	const { parsedData, providerId } = successfulResult;
+	if (typeof parsedData?.rrule !== 'string' || !parsedData.rrule.trim()) {
+		throw new TempoAiError('Invalid recurrence response from AI provider: missing or empty rrule string.', 422);
+	}
+
+	const rruleStr = parsedData.rrule.trim();
 	const summaryText = typeof parsedData?.summary === 'string' ? parsedData.summary : (typeof parsedData?.humanReadable === 'string' ? parsedData.humanReadable : input);
 	const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : 0.9;
 	const reasoning = typeof parsedData?.reasoning === 'string' ? parsedData.reasoning : undefined;

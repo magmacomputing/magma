@@ -117,9 +117,9 @@ declare module '@magmacomputing/tempo' {
 There is a subtle but important distinction between how features are activated in Core mode:
 
 *   **`Tempo.extend(Module)`**: This is **Immediate and Explicit**. It applies the module to the class exactly when the line is executed. This is the recommended pattern for modular applications.
-*   **`Tempo.init()`**: Establishes global baseline configuration at application startup and accepts explicit plugin registrations via `Tempo.init({ plugins: [...] })`.
+*   **`Tempo.init()`**: Establishes global baseline configuration at application startup and registers plugins specified in the `plugins` array during initial startup discovery.
 
 ::: note
-**Idempotent Initialization Lifecycle**: `Tempo.init()` is designed to establish baseline configuration once during startup. To register additional plugins dynamically after initialization, use `Tempo.extend(...)` rather than calling `Tempo.init()` again.
+**Idempotent Initialization Lifecycle**: `Tempo.init()` is designed to establish baseline configuration once during initial startup. Built-in plugins are registered automatically via static imports in full Tempo (`@magmacomputing/tempo`), while explicit plugin lists are registered during `Tempo.init({ plugins: [...] })`. To register additional plugins dynamically after startup initialization, use `Tempo.extend(...)` rather than re-running `Tempo.init()`.
 :::
 

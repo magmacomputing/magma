@@ -10,7 +10,7 @@ describe('AI Recurrence Plugin (recurrenceAI)', () => {
 	});
 
 	afterEach(() => {
-		vi.clearAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	it('should detect raw RRULE strings and parse them natively without network calls', async () => {
@@ -98,38 +98,91 @@ describe('AI Recurrence Plugin (recurrenceAI)', () => {
 		expect(iterated).toHaveLength(5);
 	});
 
-	it('should support provider race and consensus execution modes in recurrenceAI', async () => {
+	it('should support provider race execution mode returning fastest provider and aborting slower requests', async () => {
+		let slowWasAborted = false;
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
-		fetchSpy.mockImplementation(async () => new Response(JSON.stringify({
-			choices: [{
-				message: {
-					content: JSON.stringify({
-						rrule: 'FREQ=WEEKLY;BYDAY=FR',
-						summary: 'Every Friday',
-						confidence: 0.98
-					})
+		fetchSpy.mockImplementation(async (_url, init) => {
+			const body = JSON.parse(init?.body as string);
+			const signal = init?.signal as AbortSignal | undefined;
+			if (body.model === 'fast-model') {
+				return new Response(JSON.stringify({
+					choices: [{
+						message: {
+							content: JSON.stringify({ rrule: 'FREQ=DAILY', summary: 'Fast Daily', confidence: 0.95 })
+						}
+					}]
+				}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+			}
+			return new Promise((_resolve, reject) => {
+				if (signal?.aborted) {
+					slowWasAborted = true;
+					reject(new DOMException('Aborted', 'AbortError'));
+					return;
 				}
-			}]
-		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+				signal?.addEventListener('abort', () => {
+					slowWasAborted = true;
+					reject(new DOMException('Aborted', 'AbortError'));
+				});
+			});
+		});
 
-		const resRace = await recurrenceAI('Every Friday', {
+		const resRace = await recurrenceAI('Every day', {
 			mode: 'race',
 			providers: [
-				{ id: 'groq', key: 'key-1', url: 'https://api.groq.com/v1/chat/completions', model: 'llama-3.3-70b-versatile' },
-				{ id: 'openai', key: 'key-2', url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o' }
+				{ id: 'slow-provider', key: 'key-1', url: 'https://api.openai.com/v1/chat/completions', model: 'slow-model' },
+				{ id: 'fast-provider', key: 'key-2', url: 'https://api.groq.com/v1/chat/completions', model: 'fast-model' }
 			]
 		});
-		expect(resRace.rrule).toBe('FREQ=WEEKLY;BYDAY=FR');
 
-		const resConsensus = await recurrenceAI('Every Friday', {
+		expect(resRace.rrule).toBe('FREQ=DAILY');
+		expect(resRace.provider).toBe('fast-provider');
+		expect(slowWasAborted).toBe(true);
+	});
+
+	it('should support consensus mode selecting highest confidence result when providers disagree', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy
+			.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{
+					message: {
+						content: JSON.stringify({ rrule: 'FREQ=WEEKLY;BYDAY=FR', summary: 'Every Friday', confidence: 0.85 })
+					}
+				}]
+			}), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+			.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{
+					message: {
+						content: JSON.stringify({ rrule: 'FREQ=MONTHLY;BYDAY=-1FR', summary: 'Last Friday of month', confidence: 0.96 })
+					}
+				}]
+			}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const resConsensus = await recurrenceAI('Last Friday of the month', {
 			mode: 'consensus',
 			providers: [
-				{ id: 'groq', key: 'key-1', url: 'https://api.groq.com/v1/chat/completions', model: 'llama-3.3-70b-versatile' },
-				{ id: 'openai', key: 'key-2', url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o' }
+				{ id: 'p1', key: 'key-1', url: 'https://api.groq.com/v1/chat/completions', model: 'm1' },
+				{ id: 'p2', key: 'key-2', url: 'https://api.openai.com/v1/chat/completions', model: 'm2' }
 			]
 		});
-		expect(resConsensus.rrule).toBe('FREQ=WEEKLY;BYDAY=FR');
-		expect(resConsensus.provider).toBe('consensus');
+
+		expect(resConsensus.rrule).toBe('FREQ=MONTHLY;BYDAY=-1FR');
+		expect(resConsensus.confidence).toBe(0.96);
+		expect(resConsensus.provider).toBe('p2');
+	});
+
+	it('should throw TempoAiError for invalid execution mode', async () => {
+		await expect(recurrenceAI('Every Friday', { mode: 'invalid_mode' as any }))
+			.rejects.toThrow(/invalid execution mode/i);
+	});
+
+	it('should throw TempoAiError if provider returns empty or missing rrule string', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{ message: { content: JSON.stringify({ summary: 'No rrule', confidence: 0.9 }) } }]
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		await expect(recurrenceAI('Unparseable prompt'))
+			.rejects.toThrow(/missing or empty rrule string/i);
 	});
 
 	it('should honor minConfidence threshold and throw TempoAiError if confidence is low', async () => {
@@ -152,19 +205,32 @@ describe('AI Recurrence Plugin (recurrenceAI)', () => {
 
 	it('should evaluate RFC 5545 RRULE occurrences applying after and before windows', async () => {
 		const rruleStr = 'FREQ=DAILY;COUNT=10';
-		const anchor = new Tempo('2026-08-01T09:00:00Z');
+		const anchor = new Tempo('2026-08-01T09:00:00');
 		const result = await recurrenceAI(rruleStr, {
 			anchor,
-			after: '2026-08-03T00:00:00Z',
-			before: '2026-08-06T00:00:00Z'
+			after: '2026-08-03T00:00:00',
+			before: '2026-08-06T00:00:00'
 		});
 
 		expect(result.isFinite).toBe(true);
 		const items = result.take(10);
+		expect(items).toHaveLength(3);
+		expect(items[0].format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')).toBe('2026-08-03 09:00:00');
+		expect(items[1].format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')).toBe('2026-08-04 09:00:00');
+		expect(items[2].format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')).toBe('2026-08-05 09:00:00');
+	});
+
+	it('should correctly evaluate negative BYDAY ordinals such as -1FR and date-only UNTIL', async () => {
+		const rruleStr = 'FREQ=MONTHLY;BYDAY=-1FR;UNTIL=20261231';
+		const anchor = new Tempo('2026-08-01T09:00:00Z');
+		const result = await recurrenceAI(rruleStr, { anchor });
+
+		expect(result.isFinite).toBe(true);
+		const items = result.take(5);
 		expect(items.length).toBeGreaterThan(0);
-		for (const item of items) {
-			expect(item >= new Tempo('2026-08-03T00:00:00Z')).toBe(true);
-			expect(item <= new Tempo('2026-08-06T00:00:00Z')).toBe(true);
-		}
+		// August 2026 last Friday is Aug 28th
+		expect(items[0].format('{yyyy}-{mm}-{dd}')).toBe('2026-08-28');
+		// September 2026 last Friday is Sep 25th
+		expect(items[1].format('{yyyy}-{mm}-{dd}')).toBe('2026-09-25');
 	});
 });

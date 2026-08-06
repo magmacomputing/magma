@@ -104,8 +104,8 @@ Tempo.init({
 const pulse = Tempo.ticker(1); 
 ```
 
-> [!NOTE] Dynamic Extension
-> `Tempo.init()` establishes baseline configuration at startup and accepts a `plugins` array for explicit registration. To dynamically register plugins loaded later at runtime, use `Tempo.extend(Plugin)` directly rather than re-running `Tempo.init()`.
+> [!NOTE] Dynamic Extension vs Startup Registration
+> `Tempo.init({ plugins: [...] })` establishes baseline configuration at startup and performs initial registration of plugins. In full Tempo (`@magmacomputing/tempo`), standard plugins are registered automatically upon import. To dynamically register custom plugins loaded later at runtime, use `Tempo.extend(Plugin)` directly rather than re-running `Tempo.init()`.
 
 ---
 
