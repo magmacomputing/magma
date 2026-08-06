@@ -1,8 +1,8 @@
-import { parseAI, initAI, clearAiCache, getAiRateLimits, TempoAiError, AiMode } from '../src/index.js';
+import { parseAI, initAI, clearAiCache, getAiRateLimits, getAiConfig, TempoAiError, AiMode } from '../src/index.js';
 import { BoundedCache } from '@magmacomputing/tempo/support';
 import { Tempo } from '@magmacomputing/tempo';
 
-describe('AI Parsing Plugin', () => {
+describe('AI Parsing Plugin (parseAI)', () => {
 	const liveApiKey = process.env.GROQ_API_KEY ?? process.env.OPENAI_API_KEY;
 	const liveProviderId = process.env.GROQ_API_KEY ? 'groq' : 'openai';
 	const isLiveTest = Boolean(process.env.LIVE_AI_TEST && liveApiKey);
@@ -25,6 +25,25 @@ describe('AI Parsing Plugin', () => {
 
 	afterEach(() => {
 		vi.clearAllMocks();
+	});
+
+	it('should return current runtime configuration via getAiConfig', () => {
+		initAI({
+			providers: [{ id: 'groq', key: 'test-key-123' }],
+			mode: AiMode.Fallback,
+			timeout: 3000,
+			debug: true
+		});
+
+		const config = getAiConfig();
+		expect(config).toBeDefined();
+		expect(config.mode).toBe('fallback');
+		expect(config.timeout).toBe(3000);
+		expect(config.debug).toBe(true);
+		expect(config.providers).toHaveLength(1);
+		expect(config.providers?.[0].id).toBe('groq');
+		expect(config.providers?.[0].key).toBe('[REDACTED]');
+		expect(config.providers?.[0].model).toBe('llama-3.3-70b-versatile');
 	});
 
 	it('should fall back to native parsing first and attach .ai metadata', async () => {
@@ -179,11 +198,9 @@ describe('AI Parsing Plugin', () => {
 		});
 
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
-		// Provider 1 (local-llm): Low confidence (0.4)
 		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 			choices: [{ message: { content: '{"reasoning":"Uncertain local guess", "iso":"2026-11-26T00:00:00", "confidence":0.4}' } }]
 		}), { status: 200 }));
-		// Provider 2 (cloud-llm): High confidence (0.95)
 		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 			choices: [{ message: { content: '{"reasoning":"High confidence cloud result", "iso":"2026-11-26T00:00:00", "confidence":0.95}' } }]
 		}), { status: 200 }));
@@ -205,7 +222,6 @@ describe('AI Parsing Plugin', () => {
 		});
 
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
-		// Provider 1 (local-llm): High confidence (0.90 >= 0.85) -> Short circuit!
 		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 			choices: [{ message: { content: '{"reasoning":"Confident local result", "iso":"2026-11-26T00:00:00", "confidence":0.90}' } }]
 		}), { status: 200 }));
@@ -247,11 +263,9 @@ describe('AI Parsing Plugin', () => {
 		});
 
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
-		// Item 1 succeeds
 		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 			choices: [{ message: { content: '{"reasoning":"Date 1", "iso":"2026-01-01T00:00:00", "confidence":0.99}' } }]
 		}), { status: 200 }));
-		// Item 2 fails with 500
 		fetchSpy.mockResolvedValueOnce(new Response(null, { status: 500, statusText: 'Internal Error' }));
 
 		const results = await parseAI(['Valid Date Prompt', 'Failing Prompt'], { force: true, softErrors: true });
@@ -274,7 +288,6 @@ describe('AI Parsing Plugin', () => {
 						choices: [{ message: { content: '{"reasoning":"Fast", "iso":"2026-06-01T00:00:00", "confidence":0.95}' } }]
 					}), { status: 200 });
 				}
-				// Slow model delays
 				await new Promise(resolve => setTimeout(resolve, 500));
 				return new Response(JSON.stringify({
 					choices: [{ message: { content: '{"reasoning":"Slow", "iso":"2026-06-01T00:00:00", "confidence":0.95}' } }]
@@ -436,7 +449,6 @@ describe('AI Parsing Plugin', () => {
 			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-			// Response 1 with compound duration header '4m12s'
 			fetchSpy.mockResolvedValueOnce(new Response(null, {
 				status: 429,
 				statusText: 'Too Many Requests',
@@ -463,7 +475,6 @@ describe('AI Parsing Plugin', () => {
 			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-			// Request 1: Has rate limit headers
 			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
 			}), {
@@ -476,7 +487,6 @@ describe('AI Parsing Plugin', () => {
 			await parseAI('Thanksgiving 2026', { force: true });
 			expect(getAiRateLimits()?.remainingTokens).toBe(5000);
 
-			// Request 2: Has NO rate limit headers
 			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 				choices: [{ message: { content: '{"iso":"2026-12-25T00:00:00"}' } }]
 			}), {
@@ -485,7 +495,6 @@ describe('AI Parsing Plugin', () => {
 
 			await parseAI('Christmas 2026', { force: true });
 
-			// State should now be null (replaced, not retained!)
 			expect(getAiRateLimits()).toBeNull();
 		});
 

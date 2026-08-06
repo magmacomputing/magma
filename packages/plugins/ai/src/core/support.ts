@@ -97,63 +97,67 @@ Ambiguity Rules:
 
 Do not include markdown blocks or any text outside the JSON.`;
 
-  if (isDebug)
-    console.log(`[tempo-plugin-ai] Sending to ${provider.id}:`, { system: `${systemPrompt}\n${contextString}`, user: str });
+	if (isDebug)
+		console.log(`[tempo-plugin-ai] Querying provider '${provider.id}' (model: ${model})...`);
 
-  const tokenParam = provider.tokenParam
-    || (provider.options?.max_completion_tokens !== undefined ? 'max_completion_tokens' : undefined)
-    || (provider.options?.max_tokens !== undefined ? 'max_tokens' : undefined)
-    || 'max_tokens';
-  const tokenLimit = { [tokenParam]: 250 };
+	const tokenParam = provider.tokenParam
+		|| (provider.options?.max_completion_tokens !== undefined ? 'max_completion_tokens' : undefined)
+		|| (provider.options?.max_tokens !== undefined ? 'max_tokens' : undefined)
+		|| 'max_tokens';
+	const tokenLimit = { [tokenParam]: 250 };
 
-  const controller = new AbortController();
-  const timeoutMs = timeoutOverride ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+	const controller = new AbortController();
+	const timeoutMs = timeoutOverride ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const onParentAbort = () => controller.abort();
-  if (parentSignal) {
-    if (parentSignal.aborted) controller.abort();
-    else parentSignal.addEventListener('abort', onParentAbort);
-  }
+	const onParentAbort = () => controller.abort();
+	if (parentSignal) {
+		if (parentSignal.aborted) controller.abort();
+		else parentSignal.addEventListener('abort', onParentAbort);
+	}
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      redirect: 'error',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${provider.key}`
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: 'system', content: `${systemPrompt}\n${contextString}` },
-          { role: 'user', content: str }
-        ],
-        temperature: 0,
-        ...tokenLimit,
-        response_format: { type: 'json_object' },
-        ...provider.options
-      }),
-      signal: controller.signal
-    });
+	const startTime = performance.now();
 
-    const limits = updateRateLimitsFromResponse(response);
+	try {
+		const response = await fetch(url, {
+			method: 'POST',
+			redirect: 'error',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${provider.key}`
+			},
+			body: JSON.stringify({
+				model: model,
+				messages: [
+					{ role: 'system', content: `${systemPrompt}\n${contextString}` },
+					{ role: 'user', content: str }
+				],
+				temperature: 0,
+				...tokenLimit,
+				response_format: { type: 'json_object' },
+				...provider.options
+			}),
+			signal: controller.signal
+		});
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      const resetTime = limits?.resetAt ?? undefined;
-      _state.limits = limits;
-      throw new TempoAiError(`Provider ${provider.id} failed with status ${response.status}. Details: ${errorText}`, response.status, resetTime);
-    }
+		const limits = updateRateLimitsFromResponse(response);
 
-    const data = await response.json();
-    const rawContent = data?.choices?.[0]?.message?.content;
-    if (typeof rawContent !== 'string')
-      throw new TempoAiError(`Provider ${provider.id} returned invalid response payload.`, 422);
+		if (!response.ok) {
+			const errorText = await response.text();
+			const resetTime = limits?.resetAt ?? undefined;
+			_state.limits = limits;
+			throw new TempoAiError(`Provider ${provider.id} failed with status ${response.status}. Details: ${errorText}`, response.status, resetTime);
+		}
 
-    if (isDebug)
-      console.log(`[tempo-plugin-ai] Received from ${provider.id}:`, rawContent);
+		const data = await response.json();
+		const rawContent = data?.choices?.[0]?.message?.content;
+		if (typeof rawContent !== 'string')
+			throw new TempoAiError(`Provider ${provider.id} returned invalid response payload.`, 422);
+
+		if (isDebug) {
+			const elapsed = Math.round(performance.now() - startTime);
+			console.log(`[tempo-plugin-ai] Received response from '${provider.id}' in ${elapsed}ms`);
+		}
 
     return { rawContent: rawContent.trim(), providerId: provider.id, rateLimits: limits };
   } finally {

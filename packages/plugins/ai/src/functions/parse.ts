@@ -65,7 +65,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
   }
 
   if (cachedIso) {
-    if (isDebug) console.log(`[tempo-plugin-ai] Cache hit for "${str}":`, cachedIso);
+    if (isDebug) console.log(`[tempo-plugin-ai] Cache hit: "${str}" -> ${cachedIso}`);
     const cachedInstance = new Tempo(cachedIso, coreOptions);
     return attachAiMeta(cachedInstance, {
       provider: 'cache',
@@ -88,7 +88,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
         || native.isValid;
 
       if (native.isValid && hasNativeMatches) {
-        if (isDebug) console.log(`[parseAI] Resolved natively: "${str}"`);
+        if (isDebug) console.log(`[tempo-plugin-ai] Resolved natively: "${str}"`);
         return attachAiMeta(native, {
           provider: 'native',
           cached: false,
@@ -112,38 +112,39 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
   assertNoReservedProviderId(availableProviders);
 
-  const mode = aiMode || AiMode.Fallback;
-  let successfulResult: { parsedData: any; providerId: string; rateLimits?: any } | null = null;
+	const mode = aiMode || _state.config.mode || AiMode.Fallback;
+	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
+	let successfulResult: { parsedData: any; providerId: string; rateLimits?: any } | null = null;
 
-  if (mode === AiMode.Fallback) {
-    let lastError: any = null;
-    let bestCandidate: { parsedData: any; providerId: string; rateLimits?: any } | null = null;
+	if (mode === AiMode.Fallback) {
+		let lastError: any = null;
+		let bestCandidate: { parsedData: any; providerId: string; rateLimits?: any } | null = null;
 
-    for (const provider of availableProviders) {
-      try {
-        const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug, undefined, callTimeout);
-        const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
-        const parsedData = JSON.parse(cleanContent);
+		for (const provider of availableProviders) {
+			try {
+				const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug, undefined, callTimeout);
+				const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+				const parsedData = JSON.parse(cleanContent);
 
-        const candidateConfidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : (parsedData?.iso === 'INVALID' ? 0.0 : 1.0);
+				const candidateConfidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : (parsedData?.iso === 'INVALID' ? 0.0 : 1.0);
 
-        if (!bestCandidate || candidateConfidence > (bestCandidate.parsedData?.confidence ?? 0)) {
-          bestCandidate = { parsedData, providerId, rateLimits };
-        }
+				if (!bestCandidate || candidateConfidence > (bestCandidate.parsedData?.confidence ?? 0)) {
+					bestCandidate = { parsedData, providerId, rateLimits };
+				}
 
-        if (minConfidence === undefined || candidateConfidence >= minConfidence) {
-          successfulResult = { parsedData, providerId, rateLimits };
-          break;
-        }
+				if (effectiveMinConfidence === undefined || candidateConfidence >= effectiveMinConfidence) {
+					successfulResult = { parsedData, providerId, rateLimits };
+					break;
+				}
 
-        if (isDebug) {
-          console.log(`[parseAI] Provider ${providerId} confidence (${candidateConfidence}) below minConfidence (${minConfidence}). Cascading to next provider...`);
-        }
-      } catch (err: any) {
-        lastError = err;
-        if (err instanceof TempoAiError && err.code === 422 && minConfidence === undefined) break;
-      }
-    }
+				if (isDebug) {
+					console.log(`[tempo-plugin-ai] Provider '${providerId}' confidence (${candidateConfidence}) below minConfidence (${effectiveMinConfidence}). Cascading to next provider...`);
+				}
+			} catch (err: any) {
+				lastError = err;
+				if (err instanceof TempoAiError && err.code === 422 && effectiveMinConfidence === undefined) break;
+			}
+		}
 
     if (!successfulResult) {
       if (bestCandidate) {
@@ -224,7 +225,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
   const granularity = typeof parsedData?.granularity === 'string' ? parsedData.granularity : 'unknown';
   const reasoning = typeof parsedData?.reasoning === 'string' ? parsedData.reasoning : undefined;
 
-  const isBelowMinConfidence = minConfidence !== undefined && confidence < minConfidence;
+	const isBelowMinConfidence = effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence;
 
   if (rawIso === 'INVALID' || isBelowMinConfidence) {
     const invalidInstance = new Tempo('INVALID', { ...coreOptions, catch: true });

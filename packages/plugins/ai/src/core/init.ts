@@ -116,7 +116,21 @@ export async function clearAiCache(input?: string | string[]): Promise<void> {
 }
 
 export function getAiRateLimits(): AiRateLimits | null {
-  return _state.limits;
+	return _state.limits;
+}
+
+export function getAiConfig(): Readonly<AiConfig> {
+	const sanitizedProviders: AiProvider[] = _state.config.providers?.map(p => {
+		const clone = { ...p };
+		if (clone.key)
+			clone.key = '[REDACTED]';
+		return clone;
+	}) ?? [];
+
+	return Object.freeze({
+		..._state.config,
+		providers: Object.freeze(sanitizedProviders) as unknown as AiProvider[]
+	});
 }
 
 export function parseResetHeaderToTempo(resetHeader: string): Tempo | null {

@@ -2,11 +2,16 @@
 export { TempoAiError } from './core/error.js';
 export * from './core/types.js';
 export * from './core/config.js';
+
+// AI Manifest Support
 export { loadRemoteManifest, resetManifestCache, DEFAULT_REMOTE_MANIFEST_URL } from './core/manifest.js';
-export { initAI, clearAiCache, getAiRateLimits } from './core/init.js';
+
+// AI Core Functions
+export { initAI, clearAiCache, getAiRateLimits, getAiConfig } from './core/init.js';
 
 // AI Function Handlers
 export { parseAI } from './functions/parse.js';
+export { recurrenceAI, isRRuleString } from './functions/recurrence.js';
 
 /*
  * ============================================================================
@@ -27,9 +32,6 @@ export { parseAI } from './functions/parse.js';
 
 // /** Resolves natural language scheduling prompts into optimal Tempo intervals */
 // export { scheduleAI, type TempoInterval } from './functions/schedule.js';
-
-// /** Translates natural language descriptions of repeating schedules into RRULEs */
-// export { recurrenceAI, type TempoRecurrenceRule } from './functions/recurrence.js';
 
 // /** Infers timeZone, locale, and calendar from ambiguous location or text strings */
 // export { contextAI, inferContextAI, type TempoContext } from './functions/context.js';
