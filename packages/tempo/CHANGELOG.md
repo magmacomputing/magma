@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.11.1] - 2026-08-03
 
 ### Added
+- **Timezone Abbreviation & Humanized Offset Parsing**: Upgraded `Token.tzd` snippet compilation and Master Guard scanning to natively support 3–4 letter timezone abbreviations (e.g. `AEST`, `PST`, `EST`, `CET`, `JST`) alongside `GMT`/`UTC` offset prefixes (e.g. `'Aug 6, 16:16 GMT+10'`, `'August 6, 16:16 AEST'`). Dynamically compiles `Token.tzd` from `DEFAULTS.TIMEZONE` and introduces `Match.offset` for clean structural offset matching with downstream `Temporal.ZonedDateTime` validation.
 - **Cache Serialization (`toJSON`)**: Added native `toJSON()` serialization support to `BoundedCache` and the `Tempo.cache` facade object. Calling `Tempo.cache.toJSON()` or `JSON.stringify(Tempo.cache)` now cleanly converts active, non-expired in-memory cache entries into a plain key-value JavaScript object.
 - **AI Context & IDE Integration (`llms.txt`)**: Published official standardized `llms.txt` and `llms-full.txt` context bundles at `https://tempo.magmacomputing.com.au` to provide full project context and enhance code-generation accuracy for IDE tools (Cursor, VS Code / GitHub Copilot, Antigravity) and web AI interfaces (ChatGPT, Claude, Gemini).
 - **Automated Doc Harvester**: Created `bin/generate-llms-txt.mjs` monorepo build script integrated into `npm run docs:build` to harvest all 56 markdown documentation files into a unified `llms-full.txt` corpus.

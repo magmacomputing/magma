@@ -2005,6 +2005,13 @@ Tempo.extend(ParseModule);
 
 Tempo uses your configuration to intelligently parse ambiguous dates and foreign languages.
 
+### TimeZone & Offset Parsing
+Tempo natively supports human-readable timezone abbreviations (e.g. `AEST`, `PST`, `EST`, `CET`, `JST`) as well as explicit `GMT` / `UTC` offset designators (e.g. `'Aug 6, 16:16 GMT+10'`, `'August 6, 16:16 AEST'`, `'UTC-5'`).
+
+> [!WARNING]
+> **TimeZone Offset Positioning & Collisions**
+> Timezone offsets and abbreviations should be positioned after the date/time payload (`Aug 6, 16:16 AEST` or `Aug 6, 16:16 GMT+10`). Avoid placing unprefixed standalone timezone abbreviations at the very start of date strings (e.g., `"AEST 8 Aug 10:30"`), as leading abbreviations can collide with month names (e.g., `MAR` for March vs. Marshall Islands Time, `MAY` for May vs. Magadan Time). For non-standard log formats requiring leading timezone resolution, use `parseAI` from the `@magmacomputing/tempo-plugin-ai` package.
+
 ### US-Style Dates (`MM/DD/YYYY`)
 If you parse a numeric string like `04012026`, Tempo uses your `timeZone` to decide if it means **April 1st** (US) or **4th of January** (UK/AU).
 

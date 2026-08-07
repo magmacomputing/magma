@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { isRRuleString, checkIsFinite, parseRRule, expandRRuleEpochs } from '@magmacomputing/library';
+import { isRRuleString, isFiniteRRule, parseRRule, expandRRuleEpochs } from '@magmacomputing/library';
 import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
@@ -14,6 +14,7 @@ function expandOccurrences(rrule: string, anchor: Tempo, options?: { count?: num
 		afterMs: afterTempo ? afterTempo.epoch.ms : undefined,
 		beforeMs: beforeTempo ? beforeTempo.epoch.ms : undefined
 	});
+
 	return epochs.map(ms => new Tempo(ms, anchor.config));
 }
 
@@ -28,7 +29,7 @@ function createRecurrenceResult(
 	options?: TempoRecurrenceOptions
 ): TempoRecurrenceResult {
 	const rule = parseRRule(rruleStr);
-	const isFinite = checkIsFinite(rruleStr) || Boolean(options?.before);
+	const isFinite = isFiniteRRule(rruleStr) || Boolean(options?.before);
 	let sizeLimit: number;
 	if (rule.count !== undefined) {
 		sizeLimit = rule.count;
@@ -224,7 +225,7 @@ Do not include markdown blocks or text outside the JSON.`;
 			});
 
 			// Attach no-op rejection handler to suppress unhandled promise warnings on aborted/slower requests
-			promises.forEach(p => p.catch(() => {}));
+			promises.forEach(p => p.catch(() => { }));
 
 			successfulResult = await Promise.race(promises);
 			parentController.abort();

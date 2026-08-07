@@ -126,6 +126,29 @@ Tempo.extend(ParseModule);
 
 Tempo uses your configuration to intelligently parse ambiguous dates and foreign languages.
 
+### TimeZone & Offset Parsing
+Tempo natively supports human-readable timezone abbreviations (e.g. `AEST`, `PST`, `EST`, `CET`, `JST`) as well as explicit `GMT` / `UTC` offset designators (e.g. `'Aug 6, 16:16 GMT+10'`, `'August 6, 16:16 AEST'`, `'UTC-5'`).
+
+> [!WARNING]
+> **Default Layout Positioning & Collisions**
+> By default, Tempo's built-in layouts expect timezone offsets and abbreviations to *follow* the date/time payload. This design prevents leading abbreviations from colliding with 3-letter month names (such as `MAR` for March vs. Marshall Islands Time).
+
+#### Registering a Custom Leading Timezone Layout
+If your application processes custom log files or legacy data streams that position timezone designators at the *start* (e.g. `"PST 8 Aug 10:30"`), you can register a custom layout using `{tzd}` alongside `{dt}` and `{tm}`:
+
+```typescript
+Tempo.init({
+  registry: {
+    layouts: {
+      leadingTz: '{tzd}{sep}+{dt}{sep}+{tm}'
+    }
+  }
+});
+
+const t = new Tempo('PST 8 Aug 10:30');
+console.log(t.tz); // 'America/Los_Angeles'
+```
+
 ### US-Style Dates (`MM/DD/YYYY`)
 If you parse a numeric string like `04012026`, Tempo uses your `timeZone` to decide if it means **April 1st** (US) or **4th of January** (UK/AU).
 

@@ -3,7 +3,7 @@ import { secure, proxify } from '#library/proxy.library.js';
 import { getDateTimeFormat } from '#library/international.library.js';
 import { LOG } from '#library/logger.class.js';
 
-import { NUMBER, MODE, MONTH_DAY } from './support.enum.js';
+import { NUMBER, TIMEZONE, MODE, MONTH_DAY } from './support.enum.js';
 import { Token } from './support.symbol.js';
 import type { Options, AliasContext, IntlOptions } from '../tempo.type.js';
 
@@ -34,6 +34,7 @@ export const Match = proxify({
 	/** slick shorthand-shifter (e.g. #qtr.>2q2) */						shorthand: /(?:(?:#[\w]+|[\w]+)\.(?:[\+\-\<\>]=?)?(?:[0-9]+)?(?:[\w]*))/,
 	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>\=]=?)?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\w]*)$/,
 	/** extracted value-only version of a slick shifter */		slickValue: /^(?<sh_mod>[\+\-\<\>\=]=?)?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\w]*)$/,
+	/** numeric timezone offset (e.g. +10:00, +1000, -05:00, -0500, GMT+10, UTC-5) */					offset: /(?:[+-]\d{2}:\d{2}|[+-]\d{4}|(?<=\s|T|GMT|UTC)\s*[+-]?\d{1,2}(?::?\d{2})?)/,
 	/** escape special regex characters in a string */				escape: (str: string) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
 	/** escape only dangerous quantifiers and anchors to prevent backtracking/injection while allowing basic regex */
 	safeAlias: (str: string) => String(str).replace(/[*+{}!^$\\]/g, '\\$&'),
@@ -67,7 +68,7 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.mer]: /(\s*(?<mer>am|pm))/,												// meridiem suffix (am,pm)
 	[Token.sfx]: /((?:{sep}+|T)({tm}){tzd}?)/,								// time-pattern suffix 'T {tm} Z'; NOTE: {tm} resolves via Layout fallback in compileRegExp (cross-registry dependency: Snippet → Layout)
 	[Token.wkd]: /(?<wkd>Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)/,	// day-name (abbrev or full)
-	[Token.tzd]: /(?<tzd>Z|(?:\+(?:(?:0[0-9]|1[0-3]):?[0-5][0-9]|14:?00)|-(?:(?:0[0-9]|1[0-1]):?[0-5][0-9]|12:?00)))/,	// time-zone offset +14:00 to -12:00; colon optional throughout (including boundary values UTC+14 and UTC-12)
+	[Token.tzd]: new RegExp(`\\s*(?:GMT|UTC)?\\s*(?<tzd>Z|(?:${Object.keys(TIMEZONE).map(w => Match.escape(w.toUpperCase())).join('|')})|${Match.offset.source})`, 'i'),	// time-zone offset or abbreviation with optional GMT/UTC prefix (e.g. GMT+10, UTC+10:00, +10:00, AEST, PST)
 	[Token.nbr]: new RegExp(`(?<nbr>[0-9]+|${Object.keys(NUMBER).map(w => Match.escape(w)).join('|')})`),	// modifier count; number-word keys are regex-escaped at construction time (setPatterns() also re-escapes, but defence-in-depth)
 	[Token.afx]: new RegExp(`((s)? (?<afx>${Match.modifier.source}))?{sep}?`),	// affix optional plural 's' and (ago|hence)
 	[Token.mod]: new RegExp(`((?<mod>${Match.modifier.source})? *)`),
@@ -189,7 +190,7 @@ export type SLICK_KEYS = typeof SLICK_KEYS
 
 /** @internal Tempo Master Guard list */
 export const Guard = [
-	'am', 'pm', 'ago', 'hence', 'this', 'next', 'prev', 'last', 'from', 'now', 'today', 'yesterday', 'tomorrow', 'start', 'mid', 'end',
+	'am', 'pm', 'gmt', 'utc', 'ago', 'hence', 'this', 'next', 'prev', 'last', 'from', 'now', 'today', 'yesterday', 'tomorrow', 'start', 'mid', 'end',
 	'year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond',
 	'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds', 'nanoseconds',
 	'st', 'nd', 'rd', 'th',

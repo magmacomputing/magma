@@ -22,6 +22,21 @@ describe('rrule.library', () => {
 		expect(parsed.byMinute).toEqual([30]);
 	});
 
+	test('parseRRule supports 2-letter, 3-letter, and full weekday names and normalizes to standard RFC 2-letter codes', () => {
+		const parsed = parseRRule('FREQ=WEEKLY;BYDAY=Monday,FRI,Wed,2Thursday');
+		expect(parsed.byDay).toEqual([
+			{ nth: undefined, day: 'MO' },
+			{ nth: undefined, day: 'FR' },
+			{ nth: undefined, day: 'WE' },
+			{ nth: 2, day: 'TH' }
+		]);
+	});
+
+	test('parseRRule supports numeric, 3-letter, and full month names in BYMONTH', () => {
+		const parsed = parseRRule('FREQ=YEARLY;BYMONTH=1,Jan,December,AUG');
+		expect(parsed.byMonth).toEqual([1, 1, 12, 8]);
+	});
+
 	test('expandRRuleEpochs generates correct occurrence timestamps', () => {
 		// 2026-08-07T00:00:00.000Z is Friday
 		const anchor = Date.UTC(2026, 7, 7, 0, 0, 0, 0);

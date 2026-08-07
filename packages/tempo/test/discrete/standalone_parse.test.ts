@@ -59,3 +59,40 @@ test('standalone parse: timezone lookup', () => {
 	const zdt = parse('2025-05-20 10:00', { timeZone: 'pst' });
 	expect(zdt.timeZoneId).toBe('America/Los_Angeles');
 });
+
+test('standalone parse: human date string with GMT/UTC timezone offset (e.g. Aug 6, 16:16 GMT+10)', () => {
+	const zdt = parse('Aug 6, 16:16 GMT+10');
+	expect(zdt.month).toBe(8);
+	expect(zdt.day).toBe(6);
+	expect(zdt.hour).toBe(16);
+	expect(zdt.minute).toBe(16);
+	expect(zdt.offset).toBe('+10:00');
+
+	const zdt2 = parse('Aug 6, 16:16 UTC-5');
+	expect(zdt2.month).toBe(8);
+	expect(zdt2.day).toBe(6);
+	expect(zdt2.hour).toBe(16);
+	expect(zdt2.minute).toBe(16);
+	expect(zdt2.offset).toBe('-05:00');
+
+	const t = new Tempo('Aug 6, 16:16 GMT+10');
+	expect(t.mm).toBe(8);
+	expect(t.dd).toBe(6);
+	expect(t.hh).toBe(16);
+	expect(t.mi).toBe(16);
+
+	const zdtAest = parse('August 6, 16:16 AEST');
+	expect(zdtAest.month).toBe(8);
+	expect(zdtAest.day).toBe(6);
+	expect(zdtAest.hour).toBe(16);
+	expect(zdtAest.minute).toBe(16);
+	expect(zdtAest.timeZoneId).toBe('Australia/Sydney');
+
+	const zdtPst = parse('Aug 6, 16:16 PST');
+	expect(zdtPst.month).toBe(8);
+	expect(zdtPst.day).toBe(6);
+	expect(zdtPst.hour).toBe(16);
+	expect(zdtPst.minute).toBe(16);
+
+	expect(zdtPst.timeZoneId).toBe('America/Los_Angeles');
+});

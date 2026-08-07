@@ -301,6 +301,12 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	const brk = groups["brk"]?.replace(Match.zed, 'UTC');
 	let zone: string | undefined = brk || tzd;
 
+	if (zone && /^([+-]\d{1,2})$/.test(zone)) {
+		const sign = zone[0];
+		const num = Math.abs(parseInt(zone, 10));
+		zone = `${sign}${num.toString().padStart(2, '0')}:00`;
+	}
+
 	let cal = groups["cal"];
 	if (zone?.startsWith('u-ca=')) {
 		cal = zone;
@@ -309,8 +315,13 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 
 	const zdt = dateTime as any;
 	if (zone && zone !== zdt.timeZoneId) {
-		if (config) config.timeZone = zone;
-		dateTime = zdt.toPlainDateTime().toZonedDateTime(zone);
+		const resolvedZone = enums.TIMEZONE[zone.toLowerCase()] ?? zone;
+		if (config) config.timeZone = resolvedZone;
+		try {
+			dateTime = zdt.toPlainDateTime().toZonedDateTime(resolvedZone);
+		} catch {
+			logWarn(`Unrecognized or invalid timezone identifier: '${zone}'`, config);
+		}
 	}
 	if (cal && cal !== (dateTime as any).calendarId) {
 		const calendar = cal.startsWith('u-ca=') ? cal.substring(5) : cal;
