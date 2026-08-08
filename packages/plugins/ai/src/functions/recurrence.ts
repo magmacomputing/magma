@@ -4,7 +4,7 @@ import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
-import type { TempoRecurrenceOptions, TempoRecurrenceResult } from '../core/types.js';
+import type { TempoRecurrenceOptions, TempoRecurrenceResult } from '../types/index.js';
 
 function expandOccurrences(rrule: string, anchor: Tempo, options?: { count?: number; after?: any; before?: any }): Tempo[] {
 	const afterTempo = options?.after ? new Tempo(options.after) : undefined;

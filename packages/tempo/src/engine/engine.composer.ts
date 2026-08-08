@@ -15,7 +15,7 @@ const UNIT_LOOKUP: Record<string, { scale: bigint; matchName: string }> = {
 	ms: { scale: 1_000_000n, matchName: 'Milliseconds' },
 	us: { scale: 1_000n, matchName: 'Microseconds' },
 	ns: { scale: 1n, matchName: 'Nanoseconds' },
-};
+}
 
 /**
  * Logic to compose various input types into a Temporal.ZonedDateTime.  
@@ -41,6 +41,13 @@ export function compose(
 	let dateTime: Temporal.ZonedDateTime | undefined;
 
 	switch (type) {
+		case 'Temporal.ZonedDateTime':
+		case 'Temporal.Instant':
+		case 'Temporal.PlainDateTime':
+		case 'Temporal.PlainDate':
+			temporal = value;
+			break;
+
 		case 'Void':
 		case 'Empty':
 		case 'Undefined':
@@ -51,12 +58,16 @@ export function compose(
 		case 'String':
 			try {
 				let zdt: Temporal.ZonedDateTime;
-				if (value.includes('[')) {
-					zdt = Temporal.ZonedDateTime.from(value);
-				} else if (/Z$|[+-]\d{2}:?\d{2}/i.test(value)) {
-					zdt = Temporal.Instant.from(value).toZonedDateTimeISO(tz);
+				const normValue = value
+					.trim()
+					.replace(/^(\d{4}-\d{2}-\d{2})\s+(?=\d{2}:\d{2})/, '$1T')
+					.replace(/\s+(?=[Zz]|[+-]\d{2}|\[)/, '');
+				if (normValue.includes('[')) {
+					zdt = Temporal.ZonedDateTime.from(normValue);
+				} else if (/Z$|[+-]\d{2}:?\d{2}/i.test(normValue)) {
+					zdt = Temporal.Instant.from(normValue).toZonedDateTimeISO(tz);
 				} else {
-					zdt = Temporal.PlainDateTime.from(value, { overflow: 'constrain' }).toZonedDateTime(tz);
+					zdt = Temporal.PlainDateTime.from(normValue, { overflow: 'constrain' }).toZonedDateTime(tz);
 				}
 				timeZone = getTemporalIds(zdt)[0];
 				temporal = zdt;

@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Automated Doc Harvester**: Created `bin/generate-llms-txt.mjs` monorepo build script integrated into `npm run docs:build` to harvest all 56 markdown documentation files into a unified `llms-full.txt` corpus.
 - **AI Documentation Guide**: Added a dedicated `AI & IDE Integration` guide (`doc/1-getting-started/ai-integration.md`) featured directly in the primary VitePress navigation sidebar under Getting Started.
 
+### Changed & Hardened
+- **Hardened String-to-Temporal Composer (`engine.composer.ts`)**: Upgraded raw string fallback resolution to utilize a lookahead boundary regex (`/^(\d{4}-\d{2}-\d{2})\s+(?=\d{2}:\d{2})/`) and whitespace stripper (`/\s+(?=[Zz]|[+-]\d{2}|\[)/`). This automatically normalizes SQL/space-delimited timestamps (`2026-08-08 10:30`) to ISO 8601 (`2026-08-08T10:30`), collapses multiple whitespace runs, and strips spaces before UTC markers (`Z`), offsets (`+10:00`), and timezone brackets (`[Australia/Sydney]`), while ensuring timezone names containing internal spaces (e.g., `[America/Port of Spain]`) remain uncorrupted.
+- **Master Guard Fast-Path Safety Valve (`module.parse.ts`)**: Added a zero-cost bypass for standard ISO date strings (`YYYY-MM-DD`), preventing false-negative token scanner rejections before reaching the layout resolution engine.
+
 ## [3.11.0] - 2026-07-31
 
 ### Added

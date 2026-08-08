@@ -1,6 +1,6 @@
 // Core Infrastructure & Configuration
 export { TempoAiError } from './core/error.js';
-export * from './core/types.js';
+export * from './types/index.js';
 export * from './core/config.js';
 
 // AI Manifest Support
@@ -12,6 +12,7 @@ export { initAI, clearAiCache, getAiRateLimits, getAiConfig } from './core/init.
 // AI Function Handlers
 export { parseAI } from './functions/parse.js';
 export { recurrenceAI } from './functions/recurrence.js';
+export { scheduleAI } from './functions/schedule.js';
 export { isRRuleString } from '@magmacomputing/library';
 
 /*

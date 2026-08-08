@@ -1732,6 +1732,9 @@ export class Tempo {
 			logError(msg, this.#local.config);
 			return undefined as any;
 		}
+		if (isObject(res) && 'value' in res) {
+			return (res as any).value ?? (undefined as any);
+		}
 		return res;
 	}
 
@@ -1835,7 +1838,6 @@ export namespace Tempo {
 	export type Mutate = t.Mutate;
 	export type Set = t.MutateSet;
 	export type Add = t.MutateAdd;
-
 
 	export type Formats = t.Formats;
 	export type Format = t.Format;

@@ -1,4 +1,5 @@
-import type { AiProvider } from './types.js';
+import { secure } from '@magmacomputing/library';
+import type { AiProvider } from '../types/index.js';
 
 /**
  * ## AiMode
@@ -23,25 +24,25 @@ export const RESERVED_PROVIDER_IDS: ReadonlySet<string> = new Set(['native', 'ca
 /**
  * Built-in default endpoint and model configurations for popular providers.
  */
-export const DEFAULT_PROVIDERS: Readonly<Record<string, Readonly<Partial<AiProvider>>>> = Object.freeze({
-	groq: Object.freeze({
+export const DEFAULT_PROVIDERS: Record<string, Readonly<Partial<AiProvider>>> = secure({
+	groq: {
 		url: 'https://api.groq.com/openai/v1/chat/completions',
 		model: 'llama-3.3-70b-versatile',
 		tokenParam: 'max_tokens'
-	}),
-	openai: Object.freeze({
+	},
+	openai: {
 		url: 'https://api.openai.com/v1/chat/completions',
 		model: 'gpt-5.4-mini',
 		tokenParam: 'max_completion_tokens'
-	}),
-	gemini: Object.freeze({
+	},
+	gemini: {
 		url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
 		model: 'gemini-3.6-flash',
 		tokenParam: 'max_tokens'
-	}),
-	mistral: Object.freeze({
+	},
+	mistral: {
 		url: 'https://api.mistral.ai/v1/chat/completions',
 		model: 'mistral-small-latest',
 		tokenParam: 'max_tokens'
-	})
+	}
 });

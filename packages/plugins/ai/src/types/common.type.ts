@@ -1,5 +1,5 @@
 import type { Tempo } from '@magmacomputing/tempo';
-import type { AiMode } from './config.js';
+import type { AiMode } from '../core/config.js';
 
 /**
  * ## TempoAiMeta
@@ -74,45 +74,6 @@ export interface AiProvider {
 }
 
 /**
- * ## AiParseOptions
- * Options passed to `parseAI(input, options)`.
- */
-export interface AiParseOptions {
-	/** Reference anchor date/time instance or string */
-	anchor?: any;
-	/** Target timeZone override */
-	timeZone?: string;
-	/** Target calendar override */
-	calendar?: string;
-	/** Target locale override */
-	locale?: string;
-	/** Target sphere override */
-	sphere?: string;
-	/** If true, bypasses cache and native parsing to force an LLM fetch */
-	force?: boolean;
-	/** If false, disables reading and writing to cache */
-	cache?: boolean;
-	/** Optional custom cache adapter engine (e.g. Redis, KV store) for this request */
-	cacheAdapter?: AiCacheAdapter;
-	/** Optional TTL override in milliseconds for cached result */
-	ttl?: number;
-	/** If true, logs prompt context and LLM payloads to console */
-	debug?: boolean;
-	/** Execution mode across provider farm (`AiMode.Fallback` | `AiMode.Race` | `AiMode.Consensus` or string literal) */
-	mode?: AiMode;
-	/** Per-request provider configuration overrides */
-	providers?: AiProvider[];
-	/** Strict minimum confidence threshold (0.0 to 1.0). Throws TempoAiError(422) if score is lower */
-	minConfidence?: number;
-	/** If true, places TempoAiError into array index position instead of rejecting batch */
-	softErrors?: boolean;
-	/** Optional request timeout in milliseconds (overrides provider and global timeout) */
-	timeout?: number;
-	/** Allow extra options */
-	[key: string]: any;
-}
-
-/**
  * ## AiConfig
  * Configuration options for the AI parsing plugin.
  */
@@ -151,44 +112,4 @@ export interface AiRateLimits {
 	remainingTokens: number | null;
 	/** A Tempo instance representing the exact time the limits reset, or null if unknown */
 	resetAt: Tempo | null;
-}
-
-/**
- * ## TempoRecurrenceOptions
- * Options passed to `recurrenceAI(input, options)`.
- */
-export interface TempoRecurrenceOptions extends AiParseOptions {
-	/** Start date/time window for occurrence expansion */
-	after?: any;
-	/** End date/time window for occurrence expansion */
-	before?: any;
-	/** Number of occurrences to pull per batch (default: 5) */
-	count?: number;
-	/** Preferred BCP 47 locale tag for summary output (e.g. 'en-US', 'fr-FR', 'es-ES') */
-	locale?: string;
-}
-
-/**
- * ## TempoRecurrenceResult
- * Structured multi-directional recurrence result returned by `recurrenceAI`.
- */
-export interface TempoRecurrenceResult {
-	/** Standard RFC 5545 RRULE string (e.g. 'FREQ=WEEKLY;BYDAY=TU') */
-	rrule: string;
-	/** Localized human-friendly summary of the schedule (e.g. 'Every Tuesday at 15:00') */
-	summary: string;
-	/** True if schedule has an explicit end date or count limit; false if infinite */
-	isFinite: boolean;
-	/** Total count of occurrences if finite, or Infinity (Number.POSITIVE_INFINITY) */
-	size: number;
-	/** Advances cursor and returns the next batch of N Tempo instances (default: 5) */
-	take(count?: number): Tempo[];
-	/** Lazy generator yielding Tempo instances on demand */
-	[Symbol.iterator](): Generator<Tempo, void, unknown>;
-	/** Confidence rating from 0.0 (unparseable) to 1.0 (certain) */
-	confidence: number;
-	/** Provider ID responsible for processing or 'rrule-parser' for native RRULE inputs */
-	provider: string;
-	/** Reasoning / explanation of the recurrence pattern */
-	reasoning?: string | undefined;
 }

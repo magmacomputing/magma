@@ -2,7 +2,7 @@ import { Tempo } from '@magmacomputing/tempo';
 
 import { getResolvedProviderDefaults, loadRemoteManifest } from './manifest.js';
 import { normalizeCacheInput, assertNoReservedProviderId } from './support.js';
-import type { AiConfig, AiRateLimits, AiProvider } from './types.js';
+import type { AiConfig, AiRateLimits, AiProvider } from '../types/index.js';
 
 export const _state: {
   config: AiConfig;

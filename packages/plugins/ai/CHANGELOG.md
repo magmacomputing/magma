@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2026-08-04
 
 ### Added
+- **Intelligent Calendar Scheduling (`scheduleAI`)**: Introduced natural language appointment scheduling with deterministic conflict detection and automated slot bumping powered by `Interval.overlaps()`.
+- **RFC 5545 Recurrence Engine (`recurrenceAI`)**: Added full recurrence pattern expansion with Cartesian product support across `BYDAY`, `BYHOUR`, `BYMINUTE`, and `BYMONTH` rules, backed by lazy page-based iteration.
+- **Deep-Immutability for Default Config**: Migrated `DEFAULT_PROVIDERS` to the `secure()` Proxy utility, enforcing zero-mutation safety across AI provider configurations without dictionary lookup overhead.
 - **3-Tier Timeout Resolution Hierarchy**: Introduced flexible, multi-level request timeout control for LLM API queries to prevent network hangs and ensure predictable SLAs:
   1. *Call-site override*: `parseAI(input, { timeout: 3000 })`
   2. *Provider-specific override*: `{ id: 'groq', options: { timeout: 2000 } }`
@@ -19,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fail-Open Storage Resilience**: Custom cache adapter errors during `get()` or `set()` operations fail open silently to direct LLM resolution, preserving application request uptime.
 - **Dynamic Remote Provider Manifest (`loadRemoteManifest`)**: Lazily fetches remote provider defaults (`providers.v1.json`) on initialization with a 1500ms timeout and automatic air-gapped fallback to compiled `DEFAULT_PROVIDERS`.
 - **Cache Eviction Synchronization**: Enhanced `clearAiCache()` to flush matching keys and prefixes across both `Tempo.cache` and custom `AiCacheAdapter` storage engines, returning `Promise<void>` to await async adapter eviction.
+
+### Changed
+- **Streamlined ISO Parsing**: Refactored internal date resolution in `scheduleAI` to delegate directly to core `Tempo` constructors (`new Tempo(str, { timeZone })`), removing redundant regex parsing layers and manual `Temporal.PlainDateTime` conversions.
 
 ## [0.2.0] - 2026-07-30
 

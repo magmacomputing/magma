@@ -260,6 +260,9 @@ const _ParseEngine = {
 
 			let guard = (TempoClass as any)?.[sym.$guard]?.test(trim) ?? true;
 
+			if (!guard && /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(trim))
+				guard = true;
+
 			// 🛡️ Bypass the strict global guard if the current instance is using localized parsing
 			if (!guard && (!isEmpty(state.parse.monthMap) || !isEmpty(state.parse.weekdayMap)))
 				guard = true;

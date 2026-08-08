@@ -2,7 +2,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { TempoAiError } from './error.js';
 import { RESERVED_PROVIDER_IDS } from './config.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
-import type { AiProvider, TempoAiMeta } from './types.js';
+import type { AiProvider, TempoAiMeta } from '../types/index.js';
 
 export function assertNoReservedProviderId(providers: Partial<AiProvider>[]): void {
   for (const p of providers) {

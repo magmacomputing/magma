@@ -1,5 +1,5 @@
 import { DEFAULT_PROVIDERS } from './config.js';
-import type { AiProvider } from './types.js';
+import type { AiProvider } from '../types/index.js';
 
 export const DEFAULT_REMOTE_MANIFEST_URL = 'https://tempo.magmacomputing.com.au/providers.v1.json';
 export const DEFAULT_MANIFEST_TIMEOUT_MS = 1500;
