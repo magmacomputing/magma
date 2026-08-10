@@ -87,12 +87,27 @@ test('standalone parse: human date string with GMT/UTC timezone offset (e.g. Aug
 	expect(zdtAest.hour).toBe(16);
 	expect(zdtAest.minute).toBe(16);
 	expect(zdtAest.timeZoneId).toBe('Australia/Sydney');
+	expect(zdtAest.offset).toBe('+10:00');
 
 	const zdtPst = parse('Aug 6, 16:16 PST');
 	expect(zdtPst.month).toBe(8);
 	expect(zdtPst.day).toBe(6);
 	expect(zdtPst.hour).toBe(16);
 	expect(zdtPst.minute).toBe(16);
-
 	expect(zdtPst.timeZoneId).toBe('America/Los_Angeles');
+	expect(zdtPst.offset).toBe('-07:00');
+
+	const zdt3 = parse('Aug 6, 16:16 GMT+5:30');
+	expect(zdt3.month).toBe(8);
+	expect(zdt3.day).toBe(6);
+	expect(zdt3.hour).toBe(16);
+	expect(zdt3.minute).toBe(16);
+	expect(zdt3.offset).toBe('+05:30');
+
+	const zdt4 = parse('Aug 6, 16:16 UTC-8:30');
+	expect(zdt4.month).toBe(8);
+	expect(zdt4.day).toBe(6);
+	expect(zdt4.hour).toBe(16);
+	expect(zdt4.minute).toBe(16);
+	expect(zdt4.offset).toBe('-08:30');
 });

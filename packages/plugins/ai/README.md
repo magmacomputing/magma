@@ -25,21 +25,33 @@ npm install @magmacomputing/tempo-plugin-ai
 ### 🎯 Usage
 
 ```typescript
-import { parseAI, initAI, clearAiCache } from '@magmacomputing/tempo-plugin-ai';
+import { parseAI, scheduleAI, initAI, clearAiCache } from '@magmacomputing/tempo-plugin-ai';
 
 // Initialize with your BYOK API keys
-initAI({
+await initAI({
   providers: [
     { id: 'groq', key: process.env.GROQ_API_KEY! }
   ]
 });
 
-// Parse natural language into a Tempo instance!
+// 1. Parse natural language into a Tempo instance!
 const dt = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
 
 console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
-console.log(dt.ai?.confidence);            // 0.98
-console.log(dt.ai?.provider);              // 'groq'
+console.log(dt.ai?.confidence);             // 0.98
+console.log(dt.ai?.provider);               // 'groq'
+
+// 2. Schedule appointment slots around busy events
+const booking = await scheduleAI("45 min sync next Wednesday afternoon", {
+  events: [{ start: "2026-08-12 14:00", end: "2026-08-12 15:00", title: "Team standup" }]
+});
+
+console.log(booking.start.format('{yyyy}-{mm}-{dd} {hh}:{mi}')); // 2026-08-12 15:00
+console.log(booking.end.format('{yyyy}-{mm}-{dd} {hh}:{mi}'));   // 2026-08-12 15:45
+console.log(booking.durationMinutes);                            // 45
+console.log(booking.slot);                                       // Interval<Tempo>
+console.log(booking.alternatives);                               // Interval<Tempo>[]
+console.log(booking.ai?.conflictBumped);                         // true
 
 // Evict cached resolution
 clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");

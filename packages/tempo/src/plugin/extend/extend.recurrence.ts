@@ -16,7 +16,9 @@ declare module '../../tempo.class.js' {
 Tempo.prototype.nextOccurrence = function (this: Tempo, rrule: string | { rrule: string }): Tempo {
 	const rruleStr = isString(rrule) ? rrule : rrule.rrule;
 	const nextMs = getNextRRuleEpoch(rruleStr, this.epoch.ms);
-	return new Tempo(nextMs, this.config);
+	const epochMs = Temporal.Instant.fromEpochMilliseconds(nextMs);
+
+	return new (this.constructor as typeof Tempo)(epochMs, this.config);
 }
 
 export { isRRuleString, getNextRRuleEpoch };

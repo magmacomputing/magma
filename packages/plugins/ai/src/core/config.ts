@@ -1,4 +1,4 @@
-import { secure } from '@magmacomputing/library';
+import { secure } from '@magmacomputing/tempo/library';
 import type { AiProvider } from '../types/index.js';
 
 /**

@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.11.1] - 2026-08-03
+## [3.11.1] - 2026-08-10
 
 ### Added
 - **Timezone Abbreviation & Humanized Offset Parsing**: Upgraded `Token.tzd` snippet compilation and Master Guard scanning to natively support 3–4 letter timezone abbreviations (e.g. `AEST`, `PST`, `EST`, `CET`, `JST`) alongside `GMT`/`UTC` offset prefixes (e.g. `'Aug 6, 16:16 GMT+10'`, `'August 6, 16:16 AEST'`). Dynamically compiles `Token.tzd` from `DEFAULTS.TIMEZONE` and introduces `Match.offset` for clean structural offset matching with downstream `Temporal.ZonedDateTime` validation.
@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AI Documentation Guide**: Added a dedicated `AI & IDE Integration` guide (`doc/1-getting-started/ai-integration.md`) featured directly in the primary VitePress navigation sidebar under Getting Started.
 
 ### Changed & Hardened
+- **Timezone Offset Normalization (`engine.lexer.ts`)**: Upgraded `parseZone` to normalize signed hour-and-minute offsets (e.g. `+5:30`, `-8:30`, `+05:30`, `+530`) to canonical ISO-8601 `±HH:MM` format before calling `toZonedDateTime`, enabling seamless parsing for half-hour and quarter-hour timezones.
+- **Safe Timezone Configuration Mutation**: Hardened `parseZone` so that `config.timeZone` is updated only when `toZonedDateTime` completes successfully without throwing, preventing state mutation on invalid timezone identifiers.
+- **Remote Provider Manifest Defaults (`providers.v1.json`)**: Updated the Groq provider default model from the retiring `llama-3.3-70b-versatile` to `openai/gpt-oss-120b`.
 - **Hardened String-to-Temporal Composer (`engine.composer.ts`)**: Upgraded raw string fallback resolution to utilize a lookahead boundary regex (`/^(\d{4}-\d{2}-\d{2})\s+(?=\d{2}:\d{2})/`) and whitespace stripper (`/\s+(?=[Zz]|[+-]\d{2}|\[)/`). This automatically normalizes SQL/space-delimited timestamps (`2026-08-08 10:30`) to ISO 8601 (`2026-08-08T10:30`), collapses multiple whitespace runs, and strips spaces before UTC markers (`Z`), offsets (`+10:00`), and timezone brackets (`[Australia/Sydney]`), while ensuring timezone names containing internal spaces (e.g., `[America/Port of Spain]`) remain uncorrupted.
 - **Master Guard Fast-Path Safety Valve (`module.parse.ts`)**: Added a zero-cost bypass for standard ISO date strings (`YYYY-MM-DD`), preventing false-negative token scanner rejections before reaching the layout resolution engine.
 

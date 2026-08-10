@@ -1,9 +1,13 @@
 import { Tempo } from '@magmacomputing/tempo';
 
-import { getResolvedProviderDefaults, loadRemoteManifest } from './manifest.js';
+import { getResolvedProviderDefaults, loadRemoteManifest, resetManifestCache } from './manifest.js';
 import { normalizeCacheInput, assertNoReservedProviderId } from './support.js';
 import type { AiConfig, AiRateLimits, AiProvider } from '../types/index.js';
 
+/**
+ * Internal singleton state container for the AI plugin.
+ * @internal
+ */
 export const _state: {
   config: AiConfig;
   limits: AiRateLimits | null;
@@ -14,6 +18,21 @@ export const _state: {
   revision: 0,
 }
 
+/**
+ * Initializes the Tempo AI plugin with the specified global configuration.
+ * Configures AI provider credentials, models, timeouts, caching options,
+ * and asynchronously resolves provider defaults against remote manifests.
+ *
+ * @param config - Global AI plugin configuration object
+ * @returns A Promise that resolves once initial configuration and background manifest synchronization is scheduled
+ * @example
+ * ```ts
+ * await initAI({
+ *   providers: [{ id: 'groq', key: 'gsk_...' }],
+ *   mode: AiMode.Consensus
+ * });
+ * ```
+ */
 export function initAI(config: AiConfig): Promise<void> {
   if (config.providers)
     assertNoReservedProviderId(config.providers);
@@ -44,38 +63,64 @@ export function initAI(config: AiConfig): Promise<void> {
     Tempo.init({ cache: config.cache, silent: true });
   }
 
-  return (async () => {
-    if (remoteUrl !== false) {
-      try {
-        await loadRemoteManifest(remoteUrl, undefined, config.debug ?? _state.config.debug);
-      } catch { }
-    }
+	return (async () => {
+		if (remoteUrl !== false) {
+			try {
+				await loadRemoteManifest(remoteUrl, undefined, config.debug ?? _state.config.debug);
+			} catch { }
+		}
 
-    if (_state.revision !== currentRevision) return;
+		if (_state.revision !== currentRevision) return;
 
-    if (config.fetchDefaults && config.providers) {
-      const asyncProviders = await Promise.all(config.providers.map(async p => {
-        const normalizedId = p.id?.toLowerCase() ?? '';
-        const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
-        let hookOptions: Partial<AiProvider> | null = null;
-        try {
-          hookOptions = await config.fetchDefaults!(normalizedId);
-        } catch { }
-        return {
-          ...defaults,
-          ...(hookOptions ?? {}),
-          ...p
-        } as AiProvider;
-      }));
-      if (_state.revision === currentRevision)
-        _state.config.providers = asyncProviders;
-    } else if (config.providers) {
-      if (_state.revision === currentRevision)
-        _state.config.providers = resolveSyncProviders(config.providers);
-    }
-  })();
+		const fetchDefaults = config.fetchDefaults ?? _state.config.fetchDefaults;
+		const currentProviders = config.providers ?? _state.config.providers;
+
+		if (fetchDefaults && currentProviders) {
+			const asyncProviders = await Promise.all(currentProviders.map(async p => {
+				const normalizedId = p.id?.toLowerCase() ?? '';
+				const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
+				let hookOptions: Partial<AiProvider> | null = null;
+				try {
+					hookOptions = await fetchDefaults(normalizedId);
+				} catch { }
+				return {
+					...defaults,
+					...(hookOptions ?? {}),
+					...p,
+				} as AiProvider;
+			}));
+			if (_state.revision === currentRevision)
+				_state.config.providers = asyncProviders;
+		} else if (config.providers) {
+			if (_state.revision === currentRevision)
+				_state.config.providers = resolveSyncProviders(config.providers);
+		}
+	})();
 }
 
+/**
+ * Resets the global AI state, cached rate limits, and remote manifest cache.
+ * Useful for test isolation and clean lifecycle teardown.
+ */
+export function resetAI(): void {
+  _state.config = {};
+  _state.limits = null;
+  _state.revision = 0;
+  resetManifestCache();
+}
+
+/**
+ * Clears AI parsing results from the in-memory cache and any external storage adapters.
+ * If specific input strings or keys are provided, selectively purges only those entries.
+ *
+ * @param input - Optional string key, date string, or array of strings to purge from the cache
+ * @returns A Promise that resolves once cache eviction is completed
+ * @example
+ * ```ts
+ * await clearAiCache('next tuesday');
+ * await clearAiCache(); // Clears all cached AI entries
+ * ```
+ */
 export async function clearAiCache(input?: string | string[]): Promise<void> {
   const adapter = _state.config.cacheAdapter;
 
@@ -115,24 +160,42 @@ export async function clearAiCache(input?: string | string[]): Promise<void> {
   }
 }
 
+/**
+ * Retrieves the latest observed rate limits across all provider responses.
+ *
+ * @returns The current rate limits snapshot containing remaining requests/tokens and reset timestamp, or `null` if none recorded
+ */
 export function getAiRateLimits(): AiRateLimits | null {
-	return _state.limits;
+  return _state.limits;
 }
 
+/**
+ * Returns an immutable, sanitized snapshot of the active AI configuration.
+ * Sensitive provider API keys are redacted for safety.
+ *
+ * @returns A frozen, read-only copy of the active AI configuration with redacted API keys
+ */
 export function getAiConfig(): Readonly<AiConfig> {
-	const sanitizedProviders: AiProvider[] = _state.config.providers?.map(p => {
-		const clone = { ...p };
-		if (clone.key)
-			clone.key = '[REDACTED]';
-		return clone;
-	}) ?? [];
+  const sanitizedProviders: AiProvider[] = _state.config.providers?.map(p => {
+    const clone = { ...p };
+    if (clone.key)
+      clone.key = '[REDACTED]';
+    return clone;
+  }) ?? [];
 
-	return Object.freeze({
-		..._state.config,
-		providers: Object.freeze(sanitizedProviders) as unknown as AiProvider[]
-	});
+  return Object.freeze({
+    ..._state.config,
+    providers: Object.freeze(sanitizedProviders) as unknown as AiProvider[]
+  });
 }
 
+/**
+ * Parses HTTP rate-limit reset headers into a `Tempo` instance.
+ * Supports raw seconds, UNIX timestamps, compound durations (e.g. '1m30s'), and HTTP-date strings.
+ *
+ * @param resetHeader - The raw reset header string value (e.g. from `Retry-After` or `x-ratelimit-reset-*`)
+ * @returns A `Tempo` instance pointing to the reset time, or `null` if unparseable
+ */
 export function parseResetHeaderToTempo(resetHeader: string): Tempo | null {
   const trimmed = resetHeader.trim();
   if (!trimmed) return null;
@@ -193,6 +256,13 @@ export function parseResetHeaderToTempo(resetHeader: string): Tempo | null {
   return null;
 }
 
+/**
+ * Extracts and parses rate-limiting metadata from an HTTP response's headers.
+ * Inspects `x-ratelimit-remaining-requests`, `x-ratelimit-remaining-tokens`, and `retry-after`/`reset` headers.
+ *
+ * @param response - The Fetch `Response` object to inspect
+ * @returns An `AiRateLimits` structure, or `null` if no rate-limit headers are present
+ */
 export function parseRateLimitsFromResponse(response: Response): AiRateLimits | null {
   const remReqHeader = response.headers.get('x-ratelimit-remaining-requests');
   const remTokHeader = response.headers.get('x-ratelimit-remaining-tokens');
@@ -220,6 +290,12 @@ export function parseRateLimitsFromResponse(response: Response): AiRateLimits | 
   }
 }
 
+/**
+ * Inspects an HTTP response and extracts updated rate-limit statistics.
+ *
+ * @param response - The Fetch `Response` object to inspect
+ * @returns An `AiRateLimits` structure, or `null` if no rate-limit headers are present
+ */
 export function updateRateLimitsFromResponse(response: Response): AiRateLimits | null {
   return parseRateLimitsFromResponse(response);
 }

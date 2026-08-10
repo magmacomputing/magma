@@ -7,28 +7,31 @@ describe('AI Parsing Plugin (parseAI)', () => {
 	const liveProviderId = process.env.GROQ_API_KEY ? 'groq' : 'openai';
 	const isLiveTest = Boolean(process.env.LIVE_AI_TEST && liveApiKey);
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		vi.spyOn(console, 'warn').mockImplementation(() => {});
 		vi.spyOn(console, 'error').mockImplementation(() => {});
 		vi.spyOn(console, 'log').mockImplementation(() => {});
 
 		if (isLiveTest) {
-			initAI({
+			return initAI({
+				remoteConfigUrl: false,
 				providers: [{ id: liveProviderId, key: liveApiKey! }]
 			});
 		} else {
-			initAI({
+			return initAI({
+				remoteConfigUrl: false,
 				providers: [{ id: 'groq', key: 'mock-key-for-unit-testing' }]
 			});
 		}
 	});
 
 	afterEach(() => {
-		vi.clearAllMocks();
+		vi.restoreAllMocks();
 	});
 
-	it('should return current runtime configuration via getAiConfig', () => {
-		initAI({
+	it('should return current runtime configuration via getAiConfig', async () => {
+		await initAI({
+			remoteConfigUrl: false,
 			providers: [{ id: 'groq', key: 'test-key-123' }],
 			mode: AiMode.Fallback,
 			timeout: 3000,
@@ -58,12 +61,13 @@ describe('AI Parsing Plugin (parseAI)', () => {
 	});
 
 	it('should throw TempoAiError if reserved provider ID "native" or "cache" is used in initAI', () => {
-		expect(() => initAI({ providers: [{ id: 'native', key: '123' }] })).toThrow(TempoAiError);
-		expect(() => initAI({ providers: [{ id: 'cache', key: '123' }] })).toThrow(TempoAiError);
+		expect(() => initAI({ remoteConfigUrl: false, providers: [{ id: 'native', key: '123' }] })).toThrow(TempoAiError);
+		expect(() => initAI({ remoteConfigUrl: false, providers: [{ id: 'cache', key: '123' }] })).toThrow(TempoAiError);
 	});
 
 	it('should canonicalize Gemini provider ID and use gemini-3.6-flash model by default', async () => {
-		initAI({
+		await initAI({
+			remoteConfigUrl: false,
 			providers: [{ id: 'Gemini', key: 'mock-gemini-key' }]
 		});
 		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
@@ -77,9 +81,21 @@ describe('AI Parsing Plugin (parseAI)', () => {
 	});
 
 	it('should throw TempoAiError if no key is configured and AI is needed', async () => {
-		initAI({ providers: [] });
+		await initAI({ remoteConfigUrl: false, providers: [] });
 		await expect(parseAI('Next Thanksgiving')).rejects.toThrow(TempoAiError);
 		await expect(parseAI('Next Thanksgiving')).rejects.toThrow('No AI providers configured.');
+	});
+
+	it('should throw TempoAiError with status 400 if an invalid mode is specified in parseAI', async () => {
+		await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
+		try {
+			await parseAI('Next Thanksgiving', { mode: 'invalid-mode' as any, force: true });
+			expect.unreachable('Should have thrown TempoAiError');
+		} catch (err: any) {
+			expect(err).toBeInstanceOf(TempoAiError);
+			expect(err.code).toBe(400);
+			expect(err.message).toContain("Invalid execution mode: 'invalid-mode'");
+		}
 	});
 
 	it('should parse natural language successfully and attach secured .ai metadata', async () => {
@@ -190,7 +206,8 @@ describe('AI Parsing Plugin (parseAI)', () => {
 	});
 
 	it('should cascade from low-confidence local provider to high-confidence online provider in Fallback mode', async () => {
-		initAI({
+		await initAI({
+			remoteConfigUrl: false,
 			providers: [
 				{ id: 'local-llm', key: 'key1', url: 'https://api.openai.com/v1/chat', model: 'local' },
 				{ id: 'cloud-llm', key: 'key2', url: 'https://api.openai.com/v1/chat', model: 'cloud' }
@@ -214,7 +231,8 @@ describe('AI Parsing Plugin (parseAI)', () => {
 	});
 
 	it('should short-circuit and stop looking to other providers when a provider meets minConfidence', async () => {
-		initAI({
+		await initAI({
+			remoteConfigUrl: false,
 			providers: [
 				{ id: 'local-llm', key: 'key1', url: 'https://api.openai.com/v1/chat', model: 'local' },
 				{ id: 'cloud-llm', key: 'key2', url: 'https://api.openai.com/v1/chat', model: 'cloud' }
@@ -258,7 +276,8 @@ describe('AI Parsing Plugin (parseAI)', () => {
 	});
 
 	it('should support softErrors in array batch processing', async () => {
-		initAI({
+		await initAI({
+			remoteConfigUrl: false,
 			providers: [{ id: 'groq', key: 'test-key' }]
 		});
 
@@ -335,7 +354,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 
 	describe('Mocked Network Failures', () => {
 		it('should throw TempoAiError with 401 when API key is bad, expired, or revoked', async () => {
-			initAI({ providers: [{ id: 'openai', key: 'bad_key' }] });
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'bad_key' }] });
 
 			vi.spyOn(global, 'fetch').mockResolvedValueOnce(new Response(null, {
 				status: 401,
@@ -353,7 +372,8 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		});
 
 		it('should seamlessly fallback to the next provider if the first hits a 429 Exhausted Key rate limit', async () => {
-			initAI({
+			await initAI({
+				remoteConfigUrl: false,
 				providers: [
 					{ id: 'openai', key: 'exhausted_key' },
 					{ id: 'openai', key: 'good_key' }
@@ -415,12 +435,12 @@ describe('AI Parsing Plugin (parseAI)', () => {
 			expect(Array.from(cache.keys())).not.toContain('tempKey');
 		});
 
-		it('should preserve clearAiCache functionality', () => {
+		it('should preserve clearAiCache functionality', async () => {
 			const cache = new BoundedCache(100);
 			cache.set('Thanksgiving::2026-05-10', '2026-11-26T00:00:00Z');
 			cache.set('Christmas::2026-05-10', '2026-12-25T00:00:00Z');
 
-			initAI({ cache });
+			await initAI({ remoteConfigUrl: false, cache });
 			clearAiCache('Thanksgiving');
 
 			expect(cache.has('Thanksgiving::2026-05-10')).toBe(false);
@@ -432,7 +452,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 				['my_custom_company_glossary_term', '2026-11-01T00:00:00Z']
 			]);
 
-			initAI({ cache: glossary });
+			await initAI({ remoteConfigUrl: false, cache: glossary });
 
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
@@ -446,7 +466,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 
 	describe('Rate Limit & Reset Header Parsing Hardening', () => {
 		it('should correctly parse compound reset duration strings like 4m12s and 1h30m', async () => {
-			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
 			fetchSpy.mockResolvedValueOnce(new Response(null, {
@@ -472,7 +492,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		});
 
 		it('should replace rather than retain prior rate-limit state when subsequent response has no headers', async () => {
-			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
 			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
@@ -499,7 +519,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		});
 
 		it('should parse HTTP-date format Retry-After header strings into valid Tempo resetAt', async () => {
-			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
 			const httpDateStr = 'Wed, 21 Oct 2026 07:28:00 GMT';
@@ -518,7 +538,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		});
 
 		it('should attach limits snapshot directly to the returned Tempo instance .ai property', async () => {
-			initAI({ providers: [{ id: 'groq', key: 'test-key' }] });
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'groq', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
 			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
@@ -538,7 +558,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		});
 
 		it('should ignore invalid or malformed duration strings without throwing or crashing', async () => {
-			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
 			fetchSpy.mockResolvedValueOnce(new Response(null, {

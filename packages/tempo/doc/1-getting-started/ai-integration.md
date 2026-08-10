@@ -22,7 +22,7 @@ Add Tempo to Cursor's native documentation index:
 ---
 
 ### 2. VS Code & GitHub Copilot
-In VS Code, configure GitHub Copilot Chat by adding a `.github/copilot-instructions.md` file (or `.cursorrules`) to the root of your workspace:
+In VS Code, configure GitHub Copilot Chat by adding a `.github/copilot-instructions.md` file to the root of your workspace:
 
 ```markdown
 # Tempo AI Rules
@@ -53,7 +53,7 @@ For web-based LLM interfaces, reference or copy-paste the full, un-truncated doc
 
 ## 🛠️ Prompting AI for Custom Layout Extensions
 
-When asking AI assistants to generate custom layout patterns for parsing unique date-time formats, instruct the model to use Tempo's configuration syntax (`Tempo.init({ registry: { layouts: { ... } } })`) and named capture tokens (`{yy}`, `{mon}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tzd}`).
+When asking AI assistants to generate custom layout patterns for parsing unique date-time formats, instruct the model to use Tempo's configuration syntax (`Tempo.init({ registry: { layouts: { ... } } })`) and named capture tokens (`{yy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tzd}`).
 
 ### Sample Prompt:
 > *"Using the rules from https://tempo.magmacomputing.com.au/llms.txt, register a custom Tempo layout for fiscal quarters (e.g., 'Q3 2026') using `Tempo.init({ registry: { layouts: { ... } } })` and parse a date using `Tempo.parse()`."*

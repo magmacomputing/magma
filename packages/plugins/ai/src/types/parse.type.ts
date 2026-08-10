@@ -1,5 +1,30 @@
 import type { AiMode } from '../core/config.js';
-import type { AiCacheAdapter, AiProvider } from './common.type.js';
+import type { AiCacheAdapter, AiProvider, TempoBaseAiMeta } from './common.type.js';
+
+declare module '@magmacomputing/tempo' {
+	interface Tempo {
+		/** Frozen AI resolution metadata attached when parsed via parseAI */
+		ai?: TempoParseAiMeta | undefined;
+	}
+}
+
+/**
+ * ## TempoParseAiMeta
+ * Frozen AI resolution metadata attached to Tempo instances produced by `parseAI`.
+ */
+export interface TempoParseAiMeta extends TempoBaseAiMeta {
+	/** Whether the result was retrieved from cache */
+	readonly cached: boolean;
+	/** Whether the input prompt had multiple possible interpretations */
+	readonly ambiguous: boolean;
+	/** Granularity level of the parsed date ('year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'unknown') */
+	readonly granularity: string;
+	/** Raw un-augmented ISO 8601 string returned by the LLM (if applicable) */
+	readonly rawIso?: string | undefined;
+}
+
+/** Backward-compatible alias for TempoParseAiMeta */
+export type TempoAiMeta = TempoParseAiMeta;
 
 /**
  * ## AiParseOptions

@@ -1,12 +1,13 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { recurrenceAI, isRRuleString, initAI } from '../src/index.js';
+import { isRRuleString } from '@magmacomputing/tempo/library';
+import { recurrenceAI, initAI } from '../src/index.js';
 
 describe('AI Recurrence Plugin (recurrenceAI)', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		vi.spyOn(console, 'warn').mockImplementation(() => { });
 		vi.spyOn(console, 'error').mockImplementation(() => { });
 		vi.spyOn(console, 'log').mockImplementation(() => { });
-		initAI({ providers: [{ id: 'groq', key: 'mock-key-for-unit-testing' }] });
+		await initAI({ remoteConfigUrl: false, providers: [{ id: 'groq', key: 'mock-key-for-unit-testing' }] });
 	});
 
 	afterEach(() => {
@@ -226,11 +227,36 @@ describe('AI Recurrence Plugin (recurrenceAI)', () => {
 		const result = await recurrenceAI(rruleStr, { anchor });
 
 		expect(result.isFinite).toBe(true);
+		expect(result.size).toBe(5);
 		const items = result.take(5);
-		expect(items.length).toBeGreaterThan(0);
+		expect(items).toHaveLength(5);
 		// August 2026 last Friday is Aug 28th
 		expect(items[0].format('{yyyy}-{mm}-{dd}')).toBe('2026-08-28');
 		// September 2026 last Friday is Sep 25th
 		expect(items[1].format('{yyyy}-{mm}-{dd}')).toBe('2026-09-25');
+		// October 2026 last Friday is Oct 30th
+		expect(items[2].format('{yyyy}-{mm}-{dd}')).toBe('2026-10-30');
+		// November 2026 last Friday is Nov 27th
+		expect(items[3].format('{yyyy}-{mm}-{dd}')).toBe('2026-11-27');
+		// December 2026 last Friday is Dec 25th
+		expect(items[4].format('{yyyy}-{mm}-{dd}')).toBe('2026-12-25');
+	});
+
+	it('should propagate resolved context options (tz, cal, loc, sph) to generated Tempo instances and expandOccurrences', async () => {
+		const rruleStr = 'FREQ=DAILY;COUNT=3';
+		const result = await recurrenceAI(rruleStr, {
+			anchor: '2026-08-01T09:00:00',
+			timeZone: 'Australia/Sydney',
+			calendar: 'iso8601',
+			locale: 'en-AU',
+			sphere: 'southern',
+		});
+
+		const items = result.take(3);
+		expect(items).toHaveLength(3);
+		expect(items[0].config.timeZone).toBe('Australia/Sydney');
+		expect(items[0].config.calendar).toBe('iso8601');
+		expect(items[0].config.locale).toBe('en-AU');
+		expect(items[0].config.sphere).toBe('southern');
 	});
 });

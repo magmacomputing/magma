@@ -2,37 +2,26 @@ import type { Tempo } from '@magmacomputing/tempo';
 import type { AiMode } from '../core/config.js';
 
 /**
- * ## TempoAiMeta
- * Frozen metadata object attached to Tempo instances produced by `parseAI`.
+ * ## TempoBaseAiMeta
+ * Fundamental AI resolution telemetry and metadata shared across all AI functions.
  */
-export interface TempoAiMeta {
+export interface TempoBaseAiMeta {
 	/** Resolution source ('native', 'cache', or provider ID like 'groq', 'openai', 'ollama') */
 	readonly provider: string;
-	/** Whether the result was retrieved from cache */
-	readonly cached: boolean;
 	/** Confidence rating from 0.0 (unparseable) to 1.0 (certain) */
 	readonly confidence: number;
-	/** Whether the input prompt had multiple possible interpretations */
-	readonly ambiguous: boolean;
-	/** Granularity level of the parsed date ('year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'unknown') */
-	readonly granularity: string;
-	/** Raw un-augmented ISO 8601 string returned by the LLM (if applicable) */
-	readonly rawIso?: string | undefined;
-	/** Step-by-step calendar math reasoning (included when debug: true or when provided by LLM) */
+	/** Whether the result was retrieved from cache */
+	readonly cached?: boolean | undefined;
+	/** Step-by-step reasoning or justification provided by the engine/LLM */
 	readonly reasoning?: string | undefined;
+	/** Rate limit snapshot returned by the provider HTTP headers for this request */
+	readonly limits?: AiRateLimits | undefined;
 	/** Raw prompt input (only included when debug: true) */
 	readonly rawPrompt?: string | undefined;
 	/** Normalized prompt input (only included when debug: true) */
 	readonly normalizedPrompt?: string | undefined;
-	/** Rate limit snapshot returned by the provider HTTP headers for this request */
-	readonly limits?: AiRateLimits | undefined;
-}
-
-declare module '@magmacomputing/tempo' {
-	interface Tempo {
-		/** Frozen AI resolution metadata attached when parsed via parseAI */
-		ai?: TempoAiMeta | undefined;
-	}
+	/** Arbitrary provider-specific extra metadata */
+	readonly [key: string]: any;
 }
 
 /**

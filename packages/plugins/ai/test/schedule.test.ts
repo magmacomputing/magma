@@ -1,15 +1,14 @@
 import { Tempo, Interval } from '@magmacomputing/tempo';
 import { ParseModule } from '@magmacomputing/tempo/parse';
-import { scheduleAI, initAI, TempoAiError } from '../src/index.js';
+import { scheduleAI, initAI } from '../src/index.js';
 
 Tempo.extend(ParseModule);
 
 describe('AI Schedule Plugin (scheduleAI)', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		vi.spyOn(console, 'warn').mockImplementation(() => { });
-		// vi.spyOn(console, 'error').mockImplementation(() => { });
 		vi.spyOn(console, 'log').mockImplementation(() => { });
-		initAI({ providers: [{ id: 'groq', key: 'mock-key-for-unit-testing' }] });
+		await initAI({ remoteConfigUrl: false, providers: [{ id: 'groq', key: 'mock-key-for-unit-testing' }] });
 	});
 
 	afterEach(() => {
@@ -58,7 +57,7 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 
 		expect(slot.alternatives).toHaveLength(1);
 		expect(slot.alternatives![0]).toBeInstanceOf(Interval);
-		expect(slot.alternatives![0].start.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-11 15:15');
+		expect(slot.alternatives![0].start?.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-11 15:15');
 
 		// Assert system prompt includes reference anchor and working hours
 		expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -99,8 +98,85 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 		expect(slot.start.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-11 14:30');
 		expect(slot.end.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-11 15:15');
 		expect(slot.ai?.conflictBumped).toBe(true);
-		expect(slot.ai?.originalSlot?.start.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-11 14:00');
+		expect(slot.ai?.originalSlot?.start?.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-11 14:00');
 		expect(slot.reasoning).toContain('[Adjusted for conflict]');
+	});
+
+	it('should iteratively bump through multiple consecutive busy events', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						start: '2026-08-11T14:00:00-07:00',
+						end: '2026-08-11T14:45:00-07:00',
+						summary: 'Initial slot candidate',
+						confidence: 0.90,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const busy1 = new Interval(
+			new Tempo('2026-08-11 13:30:00', { timeZone: 'America/Los_Angeles' }),
+			new Tempo('2026-08-11 14:30:00', { timeZone: 'America/Los_Angeles' })
+		);
+		const busy2 = new Interval(
+			new Tempo('2026-08-11 14:30:00', { timeZone: 'America/Los_Angeles' }),
+			new Tempo('2026-08-11 15:00:00', { timeZone: 'America/Los_Angeles' })
+		);
+
+		const slot = await scheduleAI('Find 45 minutes next Tuesday afternoon', {
+			intervals: [busy1, busy2],
+			timeZone: 'America/Los_Angeles',
+		});
+
+		expect(slot).toBeInstanceOf(Interval);
+		// Should have bumped past busy1 (to 14:30) and then past busy2 (to 15:00)
+		expect(slot.start.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-11 15:00');
+		expect(slot.end.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-11 15:45');
+		expect(slot.ai?.conflictBumped).toBe(true);
+		expect(slot.ai?.originalSlot?.start?.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-11 14:00');
+	});
+
+	it('should wrap slot to next active working day when conflict bump pushes slot past working hours end', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		// Slot proposed at 16:15 - 17:00 on Friday (2026-08-14)
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						start: '2026-08-14T16:15:00-07:00',
+						end: '2026-08-14T17:00:00-07:00',
+						summary: 'Late Friday slot',
+						confidence: 0.90,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		// Busy event from 16:00 to 16:45 on Friday
+		const busyFriday = new Interval(
+			new Tempo('2026-08-14 16:00:00', { timeZone: 'America/Los_Angeles' }),
+			new Tempo('2026-08-14 16:45:00', { timeZone: 'America/Los_Angeles' })
+		);
+
+		const slot = await scheduleAI('Find 45 minutes Friday afternoon', {
+			intervals: [busyFriday],
+			timeZone: 'America/Los_Angeles',
+			workingHours: {
+				start: '09:00',
+				end: '17:00',
+				days: [1, 2, 3, 4, 5],
+			},
+		});
+
+		expect(slot).toBeInstanceOf(Interval);
+		// Bump past 16:45 pushes 45m slot to 17:30 (exceeding 17:00), wrapping to Monday Aug 17 09:00
+		expect(slot.start.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-17 09:00');
+		expect(slot.end.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-17 09:45');
+		expect(slot.ai?.conflictBumped).toBe(true);
+		expect(slot.ai?.originalSlot?.start?.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-14 16:15');
 	});
 
 	it('should support provider race execution mode', async () => {
@@ -205,10 +281,79 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 			.rejects.toThrow(/scheduleAI confidence \(0.5\) is below the required threshold of 0.8/i);
 	});
 
+	it('should format ISO weekday numbers (including Sunday=7) and string tokens correctly in workingHours prompt', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						start: '2026-08-09T10:00:00Z',
+						end: '2026-08-09T11:00:00Z',
+						confidence: 0.95,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		await scheduleAI('Schedule Sunday weekend session', {
+			workingHours: {
+				days: [7, 'SA', 'MON'],
+				start: '10:00',
+				end: '16:00',
+			},
+		});
+
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		const requestBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+		const systemPrompt = requestBody.messages[0].content;
+		expect(systemPrompt).toContain('Working Hours: 10:00 to 16:00 (Sunday, Saturday, Monday)');
+	});
+
 	it('should throw TempoAiError if prompt is empty or providers missing', async () => {
 		await expect(scheduleAI('')).rejects.toThrow(/invalid scheduling prompt/i);
 
-		initAI({ providers: [] });
+		await initAI({ remoteConfigUrl: false, providers: [] });
 		await expect(scheduleAI('Schedule meeting')).rejects.toThrow(/no AI providers configured/i);
 	});
+
+	it('should preserve Interval prototype behavior, own-property metadata, and toString conversion', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						start: '2026-08-11T14:00:00Z',
+						end: '2026-08-11T15:00:00Z',
+						summary: '1-hour review session',
+						confidence: 0.95,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const slot = await scheduleAI('Schedule 1 hour review session');
+
+		expect(slot).toBeInstanceOf(Interval);
+		expect(slot.constructor).toBe(Interval);
+		expect(Object.prototype.toString.call(slot)).toBe('[object Tempo.Interval]');
+		expect(typeof slot.toString).toBe('function');
+		expect(typeof slot.valueOf).toBe('function');
+
+		// Metadata keys exist as own properties / proxy traps
+		expect('durationMinutes' in slot).toBe(true);
+		expect('summary' in slot).toBe(true);
+		expect('confidence' in slot).toBe(true);
+		expect(slot.summary).toBe('1-hour review session');
+
+		// Interval prototype methods operate normally
+		const testPoint = new Tempo('2026-08-11T14:30:00Z');
+		expect(slot.contains(testPoint)).toBe(true);
+	});
+
+	it('should throw TempoAiError with status 400 for invalid mode in scheduleAI', async () => {
+		await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
+		await expect(scheduleAI('Schedule meeting', { mode: 'invalid-mode' as any }))
+			.rejects.toThrow(/Invalid execution mode: 'invalid-mode'/);
+	});
 });
+

@@ -39,12 +39,14 @@ console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
 ```
 
 ## AI Function Catalog
+All AI functions return a standard ES Promise wrapped object.
 
-| Function | Input | Output | Guide |
-| :--- | :--- | :--- | :--- |
-| **`initAI`** | Configuration object | `Promise<void>` | [Initialization & Provider Farm Guide](./init.md) |
-| **`parseAI`** | Unstructured text string | `Promise<Tempo>` | [Point-in-Time Parsing Guide](./parse.md) |
-| **`recurrenceAI`** | Natural language schedule OR RFC 5545 RRULE string | `Promise<TempoRecurrenceResult>` | [Recurrence & Schedules Guide](./recurrence.md) |
+| Function | Input | Returns (`Promise<...>`) | What You Get | Guide |
+| :--- | :--- | :--- | :--- | :--- |
+| **`initAI`** | Provider config & API keys | `void` | Configured AI provider farm | [Initialization & Provider Farm Guide](./init.md) |
+| **`parseAI`** | Natural language text string(s) | `Tempo` \| `Tempo[]` | Single point-in-time `Tempo` instance (or batch array) | [Point-in-Time Parsing Guide](./parse.md) |
+| **`recurrenceAI`** | Natural language pattern or RRULE string | `TempoRecurrenceResult` | **Iterable series of `Tempo` dates** (with `.take(n)`, `.next`, & RRULE string) | [Recurrence & Schedules Guide](./recurrence.md) |
+| **`scheduleAI`** | Booking prompt + busy constraints | `TempoScheduleResult` | **Resolved appointment slot** (`startTempo`, `endTempo`, conflict-bumped) | [Recurrence & Schedules Guide](./recurrence.md) |
 
 ## Architecture & Infrastructure Guides
 

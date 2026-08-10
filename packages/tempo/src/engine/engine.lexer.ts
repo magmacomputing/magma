@@ -301,10 +301,10 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	const brk = groups["brk"]?.replace(Match.zed, 'UTC');
 	let zone: string | undefined = brk || tzd;
 
-	if (zone && /^([+-]\d{1,2})$/.test(zone)) {
-		const sign = zone[0];
-		const num = Math.abs(parseInt(zone, 10));
-		zone = `${sign}${num.toString().padStart(2, '0')}:00`;
+	if (zone) {
+		const match = zone.match(/^([+-])(\d{1,2})(?::?(\d{2}))?$/);
+		if (match)
+			zone = `${match[1]}${match[2].padStart(2, '0')}:${match[3] ?? '00'}`;
 	}
 
 	let cal = groups["cal"];
@@ -316,9 +316,9 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	const zdt = dateTime as any;
 	if (zone && zone !== zdt.timeZoneId) {
 		const resolvedZone = enums.TIMEZONE[zone.toLowerCase()] ?? zone;
-		if (config) config.timeZone = resolvedZone;
 		try {
 			dateTime = zdt.toPlainDateTime().toZonedDateTime(resolvedZone);
+			if (config) config.timeZone = resolvedZone;
 		} catch {
 			logWarn(`Unrecognized or invalid timezone identifier: '${zone}'`, config);
 		}

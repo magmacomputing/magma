@@ -34,7 +34,7 @@ export const Match = proxify({
 	/** slick shorthand-shifter (e.g. #qtr.>2q2) */						shorthand: /(?:(?:#[\w]+|[\w]+)\.(?:[\+\-\<\>]=?)?(?:[0-9]+)?(?:[\w]*))/,
 	/** anchored version for shifter resolution */						slick: /^(?<sh_term>#[\w]+|[\w]+)\.(?<sh_mod>[\+\-\<\>\=]=?)?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\w]*)$/,
 	/** extracted value-only version of a slick shifter */		slickValue: /^(?<sh_mod>[\+\-\<\>\=]=?)?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\w]*)$/,
-	/** numeric timezone offset (e.g. +10:00, +1000, -05:00, -0500, GMT+10, UTC-5) */					offset: /(?:[+-]\d{2}:\d{2}|[+-]\d{4}|(?<=\s|T|GMT|UTC)\s*[+-]?\d{1,2}(?::?\d{2})?)/,
+	/** numeric timezone offset (e.g. +10:00, +1000, -05:00, -0500, GMT+10, UTC-5) */					offset: /(?:[+-]\d{2}:\d{2}|[+-]\d{4}|(?<=\s|T|GMT|UTC)\s*[+-]\d{1,2}(?::?\d{2})?)/,
 	/** escape special regex characters in a string */				escape: (str: string) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
 	/** escape only dangerous quantifiers and anchors to prevent backtracking/injection while allowing basic regex */
 	safeAlias: (str: string) => String(str).replace(/[*+{}!^$\\]/g, '\\$&'),

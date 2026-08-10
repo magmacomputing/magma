@@ -25,6 +25,7 @@ The library is organized into specialized modules, each designed for maximum eff
 | **Pledge** | A robust wrapper for native Promises with settled-state tracking and timeout support. |
 | **Reflection** | Clean access to own-properties, values, and entries without prototype pollution. |
 | **Temporal** | Lightweight helpers and polyfill integration for the native `Temporal` API. |
+| **Recurrence** | Zero-dependency RFC 5545 recurrence rule parsing, expansion, and finiteness evaluation. |
 
 ---
 

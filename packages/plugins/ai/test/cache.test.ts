@@ -2,12 +2,12 @@ import { parseAI, initAI, clearAiCache, type AiCacheAdapter } from '../src/index
 import { Tempo } from '@magmacomputing/tempo';
 
 describe('Advanced Cache TTL & Async Storage Adapters', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		vi.restoreAllMocks();
 		Tempo.cache.clear();
-		initAI({
+		await initAI({
 			providers: [{ id: 'groq', key: 'mock-test-key' }],
-			remoteConfigUrl: false
+			remoteConfigUrl: false,
 		});
 	});
 
@@ -31,20 +31,20 @@ describe('Advanced Cache TTL & Async Storage Adapters', () => {
 			}),
 			clear: vi.fn(async () => {
 				store.clear();
-			})
-		};
+			}),
+		}
 
-		initAI({
+		await initAI({
 			providers: [{ id: 'groq', key: 'mock-test-key' }],
 			cacheAdapter: mockAdapter,
-			ttl: 120000
+			ttl: 120000,
 		});
 
 		// Mock LLM fetch response for first call
 		vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
 			new Response(JSON.stringify({
-				choices: [{ message: { content: '{"reasoning":"Custom adapter test", "iso":"2026-11-26T00:00:00", "confidence":0.95}' } }]
-			}), { status: 200 })
+				choices: [{ message: { content: '{"reasoning":"Custom adapter test", "iso":"2026-11-26T00:00:00", "confidence":0.95}' } }],
+			}), { status: 200 }),
 		);
 
 		const result1 = await parseAI('Thanksgiving 2026');
@@ -68,19 +68,19 @@ describe('Advanced Cache TTL & Async Storage Adapters', () => {
 			get: vi.fn(() => undefined),
 			set: vi.fn((_key: string, _val: string, ttlMs?: number) => {
 				if (ttlMs) setTtlLogs.push(ttlMs);
-			})
+			}),
 		};
 
-		initAI({
+		await initAI({
 			providers: [{ id: 'groq', key: 'mock-key', ttl: 60000 }],
 			cacheAdapter: mockAdapter,
-			ttl: 300000
+			ttl: 300000,
 		});
 
 		vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(
 			new Response(JSON.stringify({
-				choices: [{ message: { content: '{"reasoning":"TTL test", "iso":"2026-12-25T00:00:00", "confidence":0.95}' } }]
-			}), { status: 200 })
+				choices: [{ message: { content: '{"reasoning":"TTL test", "iso":"2026-12-25T00:00:00", "confidence":0.95}' } }],
+			}), { status: 200 }),
 		));
 
 		// Call 1: Inherits provider.ttl (60000)
@@ -99,18 +99,18 @@ describe('Advanced Cache TTL & Async Storage Adapters', () => {
 			}),
 			set: vi.fn(async () => {
 				throw new Error('Redis write error');
-			})
+			}),
 		};
 
-		initAI({
+		await initAI({
 			providers: [{ id: 'groq', key: 'mock-key' }],
-			cacheAdapter: faultyAdapter
+			cacheAdapter: faultyAdapter,
 		});
 
 		vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
 			new Response(JSON.stringify({
-				choices: [{ message: { content: '{"reasoning":"Faulty adapter test", "iso":"2026-07-04T00:00:00", "confidence":0.95}' } }]
-			}), { status: 200 })
+				choices: [{ message: { content: '{"reasoning":"Faulty adapter test", "iso":"2026-07-04T00:00:00", "confidence":0.95}' } }],
+			}), { status: 200 }),
 		);
 
 		// parseAI should NOT throw Redis error; it should fail open to LLM fetch
@@ -124,10 +124,10 @@ describe('Advanced Cache TTL & Async Storage Adapters', () => {
 			get: vi.fn(),
 			set: vi.fn(),
 			delete: vi.fn(),
-			clear: vi.fn()
+			clear: vi.fn(),
 		};
 
-		initAI({ cacheAdapter: mockAdapter });
+		await initAI({ cacheAdapter: mockAdapter });
 
 		clearAiCache('Easter 2026');
 		expect(mockAdapter.delete).toHaveBeenCalled();

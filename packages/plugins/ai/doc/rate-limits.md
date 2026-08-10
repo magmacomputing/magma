@@ -139,7 +139,7 @@ const redis = new Redis({ url: process.env.UPSTASH_URL!, token: process.env.UPST
 const redisAdapter: AiCacheAdapter = {
   get: async (key) => (await redis.get<string>(`tempo:ai:${key}`)) ?? undefined,
   set: async (key, value, ttlMs) => {
-    if (ttlMs) await redis.set(`tempo:ai:${key}`, value, { px: ttlMs });
+    if (ttlMs !== undefined) await redis.set(`tempo:ai:${key}`, value, { px: ttlMs });
     else await redis.set(`tempo:ai:${key}`, value);
   },
   delete: async (key) => {

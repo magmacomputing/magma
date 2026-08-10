@@ -41,16 +41,15 @@ export async function loadRemoteManifest(
 	}
 
 	const fetchPromise = (async () => {
+		let timer: ReturnType<typeof setTimeout> | undefined;
 		try {
 			const controller = new AbortController();
-			const timer = setTimeout(() => controller.abort(), timeoutMs);
+			timer = setTimeout(() => controller.abort(), timeoutMs);
 
 			const response = await fetch(targetUrl, {
 				signal: controller.signal,
-				headers: { Accept: 'application/json' }
+				headers: { Accept: 'application/json' },
 			});
-
-			clearTimeout(timer);
 
 			if (!response.ok) {
 				if (debug) {
@@ -83,6 +82,7 @@ export async function loadRemoteManifest(
 			_cachedManifestMap.set(targetUrl, empty);
 			return null;
 		} finally {
+			if (timer !== undefined) clearTimeout(timer);
 			_fetchPromiseMap.delete(targetUrl);
 		}
 	})();

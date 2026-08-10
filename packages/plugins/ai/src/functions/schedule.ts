@@ -1,8 +1,9 @@
 import { Tempo, Interval } from '@magmacomputing/tempo';
-import { isString, isNumber, isFunction } from '@magmacomputing/library/assertion.library.js';
+import { isString, isNumber, isFunction, DAY_MAP, ISO_WEEKDAY_NAMES, type DayKey } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
+import { executeWithMode } from '../core/mode.js';
 import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
 import type { TempoScheduleOptions, TempoScheduleResult, TempoWorkingHours, TempoInterval, TempoScheduleMeta, AiProvider } from '../types/index.js';
 
@@ -24,8 +25,10 @@ function normalizeBusyEvents(rawEvents?: any[], timeZone = 'UTC'): Array<{ start
 			if ('start' in evt && 'end' in evt) {
 				start = parsePoint((evt as any).start);
 				end = parsePoint((evt as any).end);
-				if ('title' in evt) title = String((evt as any).title);
-				else if ('label' in evt) title = String((evt as any).label);
+				if ('title' in evt && (evt as any).title !== undefined && String((evt as any).title).trim().length > 0)
+					title = String((evt as any).title);
+				else if ('label' in evt && (evt as any).label !== undefined && String((evt as any).label).trim().length > 0)
+					title = String((evt as any).label);
 			} else if (Array.isArray(evt) && evt.length >= 2) {
 				start = parsePoint(evt[0]);
 				end = parsePoint(evt[1]);
@@ -51,6 +54,19 @@ function parseDurationMinutes(prompt: string, fallback?: number): number {
 	return 30; // default 30 minutes
 }
 
+function formatActiveDays(days?: Array<number | DayKey | string>): string {
+	const active = days ?? [1, 2, 3, 4, 5];
+	return active.map(d => {
+		if (typeof d === 'number' && (ISO_WEEKDAY_NAMES as any)[d]) return (ISO_WEEKDAY_NAMES as any)[d];
+		if (typeof d === 'string') {
+			const upper = d.toUpperCase() as DayKey;
+			const num = (DAY_MAP as any)[upper];
+			if (num && (ISO_WEEKDAY_NAMES as any)[num]) return (ISO_WEEKDAY_NAMES as any)[num];
+		}
+		return String(d);
+	}).join(', ');
+}
+
 function buildContextPrompt(
 	anchorTempo: Tempo,
 	timeZone: string,
@@ -58,8 +74,7 @@ function buildContextPrompt(
 	busyEvents: Array<{ start: Tempo; end: Tempo; title?: string | undefined }>,
 	durationMinutes: number
 ): string {
-	const daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-	const activeDays = (workingHours.days ?? [1, 2, 3, 4, 5]).map(d => daysMap[d] ?? d).join(', ');
+	const activeDays = formatActiveDays(workingHours.days);
 	const whStart = workingHours.start ?? '09:00';
 	const whEnd = workingHours.end ?? '17:00';
 
@@ -93,14 +108,11 @@ Instructions:
   "confidence": number between 0.0 and 1.0
   "alternatives": array of secondary { "start": "...", "end": "..." } options if available`;
 
-function wrapScheduleInterval(
-	interval: Interval<Tempo>,
-	meta: TempoScheduleMeta
-): TempoScheduleResult {
+function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta): TempoScheduleResult {
 	const frozenMeta = Object.freeze(meta);
 	return new Proxy(interval, {
 		get(target, prop) {
-			if (prop in frozenMeta)
+			if (Object.hasOwn(frozenMeta, prop))
 				return (frozenMeta as any)[prop];
 
 			const val = Reflect.get(target, prop, target);
@@ -108,16 +120,16 @@ function wrapScheduleInterval(
 			return val;
 		},
 		has(target, prop) {
-			if (prop in frozenMeta) return true;
+			if (Object.hasOwn(frozenMeta, prop)) return true;
 			return Reflect.has(target, prop);
 		},
 		getOwnPropertyDescriptor(target, prop) {
-			if (prop in frozenMeta) {
+			if (Object.hasOwn(frozenMeta, prop)) {
 				return {
 					value: (frozenMeta as any)[prop],
 					writable: false,
 					configurable: true,
-					enumerable: true
+					enumerable: true,
 				};
 			}
 			return Reflect.getOwnPropertyDescriptor(target, prop);
@@ -128,7 +140,7 @@ function wrapScheduleInterval(
 				if (!keys.includes(k)) keys.push(k);
 			}
 			return keys;
-		}
+		},
 	}) as unknown as TempoScheduleResult;
 }
 
@@ -152,9 +164,8 @@ export async function scheduleAI(
 	const state = _state;
 	const availableProviders = options?.providers ?? state.config.providers;
 
-	if (!availableProviders || availableProviders.length === 0) {
+	if (!availableProviders || availableProviders.length === 0)
 		throw new TempoAiError('No AI providers configured for scheduleAI. Call initAI() or supply providers in options.', 400);
-	}
 
 	assertNoReservedProviderId(availableProviders);
 
@@ -164,8 +175,8 @@ export async function scheduleAI(
 		start: options?.workingHours?.start ?? '09:00',
 		end: options?.workingHours?.end ?? '17:00',
 		days: options?.workingHours?.days ?? [1, 2, 3, 4, 5],
-		timeZone: options?.workingHours?.timeZone ?? timeZone
-	};
+		timeZone: options?.workingHours?.timeZone ?? timeZone,
+	}
 
 	const rawBusy = options?.events ?? options?.intervals;
 	const busyEvents = normalizeBusyEvents(rawBusy, timeZone);
@@ -173,146 +184,172 @@ export async function scheduleAI(
 
 	const contextString = buildContextPrompt(anchorTempo, timeZone, workingHours, busyEvents, durationMinutes);
 	const isDebug = Boolean(options?.debug ?? state.config.debug);
-	const mode = (options?.mode || state.config.mode || AiMode.Fallback).toLowerCase();
+	const mode = options?.mode || state.config.mode || AiMode.Fallback;
 	const callTimeout = options?.timeout ?? state.config.timeout ?? 15000;
 
-	const executeProviderCall = async (provider: AiProvider, signal?: AbortSignal) => {
-		const { rawContent, providerId, rateLimits } = await fetchFromProvider(
-			provider,
-			prompt,
-			contextString,
-			isDebug,
-			signal,
-			callTimeout,
-			SCHEDULE_SYSTEM_PROMPT
-		)
+	const winningCandidate = await executeWithMode<any>(
+		mode,
+		availableProviders,
+		async (provider, signal) => {
+			const { rawContent, providerId, rateLimits } = await fetchFromProvider(
+				provider,
+				prompt,
+				contextString,
+				isDebug,
+				signal,
+				callTimeout,
+				SCHEDULE_SYSTEM_PROMPT,
+			);
 
-		const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
-		let parsed: any;
-		try {
-			parsed = JSON.parse(cleanContent);
-		} catch {
-			throw new TempoAiError(`Provider ${provider.id} returned invalid JSON payload.`, 422);
-		}
-
-		if (!parsed.start || !parsed.end) {
-			throw new TempoAiError(`Provider ${provider.id} missing start or end ISO timestamp.`, 422);
-		}
-
-		let finalStart: Tempo;
-		let finalEnd: Tempo;
-		try {
-			finalStart = new Tempo(parsed.start, { timeZone });
-			finalEnd = new Tempo(parsed.end, { timeZone });
-		} catch {
-			throw new TempoAiError(`Provider ${provider.id} returned unparseable start or end timestamp.`, 422);
-		}
-
-		if (finalEnd.epoch.ms <= finalStart.epoch.ms) {
-			throw new TempoAiError(`Provider ${provider.id} proposed end time before or equal to start time.`, 422);
-		}
-
-		return {
-			parsed,
-			startTempo: finalStart,
-			endTempo: finalEnd,
-			confidence: isNumber(parsed.confidence) ? parsed.confidence : 0.9,
-			providerId,
-			rateLimits,
-			summary: parsed.summary || `Scheduled slot ${finalStart.format('{yyyy}-{mm}-{dd} {hh}:{mi}')} to ${finalEnd.format('{hh}:{mi}')}`,
-			reasoning: parsed.reasoning || 'Resolved slot via AI scheduler.',
-			alternatives: Array.isArray(parsed.alternatives) ? parsed.alternatives : []
-		};
-	};
-
-	let selectedResult: any;
-
-	if (mode === AiMode.Fallback || mode === 'fallback') {
-		let lastErr: any;
-		for (const provider of availableProviders) {
+			const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+			let parsed: any;
 			try {
-				selectedResult = await executeProviderCall(provider);
-				break;
-			} catch (err) {
-				lastErr = err;
+				parsed = JSON.parse(cleanContent);
+			} catch {
+				throw new TempoAiError(`Provider ${provider.id} returned invalid JSON payload.`, 422);
 			}
-		}
-		if (!selectedResult) {
-			throw lastErr || new TempoAiError('All configured AI providers failed during scheduleAI execution.', 502);
-		}
-	} else if (mode === AiMode.Race || mode === 'race') {
-		const parentController = new AbortController();
-		try {
-			const promises = availableProviders.map(p => executeProviderCall(p, parentController.signal));
-			promises.forEach(p => p.catch(() => { }));
-			selectedResult = await Promise.race(promises);
-			parentController.abort();
-		} catch (aggregateErr: any) {
-			parentController.abort();
-			throw aggregateErr instanceof TempoAiError
-				? aggregateErr
-				: new TempoAiError(`All providers failed in race mode: ${aggregateErr.message}`, 502);
-		}
-	} else if (mode === AiMode.Consensus || mode === 'consensus') {
-		const parentController = new AbortController();
-		const results = await Promise.allSettled(
-			availableProviders.map(p => executeProviderCall(p, parentController.signal))
-		);
 
-		const fulfilled = results
-			.filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
-			.map(r => r.value);
+			if (!parsed.start || !parsed.end)
+				throw new TempoAiError(`Provider ${provider.id} missing start or end ISO timestamp.`, 422);
 
-		if (fulfilled.length === 0) {
-			const rejected = results.find(r => r.status === 'rejected') as PromiseRejectedResult;
-			throw rejected.reason instanceof TempoAiError
-				? rejected.reason
-				: new TempoAiError('All providers failed in consensus mode during scheduleAI execution.', 502);
-		}
+			let finalStart: Tempo;
+			let finalEnd: Tempo;
+			try {
+				finalStart = new Tempo(parsed.start, { timeZone });
+				finalEnd = new Tempo(parsed.end, { timeZone });
+			} catch {
+				throw new TempoAiError(`Provider ${provider.id} returned unparseable start or end timestamp.`, 422);
+			}
 
-		fulfilled.sort((a, b) => b.confidence - a.confidence);
-		selectedResult = fulfilled[0];
-	} else {
-		throw new TempoAiError(`Invalid execution mode '${options?.mode}' provided to scheduleAI.`, 400);
-	}
+			if (finalEnd.epoch.ms <= finalStart.epoch.ms)
+				throw new TempoAiError(`Provider ${provider.id} proposed end time before or equal to start time.`, 422);
 
-	_state.limits = selectedResult.rateLimits ?? null;
+			const startKey = finalStart.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}');
+			const endKey = finalEnd.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}');
+
+			return {
+				data: {
+					parsed,
+					startTempo: finalStart,
+					endTempo: finalEnd,
+					summary: parsed.summary || `Scheduled slot ${finalStart.format('{yyyy}-{mm}-{dd} {hh}:{mi}')} to ${finalEnd.format('{hh}:{mi}')}`,
+					reasoning: parsed.reasoning || 'Resolved slot via AI scheduler.',
+					alternatives: Array.isArray(parsed.alternatives) ? parsed.alternatives : [],
+				},
+				providerId,
+				rateLimits,
+				confidence: isNumber(parsed.confidence) ? parsed.confidence : 0.9,
+				consensusKey: `${startKey}::${endKey}`,
+			};
+		},
+		{ minConfidence: options?.minConfidence ?? state.config.minConfidence, debug: isDebug, tag: 'tempo-plugin-ai:schedule' },
+	);
+
+	_state.limits = winningCandidate.rateLimits ?? null;
+
+	const { data: scheduleData, providerId } = winningCandidate;
+	const confidence = typeof winningCandidate.confidence === 'number' ? winningCandidate.confidence : 0.9;
 
 	const minConf = options?.minConfidence ?? state.config.minConfidence ?? 0.0;
-	if (selectedResult.confidence < minConf) {
-		throw new TempoAiError(
-			`scheduleAI confidence (${selectedResult.confidence}) is below the required threshold of ${minConf}`,
-			422
-		);
-	}
+	if (confidence < minConf)
+		throw new TempoAiError(`scheduleAI confidence (${confidence}) is below the required threshold of ${minConf}`, 422);
 
-	let finalStart = selectedResult.startTempo;
-	let finalEnd = selectedResult.endTempo;
+	let finalStart = scheduleData.startTempo;
+	let finalEnd = scheduleData.endTempo;
 	let conflictBumped = false;
 	let originalSlot: TempoInterval | undefined;
 
-	// Deterministic Conflict Validation using core Interval.overlaps()
-	const proposedInterval = new Interval(finalStart, finalEnd);
-	const conflictingEvent = busyEvents.find(b => {
-		const busyInt = new Interval(b.start, b.end);
-		const isOver = proposedInterval.overlaps(busyInt);
-		return isOver;
-	});
+	const whStartStr = workingHours.start ?? '09:00';
+	const whEndStr = workingHours.end ?? '17:00';
+	const [whStartH, whStartM] = whStartStr.split(':').map(v => parseInt(v, 10) || 0);
+	const [whEndH, whEndM] = whEndStr.split(':').map(v => parseInt(v, 10) || 0);
+	const whTz = workingHours.timeZone || timeZone;
 
+	const activeDaysList = (workingHours.days ?? [1, 2, 3, 4, 5]).map(d => {
+		if (typeof d === 'number') return d;
+		if (typeof d === 'string') {
+			const upper = d.toUpperCase() as DayKey;
+			if (upper in DAY_MAP) return (DAY_MAP as any)[upper];
+			const n = parseInt(d, 10);
+			if (!isNaN(n)) return n;
+		}
+		return typeof d === 'number' ? d : 1;
+	});
+	const activeDaysSet = new Set(activeDaysList.length > 0 ? activeDaysList : [1, 2, 3, 4, 5]);
+
+	const advanceToNextActiveDay = (curZdt: Temporal.ZonedDateTime): Temporal.ZonedDateTime => {
+		let next = curZdt.add({ days: 1 }).startOfDay().add({ hours: whStartH, minutes: whStartM });
+		while (!activeDaysSet.has(next.dayOfWeek)) {
+			next = next.add({ days: 1 });
+		}
+		return next;
+	};
+
+	// Deterministic Conflict Validation using core Interval.overlaps()
+	let proposedInterval = new Interval(finalStart, finalEnd);
+	let conflictingEvent = busyEvents.find(b => proposedInterval.overlaps(new Interval(b.start, b.end)));
+
+	let reasoning = scheduleData.reasoning;
 	if (conflictingEvent) {
 		conflictBumped = true;
 		originalSlot = { start: finalStart, end: finalEnd };
-		// Bump start to the end of the conflicting event
-		finalStart = conflictingEvent.end;
-		finalEnd = finalStart.add(`${durationMinutes} minutes`);
-		selectedResult.reasoning = `[Adjusted for conflict] Shifted slot past conflicting event "${conflictingEvent.title || 'Busy'}" to ${finalStart.format('{yyyy}-{mm}-{dd} {hh}:{mi}')}. ${selectedResult.reasoning}`;
+
+		const MAX_ADJUSTMENT_ITERATIONS = 50;
+		let iterations = 0;
+		let lastConflictingEvent = conflictingEvent;
+
+		// Continue bumping and re-checking until slot is valid against busyEvents and workingHours
+		while (iterations < MAX_ADJUSTMENT_ITERATIONS) {
+			iterations++;
+
+			// Bump start to the end of the conflicting event
+			finalStart = new Tempo(lastConflictingEvent.end, { timeZone });
+			finalEnd = finalStart.add(`${durationMinutes} minutes`);
+
+			// Validate and adjust against working hours and active days
+			const startZdt = finalStart.toDateTime().withTimeZone(whTz);
+			const endZdt = finalEnd.toDateTime().withTimeZone(whTz);
+
+			if (!activeDaysSet.has(startZdt.dayOfWeek)) {
+				const nextZdt = advanceToNextActiveDay(startZdt);
+				finalStart = new Tempo(nextZdt, { timeZone });
+				finalEnd = finalStart.add(`${durationMinutes} minutes`);
+			} else {
+				const dayStart = startZdt.startOfDay().add({ hours: whStartH, minutes: whStartM });
+				const dayEnd = startZdt.startOfDay().add({ hours: whEndH, minutes: whEndM });
+
+				if (startZdt.epochNanoseconds < dayStart.epochNanoseconds) {
+					finalStart = new Tempo(dayStart, { timeZone });
+					finalEnd = finalStart.add(`${durationMinutes} minutes`);
+				} else if (endZdt.epochNanoseconds > dayEnd.epochNanoseconds) {
+					const nextZdt = advanceToNextActiveDay(startZdt);
+					finalStart = new Tempo(nextZdt, { timeZone });
+					finalEnd = finalStart.add(`${durationMinutes} minutes`);
+				}
+			}
+
+			// Re-check resulting interval against all busyEvents
+			const currentInterval = new Interval(finalStart, finalEnd);
+			const nextConflict = busyEvents.find(b => currentInterval.overlaps(new Interval(b.start, b.end)));
+
+			if (nextConflict) {
+				lastConflictingEvent = nextConflict;
+				continue;
+			}
+
+			// Slot is valid against all busyEvents and workingHours
+			break;
+		}
+
+		const conflictTitle = lastConflictingEvent?.title || 'Busy';
+		reasoning = `[Adjusted for conflict] Shifted slot past conflicting event "${conflictTitle}" to ${finalStart.format('{yyyy}-{mm}-{dd} {hh}:{mi}')}. ${scheduleData.reasoning}`;
 	}
 
 	// Create actual Interval instance
 	const rawInterval = new Interval(finalStart, finalEnd);
 
 	// Process alternative slots into Interval instances
-	const alternatives: TempoInterval[] = selectedResult.alternatives
+	const alternatives: Array<Interval<Tempo>> = scheduleData.alternatives
 		.map((alt: any) => {
 			try {
 				const s = new Tempo(alt.start, { timeZone });
@@ -322,23 +359,23 @@ export async function scheduleAI(
 				return null;
 			}
 		})
-		.filter((i: any): i is TempoInterval => i !== null);
+		.filter((i: any): i is Interval<Tempo> => i !== null);
 
 	const actualDuration = Math.round((finalEnd.epoch.ms - finalStart.epoch.ms) / 60000);
 
 	return wrapScheduleInterval(rawInterval, {
 		durationMinutes: actualDuration,
-		summary: selectedResult.summary,
-		reasoning: selectedResult.reasoning,
-		confidence: selectedResult.confidence,
-		provider: selectedResult.providerId,
+		summary: scheduleData.summary,
+		reasoning,
+		confidence,
+		provider: providerId,
 		alternatives,
 		ai: {
-			provider: selectedResult.providerId,
-			confidence: selectedResult.confidence,
+			provider: providerId,
+			confidence,
 			conflictBumped,
 			originalSlot,
-			reasoning: selectedResult.reasoning
-		}
+			reasoning,
+		},
 	});
 }

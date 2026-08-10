@@ -5,7 +5,7 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2026-08-04
+## [0.3.0] - 2026-08-10
 
 ### Added
 - **Intelligent Calendar Scheduling (`scheduleAI`)**: Introduced natural language appointment scheduling with deterministic conflict detection and automated slot bumping powered by `Interval.overlaps()`.
@@ -23,8 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dynamic Remote Provider Manifest (`loadRemoteManifest`)**: Lazily fetches remote provider defaults (`providers.v1.json`) on initialization with a 1500ms timeout and automatic air-gapped fallback to compiled `DEFAULT_PROVIDERS`.
 - **Cache Eviction Synchronization**: Enhanced `clearAiCache()` to flush matching keys and prefixes across both `Tempo.cache` and custom `AiCacheAdapter` storage engines, returning `Promise<void>` to await async adapter eviction.
 
-### Changed
+### Changed & Hardened
+- **Deterministic Conflict Bumping (`scheduleAI`)**: Enhanced the scheduling engine's conflict-adjustment logic to iteratively shift proposed intervals against conflicting event bounds, re-verifying against all `busyEvents` and `workingHours` with finite loop guards to guarantee deterministic non-overlapping slots.
 - **Streamlined ISO Parsing**: Refactored internal date resolution in `scheduleAI` to delegate directly to core `Tempo` constructors (`new Tempo(str, { timeZone })`), removing redundant regex parsing layers and manual `Temporal.PlainDateTime` conversions.
+- **Streamlined Public API Surface**: Removed redundant RFC 5545 utility exports (`isFiniteRule`, `parseRRule`) from the AI plugin entry point in favor of direct imports from `@magmacomputing/tempo/library`.
+- **Test Lifecycle & Mock Isolation**: Upgraded all test suite cleanup hooks (`afterEach`) to utilize `vi.restoreAllMocks()` instead of `vi.clearAllMocks()`, ensuring network fetch and console mocks are completely reverted between test cases. Standardized `beforeEach` hooks to run asynchronously and pin `remoteConfigUrl: false` to ensure isolated, deterministic CI test runs.
+- **Revision-Guarded State Initialization**: Implemented revision tracking in `initAI` to prevent background remote manifest network resolutions from overwriting newer local initialization configurations.
+- **Context Propagation in Recurrence**: Hardened `recurrenceAI` to resolve and propagate full `Tempo` context (`timeZone`, `calendar`, `locale`, `sphere`) across anchor initialization and subsequent recurrence occurrence expansions.
 
 ## [0.2.0] - 2026-07-30
 

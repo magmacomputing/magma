@@ -216,7 +216,7 @@ t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span
 
 			<div class="output-panel">
 				<span class="label">Result</span>
-				<div id="result" class="result pulse-loading">Initializing Temporal...</div>
+				<div id="result" class="result pulse-loading" role="status" aria-live="polite">Initializing Temporal...</div>
 			</div>
 
 			<div class="footer">
@@ -234,10 +234,10 @@ t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span
 	}
 	</script>
 	<script type="module">
-		import '@js-temporal/polyfill';
-		import { Tempo } from '@magmacomputing/tempo';
-		
 		try {
+			await import('@js-temporal/polyfill');
+			const { Tempo } = await import('@magmacomputing/tempo');
+			
 			const t = new Tempo('next friday');
 			console.log('Tempo execution successful:', t.format('{mon} {dd:raw}'));
 			

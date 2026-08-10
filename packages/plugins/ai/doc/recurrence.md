@@ -86,6 +86,9 @@ export interface TempoRecurrenceResult {
   /** Localized human-friendly schedule summary */
   summary: string;
   
+  /** Reasoning / explanation of how the recurrence pattern was parsed */
+  reasoning?: string;
+  
   /** True if schedule has an explicit end date or count limit; false if infinite */
   isFinite: boolean;
   

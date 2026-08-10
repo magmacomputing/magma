@@ -93,7 +93,7 @@ For standard usage natively in the browser, use the pre-optimized **Global ESM B
 
 ---
 
-## ✨ Why Tempo?
+## ⏳ Why Tempo?
 
 While the native Temporal API gives you perfect primitives (`ZonedDateTime`, `PlainDate`), it doesn't give you business logic. Tempo bridges that gap.
 
@@ -106,16 +106,10 @@ While the native Temporal API gives you perfect primitives (`ZonedDateTime`, `Pl
 
 ### The Missing Domain Layer
 
-*   **🏗️ Future Standard**: Built natively on the TC39 `Temporal` proposal. Inherit the reliability of the future standard.
-*   **🧩 Premium Ecosystem**: Don't build temporal math from scratch. Drop in our plugins for Astronomical seasons (`astro`) and atomic state syncing (`sync`).
-*   **🌍 Zero-Bundle Localization**: Best-in-class multi-language parsing and formatting powered natively by the `Intl` API—no massive static locale dictionaries required.
-*   **🗣️ Natural Language**: Resolve complex terms like "two days ago" with zero configuration.
-*   **🧠 Functional Aliases**: Extend the parser with custom logic using a powerful resolution context for relative date math.
-*   **🔄 Cycle Persistence**: Shift by semantic terms (Quarters, Seasons) while preserving your relative day-of-period offset.
-*   **⚡ Zero-Cost Parsing**: Lazy evaluation and smart matching ensure instantiation overhead is near-zero.
-*   **🛡️ Monorepo Resilient**: Built for stability in complex environments with proxy-protected registries.
-*   **📦 Tree-Shakable**: Keep your bundle light. Only load what you need—from Fiscal calendars to high-performance Tickers.
-*   **🪶 Ultra Lightweight**: Tempo itself is incredibly lean. While the required `Temporal` polyfill adds weight today, it can be dropped entirely the moment JavaScript environments natively adopt the Stage 4 standard.
+*   **🗣️ Natural Language & Smart Parsing**: Parse natural language phrases (e.g. "next Friday 3pm", "two days ago") with zero-cost lazy evaluation and functional aliases.
+*   **🌍 Zero-Bundle Localization**: Multi-language date parsing and formatting powered natively by ECMAScript `Intl`—no heavy static locale dictionaries required.
+*   **🧩 Extensible & AI-Ready**: Modular plugin ecosystem for astronomical cycles (`astro`), financial quarters (`finance`), schedulers (`ticker`), and LLM-powered parsing (`ai`).
+*   **🏗️ Future-Proof & Ultra-Lightweight**: Built natively on the TC39 Stage 4 `Temporal` foundation with zero legacy runtime baggage and full tree-shaking support.
 
 ---
 
@@ -135,8 +129,9 @@ Tempo is the core library, but the ecosystem extends further:
 | Package | Description | Resources |
 | :--- | :--- | :--- |
 | **[`@magmacomputing/tempo`](https://www.npmjs.com/package/@magmacomputing/tempo)** | Core library — parsing, formatting, natural-language engine | [![Docs](https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square)](https://magmacomputing.github.io/magma/) |
-| **[`@magmacomputing/tempo-fns`](https://www.npmjs.com/package/@magmacomputing/tempo-fns)** | Pure functional utilities built on native Temporal & Tempo — tree-shakeable helpers | [![Docs](https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square)](https://magmacomputing.github.io/magma/functions/) |
+| **[`@magmacomputing/tempo-plugin-ai`](https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ai)** | LLM-powered natural language parsing, recurrence expansion & smart scheduling | [![Docs](https://img.shields.io/badge/Docs-AI%20Plugin-blueviolet?logo=vitepress&style=flat-square)](https://magmacomputing.github.io/magma/doc/9-plugins/ai/index.html) |
 | **[`@magmacomputing/tempo-plugin-*`](https://www.npmjs.com/search?q=%40magmacomputing%2Ftempo-plugin)** | Premium & community plugins — Ticker, Astro, Finance, Sync, Snap and more | [![Ecosystem](https://img.shields.io/badge/Browse-Plugin%20Ecosystem-blueviolet?logo=npm&style=flat-square)](https://magmacomputing.github.io/magma/doc/3-extending-tempo/ecosystem) |
+| **[`@magmacomputing/tempo-fns`](https://www.npmjs.com/package/@magmacomputing/tempo-fns)** | Pure functional utilities built on native Temporal & Tempo — tree-shakeable helpers | [![Docs](https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square)](https://magmacomputing.github.io/magma/functions/) |
 
 
 ---

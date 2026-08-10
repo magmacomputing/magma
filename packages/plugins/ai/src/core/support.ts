@@ -147,9 +147,10 @@ Do not include markdown blocks or any text outside the JSON.`;
 
 		if (!response.ok) {
 			const errorText = await response.text();
+			const boundedError = errorText.length > 500 ? `${errorText.slice(0, 500)}... (truncated)` : errorText;
 			const resetTime = limits?.resetAt ?? undefined;
 			_state.limits = limits;
-			throw new TempoAiError(`Provider ${provider.id} failed with status ${response.status}. Details: ${errorText}`, response.status, resetTime);
+			throw new TempoAiError(`Provider ${provider.id} failed with status ${response.status}. Details: ${boundedError}`, response.status, resetTime);
 		}
 
 		const data = await response.json();
@@ -162,11 +163,11 @@ Do not include markdown blocks or any text outside the JSON.`;
 			console.log(`[tempo-plugin-ai] Received response from '${provider.id}' in ${elapsed}ms`);
 		}
 
-    return { rawContent: rawContent.trim(), providerId: provider.id, rateLimits: limits };
-  } finally {
-    clearTimeout(timeoutId);
-    if (parentSignal) {
-      parentSignal.removeEventListener('abort', onParentAbort);
-    }
-  }
+		return { rawContent: rawContent.trim(), providerId: provider.id, rateLimits: limits };
+	} finally {
+		clearTimeout(timeoutId);
+		if (parentSignal) {
+			parentSignal.removeEventListener('abort', onParentAbort);
+		}
+	}
 }

@@ -17,7 +17,7 @@ import { getRange, getTermRange } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
 
-import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums } from '#tempo/support';
+import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Token, Snippet } from '#tempo/support';
 import { setProperty, logError, logDebug } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
 
@@ -260,8 +260,16 @@ const _ParseEngine = {
 
 			let guard = (TempoClass as any)?.[sym.$guard]?.test(trim) ?? true;
 
-			if (!guard && /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(trim))
-				guard = true;
+			if (!guard) {
+				const snip = Object.assign({}, Snippet, state.parse?.snippet);
+				const sep = snip[Token.sep]?.source ?? Match.separator.source;
+				const mm = snip[Token.mm]?.source ?? Snippet[Token.mm].source;
+				const dd = (snip[Token.dd]?.source ?? Snippet[Token.dd].source)
+					.replace('{ord}', snip[Token.ord]?.source ?? Snippet[Token.ord].source);
+				const datePrefix = new RegExp(`^\\d{4}${sep}(?:${mm})${sep}(?:${dd})(?:\\b|[T\\s]|$)`, 'i');
+				if (datePrefix.test(trim))
+					guard = true;
+			}
 
 			// 🛡️ Bypass the strict global guard if the current instance is using localized parsing
 			if (!guard && (!isEmpty(state.parse.monthMap) || !isEmpty(state.parse.weekdayMap)))

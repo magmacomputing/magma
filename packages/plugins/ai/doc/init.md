@@ -86,5 +86,9 @@ export interface AiConfig {
   cache?: Map<string, string>;
   /** Custom cache adapter for distributed storage (e.g. Redis, KV) */
   cacheAdapter?: AiCacheAdapter;
+  /** Global default time-to-live in milliseconds for cache adapters */
+  ttl?: number;
+  /** URL for dynamic remote provider manifest updates, or `false` to disable */
+  remoteConfigUrl?: string | false;
 }
 ```

@@ -25,6 +25,7 @@
 
 ## Key Module Links
 - [Full Documentation Concatenation](/llms-full.txt): Complete raw markdown documentation for RAG ingestion.
+- [AI Plugin Capabilities](https://github.com/magmacomputing/magma/tree/main/packages/plugins/ai): Natural language parsing (`parseAI`), slot scheduling (`scheduleAI`), and recurrence rule resolution (`recurrenceAI`).
 - [Layout Patterns & Regex Snippets](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/3-extending-tempo/tempo.layout.md): Guide to writing regex layouts and snippets.
 - [Plugin Development](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/3-extending-tempo/tempo.plugin.md): Rules for extending Tempo via plugins.
 - [Utility Library](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/6-utility-library/tempo.library.md): Type detection, serialization (`stringify`/`objectify`), and `Pledge`.

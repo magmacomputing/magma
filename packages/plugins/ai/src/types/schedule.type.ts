@@ -1,4 +1,6 @@
-import type { Tempo } from '@magmacomputing/tempo';
+import type { Tempo, Interval } from '@magmacomputing/tempo';
+import type { DayKey } from '@magmacomputing/tempo/library';
+import type { TempoBaseAiMeta } from './common.type.js';
 import type { AiParseOptions } from './parse.type.js';
 
 /**
@@ -10,8 +12,8 @@ export interface TempoWorkingHours {
 	start?: string;
 	/** End time of working day in HH:mm format (default: '17:00') */
 	end?: string;
-	/** Active working weekdays (0 = Sunday, 1 = Monday, ... 6 = Saturday; default: [1, 2, 3, 4, 5]) */
-	days?: number[];
+	/** Active working weekdays (1 = Monday, ... 7 = Sunday; or tokens like 'MO', 'MON'; default: [1, 2, 3, 4, 5]) */
+	days?: Array<number | DayKey | string>;
 	/** Target timeZone for working hours (defaults to anchor or options timeZone) */
 	timeZone?: string;
 }
@@ -37,9 +39,9 @@ export interface TempoScheduleOptions extends AiParseOptions {
 	/** Working hours configuration for slot resolution */
 	workingHours?: TempoWorkingHours;
 	/** Existing booked events or busy intervals to avoid */
-	events?: Array<{ start: any; end: any; title?: string }> | Array<TempoInterval>;
+	events?: Array<{ start: any; end: any; title?: string }> | Array<TempoInterval | Interval<Tempo>>;
 	/** Alias for events */
-	intervals?: Array<{ start: any; end: any; title?: string }> | Array<TempoInterval>;
+	intervals?: Array<{ start: any; end: any; title?: string }> | Array<TempoInterval | Interval<Tempo>>;
 	/** Search window start constraint */
 	after?: any;
 	/** Search window end constraint */
@@ -51,10 +53,21 @@ export interface TempoScheduleOptions extends AiParseOptions {
 }
 
 /**
+ * ## TempoScheduleAiMeta
+ * Extended AI execution metadata attached to scheduling results and intervals.
+ */
+export interface TempoScheduleAiMeta extends TempoBaseAiMeta {
+	/** Whether this slot was bumped due to a conflict */
+	readonly conflictBumped?: boolean | undefined;
+	/** The original un-bumped candidate slot if conflict bumping occurred */
+	readonly originalSlot?: TempoInterval | Interval<Tempo> | undefined;
+}
+
+/**
  * ## TempoScheduleResult
  * Structured scheduling result returned by `scheduleAI`.
  */
-export interface TempoScheduleResult extends TempoInterval {
+export interface TempoScheduleResult extends Interval<Tempo> {
 	/** Resolved start boundary as a Tempo instance */
 	start: Tempo;
 	/** Resolved end boundary as a Tempo instance */
@@ -70,16 +83,9 @@ export interface TempoScheduleResult extends TempoInterval {
 	/** Provider ID responsible for processing or 'native-scheduler' */
 	provider: string;
 	/** Alternative backup intervals identified during scheduling */
-	alternatives?: TempoInterval[] | undefined;
+	alternatives?: Interval<Tempo>[] | undefined;
 	/** Extended AI execution metadata */
-	ai?: {
-		provider: string;
-		confidence: number;
-		conflictBumped?: boolean | undefined;
-		originalSlot?: TempoInterval | undefined;
-		reasoning?: string | undefined;
-		[key: string]: any;
-	} | undefined;
+	ai?: TempoScheduleAiMeta | undefined;
 }
 
 /**
@@ -98,15 +104,8 @@ export interface TempoScheduleMeta {
 	/** Provider ID responsible for processing or 'native-scheduler' */
 	provider: string;
 	/** Alternative backup intervals identified during scheduling */
-	alternatives?: TempoInterval[] | undefined;
+	alternatives?: Interval<Tempo>[] | undefined;
 	/** Extended AI execution metadata */
-	ai: {
-		provider: string;
-		confidence: number;
-		conflictBumped?: boolean | undefined;
-		originalSlot?: TempoInterval | undefined;
-		reasoning?: string | undefined;
-		[key: string]: any;
-	};
+	ai: TempoScheduleAiMeta;
 }
 

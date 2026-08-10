@@ -44,7 +44,20 @@ function compare(a, b) {
   if (pa.patch !== pb.patch) return pa.patch > pb.patch;
   if (!pa.prerelease && pb.prerelease) return true;
   if (pa.prerelease && !pb.prerelease) return false;
-  return pa.prerelease > pb.prerelease;
+  if (!pa.prerelease && !pb.prerelease) return false;
+  const aParts = pa.prerelease.split(".");
+  const bParts = pb.prerelease.split(".");
+  const len = Math.min(aParts.length, bParts.length);
+  for (let i = 0; i < len; i++) {
+    const ap = aParts[i], bp = bParts[i];
+    if (ap === bp) continue;
+    const aNum = /^\d+$/.test(ap), bNum = /^\d+$/.test(bp);
+    if (aNum && bNum) return parseInt(ap, 10) > parseInt(bp, 10);
+    if (aNum && !bNum) return false;
+    if (!aNum && bNum) return true;
+    return ap > bp;
+  }
+  return aParts.length > bParts.length;
 }
 console.log(compare(process.argv[1], process.argv[2]) ? "true" : "false");
 ' "${branch_version}" "${main_version}")

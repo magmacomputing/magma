@@ -1,4 +1,23 @@
 import { isDefined } from './assertion.library.js';
+import {
+	DAYS_IN_WEEK,
+	DAY_MAP,
+	MONTH_MAP,
+	getDaysInMonth,
+	getUtcParts,
+	fromUtcParts,
+	isValidDate,
+	addUtcDays,
+	withUtcParts,
+	type DayKey,
+	type MonthKey,
+} from './calendar.library.js';
+
+export {
+	DAYS_IN_WEEK,
+	DAY_MAP,
+	MONTH_MAP
+};
 
 /**
  * Tests whether a string is a valid RFC 5545 Recurrence Rule (RRULE).
@@ -20,32 +39,6 @@ export function isRRuleString(input: string): boolean {
 export function isFiniteRRule(rrule: string): boolean {
 	return /(UNTIL|COUNT)=/i.test(rrule);
 }
-
-/**
- * Number of days in a standard week.
- */
-export const DAYS_IN_WEEK = 7;
-
-/**
- * Mapping of 2-letter ISO day abbreviations (MO..SU) to 1-indexed weekday numbers (1..7).
- */
-export const DAY_MAP: Record<string, number> = Object.freeze({
-	MO: 1,
-	TU: 2,
-	WE: 3,
-	TH: 4,
-	FR: 5,
-	SA: 6,
-	SU: 7
-});
-
-/**
- * Mapping of 3-letter month abbreviations (JAN..DEC) to 1-indexed month numbers (1..12).
- */
-export const MONTH_MAP: Record<string, number> = Object.freeze({
-	JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6,
-	JUL: 7, AUG: 8, SEP: 9, OCT: 10, NOV: 11, DEC: 12
-});
 
 /**
  * Parsed structure of an RFC 5545 Recurrence Rule string.
@@ -128,7 +121,7 @@ export function parseRRule(rrule: string): ParsedRRule {
 					const num = parseInt(trimmed, 10);
 					if (!isNaN(num) && num >= 1 && num <= 12) return num;
 					const prefix = trimmed.slice(0, 3).toUpperCase();
-					return MONTH_MAP[prefix];
+					return prefix in MONTH_MAP ? MONTH_MAP[prefix as MonthKey] : undefined;
 				}).filter((v): v is number => isDefined(v));
 				if (items.length > 0) byMonth = items;
 				break;
@@ -140,7 +133,7 @@ export function parseRRule(rrule: string): ParsedRRule {
 					const rawDay = m ? m[2] : item;
 					const canonicalDay = rawDay.slice(0, 2).toUpperCase();
 					return { nth: isDefined(nthVal) && !isNaN(nthVal) ? nthVal : undefined, day: canonicalDay };
-				}).filter(d => isDefined(DAY_MAP[d.day]));
+				}).filter(d => d.day in DAY_MAP);
 				if (items.length > 0) byDay = items;
 				break;
 			}
@@ -168,10 +161,6 @@ export function parseRRule(rrule: string): ParsedRRule {
 	return { freq, interval, count, untilMs, byMonth, byDay, byHour, byMinute, bySetPos };
 }
 
-function getDaysInMonth(year: number, month: number): number {
-	return new Date(Date.UTC(year, month, 0)).getUTCDate();
-}
-
 /**
  * Expands occurrences of an RFC 5545 RRULE string into epoch millisecond numbers.
  * Pure function operating strictly on primitive timestamps and UTC Date calculations.
@@ -189,53 +178,66 @@ export function expandRRuleEpochs(
 	const rule = parseRRule(rruleStr);
 	const anchorDate = new Date(anchorEpochMs);
 	const results: number[] = [];
-	const maxToFetch = isDefined(rule.count) ? rule.count : (options?.count ?? 100);
+	const maxToFetch = isDefined(rule.count) && isDefined(options?.count)
+		? Math.min(rule.count, options.count)
+		: (rule.count ?? options?.count ?? 100);
 
 	let totalGeneratedFromAnchor = 0;
 	let resultsCount = 0;
 	let step = 0;
 	const MAX_STEPS = 1000;
 
-	const anchorHours = anchorDate.getUTCHours();
-	const anchorMinutes = anchorDate.getUTCMinutes();
-	const anchorSeconds = anchorDate.getUTCSeconds();
-	const anchorMs = anchorDate.getUTCMilliseconds();
+	const {
+		year: anchorYear,
+		month: anchorMonth,
+		day: anchorDay,
+		hours: anchorHours,
+		minutes: anchorMinutes,
+		seconds: anchorSeconds,
+		milliseconds: anchorMs,
+	} = getUtcParts(anchorDate);
 
 	while (resultsCount < maxToFetch && step < MAX_STEPS) {
 		let periodBases: Date[] = [];
-		const baseDate = new Date(anchorEpochMs);
 
 		switch (rule.freq) {
 			case 'WEEKLY': {
-				baseDate.setUTCDate(baseDate.getUTCDate() + step * rule.interval * DAYS_IN_WEEK);
+				const steppedDate = addUtcDays(anchorDate, step * rule.interval * DAYS_IN_WEEK);
 				if (rule.byDay && rule.byDay.length > 0) {
 					periodBases = rule.byDay.map(bd => {
-						const targetDay = DAY_MAP[bd.day] ?? 1;
-						const currentDow = baseDate.getUTCDay() === 0 ? DAY_MAP.SUN : baseDate.getUTCDay();
+						const targetDay = bd.day in DAY_MAP ? DAY_MAP[bd.day as DayKey] : 1;
+						const currentDow = getUtcParts(steppedDate).weekday;
 						const diff = (targetDay - currentDow + DAYS_IN_WEEK) % DAYS_IN_WEEK;
-						const targetDate = new Date(baseDate.getTime());
-						targetDate.setUTCDate(targetDate.getUTCDate() + diff);
-						return targetDate;
+						return addUtcDays(steppedDate, diff);
 					});
 				} else {
-					periodBases = [baseDate];
+					periodBases = [steppedDate];
 				}
 				break;
 			}
+
 			case 'MONTHLY': {
-				baseDate.setUTCMonth(baseDate.getUTCMonth() + step * rule.interval);
-				const year = baseDate.getUTCFullYear();
-				const month = baseDate.getUTCMonth() + 1;
-				const daysInMonth = getDaysInMonth(year, month);
+				const totalMonths = (anchorYear * 12 + (anchorMonth - 1)) + step * rule.interval;
+				const targetYear = Math.floor(totalMonths / 12);
+				const targetMonth = (totalMonths % 12) + 1;
 
 				if (rule.byDay && rule.byDay.length > 0) {
+					const daysInMonth = getDaysInMonth(targetYear, targetMonth);
 					const candidateDays: Date[] = [];
 					for (const bd of rule.byDay) {
-						const targetDow = DAY_MAP[bd.day] ?? 1;
+						const targetDow = bd.day in DAY_MAP ? DAY_MAP[bd.day as DayKey] : 1;
 						const matchingDates: Date[] = [];
 						for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-							const d = new Date(Date.UTC(year, month - 1, dayNum, anchorHours, anchorMinutes, anchorSeconds, anchorMs));
-							const dow = d.getUTCDay() === 0 ? DAY_MAP.SUN : d.getUTCDay();
+							const d = fromUtcParts({
+								year: targetYear,
+								month: targetMonth,
+								day: dayNum,
+								hours: anchorHours,
+								minutes: anchorMinutes,
+								seconds: anchorSeconds,
+								milliseconds: anchorMs,
+							});
+							const dow = getUtcParts(d).weekday;
 							if (dow === targetDow) matchingDates.push(d);
 						}
 
@@ -251,39 +253,103 @@ export function expandRRuleEpochs(
 					}
 					periodBases = candidateDays;
 				} else {
-					periodBases = [baseDate];
+					if (isValidDate(targetYear, targetMonth, anchorDay)) {
+						periodBases = [fromUtcParts({
+							year: targetYear,
+							month: targetMonth,
+							day: anchorDay,
+							hours: anchorHours,
+							minutes: anchorMinutes,
+							seconds: anchorSeconds,
+							milliseconds: anchorMs,
+						})];
+					}
 				}
 				break;
 			}
+
 			case 'YEARLY': {
-				baseDate.setUTCFullYear(baseDate.getUTCFullYear() + step * rule.interval);
-				periodBases = [baseDate];
+				const targetYear = anchorYear + step * rule.interval;
+				const months = rule.byMonth && rule.byMonth.length > 0 ? rule.byMonth : [anchorMonth];
+				const candidateDays: Date[] = [];
+
+				for (const m of months) {
+					if (rule.byDay && rule.byDay.length > 0) {
+						const daysInMonth = getDaysInMonth(targetYear, m);
+						for (const bd of rule.byDay) {
+							const targetDow = bd.day in DAY_MAP ? DAY_MAP[bd.day as DayKey] : 1;
+							const matchingDates: Date[] = [];
+							for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+								const d = fromUtcParts({
+									year: targetYear,
+									month: m,
+									day: dayNum,
+									hours: anchorHours,
+									minutes: anchorMinutes,
+									seconds: anchorSeconds,
+									milliseconds: anchorMs,
+								});
+								const dow = getUtcParts(d).weekday;
+								if (dow === targetDow) matchingDates.push(d);
+							}
+
+							if (isDefined(bd.nth)) {
+								if (bd.nth > 0 && bd.nth <= matchingDates.length) {
+									candidateDays.push(matchingDates[bd.nth - 1]);
+								} else if (bd.nth < 0 && Math.abs(bd.nth) <= matchingDates.length) {
+									candidateDays.push(matchingDates[matchingDates.length + bd.nth]);
+								}
+							} else {
+								candidateDays.push(...matchingDates);
+							}
+						}
+					} else {
+						if (isValidDate(targetYear, m, anchorDay)) {
+							candidateDays.push(fromUtcParts({
+								year: targetYear,
+								month: m,
+								day: anchorDay,
+								hours: anchorHours,
+								minutes: anchorMinutes,
+								seconds: anchorSeconds,
+								milliseconds: anchorMs,
+							}));
+						}
+					}
+				}
+				periodBases = candidateDays;
 				break;
 			}
+
 			case 'DAILY':
 			default: {
-				baseDate.setUTCDate(baseDate.getUTCDate() + step * rule.interval);
-				periodBases = [baseDate];
+				periodBases = [addUtcDays(anchorDate, step * rule.interval)];
 				break;
 			}
 		}
 
-		if (rule.byMonth && rule.byMonth.length > 0)
+		if (rule.byMonth && rule.byMonth.length > 0 && rule.freq !== 'YEARLY')
 			periodBases = periodBases.filter(b => rule.byMonth!.includes(b.getUTCMonth() + 1));
 
 		const periodCandidates: Date[] = [];
 		for (const base of periodBases) {
-			const hours = rule.byHour && rule.byHour.length > 0 ? rule.byHour : [base.getUTCHours()];
-			const minutes = rule.byMinute && rule.byMinute.length > 0 ? rule.byMinute : [base.getUTCMinutes()];
+			const { hours: baseHours, minutes: baseMinutes } = getUtcParts(base);
+			const hours = rule.byHour && rule.byHour.length > 0 ? rule.byHour : [baseHours];
+			const minutes = rule.byMinute && rule.byMinute.length > 0 ? rule.byMinute : [baseMinutes];
 
 			for (const h of hours) {
 				for (const m of minutes) {
-					const cand = new Date(base.getTime());
-					cand.setUTCHours(h, m, anchorSeconds, anchorMs);
-					periodCandidates.push(cand);
+					periodCandidates.push(withUtcParts(base, {
+						hours: h,
+						minutes: m,
+						seconds: anchorSeconds,
+						milliseconds: anchorMs,
+					}));
 				}
 			}
 		}
+
+		periodCandidates.sort((a, b) => a.getTime() - b.getTime());
 
 		let finalPeriodCandidates = periodCandidates;
 		if (rule.bySetPos && rule.bySetPos.length > 0 && periodCandidates.length > 0) {

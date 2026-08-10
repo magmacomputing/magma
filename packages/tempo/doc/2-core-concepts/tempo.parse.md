@@ -134,7 +134,7 @@ Tempo natively supports human-readable timezone abbreviations (e.g. `AEST`, `PST
 > By default, Tempo's built-in layouts expect timezone offsets and abbreviations to *follow* the date/time payload. This design prevents leading abbreviations from colliding with 3-letter month names (such as `MAR` for March vs. Marshall Islands Time).
 
 #### Registering a Custom Leading Timezone Layout
-If your application processes custom log files or legacy data streams that position timezone designators at the *start* (e.g. `"PST 8 Aug 10:30"`), you can register a custom layout using `{tzd}` alongside `{dt}` and `{tm}`:
+If your application processes custom log files or legacy data streams that position timezone designators at the *start* (e.g. `"PST 8 Aug 10:30"`), you can register a custom layout using `{tzd}` alongside `{dt}` and `{tm}`. The `{tzd}` token accepts both timezone offset designators (`+10:00`, `Z`, `GMT+10`) and registered timezone abbreviations (such as `AEST`, `PST`, `EST`):
 
 ```typescript
 Tempo.init({
