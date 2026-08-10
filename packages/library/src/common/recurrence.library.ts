@@ -13,8 +13,8 @@ import {
 	type MonthKey,
 } from './calendar.library.js';
 
-const RE_RRULE_FREQ = /^(RRULE:)?FREQ=(DAILY|WEEKLY|MONTHLY|YEARLY)/i;
-const RE_FINITE_RRULE = /(UNTIL|COUNT)=/i;
+const RE_RRULE_FREQ = /^(RRULE:)?FREQ=(DAILY|WEEKLY|MONTHLY|YEARLY)(;|$)/i;
+const RE_FINITE_RRULE = /(?:^|;)(?:RRULE:)?(UNTIL|COUNT)=/i;
 const RE_RRULE_PREFIX = /^RRULE:/i;
 const RE_DATE_8DIGIT = /^\d{8}$/;
 const RE_UNTIL_TIMESTAMP = /^(\d{4})(\d{2})(\d{2})T?(\d{2})?(\d{2})?(\d{2})?Z?$/;
@@ -109,7 +109,9 @@ export function parseRRule(rrule: string): ParsedRRule {
 					const year = parseInt(trimmedVal.slice(0, 4), 10);
 					const month = parseInt(trimmedVal.slice(4, 6), 10);
 					const day = parseInt(trimmedVal.slice(6, 8), 10);
-					untilMs = Date.UTC(year, month - 1, day, 23, 59, 59, 999);
+					if (isValidDate(year, month, day)) {
+						untilMs = fromUtcParts({ year, month, day, hours: 23, minutes: 59, seconds: 59, milliseconds: 999 }).getTime();
+					}
 				} else {
 					const uStr = trimmedVal.replace(RE_UNTIL_TIMESTAMP, '$1-$2-$3T$4:$5:$6Z');
 					const parsedDate = new Date(uStr);
@@ -408,12 +410,9 @@ export function expandRRuleEpochs(
  *
  * @param rruleStr - The RFC 5545 recurrence rule string
  * @param fromEpochMs - The baseline timestamp in epoch milliseconds
- * @returns Epoch millisecond timestamp of the next occurrence
+ * @returns Epoch millisecond timestamp of the next occurrence, or null if no further occurrences exist
  */
-export function getNextRRuleEpoch(rruleStr: string, fromEpochMs: number): number {
+export function getNextRRuleEpoch(rruleStr: string, fromEpochMs: number): number | null {
 	const expanded = expandRRuleEpochs(rruleStr, fromEpochMs, { count: 1, afterMs: fromEpochMs });
-	if (expanded.length > 0) return expanded[0];
-
-	// Fallback to simple 1 day shift if rule has ended or yields no occurrences
-	return fromEpochMs + 86_400_000;
+	return expanded.length > 0 ? expanded[0] : null;
 }

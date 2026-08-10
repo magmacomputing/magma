@@ -160,6 +160,8 @@ Do not include markdown blocks or any text outside the JSON.`;
 		});
 
 		const limits = updateRateLimitsFromResponse(response);
+		if (limits)
+			_state.providerLimits.set(provider.id, limits);
 
 		if (!response.ok) {
 			const errorText = await response.text();

@@ -142,7 +142,7 @@ export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike | string, tz: Te
 	if (RE_CALENDAR_BRACKET.test(str))
 		return Temporal.ZonedDateTime.from(str.replace(RE_CALENDAR_BRACKET, `[${tz}]$&`));
 
-	return RE_OFFSET_SUFFIX.test(str)
+	return (str.includes('T') && RE_OFFSET_SUFFIX.test(str))
 		? Temporal.Instant.from(str).toZonedDateTimeISO(tz)
 		: Temporal.ZonedDateTime.from(`${str}[${tz}]`);
 }

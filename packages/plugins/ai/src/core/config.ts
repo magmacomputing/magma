@@ -7,11 +7,17 @@ import type { AiProvider } from '../types/index.js';
  * - `Fallback` ('fallback'): Sequential provider rotation until one succeeds.
  * - `Race` ('race'): Concurrent speculative requests; returns fastest success.
  * - `Consensus` ('consensus'): Concurrent requests across all providers with confidence voting.
+ * - `Hedged` ('hedged'): Staggered latency hedging (near-Race speed with reduced token usage).
+ * - `RoundRobin` ('roundrobin'): Cyclic load balancing across provider pool.
+ * - `Adaptive` ('adaptive'): Proactive telemetry-aware rate-limit avoidance.
  */
 export const AiMode = Object.freeze({
 	Fallback: 'fallback',
 	Race: 'race',
-	Consensus: 'consensus'
+	Consensus: 'consensus',
+	Hedged: 'hedged',
+	RoundRobin: 'roundRobin',
+	Adaptive: 'adaptive',
 } as const);
 
 export type AiMode = (typeof AiMode)[keyof typeof AiMode];

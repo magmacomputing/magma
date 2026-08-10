@@ -12,11 +12,13 @@ export const _state: {
   config: AiConfig;
   rawProviders?: AiProvider[] | undefined;
   limits: AiRateLimits | null;
+  providerLimits: Map<string, AiRateLimits>;
   revision: number;
 } = {
   config: {},
   rawProviders: undefined,
   limits: null,
+  providerLimits: new Map(),
   revision: 0,
 }
 
@@ -112,6 +114,7 @@ export function resetAI(): void {
   _state.config = {};
   _state.rawProviders = undefined;
   _state.limits = null;
+  _state.providerLimits.clear();
   _state.revision++;
   resetManifestCache();
 }
@@ -170,6 +173,16 @@ export async function clearAiCache(input?: string | string[]): Promise<void> {
  */
 export function getAiRateLimits(): AiRateLimits | null {
   return _state.limits;
+}
+
+/**
+ * Retrieves the latest observed rate limits for a specific AI provider.
+ *
+ * @param providerId - The provider ID to look up
+ * @returns The provider rate limits snapshot, or `null` if none recorded
+ */
+export function getAiProviderRateLimits(providerId: string): AiRateLimits | null {
+  return _state.providerLimits.get(providerId) ?? null;
 }
 
 /**

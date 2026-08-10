@@ -5,22 +5,23 @@ describe('extend.recurrence', () => {
 	test('Tempo.prototype.nextOccurrence returns next date matching RRULE string', () => {
 		const start = new Tempo('2026-08-07T00:00:00.000Z', { timeZone: 'UTC' });
 		const next = start.nextOccurrence('FREQ=DAILY;INTERVAL=1');
-		expect(next.epoch.ms).toBe(Date.UTC(2026, 7, 8));
-		expect(next.format('{yyyy}-{mm}-{dd}')).toBe('2026-08-08');
+		expect(next).not.toBeNull();
+		expect(next!.epoch.ms).toBe(Date.UTC(2026, 7, 8));
+		expect(next!.format('{yyyy}-{mm}-{dd}')).toBe('2026-08-08');
 	});
 
 	test('Tempo.prototype.nextOccurrence accepts object with rrule property', () => {
 		const start = new Tempo('2026-08-07T00:00:00.000Z', { timeZone: 'UTC' });
 		const next = start.nextOccurrence({ rrule: 'FREQ=DAILY;INTERVAL=2' });
-		expect(next.epoch.ms).toBe(Date.UTC(2026, 7, 9));
-		expect(next.format('{yyyy}-{mm}-{dd}')).toBe('2026-08-09');
+		expect(next).not.toBeNull();
+		expect(next!.epoch.ms).toBe(Date.UTC(2026, 7, 9));
+		expect(next!.format('{yyyy}-{mm}-{dd}')).toBe('2026-08-09');
 	});
 
-	test('Tempo.prototype.nextOccurrence falls back to one-day shift when RRULE UNTIL is expired', () => {
+	test('Tempo.prototype.nextOccurrence returns null when RRULE UNTIL is expired', () => {
 		const start = new Tempo('2026-08-07T00:00:00.000Z', { timeZone: 'UTC' });
 		const next = start.nextOccurrence('FREQ=DAILY;UNTIL=20260801');
-		expect(next.format('{yyyy}-{mm}-{dd}')).toBe('2026-08-08');
-		expect(next.epoch.ms).toBe(start.epoch.ms + 86_400_000);
+		expect(next).toBeNull();
 	});
 
 	test('Tempo.prototype.nextOccurrence preserves sandbox subclass and respects non-ms timeStamp configurations', () => {
@@ -28,7 +29,7 @@ describe('extend.recurrence', () => {
 		const start = new Sandbox('2026-08-07T00:00:00.000Z');
 		const next = start.nextOccurrence('FREQ=DAILY;INTERVAL=1');
 		expect(next).toBeInstanceOf(Sandbox);
-		expect(next.epoch.ms).toBe(Date.UTC(2026, 7, 8));
-		expect(next.config.timeStamp).toBe('ss');
+		expect(next!.epoch.ms).toBe(Date.UTC(2026, 7, 8));
+		expect(next!.config.timeStamp).toBe('ss');
 	});
 });

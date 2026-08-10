@@ -1,13 +1,14 @@
 import { asNumber, asString, nullishToValue } from '#library/coercion.library.js';
 import { stringify } from '#library/serialize.library.js';
 import { isString, isObject, isNumeric, assertCondition, assertString } from '#library/assertion.library.js';
+import type { SingularUnit } from '#library/type.library.js';
 
 const RE_TAB = /\t/g;
 const RE_NEWLINE = /(\r\n|\n|\r)/g;
 const RE_MULTI_SPACE = /\s{2,}/g;
 const RE_WORD_START = /\w\S*/g;
 const RE_SPACE = / /g;
-const RE_PARAM_MARKER = /\$\{(\d)\}/g;
+const RE_PARAM_MARKER = /\$\{(\d+)\}/g;
 const RE_FORMAT_SPECIFIER = /%[sj]/g;
 const RE_TEMPLATE_PLACEHOLDER = /\${(.*?)}/g;
 
@@ -135,12 +136,10 @@ export const randomString = (len = 36) => {
 export function sprintf(fmt: string, ...msg: any[]): string;// either a format-string, followed by arguments
 export function sprintf(...msg: any[]): string;							// or just an array of arguments
 export function sprintf(fmt: {}, ...msg: any[]) {
-	let sfmt = asString(fmt);																	// avoid mutate fmt
+	let sfmt = isString(fmt) ? (fmt as string) : '';
 
-	if (!isString(fmt)) {																			// might be an Object
+	if (!isString(fmt))																				// might be an Object
 		msg.unshift(JSON.stringify(fmt));												// push to start of msg[]
-		sfmt = '';																							// reset the string-format
-	}
 
 	let cnt = 0;																							// if the format does not contain a corresponding '${digit}' then re-construct the parameters
 	sfmt = sfmt.replace(RE_FORMAT_SPECIFIER, _ => `\${${cnt++}}`);			// flip all the %s or %j to a ${digit} parameter
@@ -176,12 +175,6 @@ export const plural = (val: string | number | Record<string, string>, word: stri
 		? (num: string, word: string) => _plural(num, word, (val as Record<string, string>)[word])
 		: _plural(val, word, plural)
 }
-
-type SingularUnit<T extends string> = T extends `${infer S}s`
-	? T extends `${string}${string}${string}${string}`
-	? S
-	: T
-	: T;
 
 /**
  * Strips a plural 's' suffix from a string if it ends with 's' and is longer than 3 characters.

@@ -148,7 +148,10 @@ export function fromUtcParts(parts: UtcPartsOptions): Date {
 		seconds = 0,
 		milliseconds = 0,
 	} = parts;
-	return new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds, milliseconds));
+	const d = new Date(0);
+	d.setUTCFullYear(year, month - 1, day);
+	d.setUTCHours(hours, minutes, seconds, milliseconds);
+	return d;
 }
 
 /**
@@ -160,7 +163,11 @@ export function fromUtcParts(parts: UtcPartsOptions): Date {
  * @returns `true` if the year, month, and day represent a valid date, otherwise `false`
  */
 export function isValidDate(year: number, month: number, day: number): boolean {
-	return month >= 1 && month <= 12 && day >= 1 && day <= getDaysInMonth(year, month);
+	if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return false;
+	if (month < 1 || month > 12 || day < 1) return false;
+	const d = new Date(0);
+	d.setUTCFullYear(year, month - 1, day);
+	return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day;
 }
 
 /**

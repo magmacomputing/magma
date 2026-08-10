@@ -62,6 +62,8 @@ export interface AiParseOptions {
 	softErrors?: boolean;
 	/** Optional request timeout in milliseconds (overrides provider and global timeout) */
 	timeout?: number;
+	/** Optional delay in milliseconds before initiating speculative hedging in AiMode.Hedged (default: 800ms) */
+	hedgeDelay?: number;
 	/** Allow extra options */
 	[key: string]: any;
 }

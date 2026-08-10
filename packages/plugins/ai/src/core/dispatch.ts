@@ -1,5 +1,6 @@
 import { TempoAiError } from './error.js';
 import { AiMode } from './config.js';
+import { _state } from './init.js';
 import type { AiProvider } from '../types/index.js';
 
 /**
@@ -48,6 +49,8 @@ export interface ExecuteModeOptions {
 	debug?: boolean | undefined;
 	/** Logging tag prefix for debugging output (e.g. 'tempo-plugin-ai:parse'). */
 	tag?: string | undefined;
+	/** Optional delay in milliseconds before initiating speculative hedging in AiMode.Hedged (default: 800ms). */
+	hedgeDelay?: number | undefined;
 }
 
 /**
@@ -187,19 +190,177 @@ async function executeConsensusMode<T>(
 }
 
 /**
+ * Executes providers with speculative staggered hedging:
+ * - Dispatches request to the primary provider immediately.
+ * - If primary provider does not respond within `hedgeDelay` (default: 800ms), dispatches speculative requests to subsequent providers.
+ * - Resolves with the first valid candidate meeting `minConfidence`.
+ * - Uses an `AbortController` to cancel in-flight and pending requests once a winner emerges.
+ *
+ * @internal
+ */
+async function executeHedgedMode<T>(
+	providers: AiProvider[],
+	task: ProviderTask<T>,
+	options?: ExecuteModeOptions,
+): Promise<ModeCandidate<T>> {
+	if (providers.length <= 1) return executeFallbackMode(providers, task, options);
+
+	const controller = new AbortController();
+	const delay = options?.hedgeDelay ?? 800;
+	const minConfidence = options?.minConfidence;
+	const errors: any[] = [];
+	let bestCandidate: ModeCandidate<T> | null = null;
+
+	return new Promise<ModeCandidate<T>>((resolve, reject) => {
+		let settled = false;
+		let completedCount = 0;
+		const timeouts: any[] = [];
+
+		const cleanup = () => {
+			timeouts.forEach(t => clearTimeout(t));
+		};
+
+		const runProvider = async (index: number) => {
+			if (settled) return;
+			const provider = providers[index];
+			try {
+				const candidate = await task(provider, controller.signal);
+				if (settled) return;
+
+				const confidence = typeof candidate.confidence === 'number' ? candidate.confidence : 1.0;
+				const bestConf = bestCandidate ? (typeof bestCandidate.confidence === 'number' ? bestCandidate.confidence : 1.0) : -1;
+				if (!bestCandidate || confidence > bestConf)
+					bestCandidate = candidate;
+
+				if (minConfidence === undefined || confidence >= minConfidence) {
+					settled = true;
+					cleanup();
+					controller.abort();
+					resolve(candidate);
+					return;
+				}
+			} catch (err: any) {
+				if (settled) return;
+				errors.push(err);
+			} finally {
+				completedCount++;
+				if (!settled && completedCount >= providers.length) {
+					settled = true;
+					cleanup();
+					controller.abort();
+					if (bestCandidate) {
+						resolve(bestCandidate);
+					} else {
+						const unwrapped = unwrapExecutionError(
+							errors.length > 1 ? new AggregateError(errors, 'All hedged providers failed') : errors[0],
+							'Hedged dispatch failed'
+						);
+						reject(unwrapped);
+					}
+				}
+			}
+		};
+
+		// Start first provider immediately
+		runProvider(0);
+
+		// Stagger remaining providers
+		for (let i = 1; i < providers.length; i++) {
+			const t = setTimeout(() => {
+				if (!settled) runProvider(i);
+			}, delay * i);
+			timeouts.push(t);
+		}
+	});
+}
+
+let _rrIndex = 0;
+
+/**
+ * Dispatches requests rotating the starting provider across the provider pool in round-robin fashion.
+ * Cascades to remaining providers in cyclic order if the selected primary provider fails.
+ *
+ * @internal
+ */
+async function executeRoundRobinMode<T>(
+	providers: AiProvider[],
+	task: ProviderTask<T>,
+	options?: ExecuteModeOptions,
+): Promise<ModeCandidate<T>> {
+	if (providers.length <= 1) return executeFallbackMode(providers, task, options);
+
+	const start = (_rrIndex++) % providers.length;
+	const rotated = [...providers.slice(start), ...providers.slice(0, start)];
+	return executeFallbackMode(rotated, task, options);
+}
+
+/**
+ * Executes providers adaptively based on real-time rate limit telemetry:
+ * - Deprioritizes or temporarily avoids providers whose request quota is exhausted (`remainingRequests === 0` with an active reset window).
+ * - Sorts available providers by remaining request quota descending.
+ * - Delegates to sequential fallback execution across the sorted provider list.
+ *
+ * @internal
+ */
+async function executeAdaptiveMode<T>(
+	providers: AiProvider[],
+	task: ProviderTask<T>,
+	options?: ExecuteModeOptions,
+): Promise<ModeCandidate<T>> {
+	if (providers.length <= 1) return executeFallbackMode(providers, task, options);
+
+	const now = Date.now();
+	const scored = providers.map((provider, index) => {
+		const limits = _state.providerLimits.get(provider.id);
+
+		// Providers with no rate-limit telemetry (local LLMs, first-call remotes) have
+		// no quota ceiling — assign Infinity so they naturally sort above constrained providers.
+		const remaining = typeof limits?.remainingRequests === 'number' ? limits.remainingRequests : Infinity;
+		let isExhausted = false;
+
+		if (limits) {
+			const resetMs = limits.resetAt?.epoch?.ms ?? now;
+			isExhausted = limits.remainingRequests === 0 && resetMs > now;
+		}
+
+		return {
+			provider,
+			index,
+			isExhausted,
+			remaining,
+		}
+	});
+
+	scored.sort((a, b) => {
+		// Non-exhausted providers before exhausted ones
+		if (a.isExhausted !== b.isExhausted) return a.isExhausted ? 1 : -1;
+		// Higher remaining requests first
+		if (a.remaining !== b.remaining) return b.remaining - a.remaining;
+		// Preserve original order
+		return a.index - b.index;
+	});
+
+	const sortedProviders = scored.map(s => s.provider);
+	return executeFallbackMode(sortedProviders, task, options);
+}
+
+/**
  * ## executeWithMode
  * Central multi-provider execution orchestrator for Tempo AI plugins.
  * Routes task execution through the configured multi-provider strategy:
  * - `Fallback`: Sequential cascade through providers until confidence threshold is met or highest confidence is found.
  * - `Race`: Concurrent speculative requests with AbortSignal cancellation returning the fastest resolution.
  * - `Consensus`: Dispatches concurrent calls across all providers and resolves matching/highest-confidence consensus.
+ * - `Hedged`: Staggered latency hedging dispatch with speculative cancellation.
+ * - `RoundRobin`: Cyclic provider rotation across the configured pool.
+ * - `Adaptive`: Real-time rate-limit telemetry-aware provider prioritization.
  *
  * @internal
  * @template T - The domain-specific payload type.
- * @param mode - Execution strategy (`AiMode.Fallback` | `AiMode.Race` | `AiMode.Consensus`).
+ * @param mode - Execution strategy (`AiMode.Fallback` | `AiMode.Race` | `AiMode.Consensus` | `AiMode.Hedged` | `AiMode.RoundRobin` | `AiMode.Adaptive`).
  * @param providers - Array of available configured `AiProvider` definitions.
  * @param task - Async task closure executed per provider.
- * @param options - Execution options including `minConfidence`, `debug`, and logging `tag`.
+ * @param options - Execution options including `minConfidence`, `debug`, logging `tag`, and `hedgeDelay`.
  * @returns Promise resolving to the winning `ModeCandidate<T>`.
  * @throws {TempoAiError} When the mode is invalid (400) or all providers fail (500/502).
  */
@@ -212,10 +373,22 @@ export async function executeWithMode<T>(
 	switch (mode) {
 		case AiMode.Fallback:
 			return executeFallbackMode(providers, task, options);
+
 		case AiMode.Race:
 			return executeRaceMode(providers, task);
+
 		case AiMode.Consensus:
 			return executeConsensusMode(providers, task);
+
+		case AiMode.Hedged:
+			return executeHedgedMode(providers, task, options);
+
+		case AiMode.RoundRobin:
+			return executeRoundRobinMode(providers, task, options);
+
+		case AiMode.Adaptive:
+			return executeAdaptiveMode(providers, task, options);
+
 		default:
 			throw new TempoAiError(`Invalid execution mode: '${mode}'. Supported modes: ${Object.values(AiMode).map(m => `'${m}'`).join(', ')}.`, 400);
 	}

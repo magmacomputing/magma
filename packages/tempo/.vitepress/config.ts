@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 import { fileURLToPath } from 'node:url'
 import { Temporal } from '@js-temporal/polyfill'
 
@@ -12,7 +13,7 @@ if (typeof (globalThis as any).Temporal === 'undefined') {
 }
 
 
-export default defineConfig({
+export default withMermaid(defineConfig({
   base: '/magma/',
   title: "Tempo",
   description: "The Professional Date-Time Library for Temporal",
@@ -30,7 +31,7 @@ export default defineConfig({
       { text: 'API Reference', link: '/api/index.html', target: '_self' },
       { text: 'Library API', link: '/api/library/index.html', target: '_self' },
       { text: 'Releases', link: '/doc/8-project-and-support/releases/' },
-      { text: 'Functions ↗', link: 'https://magmacomputing.github.io/magma/functions/' }
+      { text: 'Functions', link: 'https://magmacomputing.github.io/magma/functions/' }
     ],
     sidebar: [
       {
@@ -202,4 +203,4 @@ export default defineConfig({
       noExternal: ['@magmacomputing/tempo', '@magmacomputing/library']
     }
   }
-})
+}))

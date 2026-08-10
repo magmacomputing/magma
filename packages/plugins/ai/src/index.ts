@@ -7,7 +7,7 @@ export * from './core/config.js';
 export { loadRemoteManifest, resetManifestCache, DEFAULT_REMOTE_MANIFEST_URL } from './core/manifest.js';
 
 // AI Core Functions
-export { initAI, resetAI, clearAiCache, getAiRateLimits, getAiConfig } from './core/init.js';
+export { initAI, resetAI, clearAiCache, getAiRateLimits, getAiProviderRateLimits, getAiConfig } from './core/init.js';
 
 // AI Function Handlers
 export { parseAI } from './functions/parse.js';

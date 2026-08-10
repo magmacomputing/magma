@@ -285,8 +285,10 @@
     "@rollup/plugin-typescript": "^12.3.0",
     "javascript-obfuscator": "^5.4.3",
     "magic-string": "^0.30.21",
+    "mermaid": "^11.16.1",
     "typedoc": "^0.28.19",
-    "vitepress": "^1.6.4"
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17"
   },
   "directories": {
     "doc": "doc",

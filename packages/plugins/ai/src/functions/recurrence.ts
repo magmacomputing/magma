@@ -190,7 +190,7 @@ Do not include markdown blocks or text outside the JSON.`;
 				consensusKey: parsedData?.rrule,
 			};
 		},
-		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:recurrence' },
+		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:recurrence', hedgeDelay: options?.hedgeDelay ?? _state.config.hedgeDelay },
 	);
 
 	_state.limits = winningCandidate.rateLimits ?? null;

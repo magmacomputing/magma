@@ -10,7 +10,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 	const isDebug = options?.debug ?? _state.config.debug ?? false;
 	const normalizedStr = normalizeCacheInput(str);
 
-	const { force, debug, mode: aiMode, providers, minConfidence, softErrors, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, anchor, ...coreOptions } = options || {};
+	const { force, debug, mode: aiMode, providers, minConfidence, softErrors, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, anchor, hedgeDelay, ...coreOptions } = options || {};
 
 	let tz: string, cal: string, loc: string, sph: string, anchorStr: string;
 	if (Tempo.isTempo(options?.anchor)) {
@@ -115,6 +115,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
 	const mode = aiMode || _state.config.mode || AiMode.Fallback;
 	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
+	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
 	const winningCandidate = await executeWithMode<any>(
 		mode,
@@ -139,7 +140,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 				ambiguous: Boolean(parsedData?.ambiguous || parsedData?.iso === 'INVALID'),
 			};
 		},
-		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:parse' },
+		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:parse', hedgeDelay: effectiveHedgeDelay },
 	);
 
 	_state.limits = winningCandidate.rateLimits ?? null;

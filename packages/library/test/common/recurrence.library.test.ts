@@ -161,11 +161,13 @@ describe('recurrence.library', () => {
 	test('getNextRRuleEpoch computes next occurrence including Sunday handling', () => {
 		const anchor = Date.UTC(2026, 7, 7, 0, 0, 0, 0); // Friday Aug 7
 		const nextDaily = getNextRRuleEpoch('FREQ=DAILY;INTERVAL=1', anchor);
-		expect(new Date(nextDaily).toISOString()).toBe('2026-08-08T00:00:00.000Z');
+		expect(nextDaily).not.toBeNull();
+		expect(new Date(nextDaily!).toISOString()).toBe('2026-08-08T00:00:00.000Z');
 
 		// Next occurrence after Friday Aug 7 for Sunday rule is Sunday Aug 9
 		const nextSunday = getNextRRuleEpoch('FREQ=WEEKLY;BYDAY=SU', anchor);
-		expect(new Date(nextSunday).toISOString()).toBe('2026-08-09T00:00:00.000Z');
+		expect(nextSunday).not.toBeNull();
+		expect(new Date(nextSunday!).toISOString()).toBe('2026-08-09T00:00:00.000Z');
 	});
 
 	test('expandRRuleEpochs respects smaller of rule.count and options.count', () => {
@@ -192,5 +194,27 @@ describe('recurrence.library', () => {
 		expect(new Date(epochs[0]).toISOString()).toBe('2026-01-31T10:00:00.000Z');
 		expect(new Date(epochs[1]).toISOString()).toBe('2026-03-31T10:00:00.000Z');
 		expect(new Date(epochs[2]).toISOString()).toBe('2026-05-31T10:00:00.000Z');
+	});
+
+	test('isRRuleString and isFiniteRRule strictly validate token boundaries', () => {
+		expect(isRRuleString('FREQ=DAILYXYZ')).toBe(false);
+		expect(isRRuleString('FREQ=DAILY;INTERVAL=1')).toBe(true);
+		expect(isFiniteRRule('FREQ=DAILY;XCOUNT=5')).toBe(false);
+		expect(isFiniteRRule('FREQ=DAILY;COUNT=5')).toBe(true);
+		expect(isFiniteRRule('RRULE:COUNT=5')).toBe(true);
+	});
+
+	test('parseRRule rejects invalid calendar dates in 8-digit UNTIL clause', () => {
+		const parsed = parseRRule('FREQ=DAILY;UNTIL=20260230');
+		expect(parsed.untilMs).toBeUndefined();
+
+		const validParsed = parseRRule('FREQ=DAILY;UNTIL=20260228');
+		expect(validParsed.untilMs).toBe(Date.UTC(2026, 1, 28, 23, 59, 59, 999));
+	});
+
+	test('getNextRRuleEpoch returns null when no occurrences exist', () => {
+		const anchor = Date.UTC(2026, 7, 7, 0, 0, 0, 0);
+		const result = getNextRRuleEpoch('FREQ=DAILY;UNTIL=20260801', anchor);
+		expect(result).toBeNull();
 	});
 });

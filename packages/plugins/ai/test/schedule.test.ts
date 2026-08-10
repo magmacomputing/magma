@@ -252,6 +252,7 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 			}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
 
 		const resConsensus = await scheduleAI('Schedule 30 minute slot', {
+			timeZone: 'UTC',
 			mode: 'consensus',
 			providers: [
 				{ id: 'p1', key: 'key-1', url: 'https://api.groq.com/v1/chat/completions', model: 'm1' },
@@ -332,7 +333,9 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 			}],
 		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
 
-		const slot = await scheduleAI('Schedule 1 hour review session');
+		const slot = await scheduleAI('Schedule 1 hour review session', {
+			timeZone: 'UTC',
+		});
 
 		expect(slot).toBeInstanceOf(Interval);
 		expect(slot.constructor).toBe(Interval);
@@ -421,6 +424,64 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 		// Saturday bumped past weekend to Monday Aug 17th
 		expect(slot.start.format('{yyyy}-{mm}-{dd}')).toBe('2026-08-17');
 		expect(slot.start.format('{hh}:{mi}')).toBe('09:00');
+	});
+
+	it('should discard partial numeric day strings like "1junk" and "1.5" while keeping valid strings', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						start: '2026-08-15T10:00:00Z', // Saturday
+						end: '2026-08-15T11:00:00Z',
+						confidence: 0.95
+					})
+				}
+			}]
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const slot = await scheduleAI('Schedule 1 hour slot', {
+			anchor: '2026-08-14T09:00:00Z',
+			timeZone: 'UTC',
+			workingHours: {
+				days: ['1junk' as any, '1.5' as any, '2', 'TU', '4'],
+				start: '09:00',
+				end: '17:00'
+			}
+		});
+
+		expect(slot).toBeDefined();
+		// Active days are Tuesday (2) and Thursday (4). Next active day from Saturday Aug 15 is Tuesday Aug 18.
+		expect(slot.start.format('{yyyy}-{mm}-{dd}')).toBe('2026-08-18');
+		expect(slot.start.format('{hh}:{mi}')).toBe('09:00');
+	});
+
+	it('should adjust slots outside working hours even when no busy events exist', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						start: '2026-08-11T07:00:00Z', // Early Tuesday (before 09:00)
+						end: '2026-08-11T08:00:00Z',
+						confidence: 0.95
+					})
+				}
+			}]
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const slot = await scheduleAI('Schedule 1 hour slot', {
+			anchor: '2026-08-10T09:00:00Z',
+			timeZone: 'UTC',
+			workingHours: {
+				start: '09:00',
+				end: '17:00'
+			}
+		});
+
+		expect(slot.start.format('{hh}:{mi}')).toBe('09:00');
+		expect(slot.end.format('{hh}:{mi}')).toBe('10:00');
+		expect(slot.ai?.conflictBumped).toBe(true);
 	});
 });
 

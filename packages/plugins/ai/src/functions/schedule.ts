@@ -7,6 +7,12 @@ import { executeWithMode } from '../core/dispatch.js';
 import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
 import type { TempoScheduleOptions, TempoScheduleResult, TempoWorkingHours, TempoInterval, TempoScheduleMeta, AiProvider } from '../types/index.js';
 
+const RE_DURATION_MINUTES = /(\d+)\s*(?:minutes?|mins?|m\b)/i;
+const RE_DURATION_HOURS = /(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h\b)/i;
+const RE_MARKDOWN_JSON_PREFIX = /^```json\s*/i;
+const RE_MARKDOWN_JSON_SUFFIX = /\s*```$/i;
+const RE_ISO_WEEKDAY_DIGIT = /^[1-7]$/;
+
 function normalizeBusyEvents(rawEvents?: any[], timeZone = 'UTC'): Array<{ start: Tempo; end: Tempo; title?: string | undefined }> {
 	if (!Array.isArray(rawEvents)) return [];
 
@@ -47,9 +53,9 @@ function normalizeBusyEvents(rawEvents?: any[], timeZone = 'UTC'): Array<{ start
 
 function parseDurationMinutes(prompt: string, fallback?: number): number {
 	if (isNumber(fallback) && fallback > 0) return fallback;
-	const match = prompt.match(/(\d+)\s*(?:minutes?|mins?|m\b)/i);
+	const match = prompt.match(RE_DURATION_MINUTES);
 	if (match) return parseInt(match[1], 10);
-	const hourMatch = prompt.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h\b)/i);
+	const hourMatch = prompt.match(RE_DURATION_HOURS);
 	if (hourMatch) return Math.round(parseFloat(hourMatch[1]) * 60);
 	return 30; // default 30 minutes
 }
@@ -217,7 +223,7 @@ export async function scheduleAI(
 				SCHEDULE_SYSTEM_PROMPT,
 			);
 
-			const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+			const cleanContent = rawContent.replace(RE_MARKDOWN_JSON_PREFIX, '').replace(RE_MARKDOWN_JSON_SUFFIX, '');
 			let parsed: any;
 			try {
 				parsed = JSON.parse(cleanContent);
@@ -258,7 +264,7 @@ export async function scheduleAI(
 				consensusKey: `${startKey}::${endKey}`,
 			};
 		},
-		{ minConfidence: options?.minConfidence ?? state.config.minConfidence, debug: isDebug, tag: 'tempo-plugin-ai:schedule' },
+		{ minConfidence: options?.minConfidence ?? state.config.minConfidence, debug: isDebug, tag: 'tempo-plugin-ai:schedule', hedgeDelay: options?.hedgeDelay ?? state.config.hedgeDelay },
 	);
 
 	_state.limits = winningCandidate.rateLimits ?? null;
@@ -286,10 +292,10 @@ export async function scheduleAI(
 		.map(d => {
 			if (typeof d === 'number' && Number.isInteger(d) && d >= 1 && d <= 7) return d;
 			if (typeof d === 'string') {
-				const upper = d.toUpperCase() as DayKey;
+				const trimmed = d.trim();
+				const upper = trimmed.toUpperCase() as DayKey;
 				if (upper in DAY_MAP) return (DAY_MAP as any)[upper];
-				const n = parseInt(d, 10);
-				if (Number.isInteger(n) && n >= 1 && n <= 7) return n;
+				if (RE_ISO_WEEKDAY_DIGIT.test(trimmed)) return Number(trimmed);
 			}
 			return null;
 		})
@@ -303,64 +309,71 @@ export async function scheduleAI(
 			next = next.add({ days: 1 });
 		}
 		return next;
-	};
+	}
 
-	// Deterministic Conflict Validation using core Interval.overlaps()
-	let proposedInterval = new Interval(finalStart, finalEnd);
-	let conflictingEvent = busyEvents.find(b => proposedInterval.overlaps(new Interval(b.start, b.end)));
+	// Deterministic Conflict & Working Hours Validation using core Interval.overlaps()
+	const MAX_ADJUSTMENT_ITERATIONS = 50;
+	let iterations = 0;
+	let lastConflictingEvent: any = null;
+	let slotSatisfied = false;
 
-	let reasoning = scheduleData.reasoning;
-	if (conflictingEvent) {
-		conflictBumped = true;
-		originalSlot = { start: finalStart, end: finalEnd };
+	while (iterations < MAX_ADJUSTMENT_ITERATIONS) {
+		iterations++;
 
-		const MAX_ADJUSTMENT_ITERATIONS = 50;
-		let iterations = 0;
-		let lastConflictingEvent = conflictingEvent;
+		// Validate and adjust against working hours and active days
+		const startZdt = finalStart.toDateTime().withTimeZone(whTz);
+		const endZdt = finalEnd.toDateTime().withTimeZone(whTz);
 
-		// Continue bumping and re-checking until slot is valid against busyEvents and workingHours
-		while (iterations < MAX_ADJUSTMENT_ITERATIONS) {
-			iterations++;
-
-			// Bump start to the end of the conflicting event
-			finalStart = new Tempo(lastConflictingEvent.end, { timeZone });
+		if (!activeDaysSet.has(startZdt.dayOfWeek)) {
+			conflictBumped = true;
+			if (!originalSlot) originalSlot = { start: scheduleData.startTempo, end: scheduleData.endTempo };
+			const nextZdt = advanceToNextActiveDay(startZdt);
+			finalStart = new Tempo(nextZdt, { timeZone });
 			finalEnd = finalStart.add(`${durationMinutes} minutes`);
-
-			// Validate and adjust against working hours and active days
-			const startZdt = finalStart.toDateTime().withTimeZone(whTz);
-			const endZdt = finalEnd.toDateTime().withTimeZone(whTz);
-
-			if (!activeDaysSet.has(startZdt.dayOfWeek)) {
-				const nextZdt = advanceToNextActiveDay(startZdt);
-				finalStart = new Tempo(nextZdt, { timeZone });
-				finalEnd = finalStart.add(`${durationMinutes} minutes`);
-			} else {
-				const dayStart = startZdt.startOfDay().add({ hours: whStartH, minutes: whStartM });
-				const dayEnd = startZdt.startOfDay().add({ hours: whEndH, minutes: whEndM });
-
-				if (startZdt.epochNanoseconds < dayStart.epochNanoseconds) {
-					finalStart = new Tempo(dayStart, { timeZone });
-					finalEnd = finalStart.add(`${durationMinutes} minutes`);
-				} else if (endZdt.epochNanoseconds > dayEnd.epochNanoseconds) {
-					const nextZdt = advanceToNextActiveDay(startZdt);
-					finalStart = new Tempo(nextZdt, { timeZone });
-					finalEnd = finalStart.add(`${durationMinutes} minutes`);
-				}
-			}
-
-			// Re-check resulting interval against all busyEvents
-			const currentInterval = new Interval(finalStart, finalEnd);
-			const nextConflict = busyEvents.find(b => currentInterval.overlaps(new Interval(b.start, b.end)));
-
-			if (nextConflict) {
-				lastConflictingEvent = nextConflict;
-				continue;
-			}
-
-			// Slot is valid against all busyEvents and workingHours
-			break;
+			continue;
 		}
 
+		const dayStart = startZdt.startOfDay().add({ hours: whStartH, minutes: whStartM });
+		const dayEnd = startZdt.startOfDay().add({ hours: whEndH, minutes: whEndM });
+
+		if (startZdt.epochNanoseconds < dayStart.epochNanoseconds) {
+			conflictBumped = true;
+			if (!originalSlot) originalSlot = { start: scheduleData.startTempo, end: scheduleData.endTempo };
+			finalStart = new Tempo(dayStart, { timeZone });
+			finalEnd = finalStart.add(`${durationMinutes} minutes`);
+			continue;
+		} else if (endZdt.epochNanoseconds > dayEnd.epochNanoseconds) {
+			conflictBumped = true;
+			if (!originalSlot) originalSlot = { start: scheduleData.startTempo, end: scheduleData.endTempo };
+			const nextZdt = advanceToNextActiveDay(startZdt);
+			finalStart = new Tempo(nextZdt, { timeZone });
+			finalEnd = finalStart.add(`${durationMinutes} minutes`);
+			continue;
+		}
+
+		// Re-check resulting interval against all busyEvents
+		const currentInterval = new Interval(finalStart, finalEnd);
+		const nextConflict = busyEvents.find(b => currentInterval.overlaps(new Interval(b.start, b.end)));
+
+		if (nextConflict) {
+			conflictBumped = true;
+			if (!originalSlot) originalSlot = { start: scheduleData.startTempo, end: scheduleData.endTempo };
+			lastConflictingEvent = nextConflict;
+			finalStart = new Tempo(nextConflict.end, { timeZone });
+			finalEnd = finalStart.add(`${durationMinutes} minutes`);
+			continue;
+		}
+
+		// Slot is valid against all busyEvents and workingHours
+		slotSatisfied = true;
+		break;
+	}
+
+	if (!slotSatisfied)
+		throw new TempoAiError(`Unable to find an available schedule slot within ${MAX_ADJUSTMENT_ITERATIONS} iterations`, 422);
+
+	let reasoning = scheduleData.reasoning;
+	if (conflictBumped) {
 		const conflictTitle = lastConflictingEvent?.title || 'Busy';
 		reasoning = `[Adjusted for conflict] Shifted slot past conflicting event "${conflictTitle}" to ${finalStart.format('{yyyy}-{mm}-{dd} {hh}:{mi}')}. ${scheduleData.reasoning}`;
 	}

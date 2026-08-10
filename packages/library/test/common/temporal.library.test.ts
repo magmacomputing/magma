@@ -50,5 +50,16 @@ describe('Temporal Library Helpers', () => {
 			expect(zdt.calendarId).toBe('iso8601');
 			expect(zdt.toString()).toContain('[Australia/Sydney]');
 		});
+
+		it('should parse date-only values using the fallback timezone', () => {
+			const zdt = toZonedDateTime('2026-08-10', 'Australia/Sydney');
+			expect(zdt.timeZoneId).toBe('Australia/Sydney');
+			expect(zdt.year).toBe(2026);
+			expect(zdt.month).toBe(8);
+			expect(zdt.day).toBe(10);
+			expect(zdt.hour).toBe(0);
+			expect(zdt.minute).toBe(0);
+			expect(zdt.toString()).toContain('[Australia/Sydney]');
+		});
 	});
 });

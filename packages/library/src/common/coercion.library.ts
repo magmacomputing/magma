@@ -110,6 +110,11 @@ export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
 
 		case isNumeric(str) && (!str?.toString().startsWith('0') || stripZero): {
 			const numStr = String(str);
+			if (isIntegerLike(numStr)) {
+				const big = BigInt(numStr.slice(0, -1));
+				if (big > BigInt(Number.MAX_SAFE_INTEGER) || big < BigInt(Number.MIN_SAFE_INTEGER)) return big;
+				return Number(big);
+			}
 			if (RE_INTEGER.test(numStr)) {
 				const big = BigInt(numStr);
 				if (big > BigInt(Number.MAX_SAFE_INTEGER) || big < BigInt(Number.MIN_SAFE_INTEGER)) return big;

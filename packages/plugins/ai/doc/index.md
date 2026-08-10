@@ -53,7 +53,7 @@ All AI functions return a standard ES Promise wrapped object.
 > [!IMPORTANT]
 > **Production Recommendation**: Due to the complexities of LLM APIs, including caching gotchas, context injection, rate limits, and calendar math hallucinations, we politely but firmly recommend reading the dedicated guides below before deploying this plugin in a production environment. 
 
-Explore the architecture and security guides:
+- [Multi-Provider Execution Modes](./modes.md) (Hedged, RoundRobin, Adaptive, Race, Consensus, Fallback)
 - [Provider Architecture & Security](./architecture.md) (BYOK vs Proxy patterns, Frontend Security)
 - [Context & Natural Language Parsing](./context.md) (How Timezone and Locale are injected)
 - [Rate Limits & Cache Management](./rate-limits.md) (Tracking API quotas, handling 429 errors, and custom Redis caches)

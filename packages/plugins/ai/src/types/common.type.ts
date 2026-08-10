@@ -85,6 +85,8 @@ export interface AiConfig {
 	remoteConfigUrl?: string | false | undefined;
 	/** Optional custom resolver hook to fetch provider default options by ID */
 	fetchDefaults?: ((providerId: string) => Promise<Partial<AiProvider> | null>) | undefined;
+	/** Optional delay in milliseconds before initiating speculative hedging in AiMode.Hedged (default: 800ms) */
+	hedgeDelay?: number | undefined;
 	/** If true, logs the spoon-fed LLM context prompt and raw LLM response to the console */
 	debug?: boolean | undefined;
 }
