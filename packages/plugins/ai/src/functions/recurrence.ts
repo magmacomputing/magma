@@ -201,7 +201,7 @@ Do not include markdown blocks or text outside the JSON.`;
 
 	const rruleStr = parsedData.rrule.trim();
 	const summaryText = typeof parsedData?.summary === 'string' ? parsedData.summary : (typeof parsedData?.humanReadable === 'string' ? parsedData.humanReadable : input);
-	const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : 0.9;
+	const confidence = typeof winningCandidate.confidence === 'number' ? winningCandidate.confidence : 0.9;
 	const reasoning = typeof parsedData?.reasoning === 'string' ? parsedData.reasoning : undefined;
 
 	if (effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence)

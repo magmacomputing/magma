@@ -1,6 +1,6 @@
 # 🤖 AI & IDE Integration (`llms.txt`)
 
-To ensure modern AI coding assistants—such as **Cursor**, **VS Code (GitHub Copilot)**, **Antigravity**, **ChatGPT**, and **Claude**—generate accurate, hallucination-free Tempo code, Tempo publishes an official, standardized [`llms.txt`](https://tempo.magmacomputing.com.au/llms.txt) rulebook.
+To ensure modern AI coding assistants—such as **Cursor**, **VS Code (GitHub Copilot)**, **Antigravity**, **ChatGPT**, and **Claude**—generate accurate, idiomatically aligned Tempo code and minimize hallucinations, Tempo publishes an official, standardized [`llms.txt`](https://tempo.magmacomputing.com.au/llms.txt) rulebook.
 
 By providing these rules to your AI assistant, your IDE will respect Tempo's strict immutability, zero-cost getters, native `Temporal` runtime expectations, and layout token syntax out-of-the-box.
 
@@ -56,7 +56,7 @@ For web-based LLM interfaces, reference or copy-paste the full, un-truncated doc
 When asking AI assistants to generate custom layout patterns for parsing unique date-time formats, instruct the model to use Tempo's configuration syntax (`Tempo.init({ registry: { layouts: { ... } } })`) and named capture tokens (`{yy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tzd}`).
 
 ### Sample Prompt:
-> *"Using the rules from https://tempo.magmacomputing.com.au/llms.txt, register a custom Tempo layout for fiscal quarters (e.g., 'Q3 2026') using `Tempo.init({ registry: { layouts: { ... } } })` and parse a date using `Tempo.parse()`."*
+> *"Using the rules from https://tempo.magmacomputing.com.au/llms.txt, register a custom Tempo layout for fiscal quarters (e.g., 'Q3 2026') using `Tempo.init({ registry: { layouts: { ... } } })` and instantiate a date with the layout option."*
 
 ### Generated Code (Actual Tempo Syntax):
 ```typescript
@@ -72,5 +72,5 @@ Tempo.init({
 });
 
 // 2. Parse date string using the registered layout
-const date = Tempo.parse('Q3 2026', 'fiscal_quarter');
+const date = new Tempo('Q3 2026', { layout: 'fiscal_quarter' });
 ```

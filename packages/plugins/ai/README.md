@@ -42,7 +42,8 @@ console.log(dt.ai?.confidence);             // 0.98
 console.log(dt.ai?.provider);               // 'groq'
 
 // 2. Schedule appointment slots around busy events
-const booking = await scheduleAI("45 min sync next Wednesday afternoon", {
+const booking = await scheduleAI("45 min sync Wednesday afternoon", {
+  anchor: "2026-08-10 09:00",
   events: [{ start: "2026-08-12 14:00", end: "2026-08-12 15:00", title: "Team standup" }]
 });
 
@@ -54,7 +55,7 @@ console.log(booking.alternatives);                               // Interval<Tem
 console.log(booking.ai?.conflictBumped);                         // true
 
 // Evict cached resolution
-clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");
+await clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");
 ```
 
 ---

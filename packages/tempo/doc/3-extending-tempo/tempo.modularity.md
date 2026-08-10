@@ -120,6 +120,6 @@ There is a subtle but important distinction between how features are activated i
 *   **`Tempo.init()`**: Establishes global baseline configuration at application startup and registers plugins specified in the `plugins` array during initial startup discovery.
 
 ::: note
-**Idempotent Initialization Lifecycle**: `Tempo.init()` is designed to establish baseline configuration once during initial startup. Built-in plugins are registered automatically via static imports in full Tempo (`@magmacomputing/tempo`), while explicit plugin lists are registered during `Tempo.init({ plugins: [...] })`. To register additional plugins dynamically after startup initialization, use `Tempo.extend(...)` rather than re-running `Tempo.init()`.
+**Startup Initialization Lifecycle**: `Tempo.init()` establishes baseline configuration during application startup. Built-in plugins are registered automatically via static imports in full Tempo (`@magmacomputing/tempo`), while explicit plugin lists are registered during `Tempo.init({ plugins: [...] })`. Note that subsequent calls to `Tempo.init()` re-evaluate and merge configuration options rather than executing as an idempotent no-op. To register additional plugins dynamically after startup, use `Tempo.extend(...)`.
 :::
 

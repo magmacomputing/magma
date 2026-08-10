@@ -31,7 +31,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 	const anchorTempo = new Tempo(anchorStr, { ...coreOptions, timeZone: tz, calendar: cal, locale: loc, sphere: sph as any });
 	const cacheSalt = anchorTempo.format('{yyyy}-{mm}-{dd}');
 	const cacheKey = `${normalizedStr}::${cacheSalt}::${tz}::${cal}::${loc}::${sph}`;
-	const adapter = options?.cacheAdapter ?? _state.config.cacheAdapter;
+	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
 	let cachedIso: string | undefined;
 	if (!force && aiCacheOption !== false) {
@@ -173,7 +173,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
 	// Determine TTL hierarchy: options.ttl > provider.ttl > global config.ttl > 3600000 (1 hour)
 	const winningProvider = availableProviders.find(p => p.id === providerId);
-	const resolvedTtl = options?.ttl ?? winningProvider?.ttl ?? _state.config.ttl ?? 3600000;
+	const resolvedTtl = ttl ?? winningProvider?.ttl ?? _state.config.ttl ?? 3_600_000;
 
 	if (aiCacheOption !== false) {
 		if (adapter) {

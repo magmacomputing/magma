@@ -88,6 +88,10 @@ export interface AiConfig {
   cacheAdapter?: AiCacheAdapter;
   /** Global default time-to-live in milliseconds for cache adapters */
   ttl?: number;
+  /** Minimum confidence threshold for AI parsing results (0.0 to 1.0) */
+  minConfidence?: number;
+  /** Optional hook to intercept and resolve dynamic provider defaults */
+  fetchDefaults?: (providerId: string) => Promise<Partial<AiProvider> | null> | Partial<AiProvider> | null;
   /** URL for dynamic remote provider manifest updates, or `false` to disable */
   remoteConfigUrl?: string | false;
 }

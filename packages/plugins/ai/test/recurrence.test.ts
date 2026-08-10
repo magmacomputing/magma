@@ -33,14 +33,18 @@ describe('AI Recurrence Plugin (recurrenceAI)', () => {
 	});
 
 	it('should support stateful paged batching via .take(n)', async () => {
-		const result = await recurrenceAI('FREQ=WEEKLY;BYDAY=FR');
+		const anchor = new Tempo('2026-08-01T09:00:00Z');
+		const result = await recurrenceAI('FREQ=WEEKLY;BYDAY=FR', { anchor });
 
 		const batch1 = result.take(2);
 		expect(batch1).toHaveLength(2);
+		expect(batch1[0].format('{yyyy}-{mm}-{dd}')).toBe('2026-08-07');
+		expect(batch1[1].format('{yyyy}-{mm}-{dd}')).toBe('2026-08-14');
 
 		const batch2 = result.take(2);
 		expect(batch2).toHaveLength(2);
-		expect(batch2[0].format('{yyyy}-{mm}-{dd}')).not.toBe(batch1[0].format('{yyyy}-{mm}-{dd}'));
+		expect(batch2[0].format('{yyyy}-{mm}-{dd}')).toBe('2026-08-21');
+		expect(batch2[1].format('{yyyy}-{mm}-{dd}')).toBe('2026-08-28');
 	});
 
 	it('should parse COUNT in finite RRULE strings, compute size, and return [] when exhausted', async () => {
@@ -249,7 +253,7 @@ describe('AI Recurrence Plugin (recurrenceAI)', () => {
 			timeZone: 'Australia/Sydney',
 			calendar: 'iso8601',
 			locale: 'en-AU',
-			sphere: 'southern',
+			sphere: 'south',
 		});
 
 		const items = result.take(3);
@@ -257,6 +261,6 @@ describe('AI Recurrence Plugin (recurrenceAI)', () => {
 		expect(items[0].config.timeZone).toBe('Australia/Sydney');
 		expect(items[0].config.calendar).toBe('iso8601');
 		expect(items[0].config.locale).toBe('en-AU');
-		expect(items[0].config.sphere).toBe('southern');
+		expect(items[0].config.sphere).toBe('south');
 	});
 });

@@ -1,3 +1,4 @@
+import type { Tempo } from '@magmacomputing/tempo';
 import type { AiMode } from '../core/config.js';
 import type { AiCacheAdapter, AiProvider, TempoBaseAiMeta } from './common.type.js';
 
@@ -32,13 +33,13 @@ export type TempoAiMeta = TempoParseAiMeta;
  */
 export interface AiParseOptions {
 	/** Reference anchor date/time instance or string */
-	anchor?: any;
+	anchor?: Tempo | Date | string | number | undefined;
 	/** Target timeZone override */
 	timeZone?: string;
 	/** Target calendar override */
 	calendar?: string;
 	/** Target locale override */
-	locale?: string;
+	locale?: string | string[];
 	/** Target sphere override */
 	sphere?: string;
 	/** If true, bypasses cache and native parsing to force an LLM fetch */

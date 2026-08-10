@@ -249,7 +249,7 @@ We recommend pinning your versions in production environments to ensure stabilit
 
 > [!TIP]
 > Using **Cursor**, **VS Code (GitHub Copilot)**, **Antigravity**, **ChatGPT**, or **Claude**? 
-> Tempo publishes an official [`llms.txt`](https://tempo.magmacomputing.com.au/llms.txt) index to give AI assistants zero-hallucination context about Tempo's syntax, token grammar, and immutability rules.
+> Tempo publishes an official [`llms.txt`](https://tempo.magmacomputing.com.au/llms.txt) index to give AI assistants documented project context and reduce hallucinations regarding Tempo's syntax, token grammar, and immutability rules.
 > 
 > 👉 **[Read the dedicated AI & IDE Integration Guide](./ai-integration.md)** for step-by-step setup instructions for your IDE or tool.
 

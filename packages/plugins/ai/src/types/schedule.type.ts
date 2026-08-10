@@ -64,31 +64,6 @@ export interface TempoScheduleAiMeta extends TempoBaseAiMeta {
 }
 
 /**
- * ## TempoScheduleResult
- * Structured scheduling result returned by `scheduleAI`.
- */
-export interface TempoScheduleResult extends Interval<Tempo> {
-	/** Resolved start boundary as a Tempo instance */
-	start: Tempo;
-	/** Resolved end boundary as a Tempo instance */
-	end: Tempo;
-	/** Target slot duration in minutes */
-	durationMinutes: number;
-	/** Human-friendly summary of the scheduled slot */
-	summary: string;
-	/** Reasoning / explanation of why this slot was selected */
-	reasoning?: string | undefined;
-	/** Confidence rating from 0.0 (unparseable) to 1.0 (certain) */
-	confidence: number;
-	/** Provider ID responsible for processing or 'native-scheduler' */
-	provider: string;
-	/** Alternative backup intervals identified during scheduling */
-	alternatives?: Interval<Tempo>[] | undefined;
-	/** Extended AI execution metadata */
-	ai?: TempoScheduleAiMeta | undefined;
-}
-
-/**
  * ## TempoScheduleMeta
  * Metadata overlay attached to the Interval instance by `wrapScheduleInterval`.
  */
@@ -107,5 +82,16 @@ export interface TempoScheduleMeta {
 	alternatives?: Interval<Tempo>[] | undefined;
 	/** Extended AI execution metadata */
 	ai: TempoScheduleAiMeta;
+}
+
+/**
+ * ## TempoScheduleResult
+ * Structured scheduling result returned by `scheduleAI`.
+ */
+export interface TempoScheduleResult extends Interval<Tempo>, TempoScheduleMeta {
+	/** Resolved start boundary as a Tempo instance */
+	start: Tempo;
+	/** Resolved end boundary as a Tempo instance */
+	end: Tempo;
 }
 

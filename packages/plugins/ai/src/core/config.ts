@@ -19,12 +19,12 @@ export type AiMode = (typeof AiMode)[keyof typeof AiMode];
 /**
  * Keywords reserved by parseAI to avoid provider configuration collisions.
  */
-export const RESERVED_PROVIDER_IDS: ReadonlySet<string> = new Set(['native', 'cache']);
+export const RESERVED_PROVIDER_IDS: ReadonlySet<string> = new Set(['native', 'cache', 'consensus', 'fallback', 'builtin']);
 
 /**
  * Built-in default endpoint and model configurations for popular providers.
  */
-export const DEFAULT_PROVIDERS: Record<string, Readonly<Partial<AiProvider>>> = secure({
+export const DEFAULT_PROVIDERS: Readonly<Record<string, Partial<AiProvider>>> = secure({
 	groq: {
 		url: 'https://api.groq.com/openai/v1/chat/completions',
 		model: 'llama-3.3-70b-versatile',

@@ -135,8 +135,7 @@ export async function clearAiCache(input?: string | string[]): Promise<void> {
     Tempo.cache.clear();
     if (adapter?.clear) {
       try {
-        const res = adapter.clear();
-        if (res instanceof Promise) await res.catch(() => { });
+        await Promise.resolve(adapter.clear()).catch(() => { });
       } catch { }
     }
     return;
@@ -153,14 +152,11 @@ export async function clearAiCache(input?: string | string[]): Promise<void> {
     if (adapter) {
       try {
         if (adapter.delete) {
-          const res1 = adapter.delete(normalized);
-          if (res1 instanceof Promise) await res1.catch(() => { });
-          const res2 = adapter.delete(i);
-          if (res2 instanceof Promise) await res2.catch(() => { });
+          await Promise.resolve(adapter.delete(normalized)).catch(() => { });
+          await Promise.resolve(adapter.delete(i)).catch(() => { });
         }
         if (adapter.clear) {
-          const resClear = adapter.clear(prefix);
-          if (resClear instanceof Promise) await resClear.catch(() => { });
+          await Promise.resolve(adapter.clear(prefix)).catch(() => { });
         }
       } catch { }
     }
@@ -177,10 +173,10 @@ export function getAiRateLimits(): AiRateLimits | null {
 }
 
 /**
- * Returns an immutable, sanitized snapshot of the active AI configuration.
+ * Returns a shallowly frozen, sanitized snapshot of the active AI configuration.
  * Sensitive provider API keys are redacted for safety.
  *
- * @returns A frozen, read-only copy of the active AI configuration with redacted API keys
+ * @returns A frozen, read-only configuration object with frozen providers array and redacted API keys
  */
 export function getAiConfig(): Readonly<AiConfig> {
   const sanitizedProviders: AiProvider[] = _state.config.providers?.map(p => {

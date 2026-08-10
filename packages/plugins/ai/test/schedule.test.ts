@@ -212,6 +212,7 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 		});
 
 		const resRace = await scheduleAI('Schedule 1 hour slot', {
+			timeZone: 'UTC',
 			mode: 'race',
 			providers: [
 				{ id: 'slow-provider', key: 'key-1', url: 'https://api.openai.com/v1/chat/completions', model: 'slow-model' },

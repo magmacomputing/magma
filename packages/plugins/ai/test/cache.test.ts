@@ -135,11 +135,12 @@ describe('Advanced Cache TTL & Async Storage Adapters', () => {
 			cacheAdapter: mockAdapter,
 		});
 
-		clearAiCache('Easter 2026');
-		expect(mockAdapter.delete).toHaveBeenCalled();
-		expect(mockAdapter.clear).toHaveBeenCalled();
+		await clearAiCache('Easter 2026');
+		expect(mockAdapter.delete).toHaveBeenCalledWith('easter 2026');
+		expect(mockAdapter.delete).toHaveBeenCalledWith('Easter 2026');
+		expect(mockAdapter.clear).toHaveBeenCalledWith('easter 2026::');
 
-		clearAiCache();
+		await clearAiCache();
 		expect(mockAdapter.clear).toHaveBeenCalledTimes(2);
 	});
 });

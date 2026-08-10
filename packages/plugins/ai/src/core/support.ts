@@ -83,6 +83,9 @@ export async function fetchFromProvider(
   if (!url || typeof url !== 'string')
     throw new TempoAiError(`Provider ${provider.id} missing valid endpoint URL.`, 400);
 
+  if (!model || typeof model !== 'string')
+    throw new TempoAiError(`Provider ${provider.id} missing valid model identifier.`, 400);
+
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')))

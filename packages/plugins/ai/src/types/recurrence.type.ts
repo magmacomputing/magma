@@ -7,9 +7,9 @@ import type { AiParseOptions } from './parse.type.js';
  */
 export interface TempoRecurrenceOptions extends AiParseOptions {
 	/** Start date/time window for occurrence expansion */
-	after?: any;
+	after?: Tempo | Date | string | number | undefined;
 	/** End date/time window for occurrence expansion */
-	before?: any;
+	before?: Tempo | Date | string | number | undefined;
 	/** Number of occurrences to pull per batch (default: 5) */
 	count?: number;
 	/** Preferred BCP 47 locale tag for summary output (e.g. 'en-US', 'fr-FR', 'es-ES') */

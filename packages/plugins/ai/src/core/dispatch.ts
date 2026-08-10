@@ -91,8 +91,9 @@ async function executeFallbackMode<T>(
 		try {
 			const candidate = await task(provider);
 			const confidence = typeof candidate.confidence === 'number' ? candidate.confidence : 1.0;
+			const bestConfidence = bestCandidate ? (typeof bestCandidate.confidence === 'number' ? bestCandidate.confidence : 1.0) : -1;
 
-			if (!bestCandidate || confidence > (bestCandidate.confidence ?? 0))
+			if (!bestCandidate || confidence > bestConfidence)
 				bestCandidate = candidate;
 
 			if (options?.minConfidence === undefined || confidence >= options.minConfidence)
@@ -157,7 +158,7 @@ async function executeConsensusMode<T>(
 
 	if (fulfilled.length === 0) {
 		const firstRejected = settled.find(s => s.status === 'rejected') as PromiseRejectedResult | undefined;
-		throw firstRejected?.reason || new TempoAiError('Consensus failed: all providers rejected.', 500);
+		throw unwrapExecutionError(firstRejected?.reason, 'Consensus failed: all providers rejected.');
 	}
 
 	if (fulfilled.length === 1) return fulfilled[0];
@@ -174,7 +175,11 @@ async function executeConsensusMode<T>(
 		};
 	}
 
-	const sorted = [...fulfilled].sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0));
+	const sorted = [...fulfilled].sort((a, b) => {
+		const confB = typeof b.confidence === 'number' ? b.confidence : 1.0;
+		const confA = typeof a.confidence === 'number' ? a.confidence : 1.0;
+		return confB - confA;
+	});
 	return {
 		...sorted[0],
 		ambiguous: true,
