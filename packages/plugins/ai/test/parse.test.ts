@@ -116,8 +116,8 @@ describe('AI Parsing Plugin (parseAI)', () => {
 
 		expect(result).toBeInstanceOf(Tempo);
 		expect(result.constructor).toBe(Tempo);
-		expect(result.constructor === Tempo).toBe(true);
-		expect(result.format === result.format).toBe(true);
+		const formatRef = result.format;
+		expect(result.format).toBe(formatRef);
 		expect(result.isValid).toBe(true);
 		expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-27');
 

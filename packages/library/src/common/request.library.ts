@@ -36,6 +36,8 @@ export class HttpError extends Error {
 	}
 }
 
+const RE_TRAILING_CLOSURE = /\);?$/;
+
 /**
  * Performs an HTTP fetch request with built-in timeout, JSON parsing, and custom prefix handling.
  * Automatically throws an `HttpError` if the response is not `ok`.
@@ -66,7 +68,7 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 				if (config.prefix) {
 					const rawPrefixText = await res.text();						// read raw text first
 					const json = rawPrefixText.startsWith(config.prefix)				// if it starts with the specified prefix
-						? rawPrefixText.substring(config.prefix.length).replace(/\);?$/, '')	// then strip the prefix AND any trailing closure
+						? rawPrefixText.substring(config.prefix.length).replace(RE_TRAILING_CLOSURE, '')	// then strip the prefix AND any trailing closure
 						: rawPrefixText;
 
 					return JSON.parse(json) as T;											// parse the unwrapped string

@@ -42,5 +42,13 @@ describe('Temporal Library Helpers', () => {
 			const zdtSpacedZ = toZonedDateTime('2024-01-01 12:00:00 Z', 'Australia/Sydney');
 			expect(zdtSpacedZ.hour).toBe(23);
 		});
+
+		it('should apply fallback timezone to calendar-only bracket annotations', () => {
+			const zdt = toZonedDateTime('2024-01-01T12:00:00[u-ca=iso8601]', 'Australia/Sydney');
+			expect(zdt.timeZoneId).toBe('Australia/Sydney');
+			expect(zdt.hour).toBe(12);
+			expect(zdt.calendarId).toBe('iso8601');
+			expect(zdt.toString()).toContain('[Australia/Sydney]');
+		});
 	});
 });

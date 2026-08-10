@@ -148,6 +148,8 @@ export const verify = async (signature: Promise<ArrayBuffer> | ArrayBuffer | Uin
 	return subtle.verify(keys.SignKey, keypair.publicKey, buffer as BufferSource, encodeBuffer(doc));
 }
 
+const RE_WHITESPACE = /\s+/g;
+
 /**
  * Imports a PEM-formatted public key string into a native Web Crypto API CryptoKey object.
  * 
@@ -159,7 +161,7 @@ export const importPublicKey = async (pem: string): Promise<CryptoKey> => {
 	const pemFooter = '-----END PUBLIC KEY-----';
 	const pemContents = pem
 		.substring(pem.indexOf(pemHeader) + pemHeader.length, pem.indexOf(pemFooter))
-		.replace(/\s+/g, '');
+		.replace(RE_WHITESPACE, '');
 
 	const binaryDerString = atob(pemContents);
 	const binaryDer = new Uint8Array(binaryDerString.length);

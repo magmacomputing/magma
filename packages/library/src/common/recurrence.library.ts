@@ -13,6 +13,13 @@ import {
 	type MonthKey,
 } from './calendar.library.js';
 
+const RE_RRULE_FREQ = /^(RRULE:)?FREQ=(DAILY|WEEKLY|MONTHLY|YEARLY)/i;
+const RE_FINITE_RRULE = /(UNTIL|COUNT)=/i;
+const RE_RRULE_PREFIX = /^RRULE:/i;
+const RE_DATE_8DIGIT = /^\d{8}$/;
+const RE_UNTIL_TIMESTAMP = /^(\d{4})(\d{2})(\d{2})T?(\d{2})?(\d{2})?(\d{2})?Z?$/;
+const RE_BYDAY_PART = /^([+-]?\d+)?([A-Z]+)$/i;
+
 /**
  * Tests whether a string is a valid RFC 5545 Recurrence Rule (RRULE).
  *
@@ -21,7 +28,7 @@ import {
  */
 export function isRRuleString(input: string): boolean {
 	const trimmed = input.trim();
-	return /^(RRULE:)?FREQ=(DAILY|WEEKLY|MONTHLY|YEARLY)/i.test(trimmed);
+	return RE_RRULE_FREQ.test(trimmed);
 }
 
 /**
@@ -31,7 +38,7 @@ export function isRRuleString(input: string): boolean {
  * @returns `true` if the rule contains an UNTIL or COUNT boundary clause, otherwise `false`.
  */
 export function isFiniteRRule(rrule: string): boolean {
-	return /(UNTIL|COUNT)=/i.test(rrule);
+	return RE_FINITE_RRULE.test(rrule);
 }
 
 /**
@@ -65,7 +72,7 @@ export interface ParsedRRule {
  * @returns Structured representation of the recurrence parameters
  */
 export function parseRRule(rrule: string): ParsedRRule {
-	const cleanRRule = rrule.trim().replace(/^RRULE:/i, '');
+	const cleanRRule = rrule.trim().replace(RE_RRULE_PREFIX, '');
 	const parts = cleanRRule.split(';');
 	let freq = 'DAILY';
 	let interval = 1;
@@ -98,13 +105,13 @@ export function parseRRule(rrule: string): ParsedRRule {
 				break;
 			}
 			case 'UNTIL': {
-				if (/^\d{8}$/.test(trimmedVal)) {
+				if (RE_DATE_8DIGIT.test(trimmedVal)) {
 					const year = parseInt(trimmedVal.slice(0, 4), 10);
 					const month = parseInt(trimmedVal.slice(4, 6), 10);
 					const day = parseInt(trimmedVal.slice(6, 8), 10);
 					untilMs = Date.UTC(year, month - 1, day, 23, 59, 59, 999);
 				} else {
-					const uStr = trimmedVal.replace(/^(\d{4})(\d{2})(\d{2})T?(\d{2})?(\d{2})?(\d{2})?Z?$/, '$1-$2-$3T$4:$5:$6Z');
+					const uStr = trimmedVal.replace(RE_UNTIL_TIMESTAMP, '$1-$2-$3T$4:$5:$6Z');
 					const parsedDate = new Date(uStr);
 					untilMs = !isNaN(parsedDate.getTime()) ? parsedDate.getTime() : undefined;
 				}
@@ -123,7 +130,7 @@ export function parseRRule(rrule: string): ParsedRRule {
 			}
 			case 'BYDAY': {
 				const items = trimmedVal.split(',').map(item => {
-					const m = item.match(/^([+-]?\d+)?([A-Z]+)$/i);
+					const m = item.match(RE_BYDAY_PART);
 					const nthVal = m && m[1] ? parseInt(m[1], 10) : undefined;
 					const rawDay = m ? m[2] : item;
 					const canonicalDay = rawDay.slice(0, 2).toUpperCase();

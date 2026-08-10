@@ -18,7 +18,7 @@ await initAI({
 });
 ```
 
-> **Tip**: `initAI` returns a `Promise<void>` and is fully re-callable! Calling it synchronously without `await` instantly initializes local defaults so you can call `parseAI` immediately, while `await initAI()` guarantees that remote provider manifest overrides are fetched and applied before proceeding.
+> **Tip**: `initAI` returns a `Promise<void>` and is fully re-callable! Calling it synchronously without `await` instantly initializes local configurations so you can call `parseAI` immediately, while `await initAI()` guarantees that remote provider manifest defaults are fetched and applied before proceeding (with explicit provider configuration values always taking precedence over remote manifest defaults).
 
 ## Execution Modes & Multi-Provider Options
 

@@ -84,6 +84,8 @@ export function asInteger<T extends string | number | bigint>(str?: T) {
 	}
 }
 
+const RE_INTEGER = /^-?[0-9]+$/;
+
 /**
  * Returns the value as a Number or BigInt if possible, otherwise returns the original string.
  * 
@@ -108,7 +110,7 @@ export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
 
 		case isNumeric(str) && (!str?.toString().startsWith('0') || stripZero): {
 			const numStr = String(str);
-			if (/^-?[0-9]+$/.test(numStr)) {
+			if (RE_INTEGER.test(numStr)) {
 				const big = BigInt(numStr);
 				if (big > BigInt(Number.MAX_SAFE_INTEGER) || big < BigInt(Number.MIN_SAFE_INTEGER)) return big;
 			}

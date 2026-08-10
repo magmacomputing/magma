@@ -96,14 +96,10 @@ describe('AI Dispatch Helper (executeWithMode)', () => {
 
 	it('should throw TempoAiError with status 400 for invalid mode', async () => {
 		const task = vi.fn();
-		let thrownError: any;
-		try {
-			await executeWithMode('unsupported' as any, mockProviders, task);
-		} catch (err) {
-			thrownError = err;
-		}
-		expect(thrownError).toBeInstanceOf(TempoAiError);
-		expect(thrownError.status).toBe(400);
-		expect(thrownError.code).toBe(400);
+		const promise = executeWithMode('unsupported' as any, mockProviders, task);
+		await expect(promise).rejects.toThrow(TempoAiError);
+		await expect(promise).rejects.toSatisfy((err: unknown) => {
+			return err instanceof TempoAiError && err.status === 400 && err.code === 400;
+		});
 	});
 });

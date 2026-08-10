@@ -337,8 +337,10 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 		expect(slot).toBeInstanceOf(Interval);
 		expect(slot.constructor).toBe(Interval);
 		expect(slot.constructor === Interval).toBe(true);
-		expect(slot.contains === slot.contains).toBe(true);
-		expect(slot.toString === slot.toString).toBe(true);
+		const containsRef = slot.contains;
+		const toStringRef = slot.toString;
+		expect(slot.contains).toBe(containsRef);
+		expect(slot.toString).toBe(toStringRef);
 		expect(Object.prototype.toString.call(slot)).toBe('[object Tempo.Interval]');
 		expect(typeof slot.toString).toBe('function');
 		expect(typeof slot.valueOf).toBe('function');
@@ -386,5 +388,40 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 		expect(systemPrompt).toContain('Reference Anchor Time: 2026-08-11T10:00:00 (America/New_York)');
 		expect(systemPrompt).toContain('Target TimeZone: America/New_York');
 	});
+
+	it('should sanitize invalid workingHours.days and fallback to weekdays without infinite loop', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						start: '2026-08-15T10:00:00Z', // Saturday
+						end: '2026-08-15T11:00:00Z',
+						summary: 'Saturday slot needing weekday bump',
+						confidence: 0.95,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const slot = await scheduleAI('Schedule 1 hour slot', {
+			anchor: '2026-08-14T09:00:00Z',
+			timeZone: 'UTC',
+			workingHours: {
+				days: [0, 8, -3, 'invalid-day' as any, 99],
+				start: '09:00',
+				end: '17:00'
+			},
+			events: [
+				{ start: '2026-08-15T09:00:00Z', end: '2026-08-15T12:00:00Z' }
+			]
+		});
+
+		expect(slot).toBeDefined();
+		// Saturday bumped past weekend to Monday Aug 17th
+		expect(slot.start.format('{yyyy}-{mm}-{dd}')).toBe('2026-08-17');
+		expect(slot.start.format('{hh}:{mi}')).toBe('09:00');
+	});
 });
+
 

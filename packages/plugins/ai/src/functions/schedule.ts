@@ -281,17 +281,21 @@ export async function scheduleAI(
 	const [whEndH, whEndM] = whEndStr.split(':').map(v => parseInt(v, 10) || 0);
 	const whTz = workingHours.timeZone || timeZone;
 
-	const activeDaysList = (workingHours.days ?? [1, 2, 3, 4, 5]).map(d => {
-		if (typeof d === 'number') return d;
-		if (typeof d === 'string') {
-			const upper = d.toUpperCase() as DayKey;
-			if (upper in DAY_MAP) return (DAY_MAP as any)[upper];
-			const n = parseInt(d, 10);
-			if (!isNaN(n)) return n;
-		}
-		return typeof d === 'number' ? d : 1;
-	});
-	const activeDaysSet = new Set(activeDaysList.length > 0 ? activeDaysList : [1, 2, 3, 4, 5]);
+	const rawDays = Array.isArray(workingHours.days) ? workingHours.days : [1, 2, 3, 4, 5];
+	const validDays = rawDays
+		.map(d => {
+			if (typeof d === 'number' && Number.isInteger(d) && d >= 1 && d <= 7) return d;
+			if (typeof d === 'string') {
+				const upper = d.toUpperCase() as DayKey;
+				if (upper in DAY_MAP) return (DAY_MAP as any)[upper];
+				const n = parseInt(d, 10);
+				if (Number.isInteger(n) && n >= 1 && n <= 7) return n;
+			}
+			return null;
+		})
+		.filter((d): d is number => d !== null);
+
+	const activeDaysSet = new Set<number>(validDays.length > 0 ? validDays : [1, 2, 3, 4, 5]);
 
 	const advanceToNextActiveDay = (curZdt: Temporal.ZonedDateTime): Temporal.ZonedDateTime => {
 		let next = curZdt.add({ days: 1 }).startOfDay().add({ hours: whStartH, minutes: whStartM });

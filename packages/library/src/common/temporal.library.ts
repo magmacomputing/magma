@@ -112,6 +112,13 @@ export function normaliseFractionalDurations(payload: Record<string, any>) {
 // import a polyfill directly.
 // ─────────────────────────────────────────────────
 
+const RE_ISO_DATE_TIME_SPACE = /^(\d{4}-\d{2}-\d{2})\s+(?=\d{2}:\d{2})/;
+const RE_SPACE_BEFORE_ZONE = /\s+(?=[Zz]|[+-]\d{2}|\[)/;
+const RE_CALENDAR_BRACKET = /\[!?u-ca=[^\]]+\]/i;
+const RE_TZ_BRACKET = /\[(?!!?u-ca=)[^\]]+\]/i;
+const RE_OFFSET_SUFFIX = /Z$|[+-]\d{2}(:?\d{2})?$/i;
+const RE_UTC_OFFSET = /^UTC([+-])(\d{1,2})(?::(\d{2}))?$/i;
+
 /**
  * Creates a `Temporal.ZonedDateTime` from a property-bag or ISO string.
  * Automatically injects the specified timezone if missing from the string.
@@ -126,14 +133,18 @@ export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike | string, tz: Te
 
 	const str = bag
 		.trim()
-		.replace(/^(\d{4}-\d{2}-\d{2})\s+(?=\d{2}:\d{2})/, '$1T')
-		.replace(/\s+(?=[Zz]|[+-]\d{2}|\[)/, '');
+		.replace(RE_ISO_DATE_TIME_SPACE, '$1T')
+		.replace(RE_SPACE_BEFORE_ZONE, '');
 
-	return str.includes('[')
-		? Temporal.ZonedDateTime.from(str)
-		: /Z$|[+-]\d{2}(:?\d{2})?$/i.test(str)
-			? Temporal.Instant.from(str).toZonedDateTimeISO(tz)
-			: Temporal.ZonedDateTime.from(`${str}[${tz}]`);
+	if (RE_TZ_BRACKET.test(str))
+		return Temporal.ZonedDateTime.from(str);
+
+	if (RE_CALENDAR_BRACKET.test(str))
+		return Temporal.ZonedDateTime.from(str.replace(RE_CALENDAR_BRACKET, `[${tz}]$&`));
+
+	return RE_OFFSET_SUFFIX.test(str)
+		? Temporal.Instant.from(str).toZonedDateTimeISO(tz)
+		: Temporal.ZonedDateTime.from(`${str}[${tz}]`);
 }
 
 /**
@@ -208,7 +219,7 @@ export function getTemporalIds(tzOrZdt: any, cal?: any): [string, string] {
  * @returns The normalized offset string
  */
 export function normalizeUtcOffset(zone: string): string {
-	const match = /^UTC([+-])(\d{1,2})(?::(\d{2}))?$/i.exec(zone);
+	const match = RE_UTC_OFFSET.exec(zone);
 	if (!match) return zone;
 
 	const [, sign, hours, minutes] = match;

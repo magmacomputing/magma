@@ -53,13 +53,13 @@ describe('proxy method binding', () => {
 		}
 
 		const instance = new CustomTarget();
-		const proxy = proxify(instance, true, false);
+		const proxy = proxify(instance, false, false);
 
 		expect(proxy.constructor).toBe(CustomTarget);
 		expect(proxy.constructor === CustomTarget).toBe(true);
 
 		const plain = { a: 1 };
-		const plainProxy = proxify(plain, true, false);
+		const plainProxy = proxify(plain, false, false);
 		expect(plainProxy.constructor).toBe(Object);
 		expect(plainProxy.constructor === Object).toBe(true);
 	});

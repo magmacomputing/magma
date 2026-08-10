@@ -58,13 +58,16 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 			providers: { groq: { model: 'local-test-model' } }
 		};
 
-		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-			new Response(JSON.stringify(mockManifest), { status: 200 })
-		);
+		const fetchSpy = vi.spyOn(globalThis, 'fetch')
+			.mockResolvedValueOnce(new Response(JSON.stringify(mockManifest), { status: 200 }))
+			.mockResolvedValueOnce(new Response(JSON.stringify(mockManifest), { status: 200 }));
 
-		const result = await loadRemoteManifest('http://localhost:3000/providers.json');
-		expect(fetchSpy).toHaveBeenCalledTimes(1);
-		expect(result).toEqual(mockManifest.providers);
+		const result1 = await loadRemoteManifest('http://localhost:3000/providers.json');
+		expect(result1).toEqual(mockManifest.providers);
+
+		const result2 = await loadRemoteManifest('http://127.0.0.1:8080/providers.json');
+		expect(result2).toEqual(mockManifest.providers);
+		expect(fetchSpy).toHaveBeenCalledTimes(2);
 	});
 
 	it('should gracefully fail-open on network error (500) and return null', async () => {
