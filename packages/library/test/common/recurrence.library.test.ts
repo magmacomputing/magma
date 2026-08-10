@@ -4,8 +4,8 @@ import {
 	parseRRule,
 	expandRRuleEpochs,
 	getNextRRuleEpoch,
-	DAY_MAP
 } from '../../src/common/recurrence.library.js';
+import { DAY_MAP } from '../../src/common/calendar.library.js';
 
 describe('recurrence.library', () => {
 	test('isRRuleString identifies valid RRULE patterns', () => {
@@ -46,6 +46,13 @@ describe('recurrence.library', () => {
 		]);
 		expect(parsed.byHour).toEqual([9, 17]);
 		expect(parsed.byMinute).toEqual([30]);
+	});
+
+	test('parseRRule correctly handles RRULE: prefix', () => {
+		const parsed = parseRRule('RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO');
+		expect(parsed.freq).toBe('WEEKLY');
+		expect(parsed.interval).toBe(1);
+		expect(parsed.byDay).toEqual([{ nth: undefined, day: 'MO' }]);
 	});
 
 	test('parseRRule supports 2-letter, 3-letter, and full weekday names and normalizes to standard RFC 2-letter codes', () => {

@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Tempo esm.sh Test</title>
-	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+	<link
+		href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap"
+		rel="stylesheet">
 	<style>
 		:root {
 			--bg-color: #0f172a;
@@ -16,7 +19,11 @@
 			--accent: #10b981;
 		}
 
-		* { box-sizing: border-box; margin: 0; padding: 0; }
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
 
 		body {
 			font-family: 'Outfit', sans-serif;
@@ -37,23 +44,34 @@
 			opacity: 0.6;
 			animation: float 10s infinite alternate ease-in-out;
 		}
+
 		.blob-1 {
-			top: -10%; right: -5%;
-			width: 400px; height: 400px;
+			top: -10%;
+			right: -5%;
+			width: 400px;
+			height: 400px;
 			background: linear-gradient(to right, var(--primary), var(--secondary));
 			border-radius: 50%;
 		}
+
 		.blob-2 {
-			bottom: -10%; left: -5%;
-			width: 300px; height: 300px;
+			bottom: -10%;
+			left: -5%;
+			width: 300px;
+			height: 300px;
 			background: linear-gradient(to right, #ec4899, var(--secondary));
 			border-radius: 50%;
 			animation-delay: -5s;
 		}
 
 		@keyframes float {
-			0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-			100% { transform: translate(-30px, 50px) rotate(10deg) scale(1.1); }
+			0% {
+				transform: translate(0, 0) rotate(0deg) scale(1);
+			}
+
+			100% {
+				transform: translate(-30px, 50px) rotate(10deg) scale(1.1);
+			}
 		}
 
 		.container {
@@ -85,14 +103,20 @@
 		.glass-card::before {
 			content: '';
 			position: absolute;
-			top: 0; left: 0; right: 0;
+			top: 0;
+			left: 0;
+			right: 0;
 			height: 2px;
-			background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+			background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
 			transform: translateX(-100%);
 			animation: shimmer 3s infinite;
 		}
 
-		@keyframes shimmer { 100% { transform: translateX(100%); } }
+		@keyframes shimmer {
+			100% {
+				transform: translateX(100%);
+			}
+		}
 
 		h1 {
 			font-size: 2.2rem;
@@ -120,7 +144,7 @@
 
 		.code-block {
 			background: rgba(15, 23, 42, 0.8);
-			border: 1px solid rgba(255,255,255,0.05);
+			border: 1px solid rgba(255, 255, 255, 0.05);
 			border-radius: 12px;
 			padding: 24px 16px 16px;
 			margin-bottom: 24px;
@@ -148,10 +172,21 @@
 			line-height: 1.5;
 		}
 
-		.keyword { color: #c678dd; }
-		.type { color: #e5c07b; }
-		.method { color: #61afef; }
-		.string { color: #98c379; }
+		.keyword {
+			color: #c678dd;
+		}
+
+		.type {
+			color: #e5c07b;
+		}
+
+		.method {
+			color: #61afef;
+		}
+
+		.string {
+			color: #98c379;
+		}
 
 		.output-panel {
 			background: linear-gradient(145deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.02));
@@ -185,8 +220,13 @@
 		}
 
 		@keyframes pulse {
-			0% { opacity: 0.5; }
-			100% { opacity: 1; }
+			0% {
+				opacity: 0.5;
+			}
+
+			100% {
+				opacity: 1;
+			}
 		}
 
 		.footer {
@@ -197,6 +237,7 @@
 		}
 	</style>
 </head>
+
 <body>
 	<div class="blob blob-1"></div>
 	<div class="blob blob-2"></div>
@@ -205,7 +246,7 @@
 		<div class="glass-card">
 			<h1>Tempo</h1>
 			<div class="subtitle">esm.sh Smart CDN Test</div>
-			
+
 			<div class="code-block">
 				<code><span class="keyword">import</span> <span class="string">'@js-temporal/polyfill'</span>;
 <span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo'</span>;
@@ -235,12 +276,15 @@ t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span
 	</script>
 	<script type="module">
 		try {
-			await import('@js-temporal/polyfill');
+			const { Temporal } = await import('@js-temporal/polyfill');
+			if (!globalThis.Temporal && Temporal)
+				globalThis.Temporal = Temporal;
+
 			const { Tempo } = await import('@magmacomputing/tempo');
-			
+
 			const t = new Tempo('next friday');
 			console.log('Tempo execution successful:', t.format('{mon} {dd:raw}'));
-			
+
 			const resEl = document.getElementById('result');
 			resEl.textContent = t.format('{mon} {dd:raw}');
 			resEl.classList.remove('pulse-loading');
@@ -253,4 +297,5 @@ t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span
 		}
 	</script>
 </body>
+
 </html>

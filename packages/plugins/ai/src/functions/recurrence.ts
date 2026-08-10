@@ -3,7 +3,7 @@ import { isRRuleString, isFiniteRRule, parseRRule, expandRRuleEpochs } from '@ma
 import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
-import { executeWithMode } from '../core/mode.js';
+import { executeWithMode } from '../core/dispatch.js';
 import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
 import type { TempoRecurrenceOptions, TempoRecurrenceResult } from '../types/index.js';
 
@@ -121,7 +121,7 @@ export async function recurrenceAI(
 	const sph = options?.sphere || (options?.anchor instanceof Tempo ? options.anchor.config.sphere : undefined) || Tempo.options.sphere;
 
 	const contextConfig = { timeZone: tz, calendar: cal, locale: loc, sphere: sph };
-	const anchorTempo = options?.anchor ? new Tempo(options.anchor, contextConfig) : new Tempo(contextConfig);
+	const anchorTempo = new Tempo(options?.anchor, contextConfig);
 	const defaultBatchSize = options?.count ?? 5;
 
 	if (isRRule) {

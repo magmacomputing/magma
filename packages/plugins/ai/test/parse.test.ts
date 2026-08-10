@@ -115,6 +115,9 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		const result = await parseAI('The Friday after Thanksgiving', { anchor: anchorDate, timeZone: 'UTC', force: true });
 
 		expect(result).toBeInstanceOf(Tempo);
+		expect(result.constructor).toBe(Tempo);
+		expect(result.constructor === Tempo).toBe(true);
+		expect(result.format === result.format).toBe(true);
 		expect(result.isValid).toBe(true);
 		expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-27');
 
@@ -407,6 +410,31 @@ describe('AI Parsing Plugin (parseAI)', () => {
 			const limits = getAiRateLimits();
 			expect(limits?.remainingTokens).toBe(5000);
 		});
+
+		it('should convert invalid JSON provider response into TempoAiError with status 422', async () => {
+			await initAI({
+				remoteConfigUrl: false,
+				providers: [{ id: 'openai', key: 'test-key' }]
+			});
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: 'not valid json at all {{' } }]
+			}), { status: 200 }));
+
+			await expect(parseAI('Thanksgiving', { force: true })).rejects.toThrowError(TempoAiError);
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: 'not valid json at all {{' } }]
+			}), { status: 200 }));
+
+			try {
+				await parseAI('Thanksgiving', { force: true });
+			} catch (err: any) {
+				expect(err.code).toBe(422);
+				expect(err.message).toContain('returned invalid JSON payload');
+			}
+		});
 	});
 
 	describe('BoundedCache & Eviction', () => {
@@ -576,6 +604,34 @@ describe('AI Parsing Plugin (parseAI)', () => {
 			}
 
 			expect(getAiRateLimits()).toBeNull();
+		});
+
+		it('should exclude transport timeout option from serialized request body', async () => {
+			await initAI({
+				remoteConfigUrl: false,
+				providers: [{
+					id: 'openai',
+					key: 'test-key',
+					options: {
+						timeout: 4500,
+						user: 'user-tempo-test'
+					}
+				}]
+			});
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), { status: 200 }));
+
+			await parseAI('Thanksgiving 2026', { force: true });
+
+			expect(fetchSpy).toHaveBeenCalledTimes(1);
+			const requestInit = fetchSpy.mock.calls[0][1];
+			const parsedBody = JSON.parse(requestInit?.body as string);
+
+			expect(parsedBody.user).toBe('user-tempo-test');
+			expect(parsedBody.timeout).toBeUndefined();
 		});
 	});
 });

@@ -16,6 +16,18 @@ export function resetManifestCache(): void {
 }
 
 /**
+ * Validates that a manifest or provider URL uses HTTPS or HTTP localhost.
+ */
+function isValidManifestUrl(urlStr: string): boolean {
+	try {
+		const parsed = new URL(urlStr);
+		return parsed.protocol === 'https:' || (parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'));
+	} catch {
+		return false;
+	}
+}
+
+/**
  * Fetches the remote AI provider manifest. Remote defaults are loaded during initialization.
  * Fail-open: if network fails or times out, returns null and allows fallback to local DEFAULT_PROVIDERS.
  */
@@ -24,21 +36,24 @@ export async function loadRemoteManifest(
 	timeoutMs: number = DEFAULT_MANIFEST_TIMEOUT_MS,
 	debug: boolean = false
 ): Promise<Record<string, Partial<AiProvider>> | null> {
-	if (remoteConfigUrl === false) {
+	if (remoteConfigUrl === false)
 		return null;
-	}
 
 	const targetUrl = typeof remoteConfigUrl === 'string' && remoteConfigUrl.trim().length > 0
 		? remoteConfigUrl.trim()
 		: DEFAULT_REMOTE_MANIFEST_URL;
 
-	if (_cachedManifestMap.has(targetUrl)) {
-		return _cachedManifestMap.get(targetUrl)!;
+	if (!isValidManifestUrl(targetUrl)) {
+		if (debug)
+			console.warn(`[tempo-plugin-ai] Rejected remote manifest URL '${targetUrl}' - must be HTTPS or localhost HTTP.`);
+		return null;
 	}
 
-	if (_fetchPromiseMap.has(targetUrl)) {
+	if (_cachedManifestMap.has(targetUrl))
+		return _cachedManifestMap.get(targetUrl)!;
+
+	if (_fetchPromiseMap.has(targetUrl))
 		return _fetchPromiseMap.get(targetUrl)!;
-	}
 
 	const fetchPromise = (async () => {
 		let timer: ReturnType<typeof setTimeout> | undefined;
@@ -49,12 +64,12 @@ export async function loadRemoteManifest(
 			const response = await fetch(targetUrl, {
 				signal: controller.signal,
 				headers: { Accept: 'application/json' },
+				redirect: 'error',
 			});
 
 			if (!response.ok) {
-				if (debug) {
+				if (debug)
 					console.warn(`[tempo-plugin-ai] Remote manifest fetch failed with status ${response.status}`);
-				}
 				const empty = {};
 				_cachedManifestMap.set(targetUrl, empty);
 				return null;
@@ -67,16 +82,16 @@ export async function loadRemoteManifest(
 				return manifest;
 			}
 
-			if (debug) {
+			if (debug)
 				console.warn('[tempo-plugin-ai] Remote manifest missing valid "providers" object structure');
-			}
+
 			const empty = {};
 			_cachedManifestMap.set(targetUrl, empty);
 			return null;
 		} catch (err: any) {
-			if (debug) {
+			if (debug)
 				console.warn(`[tempo-plugin-ai] Remote manifest fetch error: ${err?.message || err}`);
-			}
+
 			// Fail-open: store empty object so we fallback to DEFAULT_PROVIDERS without hanging subsequent calls
 			const empty = {};
 			_cachedManifestMap.set(targetUrl, empty);
@@ -101,32 +116,26 @@ export function getResolvedProviderDefaults(
 	debug: boolean = false
 ): Partial<AiProvider> {
 	const normalizedId = providerId?.toLowerCase() ?? '';
-	const localDefaults = DEFAULT_PROVIDERS[normalizedId] || DEFAULT_PROVIDERS.openai;
+	const localDefaults = DEFAULT_PROVIDERS[normalizedId] || {};
 
-	if (remoteConfigUrl === false) {
+	if (remoteConfigUrl === false)
 		return localDefaults;
-	}
 
 	const targetUrl = typeof remoteConfigUrl === 'string' && remoteConfigUrl.trim().length > 0
 		? remoteConfigUrl.trim()
 		: DEFAULT_REMOTE_MANIFEST_URL;
 
 	const cached = _cachedManifestMap.get(targetUrl);
-	if (!cached || !cached[normalizedId]) {
+	if (!cached || !cached[normalizedId])
 		return localDefaults;
-	}
 
 	const manifestEntry = { ...cached[normalizedId] };
 
 	// Validate manifest-derived URL origin: must be HTTPS or localhost HTTP
 	if (manifestEntry.url) {
-		try {
-			const parsed = new URL(manifestEntry.url);
-			if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'))) {
-				if (debug) console.warn(`[tempo-plugin-ai] Rejected manifest provider URL '${manifestEntry.url}' - invalid HTTPS origin.`);
-				delete manifestEntry.url;
-			}
-		} catch {
+		if (!isValidManifestUrl(manifestEntry.url)) {
+			if (debug)
+				console.warn(`[tempo-plugin-ai] Rejected manifest provider URL '${manifestEntry.url}' - invalid HTTPS origin.`);
 			delete manifestEntry.url;
 		}
 	}

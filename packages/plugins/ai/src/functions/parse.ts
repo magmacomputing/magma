@@ -2,7 +2,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
-import { executeWithMode } from '../core/mode.js';
+import { executeWithMode } from '../core/dispatch.js';
 import { normalizeCacheInput, attachAiMeta, fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
 import type { AiParseOptions } from '../types/index.js';
 
@@ -122,7 +122,12 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 		async (provider, signal) => {
 			const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug, signal, callTimeout);
 			const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
-			const parsedData = JSON.parse(cleanContent);
+			let parsedData: any;
+			try {
+				parsedData = JSON.parse(cleanContent);
+			} catch {
+				throw new TempoAiError(`Provider ${providerId} returned invalid JSON payload.`, 422);
+			}
 			const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : (parsedData?.iso === 'INVALID' ? 0.0 : 1.0);
 
 			return {

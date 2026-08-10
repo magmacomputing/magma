@@ -45,6 +45,24 @@ describe('proxy method binding', () => {
 		expect(proxyA.getValue()).toBe(3);
 		expect(proxyB.getValue()).toBe(9);
 	});
+
+	test('preserves original constructor identity without binding', () => {
+		class CustomTarget {
+			value = 42;
+			getValue() { return this.value; }
+		}
+
+		const instance = new CustomTarget();
+		const proxy = proxify(instance, true, false);
+
+		expect(proxy.constructor).toBe(CustomTarget);
+		expect(proxy.constructor === CustomTarget).toBe(true);
+
+		const plain = { a: 1 };
+		const plainProxy = proxify(plain, true, false);
+		expect(plainProxy.constructor).toBe(Object);
+		expect(plainProxy.constructor === Object).toBe(true);
+	});
 });
 
 describe('delegator', () => {

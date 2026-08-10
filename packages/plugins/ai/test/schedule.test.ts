@@ -335,6 +335,9 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 
 		expect(slot).toBeInstanceOf(Interval);
 		expect(slot.constructor).toBe(Interval);
+		expect(slot.constructor === Interval).toBe(true);
+		expect(slot.contains === slot.contains).toBe(true);
+		expect(slot.toString === slot.toString).toBe(true);
 		expect(Object.prototype.toString.call(slot)).toBe('[object Tempo.Interval]');
 		expect(typeof slot.toString).toBe('function');
 		expect(typeof slot.valueOf).toBe('function');
@@ -354,6 +357,33 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 		await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
 		await expect(scheduleAI('Schedule meeting', { mode: 'invalid-mode' as any }))
 			.rejects.toThrow(/Invalid execution mode: 'invalid-mode'/);
+	});
+
+	it('should resolve options.timeZone and apply to anchorTempo in buildContextPrompt', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						start: '2026-08-11T14:00:00-04:00',
+						end: '2026-08-11T15:00:00-04:00',
+						summary: '1-hour meeting in NY',
+						confidence: 0.95,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		await scheduleAI('Schedule 1 hour meeting', {
+			anchor: '2026-08-11T10:00:00',
+			timeZone: 'America/New_York',
+		});
+
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		const requestBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+		const systemPrompt = requestBody.messages[0].content;
+		expect(systemPrompt).toContain('Reference Anchor Time: 2026-08-11T10:00:00 (America/New_York)');
+		expect(systemPrompt).toContain('Target TimeZone: America/New_York');
 	});
 });
 

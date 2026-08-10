@@ -22,6 +22,8 @@ export function getNamespacedCacheKey(namespace: string, key: string): string {
 
 export function attachAiMeta(instance: Tempo, meta: TempoAiMeta): Tempo {
   const frozenMeta = Object.freeze(meta);
+  const boundMethodCache = new Map<PropertyKey, Function>();
+
   return new Proxy(instance, {
     get(target, prop, _receiver) {
       if (prop === 'ai') return frozenMeta;
@@ -29,8 +31,18 @@ export function attachAiMeta(instance: Tempo, meta: TempoAiMeta): Tempo {
         if (meta.confidence === 0.0 || meta.rawIso === 'INVALID' || meta.ambiguous === true || !target.isValid)
           return false;
       }
+      if (prop === 'constructor')
+        return Reflect.get(target, prop, target);
+
+      if (boundMethodCache.has(prop))
+        return boundMethodCache.get(prop);
+
       const val = Reflect.get(target, prop, target);
-      if (typeof val === 'function') return val.bind(target);
+      if (typeof val === 'function') {
+        const bound = val.bind(target);
+        boundMethodCache.set(prop, bound);
+        return bound;
+      }
       return val;
     },
     has(target, prop) {
@@ -109,6 +121,7 @@ Do not include markdown blocks or any text outside the JSON.`;
 		|| 'max_tokens';
 	const tokenLimit = { [tokenParam]: 250 };
 
+	const { timeout: _unusedTimeout, ...bodyOptions } = provider.options ?? {};
 	const controller = new AbortController();
 	const timeoutMs = timeoutOverride ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
 	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -138,7 +151,7 @@ Do not include markdown blocks or any text outside the JSON.`;
 				temperature: 0,
 				...tokenLimit,
 				response_format: { type: 'json_object' },
-				...provider.options
+				...bodyOptions
 			}),
 			signal: controller.signal
 		});

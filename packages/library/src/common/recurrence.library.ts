@@ -13,12 +13,6 @@ import {
 	type MonthKey,
 } from './calendar.library.js';
 
-export {
-	DAYS_IN_WEEK,
-	DAY_MAP,
-	MONTH_MAP
-};
-
 /**
  * Tests whether a string is a valid RFC 5545 Recurrence Rule (RRULE).
  *
@@ -71,7 +65,8 @@ export interface ParsedRRule {
  * @returns Structured representation of the recurrence parameters
  */
 export function parseRRule(rrule: string): ParsedRRule {
-	const parts = rrule.split(';');
+	const cleanRRule = rrule.trim().replace(/^RRULE:/i, '');
+	const parts = cleanRRule.split(';');
 	let freq = 'DAILY';
 	let interval = 1;
 	let count: number | undefined;

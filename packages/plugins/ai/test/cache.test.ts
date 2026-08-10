@@ -35,6 +35,7 @@ describe('Advanced Cache TTL & Async Storage Adapters', () => {
 		}
 
 		await initAI({
+			remoteConfigUrl: false,
 			providers: [{ id: 'groq', key: 'mock-test-key' }],
 			cacheAdapter: mockAdapter,
 			ttl: 120000,
@@ -72,6 +73,7 @@ describe('Advanced Cache TTL & Async Storage Adapters', () => {
 		};
 
 		await initAI({
+			remoteConfigUrl: false,
 			providers: [{ id: 'groq', key: 'mock-key', ttl: 60000 }],
 			cacheAdapter: mockAdapter,
 			ttl: 300000,
@@ -103,6 +105,7 @@ describe('Advanced Cache TTL & Async Storage Adapters', () => {
 		};
 
 		await initAI({
+			remoteConfigUrl: false,
 			providers: [{ id: 'groq', key: 'mock-key' }],
 			cacheAdapter: faultyAdapter,
 		});
@@ -127,7 +130,10 @@ describe('Advanced Cache TTL & Async Storage Adapters', () => {
 			clear: vi.fn(),
 		};
 
-		await initAI({ cacheAdapter: mockAdapter });
+		await initAI({
+			remoteConfigUrl: false,
+			cacheAdapter: mockAdapter,
+		});
 
 		clearAiCache('Easter 2026');
 		expect(mockAdapter.delete).toHaveBeenCalled();

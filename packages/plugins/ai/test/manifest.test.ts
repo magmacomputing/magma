@@ -35,7 +35,7 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 		expect(fetchSpy).toHaveBeenCalledTimes(1);
 		expect(fetchSpy).toHaveBeenCalledWith(
 			DEFAULT_REMOTE_MANIFEST_URL,
-			expect.objectContaining({ headers: { Accept: 'application/json' } })
+			expect.objectContaining({ headers: { Accept: 'application/json' }, redirect: 'error' })
 		);
 		expect(result1).toEqual(mockManifest.providers);
 
@@ -43,6 +43,28 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 		const result2 = await loadRemoteManifest(DEFAULT_REMOTE_MANIFEST_URL);
 		expect(fetchSpy).toHaveBeenCalledTimes(1);
 		expect(result2).toEqual(mockManifest.providers);
+	});
+
+	it('should reject non-HTTPS/non-localhost remoteConfigUrl before fetching', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		const result = await loadRemoteManifest('http://insecure-domain.com/providers.json');
+		expect(fetchSpy).not.toHaveBeenCalled();
+		expect(result).toBeNull();
+	});
+
+	it('should allow http://localhost and http://127.0.0.1 remoteConfigUrl', async () => {
+		const mockManifest = {
+			version: '1.0',
+			providers: { groq: { model: 'local-test-model' } }
+		};
+
+		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(JSON.stringify(mockManifest), { status: 200 })
+		);
+
+		const result = await loadRemoteManifest('http://localhost:3000/providers.json');
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		expect(result).toEqual(mockManifest.providers);
 	});
 
 	it('should gracefully fail-open on network error (500) and return null', async () => {
@@ -136,6 +158,18 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 		expect(config.providers?.[0].model).toBe(DEFAULT_PROVIDERS.openai.model);
 	});
 
+	it('should return empty defaults for unrecognized provider IDs not in DEFAULT_PROVIDERS or manifest', async () => {
+		await initAI({
+			remoteConfigUrl: false,
+			providers: [{ id: 'custom-unrecognized-llm', key: 'test-key' }]
+		});
+
+		const config = getAiConfig();
+		expect(config.providers?.[0].id).toBe('custom-unrecognized-llm');
+		expect(config.providers?.[0].model).toBeUndefined();
+		expect(config.providers?.[0].url).toBeUndefined();
+	});
+
 	it('should retain fetchDefaults hook results alongside remote manifest resolution', async () => {
 		const mockManifest = {
 			version: '1.0',
@@ -189,5 +223,55 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 
 		// Verify state was NOT overwritten by stale invocation 1
 		expect(getAiConfig().providers?.[0].model).toBe('invocation-2-model');
+	});
+
+	it('should allow fetchDefaults to override resolved defaults when config.providers is omitted on re-init', async () => {
+		// First init with raw provider (no explicit model override)
+		await initAI({
+			remoteConfigUrl: false,
+			providers: [{ id: 'groq', key: 'test-key' }]
+		});
+
+		expect(getAiConfig().providers?.[0].model).toBe(DEFAULT_PROVIDERS.groq.model);
+
+		// Re-init with fetchDefaults hook and omitted providers
+		await initAI({
+			fetchDefaults: async () => ({ model: 'hook-overridden-model', timeout: 7777 })
+		});
+
+		const config = getAiConfig();
+		expect(config.providers?.[0].key).toBe('[REDACTED]');
+		expect(config.providers?.[0].model).toBe('hook-overridden-model');
+		expect(config.providers?.[0].timeout).toBe(7777);
+	});
+
+	it('should invalidate in-flight initAI calls across resetAI', async () => {
+		let resolveManifest: (value: any) => void;
+		const manifestPromise = new Promise(res => { resolveManifest = res; });
+
+		vi.spyOn(globalThis, 'fetch').mockImplementationOnce(() => manifestPromise as any);
+
+		const inFlightInit = initAI({
+			remoteConfigUrl: 'https://tempo.magmacomputing.com.au/manifest-slow.json',
+			providers: [{ id: 'groq', key: 'slow-key' }]
+		});
+
+		// Reset AI while first init is in-flight
+		resetAI();
+
+		// Start a new init
+		await initAI({
+			remoteConfigUrl: false,
+			providers: [{ id: 'openai', key: 'fresh-key' }]
+		});
+
+		expect(getAiConfig().providers?.[0].id).toBe('openai');
+
+		// Resolve slow in-flight manifest
+		resolveManifest!(new Response(JSON.stringify({ providers: { groq: { model: 'stale-groq-model' } } }), { status: 200 }));
+		await inFlightInit;
+
+		// Config should remain the fresh one, not overwritten by stale in-flight init
+		expect(getAiConfig().providers?.[0].id).toBe('openai');
 	});
 });

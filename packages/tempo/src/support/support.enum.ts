@@ -47,7 +47,7 @@ export const DEFAULTS = {
 	},
 	TIMEZONE: {
 		'utc': 'UTC',
-		'gmt': 'Europe/London',
+		'gmt': 'UTC',
 		'est': 'America/New_York',
 		'edt': 'America/New_York',
 		'cst': 'America/Chicago',

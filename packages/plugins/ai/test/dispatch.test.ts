@@ -1,9 +1,9 @@
-import { executeWithMode } from '../src/core/mode.js';
+import { executeWithMode } from '../src/core/dispatch.js';
 import { AiMode } from '../src/core/config.js';
 import { TempoAiError } from '../src/core/error.js';
 import type { AiProvider } from '../src/types/index.js';
 
-describe('AI Mode Execution Helper (executeWithMode)', () => {
+describe('AI Dispatch Helper (executeWithMode)', () => {
 	const mockProviders: AiProvider[] = [
 		{ id: 'provider-a', key: 'key-a' },
 		{ id: 'provider-b', key: 'key-b' },

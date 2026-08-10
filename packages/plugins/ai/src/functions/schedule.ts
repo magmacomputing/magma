@@ -3,7 +3,7 @@ import { isString, isNumber, isFunction, DAY_MAP, ISO_WEEKDAY_NAMES, type DayKey
 import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
-import { executeWithMode } from '../core/mode.js';
+import { executeWithMode } from '../core/dispatch.js';
 import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
 import type { TempoScheduleOptions, TempoScheduleResult, TempoWorkingHours, TempoInterval, TempoScheduleMeta, AiProvider } from '../types/index.js';
 
@@ -110,13 +110,25 @@ Instructions:
 
 function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta): TempoScheduleResult {
 	const frozenMeta = Object.freeze(meta);
+	const boundMethodCache = new Map<PropertyKey, Function>();
+
 	return new Proxy(interval, {
 		get(target, prop) {
 			if (Object.hasOwn(frozenMeta, prop))
 				return (frozenMeta as any)[prop];
 
+			if (prop === 'constructor')
+				return Reflect.get(target, prop, target);
+
+			if (boundMethodCache.has(prop))
+				return boundMethodCache.get(prop);
+
 			const val = Reflect.get(target, prop, target);
-			if (isFunction(val)) return val.bind(target);
+			if (isFunction(val)) {
+				const bound = val.bind(target);
+				boundMethodCache.set(prop, bound);
+				return bound;
+			}
 			return val;
 		},
 		has(target, prop) {
@@ -169,7 +181,11 @@ export async function scheduleAI(
 
 	assertNoReservedProviderId(availableProviders);
 
-	const anchorTempo = options?.anchor ? new Tempo(options.anchor) : new Tempo();
+	const resolvedTz = options?.timeZone
+		|| (options?.anchor instanceof Tempo ? options.anchor.config?.timeZone || options.anchor.tz : undefined)
+		|| Tempo.options?.timeZone
+		|| 'UTC';
+	const anchorTempo = new Tempo(options?.anchor, { timeZone: resolvedTz });
 	const timeZone = options?.timeZone || anchorTempo.tz || 'UTC';
 	const workingHours: TempoWorkingHours = {
 		start: options?.workingHours?.start ?? '09:00',

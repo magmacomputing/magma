@@ -21,9 +21,26 @@ describe('Temporal Library Helpers', () => {
 			expect(zdt.toString()).not.toContain('[UTC]');
 		});
 
-		it('should handle "Z" as a zone designator and pass it through (even if ZonedDateTime.from throws without a bracket)', () => {
+		it('should convert "Z" designated strings to the requested timezone preserving instant', () => {
 			const bag = '2024-01-01T12:00:00Z';
-			expect(() => toZonedDateTime(bag, 'Australia/Sydney')).toThrow(/time\s?zone/i);
+			const zdt = toZonedDateTime(bag, 'Australia/Sydney');
+			expect(zdt.timeZoneId).toBe('Australia/Sydney');
+			expect(zdt.epochNanoseconds).toBe(Temporal.Instant.from(bag).epochNanoseconds);
+			expect(zdt.hour).toBe(23);
+			expect(zdt.day).toBe(1);
+			expect(zdt.toString()).toBe('2024-01-01T23:00:00+11:00[Australia/Sydney]');
+		});
+
+		it('should normalize space-separated date-time and offset strings', () => {
+			const zdtSpace = toZonedDateTime('2024-01-01 12:00:00', 'Australia/Sydney');
+			expect(zdtSpace.timeZoneId).toBe('Australia/Sydney');
+			expect(zdtSpace.hour).toBe(12);
+
+			const zdtSpacedZone = toZonedDateTime('2024-01-01 12:00:00 [Australia/Sydney]', 'UTC');
+			expect(zdtSpacedZone.timeZoneId).toBe('Australia/Sydney');
+
+			const zdtSpacedZ = toZonedDateTime('2024-01-01 12:00:00 Z', 'Australia/Sydney');
+			expect(zdtSpacedZ.hour).toBe(23);
 		});
 	});
 });

@@ -1,4 +1,4 @@
-import { getTemporalIds } from '#library/temporal.library.js';
+import { getTemporalIds, toZonedDateTime } from '#library/temporal.library.js';
 import { isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
 import type { TemporalObject, TypeValue } from '#library/type.library.js';
 
@@ -57,18 +57,7 @@ export function compose(
 
 		case 'String':
 			try {
-				let zdt: Temporal.ZonedDateTime;
-				const normValue = value
-					.trim()
-					.replace(/^(\d{4}-\d{2}-\d{2})\s+(?=\d{2}:\d{2})/, '$1T')
-					.replace(/\s+(?=[Zz]|[+-]\d{2}|\[)/, '');
-				if (normValue.includes('[')) {
-					zdt = Temporal.ZonedDateTime.from(normValue);
-				} else if (/Z$|[+-]\d{2}:?\d{2}/i.test(normValue)) {
-					zdt = Temporal.Instant.from(normValue).toZonedDateTimeISO(tz);
-				} else {
-					zdt = Temporal.PlainDateTime.from(normValue, { overflow: 'constrain' }).toZonedDateTime(tz);
-				}
+				const zdt = toZonedDateTime(value, tz);
 				timeZone = getTemporalIds(zdt)[0];
 				temporal = zdt;
 				onResult?.({ type, value, match: 'iso8601' });
@@ -154,8 +143,6 @@ export function compose(
 				temporal = Temporal.Instant.fromEpochNanoseconds(nano);
 				break;
 			}
-
-
 
 		default:
 			break;

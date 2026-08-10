@@ -68,7 +68,7 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.mer]: /(\s*(?<mer>am|pm))/,												// meridiem suffix (am,pm)
 	[Token.sfx]: /((?:{sep}+|T)({tm}){tzd}?)/,								// time-pattern suffix 'T {tm} Z'; NOTE: {tm} resolves via Layout fallback in compileRegExp (cross-registry dependency: Snippet → Layout)
 	[Token.wkd]: /(?<wkd>Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)/,	// day-name (abbrev or full)
-	[Token.tzd]: new RegExp(`\\s*(?:GMT|UTC)?\\s*(?<tzd>Z|(?:${Object.keys(TIMEZONE).map(w => Match.escape(w.toUpperCase())).join('|')})|${Match.offset.source})`, 'i'),	// time-zone offset or abbreviation with optional GMT/UTC prefix (e.g. GMT+10, UTC+10:00, +10:00, AEST, PST)
+	[Token.tzd]: new RegExp(`\\s*(?:(?:GMT|UTC)(?=\\s*[+-]))?\\s*(?<tzd>Z|(?:${Object.keys(TIMEZONE).map(w => Match.escape(w.toUpperCase())).join('|')})|${Match.offset.source})`, 'i'),	// time-zone offset or abbreviation with optional GMT/UTC prefix (e.g. GMT+10, UTC+10:00, +10:00, AEST, PST)
 	[Token.nbr]: new RegExp(`(?<nbr>[0-9]+|${Object.keys(NUMBER).map(w => Match.escape(w)).join('|')})`),	// modifier count; number-word keys are regex-escaped at construction time (setPatterns() also re-escapes, but defence-in-depth)
 	[Token.afx]: new RegExp(`((s)? (?<afx>${Match.modifier.source}))?{sep}?`),	// affix optional plural 's' and (ago|hence)
 	[Token.mod]: new RegExp(`((?<mod>${Match.modifier.source})? *)`),

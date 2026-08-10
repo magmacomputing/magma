@@ -10,10 +10,12 @@ import type { AiConfig, AiRateLimits, AiProvider } from '../types/index.js';
  */
 export const _state: {
   config: AiConfig;
+  rawProviders?: AiProvider[] | undefined;
   limits: AiRateLimits | null;
   revision: number;
 } = {
   config: {},
+  rawProviders: undefined,
   limits: null,
   revision: 0,
 }
@@ -37,8 +39,12 @@ export function initAI(config: AiConfig): Promise<void> {
   if (config.providers)
     assertNoReservedProviderId(config.providers);
 
+  if (config.providers)
+    _state.rawProviders = config.providers;
+
   const currentRevision = ++_state.revision;
   const remoteUrl = config.remoteConfigUrl ?? _state.config.remoteConfigUrl;
+  const callerProviders = config.providers ?? _state.rawProviders;
 
   const resolveSyncProviders = (providers?: AiProvider[]) => {
     if (!providers) return _state.config.providers;
@@ -56,7 +62,7 @@ export function initAI(config: AiConfig): Promise<void> {
   _state.config = {
     ..._state.config,
     ...config,
-    providers: resolveSyncProviders(config.providers) || []
+    providers: resolveSyncProviders(callerProviders) || []
   };
 
   if (config.cache) {
@@ -73,7 +79,7 @@ export function initAI(config: AiConfig): Promise<void> {
 		if (_state.revision !== currentRevision) return;
 
 		const fetchDefaults = config.fetchDefaults ?? _state.config.fetchDefaults;
-		const currentProviders = config.providers ?? _state.config.providers;
+		const currentProviders = callerProviders;
 
 		if (fetchDefaults && currentProviders) {
 			const asyncProviders = await Promise.all(currentProviders.map(async p => {
@@ -91,9 +97,9 @@ export function initAI(config: AiConfig): Promise<void> {
 			}));
 			if (_state.revision === currentRevision)
 				_state.config.providers = asyncProviders;
-		} else if (config.providers) {
+		} else if (currentProviders) {
 			if (_state.revision === currentRevision)
-				_state.config.providers = resolveSyncProviders(config.providers);
+				_state.config.providers = resolveSyncProviders(currentProviders);
 		}
 	})();
 }
@@ -104,8 +110,9 @@ export function initAI(config: AiConfig): Promise<void> {
  */
 export function resetAI(): void {
   _state.config = {};
+  _state.rawProviders = undefined;
   _state.limits = null;
-  _state.revision = 0;
+  _state.revision++;
   resetManifestCache();
 }
 

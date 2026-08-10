@@ -121,12 +121,19 @@ export function normaliseFractionalDurations(payload: Record<string, any>) {
  * @returns The created Temporal.ZonedDateTime
  */
 export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike | string, tz: Temporal.TimeZoneLike = 'UTC'): Temporal.ZonedDateTime {
-	if (isString(bag)) {
-		// Detect existing zone designator: bracketed IANA zone ([...]) or numeric offset (±HH:MM, Z)
-		const hasZone = /\[[^\]]+\]|([+-]\d{2}(:?\d{2})?|Z)$/.test(bag);
-		return Temporal.ZonedDateTime.from(hasZone ? bag : `${bag}[${tz}]`);
-	}
-	return Temporal.ZonedDateTime.from(bag);
+	if (!isString(bag))
+		return Temporal.ZonedDateTime.from(bag);
+
+	const str = bag
+		.trim()
+		.replace(/^(\d{4}-\d{2}-\d{2})\s+(?=\d{2}:\d{2})/, '$1T')
+		.replace(/\s+(?=[Zz]|[+-]\d{2}|\[)/, '');
+
+	return str.includes('[')
+		? Temporal.ZonedDateTime.from(str)
+		: /Z$|[+-]\d{2}(:?\d{2})?$/i.test(str)
+			? Temporal.Instant.from(str).toZonedDateTimeISO(tz)
+			: Temporal.ZonedDateTime.from(`${str}[${tz}]`);
 }
 
 /**
