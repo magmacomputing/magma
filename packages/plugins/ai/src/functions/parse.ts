@@ -158,8 +158,12 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 	const parsedIso = `${rawIso.replace(RE_ISO_Z_SUFFIX, '')}[${tz}]`;
 
 	// Determine TTL hierarchy: options.ttl > provider.ttl > global config.ttl > 3600000 (1 hour)
-	const winningProvider = availableProviders.find(p => p.id === providerId);
-	const resolvedTtl = ttl ?? winningProvider?.ttl ?? _state.config.ttl ?? 3_600_000;
+	// In Consensus mode, providerId is the synthetic sentinel 'consensus' (not a real provider id),
+	// so use the minimum TTL across all participating providers as the conservative policy.
+	const providerTtl = providerId === AiMode.Consensus
+		? availableProviders.reduce<number | undefined>((min, p) => p.ttl === undefined ? min : (min === undefined ? p.ttl : Math.min(min, p.ttl)), undefined)
+		: availableProviders.find(p => p.id === providerId)?.ttl;
+	const resolvedTtl = ttl ?? providerTtl ?? _state.config.ttl ?? 3_600_000;
 
 	if (aiCacheOption !== false) {
 		if (adapter) {

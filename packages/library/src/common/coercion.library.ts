@@ -57,6 +57,46 @@ export function asNumber(str?: string | number | bigint) {
 	return parseFloat(str?.toString() ?? 'NaN');
 }
 
+const RE_INTEGER = /^[+-]?[0-9]+$/;
+const RE_SIGN_START = /^[+-]/;
+const MAX_SAFE_INTEGER_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
+const MIN_SAFE_INTEGER_BIGINT = BigInt(Number.MIN_SAFE_INTEGER);
+
+/**
+ * @param str - The value with optional plus|minus prefix
+ * @returns The string value without the sign prefix
+ */
+function removeSign(str: string | number | bigint) {
+	return String(str).trim().replace(RE_SIGN_START, '');
+}
+
+/**
+ * Parses any `string | number | bigint` to a canonical signed `bigint`.
+ * Handles optional sign prefix, trailing `n` suffix (BigInt literal), and float truncation.
+ * Does **not** apply a safe-integer boundary check — that is `toBounded`'s responsibility.
+ */
+function parseBigInt(str: string | number | bigint): bigint {
+	if (isInteger(str)) return str;														// already a bigint
+	if (isNumber(str)) return BigInt(Math.trunc(str));				// truncate float, no string round-trip
+
+	const raw = String(str).trim();
+	const sign = raw.startsWith('-') ? -1n : 1n;							// preserve sign before stripping
+	const clean = removeSign(str);
+	const trim = isIntegerLike(clean) ? -1 : undefined;				// strip trailing 'n' (undefined = keep full string)
+	return sign * BigInt(clean.slice(0, trim));
+}
+
+/**
+ * Applies the safe-integer boundary check to a `bigint`.
+ * Returns a `number` when the value fits within `Number.MAX_SAFE_INTEGER` bounds,
+ * otherwise preserves the `bigint` to avoid precision loss.
+ */
+function toBounded(big: bigint): number | bigint {
+	return (big > MAX_SAFE_INTEGER_BIGINT || big < MIN_SAFE_INTEGER_BIGINT)
+		? big
+		: Number(big);
+}
+
 /**
  * Coerces a String or Number to a BigInt.
  * 
@@ -75,19 +115,12 @@ export function asInteger<T extends string | number | bigint>(str?: T) {
 			return arg.value;																			// already a BigInt
 		case 'Number':
 			return BigInt(Math.trunc(arg.value));									// cast as BigInt
-		case 'String': {
-			const trimmed = arg.value.trim();
-			const clean = trimmed.startsWith('+') ? trimmed.slice(1) : trimmed;
-			return (isIntegerLike(trimmed))												// String representation of a BigInt
-				? BigInt(clean.slice(0, -1))												// get rid of trailing 'n'
-				: BigInt(clean);
-		}
+		case 'String':
+			return parseBigInt(arg.value);												// normalise sign + optional trailing 'n'
 		default:
 			return str as Exclude<T, string | number>;
 	}
 }
-
-const RE_INTEGER = /^[+-]?[0-9]+$/;
 
 /**
  * Returns the value as a Number or BigInt if possible, otherwise returns the original string.
@@ -101,34 +134,17 @@ const RE_INTEGER = /^[+-]?[0-9]+$/;
  * ```
  */
 export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
-	switch (true) {
-		case isInteger(str): {
-			const big = str as bigint;
-			if (big > BigInt(Number.MAX_SAFE_INTEGER) || big < BigInt(Number.MIN_SAFE_INTEGER)) return big;
-			return Number(big);
-		}
+	if (isInteger(str) || isNumber(str))											// native BigInt or number → boundary-check
+		return toBounded(parseBigInt(str));
 
-		case isNumber(str):
-			return str;
+	const value = removeSign(str);														// only reached for string input
 
-		case isNumeric(str) && (!str?.toString().trim().startsWith('0') || stripZero): {
-			const numStr = String(str).trim();
-			const cleanNumStr = numStr.startsWith('+') ? numStr.slice(1) : numStr;
-			if (isIntegerLike(numStr)) {
-				const big = BigInt(cleanNumStr.slice(0, -1));
-				if (big > BigInt(Number.MAX_SAFE_INTEGER) || big < BigInt(Number.MIN_SAFE_INTEGER)) return big;
-				return Number(big);
-			}
-			if (RE_INTEGER.test(numStr)) {
-				const big = BigInt(cleanNumStr);
-				if (big > BigInt(Number.MAX_SAFE_INTEGER) || big < BigInt(Number.MIN_SAFE_INTEGER)) return big;
-			}
-			return asNumber(str);
-		}
+	if (isNumeric(str) && (!value.startsWith('0') || stripZero))
+		return (isIntegerLike(value) || RE_INTEGER.test(value))	// BigInt literal or plain integer string
+			? toBounded(parseBigInt(str as string))
+			: asNumber(str);																			// floating-point string
 
-		default:
-			return str as string;																	// non-numeric String → as-is
-	}
+	return str;																								// non-numeric or leading-zero string → as-is
 }
 
 /**
