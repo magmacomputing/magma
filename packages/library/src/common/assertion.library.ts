@@ -24,7 +24,7 @@ export const isString = (obj: unknown): obj is string => isType<string>(obj, 'St
 export const isNumber = (obj: unknown): obj is number => isType<number>(obj, 'Number');
 export const isFiniteNumber = (obj: unknown): obj is number => isType<number>(obj, 'Number') && isFinite(obj as number);
 
-const RE_BIGINT_LITERAL = /^-?[0-9]+n$/;
+const RE_BIGINT_LITERAL = /^[+-]?[0-9]+n$/;
 const RE_REGEXP_LITERAL = /^\/.*\/$/;
 
 /**
@@ -53,7 +53,7 @@ export function isNumeric(str?: any): boolean {
 	}
 }
 export const isInteger = (obj: unknown): obj is bigint => isType<bigint>(obj, 'BigInt');
-export const isIntegerLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && RE_BIGINT_LITERAL.test(obj as string);
+export const isIntegerLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && RE_BIGINT_LITERAL.test((obj as string).trim());
 export const isDigit = (obj: unknown): obj is number | bigint => isType<number | bigint>(obj, 'Number', 'BigInt');
 export const isBoolean = (obj: unknown): obj is boolean => isType<boolean>(obj, 'Boolean');
 export const isArray = <T = any>(obj: unknown): obj is T[] => isType<T[]>(obj, 'Array');

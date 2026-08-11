@@ -75,16 +75,19 @@ export function asInteger<T extends string | number | bigint>(str?: T) {
 			return arg.value;																			// already a BigInt
 		case 'Number':
 			return BigInt(Math.trunc(arg.value));									// cast as BigInt
-		case 'String':
-			return (isIntegerLike(arg.value))											// String representation of a BigInt
-				? BigInt(arg.value.slice(0, -1))										// get rid of trailing 'n'
-				: BigInt(arg.value);
+		case 'String': {
+			const trimmed = arg.value.trim();
+			const clean = trimmed.startsWith('+') ? trimmed.slice(1) : trimmed;
+			return (isIntegerLike(trimmed))												// String representation of a BigInt
+				? BigInt(clean.slice(0, -1))												// get rid of trailing 'n'
+				: BigInt(clean);
+		}
 		default:
 			return str as Exclude<T, string | number>;
 	}
 }
 
-const RE_INTEGER = /^-?[0-9]+$/;
+const RE_INTEGER = /^[+-]?[0-9]+$/;
 
 /**
  * Returns the value as a Number or BigInt if possible, otherwise returns the original string.
@@ -108,15 +111,16 @@ export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
 		case isNumber(str):
 			return str;
 
-		case isNumeric(str) && (!str?.toString().startsWith('0') || stripZero): {
-			const numStr = String(str);
+		case isNumeric(str) && (!str?.toString().trim().startsWith('0') || stripZero): {
+			const numStr = String(str).trim();
+			const cleanNumStr = numStr.startsWith('+') ? numStr.slice(1) : numStr;
 			if (isIntegerLike(numStr)) {
-				const big = BigInt(numStr.slice(0, -1));
+				const big = BigInt(cleanNumStr.slice(0, -1));
 				if (big > BigInt(Number.MAX_SAFE_INTEGER) || big < BigInt(Number.MIN_SAFE_INTEGER)) return big;
 				return Number(big);
 			}
 			if (RE_INTEGER.test(numStr)) {
-				const big = BigInt(numStr);
+				const big = BigInt(cleanNumStr);
 				if (big > BigInt(Number.MAX_SAFE_INTEGER) || big < BigInt(Number.MIN_SAFE_INTEGER)) return big;
 			}
 			return asNumber(str);

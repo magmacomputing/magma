@@ -126,17 +126,60 @@ async function executeFallbackMode<T>(
 async function executeRaceMode<T>(
 	providers: AiProvider[],
 	task: ProviderTask<T>,
+	options?: ExecuteModeOptions,
 ): Promise<ModeCandidate<T>> {
+	if (providers.length <= 1) return executeFallbackMode(providers, task, options);
+
 	const controller = new AbortController();
-	try {
-		const promises = providers.map(p => task(p, controller.signal));
-		const winner = await Promise.any(promises);
-		controller.abort();
-		return winner;
-	} catch (err: any) {
-		controller.abort();
-		throw unwrapExecutionError(err, 'Provider race failed');
-	}
+	const minConfidence = options?.minConfidence;
+	const errors: any[] = [];
+	let bestCandidate: ModeCandidate<T> | null = null;
+	let settled = false;
+	let completedCount = 0;
+
+	return new Promise<ModeCandidate<T>>((resolve, reject) => {
+		const handleOutcome = (candidate: ModeCandidate<T> | null, error: any) => {
+			if (settled) return;
+
+			completedCount++;
+
+			if (candidate) {
+				const confidence = typeof candidate.confidence === 'number' ? candidate.confidence : 1.0;
+				const bestConf = bestCandidate ? (typeof bestCandidate.confidence === 'number' ? bestCandidate.confidence : 1.0) : -1;
+				if (!bestCandidate || confidence > bestConf)
+					bestCandidate = candidate;
+
+				if (minConfidence === undefined || confidence >= minConfidence) {
+					settled = true;
+					controller.abort();
+					resolve(candidate);
+					return;
+				}
+			} else {
+				errors.push(error);
+			}
+
+			if (completedCount >= providers.length) {
+				settled = true;
+				controller.abort();
+				if (bestCandidate)
+					resolve(bestCandidate);
+				else {
+					const unwrapped = unwrapExecutionError(
+						errors.length > 1 ? new AggregateError(errors, 'All raced providers failed') : errors[0],
+						'Provider race failed'
+					);
+					reject(unwrapped);
+				}
+			}
+		};
+
+		providers.forEach(p => {
+			task(p, controller.signal)
+				.then(candidate => handleOutcome(candidate, null))
+				.catch(err => handleOutcome(null, err));
+		});
+	});
 }
 
 /**
@@ -375,7 +418,7 @@ export async function executeWithMode<T>(
 			return executeFallbackMode(providers, task, options);
 
 		case AiMode.Race:
-			return executeRaceMode(providers, task);
+			return executeRaceMode(providers, task, options);
 
 		case AiMode.Consensus:
 			return executeConsensusMode(providers, task);

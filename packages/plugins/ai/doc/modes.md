@@ -46,7 +46,7 @@ flowchart TD
     Start --> Audit["High-stakes audit\n(legal, financial, scheduling)"]
 
     UI --> MultiUI{"Multiple providers\nor API keys?"}
-    MultiUI -- No --> Hedged["✅ AiMode.Hedged\nFast • Low token cost"]
+    MultiUI -- No --> Fallback["⬇️ AiMode.Fallback\nDefault • Most cost-efficient"]
     MultiUI -- Yes --> Race["🏁 AiMode.Race\nAbsolute fastest response"]
 
     Batch --> Quota{"Quota pressure\nor multiple keys?"}

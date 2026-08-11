@@ -475,9 +475,17 @@ describe('AI Parsing Plugin (parseAI)', () => {
 			expect(cache.has('Christmas::2026-05-10')).toBe(true);
 		});
 
-		it('should resolve static un-salted user glossary terms without hitting network or expiring', async () => {
+		it('should resolve static user glossary terms with context salt without hitting network or expiring', async () => {
+			const resolvedOptions = Tempo.options;
+			const tz = resolvedOptions.timeZone;
+			const cal = resolvedOptions.calendar;
+			const loc = Array.isArray(resolvedOptions.locale) ? resolvedOptions.locale[0] : resolvedOptions.locale;
+			const sph = resolvedOptions.sphere || 'north';
+			const cacheSalt = new Tempo().format('{yyyy}-{mm}-{dd}');
+			const cacheKey = `my_custom_company_glossary_term::${cacheSalt}::${tz}::${cal}::${loc}::${sph}`;
+
 			const glossary = new Map<string, string>([
-				['my_custom_company_glossary_term', '2026-11-01T00:00:00Z']
+				[cacheKey, '2026-11-01T00:00:00Z']
 			]);
 
 			await initAI({ remoteConfigUrl: false, cache: glossary });

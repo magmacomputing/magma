@@ -4,6 +4,7 @@ import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import { normalizeCacheInput, attachAiMeta, fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
+import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX, RE_ISO_DATE_PREFIX, RE_ISO_Z_SUFFIX } from '../core/patterns.js';
 import type { AiParseOptions } from '../types/index.js';
 
 async function parseSingleInput(str: string, options?: AiParseOptions): Promise<Tempo> {
@@ -37,32 +38,16 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 	if (!force && aiCacheOption !== false) {
 		if (adapter) {
 			try {
-				const val1 = await adapter.get(cacheKey);
-				if (val1) {
-					cachedIso = val1;
-				} else {
-					const val2 = await adapter.get(normalizedStr);
-					if (val2) {
-						cachedIso = val2;
-					} else {
-						const val3 = await adapter.get(str);
-						if (val3) cachedIso = val3;
-					}
+				const val = await adapter.get(cacheKey);
+				if (val) {
+					cachedIso = val;
 				}
 			} catch (err: any) {
 				if (isDebug) console.log('[tempo-plugin-ai] Cache adapter read error:', err?.message);
 			}
 		}
 
-		if (!cachedIso) {
-			if (Tempo.cache.has(cacheKey)) {
-				cachedIso = Tempo.cache.get(cacheKey);
-			} else if (Tempo.cache.has(normalizedStr)) {
-				cachedIso = Tempo.cache.get(normalizedStr);
-			} else if (Tempo.cache.has(str)) {
-				cachedIso = Tempo.cache.get(str);
-			}
-		}
+		cachedIso ??= Tempo.cache.get(cacheKey);
 	}
 
 	if (cachedIso) {
@@ -85,7 +70,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 			const native = new Tempo(str, { ...coreOptions, silent: true });
 			const hasNativeMatches = Tempo.cache.has(str)
 				|| Tempo.cache.has(normalizedStr)
-				|| /^\d{4}-\d{2}-\d{2}/.test(str.trim())
+				|| RE_ISO_DATE_PREFIX.test(str.trim())
 				|| native.isValid;
 
 			if (native.isValid && hasNativeMatches) {
@@ -122,7 +107,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 		availableProviders,
 		async (provider, signal) => {
 			const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug, signal, callTimeout);
-			const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+			const cleanContent = rawContent.replace(RE_MARKDOWN_JSON_PREFIX, '').replace(RE_MARKDOWN_JSON_SUFFIX, '');
 			let parsedData: any;
 			try {
 				parsedData = JSON.parse(cleanContent);
@@ -170,7 +155,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 		});
 	}
 
-	const parsedIso = `${rawIso.replace(/Z$/i, '')}[${tz}]`;
+	const parsedIso = `${rawIso.replace(RE_ISO_Z_SUFFIX, '')}[${tz}]`;
 
 	// Determine TTL hierarchy: options.ttl > provider.ttl > global config.ttl > 3600000 (1 hour)
 	const winningProvider = availableProviders.find(p => p.id === providerId);

@@ -72,6 +72,56 @@ describe('AI Dispatch Helper (executeWithMode)', () => {
 			expect(winner.providerId).toBe('provider-b');
 			expect(winner.data).toEqual({ fast: true });
 		});
+
+		it('should keep race active and prefer slower qualifying candidate over faster low-confidence candidate', async () => {
+			const task = vi.fn().mockImplementation(async (provider: AiProvider) => {
+				if (provider.id === 'provider-a') {
+					await new Promise(resolve => setTimeout(resolve, 10));
+					return { data: { val: 'fast-low' }, providerId: 'provider-a', confidence: 0.7 };
+				}
+				if (provider.id === 'provider-b') {
+					await new Promise(resolve => setTimeout(resolve, 50));
+					return { data: { val: 'slow-high' }, providerId: 'provider-b', confidence: 0.95 };
+				}
+				await new Promise(resolve => setTimeout(resolve, 100));
+				return { data: { val: 'slowest' }, providerId: 'provider-c', confidence: 0.8 };
+			});
+
+			const winner = await executeWithMode(
+				AiMode.Race,
+				mockProviders,
+				task,
+				{ minConfidence: 0.9 },
+			);
+
+			expect(winner.providerId).toBe('provider-b');
+			expect(winner.data).toEqual({ val: 'slow-high' });
+		});
+
+		it('should return best candidate if all race candidates fall below minConfidence', async () => {
+			const task = vi.fn().mockImplementation(async (provider: AiProvider) => {
+				if (provider.id === 'provider-a') {
+					await new Promise(resolve => setTimeout(resolve, 10));
+					return { data: { val: 'fast' }, providerId: 'provider-a', confidence: 0.7 };
+				}
+				if (provider.id === 'provider-b') {
+					await new Promise(resolve => setTimeout(resolve, 30));
+					return { data: { val: 'slow' }, providerId: 'provider-b', confidence: 0.8 };
+				}
+				await new Promise(resolve => setTimeout(resolve, 50));
+				return { data: { val: 'slowest' }, providerId: 'provider-c', confidence: 0.6 };
+			});
+
+			const winner = await executeWithMode(
+				AiMode.Race,
+				mockProviders,
+				task,
+				{ minConfidence: 0.9 },
+			);
+
+			expect(winner.providerId).toBe('provider-b');
+			expect(winner.data).toEqual({ val: 'slow' });
+		});
 	});
 
 	describe('AiMode.Consensus', () => {

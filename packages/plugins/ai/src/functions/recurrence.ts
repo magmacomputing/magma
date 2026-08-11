@@ -5,6 +5,7 @@ import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
+import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX, RE_RRULE_PREFIX } from '../core/patterns.js';
 import type { TempoRecurrenceOptions, TempoRecurrenceResult } from '../types/index.js';
 
 function expandOccurrences(rrule: string, anchor: Tempo, options?: { count?: number; after?: any; before?: any }): Tempo[] {
@@ -125,7 +126,7 @@ export async function recurrenceAI(
 	const defaultBatchSize = options?.count ?? 5;
 
 	if (isRRule) {
-		const cleanRRule = input.trim().replace(/^RRULE:/i, '');
+		const cleanRRule = input.trim().replace(RE_RRULE_PREFIX, '');
 		if (isDebug)
 			console.log(`[tempo-plugin-ai:recurrence] Detected raw RRULE string: "${cleanRRule}"`);
 
@@ -178,7 +179,7 @@ Do not include markdown blocks or text outside the JSON.`;
 				callTimeout,
 				systemPrompt,
 			);
-			const cleanContent = rawContent.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+			const cleanContent = rawContent.replace(RE_MARKDOWN_JSON_PREFIX, '').replace(RE_MARKDOWN_JSON_SUFFIX, '');
 			const parsedData = JSON.parse(cleanContent);
 			const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : 0.9;
 

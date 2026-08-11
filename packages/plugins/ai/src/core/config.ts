@@ -16,7 +16,7 @@ export const AiMode = Object.freeze({
 	Race: 'race',
 	Consensus: 'consensus',
 	Hedged: 'hedged',
-	RoundRobin: 'roundRobin',
+	RoundRobin: 'roundrobin',
 	Adaptive: 'adaptive',
 } as const);
 

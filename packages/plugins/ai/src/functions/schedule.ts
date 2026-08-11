@@ -5,13 +5,8 @@ import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
+import { RE_DURATION_MINUTES, RE_DURATION_HOURS, RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX, RE_ISO_WEEKDAY_DIGIT } from '../core/patterns.js';
 import type { TempoScheduleOptions, TempoScheduleResult, TempoWorkingHours, TempoInterval, TempoScheduleMeta, AiProvider } from '../types/index.js';
-
-const RE_DURATION_MINUTES = /(\d+)\s*(?:minutes?|mins?|m\b)/i;
-const RE_DURATION_HOURS = /(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h\b)/i;
-const RE_MARKDOWN_JSON_PREFIX = /^```json\s*/i;
-const RE_MARKDOWN_JSON_SUFFIX = /\s*```$/i;
-const RE_ISO_WEEKDAY_DIGIT = /^[1-7]$/;
 
 function normalizeBusyEvents(rawEvents?: any[], timeZone = 'UTC'): Array<{ start: Tempo; end: Tempo; title?: string | undefined }> {
 	if (!Array.isArray(rawEvents)) return [];
