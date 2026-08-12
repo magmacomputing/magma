@@ -19,6 +19,12 @@ describe('Coercion Library', () => {
 			expect(ifNumeric(' 012 ')).toBe(' 012 ');
 			expect(ifNumeric(' 012 ', true)).toBe(12);
 		});
+
+		it('should handle NaN and infinities by passing through', () => {
+			expect(ifNumeric(NaN)).toBeNaN();
+			expect(ifNumeric(Infinity)).toBe(Infinity);
+			expect(ifNumeric(-Infinity)).toBe(-Infinity);
+		});
 	});
 
 	describe('asInteger', () => {
@@ -27,6 +33,12 @@ describe('Coercion Library', () => {
 			expect(asInteger(' +9007199254740993n ')).toBe(9007199254740993n);
 			expect(asInteger(' +123 ')).toBe(123n);
 			expect(asInteger(' +123n ')).toBe(123n);
+		});
+
+		it('should throw SyntaxError for sign-only strings like + and -', () => {
+			expect(() => asInteger('+')).toThrow(SyntaxError);
+			expect(() => asInteger('-')).toThrow(SyntaxError);
+			expect(() => asInteger('  +  ')).toThrow(SyntaxError);
 		});
 	});
 });

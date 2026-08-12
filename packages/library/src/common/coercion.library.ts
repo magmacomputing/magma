@@ -80,8 +80,10 @@ function parseBigInt(str: string | number | bigint): bigint {
 	if (isNumber(str)) return BigInt(Math.trunc(str));				// truncate float, no string round-trip
 
 	const raw = String(str).trim();
-	const sign = raw.startsWith('-') ? -1n : 1n;							// preserve sign before stripping
 	const clean = removeSign(str);
+	if (clean.length === 0) return BigInt(raw);
+
+	const sign = raw.startsWith('-') ? -1n : 1n;							// preserve sign before stripping
 	const trim = isIntegerLike(clean) ? -1 : undefined;				// strip trailing 'n' (undefined = keep full string)
 	return sign * BigInt(clean.slice(0, trim));
 }
@@ -134,7 +136,7 @@ export function asInteger<T extends string | number | bigint>(str?: T) {
  * ```
  */
 export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
-	if (isInteger(str) || isNumber(str))											// native BigInt or number → boundary-check
+	if (isInteger(str) || (isNumber(str) && Number.isFinite(str)))// native BigInt or finite number → boundary-check
 		return toBounded(parseBigInt(str));
 
 	const value = removeSign(str);														// only reached for string input

@@ -72,11 +72,16 @@ describe('AI Context Plugin (contextAI)', () => {
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
 		// Seed cache
-		Tempo.cache.set('context::cached prompt', JSON.stringify({
+		const tz = String(Tempo.options.timeZone);
+		const cal = String(Tempo.options.calendar);
+		const loc = String(Array.isArray(Tempo.options.locale) ? Tempo.options.locale[0] : Tempo.options.locale);
+		const sph = String(Tempo.options.sphere || 'north');
+		Tempo.cache.set(`context::cached prompt::${tz}::${loc}::${cal}::${sph}`, JSON.stringify({
 			timeZone: 'Europe/London',
 			locale: 'en-GB',
 			calendar: 'gregory',
 			sphere: 'north',
+			confidence: 0.95,
 			reasoning: 'Pre-cached location',
 		}));
 
@@ -216,5 +221,58 @@ describe('AI Context Plugin (contextAI)', () => {
 		expect(result.timeZone).toBe('Australia/Sydney');
 		expect(result.sphere).toBe('south');
 		expect(result.confidence).toBe(1.0); // Consensus vote elevates confidence to 1.0
+	});
+
+	it('should treat cached context with confidence below minConfidence as a cache miss', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		const tz = String(Tempo.options.timeZone);
+		const cal = String(Tempo.options.calendar);
+		const loc = String(Array.isArray(Tempo.options.locale) ? Tempo.options.locale[0] : Tempo.options.locale);
+		const sph = String(Tempo.options.sphere || 'north');
+
+		Tempo.cache.set(`context::low confidence::${tz}::${loc}::${cal}::${sph}`, JSON.stringify({
+			timeZone: 'Europe/Berlin',
+			locale: 'de-DE',
+			calendar: 'gregory',
+			sphere: 'north',
+			confidence: 0.6,
+		}));
+
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						timeZone: 'Europe/Berlin',
+						locale: 'de-DE',
+						calendar: 'gregory',
+						sphere: 'north',
+						confidence: 0.95,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const result = await contextAI('low confidence', { minConfidence: 0.8 });
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		expect(result.confidence).toBe(0.95);
+		expect(result.provider).toBe('groq');
+	});
+
+	it('should reject candidates when provider returns invalid non-finite or out-of-range confidence', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						timeZone: 'Europe/Berlin',
+						locale: 'de-DE',
+						calendar: 'gregory',
+						confidence: 1.5,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		await expect(contextAI('Berlin tech hub')).rejects.toThrow(/invalid confidence score/i);
 	});
 });

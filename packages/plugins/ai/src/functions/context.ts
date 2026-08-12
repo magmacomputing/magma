@@ -12,6 +12,7 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 	const normalizedStr = normalizeCacheInput(text);
 
 	const { force, debug, mode: aiMode, providers, minConfidence, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, hedgeDelay } = options || {};
+	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
 
 	const resolvedOptions = Tempo.options;
 	const tz = String(options?.timeZone || resolvedOptions.timeZone);
@@ -19,7 +20,7 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 	const loc = String(Array.isArray(options?.locale) ? options?.locale[0] : (options?.locale || resolvedOptions.locale));
 	const sph = String(options?.sphere || resolvedOptions.sphere || 'north');
 
-	const cacheKey = `context::${normalizedStr}`;
+	const cacheKey = `context::${normalizedStr}::${tz}::${loc}::${cal}::${sph}`;
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
 	let cachedVal: string | undefined;
@@ -39,20 +40,28 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 	}
 
 	if (cachedVal) {
-		if (isDebug) console.log(`[tempo-plugin-ai:context] Cache hit: "${text}" -> ${cachedVal}`);
 		try {
 			const parsedCache = JSON.parse(cachedVal);
-			return {
-				timeZone: parsedCache.timeZone,
-				locale: parsedCache.locale,
-				calendar: parsedCache.calendar,
-				sphere: parsedCache.sphere === 'north' || parsedCache.sphere === 'south' ? parsedCache.sphere : undefined,
-				confidence: 1.0,
-				provider: 'cache',
-				reasoning: parsedCache.reasoning,
-			};
+			if (typeof parsedCache.timeZone === 'string') {
+				Intl.DateTimeFormat(undefined, { timeZone: parsedCache.timeZone });
+				const cachedConfidence = typeof parsedCache.confidence === 'number' && Number.isFinite(parsedCache.confidence)
+					? parsedCache.confidence
+					: 1.0;
+				if (effectiveMinConfidence === undefined || cachedConfidence >= effectiveMinConfidence) {
+					if (isDebug) console.log(`[tempo-plugin-ai:context] Cache hit: "${text}" -> ${cachedVal}`);
+					return {
+						timeZone: parsedCache.timeZone,
+						locale: parsedCache.locale,
+						calendar: parsedCache.calendar,
+						sphere: parsedCache.sphere === 'north' || parsedCache.sphere === 'south' ? parsedCache.sphere : undefined,
+						confidence: cachedConfidence,
+						provider: 'cache',
+						reasoning: parsedCache.reasoning,
+					}
+				}
+			}
 		} catch {
-			// If cached value is corrupted, proceed to fetch
+			// If cached value is corrupted, invalid, or fails timezone validation, proceed to fetch
 		}
 	}
 
@@ -65,7 +74,6 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 	assertNoReservedProviderId(availableProviders);
 
 	const mode = aiMode || _state.config.mode || AiMode.Fallback;
-	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
 	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
 	const systemPrompt = `You are a locale and timezone inference engine. Analyze the provided text (like location names, user descriptions, meeting context) and infer the timezone (IANA format), locale (BCP 47 language/region tag), preferred calendar system (Unicode type, default 'gregory'), and hemisphere ('north' or 'south').
@@ -109,8 +117,10 @@ Do not include markdown blocks or text outside the JSON.`;
 			const calendar = typeof parsedData?.calendar === 'string' ? parsedData.calendar.trim() : 'gregory';
 			const rawSphere = typeof parsedData?.sphere === 'string' ? parsedData.sphere.trim().toLowerCase() : null;
 			const sphere = rawSphere === 'north' || rawSphere === 'south' ? rawSphere : undefined;
+			const confidence = parsedData?.confidence;
 
-			const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : 0.9;
+			if (typeof confidence !== 'number' || !Number.isFinite(confidence) || confidence < 0 || confidence > 1)
+				throw new TempoAiError(`Provider ${providerId} returned invalid confidence score.`, 422);
 
 			return {
 				data: {
@@ -124,7 +134,7 @@ Do not include markdown blocks or text outside the JSON.`;
 				rateLimits,
 				confidence,
 				consensusKey: `${timeZone}::${locale}::${calendar}::${sphere}`,
-			};
+			}
 		},
 		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:context', hedgeDelay: effectiveHedgeDelay },
 	);
@@ -132,7 +142,7 @@ Do not include markdown blocks or text outside the JSON.`;
 	_state.limits = winningCandidate.rateLimits ?? null;
 
 	const { data: parsedData, providerId, rateLimits } = winningCandidate;
-	const confidence = typeof winningCandidate.confidence === 'number' ? winningCandidate.confidence : 0.9;
+	const confidence = typeof winningCandidate.confidence === 'number' ? winningCandidate.confidence : 1.0;
 	const reasoning = parsedData.reasoning;
 
 	if (effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence)
@@ -166,6 +176,7 @@ Do not include markdown blocks or text outside the JSON.`;
 			locale: finalResult.locale,
 			calendar: finalResult.calendar,
 			sphere: finalResult.sphere,
+			confidence: finalResult.confidence,
 			reasoning: finalResult.reasoning,
 		});
 

@@ -14,6 +14,7 @@ export { parseAI } from './functions/parse.js';
 export { recurrenceAI } from './functions/recurrence.js';
 export { scheduleAI } from './functions/schedule.js';
 export { contextAI } from './functions/context.js';
+export { diffAI } from './functions/diff.js';
 
 /*
  * ============================================================================
@@ -28,6 +29,3 @@ export { contextAI } from './functions/context.js';
 
 // /** Scans unstructured text and extracts embedded temporal entities & events */
 // export { extractAI, type TempoEvent } from './functions/extract.js';
-
-// /** Expresses the delta between two dates in human, business, or operational terms */
-// export { diffAI, type TempoAiDiffResult } from './functions/diff.js';
