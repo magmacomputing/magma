@@ -2,7 +2,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { TempoAiError } from './error.js';
 import { RESERVED_PROVIDER_IDS } from './config.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
-import type { AiProvider, TempoAiMeta } from './types.js';
+import type { AiProvider, TempoAiMeta } from '../types/index.js';
 
 export function assertNoReservedProviderId(providers: Partial<AiProvider>[]): void {
   for (const p of providers) {
@@ -22,6 +22,8 @@ export function getNamespacedCacheKey(namespace: string, key: string): string {
 
 export function attachAiMeta(instance: Tempo, meta: TempoAiMeta): Tempo {
   const frozenMeta = Object.freeze(meta);
+  const boundMethodCache = new Map<PropertyKey, Function>();
+
   return new Proxy(instance, {
     get(target, prop, _receiver) {
       if (prop === 'ai') return frozenMeta;
@@ -29,8 +31,18 @@ export function attachAiMeta(instance: Tempo, meta: TempoAiMeta): Tempo {
         if (meta.confidence === 0.0 || meta.rawIso === 'INVALID' || meta.ambiguous === true || !target.isValid)
           return false;
       }
+      if (prop === 'constructor')
+        return Reflect.get(target, prop, target);
+
+      if (boundMethodCache.has(prop))
+        return boundMethodCache.get(prop);
+
       const val = Reflect.get(target, prop, target);
-      if (typeof val === 'function') return val.bind(target);
+      if (typeof val === 'function') {
+        const bound = val.bind(target);
+        boundMethodCache.set(prop, bound);
+        return bound;
+      }
       return val;
     },
     has(target, prop) {
@@ -61,12 +73,29 @@ export async function fetchFromProvider(
   str: string,
   contextString: string,
   isDebug: boolean,
-  parentSignal?: AbortSignal
+  parentSignal?: AbortSignal,
+  timeoutOverride?: number,
+  customSystemPrompt?: string
 ): Promise<{ rawContent: string; providerId: string; rateLimits: ReturnType<typeof updateRateLimitsFromResponse> }> {
   const url = provider.url!;
   const model = provider.model!;
 
-  const systemPrompt = `You are a high-performance date parser. Read the user's string and the provided context. Return ONLY a valid JSON object matching this exact schema:
+  if (!url || typeof url !== 'string')
+    throw new TempoAiError(`Provider ${provider.id} missing valid endpoint URL.`, 400);
+
+  if (!model || typeof model !== 'string')
+    throw new TempoAiError(`Provider ${provider.id} missing valid model identifier.`, 400);
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')))
+      throw new TempoAiError(`Provider ${provider.id} endpoint URL '${url}' must use secure HTTPS protocol.`, 400);
+  } catch (err: any) {
+    if (err instanceof TempoAiError) throw err;
+    throw new TempoAiError(`Provider ${provider.id} has invalid endpoint URL '${url}'.`, 400);
+  }
+
+  const defaultSystemPrompt = `You are a high-performance date parser. Read the user's string and the provided context. Return ONLY a valid JSON object matching this exact schema:
 {
   "reasoning": "Step-by-step calendar math from Current Time.",
   "iso": "Local ISO 8601 string (YYYY-MM-DDThh:mm:ss) without offset or Z suffix, or 'INVALID' if ambiguous/unparseable.",
@@ -84,68 +113,79 @@ Ambiguity Rules:
 
 Do not include markdown blocks or any text outside the JSON.`;
 
-  if (isDebug)
-    console.log(`[tempo-plugin-ai] Sending to ${provider.id}:`, { system: `${systemPrompt}\n${contextString}`, user: str });
+  const systemPrompt = customSystemPrompt ?? defaultSystemPrompt;
 
-  const tokenParam = provider.tokenParam
-    || (provider.options?.max_completion_tokens !== undefined ? 'max_completion_tokens' : undefined)
-    || (provider.options?.max_tokens !== undefined ? 'max_tokens' : undefined)
-    || 'max_tokens';
-  const tokenLimit = { [tokenParam]: 250 };
+	if (isDebug)
+		console.log(`[tempo-plugin-ai] Querying provider '${provider.id}' (model: ${model})...`);
 
-  const controller = new AbortController();
-  const timeoutMs = provider.options?.timeout ?? 15000;
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+	const tokenParam = provider.tokenParam
+		|| (provider.options?.max_completion_tokens !== undefined ? 'max_completion_tokens' : undefined)
+		|| (provider.options?.max_tokens !== undefined ? 'max_tokens' : undefined)
+		|| 'max_tokens';
+	const tokenLimit = { [tokenParam]: 250 };
 
-  const onParentAbort = () => controller.abort();
-  if (parentSignal) {
-    if (parentSignal.aborted) controller.abort();
-    else parentSignal.addEventListener('abort', onParentAbort);
-  }
+	const { timeout: _unusedTimeout, ...bodyOptions } = provider.options ?? {};
+	const controller = new AbortController();
+	const timeoutMs = timeoutOverride ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${provider.key}`
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: 'system', content: `${systemPrompt}\n${contextString}` },
-          { role: 'user', content: str }
-        ],
-        temperature: 0,
-        ...tokenLimit,
-        response_format: { type: 'json_object' },
-        ...provider.options
-      }),
-      signal: controller.signal
-    });
+	const onParentAbort = () => controller.abort();
+	if (parentSignal) {
+		if (parentSignal.aborted) controller.abort();
+		else parentSignal.addEventListener('abort', onParentAbort);
+	}
 
-    const limits = updateRateLimitsFromResponse(response);
+	const startTime = performance.now();
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      const resetTime = limits?.resetAt ?? undefined;
-      _state.limits = limits;
-      throw new TempoAiError(`Provider ${provider.id} failed with status ${response.status}. Details: ${errorText}`, response.status, resetTime);
-    }
+	try {
+		const response = await fetch(url, {
+			method: 'POST',
+			redirect: 'error',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${provider.key}`
+			},
+			body: JSON.stringify({
+				model: model,
+				messages: [
+					{ role: 'system', content: `${systemPrompt}\n${contextString}` },
+					{ role: 'user', content: str }
+				],
+				temperature: 0,
+				...tokenLimit,
+				response_format: { type: 'json_object' },
+				...bodyOptions
+			}),
+			signal: controller.signal
+		});
 
-    const data = await response.json();
-    const rawContent = data?.choices?.[0]?.message?.content;
-    if (typeof rawContent !== 'string')
-      throw new TempoAiError(`Provider ${provider.id} returned invalid response payload.`, 422);
+		const limits = updateRateLimitsFromResponse(response);
+		if (limits)
+			_state.providerLimits.set(provider.id, limits);
 
-    if (isDebug)
-      console.log(`[tempo-plugin-ai] Received from ${provider.id}:`, rawContent);
+		if (!response.ok) {
+			const errorText = await response.text();
+			const boundedError = errorText.length > 500 ? `${errorText.slice(0, 500)}... (truncated)` : errorText;
+			const resetTime = limits?.resetAt ?? undefined;
+			_state.limits = limits;
+			throw new TempoAiError(`Provider ${provider.id} failed with status ${response.status}. Details: ${boundedError}`, response.status, resetTime);
+		}
 
-    return { rawContent: rawContent.trim(), providerId: provider.id, rateLimits: limits };
-  } finally {
-    clearTimeout(timeoutId);
-    if (parentSignal) {
-      parentSignal.removeEventListener('abort', onParentAbort);
-    }
-  }
+		const data = await response.json();
+		const rawContent = data?.choices?.[0]?.message?.content;
+		if (typeof rawContent !== 'string')
+			throw new TempoAiError(`Provider ${provider.id} returned invalid response payload.`, 422);
+
+		if (isDebug) {
+			const elapsed = Math.round(performance.now() - startTime);
+			console.log(`[tempo-plugin-ai] Received response from '${provider.id}' in ${elapsed}ms`);
+		}
+
+		return { rawContent: rawContent.trim(), providerId: provider.id, rateLimits: limits };
+	} finally {
+		clearTimeout(timeoutId);
+		if (parentSignal) {
+			parentSignal.removeEventListener('abort', onParentAbort);
+		}
+	}
 }

@@ -101,20 +101,18 @@ function replacer(key: string, obj: any): any { return isEmpty(key) ? obj : stri
 function reviver(_key: string, val: any): any { return decode(val) }
 
 // safe-characters [sp " ; < > [ ] ^ { | }]
-const safeList = ['20', '22', '3B', '3C', '3E', '5B', '5D', '5E', '7B', '7C', '7D'];
+const SAFE_URI_MAP: Record<string, string> = {
+	'%20': ' ', '%22': '"', '%3B': ';', '%3C': '<', '%3E': '>',
+	'%5B': '[', '%5D': ']', '%5E': '^', '%7B': '{', '%7C': '|', '%7D': '}',
+} as const;
+const RE_SAFE_URI_CODES = new RegExp(Object.keys(SAFE_URI_MAP).join('|'), 'gi');
 
 /** encode control characters, then replace a safe-subset back to text-string */
 function encode(val: string) {
 	let enc = encodeURI(val);
 
-	if (enc.includes('%')) {																	// if an encoded URI might be in string
-		safeList.forEach(code => {
-			const uri = '%' + code;
-			const reg = new RegExp(uri, 'g');
-
-			enc = enc.replace(reg, decodeURI(uri));
-		})
-	}
+	if (enc.includes('%'))
+		enc = enc.replace(RE_SAFE_URI_CODES, match => SAFE_URI_MAP[match.toUpperCase()] ?? decodeURI(match));
 
 	return enc;
 }

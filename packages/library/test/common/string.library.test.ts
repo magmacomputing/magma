@@ -1,4 +1,4 @@
-import { makeTemplate } from '#library/string.library.js';
+import { makeTemplate, sprintf } from '#library/string.library.js';
 
 describe('String Library', () => {
 	describe('makeTemplate', () => {
@@ -36,6 +36,21 @@ describe('String Library', () => {
 			const template = 12345;
 			const result = makeTemplate(template as any)({});
 			expect(result).toBe('12345');
+		});
+	});
+
+	describe('sprintf', () => {
+		it('should substitute multi-digit parameter markers like ${10} when 11 or more arguments are passed', () => {
+			const args = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven'];
+			const format = '%s %s %s %s %s %s %s %s %s %s %s %s';
+			const result = sprintf(format, ...args);
+			expect(result).toBe('zero one two three four five six seven eight nine ten eleven');
+
+			const explicitMarkerResult = sprintf('${10} and ${0}', ...args);
+			expect(explicitMarkerResult).toBe('ten and zero, one, two, three, four, five, six, seven, eight, nine, eleven');
+
+			const allExplicitResult = sprintf('${0} - ${10}', 'arg0', 'arg1', 'arg2', 'arg3', 'arg4', 'arg5', 'arg6', 'arg7', 'arg8', 'arg9', 'arg10');
+			expect(allExplicitResult).toBe('arg0 - arg10, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9');
 		});
 	});
 });

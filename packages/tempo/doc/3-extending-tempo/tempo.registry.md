@@ -35,22 +35,21 @@ Tempo.extend({
 
 ## 📅 TIMEZONE Registry
 
-Tempo includes a built-in registry of common timezone abbreviations. **These aliases map to DST-aware regional IANA zones, not fixed UTC offsets.** For example, `gmt` maps to `Europe/London` and `est` maps to `America/New_York`, which means they will automatically adjust to British Summer Time (BST) or Eastern Daylight Time (EDT) seasonally. If your application strictly requires a literal fixed offset (e.g., standard EST year-round), you should use an appropriate fixed-offset zone instead of these regional aliases.
+Tempo includes a built-in registry of common timezone abbreviations. **Most regional aliases map to DST-aware regional IANA zones, not fixed UTC offsets.** For example, both `est` and `edt` map to `America/New_York`, which means dates parsed during summer months will automatically adjust to Eastern Daylight Time (`-04:00`), whereas `gmt` and `utc` map to fixed `UTC` (`+00:00`). If your application requires a constant, non-shifting offset year-round (e.g. strict UTC-5 without Daylight Saving adjustments), use an explicit fixed offset like `"-05:00"` or `'Etc/GMT+5'` instead of a regional abbreviation.
 
 | Alias | IANA Identifier |
 | :--- | :--- |
-| `utc` | `UTC` |
-| `gmt` | `Europe/London` |
-| `est` | `America/New_York` |
-| `cst` | `America/Chicago` |
-| `mst` | `America/Denver` |
-| `pst` | `America/Los_Angeles` |
-| `aest` | `Australia/Sydney` |
-| `acst` | `Australia/Adelaide` |
+| `utc`/ `gmt` | `UTC` |
+| `est` / `edt` | `America/New_York` |
+| `cst` / `cdt` | `America/Chicago` |
+| `mst` / `mdt` | `America/Denver` |
+| `pst` / `pdt` | `America/Los_Angeles` |
+| `aest` / `aedt` | `Australia/Sydney` |
+| `acst` / `acdt` | `Australia/Adelaide` |
 | `awst` | `Australia/Perth` |
-| `nzt` | `Pacific/Auckland` |
-| `cet` | `Europe/Paris` |
-| `eet` | `Europe/Helsinki` |
+| `nzt` / `nzst` / `nzdt` | `Pacific/Auckland` |
+| `cet` / `cest` | `Europe/Paris` |
+| `eet` / `eest` | `Europe/Helsinki` |
 | `ist` | `Asia/Kolkata` |
 | `npt` | `Asia/Kathmandu` |
 | `jst` | `Asia/Tokyo` |

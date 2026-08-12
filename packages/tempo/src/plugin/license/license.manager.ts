@@ -194,8 +194,9 @@ export function warnIfExpiringSoon(license: Internal.LicenseState, config: any):
 }
 
 export function validateLicenseState(license: Internal.LicenseState, jws: Pledge<Internal.ValidationResult>) {
+	const runtime = getRuntime();
 	import('#tempo/license')
-		.then(m => new m.Validator(license.key!).verify())
+		.then(m => new m.Validator(license.key!, runtime.state?.config).verify())
 		.then(res => jws.resolve(res))
 		.catch(err => {
 			if (license.jws === jws)

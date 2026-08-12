@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-08-05T00:00:00Z",
+  "providers": {
+    "groq": {
+      "url": "https://api.groq.com/openai/v1/chat/completions",
+      "model": "openai/gpt-oss-120b",
+      "tokenParam": "max_tokens"
+    },
+    "openai": {
+      "url": "https://api.openai.com/v1/chat/completions",
+      "model": "gpt-5.4-mini",
+      "tokenParam": "max_completion_tokens"
+    },
+    "gemini": {
+      "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      "model": "gemini-3.6-flash",
+      "tokenParam": "max_tokens"
+    },
+    "mistral": {
+      "url": "https://api.mistral.ai/v1/chat/completions",
+      "model": "mistral-small-latest",
+      "tokenParam": "max_tokens"
+    }
+  }
+}

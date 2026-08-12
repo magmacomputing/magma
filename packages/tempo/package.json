@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.11.0",
+  "version": "3.11.1",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -120,100 +120,124 @@
   "exports": {
     ".": {
       "types": "./dist/tempo.index.d.ts",
-      "import": "./dist/tempo.index.js"
+      "import": "./dist/tempo.index.js",
+      "default": "./dist/tempo.index.js"
     },
     "./enums": {
       "types": "./dist/support/support.enum.d.ts",
-      "import": "./dist/support/support.enum.js"
+      "import": "./dist/support/support.enum.js",
+      "default": "./dist/support/support.enum.js"
     },
     "./extend/*": {
       "types": "./dist/plugin/extend/extend.*.d.ts",
-      "import": "./dist/plugin/extend/extend.*.js"
+      "import": "./dist/plugin/extend/extend.*.js",
+      "default": "./dist/plugin/extend/extend.*.js"
     },
     "./module/*": {
       "types": "./dist/module/module.*.d.ts",
-      "import": "./dist/module/module.*.js"
+      "import": "./dist/module/module.*.js",
+      "default": "./dist/module/module.*.js"
     },
     "./term/*": {
       "types": "./dist/plugin/term/term.*.d.ts",
-      "import": "./dist/plugin/term/term.*.js"
+      "import": "./dist/plugin/term/term.*.js",
+      "default": "./dist/plugin/term/term.*.js"
     },
     "./term/standard": {
       "types": "./dist/term/index.d.ts",
-      "import": "./dist/term/index.js"
+      "import": "./dist/term/index.js",
+      "default": "./dist/term/index.js"
     },
     "./term/quarter": {
       "types": "./dist/term/term.quarter.d.ts",
-      "import": "./dist/term/term.quarter.js"
+      "import": "./dist/term/term.quarter.js",
+      "default": "./dist/term/term.quarter.js"
     },
     "./term/season": {
       "types": "./dist/term/term.season.d.ts",
-      "import": "./dist/term/term.season.js"
+      "import": "./dist/term/term.season.js",
+      "default": "./dist/term/term.season.js"
     },
     "./term/zodiac": {
       "types": "./dist/term/term.zodiac.d.ts",
-      "import": "./dist/term/term.zodiac.js"
+      "import": "./dist/term/term.zodiac.js",
+      "default": "./dist/term/term.zodiac.js"
     },
     "./term/timeline": {
       "types": "./dist/term/term.timeline.d.ts",
-      "import": "./dist/term/term.timeline.js"
+      "import": "./dist/term/term.timeline.js",
+      "default": "./dist/term/term.timeline.js"
     },
     "./plugin": {
       "types": "./dist/plugin/plugin.index.d.ts",
-      "import": "./dist/plugin/plugin.index.js"
+      "import": "./dist/plugin/plugin.index.js",
+      "default": "./dist/plugin/plugin.index.js"
     },
     "./plugin/*": {
       "types": "./dist/plugin/*.d.ts",
-      "import": "./dist/plugin/*.js"
+      "import": "./dist/plugin/*.js",
+      "default": "./dist/plugin/*.js"
     },
     "./duration": {
       "types": "./dist/module/module.duration.d.ts",
-      "import": "./dist/module/module.duration.js"
+      "import": "./dist/module/module.duration.js",
+      "default": "./dist/module/module.duration.js"
     },
     "./mutate": {
       "types": "./dist/module/module.mutate.d.ts",
-      "import": "./dist/module/module.mutate.js"
+      "import": "./dist/module/module.mutate.js",
+      "default": "./dist/module/module.mutate.js"
     },
     "./format": {
       "types": "./dist/module/module.format.d.ts",
-      "import": "./dist/module/module.format.js"
+      "import": "./dist/module/module.format.js",
+      "default": "./dist/module/module.format.js"
     },
     "./ticker": {
       "types": "./dist/plugin/extend/extend.ticker.d.ts",
-      "import": "./dist/plugin/extend/extend.ticker.js"
+      "import": "./dist/plugin/extend/extend.ticker.js",
+      "default": "./dist/plugin/extend/extend.ticker.js"
     },
     "./parse": {
       "types": "./dist/module/module.parse.d.ts",
-      "import": "./dist/module/module.parse.js"
+      "import": "./dist/module/module.parse.js",
+      "default": "./dist/module/module.parse.js"
     },
     "./library": {
       "types": "./dist/library.index.d.ts",
-      "import": "./dist/library.index.js"
+      "import": "./dist/library.index.js",
+      "default": "./dist/library.index.js"
     },
     "./core": {
       "types": "./dist/core.index.d.ts",
-      "import": "./dist/core.index.js"
+      "import": "./dist/core.index.js",
+      "default": "./dist/core.index.js"
     },
     "./term": {
       "types": "./dist/plugin/term/term.index.d.ts",
-      "import": "./dist/plugin/term/term.index.js"
+      "import": "./dist/plugin/term/term.index.js",
+      "default": "./dist/plugin/term/term.index.js"
     },
     "./bundle": {
       "types": "./dist/tempo.index.d.ts",
-      "import": "./dist/tempo.bundle.esm.js"
+      "import": "./dist/tempo.bundle.esm.js",
+      "default": "./dist/tempo.bundle.esm.js"
     },
     "./global": {
       "types": "./dist/tempo.index.d.ts",
       "import": "./dist/tempo.bundle.js",
-      "script": "./dist/tempo.bundle.js"
+      "script": "./dist/tempo.bundle.js",
+      "default": "./dist/tempo.bundle.js"
     },
     "./plugin-api": {
       "types": "./dist/plugin-api.index.d.ts",
-      "import": "./dist/plugin-api.index.js"
+      "import": "./dist/plugin-api.index.js",
+      "default": "./dist/plugin-api.index.js"
     },
     "./support": {
       "types": "./dist/support/support.index.d.ts",
-      "import": "./dist/support/support.index.js"
+      "import": "./dist/support/support.index.js",
+      "default": "./dist/support/support.index.js"
     }
   },
   "scripts": {
@@ -234,9 +258,9 @@
     "prebuild": "npm run build:version",
     "clean": "magma-cli rm dist && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && if [ -z \"$TEMPO_LICENSE_PATH\" ] || [ ! -f \"$TEMPO_LICENSE_PATH\" ]; then echo '🚨 ERROR: TEMPO_LICENSE_PATH is missing or invalid. Cannot publish Premium build.'; exit 1; fi && npm run build",
-    "docs:api": "typedoc && typedoc --options typedoc.library.json",
-    "docs:dev": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && vitepress dev",
-    "docs:build": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && vitepress build",
+    "docs:api": "typedoc && typedoc --options typedoc.library.json && node bin/expand-typedoc.mjs",
+    "docs:dev": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress dev",
+    "docs:build": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress build",
     "docs:preview": "vitepress preview",
     "docs:push": "bash ./bin/push-docs.sh"
   },
@@ -260,9 +284,11 @@
     "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^12.3.0",
     "javascript-obfuscator": "^5.4.3",
-    "magic-string": "^0.30.21",
+    "magic-string": "^1.1.1",
+    "mermaid": "^11.16.1",
     "typedoc": "^0.28.19",
-    "vitepress": "^1.6.4"
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17"
   },
   "directories": {
     "doc": "doc",

@@ -124,7 +124,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 			}
 
 			const val = Reflect.get(t, k, r);
-			if (bind && isFunction(val)) {
+			if (bind && k !== 'constructor' && isFunction(val)) {
 				const desc = Object.getOwnPropertyDescriptor(t, k);
 				if (desc && !desc.configurable && !desc.writable) return val;
 				let perTargetCache = boundMethodCache.get(val);

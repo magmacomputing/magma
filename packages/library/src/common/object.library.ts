@@ -3,6 +3,9 @@ import { isObject, isArray, isFunction, isDefined, isNullish, isMap, isSet } fro
 import { getType } from '#library/type.library.js';
 import type { Extend, Property } from '#library/type.library.js';
 
+const RE_UNQUOTE_PROP = /"([^"]+)":/g;
+const RE_COMMA = /,/g;
+
 /**
  * Serializes an object to JSON and removes quotes around property names.
  * Useful for generating loosely formatted string representations of objects.
@@ -16,8 +19,8 @@ import type { Extend, Property } from '#library/type.library.js';
  */
 export const unQuoteObj = (obj: any) => {
 	return JSON.stringify(obj)
-		?.replace(/"([^"]+)":/g, '$1: ')
-		?.replace(/,/g, ', ')
+		?.replace(RE_UNQUOTE_PROP, '$1: ')
+		?.replace(RE_COMMA, ', ')
 }
 
 /**

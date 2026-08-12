@@ -4,7 +4,16 @@ import { keys } from './cipher.library.js';
 
 const logger = new Logger('WebToken');
 
-const formatBase64Url = (base64: string) => base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+const RE_PLUS = /\+/g;
+const RE_SLASH = /\//g;
+const RE_EQUALS = /=/g;
+const RE_DASH = /-/g;
+const RE_UNDERSCORE = /_/g;
+
+const formatBase64Url = (base64: string) => base64
+	.replace(RE_PLUS, '-')
+	.replace(RE_SLASH, '_')
+	.replace(RE_EQUALS, '');
 const toBase64Url = (str: string) => formatBase64Url(bufferToBase64(encodeBuffer(str)));
 const bufToBase64Url = (buf: Uint8Array) => formatBase64Url(bufferToBase64(buf));
 
@@ -27,7 +36,10 @@ export const decodeJWT = <T = any>(jwt: string): T | null => {
 		if (!part) return null;
 
 		// 🛡️ Base64URL Normalization: replace -/_ with +/ and add padding
-		const base64 = part.replace(/-/g, '+').replace(/_/g, '/').padEnd(part.length + (4 - part.length % 4) % 4, '=');
+		const base64 = part
+			.replace(RE_DASH, '+')
+			.replace(RE_UNDERSCORE, '/')
+			.padEnd(part.length + (4 - part.length % 4) % 4, '=');
 		const bytes = base64ToBuffer(base64);
 		const payload = decodeBuffer(bytes);
 
@@ -52,8 +64,8 @@ export const verifyJWS = async (token: string, publicKey: CryptoKey): Promise<bo
 
 		// Base64url to Base64 normalization
 		const signatureBase64 = signatureBase64url
-			.replace(/-/g, '+')
-			.replace(/_/g, '/')
+			.replace(RE_DASH, '+')
+			.replace(RE_UNDERSCORE, '/')
 			.padEnd(signatureBase64url.length + (4 - signatureBase64url.length % 4) % 4, '=');
 		const signatureBytes = base64ToBuffer(signatureBase64);
 

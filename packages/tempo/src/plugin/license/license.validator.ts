@@ -10,8 +10,8 @@ import { sym } from '../../support/support.symbol.js';
  */
 
 export class Validator {
-	constructor(public key: string) {
-		logWarn('Tempo Community Edition: License keys are ignored. Premium plugins cannot be validated without the cryptographic engine.');
+	constructor(public key: string, public config?: any) {
+		logWarn('Tempo Community Edition: License keys are ignored. Premium plugins cannot be validated without the cryptographic engine.', config);
 	}
 
 	async verify() {

@@ -121,6 +121,8 @@ export function ownValues<T extends Obj>(json: T, all = false): ValueOf<T>[] {
 	return ownEntries(json, all).map(([_, value]) => value as ValueOf<T>);
 }
 
+const RE_BRACKET_PATH = /\[([^\[\]]*)\]/g;
+
 /**
  * Gets a nested value from an object using dot or bracket notation.
  * 
@@ -139,7 +141,7 @@ export function extract<T>(obj: any, path: string | number, dflt?: T): T {
 
 	return path
 		.toString()
-		.replace(/\[([^\[\]]*)\]/g, '.$1.')
+		.replace(RE_BRACKET_PATH, '.$1.')
 		.split('.')
 		.filter(field => field.length > 0)
 		.reduce((acc, field) => acc?.[field] ?? null, obj) ?? dflt;

@@ -92,17 +92,20 @@ Modern Tempo plugins are designed to be "plug-and-play." By using the `definePlu
 :::
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ticker';         // 1. Module self-registers via side-effect
-import { Tempo } from '@magmacomputing/tempo/core';   // 2. Load the `lite` engine
+import { Tempo } from '@magmacomputing/tempo/core';   // 1. Load the `lite` engine
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker'; // 2. Import the plugin
 
-Tempo.init({ license: 'YOUR_JWT_KEY' });              // 3. Discover, verify, and activate all imported plugins
+Tempo.init({ 
+  license: 'YOUR_JWT_KEY',
+  plugins: [TickerPlugin]                             // 3. Register and activate plugin during init
+});
 
 // Ticker is now available on the core Tempo class!
 const pulse = Tempo.ticker(1); 
 ```
 
-> [!NOTE] Import Order
-> While older versions of Tempo were sensitive to import order, current versions handle sequencing robustly. `Tempo.init()` is automatically called during bootstrap to ensure all discovered plugins are integrated. If you dynamically load plugins later, you can call `Tempo.init()` manually to refresh the registry.
+> [!NOTE] Dynamic Extension vs Startup Registration
+> `Tempo.init({ plugins: [...] })` establishes baseline configuration at startup and performs initial registration of plugins. In full Tempo (`@magmacomputing/tempo`), standard plugins are registered automatically upon import. To dynamically register custom plugins loaded later at runtime, use `Tempo.extend(Plugin)` directly rather than re-running `Tempo.init()`.
 
 ---
 
@@ -141,21 +144,21 @@ if (errorCondition) {
 
 This pattern ensures that Tempo remains robust in production environments while providing strict validation during development.
 
-## Alternative: Standalone Functions (`functions`)
+## Alternative: Standalone Functions (`tempo-fns`)
 
 The JavaScript ecosystem is divided between two architectural preferences: **Chained Fluent APIs** (like Tempo Plugins) and **Pure Standalone Functions** (for aggressive tree-shaking).
 
-To support teams that mandate strict 0kb bundle-impacts and functional programming paradigms, Magma Computing provides the **`@magmacomputing/functions`** library.
+To support teams that mandate strict 0kb bundle-impacts and functional programming paradigms, Magma Computing provides the **`@magmacomputing/tempo-fns`** library.
 
 ```typescript
 // The Pure, Tree-shakeable approach:
-import { isFirstDayOfMonth } from '@magmacomputing/functions';
+import { isFirstDayOfMonth } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo/core';
 
 if (isFirstDayOfMonth(new Tempo('2024-01-01'))) { ... }
 ```
 
-When building complex logic, consider whether it belongs as a core Plugin extension, or as a standalone utility in `functions` (or a hybrid wrapper of both!).
+When building complex logic, consider whether it belongs as a core Plugin extension, or as a standalone utility in `tempo-fns` (or a hybrid wrapper of both!).
 
 ## Distributing Your Plugin
 

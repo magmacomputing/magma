@@ -198,6 +198,15 @@ export type OneKey<K extends keyof any, V, KK extends keyof any = K> =
 export type Prettify<T> = { [K in keyof T]: T[K]; } & {}
 export type ParseInt<T> = T extends `${infer N extends number}` ? N : never
 export type Plural<T extends string> = `${T}s`;
+export type Singular<T extends string> = T extends `${infer S}s`
+	? T extends MinLength<T, 4>
+	? S
+	: T
+	: T;
+export type SingularUnit<T extends string> = Singular<T>;
+
+// Compile-time test cases to verify singular behavior
+export type AssertEqual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 
 type toName<T extends Primitive> =
 	T extends string ? "String" :

@@ -1,8 +1,18 @@
 # .coderabbit.yaml
 reviews:
+  auto_review:
+    enabled: true
+    auto_pause_after_reviewed_commits: 0
   auto_title_instructions: "Generate a concise PR title that starts with a conventional commit type (feat, fix, chore, etc.) followed by a short imperative description of the change."
   path_filters:
     # Use "! " at the start of a pattern to EXCLUDE it from the review
+    - "!package-lock.json"        # Ignore npm lockfile
+    - "!**/package-lock.json"     # Ignore nested package lockfiles
+    - "!**/*.svg"                 # Ignore SVG graphics and logos
+    - "!**/public/*.html"         # Ignore HTML bundles and demo scripts
+    - "!**/public/llms*.txt"      # Ignore LLM context bundles
+    - "!**/llms*.txt"             # Ignore root or nested LLM context files
+    - "!**/public/providers.v1.json" # Ignore static provider definitions
     - "!**/doc/api/**"            # Ignore ONLY the generated TypeDoc API documentation
     - "!**/docs/**"               # Ignore other generated documentation artifacts
     - "!**/.vitepress/cache/**"   # Ignore VitePress cache

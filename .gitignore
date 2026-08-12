@@ -51,6 +51,8 @@ Thumbs.db
 **/doc/api/
 **/public/api/
 **/doc/9-plugins/
+**/public/llms-full.txt
+**/llms-full.txt
 # Secrets and credentials
 .env
 .env.*

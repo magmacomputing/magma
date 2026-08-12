@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/library",
-  "version": "3.11.0",
+  "version": "3.11.1",
   "description": "Shared utility library for Tempo",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -26,7 +26,8 @@
     ".": {
       "types": "./dist/common.index.d.ts",
       "development": "./src/common.index.ts",
-      "import": "./dist/common.index.js"
+      "import": "./dist/common.index.js",
+      "default": "./dist/common.index.js"
     },
     "./browser": {
       "types": "./dist/browser.index.d.ts",

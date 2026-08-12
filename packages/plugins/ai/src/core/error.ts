@@ -22,6 +22,10 @@ export class TempoAiError extends Error {
     return this.#code;
   }
 
+  get status(): number {
+    return this.#code;
+  }
+
   get retryAt(): Tempo | undefined {
     return this.#retryAt;
   }

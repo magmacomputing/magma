@@ -1,19 +1,25 @@
-import { parseAI, initAI, clearAiCache, getAiRateLimits, TempoAiError, AiMode } from '../src/index.js';
+import { parseAI, initAI, clearAiCache, getAiRateLimits, getAiConfig, TempoAiError, AiMode } from '../src/index.js';
 import { BoundedCache } from '@magmacomputing/tempo/support';
 import { Tempo } from '@magmacomputing/tempo';
 
-describe('AI Parsing Plugin', () => {
+describe('AI Parsing Plugin (parseAI)', () => {
 	const liveApiKey = process.env.GROQ_API_KEY ?? process.env.OPENAI_API_KEY;
 	const liveProviderId = process.env.GROQ_API_KEY ? 'groq' : 'openai';
 	const isLiveTest = Boolean(process.env.LIVE_AI_TEST && liveApiKey);
 
-	beforeEach(() => {
+	beforeEach(async () => {
+		vi.spyOn(console, 'warn').mockImplementation(() => {});
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+		vi.spyOn(console, 'log').mockImplementation(() => {});
+
 		if (isLiveTest) {
-			initAI({
+			return initAI({
+				remoteConfigUrl: false,
 				providers: [{ id: liveProviderId, key: liveApiKey! }]
 			});
 		} else {
-			initAI({
+			return initAI({
+				remoteConfigUrl: false,
 				providers: [{ id: 'groq', key: 'mock-key-for-unit-testing' }]
 			});
 		}
@@ -21,6 +27,26 @@ describe('AI Parsing Plugin', () => {
 
 	afterEach(() => {
 		vi.restoreAllMocks();
+	});
+
+	it('should return current runtime configuration via getAiConfig', async () => {
+		await initAI({
+			remoteConfigUrl: false,
+			providers: [{ id: 'groq', key: 'test-key-123' }],
+			mode: AiMode.Fallback,
+			timeout: 3000,
+			debug: true
+		});
+
+		const config = getAiConfig();
+		expect(config).toBeDefined();
+		expect(config.mode).toBe('fallback');
+		expect(config.timeout).toBe(3000);
+		expect(config.debug).toBe(true);
+		expect(config.providers).toHaveLength(1);
+		expect(config.providers?.[0].id).toBe('groq');
+		expect(config.providers?.[0].key).toBe('[REDACTED]');
+		expect(config.providers?.[0].model).toBe('llama-3.3-70b-versatile');
 	});
 
 	it('should fall back to native parsing first and attach .ai metadata', async () => {
@@ -35,12 +61,13 @@ describe('AI Parsing Plugin', () => {
 	});
 
 	it('should throw TempoAiError if reserved provider ID "native" or "cache" is used in initAI', () => {
-		expect(() => initAI({ providers: [{ id: 'native', key: '123' }] })).toThrow(TempoAiError);
-		expect(() => initAI({ providers: [{ id: 'cache', key: '123' }] })).toThrow(TempoAiError);
+		expect(() => initAI({ remoteConfigUrl: false, providers: [{ id: 'native', key: '123' }] })).toThrow(TempoAiError);
+		expect(() => initAI({ remoteConfigUrl: false, providers: [{ id: 'cache', key: '123' }] })).toThrow(TempoAiError);
 	});
 
 	it('should canonicalize Gemini provider ID and use gemini-3.6-flash model by default', async () => {
-		initAI({
+		await initAI({
+			remoteConfigUrl: false,
 			providers: [{ id: 'Gemini', key: 'mock-gemini-key' }]
 		});
 		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
@@ -54,9 +81,21 @@ describe('AI Parsing Plugin', () => {
 	});
 
 	it('should throw TempoAiError if no key is configured and AI is needed', async () => {
-		initAI({ providers: [] });
+		await initAI({ remoteConfigUrl: false, providers: [] });
 		await expect(parseAI('Next Thanksgiving')).rejects.toThrow(TempoAiError);
 		await expect(parseAI('Next Thanksgiving')).rejects.toThrow('No AI providers configured.');
+	});
+
+	it('should throw TempoAiError with status 400 if an invalid mode is specified in parseAI', async () => {
+		await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
+		try {
+			await parseAI('Next Thanksgiving', { mode: 'invalid-mode' as any, force: true });
+			expect.unreachable('Should have thrown TempoAiError');
+		} catch (err: any) {
+			expect(err).toBeInstanceOf(TempoAiError);
+			expect(err.code).toBe(400);
+			expect(err.message).toContain("Invalid execution mode: 'invalid-mode'");
+		}
 	});
 
 	it('should parse natural language successfully and attach secured .ai metadata', async () => {
@@ -76,6 +115,9 @@ describe('AI Parsing Plugin', () => {
 		const result = await parseAI('The Friday after Thanksgiving', { anchor: anchorDate, timeZone: 'UTC', force: true });
 
 		expect(result).toBeInstanceOf(Tempo);
+		expect(result.constructor).toBe(Tempo);
+		const formatRef = result.format;
+		expect(result.format).toBe(formatRef);
 		expect(result.isValid).toBe(true);
 		expect(result.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-27');
 
@@ -167,7 +209,8 @@ describe('AI Parsing Plugin', () => {
 	});
 
 	it('should cascade from low-confidence local provider to high-confidence online provider in Fallback mode', async () => {
-		initAI({
+		await initAI({
+			remoteConfigUrl: false,
 			providers: [
 				{ id: 'local-llm', key: 'key1', url: 'https://api.openai.com/v1/chat', model: 'local' },
 				{ id: 'cloud-llm', key: 'key2', url: 'https://api.openai.com/v1/chat', model: 'cloud' }
@@ -175,11 +218,9 @@ describe('AI Parsing Plugin', () => {
 		});
 
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
-		// Provider 1 (local-llm): Low confidence (0.4)
 		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 			choices: [{ message: { content: '{"reasoning":"Uncertain local guess", "iso":"2026-11-26T00:00:00", "confidence":0.4}' } }]
 		}), { status: 200 }));
-		// Provider 2 (cloud-llm): High confidence (0.95)
 		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 			choices: [{ message: { content: '{"reasoning":"High confidence cloud result", "iso":"2026-11-26T00:00:00", "confidence":0.95}' } }]
 		}), { status: 200 }));
@@ -193,7 +234,8 @@ describe('AI Parsing Plugin', () => {
 	});
 
 	it('should short-circuit and stop looking to other providers when a provider meets minConfidence', async () => {
-		initAI({
+		await initAI({
+			remoteConfigUrl: false,
 			providers: [
 				{ id: 'local-llm', key: 'key1', url: 'https://api.openai.com/v1/chat', model: 'local' },
 				{ id: 'cloud-llm', key: 'key2', url: 'https://api.openai.com/v1/chat', model: 'cloud' }
@@ -201,7 +243,6 @@ describe('AI Parsing Plugin', () => {
 		});
 
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
-		// Provider 1 (local-llm): High confidence (0.90 >= 0.85) -> Short circuit!
 		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 			choices: [{ message: { content: '{"reasoning":"Confident local result", "iso":"2026-11-26T00:00:00", "confidence":0.90}' } }]
 		}), { status: 200 }));
@@ -238,16 +279,15 @@ describe('AI Parsing Plugin', () => {
 	});
 
 	it('should support softErrors in array batch processing', async () => {
-		initAI({
+		await initAI({
+			remoteConfigUrl: false,
 			providers: [{ id: 'groq', key: 'test-key' }]
 		});
 
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
-		// Item 1 succeeds
 		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 			choices: [{ message: { content: '{"reasoning":"Date 1", "iso":"2026-01-01T00:00:00", "confidence":0.99}' } }]
 		}), { status: 200 }));
-		// Item 2 fails with 500
 		fetchSpy.mockResolvedValueOnce(new Response(null, { status: 500, statusText: 'Internal Error' }));
 
 		const results = await parseAI(['Valid Date Prompt', 'Failing Prompt'], { force: true, softErrors: true });
@@ -270,7 +310,6 @@ describe('AI Parsing Plugin', () => {
 						choices: [{ message: { content: '{"reasoning":"Fast", "iso":"2026-06-01T00:00:00", "confidence":0.95}' } }]
 					}), { status: 200 });
 				}
-				// Slow model delays
 				await new Promise(resolve => setTimeout(resolve, 500));
 				return new Response(JSON.stringify({
 					choices: [{ message: { content: '{"reasoning":"Slow", "iso":"2026-06-01T00:00:00", "confidence":0.95}' } }]
@@ -318,7 +357,7 @@ describe('AI Parsing Plugin', () => {
 
 	describe('Mocked Network Failures', () => {
 		it('should throw TempoAiError with 401 when API key is bad, expired, or revoked', async () => {
-			initAI({ providers: [{ id: 'openai', key: 'bad_key' }] });
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'bad_key' }] });
 
 			vi.spyOn(global, 'fetch').mockResolvedValueOnce(new Response(null, {
 				status: 401,
@@ -336,7 +375,8 @@ describe('AI Parsing Plugin', () => {
 		});
 
 		it('should seamlessly fallback to the next provider if the first hits a 429 Exhausted Key rate limit', async () => {
-			initAI({
+			await initAI({
+				remoteConfigUrl: false,
 				providers: [
 					{ id: 'openai', key: 'exhausted_key' },
 					{ id: 'openai', key: 'good_key' }
@@ -370,6 +410,31 @@ describe('AI Parsing Plugin', () => {
 			const limits = getAiRateLimits();
 			expect(limits?.remainingTokens).toBe(5000);
 		});
+
+		it('should convert invalid JSON provider response into TempoAiError with status 422', async () => {
+			await initAI({
+				remoteConfigUrl: false,
+				providers: [{ id: 'openai', key: 'test-key' }]
+			});
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: 'not valid json at all {{' } }]
+			}), { status: 200 }));
+
+			await expect(parseAI('Thanksgiving', { force: true })).rejects.toThrowError(TempoAiError);
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: 'not valid json at all {{' } }]
+			}), { status: 200 }));
+
+			try {
+				await parseAI('Thanksgiving', { force: true });
+			} catch (err: any) {
+				expect(err.code).toBe(422);
+				expect(err.message).toContain('returned invalid JSON payload');
+			}
+		});
 	});
 
 	describe('BoundedCache & Eviction', () => {
@@ -398,24 +463,32 @@ describe('AI Parsing Plugin', () => {
 			expect(Array.from(cache.keys())).not.toContain('tempKey');
 		});
 
-		it('should preserve clearAiCache functionality', () => {
+		it('should preserve clearAiCache functionality', async () => {
 			const cache = new BoundedCache(100);
 			cache.set('Thanksgiving::2026-05-10', '2026-11-26T00:00:00Z');
 			cache.set('Christmas::2026-05-10', '2026-12-25T00:00:00Z');
 
-			initAI({ cache });
+			await initAI({ remoteConfigUrl: false, cache });
 			clearAiCache('Thanksgiving');
 
 			expect(cache.has('Thanksgiving::2026-05-10')).toBe(false);
 			expect(cache.has('Christmas::2026-05-10')).toBe(true);
 		});
 
-		it('should resolve static un-salted user glossary terms without hitting network or expiring', async () => {
+		it('should resolve static user glossary terms with context salt without hitting network or expiring', async () => {
+			const resolvedOptions = Tempo.options;
+			const tz = resolvedOptions.timeZone;
+			const cal = resolvedOptions.calendar;
+			const loc = Array.isArray(resolvedOptions.locale) ? resolvedOptions.locale[0] : resolvedOptions.locale;
+			const sph = resolvedOptions.sphere || 'north';
+			const cacheSalt = new Tempo().format('{yyyy}-{mm}-{dd}');
+			const cacheKey = `my_custom_company_glossary_term::${cacheSalt}::${tz}::${cal}::${loc}::${sph}`;
+
 			const glossary = new Map<string, string>([
-				['my_custom_company_glossary_term', '2026-11-01T00:00:00Z']
+				[cacheKey, '2026-11-01T00:00:00Z']
 			]);
 
-			initAI({ cache: glossary });
+			await initAI({ remoteConfigUrl: false, cache: glossary });
 
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
@@ -429,10 +502,9 @@ describe('AI Parsing Plugin', () => {
 
 	describe('Rate Limit & Reset Header Parsing Hardening', () => {
 		it('should correctly parse compound reset duration strings like 4m12s and 1h30m', async () => {
-			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-			// Response 1 with compound duration header '4m12s'
 			fetchSpy.mockResolvedValueOnce(new Response(null, {
 				status: 429,
 				statusText: 'Too Many Requests',
@@ -456,10 +528,9 @@ describe('AI Parsing Plugin', () => {
 		});
 
 		it('should replace rather than retain prior rate-limit state when subsequent response has no headers', async () => {
-			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
-			// Request 1: Has rate limit headers
 			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
 			}), {
@@ -472,7 +543,6 @@ describe('AI Parsing Plugin', () => {
 			await parseAI('Thanksgiving 2026', { force: true });
 			expect(getAiRateLimits()?.remainingTokens).toBe(5000);
 
-			// Request 2: Has NO rate limit headers
 			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 				choices: [{ message: { content: '{"iso":"2026-12-25T00:00:00"}' } }]
 			}), {
@@ -481,12 +551,11 @@ describe('AI Parsing Plugin', () => {
 
 			await parseAI('Christmas 2026', { force: true });
 
-			// State should now be null (replaced, not retained!)
 			expect(getAiRateLimits()).toBeNull();
 		});
 
 		it('should parse HTTP-date format Retry-After header strings into valid Tempo resetAt', async () => {
-			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
 			const httpDateStr = 'Wed, 21 Oct 2026 07:28:00 GMT';
@@ -504,8 +573,28 @@ describe('AI Parsing Plugin', () => {
 			expect(getAiRateLimits()?.resetAt?.isValid).toBe(true);
 		});
 
+		it('should attach limits snapshot directly to the returned Tempo instance .ai property', async () => {
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'groq', key: 'test-key' }] });
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), {
+				status: 200,
+				headers: new Headers({
+					'x-ratelimit-remaining-requests': '499',
+					'x-ratelimit-remaining-tokens': '99500'
+				})
+			}));
+
+			const result = await parseAI('Thanksgiving 2026', { force: true });
+			expect(result.ai?.limits).toBeDefined();
+			expect(result.ai?.limits?.remainingRequests).toBe(499);
+			expect(result.ai?.limits?.remainingTokens).toBe(99500);
+		});
+
 		it('should ignore invalid or malformed duration strings without throwing or crashing', async () => {
-			initAI({ providers: [{ id: 'openai', key: 'test-key' }] });
+			await initAI({ remoteConfigUrl: false, providers: [{ id: 'openai', key: 'test-key' }] });
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
 			fetchSpy.mockResolvedValueOnce(new Response(null, {
@@ -523,6 +612,34 @@ describe('AI Parsing Plugin', () => {
 			}
 
 			expect(getAiRateLimits()).toBeNull();
+		});
+
+		it('should exclude transport timeout option from serialized request body', async () => {
+			await initAI({
+				remoteConfigUrl: false,
+				providers: [{
+					id: 'openai',
+					key: 'test-key',
+					options: {
+						timeout: 4500,
+						user: 'user-tempo-test'
+					}
+				}]
+			});
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), { status: 200 }));
+
+			await parseAI('Thanksgiving 2026', { force: true });
+
+			expect(fetchSpy).toHaveBeenCalledTimes(1);
+			const requestInit = fetchSpy.mock.calls[0][1];
+			const parsedBody = JSON.parse(requestInit?.body as string);
+
+			expect(parsedBody.user).toBe('user-tempo-test');
+			expect(parsedBody.timeout).toBeUndefined();
 		});
 	});
 });

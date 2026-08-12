@@ -24,6 +24,9 @@ export const isString = (obj: unknown): obj is string => isType<string>(obj, 'St
 export const isNumber = (obj: unknown): obj is number => isType<number>(obj, 'Number');
 export const isFiniteNumber = (obj: unknown): obj is number => isType<number>(obj, 'Number') && isFinite(obj as number);
 
+const RE_BIGINT_LITERAL = /^[+-]?[0-9]+n$/;
+const RE_REGEXP_LITERAL = /^\/.*\/$/;
+
 /**
  * Tests if a value can be safely converted to a numeric value.
  * Handles strings, numbers, and BigInts, verifying finite properties and valid formats.
@@ -44,13 +47,13 @@ export function isNumeric(str?: any): boolean {
 		case 'string': {
 			const val = str.trim();
 			if (val.length === 0) return false;
-			return /^-?[0-9]+n$/.test(val) || (!isNaN(parseFloat(val)) && isFinite(Number(val)));
+			return RE_BIGINT_LITERAL.test(val) || (!isNaN(parseFloat(val)) && isFinite(Number(val)));
 		}
 		default: return false;
 	}
 }
 export const isInteger = (obj: unknown): obj is bigint => isType<bigint>(obj, 'BigInt');
-export const isIntegerLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && /^-?[0-9]+n$/.test(obj as string);
+export const isIntegerLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && RE_BIGINT_LITERAL.test((obj as string).trim());
 export const isDigit = (obj: unknown): obj is number | bigint => isType<number | bigint>(obj, 'Number', 'BigInt');
 export const isBoolean = (obj: unknown): obj is boolean => isType<boolean>(obj, 'Boolean');
 export const isArray = <T = any>(obj: unknown): obj is T[] => isType<T[]>(obj, 'Array');
@@ -58,7 +61,7 @@ export const isArrayLike = <T = any>(obj: any): obj is ArrayLike<T> => protoType
 export const isObject = <T = any>(obj: unknown): obj is Property<T> => isType<Property<T>>(obj, 'Object');
 export const isDate = (obj: unknown): obj is Date => isType<Date>(obj, 'Date');
 export const isRegExp = (obj: unknown): obj is RegExp => isType<RegExp>(obj, 'RegExp');
-export const isRegExpLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && /^\/.*\/$/.test(obj as string);
+export const isRegExpLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && RE_REGEXP_LITERAL.test(obj as string);
 export const isSymbol = (obj: unknown): obj is symbol => isType<symbol>(obj, 'Symbol');
 export const isSymbolFor = (obj: unknown): obj is symbol => isType<symbol>(obj, 'Symbol') && Symbol.keyFor(obj as symbol) !== undefined;
 export const isPropertyKey = (obj: unknown): obj is PropertyKey => isType<PropertyKey>(obj, 'String', 'Number', 'Symbol');

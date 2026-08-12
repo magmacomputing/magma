@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-plugin-ai",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Tempo community plugin for LLM-powered natural language parsing.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,7 +17,7 @@
   },
   "scripts": {
     "build": "tsup",
-    "test": "vitest run -c ../vitest.shared.ts",
+    "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run -c ../vitest.shared.ts",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"
   },
   "tempo": {
@@ -25,7 +25,7 @@
     "plan": "community"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^3.11.0"
+    "@magmacomputing/tempo": "^3.11.1"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1"

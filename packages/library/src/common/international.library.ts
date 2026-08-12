@@ -61,6 +61,8 @@ export function getDateTimeFormat() {
 	return getDTF().resolvedOptions();
 }
 
+const RE_UNDERSCORE = /_/g;
+
 /**
  * Returns the canonicalized locale string, or undefined if the locale is invalid.
  * Uses `Intl.getCanonicalLocales` for strict validation.
@@ -74,7 +76,7 @@ export function getDateTimeFormat() {
  */
 export function canonicalLocale(locale: string): string | undefined {
 	try {
-		return Intl.getCanonicalLocales(locale.replace(/_/g, '-'))[0];
+		return Intl.getCanonicalLocales(locale.replace(RE_UNDERSCORE, '-'))[0];
 	} catch (e) {
 		console.warn(`[Tempo] dropping invalid locale: '${locale}'`, e);
 		return undefined;

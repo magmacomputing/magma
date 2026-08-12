@@ -6,41 +6,73 @@
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ai"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ai?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ai/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ai"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ai?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/ai.index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
-Tempo community plugin for LLM-powered natural language parsing.
+> **Tempo community plugin for LLM-powered natural language date, schedule, and context processing.**
 
-This plugin bridges the gap between deterministic date-math and unstructured NLP inputs, utilizing large language models (like Gemini, Groq, or OpenAI) to safely and asynchronously parse complex natural language expressions into `Tempo` instances.
+This plugin bridges deterministic date math and unstructured NLP inputs, leveraging LLMs (Gemini, Groq, OpenAI, Ollama) to asynchronously parse complex natural language expressions into type-safe `Tempo` instances.
 
-> **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). Client-side storage is vulnerable to XSS attacks, malicious scripts, and browser extension extraction, which can result in API key theft and quota abuse. BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, you must route requests through a secure backend proxy service.
->
-> **LLM Output Disclaimer**: Large Language Models are probabilistic text generators, not deterministic calculators. Magma Computing Solutions and Tempo core maintainers provide `@magmacomputing/tempo-plugin-ai` "as-is". Developers and organizations are solely responsible for validating AI-generated date and time outputs before relying on them in financial, legal, medical, or time-critical production systems.
+> 🔒 **Security Notice**: Raw LLM API keys must **never** be exposed in client-side browser bundles or client storage (`localStorage`, `sessionStorage`, `IndexedDB`). BYOK is only safe on backend servers or edge runtime proxies.
 
-## Installation
+---
+
+## ⚡ Quick Start
+
+### 📦 Installation
 
 ```bash
 npm install @magmacomputing/tempo-plugin-ai
 ```
 
-## Setup & Usage
+### 🎯 Usage
 
 ```typescript
-import { parseAI, initAI, clearAiCache } from '@magmacomputing/tempo-plugin-ai';
+import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
 
-// Initialize with your BYOK API Key (ensuring non-undefined string key)
-initAI({
+// Initialize with your API keys
+await initAI({
   providers: [
-    ...(process.env.GROQ_API_KEY ? [{ id: 'groq', key: process.env.GROQ_API_KEY }] : []),
+    { id: 'groq', key: process.env.GROQ_API_KEY! }
   ]
 });
 
-// Parse a complex natural language string!
+// Parse natural language into a standard Tempo instance!
 const dt = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
 
-// Evict bad parses from the cache
-clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");
+console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
+console.log(dt.ai?.provider);               // 'groq'
+console.log(dt.ai?.confidence);             // 0.98
 ```
 
-Full documentation is available at [https://magmacomputing.github.io/magma/doc/9-plugins/ai.index.html](https://magmacomputing.github.io/magma/doc/9-plugins/ai.index.html).
+---
 
-## Licensing
+## 📚 AI Endpoint Catalog
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
+| Endpoint | Description | Doc |
+| :--- | :--- | :---: |
+| **`parseAI`** | Parse relative/point-in-time dates (e.g. *"next Friday at 4pm"*) | <a href="./doc/parseAI.md" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`recurrenceAI`** | Convert repeating patterns (e.g. *"every 2 weeks on Friday"*) to RRULEs | <a href="./doc/recurrenceAI.md" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`diffAI`** | Calculate natural language difference & business days between dates | <a href="./doc/diffAI.md" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`scheduleAI`** | Book appointment slots around busy calendar event bounds | <a href="./doc/scheduleAI.md" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`contextAI`** | Infer timezone, locale, and calendar from user profiles/bios | <a href="./doc/contextAI.md" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+
+---
+
+## ✨ Features & Architecture
+
+* 🤖 **Multi-Provider Routing**: Native support for Groq, OpenAI, Gemini, Mistral, and local Ollama nodes with automatic fallback.
+* 🌐 **Dynamic Provider Manifest**: Model IDs and endpoints are lazily updated via hosted JSON manifests with 1500ms fail-open air-gapped fallbacks.
+* ⚡ **Two-Tier Caching**: Combines fast local in-memory LRU caching (`BoundedCache`) with optional async storage adapters (`AiCacheAdapter` for Redis / Cloudflare KV).
+* ⏱️ **Cascading TTL Policies**: Granular TTL control at call-site, provider, or global levels for TTL-enforcing storage adapters.
+* 🛡️ **Fail-Safe Confidence Bounds**: Configurable `minConfidence` thresholds and array batch processing with soft-error handling.
+
+---
+
+## 📚 Complete Guides
+
+For complete API references, architecture guides, and advanced examples:
+📖 **[Read the Official AI Plugin Documentation](https://magmacomputing.github.io/magma/doc/9-plugins/ai.index.html)**
+
+---
+
+## ⚖️ Licensing
+
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

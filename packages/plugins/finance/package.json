@@ -9,7 +9,7 @@
 	"scripts": {
 		"build": "tsup && tsc",
 		"prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build",
-		"test": "vitest run -c ../vitest.shared.ts"
+		"test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run -c ../vitest.shared.ts"
 	},
 	"keywords": [
 		"tempo",
@@ -42,7 +42,7 @@
 	},
 	"devDependencies": {
 		"@magmacomputing/tempo": "^3.9.0",
-		"vitest": "^1.0.0"
+		"vitest": "^4.1.10"
 	},
 	"exports": {
 		".": {

@@ -59,3 +59,72 @@ test('standalone parse: timezone lookup', () => {
 	const zdt = parse('2025-05-20 10:00', { timeZone: 'pst' });
 	expect(zdt.timeZoneId).toBe('America/Los_Angeles');
 });
+
+test('standalone parse: human date string with GMT/UTC timezone offset (e.g. Aug 6, 16:16 GMT+10)', () => {
+	const zdt = parse('Aug 6, 16:16 GMT+10');
+	expect(zdt.month).toBe(8);
+	expect(zdt.day).toBe(6);
+	expect(zdt.hour).toBe(16);
+	expect(zdt.minute).toBe(16);
+	expect(zdt.offset).toBe('+10:00');
+
+	const zdt2 = parse('Aug 6, 16:16 UTC-5');
+	expect(zdt2.month).toBe(8);
+	expect(zdt2.day).toBe(6);
+	expect(zdt2.hour).toBe(16);
+	expect(zdt2.minute).toBe(16);
+	expect(zdt2.offset).toBe('-05:00');
+
+	const t = new Tempo('Aug 6, 16:16 GMT+10');
+	expect(t.mm).toBe(8);
+	expect(t.dd).toBe(6);
+	expect(t.hh).toBe(16);
+	expect(t.mi).toBe(16);
+
+	const zdtAest = parse('August 6, 16:16 AEST');
+	expect(zdtAest.month).toBe(8);
+	expect(zdtAest.day).toBe(6);
+	expect(zdtAest.hour).toBe(16);
+	expect(zdtAest.minute).toBe(16);
+	expect(zdtAest.timeZoneId).toBe('Australia/Sydney');
+	expect(zdtAest.offset).toBe('+10:00');
+
+	const zdtPst = parse('Aug 6, 16:16 PST');
+	expect(zdtPst.month).toBe(8);
+	expect(zdtPst.day).toBe(6);
+	expect(zdtPst.hour).toBe(16);
+	expect(zdtPst.minute).toBe(16);
+	expect(zdtPst.timeZoneId).toBe('America/Los_Angeles');
+	expect(zdtPst.offset).toBe('-07:00');
+
+	const zdt3 = parse('Aug 6, 16:16 GMT+5:30');
+	expect(zdt3.month).toBe(8);
+	expect(zdt3.day).toBe(6);
+	expect(zdt3.hour).toBe(16);
+	expect(zdt3.minute).toBe(16);
+	expect(zdt3.offset).toBe('+05:30');
+
+	const zdt4 = parse('Aug 6, 16:16 UTC-8:30');
+	expect(zdt4.month).toBe(8);
+	expect(zdt4.day).toBe(6);
+	expect(zdt4.hour).toBe(16);
+	expect(zdt4.minute).toBe(16);
+	expect(zdt4.offset).toBe('-08:30');
+});
+
+test('standalone parse: bare GMT resolves to fixed UTC with +00:00 offset regardless of season', () => {
+	const zdtSummer = parse('2026-07-15 12:00 GMT');
+	expect(zdtSummer.month).toBe(7);
+	expect(zdtSummer.day).toBe(15);
+	expect(zdtSummer.hour).toBe(12);
+	expect(zdtSummer.offset).toBe('+00:00');
+	expect(zdtSummer.timeZoneId).toBe('UTC');
+
+	const zdtLower = parse('2026-07-15 12:00 gmt');
+	expect(zdtLower.offset).toBe('+00:00');
+	expect(zdtLower.timeZoneId).toBe('UTC');
+
+	const t = new Tempo('2026-07-15 12:00 GMT');
+	expect(t.toDateTime().offset).toBe('+00:00');
+	expect(t.tz).toBe('UTC');
+});

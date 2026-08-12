@@ -117,11 +117,9 @@ declare module '@magmacomputing/tempo' {
 There is a subtle but important distinction between how features are activated in Core mode:
 
 *   **`Tempo.extend(Module)`**: This is **Immediate and Explicit**. It applies the module to the class exactly when the line is executed. This is the recommended pattern for modular applications.
-*   **`Tempo.init()`**: This is **Discovery-Driven**. It scans the global environment for any plugins that were imported via side effects (e.g., `import '@magmacomputing/tempo/term'`) and hydrates the engine all at once.
+*   **`Tempo.init()`**: Establishes global baseline configuration at application startup and registers plugins specified in the `plugins` array during initial startup discovery.
 
-::: danger
-**The Initialization Lifecycle**: `Tempo.init()` performs a **full state refresh**. It resets configuration, Term registries, and formatting maps to defaults before re-applying all currently discovered plugins. To ensure your custom logic is managed correctly, always use `Tempo.extend()` or encapsulate changes within a formal plugin.
+::: note
+**Startup Initialization Lifecycle**: `Tempo.init()` establishes baseline configuration during application startup. Built-in plugins are registered automatically via static imports in full Tempo (`@magmacomputing/tempo`), while explicit plugin lists are registered during `Tempo.init({ plugins: [...] })`. Note that subsequent calls to `Tempo.init()` re-evaluate and merge configuration options rather than executing as an idempotent no-op. To register additional plugins dynamically after startup, use `Tempo.extend(...)`.
 :::
-
-**The Side-Effect Trap**: If you import a side-effect plugin *after* you have already called `Tempo.init()`, the feature will **not** automatically appear on the `Tempo` class. Because `Tempo.init()` short-circuits once state already exists, re-calling it will not load those late modules. Use `Tempo.extend()` explicitly to activate late-loaded modules instead of trying to re-run `Tempo.init()`.
 

@@ -1,4 +1,4 @@
-import { getTemporalIds } from '#library/temporal.library.js';
+import { getTemporalIds, toZonedDateTime } from '#library/temporal.library.js';
 import { isInstant, isZonedDateTime, isPlainDate, isPlainDateTime } from '#library/assertion.library.js';
 import type { TemporalObject, TypeValue } from '#library/type.library.js';
 
@@ -15,7 +15,7 @@ const UNIT_LOOKUP: Record<string, { scale: bigint; matchName: string }> = {
 	ms: { scale: 1_000_000n, matchName: 'Milliseconds' },
 	us: { scale: 1_000n, matchName: 'Microseconds' },
 	ns: { scale: 1n, matchName: 'Nanoseconds' },
-};
+}
 
 /**
  * Logic to compose various input types into a Temporal.ZonedDateTime.  
@@ -41,6 +41,13 @@ export function compose(
 	let dateTime: Temporal.ZonedDateTime | undefined;
 
 	switch (type) {
+		case 'Temporal.ZonedDateTime':
+		case 'Temporal.Instant':
+		case 'Temporal.PlainDateTime':
+		case 'Temporal.PlainDate':
+			temporal = value;
+			break;
+
 		case 'Void':
 		case 'Empty':
 		case 'Undefined':
@@ -50,14 +57,7 @@ export function compose(
 
 		case 'String':
 			try {
-				let zdt: Temporal.ZonedDateTime;
-				if (value.includes('[')) {
-					zdt = Temporal.ZonedDateTime.from(value);
-				} else if (/Z$|[+-]\d{2}:?\d{2}/i.test(value)) {
-					zdt = Temporal.Instant.from(value).toZonedDateTimeISO(tz);
-				} else {
-					zdt = Temporal.PlainDateTime.from(value, { overflow: 'constrain' }).toZonedDateTime(tz);
-				}
+				const zdt = toZonedDateTime(value, tz);
 				timeZone = getTemporalIds(zdt)[0];
 				temporal = zdt;
 				onResult?.({ type, value, match: 'iso8601' });
@@ -143,8 +143,6 @@ export function compose(
 				temporal = Temporal.Instant.fromEpochNanoseconds(nano);
 				break;
 			}
-
-
 
 		default:
 			break;

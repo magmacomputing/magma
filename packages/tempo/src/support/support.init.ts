@@ -140,6 +140,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			sphere: getHemisphere(timeZone),
 			scope: 'global',
 			catch: options.catch ?? false,
+			silent: options.silent ?? false,
 			intl: {},
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
@@ -151,6 +152,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		setProperties(state.config, {
 			scope: 'local',
 			catch: options.catch ?? (baseState.config as any).catch ?? false,
+			silent: options.silent ?? (baseState.config as any).silent ?? false,
 			intl: Object.create((baseState.config as any).intl || {}),
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
@@ -171,11 +173,14 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			formats: enumify(STATE.FORMAT, false),
 			sphere: getHemisphere(timeZone),
 			scope: 'local',
+			silent: options.silent ?? false,
 			intl: {},
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
 		if (isDefined(options.catch))
 			setProperty(state.config, 'catch', options.catch);
+		if (isDefined(options.silent))
+			setProperty(state.config, 'silent', options.silent);
 	}
 
 	// 3. Initialize registries that need objects
@@ -341,6 +346,10 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 			case 'catch':
 				setProperty(state.config, 'catch', Boolean(arg.value));
+				break;
+
+			case 'silent':
+				setProperty(state.config, 'silent', Boolean(arg.value));
 				break;
 
 			case 'pivot': {

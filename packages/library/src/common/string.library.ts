@@ -1,8 +1,16 @@
 import { asNumber, asString, nullishToValue } from '#library/coercion.library.js';
 import { stringify } from '#library/serialize.library.js';
 import { isString, isObject, isNumeric, assertCondition, assertString } from '#library/assertion.library.js';
+import type { SingularUnit } from '#library/type.library.js';
 
-// General <string> functions
+const RE_TAB = /\t/g;
+const RE_NEWLINE = /(\r\n|\n|\r)/g;
+const RE_MULTI_SPACE = /\s{2,}/g;
+const RE_WORD_START = /\w\S*/g;
+const RE_SPACE = / /g;
+const RE_PARAM_MARKER = /\$\{(\d+)\}/g;
+const RE_FORMAT_SPECIFIER = /%[sj]/g;
+const RE_TEMPLATE_PLACEHOLDER = /\${(.*?)}/g;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // This section needs to be Function declarations so that they are hoisted
@@ -24,9 +32,9 @@ export function trimAll(str: string | number, pat?: RegExp) {
 	return str
 		.toString()																							// coerce to String
 		.replace(pat!, '')																			// remove regexp, if supplied
-		.replace(/\t/g, ' ')																		// replace <tab> with <space>
-		.replace(/(\r\n|\n|\r)/g, ' ')													// replace <return> & <newline>
-		.replace(/\s{2,}/g, ' ')																// trim multiple <space>
+		.replace(RE_TAB, ' ')																		// replace <tab> with <space>
+		.replace(RE_NEWLINE, ' ')																// replace <return> & <newline>
+		.replace(RE_MULTI_SPACE, ' ')														// trim multiple <space>
 		.trim()																									// leading/trailing <space>
 }
 
@@ -43,7 +51,7 @@ export function trimAll(str: string | number, pat?: RegExp) {
 export function toProperCase<T extends string>(...str: T[]) {
 	return str
 		.flat()																									// in case {str} was already an array
-		.map(text => text.replace(/\w\S*/g,
+		.map(text => text.replace(RE_WORD_START,
 			word => word.charAt(0).toUpperCase() + word.substring(1).toLowerCase()))
 		.join(' ') as T
 }
@@ -89,7 +97,7 @@ export const toCamelCase = <T extends string>(sentence: T) => {
 		rest.splice(0, 1);
 	}
 
-	return (sentence.startsWith('_') ? '_' : '') + word.toLocaleLowerCase() + toProperCase(...rest).replace(/ /g, '') as T;
+	return (sentence.startsWith('_') ? '_' : '') + word.toLocaleLowerCase() + toProperCase(...rest).replace(RE_SPACE, '') as T;
 }
 
 const HEX = 16;
@@ -125,29 +133,26 @@ export const randomString = (len = 36) => {
  * sprintf('Hello %s', 'World'); // 'Hello World'
  * ```
  */
-export function sprintf(fmt: string, ...msg: any[]): string;	// either a format-string, followed by arguments
-export function sprintf(...msg: any[]): string;						// or just an array of arguments
+export function sprintf(fmt: string, ...msg: any[]): string;// either a format-string, followed by arguments
+export function sprintf(...msg: any[]): string;							// or just an array of arguments
 export function sprintf(fmt: {}, ...msg: any[]) {
-	const regexp = /\$\{(\d)\}/g;														// pattern to find "${digit}" parameter markers
-	let sfmt = asString(fmt);																// avoid mutate fmt
+	let sfmt = isString(fmt) ? (fmt as string) : '';
 
-	if (!isString(fmt)) {																		// might be an Object
-		msg.unshift(JSON.stringify(fmt));											// push to start of msg[]
-		sfmt = '';																							// reset the string-format
-	}
+	if (!isString(fmt))																				// might be an Object
+		msg.unshift(JSON.stringify(fmt));												// push to start of msg[]
 
 	let cnt = 0;																							// if the format does not contain a corresponding '${digit}' then re-construct the parameters
-	sfmt = sfmt.replace(/%[sj]/g, _ => `\${${cnt++}}`);			// flip all the %s or %j to a ${digit} parameter
+	sfmt = sfmt.replace(RE_FORMAT_SPECIFIER, _ => `\${${cnt++}}`);			// flip all the %s or %j to a ${digit} parameter
 
-	const params = Array.from(sfmt.matchAll(regexp))
-		.map(match => Number(match[1]))												// which parameters are in the fmt
+	const params = Array.from(sfmt.matchAll(RE_PARAM_MARKER))
+		.map(match => Number(match[1]))													// which parameters are in the fmt
 	msg.forEach((_, idx) => {
 		if (!params.includes(idx))															// if more args than params
 			sfmt += `${sfmt.length === 0 ? '' : sfmt.endsWith(':') ? ' ' : ', '}\${${idx}}`	//  append a dummy params to fmt
 	})
 
 	// 2024-02-21  some Objects do not have a .toString method
-	return sfmt.replace(regexp, (_, idx) => msg[idx]?.toString?.() || stringify(msg[idx]));
+	return sfmt.replace(RE_PARAM_MARKER, (_, idx) => msg[idx]?.toString?.() || stringify(msg[idx]));
 }
 
 /**
@@ -170,12 +175,6 @@ export const plural = (val: string | number | Record<string, string>, word: stri
 		? (num: string, word: string) => _plural(num, word, (val as Record<string, string>)[word])
 		: _plural(val, word, plural)
 }
-
-type SingularUnit<T extends string> = T extends `${infer S}s`
-	? T extends `${string}${string}${string}${string}`
-	? S
-	: T
-	: T;
 
 /**
  * Strips a plural 's' suffix from a string if it ends with 's' and is longer than 3 characters.
@@ -207,7 +206,7 @@ export const singular = <T extends string>(val: T): SingularUnit<T> =>
  */
 export const makeTemplate = (templateString: any) =>
 	(templateData: any) =>
-		String(templateString).replace(/\${(.*?)}/g, (_, key) => {
+		String(templateString).replace(RE_TEMPLATE_PLACEHOLDER, (_, key) => {
 			const val = (templateData as any)[key.trim()];
 			return val !== undefined ? String(val) : '';
 		});

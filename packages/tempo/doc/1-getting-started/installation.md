@@ -242,3 +242,14 @@ We recommend pinning your versions in production environments to ensure stabilit
 
 *   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/...` (Locks to major version 3)
 *   **Latest**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/...` (Omit the version string to always receive the latest release. Note that JSDelivr will resolve a missing version tag to the latest published release).
+
+---
+
+## 🤖 AI & IDE Integration (`llms.txt`)
+
+> [!TIP]
+> Using **Cursor**, **VS Code (GitHub Copilot)**, **Antigravity**, **ChatGPT**, or **Claude**? 
+> Tempo publishes an official [`llms.txt`](https://tempo.magmacomputing.com.au/llms.txt) index to give AI assistants documented project context and reduce hallucinations regarding Tempo's syntax, token grammar, and immutability rules.
+> 
+> 👉 **[Read the dedicated AI & IDE Integration Guide](./ai-integration.md)** for step-by-step setup instructions for your IDE or tool.
+

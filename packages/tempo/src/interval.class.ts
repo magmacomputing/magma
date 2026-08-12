@@ -1,4 +1,5 @@
 import type { Tempo } from './tempo.class.js';
+import { isInteger } from '#library/assertion.library.js';
 import { Immutable } from '#library/class.library.js';
 
 export type TemporalPoint = Tempo | { epochNanoseconds: bigint };
@@ -7,7 +8,7 @@ export type TemporalPoint = Tempo | { epochNanoseconds: bigint };
 
 function getNs(point: TemporalPoint | unknown): bigint {
 	const ns = (point as any)?.epoch?.ns ?? (point as any)?.epochNanoseconds;
-	if (typeof ns === 'bigint') return ns;
+	if (isInteger(ns)) return ns;
 	throw new TypeError('Invalid TemporalPoint: missing epoch.ns or epochNanoseconds');
 }
 

@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/google/material-design-icons/master/png/action/book/materialicons/48dp/2x/baseline_book_black_48dp.png" width="48px" style="vertical-align:middle;"> <span style="font-size:2.5em; vertical-align:middle;">Magma Library (Internal Reference)</span>
+# <img src="https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/library-logo.svg" width="48" height="48" style="vertical-align:middle; display:inline-block; margin-right:8px;" alt="Tempo Library Logo" /> Magma Library (Internal Reference)
 
 > [!NOTE]
 > **Internal Reference Package**: `packages/library` is an internal monorepo utility suite used across Tempo packages. It is **not** published as a standalone package on npm, and is provided in the documentation as a reference guide for internal architectural utilities and shared routines.
@@ -25,6 +25,7 @@ The library is organized into specialized modules, each designed for maximum eff
 | **Pledge** | A robust wrapper for native Promises with settled-state tracking and timeout support. |
 | **Reflection** | Clean access to own-properties, values, and entries without prototype pollution. |
 | **Temporal** | Lightweight helpers and polyfill integration for the native `Temporal` API. |
+| **Recurrence** | Zero-dependency RFC 5545 recurrence rule parsing, expansion, and finiteness evaluation. |
 
 ---
 

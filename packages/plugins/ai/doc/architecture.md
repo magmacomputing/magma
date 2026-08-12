@@ -40,11 +40,38 @@ initAI({
       id: 'local', 
       key: 'no-key-needed',
       url: 'http://localhost:11434/v1/chat/completions',
-      model: 'your-local-model'
+      model: 'your-local-model',
+      options: { timeout: 5000 } // Custom provider-level timeout (5s)
     }
   ]
 });
 ```
+
+### Dynamic Provider Manifests & Remote Endpoint Trust
+
+By default, `@magmacomputing/tempo-plugin-ai` lazily fetches provider defaults (model IDs, endpoints, token parameter keys) from `https://tempo.magmacomputing.com.au/providers.v1.json` once per application lifecycle.
+
+- **Remote Manifest Trust & Endpoint Enforcement**:
+  - `remoteConfigUrl` is restricted to fixed trusted hosts (`tempo.magmacomputing.com.au` or trusted internal HTTPS endpoints).
+  - Any dynamic `provider.url` values received from the manifest or dynamically returned via `fetchDefaults` are strictly validated against an enforced provider host allowlist (or must use verified HTTPS/localhost origins) before `getResolvedProviderDefaults()` merges them into runtime provider configurations. Untrusted or unauthenticated endpoints are rejected and stripped before merging.
+- **Validation on `fetchDefaults` Hook**: The exact same host allowlist and HTTPS origin verification is enforced when resolving custom provider options via the `fetchDefaults` callback. Any dynamic hook attempting to return unauthenticated or disallowed host URLs will have the `url` property safely discarded.
+- **Async Resolution & Promise Lifecycle**: `initAI()` returns a `Promise<void>`.
+  - **Synchronous Fire-and-Forget**: Calling `initAI(...)` synchronously without `await` immediately initializes system state with compiled local provider defaults (`DEFAULT_PROVIDERS`). You can execute `parseAI()` immediately on the next line without blocking. The remote manifest is fetched in the background and transparently updates provider defaults once received.
+  - **Guaranteed Remote Resolution**: If your application strictly requires remote provider defaults to be resolved before executing your first AI request, you can `await initAI(...)`:
+    ```typescript
+    // Await guaranteed remote manifest completion before proceeding
+    await initAI({
+      providers: [{ id: 'groq', key: process.env.GROQ_API_KEY! }]
+    });
+    ```
+- **Fail-Open & Air-Gapped Fallback**: If the network request fails, times out (1500ms limit), or the application is running offline or in an air-gapped environment, `initAI()` automatically and silently falls back to compiled local defaults (`DEFAULT_PROVIDERS`).
+- **Disabling Remote Manifest**: Pass `remoteConfigUrl: false` to disable remote manifest fetching entirely:
+  ```typescript
+  initAI({
+    providers: [{ id: 'groq', key: process.env.GROQ_API_KEY! }],
+    remoteConfigUrl: false // Disable remote manifest fetching
+  });
+  ```
 
 ### Frontend Security Warning
 > [!CAUTION]

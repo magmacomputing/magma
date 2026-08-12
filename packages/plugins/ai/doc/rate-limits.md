@@ -5,18 +5,35 @@ When using third-party AI APIs, your application is subject to strict rate limit
 The plugin automatically tracks these limits by reading the standard `x-ratelimit-*` HTTP headers returned by providers like OpenAI and Groq. 
 
 ## Tracking Quota Real-time
-To expose this data without ruining the clean return signatures of Tempo AI functions, the plugin provides a dedicated utility function: `getAiRateLimits()`.
+
+Quota and rate-limit metadata can be inspected in two convenient ways:
+
+### 1. Request-Locked Instance Metadata (`dt.ai.limits`)
+Every `Tempo` instance returned by `parseAI` includes a frozen `.ai.limits` snapshot representing the rate limit state returned by provider HTTP headers for *that specific request*. Note that `.ai.limits` is guaranteed only for provider-backed network requests where rate-limit headers are returned by the selected provider; results resolved via native parsing (`provider: 'native'`) or cache hits (`provider: 'cache'`) may omit `.ai.limits` (`undefined`).
+
+```typescript
+const dt = await parseAI("The third Friday of next month");
+
+if (dt.ai?.limits) {
+  console.log(`Remaining Tokens: ${dt.ai.limits.remainingTokens}`);
+  console.log(`Remaining Requests: ${dt.ai.limits.remainingRequests}`);
+  console.log(`Resets At: ${dt.ai.limits.resetAt?.format('{hh}:{mi}:{ss}')}`);
+}
+```
+
+### 2. Global State Utility (`getAiRateLimits()`)
+For quick status checks or global monitoring across the application lifecycle, `getAiRateLimits()` exposes the stats from the most recent LLM request:
 
 ```typescript
 import { getAiRateLimits } from '@magmacomputing/tempo-plugin-ai';
 
-// Returns the stats from the most recent LLM proxy request
+// Returns global stats from the most recent LLM proxy request
 const stats = getAiRateLimits(); 
 
 if (stats) {
   console.log(`Remaining Tokens: ${stats.remainingTokens}`); 
   console.log(`Remaining Requests: ${stats.remainingRequests}`); 
-  console.log(`Limits Reset At: ${stats.resetAt.format('{hh}:{mi}:{ss}')}`); 
+  console.log(`Limits Reset At: ${stats.resetAt?.format('{hh}:{mi}:{ss}')}`); 
 }
 ```
 
@@ -108,15 +125,55 @@ If you want to explicitly query the LLM again and *overwrite* the existing cache
 const dt = await parseAI("Q3_START", { force: true });
 ```
 
-### Extensible Caching (Enterprise)
-For edge environments or custom application architectures, you can provide custom cache instances via `initAI({ cache })` or `Tempo.init({ cache })`!
+### Extensible Caching & Async Storage Adapters (`AiCacheAdapter`)
 
-You can provide any object that implements the standard **synchronous** `Map<string, string>` interface (`get`, `set`, `has`, `delete`). Note that all cache adapter methods must execute synchronously, as the cache lookup engine does not await promise-returning cache operations.
+By default, parsed AI responses are cached in memory using `Tempo.cache` (`BoundedCache`). For distributed serverless environments (e.g. Next.js, Cloudflare Workers, Express) or cluster nodes, you can pass a custom synchronous or asynchronous storage adapter (`AiCacheAdapter`):
 
 ```typescript
-// Custom synchronous cache implementation
+import { initAI, parseAI, type AiCacheAdapter } from '@magmacomputing/tempo-plugin-ai';
+import { Redis } from '@upstash/redis';
+
+const redis = new Redis({ url: process.env.UPSTASH_URL!, token: process.env.UPSTASH_TOKEN! });
+
+// Implement custom async Redis storage adapter with namespacing & prefix deletion support
+const redisAdapter: AiCacheAdapter = {
+  get: async (key) => (await redis.get<string>(`tempo:ai:${key}`)) ?? undefined,
+  set: async (key, value, ttlMs) => {
+    if (ttlMs !== undefined) await redis.set(`tempo:ai:${key}`, value, { px: ttlMs });
+    else await redis.set(`tempo:ai:${key}`, value);
+  },
+  delete: async (key) => {
+    await redis.del(`tempo:ai:${key}`);
+  },
+  clear: async (prefix) => {
+    const pattern = prefix ? `tempo:ai:${prefix}*` : `tempo:ai:*`;
+    let cursor = '0';
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, { match: pattern, count: 100 });
+      cursor = nextCursor;
+      if (keys.length > 0) await redis.del(...keys);
+    } while (cursor !== '0');
+  }
+};
+
 initAI({
-  providers: [{ id: 'groq', key: '...' }],
-  cache: new MyCustomSyncCache()
+  providers: [{ id: 'groq', key: process.env.GROQ_API_KEY!, ttl: 7200000 }], // Provider-specific TTL (2 hours)
+  cacheAdapter: redisAdapter,
+  ttl: 3600000 // Global default TTL (1 hour)
 });
+
+// Call-site TTL override (15 minutes)
+const dt = await parseAI("next Monday at 9am", { ttl: 900000 });
 ```
+
+### Cascading TTL Resolution Policies
+
+The plugin calculates cache TTL per entry using a strict resolution hierarchy:
+1. **Call-site `options.ttl`**: `parseAI(prompt, { ttl: 900000 })`
+2. **Provider-level `provider.ttl`**: `providers: [{ id: 'groq', ttl: 7200000 }]`
+3. **Global `initAI({ ttl: 3600000 })`**
+4. **Default TTL**: `3,600,000` ms (1 hour)
+
+### Fail-Open Cache Resilience
+
+Custom storage adapter calls (`adapter.get` and `adapter.set`) are wrapped in safe error handlers. If an external Redis instance crashes or encounters a network partition, the plugin logs a debug warning (if `debug: true`) and gracefully fails open to direct LLM resolution without crashing the application request.
