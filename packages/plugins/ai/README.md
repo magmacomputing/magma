@@ -6,7 +6,7 @@
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ai"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ai?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ai/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ai"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ai?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/ai.index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
-> **Tempo community plugin for LLM-powered natural language parsing.**
+> **Tempo community plugin for LLM-powered natural language date, schedule, and context processing.**
 
 This plugin bridges deterministic date math and unstructured NLP inputs, leveraging LLMs (Gemini, Groq, OpenAI, Ollama) to asynchronously parse complex natural language expressions into type-safe `Tempo` instances.
 
@@ -25,38 +25,33 @@ npm install @magmacomputing/tempo-plugin-ai
 ### 🎯 Usage
 
 ```typescript
-import { parseAI, scheduleAI, initAI, clearAiCache } from '@magmacomputing/tempo-plugin-ai';
+import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
 
-// Initialize with your BYOK API keys
+// Initialize with your API keys
 await initAI({
   providers: [
     { id: 'groq', key: process.env.GROQ_API_KEY! }
   ]
 });
 
-// 1. Parse natural language into a Tempo instance!
+// Parse natural language into a standard Tempo instance!
 const dt = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
 
 console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
-console.log(dt.ai?.confidence);             // 0.98
 console.log(dt.ai?.provider);               // 'groq'
-
-// 2. Schedule appointment slots around busy events
-const booking = await scheduleAI("45 min sync Wednesday afternoon", {
-  anchor: "2026-08-10 09:00",
-  events: [{ start: "2026-08-12 14:00", end: "2026-08-12 15:00", title: "Team standup" }]
-});
-
-console.log(booking.start.format('{yyyy}-{mm}-{dd} {hh}:{mi}')); // 2026-08-12 15:00
-console.log(booking.end.format('{yyyy}-{mm}-{dd} {hh}:{mi}'));   // 2026-08-12 15:45
-console.log(booking.durationMinutes);                            // 45
-console.log(booking.slot);                                       // Interval<Tempo>
-console.log(booking.alternatives);                               // Interval<Tempo>[]
-console.log(booking.ai?.conflictBumped);                         // true
-
-// Evict cached resolution
-await clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");
+console.log(dt.ai?.confidence);             // 0.98
 ```
+
+---
+
+## 📚 AI Endpoint Catalog
+
+| Endpoint | Description | Doc |
+| :--- | :--- | :---: |
+| **`parseAI`** | Parse relative/point-in-time dates (e.g. *"next Friday at 4pm"*) | <a href="./doc/parseAI.md" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`recurrenceAI`** | Convert repeating patterns (e.g. *"every 2 weeks on Friday"*) to RRULEs | <a href="./doc/recurrenceAI.md" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`scheduleAI`** | Book appointment slots around busy calendar event bounds | <a href="./doc/scheduleAI.md" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`contextAI`** | Infer timezone, locale, and calendar from user profiles/bios | <a href="./doc/contextAI.md" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
 
 ---
 
@@ -65,15 +60,14 @@ await clearAiCache("The penultimate Tuesday before Thanksgiving in 2026");
 * 🤖 **Multi-Provider Routing**: Native support for Groq, OpenAI, Gemini, Mistral, and local Ollama nodes with automatic fallback.
 * 🌐 **Dynamic Provider Manifest**: Model IDs and endpoints are lazily updated via hosted JSON manifests with 1500ms fail-open air-gapped fallbacks.
 * ⚡ **Two-Tier Caching**: Combines fast local in-memory LRU caching (`BoundedCache`) with optional async storage adapters (`AiCacheAdapter` for Redis / Cloudflare KV).
-* ⏱️ **Cascading TTL Policies**: Granular TTL control at call-site, provider, or global levels for TTL-enforcing storage adapters (built-in `Tempo.cache` maintains its independently configured TTL).
+* ⏱️ **Cascading TTL Policies**: Granular TTL control at call-site, provider, or global levels for TTL-enforcing storage adapters.
 * 🛡️ **Fail-Safe Confidence Bounds**: Configurable `minConfidence` thresholds and array batch processing with soft-error handling.
 
 ---
 
-## 📚 Documentation
+## 📚 Complete Guides
 
-For complete API references, architecture guides, and advanced examples (Redis adapters, custom provider setups, race/consensus execution modes):
-
+For complete API references, architecture guides, and advanced examples:
 📖 **[Read the Official AI Plugin Documentation](https://magmacomputing.github.io/magma/doc/9-plugins/ai.index.html)**
 
 ---

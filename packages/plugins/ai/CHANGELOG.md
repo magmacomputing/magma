@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2026-08-10
 
 ### Added
+- **Context & Region Inference (`contextAI`)**: Added a context-deduction handler to extract localized environmental settings (`timeZone`, `locale`, `calendar`, `sphere`) from unstructured text inputs, such as user bios, location descriptions, or email bodies.
+  - Returns `TempoContext` result including IANA timezone, BCP 47 locale tag, Unicode calendar system, and Optional hemisphere (`'north' | 'south'`).
+  - Supports parallel array batching with optional soft-error mapping.
+  - Automatically hooks into `executeWithMode` allowing Fallback, Race, and Consensus execution mode routing.
+  - Fully integrated with caching layers using `context::` namespace partition to prevent collision.
+  - Enforces minimum confidence checks and validates returned IANA timezones against native Javascript environment `Intl` schemas.
+  - Resolves workstations and browser-based environment default variables dynamically to construct LLM baseline context prompts.
 - **Intelligent Calendar Scheduling (`scheduleAI`)**: Introduced natural language appointment scheduling with deterministic conflict detection and automated slot bumping powered by `Interval.overlaps()`.
 - **RFC 5545 Recurrence Engine (`recurrenceAI`)**: Added full recurrence pattern expansion with Cartesian product support across `BYDAY`, `BYHOUR`, `BYMINUTE`, and `BYMONTH` rules, backed by lazy page-based iteration.
 - **Deep-Immutability for Default Config**: Migrated `DEFAULT_PROVIDERS` to the `secure()` Proxy utility, enforcing zero-mutation safety across AI provider configurations without dictionary lookup overhead.
@@ -24,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cache Eviction Synchronization**: Enhanced `clearAiCache()` to flush matching keys and prefixes across both `Tempo.cache` and custom `AiCacheAdapter` storage engines, returning `Promise<void>` to await async adapter eviction.
 
 ### Changed & Hardened
+- **Consensus Mode TTL Resolution**: Fixed a runtime bug where standard provider TTL lookups failed in Consensus mode due to the synthetic sentinel provider ID (`'consensus'`), which caused lookups on the winning provider array to return undefined. Now reduces over all participating provider configs to select the minimum (most conservative) TTL.
 - **Deterministic Conflict Bumping (`scheduleAI`)**: Enhanced the scheduling engine's conflict-adjustment logic to iteratively shift proposed intervals against conflicting event bounds, re-verifying against all `busyEvents` and `workingHours` with finite loop guards to guarantee deterministic non-overlapping slots.
 - **Streamlined ISO Parsing**: Refactored internal date resolution in `scheduleAI` to delegate directly to core `Tempo` constructors (`new Tempo(str, { timeZone })`), removing redundant regex parsing layers and manual `Temporal.PlainDateTime` conversions.
 - **Streamlined Public API Surface**: Removed redundant RFC 5545 utility exports (`isFiniteRule`, `parseRRule`) from the AI plugin entry point in favor of direct imports from `@magmacomputing/tempo/library`.

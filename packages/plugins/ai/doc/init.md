@@ -22,7 +22,16 @@ await initAI({
 
 ## Execution Modes & Multi-Provider Options
 
-The AI plugin supports three multi-provider execution strategies (`fallback`, `race`, `consensus`):
+The AI plugin supports six multi-provider execution strategies (`fallback`, `race`, `consensus`, `adaptive`, `hedged`, `roundrobin`):
+
+* **`fallback`** (default): Queries providers sequentially in array order until one succeeds.
+* **`race`**: Sends concurrent requests to all providers, returning the fastest valid response.
+* **`consensus`**: Queries providers concurrently and boosts confidence when outputs agree.
+* **`hedged`**: Initiates staggered latency hedging, querying subsequent providers if the primary is slow.
+* **`roundrobin`**: Cyclic load balancing across the provider pool.
+* **`adaptive`**: Proactive telemetry-aware rate-limit avoidance.
+
+For a comprehensive guide, decision flowcharts, and configuration details for all execution modes, refer to the [Multi-Provider Execution Modes Guide](./modes.md).
 
 ```typescript
 // 1. Fallback mode (default): query providers sequentially in array order until one succeeds
@@ -41,6 +50,12 @@ const fastest = await parseAI("Third Friday of October", { mode: 'race' });
 const agreed = await parseAI("The penultimate Tuesday before Thanksgiving", { 
   mode: 'consensus',
   minConfidence: 0.85
+});
+
+// 4. Hedged mode: speculative concurrency with staggered delay (e.g. 800ms)
+const hedged = await parseAI("First Monday of December", {
+  mode: 'hedged',
+  hedgeDelay: 800
 });
 ```
 
@@ -76,8 +91,10 @@ Detailed diagnostic context—including `rawPrompt`, `normalizedPrompt`, `reason
 export interface AiConfig {
   /** List of configured AI providers */
   providers?: AiProvider[];
-  /** Default execution mode across providers ('fallback' | 'race' | 'consensus') */
-  mode?: 'fallback' | 'race' | 'consensus';
+  /** Default execution mode across providers ('fallback' | 'race' | 'consensus' | 'hedged' | 'roundrobin' | 'adaptive') */
+  mode?: 'fallback' | 'race' | 'consensus' | 'hedged' | 'roundrobin' | 'adaptive';
+  /** Speculative hedge delay in milliseconds (hedged mode only, default: 800ms) */
+  hedgeDelay?: number;
   /** Global SLA timeout in milliseconds */
   timeout?: number;
   /** Global debug flag for operational trace logging */

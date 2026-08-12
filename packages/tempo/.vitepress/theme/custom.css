@@ -1,0 +1,33 @@
+/* Custom global theme styles for Tempo Plugins catalog */
+
+.btn {
+  background-color: var(--vp-c-brand);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+  text-align: center;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  line-height: 1;
+}
+
+.btn-secondary {
+  background-color: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1) !important;
+  border: 1px solid var(--vp-c-divider);
+}
+
+.btn-secondary:hover {
+  background-color: var(--vp-c-bg-mute);
+  text-decoration: none !important;
+}

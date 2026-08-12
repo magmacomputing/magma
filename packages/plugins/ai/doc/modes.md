@@ -47,7 +47,9 @@ flowchart TD
 
     UI --> MultiUI{"Multiple providers\nor API keys?"}
     MultiUI -- No --> Fallback["⬇️ AiMode.Fallback\nDefault • Most cost-efficient"]
-    MultiUI -- Yes --> Race["🏁 AiMode.Race\nAbsolute fastest response"]
+    MultiUI -- Yes --> CostSpeed{"Latency sensitive\nor cost concern?"}
+    CostSpeed -- "Fastest response (high cost)" --> Race["🏁 AiMode.Race\nAbsolute fastest response"]
+    CostSpeed -- "Staggered concurrency (lower cost)" --> Hedged["⏳ AiMode.Hedged\nStaggered latency hedging"]
 
     Batch --> Quota{"Quota pressure\nor multiple keys?"}
     Quota -- "Spread evenly" --> RR["🔄 AiMode.RoundRobin\nCyclic key rotation"]

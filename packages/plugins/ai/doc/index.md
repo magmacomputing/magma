@@ -41,12 +41,13 @@ console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
 ## AI Function Catalog
 All AI functions return a standard ES Promise wrapped object.
 
-| Function | Input | Returns (`Promise<...>`) | What You Get | Guide |
-| :--- | :--- | :--- | :--- | :--- |
-| **`initAI`** | Provider config & API keys | `void` | Configured AI provider farm | [Initialization & Provider Farm Guide](./init.md) |
-| **`parseAI`** | Natural language text string(s) | `Tempo` \| `Tempo[]` \| `(Tempo \| TempoAiError)[]` | Single point-in-time `Tempo` instance (or batch array) | [Point-in-Time Parsing Guide](./parse.md) |
-| **`recurrenceAI`** | Natural language pattern or RRULE string | `TempoRecurrenceResult` | **Iterable series of `Tempo` dates** (with `.take(n)`, `[Symbol.iterator]`, & RRULE string) | [Recurrence & Schedules Guide](./recurrence.md) |
-| **`scheduleAI`** | Booking prompt + busy constraints | `TempoScheduleResult` | **Resolved appointment slot** (`start`, `end`, `slot`, `alternatives`, `ai.conflictBumped`) | [Recurrence & Schedules Guide](./recurrence.md) |
+| Function | Input | Returns (`Promise<...>`) | Description | Doc |
+| :--- | :--- | :--- | :--- | :---: |
+| **`initAI`** | Provider config & API keys | `void` | Configured AI provider farm | <a href="./ai.init.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`parseAI`** | Natural language text string(s) | `Tempo` \| `Tempo[]` \| `(Tempo \| TempoAiError)[]` | Single point-in-time `Tempo` instance (or batch array) | <a href="./ai.parseAI.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`recurrenceAI`** | Natural language pattern or RRULE string | `TempoRecurrenceResult` | **Iterable series of `Tempo` dates** (with `.take(n)`, `[Symbol.iterator]`, & RRULE string) | <a href="./ai.recurrenceAI.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`scheduleAI`** | Booking prompt + busy constraints | `TempoScheduleResult` | **Resolved appointment slot** (`start`, `end`, `slot`, `alternatives`, `ai.conflictBumped`) | <a href="./ai.scheduleAI.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`contextAI`** | Context text string(s) | `TempoContext` \| `TempoContext[]` \| `(TempoContext \| TempoAiError)[]` | **Inferred regional context** (`timeZone`, `locale`, `calendar`, `sphere`) | <a href="./ai.contextAI.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
 
 ## Architecture & Infrastructure Guides
 
@@ -61,3 +62,4 @@ All AI functions return a standard ES Promise wrapped object.
 ## Licensing
 
 This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
+

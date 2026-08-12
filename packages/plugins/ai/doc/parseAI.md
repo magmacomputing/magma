@@ -39,22 +39,10 @@ const dt = await parseAI("Third Friday of October", {
 
 ## Multi-Provider Execution Modes
 
-`parseAI` supports three execution strategies across your configured provider farm:
+`parseAI` supports all six multi-provider execution strategies (`fallback`, `race`, `consensus`, `hedged`, `roundrobin`, `adaptive`) configured globally or overridden per-request.
 
-1. **Fallback (default)**: Queries providers sequentially in array order until one satisfies the confidence threshold.
-2. **Race (`mode: 'race'`)**: Sends requests concurrently to all providers, returning the fastest valid response.
-3. **Consensus (`mode: 'consensus'`)**: Queries providers concurrently, boosting confidence when outputs agree across providers.
+For a comprehensive guide, decision flowcharts, and configuration details for all execution modes, refer to the [Multi-Provider Execution Modes Guide](./modes.md).
 
-```typescript
-// Consensus mode across multiple providers
-const agreed = await parseAI("First Monday of November", {
-  mode: 'consensus',
-  providers: [
-    { id: 'groq', key: process.env.GROQ_API_KEY },
-    { id: 'openai', key: process.env.OPENAI_API_KEY }
-  ]
-});
-```
 
 ## Batch Array Parsing
 
