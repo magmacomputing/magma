@@ -25,7 +25,7 @@ export { diffAI } from './functions/diff.js';
  */
 
 // /** Formats a Tempo instance into human-friendly, contextual narrative text */
-// export { formatAI } from './functions/format.js';
+// export { formatAI, type TempoAiFormatResult, type FormatItem, type AiFormatOptions } from './functions/format.js';
 
 // /** Scans unstructured text and extracts embedded temporal entities & events */
-// export { extractAI, type TempoEvent } from './functions/extract.js';
+// export { extractAI, type TempoAiExtractResult, type TempoExtractedEvent, type TempoEvent, type AiExtractOptions } from './functions/extract.js';

@@ -1,7 +1,7 @@
 # Implementation Plan: `extractAI`
 
 ## 1. Overview & Goal
-`extractAI` scans unstructured, multi-paragraph text (emails, transcripts, chat logs, meeting agendas, task notes) to identify, parse, and extract all embedded temporal entities and time-bound events into structured `TempoEvent[]` objects (`label`, `start`, `end`, `type`, `timeZone`, `confidence`).
+`extractAI` scans unstructured, multi-paragraph text (emails, transcripts, chat logs, meeting agendas, task notes) to identify, parse, and extract all embedded temporal entities and time-bound events into structured `TempoAiExtractResult` records containing `TempoExtractedEvent[]` (`label`, `start`, `end`, `type`, `rawText`, `confidence`).
 
 It anchors relative mentions (e.g., *"tomorrow at 2pm"*, *"next Tuesday from 9 to 11am"*, *"the last day of next month"*) against an explicit or current reference `anchor` timestamp and timezone.
 
@@ -31,6 +31,9 @@ export interface TempoExtractedEvent {
 	/** Confidence score for this specific entity extraction (0.0 to 1.0). */
 	confidence: number;
 }
+
+/** Backward compatibility alias for TempoExtractedEvent */
+export type TempoEvent = TempoExtractedEvent;
 
 export interface TempoAiExtractResult {
 	/** Array of extracted events with instantiated Tempo objects. */

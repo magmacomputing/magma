@@ -42,7 +42,7 @@
 	},
 	"devDependencies": {
 		"@magmacomputing/tempo": "^3.9.0",
-		"vitest": "^1.0.0"
+		"vitest": "^4.1.10"
 	},
 	"exports": {
 		".": {
