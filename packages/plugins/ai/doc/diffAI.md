@@ -10,7 +10,14 @@ While core `Tempo` provides precise numeric calculations (`start.until(end, 'day
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { diffAI } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, diffAI } from '@magmacomputing/tempo-plugin-ai';
+
+// 1. Initialize AI providers
+await initAI({
+  providers: [
+    { id: 'groq', key: process.env.GROQ_API_KEY, model: 'llama-3.3-70b-versatile' }
+  ]
+});
 
 const start = new Tempo('2026-08-01T09:00:00Z'); // Saturday
 const end = new Tempo('2026-08-10T17:00:00Z');   // Next Monday

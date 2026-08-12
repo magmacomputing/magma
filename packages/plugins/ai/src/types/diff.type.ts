@@ -57,7 +57,7 @@ export interface AiDiffOptions {
 	ttl?: number | undefined;
 	/** If true, logs prompt context and LLM payloads to console */
 	debug?: boolean | undefined;
-	/** Execution mode across provider farm (`AiMode.Fallback` | `AiMode.Race` | `AiMode.Consensus` or string literal) */
+	/** Execution mode across provider farm (`AiMode.Fallback` | `AiMode.Race` | `AiMode.Consensus` | `AiMode.Hedged` | `AiMode.RoundRobin` | `AiMode.Adaptive` or string literal) */
 	mode?: AiMode | undefined;
 	/** Per-request provider configuration overrides */
 	providers?: AiProvider[] | undefined;

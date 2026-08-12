@@ -258,7 +258,7 @@ describe('AI Context Plugin (contextAI)', () => {
 		expect(result.provider).toBe('groq');
 	});
 
-	it('should reject candidates when provider returns invalid non-finite or out-of-range confidence', async () => {
+	it('should reject candidates when provider returns out-of-range confidence', async () => {
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
 		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
 			choices: [{
@@ -268,6 +268,24 @@ describe('AI Context Plugin (contextAI)', () => {
 						locale: 'de-DE',
 						calendar: 'gregory',
 						confidence: 1.5,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		await expect(contextAI('Berlin tech hub')).rejects.toThrow(/invalid confidence score/i);
+	});
+
+	it('should reject candidates when provider returns non-finite confidence score', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						timeZone: 'Europe/Berlin',
+						locale: 'de-DE',
+						calendar: 'gregory',
+						confidence: null,
 					}),
 				},
 			}],

@@ -57,11 +57,11 @@ async function diffSingleInput(
 ): Promise<TempoAiDiffResult> {
 	const isDebug = options?.debug ?? _state.config.debug ?? false;
 	const resolvedOptions = Tempo.options;
-	const tz = String(options?.timeZone || resolvedOptions.timeZone || 'UTC');
+	const tz = String(options?.timeZone || (Tempo.isTempo(start) ? start.tz : undefined) || (Tempo.isTempo(end) ? end.tz : undefined) || resolvedOptions.timeZone || 'UTC');
 	const loc = String(Array.isArray(options?.locale) ? options?.locale[0] : (options?.locale || resolvedOptions.locale || 'en-US'));
 
-	const startTempo = Tempo.isTempo(start) ? start : new Tempo(start, { timeZone: tz });
-	const endTempo = Tempo.isTempo(end) ? end : new Tempo(end, { timeZone: tz });
+	const startTempo = Tempo.isTempo(start) ? (start.tz === tz ? start : start.set({ timeZone: tz })) : new Tempo(start, { timeZone: tz });
+	const endTempo = Tempo.isTempo(end) ? (end.tz === tz ? end : end.set({ timeZone: tz })) : new Tempo(end, { timeZone: tz });
 
 	if (!startTempo.isValid)
 		throw new TempoAiError(`Invalid start date provided to diffAI: "${start}"`, 400);
@@ -69,6 +69,7 @@ async function diffSingleInput(
 		throw new TempoAiError(`Invalid end date provided to diffAI: "${end}"`, 400);
 
 	const holidays = options?.holidays;
+	const region = String(options?.region || '');
 	const grounding = calculateGroundingMetrics(startTempo, endTempo, holidays);
 
 	const promptText = prompt?.trim() || 'Provide a natural summary of the temporal difference between these two dates.';
@@ -77,8 +78,11 @@ async function diffSingleInput(
 	const { force, mode: aiMode, providers, minConfidence, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, hedgeDelay } = options || {};
 
 	const sortedHolidays = holidays ? [...holidays].sort().join(',') : '';
-	const cacheKey = `diff::${startTempo.epoch.ms}::${endTempo.epoch.ms}::${normalizedPrompt}::${tz}::${loc}::${sortedHolidays}`;
+	const cacheKey = `diff::${startTempo.epoch.ms}::${endTempo.epoch.ms}::${normalizedPrompt}::${tz}::${loc}::${region}::${sortedHolidays}`;
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
+
+	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
+	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
 	let cachedVal: string | undefined;
 	if (!force && aiCacheOption !== false) {
@@ -95,19 +99,26 @@ async function diffSingleInput(
 	}
 
 	if (cachedVal) {
-		if (isDebug) console.log(`[tempo-plugin-ai:diff] Cache hit: "${cacheKey}" -> ${cachedVal}`);
 		try {
 			const parsedCache = JSON.parse(cachedVal);
-			return {
-				formatted: parsedCache.formatted,
-				days: parsedCache.days ?? grounding.calendarDays,
-				hours: parsedCache.hours ?? grounding.elapsedHours,
-				businessDays: parsedCache.businessDays ?? grounding.businessDays,
-				holidays: parsedCache.holidays ?? (grounding.matchedHolidays.length > 0 ? grounding.matchedHolidays : undefined),
-				confidence: 1.0,
-				provider: 'cache',
-				reasoning: parsedCache.reasoning,
-			};
+			if (typeof parsedCache?.formatted === 'string' && parsedCache.formatted.trim().length > 0) {
+				const cachedConfidence = typeof parsedCache.confidence === 'number' && Number.isFinite(parsedCache.confidence)
+					? parsedCache.confidence
+					: 1.0;
+				if (effectiveMinConfidence === undefined || cachedConfidence >= effectiveMinConfidence) {
+					if (isDebug) console.log(`[tempo-plugin-ai:diff] Cache hit: "${cacheKey}" -> ${cachedVal}`);
+					return {
+						formatted: parsedCache.formatted,
+						days: parsedCache.days ?? grounding.calendarDays,
+						hours: parsedCache.hours ?? grounding.elapsedHours,
+						businessDays: parsedCache.businessDays ?? grounding.businessDays,
+						holidays: parsedCache.holidays ?? (grounding.matchedHolidays.length > 0 ? grounding.matchedHolidays : undefined),
+						confidence: cachedConfidence,
+						provider: 'cache',
+						reasoning: parsedCache.reasoning,
+					};
+				}
+			}
 		} catch {
 			// If cached value is corrupted, proceed to fetch
 		}
@@ -120,8 +131,6 @@ async function diffSingleInput(
 	assertNoReservedProviderId(availableProviders);
 
 	const mode = aiMode || _state.config.mode || AiMode.Fallback;
-	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
-	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
 	const contextString = `Grounding Context:
 - Start Timestamp: ${startTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')} (${startTempo.tz || tz})
@@ -177,9 +186,9 @@ Do not include markdown blocks or text outside the JSON.`;
 			if (!formatted)
 				throw new TempoAiError(`Provider ${providerId} returned empty or missing 'formatted' text.`, 422);
 
-			const days = typeof parsedData?.days === 'number' ? parsedData.days : grounding.calendarDays;
-			const hours = typeof parsedData?.hours === 'number' ? parsedData.hours : grounding.elapsedHours;
-			const businessDays = typeof parsedData?.businessDays === 'number' ? parsedData.businessDays : grounding.businessDays;
+			const days = grounding.calendarDays;
+			const hours = grounding.elapsedHours;
+			const businessDays = grounding.businessDays;
 			const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : 0.9;
 			const reasoning = typeof parsedData?.reasoning === 'string' ? parsedData.reasoning : undefined;
 
@@ -231,6 +240,7 @@ Do not include markdown blocks or text outside the JSON.`;
 			hours: finalResult.hours,
 			businessDays: finalResult.businessDays,
 			holidays: finalResult.holidays,
+			confidence: finalResult.confidence,
 			reasoning: finalResult.reasoning,
 		});
 
@@ -284,12 +294,17 @@ export async function diffAI(
 		const resolvedOptions = (endOrOptions as AiDiffOptions) || {};
 		if (resolvedOptions.softErrors) {
 			const settled = await Promise.allSettled(
-				startOrPairs.map(pair => diffSingleInput(pair.start, pair.end, pair.prompt, resolvedOptions))
+				startOrPairs.map(async pair => diffSingleInput(pair?.start, pair?.end, pair?.prompt, resolvedOptions))
 			);
-			return settled.map(s => s.status === 'fulfilled' ? s.value : (s.reason as TempoAiError));
+			return settled.map(s => {
+				if (s.status === 'fulfilled') return s.value;
+				return s.reason instanceof TempoAiError
+					? s.reason
+					: new TempoAiError(s.reason?.message || String(s.reason), 500);
+			});
 		}
 		return Promise.all(
-			startOrPairs.map(pair => diffSingleInput(pair.start, pair.end, pair.prompt, resolvedOptions))
+			startOrPairs.map(async pair => diffSingleInput(pair?.start, pair?.end, pair?.prompt, resolvedOptions))
 		);
 	}
 

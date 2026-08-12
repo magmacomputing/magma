@@ -141,7 +141,7 @@ describe('AI Diff Plugin (diffAI)', () => {
 		const result2 = await diffAI(start, end, 'cached prompt');
 		expect(result2.formatted).toBe('Pre-cached 5 business days');
 		expect(result2.provider).toBe('cache');
-		expect(result2.confidence).toBe(1.0);
+		expect(result2.confidence).toBe(0.95);
 		expect(fetchSpy).toHaveBeenCalledTimes(1);
 	});
 
@@ -239,5 +239,67 @@ describe('AI Diff Plugin (diffAI)', () => {
 		expect(results).toHaveLength(2);
 		expect((results[0] as TempoAiDiffResult).formatted).toBe('Pair 1 resolved');
 		expect(results[1]).toBeInstanceOf(TempoAiError);
+	});
+
+	it('should produce distinct cache keys for different region options', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy
+			.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{
+					message: {
+						content: JSON.stringify({
+							formatted: 'AU Region difference',
+							reasoning: 'AU formatting',
+							confidence: 0.95,
+						}),
+					},
+				}],
+			}), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+			.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{
+					message: {
+						content: JSON.stringify({
+							formatted: 'US Region difference',
+							reasoning: 'US formatting',
+							confidence: 0.95,
+						}),
+					},
+				}],
+			}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const start = new Tempo('2026-08-03T09:00:00Z');
+		const end = new Tempo('2026-08-07T17:00:00Z');
+
+		const resultAU = await diffAI(start, end, 'summarize', { region: 'AU-NSW' });
+		const resultUS = await diffAI(start, end, 'summarize', { region: 'US' });
+
+		expect(resultAU.formatted).toBe('AU Region difference');
+		expect(resultUS.formatted).toBe('US Region difference');
+		expect(fetchSpy).toHaveBeenCalledTimes(2);
+	});
+
+	it('should normalize start and end Tempo instances to requested timezone', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						formatted: 'Timezone normalized difference',
+						reasoning: 'Normalized',
+						confidence: 0.95,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const start = new Tempo('2026-08-01T09:00:00', { timeZone: 'America/New_York' });
+		const end = new Tempo('2026-08-05T17:00:00', { timeZone: 'Asia/Tokyo' });
+
+		const result = await diffAI(start, end, 'summarize', { timeZone: 'Europe/London' });
+		expect(result.formatted).toBe('Timezone normalized difference');
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+		const requestBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+		expect(requestBody.messages[0].content).toContain('(Europe/London)');
 	});
 });

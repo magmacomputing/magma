@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2026-08-10
 
 ### Added
+- **Temporal Difference & Relative Grounding (`diffAI`)**: Added natural language temporal difference calculation and narrative summarization between two `Tempo` points, dates, or timestamps.
+  - Pre-computes mathematical grounding metrics (`calendarDays`, `elapsedHours`, `businessDays` with weekend and holiday exclusion) to provide strict arithmetic backing for LLM narrative formatting.
+  - Supports domain-specific delta formatting (e.g. accounting terms, working days, human relative explanations, or business SLAs).
+  - Handles reversible date intervals with signed/negative business day counts when `start > end`.
+  - Integrates with the multi-provider dispatch orchestrator (`executeWithMode`) supporting Fallback, Race, Consensus, Hedged, RoundRobin, and Adaptive execution modes.
+  - Partitioned caching using `diff::` namespace, incorporating start/end epochs, normalized prompts, timezones, locales, regional settings, and sorted holiday lists.
+  - Supports parallel array batching with optional `softErrors` normalization to `TempoAiError`.
 - **Context & Region Inference (`contextAI`)**: Added a context-deduction handler to extract localized environmental settings (`timeZone`, `locale`, `calendar`, `sphere`) from unstructured text inputs, such as user bios, location descriptions, or email bodies.
   - Returns `TempoContext` result including IANA timezone, BCP 47 locale tag, Unicode calendar system, and Optional hemisphere (`'north' | 'south'`).
   - Supports parallel array batching with optional soft-error mapping.
