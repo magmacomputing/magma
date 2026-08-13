@@ -2,9 +2,16 @@ import type { Tempo } from '@magmacomputing/tempo';
 import type { AiMode } from '../core/config.js';
 import type { AiCacheAdapter, AiProvider } from './common.type.js';
 
+/**
+ * ## TempoDateInput
+ * Flexible date-time input representation accepted by `formatAI`.
+ * Supports `Tempo` instances, `Date`, ISO strings, timestamps, and TC39 `Temporal` objects.
+ */
+export type TempoDateInput = Tempo | Date | string | number | bigint | object;
+
 export interface FormatItem {
 	/** Date-time instance, Temporal object, or string to format. */
-	date: Tempo.DateTime;
+	date: TempoDateInput;
 	/** Prompt instructions guiding the output narrative. */
 	prompt?: string | undefined;
 }
@@ -22,7 +29,7 @@ export interface TempoAiFormatResult {
 
 export interface AiFormatOptions {
 	/** Reference anchor date for relative calculations (defaults to now). */
-	anchor?: Tempo.DateTime | undefined;
+	anchor?: TempoDateInput | undefined;
 	/** Target IANA timezone (defaults to Tempo instance timezone or global options). */
 	timeZone?: string | undefined;
 	/** Target BCP 47 locale or language tag (defaults to global options or 'en-US'). */

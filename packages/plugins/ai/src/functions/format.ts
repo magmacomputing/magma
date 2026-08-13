@@ -12,9 +12,9 @@ import {
 	resolveTzAndLocale,
 	writeMultiTierCache,
 } from '../core/support.js';
-import type { AiFormatOptions, FormatItem, TempoAiFormatResult } from '../types/format.type.js';
+import type { AiFormatOptions, FormatItem, TempoAiFormatResult, TempoDateInput } from '../types/format.type.js';
 
-export type { AiFormatOptions, FormatItem, TempoAiFormatResult };
+export type { AiFormatOptions, FormatItem, TempoAiFormatResult, TempoDateInput };
 
 interface FormatGroundingMetrics {
 	iso: string;
@@ -55,7 +55,7 @@ function calculateFormatGroundingMetrics(targetTempo: Tempo, anchorTempo: Tempo)
 }
 
 async function formatSingleInput(
-	date: Tempo.DateTime,
+	date: TempoDateInput,
 	prompt?: string,
 	options?: AiFormatOptions,
 ): Promise<TempoAiFormatResult> {
@@ -82,7 +82,7 @@ async function formatSingleInput(
 			? (Tempo.isTempo(anchor)
 				? (anchor.tz === tz ? anchor : anchor.set({ timeZone: tz }))
 				: new Tempo(anchor as any, { timeZone: tz }))
-			: new Tempo(undefined, { timeZone: tz });
+			: new Tempo(Math.floor(Date.now() / 60_000) * 60_000, { timeZone: tz });
 	} catch (err: any) {
 		throw new TempoAiError(`Invalid anchor date provided to formatAI: "${String(anchor)}"`, 400);
 	}
@@ -128,11 +128,13 @@ async function formatSingleInput(
 		try {
 			const parsedCache = JSON.parse(cachedVal);
 			if (typeof parsedCache?.formatted === 'string' && parsedCache.formatted.trim().length > 0) {
-				const cachedConfidence = typeof parsedCache.confidence === 'number' && Number.isFinite(parsedCache.confidence)
-					? parsedCache.confidence
+				const cachedConfidence = typeof parsedCache?.confidence === 'number' && Number.isFinite(parsedCache.confidence)
+					? Math.max(0.0, Math.min(1.0, parsedCache.confidence))
 					: 1.0;
-				if (effectiveMinConfidence === undefined || cachedConfidence >= effectiveMinConfidence) {
-					if (isDebug) console.log(`[tempo-plugin-ai:format] Cache hit: "${cacheKey}" -> ${cachedVal}`);
+
+				if (effectiveMinConfidence !== undefined && cachedConfidence < effectiveMinConfidence) {
+					if (isDebug) console.log(`[tempo-plugin-ai:format] Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`);
+				} else {
 					return {
 						formatted: parsedCache.formatted,
 						confidence: cachedConfidence,
@@ -141,8 +143,8 @@ async function formatSingleInput(
 					};
 				}
 			}
-		} catch {
-			// If cached value is corrupted, proceed to fetch
+		} catch (err: any) {
+			if (isDebug) console.warn(`[tempo-plugin-ai:format] Failed to parse cached payload:`, err?.message ?? err);
 		}
 	}
 
@@ -153,7 +155,29 @@ async function formatSingleInput(
 
 	assertNoReservedProviderId(availableProviders);
 
-	const mode = aiMode || _state.config.mode || AiMode.Fallback;
+	const systemPrompt = `You are an expert natural language temporal formatting engine.
+Generate human-friendly, contextual narrative representations of dates and times based on the grounding context.
+
+Grounding Context:
+- Target Date-Time: ${grounding.iso} (${tz})
+- Target Day of Week: ${grounding.dayOfWeek} (Day ${grounding.dayOfWeekOrdinal})
+- Reference Anchor: ${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')} (${tz})
+- Relative Time Delta: ${grounding.calendarDays >= 0 ? '+' : ''}${grounding.calendarDays} calendar days (${grounding.elapsedHours >= 0 ? '+' : ''}${grounding.elapsedHours} hours) in the ${grounding.direction.toUpperCase()}
+- Target Locale: ${loc}${region ? `\n- Regional Context: ${region}` : ''}${style ? `\n- Desired Style/Tone: ${style}` : ''}
+
+Rules:
+1. Always return a single, valid JSON object matching the schema below.
+2. The "formatted" field must contain the contextual narrative string (e.g., "this Friday at 5:00 PM EST (in 5 days)", "Tomorrow afternoon at 3:00 PM").
+3. Respect the target locale, style, and timezone conventions.
+4. "confidence" must be a float between 0.0 and 1.0 representing certainty.
+5. "reasoning" should briefly describe how the formatted output was constructed.
+
+Output JSON Schema:
+{
+  "formatted": "string",
+  "confidence": 0.95,
+  "reasoning": "string"
+}`;
 
 	const contextString = `Grounding Context:
 - Target Date-Time: ${grounding.iso} (${grounding.timeZone})
@@ -165,18 +189,7 @@ ${style ? `- Desired Style/Tone: ${style}` : ''}
 ${region ? `- Regional Context: ${region}` : ''}
 - Formatting Instructions: "${promptText}"`;
 
-	const systemPrompt = `You are a high-performance narrative date formatter. Your task is to format the given Target Date-Time according to the Formatting Instructions, Style, and Target Locale, strictly respecting the mathematical Grounding Context provided. Return ONLY a valid JSON object matching this schema:
-{
-  "formatted": "Contextual narrative string (e.g. 'this Friday at 5:00 PM EST (in 2 days)')",
-  "confidence": 0.98,
-  "reasoning": "Brief explanation of how the narrative reflects the grounding context and prompt."
-}
-
-Rules:
-- Never hallucinate the weekday, date, or relative offset; adhere strictly to the Grounding Context.
-- Apply the requested tone/style and locale conventions.
-- Confidence must be a float between 0.0 and 1.0.
-- Do not include markdown blocks or any text outside the JSON.`;
+	const mode = aiMode || _state.config.mode || AiMode.Fallback;
 
 	const winningCandidate = await executeWithMode(
 		mode,
@@ -199,14 +212,17 @@ Rules:
 				throw new TempoAiError(`Provider ${providerId} returned invalid JSON: ${err?.message}`, 422);
 			}
 
-			const formatted = typeof parsedData?.formatted === 'string' ? parsedData.formatted.trim() : '';
-			if (!formatted) {
-				throw new TempoAiError(`Provider ${providerId} returned empty formatted string.`, 422);
-			}
+			if (typeof parsedData !== 'object' || parsedData === null)
+				throw new TempoAiError(`Provider ${providerId} returned non-object JSON payload.`, 422);
 
-			const confidence = typeof parsedData?.confidence === 'number' && Number.isFinite(parsedData.confidence)
+			const formatted = typeof parsedData?.formatted === 'string' ? parsedData.formatted.trim() : '';
+			if (!formatted)
+				throw new TempoAiError(`Provider ${providerId} returned empty formatted string.`, 422);
+
+			const rawConfidence = typeof parsedData?.confidence === 'number' && Number.isFinite(parsedData.confidence)
 				? parsedData.confidence
 				: 0.9;
+			const confidence = Math.max(0.0, Math.min(1.0, rawConfidence));
 			const reasoning = typeof parsedData?.reasoning === 'string' ? parsedData.reasoning : undefined;
 
 			return {
@@ -226,9 +242,10 @@ Rules:
 	_state.limits = winningCandidate.rateLimits ?? null;
 
 	const { data: parsedData, providerId } = winningCandidate;
-	const confidence = typeof winningCandidate.confidence === 'number' && Number.isFinite(winningCandidate.confidence)
+	const rawConfidence = typeof winningCandidate.confidence === 'number' && Number.isFinite(winningCandidate.confidence)
 		? winningCandidate.confidence
 		: 0.9;
+	const confidence = Math.max(0.0, Math.min(1.0, rawConfidence));
 
 	if (effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence) {
 		throw new TempoAiError(`formatAI confidence (${confidence}) is below the required threshold of ${effectiveMinConfidence}.`, 422);
@@ -272,9 +289,9 @@ Rules:
  * ```
  */
 export async function formatAI(items: FormatItem[], options?: AiFormatOptions): Promise<(TempoAiFormatResult | TempoAiError)[]>;
-export async function formatAI(date: Tempo.DateTime, prompt?: string, options?: AiFormatOptions): Promise<TempoAiFormatResult>;
+export async function formatAI(date: TempoDateInput, prompt?: string, options?: AiFormatOptions): Promise<TempoAiFormatResult>;
 export async function formatAI(
-	dateOrItems: Tempo.DateTime | FormatItem[],
+	dateOrItems: TempoDateInput | FormatItem[],
 	promptOrOptions?: string | AiFormatOptions,
 	options?: AiFormatOptions,
 ): Promise<TempoAiFormatResult | (TempoAiFormatResult | TempoAiError)[]> {

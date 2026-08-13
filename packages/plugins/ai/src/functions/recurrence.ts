@@ -119,6 +119,7 @@ export async function recurrenceAI(
 	const tz = options?.timeZone || (options?.anchor instanceof Tempo ? options.anchor.tz : undefined) || Tempo.options.timeZone;
 	const cal = options?.calendar || (options?.anchor instanceof Tempo ? options.anchor.cal : undefined) || Tempo.options.calendar;
 	const loc = options?.locale || (options?.anchor instanceof Tempo ? options.anchor.loc : undefined) || Tempo.options.locale;
+	const scalarLoc = String(Array.isArray(loc) ? loc[0] : loc);
 	const sph = options?.sphere || (options?.anchor instanceof Tempo ? options.anchor.config.sphere : undefined) || Tempo.options.sphere;
 
 	const contextConfig = { timeZone: tz, calendar: cal, locale: loc, sphere: sph };
@@ -151,12 +152,12 @@ export async function recurrenceAI(
 	const mode = options?.mode || _state.config.mode || AiMode.Fallback;
 	const effectiveMinConfidence = options?.minConfidence ?? _state.config.minConfidence;
 	const callTimeout = options?.timeout;
-	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}.`;
+	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${scalarLoc}, Hemisphere: ${sph}.`;
 
 	const systemPrompt = `You are a calendar recurrence compiler. Read the user's natural language schedule and context. Return ONLY a valid JSON object matching this exact schema:
 {
   "rrule": "Standard RFC 5545 RRULE string without RRULE: prefix (e.g., 'FREQ=WEEKLY;BYDAY=TU;BYHOUR=15')",
-  "summary": "Clear, concise human-friendly description localized to locale '${loc}' (e.g., 'Every Tuesday at 15:00')",
+  "summary": "Clear, concise human-friendly description localized to locale '${scalarLoc}' (e.g., 'Every Tuesday at 15:00')",
   "reasoning": "Step-by-step calendar math explanation",
   "confidence": 0.95
 }

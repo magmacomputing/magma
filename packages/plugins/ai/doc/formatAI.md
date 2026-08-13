@@ -20,9 +20,10 @@ await initAI({
 });
 
 const target = new Tempo('2026-08-07T17:00:00[America/New_York]');
+const anchor = new Tempo('2026-08-02T17:00:00[America/New_York]');
 
 // "this Friday at 5:00 PM EST (in 5 days)"
-const result = await formatAI(target, 'friendly reminder tone with relative countdown');
+const result = await formatAI(target, 'friendly reminder tone with relative countdown', { anchor });
 
 console.log(result.formatted);  // "this Friday at 5:00 PM EST (in 5 days)"
 console.log(result.confidence); // 0.98
@@ -35,7 +36,7 @@ console.log(result.provider);   // 'groq'
 
 | Option | Type | Description |
 | :--- | :--- | :--- |
-| **`anchor`** | `Tempo.DateTime` | Reference anchor date for relative delta calculations (defaults to current time). |
+| **`anchor`** | `TempoDateInput` | Reference anchor date for relative delta calculations (defaults to current time). |
 | **`style`** | `string` | Narrative style or tone hint (e.g. `'casual'`, `'formal'`, `'compact'`, `'countdown'`). |
 | **`region`** | `string` | Regional context (e.g., `'AU-NSW'`, `'US-CA'`) passed to LLM grounding. |
 | **`timeZone`** | `string` | Target IANA timezone for output formatting. |

@@ -7,7 +7,7 @@ import type { AiCacheAdapter, AiProvider, TempoAiMeta } from '../types/index.js'
 export function assertNoReservedProviderId(providers: Partial<AiProvider>[]): void {
 	for (const p of providers) {
 		if (p.id && RESERVED_PROVIDER_IDS.has(p.id.toLowerCase()))
-			throw new TempoAiError(`Provider ID '${p.id}' is a reserved keyword in parseAI.`, 400);
+			throw new TempoAiError(`Provider ID '${p.id}' is a reserved keyword in AI provider configuration.`, 400);
 	}
 }
 
@@ -95,8 +95,7 @@ export async function writeMultiTierCache(
 	const adapter = options.cacheAdapter || _state.config.cacheAdapter;
 	if (adapter) {
 		try {
-			const res = adapter.set(cacheKey, value, ttl);
-			if (res instanceof Promise) await res;
+			await adapter.set(cacheKey, value, ttl);
 		} catch (err: any) {
 			if (options.debug) console.warn(`[${options.tag ?? 'tempo-plugin-ai'}] Cache adapter set failed for ${cacheKey}:`, err?.message ?? err);
 		}

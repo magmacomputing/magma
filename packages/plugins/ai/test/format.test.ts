@@ -30,7 +30,7 @@ describe('AI Format Plugin (formatAI)', () => {
 		const target = new Tempo('2026-08-07T17:00:00Z');
 		const anchor = new Tempo('2026-08-02T17:00:00Z');
 
-		const result = await formatAI(target, 'friendly reminder tone with countdown', { anchor });
+		const result = await formatAI(target, 'friendly reminder tone with countdown', { anchor, timeZone: 'UTC' });
 		expect(result).toBeDefined();
 		expect(result.formatted).toBe('this Friday at 5:00 PM EST (in 5 days)');
 		expect(result.confidence).toBe(0.98);
@@ -60,7 +60,7 @@ describe('AI Format Plugin (formatAI)', () => {
 		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
 
 		const temporalZdt = new Tempo('2026-08-05T15:00:00+10:00[Australia/Sydney]').toDateTime();
-		const result = await formatAI(temporalZdt, 'compact relative format');
+		const result = await formatAI(temporalZdt, 'compact relative format', { timeZone: 'Australia/Sydney' });
 
 		expect(result.formatted).toBe('Tomorrow afternoon at 3:00 PM');
 		expect(result.confidence).toBe(0.95);
@@ -255,5 +255,46 @@ describe('AI Format Plugin (formatAI)', () => {
 		expect(results).toHaveLength(2);
 		expect((results[0] as TempoAiFormatResult).formatted).toBe('Item 1 formatted');
 		expect(results[1]).toBeInstanceOf(TempoAiError);
+	});
+
+	it('should honor force: true, cache: false, and ttl override options', async () => {
+		const cacheStore = new Map<string, string>();
+		const customAdapter: AiCacheAdapter = {
+			get: vi.fn(async (key: string) => cacheStore.get(key)),
+			set: vi.fn(async (key: string, val: string) => { cacheStore.set(key, val); }),
+		};
+
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockImplementation(async () => new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						formatted: 'Fresh result',
+						confidence: 0.96,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const target = new Tempo('2026-08-07T17:00:00Z');
+		const anchor = new Tempo('2026-08-02T17:00:00Z');
+
+		// 1. Initial fetch with ttl override
+		const res1 = await formatAI(target, 'test prompt', { anchor, ttl: 5000, cacheAdapter: customAdapter });
+		expect(res1.formatted).toBe('Fresh result');
+		expect(customAdapter.set).toHaveBeenCalledWith(expect.any(String), expect.any(String), 5000);
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+		// 2. force: true should bypass existing cache and invoke provider again
+		const res2 = await formatAI(target, 'test prompt', { anchor, force: true, cacheAdapter: customAdapter });
+		expect(res2.formatted).toBe('Fresh result');
+		expect(res2.provider).toBe('groq');
+		expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+		// 3. cache: false should skip writing to cache
+		customAdapter.set = vi.fn();
+		const res3 = await formatAI('2026-09-01', 'uncached prompt', { anchor, cache: false, cacheAdapter: customAdapter });
+		expect(res3.formatted).toBe('Fresh result');
+		expect(customAdapter.set).not.toHaveBeenCalled();
 	});
 });

@@ -95,10 +95,10 @@ flowchart LR
         LLM["Groq • OpenAI • Gemini • Anthropic"]
     end
 
-    Client -- "1. HTTPS (TLS 1.3)<br/>Session Token / Auth Header" --> Proxy
-    Proxy -- "2. HTTPS (TLS 1.3)<br/>Private Provider API Key" --> LLM
-    LLM -- "3. HTTPS (TLS 1.3)<br/>Raw JSON Completion" --> Proxy
-    Proxy -- "4. HTTPS (TLS 1.3)<br/>Validated Payload" --> Client
+    Client -- "1. HTTPS (TLS 1.2+)<br/>Bearer Token / Auth Header" --> Proxy
+    Proxy -- "2. HTTPS (TLS 1.2+)<br/>Private Provider API Key" --> LLM
+    LLM -- "3. HTTPS (TLS 1.2+)<br/>Raw JSON Completion" --> Proxy
+    Proxy -- "4. HTTPS (TLS 1.2+)<br/>Validated Payload" --> Client
 ```
 
 ### 1. Browser Configuration Example
@@ -113,7 +113,7 @@ await initAI({
     {
       id: 'my-gateway',
       url: 'https://api.mycompany.com/v1/ai/chat/completions', // Your secure proxy endpoint
-      key: userSessionToken, // Short-lived user JWT or session cookie
+      key: userSessionToken, // Short-lived user Bearer JWT token
       model: 'llama-3.3-70b-instruct'
     }
   ]
@@ -124,29 +124,42 @@ const date = await parseAI("Team standup next Wednesday at 9:30am");
 ```
 
 ### 2. Backend Proxy Handler Example (Next.js / Cloudflare Worker / Express)
-Your backend endpoint receives the request, validates the user's session, attaches your private LLM API key, and forwards the payload to the upstream provider:
+Your backend endpoint receives the request, validates the user's session, enforces ingress quotas, attaches your private LLM API key, and forwards the validated payload to the upstream provider:
 
 ```typescript
 // Example: Next.js API Route / Cloudflare Worker
 export async function POST(req: Request) {
   // 1. Authenticate user session
   const authHeader = req.headers.get('Authorization');
-  if (!isValidUserSession(authHeader)) {
+  const session = await validateUserSession(authHeader);
+  if (!session) {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // 2. Forward request to upstream LLM with private BYOK key
+  // 2. Ingress validation & per-user quota enforcement
   const body = await req.json();
+  if (typeof body?.prompt !== 'string' || body.prompt.length > 4096) {
+    return new Response('Invalid prompt or payload exceeds size limit', { status: 400 });
+  }
+  if (!checkUserRateLimit(session.userId)) {
+    return new Response('Too Many Requests', { status: 429 });
+  }
+
+  // 3. Construct sanitized upstream payload with private BYOK key
   const upstreamResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: body.messages,
+      temperature: 0.1,
+    })
   });
 
-  // 3. Return provider payload to client
+  // 4. Return provider payload to client
   const data = await upstreamResponse.json();
   return new Response(JSON.stringify(data), {
     status: upstreamResponse.status,
@@ -161,18 +174,18 @@ export async function POST(req: Request) {
 
 Whether running directly on backend servers (Node.js, Deno, Bun, Edge Workers) or through a client-side browser proxy, `@magmacomputing/tempo-plugin-ai` enforces strict security and privacy standards:
 
-### 1. End-to-End Encryption (TLS 1.3)
-All transport communication—both from browser to proxy and from proxy/server to upstream LLM endpoints—is strictly enforced over HTTPS utilizing **TLS 1.3**. Plaintext HTTP endpoints are disallowed in production environments (permitted only on `localhost` during local development).
+### 1. Transport Security (HTTPS / TLS)
+All network communication—both from client to proxy and from proxy/server to upstream LLM endpoints—is required over HTTPS. Negotiated TLS versions (such as TLS 1.2 or TLS 1.3) depend on deployment environment and server configuration unless strictly enforced by your reverse proxy. Plaintext HTTP endpoints are disallowed in production environments (permitted only on `localhost` during local development).
 
-### 2. Ephemeral Processing & Zero Data Retention
-Temporal processing payloads (dates, times, context snippets, prompts) are processed ephemerally. The plugin does not send telemetry or store user prompt data on external analytics servers. Information is used exclusively during the execution of the requested AI function and discarded immediately after response resolution.
+### 2. Ephemeral Processing & Cache Retention Controls
+Temporal processing payloads (dates, times, context snippets, prompts) are processed ephemerally. The plugin does not send telemetry or store user prompt data on external analytics servers. However, functions supporting caching (e.g. `parseAI`, `formatAI`, `diffAI`) may retain prompt-derived cache keys and final results in local memory or configured custom cache adapters according to the resolved TTL. Requests requiring zero cache retention must explicitly pass `cache: false`.
 
 ### 3. In-Memory Credential Redaction & Immutability
 * **Automated Key Redaction**: Calling `getAiConfig()` returns a sanitized, deeply read-only snapshot of active configurations with all provider `key` values replaced with `[REDACTED]`, preventing accidental exposure in log files, APM traces, or crash dumps.
-* **Frozen Metadata**: All diagnostic metadata attached to `Tempo` instances via `.ai` is deeply frozen with `Object.freeze()` and guarded via runtime `Proxy` wrappers, eliminating prototype pollution and runtime state mutation.
+* **Frozen Metadata**: All diagnostic metadata attached to `Tempo` instances via `.ai` is deeply frozen with `Object.freeze()` and guarded via runtime `Proxy` wrappers, protecting against direct runtime mutation of the `.ai` metadata.
 
-### 4. Deterministic Schema Guardrails & Hallucination Traps
-All LLM prompts are paired with rigid, machine-verifiable JSON schemas. Responses undergo strict boundary validation, regex parsing, and ISO verification before any native `Tempo` date object is instantiated. If an LLM returns malformed or non-chronological data, the plugin throws a typed `TempoAiError` or triggers automatic fallback rather than silently returning an invalid date.
+### 4. Deterministic Schema Guardrails & Confidence Range Verification
+All LLM prompts are paired with rigid, machine-verifiable JSON schemas. Responses undergo strict boundary validation, regex parsing, confidence range verification (`0.0` to `1.0`), and ISO verification before any native `Tempo` date object or result payload is instantiated. If an LLM returns malformed, out-of-range, or non-chronological data, the plugin throws a typed `TempoAiError` or triggers automatic fallback rather than silently returning an invalid date.
 
 ### 5. Partitioned Caching & Fail-Open Storage Resilience
 * **Strict Cache Key Partitioning**: Caches are namespaced and hashed (`ai:<namespace>::...`) with timezone, locale, calendar, and anchor date isolation to prevent cross-tenant or cross-regional cache poisoning.

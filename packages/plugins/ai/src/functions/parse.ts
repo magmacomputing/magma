@@ -17,14 +17,16 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 	if (Tempo.isTempo(options?.anchor)) {
 		tz = String(options!.timeZone || options!.anchor.tz);
 		cal = String(options!.calendar || options!.anchor.cal);
-		loc = String(Array.isArray(options!.locale) ? options!.locale[0] : (options!.locale || options!.anchor.loc));
+		const rawLoc = options!.locale || options!.anchor.loc;
+		loc = String(Array.isArray(rawLoc) ? rawLoc[0] : rawLoc);
 		sph = String(options!.sphere || options!.anchor.config.sphere || 'north');
 		anchorStr = options!.anchor.toString();
 	} else {
 		const resolvedOptions = Tempo.options;
 		tz = String(options?.timeZone || resolvedOptions.timeZone);
 		cal = String(options?.calendar || resolvedOptions.calendar);
-		loc = String(Array.isArray(options?.locale) ? options?.locale[0] : (options?.locale || resolvedOptions.locale));
+		const rawLoc = options?.locale || resolvedOptions.locale;
+		loc = String(Array.isArray(rawLoc) ? rawLoc[0] : rawLoc);
 		sph = String(options?.sphere || resolvedOptions.sphere || 'north');
 		anchorStr = String(options?.anchor || new Tempo().toString());
 	}
