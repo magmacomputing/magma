@@ -15,9 +15,9 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
 	let tz: string, cal: string, loc: string, sph: string, anchorStr: string;
 	if (Tempo.isTempo(options?.anchor)) {
-		tz = String(options!.timeZone || options!.anchor.config.timeZone);
-		cal = String(options!.calendar || options!.anchor.config.calendar);
-		loc = String(Array.isArray(options!.locale) ? options!.locale[0] : (options!.locale || options!.anchor.config.locale));
+		tz = String(options!.timeZone || options!.anchor.tz);
+		cal = String(options!.calendar || options!.anchor.cal);
+		loc = String(Array.isArray(options!.locale) ? options!.locale[0] : (options!.locale || options!.anchor.loc));
 		sph = String(options!.sphere || options!.anchor.config.sphere || 'north');
 		anchorStr = options!.anchor.toString();
 	} else {

@@ -3,7 +3,7 @@ import { getTemporalIds, instant } from '#library/temporal.library.js';
 import { ownKeys } from '#library/primitive.library.js';
 import type { TypeValue } from '#library/type.library.js';
 
-import { getRuntime, sym, Match, logError, logDebug, TempoError } from '#tempo/support';
+import { getRuntime, sym, Match, logError, logDebug, TempoError, Default } from '#tempo/support';
 import { prefix, parseWeekday, parseDate, parseTime, parseZone } from './engine.lexer.js';
 import { resolveTermMutation } from './engine.term.js';
 import enums from '#tempo/support/support.enum.js';
@@ -83,6 +83,7 @@ export function getAliasContext(ctx: NormalizerContext, dateTime: Temporal.Zoned
 		get ss() { return dateTime.second },
 		get tz() { return tz },
 		get cal() { return cal },
+		get loc() { return state.config.locale ?? Default.locale },
 		config: state.config,
 		[sym.$Identity]: true,
 	} as t.AliasContext
@@ -205,7 +206,7 @@ export function resolveAliases(
 				const host = getAliasContext(ctx, dateTime);
 				const res = aliasEngine?.resolveAlias(key as any, host);
 				if (!res) continue;
-				
+
 				logDebug(`[Normalizer] Resolved alias '${aliasKey}'`, state.config);
 
 				try {
@@ -253,7 +254,7 @@ export function resolveAliases(
 	if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {
 		const rawMm = String(groups["mm"]).replace(/\.$/, '').toLowerCase();
 		const mappedMm = state.parse.monthMap?.[rawMm];
-		
+
 		if (isDefined(mappedMm)) {
 			groups["mm"] = mappedMm.value.toString().padStart(2, '0');
 			logDebug(`[Normalizer] Normalized localized month string '${groups["mm"]}'`, state.config);

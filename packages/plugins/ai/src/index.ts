@@ -15,6 +15,7 @@ export { recurrenceAI } from './functions/recurrence.js';
 export { scheduleAI } from './functions/schedule.js';
 export { contextAI } from './functions/context.js';
 export { diffAI } from './functions/diff.js';
+export { formatAI } from './functions/format.js';
 
 /*
  * ============================================================================
@@ -23,9 +24,6 @@ export { diffAI } from './functions/diff.js';
  * The following exports lay the groundwork for expanding tempo-plugin-ai.
  * Uncomment these exports as their implementations are finalized.
  */
-
-// /** Formats a Tempo instance into human-friendly, contextual narrative text */
-// export { formatAI, type TempoAiFormatResult, type FormatItem, type AiFormatOptions } from './functions/format.js';
 
 // /** Scans unstructured text and extracts embedded temporal entities & events */
 // export { extractAI, type TempoAiExtractResult, type TempoExtractedEvent, type TempoEvent, type AiExtractOptions } from './functions/extract.js';

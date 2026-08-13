@@ -200,7 +200,7 @@ export default withMermaid(defineConfig({
     ssr: {
       // Prevent Vite from externalising these packages during SSR so the aliases
       // above are honoured in the server-side rendering pass as well.
-      noExternal: ['@magmacomputing/tempo', '@magmacomputing/library']
+      noExternal: ['@magmacomputing/tempo', '@magmacomputing/library', 'vue', '@vue/server-renderer']
     }
   }
 }))

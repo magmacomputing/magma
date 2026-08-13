@@ -75,43 +75,123 @@ By default, `@magmacomputing/tempo-plugin-ai` lazily fetches provider defaults (
 
 ### Frontend Security Warning
 > [!CAUTION]
-> **Never** expose a raw LLM API key in a client-side browser bundle (like React or Vue) or store it in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). Any Cross-Site Scripting (XSS) vulnerability, compromised NPM package, or malicious browser extension can easily inspect client-side storage and steal secret keys, leading to quota exhaustion, billing fraud, or permanent provider bans. BYOK keys are *only* safe on backend servers or edge workers.
+> **Never** expose a raw LLM API key in a client-side browser bundle (like React, Vue, or Svelte) or store it in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). Any Cross-Site Scripting (XSS) vulnerability, compromised NPM dependency, or malicious browser extension can inspect client-side memory/storage and extract secret keys, leading to quota drainage, unexpected billing spikes, or account bans. BYOK provider keys are *only* safe on backend servers and edge workers.
 
-## The Proxy Architecture
+## Browser & Client-Side Proxy Architecture
 
-If you need to execute AI functions directly on a public frontend application, you must route requests through a secure backend proxy. 
+To execute AI functions within client-side browser applications safely, route requests through a secure self-hosted backend proxy or unified AI Gateway (such as a Cloudflare Worker, Next.js API route, Express server, OpenRouter, Portkey, or LiteLLM):
 
-A standard proxy architecture (e.g. using Cloudflare Workers or a custom Node/Express backend) involves:
-1. **Frontend Request**: The browser sends the prompt or temporal data to your own backend API (e.g., `/api/parse-date`).
-2. **Backend Authentication**: Your API validates the user's session or API token to prevent abuse.
-3. **LLM Inference**: Your backend runs the Tempo AI function (such as `parseAI`) using your securely stored BYOK keys.
-4. **Response**: Your backend returns the resulting ISO 8601 string to the frontend, where it can be instantiated into a native `Tempo` object.
+```mermaid
+flowchart LR
+    subgraph Browser ["Client-Side Browser (SPA)"]
+        Client["Tempo AI Plugin<br/>(initAI / parseAI / diffAI)"]
+    end
 
-Because LLM API calls typically take ~300-800ms, the ~20ms overhead of routing the request through your own backend proxy is negligible.
+    subgraph Backend ["Self-Hosted Proxy / AI Gateway"]
+        Proxy["Your Backend API / AI Gateway<br/>• User Authentication & Rate Limits<br/>• Secure Secret Management"]
+    end
 
-## Fallback Loops & Execution Modes
+    subgraph Providers ["Upstream LLM Providers"]
+        LLM["Groq • OpenAI • Gemini • Anthropic"]
+    end
 
-Because third-party APIs can experience downtime or aggressive rate limiting, the plugin supports flexible multi-provider execution strategies:
-
-### 1. Fallback Mode (Default)
-When configured with multiple providers in `initAI()`, AI functions execute requests sequentially. If the primary provider hits a timeout or a `429 Too Many Requests` limit, the plugin instantly and silently fails over to the next provider in the array. Rate limit headers are updated based on the successful provider response or error resolution.
-
-### 2. Race Mode (`mode: 'race'`)
-Dispatches requests to all available providers simultaneously using `Promise.allSettled`. Returns the fastest resolving provider response to minimize user-perceived latency.
-
-```typescript
-const result = await parseAI("Thanksgiving 2026", { mode: 'race' });
+    Client -- "1. HTTPS (TLS 1.3)<br/>Session Token / Auth Header" --> Proxy
+    Proxy -- "2. HTTPS (TLS 1.3)<br/>Private Provider API Key" --> LLM
+    LLM -- "3. HTTPS (TLS 1.3)<br/>Raw JSON Completion" --> Proxy
+    Proxy -- "4. HTTPS (TLS 1.3)<br/>Validated Payload" --> Client
 ```
 
-### 3. Consensus Mode (`mode: 'consensus'`)
-Executes all providers concurrently. If multiple providers agree on the resolved ISO timestamp, confidence score is boosted (to `1.0`) and the consensus result is returned. Rate limits are applied from the consensus provider.
+### 1. Browser Configuration Example
+Configure `initAI` in your browser code to target your backend proxy or AI Gateway URL:
 
 ```typescript
-const result = await parseAI("The penultimate Tuesday before Thanksgiving", {
-  mode: 'consensus',
-  minConfidence: 0.85
+import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+
+// Safe for browser deployment: No private LLM API keys are bundled
+await initAI({
+  providers: [
+    {
+      id: 'my-gateway',
+      url: 'https://api.mycompany.com/v1/ai/chat/completions', // Your secure proxy endpoint
+      key: userSessionToken, // Short-lived user JWT or session cookie
+      model: 'llama-3.3-70b-instruct'
+    }
+  ]
 });
+
+// All Tempo AI functions now execute securely through your proxy
+const date = await parseAI("Team standup next Wednesday at 9:30am");
 ```
+
+### 2. Backend Proxy Handler Example (Next.js / Cloudflare Worker / Express)
+Your backend endpoint receives the request, validates the user's session, attaches your private LLM API key, and forwards the payload to the upstream provider:
+
+```typescript
+// Example: Next.js API Route / Cloudflare Worker
+export async function POST(req: Request) {
+  // 1. Authenticate user session
+  const authHeader = req.headers.get('Authorization');
+  if (!isValidUserSession(authHeader)) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  // 2. Forward request to upstream LLM with private BYOK key
+  const body = await req.json();
+  const upstreamResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+    },
+    body: JSON.stringify(body)
+  });
+
+  // 3. Return provider payload to client
+  const data = await upstreamResponse.json();
+  return new Response(JSON.stringify(data), {
+    status: upstreamResponse.status,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+```
+
+---
+
+## 🔒 Security & Privacy Guarantees
+
+Whether running directly on backend servers (Node.js, Deno, Bun, Edge Workers) or through a client-side browser proxy, `@magmacomputing/tempo-plugin-ai` enforces strict security and privacy standards:
+
+### 1. End-to-End Encryption (TLS 1.3)
+All transport communication—both from browser to proxy and from proxy/server to upstream LLM endpoints—is strictly enforced over HTTPS utilizing **TLS 1.3**. Plaintext HTTP endpoints are disallowed in production environments (permitted only on `localhost` during local development).
+
+### 2. Ephemeral Processing & Zero Data Retention
+Temporal processing payloads (dates, times, context snippets, prompts) are processed ephemerally. The plugin does not send telemetry or store user prompt data on external analytics servers. Information is used exclusively during the execution of the requested AI function and discarded immediately after response resolution.
+
+### 3. In-Memory Credential Redaction & Immutability
+* **Automated Key Redaction**: Calling `getAiConfig()` returns a sanitized, deeply read-only snapshot of active configurations with all provider `key` values replaced with `[REDACTED]`, preventing accidental exposure in log files, APM traces, or crash dumps.
+* **Frozen Metadata**: All diagnostic metadata attached to `Tempo` instances via `.ai` is deeply frozen with `Object.freeze()` and guarded via runtime `Proxy` wrappers, eliminating prototype pollution and runtime state mutation.
+
+### 4. Deterministic Schema Guardrails & Hallucination Traps
+All LLM prompts are paired with rigid, machine-verifiable JSON schemas. Responses undergo strict boundary validation, regex parsing, and ISO verification before any native `Tempo` date object is instantiated. If an LLM returns malformed or non-chronological data, the plugin throws a typed `TempoAiError` or triggers automatic fallback rather than silently returning an invalid date.
+
+### 5. Partitioned Caching & Fail-Open Storage Resilience
+* **Strict Cache Key Partitioning**: Caches are namespaced and hashed (`ai:<namespace>::...`) with timezone, locale, calendar, and anchor date isolation to prevent cross-tenant or cross-regional cache poisoning.
+* **Fail-Open Protection**: If a custom distributed cache adapter (e.g. Redis or Cloudflare KV) encounters network disruption or errors, the plugin automatically fails open to direct LLM resolution, preserving application uptime.
+
+## Multi-Provider Execution Strategies (`AiMode`)
+
+Because third-party APIs can experience downtime, latency spikes, or quota exhaustion, `@magmacomputing/tempo-plugin-ai` provides six dedicated dispatch strategies configured via `AiMode` (or string literals):
+
+| Strategy | Enum (`AiMode`) | Primary Advantage | Typical Use Case |
+| :--- | :--- | :--- | :--- |
+| **Fallback** *(Default)* | `AiMode.Fallback` | Minimum token cost (sequential cascade) | Default production baseline & background tasks |
+| **Hedged** | `AiMode.Hedged` | Ultra-fast latency with low token overhead (~1.15x) | Latency-sensitive interactive search & chatbots |
+| **RoundRobin** | `AiMode.RoundRobin` | Cyclic rotation across multi-key pools | High-throughput batch ingestion across API keys |
+| **Adaptive** | `AiMode.Adaptive` | Telemetry-driven rate-limit avoidance | Multi-tier provider pools with mixed quotas |
+| **Race** | `AiMode.Race` | Absolute minimum response latency | Real-time typeahead & autocomplete |
+| **Consensus** | `AiMode.Consensus` | Cross-LLM verification & hallucination trapping | High-stakes legal, financial, and contract dates |
+
+👉 For detailed architecture breakdowns, Mermaid decision trees, and configuration guides for each mode, see the **[Multi-Provider Execution Modes Guide (`modes.md`)](./modes.md)**.
 
 ### Provider ID Canonicalization
 Provider IDs are normalized case-insensitively during `initAI` lookup (e.g. `'Gemini'`, `'gemini'`, `'OpenAI'`), automatically applying default endpoints and models while preserving the caller's registered identifier for logging and metadata.

@@ -183,7 +183,7 @@ export async function scheduleAI(
 	assertNoReservedProviderId(availableProviders);
 
 	const resolvedTz = options?.timeZone
-		|| (options?.anchor instanceof Tempo ? options.anchor.config?.timeZone || options.anchor.tz : undefined)
+		|| (options?.anchor instanceof Tempo ? options.anchor.tz : undefined)
 		|| Tempo.options?.timeZone
 		|| 'UTC';
 	const anchorTempo = new Tempo(options?.anchor, { timeZone: resolvedTz });

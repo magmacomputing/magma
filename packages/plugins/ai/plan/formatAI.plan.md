@@ -11,13 +11,13 @@ By combining deterministic date-time grounding (formatted ISO components, day of
 
 ### 2.1 Types (`packages/plugins/ai/src/types/format.type.ts`)
 ```typescript
-import type { Tempo } from '@magmacomputing/tempo';
+import type { Tempo, DateTime } from '@magmacomputing/tempo';
 import type { AiOptions } from './common.type.js';
 import type { TempoAiError } from '../core/error.js';
 
 export interface AiFormatOptions extends AiOptions {
 	/** Reference anchor date for relative calculations (defaults to now). */
-	anchor?: Tempo | Date | string | number;
+	anchor?: DateTime;
 	/** Target IANA timezone (defaults to Tempo instance timezone or global options). */
 	timeZone?: string;
 	/** Target BCP 47 locale or language tag (defaults to global options or 'en-US'). */
@@ -29,8 +29,8 @@ export interface AiFormatOptions extends AiOptions {
 }
 
 export interface FormatItem {
-	/** Date-time instance or string to format. */
-	date: Tempo | Date | string | number;
+	/** Date-time instance, Temporal object, or string to format. */
+	date: DateTime;
 	/** Prompt instructions guiding the output narrative. */
 	prompt?: string;
 }
@@ -50,7 +50,7 @@ export interface TempoAiFormatResult {
 ### 2.2 Function Signature (`packages/plugins/ai/src/functions/format.ts`)
 ```typescript
 export async function formatAI(items: FormatItem[], options?: AiFormatOptions): Promise<(TempoAiFormatResult | TempoAiError)[]>;
-export async function formatAI(date: any, prompt?: string, options?: AiFormatOptions): Promise<TempoAiFormatResult>;
+export async function formatAI(date: DateTime, prompt?: string, options?: AiFormatOptions): Promise<TempoAiFormatResult>;
 ```
 
 ---

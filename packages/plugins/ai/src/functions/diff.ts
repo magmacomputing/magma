@@ -3,7 +3,14 @@ import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
-import { normalizeCacheInput, fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
+import {
+	assertNoReservedProviderId,
+	fetchFromProvider,
+	normalizeCacheInput,
+	readMultiTierCache,
+	resolveProviderTtl,
+	writeMultiTierCache,
+} from '../core/support.js';
 import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX } from '../core/patterns.js';
 import type { TempoAiDiffResult, AiDiffOptions, DiffPair } from '../types/index.js';
 
@@ -84,19 +91,13 @@ async function diffSingleInput(
 	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
 	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
-	let cachedVal: string | undefined;
-	if (!force && aiCacheOption !== false) {
-		if (adapter) {
-			try {
-				const val = await adapter.get(cacheKey);
-				if (val) cachedVal = val;
-			} catch (err: any) {
-				if (isDebug) console.log('[tempo-plugin-ai:diff] Cache adapter read error:', err?.message);
-			}
-		}
-
-		cachedVal ??= Tempo.cache.get(cacheKey);
-	}
+	const cachedVal = await readMultiTierCache(cacheKey, {
+		force,
+		cache: aiCacheOption,
+		cacheAdapter: adapter,
+		debug: isDebug,
+		tag: 'tempo-plugin-ai:diff',
+	});
 
 	if (cachedVal) {
 		try {
@@ -228,32 +229,23 @@ Do not include markdown blocks or text outside the JSON.`;
 		reasoning: parsedData.reasoning,
 	};
 
-	if (aiCacheOption !== false) {
-		const providerTtl = providerId === AiMode.Consensus
-			? availableProviders.reduce<number | undefined>((min, p) => p.ttl === undefined ? min : (min === undefined ? p.ttl : Math.min(min, p.ttl)), undefined)
-			: availableProviders.find(p => p.id === providerId)?.ttl;
-		const resolvedTtl = ttl ?? providerTtl ?? _state.config.ttl ?? 86_400_000;
+	const resolvedTtl = resolveProviderTtl(providerId, availableProviders, ttl, 86_400_000);
+	const cacheVal = JSON.stringify({
+		formatted: finalResult.formatted,
+		days: finalResult.days,
+		hours: finalResult.hours,
+		businessDays: finalResult.businessDays,
+		holidays: finalResult.holidays,
+		confidence: finalResult.confidence,
+		reasoning: finalResult.reasoning,
+	});
 
-		const cacheVal = JSON.stringify({
-			formatted: finalResult.formatted,
-			days: finalResult.days,
-			hours: finalResult.hours,
-			businessDays: finalResult.businessDays,
-			holidays: finalResult.holidays,
-			confidence: finalResult.confidence,
-			reasoning: finalResult.reasoning,
-		});
-
-		if (adapter) {
-			try {
-				const res = adapter.set(cacheKey, cacheVal, resolvedTtl);
-				if (res instanceof Promise) await res;
-			} catch (err: any) {
-				if (isDebug) console.log('[tempo-plugin-ai:diff] Cache adapter write error:', err?.message);
-			}
-		}
-		Tempo.cache.set(cacheKey, cacheVal);
-	}
+	await writeMultiTierCache(cacheKey, cacheVal, resolvedTtl, {
+		cache: aiCacheOption,
+		cacheAdapter: adapter,
+		debug: isDebug,
+		tag: 'tempo-plugin-ai:diff',
+	});
 
 	return finalResult;
 }

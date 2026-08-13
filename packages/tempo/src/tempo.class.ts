@@ -1553,6 +1553,7 @@ export class Tempo {
 	/** Fractional seconds (e.g., 0.123456789) */							get ff() { return +(`0.${pad(this.ms, 3)}${pad(this.us, 3)}${pad(this.ns, 3)}`) }
 	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
+	/** Resolved BCP 47 locale (e.g., 'en-US') */							get loc() { return (this.#local.config.locale ?? (this as any)[$Internal]().config.locale ?? Default.locale) as string | string[] }
 	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[this.#local.config.timeStamp] }
 	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as t.Month) }
 	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as t.Month) }

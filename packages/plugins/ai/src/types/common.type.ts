@@ -73,10 +73,14 @@ export interface AiConfig {
 	mode?: AiMode | undefined;
 	/** Strict minimum confidence threshold (0.0 to 1.0) */
 	minConfidence?: number | undefined;
-	/** Optional custom cache implementation for storing parsed strings */
-	cache?: Map<string, string> | undefined;
+	/** Optional custom cache implementation for storing parsed strings or boolean flag to enable/disable */
+	cache?: Map<string, string> | boolean | undefined;
 	/** Optional custom cache storage engine (e.g., Redis, KV store) for storing parsed strings */
 	cacheAdapter?: AiCacheAdapter | undefined;
+	/** Optional default IANA timezone for AI operations */
+	timeZone?: string | undefined;
+	/** Optional default BCP 47 locale for AI operations */
+	locale?: string | string[] | undefined;
 	/** Optional global cache TTL in milliseconds for AI parsing entries (default: 3600000ms / 1 hour) */
 	ttl?: number | undefined;
 	/** Optional global timeout in milliseconds for AI requests (default: 15000ms) */

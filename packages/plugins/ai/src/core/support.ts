@@ -2,100 +2,183 @@ import { Tempo } from '@magmacomputing/tempo';
 import { TempoAiError } from './error.js';
 import { RESERVED_PROVIDER_IDS } from './config.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
-import type { AiProvider, TempoAiMeta } from '../types/index.js';
+import type { AiCacheAdapter, AiProvider, TempoAiMeta } from '../types/index.js';
 
 export function assertNoReservedProviderId(providers: Partial<AiProvider>[]): void {
-  for (const p of providers) {
-    if (p.id && RESERVED_PROVIDER_IDS.has(p.id.toLowerCase())) {
-      throw new TempoAiError(`Provider ID '${p.id}' is a reserved keyword in parseAI.`, 400);
-    }
-  }
+	for (const p of providers) {
+		if (p.id && RESERVED_PROVIDER_IDS.has(p.id.toLowerCase()))
+			throw new TempoAiError(`Provider ID '${p.id}' is a reserved keyword in parseAI.`, 400);
+	}
 }
 
 export function normalizeCacheInput(input: string): string {
-  return input.trim().toLowerCase().replace(/\s+/g, ' ');
+	return input.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 export function getNamespacedCacheKey(namespace: string, key: string): string {
-  return `ai:${namespace}::${key}`;
+	return `ai:${namespace}::${key}`;
+}
+
+export function resolveProviderTtl(
+	providerId: string,
+	availableProviders: AiProvider[],
+	callTtl?: number,
+	defaultTtl: number = 86_400_000,
+): number {
+	const providerTtl = providerId === 'consensus'
+		? availableProviders.reduce<number | undefined>((min, p) => p.ttl === undefined ? min : (min === undefined ? p.ttl : Math.min(min, p.ttl)), undefined)
+		: availableProviders.find(p => p.id === providerId)?.ttl;
+	return callTtl ?? providerTtl ?? _state.config.ttl ?? defaultTtl;
+}
+
+export function resolveTzAndLocale(
+	options?: { timeZone?: string | undefined; locale?: string | string[] | undefined } | undefined,
+	fallbackTempo?: Tempo | null,
+): { tz: string; loc: string } {
+	const resolvedOptions = (Tempo as any).options ?? {};
+	const tz = String(options?.timeZone || fallbackTempo?.tz || resolvedOptions.timeZone || _state.config.timeZone || 'UTC');
+	const rawLoc = options?.locale || fallbackTempo?.loc || resolvedOptions.locale || _state.config.locale || 'en-US';
+	const loc = String(Array.isArray(rawLoc) ? rawLoc[0] : rawLoc);
+	return { tz, loc };
+}
+
+export async function readMultiTierCache(
+	cacheKey: string,
+	options: {
+		force?: boolean | undefined;
+		cache?: boolean | undefined;
+		cacheAdapter?: AiCacheAdapter | undefined;
+		debug?: boolean | undefined;
+		tag?: string | undefined;
+	},
+): Promise<string | undefined> {
+	if (options.force) return undefined;
+	if (options.cache === false || _state.config.cache === false) return undefined;
+
+	const adapter = options.cacheAdapter || _state.config.cacheAdapter;
+	if (adapter) {
+		try {
+			const val = await adapter.get(cacheKey);
+			if (val !== undefined && val !== null) {
+				if (options.debug) console.log(`[${options.tag ?? 'tempo-plugin-ai'}] Cache hit (adapter): ${cacheKey}`);
+				return val;
+			}
+		} catch (err: any) {
+			if (options.debug) console.warn(`[${options.tag ?? 'tempo-plugin-ai'}] Cache adapter get failed for ${cacheKey}:`, err?.message ?? err);
+		}
+	}
+
+	const localVal = Tempo.cache.get(cacheKey);
+	if (localVal) {
+		if (options.debug) console.log(`[${options.tag ?? 'tempo-plugin-ai'}] Cache hit (local): ${cacheKey}`);
+		return localVal;
+	}
+
+	return undefined;
+}
+
+export async function writeMultiTierCache(
+	cacheKey: string,
+	value: string,
+	ttl: number,
+	options: {
+		cache?: boolean | undefined;
+		cacheAdapter?: AiCacheAdapter | undefined;
+		debug?: boolean | undefined;
+		tag?: string | undefined;
+	},
+): Promise<void> {
+	if (options.cache === false || _state.config.cache === false) return;
+
+	Tempo.cache.set(cacheKey, value);
+
+	const adapter = options.cacheAdapter || _state.config.cacheAdapter;
+	if (adapter) {
+		try {
+			const res = adapter.set(cacheKey, value, ttl);
+			if (res instanceof Promise) await res;
+		} catch (err: any) {
+			if (options.debug) console.warn(`[${options.tag ?? 'tempo-plugin-ai'}] Cache adapter set failed for ${cacheKey}:`, err?.message ?? err);
+		}
+	}
 }
 
 export function attachAiMeta(instance: Tempo, meta: TempoAiMeta): Tempo {
-  const frozenMeta = Object.freeze(meta);
-  const boundMethodCache = new Map<PropertyKey, Function>();
+	const frozenMeta = Object.freeze(meta);
+	const boundMethodCache = new Map<PropertyKey, Function>();
 
-  return new Proxy(instance, {
-    get(target, prop, _receiver) {
-      if (prop === 'ai') return frozenMeta;
-      if (prop === 'isValid') {
-        if (meta.confidence === 0.0 || meta.rawIso === 'INVALID' || meta.ambiguous === true || !target.isValid)
-          return false;
-      }
-      if (prop === 'constructor')
-        return Reflect.get(target, prop, target);
+	return new Proxy(instance, {
+		get(target, prop, _receiver) {
+			if (prop === 'ai') return frozenMeta;
+			if (prop === 'isValid') {
+				if (meta.confidence === 0.0 || meta.rawIso === 'INVALID' || meta.ambiguous === true || !target.isValid)
+					return false;
+			}
+			if (prop === 'constructor')
+				return Reflect.get(target, prop, target);
 
-      if (boundMethodCache.has(prop))
-        return boundMethodCache.get(prop);
+			if (boundMethodCache.has(prop))
+				return boundMethodCache.get(prop);
 
-      const val = Reflect.get(target, prop, target);
-      if (typeof val === 'function') {
-        const bound = val.bind(target);
-        boundMethodCache.set(prop, bound);
-        return bound;
-      }
-      return val;
-    },
-    has(target, prop) {
-      if (prop === 'ai') return true;
-      return Reflect.has(target, prop);
-    },
-    getOwnPropertyDescriptor(target, prop) {
-      if (prop === 'ai') {
-        return {
-          value: frozenMeta,
-          writable: false,
-          configurable: true,
-          enumerable: true
-        };
-      }
-      return Reflect.getOwnPropertyDescriptor(target, prop);
-    },
-    ownKeys(target) {
-      const keys = Reflect.ownKeys(target);
-      if (!keys.includes('ai')) keys.push('ai');
-      return keys;
-    }
-  });
+			const val = Reflect.get(target, prop, target);
+			if (typeof val === 'function') {
+				const bound = val.bind(target);
+				boundMethodCache.set(prop, bound);
+				return bound;
+			}
+			return val;
+		},
+		has(target, prop) {
+			if (prop === 'ai') return true;
+			return Reflect.has(target, prop);
+		},
+		getOwnPropertyDescriptor(target, prop) {
+			if (prop === 'ai') {
+				return {
+					value: frozenMeta,
+					writable: false,
+					configurable: true,
+					enumerable: true
+				};
+			}
+			return Reflect.getOwnPropertyDescriptor(target, prop);
+		},
+		ownKeys(target) {
+			const keys = Reflect.ownKeys(target);
+			if (!keys.includes('ai')) keys.push('ai');
+			return keys;
+		}
+	});
 }
 
 export async function fetchFromProvider(
-  provider: AiProvider,
-  str: string,
-  contextString: string,
-  isDebug: boolean,
-  parentSignal?: AbortSignal,
-  timeoutOverride?: number,
-  customSystemPrompt?: string
+	provider: AiProvider,
+	str: string,
+	contextString: string,
+	isDebug: boolean,
+	parentSignal?: AbortSignal,
+	timeoutOverride?: number,
+	customSystemPrompt?: string
 ): Promise<{ rawContent: string; providerId: string; rateLimits: ReturnType<typeof updateRateLimitsFromResponse> }> {
-  const url = provider.url!;
-  const model = provider.model!;
+	const url = provider.url!;
+	const model = provider.model!;
 
-  if (!url || typeof url !== 'string')
-    throw new TempoAiError(`Provider ${provider.id} missing valid endpoint URL.`, 400);
+	if (!url || typeof url !== 'string')
+		throw new TempoAiError(`Provider ${provider.id} missing valid endpoint URL.`, 400);
 
-  if (!model || typeof model !== 'string')
-    throw new TempoAiError(`Provider ${provider.id} missing valid model identifier.`, 400);
+	if (!model || typeof model !== 'string')
+		throw new TempoAiError(`Provider ${provider.id} missing valid model identifier.`, 400);
 
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')))
-      throw new TempoAiError(`Provider ${provider.id} endpoint URL '${url}' must use secure HTTPS protocol.`, 400);
-  } catch (err: any) {
-    if (err instanceof TempoAiError) throw err;
-    throw new TempoAiError(`Provider ${provider.id} has invalid endpoint URL '${url}'.`, 400);
-  }
+	try {
+		const parsed = new URL(url);
+		if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')))
+			throw new TempoAiError(`Provider ${provider.id} endpoint URL '${url}' must use secure HTTPS protocol.`, 400);
+	} catch (err: any) {
+		if (err instanceof TempoAiError) throw err;
+		throw new TempoAiError(`Provider ${provider.id} has invalid endpoint URL '${url}'.`, 400);
+	}
 
-  const defaultSystemPrompt = `You are a high-performance date parser. Read the user's string and the provided context. Return ONLY a valid JSON object matching this exact schema:
+	const defaultSystemPrompt = `You are a high-performance date parser. Read the user's string and the provided context. Return ONLY a valid JSON object matching this exact schema:
 {
   "reasoning": "Step-by-step calendar math from Current Time.",
   "iso": "Local ISO 8601 string (YYYY-MM-DDThh:mm:ss) without offset or Z suffix, or 'INVALID' if ambiguous/unparseable.",
@@ -113,7 +196,7 @@ Ambiguity Rules:
 
 Do not include markdown blocks or any text outside the JSON.`;
 
-  const systemPrompt = customSystemPrompt ?? defaultSystemPrompt;
+	const systemPrompt = customSystemPrompt ?? defaultSystemPrompt;
 
 	if (isDebug)
 		console.log(`[tempo-plugin-ai] Querying provider '${provider.id}' (model: ${model})...`);

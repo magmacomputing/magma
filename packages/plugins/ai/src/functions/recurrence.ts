@@ -116,9 +116,9 @@ export async function recurrenceAI(
 	const isRRule = isRRuleString(input);
 
 	// Resolve full Tempo context hierarchy
-	const tz = options?.timeZone || (options?.anchor instanceof Tempo ? options.anchor.config.timeZone : undefined) || Tempo.options.timeZone;
-	const cal = options?.calendar || (options?.anchor instanceof Tempo ? options.anchor.config.calendar : undefined) || Tempo.options.calendar;
-	const loc = options?.locale || (options?.anchor instanceof Tempo ? options.anchor.config.locale : undefined) || Tempo.options.locale;
+	const tz = options?.timeZone || (options?.anchor instanceof Tempo ? options.anchor.tz : undefined) || Tempo.options.timeZone;
+	const cal = options?.calendar || (options?.anchor instanceof Tempo ? options.anchor.cal : undefined) || Tempo.options.calendar;
+	const loc = options?.locale || (options?.anchor instanceof Tempo ? options.anchor.loc : undefined) || Tempo.options.locale;
 	const sph = options?.sphere || (options?.anchor instanceof Tempo ? options.anchor.config.sphere : undefined) || Tempo.options.sphere;
 
 	const contextConfig = { timeZone: tz, calendar: cal, locale: loc, sphere: sph };

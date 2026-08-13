@@ -71,6 +71,7 @@ export interface AliasContext {
 	/** Second (0-59) */                    readonly ss: IntRange<0, 59>;
 	/** IANA TimeZone identifier */         readonly tz: string;
 	/** Calendar identifier */              readonly cal: string;
+	/** Resolved BCP 47 locale */           readonly loc: string | string[];
 	/** Current configuration state */      readonly config: Internal.Config;
 }
 
