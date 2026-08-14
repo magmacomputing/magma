@@ -1,4 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
+import { secure } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
@@ -68,11 +69,13 @@ async function formatSingleInput(
 			? (date.tz === tz ? date : date.set({ timeZone: tz }))
 			: new Tempo(date as any, { timeZone: tz });
 	} catch (err: any) {
-		throw new TempoAiError(`Invalid date provided to formatAI: "${String(date)}"`, 400);
+		const safeDateRep = typeof date === 'object' && date !== null ? JSON.stringify(date) : String(date);
+		throw new TempoAiError(`Invalid date provided to formatAI: "${safeDateRep}"`, 400, undefined, { cause: err });
 	}
 
 	if (!targetTempo.isValid) {
-		throw new TempoAiError(`Invalid date provided to formatAI: "${String(date)}"`, 400);
+		const safeDateRep = typeof date === 'object' && date !== null ? JSON.stringify(date) : String(date);
+		throw new TempoAiError(`Invalid date provided to formatAI: "${safeDateRep}"`, 400);
 	}
 
 	const anchor = options?.anchor;
@@ -84,11 +87,13 @@ async function formatSingleInput(
 				: new Tempo(anchor as any, { timeZone: tz }))
 			: new Tempo(Math.floor(Date.now() / 60_000) * 60_000, { timeZone: tz });
 	} catch (err: any) {
-		throw new TempoAiError(`Invalid anchor date provided to formatAI: "${String(anchor)}"`, 400);
+		const safeAnchorRep = typeof anchor === 'object' && anchor !== null ? JSON.stringify(anchor) : String(anchor);
+		throw new TempoAiError(`Invalid anchor date provided to formatAI: "${safeAnchorRep}"`, 400, undefined, { cause: err });
 	}
 
 	if (!anchorTempo.isValid) {
-		throw new TempoAiError(`Invalid anchor date provided to formatAI: "${String(anchor)}"`, 400);
+		const safeAnchorRep = typeof anchor === 'object' && anchor !== null ? JSON.stringify(anchor) : String(anchor);
+		throw new TempoAiError(`Invalid anchor date provided to formatAI: "${safeAnchorRep}"`, 400);
 	}
 
 	const style = options?.style ? String(options.style).trim() : '';
@@ -114,6 +119,16 @@ async function formatSingleInput(
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
 	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
+	if (
+		effectiveMinConfidence !== undefined &&
+		(typeof effectiveMinConfidence !== 'number' ||
+			!Number.isFinite(effectiveMinConfidence) ||
+			effectiveMinConfidence < 0.0 ||
+			effectiveMinConfidence > 1.0)
+	) {
+		throw new TempoAiError(`Invalid minConfidence provided to formatAI: "${String(effectiveMinConfidence)}"`, 400);
+	}
+
 	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
 	const cachedVal = await readMultiTierCache(cacheKey, {
@@ -135,12 +150,13 @@ async function formatSingleInput(
 				if (effectiveMinConfidence !== undefined && cachedConfidence < effectiveMinConfidence) {
 					if (isDebug) console.log(`[tempo-plugin-ai:format] Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`);
 				} else {
-					return {
+					const reasoning = typeof parsedCache?.reasoning === 'string' ? parsedCache.reasoning : undefined;
+					return secure({
 						formatted: parsedCache.formatted,
 						confidence: cachedConfidence,
 						provider: 'cache',
-						reasoning: parsedCache.reasoning,
-					};
+						reasoning,
+					});
 				}
 			}
 		} catch (err: any) {
@@ -158,16 +174,9 @@ async function formatSingleInput(
 	const systemPrompt = `You are an expert natural language temporal formatting engine.
 Generate human-friendly, contextual narrative representations of dates and times based on the grounding context.
 
-Grounding Context:
-- Target Date-Time: ${grounding.iso} (${tz})
-- Target Day of Week: ${grounding.dayOfWeek} (Day ${grounding.dayOfWeekOrdinal})
-- Reference Anchor: ${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')} (${tz})
-- Relative Time Delta: ${grounding.calendarDays >= 0 ? '+' : ''}${grounding.calendarDays} calendar days (${grounding.elapsedHours >= 0 ? '+' : ''}${grounding.elapsedHours} hours) in the ${grounding.direction.toUpperCase()}
-- Target Locale: ${loc}${region ? `\n- Regional Context: ${region}` : ''}${style ? `\n- Desired Style/Tone: ${style}` : ''}
-
 Rules:
 1. Always return a single, valid JSON object matching the schema below.
-2. The "formatted" field must contain the contextual narrative string (e.g., "this Friday at 5:00 PM EST (in 5 days)", "Tomorrow afternoon at 3:00 PM").
+2. The "formatted" field must contain the contextual narrative string (e.g., "this Friday at 5:00 PM EDT (in 5 days)", "Tomorrow afternoon at 3:00 PM").
 3. Respect the target locale, style, and timezone conventions.
 4. "confidence" must be a float between 0.0 and 1.0 representing certainty.
 5. "reasoning" should briefly describe how the formatted output was constructed.
@@ -179,15 +188,18 @@ Output JSON Schema:
   "reasoning": "string"
 }`;
 
-	const contextString = `Grounding Context:
-- Target Date-Time: ${grounding.iso} (${grounding.timeZone})
-- Day of Week: ${grounding.dayOfWeek} (Day ${grounding.dayOfWeekOrdinal})
-- Reference Anchor: ${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')} (${anchorTempo.tz || tz})
-- Relative Delta: ${grounding.calendarDays >= 0 ? '+' : ''}${grounding.calendarDays} calendar days (${grounding.elapsedHours >= 0 ? '+' : ''}${grounding.elapsedHours} hours) in the ${grounding.direction.toUpperCase()}
-- Target Locale: ${loc}
-${style ? `- Desired Style/Tone: ${style}` : ''}
-${region ? `- Regional Context: ${region}` : ''}
-- Formatting Instructions: "${promptText}"`;
+	const contextParts = [
+		'Grounding Context:',
+		`- Target Date-Time: ${grounding.iso} (${grounding.timeZone})`,
+		`- Day of Week: ${grounding.dayOfWeek} (Day ${grounding.dayOfWeekOrdinal})`,
+		`- Reference Anchor: ${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')} (${anchorTempo.tz || tz})`,
+		`- Relative Delta: ${grounding.calendarDays >= 0 ? '+' : ''}${grounding.calendarDays} calendar days (${grounding.elapsedHours >= 0 ? '+' : ''}${grounding.elapsedHours} hours) in the ${grounding.direction.toUpperCase()}`,
+		`- Target Locale: ${loc}`,
+	];
+	if (style) contextParts.push(`- Desired Style/Tone: ${style}`);
+	if (region) contextParts.push(`- Regional Context: ${region}`);
+	contextParts.push(`- Formatting Instructions: "${promptText}"`);
+	const contextString = contextParts.join('\n');
 
 	const mode = aiMode || _state.config.mode || AiMode.Fallback;
 
@@ -234,7 +246,7 @@ ${region ? `- Regional Context: ${region}` : ''}
 				rateLimits,
 				confidence,
 				consensusKey: formatted.toLowerCase(),
-			};
+			}
 		},
 		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:format', hedgeDelay: effectiveHedgeDelay },
 	);
@@ -256,7 +268,7 @@ ${region ? `- Regional Context: ${region}` : ''}
 		confidence,
 		provider: providerId,
 		reasoning: parsedData.reasoning,
-	};
+	}
 
 	const resolvedTtl = resolveProviderTtl(providerId, availableProviders, ttl, 86_400_000);
 	const cacheVal = JSON.stringify(finalResult);
@@ -267,7 +279,7 @@ ${region ? `- Regional Context: ${region}` : ''}
 		tag: 'tempo-plugin-ai:format',
 	});
 
-	return finalResult;
+	return secure(finalResult);
 }
 
 /**
@@ -283,7 +295,7 @@ ${region ? `- Regional Context: ${region}` : ''}
  * ```ts
  * const t = new Tempo('2026-08-07T17:00:00[America/New_York]');
  * 
- * // "this Friday at 5:00 PM EST (in 5 days)"
+ * // "this Friday at 5:00 PM EDT (in 5 days)"
  * const result = await formatAI(t, 'friendly reminder tone with relative countdown');
  * console.log(result.formatted);
  * ```
@@ -296,25 +308,48 @@ export async function formatAI(
 	options?: AiFormatOptions,
 ): Promise<TempoAiFormatResult | (TempoAiFormatResult | TempoAiError)[]> {
 	if (Array.isArray(dateOrItems)) {
+		if (dateOrItems.length === 0) return [];
 		const opts = (typeof promptOrOptions === 'object' && promptOrOptions !== null ? promptOrOptions : options) || {};
 		const softErrors = opts.softErrors ?? false;
+		const concurrencyLimit = Math.max(1, Math.min(opts.concurrency ?? 4, dateOrItems.length));
 
-		if (softErrors) {
-			const settled = await Promise.allSettled(
-				dateOrItems.map(item => formatSingleInput(item.date, item.prompt, opts)),
-			);
-			return settled.map((res, index) => {
-				if (res.status === 'fulfilled') return res.value;
-				const rawReason = res.reason;
-				if (rawReason instanceof TempoAiError) return rawReason;
-				return new TempoAiError(
-					rawReason?.message || `Failed to format date at index ${index}`,
-					typeof rawReason?.status === 'number' ? rawReason.status : 500,
-				);
-			});
+		const results: (TempoAiFormatResult | TempoAiError)[] = new Array(dateOrItems.length);
+		let nextIdx = 0;
+		let firstError: any = null;
+
+		const worker = async () => {
+			while (nextIdx < dateOrItems.length) {
+				if (!softErrors && firstError) break;
+				const currentIndex = nextIdx++;
+				const item = dateOrItems[currentIndex];
+				const itemOpts = item.options ? { ...opts, ...item.options } : opts;
+				try {
+					const res = await formatSingleInput(item.date, item.prompt, itemOpts);
+					results[currentIndex] = res;
+				} catch (err: any) {
+					if (softErrors) {
+						results[currentIndex] = err instanceof TempoAiError
+							? err
+							: new TempoAiError(
+								err?.message || `Failed to format date at index ${currentIndex}`,
+								typeof err?.status === 'number' ? err.status : 500,
+							);
+					} else {
+						if (!firstError) firstError = err;
+						break;
+					}
+				}
+			}
+		};
+
+		const workers = Array.from({ length: concurrencyLimit }, () => worker());
+		await Promise.all(workers);
+
+		if (!softErrors && firstError) {
+			throw firstError;
 		}
 
-		return Promise.all(dateOrItems.map(item => formatSingleInput(item.date, item.prompt, opts)));
+		return results;
 	}
 
 	const prompt = typeof promptOrOptions === 'string' ? promptOrOptions : undefined;

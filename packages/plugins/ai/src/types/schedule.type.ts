@@ -1,6 +1,6 @@
 import type { Tempo, Interval } from '@magmacomputing/tempo';
 import type { DayKey } from '@magmacomputing/tempo/library';
-import type { TempoBaseAiMeta } from './common.type.js';
+import type { TempoBaseAiMeta, TempoDateInput } from './base.type.js';
 import type { AiParseOptions } from './parse.type.js';
 
 /**
@@ -9,13 +9,13 @@ import type { AiParseOptions } from './parse.type.js';
  */
 export interface TempoWorkingHours {
 	/** Start time of working day in HH:mm format (default: '09:00') */
-	start?: string;
+	start?: string | undefined;
 	/** End time of working day in HH:mm format (default: '17:00') */
-	end?: string;
+	end?: string | undefined;
 	/** Active working weekdays (1 = Monday, ... 7 = Sunday; or tokens like 'MO', 'MON'; default: [1, 2, 3, 4, 5]) */
-	days?: Array<number | DayKey | string>;
+	days?: Array<number | DayKey | string> | undefined;
 	/** Target timeZone for working hours (defaults to anchor or options timeZone) */
-	timeZone?: string;
+	timeZone?: string | undefined;
 }
 
 /**
@@ -35,21 +35,21 @@ export interface TempoInterval {
  */
 export interface TempoScheduleOptions extends AiParseOptions {
 	/** Target slot duration in minutes (if not explicitly specified in prompt) */
-	durationMinutes?: number;
+	durationMinutes?: number | undefined;
 	/** Working hours configuration for slot resolution */
-	workingHours?: TempoWorkingHours;
+	workingHours?: TempoWorkingHours | undefined;
 	/** Existing booked events or busy intervals to avoid */
-	events?: Array<{ start: any; end: any; title?: string }> | Array<TempoInterval | Interval<Tempo>>;
+	events?: Array<{ start: any; end: any; title?: string }> | Array<TempoInterval | Interval<Tempo>> | undefined;
 	/** Alias for events */
-	intervals?: Array<{ start: any; end: any; title?: string }> | Array<TempoInterval | Interval<Tempo>>;
+	intervals?: Array<{ start: any; end: any; title?: string }> | Array<TempoInterval | Interval<Tempo>> | undefined;
 	/** Search window start constraint */
-	after?: any;
+	after?: TempoDateInput | undefined;
 	/** Search window end constraint */
-	before?: any;
+	before?: TempoDateInput | undefined;
 	/** Preferred slot positioning ('earliest' | 'latest' | 'morning' | 'afternoon' | string) */
-	preference?: string;
+	preference?: string | undefined;
 	/** Number of alternative slots to return if requesting multiple options */
-	count?: number;
+	count?: number | undefined;
 }
 
 /**
@@ -94,4 +94,3 @@ export interface TempoScheduleResult extends Interval<Tempo>, TempoScheduleMeta 
 	/** Resolved end boundary as a Tempo instance */
 	end: Tempo;
 }
-

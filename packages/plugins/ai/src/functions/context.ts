@@ -1,4 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
+import { secure } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
@@ -6,6 +7,7 @@ import { executeWithMode } from '../core/dispatch.js';
 import {
 	assertNoReservedProviderId,
 	fetchFromProvider,
+	getNamespacedCacheKey,
 	normalizeCacheInput,
 	readMultiTierCache,
 	resolveProviderTtl,
@@ -27,7 +29,7 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 	const loc = String(Array.isArray(options?.locale) ? options?.locale[0] : (options?.locale || resolvedOptions.locale));
 	const sph = String(options?.sphere || resolvedOptions.sphere || 'north');
 
-	const cacheKey = `context::${normalizedStr}::${tz}::${loc}::${cal}::${sph}`;
+	const cacheKey = getNamespacedCacheKey('context', `${normalizedStr}::${tz}::${loc}::${cal}::${sph}`);
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
 	const cachedVal = await readMultiTierCache(cacheKey, {
@@ -48,7 +50,7 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 					: 1.0;
 				if (effectiveMinConfidence === undefined || cachedConfidence >= effectiveMinConfidence) {
 					if (isDebug) console.log(`[tempo-plugin-ai:context] Cache hit: "${text}" -> ${cachedVal}`);
-					return {
+					return secure({
 						timeZone: parsedCache.timeZone,
 						locale: parsedCache.locale,
 						calendar: parsedCache.calendar,
@@ -56,7 +58,7 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 						confidence: cachedConfidence,
 						provider: 'cache',
 						reasoning: parsedCache.reasoning,
-					}
+					});
 				}
 			}
 		} catch {
@@ -181,7 +183,7 @@ Do not include markdown blocks or text outside the JSON.`;
 		tag: 'tempo-plugin-ai:context',
 	});
 
-	return finalResult;
+	return secure(finalResult);
 }
 
 /**

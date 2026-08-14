@@ -70,7 +70,7 @@ const schedule = await recurrenceAI("Every Friday");
 
 for (const occurrence of schedule) {
   // Always include a termination condition for open-ended schedules
-  if (occurrence.year > 2028) break;
+  if (occurrence.yy > 2028) break;
 
   console.log(occurrence.format('{yyyy}-{mm}-{dd}'));
 }

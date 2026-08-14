@@ -76,7 +76,7 @@ describe('AI Context Plugin (contextAI)', () => {
 		const cal = String(Tempo.options.calendar);
 		const loc = String(Array.isArray(Tempo.options.locale) ? Tempo.options.locale[0] : Tempo.options.locale);
 		const sph = String(Tempo.options.sphere || 'north');
-		Tempo.cache.set(`context::cached prompt::${tz}::${loc}::${cal}::${sph}`, JSON.stringify({
+		Tempo.cache.set(`ai:context::cached prompt::${tz}::${loc}::${cal}::${sph}`, JSON.stringify({
 			timeZone: 'Europe/London',
 			locale: 'en-GB',
 			calendar: 'gregory',
@@ -230,7 +230,7 @@ describe('AI Context Plugin (contextAI)', () => {
 		const loc = String(Array.isArray(Tempo.options.locale) ? Tempo.options.locale[0] : Tempo.options.locale);
 		const sph = String(Tempo.options.sphere || 'north');
 
-		Tempo.cache.set(`context::low confidence::${tz}::${loc}::${cal}::${sph}`, JSON.stringify({
+		Tempo.cache.set(`ai:context::low confidence::${tz}::${loc}::${cal}::${sph}`, JSON.stringify({
 			timeZone: 'Europe/Berlin',
 			locale: 'de-DE',
 			calendar: 'gregory',
@@ -292,5 +292,32 @@ describe('AI Context Plugin (contextAI)', () => {
 		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
 
 		await expect(contextAI('Berlin tech hub')).rejects.toThrow(/invalid confidence score/i);
+	});
+
+	it('should return a secure() protected immutable object supporting .toJSON() clone', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						timeZone: 'America/Chicago',
+						locale: 'en-US',
+						calendar: 'gregory',
+						sphere: 'north',
+						confidence: 0.95,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const result = await contextAI('Chicago downtown');
+		expect(() => {
+			(result as any).timeZone = 'America/New_York';
+		}).toThrow(TypeError);
+
+		const clone = (result as any).toJSON();
+		expect(clone.timeZone).toBe('America/Chicago');
+		clone.timeZone = 'America/New_York';
+		expect(clone.timeZone).toBe('America/New_York');
 	});
 });

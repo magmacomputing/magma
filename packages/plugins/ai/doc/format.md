@@ -22,10 +22,10 @@ await initAI({
 const target = new Tempo('2026-08-07T17:00:00[America/New_York]');
 const anchor = new Tempo('2026-08-02T17:00:00[America/New_York]');
 
-// "this Friday at 5:00 PM EST (in 5 days)"
+// "this Friday at 5:00 PM EDT (in 5 days)"
 const result = await formatAI(target, 'friendly reminder tone with relative countdown', { anchor });
 
-console.log(result.formatted);  // "this Friday at 5:00 PM EST (in 5 days)"
+console.log(result.formatted);  // "this Friday at 5:00 PM EDT (in 5 days)"
 console.log(result.confidence); // 0.98
 console.log(result.provider);   // 'groq'
 ```

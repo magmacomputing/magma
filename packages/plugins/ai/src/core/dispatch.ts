@@ -388,6 +388,42 @@ async function executeAdaptiveMode<T>(
 }
 
 /**
+ * Checks if a provider has exhausted its request quota and is currently within an active cooldown window.
+ *
+ * @internal
+ */
+export function isProviderInCooldown(provider: AiProvider, now = Date.now()): boolean {
+	const limits = _state.providerLimits.get(provider.id);
+	if (!limits) return false;
+	const resetMs = limits.resetAt?.epoch?.ms ?? now;
+	return limits.remainingRequests === 0 && resetMs > now;
+}
+
+/**
+ * Filters out providers currently in an active rate-limit cooldown window,
+ * provided there is at least one non-exhausted provider available.
+ * If all providers are in cooldown, returns all providers so execution can attempt or fail naturally.
+ *
+ * @internal
+ */
+export function filterCooldownProviders(
+	providers: AiProvider[],
+	options?: ExecuteModeOptions,
+): AiProvider[] {
+	if (providers.length <= 1) return providers;
+	const now = Date.now();
+	const available = providers.filter(p => !isProviderInCooldown(p, now));
+	if (available.length > 0 && available.length < providers.length) {
+		if (options?.debug) {
+			const skipped = providers.filter(p => isProviderInCooldown(p, now)).map(p => p.id);
+			console.log(`[${options?.tag || 'tempo-plugin-ai'}] Proactively filtered ${skipped.length} provider(s) in active 429 cooldown: ${skipped.join(', ')}`);
+		}
+		return available;
+	}
+	return providers;
+}
+
+/**
  * ## executeWithMode
  * Central multi-provider execution orchestrator for Tempo AI plugins.
  * Routes task execution through the configured multi-provider strategy:
@@ -413,21 +449,23 @@ export async function executeWithMode<T>(
 	task: ProviderTask<T>,
 	options?: ExecuteModeOptions,
 ): Promise<ModeCandidate<T>> {
+	const effectiveProviders = filterCooldownProviders(providers, options);
+
 	switch (mode) {
 		case AiMode.Fallback:
-			return executeFallbackMode(providers, task, options);
+			return executeFallbackMode(effectiveProviders, task, options);
 
 		case AiMode.Race:
-			return executeRaceMode(providers, task, options);
+			return executeRaceMode(effectiveProviders, task, options);
 
 		case AiMode.Consensus:
-			return executeConsensusMode(providers, task);
+			return executeConsensusMode(effectiveProviders, task);
 
 		case AiMode.Hedged:
-			return executeHedgedMode(providers, task, options);
+			return executeHedgedMode(effectiveProviders, task, options);
 
 		case AiMode.RoundRobin:
-			return executeRoundRobinMode(providers, task, options);
+			return executeRoundRobinMode(effectiveProviders, task, options);
 
 		case AiMode.Adaptive:
 			return executeAdaptiveMode(providers, task, options);
@@ -436,3 +474,4 @@ export async function executeWithMode<T>(
 			throw new TempoAiError(`Invalid execution mode: '${mode}'. Supported modes: ${Object.values(AiMode).map(m => `'${m}'`).join(', ')}.`, 400);
 	}
 }
+

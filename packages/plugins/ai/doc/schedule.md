@@ -32,22 +32,22 @@ console.log(booking.ai?.conflictBumped);                         // true (pushed
 
 ---
 
-## Configuration Options (`AiScheduleOptions`)
+## Configuration Options (`TempoScheduleOptions`)
 
 | Option | Type | Description |
 | :--- | :--- | :--- |
-| **`anchor`** | `Tempo \| Date \| string \| number` | Anchor reference time to evaluate relative dates from. Defaults to workstation/browser current time. |
-| **`events`** | `TempoEvent[]` | A list of existing busy calendar intervals that the meeting must not overlap with. |
-| **`workingHours`** | `{ start: string; end: string }` | Daily time window constraint (HH:MM formats) inside which slots must fit. |
+| **`anchor`** | `TempoDateInput` | Anchor reference time to evaluate relative dates from. Defaults to workstation/browser current time. |
+| **`events`** | `TempoInterval[]` | A list of existing busy calendar intervals that the meeting must not overlap with. |
+| **`workingHours`** | `TempoWorkingHours` | Daily time window constraint (HH:MM formats) inside which slots must fit. |
 | **`timeZone`** | `string` | Target IANA timezone to calculate the booking slot and boundaries within. |
 | **`minConfidence`**| `number` | Minimum confidence score threshold (0.0 to 1.0) required to return a valid slot. |
 | **`mode`** | `AiMode` | Concurrency routing strategy (`fallback`, `race`, `consensus`, `hedged`, `roundrobin`, `adaptive`). Refer to the [Multi-Provider Execution Modes Guide](./modes.md). |
 
-### `TempoEvent` Interface
+### `TempoInterval` Interface
 ```typescript
-interface TempoEvent {
-  start: Tempo | Date | string | number;
-  end: Tempo | Date | string | number;
+interface TempoInterval {
+  start: TempoDateInput;
+  end: TempoDateInput;
   title?: string;
 }
 ```

@@ -127,8 +127,8 @@ const date = await parseAI("Team standup next Wednesday at 9:30am");
 Your backend endpoint receives the request, validates the user's session, enforces ingress quotas, attaches your private LLM API key, and forwards the validated payload to the upstream provider:
 
 ```typescript
-// Example: Next.js API Route / Cloudflare Worker
-export async function POST(req: Request) {
+// Example: Next.js API Route / Cloudflare Worker / Express Proxy Handler
+export async function POST(req: Request, env?: { GROQ_API_KEY?: string }) {
   // 1. Authenticate user session
   const authHeader = req.headers.get('Authorization');
   const session = await validateUserSession(authHeader);
@@ -145,26 +145,51 @@ export async function POST(req: Request) {
     return new Response('Too Many Requests', { status: 429 });
   }
 
-  // 3. Construct sanitized upstream payload with private BYOK key
-  const upstreamResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages: body.messages,
-      temperature: 0.1,
-    })
-  });
+  // 3. Resolve API key (Cloudflare Worker env binding or Node/Next.js process.env)
+  const apiKey = env?.GROQ_API_KEY || (typeof process !== 'undefined' ? process.env?.GROQ_API_KEY : undefined);
+  if (!apiKey) {
+    return new Response('Provider key configuration missing', { status: 500 });
+  }
 
-  // 4. Return provider payload to client
-  const data = await upstreamResponse.json();
-  return new Response(JSON.stringify(data), {
-    status: upstreamResponse.status,
-    headers: { 'Content-Type': 'application/json' }
-  });
+  // 4. Construct upstream fetch with bounded timeout and cleanup
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s upstream limit
+
+  try {
+    const upstreamResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: body.messages,
+        temperature: 0.1,
+      }),
+      signal: controller.signal
+    });
+
+    // 5. Return provider payload to client
+    const data = await upstreamResponse.json();
+    return new Response(JSON.stringify(data), {
+      status: upstreamResponse.status,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (err: any) {
+    if (err.name === 'AbortError' || controller.signal.aborted) {
+      return new Response(JSON.stringify({ error: 'Upstream provider gateway timeout' }), {
+        status: 504,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    return new Response(JSON.stringify({ error: 'Upstream connection failure' }), {
+      status: 502,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 ```
 

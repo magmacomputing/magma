@@ -123,7 +123,7 @@ export async function recurrenceAI(
 	const sph = options?.sphere || (options?.anchor instanceof Tempo ? options.anchor.config.sphere : undefined) || Tempo.options.sphere;
 
 	const contextConfig = { timeZone: tz, calendar: cal, locale: loc, sphere: sph };
-	const anchorTempo = new Tempo(options?.anchor, contextConfig);
+	const anchorTempo = new Tempo(options?.anchor as any, contextConfig);
 	const defaultBatchSize = options?.count ?? 5;
 
 	if (isRRule) {

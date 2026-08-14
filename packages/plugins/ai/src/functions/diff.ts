@@ -1,4 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
+import { secure } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
@@ -6,6 +7,7 @@ import { executeWithMode } from '../core/dispatch.js';
 import {
 	assertNoReservedProviderId,
 	fetchFromProvider,
+	getNamespacedCacheKey,
 	normalizeCacheInput,
 	readMultiTierCache,
 	resolveProviderTtl,
@@ -85,7 +87,7 @@ async function diffSingleInput(
 	const { force, mode: aiMode, providers, minConfidence, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, hedgeDelay } = options || {};
 
 	const sortedHolidays = holidays ? [...holidays].sort().join(',') : '';
-	const cacheKey = `diff::${startTempo.epoch.ms}::${endTempo.epoch.ms}::${normalizedPrompt}::${tz}::${loc}::${region}::${sortedHolidays}`;
+	const cacheKey = getNamespacedCacheKey('diff', `${startTempo.epoch.ms}::${endTempo.epoch.ms}::${normalizedPrompt}::${tz}::${loc}::${region}::${sortedHolidays}`);
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
 	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
@@ -108,7 +110,7 @@ async function diffSingleInput(
 					: 1.0;
 				if (effectiveMinConfidence === undefined || cachedConfidence >= effectiveMinConfidence) {
 					if (isDebug) console.log(`[tempo-plugin-ai:diff] Cache hit: "${cacheKey}" -> ${cachedVal}`);
-					return {
+					return secure({
 						formatted: parsedCache.formatted,
 						days: parsedCache.days ?? grounding.calendarDays,
 						hours: parsedCache.hours ?? grounding.elapsedHours,
@@ -117,7 +119,7 @@ async function diffSingleInput(
 						confidence: cachedConfidence,
 						provider: 'cache',
 						reasoning: parsedCache.reasoning,
-					};
+					});
 				}
 			}
 		} catch {
@@ -227,7 +229,7 @@ Do not include markdown blocks or text outside the JSON.`;
 		confidence,
 		provider: providerId,
 		reasoning: parsedData.reasoning,
-	};
+	}
 
 	const resolvedTtl = resolveProviderTtl(providerId, availableProviders, ttl, 86_400_000);
 	const cacheVal = JSON.stringify({
@@ -247,7 +249,7 @@ Do not include markdown blocks or text outside the JSON.`;
 		tag: 'tempo-plugin-ai:diff',
 	});
 
-	return finalResult;
+	return secure(finalResult);
 }
 
 /**

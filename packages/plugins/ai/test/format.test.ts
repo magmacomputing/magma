@@ -1,8 +1,10 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { formatAI, initAI, TempoAiError, type TempoAiFormatResult, type AiCacheAdapter } from '../src/index.js';
+import { formatAI, initAI, resetAI, TempoAiError, type TempoAiFormatResult, type AiCacheAdapter } from '../src/index.js';
 
 describe('AI Format Plugin (formatAI)', () => {
 	beforeEach(async () => {
+		resetAI();
+		Tempo.cache.clear();
 		vi.spyOn(console, 'warn').mockImplementation(() => { });
 		vi.spyOn(console, 'error').mockImplementation(() => { });
 		vi.spyOn(console, 'log').mockImplementation(() => { });
@@ -10,6 +12,8 @@ describe('AI Format Plugin (formatAI)', () => {
 	});
 
 	afterEach(() => {
+		resetAI();
+		Tempo.cache.clear();
 		vi.restoreAllMocks();
 	});
 
@@ -96,6 +100,31 @@ describe('AI Format Plugin (formatAI)', () => {
 		expect(promptContext).toContain('Target Locale: fr-FR');
 		expect(promptContext).toContain('Desired Style/Tone: formal');
 		expect(promptContext).toContain('Regional Context: FR-IDF');
+	});
+
+	it('should normalize empty array locale to system default or en-US without stringifying undefined', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						formatted: 'Formatted with default locale',
+						confidence: 0.95,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const target = '2026-08-07T17:00:00Z';
+		const result = await formatAI(target, 'test prompt', {
+			locale: [],
+		});
+
+		expect(result.formatted).toBe('Formatted with default locale');
+		const requestBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+		const promptContext = requestBody.messages[0].content;
+		expect(promptContext).toMatch(/Target Locale: [a-zA-Z-]+/);
+		expect(promptContext).not.toContain('undefined');
 	});
 
 	it('should check cache and skip network fetch on cache hits', async () => {
@@ -187,6 +216,46 @@ describe('AI Format Plugin (formatAI)', () => {
 			.rejects.toThrow(/Invalid anchor date provided to formatAI/i);
 	});
 
+	it('should reject non-finite and out-of-range minConfidence values before cache read or provider calls', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		const customAdapter: AiCacheAdapter = {
+			get: vi.fn(async () => undefined),
+			set: vi.fn(async () => {}),
+		};
+
+		// Non-finite values
+		await expect(formatAI('2026-08-07', 'test', { minConfidence: NaN, cacheAdapter: customAdapter }))
+			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "NaN"', 400));
+
+		await expect(formatAI('2026-08-07', 'test', { minConfidence: Infinity, cacheAdapter: customAdapter }))
+			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "Infinity"', 400));
+
+		await expect(formatAI('2026-08-07', 'test', { minConfidence: -Infinity, cacheAdapter: customAdapter }))
+			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "-Infinity"', 400));
+
+		// Out-of-range values
+		await expect(formatAI('2026-08-07', 'test', { minConfidence: -0.1, cacheAdapter: customAdapter }))
+			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "-0.1"', 400));
+
+		await expect(formatAI('2026-08-07', 'test', { minConfidence: 1.05, cacheAdapter: customAdapter }))
+			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "1.05"', 400));
+
+		// Verify neither cache nor provider fetch was called
+		expect(customAdapter.get).not.toHaveBeenCalled();
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
+
+	it('should reject invalid configured default minConfidence from initAI', async () => {
+		await initAI({
+			remoteConfigUrl: false,
+			minConfidence: 1.5,
+			providers: [{ id: 'groq', key: 'mock-key-for-unit-testing' }],
+		});
+
+		await expect(formatAI('2026-08-07', 'test'))
+			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "1.5"', 400));
+	});
+
 	it('should support multi-provider race execution mode', async () => {
 		let slowWasAborted = false;
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
@@ -257,6 +326,37 @@ describe('AI Format Plugin (formatAI)', () => {
 		expect(results[1]).toBeInstanceOf(TempoAiError);
 	});
 
+	it('should reject with TempoAiError on batch failure when softErrors is false', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy
+			.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{
+					message: {
+						content: JSON.stringify({
+							formatted: 'Item 1 formatted',
+							confidence: 0.95,
+						}),
+					},
+				}],
+			}), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+			.mockResolvedValueOnce(new Response('Server Error', { status: 500 }));
+
+		const items = [
+			{ date: '2026-08-03', prompt: 'item 1' },
+			{ date: '2026-08-05', prompt: 'item 2' },
+		];
+
+		await expect(formatAI(items, { softErrors: false }))
+			.rejects.toThrow(TempoAiError);
+	});
+
+	it('should return an empty array for an empty batch input without provider requests', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		const results = await formatAI([]);
+		expect(results).toEqual([]);
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
+
 	it('should honor force: true, cache: false, and ttl override options', async () => {
 		const cacheStore = new Map<string, string>();
 		const customAdapter: AiCacheAdapter = {
@@ -296,5 +396,30 @@ describe('AI Format Plugin (formatAI)', () => {
 		const res3 = await formatAI('2026-09-01', 'uncached prompt', { anchor, cache: false, cacheAdapter: customAdapter });
 		expect(res3.formatted).toBe('Fresh result');
 		expect(customAdapter.set).not.toHaveBeenCalled();
+	});
+
+	it('should return a secure() protected immutable object supporting .toJSON() clone', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						formatted: 'Tomorrow at 5pm',
+						confidence: 0.95,
+						reasoning: 'Target is tomorrow.',
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const result = await formatAI('2026-08-03T17:00:00Z', undefined, { anchor: '2026-08-02T17:00:00Z' });
+		expect(() => {
+			(result as any).formatted = 'hacked';
+		}).toThrow(TypeError);
+
+		const clone = (result as any).toJSON();
+		expect(clone.formatted).toBe('Tomorrow at 5pm');
+		clone.formatted = 'modified';
+		expect(clone.formatted).toBe('modified');
 	});
 });

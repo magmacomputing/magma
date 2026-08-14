@@ -1,4 +1,5 @@
 import type { Tempo } from '@magmacomputing/tempo';
+import type { TempoBaseAiResult, TempoDateInput } from './base.type.js';
 import type { AiParseOptions } from './parse.type.js';
 
 /**
@@ -7,20 +8,20 @@ import type { AiParseOptions } from './parse.type.js';
  */
 export interface TempoRecurrenceOptions extends AiParseOptions {
 	/** Start date/time window for occurrence expansion */
-	after?: Tempo | Date | string | number | undefined;
+	after?: TempoDateInput | undefined;
 	/** End date/time window for occurrence expansion */
-	before?: Tempo | Date | string | number | undefined;
+	before?: TempoDateInput | undefined;
 	/** Number of occurrences to pull per batch (default: 5) */
-	count?: number;
+	count?: number | undefined;
 	/** Preferred BCP 47 locale tag for summary output (e.g. 'en-US', 'fr-FR', 'es-ES') */
-	locale?: string;
+	locale?: string | undefined;
 }
 
 /**
  * ## TempoRecurrenceResult
  * Structured multi-directional recurrence result returned by `recurrenceAI`.
  */
-export interface TempoRecurrenceResult {
+export interface TempoRecurrenceResult extends TempoBaseAiResult {
 	/** Standard RFC 5545 RRULE string (e.g. 'FREQ=WEEKLY;BYDAY=TU') */
 	rrule: string;
 	/** Localized human-friendly summary of the schedule (e.g. 'Every Tuesday at 15:00') */
@@ -33,10 +34,4 @@ export interface TempoRecurrenceResult {
 	take(count?: number): Tempo[];
 	/** Lazy generator yielding Tempo instances on demand */
 	[Symbol.iterator](): Generator<Tempo, void, unknown>;
-	/** Confidence rating from 0.0 (unparseable) to 1.0 (certain) */
-	confidence: number;
-	/** Provider ID responsible for processing or 'rrule-parser' for native RRULE inputs */
-	provider: string;
-	/** Reasoning / explanation of the recurrence pattern */
-	reasoning?: string | undefined;
 }

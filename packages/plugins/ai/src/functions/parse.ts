@@ -11,7 +11,26 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 	const isDebug = options?.debug ?? _state.config.debug ?? false;
 	const normalizedStr = normalizeCacheInput(str);
 
-	const { force, debug, mode: aiMode, providers, minConfidence, softErrors, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, anchor, hedgeDelay, ...coreOptions } = options || {};
+	const {
+		force,
+		debug,
+		mode: aiMode,
+		providers,
+		minConfidence,
+		softErrors,
+		cache: aiCacheOption,
+		timeout: callTimeout,
+		ttl,
+		cacheAdapter,
+		anchor,
+		hedgeDelay,
+		timeZone: _tz,
+		locale: _loc,
+		calendar: _cal,
+		region: _reg,
+		sphere: _sph,
+		...coreOptions
+	} = options || {};
 
 	let tz: string, cal: string, loc: string, sph: string, anchorStr: string;
 	if (Tempo.isTempo(options?.anchor)) {
@@ -31,7 +50,8 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 		anchorStr = String(options?.anchor || new Tempo().toString());
 	}
 
-	const anchorTempo = new Tempo(anchorStr, { ...coreOptions, timeZone: tz, calendar: cal, locale: loc, sphere: sph as any });
+	const tempoConfig = { ...coreOptions, timeZone: tz, calendar: cal, locale: loc, sphere: sph as any };
+	const anchorTempo = new Tempo(anchorStr, tempoConfig);
 	const cacheSalt = anchorTempo.format('{yyyy}-{mm}-{dd}');
 	const cacheKey = `${normalizedStr}::${cacheSalt}::${tz}::${cal}::${loc}::${sph}`;
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
@@ -54,7 +74,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
 	if (cachedIso) {
 		if (isDebug) console.log(`[tempo-plugin-ai] Cache hit: "${str}" -> ${cachedIso}`);
-		const cachedInstance = new Tempo(cachedIso, coreOptions);
+		const cachedInstance = new Tempo(cachedIso, tempoConfig);
 		return attachAiMeta(cachedInstance, {
 			provider: 'cache',
 			cached: true,
@@ -69,7 +89,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
 	if (!force) {
 		try {
-			const native = new Tempo(str, { ...coreOptions, silent: true });
+			const native = new Tempo(str, { ...tempoConfig, silent: true });
 			const hasNativeMatches = Tempo.cache.has(str)
 				|| Tempo.cache.has(normalizedStr)
 				|| RE_ISO_DATE_PREFIX.test(str.trim())
@@ -142,7 +162,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 	const isBelowMinConfidence = effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence;
 
 	if (rawIso === 'INVALID' || isBelowMinConfidence) {
-		const invalidInstance = new Tempo('INVALID', { ...coreOptions, catch: true });
+		const invalidInstance = new Tempo('INVALID', { ...tempoConfig, catch: true });
 		return attachAiMeta(invalidInstance, {
 			provider: providerId,
 			cached: false,
@@ -163,8 +183,10 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 	// In Consensus mode, providerId is the synthetic sentinel 'consensus' (not a real provider id),
 	// so use the minimum TTL across all participating providers as the conservative policy.
 	const providerTtl = providerId === AiMode.Consensus
-		? availableProviders.reduce<number | undefined>((min, p) => p.ttl === undefined ? min : (min === undefined ? p.ttl : Math.min(min, p.ttl)), undefined)
-		: availableProviders.find(p => p.id === providerId)?.ttl;
+		? (availableProviders)
+			.reduce<number | undefined>((min: number | undefined, p: any) =>
+				p.ttl === undefined ? min : (min === undefined ? p.ttl : Math.min(min, p.ttl)), undefined)
+		: (availableProviders).find((p: any) => p.id === providerId)?.ttl;
 	const resolvedTtl = ttl ?? providerTtl ?? _state.config.ttl ?? 3_600_000;
 
 	if (aiCacheOption !== false) {
@@ -179,7 +201,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 		Tempo.cache.set(cacheKey, parsedIso);
 	}
 
-	const finalInstance = new Tempo(parsedIso, coreOptions);
+	const finalInstance = new Tempo(parsedIso, tempoConfig);
 
 	return attachAiMeta(finalInstance, {
 		provider: providerId,

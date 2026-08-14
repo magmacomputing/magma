@@ -302,4 +302,31 @@ describe('AI Diff Plugin (diffAI)', () => {
 		const requestBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
 		expect(requestBody.messages[0].content).toContain('(Europe/London)');
 	});
+
+	it('should return a secure() protected immutable object supporting .toJSON() clone', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						formatted: '3 business days difference',
+						days: 3,
+						hours: 72,
+						businessDays: 3,
+						confidence: 0.95,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const result = await diffAI('2026-08-03', '2026-08-06', 'summarize');
+		expect(() => {
+			(result as any).formatted = 'hacked';
+		}).toThrow(TypeError);
+
+		const clone = (result as any).toJSON();
+		expect(clone.formatted).toBe('3 business days difference');
+		clone.formatted = 'modified';
+		expect(clone.formatted).toBe('modified');
+	});
 });

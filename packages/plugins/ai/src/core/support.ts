@@ -2,7 +2,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { TempoAiError } from './error.js';
 import { RESERVED_PROVIDER_IDS } from './config.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
-import type { AiCacheAdapter, AiProvider, TempoAiMeta } from '../types/index.js';
+import type { AiCacheAdapter, AiProvider, TempoParseAiMeta } from '../types/index.js';
 
 export function assertNoReservedProviderId(providers: Partial<AiProvider>[]): void {
 	for (const p of providers) {
@@ -37,8 +37,13 @@ export function resolveTzAndLocale(
 ): { tz: string; loc: string } {
 	const resolvedOptions = (Tempo as any).options ?? {};
 	const tz = String(options?.timeZone || fallbackTempo?.tz || resolvedOptions.timeZone || _state.config.timeZone || 'UTC');
-	const rawLoc = options?.locale || fallbackTempo?.loc || resolvedOptions.locale || _state.config.locale || 'en-US';
-	const loc = String(Array.isArray(rawLoc) ? rawLoc[0] : rawLoc);
+	const rawLoc = (options?.locale !== undefined && (Array.isArray(options.locale) ? options.locale.length > 0 : Boolean(options.locale)))
+		? options.locale
+		: (fallbackTempo?.loc !== undefined && (Array.isArray(fallbackTempo.loc) ? fallbackTempo.loc.length > 0 : Boolean(fallbackTempo.loc)))
+			? fallbackTempo.loc
+			: resolvedOptions.locale || _state.config.locale || 'en-US';
+	const firstLoc = Array.isArray(rawLoc) ? rawLoc[0] : rawLoc;
+	const loc = typeof firstLoc === 'string' && firstLoc.trim().length > 0 ? firstLoc.trim() : 'en-US';
 	return { tz, loc };
 }
 
@@ -102,7 +107,7 @@ export async function writeMultiTierCache(
 	}
 }
 
-export function attachAiMeta(instance: Tempo, meta: TempoAiMeta): Tempo {
+export function attachAiMeta(instance: Tempo, meta: TempoParseAiMeta): Tempo {
 	const frozenMeta = Object.freeze(meta);
 	const boundMethodCache = new Map<PropertyKey, Function>();
 

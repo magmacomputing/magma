@@ -50,8 +50,8 @@
     "description": "Tempo community plugin for LLM-powered natural language processing and parsing.",
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
-    "status": "experimental",
-    "version": "4.0.0"
+    "status": "active",
+    "version": "1.0.0"
   },
   {
     "id": "ticker",

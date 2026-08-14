@@ -186,7 +186,7 @@ export async function scheduleAI(
 		|| (options?.anchor instanceof Tempo ? options.anchor.tz : undefined)
 		|| Tempo.options?.timeZone
 		|| 'UTC';
-	const anchorTempo = new Tempo(options?.anchor, { timeZone: resolvedTz });
+	const anchorTempo = new Tempo(options?.anchor as any, { timeZone: resolvedTz });
 	const timeZone = options?.timeZone || anchorTempo.tz || 'UTC';
 	const workingHours: TempoWorkingHours = {
 		start: options?.workingHours?.start ?? '09:00',
@@ -401,6 +401,7 @@ export async function scheduleAI(
 		ai: {
 			provider: providerId,
 			confidence,
+			cached: false,
 			conflictBumped,
 			originalSlot,
 			reasoning,
