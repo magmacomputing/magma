@@ -169,6 +169,14 @@ function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta
 			return Reflect.has(interval, prop);
 		},
 		getOwnPropertyDescriptor(target, prop) {
+			if (prop === CUSTOM_INSPECT_SYMBOL || prop === 'toJSON') {
+				return {
+					value: (inspectableMeta as any)[prop],
+					writable: false,
+					configurable: true,
+					enumerable: false,
+				};
+			}
 			if (Object.hasOwn(inspectableMeta, prop)) {
 				return {
 					value: (inspectableMeta as any)[prop],
@@ -180,9 +188,10 @@ function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta
 			return Reflect.getOwnPropertyDescriptor(target, prop);
 		},
 		ownKeys(target) {
-			const keys = Reflect.ownKeys(target);
+			const keys = Reflect.ownKeys(target).filter(k => k !== CUSTOM_INSPECT_SYMBOL && k !== 'toJSON');
 			for (const k of Object.keys(inspectableMeta)) {
-				if (!keys.includes(k)) keys.push(k);
+				if (k !== 'toJSON' && !keys.includes(k))
+					keys.push(k);
 			}
 			return keys;
 		},

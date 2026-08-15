@@ -2,6 +2,7 @@ import { Tempo } from '@magmacomputing/tempo';
 
 import { getResolvedProviderDefaults, loadRemoteManifest, resetManifestCache } from './manifest.js';
 import { assertNoReservedProviderId } from './support.js';
+import { warnDebug } from './logger.js';
 import type { AiConfig, AiRateLimits, AiProvider } from '../types/index.js';
 
 /**
@@ -90,7 +91,9 @@ export function initAI(config: AiConfig): Promise<void> {
         let hookOptions: Partial<AiProvider> | null = null;
         try {
           hookOptions = await fetchDefaults(normalizedId);
-        } catch { }
+        } catch (err: any) {
+          warnDebug('tempo-plugin-ai:init', `fetchDefaults hook failed for provider '${normalizedId}'`, err, { debug: config.debug ?? _state.config.debug });
+        }
         return {
           ...defaults,
           ...(hookOptions ?? {}),

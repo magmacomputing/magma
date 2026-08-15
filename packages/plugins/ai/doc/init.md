@@ -80,7 +80,7 @@ const dt = await parseAI("Next Tuesday at 4pm", { timeout: 3000 });
 **Operational Trace Logging**
 Passing `debug: true` into `initAI` (or setting `{ debug: true }` on a per-request options object) outputs concise operational trace logs (prefixed with `[tempo-plugin-ai]`) to the developer console for monitoring provider fallback decisions and execution timing.
 
-Detailed diagnostic context—including `rawPrompt`, `normalizedPrompt`, `reasoning`, confidence scores, and rate limit snapshots—is attached directly to the returned `Tempo` instance via the `.ai` property for `parseAI`, or surfaced directly on the typed result object (`res.reasoning`, `res.confidence`, `res.ai`) for other AI functions when `debug: true` is enabled.
+Detailed diagnostic context—including provider resolution, execution lineage, confidence scores, and when `debug: true` is active, `rawPrompt`, `normalizedPrompt`, and rate-limit snapshots—is attached directly to the returned `Tempo` instance via the `.ai` property for `parseAI`. Structured functions (`formatAI`, `diffAI`, `extractAI`, `contextAI`, `scheduleAI`) surface their respective typed properties directly on the result object (such as `res.confidence`, `res.provider`, and optional `res.reasoning`).
 
 > [!TIP]
 > **Smart Debug & Proxy Introspection**: In production environments (`NODE_ENV === 'production'`), terminal logging via `console.log(date.ai)` or `console.log(result)` automatically sanitizes and masks PII (emails, phones, bearer tokens) while preserving 100% in-memory data integrity for application code. Refer to the [Security & Privacy Architecture Guide](./security.md).

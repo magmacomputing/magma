@@ -3,7 +3,7 @@ import { enumify, Enum } from '#library/enumerate.library.js';
 import { proxify } from '#library/proxy.library.js';
 import { allDescriptors } from '#library/reflection.library.js';
 import { looseIndex } from '#library/object.library.js';
-import type { OwnOf, KeyOf, ValueOf, LooseUnion, Mutable } from '#library/type.library.js';
+import type { OwnOf, KeyOf, ValueOf, LooseUnion } from '#library/type.library.js';
 
 /** calendar seasons */
 export const SEASON = enumify({

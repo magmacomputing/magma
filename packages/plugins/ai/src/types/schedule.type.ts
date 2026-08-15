@@ -30,6 +30,17 @@ export interface TempoInterval {
 }
 
 /**
+ * ## ScheduleEventInput
+ * Valid calendar event or busy interval input shape for scheduling conflicts.
+ */
+export type ScheduleEventInput =
+	| { start: any; end: any; title?: string | undefined; label?: string | undefined }
+	| TempoInterval
+	| Interval<Tempo>
+	| [any, any]
+	| TempoDateInput;
+
+/**
  * ## TempoScheduleOptions
  * Options passed to `scheduleAI(prompt, options)`.
  */
@@ -39,9 +50,9 @@ export interface TempoScheduleOptions extends AiParseOptions {
 	/** Working hours configuration for slot resolution */
 	workingHours?: TempoWorkingHours | undefined;
 	/** Existing booked events or busy intervals to avoid */
-	events?: Array<{ start: any; end: any; title?: string }> | Array<TempoInterval | Interval<Tempo>> | undefined;
+	events?: Array<ScheduleEventInput> | undefined;
 	/** Alias for events */
-	intervals?: Array<{ start: any; end: any; title?: string }> | Array<TempoInterval | Interval<Tempo>> | undefined;
+	intervals?: Array<ScheduleEventInput> | undefined;
 	/** Search window start constraint */
 	after?: TempoDateInput | undefined;
 	/** Search window end constraint */

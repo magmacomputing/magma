@@ -75,7 +75,7 @@ async function extractSingleInput(
 	} = options || {};
 
 	const normalizedText = normalizeCacheInput(text);
-	const cacheKey = `extract::${normalizedText}::${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}')}::${tz}::${loc}::${cal}::${region}::${categoriesStr}`;
+	const cacheKey = `extract::${normalizedText}::${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')}::${tz}::${loc}::${cal}::${region}::${categoriesStr}`;
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
 	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
@@ -384,7 +384,12 @@ export async function extractAI(
 		if (textOrTexts.length === 0) return [];
 		const opts = options || {};
 		const softErrors = opts.softErrors ?? false;
-		const concurrencyLimit = Math.max(1, Math.min(opts.concurrency ?? 4, textOrTexts.length));
+		let rawConcurrency = opts.concurrency;
+		if (rawConcurrency !== undefined && (typeof rawConcurrency !== 'number' || !Number.isFinite(rawConcurrency) || rawConcurrency < 1))
+			rawConcurrency = 4;
+
+		const validConcurrency = Math.floor(rawConcurrency ?? 4);
+		const concurrencyLimit = Math.max(1, Math.min(validConcurrency, textOrTexts.length));
 
 		const results: (TempoAiExtractResult | TempoAiError)[] = new Array(textOrTexts.length);
 		let nextIdx = 0;

@@ -183,11 +183,11 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Ra
 		list = list.filter(r => keys.every((key: string) => {
 			if (key === 'sphere') {
 				const valA = String(r[key] ?? '').toLowerCase();
-				const valB = String((t.config as any)[key] ?? '').toLowerCase();
+				const valB = String(t.sphere ?? (t.config as any)[key] ?? '').toLowerCase();
 				if (valA === '' || valB === '') return false;
 				return valB.includes(valA);
 			}
-			return r[key] === (t.config as any)[key];
+			return r[key] === ((t as any)[key] ?? (t.config as any)[key]);
 		}));
 	}
 
@@ -297,7 +297,7 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 
 	if (!Array.isArray(template) && groupBy.length > 0) {
 		const groupKey = groupBy
-			.map(key => options[key] ?? anchor?.[key] ?? t.config[key] ?? (t as any)[key] ?? '')
+			.map(key => options[key] ?? anchor?.[key] ?? (t as any)[key] ?? t.config[key] ?? '')
 			.join('.');
 
 		list = (template as any)[groupKey] ?? [];
@@ -335,7 +335,7 @@ export function resolveCycleWindow(source: Tempo | any, template: Range[] | Reco
 		}
 
 		if (list.length === 0) {
-			const missing = groupBy.filter(k => isUndefined(options[k]) && isUndefined(anchor?.[k]) && isUndefined(t.config[k]));
+			const missing = groupBy.filter(k => isUndefined(options[k]) && isUndefined(anchor?.[k]) && isUndefined((t as any)[k]) && isUndefined(t.config[k]));
 			const msg = missing.length > 0 ? `Missing grouping criteria: ${missing.join(', ')}` : `No ranges found for group: ${groupKey}`;
 			(t.constructor as any)[TermError]?.(t.config, msg);
 			return [];

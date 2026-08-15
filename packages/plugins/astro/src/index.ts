@@ -61,7 +61,7 @@ function calculateAstroMoment(year: number, quarter: ASTRO, timeZone: string) {
 }
 
 function resolve(t: Tempo, anchor?: any) {
-	const sphere = t.config.sphere;
+	const sphere = t.sphere;
 	if (!sphere) return [];
 
 	const year = anchor?.yy ?? anchor?.year ?? t.yy;

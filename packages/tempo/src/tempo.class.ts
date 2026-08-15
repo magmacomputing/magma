@@ -11,7 +11,7 @@ import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
-import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isError, isNumber } from '#library/assertion.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear } from '#library/international.library.js';
 import { LOG } from '#library/logger.class.js';
@@ -1553,7 +1553,8 @@ export class Tempo {
 	/** Fractional seconds (e.g., 0.123456789) */							get ff() { return +(`0.${pad(this.ms, 3)}${pad(this.us, 3)}${pad(this.ns, 3)}`) }
 	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
-	/** Resolved BCP 47 locale (e.g., 'en-US') */							get loc() { return (this.#local.config.locale ?? (this as any)[$Internal]().config.locale ?? Default.locale) as string | string[] }
+	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale() { return (this.#local.config.locale ?? (this as any)[$Internal]().config.locale ?? Default.locale) as string | string[] }
+	/** Resolved hemisphere ('north' | 'south') */						get sphere() { return (this.#local.config.sphere ?? (this as any)[$Internal]().config.sphere ?? Default.sphere) as t.COMPASS | undefined }
 	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[this.#local.config.timeStamp] }
 	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as t.Month) }
 	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as t.Month) }

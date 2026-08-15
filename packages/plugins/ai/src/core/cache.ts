@@ -6,6 +6,8 @@ import type { AiCacheAdapter } from '../types/index.js';
 
 export const AI_CACHE_NAMESPACE_PREFIX = 'ai:';
 
+const _entryExpiries = new Map<string, number>();
+
 /**
  * Normalizes input string for deterministic cache lookups by trimming excess whitespace and lowercasing.
  */
@@ -50,8 +52,14 @@ export async function readMultiTierCache(
 		}
 	}
 
+	if (_entryExpiries.has(cacheKey) && Date.now() > _entryExpiries.get(cacheKey)!) {
+		_entryExpiries.delete(cacheKey);
+		Tempo.cache.delete(cacheKey);
+		return undefined;
+	}
+
 	const localVal = Tempo.cache.get(cacheKey);
-	if (localVal) {
+	if (localVal !== undefined) {
 		logDebug(tag, `Cache hit (local): ${cacheKey}`, undefined, { debug: options.debug });
 		return localVal;
 	}
@@ -77,6 +85,11 @@ export async function writeMultiTierCache(
 
 	const tag = options.tag ?? 'tempo-plugin-ai';
 	Tempo.cache.set(cacheKey, value);
+	if (typeof ttl === 'number' && Number.isFinite(ttl) && ttl > 0) {
+		_entryExpiries.set(cacheKey, Date.now() + ttl);
+	} else {
+		_entryExpiries.delete(cacheKey);
+	}
 
 	const adapter = options.cacheAdapter || _state.config.cacheAdapter;
 	if (adapter) {
@@ -108,6 +121,7 @@ export const aiCache = secure({
 
 		if (!input) {
 			Tempo.cache.clear();
+			_entryExpiries.clear();
 			if (adapter?.clear) {
 				try {
 					await Promise.resolve(adapter.clear()).catch(() => { });
@@ -123,12 +137,28 @@ export const aiCache = secure({
 			Tempo.cache.delete(normalized);
 			Tempo.cache.delete(i);
 			Tempo.cache.deletePrefix(prefix);
+			_entryExpiries.delete(normalized);
+			_entryExpiries.delete(i);
+
+			const keysToDelete: string[] = [];
+			for (const [key] of Tempo.cache.entries()) {
+				if (key.includes(normalized) || key.includes(i)) {
+					keysToDelete.push(key);
+				}
+			}
+			for (const k of keysToDelete) {
+				Tempo.cache.delete(k);
+				_entryExpiries.delete(k);
+			}
 
 			if (adapter) {
 				try {
 					if (adapter.delete) {
 						await Promise.resolve(adapter.delete(normalized)).catch(() => { });
 						await Promise.resolve(adapter.delete(i)).catch(() => { });
+						for (const k of keysToDelete) {
+							await Promise.resolve(adapter.delete(k)).catch(() => { });
+						}
 					}
 					if (adapter.clear) {
 						await Promise.resolve(adapter.clear(prefix)).catch(() => { });
@@ -145,12 +175,11 @@ export const aiCache = secure({
 	 * @returns True if the key was present in the in-memory cache, false otherwise
 	 */
 	async delete(key: string): Promise<boolean> {
-		const normalized = normalizeCacheInput(key);
-		const deletedLocal = Tempo.cache.delete(normalized) || Tempo.cache.delete(key);
+		_entryExpiries.delete(key);
+		const deletedLocal = Tempo.cache.delete(key);
 		const adapter = _state.config.cacheAdapter;
 		if (adapter?.delete) {
 			try {
-				await Promise.resolve(adapter.delete(normalized)).catch(() => { });
 				await Promise.resolve(adapter.delete(key)).catch(() => { });
 			} catch { }
 		}
@@ -164,6 +193,12 @@ export const aiCache = secure({
 	 * @returns The cached string value, or undefined if not found
 	 */
 	async get(key: string): Promise<string | undefined> {
+		if (_entryExpiries.has(key) && Date.now() > _entryExpiries.get(key)!) {
+			_entryExpiries.delete(key);
+			Tempo.cache.delete(key);
+			return undefined;
+		}
+
 		const adapter = _state.config.cacheAdapter;
 		if (adapter?.get) {
 			try {
@@ -194,6 +229,12 @@ export const aiCache = secure({
 	 */
 	async set(key: string, value: string, ttl?: number): Promise<void> {
 		Tempo.cache.set(key, value);
+		if (typeof ttl === 'number' && Number.isFinite(ttl) && ttl > 0) {
+			_entryExpiries.set(key, Date.now() + ttl);
+		} else {
+			_entryExpiries.delete(key);
+		}
+
 		const adapter = _state.config.cacheAdapter;
 		if (adapter?.set) {
 			try {

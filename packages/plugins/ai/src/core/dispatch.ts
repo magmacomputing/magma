@@ -422,9 +422,18 @@ export function filterCooldownProviders(
 ): AiProvider[] {
 	if (providers.length <= 1) return providers;
 	const now = Date.now();
-	const available = providers.filter(p => !isProviderInCooldown(p, now));
-	if (available.length > 0 && available.length < providers.length) {
-		const skipped = providers.filter(p => isProviderInCooldown(p, now)).map(p => p.id);
+	const available: AiProvider[] = [];
+	const skipped: string[] = [];
+
+	for (const p of providers) {
+		if (isProviderInCooldown(p, now)) {
+			skipped.push(p.id);
+		} else {
+			available.push(p);
+		}
+	}
+
+	if (available.length > 0 && skipped.length > 0) {
 		logDebug(
 			options?.tag || 'tempo-plugin-ai',
 			`Proactively filtered ${skipped.length} provider(s) in active 429 cooldown: ${skipped.join(', ')}`,

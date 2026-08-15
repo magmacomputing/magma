@@ -3,7 +3,7 @@ import { _state } from './init.js';
 export const CUSTOM_INSPECT_SYMBOL = Symbol.for('nodejs.util.inspect.custom');
 
 const RE_EMAIL = /[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g;
-const RE_PHONE = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?(\d{4})/g;
+const RE_PHONE = /(?:\+?\d{1,3}[-.\s])?\(?\d{3}\)?[-.\s]\d{3}[-.\s](\d{4})\b/g;
 const RE_BEARER = /Bearer\s+[A-Za-z0-9_\-\.]+/gi;
 const RE_API_KEY = /\b(?:sk-[a-zA-Z0-9_\-]{6,}|gsk_[a-zA-Z0-9_\-]{6,}|key-[a-zA-Z0-9_\-]{6,})\b/gi;
 
@@ -59,8 +59,13 @@ export function maskPii(input: string, isProd: boolean = isProductionEnvironment
 
 /**
  * Sanitizes arbitrary objects, arrays, or primitives for safe log printing.
+ * Protects against circular object references via a visited tracker.
  */
-export function sanitizeForLog(data: any, isProd: boolean = isProductionEnvironment()): any {
+export function sanitizeForLog(
+	data: any,
+	isProd: boolean = isProductionEnvironment(),
+	visited: WeakSet<object> = new WeakSet(),
+): any {
 	if (data === null || data === undefined) return data;
 	if (!isProd) return data;
 
@@ -71,21 +76,24 @@ export function sanitizeForLog(data: any, isProd: boolean = isProductionEnvironm
 		}
 		return masked;
 	}
-	if (typeof data === 'number' || typeof data === 'boolean') return data;
-
-	if (Array.isArray(data))
-		return data.map(item => sanitizeForLog(item, isProd));
+	if (typeof data === 'number' || typeof data === 'boolean' || typeof data === 'symbol' || typeof data === 'bigint') return data;
 
 	if (typeof data === 'object') {
+		if (visited.has(data)) return '[CIRCULAR]';
+		visited.add(data);
+
+		if (Array.isArray(data))
+			return data.map(item => sanitizeForLog(item, isProd, visited));
+
 		const result: Record<string, any> = {};
 		for (const [key, val] of Object.entries(data)) {
 			const lowerKey = key.toLowerCase();
 			if (lowerKey.includes('key') || lowerKey.includes('secret') || lowerKey.includes('token') || lowerKey.includes('password') || lowerKey.includes('auth')) {
 				result[key] = '[REDACTED]';
 			} else if (key === 'rawPrompt' || key === 'normalizedPrompt' || key === 'prompt' || key === 'reasoning') {
-				result[key] = typeof val === 'string' ? maskPii(val, isProd) : val;
+				result[key] = typeof val === 'string' ? maskPii(val, isProd) : sanitizeForLog(val, isProd, visited);
 			} else {
-				result[key] = sanitizeForLog(val, isProd);
+				result[key] = sanitizeForLog(val, isProd, visited);
 			}
 		}
 		return result;
@@ -167,15 +175,17 @@ export function attachCustomInspect<T extends object>(
 			writable: true,
 		});
 
-		Object.defineProperty(target, 'toJSON', {
-			value: function () {
-				const isProd = isProductionEnvironment();
-				return getInspectView(target, isProd);
-			},
-			configurable: true,
-			enumerable: false,
-			writable: true,
-		});
+		if (typeof (target as any).toJSON !== 'function') {
+			Object.defineProperty(target, 'toJSON', {
+				value: function () {
+					const isProd = isProductionEnvironment();
+					return getInspectView(target, isProd);
+				},
+				configurable: true,
+				enumerable: false,
+				writable: true,
+			});
+		}
 	} catch { }
 
 	return target;

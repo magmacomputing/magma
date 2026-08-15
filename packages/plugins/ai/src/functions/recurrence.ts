@@ -131,9 +131,9 @@ export async function recurrenceAI(
 	// Resolve full Tempo context hierarchy
 	const tz = options?.timeZone || (options?.anchor instanceof Tempo ? options.anchor.tz : undefined) || Tempo.options.timeZone;
 	const cal = options?.calendar || (options?.anchor instanceof Tempo ? options.anchor.cal : undefined) || Tempo.options.calendar;
-	const loc = options?.locale || (options?.anchor instanceof Tempo ? options.anchor.loc : undefined) || Tempo.options.locale;
+	const loc = options?.locale || (options?.anchor instanceof Tempo ? options.anchor.locale : undefined) || Tempo.options.locale;
 	const scalarLoc = String(Array.isArray(loc) ? loc[0] : loc);
-	const sph = options?.sphere || (options?.anchor instanceof Tempo ? options.anchor.config.sphere : undefined) || Tempo.options.sphere;
+	const sph = options?.sphere || (options?.anchor instanceof Tempo ? options.anchor.sphere : undefined) || Tempo.options.sphere;
 
 	const contextConfig = { timeZone: tz, calendar: cal, locale: loc, sphere: sph };
 	const anchorTempo = new Tempo(options?.anchor as any, contextConfig);

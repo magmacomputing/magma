@@ -37,7 +37,7 @@ console.log(booking.ai?.conflictBumped);                         // true (pushed
 | Option | Type | Description |
 | :--- | :--- | :--- |
 | **`anchor`** | `TempoDateInput` | Anchor reference time to evaluate relative dates from. Defaults to workstation/browser current time. |
-| **`events`** | `Array<{ start: any; end: any; title?: string } \| TempoInterval \| Interval<Tempo>>` | A list of existing busy calendar intervals that the meeting must not overlap with. |
+| **`events`** | `Array<ScheduleEventInput>` | A list of existing busy calendar intervals or booked events that the meeting must not overlap with. |
 | **`workingHours`** | `TempoWorkingHours` | Daily time window constraint (HH:MM formats) inside which slots must fit. |
 | **`timeZone`** | `string` | Target IANA timezone to calculate the booking slot and boundaries within. |
 | **`minConfidence`**| `number` | Minimum confidence score threshold (0.0 to 1.0) required to return a valid slot. |
@@ -51,14 +51,15 @@ export interface TempoInterval {
 }
 ```
 
-### Event Input Shape (`TempoScheduleOptions.events`)
-The `events` option accepts raw event objects, continuous `TempoInterval` pairs, or native `Interval<Tempo>` instances:
+### Event Input Shape (`ScheduleEventInput`)
+The `events` (or `intervals`) option accepts raw event objects, continuous `TempoInterval` pairs, native `Interval<Tempo>` instances, or `[start, end]` tuples:
 ```typescript
-type ScheduleEventInput = {
-  start: TempoDateInput;
-  end: TempoDateInput;
-  title?: string;
-} | TempoInterval | Interval<Tempo>;
+export type ScheduleEventInput =
+  | { start: TempoDateInput; end: TempoDateInput; title?: string; label?: string }
+  | TempoInterval
+  | Interval<Tempo>
+  | [TempoDateInput, TempoDateInput]
+  | TempoDateInput;
 ```
 
 ---

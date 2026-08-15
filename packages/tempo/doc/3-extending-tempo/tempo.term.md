@@ -182,7 +182,7 @@ const ranges = defineRange([
 /** 2. Resolve the candidate list for the current anchor/context */
 function resolve(t: Tempo, anchor?: any): any[] {
   const source = anchor ?? t;
-  const sphere = source.config?.sphere ?? t.config.sphere;
+  const sphere = source.sphere ?? t.sphere;
   const template = ranges[sphere] ?? [];
   
   // resolveCycleWindow handle the ±1 year shifting for boundaries

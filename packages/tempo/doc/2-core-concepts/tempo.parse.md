@@ -268,7 +268,7 @@ Functional Alias Context is a powerful API for creating dynamic, self-referentia
 - `this.toDateTime()`: Resolve the context to a `Temporal.ZonedDateTime`.
 - `this.yy` / `this.mm` / `this.dd`: Access current date components.
 - `this.hh` / `this.mi` / `this.ss`: Access current time components.
-- `this.tz` / `this.cal` / `this.config`: Access instance metadata.
+- `this.tz` / `this.cal` / `this.locale` / `this.sphere` / `this.config`: Access instance metadata.
 
 ```javascript
 // Example: Dynamic 'meeting' alias

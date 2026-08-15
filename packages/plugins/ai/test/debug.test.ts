@@ -15,6 +15,7 @@ import { maskPii, sanitizeForLog, logDebug, warnDebug, attachCustomInspect } fro
 
 describe('Smart Debug & PII Protection Infrastructure', () => {
 	const originalEnv = process.env.NODE_ENV;
+	const originalProd = process.env.PROD;
 
 	beforeEach(async () => {
 		resetAI();
@@ -27,7 +28,16 @@ describe('Smart Debug & PII Protection Infrastructure', () => {
 	});
 
 	afterEach(() => {
-		process.env.NODE_ENV = originalEnv;
+		if (originalEnv === undefined) {
+			delete process.env.NODE_ENV;
+		} else {
+			process.env.NODE_ENV = originalEnv;
+		}
+		if (originalProd === undefined) {
+			delete process.env.PROD;
+		} else {
+			process.env.PROD = originalProd;
+		}
 		resetAI();
 		Tempo.cache.clear();
 		vi.restoreAllMocks();
@@ -56,6 +66,12 @@ describe('Smart Debug & PII Protection Infrastructure', () => {
 			expect(masked).toContain('***-***-4567');
 		});
 
+		it('should not false-positive mask numeric timestamps without phone separators', () => {
+			const raw = 'Timestamp is 20260815120000 and ID is 9876543210';
+			const masked = maskPii(raw, true);
+			expect(masked).toBe(raw);
+		});
+
 		it('should mask API keys and bearer tokens in production', () => {
 			const raw = 'Authorization: Bearer gsk_99887766554433221100 and key sk-proj-1234567890abcdef1234';
 			const masked = maskPii(raw, true);
@@ -73,7 +89,6 @@ describe('Smart Debug & PII Protection Infrastructure', () => {
 			process.env.NODE_ENV = 'development';
 			process.env.PROD = 'true';
 			expect(maskPii('email test@corp.com')).toContain('t***@corp.com');
-			delete process.env.PROD;
 		});
 	});
 
@@ -87,6 +102,23 @@ describe('Smart Debug & PII Protection Infrastructure', () => {
 
 			const sanitizedDev = sanitizeForLog(longStr, false);
 			expect(sanitizedDev).toBe(longStr);
+		});
+
+		it('should handle circular object references gracefully without stack overflow', () => {
+			const circularObj: any = {
+				name: 'test',
+				nested: {
+					email: 'contact@secure.com',
+				},
+			};
+			circularObj.self = circularObj;
+			circularObj.nested.parent = circularObj;
+
+			const sanitized = sanitizeForLog(circularObj, true);
+			expect(sanitized.name).toBe('test');
+			expect(sanitized.nested.email).toBe('c***@secure.com');
+			expect(sanitized.self).toBe('[CIRCULAR]');
+			expect(sanitized.nested.parent).toBe('[CIRCULAR]');
 		});
 
 		it('should recursively sanitize objects and mask sensitive values in production', () => {

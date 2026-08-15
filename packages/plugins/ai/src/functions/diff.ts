@@ -14,6 +14,7 @@ import {
 	assertNoReservedProviderId,
 	fetchFromProvider,
 	resolveProviderTtl,
+	resolveTzAndLocale,
 } from '../core/support.js';
 import { logDebug, warnDebug, attachCustomInspect, maskPii } from '../core/logger.js';
 import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX } from '../core/patterns.js';
@@ -68,9 +69,8 @@ async function diffSingleInput(
 	options?: AiDiffOptions,
 ): Promise<TempoAiDiffResult> {
 	const isDebug = options?.debug ?? _state.config.debug ?? false;
-	const resolvedOptions = Tempo.options;
-	const tz = String(options?.timeZone || (Tempo.isTempo(start) ? start.tz : undefined) || (Tempo.isTempo(end) ? end.tz : undefined) || resolvedOptions.timeZone || 'UTC');
-	const loc = String(Array.isArray(options?.locale) ? options?.locale[0] : (options?.locale || resolvedOptions.locale || 'en-US'));
+	const fallbackTempo = Tempo.isTempo(start) ? start : (Tempo.isTempo(end) ? end : null);
+	const { tz, loc } = resolveTzAndLocale(options, fallbackTempo);
 
 	const startTempo = Tempo.isTempo(start) ? (start.tz === tz ? start : start.set({ timeZone: tz })) : new Tempo(start, { timeZone: tz });
 	const endTempo = Tempo.isTempo(end) ? (end.tz === tz ? end : end.set({ timeZone: tz })) : new Tempo(end, { timeZone: tz });
@@ -112,7 +112,7 @@ async function diffSingleInput(
 					? parsedCache.confidence
 					: 1.0;
 				if (effectiveMinConfidence === undefined || cachedConfidence >= effectiveMinConfidence) {
-					logDebug('tempo-plugin-ai:diff', `Cache hit: "${cacheKey}" -> ${cachedVal}`, undefined, { debug: isDebug });
+					logDebug('tempo-plugin-ai:diff', `Cache hit: "${cacheKey}"`, cachedVal, { debug: isDebug });
 					const cachedResult: TempoAiDiffResult = {
 						formatted: parsedCache.formatted,
 						days: parsedCache.days ?? grounding.calendarDays,

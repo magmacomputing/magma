@@ -111,14 +111,14 @@ const rawReasoning = result.reasoning;
 
 ## 5. Ephemeral Processing & Partitioned Caching
 
-### Zero Data Retention Policy
+### Zero External Telemetry Policy
 * The plugin does not transmit telemetry, analytics, or prompt logs to external tracking servers.
-* Prompts and temporal calculations exist ephemerally in memory during execution.
+* Prompt processing and temporal computations occur ephemerally during request execution.
 
-### Tenant-Isolated Partitioned Caching
-* **Namespaced Cache Keys**: Cache keys are generated with multi-factor hashing (`ai:<fn>::<hash>`) incorporating the user prompt, target timezone, locale, calendar system, and anchor date.
-* **Zero Cross-Contamination**: Isolated cache keys prevent cross-tenant and cross-regional data leakage.
-* **Granular Bypass Controls**: Operations requiring zero cache persistence can supply `cache: false` or `force: true` on any individual request.
+### Partitioned Multi-Tier Caching
+* **Namespaced Cache Keys**: Cache keys are generated with multi-factor domain partitioning (e.g., `diff::`, `format::`, `extract::`) incorporating the prompt text, anchor epoch, target timezone, locale, calendar system, and regional parameters to prevent contextual collision.
+* **Storage Lifecycle**: Cached entries persist in the local `Tempo.cache` (`BoundedCache`) or caller-provided `AiCacheAdapter` (e.g. Redis, KV) strictly until TTL expiration or LRU capacity eviction.
+* **Granular Bypass Controls**: Operations requiring zero cache persistence can supply `cache: false` or `force: true` on any individual request, or programmatically flush entries using `await aiCache.clear()`.
 
 ---
 

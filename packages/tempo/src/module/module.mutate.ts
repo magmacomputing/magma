@@ -28,7 +28,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 	const overrides = {
 		timeZone: options.timeZone ?? this.tz,
 		calendar: options.calendar ?? this.cal,
-		sphere: options.sphere ?? this.config.sphere
+		sphere: options.sphere ?? this.sphere
 	} as Required<t.Options>;
 
 	if (type === 'set' && isObject(args) && args.constructor === Object) {

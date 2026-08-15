@@ -5,9 +5,10 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2026-08-10
+## [1.0.0] - 2026-08-15
 
 ### Added
+- **Cache Eviction Synchronization**: Enhanced `aiCache.clear()` to flush matching keys and prefixes across both `Tempo.cache` and custom `AiCacheAdapter` storage engines, returning `Promise<void>` to await async adapter eviction.
 - **Temporal Difference & Relative Grounding (`diffAI`)**: Added natural language temporal difference calculation and narrative summarization between two `Tempo` points, dates, or timestamps.
   - Pre-computes mathematical grounding metrics (`calendarDays`, `elapsedHours`, `businessDays` with weekend and holiday exclusion) to provide strict arithmetic backing for LLM narrative formatting.
   - Supports domain-specific delta formatting (e.g. accounting terms, working days, human relative explanations, or business SLAs).
@@ -35,7 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cascading Cache TTL Hierarchy**: Implemented strict 4-tier TTL resolution (`options.ttl` > `provider.ttl` > `global config.ttl` > default 1 hour / 3,600,000 ms for `parseAI` or 24 hours / 86,400,000 ms for context/difference handlers) for fine-grained cache entry expiration control on stores enforcing TTL.
 - **Fail-Open Storage Resilience**: Custom cache adapter errors during `get()` or `set()` operations fail open silently to direct LLM resolution, preserving application request uptime.
 - **Dynamic Remote Provider Manifest (`loadRemoteManifest`)**: Lazily fetches remote provider defaults (`providers.v1.json`) on initialization with a 1500ms timeout and automatic air-gapped fallback to compiled `DEFAULT_PROVIDERS`.
-- **Cache Eviction Synchronization**: Enhanced `aiCache.clear()` to flush matching keys and prefixes across both `Tempo.cache` and custom `AiCacheAdapter` storage engines, returning `Promise<void>` to await async adapter eviction.
 
 ### Changed & Hardened
 - **Consensus Mode TTL Resolution**: Fixed a runtime bug where standard provider TTL lookups failed in Consensus mode due to the synthetic sentinel provider ID (`'consensus'`), which caused lookups on the winning provider array to return undefined. Now reduces over all participating provider configs to select the minimum (most conservative) TTL.

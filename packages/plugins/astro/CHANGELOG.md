@@ -2,6 +2,11 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-astro` project will be documented in this file.
 
+## [2.1.4] - 2026-08-15
+
+### Changed
+- **Performance**: Switched hemisphere resolution to access `t.sphere` directly from the `Tempo` instance, bypassing `t.config` proxy evaluation in the hot resolution path.
+
 ## [2.1.2] - 2026-07-15
 
 ### Fixed

@@ -83,7 +83,8 @@ export function getAliasContext(ctx: NormalizerContext, dateTime: Temporal.Zoned
 		get ss() { return dateTime.second },
 		get tz() { return tz },
 		get cal() { return cal },
-		get loc() { return state.config.locale ?? Default.locale },
+		get locale() { return state.config.locale ?? Default.locale },
+		get sphere() { return state.config.sphere ?? Default.sphere },
 		config: state.config,
 		[sym.$Identity]: true,
 	} as t.AliasContext

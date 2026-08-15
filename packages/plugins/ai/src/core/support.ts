@@ -32,8 +32,8 @@ export function resolveTzAndLocale(
 	const tz = String(options?.timeZone || fallbackTempo?.tz || resolvedOptions.timeZone || _state.config.timeZone || 'UTC');
 	const rawLoc = (options?.locale !== undefined && (Array.isArray(options.locale) ? options.locale.length > 0 : Boolean(options.locale)))
 		? options.locale
-		: (fallbackTempo?.loc !== undefined && (Array.isArray(fallbackTempo.loc) ? fallbackTempo.loc.length > 0 : Boolean(fallbackTempo.loc)))
-			? fallbackTempo.loc
+		: (fallbackTempo?.locale !== undefined && (Array.isArray(fallbackTempo.locale) ? fallbackTempo.locale.length > 0 : Boolean(fallbackTempo.locale)))
+			? fallbackTempo.locale
 			: resolvedOptions.locale || _state.config.locale || 'en-US';
 	const firstLoc = Array.isArray(rawLoc) ? rawLoc[0] : rawLoc;
 	const loc = typeof firstLoc === 'string' && firstLoc.trim().length > 0 ? firstLoc.trim() : 'en-US';
@@ -207,10 +207,8 @@ Do not include markdown blocks or any text outside the JSON.`;
 		if (typeof rawContent !== 'string')
 			throw new TempoAiError(`Provider ${provider.id} returned invalid response payload.`, 422);
 
-		if (isDebug) {
-			const elapsed = Math.round(performance.now() - startTime);
-			logDebug('tempo-plugin-ai', `Received response from '${provider.id}' in ${elapsed}ms`, undefined, { debug: isDebug });
-		}
+		const elapsed = Math.round(performance.now() - startTime);
+		logDebug('tempo-plugin-ai', `Received response from '${provider.id}' in ${elapsed}ms`, undefined, { debug: isDebug });
 
 		return { rawContent: rawContent.trim(), providerId: provider.id, rateLimits: limits };
 	} finally {

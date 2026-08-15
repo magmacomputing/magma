@@ -46,12 +46,14 @@ The `Tempo` class provides an extensive array of zero-cost getters that allow yo
 | `.wkd` | `string` | Full English weekday name | `'Saturday'` |
 | `.www` | `string` | Short English weekday name | `'Sat'` |
 
-## 🌍 Timezone & System Properties
+## 🌍 Regional, Timezone & System Properties
 
 | Getter | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
 | `.tz` | `string` | IANA Time Zone ID | `'Australia/Sydney'` |
 | `.cal` | `string` | Temporal Calendar ID | `'iso8601'` |
+| `.locale` | `string \| string[]` | Resolved BCP 47 locale | `'en-AU'`, `['en-US', 'fr-FR']` |
+| `.sphere` | `'north' \| 'south' \| undefined` | Resolved hemisphere configuration | `'south'` |
 | `.ts` | `number \| bigint` | Unix timestamp (`number` for `ss`/`ms`/`us`, `bigint` for `ns`) | `1792843200000` |
 | `.nano` | `bigint` | Nanoseconds since Unix epoch | `1792843200000000000n` |
 | `.iso` | `string` | Standard ISO 8601 string (RFC 3339) in UTC | `'2026-10-24T04:30:00Z'` |
