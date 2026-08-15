@@ -1,7 +1,7 @@
 import { Tempo } from '@magmacomputing/tempo';
 
 import { getResolvedProviderDefaults, loadRemoteManifest, resetManifestCache } from './manifest.js';
-import { normalizeCacheInput, assertNoReservedProviderId } from './support.js';
+import { assertNoReservedProviderId } from './support.js';
 import type { AiConfig, AiRateLimits, AiProvider } from '../types/index.js';
 
 /**
@@ -71,39 +71,39 @@ export function initAI(config: AiConfig): Promise<void> {
     Tempo.init({ cache: config.cache, silent: true });
   }
 
-	return (async () => {
-		if (remoteUrl !== false) {
-			try {
-				await loadRemoteManifest(remoteUrl, undefined, config.debug ?? _state.config.debug);
-			} catch { }
-		}
+  return (async () => {
+    if (remoteUrl !== false) {
+      try {
+        await loadRemoteManifest(remoteUrl, undefined, config.debug ?? _state.config.debug);
+      } catch { }
+    }
 
-		if (_state.revision !== currentRevision) return;
+    if (_state.revision !== currentRevision) return;
 
-		const fetchDefaults = config.fetchDefaults ?? _state.config.fetchDefaults;
-		const currentProviders = callerProviders;
+    const fetchDefaults = config.fetchDefaults ?? _state.config.fetchDefaults;
+    const currentProviders = callerProviders;
 
-		if (fetchDefaults && currentProviders) {
-			const asyncProviders = await Promise.all(currentProviders.map(async p => {
-				const normalizedId = p.id?.toLowerCase() ?? '';
-				const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
-				let hookOptions: Partial<AiProvider> | null = null;
-				try {
-					hookOptions = await fetchDefaults(normalizedId);
-				} catch { }
-				return {
-					...defaults,
-					...(hookOptions ?? {}),
-					...p,
-				} as AiProvider;
-			}));
-			if (_state.revision === currentRevision)
-				_state.config.providers = asyncProviders;
-		} else if (currentProviders) {
-			if (_state.revision === currentRevision)
-				_state.config.providers = resolveSyncProviders(currentProviders);
-		}
-	})();
+    if (fetchDefaults && currentProviders) {
+      const asyncProviders = await Promise.all(currentProviders.map(async p => {
+        const normalizedId = p.id?.toLowerCase() ?? '';
+        const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
+        let hookOptions: Partial<AiProvider> | null = null;
+        try {
+          hookOptions = await fetchDefaults(normalizedId);
+        } catch { }
+        return {
+          ...defaults,
+          ...(hookOptions ?? {}),
+          ...p,
+        } as AiProvider;
+      }));
+      if (_state.revision === currentRevision)
+        _state.config.providers = asyncProviders;
+    } else if (currentProviders) {
+      if (_state.revision === currentRevision)
+        _state.config.providers = resolveSyncProviders(currentProviders);
+    }
+  })();
 }
 
 /**
@@ -117,53 +117,6 @@ export function resetAI(): void {
   _state.providerLimits.clear();
   _state.revision++;
   resetManifestCache();
-}
-
-/**
- * Clears AI parsing results from the in-memory cache and any external storage adapters.
- * If specific input strings or keys are provided, selectively purges only those entries.
- *
- * @param input - Optional string key, date string, or array of strings to purge from the cache
- * @returns A Promise that resolves once cache eviction is completed
- * @example
- * ```ts
- * await clearAiCache('next tuesday');
- * await clearAiCache(); // Clears all cached AI entries
- * ```
- */
-export async function clearAiCache(input?: string | string[]): Promise<void> {
-  const adapter = _state.config.cacheAdapter;
-
-  if (!input) {
-    Tempo.cache.clear();
-    if (adapter?.clear) {
-      try {
-        await Promise.resolve(adapter.clear()).catch(() => { });
-      } catch { }
-    }
-    return;
-  }
-
-  const inputs = Array.isArray(input) ? input : [input];
-  for (const i of inputs) {
-    const normalized = normalizeCacheInput(i);
-    const prefix = `${normalized}::`;
-    Tempo.cache.delete(normalized);
-    Tempo.cache.delete(i);
-    Tempo.cache.deletePrefix(prefix);
-
-    if (adapter) {
-      try {
-        if (adapter.delete) {
-          await Promise.resolve(adapter.delete(normalized)).catch(() => { });
-          await Promise.resolve(adapter.delete(i)).catch(() => { });
-        }
-        if (adapter.clear) {
-          await Promise.resolve(adapter.clear(prefix)).catch(() => { });
-        }
-      } catch { }
-    }
-  }
 }
 
 /**

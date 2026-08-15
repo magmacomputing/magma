@@ -1,6 +1,7 @@
 import { TempoAiError } from './error.js';
 import { AiMode } from './config.js';
 import { _state } from './init.js';
+import { logDebug, warnDebug } from './logger.js';
 import type { AiProvider } from '../types/index.js';
 
 /**
@@ -102,14 +103,22 @@ async function executeFallbackMode<T>(
 			if (options?.minConfidence === undefined || confidence >= options.minConfidence)
 				return candidate;
 
-			if (options?.debug)
-				console.log(`[${options.tag || 'tempo-plugin-ai'}] Provider '${candidate.providerId}' confidence (${confidence}) below minConfidence (${options.minConfidence}). Cascading to next provider...`);
+			logDebug(
+				options?.tag || 'tempo-plugin-ai',
+				`Provider '${candidate.providerId}' confidence (${confidence}) below minConfidence (${options.minConfidence}). Cascading to next provider...`,
+				undefined,
+				{ debug: options?.debug },
+			);
 
 		} catch (err: any) {
 			lastError = err;
 			if (err instanceof TempoAiError && err.code === 422 && options?.minConfidence === undefined) break;
-			if (options?.debug)
-				console.warn(`[${options.tag || 'tempo-plugin-ai'}] Provider '${provider.id}' failed:`, err);
+			warnDebug(
+				options?.tag || 'tempo-plugin-ai',
+				`Provider '${provider.id}' failed`,
+				err,
+				{ debug: options?.debug },
+			);
 		}
 	}
 
@@ -363,7 +372,7 @@ async function executeAdaptiveMode<T>(
 
 		if (limits) {
 			const resetMs = limits.resetAt?.epoch?.ms ?? now;
-			isExhausted = limits.remainingRequests === 0 && resetMs > now;
+			isExhausted = (limits.remainingRequests === 0 || limits.remainingTokens === 0) && resetMs > now;
 		}
 
 		return {
@@ -396,7 +405,8 @@ export function isProviderInCooldown(provider: AiProvider, now = Date.now()): bo
 	const limits = _state.providerLimits.get(provider.id);
 	if (!limits) return false;
 	const resetMs = limits.resetAt?.epoch?.ms ?? now;
-	return limits.remainingRequests === 0 && resetMs > now;
+	const isExhausted = limits.remainingRequests === 0 || limits.remainingTokens === 0;
+	return isExhausted && resetMs > now;
 }
 
 /**
@@ -414,10 +424,13 @@ export function filterCooldownProviders(
 	const now = Date.now();
 	const available = providers.filter(p => !isProviderInCooldown(p, now));
 	if (available.length > 0 && available.length < providers.length) {
-		if (options?.debug) {
-			const skipped = providers.filter(p => isProviderInCooldown(p, now)).map(p => p.id);
-			console.log(`[${options?.tag || 'tempo-plugin-ai'}] Proactively filtered ${skipped.length} provider(s) in active 429 cooldown: ${skipped.join(', ')}`);
-		}
+		const skipped = providers.filter(p => isProviderInCooldown(p, now)).map(p => p.id);
+		logDebug(
+			options?.tag || 'tempo-plugin-ai',
+			`Proactively filtered ${skipped.length} provider(s) in active 429 cooldown: ${skipped.join(', ')}`,
+			undefined,
+			{ debug: options?.debug },
+		);
 		return available;
 	}
 	return providers;

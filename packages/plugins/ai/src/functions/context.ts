@@ -5,14 +5,17 @@ import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
-	assertNoReservedProviderId,
-	fetchFromProvider,
 	getNamespacedCacheKey,
 	normalizeCacheInput,
 	readMultiTierCache,
-	resolveProviderTtl,
 	writeMultiTierCache,
+} from '../core/cache.js';
+import {
+	assertNoReservedProviderId,
+	fetchFromProvider,
+	resolveProviderTtl,
 } from '../core/support.js';
+import { logDebug, warnDebug, attachCustomInspect, maskPii } from '../core/logger.js';
 import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX } from '../core/patterns.js';
 import type { TempoContext, AiContextOptions } from '../types/index.js';
 
@@ -49,8 +52,8 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 					? parsedCache.confidence
 					: 1.0;
 				if (effectiveMinConfidence === undefined || cachedConfidence >= effectiveMinConfidence) {
-					if (isDebug) console.log(`[tempo-plugin-ai:context] Cache hit: "${text}" -> ${cachedVal}`);
-					return secure({
+					logDebug('tempo-plugin-ai:context', `Cache hit: "${text}" -> ${cachedVal}`, undefined, { debug: isDebug });
+					const cachedResult: TempoContext = {
 						timeZone: parsedCache.timeZone,
 						locale: parsedCache.locale,
 						calendar: parsedCache.calendar,
@@ -58,7 +61,17 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 						confidence: cachedConfidence,
 						provider: 'cache',
 						reasoning: parsedCache.reasoning,
-					});
+					};
+					attachCustomInspect(cachedResult, (obj, isProd) => ({
+						timeZone: obj.timeZone,
+						locale: obj.locale,
+						calendar: obj.calendar,
+						sphere: obj.sphere,
+						confidence: obj.confidence,
+						provider: obj.provider,
+						...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+					}));
+					return secure(cachedResult);
 				}
 			}
 		} catch {
@@ -182,6 +195,16 @@ Do not include markdown blocks or text outside the JSON.`;
 		debug: isDebug,
 		tag: 'tempo-plugin-ai:context',
 	});
+
+	attachCustomInspect(finalResult, (obj, isProd) => ({
+		timeZone: obj.timeZone,
+		locale: obj.locale,
+		calendar: obj.calendar,
+		sphere: obj.sphere,
+		confidence: obj.confidence,
+		provider: obj.provider,
+		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+	}));
 
 	return secure(finalResult);
 }

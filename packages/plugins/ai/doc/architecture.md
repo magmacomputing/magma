@@ -197,6 +197,9 @@ export async function POST(req: Request, env?: { GROQ_API_KEY?: string }) {
 
 ## 🔒 Security & Privacy Guarantees
 
+> [!TIP]
+> For an in-depth breakdown of our automated PII redaction, Smart Debug infrastructure, and tamper-resistant Proxy introspection, see the dedicated **[Security & Privacy Architecture Guide (`security.md`)](./security.md)**.
+
 Whether running directly on backend servers (Node.js, Deno, Bun, Edge Workers) or through a client-side browser proxy, `@magmacomputing/tempo-plugin-ai` enforces strict security and privacy standards:
 
 ### 1. Transport Security (HTTPS / TLS)
@@ -207,10 +210,10 @@ Temporal processing payloads (dates, times, context snippets, prompts) are proce
 
 ### 3. In-Memory Credential Redaction & Immutability
 * **Automated Key Redaction**: Calling `getAiConfig()` returns a sanitized, deeply read-only snapshot of active configurations with all provider `key` values replaced with `[REDACTED]`, preventing accidental exposure in log files, APM traces, or crash dumps.
-* **Frozen Metadata**: All diagnostic metadata attached to `Tempo` instances via `.ai` is deeply frozen with `Object.freeze()` and guarded via runtime `Proxy` wrappers, protecting against direct runtime mutation of the `.ai` metadata.
+* **Frozen Metadata**: All diagnostic metadata attached to `Tempo` instances via `.ai` and all structured AI result objects (`TempoAiFormatResult`, `TempoAiExtractResult`, `TempoAiDiffResult`, `TempoScheduleResult`, `TempoRecurrenceResult`, `TempoContext`) are deeply frozen with `Object.freeze()` and guarded via runtime `Proxy` wrappers, protecting against direct runtime mutation.
 
 ### 4. Deterministic Schema Guardrails & Confidence Range Verification
-All LLM prompts are paired with rigid, machine-verifiable JSON schemas. Responses undergo strict boundary validation, regex parsing, confidence range verification (`0.0` to `1.0`), and ISO verification before any native `Tempo` date object or result payload is instantiated. If an LLM returns malformed, out-of-range, or non-chronological data, the plugin throws a typed `TempoAiError` or triggers automatic fallback rather than silently returning an invalid date.
+All LLM prompts are paired with rigid, machine-verifiable JSON schemas. Responses undergo strict boundary validation, regex parsing, confidence range verification (`0.0` to `1.0`), and schema verification before any native `Tempo` date object or structured result payload is instantiated. If an LLM returns malformed, out-of-range, or unparseable data, the plugin throws a typed `TempoAiError` or triggers automatic provider fallback rather than silently propagating corrupt data.
 
 ### 5. Partitioned Caching & Fail-Open Storage Resilience
 * **Strict Cache Key Partitioning**: Caches are namespaced and hashed (`ai:<namespace>::...`) with timezone, locale, calendar, and anchor date isolation to prevent cross-tenant or cross-regional cache poisoning.

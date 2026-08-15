@@ -5,14 +5,17 @@ import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
-	assertNoReservedProviderId,
-	fetchFromProvider,
 	getNamespacedCacheKey,
 	normalizeCacheInput,
 	readMultiTierCache,
-	resolveProviderTtl,
 	writeMultiTierCache,
+} from '../core/cache.js';
+import {
+	assertNoReservedProviderId,
+	fetchFromProvider,
+	resolveProviderTtl,
 } from '../core/support.js';
+import { logDebug, warnDebug, attachCustomInspect, maskPii } from '../core/logger.js';
 import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX } from '../core/patterns.js';
 import type { TempoAiDiffResult, AiDiffOptions, DiffPair } from '../types/index.js';
 
@@ -109,8 +112,8 @@ async function diffSingleInput(
 					? parsedCache.confidence
 					: 1.0;
 				if (effectiveMinConfidence === undefined || cachedConfidence >= effectiveMinConfidence) {
-					if (isDebug) console.log(`[tempo-plugin-ai:diff] Cache hit: "${cacheKey}" -> ${cachedVal}`);
-					return secure({
+					logDebug('tempo-plugin-ai:diff', `Cache hit: "${cacheKey}" -> ${cachedVal}`, undefined, { debug: isDebug });
+					const cachedResult: TempoAiDiffResult = {
 						formatted: parsedCache.formatted,
 						days: parsedCache.days ?? grounding.calendarDays,
 						hours: parsedCache.hours ?? grounding.elapsedHours,
@@ -119,7 +122,18 @@ async function diffSingleInput(
 						confidence: cachedConfidence,
 						provider: 'cache',
 						reasoning: parsedCache.reasoning,
-					});
+					};
+					attachCustomInspect(cachedResult, (obj, isProd) => ({
+						formatted: obj.formatted,
+						days: obj.days,
+						hours: obj.hours,
+						businessDays: obj.businessDays,
+						...(obj.holidays ? { holidays: obj.holidays } : {}),
+						confidence: obj.confidence,
+						provider: obj.provider,
+						...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+					}));
+					return secure(cachedResult);
 				}
 			}
 		} catch {
@@ -207,7 +221,7 @@ Do not include markdown blocks or text outside the JSON.`;
 				rateLimits,
 				confidence,
 				consensusKey: `${formatted}::${businessDays}`,
-			};
+			}
 		},
 		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:diff', hedgeDelay: effectiveHedgeDelay },
 	);
@@ -248,6 +262,17 @@ Do not include markdown blocks or text outside the JSON.`;
 		debug: isDebug,
 		tag: 'tempo-plugin-ai:diff',
 	});
+
+	attachCustomInspect(finalResult, (obj, isProd) => ({
+		formatted: obj.formatted,
+		days: obj.days,
+		hours: obj.hours,
+		businessDays: obj.businessDays,
+		...(obj.holidays ? { holidays: obj.holidays } : {}),
+		confidence: obj.confidence,
+		provider: obj.provider,
+		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+	}));
 
 	return secure(finalResult);
 }

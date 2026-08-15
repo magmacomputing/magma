@@ -5,14 +5,17 @@ import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
-	assertNoReservedProviderId,
-	fetchFromProvider,
 	normalizeCacheInput,
 	readMultiTierCache,
+	writeMultiTierCache,
+} from '../core/cache.js';
+import {
+	assertNoReservedProviderId,
+	fetchFromProvider,
 	resolveProviderTtl,
 	resolveTzAndLocale,
-	writeMultiTierCache,
 } from '../core/support.js';
+import { logDebug, warnDebug, attachCustomInspect, maskPii } from '../core/logger.js';
 import type {
 	AiExtractOptions,
 	TempoAiExtractResult,
@@ -47,7 +50,7 @@ async function extractSingleInput(
 				: new Tempo(anchor as any, { timeZone: tz }))
 			: new Tempo(Math.floor(Date.now() / 60_000) * 60_000, { timeZone: tz });
 	} catch (err: any) {
-		throw new TempoAiError(`Invalid anchor date provided to extractAI: "${String(anchor)}"`, 400);
+		throw new TempoAiError(`Invalid anchor date provided to extractAI: "${String(anchor)}"`, 400, undefined, { cause: err });
 	}
 
 	if (!anchorTempo.isValid) {
@@ -105,38 +108,59 @@ async function extractSingleInput(
 					: 1.0;
 
 				if (effectiveMinConfidence !== undefined && cachedConfidence < effectiveMinConfidence) {
-					if (isDebug) console.log(`[tempo-plugin-ai:extract] Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`);
+					logDebug('tempo-plugin-ai:extract', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
 				} else {
 					const rehydratedEvents: TempoExtractedEvent[] = [];
+					const allowedTypes: TempoEventType[] = ['point', 'interval', 'deadline', 'recurrence', 'tentative'];
 					for (const ev of parsedCache.events) {
 						try {
 							const start = new Tempo(ev.start, { timeZone: tz, locale: loc, calendar: cal });
 							if (!start.isValid) continue;
 							const end = ev.end ? new Tempo(ev.end, { timeZone: tz, locale: loc, calendar: cal }) : undefined;
 							if (end && !end.isValid) continue;
+							const type: TempoEventType = allowedTypes.includes(ev.type) ? ev.type : 'point';
 							rehydratedEvents.push({
 								label: String(ev.label || 'Event'),
 								start,
 								end,
-								type: ev.type || 'point',
+								type,
 								rawText: ev.rawText ? String(ev.rawText) : undefined,
 								confidence: typeof ev.confidence === 'number' && Number.isFinite(ev.confidence)
 									? Math.max(0.0, Math.min(1.0, ev.confidence))
 									: 1.0,
 							});
-						} catch { }
+						} catch (err: any) {
+							warnDebug('tempo-plugin-ai:extract', 'Failed to rehydrate cached event', err, { debug: isDebug });
+						}
 					}
 
-					return secure({
+					const reasoning = typeof parsedCache.reasoning === 'string' ? parsedCache.reasoning : undefined;
+					const cachedResult: TempoAiExtractResult = {
 						events: rehydratedEvents,
 						confidence: cachedConfidence,
 						provider: 'cache',
-						reasoning: parsedCache.reasoning,
-					});
+						reasoning,
+					}
+
+					attachCustomInspect(cachedResult, (obj, isProd) => ({
+						events: obj.events.map(e => ({
+							label: maskPii(e.label, isProd),
+							start: e.start?.toString(),
+							...(e.end ? { end: e.end?.toString() } : {}),
+							type: e.type,
+							...(e.rawText ? { rawText: maskPii(e.rawText, isProd) } : {}),
+							confidence: e.confidence,
+						})),
+						confidence: obj.confidence,
+						provider: obj.provider,
+						...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+					}));
+
+					return secure(cachedResult);
 				}
 			}
 		} catch (err: any) {
-			if (isDebug) console.warn(`[tempo-plugin-ai:extract] Failed to parse cached payload:`, err?.message ?? err);
+			warnDebug('tempo-plugin-ai:extract', 'Failed to parse cached payload', err, { debug: isDebug });
 		}
 	}
 
@@ -261,7 +285,9 @@ ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Fil
 						rawText,
 						confidence: itemConf,
 					});
-				} catch { }
+				} catch (err: any) {
+					warnDebug('tempo-plugin-ai:extract', `Failed to parse event from provider '${providerId}'`, err, { debug: isDebug });
+				}
 			}
 
 			return {
@@ -313,6 +339,20 @@ ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Fil
 		tag: 'tempo-plugin-ai:extract',
 	});
 
+	attachCustomInspect(finalResult, (obj, isProd) => ({
+		events: obj.events.map(e => ({
+			label: maskPii(e.label, isProd),
+			start: e.start?.toString(),
+			...(e.end ? { end: e.end?.toString() } : {}),
+			type: e.type,
+			...(e.rawText ? { rawText: maskPii(e.rawText, isProd) } : {}),
+			confidence: e.confidence,
+		})),
+		confidence: obj.confidence,
+		provider: obj.provider,
+		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+	}));
+
 	return secure(finalResult);
 }
 
@@ -341,25 +381,47 @@ export async function extractAI(
 	options?: AiExtractOptions,
 ): Promise<TempoAiExtractResult | (TempoAiExtractResult | TempoAiError)[]> {
 	if (Array.isArray(textOrTexts)) {
+		if (textOrTexts.length === 0) return [];
 		const opts = options || {};
 		const softErrors = opts.softErrors ?? false;
+		const concurrencyLimit = Math.max(1, Math.min(opts.concurrency ?? 4, textOrTexts.length));
 
-		if (softErrors) {
-			const settled = await Promise.allSettled(
-				textOrTexts.map(t => extractSingleInput(t, opts)),
-			);
-			return settled.map((res, index) => {
-				if (res.status === 'fulfilled') return res.value;
-				const rawReason = res.reason;
-				if (rawReason instanceof TempoAiError) return rawReason;
-				return new TempoAiError(
-					rawReason?.message || `Failed to extract events at index ${index}`,
-					typeof rawReason?.status === 'number' ? rawReason.status : 500,
-				);
-			});
+		const results: (TempoAiExtractResult | TempoAiError)[] = new Array(textOrTexts.length);
+		let nextIdx = 0;
+		let firstError: any = null;
+
+		const worker = async () => {
+			while (nextIdx < textOrTexts.length) {
+				if (!softErrors && firstError) break;
+				const currentIndex = nextIdx++;
+				const item = textOrTexts[currentIndex];
+				try {
+					const res = await extractSingleInput(item, opts);
+					results[currentIndex] = res;
+				} catch (err: any) {
+					if (softErrors) {
+						results[currentIndex] = err instanceof TempoAiError
+							? err
+							: new TempoAiError(
+								err?.message || `Failed to extract events at index ${currentIndex}`,
+								typeof err?.status === 'number' ? err.status : 500,
+							);
+					} else {
+						if (!firstError) firstError = err;
+						break;
+					}
+				}
+			}
+		};
+
+		const workers = Array.from({ length: concurrencyLimit }, () => worker());
+		await Promise.all(workers);
+
+		if (!softErrors && firstError) {
+			throw firstError;
 		}
 
-		return Promise.all(textOrTexts.map(t => extractSingleInput(t, opts)));
+		return results;
 	}
 
 	return extractSingleInput(textOrTexts, options);

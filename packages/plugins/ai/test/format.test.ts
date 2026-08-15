@@ -225,20 +225,20 @@ describe('AI Format Plugin (formatAI)', () => {
 
 		// Non-finite values
 		await expect(formatAI('2026-08-07', 'test', { minConfidence: NaN, cacheAdapter: customAdapter }))
-			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "NaN"', 400));
+			.rejects.toMatchObject({ message: 'Invalid minConfidence provided to formatAI: "NaN"', status: 400 });
 
 		await expect(formatAI('2026-08-07', 'test', { minConfidence: Infinity, cacheAdapter: customAdapter }))
-			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "Infinity"', 400));
+			.rejects.toMatchObject({ message: 'Invalid minConfidence provided to formatAI: "Infinity"', status: 400 });
 
 		await expect(formatAI('2026-08-07', 'test', { minConfidence: -Infinity, cacheAdapter: customAdapter }))
-			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "-Infinity"', 400));
+			.rejects.toMatchObject({ message: 'Invalid minConfidence provided to formatAI: "-Infinity"', status: 400 });
 
 		// Out-of-range values
 		await expect(formatAI('2026-08-07', 'test', { minConfidence: -0.1, cacheAdapter: customAdapter }))
-			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "-0.1"', 400));
+			.rejects.toMatchObject({ message: 'Invalid minConfidence provided to formatAI: "-0.1"', status: 400 });
 
 		await expect(formatAI('2026-08-07', 'test', { minConfidence: 1.05, cacheAdapter: customAdapter }))
-			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "1.05"', 400));
+			.rejects.toMatchObject({ message: 'Invalid minConfidence provided to formatAI: "1.05"', status: 400 });
 
 		// Verify neither cache nor provider fetch was called
 		expect(customAdapter.get).not.toHaveBeenCalled();
@@ -253,7 +253,7 @@ describe('AI Format Plugin (formatAI)', () => {
 		});
 
 		await expect(formatAI('2026-08-07', 'test'))
-			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to formatAI: "1.5"', 400));
+			.rejects.toMatchObject({ message: 'Invalid minConfidence provided to formatAI: "1.5"', status: 400 });
 	});
 
 	it('should support multi-provider race execution mode', async () => {
@@ -302,8 +302,13 @@ describe('AI Format Plugin (formatAI)', () => {
 
 	it('should support batch array processing with softErrors', async () => {
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
-		fetchSpy
-			.mockResolvedValueOnce(new Response(JSON.stringify({
+		fetchSpy.mockImplementation(async (_url, init) => {
+			const body = JSON.parse(init?.body as string);
+			const hasFailedPrompt = body.messages?.some((m: any) => m.content?.includes('item 2'));
+			if (hasFailedPrompt) {
+				return new Response('Server Error', { status: 500 });
+			}
+			return new Response(JSON.stringify({
 				choices: [{
 					message: {
 						content: JSON.stringify({
@@ -312,8 +317,8 @@ describe('AI Format Plugin (formatAI)', () => {
 						}),
 					},
 				}],
-			}), { status: 200, headers: { 'Content-Type': 'application/json' } }))
-			.mockResolvedValueOnce(new Response('Server Error', { status: 500 }));
+			}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+		});
 
 		const items = [
 			{ date: '2026-08-03', prompt: 'item 1' },
@@ -328,8 +333,13 @@ describe('AI Format Plugin (formatAI)', () => {
 
 	it('should reject with TempoAiError on batch failure when softErrors is false', async () => {
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
-		fetchSpy
-			.mockResolvedValueOnce(new Response(JSON.stringify({
+		fetchSpy.mockImplementation(async (_url, init) => {
+			const body = JSON.parse(init?.body as string);
+			const hasFailedPrompt = body.messages?.some((m: any) => m.content?.includes('item 2'));
+			if (hasFailedPrompt) {
+				return new Response('Server Error', { status: 500 });
+			}
+			return new Response(JSON.stringify({
 				choices: [{
 					message: {
 						content: JSON.stringify({
@@ -338,8 +348,8 @@ describe('AI Format Plugin (formatAI)', () => {
 						}),
 					},
 				}],
-			}), { status: 200, headers: { 'Content-Type': 'application/json' } }))
-			.mockResolvedValueOnce(new Response('Server Error', { status: 500 }));
+			}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+		});
 
 		const items = [
 			{ date: '2026-08-03', prompt: 'item 1' },

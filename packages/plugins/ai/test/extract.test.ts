@@ -12,6 +12,7 @@ import {
 describe('AI Extract Plugin (extractAI)', () => {
 	beforeEach(async () => {
 		resetAI();
+		Tempo.cache.clear();
 		vi.spyOn(console, 'warn').mockImplementation(() => { });
 		vi.spyOn(console, 'error').mockImplementation(() => { });
 		vi.spyOn(console, 'log').mockImplementation(() => { });
@@ -20,6 +21,7 @@ describe('AI Extract Plugin (extractAI)', () => {
 
 	afterEach(() => {
 		resetAI();
+		Tempo.cache.clear();
 		vi.restoreAllMocks();
 	});
 
@@ -175,7 +177,7 @@ describe('AI Extract Plugin (extractAI)', () => {
 			set: vi.fn(async (key: string, val: string) => {
 				cacheStore.set(key, val);
 			}),
-		};
+		}
 
 		const text = 'Dentist appointment on August 15 from 9am to 10am.';
 		const anchor = new Tempo('2026-08-01T00:00:00Z');
@@ -208,6 +210,14 @@ describe('AI Extract Plugin (extractAI)', () => {
 	});
 
 	it('should support force: true and cache: false bypass options', async () => {
+		const cacheStore = new Map<string, string>();
+		const customAdapter: AiCacheAdapter = {
+			get: vi.fn(async (key: string) => cacheStore.get(key)),
+			set: vi.fn(async (key: string, val: string) => {
+				cacheStore.set(key, val);
+			}),
+		}
+
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
 		const mockResponse = () => new Response(JSON.stringify({
 			choices: [{
@@ -227,54 +237,77 @@ describe('AI Extract Plugin (extractAI)', () => {
 			}],
 		}), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
-		fetchSpy.mockResolvedValueOnce(mockResponse()).mockResolvedValueOnce(mockResponse());
+		fetchSpy
+			.mockResolvedValueOnce(mockResponse())
+			.mockResolvedValueOnce(mockResponse())
+			.mockResolvedValueOnce(mockResponse());
 
 		const text = '1-on-1 catchup on Wednesday at 3pm.';
 		const anchor = new Tempo('2026-08-10T09:00:00Z');
 
-		await extractAI(text, { anchor, timeZone: 'UTC' });
+		await extractAI(text, { anchor, timeZone: 'UTC', cacheAdapter: customAdapter });
 		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		expect(customAdapter.set).toHaveBeenCalledTimes(1);
 
 		// force: true should make a new fetch
-		const forcedResult = await extractAI(text, { anchor, timeZone: 'UTC', force: true });
+		const forcedResult = await extractAI(text, { anchor, timeZone: 'UTC', force: true, cacheAdapter: customAdapter });
 		expect(forcedResult.provider).toBe('groq');
 		expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+		// cache: false should skip writing to cache
+		customAdapter.set = vi.fn();
+		const uncachedResult = await extractAI('Another catchup on Thursday at 4pm.', {
+			anchor,
+			timeZone: 'UTC',
+			cache: false,
+			cacheAdapter: customAdapter,
+		});
+		expect(uncachedResult.provider).toBe('groq');
+		expect(customAdapter.set).not.toHaveBeenCalled();
+		expect(fetchSpy).toHaveBeenCalledTimes(3);
 	});
 
-	it('should reject invalid text and anchor inputs with TempoAiError(400)', async () => {
+	it('should reject invalid text and anchor inputs with TempoAiError(400) and preserve error cause', async () => {
 		await expect(extractAI(''))
-			.rejects.toThrow(new TempoAiError('Invalid text input provided to extractAI: text must be a non-empty string.', 400));
+			.rejects.toMatchObject({ message: 'Invalid text input provided to extractAI: text must be a non-empty string.', status: 400 });
 
 		await expect(extractAI('   '))
-			.rejects.toThrow(new TempoAiError('Invalid text input provided to extractAI: text must be a non-empty string.', 400));
+			.rejects.toMatchObject({ message: 'Invalid text input provided to extractAI: text must be a non-empty string.', status: 400 });
 
 		await expect(extractAI(null as any))
-			.rejects.toThrow(new TempoAiError('Invalid text input provided to extractAI: text must be a non-empty string.', 400));
+			.rejects.toMatchObject({ message: 'Invalid text input provided to extractAI: text must be a non-empty string.', status: 400 });
 
-		await expect(extractAI('some text', { anchor: 'invalid-anchor-date' }))
-			.rejects.toThrow(/Invalid anchor date provided to extractAI/i);
+		let caughtErr: any;
+		try {
+			await extractAI('some text', { anchor: 'invalid-anchor-date' });
+		} catch (err: any) {
+			caughtErr = err;
+		}
+		expect(caughtErr).toBeInstanceOf(TempoAiError);
+		expect(caughtErr.status).toBe(400);
+		expect(caughtErr.cause).toBeDefined();
 	});
 
 	it('should validate minConfidence and reject non-finite and out-of-range thresholds before cache read or provider calls', async () => {
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
 		const customAdapter: AiCacheAdapter = {
 			get: vi.fn(async () => undefined),
-			set: vi.fn(async () => {}),
-		};
+			set: vi.fn(async () => { }),
+		}
 
 		// Non-finite
 		await expect(extractAI('some text', { minConfidence: NaN, cacheAdapter: customAdapter }))
-			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to extractAI: "NaN"', 400));
+			.rejects.toMatchObject({ message: 'Invalid minConfidence provided to extractAI: "NaN"', status: 400 });
 
 		await expect(extractAI('some text', { minConfidence: Infinity, cacheAdapter: customAdapter }))
-			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to extractAI: "Infinity"', 400));
+			.rejects.toMatchObject({ message: 'Invalid minConfidence provided to extractAI: "Infinity"', status: 400 });
 
 		// Out-of-bounds
 		await expect(extractAI('some text', { minConfidence: -0.5, cacheAdapter: customAdapter }))
-			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to extractAI: "-0.5"', 400));
+			.rejects.toMatchObject({ message: 'Invalid minConfidence provided to extractAI: "-0.5"', status: 400 });
 
 		await expect(extractAI('some text', { minConfidence: 1.2, cacheAdapter: customAdapter }))
-			.rejects.toThrow(new TempoAiError('Invalid minConfidence provided to extractAI: "1.2"', 400));
+			.rejects.toMatchObject({ message: 'Invalid minConfidence provided to extractAI: "1.2"', status: 400 });
 
 		expect(customAdapter.get).not.toHaveBeenCalled();
 		expect(fetchSpy).not.toHaveBeenCalled();
@@ -300,7 +333,7 @@ describe('AI Extract Plugin (extractAI)', () => {
 	it('should throw TempoAiError(400) when no providers are configured', async () => {
 		resetAI();
 		await expect(extractAI('Meeting tomorrow at 10am'))
-			.rejects.toThrow(new TempoAiError('No AI providers configured. Please call initAI().', 400));
+			.rejects.toMatchObject({ message: 'No AI providers configured. Please call initAI().', status: 400 });
 	});
 
 	it('should support multi-provider race execution mode', async () => {
@@ -352,8 +385,13 @@ describe('AI Extract Plugin (extractAI)', () => {
 
 	it('should support batch array processing with softErrors', async () => {
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
-		fetchSpy
-			.mockResolvedValueOnce(new Response(JSON.stringify({
+		fetchSpy.mockImplementation(async (_url, init) => {
+			const body = JSON.parse(init?.body as string);
+			const hasFailedPrompt = body.messages?.some((m: any) => m.content?.includes('Another event'));
+			if (hasFailedPrompt) {
+				return new Response('Internal Error', { status: 500 });
+			}
+			return new Response(JSON.stringify({
 				choices: [{
 					message: {
 						content: JSON.stringify({
@@ -362,8 +400,8 @@ describe('AI Extract Plugin (extractAI)', () => {
 						}),
 					},
 				}],
-			}), { status: 200, headers: { 'Content-Type': 'application/json' } }))
-			.mockResolvedValueOnce(new Response('Internal Error', { status: 500 }));
+			}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+		});
 
 		const inputs = ['Meeting tomorrow at 9am', 'Another event'];
 		const results = await extractAI(inputs, {
@@ -406,5 +444,48 @@ describe('AI Extract Plugin (extractAI)', () => {
 		expect(clone.confidence).toBe(0.95);
 		clone.confidence = 0.5;
 		expect(clone.confidence).toBe(0.5);
+	});
+
+	it('should log isDebug warnings for malformed cache items or provider events without changing control flow', async () => {
+		const warnSpy = vi.spyOn(console, 'warn');
+		const customAdapter: AiCacheAdapter = {
+			get: vi.fn(async () => JSON.stringify({
+				events: [{ label: 'Malformed', start: null }],
+				confidence: 0.9,
+			})),
+			set: vi.fn(async () => { }),
+		}
+
+		const result = await extractAI('Dentist appointment tomorrow', {
+			debug: true,
+			cacheAdapter: customAdapter,
+		});
+		expect(result.events).toHaveLength(0);
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining('[tempo-plugin-ai:extract] Failed to rehydrate cached event:'),
+			expect.anything(),
+		);
+
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						events: [{ label: 'Malformed Provider Event', start: null }],
+						confidence: 0.95,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const providerResult = await extractAI('Sync meeting', {
+			debug: true,
+			force: true,
+		});
+		expect(providerResult.events).toHaveLength(0);
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining("[tempo-plugin-ai:extract] Failed to parse event from provider 'groq':"),
+			expect.anything(),
+		);
 	});
 });

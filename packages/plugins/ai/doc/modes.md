@@ -52,10 +52,10 @@ flowchart LR
 
 ### Proactive Cooldown Avoidance
 Before dispatching any request:
-1. **Cooldown Detection**: The orchestrator checks if any configured provider has exhausted its request quota (`remainingRequests === 0`) and is within an active reset window (`resetAt > now`).
+1. **Cooldown Detection**: The orchestrator checks if any configured provider has exhausted its request or token quota (`remainingRequests === 0` or `remainingTokens === 0`) and is within an active reset window (`resetAt > now`, derived from response reset timestamps or `retry-after` metadata).
 2. **Pre-Dispatch Filtering**: In `Fallback`, `Race`, `Hedged`, and `RoundRobin` modes, exhausted providers are automatically removed from the active candidate pool for that request.
    - **`Fallback` & `Hedged`**: Avoids stalling on primary providers that are guaranteed to reject with HTTP 429.
-   - **`Race`**: Saves network bandwidth and avoid firing wasted requests to rate-limited models.
+   - **`Race`**: Saves network bandwidth and avoids firing wasted requests to rate-limited models.
    - **`RoundRobin`**: Skips over cooling-down keys without breaking the cyclic load-balancing progression.
 3. **Fail-Open Resilience**: If *all* providers in the farm are currently in a cooldown window, the orchestrator keeps all providers available rather than failing prematurely, allowing the request to cascade or surface accurate rate-limit errors.
 
@@ -172,17 +172,23 @@ const dt = await parseAI('tomorrow at noon', {
 
 ### 6. `AiMode.Consensus` — Multi-LLM Cross-Validation
 
-Dispatches requests concurrently across all providers and compares the normalized ISO timestamps or RRULE strings. If all responding providers agree, confidence is elevated to `1.0` (unanimous). If providers disagree, the highest-confidence candidate is returned and flagged with `dt.ai.ambiguous = true`.
+Dispatches requests concurrently across all providers and compares the normalized outputs (e.g. ISO timestamps for `parseAI`, RRULE strings for `recurrenceAI`, formatted strings for `diffAI`/`formatAI`, or structured entity counts for `extractAI`). If all responding providers agree, confidence is elevated to `1.0` (unanimous). If providers disagree, the highest-confidence candidate is returned and flagged with `ai.ambiguous = true` (attached to `Tempo.ai` on `parseAI` or returned on structured result objects).
 
 **Best for:** High-stakes legal, financial, and scheduling — contract dates, event conflict resolution, or auditing where hallucination prevention requires unanimous LLM agreement.
 
 ```typescript
+// 1. Point-in-time cross validation
 const dt = await parseAI('contract renewal date', {
   mode: AiMode.Consensus
 });
 
 if (dt.ai?.ambiguous) {
-  console.warn('Providers disagreed — treat this result with caution.');
+  console.warn('Providers disagreed — treat this date with caution.');
 }
+
+// 2. High-precision duration calculation across multiple providers
+const diff = await diffAI(startDate, endDate, 'in business days excluding UK bank holidays', {
+  mode: AiMode.Consensus
+});
 ```
 

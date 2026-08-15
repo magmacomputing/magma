@@ -5,6 +5,7 @@ import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
+import { logDebug, attachCustomInspect, maskPii } from '../core/logger.js';
 import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX, RE_RRULE_PREFIX } from '../core/patterns.js';
 import type { TempoRecurrenceOptions, TempoRecurrenceResult } from '../types/index.js';
 
@@ -89,7 +90,7 @@ function createRecurrenceResult(
 		}
 	}
 
-	return {
+	const result: TempoRecurrenceResult = {
 		rrule: rruleStr,
 		summary: summaryText,
 		isFinite,
@@ -99,7 +100,19 @@ function createRecurrenceResult(
 		confidence,
 		provider: providerId,
 		reasoning
-	};
+	}
+
+	attachCustomInspect(result, (obj, isProd) => ({
+		rrule: obj.rrule,
+		summary: maskPii(obj.summary, isProd),
+		isFinite: obj.isFinite,
+		size: obj.size,
+		confidence: obj.confidence,
+		provider: obj.provider,
+		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+	}));
+
+	return result;
 }
 
 /**
@@ -128,8 +141,7 @@ export async function recurrenceAI(
 
 	if (isRRule) {
 		const cleanRRule = input.trim().replace(RE_RRULE_PREFIX, '');
-		if (isDebug)
-			console.log(`[tempo-plugin-ai:recurrence] Detected raw RRULE string: "${cleanRRule}"`);
+		logDebug('tempo-plugin-ai:recurrence', `Detected raw RRULE string: "${cleanRRule}"`, undefined, { debug: isDebug });
 
 		return createRecurrenceResult(
 			cleanRRule,

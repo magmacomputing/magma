@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cascading Cache TTL Hierarchy**: Implemented strict 4-tier TTL resolution (`options.ttl` > `provider.ttl` > `global config.ttl` > default 1 hour / 3,600,000 ms for `parseAI` or 24 hours / 86,400,000 ms for context/difference handlers) for fine-grained cache entry expiration control on stores enforcing TTL.
 - **Fail-Open Storage Resilience**: Custom cache adapter errors during `get()` or `set()` operations fail open silently to direct LLM resolution, preserving application request uptime.
 - **Dynamic Remote Provider Manifest (`loadRemoteManifest`)**: Lazily fetches remote provider defaults (`providers.v1.json`) on initialization with a 1500ms timeout and automatic air-gapped fallback to compiled `DEFAULT_PROVIDERS`.
-- **Cache Eviction Synchronization**: Enhanced `clearAiCache()` to flush matching keys and prefixes across both `Tempo.cache` and custom `AiCacheAdapter` storage engines, returning `Promise<void>` to await async adapter eviction.
+- **Cache Eviction Synchronization**: Enhanced `aiCache.clear()` to flush matching keys and prefixes across both `Tempo.cache` and custom `AiCacheAdapter` storage engines, returning `Promise<void>` to await async adapter eviction.
 
 ### Changed & Hardened
 - **Consensus Mode TTL Resolution**: Fixed a runtime bug where standard provider TTL lookups failed in Consensus mode due to the synthetic sentinel provider ID (`'consensus'`), which caused lookups on the winning provider array to return undefined. Now reduces over all participating provider configs to select the minimum (most conservative) TTL.
@@ -65,11 +65,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Non-Destructive Glossary Appending**: Custom glossaries provided via `initAI({ cache })` are safely appended to `Tempo.cache` as static immortal terms without destructive overrides.
 - **Silent Native Pre-Parsing & Cache Controls**: `parseAI` attempts fast, zero-latency native `Tempo` resolution and checks `Tempo.cache` before initiating LLM network calls. Supports `cache: false` to bypass cache lookups and `force: true` to force a fresh LLM API request.
 - **Anchor Instance Reuse & Cache Salting**: Reuses anchor `Tempo` instances to minimize memory allocations and salts cache keys with the anchor's date and system context (`timeZone`, `calendar`, `locale`, `sphere`), preventing stale cache hits across midnight boundaries or context shifts.
-- **Resilient Cache Invalidation**: Normalized cache key input (whitespace trimming and case insensitivity) for `clearAiCache` and internal lookups.
+- **Resilient Cache Invalidation**: Normalized cache key input (whitespace trimming and case insensitivity) for `aiCache.clear()` and internal lookups.
 
 ## [0.1.0] - 2026-07-26
 
 ### Added
 - Initial scaffolding of the AI natural language parsing plugin.
-- Functional exports for `parseAI`, `initAI`, and `clearAiCache`.
+- Functional exports for `parseAI`, `initAI`, and `aiCache`.
 - Initial provider fallback-routing engine supporting HTTP requests to configured LLM provider endpoints.

@@ -5,6 +5,7 @@ import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
+import { CUSTOM_INSPECT_SYMBOL, isProductionEnvironment, maskPii, attachCustomInspect } from '../core/logger.js';
 import { RE_DURATION_MINUTES, RE_DURATION_HOURS, RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX, RE_ISO_WEEKDAY_DIGIT } from '../core/patterns.js';
 import type { TempoScheduleOptions, TempoScheduleResult, TempoWorkingHours, TempoInterval, TempoScheduleMeta, AiProvider } from '../types/index.js';
 
@@ -110,36 +111,67 @@ Instructions:
   "alternatives": array of secondary { "start": "...", "end": "..." } options if available`;
 
 function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta): TempoScheduleResult {
-	const frozenMeta = Object.freeze(meta);
-	const boundMethodCache = new Map<PropertyKey, Function>();
+	const inspectableMeta = attachCustomInspect({ ...meta }, (obj, isProd) => ({
+		start: interval.start?.toString(),
+		end: interval.end?.toString(),
+		durationMinutes: obj.durationMinutes,
+		summary: maskPii(obj.summary, isProd),
+		confidence: obj.confidence,
+		provider: obj.provider,
+		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+		...(obj.ai ? {
+			ai: {
+				provider: obj.ai.provider,
+				confidence: obj.ai.confidence,
+				cached: obj.ai.cached,
+				conflictBumped: obj.ai.conflictBumped,
+				...(obj.ai.reasoning !== undefined ? { reasoning: maskPii(obj.ai.reasoning, isProd) } : {}),
+			},
+		} : {}),
+	}));
 
-	return new Proxy(interval, {
+	const boundMethodCache = new Map<PropertyKey, Function>();
+	const carrier = Object.create(interval);
+	Object.assign(carrier, inspectableMeta);
+	attachCustomInspect(carrier, (_obj, isProd) => {
+		const inspectFn = (inspectableMeta as any)[CUSTOM_INSPECT_SYMBOL];
+		return typeof inspectFn === 'function' ? inspectFn() : inspectableMeta;
+	});
+
+	return new Proxy(carrier, {
 		get(target, prop) {
-			if (Object.hasOwn(frozenMeta, prop))
-				return (frozenMeta as any)[prop];
+			if (prop === CUSTOM_INSPECT_SYMBOL)
+				return (inspectableMeta as any)[CUSTOM_INSPECT_SYMBOL];
+
+			if (prop === 'toJSON')
+				return (inspectableMeta as any).toJSON;
+
+			if (Object.hasOwn(inspectableMeta, prop))
+				return (inspectableMeta as any)[prop];
 
 			if (prop === 'constructor')
-				return Reflect.get(target, prop, target);
+				return Interval;
 
 			if (boundMethodCache.has(prop))
 				return boundMethodCache.get(prop);
 
-			const val = Reflect.get(target, prop, target);
+			const val = Reflect.get(interval, prop, interval);
 			if (isFunction(val)) {
-				const bound = val.bind(target);
+				const bound = val.bind(interval);
 				boundMethodCache.set(prop, bound);
 				return bound;
 			}
 			return val;
 		},
 		has(target, prop) {
-			if (Object.hasOwn(frozenMeta, prop)) return true;
-			return Reflect.has(target, prop);
+			if (prop === CUSTOM_INSPECT_SYMBOL || prop === 'toJSON') return true;
+			if (Object.hasOwn(inspectableMeta, prop)) return true;
+			return Reflect.has(interval, prop);
 		},
 		getOwnPropertyDescriptor(target, prop) {
-			if (Object.hasOwn(frozenMeta, prop)) {
+			if (Object.hasOwn(inspectableMeta, prop)) {
 				return {
-					value: (frozenMeta as any)[prop],
+					value: (inspectableMeta as any)[prop],
 					writable: false,
 					configurable: true,
 					enumerable: true,
@@ -149,7 +181,7 @@ function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta
 		},
 		ownKeys(target) {
 			const keys = Reflect.ownKeys(target);
-			for (const k of Object.keys(frozenMeta)) {
+			for (const k of Object.keys(inspectableMeta)) {
 				if (!keys.includes(k)) keys.push(k);
 			}
 			return keys;

@@ -41,4 +41,6 @@ export interface TempoAiExtractResult extends TempoBaseAiResult {
 export interface AiExtractOptions extends AiDateContextOptions {
 	/** Optional category filters to guide event identification (e.g. ['meeting', 'deadline']) */
 	categories?: string[] | undefined;
+	/** Optional maximum number of concurrent extraction requests when processing arrays (default: 4) */
+	concurrency?: number | undefined;
 }

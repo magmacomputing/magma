@@ -1,4 +1,4 @@
-import { normalizeCacheInput, getNamespacedCacheKey } from '../src/core/support.js';
+import { normalizeCacheInput, getNamespacedCacheKey } from '../src/core/cache.js';
 
 describe('AI Support Helpers Benchmark & Integrity', () => {
   it('should normalize cache input string whitespace and case', () => {

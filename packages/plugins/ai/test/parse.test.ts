@@ -1,4 +1,4 @@
-import { parseAI, initAI, clearAiCache, getAiRateLimits, getAiConfig, TempoAiError, AiMode } from '../src/index.js';
+import { parseAI, initAI, aiCache, getAiRateLimits, getAiConfig, TempoAiError, AiMode } from '../src/index.js';
 import { BoundedCache } from '@magmacomputing/tempo/support';
 import { Tempo } from '@magmacomputing/tempo';
 
@@ -156,7 +156,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 
 	it('should cache the result and mark provider as "cache"', async () => {
 		const anchorDate = '2026-05-10T12:00:00Z';
-		clearAiCache('The Friday after Thanksgiving');
+		await aiCache.clear('The Friday after Thanksgiving');
 
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
 		if (!isLiveTest) {
@@ -463,13 +463,13 @@ describe('AI Parsing Plugin (parseAI)', () => {
 			expect(Array.from(cache.keys())).not.toContain('tempKey');
 		});
 
-		it('should preserve clearAiCache functionality', async () => {
+		it('should preserve aiCache.clear functionality', async () => {
 			const cache = new BoundedCache(100);
 			cache.set('Thanksgiving::2026-05-10', '2026-11-26T00:00:00Z');
 			cache.set('Christmas::2026-05-10', '2026-12-25T00:00:00Z');
 
 			await initAI({ remoteConfigUrl: false, cache });
-			clearAiCache('Thanksgiving');
+			await aiCache.clear('Thanksgiving');
 
 			expect(cache.has('Thanksgiving::2026-05-10')).toBe(false);
 			expect(cache.has('Christmas::2026-05-10')).toBe(true);

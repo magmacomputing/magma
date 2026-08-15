@@ -5,14 +5,17 @@ import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
-	assertNoReservedProviderId,
-	fetchFromProvider,
 	normalizeCacheInput,
 	readMultiTierCache,
+	writeMultiTierCache,
+} from '../core/cache.js';
+import {
+	assertNoReservedProviderId,
+	fetchFromProvider,
 	resolveProviderTtl,
 	resolveTzAndLocale,
-	writeMultiTierCache,
 } from '../core/support.js';
+import { logDebug, warnDebug, attachCustomInspect, maskPii } from '../core/logger.js';
 import type { AiFormatOptions, FormatItem, TempoAiFormatResult, TempoDateInput } from '../types/format.type.js';
 
 export type { AiFormatOptions, FormatItem, TempoAiFormatResult, TempoDateInput };
@@ -148,19 +151,26 @@ async function formatSingleInput(
 					: 1.0;
 
 				if (effectiveMinConfidence !== undefined && cachedConfidence < effectiveMinConfidence) {
-					if (isDebug) console.log(`[tempo-plugin-ai:format] Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`);
+					logDebug('tempo-plugin-ai:format', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
 				} else {
 					const reasoning = typeof parsedCache?.reasoning === 'string' ? parsedCache.reasoning : undefined;
-					return secure({
+					const cachedResult: TempoAiFormatResult = {
 						formatted: parsedCache.formatted,
 						confidence: cachedConfidence,
 						provider: 'cache',
 						reasoning,
-					});
+					}
+					attachCustomInspect(cachedResult, (obj, isProd) => ({
+						formatted: obj.formatted,
+						confidence: obj.confidence,
+						provider: obj.provider,
+						...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+					}));
+					return secure(cachedResult);
 				}
 			}
 		} catch (err: any) {
-			if (isDebug) console.warn(`[tempo-plugin-ai:format] Failed to parse cached payload:`, err?.message ?? err);
+			warnDebug('tempo-plugin-ai:format', 'Failed to parse cached payload', err, { debug: isDebug });
 		}
 	}
 
@@ -278,6 +288,13 @@ Output JSON Schema:
 		debug: isDebug,
 		tag: 'tempo-plugin-ai:format',
 	});
+
+	attachCustomInspect(finalResult, (obj, isProd) => ({
+		formatted: obj.formatted,
+		confidence: obj.confidence,
+		provider: obj.provider,
+		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+	}));
 
 	return secure(finalResult);
 }

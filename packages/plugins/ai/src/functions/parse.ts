@@ -3,7 +3,9 @@ import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
-import { normalizeCacheInput, attachAiMeta, fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
+import { normalizeCacheInput } from '../core/cache.js';
+import { attachAiMeta, fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
+import { logDebug, warnDebug } from '../core/logger.js';
 import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX, RE_ISO_DATE_PREFIX, RE_ISO_Z_SUFFIX } from '../core/patterns.js';
 import type { AiParseOptions } from '../types/index.js';
 
@@ -65,7 +67,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 					cachedIso = val;
 				}
 			} catch (err: any) {
-				if (isDebug) console.log('[tempo-plugin-ai] Cache adapter read error:', err?.message);
+				warnDebug('tempo-plugin-ai:parse', 'Cache adapter read error', err?.message, { debug: isDebug });
 			}
 		}
 
@@ -73,7 +75,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 	}
 
 	if (cachedIso) {
-		if (isDebug) console.log(`[tempo-plugin-ai] Cache hit: "${str}" -> ${cachedIso}`);
+		logDebug('tempo-plugin-ai:parse', `Cache hit: "${str}" -> ${cachedIso}`, undefined, { debug: isDebug });
 		const cachedInstance = new Tempo(cachedIso, tempoConfig);
 		return attachAiMeta(cachedInstance, {
 			provider: 'cache',
@@ -96,7 +98,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 				|| native.isValid;
 
 			if (native.isValid && hasNativeMatches) {
-				if (isDebug) console.log(`[tempo-plugin-ai] Resolved natively: "${str}"`);
+				logDebug('tempo-plugin-ai:parse', `Resolved natively: "${str}"`, undefined, { debug: isDebug });
 				return attachAiMeta(native, {
 					provider: 'native',
 					cached: false,
@@ -195,7 +197,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 				const res = adapter.set(cacheKey, parsedIso, resolvedTtl);
 				if (res instanceof Promise) await res;
 			} catch (err: any) {
-				if (isDebug) console.log('[tempo-plugin-ai] Cache adapter write error:', err?.message);
+				warnDebug('tempo-plugin-ai:parse', 'Cache adapter write error', err?.message, { debug: isDebug });
 			}
 		}
 		Tempo.cache.set(cacheKey, parsedIso);

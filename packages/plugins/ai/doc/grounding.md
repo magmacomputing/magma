@@ -37,9 +37,13 @@ Passing the `Locale` and `TimeZone` is critical for the LLM to know whether `"11
 
 ## The Decoupled Output Bridge
 
-To ensure deterministic behavior, the LLM is instructed to *only* return strict ISO 8601 strings. 
+To ensure deterministic, type-safe behavior, the plugin enforces a strict decoupled bridge between AI text generation and JavaScript object hydration:
 
-The plugin executes the network request, the LLM returns a local ISO string without a timezone offset or 'Z' suffix (like `"2026-11-26T00:00:00"`), and the plugin immediately passes that string back into the native `new Tempo()` constructor. The provider response must omit timezone suffixes to match the local ISO contract enforced by Tempo AI functions. The developer seamlessly receives a valid, native `Tempo` instance. This eliminates AST-construction ambiguity, creating a decoupled bridge between AI text generation and native Tempo conversion.
+* **For Point-in-Time Parsing (`parseAI`)**: The LLM is instructed to return a strict local ISO 8601 string without a timezone offset or 'Z' suffix (e.g. `"2026-11-26T00:00:00"`). The plugin immediately constructs a native `new Tempo()` instance with caller-defined timezone and calendar context.
+* **For Structured Functions (`formatAI`, `extractAI`, `diffAI`, `contextAI`)**: The LLM completes rigid JSON schemas validated against strict boundary rules, instantiating typed result objects (`TempoAiFormatResult`, `TempoAiExtractResult`, `TempoAiDiffResult`, `TempoContext`).
+* **For Intervals & Generators (`scheduleAI`, `recurrenceAI`)**: The plugin hydrates interval boundaries into a proxied `Interval<Tempo>` or exposes an iterable generator yielding sequential `Tempo` instances.
+
+This eliminates AST-construction ambiguity and provides clean runtime contracts for every operation.
 
 ### Relative Date Ambiguity Tie-Breakers
 
@@ -48,11 +52,13 @@ To eliminate model variance on idioms like "Next Friday" or "Last Tuesday", the 
 * `"last [weekday/unit]"` / `"previous [weekday/unit]"`: Evaluated as the most recent past occurrence prior to the grounding anchor.
 * `"this [weekday]"`: Evaluated as the occurrence within the current calendar week containing the grounding anchor.
 
-### Confidence Thresholds & Metadata (`.ai`)
+### Confidence Thresholds & Metadata Handling
 
-When `minConfidence` is supplied in options (e.g. `parseAI("...", { minConfidence: 0.8 })`), any LLM response returning a confidence score below that threshold produces a `Tempo` instance with `isValid === false`. 
+When `minConfidence` is supplied in options (e.g. `{ minConfidence: 0.85 }`):
+* **`parseAI`**: Any LLM response returning a confidence score below the threshold produces a `Tempo` instance with `isValid === false` (when using `softErrors: true`) or throws a `TempoAiError(422)`.
+* **Structured Functions (`formatAI`, `extractAI`, `diffAI`, `contextAI`, `scheduleAI`, `recurrenceAI`)**: Low-confidence completions immediately throw a `TempoAiError(422)` (or return a `TempoAiError` in batch arrays when `softErrors: true` is enabled).
 
-Every resolved `Tempo` instance returned by `parseAI` (and other AI functions) has a non-writable, frozen `.ai` metadata descriptor containing execution audit data:
+Every resolved `Tempo` instance returned by `parseAI` has a non-writable, frozen `.ai` metadata descriptor containing execution audit data:
 ```typescript
 const dt = await parseAI("Christmas 2026", { debug: true });
 console.log(dt.ai);
@@ -67,3 +73,5 @@ console.log(dt.ai);
 //   normalizedPrompt: 'christmas 2026' // Present when debug is enabled
 // }
 ```
+
+*(For other AI functions like `extractAI` or `diffAI`, diagnostic metadata including `confidence`, `reasoning`, and `provider` is attached directly to the returned result object.)*

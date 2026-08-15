@@ -2,6 +2,9 @@
 
 `contextAI()` is designed to analyze unstructured or ambiguous text (e.g. user biographies, locations, or email bodies) and infer their regional configuration settings. It resolves these properties to a standard configuration object containing timezone, locale, calendar system, and hemisphere.
 
+> [!TIP]
+> **Smart Debug Telemetry**: Enabling `debug: true` activates operational logs. In production environments (`NODE_ENV === 'production'`), PII (emails, phone numbers, auth tokens) is automatically sanitized and masked in console output and terminal inspections. See the [Security & Privacy Architecture Guide](./security.md).
+
 This is highly useful for user onboarding settings, automatic context mapping for calendar syncs, and geolocating inputs dynamically without maintaining static geographic mapping tables.
 
 ---
@@ -28,7 +31,7 @@ console.log(context.timeZone);  // "Australia/Sydney"
 console.log(context.locale);    // "en-AU"
 console.log(context.calendar);  // "gregory"
 console.log(context.sphere);    // "south"
-console.log(context.confidence); // 0.98
+console.log(context.confidence);// 0.98
 ```
 
 ---
@@ -46,7 +49,7 @@ console.log(context.confidence); // 0.98
 | **`providers`** | `AiProvider[]` | Per-request provider configuration overrides. |
 | **`timeout`** | `number` | Per-request timeout in milliseconds (overrides provider and global timeouts). |
 | **`hedgeDelay`** | `number` | Delay in milliseconds before initiating speculative hedging in `AiMode.Hedged` (default: `800ms`). |
-| **`debug`** | `boolean` | If true, logs prompt context and LLM payloads to console. |
+| **`debug`** | `boolean` | If true, logs prompt context and cache operations to console (automatically PII-sanitized in production). |
 | **`softErrors`** | `boolean` | If true, returns `TempoAiError` into array index position instead of rejecting the entire batch query. |
 
 ---

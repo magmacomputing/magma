@@ -9,7 +9,7 @@ The plugin automatically tracks these limits by reading the standard `x-ratelimi
 Quota and rate-limit metadata can be inspected in two convenient ways:
 
 ### 1. Request-Locked Instance Metadata (`dt.ai.limits`)
-Every `Tempo` instance returned by `parseAI` includes a frozen `.ai.limits` snapshot representing the rate limit state returned by provider HTTP headers for *that specific request*. Note that `.ai.limits` is guaranteed only for provider-backed network requests where rate-limit headers are returned by the selected provider; results resolved via native parsing (`provider: 'native'`) or cache hits (`provider: 'cache'`) may omit `.ai.limits` (`undefined`).
+For `parseAI`, every resolved `Tempo` instance includes a frozen `.ai.limits` snapshot representing the rate limit state returned by provider HTTP headers for *that specific request*. Note that `.ai.limits` is guaranteed only for provider-backed network requests where rate-limit headers are returned by the selected provider; results resolved via native parsing (`provider: 'native'`) or cache hits (`provider: 'cache'`) may omit `.ai.limits` (`undefined`).
 
 ```typescript
 const dt = await parseAI("The third Friday of next month");
@@ -74,12 +74,24 @@ This is by design for three critical reasons:
 
 ### Soft Errors in Array Batches
 
-When processing arrays of inputs, an unparseable input or provider failure on one item will throw an error by default, stopping execution. Passing `softErrors: true` allows AI functions to return invalid `Tempo` instances (`isValid === false`) for failing items while completing the rest of the array:
+When processing arrays of inputs, an unparseable input or provider failure on one item will throw an error by default, halting execution of the entire batch. Passing `softErrors: true` allows batch operations to gracefully complete the rest of the array:
+
+* **For `parseAI`**: Failed array items return an invalid `Tempo` instance (`isValid === false`).
+* **For Structured Functions (`formatAI`, `extractAI`, `diffAI`, `contextAI`)**: Failed array items return the typed `TempoAiError` object directly in that array position.
 
 ```typescript
+// 1. parseAI with softErrors returns invalid Tempo instances
 const dates = await parseAI(["Thanksgiving 2026", "INVALID_PROMPT_STRING"], { softErrors: true });
 console.log(dates[0].isValid); // true
 console.log(dates[1].isValid); // false
+
+// 2. Structured functions return TempoAiError objects into the array
+import { formatAI, TempoAiError } from '@magmacomputing/tempo-plugin-ai';
+
+const formatted = await formatAI([validDate, invalidDate], 'casual tone', { softErrors: true });
+if (formatted[1] instanceof TempoAiError) {
+  console.warn(`Format failed with code: ${formatted[1].code}`);
+}
 ```
 
 ### Static Glossary Seeding
@@ -112,10 +124,13 @@ const dt = await parseAI("The last Friday before Christmas", { force: true, cach
 If the LLM hallucinates or returns an incorrect absolute date, you can explicitly purge the string from the cache:
 
 ```typescript
-import { clearAiCache } from '@magmacomputing/tempo-plugin-ai';
+import { aiCache } from '@magmacomputing/tempo-plugin-ai';
 
 // Evict a single string
-clearAiCache("2nd tuesday in nov");
+await aiCache.clear("2nd tuesday in nov");
+
+// Or purge all AI cached entries
+await aiCache.clear();
 ```
 
 ### Forcing a Refresh

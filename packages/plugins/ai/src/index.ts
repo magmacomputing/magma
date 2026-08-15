@@ -6,8 +6,11 @@ export * from './core/config.js';
 // AI Manifest Support
 export { loadRemoteManifest, resetManifestCache, DEFAULT_REMOTE_MANIFEST_URL } from './core/manifest.js';
 
+// AI Cache Manager
+export { aiCache } from './core/cache.js';
+
 // AI Core Functions
-export { initAI, resetAI, clearAiCache, getAiRateLimits, getAiProviderRateLimits, getAiConfig } from './core/init.js';
+export { initAI, resetAI, getAiRateLimits, getAiProviderRateLimits, getAiConfig } from './core/init.js';
 
 // AI Function Handlers
 export { parseAI } from './functions/parse.js';

@@ -14,7 +14,7 @@ export interface TempoRecurrenceOptions extends AiParseOptions {
 	/** Number of occurrences to pull per batch (default: 5) */
 	count?: number | undefined;
 	/** Preferred BCP 47 locale tag for summary output (e.g. 'en-US', 'fr-FR', 'es-ES') */
-	locale?: string | undefined;
+	locale?: string | string[] | undefined;
 }
 
 /**

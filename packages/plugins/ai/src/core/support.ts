@@ -2,21 +2,14 @@ import { Tempo } from '@magmacomputing/tempo';
 import { TempoAiError } from './error.js';
 import { RESERVED_PROVIDER_IDS } from './config.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
-import type { AiCacheAdapter, AiProvider, TempoParseAiMeta } from '../types/index.js';
+import { logDebug, attachCustomInspect, maskPii } from './logger.js';
+import type { AiProvider, TempoParseAiMeta } from '../types/index.js';
 
 export function assertNoReservedProviderId(providers: Partial<AiProvider>[]): void {
 	for (const p of providers) {
 		if (p.id && RESERVED_PROVIDER_IDS.has(p.id.toLowerCase()))
 			throw new TempoAiError(`Provider ID '${p.id}' is a reserved keyword in AI provider configuration.`, 400);
 	}
-}
-
-export function normalizeCacheInput(input: string): string {
-	return input.trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-export function getNamespacedCacheKey(namespace: string, key: string): string {
-	return `ai:${namespace}::${key}`;
 }
 
 export function resolveProviderTtl(
@@ -47,68 +40,20 @@ export function resolveTzAndLocale(
 	return { tz, loc };
 }
 
-export async function readMultiTierCache(
-	cacheKey: string,
-	options: {
-		force?: boolean | undefined;
-		cache?: boolean | undefined;
-		cacheAdapter?: AiCacheAdapter | undefined;
-		debug?: boolean | undefined;
-		tag?: string | undefined;
-	},
-): Promise<string | undefined> {
-	if (options.force) return undefined;
-	if (options.cache === false || _state.config.cache === false) return undefined;
-
-	const adapter = options.cacheAdapter || _state.config.cacheAdapter;
-	if (adapter) {
-		try {
-			const val = await adapter.get(cacheKey);
-			if (val !== undefined && val !== null) {
-				if (options.debug) console.log(`[${options.tag ?? 'tempo-plugin-ai'}] Cache hit (adapter): ${cacheKey}`);
-				return val;
-			}
-		} catch (err: any) {
-			if (options.debug) console.warn(`[${options.tag ?? 'tempo-plugin-ai'}] Cache adapter get failed for ${cacheKey}:`, err?.message ?? err);
-		}
-	}
-
-	const localVal = Tempo.cache.get(cacheKey);
-	if (localVal) {
-		if (options.debug) console.log(`[${options.tag ?? 'tempo-plugin-ai'}] Cache hit (local): ${cacheKey}`);
-		return localVal;
-	}
-
-	return undefined;
-}
-
-export async function writeMultiTierCache(
-	cacheKey: string,
-	value: string,
-	ttl: number,
-	options: {
-		cache?: boolean | undefined;
-		cacheAdapter?: AiCacheAdapter | undefined;
-		debug?: boolean | undefined;
-		tag?: string | undefined;
-	},
-): Promise<void> {
-	if (options.cache === false || _state.config.cache === false) return;
-
-	Tempo.cache.set(cacheKey, value);
-
-	const adapter = options.cacheAdapter || _state.config.cacheAdapter;
-	if (adapter) {
-		try {
-			await adapter.set(cacheKey, value, ttl);
-		} catch (err: any) {
-			if (options.debug) console.warn(`[${options.tag ?? 'tempo-plugin-ai'}] Cache adapter set failed for ${cacheKey}:`, err?.message ?? err);
-		}
-	}
-}
-
 export function attachAiMeta(instance: Tempo, meta: TempoParseAiMeta): Tempo {
-	const frozenMeta = Object.freeze(meta);
+	const inspectableMeta = attachCustomInspect({ ...meta }, (obj, isProd) => ({
+		provider: obj.provider,
+		cached: obj.cached,
+		confidence: obj.confidence,
+		ambiguous: obj.ambiguous,
+		granularity: obj.granularity,
+		rawIso: obj.rawIso,
+		...(obj.rawPrompt !== undefined ? { rawPrompt: maskPii(obj.rawPrompt, isProd) } : {}),
+		...(obj.normalizedPrompt !== undefined ? { normalizedPrompt: maskPii(obj.normalizedPrompt, isProd) } : {}),
+		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+		...(obj.limits ? { limits: obj.limits } : {}),
+	}));
+	const frozenMeta = Object.freeze(inspectableMeta);
 	const boundMethodCache = new Map<PropertyKey, Function>();
 
 	return new Proxy(instance, {
@@ -202,8 +147,7 @@ Do not include markdown blocks or any text outside the JSON.`;
 
 	const systemPrompt = customSystemPrompt ?? defaultSystemPrompt;
 
-	if (isDebug)
-		console.log(`[tempo-plugin-ai] Querying provider '${provider.id}' (model: ${model})...`);
+	logDebug('tempo-plugin-ai', `Querying provider '${provider.id}' (model: ${model})...`, undefined, { debug: isDebug });
 
 	const tokenParam = provider.tokenParam
 		|| (provider.options?.max_completion_tokens !== undefined ? 'max_completion_tokens' : undefined)
@@ -265,7 +209,7 @@ Do not include markdown blocks or any text outside the JSON.`;
 
 		if (isDebug) {
 			const elapsed = Math.round(performance.now() - startTime);
-			console.log(`[tempo-plugin-ai] Received response from '${provider.id}' in ${elapsed}ms`);
+			logDebug('tempo-plugin-ai', `Received response from '${provider.id}' in ${elapsed}ms`, undefined, { debug: isDebug });
 		}
 
 		return { rawContent: rawContent.trim(), providerId: provider.id, rateLimits: limits };
