@@ -27,18 +27,18 @@ flowchart TD
 
 Debugging LLM integrations traditionally presents a major security dilemma: enabling debug logs often inadvertently dumps raw prompts containing sensitive user emails, phone numbers, and auth tokens into centralized log aggregators (e.g. Datadog, CloudWatch, Sentry).
 
-`@magmacomputing/tempo-plugin-ai` eliminates this risk through **Smart Debug Infrastructure**:
+`@magmacomputing/tempo-plugin-ai` significantly mitigates this risk through **Smart Debug Infrastructure**:
 
 ### Universal Environment Detection & Zero-Config Safety
-* **Single Flag Experience**: Developers simply pass `{ debug: true }` (or configure `initAI({ debug: true })`). There are no confusing secondary flags to memorize.
+* **Unified Flag**: Telemetry is enabled directly using `{ debug: true }` on individual requests or globally via `initAI({ debug: true })`.
 * **Environment-Aware Sanitization**: The runtime automatically inspects `NODE_ENV`. In production environments (`NODE_ENV === 'production'`), all debug logs and terminal outputs automatically sanitize sensitive data before printing to `console.log` or `console.warn`.
 * **Development Fidelity**: In non-production environments (local development, testing), full diagnostic strings are preserved for seamless prompt debugging.
 
 ### Automatic PII Redaction
 In production mode, all debug telemetry is scrubbed through automated regex sanitizers:
-* **Email Addresses**: Masked to initial and domain (e.g., `john.doe@enterprise.com` $\rightarrow$ `j***@enterprise.com`).
-* **Phone Numbers**: Masked to last four digits (e.g., `+1-555-867-5309` $\rightarrow$ `***-***-5309`).
-* **Bearer & API Tokens**: Redacted with prefix/suffix preservation (e.g., `Bearer sk-proj-1234...` $\rightarrow$ `Bearer sk-p...1234`).
+* **Email Addresses**: Masked to initial and domain (e.g., `john.doe@enterprise.com` → `j***@enterprise.com`).
+* **Phone Numbers**: Masked to last four digits (e.g., `+1-555-867-5309` → `***-***-5309`).
+* **Bearer & API Tokens**: Redacted with prefix/suffix preservation (e.g., `Bearer sk-proj-1234...` → `Bearer sk-p...1234`).
 * **Length Bounds**: Exceptionally long strings (> 256 characters) are safely truncated with character count annotations to prevent log bloat and denial-of-service attacks.
 
 ```typescript

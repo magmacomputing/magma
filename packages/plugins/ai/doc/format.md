@@ -15,7 +15,7 @@ import { initAI, formatAI } from '@magmacomputing/tempo-plugin-ai';
 // 1. Initialize AI providers
 await initAI({
   providers: [
-    { id: 'groq', key: process.env.GROQ_API_KEY, model: 'llama-3.3-70b-versatile' }
+    { id: 'groq', key: process.env.GROQ_API_KEY }
   ]
 });
 

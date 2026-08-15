@@ -22,7 +22,7 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 		const mockManifest = {
 			version: '1.0',
 			providers: {
-				groq: { model: 'llama-3.3-70b-versatile', tokenParam: 'max_tokens' },
+				groq: { model: 'openai/gpt-oss-120b', tokenParam: 'max_tokens' },
 				openai: { model: 'gpt-5.4-mini', tokenParam: 'max_completion_tokens' }
 			}
 		};

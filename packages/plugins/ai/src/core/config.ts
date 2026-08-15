@@ -33,7 +33,7 @@ export const RESERVED_PROVIDER_IDS: ReadonlySet<string> = new Set(['native', 'ca
 export const DEFAULT_PROVIDERS: Readonly<Record<string, Partial<AiProvider>>> = secure({
 	groq: {
 		url: 'https://api.groq.com/openai/v1/chat/completions',
-		model: 'llama-3.3-70b-versatile',
+		model: 'openai/gpt-oss-120b',
 		tokenParam: 'max_tokens'
 	},
 	openai: {

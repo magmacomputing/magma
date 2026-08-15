@@ -201,7 +201,7 @@ describe(`${label} instance context getters`, () => {
     expect(typeof t.tz).toBe('string');
     expect(typeof t.cal).toBe('string');
     expect(t.locale).toBeDefined();
-    expect(t.sphere).toBeDefined();
+    expect(t.sphere).toBe(Tempo.config.sphere);
   })
 
   test('resolves custom context options on instance', () => {

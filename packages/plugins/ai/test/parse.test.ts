@@ -1,4 +1,4 @@
-import { parseAI, initAI, aiCache, getAiRateLimits, getAiConfig, TempoAiError, AiMode } from '../src/index.js';
+import { parseAI, initAI, resetAI, aiCache, getAiRateLimits, getAiConfig, TempoAiError, AiMode, DEFAULT_PROVIDERS } from '../src/index.js';
 import { BoundedCache } from '@magmacomputing/tempo/support';
 import { Tempo } from '@magmacomputing/tempo';
 
@@ -8,6 +8,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 	const isLiveTest = Boolean(process.env.LIVE_AI_TEST && liveApiKey);
 
 	beforeEach(async () => {
+		resetAI();
 		vi.spyOn(console, 'warn').mockImplementation(() => {});
 		vi.spyOn(console, 'error').mockImplementation(() => {});
 		vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -26,6 +27,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 	});
 
 	afterEach(() => {
+		resetAI();
 		vi.restoreAllMocks();
 	});
 
@@ -46,7 +48,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		expect(config.providers).toHaveLength(1);
 		expect(config.providers?.[0].id).toBe('groq');
 		expect(config.providers?.[0].key).toBe('[REDACTED]');
-		expect(config.providers?.[0].model).toBe('llama-3.3-70b-versatile');
+		expect(config.providers?.[0].model).toBe(DEFAULT_PROVIDERS.groq.model);
 	});
 
 	it('should fall back to native parsing first and attach .ai metadata', async () => {
@@ -58,6 +60,9 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		expect(result.ai?.cached).toBe(false);
 		expect(result.ai?.confidence).toBe(1.0);
 		expect(Object.isFrozen(result.ai)).toBe(true);
+		expect('ai' in result).toBe(true);
+		expect(() => Object.keys(result)).not.toThrow();
+		expect(() => Reflect.ownKeys(result)).not.toThrow();
 	});
 
 	it('should throw TempoAiError if reserved provider ID "native" or "cache" is used in initAI', () => {
@@ -65,7 +70,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		expect(() => initAI({ remoteConfigUrl: false, providers: [{ id: 'cache', key: '123' }] })).toThrow(TempoAiError);
 	});
 
-	it('should canonicalize Gemini provider ID and use gemini-3.6-flash model by default', async () => {
+	it('should canonicalize Gemini provider ID and use default Gemini model', async () => {
 		await initAI({
 			remoteConfigUrl: false,
 			providers: [{ id: 'Gemini', key: 'mock-gemini-key' }]
@@ -77,7 +82,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		await parseAI('Christmas 2026', { force: true });
 		expect(fetchSpy).toHaveBeenCalled();
 		const body = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
-		expect(body.model).toBe('gemini-3.6-flash');
+		expect(body.model).toBe(DEFAULT_PROVIDERS.gemini.model);
 	});
 
 	it('should throw TempoAiError if no key is configured and AI is needed', async () => {

@@ -1,13 +1,13 @@
 # Tempo Community Traction & GitHub Stars Strategy
 
 ## Objective
-Establish high-visibility developer traction, increase GitHub star count (crossing the initial 10-star threshold to unlock automated CodeRabbit CI reviews), and drive organic adoption for `@magmacomputing/tempo` and `@magmacomputing/tempo-plugin-ai`.
+Establish high-visibility developer traction, increase GitHub star count, and drive organic adoption for `@magmacomputing/tempo` and `@magmacomputing/tempo-plugin-ai`.
 
 ---
 
-## 1. Immediate Target: Crossing 10 Stars (Unlocking CodeRabbit)
+## 1. Initial Milestone: Community Growth & Early Stargazers
 
-CodeRabbit requires a minimum of **10 GitHub stars** on open-source repositories to enable automatic PR reviews on every push/PR without manual triggers.
+Building early community momentum and developer engagement on GitHub:
 
 ### Action Items
 - [ ] **Internal Network**: Coordinate with team members, co-founders, and peers to star [magmacomputing/magma](https://github.com/magmacomputing/magma).
@@ -82,6 +82,6 @@ Submit pull requests to high-visibility curated repositories:
 
 | Milestone | Target | Key Benefit |
 | :--- | :--- | :--- |
-| **Tier 1** | **10 Stars** | CodeRabbit automated PR reviews restored permanently |
+| **Tier 1** | **Early Traction** | Initial developer validation and organic engagement |
 | **Tier 2** | **100 Stars** | GitHub search discoverability & community social proof |
 | **Tier 3** | **500+ Stars** | Category leader positioning for TC39 Temporal & AI toolchains |

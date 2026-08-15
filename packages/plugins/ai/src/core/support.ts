@@ -81,22 +81,6 @@ export function attachAiMeta(instance: Tempo, meta: TempoParseAiMeta): Tempo {
 			if (prop === 'ai') return true;
 			return Reflect.has(target, prop);
 		},
-		getOwnPropertyDescriptor(target, prop) {
-			if (prop === 'ai') {
-				return {
-					value: frozenMeta,
-					writable: false,
-					configurable: true,
-					enumerable: true
-				};
-			}
-			return Reflect.getOwnPropertyDescriptor(target, prop);
-		},
-		ownKeys(target) {
-			const keys = Reflect.ownKeys(target);
-			if (!keys.includes('ai')) keys.push('ai');
-			return keys;
-		}
 	});
 }
 

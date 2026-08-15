@@ -213,6 +213,7 @@ describe('Smart Debug & PII Protection Infrastructure', () => {
 
 	describe('End-to-End AI Function Inspect Hardening', () => {
 		it('should protect parseAI returned Tempo instance metadata', async () => {
+			vi.spyOn(console, 'log').mockImplementation(() => {});
 			const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
 				choices: [{
 					message: {
