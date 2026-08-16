@@ -2,12 +2,55 @@
 
 `initAI()` sets up the global configuration for `@magmacomputing/tempo-plugin-ai`, managing provider authentication, multi-provider execution modes, global SLAs/timeouts, and caching strategies.
 
-## Basic Usage
+## Zero-Config Auto-Discovery
+
+`@magmacomputing/tempo-plugin-ai` features a zero-boilerplate auto-discovery architecture. In server environments (Node.js, Deno, Bun), calling `initAI()` is **completely optional** when standard environment variables (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`) or a `tempo.config.json` file are present.
+
+```typescript
+import { parseAI } from '@magmacomputing/tempo-plugin-ai';
+
+// When GROQ_API_KEY is present in the environment:
+// Zero setup required — providers and SLAs are auto-discovered lazily on first call!
+const dt = await parseAI("next Friday at 4pm");
+```
+
+### Configuration Resolution Order
+
+Configuration is automatically discovered and resolved in the following priority:
+1. **Call-site explicit overrides** (`options.providers`, `options.mode`).
+2. **Explicit `initAI(config)` parameters**.
+3. **Active `Tempo.config.plugins.ai`** (in-memory or loaded via `Tempo.bootstrap()`).
+4. **Filesystem `tempo.config.*` files** (JSON, JSONC, JS, TS).
+5. **Runtime Environment Variables** (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`).
+
+### `tempo.config.json` Example
+
+You can declare AI provider configurations directly within your project's `tempo.config.json` using template variable interpolation:
+
+```json
+{
+  "timeZone": "Australia/Sydney",
+  "locale": "en-AU",
+  "plugins": {
+    "ai": {
+      "mode": "fallback",
+      "timeout": 5000,
+      "minConfidence": 0.85,
+      "providers": [
+        { "id": "groq", "key": "${GROQ_API_KEY}" },
+        { "id": "openai", "key": "$env:OPENAI_API_KEY", "model": "gpt-4o-mini" }
+      ]
+    }
+  }
+}
+```
+
+## Basic Usage (Explicit Configuration)
 
 ```typescript
 import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
 
-// Initialize with BYOK (Bring Your Own Key) provider credentials
+// Initialize with custom provider credentials and execution options
 await initAI({
   providers: [
     { id: 'groq', key: process.env.GROQ_API_KEY },

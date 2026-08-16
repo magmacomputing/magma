@@ -48,7 +48,43 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		expect(config.providers).toHaveLength(1);
 		expect(config.providers?.[0].id).toBe('groq');
 		expect(config.providers?.[0].key).toBe('[REDACTED]');
-		expect(config.providers?.[0].model).toBe(DEFAULT_PROVIDERS.groq.model);
+		expect(config.providers?.[0].models?.default).toBe(DEFAULT_PROVIDERS.groq.models?.default);
+	});
+
+	it('should automatically inherit configuration from Tempo.config.plugins.ai', async () => {
+		resetAI();
+		Tempo.init({
+			plugins: {
+				ai: {
+					mode: AiMode.Race,
+					timeout: 4500,
+					providers: [{ id: 'groq', key: 'tempo-config-plugins-key' }]
+				}
+			}
+		});
+
+		await initAI();
+		const config = getAiConfig();
+		expect(config.mode).toBe('race');
+		expect(config.timeout).toBe(4500);
+		expect(config.providers?.[0].id).toBe('groq');
+	});
+
+	it('should auto-initialize from Tempo.config.plugins.ai on parseAI if initAI was not called', async () => {
+		resetAI();
+		Tempo.init({
+			plugins: {
+				ai: {
+					mode: AiMode.Fallback,
+					providers: [{ id: 'groq', key: 'auto-init-key' }]
+				}
+			}
+		});
+
+		const result = await parseAI('2026-05-10');
+		expect(result.isValid).toBe(true);
+		const config = getAiConfig();
+		expect(config.providers?.[0].id).toBe('groq');
 	});
 
 	it('should fall back to native parsing first and attach .ai metadata', async () => {
@@ -82,7 +118,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		await parseAI('Christmas 2026', { force: true });
 		expect(fetchSpy).toHaveBeenCalled();
 		const body = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
-		expect(body.model).toBe(DEFAULT_PROVIDERS.gemini.model);
+		expect(body.model).toBe(DEFAULT_PROVIDERS.gemini.models?.default);
 	});
 
 	it('should throw TempoAiError if no key is configured and AI is needed', async () => {

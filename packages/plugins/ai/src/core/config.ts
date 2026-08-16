@@ -33,22 +33,38 @@ export const RESERVED_PROVIDER_IDS: ReadonlySet<string> = new Set(['native', 'ca
 export const DEFAULT_PROVIDERS: Readonly<Record<string, Partial<AiProvider>>> = secure({
 	groq: {
 		url: 'https://api.groq.com/openai/v1/chat/completions',
-		model: 'openai/gpt-oss-120b',
+		models: {
+			default: 'openai/gpt-oss-120b',
+			fast: 'qwen/qwen3.6-27b',
+			large: 'openai/gpt-oss-120b'
+		},
 		tokenParam: 'max_tokens'
 	},
 	openai: {
 		url: 'https://api.openai.com/v1/chat/completions',
-		model: 'gpt-5.4-mini',
+		models: {
+			default: 'gpt-5.4-mini',
+			fast: 'gpt-5.4-mini',
+			reasoning: 'o3-mini'
+		},
 		tokenParam: 'max_completion_tokens'
 	},
 	gemini: {
 		url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-		model: 'gemini-3.6-flash',
+		models: {
+			default: 'gemini-3.7-flash',
+			fast: 'gemini-3.7-flash',
+			reasoning: 'gemini-2.5-pro'
+		},
 		tokenParam: 'max_tokens'
 	},
 	mistral: {
 		url: 'https://api.mistral.ai/v1/chat/completions',
-		model: 'mistral-small-latest',
+		models: {
+			default: 'mistral-small-latest',
+			fast: 'mistral-small-latest',
+			large: 'mistral-large-latest'
+		},
 		tokenParam: 'max_tokens'
 	}
 });

@@ -22,6 +22,8 @@
 			"#tempo/module": [ "../src/module/module.index.ts" ],
 			"#tempo/engine/*.js": [ "../src/engine/*.ts" ],
 			"#tempo/module/*.js": [ "../src/module/*.ts" ],
+			"#tempo/config/*.js": [ "../src/config/*.ts" ],
+			"#tempo/config": [ "../src/config/config.index.ts" ],
 			"#tempo/plugin/extend/*.js": [ "../src/plugin/extend/*.ts" ],
 			"#tempo/plugin/term/*.js": [ "../src/plugin/term/*.ts" ],
 			"#tempo/term/*": [ "../src/plugin/term/term.*.ts" ],

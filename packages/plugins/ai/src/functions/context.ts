@@ -1,4 +1,3 @@
-import { Tempo } from '@magmacomputing/tempo';
 import { secure } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
@@ -11,26 +10,25 @@ import {
 	writeMultiTierCache,
 } from '../core/cache.js';
 import {
-	assertNoReservedProviderId,
+	getAvailableProviders,
+	parseJsonPayload,
+	resolveFullContext,
+	validateMinConfidence,
+	executeBatch,
 	fetchFromProvider,
 	resolveProviderTtl,
 } from '../core/support.js';
-import { logDebug, warnDebug, attachCustomInspect, maskPii } from '../core/logger.js';
-import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX } from '../core/patterns.js';
+import { logDebug, attachCustomInspect, maskPii } from '../core/logger.js';
 import type { TempoContext, AiContextOptions } from '../types/index.js';
 
 async function contextSingleInput(text: string, options?: AiContextOptions): Promise<TempoContext> {
 	const isDebug = options?.debug ?? _state.config.debug ?? false;
 	const normalizedStr = normalizeCacheInput(text);
 
-	const { force, debug, mode: aiMode, providers, minConfidence, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, hedgeDelay } = options || {};
-	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
+	const { force, mode: aiMode, minConfidence, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, hedgeDelay } = options || {};
+	const effectiveMinConfidence = validateMinConfidence(minConfidence, 'contextAI');
 
-	const resolvedOptions = Tempo.options;
-	const tz = String(options?.timeZone || resolvedOptions.timeZone);
-	const cal = String(options?.calendar || resolvedOptions.calendar);
-	const loc = String(Array.isArray(options?.locale) ? options?.locale[0] : (options?.locale || resolvedOptions.locale));
-	const sph = String(options?.sphere || resolvedOptions.sphere || 'north');
+	const { tz, loc, cal, sph } = resolveFullContext(options);
 
 	const cacheKey = getNamespacedCacheKey('context', `${normalizedStr}::${tz}::${loc}::${cal}::${sph}`);
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
@@ -81,12 +79,7 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 
 	const contextString = `Workstation baseline context - Timezone: ${tz}, Locale: ${loc}, Calendar: ${cal}, Hemisphere: ${sph}. Use these baseline settings as the default if the input text contains no geographic or regional clues.`;
 
-	const availableProviders = providers || _state.config.providers;
-	if (!availableProviders || availableProviders.length === 0)
-		throw new TempoAiError('No AI providers configured. Please call initAI().', 400);
-
-	assertNoReservedProviderId(availableProviders);
-
+	const availableProviders = getAvailableProviders(options);
 	const mode = aiMode || _state.config.mode || AiMode.Fallback;
 	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
@@ -118,13 +111,7 @@ Do not include markdown blocks or text outside the JSON.`;
 				callTimeout,
 				systemPrompt,
 			);
-			const cleanContent = rawContent.replace(RE_MARKDOWN_JSON_PREFIX, '').replace(RE_MARKDOWN_JSON_SUFFIX, '');
-			let parsedData: any;
-			try {
-				parsedData = JSON.parse(cleanContent);
-			} catch {
-				throw new TempoAiError(`Provider ${providerId} returned invalid JSON payload.`, 422);
-			}
+			const parsedData = parseJsonPayload(rawContent, providerId);
 
 			const timeZone = typeof parsedData?.timeZone === 'string' ? parsedData.timeZone.trim() : '';
 			const locale = typeof parsedData?.locale === 'string' ? parsedData.locale.trim() : '';
@@ -148,14 +135,14 @@ Do not include markdown blocks or text outside the JSON.`;
 				rateLimits,
 				confidence,
 				consensusKey: `${timeZone}::${locale}::${calendar}::${sphere}`,
-			}
+			};
 		},
 		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:context', hedgeDelay: effectiveHedgeDelay },
 	);
 
 	_state.limits = winningCandidate.rateLimits ?? null;
 
-	const { data: parsedData, providerId, rateLimits } = winningCandidate;
+	const { data: parsedData, providerId } = winningCandidate;
 	const confidence = typeof winningCandidate.confidence === 'number' ? winningCandidate.confidence : 1.0;
 	const reasoning = parsedData.reasoning;
 
@@ -177,7 +164,7 @@ Do not include markdown blocks or text outside the JSON.`;
 		confidence,
 		provider: providerId,
 		reasoning,
-	}
+	};
 
 	const resolvedTtl = resolveProviderTtl(providerId, availableProviders, ttl, 86_400_000);
 	const cacheVal = JSON.stringify({
@@ -234,13 +221,8 @@ export async function contextAI(
 	input: string | string[],
 	options?: AiContextOptions,
 ): Promise<TempoContext | (TempoContext | TempoAiError)[]> {
-	if (Array.isArray(input)) {
-		if (options?.softErrors) {
-			const settled = await Promise.allSettled(input.map(str => contextSingleInput(str, options)));
-			return settled.map(s => s.status === 'fulfilled' ? s.value : (s.reason as TempoAiError));
-		}
-		return Promise.all(input.map(str => contextSingleInput(str, options)));
-	}
+	if (Array.isArray(input))
+		return executeBatch(input, str => contextSingleInput(str, options), options);
 
 	return contextSingleInput(input, options);
 }

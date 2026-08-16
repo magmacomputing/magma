@@ -4,9 +4,18 @@ import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import { normalizeCacheInput } from '../core/cache.js';
-import { attachAiMeta, fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
+import {
+	attachAiMeta,
+	fetchFromProvider,
+	getAvailableProviders,
+	parseJsonPayload,
+	resolveFullContext,
+	validateMinConfidence,
+	resolveProviderTtl,
+	executeBatch,
+} from '../core/support.js';
 import { logDebug, warnDebug } from '../core/logger.js';
-import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX, RE_ISO_DATE_PREFIX, RE_ISO_Z_SUFFIX } from '../core/patterns.js';
+import { RE_ISO_DATE_PREFIX, RE_ISO_Z_SUFFIX } from '../core/patterns.js';
 import type { AiParseOptions } from '../types/index.js';
 
 async function parseSingleInput(str: string, options?: AiParseOptions): Promise<Tempo> {
@@ -34,26 +43,14 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 		...coreOptions
 	} = options || {};
 
-	let tz: string, cal: string, loc: string, sph: string, anchorStr: string;
-	if (Tempo.isTempo(options?.anchor)) {
-		tz = String(options!.timeZone || options!.anchor.tz);
-		cal = String(options!.calendar || options!.anchor.cal);
-		const rawLoc = options!.locale || options!.anchor.locale;
-		loc = String(Array.isArray(rawLoc) ? rawLoc[0] : rawLoc);
-		sph = String(options!.sphere || options!.anchor.sphere || 'north');
-		anchorStr = options!.anchor.toString();
-	} else {
-		const resolvedOptions = Tempo.options;
-		tz = String(options?.timeZone || resolvedOptions.timeZone);
-		cal = String(options?.calendar || resolvedOptions.calendar);
-		const rawLoc = options?.locale || resolvedOptions.locale;
-		loc = String(Array.isArray(rawLoc) ? rawLoc[0] : rawLoc);
-		sph = String(options?.sphere || resolvedOptions.sphere || 'north');
-		anchorStr = String(options?.anchor || new Tempo().toString());
-	}
+	const fallbackTempo = Tempo.isTempo(anchor) ? anchor : null;
+	const { tz, cal, loc, sph, contextConfig } = resolveFullContext(options, fallbackTempo);
+	const tempoConfig = { ...coreOptions, ...contextConfig, sphere: sph as any } as any;
 
-	const tempoConfig = { ...coreOptions, timeZone: tz, calendar: cal, locale: loc, sphere: sph as any };
-	const anchorTempo = new Tempo(anchorStr, tempoConfig);
+	const anchorTempo = Tempo.isTempo(anchor)
+		? (anchor.tz === tz ? anchor : anchor.set({ timeZone: tz }))
+		: new Tempo(anchor !== undefined ? (anchor as any) : undefined, tempoConfig);
+
 	const cacheSalt = anchorTempo.format('{yyyy}-{mm}-{dd}');
 	const cacheKey = `${normalizedStr}::${cacheSalt}::${tz}::${cal}::${loc}::${sph}`;
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
@@ -116,14 +113,9 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
 	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}.`;
 
-	const availableProviders = providers || _state.config.providers;
-	if (!availableProviders || availableProviders.length === 0)
-		throw new TempoAiError('No AI providers configured. Please call initAI().', 400);
-
-	assertNoReservedProviderId(availableProviders);
-
+	const availableProviders = getAvailableProviders(options);
 	const mode = aiMode || _state.config.mode || AiMode.Fallback;
-	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
+	const effectiveMinConfidence = validateMinConfidence(minConfidence, 'parseAI');
 	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
 	const winningCandidate = await executeWithMode<any>(
@@ -131,13 +123,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 		availableProviders,
 		async (provider, signal) => {
 			const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug, signal, callTimeout);
-			const cleanContent = rawContent.replace(RE_MARKDOWN_JSON_PREFIX, '').replace(RE_MARKDOWN_JSON_SUFFIX, '');
-			let parsedData: any;
-			try {
-				parsedData = JSON.parse(cleanContent);
-			} catch {
-				throw new TempoAiError(`Provider ${providerId} returned invalid JSON payload.`, 422);
-			}
+			const parsedData = parseJsonPayload(rawContent, providerId);
 			const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : (parsedData?.iso === 'INVALID' ? 0.0 : 1.0);
 
 			return {
@@ -181,15 +167,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
 	const parsedIso = `${rawIso.replace(RE_ISO_Z_SUFFIX, '')}[${tz}]`;
 
-	// Determine TTL hierarchy: options.ttl > provider.ttl > global config.ttl > 3600000 (1 hour)
-	// In Consensus mode, providerId is the synthetic sentinel 'consensus' (not a real provider id),
-	// so use the minimum TTL across all participating providers as the conservative policy.
-	const providerTtl = providerId === AiMode.Consensus
-		? (availableProviders)
-			.reduce<number | undefined>((min: number | undefined, p: any) =>
-				p.ttl === undefined ? min : (min === undefined ? p.ttl : Math.min(min, p.ttl)), undefined)
-		: (availableProviders).find((p: any) => p.id === providerId)?.ttl;
-	const resolvedTtl = ttl ?? providerTtl ?? _state.config.ttl ?? 3_600_000;
+	const resolvedTtl = resolveProviderTtl(providerId, availableProviders, ttl, 3_600_000);
 
 	if (aiCacheOption !== false) {
 		if (adapter) {
@@ -244,13 +222,8 @@ export async function parseAI(
 	input: string | string[],
 	options?: AiParseOptions
 ): Promise<Tempo | (Tempo | TempoAiError)[]> {
-	if (Array.isArray(input)) {
-		if (options?.softErrors) {
-			const settled = await Promise.allSettled(input.map(str => parseSingleInput(str, options)));
-			return settled.map(s => s.status === 'fulfilled' ? s.value : (s.reason as TempoAiError));
-		}
-		return Promise.all(input.map(str => parseSingleInput(str, options)));
-	}
+	if (Array.isArray(input))
+		return executeBatch(input, str => parseSingleInput(str, options), options);
 
 	return parseSingleInput(input, options);
 }

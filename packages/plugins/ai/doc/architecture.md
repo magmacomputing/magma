@@ -2,9 +2,11 @@
 
 The `@magmacomputing/tempo-plugin-ai` plugin is designed to be highly flexible, supporting both direct Bring Your Own Key (BYOK) integrations for backend systems, and Proxied integrations for frontend clients.
 
-## Bring Your Own Key (BYOK)
+## Bring Your Own Key (BYOK) & Zero-Config Discovery
 
-For Node.js backends and Edge Workers, the simplest approach is to supply your raw API keys directly to the `initAI` function. 
+For Node.js, Deno, and Bun backends, `@magmacomputing/tempo-plugin-ai` supports **Zero-Config Auto-Discovery**. If standard environment variables (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`) are present, calling `initAI()` is optional—the plugin will automatically discover credentials and wire up provider defaults lazily on first function call.
+
+Alternatively, you can supply your API keys and execution options explicitly via `initAI`:
 
 ```typescript
 import { initAI } from '@magmacomputing/tempo-plugin-ai';

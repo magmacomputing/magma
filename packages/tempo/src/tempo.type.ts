@@ -353,7 +353,7 @@ export namespace Internal {
 		periods?: Period | RegistryOption<Logic>;
 		ignores?: Ignore;
 	};
-		/** plugins to be automatically extended */							plugins: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
+		/** plugins to be automatically extended or plugin configurations */plugins?: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[] | Record<string, any>;
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
@@ -450,7 +450,7 @@ export namespace Internal {
 		/** @deprecated Provide configuration inside `registry: { locales: ... }` */locales?: Record<string, Record<string, string | Function>>;
 		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator> };
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
-		/** plugins to be automatically extended via Tempo.extend() */plugins?: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
+		/** plugins to be automatically extended via Tempo.extend() or plugin-specific configuration dictionary */plugins?: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[] | Record<string, any>;
 	}
 
 	export interface LicenseScope {

@@ -15,20 +15,38 @@ Raw LLM API keys must **never** be exposed in client-side browser bundles or sto
 :::
 
 ## Installation & Quickstart
-
+ 
 ```bash
 npm install @magmacomputing/tempo-plugin-ai
 ```
 
-```typescript
-import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
+### 1. Zero-Config Mode (Instant Execution)
+If you have standard provider keys in your environment (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`), simply call any AI function directly with zero boilerplate:
 
-// Initialize provider farm (Node/SSR backend)
+```typescript
+import { parseAI } from '@magmacomputing/tempo-plugin-ai';
+
+// Automatically discovers GROQ_API_KEY / OPENAI_API_KEY from the environment
+const dt = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
+console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
+```
+
+### 2. Explicit Provider Farm Configuration
+For custom models, custom SLAs, or multi-provider execution strategies:
+
+```typescript
+import { parseAI, initAI, AiMode } from '@magmacomputing/tempo-plugin-ai';
+
+// Explicitly configure provider farm & fallback strategy
 await initAI({
-  providers: [{ id: 'groq', key: process.env.GROQ_API_KEY }]
+  mode: AiMode.Fallback,
+  providers: [
+    { id: 'groq', key: process.env.GROQ_API_KEY },
+    { id: 'openai', key: process.env.OPENAI_API_KEY, model: 'gpt-4o' }
+  ],
+  timeout: 5000
 });
 
-// Parse natural language temporal expressions
 const dt = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
 console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
 ```

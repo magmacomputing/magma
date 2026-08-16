@@ -331,9 +331,9 @@ describe('AI Extract Plugin (extractAI)', () => {
 	});
 
 	it('should throw TempoAiError(400) when no providers are configured', async () => {
-		resetAI();
+		await initAI({ remoteConfigUrl: false, providers: [] });
 		await expect(extractAI('Meeting tomorrow at 10am'))
-			.rejects.toMatchObject({ message: 'No AI providers configured. Please call initAI().', status: 400 });
+			.rejects.toMatchObject({ message: expect.stringMatching(/No AI providers configured/i), status: 400 });
 	});
 
 	it('should support multi-provider race execution mode', async () => {

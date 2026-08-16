@@ -411,6 +411,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				}
 				break;
 
+			case 'plugins':
+				if (isObject(arg.value) && !Array.isArray(arg.value) && !('name' in arg.value) && !('key' in arg.value))
+					setProperty(state.config, 'plugins', arg.value);
+				break;
+
 			default:
 				setProperty(state.config, optKey, arg.value);
 				break;

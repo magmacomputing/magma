@@ -1,3 +1,4 @@
+import { parseJSONC } from '@magmacomputing/tempo/library';
 import { DEFAULT_PROVIDERS } from './config.js';
 import type { AiProvider } from '../types/index.js';
 
@@ -29,6 +30,7 @@ function isValidManifestUrl(urlStr: string): boolean {
 
 /**
  * Fetches the remote AI provider manifest. Remote defaults are loaded during initialization.
+ * Supports both standard JSON and JSONC (JSON with comments & trailing commas).
  * Fail-open: if network fails or times out, returns null and allows fallback to local DEFAULT_PROVIDERS.
  */
 export async function loadRemoteManifest(
@@ -63,7 +65,7 @@ export async function loadRemoteManifest(
 
 			const response = await fetch(targetUrl, {
 				signal: controller.signal,
-				headers: { Accept: 'application/json' },
+				headers: { Accept: 'application/json, text/plain, */*' },
 				redirect: 'error',
 			});
 
@@ -75,7 +77,8 @@ export async function loadRemoteManifest(
 				return null;
 			}
 
-			const data = await response.json();
+			const rawText = await response.text();
+			const data = parseJSONC(rawText);
 			if (data && typeof data === 'object' && data.providers && typeof data.providers === 'object') {
 				const manifest = data.providers as Record<string, Partial<AiProvider>>;
 				_cachedManifestMap.set(targetUrl, manifest);

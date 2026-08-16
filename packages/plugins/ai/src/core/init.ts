@@ -3,24 +3,70 @@ import { Tempo } from '@magmacomputing/tempo';
 import { getResolvedProviderDefaults, loadRemoteManifest, resetManifestCache } from './manifest.js';
 import { assertNoReservedProviderId } from './support.js';
 import { warnDebug } from './logger.js';
+import {
+	getActiveTempoConfigAi,
+	resolveAutoDiscoveredConfig,
+	scanWellKnownEnvProviders,
+	interpolateEnv,
+	getRuntimeEnv,
+	WELL_KNOWN_ENV_MAP,
+} from './discovery.js';
 import type { AiConfig, AiRateLimits, AiProvider } from '../types/index.js';
+
+let _config: AiConfig = {};
 
 /**
  * Internal singleton state container for the AI plugin.
+ * Automatically resolves configuration from Tempo runtime on first access.
  * @internal
  */
-export const _state: {
-  config: AiConfig;
-  rawProviders?: AiProvider[] | undefined;
-  limits: AiRateLimits | null;
-  providerLimits: Map<string, AiRateLimits>;
-  revision: number;
-} = {
-  config: {},
-  rawProviders: undefined,
-  limits: null,
-  providerLimits: new Map(),
-  revision: 0,
+export const _state = {
+	get config(): AiConfig {
+		if (_state.rawProviders === undefined && (!_config.providers || _config.providers.length === 0)) {
+			const tempoAiConfig = getActiveTempoConfigAi();
+			if (tempoAiConfig) {
+				initAI(tempoAiConfig);
+			} else {
+				const envProviders = scanWellKnownEnvProviders();
+				if (envProviders.length > 0)
+					initAI({ providers: envProviders });
+			}
+		}
+		return _config;
+	},
+	set config(val: AiConfig) {
+		_config = val;
+	},
+	rawProviders: undefined as AiProvider[] | undefined,
+	limits: null as AiRateLimits | null,
+	providerLimits: new Map<string, AiRateLimits>(),
+	revision: 0,
+};
+
+/**
+ * Ensures AI configuration is automatically initialized from Tempo.config,
+ * filesystem tempo.config.*, or runtime environment variables if providers are not yet configured.
+ */
+export async function ensureAiInitialized(): Promise<void> {
+	if (_state.config.providers && _state.config.providers.length > 0)
+		return;
+
+	const discovered = await resolveAutoDiscoveredConfig();
+	if (discovered.providers && discovered.providers.length > 0) {
+		await initAI(discovered);
+	}
+}
+
+function resolveProviderApiKey(id: string, explicitKey?: string, env: Record<string, string | undefined> = getRuntimeEnv()): string | undefined {
+	if (explicitKey) return explicitKey;
+	const envVars = WELL_KNOWN_ENV_MAP[id.toLowerCase()];
+	if (!envVars) return undefined;
+	for (const envVar of envVars) {
+		const val = env[envVar];
+		if (val && typeof val === 'string' && val.trim().length > 0)
+			return val.trim();
+	}
+	return undefined;
 }
 
 /**
@@ -28,7 +74,7 @@ export const _state: {
  * Configures AI provider credentials, models, timeouts, caching options,
  * and asynchronously resolves provider defaults against remote manifests.
  *
- * @param config - Global AI plugin configuration object
+ * @param config - Optional AI plugin configuration object (inherits from Tempo.config.plugins.ai or Tempo.config.ai if omitted)
  * @returns A Promise that resolves once initial configuration and background manifest synchronization is scheduled
  * @example
  * ```ts
@@ -38,66 +84,88 @@ export const _state: {
  * });
  * ```
  */
-export function initAI(config: AiConfig): Promise<void> {
-  if (config.providers)
-    assertNoReservedProviderId(config.providers);
+export function initAI(config?: AiConfig): Promise<void> {
+	const tempoAiConfig = getActiveTempoConfigAi();
+	const env = getRuntimeEnv();
 
-  if (config.providers)
-    _state.rawProviders = config.providers;
+	const hasExplicitProviders = config?.providers !== undefined || tempoAiConfig?.providers !== undefined;
 
-  const currentRevision = ++_state.revision;
-  const remoteUrl = config.remoteConfigUrl ?? _state.config.remoteConfigUrl;
-  const callerProviders = config.providers ?? _state.rawProviders;
+	const mergedRaw: AiConfig = {
+		...(tempoAiConfig || {}),
+		...(config || {}),
+	};
 
-  const resolveSyncProviders = (providers?: AiProvider[]) => {
-    if (!providers) return _state.config.providers;
-    return providers.map(p => {
-      const normalizedId = p.id?.toLowerCase() ?? '';
-      const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
-      return {
-        ...defaults,
-        ...p
-      } as AiProvider;
-    });
-  }
+	const mergedConfig = interpolateEnv(mergedRaw, env);
 
-  // Synchronously update _state.config for immediate availability
-  _state.config = {
-    ..._state.config,
-    ...config,
-    providers: resolveSyncProviders(callerProviders) || []
-  };
+	if (!hasExplicitProviders && (!mergedConfig.providers || mergedConfig.providers.length === 0)) {
+		const envProviders = scanWellKnownEnvProviders(env);
+		if (envProviders.length > 0)
+			mergedConfig.providers = envProviders;
+	}
 
-  if (config.cache) {
-    Tempo.init({ cache: config.cache, silent: true });
-  }
+	if (mergedConfig.providers)
+		assertNoReservedProviderId(mergedConfig.providers);
+
+	if (mergedConfig.providers !== undefined)
+		_state.rawProviders = mergedConfig.providers;
+
+	const currentRevision = ++_state.revision;
+	const remoteUrl = mergedConfig.remoteConfigUrl ?? _state.config.remoteConfigUrl;
+	const callerProviders = mergedConfig.providers ?? _state.rawProviders;
+
+	const resolveSyncProviders = (providers?: AiProvider[]) => {
+		if (!providers) return _state.config.providers;
+		return providers.map(p => {
+			const normalizedId = p.id?.toLowerCase() ?? '';
+			const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, mergedConfig.debug ?? _state.config.debug);
+			const resolvedKey = (p.key && p.key.trim().length > 0) ? p.key : resolveProviderApiKey(normalizedId, undefined, env);
+			return {
+				...defaults,
+				...p,
+				...(resolvedKey ? { key: resolvedKey } : {}),
+			} as AiProvider;
+		});
+	};
+
+	// Synchronously update _state.config for immediate availability
+	_state.config = {
+		..._state.config,
+		...mergedConfig,
+		providers: resolveSyncProviders(callerProviders) || [],
+	};
+
+	if (mergedConfig.cache) {
+		Tempo.init({ cache: mergedConfig.cache, silent: true });
+	}
 
   return (async () => {
     if (remoteUrl !== false) {
       try {
-        await loadRemoteManifest(remoteUrl, undefined, config.debug ?? _state.config.debug);
+        await loadRemoteManifest(remoteUrl, undefined, mergedConfig.debug ?? _state.config.debug);
       } catch { }
     }
 
     if (_state.revision !== currentRevision) return;
 
-    const fetchDefaults = config.fetchDefaults ?? _state.config.fetchDefaults;
+    const fetchDefaults = mergedConfig.fetchDefaults ?? _state.config.fetchDefaults;
     const currentProviders = callerProviders;
 
     if (fetchDefaults && currentProviders) {
       const asyncProviders = await Promise.all(currentProviders.map(async p => {
         const normalizedId = p.id?.toLowerCase() ?? '';
-        const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
+        const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, mergedConfig.debug ?? _state.config.debug);
+        const resolvedKey = p.key ?? resolveProviderApiKey(normalizedId);
         let hookOptions: Partial<AiProvider> | null = null;
         try {
           hookOptions = await fetchDefaults(normalizedId);
         } catch (err: any) {
-          warnDebug('tempo-plugin-ai:init', `fetchDefaults hook failed for provider '${normalizedId}'`, err, { debug: config.debug ?? _state.config.debug });
+          warnDebug('tempo-plugin-ai:init', `fetchDefaults hook failed for provider '${normalizedId}'`, err, { debug: mergedConfig.debug ?? _state.config.debug });
         }
         return {
           ...defaults,
           ...(hookOptions ?? {}),
           ...p,
+          ...(resolvedKey ? { key: resolvedKey } : {})
         } as AiProvider;
       }));
       if (_state.revision === currentRevision)

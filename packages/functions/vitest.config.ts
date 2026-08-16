@@ -8,7 +8,6 @@ const polyfill = resolve(__dirname, './test/setup.ts');
 
 export default defineConfig({
 	esbuild: false,
-	oxc: false,
 	plugins: [
 		swc.vite({
 			jsc: {

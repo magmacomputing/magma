@@ -391,3 +391,87 @@ function typeify(json: any, sentinel?: Function) {
 			return Reflect.construct(cls, [value])								// create new Class instance
 	}
 }
+
+/**
+ * Strips single-line (`//`) and multi-line (`/* ... *\/`) comments and trailing commas from a JSONC string.
+ * Preserves URLs and slashes within quoted strings.
+ * 
+ * @param text - The JSONC formatted string to strip
+ * @returns Cleaned JSON string ready for `JSON.parse`
+ * @example
+ * ```ts
+ * const cleanJson = stripJSONC('{\n  // comment\n  "key": "value",\n}');
+ * ```
+ */
+export function stripJSONC(text: string): string {
+	if (!isString(text))
+		throw new TypeError('Expected string input to stripJSONC');
+
+	let inString = false;
+	let stringChar = '';
+	let escaped = false;
+	let result = '';
+	const len = text.length;
+
+	for (let i = 0; i < len; i++) {
+		const char = text[i];
+		const next = text[i + 1];
+
+		if (inString) {
+			result += char;
+			if (escaped)
+				escaped = false;
+			else if (char === '\\')
+				escaped = true;
+			else if (char === stringChar)
+				inString = false;
+			continue;
+		}
+
+		if (char === '"' || char === "'") {
+			inString = true;
+			stringChar = char;
+			result += char;
+			continue;
+		}
+
+		// Single-line comment: // ...
+		if (char === '/' && next === '/') {
+			i += 2;
+			while (i < len && text[i] !== '\n' && text[i] !== '\r')
+				i++;
+			if (i < len) result += text[i];
+			continue;
+		}
+
+		// Multi-line comment: /* ... */
+		if (char === '/' && next === '*') {
+			i += 2;
+			while (i < len && !(text[i] === '*' && text[i + 1] === '/'))
+				i++;
+			i++; // skip closing '/'
+			continue;
+		}
+
+		result += char;
+	}
+
+	// Remove trailing commas before } or ]
+	return result.replace(/,(\s*[}\]])/g, '$1');
+}
+
+/**
+ * Zero-dependency parser for JSON and JSONC (JSON with comments & trailing commas).
+ * 
+ * @param text - The JSON or JSONC string to parse
+ * @param reviver - Optional transformation function applied to parsed key-value pairs
+ * @returns The parsed JavaScript object or value
+ * @example
+ * ```ts
+ * const config = parseJSONC<{ mode: string }>('{\n  // Mode setting\n  "mode": "fallback",\n}');
+ * ```
+ */
+export function parseJSONC<T = any>(text: string, reviver?: (this: any, key: string, value: any) => any): T {
+	return JSON.parse(stripJSONC(text), reviver);
+}
+

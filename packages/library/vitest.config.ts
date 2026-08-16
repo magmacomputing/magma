@@ -8,7 +8,6 @@ const isDist = process.env.TEST_DIST === 'true';
 
 export default defineConfig({
   esbuild: false,
-  oxc: false,
   plugins: [
     swc.vite({
       jsc: {

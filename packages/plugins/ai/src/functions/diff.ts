@@ -11,13 +11,15 @@ import {
 	writeMultiTierCache,
 } from '../core/cache.js';
 import {
-	assertNoReservedProviderId,
+	getAvailableProviders,
+	parseJsonPayload,
+	validateMinConfidence,
+	executeBatch,
 	fetchFromProvider,
 	resolveProviderTtl,
 	resolveTzAndLocale,
 } from '../core/support.js';
-import { logDebug, warnDebug, attachCustomInspect, maskPii } from '../core/logger.js';
-import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX } from '../core/patterns.js';
+import { logDebug, attachCustomInspect, maskPii } from '../core/logger.js';
 import type { TempoAiDiffResult, AiDiffOptions, DiffPair } from '../types/index.js';
 
 /**
@@ -87,13 +89,13 @@ async function diffSingleInput(
 	const promptText = prompt?.trim() || 'Provide a natural summary of the temporal difference between these two dates.';
 	const normalizedPrompt = normalizeCacheInput(promptText);
 
-	const { force, mode: aiMode, providers, minConfidence, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, hedgeDelay } = options || {};
+	const { force, mode: aiMode, minConfidence, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, hedgeDelay } = options || {};
 
 	const sortedHolidays = holidays ? [...holidays].sort().join(',') : '';
 	const cacheKey = getNamespacedCacheKey('diff', `${startTempo.epoch.ms}::${endTempo.epoch.ms}::${normalizedPrompt}::${tz}::${loc}::${region}::${sortedHolidays}`);
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
-	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
+	const effectiveMinConfidence = validateMinConfidence(minConfidence, 'diffAI');
 	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
 	const cachedVal = await readMultiTierCache(cacheKey, {
@@ -141,12 +143,7 @@ async function diffSingleInput(
 		}
 	}
 
-	const availableProviders = providers || _state.config.providers;
-	if (!availableProviders || availableProviders.length === 0)
-		throw new TempoAiError('No AI providers configured. Please call initAI().', 400);
-
-	assertNoReservedProviderId(availableProviders);
-
+	const availableProviders = getAvailableProviders(options);
 	const mode = aiMode || _state.config.mode || AiMode.Fallback;
 
 	const contextString = `Grounding Context:
@@ -191,13 +188,7 @@ Do not include markdown blocks or text outside the JSON.`;
 				callTimeout,
 				systemPrompt,
 			);
-			const cleanContent = rawContent.replace(RE_MARKDOWN_JSON_PREFIX, '').replace(RE_MARKDOWN_JSON_SUFFIX, '');
-			let parsedData: any;
-			try {
-				parsedData = JSON.parse(cleanContent);
-			} catch {
-				throw new TempoAiError(`Provider ${providerId} returned invalid JSON payload.`, 422);
-			}
+			const parsedData = parseJsonPayload(rawContent, providerId);
 
 			const formatted = typeof parsedData?.formatted === 'string' ? parsedData.formatted.trim() : '';
 			if (!formatted)
@@ -221,7 +212,7 @@ Do not include markdown blocks or text outside the JSON.`;
 				rateLimits,
 				confidence,
 				consensusKey: `${formatted}::${businessDays}`,
-			}
+			};
 		},
 		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:diff', hedgeDelay: effectiveHedgeDelay },
 	);
@@ -243,7 +234,7 @@ Do not include markdown blocks or text outside the JSON.`;
 		confidence,
 		provider: providerId,
 		reasoning: parsedData.reasoning,
-	}
+	};
 
 	const resolvedTtl = resolveProviderTtl(providerId, availableProviders, ttl, 86_400_000);
 	const cacheVal = JSON.stringify({
@@ -311,19 +302,10 @@ export async function diffAI(
 ): Promise<TempoAiDiffResult | (TempoAiDiffResult | TempoAiError)[]> {
 	if (Array.isArray(startOrPairs)) {
 		const resolvedOptions = (endOrOptions as AiDiffOptions) || {};
-		if (resolvedOptions.softErrors) {
-			const settled = await Promise.allSettled(
-				startOrPairs.map(async pair => diffSingleInput(pair?.start, pair?.end, pair?.prompt, resolvedOptions))
-			);
-			return settled.map(s => {
-				if (s.status === 'fulfilled') return s.value;
-				return s.reason instanceof TempoAiError
-					? s.reason
-					: new TempoAiError(s.reason?.message || String(s.reason), 500);
-			});
-		}
-		return Promise.all(
-			startOrPairs.map(async pair => diffSingleInput(pair?.start, pair?.end, pair?.prompt, resolvedOptions))
+		return executeBatch(
+			startOrPairs,
+			pair => diffSingleInput(pair?.start, pair?.end, pair?.prompt, resolvedOptions),
+			resolvedOptions,
 		);
 	}
 

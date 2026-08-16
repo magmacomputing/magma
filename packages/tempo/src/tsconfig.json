@@ -25,6 +25,8 @@
       "#tempo/mutate": [ "./module/module.mutate.ts" ],
       "#tempo/engine/*.js": [ "./engine/*.ts" ],
       "#tempo/module/*.js": [ "./module/*.ts" ],
+      "#tempo/config/*.js": [ "./config/*.ts" ],
+      "#tempo/config": [ "./config/config.index.ts" ],
       "#tempo/plugin/extend/*.js": [ "./plugin/extend/*.ts" ],
       "#tempo/plugin/term/*.js": [ "./plugin/term/*.ts" ],
       "#tempo/plugin/plugin.*.js": [ "./plugin/plugin.*.ts" ],

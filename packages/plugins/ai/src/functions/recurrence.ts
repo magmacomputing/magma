@@ -4,9 +4,15 @@ import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
-import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
+import {
+	fetchFromProvider,
+	getAvailableProviders,
+	parseJsonPayload,
+	resolveFullContext,
+	validateMinConfidence,
+} from '../core/support.js';
 import { logDebug, attachCustomInspect, maskPii } from '../core/logger.js';
-import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX, RE_RRULE_PREFIX } from '../core/patterns.js';
+import { RE_RRULE_PREFIX } from '../core/patterns.js';
 import type { TempoRecurrenceOptions, TempoRecurrenceResult } from '../types/index.js';
 
 function expandOccurrences(rrule: string, anchor: Tempo, options?: { count?: number; after?: any; before?: any }): Tempo[] {
@@ -99,8 +105,8 @@ function createRecurrenceResult(
 		[Symbol.iterator]: () => createIterator(),
 		confidence,
 		provider: providerId,
-		reasoning
-	}
+		reasoning,
+	};
 
 	attachCustomInspect(result, (obj, isProd) => ({
 		rrule: obj.rrule,
@@ -128,15 +134,10 @@ export async function recurrenceAI(
 	const isDebug = options?.debug ?? _state.config.debug ?? false;
 	const isRRule = isRRuleString(input);
 
-	// Resolve full Tempo context hierarchy
-	const tz = options?.timeZone || (options?.anchor instanceof Tempo ? options.anchor.tz : undefined) || Tempo.options.timeZone;
-	const cal = options?.calendar || (options?.anchor instanceof Tempo ? options.anchor.cal : undefined) || Tempo.options.calendar;
-	const loc = options?.locale || (options?.anchor instanceof Tempo ? options.anchor.locale : undefined) || Tempo.options.locale;
-	const scalarLoc = String(Array.isArray(loc) ? loc[0] : loc);
-	const sph = options?.sphere || (options?.anchor instanceof Tempo ? options.anchor.sphere : undefined) || Tempo.options.sphere;
-
-	const contextConfig = { timeZone: tz, calendar: cal, locale: loc, sphere: sph };
-	const anchorTempo = new Tempo(options?.anchor as any, contextConfig);
+	const { tz, cal, loc, sph, contextConfig } = resolveFullContext(options, Tempo.isTempo(options?.anchor) ? options.anchor : null);
+	const anchorTempo = Tempo.isTempo(options?.anchor)
+		? (options.anchor.tz === tz ? options.anchor : options.anchor.set({ timeZone: tz }))
+		: new Tempo(options?.anchor as any, contextConfig);
 	const defaultBatchSize = options?.count ?? 5;
 
 	if (isRRule) {
@@ -155,21 +156,17 @@ export async function recurrenceAI(
 		);
 	}
 
-	const availableProviders = options?.providers || _state.config.providers;
-	if (!availableProviders || availableProviders.length === 0)
-		throw new TempoAiError('No AI providers configured. Please call initAI().', 400);
-
-	assertNoReservedProviderId(availableProviders);
+	const availableProviders = getAvailableProviders(options);
 
 	const mode = options?.mode || _state.config.mode || AiMode.Fallback;
-	const effectiveMinConfidence = options?.minConfidence ?? _state.config.minConfidence;
+	const effectiveMinConfidence = validateMinConfidence(options?.minConfidence, 'recurrenceAI');
 	const callTimeout = options?.timeout;
-	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${scalarLoc}, Hemisphere: ${sph}.`;
+	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}.`;
 
 	const systemPrompt = `You are a calendar recurrence compiler. Read the user's natural language schedule and context. Return ONLY a valid JSON object matching this exact schema:
 {
   "rrule": "Standard RFC 5545 RRULE string without RRULE: prefix (e.g., 'FREQ=WEEKLY;BYDAY=TU;BYHOUR=15')",
-  "summary": "Clear, concise human-friendly description localized to locale '${scalarLoc}' (e.g., 'Every Tuesday at 15:00')",
+  "summary": "Clear, concise human-friendly description localized to locale '${loc}' (e.g., 'Every Tuesday at 15:00')",
   "reasoning": "Step-by-step calendar math explanation",
   "confidence": 0.95
 }
@@ -192,8 +189,7 @@ Do not include markdown blocks or text outside the JSON.`;
 				callTimeout,
 				systemPrompt,
 			);
-			const cleanContent = rawContent.replace(RE_MARKDOWN_JSON_PREFIX, '').replace(RE_MARKDOWN_JSON_SUFFIX, '');
-			const parsedData = JSON.parse(cleanContent);
+			const parsedData = parseJsonPayload(rawContent, providerId);
 			const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : 0.9;
 
 			return {

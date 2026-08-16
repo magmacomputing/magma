@@ -10,7 +10,10 @@ import {
 	writeMultiTierCache,
 } from '../core/cache.js';
 import {
-	assertNoReservedProviderId,
+	getAvailableProviders,
+	parseJsonPayload,
+	validateMinConfidence,
+	executeBatch,
 	fetchFromProvider,
 	resolveProviderTtl,
 	resolveTzAndLocale,
@@ -65,7 +68,6 @@ async function extractSingleInput(
 	const {
 		force,
 		mode: aiMode,
-		providers,
 		minConfidence,
 		cache: aiCacheOption,
 		timeout: callTimeout,
@@ -78,17 +80,7 @@ async function extractSingleInput(
 	const cacheKey = `extract::${normalizedText}::${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')}::${tz}::${loc}::${cal}::${region}::${categoriesStr}`;
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
-	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
-	if (
-		effectiveMinConfidence !== undefined &&
-		(typeof effectiveMinConfidence !== 'number' ||
-			!Number.isFinite(effectiveMinConfidence) ||
-			effectiveMinConfidence < 0.0 ||
-			effectiveMinConfidence > 1.0)
-	) {
-		throw new TempoAiError(`Invalid minConfidence provided to extractAI: "${String(effectiveMinConfidence)}"`, 400);
-	}
-
+	const effectiveMinConfidence = validateMinConfidence(minConfidence, 'extractAI');
 	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
 	const cachedVal = await readMultiTierCache(cacheKey, {
@@ -140,7 +132,7 @@ async function extractSingleInput(
 						confidence: cachedConfidence,
 						provider: 'cache',
 						reasoning,
-					}
+					};
 
 					attachCustomInspect(cachedResult, (obj, isProd) => ({
 						events: obj.events.map(e => ({
@@ -164,12 +156,7 @@ async function extractSingleInput(
 		}
 	}
 
-	const availableProviders = providers || _state.config.providers;
-	if (!availableProviders || availableProviders.length === 0) {
-		throw new TempoAiError('No AI providers configured. Please call initAI().', 400);
-	}
-
-	assertNoReservedProviderId(availableProviders);
+	const availableProviders = getAvailableProviders(options);
 
 	const weekdayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 	const anchorWeekday = weekdayNames[anchorTempo.dow] || anchorTempo.format('{www}');
@@ -227,12 +214,7 @@ ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Fil
 				systemPrompt,
 			);
 
-			let parsedData: any;
-			try {
-				parsedData = JSON.parse(rawContent);
-			} catch (err: any) {
-				throw new TempoAiError(`Provider ${providerId} returned invalid JSON: ${err?.message}`, 422);
-			}
+			const parsedData = parseJsonPayload<any>(rawContent, providerId);
 
 			if (typeof parsedData !== 'object' || parsedData === null)
 				throw new TempoAiError(`Provider ${providerId} returned non-object JSON payload.`, 422);
@@ -322,7 +304,7 @@ ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Fil
 		confidence,
 		provider: providerId,
 		reasoning: parsedData.reasoning,
-	}
+	};
 
 	const resolvedTtl = resolveProviderTtl(providerId, availableProviders, ttl, 86_400_000);
 	const cacheVal = JSON.stringify({
@@ -381,52 +363,7 @@ export async function extractAI(
 	options?: AiExtractOptions,
 ): Promise<TempoAiExtractResult | (TempoAiExtractResult | TempoAiError)[]> {
 	if (Array.isArray(textOrTexts)) {
-		if (textOrTexts.length === 0) return [];
-		const opts = options || {};
-		const softErrors = opts.softErrors ?? false;
-		let rawConcurrency = opts.concurrency;
-		if (rawConcurrency !== undefined && (typeof rawConcurrency !== 'number' || !Number.isFinite(rawConcurrency) || rawConcurrency < 1))
-			rawConcurrency = 4;
-
-		const validConcurrency = Math.floor(rawConcurrency ?? 4);
-		const concurrencyLimit = Math.max(1, Math.min(validConcurrency, textOrTexts.length));
-
-		const results: (TempoAiExtractResult | TempoAiError)[] = new Array(textOrTexts.length);
-		let nextIdx = 0;
-		let firstError: any = null;
-
-		const worker = async () => {
-			while (nextIdx < textOrTexts.length) {
-				if (!softErrors && firstError) break;
-				const currentIndex = nextIdx++;
-				const item = textOrTexts[currentIndex];
-				try {
-					const res = await extractSingleInput(item, opts);
-					results[currentIndex] = res;
-				} catch (err: any) {
-					if (softErrors) {
-						results[currentIndex] = err instanceof TempoAiError
-							? err
-							: new TempoAiError(
-								err?.message || `Failed to extract events at index ${currentIndex}`,
-								typeof err?.status === 'number' ? err.status : 500,
-							);
-					} else {
-						if (!firstError) firstError = err;
-						break;
-					}
-				}
-			}
-		};
-
-		const workers = Array.from({ length: concurrencyLimit }, () => worker());
-		await Promise.all(workers);
-
-		if (!softErrors && firstError) {
-			throw firstError;
-		}
-
-		return results;
+		return executeBatch(textOrTexts, str => extractSingleInput(str, options), options);
 	}
 
 	return extractSingleInput(textOrTexts, options);

@@ -9,7 +9,6 @@ const spy = resolve(__dirname, '../tempo/test/support/setup.console-spy.ts');
 
 export default defineConfig({
 	esbuild: false,
-	oxc: false,
 	plugins: [
 		swc.vite({
 			jsc: {

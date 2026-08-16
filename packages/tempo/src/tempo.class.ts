@@ -817,7 +817,7 @@ export class Tempo {
 	 * before initializing the engine.
 	 */
 	static async bootstrap(options?: { cwd?: string, configFile?: string }): Promise<typeof Tempo> {
-		const { resolveConfig } = await import('./config/resolveConfig.js');
+		const { resolveConfig } = await import('./config/config.resolve.js');
 		const config = await resolveConfig(options);
 		this.init(config || {});
 		await this.ready();
@@ -914,7 +914,10 @@ export class Tempo {
 
 			setLogLevel(state.config.debug ?? options.debug ?? Default?.debug ?? LOG.Info);
 
-			if (options.plugins) this.extend(options.plugins);		// ensure init-plugins are processed before 'ready'
+			if (options.plugins) {
+				if (Array.isArray(options.plugins) || isFunction(options.plugins) || (isObject(options.plugins) && ('name' in options.plugins || 'key' in options.plugins || 'install' in options.plugins)))
+					this.extend(options.plugins);
+			}
 
 			if (Context.type === CONTEXT.Browser || state.config.debug === LOG.Debug)
 				logDebug('Tempo:', this.config, state.config);

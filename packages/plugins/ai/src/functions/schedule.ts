@@ -4,10 +4,15 @@ import { TempoAiError } from '../core/error.js';
 import { AiMode } from '../core/config.js';
 import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
-import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
-import { CUSTOM_INSPECT_SYMBOL, isProductionEnvironment, maskPii, attachCustomInspect } from '../core/logger.js';
-import { RE_DURATION_MINUTES, RE_DURATION_HOURS, RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX, RE_ISO_WEEKDAY_DIGIT } from '../core/patterns.js';
-import type { TempoScheduleOptions, TempoScheduleResult, TempoWorkingHours, TempoInterval, TempoScheduleMeta, AiProvider } from '../types/index.js';
+import {
+	fetchFromProvider,
+	getAvailableProviders,
+	parseJsonPayload,
+	validateMinConfidence,
+} from '../core/support.js';
+import { CUSTOM_INSPECT_SYMBOL, maskPii, attachCustomInspect } from '../core/logger.js';
+import { RE_DURATION_MINUTES, RE_DURATION_HOURS, RE_ISO_WEEKDAY_DIGIT } from '../core/patterns.js';
+import type { TempoScheduleOptions, TempoScheduleResult, TempoWorkingHours, TempoInterval, TempoScheduleMeta } from '../types/index.js';
 
 function normalizeBusyEvents(rawEvents?: any[], timeZone = 'UTC'): Array<{ start: Tempo; end: Tempo; title?: string | undefined }> {
 	if (!Array.isArray(rawEvents)) return [];
@@ -16,7 +21,7 @@ function normalizeBusyEvents(rawEvents?: any[], timeZone = 'UTC'): Array<{ start
 		if (!val) return new Tempo({ timeZone });
 		if (Tempo.isTempo(val)) return val;
 		return new Tempo(val, { timeZone });
-	}
+	};
 
 	return rawEvents.map(evt => {
 		let start: Tempo;
@@ -216,12 +221,7 @@ export async function scheduleAI(
 	}
 
 	const state = _state;
-	const availableProviders = options?.providers ?? state.config.providers;
-
-	if (!availableProviders || availableProviders.length === 0)
-		throw new TempoAiError('No AI providers configured for scheduleAI. Call initAI() or supply providers in options.', 400);
-
-	assertNoReservedProviderId(availableProviders);
+	const availableProviders = getAvailableProviders(options);
 
 	const resolvedTz = options?.timeZone
 		|| (options?.anchor instanceof Tempo ? options.anchor.tz : undefined)
@@ -234,7 +234,7 @@ export async function scheduleAI(
 		end: options?.workingHours?.end ?? '17:00',
 		days: options?.workingHours?.days ?? [1, 2, 3, 4, 5],
 		timeZone: options?.workingHours?.timeZone ?? timeZone,
-	}
+	};
 
 	const rawBusy = options?.events ?? options?.intervals;
 	const busyEvents = normalizeBusyEvents(rawBusy, timeZone);
@@ -244,6 +244,7 @@ export async function scheduleAI(
 	const isDebug = Boolean(options?.debug ?? state.config.debug);
 	const mode = options?.mode || state.config.mode || AiMode.Fallback;
 	const callTimeout = options?.timeout ?? state.config.timeout ?? 15000;
+	const effectiveMinConfidence = validateMinConfidence(options?.minConfidence, 'scheduleAI');
 
 	const winningCandidate = await executeWithMode<any>(
 		mode,
@@ -259,13 +260,7 @@ export async function scheduleAI(
 				SCHEDULE_SYSTEM_PROMPT,
 			);
 
-			const cleanContent = rawContent.replace(RE_MARKDOWN_JSON_PREFIX, '').replace(RE_MARKDOWN_JSON_SUFFIX, '');
-			let parsed: any;
-			try {
-				parsed = JSON.parse(cleanContent);
-			} catch {
-				throw new TempoAiError(`Provider ${provider.id} returned invalid JSON payload.`, 422);
-			}
+			const parsed = parseJsonPayload<any>(rawContent, providerId);
 
 			if (!parsed.start || !parsed.end)
 				throw new TempoAiError(`Provider ${provider.id} missing start or end ISO timestamp.`, 422);
@@ -300,7 +295,7 @@ export async function scheduleAI(
 				consensusKey: `${startKey}::${endKey}`,
 			};
 		},
-		{ minConfidence: options?.minConfidence ?? state.config.minConfidence, debug: isDebug, tag: 'tempo-plugin-ai:schedule', hedgeDelay: options?.hedgeDelay ?? state.config.hedgeDelay },
+		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:schedule', hedgeDelay: options?.hedgeDelay ?? state.config.hedgeDelay },
 	);
 
 	_state.limits = winningCandidate.rateLimits ?? null;
@@ -308,9 +303,8 @@ export async function scheduleAI(
 	const { data: scheduleData, providerId } = winningCandidate;
 	const confidence = typeof winningCandidate.confidence === 'number' ? winningCandidate.confidence : 0.9;
 
-	const minConf = options?.minConfidence ?? state.config.minConfidence ?? 0.0;
-	if (confidence < minConf)
-		throw new TempoAiError(`scheduleAI confidence (${confidence}) is below the required threshold of ${minConf}`, 422);
+	if (effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence)
+		throw new TempoAiError(`scheduleAI confidence (${confidence}) is below the required threshold of ${effectiveMinConfidence}`, 422);
 
 	let finalStart = scheduleData.startTempo;
 	let finalEnd = scheduleData.endTempo;
@@ -345,7 +339,7 @@ export async function scheduleAI(
 			next = next.add({ days: 1 });
 		}
 		return next;
-	}
+	};
 
 	// Deterministic Conflict & Working Hours Validation using core Interval.overlaps()
 	const MAX_ADJUSTMENT_ITERATIONS = 50;

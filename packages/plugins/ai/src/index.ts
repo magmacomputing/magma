@@ -12,6 +12,12 @@ export { aiCache } from './core/cache.js';
 // AI Core Functions
 export { initAI, resetAI, getAiRateLimits, getAiProviderRateLimits, getAiConfig } from './core/init.js';
 
+// AI Model Discovery
+export { listProviderModels, type ProviderModelInfo, type ListProviderModelsOptions } from './core/models.js';
+
+// AI Auto-Discovery
+export { isServerRuntime, isBrowserRuntime, interpolateEnv, interpolateEnvValue, scanWellKnownEnvProviders, resolveAutoDiscoveredConfig } from './core/discovery.js';
+
 // AI Function Handlers
 export { parseAI } from './functions/parse.js';
 export { formatAI } from './functions/format.js';

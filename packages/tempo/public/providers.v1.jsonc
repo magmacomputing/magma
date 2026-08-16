@@ -1,0 +1,49 @@
+{
+  // Tempo AI Plugin - Dynamic Remote Provider Manifest v1.1
+  // Hosted at: https://tempo.magmacomputing.com.au/providers.v1.jsonc (and .json)
+  // Consumed automatically by @magmacomputing/tempo-plugin-ai during initAI()
+  "version": "1.1",
+  "updatedAt": "2026-08-16T00:00:00Z",
+  "providers": {
+    // Groq: High-speed open weights inference
+    "groq": {
+          "url": "https://api.groq.com/openai/v1/chat/completions",
+          "models": {
+                "default": "openai/gpt-oss-120b",
+                "fast": "qwen/qwen3.6-27b",
+                "large": "openai/gpt-oss-120b"
+          },
+          "tokenParam": "max_tokens"
+    },
+    // OpenAI: Modern GPT series
+    "openai": {
+          "url": "https://api.openai.com/v1/chat/completions",
+          "models": {
+                "default": "gpt-5.4-mini",
+                "fast": "gpt-5.4-mini",
+                "reasoning": "o3-mini"
+          },
+          "tokenParam": "max_completion_tokens"
+    },
+    // Google Gemini: Multimodal flash & reasoning
+    "gemini": {
+          "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+          "models": {
+                "default": "gemini-3.7-flash",
+                "fast": "gemini-3.7-flash",
+                "reasoning": "gemini-2.5-pro"
+          },
+          "tokenParam": "max_tokens"
+    },
+    // Mistral AI: European low-latency models
+    "mistral": {
+          "url": "https://api.mistral.ai/v1/chat/completions",
+          "models": {
+                "default": "mistral-small-latest",
+                "fast": "mistral-small-latest",
+                "large": "mistral-large-latest"
+          },
+          "tokenParam": "max_tokens"
+    }
+  }
+}

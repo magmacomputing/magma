@@ -3,12 +3,46 @@ import { TempoAiError } from './error.js';
 import { RESERVED_PROVIDER_IDS } from './config.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
 import { logDebug, attachCustomInspect, maskPii } from './logger.js';
+import { RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX } from './patterns.js';
 import type { AiProvider, TempoParseAiMeta } from '../types/index.js';
 
 export function assertNoReservedProviderId(providers: Partial<AiProvider>[]): void {
 	for (const p of providers) {
 		if (p.id && RESERVED_PROVIDER_IDS.has(p.id.toLowerCase()))
 			throw new TempoAiError(`Provider ID '${p.id}' is a reserved keyword in AI provider configuration.`, 400);
+	}
+}
+
+/**
+ * Resolves available AI providers from options or global state, asserts validity, and ensures no reserved IDs.
+ *
+ * @param options - Function options containing an optional providers override array
+ * @returns Array of validated AiProvider configurations
+ * @throws TempoAiError(400) if no providers are available or if a reserved provider ID is used
+ */
+export function getAvailableProviders(options?: { providers?: Partial<AiProvider>[] | undefined } | undefined): AiProvider[] {
+	const availableProviders = (options?.providers ?? _state.config.providers) as AiProvider[];
+	if (!availableProviders || availableProviders.length === 0)
+		throw new TempoAiError('No AI providers configured. Set GROQ_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, or configure tempo.config.json.', 400);
+
+	assertNoReservedProviderId(availableProviders);
+	return availableProviders;
+}
+
+/**
+ * Strips markdown JSON fences and parses JSON payload from provider response.
+ *
+ * @param rawContent - Raw content string returned from LLM
+ * @param providerId - ID of the provider for error reporting
+ * @returns Parsed JSON object
+ * @throws TempoAiError(422) if JSON parsing fails
+ */
+export function parseJsonPayload<T = any>(rawContent: string, providerId: string): T {
+	const cleanContent = rawContent.replace(RE_MARKDOWN_JSON_PREFIX, '').replace(RE_MARKDOWN_JSON_SUFFIX, '').trim();
+	try {
+		return JSON.parse(cleanContent);
+	} catch (err: any) {
+		throw new TempoAiError(`Provider ${providerId} returned invalid JSON payload.`, 422, undefined, { cause: err });
 	}
 }
 
@@ -24,10 +58,25 @@ export function resolveProviderTtl(
 	return callTtl ?? providerTtl ?? _state.config.ttl ?? defaultTtl;
 }
 
-export function resolveTzAndLocale(
-	options?: { timeZone?: string | undefined; locale?: string | string[] | undefined } | undefined,
+export interface ResolvedAiContext {
+	tz: string;
+	loc: string;
+	cal: string;
+	sph: string;
+	contextConfig: { timeZone: string; locale: string; calendar: string; sphere: string };
+}
+
+/**
+ * Resolves complete regional, timezone, and calendar context hierarchy from options and/or anchor instance.
+ *
+ * @param options - Function options with potential context overrides
+ * @param fallbackTempo - Anchor or fallback Tempo instance
+ * @returns Resolved context fields and context configuration object
+ */
+export function resolveFullContext(
+	options?: { timeZone?: string | undefined; locale?: string | string[] | undefined; calendar?: string | undefined; sphere?: 'north' | 'south' | string | undefined; [key: string]: any } | undefined,
 	fallbackTempo?: Tempo | null,
-): { tz: string; loc: string } {
+): ResolvedAiContext {
 	const resolvedOptions = (Tempo as any).options ?? {};
 	const tz = String(options?.timeZone || fallbackTempo?.tz || resolvedOptions.timeZone || _state.config.timeZone || 'UTC');
 	const rawLoc = (options?.locale !== undefined && (Array.isArray(options.locale) ? options.locale.length > 0 : Boolean(options.locale)))
@@ -37,7 +86,114 @@ export function resolveTzAndLocale(
 			: resolvedOptions.locale || _state.config.locale || 'en-US';
 	const firstLoc = Array.isArray(rawLoc) ? rawLoc[0] : rawLoc;
 	const loc = typeof firstLoc === 'string' && firstLoc.trim().length > 0 ? firstLoc.trim() : 'en-US';
+	const cal = String(options?.calendar || fallbackTempo?.cal || resolvedOptions.calendar || _state.config.calendar || 'iso8601');
+	const sph = String(options?.sphere || fallbackTempo?.sphere || resolvedOptions.sphere || _state.config.sphere || 'north');
+	const contextConfig = { timeZone: tz, locale: loc, calendar: cal, sphere: sph };
+
+	return { tz, loc, cal, sph, contextConfig };
+}
+
+export function resolveTzAndLocale(
+	options?: { timeZone?: string | undefined; locale?: string | string[] | undefined } | undefined,
+	fallbackTempo?: Tempo | null,
+): { tz: string; loc: string } {
+	const { tz, loc } = resolveFullContext(options, fallbackTempo);
 	return { tz, loc };
+}
+
+/**
+ * Validates that minConfidence is a finite number between 0.0 and 1.0.
+ *
+ * @param minConfidence - Optional confidence threshold to validate
+ * @param targetFnName - Optional function name for descriptive error messaging
+ * @returns Validated minConfidence number or undefined
+ * @throws TempoAiError(400) if minConfidence is invalid
+ */
+export function validateMinConfidence(minConfidence?: number, targetFnName?: string): number | undefined {
+	const effective = minConfidence ?? _state.config.minConfidence;
+	if (
+		effective !== undefined &&
+		(typeof effective !== 'number' ||
+			!Number.isFinite(effective) ||
+			effective < 0.0 ||
+			effective > 1.0)
+	) {
+		const target = targetFnName ? ` to ${targetFnName}` : '';
+		throw new TempoAiError(`Invalid minConfidence provided${target}: "${String(effective)}"`, 400);
+	}
+	return effective;
+}
+
+/**
+ * Concurrently processes an array of items with bounded concurrency and optional soft error normalization.
+ *
+ * @param items - Array of input items to process
+ * @param workerFn - Asynchronous transformation function for each item
+ * @param options - Batch options containing softErrors and concurrency limits
+ * @returns Array of results or TempoAiErrors
+ */
+export async function executeBatch<TIn, TOut>(
+	items: TIn[],
+	workerFn: (item: TIn, index: number) => Promise<TOut>,
+	options?: { softErrors?: boolean | undefined; concurrency?: number | undefined } | undefined,
+): Promise<(TOut | TempoAiError)[]> {
+	if (items.length === 0) return [];
+	const softErrors = Boolean(options?.softErrors);
+	const concurrencyLimit = Math.max(1, Math.min(16, options?.concurrency ?? (softErrors ? 4 : items.length)));
+
+	if (concurrencyLimit >= items.length && !options?.concurrency) {
+		if (softErrors) {
+			const settled = await Promise.allSettled(items.map((item, idx) => workerFn(item, idx)));
+			return settled.map((s, idx) => {
+				if (s.status === 'fulfilled') return s.value;
+				return s.reason instanceof TempoAiError
+					? s.reason
+					: new TempoAiError(
+						s.reason?.message || `Failed to process item at index ${idx}`,
+						typeof s.reason?.status === 'number' ? s.reason.status : 500,
+						undefined,
+						{ cause: s.reason },
+					);
+			});
+		}
+		return Promise.all(items.map((item, idx) => workerFn(item, idx)));
+	}
+
+	const results: (TOut | TempoAiError)[] = new Array(items.length);
+	let nextIdx = 0;
+	let firstError: Error | null = null;
+
+	const worker = async () => {
+		while (nextIdx < items.length) {
+			if (!softErrors && firstError) break;
+			const currentIndex = nextIdx++;
+			const item = items[currentIndex];
+			try {
+				const res = await workerFn(item, currentIndex);
+				results[currentIndex] = res;
+			} catch (err: any) {
+				if (softErrors) {
+					results[currentIndex] = err instanceof TempoAiError
+						? err
+						: new TempoAiError(
+							err?.message || `Failed to process item at index ${currentIndex}`,
+							typeof err?.status === 'number' ? err.status : 500,
+							undefined,
+							{ cause: err },
+						);
+				} else {
+					if (!firstError) firstError = err;
+					break;
+				}
+			}
+		}
+	};
+
+	const workers = Array.from({ length: Math.min(concurrencyLimit, items.length) }, () => worker());
+	await Promise.all(workers);
+
+	if (!softErrors && firstError) throw firstError;
+	return results;
 }
 
 export function attachAiMeta(instance: Tempo, meta: TempoParseAiMeta): Tempo {
@@ -84,6 +240,26 @@ export function attachAiMeta(instance: Tempo, meta: TempoParseAiMeta): Tempo {
 	});
 }
 
+export function resolveProviderModel(provider: AiProvider, requestedTier?: string): string | undefined {
+	if (provider.model && typeof provider.model === 'string' && provider.model.trim().length > 0)
+		return provider.model.trim();
+
+	const models = provider.models;
+	if (!models) return undefined;
+
+	if (Array.isArray(models))
+		return typeof models[0] === 'string' ? models[0] : undefined;
+
+	if (typeof models === 'object') {
+		const targetTier = requestedTier || provider.tier || 'default';
+		return (models as Record<string, string>)[targetTier]
+			|| (models as Record<string, string>).default
+			|| Object.values(models)[0];
+	}
+
+	return undefined;
+}
+
 export async function fetchFromProvider(
 	provider: AiProvider,
 	str: string,
@@ -94,7 +270,7 @@ export async function fetchFromProvider(
 	customSystemPrompt?: string
 ): Promise<{ rawContent: string; providerId: string; rateLimits: ReturnType<typeof updateRateLimitsFromResponse> }> {
 	const url = provider.url!;
-	const model = provider.model!;
+	const model = resolveProviderModel(provider, provider.tier);
 
 	if (!url || typeof url !== 'string')
 		throw new TempoAiError(`Provider ${provider.id} missing valid endpoint URL.`, 400);

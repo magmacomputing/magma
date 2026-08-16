@@ -50,6 +50,8 @@ export interface AiDateContextOptions extends AiBaseOptions {
 	locale?: string | string[] | undefined;
 	/** Preferred calendar system (e.g. 'gregory', 'islamic', 'hebrew'). */
 	calendar?: string | undefined;
+	/** Hemisphere ('north' | 'south') for seasonal and environmental calculations. */
+	sphere?: 'north' | 'south' | string | undefined;
 	/** Custom regional context (e.g. 'AU-NSW', 'US-CA'). */
 	region?: string | undefined;
 }
@@ -120,6 +122,23 @@ export interface AiRateLimits {
 }
 
 /**
+ * ## AiModelTiers
+ * Tiered dictionary of model identifiers for adaptive routing.
+ */
+export interface AiModelTiers {
+	/** Default fallback model for standard inference */
+	default?: string | undefined;
+	/** High-speed / low-latency model for rapid processing */
+	fast?: string | undefined;
+	/** Extended reasoning / chain-of-thought model */
+	reasoning?: string | undefined;
+	/** High-capacity / large context model */
+	large?: string | undefined;
+	/** Custom named tier */
+	[tier: string]: string | undefined;
+}
+
+/**
  * ## AiProvider
  * Represents an LLM provider and its respective BYOK API key and configuration options.
  */
@@ -132,6 +151,10 @@ export interface AiProvider {
 	url?: string | undefined;
 	/** Optional custom model identifier (e.g., to override the provider's default model) */
 	model?: string | undefined;
+	/** Tiered model dictionary (e.g. { default: '...', fast: '...', reasoning: '...' }) */
+	models?: AiModelTiers | undefined;
+	/** Model tier preference ('default' | 'fast' | 'reasoning' | 'large' | string) */
+	tier?: 'default' | 'fast' | 'reasoning' | 'large' | string | undefined;
 	/** Optional parameter name for max token limit (e.g. 'max_tokens' or 'max_completion_tokens') */
 	tokenParam?: string | undefined;
 	/** Optional cache TTL override in milliseconds for entries produced by this provider */
@@ -167,6 +190,10 @@ export interface AiConfig {
 	timeZone?: string | undefined;
 	/** Optional default BCP 47 locale for AI operations */
 	locale?: string | string[] | undefined;
+	/** Optional default calendar system for AI operations (e.g. 'iso8601', 'gregory', 'islamic', 'hebrew') */
+	calendar?: string | undefined;
+	/** Optional default hemisphere ('north' | 'south') for seasonal and environmental calculations */
+	sphere?: 'north' | 'south' | string | undefined;
 	/** Optional global cache TTL in milliseconds for AI parsing entries (default: 3600000ms / 1 hour) */
 	ttl?: number | undefined;
 	/** Optional global timeout in milliseconds for AI requests (default: 15000ms) */

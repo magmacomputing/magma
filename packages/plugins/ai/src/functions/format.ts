@@ -10,7 +10,10 @@ import {
 	writeMultiTierCache,
 } from '../core/cache.js';
 import {
-	assertNoReservedProviderId,
+	getAvailableProviders,
+	parseJsonPayload,
+	validateMinConfidence,
+	executeBatch,
 	fetchFromProvider,
 	resolveProviderTtl,
 	resolveTzAndLocale,
@@ -109,7 +112,6 @@ async function formatSingleInput(
 	const {
 		force,
 		mode: aiMode,
-		providers,
 		minConfidence,
 		cache: aiCacheOption,
 		timeout: callTimeout,
@@ -121,17 +123,7 @@ async function formatSingleInput(
 	const cacheKey = `format::${targetTempo.epoch.ms}::${anchorTempo.epoch.ms}::${normalizedPrompt}::${tz}::${loc}::${region}::${style}`;
 	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
-	const effectiveMinConfidence = minConfidence ?? _state.config.minConfidence;
-	if (
-		effectiveMinConfidence !== undefined &&
-		(typeof effectiveMinConfidence !== 'number' ||
-			!Number.isFinite(effectiveMinConfidence) ||
-			effectiveMinConfidence < 0.0 ||
-			effectiveMinConfidence > 1.0)
-	) {
-		throw new TempoAiError(`Invalid minConfidence provided to formatAI: "${String(effectiveMinConfidence)}"`, 400);
-	}
-
+	const effectiveMinConfidence = validateMinConfidence(minConfidence, 'formatAI');
 	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
 	const cachedVal = await readMultiTierCache(cacheKey, {
@@ -159,7 +151,7 @@ async function formatSingleInput(
 						confidence: cachedConfidence,
 						provider: 'cache',
 						reasoning,
-					}
+					};
 					attachCustomInspect(cachedResult, (obj, isProd) => ({
 						formatted: obj.formatted,
 						confidence: obj.confidence,
@@ -174,12 +166,7 @@ async function formatSingleInput(
 		}
 	}
 
-	const availableProviders = providers || _state.config.providers;
-	if (!availableProviders || availableProviders.length === 0) {
-		throw new TempoAiError('No AI providers configured. Please call initAI().', 400);
-	}
-
-	assertNoReservedProviderId(availableProviders);
+	const availableProviders = getAvailableProviders(options);
 
 	const systemPrompt = `You are an expert natural language temporal formatting engine.
 Generate human-friendly, contextual narrative representations of dates and times based on the grounding context.
@@ -227,12 +214,7 @@ Output JSON Schema:
 				systemPrompt,
 			);
 
-			let parsedData: any;
-			try {
-				parsedData = JSON.parse(rawContent);
-			} catch (err: any) {
-				throw new TempoAiError(`Provider ${providerId} returned invalid JSON: ${err?.message}`, 422);
-			}
+			const parsedData = parseJsonPayload<any>(rawContent, providerId);
 
 			if (typeof parsedData !== 'object' || parsedData === null)
 				throw new TempoAiError(`Provider ${providerId} returned non-object JSON payload.`, 422);
@@ -256,7 +238,7 @@ Output JSON Schema:
 				rateLimits,
 				confidence,
 				consensusKey: formatted.toLowerCase(),
-			}
+			};
 		},
 		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:format', hedgeDelay: effectiveHedgeDelay },
 	);
@@ -278,7 +260,7 @@ Output JSON Schema:
 		confidence,
 		provider: providerId,
 		reasoning: parsedData.reasoning,
-	}
+	};
 
 	const resolvedTtl = resolveProviderTtl(providerId, availableProviders, ttl, 86_400_000);
 	const cacheVal = JSON.stringify(finalResult);
@@ -325,48 +307,12 @@ export async function formatAI(
 	options?: AiFormatOptions,
 ): Promise<TempoAiFormatResult | (TempoAiFormatResult | TempoAiError)[]> {
 	if (Array.isArray(dateOrItems)) {
-		if (dateOrItems.length === 0) return [];
 		const opts = (typeof promptOrOptions === 'object' && promptOrOptions !== null ? promptOrOptions : options) || {};
-		const softErrors = opts.softErrors ?? false;
-		const concurrencyLimit = Math.max(1, Math.min(opts.concurrency ?? 4, dateOrItems.length));
-
-		const results: (TempoAiFormatResult | TempoAiError)[] = new Array(dateOrItems.length);
-		let nextIdx = 0;
-		let firstError: any = null;
-
-		const worker = async () => {
-			while (nextIdx < dateOrItems.length) {
-				if (!softErrors && firstError) break;
-				const currentIndex = nextIdx++;
-				const item = dateOrItems[currentIndex];
-				const itemOpts = item.options ? { ...opts, ...item.options } : opts;
-				try {
-					const res = await formatSingleInput(item.date, item.prompt, itemOpts);
-					results[currentIndex] = res;
-				} catch (err: any) {
-					if (softErrors) {
-						results[currentIndex] = err instanceof TempoAiError
-							? err
-							: new TempoAiError(
-								err?.message || `Failed to format date at index ${currentIndex}`,
-								typeof err?.status === 'number' ? err.status : 500,
-							);
-					} else {
-						if (!firstError) firstError = err;
-						break;
-					}
-				}
-			}
-		};
-
-		const workers = Array.from({ length: concurrencyLimit }, () => worker());
-		await Promise.all(workers);
-
-		if (!softErrors && firstError) {
-			throw firstError;
-		}
-
-		return results;
+		return executeBatch(
+			dateOrItems,
+			item => formatSingleInput(item.date, item.prompt, item.options ? { ...opts, ...item.options } : opts),
+			opts,
+		);
 	}
 
 	const prompt = typeof promptOrOptions === 'string' ? promptOrOptions : undefined;

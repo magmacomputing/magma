@@ -113,6 +113,12 @@
     "#tempo/license": {
       "default": "./dist/plugin/license/license.validator.js"
     },
+    "#tempo/config": {
+      "default": "./dist/config/config.index.js"
+    },
+    "#tempo/config/*.js": {
+      "default": "./dist/config/*.js"
+    },
     "#tempo/*.js": {
       "default": "./dist/*.js"
     }
@@ -122,6 +128,11 @@
       "types": "./dist/tempo.index.d.ts",
       "import": "./dist/tempo.index.js",
       "default": "./dist/tempo.index.js"
+    },
+    "./config": {
+      "types": "./dist/config/config.index.d.ts",
+      "import": "./dist/config/config.index.js",
+      "default": "./dist/config/config.index.js"
     },
     "./enums": {
       "types": "./dist/support/support.enum.d.ts",

@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-08-15
 
 ### Added
+- **Zero-Configuration Auto-Discovery (`discovery.ts`)**: Enabled zero-boilerplate AI initialization. The plugin automatically scans environment variables (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`) and resolves `tempo.config.*` files via `@magmacomputing/tempo/config`, making explicit `initAI()` calls completely optional in server and CLI environments.
+- **Environment Template Interpolation**: Added support for `${VAR_NAME}`, `${env:VAR_NAME}`, and `$env:VAR_NAME` variable templates within AI configuration files and manifests, featuring case-insensitive environment matching and safe empty-string fallbacks.
+- **Lazy AI State Initialization**: Standardized `_state.config` to trigger auto-discovery on first AI function invocation (`parseAI`, `formatAI`, `diffAI`, `extractAI`, `recurrenceAI`, `scheduleAI`, `contextAI`), eliminating repetitive initialization boilerplate across all AI handlers.
 - **Cache Eviction Synchronization**: Enhanced `aiCache.clear()` to flush matching keys and prefixes across both `Tempo.cache` and custom `AiCacheAdapter` storage engines, returning `Promise<void>` to await async adapter eviction.
 - **Temporal Difference & Relative Grounding (`diffAI`)**: Added natural language temporal difference calculation and narrative summarization between two `Tempo` points, dates, or timestamps.
   - Pre-computes mathematical grounding metrics (`calendarDays`, `elapsedHours`, `businessDays` with weekend and holiday exclusion) to provide strict arithmetic backing for LLM narrative formatting.

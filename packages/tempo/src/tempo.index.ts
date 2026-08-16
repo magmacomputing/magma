@@ -39,7 +39,6 @@ Tempo.extend(core);
 
 export { parse, format } from '#tempo/module';
 export { enums };
-export { defineConfig } from './config/defineConfig.js';
 
 // make the Tempo type augmentations available
 export type * from '#tempo/parse';
@@ -48,6 +47,7 @@ export type * from '#tempo/mutate';
 export type * from '#tempo/duration';
 export type * from '#tempo/term';
 
+export { defineConfig } from './config/config.define.js';
 export { Interval } from './interval.class.js';
 export * from './tempo.class.js';
 export default Tempo;

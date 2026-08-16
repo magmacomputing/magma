@@ -10,7 +10,8 @@ export * as webToken from '#library/webtoken.library.js';
 export { enumify, type Enum } from '#library/enumerate.library.js';
 export { fetchRequest, fetchHead, HttpError } from '#library/request.library.js';
 export { asArray } from '#library/coercion.library.js';
-export { stringify, objectify, cloneify } from '#library/serialize.library.js';
+export { stringify, objectify, cloneify, parseJSONC, stripJSONC } from '#library/serialize.library.js';
+export { getContext, CONTEXT } from '#library/utility.library.js';
 
 export * from '#library/proxy.library.js';
 export * from '#library/assertion.library.js';

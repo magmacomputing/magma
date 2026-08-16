@@ -35,6 +35,6 @@ npm run test:ci
 
 ## Conventions
 
-- **Isolation Assertions**: Files ending in `.core.test.ts` or `.lazy.test.ts` are designed to assert behavior *before* modules are fully loaded. These are automatically excluded during the `test:ci:prefilter` run to avoid side-effects.
+- **Isolation Assertions**: Files ending in `.core.test.ts` or `.lazy.test.ts` are designed to assert behavior *before* modules are fully loaded. These are executed in isolation under the `Tempo: Core` test project to avoid cross-suite side-effects.
 - **Console Suppression**: By default, `console` output is suppressed in tests via `test/support/setup.console-spy.ts`. To debug, you can use `(console.log as any).mockRestore()` within your test or comment out the suppression in the setup file.
 - **Anchoring**: When testing relative dates, always provide a fixed anchor to ensure tests are deterministic.
