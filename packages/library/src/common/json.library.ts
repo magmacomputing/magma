@@ -127,8 +127,20 @@ export function stripJSONC(text: string): string {
  */
 export function parseJSONC<T = any>(
 	text: string,
+	options: { safe: true; fallback?: undefined; reviver?: JSONCReviver }
+): T | undefined;
+export function parseJSONC<T = any>(
+	text: string,
+	options: { fallback: T; safe?: boolean; reviver?: JSONCReviver }
+): T;
+export function parseJSONC<T = any>(
+	text: string,
+	optionsOrReviver?: JSONCReviver | JSONCOptions<T>
+): T;
+export function parseJSONC<T = any>(
+	text: string,
 	optionsOrReviver?: JSONCReviver | JSONCOptions<T>,
-): T {
+): T | undefined {
 	const isFn = typeof optionsOrReviver === 'function';
 	const reviver = isFn ? optionsOrReviver : optionsOrReviver?.reviver;
 	const isSafe = !isFn && (optionsOrReviver?.safe === true || (optionsOrReviver != null && 'fallback' in optionsOrReviver));
@@ -216,7 +228,7 @@ export function cleanify<T>(obj: T): T {
 	try {
 		return JSON.parse(JSON.stringify(obj)) as T;						// run any toString() methods
 	} catch (error) {
-		console.warn('Could not clean object: ', obj);
-		return { ...obj } as T;
+		console.warn('Could not clean object:', (error as Error)?.message ?? error);
+		throw error;
 	}
 }

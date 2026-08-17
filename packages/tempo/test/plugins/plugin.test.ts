@@ -119,6 +119,34 @@ describe('Tempo Plugin System', () => {
 		}
 	});
 
+	test('should allow discovery-installed plugin to read its configuration from Tempo.config.plugins during install()', () => {
+		const testDiscovery = '$TempoTestDiscoveryConfig';
+		const discoveryKey = Symbol.for(testDiscovery);
+		let pluginConfigDuringInstall: any = null;
+		const discoveryPlugin: Plugin = {
+			name: 'ConfiguredDiscoveryPlugin',
+			install(tempo) {
+				pluginConfigDuringInstall = (tempo.config as any)?.plugins?.ConfiguredDiscoveryPlugin;
+			},
+		};
+
+		(globalThis as any)[discoveryKey] = {
+			plugins: {
+				ConfiguredDiscoveryPlugin: { apiKey: 'test-key-123', customOption: true },
+			},
+			extends: [discoveryPlugin],
+		};
+
+		try {
+			Tempo.init({ discovery: testDiscovery });
+			expect(pluginConfigDuringInstall).toEqual({ apiKey: 'test-key-123', customOption: true });
+			expect((Tempo.config as any)?.plugins?.ConfiguredDiscoveryPlugin).toEqual({ apiKey: 'test-key-123', customOption: true });
+		} finally {
+			delete (globalThis as any)[discoveryKey];
+			Tempo.init();
+		}
+	});
+
 	test('should protect existing members but allow new ones', () => {
 		// 1. Try to overwrite existing (should throw in strict mode)
 		// Note: Tempo.now is a static method we want to protect

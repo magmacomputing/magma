@@ -83,7 +83,12 @@ export function getAliasContext(ctx: NormalizerContext, dateTime: Temporal.Zoned
 		get ss() { return dateTime.second },
 		get tz() { return tz },
 		get cal() { return cal },
-		get locale() { return state.config.locale ?? Default.locale },
+		get locale(): string {
+			const loc = state.config.locale;
+			const primary = Array.isArray(loc) ? loc[0] : loc;
+			const defaultLoc = Array.isArray(Default.locale) ? Default.locale[0] : Default.locale;
+			return (primary ?? defaultLoc) as string;
+		},
 		get sphere() { return state.config.sphere ?? Default.sphere },
 		config: state.config,
 		[sym.$Identity]: true,

@@ -397,7 +397,7 @@ export class Tempo {
 		markConfig(discovery);																	// auto-mark the discovery object
 
 		const isSandbox = shape !== _global;
-		let opts = discovery.options || {}
+		let opts: Record<string, any> = isFunction(discovery.options) ? discovery.options() : (discovery.options || {});
 
 		// 1. Process TimeZones (normalize to lowercase for lookup)
 		if (discovery.timeZones) {
@@ -462,11 +462,8 @@ export class Tempo {
 		}
 
 		// 4. Process Extensions / Plugins
-		if (discovery.extends)
-			asArray(discovery.extends).forEach(p => this.extend(p));
-		// TODO: @deprecated - Remove in Tempo v4.0.0
-		else if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins)))
-			asArray(discovery.plugins).forEach(p => this.extend(p));
+		if (discovery.plugins && isObject(discovery.plugins) && !Array.isArray(discovery.plugins) && !isFunction(discovery.plugins) && !('name' in discovery.plugins || 'key' in discovery.plugins || 'install' in discovery.plugins))
+			opts = { ...opts, plugins: isObject(opts.plugins) ? { ...opts.plugins, ...discovery.plugins } : discovery.plugins };
 
 		// 5. Process Options
 		if (discovery.ignore) {
@@ -723,6 +720,11 @@ export class Tempo {
 							const opts = this[$setDiscovery](this[$Internal](), discovery);
 							if (!isEmpty(opts)) this[$setConfig](this[$Internal](), opts);
 
+							if (discovery.extends)
+								asArray(discovery.extends).forEach(p => this.extend(p));
+							else if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins) || (isObject(discovery.plugins) && ('name' in discovery.plugins || 'key' in discovery.plugins || 'install' in discovery.plugins))))
+								asArray(discovery.plugins).forEach(p => this.extend(p));
+
 							// only trigger init if we're assigning a new discovery object to a symbol
 							if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
 								const discoveryArg = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
@@ -789,6 +791,11 @@ export class Tempo {
 			(SandboxTempo as any)[$setDiscovery](state, data),
 			{ ...options, discovery: normalizedDiscovery }
 		);
+
+		if (data?.extends)
+			(SandboxTempo as any).extend(data.extends);
+		else if (data?.plugins && (Array.isArray(data.plugins) || isFunction(data.plugins) || (isObject(data.plugins) && ('name' in data.plugins || 'key' in data.plugins || 'install' in data.plugins))))
+			(SandboxTempo as any).extend(data.plugins);
 
 		Object.freeze(SandboxTempo);
 
@@ -917,10 +924,16 @@ export class Tempo {
 
 			setLogLevel(state.config.debug ?? options.debug ?? Default?.debug ?? LOG.Info);
 
+			if (userDiscovery?.extends)
+				this.extend(userDiscovery.extends);
+
 			if (options.extends)
 				this.extend(options.extends);
 
 			// TODO: @deprecated - Remove in Tempo v4.0.0
+			if (userDiscovery?.plugins && (Array.isArray(userDiscovery.plugins) || isFunction(userDiscovery.plugins) || (isObject(userDiscovery.plugins) && ('name' in userDiscovery.plugins || 'key' in userDiscovery.plugins || 'install' in userDiscovery.plugins))))
+				this.extend(userDiscovery.plugins);
+
 			if (options.plugins) {
 				if (Array.isArray(options.plugins) || isFunction(options.plugins) || (isObject(options.plugins) && ('name' in options.plugins || 'key' in options.plugins || 'install' in options.plugins)))
 					this.extend(options.plugins);
@@ -1563,7 +1576,7 @@ export class Tempo {
 	/** Fractional seconds (e.g., 0.123456789) */							get ff() { return +(`0.${pad(this.ms, 3)}${pad(this.us, 3)}${pad(this.ns, 3)}`) }
 	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
-	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale() { return (this.#local.config.locale ?? (this as any)[$Internal]().config.locale ?? Default.locale) as string | string[] }
+	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
 	/** Resolved hemisphere ('north' | 'south') */						get sphere() { return (this.#local.config.sphere ?? (this as any)[$Internal]().config.sphere ?? Default.sphere) as t.COMPASS | undefined }
 	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[this.#local.config.timeStamp] }
 	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as t.Month) }

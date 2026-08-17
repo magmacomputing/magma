@@ -148,12 +148,16 @@ describe('JSON Library', () => {
 			expect(() => rawJSON(123 as any)).toThrow(TypeError);
 		});
 
-		it('should create raw JSON objects that stringify verbatim', () => {
+		it('should create raw JSON objects that stringify verbatim when supported', () => {
 			const raw = rawJSON('12345678901234567890');
 			expect(isRawJSON(raw)).toBe(true);
 
 			const payload = { id: raw };
-			expect(JSON.stringify(payload)).toBe('{"id":12345678901234567890}');
+			if (typeof (JSON as any).rawJSON === 'function') {
+				expect(JSON.stringify(payload)).toBe('{"id":12345678901234567890}');
+			} else {
+				expect(JSON.stringify(payload)).toBe('{"id":{"rawJSON":"12345678901234567890"}}');
+			}
 		});
 
 		it('should correctly identify non-rawJSON values in isRawJSON', () => {
@@ -182,6 +186,17 @@ describe('JSON Library', () => {
 					count: 5,
 				},
 			});
+		});
+
+		it('should propagate serialization errors and log only metadata on circular structures', () => {
+			const circular: any = {};
+			circular.self = circular;
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			expect(() => cleanify(circular)).toThrow(TypeError);
+			expect(warnSpy).toHaveBeenCalled();
+			const warnCallArg = warnSpy.mock.calls[0][1];
+			expect(warnCallArg).not.toBe(circular);
+			warnSpy.mockRestore();
 		});
 	});
 
