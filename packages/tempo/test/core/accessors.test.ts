@@ -34,12 +34,14 @@ describe(`${label}`, () => {
   })
 
   test(`${label} resolve canonical locale when fallback configuration is an array`, () => {
-    Tempo.init({ locale: ['de-AT', 'de-DE'] });
-    const t = new Tempo('2024-05-20');
-    expect(t.locale).toBe('de-AT');
-    expect(typeof t.locale).toBe('string');
-
-    // reset to defaults
-    Tempo.init();
+    const prevLocale = Tempo.config.locale;
+    try {
+      Tempo.init({ locale: ['de-AT', 'de-DE'] });
+      const t = new Tempo('2024-05-20');
+      expect(t.locale).toBe('de-AT');
+      expect(typeof t.locale).toBe('string');
+    } finally {
+      Tempo.init({ locale: prevLocale });
+    }
   })
 })

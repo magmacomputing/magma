@@ -1,4 +1,4 @@
-import { secure } from '@magmacomputing/tempo/library';
+import { secure, type ValueOf } from '@magmacomputing/tempo/library';
 import type { AiProvider } from '../types/index.js';
 
 /**
@@ -20,7 +20,7 @@ export const AiMode = Object.freeze({
 	Adaptive: 'adaptive',
 } as const);
 
-export type AiMode = (typeof AiMode)[keyof typeof AiMode];
+export type AiMode = ValueOf<typeof AiMode>
 
 /**
  * Keywords reserved by parseAI to avoid provider configuration collisions.
@@ -34,9 +34,9 @@ export const DEFAULT_PROVIDERS: Readonly<Record<string, Partial<AiProvider>>> = 
 	groq: {
 		url: 'https://api.groq.com/openai/v1/chat/completions',
 		models: {
-			default: 'openai/gpt-oss-120b',
-			fast: 'qwen/qwen3.6-27b',
-			large: 'openai/gpt-oss-120b'
+			default: 'llama-3.1-8b-instant',
+			fast: 'llama-3.1-8b-instant',
+			large: 'llama-3.3-70b-versatile'
 		},
 		tokenParam: 'max_tokens'
 	},

@@ -67,9 +67,9 @@ const PROVIDER_REGISTRY = {
 		url: 'https://api.groq.com/openai/v1/models',
 		extract: data => (data.data || []).map(m => m.id),
 		selectRecommended: (models, current) =>
-			models.find(m => m === 'openai/gpt-oss-120b')
-			?? models.find(m => m.includes('qwen3.6-27b'))
+			models.find(m => m === 'llama-3.1-8b-instant')
 			?? models.find(m => m.includes('llama-3.3-70b-versatile'))
+			?? models.find(m => m.includes('llama3-70b-8192'))
 			?? current
 	},
 	gemini: {

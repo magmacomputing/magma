@@ -46,8 +46,10 @@ const readBoundedBody = async (res: Response, maxBytes: number): Promise<string>
 	const contentLength = res.headers.get('Content-Length') || res.headers.get('content-length');
 	if (contentLength) {
 		const bytes = parseInt(contentLength, 10);
-		if (isNumber(bytes) && bytes > maxBytes)
+		if (isNumber(bytes) && bytes > maxBytes) {
+			try { await res.body?.cancel(); } catch { }
 			throw new HttpError(413, `Content-Length (${bytes}) exceeds limit (${maxBytes} bytes)`, null);
+		}
 	}
 
 	if (!res.body) {
