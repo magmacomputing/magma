@@ -1,4 +1,4 @@
-import { getContext, CONTEXT, isObject, isString, isArray } from '@magmacomputing/tempo/library';
+import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isEmpty } from '@magmacomputing/tempo/library';
 import { Tempo } from '@magmacomputing/tempo';
 
 import { DEFAULT_PROVIDERS } from './config.js';
@@ -55,7 +55,8 @@ export function interpolateEnvValue(value: string, env: Record<string, string | 
 }
 
 /**
- * Recursively traverses and interpolates environment variable expressions in strings, arrays, and objects.
+ * Recursively traverses and interpolates environment variable expressions in strings, arrays, Maps, and plain objects.
+ * Preserves class instances (such as CacheAdapters), functions, and primitives without mutation.
  */
 export function interpolateEnv<T>(obj: T, env: Record<string, string | undefined> = getRuntimeEnv()): T {
 	if (isString(obj))
@@ -64,11 +65,19 @@ export function interpolateEnv<T>(obj: T, env: Record<string, string | undefined
 	if (isArray(obj))
 		return obj.map(item => interpolateEnv(item, env)) as unknown as T;
 
-	if (isObject(obj)) {
+	if (isMap(obj) && Object.getPrototypeOf(obj) === Map.prototype) {
+		const result = new Map();
+		for (const [key, val] of obj.entries())
+			result.set(key, interpolateEnv(val, env));
+
+		return result as unknown as T;
+	}
+
+	if (isPlainObject(obj)) {
 		const result: Record<string, any> = {};
-		for (const [key, val] of Object.entries(obj)) {
+		for (const [key, val] of Object.entries(obj))
 			result[key] = interpolateEnv(val, env);
-		}
+
 		return result as T;
 	}
 
@@ -84,6 +93,33 @@ export const WELL_KNOWN_ENV_MAP: Record<string, string[]> = {
 	gemini: ['GEMINI_API_KEY', 'GOOGLE_API_KEY'],
 	mistral: ['MISTRAL_API_KEY'],
 };
+
+/**
+ * Resolves an API key for a provider, falling back to well-known environment variables if not provided.
+ *
+ * @param id - The provider identifier (e.g. 'groq', 'openai')
+ * @param explicitKey - Optional explicit API key
+ * @param env - The environment variables map to inspect
+ * @returns The resolved API key string, or undefined if not found
+ */
+export function resolveProviderApiKey(
+	id: string,
+	explicitKey?: string,
+	env: Record<string, string | undefined> = getRuntimeEnv()
+): string | undefined {
+	if (isString(explicitKey) && !isEmpty(explicitKey))
+		return explicitKey.trim();
+
+	const envVars = WELL_KNOWN_ENV_MAP[id?.toLowerCase()?.trim() ?? ''];
+	if (!envVars) return undefined;
+
+	for (const envVar of envVars) {
+		const val = env[envVar];
+		if (isString(val) && !isEmpty(val))
+			return val.trim();
+	}
+	return undefined;
+}
 
 /**
  * Scans the active environment variables for well-known provider tokens and constructs
@@ -183,17 +219,8 @@ export async function resolveAutoDiscoveredConfig(explicitConfig?: AiConfig): Pr
 	} else {
 		// Resolve any missing keys for explicitly configured providers
 		interpolated.providers = interpolated.providers.map(p => {
-			if (p.key && p.key.trim().length > 0)
-				return p;
-			const envVars = WELL_KNOWN_ENV_MAP[p.id?.toLowerCase() ?? ''];
-			if (envVars) {
-				for (const envVar of envVars) {
-					const val = env[envVar];
-					if (val && typeof val === 'string' && val.trim().length > 0)
-						return { ...p, key: val.trim() };
-				}
-			}
-			return p;
+			const resolvedKey = resolveProviderApiKey(p.id ?? '', p.key, env);
+			return resolvedKey ? { ...p, key: resolvedKey } : p;
 		});
 	}
 

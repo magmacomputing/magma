@@ -1,6 +1,9 @@
 import { sym } from '#library/symbol.library.js';
-import { getType, protoType, asType } from '#library/type.library.js';
+import { getType, protoType } from '#library/type.library.js';
 import type { Type, Primitive, Nullish, Temporals, Property, GetType } from '#library/type.library.js';
+import { isJSON, isRawJSON } from '#library/json.library.js';
+
+export { isJSON, isRawJSON };
 
 /**
  * Asserts if a value matches one of the provided types from the Type system.
@@ -10,7 +13,7 @@ import type { Type, Primitive, Nullish, Temporals, Property, GetType } from '#li
  * @returns True if the value matches one of the specified types
  * @example
  * ```ts
- * if (isType`<string>`(value, 'String', 'Number')) { ... }
+ * if (isType<string>(value, 'String', 'Number')) { ... }
  * ```
  */
 export const isType = <T>(obj: unknown, ...types: Type[]): obj is T => types.includes(getType(obj));
@@ -21,8 +24,7 @@ export const isReference = (obj?: unknown): obj is Object => !isPrimitive(obj);
 export const isIterable = <T>(obj: unknown): obj is Iterable<T> => Symbol.iterator in Object(obj) && !isString(obj);
 
 export const isString = (obj: unknown): obj is string => isType<string>(obj, 'String');
-export const isNumber = (obj: unknown): obj is number => isType<number>(obj, 'Number');
-export const isFiniteNumber = (obj: unknown): obj is number => isType<number>(obj, 'Number') && isFinite(obj as number);
+export const isNumber = (obj: unknown): obj is number => Number.isFinite(obj);
 
 const RE_BIGINT_LITERAL = /^[+-]?[0-9]+n$/;
 const RE_REGEXP_LITERAL = /^\/.*\/$/;
@@ -42,12 +44,12 @@ const RE_REGEXP_LITERAL = /^\/.*\/$/;
 export function isNumeric(str?: any): boolean {
 	const type = typeof str;
 	switch (type) {
-		case 'number': return isFinite(str);
+		case 'number': return Number.isFinite(str);
 		case 'bigint': return true;
 		case 'string': {
 			const val = str.trim();
 			if (val.length === 0) return false;
-			return RE_BIGINT_LITERAL.test(val) || (!isNaN(parseFloat(val)) && isFinite(Number(val)));
+			return RE_BIGINT_LITERAL.test(val) || isNumber(Number(val));
 		}
 		default: return false;
 	}
@@ -57,8 +59,13 @@ export const isIntegerLike = (obj: unknown): obj is string => isType<string>(obj
 export const isDigit = (obj: unknown): obj is number | bigint => isType<number | bigint>(obj, 'Number', 'BigInt');
 export const isBoolean = (obj: unknown): obj is boolean => isType<boolean>(obj, 'Boolean');
 export const isArray = <T = any>(obj: unknown): obj is T[] => isType<T[]>(obj, 'Array');
-export const isArrayLike = <T = any>(obj: any): obj is ArrayLike<T> => protoType(obj) === 'Object' && 'length' in obj && Object.keys(obj).every(key => key === 'length' || !isNaN(Number(key)));
+export const isArrayLike = <T = any>(obj: any): obj is ArrayLike<T> => protoType(obj) === 'Object' && 'length' in obj && Object.keys(obj).every(key => key === 'length' || isNumber(Number(key)));
 export const isObject = <T = any>(obj: unknown): obj is Property<T> => isType<Property<T>>(obj, 'Object');
+export const isPlainObject = <T = Property<any>>(obj: unknown): obj is T => {
+	if (obj === null || typeof obj !== 'object') return false;
+	const proto = Object.getPrototypeOf(obj);
+	return proto === Object.prototype || proto === null;
+};
 export const isDate = (obj: unknown): obj is Date => isType<Date>(obj, 'Date');
 export const isRegExp = (obj: unknown): obj is RegExp => isType<RegExp>(obj, 'RegExp');
 export const isRegExpLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && RE_REGEXP_LITERAL.test(obj as string);

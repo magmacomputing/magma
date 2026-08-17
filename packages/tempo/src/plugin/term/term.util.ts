@@ -85,7 +85,7 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | num
 				obj[u] = (i <= 2) ? 1 : 0;
 			} else {
 				const fallback = (anchor as any)[u];
-				obj[u] = (isNumber(fallback) && !Number.isNaN(fallback)) ? fallback : (i <= 2 ? 1 : 0);
+				obj[u] = isNumber(fallback) ? fallback : (i <= 2 ? 1 : 0);
 			}
 		}
 		// @ts-ignore

@@ -137,4 +137,100 @@ describe('AI Provider Model Discovery (listProviderModels)', () => {
 		expect(fetchSpy).toHaveBeenCalledWith(customUrl, expect.anything());
 		expect(models[0].id).toBe('custom-fine-tuned-model');
 	});
+
+	it('should construct default endpoint URL from provider ID when not well-known and no URL override provided', async () => {
+		const mockResponse = {
+			data: [{ id: 'anthropic-claude-3-5-sonnet' }]
+		};
+
+		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(JSON.stringify(mockResponse), { status: 200 })
+		);
+
+		const models = await listProviderModels('anthropic', 'sk-ant-test-token');
+		expect(fetchSpy).toHaveBeenCalledWith(
+			'https://api.anthropic.com/v1/models',
+			expect.objectContaining({
+				headers: expect.objectContaining({
+					Authorization: 'Bearer sk-ant-test-token'
+				})
+			})
+		);
+		expect(models).toHaveLength(1);
+		expect(models[0].id).toBe('anthropic-claude-3-5-sonnet');
+	});
+
+	it('should produce a 504 TempoAiError on request timeout / abort', async () => {
+		vi.spyOn(globalThis, 'fetch').mockImplementationOnce(() => {
+			const err = new Error('The operation was aborted');
+			err.name = 'AbortError';
+			return Promise.reject(err);
+		});
+
+		try {
+			await listProviderModels('openai', 'sk-test-key', { timeout: 100 });
+			expect.unreachable('Should have thrown 504 TempoAiError');
+		} catch (err: any) {
+			expect(err).toBeInstanceOf(TempoAiError);
+			expect(err.status).toBe(504);
+			expect(err.message).toMatch(/Timeout querying models for provider 'openai'/);
+		}
+	});
+
+	it('should convert non-JSON / HTML response into a 500 TempoAiError', async () => {
+		vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response('<html><body>502 Bad Gateway</body></html>', {
+				status: 200,
+				headers: { 'Content-Type': 'text/html' },
+			})
+		);
+
+		try {
+			await listProviderModels('openai', 'sk-test-key');
+			expect.unreachable('Should have thrown TempoAiError');
+		} catch (err: any) {
+			expect(err).toBeInstanceOf(TempoAiError);
+			expect(err.status).toBe(500);
+			expect(err.message).toMatch(/Network error querying models for 'openai'/);
+		}
+	});
+
+	it('should throw 400 TempoAiError and reject invalid provider IDs before making network calls', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+		await expect(listProviderModels('bad/provider', 'sk-test-key')).rejects.toThrow(TempoAiError);
+		await expect(listProviderModels('bad?provider', 'sk-test-key')).rejects.toThrow(/Invalid provider ID/);
+		await expect(listProviderModels('bad provider', 'sk-test-key')).rejects.toThrow(/Invalid provider ID/);
+
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
+
+	it('should throw 400 TempoAiError and reject insecure endpoint URLs before making network calls', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+		await expect(
+			listProviderModels('custom', 'sk-test-key', { url: 'http://insecure-endpoint.com/models' })
+		).rejects.toThrow(TempoAiError);
+
+		await expect(
+			listProviderModels('custom', 'sk-test-key', { url: 'http://insecure-endpoint.com/models' })
+		).rejects.toThrow(/must use HTTPS or localhost HTTP/);
+
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
+
+	it('should safely handle non-Error and primitive thrown values without crashing', async () => {
+		vi.spyOn(globalThis, 'fetch').mockImplementationOnce(() => {
+			return Promise.reject('Raw string network failure');
+		});
+
+		try {
+			await listProviderModels('openai', 'sk-test-key');
+			expect.unreachable('Should have thrown TempoAiError');
+		} catch (err: any) {
+			expect(err).toBeInstanceOf(TempoAiError);
+			expect(err.status).toBe(500);
+			expect(err.message).toMatch(/Network error querying models for 'openai': Raw string network failure/);
+		}
+	});
 });

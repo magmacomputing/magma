@@ -11,7 +11,12 @@ import {
 	interpolateEnv,
 	scanWellKnownEnvProviders,
 	resolveAutoDiscoveredConfig,
+	resolveProviderApiKey,
 } from '../src/index.js';
+
+vi.mock('@magmacomputing/tempo/config', () => ({
+	resolveConfig: vi.fn().mockResolvedValue({}),
+}));
 
 describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 	const savedEnv = { ...process.env };
@@ -96,6 +101,38 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 			expect(interpolated.providers[0].key).toBe('my-secret');
 			expect(interpolated.providers[0].endpoint).toBe('https://api.example.com/v1');
 			expect(interpolated.providers[0].aliases).toEqual(['llama-3.3-70b-versatile', 'backup-model']);
+		});
+
+		it('should preserve class instances and their prototype methods while interpolating plain objects and Maps', () => {
+			class CustomCacheAdapter {
+				public prefix: string;
+				constructor(prefix: string) {
+					this.prefix = prefix;
+				}
+				getPrefix() {
+					return this.prefix;
+				}
+			}
+
+			const adapter = new CustomCacheAdapter('tempo-cache');
+			const env = { API_SECRET: 'top-secret' };
+			const map = new Map<string, string>();
+			map.set('header', 'Bearer ${API_SECRET}');
+
+			const input = {
+				cacheAdapter: adapter,
+				headersMap: map,
+				apiKey: '${API_SECRET}',
+			};
+
+			const result = interpolateEnv(input, env);
+
+			expect(result.apiKey).toBe('top-secret');
+			expect(result.cacheAdapter).toBe(adapter);
+			expect(result.cacheAdapter instanceof CustomCacheAdapter).toBe(true);
+			expect(result.cacheAdapter.getPrefix()).toBe('tempo-cache');
+			expect(result.headersMap instanceof Map).toBe(true);
+			expect(result.headersMap.get('header')).toBe('Bearer top-secret');
 		});
 	});
 
@@ -209,6 +246,62 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 			const resolved = await resolveAutoDiscoveredConfig();
 			expect(resolved.providers).toBeDefined();
 			expect(resolved.providers?.some(p => p.id === 'openai' && p.key === 'sk-auto-discovered')).toBe(true);
+		});
+
+		it('should resolve provider API key with trimming and environment fallback in resolveProviderApiKey', () => {
+			expect(resolveProviderApiKey('groq', '  explicit-key-123  ')).toBe('explicit-key-123');
+			expect(resolveProviderApiKey('groq', undefined, { GROQ_API_KEY: '  env-groq-key  ' })).toBe('env-groq-key');
+			expect(resolveProviderApiKey('gemini', undefined, { GOOGLE_API_KEY: 'env-google-key' })).toBe('env-google-key');
+			expect(resolveProviderApiKey('unknown_provider', undefined, {})).toBeUndefined();
+			expect(resolveProviderApiKey('groq', '  ', {})).toBeUndefined();
+		});
+
+		it('should avoid recursive auto-initialization when Tempo config has no providers and allow re-init after resetAI', () => {
+			Tempo.init({
+				plugins: {
+					ai: {
+						timeout: 4500,
+					},
+				},
+				silent: true,
+			});
+
+			const config1 = getAiConfig();
+			expect(config1.timeout).toBe(4500);
+			expect(config1.providers).toEqual([]);
+
+			const config2 = getAiConfig();
+			expect(config2.timeout).toBe(4500);
+
+			resetAI();
+			Tempo.init({
+				plugins: {
+					ai: {
+						timeout: 9000,
+					},
+				},
+				silent: true,
+			});
+			const config3 = getAiConfig();
+			expect(config3.timeout).toBe(9000);
+		});
+
+		it('should resolve provider key from environment in async fetchDefaults path when p.key is absent or whitespace', async () => {
+			process.env.GROQ_API_KEY = 'gsk_async_env_key';
+
+			await initAI({
+				remoteConfigUrl: false,
+				fetchDefaults: async (id) => ({
+					model: `custom-${id}-model`,
+				}),
+				providers: [
+					{ id: 'groq', key: '   ' },
+				],
+			});
+
+			const config = getAiConfig();
+			expect(config.providers?.[0].key).toBe('[REDACTED]');
+			expect(config.providers?.[0].model).toBe('custom-groq-model');
 		});
 	});
 });

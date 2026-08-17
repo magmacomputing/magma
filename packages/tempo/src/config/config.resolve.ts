@@ -1,5 +1,5 @@
 import { isFunction } from '#library/assertion.library.js';
-import { parseJSONC } from '#library/serialize.library.js';
+import { parseJSONC } from '#library/json.library.js';
 import type { Options } from '../tempo.type.js';
 
 // Minimal declaration so TS doesn't complain in browser environments without @types/node

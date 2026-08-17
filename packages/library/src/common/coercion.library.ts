@@ -136,7 +136,7 @@ export function asInteger<T extends string | number | bigint>(str?: T) {
  * ```
  */
 export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
-	if (isInteger(str) || (isNumber(str) && Number.isFinite(str)))// native BigInt or finite number → boundary-check
+	if (isInteger(str) || isNumber(str))											// native BigInt or finite number → boundary-check
 		return toBounded(parseBigInt(str));
 
 	const value = removeSign(str);														// only reached for string input

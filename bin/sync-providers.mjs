@@ -15,6 +15,8 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
 
+import { parseJSONC } from '@magmacomputing/library/json.library.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = resolve(__dirname, '..');
@@ -27,6 +29,8 @@ const AI_CONFIG_PATH = resolve(ROOT_DIR, 'packages/plugins/ai/src/core/config.ts
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 const isDeploy = args.includes('--deploy');
+
+const SAFE_MODEL_ID_REGEX = /^[a-zA-Z0-9_.:/-]+$/;
 
 if (args.includes('--help') || args.includes('-h')) {
 	console.log(`
@@ -54,59 +58,6 @@ if (existsSync(envPath)) {
 			if (!process.env[key]) process.env[key] = value;
 		}
 	}
-}
-
-/**
- * Zero-dependency JSONC parser
- */
-function parseJsonc(text) {
-	let inString = false;
-	let stringChar = '';
-	let escaped = false;
-	let result = '';
-	const len = text.length;
-
-	for (let i = 0; i < len; i++) {
-		const char = text[i];
-		const next = text[i + 1];
-
-		if (inString) {
-			result += char;
-			if (escaped) {
-				escaped = false;
-			} else if (char === '\\') {
-				escaped = true;
-			} else if (char === stringChar) {
-				inString = false;
-			}
-			continue;
-		}
-
-		if (char === '"' || char === "'") {
-			inString = true;
-			stringChar = char;
-			result += char;
-			continue;
-		}
-
-		if (char === '/' && next === '/') {
-			i += 2;
-			while (i < len && text[i] !== '\n' && text[i] !== '\r') i++;
-			if (i < len) result += text[i];
-			continue;
-		}
-
-		if (char === '/' && next === '*') {
-			i += 2;
-			while (i < len && !(text[i] === '*' && text[i + 1] === '/')) i++;
-			i++;
-			continue;
-		}
-
-		result += char;
-	}
-
-	return JSON.parse(result.replace(/,(\s*[}\]])/g, '$1'));
 }
 
 const PROVIDER_REGISTRY = {
@@ -181,12 +132,13 @@ async function main() {
 	console.log('🔄 Starting Tempo AI Provider Model Sync...\n');
 
 	const existingManifest = existsSync(MANIFEST_JSONC_PATH)
-		? parseJsonc(readFileSync(MANIFEST_JSONC_PATH, 'utf8'))
+		? parseJSONC(readFileSync(MANIFEST_JSONC_PATH, 'utf8'))
 		: existsSync(MANIFEST_JSON_PATH)
 			? JSON.parse(readFileSync(MANIFEST_JSON_PATH, 'utf8'))
 			: { version: '1.1', providers: {} };
 
-	const providers = existingManifest.providers || {};
+	const initialProvidersJson = JSON.stringify(existingManifest.providers || {});
+	const providers = JSON.parse(initialProvidersJson);
 	let changesDetected = false;
 
 	// Scan all configured providers in table
@@ -211,13 +163,17 @@ async function main() {
 			// Clean up retired root model field
 			if ('model' in providers[id]) delete providers[id].model;
 
-			if (recommended && current !== recommended) {
-				console.log(`   ✨ ${def.name} model change: ${current} -> ${recommended}`);
-				providers[id].models.default = recommended;
-				if (id === 'gemini') providers[id].models.fast = recommended;
-				changesDetected = true;
-			} else if (!providers[id].models.default && recommended) {
-				providers[id].models.default = recommended;
+			if (recommended) {
+				if (typeof recommended !== 'string' || !SAFE_MODEL_ID_REGEX.test(recommended)) {
+					console.warn(`   ⚠️  ${def.name} recommended model "${recommended}" contains invalid characters - skipping.`);
+				} else if (current !== recommended) {
+					console.log(`   ✨ ${def.name} model change: ${current} -> ${recommended}`);
+					providers[id].models.default = recommended;
+					if (id === 'gemini') providers[id].models.fast = recommended;
+					changesDetected = true;
+				} else if (!providers[id].models.default) {
+					providers[id].models.default = recommended;
+				}
 			}
 		} catch (err) {
 			console.warn(`   ⚠️  ${def.name} query skipped: ${err.message}`);
@@ -229,6 +185,9 @@ async function main() {
 		if ('model' in prov) delete prov.model;
 	}
 
+	const hasProviderChanges = JSON.stringify(providers) !== initialProvidersJson;
+	changesDetected = changesDetected || hasProviderChanges;
+
 	console.log('\n📊 Summary of Current Provider Defaults:');
 	for (const [id, prov] of Object.entries(providers)) {
 		const defaultModel = prov.models?.default || '(none)';
@@ -237,7 +196,9 @@ async function main() {
 
 	const updatedManifest = {
 		version: '1.1',
-		updatedAt: new Date().toISOString().split('T')[0] + 'T00:00:00Z',
+		updatedAt: changesDetected
+			? new Date().toISOString().split('T')[0] + 'T00:00:00Z'
+			: (existingManifest.updatedAt || new Date().toISOString().split('T')[0] + 'T00:00:00Z'),
 		providers
 	};
 
@@ -247,11 +208,12 @@ async function main() {
 		return;
 	}
 
-	if (changesDetected) {
-		console.log('\n✨ Model updates detected: New provider recommendations were discovered and applied.');
-	} else {
-		console.log('\n✨ All provider defaults are already up-to-date (no model changes detected).');
+	if (!changesDetected) {
+		console.log('\n✨ All provider defaults are already up-to-date (no model changes detected). No files written.');
+		return;
 	}
+
+	console.log('\n✨ Model updates detected: New provider recommendations were discovered and applied.');
 
 	// Write clean JSON manifest
 	const jsonContent = JSON.stringify(updatedManifest, null, 2) + '\n';
@@ -259,7 +221,21 @@ async function main() {
 	console.log(`\n💾 Saved: ${MANIFEST_JSON_PATH}`);
 
 	// Write commented JSONC manifest
-	const jsoncContent = `{\n  // Tempo AI Plugin - Dynamic Remote Provider Manifest v1.1\n  // Hosted at: https://tempo.magmacomputing.com.au/providers.v1.jsonc (and .json)\n  // Consumed automatically by @magmacomputing/tempo-plugin-ai during initAI()\n  "version": "1.1",\n  "updatedAt": "${updatedManifest.updatedAt}",\n  "providers": {\n    // Groq: High-speed open weights inference\n    "groq": ${JSON.stringify(providers.groq, null, 6).replace(/^/gm, '    ').trim()},\n    // OpenAI: Modern GPT series\n    "openai": ${JSON.stringify(providers.openai, null, 6).replace(/^/gm, '    ').trim()},\n    // Google Gemini: Multimodal flash & reasoning\n    "gemini": ${JSON.stringify(providers.gemini, null, 6).replace(/^/gm, '    ').trim()},\n    // Mistral AI: European low-latency models\n    "mistral": ${JSON.stringify(providers.mistral, null, 6).replace(/^/gm, '    ').trim()}\n  }\n}\n`;
+	const PROVIDER_COMMENTS = {
+		groq: 'Groq: High-speed open weights inference',
+		openai: 'OpenAI: Modern GPT series',
+		gemini: 'Google Gemini: Multimodal flash & reasoning',
+		mistral: 'Mistral AI: European low-latency models',
+	};
+
+	const providerEntries = Object.entries(providers).map(([id, prov], idx, arr) => {
+		const comment = PROVIDER_COMMENTS[id] || (PROVIDER_REGISTRY[id]?.name ? `${PROVIDER_REGISTRY[id].name}: AI inference provider` : `${id}: AI inference provider`);
+		const jsonStr = JSON.stringify(prov, null, 6).replace(/^/gm, '    ').trim();
+		const comma = idx < arr.length - 1 ? ',' : '';
+		return `    // ${comment}\n    "${id}": ${jsonStr}${comma}`;
+	}).join('\n');
+
+	const jsoncContent = `{\n  // Tempo AI Plugin - Dynamic Remote Provider Manifest v1.1\n  // Hosted at: https://tempo.magmacomputing.com.au/providers.v1.jsonc (and .json)\n  // Consumed automatically by @magmacomputing/tempo-plugin-ai during initAI()\n  "version": "1.1",\n  "updatedAt": "${updatedManifest.updatedAt}",\n  "providers": {\n${providerEntries}\n  }\n}\n`;
 
 	writeFileSync(MANIFEST_JSONC_PATH, jsoncContent, 'utf8');
 	console.log(`💾 Saved: ${MANIFEST_JSONC_PATH}`);
@@ -277,16 +253,13 @@ async function main() {
 	// Synchronize DEFAULT_PROVIDERS in packages/plugins/ai/src/core/config.ts
 	if (existsSync(AI_CONFIG_PATH)) {
 		let configSrc = readFileSync(AI_CONFIG_PATH, 'utf8');
-		const groqModel = providers.groq?.models?.default || 'openai/gpt-oss-120b';
-		const openAiModel = providers.openai?.models?.default || 'gpt-5.4-mini';
-		const geminiModel = providers.gemini?.models?.default || 'gemini-3.7-flash';
-		const mistralModel = providers.mistral?.models?.default || 'mistral-small-latest';
-
-		configSrc = configSrc
-			.replace(/(groq:\s*\{[\s\S]*?default:\s*')[^']+(')/, `$1${groqModel}$2`)
-			.replace(/(openai:\s*\{[\s\S]*?default:\s*')[^']+(')/, `$1${openAiModel}$2`)
-			.replace(/(gemini:\s*\{[\s\S]*?default:\s*')[^']+(')/, `$1${geminiModel}$2`)
-			.replace(/(mistral:\s*\{[\s\S]*?default:\s*')[^']+(')/, `$1${mistralModel}$2`);
+		for (const [id, prov] of Object.entries(providers)) {
+			const defaultModel = prov.models?.default;
+			if (defaultModel && typeof defaultModel === 'string' && SAFE_MODEL_ID_REGEX.test(defaultModel)) {
+				const regex = new RegExp(`(${id}:\\s*\\{[\\s\\S]*?default:\\s*')[^']+(')`);
+				configSrc = configSrc.replace(regex, (_match, prefix, suffix) => `${prefix}${defaultModel}${suffix}`);
+			}
+		}
 
 		writeFileSync(AI_CONFIG_PATH, configSrc, 'utf8');
 		console.log(`💾 Synchronized: ${AI_CONFIG_PATH}`);

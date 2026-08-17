@@ -1,4 +1,4 @@
-import { stringify, objectify, cloneify, parseJSONC } from '#library/serialize.library.js';
+import { stringify, objectify, cloneify } from '#library/serialize.library.js';
 
 describe('Serializer Library', () => {
 
@@ -112,55 +112,6 @@ describe('Serializer Library', () => {
 			expect(cloned.big).toBe(999n);
 			expect(Symbol.keyFor(cloned.sym)).toBe('test');
 			expect(cloned.undef).toBeUndefined();
-		});
-	});
-
-	describe('parseJSONC & stripJSONC', () => {
-		it('should parse clean JSON without comments', () => {
-			const json = '{"name": "tempo", "version": 1}';
-			expect(parseJSONC(json)).toEqual({ name: 'tempo', version: 1 });
-		});
-
-		it('should strip single-line comments and trailing commas', () => {
-			const jsonc = `
-			{
-				// Project configuration
-				"name": "tempo", // inline comment
-				"enabled": true,
-			}
-			`;
-			expect(parseJSONC(jsonc)).toEqual({ name: 'tempo', enabled: true });
-		});
-
-		it('should strip multi-line block comments', () => {
-			const jsonc = `
-			{
-				/* Multi-line
-				   description block */
-				"mode": "fallback",
-				"tiers": ["fast", "reasoning", /* trailing */]
-			}
-			`;
-			expect(parseJSONC(jsonc)).toEqual({ mode: 'fallback', tiers: ['fast', 'reasoning'] });
-		});
-
-		it('should preserve URLs with slashes inside quoted strings', () => {
-			const jsonc = `
-			{
-				// Remote API endpoint
-				"url": "https://api.groq.com/openai/v1/models",
-				"regex": "/*not-a-comment*/"
-			}
-			`;
-			expect(parseJSONC(jsonc)).toEqual({
-				url: 'https://api.groq.com/openai/v1/models',
-				regex: '/*not-a-comment*/',
-			});
-		});
-
-		it('should preserve escaped characters inside strings', () => {
-			const jsonc = '{"msg": "Hello \\"world\\" // not a comment"}';
-			expect(parseJSONC(jsonc)).toEqual({ msg: 'Hello "world" // not a comment' });
 		});
 	});
 

@@ -138,7 +138,7 @@ describe('#setConfig refactor verification', () => {
   })
 
   test('should export defineConfig and resolveConfig from config module', async () => {
-    const { defineConfig, resolveConfig } = await import('../../src/config/config.index.js');
+    const { defineConfig, resolveConfig } = await import('@magmacomputing/tempo/config');
     expect(typeof defineConfig).toBe('function');
     expect(typeof resolveConfig).toBe('function');
     const dummy = { timeZone: 'UTC' };

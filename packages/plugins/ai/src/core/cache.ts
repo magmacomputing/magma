@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { secure } from '@magmacomputing/tempo/library';
+import { secure, isNumber } from '@magmacomputing/tempo/library';
 import { _state } from './init.js';
 import { logDebug, warnDebug } from './logger.js';
 import type { AiCacheAdapter } from '../types/index.js';
@@ -85,7 +85,7 @@ export async function writeMultiTierCache(
 
 	const tag = options.tag ?? 'tempo-plugin-ai';
 	Tempo.cache.set(cacheKey, value);
-	if (typeof ttl === 'number' && Number.isFinite(ttl) && ttl > 0) {
+	if (isNumber(ttl) && ttl > 0) {
 		_entryExpiries.set(cacheKey, Date.now() + ttl);
 	} else {
 		_entryExpiries.delete(cacheKey);
@@ -229,7 +229,7 @@ export const aiCache = secure({
 	 */
 	async set(key: string, value: string, ttl?: number): Promise<void> {
 		Tempo.cache.set(key, value);
-		if (typeof ttl === 'number' && Number.isFinite(ttl) && ttl > 0) {
+		if (isNumber(ttl) && ttl > 0) {
 			_entryExpiries.set(key, Date.now() + ttl);
 		} else {
 			_entryExpiries.delete(key);

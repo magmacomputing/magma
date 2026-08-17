@@ -19,6 +19,7 @@ import { RE_ISO_DATE_PREFIX, RE_ISO_Z_SUFFIX } from '../core/patterns.js';
 import type { AiParseOptions } from '../types/index.js';
 
 async function parseSingleInput(str: string, options?: AiParseOptions): Promise<Tempo> {
+	const availableProviders = getAvailableProviders(options);
 	const isDebug = options?.debug ?? _state.config.debug ?? false;
 	const normalizedStr = normalizeCacheInput(str);
 
@@ -113,7 +114,6 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
 	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}.`;
 
-	const availableProviders = getAvailableProviders(options);
 	const mode = aiMode || _state.config.mode || AiMode.Fallback;
 	const effectiveMinConfidence = validateMinConfidence(minConfidence, 'parseAI');
 	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;

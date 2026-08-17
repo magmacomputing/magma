@@ -1,4 +1,4 @@
-import { isDefined } from './assertion.library.js';
+import { isDefined, isNumber } from './assertion.library.js';
 import {
 	DAYS_IN_WEEK,
 	DAY_MAP,
@@ -96,12 +96,12 @@ export function parseRRule(rrule: string): ParsedRRule {
 				break;
 			case 'INTERVAL': {
 				const parsed = parseInt(trimmedVal, 10);
-				interval = !isNaN(parsed) && parsed > 0 ? parsed : 1;
+				interval = isNumber(parsed) && parsed > 0 ? parsed : 1;
 				break;
 			}
 			case 'COUNT': {
 				const parsed = parseInt(trimmedVal, 10);
-				count = !isNaN(parsed) && parsed > 0 ? parsed : undefined;
+				count = isNumber(parsed) && parsed > 0 ? parsed : undefined;
 				break;
 			}
 			case 'UNTIL': {
@@ -109,13 +109,12 @@ export function parseRRule(rrule: string): ParsedRRule {
 					const year = parseInt(trimmedVal.slice(0, 4), 10);
 					const month = parseInt(trimmedVal.slice(4, 6), 10);
 					const day = parseInt(trimmedVal.slice(6, 8), 10);
-					if (isValidDate(year, month, day)) {
+					if (isValidDate(year, month, day))
 						untilMs = fromUtcParts({ year, month, day, hours: 23, minutes: 59, seconds: 59, milliseconds: 999 }).getTime();
-					}
 				} else {
 					const uStr = trimmedVal.replace(RE_UNTIL_TIMESTAMP, '$1-$2-$3T$4:$5:$6Z');
 					const parsedDate = new Date(uStr);
-					untilMs = !isNaN(parsedDate.getTime()) ? parsedDate.getTime() : undefined;
+					untilMs = isNumber(parsedDate.getTime()) ? parsedDate.getTime() : undefined;
 				}
 				break;
 			}
@@ -123,7 +122,7 @@ export function parseRRule(rrule: string): ParsedRRule {
 				const items = trimmedVal.split(',').map(v => {
 					const trimmed = v.trim();
 					const num = parseInt(trimmed, 10);
-					if (!isNaN(num) && num >= 1 && num <= 12) return num;
+					if (isNumber(num) && num >= 1 && num <= 12) return num;
 					const prefix = trimmed.slice(0, 3).toUpperCase();
 					return prefix in MONTH_MAP ? MONTH_MAP[prefix as MonthKey] : undefined;
 				}).filter((v): v is number => isDefined(v));
@@ -136,23 +135,23 @@ export function parseRRule(rrule: string): ParsedRRule {
 					const nthVal = m && m[1] ? parseInt(m[1], 10) : undefined;
 					const rawDay = m ? m[2] : item;
 					const canonicalDay = rawDay.slice(0, 2).toUpperCase();
-					return { nth: isDefined(nthVal) && !isNaN(nthVal) ? nthVal : undefined, day: canonicalDay };
+					return { nth: isNumber(nthVal) ? nthVal : undefined, day: canonicalDay };
 				}).filter(d => d.day in DAY_MAP);
 				if (items.length > 0) byDay = items;
 				break;
 			}
 			case 'BYHOUR': {
-				const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(v => !isNaN(v) && v >= 0 && v <= 23);
+				const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(v => isNumber(v) && v >= 0 && v <= 23);
 				if (items.length > 0) byHour = items;
 				break;
 			}
 			case 'BYMINUTE': {
-				const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(v => !isNaN(v) && v >= 0 && v <= 59);
+				const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(v => isNumber(v) && v >= 0 && v <= 59);
 				if (items.length > 0) byMinute = items;
 				break;
 			}
 			case 'BYSETPOS': {
-				const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(v => !isNaN(v));
+				const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(isNumber);
 				if (items.length > 0) bySetPos = items;
 				break;
 			}

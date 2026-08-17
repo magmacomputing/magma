@@ -27,3 +27,7 @@ export const RE_DURATION_HOURS = /(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h\b)/i;
 
 /** Matches a single ISO weekday digit string (1–7). */
 export const RE_ISO_WEEKDAY_DIGIT = /^[1-7]$/;
+
+/** Matches a safe provider ID containing only alphanumeric characters, underscores, and hyphens. */
+export const RE_SAFE_PROVIDER_ID = /^[a-z0-9_-]+$/i;
+

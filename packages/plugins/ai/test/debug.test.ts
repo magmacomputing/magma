@@ -12,6 +12,7 @@ import {
 	recurrenceAI,
 } from '../src/index.js';
 import { maskPii, sanitizeForLog, logDebug, warnDebug, attachCustomInspect } from '../src/core/logger.js';
+import { executeBatch } from '../src/core/support.js';
 
 describe('Smart Debug & PII Protection Infrastructure', () => {
 	const originalEnv = process.env.NODE_ENV;
@@ -362,6 +363,83 @@ describe('Smart Debug & PII Protection Infrastructure', () => {
 			const inspected = util.inspect(res);
 			expect(inspected).toContain('d***@internal.org');
 			expect(inspected).not.toContain('dev-team@internal.org');
+		});
+	});
+
+	describe('executeBatch concurrency hardening', () => {
+		it('should safely process all items when concurrency is NaN without returning uninitialized results', async () => {
+			const items = [1, 2, 3, 4, 5];
+			const processed: number[] = [];
+			const results = await executeBatch(
+				items,
+				async (item) => {
+					processed.push(item);
+					return item * 10;
+				},
+				{ concurrency: NaN }
+			);
+
+			expect(results).toEqual([10, 20, 30, 40, 50]);
+			expect(processed).toHaveLength(5);
+		});
+
+		it('should safely process all items when concurrency is Infinity or non-finite', async () => {
+			const items = ['a', 'b', 'c'];
+			const results = await executeBatch(
+				items,
+				async (item) => item.toUpperCase(),
+				{ concurrency: Infinity }
+			);
+
+			expect(results).toEqual(['A', 'B', 'C']);
+		});
+
+		it('should clamp concurrency to at least 1 when negative or zero', async () => {
+			const items = [10, 20];
+			const results = await executeBatch(
+				items,
+				async (item) => item + 1,
+				{ concurrency: -5 }
+			);
+
+			expect(results).toEqual([11, 21]);
+		});
+
+		it('should clamp concurrency to 16 maximum when exceeding upper bound', async () => {
+			const items = Array.from({ length: 20 }, (_, i) => i);
+			const results = await executeBatch(
+				items,
+				async (item) => item * 2,
+				{ concurrency: 100 }
+			);
+
+			expect(results).toHaveLength(20);
+			expect(results[19]).toBe(38);
+		});
+
+		it('should correctly capture and throw falsy rejection values (0, false, null, undefined, empty string)', async () => {
+			const falsyValues = [0, false, null, undefined, ''];
+
+			for (const val of falsyValues) {
+				let invokedCount = 0;
+				try {
+					await executeBatch(
+						[1, 2, 3, 4, 5],
+						async (item) => {
+							invokedCount++;
+							if (item === 1) {
+								throw val;
+							}
+							return item * 10;
+						},
+						{ concurrency: 2 }
+					);
+					expect.unreachable('Should have thrown rejection value');
+				} catch (thrown) {
+					expect(thrown).toBe(val);
+					expect(invokedCount).toBeLessThan(5);
+				}
+			}
 		});
 	});
 });

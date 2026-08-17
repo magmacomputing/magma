@@ -1,9 +1,10 @@
-import { parseJSONC } from '@magmacomputing/tempo/library';
+import { isNumber, parseJSONC } from '@magmacomputing/tempo/library';
 import { DEFAULT_PROVIDERS } from './config.js';
 import type { AiProvider } from '../types/index.js';
 
 export const DEFAULT_REMOTE_MANIFEST_URL = 'https://tempo.magmacomputing.com.au/providers.v1.json';
 export const DEFAULT_MANIFEST_TIMEOUT_MS = 1500;
+export const MAX_MANIFEST_BYTES = 512 * 1024;
 
 let _cachedManifestMap = new Map<string, Record<string, Partial<AiProvider>>>();
 let _fetchPromiseMap = new Map<string, Promise<Record<string, Partial<AiProvider>> | null>>();
@@ -19,7 +20,7 @@ export function resetManifestCache(): void {
 /**
  * Validates that a manifest or provider URL uses HTTPS or HTTP localhost.
  */
-function isValidManifestUrl(urlStr: string): boolean {
+export function isValidManifestUrl(urlStr: string): boolean {
 	try {
 		const parsed = new URL(urlStr);
 		return parsed.protocol === 'https:' || (parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'));
@@ -75,6 +76,18 @@ export async function loadRemoteManifest(
 				const empty = {};
 				_cachedManifestMap.set(targetUrl, empty);
 				return null;
+			}
+
+			const contentLength = response.headers.get('content-length');
+			if (contentLength) {
+				const bytes = parseInt(contentLength, 10);
+				if (isNumber(bytes) && bytes > MAX_MANIFEST_BYTES) {
+					if (debug)
+						console.warn(`[tempo-plugin-ai] Remote manifest rejected: Content-Length (${bytes}) exceeds limit (${MAX_MANIFEST_BYTES} bytes)`);
+					const empty = {};
+					_cachedManifestMap.set(targetUrl, empty);
+					return null;
+				}
 			}
 
 			const rawText = await response.text();

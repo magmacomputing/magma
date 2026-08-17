@@ -4,7 +4,7 @@ export * from './types/index.js';
 export * from './core/config.js';
 
 // AI Manifest Support
-export { loadRemoteManifest, resetManifestCache, DEFAULT_REMOTE_MANIFEST_URL } from './core/manifest.js';
+export { loadRemoteManifest, resetManifestCache, DEFAULT_REMOTE_MANIFEST_URL, MAX_MANIFEST_BYTES, getResolvedProviderDefaults } from './core/manifest.js';
 
 // AI Cache Manager
 export { aiCache } from './core/cache.js';
@@ -16,7 +16,7 @@ export { initAI, resetAI, getAiRateLimits, getAiProviderRateLimits, getAiConfig 
 export { listProviderModels, type ProviderModelInfo, type ListProviderModelsOptions } from './core/models.js';
 
 // AI Auto-Discovery
-export { isServerRuntime, isBrowserRuntime, interpolateEnv, interpolateEnvValue, scanWellKnownEnvProviders, resolveAutoDiscoveredConfig } from './core/discovery.js';
+export { isServerRuntime, isBrowserRuntime, interpolateEnv, interpolateEnvValue, scanWellKnownEnvProviders, resolveAutoDiscoveredConfig, resolveProviderApiKey } from './core/discovery.js';
 
 // AI Function Handlers
 export { parseAI } from './functions/parse.js';

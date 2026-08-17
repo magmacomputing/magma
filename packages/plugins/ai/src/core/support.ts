@@ -1,4 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
+import { isNumber } from '@magmacomputing/tempo/library';
 import { TempoAiError } from './error.js';
 import { RESERVED_PROVIDER_IDS } from './config.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
@@ -139,9 +140,11 @@ export async function executeBatch<TIn, TOut>(
 ): Promise<(TOut | TempoAiError)[]> {
 	if (items.length === 0) return [];
 	const softErrors = Boolean(options?.softErrors);
-	const concurrencyLimit = Math.max(1, Math.min(16, options?.concurrency ?? (softErrors ? 4 : items.length)));
+	const customConcurrency = isNumber(options?.concurrency) ? options.concurrency : undefined;
+	const resolvedConcurrency = customConcurrency ?? (softErrors ? 4 : items.length);
+	const concurrencyLimit = Math.max(1, Math.min(16, Math.floor(resolvedConcurrency)));
 
-	if (concurrencyLimit >= items.length && !options?.concurrency) {
+	if (concurrencyLimit >= items.length && customConcurrency === undefined) {
 		if (softErrors) {
 			const settled = await Promise.allSettled(items.map((item, idx) => workerFn(item, idx)));
 			return settled.map((s, idx) => {
@@ -161,11 +164,12 @@ export async function executeBatch<TIn, TOut>(
 
 	const results: (TOut | TempoAiError)[] = new Array(items.length);
 	let nextIdx = 0;
-	let firstError: Error | null = null;
+	let hasFailed = false;
+	let firstError: any = undefined;
 
 	const worker = async () => {
 		while (nextIdx < items.length) {
-			if (!softErrors && firstError) break;
+			if (!softErrors && hasFailed) break;
 			const currentIndex = nextIdx++;
 			const item = items[currentIndex];
 			try {
@@ -182,7 +186,10 @@ export async function executeBatch<TIn, TOut>(
 							{ cause: err },
 						);
 				} else {
-					if (!firstError) firstError = err;
+					if (!hasFailed) {
+						hasFailed = true;
+						firstError = err;
+					}
 					break;
 				}
 			}
@@ -192,7 +199,7 @@ export async function executeBatch<TIn, TOut>(
 	const workers = Array.from({ length: Math.min(concurrencyLimit, items.length) }, () => worker());
 	await Promise.all(workers);
 
-	if (!softErrors && firstError) throw firstError;
+	if (!softErrors && hasFailed) throw firstError;
 	return results;
 }
 

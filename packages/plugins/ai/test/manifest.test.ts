@@ -3,19 +3,24 @@ import {
 	resetAI,
 	getAiConfig,
 	loadRemoteManifest,
+	resetManifestCache,
 	DEFAULT_REMOTE_MANIFEST_URL,
-	DEFAULT_PROVIDERS
+	DEFAULT_PROVIDERS,
+	MAX_MANIFEST_BYTES,
+	getResolvedProviderDefaults,
 } from '../src/index.js';
 import { parseJSONC } from '@magmacomputing/tempo/library';
 
 describe('Remote Provider Manifest & Dynamic Defaults', () => {
 	beforeEach(() => {
 		resetAI();
+		resetManifestCache();
 		vi.restoreAllMocks();
 	});
 
 	afterEach(() => {
 		resetAI();
+		resetManifestCache();
 		vi.restoreAllMocks();
 	});
 
@@ -278,6 +283,71 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 
 		// Config should remain the fresh one, not overwritten by stale in-flight init
 		expect(getAiConfig().providers?.[0].id).toBe('openai');
+	});
+
+	it('should reject remote manifest when Content-Length exceeds MAX_MANIFEST_BYTES', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(JSON.stringify({ providers: { groq: { model: 'huge-manifest-model' } } }), {
+				status: 200,
+				headers: { 'Content-Length': String(MAX_MANIFEST_BYTES + 1024) }
+			})
+		);
+
+		const result = await loadRemoteManifest('https://tempo.magmacomputing.com.au/providers-oversized.json');
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		expect(result).toBeNull();
+	});
+
+	it('should merge remote manifest entries containing tiered models into getResolvedProviderDefaults', async () => {
+		const manifestUrl = 'https://tempo.magmacomputing.com.au/manifest-tiered.json';
+		const mockManifest = {
+			version: '1.2',
+			providers: {
+				groq: {
+					models: {
+						default: 'remote-llama-3.3-70b',
+						fast: 'remote-llama-3.1-8b',
+						reasoning: 'remote-deepseek-r1-distill',
+					},
+				},
+			},
+		};
+
+		vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(JSON.stringify(mockManifest), { status: 200 })
+		);
+
+		const loaded = await loadRemoteManifest(manifestUrl);
+		expect(loaded).toBeDefined();
+
+		const resolved = getResolvedProviderDefaults('groq', manifestUrl);
+		expect(resolved.models?.default).toBe('remote-llama-3.3-70b');
+		expect(resolved.models?.fast).toBe('remote-llama-3.1-8b');
+		expect(resolved.models?.reasoning).toBe('remote-deepseek-r1-distill');
+		expect(resolved.url).toBe(DEFAULT_PROVIDERS.groq.url);
+	});
+
+	it('should preserve precedence of remote single-model entry over local defaults while maintaining unspecified fields', async () => {
+		const manifestUrl = 'https://tempo.magmacomputing.com.au/manifest-legacy.json';
+		const mockManifest = {
+			version: '1.0',
+			providers: {
+				openai: {
+					model: 'gpt-5.4-custom-override',
+				},
+			},
+		};
+
+		vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(JSON.stringify(mockManifest), { status: 200 })
+		);
+
+		await loadRemoteManifest(manifestUrl);
+
+		const resolved = getResolvedProviderDefaults('openai', manifestUrl);
+		expect(resolved.model).toBe('gpt-5.4-custom-override');
+		expect(resolved.url).toBe(DEFAULT_PROVIDERS.openai.url);
+		expect(resolved.tokenParam).toBe(DEFAULT_PROVIDERS.openai.tokenParam);
 	});
 
 	describe('JSONC Parser (parseJSONC)', () => {

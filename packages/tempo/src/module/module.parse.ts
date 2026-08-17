@@ -1,9 +1,8 @@
 import '#library/temporal.polyfill.js';
 import { asType } from '#library/type.library.js';
 import { LOG } from '#library/logger.class.js';
-import { isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty } from '#library/assertion.library.js';
+import { isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty, isNumber, isNumeric } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
-import { isNumeric } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import type { TypeValue } from '#library/type.library.js';
@@ -348,7 +347,7 @@ const _ParseEngine = {
 			isEpoch = true;
 		}
 		else if (type === 'Number') {
-			if (Number.isNaN(value) || !Number.isFinite(value)) return arg;
+			if (!isNumber(value)) return arg;
 
 			if (!Number.isInteger(value) || isLong) {
 				isEpoch = true;

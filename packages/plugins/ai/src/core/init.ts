@@ -1,19 +1,21 @@
 import { Tempo } from '@magmacomputing/tempo';
+import { isNumber } from '@magmacomputing/tempo/library';
 
 import { getResolvedProviderDefaults, loadRemoteManifest, resetManifestCache } from './manifest.js';
 import { assertNoReservedProviderId } from './support.js';
 import { warnDebug } from './logger.js';
 import {
-	getActiveTempoConfigAi,
-	resolveAutoDiscoveredConfig,
-	scanWellKnownEnvProviders,
-	interpolateEnv,
-	getRuntimeEnv,
-	WELL_KNOWN_ENV_MAP,
+  getActiveTempoConfigAi,
+  resolveAutoDiscoveredConfig,
+  scanWellKnownEnvProviders,
+  interpolateEnv,
+  getRuntimeEnv,
+  resolveProviderApiKey,
 } from './discovery.js';
 import type { AiConfig, AiRateLimits, AiProvider } from '../types/index.js';
 
 let _config: AiConfig = {};
+const _autoInit = { attempted: false, initializing: false };
 
 /**
  * Internal singleton state container for the AI plugin.
@@ -21,26 +23,32 @@ let _config: AiConfig = {};
  * @internal
  */
 export const _state = {
-	get config(): AiConfig {
-		if (_state.rawProviders === undefined && (!_config.providers || _config.providers.length === 0)) {
-			const tempoAiConfig = getActiveTempoConfigAi();
-			if (tempoAiConfig) {
-				initAI(tempoAiConfig);
-			} else {
-				const envProviders = scanWellKnownEnvProviders();
-				if (envProviders.length > 0)
-					initAI({ providers: envProviders });
-			}
-		}
-		return _config;
-	},
-	set config(val: AiConfig) {
-		_config = val;
-	},
-	rawProviders: undefined as AiProvider[] | undefined,
-	limits: null as AiRateLimits | null,
-	providerLimits: new Map<string, AiRateLimits>(),
-	revision: 0,
+  get config(): AiConfig {
+    if (!_autoInit.attempted && !_autoInit.initializing && _state.rawProviders === undefined && (!_config.providers || _config.providers.length === 0)) {
+      _autoInit.attempted = true;
+      _autoInit.initializing = true;
+      try {
+        const tempoAiConfig = getActiveTempoConfigAi();
+        if (tempoAiConfig) {
+          initAI(tempoAiConfig);
+        } else {
+          const envProviders = scanWellKnownEnvProviders();
+          if (envProviders.length > 0)
+            initAI({ providers: envProviders });
+        }
+      } finally {
+        _autoInit.initializing = false;
+      }
+    }
+    return _config;
+  },
+  set config(val: AiConfig) {
+    _config = val;
+  },
+  rawProviders: undefined as AiProvider[] | undefined,
+  limits: null as AiRateLimits | null,
+  providerLimits: new Map<string, AiRateLimits>(),
+  revision: 0,
 };
 
 /**
@@ -48,25 +56,13 @@ export const _state = {
  * filesystem tempo.config.*, or runtime environment variables if providers are not yet configured.
  */
 export async function ensureAiInitialized(): Promise<void> {
-	if (_state.config.providers && _state.config.providers.length > 0)
-		return;
+  if (_state.config.providers && _state.config.providers.length > 0)
+    return;
 
-	const discovered = await resolveAutoDiscoveredConfig();
-	if (discovered.providers && discovered.providers.length > 0) {
-		await initAI(discovered);
-	}
-}
-
-function resolveProviderApiKey(id: string, explicitKey?: string, env: Record<string, string | undefined> = getRuntimeEnv()): string | undefined {
-	if (explicitKey) return explicitKey;
-	const envVars = WELL_KNOWN_ENV_MAP[id.toLowerCase()];
-	if (!envVars) return undefined;
-	for (const envVar of envVars) {
-		const val = env[envVar];
-		if (val && typeof val === 'string' && val.trim().length > 0)
-			return val.trim();
-	}
-	return undefined;
+  const discovered = await resolveAutoDiscoveredConfig();
+  if (discovered.providers && discovered.providers.length > 0) {
+    await initAI(discovered);
+  }
 }
 
 /**
@@ -85,58 +81,58 @@ function resolveProviderApiKey(id: string, explicitKey?: string, env: Record<str
  * ```
  */
 export function initAI(config?: AiConfig): Promise<void> {
-	const tempoAiConfig = getActiveTempoConfigAi();
-	const env = getRuntimeEnv();
+  const tempoAiConfig = getActiveTempoConfigAi();
+  const env = getRuntimeEnv();
 
-	const hasExplicitProviders = config?.providers !== undefined || tempoAiConfig?.providers !== undefined;
+  const hasExplicitProviders = config?.providers !== undefined || tempoAiConfig?.providers !== undefined;
 
-	const mergedRaw: AiConfig = {
-		...(tempoAiConfig || {}),
-		...(config || {}),
-	};
+  const mergedRaw: AiConfig = {
+    ...(tempoAiConfig || {}),
+    ...(config || {}),
+  };
 
-	const mergedConfig = interpolateEnv(mergedRaw, env);
+  const mergedConfig = interpolateEnv(mergedRaw, env);
 
-	if (!hasExplicitProviders && (!mergedConfig.providers || mergedConfig.providers.length === 0)) {
-		const envProviders = scanWellKnownEnvProviders(env);
-		if (envProviders.length > 0)
-			mergedConfig.providers = envProviders;
-	}
+  if (!hasExplicitProviders && (!mergedConfig.providers || mergedConfig.providers.length === 0)) {
+    const envProviders = scanWellKnownEnvProviders(env);
+    if (envProviders.length > 0)
+      mergedConfig.providers = envProviders;
+  }
 
-	if (mergedConfig.providers)
-		assertNoReservedProviderId(mergedConfig.providers);
+  if (mergedConfig.providers)
+    assertNoReservedProviderId(mergedConfig.providers);
 
-	if (mergedConfig.providers !== undefined)
-		_state.rawProviders = mergedConfig.providers;
+  if (mergedConfig.providers !== undefined)
+    _state.rawProviders = mergedConfig.providers;
 
-	const currentRevision = ++_state.revision;
-	const remoteUrl = mergedConfig.remoteConfigUrl ?? _state.config.remoteConfigUrl;
-	const callerProviders = mergedConfig.providers ?? _state.rawProviders;
+  const currentRevision = ++_state.revision;
+  const remoteUrl = mergedConfig.remoteConfigUrl ?? _state.config.remoteConfigUrl;
+  const callerProviders = mergedConfig.providers ?? _state.rawProviders;
 
-	const resolveSyncProviders = (providers?: AiProvider[]) => {
-		if (!providers) return _state.config.providers;
-		return providers.map(p => {
-			const normalizedId = p.id?.toLowerCase() ?? '';
-			const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, mergedConfig.debug ?? _state.config.debug);
-			const resolvedKey = (p.key && p.key.trim().length > 0) ? p.key : resolveProviderApiKey(normalizedId, undefined, env);
-			return {
-				...defaults,
-				...p,
-				...(resolvedKey ? { key: resolvedKey } : {}),
-			} as AiProvider;
-		});
-	};
+  const resolveSyncProviders = (providers?: AiProvider[]) => {
+    if (!providers) return _state.config.providers;
+    return providers.map(p => {
+      const normalizedId = p.id?.toLowerCase() ?? '';
+      const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, mergedConfig.debug ?? _state.config.debug);
+      const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env);
+      return {
+        ...defaults,
+        ...p,
+        ...(resolvedKey ? { key: resolvedKey } : {}),
+      } as AiProvider;
+    });
+  };
 
-	// Synchronously update _state.config for immediate availability
-	_state.config = {
-		..._state.config,
-		...mergedConfig,
-		providers: resolveSyncProviders(callerProviders) || [],
-	};
+  // Synchronously update _state.config for immediate availability
+  _state.config = {
+    ..._state.config,
+    ...mergedConfig,
+    providers: resolveSyncProviders(callerProviders) || [],
+  };
 
-	if (mergedConfig.cache) {
-		Tempo.init({ cache: mergedConfig.cache, silent: true });
-	}
+  if (mergedConfig.cache) {
+    Tempo.init({ cache: mergedConfig.cache, silent: true });
+  }
 
   return (async () => {
     if (remoteUrl !== false) {
@@ -154,7 +150,7 @@ export function initAI(config?: AiConfig): Promise<void> {
       const asyncProviders = await Promise.all(currentProviders.map(async p => {
         const normalizedId = p.id?.toLowerCase() ?? '';
         const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, mergedConfig.debug ?? _state.config.debug);
-        const resolvedKey = p.key ?? resolveProviderApiKey(normalizedId);
+        const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env);
         let hookOptions: Partial<AiProvider> | null = null;
         try {
           hookOptions = await fetchDefaults(normalizedId);
@@ -182,11 +178,13 @@ export function initAI(config?: AiConfig): Promise<void> {
  * Useful for test isolation and clean lifecycle teardown.
  */
 export function resetAI(): void {
-  _state.config = {};
+  _config = {};
   _state.rawProviders = undefined;
   _state.limits = null;
   _state.providerLimits.clear();
   _state.revision++;
+  _autoInit.attempted = false;
+  _autoInit.initializing = false;
   resetManifestCache();
 }
 
@@ -243,7 +241,7 @@ export function parseResetHeaderToTempo(resetHeader: string): Tempo | null {
   // Case 1: Simple numeric string (seconds or epoch)
   if (/^\d+(\.\d+)?$/.test(trimmed)) {
     const val = parseFloat(trimmed);
-    if (Number.isNaN(val) || val < 0) return null;
+    if (!isNumber(val) || val < 0) return null;
     if (val > 1000000000) {
       try {
         const t = new Tempo(val * 1000);
@@ -272,7 +270,7 @@ export function parseResetHeaderToTempo(resetHeader: string): Tempo | null {
       const ms = match[5] ? parseFloat(match[5]) : 0;
 
       const totalMs = (d * 86400 + h * 3600 + m * 60 + s) * 1000 + ms;
-      if (totalMs <= 0 || Number.isNaN(totalMs)) return null;
+      if (!isNumber(totalMs) || totalMs <= 0) return null;
 
       try {
         const t = new Tempo().add(`${totalMs} milliseconds`);
@@ -316,8 +314,8 @@ export function parseRateLimitsFromResponse(response: Response): AiRateLimits | 
   const reqNum = remReqHeader !== null ? parseInt(remReqHeader, 10) : NaN;
   const tokNum = remTokHeader !== null ? parseInt(remTokHeader, 10) : NaN;
 
-  const parsedReq = Number.isNaN(reqNum) ? null : reqNum;
-  const parsedTok = Number.isNaN(tokNum) ? null : tokNum;
+  const parsedReq = isNumber(reqNum) ? reqNum : null;
+  const parsedTok = isNumber(tokNum) ? tokNum : null;
   const resetAtTempo = resetTokHeader ? parseResetHeaderToTempo(resetTokHeader) : null;
 
   if (parsedReq === null && parsedTok === null && resetAtTempo === null)

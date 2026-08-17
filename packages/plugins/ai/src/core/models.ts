@@ -1,4 +1,6 @@
 import { TempoAiError } from './error.js';
+import { isValidManifestUrl } from './manifest.js';
+import { RE_SAFE_PROVIDER_ID } from './patterns.js';
 import { parseJSONC } from '@magmacomputing/tempo/library';
 
 export interface ProviderModelInfo {
@@ -36,46 +38,53 @@ export async function listProviderModels(
 	if (!normalizedId)
 		throw new TempoAiError('Provider ID is required to query models', 400);
 
+	if (!RE_SAFE_PROVIDER_ID.test(normalizedId))
+		throw new TempoAiError(`Invalid provider ID '${providerId}'`, 400);
+
 	if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0)
 		throw new TempoAiError(`API key is required to query models for provider '${providerId}'`, 401);
+
+	let endpointUrl: string;
+	switch (normalizedId) {
+		case 'gemini':
+			endpointUrl = options.url ?? 'https://generativelanguage.googleapis.com/v1beta/models';
+			break;
+		case 'groq':
+			endpointUrl = options.url ?? 'https://api.groq.com/openai/v1/models';
+			break;
+		case 'openai':
+			endpointUrl = options.url ?? 'https://api.openai.com/v1/models';
+			break;
+		case 'mistral':
+			endpointUrl = options.url ?? 'https://api.mistral.ai/v1/models';
+			break;
+		default:
+			endpointUrl = options.url ?? `https://api.${normalizedId}.com/v1/models`;
+			break;
+	}
+
+	if (!isValidManifestUrl(endpointUrl))
+		throw new TempoAiError(`Invalid models endpoint URL '${endpointUrl}' - must use HTTPS or localhost HTTP`, 400);
 
 	const timeoutMs = options.timeout ?? DEFAULT_MODELS_TIMEOUT_MS;
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), timeoutMs);
 
 	try {
-		let endpointUrl: string;
 		const headers: Record<string, string> = {
-			Accept: 'application/json, text/plain, */*'
+			Accept: 'application/json, text/plain, */*',
 		};
 
-		switch (normalizedId) {
-			case 'gemini':
-				endpointUrl = options.url ?? 'https://generativelanguage.googleapis.com/v1beta/models';
-				headers['x-goog-api-key'] = apiKey.trim();
-				break;
-			case 'groq':
-				endpointUrl = options.url ?? 'https://api.groq.com/openai/v1/models';
-				headers.Authorization = `Bearer ${apiKey.trim()}`;
-				break;
-			case 'openai':
-				endpointUrl = options.url ?? 'https://api.openai.com/v1/models';
-				headers.Authorization = `Bearer ${apiKey.trim()}`;
-				break;
-			case 'mistral':
-				endpointUrl = options.url ?? 'https://api.mistral.ai/v1/models';
-				headers.Authorization = `Bearer ${apiKey.trim()}`;
-				break;
-			default:
-				endpointUrl = options.url ?? `https://api.${normalizedId}.com/v1/models`;
-				headers.Authorization = `Bearer ${apiKey.trim()}`;
-				break;
+		if (normalizedId === 'gemini') {
+			headers['x-goog-api-key'] = apiKey.trim();
+		} else {
+			headers.Authorization = `Bearer ${apiKey.trim()}`;
 		}
 
 		const response = await fetch(endpointUrl, {
 			signal: controller.signal,
 			headers,
-			redirect: 'error'
+			redirect: 'error',
 		});
 
 		if (!response.ok) {
@@ -125,7 +134,7 @@ export async function listProviderModels(
 	} catch (err: any) {
 		if (err instanceof TempoAiError)
 			throw err;
-		if (err.name === 'AbortError' || controller.signal.aborted)
+		if (err?.name === 'AbortError' || controller.signal.aborted)
 			throw new TempoAiError(`Timeout querying models for provider '${providerId}' after ${timeoutMs}ms`, 504);
 		throw new TempoAiError(`Network error querying models for '${providerId}': ${err?.message || err}`, 500);
 	} finally {
