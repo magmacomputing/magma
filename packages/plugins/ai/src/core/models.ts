@@ -1,7 +1,7 @@
 import { TempoAiError } from './error.js';
 import { isValidManifestUrl } from './manifest.js';
 import { RE_SAFE_PROVIDER_ID } from './patterns.js';
-import { parseJSONC } from '@magmacomputing/tempo/library';
+import { fetchRequest, HttpError, parseJSONC } from '@magmacomputing/tempo/library';
 
 export interface ProviderModelInfo {
 	id: string;
@@ -19,6 +19,7 @@ export interface ListProviderModelsOptions {
 }
 
 const DEFAULT_MODELS_TIMEOUT_MS = 10_000;
+export const MAX_MODELS_BYTES = 1024 * 1024;
 
 /**
  * Queries an AI provider's models endpoint to retrieve available models.
@@ -67,13 +68,11 @@ export async function listProviderModels(
 		throw new TempoAiError(`Invalid models endpoint URL '${endpointUrl}' - must use HTTPS or localhost HTTP`, 400);
 
 	const timeoutMs = options.timeout ?? DEFAULT_MODELS_TIMEOUT_MS;
-	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), timeoutMs);
 
 	try {
 		const headers: Record<string, string> = {
 			Accept: 'application/json, text/plain, */*',
-		};
+		}
 
 		if (normalizedId === 'gemini') {
 			headers['x-goog-api-key'] = apiKey.trim();
@@ -81,22 +80,15 @@ export async function listProviderModels(
 			headers.Authorization = `Bearer ${apiKey.trim()}`;
 		}
 
-		const response = await fetch(endpointUrl, {
-			signal: controller.signal,
+		const rawOrData = await fetchRequest<any>(endpointUrl, {
 			headers,
 			redirect: 'error',
+		}, {
+			timeout: timeoutMs,
+			maxBytes: MAX_MODELS_BYTES,
 		});
 
-		if (!response.ok) {
-			const errorText = await response.text().catch(() => '');
-			throw new TempoAiError(
-				`Failed to query models from ${providerId} (${response.status}): ${errorText || response.statusText}`,
-				response.status
-			);
-		}
-
-		const rawText = await response.text();
-		const data = parseJSONC(rawText);
+		const data = typeof rawOrData === 'string' ? parseJSONC(rawOrData) : rawOrData;
 
 		// Format 1: Google Gemini { models: [{ name: "models/gemini-3.7-flash", ... }] }
 		if (data && Array.isArray(data.models)) {
@@ -134,10 +126,15 @@ export async function listProviderModels(
 	} catch (err: any) {
 		if (err instanceof TempoAiError)
 			throw err;
-		if (err?.name === 'AbortError' || controller.signal.aborted)
+		if (err?.name === 'TimeoutError' || err?.name === 'AbortError')
 			throw new TempoAiError(`Timeout querying models for provider '${providerId}' after ${timeoutMs}ms`, 504);
+		if (err instanceof HttpError) {
+			const details = typeof err.body === 'string' ? err.body : (err.body ? JSON.stringify(err.body) : '');
+			throw new TempoAiError(
+				`Failed to query models from ${providerId} (${err.status}): ${details || err.statusText}`,
+				err.status
+			);
+		}
 		throw new TempoAiError(`Network error querying models for '${providerId}': ${err?.message || err}`, 500);
-	} finally {
-		clearTimeout(timer);
 	}
 }

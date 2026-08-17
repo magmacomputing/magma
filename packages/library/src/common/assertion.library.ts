@@ -127,7 +127,8 @@ export const isTarget = (obj: any): obj is any => isDefined(obj?.[sym.$Target]);
 
 /**
  * Checks if a value is effectively empty.
- * Returns true for nullish values, empty objects, empty strings, NaN, empty arrays, and empty sets/maps.
+ * Returns true for nullish values, empty objects, empty strings, NaN, empty arrays,
+ * empty sets/maps, empty typed arrays/buffers, and invalid dates.
  * 
  * @param obj - The value to check
  * @returns True if the value is empty
@@ -139,12 +140,14 @@ export const isTarget = (obj: any): obj is any => isDefined(obj?.[sym.$Target]);
  */
 export const isEmpty = <T>(obj?: T) => false
 	|| isNullish(obj)
-	|| (isObject(obj) && (Reflect.ownKeys(obj).length === 0))
-	|| (isString(obj) && (obj.trim().length === 0))
-	|| Number.isNaN(obj as any)
-	|| (isArray(obj) && (obj.length === 0))
-	|| (isSet(obj) && (obj.size === 0))
-	|| (isMap(obj) && (obj.size === 0))
+	|| (isObject(obj) && Reflect.ownKeys(obj).length === 0)
+	|| (isString(obj) && obj.trim().length === 0)
+	|| (typeof obj === 'number' && Number.isNaN(obj))
+	|| (isArray(obj) && obj.length === 0)
+	|| (isSet(obj) && obj.size === 0)
+	|| (isMap(obj) && obj.size === 0)
+	|| (ArrayBuffer.isView(obj) && obj.byteLength === 0)
+	|| (isDate(obj) && Number.isNaN(obj.getTime()));
 
 /**
  * Asserts a condition is true, otherwise throws an Error.

@@ -13,9 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Assertion Type Guards (`assertion.library`)**: Re-exported `isJSON` and `isRawJSON` for uniform type assertion symmetry.
 - **Calendar & Time Math (`calendar.library`)**: Added standalone date/calendar constants and helpers (`ISO_WEEKDAY_NAMES`, `DAY_MAP`, `MONTH_MAP`, `getDaysInMonth`, `getUtcParts`, `DayKey`, `MonthKey`, `IsoWeekdayNames`) in `#library/calendar.library.js`.
 - **Recurrence Engine (`recurrence.library`)**: Added standalone zero-dependency RFC 5545 recurrence rule utilities (`isRRuleString`, `isFiniteRRule`, `parseRRule`, `getNextRRuleEpoch`, `expandRRuleEpochs`, `ParsedRRule`) to `#library/recurrence.library.js`.
+- **Bounded Request Streaming (`request.library`)**: Added `maxBytes` limit option to `fetchRequest` to protect against memory-exhaustion and unbounded payload DoS by validating `Content-Length` and stream-reading chunks up to the threshold, raising `HttpError(413)` on overflow.
 
 ### Changed
 - **Hardened `isNumber` Assertion (`assertion.library`)**: Redefined `isNumber(obj)` to `Number.isFinite(obj)`, strictly rejecting `NaN`, `Infinity`, and `-Infinity`.
+- **Extended `isEmpty` Verification (`assertion.library`)**: Enhanced `isEmpty` to inspect typed arrays / buffers (`ArrayBuffer.isView`) and invalid `Date` objects, while removing unsafe type casts.
 
 ### Removed
 - **`isFiniteNumber` (`assertion.library`)**: Removed redundant export in favor of the hardened `isNumber`.

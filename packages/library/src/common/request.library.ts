@@ -1,6 +1,8 @@
+import { isNumber, isDefined } from '#library/assertion.library.js';
 import type { ValueOf } from '#library/type.library.js';
 
 const TWO_SECONDS = 2_000;																	// default time-out for requests, in milliseconds
+const RE_TRAILING_CLOSURE = /\);?$/;
 
 export const HTTP = {
 	Ok: 200,
@@ -23,6 +25,7 @@ export const METHOD = {
 type Config = {
 	/** number of milliseconds to attempt a request */				timeout?: number;
 	/** response wrapper (eg.  "alert({hello:'there'})" */		prefix?: string;
+	/** maximum cumulative bytes allowed before aborting */		maxBytes?: number;
 }
 
 export class HttpError extends Error {
@@ -36,19 +39,61 @@ export class HttpError extends Error {
 	}
 }
 
-const RE_TRAILING_CLOSURE = /\);?$/;
+/**
+ * Internal helper: incrementally reads a response body, enforcing a cumulative maxBytes limit.
+ */
+const readBoundedBody = async (res: Response, maxBytes: number): Promise<string> => {
+	const contentLength = res.headers.get('Content-Length') || res.headers.get('content-length');
+	if (contentLength) {
+		const bytes = parseInt(contentLength, 10);
+		if (isNumber(bytes) && bytes > maxBytes)
+			throw new HttpError(413, `Content-Length (${bytes}) exceeds limit (${maxBytes} bytes)`, null);
+	}
+
+	if (!res.body) {
+		const rawText = await res.text();
+		if (rawText.length > maxBytes)
+			throw new HttpError(413, `Payload length (${rawText.length}) exceeds limit (${maxBytes} bytes)`, null);
+		return rawText;
+	}
+
+	const reader = res.body.getReader();
+	const decoder = new TextDecoder();
+	let totalBytes = 0;
+	let rawText = '';
+
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done)
+				break;
+			if (value) {
+				totalBytes += value.byteLength;
+				if (totalBytes > maxBytes) {
+					try { await reader.cancel(); } catch { }
+					throw new HttpError(413, `Streamed payload exceeded limit (${maxBytes} bytes)`, null);
+				}
+				rawText += decoder.decode(value, { stream: true });
+			}
+		}
+		rawText += decoder.decode();
+		return rawText;
+	} finally {
+		try { reader.releaseLock(); } catch { }
+	}
+};
 
 /**
- * Performs an HTTP fetch request with built-in timeout, JSON parsing, and custom prefix handling.
- * Automatically throws an `HttpError` if the response is not `ok`.
+ * Performs an HTTP fetch request with built-in timeout, JSON parsing, prefix handling, and bounded stream reading.
+ * Automatically throws an `HttpError` if the response is not `ok` or exceeds `maxBytes`.
  * 
  * @param url - The resource URL to fetch
  * @param init - Optional RequestInit configuration
- * @param config - Optional configuration including timeout and prefix stripping
+ * @param config - Optional configuration including timeout, prefix stripping, and maxBytes limit
  * @returns A promise resolving to the parsed response body
  * @example
  * ```ts
- * const data = await fetchRequest`<MyData>`('https://api.example.com');
+ * const data = await fetchRequest<MyData>('https://api.example.com', {}, { maxBytes: 512 * 1024 });
  * ```
  */
 export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, config = {} as Config) => {
@@ -64,6 +109,19 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 			if (res.ok) {
 				const contentType = res.headers.get('Content-Type') || '';
 				const isJson = contentType.includes('application/json');
+
+				if (isDefined(config.maxBytes)) {
+					const rawText = await readBoundedBody(res, config.maxBytes);
+
+					if (config.prefix) {
+						const json = rawText.startsWith(config.prefix)
+							? rawText.substring(config.prefix.length).replace(RE_TRAILING_CLOSURE, '')
+							: rawText;
+						return JSON.parse(json) as T;
+					}
+
+					return (isJson ? JSON.parse(rawText) : rawText) as T;
+				}
 
 				if (config.prefix) {
 					const rawPrefixText = await res.text();						// read raw text first

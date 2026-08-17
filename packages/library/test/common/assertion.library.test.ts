@@ -1,4 +1,4 @@
-import { isNumber, isNumeric, isString, isPrimitive, isArrayLike, isObject, isPlainObject, isInteger, isJSON, isRawJSON } from '#library/assertion.library.js';
+import { isNumber, isNumeric, isString, isPrimitive, isArrayLike, isObject, isPlainObject, isInteger, isJSON, isRawJSON, isEmpty } from '#library/assertion.library.js';
 import { rawJSON } from '#library/json.library.js';
 
 describe('Assertion Library', () => {
@@ -26,6 +26,41 @@ describe('Assertion Library', () => {
 			expect(isPlainObject('string')).toBe(false);
 			expect(isPlainObject(123)).toBe(false);
 			expect(isPlainObject(true)).toBe(false);
+		});
+	});
+
+	describe('isEmpty', () => {
+		it('should return true for nullish and empty values', () => {
+			expect(isEmpty(null)).toBe(true);
+			expect(isEmpty(undefined)).toBe(true);
+			expect(isEmpty('')).toBe(true);
+			expect(isEmpty('   ')).toBe(true);
+			expect(isEmpty({})).toBe(true);
+			expect(isEmpty([])).toBe(true);
+			expect(isEmpty(new Set())).toBe(true);
+			expect(isEmpty(new Map())).toBe(true);
+			expect(isEmpty(NaN)).toBe(true);
+			expect(isEmpty(new Uint8Array(0))).toBe(true);
+			expect(isEmpty(Buffer.alloc(0))).toBe(true);
+			expect(isEmpty(new DataView(new ArrayBuffer(0)))).toBe(true);
+			expect(isEmpty(new Date('invalid'))).toBe(true);
+		});
+
+		it('should return false for non-empty values', () => {
+			expect(isEmpty(0)).toBe(false);
+			expect(isEmpty(42)).toBe(false);
+			expect(isEmpty(-1)).toBe(false);
+			expect(isEmpty(Infinity)).toBe(false);
+			expect(isEmpty(false)).toBe(false);
+			expect(isEmpty(true)).toBe(false);
+			expect(isEmpty('hello')).toBe(false);
+			expect(isEmpty({ a: 1 })).toBe(false);
+			expect(isEmpty([1])).toBe(false);
+			expect(isEmpty(new Set([1]))).toBe(false);
+			expect(isEmpty(new Map([['a', 1]]))).toBe(false);
+			expect(isEmpty(new Uint8Array([1, 2, 3]))).toBe(false);
+			expect(isEmpty(Buffer.from('hello'))).toBe(false);
+			expect(isEmpty(new Date())).toBe(false);
 		});
 	});
 

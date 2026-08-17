@@ -298,6 +298,61 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 		expect(result).toBeNull();
 	});
 
+	it('should reject streamed response without Content-Length when cumulative bytes exceed MAX_MANIFEST_BYTES', async () => {
+		let cancelled = false;
+		const stream = new ReadableStream({
+			pull(controller) {
+				const chunk = new Uint8Array(256 * 1024);
+				controller.enqueue(chunk);
+			},
+			cancel() {
+				cancelled = true;
+			},
+		});
+
+		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(stream, { status: 200 })
+		);
+
+		const result = await loadRemoteManifest('https://tempo.magmacomputing.com.au/stream-oversized.json');
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		expect(result).toBeNull();
+		expect(cancelled).toBe(true);
+
+		// Subsequent call should hit cache and return empty cached manifest without fetching again
+		const cachedResult = await loadRemoteManifest('https://tempo.magmacomputing.com.au/stream-oversized.json');
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		expect(cachedResult).toEqual({});
+	});
+
+	it('should successfully stream and parse chunked response within MAX_MANIFEST_BYTES', async () => {
+		const mockManifest = JSON.stringify({
+			providers: {
+				groq: { model: 'chunked-groq-model' },
+			},
+		});
+		const encoder = new TextEncoder();
+		const bytes = encoder.encode(mockManifest);
+		const half = Math.floor(bytes.length / 2);
+
+		const stream = new ReadableStream({
+			start(controller) {
+				controller.enqueue(bytes.subarray(0, half));
+				controller.enqueue(bytes.subarray(half));
+				controller.close();
+			},
+		});
+
+		vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(stream, { status: 200 })
+		);
+
+		const result = await loadRemoteManifest('https://tempo.magmacomputing.com.au/stream-valid.json');
+		expect(result).toEqual({
+			groq: { model: 'chunked-groq-model' },
+		});
+	});
+
 	it('should merge remote manifest entries containing tiered models into getResolvedProviderDefaults', async () => {
 		const manifestUrl = 'https://tempo.magmacomputing.com.au/manifest-tiered.json';
 		const mockManifest = {

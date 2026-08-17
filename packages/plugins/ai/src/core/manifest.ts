@@ -1,4 +1,4 @@
-import { isNumber, parseJSONC } from '@magmacomputing/tempo/library';
+import { fetchRequest, isEmpty, isString, parseJSONC } from '@magmacomputing/tempo/library';
 import { DEFAULT_PROVIDERS } from './config.js';
 import type { AiProvider } from '../types/index.js';
 
@@ -42,7 +42,7 @@ export async function loadRemoteManifest(
 	if (remoteConfigUrl === false)
 		return null;
 
-	const targetUrl = typeof remoteConfigUrl === 'string' && remoteConfigUrl.trim().length > 0
+	const targetUrl = isString(remoteConfigUrl) && !isEmpty(remoteConfigUrl)
 		? remoteConfigUrl.trim()
 		: DEFAULT_REMOTE_MANIFEST_URL;
 
@@ -59,39 +59,16 @@ export async function loadRemoteManifest(
 		return _fetchPromiseMap.get(targetUrl)!;
 
 	const fetchPromise = (async () => {
-		let timer: ReturnType<typeof setTimeout> | undefined;
 		try {
-			const controller = new AbortController();
-			timer = setTimeout(() => controller.abort(), timeoutMs);
-
-			const response = await fetch(targetUrl, {
-				signal: controller.signal,
+			const rawOrData = await fetchRequest<string | Record<string, any>>(targetUrl, {
 				headers: { Accept: 'application/json, text/plain, */*' },
 				redirect: 'error',
+			}, {
+				timeout: timeoutMs,
+				maxBytes: MAX_MANIFEST_BYTES,
 			});
 
-			if (!response.ok) {
-				if (debug)
-					console.warn(`[tempo-plugin-ai] Remote manifest fetch failed with status ${response.status}`);
-				const empty = {};
-				_cachedManifestMap.set(targetUrl, empty);
-				return null;
-			}
-
-			const contentLength = response.headers.get('content-length');
-			if (contentLength) {
-				const bytes = parseInt(contentLength, 10);
-				if (isNumber(bytes) && bytes > MAX_MANIFEST_BYTES) {
-					if (debug)
-						console.warn(`[tempo-plugin-ai] Remote manifest rejected: Content-Length (${bytes}) exceeds limit (${MAX_MANIFEST_BYTES} bytes)`);
-					const empty = {};
-					_cachedManifestMap.set(targetUrl, empty);
-					return null;
-				}
-			}
-
-			const rawText = await response.text();
-			const data = parseJSONC(rawText);
+			const data = typeof rawOrData === 'string' ? parseJSONC(rawOrData) : rawOrData;
 			if (data && typeof data === 'object' && data.providers && typeof data.providers === 'object') {
 				const manifest = data.providers as Record<string, Partial<AiProvider>>;
 				_cachedManifestMap.set(targetUrl, manifest);
@@ -113,7 +90,6 @@ export async function loadRemoteManifest(
 			_cachedManifestMap.set(targetUrl, empty);
 			return null;
 		} finally {
-			if (timer !== undefined) clearTimeout(timer);
 			_fetchPromiseMap.delete(targetUrl);
 		}
 	})();
@@ -137,7 +113,7 @@ export function getResolvedProviderDefaults(
 	if (remoteConfigUrl === false)
 		return localDefaults;
 
-	const targetUrl = typeof remoteConfigUrl === 'string' && remoteConfigUrl.trim().length > 0
+	const targetUrl = isString(remoteConfigUrl) && !isEmpty(remoteConfigUrl)
 		? remoteConfigUrl.trim()
 		: DEFAULT_REMOTE_MANIFEST_URL;
 
