@@ -24,7 +24,7 @@ import { SnapPlugin } from '@magmacomputing/tempo-plugin-snap';
 
 // Pass the plugin to `Tempo.init` to register it into the runtime.
 Tempo.init({ 
-  plugins: [SnapPlugin] 
+  extends: [SnapPlugin] 
 });
 
 const t = new Tempo('2026-06-01T14:08:00Z');

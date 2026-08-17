@@ -31,7 +31,7 @@ import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
 
 // Pass the plugin to `Tempo.init` to register it into the runtime.
 Tempo.init({ 
-  plugins: [AstroTerm] 
+  extends: [AstroTerm] 
 });
 
 const t = new Tempo('2026-03-20');

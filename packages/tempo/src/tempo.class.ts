@@ -461,8 +461,11 @@ export class Tempo {
 			}
 		}
 
-		// 4. Process Plugins
-		if (discovery.plugins)
+		// 4. Process Extensions / Plugins
+		if (discovery.extends)
+			asArray(discovery.extends).forEach(p => this.extend(p));
+		// TODO: @deprecated - Remove in Tempo v4.0.0
+		else if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins)))
 			asArray(discovery.plugins).forEach(p => this.extend(p));
 
 		// 5. Process Options
@@ -914,6 +917,10 @@ export class Tempo {
 
 			setLogLevel(state.config.debug ?? options.debug ?? Default?.debug ?? LOG.Info);
 
+			if (options.extends)
+				this.extend(options.extends);
+
+			// TODO: @deprecated - Remove in Tempo v4.0.0
 			if (options.plugins) {
 				if (Array.isArray(options.plugins) || isFunction(options.plugins) || (isObject(options.plugins) && ('name' in options.plugins || 'key' in options.plugins || 'install' in options.plugins)))
 					this.extend(options.plugins);

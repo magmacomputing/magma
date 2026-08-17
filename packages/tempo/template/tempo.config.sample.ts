@@ -30,10 +30,18 @@ export default defineConfig({
 	},
 
 	// -------------------------------------------------------------------------
-	// Plugins
+	// Extensions (Executable Plugins / Namespaces / Terms)
 	// -------------------------------------------------------------------------
-	plugins: [
-		// Import and instantiate your plugins here
+	extends: [
+		// Import and register your plugin modules/namespaces here
+		// FinanceNamespace,
 		// TickerPlugin({ interval: 1000 })
-	]
+	],
+
+	// -------------------------------------------------------------------------
+	// Plugin Configuration Dictionaries
+	// -------------------------------------------------------------------------
+	plugins: {
+		// ai: { mode: 'fallback', providers: [...] }
+	}
 });

@@ -411,8 +411,12 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				}
 				break;
 
+			case 'extends':
+				// Extensions are handled and installed by Tempo.extend() in Tempo.init() / Discovery
+				break;
+
 			case 'plugins':
-				if (isObject(arg.value) && !Array.isArray(arg.value) && !('name' in arg.value) && !('key' in arg.value))
+				if (isObject(arg.value) && !Array.isArray(arg.value) && !('name' in arg.value) && !('key' in arg.value) && !('install' in arg.value))
 					setProperty(state.config, 'plugins', arg.value);
 				break;
 

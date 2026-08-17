@@ -25,7 +25,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { BatchPlugin } from '@magmacomputing/tempo-plugin-batch';
 
 Tempo.init({ 
-  plugins: [BatchPlugin] 
+  extends: [BatchPlugin] 
 });
 
 // Assume `epochs` is a massive array of integers representing timestamps
