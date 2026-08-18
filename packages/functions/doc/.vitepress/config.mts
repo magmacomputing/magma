@@ -15,6 +15,9 @@ export default defineConfig({
 			esbuildOptions: {
 				target: 'esnext'
 			}
+		},
+		ssr: {
+			noExternal: ['vue', '@vue/server-renderer']
 		}
 	},
 	themeConfig: {
