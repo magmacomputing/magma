@@ -3,7 +3,7 @@ import { RESERVED_PROVIDER_IDS } from './config.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
 import { logDebug } from './logger.js';
 import type { AiProvider, AiBaseOptions } from '../types/index.js';
-import { asText, isObject, isString, isText } from '@magmacomputing/tempo/library';
+import { asNumber, asText, isObject, isString, isText } from '@magmacomputing/tempo/library';
 
 export interface FetchFromProviderOptions extends AiBaseOptions {
 	/** AbortSignal for early cancellation / timeout handling */
@@ -28,17 +28,24 @@ export function assertNoReservedProviderId(providers: Partial<AiProvider>[]): vo
 /**
  * Resolves available AI providers from options or global state, asserts validity, and ensures no reserved IDs.
  *
- * @param options - Function options containing an optional providers override array
- * @returns Array of validated AiProvider configurations
- * @throws TempoAiError(400) if no providers are available or if a reserved provider ID is used
+ * @param options - Execution options optionally containing provider list
+ * @returns Array of valid AI provider configs
+ * @throws TempoAiError(400) if no providers configured or reserved IDs found
  */
-export function getAvailableProviders(options?: { providers?: Partial<AiProvider>[] | undefined } | undefined): AiProvider[] {
-	const availableProviders = (options?.providers ?? _state.config.providers) as AiProvider[];
-	if (!availableProviders || availableProviders.length === 0)
-		throw new TempoAiError('No AI providers configured. Set GROQ_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, or configure tempo.config.json.', 400);
+export function getAvailableProviders(options?: AiBaseOptions): AiProvider[] {
+	const customProviders = options?.providers;
+	const globalProviders = _state.config.providers;
+	const resolved = (customProviders && customProviders.length > 0)
+		? customProviders
+		: (globalProviders && globalProviders.length > 0)
+			? globalProviders
+			: [];
 
-	assertNoReservedProviderId(availableProviders);
-	return availableProviders;
+	if (resolved.length === 0)
+		throw new TempoAiError('No AI providers configured. Call initAI() or pass providers in options.', 400);
+
+	assertNoReservedProviderId(resolved);
+	return resolved as AiProvider[];
 }
 
 /**
@@ -63,40 +70,44 @@ export function resolveProviderTtl(
 }
 
 /**
- * Resolves the specific model identifier from a provider definition according to tier or default fallbacks.
+ * Normalizes model resolution for a provider based on configured tiers.
  *
- * @param provider - Provider configuration
- * @param requestedTier - Optional requested tier (e.g. 'default', 'fast', 'smart')
- * @returns Model string name or undefined
+ * @param provider - Target AI provider configuration
+ * @param tier - Preferred model tier ('fast' | 'reasoning' | 'large' | 'default')
+ * @returns Resolved model identifier string
  */
-export function resolveProviderModel(provider: AiProvider, requestedTier?: string): string | undefined {
+export function resolveProviderModel(
+	provider: AiProvider,
+	tier?: 'fast' | 'reasoning' | 'large' | 'default',
+): string {
 	const explicitModel = asText(provider.model);
-	if (explicitModel)
-		return explicitModel;
+	if (explicitModel) return explicitModel;
 
-	const models = provider.models;
-	if (!models) return undefined;
-
-	if (Array.isArray(models))
-		return isString(models[0]) ? models[0] : undefined;
-
-	if (isObject(models)) {
-		const targetTier = requestedTier || provider.tier || 'default';
-		return (models as Record<string, string>)[targetTier]
-			|| (models as Record<string, string>).default
-			|| Object.values(models)[0];
+	if (typeof provider.models === 'string') return provider.models;
+	if (Array.isArray(provider.models)) {
+		const first = asText(provider.models[0]);
+		if (first) return first;
 	}
-
-	return undefined;
+	if (isObject(provider.models)) {
+		if (tier && provider.models[tier]) return provider.models[tier];
+		if (provider.models.default) return provider.models.default;
+		const values = Object.values(provider.models);
+		for (const val of values) {
+			const textVal = asText(val);
+			if (textVal) return textVal;
+		}
+	}
+	return '';
 }
 
 /**
- * Executes an HTTP fetch request against a target AI provider endpoint with timeout, cancellation,
- * token limit negotiation, and rate limit header extraction.
+ * Performs raw HTTP fetch dispatch to an individual AI provider's chat completions endpoint.
+ * Handles authentication headers, timeout abort controllers, JSON schema validation,
+ * and rate-limit tracking.
  *
- * @param provider - Target AI provider configuration
- * @param str - Input text / prompt
- * @param contextString - Contextual string injected into system message
+ * @param provider - Target provider configuration
+ * @param str - Input string prompt
+ * @param contextString - Contextual system instructions (time, timezone, locale)
  * @param options - Execution options (signal, timeout, systemPrompt, debug, tokenLimit)
  * @returns Object containing raw payload string, providerId, and parsed rate limits
  * @throws TempoAiError on network, timeout, or provider status errors
@@ -108,13 +119,16 @@ export async function fetchFromProvider(
 	options?: FetchFromProviderOptions,
 ): Promise<{ rawContent: string; providerId: string; rateLimits: ReturnType<typeof updateRateLimitsFromResponse> }> {
 	const url = provider.url;
-	const model = resolveProviderModel(provider, provider.tier);
+	const model = resolveProviderModel(provider, provider.tier as any);
 
 	if (!isText(url))
 		throw new TempoAiError(`Provider ${provider.id} missing valid endpoint URL.`, 400);
 
 	if (!isText(model))
 		throw new TempoAiError(`Provider ${provider.id} missing valid model identifier.`, 400);
+
+	if (!isText(provider.key))
+		throw new TempoAiError(`Provider ${provider.id} missing valid API key.`, 400);
 
 	try {
 		const parsed = new URL(url);
@@ -163,7 +177,8 @@ Do not include markdown blocks or any text outside the JSON.`;
 
 	const { timeout: _unusedTimeout, ...bodyOptions } = provider.options ?? {};
 	const controller = new AbortController();
-	const timeoutMs = options?.timeout ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
+	const rawTimeout = options?.timeout ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
+	const timeoutMs = Math.max(1, asNumber(rawTimeout, 15000));
 	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
 	const onParentAbort = () => controller.abort();
@@ -217,6 +232,14 @@ Do not include markdown blocks or any text outside the JSON.`;
 		logDebug('tempo-plugin-ai', `Received response from '${provider.id}' in ${elapsed}ms`, undefined, { debug: isDebug });
 
 		return { rawContent: rawContent.trim(), providerId: provider.id, rateLimits: limits };
+	} catch (err: any) {
+		if (err instanceof TempoAiError) throw err;
+		if (controller.signal.aborted) {
+			if (options?.signal?.aborted)
+				throw new TempoAiError('Request was aborted.', 499);
+			throw new TempoAiError(`Provider ${provider.id} request timed out after ${timeoutMs}ms.`, 408);
+		}
+		throw new TempoAiError(`Network error querying provider ${provider.id}: ${err?.message ?? err}`, 503);
 	} finally {
 		clearTimeout(timeoutId);
 		if (options?.signal)

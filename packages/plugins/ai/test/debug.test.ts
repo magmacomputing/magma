@@ -122,6 +122,21 @@ describe('Smart Debug & PII Protection Infrastructure', () => {
 			expect(sanitized.nested.parent).toBe('[CIRCULAR]');
 		});
 
+		it('should not mark shared non-circular object references as circular', () => {
+			const shared = { detail: 'hello', email: 'shared@domain.com' };
+			const dag = {
+				first: shared,
+				second: shared,
+				list: [shared, shared],
+			};
+
+			const sanitized = sanitizeForLog(dag, true) as any;
+			expect(sanitized.first.email).toBe('s***@domain.com');
+			expect(sanitized.second.email).toBe('s***@domain.com');
+			expect(sanitized.list[0].email).toBe('s***@domain.com');
+			expect(sanitized.list[1].email).toBe('s***@domain.com');
+		});
+
 		it('should recursively sanitize objects and mask sensitive values in production', () => {
 			const payload = {
 				user: 'alice@example.com',

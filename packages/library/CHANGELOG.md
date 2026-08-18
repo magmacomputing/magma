@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Coercion & Conditional Guards (`assertion.library`, `coercion.library`)**: Added `isText` guard for non-empty string checks, `when(val, guard, fallback?)` predicate-based conditional coalescer, and overloaded `asText(val, fallback?, deepClean?)` / `asNumber(val, fallback?)` coercers returning typed values or fallbacks.
 - **JSON Utilities (`json.library`)**: Added standalone, zero-dependency `#library/json.library.js` module hosting `parseJSONC`, `stripJSONC`, `cleanify`, `isJSON`, `rawJSON`, and `isRawJSON`. Supports single/multi-line comments, trailing commas, revivers, and options objects (`{ reviver, fallback, safe }`).
-- **ES2024 `rawJSON` Support (`json.library`)**: Added `rawJSON` and `isRawJSON` helpers to create unquoted verbatim JSON structures with fallback for environments lacking native `JSON.rawJSON`.
+- **ECMAScript 2024 `rawJSON` Support (`json.library`)**: Added `rawJSON` and `isRawJSON` helpers to create unquoted verbatim JSON structures with fallback for environments lacking native `JSON.rawJSON`.
 - **Assertion Type Guards (`assertion.library`)**: Re-exported `isJSON` and `isRawJSON` for uniform type assertion symmetry.
 - **Calendar & Time Math (`calendar.library`)**: Added standalone date/calendar constants and helpers (`ISO_WEEKDAY_NAMES`, `DAY_MAP`, `MONTH_MAP`, `getDaysInMonth`, `getUtcParts`, `DayKey`, `MonthKey`, `IsoWeekdayNames`) in `#library/calendar.library.js`.
 - **Recurrence Engine (`recurrence.library`)**: Added standalone zero-dependency RFC 5545 recurrence rule utilities (`isRRuleString`, `isFiniteRRule`, `parseRRule`, `getNextRRuleEpoch`, `expandRRuleEpochs`, `ParsedRRule`) to `#library/recurrence.library.js`.

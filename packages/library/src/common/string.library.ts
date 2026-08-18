@@ -29,13 +29,12 @@ const RE_TEMPLATE_PLACEHOLDER = /\${(.*?)}/g;
  * ```
  */
 export function trimAll(str: string | number, pat?: RegExp) {
-	return str
-		.toString()																							// coerce to String
-		.replace(pat!, '')																			// remove regexp, if supplied
+	const base = pat ? str.toString().replace(pat, '') : str.toString();
+	return base
 		.replace(RE_TAB, ' ')																		// replace <tab> with <space>
 		.replace(RE_NEWLINE, ' ')																// replace <return> & <newline>
 		.replace(RE_MULTI_SPACE, ' ')														// trim multiple <space>
-		.trim()																									// leading/trailing <space>
+		.trim();																								// leading/trailing <space>
 }
 
 /**

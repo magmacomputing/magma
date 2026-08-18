@@ -53,4 +53,13 @@ describe('String Library', () => {
 			expect(allExplicitResult).toBe('arg0 - arg10, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9');
 		});
 	});
+
+	describe('trimAll', () => {
+		it('should preserve literal "undefined" when pat is absent', async () => {
+			const { trimAll } = await import('#library/string.library.js');
+			expect(trimAll('undefined text')).toBe('undefined text');
+			expect(trimAll('  undefined \t value \n ')).toBe('undefined value');
+			expect(trimAll('foo undefined bar', /foo/)).toBe('undefined bar');
+		});
+	});
 });

@@ -25,6 +25,7 @@ describe('Coercion Library', () => {
 			expect(asText('  hello \t world \n', undefined, true)).toBe('hello world');
 			expect(asText('line1\r\nline2', undefined, true)).toBe('line1 line2');
 			expect(asText('foo    bar', undefined, true)).toBe('foo bar');
+			expect(asText('  undefined \t text \n', undefined, true)).toBe('undefined text');
 		});
 	});
 
@@ -96,6 +97,15 @@ describe('Coercion Library', () => {
 			expect(asNumber(null, 1.0)).toBe(1.0);
 			expect(asNumber(0, 1.0)).toBe(0);
 			expect(asNumber('invalid', null)).toBeNull();
+		});
+
+		it('should handle BigInt conversion and fallback on non-finite results', () => {
+			expect(asNumber(42n)).toBe(42);
+			expect(asNumber(0n)).toBe(0);
+			expect(asNumber(-100n)).toBe(-100);
+			const hugeBigInt = 10n ** 1000n;
+			expect(asNumber(hugeBigInt)).toBeUndefined();
+			expect(asNumber(hugeBigInt, 0)).toBe(0);
 		});
 	});
 

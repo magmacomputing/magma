@@ -687,11 +687,17 @@ describe('AI Parsing Plugin (parseAI)', () => {
 			await initAI({
 				remoteConfigUrl: false,
 				tokenLimit: 1500,
-				providers: [{
-					id: 'groq',
-					key: 'test-key',
-					tokenLimit: 3000
-				}]
+				providers: [
+					{
+						id: 'groq',
+						key: 'test-key',
+						tokenLimit: 3000,
+					},
+					{
+						id: 'mistral',
+						key: 'test-key',
+					},
+				],
 			});
 			const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
@@ -714,6 +720,24 @@ describe('AI Parsing Plugin (parseAI)', () => {
 			expect(fetchSpy).toHaveBeenCalledTimes(2);
 			parsedBody = JSON.parse(fetchSpy.mock.calls[1][1]?.body as string);
 			expect(parsedBody.max_tokens).toBe(4500);
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), { status: 200 }));
+
+			// 3. Provider without tokenLimit should fall back to global (1500)
+			await initAI({
+				remoteConfigUrl: false,
+				tokenLimit: 1500,
+				providers: [{
+					id: 'groq',
+					key: 'test-key',
+				}],
+			});
+			await parseAI('Thanksgiving 2026', { force: true });
+			expect(fetchSpy).toHaveBeenCalledTimes(3);
+			parsedBody = JSON.parse(fetchSpy.mock.calls[2][1]?.body as string);
+			expect(parsedBody.max_tokens).toBe(1500);
 		});
 	});
 });

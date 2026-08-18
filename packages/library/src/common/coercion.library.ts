@@ -121,7 +121,11 @@ export function asNumber<T extends number>(val: unknown, fallback: T): number;
 export function asNumber<T>(val: unknown, fallback: T): number | T;
 export function asNumber<T = undefined>(val: unknown, fallback?: T): number | T {
 	if (isNumber(val)) return val;
-	if (typeof val === 'bigint') return Number(val);
+	if (isInteger(val)) {
+		const num = Number(val);
+		if (isNumber(num)) return num;
+		return fallback as T;
+	}
 	if (isString(val)) {
 		const trimmed = val.trim();
 		if (trimmed.length > 0) {

@@ -82,25 +82,33 @@ export function sanitizeForLog(
 	if (isArray(data)) {
 		if (visited.has(data)) return '[CIRCULAR]';
 		visited.add(data);
-		return data.map(item => sanitizeForLog(item, isProd, visited));
+		try {
+			return data.map(item => sanitizeForLog(item, isProd, visited));
+		} finally {
+			visited.delete(data);
+		}
 	}
 
 	if (isObject(data)) {
 		if (visited.has(data)) return '[CIRCULAR]';
 		visited.add(data);
 
-		const result: Record<string, any> = {};
-		for (const [key, val] of Object.entries(data)) {
-			const lowerKey = key.toLowerCase();
-			if (lowerKey.includes('key') || lowerKey.includes('secret') || lowerKey.includes('token') || lowerKey.includes('password') || lowerKey.includes('auth')) {
-				result[key] = '[REDACTED]';
-			} else if (key === 'rawPrompt' || key === 'normalizedPrompt' || key === 'prompt' || key === 'reasoning') {
-				result[key] = isString(val) ? maskPii(val, isProd) : sanitizeForLog(val, isProd, visited);
-			} else {
-				result[key] = sanitizeForLog(val, isProd, visited);
+		try {
+			const result: Record<string, any> = {};
+			for (const [key, val] of Object.entries(data)) {
+				const lowerKey = key.toLowerCase();
+				if (lowerKey.includes('key') || lowerKey.includes('secret') || lowerKey.includes('token') || lowerKey.includes('password') || lowerKey.includes('auth')) {
+					result[key] = '[REDACTED]';
+				} else if (key === 'rawPrompt' || key === 'normalizedPrompt' || key === 'prompt' || key === 'reasoning') {
+					result[key] = isString(val) ? maskPii(val, isProd) : sanitizeForLog(val, isProd, visited);
+				} else {
+					result[key] = sanitizeForLog(val, isProd, visited);
+				}
 			}
+			return result;
+		} finally {
+			visited.delete(data);
 		}
-		return result;
 	}
 
 	return String(data);
