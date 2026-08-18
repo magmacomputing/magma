@@ -1,8 +1,6 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { secure } from '@magmacomputing/tempo/library';
+import { asText, isDefined, isNumber, isObject, isText, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
-import { AiMode } from '../core/config.js';
-import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
 	getNamespacedCacheKey,
@@ -13,13 +11,15 @@ import {
 import {
 	getAvailableProviders,
 	parseJsonPayload,
-	validateMinConfidence,
 	executeBatch,
 	fetchFromProvider,
 	resolveProviderTtl,
 	resolveTzAndLocale,
+	resolveExecutionOptions,
+	sanitizeConfidence,
+	assertMinConfidenceThreshold,
 } from '../core/support.js';
-import { logDebug, attachCustomInspect, maskPii } from '../core/logger.js';
+import { logDebug, attachCustomInspect, sanitizeInspectAiMeta } from '../core/logger.js';
 import type { TempoAiDiffResult, AiDiffOptions, DiffPair } from '../types/index.js';
 
 /**
@@ -70,7 +70,6 @@ async function diffSingleInput(
 	prompt?: string,
 	options?: AiDiffOptions,
 ): Promise<TempoAiDiffResult> {
-	const isDebug = options?.debug ?? _state.config.debug ?? false;
 	const fallbackTempo = Tempo.isTempo(start) ? start : (Tempo.isTempo(end) ? end : null);
 	const { tz, loc } = resolveTzAndLocale(options, fallbackTempo);
 
@@ -86,22 +85,20 @@ async function diffSingleInput(
 	const region = String(options?.region || '');
 	const grounding = calculateGroundingMetrics(startTempo, endTempo, holidays);
 
-	const promptText = prompt?.trim() || 'Provide a natural summary of the temporal difference between these two dates.';
+	const promptText = asText(prompt, 'Provide a natural summary of the temporal difference between these two dates.');
 	const normalizedPrompt = normalizeCacheInput(promptText);
 
-	const { force, mode: aiMode, minConfidence, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, hedgeDelay } = options || {};
+	const { force, cache: aiCacheOption, ttl, cacheAdapter } = options || {};
 
 	const sortedHolidays = holidays ? [...holidays].sort().join(',') : '';
 	const cacheKey = getNamespacedCacheKey('diff', `${startTempo.epoch.ms}::${endTempo.epoch.ms}::${normalizedPrompt}::${tz}::${loc}::${region}::${sortedHolidays}`);
-	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
-	const effectiveMinConfidence = validateMinConfidence(minConfidence, 'diffAI');
-	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
+	const { mode, minConfidence: effectiveMinConfidence, isDebug, executeOptions } = resolveExecutionOptions(options, 'diff');
 
 	const cachedVal = await readMultiTierCache(cacheKey, {
 		force,
 		cache: aiCacheOption,
-		cacheAdapter: adapter,
+		cacheAdapter,
 		debug: isDebug,
 		tag: 'tempo-plugin-ai:diff',
 	});
@@ -109,12 +106,11 @@ async function diffSingleInput(
 	if (cachedVal) {
 		try {
 			const parsedCache = JSON.parse(cachedVal);
-			if (typeof parsedCache?.formatted === 'string' && parsedCache.formatted.trim().length > 0) {
-				const cachedConfidence = typeof parsedCache.confidence === 'number' && Number.isFinite(parsedCache.confidence)
-					? parsedCache.confidence
-					: 1.0;
-				if (effectiveMinConfidence === undefined || cachedConfidence >= effectiveMinConfidence) {
-					logDebug('tempo-plugin-ai:diff', `Cache hit: "${cacheKey}"`, cachedVal, { debug: isDebug });
+			if (isText(parsedCache?.formatted)) {
+				const cachedConfidence = sanitizeConfidence(parsedCache.confidence, 0.9);
+				if (isDefined(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
+					logDebug('tempo-plugin-ai:diff', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
+				} else {
 					const cachedResult: TempoAiDiffResult = {
 						formatted: parsedCache.formatted,
 						days: parsedCache.days ?? grounding.calendarDays,
@@ -131,9 +127,7 @@ async function diffSingleInput(
 						hours: obj.hours,
 						businessDays: obj.businessDays,
 						...(obj.holidays ? { holidays: obj.holidays } : {}),
-						confidence: obj.confidence,
-						provider: obj.provider,
-						...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+						...sanitizeInspectAiMeta(obj, isProd),
 					}));
 					return secure(cachedResult);
 				}
@@ -144,7 +138,6 @@ async function diffSingleInput(
 	}
 
 	const availableProviders = getAvailableProviders(options);
-	const mode = aiMode || _state.config.mode || AiMode.Fallback;
 
 	const contextString = `Grounding Context:
 - Start Timestamp: ${startTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')} (${startTempo.tz || tz})
@@ -183,22 +176,19 @@ Do not include markdown blocks or text outside the JSON.`;
 				provider,
 				promptText,
 				contextString,
-				isDebug,
-				signal,
-				callTimeout,
-				systemPrompt,
+				{ ...options, signal, systemPrompt },
 			);
 			const parsedData = parseJsonPayload(rawContent, providerId);
 
-			const formatted = typeof parsedData?.formatted === 'string' ? parsedData.formatted.trim() : '';
+			const formatted = asText(parsedData?.formatted);
 			if (!formatted)
 				throw new TempoAiError(`Provider ${providerId} returned empty or missing 'formatted' text.`, 422);
 
 			const days = grounding.calendarDays;
 			const hours = grounding.elapsedHours;
 			const businessDays = grounding.businessDays;
-			const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : 0.9;
-			const reasoning = typeof parsedData?.reasoning === 'string' ? parsedData.reasoning : undefined;
+			const confidence = sanitizeConfidence(parsedData?.confidence);
+			const reasoning = asText(parsedData?.reasoning);
 
 			return {
 				data: {
@@ -214,16 +204,12 @@ Do not include markdown blocks or text outside the JSON.`;
 				consensusKey: `${formatted}::${businessDays}`,
 			};
 		},
-		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:diff', hedgeDelay: effectiveHedgeDelay },
+		executeOptions,
 	);
 
-	_state.limits = winningCandidate.rateLimits ?? null;
-
 	const { data: parsedData, providerId } = winningCandidate;
-	const confidence = typeof winningCandidate.confidence === 'number' ? winningCandidate.confidence : 0.9;
-
-	if (effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence)
-		throw new TempoAiError(`diffAI confidence (${confidence}) is below the required threshold of ${effectiveMinConfidence}.`, 422);
+	const confidence = sanitizeConfidence(winningCandidate.confidence);
+	assertMinConfidenceThreshold(confidence, effectiveMinConfidence, 'diffAI');
 
 	const finalResult: TempoAiDiffResult = {
 		formatted: parsedData.formatted,
@@ -249,7 +235,7 @@ Do not include markdown blocks or text outside the JSON.`;
 
 	await writeMultiTierCache(cacheKey, cacheVal, resolvedTtl, {
 		cache: aiCacheOption,
-		cacheAdapter: adapter,
+		cacheAdapter,
 		debug: isDebug,
 		tag: 'tempo-plugin-ai:diff',
 	});
@@ -260,9 +246,7 @@ Do not include markdown blocks or text outside the JSON.`;
 		hours: obj.hours,
 		businessDays: obj.businessDays,
 		...(obj.holidays ? { holidays: obj.holidays } : {}),
-		confidence: obj.confidence,
-		provider: obj.provider,
-		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+		...sanitizeInspectAiMeta(obj, isProd),
 	}));
 
 	return secure(finalResult);
@@ -309,8 +293,8 @@ export async function diffAI(
 		);
 	}
 
-	const promptStr = typeof promptOrOptions === 'string' ? promptOrOptions : undefined;
-	const resolvedOptions = (typeof promptOrOptions === 'object' ? promptOrOptions : options) || {};
+	const promptStr = asText(promptOrOptions);
+	const resolvedOptions = when(promptOrOptions, isObject<AiDiffOptions>, options) || {};
 
 	return diffSingleInput(startOrPairs, endOrOptions, promptStr, resolvedOptions);
 }

@@ -33,6 +33,8 @@ export interface AiBaseOptions {
 	timeout?: number | undefined;
 	/** Optional delay in milliseconds before initiating speculative hedging in AiMode.Hedged (default: 800ms) */
 	hedgeDelay?: number | undefined;
+	/** Optional max completion token limit override (default: 2048) */
+	tokenLimit?: number | undefined;
 	/** If true, returns an array containing both successful results and TempoAiErrors instead of throwing */
 	softErrors?: boolean | undefined;
 }
@@ -157,6 +159,8 @@ export interface AiProvider {
 	tier?: 'default' | 'fast' | 'reasoning' | 'large' | string | undefined;
 	/** Optional parameter name for max token limit (e.g. 'max_tokens' or 'max_completion_tokens') */
 	tokenParam?: string | undefined;
+	/** Optional max completion token limit for this provider (default: 2048) */
+	tokenLimit?: number | undefined;
 	/** Optional cache TTL override in milliseconds for entries produced by this provider */
 	ttl?: number | undefined;
 	/** Optional HTTP request timeout override in milliseconds for requests to this provider */
@@ -182,6 +186,8 @@ export interface AiConfig {
 	mode?: AiMode | undefined;
 	/** Strict minimum confidence threshold (0.0 to 1.0) */
 	minConfidence?: number | undefined;
+	/** Optional max completion token limit default across providers (default: 2048) */
+	tokenLimit?: number | undefined;
 	/** Optional custom cache implementation for storing parsed strings or boolean flag to enable/disable */
 	cache?: Map<string, string> | boolean | undefined;
 	/** Optional custom cache storage engine (e.g., Redis, KV store) for storing parsed strings */

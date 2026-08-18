@@ -1,4 +1,4 @@
-import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isEmpty } from '@magmacomputing/tempo/library';
+import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isDefined, asText } from '@magmacomputing/tempo/library';
 import { Tempo } from '@magmacomputing/tempo';
 
 import { DEFAULT_PROVIDERS } from './config.js';
@@ -27,7 +27,7 @@ export function getRuntimeEnv(): Record<string, string | undefined> {
 	if (!isServerRuntime())
 		return {};
 	try {
-		if (typeof process !== 'undefined' && process?.env)
+		if (isDefined(process?.env))
 			return process.env as Record<string, string | undefined>;
 	} catch { }
 	return {};
@@ -107,16 +107,16 @@ export function resolveProviderApiKey(
 	explicitKey?: string,
 	env: Record<string, string | undefined> = getRuntimeEnv()
 ): string | undefined {
-	if (isString(explicitKey) && !isEmpty(explicitKey))
-		return explicitKey.trim();
+	const key = asText(explicitKey);
+	if (key) return key;
 
-	const envVars = WELL_KNOWN_ENV_MAP[id?.toLowerCase()?.trim() ?? ''];
+	const normalizedId = asText(id)?.toLowerCase() ?? '';
+	const envVars = WELL_KNOWN_ENV_MAP[normalizedId];
 	if (!envVars) return undefined;
 
 	for (const envVar of envVars) {
-		const val = env[envVar];
-		if (isString(val) && !isEmpty(val))
-			return val.trim();
+		const val = asText(env[envVar]);
+		if (val) return val;
 	}
 	return undefined;
 }
@@ -130,13 +130,13 @@ export function scanWellKnownEnvProviders(env: Record<string, string | undefined
 
 	for (const [providerId, envVars] of Object.entries(WELL_KNOWN_ENV_MAP)) {
 		for (const envVar of envVars) {
-			const rawVal = env[envVar];
-			if (rawVal && typeof rawVal === 'string' && rawVal.trim().length > 0) {
-				const defaultTemplate = DEFAULT_PROVIDERS[providerId as keyof typeof DEFAULT_PROVIDERS];
+			const key = asText(env[envVar]);
+			if (key) {
+				const defaultTemplate = DEFAULT_PROVIDERS[providerId];
 				providers.push({
 					...(defaultTemplate || {}),
 					id: providerId,
-					key: rawVal.trim(),
+					key,
 				});
 				break;
 			}

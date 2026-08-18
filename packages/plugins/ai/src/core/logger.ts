@@ -1,3 +1,4 @@
+import { isDefined, isUndefined, isString, isNumber, isObject, isArray, isFunction, isNullish, isPrimitive } from '@magmacomputing/tempo/library';
 import { _state } from './init.js';
 
 export const CUSTOM_INSPECT_SYMBOL = Symbol.for('nodejs.util.inspect.custom');
@@ -13,7 +14,7 @@ const RE_API_KEY = /\b(?:sk-[a-zA-Z0-9_\-]{6,}|gsk_[a-zA-Z0-9_\-]{6,}|key-[a-zA-
  */
 export function isProductionEnvironment(): boolean {
 	try {
-		if (typeof process === 'undefined' || !process?.env) return false;
+		if (isUndefined(process?.env)) return false;
 		const nodeEnv = (process.env.NODE_ENV ?? '').toLowerCase();
 		if (nodeEnv === 'production' || nodeEnv === 'prod' || nodeEnv === 'live') return true;
 		if (process.env.PROD === 'true' || process.env.PRODUCTION === 'true') return true;
@@ -34,8 +35,8 @@ export function isProductionEnvironment(): boolean {
  * In development mode:
  * - Full fidelity text is preserved for local debugging.
  */
-export function maskPii(input: string, isProd: boolean = isProductionEnvironment()): string {
-	if (typeof input !== 'string') return String(input);
+export function maskPii(input: any, isProd: boolean = isProductionEnvironment()): string {
+	if (!isString(input)) return String(input);
 	if (!isProd) return input;
 
 	return input
@@ -66,24 +67,27 @@ export function sanitizeForLog(
 	isProd: boolean = isProductionEnvironment(),
 	visited: WeakSet<object> = new WeakSet(),
 ): any {
-	if (data === null || data === undefined) return data;
-	if (!isProd) return data;
+	if (isNullish(data) || !isProd) return data;
 
-	if (typeof data === 'string') {
+	if (isString(data)) {
 		const masked = maskPii(data, true);
 		if (masked.length > 256) {
 			return `${masked.slice(0, 200)}... [truncated, length: ${data.length}]`;
 		}
 		return masked;
 	}
-	if (typeof data === 'number' || typeof data === 'boolean' || typeof data === 'symbol' || typeof data === 'bigint') return data;
 
-	if (typeof data === 'object') {
+	if (isPrimitive(data)) return data;
+
+	if (isArray(data)) {
 		if (visited.has(data)) return '[CIRCULAR]';
 		visited.add(data);
+		return data.map(item => sanitizeForLog(item, isProd, visited));
+	}
 
-		if (Array.isArray(data))
-			return data.map(item => sanitizeForLog(item, isProd, visited));
+	if (isObject(data)) {
+		if (visited.has(data)) return '[CIRCULAR]';
+		visited.add(data);
 
 		const result: Record<string, any> = {};
 		for (const [key, val] of Object.entries(data)) {
@@ -91,7 +95,7 @@ export function sanitizeForLog(
 			if (lowerKey.includes('key') || lowerKey.includes('secret') || lowerKey.includes('token') || lowerKey.includes('password') || lowerKey.includes('auth')) {
 				result[key] = '[REDACTED]';
 			} else if (key === 'rawPrompt' || key === 'normalizedPrompt' || key === 'prompt' || key === 'reasoning') {
-				result[key] = typeof val === 'string' ? maskPii(val, isProd) : sanitizeForLog(val, isProd, visited);
+				result[key] = isString(val) ? maskPii(val, isProd) : sanitizeForLog(val, isProd, visited);
 			} else {
 				result[key] = sanitizeForLog(val, isProd, visited);
 			}
@@ -148,7 +152,7 @@ export function warnDebug(
 	const prefix = tag.startsWith('[') ? tag : `[${tag}]`;
 
 	if (error !== undefined) {
-		const sanitizedError = error instanceof Error ? error : (typeof error === 'string' ? maskPii(error, isProd) : sanitizeForLog(error, isProd));
+		const sanitizedError = error instanceof Error ? error : (isString(error) ? maskPii(error, isProd) : sanitizeForLog(error, isProd));
 		console.warn(`${prefix} ${sanitizedMsg}:`, sanitizedError);
 	} else {
 		console.warn(`${prefix} ${sanitizedMsg}`);
@@ -175,7 +179,7 @@ export function attachCustomInspect<T extends object>(
 			writable: true,
 		});
 
-		if (typeof (target as any).toJSON !== 'function') {
+		if (!isFunction((target as any).toJSON)) {
 			Object.defineProperty(target, 'toJSON', {
 				value: function () {
 					const isProd = isProductionEnvironment();
@@ -189,4 +193,37 @@ export function attachCustomInspect<T extends object>(
 	} catch { }
 
 	return target;
+}
+
+/**
+ * Sanitizes standard AI metadata (reasoning, prompt, limits) for custom inspection views.
+ */
+export function sanitizeInspectAiMeta(
+	ai: {
+		provider?: string | undefined;
+		cached?: boolean | undefined;
+		confidence?: number | undefined;
+		reasoning?: string | undefined;
+		limits?: any;
+		rawPrompt?: string | undefined;
+		normalizedPrompt?: string | undefined;
+		ambiguous?: boolean | undefined;
+		granularity?: string | undefined;
+		rawIso?: string | undefined;
+		[key: string]: any;
+	},
+	isProd: boolean = isProductionEnvironment(),
+): Record<string, any> {
+	return {
+		provider: ai.provider,
+		cached: ai.cached,
+		confidence: ai.confidence,
+		...(isDefined(ai.ambiguous) ? { ambiguous: ai.ambiguous } : {}),
+		...(isDefined(ai.granularity) ? { granularity: ai.granularity } : {}),
+		...(isDefined(ai.rawIso) ? { rawIso: ai.rawIso } : {}),
+		...(isDefined(ai.rawPrompt) ? { rawPrompt: maskPii(ai.rawPrompt, isProd) } : {}),
+		...(isDefined(ai.normalizedPrompt) ? { normalizedPrompt: maskPii(ai.normalizedPrompt, isProd) } : {}),
+		...(isDefined(ai.reasoning) ? { reasoning: maskPii(ai.reasoning, isProd) } : {}),
+		...(ai.limits ? { limits: ai.limits } : {}),
+	};
 }

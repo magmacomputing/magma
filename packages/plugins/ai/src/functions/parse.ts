@@ -1,16 +1,16 @@
 import { Tempo } from '@magmacomputing/tempo';
+import { asText, asNumber } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
-import { AiMode } from '../core/config.js';
-import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
-import { normalizeCacheInput } from '../core/cache.js';
+import { normalizeCacheInput, readMultiTierCache, writeMultiTierCache } from '../core/cache.js';
 import {
 	attachAiMeta,
 	fetchFromProvider,
 	getAvailableProviders,
 	parseJsonPayload,
 	resolveFullContext,
-	validateMinConfidence,
+	resolveAnchorTempo,
+	resolveExecutionOptions,
 	resolveProviderTtl,
 	executeBatch,
 } from '../core/support.js';
@@ -20,7 +20,6 @@ import type { AiParseOptions } from '../types/index.js';
 
 async function parseSingleInput(str: string, options?: AiParseOptions): Promise<Tempo> {
 	const availableProviders = getAvailableProviders(options);
-	const isDebug = options?.debug ?? _state.config.debug ?? false;
 	const normalizedStr = normalizeCacheInput(str);
 
 	const {
@@ -31,7 +30,6 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 		minConfidence,
 		softErrors,
 		cache: aiCacheOption,
-		timeout: callTimeout,
 		ttl,
 		cacheAdapter,
 		anchor,
@@ -45,32 +43,24 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 	} = options || {};
 
 	const fallbackTempo = Tempo.isTempo(anchor) ? anchor : null;
-	const { tz, cal, loc, sph, contextConfig } = resolveFullContext(options, fallbackTempo);
+	const context = resolveFullContext(options, fallbackTempo);
+	const { tz, cal, loc, sph, contextConfig } = context;
 	const tempoConfig = { ...coreOptions, ...contextConfig, sphere: sph as any } as any;
 
-	const anchorTempo = Tempo.isTempo(anchor)
-		? (anchor.tz === tz ? anchor : anchor.set({ timeZone: tz }))
-		: new Tempo(anchor !== undefined ? (anchor as any) : undefined, tempoConfig);
+	const anchorTempo = resolveAnchorTempo(anchor, context);
 
 	const cacheSalt = anchorTempo.format('{yyyy}-{mm}-{dd}');
 	const cacheKey = `${normalizedStr}::${cacheSalt}::${tz}::${cal}::${loc}::${sph}`;
-	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
-	let cachedIso: string | undefined;
-	if (!force && aiCacheOption !== false) {
-		if (adapter) {
-			try {
-				const val = await adapter.get(cacheKey);
-				if (val) {
-					cachedIso = val;
-				}
-			} catch (err: any) {
-				warnDebug('tempo-plugin-ai:parse', 'Cache adapter read error', err?.message, { debug: isDebug });
-			}
-		}
+	const { mode, minConfidence: effectiveMinConfidence, isDebug, executeOptions } = resolveExecutionOptions(options, 'parse');
 
-		cachedIso ??= Tempo.cache.get(cacheKey);
-	}
+	const cachedIso = await readMultiTierCache(cacheKey, {
+		force,
+		cache: aiCacheOption,
+		cacheAdapter,
+		debug: isDebug,
+		tag: 'tempo-plugin-ai:parse',
+	});
 
 	if (cachedIso) {
 		logDebug('tempo-plugin-ai:parse', `Cache hit: "${str}" -> ${cachedIso}`, undefined, { debug: isDebug });
@@ -114,17 +104,13 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
 	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}.`;
 
-	const mode = aiMode || _state.config.mode || AiMode.Fallback;
-	const effectiveMinConfidence = validateMinConfidence(minConfidence, 'parseAI');
-	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
-
 	const winningCandidate = await executeWithMode<any>(
 		mode,
 		availableProviders,
 		async (provider, signal) => {
-			const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, isDebug, signal, callTimeout);
+			const { rawContent, providerId, rateLimits } = await fetchFromProvider(provider, str, contextString, { ...options, signal });
 			const parsedData = parseJsonPayload(rawContent, providerId);
-			const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : (parsedData?.iso === 'INVALID' ? 0.0 : 1.0);
+			const confidence = asNumber(parsedData?.confidence, parsedData?.iso === 'INVALID' ? 0.0 : 1.0);
 
 			return {
 				data: parsedData,
@@ -135,17 +121,15 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 				ambiguous: Boolean(parsedData?.ambiguous || parsedData?.iso === 'INVALID'),
 			};
 		},
-		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:parse', hedgeDelay: effectiveHedgeDelay },
+		executeOptions,
 	);
 
-	_state.limits = winningCandidate.rateLimits ?? null;
-
 	const { data: parsedData, providerId, rateLimits, ambiguous: modeAmbiguous } = winningCandidate;
-	const rawIso = typeof parsedData?.iso === 'string' ? parsedData.iso : 'INVALID';
-	const confidence = typeof winningCandidate.confidence === 'number' ? winningCandidate.confidence : (rawIso === 'INVALID' ? 0.0 : 1.0);
+	const rawIso = asText(parsedData?.iso, 'INVALID');
+	const confidence = asNumber(winningCandidate.confidence, rawIso === 'INVALID' ? 0.0 : 1.0);
 	const ambiguous = Boolean(modeAmbiguous || parsedData?.ambiguous || rawIso === 'INVALID');
-	const granularity = typeof parsedData?.granularity === 'string' ? parsedData.granularity : 'unknown';
-	const reasoning = typeof parsedData?.reasoning === 'string' ? parsedData.reasoning : undefined;
+	const granularity = asText(parsedData?.granularity, 'unknown');
+	const reasoning = asText(parsedData?.reasoning);
 
 	const isBelowMinConfidence = effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence;
 
@@ -157,7 +141,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 			confidence,
 			ambiguous: true,
 			granularity,
-			rawIso: rawIso === 'INVALID' ? 'INVALID' : rawIso,
+			rawIso,
 			reasoning: isDebug ? reasoning : undefined,
 			rawPrompt: isDebug ? str : undefined,
 			normalizedPrompt: isDebug ? normalizedStr : undefined,
@@ -169,17 +153,12 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 
 	const resolvedTtl = resolveProviderTtl(providerId, availableProviders, ttl, 3_600_000);
 
-	if (aiCacheOption !== false) {
-		if (adapter) {
-			try {
-				const res = adapter.set(cacheKey, parsedIso, resolvedTtl);
-				if (res instanceof Promise) await res;
-			} catch (err: any) {
-				warnDebug('tempo-plugin-ai:parse', 'Cache adapter write error', err?.message, { debug: isDebug });
-			}
-		}
-		Tempo.cache.set(cacheKey, parsedIso);
-	}
+	await writeMultiTierCache(cacheKey, parsedIso, resolvedTtl, {
+		cache: aiCacheOption,
+		cacheAdapter,
+		debug: isDebug,
+		tag: 'tempo-plugin-ai:parse',
+	});
 
 	const finalInstance = new Tempo(parsedIso, tempoConfig);
 

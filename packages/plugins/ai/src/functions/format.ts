@@ -1,8 +1,6 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { secure } from '@magmacomputing/tempo/library';
+import { asText, isDefined, isObject, isReference, isText, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
-import { AiMode } from '../core/config.js';
-import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
 	normalizeCacheInput,
@@ -12,13 +10,16 @@ import {
 import {
 	getAvailableProviders,
 	parseJsonPayload,
-	validateMinConfidence,
 	executeBatch,
 	fetchFromProvider,
 	resolveProviderTtl,
-	resolveTzAndLocale,
+	resolveFullContext,
+	resolveAnchorTempo,
+	resolveExecutionOptions,
+	sanitizeConfidence,
+	assertMinConfidenceThreshold,
 } from '../core/support.js';
-import { logDebug, warnDebug, attachCustomInspect, maskPii } from '../core/logger.js';
+import { logDebug, warnDebug, attachCustomInspect, sanitizeInspectAiMeta } from '../core/logger.js';
 import type { AiFormatOptions, FormatItem, TempoAiFormatResult, TempoDateInput } from '../types/format.type.js';
 
 export type { AiFormatOptions, FormatItem, TempoAiFormatResult, TempoDateInput };
@@ -66,8 +67,9 @@ async function formatSingleInput(
 	prompt?: string,
 	options?: AiFormatOptions,
 ): Promise<TempoAiFormatResult> {
-	const isDebug = options?.debug ?? _state.config.debug ?? false;
-	const { tz, loc } = resolveTzAndLocale(options, Tempo.isTempo(date) ? date : null);
+	const fallbackTempo = Tempo.isTempo(date) ? date : null;
+	const context = resolveFullContext(options, fallbackTempo);
+	const { tz, loc } = context;
 
 	let targetTempo: Tempo;
 	try {
@@ -75,61 +77,42 @@ async function formatSingleInput(
 			? (date.tz === tz ? date : date.set({ timeZone: tz }))
 			: new Tempo(date as any, { timeZone: tz });
 	} catch (err: any) {
-		const safeDateRep = typeof date === 'object' && date !== null ? JSON.stringify(date) : String(date);
+		const safeDateRep = isReference(date) ? JSON.stringify(date) : String(date);
 		throw new TempoAiError(`Invalid date provided to formatAI: "${safeDateRep}"`, 400, undefined, { cause: err });
 	}
 
 	if (!targetTempo.isValid) {
-		const safeDateRep = typeof date === 'object' && date !== null ? JSON.stringify(date) : String(date);
+		const safeDateRep = isReference(date) ? JSON.stringify(date) : String(date);
 		throw new TempoAiError(`Invalid date provided to formatAI: "${safeDateRep}"`, 400);
 	}
 
-	const anchor = options?.anchor;
-	let anchorTempo: Tempo;
-	try {
-		anchorTempo = anchor !== undefined
-			? (Tempo.isTempo(anchor)
-				? (anchor.tz === tz ? anchor : anchor.set({ timeZone: tz }))
-				: new Tempo(anchor as any, { timeZone: tz }))
-			: new Tempo(Math.floor(Date.now() / 60_000) * 60_000, { timeZone: tz });
-	} catch (err: any) {
-		const safeAnchorRep = typeof anchor === 'object' && anchor !== null ? JSON.stringify(anchor) : String(anchor);
-		throw new TempoAiError(`Invalid anchor date provided to formatAI: "${safeAnchorRep}"`, 400, undefined, { cause: err });
-	}
+	const anchorTempo = resolveAnchorTempo(options?.anchor, context, {
+		defaultAnchor: Math.floor(Date.now() / 60_000) * 60_000,
+		operationName: 'formatAI',
+	});
 
-	if (!anchorTempo.isValid) {
-		const safeAnchorRep = typeof anchor === 'object' && anchor !== null ? JSON.stringify(anchor) : String(anchor);
-		throw new TempoAiError(`Invalid anchor date provided to formatAI: "${safeAnchorRep}"`, 400);
-	}
-
-	const style = options?.style ? String(options.style).trim() : '';
-	const region = options?.region ? String(options.region).trim() : '';
+	const style = asText(options?.style, '');
+	const region = asText(options?.region, '');
 	const grounding = calculateFormatGroundingMetrics(targetTempo, anchorTempo);
 
-	const promptText = prompt?.trim() || 'Express this date and time in a clear, human-friendly narrative.';
+	const promptText = asText(prompt, 'Express this date and time in a clear, human-friendly narrative.');
 	const normalizedPrompt = normalizeCacheInput(promptText);
 
 	const {
 		force,
-		mode: aiMode,
-		minConfidence,
 		cache: aiCacheOption,
-		timeout: callTimeout,
 		ttl,
 		cacheAdapter,
-		hedgeDelay,
 	} = options || {};
 
 	const cacheKey = `format::${targetTempo.epoch.ms}::${anchorTempo.epoch.ms}::${normalizedPrompt}::${tz}::${loc}::${region}::${style}`;
-	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
-	const effectiveMinConfidence = validateMinConfidence(minConfidence, 'formatAI');
-	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
+	const { mode, minConfidence: effectiveMinConfidence, isDebug, executeOptions } = resolveExecutionOptions(options, 'format');
 
 	const cachedVal = await readMultiTierCache(cacheKey, {
 		force,
 		cache: aiCacheOption,
-		cacheAdapter: adapter,
+		cacheAdapter,
 		debug: isDebug,
 		tag: 'tempo-plugin-ai:format',
 	});
@@ -137,15 +120,13 @@ async function formatSingleInput(
 	if (cachedVal) {
 		try {
 			const parsedCache = JSON.parse(cachedVal);
-			if (typeof parsedCache?.formatted === 'string' && parsedCache.formatted.trim().length > 0) {
-				const cachedConfidence = typeof parsedCache?.confidence === 'number' && Number.isFinite(parsedCache.confidence)
-					? Math.max(0.0, Math.min(1.0, parsedCache.confidence))
-					: 1.0;
+			if (isText(parsedCache?.formatted)) {
+				const cachedConfidence = sanitizeConfidence(parsedCache?.confidence, 1.0);
 
-				if (effectiveMinConfidence !== undefined && cachedConfidence < effectiveMinConfidence) {
+				if (isDefined(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
 					logDebug('tempo-plugin-ai:format', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
 				} else {
-					const reasoning = typeof parsedCache?.reasoning === 'string' ? parsedCache.reasoning : undefined;
+					const reasoning = asText(parsedCache?.reasoning);
 					const cachedResult: TempoAiFormatResult = {
 						formatted: parsedCache.formatted,
 						confidence: cachedConfidence,
@@ -154,9 +135,7 @@ async function formatSingleInput(
 					};
 					attachCustomInspect(cachedResult, (obj, isProd) => ({
 						formatted: obj.formatted,
-						confidence: obj.confidence,
-						provider: obj.provider,
-						...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+						...sanitizeInspectAiMeta(obj, isProd),
 					}));
 					return secure(cachedResult);
 				}
@@ -198,8 +177,6 @@ Output JSON Schema:
 	contextParts.push(`- Formatting Instructions: "${promptText}"`);
 	const contextString = contextParts.join('\n');
 
-	const mode = aiMode || _state.config.mode || AiMode.Fallback;
-
 	const winningCandidate = await executeWithMode(
 		mode,
 		availableProviders,
@@ -208,26 +185,20 @@ Output JSON Schema:
 				provider,
 				promptText,
 				contextString,
-				isDebug,
-				signal,
-				callTimeout,
-				systemPrompt,
+				{ ...options, signal, systemPrompt },
 			);
 
 			const parsedData = parseJsonPayload<any>(rawContent, providerId);
 
-			if (typeof parsedData !== 'object' || parsedData === null)
+			if (!isObject(parsedData))
 				throw new TempoAiError(`Provider ${providerId} returned non-object JSON payload.`, 422);
 
-			const formatted = typeof parsedData?.formatted === 'string' ? parsedData.formatted.trim() : '';
+			const formatted = asText(parsedData?.formatted);
 			if (!formatted)
 				throw new TempoAiError(`Provider ${providerId} returned empty formatted string.`, 422);
 
-			const rawConfidence = typeof parsedData?.confidence === 'number' && Number.isFinite(parsedData.confidence)
-				? parsedData.confidence
-				: 0.9;
-			const confidence = Math.max(0.0, Math.min(1.0, rawConfidence));
-			const reasoning = typeof parsedData?.reasoning === 'string' ? parsedData.reasoning : undefined;
+			const confidence = sanitizeConfidence(parsedData?.confidence);
+			const reasoning = asText(parsedData?.reasoning);
 
 			return {
 				data: {
@@ -240,20 +211,12 @@ Output JSON Schema:
 				consensusKey: formatted.toLowerCase(),
 			};
 		},
-		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:format', hedgeDelay: effectiveHedgeDelay },
+		executeOptions,
 	);
 
-	_state.limits = winningCandidate.rateLimits ?? null;
-
 	const { data: parsedData, providerId } = winningCandidate;
-	const rawConfidence = typeof winningCandidate.confidence === 'number' && Number.isFinite(winningCandidate.confidence)
-		? winningCandidate.confidence
-		: 0.9;
-	const confidence = Math.max(0.0, Math.min(1.0, rawConfidence));
-
-	if (effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence) {
-		throw new TempoAiError(`formatAI confidence (${confidence}) is below the required threshold of ${effectiveMinConfidence}.`, 422);
-	}
+	const confidence = sanitizeConfidence(winningCandidate.confidence);
+	assertMinConfidenceThreshold(confidence, effectiveMinConfidence, 'formatAI');
 
 	const finalResult: TempoAiFormatResult = {
 		formatted: parsedData.formatted,
@@ -266,16 +229,14 @@ Output JSON Schema:
 	const cacheVal = JSON.stringify(finalResult);
 	await writeMultiTierCache(cacheKey, cacheVal, resolvedTtl, {
 		cache: aiCacheOption,
-		cacheAdapter: adapter,
+		cacheAdapter,
 		debug: isDebug,
 		tag: 'tempo-plugin-ai:format',
 	});
 
 	attachCustomInspect(finalResult, (obj, isProd) => ({
 		formatted: obj.formatted,
-		confidence: obj.confidence,
-		provider: obj.provider,
-		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+		...sanitizeInspectAiMeta(obj, isProd),
 	}));
 
 	return secure(finalResult);
@@ -307,7 +268,7 @@ export async function formatAI(
 	options?: AiFormatOptions,
 ): Promise<TempoAiFormatResult | (TempoAiFormatResult | TempoAiError)[]> {
 	if (Array.isArray(dateOrItems)) {
-		const opts = (typeof promptOrOptions === 'object' && promptOrOptions !== null ? promptOrOptions : options) || {};
+		const opts = when(promptOrOptions, isObject<AiFormatOptions>, options) || {};
 		return executeBatch(
 			dateOrItems,
 			item => formatSingleInput(item.date, item.prompt, item.options ? { ...opts, ...item.options } : opts),
@@ -315,7 +276,7 @@ export async function formatAI(
 		);
 	}
 
-	const prompt = typeof promptOrOptions === 'string' ? promptOrOptions : undefined;
-	const opts = typeof promptOrOptions === 'object' && promptOrOptions !== null ? promptOrOptions : options;
+	const prompt = asText(promptOrOptions);
+	const opts = when(promptOrOptions, isObject<AiFormatOptions>, options);
 	return formatSingleInput(dateOrItems, prompt, opts);
 }

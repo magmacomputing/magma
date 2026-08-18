@@ -682,5 +682,38 @@ describe('AI Parsing Plugin (parseAI)', () => {
 			expect(parsedBody.user).toBe('user-tempo-test');
 			expect(parsedBody.timeout).toBeUndefined();
 		});
+
+		it('should respect tokenLimit configuration hierarchy (call > provider > global)', async () => {
+			await initAI({
+				remoteConfigUrl: false,
+				tokenLimit: 1500,
+				providers: [{
+					id: 'groq',
+					key: 'test-key',
+					tokenLimit: 3000
+				}]
+			});
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), { status: 200 }));
+
+			// 1. Should use provider tokenLimit (3000) over global (1500)
+			await parseAI('Thanksgiving 2026', { force: true });
+			expect(fetchSpy).toHaveBeenCalledTimes(1);
+			let parsedBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+			expect(parsedBody.max_tokens).toBe(3000);
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), { status: 200 }));
+
+			// 2. Should use call-level tokenLimit (4500) over provider (3000) and global (1500)
+			await parseAI('Thanksgiving 2026', { force: true, tokenLimit: 4500 });
+			expect(fetchSpy).toHaveBeenCalledTimes(2);
+			parsedBody = JSON.parse(fetchSpy.mock.calls[1][1]?.body as string);
+			expect(parsedBody.max_tokens).toBe(4500);
+		});
 	});
 });

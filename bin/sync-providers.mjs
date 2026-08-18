@@ -67,9 +67,9 @@ const PROVIDER_REGISTRY = {
 		url: 'https://api.groq.com/openai/v1/models',
 		extract: data => (data.data || []).map(m => m.id),
 		selectRecommended: (models, current) =>
-			models.find(m => m === 'llama-3.1-8b-instant')
-			?? models.find(m => m.includes('llama-3.3-70b-versatile'))
-			?? models.find(m => m.includes('llama3-70b-8192'))
+			models.find(m => m === 'openai/gpt-oss-20b')
+			?? models.find(m => m === 'openai/gpt-oss-120b')
+			?? models.find(m => m === 'qwen/qwen3.6-27b')
 			?? current
 	},
 	gemini: {
@@ -114,7 +114,10 @@ async function fetchProviderModels(def, apiKey) {
 		? { 'x-goog-api-key': apiKey, Accept: 'application/json' }
 		: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json' };
 
-	const res = await fetch(def.url, { headers });
+	const res = await fetch(def.url, {
+		headers,
+		signal: AbortSignal.timeout(10_000)
+	});
 
 	if (res.status === 401 || res.status === 403 || (def.headerType === 'goog' && res.status === 400)) {
 		const msg = `${def.env} appears invalid, revoked or expired (HTTP ${res.status})`;

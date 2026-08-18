@@ -3,6 +3,7 @@ import { AiMode } from './config.js';
 import { _state } from './init.js';
 import { logDebug, warnDebug } from './logger.js';
 import type { AiProvider } from '../types/index.js';
+import { asNumber, isUndefined } from '@magmacomputing/tempo/library';
 
 /**
  * ## ModeCandidate
@@ -94,8 +95,8 @@ async function executeFallbackMode<T>(
 	for (const provider of providers) {
 		try {
 			const candidate = await task(provider);
-			const confidence = typeof candidate.confidence === 'number' ? candidate.confidence : 1.0;
-			const bestConfidence = bestCandidate ? (typeof bestCandidate.confidence === 'number' ? bestCandidate.confidence : 1.0) : -1;
+			const confidence = asNumber(candidate.confidence, 1.0);
+			const bestConfidence = asNumber(bestCandidate?.confidence, -1);
 
 			if (!bestCandidate || confidence > bestConfidence)
 				bestCandidate = candidate;
@@ -153,12 +154,12 @@ async function executeRaceMode<T>(
 			completedCount++;
 
 			if (candidate) {
-				const confidence = typeof candidate.confidence === 'number' ? candidate.confidence : 1.0;
-				const bestConf = bestCandidate ? (typeof bestCandidate.confidence === 'number' ? bestCandidate.confidence : 1.0) : -1;
+				const confidence = asNumber(candidate.confidence, 1.0);
+				const bestConf = asNumber(bestCandidate?.confidence, -1);
 				if (!bestCandidate || confidence > bestConf)
 					bestCandidate = candidate;
 
-				if (minConfidence === undefined || confidence >= minConfidence) {
+				if (isUndefined(minConfidence) || confidence >= minConfidence) {
 					settled = true;
 					controller.abort();
 					resolve(candidate);
@@ -231,8 +232,8 @@ async function executeConsensusMode<T>(
 	}
 
 	const sorted = [...fulfilled].sort((a, b) => {
-		const confB = typeof b.confidence === 'number' ? b.confidence : 1.0;
-		const confA = typeof a.confidence === 'number' ? a.confidence : 1.0;
+		const confB = asNumber(b.confidence, 1.0);
+		const confA = asNumber(a.confidence, 1.0);
 		return confB - confA;
 	});
 	return {
@@ -279,12 +280,12 @@ async function executeHedgedMode<T>(
 				const candidate = await task(provider, controller.signal);
 				if (settled) return;
 
-				const confidence = typeof candidate.confidence === 'number' ? candidate.confidence : 1.0;
-				const bestConf = bestCandidate ? (typeof bestCandidate.confidence === 'number' ? bestCandidate.confidence : 1.0) : -1;
+				const confidence = asNumber(candidate.confidence, 1.0);
+				const bestConf = asNumber(bestCandidate?.confidence, -1);
 				if (!bestCandidate || confidence > bestConf)
 					bestCandidate = candidate;
 
-				if (minConfidence === undefined || confidence >= minConfidence) {
+				if (isUndefined(minConfidence) || confidence >= minConfidence) {
 					settled = true;
 					cleanup();
 					controller.abort();
@@ -367,7 +368,7 @@ async function executeAdaptiveMode<T>(
 
 		// Providers with no rate-limit telemetry (local LLMs, first-call remotes) have
 		// no quota ceiling — assign Infinity so they naturally sort above constrained providers.
-		const remaining = typeof limits?.remainingRequests === 'number' ? limits.remainingRequests : Infinity;
+		const remaining = asNumber(limits?.remainingRequests, Infinity);
 		let isExhausted = false;
 
 		if (limits) {
@@ -473,27 +474,37 @@ export async function executeWithMode<T>(
 ): Promise<ModeCandidate<T>> {
 	const effectiveProviders = filterCooldownProviders(providers, options);
 
+	let candidate: ModeCandidate<T>;
 	switch (mode) {
 		case AiMode.Fallback:
-			return executeFallbackMode(effectiveProviders, task, options);
+			candidate = await executeFallbackMode(effectiveProviders, task, options);
+			break;
 
 		case AiMode.Race:
-			return executeRaceMode(effectiveProviders, task, options);
+			candidate = await executeRaceMode(effectiveProviders, task, options);
+			break;
 
 		case AiMode.Consensus:
-			return executeConsensusMode(effectiveProviders, task);
+			candidate = await executeConsensusMode(effectiveProviders, task);
+			break;
 
 		case AiMode.Hedged:
-			return executeHedgedMode(effectiveProviders, task, options);
+			candidate = await executeHedgedMode(effectiveProviders, task, options);
+			break;
 
 		case AiMode.RoundRobin:
-			return executeRoundRobinMode(effectiveProviders, task, options);
+			candidate = await executeRoundRobinMode(effectiveProviders, task, options);
+			break;
 
 		case AiMode.Adaptive:
-			return executeAdaptiveMode(providers, task, options);
+			candidate = await executeAdaptiveMode(providers, task, options);
+			break;
 
 		default:
 			throw new TempoAiError(`Invalid execution mode: '${mode}'. Supported modes: ${Object.values(AiMode).map(m => `'${m}'`).join(', ')}.`, 400);
 	}
+
+	_state.limits = candidate.rateLimits ?? null;
+	return candidate;
 }
 

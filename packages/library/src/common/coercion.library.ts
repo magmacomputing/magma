@@ -1,6 +1,7 @@
 import { clone, stringify } from '#library/serialize.library.js';
 import { asType } from '#library/type.library.js';
 import { isIntegerLike, isArrayLike, isDefined, isInteger, isIterable, isNullish, isString, isUndefined, isNumber, isNumeric, isError, isObject } from '#library/assertion.library.js';
+import { trimAll } from '#library/string.library.js';
 
 /**
  * Coerces a value into an array. If the value is already an array-like or iterable,
@@ -44,17 +45,91 @@ export function asString<T>(str?: T) {
 }
 
 /**
- * Coerces a String, Number, or BigInt to a Number.
+ * Coerces a value to a cleaned, non-empty string.
+ * Returns the trimmed string if valid, otherwise returns undefined (or an optional fallback).
  * 
- * @param str - The value to coerce
- * @returns The coerced Number
+ * @param str - The value to normalize
+ * @param fallback - Optional fallback if str is not a valid non-empty string
+ * @param deepClean - If true, applies trimAll to normalize tabs, newlines, and collapsed spaces
+ * @returns The cleaned string or fallback
  * @example
  * ```ts
- * const num = asNumber(123n); // 123
+ * asText('  hello  ');              // 'hello'
+ * asText('   ');                    // undefined
+ * asText(123);                      // undefined
+ * asText('   ', 'en-US');           // 'en-US'
+ * asText(' a \t b \n', null, true); // 'a b'
  * ```
  */
-export function asNumber(str?: string | number | bigint) {
-	return parseFloat(str?.toString() ?? 'NaN');
+export function asText(str: unknown): string | undefined;
+export function asText(str: unknown, fallback: undefined, deepClean?: boolean): string | undefined;
+export function asText<T extends string>(str: unknown, fallback: T, deepClean?: boolean): string;
+export function asText<T>(str: unknown, fallback: T, deepClean?: boolean): string | T;
+export function asText<T = undefined>(str: unknown, fallback?: T, deepClean = false): string | T {
+	if (isString(str)) {
+		const cleaned = deepClean ? trimAll(str) : str.trim();
+		if (cleaned.length > 0) return cleaned;
+	}
+	return fallback as T;
+}
+
+/**
+ * Conditionally coalesces a value based on a predicate guard.
+ * Returns the value (narrowed by the guard) if the guard returns true, otherwise returns the fallback.
+ * 
+ * @param value - The candidate value to test
+ * @param guard - A predicate or type guard function
+ * @param fallback - Optional fallback value if the guard returns false
+ * @returns The value or fallback
+ * @example
+ * ```ts
+ * when('hello', isString);              // 'hello'
+ * when(123, isString);                  // undefined
+ * when(123, isString, 'default');       // 'default'
+ * when(rawIso, v => v !== 'INVALID');   // rawIso or undefined
+ * ```
+ */
+export function when<T>(value: unknown, guard: (v: unknown) => v is T): T | undefined;
+export function when<T>(value: unknown, guard: (v: unknown) => v is T, fallback: undefined): T | undefined;
+export function when<T, U>(value: unknown, guard: (v: unknown) => v is T, fallback: U): T | U;
+export function when<T>(value: T, guard: (v: T) => boolean): T | undefined;
+export function when<T, U>(value: T, guard: (v: T) => boolean, fallback: U): T | U;
+export function when<T, U = undefined>(value: unknown, guard: (v: unknown) => boolean, fallback?: U): T | U {
+	return guard(value) ? (value as T) : (fallback as U);
+}
+
+/**
+ * Coerces a value to a finite number.
+ * Returns the finite number if valid, otherwise returns undefined (or an optional fallback).
+ * 
+ * @param val - The value to coerce
+ * @param fallback - Optional fallback if val is not a finite number
+ * @returns The coerced finite number or fallback
+ * @example
+ * ```ts
+ * asNumber(123);             // 123
+ * asNumber(123n);            // 123
+ * asNumber('123.45');        // 123.45
+ * asNumber('abc');           // undefined
+ * asNumber('abc', 0);        // 0
+ * asNumber(null, 1.0);       // 1.0
+ * ```
+ */
+export function asNumber(val: unknown): number | undefined;
+export function asNumber(val: unknown, fallback: undefined): number | undefined;
+export function asNumber<T extends number>(val: unknown, fallback: T): number;
+export function asNumber<T>(val: unknown, fallback: T): number | T;
+export function asNumber<T = undefined>(val: unknown, fallback?: T): number | T {
+	if (isNumber(val)) return val;
+	if (typeof val === 'bigint') return Number(val);
+	if (isString(val)) {
+		const trimmed = val.trim();
+		if (trimmed.length > 0) {
+			const parsed = Number(trimmed);
+			if (isNumber(parsed)) return parsed;
+		}
+	}
+	return fallback as T;
 }
 
 const RE_INTEGER = /^[+-]?[0-9]+$/;
@@ -144,7 +219,7 @@ export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
 	if (isNumeric(str) && (!value.startsWith('0') || stripZero))
 		return (isIntegerLike(value) || RE_INTEGER.test(value))	// BigInt literal or plain integer string
 			? toBounded(parseBigInt(str as string))
-			: asNumber(str);																			// floating-point string
+			: asNumber(str, 0);																		// floating-point string
 
 	return str;																								// non-numeric or leading-zero string → as-is
 }

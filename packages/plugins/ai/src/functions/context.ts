@@ -1,7 +1,5 @@
-import { secure } from '@magmacomputing/tempo/library';
+import { asText, isNumber, isString, isDefined, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
-import { AiMode } from '../core/config.js';
-import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
 	getNamespacedCacheKey,
@@ -13,30 +11,30 @@ import {
 	getAvailableProviders,
 	parseJsonPayload,
 	resolveFullContext,
-	validateMinConfidence,
 	executeBatch,
 	fetchFromProvider,
 	resolveProviderTtl,
+	resolveExecutionOptions,
+	sanitizeConfidence,
+	assertMinConfidenceThreshold,
 } from '../core/support.js';
-import { logDebug, attachCustomInspect, maskPii } from '../core/logger.js';
+import { logDebug, attachCustomInspect, sanitizeInspectAiMeta } from '../core/logger.js';
 import type { TempoContext, AiContextOptions } from '../types/index.js';
 
 async function contextSingleInput(text: string, options?: AiContextOptions): Promise<TempoContext> {
-	const isDebug = options?.debug ?? _state.config.debug ?? false;
 	const normalizedStr = normalizeCacheInput(text);
 
-	const { force, mode: aiMode, minConfidence, cache: aiCacheOption, timeout: callTimeout, ttl, cacheAdapter, hedgeDelay } = options || {};
-	const effectiveMinConfidence = validateMinConfidence(minConfidence, 'contextAI');
-
+	const { force, cache: aiCacheOption, ttl, cacheAdapter } = options || {};
 	const { tz, loc, cal, sph } = resolveFullContext(options);
 
 	const cacheKey = getNamespacedCacheKey('context', `${normalizedStr}::${tz}::${loc}::${cal}::${sph}`);
-	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
+
+	const { mode, minConfidence: effectiveMinConfidence, isDebug, executeOptions } = resolveExecutionOptions(options, 'context');
 
 	const cachedVal = await readMultiTierCache(cacheKey, {
 		force,
 		cache: aiCacheOption,
-		cacheAdapter: adapter,
+		cacheAdapter,
 		debug: isDebug,
 		tag: 'tempo-plugin-ai:context',
 	});
@@ -44,18 +42,18 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 	if (cachedVal) {
 		try {
 			const parsedCache = JSON.parse(cachedVal);
-			if (typeof parsedCache.timeZone === 'string') {
+			if (isString(parsedCache.timeZone)) {
 				Intl.DateTimeFormat(undefined, { timeZone: parsedCache.timeZone });
-				const cachedConfidence = typeof parsedCache.confidence === 'number' && Number.isFinite(parsedCache.confidence)
-					? parsedCache.confidence
-					: 1.0;
-				if (effectiveMinConfidence === undefined || cachedConfidence >= effectiveMinConfidence) {
+				const cachedConfidence = sanitizeConfidence(parsedCache.confidence, 1.0);
+				if (isDefined(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
+					logDebug('tempo-plugin-ai:context', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
+				} else {
 					logDebug('tempo-plugin-ai:context', `Cache hit: "${text}" -> ${cachedVal}`, undefined, { debug: isDebug });
 					const cachedResult: TempoContext = {
 						timeZone: parsedCache.timeZone,
 						locale: parsedCache.locale,
 						calendar: parsedCache.calendar,
-						sphere: parsedCache.sphere === 'north' || parsedCache.sphere === 'south' ? parsedCache.sphere : undefined,
+						sphere: when(parsedCache.sphere, (s): s is 'north' | 'south' => s === 'north' || s === 'south'),
 						confidence: cachedConfidence,
 						provider: 'cache',
 						reasoning: parsedCache.reasoning,
@@ -65,9 +63,7 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 						locale: obj.locale,
 						calendar: obj.calendar,
 						sphere: obj.sphere,
-						confidence: obj.confidence,
-						provider: obj.provider,
-						...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+						...sanitizeInspectAiMeta(obj, isProd),
 					}));
 					return secure(cachedResult);
 				}
@@ -80,8 +76,6 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 	const contextString = `Workstation baseline context - Timezone: ${tz}, Locale: ${loc}, Calendar: ${cal}, Hemisphere: ${sph}. Use these baseline settings as the default if the input text contains no geographic or regional clues.`;
 
 	const availableProviders = getAvailableProviders(options);
-	const mode = aiMode || _state.config.mode || AiMode.Fallback;
-	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
 
 	const systemPrompt = `You are a locale and timezone inference engine. Analyze the provided text (like location names, user descriptions, meeting context) and infer the timezone (IANA format), locale (BCP 47 language/region tag), preferred calendar system (Unicode type, default 'gregory'), and hemisphere ('north' or 'south').
 Return ONLY a valid JSON object matching this exact schema:
@@ -106,21 +100,18 @@ Do not include markdown blocks or text outside the JSON.`;
 				provider,
 				text,
 				contextString,
-				isDebug,
-				signal,
-				callTimeout,
-				systemPrompt,
+				{ ...options, signal, systemPrompt },
 			);
 			const parsedData = parseJsonPayload(rawContent, providerId);
 
-			const timeZone = typeof parsedData?.timeZone === 'string' ? parsedData.timeZone.trim() : '';
-			const locale = typeof parsedData?.locale === 'string' ? parsedData.locale.trim() : '';
-			const calendar = typeof parsedData?.calendar === 'string' ? parsedData.calendar.trim() : 'gregory';
-			const rawSphere = typeof parsedData?.sphere === 'string' ? parsedData.sphere.trim().toLowerCase() : null;
-			const sphere = rawSphere === 'north' || rawSphere === 'south' ? rawSphere : undefined;
+			const timeZone = asText(parsedData?.timeZone, '');
+			const locale = asText(parsedData?.locale, '');
+			const calendar = asText(parsedData?.calendar, 'gregory');
+			const rawSphere = asText(parsedData?.sphere)?.toLowerCase();
+			const sphere = when(rawSphere, (s): s is 'north' | 'south' => s === 'north' || s === 'south');
 			const confidence = parsedData?.confidence;
 
-			if (typeof confidence !== 'number' || !Number.isFinite(confidence) || confidence < 0 || confidence > 1)
+			if (!isNumber(confidence) || confidence < 0 || confidence > 1)
 				throw new TempoAiError(`Provider ${providerId} returned invalid confidence score.`, 422);
 
 			return {
@@ -129,7 +120,7 @@ Do not include markdown blocks or text outside the JSON.`;
 					locale,
 					calendar,
 					sphere,
-					reasoning: typeof parsedData?.reasoning === 'string' ? parsedData.reasoning : undefined,
+					reasoning: asText(parsedData?.reasoning),
 				},
 				providerId,
 				rateLimits,
@@ -137,17 +128,14 @@ Do not include markdown blocks or text outside the JSON.`;
 				consensusKey: `${timeZone}::${locale}::${calendar}::${sphere}`,
 			};
 		},
-		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:context', hedgeDelay: effectiveHedgeDelay },
+		executeOptions,
 	);
 
-	_state.limits = winningCandidate.rateLimits ?? null;
-
 	const { data: parsedData, providerId } = winningCandidate;
-	const confidence = typeof winningCandidate.confidence === 'number' ? winningCandidate.confidence : 1.0;
+	const confidence = sanitizeConfidence(winningCandidate.confidence, 1.0);
 	const reasoning = parsedData.reasoning;
 
-	if (effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence)
-		throw new TempoAiError(`Inferred context confidence (${confidence}) is below the required threshold of ${effectiveMinConfidence}.`, 422);
+	assertMinConfidenceThreshold(confidence, effectiveMinConfidence, 'Inferred context');
 
 	// Validate IANA timezone
 	try {
@@ -178,7 +166,7 @@ Do not include markdown blocks or text outside the JSON.`;
 
 	await writeMultiTierCache(cacheKey, cacheVal, resolvedTtl, {
 		cache: aiCacheOption,
-		cacheAdapter: adapter,
+		cacheAdapter,
 		debug: isDebug,
 		tag: 'tempo-plugin-ai:context',
 	});
@@ -188,9 +176,7 @@ Do not include markdown blocks or text outside the JSON.`;
 		locale: obj.locale,
 		calendar: obj.calendar,
 		sphere: obj.sphere,
-		confidence: obj.confidence,
-		provider: obj.provider,
-		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+		...sanitizeInspectAiMeta(obj, isProd),
 	}));
 
 	return secure(finalResult);

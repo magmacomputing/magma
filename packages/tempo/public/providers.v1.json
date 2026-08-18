@@ -1,13 +1,13 @@
 {
   "version": "1.1",
-  "updatedAt": "2026-08-16T00:00:00Z",
+  "updatedAt": "2026-08-18T00:00:00Z",
   "providers": {
     "groq": {
       "url": "https://api.groq.com/openai/v1/chat/completions",
       "models": {
-        "default": "llama-3.1-8b-instant",
-        "fast": "llama-3.1-8b-instant",
-        "large": "llama-3.3-70b-versatile"
+        "default": "openai/gpt-oss-20b",
+        "fast": "openai/gpt-oss-20b",
+        "large": "openai/gpt-oss-120b"
       },
       "tokenParam": "max_tokens"
     },

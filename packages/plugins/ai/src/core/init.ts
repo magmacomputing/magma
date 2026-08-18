@@ -1,8 +1,8 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { isNumber } from '@magmacomputing/tempo/library';
+import { asNumber, isNumber } from '@magmacomputing/tempo/library';
 
 import { getResolvedProviderDefaults, loadRemoteManifest, resetManifestCache } from './manifest.js';
-import { assertNoReservedProviderId } from './support.js';
+import { assertNoReservedProviderId } from './transport.js';
 import { warnDebug } from './logger.js';
 import {
   getActiveTempoConfigAi,
@@ -311,11 +311,8 @@ export function parseRateLimitsFromResponse(response: Response): AiRateLimits | 
   if (remReqHeader === null && remTokHeader === null && resetTokHeader === null)
     return null;
 
-  const reqNum = remReqHeader !== null ? parseInt(remReqHeader, 10) : NaN;
-  const tokNum = remTokHeader !== null ? parseInt(remTokHeader, 10) : NaN;
-
-  const parsedReq = isNumber(reqNum) ? reqNum : null;
-  const parsedTok = isNumber(tokNum) ? tokNum : null;
+  const parsedReq = asNumber(remReqHeader, null);
+  const parsedTok = asNumber(remTokHeader, null);
   const resetAtTempo = resetTokHeader ? parseResetHeaderToTempo(resetTokHeader) : null;
 
   if (parsedReq === null && parsedTok === null && resetAtTempo === null)

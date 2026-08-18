@@ -24,6 +24,7 @@ export const isReference = (obj?: unknown): obj is Object => !isPrimitive(obj);
 export const isIterable = <T>(obj: unknown): obj is Iterable<T> => Symbol.iterator in Object(obj) && !isString(obj);
 
 export const isString = (obj: unknown): obj is string => isType<string>(obj, 'String');
+export const isText = (obj: unknown): obj is string => isString(obj) && obj.trim().length > 0;
 export const isNumber = (obj: unknown): obj is number => Number.isFinite(obj);
 
 const RE_BIGINT_LITERAL = /^[+-]?[0-9]+n$/;

@@ -1,4 +1,4 @@
-import { fetchRequest, isEmpty, isString, parseJSONC } from '@magmacomputing/tempo/library';
+import { asText, fetchRequest, isObject, isString, parseJSONC } from '@magmacomputing/tempo/library';
 import { DEFAULT_PROVIDERS } from './config.js';
 import type { AiProvider } from '../types/index.js';
 
@@ -42,9 +42,7 @@ export async function loadRemoteManifest(
 	if (remoteConfigUrl === false)
 		return null;
 
-	const targetUrl = isString(remoteConfigUrl) && !isEmpty(remoteConfigUrl)
-		? remoteConfigUrl.trim()
-		: DEFAULT_REMOTE_MANIFEST_URL;
+	const targetUrl = asText(remoteConfigUrl, DEFAULT_REMOTE_MANIFEST_URL);
 
 	if (!isValidManifestUrl(targetUrl)) {
 		if (debug)
@@ -68,8 +66,8 @@ export async function loadRemoteManifest(
 				maxBytes: MAX_MANIFEST_BYTES,
 			});
 
-			const data = typeof rawOrData === 'string' ? parseJSONC(rawOrData) : rawOrData;
-			if (data && typeof data === 'object' && data.providers && typeof data.providers === 'object') {
+			const data = isString(rawOrData) ? parseJSONC(rawOrData) : rawOrData;
+			if (isObject(data) && isObject(data.providers)) {
 				const manifest = data.providers as Record<string, Partial<AiProvider>>;
 				_cachedManifestMap.set(targetUrl, manifest);
 				return manifest;
@@ -113,9 +111,7 @@ export function getResolvedProviderDefaults(
 	if (remoteConfigUrl === false)
 		return localDefaults;
 
-	const targetUrl = isString(remoteConfigUrl) && !isEmpty(remoteConfigUrl)
-		? remoteConfigUrl.trim()
-		: DEFAULT_REMOTE_MANIFEST_URL;
+	const targetUrl = asText(remoteConfigUrl, DEFAULT_REMOTE_MANIFEST_URL);
 
 	const cached = _cachedManifestMap.get(targetUrl);
 	if (!cached || !cached[normalizedId])

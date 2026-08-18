@@ -1,8 +1,6 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { secure } from '@magmacomputing/tempo/library';
+import { asText, isDefined, isObject, isString, isText, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
-import { AiMode } from '../core/config.js';
-import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
 	normalizeCacheInput,
@@ -12,13 +10,16 @@ import {
 import {
 	getAvailableProviders,
 	parseJsonPayload,
-	validateMinConfidence,
 	executeBatch,
 	fetchFromProvider,
 	resolveProviderTtl,
-	resolveTzAndLocale,
+	resolveFullContext,
+	resolveAnchorTempo,
+	resolveExecutionOptions,
+	sanitizeConfidence,
+	assertMinConfidenceThreshold,
 } from '../core/support.js';
-import { logDebug, warnDebug, attachCustomInspect, maskPii } from '../core/logger.js';
+import { logDebug, warnDebug, attachCustomInspect, maskPii, sanitizeInspectAiMeta } from '../core/logger.js';
 import type {
 	AiExtractOptions,
 	TempoAiExtractResult,
@@ -37,56 +38,38 @@ async function extractSingleInput(
 	text: string,
 	options?: AiExtractOptions,
 ): Promise<TempoAiExtractResult> {
-	if (typeof text !== 'string' || !text.trim()) {
+	if (!isText(text))
 		throw new TempoAiError('Invalid text input provided to extractAI: text must be a non-empty string.', 400);
-	}
 
-	const isDebug = options?.debug ?? _state.config.debug ?? false;
-	const anchor = options?.anchor;
-	const { tz, loc } = resolveTzAndLocale(options, Tempo.isTempo(anchor) ? anchor : null);
+	const fallbackTempo = Tempo.isTempo(options?.anchor) ? options.anchor : null;
+	const context = resolveFullContext(options, fallbackTempo);
+	const { tz, loc, cal } = context;
 
-	let anchorTempo: Tempo;
-	try {
-		anchorTempo = anchor !== undefined
-			? (Tempo.isTempo(anchor)
-				? (anchor.tz === tz ? anchor : anchor.set({ timeZone: tz }))
-				: new Tempo(anchor as any, { timeZone: tz }))
-			: new Tempo(Math.floor(Date.now() / 60_000) * 60_000, { timeZone: tz });
-	} catch (err: any) {
-		throw new TempoAiError(`Invalid anchor date provided to extractAI: "${String(anchor)}"`, 400, undefined, { cause: err });
-	}
+	const anchorTempo = resolveAnchorTempo(options?.anchor, context, {
+		defaultAnchor: Math.floor(Date.now() / 60_000) * 60_000,
+		operationName: 'extractAI',
+	});
 
-	if (!anchorTempo.isValid) {
-		throw new TempoAiError(`Invalid anchor date provided to extractAI: "${String(anchor)}"`, 400);
-	}
-
-	const cal = options?.calendar || 'gregory';
-	const region = options?.region ? String(options.region).trim() : '';
+	const region = asText(options?.region, '');
 	const categories = options?.categories ? options.categories.map(c => String(c).trim()).filter(Boolean) : [];
 	const categoriesStr = categories.sort().join(',');
 
 	const {
 		force,
-		mode: aiMode,
-		minConfidence,
 		cache: aiCacheOption,
-		timeout: callTimeout,
 		ttl,
 		cacheAdapter,
-		hedgeDelay,
 	} = options || {};
 
 	const normalizedText = normalizeCacheInput(text);
 	const cacheKey = `extract::${normalizedText}::${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')}::${tz}::${loc}::${cal}::${region}::${categoriesStr}`;
-	const adapter = cacheAdapter ?? _state.config.cacheAdapter;
 
-	const effectiveMinConfidence = validateMinConfidence(minConfidence, 'extractAI');
-	const effectiveHedgeDelay = hedgeDelay ?? _state.config.hedgeDelay;
+	const { mode, minConfidence: effectiveMinConfidence, isDebug, executeOptions } = resolveExecutionOptions(options, 'extract');
 
 	const cachedVal = await readMultiTierCache(cacheKey, {
 		force,
 		cache: aiCacheOption,
-		cacheAdapter: adapter,
+		cacheAdapter,
 		debug: isDebug,
 		tag: 'tempo-plugin-ai:extract',
 	});
@@ -95,11 +78,9 @@ async function extractSingleInput(
 		try {
 			const parsedCache = JSON.parse(cachedVal);
 			if (Array.isArray(parsedCache?.events)) {
-				const cachedConfidence = typeof parsedCache.confidence === 'number' && Number.isFinite(parsedCache.confidence)
-					? Math.max(0.0, Math.min(1.0, parsedCache.confidence))
-					: 1.0;
+				const cachedConfidence = sanitizeConfidence(parsedCache.confidence, 1.0);
 
-				if (effectiveMinConfidence !== undefined && cachedConfidence < effectiveMinConfidence) {
+				if (isDefined(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
 					logDebug('tempo-plugin-ai:extract', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
 				} else {
 					const rehydratedEvents: TempoExtractedEvent[] = [];
@@ -110,23 +91,21 @@ async function extractSingleInput(
 							if (!start.isValid) continue;
 							const end = ev.end ? new Tempo(ev.end, { timeZone: tz, locale: loc, calendar: cal }) : undefined;
 							if (end && !end.isValid) continue;
-							const type: TempoEventType = allowedTypes.includes(ev.type) ? ev.type : 'point';
+							const type = when(ev.type, (t): t is TempoEventType => allowedTypes.includes(t as any), 'point');
 							rehydratedEvents.push({
-								label: String(ev.label || 'Event'),
+								label: asText(ev.label, 'Event'),
 								start,
 								end,
 								type,
-								rawText: ev.rawText ? String(ev.rawText) : undefined,
-								confidence: typeof ev.confidence === 'number' && Number.isFinite(ev.confidence)
-									? Math.max(0.0, Math.min(1.0, ev.confidence))
-									: 1.0,
+								rawText: asText(ev.rawText),
+								confidence: sanitizeConfidence(ev.confidence, 1.0),
 							});
 						} catch (err: any) {
 							warnDebug('tempo-plugin-ai:extract', 'Failed to rehydrate cached event', err, { debug: isDebug });
 						}
 					}
 
-					const reasoning = typeof parsedCache.reasoning === 'string' ? parsedCache.reasoning : undefined;
+					const reasoning = asText(parsedCache.reasoning);
 					const cachedResult: TempoAiExtractResult = {
 						events: rehydratedEvents,
 						confidence: cachedConfidence,
@@ -143,9 +122,7 @@ async function extractSingleInput(
 							...(e.rawText ? { rawText: maskPii(e.rawText, isProd) } : {}),
 							confidence: e.confidence,
 						})),
-						confidence: obj.confidence,
-						provider: obj.provider,
-						...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+						...sanitizeInspectAiMeta(obj, isProd),
 					}));
 
 					return secure(cachedResult);
@@ -198,8 +175,6 @@ ${categories.length > 0 ? `6. Only extract events matching one of these categori
 - Calendar System: ${cal}
 ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Filter Categories: ${categories.join(', ')}\n` : ''}`;
 
-	const mode = aiMode || _state.config.mode || AiMode.Fallback;
-
 	const winningCandidate = await executeWithMode(
 		mode,
 		availableProviders,
@@ -208,47 +183,39 @@ ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Fil
 				provider,
 				text,
 				contextString,
-				isDebug,
-				signal,
-				callTimeout,
-				systemPrompt,
+				{ ...options, signal, systemPrompt },
 			);
 
 			const parsedData = parseJsonPayload<any>(rawContent, providerId);
 
-			if (typeof parsedData !== 'object' || parsedData === null)
+			if (!isObject(parsedData))
 				throw new TempoAiError(`Provider ${providerId} returned non-object JSON payload.`, 422);
 
 			if (!Array.isArray(parsedData?.events))
 				throw new TempoAiError(`Provider ${providerId} returned invalid response: 'events' array missing.`, 422);
 
-			const rawConfidence = typeof parsedData?.confidence === 'number' && Number.isFinite(parsedData.confidence)
-				? parsedData.confidence
-				: 0.9;
-			const confidence = Math.max(0.0, Math.min(1.0, rawConfidence));
-			const reasoning = typeof parsedData?.reasoning === 'string' ? parsedData.reasoning : undefined;
+			const confidence = sanitizeConfidence(parsedData?.confidence);
+			const reasoning = asText(parsedData?.reasoning);
 
 			const validEvents: TempoExtractedEvent[] = [];
 			const rawEventItems: any[] = [];
 			for (const item of parsedData.events) {
-				if (!item || typeof item !== 'object') continue;
+				if (!isObject(item)) continue;
 				try {
 					const start = new Tempo(item.start, { timeZone: tz, locale: loc, calendar: cal });
 					if (!start.isValid) continue;
 
 					let end: Tempo | undefined;
-					if (item.end && typeof item.end === 'string') {
+					if (isString(item.end)) {
 						const parsedEnd = new Tempo(item.end, { timeZone: tz, locale: loc, calendar: cal });
 						if (parsedEnd.isValid) end = parsedEnd;
 					}
 
 					const allowedTypes: TempoEventType[] = ['point', 'interval', 'deadline', 'recurrence', 'tentative'];
-					const type: TempoEventType = allowedTypes.includes(item.type) ? item.type : 'point';
-					const label = typeof item.label === 'string' && item.label.trim() ? item.label.trim() : 'Event';
-					const rawText = typeof item.rawText === 'string' ? item.rawText : undefined;
-					const itemConf = typeof item.confidence === 'number' && Number.isFinite(item.confidence)
-						? Math.max(0.0, Math.min(1.0, item.confidence))
-						: confidence;
+					const type = when(item.type, (t): t is TempoEventType => allowedTypes.includes(t as any), 'point');
+					const label = asText(item.label, 'Event');
+					const rawText = asText(item.rawText);
+					const itemConf = sanitizeConfidence(item.confidence, confidence);
 
 					validEvents.push({
 						label,
@@ -284,20 +251,12 @@ ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Fil
 				consensusKey: JSON.stringify(rawEventItems),
 			};
 		},
-		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:extract', hedgeDelay: effectiveHedgeDelay },
+		executeOptions,
 	);
 
-	_state.limits = winningCandidate.rateLimits ?? null;
-
 	const { data: parsedData, providerId } = winningCandidate;
-	const rawConfidence = typeof winningCandidate.confidence === 'number' && Number.isFinite(winningCandidate.confidence)
-		? winningCandidate.confidence
-		: 0.9;
-	const confidence = Math.max(0.0, Math.min(1.0, rawConfidence));
-
-	if (effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence) {
-		throw new TempoAiError(`extractAI confidence (${confidence}) is below the required threshold of ${effectiveMinConfidence}.`, 422);
-	}
+	const confidence = sanitizeConfidence(winningCandidate.confidence);
+	assertMinConfidenceThreshold(confidence, effectiveMinConfidence, 'extractAI');
 
 	const finalResult: TempoAiExtractResult = {
 		events: parsedData.events,
@@ -316,7 +275,7 @@ ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Fil
 
 	await writeMultiTierCache(cacheKey, cacheVal, resolvedTtl, {
 		cache: aiCacheOption,
-		cacheAdapter: adapter,
+		cacheAdapter,
 		debug: isDebug,
 		tag: 'tempo-plugin-ai:extract',
 	});
@@ -330,9 +289,7 @@ ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Fil
 			...(e.rawText ? { rawText: maskPii(e.rawText, isProd) } : {}),
 			confidence: e.confidence,
 		})),
-		confidence: obj.confidence,
-		provider: obj.provider,
-		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+		...sanitizeInspectAiMeta(obj, isProd),
 	}));
 
 	return secure(finalResult);

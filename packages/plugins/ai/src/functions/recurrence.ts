@@ -1,17 +1,18 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { isRRuleString, isFiniteRRule, parseRRule, expandRRuleEpochs } from '@magmacomputing/tempo/library';
+import { isRRuleString, isFiniteRRule, parseRRule, expandRRuleEpochs, asText } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
-import { AiMode } from '../core/config.js';
-import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
 	fetchFromProvider,
 	getAvailableProviders,
 	parseJsonPayload,
 	resolveFullContext,
-	validateMinConfidence,
+	resolveAnchorTempo,
+	resolveExecutionOptions,
+	sanitizeConfidence,
+	assertMinConfidenceThreshold,
 } from '../core/support.js';
-import { logDebug, attachCustomInspect, maskPii } from '../core/logger.js';
+import { logDebug, attachCustomInspect, maskPii, sanitizeInspectAiMeta } from '../core/logger.js';
 import { RE_RRULE_PREFIX } from '../core/patterns.js';
 import type { TempoRecurrenceOptions, TempoRecurrenceResult } from '../types/index.js';
 
@@ -113,9 +114,7 @@ function createRecurrenceResult(
 		summary: maskPii(obj.summary, isProd),
 		isFinite: obj.isFinite,
 		size: obj.size,
-		confidence: obj.confidence,
-		provider: obj.provider,
-		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+		...sanitizeInspectAiMeta(obj, isProd),
 	}));
 
 	return result;
@@ -131,14 +130,18 @@ export async function recurrenceAI(
 	input: string,
 	options?: TempoRecurrenceOptions,
 ): Promise<TempoRecurrenceResult> {
-	const isDebug = options?.debug ?? _state.config.debug ?? false;
 	const isRRule = isRRuleString(input);
 
-	const { tz, cal, loc, sph, contextConfig } = resolveFullContext(options, Tempo.isTempo(options?.anchor) ? options.anchor : null);
-	const anchorTempo = Tempo.isTempo(options?.anchor)
-		? (options.anchor.tz === tz ? options.anchor : options.anchor.set({ timeZone: tz }))
-		: new Tempo(options?.anchor as any, contextConfig);
+	const fallbackTempo = Tempo.isTempo(options?.anchor) ? options.anchor : null;
+	const context = resolveFullContext(options, fallbackTempo);
+	const { tz, cal, loc, sph } = context;
+
+	const anchorTempo = resolveAnchorTempo(options?.anchor, context, {
+		operationName: 'recurrenceAI',
+	});
 	const defaultBatchSize = options?.count ?? 5;
+
+	const { mode, minConfidence: effectiveMinConfidence, isDebug, executeOptions } = resolveExecutionOptions(options, 'recurrence');
 
 	if (isRRule) {
 		const cleanRRule = input.trim().replace(RE_RRULE_PREFIX, '');
@@ -158,9 +161,6 @@ export async function recurrenceAI(
 
 	const availableProviders = getAvailableProviders(options);
 
-	const mode = options?.mode || _state.config.mode || AiMode.Fallback;
-	const effectiveMinConfidence = validateMinConfidence(options?.minConfidence, 'recurrenceAI');
-	const callTimeout = options?.timeout;
 	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}.`;
 
 	const systemPrompt = `You are a calendar recurrence compiler. Read the user's natural language schedule and context. Return ONLY a valid JSON object matching this exact schema:
@@ -184,13 +184,10 @@ Do not include markdown blocks or text outside the JSON.`;
 				provider,
 				input,
 				contextString,
-				isDebug,
-				signal,
-				callTimeout,
-				systemPrompt,
+				{ ...options, signal, systemPrompt },
 			);
 			const parsedData = parseJsonPayload(rawContent, providerId);
-			const confidence = typeof parsedData?.confidence === 'number' ? parsedData.confidence : 0.9;
+			const confidence = sanitizeConfidence(parsedData?.confidence);
 
 			return {
 				data: parsedData,
@@ -200,22 +197,19 @@ Do not include markdown blocks or text outside the JSON.`;
 				consensusKey: parsedData?.rrule,
 			};
 		},
-		{ minConfidence: effectiveMinConfidence, debug: isDebug, tag: 'tempo-plugin-ai:recurrence', hedgeDelay: options?.hedgeDelay ?? _state.config.hedgeDelay },
+		executeOptions,
 	);
 
-	_state.limits = winningCandidate.rateLimits ?? null;
-
 	const { data: parsedData, providerId } = winningCandidate;
-	if (typeof parsedData?.rrule !== 'string' || !parsedData.rrule.trim())
+	const rruleStr = asText(parsedData?.rrule);
+	if (!rruleStr)
 		throw new TempoAiError('Invalid recurrence response from AI provider: missing or empty rrule string.', 422);
 
-	const rruleStr = parsedData.rrule.trim();
-	const summaryText = typeof parsedData?.summary === 'string' ? parsedData.summary : (typeof parsedData?.humanReadable === 'string' ? parsedData.humanReadable : input);
-	const confidence = typeof winningCandidate.confidence === 'number' ? winningCandidate.confidence : 0.9;
-	const reasoning = typeof parsedData?.reasoning === 'string' ? parsedData.reasoning : undefined;
+	const summaryText = asText(parsedData?.summary) ?? asText(parsedData?.humanReadable) ?? input;
+	const confidence = sanitizeConfidence(winningCandidate.confidence);
+	const reasoning = asText(parsedData?.reasoning);
 
-	if (effectiveMinConfidence !== undefined && confidence < effectiveMinConfidence)
-		throw new TempoAiError(`Recurrence rule confidence (${confidence}) is below the required threshold of ${effectiveMinConfidence}.`, 422);
+	assertMinConfidenceThreshold(confidence, effectiveMinConfidence, 'recurrenceAI');
 
 	return createRecurrenceResult(
 		rruleStr,

@@ -1,7 +1,32 @@
-import { isNumber, isNumeric, isString, isPrimitive, isArrayLike, isObject, isPlainObject, isInteger, isJSON, isRawJSON, isEmpty } from '#library/assertion.library.js';
+import { isNumber, isNumeric, isString, isText, isPrimitive, isArrayLike, isObject, isPlainObject, isInteger, isJSON, isRawJSON, isEmpty } from '#library/assertion.library.js';
 import { rawJSON } from '#library/json.library.js';
 
 describe('Assertion Library', () => {
+
+	describe('isText', () => {
+		it('should return true for non-empty, non-whitespace strings', () => {
+			expect(isText('hello')).toBe(true);
+			expect(isText(' a ')).toBe(true);
+			expect(isText('0')).toBe(true);
+			expect(isText('false')).toBe(true);
+		});
+
+		it('should return false for empty or whitespace-only strings', () => {
+			expect(isText('')).toBe(false);
+			expect(isText('   ')).toBe(false);
+			expect(isText('\t\n\r')).toBe(false);
+		});
+
+		it('should return false for non-string types', () => {
+			expect(isText(null)).toBe(false);
+			expect(isText(undefined)).toBe(false);
+			expect(isText(123)).toBe(false);
+			expect(isText(0)).toBe(false);
+			expect(isText(true)).toBe(false);
+			expect(isText({})).toBe(false);
+			expect(isText([])).toBe(false);
+		});
+	});
 
 	describe('isPlainObject', () => {
 		it('should return true for object literals and Object.create(null)', () => {

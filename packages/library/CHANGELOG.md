@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.11.1] - 2026-08-06
 
 ### Added
+- **Coercion & Conditional Guards (`assertion.library`, `coercion.library`)**: Added `isText` guard for non-empty string checks, `when(val, guard, fallback?)` predicate-based conditional coalescer, and overloaded `asText(val, fallback?, deepClean?)` / `asNumber(val, fallback?)` coercers returning typed values or fallbacks.
 - **JSON Utilities (`json.library`)**: Added standalone, zero-dependency `#library/json.library.js` module hosting `parseJSONC`, `stripJSONC`, `cleanify`, `isJSON`, `rawJSON`, and `isRawJSON`. Supports single/multi-line comments, trailing commas, revivers, and options objects (`{ reviver, fallback, safe }`).
 - **ES2024 `rawJSON` Support (`json.library`)**: Added `rawJSON` and `isRawJSON` helpers to create unquoted verbatim JSON structures with fallback for environments lacking native `JSON.rawJSON`.
 - **Assertion Type Guards (`assertion.library`)**: Re-exported `isJSON` and `isRawJSON` for uniform type assertion symmetry.

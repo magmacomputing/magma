@@ -1,7 +1,7 @@
 import { TempoAiError } from './error.js';
 import { isValidManifestUrl } from './manifest.js';
 import { RE_SAFE_PROVIDER_ID } from './patterns.js';
-import { fetchRequest, HttpError, parseJSONC } from '@magmacomputing/tempo/library';
+import { asText, asNumber, fetchRequest, HttpError, isString, parseJSONC } from '@magmacomputing/tempo/library';
 
 export interface ProviderModelInfo {
 	id: string;
@@ -35,14 +35,15 @@ export async function listProviderModels(
 	apiKey: string,
 	options: ListProviderModelsOptions = {}
 ): Promise<ProviderModelInfo[]> {
-	const normalizedId = providerId?.toLowerCase()?.trim() ?? '';
+	const normalizedId = asText(providerId)?.toLowerCase() ?? '';
 	if (!normalizedId)
 		throw new TempoAiError('Provider ID is required to query models', 400);
 
 	if (!RE_SAFE_PROVIDER_ID.test(normalizedId))
 		throw new TempoAiError(`Invalid provider ID '${providerId}'`, 400);
 
-	if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0)
+	const cleanKey = asText(apiKey);
+	if (!cleanKey)
 		throw new TempoAiError(`API key is required to query models for provider '${providerId}'`, 401);
 
 	let endpointUrl: string;
@@ -75,9 +76,9 @@ export async function listProviderModels(
 		}
 
 		if (normalizedId === 'gemini') {
-			headers['x-goog-api-key'] = apiKey.trim();
+			headers['x-goog-api-key'] = cleanKey;
 		} else {
-			headers.Authorization = `Bearer ${apiKey.trim()}`;
+			headers.Authorization = `Bearer ${cleanKey}`;
 		}
 
 		const rawOrData = await fetchRequest<any>(endpointUrl, {
@@ -88,16 +89,16 @@ export async function listProviderModels(
 			maxBytes: MAX_MODELS_BYTES,
 		});
 
-		const data = typeof rawOrData === 'string' ? parseJSONC(rawOrData) : rawOrData;
+		const data = isString(rawOrData) ? parseJSONC(rawOrData) : rawOrData;
 
 		// Format 1: Google Gemini { models: [{ name: "models/gemini-3.7-flash", ... }] }
 		if (data && Array.isArray(data.models)) {
 			return data.models.map((item: any) => ({
 				id: String(item.name || '').replace(/^models\//, ''),
-				name: item.displayName || undefined,
-				description: item.description || undefined,
-				contextWindow: typeof item.inputTokenLimit === 'number' ? item.inputTokenLimit : undefined,
-				supportedGenerationMethods: Array.isArray(item.supportedGenerationMethods) ? item.supportedGenerationMethods : undefined
+				name: asText(item.displayName),
+				description: asText(item.description),
+				contextWindow: asNumber(item.inputTokenLimit),
+				supportedGenerationMethods: Array.isArray(item.supportedGenerationMethods) ? item.supportedGenerationMethods : undefined,
 			})).filter((m: ProviderModelInfo) => m.id.length > 0);
 		}
 
@@ -105,20 +106,20 @@ export async function listProviderModels(
 		if (data && Array.isArray(data.data)) {
 			return data.data.map((item: any) => ({
 				id: String(item.id || ''),
-				name: item.name || undefined,
-				ownedBy: item.owned_by || undefined,
-				created: typeof item.created === 'number' ? item.created : undefined,
-				description: item.description || undefined,
-				contextWindow: typeof item.context_window === 'number' ? item.context_window : undefined
+				name: asText(item.name),
+				ownedBy: asText(item.owned_by),
+				created: asNumber(item.created),
+				description: asText(item.description),
+				contextWindow: asNumber(item.context_window),
 			})).filter((m: ProviderModelInfo) => m.id.length > 0);
 		}
 
 		// Format 3: Direct Array [ { id: "model-1" }, ... ]
 		if (Array.isArray(data)) {
 			return data.map((item: any) => ({
-				id: typeof item === 'string' ? item : String(item?.id || ''),
-				name: item?.name || undefined,
-				description: item?.description || undefined
+				id: isString(item) ? item : String(item?.id || ''),
+				name: asText(item?.name),
+				description: asText(item?.description),
 			})).filter((m: ProviderModelInfo) => m.id.length > 0);
 		}
 
@@ -129,7 +130,7 @@ export async function listProviderModels(
 		if (err?.name === 'TimeoutError' || err?.name === 'AbortError')
 			throw new TempoAiError(`Timeout querying models for provider '${providerId}' after ${timeoutMs}ms`, 504);
 		if (err instanceof HttpError) {
-			const details = typeof err.body === 'string' ? err.body : (err.body ? JSON.stringify(err.body) : '');
+			const details = isString(err.body) ? err.body : (err.body ? JSON.stringify(err.body) : '');
 			throw new TempoAiError(
 				`Failed to query models from ${providerId} (${err.status}): ${details || err.statusText}`,
 				err.status
