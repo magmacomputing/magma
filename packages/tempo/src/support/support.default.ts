@@ -87,8 +87,8 @@ export type Snippet = typeof Snippet
  */
 /** @internal Layout components for date resolution */
 export const datePattern = {
-	dmy: '{mod}?(?:{dd}{sep}?{mm}({sep}?{yy})?|{evt}|(?<slk>{slk})|{wkd}){afx}?',
-	mdy: '{mod}?(?:{mm}{sep}?{dd}({sep}?{yy})?|{evt}|(?<slk>{slk})|{wkd}){afx}?'
+	dmy: '{mod}?(?:{dd}{sep}?{mm}(?:{sep}+{yy}|(?<yy>[0-9]{4}))?|{evt}|(?<slk>{slk})|{wkd}){afx}?',
+	mdy: '{mod}?(?:{mm}{sep}?{dd}(?:{sep}+{yy}|(?<yy>[0-9]{4}))?|{evt}|(?<slk>{slk})|{wkd}){afx}?'
 }
 
 /** @internal Tempo Layout registry */
@@ -102,9 +102,9 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
 	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tzd}?{brk}?',	// calendar/event and clock/period
 	[Token.tmd]: '({tm})(?:(?:{sep}+|T)({dt}))?{tzd}?{brk}?',	// clock/period and calendar/event
-	[Token.dmy]: '{mod}?({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{era}?{afx}?{sfx}?{brk}?',// day-month(-year)
-	[Token.mdy]: '{mod}?({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{era}?{afx}?{sfx}?{brk}?',// month-day(-year)
-	[Token.ymd]: '{mod}?({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{era}?{afx}?{sfx}?{brk}?',// year-month(-day)
+	[Token.dmy]: '{mod}?({wkd}{sep}+)?{dd}{sep}?{mm}(?:{sep}+{yy}|(?<yy>[0-9]{4}))?{era}?{afx}?{sfx}?{brk}?',// day-month(-year)
+	[Token.mdy]: '{mod}?({wkd}{sep}+)?{mm}{sep}?{dd}(?:{sep}+{yy}|(?<yy>[0-9]{4}))?{era}?{afx}?{sfx}?{brk}?',// month-day(-year)
+	[Token.ymd]: '{mod}?({wkd}{sep}+)?{yy}{sep}?{mm}(?:{sep}+{dd}|(?<dd>[0-9]{2}))?{era}?{afx}?{sfx}?{brk}?',// year-month(-day)
 	[Token.off]: '{mod}?{dd}{afx}?',													// day of month, with optional offset
 	[Token.rel]: '{nbr}{sep}?{unt}{sep}?{afx}',								// relative duration (e.g. 2 days ago)
 	[Token.ye]: '{mod}?{yy}{era}',														// explicit year and era (e.g. 200 BC)

@@ -90,6 +90,41 @@ if (fs.existsSync(stdDir)) {
 	}
 }
 
+const internalAliases = [
+	{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') },
+	{ find: '#tempo/std', replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') },
+	{ find: /^#library\/(.*)\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/$1.js') },
+	{ find: /^#library\/(.*)$/, replacement: path.resolve(__dirname, '../library/dist/common/$1.js') },
+	{ find: /^#library$/, replacement: path.resolve(__dirname, '../library/dist/common.index.js') },
+	{ find: /^@magmacomputing\/library\/(?:common|src\/common)\/(.*)\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/$1.js') },
+	{ find: /^@magmacomputing\/library\/(?:common|src\/common)\/(.*)$/, replacement: path.resolve(__dirname, '../library/dist/common/$1.js') },
+	{ find: /^@magmacomputing\/library$/, replacement: path.resolve(__dirname, '../library/dist/common.index.js') },
+	{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: path.resolve(__dirname, 'dist/plugin-api.index.js') },
+	{ find: /^@magmacomputing\/tempo\/library$/, replacement: path.resolve(__dirname, 'dist/library.index.js') },
+	{ find: /^@magmacomputing\/tempo\/core$/, replacement: path.resolve(__dirname, 'dist/core.index.js') },
+	{ find: /^@magmacomputing\/tempo\/support$/, replacement: path.resolve(__dirname, 'dist/support/support.index.js') },
+	{ find: /^@magmacomputing\/tempo\/config$/, replacement: path.resolve(__dirname, 'dist/config/config.index.js') },
+	{ find: /^@magmacomputing\/tempo\/enums$/, replacement: path.resolve(__dirname, 'dist/support/support.enum.js') },
+	{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: path.resolve(__dirname, 'dist/plugin/plugin.index.js') },
+	{ find: /^@magmacomputing\/tempo\/term$/, replacement: path.resolve(__dirname, 'dist/plugin/term/term.index.js') },
+	{ find: /^@magmacomputing\/tempo\/duration$/, replacement: path.resolve(__dirname, 'dist/module/module.duration.js') },
+	{ find: /^@magmacomputing\/tempo\/mutate$/, replacement: path.resolve(__dirname, 'dist/module/module.mutate.js') },
+	{ find: /^@magmacomputing\/tempo\/format$/, replacement: path.resolve(__dirname, 'dist/module/module.format.js') },
+	{ find: /^@magmacomputing\/tempo\/parse$/, replacement: path.resolve(__dirname, 'dist/module/module.parse.js') },
+	{ find: /^@magmacomputing\/tempo\/ticker$/, replacement: path.resolve(__dirname, 'dist/plugin/extend/extend.ticker.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/standard$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/quarter$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/term.quarter.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/season$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/term.season.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/zodiac$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/term.zodiac.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/timeline$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/term.timeline.js') },
+	{ find: /^@magmacomputing\/tempo\/extend\/(.*)$/, replacement: path.resolve(__dirname, 'dist/plugin/extend/extend.$1.js') },
+	{ find: /^@magmacomputing\/tempo\/module\/(.*)$/, replacement: path.resolve(__dirname, 'dist/module/module.$1.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: path.resolve(__dirname, 'dist/plugin/term/term.$1.js') },
+	{ find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: path.resolve(__dirname, 'dist/plugin/$1.js') },
+	{ find: /^@magmacomputing\/tempo$/, replacement: path.resolve(__dirname, 'dist/tempo.index.js') },
+	{ find: /^@magmacomputing\/tempo\/(.*)$/, replacement: path.resolve(__dirname, 'dist/$1.js') }
+];
+
 export default [
 	...(isPremiumAvailable ? [{
 		input: licensePath,
@@ -172,13 +207,9 @@ export default [
 		external: ['@js-temporal/polyfill'],
 		plugins: [
 			alias({
-				entries: [
-					// Pull in the already-obfuscated monolith!
-					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') },
-					{ find: '#tempo/std', replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') }
-				]
+				entries: internalAliases
 			}),
-			resolve({ extensions: ['.js', '.ts'] })
+			resolve({ extensions: ['.js'], exportConditions: ['node', 'import', 'default'] })
 		],
 	},
 
@@ -209,13 +240,9 @@ export default [
 		external: ['@js-temporal/polyfill'],
 		plugins: [
 			alias({
-				entries: [
-					// Pull in the already-obfuscated monolith!
-					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') },
-					{ find: '#tempo/std', replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') }
-				]
+				entries: internalAliases
 			}),
-			resolve({ extensions: ['.js', '.ts'] }),
+			resolve({ extensions: ['.js'], exportConditions: ['node', 'import', 'default'] }),
 			terser()
 		],
 	},
@@ -273,14 +300,12 @@ export default [
 		},
 		plugins: [
 			alias({
-				entries: [
-					{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') },
-					{ find: '#tempo/std', replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') }
-				]
+				entries: internalAliases
 			}),
 			// We DO want to resolve @magmacomputing/library and bundle it into lib/ 
 			resolve({
-				extensions: ['.js', '.ts'],
+				extensions: ['.js'],
+				exportConditions: ['node', 'import', 'default'],
 				moduleDirectories: ['node_modules']
 			}),
 			indentFix()

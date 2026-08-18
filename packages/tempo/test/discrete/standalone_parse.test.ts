@@ -110,6 +110,20 @@ test('standalone parse: human date string with GMT/UTC timezone offset (e.g. Aug
 	expect(zdt4.hour).toBe(16);
 	expect(zdt4.minute).toBe(16);
 	expect(zdt4.offset).toBe('-08:30');
+
+	const zdt17 = parse('Aug 17, 20:17 GMT+10');
+	expect(zdt17.month).toBe(8);
+	expect(zdt17.day).toBe(17);
+	expect(zdt17.hour).toBe(20);
+	expect(zdt17.minute).toBe(17);
+	expect(zdt17.offset).toBe('+10:00');
+
+	const t17 = new Tempo('Aug 17, 20:17 GMT+10');
+	expect(t17.isValid).toBe(true);
+	expect(t17.mm).toBe(8);
+	expect(t17.dd).toBe(17);
+	expect(t17.hh).toBe(20);
+	expect(t17.mi).toBe(17);
 });
 
 test('standalone parse: bare GMT resolves to fixed UTC with +00:00 offset regardless of season', () => {
