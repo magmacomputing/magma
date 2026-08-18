@@ -1,0 +1,90 @@
+name: Publish Package with Provenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish'
+        required: true
+        type: choice
+        options:
+          - '@magmacomputing/tempo'
+          - '@magmacomputing/tempo-plugin-ai'
+          - '@magmacomputing/tempo-fns'
+          - '@magmacomputing/tempo-plugin-astro'
+          - '@magmacomputing/tempo-plugin-finance'
+          - '@magmacomputing/tempo-plugin-batch'
+          - '@magmacomputing/tempo-plugin-snap'
+          - '@magmacomputing/tempo-plugin-sync'
+          - 'all'
+      dry_run:
+        description: 'Dry run (simulate without uploading to registry)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write # Mandatory for npm Sigstore/OIDC cryptographic provenance
+
+jobs:
+  validate-and-publish:
+    name: Publish with Provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TZ: America/New_York
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+      TEMPO_LICENSE_KEY: ${{ secrets.TEMPO_LICENSE_KEY || '' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Monorepo Workspaces
+        run: |
+          npm run build:library
+          npm run build:tempo
+          npm run build:plugins
+
+      - name: Run Tests
+        run: npm run test
+
+      - name: Publish Selected Package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          SELECTED_PKG: ${{ inputs.package }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          PROVENANCE_FLAG="--provenance --access public"
+          if [ "$DRY_RUN" = "true" ]; then
+            PROVENANCE_FLAG="$PROVENANCE_FLAG --dry-run"
+            echo "🔍 DRY RUN MODE ACTIVATED — Simulating publication..."
+          fi
+
+          if [ "$SELECTED_PKG" = "all" ]; then
+            echo "🚀 Publishing all workspaces..."
+            npm publish --workspace=@magmacomputing/tempo $PROVENANCE_FLAG
+            npm publish --workspace=@magmacomputing/tempo-fns $PROVENANCE_FLAG
+            npm publish --workspace=@magmacomputing/tempo-plugin-ai $PROVENANCE_FLAG
+            npm publish --workspace=@magmacomputing/tempo-plugin-astro $PROVENANCE_FLAG
+            npm publish --workspace=@magmacomputing/tempo-plugin-finance $PROVENANCE_FLAG
+            npm publish --workspace=@magmacomputing/tempo-plugin-batch $PROVENANCE_FLAG
+            npm publish --workspace=@magmacomputing/tempo-plugin-snap $PROVENANCE_FLAG
+            npm publish --workspace=@magmacomputing/tempo-plugin-sync $PROVENANCE_FLAG
+          else
+            echo "🚀 Publishing workspace: $SELECTED_PKG"
+            npm publish --workspace="$SELECTED_PKG" $PROVENANCE_FLAG
+          fi

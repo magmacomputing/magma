@@ -75,6 +75,16 @@ For complete API references, architecture guides, and advanced examples:
 
 ---
 
+## 🔒 Security, Privacy & Transparency
+
+* 🌐 **Direct Provider Communication**: All requests are dispatched directly from your application runtime to the official endpoints of your configured AI providers (OpenAI, Google Gemini, Anthropic, Groq, or local Ollama). There are **no intermediary proxies**, **no telemetry**, and **zero tracking**.
+* 🛡️ **Zero Data Retention**: Prompts, input expressions, and temporal context are processed ephemerally and are never stored, logged, or retained outside of your own runtime memory or explicitly configured cache adapters.
+* 🔑 **Scoped Environment Lookups**: Auto-discovery only reads standard, documented provider variables (`OPENAI_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `TEMPO_AI_KEY`). No other system environment variables are inspected.
+* 📦 **Client-Side Safety**: BYOK API keys are designed exclusively for server, edge runtime, or secure container environments and should never be exposed in client-side browser bundles.
+
+---
+
 ## ⚖️ Licensing
 
 This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.
+

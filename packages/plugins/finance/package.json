@@ -22,6 +22,11 @@
 	],
 	"author": "Magma Computing",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/magmacomputing/magma.git",
+		"directory": "packages/plugins/finance"
+	},
 	"files": [
 		"dist",
 		"src",
