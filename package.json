@@ -54,7 +54,7 @@
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "typescript-7": "npm:typescript@^7.0.2",
-    "unplugin-swc": "^1.5.9",
+    "unplugin-swc": "^1.5.11",
     "vitest": "4.1.10",
     "webdriverio": "^9.30.1"
   },
