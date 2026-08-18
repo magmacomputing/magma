@@ -258,9 +258,9 @@ describe('AI Recurrence Plugin (recurrenceAI)', () => {
 
 		const items = result.take(3);
 		expect(items).toHaveLength(3);
-		expect(items[0].config.timeZone).toBe('Australia/Sydney');
-		expect(items[0].config.calendar).toBe('iso8601');
-		expect(items[0].config.locale).toBe('en-AU');
-		expect(items[0].config.sphere).toBe('south');
+		expect(items[0].tz).toBe('Australia/Sydney');
+		expect(items[0].cal).toBe('iso8601');
+		expect(items[0].locale).toBe('en-AU');
+		expect(items[0].sphere).toBe('south');
 	});
 });

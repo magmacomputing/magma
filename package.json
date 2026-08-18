@@ -23,6 +23,7 @@
     "version:bump": "node bin/version-bump.mjs",
     "version:sync": "node bin/version-sync.mjs",
     "catalog:sync": "node packages/plugins/.bin/catalog-sync.mjs",
+    "providers:sync": "npm run build:library && node bin/sync-providers.mjs",
     "repl": "npm run repl --workspace=@magmacomputing/tempo",
     "repl:plugins": "tsx --import ./packages/plugins/.bin/temporal-polyfill.mts ./packages/plugins/.bin/repl.mts",
     "repl:dist": "npm run repl:dist --workspace=@magmacomputing/tempo",
@@ -53,7 +54,7 @@
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "typescript-7": "npm:typescript@^7.0.2",
-    "unplugin-swc": "^1.5.9",
+    "unplugin-swc": "^1.5.11",
     "vitest": "4.1.10",
     "webdriverio": "^9.30.1"
   },

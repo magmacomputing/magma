@@ -6,34 +6,47 @@
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ai"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ai?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ai/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ai"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ai?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
-> [!WARNING]
-> **🧪 EXPERIMENTAL PLUGIN**
-> This plugin relies on Generative AI. While it uses strict JSON schemas and validation to force deterministic outputs, LLMs (especially smaller models) can still hallucinate complex calendar math. We are actively collecting feedback on prompt engineering and model reliability. Please report any strange behavior or unexpected hallucinations on the [Magma GitHub Bug Report Form](https://github.com/magmacomputing/magma/issues/new?template=bug_report_ai.yml)!
->
-> [!CAUTION]
-> **LLM Output Disclaimer**: Magma Computing Solutions and the Tempo core maintainers provide `@magmacomputing/tempo-plugin-ai` "as-is" without warranty of any kind. Large Language Models are probabilistic text generators, not deterministic calculators. Developers and organization operators are solely responsible for validating AI-generated date and time outputs before relying on them in financial, legal, medical, or time-critical production systems.
-
 Tempo community plugin for LLM-powered natural language date parsing, schedule compilation, and temporal processing.
 
 This plugin bridges the gap between deterministic date-math and unstructured NLP inputs, utilizing large language models (like Gemini, Groq, or OpenAI) to safely and asynchronously parse, format, and process complex natural language temporal expressions into `Tempo` instances.
 
-> **CRITICAL SECURITY WARNING**: Raw LLM API keys must **never** be exposed in a client-side browser bundle or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, route requests through a secure backend proxy service.
+::: warning 🔒 Security Notice
+Raw LLM API keys must **never** be exposed in client-side browser bundles or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, route requests through a secure backend proxy service.
+:::
 
 ## Installation & Quickstart
-
+ 
 ```bash
 npm install @magmacomputing/tempo-plugin-ai
 ```
 
-```typescript
-import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
+### 1. Zero-Config Mode (Instant Execution)
+If you have standard provider keys in your environment (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`), simply call any AI function directly with zero boilerplate:
 
-// Initialize provider farm (Node/SSR backend)
+```typescript
+import { parseAI } from '@magmacomputing/tempo-plugin-ai';
+
+// Automatically discovers GROQ_API_KEY / OPENAI_API_KEY from the environment
+const dt = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
+console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
+```
+
+### 2. Explicit Provider Farm Configuration
+For custom models, custom SLAs, or multi-provider execution strategies:
+
+```typescript
+import { parseAI, initAI, AiMode } from '@magmacomputing/tempo-plugin-ai';
+
+// Explicitly configure provider farm & fallback strategy
 await initAI({
-  providers: [{ id: 'groq', key: process.env.GROQ_API_KEY }]
+  mode: AiMode.Fallback,
+  providers: [
+    { id: 'groq', key: process.env.GROQ_API_KEY },
+    { id: 'openai', key: process.env.OPENAI_API_KEY, model: 'gpt-4o' }
+  ],
+  timeout: 5000
 });
 
-// Parse natural language temporal expressions
 const dt = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
 console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
 ```
@@ -43,22 +56,43 @@ All AI functions return a standard ES Promise wrapped object.
 
 | Function | Input | Returns (`Promise<...>`) | Description | Doc |
 | :--- | :--- | :--- | :--- | :---: |
+| **`parseAI`** | Natural language text string(s) | `Tempo` \| `Tempo[]` \| `(Tempo \| TempoAiError)[]` | Single point-in-time `Tempo` instance (or batch array) | <a href="./ai.parse.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`formatAI`** | Date-time + prompt / style | `TempoAiFormatResult` \| `TempoAiFormatResult[]` \| `(TempoAiFormatResult \| TempoAiError)[]` | **Contextual narrative date formatting** (`formatted`, `confidence`, `provider`, `reasoning`) | <a href="./ai.format.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`extractAI`** | Unstructured text string(s) | `TempoAiExtractResult` \| `TempoAiExtractResult[]` \| `(TempoAiExtractResult \| TempoAiError)[]` | **Extracted temporal entities & calendar events** (`events: TempoExtractedEvent[]`, `confidence`, `reasoning`) | <a href="./ai.extract.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`recurrenceAI`** | Natural language pattern or RRULE string | `TempoRecurrenceResult` | **Iterable series of `Tempo` dates** (with `.take(n)`, `[Symbol.iterator]`, & RRULE string) | <a href="./ai.recurrence.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`scheduleAI`** | Booking prompt + busy constraints | `TempoScheduleResult` | **Resolved appointment slot** (`start`, `end`, `slot`, `alternatives`, `ai.conflictBumped`) | <a href="./ai.schedule.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`diffAI`** | Start & End dates + prompt | `TempoAiDiffResult` \| `TempoAiDiffResult[]` \| `(TempoAiDiffResult \| TempoAiError)[]` | **Narrative time delta & business days** (`formatted`, `businessDays`, `days`, `hours`, `holidays`) | <a href="./ai.diff.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+| **`contextAI`** | Context text string(s) | `TempoContext` \| `TempoContext[]` \| `(TempoContext \| TempoAiError)[]` | **Inferred regional context** (`timeZone`, `locale`, `calendar`, `sphere`) | <a href="./ai.context.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
 | **`initAI`** | Provider config & API keys | `void` | Configured AI provider farm | <a href="./ai.init.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
-| **`parseAI`** | Natural language text string(s) | `Tempo` \| `Tempo[]` \| `(Tempo \| TempoAiError)[]` | Single point-in-time `Tempo` instance (or batch array) | <a href="./ai.parseAI.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
-| **`recurrenceAI`** | Natural language pattern or RRULE string | `TempoRecurrenceResult` | **Iterable series of `Tempo` dates** (with `.take(n)`, `[Symbol.iterator]`, & RRULE string) | <a href="./ai.recurrenceAI.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
-| **`scheduleAI`** | Booking prompt + busy constraints | `TempoScheduleResult` | **Resolved appointment slot** (`start`, `end`, `slot`, `alternatives`, `ai.conflictBumped`) | <a href="./ai.scheduleAI.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
-| **`contextAI`** | Context text string(s) | `TempoContext` \| `TempoContext[]` \| `(TempoContext \| TempoAiError)[]` | **Inferred regional context** (`timeZone`, `locale`, `calendar`, `sphere`) | <a href="./ai.contextAI.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
-| **`diffAI`** | Start & End dates + prompt | `TempoAiDiffResult` \| `TempoAiDiffResult[]` \| `(TempoAiDiffResult \| TempoAiError)[]` | **Narrative time delta & business days** (`formatted`, `businessDays`, `days`, `hours`, `holidays`) | <a href="./ai.diffAI.html" class="btn btn-secondary icon-btn" title="View Documentation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="View Documentation"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a> |
+
+### Summary of Distinct Return Contracts
+
+To streamline error handling and data consumption, return shapes across the AI plugin follow three distinct contracts:
+
+| Category | Functions | Return Type | Single Query Low-Confidence / Failure | Batch Array `softErrors: true` Contract |
+| :--- | :--- | :--- | :--- | :--- |
+| **Point-in-Time Date** | `parseAI` | `Tempo` (with `.ai`) | Throws `TempoAiError` (or returns invalid `Tempo` if `minConfidence` threshold unmet) | Returns invalid `Tempo` (`isValid === false`) in array position |
+| **Structured AI Objects** | `formatAI`<br/>`extractAI`<br/>`diffAI`<br/>`contextAI` | `TempoAiFormatResult`<br/>`TempoAiExtractResult`<br/>`TempoAiDiffResult`<br/>`TempoContext` | Throws `TempoAiError` (422 for low confidence, 429 for quota, 500 for network) | Returns typed `TempoAiError` object directly in array position |
+| **Intervals & Generators** | `scheduleAI`<br/>`recurrenceAI` | `TempoScheduleResult` (Proxied `Interval<Tempo>`)<br/>`TempoRecurrenceResult` (`.take(n)`) | Throws `TempoAiError` (Single item query only) | N/A (Single query operations) |
 
 ## Architecture & Infrastructure Guides
 
 > [!IMPORTANT]
-> **Production Recommendation**: Due to the complexities of LLM APIs, including caching gotchas, context injection, rate limits, and calendar math hallucinations, we politely but firmly recommend reading the dedicated guides below before deploying this plugin in a production environment. 
+> **Production Recommendation**: Due to the complexities of LLM APIs, including caching gotchas, context injection, rate limits, and calendar math hallucinations, we politely but strongly recommend reading the dedicated guides below before deploying this plugin in a production environment. 
 
+- [Security & Privacy Architecture](./security.md) (Smart Debug Telemetry, PII Masking, HTTPS & Proxy Introspection)
 - [Multi-Provider Execution Modes](./modes.md) (Hedged, RoundRobin, Adaptive, Race, Consensus, Fallback)
-- [Provider Architecture & Security](./architecture.md) (BYOK vs Proxy patterns, Frontend Security)
-- [Context & Natural Language Parsing](./context.md) (How Timezone and Locale are injected)
+- [Provider Architecture & Security](./architecture.md) (BYOK vs Proxy patterns, Browser Security, TLS 1.3 & Privacy Guarantees)
+- [Grounding & Natural Language Parsing](./grounding.md) (How Timezone and Locale are injected)
 - [Rate Limits & Cache Management](./rate-limits.md) (Tracking API quotas, handling 429 errors, and custom Redis caches)
+
+## Community Feedback & Production Notice
+
+> [!NOTE]
+> **Community Feedback & Prompt Engineering**
+> While `@magmacomputing/tempo-plugin-ai` utilizes deterministic grounding, schema enforcement, and confidence validation, LLM outputs can vary across models and prompt styles. We actively welcome community feedback and prompt optimizations—please report any edge cases or suggestions on the [Magma GitHub Issue Tracker](https://github.com/magmacomputing/magma/issues/new?template=bug_report_ai.yml).
+>
+> **Production Notice & "As-Is" Disclaimer**: Magma Computing Solutions and the Tempo core maintainers provide `@magmacomputing/tempo-plugin-ai` "as-is" without warranty of any kind. Large Language Models operate probabilistically; developers and system architects are responsible for validating AI-generated temporal outputs before committing them to financial, legal, medical, or life-critical applications.
 
 ## Licensing
 

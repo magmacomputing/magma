@@ -1,8 +1,10 @@
+import { asText, fetchRequest, isObject, isString, parseJSONC } from '@magmacomputing/tempo/library';
 import { DEFAULT_PROVIDERS } from './config.js';
 import type { AiProvider } from '../types/index.js';
 
 export const DEFAULT_REMOTE_MANIFEST_URL = 'https://tempo.magmacomputing.com.au/providers.v1.json';
 export const DEFAULT_MANIFEST_TIMEOUT_MS = 1500;
+export const MAX_MANIFEST_BYTES = 512 * 1024;
 
 let _cachedManifestMap = new Map<string, Record<string, Partial<AiProvider>>>();
 let _fetchPromiseMap = new Map<string, Promise<Record<string, Partial<AiProvider>> | null>>();
@@ -18,7 +20,7 @@ export function resetManifestCache(): void {
 /**
  * Validates that a manifest or provider URL uses HTTPS or HTTP localhost.
  */
-function isValidManifestUrl(urlStr: string): boolean {
+export function isValidManifestUrl(urlStr: string): boolean {
 	try {
 		const parsed = new URL(urlStr);
 		return parsed.protocol === 'https:' || (parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'));
@@ -29,6 +31,7 @@ function isValidManifestUrl(urlStr: string): boolean {
 
 /**
  * Fetches the remote AI provider manifest. Remote defaults are loaded during initialization.
+ * Supports both standard JSON and JSONC (JSON with comments & trailing commas).
  * Fail-open: if network fails or times out, returns null and allows fallback to local DEFAULT_PROVIDERS.
  */
 export async function loadRemoteManifest(
@@ -39,9 +42,7 @@ export async function loadRemoteManifest(
 	if (remoteConfigUrl === false)
 		return null;
 
-	const targetUrl = typeof remoteConfigUrl === 'string' && remoteConfigUrl.trim().length > 0
-		? remoteConfigUrl.trim()
-		: DEFAULT_REMOTE_MANIFEST_URL;
+	const targetUrl = asText(remoteConfigUrl, DEFAULT_REMOTE_MANIFEST_URL);
 
 	if (!isValidManifestUrl(targetUrl)) {
 		if (debug)
@@ -56,27 +57,17 @@ export async function loadRemoteManifest(
 		return _fetchPromiseMap.get(targetUrl)!;
 
 	const fetchPromise = (async () => {
-		let timer: ReturnType<typeof setTimeout> | undefined;
 		try {
-			const controller = new AbortController();
-			timer = setTimeout(() => controller.abort(), timeoutMs);
-
-			const response = await fetch(targetUrl, {
-				signal: controller.signal,
-				headers: { Accept: 'application/json' },
+			const rawOrData = await fetchRequest<string | Record<string, any>>(targetUrl, {
+				headers: { Accept: 'application/json, text/plain, */*' },
 				redirect: 'error',
+			}, {
+				timeout: timeoutMs,
+				maxBytes: MAX_MANIFEST_BYTES,
 			});
 
-			if (!response.ok) {
-				if (debug)
-					console.warn(`[tempo-plugin-ai] Remote manifest fetch failed with status ${response.status}`);
-				const empty = {};
-				_cachedManifestMap.set(targetUrl, empty);
-				return null;
-			}
-
-			const data = await response.json();
-			if (data && typeof data === 'object' && data.providers && typeof data.providers === 'object') {
+			const data = isString(rawOrData) ? parseJSONC(rawOrData) : rawOrData;
+			if (isObject(data) && isObject(data.providers)) {
 				const manifest = data.providers as Record<string, Partial<AiProvider>>;
 				_cachedManifestMap.set(targetUrl, manifest);
 				return manifest;
@@ -97,7 +88,6 @@ export async function loadRemoteManifest(
 			_cachedManifestMap.set(targetUrl, empty);
 			return null;
 		} finally {
-			if (timer !== undefined) clearTimeout(timer);
 			_fetchPromiseMap.delete(targetUrl);
 		}
 	})();
@@ -121,9 +111,7 @@ export function getResolvedProviderDefaults(
 	if (remoteConfigUrl === false)
 		return localDefaults;
 
-	const targetUrl = typeof remoteConfigUrl === 'string' && remoteConfigUrl.trim().length > 0
-		? remoteConfigUrl.trim()
-		: DEFAULT_REMOTE_MANIFEST_URL;
+	const targetUrl = asText(remoteConfigUrl, DEFAULT_REMOTE_MANIFEST_URL);
 
 	const cached = _cachedManifestMap.get(targetUrl);
 	if (!cached || !cached[normalizedId])

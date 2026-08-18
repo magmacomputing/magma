@@ -1,7 +1,9 @@
 import { TempoAiError } from './error.js';
 import { AiMode } from './config.js';
 import { _state } from './init.js';
+import { logDebug, warnDebug } from './logger.js';
 import type { AiProvider } from '../types/index.js';
+import { asNumber, isUndefined } from '@magmacomputing/tempo/library';
 
 /**
  * ## ModeCandidate
@@ -93,8 +95,8 @@ async function executeFallbackMode<T>(
 	for (const provider of providers) {
 		try {
 			const candidate = await task(provider);
-			const confidence = typeof candidate.confidence === 'number' ? candidate.confidence : 1.0;
-			const bestConfidence = bestCandidate ? (typeof bestCandidate.confidence === 'number' ? bestCandidate.confidence : 1.0) : -1;
+			const confidence = asNumber(candidate.confidence, 1.0);
+			const bestConfidence = asNumber(bestCandidate?.confidence, -1);
 
 			if (!bestCandidate || confidence > bestConfidence)
 				bestCandidate = candidate;
@@ -102,14 +104,22 @@ async function executeFallbackMode<T>(
 			if (options?.minConfidence === undefined || confidence >= options.minConfidence)
 				return candidate;
 
-			if (options?.debug)
-				console.log(`[${options.tag || 'tempo-plugin-ai'}] Provider '${candidate.providerId}' confidence (${confidence}) below minConfidence (${options.minConfidence}). Cascading to next provider...`);
+			logDebug(
+				options?.tag || 'tempo-plugin-ai',
+				`Provider '${candidate.providerId}' confidence (${confidence}) below minConfidence (${options.minConfidence}). Cascading to next provider...`,
+				undefined,
+				{ debug: options?.debug },
+			);
 
 		} catch (err: any) {
 			lastError = err;
 			if (err instanceof TempoAiError && err.code === 422 && options?.minConfidence === undefined) break;
-			if (options?.debug)
-				console.warn(`[${options.tag || 'tempo-plugin-ai'}] Provider '${provider.id}' failed:`, err);
+			warnDebug(
+				options?.tag || 'tempo-plugin-ai',
+				`Provider '${provider.id}' failed`,
+				err,
+				{ debug: options?.debug },
+			);
 		}
 	}
 
@@ -144,12 +154,12 @@ async function executeRaceMode<T>(
 			completedCount++;
 
 			if (candidate) {
-				const confidence = typeof candidate.confidence === 'number' ? candidate.confidence : 1.0;
-				const bestConf = bestCandidate ? (typeof bestCandidate.confidence === 'number' ? bestCandidate.confidence : 1.0) : -1;
+				const confidence = asNumber(candidate.confidence, 1.0);
+				const bestConf = asNumber(bestCandidate?.confidence, -1);
 				if (!bestCandidate || confidence > bestConf)
 					bestCandidate = candidate;
 
-				if (minConfidence === undefined || confidence >= minConfidence) {
+				if (isUndefined(minConfidence) || confidence >= minConfidence) {
 					settled = true;
 					controller.abort();
 					resolve(candidate);
@@ -222,8 +232,8 @@ async function executeConsensusMode<T>(
 	}
 
 	const sorted = [...fulfilled].sort((a, b) => {
-		const confB = typeof b.confidence === 'number' ? b.confidence : 1.0;
-		const confA = typeof a.confidence === 'number' ? a.confidence : 1.0;
+		const confB = asNumber(b.confidence, 1.0);
+		const confA = asNumber(a.confidence, 1.0);
 		return confB - confA;
 	});
 	return {
@@ -270,12 +280,12 @@ async function executeHedgedMode<T>(
 				const candidate = await task(provider, controller.signal);
 				if (settled) return;
 
-				const confidence = typeof candidate.confidence === 'number' ? candidate.confidence : 1.0;
-				const bestConf = bestCandidate ? (typeof bestCandidate.confidence === 'number' ? bestCandidate.confidence : 1.0) : -1;
+				const confidence = asNumber(candidate.confidence, 1.0);
+				const bestConf = asNumber(bestCandidate?.confidence, -1);
 				if (!bestCandidate || confidence > bestConf)
 					bestCandidate = candidate;
 
-				if (minConfidence === undefined || confidence >= minConfidence) {
+				if (isUndefined(minConfidence) || confidence >= minConfidence) {
 					settled = true;
 					cleanup();
 					controller.abort();
@@ -358,12 +368,12 @@ async function executeAdaptiveMode<T>(
 
 		// Providers with no rate-limit telemetry (local LLMs, first-call remotes) have
 		// no quota ceiling — assign Infinity so they naturally sort above constrained providers.
-		const remaining = typeof limits?.remainingRequests === 'number' ? limits.remainingRequests : Infinity;
+		const remaining = asNumber(limits?.remainingRequests, Infinity);
 		let isExhausted = false;
 
 		if (limits) {
 			const resetMs = limits.resetAt?.epoch?.ms ?? now;
-			isExhausted = limits.remainingRequests === 0 && resetMs > now;
+			isExhausted = (limits.remainingRequests === 0 || limits.remainingTokens === 0) && resetMs > now;
 		}
 
 		return {
@@ -385,6 +395,55 @@ async function executeAdaptiveMode<T>(
 
 	const sortedProviders = scored.map(s => s.provider);
 	return executeFallbackMode(sortedProviders, task, options);
+}
+
+/**
+ * Checks if a provider has exhausted its request quota and is currently within an active cooldown window.
+ *
+ * @internal
+ */
+export function isProviderInCooldown(provider: AiProvider, now = Date.now()): boolean {
+	const limits = _state.providerLimits.get(provider.id);
+	if (!limits) return false;
+	const resetMs = limits.resetAt?.epoch?.ms ?? now;
+	const isExhausted = limits.remainingRequests === 0 || limits.remainingTokens === 0;
+	return isExhausted && resetMs > now;
+}
+
+/**
+ * Filters out providers currently in an active rate-limit cooldown window,
+ * provided there is at least one non-exhausted provider available.
+ * If all providers are in cooldown, returns all providers so execution can attempt or fail naturally.
+ *
+ * @internal
+ */
+export function filterCooldownProviders(
+	providers: AiProvider[],
+	options?: ExecuteModeOptions,
+): AiProvider[] {
+	if (providers.length <= 1) return providers;
+	const now = Date.now();
+	const available: AiProvider[] = [];
+	const skipped: string[] = [];
+
+	for (const p of providers) {
+		if (isProviderInCooldown(p, now)) {
+			skipped.push(p.id);
+		} else {
+			available.push(p);
+		}
+	}
+
+	if (available.length > 0 && skipped.length > 0) {
+		logDebug(
+			options?.tag || 'tempo-plugin-ai',
+			`Proactively filtered ${skipped.length} provider(s) in active 429 cooldown: ${skipped.join(', ')}`,
+			undefined,
+			{ debug: options?.debug },
+		);
+		return available;
+	}
+	return providers;
 }
 
 /**
@@ -413,26 +472,39 @@ export async function executeWithMode<T>(
 	task: ProviderTask<T>,
 	options?: ExecuteModeOptions,
 ): Promise<ModeCandidate<T>> {
+	const effectiveProviders = filterCooldownProviders(providers, options);
+
+	let candidate: ModeCandidate<T>;
 	switch (mode) {
 		case AiMode.Fallback:
-			return executeFallbackMode(providers, task, options);
+			candidate = await executeFallbackMode(effectiveProviders, task, options);
+			break;
 
 		case AiMode.Race:
-			return executeRaceMode(providers, task, options);
+			candidate = await executeRaceMode(effectiveProviders, task, options);
+			break;
 
 		case AiMode.Consensus:
-			return executeConsensusMode(providers, task);
+			candidate = await executeConsensusMode(effectiveProviders, task);
+			break;
 
 		case AiMode.Hedged:
-			return executeHedgedMode(providers, task, options);
+			candidate = await executeHedgedMode(effectiveProviders, task, options);
+			break;
 
 		case AiMode.RoundRobin:
-			return executeRoundRobinMode(providers, task, options);
+			candidate = await executeRoundRobinMode(effectiveProviders, task, options);
+			break;
 
 		case AiMode.Adaptive:
-			return executeAdaptiveMode(providers, task, options);
+			candidate = await executeAdaptiveMode(providers, task, options);
+			break;
 
 		default:
 			throw new TempoAiError(`Invalid execution mode: '${mode}'. Supported modes: ${Object.values(AiMode).map(m => `'${m}'`).join(', ')}.`, 400);
 	}
+
+	_state.limits = candidate.rateLimits ?? null;
+	return candidate;
 }
+

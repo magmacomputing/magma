@@ -1,4 +1,3 @@
-import { asNumber, asString, nullishToValue } from '#library/coercion.library.js';
 import { stringify } from '#library/serialize.library.js';
 import { isString, isObject, isNumeric, assertCondition, assertString } from '#library/assertion.library.js';
 import type { SingularUnit } from '#library/type.library.js';
@@ -29,13 +28,12 @@ const RE_TEMPLATE_PLACEHOLDER = /\${(.*?)}/g;
  * ```
  */
 export function trimAll(str: string | number, pat?: RegExp) {
-	return str
-		.toString()																							// coerce to String
-		.replace(pat!, '')																			// remove regexp, if supplied
+	const base = pat ? str.toString().replace(pat, '') : str.toString();
+	return base
 		.replace(RE_TAB, ' ')																		// replace <tab> with <space>
 		.replace(RE_NEWLINE, ' ')																// replace <return> & <newline>
 		.replace(RE_MULTI_SPACE, ' ')														// trim multiple <space>
-		.trim()																									// leading/trailing <space>
+		.trim();																								// leading/trailing <space>
 }
 
 /**
@@ -221,7 +219,7 @@ export const makeTemplate = (templateString: any) =>
  * toLower(' HELLO '); // 'hello'
  * ```
  */
-export const toLower = <T>(str: T) => isString(str) ? asString(str).toLowerCase().trim() : str;
+export const toLower = <T>(str: T) => isString(str) ? str.toLowerCase().trim() : str;
 
 /**
  * Coerces a value to a string, converts it to uppercase, and trims whitespace.
@@ -233,7 +231,7 @@ export const toLower = <T>(str: T) => isString(str) ? asString(str).toLowerCase(
  * toUpper(' hello '); // 'HELLO'
  * ```
  */
-export const toUpper = <T>(str: T) => isString(str) ? asString(str).toUpperCase().trim() : str;
+export const toUpper = <T>(str: T) => isString(str) ? str.toUpperCase().trim() : str;
 
 /**
  * Asserts that a string's length is within specified minimum and maximum bounds.
@@ -269,7 +267,7 @@ export const strlen = <Min extends number, Max extends number>(str: unknown, min
  * ```
  */
 export const pad = (nbr: string | number | bigint = 0, len = 2, fill?: string | number) =>
-	nbr.toString().padStart(len, nullishToValue(fill, isNumeric(nbr) ? '0' : ' ').toString());
+	nbr.toString().padStart(len, (fill ?? (isNumeric(nbr) ? '0' : ' ')).toString());
 
 /**
  * Pads a numeric or string value with non-breaking spaces.
@@ -280,7 +278,7 @@ export const pad = (nbr: string | number | bigint = 0, len = 2, fill?: string | 
  * @returns The right-aligned padded string
  */
 export const padString = (str: string | number | bigint, pad = 6) =>
-	(isNumeric(str) ? asNumber(str).toFixed(2).toString() : str.toString() ?? '').padStart(pad, '\u00A0');
+	(isNumeric(str) ? Number(str).toFixed(2) : str?.toString() ?? '').padStart(pad, '\u00A0');
 
 /** 
  * Reconstructs a string from an array of char codes.

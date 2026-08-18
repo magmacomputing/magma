@@ -182,10 +182,39 @@ describe(`${label} properties`, () => {
     expect(Tempo.properties).toContain('yy');
     expect(Tempo.properties).toContain('mm');
     expect(Tempo.properties).toContain('dd');
+    expect(Tempo.properties).toContain('tz');
+    expect(Tempo.properties).toContain('cal');
+    expect(Tempo.properties).toContain('locale');
+    expect(Tempo.properties).toContain('sphere');
   })
 
   test('properties does not include Symbol keys', () => {
     Tempo.properties.forEach((p: string) => expect(typeof p).not.toBe('symbol'));
+  })
+
+})
+
+describe(`${label} instance context getters`, () => {
+
+  test('resolves default context values on instance', () => {
+    const t = new Tempo('2026-08-15T12:00:00Z');
+    expect(typeof t.tz).toBe('string');
+    expect(typeof t.cal).toBe('string');
+    expect(t.locale).toBeDefined();
+    expect(t.sphere).toBe(Tempo.config.sphere);
+  })
+
+  test('resolves custom context options on instance', () => {
+    const t = new Tempo('2026-08-15T12:00:00', {
+      timeZone: 'Australia/Sydney',
+      calendar: 'iso8601',
+      locale: 'en-AU',
+      sphere: 'south',
+    });
+    expect(t.tz).toBe('Australia/Sydney');
+    expect(t.cal).toBe('iso8601');
+    expect(t.locale).toBe('en-AU');
+    expect(t.sphere).toBe('south');
   })
 
 })

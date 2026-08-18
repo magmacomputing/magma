@@ -31,7 +31,7 @@ const dt = await parseAI("Third Friday of October", {
   timeZone: 'Australia/Sydney',   // Context timezone
   locale: 'en-AU',                // Context locale
   minConfidence: 0.85,            // Require at least 0.85 confidence score
-  timeout: 3000,                  // 3-second SLA call-site timeout
+  timeout: 3000,                  // 3-second request timeout (throws TempoAiError(504) if exceeded)
   force: true,                    // Skip native pre-parsing & cache lookup
   debug: true                     // Enable operational trace logging & .ai metadata
 });

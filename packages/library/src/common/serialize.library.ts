@@ -1,5 +1,6 @@
 import { curry } from '#library/function.library.js';
 import { ownKeys, ownValues, ownEntries } from '#library/primitive.library.js';
+import { cleanify } from '#library/json.library.js';
 
 import { asType } from '#library/type.library.js';
 import { isType, isEmpty, isDefined, isUndefined, isNullish, isString, isObject, isArray, isFunction, isSymbolFor, isSymbol } from '#library/assertion.library.js';
@@ -52,26 +53,6 @@ export function clone<T>(obj: T, opts?: { transfer: any[] }) {
 		return globalThis.structuredClone(obj, opts);
 	} catch {
 		return cleanify(obj);																		// fallback to JSON functions
-	}
-}
-
-/**
- * Returns a JSON-clean copy of an object by stringifying and re-parsing.
- * This inherently removes unsupported values like functions and `undefined`.
- * 
- * @param obj - The object to clean
- * @returns A clean, JSON-compatible object
- * @example
- * ```ts
- * const clean = cleanify({ a: 1, b: undefined }); // { a: 1 }
- * ```
- */
-export function cleanify<T>(obj: T) {
-	try {
-		return JSON.parse(JSON.stringify(obj)) as T;						// run any toString() methods
-	} catch (error) {
-		console.warn('Could not clean object: ', obj);
-		return { ...obj }
 	}
 }
 
@@ -391,3 +372,4 @@ function typeify(json: any, sentinel?: Function) {
 			return Reflect.construct(cls, [value])								// create new Class instance
 	}
 }
+

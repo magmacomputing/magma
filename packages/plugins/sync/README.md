@@ -25,7 +25,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { SyncPlugin } from '@magmacomputing/tempo-plugin-sync';
 
 Tempo.init({ 
-  plugins: [SyncPlugin] 
+  extends: [SyncPlugin] 
 });
 
 // Master Thread: Start the clock

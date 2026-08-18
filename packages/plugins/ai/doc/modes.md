@@ -28,12 +28,36 @@ const dt = await parseAI('next friday at 3pm', {
 
 | Mode | Dispatch | Token Cost | Latency | Rate-Limit Resilience |
 | :--- | :--- | :---: | :---: | :---: |
-| **`Fallback`** *(Default)* | Sequential | 🟢 1 request | 🟡 Moderate | 🟡 Reactive |
-| **`Hedged`** | Staggered (primary + timer) | 🟢 ~1.15 avg | 🟢 Ultra-Fast | 🟡 Reactive |
-| **`RoundRobin`** | Cyclic rotation | 🟢 1 request | 🟡 Moderate | 🟢 High |
-| **`Adaptive`** | Quota-sorted rotation | 🟢 1 request | 🟡 Moderate | 🟢 Maximum |
-| **`Race`** | Full parallel | 🔴 N requests | 🟢 Ultra-Fast | 🟡 Reactive |
-| **`Consensus`** | Full parallel + voting | 🔴 N requests | 🟡 Moderate | 🟡 Reactive |
+| **`Fallback`** *(Default)* | Sequential | 🟢 1 request | 🟡 Moderate | 🟢 Proactive Cooldown Filter |
+| **`Hedged`** | Staggered (primary + timer) | 🟢 ~1.15 avg | 🟢 Ultra-Fast | 🟢 Proactive Cooldown Filter |
+| **`RoundRobin`** | Cyclic rotation | 🟢 1 request | 🟡 Moderate | 🟢 High (Cyclic + Filter) |
+| **`Adaptive`** | Quota-sorted rotation | 🟢 1 request | 🟡 Moderate | 🟢 Maximum (Telemetry-Ranked) |
+| **`Race`** | Full parallel | 🔴 N requests | 🟢 Ultra-Fast | 🟢 Proactive Cooldown Filter |
+| **`Consensus`** | Full parallel + voting | 🔴 N requests | 🟡 Moderate | 🟢 Proactive Cooldown Filter |
+
+---
+
+## Global Telemetry & Cooldown Filtering
+
+Regardless of the execution mode chosen, the AI dispatch engine actively monitors per-provider rate-limiting metadata across all network responses (`x-ratelimit-remaining-requests`, `x-ratelimit-remaining-tokens`, `x-ratelimit-reset-requests`, `retry-after`).
+
+```mermaid
+flowchart LR
+    A["Incoming Request\n(Any AiMode)"] --> B{"Check Provider Farm\nCooldown State"}
+    B -- "Exhausted (remaining === 0\n& resetAt > now)" --> C["🚫 Proactively Filter Out\n(Skip 429 endpoints)"]
+    B -- "Ready / High Quota" --> D["✅ Active Provider Pool"]
+    C -. "If ALL in cooldown" .-> D
+    D --> E["Dispatch via Selected Mode\n(Fallback, Race, Hedged, etc.)"]
+```
+
+### Proactive Cooldown Avoidance
+Before dispatching any request:
+1. **Cooldown Detection**: The orchestrator checks if any configured provider has exhausted its request or token quota (`remainingRequests === 0` or `remainingTokens === 0`) and is within an active reset window (`resetAt > now`, derived from response reset timestamps or `retry-after` metadata).
+2. **Pre-Dispatch Filtering**: In `Fallback`, `Race`, `Hedged`, and `RoundRobin` modes, exhausted providers are automatically removed from the active candidate pool for that request.
+   - **`Fallback` & `Hedged`**: Avoids stalling on primary providers that are guaranteed to reject with HTTP 429.
+   - **`Race`**: Saves network bandwidth and avoids firing wasted requests to rate-limited models.
+   - **`RoundRobin`**: Skips over cooling-down keys without breaking the cyclic load-balancing progression.
+3. **Fail-Open Resilience**: If *all* providers in the farm are currently in a cooldown window, the orchestrator keeps all providers available rather than failing prematurely, allowing the request to cascade or surface accurate rate-limit errors.
 
 ---
 
@@ -58,7 +82,6 @@ flowchart TD
 
     Audit --> Consensus["🗳️ AiMode.Consensus\nCross-LLM voting • Highest accuracy"]
 ```
-
 
 ---
 
@@ -93,7 +116,7 @@ const dt = await parseAI('schedule team sync for next wednesday at 2pm', {
 ```
 
 > [!TIP]
-> `hedgeDelay` can also be set globally in `initAI({ hedgeDelay: 600 })` so it applies to all functions (`parseAI`, `recurrenceAI`, `scheduleAI`).
+> `hedgeDelay` can also be set globally in `initAI({ hedgeDelay: 600 })` so it applies to all functions (`parseAI`, `recurrenceAI`, `scheduleAI`, `extractAI`).
 
 ---
 
@@ -118,7 +141,7 @@ await initAI({
 
 ### 4. `AiMode.Adaptive` — Rate-Limit Telemetry Prioritization
 
-Reads `x-ratelimit-*` HTTP headers after every provider response and stores per-provider quota snapshots. On the next request, providers with `remainingRequests === 0` in an active reset window are automatically deprioritized; remaining providers are sorted by highest available quota.
+Reads `x-ratelimit-*` HTTP headers after every provider response and stores per-provider quota snapshots. On subsequent requests, providers are ranked dynamically by highest remaining quota descending, guaranteeing that providers with ample headroom are prioritized ahead of constrained models.
 
 **Best for:** Multi-tier production gateways — mixed free/paid provider pools where proactively avoiding `429 Too Many Requests` is essential.
 
@@ -149,16 +172,23 @@ const dt = await parseAI('tomorrow at noon', {
 
 ### 6. `AiMode.Consensus` — Multi-LLM Cross-Validation
 
-Dispatches requests concurrently across all providers and compares the normalized ISO timestamps or RRULE strings. If all responding providers agree, confidence is elevated to `1.0` (unanimous). If providers disagree, the highest-confidence candidate is returned and flagged with `dt.ai.ambiguous = true`.
+Dispatches requests concurrently across all providers and compares the normalized outputs (e.g. ISO timestamps for `parseAI`, RRULE strings for `recurrenceAI`, formatted strings for `diffAI`/`formatAI`, or structured entity counts for `extractAI`). If all responding providers agree, confidence is elevated to `1.0` (unanimous). If providers disagree, the highest-confidence candidate is returned and flagged with `ai.ambiguous = true` (attached to `Tempo.ai` on `parseAI` or returned on structured result objects).
 
 **Best for:** High-stakes legal, financial, and scheduling — contract dates, event conflict resolution, or auditing where hallucination prevention requires unanimous LLM agreement.
 
 ```typescript
+// 1. Point-in-time cross validation
 const dt = await parseAI('contract renewal date', {
   mode: AiMode.Consensus
 });
 
 if (dt.ai?.ambiguous) {
-  console.warn('Providers disagreed — treat this result with caution.');
+  console.warn('Providers disagreed — treat this date with caution.');
 }
+
+// 2. High-precision duration calculation across multiple providers
+const diff = await diffAI(startDate, endDate, 'in business days excluding UK bank holidays', {
+  mode: AiMode.Consensus
+});
 ```
+

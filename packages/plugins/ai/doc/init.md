@@ -2,19 +2,62 @@
 
 `initAI()` sets up the global configuration for `@magmacomputing/tempo-plugin-ai`, managing provider authentication, multi-provider execution modes, global SLAs/timeouts, and caching strategies.
 
-## Basic Usage
+## Zero-Config Auto-Discovery
+
+`@magmacomputing/tempo-plugin-ai` features a zero-boilerplate auto-discovery architecture. In server environments (Node.js, Deno, Bun), calling `initAI()` is **completely optional** when standard environment variables (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`) or a `tempo.config.json` file are present.
+
+```typescript
+import { parseAI } from '@magmacomputing/tempo-plugin-ai';
+
+// When GROQ_API_KEY is present in the environment:
+// Zero setup required — providers and SLAs are auto-discovered lazily on first call!
+const dt = await parseAI("next Friday at 4pm");
+```
+
+### Configuration Resolution Order
+
+Configuration is automatically discovered and resolved in the following priority:
+1. **Call-site explicit overrides** (`options.providers`, `options.mode`).
+2. **Explicit `initAI(config)` parameters**.
+3. **Active `Tempo.config.plugins.ai`** (in-memory or loaded via `Tempo.bootstrap()`).
+4. **Filesystem `tempo.config.*` files** (JSON, JSONC, JS, TS).
+5. **Runtime Environment Variables** (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`).
+
+### `tempo.config.json` Example
+
+You can declare AI provider configurations directly within your project's `tempo.config.json` using template variable interpolation:
+
+```json
+{
+  "timeZone": "Australia/Sydney",
+  "locale": "en-AU",
+  "plugins": {
+    "ai": {
+      "mode": "fallback",
+      "timeout": 5000,
+      "minConfidence": 0.85,
+      "providers": [
+        { "id": "groq", "key": "${GROQ_API_KEY}" },
+        { "id": "openai", "key": "$env:OPENAI_API_KEY", "model": "gpt-4o-mini" }
+      ]
+    }
+  }
+}
+```
+
+## Basic Usage (Explicit Configuration)
 
 ```typescript
 import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
 
-// Initialize with BYOK (Bring Your Own Key) provider credentials
+// Initialize with custom provider credentials and execution options
 await initAI({
   providers: [
     { id: 'groq', key: process.env.GROQ_API_KEY },
     { id: 'openai', key: process.env.OPENAI_API_KEY, model: 'gpt-4o' }
   ],
   timeout: 5000, // 5-second global SLA default
-  debug: true    // Enable operational trace logging (development-only)
+  debug: true    // Enable operational trace logging (automatically PII-sanitized in production)
 });
 ```
 
@@ -80,10 +123,10 @@ const dt = await parseAI("Next Tuesday at 4pm", { timeout: 3000 });
 **Operational Trace Logging**
 Passing `debug: true` into `initAI` (or setting `{ debug: true }` on a per-request options object) outputs concise operational trace logs (prefixed with `[tempo-plugin-ai]`) to the developer console for monitoring provider fallback decisions and execution timing.
 
-Detailed diagnostic context—including `rawPrompt`, `normalizedPrompt`, `reasoning`, confidence scores, and rate limit snapshots—is attached directly to the returned `Tempo` instance via the `.ai` property when `debug: true` is enabled.
+Detailed diagnostic context—including provider resolution, execution lineage, confidence scores, and when `debug: true` is active, `rawPrompt`, `normalizedPrompt`, and rate-limit snapshots—is attached directly to the returned `Tempo` instance via the `.ai` property for `parseAI`. Structured functions (`formatAI`, `diffAI`, `extractAI`, `contextAI`, `scheduleAI`) surface their respective typed properties directly on the result object (such as `res.confidence`, `res.provider`, and optional `res.reasoning`).
 
-> [!WARNING]
-> **Diagnostic Security Notice**: Inspecting or exposing the `.ai` metadata property (such as `rawPrompt` or `reasoning`) in public UI components or client-side telemetry may expose raw user inputs. Ensure sensitive diagnostic fields on `Tempo.ai` are sanitized before forwarding instances to external monitoring tools.
+> [!TIP]
+> **Smart Debug & Proxy Introspection**: In production environments (`NODE_ENV === 'production'`), terminal logging via `console.log(date.ai)` or `console.log(result)` automatically sanitizes and masks PII (emails, phones, bearer tokens) while preserving 100% in-memory data integrity for application code. Refer to the [Security & Privacy Architecture Guide](./security.md).
 
 ## Configuration Options Reference
 

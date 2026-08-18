@@ -1,12 +1,20 @@
 import { Tempo, Interval } from '@magmacomputing/tempo';
-import { isString, isNumber, isFunction, DAY_MAP, ISO_WEEKDAY_NAMES, type DayKey } from '@magmacomputing/tempo/library';
+import { asText, isText, isString, isNumber, isReference, isFunction, DAY_MAP, ISO_WEEKDAY_NAMES, type DayKey } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
-import { AiMode } from '../core/config.js';
-import { _state } from '../core/init.js';
 import { executeWithMode } from '../core/dispatch.js';
-import { fetchFromProvider, assertNoReservedProviderId } from '../core/support.js';
-import { RE_DURATION_MINUTES, RE_DURATION_HOURS, RE_MARKDOWN_JSON_PREFIX, RE_MARKDOWN_JSON_SUFFIX, RE_ISO_WEEKDAY_DIGIT } from '../core/patterns.js';
-import type { TempoScheduleOptions, TempoScheduleResult, TempoWorkingHours, TempoInterval, TempoScheduleMeta, AiProvider } from '../types/index.js';
+import {
+	fetchFromProvider,
+	getAvailableProviders,
+	parseJsonPayload,
+	resolveFullContext,
+	resolveAnchorTempo,
+	resolveExecutionOptions,
+	sanitizeConfidence,
+	assertMinConfidenceThreshold,
+} from '../core/support.js';
+import { CUSTOM_INSPECT_SYMBOL, maskPii, attachCustomInspect, sanitizeInspectAiMeta } from '../core/logger.js';
+import { RE_DURATION_MINUTES, RE_DURATION_HOURS, RE_ISO_WEEKDAY_DIGIT } from '../core/patterns.js';
+import type { TempoScheduleOptions, TempoScheduleResult, TempoWorkingHours, TempoInterval, TempoScheduleMeta } from '../types/index.js';
 
 function normalizeBusyEvents(rawEvents?: any[], timeZone = 'UTC'): Array<{ start: Tempo; end: Tempo; title?: string | undefined }> {
 	if (!Array.isArray(rawEvents)) return [];
@@ -15,21 +23,18 @@ function normalizeBusyEvents(rawEvents?: any[], timeZone = 'UTC'): Array<{ start
 		if (!val) return new Tempo({ timeZone });
 		if (Tempo.isTempo(val)) return val;
 		return new Tempo(val, { timeZone });
-	}
+	};
 
 	return rawEvents.map(evt => {
 		let start: Tempo;
 		let end: Tempo;
 		let title = 'Busy';
 
-		if (evt && typeof evt === 'object') {
+		if (evt && isReference(evt)) {
 			if ('start' in evt && 'end' in evt) {
 				start = parsePoint((evt as any).start);
 				end = parsePoint((evt as any).end);
-				if ('title' in evt && (evt as any).title !== undefined && String((evt as any).title).trim().length > 0)
-					title = String((evt as any).title);
-				else if ('label' in evt && (evt as any).label !== undefined && String((evt as any).label).trim().length > 0)
-					title = String((evt as any).label);
+				title = asText((evt as any).title) ?? asText((evt as any).label) ?? 'Busy';
 			} else if (Array.isArray(evt) && evt.length >= 2) {
 				start = parsePoint(evt[0]);
 				end = parsePoint(evt[1]);
@@ -58,8 +63,8 @@ function parseDurationMinutes(prompt: string, fallback?: number): number {
 function formatActiveDays(days?: Array<number | DayKey | string>): string {
 	const active = days ?? [1, 2, 3, 4, 5];
 	return active.map(d => {
-		if (typeof d === 'number' && (ISO_WEEKDAY_NAMES as any)[d]) return (ISO_WEEKDAY_NAMES as any)[d];
-		if (typeof d === 'string') {
+		if (isNumber(d) && (ISO_WEEKDAY_NAMES as any)[d]) return (ISO_WEEKDAY_NAMES as any)[d];
+		if (isString(d)) {
 			const upper = d.toUpperCase() as DayKey;
 			const num = (DAY_MAP as any)[upper];
 			if (num && (ISO_WEEKDAY_NAMES as any)[num]) return (ISO_WEEKDAY_NAMES as any)[num];
@@ -110,36 +115,72 @@ Instructions:
   "alternatives": array of secondary { "start": "...", "end": "..." } options if available`;
 
 function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta): TempoScheduleResult {
-	const frozenMeta = Object.freeze(meta);
-	const boundMethodCache = new Map<PropertyKey, Function>();
+	const inspectableMeta = attachCustomInspect({ ...meta }, (obj, isProd) => ({
+		start: interval.start?.toString(),
+		end: interval.end?.toString(),
+		durationMinutes: obj.durationMinutes,
+		summary: maskPii(obj.summary, isProd),
+		confidence: obj.confidence,
+		provider: obj.provider,
+		...(obj.reasoning !== undefined ? { reasoning: maskPii(obj.reasoning, isProd) } : {}),
+		...(obj.ai ? {
+			ai: {
+				...sanitizeInspectAiMeta(obj.ai, isProd),
+				...(obj.ai.conflictBumped !== undefined ? { conflictBumped: obj.ai.conflictBumped } : {}),
+			},
+		} : {}),
+	}));
 
-	return new Proxy(interval, {
+	const boundMethodCache = new Map<PropertyKey, Function>();
+	const carrier = Object.create(interval);
+	Object.assign(carrier, inspectableMeta);
+	attachCustomInspect(carrier, (_obj, isProd) => {
+		const inspectFn = (inspectableMeta as any)[CUSTOM_INSPECT_SYMBOL];
+		return isFunction(inspectFn) ? inspectFn() : inspectableMeta;
+	});
+
+	return new Proxy(carrier, {
 		get(target, prop) {
-			if (Object.hasOwn(frozenMeta, prop))
-				return (frozenMeta as any)[prop];
+			if (prop === CUSTOM_INSPECT_SYMBOL)
+				return (inspectableMeta as any)[CUSTOM_INSPECT_SYMBOL];
+
+			if (prop === 'toJSON')
+				return (inspectableMeta as any).toJSON;
+
+			if (Object.hasOwn(inspectableMeta, prop))
+				return (inspectableMeta as any)[prop];
 
 			if (prop === 'constructor')
-				return Reflect.get(target, prop, target);
+				return Interval;
 
 			if (boundMethodCache.has(prop))
 				return boundMethodCache.get(prop);
 
-			const val = Reflect.get(target, prop, target);
+			const val = Reflect.get(interval, prop, interval);
 			if (isFunction(val)) {
-				const bound = val.bind(target);
+				const bound = val.bind(interval);
 				boundMethodCache.set(prop, bound);
 				return bound;
 			}
 			return val;
 		},
 		has(target, prop) {
-			if (Object.hasOwn(frozenMeta, prop)) return true;
-			return Reflect.has(target, prop);
+			if (prop === CUSTOM_INSPECT_SYMBOL || prop === 'toJSON') return true;
+			if (Object.hasOwn(inspectableMeta, prop)) return true;
+			return Reflect.has(interval, prop);
 		},
 		getOwnPropertyDescriptor(target, prop) {
-			if (Object.hasOwn(frozenMeta, prop)) {
+			if (prop === CUSTOM_INSPECT_SYMBOL || prop === 'toJSON') {
 				return {
-					value: (frozenMeta as any)[prop],
+					value: (inspectableMeta as any)[prop],
+					writable: false,
+					configurable: true,
+					enumerable: false,
+				};
+			}
+			if (Object.hasOwn(inspectableMeta, prop)) {
+				return {
+					value: (inspectableMeta as any)[prop],
 					writable: false,
 					configurable: true,
 					enumerable: true,
@@ -148,9 +189,10 @@ function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta
 			return Reflect.getOwnPropertyDescriptor(target, prop);
 		},
 		ownKeys(target) {
-			const keys = Reflect.ownKeys(target);
-			for (const k of Object.keys(frozenMeta)) {
-				if (!keys.includes(k)) keys.push(k);
+			const keys = Reflect.ownKeys(target).filter(k => k !== CUSTOM_INSPECT_SYMBOL && k !== 'toJSON');
+			for (const k of Object.keys(inspectableMeta)) {
+				if (k !== 'toJSON' && !keys.includes(k))
+					keys.push(k);
 			}
 			return keys;
 		},
@@ -170,39 +212,31 @@ export async function scheduleAI(
 	prompt: string,
 	options?: TempoScheduleOptions
 ): Promise<TempoScheduleResult> {
-	if (!isString(prompt) || prompt.trim() === '') {
+	if (!isText(prompt))
 		throw new TempoAiError('Invalid scheduling prompt provided to scheduleAI', 400);
-	}
 
-	const state = _state;
-	const availableProviders = options?.providers ?? state.config.providers;
+	const availableProviders = getAvailableProviders(options);
+	const fallbackTempo = Tempo.isTempo(options?.anchor) ? options.anchor : null;
+	const context = resolveFullContext(options, fallbackTempo);
+	const { tz: timeZone } = context;
 
-	if (!availableProviders || availableProviders.length === 0)
-		throw new TempoAiError('No AI providers configured for scheduleAI. Call initAI() or supply providers in options.', 400);
+	const anchorTempo = resolveAnchorTempo(options?.anchor, context, {
+		operationName: 'scheduleAI',
+	});
 
-	assertNoReservedProviderId(availableProviders);
-
-	const resolvedTz = options?.timeZone
-		|| (options?.anchor instanceof Tempo ? options.anchor.config?.timeZone || options.anchor.tz : undefined)
-		|| Tempo.options?.timeZone
-		|| 'UTC';
-	const anchorTempo = new Tempo(options?.anchor, { timeZone: resolvedTz });
-	const timeZone = options?.timeZone || anchorTempo.tz || 'UTC';
 	const workingHours: TempoWorkingHours = {
 		start: options?.workingHours?.start ?? '09:00',
 		end: options?.workingHours?.end ?? '17:00',
 		days: options?.workingHours?.days ?? [1, 2, 3, 4, 5],
 		timeZone: options?.workingHours?.timeZone ?? timeZone,
-	}
+	};
 
 	const rawBusy = options?.events ?? options?.intervals;
 	const busyEvents = normalizeBusyEvents(rawBusy, timeZone);
 	const durationMinutes = parseDurationMinutes(prompt, options?.durationMinutes);
 
 	const contextString = buildContextPrompt(anchorTempo, timeZone, workingHours, busyEvents, durationMinutes);
-	const isDebug = Boolean(options?.debug ?? state.config.debug);
-	const mode = options?.mode || state.config.mode || AiMode.Fallback;
-	const callTimeout = options?.timeout ?? state.config.timeout ?? 15000;
+	const { mode, minConfidence: effectiveMinConfidence, isDebug, executeOptions } = resolveExecutionOptions(options, 'schedule');
 
 	const winningCandidate = await executeWithMode<any>(
 		mode,
@@ -212,19 +246,10 @@ export async function scheduleAI(
 				provider,
 				prompt,
 				contextString,
-				isDebug,
-				signal,
-				callTimeout,
-				SCHEDULE_SYSTEM_PROMPT,
+				{ ...options, signal, systemPrompt: SCHEDULE_SYSTEM_PROMPT },
 			);
 
-			const cleanContent = rawContent.replace(RE_MARKDOWN_JSON_PREFIX, '').replace(RE_MARKDOWN_JSON_SUFFIX, '');
-			let parsed: any;
-			try {
-				parsed = JSON.parse(cleanContent);
-			} catch {
-				throw new TempoAiError(`Provider ${provider.id} returned invalid JSON payload.`, 422);
-			}
+			const parsed = parseJsonPayload<any>(rawContent, providerId);
 
 			if (!parsed.start || !parsed.end)
 				throw new TempoAiError(`Provider ${provider.id} missing start or end ISO timestamp.`, 422);
@@ -255,21 +280,16 @@ export async function scheduleAI(
 				},
 				providerId,
 				rateLimits,
-				confidence: isNumber(parsed.confidence) ? parsed.confidence : 0.9,
+				confidence: sanitizeConfidence(parsed.confidence),
 				consensusKey: `${startKey}::${endKey}`,
 			};
 		},
-		{ minConfidence: options?.minConfidence ?? state.config.minConfidence, debug: isDebug, tag: 'tempo-plugin-ai:schedule', hedgeDelay: options?.hedgeDelay ?? state.config.hedgeDelay },
+		executeOptions,
 	);
 
-	_state.limits = winningCandidate.rateLimits ?? null;
-
 	const { data: scheduleData, providerId } = winningCandidate;
-	const confidence = typeof winningCandidate.confidence === 'number' ? winningCandidate.confidence : 0.9;
-
-	const minConf = options?.minConfidence ?? state.config.minConfidence ?? 0.0;
-	if (confidence < minConf)
-		throw new TempoAiError(`scheduleAI confidence (${confidence}) is below the required threshold of ${minConf}`, 422);
+	const confidence = sanitizeConfidence(winningCandidate.confidence);
+	assertMinConfidenceThreshold(confidence, effectiveMinConfidence, 'scheduleAI');
 
 	let finalStart = scheduleData.startTempo;
 	let finalEnd = scheduleData.endTempo;
@@ -285,9 +305,9 @@ export async function scheduleAI(
 	const rawDays = Array.isArray(workingHours.days) ? workingHours.days : [1, 2, 3, 4, 5];
 	const validDays = rawDays
 		.map(d => {
-			if (typeof d === 'number' && Number.isInteger(d) && d >= 1 && d <= 7) return d;
-			if (typeof d === 'string') {
-				const trimmed = d.trim();
+			if (isNumber(d) && Number.isInteger(d) && d >= 1 && d <= 7) return d;
+			const trimmed = asText(d);
+			if (trimmed) {
 				const upper = trimmed.toUpperCase() as DayKey;
 				if (upper in DAY_MAP) return (DAY_MAP as any)[upper];
 				if (RE_ISO_WEEKDAY_DIGIT.test(trimmed)) return Number(trimmed);
@@ -304,7 +324,7 @@ export async function scheduleAI(
 			next = next.add({ days: 1 });
 		}
 		return next;
-	}
+	};
 
 	// Deterministic Conflict & Working Hours Validation using core Interval.overlaps()
 	const MAX_ADJUSTMENT_ITERATIONS = 50;
@@ -401,6 +421,7 @@ export async function scheduleAI(
 		ai: {
 			provider: providerId,
 			confidence,
+			cached: false,
 			conflictBumped,
 			originalSlot,
 			reasoning,

@@ -71,6 +71,8 @@ export interface AliasContext {
 	/** Second (0-59) */                    readonly ss: IntRange<0, 59>;
 	/** IANA TimeZone identifier */         readonly tz: string;
 	/** Calendar identifier */              readonly cal: string;
+	/** Resolved BCP 47 locale */           readonly locale: string;
+	/** Resolved hemisphere */              readonly sphere: enums.COMPASS | undefined;
 	/** Current configuration state */      readonly config: Internal.Config;
 }
 
@@ -351,7 +353,13 @@ export namespace Internal {
 		periods?: Period | RegistryOption<Logic>;
 		ignores?: Ignore;
 	};
-		/** plugins to be automatically extended */							plugins: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
+		/** plugins or namespaces to extend onto Tempo */
+		extends?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
+		/** plugin configuration dictionaries */
+		plugins?: Record<string, any>
+			/** @deprecated Passing an array of executable plugins to `plugins` is deprecated and will be removed in Tempo v4.0.0. Use `extends: [...]` instead. @internal */
+			| (TempoPlugin | TermPlugin | any)[]
+			| (TempoPlugin | TermPlugin | any);
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
@@ -448,7 +456,13 @@ export namespace Internal {
 		/** @deprecated Provide configuration inside `registry: { locales: ... }` */locales?: Record<string, Record<string, string | Function>>;
 		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator> };
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
-		/** plugins to be automatically extended via Tempo.extend() */plugins?: (TempoPlugin | TermPlugin) | (TempoPlugin | TermPlugin)[];
+		/** plugins or namespaces to extend onto Tempo */
+		extends?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
+		/** plugin configuration dictionaries */
+		plugins?: Record<string, any>
+			/** @deprecated Passing an array of executable plugins to `plugins` is deprecated and will be removed in Tempo v4.0.0. Use `extends: [...]` instead. @internal */
+			| (TempoPlugin | TermPlugin | any)[]
+			| (TempoPlugin | TermPlugin | any);
 	}
 
 	export interface LicenseScope {

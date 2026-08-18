@@ -369,6 +369,59 @@ describe('AI Dispatch Helper (executeWithMode)', () => {
 		});
 	});
 
+	describe('Global Telemetry Cooldown Filtering', () => {
+		it('should skip exhausted cooldown providers in Fallback mode', async () => {
+			const resetFuture = new Tempo().add('2 minutes');
+			_state.providerLimits.set('provider-a', {
+				remainingRequests: 0,
+				remainingTokens: 0,
+				resetAt: resetFuture,
+			});
+
+			const task = vi.fn().mockImplementation(async (provider: AiProvider) => {
+				return { data: { id: provider.id }, providerId: provider.id, confidence: 0.95 };
+			});
+
+			const winner = await executeWithMode(AiMode.Fallback, mockProviders, task);
+			expect(winner.providerId).toBe('provider-b');
+			expect(task).not.toHaveBeenCalledWith(mockProviders[0]);
+		});
+
+		it('should skip exhausted cooldown providers in Race mode', async () => {
+			const resetFuture = new Tempo().add('2 minutes');
+			_state.providerLimits.set('provider-a', {
+				remainingRequests: 0,
+				remainingTokens: 0,
+				resetAt: resetFuture,
+			});
+
+			const task = vi.fn().mockImplementation(async (provider: AiProvider) => {
+				return { data: { id: provider.id }, providerId: provider.id, confidence: 0.95 };
+			});
+
+			const winner = await executeWithMode(AiMode.Race, mockProviders, task);
+			expect(['provider-b', 'provider-c']).toContain(winner.providerId);
+			expect(task).not.toHaveBeenCalledWith(mockProviders[0], expect.anything());
+		});
+
+		it('should skip exhausted cooldown providers in Hedged mode', async () => {
+			const resetFuture = new Tempo().add('2 minutes');
+			_state.providerLimits.set('provider-a', {
+				remainingRequests: 0,
+				remainingTokens: 0,
+				resetAt: resetFuture,
+			});
+
+			const task = vi.fn().mockImplementation(async (provider: AiProvider) => {
+				return { data: { id: provider.id }, providerId: provider.id, confidence: 0.95 };
+			});
+
+			const winner = await executeWithMode(AiMode.Hedged, mockProviders, task, { hedgeDelay: 100 });
+			expect(winner.providerId).toBe('provider-b');
+			expect(task).not.toHaveBeenCalledWith(mockProviders[0], expect.anything());
+		});
+	});
+
 	describe('Invalid Modes', () => {
 		it('should throw TempoAiError with status 400 for invalid mode', async () => {
 			const task = vi.fn();

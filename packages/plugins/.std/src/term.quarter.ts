@@ -18,7 +18,7 @@ const groups = defineRange([
 
 /** resolve the full candidate list for the current context */
 function resolve(t: Tempo, anchor?: any): any[] {
-	if (t.config.sphere === undefined && anchor?.sphere === undefined) {
+	if (t.sphere === undefined && anchor?.sphere === undefined) {
 		logWarn(`[tempo] QuarterTerm requires 'sphere' configuration (e.g. Tempo.init({ sphere: 'north' }) or { sphere: 'south' }).`, t.config);
 		return [];
 	}

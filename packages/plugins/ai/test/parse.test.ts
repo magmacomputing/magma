@@ -1,4 +1,4 @@
-import { parseAI, initAI, clearAiCache, getAiRateLimits, getAiConfig, TempoAiError, AiMode } from '../src/index.js';
+import { parseAI, initAI, resetAI, aiCache, getAiRateLimits, getAiConfig, TempoAiError, AiMode, DEFAULT_PROVIDERS } from '../src/index.js';
 import { BoundedCache } from '@magmacomputing/tempo/support';
 import { Tempo } from '@magmacomputing/tempo';
 
@@ -8,6 +8,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 	const isLiveTest = Boolean(process.env.LIVE_AI_TEST && liveApiKey);
 
 	beforeEach(async () => {
+		resetAI();
 		vi.spyOn(console, 'warn').mockImplementation(() => {});
 		vi.spyOn(console, 'error').mockImplementation(() => {});
 		vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -26,6 +27,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 	});
 
 	afterEach(() => {
+		resetAI();
 		vi.restoreAllMocks();
 	});
 
@@ -46,7 +48,43 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		expect(config.providers).toHaveLength(1);
 		expect(config.providers?.[0].id).toBe('groq');
 		expect(config.providers?.[0].key).toBe('[REDACTED]');
-		expect(config.providers?.[0].model).toBe('llama-3.3-70b-versatile');
+		expect(config.providers?.[0].models?.default).toBe(DEFAULT_PROVIDERS.groq.models?.default);
+	});
+
+	it('should automatically inherit configuration from Tempo.config.plugins.ai', async () => {
+		resetAI();
+		Tempo.init({
+			plugins: {
+				ai: {
+					mode: AiMode.Race,
+					timeout: 4500,
+					providers: [{ id: 'groq', key: 'tempo-config-plugins-key' }]
+				}
+			}
+		});
+
+		await initAI();
+		const config = getAiConfig();
+		expect(config.mode).toBe('race');
+		expect(config.timeout).toBe(4500);
+		expect(config.providers?.[0].id).toBe('groq');
+	});
+
+	it('should auto-initialize from Tempo.config.plugins.ai on parseAI if initAI was not called', async () => {
+		resetAI();
+		Tempo.init({
+			plugins: {
+				ai: {
+					mode: AiMode.Fallback,
+					providers: [{ id: 'groq', key: 'auto-init-key' }]
+				}
+			}
+		});
+
+		const result = await parseAI('2026-05-10');
+		expect(result.isValid).toBe(true);
+		const config = getAiConfig();
+		expect(config.providers?.[0].id).toBe('groq');
 	});
 
 	it('should fall back to native parsing first and attach .ai metadata', async () => {
@@ -58,6 +96,9 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		expect(result.ai?.cached).toBe(false);
 		expect(result.ai?.confidence).toBe(1.0);
 		expect(Object.isFrozen(result.ai)).toBe(true);
+		expect('ai' in result).toBe(true);
+		expect(() => Object.keys(result)).not.toThrow();
+		expect(() => Reflect.ownKeys(result)).not.toThrow();
 	});
 
 	it('should throw TempoAiError if reserved provider ID "native" or "cache" is used in initAI', () => {
@@ -65,7 +106,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		expect(() => initAI({ remoteConfigUrl: false, providers: [{ id: 'cache', key: '123' }] })).toThrow(TempoAiError);
 	});
 
-	it('should canonicalize Gemini provider ID and use gemini-3.6-flash model by default', async () => {
+	it('should canonicalize Gemini provider ID and use default Gemini model', async () => {
 		await initAI({
 			remoteConfigUrl: false,
 			providers: [{ id: 'Gemini', key: 'mock-gemini-key' }]
@@ -77,7 +118,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 		await parseAI('Christmas 2026', { force: true });
 		expect(fetchSpy).toHaveBeenCalled();
 		const body = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
-		expect(body.model).toBe('gemini-3.6-flash');
+		expect(body.model).toBe(DEFAULT_PROVIDERS.gemini.models?.default);
 	});
 
 	it('should throw TempoAiError if no key is configured and AI is needed', async () => {
@@ -156,7 +197,7 @@ describe('AI Parsing Plugin (parseAI)', () => {
 
 	it('should cache the result and mark provider as "cache"', async () => {
 		const anchorDate = '2026-05-10T12:00:00Z';
-		clearAiCache('The Friday after Thanksgiving');
+		await aiCache.clear('The Friday after Thanksgiving');
 
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
 		if (!isLiveTest) {
@@ -463,13 +504,13 @@ describe('AI Parsing Plugin (parseAI)', () => {
 			expect(Array.from(cache.keys())).not.toContain('tempKey');
 		});
 
-		it('should preserve clearAiCache functionality', async () => {
+		it('should preserve aiCache.clear functionality', async () => {
 			const cache = new BoundedCache(100);
 			cache.set('Thanksgiving::2026-05-10', '2026-11-26T00:00:00Z');
 			cache.set('Christmas::2026-05-10', '2026-12-25T00:00:00Z');
 
 			await initAI({ remoteConfigUrl: false, cache });
-			clearAiCache('Thanksgiving');
+			await aiCache.clear('Thanksgiving');
 
 			expect(cache.has('Thanksgiving::2026-05-10')).toBe(false);
 			expect(cache.has('Christmas::2026-05-10')).toBe(true);
@@ -640,6 +681,63 @@ describe('AI Parsing Plugin (parseAI)', () => {
 
 			expect(parsedBody.user).toBe('user-tempo-test');
 			expect(parsedBody.timeout).toBeUndefined();
+		});
+
+		it('should respect tokenLimit configuration hierarchy (call > provider > global)', async () => {
+			await initAI({
+				remoteConfigUrl: false,
+				tokenLimit: 1500,
+				providers: [
+					{
+						id: 'groq',
+						key: 'test-key',
+						tokenLimit: 3000,
+					},
+					{
+						id: 'mistral',
+						key: 'test-key',
+					},
+				],
+			});
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), { status: 200 }));
+
+			// 1. Should use provider tokenLimit (3000) over global (1500)
+			await parseAI('Thanksgiving 2026', { force: true });
+			expect(fetchSpy).toHaveBeenCalledTimes(1);
+			let parsedBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+			expect(parsedBody.max_tokens).toBe(3000);
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), { status: 200 }));
+
+			// 2. Should use call-level tokenLimit (4500) over provider (3000) and global (1500)
+			await parseAI('Thanksgiving 2026', { force: true, tokenLimit: 4500 });
+			expect(fetchSpy).toHaveBeenCalledTimes(2);
+			parsedBody = JSON.parse(fetchSpy.mock.calls[1][1]?.body as string);
+			expect(parsedBody.max_tokens).toBe(4500);
+
+			fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+				choices: [{ message: { content: '{"iso":"2026-11-26T00:00:00"}' } }]
+			}), { status: 200 }));
+
+			// 3. Provider without tokenLimit should fall back to global (1500)
+			await initAI({
+				remoteConfigUrl: false,
+				tokenLimit: 1500,
+				providers: [{
+					id: 'groq',
+					key: 'test-key',
+				}],
+			});
+			await parseAI('Thanksgiving 2026', { force: true });
+			expect(fetchSpy).toHaveBeenCalledTimes(3);
+			parsedBody = JSON.parse(fetchSpy.mock.calls[2][1]?.body as string);
+			expect(parsedBody.max_tokens).toBe(1500);
 		});
 	});
 });

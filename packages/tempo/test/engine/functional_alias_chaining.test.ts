@@ -35,6 +35,11 @@ describe('Functional Alias Chaining & Host Context', () => {
 				// 6. Multi-chain with fixed anchor
 				'multi.chain': function (this: t.AliasContext) {
 					return this.set('2026-01-01').add({ hours: 1 }).add({ minutes: 30 });
+				},
+				// 7. Context locale string resolution
+				'context.locale': function (this: t.AliasContext) {
+					if (typeof this.locale === 'string' && this.locale === 'it-IT') return '2026-07-07';
+					return 'fail';
 				}
 				}
 			}
@@ -76,5 +81,10 @@ describe('Functional Alias Chaining & Host Context', () => {
 		expect(t.format('date')).toBe('2026-01-01');
 		expect(t.hh).toBe(1);
 		expect(t.mi).toBe(30); // Minute number
+	});
+
+	test('should resolve canonical locale string inside AliasContext when configured with array', () => {
+		const t = new Tempo('context.locale', { locale: ['it-IT', 'it-CH'] });
+		expect(t.format('date')).toBe('2026-07-07');
 	});
 });

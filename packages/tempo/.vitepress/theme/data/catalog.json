@@ -6,7 +6,7 @@
     "packageName": "@magmacomputing/tempo-plugin-astro",
     "plan": "community",
     "status": "active",
-    "version": "2.1.3"
+    "version": "2.1.4"
   },
   {
     "id": "batch",
@@ -50,8 +50,8 @@
     "description": "Tempo community plugin for LLM-powered natural language processing and parsing.",
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
-    "status": "experimental",
-    "version": "0.3.0"
+    "status": "active",
+    "version": "1.0.0"
   },
   {
     "id": "ticker",

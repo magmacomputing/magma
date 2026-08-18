@@ -1,63 +1,126 @@
-# Context & Natural Language Parsing
+# `contextAI` — Context & Regional Inference
 
-Because natural language dates are entirely relative (e.g., "next Tuesday") and often geographically ambiguous (e.g., "11/12"), an LLM cannot reliably parse them in a vacuum. 
+`contextAI()` is designed to analyze unstructured or ambiguous text (e.g. user biographies, locations, or email bodies) and infer their regional configuration settings. It resolves these properties to a standard configuration object containing timezone, locale, calendar system, and hemisphere.
 
-The Tempo AI plugin solves this by automatically wrapping your input with rich environmental context before sending it to the LLM.
+> [!TIP]
+> **Smart Debug Telemetry**: Enabling `debug: true` activates operational logs. In production environments (`NODE_ENV === 'production'`), PII (emails, phone numbers, auth tokens) is automatically sanitized and masked in console output and terminal inspections. See the [Security & Privacy Architecture Guide](./security.md).
 
-## Geographic Context
+This is highly useful for user onboarding settings, automatic context mapping for calendar syncs, and geolocating inputs dynamically without maintaining static geographic mapping tables.
 
-The plugin automatically reads from the global `Tempo.config` to fetch the default TimeZone, Calendar, and Locale, and establishes the "current anchor time" the moment you call it.
+---
 
-Along with your string, the plugin passes a hidden context payload to the LLM: 
-*`Current Time: [Anchor], Timezone: [TZ], Calendar: [Cal], Locale: [Locale], Hemisphere: [Sphere]`*
+## Basic Usage
 
-### Overriding Context
-You can explicitly override any of these global settings on a per-request basis by passing an `options` object as the second argument, identical to how you pass options to a standard `new Tempo()` constructor:
+> [!NOTE]
+> Like all Tempo AI functions, `contextAI` requires prior initialization with at least one active provider via `initAI()`.
 
 ```typescript
-// Explicitly evaluate this complex query from the perspective of September 1st
-const dt = await parseAI("The penultimate Tuesday before Thanksgiving", { anchor: '2026-09-01T00:00:00Z' });
+import { initAI, contextAI } from '@magmacomputing/tempo-plugin-ai';
 
-// Explicitly parse assuming a Japanese locale and timezone
-const tokyoDt = await parseAI("The second Sunday of May", { locale: 'ja-JP', timeZone: 'Asia/Tokyo' });
+// 1. Configure the AI provider farm
+await initAI({
+  providers: [
+    { id: 'groq', key: process.env.GROQ_API_KEY }
+  ]
+});
+
+// 2. Infer contextual settings from unstructured text
+const context = await contextAI("I'm a photographer based in Sydney, Australia.");
+
+console.log(context.timeZone);  // "Australia/Sydney"
+console.log(context.locale);    // "en-AU"
+console.log(context.calendar);  // "gregory"
+console.log(context.sphere);    // "south"
+console.log(context.confidence);// 0.98
 ```
 
-### Why Locale is Critical
-Passing the `Locale` is absolutely critical for the LLM to know whether "11/12" means November 12th (US format) or 11th of December (UK/EU format). The plugin handles this transparently based on your standard Tempo configuration!
+---
 
-> [!WARNING]
-> **Calendar Math Hallucinations**: LLMs are language predictors, not calculators. While they excel at parsing conversational times (like `"tomorrow at 5pm"`), smaller models are notoriously prone to hallucinations on complex, cross-year calendar math. For example, asking a lightweight model for `"Thanksgiving in 2026"` may result in a hallucinated day of the week because the model doesn't natively compute "the fourth Thursday of November 2026." If your application relies on heavy holiday logic or complex multi-year math, you *must* use a capable frontier model or rely on deterministic plugins instead of AI.
+## Configuration Options (`AiContextOptions`)
 
-## The Decoupled Output Bridge
+| Option | Type | Description |
+| :--- | :--- | :--- |
+| **`force`** | `boolean` | If true, bypasses the cache to initiate a fresh LLM query. |
+| **`cache`** | `boolean` | If false, disables writing to and reading from cache adapters. |
+| **`cacheAdapter`** | `AiCacheAdapter` | Custom cache engine (e.g., Redis) for caching results on this request. |
+| **`ttl`** | `number` | Time-to-live override in milliseconds for cached results. |
+| **`minConfidence`**| `number` | Minimum confidence score threshold (0.0 to 1.0) required to return a valid slot. Throws `TempoAiError(422)` if lower. |
+| **`mode`** | `AiMode` | Concurrency routing strategy (`fallback`, `race`, `consensus`, `hedged`, `roundrobin`, `adaptive`). Refer to the [Multi-Provider Execution Modes Guide](./modes.md). |
+| **`providers`** | `AiProvider[]` | Per-request provider configuration overrides. |
+| **`timeout`** | `number` | Per-request timeout in milliseconds (overrides provider and global timeouts). |
+| **`hedgeDelay`** | `number` | Delay in milliseconds before initiating speculative hedging in `AiMode.Hedged` (default: `800ms`). |
+| **`debug`** | `boolean` | If true, logs prompt context and cache operations to console (automatically PII-sanitized in production). |
+| **`softErrors`** | `boolean` | If true, returns `TempoAiError` into array index position instead of rejecting the entire batch query. |
 
-To ensure deterministic behavior, the LLM is instructed to *only* return strict ISO 8601 strings. 
+---
 
-The plugin executes the network request, the LLM returns a local ISO string without a timezone offset or 'Z' suffix (like `"2026-11-26T00:00:00"`), and the plugin immediately passes that string back into the native `new Tempo()` constructor. The provider response must omit timezone suffixes to match the local ISO contract enforced by Tempo AI functions. The developer seamlessly receives a valid, native `Tempo` instance. This eliminates AST-construction ambiguity, creating a decoupled bridge between AI text generation and native Tempo conversion.
+## Result Schema (`TempoContext`)
 
-### Relative Date Ambiguity Tie-Breakers
-
-To eliminate model variance on idioms like "Next Friday" or "Last Tuesday", the plugin enforces static system prompt ambiguity rules:
-* `"next [weekday/unit]"`: Evaluated as the immediate next chronological occurrence after `Current Time`.
-* `"last [weekday/unit]"` / `"previous [weekday/unit]"`: Evaluated as the most recent past occurrence prior to `Current Time`.
-* `"this [weekday]"`: Evaluated as the occurrence within the current calendar week containing `Current Time`.
-
-### Confidence Thresholds & Metadata (`.ai`)
-
-When `minConfidence` is supplied in options (e.g. `parseAI("...", { minConfidence: 0.8 })`), any LLM response returning a confidence score below that threshold produces a `Tempo` instance with `isValid === false`. 
-
-Every resolved `Tempo` instance returned by `parseAI` (and other AI functions) has a non-writable, frozen `.ai` metadata descriptor containing execution audit data:
 ```typescript
-const dt = await parseAI("Christmas 2026", { debug: true });
-console.log(dt.ai);
-// {
-//   provider: 'openai',
-//   cached: false,
-//   confidence: 0.95,
-//   ambiguous: false,
-//   granularity: 'day',
-//   rawIso: '2026-12-25T00:00:00',
-//   rawPrompt: 'Christmas 2026',        // Present when debug is enabled
-//   normalizedPrompt: 'christmas 2026' // Present when debug is enabled
-// }
+export interface TempoContext {
+  /** Inferred IANA time zone identifier (e.g. 'America/New_York') */
+  timeZone: string;
+  
+  /** Inferred BCP 47 language/region tag (e.g. 'en-US') */
+  locale: string;
+  
+  /** Inferred Unicode calendar system type (e.g. 'gregory') */
+  calendar: string;
+  
+  /** Inferred hemisphere, or undefined if ambiguous */
+  sphere?: 'north' | 'south' | undefined;
+  
+  /** Confidence rating from 0.0 (unparseable) to 1.0 (certain) */
+  confidence: number;
+  
+  /** Resolution source ('cache' or provider ID like 'groq', 'gemini', 'openai') */
+  provider: string;
+  
+  /** Step-by-step reasoning or justification provided by the engine/LLM */
+  reasoning?: string | undefined;
+}
 ```
 
+---
+
+## Key Architectural Behaviors
+
+### 1. Workspace Baseline Context
+`contextAI` inspects the host runtime or current `Tempo` configuration (`Tempo.options.timeZone`, `Tempo.options.locale`, etc.) as a fallback baseline. If an input like `"at home"` is provided, the LLM will ground its inference in the workstation's baseline defaults.
+
+### 2. Strict Confidence Thresholds
+Using `minConfidence`, developers can guarantee that low-certainty or completely ambiguous inputs (e.g., `"in the park"`) throw a `TempoAiError(422)` rather than silently returning guessed context parameters:
+
+```typescript
+const context = await contextAI("meeting somewhere online", { minConfidence: 0.9 });
+// Throws TempoAiError(422): Inferred context confidence (0.4) is below the required threshold of 0.9.
+```
+
+### 3. Timezone Validation
+Before returning, the returned IANA timezone string is dynamically validated against the runtime's native JavaScript `Intl` API. If the LLM returns an unsupported or fake timezone identifier, `contextAI` throws a `TempoAiError(422)` to prevent application runtime failures.
+
+### 4. Parallel Batch Processing
+You can pass an array of strings to process multiple contexts concurrently:
+```typescript
+const [context1, context2] = await contextAI([
+  "Working from Kyoto",
+  "Living in Melbourne"
+]);
+```
+
+### Combining `contextAI` with `parseAI` (The Pivot Flow)
+
+Often, a user will mention their location in one sentence and a relative time in another. You can chain these APIs together to form a seamless date-resolution pipeline:
+
+```typescript
+import { contextAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+
+// 1. Deduces the context
+const ticketContext = await contextAI("customer issue from our London office");
+// ticketContext = { timeZone: 'Europe/London', locale: 'en-GB', sphere: 'north' }
+
+// 2. Feed the output context directly as options into parseAI
+const resolutionTime = await parseAI("issue occurred on 04/05/2026 at 3 PM", ticketContext);
+// 1. Correctly parses 04/05 to May 4th (UK format) rather than April 5th.
+// 2. Adjusts to BST/GMT (Europe/London).
+```

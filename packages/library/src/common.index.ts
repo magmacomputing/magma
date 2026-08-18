@@ -19,6 +19,7 @@ export * from './common/pledge.class.js';
 export * from './common/proxy.library.js';
 export * from './common/reflection.library.js';
 export * from './common/request.library.js';
+export * from './common/json.library.js';
 export * from './common/serialize.library.js';
 export * from './common/storage.library.js';
 export * from './common/string.library.js';

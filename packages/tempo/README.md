@@ -30,7 +30,7 @@ import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
 
 // 🔌 Instantly Extensible (with deterministic defaults)
 Tempo.init({ 
-  plugins: [AstroPlugin],
+  extends: [AstroPlugin],
   timeZone: 'America/New_York'
 });
 

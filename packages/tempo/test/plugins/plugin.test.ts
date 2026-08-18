@@ -42,28 +42,52 @@ describe('Tempo Plugin System', () => {
 		expect(installCount).toBe(1);
 	});
 
-	test('should auto-load plugins from init options', () => {
+	test('should auto-load plugins from init extends option', () => {
 		let loaded = false;
 		const initPlugin: Plugin = {
-			name: 'InitPlugin',
+			name: 'InitExtendsPlugin',
 			install() { loaded = true; },
 		};
 
-		Tempo.init({ plugins: [initPlugin] });
+		Tempo.init({ extends: [initPlugin] });
 		expect(loaded).toBe(true);
 	});
 
-	test('should auto-load plugins from global discovery', () => {
-		const testDiscovery = '$TempoTestDiscovery';
+	test('should store plugin configuration dictionary in Tempo.config.plugins', () => {
+		Tempo.init({
+			plugins: {
+				ai: {
+					mode: 'fallback',
+					timeout: 5000,
+				},
+			},
+		});
+		expect(Tempo.config.plugins?.ai?.mode).toBe('fallback');
+		expect(Tempo.config.plugins?.ai?.timeout).toBe(5000);
+	});
+
+	test('should support legacy plugins array registration with @deprecated fallback', () => {
+		let loaded = false;
+		const legacyPlugin: Plugin = {
+			name: 'LegacyArrayPlugin',
+			install() { loaded = true; },
+		};
+
+		Tempo.init({ plugins: [legacyPlugin] });
+		expect(loaded).toBe(true);
+	});
+
+	test('should auto-load plugins from global discovery extends', () => {
+		const testDiscovery = '$TempoTestDiscoveryExtends';
 		const discoveryKey = Symbol.for(testDiscovery);
 		let loaded = false;
 		const discoveryPlugin: Plugin = {
-			name: 'DiscoveryPlugin',
+			name: 'DiscoveryExtendsPlugin',
 			install() { loaded = true; },
 		};
 
 		(globalThis as any)[discoveryKey] = {
-			plugins: [discoveryPlugin]
+			extends: [discoveryPlugin],
 		};
 
 		try {
@@ -71,6 +95,55 @@ describe('Tempo Plugin System', () => {
 			expect(loaded).toBe(true);
 		} finally {
 			delete (globalThis as any)[discoveryKey];
+		}
+	});
+
+	test('should auto-load plugins from global discovery legacy plugins array', () => {
+		const testDiscovery = '$TempoTestDiscoveryLegacy';
+		const discoveryKey = Symbol.for(testDiscovery);
+		let loaded = false;
+		const discoveryPlugin: Plugin = {
+			name: 'DiscoveryLegacyPlugin',
+			install() { loaded = true; },
+		};
+
+		(globalThis as any)[discoveryKey] = {
+			plugins: [discoveryPlugin],
+		};
+
+		try {
+			Tempo.init({ discovery: testDiscovery });
+			expect(loaded).toBe(true);
+		} finally {
+			delete (globalThis as any)[discoveryKey];
+		}
+	});
+
+	test('should allow discovery-installed plugin to read its configuration from Tempo.config.plugins during install()', () => {
+		const testDiscovery = '$TempoTestDiscoveryConfig';
+		const discoveryKey = Symbol.for(testDiscovery);
+		let pluginConfigDuringInstall: any = null;
+		const discoveryPlugin: Plugin = {
+			name: 'ConfiguredDiscoveryPlugin',
+			install(tempo) {
+				pluginConfigDuringInstall = (tempo.config as any)?.plugins?.ConfiguredDiscoveryPlugin;
+			},
+		};
+
+		(globalThis as any)[discoveryKey] = {
+			plugins: {
+				ConfiguredDiscoveryPlugin: { apiKey: 'test-key-123', customOption: true },
+			},
+			extends: [discoveryPlugin],
+		};
+
+		try {
+			Tempo.init({ discovery: testDiscovery });
+			expect(pluginConfigDuringInstall).toEqual({ apiKey: 'test-key-123', customOption: true });
+			expect((Tempo.config as any)?.plugins?.ConfiguredDiscoveryPlugin).toEqual({ apiKey: 'test-key-123', customOption: true });
+		} finally {
+			delete (globalThis as any)[discoveryKey];
+			Tempo.init();
 		}
 	});
 

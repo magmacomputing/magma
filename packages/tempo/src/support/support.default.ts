@@ -57,9 +57,9 @@ export const Match = proxify({
 /** @internal Tempo Snippet registry */
 export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.yy]: /(?<yy>[0-9]{1,4})/,													// year must be 1 to 4 digits
-	[Token.mm]: /(?<mm>[0 ]?[1-9]|1[0-2]|Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)/,	// month-name (abbrev or full) or month-number 01-12; leading '0' or space only (not \s — tab/newline are not valid padding)
+	[Token.mm]: /(?<mm>Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?|1[0-2]|[0 ]?[1-9])/,	// month-name (abbrev or full) or month-number 01-12; leading '0' or space only (not \s — tab/newline are not valid padding)
 	[Token.ww]: /(?<ww>0?[1-9]|[1-4][0-9]|5[0-3])/,						// week-number 01-53
-	[Token.dd]: /(?<dd>[0 ]?[1-9]|[12][0-9]|3[01]){ord}?/,		// day-number 01-31; leading '0' or space only (not \s — tab/newline are not valid padding)
+	[Token.dd]: /(?<dd>3[01]|[12][0-9]|[0 ]?[1-9]){ord}?/,		// day-number 01-31; leading '0' or space only (not \s — tab/newline are not valid padding)
 	[Token.hh]: /(?<hh>2[0-4]|[01]?[0-9])/,										// hour 00-24; CAUTION: in non-anchored use '25' partially matches as '2' via [01]?[0-9] — always use within anchored layouts; single-digit hours (e.g. '9') are intentionally supported
 	[Token.mi]: /(\:(?<mi>[0-5][0-9]))/,											// minute-number 00-59
 	[Token.ss]: /(\:(?<ss>[0-5][0-9]))/,											// seconds-number 00-59

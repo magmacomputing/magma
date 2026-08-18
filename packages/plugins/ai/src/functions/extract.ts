@@ -1,102 +1,327 @@
-import type { Tempo } from '@magmacomputing/tempo';
-import type { TempoAiError } from '../core/error.js';
-import type { AiMode } from '../core/config.js';
-import type { AiCacheAdapter, AiProvider } from '../types/common.type.js';
+import { Tempo } from '@magmacomputing/tempo';
+import { asText, isDefined, isObject, isString, isText, secure, when } from '@magmacomputing/tempo/library';
+import { TempoAiError } from '../core/error.js';
+import { executeWithMode } from '../core/dispatch.js';
+import {
+	normalizeCacheInput,
+	readMultiTierCache,
+	writeMultiTierCache,
+} from '../core/cache.js';
+import {
+	getAvailableProviders,
+	parseJsonPayload,
+	executeBatch,
+	fetchFromProvider,
+	resolveProviderTtl,
+	resolveFullContext,
+	resolveAnchorTempo,
+	resolveExecutionOptions,
+	sanitizeConfidence,
+	assertMinConfidenceThreshold,
+} from '../core/support.js';
+import { logDebug, warnDebug, attachCustomInspect, maskPii, sanitizeInspectAiMeta } from '../core/logger.js';
+import type {
+	AiExtractOptions,
+	TempoAiExtractResult,
+	TempoExtractedEvent,
+	TempoEventType,
+} from '../types/extract.type.js';
 
-export type TempoEventType = 'point' | 'interval' | 'deadline' | 'recurrence' | 'tentative';
+export type {
+	AiExtractOptions,
+	TempoAiExtractResult,
+	TempoExtractedEvent,
+	TempoEventType,
+};
 
-export interface TempoExtractedEvent {
-	/** Short descriptive label or title of the extracted event/activity. */
-	label: string;
-	/** Start date-time point as an instantiated Tempo instance. */
-	start: Tempo;
-	/** Optional end date-time point (if an interval or duration was mentioned). */
-	end?: Tempo | undefined;
-	/** Classification category of the temporal mention. */
-	type: TempoEventType;
-	/** Raw text snippet extracted from the source document. */
-	rawText?: string | undefined;
-	/** Confidence score for this specific entity extraction (0.0 to 1.0). */
-	confidence: number;
+async function extractSingleInput(
+	text: string,
+	options?: AiExtractOptions,
+): Promise<TempoAiExtractResult> {
+	if (!isText(text))
+		throw new TempoAiError('Invalid text input provided to extractAI: text must be a non-empty string.', 400);
+
+	const fallbackTempo = Tempo.isTempo(options?.anchor) ? options.anchor : null;
+	const context = resolveFullContext(options, fallbackTempo);
+	const { tz, loc, cal } = context;
+
+	const anchorTempo = resolveAnchorTempo(options?.anchor, context, {
+		defaultAnchor: Math.floor(Date.now() / 60_000) * 60_000,
+		operationName: 'extractAI',
+	});
+
+	const region = asText(options?.region, '');
+	const categories = options?.categories ? options.categories.map(c => String(c).trim()).filter(Boolean) : [];
+	const categoriesStr = categories.sort().join(',');
+
+	const {
+		force,
+		cache: aiCacheOption,
+		ttl,
+		cacheAdapter,
+	} = options || {};
+
+	const normalizedText = normalizeCacheInput(text);
+	const cacheKey = `extract::${normalizedText}::${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')}::${tz}::${loc}::${cal}::${region}::${categoriesStr}`;
+
+	const { mode, minConfidence: effectiveMinConfidence, isDebug, executeOptions } = resolveExecutionOptions(options, 'extract');
+
+	const cachedVal = await readMultiTierCache(cacheKey, {
+		force,
+		cache: aiCacheOption,
+		cacheAdapter,
+		debug: isDebug,
+		tag: 'tempo-plugin-ai:extract',
+	});
+
+	if (cachedVal) {
+		try {
+			const parsedCache = JSON.parse(cachedVal);
+			if (Array.isArray(parsedCache?.events)) {
+				const cachedConfidence = sanitizeConfidence(parsedCache.confidence, 1.0);
+
+				if (isDefined(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
+					logDebug('tempo-plugin-ai:extract', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
+				} else {
+					const rehydratedEvents: TempoExtractedEvent[] = [];
+					const allowedTypes: TempoEventType[] = ['point', 'interval', 'deadline', 'recurrence', 'tentative'];
+					for (const ev of parsedCache.events) {
+						try {
+							const start = new Tempo(ev.start, { timeZone: tz, locale: loc, calendar: cal });
+							if (!start.isValid) continue;
+							const end = ev.end ? new Tempo(ev.end, { timeZone: tz, locale: loc, calendar: cal }) : undefined;
+							if (end && !end.isValid) continue;
+							const type = when(ev.type, (t): t is TempoEventType => allowedTypes.includes(t as any), 'point');
+							rehydratedEvents.push({
+								label: asText(ev.label, 'Event'),
+								start,
+								end,
+								type,
+								rawText: asText(ev.rawText),
+								confidence: sanitizeConfidence(ev.confidence, 1.0),
+							});
+						} catch (err: any) {
+							warnDebug('tempo-plugin-ai:extract', 'Failed to rehydrate cached event', err, { debug: isDebug });
+						}
+					}
+
+					const reasoning = asText(parsedCache.reasoning);
+					const cachedResult: TempoAiExtractResult = {
+						events: rehydratedEvents,
+						confidence: cachedConfidence,
+						provider: 'cache',
+						reasoning,
+					};
+
+					attachCustomInspect(cachedResult, (obj, isProd) => ({
+						events: obj.events.map(e => ({
+							label: maskPii(e.label, isProd),
+							start: e.start?.toString(),
+							...(e.end ? { end: e.end?.toString() } : {}),
+							type: e.type,
+							...(e.rawText ? { rawText: maskPii(e.rawText, isProd) } : {}),
+							confidence: e.confidence,
+						})),
+						...sanitizeInspectAiMeta(obj, isProd),
+					}));
+
+					return secure(cachedResult);
+				}
+			}
+		} catch (err: any) {
+			warnDebug('tempo-plugin-ai:extract', 'Failed to parse cached payload', err, { debug: isDebug });
+		}
+	}
+
+	const availableProviders = getAvailableProviders(options);
+
+	const weekdayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+	const anchorWeekday = weekdayNames[anchorTempo.dow] || anchorTempo.format('{www}');
+	const anchorIso = anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}');
+
+	const systemPrompt = `You are an expert temporal entity and calendar event extraction engine.
+Scan the user-provided text for all temporal expressions, deadlines, appointments, meetings, intervals, and time-bound events.
+Resolve all relative references ("tomorrow", "next Tuesday", "in 2 hours", "at 5pm") strictly against the Reference Anchor date and timezone.
+
+Return ONLY a valid JSON object matching this exact schema:
+{
+  "events": [
+    {
+      "label": "Brief descriptive title of the event or task",
+      "start": "ISO 8601 string without offset or Z (e.g. 2026-08-14T10:00:00)",
+      "end": "ISO 8601 string without offset or Z or null if point in time",
+      "type": "point | interval | deadline | recurrence | tentative",
+      "rawText": "Exact text snippet from the input mentioning this event",
+      "confidence": 0.95
+    }
+  ],
+  "confidence": 0.95,
+  "reasoning": "Summary of temporal entities identified"
+}
+
+Rules:
+1. "events": Array of extracted event objects. If no temporal entities are mentioned, return an empty array [].
+2. "start": Local ISO 8601 representation (YYYY-MM-DDThh:mm:ss) anchored to the reference date and timezone.
+3. "end": Local ISO 8601 string for interval end / duration, or null.
+4. "type": Must be one of 'point', 'interval', 'deadline', 'recurrence', 'tentative'.
+5. "confidence": Float score between 0.0 and 1.0 representing extraction certainty.
+${categories.length > 0 ? `6. Only extract events matching one of these categories: ${categories.join(', ')}.` : ''}`;
+
+	const contextString = `Grounding Context:
+- Reference Anchor Date-Time: ${anchorIso} (${tz})
+- Reference Day of Week: ${anchorWeekday} (Day ${anchorTempo.dow})
+- Target TimeZone: ${tz}
+- Target Locale: ${loc}
+- Calendar System: ${cal}
+${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Filter Categories: ${categories.join(', ')}\n` : ''}`;
+
+	const winningCandidate = await executeWithMode(
+		mode,
+		availableProviders,
+		async (provider, signal) => {
+			const { rawContent, providerId, rateLimits } = await fetchFromProvider(
+				provider,
+				text,
+				contextString,
+				{ ...options, signal, systemPrompt },
+			);
+
+			const parsedData = parseJsonPayload<any>(rawContent, providerId);
+
+			if (!isObject(parsedData))
+				throw new TempoAiError(`Provider ${providerId} returned non-object JSON payload.`, 422);
+
+			if (!Array.isArray(parsedData?.events))
+				throw new TempoAiError(`Provider ${providerId} returned invalid response: 'events' array missing.`, 422);
+
+			const confidence = sanitizeConfidence(parsedData?.confidence);
+			const reasoning = asText(parsedData?.reasoning);
+
+			const validEvents: TempoExtractedEvent[] = [];
+			const rawEventItems: any[] = [];
+			for (const item of parsedData.events) {
+				if (!isObject(item)) continue;
+				try {
+					const start = new Tempo(item.start, { timeZone: tz, locale: loc, calendar: cal });
+					if (!start.isValid) continue;
+
+					let end: Tempo | undefined;
+					if (isString(item.end)) {
+						const parsedEnd = new Tempo(item.end, { timeZone: tz, locale: loc, calendar: cal });
+						if (parsedEnd.isValid) end = parsedEnd;
+					}
+
+					const allowedTypes: TempoEventType[] = ['point', 'interval', 'deadline', 'recurrence', 'tentative'];
+					const type = when(item.type, (t): t is TempoEventType => allowedTypes.includes(t as any), 'point');
+					const label = asText(item.label, 'Event');
+					const rawText = asText(item.rawText);
+					const itemConf = sanitizeConfidence(item.confidence, confidence);
+
+					validEvents.push({
+						label,
+						start,
+						end,
+						type,
+						rawText,
+						confidence: itemConf,
+					});
+
+					rawEventItems.push({
+						label,
+						start: start.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}'),
+						end: end ? end.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}') : null,
+						type,
+						rawText,
+						confidence: itemConf,
+					});
+				} catch (err: any) {
+					warnDebug('tempo-plugin-ai:extract', `Failed to parse event from provider '${providerId}'`, err, { debug: isDebug });
+				}
+			}
+
+			return {
+				data: {
+					events: validEvents,
+					rawEvents: rawEventItems,
+					reasoning,
+				},
+				providerId,
+				rateLimits,
+				confidence,
+				consensusKey: JSON.stringify(rawEventItems),
+			};
+		},
+		executeOptions,
+	);
+
+	const { data: parsedData, providerId } = winningCandidate;
+	const confidence = sanitizeConfidence(winningCandidate.confidence);
+	assertMinConfidenceThreshold(confidence, effectiveMinConfidence, 'extractAI');
+
+	const finalResult: TempoAiExtractResult = {
+		events: parsedData.events,
+		confidence,
+		provider: providerId,
+		reasoning: parsedData.reasoning,
+	};
+
+	const resolvedTtl = resolveProviderTtl(providerId, availableProviders, ttl, 86_400_000);
+	const cacheVal = JSON.stringify({
+		events: parsedData.rawEvents,
+		confidence,
+		provider: providerId,
+		reasoning: parsedData.reasoning,
+	});
+
+	await writeMultiTierCache(cacheKey, cacheVal, resolvedTtl, {
+		cache: aiCacheOption,
+		cacheAdapter,
+		debug: isDebug,
+		tag: 'tempo-plugin-ai:extract',
+	});
+
+	attachCustomInspect(finalResult, (obj, isProd) => ({
+		events: obj.events.map(e => ({
+			label: maskPii(e.label, isProd),
+			start: e.start?.toString(),
+			...(e.end ? { end: e.end?.toString() } : {}),
+			type: e.type,
+			...(e.rawText ? { rawText: maskPii(e.rawText, isProd) } : {}),
+			confidence: e.confidence,
+		})),
+		...sanitizeInspectAiMeta(obj, isProd),
+	}));
+
+	return secure(finalResult);
 }
 
 /**
- * Backward compatibility alias for TempoExtractedEvent.
- */
-export type TempoEvent = TempoExtractedEvent;
-
-export interface TempoAiExtractResult {
-	/** Array of extracted events with instantiated Tempo objects. */
-	events: TempoExtractedEvent[];
-	/** Overall confidence score. */
-	confidence: number;
-	/** Provider ID that fulfilled the request (or 'cache'). */
-	provider: string;
-	/** Optional summary or reasoning from the LLM. */
-	reasoning?: string | undefined;
-}
-
-export interface AiExtractOptions {
-	/** Reference anchor date-time for relative expressions (defaults to now). */
-	anchor?: Tempo | Date | string | number | undefined;
-	/** Reference IANA timezone (defaults to global options or 'UTC'). */
-	timeZone?: string | undefined;
-	/** Reference BCP 47 locale (defaults to global options or 'en-US'). */
-	locale?: string | string[] | undefined;
-	/** Preferred calendar system (e.g. 'gregory', 'islamic', 'hebrew'). */
-	calendar?: string | undefined;
-	/** Optional category filter to restrict extracted entities (e.g. ['meeting', 'deadline']). */
-	categories?: string[] | undefined;
-	/** Optional regional context (e.g. 'US-NY', 'GB'). */
-	region?: string | undefined;
-	/** If true, bypasses cache to force a fresh LLM fetch */
-	force?: boolean | undefined;
-	/** If false, disables reading and writing to cache */
-	cache?: boolean | undefined;
-	/** Optional custom cache adapter engine (e.g. Redis, KV store) for this request */
-	cacheAdapter?: AiCacheAdapter | undefined;
-	/** Optional TTL override in milliseconds for cached result */
-	ttl?: number | undefined;
-	/** If true, logs prompt context and LLM payloads to console */
-	debug?: boolean | undefined;
-	/** Execution mode across provider farm (`AiMode.Fallback` | `AiMode.Race` | `AiMode.Consensus` | `AiMode.Hedged` | `AiMode.RoundRobin` | `AiMode.Adaptive` or string literal) */
-	mode?: AiMode | undefined;
-	/** Per-request provider configuration overrides */
-	providers?: AiProvider[] | undefined;
-	/** Strict minimum confidence threshold (0.0 to 1.0). Throws TempoAiError(422) if score is lower */
-	minConfidence?: number | undefined;
-	/** If true, returns TempoAiError into array index position instead of rejecting batch */
-	softErrors?: boolean | undefined;
-	/** Optional request timeout in milliseconds (overrides provider and global timeout) */
-	timeout?: number | undefined;
-	/** Optional delay in milliseconds before initiating speculative hedging in AiMode.Hedged (default: 800ms) */
-	hedgeDelay?: number | undefined;
-	/** Allow extra custom properties */
-	[key: string]: any;
-}
-
-/**
- * @internal Draft implementation scaffolded for future releases.
- * ## extractAI (Upcoming Export)
- * Scans unstructured text (emails, transcripts, task notes) and extracts all 
- * embedded temporal entities, deadlines, and events into structured `TempoAiExtractResult` records.
+ * ## extractAI
+ * Scans unstructured multi-paragraph text (emails, meeting transcripts, chat logs, task notes) 
+ * and extracts all embedded temporal entities, deadlines, appointments, and intervals into structured `TempoAiExtractResult` records.
  * 
  * ### Why it fits Tempo:
- * Essential for calendar apps and document processing workflows where temporal references 
- * are buried inside unstructured text.
+ * Translates messy unstructured prose into typed, validated `Tempo` instances anchored to reference timezones and calendar contexts.
  * 
  * ### Example Usage:
  * ```ts
- * const text = "Let's meet tomorrow at 10am. Final deliverables due next Friday EOD.";
- * const result = await extractAI(text, { anchor: new Tempo() });
- * // returns TempoAiExtractResult with parsed Tempo instances in result.events
+ * const email = "Let's meet tomorrow at 10am for sprint planning. Deliverables due next Friday by 5pm.";
+ * const result = await extractAI(email, { anchor: new Tempo('2026-08-10T09:00:00Z') });
+ * 
+ * for (const event of result.events) {
+ *   console.log(event.label, event.start.format('{yyyy}-{mm}-{dd} {hh}:{mi}'));
+ * }
  * ```
  */
 export async function extractAI(texts: string[], options?: AiExtractOptions): Promise<(TempoAiExtractResult | TempoAiError)[]>;
 export async function extractAI(text: string, options?: AiExtractOptions): Promise<TempoAiExtractResult>;
 export async function extractAI(
 	textOrTexts: string | string[],
-	_options?: AiExtractOptions,
+	options?: AiExtractOptions,
 ): Promise<TempoAiExtractResult | (TempoAiExtractResult | TempoAiError)[]> {
-	throw new Error('extractAI is not yet implemented in tempo-plugin-ai.');
+	if (Array.isArray(textOrTexts)) {
+		return executeBatch(textOrTexts, str => extractSingleInput(str, options), options);
+	}
+
+	return extractSingleInput(textOrTexts, options);
 }

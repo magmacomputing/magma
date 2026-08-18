@@ -97,7 +97,7 @@ import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker'; // 2. Import
 
 Tempo.init({ 
   license: 'YOUR_JWT_KEY',
-  plugins: [TickerPlugin]                             // 3. Register and activate plugin during init
+  extends: [TickerPlugin]                             // 3. Register and activate plugin during init
 });
 
 // Ticker is now available on the core Tempo class!
@@ -105,7 +105,7 @@ const pulse = Tempo.ticker(1);
 ```
 
 > [!NOTE] Dynamic Extension vs Startup Registration
-> `Tempo.init({ plugins: [...] })` establishes baseline configuration at startup and performs initial registration of plugins. In full Tempo (`@magmacomputing/tempo`), standard plugins are registered automatically upon import. To dynamically register custom plugins loaded later at runtime, use `Tempo.extend(Plugin)` directly rather than re-running `Tempo.init()`.
+> `Tempo.init({ extends: [...] })` establishes baseline configuration at startup and performs initial registration of plugins. In full Tempo (`@magmacomputing/tempo`), standard plugins are registered automatically upon import. To dynamically register custom plugins loaded later at runtime, use `Tempo.extend(Plugin)` directly rather than re-running `Tempo.init()`.
 
 ---
 
@@ -211,7 +211,7 @@ import { PremiumPlugin } from 'tempo-plugin-premium';
 // 1. Initialize Tempo with your license key
 Tempo.init({ 
   license: process.env.TEMPO_LICENSE,
-  plugins: [PremiumPlugin] 
+  extends: [PremiumPlugin] 
 });
 
 async function boot() {

@@ -1,0 +1,107 @@
+[
+  {
+    "text": "Plugin Ecosystem",
+    "items": [
+      {
+        "text": "← Back to Catalog",
+        "link": "/doc/3-extending-tempo/ecosystem"
+      },
+      {
+        "text": "License Key Guide",
+        "link": "/doc/9-plugins/_setup.index"
+      }
+    ]
+  },
+  {
+    "text": "AI Plugin (@magmacomputing/tempo-plugin-ai)",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/ai.index"
+      },
+      {
+        "text": "Initialization (initAI)",
+        "link": "/doc/9-plugins/ai.init"
+      },
+      {
+        "text": "Smart Parsing (parseAI)",
+        "link": "/doc/9-plugins/ai.parse"
+      },
+      {
+        "text": "Narrative Formatting (formatAI)",
+        "link": "/doc/9-plugins/ai.format"
+      },
+      {
+        "text": "Entity Extraction (extractAI)",
+        "link": "/doc/9-plugins/ai.extract"
+      },
+      {
+        "text": "Recurrence Rules (recurrenceAI)",
+        "link": "/doc/9-plugins/ai.recurrence"
+      },
+      {
+        "text": "Conflict Scheduling (scheduleAI)",
+        "link": "/doc/9-plugins/ai.schedule"
+      },
+      {
+        "text": "Time Differences (diffAI)",
+        "link": "/doc/9-plugins/ai.diff"
+      },
+      {
+        "text": "Regional Context (contextAI)",
+        "link": "/doc/9-plugins/ai.context"
+      },
+      {
+        "text": "Execution Modes",
+        "link": "/doc/9-plugins/ai.modes"
+      },
+      {
+        "text": "Security & PII Protection",
+        "link": "/doc/9-plugins/ai.security"
+      },
+      {
+        "text": "Grounding & Normalization",
+        "link": "/doc/9-plugins/ai.grounding"
+      },
+      {
+        "text": "Rate Limits & Caching",
+        "link": "/doc/9-plugins/ai.rate-limits"
+      },
+      {
+        "text": "Provider Architecture",
+        "link": "/doc/9-plugins/ai.architecture"
+      }
+    ]
+  },
+  {
+    "text": "Community & Pro Plugins",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Astro (Seasons & Solstices)",
+        "link": "/doc/9-plugins/astro.index"
+      },
+      {
+        "text": "Batch (Multi-Threaded SAB)",
+        "link": "/doc/9-plugins/batch.index"
+      },
+      {
+        "text": "Finance (Fiscal & Business)",
+        "link": "/doc/9-plugins/finance.index"
+      },
+      {
+        "text": "Snap (Block Rounding)",
+        "link": "/doc/9-plugins/snap.index"
+      },
+      {
+        "text": "Sync (Thread Synchronization)",
+        "link": "/doc/9-plugins/sync.index"
+      },
+      {
+        "text": "Ticker (Execution Loop)",
+        "link": "/doc/9-plugins/ticker.index"
+      }
+    ]
+  }
+]

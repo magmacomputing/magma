@@ -33,7 +33,14 @@ import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 export default defineConfig({
   timeZone: 'Australia/Sydney',     // Set your baseline timezone
   license: 'eyJhbGciOiJIUzI1...',   // JWT License Key for Premium Plugins
-  plugins: [FinanceNamespace, TickerPlugin], // Register plugins
+  extends: [FinanceNamespace, TickerPlugin], // Register executable plugins
+  plugins: {
+    // Plugin configuration dictionaries
+    ai: {
+      mode: 'fallback',
+      timeout: 10000,
+    }
+  },
   registry: {
     periods: { 
       'market-open': '09:30',
@@ -154,7 +161,8 @@ Tempo looks for the following structure:
 | :--- | :--- | :--- |
 | `options` | `Options \| (() => Options)` | Configuration options merged into global state. |
 | `intl` | `IntlOptions` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, `durationFormat`, and `dateTimeFormat`. |
-| `plugins` | `Plugin \| Plugin[]` | Modular plugin(s) (including `TermPlugin`s) to be extended onto Tempo automatically. |
+| `extends` | `Plugin \| Plugin[]` | Modular plugin(s) (including `TermPlugin`s) to be extended onto Tempo automatically. |
+| `plugins` | `Record<string, any>` | Plugin configuration dictionary. *(Note: Passing an array to `plugins` is `@deprecated` and scheduled for removal in v4.0.0; use `extends` instead)*. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
 | `numbers` | `Record<string, number>` | Custom number-word aliases merged into the NUMBER registry. |
 | `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores?, modifiers?, tokens? }` | Custom configuration for internal dictionary registries. |
@@ -189,7 +197,8 @@ Tempo.init({
 | `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
 | `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, parsing logic, localization). |
-| `plugins` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. Unlike `registry` options, these values are not merged into internal state via `extendState`; `Tempo.init()` applies each plugin with `Tempo.extend(p)`, so plugin authors should treat them as instance/class augmentations rather than internal-state merges. |
+| `extends` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. `Tempo.init()` applies each plugin with `Tempo.extend(p)`. |
+| `plugins` | `Record<string, any>` | `{}` | Plugin configuration dictionaries (e.g. `plugins: { ai: { ... } }`). *(Note: Passing an array of plugins to `plugins` is `@deprecated` and scheduled for removal in v4.0.0; use `extends` instead)*. |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
 | `debug` | `number \| string` | `'info'` | Controls log verbosity via direct `LOG` levels (`0=Off ... 5=Trace`) or string labels (`'trace'`, `'info'`, etc). |

@@ -1,25 +1,68 @@
 import { Tempo } from '@magmacomputing/tempo';
+import { asNumber, isNumber } from '@magmacomputing/tempo/library';
 
 import { getResolvedProviderDefaults, loadRemoteManifest, resetManifestCache } from './manifest.js';
-import { normalizeCacheInput, assertNoReservedProviderId } from './support.js';
+import { assertNoReservedProviderId } from './transport.js';
+import { warnDebug } from './logger.js';
+import {
+  getActiveTempoConfigAi,
+  resolveAutoDiscoveredConfig,
+  scanWellKnownEnvProviders,
+  interpolateEnv,
+  getRuntimeEnv,
+  resolveProviderApiKey,
+} from './discovery.js';
 import type { AiConfig, AiRateLimits, AiProvider } from '../types/index.js';
+
+let _config: AiConfig = {};
+const _autoInit = { attempted: false, initializing: false };
 
 /**
  * Internal singleton state container for the AI plugin.
+ * Automatically resolves configuration from Tempo runtime on first access.
  * @internal
  */
-export const _state: {
-  config: AiConfig;
-  rawProviders?: AiProvider[] | undefined;
-  limits: AiRateLimits | null;
-  providerLimits: Map<string, AiRateLimits>;
-  revision: number;
-} = {
-  config: {},
-  rawProviders: undefined,
-  limits: null,
-  providerLimits: new Map(),
+export const _state = {
+  get config(): AiConfig {
+    if (!_autoInit.attempted && !_autoInit.initializing && _state.rawProviders === undefined && (!_config.providers || _config.providers.length === 0)) {
+      _autoInit.attempted = true;
+      _autoInit.initializing = true;
+      try {
+        const tempoAiConfig = getActiveTempoConfigAi();
+        if (tempoAiConfig) {
+          initAI(tempoAiConfig);
+        } else {
+          const envProviders = scanWellKnownEnvProviders();
+          if (envProviders.length > 0)
+            initAI({ providers: envProviders });
+        }
+      } finally {
+        _autoInit.initializing = false;
+      }
+    }
+    return _config;
+  },
+  set config(val: AiConfig) {
+    _config = val;
+  },
+  rawProviders: undefined as AiProvider[] | undefined,
+  limits: null as AiRateLimits | null,
+  providerLimits: new Map<string, AiRateLimits>(),
   revision: 0,
+};
+
+/**
+ * Ensures AI configuration is automatically initialized from Tempo.config,
+ * filesystem tempo.config.*, or runtime environment variables if providers are not yet configured.
+ */
+export async function ensureAiInitialized(): Promise<void> {
+  if (_state.config.providers && _state.config.providers.length > 0)
+    return;
+
+  const discovered = await resolveAutoDiscoveredConfig();
+  if (discovered.providers && discovered.providers.length > 0) {
+    await initAI(discovered);
+  }
 }
 
 /**
@@ -27,7 +70,7 @@ export const _state: {
  * Configures AI provider credentials, models, timeouts, caching options,
  * and asynchronously resolves provider defaults against remote manifests.
  *
- * @param config - Global AI plugin configuration object
+ * @param config - Optional AI plugin configuration object (inherits from Tempo.config.plugins.ai or Tempo.config.ai if omitted)
  * @returns A Promise that resolves once initial configuration and background manifest synchronization is scheduled
  * @example
  * ```ts
@@ -37,73 +80,97 @@ export const _state: {
  * });
  * ```
  */
-export function initAI(config: AiConfig): Promise<void> {
-  if (config.providers)
-    assertNoReservedProviderId(config.providers);
+export function initAI(config?: AiConfig): Promise<void> {
+  const tempoAiConfig = getActiveTempoConfigAi();
+  const env = getRuntimeEnv();
 
-  if (config.providers)
-    _state.rawProviders = config.providers;
+  const hasExplicitProviders = config?.providers !== undefined || tempoAiConfig?.providers !== undefined;
+
+  const mergedRaw: AiConfig = {
+    ...(tempoAiConfig || {}),
+    ...(config || {}),
+  };
+
+  const mergedConfig = interpolateEnv(mergedRaw, env);
+
+  if (!hasExplicitProviders && (!mergedConfig.providers || mergedConfig.providers.length === 0)) {
+    const envProviders = scanWellKnownEnvProviders(env);
+    if (envProviders.length > 0)
+      mergedConfig.providers = envProviders;
+  }
+
+  if (mergedConfig.providers)
+    assertNoReservedProviderId(mergedConfig.providers);
+
+  if (mergedConfig.providers !== undefined)
+    _state.rawProviders = mergedConfig.providers;
 
   const currentRevision = ++_state.revision;
-  const remoteUrl = config.remoteConfigUrl ?? _state.config.remoteConfigUrl;
-  const callerProviders = config.providers ?? _state.rawProviders;
+  const remoteUrl = mergedConfig.remoteConfigUrl ?? _state.config.remoteConfigUrl;
+  const callerProviders = mergedConfig.providers ?? _state.rawProviders;
 
   const resolveSyncProviders = (providers?: AiProvider[]) => {
     if (!providers) return _state.config.providers;
     return providers.map(p => {
       const normalizedId = p.id?.toLowerCase() ?? '';
-      const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
+      const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, mergedConfig.debug ?? _state.config.debug);
+      const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env);
       return {
         ...defaults,
-        ...p
+        ...p,
+        ...(resolvedKey ? { key: resolvedKey } : {}),
       } as AiProvider;
     });
-  }
+  };
 
   // Synchronously update _state.config for immediate availability
   _state.config = {
     ..._state.config,
-    ...config,
-    providers: resolveSyncProviders(callerProviders) || []
+    ...mergedConfig,
+    providers: resolveSyncProviders(callerProviders) || [],
   };
 
-  if (config.cache) {
-    Tempo.init({ cache: config.cache, silent: true });
+  if (mergedConfig.cache) {
+    Tempo.init({ cache: mergedConfig.cache, silent: true });
   }
 
-	return (async () => {
-		if (remoteUrl !== false) {
-			try {
-				await loadRemoteManifest(remoteUrl, undefined, config.debug ?? _state.config.debug);
-			} catch { }
-		}
+  return (async () => {
+    if (remoteUrl !== false) {
+      try {
+        await loadRemoteManifest(remoteUrl, undefined, mergedConfig.debug ?? _state.config.debug);
+      } catch { }
+    }
 
-		if (_state.revision !== currentRevision) return;
+    if (_state.revision !== currentRevision) return;
 
-		const fetchDefaults = config.fetchDefaults ?? _state.config.fetchDefaults;
-		const currentProviders = callerProviders;
+    const fetchDefaults = mergedConfig.fetchDefaults ?? _state.config.fetchDefaults;
+    const currentProviders = callerProviders;
 
-		if (fetchDefaults && currentProviders) {
-			const asyncProviders = await Promise.all(currentProviders.map(async p => {
-				const normalizedId = p.id?.toLowerCase() ?? '';
-				const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, config.debug ?? _state.config.debug);
-				let hookOptions: Partial<AiProvider> | null = null;
-				try {
-					hookOptions = await fetchDefaults(normalizedId);
-				} catch { }
-				return {
-					...defaults,
-					...(hookOptions ?? {}),
-					...p,
-				} as AiProvider;
-			}));
-			if (_state.revision === currentRevision)
-				_state.config.providers = asyncProviders;
-		} else if (currentProviders) {
-			if (_state.revision === currentRevision)
-				_state.config.providers = resolveSyncProviders(currentProviders);
-		}
-	})();
+    if (fetchDefaults && currentProviders) {
+      const asyncProviders = await Promise.all(currentProviders.map(async p => {
+        const normalizedId = p.id?.toLowerCase() ?? '';
+        const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, mergedConfig.debug ?? _state.config.debug);
+        const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env);
+        let hookOptions: Partial<AiProvider> | null = null;
+        try {
+          hookOptions = await fetchDefaults(normalizedId);
+        } catch (err: any) {
+          warnDebug('tempo-plugin-ai:init', `fetchDefaults hook failed for provider '${normalizedId}'`, err, { debug: mergedConfig.debug ?? _state.config.debug });
+        }
+        return {
+          ...defaults,
+          ...(hookOptions ?? {}),
+          ...p,
+          ...(resolvedKey ? { key: resolvedKey } : {})
+        } as AiProvider;
+      }));
+      if (_state.revision === currentRevision)
+        _state.config.providers = asyncProviders;
+    } else if (currentProviders) {
+      if (_state.revision === currentRevision)
+        _state.config.providers = resolveSyncProviders(currentProviders);
+    }
+  })();
 }
 
 /**
@@ -111,59 +178,14 @@ export function initAI(config: AiConfig): Promise<void> {
  * Useful for test isolation and clean lifecycle teardown.
  */
 export function resetAI(): void {
-  _state.config = {};
+  _config = {};
   _state.rawProviders = undefined;
   _state.limits = null;
   _state.providerLimits.clear();
   _state.revision++;
+  _autoInit.attempted = false;
+  _autoInit.initializing = false;
   resetManifestCache();
-}
-
-/**
- * Clears AI parsing results from the in-memory cache and any external storage adapters.
- * If specific input strings or keys are provided, selectively purges only those entries.
- *
- * @param input - Optional string key, date string, or array of strings to purge from the cache
- * @returns A Promise that resolves once cache eviction is completed
- * @example
- * ```ts
- * await clearAiCache('next tuesday');
- * await clearAiCache(); // Clears all cached AI entries
- * ```
- */
-export async function clearAiCache(input?: string | string[]): Promise<void> {
-  const adapter = _state.config.cacheAdapter;
-
-  if (!input) {
-    Tempo.cache.clear();
-    if (adapter?.clear) {
-      try {
-        await Promise.resolve(adapter.clear()).catch(() => { });
-      } catch { }
-    }
-    return;
-  }
-
-  const inputs = Array.isArray(input) ? input : [input];
-  for (const i of inputs) {
-    const normalized = normalizeCacheInput(i);
-    const prefix = `${normalized}::`;
-    Tempo.cache.delete(normalized);
-    Tempo.cache.delete(i);
-    Tempo.cache.deletePrefix(prefix);
-
-    if (adapter) {
-      try {
-        if (adapter.delete) {
-          await Promise.resolve(adapter.delete(normalized)).catch(() => { });
-          await Promise.resolve(adapter.delete(i)).catch(() => { });
-        }
-        if (adapter.clear) {
-          await Promise.resolve(adapter.clear(prefix)).catch(() => { });
-        }
-      } catch { }
-    }
-  }
 }
 
 /**
@@ -219,7 +241,7 @@ export function parseResetHeaderToTempo(resetHeader: string): Tempo | null {
   // Case 1: Simple numeric string (seconds or epoch)
   if (/^\d+(\.\d+)?$/.test(trimmed)) {
     const val = parseFloat(trimmed);
-    if (Number.isNaN(val) || val < 0) return null;
+    if (!isNumber(val) || val < 0) return null;
     if (val > 1000000000) {
       try {
         const t = new Tempo(val * 1000);
@@ -248,7 +270,7 @@ export function parseResetHeaderToTempo(resetHeader: string): Tempo | null {
       const ms = match[5] ? parseFloat(match[5]) : 0;
 
       const totalMs = (d * 86400 + h * 3600 + m * 60 + s) * 1000 + ms;
-      if (totalMs <= 0 || Number.isNaN(totalMs)) return null;
+      if (!isNumber(totalMs) || totalMs <= 0) return null;
 
       try {
         const t = new Tempo().add(`${totalMs} milliseconds`);
@@ -289,11 +311,8 @@ export function parseRateLimitsFromResponse(response: Response): AiRateLimits | 
   if (remReqHeader === null && remTokHeader === null && resetTokHeader === null)
     return null;
 
-  const reqNum = remReqHeader !== null ? parseInt(remReqHeader, 10) : NaN;
-  const tokNum = remTokHeader !== null ? parseInt(remTokHeader, 10) : NaN;
-
-  const parsedReq = Number.isNaN(reqNum) ? null : reqNum;
-  const parsedTok = Number.isNaN(tokNum) ? null : tokNum;
+  const parsedReq = asNumber(remReqHeader, null);
+  const parsedTok = asNumber(remTokHeader, null);
   const resetAtTempo = resetTokHeader ? parseResetHeaderToTempo(resetTokHeader) : null;
 
   if (parsedReq === null && parsedTok === null && resetAtTempo === null)

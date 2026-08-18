@@ -11,12 +11,12 @@ export class TempoAiError extends Error {
   /** A Tempo instance representing the rate limit reset time (extracted from Headers) */
   #retryAt?: Tempo | undefined;
 
-  constructor(message: string, code: number, retryAt?: Tempo) {
-    super(message);
-    this.name = 'TempoAiError';
-    this.#code = code;
-    this.#retryAt = retryAt;
-  }
+	constructor(message: string, code: number, retryAt?: Tempo, options?: ErrorOptions) {
+		super(message, options);
+		this.name = 'TempoAiError';
+		this.#code = code;
+		this.#retryAt = retryAt;
+	}
 
   get code(): number {
     return this.#code;

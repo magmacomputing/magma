@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo';
+import { parseJSONC } from '@magmacomputing/tempo/library';
 
 describe('#setConfig refactor verification', () => {
 
@@ -108,4 +109,41 @@ describe('#setConfig refactor verification', () => {
     expect(config.value).toBeUndefined();
   })
 
+  test('should parse JSONC config with comments and trailing commas during bootstrap', async () => {
+    using _ = Tempo;
+
+    const jsoncText = `
+    {
+      // Default timezone
+      "timeZone": "Australia/Sydney",
+      "plugins": {
+        // AI Configuration
+        "ai": {
+          "mode": "fallback",
+          "providers": [
+            { "id": "groq" },
+          ],
+        },
+      },
+    }
+    `;
+    const parsed = parseJSONC(jsoncText);
+    expect(parsed.timeZone).toBe('Australia/Sydney');
+    expect(parsed.plugins.ai.mode).toBe('fallback');
+    expect(parsed.plugins.ai.providers).toEqual([{ id: 'groq' }]);
+
+    await Tempo.init(parsed);
+    expect(Tempo.config.timeZone).toBe('Australia/Sydney');
+    expect((Tempo.config as any).plugins?.ai?.mode).toBe('fallback');
+  })
+
+  test('should export defineConfig and resolveConfig from config module', async () => {
+    const { defineConfig, resolveConfig } = await import('@magmacomputing/tempo/config');
+    expect(typeof defineConfig).toBe('function');
+    expect(typeof resolveConfig).toBe('function');
+    const dummy = { timeZone: 'UTC' };
+    expect(defineConfig(dummy)).toBe(dummy);
+  })
+
 })
+

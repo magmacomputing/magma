@@ -9,7 +9,7 @@ The plugin automatically tracks these limits by reading the standard `x-ratelimi
 Quota and rate-limit metadata can be inspected in two convenient ways:
 
 ### 1. Request-Locked Instance Metadata (`dt.ai.limits`)
-Every `Tempo` instance returned by `parseAI` includes a frozen `.ai.limits` snapshot representing the rate limit state returned by provider HTTP headers for *that specific request*. Note that `.ai.limits` is guaranteed only for provider-backed network requests where rate-limit headers are returned by the selected provider; results resolved via native parsing (`provider: 'native'`) or cache hits (`provider: 'cache'`) may omit `.ai.limits` (`undefined`).
+For `parseAI`, every resolved `Tempo` instance includes a frozen `.ai.limits` snapshot representing the rate limit state returned by provider HTTP headers for *that specific request*. Note that `.ai.limits` is guaranteed only for provider-backed network requests where rate-limit headers are returned by the selected provider; results resolved via native parsing (`provider: 'native'`) or cache hits (`provider: 'cache'`) may omit `.ai.limits` (`undefined`).
 
 ```typescript
 const dt = await parseAI("The third Friday of next month");
@@ -67,19 +67,31 @@ When you pass an array of inputs to AI functions (such as `parseAI`), the plugin
 This is by design for three critical reasons:
 1. **Cache Efficiency**: Individual processing allows AI functions to instantly resolve duplicate strings against `Tempo.cache`, saving massive amounts of API tokens. If you pass an array of 10,000 dates, but only 1,000 are unique, only 1,000 network requests are made. 
 2. **Token Economics**: A single request consumes ~100 tokens (System Prompt + User String + Output ISO). Given that frontier models cost cents per million tokens, the risk of array-misalignment bugs (see below) far outweighs the negligible savings of batching system prompts.
-3. **Deterministic Safety**: LLMs are language models, not arrays. If you pass 50 strings, smaller models often hallucinate and return 49 strings, completely breaking your array indexing. By querying sequentially, we guarantee a strict 1:1 mapping and ensure one invalid string doesn't crash the entire batch.
+3. **Deterministic Safety**: LLMs are language models, not arrays. If you pass 50 strings in a single prompt, smaller models often hallucinate and return 49 strings, completely breaking your array indexing. By dispatching items individually, we guarantee a strict 1:1 index alignment, prevent hallucinations from corrupting sibling entries, and allow granular per-item error isolation when `softErrors: true` is enabled.
 
 > [!WARNING]  
 > **Granular Time Gotcha**: The cache key is automatically salted with the **calendar date** (`yyyy-mm-dd`) of the execution anchor. By default this uses the system execution date, but when `options.anchor` is explicitly set, it uses the caller-provided anchor date. Note that keeping a fixed anchor date retains the same cache key across midnight boundaries, so an automatic midnight cache miss is not guaranteed.
 
 ### Soft Errors in Array Batches
 
-When processing arrays of inputs, an unparseable input or provider failure on one item will throw an error by default, stopping execution. Passing `softErrors: true` allows AI functions to return invalid `Tempo` instances (`isValid === false`) for failing items while completing the rest of the array:
+When processing arrays of inputs, an unparseable input or provider failure on one item will throw an error and reject the entire batch operation by default. Passing `softErrors: true` allows batch operations to continue processing all items and return per-item failure representations:
+
+* **For `parseAI`**: Failed array items return an invalid `Tempo` instance (`isValid === false`).
+* **For Structured Functions (`formatAI`, `extractAI`, `diffAI`, `contextAI`)**: Failed array items return the typed `TempoAiError` object directly in that array position.
 
 ```typescript
+// 1. parseAI with softErrors returns invalid Tempo instances
 const dates = await parseAI(["Thanksgiving 2026", "INVALID_PROMPT_STRING"], { softErrors: true });
 console.log(dates[0].isValid); // true
 console.log(dates[1].isValid); // false
+
+// 2. Structured functions return TempoAiError objects into the array
+import { formatAI, TempoAiError } from '@magmacomputing/tempo-plugin-ai';
+
+const formatted = await formatAI([validDate, invalidDate], 'casual tone', { softErrors: true });
+if (formatted[1] instanceof TempoAiError) {
+  console.warn(`Format failed with code: ${formatted[1].code}`);
+}
 ```
 
 ### Static Glossary Seeding
@@ -112,10 +124,13 @@ const dt = await parseAI("The last Friday before Christmas", { force: true, cach
 If the LLM hallucinates or returns an incorrect absolute date, you can explicitly purge the string from the cache:
 
 ```typescript
-import { clearAiCache } from '@magmacomputing/tempo-plugin-ai';
+import { aiCache } from '@magmacomputing/tempo-plugin-ai';
 
 // Evict a single string
-clearAiCache("2nd tuesday in nov");
+await aiCache.clear("2nd tuesday in nov");
+
+// Or purge all AI cached entries
+await aiCache.clear();
 ```
 
 ### Forcing a Refresh

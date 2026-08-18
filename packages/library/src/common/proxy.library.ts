@@ -2,7 +2,7 @@ import { sym } from '#library/symbol.library.js';
 import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { unwrap } from '#library/primitive.library.js';
-import { isString, isFunction, isSymbol, isDefined } from '#library/assertion.library.js';
+import { isString, isFunction, isSymbol, isDefined, isNumber } from '#library/assertion.library.js';
 import { registerType, type Constructor } from '#library/type.library.js';
 
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
@@ -250,7 +250,7 @@ export function indexedArray<T extends object>(
 	readonly = true
 ): T[] & Record<string, T> {
 	return delegate(list, (key) => {
-		return (isString(key) && key !== 'length' && !(key in Array.prototype) && isNaN(Number(key)))
+		return (isString(key) && key !== 'length' && !(key in Array.prototype) && !isNumber(Number(key)))
 			? finder(key)
 			: undefined;
 	}, readonly) as any;

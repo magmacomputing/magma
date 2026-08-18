@@ -46,7 +46,7 @@ export const getType = (obj?: any, ...instances: Instance[]): Type => {
 		case typeof raw === 'function': return type;						// catch all functional types (including AsyncFunction)
 		case type === 'Object': {
 			// check for ArrayLike (e.g. {0:'a', 1:'b', length:2})
-			if ('length' in raw && Object.keys(raw).every(key => key === 'length' || !isNaN(Number(key)))) return 'ArrayLike';
+			if ('length' in raw && Object.keys(raw).every(key => key === 'length' || Number.isFinite(Number(key)))) return 'ArrayLike';
 
 			for (const inst of instances) {
 				const instRaw = (inst.class as any)?.[sym.$Target] ?? inst.class;

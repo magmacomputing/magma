@@ -3,7 +3,7 @@ import { enumify, Enum } from '#library/enumerate.library.js';
 import { proxify } from '#library/proxy.library.js';
 import { allDescriptors } from '#library/reflection.library.js';
 import { looseIndex } from '#library/object.library.js';
-import type { OwnOf, KeyOf, ValueOf, LooseUnion, Mutable } from '#library/type.library.js';
+import type { OwnOf, KeyOf, ValueOf, LooseUnion } from '#library/type.library.js';
 
 /** calendar seasons */
 export const SEASON = enumify({
@@ -238,7 +238,7 @@ export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
-const configKeys = ['config', 'parse', 'value', 'intl', 'store', 'discovery', 'debug', 'catch', 'silent', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'registry', 'plugins', 'cache'] as const;
+const configKeys = ['config', 'parse', 'value', 'intl', 'store', 'discovery', 'debug', 'catch', 'silent', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'registry', 'plugins', 'extends', 'cache'] as const;
 export const CONFIG = enumify(configKeys, false);
 export type Config = KeyOf<typeof CONFIG>
 
@@ -260,7 +260,7 @@ export const PARSE = enumify(parseKeys, false);
 export type Parse = KeyOf<typeof PARSE>
 
 /** allowed keys for global discovery objects */
-const discoveryKeys = ['options', 'plugins', 'terms', 'timeZones', 'monthDay', 'intl', 'planner', 'numbers', 'formats', 'ignore'] as const;
+const discoveryKeys = ['options', 'extends', 'plugins', 'terms', 'timeZones', 'monthDay', 'intl', 'planner', 'numbers', 'formats', 'ignore'] as const;
 export const DISCOVERY = enumify(discoveryKeys, false);
 export type Discovery = KeyOf<typeof DISCOVERY>
 

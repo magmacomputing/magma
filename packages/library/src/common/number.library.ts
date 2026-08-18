@@ -79,7 +79,7 @@ export function split<T extends string | number>(nbr?: T, chr: string = '.', zer
  * ```
  */
 export const fix = (nbr: string | number = 0, max = 2) =>
-	asNumber(nbr).toFixed(max);
+	asNumber(nbr, 0).toFixed(max);
 
 /**
  * Removes the colon from an HH:MI time string and returns it as a number.

@@ -1,4 +1,5 @@
 import { isFunction } from '#library/assertion.library.js';
+import { parseJSONC } from '#library/json.library.js';
 import type { Options } from '../tempo.type.js';
 
 // Minimal declaration so TS doesn't complain in browser environments without @types/node
@@ -31,9 +32,9 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 		let currentDir = options?.cwd || process.cwd();
 
 		const loadFile = async (configPath: string, ext: string) => {
-			if (ext === '.json') {
+			if (ext === '.json' || ext === '.jsonc') {
 				const content = await fs.promises.readFile(configPath, 'utf8');
-				return JSON.parse(content) as Options;
+				return parseJSONC(content) as Options;
 			} else {
 				// Use pathToFileURL to safely load absolute paths on Windows
 				const { pathToFileURL } = await import(modUrl);
@@ -61,7 +62,7 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 
 		while (currentDir !== rootPath) {
 			const pkgJson = path.join(currentDir, 'package.json');
-			const exts = ['.ts', '.js', '.mjs', '.cjs', '.json'];
+			const exts = ['.ts', '.js', '.mjs', '.cjs', '.jsonc', '.json'];
 
 			for (const ext of exts) {
 				const configPath = path.join(currentDir, `tempo.config${ext}`);

@@ -3,18 +3,24 @@ import {
 	resetAI,
 	getAiConfig,
 	loadRemoteManifest,
+	resetManifestCache,
 	DEFAULT_REMOTE_MANIFEST_URL,
-	DEFAULT_PROVIDERS
+	DEFAULT_PROVIDERS,
+	MAX_MANIFEST_BYTES,
+	getResolvedProviderDefaults,
 } from '../src/index.js';
+import { parseJSONC } from '@magmacomputing/tempo/library';
 
 describe('Remote Provider Manifest & Dynamic Defaults', () => {
 	beforeEach(() => {
 		resetAI();
+		resetManifestCache();
 		vi.restoreAllMocks();
 	});
 
 	afterEach(() => {
 		resetAI();
+		resetManifestCache();
 		vi.restoreAllMocks();
 	});
 
@@ -22,7 +28,7 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 		const mockManifest = {
 			version: '1.0',
 			providers: {
-				groq: { model: 'llama-3.3-70b-versatile', tokenParam: 'max_tokens' },
+				groq: { model: 'openai/gpt-oss-120b', tokenParam: 'max_tokens' },
 				openai: { model: 'gpt-5.4-mini', tokenParam: 'max_completion_tokens' }
 			}
 		};
@@ -35,7 +41,7 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 		expect(fetchSpy).toHaveBeenCalledTimes(1);
 		expect(fetchSpy).toHaveBeenCalledWith(
 			DEFAULT_REMOTE_MANIFEST_URL,
-			expect.objectContaining({ headers: { Accept: 'application/json' }, redirect: 'error' })
+			expect.objectContaining({ redirect: 'error' })
 		);
 		expect(result1).toEqual(mockManifest.providers);
 
@@ -158,7 +164,7 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 		});
 
 		const config = getAiConfig();
-		expect(config.providers?.[0].model).toBe(DEFAULT_PROVIDERS.openai.model);
+		expect(config.providers?.[0].models?.default).toBe(DEFAULT_PROVIDERS.openai.models?.default);
 	});
 
 	it('should return empty defaults for unrecognized provider IDs not in DEFAULT_PROVIDERS or manifest', async () => {
@@ -170,6 +176,7 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 		const config = getAiConfig();
 		expect(config.providers?.[0].id).toBe('custom-unrecognized-llm');
 		expect(config.providers?.[0].model).toBeUndefined();
+		expect(config.providers?.[0].models).toBeUndefined();
 		expect(config.providers?.[0].url).toBeUndefined();
 	});
 
@@ -235,7 +242,7 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 			providers: [{ id: 'groq', key: 'test-key' }]
 		});
 
-		expect(getAiConfig().providers?.[0].model).toBe(DEFAULT_PROVIDERS.groq.model);
+		expect(getAiConfig().providers?.[0].models?.default).toBe(DEFAULT_PROVIDERS.groq.models?.default);
 
 		// Re-init with fetchDefaults hook and omitted providers
 		await initAI({
@@ -276,5 +283,225 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 
 		// Config should remain the fresh one, not overwritten by stale in-flight init
 		expect(getAiConfig().providers?.[0].id).toBe('openai');
+	});
+
+	it('should reject remote manifest when Content-Length exceeds MAX_MANIFEST_BYTES', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(JSON.stringify({ providers: { groq: { model: 'huge-manifest-model' } } }), {
+				status: 200,
+				headers: { 'Content-Length': String(MAX_MANIFEST_BYTES + 1024) }
+			})
+		);
+
+		const result = await loadRemoteManifest('https://tempo.magmacomputing.com.au/providers-oversized.json');
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		expect(result).toBeNull();
+	});
+
+	it('should reject streamed response without Content-Length when cumulative bytes exceed MAX_MANIFEST_BYTES', async () => {
+		let cancelled = false;
+		const stream = new ReadableStream({
+			pull(controller) {
+				const chunk = new Uint8Array(256 * 1024);
+				controller.enqueue(chunk);
+			},
+			cancel() {
+				cancelled = true;
+			},
+		});
+
+		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(stream, { status: 200 })
+		);
+
+		const result = await loadRemoteManifest('https://tempo.magmacomputing.com.au/stream-oversized.json');
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		expect(result).toBeNull();
+		expect(cancelled).toBe(true);
+
+		// Subsequent call should hit cache and return empty cached manifest without fetching again
+		const cachedResult = await loadRemoteManifest('https://tempo.magmacomputing.com.au/stream-oversized.json');
+		expect(fetchSpy).toHaveBeenCalledTimes(1);
+		expect(cachedResult).toEqual({});
+	});
+
+	it('should successfully stream and parse chunked response within MAX_MANIFEST_BYTES', async () => {
+		const mockManifest = JSON.stringify({
+			providers: {
+				groq: { model: 'chunked-groq-model' },
+			},
+		});
+		const encoder = new TextEncoder();
+		const bytes = encoder.encode(mockManifest);
+		const half = Math.floor(bytes.length / 2);
+
+		const stream = new ReadableStream({
+			start(controller) {
+				controller.enqueue(bytes.subarray(0, half));
+				controller.enqueue(bytes.subarray(half));
+				controller.close();
+			},
+		});
+
+		vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(stream, { status: 200 })
+		);
+
+		const result = await loadRemoteManifest('https://tempo.magmacomputing.com.au/stream-valid.json');
+		expect(result).toEqual({
+			groq: { model: 'chunked-groq-model' },
+		});
+	});
+
+	it('should merge remote manifest entries containing tiered models into getResolvedProviderDefaults', async () => {
+		const manifestUrl = 'https://tempo.magmacomputing.com.au/manifest-tiered.json';
+		const mockManifest = {
+			version: '1.2',
+			providers: {
+				groq: {
+					models: {
+						default: 'remote-llama-3.3-70b',
+						fast: 'remote-llama-3.1-8b',
+						reasoning: 'remote-deepseek-r1-distill',
+					},
+				},
+			},
+		};
+
+		vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(JSON.stringify(mockManifest), { status: 200 })
+		);
+
+		const loaded = await loadRemoteManifest(manifestUrl);
+		expect(loaded).toBeDefined();
+
+		const resolved = getResolvedProviderDefaults('groq', manifestUrl);
+		expect(resolved.models?.default).toBe('remote-llama-3.3-70b');
+		expect(resolved.models?.fast).toBe('remote-llama-3.1-8b');
+		expect(resolved.models?.reasoning).toBe('remote-deepseek-r1-distill');
+		expect(resolved.url).toBe(DEFAULT_PROVIDERS.groq.url);
+	});
+
+	it('should preserve precedence of remote single-model entry over local defaults while maintaining unspecified fields', async () => {
+		const manifestUrl = 'https://tempo.magmacomputing.com.au/manifest-legacy.json';
+		const mockManifest = {
+			version: '1.0',
+			providers: {
+				openai: {
+					model: 'gpt-5.4-custom-override',
+				},
+			},
+		};
+
+		vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+			new Response(JSON.stringify(mockManifest), { status: 200 })
+		);
+
+		await loadRemoteManifest(manifestUrl);
+
+		const resolved = getResolvedProviderDefaults('openai', manifestUrl);
+		expect(resolved.model).toBe('gpt-5.4-custom-override');
+		expect(resolved.url).toBe(DEFAULT_PROVIDERS.openai.url);
+		expect(resolved.tokenParam).toBe(DEFAULT_PROVIDERS.openai.tokenParam);
+	});
+
+	describe('JSONC Parser (parseJSONC)', () => {
+		it('should parse standard JSON objects and arrays', () => {
+			const json = '{"name": "tempo", "active": true, "count": 42, "items": [1, 2, 3]}';
+			expect(parseJSONC(json)).toEqual({
+				name: 'tempo',
+				active: true,
+				count: 42,
+				items: [1, 2, 3]
+			});
+		});
+
+		it('should strip single-line comments without stripping URLs inside strings', () => {
+			const jsonc = `
+			// Top-level comment
+			{
+				"provider": "groq", // provider ID
+				"url": "https://api.groq.com/openai/v1/chat/completions", // Endpoint URL with slashes
+				"model": "openai/gpt-oss-120b" // Active model
+			}
+			`;
+			const parsed = parseJSONC(jsonc);
+			expect(parsed.provider).toBe('groq');
+			expect(parsed.url).toBe('https://api.groq.com/openai/v1/chat/completions');
+			expect(parsed.model).toBe('openai/gpt-oss-120b');
+		});
+
+		it('should strip multi-line comments', () => {
+			const jsonc = `
+			/*
+			 * Multi-line header comment
+			 * Explaining model rollout
+			 */
+			{
+				"version": "1.1",
+				/* inline comment */ "providers": {
+					"gemini": {
+						"model": "gemini-3.7-flash"
+					}
+				}
+			}
+			`;
+			const parsed = parseJSONC(jsonc);
+			expect(parsed.version).toBe('1.1');
+			expect(parsed.providers.gemini.model).toBe('gemini-3.7-flash');
+		});
+
+		it('should handle trailing commas in objects and arrays gracefully', () => {
+			const jsonc = `
+			{
+				"providers": {
+					"openai": {
+						"model": "gpt-5.4-mini",
+						"tokenParam": "max_completion_tokens",
+					},
+				},
+				"tags": [
+					"fast",
+					"cost-effective",
+				],
+			}
+			`;
+			const parsed = parseJSONC(jsonc);
+			expect(parsed.providers.openai.model).toBe('gpt-5.4-mini');
+			expect(parsed.tags).toEqual(['fast', 'cost-effective']);
+		});
+
+		it('should parse remote manifest with comments seamlessly in loadRemoteManifest', async () => {
+			const mockJsoncManifest = `
+			// Remote Manifest v1.1
+			{
+				"version": "1.1",
+				"providers": {
+					// Groq default fast model
+					"groq": {
+						"url": "https://api.groq.com/openai/v1/chat/completions",
+						"model": "openai/gpt-oss-120b",
+						"tokenParam": "max_tokens",
+					},
+					// Gemini Flash
+					"gemini": {
+						"url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+						"model": "gemini-3.7-flash",
+						"tokenParam": "max_tokens",
+					},
+				},
+			}
+			`;
+
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(mockJsoncManifest, { status: 200 })
+			);
+
+			const result = await loadRemoteManifest('https://tempo.magmacomputing.com.au/providers.v1.jsonc');
+			expect(result).toBeDefined();
+			expect(result?.groq?.model).toBe('openai/gpt-oss-120b');
+			expect(result?.groq?.url).toBe('https://api.groq.com/openai/v1/chat/completions');
+			expect(result?.gemini?.model).toBe('gemini-3.7-flash');
+		});
 	});
 });

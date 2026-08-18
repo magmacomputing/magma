@@ -1,4 +1,4 @@
-import { parseAI, initAI, clearAiCache, type AiCacheAdapter } from '../src/index.js';
+import { parseAI, initAI, aiCache, type AiCacheAdapter } from '../src/index.js';
 import { Tempo } from '@magmacomputing/tempo';
 
 describe('Advanced Cache TTL & Async Storage Adapters', () => {
@@ -122,7 +122,7 @@ describe('Advanced Cache TTL & Async Storage Adapters', () => {
 		expect(result.ai?.provider).toBe('groq');
 	});
 
-	it('should clear custom cacheAdapter entries when clearAiCache is invoked', async () => {
+	it('should clear custom cacheAdapter entries when aiCache.clear is invoked', async () => {
 		const mockAdapter: AiCacheAdapter = {
 			get: vi.fn(),
 			set: vi.fn(),
@@ -135,12 +135,68 @@ describe('Advanced Cache TTL & Async Storage Adapters', () => {
 			cacheAdapter: mockAdapter,
 		});
 
-		await clearAiCache('Easter 2026');
+		await aiCache.clear('Easter 2026');
 		expect(mockAdapter.delete).toHaveBeenCalledWith('easter 2026');
 		expect(mockAdapter.delete).toHaveBeenCalledWith('Easter 2026');
 		expect(mockAdapter.clear).toHaveBeenCalledWith('easter 2026::');
 
-		await clearAiCache();
+		await aiCache.clear();
 		expect(mockAdapter.clear).toHaveBeenCalledTimes(2);
+	});
+
+	it('should protect aiCache object from direct property mutation via secure()', () => {
+		expect(() => {
+			(aiCache as any).clear = null;
+		}).toThrow();
+
+		expect(() => {
+			(aiCache as any).newProp = 'tampered';
+		}).toThrow();
+
+		expect(() => {
+			delete (aiCache as any).clear;
+		}).toThrow();
+	});
+
+	it('should support store methods on aiCache (set, get, has, delete, clear, entries, toJSON)', async () => {
+		const store = new Map<string, string>();
+		const mockAdapter: AiCacheAdapter = {
+			get: vi.fn(async (key: string) => store.get(key)),
+			set: vi.fn(async (key: string, val: string) => { store.set(key, val); }),
+			delete: vi.fn(async (key: string) => { store.delete(key); }),
+			clear: vi.fn(async () => { store.clear(); }),
+		};
+
+		await initAI({
+			remoteConfigUrl: false,
+			cacheAdapter: mockAdapter,
+		});
+
+		await aiCache.set('custom-key', 'custom-value', 5000);
+		expect(mockAdapter.set).toHaveBeenCalledWith('custom-key', 'custom-value', 5000);
+
+		const hasKey = await aiCache.has('custom-key');
+		expect(hasKey).toBe(true);
+
+		const val = await aiCache.get('custom-key');
+		expect(val).toBe('custom-value');
+
+		const deleted = await aiCache.delete('custom-key');
+		expect(deleted).toBe(true);
+		expect(mockAdapter.delete).toHaveBeenCalledWith('custom-key');
+
+		const hasAfterDelete = await aiCache.has('custom-key');
+		expect(hasAfterDelete).toBe(false);
+
+		await aiCache.set('key-a', 'val-a');
+		const json = aiCache.toJSON();
+		expect(json['key-a']).toBe('val-a');
+
+		const entries = Array.from(aiCache.entries());
+		expect(entries.some(([k, v]) => k === 'key-a' && v === 'val-a')).toBe(true);
+
+		await aiCache.clear();
+		expect(mockAdapter.clear).toHaveBeenCalled();
+		expect(await aiCache.has('key-a')).toBe(false);
 	});
 });

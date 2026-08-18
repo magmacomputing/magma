@@ -87,6 +87,99 @@ describe('request.library', () => {
 				expect(err.body).toBe(errorText);
 			}
 		});
+
+		it('should reject when Content-Length exceeds maxBytes', async () => {
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				headers: new Headers({
+					'Content-Type': 'application/json',
+					'Content-Length': '2048'
+				})
+			} as unknown as Response);
+
+			await expect(fetchRequest('https://example.com/large', {}, { maxBytes: 1024 }))
+				.rejects.toThrow('Content-Length (2048) exceeds limit (1024 bytes)');
+		});
+
+		it('should reject streamed response when cumulative bytes exceed maxBytes', async () => {
+			let cancelled = false;
+			const stream = new ReadableStream({
+				pull(controller) {
+					controller.enqueue(new Uint8Array(512));
+				},
+				cancel() {
+					cancelled = true;
+				}
+			});
+
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				headers: new Headers({ 'Content-Type': 'application/json' }),
+				body: stream
+			} as unknown as Response);
+
+			try {
+				await fetchRequest('https://example.com/stream-large', {}, { maxBytes: 1000 });
+				expect.fail('Should have thrown HttpError');
+			} catch (err: any) {
+				expect(err).toBeInstanceOf(HttpError);
+				expect(err.status).toBe(413);
+				expect(cancelled).toBe(true);
+			}
+		});
+
+		it('should successfully read streamed response within maxBytes limit', async () => {
+			const payload = JSON.stringify({ success: true, count: 42 });
+			const encoder = new TextEncoder();
+			const bytes = encoder.encode(payload);
+
+			const stream = new ReadableStream({
+				start(controller) {
+					controller.enqueue(bytes);
+					controller.close();
+				}
+			});
+
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				headers: new Headers({ 'Content-Type': 'application/json' }),
+				body: stream
+			} as unknown as Response);
+
+			const result = await fetchRequest<{ success: boolean; count: number }>(
+				'https://example.com/stream-valid',
+				{},
+				{ maxBytes: 1024 }
+			);
+			expect(result).toEqual({ success: true, count: 42 });
+		});
+
+		it('should support prefix stripping combined with maxBytes limit', async () => {
+			const prefix = ')]}\'\n';
+			const payload = `${prefix}{"valid":true}`;
+			const encoder = new TextEncoder();
+			const bytes = encoder.encode(payload);
+
+			const stream = new ReadableStream({
+				start(controller) {
+					controller.enqueue(bytes);
+					controller.close();
+				}
+			});
+
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				headers: new Headers({ 'Content-Type': 'application/json' }),
+				body: stream
+			} as unknown as Response);
+
+			const result = await fetchRequest<{ valid: boolean }>(
+				'https://example.com/prefix-stream',
+				{},
+				{ prefix, maxBytes: 1024 }
+			);
+			expect(result).toEqual({ valid: true });
+		});
 	});
 
 	describe('fetchHead', () => {

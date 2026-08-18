@@ -33,7 +33,6 @@ const isPremiumAvailable = Boolean(
 
 export default defineConfig({
 	esbuild: false,
-	oxc: false,
 	plugins: [
 		swc.vite({
 			jsc: {
@@ -61,6 +60,8 @@ export default defineConfig({
 		alias: isDist ? [
 			{ find: /^#tempo\/license$/, replacement: resolve(__dirname, './dist/plugin/license/license.validator.js') },
 			{ find: /^#tempo\/core$/, replacement: resolve(__dirname, './dist/core.index.js') },
+			{ find: /^#tempo\/config\/(.*)\.js$/, replacement: resolve(__dirname, './dist/config/$1.js') },
+			{ find: /^#tempo\/config$/, replacement: resolve(__dirname, './dist/config/config.index.js') },
 			{ find: /^#tempo\/term$/, replacement: resolve(__dirname, './dist/plugin/term/term.index.js') },
 			{ find: /^#tempo\/(parse|format|mutate|duration)$/, replacement: resolve(__dirname, './dist/module/module.$1.js') },
 			{ find: /^#tempo\/module$/, replacement: resolve(__dirname, './dist/module/module.index.js') },
@@ -82,6 +83,7 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/tempo\/term$/, replacement: resolve(__dirname, './dist/plugin/term/term.index.js') },
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(__dirname, './dist/plugin/term/term.$1.js') },
 			{ find: /^@magmacomputing\/tempo\/core$/, replacement: resolve(__dirname, './dist/core.index.js') },
+			{ find: /^@magmacomputing\/tempo\/config$/, replacement: resolve(__dirname, './dist/config/config.index.js') },
 			{ find: /^@magmacomputing\/tempo\/library$/, replacement: resolve(__dirname, './dist/library.index.js') },
 			{ find: /^@magmacomputing\/tempo$/, replacement: resolve(__dirname, './dist/tempo.index.js') },
 		] : [
@@ -95,9 +97,12 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/term.$1.ts') },
 			{ find: /^@magmacomputing\/tempo\/core$/, replacement: resolve(__dirname, './src/core.index.ts') },
+			{ find: /^@magmacomputing\/tempo\/config$/, replacement: resolve(__dirname, './src/config/config.index.ts') },
 			{ find: /^@magmacomputing\/tempo\/library$/, replacement: resolve(__dirname, './src/library.index.ts') },
 			{ find: /^@magmacomputing\/tempo$/, replacement: resolve(__dirname, './src/tempo.index.ts') },
 			{ find: /^#tempo\/core$/, replacement: resolve(__dirname, './src/core.index.ts') },
+			{ find: /^#tempo\/config\/(.*)\.js$/, replacement: resolve(__dirname, './src/config/$1.ts') },
+			{ find: /^#tempo\/config$/, replacement: resolve(__dirname, './src/config/config.index.ts') },
 			{ find: /^#tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
 			{ find: /^#tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/$1') },
 			{ find: /^#tempo\/(parse|format|mutate|duration)$/, replacement: resolve(__dirname, './src/module/module.$1.ts') },

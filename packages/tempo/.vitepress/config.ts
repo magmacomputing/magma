@@ -2,6 +2,7 @@ import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { fileURLToPath } from 'node:url'
 import { Temporal } from '@js-temporal/polyfill'
+import pluginsSidebar from './theme/data/plugins-sidebar.json'
 
 if (typeof (globalThis as any).Temporal === 'undefined') {
   Object.defineProperty(globalThis, 'Temporal', {
@@ -33,91 +34,94 @@ export default withMermaid(defineConfig({
       { text: 'Releases', link: '/doc/8-project-and-support/releases/' },
       { text: 'Functions', link: 'https://magmacomputing.github.io/magma/functions/' }
     ],
-    sidebar: [
-      {
-        text: 'Getting Started',
-        items: [
-          { text: 'Introduction', link: '/README' },
-          { text: 'Installation', link: '/doc/1-getting-started/installation' },
-          { text: 'AI & IDE Integration', link: '/doc/1-getting-started/ai-integration' },
-          { text: 'Cookbook', link: '/doc/1-getting-started/tempo.cookbook' }
-        ]
-      },
-      {
-        text: 'Core Concepts',
-        items: [
-          { text: 'Configuration', link: '/doc/2-core-concepts/tempo.config' },
-          { text: 'Cache Management', link: '/doc/2-core-concepts/tempo.cache' },
-          { text: 'Core Getters', link: '/doc/2-core-concepts/tempo.getters' },
-          { text: 'Smart Parsing', link: '/doc/2-core-concepts/tempo.parse' },
-          { text: 'Smart Formatting', link: '/doc/2-core-concepts/tempo.format' },
-          { text: 'Duration Logic', link: '/doc/2-core-concepts/tempo.duration' },
-          { text: 'Mutation & Math', link: '/doc/2-core-concepts/tempo.mutate' },
-          { text: 'Intervals', link: '/doc/2-core-concepts/tempo.interval' }
-        ]
-      },
-      {
-        text: 'Extending Tempo',
-        items: [
-          { text: 'Modules', link: '/doc/3-extending-tempo/tempo.modularity' },
-          { text: 'Registries', link: '/doc/3-extending-tempo/tempo.registry' },
-          { text: 'Plugins', link: '/doc/3-extending-tempo/tempo.plugin' },
-          { text: 'Layout Patterns', link: '/doc/3-extending-tempo/tempo.layout' },
-          { text: 'Terms', link: '/doc/3-extending-tempo/tempo.term' },
-          { text: 'Namespaces', link: '/doc/3-extending-tempo/tempo.namespace' },
-          { text: 'Creating Custom Plugins', link: '/doc/3-extending-tempo/tempo.extension' },
-          { text: 'Plugin Ecosystem', link: '/doc/3-extending-tempo/ecosystem' }
-        ]
-      },
-      {
-        text: 'Advanced Reference',
-        items: [
-          { text: 'Sandbox Factory', link: '/doc/4-advanced-reference/sandbox-factory' },
-          { text: 'Parse Planner', link: '/doc/4-advanced-reference/tempo.planner' },
-          { text: 'The Role of Locale', link: '/doc/4-advanced-reference/tempo.locale' },
-          { text: 'Shorthand Engine', link: '/doc/4-advanced-reference/tempo.shorthand' },
-          { text: 'Weekday Engine', link: '/doc/4-advanced-reference/tempo.weekday' },
-          { text: 'Debugging', link: '/doc/4-advanced-reference/tempo.debugging' }
-        ]
-      },
-      {
-        text: 'Architecture & Internals',
-        items: [
-          { text: 'Core Architecture', link: '/doc/5-architecture-and-internals/architecture' },
-          { text: 'Soft Freeze Strategy', link: '/doc/5-architecture-and-internals/soft_freeze_strategy' },
-          { text: 'Lazy Evaluation', link: '/doc/5-architecture-and-internals/lazy-evaluation-pattern' },
-          { text: 'Performance Benchmarks', link: '/doc/5-architecture-and-internals/tempo.benchmarks' }
-        ]
-      },
-      {
-        text: 'Utility Library',
-        items: [
-          { text: 'Library Overview', link: '/doc/6-utility-library/tempo.library' },
-          { text: 'Enumerators', link: '/doc/6-utility-library/tempo.enumerators' },
-          { text: 'Serializers', link: '/doc/6-utility-library/tempo.serializers' },
-          { text: 'Decorators', link: '/doc/6-utility-library/tempo.decorators' },
-          { text: 'Advanced Promises (Pledge)', link: '/doc/6-utility-library/tempo.pledge' }
-        ]
-      },
-      {
-        text: 'Ecosystem',
-        items: [
-          { text: 'Contribution Guide', link: '/CONTRIBUTING' },
-          { text: 'Comparison', link: '/doc/7-ecosystem/comparison' },
-          { text: 'Extending Temporal', link: '/doc/7-ecosystem/extending-temporal' },
-          { text: 'Project Vision', link: '/doc/7-ecosystem/vision' }
-        ]
-      },
-      {
-        text: 'Project & Support',
-        items: [
-          { text: 'License Key Guide', link: '/doc/9-plugins/_setup.index' },
-          { text: 'Migration Guide', link: '/doc/8-project-and-support/migration-guide' },
-          { text: 'Release Notes', link: '/doc/8-project-and-support/releases/' },
-          { text: 'Professional Services', link: '/doc/8-project-and-support/commercial' }
-        ]
-      }
-    ],
+    sidebar: {
+      '/doc/9-plugins/': pluginsSidebar,
+      '/': [
+        {
+          text: 'Getting Started',
+          items: [
+            { text: 'Introduction', link: '/README' },
+            { text: 'Installation', link: '/doc/1-getting-started/installation' },
+            { text: 'AI & IDE Integration', link: '/doc/1-getting-started/ai-integration' },
+            { text: 'Cookbook', link: '/doc/1-getting-started/tempo.cookbook' }
+          ]
+        },
+        {
+          text: 'Core Concepts',
+          items: [
+            { text: 'Configuration', link: '/doc/2-core-concepts/tempo.config' },
+            { text: 'Cache Management', link: '/doc/2-core-concepts/tempo.cache' },
+            { text: 'Core Getters', link: '/doc/2-core-concepts/tempo.getters' },
+            { text: 'Smart Parsing', link: '/doc/2-core-concepts/tempo.parse' },
+            { text: 'Smart Formatting', link: '/doc/2-core-concepts/tempo.format' },
+            { text: 'Duration Logic', link: '/doc/2-core-concepts/tempo.duration' },
+            { text: 'Mutation & Math', link: '/doc/2-core-concepts/tempo.mutate' },
+            { text: 'Intervals', link: '/doc/2-core-concepts/tempo.interval' }
+          ]
+        },
+        {
+          text: 'Extending Tempo',
+          items: [
+            { text: 'Modules', link: '/doc/3-extending-tempo/tempo.modularity' },
+            { text: 'Registries', link: '/doc/3-extending-tempo/tempo.registry' },
+            { text: 'Plugins', link: '/doc/3-extending-tempo/tempo.plugin' },
+            { text: 'Layout Patterns', link: '/doc/3-extending-tempo/tempo.layout' },
+            { text: 'Terms', link: '/doc/3-extending-tempo/tempo.term' },
+            { text: 'Namespaces', link: '/doc/3-extending-tempo/tempo.namespace' },
+            { text: 'Creating Custom Plugins', link: '/doc/3-extending-tempo/tempo.extension' },
+            { text: 'Plugin Ecosystem', link: '/doc/3-extending-tempo/ecosystem' }
+          ]
+        },
+        {
+          text: 'Advanced Reference',
+          items: [
+            { text: 'Sandbox Factory', link: '/doc/4-advanced-reference/sandbox-factory' },
+            { text: 'Parse Planner', link: '/doc/4-advanced-reference/tempo.planner' },
+            { text: 'The Role of Locale', link: '/doc/4-advanced-reference/tempo.locale' },
+            { text: 'Shorthand Engine', link: '/doc/4-advanced-reference/tempo.shorthand' },
+            { text: 'Weekday Engine', link: '/doc/4-advanced-reference/tempo.weekday' },
+            { text: 'Debugging', link: '/doc/4-advanced-reference/tempo.debugging' }
+          ]
+        },
+        {
+          text: 'Architecture & Internals',
+          items: [
+            { text: 'Core Architecture', link: '/doc/5-architecture-and-internals/architecture' },
+            { text: 'Soft Freeze Strategy', link: '/doc/5-architecture-and-internals/soft_freeze_strategy' },
+            { text: 'Lazy Evaluation', link: '/doc/5-architecture-and-internals/lazy-evaluation-pattern' },
+            { text: 'Performance Benchmarks', link: '/doc/5-architecture-and-internals/tempo.benchmarks' }
+          ]
+        },
+        {
+          text: 'Utility Library',
+          items: [
+            { text: 'Library Overview', link: '/doc/6-utility-library/tempo.library' },
+            { text: 'Enumerators', link: '/doc/6-utility-library/tempo.enumerators' },
+            { text: 'Serializers', link: '/doc/6-utility-library/tempo.serializers' },
+            { text: 'Decorators', link: '/doc/6-utility-library/tempo.decorators' },
+            { text: 'Advanced Promises (Pledge)', link: '/doc/6-utility-library/tempo.pledge' }
+          ]
+        },
+        {
+          text: 'Ecosystem',
+          items: [
+            { text: 'Contribution Guide', link: '/CONTRIBUTING' },
+            { text: 'Comparison', link: '/doc/7-ecosystem/comparison' },
+            { text: 'Extending Temporal', link: '/doc/7-ecosystem/extending-temporal' },
+            { text: 'Project Vision', link: '/doc/7-ecosystem/vision' }
+          ]
+        },
+        {
+          text: 'Project & Support',
+          items: [
+            { text: 'License Key Guide', link: '/doc/9-plugins/_setup.index' },
+            { text: 'Migration Guide', link: '/doc/8-project-and-support/migration-guide' },
+            { text: 'Release Notes', link: '/doc/8-project-and-support/releases/' },
+            { text: 'Professional Services', link: '/doc/8-project-and-support/commercial' }
+          ]
+        }
+      ]
+    },
     socialLinks: [
       { icon: 'github', link: 'https://github.com/magmacomputing/magma/tree/main/packages/tempo' }
     ],
@@ -200,7 +204,7 @@ export default withMermaid(defineConfig({
     ssr: {
       // Prevent Vite from externalising these packages during SSR so the aliases
       // above are honoured in the server-side rendering pass as well.
-      noExternal: ['@magmacomputing/tempo', '@magmacomputing/library']
+      noExternal: ['@magmacomputing/tempo', '@magmacomputing/library', 'vue', '@vue/server-renderer']
     }
   }
 }))
