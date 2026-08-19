@@ -2,7 +2,7 @@ import { sym } from '#library/symbol.library.js';
 import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { unwrap } from '#library/primitive.library.js';
-import { isString, isFunction, isSymbol, isDefined, isNumber } from '#library/assertion.library.js';
+import { isString, isFunction, isSymbol, isDefined, isNumber, isObject } from '#library/assertion.library.js';
 import { registerType, type Constructor } from '#library/type.library.js';
 
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
@@ -255,3 +255,47 @@ export function indexedArray<T extends object>(
 			: undefined;
 	}, readonly) as any;
 }
+
+/**
+ * Wraps an object in a dynamic evaluation Proxy where any property that is a function/supplier
+ * is transparently invoked upon read access.
+ * Non-function properties and symbol traps are forwarded as-is.
+ * 
+ * @param target - The object containing dynamic properties or suppliers
+ * @returns A Proxy wrapping the target where property reads automatically resolve functions
+ * @example
+ * ```ts
+ * const userContext = {
+ *   timeZone: () => currentSession.tz,
+ *   locale: 'en-US'
+ * };
+ * const proxy = dynamicProxy(userContext);
+ * proxy.timeZone; // Returns dynamic currentSession.tz
+ * proxy.locale;   // 'en-US'
+ * ```
+ */
+export function dynamicProxy<T extends object>(target: T): { [K in keyof T]: T[K] extends () => infer R ? R : T[K] } {
+	if (!isObject(target)) return target as any;
+	return new Proxy(unwrap(target), {
+		get(t, k, r) {
+			if (k === sym.$Target) return t;
+			const val = Reflect.get(t, k, r);
+			return (isFunction(val) && k !== 'constructor')
+				? (val as () => any)()
+				: val;
+		},
+		has(t, k) {
+			return Reflect.has(t, k);
+		},
+		ownKeys(t) {
+			return Reflect.ownKeys(t);
+		},
+		getOwnPropertyDescriptor(t, k) {
+			const desc = Reflect.getOwnPropertyDescriptor(t, k);
+			return (!desc)
+				? undefined
+				: { ...desc, configurable: true };
+		},
+	}) as any;
+}
+

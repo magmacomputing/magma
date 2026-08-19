@@ -150,6 +150,23 @@ console.log(nyc.format('{hh}:{mi}'));    // "10:00"
 console.log(london.format('{hh}:{mi}')); // "15:00"
 ```
 
+### Dynamic / Multi-Tenant Context (Functional Options)
+Context options (`timeZone`, `locale`, `calendar`, `sphere`) accept supplier functions (`() => string`). Tempo resolves suppliers at instantiation time to construct an immutable, frozen instance:
+
+```typescript
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+const requestContext = new AsyncLocalStorage<{ timeZone: string; locale: string }>();
+
+// Configure dynamic suppliers that evaluate against current request context
+const t = new Tempo('now', {
+  timeZone: () => requestContext.getStore()?.timeZone || 'UTC',
+  locale: () => requestContext.getStore()?.locale || 'en-US'
+});
+```
+
+👉 **Learn More:** See the [Configuration Guide](../2-core-concepts/tempo.config.md#dynamic--functional-context-evaluation) for details on functional options and immutability guarantees.
+
 ---
 
 ## Business Logic and Terms

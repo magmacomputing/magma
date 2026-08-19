@@ -10,6 +10,7 @@ export * from './common/cipher.library.js';
 export * from './common/class.library.js';
 export * from './common/coercion.library.js';
 export * from './common/enumerate.library.js';
+export * from './common/evaluation.library.js';
 export * from './common/function.library.js';
 export * from './common/international.library.js';
 export * from './common/logger.class.js';

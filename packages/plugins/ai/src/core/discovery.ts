@@ -1,4 +1,5 @@
-import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isDefined, asText } from '@magmacomputing/tempo/library';
+import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isDefined, isFunction, asText } from '@magmacomputing/tempo/library';
+import type { AsyncEvaluable } from '@magmacomputing/tempo/library';
 import { Tempo } from '@magmacomputing/tempo';
 
 import { DEFAULT_PROVIDERS } from './config.js';
@@ -98,15 +99,16 @@ export const WELL_KNOWN_ENV_MAP: Record<string, string[]> = {
  * Resolves an API key for a provider, falling back to well-known environment variables if not provided.
  *
  * @param id - The provider identifier (e.g. 'groq', 'openai')
- * @param explicitKey - Optional explicit API key
+ * @param explicitKey - Optional explicit API key or dynamic supplier
  * @param env - The environment variables map to inspect
- * @returns The resolved API key string, or undefined if not found
+ * @returns The resolved API key string or supplier, or undefined if not found
  */
 export function resolveProviderApiKey(
 	id: string,
-	explicitKey?: string,
+	explicitKey?: AsyncEvaluable<string>,
 	env: Record<string, string | undefined> = getRuntimeEnv()
-): string | undefined {
+): AsyncEvaluable<string> | undefined {
+	if (isFunction(explicitKey)) return explicitKey;
 	const key = asText(explicitKey);
 	if (key) return key;
 

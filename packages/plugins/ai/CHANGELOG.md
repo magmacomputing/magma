@@ -5,6 +5,13 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-19
+
+### Added
+- **Dynamic Context & Lazy Provider Resolution**: Upgraded `AiConfig` and all AI handlers (`parseAI`, `formatAI`, `diffAI`, `extractAI`, `recurrenceAI`, `scheduleAI`, `contextAI`) to support `Evaluable<T>` and `AsyncEvaluable<T>` configuration suppliers (`T | (() => T | Promise<T>)`).
+- **Dynamic Secret Rotation & Custom Endpoints**: AI provider configurations (`AiProvider`) now accept dynamic functions for `key`, `url`, and `model`, enabling automated secret vault rotation and dynamic proxy routing evaluated just-in-time on each request dispatch.
+- **Provider Fallback & Default Hierarchy**: Hardened `fetchFromProvider` in `transport.ts` with automated fallback defaults via `evaluate`/`evaluateAsync`, cleanly resolving `DEFAULT_PROVIDERS` templates and environment keys when explicit provider fields are omitted.
+
 ## [1.0.0] - 2026-08-15
 
 ### Added

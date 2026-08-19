@@ -14,6 +14,7 @@ import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear } from '#library/international.library.js';
+import { evaluate } from '#library/evaluation.library.js';
 import { LOG } from '#library/logger.class.js';
 import type { Property, Secure } from '#library/type.library.js';
 
@@ -255,8 +256,8 @@ export class Tempo {
 	}
 
 	/** try to infer hemisphere using the timezone's daylight-savings setting */
-	static #setSphere = (shape: Internal.State, options: t.Options) => {
-		if (isDefined(options.sphere)) return options.sphere;
+	static #setSphere = (shape: Internal.State, options: t.Options): t.COMPASS | undefined => {
+		if (isDefined(options.sphere)) return evaluate(options.sphere);
 
 		const tz = options.timeZone;
 		if (isDefined(tz)) {
@@ -868,8 +869,8 @@ export class Tempo {
 
 			// 2. Establish context and keys
 			const sys = getDateTimeFormat();
-			const timeZone = options.timeZone ?? sys.timeZone;
-			const calendar = options.calendar ?? sys.calendar;
+			const timeZone = evaluate(options.timeZone) ?? sys.timeZone;
+			const calendar = evaluate(options.calendar) ?? sys.calendar;
 			const config = state.config;
 			let discovery = options.discovery ?? Symbol.keyFor($Tempo) as string;
 			const storeKey = options.store || config.store || Symbol.keyFor($Tempo) as string;
@@ -884,7 +885,7 @@ export class Tempo {
 			const userDiscovery = (globalThis as any)[normalizedDiscovery] as Internal.Discovery;
 
 			// Resolve locale if missing or invalid
-			const currentLocale = config.locale;
+			const currentLocale = evaluate(options.locale ?? config.locale);
 			const locale = (!currentLocale || currentLocale === 'en-US') ? Tempo.#locale(currentLocale) : currentLocale;
 
 			if (!hasOwn(config, 'get')) {
@@ -1334,9 +1335,15 @@ export class Tempo {
 
 		if (isZonedDateTime(this.#tempo)) this.#zdt = this.#tempo;
 		this.#setLocal(this.#options);													// parse local options
+		this.#anchor = evaluate(this.#options.anchor);
 		if (!this.#zdt && isObject(this.#tempo) && isDurationLike(this.#tempo)) {
-			// relative shorthand for "now plus duration"
-			this.#zdt = this.#now.toZonedDateTimeISO(this.#local.config.timeZone).add(this.#tempo as Temporal.DurationLike);
+			// relative shorthand for "anchor (or now) plus duration"
+			const basis = isTempo(this.#anchor)
+				? this.#anchor.toDateTime()
+				: isZonedDateTime(this.#anchor)
+					? this.#anchor
+					: this.#now.toZonedDateTimeISO(this.#local.config.timeZone);
+			this.#zdt = basis.add(this.#tempo as Temporal.DurationLike);
 		}
 
 		const { mode } = this.#local.parse;
@@ -1348,8 +1355,6 @@ export class Tempo {
 		else if (mode === Tempo.MODE.Strict) this.#local.parse.lazy = false;
 		else if (isString(this.#tempo) && !isEmpty(input) && guard.test(trimAll(input)))
 			this.#local.parse.lazy = true;												// auto-switch to lazy-mode for valid strings
-
-		this.#anchor = this.#options.anchor;
 
 		// 🧬 Unified State Hand-off (from clone / mutate)
 		const handoff = (this.#options as any)[$Internal];

@@ -49,6 +49,14 @@ initAI({
 });
 ```
 
+### Per-Request Lazy Resolution & Fallback Defaults
+
+When dispatching requests via `transport.ts`, all provider fields (`key`, `url`, `model`) and execution context (`timeZone`, `locale`, `calendar`, `sphere`) are resolved lazily just-in-time using functional evaluation (`evaluate` / `evaluateAsync`):
+
+1. **Explicit Dynamic Suppliers**: If a supplier function was provided (e.g. `key: async () => await getRotatedKey()`), it is called per-dispatch.
+2. **Built-in Fallbacks**: If a property is omitted or resolves to `undefined`, the transport layer seamlessly cascades to the compiled `DEFAULT_PROVIDERS` templates, remote manifest endpoints, and auto-discovered environment variables.
+3. **No Configuration Mutation**: The dynamic resolution runs ephemerally per HTTP dispatch without mutating or locking shared global provider state.
+
 ### Dynamic Provider Manifests & Remote Endpoint Trust
 
 By default, `@magmacomputing/tempo-plugin-ai` lazily fetches provider defaults (model IDs, endpoints, token parameter keys) from `https://tempo.magmacomputing.com.au/providers.v1.json` once per application lifecycle.

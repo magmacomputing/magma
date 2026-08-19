@@ -9,7 +9,7 @@
 import type { Pledge } from '#library/pledge.class.js';
 import type { DebugLevel } from '#library/logger.class.js';
 import type { ScopedSet } from '#library/scopedset.class.js';
-import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion } from '#library/type.library.js';
+import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable } from '#library/type.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
@@ -40,7 +40,7 @@ declare global {
 export type ISOString = Branded<string, 'ISO8601'>;
 
 /** the value that Tempo will attempt to interpret as a valid ISO date / time */
-export type DateTime = ISOString | string | number | bigint | Date | Tempo | TempoBrand | TemporalObject | Temporal.ZonedDateTimeLike | undefined | null;
+export type DateTime = ISOString | string | number | bigint | Date | Tempo | TempoBrand | TemporalObject | Temporal.ZonedDateTimeLike | Temporal.DurationLike | undefined | null;
 
 export type Pattern = string | RegExp
 /**
@@ -332,11 +332,11 @@ export namespace Internal {
 		/** additional console.log for tracking */							debug: DebugLevel;
 		/** catch or throw Errors */														catch: boolean;
 		/** suppress console output during catch */							silent: boolean;
-		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
-		/** Temporal calendar */																calendar: Temporal.CalendarLike;
-		/** locale (e.g. en-AU) */															locale: string | string[];
+		/** Temporal timeZone */																timeZone: Evaluable<Temporal.TimeZoneLike>;
+		/** Temporal calendar */																calendar: Evaluable<Temporal.CalendarLike>;
+		/** locale (e.g. en-AU) */															locale: Evaluable<string | string[]>;
 		/** pivot year for two-digit years */										pivot: number;
-		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
+		/** hemisphere for term.qtr or term.szn */							sphere: Evaluable<enums.COMPASS | undefined>;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
@@ -436,7 +436,11 @@ export namespace Internal {
 	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "layoutOrder" | "preFilter" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
 
 	/** Instance configuration derived from supply, storage, and discovery. */
-	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "license" | "localize">> {
+	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "license" | "localize" | "timeZone" | "calendar" | "locale" | "sphere">> {
+		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
+		/** Temporal calendar */																calendar: Temporal.CalendarLike;
+		/** locale (e.g. en-AU) */															locale: string | string[];
+		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
 		/** license key for premium features */									license?: string;
 		/** scope for configuration mutations */								scope: 'global' | 'local';
 		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator> };

@@ -188,13 +188,13 @@ Tempo.init({
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `timeZone` | `string` | System Zone | Default IANA time zone or alias. |
-| `locale` | `string` | System Locale | Default BCP 47 language tag. used in .since() method |
-| `calendar` | `string` | `'iso8601'` | Default calendar system. |
+| `timeZone` | `Evaluable<string>` | System Zone | Default IANA time zone, alias, or dynamic supplier (`() => string`). |
+| `locale` | `Evaluable<string \| string[]>` | System Locale | Default BCP 47 language tag(s) or dynamic supplier. |
+| `calendar` | `Evaluable<string>` | `'iso8601'` | Default calendar system or dynamic supplier. |
 | `pivot` | `number` | `75` | Cutoff for parsing two-digit years. |
 | `monthDay` | `MonthDay \| boolean` | `undefined` | Regional date-parsing configuration (grouped). Includes `active`, `locales`, `layouts`, and `timezones`. |
 | `timeStamp`| `'ss' \| 'ms' \| 'us' \| 'ns'` | `'ms'` | Precision for numeric inputs and the `.ts` property. |
-| `sphere` | `'north' \| 'south'`| Auto-inferred | Hemisphere for seasonal plugins. |
+| `sphere` | `Evaluable<'north' \| 'south'>`| Auto-inferred | Hemisphere for seasonal plugins or dynamic supplier. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
 | `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, parsing logic, localization). |
 | `extends` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. `Tempo.init()` applies each plugin with `Tempo.extend(p)`. |
@@ -221,6 +221,51 @@ The final layer of precedence is the constructor itself. You can override *any* 
 // This instance uses UTC regardless of any global configuration
 const t = new Tempo('now', { timeZone: 'UTC' });
 ```
+
+---
+
+## 4.1 Dynamic & Functional Context Evaluation
+
+In modern multi-tenant, serverless, or micro-service architectures (such as Next.js, Express, or Fastify), user timezone and locale preferences frequently change on a per-request basis.
+
+To eliminate repetitive instance options and prevent global configuration mutation churn (`Tempo.init()`), Tempo supports **`Evaluable<T>`** (`T | (() => T)`) suppliers across all core context properties (`timeZone`, `locale`, `calendar`, `sphere`):
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+interface UserSession {
+  tenantId: string;
+  timeZone: string;
+  locale: string;
+}
+
+export const sessionContext = new AsyncLocalStorage<UserSession>();
+
+// Initialize global baseline with dynamic supplier functions once:
+Tempo.init({
+  timeZone: () => sessionContext.getStore()?.timeZone || 'UTC',
+  locale: () => sessionContext.getStore()?.locale || 'en-US'
+});
+
+// In request handlers, instantiate Tempo without manual option boilerplate:
+app.get('/api/report', (req, res) => {
+  sessionContext.run({ tenantId: 'tenant-123', timeZone: 'America/Chicago', locale: 'en-US' }, () => {
+    const t = new Tempo(); // Automatically resolves to 'America/Chicago'
+    res.json({ formatted: t.format('{mon} {dd}, {yyyy}') });
+  });
+});
+```
+
+### Determinism and Immutability Guarantees
+
+When a `Tempo` instance is constructed:
+1. All functional suppliers (`timeZone`, `locale`, `calendar`, `sphere`) are **evaluated synchronously** at the moment of instantiation.
+2. The resolved scalar values are locked into the instance's immutable `Temporal.ZonedDateTime` engine and `#state` record.
+3. The instance is **strictly frozen** (`Object.freeze`).
+
+> [!NOTE]
+> **Zero Configuration Drift**: Because suppliers are resolved at creation time into an immutable snapshot, an existing `Tempo` instance will never drift or become out-of-sync if external session state changes later in the request lifecycle. Subsequent `new Tempo()` or plugin calls will cleanly evaluate contemporary session state anew.
 
 ---
 

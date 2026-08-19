@@ -4,7 +4,7 @@
 
 ## Core Architectural Rules & Philosophy
 - **Temporal Engine**: Tempo expects native `Temporal` in modern runtimes or uses `@js-temporal/polyfill` when necessary. Never instantiate legacy JavaScript `Date`.
-- **Strict Immutability**: `Tempo` instances are completely frozen. All mutating operations (`add`, `subtract`, `with`, `startOf`, `endOf`) return a brand-new `Tempo` object.
+- **Strict Immutability**: `Tempo` instances are completely frozen. All mutating operations (`add`, `subtract`, `set`) return a brand-new `Tempo` object.
 - **Zero-Cost Getter Proxies**: Properties like `.year`, `.month`, `.day`, `.hour`, `.minute`, `.second`, `.millisecond`, `.microsecond`, `.nanosecond` are live getters proxying the underlying `Temporal` state.
 - **Plugin Architecture**: Core functions can be extended via `Tempo.extend(Plugin)`. License validation occurs via `Tempo.init(...)`.
 

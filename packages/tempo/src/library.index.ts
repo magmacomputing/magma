@@ -19,5 +19,16 @@ export * from '#library/assertion.library.js';
 export * from '#library/temporal.library.js';
 export * from '#library/calendar.library.js';
 export * from '#library/recurrence.library.js';
+export * from '#library/evaluation.library.js';
 
-export type { OwnOf, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
+export type {
+	OwnOf,
+	KeyOf,
+	ValueOf,
+	EntryOf,
+	Evaluable,
+	AsyncEvaluable,
+	EvaluableRecord,
+	AsyncEvaluableRecord,
+	Resolved,
+} from '#library/type.library.js';

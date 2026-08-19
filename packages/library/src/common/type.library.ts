@@ -454,3 +454,35 @@ export type LooseKey<K extends PropertyKey = string> = K | LooseProperty
 
 /** Extend an object with a generic-signature */
 export type Extend<T, K extends PropertyKey = string, V = any> = T & { [P in K]: V }
+
+/**
+ * Represents a value that can either be a direct scalar or a synchronous supplier function.
+ */
+export type Evaluable<T> = T | (() => T);
+
+/**
+ * Represents a value that can either be a direct scalar, a synchronous supplier function, or an asynchronous supplier function.
+ */
+export type AsyncEvaluable<T> = T | (() => T | Promise<T>);
+
+/**
+ * Maps an object type so that each property value can be provided as an `Evaluable<T>`.
+ */
+export type EvaluableRecord<T extends object> = {
+	[K in keyof T]: Evaluable<T[K]>;
+};
+
+/**
+ * Maps an object type so that each property value can be provided as an `AsyncEvaluable<T>`.
+ */
+export type AsyncEvaluableRecord<T extends object> = {
+	[K in keyof T]: AsyncEvaluable<T[K]>;
+};
+
+/**
+ * Unwraps an `Evaluable<T>` or `AsyncEvaluable<T>` to its resolved value type.
+ */
+export type Resolved<T> = T extends (...args: any[]) => infer R
+	? Awaited<R>
+	: Awaited<T>;
+

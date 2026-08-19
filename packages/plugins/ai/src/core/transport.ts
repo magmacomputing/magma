@@ -1,9 +1,10 @@
 import { TempoAiError } from './error.js';
-import { RESERVED_PROVIDER_IDS } from './config.js';
+import { DEFAULT_PROVIDERS, RESERVED_PROVIDER_IDS } from './config.js';
+import { resolveProviderApiKey } from './discovery.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
 import { logDebug } from './logger.js';
 import type { AiProvider, AiBaseOptions } from '../types/index.js';
-import { asNumber, asText, isObject, isString, isText } from '@magmacomputing/tempo/library';
+import { asNumber, asText, isNumber, isObject, isString, isText, evaluate, evaluateAsync } from '@magmacomputing/tempo/library';
 
 export interface FetchFromProviderOptions extends AiBaseOptions {
 	/** AbortSignal for early cancellation / timeout handling */
@@ -28,9 +29,8 @@ export function assertNoReservedProviderId(providers: Partial<AiProvider>[]): vo
 /**
  * Resolves available AI providers from options or global state, asserts validity, and ensures no reserved IDs.
  *
- * @param options - Execution options optionally containing provider list
- * @returns Array of valid AI provider configs
- * @throws TempoAiError(400) if no providers configured or reserved IDs found
+ * @param options - Operation options containing potential per-request provider overrides
+ * @returns Array of valid provider configurations
  */
 export function getAvailableProviders(options?: AiBaseOptions): AiProvider[] {
 	const customProviders = options?.providers;
@@ -80,18 +80,21 @@ export function resolveProviderModel(
 	provider: AiProvider,
 	tier?: 'fast' | 'reasoning' | 'large' | 'default',
 ): string {
-	const explicitModel = asText(provider.model);
+	const defaultTemplate = DEFAULT_PROVIDERS[provider.id];
+	const explicitModel = asText(evaluate(provider.model, defaultTemplate?.model));
 	if (explicitModel) return explicitModel;
 
-	if (typeof provider.models === 'string') return provider.models;
-	if (Array.isArray(provider.models)) {
-		const first = asText(provider.models[0]);
+	const models = provider.models ?? defaultTemplate?.models;
+
+	if (isString(models)) return models;
+	if (Array.isArray(models)) {
+		const first = asText(models[0]);
 		if (first) return first;
 	}
-	if (isObject(provider.models)) {
-		if (tier && provider.models[tier]) return provider.models[tier];
-		if (provider.models.default) return provider.models.default;
-		const values = Object.values(provider.models);
+	if (isObject(models)) {
+		if (tier && (models as any)[tier]) return (models as any)[tier];
+		if (models.default) return models.default;
+		const values = Object.values(models);
 		for (const val of values) {
 			const textVal = asText(val);
 			if (textVal) return textVal;
@@ -118,8 +121,21 @@ export async function fetchFromProvider(
 	contextString: string,
 	options?: FetchFromProviderOptions,
 ): Promise<{ rawContent: string; providerId: string; rateLimits: ReturnType<typeof updateRateLimitsFromResponse> }> {
-	const url = provider.url;
-	const model = resolveProviderModel(provider, provider.tier as any);
+	let url: string | undefined;
+	let model: string | undefined;
+	let key: string | undefined;
+
+	const defaultUrl = DEFAULT_PROVIDERS[provider.id]?.url;
+	const defaultKey = resolveProviderApiKey(provider.id);
+
+	try {
+		url = asText(evaluate(provider.url, defaultUrl));
+		model = resolveProviderModel(provider, provider.tier as any);
+		key = asText(await evaluateAsync(provider.key, defaultKey));
+	} catch (err: any) {
+		if (err instanceof TempoAiError) throw err;
+		throw new TempoAiError(`Failed to resolve dynamic configuration for provider ${provider.id}: ${err?.message ?? err}`, 500, undefined, { cause: err });
+	}
 
 	if (!isText(url))
 		throw new TempoAiError(`Provider ${provider.id} missing valid endpoint URL.`, 400);
@@ -127,7 +143,7 @@ export async function fetchFromProvider(
 	if (!isText(model))
 		throw new TempoAiError(`Provider ${provider.id} missing valid model identifier.`, 400);
 
-	if (!isText(provider.key))
+	if (!isText(key))
 		throw new TempoAiError(`Provider ${provider.id} missing valid API key.`, 400);
 
 	try {
@@ -195,7 +211,7 @@ Do not include markdown blocks or any text outside the JSON.`;
 			redirect: 'error',
 			headers: {
 				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${provider.key}`
+				'Authorization': `Bearer ${key}`
 			},
 			body: JSON.stringify({
 				model: model,

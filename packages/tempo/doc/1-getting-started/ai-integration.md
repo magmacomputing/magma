@@ -28,7 +28,7 @@ In VS Code, configure GitHub Copilot Chat by adding a `.github/copilot-instructi
 # Tempo AI Rules
 - Always use `Tempo` from `@magmacomputing/tempo`.
 - Never instantiate legacy JavaScript `Date`. Tempo expects native `Temporal` or polyfill.
-- All mutating methods (`.add()`, `.subtract()`, `.with()`) return a brand-new, frozen `Tempo` instance.
+- All mutating methods (`.add()`, `.subtract()`, `.set()`) return a brand-new, frozen `Tempo` instance.
 - Refer to https://tempo.magmacomputing.com.au/llms.txt for full layout token grammar.
 ```
 

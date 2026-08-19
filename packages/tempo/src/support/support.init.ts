@@ -11,6 +11,7 @@ import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { getStorage } from '#library/storage.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
+import { evaluate } from '#library/evaluation.library.js';
 
 import { getRuntime } from './support.runtime.js';
 import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, generateLocalizedSnippets } from './support.util.js';
@@ -226,7 +227,10 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 		if (isUndefined(optVal)) return;
 
 		state.userProvidedKeys.add(optKey);
-		const arg = asType(optVal);
+		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey))
+			? evaluate(optVal)
+			: optVal;
+		const arg = asType(evaluatedVal);
 
 		switch (optKey) {
 			case 'monthDay':
