@@ -65,7 +65,7 @@ await initAI({
 
 ### Dynamic Provider Credentials & Context Suppliers
 
-All provider credential fields (`key`, `url`, `model`) as well as global context settings (`timeZone`, `locale`, `calendar`, `sphere`) accept synchronous or asynchronous **supplier functions** (`Evaluable<T>` / `AsyncEvaluable<T>`).
+The provider `key` configuration supports asynchronous or synchronous supplier functions (`AsyncEvaluable<string>`), allowing automated secret vault retrieval and dynamic token refreshing. Provider attributes (`url`, `model`) as well as global context settings (`timeZone`, `locale`, `calendar`, `sphere`) accept synchronous supplier functions (`Evaluable<T>`).
 
 This enables automated secret vault rotation, dynamic AI gateways, and multi-tenant context resolution evaluated just-in-time on every HTTP dispatch:
 

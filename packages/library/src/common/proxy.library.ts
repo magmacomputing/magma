@@ -3,7 +3,7 @@ import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { unwrap } from '#library/primitive.library.js';
 import { isString, isFunction, isSymbol, isDefined, isNumber, isObject } from '#library/assertion.library.js';
-import { registerType, type Constructor } from '#library/type.library.js';
+import { registerType, type Constructor, type Evaluated } from '#library/type.library.js';
 
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
 
@@ -274,15 +274,18 @@ export function indexedArray<T extends object>(
  * proxy.locale;   // 'en-US'
  * ```
  */
-export function dynamicProxy<T extends object>(target: T): { [K in keyof T]: T[K] extends () => infer R ? R : T[K] } {
+export function dynamicProxy<T extends object>(target: T): Evaluated<T> {
 	if (!isObject(target)) return target as any;
 	return new Proxy(unwrap(target), {
 		get(t, k, r) {
 			if (k === sym.$Target) return t;
 			const val = Reflect.get(t, k, r);
-			return (isFunction(val) && k !== 'constructor')
-				? (val as () => any)()
-				: val;
+			if (!isFunction(val) || isSymbol(k) || k === 'constructor')
+				return val;
+			const desc = Reflect.getOwnPropertyDescriptor(t, k);
+			if (desc && !desc.configurable && !desc.writable)
+				return val;
+			return (val as () => any)();
 		},
 		has(t, k) {
 			return Reflect.has(t, k);
@@ -291,10 +294,7 @@ export function dynamicProxy<T extends object>(target: T): { [K in keyof T]: T[K
 			return Reflect.ownKeys(t);
 		},
 		getOwnPropertyDescriptor(t, k) {
-			const desc = Reflect.getOwnPropertyDescriptor(t, k);
-			return (!desc)
-				? undefined
-				: { ...desc, configurable: true };
+			return Reflect.getOwnPropertyDescriptor(t, k);
 		},
 	}) as any;
 }

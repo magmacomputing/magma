@@ -75,22 +75,28 @@ describe('Dynamic Context Evaluation in Tempo Core', () => {
 		expect(t2.dd).toBe(6);
 	});
 
-	test('should dynamically evaluate suppliers in Tempo.init', () => {
-		let globalTz = 'Asia/Tokyo';
-		Tempo.init({ timeZone: () => globalTz, locale: () => 'ja-JP' });
-
-		expect(Tempo.config.timeZone).toBe('Asia/Tokyo');
-		expect(Tempo.config.locale).toBe('ja-JP');
-	});
-
-	test('should dynamically evaluate suppliers in Tempo.create sandbox', () => {
-		let sandboxTz = 'Europe/London';
-		const Sandbox = Tempo.create({
-			timeZone: () => sandboxTz,
-			locale: () => 'en-GB',
+	test('should evaluate global suppliers when creating new Tempo instances after supplier changes', () => {
+		let dynamicTz = 'Asia/Tokyo';
+		let dynamicLocale = 'ja-JP';
+		Tempo.init({
+			timeZone: () => dynamicTz,
+			locale: () => dynamicLocale
 		});
 
-		expect(Sandbox.config.timeZone).toBe('Europe/London');
-		expect(Sandbox.config.locale).toBe('en-GB');
+		const t1 = new Tempo('2026-06-01T12:00:00');
+		expect(t1.tz).toBe('Asia/Tokyo');
+		expect(t1.locale).toBe('ja-JP');
+
+		// Change supplier return values
+		dynamicTz = 'America/Chicago';
+		dynamicLocale = 'es-ES';
+
+		const t2 = new Tempo('2026-06-01T12:00:00');
+		expect(t2.tz).toBe('America/Chicago');
+		expect(t2.locale).toBe('es-ES');
+
+		// Verify existing instance t1 remained immutable
+		expect(t1.tz).toBe('Asia/Tokyo');
+		expect(t1.locale).toBe('ja-JP');
 	});
 });

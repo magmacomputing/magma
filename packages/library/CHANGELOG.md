@@ -8,9 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.12.0] - 2026-08-19
 
 ### Added
-- **Dynamic Evaluation Utilities (`evaluation.library`)**: Added `#library/evaluation.library.js` containing `evaluate(value, fallback?)`, `evaluateAsync(value, fallback?)`, `evaluateConfig(config)`, and `evaluateConfigAsync(config)`. Supports synchronous and asynchronous value/supplier evaluation with fallback defaults for undefined resolutions.
-- **Dynamic Property Proxy (`proxy.library`)**: Added `dynamicProxy(target, overrides)` for zero-overhead dynamic property proxying with on-access evaluation of functional overrides.
-- **Standardized Evaluation Types (`type.library`)**: Added `Evaluable<T>`, `AsyncEvaluable<T>`, `EvaluableRecord<T>`, `AsyncEvaluableRecord<T>`, and unified `Resolved<T>` on top of `Awaited<T>`.
+- **Dynamic Evaluation Utilities (`evaluation.library`)**: Added `#library/evaluation.library.js` containing `evaluate(...values)`, `evaluateAsync(...values)`, `evaluateConfig(config)`, and `evaluateConfigAsync(config)`. Supports variadic synchronous and asynchronous value/supplier evaluation with lazy, short-circuiting coalescing.
+- **Dynamic Property Proxy (`proxy.library`)**: Added `dynamicProxy(target)` for zero-overhead dynamic property proxying with on-access evaluation of function-valued properties on the target object.
+- **Standardized Evaluation Types (`type.library`)**: Added `Evaluable<T>`, `AsyncEvaluable<T>`, `EvaluableRecord<T>`, `AsyncEvaluableRecord<T>`, `Evaluated<T>`, `AsyncEvaluated<T>`, and unified `Resolved<T>` on top of `Awaited<T>`.
 
 ## [3.11.1] - 2026-08-06
 

@@ -57,13 +57,13 @@ export function resolveFullContext(
 	fallbackTempo?: Tempo | null,
 ): ResolvedAiContext {
 	const resolvedOptions = (Tempo as any).options ?? {};
-	const rawTz = options?.timeZone !== undefined ? evaluate(options.timeZone) : fallbackTempo?.tz ?? evaluate(resolvedOptions.timeZone) ?? evaluate(_state.config.timeZone) ?? 'UTC';
+	const rawTz = evaluate(options?.timeZone, fallbackTempo?.tz, resolvedOptions.timeZone, _state.config.timeZone, 'UTC');
 	const tz = String(rawTz || 'UTC');
 
-	const optLoc = options?.locale !== undefined ? evaluate(options.locale) : undefined;
+	const optLoc = evaluate(options?.locale);
 	const fbLoc = fallbackTempo?.locale;
-	const resLoc = resolvedOptions.locale !== undefined ? evaluate(resolvedOptions.locale) : undefined;
-	const cfgLoc = _state.config.locale !== undefined ? evaluate(_state.config.locale) : undefined;
+	const resLoc = evaluate(resolvedOptions.locale);
+	const cfgLoc = evaluate(_state.config.locale);
 
 	const rawLoc = (optLoc !== undefined && (Array.isArray(optLoc) ? optLoc.length > 0 : Boolean(optLoc)))
 		? optLoc
@@ -73,10 +73,10 @@ export function resolveFullContext(
 	const firstLoc = Array.isArray(rawLoc) ? rawLoc[0] : rawLoc;
 	const loc = asText(firstLoc, 'en-US');
 
-	const rawCal = options?.calendar !== undefined ? evaluate(options.calendar) : fallbackTempo?.cal ?? evaluate(resolvedOptions.calendar) ?? evaluate(_state.config.calendar) ?? 'iso8601';
+	const rawCal = evaluate(options?.calendar, fallbackTempo?.cal, resolvedOptions.calendar, _state.config.calendar, 'iso8601');
 	const cal = String(rawCal || 'iso8601');
 
-	const rawSph = options?.sphere !== undefined ? evaluate(options.sphere) : fallbackTempo?.sphere ?? evaluate(resolvedOptions.sphere) ?? evaluate(_state.config.sphere) ?? 'north';
+	const rawSph = evaluate(options?.sphere, fallbackTempo?.sphere, resolvedOptions.sphere, _state.config.sphere, 'north');
 	const sph = String(rawSph || 'north');
 
 	const contextConfig = { timeZone: tz, locale: loc, calendar: cal, sphere: sph };
@@ -126,15 +126,14 @@ export function resolveAnchorTempo(
 	context: ResolvedAiContext,
 	options?: { defaultAnchor?: unknown; operationName?: string } | undefined,
 ): Tempo {
-	const evaluatedAnchor = evaluate(anchor as any);
+	const evaluatedAnchor = evaluate(anchor as any, options?.defaultAnchor as any);
 	const { tz, loc, cal, sph } = context;
 	if (Tempo.isTempo(evaluatedAnchor))
 		return evaluatedAnchor.tz === tz ? evaluatedAnchor : evaluatedAnchor.set({ timeZone: tz });
 
-	const targetValue = isDefined(evaluatedAnchor) ? evaluatedAnchor : evaluate(options?.defaultAnchor as any);
 	let instance: Tempo;
 	try {
-		instance = new Tempo(targetValue as any, {
+		instance = new Tempo(evaluatedAnchor as any, {
 			timeZone: tz,
 			locale: loc,
 			calendar: cal,

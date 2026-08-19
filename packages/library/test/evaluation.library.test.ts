@@ -31,6 +31,21 @@ describe('evaluation.library', () => {
 			expect(evaluate(() => 'supplier-value', 'fallback')).toBe('supplier-value');
 		});
 
+		it('should coalesce multiple candidates in sequence and short-circuit', () => {
+			let thirdCalled = false;
+			const result = evaluate(
+				undefined,
+				() => undefined,
+				() => 'first-defined',
+				() => {
+					thirdCalled = true;
+					return 'should-not-reach';
+				}
+			);
+			expect(result).toBe('first-defined');
+			expect(thirdCalled).toBe(false);
+		});
+
 		it('should allow exceptions thrown in suppliers to bubble naturally', () => {
 			const throwingSupplier = () => {
 				throw new Error('Supplier failed');
@@ -60,10 +75,31 @@ describe('evaluation.library', () => {
 			expect(await evaluateAsync(promiseSupplier)).toBe(999);
 		});
 
+		it('should resolve direct Promise values', async () => {
+			const directPromise: Promise<string> = Promise.resolve('direct-resolved-value');
+			const result: string = (await evaluateAsync<string>(directPromise))!;
+			expect(result).toBe('direct-resolved-value');
+		});
+
 		it('should support async fallbacks and suppliers', async () => {
 			expect(await evaluateAsync(undefined, 'default-key')).toBe('default-key');
 			expect(await evaluateAsync(undefined, async () => 'async-default-key')).toBe('async-default-key');
 			expect(await evaluateAsync('explicit-key', 'fallback-key')).toBe('explicit-key');
+		});
+
+		it('should coalesce multiple async candidates in sequence and short-circuit', async () => {
+			let thirdCalled = false;
+			const result = await evaluateAsync(
+				undefined,
+				async () => undefined,
+				async () => 'async-first-defined',
+				async () => {
+					thirdCalled = true;
+					return 'should-not-reach';
+				}
+			);
+			expect(result).toBe('async-first-defined');
+			expect(thirdCalled).toBe(false);
 		});
 
 		it('should allow asynchronous rejections to bubble naturally', async () => {
@@ -167,6 +203,32 @@ describe('evaluation.library', () => {
 			expect('b' in proxy).toBe(true);
 			expect('c' in proxy).toBe(false);
 			expect(Object.keys(proxy)).toEqual(['a', 'b']);
+		});
+
+		it('should preserve Proxy invariants for non-configurable and symbol properties', () => {
+			const symKey = Symbol('customSymbol');
+			const target = {
+				regular: () => 'computed',
+				[symKey]: () => 'symbol-func',
+				frozenProp: undefined as any,
+			};
+
+			Object.defineProperty(target, 'frozenProp', {
+				value: () => 'frozen-supplier',
+				writable: false,
+				configurable: false,
+			});
+
+			const proxy = dynamicProxy(target);
+
+			expect(proxy.regular).toBe('computed');
+			expect(typeof proxy[symKey]).toBe('function');
+			expect(typeof proxy.frozenProp).toBe('function');
+			expect(proxy.frozenProp()).toBe('frozen-supplier');
+
+			const desc = Object.getOwnPropertyDescriptor(proxy, 'frozenProp');
+			expect(desc?.configurable).toBe(false);
+			expect(desc?.writable).toBe(false);
 		});
 	});
 });

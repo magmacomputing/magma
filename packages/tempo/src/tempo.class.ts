@@ -12,7 +12,7 @@ import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
-import { instant, getTemporalIds } from '#library/temporal.library.js';
+import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { LOG } from '#library/logger.class.js';
@@ -257,7 +257,10 @@ export class Tempo {
 
 	/** try to infer hemisphere using the timezone's daylight-savings setting */
 	static #setSphere = (shape: Internal.State, options: t.Options): t.COMPASS | undefined => {
-		if (isDefined(options.sphere)) return evaluate(options.sphere);
+		if (isDefined(options.sphere)) {
+			const evaluatedSphere = evaluate(options.sphere);
+			if (isDefined(evaluatedSphere)) return evaluatedSphere;
+		}
 
 		const tz = options.timeZone;
 		if (isDefined(tz)) {
@@ -267,7 +270,7 @@ export class Tempo {
 			if (isDefined(sphere)) return sphere;
 		}
 
-		return isDefined(shape.config?.sphere) ? shape.config.sphere : undefined;
+		return isDefined(shape.config?.sphere) ? evaluate(shape.config.sphere) : undefined;
 	}
 
 	/** determine if we have a {timeZone} which prefers {mdy} date-order */
@@ -869,9 +872,9 @@ export class Tempo {
 
 			// 2. Establish context and keys
 			const sys = getDateTimeFormat();
-			const timeZone = evaluate(options.timeZone) ?? sys.timeZone;
-			const calendar = evaluate(options.calendar) ?? sys.calendar;
 			const config = state.config;
+			const timeZone = options.timeZone ?? config.timeZone ?? sys.timeZone;
+			const calendar = options.calendar ?? config.calendar ?? sys.calendar;
 			let discovery = options.discovery ?? Symbol.keyFor($Tempo) as string;
 			const storeKey = options.store || config.store || Symbol.keyFor($Tempo) as string;
 
@@ -885,8 +888,8 @@ export class Tempo {
 			const userDiscovery = (globalThis as any)[normalizedDiscovery] as Internal.Discovery;
 
 			// Resolve locale if missing or invalid
-			const currentLocale = evaluate(options.locale ?? config.locale);
-			const locale = (!currentLocale || currentLocale === 'en-US') ? Tempo.#locale(currentLocale) : currentLocale;
+			const currentLocale = options.locale ?? config.locale;
+			const locale = currentLocale ?? Tempo.#locale();
 
 			if (!hasOwn(config, 'get')) {
 				Object.defineProperty(config, 'get', {
@@ -1721,6 +1724,31 @@ export class Tempo {
 		if (classState.config.registry) this.#local.config.registry = Object.create(classState.config.registry);
 
 		Object.assign(this.#local.config, { scope: 'local' });
+
+		// Evaluate and snapshot dynamic context suppliers for this specific Tempo instance
+		const evaluatedTz = evaluate(options.timeZone, classState.config.timeZone);
+		if (isDefined(evaluatedTz)) {
+			const zone = String(evaluatedTz).toLowerCase();
+			const resolvedZone = (this.constructor as any).timeZones?.[zone] ?? classState.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(evaluatedTz));
+			setProperty(this.#local.config, 'timeZone', resolvedZone);
+		}
+
+		const evaluatedCal = evaluate(options.calendar, classState.config.calendar);
+		if (isDefined(evaluatedCal))
+			setProperty(this.#local.config, 'calendar', String(evaluatedCal));
+
+		const evaluatedLoc = evaluate(options.locale, classState.config.locale);
+		if (isDefined(evaluatedLoc)) {
+			const resolvedLocales = asArray(evaluatedLoc).map(l => canonicalLocale(String(l))).filter(Boolean) as string[];
+			if (resolvedLocales.length > 0) {
+				const finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
+				setProperty(this.#local.config, 'locale', finalLocale);
+			}
+		}
+
+		const evaluatedSphere = evaluate(options.sphere, classState.config.sphere);
+		if (isDefined(evaluatedSphere))
+			setProperty(this.#local.config, 'sphere', evaluatedSphere);
 
 		this.#local.parse = markConfig(Object.create(classState.parse));
 		this.#local.parse.event = { ...classState.parse.event };

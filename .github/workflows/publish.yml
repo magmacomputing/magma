@@ -12,8 +12,8 @@ on:
           - '@magmacomputing/tempo-fns'
           - '@magmacomputing/tempo-plugin-ai'
           - '@magmacomputing/tempo-plugin-astro'
-          - '@magmacomputing/tempo-plugin-finance'
           - '@magmacomputing/tempo-plugin-batch'
+          - '@magmacomputing/tempo-plugin-finance'
           - '@magmacomputing/tempo-plugin-snap'
           - '@magmacomputing/tempo-plugin-sync'
           - 'all'
@@ -30,6 +30,10 @@ permissions:
 jobs:
   validate-and-publish:
     name: Publish with Provenance
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: npm
+      url: https://www.npmjs.com/org/magmacomputing
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

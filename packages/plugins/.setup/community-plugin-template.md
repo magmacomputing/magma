@@ -145,7 +145,7 @@ export function myExportedFunction(input: string): string { ... }
 
 ## 7. Release & CI Configuration (`.github/workflows/publish.yml`)
 
-When adding a new plugin to the monorepo, update `.github/workflows/publish.yml` to enable automated provenance releases:
+When adding a new plugin to the monorepo, update `.github/workflows/publish.yml` to enable manual `workflow_dispatch` provenance releases:
 
 1. **Add to Package Selector**: Add `@magmacomputing/tempo-plugin-[name]` to the `options` array under `inputs.package`.
 2. **Add to Bulk Publish**: Add the workspace to the `all` branch in the publishing step:

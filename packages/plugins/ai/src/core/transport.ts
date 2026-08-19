@@ -179,6 +179,7 @@ Do not include markdown blocks or any text outside the JSON.`;
 	logDebug('tempo-plugin-ai', `Querying provider '${provider.id}' (model: ${model})...`, undefined, { debug: isDebug });
 
 	const tokenParam = provider.tokenParam
+		|| DEFAULT_PROVIDERS[provider.id]?.tokenParam
 		|| (provider.options?.max_completion_tokens !== undefined ? 'max_completion_tokens' : undefined)
 		|| (provider.options?.max_tokens !== undefined ? 'max_tokens' : undefined)
 		|| 'max_tokens';

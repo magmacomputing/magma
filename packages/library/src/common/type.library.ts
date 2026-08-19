@@ -461,9 +461,9 @@ export type Extend<T, K extends PropertyKey = string, V = any> = T & { [P in K]:
 export type Evaluable<T> = T | (() => T);
 
 /**
- * Represents a value that can either be a direct scalar, a synchronous supplier function, or an asynchronous supplier function.
+ * Represents a value that can either be a direct scalar, a Promise, a synchronous supplier function, or an asynchronous supplier function.
  */
-export type AsyncEvaluable<T> = T | (() => T | Promise<T>);
+export type AsyncEvaluable<T> = T | Promise<T> | (() => T | Promise<T>);
 
 /**
  * Maps an object type so that each property value can be provided as an `Evaluable<T>`.
@@ -485,4 +485,18 @@ export type AsyncEvaluableRecord<T extends object> = {
 export type Resolved<T> = T extends (...args: any[]) => infer R
 	? Awaited<R>
 	: Awaited<T>;
+
+/**
+ * Unwraps an object's evaluable properties to their synchronously evaluated values.
+ */
+export type Evaluated<T extends object> = {
+	[K in keyof T]: T[K] extends () => infer R ? R : T[K];
+};
+
+/**
+ * Unwraps an object's asynchronous evaluable properties to their resolved values.
+ */
+export type AsyncEvaluated<T extends object> = {
+	[K in keyof T]: Resolved<T[K]>;
+};
 

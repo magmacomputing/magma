@@ -227,6 +227,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 		if (isUndefined(optVal)) return;
 
 		state.userProvidedKeys.add(optKey);
+		const preserveSupplier = isFunction(optVal) && state.config?.scope !== 'local';
 		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey))
 			? evaluate(optVal)
 			: optVal;
@@ -240,19 +241,19 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 			case 'timeZone': {
 				const zone = String(arg.value).toLowerCase();
 				const resolvedZone = options.timeZones?.[zone] ?? state.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
-				setProperty(state.config, 'timeZone', resolvedZone);
+				setProperty(state.config, 'timeZone', preserveSupplier ? optVal : resolvedZone);
 				break;
 			}
 
 			case 'calendar':
-				setProperty(state.config, 'calendar', String(arg.value));
+				setProperty(state.config, 'calendar', preserveSupplier ? optVal : String(arg.value));
 				break;
 
 			case 'locale': {
 				const resolvedLocales = asArray(arg.value).map(l => canonicalLocale(String(l))).filter(Boolean) as string[];
 				if (resolvedLocales.length > 0) {
 					const finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
-					setProperty(state.config, 'locale', finalLocale);
+					setProperty(state.config, 'locale', preserveSupplier ? optVal : finalLocale);
 					if (resolvedLocales.every(locale => locale.split('-')[0] === 'en')) clearLocalization();
 				}
 				break;
@@ -345,7 +346,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'sphere':
-				setProperty(state.config, 'sphere', arg.value);
+				setProperty(state.config, 'sphere', preserveSupplier ? optVal : arg.value);
 				break;
 
 			case 'catch':
@@ -431,9 +432,9 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 		}
 	});
 
-	const locale = state.config.locale;
+	const locale = evaluate(state.config.locale);
 	if (locale) {
-		const locales = asArray(locale);
+		const locales = asArray(locale).map(l => isString(l) ? l : undefined).filter(Boolean) as string[];
 		if (locales.length > 0 && !locales.every(l => l.split('-')[0] === 'en')) {
 			const { snippets, monthMap, weekdayMap, events } = generateLocalizedSnippets(locales);
 			state.parse.monthMap = monthMap;

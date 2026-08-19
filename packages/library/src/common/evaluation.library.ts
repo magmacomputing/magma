@@ -1,55 +1,56 @@
 import { isFunction, isNullish, isObject } from '#library/assertion.library.js';
-import type { Evaluable, AsyncEvaluable } from '#library/type.library.js';
+import type { Evaluable, AsyncEvaluable, Evaluated, AsyncEvaluated } from '#library/type.library.js';
 
 /**
- * Evaluates a synchronous scalar or supplier function.
- * If the input is a function, it is invoked with zero arguments and its return value is returned.
- * If the resolved value is undefined and a fallback is provided, the fallback is evaluated and returned.
- * Otherwise, the scalar value is returned as-is.
- * Any exception thrown by the supplier function bubbles directly to the caller.
+ * Evaluates candidate synchronous scalars or supplier functions in order, returning the first defined result (lazy coalesce).
+ * If a candidate is a function, it is invoked with zero arguments.
+ * Candidates after the first defined value are never evaluated (short-circuiting).
+ * If all candidates evaluate to undefined, returns undefined.
+ * Any exception thrown by an evaluated supplier function bubbles directly to the caller.
  * 
- * @param value - The scalar value or synchronous supplier function to evaluate
- * @param fallback - Optional default value or supplier to evaluate if `value` is undefined
- * @returns The resolved synchronous value
+ * @param values - One or more scalars or synchronous supplier functions to evaluate in sequence
+ * @returns The first resolved defined value, or undefined if none resolved
  * @example
  * ```ts
  * evaluate(42); // 42
  * evaluate(() => 'UTC'); // 'UTC'
  * evaluate(undefined, 'fallback'); // 'fallback'
- * evaluate(undefined, () => 'dynamic-fallback'); // 'dynamic-fallback'
+ * evaluate(undefined, () => undefined, () => 'dynamic-fallback', 'final'); // 'dynamic-fallback'
  * ```
  */
-export function evaluate<T>(value: Evaluable<T> | undefined, fallback?: Evaluable<T>): T {
-	const resolved = isFunction(value) ? (value as () => T)() : value;
-	if (resolved !== undefined) return resolved as T;
-	return (isFunction(fallback)
-		? (fallback as () => T)()
-		: fallback) as T;
+export function evaluate<T>(first: Evaluable<T> | undefined, fallback: Evaluable<T>, ...rest: Evaluable<T>[]): T;
+export function evaluate<T>(...values: (Evaluable<T> | undefined)[]): T | undefined;
+export function evaluate<T>(...values: (Evaluable<T> | undefined)[]): T | undefined {
+	for (const val of values) {
+		const resolved = isFunction(val) ? (val as () => T)() : val;
+		if (resolved !== undefined) return resolved as T;
+	}
+	return undefined;
 }
 
 /**
- * Evaluates a synchronous or asynchronous scalar, Promise, or supplier function.
- * If the input is a function, it is invoked and its result is awaited.
- * If the resolved value is undefined and a fallback is provided, the fallback is evaluated and returned.
- * Otherwise, the scalar or Promise is resolved and returned.
- * Any exception or rejection bubbles directly to the caller.
+ * Evaluates candidate synchronous or asynchronous scalars, Promises, or supplier functions in order, returning the first defined result (async lazy coalesce).
+ * If a candidate is a function, it is invoked and its result awaited.
+ * Candidates after the first defined value are never evaluated (short-circuiting).
+ * If all candidates evaluate to undefined, returns undefined.
+ * Any exception or rejection thrown by an evaluated supplier bubbles directly to the caller.
  * 
- * @param value - The scalar value, Promise, or supplier function to evaluate
- * @param fallback - Optional default value, Promise, or async supplier to evaluate if `value` is undefined
- * @returns A Promise resolving to the evaluated value
+ * @param values - One or more scalars, Promises, or async supplier functions to evaluate in sequence
+ * @returns A Promise resolving to the first defined value, or undefined if none resolved
  * @example
  * ```ts
  * await evaluateAsync('apiKey123'); // 'apiKey123'
- * await evaluateAsync(async () => fetchSecret()); // 'secret'
- * await evaluateAsync(undefined, async () => fetchDefault()); // 'default'
+ * await evaluateAsync(undefined, async () => fetchSecret(), 'defaultKey'); // 'secret'
  * ```
  */
-export async function evaluateAsync<T>(value: AsyncEvaluable<T> | undefined, fallback?: AsyncEvaluable<T>): Promise<T> {
-	const resolved = isFunction(value) ? await (value as () => T | Promise<T>)() : await value;
-	if (resolved !== undefined) return resolved as T;
-	return (isFunction(fallback)
-		? await (fallback as () => T | Promise<T>)()
-		: await fallback) as T;
+export function evaluateAsync<T>(first: AsyncEvaluable<T> | undefined, fallback: AsyncEvaluable<T>, ...rest: AsyncEvaluable<T>[]): Promise<T>;
+export function evaluateAsync<T>(...values: (AsyncEvaluable<T> | undefined)[]): Promise<T | undefined>;
+export async function evaluateAsync<T>(...values: (AsyncEvaluable<T> | undefined)[]): Promise<T | undefined> {
+	for (const val of values) {
+		const resolved = isFunction(val) ? await (val as () => T | Promise<T>)() : await val;
+		if (resolved !== undefined) return resolved as T;
+	}
+	return undefined;
 }
 
 /**
@@ -67,7 +68,7 @@ export async function evaluateAsync<T>(value: AsyncEvaluable<T> | undefined, fal
  * // { timeZone: 'America/New_York', locale: 'en-US' }
  * ```
  */
-export function evaluateConfig<T extends object>(config: T): { [K in keyof T]: T[K] extends () => infer R ? R : T[K] } {
+export function evaluateConfig<T extends object>(config: T): Evaluated<T> {
 	if (isNullish(config) || !isObject(config)) return config as any;
 	const result = { ...config } as any;
 
@@ -94,7 +95,7 @@ export function evaluateConfig<T extends object>(config: T): { [K in keyof T]: T
  * // { key: 'sk-...', url: 'https://api.openai.com/v1' }
  * ```
  */
-export async function evaluateConfigAsync<T extends object>(config: T): Promise<{ [K in keyof T]: T[K] extends () => infer R ? Awaited<R> : Awaited<T[K]> }> {
+export async function evaluateConfigAsync<T extends object>(config: T): Promise<AsyncEvaluated<T>> {
 	if (isNullish(config) || !isObject(config)) return config as any;
 	const result = { ...config } as any;
 	const keys = Object.keys(config) as (keyof T)[];

@@ -104,7 +104,7 @@ const rawReasoning = result.reasoning;
 * All provider `key` values, authorization tokens, and shared secrets are permanently replaced with `[REDACTED]`, ensuring secrets cannot be leaked via diagnostic endpoints or error monitors.
 
 ### Dynamic Secret Vaults & Automated Key Rotation
-* Provider `key` and `url` parameters support synchronous and asynchronous supplier functions (`() => Promise<string> | string`).
+* Provider `key` parameters support synchronous and asynchronous supplier functions (`AsyncEvaluable<string>` / `() => Promise<string> | string`), while `url`, `model`, and temporal context fields accept synchronous suppliers (`Evaluable<T>`).
 * **Enterprise Secret Vaults**: Instead of pinning long-lived static API keys in memory, applications can integrate cloud key vaults (e.g. AWS Secrets Manager, HashiCorp Vault, Azure Key Vault, Doppler):
   ```typescript
   initAI({

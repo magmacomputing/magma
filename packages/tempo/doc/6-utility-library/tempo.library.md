@@ -64,26 +64,26 @@ Tempo provides a specialized wrapper around `Promise.withResolvers()` called `Pl
 
 Tempo exports zero-overhead functional evaluation utilities for resolving static values, lazy suppliers, and dynamic object proxies:
 
-*   **`evaluate(value, fallback?)`:** Synchronously resolves a static value or zero-argument supplier function (`() => T`). If the result is `undefined`, evaluates and returns the optional fallback.
-*   **`evaluateAsync(value, fallback?)`:** Asynchronously resolves static values, sync/async suppliers, or Promises (`() => Promise<T> | T`).
-*   **`evaluateConfig(config)` / `evaluateConfigAsync(config)`:** Deeply resolves all `Evaluable` property suppliers across a configuration dictionary.
-*   **`dynamicProxy(target, overrides)`:** Wraps a target object with dynamic property traps that evaluate functional overrides lazily on-access.
+*   **`evaluate(...values)`:** Synchronously resolves candidate values or zero-argument supplier functions (`() => T`) in order, returning the first defined result (lazy coalesce with short-circuiting).
+*   **`evaluateAsync(...values)`:** Asynchronously resolves static values, sync/async suppliers, or Promises (`() => Promise<T> | T`) in order with short-circuiting.
+*   **`evaluateConfig(config)` / `evaluateConfigAsync(config)`:** Resolves `Evaluable` property suppliers on the top-level properties of a configuration dictionary.
+*   **`dynamicProxy(target)`:** Wraps a target object with dynamic property traps that evaluate function-valued properties lazily on-access.
 *   **`Evaluable<T>` / `AsyncEvaluable<T>`:** TypeScript utility types representing values that can be provided directly or supplied lazily via functions.
 
 ```typescript
 import { evaluate, evaluateAsync, dynamicProxy } from '@magmacomputing/tempo/library';
 
-// Synchronous supplier evaluation with fallback
-const tz = evaluate(() => process.env.TZ, 'UTC'); // Returns env TZ or 'UTC'
+// Synchronous supplier evaluation with lazy cascading fallback (short-circuited)
+const tz = evaluate(options.timeZone, () => process.env.TZ, 'UTC');
 
 // Asynchronous supplier evaluation (e.g. secret vault / remote config)
-const apiKey = await evaluateAsync(async () => await vault.getKey('openai'));
+const apiKey = await evaluateAsync(provider.key, async () => await vault.getKey('openai'));
 
 // Dynamic proxy with lazy on-access getters
-const dynamicSettings = dynamicProxy(
-  { timeout: 5000 },
-  { token: () => getActiveToken() }
-);
+const dynamicSettings = dynamicProxy({
+  timeout: 5000,
+  token: () => getActiveToken()
+});
 ```
 
 <br>
