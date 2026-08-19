@@ -1,4 +1,4 @@
-import { isFunction, isNullish, isObject } from '#library/assertion.library.js';
+import { isFunction, isNullish, isObject, isPromise } from '#library/assertion.library.js';
 import type { Evaluable, AsyncEvaluable, Evaluated, AsyncEvaluated } from '#library/type.library.js';
 
 /**
@@ -30,10 +30,10 @@ export function evaluate<T>(...values: (Evaluable<T> | undefined)[]): T | undefi
 
 /**
  * Evaluates candidate synchronous or asynchronous scalars, Promises, or supplier functions in order, returning the first defined result (async lazy coalesce).
- * If a candidate is a function, it is invoked and its result awaited.
- * Candidates after the first defined value are never evaluated (short-circuiting).
+ * Supplier functions represent deferred asynchronous work and are invoked lazily only when reached during evaluation.
+ * Rejection handlers are attached upfront to direct Promise candidates to prevent unobserved rejections if iteration short-circuits on an earlier defined candidate.
  * If all candidates evaluate to undefined, returns undefined.
- * Any exception or rejection thrown by an evaluated supplier bubbles directly to the caller.
+ * Any exception or rejection thrown by an evaluated candidate bubbles directly to the caller.
  * 
  * @param values - One or more scalars, Promises, or async supplier functions to evaluate in sequence
  * @returns A Promise resolving to the first defined value, or undefined if none resolved
@@ -46,6 +46,10 @@ export function evaluate<T>(...values: (Evaluable<T> | undefined)[]): T | undefi
 export function evaluateAsync<T>(first: AsyncEvaluable<T> | undefined, fallback: AsyncEvaluable<T>, ...rest: AsyncEvaluable<T>[]): Promise<T>;
 export function evaluateAsync<T>(...values: (AsyncEvaluable<T> | undefined)[]): Promise<T | undefined>;
 export async function evaluateAsync<T>(...values: (AsyncEvaluable<T> | undefined)[]): Promise<T | undefined> {
+	for (const val of values)
+		if (!isFunction(val) && isFunction((val as any)?.then))
+			(val as PromiseLike<any>).then(undefined, () => {});
+
 	for (const val of values) {
 		const resolved = isFunction(val) ? await (val as () => T | Promise<T>)() : await val;
 		if (resolved !== undefined) return resolved as T;

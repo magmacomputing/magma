@@ -99,4 +99,64 @@ describe('Dynamic Context Evaluation in Tempo Core', () => {
 		expect(t1.tz).toBe('Asia/Tokyo');
 		expect(t1.locale).toBe('ja-JP');
 	});
+
+	test('should evaluate global sphere supplier when creating new Tempo instances after supplier changes', () => {
+		let dynamicSphere: 'north' | 'south' = 'south';
+		Tempo.init({
+			sphere: () => dynamicSphere,
+		});
+
+		expect(typeof (Tempo.config.sphere as any)).toBe('function');
+		expect((Tempo.config.sphere as any)()).toBe('south');
+
+		const t1 = new Tempo('2026-06-01T12:00:00');
+		expect(t1.sphere).toBe('south');
+		expect(t1.config.sphere).toBe('south');
+
+		dynamicSphere = 'north';
+		expect((Tempo.config.sphere as any)()).toBe('north');
+
+		const t2 = new Tempo('2026-06-01T12:00:00');
+		expect(t2.sphere).toBe('north');
+		expect(t2.config.sphere).toBe('north');
+
+		// Verify existing instance t1 remained immutable
+		expect(t1.sphere).toBe('south');
+		expect(t1.config.sphere).toBe('south');
+	});
+
+	test('should preserve static sphere values during initialization', () => {
+		Tempo.init({
+			sphere: 'south',
+		});
+
+		expect(Tempo.config.sphere).toBe('south');
+
+		const t = new Tempo('2026-06-01T12:00:00');
+		expect(t.sphere).toBe('south');
+		expect(t.config.sphere).toBe('south');
+	});
+
+	test('should infer sphere from dynamic global timeZone supplier when sphere is not explicitly set', () => {
+		let dynamicTz = 'Australia/Sydney';
+		Tempo.init({
+			timeZone: () => dynamicTz,
+		});
+
+		const t1 = new Tempo('2026-06-01T12:00:00');
+		expect(t1.tz).toBe('Australia/Sydney');
+		expect(t1.sphere).toBe('south');
+		expect(t1.config.sphere).toBe('south');
+
+		dynamicTz = 'America/New_York';
+		const t2 = new Tempo('2026-06-01T12:00:00');
+		expect(t2.tz).toBe('America/New_York');
+		expect(t2.sphere).toBe('north');
+		expect(t2.config.sphere).toBe('north');
+
+		// Verify existing instance t1 remained immutable
+		expect(t1.tz).toBe('Australia/Sydney');
+		expect(t1.sphere).toBe('south');
+		expect(t1.config.sphere).toBe('south');
+	});
 });

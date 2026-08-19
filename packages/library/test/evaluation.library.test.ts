@@ -1,5 +1,6 @@
 import { evaluate, evaluateAsync, evaluateConfig, evaluateConfigAsync } from '#library/evaluation.library.js';
 import { dynamicProxy } from '#library/proxy.library.js';
+import { Pledge } from '#library/pledge.class.js';
 
 describe('evaluation.library', () => {
 	describe('evaluate()', () => {
@@ -107,6 +108,44 @@ describe('evaluation.library', () => {
 				throw new Error('Vault timeout');
 			};
 			await expect(evaluateAsync(failingAsyncSupplier)).rejects.toThrow('Vault timeout');
+		});
+
+		it('should attach rejection handlers to direct Promise candidates to prevent unhandled rejections upon short-circuiting', async () => {
+			const resolvedPromise = Promise.resolve('early-success');
+			const rejectedPromise = Promise.reject(new Error('Unobserved error'));
+
+			const result = await evaluateAsync(resolvedPromise, rejectedPromise);
+			expect(result).toBe('early-success');
+		});
+
+		it('should await and bubble rejection when an earlier candidate is undefined and a later Promise rejects', async () => {
+			const rejectedPromise = Promise.reject(new Error('Observed rejection'));
+			await expect(evaluateAsync(undefined, rejectedPromise)).rejects.toThrow('Observed rejection');
+		});
+
+		it('should keep supplier functions lazy and not invoke them if an earlier Promise candidate resolves', async () => {
+			let supplierInvoked = false;
+			const lazySupplier = () => {
+				supplierInvoked = true;
+				return 'lazy-value';
+			};
+
+			const result = await evaluateAsync(Promise.resolve('immediate'), lazySupplier);
+			expect(result).toBe('immediate');
+			expect(supplierInvoked).toBe(false);
+		});
+
+		it('should resolve Pledge candidates and handle Pledge rejection safely', async () => {
+			const resolvedPledge = new Pledge<string>();
+			resolvedPledge.resolve('pledge-value');
+			expect(await evaluateAsync(resolvedPledge)).toBe('pledge-value');
+
+			const earlyPromise = Promise.resolve('early-val');
+			const rejectedPledge = new Pledge<string>();
+			rejectedPledge.reject(new Error('pledge error'));
+
+			const coalesced = await evaluateAsync(earlyPromise, rejectedPledge);
+			expect(coalesced).toBe('early-val');
 		});
 	});
 

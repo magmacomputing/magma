@@ -461,9 +461,9 @@ export type Extend<T, K extends PropertyKey = string, V = any> = T & { [P in K]:
 export type Evaluable<T> = T | (() => T);
 
 /**
- * Represents a value that can either be a direct scalar, a Promise, a synchronous supplier function, or an asynchronous supplier function.
+ * Represents a value that can either be a direct scalar, a Promise, a thenable (such as Pledge), a synchronous supplier function, or an asynchronous supplier function.
  */
-export type AsyncEvaluable<T> = T | Promise<T> | (() => T | Promise<T>);
+export type AsyncEvaluable<T> = T | PromiseLike<T> | (() => T | PromiseLike<T>);
 
 /**
  * Maps an object type so that each property value can be provided as an `Evaluable<T>`.

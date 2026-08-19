@@ -373,7 +373,8 @@ export class Tempo {
 			const parentSphere = Object.getPrototypeOf(shape.config).sphere;
 			if (newSphere !== parentSphere) shape.config.sphere = newSphere;
 		} else {
-			shape.config.sphere = newSphere;
+			if (!isFunction(shape.config.sphere))
+				shape.config.sphere = newSphere;
 		}
 
 		const oldLayout = shape.parse.layout;
@@ -1746,7 +1747,10 @@ export class Tempo {
 			}
 		}
 
-		const evaluatedSphere = evaluate(options.sphere, classState.config.sphere);
+		const hasExplicitSphere = isDefined(options.sphere) || classState.userProvidedKeys?.has('sphere');
+		const evaluatedSphere = hasExplicitSphere
+			? evaluate(options.sphere, classState.config.sphere)
+			: (this.#local.config.timeZone ? getHemisphere(String(this.#local.config.timeZone)) : undefined) ?? evaluate(classState.config.sphere);
 		if (isDefined(evaluatedSphere))
 			setProperty(this.#local.config, 'sphere', evaluatedSphere);
 
