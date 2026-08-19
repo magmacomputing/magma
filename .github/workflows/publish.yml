@@ -9,8 +9,8 @@ on:
         type: choice
         options:
           - '@magmacomputing/tempo'
-          - '@magmacomputing/tempo-plugin-ai'
           - '@magmacomputing/tempo-fns'
+          - '@magmacomputing/tempo-plugin-ai'
           - '@magmacomputing/tempo-plugin-astro'
           - '@magmacomputing/tempo-plugin-finance'
           - '@magmacomputing/tempo-plugin-batch'
