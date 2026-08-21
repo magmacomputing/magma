@@ -26,7 +26,7 @@
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^3.12.0"
+    "@magmacomputing/tempo": "^3.11.1"
   },
   "tempo": {
     "vendorVariantId": "tempo-plugin-snap",
