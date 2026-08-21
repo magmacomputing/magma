@@ -131,7 +131,8 @@ class TickerInstance implements Ticker.Descriptor {
 		let rawOptions: any = {};
 		let cb: Ticker.Callback | undefined;
 
-		const isOptions = (obj: any) => isObject(obj) && !('epochMilliseconds' in obj);
+		const isDateLike = (obj: any) => isObject(obj) && ('epoch' in obj || 'epochMilliseconds' in obj || 'toZonedDateTimeISO' in obj || 'getTime' in obj);
+		const isOptions = (obj: any) => isObject(obj) && !isDateLike(obj);
 
 		switch (true) {
 			case isFunction(arg1):

@@ -32,7 +32,7 @@ describe('Ticker RRULE Support', () => {
 	});
 
 	test('stepping via pulse() follows RRULE logic deterministically', () => {
-		const seed = new Tempo('2026-08-07T00:00:00.000Z');
+		const seed = new Tempo('2026-08-07');
 		const t = Tempo.ticker({ rrule: 'FREQ=DAILY;INTERVAL=2', seed });
 
 		const step1 = t.pulse();
