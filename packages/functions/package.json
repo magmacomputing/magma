@@ -58,7 +58,7 @@
   },
   "peerDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/tempo": "^3.11.1"
+    "@magmacomputing/tempo": "^3.11.1 || ^4.0.0"
   },
   "peerDependenciesMeta": {
     "@js-temporal/polyfill": {

@@ -43,10 +43,10 @@
 		"plan": "community"
 	},
 	"peerDependencies": {
-		"@magmacomputing/tempo": "^3.11.1"
+		"@magmacomputing/tempo": "^3.11.1 || ^4.0.0"
 	},
 	"devDependencies": {
-		"@magmacomputing/tempo": "^3.11.1",
+		"@magmacomputing/tempo": "^3.11.1 || ^4.0.0",
 		"vitest": "^4.1.10"
 	},
 	"exports": {
