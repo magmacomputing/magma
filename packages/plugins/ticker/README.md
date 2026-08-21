@@ -31,7 +31,7 @@ Tempo.init({
 });
 
 // You can now access Ticker-based execution loops through the Tempo API:
-const ticker = Tempo.ticker(1000, (t, stop) => {
+const ticker = Tempo.ticker({ seconds: 1 }, (t, stop) => {
   console.log('Tick:', t.format('isoTime'));
 });
 ```

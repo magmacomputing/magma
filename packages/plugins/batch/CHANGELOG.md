@@ -2,6 +2,11 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-batch` project will be documented in this file.
 
+## [1.0.1] - 2026-08-20
+
+### Fixed
+- **Peer Dependencies**: Expanded peerDependency range to support Tempo v4.0.0.
+
 ## [1.0.0] - 2026-06-29
 
 ### Added

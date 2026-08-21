@@ -47,7 +47,7 @@ export function evaluateAsync<T>(first: AsyncEvaluable<T> | undefined, fallback:
 export function evaluateAsync<T>(...values: (AsyncEvaluable<T> | undefined)[]): Promise<T | undefined>;
 export async function evaluateAsync<T>(...values: (AsyncEvaluable<T> | undefined)[]): Promise<T | undefined> {
 	for (const val of values)
-		if (!isFunction(val) && isFunction((val as any)?.then))
+		if (!isFunction(val))
 			Promise.resolve(val).catch(() => {});
 
 	for (const val of values) {

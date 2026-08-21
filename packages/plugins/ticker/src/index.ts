@@ -118,7 +118,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#isInstant = false;
 	#isShorthand = false;
 	#schedId: any;
-	#waiter: Pledge<void> | undefined;
+	#waiter: Pledge<Tempo> | undefined;
 	#listeners = new Set<Ticker.Callback>();
 	#catchListeners = new Set<Ticker.Callback>();
 	#stopListeners = new Set<Ticker.Callback>();
@@ -164,9 +164,16 @@ class TickerInstance implements Ticker.Descriptor {
 		if (rruleOption)
 			this.#rrule = typeof rruleOption === 'string' ? rruleOption : rruleOption.rrule;
 
+		if (cb) this.#listeners.add(cb);
+
+		const durationKeys = new Set(Object.keys(enums.DURATIONS));
+		for (const [key, val] of Object.entries(rest))
+			if (isDefined(val) && (durationKeys.has(key) || key in enums.ELEMENT || key === 'ww' || key.startsWith('#')))
+				this.#payload[key] = val;
+
 		const isSeed = isDefined(rawOptions.seed);
 		const isRRule = isDefined(this.#rrule);
-		const isInterval = isDefined(rawOptions.seconds) && isNumber(rawOptions.seconds);
+		const isInterval = !isEmpty(this.#payload) || (isDefined(rawOptions.seconds) && isNumber(rawOptions.seconds));
 
 		if (isDefined(arg1) && !isInterval && !isSeed && !isRRule && !cb) {
 			const err = new Error(`Invalid Ticker interval or seed: ${String(arg1)}`);
@@ -175,12 +182,6 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 
 		this.#until = stopAt ? new this.#TempoClass(isOptions(stopAt) ? undefined : stopAt, isOptions(stopAt) ? { ...rest, ...stopAt } : rest) : undefined;
-		if (cb) this.#listeners.add(cb);
-
-		const durationKeys = new Set(Object.keys(enums.DURATIONS));
-		for (const [key, val] of Object.entries(rest))
-			if (isDefined(val) && (durationKeys.has(key) || key in enums.ELEMENT || key === 'ww' || key.startsWith('#')))
-				this.#payload[key] = val;
 
 		if (isEmpty(this.#payload) && !isRRule) {
 			if (isDefined(startAt) && isUndefined(this.#limit)) this.#limit = 1;
@@ -253,28 +254,47 @@ class TickerInstance implements Ticker.Descriptor {
 		return Math.max(0, Math.round(this.#current.epoch.ms - instant().epochMilliseconds));
 	}
 
+	#safePulse(): Tempo {
+		try {
+			const t = this.pulse();
+			if (this.#waiter && this.#waiter.isPending) {
+				this.#waiter.resolve(t);
+				this.#waiter = undefined;
+			}
+			return t;
+		} catch (e: any) {
+			this.stop();
+			if (this.#catchListeners.size > 0) {
+				this.#catchListeners.forEach(l => l(this.#current, () => this.stop()));
+			} else if (!this.#TempoClass.config?.catch) {
+				throw e;
+			}
+			return this.#current;
+		}
+	}
+
 	#scheduleNext() {
 		if (this.#stopped || this.#isInstant) return;
 		this.#schedId = setTimeout(() => {
 			if (!this.#stopped) {
-				this.pulse();
+				this.#safePulse();
 				this.#scheduleNext();
 			}
 		}, this.#delayMs());
 	}
 
 	#runBootstrap() {
-		if (this.#listeners.size > 0 && !this.#stopped && !this.#schedId) {
+		if ((this.#listeners.size > 0 || this.#waiter) && !this.#stopped && !this.#schedId) {
 			const delay = this.#delayMs();
 			if (delay > 0) {
 				this.#schedId = setTimeout(() => {
 					if (!this.#stopped) {
-						this.pulse();
+						this.#safePulse();
 						this.#scheduleNext();
 					}
 				}, delay);
 			} else {
-				this.pulse();
+				this.#safePulse();
 				this.#scheduleNext();
 			}
 		}
@@ -330,7 +350,7 @@ class TickerInstance implements Ticker.Descriptor {
 			this.#schedId = undefined;
 		}
 		if (this.#waiter && this.#waiter.isPending) {
-			this.#waiter.resolve();
+			this.#waiter.resolve(this.#current);
 			this.#waiter = undefined;
 		}
 		this.#stopListeners.forEach(l => l(this.#current, () => undefined));
@@ -354,26 +374,22 @@ class TickerInstance implements Ticker.Descriptor {
 			this.#genFirstYielded = true;
 			const delay = this.#delayMs();
 			if (delay > 0) {
-				this.#waiter = new Pledge<void>('Ticker.next');
-				this.#schedId = setTimeout(() => this.#waiter?.resolve(), delay);
-				await this.#waiter;
-				this.#waiter = undefined;
+				this.#waiter = new Pledge<Tempo>('Ticker.next');
+				this.#runBootstrap();
+				const res = await this.#waiter;
 				if (this.#stopped) return { done: true, value: undefined };
+				return { done: false, value: res ?? this.#current };
 			}
-			const t = this.pulse();
+			const t = this.#safePulse();
 			if (this.#stopped && isDefined(this.#limit) && this.#limit === 0) return { done: true, value: undefined };
 			return { done: false, value: t };
 		}
 		if (this.#isInstant) return { done: true, value: undefined };
-		const delay = this.#delayMs();
-		this.#waiter = new Pledge<void>('Ticker.next');
-		this.#schedId = setTimeout(() => this.#waiter?.resolve(), delay);
-		await this.#waiter;
-		this.#waiter = undefined;
+		this.#waiter = new Pledge<Tempo>('Ticker.next');
+		this.#runBootstrap();
+		const res = await this.#waiter;
 		if (this.#stopped) return { done: true, value: undefined };
-		const t = this.pulse();
-		if (this.#stopped && isDefined(this.#limit) && this.#limit === 0) return { done: true, value: undefined };
-		return { done: false, value: t };
+		return { done: false, value: res ?? this.#current };
 	}
 
 	async return(): Promise<IteratorResult<Tempo, any>> {

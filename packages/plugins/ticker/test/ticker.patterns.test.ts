@@ -104,6 +104,18 @@ describe(`${label}`, () => {
 		expect(count).toBe(1);																	// Only initial emit
 	});
 
+	test('ticker: non-second duration and term intervals without callback', () => {
+		expect(() => {
+			using t = Tempo.ticker({ months: 1 });
+			t.stop();
+		}).not.toThrow();
+
+		expect(() => {
+			using t = Tempo.ticker({ '#quarter': 1 });
+			t.stop();
+		}).not.toThrow();
+	});
+
 	test('ticker: validation', () => {
 		// @ts-ignore
 		expect(() => Tempo.ticker(NaN)).toThrow(/Invalid Tempo number: NaN/);

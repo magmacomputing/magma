@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`Tempo.ready()` Return Signature**: Simplified `Tempo.ready()` return value to a static `'none'` status for community core compatibility.
 
 ### Added
-- **Synchronous ESM & JSONC Config Discovery (`resolveConfigSync`)**: Introduced zero-`await` static startup configuration discovery (`resolveConfigSync()`) utilizing `parseJSONC` for `.jsonc` / `.json` files. Automatically executed inside `Tempo`'s `static { ... }` initialization block at module load time.
+- **Synchronous JSON & JSONC Config Discovery (`resolveConfigSync`)**: Introduced zero-`await` static startup configuration discovery (`resolveConfigSync()`) utilizing `parseJSONC` for `.jsonc` / `.json` files. ESM/TypeScript extensions such as `.mts`, `.ts`, `.mjs`, and `.js` require the asynchronous `resolveConfig()` path. Automatically executed inside `Tempo`'s `static { ... }` initialization block at module load time.
 - **Lazy Dynamic Context & Options Evaluation**: Upgraded `BaseOptions` and `Tempo` options (`timeZone`, `locale`, `calendar`, `sphere`) to support `Evaluable<T>` suppliers (`T | (() => T)`). This enables dynamic, per-request context evaluation (such as multi-tenant timezone or locale resolution) without rebuilding configuration state.
 - **Evaluation Utilities Export (`@magmacomputing/tempo/library`)**: Re-exported `Evaluable`, `AsyncEvaluable`, `evaluate`, `evaluateAsync`, `evaluateConfig`, `evaluateConfigAsync`, and `dynamicProxy` from the `#library` surface for downstream plugins and custom extensions.
 

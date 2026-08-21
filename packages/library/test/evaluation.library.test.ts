@@ -158,6 +158,18 @@ describe('evaluation.library', () => {
 			const result = await evaluateAsync('early-scalar', throwingThenable as any);
 			expect(result).toBe('early-scalar');
 		});
+
+		it('should safely return earlier scalar when followed by a candidate with a throwing then getter', async () => {
+			const throwingThenGetter = {};
+			Object.defineProperty(throwingThenGetter, 'then', {
+				get() {
+					throw new Error('throwing then getter');
+				}
+			});
+
+			const result = await evaluateAsync('early-scalar', throwingThenGetter as any);
+			expect(result).toBe('early-scalar');
+		});
 	});
 
 	describe('evaluateConfig()', () => {

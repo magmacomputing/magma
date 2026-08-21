@@ -8,6 +8,7 @@ on:
         required: true
         type: choice
         options:
+          - '@magmacomputing/library'
           - '@magmacomputing/tempo'
           - '@magmacomputing/tempo-pro'
           - '@magmacomputing/tempo-fns'
@@ -71,7 +72,7 @@ jobs:
         run: |
           npm run build:library
           npm run build:tempo
-          npm run build --workspace=@magmacomputing/tempo-plugin-ai --workspace=@magmacomputing/tempo-plugin-astro --workspace=@magmacomputing/tempo-plugin-batch --workspace=@magmacomputing/tempo-plugin-finance --workspace=@magmacomputing/tempo-plugin-snap --workspace=@magmacomputing/tempo-plugin-sync --if-present
+          npm run build --workspace=@magmacomputing/tempo-pro --workspace=@magmacomputing/tempo-fns --workspace=@magmacomputing/tempo-plugin-ai --workspace=@magmacomputing/tempo-plugin-astro --workspace=@magmacomputing/tempo-plugin-batch --workspace=@magmacomputing/tempo-plugin-finance --workspace=@magmacomputing/tempo-plugin-snap --workspace=@magmacomputing/tempo-plugin-sync --workspace=@magmacomputing/tempo-plugin-ticker --if-present
 
       - name: Run Tests
         run: npm run test
@@ -89,6 +90,7 @@ jobs:
           fi
 
           WORKSPACES=(
+            "@magmacomputing/library"
             "@magmacomputing/tempo"
             "@magmacomputing/tempo-pro"
             "@magmacomputing/tempo-fns"
@@ -105,6 +107,10 @@ jobs:
             local pkg="$1"
             local ver
             ver=$(npm pkg get version --workspace="$pkg" --json | node -p "const d=JSON.parse(require('fs').readFileSync(0, 'utf8')); typeof d === 'string' ? d : (d['$pkg']?.version ?? d['$pkg'] ?? d.version ?? '')")
+            if [ -z "$ver" ] || [ "$ver" = "null" ]; then
+              echo "❌ Failed to resolve version for $pkg"
+              exit 1
+            fi
             echo "Checking $pkg@$ver on npm..."
 
             if [ "$DRY_RUN" != "true" ] && npm view "$pkg@$ver" version >/dev/null 2>&1; then

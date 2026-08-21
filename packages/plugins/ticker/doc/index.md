@@ -9,7 +9,7 @@
 This is a Community plugin for the [Tempo](https://github.com/magmacomputing/magma) library that provides a high-performance continuous execution loop (Ticker) based on temporal mathematics.
 
 ::: info High Performance Loop
-Unlike standard `setInterval` or `requestAnimationFrame`, the Ticker plugin leverages Tempo's robust temporal core to ensure exact sub-millisecond precision, making it ideal for games, complex UI animations, and accurate state synchronization.
+Unlike raw `setInterval`, the Ticker plugin leverages Tempo's temporal core to provide best-effort scheduling with millisecond resolution, making it ideal for standard UI updates, periodic tasks, and accurate state synchronization.
 :::
 
 ## Installation

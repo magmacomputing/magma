@@ -162,7 +162,7 @@ A Term plugin is created using the **`defineTerm`** factory function provided by
 ### Plugin Definition
 
 ```ts
-import { defineTerm, defineRange, getTermRange, resolveCycleWindow } from '@magmacomputing/tempo/plugin';
+import { defineTerm, defineRange, getTermRange, resolveCycleWindow } from '@magmacomputing/tempo/plugin-api';
 import { enums, type Tempo } from '@magmacomputing/tempo/core';
 
 /** 1. The range boundaries (grouped by sphere) */
@@ -290,7 +290,7 @@ To unlock Tempo's advanced **Term Traversal** (e.g., `t.add({ '#quarter': 1 })`)
 The library provides a specialized helper that calculates these boundaries automatically based on your `ranges` array.
 
 ```ts
-import { getTermRange } from '@magmacomputing/tempo/plugin';
+import { getTermRange } from '@magmacomputing/tempo/plugin-api';
 
 export function define(this: Tempo, keyOnly?: boolean) {
   // Finds the current range, then injects 'start' and 'end' (as Tempo instances)

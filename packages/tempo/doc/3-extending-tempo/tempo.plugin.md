@@ -82,7 +82,7 @@ import { Tempo } from '@magmacomputing/tempo/core';   // 1. Load the `lite` engi
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker'; // 2. Import the plugin
 
 Tempo.init({ 
-  plugins: [TickerPlugin]                             // 3. Register and activate plugin during init
+  extends: [TickerPlugin]                             // 3. Register and activate plugin during init
 });
 
 // Ticker is now available on the core Tempo class!
