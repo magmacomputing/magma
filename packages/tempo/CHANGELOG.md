@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Evaluation Utilities Export (`@magmacomputing/tempo/library`)**: Re-exported `Evaluable`, `AsyncEvaluable`, `evaluate`, `evaluateAsync`, `evaluateConfig`, `evaluateConfigAsync`, and `dynamicProxy` from the `#library` surface for downstream plugins and custom extensions.
 
 ### Changed & Fixed
+- **API Standardization for Boundary & Mutation Payloads (`{Term: Value}`)**: Standardized mutation object signatures across `.set()`, `.add()`, and plugin payloads to follow the unified `{Term: Value}` pattern (e.g., `.set({ year: 'start' })`, `.set({ month: 'end' })`, `.set({ '#qtr': 1 })`). The legacy positional syntax (e.g., `.set({ start: 'year' })`) remains fully supported transparently for complete backwards compatibility.
 - **Term Registry Simplification**: Simplified `Tempo.terms` getter to operate purely on open-source term plugins, removing legacy licensing metadata mapping and synthetic uninstalled scope claims.
 - **Documentation & LLM Corpus Alignment**: Corrected mutating method descriptions in `ai-integration.md` and `public/llms.txt` to strictly reference supported immutable methods (`.add()`, `.subtract()`, and `.set()`).
 

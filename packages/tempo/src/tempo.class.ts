@@ -484,9 +484,13 @@ export class Tempo {
 				return src
 					.replace(/\{[#]?[\w]+(?:\.[\w]+)*(?:\:[a-zA-Z]+)*\}/g, ' ')
 					.replace(/\(\?<[\w]+>/g, ' ')
+					.replace(/\\\\/g, '\u0001')
+					.replace(/\\\|/g, '\u0000')
 					.replace(/[\(\)\?\:\^\$\d\{\}\[\]]/g, ' ')
 					.replace(/\\(.)/g, '$1')
-					.split(/\s+/)
+					.replace(/\u0001/g, '\\')
+					.split(/[\s\|]+/)
+					.map((t: string) => t.replace(/\u0000/g, '|'))
 					.filter(Boolean)
 					.filter((t: string) => t !== '[' && t !== ']');
 			})

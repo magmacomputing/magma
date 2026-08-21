@@ -106,7 +106,7 @@ The `.set()` method allows you to jump to the boundaries of native units (like m
 const monthStart = new Tempo().set({ month: 'start' });
 
 // Semantic Terms (Lands on 30-Sep 23:59:59.999... Inclusive End)
-const qtrEnd = new Tempo().set({ '#quarter': 'end' });
+const qtrEnd = new Tempo('2024-07-15').set({ '#quarter': 'end' });
 
 // Lands on the arithmetic nanosecond midpoint of the period
 const qtrMid = new Tempo().set({ '#quarter': 'mid' });

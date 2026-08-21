@@ -170,6 +170,20 @@ describe('evaluation.library', () => {
 			const result = await evaluateAsync('early-scalar', throwingThenGetter as any);
 			expect(result).toBe('early-scalar');
 		});
+
+		it('should call direct thenable then method only once', async () => {
+			let thenCalls = 0;
+			const thenable = {
+				then(onFulfilled: any) {
+					thenCalls++;
+					onFulfilled('thenable-value');
+				}
+			};
+
+			const result = await evaluateAsync(thenable as any);
+			expect(result).toBe('thenable-value');
+			expect(thenCalls).toBe(1);
+		});
 	});
 
 	describe('evaluateConfig()', () => {

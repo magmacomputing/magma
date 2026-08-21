@@ -34,7 +34,7 @@ describe('#setConfig refactor verification', () => {
 
   test('should parse custom date layout registered via registry.layouts', () => {
     using _ = Tempo;
-    Tempo.init({ timeZone: 'UTC', locale: 'en-GB', registry: { layouts: { dot_date: '{dd}.{mm}.{yy}' } } });
+    Tempo.init({ timeZone: 'UTC', locale: 'en-GB', registry: { layouts: { dot_date: '{dd}\\.{mm}\\.{yy}' } } });
     const date = new Tempo('04.08.2026');
     expect(date.isValid).toBe(true);
     expect(date.dd).toBe(4);
@@ -165,6 +165,15 @@ describe('#setConfig refactor verification', () => {
     await Tempo.init(parsed);
     expect(Tempo.config.timeZone).toBe('Australia/Sydney');
     expect((Tempo.config as any).plugins?.ai?.mode).toBe('fallback');
+  })
+
+  test('should handle custom layouts containing regex alternatives', () => {
+    using _ = Tempo;
+    Tempo.init({ registry: { layouts: { alt_layout: 'today|tomorrow' } } });
+    const dateToday = new Tempo('today');
+    const dateTomorrow = new Tempo('tomorrow');
+    expect(dateToday.isValid).toBe(true);
+    expect(dateTomorrow.isValid).toBe(true);
   })
 
   test('should export defineConfig and resolveConfig from config module', async () => {

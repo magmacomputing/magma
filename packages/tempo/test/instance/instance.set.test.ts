@@ -215,6 +215,20 @@ describe(`${label} set method`, () => {
 				expect(t3.mm).toBe(12);
 				expect(t3.dd).toBe(24);
 			});
+
+			test('supports start, mid, and end boundary snapping on sub-second units', () => {
+				const t = new Tempo('2026-08-21T12:34:56.789123456Z');
+				expect(t.isValid).toBe(true);
+
+				const msStart = t.set({ millisecond: 'start' });
+				expect(msStart.isValid).toBe(true);
+
+				const usMid = t.set({ us: 'mid' });
+				expect(usMid.isValid).toBe(true);
+
+				const nsEnd = t.set({ nanosecond: 'end' });
+				expect(nsEnd.isValid).toBe(true);
+			});
 		});
 	});
 });

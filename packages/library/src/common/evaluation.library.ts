@@ -46,12 +46,18 @@ export function evaluate<T>(...values: (Evaluable<T> | undefined)[]): T | undefi
 export function evaluateAsync<T>(first: AsyncEvaluable<T> | undefined, fallback: AsyncEvaluable<T>, ...rest: AsyncEvaluable<T>[]): Promise<T>;
 export function evaluateAsync<T>(...values: (AsyncEvaluable<T> | undefined)[]): Promise<T | undefined>;
 export async function evaluateAsync<T>(...values: (AsyncEvaluable<T> | undefined)[]): Promise<T | undefined> {
-	for (const val of values)
-		if (!isFunction(val))
-			Promise.resolve(val).catch(() => {});
+	const promises = values.map(val => {
+		if (!isFunction(val)) {
+			const p = Promise.resolve(val);
+			p.catch(() => {});
+			return p;
+		}
+		return undefined;
+	});
 
-	for (const val of values) {
-		const resolved = isFunction(val) ? await (val as () => T | Promise<T>)() : await val;
+	for (let i = 0; i < values.length; i++) {
+		const val = values[i];
+		const resolved = isFunction(val) ? await (val as () => T | Promise<T>)() : await promises[i];
 		if (resolved !== undefined) return resolved as T;
 	}
 	return undefined;

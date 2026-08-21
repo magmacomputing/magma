@@ -8,7 +8,6 @@ on:
         required: true
         type: choice
         options:
-          - '@magmacomputing/library'
           - '@magmacomputing/tempo'
           - '@magmacomputing/tempo-pro'
           - '@magmacomputing/tempo-fns'
@@ -90,7 +89,6 @@ jobs:
           fi
 
           WORKSPACES=(
-            "@magmacomputing/library"
             "@magmacomputing/tempo"
             "@magmacomputing/tempo-pro"
             "@magmacomputing/tempo-fns"

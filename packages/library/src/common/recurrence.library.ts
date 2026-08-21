@@ -1,4 +1,4 @@
-import { isDefined, isNumber } from './assertion.library.js';
+import { isDefined, isNumber, isString } from './assertion.library.js';
 import {
 	DAYS_IN_WEEK,
 	DAY_MAP,
@@ -21,12 +21,13 @@ const RE_UNTIL_TIMESTAMP = /^(\d{4})(\d{2})(\d{2})T?(\d{2})?(\d{2})?(\d{2})?Z?$/
 const RE_BYDAY_PART = /^([+-]?\d+)?([A-Z]+)$/i;
 
 /**
- * Tests whether a string is a valid RFC 5545 Recurrence Rule (RRULE).
+ * Tests whether a value is a valid RFC 5545 Recurrence Rule (RRULE) string.
  *
- * @param input - The candidate string to inspect
- * @returns `true` if the string matches an RRULE pattern starting with FREQ=, otherwise `false`.
+ * @param input - The candidate value to inspect
+ * @returns `true` if the value is a string matching an RRULE pattern starting with FREQ=, otherwise `false`.
  */
-export function isRRuleString(input: string): boolean {
+export function isRRuleString(input: unknown): input is string {
+	if (!isString(input)) return false;
 	const trimmed = input.trim();
 	return RE_RRULE_FREQ.test(trimmed);
 }
