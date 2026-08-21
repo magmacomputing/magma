@@ -12,19 +12,12 @@ This is highly useful for user onboarding settings, automatic context mapping fo
 ## Basic Usage
 
 > [!NOTE]
-> Like all Tempo AI functions, `contextAI` requires prior initialization with at least one active provider via `initAI()`.
+> `@magmacomputing/tempo-plugin-ai` features zero-config auto-discovery. If provider keys exist in your environment (`GROQ_API_KEY`, `OPENAI_API_KEY`, etc.) or `tempo.config.json`, calling `initAI()` is **completely optional**.
 
 ```typescript
-import { initAI, contextAI } from '@magmacomputing/tempo-plugin-ai';
+import { contextAI } from '@magmacomputing/tempo-plugin-ai';
 
-// 1. Configure the AI provider farm
-await initAI({
-  providers: [
-    { id: 'groq', key: process.env.GROQ_API_KEY }
-  ]
-});
-
-// 2. Infer contextual settings from unstructured text
+// 1. Infer contextual settings directly from unstructured text (auto-discovers provider keys)
 const context = await contextAI("I'm a photographer based in Sydney, Australia.");
 
 console.log(context.timeZone);  // "Australia/Sydney"

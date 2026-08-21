@@ -36,16 +36,14 @@ export class PatternCompiler {
 		const source = isRegExp(layout) ? layout.source : layout;
 		let cache: Map<string, RegExp>;
 		if (snippet) {
-			if (!this.#snippetCache.has(snippet)) {
+			if (!this.#snippetCache.has(snippet))
 				this.#snippetCache.set(snippet, new Map());
-			}
 			cache = this.#snippetCache.get(snippet)!;
 		} else {
 			cache = this.#globalCache;
 		}
-		if (cache.has(source)) {
+		if (cache.has(source))
 			return cache.get(source)!;
-		}
 
 		const matcher = (source: string, d = 0): string => {
 			if (d > 10) {																					// Emit a diagnostic if recursion limit is hit (likely circular placeholder)
@@ -120,7 +118,7 @@ export class PatternCompiler {
 			const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a, b) => b.length - a.length).join('|')})`);
 
 			snippet[Token.nbr] = nbr;
-			
+
 			let modPattern = Match.modifier.source;
 			let afxPattern = Match.modifier.source;
 			if (state.config.registry?.modifiers) {
@@ -136,7 +134,7 @@ export class PatternCompiler {
 					const wordPattern = escapedWords.join('|');
 					modPattern = `[\\+\\-\\<\\>][\\=]?|${wordPattern}`;
 					afxPattern = `[\\+\\-\\<\\>][\\=]?|${wordPattern}`;
-					
+
 					const op = `[\\+\\-\\<\\>]=?`;
 					const terms = `(?:#[\\w]+|[\\w]+)`;
 					const units = `(?:[\\w]*)`;

@@ -134,22 +134,24 @@ export type SetFields = {
 	[K in Mutate]?: Unit | `#${string}`;
 } & {
 	[K in 'date' | 'time' | 'event' | 'period']?: string;
+} & {
+	[K in 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
 }
 export type SlickKey = SLICK_KEYS[number];
 export type SlickOffset = { [K in SlickKey]?: string };
 
 export type MutateShorthand = {
-	yy?: LooseUnion<number>;
-	mm?: LooseUnion<mm>;
-	wy?: LooseUnion<wy>;
-	ww?: LooseUnion<wy>;
-	dd?: LooseUnion<dd>;
-	hh?: LooseUnion<hh>;
-	mi?: LooseUnion<mi>;
-	ss?: LooseUnion<ss>;
-	ms?: LooseUnion<ms>;
-	us?: LooseUnion<us>;
-	ns?: LooseUnion<ns>;
+	yy?: LooseUnion<number | Mutate>;
+	mm?: LooseUnion<mm | Mutate>;
+	wy?: LooseUnion<wy | Mutate>;
+	ww?: LooseUnion<wy | Mutate>;
+	dd?: LooseUnion<dd | Mutate>;
+	hh?: LooseUnion<hh | Mutate>;
+	mi?: LooseUnion<mi | Mutate>;
+	ss?: LooseUnion<ss | Mutate>;
+	ms?: LooseUnion<ms | Mutate>;
+	us?: LooseUnion<us | Mutate>;
+	ns?: LooseUnion<ns | Mutate>;
 	wkd?: LooseUnion<wkd>;
 }
 

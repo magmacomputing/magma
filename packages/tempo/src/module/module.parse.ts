@@ -266,7 +266,7 @@ const _ParseEngine = {
 				const dd = (snip[Token.dd]?.source ?? Snippet[Token.dd].source)
 					.replace('{ord}', snip[Token.ord]?.source ?? Snippet[Token.ord].source);
 				const datePrefix = new RegExp(`^\\d{4}${sep}(?:${mm})${sep}(?:${dd})(?:\\b|[T\\s]|$)`, 'i');
-				if (datePrefix.test(trim))
+				if (datePrefix.test(trim) && (!trim.includes('[') && !trim.includes(']') || Match.bracket.test(trim)))
 					guard = true;
 			}
 
@@ -394,7 +394,6 @@ const _ParseEngine = {
 
 		for (const [symKey, pat] of orderedPatterns) {
 			const groups = _ParseEngine.parseMatch(state, pat, trim);
-
 			if (isEmpty(groups))
 				continue;
 

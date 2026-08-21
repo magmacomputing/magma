@@ -103,13 +103,13 @@ const t2 = t1.add({ '#quarter': 1 }); // Middle of Q3: "2024-08-14" (approx)
 The `.set()` method allows you to jump to the boundaries of native units (like months or years) or semantic Terms (using the `#` prefix). You can specify whether to land on the inclusive start, inclusive end, or the exact center.
 ```typescript
 // Native Units
-const monthStart = new Tempo().set({ start: 'month' });
+const monthStart = new Tempo().set({ month: 'start' });
 
 // Semantic Terms (Lands on 30-Sep 23:59:59.999... Inclusive End)
-const qtrEnd = new Tempo().set({ end: '#quarter' });
+const qtrEnd = new Tempo().set({ '#quarter': 'end' });
 
 // Lands on the arithmetic nanosecond midpoint of the period
-const qtrMid = new Tempo().set({ mid: '#quarter' });
+const qtrMid = new Tempo().set({ '#quarter': 'mid' });
 ```
 
 ### Slick Object Mutations

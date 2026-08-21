@@ -56,21 +56,21 @@ For web-based LLM interfaces, reference or copy-paste the full, un-truncated doc
 When asking AI assistants to generate custom layout patterns for parsing unique date-time formats, instruct the model to use Tempo's configuration syntax (`Tempo.init({ registry: { layouts: { ... } } })`) and named capture tokens (`{yy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tzd}`).
 
 ### Sample Prompt:
-> *"Using the rules from https://tempo.magmacomputing.com.au/llms.txt, register a custom Tempo layout for fiscal quarters (e.g., 'Q3 2026') using `Tempo.init({ registry: { layouts: { ... } } })` and instantiate a date with the layout option."*
+> *"Using the rules from https://tempo.magmacomputing.com.au/llms.txt, register a custom Tempo layout for dot-delimited dates (e.g., '04.08.2026') using `Tempo.init({ registry: { layouts: { ... } } })` and parse the date string using `new Tempo(...)`."*
 
 ### Generated Code (Actual Tempo Syntax):
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
-// 1. Register custom layout pattern using snippet tokens
+// 1. Register custom layout pattern using layout tokens
 Tempo.init({
   registry: {
     layouts: {
-      fiscal_quarter: 'Q{nbr} {yy}'
+      dot_date: '{dd}.{mm}.{yy}'
     }
   }
 });
 
-// 2. Parse date string using the registered layout
-const date = new Tempo('Q3 2026', { layout: 'fiscal_quarter' });
+// 2. Parse date string matching the custom layout
+const date = new Tempo('04.08.2026');
 ```

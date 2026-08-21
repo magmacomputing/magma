@@ -67,7 +67,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 								return currZdt;
 							}
 
-							if (type === 'set' && isString(adjust)) {
+							if (type === 'set' && isString(adjust) && adjust !== 'start' && adjust !== 'mid' && adjust !== 'end') {
 								const validMap: Record<string, string> = { year: 'yy', month: 'mm', week: 'ww', day: 'dd', hour: 'hh', minute: 'mi', second: 'ss' };
 								const mapped = validMap[singular(key)];
 								if (mapped) {
@@ -77,7 +77,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 								}
 							}
 
-							if (type === 'set' && SLICK_KEYS.includes(key as any)) {
+							if (type === 'set' && SLICK_KEYS.includes(key as any) && adjust !== 'start' && adjust !== 'mid' && adjust !== 'end') {
 								if (!isString(adjust)) {
 									if (key === 'wkd') {
 										logError(`Slick key 'wkd' requires a weekday name (e.g. '>Fri').`, this.config);
@@ -156,6 +156,19 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 										offset: adjust,
 										single: isTerm || (isTermPlugin && !isStandard) ? 'term' : singular(key),
 										term: isTerm ? (key as string) : (isTermPlugin ? key : undefined)
+									}
+								}
+
+								if (type === 'set' && isString(adjust) && (adjust === 'start' || adjust === 'mid' || adjust === 'end')) {
+									const unitKey = (enums.ELEMENT as any)[key] ?? key;
+									const isTermVal = (unitKey as string).startsWith('#');
+									const isTermPlugin = !isTermVal && isDefined(findTermPlugin(unitKey as string, state));
+									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(unitKey as string);
+									return {
+										mutate: adjust as any,
+										offset: adjust,
+										single: isTermVal || (isTermPlugin && !isStandard) ? 'term' : singular(unitKey as string),
+										term: isTermVal ? (unitKey as string) : (isTermPlugin ? unitKey : undefined)
 									}
 								}
 

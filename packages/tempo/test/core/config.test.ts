@@ -32,6 +32,36 @@ describe('#setConfig refactor verification', () => {
     expect(Tempo.parse.layout[sym]).toBe('{dd}{mm}{yy}')
   })
 
+  test('should parse custom date layout registered via registry.layouts', () => {
+    using _ = Tempo;
+    Tempo.init({ registry: { layouts: { dot_date: '{dd}.{mm}.{yy}' } } });
+    const date = new Tempo('04.08.2026');
+    expect(date.isValid).toBe(true);
+    expect(date.dd).toBe(4);
+    expect(date.mm).toBe(8);
+    expect(date.yy).toBe(2026);
+  })
+
+  test('should handle custom string layout with escaped star delimiters', () => {
+    using _ = Tempo;
+    Tempo.init({ registry: { layouts: { star_date: '{mm}\\*{dd}\\*{yy}' } } });
+    const date = new Tempo('08*04*2026');
+    expect(date.isValid).toBe(true);
+    expect(date.mm).toBe(8);
+    expect(date.dd).toBe(4);
+    expect(date.yy).toBe(2026);
+  })
+
+  test('should handle custom string layout with escaped pipe delimiters', () => {
+    using _ = Tempo;
+    Tempo.init({ registry: { layouts: { pipe_date: '{mm}\\|{dd}\\|{yy}' } } });
+    const date = new Tempo('08|04|2026');
+    expect(date.isValid).toBe(true);
+    expect(date.mm).toBe(8);
+    expect(date.dd).toBe(4);
+    expect(date.yy).toBe(2026);
+  })
+
   test('should handle layout as a RegExp (converted to source string)', () => {
     Tempo.init({ registry: { layouts: { 'myRegExpLayout': /^\d{4}$/ } } });
     const sym = Tempo.getSymbol('myRegExpLayout');

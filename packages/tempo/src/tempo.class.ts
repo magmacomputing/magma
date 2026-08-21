@@ -6,7 +6,7 @@ import { getStorage, setStorage } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { enumify } from '#library/enumerate.library.js';
-import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, ownValues, unwrap } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
@@ -356,8 +356,10 @@ export class Tempo {
 			needsRebuild = true;
 		}
 
-		if (needsRebuild)
+		if (needsRebuild) {
 			setPatterns(shape);
+			this[$buildGuard](shape);
+		}
 	}
 
 	/** support "Global Discovery" of user-options */
@@ -475,15 +477,29 @@ export class Tempo {
 			...Tempo.#terms.map(t => t.key),
 			...Tempo.#terms.map(t => t.scope),
 			...Guard,
-			...(state.config.registry?.modifiers ? Object.values(state.config.registry.modifiers).flat() : [])
+			...(state.config.registry?.modifiers ? Object.values(state.config.registry.modifiers).flat() : []),
+			...ownValues(state.parse.layout, true).flatMap(val => {
+				const src = (val as any) instanceof RegExp ? (val as any).source : (typeof val === 'string' ? val : '');
+				if (!src) return [];
+				return src
+					.replace(/\{[#]?[\w]+(?:\.[\w]+)*(?:\:[a-zA-Z]+)*\}/g, ' ')
+					.replace(/\(\?<[\w]+>/g, ' ')
+					.replace(/[\(\)\?\:\^\$\d\{\}\[\]]/g, ' ')
+					.replace(/\\(.)/g, '$1')
+					.split(/\s+/)
+					.filter(Boolean)
+					.filter((t: string) => t !== '[' && t !== ']');
+			})
 		];
 
 		const guard = createMasterGuard(wordsList);
 
 		if (targetState) {
 			targetState.parse.guard = guard as any;
+			(targetState as any)[$guard] = guard;
 		} else {
 			(this[$Internal]() as any)[$guard] = guard;
+			(this[$Internal]().parse as any).guard = guard;
 		}
 
 		if (!targetState && this[$Internal]() === _global)

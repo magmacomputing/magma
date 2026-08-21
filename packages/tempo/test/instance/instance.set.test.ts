@@ -3,6 +3,9 @@ import { Tempo } from '#tempo';
 const label = 'instance.set:';
 
 describe(`${label} set method`, () => {
+	beforeEach(() => {
+		Tempo.init({ timeZone: 'UTC', sphere: 'north', locale: 'en-US' });
+	});
 
 	test('throws on unknown #term', () => {
 		const t = new Tempo();
@@ -50,15 +53,42 @@ describe(`${label} set method`, () => {
 		expect(t2.parse.result.some(r => r.type === 'Period')).toBe(true);
 	});
 
-	test('startOf/midOf/endOf shorthand via set', () => {
+	test('startOf/midOf/endOf shorthand via set ({ Term: Value })', () => {
 		const t = new Tempo('2024-05-20 12:34:56');
-		const start = t.set({ start: 'day' });
-		expect(start.hh).toBe(0);
-		expect(start.mi).toBe(0);
+		
+		// New { Term: Value } syntax (full names)
+		const startDay = t.set({ day: 'start' });
+		expect(startDay.hh).toBe(0);
+		expect(startDay.mi).toBe(0);
 
-		const end = t.set({ end: 'month' });
-		expect(end.dd).toBe(31);
-		expect(end.hh).toBe(23);
+		const endMonth = t.set({ month: 'end' });
+		expect(endMonth.dd).toBe(31);
+		expect(endMonth.hh).toBe(23);
+
+		// Snippet keys ({ mm: 'start' }, { dd: 'mid' })
+		const startMm = t.set({ mm: 'start' });
+		expect(startMm.dd).toBe(1);
+		expect(startMm.hh).toBe(0);
+
+		const midDd = t.set({ dd: 'mid' });
+		expect(midDd.hh).toBe(12);
+
+		// Mixed payloads
+		const mixed = t.set({ year: 2026, month: 'start', hour: 12 });
+		expect(mixed.yy).toBe(2026);
+		expect(mixed.mm).toBe(5);
+		expect(mixed.dd).toBe(1);
+		expect(mixed.hh).toBe(12);
+
+		// Term boundary snapping ({ '#timeOfDay.Night': 'start' })
+		const nightStart = t.set({ '#timeOfDay.Night': 'start' });
+		expect(nightStart.hh).toBe(20);
+
+		// Legacy regression check ({ start: 'day' }, { end: 'month' })
+		const legacyStart = t.set({ start: 'day' });
+		expect(legacyStart.hh).toBe(0);
+		const legacyEnd = t.set({ end: 'month' });
+		expect(legacyEnd.dd).toBe(31);
 	});
 
 	describe('Relative Events', () => {
