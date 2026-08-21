@@ -51,7 +51,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
     "status": "active",
-    "version": "1.0.0"
+    "version": "1.1.0"
   },
   {
     "id": "ticker",
@@ -60,6 +60,6 @@
     "packageName": "@magmacomputing/tempo-plugin-ticker",
     "plan": "pro",
     "status": "active",
-    "version": "2.2.3"
+    "version": "2.3.0"
   }
 ]

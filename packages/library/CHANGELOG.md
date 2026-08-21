@@ -5,12 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.12.0] - 2026-08-19
+## [4.0.0] - 2026-08-21
 
 ### Added
 - **Dynamic Evaluation Utilities (`evaluation.library`)**: Added `#library/evaluation.library.js` containing `evaluate(...values)`, `evaluateAsync(...values)`, `evaluateConfig(config)`, and `evaluateConfigAsync(config)`. Supports variadic synchronous and asynchronous value/supplier evaluation with lazy, short-circuiting coalescing.
 - **Dynamic Property Proxy (`proxy.library`)**: Added `dynamicProxy(target)` for zero-overhead dynamic property proxying with on-access evaluation of function-valued properties on the target object.
 - **Standardized Evaluation Types (`type.library`)**: Added `Evaluable<T>`, `AsyncEvaluable<T>`, `EvaluableRecord<T>`, `AsyncEvaluableRecord<T>`, `Evaluated<T>`, `AsyncEvaluated<T>`, and unified `Resolved<T>` on top of `Awaited<T>`.
+- **WebWorker Context & Runtime Hardening (`utility.library`)**: Added `CONTEXT.WebWorker` to `getContext()` with `WorkerGlobalScope` / `importScripts` detection and hardened runtime checks against global property tampering.
 
 ## [3.11.1] - 2026-08-06
 

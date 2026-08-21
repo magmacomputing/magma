@@ -4,7 +4,7 @@ Welcome to the `tempo-fns` documentation! This library provides a comprehensive 
 
 ## Built for Temporal
 
-`tempo-fns` was engineered from the ground up to support modern date and time objects. For standard calendar operations, `tempo-fns` consumes and returns native `Temporal` instances. [Temporal](https://tc39.es/proposal-temporal/docs/) is the new global object coming to JavaScript that brings a modern, robust date and time API to the language, resolving decades of frustration with the legacy `Date` object.
+`tempo-fns` was engineered from the ground up to support modern date and time objects. For standard calendar operations, `tempo-fns` consumes and returns native `Temporal` instances. [Temporal](https://tc39.es/proposal-temporal/docs/) is the new global object in modern JavaScript that brings a robust date and time API to the language, resolving decades of frustration with the legacy `Date` object.
 
 Because these core utilities expect standard `Temporal` objects (like `Temporal.ZonedDateTime` or `Temporal.PlainDate`), you can use them natively in any modern JavaScript environment without requiring bulky adapters, parsers, or conversion layers.
 

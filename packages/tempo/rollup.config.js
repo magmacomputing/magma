@@ -4,54 +4,22 @@ import { fileURLToPath } from 'node:url';
 
 import alias from '@rollup/plugin-alias';
 import resolve from '@rollup/plugin-node-resolve';
-import { transform } from 'esbuild';
 import terser from '@rollup/plugin-terser';
-import JavaScriptObfuscator from 'javascript-obfuscator';
 import MagicString from 'magic-string';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distPath = path.join(__dirname, 'dist');
 
-const licensePremium = process.env.TEMPO_LICENSE_PATH ? path.resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
-const licenseDefault = path.resolve(__dirname, './src/plugin/license/license.validator.ts');
-
-const foundTsconfigPath = (() => {
-	if (!licensePremium) return '';
-	let dir = path.dirname(licensePremium);
-	while (dir !== path.resolve(dir, '..')) {
-		const p = path.resolve(dir, 'tsconfig.json');
-		if (fs.existsSync(p)) return p;
-		dir = path.resolve(dir, '..');
-	}
-	return '';
-})();
-
-if (licensePremium && !foundTsconfigPath)
-	throw new Error(`TEMPO_LICENSE_PATH is set to ${licensePremium} but no ancestor tsconfig.json was found.`);
-
-const isPremiumAvailable = Boolean(
-	licensePremium &&
-	fs.existsSync(licensePremium) &&
-	fs.existsSync(foundTsconfigPath)
-);
-const licensePath = isPremiumAvailable ? licensePremium : licenseDefault;
-
-if (isPremiumAvailable) {
-	console.log('\n\x1b[45m\x1b[37m\x1b[1m =========================================== \x1b[0m');
-	console.log('\x1b[45m\x1b[37m\x1b[1m        📦 BUILDING TEMPO: 💎 PREMIUM        \x1b[0m');
-	console.log('\x1b[45m\x1b[37m\x1b[1m =========================================== \x1b[0m');
-	console.log(`\x1b[35m🛡️  Engine: ${licensePath}\x1b[0m\n`);
-} else {
-	console.log('\n\x1b[42m\x1b[30m\x1b[1m =========================================== \x1b[0m');
-	console.log('\x1b[42m\x1b[30m\x1b[1m       📦 BUILDING TEMPO: 🍃 COMMUNITY       \x1b[0m');
-	console.log('\x1b[42m\x1b[30m\x1b[1m =========================================== \x1b[0m\n');
-}
+console.log('\n\x1b[42m\x1b[30m\x1b[1m =========================================== \x1b[0m');
+console.log('\x1b[42m\x1b[30m\x1b[1m       📦 BUILDING TEMPO: COMMUNITY         \x1b[0m');
+console.log('\x1b[42m\x1b[30m\x1b[1m =========================================== \x1b[0m\n');
 
 /**
- * Rollup Configuration for Tempo
+ * Rollup Configuration for Tempo Community Edition
  * 
  * 1. Global IIFE Bundle: Single file for <script> tags, includes all dependencies.
- * 2. Granular ESM: Multi-file for bundlers, keeps external dependencies external.
+ * 2. Minified Global IIFE Bundle: Minified for CDNs.
+ * 3. Granular ESM: Multi-file for bundlers, keeps external dependencies external.
  */
 
 function getFiles(dir, suffix = '.js') {
@@ -74,11 +42,10 @@ function getFiles(dir, suffix = '.js') {
 	return files;
 }
 
-// Generate a map of entry points, EXCLUDING the license module because we build it separately
+// Generate a map of entry points
 const entryPoints = Object.fromEntries(
 	getFiles(distPath)
 		.map(file => [path.relative(distPath, file).replace(/\.js$/, ''), file])
-		.filter(([key]) => !isPremiumAvailable || key !== 'plugin/license/license.validator')
 );
 
 const stdDir = path.resolve(__dirname, '../plugins/.std/dist');
@@ -91,7 +58,6 @@ if (fs.existsSync(stdDir)) {
 }
 
 const internalAliases = [
-	{ find: '#tempo/license', replacement: path.resolve(__dirname, 'dist/plugin/license/license.validator.js') },
 	{ find: '#tempo/std', replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') },
 	{ find: /^#library\/(.*)\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/$1.js') },
 	{ find: /^#library\/(.*)$/, replacement: path.resolve(__dirname, '../library/dist/common/$1.js') },
@@ -111,7 +77,6 @@ const internalAliases = [
 	{ find: /^@magmacomputing\/tempo\/mutate$/, replacement: path.resolve(__dirname, 'dist/module/module.mutate.js') },
 	{ find: /^@magmacomputing\/tempo\/format$/, replacement: path.resolve(__dirname, 'dist/module/module.format.js') },
 	{ find: /^@magmacomputing\/tempo\/parse$/, replacement: path.resolve(__dirname, 'dist/module/module.parse.js') },
-	{ find: /^@magmacomputing\/tempo\/ticker$/, replacement: path.resolve(__dirname, 'dist/plugin/extend/extend.ticker.js') },
 	{ find: /^@magmacomputing\/tempo\/term\/standard$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') },
 	{ find: /^@magmacomputing\/tempo\/term\/quarter$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/term.quarter.js') },
 	{ find: /^@magmacomputing\/tempo\/term\/season$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/term.season.js') },
@@ -126,61 +91,7 @@ const internalAliases = [
 ];
 
 export default [
-	...(isPremiumAvailable ? [{
-		input: licensePath,
-		output: {
-			file: 'dist/plugin/license/license.validator.js', // Overwrites the tsc output stealthily
-			format: 'es',
-			sourcemap: false
-		},
-		external: [
-			'@js-temporal/polyfill',
-			/^@magmacomputing\/tempo/,
-			/^@magmacomputing\/library/,
-			/^#library/,
-			/^#tempo/
-		],
-		plugins: [
-			{
-				name: 'manual-typescript',
-				async transform(code, id) {
-					if (!id.endsWith('.ts')) return null;
-					
-					try {
-						const result = await transform(code, {
-							loader: 'ts',
-							target: 'esnext',
-							format: 'esm',
-							sourcemap: false
-						});
-
-						return {
-							code: result.code,
-							map: null
-						};
-					} catch (err) {
-						this.error(`esbuild compilation failed in ${id}:\n${err.message}`);
-					}
-				}
-			},
-			resolve({ extensions: ['.js', '.ts'], moduleDirectories: ['node_modules'] }),
-			{
-				name: 'obfuscator',
-				renderChunk(code) {
-					return {
-						code: JavaScriptObfuscator.obfuscate(code, {
-							compact: true,
-							identifierNamesGenerator: 'mangled',
-							unicodeEscapeSequence: false
-						}).getObfuscatedCode(),
-						map: null
-					}
-				}
-			}
-		]
-	}] : []),
-
-	// 2. 🌐 GLOBAL IIFE BUNDLE
+	// 1. 🌐 GLOBAL IIFE BUNDLE
 	{
 		input: path.join(distPath, 'tempo.entry.js'),
 		output: [
@@ -213,7 +124,7 @@ export default [
 		],
 	},
 
-	// 2b. 🌐 MINIFIED GLOBAL IIFE BUNDLE
+	// 2. 🌐 MINIFIED GLOBAL IIFE BUNDLE
 	{
 		input: path.join(distPath, 'tempo.entry.js'),
 		output: [
@@ -250,7 +161,6 @@ export default [
 	// 3. 🧩 GRANULAR ESM
 	{
 		input: entryPoints,
-		// Keep dependencies external. Resolving #tempo/license via alias forces Rollup to rewrite the dynamic import to a native relative path!
 		external: ['@js-temporal/polyfill'],
 		output: {
 			dir: 'dist',
@@ -302,7 +212,6 @@ export default [
 			alias({
 				entries: internalAliases
 			}),
-			// We DO want to resolve @magmacomputing/library and bundle it into lib/ 
 			resolve({
 				extensions: ['.js'],
 				exportConditions: ['node', 'import', 'default'],

@@ -159,4 +159,28 @@ describe('Dynamic Context Evaluation in Tempo Core', () => {
 		expect(t1.sphere).toBe('south');
 		expect(t1.config.sphere).toBe('south');
 	});
+
+	test('should infer hemisphere from local timezone when explicit sphere supplier resolves to undefined', () => {
+		const sphereFn = () => undefined as any;
+		const t = new Tempo('2026-06-01T12:00:00', {
+			timeZone: 'Australia/Sydney',
+			sphere: sphereFn,
+		});
+
+		expect(t.tz).toBe('Australia/Sydney');
+		expect(t.sphere).toBe('south');
+		expect(t.config.sphere).toBe('south');
+	});
+
+	test('should infer hemisphere from global timezone when global sphere supplier resolves to undefined', () => {
+		Tempo.init({
+			timeZone: 'America/New_York',
+			sphere: () => undefined as any,
+		});
+
+		const t = new Tempo('2026-06-01T12:00:00');
+		expect(t.tz).toBe('America/New_York');
+		expect(t.sphere).toBe('north');
+		expect(t.config.sphere).toBe('north');
+	});
 });

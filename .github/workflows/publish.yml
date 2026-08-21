@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - '@magmacomputing/tempo'
+          - '@magmacomputing/tempo-pro'
           - '@magmacomputing/tempo-fns'
           - '@magmacomputing/tempo-plugin-ai'
           - '@magmacomputing/tempo-plugin-astro'
@@ -16,6 +17,7 @@ on:
           - '@magmacomputing/tempo-plugin-finance'
           - '@magmacomputing/tempo-plugin-snap'
           - '@magmacomputing/tempo-plugin-sync'
+          - '@magmacomputing/tempo-plugin-ticker'
           - 'all'
       dry_run:
         description: 'Dry run (simulate without uploading to registry)'
@@ -88,6 +90,7 @@ jobs:
 
           WORKSPACES=(
             "@magmacomputing/tempo"
+            "@magmacomputing/tempo-pro"
             "@magmacomputing/tempo-fns"
             "@magmacomputing/tempo-plugin-ai"
             "@magmacomputing/tempo-plugin-astro"
@@ -95,12 +98,13 @@ jobs:
             "@magmacomputing/tempo-plugin-finance"
             "@magmacomputing/tempo-plugin-snap"
             "@magmacomputing/tempo-plugin-sync"
+            "@magmacomputing/tempo-plugin-ticker"
           )
 
           publish_workspace() {
             local pkg="$1"
             local ver
-            ver=$(npm pkg get version --workspace="$pkg" | awk '{print $NF}' | tr -d '"')
+            ver=$(npm pkg get version --workspace="$pkg" --json | node -p "const d=JSON.parse(require('fs').readFileSync(0, 'utf8')); typeof d === 'string' ? d : (d['$pkg']?.version ?? d['$pkg'] ?? d.version ?? '')")
             echo "Checking $pkg@$ver on npm..."
 
             if [ "$DRY_RUN" != "true" ] && npm view "$pkg@$ver" version >/dev/null 2>&1; then
@@ -113,9 +117,9 @@ jobs:
           }
 
           if [ "$SELECTED_PKG" = "all" ]; then
-            echo "🔎 Preflighting all 8 package versions..."
+            echo "🔎 Preflighting all ${#WORKSPACES[@]} package versions..."
             for pkg in "${WORKSPACES[@]}"; do
-              ver=$(npm pkg get version --workspace="$pkg" | awk '{print $NF}' | tr -d '"')
+              ver=$(npm pkg get version --workspace="$pkg" --json | node -p "const d=JSON.parse(require('fs').readFileSync(0, 'utf8')); typeof d === 'string' ? d : (d['$pkg']?.version ?? d['$pkg'] ?? d.version ?? '')")
               echo "  - $pkg: $ver"
               if [ -z "$ver" ] || [ "$ver" = "null" ]; then
                 echo "❌ Failed to resolve version for $pkg"

@@ -363,7 +363,6 @@ export namespace Internal {
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
-		/** license key for premium features */									license?: string | undefined;
 	}
 
 	/** high-precision precision to measure timestamps (ms | us) */
@@ -392,7 +391,6 @@ export namespace Internal {
 		/** @internal database of plugins scoped to this state */pluginsDb: { terms: TermPlugin[]; plugins: TempoPlugin[] };
 		/** @internal internal cache engine for static terms and string parses */cache: BoundedCache<string, string>;
 		/** @internal installed-plugin dedup tracker; a ScopedSet for sandboxes (delegates has() to global rt.installed), undefined for the global state */installed?: Set<any> | ScopedSet<any>;
-		/** @internal sandbox-local license state; runtime license is centralized on TempoRuntime */license?: Internal.LicenseState;
 	}
 
 	/** debug a Tempo instantiation */
@@ -436,12 +434,11 @@ export namespace Internal {
 	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "layoutOrder" | "preFilter" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
 
 	/** Instance configuration derived from supply, storage, and discovery. */
-	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "license" | "localize" | "timeZone" | "calendar" | "locale" | "sphere">> {
+	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "localize" | "timeZone" | "calendar" | "locale" | "sphere">> {
 		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
 		/** Temporal calendar */																calendar: Temporal.CalendarLike;
 		/** locale (e.g. en-AU) */															locale: string | string[];
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
-		/** license key for premium features */									license?: string;
 		/** scope for configuration mutations */								scope: 'global' | 'local';
 		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator> };
 		/** index-signature */																	readonly [key: string]: any;
@@ -467,46 +464,6 @@ export namespace Internal {
 			/** @deprecated Passing an array of executable plugins to `plugins` is deprecated and will be removed in Tempo v4.0.0. Use `extends: [...]` instead. @internal */
 			| (TempoPlugin | TermPlugin | any)[]
 			| (TempoPlugin | TermPlugin | any);
-	}
-
-	export interface LicenseScope {
-		exp?: number;
-		updated_at?: number;
-	}
-
-	/** structure of the verified license reckoning */
-	export interface ValidationResult {
-		status: enums.LICENSE;
-		role?: string;
-		scopes: Record<string, Internal.LicenseScope>;
-		expires?: number | string;
-		issuedAt?: number;
-		issuer?: string;
-		jti?: string;
-		error?: string;
-	}
-
-	/** structure of the dynamic #tempo/license chunk */
-	export interface LicensingModule {
-		Validator: new (jwt: string) => {
-			verify(): Promise<ValidationResult>;
-			syncRevocation(jwsUrl: string, currentJti: string): Promise<{ revoked: boolean, success: boolean }>;
-		};
-	}
-
-	export interface LicenseState {
-		status: enums.LICENSE;
-		key?: string;
-		role?: string;
-		scopes: Record<string, Internal.LicenseScope>;
-		jws?: Pledge<Internal.ValidationResult>;
-		expires?: number | string;
-		issuedAt?: number;
-		issuer?: string;
-		subject?: string;
-		audience?: string;
-		jti?: string;
-		error?: string;
 	}
 }
 

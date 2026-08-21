@@ -147,6 +147,17 @@ describe('evaluation.library', () => {
 			const coalesced = await evaluateAsync(earlyPromise, rejectedPledge);
 			expect(coalesced).toBe('early-val');
 		});
+
+		it('should safely return earlier scalar when followed by a throwing thenable', async () => {
+			const throwingThenable = {
+				then() {
+					throw new Error('synchronous then error');
+				}
+			};
+
+			const result = await evaluateAsync('early-scalar', throwingThenable as any);
+			expect(result).toBe('early-scalar');
+		});
 	});
 
 	describe('evaluateConfig()', () => {

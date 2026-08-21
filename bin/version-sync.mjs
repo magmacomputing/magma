@@ -10,7 +10,7 @@ if (!version) {
 console.log(`\n🔄 Syncing version ${version} to workspaces...`);
 
 try {
-	const workspaces = ['@magmacomputing/tempo', '@magmacomputing/library'];
+	const workspaces = ['@magmacomputing/tempo', '@magmacomputing/library', '@magmacomputing/tempo-pro'];
 	let syncedCount = 0;
 	for (const ws of workspaces) {
 		try {

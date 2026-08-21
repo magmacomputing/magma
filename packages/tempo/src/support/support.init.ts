@@ -9,13 +9,11 @@ import { asType } from '#library/type.library.js';
 import { isString, isObject, isUndefined, isDefined, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries } from '#library/primitive.library.js';
-import { getStorage } from '#library/storage.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 
 import { getRuntime } from './support.runtime.js';
 import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, generateLocalizedSnippets } from './support.util.js';
-import { setLicense } from '../plugin/license/license.manager.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
 import { STATE } from './support.enum.js';
@@ -188,17 +186,9 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	state.OPTION = new Set(Object.keys(configDefaults));
 	state.ZONED_DATE_TIME = new Set(['year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond', 'offset', 'timeZone', 'calendar']);
 
-	if (isGlobal) {
+	if (isGlobal)
 		runtime.state = state;
 
-		// 4. Discovery Cascade (License)
-		let key = options.license;
-
-		if (!key) key = getStorage('TEMPO_LICENSE_KEY');
-		if (!key) key = (globalThis as any).TEMPO_LICENSE_KEY;
-
-		if (key) setLicense(state, key);
-	}
 	return state;
 }
 
@@ -346,7 +336,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'sphere':
-				setProperty(state.config, 'sphere', preserveSupplier ? optVal : arg.value);
+				if (preserveSupplier) {
+					setProperty(state.config, 'sphere', optVal);
+				} else if (isDefined(arg.value)) {
+					setProperty(state.config, 'sphere', arg.value);
+				}
 				break;
 
 			case 'catch':
@@ -394,12 +388,6 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				}
 
 				setProperty(state.config, optKey, unit);
-				break;
-			}
-
-			case 'license': {
-				const key = String(arg.value);
-				setLicense(state, key);
 				break;
 			}
 

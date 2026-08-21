@@ -101,27 +101,7 @@ export const sharedConfig: Options = {
 				});
 			}
 		},
-		{
-			name: 'license-alias',
-			setup(build) {
-				build.onResolve({ filter: /^@magmacomputing\/tempo\/(plugin|plugin-api)$/ }, (args) => {
-					if (args.importer.includes('internal/license/src/plugin.api.ts')) return;
 
-					// Dynamically check the local package.json to determine if this is a Premium plugin
-					const pkgPath = path.resolve(process.cwd(), 'package.json');
-					if (fs.existsSync(pkgPath)) {
-						const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-						const plan = pkg?.tempo?.plan;
-
-						// If the package explicitly declares plan: 'community', skip the license wrapper
-						if (plan === 'community')
-							return; // Community plugin, do not apply license wrapper
-					}
-
-					return { path: path.resolve(__dirname, 'internal/license/src/plugin.api.ts') };
-				});
-			}
-		},
 		{
 			// For ESM builds, keep @magmacomputing/tempo/plugin* external so all plugins
 			// share one runtime singleton and avoid registerSerializable collisions.

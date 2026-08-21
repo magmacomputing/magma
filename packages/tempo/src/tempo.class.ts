@@ -20,18 +20,18 @@ import type { Property, Secure } from '#library/type.library.js';
 
 import { registerPlugin, interpret, ensureModule, type TempoPlugin } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term/term.util.js';
-import type { TermPlugin, PremiumPlugin } from './plugin/term/term.type.js';
+import type { TermPlugin } from './plugin/term/term.type.js';
 
 import { AliasEngine } from './engine/engine.alias.js';
 import { PatternCompiler } from './engine/engine.pattern.js';
 import { createMasterGuard } from './engine/engine.guard.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 
-import { validateLicenseState, getLicenseSnapshot, setLicense, getLicenseState, updateScopeStatus } from './plugin/license/license.manager.js';
+import { resolveConfigSync } from './config/config.resolve.js';
 
-import { resolveMonthDay, setProperty, proto, hasOwn, resolveDisplayStatus } from './support/support.util.js';
+import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, $updateScopeStatus, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import { Interval } from './interval.class.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -125,39 +125,6 @@ export class Tempo {
 	}
 
 	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return Tempo[$Internal]().pluginsDb.terms }
-	/** @internal format raw license snapshot into human-readable license object */
-	static #formatLicense(state: Internal.State) {
-		const { jws, key, ...raw } = getLicenseSnapshot(state);
-		const ss = { timeStamp: 'ss' } as const;
-		const scopesSource = (raw.scopes && isObject(raw.scopes)) ? raw.scopes : {};
-		const scopes = Object.fromEntries(
-			Object.entries(scopesSource).map(([key, scope]) => {
-				const s = scope as any;
-				return [key, {
-					...s,
-					...(isNumber(s.exp) && { exp: new Tempo(s.exp, ss).fmt.weekTime }),
-					...(isNumber(s.updated_at) && { updated_at: new Tempo(s.updated_at, ss).fmt.weekTime }),
-				}];
-			})
-		);
-		return secure({
-			...raw,
-			status: resolveDisplayStatus(raw.status),
-			scopes,
-			...(isNumber(raw.expires) && { expires: new Tempo(raw.expires, ss).fmt.weekTime }),
-			...(isNumber(raw.issuedAt) && { issuedAt: new Tempo(raw.issuedAt, ss).fmt.weekTime }),
-		});
-	}
-
-	/** human-readable formatted license state */
-	static get license() {
-		return Tempo.#formatLicense(this[$Internal]());
-	}
-
-	/** @internal programmatically update status of a license scope (e.g. when network response determines revocation) */
-	static [$updateScopeStatus](scopeKey: string, status: string, error?: string): void {
-		updateScopeStatus(this[$Internal](), scopeKey, status, error);
-	}
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
 
 	/** @internal Master Guard predicate (implements RegExp-like interface) */static get [$guard]() { return (this[$Internal]() as any)[$guard] ?? { test: () => true }; }
@@ -370,8 +337,7 @@ export class Tempo {
 		// Side-effects
 		const newSphere = Tempo.#setSphere(shape, mergedOptions);
 		if (shape.config.scope === 'local') {
-			const parentSphere = Object.getPrototypeOf(shape.config).sphere;
-			if (newSphere !== parentSphere) shape.config.sphere = newSphere;
+			if (isDefined(newSphere)) shape.config.sphere = newSphere;
 		} else {
 			if (!isFunction(shape.config.sphere))
 				shape.config.sphere = newSphere;
@@ -563,13 +529,6 @@ export class Tempo {
 			!('options' in arg);
 
 		let options = (args.length > 1 && isOptionsArg(args[args.length - 1])) ? args.pop() : undefined;
-		const licenseKey = options?.license || (args.length === 1 && isObject(args[0]) ? args[0].license : undefined);
-		if (licenseKey) {
-			const state = this[$Internal]();
-			setLicense(state, licenseKey);
-			const license = getLicenseState(state);
-			if (license.jws?.isPending) validateLicenseState(license, license.jws);
-		}
 
 		const items = args.flat(Infinity);
 		if (isEmpty(items)) return this;
@@ -781,7 +740,6 @@ export class Tempo {
 		(globalThis as any)[normalizedDiscovery as any] = data;
 
 		const state = init(options, false, this[$Internal]());
-		if (options?.license) setLicense(state, options.license);
 		state.config.discovery = normalizedDiscovery as any;
 		ClassStates.set(SandboxTempo as any, state);
 		setPatterns(state); // compile regex patterns for the isolated sandbox state
@@ -804,27 +762,15 @@ export class Tempo {
 
 		Object.freeze(SandboxTempo);
 
-		// 🏛️ Trigger background license validation for sandbox-local license keys
-		// (mirrors the same reckoning logic in Tempo.init() for the global license)
-		const sandboxLicense = getLicenseState(state);
-		if (sandboxLicense.jws?.isPending)
-			validateLicenseState(sandboxLicense, sandboxLicense.jws);
-
 		return SandboxTempo as unknown as typeof Tempo;
 	}
 
 	/** 
-	 * Wait for the background licensing and validation engine to finish settling.
-	 * Resolves immediately if no license key or validation is pending.
-	 * @returns The final, human-readable license status ('none', 'active', 'expired', etc.)
+	 * Wait for engine readiness.
+	 * @returns The final status ('none' in Community Tempo)
 	 */
 	static async ready(): Promise<string> {
-		const rt = getRuntime();
-		const jws = rt.license?.jws;
-		if (jws) {
-			try { await jws; } catch { /* fail-safe */ }
-		}
-		return resolveDisplayStatus(rt.license.status);
+		return 'none';
 	}
 
 	/** 
@@ -948,10 +894,6 @@ export class Tempo {
 				logDebug('Tempo:', this.config, state.config);
 
 			setPatterns(state);																		// rebuild the global patterns (Master Guard etc)
-
-			// 🏛️ Licensing Reckoning (Background Verification)
-			if (rt.license.jws?.isPending)
-				validateLicenseState(rt.license, rt.license.jws);
 
 			_lifecycle.ready = true;
 			return this;
@@ -1108,36 +1050,8 @@ export class Tempo {
 	static get instant() { return Temporal.Instant.fromEpochNanoseconds(Tempo.now()) }
 
 	/** static Tempo.terms (registry) */
-	static get terms(): Secure<PremiumPlugin[]> & Record<string, PremiumPlugin> {
-		const rt = getRuntime();
-		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => {
-			const item = { ...rest } as any;
-			if (hasOwn(rt.license.scopes, rest.key)) {
-				const meta = rt.license.scopes[rest.key];
-				item.status = resolveDisplayStatus(rt.license.status);
-				item.expires = meta.exp ?? rt.license.expires;
-				if (meta.updated_at) item.updated = meta.updated_at;
-			}
-			return item;
-		});
-
-		// 📋 Synthetic stubs: surface JWT-claimed scopes that haven't been registered yet
-		const registeredKeys = new Set(list.map((t: any) => t.key));
-		const licenseStatus = rt.license.status;
-		if (licenseStatus && licenseStatus !== 'none') {
-			for (const [scopeKey, meta] of Object.entries(rt.license.scopes || {})) {
-				if (!registeredKeys.has(scopeKey)) {
-					const m = meta as any;
-					list.push({
-						key: scopeKey,
-						description: `Premium plugin (uninstalled)`,
-						status: resolveDisplayStatus(licenseStatus),
-						expires: m?.exp ?? rt.license.expires,
-						...(m?.updated_at && { updated: m.updated_at }),
-					} as any);
-				}
-			}
-		}
+	static get terms(): Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>> {
+		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => ({ ...rest } as any));
 
 		// treats `Tempo.terms` as array-like and indexable by key.
 		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key)) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
@@ -1233,7 +1147,8 @@ export class Tempo {
 			setPatterns(state);
 		});
 
-		Tempo.init();																						// synchronously initialize the library
+		const syncConfig = resolveConfigSync();
+		Tempo.init(syncConfig || {});																						// synchronously initialize the library
 		getRuntime().logger = logTempo;
 	}
 
@@ -1492,17 +1407,10 @@ export class Tempo {
 			} else {
 				if (!ensureModule(this, 'TermsModule')) return undefined;
 
-				// 🛡️ Lazy Proxy Guard (Licensing)
-				if (this.#isBlocked(key)) return undefined;
-
 				const term = Tempo.#termMap.get(key);
 				if (term) {
 					const isKeyOnly = term.key === key;
 					const define = (keyOnly: boolean) => {
-						// 🛡️ Resolution Guard (Licensing)
-						// We check again to handle the transition from Pending -> Revoked/Expired
-						if (getRuntime().license.status !== LICENSE.Active && this.#isBlocked(key)) return undefined;
-
 						try {
 							const result = term.define.call(this, keyOnly);
 							const res = Array.isArray(result) ? getTermRange(this, result, keyOnly) : result;
@@ -1540,9 +1448,6 @@ export class Tempo {
 		} else {
 			Tempo.#terms.forEach(term => {
 				const define = (keyOnly: boolean, anchor?: any) => {
-					// 🛡️ Resolution Guard (Licensing)
-					if (getRuntime().license.status !== LICENSE.Active && this.#isBlocked(term.key)) return undefined;
-
 					try {
 						const res = term.resolve ? term.resolve.call(this, anchor) : term.define.call(this, keyOnly, anchor);
 						const out = (getTermRange(this, (Array.isArray(res) ? (res as any) : [res]), keyOnly, anchor) as any);
@@ -1747,10 +1652,14 @@ export class Tempo {
 			}
 		}
 
-		const hasExplicitSphere = isDefined(options.sphere) || classState.userProvidedKeys?.has('sphere');
-		const evaluatedSphere = hasExplicitSphere
-			? evaluate(options.sphere, classState.config.sphere)
-			: (this.#local.config.timeZone ? getHemisphere(String(this.#local.config.timeZone)) : undefined) ?? evaluate(classState.config.sphere);
+		const hasExplicitOption = isDefined(options.sphere);
+		const evaluatedExplicit = hasExplicitOption ? evaluate(options.sphere) : (classState.userProvidedKeys?.has('sphere') ? evaluate(classState.config.sphere) : undefined);
+		const inferredSphere = this.#local.config.timeZone ? getHemisphere(String(this.#local.config.timeZone)) : undefined;
+		const evaluatedSphere = evaluate(
+			evaluatedExplicit,
+			inferredSphere,
+			classState.config.sphere
+		);
 		if (isDefined(evaluatedSphere))
 			setProperty(this.#local.config, 'sphere', evaluatedSphere);
 
@@ -1863,18 +1772,6 @@ export class Tempo {
 		return true;
 	}
 
-	#isBlocked(key: string): boolean {
-		const rt = getRuntime();
-		const blocked = [LICENSE.Revoked, LICENSE.Expired, LICENSE.Invalid] as readonly string[];
-
-		if (blocked.includes(rt.license.status) && hasOwn(rt.license.scopes, key)) {
-			const msg = `License for premium term '${key}' is ${rt.license.status}. Access denied.`;
-			logWarn(msg, this.#local.config);
-			return true;
-		}
-
-		return false;
-	}
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

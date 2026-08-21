@@ -2,29 +2,20 @@
 
 Tempo v3.x finalizes the plugin ecosystem by extracting advanced features into standalone, licensed packages.
 
-## 🔁 Migrating from version 2.x to 3.0.0 (Ticker Extraction)
+## 🔁 Migrating to Tempo v3.x (Ticker Extraction)
 
-The `TickerPlugin` has been extracted from the core open-source repository into a standalone premium plugin.
+The `TickerPlugin` has been extracted from the core engine into a standalone open-source Community plugin (`@magmacomputing/tempo-plugin-ticker`).
 
 **Action Required**:
-1. If you use `Tempo.ticker()`, you must now install `@magmacomputing/tempo-plugin-ticker` alongside `@magmacomputing/tempo`.
-2. **Activate your License**: Obtain your JWT license key.
-   <div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
-     <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
-       <img src="https://registry.magmacomputing.com.au/registry-logo.svg" width="48" height="48" alt="Tempo License Registry" style="margin: 0;" />
-     </a>
-     <div>
-       <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
-       Manage your subscriptions and retrieve your license key.
-     </div>
-   </div>
-3. Import and register the plugin in your application initialization:
+1. If you use `Tempo.ticker()`, install `@magmacomputing/tempo-plugin-ticker` alongside `@magmacomputing/tempo`.
+2. Import and register the plugin in your application initialization:
    ```javascript
    import { Tempo } from '@magmacomputing/tempo';
    import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
-   Tempo.init({ license: 'YOUR_JWT_KEY' });
-   Tempo.extend(TickerPlugin);
+   Tempo.init({
+     plugins: [TickerPlugin]
+   });
    ```
 
 # ⚠️ Migrating to Tempo v2.x

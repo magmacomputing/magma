@@ -11,25 +11,7 @@ const isDist = process.env.TEST_DIST === 'true';
 const polyfill = resolve(__dirname, './bin/temporal-polyfill.ts');
 const consoleSpySetup = resolve(__dirname, './test/support/setup.console-spy.ts');
 
-const licensePremium = process.env.TEMPO_LICENSE_PATH ? resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
 const licenseDefault = resolve(__dirname, './src/plugin/license/license.validator.ts');
-
-const foundTsconfigPath = (() => {
-	if (!licensePremium) return '';
-	let dir = dirname(licensePremium);
-	while (dir !== resolve(dir, '..')) {
-		const p = resolve(dir, 'tsconfig.json');
-		if (fs.existsSync(p)) return p;
-		dir = resolve(dir, '..');
-	}
-	return '';
-})();
-
-const isPremiumAvailable = Boolean(
-	licensePremium &&
-	fs.existsSync(licensePremium) &&
-	fs.existsSync(foundTsconfigPath)
-);
 
 export default defineConfig({
 	esbuild: false,
@@ -87,10 +69,10 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/tempo\/library$/, replacement: resolve(__dirname, './dist/library.index.js') },
 			{ find: /^@magmacomputing\/tempo$/, replacement: resolve(__dirname, './dist/tempo.index.js') },
 		] : [
-			{ find: /^#tempo\/license$/, replacement: isPremiumAvailable ? (licensePremium as string) : licenseDefault },
+			{ find: /^#tempo\/license$/, replacement: licenseDefault },
 			// Also alias the relative path used by the dynamic import in tempo.class.ts, so vi.mock('#tempo/license') intercepts it
-			{ find: resolve(__dirname, './src/plugin/license/license.validator.ts'), replacement: isPremiumAvailable ? (licensePremium as string) : licenseDefault },
-			{ find: resolve(__dirname, './src/plugin/license/license.validator.js'), replacement: isPremiumAvailable ? (licensePremium as string) : licenseDefault },
+			{ find: resolve(__dirname, './src/plugin/license/license.validator.ts'), replacement: licenseDefault },
+			{ find: resolve(__dirname, './src/plugin/license/license.validator.js'), replacement: licenseDefault },
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './src/plugin/plugin.index.ts') },
 			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(__dirname, './src/plugin-api.index.ts') },
 			{ find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: resolve(__dirname, './src/plugin/$1.ts') },

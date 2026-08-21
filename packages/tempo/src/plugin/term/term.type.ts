@@ -27,15 +27,6 @@ export interface TermPlugin {
 	define: (this: Tempo, keyOnly?: boolean, anchor?: any) => string | Range | Range[] | undefined;
 }
 
-/**
- * ## PremiumPlugin
- * Augmented TermPlugin metadata including licensing state.
- */
-export interface PremiumPlugin extends Omit<TermPlugin, 'define' | 'resolve'> {
-	status?: enums.LICENSE;
-	expires?: number;
-	updated?: string;
-}
 
 /** mapping of terms to their resolved values */
 export type Terms = Property<any>;

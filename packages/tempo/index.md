@@ -56,7 +56,7 @@ const features = [
   { title: 'tomorrow at noon', details: 'Semantic parsing for events and periods. Resolve human-readable strings with zero configuration.', icon: '🎯' },
   { title: 'Cycle Persistence', details: 'Shift by semantic terms while preserving your relative day-of-period offset.', icon: '🔄' },
   { title: 'Tempo.ticker()', details: 'Premium Plugin: State-of-the-art timing engine with AsyncGenerator support and native Daylight Saving Time resolution.', icon: '⏱️' },
-  { title: 'Temporal Inside', details: 'Built on the ECMAScript Temporal API. Inherit the reliability of the future standard.', icon: '🏗️' },
+  { title: 'Temporal Inside', details: 'Built on the ECMAScript Temporal API. Inherit the reliability of the modern standard.', icon: '🏗️' },
   { title: 'Monorepo Resilient', details: 'Built for stability in complex environments with proxy-protected registries.', icon: '🛡️' },
   { title: 'Tree-Shakable', details: 'Keep your bundle light. Only import the modules you need—from Fiscal calendars to pulsing Tickers.', icon: '📦' },
   { title: 'Business Aware', details: 'Native support for fiscal quarters, zodiac signs, and meteorological seasons. Perfect for financial applications or astrology buffs or meteorologists !', icon: '📈' }

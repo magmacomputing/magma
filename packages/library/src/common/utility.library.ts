@@ -1,5 +1,5 @@
 import { ownEntries } from '#library/primitive.library.js';
-import { isDefined, isPrimitive } from '#library/assertion.library.js';
+import { isDefined, isFunction, isPrimitive } from '#library/assertion.library.js';
 import { sym } from '#library/symbol.library.js';
 import type { Secure, ValueOf } from '#library/type.library.js';
 
@@ -62,6 +62,7 @@ export const sleep = (msg = 'sleep: timed out', timeout = 2000) =>
 export const CONTEXT = {
 	'Unknown': 'unknown',
 	'Browser': 'browser',
+	'WebWorker': 'web-worker',
 	'NodeJS': 'nodejs',
 	'Deno': 'deno',
 	'GoogleAppsScript': 'google-apps-script',
@@ -83,17 +84,22 @@ type Context = { global: any, type: CONTEXT }
 export const getContext = (): Context => {
 	const global = globalThis as any;
 
-	if (isDefined(global.SpreadsheetApp))
-		return { global, type: CONTEXT.GoogleAppsScript };
+	try {
+		if (isDefined(global.SpreadsheetApp))
+			return { global, type: CONTEXT.GoogleAppsScript };
 
-	if (isDefined(global.window?.document))
-		return { global, type: CONTEXT.Browser };
+		if (isDefined(global.window?.document))
+			return { global, type: CONTEXT.Browser };
 
-	if (isDefined(global.Deno))
-		return { global, type: CONTEXT.Deno };
+		if (isFunction(global.importScripts) || (isDefined(global.WorkerGlobalScope) && global instanceof global.WorkerGlobalScope))
+			return { global, type: CONTEXT.WebWorker };
 
-	if (isDefined(global.process?.versions?.node))
-		return { global, type: CONTEXT.NodeJS };
+		if (isDefined(global.Deno))
+			return { global, type: CONTEXT.Deno };
+
+		if (isDefined(global.process?.versions?.node) && global.process?.release?.name === 'node')
+			return { global, type: CONTEXT.NodeJS };
+	} catch { }
 
 	return { global, type: CONTEXT.Unknown };
 }

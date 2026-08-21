@@ -76,6 +76,11 @@ export function getStorage<T>(key?: string, dflt?: T): T | undefined {
 			store = context.global.PropertiesService?.getUserProperties().getProperty(key);
 			break;
 
+		case CONTEXT.WebWorker:
+		case CONTEXT.Unknown:
+			store = undefined;
+			break;
+
 		default:
 			throw new Error(`Cannot determine Javascript context: ${context.type}`);
 	}
@@ -124,6 +129,10 @@ export function setStorage<T>(key: string, val?: T) {
 			set
 				? context.global.PropertiesService?.getUserProperties().setProperty(key, stash)
 				: context.global.PropertiesService?.getUserProperties().deleteProperty(key)
+			break;
+
+		case CONTEXT.WebWorker:
+		case CONTEXT.Unknown:
 			break;
 
 		default:

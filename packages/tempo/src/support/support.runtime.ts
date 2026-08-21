@@ -1,5 +1,4 @@
 import { sym } from './support.symbol.js';
-import { LICENSE } from './support.enum.js';
 import type { TermPlugin } from '../plugin/term/term.type.js';
 import type { Extension } from '../plugin/plugin.type.js';
 import type { Internal } from '../tempo.type.js';
@@ -42,9 +41,6 @@ export class TempoRuntime {
 	readonly installed: Set<any> = new Set();
 	/** decentralized reset hooks — fired on every registryReset() call */
 	readonly resetHooks: Set<() => void> = new Set();
-
-	/** current license state */
-	readonly license: Internal.LicenseState = { status: LICENSE.None, scopes: {} };
 
 	/** persistent global configuration state — mirrors Tempo.#global */
 	state?: Internal.State | undefined;
@@ -179,27 +175,6 @@ export function getRuntime(): TempoRuntime {
  */
 export function resetRuntime(): void {
 	const rt = getRuntime();
-	// 🛡️ Race Condition Guard: Bump JTI to invalidate pending async reckonings
-	rt.license.jti = Math.random().toString(36).slice(2);
-
-	const oldJws = (rt.license as any).jws as any;
-	if (oldJws && oldJws.isPending) {
-		if (oldJws.promise && typeof oldJws.promise.catch === 'function')
-			oldJws.promise.catch(() => { });
-		// Leave the stale runtime pledge to settle naturally.
-		// Its internal handlers and JTI guard will ignore stale validation results.
-	}
-
 	rt.state = undefined;
-
-	const lic = rt.license as any;
-	lic.status = LICENSE.None;
-	lic.scopes = {};
-	delete lic.key;
-	// We keep the jti we just set as the "new" marker
-	delete lic.issuer;
-	delete lic.expires;
-	delete lic.jws;
-	delete lic.error;
 	rt.usrCount = 0;
 }

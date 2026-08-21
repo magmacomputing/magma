@@ -143,8 +143,9 @@ While you *could* import directly from the URL everywhere, the best practice is 
   import { Tempo } from '@magmacomputing/tempo';
   import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
-  Tempo.init({ license: 'YOUR_JWT_KEY' });
-  Tempo.extend(TickerPlugin);
+  Tempo.init({ 
+    plugins: [TickerPlugin] 
+  });
 </script>
 ```
 

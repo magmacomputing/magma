@@ -47,7 +47,7 @@
     }
   },
   "scripts": {
-    "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run",
+    "test": "vitest run",
     "build": "npm run clean && npm run build:esm && npm run build:global",
     "build:esm": "node ../../node_modules/typescript-7/bin/tsc -b",
     "build:global": "rollup -c",
@@ -58,7 +58,7 @@
   },
   "peerDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/tempo": "^3.7.0"
+    "@magmacomputing/tempo": "^3.12.0"
   },
   "peerDependenciesMeta": {
     "@js-temporal/polyfill": {

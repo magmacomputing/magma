@@ -6,13 +6,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.12.0] - 2026-08-19
+## [4.0.0] - 2026-08-21
+
+### Breaking Changes
+- **100% Open-Source Community Core**: Completely removed commercial licensing, JWT validation, JWS verification, domain-locking, and premium plugin gating (`license.manager.ts`, `license.validator.ts`, `Tempo.license`, `#formatLicense`, `#isBlocked`, `validateLicenseState`, `LICENSE` enum, `$updateScopeStatus`, and `#tempo/license` export subpath).
+- **Commercial Package Decoupling**: Relocated all enterprise licensing hooks and commercial plugin management to the `@magmacomputing/tempo-pro` wrapper package.
+- **Config Auto-Discovery Modernization**: Dropped `.cjs` configuration discovery support in favor of modern ES-preferred module extensions (`.mts`, `.ts`, `.mjs`, `.js`, `.jsonc`, `.json`).
+- **`Tempo.ready()` Return Signature**: Simplified `Tempo.ready()` return value to a static `'none'` status for community core compatibility.
 
 ### Added
+- **Synchronous ESM & JSONC Config Discovery (`resolveConfigSync`)**: Introduced zero-`await` static startup configuration discovery (`resolveConfigSync()`) utilizing `parseJSONC` for `.jsonc` / `.json` files. Automatically executed inside `Tempo`'s `static { ... }` initialization block at module load time.
 - **Lazy Dynamic Context & Options Evaluation**: Upgraded `BaseOptions` and `Tempo` options (`timeZone`, `locale`, `calendar`, `sphere`) to support `Evaluable<T>` suppliers (`T | (() => T)`). This enables dynamic, per-request context evaluation (such as multi-tenant timezone or locale resolution) without rebuilding configuration state.
 - **Evaluation Utilities Export (`@magmacomputing/tempo/library`)**: Re-exported `Evaluable`, `AsyncEvaluable`, `evaluate`, `evaluateAsync`, `evaluateConfig`, `evaluateConfigAsync`, and `dynamicProxy` from the `#library` surface for downstream plugins and custom extensions.
 
 ### Changed & Fixed
+- **Term Registry Simplification**: Simplified `Tempo.terms` getter to operate purely on open-source term plugins, removing legacy licensing metadata mapping and synthetic uninstalled scope claims.
 - **Documentation & LLM Corpus Alignment**: Corrected mutating method descriptions in `ai-integration.md` and `public/llms.txt` to strictly reference supported immutable methods (`.add()`, `.subtract()`, and `.set()`).
 
 ## [3.11.1] - 2026-08-10
