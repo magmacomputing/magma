@@ -33,7 +33,9 @@
   "peerDependencies": {
     "@magmacomputing/tempo": "^3.11.1 || ^4.0.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@magmacomputing/tempo-fns": "workspace:*"
+  },
   "keywords": [
     "tempo",
     "tempo-plugin",

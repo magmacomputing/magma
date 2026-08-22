@@ -29,8 +29,10 @@ describe('Discovery in Extend', () => {
 	it('should apply formats discovery via extend', () => {
 		Tempo.extend({
 			options: {},
-			formats: {
-				customFormat: '{yyyy}-{mm}'
+			registry: {
+				formats: {
+					customFormat: '{yyyy}-{mm}'
+				}
 			}
 		});
 		expect(Tempo.registry.formats.customFormat).toBe('{yyyy}-{mm}');

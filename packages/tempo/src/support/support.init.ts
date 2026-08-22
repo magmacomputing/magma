@@ -21,6 +21,7 @@ import { STATE } from './support.enum.js';
 import enums from './support.enum.js';
 import { BoundedCache } from './support.cache.js';
 import * as t from '../tempo.type.js';
+import { registryUpdate } from './support.register.js';
 
 function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
 	const isBoundedCacheOpt = Boolean(optionsCache?.isBoundedCache || optionsCache instanceof BoundedCache);
@@ -255,14 +256,17 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 			case 'registry':
 				if (isObject(arg.value)) {
-					if (!state.config.registry) state.config.registry = {} as any;
+					state.config.registry = {
+						...state.config.registry,
+						modifiers: { ...(state.config.registry?.modifiers ?? {}) }
+					};
 					if (arg.value.formats) {
-						if (state.config.registry.formats?.extend) state.config.registry.formats = state.config.registry.formats.extend(arg.value.formats) as t.FormatRegistry;
-						else setProperty(state.config.registry, 'formats', arg.value.formats);
+						const extended = state.config.registry.formats?.extend ? state.config.registry.formats.extend(arg.value.formats) : arg.value.formats;
+						setProperty(state.config.registry, 'formats', extended);
 					}
 					if (arg.value.locales) {
-						if ((state.config.registry.locales as any)?.extend) state.config.registry.locales = (state.config.registry.locales as any).extend(arg.value.locales);
-						else setProperty(state.config.registry, 'locales', arg.value.locales);
+						const extended = (state.config.registry.locales as any)?.extend ? (state.config.registry.locales as any).extend(arg.value.locales) : arg.value.locales;
+						setProperty(state.config.registry, 'locales', extended);
 					}
 					if (arg.value.modifiers) {
 						// Deep-merge user modifiers with existing defaults so English keywords remain active
@@ -280,11 +284,14 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						}
 
 						setProperty(state.config.registry, 'modifiers', merged);
+						patternsDirty = true;
 					}
 					if (arg.value.tokens) {
 						const existing = state.config.registry.tokens ?? {};
 						setProperty(state.config.registry, 'tokens', { ...existing, ...arg.value.tokens });
 					}
+					if (arg.value.numbers)
+						registryUpdate('NUMBER', arg.value.numbers);
 
 					const parseMap: Record<string, 'snippet' | 'layout' | 'event' | 'period' | 'ignore'> = {
 						snippets: 'snippet',
@@ -409,8 +416,10 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'plugins':
-				if (isObject(arg.value) && !Array.isArray(arg.value) && !('name' in arg.value) && !('key' in arg.value) && !('install' in arg.value))
-					setProperty(state.config, 'plugins', arg.value);
+				if (isObject(arg.value) && !Array.isArray(arg.value)) {
+					const existing = state.config.plugins ?? {};
+					setProperty(state.config, 'plugins', { ...existing, ...arg.value });
+				}
 				break;
 
 			default:

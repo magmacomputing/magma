@@ -194,8 +194,6 @@ export type OneKey<K extends keyof any, V, KK extends keyof any = K> =
 		{ [Q in keyof O]: O[Q] } : never
 	}[K]
 
-/** @deprecated natively supported by modern IDEs via hover verbosity. Slated for removal in v4.0.0 */
-export type Prettify<T> = { [K in keyof T]: T[K]; } & {}
 export type ParseInt<T> = T extends `${infer N extends number}` ? N : never
 export type Plural<T extends string> = `${T}s`;
 export type Singular<T extends string> = T extends `${infer S}s`

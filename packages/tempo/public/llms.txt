@@ -4,10 +4,10 @@
 
 ## Core Architectural Rules & Philosophy
 - **Temporal Engine**: Tempo uses native `Temporal` in modern runtimes or `@js-temporal/polyfill`. Never instantiate legacy JavaScript `Date`.
-- **Strict Immutability**: `Tempo` instances are completely frozen (`Object.freeze`). All mutating operations (`add`, `subtract`, `set`, `startOf`, `endOf`) return a new `Tempo` instance.
+- **Strict Immutability**: `Tempo` instances are completely frozen (`Object.freeze`). All mutating operations (`add`, `subtract`, `set`) return a new `Tempo` instance.
 - **Constructor Instantiation**: Instantiation and string parsing ALWAYS use the `new Tempo(...)` constructor. (There are no static `Tempo.from` or `Tempo.parse` functions; `Tempo.parse` is a static configuration object getter).
 - **Live Getters**: Core property accessors use short layout tokens: `.yy` (year), `.mm` (month), `.dd` or `.day` (day of month), `.hh` (hour), `.mi` (minute), `.ss` (second), `.ms` (millisecond), `.us` (microsecond), `.ns` (nanosecond), `.dow` (day of week 1-7), `.doy` (day of year 1-366), `.wy` (week of year), `.tz` (timeZone ID), `.cal` (calendar ID), `.ts` (timestamp ms), `.iso` (ISO 8601 UTC string), `.isValid`. *(Note: Long getters like `.year`, `.month`, `.hour`, `.minute`, `.second` do not exist directly on Tempo instances).*
-- **Configuration & Plugins**: System options and plugin registration are configured via `Tempo.init({ timeZone: 'UTC', monthDay: true, extends: [Plugin], registry: { layouts: { ... } } })`. Core functionality can also be extended dynamically via `Tempo.extend(Plugin)`.
+- **Configuration & Plugins**: System options and plugin registration are configured via `Tempo.init({ timeZone: 'UTC', monthDay: true, extends: [Plugin], registry: { layouts: { ... }, formats: { ... }, numbers: { ... } } })`. Core functionality can also be extended dynamically via `Tempo.extend(Plugin)`.
 
 ## Formatting & Parsing Tokens
 | Token | Description | Sample Output |
@@ -41,7 +41,7 @@ import { Tempo } from '@magmacomputing/tempo';
 const t = new Tempo('2026-08-04T15:30:00Z');
 
 // Format using layout tokens
-t.format('{mon} {dd}, {yy}'); // "August 04, 2026"
+t.format('{mon} {dd}, {yyyy}'); // "August 04, 2026"
 
 // Immutably manipulate date
 const nextWeek = t.add({ days: 7 });
@@ -53,10 +53,11 @@ import { Tempo } from '@magmacomputing/tempo';
 
 // Instantiation with relative expressions or durations
 const t1 = new Tempo('next Friday');
-const t2 = new Tempo('+3 days');
+const t2 = new Tempo('in 3 days');
 
-// Immutable boundary & arithmetic helpers
-const startOfMonth = new Tempo().startOf('month');
+// Immutable boundary & arithmetic helpers via .set()
+const startOfMonth = new Tempo().set({ month: 'start' });
+const endOfYear = new Tempo().set({ year: 'end' });
 const inTwoHours = new Tempo().add({ hours: 2 });
 ```
 
@@ -68,7 +69,7 @@ import { Tempo } from '@magmacomputing/tempo';
 const tIso = new Tempo('2026-08-04T15:30:00+10:00');
 
 // Pass instance options as the second parameter
-const tSydney = new Tempo('2026-08-04T15:30:00Z', { timeZone: 'Australia/Sydney' });
+const tSydney = new Tempo('2026-08-04T15:30:00', { timeZone: 'Australia/Sydney' });
 ```
 
 ### 4. System Initialization & Month-Day / Custom Layout Configuration

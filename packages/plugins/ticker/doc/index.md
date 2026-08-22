@@ -126,6 +126,23 @@ await using weeklyMeeting = Tempo.ticker({
 });
 ```
 
+### 7. Cron Expressions (Standard 5-Field Syntax)
+Ticker natively accepts 5-part cron expressions (`min hr dom mon dow`) powered by `@magmacomputing/tempo-fns`. You can pass cron strings directly or via the `cron` configuration option.
+
+```typescript
+// Pattern A: Positional 5-field cron string (e.g., 9am Monday–Friday)
+await using weekdaySync = Tempo.ticker('0 9 * * 1-5', (t) => {
+  console.log(`Workday morning pulse: ${t.format('isoTime')}`);
+});
+
+// Pattern B: Options object with cron schedule and boundary limits
+await using healthCheck = Tempo.ticker({
+  cron: '*/15 * * * *', // Every 15 minutes
+  label: '15-Minute Healthcheck',
+  limit: 10
+});
+```
+
 ## Usage Patterns
 
 ### 1. Resource Management (Recommended)

@@ -26,7 +26,7 @@ export function unwrap<T extends object>(obj: T): T {
 
 	// Use direct reads so proxy get-traps can surface synthetic $Target values.
 	while (curr) {
-		const next = curr[sym.$Target] ?? (curr as any).$Target;
+		const next = curr[sym.$Target];
 		if (!next || depth >= maxDepth) break;
 		curr = next;
 		depth++;

@@ -116,8 +116,10 @@ describe('Sandbox Factory Pattern', () => {
 
 	it('should support full discovery payloads (formats, timeZones) in create()', () => {
 		const discovery = {
-			formats: {
-				'sandboxed_fmt': '{dd}/{mm}/{yyyy}'
+			registry: {
+				formats: {
+					'sandboxed_fmt': '{dd}/{mm}/{yyyy}'
+				}
 			},
 			timeZones: {
 				'sandbox_tz': 'Australia/Sydney'

@@ -1,9 +1,12 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { isRRuleString, getNextRRuleEpoch, isString } from '@magmacomputing/library';
+import { nextCron, isCronString } from '@magmacomputing/tempo-fns';
 import {
 	enums, definePlugin, attachStatics, type TempoPlugin,
-	isObject, isFunction, isDefined, isUndefined, isEmpty, isNumeric, isNumber, Pledge, asArray, instant, normaliseFractionalDurations,
+	isObject, isFunction, isDefined, isEmpty, isNumeric, isNumber, Pledge, asArray, instant, normaliseFractionalDurations,
 } from '@magmacomputing/tempo/plugin-api';
+
+export { isCronString };
 
 declare module '@magmacomputing/tempo' {
 	namespace Tempo {
@@ -13,7 +16,7 @@ declare module '@magmacomputing/tempo' {
 		/**
 		 * Creates a new Ticker instance to schedule recurring events.
 		 * 
-		 * @param interval - The ticker interval or options configuration
+		 * @param interval - The ticker interval, cron string, rrule, or options configuration
 		 * @param callback - Optional callback to execute on each tick
 		 * @returns A Ticker.Instance that can be awaited, iterated, or listened to
 		 */
@@ -35,8 +38,8 @@ export const Ticker = {
 	get active() {
 		return asArray(ACTIVE_TICKERS)
 			.map((t): Ticker.Snapshot => {
-				const { label, next, ticks, limit, interval, rrule, stopped } = t.info;
-				return { ticker: t, label, next, ticks, limit, interval, rrule, stopped };
+				const { label, next, ticks, limit, interval, rrule, cron, stopped } = t.info;
+				return { ticker: t, label, next, ticks, limit, interval, rrule, cron, stopped };
 			});
 	},
 };
@@ -51,6 +54,7 @@ export namespace Ticker {
 	/** ticker configuration and stop conditions */
 	export type Options = {
 		label?: string;
+		cron?: string;
 		rrule?: string | { rrule: string;[key: string]: any };
 		years?: number; months?: number; weeks?: number; days?: number;
 		hours?: number; minutes?: number; seconds?: number;
@@ -80,6 +84,7 @@ export namespace Ticker {
 			limit: number | undefined;
 			interval: Record<string, any>;
 			rrule: string | undefined;
+			cron: string | undefined;
 			stopped: boolean;
 		};
 	}
@@ -108,6 +113,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#label: string | undefined;
 	#payload: Record<string, any> = {};
 	#rrule: string | undefined;
+	#cron: string | undefined;
 	#current: Tempo;
 	#until: Tempo | undefined;
 	#limit: number | undefined;
@@ -145,7 +151,9 @@ class TickerInstance implements Ticker.Descriptor {
 				break;
 			default:
 				if (isDefined(arg1)) {
-					if (isRRuleString(arg1)) {
+					if (isCronString(arg1)) {
+						rawOptions.cron = arg1;
+					} else if (isRRuleString(arg1)) {
 						rawOptions.rrule = arg1;
 					} else {
 						const num = Number(arg1);
@@ -158,11 +166,13 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 
 		// ── Initialization ───────────────────────────────────────────────────
-		const { label, limit: lmt, until: stopAt, seed: startAt, rrule: rruleOption, ...rest } = rawOptions;
+		const { label, limit: lmt, until: stopAt, seed: startAt, rrule: rruleOption, cron: cronOption, ...rest } = rawOptions;
 		this.#label = label;
 		this.#limit = lmt;
 		if (rruleOption)
 			this.#rrule = isString(rruleOption) ? rruleOption : rruleOption.rrule;
+		if (cronOption)
+			this.#cron = cronOption;
 
 		if (cb) this.#listeners.add(cb);
 
@@ -173,17 +183,18 @@ class TickerInstance implements Ticker.Descriptor {
 
 		const isSeed = isDefined(rawOptions.seed);
 		const isRRule = isDefined(this.#rrule);
+		const isCron = isDefined(this.#cron);
 		const isInterval = !isEmpty(this.#payload) || (isDefined(rawOptions.seconds) && isNumber(rawOptions.seconds));
 
-		if (isDefined(arg1) && !isInterval && !isSeed && !isRRule && !cb) {
-			const err = new Error(`Invalid Ticker interval or seed: ${String(arg1)}`);
+		if (isDefined(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb) {
+			const err = new Error(`Invalid Ticker interval, seed, cron, or rrule: ${String(arg1)}`);
 			if (!this.#TempoClass.config?.catch) throw err;
 			console.error(err.message);
 		}
 
 		this.#until = stopAt ? new this.#TempoClass(isOptions(stopAt) ? undefined : stopAt, isOptions(stopAt) ? { ...rest, ...stopAt } : rest) : undefined;
 
-		if (isEmpty(this.#payload) && !isRRule) {
+		if (isEmpty(this.#payload) && !isRRule && !isCron) {
 			if (isDefined(startAt)) this.#limit ??= 1;
 			else this.#payload.seconds = 1;
 		}
@@ -209,7 +220,7 @@ class TickerInstance implements Ticker.Descriptor {
 			console.error(err.message);
 		} else {
 			try {
-				if (this.#rrule) {
+				if (this.#cron || this.#rrule) {
 					this.#isForward = true;
 					this.#isInstant = false;
 					ACTIVE_TICKERS.add(this.#self);
@@ -311,7 +322,9 @@ class TickerInstance implements Ticker.Descriptor {
 			return t;
 		}
 
-		if (this.#rrule) {
+		if (this.#cron) {
+			this.#current = nextCron(t, this.#cron);
+		} else if (this.#rrule) {
 			const nextMs = getNextRRuleEpoch(this.#rrule, t.epoch.ms);
 			this.#current = new (this.#TempoClass as any)(nextMs, t.config);
 		} else {
@@ -366,6 +379,7 @@ class TickerInstance implements Ticker.Descriptor {
 			limit: this.#limit,
 			interval: { ...this.#payload },
 			rrule: this.#rrule,
+			cron: this.#cron,
 			stopped: this.#stopped,
 		}
 	}

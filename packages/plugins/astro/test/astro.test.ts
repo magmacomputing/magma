@@ -6,7 +6,7 @@ describe('Astro Plugin (Term Implementation)', () => {
 
 	beforeEach(() => {
 		// Bypass monorepo dual-package (src vs dist) type hazard for test plugins
-		Tempo.init({ plugins: [ParseModule as any, AstroTerm as any] });
+		Tempo.init({ extends: [ParseModule, AstroTerm] });
 	});
 
 	it('should register "astro" and "astronomy" terms', () => {

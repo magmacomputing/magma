@@ -1,3 +1,62 @@
+# ⚠️ Migrating to Tempo v4.0.0
+
+Tempo v4.0.0 introduces a standardized plugin & registry architecture, strict configuration namespaces, and excises legacy v3.x deprecated interfaces.
+
+## 🔌 Plugin Registration (`extends` vs `plugins`)
+
+In v3.x, passing plugin modules to install via `plugins: [PluginA]` was supported. In v4.0.0, plugin module installation is strictly separated from plugin runtime configuration.
+
+- **Plugin Installation**: Use `extends: [PluginA, PluginB]` or `Tempo.extend(PluginA, PluginB)`.
+- **Plugin Configuration**: The top-level `plugins` option is now reserved exclusively as a configuration dictionary (`plugins: { ticker: { interval: 1000 }, ai: { provider: 'groq' } }`).
+
+### Example Migration:
+```javascript
+// ❌ v3.x (Deprecated)
+Tempo.init({
+  plugins: [TickerPlugin]
+});
+
+// ✅ v4.0.0
+Tempo.init({
+  extends: [TickerPlugin],
+  plugins: {
+    ticker: { interval: 500 }
+  }
+});
+```
+
+## 📂 Data Augmentation (`registry: { ... }`)
+
+All custom format definitions, locale mappings, modifiers, tokens, snippets, layouts, events, periods, ignores, and number-word definitions are consolidated under the `registry` namespace.
+
+- **Number-Word Mappings**: Top-level `numbers: { ... }` has been moved to `registry: { numbers: { ... } }`.
+- **Custom Formats**: Top-level `formats: { ... }` has been moved to `registry: { formats: { ... } }`.
+- **Global Discovery**: Discovery objects (`Symbol.for('$Tempo')`) use `registry: { numbers: { ... }, formats: { ... } }` instead of top-level `discovery.numbers` or `discovery.formats`.
+
+### Example Migration:
+```javascript
+// ❌ v3.x (Deprecated)
+Tempo.init({
+  numbers: { un: 1, deux: 2 },
+  formats: { customDate: '{yyyy}-{mm}-{dd}' }
+});
+
+// ✅ v4.0.0
+Tempo.init({
+  registry: {
+    numbers: { un: 1, deux: 2 },
+    formats: { customDate: '{yyyy}-{mm}-{dd}' }
+  }
+});
+```
+
+## 🧹 Deprecated Type & API Cleanup
+
+- **`Tempo.extend` vs `Tempo.extends`**: The legacy alias `Tempo.extends` has been excised. Use `Tempo.extend()`.
+- **`TempoInstance` Type**: `TempoInstance` interface alias has been removed in favor of standard `Tempo` class/instance types.
+
+---
+
 # ⚠️ Migrating to Tempo v3.x
 
 Tempo v3.x finalizes the plugin ecosystem by extracting advanced features into standalone, licensed packages.

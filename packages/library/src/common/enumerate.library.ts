@@ -93,7 +93,7 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 	switch (arg.type) {
 		case 'Enumify':
 		case 'Object':
-			Object.assign(target, arg.value);
+			Object.defineProperties(target, Object.getOwnPropertyDescriptors(arg.value));
 			break;
 
 		case 'Array':

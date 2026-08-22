@@ -6,10 +6,9 @@
  *
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
-import type { Pledge } from '#library/pledge.class.js';
 import type { DebugLevel } from '#library/logger.class.js';
 import type { ScopedSet } from '#library/scopedset.class.js';
-import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable } from '#library/type.library.js';
+import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable } from '#library/type.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
@@ -222,8 +221,6 @@ export interface TempoFormatTokens {
 	ms: true; us: true; ns: true; ff: true;
 	// ── composite date/time ───────────────────────────
 	ymd: true; dmy: true; mdy: true; hms: true;
-	// ── legacy composites (deprecated, still supported) ──
-	ymd6: true; dmy6: true; mdy6: true;
 	// ── timestamp / zone / calendar ───────────────────
 	ts: true; nano: true; tz: true; cal: true;
 }
@@ -353,15 +350,13 @@ export namespace Internal {
 		layouts?: Layout | RegistryOption<Pattern>;
 		events?: Event | RegistryOption<Logic>;
 		periods?: Period | RegistryOption<Logic>;
+		numbers?: Record<string, number>;
 		ignores?: Ignore;
 	};
 		/** plugins or namespaces to extend onto Tempo */
 		extends?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
 		/** plugin configuration dictionaries */
-		plugins?: Record<string, any>
-			/** @deprecated Passing an array of executable plugins to `plugins` is deprecated and will be removed in Tempo v4.0.0. Use `extends: [...]` instead. @internal */
-			| (TempoPlugin | TermPlugin | any)[]
-			| (TempoPlugin | TermPlugin | any);
+		plugins?: Record<string, any>;
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
@@ -432,11 +427,11 @@ export namespace Internal {
 		/** @internal reverse-lookup map for localized weekdays */weekdayMap?: Record<string, { value: number; locale: string }>;
 	}
 
-	/** drop the parse-only Options */
-	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "layoutOrder" | "preFilter" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
+	/** drop parse-only, internal, and one-time initialization Options when deriving Config */
+	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "pivot" | "value" | "anchor" | "result" | "extends">;
 
 	/** Instance configuration derived from supply, storage, and discovery. */
-	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "localize" | "timeZone" | "calendar" | "locale" | "sphere">> {
+	export interface Config extends Required<Omit<OptionsKeep, "registry" | "timeZone" | "calendar" | "locale" | "sphere">> {
 		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
 		/** Temporal calendar */																calendar: Temporal.CalendarLike;
 		/** locale (e.g. en-AU) */															locale: string | string[];
@@ -452,20 +447,14 @@ export namespace Internal {
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** regional date-parsing configuration */							monthDay?: MonthDay;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
-		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
-		/** @deprecated Provide configuration inside `registry: { formats: ... }` */formats?: Property<any>;
-		/** @deprecated Provide configuration inside `registry: { locales: ... }` */locales?: Record<string, Record<string, string | Function>>;
-		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator> };
+		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator>, numbers?: Record<string, number> };
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
 		/** plugins or namespaces to extend onto Tempo */
 		extends?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
 		/** plugin configuration dictionaries */
-		plugins?: Record<string, any>
-			/** @deprecated Passing an array of executable plugins to `plugins` is deprecated and will be removed in Tempo v4.0.0. Use `extends: [...]` instead. @internal */
-			| (TempoPlugin | TermPlugin | any)[]
-			| (TempoPlugin | TermPlugin | any);
+		plugins?: Record<string, any>;
 	}
 }
 

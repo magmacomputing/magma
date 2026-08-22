@@ -5,7 +5,6 @@ import { asArray, asError } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
-import { enumify } from '#library/enumerate.library.js';
 import { ownKeys, ownEntries, ownValues, unwrap } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
@@ -27,7 +26,7 @@ import { PatternCompiler } from './engine/engine.pattern.js';
 import { createMasterGuard } from './engine/engine.guard.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 
-import { resolveConfigSync } from './config/config.resolve.js';
+import { resolveConfig, resolveConfigSync } from './config/config.resolve.js';
 
 import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
@@ -375,19 +374,14 @@ export class Tempo {
 		// 1. Process TimeZones (normalize to lowercase for lookup)
 		if (discovery.timeZones) {
 			const tzs = Object.fromEntries(
-				ownEntries(discovery.timeZones, true).map(([k, v]) => [String(k).toLowerCase(), v])
+				ownEntries(discovery.timeZones, true)
+					.map(([k, v]) => [String(k).toLowerCase(), v])
 			);
 			if (isSandbox) opts = { ...opts, timeZones: tzs };
 			else registryUpdate('TIMEZONE', tzs);
 		}
 
-		// 1b. Process Numbers
-		if (discovery.numbers) {
-			if (isSandbox) opts = { ...opts, numbers: discovery.numbers };
-			else registryUpdate('NUMBER', discovery.numbers);
-		}
-
-		// 1c. Process MDY settings
+		// 1a. Process MDY settings
 		if (discovery.monthDay) {
 			let md = discovery.monthDay;
 			if (md.timezones) {
@@ -407,10 +401,10 @@ export class Tempo {
 			opts = { ...opts, monthDay: md };
 		}
 
-		// 1d. Process Internationalization
+		// 1b. Process Internationalization
 		if (discovery.intl) opts = { ...opts, intl: discovery.intl };
 
-		// 1e. Process Planner
+		// 1c. Process Planner
 		if (isObject(discovery.planner)) opts = { ...opts, planner: discovery.planner };
 
 		// 2. Process Terms
@@ -420,22 +414,17 @@ export class Tempo {
 		// 3. Process Registry
 		let registryOpts = discovery.registry ?? {};
 
-		if (discovery.formats)
-			registryOpts = { ...registryOpts, formats: discovery.formats };
-
-		if (discovery.locales)
-			registryOpts = { ...registryOpts, locales: discovery.locales };
-
 		if (Object.keys(registryOpts).length > 0) {
 			opts = { ...opts, registry: registryOpts };
 			if (!isSandbox) {
 				if (registryOpts.formats) registryUpdate('FORMAT', registryOpts.formats);
 				if (registryOpts.locales) registryUpdate('LOCALE', registryOpts.locales);
+				if (registryOpts.numbers) registryUpdate('NUMBER', registryOpts.numbers);
 			}
 		}
 
-		// 4. Process Extensions / Plugins
-		if (discovery.plugins && isObject(discovery.plugins) && !Array.isArray(discovery.plugins) && !isFunction(discovery.plugins) && !('name' in discovery.plugins || 'key' in discovery.plugins || 'install' in discovery.plugins))
+		// 4. Process Plugins
+		if (discovery.plugins && isObject(discovery.plugins) && !Array.isArray(discovery.plugins))
 			opts = { ...opts, plugins: isObject(opts.plugins) ? { ...opts.plugins, ...discovery.plugins } : discovery.plugins };
 
 		// 5. Process Options
@@ -577,16 +566,9 @@ export class Tempo {
 					}
 				}
 				else if (isObject(item)) {
-					let pluginType = item[sym.$PluginType];
-
-					/** @deprecated Legacy structural typing fallback. Will be removed in v4.0.0 */
-					if (!pluginType) {
-						if (isFunction(item.install) && (item.type === 'plugin' || item.type === 'namespace' || item.type === 'module' || isString(item.name))) {
-							pluginType = item.type || 'plugin';
-						} else if (item.type === 'term' || (isString(item.key) && isFunction(item.define))) {
-							pluginType = 'term';
-						}
-					}
+					let pluginType = item[sym.$PluginType] || item.type;
+					if (!pluginType && isFunction(item.define) && item.key) pluginType = 'term';
+					if (!pluginType && isFunction(item.install)) pluginType = 'plugin';
 
 					const assertContract = (isValid: boolean, msg: string) => {
 						if (!isValid) {
@@ -706,8 +688,6 @@ export class Tempo {
 
 							if (discovery.extends)
 								asArray(discovery.extends).forEach(p => this.extend(p));
-							else if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins) || (isObject(discovery.plugins) && ('name' in discovery.plugins || 'key' in discovery.plugins || 'install' in discovery.plugins))))
-								asArray(discovery.plugins).forEach(p => this.extend(p));
 
 							// only trigger init if we're assigning a new discovery object to a symbol
 							if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
@@ -798,7 +778,6 @@ export class Tempo {
 	 * before initializing the engine.
 	 */
 	static async bootstrap(options?: { cwd?: string, configFile?: string }): Promise<typeof Tempo> {
-		const { resolveConfig } = await import('./config/config.resolve.js');
 		const config = await resolveConfig(options);
 		this.init(config || {});
 		await this.ready();
@@ -880,7 +859,7 @@ export class Tempo {
 				locale,
 				discovery: normalizedDiscovery,
 				registry: {
-					formats: config.registry?.formats ?? config.formats ?? enumify(STATE.FORMAT, false),
+					formats: config.registry?.formats ?? config.formats ?? enums.FORMAT,
 					locales: config.registry?.locales ?? config.locales ?? proxify(STATE.LOCALE, true, true)
 				},
 				scope: 'global',
@@ -900,15 +879,6 @@ export class Tempo {
 
 			if (options.extends)
 				this.extend(options.extends);
-
-			// TODO: @deprecated - Remove in Tempo v4.0.0
-			if (userDiscovery?.plugins && (Array.isArray(userDiscovery.plugins) || isFunction(userDiscovery.plugins) || (isObject(userDiscovery.plugins) && ('name' in userDiscovery.plugins || 'key' in userDiscovery.plugins || 'install' in userDiscovery.plugins))))
-				this.extend(userDiscovery.plugins);
-
-			if (options.plugins) {
-				if (Array.isArray(options.plugins) || isFunction(options.plugins) || (isObject(options.plugins) && ('name' in options.plugins || 'key' in options.plugins || 'install' in options.plugins)))
-					this.extend(options.plugins);
-			}
 
 			if (Context.type === CONTEXT.Browser || state.config.debug === LOG.Debug)
 				logDebug('Tempo:', this.config, state.config);
@@ -1080,15 +1050,6 @@ export class Tempo {
 	/** static Tempo.registry */
 	static get registry() {
 		return Tempo.config.registry;
-	}
-
-	/** @deprecated Use Tempo.registry.formats instead */
-	static get formats() {
-		// Extend built-in enums.FORMAT with any user-registered formats, preserving Enum methods (.keys(), .values(), etc.)
-		const userFormats = Tempo.config.registry?.formats;
-		return (userFormats && Object.keys(userFormats).length > 0)
-			? enums.FORMAT.extend(userFormats, false)
-			: enums.FORMAT;
 	}
 
 	/** static Tempo properties getter */

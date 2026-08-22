@@ -134,8 +134,8 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 		const modPath = 'node:path';
 
 		const [fs, path] = await Promise.all([
-			import(modFs),
-			import(modPath),
+			import(/* @vite-ignore */ modFs),
+			import(/* @vite-ignore */ modPath),
 		]);
 
 		let currentDir = options?.cwd || process.cwd();
@@ -145,8 +145,8 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 				const content = await fs.promises.readFile(configPath, 'utf8');
 				return parseJSONC(content) as Options;
 			} else {
-				const { pathToFileURL } = await import(modUrl);
-				const imported = await import(pathToFileURL(configPath).href);
+				const { pathToFileURL } = await import(/* @vite-ignore */ modUrl);
+				const imported = await import(/* @vite-ignore */ pathToFileURL(configPath).href);
 				return imported.default || imported;
 			}
 		};

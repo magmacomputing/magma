@@ -1,9 +1,7 @@
 import { sym } from './support.symbol.js';
+import type { Plugin } from '../plugin/plugin.type.js';
 import type { TermPlugin } from '../plugin/term/term.type.js';
-import type { Extension } from '../plugin/plugin.type.js';
 import type { Internal } from '../tempo.type.js';
-
-
 
 /**
  * # TempoRuntime
@@ -33,7 +31,7 @@ export class TempoRuntime {
 	constructor() { (this as any)[sym.$RuntimeBrand] = true; }
 
 	/** raw extension-plugin storage array — consumed by REGISTRY */
-	readonly extensions: Extension[] = [];
+	readonly extensions: (Plugin | TermPlugin | any)[] = [];
 	/** raw named-module map — consumed by REGISTRY */
 	readonly modules: Record<string, any> = {};
 	/** set of installed plugin identifiers — consumed by REGISTRY.

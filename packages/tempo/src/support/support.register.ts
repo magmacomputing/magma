@@ -69,6 +69,7 @@ export function registryReset() {
 		rt.state.pluginsDb.plugins.length = 0;
 	}
 	rt.extensions.length = 0;
+	rt.installed.clear();
 
 	// Trigger all registered reset hooks
 	const hooks = resetHooks();
@@ -79,9 +80,9 @@ export function registryReset() {
 export function registryUpdate(name: keyof typeof STATE, data: Record<string, any>) {
 	const registry = REGISTRIES[name];
 	const state = STATE[name] as Property<any>;
-	const target = unwrap(registry) as Property<any>;
+	const target = (unwrap(registry) ?? registry) as Property<any>;
 
-	if (!isDefined(target) || target === registry)
+	if (!isDefined(target))
 		return;
 
 	const merge = (tgt: any, src: any, st?: any) => {

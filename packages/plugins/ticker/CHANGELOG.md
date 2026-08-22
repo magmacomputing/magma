@@ -9,6 +9,7 @@ All notable changes to the `@magmacomputing/tempo-plugin-ticker` project will be
 - Removed obfuscation and proprietary license key requirement.
 
 ### Added
+- **5-Field Cron Expression Support**: Added native support for standard 5-part cron syntax (e.g. `Tempo.ticker("0 9 * * 1-5")` or `{ cron: "*/15 * * * *" }`) powered by `@magmacomputing/tempo-fns`.
 - **RFC 5545 RRULE Support**: Integrated native RRULE string and `TempoRecurrenceRule` support into `Ticker` and `Ticker.Options`. Tickers can now step using deterministic calendar recurrence rules (e.g. `FREQ=DAILY;INTERVAL=1`, `FREQ=WEEKLY;BYDAY=MO`).
 - **Snapshot Alignment**: Included `rrule?: string` on `Ticker.Snapshot` and `info` properties so active tickers list their active recurrence rule.
 

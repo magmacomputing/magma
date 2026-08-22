@@ -232,12 +232,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				else res = `${y}${m}${d}`;
 				break;
 			}
-			/** @deprecated Use {dmy:yy} modifier instead */
-			case 'dmy6': res = `${pad(zdt.day)}${pad(zdt.month)}${pad(zdt.year % 100)}`; break;
-			/** @deprecated Use {mdy:yy} modifier instead */
-			case 'mdy6': res = `${pad(zdt.month)}${pad(zdt.day)}${pad(zdt.year % 100)}`; break;
-			/** @deprecated Use {ymd:yy} modifier instead */
-			case 'ymd6': res = `${pad(zdt.year % 100)}${pad(zdt.month)}${pad(zdt.day)}`; break;
 			case 'hms': res = `${pad(zdt.hour)}${pad(zdt.minute)}${pad(zdt.second)}`; break;
 			case 'ts': res = ((config?.timeStamp ?? 'ms') === 'ss')
 				? Math.trunc(zdt.epochMilliseconds / 1000).toString()

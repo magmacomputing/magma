@@ -25,7 +25,9 @@ describe('Number-Word Pilot (0-10)', () => {
 
 	it('should be extendable via global discovery', () => {
 		Tempo.extend({
-			numbers: { eleven: 11 }
+			registry: {
+				numbers: { eleven: 11 }
+			}
 		});
 
 		const base = new Tempo('2024-03-20');

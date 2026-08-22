@@ -8,7 +8,7 @@ export { isFirstDayOfMonth } from './calendar/isFirstDayOfMonth.js';
 export { getISOWeekOfYear } from './calendar/getISOWeekOfYear.js';
 
 // --- Scheduling ---
-export { nextCron, prevCron } from './scheduling/cron.js';
+export { nextCron, prevCron, isCronString } from './scheduling/cron.js';
 export { Interval } from '@magmacomputing/tempo';
 
 // --- Timezone & Location ---

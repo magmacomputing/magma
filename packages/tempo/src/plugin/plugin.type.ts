@@ -17,12 +17,3 @@ export interface Plugin<T = any, O = Options> {
 export interface Module<T = any, O = Options> extends Plugin<T, O> {
 	[key: string]: any;
 }
-
-/**
- * ## Extension
- * Type for Extension plugins.
- * @deprecated Use `Plugin` instead.
- */
-export interface Extension<T = any, O = Options> extends Plugin<T, O> {
-	[key: string]: any;
-}

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Tempo Pro Logo - Sparkle Scaling Explorations</title>
+	<style>
+		:root {
+			--bg: #0f172a;
+			--card-bg: #1e293b;
+			--border: #334155;
+			--text: #f8fafc;
+			--muted: #94a3b8;
+			--accent: #38bdf8;
+			--gold: #fbbf24;
+		}
+
+		[data-theme="light"] {
+			--bg: #f8fafc;
+			--card-bg: #ffffff;
+			--border: #e2e8f0;
+			--text: #0f172a;
+			--muted: #64748b;
+			--accent: #0284c7;
+			--gold: #d97706;
+		}
+
+		* { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+		body { background: var(--bg); color: var(--text); padding: 2rem; transition: background 0.3s, color 0.3s; min-height: 100vh; }
+
+		header { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto 3rem auto; }
+		h1 { font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+		p.subtitle { color: var(--muted); margin-top: 0.5rem; }
+
+		.theme-toggle { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+		.theme-toggle:hover { border-color: var(--accent); }
+
+		.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 2rem; max-width: 1200px; margin: 0 auto; }
+		.card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; transition: transform 0.2s, border-color 0.2s; }
+		.card:hover { transform: translateY(-4px); border-color: var(--accent); }
+		.badge { position: absolute; top: 1rem; right: 1rem; background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+
+		.logo-box { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; margin: 1.5rem 0; border-radius: 12px; background: rgba(0,0,0,0.05); }
+		.logo-box svg { height: 100px; width: 125px; color: var(--text); }
+
+		.title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+		.desc { color: var(--muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem; }
+	</style>
+</head>
+<body>
+	<header>
+		<div>
+			<h1>Tempo Pro Logo - Quad Sparkle Scaling</h1>
+			<p class="subtitle">Fine-tuning the side emblem size & exposure alongside the Hourglass</p>
+		</div>
+		<button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Light / Dark</button>
+	</header>
+
+	<div class="grid">
+		<!-- SPARKLE VARIATION 1: SCALE 0.72 -->
+		<div class="card">
+			<span class="badge">Option 1</span>
+			<div class="title">Medium Scale (0.72x)</div>
+			<div class="desc">Moderately shrunk sparkle (72% scale). The star points extend generously from behind the left hourglass wall.</div>
+			<div class="logo-box">
+				<svg height="100px" width="125px" viewBox="0 0 285 235.319" fill="currentColor">
+					<!-- BACKGROUND: Shrunk Sparkle Star (0.72x) -->
+					<g transform="translate(-15, 25) scale(0.72)" fill="currentColor">
+						<path d="M 85 10 Q 85 95 0 95 Q 85 95 85 180 Q 85 95 170 95 Q 85 95 85 10 Z" />
+						<path d="M 140 155 Q 140 180 115 180 Q 140 180 140 205 Q 140 180 165 180 Q 140 180 140 155 Z" />
+					</g>
+
+					<!-- FOREGROUND: Hourglass Frame -->
+					<g transform="translate(50, 0)" fill="currentColor">
+						<path d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z"/>
+						<path d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z"/>
+						<path d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z"/>
+					</g>
+				</svg>
+			</div>
+		</div>
+
+		<!-- SPARKLE VARIATION 2: SCALE 0.65 -->
+		<div class="card">
+			<span class="badge">Option 2 (Recommended)</span>
+			<div class="title">Compact Scale (0.65x)</div>
+			<div class="desc">Compact scale (65% scale). Exposes almost the full star shape while keeping a clean background overlay behind the hourglass waist.</div>
+			<div class="logo-box">
+				<svg height="100px" width="125px" viewBox="0 0 285 235.319" fill="currentColor">
+					<!-- BACKGROUND: Shrunk Sparkle Star (0.65x) -->
+					<g transform="translate(-5, 32) scale(0.65)" fill="currentColor">
+						<path d="M 85 10 Q 85 95 0 95 Q 85 95 85 180 Q 85 95 170 95 Q 85 95 85 10 Z" />
+						<path d="M 140 155 Q 140 180 115 180 Q 140 180 140 205 Q 140 180 165 180 Q 140 180 140 155 Z" />
+					</g>
+
+					<!-- FOREGROUND: Hourglass Frame -->
+					<g transform="translate(50, 0)" fill="currentColor">
+						<path d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z"/>
+						<path d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z"/>
+						<path d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z"/>
+					</g>
+				</svg>
+			</div>
+		</div>
+
+		<!-- SPARKLE VARIATION 3: SCALE 0.58 -->
+		<div class="card">
+			<span class="badge">Option 3</span>
+			<div class="title">Small Scale (0.58x)</div>
+			<div class="desc">Ultra-compact scale (58% scale). The entire main sparkle star sits cleanly beside the upper-left glass wall.</div>
+			<div class="logo-box">
+				<svg height="100px" width="125px" viewBox="0 0 285 235.319" fill="currentColor">
+					<!-- BACKGROUND: Shrunk Sparkle Star (0.58x) -->
+					<g transform="translate(5, 38) scale(0.58)" fill="currentColor">
+						<path d="M 85 10 Q 85 95 0 95 Q 85 95 85 180 Q 85 95 170 95 Q 85 95 85 10 Z" />
+						<path d="M 140 155 Q 140 180 115 180 Q 140 180 140 205 Q 140 180 165 180 Q 140 180 140 155 Z" />
+					</g>
+
+					<!-- FOREGROUND: Hourglass Frame -->
+					<g transform="translate(50, 0)" fill="currentColor">
+						<path d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z"/>
+						<path d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z"/>
+						<path d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z"/>
+					</g>
+				</svg>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		function toggleTheme() {
+			const current = document.documentElement.getAttribute('data-theme');
+			document.documentElement.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+		}
+	</script>
+</body>
+</html>

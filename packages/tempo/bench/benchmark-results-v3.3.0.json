@@ -1,63 +1,63 @@
 {
-  "runAt": "2026-06-21T03:09:07.682Z",
+  "runAt": "2026-08-22T01:05:41.379Z",
   "version": "3.3.0",
   "iterations": 500,
   "baselineRaw": {
     "label": "A. Baseline (stock, 20-entry corpus)",
-    "totalTimeMs": 15517.8,
-    "opsPerSec": 644,
-    "microSecPerOp": 1551.78,
+    "totalTimeMs": 21717.38,
+    "opsPerSec": 460,
+    "microSecPerOp": 2171.74,
     "successCount": 10000,
     "failureCount": 0,
     "successRate": "100.0%",
-    "heapDeltaMb": 113.02
+    "heapDeltaMb": 109.34
   },
   "moduleResults": [
     {
       "name": "Native Date",
-      "totalTimeMs": 2.92,
+      "totalTimeMs": 2.85,
       "microSecPerOp": 0.29,
       "successCount": 2500,
       "failureCount": 7500,
       "successRate": "25.0%",
-      "heapUsedDeltaMb": "1.08"
+      "heapUsedDeltaMb": "1.09"
     },
     {
       "name": "Tempo (mode: auto)",
-      "totalTimeMs": 15524.01,
-      "microSecPerOp": 1552.4,
+      "totalTimeMs": 21984.82,
+      "microSecPerOp": 2198.48,
       "successCount": 10000,
       "failureCount": 0,
       "successRate": "100.0%",
-      "heapUsedDeltaMb": "10.34"
+      "heapUsedDeltaMb": "26.21"
     },
     {
       "name": "Tempo (mode: defer)",
-      "totalTimeMs": 15089.25,
-      "microSecPerOp": 1508.93,
+      "totalTimeMs": 22889.07,
+      "microSecPerOp": 2288.91,
       "successCount": 10000,
       "failureCount": 0,
       "successRate": "100.0%",
-      "heapUsedDeltaMb": "-22.66"
+      "heapUsedDeltaMb": "-15.66"
     },
     {
       "name": "Tempo (mode: strict)",
-      "totalTimeMs": 15784.87,
-      "microSecPerOp": 1578.49,
+      "totalTimeMs": 20701.7,
+      "microSecPerOp": 2070.17,
       "successCount": 10000,
       "failureCount": 0,
       "successRate": "100.0%",
-      "heapUsedDeltaMb": "56.53"
+      "heapUsedDeltaMb": "-79.06"
     }
   ],
   "localizedModifiers": {
     "label": "C. Localized fr-FR modifiers (8-entry corpus)",
-    "totalTimeMs": 11330.81,
-    "opsPerSec": 353,
-    "microSecPerOp": 2832.7,
+    "totalTimeMs": 10310.03,
+    "opsPerSec": 388,
+    "microSecPerOp": 2577.51,
     "successCount": 4000,
     "failureCount": 0,
     "successRate": "100.0%",
-    "heapDeltaMb": -9.07
+    "heapDeltaMb": 11.8
   }
 }

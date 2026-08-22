@@ -161,10 +161,9 @@ Tempo looks for the following structure:
 | `options` | `Options \| (() => Options)` | Configuration options merged into global state. |
 | `intl` | `IntlOptions` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, `durationFormat`, and `dateTimeFormat`. |
 | `extends` | `Plugin \| Plugin[]` | Modular plugin(s) (including `TermPlugin`s) to be extended onto Tempo automatically. |
-| `plugins` | `Record<string, any>` | Plugin configuration dictionary. *(Note: Passing an array to `plugins` is `@deprecated` and scheduled for removal in v4.0.0; use `extends` instead)*. |
+| `plugins` | `Record<string, any>` | Plugin configuration dictionary. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
-| `numbers` | `Record<string, number>` | Custom number-word aliases merged into the NUMBER registry. |
-| `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores?, modifiers?, tokens? }` | Custom configuration for internal dictionary registries. |
+| `registry` | `{ formats?, locales?, numbers?, events?, periods?, snippets?, layouts?, ignores?, modifiers?, tokens? }` | Custom configuration for internal dictionary registries. |
 
 ---
 
@@ -195,9 +194,9 @@ Tempo.init({
 | `timeStamp`| `'ss' \| 'ms' \| 'us' \| 'ns'` | `'ms'` | Precision for numeric inputs and the `.ts` property. |
 | `sphere` | `Evaluable<'north' \| 'south'>`| Auto-inferred | Hemisphere for seasonal plugins or dynamic supplier. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
-| `registry` | `{ formats?, locales?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, parsing logic, localization). |
+| `registry` | `{ formats?, locales?, numbers?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, number-to-word mappings, parsing logic, localization). |
 | `extends` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. `Tempo.init()` applies each plugin with `Tempo.extend(p)`. |
-| `plugins` | `Record<string, any>` | `{}` | Plugin configuration dictionaries (e.g. `plugins: { ai: { ... } }`). *(Note: Passing an array of plugins to `plugins` is `@deprecated` and scheduled for removal in v4.0.0; use `extends` instead)*. |
+| `plugins` | `Record<string, any>` | `{}` | Plugin configuration dictionaries (e.g. `plugins: { ai: { ... } }`). |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
 | `debug` | `number \| string` | `'info'` | Controls log verbosity via direct `LOG` levels (`0=Off ... 5=Trace`) or string labels (`'trace'`, `'info'`, etc). |

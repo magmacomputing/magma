@@ -148,3 +148,21 @@ export function prevCron(tempo: Tempo, pattern: string): Tempo {
 		return tempo.set(current);
 	}
 }
+
+/**
+ * Sniffs whether a given value is a valid 5-part cron expression (min, hr, dom, mon, dow).
+ */
+export function isCronString(val: unknown): val is string {
+	if (typeof val !== 'string') return false;
+	const trimmed = val.trim();
+	if (trimmed.startsWith('FREQ=') || trimmed.startsWith('RRULE:')) return false;
+	const fields = trimmed.split(/\s+/);
+	if (fields.length !== 5) return false;
+	try {
+		parseCron(trimmed);
+		return true;
+	} catch {
+		return false;
+	}
+}
+

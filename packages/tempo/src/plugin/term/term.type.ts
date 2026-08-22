@@ -1,7 +1,6 @@
-import type { Prettify, Property } from '#library/type.library.js';
+import type { Property } from '#library/type.library.js';
 import type { Tempo } from '../../tempo.class.js';
 import { TermError } from '#tempo/support';
-import * as enums from '#tempo/support/support.enum.js';
 
 /**
  * ## TempoTermType
@@ -38,7 +37,7 @@ export type Terms = Property<any>;
  * When Range.year is a number it is interpreted as a relative offset if |year| ≤ 10 
  * and as an absolute year otherwise.
  */
-export type Range = Prettify<{
+export type Range = {
 	key: string;
 	group?: string;																						// categorization marker (e.g. 'western', 'chinese', 'fiscal')
 	[meta: string]: any;
@@ -57,7 +56,7 @@ export type Range = Prettify<{
 		millisecond?: number;
 		microsecond?: number;
 		nanosecond?: number;
-	}>;
+	}
 
 
 /**

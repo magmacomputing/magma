@@ -1,10 +1,10 @@
 /**
- * Post-refactor (v3.3.0) representative benchmark
+ * Tempo v4.0.0 Production Benchmark
  *
- * Compares three configurations:
- *   A. Baseline: stock Tempo, same corpus as pre-refactor
- *   B. Module-based comparison using BenchmarkModule across auto/defer/strict modes
- *   C. Localized fr-FR modifiers through the new registry.modifiers code path
+ * Evaluates v4.0.0 engine performance across:
+ *   A. Baseline: stock Tempo core parser
+ *   B. BenchmarkModule evaluation across auto/defer/strict modes
+ *   C. Localized registry modifier resolution
  */
 import '../bin/temporal-polyfill.js';
 import { Tempo } from '../src/tempo.index.js';
@@ -18,7 +18,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ── Corpus ──────────────────────────────────────────────────────────────────
 
-/** Same 20-entry corpus used for the pre-refactor benchmark */
+/** 20-entry representative parser corpus */
 const baseCorpus: string[] = [
 	'04012026',
 	'310559',
@@ -42,22 +42,22 @@ const baseCorpus: string[] = [
 	'midnight',
 ];
 
-/** New v3.3.0 corpus: French localized modifiers through registry.modifiers */
+/** French localized modifier corpus via nested v4 registry.modifiers */
 const frCorpus: string[] = [
-	'vendredi prochain',		// localized 'next Friday'
-	'lundi dernier',			// localized 'last Monday'
-	'mercredi prochain',		// localized 'next Wednesday'
-	'3 jours',				// plain French numeric
-	'vendredi',				// plain French weekday
-	'jeudi dernier',			// localized 'last Thursday'
-	'mardi suivant',			// alias: suivant => >
-	'dimanche prochain',		// localized 'next Sunday'
+	'vendredi prochain',
+	'lundi dernier',
+	'mercredi prochain',
+	'3 jours',
+	'vendredi',
+	'jeudi dernier',
+	'mardi suivant',
+	'dimanche prochain',
 ];
 
 // ── Benchmark helpers ───────────────────────────────────────────────────────
 
 function timedRun(label: string, data: string[], iterations: number, tempoOptions: any) {
-	// warm-up
+	// Warm-up pass
 	for (const d of data) new Tempo(d, { catch: true, ...tempoOptions });
 
 	let success = 0, failure = 0;
@@ -91,13 +91,13 @@ function timedRun(label: string, data: string[], iterations: number, tempoOption
 
 const ITERATIONS = 100;
 
-console.log(`\n⏱  Tempo v3.3.0 Post-Refactor Benchmark  (${ITERATIONS} iterations × corpus size)\n`);
+console.log(`\n⏱  Tempo v4.0.0 Production Benchmark (${ITERATIONS} iterations × corpus size)\n`);
 
-// A. Baseline — stock config, base corpus (mirrors pre-refactor run)
+// A. Baseline — stock config, base corpus
 Tempo.init({ debug: 0, catch: true, timeZone: 'UTC' });
-const baseline = timedRun('A. Baseline (stock, 20-entry corpus)', baseCorpus, ITERATIONS, { timeZone: 'UTC' });
+const baseline = timedRun('A. Baseline (v4.0.0 stock, 20-entry corpus)', baseCorpus, ITERATIONS, { timeZone: 'UTC' });
 
-// B. Baseline with all three Tempo modes using BenchmarkModule
+// B. Module-based comparison across modes using BenchmarkModule
 Tempo.init({ debug: 0, catch: true, timeZone: 'UTC' });
 const moduleResults = BenchmarkModule.run(Tempo, {
 	data: baseCorpus,
@@ -106,7 +106,7 @@ const moduleResults = BenchmarkModule.run(Tempo, {
 	baseline: true,
 });
 
-// C. Localized modifier corpus — exercises the new registry.modifiers code path
+// C. Localized modifier corpus via nested v4.0.0 registry configuration
 const localizedConfig = {
 	locale: 'fr-FR',
 	debug: 0,
@@ -121,24 +121,24 @@ const localizedConfig = {
 	}
 };
 Tempo.init(localizedConfig as any);
-const localized = timedRun('C. Localized fr-FR modifiers (8-entry corpus)', frCorpus, ITERATIONS, {});
+const localized = timedRun('C. Localized fr-FR modifiers (v4 nested registry)', frCorpus, ITERATIONS, {});
 
 // ── Output ───────────────────────────────────────────────────────────────────
 
 const output = {
 	runAt: new Date().toISOString(),
-	version: '3.3.0',
+	version: '4.0.0',
 	iterations: ITERATIONS,
 	baselineRaw: baseline,
 	moduleResults,
 	localizedModifiers: localized,
 };
 
-// Pretty console table
-console.log('── Module-based comparison (matches pre-refactor format) ──');
+// Console output
+console.log('── Module-based comparison (v4.0.0 modes) ──');
 BenchmarkModule.printTable(moduleResults);
 
-console.log('\n── Baseline (manual, matches pre-refactor corpus exactly) ──');
+console.log('\n── Baseline (v4.0.0 stock) ──');
 console.table([{
 	'Engine': baseline.label,
 	'Total Time (ms)': baseline.totalTimeMs,
@@ -148,7 +148,7 @@ console.table([{
 	'Heap Delta (MB)': baseline.heapDeltaMb,
 }]);
 
-console.log('\n── New: Localized modifier throughput ──');
+console.log('\n── Localized Modifier Throughput (v4 registry) ──');
 console.table([{
 	'Engine': localized.label,
 	'Total Time (ms)': localized.totalTimeMs,
@@ -158,7 +158,7 @@ console.table([{
 	'Heap Delta (MB)': localized.heapDeltaMb,
 }]);
 
-// Save to file
-const outPath = path.join(__dirname, 'benchmark-results-v3.3.0.json');
+// Save to JSON artifact
+const outPath = path.join(__dirname, 'benchmark-results-v4.0.0.json');
 fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
-console.log(`\n✅  Results saved to ${outPath}\n`);
+console.log(`\n✅ Results saved to ${outPath}\n`);

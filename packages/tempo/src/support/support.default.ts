@@ -3,7 +3,7 @@ import { secure, proxify } from '#library/proxy.library.js';
 import { getDateTimeFormat } from '#library/international.library.js';
 import { LOG } from '#library/logger.class.js';
 
-import { NUMBER, TIMEZONE, MODE, MONTH_DAY } from './support.enum.js';
+import { NUMBER, TIMEZONE, MODE, MONTH_DAY, FORMAT, LOCALE } from './support.enum.js';
 import { Token } from './support.symbol.js';
 import type { Options, AliasContext, IntlOptions } from '../tempo.type.js';
 
@@ -223,9 +223,10 @@ export const Default = secure({
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
 	/** internationalization configuration */									intl: IntlDefault,
+	/** plugin configurations */															plugins: {},
 	/** global data augmentation registries */								registry: {
-		formats: {},
-		locales: {},
+		formats: FORMAT,
+		locales: LOCALE,
 		modifiers: {
 			'+': ['next', 'hence', 'from now'],
 			'-': ['ago', 'last', 'prev'],
