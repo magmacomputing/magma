@@ -289,7 +289,17 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				list = list.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
 			}
 
-			const resolved = rawList.map(c => {
+			const chronological = [...rawList].sort((a, b) => {
+				const ya = a.year ?? jump.year, yb = b.year ?? jump.year;
+				if (ya !== yb) return ya - yb;
+				const ma = a.month ?? 1, mb = b.month ?? 1;
+				if (ma !== mb) return ma - mb;
+				const da = a.day ?? 1, db = b.day ?? 1;
+				return da - db;
+			});
+
+			const resolved = chronological.map((c, idx) => {
+				if (c.start && c.end) return c;
 				const start = toZonedDateTime({
 					year: c.year ?? jump.year,
 					month: c.month ?? 1,
@@ -303,8 +313,27 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 					timeZone: tz,
 					calendar: cal
 				});
-				return getTermRange(instance, rawList, false, start);
-			}).filter(isDefined) as any[];
+				const nextC = chronological[idx + 1];
+				let end: Temporal.ZonedDateTime;
+				if (nextC) {
+					end = toZonedDateTime({
+						year: nextC.year ?? jump.year,
+						month: nextC.month ?? 1,
+						day: nextC.day ?? 1,
+						hour: nextC.hour ?? 0,
+						minute: nextC.minute ?? 0,
+						second: nextC.second ?? 0,
+						millisecond: nextC.millisecond ?? 0,
+						microsecond: nextC.microsecond ?? 0,
+						nanosecond: nextC.nanosecond ?? 0,
+						timeZone: tz,
+						calendar: cal
+					});
+				} else {
+					end = start.add({ years: 1 });
+				}
+				return { ...c, start, end };
+			});
 
 			// Special handling for numeric-only repeat counts (e.g. `2q2`):
 			// - First iteration should prefer the containing or most-recent past

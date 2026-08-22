@@ -34,7 +34,7 @@
     "@magmacomputing/tempo": "^3.11.1 || ^4.0.0"
   },
   "devDependencies": {
-    "@magmacomputing/tempo-fns": "workspace:*"
+    "@magmacomputing/tempo-fns": "*"
   },
   "keywords": [
     "tempo",
