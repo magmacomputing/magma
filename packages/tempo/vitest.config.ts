@@ -99,6 +99,10 @@ export default defineConfig({
 			{ find: /^#tempo\/(.*)\.js$/, replacement: resolve(__dirname, './src/$1.ts') },
 			{ find: /^#tempo\/std$/, replacement: resolve(__dirname, '../plugins/.std/src/index.ts') },
 			{ find: /^#tempo$/, replacement: resolve(__dirname, './src/tempo.index.ts') },
+			{ find: /^@magmacomputing\/tempo-fns$/, replacement: resolve(__dirname, '../functions/src/index.ts') },
+			{ find: /^@magmacomputing\/tempo-fns\/(.*)$/, replacement: resolve(__dirname, '../functions/src/$1.ts') },
+			{ find: /^@magmacomputing\/library$/, replacement: resolve(__dirname, '../library/src/common.index.ts') },
+			{ find: /^@magmacomputing\/library\/(.*)$/, replacement: resolve(__dirname, '../library/src/$1.ts') },
 			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/$1.ts') },
 			{ find: /^#library$/, replacement: resolve(__dirname, '../library/src/common.index.ts') },
 		]
