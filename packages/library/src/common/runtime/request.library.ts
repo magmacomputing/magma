@@ -54,8 +54,9 @@ const readBoundedBody = async (res: Response, maxBytes: number): Promise<string>
 
 	if (!res.body) {
 		const rawText = await res.text();
-		if (rawText.length > maxBytes)
-			throw new HttpError(413, `Payload length (${rawText.length}) exceeds limit (${maxBytes} bytes)`, null);
+		const byteLength = new TextEncoder().encode(rawText).byteLength;
+		if (byteLength > maxBytes)
+			throw new HttpError(413, `Payload length (${byteLength}) exceeds limit (${maxBytes} bytes)`, null);
 		return rawText;
 	}
 

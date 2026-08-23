@@ -16,20 +16,26 @@ import type { Obj, KeyOf, Primitives } from '#library/type.library.js';
  */
 export function exclude<T extends Obj>(obj: T, ...types: (Primitives | Lowercase<Primitives>)[]) {
 	const exclusions = distinct(types.map(item => item.toLowerCase())) as typeof types;
+	return _exclude(obj, exclusions as string[], new WeakSet<object>());
+}
 
-	if (isReference(obj)) {																		// only works on Objects and Arrays
+function _exclude<T extends Obj>(obj: T, exclusions: string[], visited: WeakSet<object>): T {
+	if (isReference(obj)) {
+		if (visited.has(obj)) return obj;
+		visited.add(obj);
+
 		const keys = [] as KeyOf<T>[];
 
 		(ownEntries(obj) as [KeyOf<T>, Obj][])
 			.forEach(([key, value]) => {
 				const type = getType(value);
 
-				if (['Object', 'Array'].includes(type))							// recurse into object
-					exclude(value, ...exclusions);
+				if (['Object', 'Array'].includes(type) && isReference(value))
+					_exclude(value, exclusions, visited);
 
 				if (isPrimitive(value) && exclusions.includes(type.toLowerCase() as Primitives))
-					keys.push(key)
-			})
+					keys.push(key);
+			});
 
 		if (!isEmpty(keys))																			// if any values to be excluded
 			omit(obj, ...keys);

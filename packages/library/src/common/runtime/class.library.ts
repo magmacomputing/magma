@@ -214,8 +214,8 @@ export function Static<T extends Constructor>(value: T, { kind, name }: ClassDec
 			const wrapper = {
 				[safeName]: class extends value {
 					constructor(...args: any[]) {
-						super(...args);
 						throw new TypeError(`${safeName} is not a constructor`);
+						super(...args);
 					}
 				}
 			}[safeName] as T;

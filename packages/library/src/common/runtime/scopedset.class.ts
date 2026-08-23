@@ -47,7 +47,9 @@ export class ScopedSet<T> {
 	/** Number of own-local entries (does not include parent entries). */
 	get size(): number { return this.#own.size; }
 
-	forEach(cb: (value: T, value2: T, set: Set<T>) => void): void { this.#own.forEach(cb as any); }
+	forEach(cb: (value: T, value2: T, set: ScopedSet<T>) => void, thisArg?: any): void {
+		this.#own.forEach((val1, val2) => cb.call(thisArg, val1, val2, this));
+	}
 	values(): IterableIterator<T> { return this.#own.values(); }
 	keys(): IterableIterator<T> { return this.#own.keys(); }
 	entries(): IterableIterator<[T, T]> { return this.#own.entries(); }
