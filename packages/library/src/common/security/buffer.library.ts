@@ -84,9 +84,7 @@ export const base64ToBuffer = (base64: string) => {
  * ```
  */
 export const encodeBase64 = (input: unknown): string => {
-	const str = stringify(input);
-
-	return bufferToBase64(encodeBuffer(str));
+	return bufferToBase64(encodeBuffer(input));
 }
 
 /**

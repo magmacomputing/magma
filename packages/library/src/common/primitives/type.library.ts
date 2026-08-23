@@ -404,8 +404,8 @@ type Substr<U, Max, Start, Str extends string = '', Offset extends number[] = [0
 	? Offset["length"] extends Start													// if offset beginning of U reached
 	? Length<Str> extends Max																	// if length of Str is equal to Max
 	? Str																											// return Str, all done
-	: Substr<Rest, Start, Max, `${Str}${NextChar}`, Offset>		// else Str less than Max; recurse & append NextChar to Str
-	: Substr<Rest, Start, Max, Str, [...Offset, 0]>						// else offset not reached; recurse & increment offset-Count
+	: Substr<Rest, Max, Start, `${Str}${NextChar}`, Offset>		// else Str less than Max; recurse & append NextChar to Str
+	: Substr<Rest, Max, Start, Str, [...Offset, 0]>						// else offset not reached; recurse & increment offset-Count
 	: Str																											// else no more chars; return Str
 
 // https://stackoverflow.com/questions/69571110/how-to-turn-union-into-a-tuple-in-typescript

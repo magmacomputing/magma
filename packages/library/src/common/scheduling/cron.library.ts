@@ -36,7 +36,10 @@ function parseCronField(field: string, min: number, max: number): CronField {
 	const parts = field.split(',');
 	for (const part of parts) {
 		if (part.includes('/')) {
-			const [range, stepStr] = part.split('/');
+			const slashParts = part.split('/');
+			if (slashParts.length !== 2)
+				throw new Error(`Invalid step expression: ${part}`);
+			const [range, stepStr] = slashParts;
 			if (!/^\d+$/.test(stepStr.trim()))
 				throw new Error(`Invalid step value: ${stepStr}`);
 
@@ -118,9 +121,13 @@ function searchCronEpoch(pattern: string, anchorMs: number, timeZone: string, di
 	const zdt = Temporal.Instant.fromEpochMilliseconds(anchorMs).toZonedDateTimeISO(timeZone);
 	const forward = direction === 1;
 
+	const isAligned = zdt.second === 0 && zdt.millisecond === 0 && zdt.microsecond === 0 && zdt.nanosecond === 0;
+
 	let current = forward
 		? zdt.add({ minutes: 1 }).with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 })
-		: zdt.subtract({ minutes: 1 }).with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
+		: (isAligned
+			? zdt.subtract({ minutes: 1 }).with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 })
+			: zdt.with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 }));
 
 	const limitMs = forward
 		? current.add({ years: 5 }).epochMilliseconds
@@ -135,9 +142,12 @@ function searchCronEpoch(pattern: string, anchorMs: number, timeZone: string, di
 			throw new Error(errMessage);
 
 		if (!schedule.months.allowed.has(current.month)) {
-			current = forward
-				? current.add({ months: 1 }).with({ day: 1, hour: 0, minute: 0 })
-				: current.subtract({ months: 1 }).with({ day: current.daysInMonth, hour: 23, minute: 59 });
+			if (forward) {
+				current = current.add({ months: 1 }).with({ day: 1, hour: 0, minute: 0 });
+			} else {
+				const prevMonth = current.subtract({ months: 1 });
+				current = prevMonth.with({ day: prevMonth.daysInMonth, hour: 23, minute: 59 });
+			}
 			continue;
 		}
 

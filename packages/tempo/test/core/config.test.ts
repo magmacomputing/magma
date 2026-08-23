@@ -169,11 +169,11 @@ describe('#setConfig refactor verification', () => {
 
   test('should handle custom layouts containing regex alternatives', () => {
     using _ = Tempo;
-    Tempo.init({ registry: { layouts: { alt_layout: 'today|tomorrow' } } });
-    const dateToday = new Tempo('today');
-    const dateTomorrow = new Tempo('tomorrow');
-    expect(dateToday.isValid).toBe(true);
-    expect(dateTomorrow.isValid).toBe(true);
+    Tempo.init({ timeZone: 'UTC', registry: { layouts: { alt_layout: '{yy}-{mm}-{dd}|{dd}\\.{mm}\\.{yy}' } } });
+    const dateDash = new Tempo('2026-08-04');
+    const dateDot = new Tempo('04.08.2026');
+    expect(dateDash.isValid).toBe(true);
+    expect(dateDot.isValid).toBe(true);
   })
 
   test('should export defineConfig and resolveConfig from config module', async () => {
@@ -182,6 +182,34 @@ describe('#setConfig refactor verification', () => {
     expect(typeof resolveConfig).toBe('function');
     const dummy = { timeZone: 'UTC' };
     expect(defineConfig(dummy)).toBe(dummy);
+  })
+
+  test('should invoke option suppliers at most once and store consistent snapshot', () => {
+    let tzCalls = 0;
+    let calCalls = 0;
+    const tzSupplier = () => { tzCalls++; return 'UTC'; };
+    const calSupplier = () => { calCalls++; return 'iso8601'; };
+
+    const t = new Tempo({ timeZone: tzSupplier, calendar: calSupplier });
+    expect(t.config.timeZone).toBe('UTC');
+    expect(t.config.calendar).toBe('iso8601');
+    expect(tzCalls).toBe(1);
+    expect(calCalls).toBe(1);
+  })
+
+  test('should handle relative duration with string and Date anchors', () => {
+    const tString = new Tempo({ days: 2 }, { anchor: '2026-08-20T10:00:00Z', timeZone: 'UTC' });
+    expect(tString.isValid).toBe(true);
+    expect(tString.dd).toBe(22);
+
+    const tDate = new Tempo({ hours: 5 }, { anchor: new Date('2026-08-20T10:00:00Z'), timeZone: 'UTC' });
+    expect(tDate.isValid).toBe(true);
+    expect(tDate.hh).toBe(15);
+
+    const tPastMidnight = new Tempo({ hours: 5 }, { anchor: new Date('2026-08-20T21:00:00Z'), timeZone: 'UTC' });
+    expect(tPastMidnight.isValid).toBe(true);
+    expect(tPastMidnight.dd).toBe(21);
+    expect(tPastMidnight.hh).toBe(2);
   })
 
 })

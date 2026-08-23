@@ -140,6 +140,8 @@ await using healthCheck = Tempo.ticker({
   cron: '*/15 * * * *', // Every 15 minutes
   label: '15-Minute Healthcheck',
   limit: 10
+}, (t) => {
+  console.log(`Healthcheck pulse: ${t.format('isoTime')}`);
 });
 ```
 

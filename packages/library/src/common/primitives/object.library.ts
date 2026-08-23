@@ -152,14 +152,15 @@ export function ifDefined<T extends Property<any>>(obj: T) {
  * const subset = pick({ a: 1, b: 2, c: 3 }, 'a', 'c'); // { a: 1, c: 3 }
  * ```
  */
-export const pick = <T extends Property<T>, K extends string>(obj: T, ...keys: K[]): Partial<T> => {
-	const ownKeys = Object.getOwnPropertyNames(obj);
-
-	return keys.reduce((acc, key) => {
-		if (ownKeys.includes(key))
-			acc[key] = obj[key];
-		return acc;
-	}, {} as T);
+export function pick<T extends object, K extends keyof T>(obj: T, ...keys: (K | K[])[]): Pick<T, K>;
+export function pick<T extends object, K extends keyof T>(obj: T, ...keys: (K | K[])[]): Pick<T, K> {
+	const flatKeys = keys.flat() as K[];
+	const result = {} as Pick<T, K>;
+	for (const key of flatKeys) {
+		if (key in obj)
+			result[key] = obj[key];
+	}
+	return result;
 }
 
 /**

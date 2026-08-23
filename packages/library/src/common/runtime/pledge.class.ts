@@ -137,7 +137,15 @@ export class Pledge<T> {
 	}
 
 	get status() {
-		return cleanify(this.#status);
+		const rawStatus: Record<string, any> = {
+			...this.#status,
+			state: this.state
+		};
+		try {
+			return cleanify(rawStatus);
+		} catch {
+			return { tag: this.#status.tag, state: this.state };
+		}
 	}
 
 	get promise() {
@@ -162,7 +170,11 @@ export class Pledge<T> {
 	}
 
 	toString() {
-		return JSON.stringify(this.status);
+		try {
+			return JSON.stringify(this.status);
+		} catch {
+			return `[Pledge ${this.state}]`;
+		}
 	}
 
 	/**

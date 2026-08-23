@@ -62,9 +62,9 @@ export function omit<T extends Obj>(obj: T, ...keys: PropertyKey[]) {
 				break;
 			}
 			keys
-				.sort()
-				.reverse()																					// remove from end-to-start to preserve indexes
-				.forEach(key => value.splice(Number(key), 1));			// remove Array index
+				.map(Number)
+				.sort((a, b) => b - a)
+				.forEach(index => value.splice(index, 1));
 			break;
 
 		case 'Object':

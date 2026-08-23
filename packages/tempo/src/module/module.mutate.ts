@@ -143,7 +143,8 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 
 									const unitMap: Record<string, string> = {
 										yy: 'years', mm: 'months', ww: 'weeks', dd: 'days',
-										hh: 'hours', mi: 'minutes', ss: 'seconds'
+										hh: 'hours', mi: 'minutes', ss: 'seconds',
+										ms: 'milliseconds', us: 'microseconds', ns: 'nanoseconds'
 									};
 									return currZdt.add({ [unitMap[key]]: nbr });
 								}
@@ -283,8 +284,9 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 								case 'end.second':
 								case 'end.millisecond':
 								case 'end.microsecond':
-								case 'end.nanosecond':
 									return currZdt.round({ smallestUnit: (enums.ELEMENT[single as t.Element] ?? single) as any, roundingMode: 'ceil' }).subtract({ nanoseconds: 1 });
+								case 'end.nanosecond':
+									return currZdt;
 
 								default:
 									logError(`Unexpected method(${op}), unit(${key}) and offset(${adjust})`, this.config);

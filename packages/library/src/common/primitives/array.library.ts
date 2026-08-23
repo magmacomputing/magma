@@ -61,16 +61,16 @@ export interface SortBy {
  */
 export function sortBy<T extends Property<T>>(...keys: (PropertyKey | SortBy)[]) {
 	const sortOptions = keys																	// coerce string => SortBy
-		.flat()																								// flatten Array-of-Array
+		.flat()																									// flatten Array-of-Array
 		.map(key => isObject(key) ? key : { field: stringify(key) })	// build Array of sort-options
 
 	return (left: T, right: T) => {
-		let result = 0 as -1 | 0 | 1;													// 0 = same, -1 = left<right, +1 = left>right
+		let result = 0 as -1 | 0 | 1;														// 0 = same, -1 = left<right, +1 = left>right
 
 		sortOptions.forEach(key => {
-			if (result === 0) {																	// no need to look further if result !== 0
+			if (result === 0) {																		// no need to look further if result !== 0
 				const dir = key.dir === 'desc' ? -1 : 1;
-				const field = key.field + (key.index ? `[${key.index}]` : '');
+				const field = key.field + (isDefined(key.index) ? `[${key.index}]` : '');
 				const valueA = extract(left, field, nullishToValue(key.default, 0));
 				const valueB = extract(right, field, nullishToValue(key.default, 0));
 
@@ -107,6 +107,17 @@ export function sortKey<T extends Property<any>>(array: T[], ...keys: (PropertyK
 	return array.sort(sortBy(...keys));
 }
 
+const groupByFallback = <T>(arr: T[], fn: (itm: T, idx?: number) => PropertyKey): Record<PropertyKey, T[]> => {
+	if (typeof Object.groupBy === 'function')
+		return Object.groupBy(arr, fn as any) as Record<PropertyKey, T[]>;
+	const res: Record<PropertyKey, T[]> = {};
+	arr.forEach((itm, idx) => {
+		const key = fn(itm, idx);
+		(res[key] ??= []).push(itm);
+	});
+	return res;
+};
+
 type GroupFn<T extends Property<T>> = (value: T, index?: number) => PropertyKey
 
 /**
@@ -136,13 +147,13 @@ export function byKey<T extends Property<any>>(arr: T[], key1: keyof T, ...keys:
 export function byKey<T extends Property<any>>(arr: T[], ...keys: (keyof T)[]): Record<PropertyKey, T[]>;
 export function byKey<T extends Property<any>>(arr: T[], fnKey: GroupFn<T> | keyof T, ...keys: (keyof T)[]) {
 	if (isFunction(fnKey))
-		return Object.groupBy(arr, fnKey);
+		return groupByFallback(arr, fnKey);
 
-	const keyed = [fnKey]																		// mapFn is a keyof T
-		.concat(keys)																					// append any trailing keyof T[]
+	const keyed = [fnKey]																			// mapFn is a keyof T
+		.concat(keys)																						// append any trailing keyof T[]
 		.flat();																								// flatten Array-of-Array
 
-	return Object.groupBy(arr, itm =>												// group an array into an object with named keys
+	return groupByFallback(arr, itm =>												// group an array into an object with named keys
 		keyed
 			.map(key => isUndefined(itm[key]) ? '' : stringify(itm[key]))
 			.join('.')

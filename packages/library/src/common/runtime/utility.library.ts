@@ -21,7 +21,11 @@ export const getCaller = () => {
 		?.filter(itm => !itm.startsWith('Error'))
 		?? []
 
-	const callerName = stackTrace[2].split(' ');
+	const callerFrame = stackTrace[2];
+	if (!callerFrame) return undefined;
+
+	const callerName = callerFrame.split(' ');
+	if (!callerName[1]) return undefined;
 
 	return (callerName[1] === 'new') ? callerName[2] : callerName[1].split('.')[0];
 }
@@ -126,7 +130,7 @@ export function deepFreeze<const T extends object>(obj: T, options?: { skip?: We
 	// Support both old and new signatures for backward compatibility
 	const skip = (options instanceof WeakSet) ? options : (options?.skip ?? EMPTY_SKIP);
 
-	if (isPrimitive(obj) || Object.isFrozen(obj) || seen.has(obj) || skip.has(obj))
+	if (isPrimitive(obj) || seen.has(obj) || skip.has(obj))
 		return obj as Secure<T>;
 
 	if ((obj as any)?.[Symbol.toStringTag] === 'Enumify')

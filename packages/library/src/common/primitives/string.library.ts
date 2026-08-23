@@ -90,10 +90,11 @@ const PAT = /[A-Z\xC0-\xD6\xD8-\xDE]?[a-z\xDF-\xF6\xF8-\xFF]+|[A-Z\xC0-\xD6\xD8-
 export const toCamelCase = <T extends string>(sentence: T) => {
 	let [word, ...rest] = sentence.match(PAT) ?? [''];
 
-	if (isNumeric(word)) {
+	if (isNumeric(word) && rest.length > 0) {
 		word = rest[0];
 		rest.splice(0, 1);
 	}
+	word ??= '';
 
 	return (sentence.startsWith('_') ? '_' : '') + word.toLocaleLowerCase() + toProperCase(...rest).replace(RE_SPACE, '') as T;
 }

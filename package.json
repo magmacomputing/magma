@@ -15,10 +15,12 @@
     "packages/plugins/*"
   ],
   "scripts": {
-    "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run",
+    "test": "vitest run",
     "build:tempo": "npm run build --workspace=@magmacomputing/tempo",
     "build:library": "npm run build --workspace=@magmacomputing/library",
-    "build:plugins": "npm run build --workspaces --if-present",
+    "build:functions": "npm run build --workspace=@magmacomputing/tempo-fns",
+    "build:plugins": "node bin/build-plugins.mjs",
+    "build:all": "npm run build --workspaces --if-present",
     "clean": "node node_modules/typescript-7/bin/tsc -b --clean",
     "version:bump": "node bin/version-bump.mjs",
     "version:sync": "node bin/version-sync.mjs",
@@ -33,7 +35,7 @@
     "docs:build": "npm run docs:build --workspace=@magmacomputing/tempo",
     "docs:preview": "npm run docs:preview --workspace=@magmacomputing/tempo",
     "docs:push": "npm run docs:push --workspace=@magmacomputing/tempo",
-    "test:dist": "npm run build:library && npm run build:tempo && cross-env TEMPO_LICENSE_KEY=\"\" TEST_DIST=true vitest run"
+    "test:dist": "npm run build:library && npm run build:tempo && TEST_DIST=true vitest run"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",

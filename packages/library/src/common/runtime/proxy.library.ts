@@ -78,7 +78,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 		},
 
 		defineProperty: (t, k, d) => {
-			if (frozen) throw new TypeError(`Cannot define property '${String(k)}' on a frozen object.`);
+			if (frozen && !Object.isFrozen(t)) throw new TypeError(`Cannot define property '${String(k)}' on a frozen object.`);
 			if (appendOnly && Reflect.has(t, k)) throw new Error(`Security: Mutation attempt on protected key '${String(k)}'`);
 			return Reflect.defineProperty(t, k, d);
 		},

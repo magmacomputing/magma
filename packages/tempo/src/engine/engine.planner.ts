@@ -193,7 +193,7 @@ export function selectLayoutPatterns(
 		let include = true;
 
 		if (hasAgoHence) {
-			include = desc === LAYOUT.rel;
+			include = desc === LAYOUT.rel || desc === LAYOUT.wkd;
 		} else {
 			if (include && isAlphaOnly && ALPHA_EXCLUDE.has(desc)) include = false;
 			if (include && isSixDigits && !COMPACT_SIX.has(desc)) include = false;

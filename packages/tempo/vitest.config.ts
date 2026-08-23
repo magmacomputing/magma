@@ -1,6 +1,5 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import fs from 'node:fs';
 
 import { defineConfig } from 'vitest/config';
 import swc from 'unplugin-swc';
@@ -32,8 +31,6 @@ export default defineConfig({
 		include: ['test/**/*.{test,spec}.ts'],
 		exclude: [
 			'**/node_modules/**',
-			'**/test/**/*.core.test.ts',
-			'**/test/**/*.lazy.test.ts',
 			'**/test/browser/**'
 		],
 		setupFiles: [polyfill, consoleSpySetup],
@@ -103,7 +100,13 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/tempo-fns\/(.*)$/, replacement: resolve(__dirname, '../functions/src/$1.ts') },
 			{ find: /^@magmacomputing\/library$/, replacement: resolve(__dirname, '../library/src/common.index.ts') },
 			{ find: /^@magmacomputing\/library\/(.*)$/, replacement: resolve(__dirname, '../library/src/$1.ts') },
-			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/$1.ts') },
+			{ find: /^#library\/([^/]+)\/index\.js$/, replacement: resolve(__dirname, '../library/src/common/$1/index.ts') },
+			{ find: /^#library\/(array|assertion|coercion|number|object|primitive|string|symbol|type)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/primitives/$1.library.ts') },
+			{ find: /^#library\/(calendar|temporal)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/temporal/$1.library.ts') },
+			{ find: /^#library\/temporal\.polyfill\.js$/, replacement: resolve(__dirname, '../library/src/common/temporal/temporal.polyfill.ts') },
+			{ find: /^#library\/(buffer|cipher|webtoken)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/security/$1.library.ts') },
+			{ find: /^#library\/(cron|rrule|schedule)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/scheduling/$1.library.ts') },
+			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/runtime/$1.ts') },
 			{ find: /^#library$/, replacement: resolve(__dirname, '../library/src/common.index.ts') },
 		]
 	}

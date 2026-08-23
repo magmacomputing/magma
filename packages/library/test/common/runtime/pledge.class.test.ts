@@ -36,8 +36,7 @@ describe('Pledge', () => {
 		try {
 			const p = new Pledge();
 			p[Symbol.dispose]();
-			await Promise.resolve();
-			await Promise.resolve();
+			await new Promise(r => setTimeout(r, 0));
 			expect(unhandled).toHaveLength(0);
 		} finally {
 			process.off('unhandledRejection', listener);

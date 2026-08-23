@@ -1237,18 +1237,13 @@ export class Tempo {
 		this.#setLocal(this.#options);													// parse local options
 		this.#anchor = evaluate(this.#options.anchor);
 		if (!this.#zdt && isObject(this.#tempo) && isDurationLike(this.#tempo)) {
-			// relative shorthand for "anchor (or now) plus duration"
-			const basis = isTempo(this.#anchor)
-				? this.#anchor.toDateTime()
-				: isZonedDateTime(this.#anchor)
-					? this.#anchor
-					: this.#now.toZonedDateTimeISO(this.#local.config.timeZone);
-			this.#zdt = basis.add(this.#tempo as Temporal.DurationLike);
+			this.#zdt = this.#resolveAnchorBasis(this.#anchor)		// relative shorthand for "anchor (or now) plus duration"
+				.add(this.#tempo as Temporal.DurationLike);
 		}
 
-		const { mode } = this.#local.parse;
 		const input = String(this.#tempo ?? '');
 		const guard = this.#local.parse.guard || (this.constructor as typeof Tempo)[$guard];
+		const { mode } = this.#local.parse;
 
 		// 🏛️ Initialization Strategy ('auto' | 'strict' | 'defer')
 		if (mode === Tempo.MODE.Defer) this.#local.parse.lazy = true;
@@ -1644,6 +1639,12 @@ export class Tempo {
 		if (isDefined(evaluatedSphere))
 			setProperty(this.#local.config, 'sphere', evaluatedSphere);
 
+		const optionsSnapshot = { ...options };
+		if (isDefined(options.timeZone)) optionsSnapshot.timeZone = this.#local.config.timeZone;
+		if (isDefined(options.calendar)) optionsSnapshot.calendar = this.#local.config.calendar;
+		if (isDefined(options.locale)) optionsSnapshot.locale = this.#local.config.locale;
+		if (isDefined(options.sphere)) optionsSnapshot.sphere = this.#local.config.sphere;
+
 		this.#local.parse = markConfig(Object.create(classState.parse));
 		this.#local.parse.event = { ...classState.parse.event };
 		this.#local.parse.period = { ...classState.parse.period };
@@ -1671,7 +1672,7 @@ export class Tempo {
 			enumerable: false
 		});
 
-		(this.constructor as any)[$setConfig](this.#local, options);									// set #local config
+		(this.constructor as any)[$setConfig](this.#local, optionsSnapshot);				// set #local config
 	}
 
 	/** parse DateTime input */
@@ -1705,6 +1706,13 @@ export class Tempo {
 		const msg = 'Tempo ParseModule not loaded. Did you forget to Tempo.extend(ParseModule)?';
 		logError(msg, this.#local.config);
 		return undefined as any;
+	}
+
+	#resolveAnchorBasis(anchor: unknown): Temporal.ZonedDateTime {
+		if (isTempo(anchor)) return anchor.toDateTime();
+		if (isZonedDateTime(anchor)) return anchor;
+		if (isDefined(anchor)) return new (this.constructor as typeof Tempo)(anchor as any, this.#options).toDateTime();
+		return this.#now.toZonedDateTimeISO(this.#local.config.timeZone);
 	}
 
 	/** resolve constructor / method arguments */

@@ -59,8 +59,15 @@ if (fs.existsSync(stdDir)) {
 
 const internalAliases = [
 	{ find: '#tempo/std', replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') },
-	{ find: /^#library\/(.*)\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/$1.js') },
-	{ find: /^#library\/(.*)$/, replacement: path.resolve(__dirname, '../library/dist/common/$1.js') },
+	{ find: /^#library\/([^/]+)\/index\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/$1/index.js') },
+	{ find: /^#library\/(browser|server)\/(.*)\.js$/, replacement: path.resolve(__dirname, '../library/dist/$1/$2.js') },
+	{ find: /^#library\/(array|assertion|coercion|number|object|primitive|string|symbol|type)\.library\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/primitives/$1.library.js') },
+	{ find: /^#library\/(calendar|temporal)\.library\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/temporal/$1.library.js') },
+	{ find: /^#library\/temporal\.polyfill\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/temporal/temporal.polyfill.js') },
+	{ find: /^#library\/(buffer|cipher|webtoken)\.library\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/security/$1.library.js') },
+	{ find: /^#library\/(cron|rrule|schedule)\.library\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/scheduling/$1.library.js') },
+	{ find: /^#library\/(.*)\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/runtime/$1.js') },
+	{ find: /^#library\/(.*)$/, replacement: path.resolve(__dirname, '../library/dist/common/runtime/$1.js') },
 	{ find: /^#library$/, replacement: path.resolve(__dirname, '../library/dist/common.index.js') },
 	{ find: /^@magmacomputing\/library\/(?:common|src\/common)\/(.*)\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/$1.js') },
 	{ find: /^@magmacomputing\/library\/(?:common|src\/common)\/(.*)$/, replacement: path.resolve(__dirname, '../library/dist/common/$1.js') },

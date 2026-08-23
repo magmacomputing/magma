@@ -26,7 +26,7 @@ export function getNextScheduleEpoch(
 	timeZone = 'UTC'
 ): number | null {
 	if (isRRuleString(pattern))
-		return getNextRRuleEpoch(pattern, anchorMs);
+		return getNextRRuleEpoch(pattern, anchorMs, timeZone);
 
 	if (isCronString(pattern))
 		return getNextCronEpoch(pattern, anchorMs, timeZone);

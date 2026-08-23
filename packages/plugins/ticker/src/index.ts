@@ -1,6 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { isRRuleString, getNextRRuleEpoch, isString } from '@magmacomputing/library';
-import { nextCron, isCronString } from '@magmacomputing/tempo-fns';
+import { isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch, isString } from '@magmacomputing/library';
 import {
 	enums, definePlugin, attachStatics, type TempoPlugin,
 	isObject, isFunction, isDefined, isEmpty, isNumeric, isNumber, Pledge, asArray, instant, normaliseFractionalDurations,
@@ -171,8 +170,14 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#limit = lmt;
 		if (rruleOption)
 			this.#rrule = isString(rruleOption) ? rruleOption : rruleOption.rrule;
-		if (cronOption)
+		if (cronOption) {
+			if (!isCronString(cronOption)) {
+				const err = new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`);
+				if (!this.#TempoClass.config?.catch) throw err;
+				console.error(err.message);
+			}
 			this.#cron = cronOption;
+		}
 
 		if (cb) this.#listeners.add(cb);
 
@@ -323,7 +328,8 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 
 		if (this.#cron) {
-			this.#current = nextCron(t, this.#cron);
+			const nextMs = getNextCronEpoch(this.#cron, t.epoch.ms, t.tz);
+			this.#current = new (this.#TempoClass as any)(nextMs, t.config);
 		} else if (this.#rrule) {
 			const nextMs = getNextRRuleEpoch(this.#rrule, t.epoch.ms);
 			this.#current = new (this.#TempoClass as any)(nextMs, t.config);

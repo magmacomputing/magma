@@ -76,7 +76,7 @@ export function interpolateEnv<T>(obj: T, env: Record<string, string | undefined
 
 	if (isPlainObject(obj)) {
 		const result: Record<string, any> = {};
-		for (const [key, val] of Object.entries(obj))
+		for (const [key, val] of Object.entries(obj as object))
 			result[key] = interpolateEnv(val, env);
 
 		return result as T;

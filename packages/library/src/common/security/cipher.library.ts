@@ -1,4 +1,5 @@
 import { toHex } from '#library/number.library.js';
+import { objectify } from '#library/serialize.library.js';
 import { asString, asError } from '#library/coercion.library.js';
 import { isError } from '#library/assertion.library.js';
 import { bufferToBase64, base64ToBuffer, encodeBuffer, decodeBuffer } from '#library/buffer.library.js';
@@ -13,18 +14,20 @@ export const keys = {
 	TypeKey: 'AES-GCM',
 } as const;
 
-// Module-scoped state for ephemeral keys
-const _cryptoKey = subtle
+// Module-scoped state for ephemeral keys (lazily instantiated)
+let _cryptoKeyPromise: Promise<CryptoKey | Error> | undefined;
+const getCryptoKey = () => (_cryptoKeyPromise ??= subtle
 	.generateKey({ name: keys.TypeKey, length: 128 }, false, ['encrypt', 'decrypt'])
-	.catch(asError);
+	.catch(asError));
 
-const _asymmetricKey = subtle.generateKey({
+let _asymmetricKeyPromise: Promise<CryptoKeyPair | Error> | undefined;
+const getAsymmetricKey = () => (_asymmetricKeyPromise ??= subtle.generateKey({
 	name: keys.SignKey,
 	modulusLength: 2048,
 	publicExponent: new Uint8Array([1, 0, 1]),
 	hash: { name: keys.Algorithm },
 }, false, ['sign', 'verify'])
-	.catch(asError);
+	.catch(asError));
 
 /**
  * Generates a random, short UUID key based on standard Web Crypto API UUIDs.
@@ -87,7 +90,7 @@ export const hash = async (source: string | Object, len?: number, alg = 'SHA-256
  */
 export const encrypt = async (data: any) => {
 	const iv = crypto.getRandomValues(new Uint8Array(16));
-	const key = await _cryptoKey;
+	const key = await getCryptoKey();
 	if (isError(key)) throw new Error(`Cipher: Key generation failed: ${key.message}`, { cause: key });
 
 	const cipherBuf = await subtle.encrypt({ name: keys.TypeKey, iv }, key, encodeBuffer(data));
@@ -106,7 +109,7 @@ export const encrypt = async (data: any) => {
  * @returns A promise resolving to the decrypted, deserialized data
  */
 export const decrypt = async (secret: Promise<string> | string) => {
-	const [str, key] = await Promise.all([secret, _cryptoKey]);
+	const [str, key] = await Promise.all([secret, getCryptoKey()]);
 	if (isError(key)) throw new Error(`Cipher: Key generation failed: ${key.message}`, { cause: key });
 
 	const uint8 = base64ToBuffer(str);
@@ -115,7 +118,8 @@ export const decrypt = async (secret: Promise<string> | string) => {
 
 	return subtle.decrypt({ name: keys.TypeKey, iv }, key, data)
 		.then(result => new Uint8Array(result))
-		.then(decodeBuffer);
+		.then(decodeBuffer)
+		.then(objectify);
 }
 
 /**
@@ -125,7 +129,7 @@ export const decrypt = async (secret: Promise<string> | string) => {
  * @returns A promise resolving to the Uint8Array signature
  */
 export const sign = async (doc: any) => {
-	const keypair = await _asymmetricKey;
+	const keypair = await getAsymmetricKey();
 	if (isError(keypair)) throw new Error(`Cipher: Key generation failed: ${keypair.message}`, { cause: keypair });
 	if (!keypair.privateKey) throw new Error('Cipher: Missing private key');
 
@@ -141,7 +145,7 @@ export const sign = async (doc: any) => {
  * @returns A promise resolving to a boolean indicating verification success
  */
 export const verify = async (signature: Promise<ArrayBuffer> | ArrayBuffer | Uint8Array, doc: any) => {
-	const [buffer, keypair] = await Promise.all([signature, _asymmetricKey]);
+	const [buffer, keypair] = await Promise.all([signature, getAsymmetricKey()]);
 	if (isError(keypair)) throw new Error(`Cipher: Key generation failed: ${keypair.message}`, { cause: keypair });
 	if (!keypair.publicKey) throw new Error('Cipher: Missing public key');
 

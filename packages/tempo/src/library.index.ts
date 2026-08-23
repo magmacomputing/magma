@@ -13,13 +13,7 @@ export { stringify, objectify, cloneify } from '#library/serialize.library.js';
 export { parseJSONC, stripJSONC, cleanify, isJSON, rawJSON, isRawJSON } from '#library/json.library.js';
 export { getContext, CONTEXT } from '#library/utility.library.js';
 
-export * from '#library/proxy.library.js';
-export * from '#library/coercion.library.js';
-export * from '#library/assertion.library.js';
-export * from '#library/temporal.library.js';
-export * from '#library/calendar.library.js';
-export * from '#library/recurrence.library.js';
-export * from '#library/evaluation.library.js';
+export * from '@magmacomputing/library';
 
 export type {
 	OwnOf,

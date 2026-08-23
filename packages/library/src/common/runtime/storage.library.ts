@@ -27,6 +27,8 @@ let storage = context.type === CONTEXT.Browser
 	? getSafeStorage()
 	: mockStorage;
 
+const nodeStorage = new Map<string, string>();
+
 /**
  * Selects the active browser storage mechanism (localStorage or sessionStorage).
  * 
@@ -65,7 +67,7 @@ export function getStorage<T>(key?: string, dflt?: T): T | undefined {
 			break;
 
 		case CONTEXT.NodeJS:
-			store = context.global.process.env[key];
+			store = nodeStorage.get(key) ?? context.global.process?.env?.[key];
 			break;
 
 		case CONTEXT.Deno:
@@ -114,9 +116,11 @@ export function setStorage<T>(key: string, val?: T) {
 			break;
 
 		case CONTEXT.NodeJS:
-			set
-				? (context.global.process.env[key] = stash)
-				: (delete context.global.process.env[key])
+			if (set) {
+				nodeStorage.set(key, stash);
+			} else {
+				nodeStorage.delete(key);
+			}
 			break;
 
 		case CONTEXT.Deno:

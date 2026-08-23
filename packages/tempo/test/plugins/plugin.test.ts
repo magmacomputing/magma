@@ -71,16 +71,17 @@ describe('Tempo Plugin System', () => {
 		const testDiscovery = '$TempoTestDiscoveryExtends';
 		const discoveryKey = Symbol.for(testDiscovery);
 		let loaded = false;
-		const discoveryPlugin: Plugin = definePlugin({
+		const discoveryPlugin: Plugin = {
 			name: 'DiscoveryExtendsPlugin',
 			install() { loaded = true; },
-		});
+		} as Plugin;
 
 		(globalThis as any)[discoveryKey] = {
 			extends: [discoveryPlugin],
 		};
 
 		try {
+			expect(loaded).toBe(false);
 			Tempo.init({ discovery: testDiscovery });
 			expect(loaded).toBe(true);
 		} finally {
@@ -92,6 +93,13 @@ describe('Tempo Plugin System', () => {
 		const testDiscovery = '$TempoTestDiscoveryConfig';
 		const discoveryKey = Symbol.for(testDiscovery);
 		let pluginConfigDuringInstall: any = null;
+
+		(globalThis as any)[discoveryKey] = {
+			plugins: {
+				ConfiguredDiscoveryPlugin: { apiKey: 'test-key-123', customOption: true },
+			},
+		};
+
 		const discoveryPlugin: Plugin = definePlugin({
 			name: 'ConfiguredDiscoveryPlugin',
 			install(tempo) {
@@ -99,12 +107,7 @@ describe('Tempo Plugin System', () => {
 			},
 		});
 
-		(globalThis as any)[discoveryKey] = {
-			plugins: {
-				ConfiguredDiscoveryPlugin: { apiKey: 'test-key-123', customOption: true },
-			},
-			extends: [discoveryPlugin],
-		}
+		(globalThis as any)[discoveryKey].extends = [discoveryPlugin];
 
 		try {
 			Tempo.init({ discovery: testDiscovery });
