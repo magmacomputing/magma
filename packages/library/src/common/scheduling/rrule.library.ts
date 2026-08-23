@@ -1,4 +1,4 @@
-import { isDefined, isNumber, isString } from './assertion.library.js';
+import { isDefined, isNumber, isString } from '#library/assertion.library.js';
 import {
 	DAYS_IN_WEEK,
 	DAY_MAP,
@@ -11,7 +11,7 @@ import {
 	withUtcParts,
 	type DayKey,
 	type MonthKey,
-} from './calendar.library.js';
+} from '#library/calendar.library.js';
 
 const RE_RRULE_FREQ = /^(RRULE:)?FREQ=(DAILY|WEEKLY|MONTHLY|YEARLY)(;|$)/i;
 const RE_FINITE_RRULE = /(?:^|;)(?:RRULE:)?(UNTIL|COUNT)=/i;
@@ -90,6 +90,7 @@ export function parseRRule(rrule: string): ParsedRRule {
 		if (!key || !val) continue;
 		const k = key.toUpperCase();
 		const trimmedVal = val.trim();
+		const trimmedArr = trimmedVal.split(',').map(v => v.trim());
 
 		switch (k) {
 			case 'FREQ':
@@ -120,18 +121,17 @@ export function parseRRule(rrule: string): ParsedRRule {
 				break;
 			}
 			case 'BYMONTH': {
-				const items = trimmedVal.split(',').map(v => {
-					const trimmed = v.trim();
-					const num = parseInt(trimmed, 10);
+				const items = trimmedArr.map(v => {
+					const num = parseInt(v, 10);
 					if (isNumber(num) && num >= 1 && num <= 12) return num;
-					const prefix = trimmed.slice(0, 3).toUpperCase();
+					const prefix = v.slice(0, 3).toUpperCase();
 					return prefix in MONTH_MAP ? MONTH_MAP[prefix as MonthKey] : undefined;
 				}).filter((v): v is number => isDefined(v));
 				if (items.length > 0) byMonth = items;
 				break;
 			}
 			case 'BYDAY': {
-				const items = trimmedVal.split(',').map(item => {
+				const items = trimmedArr.map(item => {
 					const m = item.match(RE_BYDAY_PART);
 					const nthVal = m && m[1] ? parseInt(m[1], 10) : undefined;
 					const rawDay = m ? m[2] : item;
@@ -142,17 +142,17 @@ export function parseRRule(rrule: string): ParsedRRule {
 				break;
 			}
 			case 'BYHOUR': {
-				const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(v => isNumber(v) && v >= 0 && v <= 23);
+				const items = trimmedArr.map(v => parseInt(v, 10)).filter(v => isNumber(v) && v >= 0 && v <= 23);
 				if (items.length > 0) byHour = items;
 				break;
 			}
 			case 'BYMINUTE': {
-				const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(v => isNumber(v) && v >= 0 && v <= 59);
+				const items = trimmedArr.map(v => parseInt(v, 10)).filter(v => isNumber(v) && v >= 0 && v <= 59);
 				if (items.length > 0) byMinute = items;
 				break;
 			}
 			case 'BYSETPOS': {
-				const items = trimmedVal.split(',').map(v => parseInt(v, 10)).filter(isNumber);
+				const items = trimmedArr.map(v => parseInt(v, 10)).filter(isNumber);
 				if (items.length > 0) bySetPos = items;
 				break;
 			}

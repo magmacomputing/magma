@@ -1,4 +1,4 @@
-import { Immutable, Securable } from '../../src/common/class.library.js';
+import { Immutable, Securable } from '#library/class.library.js';
 
 describe('Class Decorators: Immutable & Secure', () => {
   it('Immutable: should throw on mutation (Object.freeze, strict mode)', () => {

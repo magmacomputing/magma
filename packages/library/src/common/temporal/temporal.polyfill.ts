@@ -16,7 +16,7 @@ if (typeof globalThis.Temporal === 'undefined') {
 	);
 }
 
-import { asError } from './coercion.library.js';
+import { asError } from '../primitives/coercion.library.js';
 
 // 🛡️ Sane Implementation Check
 // Some early native implementations (e.g. Node 22.0.x) are incomplete and crash on basic arithmetic.

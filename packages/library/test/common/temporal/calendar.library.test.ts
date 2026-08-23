@@ -10,7 +10,7 @@ import {
 	isValidDate,
 	addUtcDays,
 	withUtcParts,
-} from '../../src/common/calendar.library.js';
+} from '#library/calendar.library.js';
 import type {
 	UtcPartsOptions,
 	DayKey,
@@ -19,7 +19,7 @@ import type {
 	MonthValue,
 	IsoWeekdayNumber,
 	IsoWeekdayName
-} from '../../src/common/calendar.library.js';
+} from '#library/calendar.library.js';
 
 describe('calendar.library', () => {
 	test('DAYS_IN_WEEK constant is 7', () => {

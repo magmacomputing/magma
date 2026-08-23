@@ -1,5 +1,5 @@
-import { isNumber, isNumeric, isString, isText, isPrimitive, isArrayLike, isObject, isPlainObject, isInteger, isJSON, isRawJSON, isEmpty } from '#library/assertion.library.js';
-import { rawJSON } from '#library/json.library.js';
+import { isNumber, isNumeric, isText, isArrayLike, isPlainObject, isEmpty } from '#library/assertion.library.js';
+import { isJSON, isRawJSON, rawJSON } from '#library/json.library.js';
 
 describe('Assertion Library', () => {
 

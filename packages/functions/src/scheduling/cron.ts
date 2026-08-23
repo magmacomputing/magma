@@ -1,168 +1,50 @@
 import type { Tempo } from '@magmacomputing/tempo';
+import { getTemporal, isTempo, isZonedDateTime } from '../support/index.js';
+import {
+	parseCron,
+	isCronString,
+	getNextCronEpoch,
+	getPrevCronEpoch,
+	type CronField,
+	type CronSchedule
+} from '#library/cron.library.js';
 
-type CronField = { allowed: Set<number>; restricted: boolean };
+export type { CronField, CronSchedule };
+export { parseCron, isCronString };
 
-interface CronSchedule {
-	minutes: CronField;
-	hours: CronField;
-	daysOfMonth: CronField;
-	months: CronField;
-	daysOfWeek: CronField;
-}
-
-function parseCronField(field: string, min: number, max: number): CronField {
-	const allowed = new Set<number>();
-	if (field === '*' || field === '?') {
-		for (let i = min; i <= max; i++) allowed.add(i);
-		return { allowed, restricted: false };
+/**
+ * Returns the next occurrence of a Cron pattern as a new Tempo instance or Temporal.ZonedDateTime.
+ */
+export function nextCron<T extends Tempo | any>(input: T, pattern: string): T {
+	const Temporal = getTemporal();
+	if (isTempo(input)) {
+		const nextMs = getNextCronEpoch(pattern, input.epoch.ms, input.tz);
+		return input.set(nextMs) as T;
 	}
 
-	const parts = field.split(',');
-	for (const part of parts) {
-		if (part.includes('/')) {
-			const [range, stepStr] = part.split('/');
-			const step = parseInt(stepStr, 10);
-			if (isNaN(step) || step <= 0)
-				throw new Error(`[tempo-fns] Invalid step value: ${stepStr}`);
+	const anchorZdt = isZonedDateTime(input)
+		? (input as any).toZonedDateTimeISO('UTC')
+		: Temporal.Instant.fromEpochMilliseconds(typeof input === 'number' ? input : Date.now()).toZonedDateTimeISO('UTC');
 
-			let start = min;
-			let end = max;
-			if (range !== '*') {
-				const rangeParts = range.split('-');
-				start = parseInt(rangeParts[0], 10);
-				end = rangeParts.length > 1 ? parseInt(rangeParts[1], 10) : start;
-				if (start > end)
-					throw new Error(`[tempo-fns] Invalid range: ${range}`);
-
-			}
-			for (let i = start; i <= end; i += step) {
-				allowed.add(i);
-			}
-		} else if (part.includes('-')) {
-			const [start, end] = part.split('-').map(Number);
-			if (start > end)
-				throw new Error(`[tempo-fns] Invalid range: ${part}`);
-
-			for (let i = start; i <= end; i++)
-				allowed.add(i);
-		} else {
-			allowed.add(parseInt(part, 10));
-		}
-	}
-	return { allowed, restricted: true };
-}
-
-export function parseCron(pattern: string): CronSchedule {
-	const fields = pattern.trim().split(/\s+/);
-	if (fields.length !== 5) {
-		throw new Error('[tempo-fns] Invalid cron pattern. Expected 5 fields (min, hr, dom, mon, dow).');
-	}
-
-	return {
-		minutes: parseCronField(fields[0], 0, 59),
-		hours: parseCronField(fields[1], 0, 23),
-		daysOfMonth: parseCronField(fields[2], 1, 31),
-		months: parseCronField(fields[3], 1, 12),
-		daysOfWeek: parseCronField(fields[4], 0, 7) // 0 and 7 can both be Sunday
-	};
-}
-
-function matchesDay(schedule: CronSchedule, current: Temporal.ZonedDateTime): boolean {
-	const domMatch = schedule.daysOfMonth.allowed.has(current.day);
-	const dow = current.dayOfWeek;
-	const dowMatch = schedule.daysOfWeek.allowed.has(dow) || (dow === 7 && schedule.daysOfWeek.allowed.has(0));
-
-	if (schedule.daysOfMonth.restricted && schedule.daysOfWeek.restricted) {
-		return domMatch || dowMatch;
-	}
-	return domMatch && dowMatch;
+	const nextMs = getNextCronEpoch(pattern, anchorZdt.epochMilliseconds, anchorZdt.timeZoneId);
+	return Temporal.Instant.fromEpochMilliseconds(nextMs).toZonedDateTimeISO(anchorZdt.timeZoneId) as T;
 }
 
 /**
- * Returns the next occurrence of a Cron pattern, starting from (and excluding) the current minute.
+ * Returns the previous occurrence of a Cron pattern as a new Tempo instance or Temporal.ZonedDateTime.
  */
-export function nextCron(tempo: Tempo, pattern: string): Tempo {
-	const schedule = parseCron(pattern);
-	// Start searching from the next minute, operating directly on Temporal.ZonedDateTime for performance
-	let current = tempo.toDateTime().add({ minutes: 1 }).with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
-
-	const maxLimit = current.add({ years: 5 }).epochNanoseconds;
-	for (;;) { // Max iterations to prevent infinite loops (5 years max approx)
-		if (current.epochNanoseconds > maxLimit) throw new Error('[tempo-fns] Could not find next cron match within 5 years.');
-		if (!schedule.months.allowed.has(current.month)) {
-			current = current.add({ months: 1 }).with({ day: 1, hour: 0, minute: 0 });
-			continue;
-		}
-
-		if (!matchesDay(schedule, current)) {
-			current = current.add({ days: 1 }).with({ hour: 0, minute: 0 });
-			continue;
-		}
-
-		if (!schedule.hours.allowed.has(current.hour)) {
-			current = current.add({ hours: 1 }).with({ minute: 0 });
-			continue;
-		}
-
-		if (!schedule.minutes.allowed.has(current.minute)) {
-			current = current.add({ minutes: 1 });
-			continue;
-		}
-
-		return tempo.set(current);
+export function prevCron<T extends Tempo | any>(input: T, pattern: string): T {
+	const Temporal = getTemporal();
+	if (isTempo(input)) {
+		const prevMs = getPrevCronEpoch(pattern, input.epoch.ms, input.tz);
+		return input.set(prevMs) as T;
 	}
-}
 
-/**
- * Returns the previous occurrence of a Cron pattern, starting from (and excluding) the current minute.
- */
-export function prevCron(tempo: Tempo, pattern: string): Tempo {
-	const schedule = parseCron(pattern);
-	// Start searching from the previous minute
-	let current = tempo.toDateTime().subtract({ minutes: 1 }).with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
+	const anchorZdt = isZonedDateTime(input)
+		? (input as any).toZonedDateTimeISO('UTC')
+		: Temporal.Instant.fromEpochMilliseconds(typeof input === 'number' ? input : Date.now()).toZonedDateTimeISO('UTC');
 
-	const minLimit = current.subtract({ years: 5 }).epochNanoseconds;
-	for (;;) {
-		if (current.epochNanoseconds < minLimit) throw new Error('[tempo-fns] Could not find previous cron match within 5 years.');
-		if (!schedule.months.allowed.has(current.month)) {
-			current = current.subtract({ months: 1 });
-			current = current.with({ day: current.daysInMonth, hour: 23, minute: 59 });
-			continue;
-		}
-
-		if (!matchesDay(schedule, current)) {
-			current = current.subtract({ days: 1 }).with({ hour: 23, minute: 59 });
-			continue;
-		}
-
-		if (!schedule.hours.allowed.has(current.hour)) {
-			current = current.subtract({ hours: 1 }).with({ minute: 59 });
-			continue;
-		}
-
-		if (!schedule.minutes.allowed.has(current.minute)) {
-			current = current.subtract({ minutes: 1 });
-			continue;
-		}
-
-		return tempo.set(current);
-	}
-}
-
-/**
- * Sniffs whether a given value is a valid 5-part cron expression (min, hr, dom, mon, dow).
- */
-export function isCronString(val: unknown): val is string {
-	if (typeof val !== 'string') return false;
-	const trimmed = val.trim();
-	if (trimmed.startsWith('FREQ=') || trimmed.startsWith('RRULE:')) return false;
-	const fields = trimmed.split(/\s+/);
-	if (fields.length !== 5) return false;
-	try {
-		parseCron(trimmed);
-		return true;
-	} catch {
-		return false;
-	}
+	const prevMs = getPrevCronEpoch(pattern, anchorZdt.epochMilliseconds, anchorZdt.timeZoneId);
+	return Temporal.Instant.fromEpochMilliseconds(prevMs).toZonedDateTimeISO(anchorZdt.timeZoneId) as T;
 }
 

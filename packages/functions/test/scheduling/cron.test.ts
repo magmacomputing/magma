@@ -63,4 +63,13 @@ describe('cron parser', () => {
 		expect(next2.dd).toBe(5);
 		expect(next2.dow).toBe(7);
 	});
+
+	it('rejects non-numeric and out-of-range cron fields', () => {
+		expect(() => parseCron('60 9 * * 1-5')).toThrow();
+		expect(() => parseCron('foo 9 * * 1-5')).toThrow();
+		expect(() => parseCron('0 24 * * 1')).toThrow();
+		expect(() => parseCron('0 9 32 * 1')).toThrow();
+		expect(() => parseCron('0 9 1 13 1')).toThrow();
+		expect(() => parseCron('0 9 1 1 8')).toThrow();
+	});
 });

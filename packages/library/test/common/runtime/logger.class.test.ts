@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Logger, LOG, parseLogLevel } from '../../src/common/logger.class.js';
-import { sym } from '../../src/common/symbol.library.js';
+import { Logger, LOG, parseLogLevel } from '#library/logger.class.js';
+import { sym } from '#library/symbol.library.js';
 
 describe('Logger Class', () => {
 	let consoleSpy: any;

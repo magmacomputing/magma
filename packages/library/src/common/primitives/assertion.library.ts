@@ -1,9 +1,6 @@
 import { sym } from '#library/symbol.library.js';
 import { getType, protoType } from '#library/type.library.js';
 import type { Type, Primitive, Nullish, Temporals, Property, GetType } from '#library/type.library.js';
-import { isJSON, isRawJSON } from '#library/json.library.js';
-
-export { isJSON, isRawJSON };
 
 /**
  * Asserts if a value matches one of the provided types from the Type system.

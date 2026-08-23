@@ -4,10 +4,10 @@ import {
 	parseRRule,
 	expandRRuleEpochs,
 	getNextRRuleEpoch,
-} from '../../src/common/recurrence.library.js';
-import { DAY_MAP } from '../../src/common/calendar.library.js';
+} from '#library/rrule.library.js';
+import { DAY_MAP } from '#library/calendar.library.js';
 
-describe('recurrence.library', () => {
+describe('rrule.library', () => {
 	test('isRRuleString identifies valid RRULE patterns', () => {
 		expect(isRRuleString('FREQ=DAILY')).toBe(true);
 		expect(isRRuleString('RRULE:FREQ=WEEKLY;BYDAY=MO')).toBe(true);

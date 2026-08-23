@@ -1,5 +1,5 @@
 import { base64ToBuffer, bufferToBase64, encodeBuffer, decodeBuffer } from './buffer.library.js';
-import { Logger } from './logger.class.js';
+import { Logger } from '../runtime/logger.class.js';
 import { keys } from './cipher.library.js';
 
 const logger = new Logger('WebToken');

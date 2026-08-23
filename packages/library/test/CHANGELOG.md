@@ -8,10 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.0.0] - 2026-08-21
 
 ### Added
+- **Scheduling Domain Engine (`scheduling/`)**: Introduced the `src/common/scheduling/` domain architecture containing `cron.library.ts` (5-field UNIX Cron expression parser & evaluator), `rrule.library.ts` (RFC 5545 RRULE parser & evaluator, replacing `recurrence.library.ts`), and `schedule.library.ts` (polymorphic schedule engine providing `isScheduleString` and `getNextScheduleEpoch`).
 - **Dynamic Evaluation Utilities (`evaluation.library`)**: Added `#library/evaluation.library.js` containing `evaluate(...values)`, `evaluateAsync(...values)`, `evaluateConfig(config)`, and `evaluateConfigAsync(config)`. Supports variadic synchronous and asynchronous value/supplier evaluation with lazy, short-circuiting coalescing.
 - **Dynamic Property Proxy (`proxy.library`)**: Added `dynamicProxy(target)` for zero-overhead dynamic property proxying with on-access evaluation of function-valued properties on the target object.
 - **Standardized Evaluation Types (`type.library`)**: Added `Evaluable<T>`, `AsyncEvaluable<T>`, `EvaluableRecord<T>`, `AsyncEvaluableRecord<T>`, `Evaluated<T>`, `AsyncEvaluated<T>`, and unified `Resolved<T>` on top of `Awaited<T>`.
 - **WebWorker Context & Runtime Hardening (`utility.library`)**: Added `CONTEXT.WebWorker` to `getContext()` with `WorkerGlobalScope` / `importScripts` detection and hardened runtime checks against global property tampering.
+
+### Changed
+- **Domain Subdirectory Architecture (`src/common/`)**: Reorganized internal common utilities into domain-focused subdirectories (`primitives/`, `temporal/`, `security/`, `runtime/`, `scheduling/`). Resolution via `#library/*` path aliases and root barrel re-exports (`@magmacomputing/library`) automatically resolve across domain subdirectories without breaking consumers.
 
 ## [3.11.1] - 2026-08-06
 

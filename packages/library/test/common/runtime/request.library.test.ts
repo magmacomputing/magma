@@ -1,4 +1,4 @@
-import { fetchRequest, fetchHead, HttpError } from '../../src/common/request.library.js';
+import { fetchRequest, fetchHead, HttpError } from '#library/request.library.js';
 
 describe('request.library', () => {
 	const mockFetch = vi.fn();

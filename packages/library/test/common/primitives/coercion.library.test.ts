@@ -1,4 +1,4 @@
-import { ifNumeric, asInteger, asText, asNumber, when } from '../../src/common/coercion.library.js';
+import { ifNumeric, asInteger, asText, asNumber, when } from '#library/coercion.library.js';
 
 describe('Coercion Library', () => {
 	describe('asText', () => {

@@ -1,4 +1,4 @@
-import { isString } from './assertion.library.js';
+import { isString } from '../primitives/assertion.library.js';
 import type { Logger } from './logger.class.js';
 
 export interface BoundaryContext {

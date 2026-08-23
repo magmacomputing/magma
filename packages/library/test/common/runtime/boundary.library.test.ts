@@ -1,4 +1,4 @@
-import { raise } from '../../src/common/boundary.library.js';
+import { raise } from '#library/boundary.library.js';
 
 describe('Boundary Library', () => {
 	let consoleSpy: any;
