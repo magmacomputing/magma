@@ -3,7 +3,7 @@ import {
 	enums, definePlugin, attachStatics, type TempoPlugin,
 	isObject, isFunction, isDefined, isEmpty, isNumeric, isNumber, Pledge, asArray, instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch, isString,
-} from '@magmacomputing/tempo/plugin-api';
+} from '@magmacomputing/tempo/plugin/sdk';
 
 export { isCronString };
 
@@ -127,6 +127,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#listeners = new Set<Ticker.Callback>();
 	#catchListeners = new Set<Ticker.Callback>();
 	#stopListeners = new Set<Ticker.Callback>();
+	#hasInvalidSchedule = false;
 	#self!: Ticker.Instance;
 
 	constructor(TempoClass: typeof Tempo, arg1: any, arg2?: any) {
@@ -172,6 +173,7 @@ class TickerInstance implements Ticker.Descriptor {
 			this.#rrule = isString(rruleOption) ? rruleOption : rruleOption.rrule;
 		if (cronOption) {
 			if (!isCronString(cronOption)) {
+				this.#hasInvalidSchedule = true;
 				const err = new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`);
 				if (!this.#TempoClass.config?.catch) throw err;
 				console.error(err.message);
@@ -200,7 +202,7 @@ class TickerInstance implements Ticker.Descriptor {
 
 		this.#until = stopAt ? new this.#TempoClass(isOptions(stopAt) ? undefined : stopAt, isOptions(stopAt) ? { ...rest, ...stopAt } : rest) : undefined;
 
-		if (isEmpty(this.#payload) && !isRRule && !isCron) {
+		if (isEmpty(this.#payload) && !isRRule && !isCron && !this.#hasInvalidSchedule) {
 			if (isDefined(startAt)) this.#limit ??= 1;
 			else this.#payload.seconds = 1;
 		}
@@ -214,6 +216,10 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#self = proxy;
 
 		// ── Validation ───────────────────────────────────────────────
+		if (this.#hasInvalidSchedule) {
+			this.stop();
+			return this.#self;
+		}
 		if (!this.#current.isValid) {
 			this.stop();
 			const err = new Error(`Invalid Ticker seed: ${String(this.#current)}`);

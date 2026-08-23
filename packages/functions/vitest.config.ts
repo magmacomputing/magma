@@ -31,7 +31,7 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/tempo-fns$/, replacement: resolve(__dirname, './src/index.ts') },
 			{ find: /^@magmacomputing\/tempo-fns\/(.*)$/, replacement: resolve(__dirname, './src/$1.ts') },
 			{ find: /^@magmacomputing\/tempo$/, replacement: resolve(rootDir, './packages/tempo/src/tempo.index.ts') },
-			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(rootDir, './packages/tempo/src/plugin-api.index.ts') },
+			{ find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: resolve(rootDir, './packages/tempo/src/plugin/plugin.sdk.ts') },
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(rootDir, './packages/tempo/src/plugin/term/term.$1.ts') },
 			{ find: /^@magmacomputing\/tempo\/(.*)$/, replacement: resolve(rootDir, './packages/tempo/src/$1.ts') },
 			{ find: /^@magmacomputing\/library$/, replacement: resolve(rootDir, './packages/library/src/common.index.ts') },

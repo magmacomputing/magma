@@ -111,27 +111,28 @@ const groupByFallback = <T>(arr: T[], fn: (itm: T, idx?: number) => PropertyKey)
 	if (typeof Object.groupBy === 'function')
 		return Object.groupBy(arr, fn as any) as Record<PropertyKey, T[]>;
 	const res: Record<PropertyKey, T[]> = Object.create(null);
-	arr.forEach((itm, idx) => {
+	for (let idx = 0; idx < arr.length; idx++) {
+		const itm = arr[idx];
 		const key = fn(itm, idx);
 		(res[key] ??= []).push(itm);
-	});
+	}
 	return res;
 };
 
-type GroupFn<T extends Property<T>> = (value: T, index?: number) => PropertyKey
+type GroupFn<T> = (value: T, index?: number) => PropertyKey;
 
 /**
- * Groups an array of objects by the return value of a callback function.
+ * Groups an array by the return value of a callback function.
  * 
- * @param arr - The array of objects to group
+ * @param arr - The array of items to group
  * @param grpFn - The callback function returning the group key
- * @returns A record containing arrays of grouped objects
+ * @returns A record containing arrays of grouped items
  * @example
  * ```ts
  * const groups = byKey([{ id: 1, type: 'A' }, { id: 2, type: 'A' }], itm => itm.type);
  * ```
  */
-export function byKey<T extends Property<any>>(arr: T[], grpFn: GroupFn<T>): Record<PropertyKey, T[]>;
+export function byKey<T>(arr: T[], grpFn: GroupFn<T>): Record<PropertyKey, T[]>;
 /**
  * Groups an array of objects by a sequence of key fields.
  * 
@@ -145,7 +146,7 @@ export function byKey<T extends Property<any>>(arr: T[], grpFn: GroupFn<T>): Rec
  */
 export function byKey<T extends Property<any>>(arr: T[], key1: keyof T, ...keys: (keyof T)[]): Record<PropertyKey, T[]>;
 export function byKey<T extends Property<any>>(arr: T[], ...keys: (keyof T)[]): Record<PropertyKey, T[]>;
-export function byKey<T extends Property<any>>(arr: T[], fnKey: GroupFn<T> | keyof T, ...keys: (keyof T)[]) {
+export function byKey<T>(arr: T[], fnKey: GroupFn<T> | any, ...keys: any[]) {
 	if (isFunction(fnKey))
 		return groupByFallback(arr, fnKey);
 
@@ -153,7 +154,7 @@ export function byKey<T extends Property<any>>(arr: T[], fnKey: GroupFn<T> | key
 		.concat(keys)																						// append any trailing keyof T[]
 		.flat();																								// flatten Array-of-Array
 
-	return groupByFallback(arr, itm =>												// group an array into an object with named keys
+	return groupByFallback(arr, (itm: any) =>									// group an array into an object with named keys
 		keyed
 			.map(key => isUndefined(itm[key]) ? '' : stringify(itm[key]))
 			.join('.')

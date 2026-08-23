@@ -15,7 +15,7 @@ Let's build a `finance` plugin. We want to add a `.finance` namespace that provi
 
 ```typescript
 // finance.ts
-import { defineNamespace } from '@magmacomputing/tempo/plugin-api';
+import { defineNamespace } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
 export const FinanceNamespace = defineNamespace({
@@ -75,7 +75,7 @@ Just like standard plugins, you must inform TypeScript about your new namespace 
 
 ```typescript
 // finance.ts
-import { defineNamespace } from '@magmacomputing/tempo/plugin-api';
+import { defineNamespace } from '@magmacomputing/tempo/plugin/sdk';
 
 // ... (FinanceNamespace implementation) ...
 
@@ -154,7 +154,7 @@ If you are building a highly-specialized internal plugin and want to mathematica
 
 ```typescript
 // secret.ts
-import { defineNamespace } from '@magmacomputing/tempo/plugin-api';
+import { defineNamespace } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
 export const InternalTools = Symbol('internal');

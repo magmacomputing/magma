@@ -9,6 +9,6 @@
     "test": "vitest run -c ../vitest.shared.ts"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^3.9.x"
+    "@magmacomputing/tempo": "^4.0.0"
   }
 }

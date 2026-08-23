@@ -42,7 +42,8 @@
 			"#tempo/plugin/extend/*.js": [ "../src/plugin/extend/*.ts" ],
 			"#tempo/plugin/term/*.js": [ "../src/plugin/term/*.ts" ],
 			"#tempo/term/*": [ "../src/plugin/term/term.*.ts" ],
-		"#tempo/license": [ "../src/plugin/license/license.validator.ts" ],
+			"#tempo/std": [ "../../plugins/.std/src/index.ts" ],
+			"#tempo/license": [ "../src/plugin/license/license.validator.ts" ],
 			"#tempo/*": [ "../src/*" ]
 		}
 	},
@@ -50,6 +51,7 @@
 		"**/*.ts"
 	],
 	"references": [
-		{ "path": "../src/tsconfig.json" }
+		{ "path": "../src/tsconfig.json" },
+		{ "path": "../../plugins/.std" }
 	]
 }

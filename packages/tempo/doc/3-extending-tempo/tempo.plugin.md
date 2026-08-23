@@ -154,7 +154,7 @@ If your plugin requires its own configuration, export a **factory function** tha
 
 ```typescript
 // tempo-plugin-holiday/index.ts
-import { definePlugin } from '@magmacomputing/tempo/plugin-api';
+import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
 
 export const HolidayPlugin = (pluginOptions = {}) => {
   return definePlugin((TempoClass, tempoOptions, factory) => {
@@ -168,7 +168,7 @@ If your plugin provides multiple related components, wrap them in an aggregator 
 
 ```typescript
 // index.ts
-import { definePlugin } from '@magmacomputing/tempo/plugin-api';
+import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
 import { PluginA } from './plugin.a.js';
 import { PluginB } from './plugin.b.js';
 
