@@ -407,12 +407,13 @@ export function expandRRuleEpochs(
 
 /**
  * Computes the single next RRULE occurrence epoch millisecond timestamp after `fromEpochMs`.
+ * Note: RRULE evaluation is performed in UTC.
  *
  * @param rruleStr - The RFC 5545 recurrence rule string
  * @param fromEpochMs - The baseline timestamp in epoch milliseconds
  * @returns Epoch millisecond timestamp of the next occurrence, or null if no further occurrences exist
  */
-export function getNextRRuleEpoch(rruleStr: string, fromEpochMs: number, _timeZone?: string): number | null {
+export function getNextRRuleEpoch(rruleStr: string, fromEpochMs: number): number | null {
 	const expanded = expandRRuleEpochs(rruleStr, fromEpochMs, { count: 1, afterMs: fromEpochMs });
 	return expanded.length > 0 ? expanded[0] : null;
 }

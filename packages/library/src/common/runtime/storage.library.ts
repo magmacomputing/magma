@@ -28,6 +28,7 @@ let storage = context.type === CONTEXT.Browser
 	: mockStorage;
 
 const nodeStorage = new Map<string, string>();
+const deletedKeys = new Set<string>();
 
 /**
  * Selects the active browser storage mechanism (localStorage or sessionStorage).
@@ -67,7 +68,7 @@ export function getStorage<T>(key?: string, dflt?: T): T | undefined {
 			break;
 
 		case CONTEXT.NodeJS:
-			store = nodeStorage.get(key) ?? context.global.process?.env?.[key];
+			store = nodeStorage.get(key) ?? (deletedKeys.has(key) ? undefined : context.global.process?.env?.[key]);
 			break;
 
 		case CONTEXT.Deno:
@@ -118,8 +119,10 @@ export function setStorage<T>(key: string, val?: T) {
 		case CONTEXT.NodeJS:
 			if (set) {
 				nodeStorage.set(key, stash);
+				deletedKeys.delete(key);
 			} else {
 				nodeStorage.delete(key);
+				deletedKeys.add(key);
 			}
 			break;
 

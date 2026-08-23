@@ -157,8 +157,14 @@ export function pick<T extends object, K extends keyof T>(obj: T, ...keys: (K | 
 	const flatKeys = keys.flat() as K[];
 	const result = {} as Pick<T, K>;
 	for (const key of flatKeys) {
-		if (key in obj)
-			result[key] = obj[key];
+		if (key in obj) {
+			Object.defineProperty(result, key, {
+				value: obj[key],
+				writable: true,
+				enumerable: true,
+				configurable: true
+			});
+		}
 	}
 	return result;
 }

@@ -110,7 +110,7 @@ export function sortKey<T extends Property<any>>(array: T[], ...keys: (PropertyK
 const groupByFallback = <T>(arr: T[], fn: (itm: T, idx?: number) => PropertyKey): Record<PropertyKey, T[]> => {
 	if (typeof Object.groupBy === 'function')
 		return Object.groupBy(arr, fn as any) as Record<PropertyKey, T[]>;
-	const res: Record<PropertyKey, T[]> = {};
+	const res: Record<PropertyKey, T[]> = Object.create(null);
 	arr.forEach((itm, idx) => {
 		const key = fn(itm, idx);
 		(res[key] ??= []).push(itm);

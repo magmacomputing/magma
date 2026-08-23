@@ -20,7 +20,7 @@ describe('Tempo storage functionality', () => {
 		const config: Options = { timeZone: 'Australia/Perth', calendar: 'iso8601' };
 		Tempo.writeStore(config, customKey);
 
-		expect(process.env[customKey]).toBeDefined();
+		expect(Tempo.readStore(customKey)).toBeDefined();
 		const read = Tempo.readStore(customKey);
 		expect(read.timeZone).toBe(config.timeZone);
 		expect(read.calendar).toBe(config.calendar);

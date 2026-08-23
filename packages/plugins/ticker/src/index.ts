@@ -1,8 +1,8 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch, isString } from '@magmacomputing/library';
 import {
 	enums, definePlugin, attachStatics, type TempoPlugin,
 	isObject, isFunction, isDefined, isEmpty, isNumeric, isNumber, Pledge, asArray, instant, normaliseFractionalDurations,
+	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch, isString,
 } from '@magmacomputing/tempo/plugin-api';
 
 export { isCronString };
@@ -175,8 +175,9 @@ class TickerInstance implements Ticker.Descriptor {
 				const err = new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`);
 				if (!this.#TempoClass.config?.catch) throw err;
 				console.error(err.message);
+			} else {
+				this.#cron = cronOption;
 			}
-			this.#cron = cronOption;
 		}
 
 		if (cb) this.#listeners.add(cb);

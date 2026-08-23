@@ -169,11 +169,17 @@ describe('#setConfig refactor verification', () => {
 
   test('should handle custom layouts containing regex alternatives', () => {
     using _ = Tempo;
-    Tempo.init({ timeZone: 'UTC', registry: { layouts: { alt_layout: '{yy}-{mm}-{dd}|{dd}\\.{mm}\\.{yy}' } } });
-    const dateDash = new Tempo('2026-08-04');
-    const dateDot = new Tempo('04.08.2026');
-    expect(dateDash.isValid).toBe(true);
-    expect(dateDot.isValid).toBe(true);
+    Tempo.init({ timeZone: 'UTC', registry: { layouts: { alt_layout: '{yy}#{mm}#{dd}|{dd}@{mm}@{yy}' } } });
+    const dateHash = new Tempo('2026#08#04');
+    const dateAt = new Tempo('04@08@2026');
+    expect(dateHash.isValid).toBe(true);
+    expect(dateHash.yy).toBe(2026);
+    expect(dateHash.mm).toBe(8);
+    expect(dateHash.dd).toBe(4);
+    expect(dateAt.isValid).toBe(true);
+    expect(dateAt.yy).toBe(2026);
+    expect(dateAt.mm).toBe(8);
+    expect(dateAt.dd).toBe(4);
   })
 
   test('should export defineConfig and resolveConfig from config module', async () => {

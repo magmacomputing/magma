@@ -40,6 +40,11 @@ describe('cron.library', () => {
 		// Previous occurrence of "0 11 * * *" -> 2026-08-20 11:00:00 UTC
 		const prevMs = getPrevCronEpoch('0 11 * * *', anchorMs, 'UTC');
 		expect(new Date(prevMs).toISOString()).toBe('2026-08-20T11:00:00.000Z');
+
+		// Non-aligned anchor 2026-08-20 12:00:30 UTC for "0 12 * * *" -> 2026-08-20 12:00:00 UTC
+		const nonAlignedAnchorMs = Date.UTC(2026, 7, 20, 12, 0, 30);
+		const prevNonAlignedMs = getPrevCronEpoch('0 12 * * *', nonAlignedAnchorMs, 'UTC');
+		expect(new Date(prevNonAlignedMs).toISOString()).toBe('2026-08-20T12:00:00.000Z');
 	});
 
 	test('rejects non-numeric, out of range, or invalid cron field tokens', () => {

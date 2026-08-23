@@ -17,7 +17,7 @@ export { parseCron, isCronString };
  */
 export function nextCron<T extends Tempo>(input: T, pattern: string): T;
 export function nextCron(input: number, pattern: string): number;
-export function nextCron<T extends any>(input: T, pattern: string): T;
+export function nextCron(input: Temporal.ZonedDateTime, pattern: string): Temporal.ZonedDateTime;
 export function nextCron(input: any, pattern: string): any {
 	const Temporal = getTemporal();
 	if (isTempo(input)) {
@@ -28,12 +28,12 @@ export function nextCron(input: any, pattern: string): any {
 	if (typeof input === 'number')
 		return getNextCronEpoch(pattern, input, 'UTC');
 
-	const anchorZdt = isZonedDateTime(input)
-		? input
-		: Temporal.Instant.fromEpochMilliseconds(Date.now()).toZonedDateTimeISO('UTC');
+	if (isZonedDateTime(input)) {
+		const nextMs = getNextCronEpoch(pattern, input.epochMilliseconds, input.timeZoneId);
+		return Temporal.Instant.fromEpochMilliseconds(nextMs).toZonedDateTimeISO(input.timeZoneId);
+	}
 
-	const nextMs = getNextCronEpoch(pattern, anchorZdt.epochMilliseconds, anchorZdt.timeZoneId);
-	return Temporal.Instant.fromEpochMilliseconds(nextMs).toZonedDateTimeISO(anchorZdt.timeZoneId);
+	throw new TypeError('nextCron: Input must be a Tempo instance, number (epoch ms), or Temporal.ZonedDateTime');
 }
 
 /**
@@ -41,7 +41,7 @@ export function nextCron(input: any, pattern: string): any {
  */
 export function prevCron<T extends Tempo>(input: T, pattern: string): T;
 export function prevCron(input: number, pattern: string): number;
-export function prevCron<T extends any>(input: T, pattern: string): T;
+export function prevCron(input: Temporal.ZonedDateTime, pattern: string): Temporal.ZonedDateTime;
 export function prevCron(input: any, pattern: string): any {
 	const Temporal = getTemporal();
 	if (isTempo(input)) {
@@ -52,11 +52,11 @@ export function prevCron(input: any, pattern: string): any {
 	if (typeof input === 'number')
 		return getPrevCronEpoch(pattern, input, 'UTC');
 
-	const anchorZdt = isZonedDateTime(input)
-		? input
-		: Temporal.Instant.fromEpochMilliseconds(Date.now()).toZonedDateTimeISO('UTC');
+	if (isZonedDateTime(input)) {
+		const prevMs = getPrevCronEpoch(pattern, input.epochMilliseconds, input.timeZoneId);
+		return Temporal.Instant.fromEpochMilliseconds(prevMs).toZonedDateTimeISO(input.timeZoneId);
+	}
 
-	const prevMs = getPrevCronEpoch(pattern, anchorZdt.epochMilliseconds, anchorZdt.timeZoneId);
-	return Temporal.Instant.fromEpochMilliseconds(prevMs).toZonedDateTimeISO(anchorZdt.timeZoneId);
+	throw new TypeError('prevCron: Input must be a Tempo instance, number (epoch ms), or Temporal.ZonedDateTime');
 }
 
