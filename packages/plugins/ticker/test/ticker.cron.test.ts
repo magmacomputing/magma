@@ -70,4 +70,22 @@ describe('Ticker Cron Support', () => {
 		expect(p2.format('{yyyy}-{mm}-{dd}')).toBe('2026-08-23');
 		expect(t.info.stopped).toBe(true);
 	});
+
+	test('handles cron schedule across daylight saving transition with IANA timezone', () => {
+		// US Eastern DST spring forward on 2026-03-08
+		const seed = new Tempo('2026-03-07 08:45', { timeZone: 'America/New_York' });
+		const t = Tempo.ticker({ cron: '0 9 * * *', seed });
+
+		const step1 = t.pulse();
+		expect(step1.epoch.ms).toBe(seed.epoch.ms);
+
+		const step2 = t.pulse();
+		expect(step2.epoch.ms).toBeGreaterThan(step1.epoch.ms);
+
+		const step3 = t.pulse();
+		expect(step3.epoch.ms).toBeGreaterThan(step2.epoch.ms);
+
+		expect(t.info.cron).toBe('0 9 * * *');
+		t.stop();
+	});
 });

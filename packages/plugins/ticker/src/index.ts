@@ -171,11 +171,13 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#limit = lmt;
 		if (rruleOption)
 			this.#rrule = isString(rruleOption) ? rruleOption : rruleOption.rrule;
+		const isCatch = Boolean(rawOptions.catch ?? this.#TempoClass.config?.catch);
+
 		if (cronOption) {
 			if (!isCronString(cronOption)) {
 				this.#hasInvalidSchedule = true;
 				const err = new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`);
-				if (!this.#TempoClass.config?.catch) throw err;
+				if (!isCatch) throw err;
 				console.error(err.message);
 			} else {
 				this.#cron = cronOption;
@@ -196,7 +198,7 @@ class TickerInstance implements Ticker.Descriptor {
 
 		if (isDefined(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb) {
 			const err = new Error(`Invalid Ticker interval, seed, cron, or rrule: ${String(arg1)}`);
-			if (!this.#TempoClass.config?.catch) throw err;
+			if (!isCatch) throw err;
 			console.error(err.message);
 		}
 

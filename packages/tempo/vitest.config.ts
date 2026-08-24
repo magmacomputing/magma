@@ -57,7 +57,7 @@ export default defineConfig({
 			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/dist/common/$1.js') },
 			{ find: /^#library$/, replacement: resolve(__dirname, '../library/dist/common.index.js') },
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './dist/plugin/plugin.index.js') },
-			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(__dirname, './dist/plugin-api.index.js') },
+			{ find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: resolve(__dirname, './dist/plugin/plugin.sdk.js') },
 			{ find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: resolve(__dirname, './dist/plugin/$1.js') },
 			{ find: /^@magmacomputing\/tempo\/term$/, replacement: resolve(__dirname, './dist/plugin/term/term.index.js') },
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(__dirname, './dist/plugin/term/term.$1.js') },

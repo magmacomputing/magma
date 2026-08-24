@@ -157,7 +157,7 @@ Tempo.extend(QuarterTerm);
 
 ## How to Define a Term Plugin
 
-A Term plugin is created using the **`defineTerm`** factory function provided by the library (`@magmacomputing/tempo/plugin-api`). This ensures correct type-inference and automatically handles registration during the discovery phase.
+A Term plugin is created using the **`defineTerm`** factory function provided by the library (`@magmacomputing/tempo/plugin/sdk`). This ensures correct type-inference and automatically handles registration during the discovery phase.
 
 ### Plugin Definition
 
