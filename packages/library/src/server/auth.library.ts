@@ -1,4 +1,4 @@
-import { decodeJWT } from '../common/webtoken.library.js';
+import { decodeJWT } from '../common/security/webtoken.library.js';
 
 const MAX_TOKEN_LENGTH = 8192;															// 8 KB
 const MAX_PAYLOAD_LENGTH = 4096;														// 4 KB

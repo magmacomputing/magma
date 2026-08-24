@@ -1,4 +1,4 @@
-import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin-api';
+import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
 type SnapKey = 

@@ -257,7 +257,9 @@ const _ParseEngine = {
 				trim = trim.replace(pat, ' ').replace(Match.spaces, ' ').trim();
 			}
 
-			let guard = (TempoClass as any)?.[sym.$guard]?.test(trim) ?? true;
+			let guard = state?.parse?.guard?.test(trim)
+				?? (TempoClass as any)?.[sym.$guard]?.test(trim)
+				?? true;
 
 			if (!guard) {
 				const snip = Object.assign({}, Snippet, state.parse?.snippet);

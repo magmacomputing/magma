@@ -1,6 +1,6 @@
 {
 	"name": "@magmacomputing/tempo-plugin-finance",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"type": "module",
 	"description": "Tempo Community Plugin: Finance namespace and fiscal year utilities",
 	"main": "dist/index.js",
@@ -43,10 +43,10 @@
 		"plan": "community"
 	},
 	"peerDependencies": {
-		"@magmacomputing/tempo": "^3.11.1 || ^4.0.0"
+		"@magmacomputing/tempo": "^4.0.0"
 	},
 	"devDependencies": {
-		"@magmacomputing/tempo": "^3.11.1 || ^4.0.0",
+		"@magmacomputing/tempo": "^4.0.0",
 		"vitest": "^4.1.10"
 	},
 	"exports": {

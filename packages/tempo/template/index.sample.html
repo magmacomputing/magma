@@ -10,7 +10,7 @@
     Note: For production, you may want to bundle these or serve them from your own infrastructure.
     
     The '@js-temporal/polyfill' mapping is provided if your environment does not yet natively support Temporal.
-    The '@magmacomputing/tempo/plugin-api' mapping is optional and is only required 
+    The '@magmacomputing/tempo/plugin/sdk' mapping is optional and is only required 
     if you choose to install and use Tempo Premium Plugins later.
   -->
   <script type="importmap">
@@ -18,7 +18,7 @@
     "imports": {
       "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
       "@magmacomputing/tempo": "./node_modules/@magmacomputing/tempo/dist/tempo.index.js",
-      "@magmacomputing/tempo/plugin-api": "./node_modules/@magmacomputing/tempo/dist/plugin-api.index.js"
+      "@magmacomputing/tempo/plugin/sdk": "./node_modules/@magmacomputing/tempo/dist/plugin/plugin.sdk.js"
     }
   }
   </script>

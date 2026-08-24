@@ -10,7 +10,22 @@
 		],
 		"paths": {
 			"#library": [ "../../library/src/common.index.ts" ],
-			"#library/*": [ "../../library/src/common/*" ],
+			"#library/*.js": [
+				"../../library/src/common/primitives/*.ts",
+				"../../library/src/common/temporal/*.ts",
+				"../../library/src/common/security/*.ts",
+				"../../library/src/common/runtime/*.ts",
+				"../../library/src/common/scheduling/*.ts",
+				"../../library/src/common/*.ts"
+			],
+			"#library/*": [
+				"../../library/src/common/primitives/*",
+				"../../library/src/common/temporal/*",
+				"../../library/src/common/security/*",
+				"../../library/src/common/runtime/*",
+				"../../library/src/common/scheduling/*",
+				"../../library/src/common/*"
+			],
 			"#browser/*": [ "../../library/src/browser/*" ],
 			"#server/*": [ "../../library/src/server/*" ],
 			"#tempo": [ "../src/tempo.index.ts" ],
@@ -27,7 +42,8 @@
 			"#tempo/plugin/extend/*.js": [ "../src/plugin/extend/*.ts" ],
 			"#tempo/plugin/term/*.js": [ "../src/plugin/term/*.ts" ],
 			"#tempo/term/*": [ "../src/plugin/term/term.*.ts" ],
-		"#tempo/license": [ "../src/plugin/license/license.validator.ts" ],
+			"#tempo/std": [ "../../plugins/.std/src/index.ts" ],
+			"#tempo/license": [ "../src/plugin/license/license.validator.ts" ],
 			"#tempo/*": [ "../src/*" ]
 		}
 	},
@@ -35,6 +51,7 @@
 		"**/*.ts"
 	],
 	"references": [
-		{ "path": "../src/tsconfig.json" }
+		{ "path": "../src/tsconfig.json" },
+		{ "path": "../../plugins/.std" }
 	]
 }

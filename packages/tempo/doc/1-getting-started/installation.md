@@ -166,7 +166,7 @@ While `esm.sh` is fantastic for prototyping and reducing import map complexity, 
 
 For production environments where uptime and load speeds are critical, you should use a static file CDN (like jsdelivr). Because static CDNs serve raw files without compiling them on the fly, they are significantly faster and more reliable than Smart CDNs.
 
-To use **Tempo Plugins** via a static CDN, you simply need to explicitly map the unified `plugin-api` subpath so the browser knows how to resolve the internal connections:
+To use **Tempo Plugins** via a static CDN, you simply need to explicitly map the unified `plugin/sdk` subpath so the browser knows how to resolve the internal connections:
 
 ```html
 <script type="importmap">
@@ -174,7 +174,7 @@ To use **Tempo Plugins** via a static CDN, you simply need to explicitly map the
   "imports": {
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
     "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.index.js",
-    "@magmacomputing/tempo/plugin-api": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/plugin-api.index.js",
+    "@magmacomputing/tempo/plugin/sdk": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/plugin/plugin.sdk.js",
 
     "@magmacomputing/tempo-plugin-astro": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@2/dist/index.js",
     "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@2/dist/index.js"

@@ -6,7 +6,7 @@
     "composite": true,
     "noEmit": false,
     "paths": {
-      "@magmacomputing/tempo/plugin-api": ["../../tempo/src/plugin-api.index.ts"],
+      "@magmacomputing/tempo/plugin/sdk": ["../../tempo/src/plugin/plugin.sdk.ts"],
       "@magmacomputing/tempo": ["../../tempo/src/tempo.index.ts"],
       "@magmacomputing/library": ["../../library/src/common.index.ts"],
       "#library/*": ["../../library/src/common/*"]

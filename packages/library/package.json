@@ -47,6 +47,26 @@
       },
       "browser": null
     },
+    "./primitives/*.js": {
+      "development": "./src/common/primitives/*.ts",
+      "default": "./dist/common/primitives/*.js"
+    },
+    "./temporal/*.js": {
+      "development": "./src/common/temporal/*.ts",
+      "default": "./dist/common/temporal/*.js"
+    },
+    "./security/*.js": {
+      "development": "./src/common/security/*.ts",
+      "default": "./dist/common/security/*.js"
+    },
+    "./scheduling/*.js": {
+      "development": "./src/common/scheduling/*.ts",
+      "default": "./dist/common/scheduling/*.js"
+    },
+    "./runtime/*.js": {
+      "development": "./src/common/runtime/*.ts",
+      "default": "./dist/common/runtime/*.js"
+    },
     "./browser/*.js": {
       "development": "./src/browser/*.ts",
       "default": "./dist/browser/*.js"
@@ -72,6 +92,154 @@
     "#library": {
       "development": "./src/common.index.ts",
       "default": "./dist/common.index.js"
+    },
+    "#library/primitives/*.js": {
+      "development": "./src/common/primitives/*.ts",
+      "default": "./dist/common/primitives/*.js"
+    },
+    "#library/temporal/*.js": {
+      "development": "./src/common/temporal/*.ts",
+      "default": "./dist/common/temporal/*.js"
+    },
+    "#library/security/*.js": {
+      "development": "./src/common/security/*.ts",
+      "default": "./dist/common/security/*.js"
+    },
+    "#library/scheduling/*.js": {
+      "development": "./src/common/scheduling/*.ts",
+      "default": "./dist/common/scheduling/*.js"
+    },
+    "#library/runtime/*.js": {
+      "development": "./src/common/runtime/*.ts",
+      "default": "./dist/common/runtime/*.js"
+    },
+    "#library/array.library.js": {
+      "development": "./src/common/primitives/array.library.ts",
+      "default": "./dist/common/primitives/array.library.js"
+    },
+    "#library/assertion.library.js": {
+      "development": "./src/common/primitives/assertion.library.ts",
+      "default": "./dist/common/primitives/assertion.library.js"
+    },
+    "#library/coercion.library.js": {
+      "development": "./src/common/primitives/coercion.library.ts",
+      "default": "./dist/common/primitives/coercion.library.js"
+    },
+    "#library/number.library.js": {
+      "development": "./src/common/primitives/number.library.ts",
+      "default": "./dist/common/primitives/number.library.js"
+    },
+    "#library/object.library.js": {
+      "development": "./src/common/primitives/object.library.ts",
+      "default": "./dist/common/primitives/object.library.js"
+    },
+    "#library/primitive.library.js": {
+      "development": "./src/common/primitives/primitive.library.ts",
+      "default": "./dist/common/primitives/primitive.library.js"
+    },
+    "#library/string.library.js": {
+      "development": "./src/common/primitives/string.library.ts",
+      "default": "./dist/common/primitives/string.library.js"
+    },
+    "#library/symbol.library.js": {
+      "development": "./src/common/primitives/symbol.library.ts",
+      "default": "./dist/common/primitives/symbol.library.js"
+    },
+    "#library/type.library.js": {
+      "development": "./src/common/primitives/type.library.ts",
+      "default": "./dist/common/primitives/type.library.js"
+    },
+    "#library/calendar.library.js": {
+      "development": "./src/common/temporal/calendar.library.ts",
+      "default": "./dist/common/temporal/calendar.library.js"
+    },
+    "#library/temporal.library.js": {
+      "development": "./src/common/temporal/temporal.library.ts",
+      "default": "./dist/common/temporal/temporal.library.js"
+    },
+    "#library/temporal.polyfill.js": {
+      "development": "./src/common/temporal/temporal.polyfill.ts",
+      "default": "./dist/common/temporal/temporal.polyfill.js"
+    },
+    "#library/buffer.library.js": {
+      "development": "./src/common/security/buffer.library.ts",
+      "default": "./dist/common/security/buffer.library.js"
+    },
+    "#library/cipher.library.js": {
+      "development": "./src/common/security/cipher.library.ts",
+      "default": "./dist/common/security/cipher.library.js"
+    },
+    "#library/webtoken.library.js": {
+      "development": "./src/common/security/webtoken.library.ts",
+      "default": "./dist/common/security/webtoken.library.js"
+    },
+    "#library/cron.library.js": {
+      "development": "./src/common/scheduling/cron.library.ts",
+      "default": "./dist/common/scheduling/cron.library.js"
+    },
+    "#library/rrule.library.js": {
+      "development": "./src/common/scheduling/rrule.library.ts",
+      "default": "./dist/common/scheduling/rrule.library.js"
+    },
+    "#library/schedule.library.js": {
+      "development": "./src/common/scheduling/schedule.library.ts",
+      "default": "./dist/common/scheduling/schedule.library.js"
+    },
+    "#library/class.library.js": {
+      "development": "./src/common/runtime/class.library.ts",
+      "default": "./dist/common/runtime/class.library.js"
+    },
+    "#library/enumerate.library.js": {
+      "development": "./src/common/runtime/enumerate.library.ts",
+      "default": "./dist/common/runtime/enumerate.library.js"
+    },
+    "#library/evaluation.library.js": {
+      "development": "./src/common/runtime/evaluation.library.ts",
+      "default": "./dist/common/runtime/evaluation.library.js"
+    },
+    "#library/function.library.js": {
+      "development": "./src/common/runtime/function.library.ts",
+      "default": "./dist/common/runtime/function.library.js"
+    },
+    "#library/international.library.js": {
+      "development": "./src/common/runtime/international.library.ts",
+      "default": "./dist/common/runtime/international.library.js"
+    },
+    "#library/json.library.js": {
+      "development": "./src/common/runtime/json.library.ts",
+      "default": "./dist/common/runtime/json.library.js"
+    },
+    "#library/logger.class.js": {
+      "development": "./src/common/runtime/logger.class.ts",
+      "default": "./dist/common/runtime/logger.class.js"
+    },
+    "#library/pledge.class.js": {
+      "development": "./src/common/runtime/pledge.class.ts",
+      "default": "./dist/common/runtime/pledge.class.js"
+    },
+    "#library/proxy.library.js": {
+      "development": "./src/common/runtime/proxy.library.ts",
+      "default": "./dist/common/runtime/proxy.library.js"
+    },
+    "#library/reflection.library.js": {
+      "development": "./src/common/runtime/reflection.library.ts",
+      "default": "./dist/common/runtime/reflection.library.js"
+    },
+    "#library/request.library.js": {
+      "development": "./src/common/runtime/request.library.ts",
+      "default": "./dist/common/runtime/request.library.js"
+    },
+    "#library/serialize.library.js": {
+      "development": "./src/common/runtime/serialize.library.ts",
+      "default": "./dist/common/runtime/serialize.library.js"
+    },
+    "#library/storage.library.js": {
+      "development": "./src/common/runtime/storage.library.ts",
+      "default": "./dist/common/runtime/storage.library.js"
+    },
+    "#library/utility.library.js": {
+      "development": "./src/common/runtime/utility.library.ts",
+      "default": "./dist/common/runtime/utility.library.js"
     },
     "#library/*.js": {
       "development": "./src/common/*.ts",

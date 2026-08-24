@@ -222,12 +222,17 @@ describe(`${label} set method`, () => {
 
 				const msStart = t.set({ millisecond: 'start' });
 				expect(msStart.isValid).toBe(true);
+				expect(msStart.us).toBe(0);
+				expect(msStart.ns).toBe(0);
 
 				const usMid = t.set({ us: 'mid' });
 				expect(usMid.isValid).toBe(true);
+				expect(usMid.ns).toBe(500);
 
 				const nsEnd = t.set({ nanosecond: 'end' });
 				expect(nsEnd.isValid).toBe(true);
+				expect(nsEnd.us).toBe(123);
+				expect(nsEnd.ns).toBe(456);
 			});
 		});
 	});

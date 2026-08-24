@@ -1,0 +1,35 @@
+import { isCronString, getNextCronEpoch } from './cron.library.js';
+import { isRRuleString, getNextRRuleEpoch } from './rrule.library.js';
+
+/**
+ * Sniffs whether a given value is a valid schedule string (either Cron or RRULE).
+ *
+ * @param val - The candidate value to inspect
+ * @returns `true` if the value is a valid Cron pattern or RRULE string, otherwise `false`.
+ */
+export function isScheduleString(val: unknown): val is string {
+	return isCronString(val) || isRRuleString(val);
+}
+
+/**
+ * Polymorphically computes the next occurrence epoch timestamp (in milliseconds)
+ * for a schedule expression (Cron pattern or RRULE string).
+ *
+ * @param pattern - The schedule pattern (5-field Cron or RFC 5545 RRULE)
+ * @param anchorMs - The starting anchor timestamp in epoch milliseconds
+ * @param timeZone - The IANA time zone identifier (defaults to UTC)
+ * @returns Next epoch timestamp in milliseconds, or `null` if no future occurrences exist
+ */
+export function getNextScheduleEpoch(
+	pattern: string,
+	anchorMs: number,
+	timeZone = 'UTC'
+): number | null {
+	if (isRRuleString(pattern))
+		return getNextRRuleEpoch(pattern, anchorMs);
+
+	if (isCronString(pattern))
+		return getNextCronEpoch(pattern, anchorMs, timeZone);
+
+	return null;
+}

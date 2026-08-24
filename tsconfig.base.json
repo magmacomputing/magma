@@ -34,7 +34,20 @@
 			"#library": [
 				"./packages/library/src/common.index.ts"
 			],
+			"#library/*.js": [
+				"./packages/library/src/common/primitives/*.ts",
+				"./packages/library/src/common/temporal/*.ts",
+				"./packages/library/src/common/security/*.ts",
+				"./packages/library/src/common/runtime/*.ts",
+				"./packages/library/src/common/scheduling/*.ts",
+				"./packages/library/src/common/*.ts"
+			],
 			"#library/*": [
+				"./packages/library/src/common/primitives/*",
+				"./packages/library/src/common/temporal/*",
+				"./packages/library/src/common/security/*",
+				"./packages/library/src/common/runtime/*",
+				"./packages/library/src/common/scheduling/*",
 				"./packages/library/src/common/*"
 			],
 			"#browser": [

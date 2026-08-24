@@ -31,10 +31,7 @@
     "plan": "community"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^3.11.1 || ^4.0.0"
-  },
-  "devDependencies": {
-    "@magmacomputing/tempo-fns": "*"
+    "@magmacomputing/tempo": "^4.0.0"
   },
   "keywords": [
     "tempo",

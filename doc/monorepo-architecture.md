@@ -19,7 +19,7 @@ The `@magmacomputing/library` package is a strictly private, internal utility li
 ### 3. `packages/plugins/*` (The Plugin Ecosystem)
 The `@magmacomputing/tempo-plugin-*` packages are standalone, publishable modules that extend the core Tempo engine (e.g., `astro`, `finance`, `sync`).
 - **Role**: Provide opt-in functionality for users without bloating the core engine bundle.
-- **Dependencies**: They depend on `@magmacomputing/tempo/plugin-api` for strict type-checking and structural validation.
+- **Dependencies**: They depend on `@magmacomputing/tempo/plugin/sdk` for strict type-checking and structural validation.
 
 ### 4. `packages/plugins/.std` (Standard Built-Ins)
 The `@magmacomputing/tempo-std` workspace is a highly specialized, private workspace containing the "standard" built-in plugins (e.g., quarters, seasons).

@@ -1,10 +1,9 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { isRRuleString, getNextRRuleEpoch, isString } from '@magmacomputing/library';
-import { nextCron, isCronString } from '@magmacomputing/tempo-fns';
 import {
 	enums, definePlugin, attachStatics, type TempoPlugin,
 	isObject, isFunction, isDefined, isEmpty, isNumeric, isNumber, Pledge, asArray, instant, normaliseFractionalDurations,
-} from '@magmacomputing/tempo/plugin-api';
+	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch, isString,
+} from '@magmacomputing/tempo/plugin/sdk';
 
 export { isCronString };
 
@@ -24,6 +23,7 @@ declare module '@magmacomputing/tempo' {
 		function ticker(interval?: Ticker.Interval): Ticker.Instance;
 		function ticker(callback: Ticker.Callback): Ticker.Instance;
 		function ticker(interval: Ticker.Interval, callback: Ticker.Callback): Ticker.Instance;
+		function ticker(interval: Ticker.Interval, options: Ticker.Options): Ticker.Instance;
 		function ticker(options: Ticker.Options, callback: Ticker.Callback): Ticker.Instance;
 		function ticker(options: Ticker.Options, extraOptions: Ticker.Options): Ticker.Instance;
 	}
@@ -128,6 +128,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#listeners = new Set<Ticker.Callback>();
 	#catchListeners = new Set<Ticker.Callback>();
 	#stopListeners = new Set<Ticker.Callback>();
+	#hasInvalidSchedule = false;
 	#self!: Ticker.Instance;
 
 	constructor(TempoClass: typeof Tempo, arg1: any, arg2?: any) {
@@ -171,8 +172,18 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#limit = lmt;
 		if (rruleOption)
 			this.#rrule = isString(rruleOption) ? rruleOption : rruleOption.rrule;
-		if (cronOption)
-			this.#cron = cronOption;
+		const isCatch = Boolean(rawOptions.catch ?? this.#TempoClass.config?.catch);
+
+		if (isDefined(cronOption)) {
+			if (!isCronString(cronOption)) {
+				this.#hasInvalidSchedule = true;
+				const err = new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`);
+				if (!isCatch) throw err;
+				console.error(err.message);
+			} else {
+				this.#cron = cronOption;
+			}
+		}
 
 		if (cb) this.#listeners.add(cb);
 
@@ -186,15 +197,15 @@ class TickerInstance implements Ticker.Descriptor {
 		const isCron = isDefined(this.#cron);
 		const isInterval = !isEmpty(this.#payload) || (isDefined(rawOptions.seconds) && isNumber(rawOptions.seconds));
 
-		if (isDefined(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb) {
+		if (isDefined(arg1) && !isOptions(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb) {
 			const err = new Error(`Invalid Ticker interval, seed, cron, or rrule: ${String(arg1)}`);
-			if (!this.#TempoClass.config?.catch) throw err;
+			if (!isCatch) throw err;
 			console.error(err.message);
 		}
 
 		this.#until = stopAt ? new this.#TempoClass(isOptions(stopAt) ? undefined : stopAt, isOptions(stopAt) ? { ...rest, ...stopAt } : rest) : undefined;
 
-		if (isEmpty(this.#payload) && !isRRule && !isCron) {
+		if (isEmpty(this.#payload) && !isRRule && !isCron && !this.#hasInvalidSchedule) {
 			if (isDefined(startAt)) this.#limit ??= 1;
 			else this.#payload.seconds = 1;
 		}
@@ -208,6 +219,10 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#self = proxy;
 
 		// ── Validation ───────────────────────────────────────────────
+		if (this.#hasInvalidSchedule) {
+			this.stop();
+			return this.#self;
+		}
 		if (!this.#current.isValid) {
 			this.stop();
 			const err = new Error(`Invalid Ticker seed: ${String(this.#current)}`);
@@ -323,7 +338,8 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 
 		if (this.#cron) {
-			this.#current = nextCron(t, this.#cron);
+			const nextMs = getNextCronEpoch(this.#cron, t.epoch.ms, t.tz);
+			this.#current = new (this.#TempoClass as any)(nextMs, t.config);
 		} else if (this.#rrule) {
 			const nextMs = getNextRRuleEpoch(this.#rrule, t.epoch.ms);
 			this.#current = new (this.#TempoClass as any)(nextMs, t.config);

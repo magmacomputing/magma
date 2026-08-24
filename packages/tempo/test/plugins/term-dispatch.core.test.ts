@@ -3,10 +3,12 @@ import '#tempo/parse';
 import '#tempo/mutate';
 import '#tempo/format';
 import '#tempo/term';
+import { QuarterTerm } from '#tempo/std';
 
 describe('Term Dispatch Refactor', () => {
 	beforeEach(() => {
 		Tempo.init();
+		Tempo.extend(QuarterTerm);
 	});
 
 	it('should set term by index (#quarter: 2)', () => {

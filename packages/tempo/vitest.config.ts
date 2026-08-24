@@ -1,6 +1,5 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import fs from 'node:fs';
 
 import { defineConfig } from 'vitest/config';
 import swc from 'unplugin-swc';
@@ -32,8 +31,6 @@ export default defineConfig({
 		include: ['test/**/*.{test,spec}.ts'],
 		exclude: [
 			'**/node_modules/**',
-			'**/test/**/*.core.test.ts',
-			'**/test/**/*.lazy.test.ts',
 			'**/test/browser/**'
 		],
 		setupFiles: [polyfill, consoleSpySetup],
@@ -60,7 +57,7 @@ export default defineConfig({
 			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/dist/common/$1.js') },
 			{ find: /^#library$/, replacement: resolve(__dirname, '../library/dist/common.index.js') },
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './dist/plugin/plugin.index.js') },
-			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(__dirname, './dist/plugin-api.index.js') },
+			{ find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: resolve(__dirname, './dist/plugin/plugin.sdk.js') },
 			{ find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: resolve(__dirname, './dist/plugin/$1.js') },
 			{ find: /^@magmacomputing\/tempo\/term$/, replacement: resolve(__dirname, './dist/plugin/term/term.index.js') },
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(__dirname, './dist/plugin/term/term.$1.js') },
@@ -74,7 +71,7 @@ export default defineConfig({
 			{ find: resolve(__dirname, './src/plugin/license/license.validator.ts'), replacement: licenseDefault },
 			{ find: resolve(__dirname, './src/plugin/license/license.validator.js'), replacement: licenseDefault },
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './src/plugin/plugin.index.ts') },
-			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(__dirname, './src/plugin-api.index.ts') },
+			{ find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: resolve(__dirname, './src/plugin/plugin.sdk.ts') },
 			{ find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: resolve(__dirname, './src/plugin/$1.ts') },
 			{ find: /^@magmacomputing\/tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/term.$1.ts') },
@@ -103,7 +100,15 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/tempo-fns\/(.*)$/, replacement: resolve(__dirname, '../functions/src/$1.ts') },
 			{ find: /^@magmacomputing\/library$/, replacement: resolve(__dirname, '../library/src/common.index.ts') },
 			{ find: /^@magmacomputing\/library\/(.*)$/, replacement: resolve(__dirname, '../library/src/$1.ts') },
-			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/$1.ts') },
+			{ find: /^#library\/(browser|server)\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/$1/$2.ts') },
+			{ find: /^#library\/([^/]+)\/index\.js$/, replacement: resolve(__dirname, '../library/src/common/$1/index.ts') },
+			{ find: /^#library\/([^/]+)\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/$1/$2.ts') },
+			{ find: /^#library\/(array|assertion|coercion|number|object|primitive|string|symbol|type)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/primitives/$1.library.ts') },
+			{ find: /^#library\/(calendar|temporal)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/temporal/$1.library.ts') },
+			{ find: /^#library\/temporal\.polyfill\.js$/, replacement: resolve(__dirname, '../library/src/common/temporal/temporal.polyfill.ts') },
+			{ find: /^#library\/(buffer|cipher|webtoken)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/security/$1.library.ts') },
+			{ find: /^#library\/(cron|rrule|schedule)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/scheduling/$1.library.ts') },
+			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/runtime/$1.ts') },
 			{ find: /^#library$/, replacement: resolve(__dirname, '../library/src/common.index.ts') },
 		]
 	}

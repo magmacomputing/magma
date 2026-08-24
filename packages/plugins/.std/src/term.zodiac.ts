@@ -1,4 +1,4 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '@magmacomputing/tempo/plugin-api';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '@magmacomputing/tempo/plugin/sdk';
 import { isNumber } from '@magmacomputing/library';
 import type { Tempo } from '@magmacomputing/tempo';
 
