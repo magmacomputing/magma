@@ -72,20 +72,39 @@ describe('Ticker Cron Support', () => {
 	});
 
 	test('handles cron schedule across daylight saving transition with IANA timezone', () => {
-		// US Eastern DST spring forward on 2026-03-08
-		const seed = new Tempo('2026-03-07 08:45', { timeZone: 'America/New_York' });
+		// US Eastern DST spring forward on March 8, 2026 at 02:00 -> 03:00 (EST -05:00 to EDT -04:00)
+		Tempo.init({ timeZone: 'America/New_York' });
+		const seed = new Tempo('2026-03-07 08:45');
 		const t = Tempo.ticker({ cron: '0 9 * * *', seed });
 
-		const step1 = t.pulse();
-		expect(step1.epoch.ms).toBe(seed.epoch.ms);
+		const step1 = t.pulse(); // seed: 2026-03-07 08:45 EST
+		expect(step1.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-03-07 08:45');
 
-		const step2 = t.pulse();
-		expect(step2.epoch.ms).toBeGreaterThan(step1.epoch.ms);
+		const step2 = t.pulse(); // 2026-03-07 09:00 EST
+		expect(step2.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-03-07 09:00');
 
-		const step3 = t.pulse();
-		expect(step3.epoch.ms).toBeGreaterThan(step2.epoch.ms);
+		const step3 = t.pulse(); // 2026-03-08 09:00 EDT (post-DST transition)
+		expect(step3.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-03-08 09:00');
+
+		const step4 = t.pulse(); // 2026-03-09 09:00 EDT
+		expect(step4.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-03-09 09:00');
 
 		expect(t.info.cron).toBe('0 9 * * *');
 		t.stop();
+	});
+
+	test('allows options-only ticker construction without throwing', () => {
+		const t = Tempo.ticker({ limit: 5 });
+		expect(t.info.limit).toBe(5);
+		expect(t.info.stopped).toBe(false);
+		t.stop();
+	});
+
+	test('validates empty string cron option as invalid schedule', () => {
+		expect(() => Tempo.ticker({ cron: '', catch: false })).toThrow(/Invalid Ticker cron schedule/);
+	});
+
+	test('rejects invalid positional input when catch is false', () => {
+		expect(() => Tempo.ticker('invalid-positional-arg', { catch: false })).toThrow();
 	});
 });

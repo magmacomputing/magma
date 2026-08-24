@@ -23,6 +23,7 @@ declare module '@magmacomputing/tempo' {
 		function ticker(interval?: Ticker.Interval): Ticker.Instance;
 		function ticker(callback: Ticker.Callback): Ticker.Instance;
 		function ticker(interval: Ticker.Interval, callback: Ticker.Callback): Ticker.Instance;
+		function ticker(interval: Ticker.Interval, options: Ticker.Options): Ticker.Instance;
 		function ticker(options: Ticker.Options, callback: Ticker.Callback): Ticker.Instance;
 		function ticker(options: Ticker.Options, extraOptions: Ticker.Options): Ticker.Instance;
 	}
@@ -173,7 +174,7 @@ class TickerInstance implements Ticker.Descriptor {
 			this.#rrule = isString(rruleOption) ? rruleOption : rruleOption.rrule;
 		const isCatch = Boolean(rawOptions.catch ?? this.#TempoClass.config?.catch);
 
-		if (cronOption) {
+		if (isDefined(cronOption)) {
 			if (!isCronString(cronOption)) {
 				this.#hasInvalidSchedule = true;
 				const err = new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`);
@@ -196,7 +197,7 @@ class TickerInstance implements Ticker.Descriptor {
 		const isCron = isDefined(this.#cron);
 		const isInterval = !isEmpty(this.#payload) || (isDefined(rawOptions.seconds) && isNumber(rawOptions.seconds));
 
-		if (isDefined(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb) {
+		if (isDefined(arg1) && !isOptions(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb) {
 			const err = new Error(`Invalid Ticker interval, seed, cron, or rrule: ${String(arg1)}`);
 			if (!isCatch) throw err;
 			console.error(err.message);
