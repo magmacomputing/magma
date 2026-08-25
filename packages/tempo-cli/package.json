@@ -1,0 +1,14 @@
+{
+  "name": "@magmacomputing/tempo-cli",
+  "version": "1.0.0",
+  "description": "Tempo Ecosystem Developer CLI Tool",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "tempo-cli": "./index.js",
+    "tempo-dev": "./index.js"
+  },
+  "dependencies": {
+    "@magmacomputing/library": "^4.0.0"
+  }
+}

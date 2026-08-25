@@ -1,30 +1,80 @@
+# ⚠️ Migrating to Tempo v4.0.0
+
+Tempo v4.0.0 introduces a standardized plugin & registry architecture, strict configuration namespaces, and excises legacy v3.x deprecated interfaces.
+
+## 🔌 Plugin Registration (`extends` vs `plugins`)
+
+In v3.x, passing plugin modules to install via `plugins: [PluginA]` was supported. In v4.0.0, plugin module installation is strictly separated from plugin runtime configuration.
+
+- **Plugin Installation**: Use `extends: [PluginA, PluginB]` or `Tempo.extend(PluginA, PluginB)`.
+- **Plugin Configuration**: The top-level `plugins` option is now reserved exclusively as a configuration dictionary (`plugins: { ticker: { interval: 1000 }, ai: { provider: 'groq' } }`).
+
+### Example Migration:
+```javascript
+// ❌ v3.x (Deprecated)
+Tempo.init({
+  plugins: [TickerPlugin]
+});
+
+// ✅ v4.0.0
+Tempo.init({
+  extends: [TickerPlugin],
+  plugins: {
+    ticker: { interval: 500 }
+  }
+});
+```
+
+## 📂 Data Augmentation (`registry: { ... }`)
+
+All custom format definitions, locale mappings, modifiers, tokens, snippets, layouts, events, periods, ignores, and number-word definitions are consolidated under the `registry` namespace.
+
+- **Number-Word Mappings**: Top-level `numbers: { ... }` has been moved to `registry: { numbers: { ... } }`.
+- **Custom Formats**: Top-level `formats: { ... }` has been moved to `registry: { formats: { ... } }`.
+- **Global Discovery**: Discovery objects (`Symbol.for('$Tempo')`) use `registry: { numbers: { ... }, formats: { ... } }` instead of top-level `discovery.numbers` or `discovery.formats`.
+
+### Example Migration:
+```javascript
+// ❌ v3.x (Deprecated)
+Tempo.init({
+  numbers: { un: 1, deux: 2 },
+  formats: { customDate: '{yyyy}-{mm}-{dd}' }
+});
+
+// ✅ v4.0.0
+Tempo.init({
+  registry: {
+    numbers: { un: 1, deux: 2 },
+    formats: { customDate: '{yyyy}-{mm}-{dd}' }
+  }
+});
+```
+
+## 🧹 Deprecated Type & API Cleanup
+
+- **`Tempo.extend` vs `Tempo.extends`**: The legacy alias `Tempo.extends` has been excised. Use `Tempo.extend()`.
+- **`TempoInstance` Type**: `TempoInstance` interface alias has been removed in favor of standard `Tempo` class/instance types.
+
+---
+
 # ⚠️ Migrating to Tempo v3.x
 
 Tempo v3.x finalizes the plugin ecosystem by extracting advanced features into standalone, licensed packages.
 
-## 🔁 Migrating from version 2.x to 3.0.0 (Ticker Extraction)
+## 🔁 Migrating to Tempo v3.x (Ticker Extraction)
 
-The `TickerPlugin` has been extracted from the core open-source repository into a standalone premium plugin.
+The `TickerPlugin` has been extracted from the core engine into a standalone open-source Community plugin (`@magmacomputing/tempo-plugin-ticker`).
 
 **Action Required**:
-1. If you use `Tempo.ticker()`, you must now install `@magmacomputing/tempo-plugin-ticker` alongside `@magmacomputing/tempo`.
-2. **Activate your License**: Obtain your JWT license key.
-   <div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
-     <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
-       <img src="https://registry.magmacomputing.com.au/registry-logo.svg" width="48" height="48" alt="Tempo License Registry" style="margin: 0;" />
-     </a>
-     <div>
-       <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
-       Manage your subscriptions and retrieve your license key.
-     </div>
-   </div>
-3. Import and register the plugin in your application initialization:
+1. If you use `Tempo.ticker()`, install `@magmacomputing/tempo-plugin-ticker` alongside `@magmacomputing/tempo`.
+2. Import and register the plugin in your application initialization:
    ```javascript
    import { Tempo } from '@magmacomputing/tempo';
    import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
-   Tempo.init({ license: 'YOUR_JWT_KEY' });
-   Tempo.extend(TickerPlugin);
+   Tempo.init({
+     plugins: [TickerPlugin]
+   });
    ```
 
 # ⚠️ Migrating to Tempo v2.x

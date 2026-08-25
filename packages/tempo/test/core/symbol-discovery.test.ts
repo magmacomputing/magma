@@ -68,8 +68,10 @@ describe('Global Discovery (via Configurable Symbol)', () => {
 
 	it('should merge global custom formats', () => {
 		(globalThis as any)[$TestTempo] = {
-			formats: {
-				'custom': '{yyyy}!!{mm}!!{dd}'
+			registry: {
+				formats: {
+					'custom': '{yyyy}!!{mm}!!{dd}'
+				}
 			}
 		}
 

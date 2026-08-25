@@ -1,11 +1,8 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "3.11.1",
+  "version": "4.0.0",
   "engines": {
     "node": ">=20.0.0"
-  },
-  "bin": {
-    "tempo": "./bin/tempo.js"
   },
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
@@ -110,9 +107,6 @@
     "#tempo/module": {
       "default": "./dist/module/module.index.js"
     },
-    "#tempo/license": {
-      "default": "./dist/plugin/license/license.validator.js"
-    },
     "#tempo/config": {
       "default": "./dist/config/config.index.js"
     },
@@ -204,11 +198,6 @@
       "import": "./dist/module/module.format.js",
       "default": "./dist/module/module.format.js"
     },
-    "./ticker": {
-      "types": "./dist/plugin/extend/extend.ticker.d.ts",
-      "import": "./dist/plugin/extend/extend.ticker.js",
-      "default": "./dist/plugin/extend/extend.ticker.js"
-    },
     "./parse": {
       "types": "./dist/module/module.parse.d.ts",
       "import": "./dist/module/module.parse.js",
@@ -240,10 +229,10 @@
       "script": "./dist/tempo.bundle.js",
       "default": "./dist/tempo.bundle.js"
     },
-    "./plugin-api": {
-      "types": "./dist/plugin-api.index.d.ts",
-      "import": "./dist/plugin-api.index.js",
-      "default": "./dist/plugin-api.index.js"
+    "./plugin/sdk": {
+      "types": "./dist/plugin/plugin.sdk.d.ts",
+      "import": "./dist/plugin/plugin.sdk.js",
+      "default": "./dist/plugin/plugin.sdk.js"
     },
     "./support": {
       "types": "./dist/support/support.index.d.ts",
@@ -252,11 +241,12 @@
     }
   },
   "scripts": {
-    "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run",
-    "test:dist": "cross-env TEMPO_LICENSE_KEY=\"\" TEST_DIST=true vitest run",
+    "test": "vitest run",
+    "test:dist": "TEST_DIST=true vitest run",
     "test:browser": "vitest run -c vitest.browser.config.ts",
-    "test:ci": "cross-env TEMPO_LICENSE_KEY=\"\" TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
-    "repl": "cross-env TEMPO_LICENSE_KEY=\"\" tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
+    "test:ci": "TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
+    "repl": "tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
+    "repl:pro": "cross-env TEMPO_LICENSE_KEY=\"mock-pro-token\" tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:dist": "tsx -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:node": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/repl.ts",
     "repl:bare": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal",
@@ -267,8 +257,8 @@
     "build:resolve": "tsx bin/resolve-types.ts",
     "build:version": "node bin/update-version.mjs",
     "prebuild": "npm run build:version",
-    "clean": "magma-cli rm dist && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
-    "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && if [ -z \"$TEMPO_LICENSE_PATH\" ] || [ ! -f \"$TEMPO_LICENSE_PATH\" ]; then echo '🚨 ERROR: TEMPO_LICENSE_PATH is missing or invalid. Cannot publish Premium build.'; exit 1; fi && npm run build",
+    "clean": "tempo-cli rm dist && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
+    "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build",
     "docs:api": "typedoc && typedoc --options typedoc.library.json && node bin/expand-typedoc.mjs",
     "docs:dev": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress dev",
     "docs:build": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress build",
@@ -290,11 +280,10 @@
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
     "@magmacomputing/library": "*",
-    "@magmacomputing/tempo-plugin-ticker": "^2.2.3",
+    "@magmacomputing/tempo-plugin-ticker": "*",
     "@rollup/plugin-alias": "^6.0.0",
     "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^12.3.0",
-    "javascript-obfuscator": "^5.4.3",
     "magic-string": "^1.2.0",
     "mermaid": "^11.16.1",
     "typedoc": "^0.28.19",

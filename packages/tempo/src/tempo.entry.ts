@@ -2,7 +2,7 @@
 // (This is already handled by tempo.index.js)
 import { Tempo } from './tempo.index.js';
 export * from './tempo.index.js';
-export * as pluginApi from './plugin-api.index.js';
+export * as pluginSdk from './plugin/plugin.sdk.js';
 
 // NOTE: This file is referenced by Rollup during the build process to create the production-ready browser bundle.
 

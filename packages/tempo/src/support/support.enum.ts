@@ -264,19 +264,6 @@ const discoveryKeys = ['options', 'extends', 'plugins', 'terms', 'timeZones', 'm
 export const DISCOVERY = enumify(discoveryKeys, false);
 export type Discovery = KeyOf<typeof DISCOVERY>
 
-/** license validation status */
-export const LICENSE = enumify({
-	None: 'none',
-	Pending: 'pending',
-	Active: 'active',
-	Expired: 'expired',
-	Revoked: 'revoked',
-	Invalid: 'invalid',
-	Unauthorized: 'unauthorized',
-	Unknown: 'unknown',
-}, false);
-export type LICENSE = ValueOf<typeof LICENSE>
-
 /** @internal LIVE Registries mapping (STATE key -> Enum/Proxy) */
 export const REGISTRIES: Record<string, any> = {
 	NUMBER, DURATION, TIMEZONE, DURATIONS, FORMAT, LIMIT, MONTH_DAY, LOCALE
@@ -304,6 +291,5 @@ export default {
 	CACHE,
 	PARSE,
 	MONTH_DAY,
-	LICENSE,
 	LOCALE,
 }

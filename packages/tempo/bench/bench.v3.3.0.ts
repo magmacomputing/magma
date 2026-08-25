@@ -89,7 +89,7 @@ function timedRun(label: string, data: string[], iterations: number, tempoOption
 
 // ── Run ──────────────────────────────────────────────────────────────────────
 
-const ITERATIONS = 500;
+const ITERATIONS = 100;
 
 console.log(`\n⏱  Tempo v3.3.0 Post-Refactor Benchmark  (${ITERATIONS} iterations × corpus size)\n`);
 

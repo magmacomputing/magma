@@ -67,8 +67,11 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 								return currZdt;
 							}
 
-							if (type === 'set' && isString(adjust)) {
-								const validMap: Record<string, string> = { year: 'yy', month: 'mm', week: 'ww', day: 'dd', hour: 'hh', minute: 'mi', second: 'ss' };
+							if (type === 'set' && isString(adjust) && adjust !== 'start' && adjust !== 'mid' && adjust !== 'end') {
+								const validMap: Record<string, string> = {
+									year: 'yy', month: 'mm', week: 'ww', day: 'dd', hour: 'hh', minute: 'mi', second: 'ss',
+									millisecond: 'ms', microsecond: 'us', nanosecond: 'ns'
+								};
 								const mapped = validMap[singular(key)];
 								if (mapped) {
 									logError(`For relative Slick math, use the '${mapped}' snippet key instead of '${key}'.`, this.config);
@@ -77,7 +80,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 								}
 							}
 
-							if (type === 'set' && SLICK_KEYS.includes(key as any)) {
+							if (type === 'set' && SLICK_KEYS.includes(key as any) && adjust !== 'start' && adjust !== 'mid' && adjust !== 'end') {
 								if (!isString(adjust)) {
 									if (key === 'wkd') {
 										logError(`Slick key 'wkd' requires a weekday name (e.g. '>Fri').`, this.config);
@@ -140,7 +143,8 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 
 									const unitMap: Record<string, string> = {
 										yy: 'years', mm: 'months', ww: 'weeks', dd: 'days',
-										hh: 'hours', mi: 'minutes', ss: 'seconds'
+										hh: 'hours', mi: 'minutes', ss: 'seconds',
+										ms: 'milliseconds', us: 'microseconds', ns: 'nanoseconds'
 									};
 									return currZdt.add({ [unitMap[key]]: nbr });
 								}
@@ -156,6 +160,19 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 										offset: adjust,
 										single: isTerm || (isTermPlugin && !isStandard) ? 'term' : singular(key),
 										term: isTerm ? (key as string) : (isTermPlugin ? key : undefined)
+									}
+								}
+
+								if (type === 'set' && isString(adjust) && (adjust === 'start' || adjust === 'mid' || adjust === 'end')) {
+									const unitKey = (enums.ELEMENT as any)[key] ?? key;
+									const isTermVal = (unitKey as string).startsWith('#');
+									const isTermPlugin = !isTermVal && isDefined(findTermPlugin(unitKey as string, state));
+									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(unitKey as string);
+									return {
+										mutate: adjust as any,
+										offset: adjust,
+										single: isTermVal || (isTermPlugin && !isStandard) ? 'term' : singular(unitKey as string),
+										term: isTermVal ? (unitKey as string) : (isTermPlugin ? unitKey : undefined)
 									}
 								}
 
@@ -239,8 +256,13 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 								case 'start.month': return currZdt.with({ day: 1 }).startOfDay();
 								case 'start.week': return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Mon) }).startOfDay();
 								case 'start.day': return currZdt.startOfDay();
-								case 'start.hour': case 'start.minute': case 'start.second':
-									return currZdt.round({ smallestUnit: offset as any, roundingMode: 'trunc' });
+								case 'start.hour':
+								case 'start.minute':
+								case 'start.second':
+								case 'start.millisecond':
+								case 'start.microsecond':
+								case 'start.nanosecond':
+									return currZdt.round({ smallestUnit: (enums.ELEMENT[single as t.Element] ?? single) as any, roundingMode: 'trunc' });
 
 								case 'mid.year': return currZdt.with({ month: enums.MONTH.Jul, day: 1 }).startOfDay();
 								case 'mid.month': return currZdt.with({ day: Math.trunc(currZdt.daysInMonth / 2) }).startOfDay();
@@ -249,12 +271,22 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 								case 'mid.hour': return currZdt.round({ smallestUnit: 'hour', roundingMode: 'trunc' }).add({ minutes: 30 });
 								case 'mid.minute': return currZdt.round({ smallestUnit: 'minute', roundingMode: 'trunc' }).add({ seconds: 30 });
 								case 'mid.second': return currZdt.round({ smallestUnit: 'second', roundingMode: 'trunc' }).add({ milliseconds: 500 });
+								case 'mid.millisecond': return currZdt.round({ smallestUnit: 'millisecond', roundingMode: 'trunc' }).add({ microseconds: 500 });
+								case 'mid.microsecond': return currZdt.round({ smallestUnit: 'microsecond', roundingMode: 'trunc' }).add({ nanoseconds: 500 });
+								case 'mid.nanosecond': return currZdt;
 
 								case 'end.year': return currZdt.add({ years: 1 }).with({ month: enums.MONTH.Jan, day: 1 }).startOfDay().subtract({ nanoseconds: 1 });
 								case 'end.month': return currZdt.add({ months: 1 }).with({ day: 1 }).startOfDay().subtract({ nanoseconds: 1 });
 								case 'end.week': return currZdt.add({ days: (enums.WEEKDAY.Sun - currZdt.dayOfWeek) + 1 }).startOfDay().subtract({ nanoseconds: 1 });
-								case 'end.day': case 'end.hour': case 'end.minute': case 'end.second':
-									return currZdt.round({ smallestUnit: offset as any, roundingMode: 'ceil' }).subtract({ nanoseconds: 1 });
+								case 'end.day':
+								case 'end.hour':
+								case 'end.minute':
+								case 'end.second':
+								case 'end.millisecond':
+								case 'end.microsecond':
+									return currZdt.round({ smallestUnit: (enums.ELEMENT[single as t.Element] ?? single) as any, roundingMode: 'ceil' }).subtract({ nanoseconds: 1 });
+								case 'end.nanosecond':
+									return currZdt;
 
 								default:
 									logError(`Unexpected method(${op}), unit(${key}) and offset(${adjust})`, this.config);
@@ -292,10 +324,16 @@ const MutateEngine = {
 	add(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'add', args, options);
 	},
+	plus(this: Tempo, args?: any, options: t.Options = {}) {
+		return mutate.call(this, 'add', args, options);
+	},
 	subtract(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'subtract', args, options);
 	},
 	sub(this: Tempo, args?: any, options: t.Options = {}) {
+		return mutate.call(this, 'subtract', args, options);
+	},
+	minus(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'subtract', args, options);
 	},
 	set(this: Tempo, args?: any, options: t.Options = {}) {

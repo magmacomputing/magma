@@ -30,12 +30,11 @@ export {
 	CONFIG,
 	PARSE,
 	MONTH_DAY,
-	LICENSE,
 } from './support.enum.js';
 
 export { markConfig } from '#library/symbol.library.js';
 export { sym, isTempo, Token, TermError, type TempoBrand } from './support.symbol.js';
-export { $Tempo, $Register, $Interpreter, $guard, $errored, $Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Identity, $LogConfig, $Discover, $ImmutableSkip, $updateScopeStatus } from './support.symbol.js';
+export { $Tempo, $Register, $Interpreter, $guard, $errored, $Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Identity, $LogConfig, $Discover, $ImmutableSkip } from './support.symbol.js';
 export { registryUpdate, registryReset, onRegistryReset } from './support.register.js';
 export { getRuntime, resetRuntime, TempoRuntime } from './support.runtime.js';
 export { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './support.default.js';

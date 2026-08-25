@@ -157,14 +157,12 @@ Tempo.extend(QuarterTerm);
 
 ## How to Define a Term Plugin
 
-A Term plugin is ideally created using the **`defineTerm`** factory function provided by the library. This ensures correct type-inference and automatically handles registration during the discovery phase.
-
-If you are developing a commercial plugin and require license enforcement, simply build your logic using the standard `defineTerm` factory. Once ready for the marketplace, **[contact Magma Computing Solutions](https://github.com/magmacomputing)** to have our proprietary licensing and cryptographic verification engine wrapped around your plugin prior to distribution.
+A Term plugin is created using the **`defineTerm`** factory function provided by the library (`@magmacomputing/tempo/plugin/sdk`). This ensures correct type-inference and automatically handles registration during the discovery phase.
 
 ### Plugin Definition
 
 ```ts
-import { defineTerm, defineRange, getTermRange, resolveCycleWindow } from '@magmacomputing/tempo/plugin';
+import { defineTerm, defineRange, getTermRange, resolveCycleWindow } from '@magmacomputing/tempo/plugin/sdk';
 import { enums, type Tempo } from '@magmacomputing/tempo/core';
 
 /** 1. The range boundaries (grouped by sphere) */
@@ -292,7 +290,7 @@ To unlock Tempo's advanced **Term Traversal** (e.g., `t.add({ '#quarter': 1 })`)
 The library provides a specialized helper that calculates these boundaries automatically based on your `ranges` array.
 
 ```ts
-import { getTermRange } from '@magmacomputing/tempo/plugin';
+import { getTermRange } from '@magmacomputing/tempo/plugin/sdk';
 
 export function define(this: Tempo, keyOnly?: boolean) {
   // Finds the current range, then injects 'start' and 'end' (as Tempo instances)

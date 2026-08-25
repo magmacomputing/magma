@@ -17,47 +17,23 @@ export default defineConfig({
       },
     }),
   ],
-  test: {
-    globals: true,
-    environment: 'node',
-    projects: [
-      {
-        extends: './packages/tempo/vitest.config.ts',
-        test: {
-          name: 'Tempo: Full',
-          include: ['packages/tempo/test/**/*.{test,spec}.ts'],
-          exclude: ['**/node_modules/**', '**/test/**/*.core.test.ts', '**/test/**/*.lazy.test.ts'],
-          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
-        }
-      },
-      {
-        extends: './packages/tempo/vitest.config.ts',
-        test: {
-          name: 'Tempo: Core',
-          include: ['packages/tempo/test/**/*.core.test.ts', 'packages/tempo/test/**/*.lazy.test.ts'],
-          exclude: ['**/node_modules/**'],
-          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
-        }
-      },
-      {
-        extends: './packages/library/vitest.config.ts',
-        test: {
-          name: 'Library: Full',
-          include: ['packages/library/test/**/*.{test,spec}.ts'],
-          exclude: ['**/node_modules/**'],
-        }
-      },
-      {
-        extends: './packages/tempo/vitest.config.ts',
-        test: {
-          name: 'Plugins',
-          include: ['packages/plugins/*/test/**/*.{test,spec}.ts'],
-          exclude: ['**/node_modules/**'],
-          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
-        }
-      }
-    ],
+  resolve: {
     alias: [
+      { find: /^#tempo\/license$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/license/license.validator.ts') },
+      { find: /^@magmacomputing\/tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.index.ts') },
+      { find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.sdk.ts') },
+      { find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/$1.ts') },
+      { find: /^@magmacomputing\/tempo\/term$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/term/term.index.ts') },
+      { find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/term/term.$1.ts') },
+      { find: /^@magmacomputing\/tempo\/core$/, replacement: path.resolve(__dirname, './packages/tempo/src/core.index.ts') },
+      { find: /^@magmacomputing\/tempo\/config$/, replacement: path.resolve(__dirname, './packages/tempo/src/config/config.index.ts') },
+      { find: /^@magmacomputing\/tempo\/library$/, replacement: path.resolve(__dirname, './packages/tempo/src/library.index.ts') },
+      { find: /^@magmacomputing\/tempo$/, replacement: path.resolve(__dirname, './packages/tempo/src/tempo.index.ts') },
+      { find: /^@magmacomputing\/tempo-fns$/, replacement: path.resolve(__dirname, './packages/functions/src/index.ts') },
+      { find: /^@magmacomputing\/tempo-fns\/(.*)$/, replacement: path.resolve(__dirname, './packages/functions/src/$1.ts') },
+      { find: /^@magmacomputing\/library$/, replacement: path.resolve(__dirname, './packages/library/src/common.index.ts') },
+      { find: /^@magmacomputing\/library\/(primitives|temporal|security|scheduling|runtime)\/(.*)$/, replacement: path.resolve(__dirname, './packages/library/src/common/$1/$2') },
+      { find: /^@magmacomputing\/library\/(.*)$/, replacement: path.resolve(__dirname, './packages/library/src/$1.ts') },
       { find: /^#library\/(primitives|temporal|security|scheduling|runtime)\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/$1/$2.ts') },
       { find: /^#library\/(browser|server)\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/src/$1/$2.ts') },
       { find: /^#library\/(array|assertion|coercion|number|object|primitive|string|symbol|type)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/primitives/$1.library.ts') },
@@ -67,8 +43,14 @@ export default defineConfig({
       { find: /^#library\/(calendar|temporal)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/temporal/$1.library.ts') },
       { find: /^#library\/temporal\.polyfill\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/temporal/temporal.polyfill.ts') },
       { find: /^#library\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/$1.ts') },
+      { find: /^#library$/, replacement: path.resolve(__dirname, './packages/library/src/common.index.ts') },
+      { find: /^#tempo\/plugin\/term\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/term/$1.ts') },
       { find: /^#tempo\/plugin\.(util|type)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.$1.ts') },
       { find: /^#tempo\/plugin\.(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/extend/plugin.$1.ts') },
+      { find: /^#tempo\/term\/quarter$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/term/term.quarter.ts') },
+      { find: /^#tempo\/term$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/term/term.index.ts') },
+      { find: /^#tempo\/term\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/term/$1') },
+      { find: /^#tempo\/std$/, replacement: path.resolve(__dirname, './packages/plugins/.std/src/index.ts') },
       { find: /^#tempo\/core$/, replacement: path.resolve(__dirname, './packages/tempo/src/core.index.ts') },
       { find: /^#tempo\/config\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/config/$1.ts') },
       { find: /^#tempo\/config$/, replacement: path.resolve(__dirname, './packages/tempo/src/config/config.index.ts') },
@@ -80,4 +62,59 @@ export default defineConfig({
       { find: /^#tempo\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/src/$1.ts') }
     ]
   },
+  test: {
+    globals: true,
+    environment: 'node',
+    projects: [
+      {
+        extends: './packages/tempo/vitest.config.ts',
+        test: {
+          name: 'Tempo',
+          color: 'cyan',
+          include: ['packages/tempo/test/**/*.{test,spec}.ts'],
+          exclude: ['**/node_modules/**', '**/test/**/*.core.test.ts', '**/test/**/*.lazy.test.ts'],
+          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
+        } as any
+      },
+      {
+        extends: './packages/tempo/vitest.config.ts',
+        test: {
+          name: 'Tempo: Core',
+          color: 'blue',
+          include: ['packages/tempo/test/**/*.core.test.ts', 'packages/tempo/test/**/*.lazy.test.ts'],
+          exclude: ['**/node_modules/**'],
+          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
+        } as any
+      },
+      {
+        extends: './packages/tempo/vitest.config.ts',
+        test: {
+          name: 'Library',
+          color: 'magenta',
+          include: ['packages/library/test/**/*.{test,spec}.ts'],
+          exclude: ['**/node_modules/**'],
+        } as any
+      },
+      {
+        extends: './packages/tempo/vitest.config.ts',
+        test: {
+          name: 'Functions',
+          color: 'yellow',
+          include: ['packages/functions/test/**/*.{test,spec}.ts'],
+          exclude: ['**/node_modules/**'],
+          setupFiles: ['./packages/functions/test/setup.ts'],
+        } as any
+      },
+      {
+        extends: './packages/tempo/vitest.config.ts',
+        test: {
+          name: 'Plugins',
+          color: 'green',
+          include: ['packages/plugins/*/test/**/*.{test,spec}.ts'],
+          exclude: ['**/node_modules/**'],
+          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
+        } as any
+      }
+    ]
+  }
 })

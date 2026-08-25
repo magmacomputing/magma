@@ -25,7 +25,6 @@ import { ParseModule } from '@magmacomputing/tempo/parse';
 import { TermsModule } from '@magmacomputing/tempo/term';
 
 
-
 // Individual extension...
 Tempo.extend(DurationModule);
 
@@ -42,7 +41,7 @@ Adds support for `.until()` and `.since()` instance methods, as well as the stat
 Adds support for the `.format()` method and custom layout resolution.
 
 ### Mutate Module (@magmacomputing/tempo/mutate)
-Adds support for the `.add()` and `.set()` instance methods, enabling time manipulation.
+Adds support for the `.add()`, `.subtract()`, and `.set()` instance methods, enabling time manipulation.
 
 ### Parse Module (@magmacomputing/tempo/parse)
 Handles string parsing and token extraction. This is included automatically in the `full` package, but must be explicitly opted-in when using `core`.

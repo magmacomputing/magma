@@ -1,32 +1,141 @@
 import { isFunction } from '#library/assertion.library.js';
 import { parseJSONC } from '#library/json.library.js';
+import { when } from '#library/coercion.library.js';
+import { getContext, CONTEXT } from '#library/utility.library.js';
 import type { Options } from '../tempo.type.js';
 
 // Minimal declaration so TS doesn't complain in browser environments without @types/node
 declare const process: any;
+declare const require: any;
+
+const ctx = getContext();
+let nodeReq: ((id: string) => any) | null | undefined = undefined;
+let syncCache: Options | null | undefined = undefined;
+
+function getRequireSync() {
+	if (nodeReq !== undefined) return nodeReq;
+
+	if (ctx.type !== CONTEXT.NodeJS || !isFunction(ctx.global.process?.cwd))
+		return nodeReq = null;
+
+	try {
+		const globalReq = isFunction(ctx.global.require) ? ctx.global.require : null;
+		if (globalReq) {
+			const url = (import.meta as any)?.url;
+			const createReq = globalReq('node:module')?.createRequire;
+			return nodeReq = (createReq && url) ? createReq(url) : globalReq;
+		}
+
+		let reqFn: any = null;
+		try {
+			if (typeof require !== 'undefined' && isFunction(require)) reqFn = require;
+		} catch {}
+
+		if (reqFn) {
+			const url = (import.meta as any)?.url;
+			const createReq = reqFn('node:module')?.createRequire;
+			return nodeReq = (createReq && url) ? createReq(url) : reqFn;
+		}
+	} catch { }
+
+	return nodeReq = null;
+}
 
 /**
- * Automatically discovers and loads a tempo.config.* file by traversing upwards
+ * Synchronously discovers and loads a `tempo.config.jsonc` or `tempo.config.json` file
+ * by traversing upwards from process.cwd() until a package.json is found.
+ * Results are cached in process memory for maximum performance.
+ */
+export function resolveConfigSync(options?: { cwd?: string, configFile?: string }): Options | undefined {
+	if (syncCache !== undefined && !options)
+		return syncCache || undefined;
+
+	if (ctx.type !== CONTEXT.NodeJS || !isFunction(ctx.global.process?.cwd)) {
+		if (!options) syncCache = null;
+		return undefined;
+	}
+
+	try {
+		const req = getRequireSync();
+		if (!req) {
+			if (!options) syncCache = null;
+			return undefined;
+		}
+
+		const modFs = 'node:fs';
+		const modPath = 'node:path';
+		const fs = req(modFs);
+		const path = req(modPath);
+
+		let currentDir = options?.cwd || process.cwd();
+
+		if (options?.configFile) {
+			const explicitPath = path.resolve(currentDir, options.configFile);
+			if (fs.existsSync(explicitPath)) {
+				const ext = path.extname(explicitPath);
+				if (ext === '.json' || ext === '.jsonc') {
+					const content = fs.readFileSync(explicitPath, 'utf8');
+					const parsed = parseJSONC(content) as Options;
+					if (!options) syncCache = parsed;
+					return parsed;
+				}
+			}
+			if (!options) syncCache = null;
+			return undefined;
+		}
+
+		const rootPath = path.parse(currentDir).root;
+		const exts = ['.jsonc', '.json'];
+
+		while (currentDir && currentDir !== rootPath) {
+			for (const ext of exts) {
+				const configPath = path.join(currentDir, `tempo.config${ext}`);
+				if (fs.existsSync(configPath)) {
+					try {
+						const content = fs.readFileSync(configPath, 'utf8');
+						const parsed = parseJSONC(content) as Options;
+						if (!options) syncCache = parsed;
+						return parsed;
+					} catch (err) {
+						console.warn(`[Tempo] Found config file at ${configPath} but failed to parse JSONC:`, err);
+					}
+				}
+			}
+
+			const pkgJson = path.join(currentDir, 'package.json');
+			if (fs.existsSync(pkgJson)) {
+				break;
+			}
+
+			const parentDir = path.dirname(currentDir);
+			if (parentDir === currentDir) break;
+			currentDir = parentDir;
+		}
+	} catch {
+		// Environment doesn't support Node fs/path, skip discovery
+	}
+
+	if (!options) syncCache = null;
+	return undefined;
+}
+
+/**
+ * Asynchronously discovers and loads a `tempo.config.*` file by traversing upwards
  * from the current working directory until a package.json is found.
- * 
- * Note: TypeScript config files require Bun, Deno, or Node.js with a TypeScript
- * loader such as tsx, since vanilla Node.js cannot dynamically import TypeScript
- * files without a loader.
  */
 export async function resolveConfig(options?: { cwd?: string, configFile?: string }): Promise<Options | undefined> {
-	// Skip discovery if not in a Node/Deno/Bun environment
-	if (typeof process === 'undefined' || !isFunction(process?.cwd))
+	const ctx = getContext();
+	if (ctx.type !== CONTEXT.NodeJS || !isFunction(ctx.global.process?.cwd))
 		return undefined;
 
 	try {
-		// Use variables for dynamic imports to prevent bundlers from statically analyzing and failing
 		const modFs = 'node:fs';
 		const modUrl = 'node:url';
 		const modPath = 'node:path';
 
 		const [fs, path] = await Promise.all([
-			import(modFs),
-			import(modPath),
+			import(/* @vite-ignore */ modFs),
+			import(/* @vite-ignore */ modPath),
 		]);
 
 		let currentDir = options?.cwd || process.cwd();
@@ -36,9 +145,8 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 				const content = await fs.promises.readFile(configPath, 'utf8');
 				return parseJSONC(content) as Options;
 			} else {
-				// Use pathToFileURL to safely load absolute paths on Windows
-				const { pathToFileURL } = await import(modUrl);
-				const imported = await import(pathToFileURL(configPath).href);
+				const { pathToFileURL } = await import(/* @vite-ignore */ modUrl);
+				const imported = await import(/* @vite-ignore */ pathToFileURL(configPath).href);
 				return imported.default || imported;
 			}
 		};
@@ -60,9 +168,9 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 
 		const rootPath = path.parse(currentDir).root;
 
-		while (currentDir !== rootPath) {
+		while (currentDir && currentDir !== rootPath) {
 			const pkgJson = path.join(currentDir, 'package.json');
-			const exts = ['.ts', '.js', '.mjs', '.cjs', '.jsonc', '.json'];
+			const exts = ['.mts', '.ts', '.mjs', '.js', '.jsonc', '.json'];
 
 			for (const ext of exts) {
 				const configPath = path.join(currentDir, `tempo.config${ext}`);
@@ -76,15 +184,15 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 				}
 			}
 
-			if (fs.existsSync(pkgJson)) {
-				// Reached project root, stop searching
+			if (fs.existsSync(pkgJson))
 				break;
-			}
 
-			currentDir = path.dirname(currentDir);
+			const parentDir = path.dirname(currentDir);
+			if (parentDir === currentDir) break;
+			currentDir = parentDir;
 		}
-	} catch (e) {
-		// Environment doesn't support node 'fs' or 'path', skip discovery
+	} catch {
+		// Environment doesn't support Node fs/path, skip discovery
 	}
 
 	return undefined;

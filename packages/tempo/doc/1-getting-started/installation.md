@@ -101,7 +101,7 @@ The easiest way to use Tempo natively in the browser is via the pre-optimized ES
 {
   "imports": {
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.esm.js"
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.bundle.esm.js"
   }
 }
 </script>
@@ -129,7 +129,7 @@ While you *could* import directly from the URL everywhere, the best practice is 
 {
   "imports": {
     "@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
-    "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@3",
+    "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@4",
     "@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@2"
   }
 }
@@ -143,8 +143,9 @@ While you *could* import directly from the URL everywhere, the best practice is 
   import { Tempo } from '@magmacomputing/tempo';
   import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
-  Tempo.init({ license: 'YOUR_JWT_KEY' });
-  Tempo.extend(TickerPlugin);
+  Tempo.init({ 
+    extends: [TickerPlugin] 
+  });
 </script>
 ```
 
@@ -165,15 +166,15 @@ While `esm.sh` is fantastic for prototyping and reducing import map complexity, 
 
 For production environments where uptime and load speeds are critical, you should use a static file CDN (like jsdelivr). Because static CDNs serve raw files without compiling them on the fly, they are significantly faster and more reliable than Smart CDNs.
 
-To use **Tempo Plugins** via a static CDN, you simply need to explicitly map the unified `plugin-api` subpath so the browser knows how to resolve the internal connections:
+To use **Tempo Plugins** via a static CDN, you simply need to explicitly map the unified `plugin/sdk` subpath so the browser knows how to resolve the internal connections:
 
 ```html
 <script type="importmap">
 {
   "imports": {
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.index.js",
-    "@magmacomputing/tempo/plugin-api": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/plugin-api.index.js",
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.index.js",
+    "@magmacomputing/tempo/plugin/sdk": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/plugin/plugin.sdk.js",
 
     "@magmacomputing/tempo-plugin-astro": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@2/dist/index.js",
     "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@2/dist/index.js"
@@ -183,7 +184,7 @@ To use **Tempo Plugins** via a static CDN, you simply need to explicitly map the
 ```
 
 > [!WARNING] Cache Busting
-> The jsdelivr CDN aggressively caches major version tags (like `@3`). When relying on precise module resolution for plugins, it is highly recommended to use explicit patch versions (like `@3.0.1`) to avoid fetching mismatched or outdated sub-modules.
+> The jsdelivr CDN aggressively caches major version tags (like `@4`). When relying on precise module resolution for plugins, it is highly recommended to use explicit patch versions (like `@4.0.0`) to avoid fetching mismatched or outdated sub-modules.
 
 ---
 
@@ -196,7 +197,7 @@ If you aren't using ESM or just want a simple `<script>` tag for rapid prototypi
 <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.umd.js"></script>
 
 <!-- 2. Load the Tempo Global Bundle (Creates window.Magma) -->
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/dist/tempo.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.bundle.min.js"></script>
 
 <!-- 3. Load any Community Plugins (Attaches to window.Magma.plugins) -->
 <script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@2/dist/index.global.min.js"></script>
@@ -240,7 +241,7 @@ When using the Lite build, the `Tempo` class will have almost no methods (like `
 
 We recommend pinning your versions in production environments to ensure stability. 
 
-*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@3/...` (Locks to major version 3)
+*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/...` (Locks to major version 4)
 *   **Latest**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/...` (Omit the version string to always receive the latest release. Note that JSDelivr will resolve a missing version tag to the latest published release).
 
 ---

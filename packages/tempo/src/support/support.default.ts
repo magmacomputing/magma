@@ -3,7 +3,7 @@ import { secure, proxify } from '#library/proxy.library.js';
 import { getDateTimeFormat } from '#library/international.library.js';
 import { LOG } from '#library/logger.class.js';
 
-import { NUMBER, TIMEZONE, MODE, MONTH_DAY } from './support.enum.js';
+import { NUMBER, TIMEZONE, MODE, MONTH_DAY, FORMAT, LOCALE } from './support.enum.js';
 import { Token } from './support.symbol.js';
 import type { Options, AliasContext, IntlOptions } from '../tempo.type.js';
 
@@ -97,7 +97,7 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.dmy6]: '(?<dd>0[1-9]|[12][0-9]|3[01])(?<mm>0[1-9]|1[0-2])(?<yy>[0-9]{2})',// compact date (ddmmyy)
 	[Token.mdy6]: '(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])(?<yy>[0-9]{2})',// compact date (mmddyy)
 	[Token.ymd6]: '(?<yy>[0-9]{2})(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])',// compact date (yymmdd)
-	[Token.wkd]: '{mod}?{nbr}?{wkd}{afx}?{sfx}?',							// weekday-only layout; MUST precede {dt} (which also matches bare weekday names via its {wkd} alternative)
+	[Token.wkd]: '{mod}?{nbr}?{sep}?{wkd}{afx}?{sfx}?',				// weekday-only layout; MUST precede {dt} (which also matches bare weekday names via its {wkd} alternative)
 	[Token.dt]: datePattern.dmy,															// calendar, event, slick or weekday
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
 	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tzd}?{brk}?',	// calendar/event and clock/period
@@ -223,9 +223,10 @@ export const Default = secure({
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
 	/** internationalization configuration */									intl: IntlDefault,
+	/** plugin configurations */															plugins: {},
 	/** global data augmentation registries */								registry: {
-		formats: {},
-		locales: {},
+		formats: FORMAT,
+		locales: LOCALE,
 		modifiers: {
 			'+': ['next', 'hence', 'from now'],
 			'-': ['ago', 'last', 'prev'],

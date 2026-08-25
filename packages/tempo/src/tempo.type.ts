@@ -6,10 +6,9 @@
  *
  * Inside `tempo.class.ts` these are accessed via `import * as t`.
  */
-import type { Pledge } from '#library/pledge.class.js';
 import type { DebugLevel } from '#library/logger.class.js';
 import type { ScopedSet } from '#library/scopedset.class.js';
-import type { IntRange, NonOptional, Property, Plural, Prettify, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion } from '#library/type.library.js';
+import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable } from '#library/type.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
@@ -40,7 +39,7 @@ declare global {
 export type ISOString = Branded<string, 'ISO8601'>;
 
 /** the value that Tempo will attempt to interpret as a valid ISO date / time */
-export type DateTime = ISOString | string | number | bigint | Date | Tempo | TempoBrand | TemporalObject | Temporal.ZonedDateTimeLike | undefined | null;
+export type DateTime = ISOString | string | number | bigint | Date | Tempo | TempoBrand | TemporalObject | Temporal.ZonedDateTimeLike | Temporal.DurationLike | undefined | null;
 
 export type Pattern = string | RegExp
 /**
@@ -50,10 +49,14 @@ export type Pattern = string | RegExp
 export interface AliasContext {
 	/** add a duration or Term to the current state and return a new context */
 	add(value: DateTime | string | Record<string, any>, options?: Options): AliasContext;
+	/** @hidden */
+	plus(value: DateTime | string | Record<string, any>, options?: Options): AliasContext;
 	/** subtract a duration or Term from the current state and return a new context */
 	subtract(value: DateTime | string | Record<string, any>, options?: Options): AliasContext;
 	/** @hidden */
 	sub(value: DateTime | string | Record<string, any>, options?: Options): AliasContext;
+	/** @hidden */
+	minus(value: DateTime | string | Record<string, any>, options?: Options): AliasContext;
 	/** set the current state to a new value (alias, date, or Term) and return a new context */
 	set(value: DateTime | string, options?: Options): AliasContext;
 	/** reset the context to the current system time ('now') */
@@ -134,22 +137,24 @@ export type SetFields = {
 	[K in Mutate]?: Unit | `#${string}`;
 } & {
 	[K in 'date' | 'time' | 'event' | 'period']?: string;
+} & {
+	[K in 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
 }
 export type SlickKey = SLICK_KEYS[number];
 export type SlickOffset = { [K in SlickKey]?: string };
 
 export type MutateShorthand = {
-	yy?: LooseUnion<number>;
-	mm?: LooseUnion<mm>;
-	wy?: LooseUnion<wy>;
-	ww?: LooseUnion<wy>;
-	dd?: LooseUnion<dd>;
-	hh?: LooseUnion<hh>;
-	mi?: LooseUnion<mi>;
-	ss?: LooseUnion<ss>;
-	ms?: LooseUnion<ms>;
-	us?: LooseUnion<us>;
-	ns?: LooseUnion<ns>;
+	yy?: LooseUnion<number | Mutate>;
+	mm?: LooseUnion<mm | Mutate>;
+	wy?: LooseUnion<wy | Mutate>;
+	ww?: LooseUnion<wy | Mutate>;
+	dd?: LooseUnion<dd | Mutate>;
+	hh?: LooseUnion<hh | Mutate>;
+	mi?: LooseUnion<mi | Mutate>;
+	ss?: LooseUnion<ss | Mutate>;
+	ms?: LooseUnion<ms | Mutate>;
+	us?: LooseUnion<us | Mutate>;
+	ns?: LooseUnion<ns | Mutate>;
 	wkd?: LooseUnion<wkd>;
 }
 
@@ -220,8 +225,6 @@ export interface TempoFormatTokens {
 	ms: true; us: true; ns: true; ff: true;
 	// ── composite date/time ───────────────────────────
 	ymd: true; dmy: true; mdy: true; hms: true;
-	// ── legacy composites (deprecated, still supported) ──
-	ymd6: true; dmy6: true; mdy6: true;
 	// ── timestamp / zone / calendar ───────────────────
 	ts: true; nano: true; tz: true; cal: true;
 }
@@ -332,11 +335,11 @@ export namespace Internal {
 		/** additional console.log for tracking */							debug: DebugLevel;
 		/** catch or throw Errors */														catch: boolean;
 		/** suppress console output during catch */							silent: boolean;
-		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
-		/** Temporal calendar */																calendar: Temporal.CalendarLike;
-		/** locale (e.g. en-AU) */															locale: string | string[];
+		/** Temporal timeZone */																timeZone: Evaluable<Temporal.TimeZoneLike>;
+		/** Temporal calendar */																calendar: Evaluable<Temporal.CalendarLike>;
+		/** locale (e.g. en-AU) */															locale: Evaluable<string | string[]>;
 		/** pivot year for two-digit years */										pivot: number;
-		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
+		/** hemisphere for term.qtr or term.szn */							sphere: Evaluable<enums.COMPASS | undefined>;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
@@ -351,19 +354,16 @@ export namespace Internal {
 		layouts?: Layout | RegistryOption<Pattern>;
 		events?: Event | RegistryOption<Logic>;
 		periods?: Period | RegistryOption<Logic>;
+		numbers?: Record<string, number>;
 		ignores?: Ignore;
 	};
 		/** plugins or namespaces to extend onto Tempo */
 		extends?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
 		/** plugin configuration dictionaries */
-		plugins?: Record<string, any>
-			/** @deprecated Passing an array of executable plugins to `plugins` is deprecated and will be removed in Tempo v4.0.0. Use `extends: [...]` instead. @internal */
-			| (TempoPlugin | TermPlugin | any)[]
-			| (TempoPlugin | TermPlugin | any);
+		plugins?: Record<string, any>;
 		/** supplied value to parse */													value: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
-		/** license key for premium features */									license?: string | undefined;
 	}
 
 	/** high-precision precision to measure timestamps (ms | us) */
@@ -392,7 +392,6 @@ export namespace Internal {
 		/** @internal database of plugins scoped to this state */pluginsDb: { terms: TermPlugin[]; plugins: TempoPlugin[] };
 		/** @internal internal cache engine for static terms and string parses */cache: BoundedCache<string, string>;
 		/** @internal installed-plugin dedup tracker; a ScopedSet for sandboxes (delegates has() to global rt.installed), undefined for the global state */installed?: Set<any> | ScopedSet<any>;
-		/** @internal sandbox-local license state; runtime license is centralized on TempoRuntime */license?: Internal.LicenseState;
 	}
 
 	/** debug a Tempo instantiation */
@@ -432,12 +431,15 @@ export namespace Internal {
 		/** @internal reverse-lookup map for localized weekdays */weekdayMap?: Record<string, { value: number; locale: string }>;
 	}
 
-	/** drop the parse-only Options */
-	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "layoutOrder" | "preFilter" | "pivot" | "snippet" | "layout" | "event" | "period" | "ignore" | "value">
+	/** drop parse-only, internal, and one-time initialization Options when deriving Config */
+	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "pivot" | "value" | "anchor" | "result" | "extends">;
 
 	/** Instance configuration derived from supply, storage, and discovery. */
-	export interface Config extends Required<Omit<OptionsKeep, "formats" | "locales" | "registry" | "license" | "localize">> {
-		/** license key for premium features */									license?: string;
+	export interface Config extends Required<Omit<OptionsKeep, "registry" | "timeZone" | "calendar" | "locale" | "sphere">> {
+		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
+		/** Temporal calendar */																calendar: Temporal.CalendarLike;
+		/** locale (e.g. en-AU) */															locale: string | string[];
+		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
 		/** scope for configuration mutations */								scope: 'global' | 'local';
 		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator> };
 		/** index-signature */																	readonly [key: string]: any;
@@ -449,60 +451,14 @@ export namespace Internal {
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** regional date-parsing configuration */							monthDay?: MonthDay;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
-		/** aliases to merge in the Number-Word dictionary */		numbers?: Record<string, number>;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
-		/** @deprecated Provide configuration inside `registry: { formats: ... }` */formats?: Property<any>;
-		/** @deprecated Provide configuration inside `registry: { locales: ... }` */locales?: Record<string, Record<string, string | Function>>;
-		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator> };
+		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator>, numbers?: Record<string, number> };
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
 		/** plugins or namespaces to extend onto Tempo */
 		extends?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
 		/** plugin configuration dictionaries */
-		plugins?: Record<string, any>
-			/** @deprecated Passing an array of executable plugins to `plugins` is deprecated and will be removed in Tempo v4.0.0. Use `extends: [...]` instead. @internal */
-			| (TempoPlugin | TermPlugin | any)[]
-			| (TempoPlugin | TermPlugin | any);
-	}
-
-	export interface LicenseScope {
-		exp?: number;
-		updated_at?: number;
-	}
-
-	/** structure of the verified license reckoning */
-	export interface ValidationResult {
-		status: enums.LICENSE;
-		role?: string;
-		scopes: Record<string, Internal.LicenseScope>;
-		expires?: number | string;
-		issuedAt?: number;
-		issuer?: string;
-		jti?: string;
-		error?: string;
-	}
-
-	/** structure of the dynamic #tempo/license chunk */
-	export interface LicensingModule {
-		Validator: new (jwt: string) => {
-			verify(): Promise<ValidationResult>;
-			syncRevocation(jwsUrl: string, currentJti: string): Promise<{ revoked: boolean, success: boolean }>;
-		};
-	}
-
-	export interface LicenseState {
-		status: enums.LICENSE;
-		key?: string;
-		role?: string;
-		scopes: Record<string, Internal.LicenseScope>;
-		jws?: Pledge<Internal.ValidationResult>;
-		expires?: number | string;
-		issuedAt?: number;
-		issuer?: string;
-		subject?: string;
-		audience?: string;
-		jti?: string;
-		error?: string;
+		plugins?: Record<string, any>;
 	}
 }
 

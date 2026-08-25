@@ -1,6 +1,6 @@
 {
   "name": "tempo-monorepo",
-  "version": "3.11.1",
+  "version": "4.0.0",
   "private": true,
   "engines": {
     "node": ">=20.0.0"
@@ -15,16 +15,19 @@
     "packages/plugins/*"
   ],
   "scripts": {
-    "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run",
-    "build:tempo": "npm run build --workspace=@magmacomputing/tempo",
+    "test": "vitest run",
+    "build:tempo": "npm run build:library && npm run build --workspace=@magmacomputing/tempo",
     "build:library": "npm run build --workspace=@magmacomputing/library",
-    "build:plugins": "npm run build --workspaces --if-present",
+    "build:functions": "npm run build --workspace=@magmacomputing/tempo-fns",
+    "build:plugins": "npm run build:library && tempo-cli build-plugins",
+    "build:all": "npm run build --workspaces --if-present",
     "clean": "node node_modules/typescript-7/bin/tsc -b --clean",
-    "version:bump": "node bin/version-bump.mjs",
-    "version:sync": "node bin/version-sync.mjs",
-    "catalog:sync": "node packages/plugins/.bin/catalog-sync.mjs",
-    "providers:sync": "npm run build:library && node bin/sync-providers.mjs",
+    "version:bump": "tempo-cli version-bump",
+    "version:sync": "tempo-cli version-sync",
+    "catalog:sync": "tempo-cli catalog-sync",
+    "providers:sync": "npm run build:library && tempo-cli sync-providers",
     "repl": "npm run repl --workspace=@magmacomputing/tempo",
+    "repl:pro": "npm run repl --workspace=@magmacomputing/tempo-pro",
     "repl:plugins": "tsx --import ./packages/plugins/.bin/temporal-polyfill.mts ./packages/plugins/.bin/repl.mts",
     "repl:dist": "npm run repl:dist --workspace=@magmacomputing/tempo",
     "core": "npm run core --workspace=@magmacomputing/tempo",
@@ -32,7 +35,7 @@
     "docs:build": "npm run docs:build --workspace=@magmacomputing/tempo",
     "docs:preview": "npm run docs:preview --workspace=@magmacomputing/tempo",
     "docs:push": "npm run docs:push --workspace=@magmacomputing/tempo",
-    "test:dist": "npm run build:library && npm run build:tempo && cross-env TEMPO_LICENSE_KEY=\"\" TEST_DIST=true vitest run"
+    "test:dist": "npm run build:library && npm run build:tempo && TEST_DIST=true vitest run"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",

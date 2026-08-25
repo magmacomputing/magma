@@ -1,12 +1,13 @@
 # Tempo: Immutable Date-Time Engine & AI Syntax Rules
 
-> Tempo is a lightweight, immutable JavaScript/TypeScript date-time library built around the native ECMAScript Temporal API proposal. It provides type-safe parsing, formatting, relative time arithmetic, and extensible layout matching across Browser and Node.js environments.
+> Tempo is an immutable TypeScript date-time engine built around the ECMAScript Temporal API. It provides type-safe parsing, formatting, relative time arithmetic, and extensible layout matching across Browser and Node.js environments.
 
 ## Core Architectural Rules & Philosophy
-- **Temporal Engine**: Tempo expects native `Temporal` in modern runtimes or uses `@js-temporal/polyfill` when necessary. Never instantiate legacy JavaScript `Date`.
-- **Strict Immutability**: `Tempo` instances are completely frozen. All mutating operations (`add`, `subtract`, `with`, `startOf`, `endOf`) return a brand-new `Tempo` object.
-- **Zero-Cost Getter Proxies**: Properties like `.year`, `.month`, `.day`, `.hour`, `.minute`, `.second`, `.millisecond`, `.microsecond`, `.nanosecond` are live getters proxying the underlying `Temporal` state.
-- **Plugin Architecture**: Core functions can be extended via `Tempo.extend(Plugin)`. License validation occurs via `Tempo.init(...)`.
+- **Temporal Engine**: Tempo uses native `Temporal` in modern runtimes or `@js-temporal/polyfill`. Never instantiate legacy JavaScript `Date`.
+- **Strict Immutability**: `Tempo` instances are completely frozen (`Object.freeze`). All mutating operations (`add`, `subtract`, `set`) return a new `Tempo` instance.
+- **Constructor Instantiation**: Instantiation and string parsing ALWAYS use the `new Tempo(...)` constructor. (There are no static `Tempo.from` or `Tempo.parse` functions; `Tempo.parse` is a static configuration object getter).
+- **Live Getters**: Core property accessors use short layout tokens: `.yy` (year), `.mm` (month), `.dd` or `.day` (day of month), `.hh` (hour), `.mi` (minute), `.ss` (second), `.ms` (millisecond), `.us` (microsecond), `.ns` (nanosecond), `.dow` (day of week 1-7), `.doy` (day of year 1-366), `.wy` (week of year), `.tz` (timeZone ID), `.cal` (calendar ID), `.ts` (timestamp ms), `.iso` (ISO 8601 UTC string), `.isValid`. *(Note: Long getters like `.year`, `.month`, `.hour`, `.minute`, `.second` do not exist directly on Tempo instances).*
+- **Configuration & Plugins**: System options and plugin registration are configured via `Tempo.init({ timeZone: 'UTC', monthDay: true, extends: [Plugin], registry: { layouts: { ... }, formats: { ... }, numbers: { ... } } })`. Core functionality can also be extended dynamically via `Tempo.extend(Plugin)`.
 
 ## Formatting & Parsing Tokens
 | Token | Description | Sample Output |
@@ -30,46 +31,65 @@
 - [Plugin Development](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/3-extending-tempo/tempo.plugin.md): Rules for extending Tempo via plugins.
 - [Utility Library](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/6-utility-library/tempo.library.md): Type detection, serialization (`stringify`/`objectify`), and `Pledge`.
 
-## Common Code Snippets
+## Common Code Snippets & Patterns
 
-### Quick Setup & Basic Usage
+### 1. Basic Instantiation & Formatting
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
-// Create from current instant or ISO string
-const t = Tempo.from('2026-08-04T15:30:00Z');
+// Create from current instant or ISO 8601 string
+const t = new Tempo('2026-08-04T15:30:00Z');
 
 // Format using layout tokens
-t.format('{mon} {dd}, {yy}'); // "August 04, 2026"
+t.format('{mon} {dd}, {yyyy}'); // "August 04, 2026"
 
 // Immutably manipulate date
 const nextWeek = t.add({ days: 7 });
 ```
 
-### Smart Parsing & Shorthand Expressions
+### 2. Relative Shorthand & Arithmetic
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
-// 1. Natural language & relative shorthand expressions
-const t1 = Tempo.from('next friday');
-const t2 = Tempo.from('start of month');
-const t3 = Tempo.from('+3 days');
+// Instantiation with relative expressions or durations
+const t1 = new Tempo('next Friday');
+const t2 = new Tempo('in 3 days');
 
-// 2. Flexible date parsing
-const t4 = Tempo.parse('2026-08-04T15:30:00+10:00');
+// Immutable boundary & arithmetic helpers via .set()
+const startOfMonth = new Tempo().set({ month: 'start' });
+const endOfYear = new Tempo().set({ year: 'end' });
+const inTwoHours = new Tempo().add({ hours: 2 });
 ```
 
-### Custom Layout Registration & Parsing
+### 3. Instance Options (Timezone & Locale)
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
-// Register custom snippet & layout pattern via config
-Tempo.config({
-  layouts: {
-    us_date: '{mm}/{dd}/{yy}'
+// ISO 8601 strings parse directly via constructor
+const tIso = new Tempo('2026-08-04T15:30:00+10:00');
+
+// Pass instance options as the second parameter
+const tSydney = new Tempo('2026-08-04T15:30:00', { timeZone: 'Australia/Sydney' });
+```
+
+### 4. System Initialization & Month-Day / Custom Layout Configuration
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+
+// 1. Configure US Month-First Parsing for ambiguous slash dates ('08/04/2026' -> August 4th)
+Tempo.init({
+  timeZone: 'UTC',
+  monthDay: true // or locale: 'en-US'
+});
+const usDate = new Tempo('08/04/2026'); // Month: 8 (August), Day: 4
+
+// 2. Register custom layout patterns for non-standard formats via registry (escape regex meta-characters as needed, e.g. '\\*')
+Tempo.init({
+  registry: {
+    layouts: {
+      star_date: '{mm}\\*{dd}\\*{yy}'
+    }
   }
 });
-
-// Parse string using registered layout
-const parsed = Tempo.parse('08/04/2026', 'us_date');
+const customDate = new Tempo('08*04*2026'); // Automatically matched against star_date layout
 ```

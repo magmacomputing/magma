@@ -25,7 +25,7 @@ The safest and most efficient way to author a plugin is using the `definePlugin`
 
 ```typescript
 // src/index.ts
-import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin-api';
+import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 
 export const BusinessDaysPlugin: TempoPlugin = definePlugin({
   name: 'BusinessDaysPlugin',
@@ -83,7 +83,7 @@ You must declare this augmentation in the same file that exports your plugin:
 
 ```typescript
 // src/index.ts
-import { definePlugin } from '@magmacomputing/tempo/plugin-api';
+import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
 
 // ... (plugin implementation) ...
 

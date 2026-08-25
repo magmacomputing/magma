@@ -53,13 +53,13 @@ const swipeHint = computed(() => {
 
 const features = [
   { title: 'Zero-Cost', details: 'Lazy evaluation and smart matching ensure instantiation overhead is near-zero.', icon: '⚡' },
-  { title: 'tomorrow at noon', details: 'Semantic parsing for events and periods. Resolve human-readable strings with zero configuration.', icon: '🎯' },
+  { title: 'Natural Language', details: 'Semantic parsing for events and periods. Resolve human-readable strings with zero configuration.', icon: '🎯' },
+  { title: 'Tempo AI Engine', details: 'Natural language date parsing, multi-provider dispatch (OpenAI, Gemini, Groq, Mistral), and slot resolution.', icon: '🤖' },
+  { title: 'Tempo.ticker()', details: 'Community Plugin: State-of-the-art timing engine with AsyncGenerator support and native Daylight Saving Time resolution.', icon: '⏱️' },
+  { title: 'Modular Plugins', details: 'Extend Tempo with specialized plugins for Snapping, High-Throughput Batching, and AI dispatch.', icon: '🔌' },
+  { title: 'Temporal Inside', details: 'Built on the ECMAScript Temporal API. Inherit the reliability of the modern standard.', icon: '🏗️' },
   { title: 'Cycle Persistence', details: 'Shift by semantic terms while preserving your relative day-of-period offset.', icon: '🔄' },
-  { title: 'Tempo.ticker()', details: 'Premium Plugin: State-of-the-art timing engine with AsyncGenerator support and native Daylight Saving Time resolution.', icon: '⏱️' },
-  { title: 'Temporal Inside', details: 'Built on the ECMAScript Temporal API. Inherit the reliability of the future standard.', icon: '🏗️' },
-  { title: 'Monorepo Resilient', details: 'Built for stability in complex environments with proxy-protected registries.', icon: '🛡️' },
-  { title: 'Tree-Shakable', details: 'Keep your bundle light. Only import the modules you need—from Fiscal calendars to pulsing Tickers.', icon: '📦' },
-  { title: 'Business Aware', details: 'Native support for fiscal quarters, zodiac signs, and meteorological seasons. Perfect for financial applications or astrology buffs or meteorologists !', icon: '📈' }
+  { title: 'Business & Financial', details: 'Native support for fiscal quarters, zodiac cycles, and meteorological seasons for finance and analytics.', icon: '📈' }
 ]
 
 // Real features plus leading/trailing clones for seamless bi-directional looping.
@@ -104,6 +104,7 @@ let initPromise = (async () => {
     }
 
     const { Tempo } = await import('@magmacomputing/tempo')
+    await import('@magmacomputing/tempo-plugin-ticker')
 
     if (import.meta.env.DEV) registry.has = originalHas
     
@@ -139,10 +140,7 @@ async function startTicker() {
     
     if (isManualTickerPaused.value) return
     
-    ticker = {
-      _id: setInterval(() => sync(new Tempo({ timeZone: selectedTz.value })), 1000),
-      stop() { clearInterval(this._id) }
-    }
+    ticker = Tempo.ticker(1000, sync, { timeZone: selectedTz.value })
   } catch (e) {
     timeStr.value = `Error: ${e.message || 'Unknown'}`
     const fallback = () => {

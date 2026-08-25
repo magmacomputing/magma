@@ -5,32 +5,32 @@ import { asArray, asError } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
-import { enumify } from '#library/enumerate.library.js';
-import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, ownValues, unwrap } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
-import { instant, getTemporalIds } from '#library/temporal.library.js';
+import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear } from '#library/international.library.js';
+import { evaluate } from '#library/evaluation.library.js';
 import { LOG } from '#library/logger.class.js';
 import type { Property, Secure } from '#library/type.library.js';
 
 import { registerPlugin, interpret, ensureModule, type TempoPlugin } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term/term.util.js';
-import type { TermPlugin, PremiumPlugin } from './plugin/term/term.type.js';
+import type { TermPlugin } from './plugin/term/term.type.js';
 
 import { AliasEngine } from './engine/engine.alias.js';
 import { PatternCompiler } from './engine/engine.pattern.js';
 import { createMasterGuard } from './engine/engine.guard.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 
-import { validateLicenseState, getLicenseSnapshot, setLicense, getLicenseState, updateScopeStatus } from './plugin/license/license.manager.js';
+import { resolveConfig, resolveConfigSync } from './config/config.resolve.js';
 
-import { resolveMonthDay, setProperty, proto, hasOwn, resolveDisplayStatus } from './support/support.util.js';
+import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, LICENSE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, $updateScopeStatus, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import { Interval } from './interval.class.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -124,39 +124,6 @@ export class Tempo {
 	}
 
 	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return Tempo[$Internal]().pluginsDb.terms }
-	/** @internal format raw license snapshot into human-readable license object */
-	static #formatLicense(state: Internal.State) {
-		const { jws, key, ...raw } = getLicenseSnapshot(state);
-		const ss = { timeStamp: 'ss' } as const;
-		const scopesSource = (raw.scopes && isObject(raw.scopes)) ? raw.scopes : {};
-		const scopes = Object.fromEntries(
-			Object.entries(scopesSource).map(([key, scope]) => {
-				const s = scope as any;
-				return [key, {
-					...s,
-					...(isNumber(s.exp) && { exp: new Tempo(s.exp, ss).fmt.weekTime }),
-					...(isNumber(s.updated_at) && { updated_at: new Tempo(s.updated_at, ss).fmt.weekTime }),
-				}];
-			})
-		);
-		return secure({
-			...raw,
-			status: resolveDisplayStatus(raw.status),
-			scopes,
-			...(isNumber(raw.expires) && { expires: new Tempo(raw.expires, ss).fmt.weekTime }),
-			...(isNumber(raw.issuedAt) && { issuedAt: new Tempo(raw.issuedAt, ss).fmt.weekTime }),
-		});
-	}
-
-	/** human-readable formatted license state */
-	static get license() {
-		return Tempo.#formatLicense(this[$Internal]());
-	}
-
-	/** @internal programmatically update status of a license scope (e.g. when network response determines revocation) */
-	static [$updateScopeStatus](scopeKey: string, status: string, error?: string): void {
-		updateScopeStatus(this[$Internal](), scopeKey, status, error);
-	}
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
 
 	/** @internal Master Guard predicate (implements RegExp-like interface) */static get [$guard]() { return (this[$Internal]() as any)[$guard] ?? { test: () => true }; }
@@ -255,8 +222,11 @@ export class Tempo {
 	}
 
 	/** try to infer hemisphere using the timezone's daylight-savings setting */
-	static #setSphere = (shape: Internal.State, options: t.Options) => {
-		if (isDefined(options.sphere)) return options.sphere;
+	static #setSphere = (shape: Internal.State, options: t.Options): t.COMPASS | undefined => {
+		if (isDefined(options.sphere)) {
+			const evaluatedSphere = evaluate(options.sphere);
+			if (isDefined(evaluatedSphere)) return evaluatedSphere;
+		}
 
 		const tz = options.timeZone;
 		if (isDefined(tz)) {
@@ -266,7 +236,7 @@ export class Tempo {
 			if (isDefined(sphere)) return sphere;
 		}
 
-		return isDefined(shape.config?.sphere) ? shape.config.sphere : undefined;
+		return isDefined(shape.config?.sphere) ? evaluate(shape.config.sphere) : undefined;
 	}
 
 	/** determine if we have a {timeZone} which prefers {mdy} date-order */
@@ -366,10 +336,10 @@ export class Tempo {
 		// Side-effects
 		const newSphere = Tempo.#setSphere(shape, mergedOptions);
 		if (shape.config.scope === 'local') {
-			const parentSphere = Object.getPrototypeOf(shape.config).sphere;
-			if (newSphere !== parentSphere) shape.config.sphere = newSphere;
+			if (isDefined(newSphere)) shape.config.sphere = newSphere;
 		} else {
-			shape.config.sphere = newSphere;
+			if (!isFunction(shape.config.sphere))
+				shape.config.sphere = newSphere;
 		}
 
 		const oldLayout = shape.parse.layout;
@@ -385,8 +355,10 @@ export class Tempo {
 			needsRebuild = true;
 		}
 
-		if (needsRebuild)
+		if (needsRebuild) {
 			setPatterns(shape);
+			this[$buildGuard](shape);
+		}
 	}
 
 	/** support "Global Discovery" of user-options */
@@ -402,19 +374,14 @@ export class Tempo {
 		// 1. Process TimeZones (normalize to lowercase for lookup)
 		if (discovery.timeZones) {
 			const tzs = Object.fromEntries(
-				ownEntries(discovery.timeZones, true).map(([k, v]) => [String(k).toLowerCase(), v])
+				ownEntries(discovery.timeZones, true)
+					.map(([k, v]) => [String(k).toLowerCase(), v])
 			);
 			if (isSandbox) opts = { ...opts, timeZones: tzs };
 			else registryUpdate('TIMEZONE', tzs);
 		}
 
-		// 1b. Process Numbers
-		if (discovery.numbers) {
-			if (isSandbox) opts = { ...opts, numbers: discovery.numbers };
-			else registryUpdate('NUMBER', discovery.numbers);
-		}
-
-		// 1c. Process MDY settings
+		// 1a. Process MDY settings
 		if (discovery.monthDay) {
 			let md = discovery.monthDay;
 			if (md.timezones) {
@@ -434,10 +401,10 @@ export class Tempo {
 			opts = { ...opts, monthDay: md };
 		}
 
-		// 1d. Process Internationalization
+		// 1b. Process Internationalization
 		if (discovery.intl) opts = { ...opts, intl: discovery.intl };
 
-		// 1e. Process Planner
+		// 1c. Process Planner
 		if (isObject(discovery.planner)) opts = { ...opts, planner: discovery.planner };
 
 		// 2. Process Terms
@@ -447,22 +414,17 @@ export class Tempo {
 		// 3. Process Registry
 		let registryOpts = discovery.registry ?? {};
 
-		if (discovery.formats)
-			registryOpts = { ...registryOpts, formats: discovery.formats };
-
-		if (discovery.locales)
-			registryOpts = { ...registryOpts, locales: discovery.locales };
-
 		if (Object.keys(registryOpts).length > 0) {
 			opts = { ...opts, registry: registryOpts };
 			if (!isSandbox) {
 				if (registryOpts.formats) registryUpdate('FORMAT', registryOpts.formats);
 				if (registryOpts.locales) registryUpdate('LOCALE', registryOpts.locales);
+				if (registryOpts.numbers) registryUpdate('NUMBER', registryOpts.numbers);
 			}
 		}
 
-		// 4. Process Extensions / Plugins
-		if (discovery.plugins && isObject(discovery.plugins) && !Array.isArray(discovery.plugins) && !isFunction(discovery.plugins) && !('name' in discovery.plugins || 'key' in discovery.plugins || 'install' in discovery.plugins))
+		// 4. Process Plugins
+		if (discovery.plugins && isObject(discovery.plugins) && !Array.isArray(discovery.plugins))
 			opts = { ...opts, plugins: isObject(opts.plugins) ? { ...opts.plugins, ...discovery.plugins } : discovery.plugins };
 
 		// 5. Process Options
@@ -504,15 +466,33 @@ export class Tempo {
 			...Tempo.#terms.map(t => t.key),
 			...Tempo.#terms.map(t => t.scope),
 			...Guard,
-			...(state.config.registry?.modifiers ? Object.values(state.config.registry.modifiers).flat() : [])
+			...(state.config.registry?.modifiers ? Object.values(state.config.registry.modifiers).flat() : []),
+			...ownValues(state.parse.layout, true).flatMap(val => {
+				const src = (val as any) instanceof RegExp ? (val as any).source : (typeof val === 'string' ? val : '');
+				if (!src) return [];
+				return src
+					.replace(/\{[#]?[\w]+(?:\.[\w]+)*(?:\:[a-zA-Z]+)*\}/g, ' ')
+					.replace(/\(\?<[\w]+>/g, ' ')
+					.replace(/\\\\/g, '\u0001')
+					.replace(/\\\|/g, '\u0000')
+					.replace(/[\(\)\?\:\^\$\d\{\}\[\]]/g, ' ')
+					.replace(/\\(.)/g, '$1')
+					.replace(/\u0001/g, '\\')
+					.split(/[\s\|]+/)
+					.map((t: string) => t.replace(/\u0000/g, '|'))
+					.filter(Boolean)
+					.filter((t: string) => t !== '[' && t !== ']');
+			})
 		];
 
 		const guard = createMasterGuard(wordsList);
 
 		if (targetState) {
 			targetState.parse.guard = guard as any;
+			(targetState as any)[$guard] = guard;
 		} else {
 			(this[$Internal]() as any)[$guard] = guard;
+			(this[$Internal]().parse as any).guard = guard;
 		}
 
 		if (!targetState && this[$Internal]() === _global)
@@ -558,13 +538,6 @@ export class Tempo {
 			!('options' in arg);
 
 		let options = (args.length > 1 && isOptionsArg(args[args.length - 1])) ? args.pop() : undefined;
-		const licenseKey = options?.license || (args.length === 1 && isObject(args[0]) ? args[0].license : undefined);
-		if (licenseKey) {
-			const state = this[$Internal]();
-			setLicense(state, licenseKey);
-			const license = getLicenseState(state);
-			if (license.jws?.isPending) validateLicenseState(license, license.jws);
-		}
 
 		const items = args.flat(Infinity);
 		if (isEmpty(items)) return this;
@@ -593,16 +566,9 @@ export class Tempo {
 					}
 				}
 				else if (isObject(item)) {
-					let pluginType = item[sym.$PluginType];
-
-					/** @deprecated Legacy structural typing fallback. Will be removed in v4.0.0 */
-					if (!pluginType) {
-						if (isFunction(item.install) && (item.type === 'plugin' || item.type === 'namespace' || item.type === 'module' || isString(item.name))) {
-							pluginType = item.type || 'plugin';
-						} else if (item.type === 'term' || (isString(item.key) && isFunction(item.define))) {
-							pluginType = 'term';
-						}
-					}
+					let pluginType = item[sym.$PluginType] || item.type;
+					if (!pluginType && isFunction(item.define) && item.key) pluginType = 'term';
+					if (!pluginType && isFunction(item.install)) pluginType = 'plugin';
 
 					const assertContract = (isValid: boolean, msg: string) => {
 						if (!isValid) {
@@ -722,8 +688,6 @@ export class Tempo {
 
 							if (discovery.extends)
 								asArray(discovery.extends).forEach(p => this.extend(p));
-							else if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins) || (isObject(discovery.plugins) && ('name' in discovery.plugins || 'key' in discovery.plugins || 'install' in discovery.plugins))))
-								asArray(discovery.plugins).forEach(p => this.extend(p));
 
 							// only trigger init if we're assigning a new discovery object to a symbol
 							if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
@@ -776,7 +740,6 @@ export class Tempo {
 		(globalThis as any)[normalizedDiscovery as any] = data;
 
 		const state = init(options, false, this[$Internal]());
-		if (options?.license) setLicense(state, options.license);
 		state.config.discovery = normalizedDiscovery as any;
 		ClassStates.set(SandboxTempo as any, state);
 		setPatterns(state); // compile regex patterns for the isolated sandbox state
@@ -799,27 +762,15 @@ export class Tempo {
 
 		Object.freeze(SandboxTempo);
 
-		// 🏛️ Trigger background license validation for sandbox-local license keys
-		// (mirrors the same reckoning logic in Tempo.init() for the global license)
-		const sandboxLicense = getLicenseState(state);
-		if (sandboxLicense.jws?.isPending)
-			validateLicenseState(sandboxLicense, sandboxLicense.jws);
-
 		return SandboxTempo as unknown as typeof Tempo;
 	}
 
 	/** 
-	 * Wait for the background licensing and validation engine to finish settling.
-	 * Resolves immediately if no license key or validation is pending.
-	 * @returns The final, human-readable license status ('none', 'active', 'expired', etc.)
+	 * Wait for engine readiness.
+	 * @returns The final status ('none' in Community Tempo)
 	 */
 	static async ready(): Promise<string> {
-		const rt = getRuntime();
-		const jws = rt.license?.jws;
-		if (jws) {
-			try { await jws; } catch { /* fail-safe */ }
-		}
-		return resolveDisplayStatus(rt.license.status);
+		return 'none';
 	}
 
 	/** 
@@ -827,7 +778,6 @@ export class Tempo {
 	 * before initializing the engine.
 	 */
 	static async bootstrap(options?: { cwd?: string, configFile?: string }): Promise<typeof Tempo> {
-		const { resolveConfig } = await import('./config/config.resolve.js');
 		const config = await resolveConfig(options);
 		this.init(config || {});
 		await this.ready();
@@ -868,9 +818,9 @@ export class Tempo {
 
 			// 2. Establish context and keys
 			const sys = getDateTimeFormat();
-			const timeZone = options.timeZone ?? sys.timeZone;
-			const calendar = options.calendar ?? sys.calendar;
 			const config = state.config;
+			const timeZone = options.timeZone ?? config.timeZone ?? sys.timeZone;
+			const calendar = options.calendar ?? config.calendar ?? sys.calendar;
 			let discovery = options.discovery ?? Symbol.keyFor($Tempo) as string;
 			const storeKey = options.store || config.store || Symbol.keyFor($Tempo) as string;
 
@@ -884,8 +834,8 @@ export class Tempo {
 			const userDiscovery = (globalThis as any)[normalizedDiscovery] as Internal.Discovery;
 
 			// Resolve locale if missing or invalid
-			const currentLocale = config.locale;
-			const locale = (!currentLocale || currentLocale === 'en-US') ? Tempo.#locale(currentLocale) : currentLocale;
+			const currentLocale = options.locale ?? config.locale;
+			const locale = currentLocale ?? Tempo.#locale();
 
 			if (!hasOwn(config, 'get')) {
 				Object.defineProperty(config, 'get', {
@@ -909,7 +859,7 @@ export class Tempo {
 				locale,
 				discovery: normalizedDiscovery,
 				registry: {
-					formats: config.registry?.formats ?? config.formats ?? enumify(STATE.FORMAT, false),
+					formats: config.registry?.formats ?? config.formats ?? enums.FORMAT,
 					locales: config.registry?.locales ?? config.locales ?? proxify(STATE.LOCALE, true, true)
 				},
 				scope: 'global',
@@ -930,23 +880,10 @@ export class Tempo {
 			if (options.extends)
 				this.extend(options.extends);
 
-			// TODO: @deprecated - Remove in Tempo v4.0.0
-			if (userDiscovery?.plugins && (Array.isArray(userDiscovery.plugins) || isFunction(userDiscovery.plugins) || (isObject(userDiscovery.plugins) && ('name' in userDiscovery.plugins || 'key' in userDiscovery.plugins || 'install' in userDiscovery.plugins))))
-				this.extend(userDiscovery.plugins);
-
-			if (options.plugins) {
-				if (Array.isArray(options.plugins) || isFunction(options.plugins) || (isObject(options.plugins) && ('name' in options.plugins || 'key' in options.plugins || 'install' in options.plugins)))
-					this.extend(options.plugins);
-			}
-
 			if (Context.type === CONTEXT.Browser || state.config.debug === LOG.Debug)
 				logDebug('Tempo:', this.config, state.config);
 
 			setPatterns(state);																		// rebuild the global patterns (Master Guard etc)
-
-			// 🏛️ Licensing Reckoning (Background Verification)
-			if (rt.license.jws?.isPending)
-				validateLicenseState(rt.license, rt.license.jws);
 
 			_lifecycle.ready = true;
 			return this;
@@ -1103,36 +1040,8 @@ export class Tempo {
 	static get instant() { return Temporal.Instant.fromEpochNanoseconds(Tempo.now()) }
 
 	/** static Tempo.terms (registry) */
-	static get terms(): Secure<PremiumPlugin[]> & Record<string, PremiumPlugin> {
-		const rt = getRuntime();
-		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => {
-			const item = { ...rest } as any;
-			if (hasOwn(rt.license.scopes, rest.key)) {
-				const meta = rt.license.scopes[rest.key];
-				item.status = resolveDisplayStatus(rt.license.status);
-				item.expires = meta.exp ?? rt.license.expires;
-				if (meta.updated_at) item.updated = meta.updated_at;
-			}
-			return item;
-		});
-
-		// 📋 Synthetic stubs: surface JWT-claimed scopes that haven't been registered yet
-		const registeredKeys = new Set(list.map((t: any) => t.key));
-		const licenseStatus = rt.license.status;
-		if (licenseStatus && licenseStatus !== 'none') {
-			for (const [scopeKey, meta] of Object.entries(rt.license.scopes || {})) {
-				if (!registeredKeys.has(scopeKey)) {
-					const m = meta as any;
-					list.push({
-						key: scopeKey,
-						description: `Premium plugin (uninstalled)`,
-						status: resolveDisplayStatus(licenseStatus),
-						expires: m?.exp ?? rt.license.expires,
-						...(m?.updated_at && { updated: m.updated_at }),
-					} as any);
-				}
-			}
-		}
+	static get terms(): Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>> {
+		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => ({ ...rest } as any));
 
 		// treats `Tempo.terms` as array-like and indexable by key.
 		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key)) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
@@ -1141,15 +1050,6 @@ export class Tempo {
 	/** static Tempo.registry */
 	static get registry() {
 		return Tempo.config.registry;
-	}
-
-	/** @deprecated Use Tempo.registry.formats instead */
-	static get formats() {
-		// Extend built-in enums.FORMAT with any user-registered formats, preserving Enum methods (.keys(), .values(), etc.)
-		const userFormats = Tempo.config.registry?.formats;
-		return (userFormats && Object.keys(userFormats).length > 0)
-			? enums.FORMAT.extend(userFormats, false)
-			: enums.FORMAT;
 	}
 
 	/** static Tempo properties getter */
@@ -1228,7 +1128,8 @@ export class Tempo {
 			setPatterns(state);
 		});
 
-		Tempo.init();																						// synchronously initialize the library
+		const syncConfig = resolveConfigSync();
+		Tempo.init(syncConfig || {});																						// synchronously initialize the library
 		getRuntime().logger = logTempo;
 	}
 
@@ -1334,22 +1235,21 @@ export class Tempo {
 
 		if (isZonedDateTime(this.#tempo)) this.#zdt = this.#tempo;
 		this.#setLocal(this.#options);													// parse local options
+		this.#anchor = evaluate(this.#options.anchor);
 		if (!this.#zdt && isObject(this.#tempo) && isDurationLike(this.#tempo)) {
-			// relative shorthand for "now plus duration"
-			this.#zdt = this.#now.toZonedDateTimeISO(this.#local.config.timeZone).add(this.#tempo as Temporal.DurationLike);
+			this.#zdt = this.#resolveAnchorBasis(this.#anchor)		// relative shorthand for "anchor (or now) plus duration"
+				.add(this.#tempo as Temporal.DurationLike);
 		}
 
-		const { mode } = this.#local.parse;
 		const input = String(this.#tempo ?? '');
 		const guard = this.#local.parse.guard || (this.constructor as typeof Tempo)[$guard];
+		const { mode } = this.#local.parse;
 
 		// 🏛️ Initialization Strategy ('auto' | 'strict' | 'defer')
 		if (mode === Tempo.MODE.Defer) this.#local.parse.lazy = true;
 		else if (mode === Tempo.MODE.Strict) this.#local.parse.lazy = false;
 		else if (isString(this.#tempo) && !isEmpty(input) && guard.test(trimAll(input)))
 			this.#local.parse.lazy = true;												// auto-switch to lazy-mode for valid strings
-
-		this.#anchor = this.#options.anchor;
 
 		// 🧬 Unified State Hand-off (from clone / mutate)
 		const handoff = (this.#options as any)[$Internal];
@@ -1483,17 +1383,10 @@ export class Tempo {
 			} else {
 				if (!ensureModule(this, 'TermsModule')) return undefined;
 
-				// 🛡️ Lazy Proxy Guard (Licensing)
-				if (this.#isBlocked(key)) return undefined;
-
 				const term = Tempo.#termMap.get(key);
 				if (term) {
 					const isKeyOnly = term.key === key;
 					const define = (keyOnly: boolean) => {
-						// 🛡️ Resolution Guard (Licensing)
-						// We check again to handle the transition from Pending -> Revoked/Expired
-						if (getRuntime().license.status !== LICENSE.Active && this.#isBlocked(key)) return undefined;
-
 						try {
 							const result = term.define.call(this, keyOnly);
 							const res = Array.isArray(result) ? getTermRange(this, result, keyOnly) : result;
@@ -1531,9 +1424,6 @@ export class Tempo {
 		} else {
 			Tempo.#terms.forEach(term => {
 				const define = (keyOnly: boolean, anchor?: any) => {
-					// 🛡️ Resolution Guard (Licensing)
-					if (getRuntime().license.status !== LICENSE.Active && this.#isBlocked(term.key)) return undefined;
-
 					try {
 						const res = term.resolve ? term.resolve.call(this, anchor) : term.define.call(this, keyOnly, anchor);
 						const out = (getTermRange(this, (Array.isArray(res) ? (res as any) : [res]), keyOnly, anchor) as any);
@@ -1683,8 +1573,10 @@ export class Tempo {
 	since(arg0?: any, arg1?: any): any { return this.#resolve(() => interpret(this, 'DurationModule', undefined, false, 'since', arg0, arg1) ?? this); }
 
 	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'add', false, tempo, options) ?? this); }
+	/** @hidden */																						plus(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.add(tempo, options); }
 	/** returns a new `Tempo` with specific duration subtracted. */subtract(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'subtract', false, tempo, options) ?? this); }
 	/** @hidden */																						sub(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.subtract(tempo, options); }
+	/** @hidden */																						minus(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.subtract(tempo, options); }
 	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.MutateSet, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this); }
 	/** returns a clone of the current `Tempo` instance. */		clone() { return new this.#Tempo(this, this.config) }
 
@@ -1717,6 +1609,44 @@ export class Tempo {
 
 		Object.assign(this.#local.config, { scope: 'local' });
 
+		// Evaluate and snapshot dynamic context suppliers for this specific Tempo instance
+		const evaluatedTz = evaluate(options.timeZone, classState.config.timeZone);
+		if (isDefined(evaluatedTz)) {
+			const zone = String(evaluatedTz).toLowerCase();
+			const resolvedZone = (this.constructor as any).timeZones?.[zone] ?? classState.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(evaluatedTz));
+			setProperty(this.#local.config, 'timeZone', resolvedZone);
+		}
+
+		const evaluatedCal = evaluate(options.calendar, classState.config.calendar);
+		if (isDefined(evaluatedCal))
+			setProperty(this.#local.config, 'calendar', String(evaluatedCal));
+
+		const evaluatedLoc = evaluate(options.locale, classState.config.locale);
+		if (isDefined(evaluatedLoc)) {
+			const resolvedLocales = asArray(evaluatedLoc).map(l => canonicalLocale(String(l))).filter(Boolean) as string[];
+			if (resolvedLocales.length > 0) {
+				const finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
+				setProperty(this.#local.config, 'locale', finalLocale);
+			}
+		}
+
+		const hasExplicitOption = isDefined(options.sphere);
+		const evaluatedExplicit = hasExplicitOption ? evaluate(options.sphere) : (classState.userProvidedKeys?.has('sphere') ? evaluate(classState.config.sphere) : undefined);
+		const inferredSphere = this.#local.config.timeZone ? getHemisphere(String(this.#local.config.timeZone)) : undefined;
+		const evaluatedSphere = evaluate(
+			evaluatedExplicit,
+			inferredSphere,
+			classState.config.sphere
+		);
+		if (isDefined(evaluatedSphere))
+			setProperty(this.#local.config, 'sphere', evaluatedSphere);
+
+		const optionsSnapshot = { ...options };
+		if (isDefined(options.timeZone)) optionsSnapshot.timeZone = this.#local.config.timeZone;
+		if (isDefined(options.calendar)) optionsSnapshot.calendar = this.#local.config.calendar;
+		if (isDefined(options.locale)) optionsSnapshot.locale = this.#local.config.locale;
+		if (isDefined(options.sphere)) optionsSnapshot.sphere = this.#local.config.sphere;
+
 		this.#local.parse = markConfig(Object.create(classState.parse));
 		this.#local.parse.event = { ...classState.parse.event };
 		this.#local.parse.period = { ...classState.parse.period };
@@ -1744,7 +1674,7 @@ export class Tempo {
 			enumerable: false
 		});
 
-		(this.constructor as any)[$setConfig](this.#local, options);									// set #local config
+		(this.constructor as any)[$setConfig](this.#local, optionsSnapshot);				// set #local config
 	}
 
 	/** parse DateTime input */
@@ -1778,6 +1708,13 @@ export class Tempo {
 		const msg = 'Tempo ParseModule not loaded. Did you forget to Tempo.extend(ParseModule)?';
 		logError(msg, this.#local.config);
 		return undefined as any;
+	}
+
+	#resolveAnchorBasis(anchor: unknown): Temporal.ZonedDateTime {
+		if (isTempo(anchor)) return anchor.toDateTime();
+		if (isZonedDateTime(anchor)) return anchor;
+		if (isDefined(anchor)) return new (this.constructor as typeof Tempo)(anchor as any, this.#options).toDateTime();
+		return this.#now.toZonedDateTimeISO(this.#local.config.timeZone);
 	}
 
 	/** resolve constructor / method arguments */
@@ -1826,18 +1763,6 @@ export class Tempo {
 		return true;
 	}
 
-	#isBlocked(key: string): boolean {
-		const rt = getRuntime();
-		const blocked = [LICENSE.Revoked, LICENSE.Expired, LICENSE.Invalid] as readonly string[];
-
-		if (blocked.includes(rt.license.status) && hasOwn(rt.license.scopes, key)) {
-			const msg = `License for premium term '${key}' is ${rt.license.status}. Access denied.`;
-			logWarn(msg, this.#local.config);
-			return true;
-		}
-
-		return false;
-	}
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

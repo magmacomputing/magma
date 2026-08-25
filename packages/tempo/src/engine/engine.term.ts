@@ -16,6 +16,24 @@ import type { TempoTermType } from '../plugin/term/term.type.js';
 const toZdt = (v: any): Temporal.ZonedDateTime => isTempo(v) ? v.toDateTime() : v;
 
 /**
+ * Internal helper to construct a ZonedDateTime from a raw term item
+ */
+const toZdtItem = (item: any, defaultYear: number, tz: string, cal: string): Temporal.ZonedDateTime =>
+	toZonedDateTime({
+		year: item.year ?? defaultYear,
+		month: item.month ?? 1,
+		day: item.day ?? 1,
+		hour: item.hour ?? 0,
+		minute: item.minute ?? 0,
+		second: item.second ?? 0,
+		millisecond: item.millisecond ?? 0,
+		microsecond: item.microsecond ?? 0,
+		nanosecond: item.nanosecond ?? 0,
+		timeZone: tz,
+		calendar: cal
+	});
+
+/**
  * Resolves a mutation (start/mid/end/add) against a Tempo Term.
  * 
  * @param Tempo - The Tempo constructor (for static access)
@@ -227,22 +245,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				candidates = rawList.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
 			}
 
-			const starts = candidates.map(c => {
-				const s = toZonedDateTime({
-					year: c.year ?? jump.year,
-					month: c.month ?? 1,
-					day: c.day ?? 1,
-					hour: c.hour ?? 0,
-					minute: c.minute ?? 0,
-					second: c.second ?? 0,
-					millisecond: c.millisecond ?? 0,
-					microsecond: c.microsecond ?? 0,
-					nanosecond: c.nanosecond ?? 0,
-					timeZone: tz,
-					calendar: cal
-				});
-				return { range: c, start: s };
-			});
+			const starts = candidates.map(c => ({ range: c, start: toZdtItem(c, jump.year, tz, cal) }));
 
 			// prefer the latest start that is <= cursor
 			const prev = starts
@@ -289,22 +292,25 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				list = list.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
 			}
 
-			const resolved = rawList.map(c => {
-				const start = toZonedDateTime({
-					year: c.year ?? jump.year,
-					month: c.month ?? 1,
-					day: c.day ?? 1,
-					hour: c.hour ?? 0,
-					minute: c.minute ?? 0,
-					second: c.second ?? 0,
-					millisecond: c.millisecond ?? 0,
-					microsecond: c.microsecond ?? 0,
-					nanosecond: c.nanosecond ?? 0,
-					timeZone: tz,
-					calendar: cal
-				});
-				return getTermRange(instance, rawList, false, start);
-			}).filter(isDefined) as any[];
+			const toZdt = (item: typeof rawList[number]): Temporal.ZonedDateTime =>
+				toZdtItem(item, jump.year, tz, cal);
+
+			const toEpochNs = (item: typeof rawList[number]): bigint =>
+				toZdt(item).epochNanoseconds as bigint;
+
+			const chronological = [...rawList].sort((a, b) => {
+				const sa = toEpochNs(a);
+				const sb = toEpochNs(b);
+				return sa === sb ? 0 : (sa < sb ? -1 : 1);
+			});
+
+			const resolved = chronological.map((c, idx) => {
+				if (c.start && c.end) return c;
+				const start = toZdt(c);
+				const nextC = chronological[idx + 1];
+				const end = nextC ? toZdt(nextC) : start.add({ years: 1 });
+				return { ...c, start, end };
+			});
 
 			// Special handling for numeric-only repeat counts (e.g. `2q2`):
 			// - First iteration should prefer the containing or most-recent past
