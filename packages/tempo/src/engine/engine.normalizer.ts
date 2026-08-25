@@ -111,6 +111,16 @@ export function normalizeMatch(
 	dateTime: Temporal.ZonedDateTime,
 	ctx: NormalizerContext
 ): Temporal.ZonedDateTime {
+	if (groups) {
+		for (const key of ownKeys(groups)) {
+			if (key.includes('_alt') && isDefined(groups[key])) {
+				const baseKey = key.split('_alt')[0];
+				if (!isDefined(groups[baseKey]) || groups[baseKey] === '') {
+					groups[baseKey] = groups[key];
+				}
+			}
+		}
+	}
 	const { state, isAnchored } = ctx;
 
 	// 1. Zone

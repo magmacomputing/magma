@@ -88,7 +88,7 @@ export class PatternCompiler {
 		};
 
 		try {
-			const expanded = matcher(source);
+			const expanded = deduplicateCaptureGroups(matcher(source));
 			const compiled = new RegExp(`^(${expanded})$`, 'i');
 			cache.set(source, compiled);
 			return compiled;
@@ -189,4 +189,58 @@ export function setPatterns(state: t.Internal.State) {
 		state.patternCompiler = new PatternCompiler({ state });
 
 	state.patternCompiler.setPatterns();
+}
+
+/**
+ * Deduplicate named capture groups across regex '|' branches to avoid SyntaxError in JS RegExp compilation.
+ */
+function deduplicateCaptureGroups(expanded: string): string {
+	if (!expanded.includes('|') || !expanded.includes('(?<'))
+		return expanded;
+
+	const branches: string[] = [];
+	let current = '';
+	let depth = 0;
+
+	for (let i = 0; i < expanded.length; i++) {
+		const char = expanded[i];
+		if (char === '\\') {
+			current += char + (expanded[i + 1] || '');
+			i++;
+			continue;
+		}
+		if (char === '(') depth++;
+		else if (char === ')') depth--;
+
+		if (char === '|' && depth === 0) {
+			branches.push(current);
+			current = '';
+		} else {
+			current += char;
+		}
+	}
+	branches.push(current);
+
+	if (branches.length <= 1) return expanded;
+
+	const seenNames = new Set<string>();
+	const processedBranches = branches.map((branch, bIdx) => {
+		if (bIdx === 0) {
+			const matches = branch.matchAll(/\(\?<([a-zA-Z][\w]*)>/g);
+			for (const m of matches) {
+				seenNames.add(m[1]);
+			}
+			return branch;
+		}
+
+		return branch.replace(/\(\?<([a-zA-Z][\w]*)>/g, (match, name) => {
+			if (seenNames.has(name)) {
+				return `(?<${name}_alt${bIdx}>`;
+			}
+			seenNames.add(name);
+			return match;
+		});
+	});
+
+	return processedBranches.join('|');
 }
