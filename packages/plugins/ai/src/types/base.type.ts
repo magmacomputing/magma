@@ -1,4 +1,5 @@
 import type { Tempo } from '@magmacomputing/tempo';
+import type { Evaluable, AsyncEvaluable } from '@magmacomputing/tempo/library';
 import type { AiMode } from '../core/config.js';
 
 /**
@@ -44,16 +45,16 @@ export interface AiBaseOptions {
  * Base options for operations requiring relative anchor dates, timezone, and calendar grounding.
  */
 export interface AiDateContextOptions extends AiBaseOptions {
-	/** Reference anchor date for relative calculations (defaults to current time). */
-	anchor?: TempoDateInput | undefined;
-	/** Target IANA timezone. */
-	timeZone?: string | undefined;
-	/** Target BCP 47 locale or language tag. */
-	locale?: string | string[] | undefined;
-	/** Preferred calendar system (e.g. 'gregory', 'islamic', 'hebrew'). */
-	calendar?: string | undefined;
-	/** Hemisphere ('north' | 'south') for seasonal and environmental calculations. */
-	sphere?: 'north' | 'south' | string | undefined;
+	/** Reference anchor date for relative calculations (defaults to current time). Accepts static value or dynamic supplier. */
+	anchor?: Evaluable<TempoDateInput> | undefined;
+	/** Target IANA timezone. Accepts static value or dynamic supplier. */
+	timeZone?: Evaluable<string> | undefined;
+	/** Target BCP 47 locale or language tag. Accepts static value or dynamic supplier. */
+	locale?: Evaluable<string | string[]> | undefined;
+	/** Preferred calendar system (e.g. 'gregory', 'islamic', 'hebrew'). Accepts static value or dynamic supplier. */
+	calendar?: Evaluable<string> | undefined;
+	/** Hemisphere ('north' | 'south') for seasonal and environmental calculations. Accepts static value or dynamic supplier. */
+	sphere?: Evaluable<'north' | 'south' | string> | undefined;
 	/** Custom regional context (e.g. 'AU-NSW', 'US-CA'). */
 	region?: string | undefined;
 }
@@ -147,12 +148,12 @@ export interface AiModelTiers {
 export interface AiProvider {
 	/** The provider identifier (e.g., 'groq', 'gemini', 'openai', 'mistral', 'custom') */
 	id: string;
-	/** The raw API key for the respective provider */
-	key?: string | undefined;
-	/** Optional custom API endpoint URL (e.g., for local Ollama or Azure OpenAI) */
-	url?: string | undefined;
-	/** Optional custom model identifier (e.g., to override the provider's default model) */
-	model?: string | undefined;
+	/** The raw API key for the respective provider (supports static string, sync supplier, or async supplier e.g. for IAM/Vault tokens) */
+	key?: AsyncEvaluable<string> | undefined;
+	/** Optional custom API endpoint URL (supports static string or dynamic supplier) */
+	url?: Evaluable<string> | undefined;
+	/** Optional custom model identifier (supports static string or dynamic supplier) */
+	model?: Evaluable<string> | undefined;
 	/** Tiered model dictionary (e.g. { default: '...', fast: '...', reasoning: '...' }) */
 	models?: AiModelTiers | undefined;
 	/** Model tier preference ('default' | 'fast' | 'reasoning' | 'large' | string) */
@@ -192,14 +193,14 @@ export interface AiConfig {
 	cache?: Map<string, string> | boolean | undefined;
 	/** Optional custom cache storage engine (e.g., Redis, KV store) for storing parsed strings */
 	cacheAdapter?: AiCacheAdapter | undefined;
-	/** Optional default IANA timezone for AI operations */
-	timeZone?: string | undefined;
-	/** Optional default BCP 47 locale for AI operations */
-	locale?: string | string[] | undefined;
+	/** Optional default IANA timezone for AI operations (accepts static string or dynamic supplier) */
+	timeZone?: Evaluable<string> | undefined;
+	/** Optional default BCP 47 locale for AI operations (accepts static string/array or dynamic supplier) */
+	locale?: Evaluable<string | string[]> | undefined;
 	/** Optional default calendar system for AI operations (e.g. 'iso8601', 'gregory', 'islamic', 'hebrew') */
-	calendar?: string | undefined;
+	calendar?: Evaluable<string> | undefined;
 	/** Optional default hemisphere ('north' | 'south') for seasonal and environmental calculations */
-	sphere?: 'north' | 'south' | string | undefined;
+	sphere?: Evaluable<'north' | 'south' | string> | undefined;
 	/** Optional global cache TTL in milliseconds for AI parsing entries (default: 3600000ms / 1 hour) */
 	ttl?: number | undefined;
 	/** Optional global timeout in milliseconds for AI requests (default: 15000ms) */

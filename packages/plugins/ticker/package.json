@@ -1,17 +1,18 @@
 {
-  "name": "@magmacomputing/tempo-plugin-ai",
-  "version": "1.1.1",
-  "description": "Tempo community plugin for LLM-powered natural language parsing.",
+  "name": "@magmacomputing/tempo-plugin-ticker",
+  "version": "2.3.0",
+  "description": "Tempo plugin that provides a high-performance continuous execution loop (Ticker) based on temporal mathematics.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/magmacomputing/magma.git",
-    "directory": "packages/plugins/ai"
+    "directory": "packages/plugins/ticker"
   },
   "files": [
     "dist",
+    "src",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
@@ -21,29 +22,29 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc",
     "test": "vitest run -c ../vitest.shared.ts",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"
   },
   "tempo": {
-    "vendorVariantId": "tempo-plugin-ai",
+    "vendorVariantId": "tempo-plugin-ticker",
     "plan": "community"
   },
   "peerDependencies": {
     "@magmacomputing/tempo": "^4.0.0"
   },
-  "devDependencies": {
-    "@js-temporal/polyfill": "^0.5.1"
-  },
   "keywords": [
     "tempo",
     "tempo-plugin",
     "magmacomputing",
-    "ai",
-    "parsing",
-    "llm",
-    "openai",
-    "gemini"
+    "temporal",
+    "ticker",
+    "interval",
+    "loop",
+    "animation",
+    "date",
+    "datetime",
+    "typescript"
   ],
   "type": "module",
   "exports": {

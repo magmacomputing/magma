@@ -42,7 +42,7 @@
   {
     "id": "ai",
     "name": "AI Plugin",
-    "description": "Tempo community plugin for LLM-powered natural language processing and parsing.",
+    "description": "Tempo community plugin for LLM-powered natural language parsing.",
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
     "status": "active"
@@ -52,7 +52,15 @@
     "name": "Ticker Plugin",
     "description": "Tempo plugin that provides a high-performance continuous execution loop (Ticker) based on temporal mathematics.",
     "packageName": "@magmacomputing/tempo-plugin-ticker",
-    "plan": "pro",
+    "plan": "community",
+    "status": "active"
+  },
+  {
+    "id": "_std",
+    "name": "_std Plugin",
+    "description": "Standard built-in Terms for @magmacomputing/tempo (showcase implementation — not published separately)",
+    "packageName": "@magmacomputing/tempo-std",
+    "plan": "community",
     "status": "active"
   }
 ]

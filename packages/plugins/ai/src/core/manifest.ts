@@ -1,4 +1,4 @@
-import { asText, fetchRequest, isObject, isString, parseJSONC } from '@magmacomputing/tempo/library';
+import { asText, evaluate, fetchRequest, isObject, isString, parseJSONC } from '@magmacomputing/tempo/library';
 import { DEFAULT_PROVIDERS } from './config.js';
 import type { AiProvider } from '../types/index.js';
 
@@ -121,9 +121,10 @@ export function getResolvedProviderDefaults(
 
 	// Validate manifest-derived URL origin: must be HTTPS or localhost HTTP
 	if (manifestEntry.url) {
-		if (!isValidManifestUrl(manifestEntry.url)) {
+		const evaluatedUrl = asText(evaluate(manifestEntry.url));
+		if (evaluatedUrl && !isValidManifestUrl(evaluatedUrl)) {
 			if (debug)
-				console.warn(`[tempo-plugin-ai] Rejected manifest provider URL '${manifestEntry.url}' - invalid HTTPS origin.`);
+				console.warn(`[tempo-plugin-ai] Rejected manifest provider URL '${evaluatedUrl}' - invalid HTTPS origin.`);
 			delete manifestEntry.url;
 		}
 	}

@@ -1,0 +1,86 @@
+import { Tempo } from '@magmacomputing/tempo';
+import { TickerPlugin, type Ticker } from '../src/index.js';
+
+Tempo.extend(TickerPlugin);
+
+describe('Ticker with Terms', () => {
+	beforeEach(() => {
+		Tempo.init({ sphere: 'north' });
+	});
+
+	test.each<{ name: string; interval: Ticker.Options; seed: string; expected: string[] }>([
+		{
+			name: 'once-per-quarter using #quarter term',
+			interval: { '#quarter': 1 },
+			seed: '2020-01-01T00:00:00',
+			expected: [
+				'2020-04-01T00:00:00',
+				'2020-07-01T00:00:00',
+				'2020-10-01T00:00:00',
+				'2021-01-01T00:00:00',
+			],
+		},
+		{
+			name: 'every morning using #timeOfDay term',
+			interval: { '#timeOfDay': 'Morning' },
+			seed: '2020-01-01T00:00:00',
+			expected: [
+				'2020-01-01T08:00:00',
+				'2020-01-02T08:00:00',
+				'2020-01-03T08:00:00',
+				'2020-01-04T08:00:00',
+			],
+		},
+		{
+			name: 'every morning using shorthand literal key',
+			interval: { '#timeOfDay.Morning': 1 },
+			seed: '2020-01-01T00:00:00',
+			expected: [
+				'2020-01-01T08:00:00',
+				'2020-01-02T08:00:00',
+				'2020-01-03T08:00:00',
+				'2020-01-04T08:00:00',
+			],
+		},
+	])('should pulse $name', ({ interval, seed, expected }) => {
+		const pulses: string[] = [];
+		const ticker = Tempo.ticker(interval, { seed });
+		try {
+			const callback = vi.fn((t: Tempo) => {
+				pulses.push(t.toString().substring(0, 19));
+			});
+
+			ticker.on('pulse', callback);
+
+			// Manual pulses to simulate time passing (after the initial bootstrap pulse)
+			ticker.pulse();
+			ticker.pulse();
+			ticker.pulse();
+
+			expect(callback).toHaveBeenCalledTimes(4);
+			expect(pulses).toEqual(expected);
+		} finally {
+			ticker.stop();
+		}
+	});
+
+	it('should refuse to launch with an invalid #term', async () => {
+		const seed = '2020-01-01';
+		const payload = { '#invalid': 1 };
+
+		// 1. should throw by default (catch: false)
+		expect(() => Tempo.ticker(payload, { seed })).toThrow(/Invalid Ticker payload resolution/);
+
+		// 2. should catch and inhibit start if (catch: true)
+		const errorCallback = vi.fn();
+		const ticker = Tempo.ticker(payload, { seed, catch: true });
+		ticker.on('catch', errorCallback);
+
+		// Pulse-manual should not work meaningfully as ticker was inhibited
+		expect(ticker.pulse().isValid).toBe(false);
+
+		// the catch event is emitted via queueMicrotask during bootstrap
+		await Promise.resolve();
+		expect(errorCallback).toHaveBeenCalled();
+	});
+});

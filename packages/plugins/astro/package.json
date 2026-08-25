@@ -1,10 +1,15 @@
 {
   "name": "@magmacomputing/tempo-plugin-astro",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "Tempo plugin that calculates precise astronomical seasons (solstices & equinoxes) using the Jean Meeus algorithm — hemisphere-aware, sub-minute accuracy",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magmacomputing/magma.git",
+    "directory": "packages/plugins/astro"
+  },
   "files": [
     "dist",
     "src",
@@ -18,11 +23,11 @@
   },
   "scripts": {
     "build": "tsup && tsc",
-    "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run -c ../vitest.shared.ts",
+    "test": "vitest run -c ../vitest.shared.ts",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^3.6.1"
+    "@magmacomputing/tempo": "^4.0.0"
   },
   "tempo": {
     "vendorVariantId": "tempo-plugin-astro",

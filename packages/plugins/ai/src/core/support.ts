@@ -1,5 +1,6 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asText, asNumber, isDefined, isFunction, isNumber } from '@magmacomputing/tempo/library';
+import { asText, asNumber, isDefined, isFunction, isNumber, evaluate } from '@magmacomputing/tempo/library';
+import type { Evaluable } from '@magmacomputing/tempo/library';
 import { TempoAiError } from './error.js';
 import { AiMode } from './config.js';
 import { _state } from './init.js';
@@ -52,27 +53,39 @@ export interface ResolvedAiContext {
  * @returns Resolved context fields and context configuration object
  */
 export function resolveFullContext(
-	options?: { timeZone?: string | undefined; locale?: string | string[] | undefined; calendar?: string | undefined; sphere?: 'north' | 'south' | string | undefined;[key: string]: any } | undefined,
+	options?: { timeZone?: Evaluable<string> | undefined; locale?: Evaluable<string | string[]> | undefined; calendar?: Evaluable<string> | undefined; sphere?: Evaluable<'north' | 'south' | string> | undefined;[key: string]: any } | undefined,
 	fallbackTempo?: Tempo | null,
 ): ResolvedAiContext {
 	const resolvedOptions = (Tempo as any).options ?? {};
-	const tz = String(options?.timeZone || fallbackTempo?.tz || resolvedOptions.timeZone || _state.config.timeZone || 'UTC');
-	const rawLoc = (options?.locale !== undefined && (Array.isArray(options.locale) ? options.locale.length > 0 : Boolean(options.locale)))
-		? options.locale
-		: (fallbackTempo?.locale !== undefined && (Array.isArray(fallbackTempo.locale) ? fallbackTempo.locale.length > 0 : Boolean(fallbackTempo.locale)))
-			? fallbackTempo.locale
-			: resolvedOptions.locale || _state.config.locale || 'en-US';
+	const rawTz = evaluate(options?.timeZone, fallbackTempo?.tz, resolvedOptions.timeZone, _state.config.timeZone, 'UTC');
+	const tz = String(rawTz || 'UTC');
+
+	const optLoc = evaluate(options?.locale);
+	const fbLoc = fallbackTempo?.locale;
+	const resLoc = evaluate(resolvedOptions.locale);
+	const cfgLoc = evaluate(_state.config.locale);
+
+	const rawLoc = (optLoc !== undefined && (Array.isArray(optLoc) ? optLoc.length > 0 : Boolean(optLoc)))
+		? optLoc
+		: (fbLoc !== undefined && (Array.isArray(fbLoc) ? fbLoc.length > 0 : Boolean(fbLoc)))
+			? fbLoc
+			: resLoc || cfgLoc || 'en-US';
 	const firstLoc = Array.isArray(rawLoc) ? rawLoc[0] : rawLoc;
 	const loc = asText(firstLoc, 'en-US');
-	const cal = String(options?.calendar || fallbackTempo?.cal || resolvedOptions.calendar || _state.config.calendar || 'iso8601');
-	const sph = String(options?.sphere || fallbackTempo?.sphere || resolvedOptions.sphere || _state.config.sphere || 'north');
+
+	const rawCal = evaluate(options?.calendar, fallbackTempo?.cal, resolvedOptions.calendar, _state.config.calendar, 'iso8601');
+	const cal = String(rawCal || 'iso8601');
+
+	const rawSph = evaluate(options?.sphere, fallbackTempo?.sphere, resolvedOptions.sphere, _state.config.sphere, 'north');
+	const sph = String(rawSph || 'north');
+
 	const contextConfig = { timeZone: tz, locale: loc, calendar: cal, sphere: sph };
 
 	return { tz, loc, cal, sph, contextConfig };
 }
 
 export function resolveTzAndLocale(
-	options?: { timeZone?: string | undefined; locale?: string | string[] | undefined } | undefined,
+	options?: { timeZone?: Evaluable<string> | undefined; locale?: Evaluable<string | string[]> | undefined } | undefined,
 	fallbackTempo?: Tempo | null,
 ): { tz: string; loc: string } {
 	const { tz, loc } = resolveFullContext(options, fallbackTempo);
@@ -102,7 +115,7 @@ export function validateMinConfidence(minConfidence?: number, targetFnName?: str
 /**
  * Resolves an anchor Tempo instance, applying timeZone, locale, calendar, and sphere.
  *
- * @param anchor - Optional anchor instance, ISO string, epoch, or undefined
+ * @param anchor - Optional anchor instance, ISO string, epoch, supplier function, or undefined
  * @param context - Resolved context fields from resolveFullContext
  * @param options - Optional default anchor fallback and operation name for error messaging
  * @returns Standardized anchor Tempo instance
@@ -113,14 +126,14 @@ export function resolveAnchorTempo(
 	context: ResolvedAiContext,
 	options?: { defaultAnchor?: unknown; operationName?: string } | undefined,
 ): Tempo {
+	const evaluatedAnchor = evaluate(anchor as any, options?.defaultAnchor as any);
 	const { tz, loc, cal, sph } = context;
-	if (Tempo.isTempo(anchor))
-		return anchor.tz === tz ? anchor : anchor.set({ timeZone: tz });
+	if (Tempo.isTempo(evaluatedAnchor))
+		return evaluatedAnchor.tz === tz ? evaluatedAnchor : evaluatedAnchor.set({ timeZone: tz });
 
-	const targetValue = isDefined(anchor) ? anchor : options?.defaultAnchor;
 	let instance: Tempo;
 	try {
-		instance = new Tempo(targetValue as any, {
+		instance = new Tempo(evaluatedAnchor as any, {
 			timeZone: tz,
 			locale: loc,
 			calendar: cal,
@@ -128,12 +141,12 @@ export function resolveAnchorTempo(
 		});
 	} catch (err: any) {
 		const op = options?.operationName ? ` to ${options.operationName}` : '';
-		throw new TempoAiError(`Invalid anchor date provided${op}: "${String(anchor)}"`, 400, undefined, { cause: err });
+		throw new TempoAiError(`Invalid anchor date provided${op}: "${String(evaluatedAnchor)}"`, 400, undefined, { cause: err });
 	}
 
-	if (!instance.isValid && isDefined(anchor)) {
+	if (!instance.isValid && isDefined(evaluatedAnchor)) {
 		const op = options?.operationName ? ` to ${options.operationName}` : '';
-		throw new TempoAiError(`Invalid anchor date provided${op}: "${String(anchor)}"`, 400);
+		throw new TempoAiError(`Invalid anchor date provided${op}: "${String(evaluatedAnchor)}"`, 400);
 	}
 
 	return instance;
