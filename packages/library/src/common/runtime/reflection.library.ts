@@ -237,6 +237,3 @@ export function lazyMethod<T extends object>(target: T, key: PropertyKey, factor
 	});
 }
 
-function isSynbol(k: PropertyKey) {
-	throw new Error('Function not implemented.');
-}
