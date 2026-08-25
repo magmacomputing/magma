@@ -9,7 +9,7 @@ Each branch contains a logical chunk of the monorepo, passes all 1,316 unit test
 
 ## 1. Branch Topology & Diff Breakdown
 
-```
+```text
                        ┌─────────────────────────────────────────┐
                        │                  main                   │
                        └────────────────────┬────────────────────┘

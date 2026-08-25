@@ -1,6 +1,6 @@
 import { distinct, ownKeys, ownEntries } from '#library/primitive.library.js';
 import { asType, getType } from '#library/type.library.js';
-import { isEmpty, isFunction, isPrimitive, isReference } from '#library/assertion.library.js';
+import { isEmpty, isFunction, isPrimitive, isReference, isSymbol } from '#library/assertion.library.js';
 import type { Obj, KeyOf, Primitives } from '#library/type.library.js';
 
 /**
@@ -69,6 +69,7 @@ export function omit<T extends Obj>(obj: T, ...keys: PropertyKey[]) {
 			}
 			distinct(
 				keys
+					.filter(k => !isSymbol(k))
 					.map(k => Number(k))
 					.filter(idx => Number.isInteger(idx) && idx >= 0 && idx < value.length)
 			)
@@ -234,4 +235,8 @@ export function lazyMethod<T extends object>(target: T, key: PropertyKey, factor
 			return impl;
 		}
 	});
+}
+
+function isSynbol(k: PropertyKey) {
+	throw new Error('Function not implemented.');
 }

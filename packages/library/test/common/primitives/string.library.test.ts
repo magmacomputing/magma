@@ -1,4 +1,4 @@
-import { makeTemplate, sprintf, trimAll } from '#library/string.library.js';
+import { makeTemplate, sprintf, trimAll, randomString } from '#library/string.library.js';
 
 describe('String Library', () => {
 	describe('makeTemplate', () => {
@@ -59,6 +59,13 @@ describe('String Library', () => {
 			expect(trimAll('undefined text')).toBe('undefined text');
 			expect(trimAll('  undefined \t value \n ')).toBe('undefined value');
 			expect(trimAll('foo undefined bar', /foo/)).toBe('undefined bar');
+		});
+	});
+
+	describe('randomString', () => {
+		it('should generate string exceeding 65,536 bytes without throwing', () => {
+			const res = randomString(70000);
+			expect(res.length).toBe(70000);
 		});
 	});
 });

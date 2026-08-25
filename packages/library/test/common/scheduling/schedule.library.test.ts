@@ -29,4 +29,9 @@ describe('schedule.library', () => {
 		const anchorMs = Date.UTC(2026, 7, 20, 10, 0, 0);
 		expect(getNextScheduleEpoch('invalid pattern', anchorMs)).toBeNull();
 	});
+
+	test('getNextScheduleEpoch returns null for unsupported RRULE frequency', () => {
+		const anchorMs = Date.UTC(2026, 7, 20, 10, 0, 0);
+		expect(getNextScheduleEpoch('FREQ=HOURLY', anchorMs)).toBeNull();
+	});
 });

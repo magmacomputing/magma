@@ -25,5 +25,11 @@ describe('Reflection Library', () => {
 			omit(longArr, 2, 10);
 			expect(longArr).toEqual(['0', '1', '3', '4', '5', '6', '7', '8', '9', '11']);
 		});
+
+		it('should ignore Symbol keys when omitting from an array without throwing', () => {
+			const arr = ['a', 'b', 'c'];
+			omit(arr, Symbol('test') as any);
+			expect(arr).toEqual(['a', 'b', 'c']);
+		});
 	});
 });

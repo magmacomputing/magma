@@ -116,11 +116,15 @@ export const randomString = (len = 36) => {
 	const cryptoObj = globalThis.crypto;
 	if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
 		const bytes = new Uint8Array(len);
-		cryptoObj.getRandomValues(bytes);
-		let result = '';
-		for (let i = 0; i < len; i++) {
-			result += CHARS[bytes[i]! % CHARS.length];
+		const maxChunk = 65_536;
+		for (let offset = 0; offset < len; offset += maxChunk) {
+			const chunkSize = Math.min(len - offset, maxChunk);
+			cryptoObj.getRandomValues(bytes.subarray(offset, offset + chunkSize));
 		}
+		let result = '';
+		for (let i = 0; i < len; i++)
+			result += CHARS[bytes[i]! % CHARS.length];
+
 		return result;
 	}
 
