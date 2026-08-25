@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path, { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
@@ -57,7 +58,14 @@ export default defineConfig({
       }
     ],
     alias: [
-      { find: /^#library\/(browser|server|common)\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/src/$1/$2.ts') },
+      { find: /^#library\/(primitives|temporal|security|scheduling|runtime)\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/$1/$2.ts') },
+      { find: /^#library\/(browser|server)\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/src/$1/$2.ts') },
+      { find: /^#library\/(array|assertion|coercion|number|object|primitive|string|symbol|type)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/primitives/$1.library.ts') },
+      { find: /^#library\/(boundary|class|enumerate|evaluation|function|international|json|logger|pledge|proxy|reflection|request|scopedset|serialize|storage|utility)\.(library|class)\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/runtime/$1.$2.ts') },
+      { find: /^#library\/(cron|rrule|schedule)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/scheduling/$1.library.ts') },
+      { find: /^#library\/(buffer|cipher|webtoken)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/security/$1.library.ts') },
+      { find: /^#library\/(calendar|temporal)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/temporal/$1.library.ts') },
+      { find: /^#library\/temporal\.polyfill\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/temporal/temporal.polyfill.ts') },
       { find: /^#library\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/$1.ts') },
       { find: /^#tempo\/plugin\.(util|type)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.$1.ts') },
       { find: /^#tempo\/plugin\.(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/extend/plugin.$1.ts') },

@@ -18,6 +18,6 @@ export * from '#library/coercion.library.js';
 export * from '#library/assertion.library.js';
 export * from '#library/temporal.library.js';
 export * from '#library/calendar.library.js';
-export * from '#library/recurrence.library.js';
+export * from '#library/scheduling/rrule.library.js';
 
 export type { OwnOf, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';

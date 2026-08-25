@@ -1,0 +1,128 @@
+import { Pledge } from '#library/pledge.class.js';
+
+describe('Pledge', () => {
+
+	test('resolve/reject state', async () => {
+		const p1 = new Pledge<string>();
+		p1.resolve('ok');
+		expect(p1.isResolved).toBe(true);
+		expect(await p1.promise).toBe('ok');
+
+		const p2 = new Pledge<string>({ catch: true, silent: true });
+		p2.reject(new Error('fail'));
+		expect(p2.isRejected).toBe(true);
+		await expect(p2.promise).rejects.toThrow('fail');
+	});
+
+	test('static init', () => {
+		Pledge.init('GlobalTag');
+		const p = new Pledge();
+		expect(p.status.tag).toBe('GlobalTag');
+		Pledge[Symbol.dispose]();
+	});
+
+	test('disposal', async () => {
+		const p = new Pledge({ catch: true, silent: true });
+		p[Symbol.dispose]();
+		expect(p.isRejected).toBe(true);
+		await expect(p.promise).rejects.toThrow('Pledge disposed');
+	});
+
+	test('dispose does not trigger unhandled rejection', async () => {
+		const unhandled: any[] = [];
+		const listener = (error: any) => { unhandled.push(error); };
+		process.on('unhandledRejection', listener);
+
+		try {
+			const p = new Pledge();
+			p[Symbol.dispose]();
+			await new Promise(r => setTimeout(r, 0));
+			expect(unhandled).toHaveLength(0);
+		} finally {
+			process.off('unhandledRejection', listener);
+		}
+	});
+
+	test('callbacks', async () => {
+		const onResolve = vi.fn();
+		const onReject = vi.fn();
+
+		const p1 = new Pledge({ onResolve });
+		p1.resolve('data');
+		await p1.promise;
+		expect(onResolve).toHaveBeenCalledWith('data');
+
+		const p2 = new Pledge({ onReject, catch: true, silent: true });
+		await expect(p2.reject(new Error('err'))).rejects.toThrow('err');
+		expect(onReject).toHaveBeenCalled();
+	});
+
+	test('thenable', async () => {
+		const p = new Pledge<string>();
+		p.resolve('thenable');
+		const result = await p.then(val => val + ' works');
+		expect(result).toBe('thenable works');
+	});
+
+	test('silent mode suppression', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+		try {
+			const p = new Pledge({ silent: true, catch: true });
+			p.reject(new Error('silent failure'));
+			await expect(p.promise).rejects.toThrow('silent failure');
+			expect(warnSpy).not.toHaveBeenCalled();
+			expect(errSpy).not.toHaveBeenCalled();
+		} finally {
+			warnSpy.mockRestore();
+			errSpy.mockRestore();
+		}
+	});
+
+	test('callback failures warn at default debug level (indirect Diagnostic Engine integration)', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+
+		try {
+			const p = new Pledge({
+				onResolve: () => {
+					throw new Error('resolve callback failed');
+				}
+			});
+
+			p.resolve('ok');
+			await p.promise;
+			await Promise.resolve();
+
+			expect(warnSpy).toHaveBeenCalledTimes(1);
+			expect(String(warnSpy.mock.calls[0]?.[0])).toContain('Pledge callback failed');
+			expect(debugSpy).not.toHaveBeenCalled();
+		} finally {
+			warnSpy.mockRestore();
+			debugSpy.mockRestore();
+		}
+	});
+
+	test('numeric debug level gates callback warning logs (indirect Diagnostic Engine integration)', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+		try {
+			const p = new Pledge({
+				debug: 0,
+				onResolve: () => {
+					throw new Error('resolve callback failed');
+				}
+			});
+
+			p.resolve('ok');
+			await p.promise;
+			await Promise.resolve();
+
+			expect(warnSpy).not.toHaveBeenCalled();
+		} finally {
+			warnSpy.mockRestore();
+		}
+	});
+
+});

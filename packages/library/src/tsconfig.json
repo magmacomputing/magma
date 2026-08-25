@@ -19,10 +19,25 @@
       "#library": [
         "./common.index.ts"
       ],
+      "#library/primitives/*.js": ["./common/primitives/*.ts"],
+      "#library/temporal/*.js": ["./common/temporal/*.ts"],
+      "#library/security/*.js": ["./common/security/*.ts"],
+      "#library/scheduling/*.js": ["./common/scheduling/*.ts"],
+      "#library/runtime/*.js": ["./common/runtime/*.ts"],
       "#library/*.js": [
+        "./common/primitives/*.ts",
+        "./common/temporal/*.ts",
+        "./common/security/*.ts",
+        "./common/runtime/*.ts",
+        "./common/scheduling/*.ts",
         "./common/*.ts"
       ],
       "#library/*": [
+        "./common/primitives/*",
+        "./common/temporal/*",
+        "./common/security/*",
+        "./common/runtime/*",
+        "./common/scheduling/*",
         "./common/*"
       ],
       "#browser/*.js": [
