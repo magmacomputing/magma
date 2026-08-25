@@ -100,6 +100,8 @@ export const toCamelCase = <T extends string>(sentence: T) => {
 }
 
 const HEX = 16;
+const CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
 /**
  * Generates a random alphanumeric string of a specified length.
  * 
@@ -111,6 +113,17 @@ const HEX = 16;
  * ```
  */
 export const randomString = (len = 36) => {
+	const cryptoObj = globalThis.crypto;
+	if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
+		const bytes = new Uint8Array(len);
+		cryptoObj.getRandomValues(bytes);
+		let result = '';
+		for (let i = 0; i < len; i++) {
+			result += CHARS[bytes[i]! % CHARS.length];
+		}
+		return result;
+	}
+
 	let str = '';
 
 	do																												// generate random strings

@@ -111,18 +111,24 @@ export function setStorage<T>(key: string, val?: T) {
 
 	switch (context.type) {
 		case CONTEXT.Browser:
-			set
-				? storage.setItem(key, stash)
-				: storage.removeItem(key);
+			try {
+				set
+					? storage.setItem(key, stash)
+					: storage.removeItem(key);
+			} catch (e) {
+				console.warn(`[Storage] Failed to ${set ? 'setItem' : 'removeItem'} for key '${key}':`, e);
+			}
 			break;
 
 		case CONTEXT.NodeJS:
 			if (set) {
 				nodeStorage.set(key, stash);
 				deletedKeys.delete(key);
+				if (context.global.process?.env) context.global.process.env[key] = stash;
 			} else {
 				nodeStorage.delete(key);
 				deletedKeys.add(key);
+				if (context.global.process?.env) delete context.global.process.env[key];
 			}
 			break;
 

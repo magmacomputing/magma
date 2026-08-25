@@ -55,11 +55,10 @@ function parseCronField(field: string, min: number, max: number): CronField {
 					if (rangeParts.length !== 2) throw new Error(`Invalid range: ${range}`);
 					start = parseStrictInt(rangeParts[0], min, max);
 					end = parseStrictInt(rangeParts[1], min, max);
+					if (start > end) throw new Error(`Invalid range: ${range}`);
 				} else {
-					start = parseStrictInt(range, min, max);
-					end = start;
+					throw new Error(`Invalid step expression range: "${range}/${stepStr}"`);
 				}
-				if (start > end) throw new Error(`Invalid range: ${range}`);
 			}
 			for (let i = start; i <= end; i += step)
 				allowed.add(i);

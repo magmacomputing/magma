@@ -107,7 +107,7 @@ export function sortKey<T extends Property<any>>(array: T[], ...keys: (PropertyK
 	return array.sort(sortBy(...keys));
 }
 
-const groupByFallback = <T>(arr: T[], fn: (itm: T, idx?: number) => PropertyKey): Record<PropertyKey, T[]> => {
+const groupByImpl = <T>(arr: T[], fn: (itm: T, idx?: number) => PropertyKey): Record<PropertyKey, T[]> => {
 	if (typeof Object.groupBy === 'function')
 		return Object.groupBy(arr, fn as any) as Record<PropertyKey, T[]>;
 	const res: Record<PropertyKey, T[]> = Object.create(null);
@@ -148,13 +148,13 @@ export function byKey<T extends Property<any>>(arr: T[], key1: keyof T, ...keys:
 export function byKey<T extends Property<any>>(arr: T[], ...keys: (keyof T)[]): Record<PropertyKey, T[]>;
 export function byKey<T>(arr: T[], fnKey: GroupFn<T> | any, ...keys: any[]) {
 	if (isFunction(fnKey))
-		return groupByFallback(arr, fnKey);
+		return groupByImpl(arr, fnKey);
 
 	const keyed = [fnKey]																			// mapFn is a keyof T
 		.concat(keys)																						// append any trailing keyof T[]
 		.flat();																								// flatten Array-of-Array
 
-	return groupByFallback(arr, (itm: any) =>									// group an array into an object with named keys
+	return groupByImpl(arr, (itm: any) =>											// group an array into an object with named keys
 		keyed
 			.map(key => isUndefined(itm[key]) ? '' : stringify(itm[key]))
 			.join('.')
@@ -222,6 +222,8 @@ export function clear<T>(arr: T[]) {
  * ```
  */
 export function cartesian<T>(...args: T[][]): T[][] {
+	if (args.length === 0) return [];
+	if (args.length === 1) return (args[0] || []).map(x => [x] as unknown as T[]);
 	const [a, b = [], ...c] = args;
 	const cartFn = (a: any[], b: any[]) => ([] as any[]).concat(...a.map(d => b.map(e => ([] as any[]).concat(d, e))));
 

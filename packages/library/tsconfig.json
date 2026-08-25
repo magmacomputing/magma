@@ -41,6 +41,9 @@
   "references": [
     {
       "path": "./src"
+    },
+    {
+      "path": "./test"
     }
   ]
 }

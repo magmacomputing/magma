@@ -1,4 +1,4 @@
-import { base64ToBuffer, bufferToBase64, encodeBuffer, decodeBuffer } from './buffer.library.js';
+import { base64ToBuffer, bufferToBase64, encodeText, decodeBuffer } from './buffer.library.js';
 import { Logger } from '../runtime/logger.class.js';
 import { keys } from './cipher.library.js';
 
@@ -14,7 +14,7 @@ const formatBase64Url = (base64: string) => base64
 	.replace(RE_PLUS, '-')
 	.replace(RE_SLASH, '_')
 	.replace(RE_EQUALS, '');
-const toBase64Url = (str: string) => formatBase64Url(bufferToBase64(encodeBuffer(str)));
+const toBase64Url = (str: string) => formatBase64Url(bufferToBase64(encodeText(str)));
 const bufToBase64Url = (buf: Uint8Array) => formatBase64Url(bufferToBase64(buf));
 
 /**
@@ -71,7 +71,7 @@ export const verifyJWS = async (token: string, publicKey: CryptoKey): Promise<bo
 
 		// crypto.subtle.verify takes signature, key, data
 		const crypto = globalThis.crypto;
-		const dataBytes = encodeBuffer(signedData);
+		const dataBytes = encodeText(signedData);
 
 		return await crypto.subtle.verify(
 			keys.SignKey,
@@ -102,7 +102,7 @@ export const signJWS = async (payload: object, privateKey: CryptoKey, headers: o
 		const payload64 = toBase64Url(JSON.stringify(payload));
 
 		const unsignedToken = `${header64}.${payload64}`;
-		const dataBytes = encodeBuffer(unsignedToken);
+		const dataBytes = encodeText(unsignedToken);
 
 		const signatureBytes = await globalThis.crypto.subtle.sign(
 			keys.SignKey,

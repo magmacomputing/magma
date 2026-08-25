@@ -193,7 +193,7 @@ export function rawJSON(text: string): object {
 	if (typeof (JSON as any).rawJSON === 'function')
 		return (JSON as any).rawJSON(text);
 
-	return Object.freeze(Object.assign(Object.create(null), { rawJSON: text }));
+	throw new Error('Native JSON.rawJSON is not supported in this environment');
 }
 
 /**

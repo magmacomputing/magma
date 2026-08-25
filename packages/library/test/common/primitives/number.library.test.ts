@@ -1,33 +1,38 @@
-import { formatCurrency } from '#library/international.library.js';
+import { toHex, suffix, split, fix, asTime } from '#library/number.library.js';
 
 describe('Number Library', () => {
-	describe('formatCurrency', () => {
-		it('should format a number as AUD currency by default', () => {
-			const result = formatCurrency(123.45);
-			// The exact format can depend on the locale, but it should contain the number and currency symbol (or code)
-			expect(result).toMatch(/123\.45/);
+	describe('toHex', () => {
+		it('should convert numbers to hex strings', () => {
+			expect(toHex([255, 16])).toBe('ff10');
 		});
+	});
 
-		it('should format a string as currency by coercing to number', () => {
-			const result = formatCurrency("123.45");
-			expect(result).toMatch(/123\.45/);
+	describe('suffix', () => {
+		it('should append ordinal suffixes to numbers', () => {
+			expect(suffix(1)).toBe('1st');
+			expect(suffix(2)).toBe('2nd');
+			expect(suffix(3)).toBe('3rd');
+			expect(suffix(4)).toBe('4th');
+			expect(suffix(11)).toBe('11th');
+			expect(suffix(23)).toBe('23rd');
 		});
+	});
 
-		it('should support different currencies (e.g. USD)', () => {
-			const result = formatCurrency(123.45, 2, 'USD');
-			expect(result).toMatch(/123\.45/);
-			// In many locales USD is $ or USD
-			expect(result).toMatch(/\$|USD/);
+	describe('split', () => {
+		it('should split numeric strings by delimiter', () => {
+			expect(split('12.34')).toEqual([12, 34]);
 		});
+	});
 
-		it('should handle zero correctly', () => {
-			const result = formatCurrency(0);
-			expect(result).toMatch(/0\.00/);
+	describe('fix', () => {
+		it('should format number to fixed precision string', () => {
+			expect(fix(12.3456, 2)).toBe('12.35');
 		});
+	});
 
-		it('should handle string zero correctly', () => {
-			const result = formatCurrency("0");
-			expect(result).toMatch(/0\.00/);
+	describe('asTime', () => {
+		it('should convert time string to number', () => {
+			expect(asTime('14:30')).toBe(1430);
 		});
 	});
 });

@@ -133,6 +133,9 @@ export function deepFreeze<const T extends object>(obj: T, options?: { skip?: We
 	if (isPrimitive(obj) || seen.has(obj) || skip.has(obj))
 		return obj as Secure<T>;
 
+	if (obj instanceof Date || obj instanceof RegExp || obj instanceof Error || obj instanceof Map || obj instanceof Set || obj instanceof Promise)
+		return obj as Secure<T>;
+
 	if ((obj as any)?.[Symbol.toStringTag] === 'Enumify')
 		return obj as Secure<T>;
 

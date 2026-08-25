@@ -76,8 +76,15 @@ export const isEqual = (a: any, b: any): boolean => {
 
 	if (isSet(a) && isSet(b)) {
 		const left = a as Set<any>, right = b as Set<any>;
-		return left.size === right.size &&
-			Array.from(left).every(v => right.has(v));
+		if (left.size !== right.size) return false;
+		const rightArr = Array.from(right);
+		const matched = new Set<number>();
+		for (const lVal of left) {
+			const foundIdx = rightArr.findIndex((rVal, idx) => !matched.has(idx) && isEqual(lVal, rVal));
+			if (foundIdx === -1) return false;
+			matched.add(foundIdx);
+		}
+		return true;
 	}
 
 	if (isObject(a) && isObject(b)) {
@@ -218,6 +225,8 @@ export const deepMerge = <T extends Record<PropertyKey, any>>(...objects: Partia
 			const pVal = prev[key];
 			if (isObject(pVal) && isObject(value)) {
 				prev[key as keyof T] = deepMerge(pVal, value) as any;
+			} else if (isObject(value)) {
+				prev[key as keyof T] = deepMerge({}, value) as any;
 			} else {
 				prev[key as keyof T] = value as any;
 			}

@@ -1,4 +1,4 @@
-import { makeTemplate, sprintf } from '#library/string.library.js';
+import { makeTemplate, sprintf, trimAll } from '#library/string.library.js';
 
 describe('String Library', () => {
 	describe('makeTemplate', () => {
@@ -55,8 +55,7 @@ describe('String Library', () => {
 	});
 
 	describe('trimAll', () => {
-		it('should preserve literal "undefined" when pat is absent', async () => {
-			const { trimAll } = await import('#library/string.library.js');
+		it('should preserve literal "undefined" when pat is absent', () => {
 			expect(trimAll('undefined text')).toBe('undefined text');
 			expect(trimAll('  undefined \t value \n ')).toBe('undefined value');
 			expect(trimAll('foo undefined bar', /foo/)).toBe('undefined bar');

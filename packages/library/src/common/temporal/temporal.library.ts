@@ -67,7 +67,7 @@ export function getOffsets(timeZone: string, year = 2024) {	//** use a fixed ref
  */
 export function isDST(date?: Temporal.ZonedDateTime | string, timeZone: string = Intl.DateTimeFormat().resolvedOptions().timeZone) {
 	const zdt = isString(date)
-		? Temporal.ZonedDateTime.from(date)
+		? toZonedDateTime(date, timeZone)
 		: (date ?? instant().toZonedDateTimeISO(timeZone));
 	const { jan, jul } = getOffsets(zdt.timeZoneId, zdt.year);
 

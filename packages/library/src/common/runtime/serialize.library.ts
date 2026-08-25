@@ -208,33 +208,37 @@ function stringize<T>(obj: T, recurse = true): string {			// hide the second par
 		case 'BigInt':
 			return one(arg.value.toString());											// even though BigInt has a toString method, it is not supported in JSON.stringify
 
-		case 'Object':
+		case 'Object': {
 			const obj = ownEntries(arg.value)
 				.filter(([, val]) => isStringable(val))
 				.map(([key, val]) => `${fromSymbol(key)}: ${stringize(val)}`)
-				.join(',')
+				.join(',');
 			return `{${obj}}`;
+		}
 
-		case 'Array':
+		case 'Array': {
 			const arr = arg.value
 				.filter(val => isStringable(val))
 				.map(val => stringize(val))
-				.join(',')
+				.join(',');
 			return `[${arr}]`;
+		}
 
-		case 'Map':
+		case 'Map': {
 			const map = Array.from(arg.value.entries())
 				.filter(([, val]) => isStringable(val))
 				.map(([key, val]) => `[${stringize(key)}, ${stringize(val)}]`)
-				.join(',')
+				.join(',');
 			return one(`[${map}]`);
+		}
 
-		case 'Set':
+		case 'Set': {
 			const set = Array.from(arg.value.values())
 				.filter(val => isStringable(val))
 				.map(val => stringize(val))
-				.join(',')
+				.join(',');
 			return one(`[${set}]`);
+		}
 
 		case 'Symbol':
 			return one(fromSymbol(arg.value));
@@ -243,7 +247,7 @@ function stringize<T>(obj: T, recurse = true): string {			// hide the second par
 			return one(stringize({ source: arg.value.source, flags: arg.value.flags }));
 
 		case 'Class':
-		default:
+		default: {
 			const value = arg.value as any;
 			switch (true) {
 				case !isStringable(value):													// Object is not stringify-able
@@ -252,11 +256,12 @@ function stringize<T>(obj: T, recurse = true): string {			// hide the second par
 				case isFunction(value.toJSON):											// Object has its own toJSON method
 					return one(stringize(value.toJSON(), /** replacer */));
 
-				case isFunction(value.toString):										// Object has its own toString method
+				case isFunction(value.toString): {									// Object has its own toString method
 					const str = value.toString();
 					return one(str.includes('"')											// TODO: improve detection of JSON vs non-JSON strings
 						? str
 						: JSON.stringify(str));
+				}
 
 				case isFunction(value.valueOf):											// Object has its own valueOf method		
 					return one(JSON.stringify(value.valueOf()));
@@ -264,6 +269,7 @@ function stringize<T>(obj: T, recurse = true): string {			// hide the second par
 				default:																						// else standard stringify
 					return one(JSON.stringify(value, replacer));
 			}
+		}
 	}
 }
 
@@ -331,45 +337,52 @@ function typeify(json: any, sentinel?: Function) {
 		return json;																						// not a serialized single key:value Object
 	const type = $type.substring(1) as Type;									// remove '$' prefix
 
-	switch (type) {
-		case 'String':
-		case 'Boolean':
-		case 'Object':
-		case 'Array':
-			return value;																					// these types are already handled by traverse()
+	try {
+		switch (type) {
+			case 'String':
+			case 'Boolean':
+			case 'Object':
+			case 'Array':
+				return value;																					// these types are already handled by traverse()
 
-		case 'Number':
-			return Number(value);
-		case 'BigInt':
-			return BigInt(value);
-		case 'Null':
-			return null;
+			case 'Number':
+				return Number(value);
+			case 'BigInt':
+				return BigInt(value);
+			case 'Null':
+				return null;
 
-		case 'Undefined':
-		case 'Empty':
-		case 'Void':
-			return sentinel?.();																	// run Sentinel function to handle undefined values
+			case 'Undefined':
+			case 'Empty':
+			case 'Void':
+				return sentinel?.();																	// run Sentinel function to handle undefined values
 
-		case 'Date':
-			return new Date(value);
-		case 'RegExp':
-			return new RegExp(value.source, value.flags);
-		case 'Symbol':
-			return toSymbol(value);
-		case 'Map':
-			return new Map(value);
-		case 'Set':
-			return new Set(value);
+			case 'Date':
+				return new Date(value);
+			case 'RegExp':
+				if (!isObject(value) || !isString(value.source)) return json;
+				return new RegExp(value.source, value.flags);
+			case 'Symbol':
+				return toSymbol(value);
+			case 'Map':
+				if (!isArray(value)) return json;
+				return new Map(value);
+			case 'Set':
+				if (!isArray(value)) return json;
+				return new Set(value);
 
-		default:
-			const cls = Registry.get($type);											// lookup registered Class
+			default:
+				const cls = Registry.get($type);											// lookup registered Class
 
-			if (!cls) {
-				console.warn(`objectify: dont know how to deserialize '${type}'`);
-				return json;																				// return original JSON object
-			}
+				if (!cls) {
+					console.warn(`objectify: dont know how to deserialize '${type}'`);
+					return json;																				// return original JSON object
+				}
 
-			return Reflect.construct(cls, [value])								// create new Class instance
+				return Reflect.construct(cls, [value]);								// create new Class instance
+		}
+	} catch {
+		return json;
 	}
 }
 

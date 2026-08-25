@@ -2,7 +2,7 @@ import { toHex } from '#library/number.library.js';
 import { objectify } from '#library/serialize.library.js';
 import { asString, asError } from '#library/coercion.library.js';
 import { isError } from '#library/assertion.library.js';
-import { bufferToBase64, base64ToBuffer, encodeBuffer, decodeBuffer } from '#library/buffer.library.js';
+import { bufferToBase64, base64ToBuffer, encodeBuffer, encodeText, decodeBuffer } from '#library/buffer.library.js';
 
 const crypto = globalThis.crypto;
 const subtle = crypto.subtle;
@@ -76,7 +76,7 @@ export const hmac = async (source: string | Object, secret: string, alg = 'SHA-5
  * @returns A promise resolving to the hash hex string
  */
 export const hash = async (source: string | Object, len?: number, alg = 'SHA-256') => {
-	const buffer = encodeBuffer(asString(source));
+	const buffer = encodeText(asString(source));
 	const hashBuf = await subtle.digest(alg, buffer);
 
 	return toHex(Array.from(new Uint8Array(hashBuf)), len);
@@ -163,15 +163,14 @@ const RE_WHITESPACE = /\s+/g;
 export const importPublicKey = async (pem: string): Promise<CryptoKey> => {
 	const pemHeader = '-----BEGIN PUBLIC KEY-----';
 	const pemFooter = '-----END PUBLIC KEY-----';
+	if (!pem || !pem.includes(pemHeader) || !pem.includes(pemFooter))
+		throw new Error('Invalid PEM key format');
+
 	const pemContents = pem
 		.substring(pem.indexOf(pemHeader) + pemHeader.length, pem.indexOf(pemFooter))
 		.replace(RE_WHITESPACE, '');
 
-	const binaryDerString = atob(pemContents);
-	const binaryDer = new Uint8Array(binaryDerString.length);
-	for (let i = 0; i < binaryDerString.length; i++) {
-		binaryDer[i] = binaryDerString.charCodeAt(i);
-	}
+	const binaryDer = base64ToBuffer(pemContents);
 
 	return subtle.importKey(
 		'spki',

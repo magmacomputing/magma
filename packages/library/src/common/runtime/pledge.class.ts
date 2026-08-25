@@ -109,11 +109,11 @@ export class Pledge<T> {
 		}
 
 		if (onResolve.length)
-			this.#pledge.promise.then(val => runSafely(onResolve, val));
+			this.#pledge.promise.then(val => runSafely(onResolve, val)).catch(() => {});
 		if (onReject.length)
 			this.#pledge.promise.catch(err => runSafely(onReject, err));
 		if (onSettle.length)
-			this.#pledge.promise.finally(() => runSafely(onSettle));
+			this.#pledge.promise.finally(() => runSafely(onSettle)).catch(() => {});
 
 		if (this.#status.catch)
 			this.#pledge.promise.catch(err => _dbg.warn(this.#status, err));

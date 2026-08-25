@@ -2,6 +2,8 @@ import { stringify, objectify } from '#library/serialize.library.js';
 
 const CHUNK_SIZE = 8192;
 
+export const encodeText = (text: string) => new TextEncoder().encode(text);
+
 /**
  * Serializes any object to a string and encodes it into a Uint8Array.
  * 

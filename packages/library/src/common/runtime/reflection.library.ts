@@ -67,8 +67,11 @@ export function omit<T extends Obj>(obj: T, ...keys: PropertyKey[]) {
 				value.length = 0;																		// clear Array
 				break;
 			}
-			keys
-				.map(Number)
+			distinct(
+				keys
+					.map(k => Number(k))
+					.filter(idx => Number.isInteger(idx) && idx >= 0 && idx < value.length)
+			)
 				.sort((a, b) => b - a)
 				.forEach(index => value.splice(index, 1));
 			break;

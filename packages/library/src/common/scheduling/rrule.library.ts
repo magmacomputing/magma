@@ -325,11 +325,13 @@ export function expandRRuleEpochs(
 				break;
 			}
 
-			case 'DAILY':
-			default: {
+			case 'DAILY': {
 				periodBases = [addUtcDays(anchorDate, step * rule.interval)];
 				break;
 			}
+
+			default:
+				throw new Error(`Unsupported RRULE frequency: ${rule.freq}`);
 		}
 
 		if (rule.byMonth && rule.byMonth.length > 0 && rule.freq !== 'YEARLY')

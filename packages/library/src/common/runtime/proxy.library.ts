@@ -116,10 +116,6 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 				} finally {
 					pending.delete(k);
 				}
-				// silent mark to avoid redundant discovery
-				// Only define if object is extensible and not frozen
-				if (Reflect.isExtensible(t) && !Object.isFrozen(t) && !Reflect.has(t, k))
-					Object.defineProperty(t, k, { value: undefined, writable: true, enumerable: false, configurable: true });
 			}
 
 			const val = Reflect.get(t, k, r);
@@ -223,7 +219,7 @@ export function secure<const T extends object>(obj: T, skip = new WeakSet<object
  * const v = delegator(['a', 'b'], (key) => key.toUpperCase());
  * ```
  */
-export function delegator<K extends string | symbol>(keys: K[] | Record<K, any>, fn: (prop: K) => any): Record<K, any> {
+export function delegator<K extends string | symbol>(keys: readonly K[] | Record<K, any>, fn: (prop: K) => any): Record<K, any> {
 	const keyList = Array.isArray(keys) ? keys : Reflect.ownKeys(keys) as K[];
 	return factory({} as any, { keys: keyList, onGet: fn as any, frozen: true });
 }
@@ -284,7 +280,7 @@ export function dynamicProxy<T extends object>(target: T): Evaluated<T> {
 			const desc = Reflect.getOwnPropertyDescriptor(t, k);
 			if (desc && !desc.configurable && !desc.writable)
 				return val;
-			return (val as () => any)();
+			return (val as () => any).call(t);
 		},
 		has(t, k) {
 			return Reflect.has(t, k);

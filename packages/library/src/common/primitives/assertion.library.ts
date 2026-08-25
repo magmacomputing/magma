@@ -1,7 +1,5 @@
 import { sym } from '#library/symbol.library.js';
 import { getType, protoType } from '#library/type.library.js';
-import { isJSON, isRawJSON } from '../runtime/json.library.js';
-export { isJSON, isRawJSON };
 import type { Type, Primitive, Nullish, Temporals, Property, GetType } from '#library/type.library.js';
 
 /**

@@ -219,7 +219,7 @@ export function getHemisphere(timeZone: string = getDateTimeFormat().timeZone) {
 		const { jan, jul } = getOffsets(timeZone);							// using default reference-year (2024) for stability
 
 		// Fallback: Check for known Southern geographic prefixes that might not observer DST
-		const southPrefixes = ['Australia', 'Antarctica', 'Africa/Johannesburg', 'America/Buenos_Aires', 'America/Sao_Paulo'];
+		const southPrefixes = ['Australia', 'Antarctica', 'Africa/Johannesburg', 'America/Argentina/Buenos_Aires', 'America/Sao_Paulo'];
 		const isSouthZone = southPrefixes.some(p => timeZone.startsWith(p));
 
 		switch (true) {

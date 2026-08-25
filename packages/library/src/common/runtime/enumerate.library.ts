@@ -48,7 +48,7 @@ const tag = 'Enumify';
 const ENUM = secure(Object.create(null, {
 	keys: memoizeMethod('keys', function (this: any) { return ownEntries(this, true).map(([key]: any) => key) }),
 	values: memoizeMethod('values', function (this: any) { return ownEntries(this, true).map(([_, val]: any) => val) }),
-	entries: memoizeMethod('entries', function (this: any) { return ownEntries(this, true) }),
+	entries: memoizeMethod('entries', function (this: any) { return ownEntries(this, true).map(([key, val]: any) => Object.freeze([key, val])) }),
 	invert: memoizeMethod('invert', function (this: any) { return Object.fromEntries(this.entries().map(([key, val]: any) => [val, key])) }),
 
 	has: value(function (this: any, key: PropertyKey) { return this.keys().includes(key as any) }),

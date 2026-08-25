@@ -39,7 +39,7 @@ type Curry<Args extends any[], Res> =
 function serialize(val: any, seen = new WeakSet()): string {
 	return JSON.stringify(val, function (this: any, key: string, value: any) {
 		if (value === undefined) return '\u0000__undefined__\u0000';
-		if (isInteger(value)) return `bigint:${value}`;
+		if (isInteger(value)) return `\u0000__bigint:${value}__\u0000`;
 		if (isFunction(value)) return `function:${value.name || 'anonymous'}`;
 
 		if (isReference(value)) {
@@ -86,10 +86,12 @@ export function memoizeFunction<F extends (...args: any[]) => any>(fn: F): F {
 	const cache = new Map<string, ReturnType<F>>();						// using a Map for better key handling than plain objects
 
 	return function (this: any, ...args: Parameters<F>): ReturnType<F> {
-		const key = serialize(args);
+		const key = (this !== undefined && this !== globalThis)
+			? serialize([this, ...args])
+			: serialize(args);
 		if (!cache.has(key)) {
 			const result = fn.apply(this, args);									// call the original function with the correct context
-			cache.set(key, Object.freeze(result));								// stash the result for subsequent calls
+			cache.set(key, result);                               // stash the result for subsequent calls
 		}
 
 		return cache.get(key)!;

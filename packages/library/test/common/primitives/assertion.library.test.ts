@@ -1,5 +1,4 @@
 import { isNumber, isNumeric, isText, isArrayLike, isPlainObject, isEmpty } from '#library/assertion.library.js';
-import { isJSON, isRawJSON, rawJSON } from '#library/json.library.js';
 
 describe('Assertion Library', () => {
 
@@ -153,19 +152,6 @@ describe('Assertion Library', () => {
 
 		it('should return false for plain non-array-like objects', () => {
 			expect(isArrayLike({ a: 1, b: 2 })).toBe(false);
-		});
-	});
-
-	describe('isJSON & isRawJSON re-exports', () => {
-		it('should evaluate isJSON properly through assertion.library', () => {
-			expect(isJSON('{"test": 123}')).toBe(true);
-			expect(isJSON('invalid')).toBe(false);
-		});
-
-		it('should evaluate isRawJSON properly through assertion.library', () => {
-			const raw = rawJSON('123');
-			expect(isRawJSON(raw)).toBe(true);
-			expect(isRawJSON('123')).toBe(false);
 		});
 	});
 
