@@ -198,49 +198,12 @@ function deduplicateCaptureGroups(expanded: string): string {
 	if (!expanded.includes('|') || !expanded.includes('(?<'))
 		return expanded;
 
-	const branches: string[] = [];
-	let current = '';
-	let depth = 0;
+	const counts = new Map<string, number>();
 
-	for (let i = 0; i < expanded.length; i++) {
-		const char = expanded[i];
-		if (char === '\\') {
-			current += char + (expanded[i + 1] || '');
-			i++;
-			continue;
-		}
-		if (char === '(') depth++;
-		else if (char === ')') depth--;
-
-		if (char === '|' && depth === 0) {
-			branches.push(current);
-			current = '';
-		} else {
-			current += char;
-		}
-	}
-	branches.push(current);
-
-	if (branches.length <= 1) return expanded;
-
-	const seenNames = new Set<string>();
-	const processedBranches = branches.map((branch, bIdx) => {
-		if (bIdx === 0) {
-			const matches = branch.matchAll(/\(\?<([a-zA-Z][\w]*)>/g);
-			for (const m of matches) {
-				seenNames.add(m[1]);
-			}
-			return branch;
-		}
-
-		return branch.replace(/\(\?<([a-zA-Z][\w]*)>/g, (match, name) => {
-			if (seenNames.has(name)) {
-				return `(?<${name}_alt${bIdx}>`;
-			}
-			seenNames.add(name);
-			return match;
-		});
+	return expanded.replace(/\(\?<([a-zA-Z][\w]*)>/g, (match, name) => {
+		const count = counts.get(name) ?? 0;
+		counts.set(name, count + 1);
+		if (count === 0) return match;
+		return `(?<${name}_alt${count}>`;
 	});
-
-	return processedBranches.join('|');
 }

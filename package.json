@@ -16,10 +16,10 @@
   ],
   "scripts": {
     "test": "vitest run",
-    "build:tempo": "npm run build --workspace=@magmacomputing/tempo",
+    "build:tempo": "npm run build:library && npm run build --workspace=@magmacomputing/tempo",
     "build:library": "npm run build --workspace=@magmacomputing/library",
     "build:functions": "npm run build --workspace=@magmacomputing/tempo-fns",
-    "build:plugins": "tempo-cli build-plugins",
+    "build:plugins": "npm run build:library && tempo-cli build-plugins",
     "build:all": "npm run build --workspaces --if-present",
     "clean": "node node_modules/typescript-7/bin/tsc -b --clean",
     "version:bump": "tempo-cli version-bump",

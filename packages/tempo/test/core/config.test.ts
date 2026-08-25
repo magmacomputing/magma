@@ -169,9 +169,10 @@ describe('#setConfig refactor verification', () => {
 
   test('should handle custom layouts containing regex alternatives', () => {
     using _ = Tempo;
-    Tempo.init({ timeZone: 'UTC', registry: { layouts: { alt_layout: '{yy}#{mm}#{dd}|{dd}@{mm}@{yy}' } } });
+    Tempo.init({ timeZone: 'UTC', registry: { layouts: { alt_layout: '{yy}#{mm}#{dd}|{dd}@{mm}@{yy}|{mm}~{dd}~{yy}' } } });
     const dateHash = new Tempo('2026#08#04');
     const dateAt = new Tempo('04@08@2026');
+    const dateTilde = new Tempo('08~04~2026');
     expect(dateHash.isValid).toBe(true);
     expect(dateHash.yy).toBe(2026);
     expect(dateHash.mm).toBe(8);
@@ -180,6 +181,10 @@ describe('#setConfig refactor verification', () => {
     expect(dateAt.yy).toBe(2026);
     expect(dateAt.mm).toBe(8);
     expect(dateAt.dd).toBe(4);
+    expect(dateTilde.isValid).toBe(true);
+    expect(dateTilde.yy).toBe(2026);
+    expect(dateTilde.mm).toBe(8);
+    expect(dateTilde.dd).toBe(4);
   })
 
   test('should export defineConfig and resolveConfig from config module', async () => {
