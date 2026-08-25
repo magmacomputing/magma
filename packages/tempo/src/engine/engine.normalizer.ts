@@ -49,6 +49,9 @@ export function getAliasContext(ctx: NormalizerContext, dateTime: Temporal.Zoned
 
 			return getAliasContext(nextCtx as any, nextZdt);
 		},
+		plus(val: any, opt?: any) {
+			return this.add(val, opt);
+		},
 		subtract: (val: any, opt?: any) => {
 			let nextZdt = dateTime;
 			const nextCtx = opt ? { ...ctx, state: { ...state, config: { ...state.config, ...opt } } } : ctx;
@@ -64,6 +67,9 @@ export function getAliasContext(ctx: NormalizerContext, dateTime: Temporal.Zoned
 			return getAliasContext(nextCtx as any, nextZdt);
 		},
 		sub(val: any, opt?: any) {
+			return this.subtract(val, opt);
+		},
+		minus(val: any, opt?: any) {
 			return this.subtract(val, opt);
 		},
 		set: (val: any, opt?: any) => {

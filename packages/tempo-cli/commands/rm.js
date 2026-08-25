@@ -1,10 +1,12 @@
-#!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
 
-const [command, ...args] = process.argv.slice(2);
+export async function rm(args) {
+	if (args.length === 0) {
+		console.error('Error: "magma-cli rm" requires at least one file or directory path argument.');
+		process.exit(1);
+	}
 
-if (command === 'rm') {
 	for (const arg of args) {
 		if (!arg) continue;
 		const fullPath = path.resolve(process.cwd(), arg);
@@ -15,7 +17,4 @@ if (command === 'rm') {
 			process.exitCode = 1;
 		}
 	}
-} else {
-	console.error(`Unknown command: ${command}`);
-	process.exit(1);
 }

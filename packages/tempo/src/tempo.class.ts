@@ -1573,8 +1573,10 @@ export class Tempo {
 	since(arg0?: any, arg1?: any): any { return this.#resolve(() => interpret(this, 'DurationModule', undefined, false, 'since', arg0, arg1) ?? this); }
 
 	/** returns a new `Tempo` with specific duration added. */add(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'add', false, tempo, options) ?? this); }
+	/** @hidden */																						plus(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.add(tempo, options); }
 	/** returns a new `Tempo` with specific duration subtracted. */subtract(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'subtract', false, tempo, options) ?? this); }
 	/** @hidden */																						sub(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.subtract(tempo, options); }
+	/** @hidden */																						minus(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.subtract(tempo, options); }
 	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.MutateSet, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this); }
 	/** returns a clone of the current `Tempo` instance. */		clone() { return new this.#Tempo(this, this.config) }
 

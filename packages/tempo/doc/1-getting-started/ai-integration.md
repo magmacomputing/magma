@@ -53,10 +53,10 @@ For web-based LLM interfaces, reference or copy-paste the full, un-truncated doc
 
 ## 🛠️ Prompting AI for Custom Layout Extensions
 
-When asking AI assistants to generate custom layout patterns for parsing unique date-time formats, instruct the model to use Tempo's configuration syntax (`Tempo.init({ registry: { layouts: { ... } } })`) and named capture tokens (`{yy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tzd}`).
+When asking AI assistants to generate custom layout patterns for non-standard date-time formats, instruct the model to use Tempo's configuration syntax (`Tempo.init({ registry: { layouts: { ... } } })`) and layout tokens (`{yy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`).
 
 ### Sample Prompt:
-> *"Using the rules from https://tempo.magmacomputing.com.au/llms.txt, register a custom Tempo layout for dot-delimited dates (e.g., '04.08.2026') using `Tempo.init({ registry: { layouts: { ... } } })` and parse the date string using `new Tempo(...)`."*
+> *"Using the rules from https://tempo.magmacomputing.com.au/llms.txt, register a custom Tempo layout for star-delimited dates (e.g., '08*04*2026') using `Tempo.init({ registry: { layouts: { ... } } })` and parse the date string using `new Tempo(...)`."*
 
 ### Generated Code (Actual Tempo Syntax):
 ```typescript
@@ -66,11 +66,11 @@ import { Tempo } from '@magmacomputing/tempo';
 Tempo.init({
   registry: {
     layouts: {
-      dot_date: '{dd}.{mm}.{yy}'
+      star_date: '{mm}\\*{dd}\\*{yy}'
     }
   }
 });
 
 // 2. Parse date string matching the custom layout
-const date = new Tempo('04.08.2026');
+const date = new Tempo('08*04*2026');
 ```

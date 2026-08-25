@@ -1,64 +1,19 @@
-#!/usr/bin/env node
-
-/**
- * ## sync-providers.mjs
- * Automated CLI utility to query AI providers for available models,
- * generate/sync public manifest files (providers.v1.jsonc / .json),
- * and keep DEFAULT_PROVIDERS in packages/plugins/ai in lockstep.
- *
- * Usage:
- *   node bin/sync-providers.mjs [--dry-run] [--deploy] [--help]
- */
-
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
-
-import { parseJSONC } from '@magmacomputing/library/json.library.js';
+import { parseJSONC } from '@magmacomputing/library/runtime/json.library.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const ROOT_DIR = resolve(__dirname, '..');
+const ROOT_DIR = resolve(__dirname, '../../../');
 
 const MANIFEST_JSONC_PATH = resolve(ROOT_DIR, 'packages/tempo/public/providers.v1.jsonc');
 const MANIFEST_JSON_PATH = resolve(ROOT_DIR, 'packages/tempo/public/providers.v1.json');
 const REGISTRY_UI_PUBLIC_PATH = resolve(ROOT_DIR, '../tempo-workspace/apps/registry-ui/public');
 const AI_CONFIG_PATH = resolve(ROOT_DIR, 'packages/plugins/ai/src/core/config.ts');
 
-const args = process.argv.slice(2);
-const isDryRun = args.includes('--dry-run');
-const isDeploy = args.includes('--deploy');
-
 const SAFE_MODEL_ID_REGEX = /^[a-zA-Z0-9_.:/-]+$/;
-
-if (args.includes('--help') || args.includes('-h')) {
-	console.log(`
-Tempo AI Provider Sync Utility
-
-Options:
-  --dry-run   Query providers and preview changes without writing to disk
-  --deploy    Deploy updated manifests to Firebase Hosting after sync
-  --help      Show this help menu
-`);
-	process.exit(0);
-}
-
-// Load local .env if present
-const envPath = resolve(ROOT_DIR, '.env');
-if (existsSync(envPath)) {
-	const envLines = readFileSync(envPath, 'utf8').split('\n');
-	for (const line of envLines) {
-		const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-		if (match) {
-			const key = match[1];
-			let value = match[2] || '';
-			if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
-			if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
-			if (!process.env[key]) process.env[key] = value;
-		}
-	}
-}
 
 const PROVIDER_REGISTRY = {
 	groq: {
@@ -106,9 +61,6 @@ const PROVIDER_REGISTRY = {
 	}
 };
 
-/**
- * Unified helper to query model discovery endpoints with error & expiration detection.
- */
 async function fetchProviderModels(def, apiKey) {
 	const headers = def.headerType === 'goog'
 		? { 'x-goog-api-key': apiKey, Accept: 'application/json' }
@@ -131,8 +83,39 @@ async function fetchProviderModels(def, apiKey) {
 	return def.extract(data);
 }
 
-async function main() {
+export async function syncProviders(args) {
+	const isDryRun = args.includes('--dry-run');
+	const isDeploy = args.includes('--deploy');
+
+	if (args.includes('--help') || args.includes('-h')) {
+		console.log(`
+Tempo AI Provider Sync Utility
+
+Options:
+  --dry-run   Query providers and preview changes without writing to disk
+  --deploy    Deploy updated manifests to Firebase Hosting after sync
+  --help      Show this help menu
+`);
+		return;
+	}
+
 	console.log('🔄 Starting Tempo AI Provider Model Sync...\n');
+
+	// Load local .env if present
+	const envPath = resolve(ROOT_DIR, '.env');
+	if (existsSync(envPath)) {
+		const envLines = readFileSync(envPath, 'utf8').split('\n');
+		for (const line of envLines) {
+			const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+			if (match) {
+				const key = match[1];
+				let value = match[2] || '';
+				if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+				if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
+				if (!process.env[key]) process.env[key] = value;
+			}
+		}
+	}
 
 	const existingManifest = existsSync(MANIFEST_JSONC_PATH)
 		? parseJSONC(readFileSync(MANIFEST_JSONC_PATH, 'utf8'))
@@ -144,7 +127,6 @@ async function main() {
 	const providers = JSON.parse(initialProvidersJson);
 	let changesDetected = false;
 
-	// Scan all configured providers in table
 	for (const [id, def] of Object.entries(PROVIDER_REGISTRY)) {
 		const key = process.env[def.env] || (def.envAlt ? process.env[def.envAlt] : undefined);
 		if (!key) {
@@ -163,7 +145,6 @@ async function main() {
 			const current = providers[id].models.default || providers[id].model;
 			const recommended = def.selectRecommended(models, current);
 
-			// Clean up retired root model field
 			if ('model' in providers[id]) delete providers[id].model;
 
 			if (recommended) {
@@ -183,7 +164,6 @@ async function main() {
 		}
 	}
 
-	// Clean up any remaining legacy root model fields across all providers
 	for (const prov of Object.values(providers)) {
 		if ('model' in prov) delete prov.model;
 	}
@@ -218,12 +198,10 @@ async function main() {
 
 	console.log('\n✨ Model updates detected: New provider recommendations were discovered and applied.');
 
-	// Write clean JSON manifest
 	const jsonContent = JSON.stringify(updatedManifest, null, 2) + '\n';
 	writeFileSync(MANIFEST_JSON_PATH, jsonContent, 'utf8');
 	console.log(`\n💾 Saved: ${MANIFEST_JSON_PATH}`);
 
-	// Write commented JSONC manifest
 	const PROVIDER_COMMENTS = {
 		groq: 'Groq: High-speed open weights inference',
 		openai: 'OpenAI: Modern GPT series',
@@ -243,7 +221,6 @@ async function main() {
 	writeFileSync(MANIFEST_JSONC_PATH, jsoncContent, 'utf8');
 	console.log(`💾 Saved: ${MANIFEST_JSONC_PATH}`);
 
-	// Also copy to tempo-workspace/apps/registry-ui/public if workspace exists
 	if (existsSync(REGISTRY_UI_PUBLIC_PATH)) {
 		const targetJson = resolve(REGISTRY_UI_PUBLIC_PATH, 'providers.v1.json');
 		const targetJsonc = resolve(REGISTRY_UI_PUBLIC_PATH, 'providers.v1.jsonc');
@@ -253,7 +230,6 @@ async function main() {
 		console.log(`💾 Synced to Registry UI: ${targetJsonc}`);
 	}
 
-	// Synchronize DEFAULT_PROVIDERS in packages/plugins/ai/src/core/config.ts
 	if (existsSync(AI_CONFIG_PATH)) {
 		let configSrc = readFileSync(AI_CONFIG_PATH, 'utf8');
 		for (const [id, prov] of Object.entries(providers)) {
@@ -289,8 +265,3 @@ async function main() {
 
 	console.log('\n✅ Provider sync completed successfully!');
 }
-
-main().catch(err => {
-	console.error('\n❌ Fatal error in sync-providers:', err);
-	process.exit(1);
-});

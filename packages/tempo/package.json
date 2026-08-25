@@ -4,9 +4,6 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "bin": {
-    "tempo": "./bin/tempo.js"
-  },
   "description": "The Tempo core library",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -260,7 +257,7 @@
     "build:resolve": "tsx bin/resolve-types.ts",
     "build:version": "node bin/update-version.mjs",
     "prebuild": "npm run build:version",
-    "clean": "magma-cli rm dist && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
+    "clean": "tempo-cli rm dist && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
     "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build",
     "docs:api": "typedoc && typedoc --options typedoc.library.json && node bin/expand-typedoc.mjs",
     "docs:dev": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress dev",
@@ -283,6 +280,7 @@
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
     "@magmacomputing/library": "*",
+    "@magmacomputing/tempo-plugin-ticker": "*",
     "@rollup/plugin-alias": "^6.0.0",
     "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^12.3.0",

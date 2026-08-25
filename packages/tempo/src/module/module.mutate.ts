@@ -324,10 +324,16 @@ const MutateEngine = {
 	add(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'add', args, options);
 	},
+	plus(this: Tempo, args?: any, options: t.Options = {}) {
+		return mutate.call(this, 'add', args, options);
+	},
 	subtract(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'subtract', args, options);
 	},
 	sub(this: Tempo, args?: any, options: t.Options = {}) {
+		return mutate.call(this, 'subtract', args, options);
+	},
+	minus(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'subtract', args, options);
 	},
 	set(this: Tempo, args?: any, options: t.Options = {}) {
