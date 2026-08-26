@@ -1,3 +1,4 @@
+import { evaluate } from '#library/evaluation.library.js';
 import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { singular } from '#library/string.library.js';
@@ -38,7 +39,9 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 	}
 
 	// Shift the current instance to the target timezone first
-	let zdt = selfZdt.withTimeZone(overrides.timeZone).withCalendar(overrides.calendar);
+	const targetTz = evaluate(overrides.timeZone);
+	const targetCal = evaluate(overrides.calendar);
+	let zdt = selfZdt.withTimeZone(targetTz).withCalendar(targetCal);
 	state.parseDepth++;
 	const matches = Array.isArray(this.parse?.result) ? Array.from(this.parse.result) : [];
 

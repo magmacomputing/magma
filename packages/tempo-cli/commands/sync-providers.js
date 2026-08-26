@@ -150,13 +150,18 @@ Options:
 			if (recommended) {
 				if (typeof recommended !== 'string' || !SAFE_MODEL_ID_REGEX.test(recommended)) {
 					console.warn(`   ⚠️  ${def.name} recommended model "${recommended}" contains invalid characters - skipping.`);
-				} else if (current !== recommended) {
-					console.log(`   ✨ ${def.name} model change: ${current} -> ${recommended}`);
-					providers[id].models.default = recommended;
-					if (id === 'gemini') providers[id].models.fast = recommended;
-					changesDetected = true;
-				} else if (!providers[id].models.default) {
-					providers[id].models.default = recommended;
+				} else {
+					if (current !== recommended) {
+						console.log(`   ✨ ${def.name} model change: ${current} -> ${recommended}`);
+						providers[id].models.default = recommended;
+						changesDetected = true;
+					} else if (!providers[id].models.default) {
+						providers[id].models.default = recommended;
+					}
+					if (id === 'gemini' && providers[id].models.fast !== recommended) {
+						providers[id].models.fast = recommended;
+						changesDetected = true;
+					}
 				}
 			}
 		} catch (err) {
@@ -185,6 +190,12 @@ Options:
 		providers
 	};
 
+	const manifestJsonOnDisk = existsSync(MANIFEST_JSON_PATH) ? readFileSync(MANIFEST_JSON_PATH, 'utf8') : '';
+	const generatedJsonContent = JSON.stringify(updatedManifest, null, 2) + '\n';
+	if (manifestJsonOnDisk !== generatedJsonContent) {
+		changesDetected = true;
+	}
+
 	if (isDryRun) {
 		console.log(`\n[Dry Run] Changes detected: ${changesDetected ? 'YES (would update manifests on disk)' : 'NO (manifests are currently up-to-date)'}`);
 		console.log('[Dry Run] No files modified.');
@@ -198,7 +209,7 @@ Options:
 
 	console.log('\n✨ Model updates detected: New provider recommendations were discovered and applied.');
 
-	const jsonContent = JSON.stringify(updatedManifest, null, 2) + '\n';
+	const jsonContent = generatedJsonContent;
 	writeFileSync(MANIFEST_JSON_PATH, jsonContent, 'utf8');
 	console.log(`\n💾 Saved: ${MANIFEST_JSON_PATH}`);
 
@@ -256,7 +267,7 @@ Options:
 				console.log('\n✅ Deployment successful!');
 				console.log('🌐 Verify CDN via: curl -sI https://tempo.magmacomputing.com.au/providers.v1.json');
 			} else {
-				console.warn('⚠️ tempo-workspace not found at expected sibling directory.');
+				throw new Error(`tempo-workspace not found at expected sibling directory (${workspaceRegistryPath}).`);
 			}
 		} catch (err) {
 			console.error(`❌ Deployment failed: ${err.message}`);

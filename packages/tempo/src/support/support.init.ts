@@ -297,7 +297,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 					if (arg.value.numbers) {
 						const existing = state.config.registry.numbers ?? {};
 						setProperty(state.config.registry, 'numbers', { ...existing, ...arg.value.numbers });
-						if (state.config?.scope !== 'local')
+						if (state.config?.scope === 'global')
 							registryUpdate('NUMBER', arg.value.numbers);
 					}
 
@@ -437,7 +437,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 		}
 	});
 
-	const locale = evaluate(state.config.locale);
+	const locale = (isFunction(state.config.locale) && state.config?.scope !== 'local') ? undefined : evaluate(state.config.locale);
 	if (locale) {
 		const locales = asArray(locale).map(l => isString(l) ? l : undefined).filter(Boolean) as string[];
 		if (locales.length > 0 && !locales.every(l => l.split('-')[0] === 'en')) {

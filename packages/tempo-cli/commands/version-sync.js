@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -8,16 +8,12 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '../../../');
 
 export async function versionSync(_args) {
-	let version = process.env.npm_package_version;
+	const rootPkgPath = path.resolve(ROOT_DIR, 'package.json');
+	const rootPkg = JSON.parse(readFileSync(rootPkgPath, 'utf8'));
+	const version = rootPkg?.version;
 
-	if (!version) {
-		const rootPkgPath = path.resolve(ROOT_DIR, 'package.json');
-		const rootPkg = JSON.parse(readFileSync(rootPkgPath, 'utf8'));
-		version = rootPkg.version;
-	}
-
-	if (!version) {
-		console.error('ERROR: Unable to detect root package version for version-sync.');
+	if (!version || typeof version !== 'string' || !/^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$/.test(version.trim())) {
+		console.error('ERROR: Unable to detect valid root package version for version-sync.');
 		process.exit(1);
 	}
 
@@ -39,7 +35,7 @@ export async function versionSync(_args) {
 						continue;
 					}
 				}
-				execSync(`npm version ${version} -w ${ws} --no-git-tag-version`, { cwd: ROOT_DIR, stdio: 'inherit' });
+				execFileSync('npm', ['version', version, '-w', ws, '--no-git-tag-version'], { cwd: ROOT_DIR, stdio: 'inherit' });
 				console.log(`✅ Synced ${ws} to ${version}`);
 				syncedCount++;
 			} catch (error) {
