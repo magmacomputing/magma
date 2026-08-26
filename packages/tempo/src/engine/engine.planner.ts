@@ -7,6 +7,9 @@ const ERA_RE = /(?:^|\s)(b\.?c\.?(?:e\.?)?|a\.?d\.?|c\.?e\.?)(?:\s|$)/i;
 const CLASS_CACHE_LIMIT = 256;
 const classCache = new Map<string, ParseInputClass>();
 
+/**
+ * Memoized wrapper for classifyParseInput to accelerate parse input classification loops.
+ */
 function classifyParseInputCached(value: string | number): ParseInputClass {
 	const key = String(value ?? '').trim();
 	const cached = classCache.get(key);

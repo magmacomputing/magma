@@ -13,6 +13,9 @@ export type TempoType = typeof Tempo;
 export type TempoPlugin = Plugin<TempoType>;
 export type TempoModule = Module<TempoType>;
 
+/**
+ * Resolves the host Tempo class constructor for a given instance, value, or runtime environment.
+ */
 export function getHost(t: any): any {
 	const TempoClass = getRuntime().modules['Tempo'];
 	if (isFunction(t) || isClass(t)) return t;

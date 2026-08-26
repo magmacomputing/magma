@@ -193,7 +193,7 @@ export function setPatterns(state: t.Internal.State) {
 }
 
 /**
- * Deduplicate named capture groups across regex '|' branches to avoid SyntaxError in JS RegExp compilation.
+ * Deduplicates named capture groups across regex '|' branches to avoid SyntaxError in JS RegExp compilation.
  */
 function deduplicateCaptureGroups(expanded: string): string {
 	if (!expanded.includes('|') || !expanded.includes('(?<'))

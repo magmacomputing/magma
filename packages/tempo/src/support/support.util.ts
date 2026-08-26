@@ -319,4 +319,5 @@ const _generateLocalizedSnippets = memoizeFunction((localeKey: string) => {
 	};
 });
 
+/** @internal generate localized snippets for a locale or list of locales */
 export const generateLocalizedSnippets = (locales: string | string[]) => _generateLocalizedSnippets(asArray(locales).join(','));

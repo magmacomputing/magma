@@ -23,6 +23,9 @@ import { BoundedCache } from './support.cache.js';
 import * as t from '../tempo.type.js';
 import { registryUpdate } from './support.register.js';
 
+/**
+ * Normalizes or constructs a BoundedCache instance from configuration options.
+ */
 function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
 	const isBoundedCacheOpt = Boolean(optionsCache?.isBoundedCache || optionsCache instanceof BoundedCache);
 	if (isBoundedCacheOpt) {

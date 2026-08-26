@@ -12,6 +12,9 @@ const ctx = getContext();
 let nodeReq: ((id: string) => any) | null | undefined = undefined;
 let syncCache: Options | null | undefined = undefined;
 
+/**
+ * Safely resolves a Node.js require function in CommonJS or ESM environments.
+ */
 function getRequireSync() {
 	if (nodeReq !== undefined) return nodeReq;
 
