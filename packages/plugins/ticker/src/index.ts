@@ -1,8 +1,9 @@
 import { Tempo } from '@magmacomputing/tempo';
 import {
 	enums, definePlugin, attachStatics, type TempoPlugin,
-	isObject, isFunction, isDefined, isEmpty, isNumeric, isNumber, Pledge, asArray, instant, normaliseFractionalDurations,
-	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch, isString,
+	isObject, isFunction, isDefined, isEmpty, isNumeric, isString, isNumber, Pledge, asArray,
+	instant, normaliseFractionalDurations,
+	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
 } from '@magmacomputing/tempo/plugin/sdk';
 
 export { isCronString };
@@ -219,6 +220,10 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#self = proxy;
 
 		// ── Validation ───────────────────────────────────────────────
+		if (this.#limit === 0) {
+			this.stop();
+			return this.#self;
+		}
 		if (this.#hasInvalidSchedule) {
 			this.stop();
 			return this.#self;
@@ -278,7 +283,7 @@ class TickerInstance implements Ticker.Descriptor {
 
 	#delayMs() {
 		const diff = Math.round(this.#current.epoch.ms - instant().epochMilliseconds);
-		if (diff > 0) return diff;
+		if (diff > 0) return Math.min(diff, 2_147_483_647);
 		if (!this.#isForward) {
 			const stepMs = Math.abs(Math.round(this.#current.add(this.#payload).epoch.ms - this.#current.epoch.ms));
 			return Math.max(20, Math.min(50, stepMs || 1000));
@@ -355,13 +360,13 @@ class TickerInstance implements Ticker.Descriptor {
 
 		this.#ticks++;
 
-		if (isDefined(this.#limit) && this.#ticks >= this.#limit) this.stop(t);
+		if (this.#limit !== undefined && this.#ticks >= this.#limit) this.stop(t);
 		if (isDefined(this.#until)) {
 			const cmp = this.#TempoClass.compare(t, this.#until);
 			if ((this.#isForward && cmp >= 0) || (!this.#isForward && cmp <= 0)) this.stop(t);
 		}
 
-		if (this.#stopped && isDefined(this.#limit) && this.#limit === 0) return t;
+		if (this.#stopped && this.#limit === 0) return t;
 
 		this.#listeners.forEach(l => l(t, () => this.stop()));
 		return t;

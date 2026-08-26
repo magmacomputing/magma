@@ -15,12 +15,15 @@ describe('Ticker Cold-Start Resolution', () => {
 		await new Promise(resolve => setTimeout(resolve, 250));
 		expect(t.info.ticks).toBe(0);
 
-		// 3. Add a listener (should trigger bootstrap)
-		t.on('pulse', () => { count++; });
+		try {
+			// 3. Add a listener (should trigger bootstrap)
+			t.on('pulse', () => { count++; });
 
-		// 4. Verify pulsing has started
-		await new Promise(resolve => setTimeout(resolve, 250));
-		expect(count).toBeGreaterThan(0);
-		t.stop();
+			// 4. Verify pulsing has started
+			await new Promise(resolve => setTimeout(resolve, 250));
+			expect(count).toBeGreaterThan(0);
+		} finally {
+			t.stop();
+		}
 	});
 });

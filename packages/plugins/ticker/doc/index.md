@@ -87,8 +87,8 @@ using tickerB = Tempo.ticker({
   until: '2024-12-25T12:00:00' 
 }, (t) => console.log(t));
 
-// Pattern C: Stop immediately (Limit: 0 is strictly honored)
-using tickerC = Tempo.ticker({ limit: 0 }); 
+// Pattern C: Stop immediately without pulsing (Limit: 0 is strictly honored)
+using tickerC = Tempo.ticker({ limit: 0 }, (t) => console.log(t)); 
 ```
 
 ### 4. Virtual Clock (Seeding)
@@ -99,7 +99,7 @@ To create a **Virtual Clock** that increments from a specific point rather than 
 await using daily = Tempo.ticker({ 
   days: 1, 
   seed: '2024-01-01' 
-});
+}, (t) => console.log(t));
 ```
 
 ### 5. Backwards Tickers (Countdowns)

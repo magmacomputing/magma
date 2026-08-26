@@ -121,41 +121,62 @@ export async function fetchFromProvider(
 	contextString: string,
 	options?: FetchFromProviderOptions,
 ): Promise<{ rawContent: string; providerId: string; rateLimits: ReturnType<typeof updateRateLimitsFromResponse> }> {
-	let url: string | undefined;
-	let model: string | undefined;
-	let key: string | undefined;
+	let rawUrl: string | undefined;
+	let rawModel: string | undefined;
+	let rawKey: string | undefined;
 
 	const defaultUrl = DEFAULT_PROVIDERS[provider.id]?.url;
 	const defaultKey = resolveProviderApiKey(provider.id);
 
-	try {
-		url = asText(evaluate(provider.url, defaultUrl));
-		model = resolveProviderModel(provider, provider.tier as any);
-		key = asText(await evaluateAsync(provider.key, defaultKey));
-	} catch (err: any) {
-		if (err instanceof TempoAiError) throw err;
-		throw new TempoAiError(`Failed to resolve dynamic configuration for provider ${provider.id}: ${err?.message ?? err}`, 500, undefined, { cause: err });
+	const controller = new AbortController();
+	const rawTimeout = options?.timeout ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
+	const timeoutMs = Math.max(1, asNumber(rawTimeout, 15000));
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+	const onParentAbort = () => controller.abort();
+	if (options?.signal) {
+		if (options.signal.aborted) controller.abort();
+		else options.signal.addEventListener('abort', onParentAbort);
 	}
 
-	if (!isText(url))
-		throw new TempoAiError(`Provider ${provider.id} missing valid endpoint URL.`, 400);
-
-	if (!isText(model))
-		throw new TempoAiError(`Provider ${provider.id} missing valid model identifier.`, 400);
-
-	if (!isText(key))
-		throw new TempoAiError(`Provider ${provider.id} missing valid API key.`, 400);
-
 	try {
-		const parsed = new URL(url);
-		if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')))
-			throw new TempoAiError(`Provider ${provider.id} endpoint URL '${url}' must use secure HTTPS protocol.`, 400);
-	} catch (err: any) {
-		if (err instanceof TempoAiError) throw err;
-		throw new TempoAiError(`Provider ${provider.id} has invalid endpoint URL '${url}'.`, 400);
-	}
+		if (controller.signal.aborted) {
+			if (options?.signal?.aborted) throw new TempoAiError('Request was aborted.', 499);
+			throw new TempoAiError(`Provider ${provider.id} request timed out after ${timeoutMs}ms.`, 408);
+		}
 
-	const defaultSystemPrompt = `You are a high-performance date parser. Read the user's string and the provided context. Return ONLY a valid JSON object matching this exact schema:
+		try {
+			rawUrl = asText(evaluate(provider.url, defaultUrl));
+			rawModel = resolveProviderModel(provider, provider.tier as any);
+			rawKey = asText(await evaluateAsync(provider.key, defaultKey));
+		} catch (err: any) {
+			if (err instanceof TempoAiError) throw err;
+			throw new TempoAiError(`Failed to resolve dynamic configuration for provider ${provider.id}: ${err?.message ?? err}`, 500, undefined, { cause: err });
+		}
+
+		if (!isText(rawUrl))
+			throw new TempoAiError(`Provider ${provider.id} missing valid endpoint URL.`, 400);
+
+		if (!isText(rawModel))
+			throw new TempoAiError(`Provider ${provider.id} missing valid model identifier.`, 400);
+
+		if (!isText(rawKey))
+			throw new TempoAiError(`Provider ${provider.id} missing valid API key.`, 400);
+
+		const url: string = rawUrl;
+		const model: string = rawModel;
+		const key: string = rawKey;
+
+		try {
+			const parsed = new URL(url);
+			if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1')))
+				throw new TempoAiError(`Provider ${provider.id} endpoint URL '${url}' must use secure HTTPS protocol.`, 400);
+		} catch (err: any) {
+			if (err instanceof TempoAiError) throw err;
+			throw new TempoAiError(`Provider ${provider.id} has invalid endpoint URL '${url}'.`, 400);
+		}
+
+		const defaultSystemPrompt = `You are a high-performance date parser. Read the user's string and the provided context. Return ONLY a valid JSON object matching this exact schema:
 {
   "reasoning": "Step-by-step calendar math from Current Time.",
   "iso": "Local ISO 8601 string (YYYY-MM-DDThh:mm:ss) without offset or Z suffix, or 'INVALID' if ambiguous/unparseable.",
@@ -173,40 +194,28 @@ Ambiguity Rules:
 
 Do not include markdown blocks or any text outside the JSON.`;
 
-	const isDebug = options?.debug ?? _state.config.debug ?? false;
-	const systemPrompt = options?.systemPrompt ?? defaultSystemPrompt;
+		const isDebug = options?.debug ?? _state.config.debug ?? false;
+		const systemPrompt = options?.systemPrompt ?? defaultSystemPrompt;
 
-	logDebug('tempo-plugin-ai', `Querying provider '${provider.id}' (model: ${model})...`, undefined, { debug: isDebug });
+		logDebug('tempo-plugin-ai', `Querying provider '${provider.id}' (model: ${model})...`, undefined, { debug: isDebug });
 
-	const tokenParam = provider.tokenParam
-		|| DEFAULT_PROVIDERS[provider.id]?.tokenParam
-		|| (provider.options?.max_completion_tokens !== undefined ? 'max_completion_tokens' : undefined)
-		|| (provider.options?.max_tokens !== undefined ? 'max_tokens' : undefined)
-		|| 'max_tokens';
-	const resolvedLimit = options?.tokenLimit
-		?? provider.tokenLimit
-		?? provider.options?.tokenLimit
-		?? provider.options?.max_completion_tokens
-		?? provider.options?.max_tokens
-		?? _state.config.tokenLimit
-		?? 2048;
-	const tokenLimit = { [tokenParam]: resolvedLimit };
+		const tokenParam = provider.tokenParam
+			|| DEFAULT_PROVIDERS[provider.id]?.tokenParam
+			|| (provider.options?.max_completion_tokens !== undefined ? 'max_completion_tokens' : undefined)
+			|| (provider.options?.max_tokens !== undefined ? 'max_tokens' : undefined)
+			|| 'max_tokens';
+		const resolvedLimit = options?.tokenLimit
+			?? provider.tokenLimit
+			?? provider.options?.tokenLimit
+			?? provider.options?.max_completion_tokens
+			?? provider.options?.max_tokens
+			?? _state.config.tokenLimit
+			?? 2048;
 
-	const { timeout: _unusedTimeout, max_completion_tokens: _unusedMct, max_tokens: _unusedMt, tokenLimit: _unusedTl, ...bodyOptions } = provider.options ?? {};
-	const controller = new AbortController();
-	const rawTimeout = options?.timeout ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
-	const timeoutMs = Math.max(1, asNumber(rawTimeout, 15000));
-	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+		const tokenLimit = { [tokenParam]: resolvedLimit };
+		const { timeout: _unusedTimeout, max_completion_tokens: _unusedMct, max_tokens: _unusedMt, tokenLimit: _unusedTl, ...bodyOptions } = provider.options ?? {};
+		const startTime = performance.now();
 
-	const onParentAbort = () => controller.abort();
-	if (options?.signal) {
-		if (options.signal.aborted) controller.abort();
-		else options.signal.addEventListener('abort', onParentAbort);
-	}
-
-	const startTime = performance.now();
-
-	try {
 		const response = await fetch(url, {
 			method: 'POST',
 			redirect: 'error',
