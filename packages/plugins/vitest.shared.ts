@@ -24,6 +24,7 @@ export default defineConfig({
 		include: ['test/**/*.{test,spec}.ts'],
 		setupFiles: [polyfill, spy],
 		alias: [
+			{ find: /^#library\/(primitives|temporal|security|scheduling|runtime)\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/$1/$2.ts') },
 			{ find: /^#library\/([^/]+)\/index\.js$/, replacement: resolve(__dirname, '../library/src/common/$1/index.ts') },
 			{ find: /^#library\/(browser|server)\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/$1/$2.ts') },
 			{ find: /^#library\/(array|assertion|coercion|number|object|primitive|string|symbol|type)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/primitives/$1.library.ts') },
