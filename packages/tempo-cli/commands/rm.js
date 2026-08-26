@@ -3,7 +3,7 @@ import path from 'node:path';
 
 export async function rm(args) {
 	if (args.length === 0) {
-		console.error('Error: "magma-cli rm" requires at least one file or directory path argument.');
+		console.error('Error: "tempo-cli rm" requires at least one file or directory path argument.');
 		process.exit(1);
 	}
 

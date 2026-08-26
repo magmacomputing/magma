@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
 import path from 'node:path';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,18 +26,29 @@ export async function versionSync(_args) {
 	try {
 		const workspaces = ['@magmacomputing/tempo', '@magmacomputing/library', '@magmacomputing/tempo-pro'];
 		let syncedCount = 0;
+		let alreadySyncedCount = 0;
 		for (const ws of workspaces) {
 			try {
+				const wsRelPath = ws.replace('@magmacomputing/', '');
+				const wsPkgPath = path.resolve(ROOT_DIR, 'packages', wsRelPath, 'package.json');
+				if (existsSync(wsPkgPath)) {
+					const wsPkg = JSON.parse(readFileSync(wsPkgPath, 'utf8'));
+					if (wsPkg.version === version) {
+						console.log(`ℹ️ ${ws} is already at ${version}`);
+						alreadySyncedCount++;
+						continue;
+					}
+				}
 				execSync(`npm version ${version} -w ${ws} --no-git-tag-version`, { cwd: ROOT_DIR, stdio: 'inherit' });
 				console.log(`✅ Synced ${ws} to ${version}`);
 				syncedCount++;
 			} catch (error) {
-				console.warn(`⚠️ Bypassed ${ws} (likely already at ${version} or not found). Error details:`, error);
+				console.warn(`⚠️ Bypassed ${ws} (error details):`, error?.message || error);
 			}
 		}
 
-		if (syncedCount === 0) {
-			console.error(`\n✖ Sync failed: All workspaces were bypassed (already at ${version} or not found).`);
+		if (syncedCount === 0 && alreadySyncedCount === 0) {
+			console.error(`\n✖ Sync failed: All workspaces were bypassed or not found.`);
 			process.exit(1);
 		}
 

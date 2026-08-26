@@ -62,7 +62,7 @@ Tempo provides a specialized wrapper around `Promise.withResolvers()` called `Pl
 
 ## 5. Functional Evaluation (`evaluate`, `dynamicProxy`)
 
-Tempo exports zero-overhead functional evaluation utilities for resolving static values, lazy suppliers, and dynamic object proxies:
+Tempo exports functional evaluation utilities for resolving static values, lazy suppliers, and dynamic object proxies:
 
 *   **`evaluate(...values)`:** Synchronously resolves candidate values or zero-argument supplier functions (`() => T`) in order, returning the first defined result (lazy coalesce with short-circuiting).
 *   **`evaluateAsync(...values)`:** Asynchronously resolves static values, sync/async suppliers, or Promises (`() => Promise<T> | T`) in order with short-circuiting.

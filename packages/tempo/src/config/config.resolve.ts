@@ -19,7 +19,11 @@ function getRequireSync() {
 		return nodeReq = null;
 
 	try {
-		const globalReq = isFunction(ctx.global.require) ? ctx.global.require : null;
+		const globalReq = isFunction(ctx.global.require)
+			? ctx.global.require
+			: (isFunction(ctx.global.process?.mainModule?.require)
+				? ctx.global.process.mainModule.require
+				: null);
 		if (globalReq) {
 			const url = (import.meta as any)?.url;
 			const createReq = globalReq('node:module')?.createRequire;
@@ -29,7 +33,8 @@ function getRequireSync() {
 		let reqFn: any = null;
 		try {
 			if (typeof require !== 'undefined' && isFunction(require)) reqFn = require;
-		} catch {}
+			else if (isFunction(ctx.global.process?.mainModule?.require)) reqFn = ctx.global.process.mainModule.require;
+		} catch { }
 
 		if (reqFn) {
 			const url = (import.meta as any)?.url;

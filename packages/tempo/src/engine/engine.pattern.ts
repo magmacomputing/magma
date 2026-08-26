@@ -11,6 +11,7 @@ import enums from '../support/support.enum.js';
 import type * as t from '../tempo.type.js';
 
 const BRACES_REGEX = new RegExp(Match.braces, 'g');
+const RE_NAMED_CAPTURE_GROUP = /\(\?<([a-zA-Z][\w]*)>/g;
 
 export interface PatternCompilerOptions {
 	state: t.Internal.State;
@@ -198,12 +199,25 @@ function deduplicateCaptureGroups(expanded: string): string {
 	if (!expanded.includes('|') || !expanded.includes('(?<'))
 		return expanded;
 
+	const reserved = new Set<string>();
+	const matches = expanded.matchAll(RE_NAMED_CAPTURE_GROUP);
+	for (const m of matches)
+		reserved.add(m[1]);
+
 	const counts = new Map<string, number>();
 
-	return expanded.replace(/\(\?<([a-zA-Z][\w]*)>/g, (match, name) => {
+	return expanded.replace(RE_NAMED_CAPTURE_GROUP, (match, name) => {
 		const count = counts.get(name) ?? 0;
 		counts.set(name, count + 1);
 		if (count === 0) return match;
-		return `(?<${name}_alt${count}>`;
+
+		let altSuffix = count;
+		let altName = `${name}_alt${altSuffix}`;
+		while (reserved.has(altName)) {
+			altSuffix++;
+			altName = `${name}_alt${altSuffix}`;
+		}
+		reserved.add(altName);
+		return `(?<${altName}>`;
 	});
 }

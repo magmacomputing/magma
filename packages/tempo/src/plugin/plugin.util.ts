@@ -107,7 +107,7 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 	for (const [key, val] of Object.entries(props)) {
 		if (hasOwn(TempoClass, key)) {
 			const existing = (TempoClass as any)[key];
-			if (existing === val || (isObject(val) && val.value === existing))
+			if (existing === val || (isObject(val) && 'value' in val && val.value === existing))
 				continue;
 			const msg = `Static name collision on "${key}". Property is already defined on the host class.`;
 			logError(msg, { ...TempoClass?.config, catch: true });

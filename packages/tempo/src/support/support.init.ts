@@ -219,7 +219,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 		state.userProvidedKeys.add(optKey);
 		const preserveSupplier = isFunction(optVal) && state.config?.scope !== 'local';
-		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey))
+		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey) && !(optKey === 'locale' && preserveSupplier))
 			? evaluate(optVal)
 			: optVal;
 		const arg = asType(evaluatedVal);
@@ -241,10 +241,14 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'locale': {
+				if (preserveSupplier) {
+					setProperty(state.config, 'locale', optVal);
+					break;
+				}
 				const resolvedLocales = asArray(arg.value).map(l => canonicalLocale(String(l))).filter(Boolean) as string[];
 				if (resolvedLocales.length > 0) {
 					const finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
-					setProperty(state.config, 'locale', preserveSupplier ? optVal : finalLocale);
+					setProperty(state.config, 'locale', finalLocale);
 					if (resolvedLocales.every(locale => locale.split('-')[0] === 'en')) clearLocalization();
 				}
 				break;
@@ -290,8 +294,12 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						const existing = state.config.registry.tokens ?? {};
 						setProperty(state.config.registry, 'tokens', { ...existing, ...arg.value.tokens });
 					}
-					if (arg.value.numbers)
-						registryUpdate('NUMBER', arg.value.numbers);
+					if (arg.value.numbers) {
+						const existing = state.config.registry.numbers ?? {};
+						setProperty(state.config.registry, 'numbers', { ...existing, ...arg.value.numbers });
+						if (state.config?.scope !== 'local')
+							registryUpdate('NUMBER', arg.value.numbers);
+					}
 
 					const parseMap: Record<string, 'snippet' | 'layout' | 'event' | 'period' | 'ignore'> = {
 						snippets: 'snippet',

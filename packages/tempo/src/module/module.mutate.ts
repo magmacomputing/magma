@@ -283,8 +283,11 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 								case 'end.minute':
 								case 'end.second':
 								case 'end.millisecond':
-								case 'end.microsecond':
-									return currZdt.round({ smallestUnit: (enums.ELEMENT[single as t.Element] ?? single) as any, roundingMode: 'ceil' }).subtract({ nanoseconds: 1 });
+								case 'end.microsecond': {
+									const unit = (enums.ELEMENT[single as t.Element] ?? single) as any;
+									const pluralUnit = `${unit}s`;
+									return currZdt.round({ smallestUnit: unit, roundingMode: 'trunc' }).add({ [pluralUnit]: 1 }).subtract({ nanoseconds: 1 });
+								}
 								case 'end.nanosecond':
 									return currZdt;
 

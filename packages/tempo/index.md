@@ -104,11 +104,11 @@ let initPromise = (async () => {
     }
 
     const { Tempo } = await import('@magmacomputing/tempo')
-    await import('@magmacomputing/tempo-plugin-ticker')
+    const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker')
 
     if (import.meta.env.DEV) registry.has = originalHas
     
-    Tempo.init()
+    Tempo.init({ extends: [TickerPlugin] })
     
     return Tempo
   } catch (e) {

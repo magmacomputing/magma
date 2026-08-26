@@ -20,6 +20,7 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: /^#tempo\/license$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/license/license.validator.ts') },
+      { find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.sdk.ts') },
       { find: /^@magmacomputing\/tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.index.ts') },
       { find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.sdk.ts') },
       { find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/$1.ts') },

@@ -10,6 +10,51 @@ import { parseModifier, normalizeModifier } from './engine.lexer.js';
 import type { Tempo } from '../tempo.class.js';
 import type { TempoTermType } from '../plugin/term/term.type.js';
 
+const SHIFTER_MODIFIERS = new Set(['>', '<', '>=', '<=', '+', '-']);
+const ALL_MODIFIER_SYMBOLS = [...SHIFTER_MODIFIERS, '='];
+const ABSOLUTE_MUTATIONS = new Set(['start', 'mid', 'end']);
+const BOUNDARY_MUTATIONS = new Set(['mid', 'end']);
+const FUTURE_MODIFIERS = new Set(['>', 'next', '+']);
+const PAST_MODIFIERS = new Set(['<', 'last', 'prev', '-']);
+
+const isBackwardShift = (mod?: string): boolean => isDefined(mod) && (mod.includes('<') || mod.includes('-') || PAST_MODIFIERS.has(mod));
+
+const DAYS_IN_WEEK = 7;
+
+/**
+ * Calculates the net day difference to shift from currentDow to targetDow based on modifier and repeat count.
+ */
+function calculateWeekdayShift(currentDow: number, targetDow: number, mod: string, nbr: number): number | null {
+	let diff = 0;
+
+	if (FUTURE_MODIFIERS.has(mod)) {
+		diff = (targetDow - currentDow + DAYS_IN_WEEK) % DAYS_IN_WEEK || DAYS_IN_WEEK;
+	} else if (PAST_MODIFIERS.has(mod)) {
+		diff = -((currentDow - targetDow + DAYS_IN_WEEK) % DAYS_IN_WEEK || DAYS_IN_WEEK);
+	} else if (mod === '>=' || mod === '=') {
+		diff = (targetDow - currentDow + DAYS_IN_WEEK) % DAYS_IN_WEEK;
+	} else if (mod === '<=') {
+		diff = -((currentDow - targetDow + DAYS_IN_WEEK) % DAYS_IN_WEEK);
+	} else {
+		return null;
+	}
+
+	// Handle multi-week repeat counts (e.g. '2mon.>', '-2mon.<')
+	if (nbr > 1 || nbr < -1) {
+		const count = nbr > 0 ? nbr - 1 : nbr;
+		if (diff > 0) {
+			diff += count * DAYS_IN_WEEK;
+		} else if (diff < 0) {
+			diff -= count * DAYS_IN_WEEK;
+		} else if (diff === 0 && (mod === '>=' || mod === '<=')) {
+			const zeroCount = mod === '>=' ? (nbr > 0 ? nbr - 1 : nbr + 1) : -(nbr > 0 ? nbr - 1 : nbr + 1);
+			diff = zeroCount * DAYS_IN_WEEK;
+		}
+	}
+
+	return diff;
+}
+
 /**
  * Internal helper to safely get the ZonedDateTime from a Tempo instance or raw object
  */
@@ -63,7 +108,6 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		? (instance as any)[sym.$Internal]?.()
 		: (instance as any);
 	const termObj = findTermPlugin(termPart, state);
-
 	const [tz, cal] = getTemporalIds(zdt);
 
 	// Slick Shorthand Parsing (e.g. #qtr.>2, #zodiac.<)
@@ -77,11 +121,10 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		let matchSlick = Match.slick;
 		let matchSlickValue = Match.slickValue;
 		if (state.config.registry?.modifiers) {
-			const symbols = ['+', '-', '<', '<=', '>', '>=', '='];
 			const words = new Set<string>();
-			symbols.forEach(sym => {
+			ALL_MODIFIER_SYMBOLS.forEach(sym => {
 				const mapped = state.config.registry!.modifiers![sym];
-				if (mapped) (Array.isArray(mapped) ? mapped : [mapped]).forEach(w => words.add(w));
+				if (mapped) asArray(mapped).forEach(w => words.add(w));
 			});
 			if (words.size > 0) {
 				const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
@@ -121,31 +164,10 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		}
 
 		if (wkdValue !== undefined && mod) {
-			const targetDow = wkdValue;
-			const currentDow = zdt.dayOfWeek;
-			let diff = 0;
-
-			if (mod === '>' || mod === 'next' || mod === '+') {
-				diff = (targetDow - currentDow + 7) % 7 || 7;
-			} else if (mod === '<' || mod === 'last' || mod === 'prev' || mod === '-') {
-				diff = -((currentDow - targetDow + 7) % 7 || 7);
-			} else if (mod === '>=') {
-				diff = (targetDow - currentDow + 7) % 7;
-			} else if (mod === '<=') {
-				diff = -((currentDow - targetDow + 7) % 7);
-			} else if (mod === '=') {
-				diff = (targetDow - currentDow + 7) % 7;
-			} else {
+			const diff = calculateWeekdayShift(zdt.dayOfWeek, wkdValue, mod, nbr);
+			if (diff === null) {
 				Tempo?.[TermError]?.(instance.config, unit);
 				return null;
-			}
-
-			if (nbr > 1 || nbr < -1) {
-				if (diff > 0) diff += (nbr > 0 ? nbr - 1 : nbr) * 7;
-				else if (diff < 0) diff -= (nbr > 0 ? nbr - 1 : nbr) * 7;
-				else if (diff === 0 && (mod === '>=' || mod === '<=')) {
-					diff = mod === '>=' ? (nbr > 0 ? nbr - 1 : nbr + 1) * 7 : -(nbr > 0 ? nbr - 1 : nbr + 1) * 7;
-				}
 			}
 			return zdt.add({ days: diff }).withTimeZone(tz).withCalendar(cal);
 		}
@@ -162,7 +184,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 
 		if (directional || numericOffset || (slickParsed && !mod)) {
 			let shiftDir = directional
-				? ((mod!.includes('<') || mod!.includes('-') || mod === 'prev' || mod === 'last') ? -1 : 1)
+				? (isBackwardShift(mod) ? -1 : 1)
 				: (numericOffset ? Math.sign(Number(offset) || 1) : 1);
 			if (mutate === 'subtract') shiftDir *= -1;
 			const addCount = directional
@@ -226,7 +248,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 	}
 
 	// 1. Handle Absolute Mutations (start | mid | end) OR Slick Mutations
-	if (mutate === 'start' || mutate === 'mid' || mutate === 'end' || mod) {
+	if (ABSOLUTE_MUTATIONS.has(mutate) || mod) {
 		let jump = zdt;
 		let list = getRange(termObj, instance, jump);
 
@@ -273,7 +295,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		}
 
 		// 1. Core resolving loop: handle shifters and absolute searching with repeat counts
-		const direction = (mod?.includes('<') || mod?.includes('-') || mod === 'prev' || mod === 'last') ? -1 : 1;
+		const direction = isBackwardShift(mod) ? -1 : 1;
 		let remaining = nbr;
 		let iterations = 0;
 		while (remaining > 0 && iterations < 200) {
@@ -333,7 +355,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 					const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 					remaining--;
 					if (remaining === 0) {
-						if (mutate === 'mid' || mutate === 'end') { jump = found; break; }
+						if (BOUNDARY_MUTATIONS.has(mutate)) { jump = found; break; }
 						return found;
 					}
 					jump = toZdt(target.end);
@@ -354,7 +376,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 					const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 					remaining--;
 					if (remaining === 0) {
-						if (mutate === 'mid' || mutate === 'end') { jump = found; break; }
+						if (BOUNDARY_MUTATIONS.has(mutate)) { jump = found; break; }
 						return found;
 					}
 					jump = toZdt(target.end);
@@ -379,7 +401,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 					const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 					remaining--;
 					if (remaining === 0) {
-						if (mutate === 'mid' || mutate === 'end') { jump = found; break; }
+						if (BOUNDARY_MUTATIONS.has(mutate)) { jump = found; break; }
 						return found;
 					}
 					jump = toZdt(target.end);
@@ -390,12 +412,16 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			// Treat explicit modifiers and + / - as shifters. Numeric repeat counts
 			// without an explicit modifier (e.g. `2q2`) are handled as inclusive
 			// searches and should not be treated as shifters.
-			const isShifter = (mod === '>' || mod === '<' || mod === '>=' || mod === '<=' || mod === '+' || mod === '-');
+			const isShifter = isDefined(mod) && SHIFTER_MODIFIERS.has(mod);
 
 			const compare = (r: any) => {
-				const start = toZdt(r.start).epochNanoseconds as bigint;
-				const end = toZdt(r.end).epochNanoseconds as bigint;
-				const cursor = (isShifter && iterations > 1) ? (jump.epochNanoseconds as bigint) : (zdt.epochNanoseconds as bigint);
+				const startZdt = isZonedDateTime(r.start) ? r.start : toZdt(r.start);
+				const endZdt = isZonedDateTime(r.end) ? r.end : toZdt(r.end);
+				const start = startZdt.epochNanoseconds as bigint;
+				const end = endZdt.epochNanoseconds as bigint;
+				const cursor = (isShifter && iterations > 1)
+					? (jump.epochNanoseconds as bigint)
+					: (zdt.epochNanoseconds as bigint);
 
 				let match = false;
 				if (mod === '>' || mod === 'next') match = (iterations > 1) ? (start >= cursor) : (start > cursor);
@@ -451,7 +477,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 				remaining--;
 				if (remaining === 0) {
-					if (mutate === 'mid' || mutate === 'end') {
+					if (BOUNDARY_MUTATIONS.has(mutate)) {
 						jump = found;
 						break;
 					}
@@ -471,7 +497,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		}
 
 		// Final range resolution for mid/end
-		if (mutate === 'mid' || mutate === 'end') {
+		if (BOUNDARY_MUTATIONS.has(mutate)) {
 			const finalRange = (getTermRange(instance, getRange(termObj, instance, jump), false, jump) as any);
 			if (!finalRange) {
 				Tempo?.[TermError]?.(instance.config, unit);

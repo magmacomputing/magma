@@ -441,7 +441,7 @@ export namespace Internal {
 		/** locale (e.g. en-AU) */															locale: string | string[];
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
 		/** scope for configuration mutations */								scope: 'global' | 'local';
-		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator> };
+		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator>, numbers?: Record<string, number> };
 		/** index-signature */																	readonly [key: string]: any;
 	}
 

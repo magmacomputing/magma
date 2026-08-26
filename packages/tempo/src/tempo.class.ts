@@ -819,8 +819,8 @@ export class Tempo {
 			// 2. Establish context and keys
 			const sys = getDateTimeFormat();
 			const config = state.config;
-			const timeZone = options.timeZone ?? config.timeZone ?? sys.timeZone;
-			const calendar = options.calendar ?? config.calendar ?? sys.calendar;
+			const timeZone = evaluate(options.timeZone, config.timeZone, sys.timeZone);
+			const calendar = evaluate(options.calendar, config.calendar, sys.calendar);
 			let discovery = options.discovery ?? Symbol.keyFor($Tempo) as string;
 			const storeKey = options.store || config.store || Symbol.keyFor($Tempo) as string;
 

@@ -40,6 +40,7 @@ export async function catalogSync(_args) {
 		entry.name = entry.name || humanName;
 		entry.description = pkg.description || entry.description || '';
 		entry.packageName = pkg.name;
+		entry.version = pkg.version || entry.version;
 		entry.plan = pkg.tempo?.plan || entry.plan || 'community';
 		entry.status = entry.status || 'active';
 

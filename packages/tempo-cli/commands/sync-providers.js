@@ -260,6 +260,7 @@ Options:
 			}
 		} catch (err) {
 			console.error(`❌ Deployment failed: ${err.message}`);
+			throw err;
 		}
 	}
 

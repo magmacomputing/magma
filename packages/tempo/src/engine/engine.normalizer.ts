@@ -15,6 +15,7 @@ import * as t from '../tempo.type.js';
  * the PatternCompiler.matcher depth limit (~10), preventing stack overflows during normalization.
  */
 const MAX_TEMPO_RESOLVE_DEPTH = 50;
+const RE_ALT_SUFFIX = /_alt\d+$/;
 
 /**
  * Context provided to the normalizer to handle recursion and state management.
@@ -113,11 +114,11 @@ export function normalizeMatch(
 ): Temporal.ZonedDateTime {
 	if (groups) {
 		for (const key of ownKeys(groups)) {
-			if (key.includes('_alt') && isDefined(groups[key])) {
-				const baseKey = key.split('_alt')[0];
-				if (!isDefined(groups[baseKey]) || groups[baseKey] === '') {
+			const baseKey = key.replace(RE_ALT_SUFFIX, '');
+			if (baseKey !== key && isDefined(groups[key])) {
+				if (!isDefined(groups[baseKey]) || groups[baseKey] === '')
 					groups[baseKey] = groups[key];
-				}
+				delete groups[key];
 			}
 		}
 	}
