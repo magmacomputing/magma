@@ -45,7 +45,7 @@ Ensure the plugin's `package.json` contains the correct community configuration:
   ```
 - **Scripts**: 
   - Ensure `"build": "tsup && tsc"` is present.
-  - Include the prepublish safeguard: `"prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"`.
+  - Include the prepublish safeguard: `"prepublishOnly": "tempo-cli prepublish"`.
   - Include the correct test script: `"test": "vitest run -c ../vitest.shared.ts"`.
 - **Keywords**: Ensure relevant keywords are present (`tempo`, `tempo-plugin`, `magmacomputing`, `temporal`, `plugin`, etc.).
 - **tempo**: Set `"plan": "community"`.

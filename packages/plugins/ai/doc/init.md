@@ -176,6 +176,14 @@ export interface AiConfig {
   ttl?: number;
   /** Minimum confidence threshold for AI parsing results (0.0 to 1.0) */
   minConfidence?: number;
+  /** Dynamic or static default timezone context (string | (() => string)) */
+  timeZone?: Evaluable<string>;
+  /** Dynamic or static default locale context (string | string[] | (() => string | string[])) */
+  locale?: Evaluable<string | string[]>;
+  /** Dynamic or static default calendar context (string | (() => string)) */
+  calendar?: Evaluable<string>;
+  /** Dynamic or static default celestial sphere context (string | (() => string)) */
+  sphere?: Evaluable<string>;
   /** Optional hook to intercept and resolve dynamic provider defaults */
   fetchDefaults?: (providerId: string) => Promise<Partial<AiProvider> | null> | Partial<AiProvider> | null;
   /** URL for dynamic remote provider manifest updates, or `false` to disable */

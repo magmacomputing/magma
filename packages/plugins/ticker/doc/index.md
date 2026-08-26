@@ -27,7 +27,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 Tempo.init({ 
-  plugins: [TickerPlugin] 
+  extends: [TickerPlugin] 
 });
 
 // You can access Ticker-based execution loops through the Tempo API:
@@ -83,6 +83,7 @@ using tickerA = Tempo.ticker({ limit: 5 }, (t) => console.log(t));
 // Pattern B: Stop when a specific virtual time is reached (Inclusive)
 using tickerB = Tempo.ticker({ 
   seconds: 10,               // Plural DurationLike property
+  seed: '2024-12-25T10:00:00',
   until: '2024-12-25T12:00:00' 
 }, (t) => console.log(t));
 
@@ -251,7 +252,7 @@ The object returned by `Tempo.ticker()` (or an instance of the `Ticker` class) i
 | Method / Property | Description |
 | :--- | :--- |
 | `on(event, cb)` | Registers a listener for the `'pulse'`, `'stop'`, or `'catch'` events. |
-| `pulse()` | Manually triggers a pulse, advances state, and notifies listeners. Returns the new `Tempo`. |
+| `pulse()` | Manually triggers a pulse, advances state, and notifies listeners. Returns the emitted pulse Tempo. |
 | `info` | Read-only getter returning `{ next, ticks, limit, interval, stopped }`. |
 | `stop()` | Stops the Ticker, clears active timers, and immediately resolves any pending async iteration Promises. |
 | `[Symbol.dispose]` | Standard cleanup for `using` blocks. |

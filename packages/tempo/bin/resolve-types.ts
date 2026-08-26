@@ -36,10 +36,6 @@ function copyLibraryDts(dir: string) {
 				const destNested = path.join(LIB_DEST_DIR, dtsRelPath);
 				fs.mkdirSync(path.dirname(destNested), { recursive: true });
 				fs.copyFileSync(src, destNested);
-
-				// Copy flat .d.ts for root lib exports
-				const destFlat = path.join(LIB_DEST_DIR, entry.name.replace(/\.js$/, '.d.ts'));
-				fs.copyFileSync(src, destFlat);
 			}
 		}
 	}

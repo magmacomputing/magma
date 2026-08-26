@@ -13,7 +13,7 @@ describe('Ticker Cold-Start Resolution', () => {
 
 		// 2. Wait to ensure it remains idle
 		await new Promise(resolve => setTimeout(resolve, 250));
-		expect(count).toBe(0);
+		expect(t.info.ticks).toBe(0);
 
 		// 3. Add a listener (should trigger bootstrap)
 		t.on('pulse', () => { count++; });

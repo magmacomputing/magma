@@ -20,7 +20,7 @@ Over successive minor releases, `Tempo` has accumulated redundant method aliases
 
 ### Track 1: API Surface Rationalization (Method Aliases)
 
-#### [MODIFY] [tempo.class.ts](file:///home/michael/Project/magma/packages/tempo/src/tempo.class.ts) & [module.mutate.ts](file:///home/michael/Project/magma/packages/tempo/src/module/module.mutate.ts)
+#### [MODIFY] [tempo.class.ts](../src/tempo.class.ts) & [module.mutate.ts](../src/module/module.mutate.ts)
 - **Primary API**: Standardize on `add()` and `subtract()`.
 - **Deprecate / Prune**:
   - Mark `sub()`, `minus()`, and `plus()` as `@deprecated` (or prune them in v4.0.0) in favor of `subtract()` and `add()`.
@@ -30,7 +30,7 @@ Over successive minor releases, `Tempo` has accumulated redundant method aliases
 
 ### Track 2: Options Schema Standardization
 
-#### [MODIFY] [tempo.type.ts](file:///home/michael/Project/magma/packages/tempo/src/tempo.type.ts) & [support.init.ts](file:///home/michael/Project/magma/packages/tempo/src/support/support.init.ts)
+#### [MODIFY] [tempo.type.ts](../src/tempo.type.ts) & [support.init.ts](../src/support/support.init.ts)
 - **Timestamp Casing**:
   - Deprecate `timeStamp` in favor of standard camelCase `timestamp` (`'ss' | 'ms' | 'us' | 'ns'`). Provide a backward-compatible getter/normalizer during option ingestion.
 - **Month-Day Order Overload**:
@@ -42,7 +42,7 @@ Over successive minor releases, `Tempo` has accumulated redundant method aliases
 
 ### Track 3: Error & Logging Matrix Unification
 
-#### [MODIFY] [tempo.class.ts](file:///home/michael/Project/magma/packages/tempo/src/tempo.class.ts) & [support.init.ts](file:///home/michael/Project/magma/packages/tempo/src/support/support.init.ts)
+#### [MODIFY] [tempo.class.ts](../src/tempo.class.ts) & [support.init.ts](../src/support/support.init.ts)
 - **Problem**: `catch: boolean`, `silent: boolean`, and `debug: DebugLevel` create conflicting state matrices (e.g. `catch: true`, `silent: false`, `debug: DebugLevel.Silent`).
 - **Proposed Refactor**:
   - Consolidate error handling into a single `errorHandling` option or normalize `catch` and `silent` defaults under `debug` logging contracts.
@@ -51,7 +51,7 @@ Over successive minor releases, `Tempo` has accumulated redundant method aliases
 
 ### Track 4: Context & Scope Modernization
 
-#### [MODIFY] [tempo.class.ts](file:///home/michael/Project/magma/packages/tempo/src/tempo.class.ts)
+#### [MODIFY] [tempo.class.ts](../src/tempo.class.ts)
 - **Problem**: `Tempo.init()` mutates shared global state, creating risk in multi-library ESM monorepos.
 - **Proposed Refactor**:
   - Formally recommend `Tempo.configure()` or `Tempo.createContext()` for instance-isolated configurations.
@@ -61,7 +61,7 @@ Over successive minor releases, `Tempo` has accumulated redundant method aliases
 
 ### Track 5: Internal Private Field Migration (`#private`)
 
-#### [MODIFY] [tempo.class.ts](file:///home/michael/Project/magma/packages/tempo/src/tempo.class.ts)
+#### [MODIFY] [tempo.class.ts](../src/tempo.class.ts)
 - **Refactor**:
   - Replace internal Symbol methods (`this[$setConfig]`, `this[$setDiscovery]`) with native TypeScript `#setConfig` and `#setDiscovery` private instance/static methods.
   - Reduces internal Symbol noise and improves debugger stack-trace readability.

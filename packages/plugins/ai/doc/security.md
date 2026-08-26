@@ -124,7 +124,11 @@ const rawReasoning = result.reasoning;
       {
         id: 'openai',
         // Pulls tenant-specific key from AsyncLocalStorage or request session
-        key: () => tenantStore.getStore()?.openaiApiKey
+        key: () => {
+          const tenant = tenantStore.getStore();
+          if (!tenant) throw new Error('No tenant context found');
+          return tenant.openaiApiKey;
+        }
       }
     ]
   });

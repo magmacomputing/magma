@@ -192,7 +192,7 @@ Do not include markdown blocks or any text outside the JSON.`;
 		?? 2048;
 	const tokenLimit = { [tokenParam]: resolvedLimit };
 
-	const { timeout: _unusedTimeout, ...bodyOptions } = provider.options ?? {};
+	const { timeout: _unusedTimeout, max_completion_tokens: _unusedMct, max_tokens: _unusedMt, tokenLimit: _unusedTl, ...bodyOptions } = provider.options ?? {};
 	const controller = new AbortController();
 	const rawTimeout = options?.timeout ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
 	const timeoutMs = Math.max(1, asNumber(rawTimeout, 15000));

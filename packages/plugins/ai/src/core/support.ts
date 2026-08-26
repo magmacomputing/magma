@@ -65,11 +65,17 @@ export function resolveFullContext(
 	const resLoc = evaluate(resolvedOptions.locale);
 	const cfgLoc = evaluate(_state.config.locale);
 
-	const rawLoc = (optLoc !== undefined && (Array.isArray(optLoc) ? optLoc.length > 0 : Boolean(optLoc)))
+	const isNonEmptyLocale = (l: any) => l !== undefined && l !== null && (Array.isArray(l) ? l.length > 0 : Boolean(l));
+
+	const rawLoc = isNonEmptyLocale(optLoc)
 		? optLoc
-		: (fbLoc !== undefined && (Array.isArray(fbLoc) ? fbLoc.length > 0 : Boolean(fbLoc)))
+		: isNonEmptyLocale(fbLoc)
 			? fbLoc
-			: resLoc || cfgLoc || 'en-US';
+			: isNonEmptyLocale(resLoc)
+				? resLoc
+				: isNonEmptyLocale(cfgLoc)
+					? cfgLoc
+					: 'en-US';
 	const firstLoc = Array.isArray(rawLoc) ? rawLoc[0] : rawLoc;
 	const loc = asText(firstLoc, 'en-US');
 

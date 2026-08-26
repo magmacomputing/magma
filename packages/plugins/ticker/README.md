@@ -27,7 +27,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 Tempo.init({ 
-  plugins: [TickerPlugin] 
+  extends: [TickerPlugin] 
 });
 
 // You can now access Ticker-based execution loops through the Tempo API:

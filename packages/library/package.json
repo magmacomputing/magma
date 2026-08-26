@@ -258,7 +258,7 @@
     "test": "vitest run",
     "build": "tsc -b",
     "clean": "tsc -b --clean",
-    "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"
+    "prepublishOnly": "tempo-cli prepublish"
   },
   "dependencies": {
     "tslib": "^2.8.1"

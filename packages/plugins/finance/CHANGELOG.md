@@ -1,6 +1,6 @@
 # @magmacomputing/tempo-plugin-finance
 
-## [1.0.3] - 2026-08-20
+## [1.0.4] - 2026-08-20
 
 ### Fixed
 - **Peer Dependencies**: Expanded peerDependency range to support Tempo v4.0.0.

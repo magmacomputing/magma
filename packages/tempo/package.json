@@ -258,7 +258,7 @@
     "build:version": "node bin/update-version.mjs",
     "prebuild": "npm run build:version",
     "clean": "tempo-cli rm dist && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
-    "prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build",
+    "prepublishOnly": "tempo-cli prepublish",
     "docs:api": "typedoc && typedoc --options typedoc.library.json && node bin/expand-typedoc.mjs",
     "docs:dev": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress dev",
     "docs:build": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress build",

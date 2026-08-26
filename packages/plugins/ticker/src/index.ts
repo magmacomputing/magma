@@ -277,7 +277,13 @@ class TickerInstance implements Ticker.Descriptor {
 	}
 
 	#delayMs() {
-		return Math.max(0, Math.round(this.#current.epoch.ms - instant().epochMilliseconds));
+		const diff = Math.round(this.#current.epoch.ms - instant().epochMilliseconds);
+		if (diff > 0) return diff;
+		if (!this.#isForward) {
+			const stepMs = Math.abs(Math.round(this.#current.add(this.#payload).epoch.ms - this.#current.epoch.ms));
+			return Math.max(20, Math.min(50, stepMs || 1000));
+		}
+		return 0;
 	}
 
 	#safePulse(): Tempo {
