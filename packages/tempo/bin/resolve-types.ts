@@ -19,18 +19,32 @@ console.log('Resolving type definitions...');
 if (!fs.existsSync(LIB_DEST_DIR))
 	fs.mkdirSync(LIB_DEST_DIR, { recursive: true });
 
-// 2. Identify used library modules from Rollup's JS output
-const usedModules = fs.readdirSync(LIB_DEST_DIR)
-	.filter(f => f.endsWith('.js'))
-	.map(f => f.slice(0, -3));
+// 2. Identify used library modules from Rollup's JS output (recursive)
+function copyLibraryDts(dir: string) {
+	const entries = fs.readdirSync(dir, { withFileTypes: true });
+	for (const entry of entries) {
+		const fullPath = path.join(dir, entry.name);
+		if (entry.isDirectory()) {
+			copyLibraryDts(fullPath);
+		} else if (entry.isFile() && entry.name.endsWith('.js')) {
+			const relPath = path.relative(LIB_DEST_DIR, fullPath);
+			const dtsRelPath = relPath.replace(/\.js$/, '.d.ts');
+			const src = path.join(LIB_SRC_DIR, dtsRelPath);
 
-// 3. Copy corresponding .d.ts files from library
-usedModules.forEach(mod => {
-	const src = path.join(LIB_SRC_DIR, `${mod}.d.ts`);
-	const dest = path.join(LIB_DEST_DIR, `${mod}.d.ts`);
-	if (fs.existsSync(src))
-		fs.copyFileSync(src, dest);
-});
+			if (fs.existsSync(src)) {
+				// Copy nested .d.ts
+				const destNested = path.join(LIB_DEST_DIR, dtsRelPath);
+				fs.mkdirSync(path.dirname(destNested), { recursive: true });
+				fs.copyFileSync(src, destNested);
+
+				// Copy flat .d.ts for root lib exports
+				const destFlat = path.join(LIB_DEST_DIR, entry.name.replace(/\.js$/, '.d.ts'));
+				fs.copyFileSync(src, destFlat);
+			}
+		}
+	}
+}
+copyLibraryDts(LIB_DEST_DIR);
 
 // 4. Walk through all .d.ts files in dist/ to rewrite aliases
 function walk(dir: string) {
@@ -69,11 +83,7 @@ function rewrite(filePath: string) {
 
 	const updatedContent = content
 		.replace(/#library\/([^"')]+\.js)/g, (_, libPath) => {
-			// NOTE: We use path.basename here because the @magmacomputing/library distribution 
-			// is currently flat (dist/common/*.js), and our resolve process flattens all 
-			// used library modules into the local dist/lib/ directory.
-			const fileName = path.basename(libPath);
-			return `${replacement}${fileName}`;
+			return `${replacement}${libPath}`;
 		})
 		.replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`)
 		.replace(/#tempo\/license(['"])/g, (_, quote) => `${licReplacement}${quote}`);
