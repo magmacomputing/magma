@@ -1,6 +1,6 @@
 import { AtomicClock, ClockOptions } from './AtomicClock.js';
 import { AtomicReader } from './AtomicReader.js';
-import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin-api';
+import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 
 export { AtomicClock, AtomicReader, ClockOptions };
 

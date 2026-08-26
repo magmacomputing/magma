@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asText, isDefined, isObject, isReference, isText, secure, when } from '@magmacomputing/tempo/library';
+import { asNumber, asText, isDefined, isObject, isReference, isText, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
@@ -37,7 +37,7 @@ interface FormatGroundingMetrics {
 function calculateFormatGroundingMetrics(targetTempo: Tempo, anchorTempo: Tempo): FormatGroundingMetrics {
 	const iso = targetTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}');
 	const timeZone = targetTempo.tz || 'UTC';
-	const dayOfWeekOrdinal = targetTempo.dow;
+	const dayOfWeekOrdinal = asNumber(targetTempo.dow, 0);
 	const weekdayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 	const dayOfWeek = weekdayNames[dayOfWeekOrdinal] || targetTempo.format('{www}');
 

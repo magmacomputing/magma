@@ -24,7 +24,7 @@ export const sharedConfig: Options = {
 	// @magmacomputing/tempo/plugin* is inlined only for IIFE (self-contained browser bundle).
 	// For ESM the 'esm-external' plugin below re-marks them as external so all plugins
 	// share a single runtime copy and avoid registerSerializable singleton collisions.
-	noExternal: [/^@magmacomputing\/tempo\/(plugin|plugin-api)$/],
+	noExternal: [/^@magmacomputing\/tempo\/plugin(\/sdk)?$/],
 	outExtension({ format }) {
 		return {
 			js: format === 'iife' ? '.global.min.js' : '.js'
@@ -40,7 +40,7 @@ export const sharedConfig: Options = {
 		{
 			name: 'auto-inject-version',
 			setup(build) {
-				build.onResolve({ filter: /^@magmacomputing\/tempo\/(plugin|plugin-api)$/ }, (args) => {
+				build.onResolve({ filter: /^@magmacomputing\/tempo\/plugin(\/sdk)?$/ }, (args) => {
 					// Prevent infinite loop: if the importer is our virtual module, let standard resolution (or license-alias) handle it
 					if (args.namespace === 'auto-inject-version') return;
 					return { path: args.path, namespace: 'auto-inject-version', pluginData: { originalPath: args.path } };
@@ -54,11 +54,11 @@ export const sharedConfig: Options = {
 						version = pkg.version || 'unknown';
 					}
 
-					const isApi = args.pluginData.originalPath === '@magmacomputing/tempo/plugin-api';
+					const isSdk = args.pluginData.originalPath === '@magmacomputing/tempo/plugin/sdk';
 
 					let contents = `export * from '${args.pluginData.originalPath}';\n`;
 
-					if (isApi) {
+					if (isSdk) {
 						contents += `import { definePlugin as originalPlugin, defineTerm as originalTerm } from '${args.pluginData.originalPath}';\n`;
 						contents += `export const definePlugin = (config) => originalPlugin({ ...config, version: "${version}" });\n`;
 						contents += `export const defineTerm = (config) => originalTerm({ ...config, version: "${version}" });\n`;
@@ -84,7 +84,7 @@ export const sharedConfig: Options = {
 				const globals: Record<string, string> = {
 					'@js-temporal/polyfill': 'Temporal',
 					'@magmacomputing/tempo': 'Magma.Tempo',
-					'@magmacomputing/tempo/plugin-api': 'Magma.pluginApi',
+					'@magmacomputing/tempo/plugin/sdk': 'Magma.pluginSdk',
 					'@magmacomputing/tempo/plugin': 'Magma.plugin'
 				};
 
@@ -101,27 +101,7 @@ export const sharedConfig: Options = {
 				});
 			}
 		},
-		{
-			name: 'license-alias',
-			setup(build) {
-				build.onResolve({ filter: /^@magmacomputing\/tempo\/(plugin|plugin-api)$/ }, (args) => {
-					if (args.importer.includes('internal/license/src/plugin.api.ts')) return;
 
-					// Dynamically check the local package.json to determine if this is a Premium plugin
-					const pkgPath = path.resolve(process.cwd(), 'package.json');
-					if (fs.existsSync(pkgPath)) {
-						const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-						const plan = pkg?.tempo?.plan;
-
-						// If the package explicitly declares plan: 'community', skip the license wrapper
-						if (plan === 'community')
-							return; // Community plugin, do not apply license wrapper
-					}
-
-					return { path: path.resolve(__dirname, 'internal/license/src/plugin.api.ts') };
-				});
-			}
-		},
 		{
 			// For ESM builds, keep @magmacomputing/tempo/plugin* external so all plugins
 			// share one runtime singleton and avoid registerSerializable collisions.
@@ -131,7 +111,7 @@ export const sharedConfig: Options = {
 			setup(build) {
 				if (build.initialOptions?.format === 'iife') return;
 
-				build.onResolve({ filter: /^@magmacomputing\/tempo\/(plugin|plugin-api)$/ }, () => {
+				build.onResolve({ filter: /^@magmacomputing\/tempo\/plugin(\/sdk)?$/ }, () => {
 					return { external: true };
 				});
 			}

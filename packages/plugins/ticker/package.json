@@ -1,0 +1,56 @@
+{
+  "name": "@magmacomputing/tempo-plugin-ticker",
+  "version": "2.3.0",
+  "description": "Tempo plugin that provides a high-performance continuous execution loop (Ticker) based on temporal mathematics.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magmacomputing/magma.git",
+    "directory": "packages/plugins/ticker"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && tsc",
+    "test": "vitest run -c ../vitest.shared.ts",
+    "prepublishOnly": "tempo-cli prepublish"
+  },
+  "tempo": {
+    "vendorVariantId": "tempo-plugin-ticker",
+    "plan": "community"
+  },
+  "peerDependencies": {
+    "@magmacomputing/tempo": "^4.0.0"
+  },
+  "keywords": [
+    "tempo",
+    "tempo-plugin",
+    "magmacomputing",
+    "temporal",
+    "ticker",
+    "interval",
+    "loop",
+    "animation",
+    "date",
+    "datetime",
+    "typescript"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  }
+}

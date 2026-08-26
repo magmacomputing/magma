@@ -5,6 +5,7 @@ import { versionBump } from './commands/version-bump.js';
 import { versionSync } from './commands/version-sync.js';
 import { catalogSync } from './commands/catalog-sync.js';
 import { syncProviders } from './commands/sync-providers.js';
+import { prepublish } from './commands/prepublish.js';
 
 const [command, ...args] = process.argv.slice(2);
 
@@ -27,6 +28,9 @@ switch (command) {
 	case 'sync-providers':
 		await syncProviders(args);
 		break;
+	case 'prepublish':
+		await prepublish(args);
+		break;
 	case '-h':
 	case '--help':
 	case 'help':
@@ -43,6 +47,7 @@ Available Commands:
   version-sync       Sync root package version to workspace packages
   catalog-sync       Sync plugin catalog metadata
   sync-providers     Sync AI provider models and remote manifests
+  prepublish         Verify git main branch and run build prior to publish
 `);
 		break;
 	default:

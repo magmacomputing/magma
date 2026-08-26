@@ -1,5 +1,5 @@
 import { BatchOrchestrator, type BatchOptions } from './BatchOrchestrator.js';
-import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin-api';
+import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 
 export type { BatchOptions };
 

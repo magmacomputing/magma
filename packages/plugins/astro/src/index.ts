@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { enums, getTermRange, defineTerm, enumify, type ValueOf } from '@magmacomputing/tempo/plugin-api';
+import { enums, getTermRange, defineTerm, enumify, type ValueOf } from '@magmacomputing/tempo/plugin/sdk';
 
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
@@ -46,7 +46,7 @@ function calculateAstroMoment(year: number, quarter: ASTRO, timeZone: string) {
 		throw new RangeError(`AstroTerm: Year ${year} is outside the supported Meeus calculation range (-1000 to +3000).`);
 
 	const y = (year - 2_000) / 1_000;
-	let jde: number;
+	let jde = 0;
 
 	switch (quarter) {
 		case ASTRO.Vernal: jde = 2_451_623.80984 + 365_242.37404 * y + 0.05169 * y * y; break;

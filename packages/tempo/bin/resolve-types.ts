@@ -19,18 +19,81 @@ console.log('Resolving type definitions...');
 if (!fs.existsSync(LIB_DEST_DIR))
 	fs.mkdirSync(LIB_DEST_DIR, { recursive: true });
 
-// 2. Identify used library modules from Rollup's JS output
-const usedModules = fs.readdirSync(LIB_DEST_DIR)
-	.filter(f => f.endsWith('.js'))
-	.map(f => f.slice(0, -3));
+// 2. Synchronize all library .d.ts files into dist/lib/
+function copyAllLibraryDts(srcDir: string, destDir: string) {
+	if (!fs.existsSync(srcDir)) return;
+	const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+	for (const entry of entries) {
+		const srcPath = path.join(srcDir, entry.name);
+		const destPath = path.join(destDir, entry.name);
+		if (entry.isDirectory()) {
+			if (!fs.existsSync(destPath)) fs.mkdirSync(destPath, { recursive: true });
+			copyAllLibraryDts(srcPath, destPath);
+		} else if (entry.isFile() && entry.name.endsWith('.d.ts')) {
+			fs.mkdirSync(path.dirname(destPath), { recursive: true });
+			fs.copyFileSync(srcPath, destPath);
+		}
+	}
+}
+copyAllLibraryDts(LIB_SRC_DIR, LIB_DEST_DIR);
 
-// 3. Copy corresponding .d.ts files from library
-usedModules.forEach(mod => {
-	const src = path.join(LIB_SRC_DIR, `${mod}.d.ts`);
-	const dest = path.join(LIB_DEST_DIR, `${mod}.d.ts`);
-	if (fs.existsSync(src))
-		fs.copyFileSync(src, dest);
-});
+// Remove top-level duplicated .d.ts files in dist/lib/ when they exist inside a domain subfolder
+function cleanDuplicateTopLevelDts() {
+	if (!fs.existsSync(LIB_DEST_DIR)) return;
+	const entries = fs.readdirSync(LIB_DEST_DIR, { withFileTypes: true });
+	for (const entry of entries) {
+		if (entry.isDirectory()) {
+			const subDirPath = path.join(LIB_DEST_DIR, entry.name);
+			const subFiles = fs.readdirSync(subDirPath);
+			for (const file of subFiles) {
+				if (file.endsWith('.d.ts')) {
+					const topLevelFile = path.join(LIB_DEST_DIR, file);
+					if (fs.existsSync(topLevelFile)) {
+						fs.unlinkSync(topLevelFile);
+					}
+				}
+			}
+		}
+	}
+}
+cleanDuplicateTopLevelDts();
+
+// 3. Helper to locate actual relative path of a #library file in LIB_SRC_DIR
+const libFileCache = new Map<string, string>();
+function findInLibSrc(targetFileName: string): string {
+	if (libFileCache.has(targetFileName)) return libFileCache.get(targetFileName)!;
+
+	const targetDts = targetFileName.replace(/\.js$/, '.d.ts');
+
+	// Search subdirectories FIRST in LIB_SRC_DIR (e.g. primitives/, runtime/, etc.)
+	function search(dir: string, baseDir: string): string | null {
+		const entries = fs.readdirSync(dir, { withFileTypes: true });
+		for (const entry of entries) {
+			const full = path.join(dir, entry.name);
+			if (entry.isDirectory()) {
+				const found = search(full, baseDir);
+				if (found) return found;
+			} else if (entry.name === targetDts && dir !== baseDir) {
+				return path.relative(baseDir, full).replace(/\.d\.ts$/, '.js').replace(/\\/g, '/');
+			}
+		}
+		return null;
+	}
+
+	const subPath = search(LIB_SRC_DIR, LIB_SRC_DIR);
+	if (subPath) {
+		libFileCache.set(targetFileName, subPath);
+		return subPath;
+	}
+
+	if (fs.existsSync(path.join(LIB_SRC_DIR, targetDts))) {
+		libFileCache.set(targetFileName, targetFileName);
+		return targetFileName;
+	}
+
+	libFileCache.set(targetFileName, targetFileName);
+	return targetFileName;
+}
 
 // 4. Walk through all .d.ts files in dist/ to rewrite aliases
 function walk(dir: string) {
@@ -69,11 +132,8 @@ function rewrite(filePath: string) {
 
 	const updatedContent = content
 		.replace(/#library\/([^"')]+\.js)/g, (_, libPath) => {
-			// NOTE: We use path.basename here because the @magmacomputing/library distribution 
-			// is currently flat (dist/common/*.js), and our resolve process flattens all 
-			// used library modules into the local dist/lib/ directory.
-			const fileName = path.basename(libPath);
-			return `${replacement}${fileName}`;
+			const actualPath = isInsideLib ? libPath : findInLibSrc(libPath);
+			return `${replacement}${actualPath}`;
 		})
 		.replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`)
 		.replace(/#tempo\/license(['"])/g, (_, quote) => `${licReplacement}${quote}`);

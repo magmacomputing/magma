@@ -103,6 +103,49 @@ const rawReasoning = result.reasoning;
 * Calling `getAiConfig()` returns a sanitized, read-only configuration snapshot.
 * All provider `key` values, authorization tokens, and shared secrets are permanently replaced with `[REDACTED]`, ensuring secrets cannot be leaked via diagnostic endpoints or error monitors.
 
+### Dynamic Secret Vaults & Automated Key Rotation
+* Provider `key` parameters support synchronous and asynchronous supplier functions (`AsyncEvaluable<string>` / `() => Promise<string> | string`), while `url`, `model`, and temporal context fields accept synchronous suppliers (`Evaluable<T>`).
+* **Enterprise Secret Vaults**: Instead of pinning long-lived static API keys in memory, applications can integrate cloud key vaults (e.g. AWS Secrets Manager, HashiCorp Vault, Azure Key Vault, Doppler):
+  ```typescript
+  initAI({
+    providers: [
+      {
+        id: 'openai',
+        // Evaluated just-in-time on every provider HTTP dispatch
+        key: async () => await secretVault.getSecret('OPENAI_API_KEY')
+      }
+    ]
+  });
+  ```
+* **Multi-Tenant / Per-Request Key Isolation**: In SaaS applications where each tenant supplies their own BYOK credentials, resolve keys dynamically from the active request context without re-initializing global AI state:
+  ```typescript
+  initAI({
+    providers: [
+      {
+        id: 'openai',
+        // Pulls tenant-specific key from AsyncLocalStorage or request session
+        key: () => {
+          const tenant = tenantStore.getStore();
+          if (!tenant) throw new Error('No tenant context found');
+          return tenant.openaiApiKey;
+        }
+      }
+    ]
+  });
+  ```
+* **Short-Lived & OAuth Token Refreshers**: Dynamic suppliers allow automatic token refresh for short-lived credentials (e.g. Google Cloud Vertex AI / Azure Entra ID OAuth tokens) without service disruption:
+  ```typescript
+  initAI({
+    providers: [
+      {
+        id: 'gemini',
+        key: async () => (await authClient.getAccessToken()).token
+      }
+    ]
+  });
+  ```
+* Keys are fetched just-in-time prior to the HTTP request and never stored in plain text in persistent global state, enabling zero-downtime key rotation.
+
 ### Frontend Zero-Storage Principle
 * **No Client-Side Secrets**: LLM API keys must **never** be bundled into client-side single-page applications (React, Vue, Svelte) or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`).
 * **Proxy Architecture**: Public frontend web applications must route requests through a self-hosted backend proxy or secure AI Gateway (Cloudflare Worker, Next.js API Route) where private API keys are kept server-side.

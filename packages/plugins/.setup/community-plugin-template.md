@@ -26,6 +26,14 @@ Ensure the plugin's `package.json` contains the correct community configuration:
     "access": "public"
   }
   ```
+- **Repository**: Required for npm provenance and source linking. Must include the exact sub-directory path:
+  ```json
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magmacomputing/magma.git",
+    "directory": "packages/plugins/[name]"
+  }
+  ```
 - **Exports**: Define exports with types and import entrypoints:
   ```json
   "exports": {
@@ -37,7 +45,7 @@ Ensure the plugin's `package.json` contains the correct community configuration:
   ```
 - **Scripts**: 
   - Ensure `"build": "tsup && tsc"` is present.
-  - Include the prepublish safeguard: `"prepublishOnly": "if [ $(git rev-parse --abbrev-ref HEAD) != main ]; then echo 'ERROR: Must be on main branch to publish.'; exit 1; fi && npm run build"`.
+  - Include the prepublish safeguard: `"prepublishOnly": "tempo-cli prepublish"`.
   - Include the correct test script: `"test": "vitest run -c ../vitest.shared.ts"`.
 - **Keywords**: Ensure relevant keywords are present (`tempo`, `tempo-plugin`, `magmacomputing`, `temporal`, `plugin`, etc.).
 - **tempo**: Set `"plan": "community"`.
@@ -134,3 +142,14 @@ All exported components (functions, interfaces, classes, and types) must be prop
  */
 export function myExportedFunction(input: string): string { ... }
 ```
+
+## 7. Release & CI Configuration (`.github/workflows/publish.yml`)
+
+When adding a new plugin to the monorepo, update `.github/workflows/publish.yml` to enable manual `workflow_dispatch` provenance releases:
+
+1. **Add to Package Selector**: Add `@magmacomputing/tempo-plugin-[name]` to the `options` array under `inputs.package`.
+2. **Add to Bulk Publish**: Add the workspace to the `all` branch in the publishing step:
+   ```bash
+   npm publish --workspace=@magmacomputing/tempo-plugin-[name] $PROVENANCE_FLAG
+   ```
+

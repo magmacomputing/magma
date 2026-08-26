@@ -2,6 +2,60 @@
 
 Tempo v4.0.0 introduces a standardized plugin & registry architecture, strict configuration namespaces, and excises legacy v3.x deprecated interfaces.
 
+## ⚡ Dynamic Functional Context (DFC) & Supplier Options
+
+In v4.0.0, core configuration options (`timeZone`, `locale`, `calendar`, `sphere`) accept lazy `Evaluable<T>` supplier functions (`() => T`) as well as static scalars. This enables dynamic, per-request context resolution (e.g. multi-tenant session headers, request-scoped localizations) without recreating `Tempo` options or rebuilding configuration objects.
+
+```typescript
+// ✅ v4.0.0 - Dynamic per-request timezone resolution
+import { Tempo } from '@magmacomputing/tempo';
+import { getActiveTenantTimezone } from './session';
+
+Tempo.init({
+  timeZone: () => getActiveTenantTimezone(), // Re-evaluated dynamically when context getters execute
+  locale: () => getCurrentUserLocale()
+});
+```
+
+---
+
+## 🛠️ Plugin SDK Subpath (`@magmacomputing/tempo/plugin/sdk`)
+
+In v4.0.0, all custom plugin, term, module, and namespace development is standardized on `@magmacomputing/tempo/plugin/sdk`.
+
+- **Legacy Imports**: Deprecated `plugin-api.index.ts` and `#tempo/license` subpath imports have been removed.
+- **SDK Import**: Import `definePlugin`, `defineTerm`, `defineModule`, `defineNamespace`, `defineRange`, and evaluation utilities directly from `@magmacomputing/tempo/plugin/sdk`.
+
+```typescript
+// ❌ v3.x (Deprecated)
+import { definePlugin } from '@magmacomputing/tempo/plugin-api';
+
+// ✅ v4.0.0
+import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
+```
+
+---
+
+## 📄 Zero-`await` Synchronous JSONC Config Discovery
+
+Tempo v4.0.0 introduces `resolveConfigSync()` for zero-`await` synchronous configuration discovery when using `.json` or `.jsonc` configuration files.
+
+- `.json` / `.jsonc` files: Dynamically discovered and parsed synchronously during module initialization via `parseJSONC`.
+- `.ts` / `.mts` / `.mjs` / `.js` files: Asynchronously loaded via `resolveConfig()`.
+- Deprecated `.cjs` config discovery files are no longer automatically scanned.
+
+---
+
+## 🔓 100% Open-Source Community Core
+
+Tempo v4.0.0 Community Core is 100% open-source without commercial license validation hooks or JWT scope checks.
+
+- License keys (`licenseKey`, `TEMPO_LICENSE_KEY`) are no longer required or checked in the Community Edition.
+- `Tempo.ready()` returns `'none'` for community core compatibility.
+- Commercial plugin management and domain-locking hooks have been relocated into the `@magmacomputing/tempo-pro` enterprise package.
+
+---
+
 ## 🔌 Plugin Registration (`extends` vs `plugins`)
 
 In v3.x, passing plugin modules to install via `plugins: [PluginA]` was supported. In v4.0.0, plugin module installation is strictly separated from plugin runtime configuration.
@@ -24,6 +78,8 @@ Tempo.init({
   }
 });
 ```
+
+---
 
 ## 📂 Data Augmentation (`registry: { ... }`)
 
@@ -49,6 +105,8 @@ Tempo.init({
   }
 });
 ```
+
+---
 
 ## 🧹 Deprecated Type & API Cleanup
 

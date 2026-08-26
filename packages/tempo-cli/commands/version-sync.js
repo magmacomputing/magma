@@ -35,7 +35,8 @@ export async function versionSync(_args) {
 						continue;
 					}
 				}
-				execFileSync('npm', ['version', version, '-w', ws, '--no-git-tag-version'], { cwd: ROOT_DIR, stdio: 'inherit' });
+				const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+				execFileSync(npmCmd, ['version', version, '-w', ws, '--no-git-tag-version'], { cwd: ROOT_DIR, stdio: 'inherit' });
 				console.log(`✅ Synced ${ws} to ${version}`);
 				syncedCount++;
 			} catch (error) {

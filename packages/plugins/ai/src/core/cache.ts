@@ -10,6 +10,9 @@ const _entryExpiries = new Map<string, number>();
 
 /**
  * Normalizes input string for deterministic cache lookups by trimming excess whitespace and lowercasing.
+ *
+ * @param input - Raw input string to normalize
+ * @returns Normalized cache key string
  */
 export function normalizeCacheInput(input: string): string {
 	return input.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -17,6 +20,10 @@ export function normalizeCacheInput(input: string): string {
 
 /**
  * Generates a namespaced cache key for domain-specific AI functions.
+ *
+ * @param namespace - The functional namespace (e.g., 'parse', 'format', 'diff')
+ * @param key - The specific cache key within the namespace
+ * @returns Fully namespaced cache key string
  */
 export function getNamespacedCacheKey(namespace: string, key: string): string {
 	return `${AI_CACHE_NAMESPACE_PREFIX}${namespace}::${key}`;
@@ -24,6 +31,10 @@ export function getNamespacedCacheKey(namespace: string, key: string): string {
 
 /**
  * Reads from multi-tier cache (Tier 2 external async adapter first, Tier 1 local in-memory Tempo.cache fallback).
+ *
+ * @param cacheKey - The cache key to retrieve
+ * @param options - Cache read options including force, cache toggle, adapter, debug, and tag
+ * @returns The cached string value, or undefined if not found or cache is disabled
  */
 export async function readMultiTierCache(
 	cacheKey: string,
@@ -69,6 +80,11 @@ export async function readMultiTierCache(
 
 /**
  * Writes to multi-tier cache (Tier 1 local in-memory Tempo.cache and Tier 2 external async adapter).
+ *
+ * @param cacheKey - The cache key to store
+ * @param value - The string value to cache
+ * @param ttl - Time-to-live in milliseconds
+ * @param options - Cache write options including cache toggle, adapter, debug, and tag
  */
 export async function writeMultiTierCache(
 	cacheKey: string,

@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asText, isDefined, isObject, isString, isText, secure, when } from '@magmacomputing/tempo/library';
+import { asNumber, asText, isDefined, isObject, isString, isText, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
@@ -91,7 +91,7 @@ async function extractSingleInput(
 							if (!start.isValid) continue;
 							const end = ev.end ? new Tempo(ev.end, { timeZone: tz, locale: loc, calendar: cal }) : undefined;
 							if (end && !end.isValid) continue;
-							const type = when(ev.type, (t): t is TempoEventType => allowedTypes.includes(t as any), 'point');
+							const type = when(ev.type, (t: unknown): t is TempoEventType => allowedTypes.includes(t as any), 'point');
 							rehydratedEvents.push({
 								label: asText(ev.label, 'Event'),
 								start,
@@ -136,7 +136,8 @@ async function extractSingleInput(
 	const availableProviders = getAvailableProviders(options);
 
 	const weekdayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-	const anchorWeekday = weekdayNames[anchorTempo.dow] || anchorTempo.format('{www}');
+	const anchorDow = asNumber(anchorTempo.dow, 0);
+	const anchorWeekday = weekdayNames[anchorDow] || anchorTempo.format('{www}');
 	const anchorIso = anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}');
 
 	const systemPrompt = `You are an expert temporal entity and calendar event extraction engine.
@@ -169,7 +170,7 @@ ${categories.length > 0 ? `6. Only extract events matching one of these categori
 
 	const contextString = `Grounding Context:
 - Reference Anchor Date-Time: ${anchorIso} (${tz})
-- Reference Day of Week: ${anchorWeekday} (Day ${anchorTempo.dow})
+- Reference Day of Week: ${anchorWeekday} (Day ${anchorDow})
 - Target TimeZone: ${tz}
 - Target Locale: ${loc}
 - Calendar System: ${cal}
@@ -212,7 +213,7 @@ ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Fil
 					}
 
 					const allowedTypes: TempoEventType[] = ['point', 'interval', 'deadline', 'recurrence', 'tentative'];
-					const type = when(item.type, (t): t is TempoEventType => allowedTypes.includes(t as any), 'point');
+					const type = when(item.type, (t: unknown): t is TempoEventType => allowedTypes.includes(t as any), 'point');
 					const label = asText(item.label, 'Event');
 					const rawText = asText(item.rawText);
 					const itemConf = sanitizeConfidence(item.confidence, confidence);

@@ -63,6 +63,32 @@ await initAI({
 
 > **Tip**: `initAI` returns a `Promise<void>` and is fully re-callable! Calling it synchronously without `await` instantly initializes local configurations so you can call `parseAI` immediately, while `await initAI()` guarantees that remote provider manifest defaults are fetched and applied before proceeding (with explicit provider configuration values always taking precedence over remote manifest defaults).
 
+### Dynamic Provider Credentials & Context Suppliers
+
+The provider `key` configuration supports asynchronous or synchronous supplier functions (`AsyncEvaluable<string>`), allowing automated secret vault retrieval and dynamic token refreshing. Provider attributes (`url`, `model`) as well as global context settings (`timeZone`, `locale`, `calendar`, `sphere`) accept synchronous supplier functions (`Evaluable<T>`).
+
+This enables automated secret vault rotation, dynamic AI gateways, and multi-tenant context resolution evaluated just-in-time on every HTTP dispatch:
+
+```typescript
+import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+
+// Initialize with dynamic async key resolver and per-request context
+initAI({
+  providers: [
+    {
+      id: 'openai',
+      // Resolved dynamically per-request: enables secret vault rotation without restarting
+      key: async () => await secretVault.getApiKey('openai'),
+      // Dynamic proxy endpoint
+      url: () => getActiveGatewayUrl()
+    }
+  ],
+  // Dynamic timezone / locale resolution
+  timeZone: () => currentRequestContext.timeZone,
+  locale: () => currentRequestContext.locale
+});
+```
+
 ## Execution Modes & Multi-Provider Options
 
 The AI plugin supports six multi-provider execution strategies (`fallback`, `race`, `consensus`, `adaptive`, `hedged`, `roundrobin`):
@@ -150,6 +176,14 @@ export interface AiConfig {
   ttl?: number;
   /** Minimum confidence threshold for AI parsing results (0.0 to 1.0) */
   minConfidence?: number;
+  /** Dynamic or static default timezone context (string | (() => string)) */
+  timeZone?: Evaluable<string>;
+  /** Dynamic or static default locale context (string | string[] | (() => string | string[])) */
+  locale?: Evaluable<string | string[]>;
+  /** Dynamic or static default calendar context (string | (() => string)) */
+  calendar?: Evaluable<string>;
+  /** Dynamic or static default celestial sphere context (string | (() => string)) */
+  sphere?: Evaluable<string>;
   /** Optional hook to intercept and resolve dynamic provider defaults */
   fetchDefaults?: (providerId: string) => Promise<Partial<AiProvider> | null> | Partial<AiProvider> | null;
   /** URL for dynamic remote provider manifest updates, or `false` to disable */
