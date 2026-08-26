@@ -19,6 +19,9 @@ export function resetManifestCache(): void {
 
 /**
  * Validates that a manifest or provider URL uses HTTPS or HTTP localhost.
+ *
+ * @param urlStr - The URL string to validate
+ * @returns True if the URL is secure (HTTPS or localhost HTTP), false otherwise
  */
 export function isValidManifestUrl(urlStr: string): boolean {
 	try {
@@ -33,6 +36,11 @@ export function isValidManifestUrl(urlStr: string): boolean {
  * Fetches the remote AI provider manifest. Remote defaults are loaded during initialization.
  * Supports both standard JSON and JSONC (JSON with comments & trailing commas).
  * Fail-open: if network fails or times out, returns null and allows fallback to local DEFAULT_PROVIDERS.
+ *
+ * @param remoteConfigUrl - The URL to fetch the manifest from, or false to disable remote fetching (default: DEFAULT_REMOTE_MANIFEST_URL)
+ * @param timeoutMs - Request timeout in milliseconds (default: 1500ms)
+ * @param debug - Whether to log debug warnings to console (default: false)
+ * @returns The provider manifest map, or null if fetch fails or is disabled
  */
 export async function loadRemoteManifest(
 	remoteConfigUrl: string | false = DEFAULT_REMOTE_MANIFEST_URL,
@@ -99,6 +107,11 @@ export async function loadRemoteManifest(
 /**
  * Resolves the default settings for a given provider ID by combining compiled DEFAULT_PROVIDERS
  * with remote manifest entries if available.
+ *
+ * @param providerId - The provider identifier to resolve defaults for
+ * @param remoteConfigUrl - Optional URL to fetch remote manifest from, or false to disable
+ * @param debug - Whether to log debug warnings to console (default: false)
+ * @returns Merged provider defaults from local and remote sources
  */
 export function getResolvedProviderDefaults(
 	providerId: string,

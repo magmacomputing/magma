@@ -90,6 +90,13 @@ export function resolveFullContext(
 	return { tz, loc, cal, sph, contextConfig };
 }
 
+/**
+ * Resolves timezone and locale from options hierarchy or fallback Tempo instance.
+ *
+ * @param options - Function options with potential timezone and locale overrides
+ * @param fallbackTempo - Optional fallback Tempo instance for context resolution
+ * @returns Object containing resolved timezone and locale strings
+ */
 export function resolveTzAndLocale(
 	options?: { timeZone?: Evaluable<string> | undefined; locale?: Evaluable<string | string[]> | undefined } | undefined,
 	fallbackTempo?: Tempo | null,
@@ -160,6 +167,11 @@ export function resolveAnchorTempo(
 
 /**
  * Resolves standard execution options (mode, minConfidence, hedgeDelay, debug, and tag) across AI functions.
+ *
+ * @param options - Base AI options containing mode, confidence, and debug settings
+ * @param fnName - Name of the calling function (used for tag generation and validation)
+ * @param tagPrefix - Logging tag prefix (default: 'tempo-plugin-ai')
+ * @returns Resolved execution configuration including mode, confidence, debug state, and executeOptions
  */
 export function resolveExecutionOptions(
 	options: AiBaseOptions | undefined,

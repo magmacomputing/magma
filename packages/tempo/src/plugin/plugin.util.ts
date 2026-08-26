@@ -15,6 +15,9 @@ export type TempoModule = Module<TempoType>;
 
 /**
  * Resolves the host Tempo class constructor for a given instance, value, or runtime environment.
+ *
+ * @param t - A Tempo instance, constructor, or any value to resolve the host from
+ * @returns The Tempo class constructor
  */
 export function getHost(t: any): any {
 	const TempoClass = getRuntime().modules['Tempo'];
@@ -26,6 +29,12 @@ export function getHost(t: any): any {
 /**
  * ## ensureModule
  * Ensure a specific module is loaded, throwing a friendly error if not.
+ *
+ * @param t - The Tempo instance or constructor to check
+ * @param module - The module name to verify is loaded
+ * @param silent - If true, returns false instead of throwing errors (default: false)
+ * @returns True if the module is loaded, false if silent mode and module is missing
+ * @throws TempoError if module is not loaded and silent is false
  */
 export function ensureModule(t: any, module: string, silent: boolean = false): boolean {
 	const host = getHost(t);
@@ -54,6 +63,13 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 /**
  * ## interpret
  * Utility to safely delegate calls to the Tempo Interpreter with catch-support.
+ *
+ * @param t - The Tempo instance to operate on
+ * @param module - The module name to invoke
+ * @param methodOrFallback - Optional method name within the module, or fallback function
+ * @param silent - If true, suppresses errors and returns fallback values (default: false)
+ * @param args - Arguments to pass to the module or method
+ * @returns The result of the module invocation, or fallback value on error
  */
 export function interpret(t: any, module: string, methodOrFallback?: any, silent: boolean = false, ...args: any[]) {
 	const host = getHost(t);
@@ -94,6 +110,9 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
 /**
  * ## defineModule
  * Used to register an internal modularization component.
+ *
+ * @param module - The module plugin definition to register
+ * @returns The registered module with plugin type metadata attached
  */
 export function defineModule<T extends Plugin<TempoType>>(module: T): T {
 	const result = { ...module, [sym.$PluginType]: 'module' };

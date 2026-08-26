@@ -7,6 +7,8 @@ import type { AiConfig, AiProvider } from '../types/index.js';
 
 /**
  * Checks if the current execution context is a server-side JavaScript runtime (Node.js, Deno, Bun).
+ *
+ * @returns True if running in a server runtime, false otherwise
  */
 export function isServerRuntime(): boolean {
 	const { type } = getContext();
@@ -15,6 +17,8 @@ export function isServerRuntime(): boolean {
 
 /**
  * Checks if the current execution context is a browser environment.
+ *
+ * @returns True if running in a browser, false otherwise
  */
 export function isBrowserRuntime(): boolean {
 	const { type } = getContext();
@@ -23,6 +27,8 @@ export function isBrowserRuntime(): boolean {
 
 /**
  * Safely accesses the runtime environment variables without crashing non-server runtimes.
+ *
+ * @returns A record of environment variable key-value pairs, or an empty object if not in a server runtime
  */
 export function getRuntimeEnv(): Record<string, string | undefined> {
 	if (!isServerRuntime())
@@ -47,6 +53,10 @@ function getEnvValue(env: Record<string, string | undefined>, name: string): str
 /**
  * Interpolates environment variable expressions (${VAR_NAME}, ${env:VAR_NAME}, and $env:VAR_NAME)
  * in a string, substituting missing variables with an empty string.
+ *
+ * @param value - The string containing environment variable references
+ * @param env - The environment variables map to use for interpolation (default: runtime environment)
+ * @returns The interpolated string with environment variables substituted
  */
 export function interpolateEnvValue(value: string, env: Record<string, string | undefined> = getRuntimeEnv()): string {
 	return value.replace(/(?:\$\{(?:env:)?([A-Z0-9_]+)\}|\$env:([A-Z0-9_]+))/gi, (_, g1, g2) => {
@@ -58,6 +68,10 @@ export function interpolateEnvValue(value: string, env: Record<string, string | 
 /**
  * Recursively traverses and interpolates environment variable expressions in strings, arrays, Maps, and plain objects.
  * Preserves class instances (such as CacheAdapters), functions, and primitives without mutation.
+ *
+ * @param obj - The object, array, Map, or primitive to recursively interpolate
+ * @param env - The environment variables map to use for interpolation (default: runtime environment)
+ * @returns A new structure with all environment variable references resolved
  */
 export function interpolateEnv<T>(obj: T, env: Record<string, string | undefined> = getRuntimeEnv()): T {
 	if (isString(obj))
@@ -126,6 +140,9 @@ export function resolveProviderApiKey(
 /**
  * Scans the active environment variables for well-known provider tokens and constructs
  * matching AiProvider configurations using built-in defaults.
+ *
+ * @param env - The environment variables map to scan (default: runtime environment)
+ * @returns Array of auto-discovered provider configurations
  */
 export function scanWellKnownEnvProviders(env: Record<string, string | undefined> = getRuntimeEnv()): AiProvider[] {
 	const providers: AiProvider[] = [];
@@ -150,6 +167,8 @@ export function scanWellKnownEnvProviders(env: Record<string, string | undefined
 
 /**
  * Inspects active Tempo runtime state and static class configuration for AI plugin settings.
+ *
+ * @returns The active AI configuration if found, or undefined
  */
 export function getActiveTempoConfigAi(): AiConfig | undefined {
 	try {
@@ -171,6 +190,8 @@ export function getActiveTempoConfigAi(): AiConfig | undefined {
 
 /**
  * Dynamically resolves AI configuration from tempo.config.* files on disk if running in server environments.
+ *
+ * @returns The resolved AI configuration from filesystem, or undefined if not found or not in server runtime
  */
 export async function resolveTempoConfigFileAi(): Promise<AiConfig | undefined> {
 	if (!isServerRuntime())
@@ -193,6 +214,9 @@ export async function resolveTempoConfigFileAi(): Promise<AiConfig | undefined> 
  * 3. Caller explicit configuration overrides
  * 4. Recursive environment variable template string interpolation (`${VAR_NAME}`, `$env:VAR_NAME`)
  * 5. Environment variable token scanning for well-known provider keys (`GROQ_API_KEY`, etc.)
+ *
+ * @param explicitConfig - Optional explicit configuration to merge and override defaults
+ * @returns Fully resolved AI configuration with providers and settings
  */
 export async function resolveAutoDiscoveredConfig(explicitConfig?: AiConfig): Promise<AiConfig> {
 	const env = getRuntimeEnv();

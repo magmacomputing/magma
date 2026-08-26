@@ -145,6 +145,11 @@ export function logDebug(
 
 /**
  * Emits a sanitized debug warning if debugging is active.
+ *
+ * @param tag - Logging namespace / tag (e.g. 'tempo-plugin-ai:parse')
+ * @param message - Descriptive warning message (automatically PII-masked)
+ * @param error - Optional error object or details
+ * @param options - Explicit debug override
  */
 export function warnDebug(
 	tag: string,
@@ -171,6 +176,10 @@ export function warnDebug(
  * Attaches custom inspection (`util.inspect.custom` and `toJSON`) hooks to an object
  * to ensure that `console.log()` outputs a PII-sanitized summary in terminal/log aggregators
  * without altering in-memory property access.
+ *
+ * @param target - The target object to attach inspection hooks to
+ * @param getInspectView - Function that generates a sanitized view of the object
+ * @returns The modified target object with inspection hooks attached
  */
 export function attachCustomInspect<T extends object>(
 	target: T,
@@ -205,6 +214,10 @@ export function attachCustomInspect<T extends object>(
 
 /**
  * Sanitizes standard AI metadata (reasoning, prompt, limits) for custom inspection views.
+ *
+ * @param ai - AI metadata object containing provider info, confidence, reasoning, etc.
+ * @param isProd - Whether to apply production-level PII masking (default: auto-detected)
+ * @returns Sanitized metadata object safe for logging
  */
 export function sanitizeInspectAiMeta(
 	ai: {
