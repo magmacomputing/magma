@@ -63,7 +63,7 @@ describe('engine.planner shell', () => {
 		const state = makeState(['weekDay', 'date', 'time', 'relativeOffset']);
 		const pre = selectLayoutPatterns(state, '2 days ago', { enablePrefilter: true });
 
-		expect(pre.map(([sym]) => sym.description)).toEqual(['relativeOffset']);
+		expect(pre.map(([sym]) => sym.description)).toEqual(['weekDay', 'relativeOffset']);
 	});
 
 	test('prefilter: colon input biases time-family layouts first', () => {

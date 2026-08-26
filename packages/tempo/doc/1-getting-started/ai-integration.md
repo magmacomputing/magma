@@ -28,7 +28,7 @@ In VS Code, configure GitHub Copilot Chat by adding a `.github/copilot-instructi
 # Tempo AI Rules
 - Always use `Tempo` from `@magmacomputing/tempo`.
 - Never instantiate legacy JavaScript `Date`. Tempo expects native `Temporal` or polyfill.
-- All mutating methods (`.add()`, `.subtract()`, `.with()`) return a brand-new, frozen `Tempo` instance.
+- All mutating methods (`.add()`, `.subtract()`, `.set()`) return a brand-new, frozen `Tempo` instance.
 - Refer to https://tempo.magmacomputing.com.au/llms.txt for full layout token grammar.
 ```
 
@@ -53,24 +53,24 @@ For web-based LLM interfaces, reference or copy-paste the full, un-truncated doc
 
 ## 🛠️ Prompting AI for Custom Layout Extensions
 
-When asking AI assistants to generate custom layout patterns for parsing unique date-time formats, instruct the model to use Tempo's configuration syntax (`Tempo.init({ registry: { layouts: { ... } } })`) and named capture tokens (`{yy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tzd}`).
+When asking AI assistants to generate custom layout patterns for non-standard date-time formats, instruct the model to use Tempo's configuration syntax (`Tempo.init({ registry: { layouts: { ... } } })`) and layout tokens (`{yy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`).
 
 ### Sample Prompt:
-> *"Using the rules from https://tempo.magmacomputing.com.au/llms.txt, register a custom Tempo layout for fiscal quarters (e.g., 'Q3 2026') using `Tempo.init({ registry: { layouts: { ... } } })` and instantiate a date with the layout option."*
+> *"Using the rules from https://tempo.magmacomputing.com.au/llms.txt, register a custom Tempo layout for star-delimited dates (e.g., '08*04*2026') using `Tempo.init({ registry: { layouts: { ... } } })` and parse the date string using `new Tempo(...)`."*
 
 ### Generated Code (Actual Tempo Syntax):
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
-// 1. Register custom layout pattern using snippet tokens
+// 1. Register custom layout pattern using layout tokens
 Tempo.init({
   registry: {
     layouts: {
-      fiscal_quarter: 'Q{nbr} {yy}'
+      star_date: '{mm}\\*{dd}\\*{yy}'
     }
   }
 });
 
-// 2. Parse date string using the registered layout
-const date = new Tempo('Q3 2026', { layout: 'fiscal_quarter' });
+// 2. Parse date string matching the custom layout
+const date = new Tempo('08*04*2026');
 ```

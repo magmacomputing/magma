@@ -39,11 +39,18 @@ t.set({ year: 2026, month: 1 }); // Sets to January 2026
 
 ### Navigating to Boundaries
 
-You can snap to boundaries using native units, or use [Slick Structural Keys](../4-advanced-reference/tempo.shorthand.md) to navigate custom terminology cycles:
+You can snap to boundaries using intuitive property-based `{ Term: Value }` assignment, or use [Slick Structural Keys](../4-advanced-reference/tempo.shorthand.md) to navigate custom terminology cycles:
 
 ```typescript
-t.set({ start: 'month' });    // Native: Start of the current month
-t.set({ end: '#qtr' });       // Slick: End of the current quarter
+t.set({ month: 'start' });    // Native: Start of the current month
+t.set({ '#qtr': 'end' });     // Slick: End of the current quarter
+```
+
+Snippet shorthand keys (`mm`, `yy`, `dd`) are also supported for boundary snapping:
+
+```typescript
+t.set({ mm: 'start' });       // Snaps to start of current month
+t.set({ yy: 'end' });         // Snaps to end of current year
 ```
 
 ### Slick Object Mutations
@@ -86,10 +93,10 @@ Because all mutations return a new instance, you can safely chain `.add()` and `
 
 ```typescript
 const endOfQ1 = t
-  .set({ start: 'year' })     // Snap to January 1st
+  .set({ year: 'start' })     // Snap to January 1st
   .add({ months: 3 })         // Shift forward 3 months (to April 1st)
   .subtract({ days: 1 })      // Step back exactly one day (March 31st)
-  .set({ end: 'month' });     // Snap to March 31st at 23:59:59.999
+  .set({ month: 'end' });     // Snap to March 31st at 23:59:59.999
 ```
 
 ## Relational vs. Navigation Shifting

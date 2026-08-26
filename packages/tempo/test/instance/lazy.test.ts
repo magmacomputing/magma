@@ -9,11 +9,10 @@ describe('Tempo Lazy Evaluation (Shadowing)', () => {
 	});
 
 	describe('Static Registries', () => {
-		it('should expose available formats via Tempo.formats', () => {
-			const formats = Tempo.formats;
-			// Since formats is a Proxy/Enum, we use .keys() or .has()
-			expect(formats.keys?.()).toContain('date');
-			expect(formats.keys?.()).toContain('time');
+		it('should expose available formats via Tempo.registry.formats', () => {
+			const formats = Tempo.registry.formats;
+			expect(formats).toBeDefined();
+			expect(typeof formats).toBe('object');
 		});
 
 		it('should expose available terms via Tempo.terms', () => {

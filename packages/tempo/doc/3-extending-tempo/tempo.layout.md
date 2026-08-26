@@ -71,6 +71,22 @@ Tempo.init({
 const t = new Tempo('20-05-2024'); // Parsed using 'myCustomFormat'
 ```
 
+> [!WARNING]
+> **Escaping Regex Meta-Characters in Custom Delimiters**
+>
+> Layout strings are compiled directly into regular expressions by the Tempo engine. If your custom layout uses non-standard separators that are regex meta-characters (such as `*`, `|`, `+`, `?`, `.`, `^`, `$`), you **must escape them** in layout strings (e.g., `\\*`, `\\|`) or pass a pre-compiled `RegExp` object with escaped delimiters.
+>
+> ```typescript
+> // ❌ Incorrect: '*' is interpreted as a regex quantifier
+> Tempo.init({ registry: { layouts: { starDate: '{mm}*{dd}*{yy}' } } });
+>
+> // ✅ Correct: escape meta-characters in layout strings
+> Tempo.init({ registry: { layouts: { starDate: '{mm}\\*{dd}\\*{yy}' } } });
+>
+> // ✅ Correct: using RegExp with escaped delimiters
+> Tempo.init({ registry: { layouts: { starDate: /(?<mm>\d{2})\*(?<dd>\d{2})\*(?<yy>\d{4})/ } } });
+> ```
+
 ### Instance-Specific Layout
 
 ```typescript
@@ -109,7 +125,7 @@ When prompting AI assistants (Cursor, GitHub Copilot, ChatGPT, Claude) to write 
 2. **Explicit Token Request**: Ask the LLM to use Tempo's standard snippet tokens (`{yy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tzd}`) rather than raw, un-anchored regular expressions.
 3. **Example AI Prompt**:
    ```text
-   "Using https://tempo.magmacomputing.com.au/llms.txt, register a custom layout for strings like 'Q3 2026' using Tempo.init({ registry: { layouts: { ... } } }) and snippet tokens."
+   "Using https://tempo.magmacomputing.com.au/llms.txt, register a custom layout for strings like '20-05-2024' using Tempo.init({ registry: { layouts: { ... } } }) and snippet tokens."
    ```
 
 ---

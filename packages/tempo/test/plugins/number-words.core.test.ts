@@ -1,6 +1,12 @@
 import { Tempo } from '#tempo/core';
-import '#tempo/mutate';
-import '#tempo/parse';
+import { FormatModule } from '#tempo/format';
+import { DurationModule } from '#tempo/duration';
+import { MutateModule } from '#tempo/mutate';
+import { ParseModule } from '#tempo/parse';
+import { StandardTerms } from '#tempo/std';
+import { TermsModule } from '#tempo';
+
+Tempo.extend([ParseModule, FormatModule, MutateModule, DurationModule, TermsModule, StandardTerms]);
 
 describe('Number-Word Pilot (0-10)', () => {
 	it('should resolve word-based counts in weekday patterns', () => {
@@ -25,7 +31,9 @@ describe('Number-Word Pilot (0-10)', () => {
 
 	it('should be extendable via global discovery', () => {
 		Tempo.extend({
-			numbers: { eleven: 11 }
+			registry: {
+				numbers: { eleven: 11 }
+			}
 		});
 
 		const base = new Tempo('2024-03-20');

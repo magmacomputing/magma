@@ -13,6 +13,9 @@ export type TempoType = typeof Tempo;
 export type TempoPlugin = Plugin<TempoType>;
 export type TempoModule = Module<TempoType>;
 
+/**
+ * Resolves the host Tempo class constructor for a given instance, value, or runtime environment.
+ */
 export function getHost(t: any): any {
 	const TempoClass = getRuntime().modules['Tempo'];
 	if (isFunction(t) || isClass(t)) return t;
@@ -106,10 +109,11 @@ export function defineModule<T extends Plugin<TempoType>>(module: T): T {
 export function attachStatics(TempoClass: any, props: Record<string, any>) {
 	for (const [key, val] of Object.entries(props)) {
 		if (hasOwn(TempoClass, key)) {
+			const existing = (TempoClass as any)[key];
+			if (existing === val || (isObject(val) && 'value' in val && val.value === existing))
+				continue;
 			const msg = `Static name collision on "${key}". Property is already defined on the host class.`;
-			// use catch:true to report the collision without a fatal throw (supports re-extension in shared environments)
 			logError(msg, { ...TempoClass?.config, catch: true });
-			// console.error(msg);
 			continue;
 		}
 
@@ -180,13 +184,6 @@ export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T {
 	const result = { ...plugin, [sym.$PluginType]: 'plugin' };
 	registerPlugin(result);
 	return result as unknown as T;
-}
-
-/**
- * @deprecated Use `definePlugin` instead. Retained for backwards compatibility.
- */
-export function defineExtension<T extends Plugin<TempoType>>(plugin: T): T {
-	return definePlugin(plugin);
 }
 
 /**

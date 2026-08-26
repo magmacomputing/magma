@@ -3,8 +3,10 @@ import '#tempo/parse';
 import '#tempo/term';
 import '#tempo/mutate';
 import { FormatModule } from '#tempo/format';
+import { QuarterTerm } from '#tempo/std';
+import { TermsModule } from '#tempo';
 
-Tempo.extend(FormatModule);
+Tempo.extend([FormatModule, TermsModule, QuarterTerm]);
 
 describe('Fiscal Cycle Wrap-around', () => {
 	it('should resolve Southern Hemisphere Q4 for April anchor', () => {

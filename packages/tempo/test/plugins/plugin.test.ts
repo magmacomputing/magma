@@ -1,29 +1,30 @@
 import { Tempo } from '#tempo';
 import type { Plugin } from '#tempo/plugin/plugin.type.js';
+import { definePlugin } from '#tempo/plugin/plugin.util.js';
 
 describe('Tempo Plugin System', () => {
 
 	test('should extend Tempo with a static method', () => {
-		const staticPlugin: Plugin = {
+		const staticPlugin: Plugin = definePlugin({
 			name: 'StaticPlugin',
 			install(TempoClass) {
 				(TempoClass as any).staticMethod = () => 'static';
 			},
-		};
+		});
 
 		Tempo.extend(staticPlugin);
 		expect((Tempo as any).staticMethod()).toBe('static');
 	});
 
 	test('should extend Tempo with an instance method', () => {
-		const instancePlugin: Plugin = {
+		const instancePlugin: Plugin = definePlugin({
 			name: 'InstancePlugin',
 			install(TempoClass) {
 				(TempoClass.prototype as any).instanceMethod = function () {
 					return 'instance';
 				};
 			},
-		};
+		});
 
 		Tempo.extend(instancePlugin);
 		const t = new Tempo();
@@ -32,10 +33,10 @@ describe('Tempo Plugin System', () => {
 
 	test('should not install the same plugin twice', () => {
 		let installCount = 0;
-		const singlePlugin: Plugin = {
+		const singlePlugin: Plugin = definePlugin({
 			name: 'SinglePlugin',
 			install() { installCount++; },
-		};
+		});
 
 		Tempo.extend(singlePlugin);
 		Tempo.extend(singlePlugin);
@@ -44,10 +45,10 @@ describe('Tempo Plugin System', () => {
 
 	test('should auto-load plugins from init extends option', () => {
 		let loaded = false;
-		const initPlugin: Plugin = {
+		const initPlugin: Plugin = definePlugin({
 			name: 'InitExtendsPlugin',
 			install() { loaded = true; },
-		};
+		});
 
 		Tempo.init({ extends: [initPlugin] });
 		expect(loaded).toBe(true);
@@ -66,17 +67,6 @@ describe('Tempo Plugin System', () => {
 		expect(Tempo.config.plugins?.ai?.timeout).toBe(5000);
 	});
 
-	test('should support legacy plugins array registration with @deprecated fallback', () => {
-		let loaded = false;
-		const legacyPlugin: Plugin = {
-			name: 'LegacyArrayPlugin',
-			install() { loaded = true; },
-		};
-
-		Tempo.init({ plugins: [legacyPlugin] });
-		expect(loaded).toBe(true);
-	});
-
 	test('should auto-load plugins from global discovery extends', () => {
 		const testDiscovery = '$TempoTestDiscoveryExtends';
 		const discoveryKey = Symbol.for(testDiscovery);
@@ -84,34 +74,14 @@ describe('Tempo Plugin System', () => {
 		const discoveryPlugin: Plugin = {
 			name: 'DiscoveryExtendsPlugin',
 			install() { loaded = true; },
-		};
+		} as Plugin;
 
 		(globalThis as any)[discoveryKey] = {
 			extends: [discoveryPlugin],
 		};
 
 		try {
-			Tempo.init({ discovery: testDiscovery });
-			expect(loaded).toBe(true);
-		} finally {
-			delete (globalThis as any)[discoveryKey];
-		}
-	});
-
-	test('should auto-load plugins from global discovery legacy plugins array', () => {
-		const testDiscovery = '$TempoTestDiscoveryLegacy';
-		const discoveryKey = Symbol.for(testDiscovery);
-		let loaded = false;
-		const discoveryPlugin: Plugin = {
-			name: 'DiscoveryLegacyPlugin',
-			install() { loaded = true; },
-		};
-
-		(globalThis as any)[discoveryKey] = {
-			plugins: [discoveryPlugin],
-		};
-
-		try {
+			expect(loaded).toBe(false);
 			Tempo.init({ discovery: testDiscovery });
 			expect(loaded).toBe(true);
 		} finally {
@@ -123,19 +93,21 @@ describe('Tempo Plugin System', () => {
 		const testDiscovery = '$TempoTestDiscoveryConfig';
 		const discoveryKey = Symbol.for(testDiscovery);
 		let pluginConfigDuringInstall: any = null;
-		const discoveryPlugin: Plugin = {
-			name: 'ConfiguredDiscoveryPlugin',
-			install(tempo) {
-				pluginConfigDuringInstall = (tempo.config as any)?.plugins?.ConfiguredDiscoveryPlugin;
-			},
-		};
 
 		(globalThis as any)[discoveryKey] = {
 			plugins: {
 				ConfiguredDiscoveryPlugin: { apiKey: 'test-key-123', customOption: true },
 			},
-			extends: [discoveryPlugin],
 		};
+
+		const discoveryPlugin: Plugin = definePlugin({
+			name: 'ConfiguredDiscoveryPlugin',
+			install(tempo) {
+				pluginConfigDuringInstall = (tempo.config as any)?.plugins?.ConfiguredDiscoveryPlugin;
+			},
+		});
+
+		(globalThis as any)[discoveryKey].extends = [discoveryPlugin];
 
 		try {
 			Tempo.init({ discovery: testDiscovery });
@@ -155,12 +127,12 @@ describe('Tempo Plugin System', () => {
 		}).toThrow();
 
 		// 2. Try to add new (should succeed)
-		const newPlugin: Plugin = {
+		const newPlugin: Plugin = definePlugin({
 			name: 'NewPlugin',
 			install(TempoClass) {
 				(TempoClass as any).freshMethod = () => 'fresh';
 			},
-		};
+		});
 		Tempo.extend(newPlugin);
 		expect((Tempo as any).freshMethod()).toBe('fresh');
 	});

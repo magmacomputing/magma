@@ -1,63 +1,63 @@
 {
-  "runAt": "2026-06-21T03:09:07.682Z",
+  "runAt": "2026-08-22T23:04:08.571Z",
   "version": "3.3.0",
-  "iterations": 500,
+  "iterations": 100,
   "baselineRaw": {
     "label": "A. Baseline (stock, 20-entry corpus)",
-    "totalTimeMs": 15517.8,
-    "opsPerSec": 644,
-    "microSecPerOp": 1551.78,
-    "successCount": 10000,
+    "totalTimeMs": 4846.83,
+    "opsPerSec": 413,
+    "microSecPerOp": 2423.42,
+    "successCount": 2000,
     "failureCount": 0,
     "successRate": "100.0%",
-    "heapDeltaMb": 113.02
+    "heapDeltaMb": 38.2
   },
   "moduleResults": [
     {
       "name": "Native Date",
-      "totalTimeMs": 2.92,
-      "microSecPerOp": 0.29,
-      "successCount": 2500,
-      "failureCount": 7500,
+      "totalTimeMs": 0.65,
+      "microSecPerOp": 0.33,
+      "successCount": 500,
+      "failureCount": 1500,
       "successRate": "25.0%",
-      "heapUsedDeltaMb": "1.08"
+      "heapUsedDeltaMb": "0.23"
     },
     {
       "name": "Tempo (mode: auto)",
-      "totalTimeMs": 15524.01,
-      "microSecPerOp": 1552.4,
-      "successCount": 10000,
+      "totalTimeMs": 4444.45,
+      "microSecPerOp": 2222.22,
+      "successCount": 2000,
       "failureCount": 0,
       "successRate": "100.0%",
-      "heapUsedDeltaMb": "10.34"
+      "heapUsedDeltaMb": "43.70"
     },
     {
       "name": "Tempo (mode: defer)",
-      "totalTimeMs": 15089.25,
-      "microSecPerOp": 1508.93,
-      "successCount": 10000,
+      "totalTimeMs": 4088.89,
+      "microSecPerOp": 2044.45,
+      "successCount": 2000,
       "failureCount": 0,
       "successRate": "100.0%",
-      "heapUsedDeltaMb": "-22.66"
+      "heapUsedDeltaMb": "31.31"
     },
     {
       "name": "Tempo (mode: strict)",
-      "totalTimeMs": 15784.87,
-      "microSecPerOp": 1578.49,
-      "successCount": 10000,
+      "totalTimeMs": 4000.16,
+      "microSecPerOp": 2000.08,
+      "successCount": 2000,
       "failureCount": 0,
       "successRate": "100.0%",
-      "heapUsedDeltaMb": "56.53"
+      "heapUsedDeltaMb": "-28.56"
     }
   ],
   "localizedModifiers": {
     "label": "C. Localized fr-FR modifiers (8-entry corpus)",
-    "totalTimeMs": 11330.81,
-    "opsPerSec": 353,
-    "microSecPerOp": 2832.7,
-    "successCount": 4000,
+    "totalTimeMs": 2078.78,
+    "opsPerSec": 385,
+    "microSecPerOp": 2598.48,
+    "successCount": 800,
     "failureCount": 0,
     "successRate": "100.0%",
-    "heapDeltaMb": -9.07
+    "heapDeltaMb": -22.27
   }
 }

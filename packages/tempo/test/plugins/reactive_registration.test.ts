@@ -9,16 +9,15 @@ describe('Tempo Reactive Registration', () => {
 		// Let's verify we are initialized
 		expect(Tempo.config.scope).toBe('global')
 
-		// Mock a late-registering plugin
-		const myLatePlugin: Plugin = {
+		const { registerPlugin, definePlugin } = await import('#tempo/plugin/plugin.util.js')
+		const myLatePlugin: Plugin = definePlugin({
 			name: 'LateDiscovery',
 			install(TempoClass) {
 				(TempoClass as any).lateMethod = () => 'it works!'
 			},
-		}
+		})
 
 		// Register it (simulating side-effect import)
-		const { registerPlugin } = await import('#tempo/plugin/plugin.util.js')
 		registerPlugin(myLatePlugin)
 
 		// Now, WITHOUT manual Tempo.init(), it should still be there!

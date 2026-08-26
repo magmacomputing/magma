@@ -32,6 +32,36 @@ describe('#setConfig refactor verification', () => {
     expect(Tempo.parse.layout[sym]).toBe('{dd}{mm}{yy}')
   })
 
+  test('should parse custom date layout registered via registry.layouts', () => {
+    using _ = Tempo;
+    Tempo.init({ timeZone: 'UTC', locale: 'en-GB', registry: { layouts: { dot_date: '{dd}\\.{mm}\\.{yy}' } } });
+    const date = new Tempo('04.08.2026');
+    expect(date.isValid).toBe(true);
+    expect(date.dd).toBe(4);
+    expect(date.mm).toBe(8);
+    expect(date.yy).toBe(2026);
+  })
+
+  test('should handle custom string layout with escaped star delimiters', () => {
+    using _ = Tempo;
+    Tempo.init({ registry: { layouts: { star_date: '{mm}\\*{dd}\\*{yy}' } } });
+    const date = new Tempo('08*04*2026');
+    expect(date.isValid).toBe(true);
+    expect(date.mm).toBe(8);
+    expect(date.dd).toBe(4);
+    expect(date.yy).toBe(2026);
+  })
+
+  test('should handle custom string layout with escaped pipe delimiters', () => {
+    using _ = Tempo;
+    Tempo.init({ registry: { layouts: { pipe_date: '{mm}\\|{dd}\\|{yy}' } } });
+    const date = new Tempo('08|04|2026');
+    expect(date.isValid).toBe(true);
+    expect(date.mm).toBe(8);
+    expect(date.dd).toBe(4);
+    expect(date.yy).toBe(2026);
+  })
+
   test('should handle layout as a RegExp (converted to source string)', () => {
     Tempo.init({ registry: { layouts: { 'myRegExpLayout': /^\d{4}$/ } } });
     const sym = Tempo.getSymbol('myRegExpLayout');
@@ -137,12 +167,60 @@ describe('#setConfig refactor verification', () => {
     expect((Tempo.config as any).plugins?.ai?.mode).toBe('fallback');
   })
 
+  test('should handle custom layouts containing regex alternatives', () => {
+    using _ = Tempo;
+    Tempo.init({ timeZone: 'UTC', registry: { layouts: { alt_layout: '{yy}#{mm}#{dd}|{dd}@{mm}@{yy}|{mm}~{dd}~{yy}' } } });
+    const dateHash = new Tempo('2026#08#04');
+    const dateAt = new Tempo('04@08@2026');
+    const dateTilde = new Tempo('08~04~2026');
+    expect(dateHash.isValid).toBe(true);
+    expect(dateHash.yy).toBe(2026);
+    expect(dateHash.mm).toBe(8);
+    expect(dateHash.dd).toBe(4);
+    expect(dateAt.isValid).toBe(true);
+    expect(dateAt.yy).toBe(2026);
+    expect(dateAt.mm).toBe(8);
+    expect(dateAt.dd).toBe(4);
+    expect(dateTilde.isValid).toBe(true);
+    expect(dateTilde.yy).toBe(2026);
+    expect(dateTilde.mm).toBe(8);
+    expect(dateTilde.dd).toBe(4);
+  })
+
   test('should export defineConfig and resolveConfig from config module', async () => {
     const { defineConfig, resolveConfig } = await import('@magmacomputing/tempo/config');
     expect(typeof defineConfig).toBe('function');
     expect(typeof resolveConfig).toBe('function');
     const dummy = { timeZone: 'UTC' };
     expect(defineConfig(dummy)).toBe(dummy);
+  })
+
+  test('should invoke option suppliers at most once and store consistent snapshot', () => {
+    let tzCalls = 0;
+    let calCalls = 0;
+    const tzSupplier = () => { tzCalls++; return 'UTC'; };
+    const calSupplier = () => { calCalls++; return 'iso8601'; };
+
+    const t = new Tempo({ timeZone: tzSupplier, calendar: calSupplier });
+    expect(t.config.timeZone).toBe('UTC');
+    expect(t.config.calendar).toBe('iso8601');
+    expect(tzCalls).toBe(1);
+    expect(calCalls).toBe(1);
+  })
+
+  test('should handle relative duration with string and Date anchors', () => {
+    const tString = new Tempo({ days: 2 }, { anchor: '2026-08-20T10:00:00Z', timeZone: 'UTC' });
+    expect(tString.isValid).toBe(true);
+    expect(tString.dd).toBe(22);
+
+    const tDate = new Tempo({ hours: 5 }, { anchor: new Date('2026-08-20T10:00:00Z'), timeZone: 'UTC' });
+    expect(tDate.isValid).toBe(true);
+    expect(tDate.hh).toBe(15);
+
+    const tPastMidnight = new Tempo({ hours: 5 }, { anchor: new Date('2026-08-20T21:00:00Z'), timeZone: 'UTC' });
+    expect(tPastMidnight.isValid).toBe(true);
+    expect(tPastMidnight.dd).toBe(21);
+    expect(tPastMidnight.hh).toBe(2);
   })
 
 })

@@ -25,7 +25,6 @@ export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termErr
 /** hardened globalThis bridge key for the TempoRuntime */	export const $Bridge: unique symbol = Symbol.for('magmacomputing/tempo/runtime') as any;
 /** cross-bundle brand check for TempoRuntime */						export const $RuntimeBrand: unique symbol = Symbol.for('magmacomputing/tempo/runtime/brand') as any;
 /** branding for explicit PropertyDescriptors */						export const $Descriptor: unique symbol = Symbol.for('magmacomputing/tempo/descriptor') as any;
-/** key for License State */																export const $License: unique symbol = Symbol.for('magmacomputing/tempo/license') as any;
 /** key for Plugin Discrimination */												export const $PluginType: unique symbol = Symbol.for('magmacomputing/tempo/pluginType') as any;
 
 /** @internal static config helper */												export const $setConfig: unique symbol = Symbol.for('magmacomputing/tempo/setConfig') as any;
@@ -35,13 +34,12 @@ export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termErr
 /** @internal static alias builder */												export const $setAliases: unique symbol = Symbol.for('magmacomputing/tempo/setAliases') as any;
 /** @internal static guard builder */												export const $buildGuard: unique symbol = Symbol.for('magmacomputing/tempo/buildGuard') as any;
 /** @internal static base class marker */										export const $IsBase: unique symbol = Symbol.for('magmacomputing/tempo/isBase') as any;
-/** @internal static license scope status mutator */				export const $updateScopeStatus: unique symbol = Symbol.for('magmacomputing/tempo/updateScopeStatus') as any;
 
 /** @internal Tempo Symbol Registry (Local Keys) */
 const local = {
 	$Tempo, $Register, $Interpreter, $guard, $errored,
-	$Internal, $Bridge, $RuntimeBrand, $Descriptor, $License, $setConfig, $setDiscovery,
-	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $PluginType, $updateScopeStatus
+	$Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery,
+	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $PluginType
 } as const;
 
 /** @internal Unified Symbol Registry (Inherits from #library via Prototype Chain) */

@@ -1,0 +1,63 @@
+{
+  "runAt": "2026-08-22T23:14:37.333Z",
+  "version": "4.0.0",
+  "iterations": 100,
+  "baselineRaw": {
+    "label": "A. Baseline (v4.0.0 stock, 20-entry corpus)",
+    "totalTimeMs": 4551.91,
+    "opsPerSec": 439,
+    "microSecPerOp": 2275.96,
+    "successCount": 2000,
+    "failureCount": 0,
+    "successRate": "100.0%",
+    "heapDeltaMb": 31.37
+  },
+  "moduleResults": [
+    {
+      "name": "Native Date",
+      "totalTimeMs": 0.64,
+      "microSecPerOp": 0.32,
+      "successCount": 500,
+      "failureCount": 1500,
+      "successRate": "25.0%",
+      "heapUsedDeltaMb": "0.23"
+    },
+    {
+      "name": "Tempo (mode: auto)",
+      "totalTimeMs": 4125.81,
+      "microSecPerOp": 2062.91,
+      "successCount": 2000,
+      "failureCount": 0,
+      "successRate": "100.0%",
+      "heapUsedDeltaMb": "43.19"
+    },
+    {
+      "name": "Tempo (mode: defer)",
+      "totalTimeMs": 3895.94,
+      "microSecPerOp": 1947.97,
+      "successCount": 2000,
+      "failureCount": 0,
+      "successRate": "100.0%",
+      "heapUsedDeltaMb": "30.79"
+    },
+    {
+      "name": "Tempo (mode: strict)",
+      "totalTimeMs": 4132.75,
+      "microSecPerOp": 2066.37,
+      "successCount": 2000,
+      "failureCount": 0,
+      "successRate": "100.0%",
+      "heapUsedDeltaMb": "-26.40"
+    }
+  ],
+  "localizedModifiers": {
+    "label": "C. Localized fr-FR modifiers (v4 nested registry)",
+    "totalTimeMs": 2135.71,
+    "opsPerSec": 375,
+    "microSecPerOp": 2669.64,
+    "successCount": 800,
+    "failureCount": 0,
+    "successRate": "100.0%",
+    "heapDeltaMb": -22.2
+  }
+}

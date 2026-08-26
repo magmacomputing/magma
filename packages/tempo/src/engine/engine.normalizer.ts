@@ -15,6 +15,7 @@ import * as t from '../tempo.type.js';
  * the PatternCompiler.matcher depth limit (~10), preventing stack overflows during normalization.
  */
 const MAX_TEMPO_RESOLVE_DEPTH = 50;
+const RE_ALT_SUFFIX = /_alt\d+$/;
 
 /**
  * Context provided to the normalizer to handle recursion and state management.
@@ -49,6 +50,9 @@ export function getAliasContext(ctx: NormalizerContext, dateTime: Temporal.Zoned
 
 			return getAliasContext(nextCtx as any, nextZdt);
 		},
+		plus(val: any, opt?: any) {
+			return this.add(val, opt);
+		},
 		subtract: (val: any, opt?: any) => {
 			let nextZdt = dateTime;
 			const nextCtx = opt ? { ...ctx, state: { ...state, config: { ...state.config, ...opt } } } : ctx;
@@ -64,6 +68,9 @@ export function getAliasContext(ctx: NormalizerContext, dateTime: Temporal.Zoned
 			return getAliasContext(nextCtx as any, nextZdt);
 		},
 		sub(val: any, opt?: any) {
+			return this.subtract(val, opt);
+		},
+		minus(val: any, opt?: any) {
 			return this.subtract(val, opt);
 		},
 		set: (val: any, opt?: any) => {
@@ -105,6 +112,16 @@ export function normalizeMatch(
 	dateTime: Temporal.ZonedDateTime,
 	ctx: NormalizerContext
 ): Temporal.ZonedDateTime {
+	if (groups) {
+		for (const key of ownKeys(groups)) {
+			const baseKey = key.replace(RE_ALT_SUFFIX, '');
+			if (baseKey !== key && isDefined(groups[key])) {
+				if (!isDefined(groups[baseKey]) || groups[baseKey] === '')
+					groups[baseKey] = groups[key];
+				delete groups[key];
+			}
+		}
+	}
 	const { state, isAnchored } = ctx;
 
 	// 1. Zone

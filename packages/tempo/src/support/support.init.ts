@@ -9,12 +9,11 @@ import { asType } from '#library/type.library.js';
 import { isString, isObject, isUndefined, isDefined, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries } from '#library/primitive.library.js';
-import { getStorage } from '#library/storage.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
+import { evaluate } from '#library/evaluation.library.js';
 
 import { getRuntime } from './support.runtime.js';
 import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, generateLocalizedSnippets } from './support.util.js';
-import { setLicense } from '../plugin/license/license.manager.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
 import { STATE } from './support.enum.js';
@@ -22,7 +21,11 @@ import { STATE } from './support.enum.js';
 import enums from './support.enum.js';
 import { BoundedCache } from './support.cache.js';
 import * as t from '../tempo.type.js';
+import { registryUpdate } from './support.register.js';
 
+/**
+ * Normalizes or constructs a BoundedCache instance from configuration options.
+ */
 function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
 	const isBoundedCacheOpt = Boolean(optionsCache?.isBoundedCache || optionsCache instanceof BoundedCache);
 	if (isBoundedCacheOpt) {
@@ -187,17 +190,9 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	state.OPTION = new Set(Object.keys(configDefaults));
 	state.ZONED_DATE_TIME = new Set(['year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond', 'offset', 'timeZone', 'calendar']);
 
-	if (isGlobal) {
+	if (isGlobal)
 		runtime.state = state;
 
-		// 4. Discovery Cascade (License)
-		let key = options.license;
-
-		if (!key) key = getStorage('TEMPO_LICENSE_KEY');
-		if (!key) key = (globalThis as any).TEMPO_LICENSE_KEY;
-
-		if (key) setLicense(state, key);
-	}
 	return state;
 }
 
@@ -226,7 +221,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 		if (isUndefined(optVal)) return;
 
 		state.userProvidedKeys.add(optKey);
-		const arg = asType(optVal);
+		const preserveSupplier = isFunction(optVal) && state.config?.scope !== 'local';
+		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey) && !(optKey === 'locale' && preserveSupplier))
+			? evaluate(optVal)
+			: optVal;
+		const arg = asType(evaluatedVal);
 
 		switch (optKey) {
 			case 'monthDay':
@@ -236,15 +235,19 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 			case 'timeZone': {
 				const zone = String(arg.value).toLowerCase();
 				const resolvedZone = options.timeZones?.[zone] ?? state.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
-				setProperty(state.config, 'timeZone', resolvedZone);
+				setProperty(state.config, 'timeZone', preserveSupplier ? optVal : resolvedZone);
 				break;
 			}
 
 			case 'calendar':
-				setProperty(state.config, 'calendar', String(arg.value));
+				setProperty(state.config, 'calendar', preserveSupplier ? optVal : String(arg.value));
 				break;
 
 			case 'locale': {
+				if (preserveSupplier) {
+					setProperty(state.config, 'locale', optVal);
+					break;
+				}
 				const resolvedLocales = asArray(arg.value).map(l => canonicalLocale(String(l))).filter(Boolean) as string[];
 				if (resolvedLocales.length > 0) {
 					const finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
@@ -260,14 +263,17 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 			case 'registry':
 				if (isObject(arg.value)) {
-					if (!state.config.registry) state.config.registry = {} as any;
+					state.config.registry = {
+						...state.config.registry,
+						modifiers: { ...(state.config.registry?.modifiers ?? {}) }
+					};
 					if (arg.value.formats) {
-						if (state.config.registry.formats?.extend) state.config.registry.formats = state.config.registry.formats.extend(arg.value.formats) as t.FormatRegistry;
-						else setProperty(state.config.registry, 'formats', arg.value.formats);
+						const extended = state.config.registry.formats?.extend ? state.config.registry.formats.extend(arg.value.formats) : arg.value.formats;
+						setProperty(state.config.registry, 'formats', extended);
 					}
 					if (arg.value.locales) {
-						if ((state.config.registry.locales as any)?.extend) state.config.registry.locales = (state.config.registry.locales as any).extend(arg.value.locales);
-						else setProperty(state.config.registry, 'locales', arg.value.locales);
+						const extended = (state.config.registry.locales as any)?.extend ? (state.config.registry.locales as any).extend(arg.value.locales) : arg.value.locales;
+						setProperty(state.config.registry, 'locales', extended);
 					}
 					if (arg.value.modifiers) {
 						// Deep-merge user modifiers with existing defaults so English keywords remain active
@@ -285,10 +291,17 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						}
 
 						setProperty(state.config.registry, 'modifiers', merged);
+						patternsDirty = true;
 					}
 					if (arg.value.tokens) {
 						const existing = state.config.registry.tokens ?? {};
 						setProperty(state.config.registry, 'tokens', { ...existing, ...arg.value.tokens });
+					}
+					if (arg.value.numbers) {
+						const existing = state.config.registry.numbers ?? {};
+						setProperty(state.config.registry, 'numbers', { ...existing, ...arg.value.numbers });
+						if (state.config?.scope === 'global')
+							registryUpdate('NUMBER', arg.value.numbers);
 					}
 
 					const parseMap: Record<string, 'snippet' | 'layout' | 'event' | 'period' | 'ignore'> = {
@@ -341,7 +354,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'sphere':
-				setProperty(state.config, 'sphere', arg.value);
+				if (preserveSupplier) {
+					setProperty(state.config, 'sphere', optVal);
+				} else if (isDefined(arg.value)) {
+					setProperty(state.config, 'sphere', arg.value);
+				}
 				break;
 
 			case 'catch':
@@ -392,12 +409,6 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 			}
 
-			case 'license': {
-				const key = String(arg.value);
-				setLicense(state, key);
-				break;
-			}
-
 			case 'debug':
 				setProperty(state.config, 'debug', parseLogLevel(arg.value));
 				break;
@@ -416,8 +427,10 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'plugins':
-				if (isObject(arg.value) && !Array.isArray(arg.value) && !('name' in arg.value) && !('key' in arg.value) && !('install' in arg.value))
-					setProperty(state.config, 'plugins', arg.value);
+				if (isObject(arg.value) && !Array.isArray(arg.value)) {
+					const existing = state.config.plugins ?? {};
+					setProperty(state.config, 'plugins', { ...existing, ...arg.value });
+				}
 				break;
 
 			default:
@@ -427,9 +440,9 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 		}
 	});
 
-	const locale = state.config.locale;
+	const locale = (isFunction(state.config.locale) && state.config?.scope !== 'local') ? undefined : evaluate(state.config.locale);
 	if (locale) {
-		const locales = asArray(locale);
+		const locales = asArray(locale).map(l => isString(l) ? l : undefined).filter(Boolean) as string[];
 		if (locales.length > 0 && !locales.every(l => l.split('-')[0] === 'en')) {
 			const { snippets, monthMap, weekdayMap, events } = generateLocalizedSnippets(locales);
 			state.parse.monthMap = monthMap;

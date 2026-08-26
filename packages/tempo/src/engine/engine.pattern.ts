@@ -11,6 +11,7 @@ import enums from '../support/support.enum.js';
 import type * as t from '../tempo.type.js';
 
 const BRACES_REGEX = new RegExp(Match.braces, 'g');
+const RE_NAMED_CAPTURE_GROUP = /\(\?<([a-zA-Z][\w]*)>/g;
 
 export interface PatternCompilerOptions {
 	state: t.Internal.State;
@@ -36,16 +37,14 @@ export class PatternCompiler {
 		const source = isRegExp(layout) ? layout.source : layout;
 		let cache: Map<string, RegExp>;
 		if (snippet) {
-			if (!this.#snippetCache.has(snippet)) {
+			if (!this.#snippetCache.has(snippet))
 				this.#snippetCache.set(snippet, new Map());
-			}
 			cache = this.#snippetCache.get(snippet)!;
 		} else {
 			cache = this.#globalCache;
 		}
-		if (cache.has(source)) {
+		if (cache.has(source))
 			return cache.get(source)!;
-		}
 
 		const matcher = (source: string, d = 0): string => {
 			if (d > 10) {																					// Emit a diagnostic if recursion limit is hit (likely circular placeholder)
@@ -90,7 +89,7 @@ export class PatternCompiler {
 		};
 
 		try {
-			const expanded = matcher(source);
+			const expanded = deduplicateCaptureGroups(matcher(source));
 			const compiled = new RegExp(`^(${expanded})$`, 'i');
 			cache.set(source, compiled);
 			return compiled;
@@ -120,7 +119,7 @@ export class PatternCompiler {
 			const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a, b) => b.length - a.length).join('|')})`);
 
 			snippet[Token.nbr] = nbr;
-			
+
 			let modPattern = Match.modifier.source;
 			let afxPattern = Match.modifier.source;
 			if (state.config.registry?.modifiers) {
@@ -136,7 +135,7 @@ export class PatternCompiler {
 					const wordPattern = escapedWords.join('|');
 					modPattern = `[\\+\\-\\<\\>][\\=]?|${wordPattern}`;
 					afxPattern = `[\\+\\-\\<\\>][\\=]?|${wordPattern}`;
-					
+
 					const op = `[\\+\\-\\<\\>]=?`;
 					const terms = `(?:#[\\w]+|[\\w]+)`;
 					const units = `(?:[\\w]*)`;
@@ -191,4 +190,34 @@ export function setPatterns(state: t.Internal.State) {
 		state.patternCompiler = new PatternCompiler({ state });
 
 	state.patternCompiler.setPatterns();
+}
+
+/**
+ * Deduplicates named capture groups across regex '|' branches to avoid SyntaxError in JS RegExp compilation.
+ */
+function deduplicateCaptureGroups(expanded: string): string {
+	if (!expanded.includes('|') || !expanded.includes('(?<'))
+		return expanded;
+
+	const reserved = new Set<string>();
+	const matches = expanded.matchAll(RE_NAMED_CAPTURE_GROUP);
+	for (const m of matches)
+		reserved.add(m[1]);
+
+	const counts = new Map<string, number>();
+
+	return expanded.replace(RE_NAMED_CAPTURE_GROUP, (match, name) => {
+		const count = counts.get(name) ?? 0;
+		counts.set(name, count + 1);
+		if (count === 0) return match;
+
+		let altSuffix = count;
+		let altName = `${name}_alt${altSuffix}`;
+		while (reserved.has(altName)) {
+			altSuffix++;
+			altName = `${name}_alt${altSuffix}`;
+		}
+		reserved.add(altName);
+		return `(?<${altName}>`;
+	});
 }

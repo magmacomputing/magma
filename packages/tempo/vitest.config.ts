@@ -1,6 +1,5 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import fs from 'node:fs';
 
 import { defineConfig } from 'vitest/config';
 import swc from 'unplugin-swc';
@@ -11,25 +10,7 @@ const isDist = process.env.TEST_DIST === 'true';
 const polyfill = resolve(__dirname, './bin/temporal-polyfill.ts');
 const consoleSpySetup = resolve(__dirname, './test/support/setup.console-spy.ts');
 
-const licensePremium = process.env.TEMPO_LICENSE_PATH ? resolve(process.env.TEMPO_LICENSE_PATH) : undefined;
 const licenseDefault = resolve(__dirname, './src/plugin/license/license.validator.ts');
-
-const foundTsconfigPath = (() => {
-	if (!licensePremium) return '';
-	let dir = dirname(licensePremium);
-	while (dir !== resolve(dir, '..')) {
-		const p = resolve(dir, 'tsconfig.json');
-		if (fs.existsSync(p)) return p;
-		dir = resolve(dir, '..');
-	}
-	return '';
-})();
-
-const isPremiumAvailable = Boolean(
-	licensePremium &&
-	fs.existsSync(licensePremium) &&
-	fs.existsSync(foundTsconfigPath)
-);
 
 export default defineConfig({
 	esbuild: false,
@@ -50,8 +31,6 @@ export default defineConfig({
 		include: ['test/**/*.{test,spec}.ts'],
 		exclude: [
 			'**/node_modules/**',
-			'**/test/**/*.core.test.ts',
-			'**/test/**/*.lazy.test.ts',
 			'**/test/browser/**'
 		],
 		setupFiles: [polyfill, consoleSpySetup],
@@ -85,7 +64,7 @@ export default defineConfig({
 			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/dist/common/$1.js') },
 			{ find: /^#library$/, replacement: resolve(__dirname, '../library/dist/common.index.js') },
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './dist/plugin/plugin.index.js') },
-			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(__dirname, './dist/plugin-api.index.js') },
+			{ find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: resolve(__dirname, './dist/plugin/plugin.sdk.js') },
 			{ find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: resolve(__dirname, './dist/plugin/$1.js') },
 			{ find: /^@magmacomputing\/tempo\/term$/, replacement: resolve(__dirname, './dist/plugin/term/term.index.js') },
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(__dirname, './dist/plugin/term/term.$1.js') },
@@ -94,12 +73,13 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/tempo\/library$/, replacement: resolve(__dirname, './dist/library.index.js') },
 			{ find: /^@magmacomputing\/tempo$/, replacement: resolve(__dirname, './dist/tempo.index.js') },
 		] : [
-			{ find: /^#tempo\/license$/, replacement: isPremiumAvailable ? (licensePremium as string) : licenseDefault },
+			{ find: /^#tempo\/license$/, replacement: licenseDefault },
 			// Also alias the relative path used by the dynamic import in tempo.class.ts, so vi.mock('#tempo/license') intercepts it
-			{ find: resolve(__dirname, './src/plugin/license/license.validator.ts'), replacement: isPremiumAvailable ? (licensePremium as string) : licenseDefault },
-			{ find: resolve(__dirname, './src/plugin/license/license.validator.js'), replacement: isPremiumAvailable ? (licensePremium as string) : licenseDefault },
+			{ find: resolve(__dirname, './src/plugin/license/license.validator.ts'), replacement: licenseDefault },
+			{ find: resolve(__dirname, './src/plugin/license/license.validator.js'), replacement: licenseDefault },
+			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(__dirname, './src/plugin/plugin.sdk.ts') },
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './src/plugin/plugin.index.ts') },
-			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(__dirname, './src/plugin-api.index.ts') },
+			{ find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: resolve(__dirname, './src/plugin/plugin.sdk.ts') },
 			{ find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: resolve(__dirname, './src/plugin/$1.ts') },
 			{ find: /^@magmacomputing\/tempo\/term$/, replacement: resolve(__dirname, './src/plugin/term/term.index.ts') },
 			{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: resolve(__dirname, './src/plugin/term/term.$1.ts') },
@@ -124,6 +104,11 @@ export default defineConfig({
 			{ find: /^#tempo\/(.*)\.js$/, replacement: resolve(__dirname, './src/$1.ts') },
 			{ find: /^#tempo\/std$/, replacement: resolve(__dirname, '../plugins/.std/src/index.ts') },
 			{ find: /^#tempo$/, replacement: resolve(__dirname, './src/tempo.index.ts') },
+			{ find: /^@magmacomputing\/tempo-fns$/, replacement: resolve(__dirname, '../functions/src/index.ts') },
+			{ find: /^@magmacomputing\/tempo-fns\/(.*)$/, replacement: resolve(__dirname, '../functions/src/$1.ts') },
+			{ find: /^@magmacomputing\/library$/, replacement: resolve(__dirname, '../library/src/common.index.ts') },
+			{ find: /^@magmacomputing\/library\/(primitives|temporal|security|scheduling|runtime)\/(.*?)(\.js)?$/, replacement: resolve(__dirname, '../library/src/common/$1/$2.ts') },
+			{ find: /^@magmacomputing\/library\/(.*)$/, replacement: resolve(__dirname, '../library/src/$1.ts') },
 			{ find: /^#library\/(primitives|temporal|security|scheduling|runtime)\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/$1/$2.ts') },
 			{ find: /^#library\/(array|assertion|coercion|number|object|primitive|string|symbol|type)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/primitives/$1.library.ts') },
 			{ find: /^#library\/(boundary|class|enumerate|evaluation|function|international|json|logger|pledge|proxy|reflection|request|scopedset|serialize|storage|utility)\.(library|class)\.js$/, replacement: resolve(__dirname, '../library/src/common/runtime/$1.$2.ts') },

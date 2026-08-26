@@ -10,7 +10,6 @@ import { ownEntries, unwrap } from '#library/primitive.library.js';
 import { memoizeFunction } from '#library/function.library.js';
 import { getDTF } from '#library/international.library.js';
 import { getRuntime } from './support.runtime.js';
-import { LICENSE } from './support.enum.js';
 import type * as t from '../tempo.type.js';
 
 /** @internal normalize layout-order options into a clean string array */
@@ -221,14 +220,6 @@ export function isSyncToken(status: any): status is string {
 	return isString(status) && /^[0-9a-f]{8}$/.test(status);
 }
 
-/** @internal resolve licensing state to standard 'active' state */
-export function resolveDisplayStatus(status: string): string {
-	const raw = isSyncToken(status)
-		? LICENSE.Active
-		: String(status) as LICENSE
-	return LICENSE.values().includes(raw) ? raw : LICENSE.Unknown;
-}
-
 /** @internal generate localized snippets for months, weekdays, and relative events */
 const _generateLocalizedSnippets = memoizeFunction((localeKey: string) => {
 	const locales = localeKey.split(',');
@@ -328,4 +319,5 @@ const _generateLocalizedSnippets = memoizeFunction((localeKey: string) => {
 	};
 });
 
+/** @internal generate localized snippets for a locale or list of locales */
 export const generateLocalizedSnippets = (locales: string | string[]) => _generateLocalizedSnippets(asArray(locales).join(','));

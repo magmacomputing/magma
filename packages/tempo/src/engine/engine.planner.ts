@@ -7,6 +7,9 @@ const ERA_RE = /(?:^|\s)(b\.?c\.?(?:e\.?)?|a\.?d\.?|c\.?e\.?)(?:\s|$)/i;
 const CLASS_CACHE_LIMIT = 256;
 const classCache = new Map<string, ParseInputClass>();
 
+/**
+ * Memoized wrapper for classifyParseInput to accelerate parse input classification loops.
+ */
 function classifyParseInputCached(value: string | number): ParseInputClass {
 	const key = String(value ?? '').trim();
 	const cached = classCache.get(key);
@@ -193,7 +196,7 @@ export function selectLayoutPatterns(
 		let include = true;
 
 		if (hasAgoHence) {
-			include = desc === LAYOUT.rel;
+			include = desc === LAYOUT.rel || desc === LAYOUT.wkd;
 		} else {
 			if (include && isAlphaOnly && ALPHA_EXCLUDE.has(desc)) include = false;
 			if (include && isSixDigits && !COMPACT_SIX.has(desc)) include = false;
