@@ -148,8 +148,30 @@ export async function fetchFromProvider(
 		try {
 			rawUrl = asText(evaluate(provider.url, defaultUrl));
 			rawModel = resolveProviderModel(provider, provider.tier as any);
-			rawKey = asText(await evaluateAsync(provider.key, defaultKey));
+
+			let abortListener: (() => void) | undefined;
+			const abortPromise = new Promise<never>((_, reject) => {
+				if (controller.signal.aborted) {
+					reject(new Error('Aborted'));
+				} else {
+					abortListener = () => reject(new Error('Aborted'));
+					controller.signal.addEventListener('abort', abortListener, { once: true });
+				}
+			});
+
+			try {
+				const resolvedKey = await Promise.race([evaluateAsync(provider.key, defaultKey), abortPromise]);
+				rawKey = asText(resolvedKey);
+			} finally {
+				if (abortListener) {
+					controller.signal.removeEventListener('abort', abortListener);
+				}
+			}
 		} catch (err: any) {
+			if (controller.signal.aborted) {
+				if (options?.signal?.aborted) throw new TempoAiError('Request was aborted.', 499);
+				throw new TempoAiError(`Provider ${provider.id} request timed out after ${timeoutMs}ms.`, 408);
+			}
 			if (err instanceof TempoAiError) throw err;
 			throw new TempoAiError(`Failed to resolve dynamic configuration for provider ${provider.id}: ${err?.message ?? err}`, 500, undefined, { cause: err });
 		}
