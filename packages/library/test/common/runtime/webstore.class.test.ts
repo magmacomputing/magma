@@ -44,4 +44,30 @@ describe('WebStore', () => {
 		expect(store.get('a')).toBeNull();
 		expect(store.get('b')).toBeNull();
 	});
+
+	it('shares memory storage across WebStore instances by storage name when native storage is unavailable', () => {
+		const instance1 = new WebStore('local');
+		const instance2 = new WebStore('local');
+
+		instance1.set('sharedKey', 'sharedValue');
+		expect(instance2.get('sharedKey')).toBe('sharedValue');
+	});
+
+	it('handles write failures in set, del, and clear gracefully', () => {
+		const store = new WebStore('local');
+		const mockStorage = {
+			length: 1,
+			getItem: () => null,
+			setItem: () => { throw new Error('QuotaExceededError'); },
+			removeItem: () => { throw new Error('SecurityError'); },
+			clear: () => { throw new Error('ClearError'); },
+			key: () => null,
+		};
+		// @ts-ignore
+		store['#resolvedStorage'] = mockStorage;
+
+		expect(() => store.set('test', 'value')).not.toThrow();
+		expect(() => store.del('test')).not.toThrow();
+		expect(() => store.clear()).not.toThrow();
+	});
 });

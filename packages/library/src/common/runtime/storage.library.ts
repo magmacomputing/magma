@@ -17,15 +17,34 @@ export const createMemoryStorage = (): Storage => {
 	};
 }
 
+const memoryStores = new Map<string, Storage>();
+
+const getMemoryStorage = (name: string): Storage => {
+	let store = memoryStores.get(name);
+	if (!store) {
+		store = createMemoryStorage();
+		memoryStores.set(name, store);
+	}
+	return store;
+};
+
 /** Safely attempt to retrieve a Storage object from globalThis or fallback to memory storage */
 export const getSafeStorage = (name: 'localStorage' | 'sessionStorage' = 'localStorage'): Storage => {
 	try {
 		const target = globalThis?.[name];
-		if (target && typeof target.getItem === 'function') return target;
+		if (
+			target &&
+			typeof target.getItem === 'function' &&
+			typeof target.setItem === 'function' &&
+			typeof target.removeItem === 'function' &&
+			typeof target.clear === 'function' &&
+			typeof target.key === 'function' &&
+			typeof target.length === 'number'
+		) return target;
 	} catch {
 		// Ignore SecurityError / ReferenceError in restricted sandboxes
 	}
-	return createMemoryStorage();
+	return getMemoryStorage(name);
 }
 
 let storage = context.type === CONTEXT.Browser

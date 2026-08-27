@@ -135,7 +135,11 @@ export class WebStore {
 	 * @returns The WebStore instance for chaining
 	 */
 	public clear() {
-		this.#storage.clear();
+		try {
+			this.#storage.clear();
+		} catch (e) {
+			console.warn('[WebStore] Failed to clear storage:', e);
+		}
 		return this;
 	}
 
@@ -146,8 +150,13 @@ export class WebStore {
 	 * @returns The WebStore instance for chaining
 	 */
 	public del(...keys: PropertyKey[]) {											// list of keys to remove
-		keys
-			.forEach(key => this.#storage.removeItem(stringify(key)))
+		keys.forEach(key => {
+			try {
+				this.#storage.removeItem(stringify(key));
+			} catch (e) {
+				console.warn(`[WebStore] Failed to removeItem for key '${String(key)}':`, e);
+			}
+		});
 		return this;
 	}
 
@@ -209,7 +218,11 @@ export class WebStore {
 	}
 
 	#upd(key: PropertyKey, obj: any) {
-		this.#storage.setItem(stringify(key), stringify(obj));
+		try {
+			this.#storage.setItem(stringify(key), stringify(obj));
+		} catch (e) {
+			console.warn(`[WebStore] Failed to setItem for key '${String(key)}':`, e);
+		}
 		return this;
 	}
 }

@@ -9,6 +9,10 @@ const RE_SLASH = /\//g;
 const RE_EQUALS = /=/g;
 const RE_DASH = /-/g;
 const RE_UNDERSCORE = /_/g;
+const RE_BASE64URL = /^[A-Za-z0-9_-]*$/;
+
+const MAX_TOKEN_LENGTH = 8192;															// 8 KB
+const MAX_PAYLOAD_LENGTH = 4096;														// 4 KB
 
 const formatBase64Url = (base64: string) => base64
 	.replace(RE_PLUS, '-')
@@ -16,9 +20,6 @@ const formatBase64Url = (base64: string) => base64
 	.replace(RE_EQUALS, '');
 const toBase64Url = (str: string) => formatBase64Url(bufferToBase64(encodeText(str)));
 const bufToBase64Url = (buf: Uint8Array) => formatBase64Url(bufferToBase64(buf));
-
-const MAX_TOKEN_LENGTH = 8192;															// 8 KB
-const MAX_PAYLOAD_LENGTH = 4096;														// 4 KB
 
 export interface ParseJWTOptions {
 	/** If true, throws explicit Errors on length or format validation failures instead of returning null */
@@ -41,12 +42,15 @@ export interface JWTComponents<Header = Record<string, any>, Payload = Record<st
 }
 
 const base64UrlToBuffer = (part: string): Uint8Array => {
+	if (!RE_BASE64URL.test(part) || part.length % 4 === 1)
+		throw new Error('Invalid base64url segment');
+
 	const base64 = part
 		.replace(RE_DASH, '+')
 		.replace(RE_UNDERSCORE, '/')
 		.padEnd(part.length + (4 - part.length % 4) % 4, '=');
 	return base64ToBuffer(base64);
-};
+}
 
 /**
  * Parses and decodes all three segments of a JSON Web Token (Header, Payload, Signature) without signature verification.
@@ -81,13 +85,21 @@ export const parseJWT = <Header = Record<string, any>, Payload = Record<string, 
 	}
 
 	try {
-		const headerJson = decodeBuffer(base64UrlToBuffer(parts[0]));
-		const payloadJson = decodeBuffer(base64UrlToBuffer(parts[1]));
+		const headerJson = decodeBuffer(base64UrlToBuffer(parts[0]), 'utf-8', { fatal: true });
+		const payloadJson = decodeBuffer(base64UrlToBuffer(parts[1]), 'utf-8', { fatal: true });
 		const signatureBuf = base64UrlToBuffer(parts[2]);
 
+		const header = JSON.parse(headerJson);
+		const payload = JSON.parse(payloadJson);
+
+		if (typeof header !== 'object' || header === null || Array.isArray(header) ||
+			typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+			throw new Error('Invalid JWT shape');
+		}
+
 		return {
-			header: JSON.parse(headerJson),
-			payload: JSON.parse(payloadJson),
+			header,
+			payload,
 			signature: signatureBuf,
 			raw: { header: parts[0], payload: parts[1], signature: parts[2] },
 		};

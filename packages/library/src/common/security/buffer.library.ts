@@ -27,7 +27,7 @@ export const encodeBuffer = (str: any) => new TextEncoder().encode(stringify(str
  * const str = decodeBuffer(buf);
  * ```
  */
-export const decodeBuffer = (buf: Uint8Array | ArrayBuffer, encoding = 'utf-8') => new TextDecoder(encoding).decode(buf);
+export const decodeBuffer = (buf: Uint8Array | ArrayBuffer, encoding = 'utf-8', options?: TextDecoderOptions) => new TextDecoder(encoding, options).decode(buf);
 
 /**
  * Encodes a raw Uint8Array into a Base64 string.
