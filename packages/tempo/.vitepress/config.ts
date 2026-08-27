@@ -114,7 +114,7 @@ export default withMermaid(defineConfig({
         {
           text: 'Project & Support',
           items: [
-            { text: 'License Key Guide', link: '/doc/9-plugins/_setup.index' },
+            { text: 'Plugin Setup Guide', link: '/doc/9-plugins/_setup.index' },
             { text: 'Migration Guide', link: '/doc/8-project-and-support/migration-guide' },
             { text: 'Release Notes', link: '/doc/8-project-and-support/releases/' },
             { text: 'Professional Services', link: '/doc/8-project-and-support/commercial' }

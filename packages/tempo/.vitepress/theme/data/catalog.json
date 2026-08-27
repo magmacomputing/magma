@@ -69,6 +69,7 @@
     "packageName": "@magmacomputing/tempo-std",
     "plan": "community",
     "status": "active",
-    "version": ""
+    "version": "1.0.0",
+    "hidden": true
   }
 ]

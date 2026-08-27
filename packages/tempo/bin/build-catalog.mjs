@@ -26,17 +26,25 @@ for (const entry of catalog) {
 	// Note: Local plugins use the original un-mangled folder name, but our entry.id has leading dots replaced with underscores.
 	// We can just check the dir directly if we kept the original name, but let's just search the dirs.
 	// Actually, wait, community plugins match `entry.id`.
-	const localPkgPath = path.join(pluginsDir, entry.id, 'package.json');
+	// Local plugin folder name may have a leading dot if entry.id starts with '_'
+	const folderName = entry.id.startsWith('_') ? '.' + entry.id.slice(1) : entry.id;
+	const localPkgPath = path.join(pluginsDir, folderName, 'package.json');
 
 	if (fs.existsSync(localPkgPath)) {
 		const pkg = JSON.parse(fs.readFileSync(localPkgPath, 'utf8'));
 		version = pkg.version;
+		if (pkg.private || pkg.tempo?.hidden !== undefined || pkg.tempo?.catalog !== undefined) {
+			entry.hidden = Boolean(pkg.private || pkg.tempo?.hidden || pkg.tempo?.catalog === false);
+		}
 	} else {
 		// 2. Try resolving from node_modules (Premium Plugins installed by Dependabot)
 		const externalPkgPath = path.join(nodeModulesDir, entry.packageName, 'package.json');
 		if (fs.existsSync(externalPkgPath)) {
 			const pkg = JSON.parse(fs.readFileSync(externalPkgPath, 'utf8'));
 			version = pkg.version;
+			if (pkg.private || pkg.tempo?.hidden !== undefined || pkg.tempo?.catalog !== undefined) {
+				entry.hidden = Boolean(pkg.private || pkg.tempo?.hidden || pkg.tempo?.catalog === false);
+			}
 		}
 	}
 
