@@ -96,5 +96,5 @@ To streamline error handling and data consumption, return shapes across the AI p
 
 ## Licensing
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.
 

@@ -42,5 +42,5 @@ For full API reference, advanced options, and detailed usage patterns, please vi
 
 ## Licensing
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.
 

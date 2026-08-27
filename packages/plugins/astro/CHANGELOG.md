@@ -16,7 +16,7 @@ All notable changes to the `@magmacomputing/tempo-plugin-astro` project will be 
 
 ### Changed
 - **Open Source Transition**: The Astro plugin is now officially a Community plugin! It is 100% free and open-source under the MIT License.
-- **Licensing Removal**: Removed all proprietary licensing logic (`definePremiumTerm`) and initialization token checks.
+- **Licensing Removal**: Removed all proprietary licensing logic and initialization token checks.
 - **Clear-Text Build**: Removed `javascript-obfuscator` from the build pipeline. The published NPM artifact is now fully readable clear-text JavaScript.
 - Updated documentation and README to reflect the new open-source structure.
 
@@ -44,7 +44,7 @@ All notable changes to the `@magmacomputing/tempo-plugin-astro` project will be 
 
 ### Fixed
 - Resolved the "Ghost-Trap" architectural conflict that prevented validation when used with Tempo v3.0.0.
-- Decoupled `definePremiumTerm` and cryptographic validation from the plugin bundle. Licensing engine state and references are now directly imported from the Tempo Core (`@magmacomputing/tempo/plugin`).
+- Decoupled proprietary term definition and cryptographic validation from the plugin bundle. Licensing engine state and references are now directly imported from the Tempo Core (`@magmacomputing/tempo/plugin`).
 - Removed the `@magmacomputing/tempo-plugin-core` bundled `devDependency` to prevent duplicate initialization.
 
 ## [1.0.2] - 2026-05-25

@@ -370,5 +370,5 @@ for await (const t of master) {
 
 ## Licensing
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.
 
