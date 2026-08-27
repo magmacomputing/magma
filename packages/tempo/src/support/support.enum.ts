@@ -7,19 +7,19 @@ import type { OwnOf, KeyOf, ValueOf, LooseUnion } from '#library/type.library.js
 
 /** calendar seasons */
 export const SEASON = enumify({
-	Spring: 'spring',
-	Summer: 'summer',
-	Autumn: 'autumn',
-	Winter: 'winter'
+	/** Spring season */ Spring: 'spring',
+	/** Summer season */ Summer: 'summer',
+	/** Autumn season */ Autumn: 'autumn',
+	/** Winter season */ Winter: 'winter'
 }, false);
 export type SEASON = ValueOf<typeof SEASON>
 
 /** cardinal directions */
 export const COMPASS = looseIndex<string, string>()(enumify({
-	North: 'north',
-	South: 'south',
-	East: 'east',
-	West: 'west'
+	/** North direction */ North: 'north',
+	/** South direction */ South: 'south',
+	/** East direction */ East: 'east',
+	/** West direction */ West: 'west'
 }, false));
 export type COMPASS = ValueOf<typeof COMPASS>
 
@@ -31,7 +31,17 @@ export type COMPASS = ValueOf<typeof COMPASS>
 /** @internal LIVE state for all registries */
 export const DEFAULTS = {
 	NUMBER: {
-		zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10
+		/** number value 0 */ zero: 0,
+		/** number value 1 */ one: 1,
+		/** number value 2 */ two: 2,
+		/** number value 3 */ three: 3,
+		/** number value 4 */ four: 4,
+		/** number value 5 */ five: 5,
+		/** number value 6 */ six: 6,
+		/** number value 7 */ seven: 7,
+		/** number value 8 */ eight: 8,
+		/** number value 9 */ nine: 9,
+		/** number value 10 */ ten: 10
 	},
 	DURATION: {
 		/** approx number of seconds in a year */								year: 31_536_000,
@@ -46,31 +56,31 @@ export const DEFAULTS = {
 		/** number of seconds in a nanosecond */								nanosecond: .000_000_001,
 	},
 	TIMEZONE: {
-		'utc': 'UTC',
-		'gmt': 'UTC',
-		'est': 'America/New_York',
-		'edt': 'America/New_York',
-		'cst': 'America/Chicago',
-		'cdt': 'America/Chicago',
-		'mst': 'America/Denver',
-		'mdt': 'America/Denver',
-		'pst': 'America/Los_Angeles',
-		'pdt': 'America/Los_Angeles',
-		'aest': 'Australia/Sydney',
-		'aedt': 'Australia/Sydney',
-		'acst': 'Australia/Adelaide',
-		'acdt': 'Australia/Adelaide',
-		'awst': 'Australia/Perth',
-		'nzt': 'Pacific/Auckland',
-		'nzst': 'Pacific/Auckland',
-		'nzdt': 'Pacific/Auckland',
-		'cet': 'Europe/Paris',
-		'cest': 'Europe/Paris',
-		'eet': 'Europe/Helsinki',
-		'eest': 'Europe/Helsinki',
-		'ist': 'Asia/Kolkata',
-		'npt': 'Asia/Kathmandu',
-		'jst': 'Asia/Tokyo',
+		/** Coordinated Universal Time */ 'utc': 'UTC',
+		/** Greenwich Mean Time */ 'gmt': 'UTC',
+		/** Eastern Standard Time */ 'est': 'America/New_York',
+		/** Eastern Daylight Time */ 'edt': 'America/New_York',
+		/** Central Standard Time */ 'cst': 'America/Chicago',
+		/** Central Daylight Time */ 'cdt': 'America/Chicago',
+		/** Mountain Standard Time */ 'mst': 'America/Denver',
+		/** Mountain Daylight Time */ 'mdt': 'America/Denver',
+		/** Pacific Standard Time */ 'pst': 'America/Los_Angeles',
+		/** Pacific Daylight Time */ 'pdt': 'America/Los_Angeles',
+		/** Australian Eastern Standard Time */ 'aest': 'Australia/Sydney',
+		/** Australian Eastern Daylight Time */ 'aedt': 'Australia/Sydney',
+		/** Australian Central Standard Time */ 'acst': 'Australia/Adelaide',
+		/** Australian Central Daylight Time */ 'acdt': 'Australia/Adelaide',
+		/** Australian Western Standard Time */ 'awst': 'Australia/Perth',
+		/** New Zealand Time */ 'nzt': 'Pacific/Auckland',
+		/** New Zealand Standard Time */ 'nzst': 'Pacific/Auckland',
+		/** New Zealand Daylight Time */ 'nzdt': 'Pacific/Auckland',
+		/** Central European Time */ 'cet': 'Europe/Paris',
+		/** Central European Summer Time */ 'cest': 'Europe/Paris',
+		/** Eastern European Time */ 'eet': 'Europe/Helsinki',
+		/** Eastern European Summer Time */ 'eest': 'Europe/Helsinki',
+		/** India Standard Time */ 'ist': 'Asia/Kolkata',
+		/** Nepal Time */ 'npt': 'Asia/Kathmandu',
+		/** Japan Standard Time */ 'jst': 'Asia/Tokyo',
 	},
 	DURATIONS: {
 		/** approx number of milliseconds in a year */					years: 31_536_000_000,
@@ -105,10 +115,10 @@ export const DEFAULTS = {
 		/** Tempo(01-Jan-1000.00:00:00).ns */										get minTempo() { return Temporal.Instant.from('1000-01-01T00:00+00:00').epochNanoseconds },
 	},
 	MONTH_DAY: {
-		locales: ['en-US', 'en-AS'],
-		layouts: [['dayMonthYearShort', 'monthDayYearShort'], ['dayMonthYear', 'monthDayYear']],
-		timezones: {
-			'en-US': [
+		/** supported locales for month-day disambiguation */ locales: ['en-US', 'en-AS'],
+		/** layout patterns for month-day parsing */ layouts: [['dayMonthYearShort', 'monthDayYearShort'], ['dayMonthYear', 'monthDayYear']],
+		/** timezone mappings for locale-based month-day ordering */ timezones: {
+			/** US timezones that use month/day/year format */ 'en-US': [
 				"America/Adak", "America/Anchorage", "America/Boise", "America/Chicago", "America/Denver",
 				"America/Detroit", "America/Indiana/Indianapolis", "America/Indiana/Knox", "America/Indiana/Marengo",
 				"America/Indiana/Petersburg", "America/Indiana/Tell_City", "America/Indiana/Vevay", "America/Indiana/Vincennes",
@@ -119,7 +129,7 @@ export const DEFAULTS = {
 				"America/Yakutat", "Pacific/Honolulu",
 				"US/Aleutian", "US/Alaska", "US/Arizona", "US/Central", "US/Eastern", "US/Mountain", "US/Pacific",
 			],
-			'en-AS': [
+			/** American Samoa timezones */ 'en-AS': [
 				"Pacific/Pago_Pago"
 			]
 		}
@@ -199,6 +209,7 @@ export type Formats = {
 /** Enum registry of format strings */
 export type FormatEnum = Enum.wrap<Formats>;
 
+/** Temporal limits (min/max date bounds) */
 export const LIMIT = proxify(STATE.LIMIT, true, false);
 
 /** regional month-day-year parsing settings */
@@ -210,17 +221,17 @@ export const LOCALE = proxify(STATE.LOCALE, true, true);
 /** date-time element tokens */
 const elementKeys = ['yy', 'mm', 'wy', 'ww', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
 export const ELEMENT = enumify({
-	yy: 'year',
-	mm: 'month',
-	wy: 'week',
-	ww: 'week',
-	dd: 'day',
-	hh: 'hour',
-	mi: 'minute',
-	ss: 'second',
-	ms: 'millisecond',
-	us: 'microsecond',
-	ns: 'nanosecond',
+	/** Year element */ yy: 'year',
+	/** Month element */ mm: 'month',
+	/** ISO week-year element */ wy: 'week',
+	/** Week element */ ww: 'week',
+	/** Day element */ dd: 'day',
+	/** Hour element */ hh: 'hour',
+	/** Minute element */ mi: 'minute',
+	/** Second element */ ss: 'second',
+	/** Millisecond element */ ms: 'millisecond',
+	/** Microsecond element */ us: 'microsecond',
+	/** Nanosecond element */ ns: 'nanosecond',
 }, false);
 export type ELEMENT = ValueOf<typeof ELEMENT>
 export type Element = KeyOf<typeof ELEMENT>
@@ -243,14 +254,18 @@ export const CONFIG = enumify(configKeys, false);
 export type Config = KeyOf<typeof CONFIG>
 
 /** initialization strategies */
-export const MODE = enumify({ Auto: 'auto', Strict: 'strict', Defer: 'defer', }, false);
+export const MODE = enumify({
+	/** automatic initialization mode */ Auto: 'auto',
+	/** strict initialization mode */ Strict: 'strict',
+	/** deferred initialization mode */ Defer: 'defer',
+}, false);
 export type MODE = ValueOf<typeof MODE>
 
 /** cache operation modes */
 export const CACHE = enumify({
-	Off: false,
-	On: true,
-	Refresh: 'refresh',
+	/** cache disabled */ Off: false,
+	/** cache enabled */ On: true,
+	/** refresh cache */ Refresh: 'refresh',
 }, false);
 export type CACHE = ValueOf<typeof CACHE>
 

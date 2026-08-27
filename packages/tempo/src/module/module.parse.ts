@@ -480,11 +480,17 @@ const withState = <A extends any[], R>(fn: (state: t.Internal.State, ...args: A)
  * Public Parse Engine (wrapped for dual-mode support)
  */
 export const ParseEngine = {
+	/** Parses a DateTime input into a normalized temporal object */
 	parse: withState(_ParseEngine.parse),
+	/** Conforms a parse result to a specific temporal type */
 	conform: withState(_ParseEngine.conform),
+	/** Parses input using a specific layout pattern */
 	parseLayout: withState(_ParseEngine.parseLayout),
+	/** Parses input by matching against registered patterns */
 	parseMatch: withState(_ParseEngine.parseMatch),
+	/** Checks if input is a ZonedDateTime-like object */
 	isZonedDateTimeLike: withState(_ParseEngine.isZonedDateTimeLike),
+	/** Accumulates and returns parse results */
 	result: withState(accumulateResult)
 }
 
@@ -492,6 +498,9 @@ export const ParseEngine = {
  * # ParseModule
  * The internal parsing engine for Tempo.
  * Decouples date-string interpretation from the core class.
+ * @property {string} name - Module identifier
+ * @property {string} version - Module version
+ * @property {Function} install - Module installation function
  */
 export const ParseModule = defineInterpreterModule('ParseModule', ParseEngine);
 

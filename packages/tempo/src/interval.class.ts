@@ -39,22 +39,30 @@ export class Interval<T extends TemporalPoint = TemporalPoint> {
 		return Object.freeze(this) as this;
 	}
 
+	/**
+	 * Returns the string tag for Object.prototype.toString.
+	 * @returns 'Tempo.Interval'
+	 */
 	get [Symbol.toStringTag]() {
 		return 'Tempo.Interval';
 	}
 
+	/** The start point of the interval, or null for unbounded start */
 	get start(): T | null {
 		return this.#start;
 	}
 
+	/** The end point of the interval, or null for unbounded end */
 	get end(): T | null {
 		return this.#end;
 	}
 
+	/** The start time in nanoseconds since epoch, or -Infinity for unbounded start */
 	get startNs(): bigint | number {
 		return this.#startNs;
 	}
 
+	/** The end time in nanoseconds since epoch, or Infinity for unbounded end */
 	get endNs(): bigint | number {
 		return this.#endNs;
 	}

@@ -125,29 +125,29 @@ export type Layout = typeof Layout
  */
 /** @internal Tempo Event registry */
 export const Event = looseIndex<string, string | Function>()({
-	'new.?years? ?eve': '31 Dec',
-	'nye': '31 Dec',
-	'new.?years?(?: ?day)?': '01 Jan',
-	'ny': '01 Jan',
-	'christmas ?eve': '24 Dec',
-	'christmas': '25 Dec',
-	'xmas ?eve': '24 Dec',
-	'xmas': '25 Dec',
-	'now': function (this: AliasContext) { return this.toNow() },
-	'today': function (this: AliasContext) {
+	/** New Year's Eve (December 31) */ 'new.?years? ?eve': '31 Dec',
+	/** New Year's Eve abbreviation */ 'nye': '31 Dec',
+	/** New Year's Day (January 1) */ 'new.?years?(?: ?day)?': '01 Jan',
+	/** New Year abbreviation */ 'ny': '01 Jan',
+	/** Christmas Eve (December 24) */ 'christmas ?eve': '24 Dec',
+	/** Christmas Day (December 25) */ 'christmas': '25 Dec',
+	/** Christmas Eve abbreviation */ 'xmas ?eve': '24 Dec',
+	/** Christmas abbreviation */ 'xmas': '25 Dec',
+	/** Returns the current instant */ 'now': function (this: AliasContext) { return this.toNow() },
+	/** Returns today's date at the current time */ 'today': function (this: AliasContext) {
 		// ABSOLUTE: Snaps to the current system date
 		const { yy: year, mm: month, dd: day } = this.toNow();
 		return this.toDateTime().with({ year, month, day });
 	},
-	'tomorrow': function (this: AliasContext) {
+	/** Returns tomorrow's date */ 'tomorrow': function (this: AliasContext) {
 		// RELATIVE: Offsets the current anchor by one day
 		return this.add({ days: 1 });
 	},
-	'yesterday': function (this: AliasContext) {
+	/** Returns yesterday's date */ 'yesterday': function (this: AliasContext) {
 		// RELATIVE: Offsets the current anchor by one day
 		return this.add({ days: -1 });
 	},
-	'fortnight': function (this: AliasContext) {
+	/** Returns date two weeks from now */ 'fortnight': function (this: AliasContext) {
 		// RELATIVE: Offsets the current anchor by two weeks
 		return this.add({ weeks: 2 });
 	},
@@ -164,15 +164,15 @@ export type Event = typeof Event
  */
 /** @internal Tempo Period registry */
 export const Period = looseIndex<string, string | Function>()({
-	'mid[ -]?night': '24:00',
-	'morning': '8:00',
-	'mid[ -]?morning': '10:00',
-	'mid[ -]?day': '12:00',
-	'noon': '12:00',
-	'after[ -]?noon': '3:00pm',
-	'evening': '18:00',
-	'night': '20:00',
-	'half[ -]?hour': function (this: AliasContext) {
+	/** Midnight (00:00 or 24:00) */ 'mid[ -]?night': '24:00',
+	/** Morning time (8:00 AM) */ 'morning': '8:00',
+	/** Mid-morning time (10:00 AM) */ 'mid[ -]?morning': '10:00',
+	/** Midday/noon (12:00 PM) */ 'mid[ -]?day': '12:00',
+	/** Noon (12:00 PM) */ 'noon': '12:00',
+	/** Afternoon time (3:00 PM) */ 'after[ -]?noon': '3:00pm',
+	/** Evening time (6:00 PM) */ 'evening': '18:00',
+	/** Night time (8:00 PM) */ 'night': '20:00',
+	/** Half past the current hour */ 'half[ -]?hour': function (this: AliasContext) {
 		return `${this.hh}:30`;
 	},
 })
@@ -212,7 +212,11 @@ export const IntlDefault: IntlOptions = {
 	}
 }
 
-/** @internal Tempo Default options */
+/**
+ * @internal Tempo Default options
+ * @property {string} scope - Configuration scope identifier
+ * @property {string} timeZone - Default timezone for Tempo instances
+ */
 export const Default = secure({
 	/** log to console */																			debug: LOG.Info,
 	/** catch or throw Errors */															catch: false,
@@ -228,9 +232,9 @@ export const Default = secure({
 	/** internationalization configuration */									intl: IntlDefault,
 	/** plugin configurations */															plugins: {},
 	/** global data augmentation registries */								registry: {
-		formats: FORMAT,
-		locales: LOCALE,
-		modifiers: {
+		/** Format string templates */ formats: FORMAT,
+		/** Locale-specific configurations */ locales: LOCALE,
+		/** Temporal modifiers for relative dates */ modifiers: {
 			'+': ['next', 'hence', 'from now'],
 			'-': ['ago', 'last', 'prev'],
 			'=': ['this'],
