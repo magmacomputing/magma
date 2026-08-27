@@ -9,8 +9,6 @@
     ],
     "paths": {
       "#library": [ "../../library/src/common.index.ts" ],
-      "#library/scheduling/rrule.library.js": [ "../../library/src/common/scheduling/rrule.library.ts" ],
-      "#library/scheduling/cron.library.js": [ "../../library/src/common/scheduling/cron.library.ts" ],
       "#library/*.js": [
         "../../library/src/common/primitives/*.ts",
         "../../library/src/common/temporal/*.ts",

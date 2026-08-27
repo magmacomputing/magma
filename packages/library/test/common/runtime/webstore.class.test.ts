@@ -54,20 +54,47 @@ describe('WebStore', () => {
 	});
 
 	it('handles write failures in set, del, and clear gracefully', () => {
-		const store = new WebStore('local');
+		const originalLocalStorage = globalThis.localStorage;
+		const setItemMock = vi.fn().mockImplementation(() => { throw new Error('QuotaExceededError'); });
+		const removeItemMock = vi.fn().mockImplementation(() => { throw new Error('SecurityError'); });
+		const clearMock = vi.fn().mockImplementation(() => { throw new Error('ClearError'); });
+
 		const mockStorage = {
 			length: 1,
-			getItem: () => null,
-			setItem: () => { throw new Error('QuotaExceededError'); },
-			removeItem: () => { throw new Error('SecurityError'); },
-			clear: () => { throw new Error('ClearError'); },
-			key: () => null,
+			getItem: vi.fn().mockReturnValue(null),
+			setItem: setItemMock,
+			removeItem: removeItemMock,
+			clear: clearMock,
+			key: vi.fn().mockReturnValue(null),
 		};
-		// @ts-ignore
-		store['#resolvedStorage'] = mockStorage;
 
-		expect(() => store.set('test', 'value')).not.toThrow();
-		expect(() => store.del('test')).not.toThrow();
-		expect(() => store.clear()).not.toThrow();
+		try {
+			Object.defineProperty(globalThis, 'localStorage', {
+				value: mockStorage,
+				configurable: true,
+				writable: true,
+			});
+
+			const store = new WebStore('local');
+
+			expect(() => store.set('test', 'value')).not.toThrow();
+			expect(setItemMock).toHaveBeenCalled();
+
+			expect(() => store.del('test')).not.toThrow();
+			expect(removeItemMock).toHaveBeenCalled();
+
+			expect(() => store.clear()).not.toThrow();
+			expect(clearMock).toHaveBeenCalled();
+		} finally {
+			if (originalLocalStorage === undefined) {
+				delete (globalThis as any).localStorage;
+			} else {
+				Object.defineProperty(globalThis, 'localStorage', {
+					value: originalLocalStorage,
+					configurable: true,
+					writable: true,
+				});
+			}
+		}
 	});
 });
