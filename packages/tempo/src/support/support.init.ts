@@ -215,9 +215,8 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 			state.parse.snippet[Token.wkd as any] = Snippet[Token.wkd as any];
 
 			if ((state.parse as any).localizedEvents) {
-				(state.parse as any).localizedEvents.forEach((k: string) => {
-					delete state.parse.event[k];
-				});
+				(state.parse as any).localizedEvents
+					.forEach((k: string) => { delete state.parse.event[k] });
 				delete (state.parse as any).localizedEvents;
 			}
 			patternsDirty = true;
@@ -227,9 +226,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 	ownEntries(options).forEach(([rawKey, optVal]) => {
 		if (isUndefined(optVal)) return;
 
-		const optKey = typeof rawKey === 'string' ? (CANONICAL_OPTION_KEYS[rawKey.toLowerCase()] ?? rawKey) : rawKey;
-		state.userProvidedKeys.add(optKey as string);
-		state.userProvidedKeys.add(rawKey as string);
+		const optKey = isString(rawKey)
+			? (CANONICAL_OPTION_KEYS[rawKey.toLowerCase()] ?? rawKey)
+			: rawKey;
+		state.userProvidedKeys.add(optKey);
+		state.userProvidedKeys.add(rawKey);
 		const preserveSupplier = isFunction(optVal) && state.config?.scope !== 'local';
 		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey) && !(optKey === 'locale' && preserveSupplier))
 			? evaluate(optVal)
