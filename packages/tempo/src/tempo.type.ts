@@ -335,6 +335,7 @@ export namespace Internal {
 		/** additional console.log for tracking */							debug: DebugLevel;
 		/** catch or throw Errors */														catch: boolean;
 		/** suppress console output during catch */							silent: boolean;
+		/** convenience error handling policy preset */					error?: 'throw' | 'catch' | 'silent' | 'log';
 		/** Temporal timeZone */																timeZone: Evaluable<Temporal.TimeZoneLike>;
 		/** Temporal calendar */																calendar: Evaluable<Temporal.CalendarLike>;
 		/** locale (e.g. en-AU) */															locale: Evaluable<string | string[]>;
@@ -343,6 +344,7 @@ export namespace Internal {
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
+		/** Precision to measure timestamps alias */						timestamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
 		/** custom data augmentation registries */							registry?: {

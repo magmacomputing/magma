@@ -256,8 +256,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "tsc -b",
-    "clean": "tsc -b --clean",
+    "build": "npm run clean && tsc -b",
+    "clean": "tempo-cli rm dist && (tsc -b --clean || true)",
     "prepublishOnly": "tempo-cli prepublish"
   },
   "dependencies": {
