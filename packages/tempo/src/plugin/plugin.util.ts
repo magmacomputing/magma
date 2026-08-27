@@ -140,13 +140,20 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 			const desc = Object.getOwnPropertyDescriptor(TempoClass, key);
 			if (desc) {
 				if (!isDescriptor && desc.value === val) continue;
-				if (isDescriptor && 'get' in val && desc.get === val.get) continue;
-				if (isDescriptor && 'value' in val && desc.value === val.value) continue;
+				if (isDescriptor) {
+					const isAccessor = ('get' in val && isFunction(val.get)) || ('set' in val && isFunction(val.set));
+					if (isAccessor) {
+						if (desc.get === val.get && desc.set === val.set) continue;
+					} else if ('value' in val) {
+						if (
+							desc.value === val.value &&
+							desc.writable === (val.writable ?? true) &&
+							desc.enumerable === (val.enumerable ?? false) &&
+							desc.configurable === (val.configurable ?? true)
+						) continue;
+					}
+				}
 			}
-
-			const existing = desc?.value;
-			if (existing === val || (isObject(val) && 'value' in val && val.value === existing))
-				continue;
 
 			const msg = `Static name collision on "${key}". Property is already defined on the host class.`;
 			logError(msg, { ...TempoClass?.config, catch: true });

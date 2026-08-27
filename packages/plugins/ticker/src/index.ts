@@ -459,8 +459,7 @@ class TickerInstance implements Ticker.Descriptor {
 	[Symbol.dispose]() { this.stop(); }
 }
 
-function tickerFactory(this: typeof Tempo, arg1: any, arg2?: any): Ticker.Instance {
-	const TempoClass = (this as any)?.prototype ? this : (this as any)?.constructor;
+function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.Instance {
 	const instance = new TickerInstance(TempoClass, arg1, arg2);
 	const proxy = new Proxy((() => instance.stop()) as any, {
 		get: (_, prop) => {
@@ -484,7 +483,7 @@ function tickerFactory(this: typeof Tempo, arg1: any, arg2?: any): Ticker.Instan
 
 const tickersDescriptor = {
 	get: () => Ticker.active,
-};
+}
 
 /**
  * ## TickerPlugin
@@ -494,7 +493,13 @@ const tickersDescriptor = {
 export const TickerPlugin: TempoPlugin = definePlugin({
 	name: 'ticker',
 	install(this: typeof Tempo, TempoClass: typeof Tempo) {
-		attachStatics(TempoClass, {
+		const installedClass = TempoClass || this;
+		const tickerFactory = function (this: any, arg1: any, arg2?: any): Ticker.Instance {
+			const cls = (this as any)?.prototype ? this : ((this as any)?.constructor?.prototype ? (this as any).constructor : installedClass);
+			return createTicker(cls, arg1, arg2);
+		};
+
+		attachStatics(installedClass, {
 			ticker: tickerFactory,
 			tickers: tickersDescriptor,
 		});

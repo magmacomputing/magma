@@ -77,7 +77,7 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.brk]: new RegExp(`(\\[(?<brk>${bracket_content.source})\\](?:\\[(?<cal>${bracket_content.source})\\])?)?`),	// timezone/calendar brackets [...]
 	[Token.slk]: new RegExp(Match.shorthand.source),					// shorthand shifter
 	[Token.era]: /(?:\s*(?<era>b\.?c\.?e\.?|c\.?e\.?|b\.?c\.?|a\.?d\.?))/i,	// historical era designation
-	[Token.nth]: /(?<nth>(?:[1-9][0-9]{0,2})(?:st|nd|rd|th)?|first|1st|second|2nd|third|3rd|fourth|4th|fifth|5th|last)/i,	// ordinal index (1st, 2nd, 3rd, last, etc)
+	[Token.nth]: /(?<nth>(?:[0-9]*11th|[0-9]*12th|[0-9]*13th|[0-9]*[04-9]th|[0-9]*[02-9]1st|1st|[0-9]*[02-9]2nd|2nd|[0-9]*[02-9]3rd|3rd|[1-9][0-9]{0,2})|first|second|third|fourth|fifth|last)/i,	// ordinal index (1st, 2nd, 3rd, last, etc)
 })
 /** @internal Tempo Snippet type */
 export type Snippet = typeof Snippet
@@ -99,7 +99,7 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.mdy6]: '(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])(?<yy>[0-9]{2})',// compact date (mmddyy)
 	[Token.ymd6]: '(?<yy>[0-9]{2})(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])',// compact date (yymmdd)
 	[Token.ordWkd]: '{mod}?{nth}?{sep}+{wkd}(?:{sep}+(?:in|of))?{sep}+(?:{mm}(?:{sep}?{yy})?){afx}?{sfx}?',// ordinal weekday (e.g. 3rd Thursday of Nov 2026)
-	[Token.ordUnt]: '{mod}?{nth}?{sep}+{unt}(?:{sep}+(?:in|of))?{sep}+(?:(?<yy>[0-9]{4})|{mm}(?:{sep}?(?<yy>[0-9]{2,4}))?){afx}?{sfx}?',// ordinal unit (e.g. 1st day of May, 100th day of 2026)
+	[Token.ordUnt]: '{mod}?{nth}?{sep}+{unt}(?:{sep}+(?:in|of))?{sep}+(?:(?<yy>[0-9]{4})|{mm}(?:{sep}?(?<yy2>[0-9]{2,4}))?){afx}?{sfx}?',// ordinal unit (e.g. 1st day of May, 100th day of 2026)
 	[Token.wkd]: '{mod}?{nbr}?{sep}?{wkd}{afx}?{sfx}?',				// weekday-only layout; MUST precede {dt} (which also matches bare weekday names via its {wkd} alternative)
 	[Token.dt]: datePattern.dmy,															// calendar, event, slick or weekday
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period

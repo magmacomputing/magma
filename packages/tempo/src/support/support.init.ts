@@ -197,12 +197,12 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 }
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
-const CANONICAL_OPTION_KEYS: Record<string, string> = {
+const CANONICAL_OPTION_KEYS: Record<string, string> = Object.assign(Object.create(null), {
 	timezone: 'timeZone',
 	timestamp: 'timeStamp',
 	monthday: 'monthDay',
 	errorhandling: 'error',
-};
+});
 
 export function extendState(state: t.Internal.State, options: t.Options): boolean {
 	let patternsDirty = false;

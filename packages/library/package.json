@@ -257,7 +257,7 @@
   "scripts": {
     "test": "vitest run",
     "build": "npm run clean && tsc -b",
-    "clean": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\" && (tsc -b --clean || true)",
+    "clean": "node bin/clean.mjs && (tsc -b --clean || true)",
     "prepublishOnly": "tempo-cli prepublish"
   },
   "dependencies": {

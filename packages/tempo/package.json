@@ -257,7 +257,7 @@
     "build:resolve": "tsx bin/resolve-types.ts",
     "build:version": "node bin/update-version.mjs",
     "prebuild": "npm run build:version",
-    "clean": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\" && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
+    "clean": "node bin/clean.mjs && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
     "prepublishOnly": "tempo-cli prepublish",
     "docs:api": "typedoc && typedoc --options typedoc.library.json && node bin/expand-typedoc.mjs",
     "docs:dev": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress dev",

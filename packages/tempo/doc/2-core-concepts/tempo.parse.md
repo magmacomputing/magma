@@ -77,13 +77,12 @@ Tempo natively supports parsing structured ordinal weekday and ordinal date expr
 
 ```typescript
 // Ordinal Weekdays
-new Tempo('3rd Wednesday of October');       // 3rd Wed in Oct of anchor/current year
-new Tempo('1st Mon of next month');          // 1st Monday of next month
-new Tempo('2nd Friday of last month');       // 2nd Friday of previous month
+new Tempo('3rd Wednesday of October');        // 3rd Wed in Oct of anchor/current year
+new Tempo('1st Thursday of November 2026');   // 1st Thursday of November 2026
 
 // Ordinal Dates
-new Tempo('15th of next month');             // 15th day of next month
-new Tempo('1st day of next year');           // Jan 1st of next year
+new Tempo('15th day of May');                 // 15th day of May
+new Tempo('1st day of 2026');                 // 1st day of 2026
 ```
 
 #### 💡 When to use Native Ordinal Parsing vs. `@magmacomputing/tempo-plugin-ai` (`parseAI`)

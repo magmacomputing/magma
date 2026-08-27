@@ -157,6 +157,7 @@ export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: strin
 
 	let fallbackAnchor = config?.anchor;
 	if (isTempo(fallbackAnchor)) fallbackAnchor = fallbackAnchor.toDateTime();
+	if (isInstant(fallbackAnchor)) fallbackAnchor = fallbackAnchor.toZonedDateTimeISO(config?.timeZone || 'UTC');
 	if (!isTemporal(fallbackAnchor)) fallbackAnchor = undefined;
 
 	let yy = groups.yy ? Number(groups.yy) : (fallbackAnchor?.year ?? dateTime.year);
@@ -289,7 +290,16 @@ export function parseOrdinalDate(
 	}
 
 	if (targetDate) {
-		clearGroupKeys(groups, "nth", "unt", "mm", "yy", "dd", "mod", "nbr", "afx");
+		if (isDefined(targetMonth) && targetDate.month !== targetMonth) {
+			logError(`Ordinal date day ${nthVal} out of bounds for month ${targetMonth}`, config);
+			return undefined;
+		}
+		if (targetDate.year !== targetYear) {
+			logError(`Ordinal date day ${nthVal} out of bounds for year ${targetYear}`, config);
+			return undefined;
+		}
+
+		clearGroupKeys(groups, "nth", "unt", "mm", "yy", "yy2", "dd", "mod", "nbr", "afx");
 
 		const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone ?? 'UTC';
 		const resZdt = targetDate.toZonedDateTime(tz).withPlainTime(dateTime.toPlainTime());
@@ -305,7 +315,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 
 	const { mod, nbr = '1', afx, unt, era } = groups as Lexer.GroupDate & { era?: string };
 	// Normalize yy, mm, dd: treat empty captures as missing (regex groups yield '' for optional unmatched groups)
-	let yy = groups.yy || undefined;
+	let yy = groups.yy || groups.yy2 || undefined;
 	let mm = groups.mm || undefined;
 	let dd = groups.dd || undefined;
 

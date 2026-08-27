@@ -434,7 +434,7 @@ export namespace Internal {
 	}
 
 	/** drop parse-only, internal, and one-time initialization Options when deriving Config */
-	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "pivot" | "value" | "anchor" | "result" | "extends">;
+	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "pivot" | "value" | "anchor" | "result" | "extends" | "error" | "timestamp">;
 
 	/** Instance configuration derived from supply, storage, and discovery. */
 	export interface Config extends Required<Omit<OptionsKeep, "registry" | "timeZone" | "calendar" | "locale" | "sphere">> {
