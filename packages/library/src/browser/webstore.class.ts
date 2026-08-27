@@ -2,6 +2,7 @@ import { distinct, ownEntries } from '#library/primitive.library.js';
 import { stringify, objectify } from '#library/serialize.library.js';
 import { asType } from '#library/type.library.js';
 import { isEmpty, isNullish, isString } from '#library/assertion.library.js';
+import { getSafeStorage } from '#library/storage.library.js';
 import type { Property, ValueOf } from '#library/type.library.js';
 
 const STORAGE = {
@@ -44,12 +45,13 @@ export class WebStore {
 	}
 
 	#type: STORAGE;
+	#resolvedStorage?: globalThis.Storage;
 
-	/** Resolved Storage object (resolved only on access) */
+	/** Resolved Storage object (resolved safely on access with memory fallback) */
 	get #storage(): globalThis.Storage {
-		return this.#type === STORAGE.Local
-			? globalThis.localStorage
-			: globalThis.sessionStorage;
+		if (this.#resolvedStorage) return this.#resolvedStorage;
+		const name = this.#type === STORAGE.Local ? 'localStorage' : 'sessionStorage';
+		return this.#resolvedStorage = getSafeStorage(name);
 	}
 
 	[Symbol.toStringTag] = 'WebStore';
@@ -179,10 +181,19 @@ export class WebStore {
 	 */
 	public entries<T>(...keys: PropertyKey[]) {								// list of keys (or all) to lookup
 		const wanted = new Set(keys.map(key => stringify(key)));
+		const result: [PropertyKey, T][] = [];
+		const storage = this.#storage;
 
-		return ownEntries<Record<string, string>>(this.#storage)
-			.map(([key, val]) => [objectify(key), objectify(val)] as [PropertyKey, T])
-			.filter(([key]) => isEmpty(keys) || wanted.has(stringify(key)))
+		for (let i = 0; i < storage.length; i++) {
+			const rawKey = storage.key(i);
+			if (rawKey === null) continue;
+			if (isEmpty(keys) || wanted.has(rawKey)) {
+				const rawVal = storage.getItem(rawKey);
+				result.push([objectify(rawKey), objectify(rawVal) as T]);
+			}
+		}
+
+		return result;
 	}
 
 	/**

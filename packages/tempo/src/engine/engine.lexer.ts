@@ -63,7 +63,11 @@ export function resolveNth(str: any): number {
 		case 'fifth': case '5th': return 5;
 		default: {
 			const match = low.match(/^(\d+)/);
-			return match ? parseInt(match[1], 10) : 1;
+			if (match) {
+				const val = parseInt(match[1], 10);
+				if (Number.isFinite(val) && val >= 1 && val <= 366) return val;
+			}
+			return 1;
 		}
 	}
 }
@@ -187,7 +191,7 @@ export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: strin
 
 	clearGroupKeys(groups, "nth", "wkd", "mm", "yy", "mod", "nbr", "sfx", "afx", "unt", "dd");
 
-	if (targetDate.month === mm) {
+	if (targetDate.year === yy && targetDate.month === mm) {
 		const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone ?? 'UTC';
 		const resZdt = targetDate.toZonedDateTime(tz).withPlainTime(dateTime.toPlainTime());
 		logDebug(`[Lexer] Resolved ordinal weekday to ${targetDate.toString()}`, config);
@@ -314,8 +318,19 @@ export function parseOrdinalDate(
 export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any, pivot: number = 75): Temporal.ZonedDateTime {
 
 	const { mod, nbr = '1', afx, unt, era } = groups as Lexer.GroupDate & { era?: string };
-	// Normalize yy, mm, dd: treat empty captures as missing (regex groups yield '' for optional unmatched groups)
-	let yy = groups.yy || groups.yy2 || undefined;
+	let yy = groups.yy || undefined;
+	if (isUndefined(yy) && isDefined(groups.yy2)) {
+		let yy2Num = parseInt(groups.yy2, 10);
+		if (Number.isFinite(yy2Num)) {
+			if (yy2Num < 100) {
+				const pivotVal = config?.pivot ?? pivot ?? 75;
+				const pivotYear = dateTime.subtract({ years: pivotVal }).year % 100;
+				const century = Math.floor(dateTime.year / 100);
+				yy2Num += (century - Number(yy2Num >= pivotYear)) * 100;
+			}
+			yy = String(yy2Num);
+		}
+	}
 	let mm = groups.mm || undefined;
 	let dd = groups.dd || undefined;
 
@@ -359,10 +374,12 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		day: dd ?? fallbackDay,
 	} as any);
 
+	const isExplicitNth = isDefined(groups["nth"]);
 	const nthStr = groups["nth"] ?? (groups["mod"]?.toLowerCase() === 'last' && (groups["mm"] || groups["yy"] || unt) ? 'last' : undefined);
 	if (isDefined(nthStr)) {
 		const res = parseOrdinalDate(groups, unt, nthStr, dateTime, config, year, month);
 		if (isDefined(res)) return res;
+		if (isExplicitNth) return dateTime;
 	}
 
 	if (unt) {

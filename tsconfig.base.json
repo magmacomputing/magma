@@ -39,16 +39,14 @@
 				"./packages/library/src/common/temporal/*.ts",
 				"./packages/library/src/common/security/*.ts",
 				"./packages/library/src/common/runtime/*.ts",
-				"./packages/library/src/common/scheduling/*.ts",
-				"./packages/library/src/common/*.ts"
+				"./packages/library/src/common/scheduling/*.ts"
 			],
 			"#library/*": [
 				"./packages/library/src/common/primitives/*",
 				"./packages/library/src/common/temporal/*",
 				"./packages/library/src/common/security/*",
 				"./packages/library/src/common/runtime/*",
-				"./packages/library/src/common/scheduling/*",
-				"./packages/library/src/common/*"
+				"./packages/library/src/common/scheduling/*"
 			],
 			"#browser": [
 				"./packages/library/src/browser.index.ts"
@@ -67,9 +65,6 @@
 			],
 			"#tempo/config/*": [
 				"./packages/tempo/src/config/*"
-			],
-			"#tempo/license": [
-				"../tempo-plugin/packages/_core/src/index.ts"
 			],
 			"#tempo": [
 				"./packages/tempo/src/tempo.index.ts"

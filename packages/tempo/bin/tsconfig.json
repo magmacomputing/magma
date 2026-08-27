@@ -16,16 +16,14 @@
         "../../library/src/common/temporal/*.ts",
         "../../library/src/common/security/*.ts",
         "../../library/src/common/runtime/*.ts",
-        "../../library/src/common/scheduling/*.ts",
-        "../../library/src/common/*.ts"
+        "../../library/src/common/scheduling/*.ts"
       ],
       "#library/*": [
         "../../library/src/common/primitives/*",
         "../../library/src/common/temporal/*",
         "../../library/src/common/security/*",
         "../../library/src/common/runtime/*",
-        "../../library/src/common/scheduling/*",
-        "../../library/src/common/*"
+        "../../library/src/common/scheduling/*"
       ],
       "#browser/*": [
         "../../library/src/browser/*"

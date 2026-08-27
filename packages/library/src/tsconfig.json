@@ -29,16 +29,14 @@
         "./common/temporal/*.ts",
         "./common/security/*.ts",
         "./common/runtime/*.ts",
-        "./common/scheduling/*.ts",
-        "./common/*.ts"
+        "./common/scheduling/*.ts"
       ],
       "#library/*": [
         "./common/primitives/*",
         "./common/temporal/*",
         "./common/security/*",
         "./common/runtime/*",
-        "./common/scheduling/*",
-        "./common/*"
+        "./common/scheduling/*"
       ],
       "#browser/*.js": [
         "./browser/*.ts"

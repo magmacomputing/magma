@@ -14,16 +14,14 @@
         "../../library/src/common/temporal/*.ts",
         "../../library/src/common/security/*.ts",
         "../../library/src/common/runtime/*.ts",
-        "../../library/src/common/scheduling/*.ts",
-        "../../library/src/common/*.ts"
+        "../../library/src/common/scheduling/*.ts"
       ],
       "#library/*": [
         "../../library/src/common/primitives/*",
         "../../library/src/common/temporal/*",
         "../../library/src/common/security/*",
         "../../library/src/common/runtime/*",
-        "../../library/src/common/scheduling/*",
-        "../../library/src/common/*"
+        "../../library/src/common/scheduling/*"
       ],
       "#browser": [ "../../library/src/browser.index.ts" ],
       "#browser/*": [ "../../library/src/browser/*" ],
@@ -49,7 +47,6 @@
       "#tempo/term/*": [ "./plugin/term/term.*.ts" ],
       "#tempo/support": [ "./support/support.index.ts" ],
       "#tempo/support/*": [ "./support/*" ],
-      "#tempo/license": [ "./plugin/license/license.validator.ts" ],
       "#tempo/std": [ "./plugin/term/std.d.ts" ],
       "#tempo/*": [ "./*" ]
     }

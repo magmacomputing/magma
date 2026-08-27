@@ -19,7 +19,6 @@ export default defineConfig({
   ],
   resolve: {
     alias: [
-      { find: /^#tempo\/license$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/license/license.validator.ts') },
       { find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.sdk.ts') },
       { find: /^@magmacomputing\/tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.index.ts') },
       { find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.sdk.ts') },
@@ -43,7 +42,6 @@ export default defineConfig({
       { find: /^#library\/(buffer|cipher|webtoken)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/security/$1.library.ts') },
       { find: /^#library\/(calendar|temporal)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/temporal/$1.library.ts') },
       { find: /^#library\/temporal\.polyfill\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/temporal/temporal.polyfill.ts') },
-      { find: /^#library\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/src/common/$1.ts') },
       { find: /^#library$/, replacement: path.resolve(__dirname, './packages/library/src/common.index.ts') },
       { find: /^#tempo\/plugin\/term\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/term/$1.ts') },
       { find: /^#tempo\/plugin\.(util|type)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.$1.ts') },

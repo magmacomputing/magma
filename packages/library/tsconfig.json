@@ -12,16 +12,14 @@
         "./src/common/temporal/*.ts",
         "./src/common/security/*.ts",
         "./src/common/runtime/*.ts",
-        "./src/common/scheduling/*.ts",
-        "./src/common/*.ts"
+        "./src/common/scheduling/*.ts"
       ],
       "#library/*": [
         "./src/common/primitives/*",
         "./src/common/temporal/*",
         "./src/common/security/*",
         "./src/common/runtime/*",
-        "./src/common/scheduling/*",
-        "./src/common/*"
+        "./src/common/scheduling/*"
       ],
        "#browser": [
         "./src/browser.index.ts"

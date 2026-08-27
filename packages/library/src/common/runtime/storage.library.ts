@@ -4,28 +4,33 @@ import { isDefined, isUndefined, isString } from '#library/assertion.library.js'
 
 const context = getContext();
 
-/** simplified in-memory storage for restricted browser contexts */
-const mockStorage: Storage = {
-	length: 0,
-	clear: () => { },
-	getItem: (_key: string) => null,
-	key: (_index: number) => null,
-	removeItem: (_key: string) => { },
-	setItem: (_key: string, _value: string) => { },
-};
+/** Creates an in-memory Storage object fallback for environments without native Storage support */
+export const createMemoryStorage = (): Storage => {
+	const map = new Map<string, string>();
+	return {
+		get length() { return map.size; },
+		clear: () => map.clear(),
+		getItem: (key: string) => map.get(key) ?? null,
+		key: (index: number) => Array.from(map.keys())[index] ?? null,
+		removeItem: (key: string) => { map.delete(key); },
+		setItem: (key: string, value: string) => { map.set(key, String(value)); },
+	};
+}
 
-/** safely attempt to retrieve a Storage object from the global context */
-const getSafeStorage = (name: 'localStorage' | 'sessionStorage' = 'localStorage'): Storage => {
+/** Safely attempt to retrieve a Storage object from globalThis or fallback to memory storage */
+export const getSafeStorage = (name: 'localStorage' | 'sessionStorage' = 'localStorage'): Storage => {
 	try {
-		return context.global?.[name] ?? mockStorage;
+		const target = globalThis?.[name];
+		if (target && typeof target.getItem === 'function') return target;
 	} catch {
-		return mockStorage;
+		// Ignore SecurityError / ReferenceError in restricted sandboxes
 	}
-};
+	return createMemoryStorage();
+}
 
 let storage = context.type === CONTEXT.Browser
 	? getSafeStorage()
-	: mockStorage;
+	: createMemoryStorage();
 
 const nodeStorage = new Map<string, string>();
 const deletedKeys = new Set<string>();

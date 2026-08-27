@@ -125,18 +125,12 @@ function rewrite(filePath: string) {
 		replacement = `${prefix || './'}lib/`;
 	}
 
-	// Handle #tempo/license resolution
-	let prefix = '';
-	for (let i = 0; i < depth; i++) prefix += '../';
-	let licReplacement = `${prefix || './'}plugin/license/license.validator.js`;
-
 	const updatedContent = content
 		.replace(/#library\/([^"')]+\.js)/g, (_, libPath) => {
 			const actualPath = isInsideLib ? libPath : findInLibSrc(libPath);
 			return `${replacement}${actualPath}`;
 		})
-		.replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`)
-		.replace(/#tempo\/license(['"])/g, (_, quote) => `${licReplacement}${quote}`);
+		.replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`);
 
 	if (content !== updatedContent) {
 		fs.writeFileSync(filePath, updatedContent);
