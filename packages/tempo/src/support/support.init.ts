@@ -227,9 +227,9 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 	ownEntries(options).forEach(([rawKey, optVal]) => {
 		if (isUndefined(optVal)) return;
 
-		const optKey = CANONICAL_OPTION_KEYS[rawKey.toLowerCase()] ?? rawKey;
-		state.userProvidedKeys.add(optKey);
-		state.userProvidedKeys.add(rawKey);
+		const optKey = typeof rawKey === 'string' ? (CANONICAL_OPTION_KEYS[rawKey.toLowerCase()] ?? rawKey) : rawKey;
+		state.userProvidedKeys.add(optKey as string);
+		state.userProvidedKeys.add(rawKey as string);
 		const preserveSupplier = isFunction(optVal) && state.config?.scope !== 'local';
 		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey) && !(optKey === 'locale' && preserveSupplier))
 			? evaluate(optVal)
