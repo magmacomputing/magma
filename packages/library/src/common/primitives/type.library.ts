@@ -171,7 +171,7 @@ export type WellKnownSymbols = { [K in keyof SymbolConstructor]: SymbolConstruct
 export interface IgnoreOfMap { }
 type IgnoreOf = WellKnownSymbols | keyof IgnoreOfMap;
 
-/** Extracts the count of elements/entries in an array or object type */
+/** Computes the union-member cardinality of type T, with numeric fallback for non-unions or deep recursion */
 export type CountOf<T> = SafeCount<T>
 /** Extracts own properties of an object, excluding well-known symbols and ignored keys */
 export type OwnOf<T extends Obj> = T extends Array<any> ? { [K in number]: T[number] } : Omit<T, IgnoreOf>

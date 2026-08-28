@@ -17,10 +17,10 @@ All official and community plugins are 100% open source under the MIT license an
 Tempo plugins are published as scoped packages on the standard npm registry (`npmjs.com`). Install plugins using your package manager of choice:
 
 ```bash
-npm install @magmacomputing/tempo-plugin-ticker  # npm
-pnpm add @magmacomputing/tempo-plugin-ticker     # pnpm
-yarn add @magmacomputing/tempo-plugin-ticker     # yarn
-bun add @magmacomputing/tempo-plugin-ticker      # bun
+npm install @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # npm
+pnpm add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # pnpm
+yarn add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # yarn
+bun add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # bun
 ```
 
 ---
@@ -55,8 +55,8 @@ import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
 
 Tempo.extend(AstroTerm);
 
-const t = new Tempo('2026-03-20');
-console.log(t.season); // Discovers equinoxes and astronomical seasons
+const t = new Tempo('2026-03-20', { sphere: 'north' });
+console.log(t.term.astro); // Discovers equinoxes and astronomical seasons
 ```
 
 ### Option C: Explicit Registration (`Tempo.extend`)
