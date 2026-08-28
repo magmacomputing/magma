@@ -311,7 +311,7 @@ export function Singleton<T extends Constructor>(
 			[safeName]: class extends value {
 				constructor(...args: any[]) {
 					if (instance) {
-						if (options?.allowArgMismatch !== true && initialArgs && initialArgs.length > 0) {
+						if (options?.allowArgMismatch !== true && initialArgs) {
 							const prev = initialArgs;
 							const isMismatch = args.length !== prev.length || args.some((arg, i) => arg !== prev[i]);
 							if (isMismatch)

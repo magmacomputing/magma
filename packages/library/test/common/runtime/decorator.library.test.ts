@@ -161,4 +161,15 @@ describe('Class Decorators: Singleton', () => {
     expect(m2).toBe(m1);
     expect(m2.id).toBe('alpha');
   });
+
+  it('should detect argument mismatch when initial construction has zero arguments', () => {
+    @Singleton
+    class ZeroArgStore {
+      constructor(public id?: string) {}
+    }
+
+    const z1 = new ZeroArgStore();
+    expect(() => new ZeroArgStore('extra')).toThrow(/Argument mismatch/);
+    expect(new ZeroArgStore()).toBe(z1);
+  });
 });
