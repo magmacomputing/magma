@@ -42,7 +42,7 @@ Tempo.init({
 });
 
 const t = new Tempo();
-console.log(t.tickers);
+console.log(Tempo.tickers);
 ```
 
 ### Option B: Explicit Extension (`Tempo.extend`)
@@ -51,24 +51,26 @@ Register plugins dynamically at runtime using `Tempo.extend()`:
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
+import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
 
-Tempo.extend(AstroPlugin);
+Tempo.extend(AstroTerm);
 
 const t = new Tempo('2026-03-20');
 console.log(t.season); // Discovers equinoxes and astronomical seasons
 ```
 
-### Option C: Auto-Registration via Side-Effect Import
+### Option C: Explicit Registration (`Tempo.extend`)
 
-Many plugins support self-registration on import. Simply import the plugin module:
+Register plugins dynamically matching install behavior:
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker'; // Auto-registers TickerPlugin
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+
+Tempo.extend(TickerPlugin);
 
 const t = new Tempo();
-console.log(t.tickers);
+console.log(Tempo.tickers);
 ```
 
 ---

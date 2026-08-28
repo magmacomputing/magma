@@ -2,7 +2,7 @@ import { distinct, ownEntries } from '#library/primitive.library.js';
 import { stringify, objectify } from '#library/serialize.library.js';
 import { asType } from '#library/type.library.js';
 import { isEmpty, isNullish, isString } from '#library/assertion.library.js';
-import { getSafeStorage } from '#library/storage.library.js';
+import { getSafeStorage, getMemoryStorage } from '#library/storage.library.js';
 import { StringTag } from '#library/class.library.js';
 import type { Property, ValueOf } from '#library/type.library.js';
 
@@ -56,6 +56,17 @@ export class WebStore {
 		return this.#resolvedStorage = getSafeStorage(name);
 	}
 
+	#exec<R>(op: (storage: globalThis.Storage) => R): R {
+		try {
+			return op(this.#storage);
+		} catch (e) {
+			const name = this.#type === STORAGE.Local ? 'localStorage' : 'sessionStorage';
+			const fallback = getMemoryStorage(name);
+			this.#resolvedStorage = fallback;
+			return op(fallback);
+		}
+	}
+
 	constructor(storage: STORAGE = STORAGE.Local) {
 		this.#type = storage;
 	}
@@ -68,7 +79,7 @@ export class WebStore {
 	 * @returns The parsed object from storage, or the default/null if not found
 	 */
 	public get<T>(key: PropertyKey, dflt?: T) {
-		const str = this.#storage.getItem(stringify(key));
+		const str = this.#exec(storage => storage.getItem(stringify(key)));
 		return isString(str)
 			? objectify<T>(str)																		// rebuild the object
 			: (dflt ?? null)
@@ -136,7 +147,7 @@ export class WebStore {
 	 */
 	public clear() {
 		try {
-			this.#storage.clear();
+			this.#exec(storage => storage.clear());
 		} catch (e) {
 			console.warn('[WebStore] Failed to clear storage:', e);
 		}
@@ -152,7 +163,7 @@ export class WebStore {
 	public del(...keys: PropertyKey[]) {											// list of keys to remove
 		keys.forEach(key => {
 			try {
-				this.#storage.removeItem(stringify(key));
+				this.#exec(storage => storage.removeItem(stringify(key)));
 			} catch (e) {
 				console.warn(`[WebStore] Failed to removeItem for key '${String(key)}':`, e);
 			}
@@ -191,16 +202,17 @@ export class WebStore {
 	public entries<T>(...keys: PropertyKey[]) {								// list of keys (or all) to lookup
 		const wanted = new Set(keys.map(key => stringify(key)));
 		const result: [PropertyKey, T][] = [];
-		const storage = this.#storage;
 
-		for (let i = 0; i < storage.length; i++) {
-			const rawKey = storage.key(i);
-			if (rawKey === null) continue;
-			if (isEmpty(keys) || wanted.has(rawKey)) {
-				const rawVal = storage.getItem(rawKey);
-				result.push([objectify(rawKey), objectify(rawVal) as T]);
+		this.#exec(storage => {
+			for (let i = 0; i < storage.length; i++) {
+				const rawKey = storage.key(i);
+				if (rawKey === null) continue;
+				if (isEmpty(keys) || wanted.has(rawKey)) {
+					const rawVal = storage.getItem(rawKey);
+					result.push([objectify(rawKey), objectify(rawVal) as T]);
+				}
 			}
-		}
+		});
 
 		return result;
 	}
@@ -219,7 +231,7 @@ export class WebStore {
 
 	#upd(key: PropertyKey, obj: any) {
 		try {
-			this.#storage.setItem(stringify(key), stringify(obj));
+			this.#exec(storage => storage.setItem(stringify(key), stringify(obj)));
 		} catch (e) {
 			console.warn(`[WebStore] Failed to setItem for key '${String(key)}':`, e);
 		}

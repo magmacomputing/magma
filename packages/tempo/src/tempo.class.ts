@@ -92,7 +92,7 @@ const intervalProxyHandler: ProxyHandler<typeof Interval> = {
  */
 @Serializable
 @Immutable
-@StringTag
+@StringTag('Tempo')
 export class Tempo {
 	/** Interval class for checking overlaps and bounds between Temporal points */	static Interval = new Proxy(Interval, intervalProxyHandler) as unknown as new (start: t.DateTime | null, end: t.DateTime | null) => Interval<Tempo>;
 

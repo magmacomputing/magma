@@ -19,7 +19,7 @@ export const createMemoryStorage = (): Storage => {
 
 const memoryStores = new Map<string, Storage>();
 
-const getMemoryStorage = (name: string): Storage => {
+export const getMemoryStorage = (name: string): Storage => {
 	let store = memoryStores.get(name);
 	if (!store) {
 		store = createMemoryStorage();

@@ -75,15 +75,16 @@ describe('WebStore', () => {
 				writable: true,
 			});
 
-			const store = new WebStore('local');
-
-			expect(() => store.set('test', 'value')).not.toThrow();
+			const store1 = new WebStore('local');
+			expect(() => store1.set('test', 'value')).not.toThrow();
 			expect(setItemMock).toHaveBeenCalled();
 
-			expect(() => store.del('test')).not.toThrow();
+			const store2 = new WebStore('local');
+			expect(() => store2.del('test')).not.toThrow();
 			expect(removeItemMock).toHaveBeenCalled();
 
-			expect(() => store.clear()).not.toThrow();
+			const store3 = new WebStore('local');
+			expect(() => store3.clear()).not.toThrow();
 			expect(clearMock).toHaveBeenCalled();
 		} finally {
 			if (originalLocalStorage === undefined) {
