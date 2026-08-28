@@ -4,6 +4,9 @@ import type { ValueOf } from '#library/type.library.js';
 const TWO_SECONDS = 2_000;																	// default time-out for requests, in milliseconds
 const RE_TRAILING_CLOSURE = /\);?$/;
 
+/**
+ * Common HTTP status code constants.
+ */
 export const HTTP = {
 	Ok: 200,
 	PermRedirect: 301,
@@ -12,6 +15,9 @@ export const HTTP = {
 	Unauthorised: 401,
 	Forbidden: 403,
 } as const
+/**
+ * Type representing an HTTP status code value.
+ */
 export type HTTP = ValueOf<typeof HTTP>
 
 export const METHOD = {

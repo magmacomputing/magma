@@ -140,6 +140,9 @@ export class Tapper {
 	}
 }
 
+/**
+ * Namespace containing type definitions for the Tapper touch gesture handler.
+ */
 export namespace Tapper {
 	export type EVENT = ValueOf<typeof Tapper.EVENT>					// typeof Event enum
 

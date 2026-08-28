@@ -171,10 +171,15 @@ export type WellKnownSymbols = { [K in keyof SymbolConstructor]: SymbolConstruct
 export interface IgnoreOfMap { }
 type IgnoreOf = WellKnownSymbols | keyof IgnoreOfMap;
 
+/** Extracts the count of elements/entries in an array or object type */
 export type CountOf<T> = SafeCount<T>
+/** Extracts own properties of an object, excluding well-known symbols and ignored keys */
 export type OwnOf<T extends Obj> = T extends Array<any> ? { [K in number]: T[number] } : Omit<T, IgnoreOf>
+/** Extracts the keys of an object type, excluding arrays' numeric indices for arrays or ignored keys for objects */
 export type KeyOf<T extends Obj> = T extends Array<any> ? number : Exclude<Extract<keyof T, string | symbol>, IgnoreOf>
+/** Extracts the value types from an object or array */
 export type ValueOf<T extends Obj> = T extends Array<any> ? T[number] : T[KeyOf<T>]
+/** Constructs a tuple type representing a key-value entry pair from an object or array */
 export type EntryOf<T extends Obj> = [KeyOf<T>, ValueOf<T>]
 
 /** extracts only the Literal string keys (not index signatures) from an object/interface */
@@ -194,16 +199,22 @@ export type OneKey<K extends keyof any, V, KK extends keyof any = K> =
 		{ [Q in keyof O]: O[Q] } : never
 	}[K]
 
+/** Parses a string literal type into a numeric literal type */
 export type ParseInt<T> = T extends `${infer N extends number}` ? N : never
+/** Converts a string literal type to its plural form by appending 's' */
 export type Plural<T extends string> = `${T}s`;
+/** Converts a string literal type from plural to singular by removing trailing 's' (if length permits) */
 export type Singular<T extends string> = T extends `${infer S}s`
 	? T extends MinLength<T, 4>
 	? S
 	: T
 	: T;
+/** Alias for Singular type utility */
 export type SingularUnit<T extends string> = Singular<T>;
 
-// Compile-time test cases to verify singular behavior
+/**
+ * Compile-time type equality assertion utility for testing type equivalence.
+ */
 export type AssertEqual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 
 type toName<T extends Primitive> =
@@ -216,7 +227,9 @@ type toName<T extends Primitive> =
 	T extends undefined ? "Undefined" :
 	T extends null ? "Null" :
 	never
+/** Union type of all JavaScript primitive value types */
 export type Primitive = string | number | bigint | boolean | symbol | void | undefined | null	// TODO: add  composite (record & tuple) ?
+/** Union type of all JavaScript primitive type name strings */
 export type Primitives = toName<Primitive>
 
 /** Generic constructor type */
@@ -249,10 +262,16 @@ export const registerType = (cls: Constructor, type?: Type) => {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/** Union type of all ECMAScript Temporal API type name strings */
 export type Temporals = 'Instant' | 'ZonedDateTime' | 'PlainDateTime' | 'PlainDate' | 'PlainTime' | 'PlainYearMonth' | 'PlainMonthDay' | 'Duration';
+/** Union type of all ECMAScript Temporal API object instances */
 export type TemporalObject = Temporal.PlainDate | Temporal.PlainTime | Temporal.PlainDateTime | Temporal.ZonedDateTime | Temporal.Instant | Temporal.Duration;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/**
+ * Augmentable interface mapping type names to their corresponding TypeValue structure.
+ * Used by the runtime type inspection system to provide strongly-typed value extraction.
+ */
 export interface TypeValueMap<T = any> {
 	String: { type: 'String', value: string };
 	Number: { type: 'Number', value: number };
@@ -356,9 +375,10 @@ export type IntRange<Lower extends number, Upper extends number> = Exclude<Enume
 // branded object
 declare const __brand: unique symbol
 type Brand<B> = { [__brand]: B }
+/** Type utility for creating branded types that are nominally distinct from their base type */
 export type Branded<T, B> = T & Brand<B>
 
-// JSON object with no own-properties
+/** Type representing a JSON object with no own properties */
 export type EmptyObject = { [__brand]?: never }
 
 // https://www.youtube.com/watch?v=_-QYbP9rOhg&list=WL&index=1
@@ -376,11 +396,14 @@ type Compare<First extends number, Second extends number, Count extends number[]
 	? 1																												// first more than second
 	: Compare<First, Second, [...Count, 0]>
 
+/** Type constraint ensuring a string literal has at most the specified character length */
 export type MaxLength<T extends string, Max extends number> =
 	Compare<Length<T>, Max> extends -1 | 0 ? T : never
+/** Type constraint ensuring a string literal has at least the specified character length */
 export type MinLength<T extends string, Min extends number> =
 	Compare<Min, Length<T>> extends -1 | 0 ? T : never
 
+/** Type constraint ensuring a string literal's character length falls within the specified range */
 export type InRange<T extends string, Min extends number, Max extends number> =
 	MinLength<T, Min> & MaxLength<T, Max>
 

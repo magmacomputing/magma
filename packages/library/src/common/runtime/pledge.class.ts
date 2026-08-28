@@ -229,6 +229,9 @@ export class Pledge<T> {
 	}
 }
 
+/**
+ * Namespace containing type definitions and configuration for the Pledge class.
+ */
 export namespace Pledge {
 	export type Resolve = (val?: any) => any;									// function to call after Pledge resolves
 	export type Reject = (err: Error) => any;									// function to call after Pledge rejects
