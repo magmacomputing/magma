@@ -260,8 +260,8 @@
     "clean": "node bin/clean.mjs && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
     "prepublishOnly": "tempo-cli prepublish",
     "docs:api": "typedoc && typedoc --options typedoc.library.json && node bin/expand-typedoc.mjs",
-    "docs:dev": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress dev",
-    "docs:build": "npm run build && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress build",
+    "docs:dev": "npm run build && tempo-cli build-plugins && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress dev",
+    "docs:build": "npm run build && tempo-cli build-plugins && npm run docs:api && node bin/build-catalog.mjs && node bin/harvest-plugins.mjs && node bin/generate-llms-txt.mjs && vitepress build",
     "docs:preview": "vitepress preview",
     "docs:push": "bash ./bin/push-docs.sh"
   },
