@@ -38,7 +38,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 Tempo.init({
-  plugins: [TickerPlugin]
+  extends: [TickerPlugin]
 });
 
 const t = new Tempo();
@@ -100,4 +100,4 @@ When using pre-bundled scripts directly in HTML via `<script>` tags, plugins att
 
 ## 5. Authoring Custom Plugins
 
-Interested in creating your own plugin? Check out the [Creating Custom Plugins Guide](../../doc/3-extending-tempo/tempo.extension.md) and [Plugin Ecosystem Catalog](../../doc/3-extending-tempo/ecosystem.md) to learn how to register custom getters, term definitions, and dynamic proxies.
+Interested in creating your own plugin? Check out the [Creating Custom Plugins Guide](../../../tempo/doc/3-extending-tempo/tempo.extension.md) and [Plugin Ecosystem Catalog](../../../tempo/doc/3-extending-tempo/ecosystem.md) to learn how to register custom getters, term definitions, and dynamic proxies.

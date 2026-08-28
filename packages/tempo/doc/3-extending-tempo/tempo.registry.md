@@ -55,7 +55,7 @@ Tempo includes a built-in registry of common timezone abbreviations. **Most regi
 | `jst` | `Asia/Tokyo` |
 
 ::: tip
-You can extend this list or override existing aliases using `Tempo.extend({ timeZones: { ... } })`. (Note: in v4.x, this will be fully migrated to `registry.timeZones`).
+You can extend this list or override existing aliases using `Tempo.extend({ registry: { timeZones: { ... } } })`.
 :::
 
 ---

@@ -486,7 +486,7 @@ export const ParseEngine = {
 	conform: withState(_ParseEngine.conform),
 	/** Parses input using a specific layout pattern */
 	parseLayout: withState(_ParseEngine.parseLayout),
-	/** Parses input by matching against registered patterns */
+	/** Matches input against the supplied regular expression pattern */
 	parseMatch: withState(_ParseEngine.parseMatch),
 	/** Checks if input is a ZonedDateTime-like object */
 	isZonedDateTimeLike: withState(_ParseEngine.isZonedDateTimeLike),

@@ -223,7 +223,7 @@ export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mu
 	if (mutate === 'mid') {
 		const startNs = range.start.toDateTime().epochNanoseconds as bigint;
 		const endNs = range.end.toDateTime().epochNanoseconds as bigint;
-		const midNs = startNs + (endNs - startNs) / BigInt(2);
+		const midNs = startNs + (endNs - startNs) / 2n;
 		// @ts-ignore
 		return new tempo.constructor(toInstant(midNs).toZonedDateTimeISO((range.start as any).tz).withCalendar((range.start as any).cal), (tempo as any).config);
 	}

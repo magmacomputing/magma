@@ -17,7 +17,7 @@ describe('Tempo [Symbol.toPrimitive]', () => {
 
 	it('should return BigInt nanoseconds for default hint', () => {
 		// Arithmetic with BigInt or no hint defaults to 'default' which gives BigInt nano
-		expect((t as any) + BigInt(0)).toBe(t.nano);						// triggers 'default' hint
+		expect((t as any) + 0n).toBe(t.nano);										// triggers 'default' hint
 		expect((t as any) == t.nano).toBe(true);								// triggers 'default' hint
 	})
 

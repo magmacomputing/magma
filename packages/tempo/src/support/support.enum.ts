@@ -223,7 +223,7 @@ const elementKeys = ['yy', 'mm', 'wy', 'ww', 'dd', 'hh', 'mi', 'ss', 'ms', 'us',
 export const ELEMENT = enumify({
 	/** Year element */ yy: 'year',
 	/** Month element */ mm: 'month',
-	/** ISO week-year element */ wy: 'week',
+	/** ISO week number element */ wy: 'week',
 	/** Week element */ ww: 'week',
 	/** Day element */ dd: 'day',
 	/** Hour element */ hh: 'hour',

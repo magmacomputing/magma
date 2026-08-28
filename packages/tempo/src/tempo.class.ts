@@ -1019,8 +1019,8 @@ export class Tempo {
 
 	/**
 	 * Gets the current timestamp in the specified unit.
-	 * @param unit - The time unit ('ss', 'ms', 'us', 'ns'). Defaults to 'ns' (nanoseconds).
-	 * @returns The current timestamp as a number (for 'ss', 'ms', 'us') or bigint (for 'ns')
+	 * @param unit - The time unit ('ss', 'ms', 'us').
+	 * @returns The current timestamp as a number (for 'ss', 'ms', 'us')
 	 */
 	static now(unit: Exclude<Tempo.TimeStamp, 'ns'>): number;
 	/**
@@ -1034,7 +1034,7 @@ export class Tempo {
 		switch (unit) {
 			case 'ss': return Math.trunc(inst.epochMilliseconds / 1_000);
 			case 'ms': return inst.epochMilliseconds;
-			case 'us': return Number(inst.epochNanoseconds / BigInt(1_000));
+			case 'us': return Number(inst.epochNanoseconds / 1_000n);
 			case 'ns':
 			default: return inst.epochNanoseconds;
 		}
@@ -1044,7 +1044,7 @@ export class Tempo {
 		return secure({
 			/** seconds since epoch */														ss: Math.trunc(inst.epochMilliseconds / 1_000),
 			/** milliseconds since epoch */												ms: inst.epochMilliseconds,
-			/** microseconds since epoch */												us: Number(inst.epochNanoseconds / BigInt(1_000)),
+			/** microseconds since epoch */												us: Number(inst.epochNanoseconds / 1_000n),
 			/** nanoseconds since epoch */												ns: inst.epochNanoseconds,
 		});
 	}
@@ -1796,8 +1796,7 @@ export class Tempo {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /**
- * Registry for Tempo term definitions.
- * Allows dynamic term registration and lookup.
+ * Keyed lookup surface for resolved term values returned by Tempo.term.
  */
 export interface TempoTermRegistry {
 	[key: string]: any;
@@ -1888,9 +1887,9 @@ export namespace Tempo {
 	/** Date-time element tokens */
 	export type ELEMENT = t.ELEMENT;
 
-	/** Weekday string value */
+	/** Weekday numeric value */
 	export type Weekday = t.Weekday;
-	/** Month string value */
+	/** Month numeric value */
 	export type Month = t.Month;
 	/** Date-time element name */
 	export type Element = t.Element;
