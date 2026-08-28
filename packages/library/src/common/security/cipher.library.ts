@@ -7,6 +7,14 @@ import { bufferToBase64, base64ToBuffer, encodeBuffer, encodeText, decodeBuffer 
 const crypto = globalThis.crypto;
 const subtle = crypto.subtle;
 
+/**
+ * Cryptographic algorithm and encoding constants used throughout the cipher library.
+ *
+ * @property Algorithm - Default hash algorithm for digest operations
+ * @property Encoding - Default text encoding for string conversion
+ * @property SignKey - Asymmetric signature algorithm identifier
+ * @property TypeKey - Symmetric encryption algorithm identifier
+ */
 export const keys = {
 	Algorithm: 'SHA-256',
 	Encoding: 'utf-8',

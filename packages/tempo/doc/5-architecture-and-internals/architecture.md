@@ -1,12 +1,12 @@
 # 🏗️ Core Architecture
 
-Tempo v3.7.x introduces several industry-leading architectural patterns designed for maximum resilience in complex Monorepo and Proxy-wrapped environments.
+Tempo introduces several industry-leading architectural patterns designed for maximum resilience in complex Monorepo and Proxy-wrapped environments.
 
 ## 🌐 Shared Global Registry
 
-### TempoRuntime — single hardened bridge (v3.0+)
+### TempoRuntime — single hardened bridge
 
-Prior to the v3.x series, Tempo spread its inter-module state across many `globalThis[Symbol.for(…)]` slots (`$terms`, `$extends`, `$modules`, `$installed`, `$reset`, `$Plugins`, `$Register`). Each slot was a potential tamper target, making the global namespace difficult to audit securely.
+Historically, Tempo spread its inter-module state across many `globalThis[Symbol.for(…)]` slots (`$terms`, `$extends`, `$modules`, `$installed`, `$reset`, `$Plugins`, `$Register`). Each slot was a potential tamper target, making the global namespace difficult to audit securely.
 
 As of modern builds, all bookkeeping is consolidated inside a single **`TempoRuntime`** object (`#tempo/support`). The runtime is stored on `globalThis` under one hardened, highly protected property:
 
@@ -108,7 +108,7 @@ For deeper implementation schematics, see the **[Lazy Evaluation Pattern](./lazy
 ## 2. Soft Freeze Strategy (Proxy)
 Used for: `Tempo.NUMBER`, `Tempo.FORMAT`, `Tempo.TIMEZONE`, `Tempo.config`
 
-Global registries must remain **live** yet highly **secure**. As of the modern v3.x series, these are protected by a "Soft Freeze" layer to prevent state corruption or prototype poisoning by third-party code.
+Global registries must remain **live** yet highly **secure**. These are protected by a "Soft Freeze" layer to prevent state corruption or prototype poisoning by third-party code.
 
 ### How it works:
 - **The User**: Interacts with a read-only Proxy that strictly behaves like a frozen object. Direct assignments are hard-blocked to prevent poisoning the global state.

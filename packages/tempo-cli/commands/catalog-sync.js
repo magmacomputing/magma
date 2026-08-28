@@ -44,6 +44,9 @@ export async function catalogSync(_args) {
 		entry.version = pkg.version || entry.version || '';
 		entry.plan = pkg.tempo?.plan || entry.plan || 'community';
 		entry.status = entry.status || 'active';
+		if (pkg.private || pkg.tempo?.hidden !== undefined || pkg.tempo?.catalog !== undefined) {
+			entry.hidden = Boolean(pkg.private || pkg.tempo?.hidden || pkg.tempo?.catalog === false);
+		}
 
 		catalogMap.set(id, entry);
 		console.log(`Synced plugin metadata for: ${id} (${isExternal ? 'external' : 'local'})`);

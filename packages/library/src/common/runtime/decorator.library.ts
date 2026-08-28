@@ -1,6 +1,6 @@
 import { $ImmutableSkip } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
-import { isReference, isUndefined } from '#library/assertion.library.js';
+import { isReference, isUndefined, isFunction, isString } from '#library/assertion.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { registerType, getSafeTag } from '#library/type.library.js';
 import type { Constructor, Type } from '#library/type.library.js';
@@ -231,4 +231,116 @@ export function Static<T extends Constructor>(value: T, { kind, name }: ClassDec
 		default:
 			throw new Error(`@Static decorating unknown 'kind': ${kind} (${name})`);
 	}
+}
+
+/**
+ * A class decorator that sets Symbol.toStringTag on the prototype if not already present.
+ * Supports both `@StringTag` (without parentheses) and `@StringTag('CustomName')`.
+ * 
+ * @param tagOrValue - Custom string tag or the class constructor
+ * @param context - Optional decorator context when used without parentheses
+ * @example
+ * ```ts
+ *  @ StringTag
+ *  class Tapper { ... }
+ * 
+ *  @ StringTag('CustomTag')
+ *  class Special { ... }
+ * ```
+ */
+export function StringTag<T extends Constructor>(tagOrValue?: string | T, context?: ClassDecoratorContext<T>): any {
+	const applyTag = (value: T, customTag?: string) => {
+		const proto = value.prototype;
+
+		if (proto && !Object.hasOwn(proto, Symbol.toStringTag)) {
+			const tagName = customTag ?? value.name;
+			Object.defineProperty(proto, Symbol.toStringTag, {
+				value: tagName,
+				configurable: true,
+				writable: false,
+				enumerable: false,
+			});
+		}
+
+		return value;
+	}
+
+	if (typeof tagOrValue === 'function' && context?.kind === 'class')
+		return applyTag(tagOrValue as T);
+
+	return (value: T, _ctx?: ClassDecoratorContext<T>) => {
+		return applyTag(value, isString(tagOrValue) ? tagOrValue : undefined);
+	}
+}
+
+export interface SingletonOptions {
+	/** If true, prevents throwing when subsequent instantiations pass different arguments */
+	allowArgMismatch?: boolean;
+}
+
+/**
+ * A class decorator that transforms a class into a Singleton pattern.
+ * Intercepts constructor calls to return a cached instance upon subsequent instantiations.
+ * Also attaches a static `.instance` property to the decorated constructor.
+ * 
+ * @param targetOrOptions - Class constructor or Singleton options
+ * @param context - Optional decorator context (when used without parentheses)
+ * @example
+ * ```ts
+ *  @ Singleton
+ *  class ConfigStore {
+ *    public apiKey = 'secret_123';
+ *  }
+ * 
+ *  const a = new ConfigStore();
+ *  const b = new ConfigStore();
+ *  console.log(a === b); // true
+ *  console.log((ConfigStore as any).instance === a); // true
+ * ```
+ */
+export function Singleton<T extends Constructor>(
+	targetOrOptions?: T | SingletonOptions,
+	context?: ClassDecoratorContext<T>
+): any {
+	const decorate = (value: T, options?: SingletonOptions) => {
+		let instance: InstanceType<T> | undefined;
+		let initialArgs: any[] | undefined;
+		const safeName = value.name || 'Singleton';
+
+		const wrapper = {
+			[safeName]: class extends value {
+				constructor(...args: any[]) {
+					if (instance) {
+						if (options?.allowArgMismatch !== true && initialArgs) {
+							const prev = initialArgs;
+							const isMismatch = args.length !== prev.length || args.some((arg, i) => arg !== prev[i]);
+							if (isMismatch)
+								throw new Error(`[Singleton] Argument mismatch on subsequent instantiation of '${safeName}'`);
+						}
+						return instance as any;
+					}
+					super(...args);
+					initialArgs = args;
+					instance = this as InstanceType<T>;
+					return this;
+				}
+			}
+		}[safeName] as T;
+
+		Object.defineProperty(wrapper, 'instance', {
+			get: () => instance,
+			configurable: true,
+			enumerable: false,
+		});
+
+		return wrapper;
+	};
+
+	if (typeof targetOrOptions === 'function' && context?.kind === 'class') {
+		return decorate(targetOrOptions as T);
+	}
+
+	return (value: T, _ctx?: ClassDecoratorContext<T>) => {
+		return decorate(value, targetOrOptions as SingletonOptions);
+	};
 }

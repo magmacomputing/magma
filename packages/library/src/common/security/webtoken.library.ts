@@ -9,6 +9,10 @@ const RE_SLASH = /\//g;
 const RE_EQUALS = /=/g;
 const RE_DASH = /-/g;
 const RE_UNDERSCORE = /_/g;
+const RE_BASE64URL = /^[A-Za-z0-9_-]*$/;
+
+const MAX_TOKEN_LENGTH = 8192;															// 8 KB
+const MAX_PAYLOAD_LENGTH = 4096;														// 4 KB
 
 const formatBase64Url = (base64: string) => base64
 	.replace(RE_PLUS, '-')
@@ -17,34 +21,92 @@ const formatBase64Url = (base64: string) => base64
 const toBase64Url = (str: string) => formatBase64Url(bufferToBase64(encodeText(str)));
 const bufToBase64Url = (buf: Uint8Array) => formatBase64Url(bufferToBase64(buf));
 
+export interface ParseJWTOptions {
+	/** If true, throws explicit Errors on length or format validation failures instead of returning null */
+	strict?: boolean;
+}
+
+export interface JWTComponents<Header = Record<string, any>, Payload = Record<string, any>> {
+	/** Decoded JSON header object */
+	header: Header;
+	/** Decoded JSON payload object */
+	payload: Payload;
+	/** Raw binary signature buffer */
+	signature: Uint8Array;
+	/** Original encoded string segments */
+	raw: {
+		header: string;
+		payload: string;
+		signature: string;
+	};
+}
+
+const base64UrlToBuffer = (part: string): Uint8Array => {
+	if (!RE_BASE64URL.test(part) || part.length % 4 === 1)
+		throw new Error('Invalid base64url segment');
+
+	const base64 = part
+		.replace(RE_DASH, '+')
+		.replace(RE_UNDERSCORE, '/')
+		.padEnd(part.length + (4 - part.length % 4) % 4, '=');
+	return base64ToBuffer(base64);
+}
+
 /**
- * Performs a fast, unverified decode of a JSON Web Token (JWT) payload.
- * The payload is unverified and attacker-controlled. Use only for reading public
- * claims and must not be used for authentication, authorization, or any other
- * security decision.
+ * Parses and decodes all three segments of a JSON Web Token (Header, Payload, Signature) without signature verification.
  * 
- * @param jwt - The JWT string to decode
- * @returns The parsed payload object, or null if decoding fails
+ * @param jwt - The JWT string to parse
+ * @param options - Optional parsing behavior (e.g. strict: true to throw on failure)
+ * @returns Object containing decoded header, payload, raw signature buffer, and raw segments, or null if invalid
  * @example
  * ```ts
- * const payload = decodeJWT`<MyClaims>`(token);
+ * const token = parseJWT`<MyHeader, MyPayload>`(jwtString);
+ * const payload = token?.payload;
  * ```
  */
-export const decodeJWT = <T = any>(jwt: string): T | null => {
+export const parseJWT = <Header = Record<string, any>, Payload = Record<string, any>>(
+	jwt: string,
+	options?: ParseJWTOptions
+): JWTComponents<Header, Payload> | null => {
+	if (!jwt || jwt.length > MAX_TOKEN_LENGTH) {
+		if (options?.strict) throw new Error('JWT too large: Exceeds maximum length.');
+		return null;
+	}
+
+	const parts = jwt.split('.');
+	if (parts.length !== 3) {
+		if (options?.strict) throw new Error('Invalid JWT format: Expected 3 segments (header.payload.signature)');
+		return null;
+	}
+
+	if (parts[1].length > MAX_PAYLOAD_LENGTH) {
+		if (options?.strict) throw new Error('JWT payload too large: Encoded segment exceeds maximum length.');
+		return null;
+	}
+
 	try {
-		const part = jwt.split('.')[1];
-		if (!part) return null;
+		const headerJson = decodeBuffer(base64UrlToBuffer(parts[0]), 'utf-8', { fatal: true });
+		const payloadJson = decodeBuffer(base64UrlToBuffer(parts[1]), 'utf-8', { fatal: true });
+		const signatureBuf = base64UrlToBuffer(parts[2]);
 
-		// 🛡️ Base64URL Normalization: replace -/_ with +/ and add padding
-		const base64 = part
-			.replace(RE_DASH, '+')
-			.replace(RE_UNDERSCORE, '/')
-			.padEnd(part.length + (4 - part.length % 4) % 4, '=');
-		const bytes = base64ToBuffer(base64);
-		const payload = decodeBuffer(bytes);
+		const header = JSON.parse(headerJson);
+		const payload = JSON.parse(payloadJson);
 
-		return JSON.parse(payload);
-	} catch { return null; }
+		if (typeof header !== 'object' || header === null || Array.isArray(header) ||
+			typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+			throw new Error('Invalid JWT shape');
+		}
+
+		return {
+			header,
+			payload,
+			signature: signatureBuf,
+			raw: { header: parts[0], payload: parts[1], signature: parts[2] },
+		};
+	} catch {
+		if (options?.strict) throw new Error('Invalid JWT: Segment decoding failed.');
+		return null;
+	}
 }
 
 /**

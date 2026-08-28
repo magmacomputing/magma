@@ -77,6 +77,7 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.brk]: new RegExp(`(\\[(?<brk>${bracket_content.source})\\](?:\\[(?<cal>${bracket_content.source})\\])?)?`),	// timezone/calendar brackets [...]
 	[Token.slk]: new RegExp(Match.shorthand.source),					// shorthand shifter
 	[Token.era]: /(?:\s*(?<era>b\.?c\.?e\.?|c\.?e\.?|b\.?c\.?|a\.?d\.?))/i,	// historical era designation
+	[Token.nth]: /(?<nth>(?:[0-9]{0,2}11th|[0-9]{0,2}12th|[0-9]{0,2}13th|[0-9]{0,2}[04-9]th|[0-9]{0,2}[02-9]1st|1st|[0-9]{0,2}[02-9]2nd|2nd|[0-9]{0,2}[02-9]3rd|3rd|[1-9][0-9]{0,2})|first|second|third|fourth|fifth|last)/i,	// ordinal index (1st, 2nd, 3rd, last, etc)
 })
 /** @internal Tempo Snippet type */
 export type Snippet = typeof Snippet
@@ -97,6 +98,8 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.dmy6]: '(?<dd>0[1-9]|[12][0-9]|3[01])(?<mm>0[1-9]|1[0-2])(?<yy>[0-9]{2})',// compact date (ddmmyy)
 	[Token.mdy6]: '(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])(?<yy>[0-9]{2})',// compact date (mmddyy)
 	[Token.ymd6]: '(?<yy>[0-9]{2})(?<mm>0[1-9]|1[0-2])(?<dd>0[1-9]|[12][0-9]|3[01])',// compact date (yymmdd)
+	[Token.ordWkd]: '{mod}?{nth}?{sep}+{wkd}(?:{sep}+(?:in|of))?{sep}+(?:{mm}(?:{sep}?{yy})?){afx}?{sfx}?',// ordinal weekday (e.g. 3rd Thursday of Nov 2026)
+	[Token.ordUnt]: '{mod}?{nth}?{sep}+{unt}(?:{sep}+(?:in|of))?{sep}+(?:(?<yy>[0-9]{4})|{mm}(?:{sep}?(?<yy2>[0-9]{2,4}))?){afx}?{sfx}?',// ordinal unit (e.g. 1st day of May, 100th day of 2026)
 	[Token.wkd]: '{mod}?{nbr}?{sep}?{wkd}{afx}?{sfx}?',				// weekday-only layout; MUST precede {dt} (which also matches bare weekday names via its {wkd} alternative)
 	[Token.dt]: datePattern.dmy,															// calendar, event, slick or weekday
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
@@ -122,29 +125,29 @@ export type Layout = typeof Layout
  */
 /** @internal Tempo Event registry */
 export const Event = looseIndex<string, string | Function>()({
-	'new.?years? ?eve': '31 Dec',
-	'nye': '31 Dec',
-	'new.?years?(?: ?day)?': '01 Jan',
-	'ny': '01 Jan',
-	'christmas ?eve': '24 Dec',
-	'christmas': '25 Dec',
-	'xmas ?eve': '24 Dec',
-	'xmas': '25 Dec',
-	'now': function (this: AliasContext) { return this.toNow() },
-	'today': function (this: AliasContext) {
+	/** New Year's Eve (December 31) */ 'new.?years? ?eve': '31 Dec',
+	/** New Year's Eve abbreviation */ 'nye': '31 Dec',
+	/** New Year's Day (January 1) */ 'new.?years?(?: ?day)?': '01 Jan',
+	/** New Year abbreviation */ 'ny': '01 Jan',
+	/** Christmas Eve (December 24) */ 'christmas ?eve': '24 Dec',
+	/** Christmas Day (December 25) */ 'christmas': '25 Dec',
+	/** Christmas Eve abbreviation */ 'xmas ?eve': '24 Dec',
+	/** Christmas abbreviation */ 'xmas': '25 Dec',
+	/** Returns the current instant */ 'now': function (this: AliasContext) { return this.toNow() },
+	/** Returns today's date at the current time */ 'today': function (this: AliasContext) {
 		// ABSOLUTE: Snaps to the current system date
 		const { yy: year, mm: month, dd: day } = this.toNow();
 		return this.toDateTime().with({ year, month, day });
 	},
-	'tomorrow': function (this: AliasContext) {
+	/** Returns tomorrow's date */ 'tomorrow': function (this: AliasContext) {
 		// RELATIVE: Offsets the current anchor by one day
 		return this.add({ days: 1 });
 	},
-	'yesterday': function (this: AliasContext) {
+	/** Returns yesterday's date */ 'yesterday': function (this: AliasContext) {
 		// RELATIVE: Offsets the current anchor by one day
 		return this.add({ days: -1 });
 	},
-	'fortnight': function (this: AliasContext) {
+	/** Returns date two weeks from now */ 'fortnight': function (this: AliasContext) {
 		// RELATIVE: Offsets the current anchor by two weeks
 		return this.add({ weeks: 2 });
 	},
@@ -161,15 +164,15 @@ export type Event = typeof Event
  */
 /** @internal Tempo Period registry */
 export const Period = looseIndex<string, string | Function>()({
-	'mid[ -]?night': '24:00',
-	'morning': '8:00',
-	'mid[ -]?morning': '10:00',
-	'mid[ -]?day': '12:00',
-	'noon': '12:00',
-	'after[ -]?noon': '3:00pm',
-	'evening': '18:00',
-	'night': '20:00',
-	'half[ -]?hour': function (this: AliasContext) {
+	/** Midnight (00:00 or 24:00) */ 'mid[ -]?night': '24:00',
+	/** Morning time (8:00 AM) */ 'morning': '8:00',
+	/** Mid-morning time (10:00 AM) */ 'mid[ -]?morning': '10:00',
+	/** Midday/noon (12:00 PM) */ 'mid[ -]?day': '12:00',
+	/** Noon (12:00 PM) */ 'noon': '12:00',
+	/** Afternoon time (3:00 PM) */ 'after[ -]?noon': '3:00pm',
+	/** Evening time (6:00 PM) */ 'evening': '18:00',
+	/** Night time (8:00 PM) */ 'night': '20:00',
+	/** Half past the current hour */ 'half[ -]?hour': function (this: AliasContext) {
 		return `${this.hh}:30`;
 	},
 })
@@ -209,7 +212,11 @@ export const IntlDefault: IntlOptions = {
 	}
 }
 
-/** @internal Tempo Default options */
+/**
+ * @internal Tempo Default options
+ * @property {string} scope - Configuration scope identifier
+ * @property {string} timeZone - Default timezone for Tempo instances
+ */
 export const Default = secure({
 	/** log to console */																			debug: LOG.Info,
 	/** catch or throw Errors */															catch: false,
@@ -225,9 +232,9 @@ export const Default = secure({
 	/** internationalization configuration */									intl: IntlDefault,
 	/** plugin configurations */															plugins: {},
 	/** global data augmentation registries */								registry: {
-		formats: FORMAT,
-		locales: LOCALE,
-		modifiers: {
+		/** Format string templates */ formats: FORMAT,
+		/** Locale-specific configurations */ locales: LOCALE,
+		/** Temporal modifiers for relative dates */ modifiers: {
 			'+': ['next', 'hence', 'from now'],
 			'-': ['ago', 'last', 'prev'],
 			'=': ['this'],

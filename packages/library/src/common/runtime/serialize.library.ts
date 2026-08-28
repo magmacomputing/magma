@@ -7,6 +7,9 @@ import { isType, isEmpty, isDefined, isUndefined, isNullish, isString, isObject,
 import { sym } from '#library/symbol.library.js';
 import type { Obj, Type } from '#library/type.library.js';
 
+/**
+ * Global registry mapping class names to their constructors for serialization/deserialization.
+ */
 export const Registry = (globalThis as any)[sym.$SerializerRegistry] ??= new Map<string, Function>();
 
 /**

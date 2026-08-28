@@ -6,7 +6,7 @@ By standardizing these data stores under the `registry` namespace, you can deepl
 
 ## Accessing Registries
 
-In v3.1.0+, you can access active registries using the static `Tempo.registry` getter. These objects are **Read-Only Proxies**.
+You can access active registries using the static `Tempo.registry` getter. These objects are **Read-Only Proxies**.
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
@@ -55,14 +55,14 @@ Tempo includes a built-in registry of common timezone abbreviations. **Most regi
 | `jst` | `Asia/Tokyo` |
 
 ::: tip
-You can extend this list or override existing aliases using `Tempo.extend({ timeZones: { ... } })`. (Note: in v4.x, this will be fully migrated to `registry.timeZones`).
+You can extend this list or override existing aliases using `Tempo.extend({ registry: { timeZones: { ... } } })`.
 :::
 
 ---
 
 ## Other Internal Registries
 
-Tempo leverages several other internal data dictionaries to parse and format dates. As of v3.1.0, the `formats` and `locales` dictionaries have been officially moved to the `registry` configuration namespace. 
+Tempo leverages several other internal data dictionaries to parse and format dates. The `formats` and `locales` dictionaries are organized under the `registry` configuration namespace. 
 
 - **Formats**: Named format aliases used by the `format()` engine.
 - **Locales**: Translation dictionaries used by the `:locale` format modifier.
@@ -72,7 +72,7 @@ Tempo leverages several other internal data dictionaries to parse and format dat
 - **Layouts**: Composed string patterns mapped to Regex logic for parsing.
 - **Numbers**: Word-to-number dictionaries (e.g., `"one" -> 1`).
 
-*(Note: The overarching architectural goal for v4.0.0 is to consolidate all remaining dictionaries fully into the `registry` namespace to separate data from behavior.)*
+*(Note: All dictionaries are consolidated into the `registry` namespace to separate data from behavior.)*
 
 ### Registry Merge Contracts
 

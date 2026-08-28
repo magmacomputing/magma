@@ -16,8 +16,16 @@ import { DurationModule } from '#tempo/duration';
 import { StandardTerms } from '#tempo/std';
 import { defineModule } from './plugin/plugin.util.js';
 
+/**
+ * TermsModule provides the standard term definitions for Tempo.
+ *
+ * This module automatically registers standard temporal terms like "today", "tomorrow",
+ * "next week", etc., and ensures they are re-registered on registry resets.
+ */
 export const TermsModule = defineModule({
+	/** Module name identifier */
 	name: 'TermsModule',
+	/** Installs standard terms into the Tempo class */
 	install(this: typeof Tempo, TempoClass: typeof Tempo) {
 		getRuntime().modules['TermsModule'] = true;
 		onRegistryReset(() => { TempoClass.extend(StandardTerms); });

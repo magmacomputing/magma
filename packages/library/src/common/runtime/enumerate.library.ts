@@ -2,7 +2,7 @@ import { asType, getType } from '#library/type.library.js';
 import { isNumber, isFunction } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
-import { Serializable } from '#library/class.library.js';
+import { Serializable, StringTag } from '#library/decorator.library.js';
 import { memoizeMethod } from '#library/function.library.js';
 import type { Property, Index, KeyOf, ValueOf, EntryOf, Invert, LooseKey } from '#library/type.library.js';
 
@@ -113,6 +113,7 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 
 /** create an entry in the Serialization Registry to describe how to rebuild an Enum */
 @Serializable
+@StringTag
 export class Enumify {
 	constructor(list: Property<any>) {
 		return enumify(list);

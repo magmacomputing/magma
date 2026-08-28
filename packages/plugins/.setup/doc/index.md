@@ -1,149 +1,105 @@
 # Tempo Plugin Setup Guide
 
-This guide explains how to install and activate premium Tempo plugins.
+This guide explains how to install, register, and activate Tempo plugins in your projects.
 
-## 1. Tempo License Registry
+---
 
-::: warning 🔑 ACTION REQUIRED: Generate Your License Key
-To use any premium plugins, you **must** first generate a cryptographic license key (JWT). 
+## 1. Overview
 
-<div style="display: flex; align-items: center; gap: 16px; margin: 16px 0;">
-  <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
-    <img src="https://registry.magmacomputing.com.au/registry-logo.svg" width="48" height="48" alt="Tempo License Registry" style="margin: 0;" />
-  </a>
-  <div>
-    <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
-    Manage your subscriptions and retrieve your license key.
-  </div>
-</div>
-:::
+Tempo features an extensible plugin architecture that allows developers to add custom business logic, date generators, term calculators, and domain-specific APIs (such as financial tickers or astronomy calculations) to the Tempo engine.
+
+All official and community plugins are 100% open source under the MIT license and run without runtime license checks or key configuration.
+
+---
 
 ## 2. Installation
 
-All premium plugins are distributed as public scoped packages on the standard npm registry (`npmjs.com`). This means no special token configuration or registry overrides are required in your `.npmrc`. You can install them directly using your preferred package manager:
+Tempo plugins are published as scoped packages on the standard npm registry (`npmjs.com`). Install plugins using your package manager of choice:
 
 ```bash
-npm install @magmacomputing/tempo-plugin-ticker
+npm install @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # npm
+pnpm add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # pnpm
+yarn add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # yarn
+bun add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # bun
 ```
 
-## 3. Activation
+---
 
-Although the packages are publicly installable, they require your valid license key at runtime. If no valid license key is detected, the premium features will fail-safe to `undefined`. 
+## 3. Registration & Activation
 
-Once you have your key from the registry, you can activate it using any of the following discovery methods:
+Tempo provides flexible registration options depending on your application structure and bundler setup.
 
-### Method A: Environment Variable (Recommended for Node/Server environments)
-Set the `TEMPO_LICENSE_KEY` environment variable in your run environment:
+### Option A: Initialization Option (Recommended)
 
-```bash
-export TEMPO_LICENSE_KEY="eyJhbGciOiJSUzI1NiJ9..."
-```
-
-Then in your application, you can simply import Tempo and the plugin via side-effect. Because the license key is automatically discovered from the environment variable, no manual initialization is required, and the side-effect import registers the plugin automatically:
+Pass plugins directly to `Tempo.init()` during application initialization. This guarantees clean execution order regardless of import hoisting:
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker'; // Automatically registers TickerPlugin
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+
+Tempo.init({
+  extends: [TickerPlugin]
+});
 
 const t = new Tempo();
-console.log(t.tickers); // Unlocked and ready!
+console.log(Tempo.tickers);
 ```
 
-### Method B: Initialization Option (Recommended for applications)
-Pass the key explicitly when initializing Tempo. Since static imports are hoisted, calling `Tempo.init()` after a side-effect import will clear any registered terms. To avoid hoisting issues, you can either pass the plugins directly into the `plugins` configuration array (cleanest and recommended), or call `Tempo.extend()` explicitly after initialization:
+### Option B: Explicit Extension (`Tempo.extend`)
 
-#### Option 1: Pass via Init Options (Recommended)
+Register plugins dynamically at runtime using `Tempo.extend()`:
+
+```javascript
+import { Tempo } from '@magmacomputing/tempo';
+import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
+
+Tempo.extend(AstroTerm);
+
+const t = new Tempo('2026-03-20', { sphere: 'north' });
+console.log(t.term.astro); // Discovers equinoxes and astronomical seasons
+```
+
+### Option C: Explicit Registration (`Tempo.extend`)
+
+Register plugins dynamically matching install behavior:
+
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
-Tempo.init({
-  license: 'eyJhbGciOiJSUzI1NiJ9...',
-  plugins: [TickerPlugin]
-});
-```
-
-#### Option 2: Explicit Extension
-```javascript
-import { Tempo } from '@magmacomputing/tempo';
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
-
-// 1. Initialize core Tempo with your license
-Tempo.init({
-  license: 'eyJhbGciOiJSUzI1NiJ9...'
-});
-
-// 2. Register the plugin
 Tempo.extend(TickerPlugin);
+
+const t = new Tempo();
+console.log(Tempo.tickers);
 ```
 
-### Method C: Global Context (Fallback for specific bundlers/environments)
+---
 
-Method C is a browser-native variation of Method A. While Method A targets the process-level environment (`process.env`) available in Node/SSR contexts, Method C sets the key on the JavaScript `globalThis` object (which maps to `window` in browsers), enabling the same auto-discovery behaviour.
+## 4. Browser & Global Namespace Usage
 
-**Use this method in the following scenarios:**
-
-#### 1. Direct HTML Script Tags (No Bundler)
-If you are loading Tempo directly from a CDN or local file using `<script>` tags, set the key in an inline script *before* loading the Tempo bundle:
+When using pre-bundled scripts directly in HTML via `<script>` tags, plugins attach to the `Magma.plugins` global object:
 
 ```html
+<!-- 1. Core Temporal Polyfill & Tempo -->
+<script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.bundle.min.js"></script>
+
+<!-- 2. Plugin Script -->
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@2/dist/index.global.min.js"></script>
+
 <script>
-  window.TEMPO_LICENSE_KEY = "eyJhbGciOiJSUzI1NiJ9...";
+  const { Tempo, plugins } = Magma;
+
+  // Register the plugin
+  Tempo.extend(plugins.astro);
+
+  const t = new Tempo('next friday');
+  console.log(t.toString());
 </script>
-<script type="module" src="/js/tempo.bundle.js"></script>
-<script type="module" src="/js/tempo-plugin-ticker.js"></script>
 ```
 
-#### 2. Frontend Bundlers without `process.env` Polyfills
-Modern browser bundlers (e.g., Vite) do not inject Node's `process` object by default. If you prefer to avoid configuring build-time env replacements or `dotenv` plugins, assign the key to `globalThis` in your entry file and use dynamic imports to ensure the key is set before Tempo initializes:
+---
 
-```javascript
-// entry.js
-globalThis.TEMPO_LICENSE_KEY = import.meta.env.VITE_TEMPO_LICENSE_KEY;
+## 5. Authoring Custom Plugins
 
-// Use dynamic imports so the key is set before Tempo's static initializer runs
-const { Tempo } = await import('@magmacomputing/tempo');
-const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
-
-Tempo.init({ plugins: [TickerPlugin] });
-```
-
-Alternatively, pass the license key explicitly via `Tempo.init()` after your static imports:
-
-```javascript
-import { Tempo } from '@magmacomputing/tempo';
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
-
-Tempo.init({
-  license: import.meta.env.VITE_TEMPO_LICENSE_KEY,
-  plugins: [TickerPlugin]
-});
-```
-
-#### 3. Micro-frontends / Shared Global Space
-In architectures where multiple independently-bundled applications share a single browser tab, set the key once in the host container. All dynamically-loaded sub-applications will then auto-discover it without needing individual configuration:
-
-```javascript
-// host-container.js
-globalThis.TEMPO_LICENSE_KEY = 'eyJhbGciOiJSUzI1NiJ9...';
-
-// sub-apps loaded later will automatically run in licensed mode
-```
-
-## 4. Network Requests & Offline Behavior
-
-To verify license validity and prevent abuse, Tempo's licensing engine performs background synchronization with our revocation registry:
-
-* **Outbound Request:** When a license key is active, Tempo asynchronously fetches a cryptographically signed revocation list (JWS).
-* **Endpoint:** `https://registry.magmacomputing.com.au/tempo/v1/revoked.jws` (useful for configuring Content Security Policies (CSP) or egress firewall rules).
-* **Frequency:** The revocation check occurs once every **7 days**. The last-checked state is cached to avoid redundant network traffic on subsequent startups.
-* **Offline Resilience (Fail-Open):** If your application is offline, behind a strict firewall, or the registry server is temporarily unreachable, the validation **fails open**. Tempo emits a debug-level log entry but continues to grant access to premium features (relying on the local cryptographic expiration of the JWT).
-
-## 5. Commercialize Your Own Plugin
-
-Are you a developer who has built an incredibly useful, domain-specific Tempo plugin (e.g., medical billing cycles, legal discovery windows, complex religious calendars)? 
-
-If you would like to monetize your logic without having to build your own licensing infrastructure, **we want to partner with you**. 
-
-Get in touch with us with your proposed code and use-case. If it meets our quality and performance standards, we can publish it as an official Premium Extension secured behind the Tempo License Key system, under a mutually beneficial commercial revenue-sharing arrangement.
-
+Interested in creating your own plugin? Check out the [Creating Custom Plugins Guide](../../../tempo/doc/3-extending-tempo/tempo.extension.md) and [Plugin Ecosystem Catalog](../../../tempo/doc/3-extending-tempo/ecosystem.md) to learn how to register custom getters, term definitions, and dynamic proxies.

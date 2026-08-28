@@ -25,8 +25,9 @@ export * from '#library/string.library.js';
 export * from '#library/number.library.js';
 export * from '#library/temporal.library.js';
 export * from '#library/calendar.library.js';
-export * from '#library/scheduling/rrule.library.js';
-export * from '#library/scheduling/cron.library.js';
+export * from '#library/rrule.library.js';
+export * from '#library/cron.library.js';
+export * from '#library/decorator.library.js';
 
 export type {
 	OwnOf,

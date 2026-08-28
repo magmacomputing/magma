@@ -149,7 +149,7 @@ const sidebar = [
     text: 'Plugin Ecosystem',
     items: [
       { text: '← Back to Catalog', link: '/doc/3-extending-tempo/ecosystem' },
-      { text: 'License Key Guide', link: '/doc/9-plugins/_setup.index' }
+      { text: 'Plugin Setup Guide', link: '/doc/9-plugins/_setup.index' }
     ]
   }
 ];

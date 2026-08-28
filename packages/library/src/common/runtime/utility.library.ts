@@ -62,7 +62,9 @@ export const getScript = (nbr = 1) => {
 export const sleep = (msg = 'sleep: timed out', timeout = 2000) =>
 	new Promise<Error>((_, reject) => setTimeout(() => reject(new Error(msg)), timeout));
 
-/** Javascript Runtimes */
+/**
+ * Enumeration of supported JavaScript runtime environment identifiers.
+ */
 export const CONTEXT = {
 	'Unknown': 'unknown',
 	'Browser': 'browser',
@@ -71,6 +73,9 @@ export const CONTEXT = {
 	'Deno': 'deno',
 	'GoogleAppsScript': 'google-apps-script',
 } as const
+/**
+ * Type representing a JavaScript runtime context value.
+ */
 export type CONTEXT = ValueOf<typeof CONTEXT>
 type Context = { global: any, type: CONTEXT }
 

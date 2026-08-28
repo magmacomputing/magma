@@ -10,15 +10,16 @@ interface Plugin {
   status: string;
   plan: string;
   version: string;
+  hidden?: boolean;
 }
 
 import catalogData from '../data/catalog.json';
 
 const plugins = ref<Plugin[]>(catalogData as unknown as Plugin[]);
 
-const communityPlugins = computed(() => plugins.value.filter(p => p.plan === 'community' && (p.status === 'active' || p.status === 'experimental')));
-const premiumPlugins = computed(() => plugins.value.filter(p => p.plan !== 'community' && (p.status === 'active' || p.status === 'experimental')));
-const comingSoonPlugins = computed(() => plugins.value.filter(p => p.status === 'coming_soon'));
+const communityPlugins = computed(() => plugins.value.filter(p => !p.hidden && p.plan === 'community' && (p.status === 'active' || p.status === 'experimental')));
+const premiumPlugins = computed(() => plugins.value.filter(p => !p.hidden && p.plan !== 'community' && (p.status === 'active' || p.status === 'experimental')));
+const comingSoonPlugins = computed(() => plugins.value.filter(p => !p.hidden && p.status === 'coming_soon'));
 
 const copiedPkg = ref<string | null>(null);
 
@@ -37,7 +38,7 @@ const copyInstall = (pkgName: string) => {
   <div class="catalog-container">
     <div>
       <h2 id="community">Community Plugins</h2>
-      <p>These plugins are free, open-source extensions that do not require a license token.</p>
+      <p>These plugins are free, open-source extensions under the MIT license.</p>
       <div class="grid">
         <div v-for="plugin in communityPlugins" :key="plugin.id" class="card" :class="{'experimental-card': plugin.status === 'experimental'}">
           <div v-if="plugin.status === 'experimental'" class="badge experimental-badge">Experimental</div>
@@ -62,40 +63,42 @@ const copyInstall = (pkgName: string) => {
         </div>
       </div>
       
-      <h2 id="premium">Premium Plugins</h2>
-      <p>Enterprise-grade extensions. A cryptographic license token is required.</p>
-      
-      <div style="display: flex; align-items: center; gap: 16px; margin: 16px 0; padding: 16px; background-color: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-brand); border-radius: 8px;">
-        <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
-          <img src="https://registry.magmacomputing.com.au/registry-logo.svg" width="48" height="48" alt="Tempo License Registry" style="margin: 0;" />
-        </a>
-        <div>
-          <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
-          Manage your subscriptions and retrieve your license key.
-        </div> 
-      </div>
+      <div v-if="premiumPlugins.length > 0">
+        <h2 id="premium">Premium Plugins</h2>
+        <p>Enterprise-grade extensions. A cryptographic license token is required.</p>
+        
+        <div style="display: flex; align-items: center; gap: 16px; margin: 16px 0; padding: 16px; background-color: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-brand); border-radius: 8px;">
+          <a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer" style="display: flex; flex-shrink: 0;">
+            <img src="https://registry.magmacomputing.com.au/registry-logo.svg" width="48" height="48" alt="Tempo License Registry" style="margin: 0;" />
+          </a>
+          <div>
+            <strong><a href="https://registry.magmacomputing.com.au" target="_blank" rel="noopener noreferrer">👉 Go to the Tempo License Registry 👈</a></strong><br>
+            Manage your subscriptions and retrieve your license key.
+          </div> 
+        </div>
 
-      <div class="grid">
-        <div v-for="plugin in premiumPlugins" :key="plugin.id" class="card premium-card" :class="{'experimental-card': plugin.status === 'experimental'}">
-          <div class="badge">Premium</div>
-          <div v-if="plugin.status === 'experimental'" class="badge experimental-badge" style="right: 85px;">Experimental</div>
-          <div class="card-title">
-            <h3>{{ plugin.name }}</h3>
-            <span v-if="plugin.version" class="card-version">v{{ plugin.version }}</span>
-          </div>
-          <p>{{ plugin.description }}</p>
-          <div class="actions" style="display: flex; gap: 0.5rem; align-items: center;">
-            <code>npm install {{ plugin.packageName }}</code>
-            <div style="position: relative; display: flex;">
-              <button @click="copyInstall(plugin.packageName)" class="btn icon-btn" title="Copy install command">
-                <svg v-if="copiedPkg === plugin.packageName" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              </button>
-              <span v-if="copiedPkg === plugin.packageName" class="copy-tooltip">Copied!</span>
+        <div class="grid">
+          <div v-for="plugin in premiumPlugins" :key="plugin.id" class="card premium-card" :class="{'experimental-card': plugin.status === 'experimental'}">
+            <div class="badge">Premium</div>
+            <div v-if="plugin.status === 'experimental'" class="badge experimental-badge" style="right: 85px;">Experimental</div>
+            <div class="card-title">
+              <h3>{{ plugin.name }}</h3>
+              <span v-if="plugin.version" class="card-version">v{{ plugin.version }}</span>
             </div>
-            <a :href="`../9-plugins/${plugin.id}.index`" class="btn btn-secondary icon-btn" title="View Documentation">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-            </a>
+            <p>{{ plugin.description }}</p>
+            <div class="actions" style="display: flex; gap: 0.5rem; align-items: center;">
+              <code>npm install {{ plugin.packageName }}</code>
+              <div style="position: relative; display: flex;">
+                <button @click="copyInstall(plugin.packageName)" class="btn icon-btn" title="Copy install command">
+                  <svg v-if="copiedPkg === plugin.packageName" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <span v-if="copiedPkg === plugin.packageName" class="copy-tooltip">Copied!</span>
+              </div>
+              <a :href="`../9-plugins/${plugin.id}.index`" class="btn btn-secondary icon-btn" title="View Documentation">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+              </a>
+            </div>
           </div>
         </div>
       </div>

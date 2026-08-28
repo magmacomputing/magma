@@ -1,11 +1,17 @@
 import '#library/temporal.polyfill.js';
 import { isString } from '#library/assertion.library.js';
 
+/**
+ * Represents a single parsed cron field with its allowed values and restriction status.
+ */
 export interface CronField {
 	allowed: Set<number>;
 	restricted: boolean;
 }
 
+/**
+ * Represents a fully parsed cron schedule with all five time fields.
+ */
 export interface CronSchedule {
 	minutes: CronField;
 	hours: CronField;
@@ -78,6 +84,13 @@ function parseCronField(field: string, min: number, max: number): CronField {
 	return { allowed, restricted: true };
 }
 
+/**
+ * Parses a standard 5-field cron pattern into a structured CronSchedule object.
+ *
+ * @param pattern - The cron pattern string (e.g., "0 12 * * 1-5")
+ * @returns A CronSchedule object with parsed fields
+ * @throws Error if the pattern is invalid or malformed
+ */
 export function parseCron(pattern: string): CronSchedule {
 	const fields = pattern.trim().split(/\s+/);
 	if (fields.length !== 5)
@@ -92,6 +105,12 @@ export function parseCron(pattern: string): CronSchedule {
 	}
 }
 
+/**
+ * Type guard to check if a value is a valid cron pattern string.
+ *
+ * @param val - The value to check
+ * @returns True if the value is a valid cron pattern string
+ */
 export function isCronString(val: unknown): val is string {
 	if (!isString(val)) return false;
 	const trimmed = val.trim();
@@ -175,10 +194,26 @@ function searchCronEpoch(pattern: string, anchorMs: number, timeZone: string, di
 	}
 }
 
+/**
+ * Calculates the next occurrence of a cron schedule after the given anchor time.
+ *
+ * @param pattern - The cron pattern string
+ * @param anchorMs - The anchor time in milliseconds since epoch
+ * @param timeZone - The time zone to use for calculations (default: 'UTC')
+ * @returns The next occurrence time in milliseconds since epoch
+ */
 export function getNextCronEpoch(pattern: string, anchorMs: number, timeZone = 'UTC'): number {
 	return searchCronEpoch(pattern, anchorMs, timeZone, 1);
 }
 
+/**
+ * Calculates the previous occurrence of a cron schedule before the given anchor time.
+ *
+ * @param pattern - The cron pattern string
+ * @param anchorMs - The anchor time in milliseconds since epoch
+ * @param timeZone - The time zone to use for calculations (default: 'UTC')
+ * @returns The previous occurrence time in milliseconds since epoch
+ */
 export function getPrevCronEpoch(pattern: string, anchorMs: number, timeZone = 'UTC'): number {
 	return searchCronEpoch(pattern, anchorMs, timeZone, -1);
 }

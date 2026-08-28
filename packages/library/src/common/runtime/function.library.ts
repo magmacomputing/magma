@@ -32,9 +32,16 @@ type Curry<Args extends any[], Res> =
 	: Res;
 
 /**
- * ## serialize
  * Robust deterministic serialization for cache keys.
- * Handles BigInt, Map, Set, Function, Undefined, and Circular refs.
+ * Handles BigInt, Map, Set, Function, Undefined, and circular references.
+ *
+ * @param val - The value to serialize
+ * @param seen - Internal WeakSet to track circular references
+ * @returns The serialized JSON string representation
+ * @example
+ * ```ts
+ * serialize({ a: 1, b: undefined }); // '{"a":1,"b":"__undefined__"}'
+ * ```
  */
 function serialize(val: any, seen = new WeakSet()): string {
 	return JSON.stringify(val, function (this: any, key: string, value: any) {

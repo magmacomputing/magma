@@ -127,15 +127,6 @@ export function defineModule<T extends Plugin<TempoType>>(module: T): T {
  */
 export function attachStatics(TempoClass: any, props: Record<string, any>) {
 	for (const [key, val] of Object.entries(props)) {
-		if (hasOwn(TempoClass, key)) {
-			const existing = (TempoClass as any)[key];
-			if (existing === val || (isObject(val) && 'value' in val && val.value === existing))
-				continue;
-			const msg = `Static name collision on "${key}". Property is already defined on the host class.`;
-			logError(msg, { ...TempoClass?.config, catch: true });
-			continue;
-		}
-
 		const isDescriptor = isObject(val) && (
 			(val as any)[sym.$Descriptor] === true ||
 			(
@@ -144,6 +135,30 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 				(!isDefined(val.set) || isFunction(val.set))
 			)
 		);
+
+		if (hasOwn(TempoClass, key)) {
+			const desc = Object.getOwnPropertyDescriptor(TempoClass, key);
+			if (desc) {
+				if (!isDescriptor && desc.value === val) continue;
+				if (isDescriptor) {
+					const isAccessor = ('get' in val && isFunction(val.get)) || ('set' in val && isFunction(val.set));
+					if (isAccessor) {
+						if (desc.get === val.get && desc.set === val.set) continue;
+					} else if ('value' in val) {
+						if (
+							desc.value === val.value &&
+							desc.writable === (val.writable ?? true) &&
+							desc.enumerable === (val.enumerable ?? false) &&
+							desc.configurable === (val.configurable ?? true)
+						) continue;
+					}
+				}
+			}
+
+			const msg = `Static name collision on "${key}". Property is already defined on the host class.`;
+			logError(msg, { ...TempoClass?.config, catch: true });
+			continue;
+		}
 
 		// attachStatics: Intentional ordering in Object.defineProperty overrides any caller-provided flags in isDescriptor to force non-enumerable behavior (avoiding @Immutable exposure).
 		Object.defineProperty(TempoClass, key, {

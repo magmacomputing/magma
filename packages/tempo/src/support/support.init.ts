@@ -197,6 +197,13 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 }
 
 /** @internal Extend a Tempo state with new options (Shadowing) */
+const CANONICAL_OPTION_KEYS: Record<string, string> = Object.assign(Object.create(null), {
+	timezone: 'timeZone',
+	timestamp: 'timeStamp',
+	monthday: 'monthDay',
+	errorhandling: 'error',
+});
+
 export function extendState(state: t.Internal.State, options: t.Options): boolean {
 	let patternsDirty = false;
 
@@ -208,19 +215,22 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 			state.parse.snippet[Token.wkd as any] = Snippet[Token.wkd as any];
 
 			if ((state.parse as any).localizedEvents) {
-				(state.parse as any).localizedEvents.forEach((k: string) => {
-					delete state.parse.event[k];
-				});
+				(state.parse as any).localizedEvents
+					.forEach((k: string) => { delete state.parse.event[k] });
 				delete (state.parse as any).localizedEvents;
 			}
 			patternsDirty = true;
 		}
 	}
 
-	ownEntries(options).forEach(([optKey, optVal]) => {
+	ownEntries(options).forEach(([rawKey, optVal]) => {
 		if (isUndefined(optVal)) return;
 
+		const optKey = isString(rawKey)
+			? (CANONICAL_OPTION_KEYS[rawKey.toLowerCase()] ?? rawKey)
+			: rawKey;
 		state.userProvidedKeys.add(optKey);
+		state.userProvidedKeys.add(rawKey);
 		const preserveSupplier = isFunction(optVal) && state.config?.scope !== 'local';
 		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey) && !(optKey === 'locale' && preserveSupplier))
 			? evaluate(optVal)
@@ -228,6 +238,32 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 		const arg = asType(evaluatedVal);
 
 		switch (optKey) {
+			case 'error': {
+				const policy = String(arg.value).toLowerCase();
+				switch (policy) {
+					case 'throw':
+						if (isUndefined(options.catch)) setProperty(state.config, 'catch', false);
+						if (isUndefined(options.silent)) setProperty(state.config, 'silent', false);
+						break;
+					case 'catch':
+						if (isUndefined(options.catch)) setProperty(state.config, 'catch', true);
+						if (isUndefined(options.silent)) setProperty(state.config, 'silent', false);
+						break;
+					case 'silent':
+						if (isUndefined(options.catch)) setProperty(state.config, 'catch', true);
+						if (isUndefined(options.silent)) setProperty(state.config, 'silent', true);
+						break;
+					case 'log':
+						if (isUndefined(options.catch)) setProperty(state.config, 'catch', true);
+						if (isUndefined(options.silent)) setProperty(state.config, 'silent', false);
+						if (isUndefined(options.debug)) setProperty(state.config, 'debug', parseLogLevel('warn'));
+						break;
+					default:
+						logError(`[Tempo#extend] Invalid error option policy: ${String(arg.value)}. Expected 'throw', 'catch', 'silent', or 'log'.`, state.config);
+						break;
+				}
+				break;
+			}
 			case 'monthDay':
 				state.parse.monthDay = resolveMonthDay(arg.value, state.parse.monthDay);
 				break;

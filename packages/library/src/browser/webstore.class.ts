@@ -2,6 +2,8 @@ import { distinct, ownEntries } from '#library/primitive.library.js';
 import { stringify, objectify } from '#library/serialize.library.js';
 import { asType } from '#library/type.library.js';
 import { isEmpty, isNullish, isString } from '#library/assertion.library.js';
+import { getSafeStorage, getMemoryStorage } from '#library/storage.library.js';
+import { StringTag } from '#library/decorator.library.js';
 import type { Property, ValueOf } from '#library/type.library.js';
 
 const STORAGE = {
@@ -21,6 +23,7 @@ type STORAGE = ValueOf<typeof STORAGE>
  * const user = store.get('user');
  * ```
  */
+@StringTag
 export class WebStore {
 	private static _localInstance?: WebStore;
 	private static _sessionInstance?: WebStore;
@@ -44,15 +47,25 @@ export class WebStore {
 	}
 
 	#type: STORAGE;
+	#resolvedStorage?: globalThis.Storage;
 
-	/** Resolved Storage object (resolved only on access) */
+	/** Resolved Storage object (resolved safely on access with memory fallback) */
 	get #storage(): globalThis.Storage {
-		return this.#type === STORAGE.Local
-			? globalThis.localStorage
-			: globalThis.sessionStorage;
+		if (this.#resolvedStorage) return this.#resolvedStorage;
+		const name = this.#type === STORAGE.Local ? 'localStorage' : 'sessionStorage';
+		return this.#resolvedStorage = getSafeStorage(name);
 	}
 
-	[Symbol.toStringTag] = 'WebStore';
+	#exec<R>(op: (storage: globalThis.Storage) => R): R {
+		try {
+			return op(this.#storage);
+		} catch (e) {
+			const name = this.#type === STORAGE.Local ? 'localStorage' : 'sessionStorage';
+			const fallback = getMemoryStorage(name);
+			this.#resolvedStorage = fallback;
+			return op(fallback);
+		}
+	}
 
 	constructor(storage: STORAGE = STORAGE.Local) {
 		this.#type = storage;
@@ -66,7 +79,7 @@ export class WebStore {
 	 * @returns The parsed object from storage, or the default/null if not found
 	 */
 	public get<T>(key: PropertyKey, dflt?: T) {
-		const str = this.#storage.getItem(stringify(key));
+		const str = this.#exec(storage => storage.getItem(stringify(key)));
 		return isString(str)
 			? objectify<T>(str)																		// rebuild the object
 			: (dflt ?? null)
@@ -133,7 +146,11 @@ export class WebStore {
 	 * @returns The WebStore instance for chaining
 	 */
 	public clear() {
-		this.#storage.clear();
+		try {
+			this.#exec(storage => storage.clear());
+		} catch (e) {
+			console.warn('[WebStore] Failed to clear storage:', e);
+		}
 		return this;
 	}
 
@@ -144,8 +161,13 @@ export class WebStore {
 	 * @returns The WebStore instance for chaining
 	 */
 	public del(...keys: PropertyKey[]) {											// list of keys to remove
-		keys
-			.forEach(key => this.#storage.removeItem(stringify(key)))
+		keys.forEach(key => {
+			try {
+				this.#exec(storage => storage.removeItem(stringify(key)));
+			} catch (e) {
+				console.warn(`[WebStore] Failed to removeItem for key '${String(key)}':`, e);
+			}
+		});
 		return this;
 	}
 
@@ -179,10 +201,20 @@ export class WebStore {
 	 */
 	public entries<T>(...keys: PropertyKey[]) {								// list of keys (or all) to lookup
 		const wanted = new Set(keys.map(key => stringify(key)));
+		const result: [PropertyKey, T][] = [];
 
-		return ownEntries<Record<string, string>>(this.#storage)
-			.map(([key, val]) => [objectify(key), objectify(val)] as [PropertyKey, T])
-			.filter(([key]) => isEmpty(keys) || wanted.has(stringify(key)))
+		this.#exec(storage => {
+			for (let i = 0; i < storage.length; i++) {
+				const rawKey = storage.key(i);
+				if (rawKey === null) continue;
+				if (isEmpty(keys) || wanted.has(rawKey)) {
+					const rawVal = storage.getItem(rawKey);
+					result.push([objectify(rawKey), objectify(rawVal) as T]);
+				}
+			}
+		});
+
+		return result;
 	}
 
 	/**
@@ -198,7 +230,11 @@ export class WebStore {
 	}
 
 	#upd(key: PropertyKey, obj: any) {
-		this.#storage.setItem(stringify(key), stringify(obj));
+		try {
+			this.#exec(storage => storage.setItem(stringify(key), stringify(obj)));
+		} catch (e) {
+			console.warn(`[WebStore] Failed to setItem for key '${String(key)}':`, e);
+		}
 		return this;
 	}
 }

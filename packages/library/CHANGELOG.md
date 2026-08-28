@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-08-27
+
+### Changed & Fixed
+- **Domain-Grouped Module Architecture (`src/common/*`)**: Re-organized internal modules into domain subdirectories (`primitives/`, `runtime/`, `scheduling/`, `temporal/`) for cleaner maintainability, predictable subpath imports (`#library/common/...`), and improved tree-shaking granularity.
+- **Clean Compilation & Build Scripts**: Updated package build scripts to enforce `npm run clean && tsc -b`, ensuring `dist` artifacts and declaration files (`.d.ts`) are purged before re-compiling to prevent stale artifact accumulation.
+
 ## [3.11.1] - 2026-08-06
 
 ### Added

@@ -1,3 +1,5 @@
+import { StringTag } from '#library/decorator.library.js';
+
 /**
  * A lightweight `Set`-compatible container that delegates `has()` lookups to a
  * parent Set/ScopedSet, but confines `add()` writes to its own-local storage.
@@ -15,6 +17,7 @@
  * sandbox.has('b');   // true  (own-local)
  * global.has('b');    // false (never written to parent)
  */
+@StringTag
 export class ScopedSet<T> {
 	readonly #own = new Set<T>();
 	readonly #parent: Set<T> | ScopedSet<T> | undefined;
@@ -55,5 +58,4 @@ export class ScopedSet<T> {
 	entries(): IterableIterator<[T, T]> { return this.#own.entries(); }
 	
 	[Symbol.iterator](): IterableIterator<T> { return this.#own[Symbol.iterator](); }
-	get [Symbol.toStringTag](): string { return 'ScopedSet'; }
 }

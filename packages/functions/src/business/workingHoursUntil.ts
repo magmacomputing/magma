@@ -18,8 +18,19 @@ export type SLAOptions = {
 // Internal cache for holidays loaded via the async `preloadHolidays` method
 const remoteHolidaysCache: Map<string, string[]> = new Map();
 
-/** 
+/**
  * Calculates the exact number of SLA-eligible working hours from the start date until the deadline.
+ * Excludes weekends and holidays, and accounts for working hour boundaries.
+ *
+ * @param start - The starting date/time
+ * @param deadline - The ending date/time
+ * @param options - Optional configuration for working hours and holidays
+ * @returns The total working hours (negative if start is after deadline)
+ * @throws {Error} If startHour is greater than or equal to endHour
+ * @example
+ * ```ts
+ * const hours = workingHoursUntil(startDate, endDate, { startHour: 9, endHour: 17 });
+ * ```
  */
 export const workingHoursUntil = function (start: Tempo | Temporal.ZonedDateTime, deadline: Tempo | Temporal.ZonedDateTime, options?: SLAOptions): number {
 	const startZdt = isTempo(start) ? start.toDateTime() : start;
@@ -88,7 +99,18 @@ export const workingHoursUntil = function (start: Tempo | Temporal.ZonedDateTime
 	return (Number(totalNs) / 3.6e12) * multiplier;
 }
 
-/** Preloads and caches holiday data for a region and year. */
+/**
+ * Preloads and caches holiday data for a region and year.
+ * Should be called before `workingHoursUntil` to ensure holidays are available synchronously.
+ *
+ * @param region - The ISO 3166-1 alpha-2 country code (defaults to system locale region or 'US')
+ * @param year - The year to fetch holidays for (defaults to current year)
+ * @returns A promise that resolves when holidays are cached
+ * @example
+ * ```ts
+ * await preloadHolidays('AU-NSW', 2024);
+ * ```
+ */
 export const preloadHolidays = async (region?: string, year: number = getTemporal().Now.plainDateISO().year): Promise<void> => {
 	const resolvedRegion = region || getLocale().region || 'US';
 	const cacheKey = `${resolvedRegion}-${year}`;

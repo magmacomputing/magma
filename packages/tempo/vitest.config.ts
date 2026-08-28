@@ -10,8 +10,6 @@ const isDist = process.env.TEST_DIST === 'true';
 const polyfill = resolve(__dirname, './bin/temporal-polyfill.ts');
 const consoleSpySetup = resolve(__dirname, './test/support/setup.console-spy.ts');
 
-const licenseDefault = resolve(__dirname, './src/plugin/license/license.validator.ts');
-
 export default defineConfig({
 	esbuild: false,
 	plugins: [
@@ -37,7 +35,6 @@ export default defineConfig({
 	},
 	resolve: {
 		alias: isDist ? [
-			{ find: /^#tempo\/license$/, replacement: resolve(__dirname, './dist/plugin/license/license.validator.js') },
 			{ find: /^#tempo\/core$/, replacement: resolve(__dirname, './dist/core.index.js') },
 			{ find: /^#tempo\/config\/(.*)\.js$/, replacement: resolve(__dirname, './dist/config/$1.js') },
 			{ find: /^#tempo\/config$/, replacement: resolve(__dirname, './dist/config/config.index.js') },
@@ -56,12 +53,11 @@ export default defineConfig({
 			{ find: /^#tempo$/, replacement: resolve(__dirname, './dist/tempo.index.js') },
 			{ find: /^#library\/(primitives|temporal|security|scheduling|runtime)\/(.*)\.js$/, replacement: resolve(__dirname, '../library/dist/common/$1/$2.js') },
 			{ find: /^#library\/(array|assertion|coercion|number|object|primitive|string|symbol|type)\.library\.js$/, replacement: resolve(__dirname, '../library/dist/common/primitives/$1.library.js') },
-			{ find: /^#library\/(boundary|class|enumerate|evaluation|function|international|json|logger|pledge|proxy|reflection|request|scopedset|serialize|storage|utility)\.(library|class)\.js$/, replacement: resolve(__dirname, '../library/dist/common/runtime/$1.$2.js') },
+			{ find: /^#library\/(boundary|decorator|enumerate|evaluation|function|international|json|logger|pledge|proxy|reflection|request|scopedset|serialize|storage|utility)\.(library|class)\.js$/, replacement: resolve(__dirname, '../library/dist/common/runtime/$1.$2.js') },
 			{ find: /^#library\/(cron|rrule|schedule)\.library\.js$/, replacement: resolve(__dirname, '../library/dist/common/scheduling/$1.library.js') },
 			{ find: /^#library\/(buffer|cipher|webtoken)\.library\.js$/, replacement: resolve(__dirname, '../library/dist/common/security/$1.library.js') },
 			{ find: /^#library\/(calendar|temporal)\.library\.js$/, replacement: resolve(__dirname, '../library/dist/common/temporal/$1.library.js') },
 			{ find: /^#library\/temporal\.polyfill\.js$/, replacement: resolve(__dirname, '../library/dist/common/temporal/temporal.polyfill.js') },
-			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/dist/common/$1.js') },
 			{ find: /^#library$/, replacement: resolve(__dirname, '../library/dist/common.index.js') },
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './dist/plugin/plugin.index.js') },
 			{ find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: resolve(__dirname, './dist/plugin/plugin.sdk.js') },
@@ -73,10 +69,6 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/tempo\/library$/, replacement: resolve(__dirname, './dist/library.index.js') },
 			{ find: /^@magmacomputing\/tempo$/, replacement: resolve(__dirname, './dist/tempo.index.js') },
 		] : [
-			{ find: /^#tempo\/license$/, replacement: licenseDefault },
-			// Also alias the relative path used by the dynamic import in tempo.class.ts, so vi.mock('#tempo/license') intercepts it
-			{ find: resolve(__dirname, './src/plugin/license/license.validator.ts'), replacement: licenseDefault },
-			{ find: resolve(__dirname, './src/plugin/license/license.validator.js'), replacement: licenseDefault },
 			{ find: /^@magmacomputing\/tempo\/plugin-api$/, replacement: resolve(__dirname, './src/plugin/plugin.sdk.ts') },
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './src/plugin/plugin.index.ts') },
 			{ find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: resolve(__dirname, './src/plugin/plugin.sdk.ts') },
@@ -111,12 +103,11 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/library\/(.*)$/, replacement: resolve(__dirname, '../library/src/$1.ts') },
 			{ find: /^#library\/(primitives|temporal|security|scheduling|runtime)\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/$1/$2.ts') },
 			{ find: /^#library\/(array|assertion|coercion|number|object|primitive|string|symbol|type)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/primitives/$1.library.ts') },
-			{ find: /^#library\/(boundary|class|enumerate|evaluation|function|international|json|logger|pledge|proxy|reflection|request|scopedset|serialize|storage|utility)\.(library|class)\.js$/, replacement: resolve(__dirname, '../library/src/common/runtime/$1.$2.ts') },
+			{ find: /^#library\/(boundary|decorator|enumerate|evaluation|function|international|json|logger|pledge|proxy|reflection|request|scopedset|serialize|storage|utility)\.(library|class)\.js$/, replacement: resolve(__dirname, '../library/src/common/runtime/$1.$2.ts') },
 			{ find: /^#library\/(cron|rrule|schedule)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/scheduling/$1.library.ts') },
 			{ find: /^#library\/(buffer|cipher|webtoken)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/security/$1.library.ts') },
 			{ find: /^#library\/(calendar|temporal)\.library\.js$/, replacement: resolve(__dirname, '../library/src/common/temporal/$1.library.ts') },
 			{ find: /^#library\/temporal\.polyfill\.js$/, replacement: resolve(__dirname, '../library/src/common/temporal/temporal.polyfill.ts') },
-			{ find: /^#library\/(.*)\.js$/, replacement: resolve(__dirname, '../library/src/common/$1.ts') },
 			{ find: /^#library$/, replacement: resolve(__dirname, '../library/src/common.index.ts') },
 		]
 	}

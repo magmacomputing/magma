@@ -2,6 +2,16 @@ import { stringify, objectify } from '#library/serialize.library.js';
 
 const CHUNK_SIZE = 8192;
 
+/**
+ * Encodes a text string into a Uint8Array using UTF-8 encoding.
+ *
+ * @param text - The string to encode
+ * @returns A Uint8Array containing the encoded text
+ * @example
+ * ```ts
+ * const bytes = encodeText('Hello');
+ * ```
+ */
 export const encodeText = (text: string) => new TextEncoder().encode(text);
 
 /**
@@ -27,7 +37,7 @@ export const encodeBuffer = (str: any) => new TextEncoder().encode(stringify(str
  * const str = decodeBuffer(buf);
  * ```
  */
-export const decodeBuffer = (buf: Uint8Array | ArrayBuffer, encoding = 'utf-8') => new TextDecoder(encoding).decode(buf);
+export const decodeBuffer = (buf: Uint8Array | ArrayBuffer, encoding = 'utf-8', options?: TextDecoderOptions) => new TextDecoder(encoding, options).decode(buf);
 
 /**
  * Encodes a raw Uint8Array into a Base64 string.

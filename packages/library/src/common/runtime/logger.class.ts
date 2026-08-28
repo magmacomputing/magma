@@ -1,11 +1,24 @@
 import { isObject, isEmpty, isNumber, isError, isString } from '#library/assertion.library.js';
 import { enumify } from '#library/enumerate.library.js';
 import { sym } from '#library/symbol.library.js';
+import { StringTag } from '#library/decorator.library.js';
 import type { KeyOf, ValueOf } from '#library/type.library.js';
 
+/**
+ * Enumeration of available log levels from lowest to highest verbosity.
+ */
 export const LOG = enumify(['Off', 'Error', 'Warn', 'Info', 'Debug', 'Trace']);
+/**
+ * Type representing a numeric log level value.
+ */
 export type LOG = ValueOf<typeof LOG>
+/**
+ * Type representing a log level by its string key name.
+ */
 export type LogLevel = KeyOf<typeof LOG>
+/**
+ * Type representing any valid debug level specification (numeric or method string).
+ */
 export type DebugLevel = LOG | Method;
 
 const Method = {
@@ -57,6 +70,7 @@ export function parseLogLevel(level?: DebugLevel, fallback: LOG = LOG.Info): LOG
  * log.info('Started'); // [App] Started
  * ```
  */
+@StringTag
 export class Logger {
 	#namespace: string;
 

@@ -10,6 +10,17 @@ interface CronSchedule {
 	daysOfWeek: CronField;
 }
 
+/**
+ * Parses a single cron field (e.g., minutes, hours) into a set of allowed values.
+ * Supports wildcards, ranges, steps, and lists.
+ *
+ * @param field - The cron field string to parse
+ * @param min - The minimum valid value for this field
+ * @param max - The maximum valid value for this field
+ * @returns A CronField object containing the allowed values and restriction status
+ * @throws {Error} If the field contains invalid syntax
+ * @internal
+ */
 function parseCronField(field: string, min: number, max: number): CronField {
 	const allowed = new Set<number>();
 	if (field === '*' || field === '?') {
@@ -52,6 +63,18 @@ function parseCronField(field: string, min: number, max: number): CronField {
 	return { allowed, restricted: true };
 }
 
+/**
+ * Parses a 5-field cron pattern into a schedule object.
+ * Supports standard cron syntax with minute, hour, day-of-month, month, and day-of-week.
+ *
+ * @param pattern - The cron pattern string (e.g., "0 9 * * 1-5")
+ * @returns A CronSchedule object containing parsed field constraints
+ * @throws {Error} If the pattern does not have exactly 5 fields
+ * @example
+ * ```ts
+ * const schedule = parseCron('0 9 * * 1-5'); // 9 AM on weekdays
+ * ```
+ */
 export function parseCron(pattern: string): CronSchedule {
 	const fields = pattern.trim().split(/\s+/);
 	if (fields.length !== 5) {
@@ -67,6 +90,15 @@ export function parseCron(pattern: string): CronSchedule {
 	};
 }
 
+/**
+ * Determines if a given date matches the day constraints in a cron schedule.
+ * Handles the logical OR between day-of-month and day-of-week when both are restricted.
+ *
+ * @param schedule - The parsed cron schedule
+ * @param current - The date to test against the schedule
+ * @returns `true` if the date matches the day constraints
+ * @internal
+ */
 function matchesDay(schedule: CronSchedule, current: Temporal.ZonedDateTime): boolean {
 	const domMatch = schedule.daysOfMonth.allowed.has(current.day);
 	const dow = current.dayOfWeek;
@@ -79,7 +111,17 @@ function matchesDay(schedule: CronSchedule, current: Temporal.ZonedDateTime): bo
 }
 
 /**
- * Returns the next occurrence of a Cron pattern, starting from (and excluding) the current minute.
+ * Returns the next occurrence of a cron pattern, starting from (and excluding) the current minute.
+ * Searches up to 5 years into the future.
+ *
+ * @param tempo - The starting Tempo instance
+ * @param pattern - The 5-field cron pattern (e.g., "0 9 * * 1-5")
+ * @returns A new Tempo instance representing the next scheduled occurrence
+ * @throws {Error} If no match is found within 5 years
+ * @example
+ * ```ts
+ * const next = nextCron(tempo, '0 9 * * 1'); // Next Monday at 9:00 AM
+ * ```
  */
 export function nextCron(tempo: Tempo, pattern: string): Tempo {
 	const schedule = parseCron(pattern);
@@ -114,7 +156,17 @@ export function nextCron(tempo: Tempo, pattern: string): Tempo {
 }
 
 /**
- * Returns the previous occurrence of a Cron pattern, starting from (and excluding) the current minute.
+ * Returns the previous occurrence of a cron pattern, starting from (and excluding) the current minute.
+ * Searches up to 5 years into the past.
+ *
+ * @param tempo - The starting Tempo instance
+ * @param pattern - The 5-field cron pattern (e.g., "0 9 * * 1-5")
+ * @returns A new Tempo instance representing the previous scheduled occurrence
+ * @throws {Error} If no match is found within 5 years
+ * @example
+ * ```ts
+ * const prev = prevCron(tempo, '0 9 * * 1'); // Previous Monday at 9:00 AM
+ * ```
  */
 export function prevCron(tempo: Tempo, pattern: string): Tempo {
 	const schedule = parseCron(pattern);

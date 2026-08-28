@@ -71,6 +71,30 @@ It correctly resolves both trailing (`200 BC`) and leading (`BC 200`) formats.
 > 2. **Missing Months/Days**: If a historical era string like `"200 BC"` is parsed without a month or day, Tempo anchors the missing components to **January 1st** of that astronomical year (i.e., `-199-01-01`).
 > 3. **Calendar Systems**: Era parsing and conversion to astronomical years is strictly restricted to the **ISO/Gregorian** calendar system. This mathematically means `1 BC` becomes astronomical year `0`, and `200 BC` becomes year `-199`.
 
+### 📆 Ordinals & Nth Parsing (`"3rd Wednesday of October"`)
+
+Tempo natively supports parsing structured ordinal weekday and ordinal date expressions in deterministic $O(1)$ time with zero network overhead.
+
+```typescript
+// Ordinal Weekdays
+new Tempo('3rd Wednesday of October');        // 3rd Wed in Oct of anchor/current year
+new Tempo('1st Thursday of November 2026');   // 1st Thursday of November 2026
+
+// Ordinal Dates
+new Tempo('15th day of May');                 // 15th day of May
+new Tempo('1st day of 2026');                 // 1st day of 2026
+```
+
+#### 💡 When to use Native Ordinal Parsing vs. `@magmacomputing/tempo-plugin-ai` (`parseAI`)
+
+| Input Type & Scenario | Recommended Approach | Key Advantage |
+| :--- | :--- | :--- |
+| **Structured Expressions**<br>(e.g. `"3rd Wednesday of Oct"`, `"1st day of next month"`) | **Native `Tempo` Parsing** | **Deterministic $O(1)$ Speed**<br>Zero API latency, zero token costs, 100% offline processing. |
+| **Free-Form / Conversational Text**<br>(e.g. `"Schedule a call on the third Wednesday after my trip ends"`) | **`tempo-plugin-ai` (`parseAI`)** | **LLM Natural Language Reasoning**<br>Extracts context and conversational intent before passing dates to Tempo. |
+
+> [!TIP]
+> Always prefer native Tempo parsing for form inputs, search inputs, and predictable UI date controls. Reserve `@magmacomputing/tempo-plugin-ai` for conversational chat interfaces or unstructured email/document text processing.
+
 ---
 
 ## 🔢 Numeric & Epoch Parsing

@@ -1,6 +1,7 @@
 import { toZonedDateTime, toInstant, getTemporalIds } from '#library/temporal.library.js';
 import { isDefined, isString, isZonedDateTime, isNumeric } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
+import type { LooseUnion } from '#library/type.library.js';
 
 import { sym, TermError, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
 import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin/term/term.util.js';
@@ -10,26 +11,45 @@ import { parseModifier, normalizeModifier } from './engine.lexer.js';
 import type { Tempo } from '../tempo.class.js';
 import type { TempoTermType } from '../plugin/term/term.type.js';
 
-const SHIFTER_MODIFIERS = new Set(['>', '<', '>=', '<=', '+', '-']);
-const ALL_MODIFIER_SYMBOLS = [...SHIFTER_MODIFIERS, '='];
-const ABSOLUTE_MUTATIONS = new Set(['start', 'mid', 'end']);
-const BOUNDARY_MUTATIONS = new Set(['mid', 'end']);
-const FUTURE_MODIFIERS = new Set(['>', 'next', '+']);
-const PAST_MODIFIERS = new Set(['<', 'last', 'prev', '-']);
+const SHIFTER_MODIFIERS = new Set(['>', '<', '>=', '<=', '+', '-'] as const);
+const ALL_MODIFIER_SYMBOLS = [...SHIFTER_MODIFIERS, '='] as const;
+const ABSOLUTE_MUTATIONS = new Set(['start', 'mid', 'end'] as const);
+const BOUNDARY_MUTATIONS = new Set(['mid', 'end'] as const);
+const FUTURE_MODIFIERS = new Set(['>', 'next', '+'] as const);
+const PAST_MODIFIERS = new Set(['<', 'last', 'prev', '-'] as const);
 
-const isBackwardShift = (mod?: string): boolean => isDefined(mod) && (mod.includes('<') || mod.includes('-') || PAST_MODIFIERS.has(mod));
+const ADD_MUTATIONS = new Set(['add', 'plus'] as const);
+const SUB_MUTATIONS = new Set(['subtract', 'minus', 'sub'] as const);
+const RELATIVE_MUTATIONS = new Set([...ADD_MUTATIONS, ...SUB_MUTATIONS] as const);
+const API_MUTATIONS = new Set(['add', 'subtract', 'set'] as const);
+
+type ShifterModifier = typeof SHIFTER_MODIFIERS extends Set<infer T> ? T : string;
+type FutureModifier = typeof FUTURE_MODIFIERS extends Set<infer T> ? T : string;
+type PastModifier = typeof PAST_MODIFIERS extends Set<infer T> ? T : string;
+type AbsoluteMutation = typeof ABSOLUTE_MUTATIONS extends Set<infer T> ? T : string;
+type BoundaryMutation = typeof BOUNDARY_MUTATIONS extends Set<infer T> ? T : string;
+type ApiMutation = typeof API_MUTATIONS extends Set<infer T> ? T : string;
+
+type AddMutation = typeof ADD_MUTATIONS extends Set<infer T> ? T : string;
+type SubMutation = typeof SUB_MUTATIONS extends Set<infer T> ? T : string;
+type RelativeMutation = typeof RELATIVE_MUTATIONS extends Set<infer T> ? T : string;
+
+type ModifierSymbol = LooseUnion<ShifterModifier | FutureModifier | PastModifier>;
+type MutationSymbol = LooseUnion<ApiMutation | AbsoluteMutation | BoundaryMutation>;
+
+const isBackwardShift = (mod?: ModifierSymbol): boolean => isDefined(mod) && (mod.includes('<') || mod.includes('-') || PAST_MODIFIERS.has(mod as any));
 
 const DAYS_IN_WEEK = 7;
 
 /**
  * Calculates the net day difference to shift from currentDow to targetDow based on modifier and repeat count.
  */
-function calculateWeekdayShift(currentDow: number, targetDow: number, mod: string, nbr: number): number | null {
+function calculateWeekdayShift(currentDow: number, targetDow: number, mod: ModifierSymbol, nbr: number): number | null {
 	let diff = 0;
 
-	if (FUTURE_MODIFIERS.has(mod)) {
+	if (FUTURE_MODIFIERS.has(mod as FutureModifier)) {
 		diff = (targetDow - currentDow + DAYS_IN_WEEK) % DAYS_IN_WEEK || DAYS_IN_WEEK;
-	} else if (PAST_MODIFIERS.has(mod)) {
+	} else if (PAST_MODIFIERS.has(mod as PastModifier)) {
 		diff = -((currentDow - targetDow + DAYS_IN_WEEK) % DAYS_IN_WEEK || DAYS_IN_WEEK);
 	} else if (mod === '>=' || mod === '=') {
 		diff = (targetDow - currentDow + DAYS_IN_WEEK) % DAYS_IN_WEEK;
@@ -89,7 +109,7 @@ const toZdtItem = (item: any, defaultYear: number, tz: string, cal: string): Tem
  * @param zdt - The current ZonedDateTime state
  * @returns The mutated ZonedDateTime
  */
-export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutate: string, unit: string, offset: any, zdt: Temporal.ZonedDateTime): Temporal.ZonedDateTime | null {
+export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutate: MutationSymbol, unit: string, offset: any, zdt: Temporal.ZonedDateTime): Temporal.ZonedDateTime | null {
 	if (!isZonedDateTime(zdt)) return zdt;
 
 	let termPart = unit;
@@ -177,7 +197,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 	}
 
 	// 0. Handle relative .add() or .subtract() — preserving position within the target range
-	if (mutate === 'add' || mutate === 'subtract') {
+	if (RELATIVE_MUTATIONS.has(mutate as RelativeMutation)) {
 		const slickParsed = isDefined(slickStr);
 		const directional = mod && !['this', '>=', '<='].includes(mod);
 		const numericOffset = !directional && isNumeric(offset);
@@ -186,7 +206,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			let shiftDir = directional
 				? (isBackwardShift(mod) ? -1 : 1)
 				: (numericOffset ? Math.sign(Number(offset) || 1) : 1);
-			if (mutate === 'subtract') shiftDir *= -1;
+			if (SUB_MUTATIONS.has(mutate as SubMutation)) shiftDir *= -1;
 			const addCount = directional
 				? nbr
 				: (numericOffset ? Math.abs(Number(offset) || 1) : nbr);
@@ -248,7 +268,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 	}
 
 	// 1. Handle Absolute Mutations (start | mid | end) OR Slick Mutations
-	if (ABSOLUTE_MUTATIONS.has(mutate) || mod) {
+	if (ABSOLUTE_MUTATIONS.has(mutate as AbsoluteMutation) || mod) {
 		let jump = zdt;
 		let list = getRange(termObj, instance, jump);
 
@@ -355,7 +375,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 					const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 					remaining--;
 					if (remaining === 0) {
-						if (BOUNDARY_MUTATIONS.has(mutate)) { jump = found; break; }
+						if (BOUNDARY_MUTATIONS.has(mutate as BoundaryMutation)) { jump = found; break; }
 						return found;
 					}
 					jump = toZdt(target.end);
@@ -376,7 +396,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 					const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 					remaining--;
 					if (remaining === 0) {
-						if (BOUNDARY_MUTATIONS.has(mutate)) { jump = found; break; }
+						if (BOUNDARY_MUTATIONS.has(mutate as BoundaryMutation)) { jump = found; break; }
 						return found;
 					}
 					jump = toZdt(target.end);
@@ -401,7 +421,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 					const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 					remaining--;
 					if (remaining === 0) {
-						if (BOUNDARY_MUTATIONS.has(mutate)) { jump = found; break; }
+						if (BOUNDARY_MUTATIONS.has(mutate as BoundaryMutation)) { jump = found; break; }
 						return found;
 					}
 					jump = toZdt(target.end);
@@ -412,7 +432,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			// Treat explicit modifiers and + / - as shifters. Numeric repeat counts
 			// without an explicit modifier (e.g. `2q2`) are handled as inclusive
 			// searches and should not be treated as shifters.
-			const isShifter = isDefined(mod) && SHIFTER_MODIFIERS.has(mod);
+			const isShifter = isDefined(mod) && SHIFTER_MODIFIERS.has(mod as ShifterModifier);
 
 			const compare = (r: any) => {
 				const startZdt = isZonedDateTime(r.start) ? r.start : toZdt(r.start);
@@ -477,7 +497,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				const found = toZdt(target.start).withTimeZone(tz).withCalendar(cal);
 				remaining--;
 				if (remaining === 0) {
-					if (BOUNDARY_MUTATIONS.has(mutate)) {
+					if (BOUNDARY_MUTATIONS.has(mutate as BoundaryMutation)) {
 						jump = found;
 						break;
 					}
@@ -497,7 +517,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		}
 
 		// Final range resolution for mid/end
-		if (BOUNDARY_MUTATIONS.has(mutate)) {
+		if (BOUNDARY_MUTATIONS.has(mutate as BoundaryMutation)) {
 			const finalRange = (getTermRange(instance, getRange(termObj, instance, jump), false, jump) as any);
 			if (!finalRange) {
 				Tempo?.[TermError]?.(instance.config, unit);
@@ -506,7 +526,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			if (mutate === 'mid') {
 				const startNs = toZdt(finalRange.start).epochNanoseconds as bigint;
 				const endNs = toZdt(finalRange.end).epochNanoseconds as bigint;
-				const midNs = startNs + (endNs - startNs) / BigInt(2);
+				const midNs = startNs + (endNs - startNs) / 2n;
 				return toInstant(midNs).toZonedDateTimeISO(tz).withCalendar(cal);
 			}
 			return toZdt(finalRange.end).subtract({ nanoseconds: 1 }).withTimeZone(tz).withCalendar(cal);

@@ -1,5 +1,11 @@
+/**
+ * Type for a JSONC reviver function that transforms parsed values.
+ */
 export type JSONCReviver = (this: any, key: string, value: any) => any;
 
+/**
+ * Configuration options for JSONC parsing operations.
+ */
 export interface JSONCOptions<T = any> {
 	reviver?: JSONCReviver;
 	fallback?: T;

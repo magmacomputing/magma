@@ -185,9 +185,9 @@
       "development": "./src/common/scheduling/schedule.library.ts",
       "default": "./dist/common/scheduling/schedule.library.js"
     },
-    "#library/class.library.js": {
-      "development": "./src/common/runtime/class.library.ts",
-      "default": "./dist/common/runtime/class.library.js"
+    "#library/decorator.library.js": {
+      "development": "./src/common/runtime/decorator.library.ts",
+      "default": "./dist/common/runtime/decorator.library.js"
     },
     "#library/enumerate.library.js": {
       "development": "./src/common/runtime/enumerate.library.ts",
@@ -256,8 +256,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "tsc -b",
-    "clean": "tsc -b --clean",
+    "build": "npm run clean && tsc -b",
+    "clean": "node bin/clean.mjs && (tsc -b --clean || true)",
     "prepublishOnly": "tempo-cli prepublish"
   },
   "dependencies": {

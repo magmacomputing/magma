@@ -459,6 +459,32 @@ class TickerInstance implements Ticker.Descriptor {
 	[Symbol.dispose]() { this.stop(); }
 }
 
+function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.Instance {
+	const instance = new TickerInstance(TempoClass, arg1, arg2);
+	const proxy = new Proxy((() => instance.stop()) as any, {
+		get: (_, prop) => {
+			if (prop === 'pulse') return instance.pulse.bind(instance);
+			if (prop === 'on') return instance.on.bind(instance);
+			if (prop === 'stop') return instance.stop.bind(instance);
+			if (prop === 'next') return instance.next.bind(instance);
+			if (prop === 'return') return instance.return.bind(instance);
+			if (prop === 'throw') return instance.throw.bind(instance);
+			if (prop === 'info') return instance.info;
+			if (prop === Symbol.asyncIterator) return () => proxy;
+			if (prop === Symbol.asyncDispose) return instance[Symbol.asyncDispose].bind(instance);
+			if (prop === Symbol.dispose) return instance[Symbol.dispose].bind(instance);
+			return (instance as any)[prop];
+		},
+		apply: (target) => target(),
+	}) as unknown as Ticker.Instance;
+
+	return instance.bootstrap(proxy);
+}
+
+const tickersDescriptor = {
+	get: () => Ticker.active,
+}
+
 /**
  * ## TickerPlugin
  * The Community Ticker Plugin.
@@ -467,31 +493,15 @@ class TickerInstance implements Ticker.Descriptor {
 export const TickerPlugin: TempoPlugin = definePlugin({
 	name: 'ticker',
 	install(this: typeof Tempo, TempoClass: typeof Tempo) {
-		attachStatics(TempoClass, {
-			ticker: function (arg1: any, arg2?: any): Ticker.Instance {
-				const instance = new TickerInstance(TempoClass, arg1, arg2);
-				const proxy = new Proxy((() => instance.stop()) as any, {
-					get: (_, prop) => {
-						if (prop === 'pulse') return instance.pulse.bind(instance);
-						if (prop === 'on') return instance.on.bind(instance);
-						if (prop === 'stop') return instance.stop.bind(instance);
-						if (prop === 'next') return instance.next.bind(instance);
-						if (prop === 'return') return instance.return.bind(instance);
-						if (prop === 'throw') return instance.throw.bind(instance);
-						if (prop === 'info') return instance.info;
-						if (prop === Symbol.asyncIterator) return () => proxy;
-						if (prop === Symbol.asyncDispose) return instance[Symbol.asyncDispose].bind(instance);
-						if (prop === Symbol.dispose) return instance[Symbol.dispose].bind(instance);
-						return (instance as any)[prop];
-					},
-					apply: (target) => target(),
-				}) as unknown as Ticker.Instance;
+		const installedClass = TempoClass || this;
+		const tickerFactory = function (this: any, arg1: any, arg2?: any): Ticker.Instance {
+			const cls = (this as any)?.prototype ? this : ((this as any)?.constructor?.prototype ? (this as any).constructor : installedClass);
+			return createTicker(cls, arg1, arg2);
+		};
 
-				return instance.bootstrap(proxy);
-			},
-			tickers: {
-				get: () => Ticker.active,
-			},
+		attachStatics(installedClass, {
+			ticker: tickerFactory,
+			tickers: tickersDescriptor,
 		});
 	},
 });

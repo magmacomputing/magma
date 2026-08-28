@@ -50,6 +50,39 @@ export function resolveNumber(str: any): t.Number | any {
 	return enums.NUMBER.keys().find(key => key.startsWith(low)) ?? str;
 }
 
+/** resolve an ordinal string ('1st', '2nd', 'first', 'last', etc) to a 1-based index or -1 for last */
+export function resolveNth(str: any): number {
+	if (!isString(str)) return Number(str) || 1;
+	const low = str.trim().toLowerCase();
+	switch (low) {
+		case 'last': return -1;
+		case 'first': case '1st': return 1;
+		case 'second': case '2nd': return 2;
+		case 'third': case '3rd': return 3;
+		case 'fourth': case '4th': return 4;
+		case 'fifth': case '5th': return 5;
+		default: {
+			const match = low.match(/^(\d+)/);
+			if (match) {
+				const val = parseInt(match[1], 10);
+				if (Number.isFinite(val) && val >= 1 && val <= 366) return val;
+			}
+			return 1;
+		}
+	}
+}
+
+/** helper to clear base keys and their _alt variants from regex groups */
+export function clearGroupKeys(groups: t.Groups, ...baseKeys: string[]) {
+	for (const key of ownKeys(groups)) {
+		for (const base of baseKeys) {
+			if (key === base || key.startsWith(`${base}_alt`)) {
+				delete groups[key];
+			}
+		}
+	}
+}
+
 /** conform weekday names (3-characters) using prefix matching */
 export function prefix(str: t.WEEKDAY | t.WEEKDAYS): t.WEEKDAY;
 /** conform month names (3-characters) using prefix matching */
@@ -118,6 +151,57 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
 	}
 }
 
+/** resolve an ordinal weekday match (e.g. 3rd Thursday of Nov 2026, last Friday of May) */
+export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: string, dateTime: Temporal.ZonedDateTime, config: any): Temporal.ZonedDateTime | undefined {
+	const nthVal = resolveNth(nthStr);
+	const weekday = prefix(wkd);
+	const targetWkd = (enums.WEEKDAY as any)[weekday] ?? (enums.WEEKDAYS as any)[weekday];
+
+	if (!Number.isFinite(targetWkd)) return undefined;
+
+	let fallbackAnchor = config?.anchor;
+	if (isTempo(fallbackAnchor)) fallbackAnchor = fallbackAnchor.toDateTime();
+	if (isInstant(fallbackAnchor)) fallbackAnchor = fallbackAnchor.toZonedDateTimeISO(config?.timeZone || 'UTC');
+	if (!isTemporal(fallbackAnchor)) fallbackAnchor = undefined;
+
+	let yy = groups.yy ? Number(groups.yy) : (fallbackAnchor?.year ?? dateTime.year);
+	let mm = groups.mm ? num({ month: groups.mm }).month : (fallbackAnchor?.month ?? dateTime.month);
+
+	if (Number.isFinite(yy) && yy < 100) {
+		const pivot = config?.pivot ?? 75;
+		const pivotYear = dateTime.subtract({ years: pivot }).year % 100;
+		const century = Math.trunc(dateTime.year / 100);
+		yy += (century - Number(yy >= pivotYear)) * 100;
+	}
+
+	if (!Number.isFinite(yy) || !Number.isFinite(mm)) return undefined;
+
+	const firstDay = Temporal.PlainDate.from({ year: yy, month: mm, day: 1 });
+	let targetDate: Temporal.PlainDate;
+
+	if (nthVal === -1) {
+		const lastDay = firstDay.add({ months: 1 }).subtract({ days: 1 });
+		const daysBack = (lastDay.dayOfWeek - targetWkd + 7) % 7;
+		targetDate = lastDay.subtract({ days: daysBack });
+	} else {
+		const daysUntil = (targetWkd - firstDay.dayOfWeek + 7) % 7;
+		const firstWkd = firstDay.add({ days: daysUntil });
+		targetDate = firstWkd.add({ weeks: nthVal - 1 });
+	}
+
+	clearGroupKeys(groups, "nth", "wkd", "mm", "yy", "mod", "nbr", "sfx", "afx", "unt", "dd");
+
+	if (targetDate.year === yy && targetDate.month === mm) {
+		const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone ?? 'UTC';
+		const resZdt = targetDate.toZonedDateTime(tz).withPlainTime(dateTime.toPlainTime());
+		logDebug(`[Lexer] Resolved ordinal weekday to ${targetDate.toString()}`, config);
+		return resZdt;
+	} else {
+		logError(`Ordinal weekday out of bounds for month ${mm}`, config);
+		return dateTime;
+	}
+}
+
 /**
  * if named-group 'wkd' detected (with optional 'mod', 'nbr', 'sfx' or time-units), then calc relative weekday offset  
  * | Example | Result | Note |
@@ -135,6 +219,12 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
 export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any): Temporal.ZonedDateTime {
 	const { wkd, mod, nbr = '1', sfx, afx, ...rest } = groups as Lexer.GroupWkd;
 	if (isUndefined(wkd)) return dateTime;
+
+	const nthStr = groups["nth"] ?? (groups["mod"]?.toLowerCase() === 'last' && (groups["mm"] || groups["yy"]) ? 'last' : undefined);
+	if (isDefined(nthStr)) {
+		const res = parseOrdinalWeekday(groups, wkd, nthStr, dateTime, config);
+		if (isDefined(res)) return res;
+	}
 
 	const time = ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'] as ReadonlyArray<string>;
 	if (!ownKeys(rest).every(key => time.includes(key) || key.startsWith('per')))
@@ -167,12 +257,80 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	return finalDateTime;
 }
 
+/** resolve an ordinal date unit match (e.g. 1st day of May, last day of 2026, 100th day of 2026) */
+export function parseOrdinalDate(
+	groups: t.Groups,
+	unt: string | undefined,
+	nthStr: string,
+	dateTime: Temporal.ZonedDateTime,
+	config: any,
+	year: number,
+	month: number
+): Temporal.ZonedDateTime | undefined {
+	const nthVal = resolveNth(nthStr);
+	const untStr = unt ? singular(unt).toLowerCase() : 'day';
+
+	let targetYear = year;
+	let targetMonth = isDefined(groups.mm) ? month : undefined;
+	let targetDate: Temporal.PlainDate | undefined;
+
+	if (untStr === 'day') {
+		if (nthVal === -1) {
+			if (isDefined(targetMonth)) {
+				const firstDay = Temporal.PlainDate.from({ year: targetYear, month: targetMonth, day: 1 });
+				targetDate = firstDay.add({ months: 1 }).subtract({ days: 1 });
+			} else {
+				targetDate = Temporal.PlainDate.from({ year: targetYear, month: 12, day: 31 });
+			}
+		} else if (nthVal > 0) {
+			if (isDefined(targetMonth)) {
+				const firstDay = Temporal.PlainDate.from({ year: targetYear, month: targetMonth, day: 1 });
+				targetDate = firstDay.add({ days: nthVal - 1 });
+			} else {
+				const startOfYear = Temporal.PlainDate.from({ year: targetYear, month: 1, day: 1 });
+				targetDate = startOfYear.add({ days: nthVal - 1 });
+			}
+		}
+	}
+
+	if (targetDate) {
+		if (isDefined(targetMonth) && targetDate.month !== targetMonth) {
+			logError(`Ordinal date day ${nthVal} out of bounds for month ${targetMonth}`, config);
+			return undefined;
+		}
+		if (targetDate.year !== targetYear) {
+			logError(`Ordinal date day ${nthVal} out of bounds for year ${targetYear}`, config);
+			return undefined;
+		}
+
+		clearGroupKeys(groups, "nth", "unt", "mm", "yy", "yy2", "dd", "mod", "nbr", "afx");
+
+		const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone ?? 'UTC';
+		const resZdt = targetDate.toZonedDateTime(tz).withPlainTime(dateTime.toPlainTime());
+		logDebug(`[Lexer] Resolved ordinal date to ${targetDate.toString()}`, config);
+		return resZdt;
+	}
+
+	return undefined;
+}
+
 /** resolve a date pattern match */
 export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any, pivot: number = 75): Temporal.ZonedDateTime {
 
 	const { mod, nbr = '1', afx, unt, era } = groups as Lexer.GroupDate & { era?: string };
-	// Normalize yy, mm, dd: treat empty captures as missing (regex groups yield '' for optional unmatched groups)
 	let yy = groups.yy || undefined;
+	if (isUndefined(yy) && isDefined(groups.yy2)) {
+		let yy2Num = parseInt(groups.yy2, 10);
+		if (Number.isFinite(yy2Num)) {
+			if (yy2Num < 100) {
+				const pivotVal = config?.pivot ?? pivot ?? 75;
+				const pivotYear = dateTime.subtract({ years: pivotVal }).year % 100;
+				const century = Math.floor(dateTime.year / 100);
+				yy2Num += (century - Number(yy2Num >= pivotYear)) * 100;
+			}
+			yy = String(yy2Num);
+		}
+	}
 	let mm = groups.mm || undefined;
 	let dd = groups.dd || undefined;
 
@@ -192,7 +350,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		delete groups["era"];
 	}
 
-	if (isEmpty(yy) && isEmpty(mm) && isEmpty(dd) && isUndefined(unt))
+	if (isEmpty(yy) && isEmpty(mm) && isEmpty(dd) && isUndefined(unt) && isUndefined(groups["nth"]))
 		return dateTime;
 
 	if (!isEmpty(mod) && !isEmpty(afx)) {
@@ -215,6 +373,14 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		month: mm ?? fallbackMonth,
 		day: dd ?? fallbackDay,
 	} as any);
+
+	const isExplicitNth = isDefined(groups["nth"]);
+	const nthStr = groups["nth"] ?? (groups["mod"]?.toLowerCase() === 'last' && (groups["mm"] || groups["yy"] || unt) ? 'last' : undefined);
+	if (isDefined(nthStr)) {
+		const res = parseOrdinalDate(groups, unt, nthStr, dateTime, config, year, month);
+		if (isDefined(res)) return res;
+		if (isExplicitNth) return dateTime;
+	}
 
 	if (unt) {
 		const { nbr: adjust = 1 } = num({ nbr });

@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.0.0] - 2026-08-21
+## [4.0.0] - 2026-08-27
 
 ### Breaking Changes
 - **100% Open-Source Community Core**: Completely removed commercial licensing, JWT validation, JWS verification, domain-locking, and premium plugin gating (`license.manager.ts`, `license.validator.ts`, `Tempo.license`, `#formatLicense`, `#isBlocked`, `validateLicenseState`, `LICENSE` enum, `$updateScopeStatus`, and `#tempo/license` export subpath).
@@ -18,10 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Synchronous JSON & JSONC Config Discovery (`resolveConfigSync`)**: Introduced zero-`await` static startup configuration discovery (`resolveConfigSync()`) utilizing `parseJSONC` for `.jsonc` / `.json` files. ESM/TypeScript extensions such as `.mts`, `.ts`, `.mjs`, and `.js` require the asynchronous `resolveConfig()` path. Automatically executed inside `Tempo`'s `static { ... }` initialization block at module load time.
 - **Lazy Dynamic Context & Options Evaluation**: Upgraded `BaseOptions` and `Tempo` options (`timeZone`, `locale`, `calendar`, `sphere`) to support `Evaluable<T>` suppliers (`T | (() => T)`). This enables dynamic, per-request context evaluation (such as multi-tenant timezone or locale resolution) without rebuilding configuration state.
 - **Evaluation Utilities Export (`@magmacomputing/tempo/library`)**: Re-exported `Evaluable`, `AsyncEvaluable`, `evaluate`, `evaluateAsync`, `evaluateConfig`, `evaluateConfigAsync`, and `dynamicProxy` from the `#library` surface for downstream plugins and custom extensions.
+- **Deterministic Ordinal Offset Parsing Engine**: Added native support for ordinal weekday and ordinal date parsing expressions (e.g. `'3rd wednesday in oct'`, `'2nd Friday of next month'`, `'15th of next month'`, `'1st day of next year'`) in `engine.lexer.ts` via `parseOrdinalWeekday` and `parseOrdinalDate` with month/leap-year boundary and anchor protection.
 
 ### Changed & Fixed
 - **API Standardization for Boundary & Mutation Payloads (`{Term: Value}`)**: Standardized mutation object signatures across `.set()`, `.add()`, and plugin payloads to follow the unified `{Term: Value}` pattern (e.g., `.set({ year: 'start' })`, `.set({ month: 'end' })`, `.set({ '#qtr': 1 })`). The legacy positional syntax (e.g., `.set({ start: 'year' })`) remains fully supported transparently for complete backwards compatibility.
 - **Term Registry Simplification**: Simplified `Tempo.terms` getter to operate purely on open-source term plugins, removing legacy licensing metadata mapping and synthetic uninstalled scope claims.
+- **Idempotent Plugin Registration (`attachStatics`)**: Upgraded `attachStatics` in `plugin.util.ts` to inspect property descriptors directly without executing getters or emitting false-positive `Static name collision` warnings on repeated `Tempo.extend(Plugin)` calls.
+- **Workspace Package Export Fallbacks**: Added `"default": "./dist/index.js"` fallbacks across all plugin `package.json` files and added `/^@magmacomputing\/tempo-plugin-/` to VitePress `ssr.noExternal` to guarantee clean SSR builds in CI environments.
+- **Clean Build Pipelines**: Hardened build scripts across `@magmacomputing/library` and `@magmacomputing/tempo` to execute `tsc -b --clean` prior to compilation, preventing stale type definition files (`.d.ts`) from propagating.
 - **Documentation & LLM Corpus Alignment**: Corrected mutating method descriptions in `ai-integration.md` and `public/llms.txt` to strictly reference supported immutable methods (`.add()`, `.subtract()`, and `.set()`).
 
 ## [3.11.1] - 2026-08-10

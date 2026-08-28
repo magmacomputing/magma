@@ -1,6 +1,6 @@
 import type { Tempo } from './tempo.class.js';
 import { isInteger } from '#library/assertion.library.js';
-import { Immutable } from '#library/class.library.js';
+import { Immutable, StringTag } from '#library/decorator.library.js';
 
 export type TemporalPoint = Tempo | { epochNanoseconds: bigint };
 
@@ -14,6 +14,7 @@ function getNs(point: TemporalPoint | unknown): bigint {
 
 /** Represents a continuous span of time with optional start and end boundaries, supporting set operations. */
 @Immutable
+@StringTag('Tempo.Interval')
 export class Interval<T extends TemporalPoint = TemporalPoint> {
 	readonly #start: T | null;
 	readonly #end: T | null;
@@ -39,22 +40,22 @@ export class Interval<T extends TemporalPoint = TemporalPoint> {
 		return Object.freeze(this) as this;
 	}
 
-	get [Symbol.toStringTag]() {
-		return 'Tempo.Interval';
-	}
-
+	/** The start point of the interval, or null for unbounded start */
 	get start(): T | null {
 		return this.#start;
 	}
 
+	/** The end point of the interval, or null for unbounded end */
 	get end(): T | null {
 		return this.#end;
 	}
 
+	/** The start time in nanoseconds since epoch, or -Infinity for unbounded start */
 	get startNs(): bigint | number {
 		return this.#startNs;
 	}
 
+	/** The end time in nanoseconds since epoch, or Infinity for unbounded end */
 	get endNs(): bigint | number {
 		return this.#endNs;
 	}

@@ -4,7 +4,7 @@ import { asArray } from '#library/coercion.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { secure } from '#library/proxy.library.js';
 import { cleanify } from '#library/json.library.js';
-import { Immutable } from '#library/class.library.js';
+import { Immutable, StringTag } from '#library/decorator.library.js';
 import { isEmpty, isObject } from '#library/assertion.library.js';
 
 declare module '#library/type.library.js' {
@@ -34,6 +34,7 @@ const _STATE = secure({
  * ```
  */
 @Immutable
+@StringTag('Pledge')
 export class Pledge<T> {
 	#pledge: PromiseWithResolvers<T>;
 	#status = {} as Pledge.Status<T>;
@@ -119,10 +120,6 @@ export class Pledge<T> {
 			this.#pledge.promise.catch(err => _dbg.warn(this.#status, err));
 
 		return Object.freeze(this) as this;
-	}
-
-	get [Symbol.toStringTag]() {
-		return 'Pledge'
 	}
 
 	[Symbol.dispose]() {
@@ -229,6 +226,9 @@ export class Pledge<T> {
 	}
 }
 
+/**
+ * Namespace containing type definitions and configuration for the Pledge class.
+ */
 export namespace Pledge {
 	export type Resolve = (val?: any) => any;									// function to call after Pledge resolves
 	export type Reject = (err: Error) => any;									// function to call after Pledge rejects

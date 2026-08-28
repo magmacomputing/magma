@@ -1,6 +1,6 @@
 import '#library/temporal.polyfill.js';
 
-import { Immutable, Serializable } from '#library/class.library.js';
+import { Immutable, Serializable, StringTag } from '#library/decorator.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray } from '#library/proxy.library.js';
@@ -84,10 +84,15 @@ const intervalProxyHandler: ProxyHandler<typeof Interval> = {
 		const parse = (arg: t.DateTime | null) => arg === null ? null : (arg instanceof Tempo ? arg : new Tempo(arg));
 		return new (target as any)(parse(args[0]), parse(args[1]));
 	}
-};
+}
 
+/**
+ * A powerful wrapper around `Temporal.ZonedDateTime` for flexible parsing and intuitive manipulation of date-time objects.
+ * Bridges the gap between raw string/number inputs and the strict requirements of the ECMAScript Temporal API.
+ */
 @Serializable
 @Immutable
+@StringTag('Tempo')
 export class Tempo {
 	/** Interval class for checking overlaps and bounds between Temporal points */	static Interval = new Proxy(Interval, intervalProxyHandler) as unknown as new (start: t.DateTime | null, end: t.DateTime | null) => Interval<Tempo>;
 
@@ -998,6 +1003,10 @@ export class Tempo {
 		return Tempo.#getConfig(sym as symbol);
 	}
 
+	/**
+	 * Retrieves the merged options for this Tempo class, combining defaults, storage, discovery, and config.
+	 * @returns The complete options object for Tempo initialization
+	 */
 	static get options() {
 		const keyFor = this.config.store ?? Symbol.keyFor($Tempo) as string;
 		const storage = proxify(Object.assign({ key: keyFor, scope: 'storage' }, omit(Tempo.readStore(keyFor), 'value')));
@@ -1009,14 +1018,24 @@ export class Tempo {
 	static from(tempo: t.DateTime | undefined, options?: t.Options): Tempo;
 	static from(tempo?: t.DateTime | t.Options, options?: t.Options) { return new this(tempo as NonNullable<t.DateTime>, options); }
 
+	/**
+	 * Gets the current timestamp in the specified unit.
+	 * @param unit - The time unit ('ss', 'ms', 'us').
+	 * @returns The current timestamp as a number (for 'ss', 'ms', 'us')
+	 */
 	static now(unit: Exclude<Tempo.TimeStamp, 'ns'>): number;
+	/**
+	 * Gets the current timestamp in the specified unit.
+	 * @param unit - The time unit ('ss', 'ms', 'us', 'ns'). Defaults to 'ns' (nanoseconds).
+	 * @returns The current timestamp as a number (for 'ss', 'ms', 'us') or bigint (for 'ns')
+	 */
 	static now(unit?: Extract<Tempo.TimeStamp, 'ns'>): bigint;
 	static now(unit?: Tempo.TimeStamp): number | bigint {
 		const inst = instant();
 		switch (unit) {
 			case 'ss': return Math.trunc(inst.epochMilliseconds / 1_000);
 			case 'ms': return inst.epochMilliseconds;
-			case 'us': return Number(inst.epochNanoseconds / BigInt(1_000));
+			case 'us': return Number(inst.epochNanoseconds / 1_000n);
 			case 'ns':
 			default: return inst.epochNanoseconds;
 		}
@@ -1026,7 +1045,7 @@ export class Tempo {
 		return secure({
 			/** seconds since epoch */														ss: Math.trunc(inst.epochMilliseconds / 1_000),
 			/** milliseconds since epoch */												ms: inst.epochMilliseconds,
-			/** microseconds since epoch */												us: Number(inst.epochNanoseconds / BigInt(1_000)),
+			/** microseconds since epoch */												us: Number(inst.epochNanoseconds / 1_000n),
 			/** nanoseconds since epoch */												ns: inst.epochNanoseconds,
 		});
 	}
@@ -1069,18 +1088,18 @@ export class Tempo {
 	static get parse() {
 		const parse = this[$Internal]().parse;
 		const planner = {
-			layoutOrder: [...(parse.planner?.layoutOrder ?? [])],
-			preFilter: parse.planner?.preFilter ?? false
+			/** Layout order for parsing */ layoutOrder: [...(parse.planner?.layoutOrder ?? [])],
+			/** Pre-filter flag for parsing */ preFilter: parse.planner?.preFilter ?? false
 		}
 		return secure({
 			...omit({ ...parse }, 'token', 'planner'),								// spread primitives like {pivot}
-			snippet: { ...parse.snippet },												// spread nested objects
-			layout: { ...parse.layout },
-			event: { ...parse.event },
-			period: { ...parse.period },
-			ignore: { ...parse.ignore },
-			monthDay: clone(parse.monthDay),
-			planner,
+			/** Snippet registry for parsing shortcuts */ snippet: { ...parse.snippet },												// spread nested objects
+			/** Layout registry for date/time patterns */ layout: { ...parse.layout },
+			/** Event registry for special dates */ event: { ...parse.event },
+			/** Period registry for time-of-day aliases */ period: { ...parse.period },
+			/** Ignore list for noise words */ ignore: { ...parse.ignore },
+			/** Month-day disambiguation settings */ monthDay: clone(parse.monthDay),
+			/** Planner configuration for layout selection */ planner,
 		});
 	}
 
@@ -1100,6 +1119,12 @@ export class Tempo {
 	/** allow instanceof to work across module boundaries via the local brand symbol */
 	/** @internal */
 	static [$Identity] = true;
+	/**
+	 * Checks if an instance is a Tempo object using the brand symbol.
+	 * Allows instanceof to work across module boundaries.
+	 * @param instance - The instance to check
+	 * @returns True if the instance is a Tempo object
+	 */
 	static [Symbol.hasInstance](instance: any) {
 		return isDefined(instance?.[$Identity])
 	}
@@ -1211,10 +1236,6 @@ export class Tempo {
 	/** iterate over instance formats */
 	[Symbol.iterator]() {
 		return ownEntries(this.fmt, true)[Symbol.iterator]();		// instance Iterator over tuple of FormatType[]
-	}
-
-	get [Symbol.toStringTag](): 'Tempo' {											// default string description
-		return 'Tempo';																					// hard-coded to avoid minification mangling
 	}
 
 	/**
@@ -1767,62 +1788,108 @@ export class Tempo {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+/**
+ * Keyed lookup surface for resolved term values returned by Tempo.term.
+ */
 export interface TempoTermRegistry {
 	[key: string]: any;
 }
 
 export namespace Tempo {
+	/** Represents any value that can be parsed as a date/time */
 	export type DateTime = t.DateTime;
+	/** String or RegExp pattern for matching dates/times */
 	export type Pattern = t.Pattern;
+	/** Function or string logic for event/period evaluation */
 	export type Logic = t.Logic;
+	/** Pair of values for date ranges */
 	export type Pair = t.Pair;
+	/** Regex capture groups from pattern matching */
 	export type Groups = t.Groups;
 
+	/** Base configuration options for Tempo */
 	export interface BaseOptions extends t.Internal.BaseOptions { }
+	/** Full configuration options for Tempo */
 	export type Options = t.Options;
+	/** Formatting options for date/time display */
 	export interface FormatOptions extends t.FormatOptions { }
 
 	/** Configuration to use for #until() and #since() argument */
 	export type Unit = t.Unit;
+	/** Options for calculating duration until/since another date */
 	export type Until = t.Until;
+	/** Mutation operations for date/time modification */
 	export type Mutate = t.Mutate;
+	/** Set operations for setting specific date/time values */
 	export type Set = t.MutateSet;
+	/** Add operations for adding durations to date/time */
 	export type Add = t.MutateAdd;
 
+	/** Collection of format string templates */
 	export type Formats = t.Formats;
+	/** A single format string template name */
 	export type Format = t.Format;
+	/** Registry of format strings */
 	export type FormatRegistry = t.FormatRegistry;
 
+	/** Temporal direction modifier (next, last, this, etc.) */
 	export type Modifier = t.Modifier;
+	/** Relative temporal expression (e.g., 'next week', '2 days ago') */
 	export type Relative = t.Relative;
 
+	/** Month numeric value (1-12) */
 	export type mm = t.mm;
+	/** Hour numeric value (0-23) */
 	export type hh = t.hh;
+	/** Minute numeric value (0-59) */
 	export type mi = t.mi;
+	/** Second numeric value (0-59) */
 	export type ss = t.ss;
+	/** Millisecond numeric value */
 	export type ms = t.ms;
+	/** Microsecond numeric value */
 	export type us = t.us;
+	/** Nanosecond numeric value */
 	export type ns = t.ns;
+	/** ISO week-year numeric value */
 	export type wy = t.wy;
 	/** @deprecated use `wy` */
 	export type ww = t.wy;
 
+	/** Timestamp precision unit (ss, ms, us, ns) */
 	export type TimeStamp = t.Internal.TimeStamp;
+	/** Temporal duration object */
 	export type Duration = t.Duration;
 
+	/** Weekday enumeration (short form) */
 	export type WEEKDAY = t.WEEKDAY;
+	/** Weekday enumeration (long form) */
 	export type WEEKDAYS = t.WEEKDAYS;
+	/** Month enumeration (short form) */
 	export type MONTH = t.MONTH;
+	/** Month enumeration (long form) */
 	export type MONTHS = t.MONTHS;
+	/** Duration in seconds */
 	export type DURATION = t.DURATION;
+	/** Duration in milliseconds */
 	export type DURATIONS = t.DURATIONS;
+	/** Cardinal directions */
 	export type COMPASS = t.COMPASS;
+	/** Calendar seasons */
 	export type SEASON = t.SEASON;
+	/** Date-time element tokens */
 	export type ELEMENT = t.ELEMENT;
 
+	/** Weekday numeric value */
 	export type Weekday = t.Weekday;
+	/** Month numeric value */
 	export type Month = t.Month;
+	/** Date-time element name */
 	export type Element = t.Element;
 
+	/**
+	 * Helper function signature for creating Tempo instances with flexible parameter order.
+	 * @template T Return type
+	 */
 	export interface Params<T> extends t.Params<T> { }
 }

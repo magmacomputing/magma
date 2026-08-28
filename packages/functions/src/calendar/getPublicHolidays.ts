@@ -19,6 +19,16 @@ const holidaysCache = new Map<string, PublicHoliday[]>();
 
 /**
  * Fetches public holidays for a given year and region from the Nager.Date API.
+ * Results are cached per year and region to minimize network requests.
+ *
+ * @param year - The year to fetch holidays for (defaults to current year)
+ * @param region - The ISO 3166-1 alpha-2 country code (defaults to system locale region or 'US')
+ * @returns A promise resolving to an array of public holiday objects
+ * @throws {Error} If the region code is invalid or the API request fails
+ * @example
+ * ```ts
+ * const holidays = await getPublicHolidays(2024, 'US');
+ * ```
  */
 export const getPublicHolidays = async (
 	year: number = getTemporal().Now.plainDateISO().year,

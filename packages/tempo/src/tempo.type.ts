@@ -293,8 +293,11 @@ export interface RelativeTime {
 }
 
 export interface FormatOptions extends Intl.DateTimeFormatOptions {
+	/** Timezone for formatting */
 	timeZone?: string;
+	/** Calendar system for formatting */
 	calendar?: string;
+	/** Locale or array of locales for formatting */
 	locale?: string | string[];
 }
 
@@ -335,6 +338,7 @@ export namespace Internal {
 		/** additional console.log for tracking */							debug: DebugLevel;
 		/** catch or throw Errors */														catch: boolean;
 		/** suppress console output during catch */							silent: boolean;
+		/** convenience error handling policy preset */					error?: 'throw' | 'catch' | 'silent' | 'log';
 		/** Temporal timeZone */																timeZone: Evaluable<Temporal.TimeZoneLike>;
 		/** Temporal calendar */																calendar: Evaluable<Temporal.CalendarLike>;
 		/** locale (e.g. en-AU) */															locale: Evaluable<string | string[]>;
@@ -343,19 +347,20 @@ export namespace Internal {
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
+		/** Precision to measure timestamps alias */						timestamp?: TimeStamp;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
 		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
 		/** custom data augmentation registries */							registry?: {
-		formats?: Property<any>;
-		locales?: Record<string, Record<string, string | Function>>;
-		modifiers?: Record<string, string | string[]>;
-		tokens?: Record<string, TokenEvaluator>;
-		snippets?: Snippet | RegistryOption<Pattern>;
-		layouts?: Layout | RegistryOption<Pattern>;
-		events?: Event | RegistryOption<Logic>;
-		periods?: Period | RegistryOption<Logic>;
-		numbers?: Record<string, number>;
-		ignores?: Ignore;
+		/** Format string templates */ formats?: Property<any>;
+		/** Locale-specific configurations */ locales?: Record<string, Record<string, string | Function>>;
+		/** Temporal modifiers for relative dates */ modifiers?: Record<string, string | string[]>;
+		/** Token evaluators for custom parsing patterns */ tokens?: Record<string, TokenEvaluator>;
+		/** Snippet registry for parsing shortcuts */ snippets?: Snippet | RegistryOption<Pattern>;
+		/** Layout registry for date/time patterns */ layouts?: Layout | RegistryOption<Pattern>;
+		/** Event registry for special dates */ events?: Event | RegistryOption<Logic>;
+		/** Period registry for time-of-day aliases */ periods?: Period | RegistryOption<Logic>;
+		/** Number name mappings */ numbers?: Record<string, number>;
+		/** Noise words to ignore during parsing */ ignores?: Ignore;
 	};
 		/** plugins or namespaces to extend onto Tempo */
 		extends?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
@@ -432,7 +437,7 @@ export namespace Internal {
 	}
 
 	/** drop parse-only, internal, and one-time initialization Options when deriving Config */
-	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "pivot" | "value" | "anchor" | "result" | "extends">;
+	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "pivot" | "value" | "anchor" | "result" | "extends" | "error" | "timestamp">;
 
 	/** Instance configuration derived from supply, storage, and discovery. */
 	export interface Config extends Required<Omit<OptionsKeep, "registry" | "timeZone" | "calendar" | "locale" | "sphere">> {

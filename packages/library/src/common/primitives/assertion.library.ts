@@ -18,10 +18,14 @@ export const isType = <T>(obj: unknown, ...types: Type[]): obj is T => types.inc
 /** Type-Guards: assert `<obj>` is of `<type>` */
 export const isPrimitive = (obj?: unknown): obj is Primitive => isType(obj, 'String', 'Number', 'BigInt', 'Boolean', 'Symbol', 'Undefined', 'Void', 'Null', 'Empty');
 export const isReference = (obj?: unknown): obj is Object => !isPrimitive(obj);
+/** Type guard to check if a value is iterable (excludes strings) */
 export const isIterable = <T>(obj: unknown): obj is Iterable<T> => Symbol.iterator in Object(obj) && !isString(obj);
 
+/** Type guard to check if a value is a string */
 export const isString = (obj: unknown): obj is string => isType<string>(obj, 'String');
+/** Type guard to check if a value is a non-empty string with meaningful content */
 export const isText = (obj: unknown): obj is string => isString(obj) && obj.trim().length > 0;
+/** Type guard to check if a value is a finite number */
 export const isNumber = (obj: unknown): obj is number => Number.isFinite(obj);
 
 const RE_BIGINT_LITERAL = /^[+-]?[0-9]+n$/;
@@ -52,6 +56,7 @@ export function isNumeric(str?: any): boolean {
 		default: return false;
 	}
 }
+/** Type guard to check if a value is a BigInt */
 export const isInteger = (obj: unknown): obj is bigint => isType<bigint>(obj, 'BigInt');
 export const isIntegerLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && RE_BIGINT_LITERAL.test((obj as string).trim());
 export const isDigit = (obj: unknown): obj is number | bigint => isType<number | bigint>(obj, 'Number', 'BigInt');

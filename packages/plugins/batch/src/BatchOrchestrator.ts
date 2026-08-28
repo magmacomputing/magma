@@ -52,6 +52,18 @@ export class BatchOrchestrator {
 		}
 	}
 
+	/**
+	 * Transforms epochs using SharedArrayBuffer for maximum performance.
+	 * Workers read from and write to shared memory concurrently.
+	 *
+	 * @param epochs - Array of millisecond epoch numbers
+	 * @param operation - The tempo mutation string
+	 * @param threadCount - Number of worker threads to spawn
+	 * @param chunkSize - Number of epochs per chunk
+	 * @param options - Execution options
+	 * @returns Array of transformed epochs
+	 * @internal
+	 */
 	private static async _transformWithSAB(epochs: number[], operation: string, threadCount: number, chunkSize: number, options: BatchOptions): Promise<any[]> {
 		// Allocate SAB for input and output. We use Float64Array for Javascript numbers (which are doubles).
 		// Assuming for this prototype we are returning numbers (mutated epochs). 
@@ -108,6 +120,18 @@ export class BatchOrchestrator {
 		return result;
 	}
 
+	/**
+	 * Transforms epochs using postMessage for worker communication.
+	 * Falls back to this method when SharedArrayBuffer is unavailable.
+	 *
+	 * @param epochs - Array of millisecond epoch numbers
+	 * @param operation - The tempo mutation string
+	 * @param threadCount - Number of worker threads to spawn
+	 * @param chunkSize - Number of epochs per chunk
+	 * @param options - Execution options
+	 * @returns Array of transformed epochs
+	 * @internal
+	 */
 	private static async _transformWithPostMessage(epochs: number[], operation: string, threadCount: number, chunkSize: number, options: BatchOptions): Promise<any[]> {
 		const workers: Promise<any[]>[] = [];
 		const actualThreads = Math.min(threadCount, Math.ceil(epochs.length / chunkSize));

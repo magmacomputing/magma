@@ -15,14 +15,23 @@ export type TempoTermType = typeof Tempo & {
  * Interface for term-driven parsing and resolution.
  */
 export interface TermPlugin {
+	/** Unique identifier for the term */
 	key: string;
+	/** Version of the term plugin */
 	version?: string;
+	/** Scope or category of the term */
 	scope?: string;
+	/** Human-readable description of the term */
 	description?: string;
+	/** Locale-specific term translations */
 	locale?: Record<string, string | Function>;
+	/** Grouping information for the term */
 	groups?: any;
+	/** Array of time ranges this term represents */
 	ranges?: any[];
+	/** Resolves the term to concrete time ranges */
 	resolve?: (this: Tempo, anchor?: any) => Range[];
+	/** Defines the term's value or range */
 	define: (this: Tempo, keyOnly?: boolean, anchor?: any) => string | Range | Range[] | undefined;
 }
 
@@ -38,23 +47,42 @@ export type Terms = Property<any>;
  * and as an absolute year otherwise.
  */
 export type Range = {
+	/** Unique identifier for the range */
 	key: string;
-	group?: string;																						// categorization marker (e.g. 'western', 'chinese', 'fiscal')
+	/** Categorization marker (e.g. 'western', 'chinese', 'fiscal') */
+	group?: string;
 	[meta: string]: any;
 } & (
-		{ year: number } | { month: number } | { week: number } | { day: number } |
-		{ hour: number } | { minute: number } | { second: number } |
-		{ millisecond: number } | { microsecond: number } | { nanosecond: number }
+		/** Year value or offset */ { year: number } |
+		/** Month value (1-12) */ { month: number } |
+		/** Week value */ { week: number } |
+		/** Day value */ { day: number } |
+		/** Hour value (0-23) */ { hour: number } |
+		/** Minute value (0-59) */ { minute: number } |
+		/** Second value (0-59) */ { second: number } |
+		/** Millisecond value */ { millisecond: number } |
+		/** Microsecond value */ { microsecond: number } |
+		/** Nanosecond value */ { nanosecond: number }
 	) & {
+		/** Optional year override */
 		year?: number;
+		/** Optional month override */
 		month?: number;
+		/** Optional week override */
 		week?: number;
+		/** Optional day override */
 		day?: number;
+		/** Optional hour override */
 		hour?: number;
+		/** Optional minute override */
 		minute?: number;
+		/** Optional second override */
 		second?: number;
+		/** Optional millisecond override */
 		millisecond?: number;
+		/** Optional microsecond override */
 		microsecond?: number;
+		/** Optional nanosecond override */
 		nanosecond?: number;
 	}
 
@@ -64,12 +92,19 @@ export type Range = {
  * Range with additional metadata.
  */
 export type ResolvedRange = Range & {
+	/** Start boundary of the resolved range */
 	start: Tempo;
+	/** End boundary of the resolved range */
 	end: Tempo;
+	/** Scope or category of the term */
 	scope?: string;
+	/** Human-readable label for the range */
 	label?: string;
+	/** Locale-specific translations */
 	locale?: Record<string, string | Function>;
+	/** Primary unit for this range */
 	unit?: string;
+	/** Rollover behavior for the range */
 	rollover?: string;
 	[str: string]: any;
 }

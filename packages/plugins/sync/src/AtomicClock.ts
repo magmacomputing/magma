@@ -1,4 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
+import { Singleton } from '@magmacomputing/tempo/library';
 
 export interface ClockOptions {
 	/**
@@ -12,6 +13,7 @@ export interface ClockOptions {
  * The master clock that continuously writes the current system time to a SharedArrayBuffer.
  * This should only be instantiated once on the main thread (or a master worker).
  */
+@Singleton
 export class AtomicClock {
 	#buffer: SharedArrayBuffer;
 	#view: BigInt64Array;
@@ -19,9 +21,8 @@ export class AtomicClock {
 	#interval: number;
 
 	constructor(options: ClockOptions = {}) {
-		if (typeof SharedArrayBuffer === 'undefined') {
+		if (typeof SharedArrayBuffer === 'undefined')
 			throw new Error('[Tempo#sync] SharedArrayBuffer is not available in this environment. Ensure COOP/COEP headers are set, or use Node.js.');
-		}
 
 		// Allocate 8 bytes for a 64-bit integer (epoch in nanoseconds)
 		this.#buffer = new SharedArrayBuffer(8);
