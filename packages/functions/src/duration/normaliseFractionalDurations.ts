@@ -1,7 +1,17 @@
 /**
- * Temporal rejects fractional Duration values, so normalise 
- * fractional parts downwards, e.g. { seconds: 0.1 } → { milliseconds: 100 }.
- * Mutates the provided duration object.
+ * Normalizes fractional duration values by converting them to smaller units.
+ * Temporal API rejects fractional values, so this function converts them downwards.
+ * For example, `{ seconds: 0.1 }` becomes `{ milliseconds: 100 }`.
+ * Mutates the provided duration object in place.
+ *
+ * @param payload - The duration object to normalize
+ * @returns The mutated duration object with normalized fractional values
+ * @example
+ * ```ts
+ * const duration = { hours: 1.5, seconds: 2.5 };
+ * normaliseFractionalDurations(duration);
+ * // duration is now { hours: 1, minutes: 30, seconds: 2, milliseconds: 500 }
+ * ```
  */
 export function normaliseFractionalDurations(payload: Record<string, any>) {
 	const SCALE: [string, string, number][] = [

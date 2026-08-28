@@ -18,10 +18,14 @@ type ProxyOptions = {
 	skip?: WeakSet<object>;																		// objects to skip during deep-freeze
 }
 
-/** 
- * ## factory
+/**
  * The unified internal engine for all Proxy creation in the library.
- * Handles unwrapping, Proxy invariants, discovery, and security.
+ * Handles unwrapping, Proxy invariants, discovery, and security mechanisms.
+ *
+ * @param target - The object to wrap in a Proxy
+ * @param options - Configuration options for proxy behavior
+ * @returns The proxified object with configured behavior
+ * @internal
  */
 function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 	const { frozen, lock, appendOnly, onGet, keys, bind, skip } = options;
