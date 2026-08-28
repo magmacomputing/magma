@@ -1,6 +1,6 @@
 import '#library/temporal.polyfill.js';
 
-import { Immutable, Serializable } from '#library/class.library.js';
+import { Immutable, Serializable, StringTag } from '#library/class.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray } from '#library/proxy.library.js';
@@ -84,7 +84,7 @@ const intervalProxyHandler: ProxyHandler<typeof Interval> = {
 		const parse = (arg: t.DateTime | null) => arg === null ? null : (arg instanceof Tempo ? arg : new Tempo(arg));
 		return new (target as any)(parse(args[0]), parse(args[1]));
 	}
-};
+}
 
 /**
  * A powerful wrapper around `Temporal.ZonedDateTime` for flexible parsing and intuitive manipulation of date-time objects.
@@ -92,6 +92,7 @@ const intervalProxyHandler: ProxyHandler<typeof Interval> = {
  */
 @Serializable
 @Immutable
+@StringTag
 export class Tempo {
 	/** Interval class for checking overlaps and bounds between Temporal points */	static Interval = new Proxy(Interval, intervalProxyHandler) as unknown as new (start: t.DateTime | null, end: t.DateTime | null) => Interval<Tempo>;
 
@@ -1235,14 +1236,6 @@ export class Tempo {
 	/** iterate over instance formats */
 	[Symbol.iterator]() {
 		return ownEntries(this.fmt, true)[Symbol.iterator]();		// instance Iterator over tuple of FormatType[]
-	}
-
-	/**
-	 * Returns the string tag for Object.prototype.toString.
-	 * @returns 'Tempo'
-	 */
-	get [Symbol.toStringTag](): 'Tempo' {											// default string description
-		return 'Tempo';																					// hard-coded to avoid minification mangling
 	}
 
 	/**

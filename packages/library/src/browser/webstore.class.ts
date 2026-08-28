@@ -3,6 +3,7 @@ import { stringify, objectify } from '#library/serialize.library.js';
 import { asType } from '#library/type.library.js';
 import { isEmpty, isNullish, isString } from '#library/assertion.library.js';
 import { getSafeStorage } from '#library/storage.library.js';
+import { StringTag } from '#library/class.library.js';
 import type { Property, ValueOf } from '#library/type.library.js';
 
 const STORAGE = {
@@ -22,6 +23,7 @@ type STORAGE = ValueOf<typeof STORAGE>
  * const user = store.get('user');
  * ```
  */
+@StringTag
 export class WebStore {
 	private static _localInstance?: WebStore;
 	private static _sessionInstance?: WebStore;
@@ -53,8 +55,6 @@ export class WebStore {
 		const name = this.#type === STORAGE.Local ? 'localStorage' : 'sessionStorage';
 		return this.#resolvedStorage = getSafeStorage(name);
 	}
-
-	[Symbol.toStringTag] = 'WebStore';
 
 	constructor(storage: STORAGE = STORAGE.Local) {
 		this.#type = storage;

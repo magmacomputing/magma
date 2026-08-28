@@ -1,5 +1,6 @@
 import { enumify } from '#library/enumerate.library.js';
 import { isEmpty, isFunction } from '#library/assertion.library.js';
+import { StringTag } from '#library/class.library.js';
 import type { ValueOf } from '#library/type.library.js';
 
 /**
@@ -11,6 +12,7 @@ import type { ValueOf } from '#library/type.library.js';
  * const tapper = new Tapper('#my-button', [Tapper.EVENT.SingleTap, () => console.log('Tapped!')]);
  * ```
  */
+@StringTag
 export class Tapper {
 	static EVENT = enumify({
 		SingleTap: 'singleTap',
@@ -18,15 +20,13 @@ export class Tapper {
 		TripleTap: 'tripleTap',
 	});
 
-	[Symbol.toStringTag] = 'Tapper';
-
 	[Symbol.iterator] = () => {
 		const iterator = this.list()[Symbol.iterator]();
 		return { next: () => iterator.next(), }
 	}
 
 	[Symbol.dispose]() {
-		this.destroy();																				// destroy Hammer instances
+		this.destroy();																					// destroy Hammer instances
 	}
 
 	#hammer: HammerManager[] = [];

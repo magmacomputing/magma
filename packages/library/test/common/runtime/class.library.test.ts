@@ -1,4 +1,4 @@
-import { Immutable, Securable } from '#library/class.library.js';
+import { Immutable, Securable, StringTag } from '#library/class.library.js';
 
 describe('Class Decorators: Immutable & Secure', () => {
   it('Immutable: should throw on mutation (Object.freeze, strict mode)', () => {
@@ -56,5 +56,48 @@ describe('Class Decorators: Immutable & Secure', () => {
     @Immutable
     class Silent { static foo = 42; }
     expect(Silent.foo).toBe(42);
+  });
+});
+
+describe('Class Decorators: StringTag', () => {
+  it('should set Symbol.toStringTag to class name when used without arguments', () => {
+    @StringTag
+    class Widget {}
+
+    const w = new Widget();
+    expect(Object.prototype.toString.call(w)).toBe('[object Widget]');
+    expect((w as any)[Symbol.toStringTag]).toBe('Widget');
+  });
+
+  it('should set Symbol.toStringTag to custom tag when string parameter provided', () => {
+    @StringTag('CustomWidget')
+    class Widget {}
+
+    const w = new Widget();
+    expect(Object.prototype.toString.call(w)).toBe('[object CustomWidget]');
+    expect((w as any)[Symbol.toStringTag]).toBe('CustomWidget');
+  });
+
+  it('should not overwrite existing Symbol.toStringTag on prototype', () => {
+    @StringTag('IgnoredTag')
+    class PretaggedWidget {
+      get [Symbol.toStringTag]() {
+        return 'OriginalTag';
+      }
+    }
+
+    const pw = new PretaggedWidget();
+    expect(Object.prototype.toString.call(pw)).toBe('[object OriginalTag]');
+    expect((pw as any)[Symbol.toStringTag]).toBe('OriginalTag');
+  });
+
+  it('should support decorator stacking with @Immutable', () => {
+    @Immutable
+    @StringTag('FrozenWidget')
+    class StackedWidget {}
+
+    const sw = new StackedWidget();
+    expect(Object.prototype.toString.call(sw)).toBe('[object FrozenWidget]');
+    expect(Object.isFrozen(sw)).toBe(true);
   });
 });

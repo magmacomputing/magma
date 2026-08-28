@@ -1,6 +1,6 @@
 import { $ImmutableSkip } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
-import { isReference, isUndefined } from '#library/assertion.library.js';
+import { isReference, isUndefined, isFunction, isString } from '#library/assertion.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { registerType, getSafeTag } from '#library/type.library.js';
 import type { Constructor, Type } from '#library/type.library.js';
@@ -230,5 +230,45 @@ export function Static<T extends Constructor>(value: T, { kind, name }: ClassDec
 
 		default:
 			throw new Error(`@Static decorating unknown 'kind': ${kind} (${name})`);
+	}
+}
+
+/**
+ * A class decorator that sets Symbol.toStringTag on the prototype if not already present.
+ * Supports both `@StringTag` (without parentheses) and `@StringTag('CustomName')`.
+ * 
+ * @param tagOrValue - Custom string tag or the class constructor
+ * @param context - Optional decorator context when used without parentheses
+ * @example
+ * ```ts
+ *  @ StringTag
+ *  class Tapper { ... }
+ * 
+ *  @ StringTag('CustomTag')
+ *  class Special { ... }
+ * ```
+ */
+export function StringTag<T extends Constructor>(tagOrValue?: string | T, context?: ClassDecoratorContext<T>): any {
+	const applyTag = (value: T, customTag?: string) => {
+		const proto = value.prototype;
+
+		if (proto && !Object.hasOwn(proto, Symbol.toStringTag)) {
+			const tagName = customTag ?? value.name;
+			Object.defineProperty(proto, Symbol.toStringTag, {
+				value: tagName,
+				configurable: true,
+				writable: false,
+				enumerable: false,
+			});
+		}
+
+		return value;
+	}
+
+	if (typeof tagOrValue === 'function' && context?.kind === 'class')
+		return applyTag(tagOrValue as T);
+
+	return (value: T, _ctx?: ClassDecoratorContext<T>) => {
+		return applyTag(value, isString(tagOrValue) ? tagOrValue : undefined);
 	}
 }
