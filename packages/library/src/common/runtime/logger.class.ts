@@ -1,7 +1,7 @@
 import { isObject, isEmpty, isNumber, isError, isString } from '#library/assertion.library.js';
 import { enumify } from '#library/enumerate.library.js';
 import { sym } from '#library/symbol.library.js';
-import { StringTag } from '#library/class.library.js';
+import { StringTag } from '#library/decorator.library.js';
 import type { KeyOf, ValueOf } from '#library/type.library.js';
 
 /**

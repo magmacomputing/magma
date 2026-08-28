@@ -1,6 +1,6 @@
 import type { Tempo } from './tempo.class.js';
 import { isInteger } from '#library/assertion.library.js';
-import { Immutable, StringTag } from '#library/class.library.js';
+import { Immutable, StringTag } from '#library/decorator.library.js';
 
 export type TemporalPoint = Tempo | { epochNanoseconds: bigint };
 

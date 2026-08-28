@@ -1,5 +1,5 @@
 export * from './boundary.library.js';
-export * from './class.library.js';
+export * from './decorator.library.js';
 export * from './enumerate.library.js';
 export * from './evaluation.library.js';
 export * from './function.library.js';

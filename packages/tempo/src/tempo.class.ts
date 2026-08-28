@@ -1,6 +1,6 @@
 import '#library/temporal.polyfill.js';
 
-import { Immutable, Serializable, StringTag } from '#library/class.library.js';
+import { Immutable, Serializable, StringTag } from '#library/decorator.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray } from '#library/proxy.library.js';

@@ -2,7 +2,7 @@ import { asType, getType } from '#library/type.library.js';
 import { isNumber, isFunction } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
-import { Serializable, StringTag } from '#library/class.library.js';
+import { Serializable, StringTag } from '#library/decorator.library.js';
 import { memoizeMethod } from '#library/function.library.js';
 import type { Property, Index, KeyOf, ValueOf, EntryOf, Invert, LooseKey } from '#library/type.library.js';
 

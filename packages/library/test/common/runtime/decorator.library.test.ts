@@ -1,4 +1,4 @@
-import { Immutable, Securable, StringTag } from '#library/class.library.js';
+import { Immutable, Securable, StringTag, Singleton } from '#library/decorator.library.js';
 
 describe('Class Decorators: Immutable & Secure', () => {
   it('Immutable: should throw on mutation (Object.freeze, strict mode)', () => {
@@ -99,5 +99,45 @@ describe('Class Decorators: StringTag', () => {
     const sw = new StackedWidget();
     expect(Object.prototype.toString.call(sw)).toBe('[object FrozenWidget]');
     expect(Object.isFrozen(sw)).toBe(true);
+  });
+});
+
+describe('Class Decorators: Singleton', () => {
+  it('should return identical instance on subsequent instantiations (@Singleton without parentheses)', () => {
+    @Singleton
+    class ConfigStore {
+      public apiKey = 'secret_123';
+    }
+
+    const a = new ConfigStore();
+    const b = new ConfigStore();
+    expect(a).toBe(b);
+    expect(a.apiKey).toBe('secret_123');
+    expect((ConfigStore as any).instance).toBe(a);
+  });
+
+  it('should support @Singleton with options/parentheses', () => {
+    @Singleton()
+    class AppRegistry {
+      public count = 0;
+    }
+
+    const first = new AppRegistry();
+    first.count = 42;
+    const second = new AppRegistry();
+    expect(second).toBe(first);
+    expect(second.count).toBe(42);
+    expect((AppRegistry as any).instance).toBe(first);
+  });
+
+  it('should preserve instanceof checks and static members', () => {
+    @Singleton
+    class Service {
+      static version = '1.0.0';
+    }
+
+    const s = new Service();
+    expect(s instanceof Service).toBe(true);
+    expect(Service.version).toBe('1.0.0');
   });
 });

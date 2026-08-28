@@ -1,6 +1,6 @@
 import { enumify } from '#library/enumerate.library.js';
 import { isEmpty, isFunction } from '#library/assertion.library.js';
-import { StringTag } from '#library/class.library.js';
+import { StringTag } from '#library/decorator.library.js';
 import type { ValueOf } from '#library/type.library.js';
 
 /**

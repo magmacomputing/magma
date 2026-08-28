@@ -4,7 +4,7 @@ import { asArray } from '#library/coercion.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { secure } from '#library/proxy.library.js';
 import { cleanify } from '#library/json.library.js';
-import { Immutable, StringTag } from '#library/class.library.js';
+import { Immutable, StringTag } from '#library/decorator.library.js';
 import { isEmpty, isObject } from '#library/assertion.library.js';
 
 declare module '#library/type.library.js' {

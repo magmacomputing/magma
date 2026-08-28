@@ -1,4 +1,4 @@
-import { StringTag } from '#library/class.library.js';
+import { StringTag } from '#library/decorator.library.js';
 
 /**
  * A lightweight `Set`-compatible container that delegates `has()` lookups to a

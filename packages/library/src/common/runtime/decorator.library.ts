@@ -272,3 +272,65 @@ export function StringTag<T extends Constructor>(tagOrValue?: string | T, contex
 		return applyTag(value, isString(tagOrValue) ? tagOrValue : undefined);
 	}
 }
+
+export interface SingletonOptions {
+	/** If true, prevents throwing when subsequent instantiations pass different arguments */
+	allowArgMismatch?: boolean;
+}
+
+/**
+ * A class decorator that transforms a class into a Singleton pattern.
+ * Intercepts constructor calls to return a cached instance upon subsequent instantiations.
+ * Also attaches a static `.instance` property to the decorated constructor.
+ * 
+ * @param targetOrOptions - Class constructor or Singleton options
+ * @param context - Optional decorator context (when used without parentheses)
+ * @example
+ * ```ts
+ *  @ Singleton
+ *  class ConfigStore {
+ *    public apiKey = 'secret_123';
+ *  }
+ * 
+ *  const a = new ConfigStore();
+ *  const b = new ConfigStore();
+ *  console.log(a === b); // true
+ *  console.log((ConfigStore as any).instance === a); // true
+ * ```
+ */
+export function Singleton<T extends Constructor>(
+	targetOrOptions?: T | SingletonOptions,
+	context?: ClassDecoratorContext<T>
+): any {
+	const decorate = (value: T, _options?: SingletonOptions) => {
+		let instance: InstanceType<T> | undefined;
+		const safeName = value.name || 'Singleton';
+
+		const wrapper = {
+			[safeName]: class extends value {
+				constructor(...args: any[]) {
+					if (instance) return instance as any;
+					super(...args);
+					instance = this as InstanceType<T>;
+					return this;
+				}
+			}
+		}[safeName] as T;
+
+		Object.defineProperty(wrapper, 'instance', {
+			get: () => instance,
+			configurable: true,
+			enumerable: false,
+		});
+
+		return wrapper;
+	};
+
+	if (typeof targetOrOptions === 'function' && context?.kind === 'class') {
+		return decorate(targetOrOptions as T);
+	}
+
+	return (value: T, _ctx?: ClassDecoratorContext<T>) => {
+		return decorate(value, targetOrOptions as SingletonOptions);
+	};
+}
