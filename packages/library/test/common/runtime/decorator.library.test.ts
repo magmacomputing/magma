@@ -140,4 +140,25 @@ describe('Class Decorators: Singleton', () => {
     expect(s instanceof Service).toBe(true);
     expect(Service.version).toBe('1.0.0');
   });
+
+  it('should enforce argument matching unless allowArgMismatch is true', () => {
+    @Singleton
+    class ParamStore {
+      constructor(public id: string) {}
+    }
+
+    const p1 = new ParamStore('alpha');
+    expect(() => new ParamStore('beta')).toThrow(/Argument mismatch/);
+    expect(new ParamStore('alpha')).toBe(p1);
+
+    @Singleton({ allowArgMismatch: true })
+    class PermissiveStore {
+      constructor(public id: string) {}
+    }
+
+    const m1 = new PermissiveStore('alpha');
+    const m2 = new PermissiveStore('beta');
+    expect(m2).toBe(m1);
+    expect(m2.id).toBe('alpha');
+  });
 });

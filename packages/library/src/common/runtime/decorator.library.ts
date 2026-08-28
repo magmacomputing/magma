@@ -302,15 +302,25 @@ export function Singleton<T extends Constructor>(
 	targetOrOptions?: T | SingletonOptions,
 	context?: ClassDecoratorContext<T>
 ): any {
-	const decorate = (value: T, _options?: SingletonOptions) => {
+	const decorate = (value: T, options?: SingletonOptions) => {
 		let instance: InstanceType<T> | undefined;
+		let initialArgs: any[] | undefined;
 		const safeName = value.name || 'Singleton';
 
 		const wrapper = {
 			[safeName]: class extends value {
 				constructor(...args: any[]) {
-					if (instance) return instance as any;
+					if (instance) {
+						if (options?.allowArgMismatch !== true && initialArgs && initialArgs.length > 0) {
+							const prev = initialArgs;
+							const isMismatch = args.length !== prev.length || args.some((arg, i) => arg !== prev[i]);
+							if (isMismatch)
+								throw new Error(`[Singleton] Argument mismatch on subsequent instantiation of '${safeName}'`);
+						}
+						return instance as any;
+					}
 					super(...args);
+					initialArgs = args;
 					instance = this as InstanceType<T>;
 					return this;
 				}

@@ -34,7 +34,7 @@ const _STATE = secure({
  * ```
  */
 @Immutable
-@StringTag
+@StringTag('Pledge')
 export class Pledge<T> {
 	#pledge: PromiseWithResolvers<T>;
 	#status = {} as Pledge.Status<T>;

@@ -56,6 +56,7 @@ export default defineConfig({
 			{ find: /^#library\/(boundary|decorator|enumerate|evaluation|function|international|json|logger|pledge|proxy|reflection|request|scopedset|serialize|storage|utility)\.(library|class)\.js$/, replacement: resolve(__dirname, '../library/dist/common/runtime/$1.$2.js') },
 			{ find: /^#library\/(cron|rrule|schedule)\.library\.js$/, replacement: resolve(__dirname, '../library/dist/common/scheduling/$1.library.js') },
 			{ find: /^#library\/(buffer|cipher|webtoken)\.library\.js$/, replacement: resolve(__dirname, '../library/dist/common/security/$1.library.js') },
+			{ find: /^#library\/(calendar|temporal)\.library\.js$/, replacement: resolve(__dirname, '../library/dist/common/temporal/$1.library.js') },
 			{ find: /^#library\/temporal\.polyfill\.js$/, replacement: resolve(__dirname, '../library/dist/common/temporal/temporal.polyfill.js') },
 			{ find: /^#library$/, replacement: resolve(__dirname, '../library/dist/common.index.js') },
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './dist/plugin/plugin.index.js') },
