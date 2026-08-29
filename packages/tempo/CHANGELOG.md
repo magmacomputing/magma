@@ -6,10 +6,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.0.1] - 2026-08-29
+## [4.0.1] - 2026-08-30
 
 ### Changed & Fixed
-- **NPM Provenance & Security Hardening**: Configured `"publishConfig": { "provenance": true }` to enforce cryptographic build provenance statements on npm releases.
+- **NPM Provenance & Security Hardening**: Configured `"publishConfig": { "provenance": true }` and created `.github/workflows/publish.yml` to enforce cryptographic build provenance statements on npm releases via GitHub Actions OIDC.
 - **Package Tarball Optimization**: Refined package `"files"` list to strictly ship compiled runtime distribution assets (`dist/`), excluding raw documentation images, sample files, and uncompiled templates from package tarballs.
 - **Build Output Alignment**: Updated Rollup build logging banner to dynamically reflect active package version during compilation (`📦 BUILDING TEMPO (v4.0.1)`).
 
