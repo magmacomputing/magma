@@ -75,7 +75,6 @@ jobs:
       - name: Publish Package(s) with Provenance
         env:
           INPUT_TARGET: ${{ github.event.inputs.target }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           TARGET="${INPUT_TARGET:-@magmacomputing/tempo}"
 
