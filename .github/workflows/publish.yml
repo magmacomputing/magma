@@ -2,15 +2,6 @@ name: Release & Publish
 
 on:
   workflow_dispatch:
-    inputs:
-      package:
-        description: 'Package to publish'
-        required: true
-        default: '@magmacomputing/tempo'
-        type: choice
-        options:
-          - '@magmacomputing/tempo'
-          - 'all'
   release:
     types: [published]
 
@@ -25,6 +16,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
