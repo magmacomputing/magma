@@ -1,0 +1,43 @@
+name: Release & Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish'
+        required: true
+        default: '@magmacomputing/tempo'
+        type: choice
+        options:
+          - '@magmacomputing/tempo'
+          - 'all'
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish to NPM Registry
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Core Tempo
+        run: npm run build:tempo
+
+      - name: Publish @magmacomputing/tempo with Provenance
+        run: npm publish --workspace=@magmacomputing/tempo --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
