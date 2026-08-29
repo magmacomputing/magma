@@ -46,8 +46,21 @@ jobs:
         run: npm ci
 
       - name: Build Packages
+        env:
+          INPUT_TARGET: ${{ github.event.inputs.target }}
         run: |
-          TARGET="${{ github.event.inputs.target || '@magmacomputing/tempo' }}"
+          TARGET="${INPUT_TARGET:-@magmacomputing/tempo}"
+          
+          # Input validation
+          case "$TARGET" in
+            @magmacomputing/tempo|@magmacomputing/tempo-fns|@magmacomputing/tempo-plugin-astro|@magmacomputing/tempo-plugin-ai|@magmacomputing/tempo-plugin-batch|@magmacomputing/tempo-plugin-finance|@magmacomputing/tempo-plugin-snap|@magmacomputing/tempo-plugin-sync|@magmacomputing/tempo-plugin-ticker|all)
+              ;;
+            *)
+              echo "❌ Error: Invalid target '$TARGET'"
+              exit 1
+              ;;
+          esac
+
           if [ "$TARGET" = "all" ]; then
             npm run build:all
           elif [ "$TARGET" = "@magmacomputing/tempo" ]; then
@@ -60,12 +73,46 @@ jobs:
           fi
 
       - name: Publish Package(s) with Provenance
+        env:
+          INPUT_TARGET: ${{ github.event.inputs.target }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          TARGET="${{ github.event.inputs.target || '@magmacomputing/tempo' }}"
-          
+          TARGET="${INPUT_TARGET:-@magmacomputing/tempo}"
+
           publish_pkg() {
             local pkg="$1"
-            echo "📦 Publishing $pkg with provenance..."
+            
+            # Read exact version from workspace package.json
+            local pkg_json
+            if [ "$pkg" = "@magmacomputing/tempo" ]; then
+              pkg_json="packages/tempo/package.json"
+            elif [ "$pkg" = "@magmacomputing/tempo-fns" ]; then
+              pkg_json="packages/functions/package.json"
+            else
+              local plugin_dir="${pkg#@magmacomputing/tempo-plugin-}"
+              pkg_json="packages/plugins/$plugin_dir/package.json"
+            fi
+
+            if [ ! -f "$pkg_json" ]; then
+              echo "❌ Error: Could not find package.json for $pkg at $pkg_json"
+              exit 1
+            fi
+
+            local ver
+            ver=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$pkg_json')).version)")
+
+            echo "🔍 Preflight check for $pkg@$ver on npm registry..."
+            
+            local remote_ver=""
+            local view_status=0
+            remote_ver=$(npm view "$pkg@$ver" version 2>/dev/null) || view_status=$?
+
+            if [ "$remote_ver" = "$ver" ]; then
+              echo "ℹ️  $pkg@$ver is already published on npm registry. Skipping."
+              return 0
+            fi
+
+            echo "📦 Publishing $pkg@$ver with provenance..."
             npm publish --workspace="$pkg" --access public --provenance
           }
 
@@ -82,5 +129,3 @@ jobs:
           else
             publish_pkg "$TARGET"
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
