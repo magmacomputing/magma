@@ -36,5 +36,19 @@ if (existsSync(esmHtmlFile)) {
 	writeFileSync(esmHtmlFile, html, 'utf-8');
 }
 
+const llmsTxtFile = resolve(__dirname, '../public/llms.txt');
+if (existsSync(llmsTxtFile)) {
+	let llmsTxt = readFileSync(llmsTxtFile, 'utf-8');
+	llmsTxt = llmsTxt.replace(
+		/^# Tempo: Immutable Date-Time Engine & AI Syntax Rules(?:\s+\(v[^\)]+\))?/m,
+		`# Tempo: Immutable Date-Time Engine & AI Syntax Rules (v${version})`
+	);
+	llmsTxt = llmsTxt.replace(
+		/^> Tempo(?:\s+\(v[^\)]+\))?\s+is an immutable/m,
+		`> Tempo (v${version}) is an immutable`
+	);
+	writeFileSync(llmsTxtFile, llmsTxt, 'utf-8');
+}
+
 console.log(`✅ Tempo version stamped: ${version}`);
 

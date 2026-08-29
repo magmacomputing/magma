@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const docDir = join(__dirname, '../doc');
 const outputFile = join(__dirname, '../public/llms-full.txt');
+const llmsTxtFile = join(__dirname, '../public/llms.txt');
+const pkgFile = join(__dirname, '../package.json');
 
 async function getMarkdownFiles(dir) {
 	const entries = await readdir(dir, { withFileTypes: true });
@@ -20,10 +22,33 @@ async function getMarkdownFiles(dir) {
 	return files.sort();
 }
 
+async function updateLlmsTxt(version) {
+	try {
+		let llmsTxt = await readFile(llmsTxtFile, 'utf-8');
+		llmsTxt = llmsTxt.replace(
+			/^# Tempo: Immutable Date-Time Engine & AI Syntax Rules(?:\s+\(v[^\)]+\))?/m,
+			`# Tempo: Immutable Date-Time Engine & AI Syntax Rules (v${version})`
+		);
+		llmsTxt = llmsTxt.replace(
+			/^> Tempo(?:\s+\(v[^\)]+\))?\s+is an immutable/m,
+			`> Tempo (v${version}) is an immutable`
+		);
+		await writeFile(llmsTxtFile, llmsTxt, 'utf-8');
+		console.log(`✅ Successfully updated llms.txt with version v${version}`);
+	} catch (err) {
+		console.error('❌ Error updating llms.txt version:', err);
+	}
+}
+
 async function generateLlmsFull() {
 	try {
+		const pkg = JSON.parse(await readFile(pkgFile, 'utf-8'));
+		const version = pkg.version || '4.0.0';
+
+		await updateLlmsTxt(version);
+
 		const files = await getMarkdownFiles(docDir);
-		let content = `# Tempo Full Documentation Context\n\n> This file contains the complete concatenated markdown documentation set for @magmacomputing/tempo. It is intended for automated LLM context ingestion and RAG indexing.\n\n---\n\n`;
+		let content = `# Tempo Full Documentation Context (v${version})\n\n> This file contains the complete concatenated markdown documentation set for @magmacomputing/tempo (v${version}). It is intended for automated LLM context ingestion and RAG indexing.\n\n---\n\n`;
 
 		for (const file of files) {
 			const relPath = relative(docDir, file);
@@ -32,7 +57,7 @@ async function generateLlmsFull() {
 		}
 
 		await writeFile(outputFile, content, 'utf-8');
-		console.log(`✅ Successfully generated llms-full.txt (${files.length} markdown documents merged)`);
+		console.log(`✅ Successfully generated llms-full.txt v${version} (${files.length} markdown documents merged)`);
 	} catch (err) {
 		console.error('❌ Error generating llms-full.txt:', err);
 		process.exit(1);

@@ -1,6 +1,6 @@
-# Tempo: Immutable Date-Time Engine & AI Syntax Rules
+# Tempo: Immutable Date-Time Engine & AI Syntax Rules (v4.0.0)
 
-> Tempo is an immutable TypeScript date-time engine built around the ECMAScript Temporal API. It provides type-safe parsing, formatting, relative time arithmetic, and extensible layout matching across Browser and Node.js environments.
+> Tempo (v4.0.0) is an immutable TypeScript date-time engine built around the ECMAScript Temporal API. It provides type-safe parsing, formatting, relative time arithmetic, and extensible layout matching across Browser and Node.js environments.
 
 ## Core Architectural Rules & Philosophy
 - **Temporal Engine**: Tempo uses native `Temporal` in modern runtimes or `@js-temporal/polyfill`. Never instantiate legacy JavaScript `Date`.
