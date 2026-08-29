@@ -2,6 +2,23 @@ name: Release & Publish
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Package to publish'
+        required: true
+        default: '@magmacomputing/tempo'
+        type: choice
+        options:
+          - '@magmacomputing/tempo'
+          - '@magmacomputing/tempo-fns'
+          - '@magmacomputing/tempo-plugin-astro'
+          - '@magmacomputing/tempo-plugin-ai'
+          - '@magmacomputing/tempo-plugin-batch'
+          - '@magmacomputing/tempo-plugin-finance'
+          - '@magmacomputing/tempo-plugin-snap'
+          - '@magmacomputing/tempo-plugin-sync'
+          - '@magmacomputing/tempo-plugin-ticker'
+          - 'all'
   release:
     types: [published]
 
@@ -28,10 +45,42 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Core Tempo
-        run: npm run build:tempo
+      - name: Build Packages
+        run: |
+          TARGET="${{ github.event.inputs.target || '@magmacomputing/tempo' }}"
+          if [ "$TARGET" = "all" ]; then
+            npm run build:all
+          elif [ "$TARGET" = "@magmacomputing/tempo" ]; then
+            npm run build:tempo
+          elif [ "$TARGET" = "@magmacomputing/tempo-fns" ]; then
+            npm run build:tempo
+            npm run build:functions
+          else
+            npm run build:plugins
+          fi
 
-      - name: Publish @magmacomputing/tempo with Provenance
-        run: npm publish --workspace=@magmacomputing/tempo --access public --provenance
+      - name: Publish Package(s) with Provenance
+        run: |
+          TARGET="${{ github.event.inputs.target || '@magmacomputing/tempo' }}"
+          
+          publish_pkg() {
+            local pkg="$1"
+            echo "📦 Publishing $pkg with provenance..."
+            npm publish --workspace="$pkg" --access public --provenance
+          }
+
+          if [ "$TARGET" = "all" ]; then
+            publish_pkg "@magmacomputing/tempo"
+            publish_pkg "@magmacomputing/tempo-fns"
+            publish_pkg "@magmacomputing/tempo-plugin-astro"
+            publish_pkg "@magmacomputing/tempo-plugin-ai"
+            publish_pkg "@magmacomputing/tempo-plugin-batch"
+            publish_pkg "@magmacomputing/tempo-plugin-finance"
+            publish_pkg "@magmacomputing/tempo-plugin-snap"
+            publish_pkg "@magmacomputing/tempo-plugin-sync"
+            publish_pkg "@magmacomputing/tempo-plugin-ticker"
+          else
+            publish_pkg "$TARGET"
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
