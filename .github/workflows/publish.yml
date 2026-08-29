@@ -39,7 +39,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
       - name: Install dependencies
@@ -75,7 +74,6 @@ jobs:
       - name: Publish Package(s) with Provenance
         env:
           INPUT_TARGET: ${{ github.event.inputs.target }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           TARGET="${INPUT_TARGET:-@magmacomputing/tempo}"
 
