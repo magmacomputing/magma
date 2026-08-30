@@ -25,6 +25,12 @@ import { registryUpdate } from './support.register.js';
 
 /**
  * Normalizes or constructs a BoundedCache instance from configuration options.
+ * Handles various input types: existing BoundedCache, Map, or cache configuration objects.
+ *
+ * @param optionsCache - The cache configuration from options
+ * @param existingCache - An existing cache to update or extend
+ * @returns A BoundedCache instance
+ * @internal
  */
 function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
 	const isBoundedCacheOpt = Boolean(optionsCache?.isBoundedCache || optionsCache instanceof BoundedCache);

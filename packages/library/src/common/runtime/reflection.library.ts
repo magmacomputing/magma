@@ -19,6 +19,11 @@ export function exclude<T extends Obj>(obj: T, ...types: (Primitives | Lowercase
 	return _exclude(obj, exclusions as string[], new WeakSet<object>());
 }
 
+/**
+ * Internal recursive implementation for exclude operation.
+ * Traverses object graph while tracking visited references to prevent infinite loops.
+ * @internal
+ */
 function _exclude<T extends Obj>(obj: T, exclusions: string[], visited: WeakSet<object>): T {
 	if (isReference(obj)) {
 		if (visited.has(obj)) return obj;

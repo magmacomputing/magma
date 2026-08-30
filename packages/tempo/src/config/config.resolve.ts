@@ -14,6 +14,10 @@ let syncCache: Options | null | undefined = undefined;
 
 /**
  * Safely resolves a Node.js require function in CommonJS or ESM environments.
+ * Caches the result to avoid repeated resolution attempts.
+ *
+ * @returns The require function if available, or null if not in a Node.js context
+ * @internal
  */
 function getRequireSync() {
 	if (nodeReq !== undefined) return nodeReq;

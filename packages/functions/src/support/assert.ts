@@ -1,6 +1,10 @@
 import type { Tempo } from '@magmacomputing/tempo';
 import type { Temporal } from './temporal.js';
 
+/**
+ * Checks if the given argument is an object with a Symbol.toStringTag property.
+ * @internal
+ */
 function isObject(arg: any): arg is Record<string | symbol, any> {
 	return arg != null && typeof arg === 'object' && Symbol.toStringTag in arg;
 }

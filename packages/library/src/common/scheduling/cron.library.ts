@@ -20,6 +20,15 @@ export interface CronSchedule {
 	daysOfWeek: CronField;
 }
 
+/**
+ * Parses and validates a numeric cron token string.
+ * @param token - The token string to parse
+ * @param min - The minimum allowed value
+ * @param max - The maximum allowed value
+ * @returns The parsed integer
+ * @throws Error if the token is invalid or out of range
+ * @internal
+ */
 function parseStrictInt(token: string, min: number, max: number): number {
 	const trimmed = token.trim();
 	if (!/^\d+$/.test(trimmed))
@@ -32,6 +41,16 @@ function parseStrictInt(token: string, min: number, max: number): number {
 	return num;
 }
 
+/**
+ * Parses a single cron field into a CronField object.
+ * Supports wildcards, ranges, steps, and comma-separated lists.
+ * @param field - The cron field string to parse
+ * @param min - The minimum allowed value for this field
+ * @param max - The maximum allowed value for this field
+ * @returns A CronField object containing the allowed values and restriction status
+ * @throws Error if the field syntax is invalid
+ * @internal
+ */
 function parseCronField(field: string, min: number, max: number): CronField {
 	const allowed = new Set<number>();
 	if (field === '*' || field === '?') {

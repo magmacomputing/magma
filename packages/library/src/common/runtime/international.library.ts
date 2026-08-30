@@ -179,7 +179,20 @@ export function formatDayPeriod(value: number, locale?: string, options?: Intl.D
 	}
 }
 
-/** return a localized unit string (e.g., '2 days') */
+/**
+ * Returns a localized unit string using `Intl.NumberFormat`.
+ * Falls back to a simple concatenation if formatting fails.
+ *
+ * @param value - The numeric value to format
+ * @param unit - The unit identifier (e.g., 'day', 'hour', 'meter')
+ * @param locale - Optional locale string
+ * @param unitDisplay - The unit display style (default: 'long')
+ * @returns The localized unit string
+ * @example
+ * ```ts
+ * formatUnit(2, 'day', 'en'); // '2 days'
+ * ```
+ */
 export function formatUnit(value: number, unit: string, locale?: string, unitDisplay: Intl.NumberFormatOptions['unitDisplay'] = 'long') {
 	try {
 		return getNF(locale, { style: 'unit', unit, unitDisplay }).format(value);
