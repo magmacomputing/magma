@@ -107,6 +107,11 @@ export function sortKey<T extends Property<any>>(array: T[], ...keys: (PropertyK
 	return array.sort(sortBy(...keys));
 }
 
+/**
+ * Internal implementation for grouping arrays.
+ * Uses native Object.groupBy when available, otherwise provides a polyfill.
+ * @internal
+ */
 const groupByImpl = <T>(arr: T[], fn: (itm: T, idx?: number) => PropertyKey): Record<PropertyKey, T[]> => {
 	if (typeof Object.groupBy === 'function')
 		return Object.groupBy(arr, fn as any) as Record<PropertyKey, T[]>;

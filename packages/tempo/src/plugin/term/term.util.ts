@@ -58,7 +58,15 @@ export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) 
 }
 
 /**
- * find where a Tempo fits within a range of DateTime
+ * Finds where a Tempo instance fits within a range of DateTime values.
+ * Returns either a key string, a resolved range object with start/end boundaries, or undefined.
+ *
+ * @param tempo - The Tempo instance to locate within the range
+ * @param list - The array of Range objects to search
+ * @param keyOnly - If true, returns the key string; if a number, returns a specific cycle; if false, returns the full ResolvedRange
+ * @param anchor - Optional anchor ZonedDateTime for range resolution
+ * @returns The matched range key, ResolvedRange object, or undefined if no match
+ * @internal
  */
 export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | number = true, anchor?: any): string | ResolvedRange | undefined {
 	const chronological = sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
@@ -154,8 +162,15 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | num
 }
 
 /**
- * # getRange
- * Resolve the full list of candidates for a term, passing an anchor to prevent recursion.
+ * Resolves the full list of candidate ranges for a term plugin.
+ * Passes an anchor to prevent recursion and optionally filters by group.
+ *
+ * @param entry - The term plugin entry to resolve
+ * @param t - The Tempo instance context
+ * @param anchor - Optional anchor to prevent recursion
+ * @param group - Optional group filter to apply
+ * @returns An array of Range objects
+ * @internal
  */
 export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Range[] {
 	const term = (entry.plugin ?? entry) as TermPlugin;
@@ -207,7 +222,14 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Ra
 }
 
 /**
- * Resolve a term to a specific boundary based on a mutation.
+ * Resolves a term to a specific boundary (start, mid, or end) based on a mutation.
+ *
+ * @param tempo - The Tempo instance
+ * @param terms - The array of term objects
+ * @param offset - The term identifier or offset
+ * @param mutate - The boundary type: 'start', 'mid', or 'end'
+ * @returns The resolved Tempo instance at the specified boundary, or undefined if not found
+ * @internal
  */
 export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mutate: string): any {
 	const ident = offset.startsWith('#') ? offset.slice(1) : offset;
@@ -233,7 +255,14 @@ export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mu
 }
 
 /**
- * Resolve a term shift.
+ * Resolves a term shift by moving forward or backward through a list of ranges.
+ *
+ * @param tempo - The Tempo instance
+ * @param source - The array of plugins or ranges
+ * @param offset - The term identifier
+ * @param shift - The number of ranges to shift (positive or negative)
+ * @returns The shifted Tempo instance, or undefined if out of bounds
+ * @internal
  */
 export function resolveTermShift(tempo: Tempo, source: any[], offset: string, shift: number): any {
 	const anchor = (tempo as any).toDateTime();
@@ -279,9 +308,14 @@ type resolveOptions = {
 	[key: string]: any;
 }
 /**
- * # resolveCycleWindow
- * Resolves a window of ranges (prev, current, next) around a source date,
- * ensuring all returned ranges are detached clones and validated against the context.
+ * Resolves a window of ranges (prev, current, next) around a source date.
+ * Ensures all returned ranges are detached clones and validated against the context.
+ *
+ * @param source - The Tempo instance or source value
+ * @param template - The array or record of Range templates
+ * @param options - Optional configuration including anchor, groupBy, and other parameters
+ * @returns An array of Range objects representing the prev/current/next window
+ * @internal
  */
 export function resolveCycleWindow(source: Tempo | any, template: Range[] | Record<string, Range[]>, { anchor, groupBy = [], ...options }: resolveOptions = {}): Range[] {
 	// ensure we have a valid Tempo instance to work with

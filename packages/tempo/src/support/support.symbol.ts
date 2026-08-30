@@ -3,8 +3,19 @@ import { isDefined } from '#library/assertion.library.js';
 import { sym as lib, $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register as $LibRegister, $SerializerRegistry, $Identity, $ImmutableSkip } from '#library/symbol.library.js';
 export { $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $LibRegister, $SerializerRegistry, $Identity, $ImmutableSkip };
 
-
-/** check valid Tempo instance */
+/**
+ * Checks if the given value is a valid Tempo instance.
+ * Uses brand checking via the $Identity symbol.
+ *
+ * @param tempo - The value to check
+ * @returns True if the value is a Tempo instance, false otherwise
+ * @example
+ * ```ts
+ * if (isTempo(value)) {
+ *   // value is narrowed to Tempo type
+ * }
+ * ```
+ */
 export const isTempo = (tempo?: any): tempo is TempoBrand => tempo?.[sym.$Identity] === true;
 
 /**

@@ -142,8 +142,10 @@ const MAX_SAFE_INTEGER_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
 const MIN_SAFE_INTEGER_BIGINT = BigInt(Number.MIN_SAFE_INTEGER);
 
 /**
+ * Removes the leading sign (+/-) from a stringified value.
  * @param str - The value with optional plus|minus prefix
  * @returns The string value without the sign prefix
+ * @internal
  */
 function removeSign(str: string | number | bigint) {
 	return String(str).trim().replace(RE_SIGN_START, '');
@@ -153,6 +155,7 @@ function removeSign(str: string | number | bigint) {
  * Parses any `string | number | bigint` to a canonical signed `bigint`.
  * Handles optional sign prefix, trailing `n` suffix (BigInt literal), and float truncation.
  * Does **not** apply a safe-integer boundary check — that is `toBounded`'s responsibility.
+ * @internal
  */
 function parseBigInt(str: string | number | bigint): bigint {
 	if (isInteger(str)) return str;														// already a bigint
@@ -171,6 +174,7 @@ function parseBigInt(str: string | number | bigint): bigint {
  * Applies the safe-integer boundary check to a `bigint`.
  * Returns a `number` when the value fits within `Number.MAX_SAFE_INTEGER` bounds,
  * otherwise preserves the `bigint` to avoid precision loss.
+ * @internal
  */
 function toBounded(big: bigint): number | bigint {
 	return (big > MAX_SAFE_INTEGER_BIGINT || big < MIN_SAFE_INTEGER_BIGINT)

@@ -129,6 +129,13 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 		return super.delete(key);
 	}
 
+	/**
+	 * Deletes all cache entries whose keys start with the specified prefix.
+	 * The prefix comparison is case-insensitive.
+	 *
+	 * @param prefix - The prefix string to match against cache keys
+	 * @returns The number of entries deleted
+	 */
 	deletePrefix(prefix: string): number {
 		const normalizedPrefix = String(prefix).trim().toLowerCase();
 		const toDelete: K[] = [];

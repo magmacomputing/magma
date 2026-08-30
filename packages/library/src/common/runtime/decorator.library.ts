@@ -10,8 +10,9 @@ import type { Constructor, Type } from '#library/type.library.js';
  */
 
 /**
- * Safely extracts the class name from Symbol.toStringTag (if present) to prevent 
+ * Safely extracts the class name from Symbol.toStringTag (if present) to prevent
  * minifiers and compilers from mangling the registered class name.
+ * @internal
  */
 function getClassName<T extends Constructor>(value: T, contextName: string | symbol | undefined): string | undefined {
 	return getSafeTag(value) ?? (isUndefined(contextName) ? (value.name || undefined) : String(contextName));
@@ -60,9 +61,10 @@ function createImmutableWrapper<T extends Constructor>(
 }
 
 /**
- * Helper to harden static and prototype members of a class
+ * Helper to harden static and prototype members of a class.
+ * Hybrid lockdown: locks existing statics for mutation while allowing extension.
+ * @internal
  */
-// Hybrid lockdown: lock existing statics for mutation, allow extension
 function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 	const lockStatic = (ctor: object) => {
 		Reflect.ownKeys(ctor).forEach(name => {
