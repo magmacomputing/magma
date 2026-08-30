@@ -17,7 +17,7 @@ import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
 
 import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Token, Snippet } from '#tempo/support';
-import { setProperty, logError, logDebug } from '#tempo/support/support.util.js';
+import { setProperty, logError, logDebug, hasOwn } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
 
 function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Internal.State): string {
@@ -159,8 +159,10 @@ const _ParseEngine = {
 
 			dateTime = dt;
 
+			const hasExplicitTzOption = state.options && hasOwn(state.options, 'timeZone');
+			const effectiveTz = hasExplicitTzOption ? targetTz : (timeZone ?? targetTz);
 			if (isZonedDateTime(dateTime) && !state.errored)
-				dateTime = dateTime.withTimeZone(targetTz).withCalendar(targetCal);
+				dateTime = dateTime.withTimeZone(effectiveTz).withCalendar(targetCal);
 
 			if ((state.config.cache === true || state.config.cache === enums.CACHE.On || state.config.cache === enums.CACHE.Refresh || state.config.cache === 'refresh') && isString(tempo) && isZonedDateTime(dateTime) && !state.errored) {
 				const cacheKey = buildCacheKey(tempo, today, state);

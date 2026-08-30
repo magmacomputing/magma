@@ -10,7 +10,10 @@ Because Tempo wraps the modern `Temporal` API, durations are highly accurate, se
 
 ## Calculating Durations
 
-Tempo offers two primary methods for calculating the difference between dates: `.until()` and `.since()`.
+Tempo offers two primary methods for calculating time differences: `.until()` and `.since()`. While they may appear to be directional inverses of each other, they serve distinct architectural purposes and produce **different output types**:
+
+- **`.until()`** is built for **numeric and mathematical calculations**, returning primitive `Number` metrics (e.g. `420` minutes) or a `Duration` object.
+- **`.since()`** is built for **human-readable relative time formatting**, returning localized `String` outputs (e.g. `"36y ago"` or `"yesterday"` via `Intl.RelativeTimeFormat`).
 
 ### `.until()`
 Calculates the time remaining from the Tempo instance *until* a future date. The target can be a **`Tempo` instance**, a **`Temporal` object**, a **JS `Date`**, an **ISO string**, or a **natural-language string expression**.
@@ -32,7 +35,9 @@ now.until(targetDate, 'weeks');              // → ~32.71 (using Tempo instance
 now.until('2026-12-25', 'days');             // → 229    (ISO date string)
 now.until('christmas', 'days');              // → 229    (natural-language string expression)
 now.until('afternoon', 'minutes');           // → 420    (natural-language string expression)
-now.until(now.add({ days: 2 }), 'hours');    // → 48     (chained Tempo mutation)
+
+// 4. Target as a chained Tempo mutation
+now.until(now.add({ days: 2 }), 'hours');    // → 48     (or 47/49 if crossing a DST transition)
 ```
 
 ::: tip Date-only targets inherit the current time

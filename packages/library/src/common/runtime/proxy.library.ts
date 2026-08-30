@@ -275,7 +275,7 @@ export function indexedArray<T extends object>(
  */
 export function dynamicProxy<T extends object>(target: T): Evaluated<T> {
 	if (!isObject(target)) return target as any;
-	return new Proxy(unwrap(target), {
+	return new Proxy(target, {
 		get(t, k, r) {
 			if (k === sym.$Target) return t;
 			const val = Reflect.get(t, k, r);

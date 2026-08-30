@@ -95,8 +95,8 @@ export type Groups = Record<string, string>
  * Both top-level and grouped options are supported.
  */
 export interface Options extends Partial<Internal.BaseOptions> {
-	planner?: PlannerOptions;
-	intl?: IntlOptions;
+	planner?: PlannerOptions | undefined;
+	intl?: IntlOptions | undefined;
 	[key: string]: any;
 }
 
@@ -333,23 +333,23 @@ export namespace Internal {
 
 	/** the Options object found in a config-module, or passed to a call to Tempo.init({}) or 'new Tempo({})' */
 	export interface BaseOptions {
-		/** localStorage key */																	store: string;
-		/** globalThis Discovery Symbol */											discovery: string | symbol | Discovery;
-		/** additional console.log for tracking */							debug: DebugLevel;
-		/** catch or throw Errors */														catch: boolean;
-		/** suppress console output during catch */							silent: boolean;
-		/** convenience error handling policy preset */					error?: 'throw' | 'catch' | 'silent' | 'log';
-		/** Temporal timeZone */																timeZone: Evaluable<Temporal.TimeZoneLike>;
-		/** Temporal calendar */																calendar: Evaluable<Temporal.CalendarLike>;
-		/** locale (e.g. en-AU) */															locale: Evaluable<string | string[]>;
-		/** pivot year for two-digit years */										pivot: number;
-		/** hemisphere for term.qtr or term.szn */							sphere: Evaluable<enums.COMPASS | undefined>;
-		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions;
-		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
-		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp;
-		/** Precision to measure timestamps alias */						timestamp?: TimeStamp;
-		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE;
-		/** regional date-parsing configuration */							monthDay: MonthDay | boolean;
+		/** localStorage key */																	store?: string | undefined;
+		/** globalThis Discovery Symbol */											discovery?: string | symbol | Discovery | undefined;
+		/** additional console.log for tracking */							debug?: DebugLevel | undefined;
+		/** catch or throw Errors */														catch?: boolean | undefined;
+		/** suppress console output during catch */							silent?: boolean | undefined;
+		/** convenience error handling policy preset */					error?: 'throw' | 'catch' | 'silent' | 'log' | undefined;
+		/** Temporal timeZone */																timeZone?: Evaluable<Temporal.TimeZoneLike> | undefined;
+		/** Temporal calendar */																calendar?: Evaluable<Temporal.CalendarLike> | undefined;
+		/** locale (e.g. en-AU) */															locale?: Evaluable<string | string[]> | undefined;
+		/** pivot year for two-digit years */										pivot?: number | undefined;
+		/** hemisphere for term.qtr or term.szn */							sphere?: Evaluable<enums.COMPASS | undefined> | undefined;
+		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions | undefined;
+		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions | undefined;
+		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp | undefined;
+		/** Precision to measure timestamps alias */						timestamp?: TimeStamp | undefined;
+		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE | undefined;
+		/** regional date-parsing configuration */							monthDay?: MonthDay | boolean | undefined;
 		/** custom data augmentation registries */							registry?: {
 		/** Format string templates */ formats?: Property<any>;
 		/** Locale-specific configurations */ locales?: Record<string, Record<string, string | Function>>;
@@ -366,8 +366,8 @@ export namespace Internal {
 		extends?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
 		/** plugin configuration dictionaries */
 		plugins?: Record<string, any>;
-		/** supplied value to parse */													value: DateTime;
-		/** @internal temporary anchor used during parsing */		anchor: any;
+		/** supplied value to parse */													value?: DateTime;
+		/** @internal temporary anchor used during parsing */		anchor?: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
 	}
 
@@ -383,6 +383,7 @@ export namespace Internal {
 	export interface State {																	// 'global' and 'local' variables
 		/** current defaults for all Tempo instances */					config: Config;
 		/** parsing rules */																		parse: Parse;
+		/** @internal explicit options snapshot */							options?: Options;
 		/** @internal current valid configuration options */		OPTION: Set<string>;
 		/** @internal valid Temporal units for ZonedDateTime */	ZONED_DATE_TIME: Set<string>;
 		/** @internal keys explicitly provided during init */		userProvidedKeys: Set<string>;
@@ -440,11 +441,13 @@ export namespace Internal {
 	export type OptionsKeep = Omit<BaseOptions, "monthDay" | "planner" | "pivot" | "value" | "anchor" | "result" | "extends" | "error" | "timestamp">;
 
 	/** Instance configuration derived from supply, storage, and discovery. */
-	export interface Config extends Required<Omit<OptionsKeep, "registry" | "timeZone" | "calendar" | "locale" | "sphere">> {
+	export interface Config extends Omit<OptionsKeep, "registry" | "timeZone" | "calendar" | "locale" | "sphere" | "intl" | "planner"> {
 		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
 		/** Temporal calendar */																calendar: Temporal.CalendarLike;
 		/** locale (e.g. en-AU) */															locale: string | string[];
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
+		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions | undefined;
+		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions | undefined;
 		/** scope for configuration mutations */								scope: 'global' | 'local';
 		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator>, numbers?: Record<string, number> };
 		/** index-signature */																	readonly [key: string]: any;

@@ -21,27 +21,37 @@ declare module '#library/type.library.js' {
 /**
  * MutateModule logic for Tempo.add, Tempo.subtract, and Tempo.set
  */
-function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, options: t.Options = {}) {
+function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus' | 'sub', args?: any, options: t.Options = {}) {
+	if (type === 'plus') type = 'add';
+	if (type === 'minus' || type === 'sub') type = 'subtract';
 	const state = (this as any)[sym.$Internal]();
 	if (isUndefined(state.mutateDepth)) state.mutateDepth = 0;
 	if (!isZonedDateTime(state.zdt)) return this;
 	const { zdt: selfZdt } = state;
-	const overrides = {
-		timeZone: options.timeZone ?? this.tz,
-		calendar: options.calendar ?? this.cal,
-		sphere: options.sphere ?? this.sphere
-	} as Required<t.Options>;
+	let explicitTz: any = options.timeZone;
+	let explicitCal: any = options.calendar;
+	let explicitSphere: any = options.sphere;
 
 	if (type === 'set' && isObject(args) && args.constructor === Object) {
-		const { timeZone, calendar } = args as Record<string, any>;
-		if (timeZone) overrides.timeZone = timeZone;
-		if (calendar) overrides.calendar = calendar;
+		const { timeZone, calendar, sphere } = args as Record<string, any>;
+		if (isDefined(timeZone)) explicitTz = timeZone;
+		if (isDefined(calendar)) explicitCal = calendar;
+		if (isDefined(sphere)) explicitSphere = sphere;
 	}
 
+	const targetTz = explicitTz ?? this.tz;
+	const isChangingTz = isDefined(targetTz) && evaluate(targetTz) !== this.tz;
+
+	const overrides: t.Options = {
+		timeZone: targetTz,
+		calendar: explicitCal ?? this.cal,
+		sphere: isDefined(explicitSphere) ? explicitSphere : (isChangingTz ? undefined : state.options?.sphere)
+	};
+
 	// Shift the current instance to the target timezone first
-	const targetTz = evaluate(overrides.timeZone);
+	const resolvedTz = evaluate(overrides.timeZone);
 	const targetCal = evaluate(overrides.calendar);
-	let zdt = selfZdt.withTimeZone(targetTz).withCalendar(targetCal);
+	let zdt = selfZdt.withTimeZone(resolvedTz).withCalendar(targetCal);
 	state.parseDepth++;
 	const matches = Array.isArray(this.parse?.result) ? Array.from(this.parse.result) : [];
 
@@ -61,7 +71,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set', args?: any, optio
 
 				zdt = Object.entries(payload)
 					.reduce<Temporal.ZonedDateTime>((currZdt, [key, adjust]) => {
-						if (key === 'timeZone' || key === 'calendar') return currZdt;
+						if (key === 'timeZone' || key === 'calendar' || key === 'sphere') return currZdt;
 
 						try {
 							if (++state.mutateDepth > 100) {

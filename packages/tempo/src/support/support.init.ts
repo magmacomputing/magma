@@ -78,6 +78,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		};
 	}
 
+	state.options = options;
 	const targetCache = baseState?.cache ?? runtime.state?.cache ?? prevCache;
 	state.cache = resolveCache(options.cache, targetCache);
 
@@ -232,7 +233,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 		state.userProvidedKeys.add(optKey);
 		state.userProvidedKeys.add(rawKey);
 		const preserveSupplier = isFunction(optVal) && state.config?.scope !== 'local';
-		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey) && !(optKey === 'locale' && preserveSupplier))
+		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey) && !preserveSupplier)
 			? evaluate(optVal)
 			: optVal;
 		const arg = asType(evaluatedVal);
@@ -272,6 +273,8 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				const zone = String(arg.value).toLowerCase();
 				const resolvedZone = options.timeZones?.[zone] ?? state.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
 				setProperty(state.config, 'timeZone', preserveSupplier ? optVal : resolvedZone);
+				if (!hasOwn(options, 'sphere') && !hasOwn(options, 'Sphere') && !state.userProvidedKeys?.has('sphere'))
+					setProperty(state.config, 'sphere', getHemisphere(resolvedZone));
 				break;
 			}
 
@@ -416,8 +419,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'intl':
-				if (!isObject(state.config.intl)) setProperty(state.config, 'intl', {});
-				state.config.intl = deepMerge(state.config.intl, arg.value);
+				state.config.intl = deepMerge(state.config.intl ?? {}, arg.value);
 				break;
 
 			case 'planner':

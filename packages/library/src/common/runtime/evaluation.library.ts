@@ -1,4 +1,4 @@
-import { isFunction, isNullish, isObject, isPromise } from '#library/assertion.library.js';
+import { isFunction, isNullish, isObject } from '#library/assertion.library.js';
 import type { Evaluable, AsyncEvaluable, Evaluated, AsyncEvaluated } from '#library/type.library.js';
 
 /**
@@ -49,7 +49,7 @@ export async function evaluateAsync<T>(...values: (AsyncEvaluable<T> | undefined
 	const promises = values.map(val => {
 		if (!isFunction(val)) {
 			const p = Promise.resolve(val);
-			p.catch(() => {});
+			p.catch(() => { });
 			return p;
 		}
 		return undefined;

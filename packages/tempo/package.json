@@ -270,8 +270,8 @@
   "files": [
     "README.md",
     "CHANGELOG.md",
-    "LICENSE",
     "SECURITY.md",
+    "LICENSE",
     "dist/"
   ],
   "dependencies": {

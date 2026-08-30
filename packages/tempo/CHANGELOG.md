@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Socket Security Badge**: Integrated live Socket.dev supply chain security status badge into `README.md`.
 - **Package `sideEffects` Optimization**: Refined `"sideEffects"` glob rules to accurately target `dist/lib/temporal/*.js` and remove obsolete source paths, improving bundler tree-shaking accuracy.
 
+### Fixed
+- **Strict Types Hardening**: Added explicit `| undefined` union types across `Internal.State`, `Internal.BaseOptions`, and `Options` interface properties to ensure zero-error compilation under TypeScript `exactOptionalPropertyTypes: true`.
+
 ## [4.0.1] - 2026-08-30
 
 ### Changed & Fixed

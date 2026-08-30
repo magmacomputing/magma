@@ -23,7 +23,7 @@ describe('Discovery in Extend', () => {
 				}
 			}
 		});
-		expect(Tempo.config.intl.relativeTime.style).toBe('narrow');
+		expect((Tempo.config.intl as any)?.relativeTime?.style ?? (Tempo.config.intl as any)?.relativeTimeFormat?.style).toBe('narrow');
 	});
 
 	it('should apply formats discovery via extend', () => {
