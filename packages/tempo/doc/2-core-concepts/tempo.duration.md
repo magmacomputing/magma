@@ -13,30 +13,34 @@ Because Tempo wraps the modern `Temporal` API, durations are highly accurate, se
 Tempo offers two primary methods for calculating the difference between dates: `.until()` and `.since()`.
 
 ### `.until()`
-Calculates the time remaining from the Tempo instance *until* a future date.
+Calculates the time remaining from the Tempo instance *until* a future date. The target can be a **`Tempo` instance**, a **`Temporal` object**, a **JS `Date`**, an **ISO string**, or a **natural-language string expression**.
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
 
 const now = new Tempo('2026-05-10T08:00:00');
-const xmas = new Tempo('2026-12-25');
+const targetDate = new Tempo('2026-12-25'); // Tempo instance
 
-// 1. Return an Extended Data Object (EDO)
-const duration = now.until(xmas);
+// 1. Target as a Tempo / Temporal instance (returns a Duration EDO)
+const duration = now.until(targetDate);
 
-// 2. Or, calculate relative to a specific unit (returns a primitive Number)
-now.until('afternoon', 'minutes'); // → 420    (example output: exactly 7 hours)
-now.until('xmas', 'days');         // → 229    (example output: whole number — see note below)
-now.until('xmas', 'weeks');        // → ~32.71 (example output: fractional)
-now.until(now.add({ days: 2 }), 'hours'); // → 48 (targets can also be Temporal/Tempo instances)
+// 2. Target as a Tempo instance with a specific unit (returns a primitive Number)
+now.until(targetDate, 'days');               // → 229    (using Tempo instance)
+now.until(targetDate, 'weeks');              // → ~32.71 (using Tempo instance)
+
+// 3. Target as a natural-language string expression or ISO string
+now.until('2026-12-25', 'days');             // → 229    (ISO date string)
+now.until('christmas', 'days');              // → 229    (natural-language string expression)
+now.until('afternoon', 'minutes');           // → 420    (natural-language string expression)
+now.until(now.add({ days: 2 }), 'hours');    // → 48     (chained Tempo mutation)
 ```
 
 ::: tip Date-only targets inherit the current time
-When a target resolves to a **date without a time component** (e.g. `'xmas'`, `'tomorrow'`, `'next friday'`), Tempo copies the current time-of-day from the anchor into the target. This means:
+When a target resolves to a **date without a time component** (e.g. `'christmas'`, `'tomorrow'`, `'next friday'`), Tempo copies the current time-of-day from the anchor into the target. This means:
 
-- `t.until('xmas', 'days')` → a **whole number** — the time components cancel out exactly.
-- `t.until('xmas', 'hours')` → a **whole number** — same reason.
-- `t.until('xmas', 'weeks')` → **fractional** — 229 days does not divide evenly into weeks.
+- `t.until('christmas', 'days')` → a **whole number** — the time components cancel out exactly.
+- `t.until('christmas', 'hours')` → a **whole number** — same reason.
+- `t.until('christmas', 'weeks')` → **fractional** — 229 days does not divide evenly into weeks.
 
 This matches natural-language intuition: *"How many days until Christmas?"* expects `229`, not `229.43`. Targets with an **explicit time** (e.g. `'afternoon'`, `'9am'`) produce fractional values if the target time differs from the anchor's current time-of-day.
 :::

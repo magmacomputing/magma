@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.2] - 2026-08-30
+
+### Added & Security
+- **Security Policy (`SECURITY.md`)**: Added official vulnerability disclosure policy and security contact procedures (shipped in package tarball).
+- **Package Funding Metadata**: Configured `"funding"` metadata in `package.json` pointing to GitHub Sponsors.
+- **Socket Security Badge**: Integrated live Socket.dev supply chain security status badge into `README.md`.
+- **Package `sideEffects` Optimization**: Refined `"sideEffects"` glob rules to accurately target `dist/lib/temporal/*.js` and remove obsolete source paths, improving bundler tree-shaking accuracy.
+
 ## [4.0.1] - 2026-08-30
 
 ### Changed & Fixed

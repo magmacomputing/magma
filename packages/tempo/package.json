@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -14,7 +14,12 @@
   },
   "homepage": "https://github.com/magmacomputing/magma/tree/main/packages/tempo#readme",
   "bugs": {
-    "url": "https://github.com/magmacomputing/magma/issues"
+    "url": "https://github.com/magmacomputing/magma/issues",
+    "email": "tempo@magmacomputing.com.au"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/magmacomputing"
   },
   "keywords": [
     "temporal",
@@ -38,13 +43,9 @@
   "sideEffects": [
     "**/tempo.index.js",
     "**/plugin/extend/extend.*.js",
-    "**/plugin/extend/extend.*.ts",
     "dist/engine/engine.*.js",
-    "src/engine/engine.*.ts",
     "dist/module/module.*.js",
-    "src/module/module.*.ts",
-    "dist/lib/temporal.polyfill.js",
-    "dist/lib/temporal.library.js"
+    "dist/lib/temporal/*.js"
   ],
   "main": "dist/tempo.index.js",
   "types": "dist/tempo.index.d.ts",
@@ -270,6 +271,7 @@
     "README.md",
     "CHANGELOG.md",
     "LICENSE",
+    "SECURITY.md",
     "dist/"
   ],
   "dependencies": {
