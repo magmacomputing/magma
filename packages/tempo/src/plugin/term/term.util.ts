@@ -50,8 +50,11 @@ export function findTermPlugin(ident: string, state?: any): TermPlugin | undefin
 }
 
 /**
- * ## defineRange
- * Factory to normalize and group Term ranges for efficient lookup.
+ * Groups and secures term ranges for efficient lookup.
+ *
+ * @param ranges - The ranges to group
+ * @param keys - Range properties used as grouping keys
+ * @returns A secured collection of grouped ranges
  */
 export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) {
 	return secure(byKey(ranges, ...keys));
@@ -162,14 +165,12 @@ export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | num
 }
 
 /**
- * Resolves the full list of candidate ranges for a term plugin.
- * Passes an anchor to prevent recursion and optionally filters by group.
+ * Resolves and filters the ranges provided by a term plugin.
  *
  * @param entry - The term plugin entry to resolve
- * @param t - The Tempo instance context
- * @param anchor - Optional anchor to prevent recursion
- * @param group - Optional group filter to apply
- * @returns An array of Range objects
+ * @param anchor - Optional anchor used as the resolution context
+ * @param group - Optional group name used to filter the ranges
+ * @returns The resolved, filtered range list
  * @internal
  */
 export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Range[] {
@@ -222,13 +223,13 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Ra
 }
 
 /**
- * Resolves a term to a specific boundary (start, mid, or end) based on a mutation.
+ * Resolves a term to a boundary of its current range.
  *
- * @param tempo - The Tempo instance
- * @param terms - The array of term objects
- * @param offset - The term identifier or offset
- * @param mutate - The boundary type: 'start', 'mid', or 'end'
- * @returns The resolved Tempo instance at the specified boundary, or undefined if not found
+ * @param tempo - The reference time used to determine the current range
+ * @param terms - The available term definitions
+ * @param offset - The term key or scope, optionally prefixed with `#`
+ * @param mutate - The boundary to resolve: `start`, `mid`, or `end`
+ * @returns The resolved boundary, or `undefined` when the term, range, or boundary is unavailable
  * @internal
  */
 export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mutate: string): any {
@@ -255,13 +256,13 @@ export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mu
 }
 
 /**
- * Resolves a term shift by moving forward or backward through a list of ranges.
+ * Resolves the start of a range shifted from the current term range.
  *
- * @param tempo - The Tempo instance
- * @param source - The array of plugins or ranges
- * @param offset - The term identifier
- * @param shift - The number of ranges to shift (positive or negative)
- * @returns The shifted Tempo instance, or undefined if out of bounds
+ * @param tempo - The reference date and time used to identify the current range.
+ * @param source - Term plugins or pre-resolved ranges to search.
+ * @param offset - The term key or scope when `source` contains plugins.
+ * @param shift - The number of ranges to move forward or backward.
+ * @returns The start of the shifted range, or `undefined` when the term, current range, or target range cannot be resolved.
  * @internal
  */
 export function resolveTermShift(tempo: Tempo, source: any[], offset: string, shift: number): any {
@@ -308,13 +309,12 @@ type resolveOptions = {
 	[key: string]: any;
 }
 /**
- * Resolves a window of ranges (prev, current, next) around a source date.
- * Ensures all returned ranges are detached clones and validated against the context.
+ * Builds a three-period range window centered on a source date.
  *
- * @param source - The Tempo instance or source value
- * @param template - The array or record of Range templates
- * @param options - Optional configuration including anchor, groupBy, and other parameters
- * @returns An array of Range objects representing the prev/current/next window
+ * @param source - The date value or `Tempo` instance used to determine the window.
+ * @param template - Range templates provided as an array or grouped record.
+ * @param options - Configuration for the anchor and template grouping criteria.
+ * @returns Detached range copies representing the previous, current, and next periods.
  * @internal
  */
 export function resolveCycleWindow(source: Tempo | any, template: Range[] | Record<string, Range[]>, { anchor, groupBy = [], ...options }: resolveOptions = {}): Range[] {

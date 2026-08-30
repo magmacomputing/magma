@@ -43,13 +43,12 @@ export function epoch() {
 	return instant().epochNanoseconds;
 }
 
-/** 
- * Returns the January and July offsets (in nanoseconds) for a given timezone and year.
- * Used for inferring daylight savings time and hemisphere characteristics.
- * 
- * @param timeZone - The IANA timezone string
- * @param year - The reference year to calculate offsets for (default: 2024 for stability)
- * @returns An object containing the `jan` and `jul` offsets
+/**
+ * Gets the timezone offsets for January 1 and July 1 of a given year.
+ *
+ * @param timeZone - The IANA timezone identifier
+ * @param year - The year for which to calculate the offsets; defaults to 2024
+ * @returns An object containing January and July offsets in nanoseconds
  */
 export function getOffsets(timeZone: string, year = 2024) {	//** use a fixed reference-year (2024) for stability */
 	const jan = Temporal.ZonedDateTime.from({ year, month: 1, day: 1, hour: 0, minute: 0, second: 0, timeZone }).offsetNanoseconds;

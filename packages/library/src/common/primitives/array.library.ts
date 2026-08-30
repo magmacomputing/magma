@@ -93,11 +93,11 @@ export function sortBy<T extends Property<T>>(...keys: (PropertyKey | SortBy)[])
 }
 
 /**
- * Sorts an array of objects in place by a series of keys.
- * 
+ * Sorts an array in place according to the specified keys or sorting options.
+ *
  * @param array - The array to sort
- * @param keys - The keys or sorting options to apply
- * @returns The sorted array
+ * @param keys - Sorting criteria, applied in order of priority
+ * @returns The input array after sorting
  * @example
  * ```ts
  * const sorted = sortKey(users, 'lastName', 'firstName');

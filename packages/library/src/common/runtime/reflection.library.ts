@@ -4,15 +4,11 @@ import { isEmpty, isFunction, isPrimitive, isReference, isSymbol } from '#librar
 import type { Obj, KeyOf, Primitives } from '#library/type.library.js';
 
 /**
- * Mutates an object or array by deleting properties that match specified primitive types.
- * 
+ * Recursively removes properties whose values match the specified type names.
+ *
  * @param obj - The object or array to mutate
- * @param types - The primitive types to exclude (e.g., 'Function', 'String')
+ * @param types - The type names to exclude, such as `Function` or `String`
  * @returns The mutated object reference
- * @example
- * ```ts
- * exclude({ a: 1, b: () => {} }, 'Function'); // { a: 1 }
- * ```
  */
 export function exclude<T extends Obj>(obj: T, ...types: (Primitives | Lowercase<Primitives>)[]) {
 	const exclusions = distinct(types.map(item => item.toLowerCase())) as typeof types;
@@ -20,8 +16,11 @@ export function exclude<T extends Obj>(obj: T, ...types: (Primitives | Lowercase
 }
 
 /**
- * Internal recursive implementation for exclude operation.
- * Traverses object graph while tracking visited references to prevent infinite loops.
+ * Recursively removes properties whose primitive values match the specified type names.
+ *
+ * @param exclusions - Primitive type names whose matching properties should be removed
+ * @param visited - Object references already traversed during the current operation
+ * @returns The original object reference after matching properties are removed
  * @internal
  */
 function _exclude<T extends Obj>(obj: T, exclusions: string[], visited: WeakSet<object>): T {

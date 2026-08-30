@@ -19,7 +19,12 @@ declare module '#library/type.library.js' {
 }
 
 /**
- * MutateModule logic for Tempo.add, Tempo.subtract, and Tempo.set
+ * Applies an addition, subtraction, or field-setting mutation to the current date-time.
+ *
+ * @param type - The mutation operation: `add`, `plus`, `subtract`, `sub`, `minus`, or `set`
+ * @param args - A mutation value, mutation object, term expression, or date-time input
+ * @param options - Time zone, calendar, and sphere overrides
+ * @returns A new mutated `Tempo` instance, or the original instance when no valid date-time exists
  */
 function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus' | 'sub', args?: any, options: t.Options = {}) {
 	if (type === 'plus') type = 'add';

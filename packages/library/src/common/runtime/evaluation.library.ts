@@ -45,6 +45,12 @@ export function evaluate<T>(...values: (Evaluable<T> | undefined)[]): T | undefi
  */
 export function evaluateAsync<T>(first: AsyncEvaluable<T> | undefined, fallback: AsyncEvaluable<T>, ...rest: AsyncEvaluable<T>[]): Promise<T>;
 export function evaluateAsync<T>(...values: (AsyncEvaluable<T> | undefined)[]): Promise<T | undefined>;
+/**
+ * Evaluates asynchronous candidates in order and stops at the first defined value.
+ *
+ * @param values - Values, promises, or supplier functions to evaluate.
+ * @returns The first defined result, or `undefined` if all candidates resolve to `undefined`.
+ */
 export async function evaluateAsync<T>(...values: (AsyncEvaluable<T> | undefined)[]): Promise<T | undefined> {
 	const promises = values.map(val => {
 		if (!isFunction(val)) {

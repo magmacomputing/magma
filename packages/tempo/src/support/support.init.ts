@@ -24,12 +24,11 @@ import * as t from '../tempo.type.js';
 import { registryUpdate } from './support.register.js';
 
 /**
- * Normalizes or constructs a BoundedCache instance from configuration options.
- * Handles various input types: existing BoundedCache, Map, or cache configuration objects.
+ * Resolves cache configuration into a bounded cache.
  *
- * @param optionsCache - The cache configuration from options
- * @param existingCache - An existing cache to update or extend
- * @returns A BoundedCache instance
+ * @param optionsCache - An existing bounded cache, entry collection, or cache configuration.
+ * @param existingCache - A cache to reuse or update when applicable.
+ * @returns The resolved bounded cache, using defaults of 1000 entries and 24 hours when created from configuration.
  * @internal
  */
 function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
@@ -54,7 +53,16 @@ function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedC
 	}
 }
 
-/** @internal Initialise a Tempo state */
+/**
+ * @internal
+ * Initializes and returns Tempo state for global, local, or inherited configurations.
+ *
+ * @param options - Configuration options used to initialize the state
+ * @param isGlobal - Whether the state serves as the global Tempo state
+ * @param baseState - Optional state from which to inherit configuration and parsing settings
+ * @param prevCache - Optional cache to reuse when no cache is available on the base or global state
+ * @returns The initialized Tempo state
+ */
 export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State, prevCache?: BoundedCache): t.Internal.State {
 	const runtime = getRuntime();
 	// Global init is intentionally idempotent after first hydration; late-loaded modules must use Tempo.extend().
@@ -211,6 +219,13 @@ const CANONICAL_OPTION_KEYS: Record<string, string> = Object.assign(Object.creat
 	errorhandling: 'error',
 });
 
+/**
+ * Applies configuration overrides to an existing state.
+ *
+ * @param state - The state to update
+ * @param options - Configuration options to apply
+ * @returns `true` if the changes require parsing patterns to be regenerated, `false` otherwise.
+ */
 export function extendState(state: t.Internal.State, options: t.Options): boolean {
 	let patternsDirty = false;
 

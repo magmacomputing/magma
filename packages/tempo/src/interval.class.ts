@@ -7,8 +7,12 @@ export type TemporalPoint = Tempo | { epochNanoseconds: bigint };
 // Tempo uses native JavaScript Infinity and -Infinity for open-ended boundaries
 
 /**
- * Extracts the epoch nanoseconds from a TemporalPoint object.
+ * Extracts epoch nanoseconds from a temporal point.
+ *
  * @internal
+ * @param point - The value containing epoch nanoseconds.
+ * @returns The epoch nanoseconds.
+ * @throws `TypeError` if the value does not contain an integer epoch nanosecond value.
  */
 function getNs(point: TemporalPoint | unknown): bigint {
 	const ns = (point as any)?.epoch?.ns ?? (point as any)?.epochNanoseconds;

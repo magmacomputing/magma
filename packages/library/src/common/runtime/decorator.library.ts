@@ -10,8 +10,11 @@ import type { Constructor, Type } from '#library/type.library.js';
  */
 
 /**
- * Safely extracts the class name from Symbol.toStringTag (if present) to prevent
- * minifiers and compilers from mangling the registered class name.
+ * Determines a class name from its string tag, decorator context name, or constructor name.
+ *
+ * @param value - The class whose name should be determined
+ * @param contextName - An optional name from the decorator context
+ * @returns The resolved class name, or `undefined` when no name is available
  * @internal
  */
 function getClassName<T extends Constructor>(value: T, contextName: string | symbol | undefined): string | undefined {
@@ -19,14 +22,12 @@ function getClassName<T extends Constructor>(value: T, contextName: string | sym
 }
 
 /**
- * Shared helper to create an immutable or secure class wrapper  
- * 
- * @remarks **Workaround:** When TS 7.0 (targeting ES2022) emits its `__esDecorate` IIFE, aggressive 
- * bundlers and minifiers (like `Rollup`, `Terser`, or `esbuild`) frequently compress the variable 
- * declarations into chained assignments (e.g. `var Class = _classThis = class`). This breaks JS 
- * evaluation order and overwrites the decorated wrapper with the original class. 
- * As a permanent defense against these bundler mutations, consuming classes must explicitly return 
- * `Object.freeze(this) as this;` at the end of their own constructors.
+ * Creates a class wrapper that applies an immutability strategy to each instance and hardens its static and prototype members.
+ *
+ * @param value - The class to wrap
+ * @param name - The wrapper's class name, when available
+ * @param immutabilityStrategy - The strategy applied to each created instance
+ * @returns A wrapped class that applies the immutability strategy to instances
  */
 function createImmutableWrapper<T extends Constructor>(
 	value: T,
@@ -61,8 +62,8 @@ function createImmutableWrapper<T extends Constructor>(
 }
 
 /**
- * Helper to harden static and prototype members of a class.
- * Hybrid lockdown: locks existing statics for mutation while allowing extension.
+ * Locks existing static and prototype members while allowing new members to be added.
+ *
  * @internal
  */
 function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {

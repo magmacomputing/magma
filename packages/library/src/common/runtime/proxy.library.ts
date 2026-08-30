@@ -256,22 +256,10 @@ export function indexedArray<T extends object>(
 }
 
 /**
- * Wraps an object in a dynamic evaluation Proxy where any property that is a function/supplier
- * is transparently invoked upon read access.
- * Non-function properties and symbol traps are forwarded as-is.
- * 
- * @param target - The object containing dynamic properties or suppliers
- * @returns A Proxy wrapping the target where property reads automatically resolve functions
- * @example
- * ```ts
- * const userContext = {
- *   timeZone: () => currentSession.tz,
- *   locale: 'en-US'
- * };
- * const proxy = dynamicProxy(userContext);
- * proxy.timeZone; // Returns dynamic currentSession.tz
- * proxy.locale;   // 'en-US'
- * ```
+ * Creates a proxy that evaluates function-valued properties when they are read.
+ *
+ * @param target - The object whose properties are evaluated
+ * @returns A proxy that invokes eligible function-valued properties with `target` as their receiver
  */
 export function dynamicProxy<T extends object>(target: T): Evaluated<T> {
 	if (!isObject(target)) return target as any;
