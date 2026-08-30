@@ -1157,11 +1157,10 @@ export class Tempo {
 	/** constructor options */																#options = {} as t.Options;
 	/** instantiation Temporal Instant */											#instant?: Temporal.Instant;
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
-	/** memoized TimeZone ID */																#tz?: string;
-	/** memoized Calendar ID */																#cal?: string;
+	/** memoized instance properties */
+	#memo: { tz?: string; cal?: string; sphere?: t.COMPASS | undefined; fmt?: Record<string, string | undefined> } = {};
 	/** indicator that the instance failed to parse */				#errored = false;
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
-	/** prebuilt formats, for convenience */									#fmt?: Record<string, string | undefined>;
 	/** mapping of terms to their resolved values */					#term?: any;
 	/** a collection of parse rule-matches */									#matches: Internal.MatchResult[] | undefined;
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
@@ -1303,10 +1302,10 @@ export class Tempo {
 
 	/** returns a [timezone, calendar] tuple derived from the underlying date-time. */
 	#temporalIds(): [string, string] {
-		if (!this.#tz || !this.#cal) {
-			[this.#tz, this.#cal] = getTemporalIds(this.toDateTime());
+		if (!this.#memo.tz || !this.#memo.cal) {
+			[this.#memo.tz, this.#memo.cal] = getTemporalIds(this.toDateTime());
 		}
-		return [this.#tz, this.#cal];
+		return [this.#memo.tz, this.#memo.cal];
 	}
 
 	/** Resolve the instance to a Temporal.ZonedDateTime (with optional callback) */
@@ -1467,11 +1466,11 @@ export class Tempo {
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
 	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return this.toDateTime().era; }
 	/** Year within the era (positive integer) */							get eon() { return this.toDateTime().eraYear; }
-	/** @hidden */																						get eraYear() { return this.toDateTime().eraYear; }
+	/** @hidden prefer `eon` */																get eraYear() { return this.toDateTime().eraYear; }
 	/** 4-digit iso week-numbering year */										get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** iso week number of the year */												get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
-	/** @deprecated use `wy` */																get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/** @hidden prefer `wy` */																get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
 	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day as t.dd }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
@@ -1484,18 +1483,22 @@ export class Tempo {
 	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
-	/** Resolved hemisphere ('north' | 'south') */						get sphere() {
+	/** Resolved hemisphere ('north' | 'south' | undefined) */get sphere(): t.COMPASS | undefined {
+		if ('sphere' in this.#memo) return this.#memo.sphere;
+
 		const globalTz = (this as any)[$Internal]().config.timeZone;
 		const hasInstanceTzOverride = isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(this.tz).toLowerCase() !== String(globalTz).toLowerCase());
 
-		return (evaluate(
+		const res = evaluate(
 			this.#local.options && hasOwn(this.#local.options, 'sphere') ? this.#local.options.sphere : undefined,
 			hasInstanceTzOverride ? () => getHemisphere(String(this.tz)) : undefined,
 			hasOwn(this.#local.config, 'sphere') ? this.#local.config.sphere : undefined,
 			() => (isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' ? getHemisphere(String(this.tz)) : undefined),
 			(this as any)[$Internal]().config.sphere,
 			Default.sphere
-		) ?? Default.sphere) as t.COMPASS;
+		);
+
+		return (this.#memo.sphere = res as t.COMPASS | undefined);
 	}
 	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[this.#local.config.timeStamp ?? 'ms'] }
 	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as t.Month) }
@@ -1581,7 +1584,7 @@ export class Tempo {
 	}
 
 	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term ??= this.#setDelegator('term'); }
-	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#fmt ??= this.#setDelegator('fmt'); }
+	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#memo.fmt ??= this.#setDelegator('fmt'); }
 	/** units since epoch for this date-time instance */			get epoch() { return Tempo.#getEpoch(this.toDateTime()); }
 
 	/**
@@ -1885,7 +1888,7 @@ export namespace Tempo {
 	export type ns = t.ns;
 	/** ISO week-year numeric value */
 	export type wy = t.wy;
-	/** @deprecated use `wy` */
+	/** @hidden prefer `wy` */
 	export type ww = t.wy;
 
 	/** Timestamp precision unit (ss, ms, us, ns) */
