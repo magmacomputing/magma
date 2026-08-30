@@ -539,6 +539,7 @@ export function parse(value: t.DateTime, options: t.Options = {}): Temporal.Zone
 	// Standalone parsing defaults to 'strict' mode
 	const localOptions = { ...options };
 	localOptions.mode ??= 'strict';
+	state.options = localOptions;
 
 	// Apply options
 	extendState(state, localOptions);

@@ -198,7 +198,7 @@ describe('#setConfig refactor verification', () => {
   test('should invoke option suppliers at most once and store consistent snapshot', () => {
     let tzCalls = 0;
     let calCalls = 0;
-    const tzSupplier = () => { tzCalls++; console.log(new Error().stack); return 'UTC'; };
+    const tzSupplier = () => { tzCalls++; return 'UTC'; };
     const calSupplier = () => { calCalls++; return 'iso8601'; };
 
     const t = new Tempo({ timeZone: tzSupplier, calendar: calSupplier });

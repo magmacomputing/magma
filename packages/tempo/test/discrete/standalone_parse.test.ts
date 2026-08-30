@@ -142,3 +142,12 @@ test('standalone parse: bare GMT resolves to fixed UTC with +00:00 offset regard
 	expect(t.toDateTime().offset).toBe('+00:00');
 	expect(t.tz).toBe('UTC');
 });
+
+test('standalone parse: explicit timeZone option application and isolation from Tempo.init options', () => {
+	Tempo.init({ timeZone: 'America/New_York' });
+	const zdtUtc = parse('2026-05-20 10:00', { timeZone: 'UTC' });
+	expect(zdtUtc.timeZoneId).toBe('UTC');
+
+	const zdtDefault = parse('2026-05-20 10:00');
+	expect(zdtDefault.timeZoneId).toBe('America/New_York');
+});

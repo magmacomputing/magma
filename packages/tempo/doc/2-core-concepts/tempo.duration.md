@@ -43,9 +43,9 @@ now.until(now.add({ days: 2 }), 'hours');    // → 48     (or 47/49 if crossing
 ::: tip Date-only targets inherit the current time
 When a target resolves to a **date without a time component** (e.g. `'christmas'`, `'tomorrow'`, `'next friday'`), Tempo copies the current time-of-day from the anchor into the target. This means:
 
-- `t.until('christmas', 'days')` → a **whole number** — the time components cancel out exactly.
-- `t.until('christmas', 'hours')` → a **whole number** — same reason.
-- `t.until('christmas', 'weeks')` → **fractional** — 229 days does not divide evenly into weeks.
+- `now.until('christmas', 'days')`	→ **whole number** — the time components cancel out exactly.
+- `now.until('christmas', 'hours')`	→ **whole number** — same reason.
+- `now.until('christmas', 'weeks')`	→ **fractional** — 229 days does not divide evenly into weeks.
 
 This matches natural-language intuition: *"How many days until Christmas?"* expects `229`, not `229.43`. Targets with an **explicit time** (e.g. `'afternoon'`, `'9am'`) produce fractional values if the target time differs from the anchor's current time-of-day.
 :::

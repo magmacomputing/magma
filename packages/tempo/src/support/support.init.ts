@@ -273,7 +273,8 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				const zone = String(arg.value).toLowerCase();
 				const resolvedZone = options.timeZones?.[zone] ?? state.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
 				setProperty(state.config, 'timeZone', preserveSupplier ? optVal : resolvedZone);
-				if (!hasOwn(options, 'sphere') && !hasOwn(options, 'Sphere') && !state.userProvidedKeys?.has('sphere'))
+				const hasSuppliedSphere = isDefined(options.sphere) || (state.userProvidedKeys?.has('sphere') && isDefined(state.config.sphere));
+				if (!hasSuppliedSphere)
 					setProperty(state.config, 'sphere', getHemisphere(resolvedZone));
 				break;
 			}

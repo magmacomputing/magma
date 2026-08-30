@@ -34,6 +34,6 @@ To help us investigate and resolve the issue quickly, please include:
 
 - **Acknowledgement:** We will acknowledge receipt of your vulnerability report within **48 hours**.
 - **Assessment & Fix:** We aim to assess and patch verified vulnerabilities within **7 business days**.
-- **Public Disclosure:** Public advisories and patched release releases will be coordinated with the reporter after a fix is verified and deployed.
+- **Public Disclosure:** Public advisories and patched releases will be coordinated with the reporter after a fix is verified and deployed.
 
 Thank you for helping keep the open-source ecosystem secure!

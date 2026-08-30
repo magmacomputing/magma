@@ -228,7 +228,6 @@ export function getHemisphere(timeZone: string = getDateTimeFormat().timeZone) {
 			default: return isSouthZone ? 'south' : undefined;
 		}
 	} catch (e) {
-		console.error('DEBUG getHemisphere error:', e);
 		return undefined;
 	}
 }
