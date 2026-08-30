@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo';
+import { getHemisphere } from '#library/international.library.js';
 
 const label = 'instance.set:';
 
@@ -233,6 +234,44 @@ describe(`${label} set method`, () => {
 				expect(nsEnd.isValid).toBe(true);
 				expect(nsEnd.us).toBe(123);
 				expect(nsEnd.ns).toBe(456);
+			});
+		});
+
+		describe('Hemisphere and TimeZone Mutations', () => {
+			test('automatically re-infers sphere when mutating timeZone across hemispheres', () => {
+				const syd = new Tempo('2026-05-10T12:00:00[Australia/Sydney]');
+				expect(syd.sphere).toBe('south');
+
+				const ny = syd.set({ timeZone: 'America/New_York' });
+				expect(ny.tz).toBe('America/New_York');
+				expect(ny.sphere).toBe('north');
+			});
+
+			test('respects explicit sphere override during timeZone mutation', () => {
+				const syd = new Tempo('2026-05-10T12:00:00[Australia/Sydney]');
+				const nyOverride = syd.set({ timeZone: 'America/New_York', sphere: 'south' });
+				expect(nyOverride.tz).toBe('America/New_York');
+				expect(nyOverride.sphere).toBe('south');
+			});
+
+			test('allows explicit sphere mutation without altering timeZone', () => {
+				const syd = new Tempo('2026-05-10T12:00:00[Australia/Sydney]');
+				const sydNorth = syd.set({ sphere: 'north' });
+				expect(sydNorth.tz).toBe('Australia/Sydney');
+				expect(sydNorth.sphere).toBe('north');
+			});
+		});
+
+		describe('Convenience Mutate Aliases', () => {
+			test('plus, minus, sub handle duration objects correctly', () => {
+				const t = new Tempo('2026-05-10T12:00:00Z');
+				const tPlusObj = t.plus({ days: 2 });
+				const tMinusObj = t.minus({ days: 2 });
+				const tSubObj = t.sub({ days: 2 });
+
+				expect(tPlusObj.dd).toBe(12);
+				expect(tMinusObj.dd).toBe(8);
+				expect(tSubObj.dd).toBe(8);
 			});
 		});
 	});

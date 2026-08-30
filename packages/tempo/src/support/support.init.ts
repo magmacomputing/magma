@@ -24,7 +24,12 @@ import * as t from '../tempo.type.js';
 import { registryUpdate } from './support.register.js';
 
 /**
- * Normalizes or constructs a BoundedCache instance from configuration options.
+ * Resolves cache configuration into a bounded cache.
+ *
+ * @param optionsCache - An existing bounded cache, entry collection, or cache configuration.
+ * @param existingCache - A cache to reuse or update when applicable.
+ * @returns The resolved bounded cache, using defaults of 1000 entries and 24 hours when created from configuration.
+ * @internal
  */
 function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
 	const isBoundedCacheOpt = Boolean(optionsCache?.isBoundedCache || optionsCache instanceof BoundedCache);
@@ -48,7 +53,16 @@ function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedC
 	}
 }
 
-/** @internal Initialise a Tempo state */
+/**
+ * @internal
+ * Initializes and returns Tempo state for global, local, or inherited configurations.
+ *
+ * @param options - Configuration options used to initialize the state
+ * @param isGlobal - Whether the state serves as the global Tempo state
+ * @param baseState - Optional state from which to inherit configuration and parsing settings
+ * @param prevCache - Optional cache to reuse when no cache is available on the base or global state
+ * @returns The initialized Tempo state
+ */
 export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State, prevCache?: BoundedCache): t.Internal.State {
 	const runtime = getRuntime();
 	// Global init is intentionally idempotent after first hydration; late-loaded modules must use Tempo.extend().
@@ -78,6 +92,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		};
 	}
 
+	state.options = options;
 	const targetCache = baseState?.cache ?? runtime.state?.cache ?? prevCache;
 	state.cache = resolveCache(options.cache, targetCache);
 
@@ -204,6 +219,13 @@ const CANONICAL_OPTION_KEYS: Record<string, string> = Object.assign(Object.creat
 	errorhandling: 'error',
 });
 
+/**
+ * Applies configuration overrides to an existing state.
+ *
+ * @param state - The state to update
+ * @param options - Configuration options to apply
+ * @returns `true` if the changes require parsing patterns to be regenerated, `false` otherwise.
+ */
 export function extendState(state: t.Internal.State, options: t.Options): boolean {
 	let patternsDirty = false;
 
@@ -232,7 +254,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 		state.userProvidedKeys.add(optKey);
 		state.userProvidedKeys.add(rawKey);
 		const preserveSupplier = isFunction(optVal) && state.config?.scope !== 'local';
-		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey) && !(optKey === 'locale' && preserveSupplier))
+		const evaluatedVal = (['timeZone', 'calendar', 'locale', 'sphere', 'pivot'].includes(optKey) && !preserveSupplier)
 			? evaluate(optVal)
 			: optVal;
 		const arg = asType(evaluatedVal);
@@ -272,6 +294,9 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				const zone = String(arg.value).toLowerCase();
 				const resolvedZone = options.timeZones?.[zone] ?? state.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
 				setProperty(state.config, 'timeZone', preserveSupplier ? optVal : resolvedZone);
+				const hasSuppliedSphere = isDefined(options.sphere) || (state.userProvidedKeys?.has('sphere') && isDefined(state.config.sphere));
+				if (!hasSuppliedSphere)
+					setProperty(state.config, 'sphere', getHemisphere(resolvedZone));
 				break;
 			}
 
@@ -416,8 +441,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'intl':
-				if (!isObject(state.config.intl)) setProperty(state.config, 'intl', {});
-				state.config.intl = deepMerge(state.config.intl, arg.value);
+				state.config.intl = deepMerge(state.config.intl ?? {}, arg.value);
 				break;
 
 			case 'planner':

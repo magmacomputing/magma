@@ -17,9 +17,17 @@ import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
 
 import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Token, Snippet } from '#tempo/support';
-import { setProperty, logError, logDebug } from '#tempo/support/support.util.js';
+import { setProperty, logError, logDebug, hasOwn } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
 
+/**
+ * Builds a parse-cache key from normalized input and parsing configuration.
+ *
+ * @param str - The input text to include in the key
+ * @param today - The anchor date used for date-sensitive parsing
+ * @param state - The parser state whose temporal configuration scopes the key
+ * @returns A cache key containing the input, anchor date, time zone, calendar, locale, and hemisphere
+ */
 function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Internal.State): string {
 	const norm = str.trim().toLowerCase();
 	const dateSalt = today.toPlainDate().toString();
@@ -159,8 +167,10 @@ const _ParseEngine = {
 
 			dateTime = dt;
 
+			const hasExplicitTzOption = state.options && hasOwn(state.options, 'timeZone');
+			const effectiveTz = hasExplicitTzOption ? targetTz : (timeZone ?? targetTz);
 			if (isZonedDateTime(dateTime) && !state.errored)
-				dateTime = dateTime.withTimeZone(targetTz).withCalendar(targetCal);
+				dateTime = dateTime.withTimeZone(effectiveTz).withCalendar(targetCal);
 
 			if ((state.config.cache === true || state.config.cache === enums.CACHE.On || state.config.cache === enums.CACHE.Refresh || state.config.cache === 'refresh') && isString(tempo) && isZonedDateTime(dateTime) && !state.errored) {
 				const cacheKey = buildCacheKey(tempo, today, state);
@@ -505,15 +515,13 @@ export const ParseEngine = {
 export const ParseModule = defineInterpreterModule('ParseModule', ParseEngine);
 
 /**
- * Standalone Parser
- * Returns a Temporal.ZonedDateTime from a variety of inputs.
+ * Parses a date-time value using an isolated parser configuration.
  *
- * @param value - The date-time value to parse (string, number, Date, or Tempo instance).
- * @param options - Configuration overrides for this specific parse operation.
+ * Standalone parsing defaults to strict mode and applies the supplied configuration overrides.
  *
- * @example
- * import { parse } from '@magmacomputing/tempo/parse';
- * const zdt = parse('2026-04-22');
+ * @param value - The date-time value to parse.
+ * @param options - Configuration overrides for this parse operation.
+ * @returns The parsed date-time as a `Temporal.ZonedDateTime`.
  */
 export function parse(value: t.DateTime, options: t.Options = {}): Temporal.ZonedDateTime {
 	const runtime = getRuntime();
@@ -537,6 +545,7 @@ export function parse(value: t.DateTime, options: t.Options = {}): Temporal.Zone
 	// Standalone parsing defaults to 'strict' mode
 	const localOptions = { ...options };
 	localOptions.mode ??= 'strict';
+	state.options = localOptions;
 
 	// Apply options
 	extendState(state, localOptions);

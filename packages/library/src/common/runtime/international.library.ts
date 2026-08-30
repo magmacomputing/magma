@@ -162,13 +162,12 @@ export function formatNumber(value: number, locale?: string, options?: Intl.Numb
 }
 
 /**
- * Returns a localized day period string using `Intl.DateTimeFormat`.
- * Extracts the 'dayPeriod' token from the formatted parts.
- * 
- * @param value - The numeric epoch time value
- * @param locale - Optional locale string
- * @param options - Optional format configuration
- * @returns The localized day period string (e.g., 'AM', 'PM', 'de la mañana')
+ * Extracts the localized day-period label from a formatted date.
+ *
+ * @param value - The epoch time value to format
+ * @param locale - The locale used for formatting
+ * @param options - Date-time formatting options
+ * @returns The localized day-period label, or `undefined` if formatting fails or no day-period part exists
  */
 export function formatDayPeriod(value: number, locale?: string, options?: Intl.DateTimeFormatOptions) {
 	try {
@@ -179,7 +178,15 @@ export function formatDayPeriod(value: number, locale?: string, options?: Intl.D
 	}
 }
 
-/** return a localized unit string (e.g., '2 days') */
+/**
+ * Formats a numeric value with a localized unit.
+ *
+ * @param value - The numeric value to format
+ * @param unit - The unit identifier, such as `day`, `hour`, or `meter`
+ * @param locale - The locale to use for formatting
+ * @param unitDisplay - The unit display style
+ * @returns The localized unit string, or the value and unit separated by a space if formatting fails
+ */
 export function formatUnit(value: number, unit: string, locale?: string, unitDisplay: Intl.NumberFormatOptions['unitDisplay'] = 'long') {
 	try {
 		return getNF(locale, { style: 'unit', unit, unitDisplay }).format(value);

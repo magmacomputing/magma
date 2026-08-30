@@ -41,7 +41,7 @@ describe('Numeric Resolution & Fractional Precision', () => {
 	});
 
 	describe('NaN handling', () => {
-		let originalCatch: boolean;
+		let originalCatch: boolean | undefined;
 
 		beforeEach(() => {
 			originalCatch = Tempo.config.catch;

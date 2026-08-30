@@ -3,7 +3,7 @@ import '#library/temporal.polyfill.js';
 import { Immutable, Serializable, StringTag } from '#library/decorator.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
-import { secure, proxify, delegate, indexedArray } from '#library/proxy.library.js';
+import { secure, proxify, delegate, indexedArray, dynamicProxy } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { ownKeys, ownEntries, ownValues, unwrap } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
@@ -233,15 +233,13 @@ export class Tempo {
 			if (isDefined(evaluatedSphere)) return evaluatedSphere;
 		}
 
-		const tz = options.timeZone;
-		if (isDefined(tz)) {
-			const resolvedTz = shape.config.timeZone;
-			if (String(resolvedTz).toLowerCase() === 'utc') return undefined;
+		const resolvedTz = options.timeZone ?? shape.config.timeZone;
+		if (isDefined(resolvedTz) && String(resolvedTz).toLowerCase() !== 'utc') {
 			const sphere = getHemisphere(String(resolvedTz));
 			if (isDefined(sphere)) return sphere;
 		}
 
-		return isDefined(shape.config?.sphere) ? evaluate(shape.config.sphere) : undefined;
+		return undefined;
 	}
 
 	/** determine if we have a {timeZone} which prefers {mdy} date-order */
@@ -339,12 +337,9 @@ export class Tempo {
 		}
 
 		// Side-effects
-		const newSphere = Tempo.#setSphere(shape, mergedOptions);
-		if (shape.config.scope === 'local') {
+		if (isDefined(mergedOptions.sphere) && !isFunction(mergedOptions.sphere)) {
+			const newSphere = Tempo.#setSphere(shape, mergedOptions);
 			if (isDefined(newSphere)) shape.config.sphere = newSphere;
-		} else {
-			if (!isFunction(shape.config.sphere))
-				shape.config.sphere = newSphere;
 		}
 
 		const oldLayout = shape.parse.layout;
@@ -824,8 +819,8 @@ export class Tempo {
 			// 2. Establish context and keys
 			const sys = getDateTimeFormat();
 			const config = state.config;
-			const timeZone = evaluate(options.timeZone, config.timeZone, sys.timeZone);
-			const calendar = evaluate(options.calendar, config.calendar, sys.calendar);
+			const timeZone = evaluate(config.timeZone, sys.timeZone);
+			const calendar = evaluate(config.calendar, sys.calendar);
 			let discovery = options.discovery ?? Symbol.keyFor($Tempo) as string;
 			const storeKey = options.store || config.store || Symbol.keyFor($Tempo) as string;
 
@@ -925,12 +920,12 @@ export class Tempo {
 	}
 
 	/** @internal Reads options from persistent storage (e.g., localStorage). */
-	static readStore(key = this[$Internal]().config.store) {
+	static readStore(key: string = this[$Internal]().config.store || (Symbol.keyFor($Tempo) as string)) {
 		return getStorage<t.Options>(key, {});
 	}
 
 	/** @internal Writes configuration into persistent storage. */
-	static writeStore(config?: t.Options, key = this[$Internal]().config.store) {
+	static writeStore(config?: t.Options, key: string = this[$Internal]().config.store || (Symbol.keyFor($Tempo) as string)) {
 		return setStorage(key, config);
 	}
 
@@ -993,7 +988,7 @@ export class Tempo {
 				enumerable: false, configurable: true
 			});
 
-		return proxify(out);
+		return dynamicProxy(proxify(out)) as t.Internal.Config;
 	}
 
 	/** global discovery configuration */
@@ -1162,11 +1157,10 @@ export class Tempo {
 	/** constructor options */																#options = {} as t.Options;
 	/** instantiation Temporal Instant */											#instant?: Temporal.Instant;
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
-	/** memoized TimeZone ID */																#tz?: string;
-	/** memoized Calendar ID */																#cal?: string;
+	/** memoized instance properties */
+	#memo: { tz?: string; cal?: string; sphere?: t.COMPASS | undefined; fmt?: Record<string, string | undefined> } = {};
 	/** indicator that the instance failed to parse */				#errored = false;
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
-	/** prebuilt formats, for convenience */									#fmt?: Record<string, string | undefined>;
 	/** mapping of terms to their resolved values */					#term?: any;
 	/** a collection of parse rule-matches */									#matches: Internal.MatchResult[] | undefined;
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
@@ -1256,6 +1250,7 @@ export class Tempo {
 
 		if (isZonedDateTime(this.#tempo)) this.#zdt = this.#tempo;
 		this.#setLocal(this.#options);													// parse local options
+		this.#options = this.#local.options ?? {};
 		this.#anchor = evaluate(this.#options.anchor);
 		if (!this.#zdt && isObject(this.#tempo) && isDurationLike(this.#tempo)) {
 			this.#zdt = this.#resolveAnchorBasis(this.#anchor)		// relative shorthand for "anchor (or now) plus duration"
@@ -1307,10 +1302,10 @@ export class Tempo {
 
 	/** returns a [timezone, calendar] tuple derived from the underlying date-time. */
 	#temporalIds(): [string, string] {
-		if (!this.#tz || !this.#cal) {
-			[this.#tz, this.#cal] = getTemporalIds(this.toDateTime());
+		if (!this.#memo.tz || !this.#memo.cal) {
+			[this.#memo.tz, this.#memo.cal] = getTemporalIds(this.toDateTime());
 		}
-		return [this.#tz, this.#cal];
+		return [this.#memo.tz, this.#memo.cal];
 	}
 
 	/** Resolve the instance to a Temporal.ZonedDateTime (with optional callback) */
@@ -1471,11 +1466,11 @@ export class Tempo {
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
 	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return this.toDateTime().era; }
 	/** Year within the era (positive integer) */							get eon() { return this.toDateTime().eraYear; }
-	/** @hidden */																						get eraYear() { return this.toDateTime().eraYear; }
+	/** @hidden prefer `eon` */																get eraYear() { return this.toDateTime().eraYear; }
 	/** 4-digit iso week-numbering year */										get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** iso week number of the year */												get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
-	/** @deprecated use `wy` */																get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/** @hidden prefer `wy` */																get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
 	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day as t.dd }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
@@ -1488,8 +1483,24 @@ export class Tempo {
 	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
-	/** Resolved hemisphere ('north' | 'south') */						get sphere() { return (this.#local.config.sphere ?? (this as any)[$Internal]().config.sphere ?? Default.sphere) as t.COMPASS | undefined }
-	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[this.#local.config.timeStamp] }
+	/** Resolved hemisphere ('north' | 'south' | undefined) */get sphere(): t.COMPASS | undefined {
+		if ('sphere' in this.#memo) return this.#memo.sphere;
+
+		const globalTz = (this as any)[$Internal]().config.timeZone;
+		const hasInstanceTzOverride = isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(this.tz).toLowerCase() !== String(globalTz).toLowerCase());
+
+		const res = evaluate(
+			this.#local.options && hasOwn(this.#local.options, 'sphere') ? this.#local.options.sphere : undefined,
+			hasInstanceTzOverride ? () => getHemisphere(String(this.tz)) : undefined,
+			hasOwn(this.#local.config, 'sphere') ? this.#local.config.sphere : undefined,
+			() => (isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' ? getHemisphere(String(this.tz)) : undefined),
+			(this as any)[$Internal]().config.sphere,
+			Default.sphere
+		);
+
+		return (this.#memo.sphere = res as t.COMPASS | undefined);
+	}
+	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[this.#local.config.timeStamp ?? 'ms'] }
 	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as t.Month) }
 	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as t.Month) }
 	/** Short weekday name (e.g., 'Mon') */										get www() { return Tempo.WEEKDAY.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
@@ -1533,13 +1544,18 @@ export class Tempo {
 		const out = markConfig(Object.create(global));
 		Object.entries(this.#local.config).forEach(([k, v]) => setProperty(out, k, v));
 
+		Object.defineProperty(out, 'sphere', {
+			get: () => this.sphere,
+			enumerable: true, configurable: true
+		});
+
 		Object.defineProperty(out, 'toJSON', {
 			value: () => Object.fromEntries(											// bare-bones: only show local overrides
 				Object.entries(out)),																// proxify sees own toJSON, skips allObject
 			enumerable: false, configurable: true
 		});
 
-		return proxify(out) as t.Internal.Config;
+		return dynamicProxy(proxify(out)) as t.Internal.Config;
 	}
 
 	/** Instance-specific parse rules (merged with global) */
@@ -1568,7 +1584,7 @@ export class Tempo {
 	}
 
 	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term ??= this.#setDelegator('term'); }
-	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#fmt ??= this.#setDelegator('fmt'); }
+	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#memo.fmt ??= this.#setDelegator('fmt'); }
 	/** units since epoch for this date-time instance */			get epoch() { return Tempo.#getEpoch(this.toDateTime()); }
 
 	/**
@@ -1613,16 +1629,19 @@ export class Tempo {
 	}
 	/** the date-time as a standard `Date` object. */					toDate() { return new Date(this.toDateTime().round({ smallestUnit: enums.ELEMENT.ms }).epochMilliseconds) }
 	/** Custom JSON serialization for `JSON.stringify`. */		toJSON() { return { ...this.#local.config, value: this.toString() } }
-	/** iso8601 string representation of the date-time. */
-	toString() {
+	/** iso8601 string representation of the date-time. */		toString() {
 		return (this.isValid && !this.#errored)
 			? this.toPlainDateTime().toString({ calendarName: 'never' })
 			: String(this.#tempo ?? '');
 	}
 
 	/** setup local 'config' and 'parse' rules (prototype-linked to global) */
-	#setLocal(options: t.Options = {}) {
+	#setLocal(rawOptions: t.Options = {}) {
 		const classState = (this.constructor as any)[$Internal]();
+		const storeKey = rawOptions.store;
+		const storeOptions = storeKey ? (this.constructor as any).readStore(storeKey) : {};
+		const options: t.Options = { ...storeOptions, ...rawOptions };
+
 		this.#local = Object.create(classState);
 		const self = unwrap(this);
 		this.#local.config = markConfig(Object.create(classState.config));
@@ -1631,42 +1650,58 @@ export class Tempo {
 		Object.assign(this.#local.config, { scope: 'local' });
 
 		// Evaluate and snapshot dynamic context suppliers for this specific Tempo instance
-		const evaluatedTz = evaluate(options.timeZone, classState.config.timeZone);
+		const rawTz = options.timeZone ?? (options as any).timezone ?? (options as any).TimeZone;
+		const explicitTz = evaluate(rawTz);
+		const evaluatedTz = explicitTz ?? evaluate(classState.config.timeZone);
+		let resolvedZone: string | undefined;
 		if (isDefined(evaluatedTz)) {
 			const zone = String(evaluatedTz).toLowerCase();
-			const resolvedZone = (this.constructor as any).timeZones?.[zone] ?? classState.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(evaluatedTz));
+			resolvedZone = (this.constructor as any).timeZones?.[zone] ?? classState.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(evaluatedTz));
 			setProperty(this.#local.config, 'timeZone', resolvedZone);
 		}
 
-		const evaluatedCal = evaluate(options.calendar, classState.config.calendar);
+		const rawCal = options.calendar ?? (options as any).Calendar;
+		const explicitCal = evaluate(rawCal);
+		const evaluatedCal = explicitCal ?? evaluate(classState.config.calendar);
 		if (isDefined(evaluatedCal))
 			setProperty(this.#local.config, 'calendar', String(evaluatedCal));
 
-		const evaluatedLoc = evaluate(options.locale, classState.config.locale);
+		let finalLocale: string | string[] | undefined;
+		const rawLoc = options.locale ?? (options as any).Locale;
+		const explicitLoc = evaluate(rawLoc);
+		const evaluatedLoc = explicitLoc ?? evaluate(classState.config.locale);
 		if (isDefined(evaluatedLoc)) {
 			const resolvedLocales = asArray(evaluatedLoc).map(l => canonicalLocale(String(l))).filter(Boolean) as string[];
 			if (resolvedLocales.length > 0) {
-				const finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
+				finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
 				setProperty(this.#local.config, 'locale', finalLocale);
 			}
 		}
 
-		const hasExplicitOption = isDefined(options.sphere);
-		const evaluatedExplicit = hasExplicitOption ? evaluate(options.sphere) : (classState.userProvidedKeys?.has('sphere') ? evaluate(classState.config.sphere) : undefined);
-		const inferredSphere = this.#local.config.timeZone ? getHemisphere(String(this.#local.config.timeZone)) : undefined;
-		const evaluatedSphere = evaluate(
-			evaluatedExplicit,
-			inferredSphere,
-			classState.config.sphere
-		);
-		if (isDefined(evaluatedSphere))
-			setProperty(this.#local.config, 'sphere', evaluatedSphere);
+		this.#local.userProvidedKeys = new Set();
 
-		const optionsSnapshot = { ...options };
-		if (isDefined(options.timeZone)) optionsSnapshot.timeZone = this.#local.config.timeZone;
-		if (isDefined(options.calendar)) optionsSnapshot.calendar = this.#local.config.calendar;
-		if (isDefined(options.locale)) optionsSnapshot.locale = this.#local.config.locale;
-		if (isDefined(options.sphere)) optionsSnapshot.sphere = this.#local.config.sphere;
+		let explicitSphere: t.COMPASS | undefined;
+		let evalSphere: t.COMPASS | undefined;
+		const rawSphere = options.sphere ?? (options as any).Sphere;
+		if (isDefined(rawSphere)) {
+			explicitSphere = evaluate(rawSphere) as t.COMPASS;
+			evalSphere = explicitSphere;
+			setProperty(this.#local.config, 'sphere', evalSphere);
+			this.#local.userProvidedKeys.add('sphere');
+		} else if (classState.userProvidedKeys?.has('sphere')) {
+			evalSphere = evaluate(classState.config.sphere);
+			setProperty(this.#local.config, 'sphere', evalSphere);
+		}
+
+		const optionsSnapshot = {
+			...options,
+			...(isDefined(explicitTz) ? { timeZone: resolvedZone } : {}),
+			...(isDefined(explicitCal) ? { calendar: String(evaluatedCal) } : {}),
+			...(isDefined(explicitLoc) ? { locale: finalLocale } : {}),
+			...(isDefined(explicitSphere) ? { sphere: explicitSphere } : {}),
+		};
+
+		this.#local.options = optionsSnapshot;
 
 		this.#local.parse = markConfig(Object.create(classState.parse));
 		this.#local.parse.event = { ...classState.parse.event };
@@ -1853,7 +1888,7 @@ export namespace Tempo {
 	export type ns = t.ns;
 	/** ISO week-year numeric value */
 	export type wy = t.wy;
-	/** @deprecated use `wy` */
+	/** @hidden prefer `wy` */
 	export type ww = t.wy;
 
 	/** Timestamp precision unit (ss, ms, us, ns) */
