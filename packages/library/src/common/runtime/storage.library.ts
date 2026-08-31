@@ -51,7 +51,7 @@ let storage = context.type === CONTEXT.Browser
 	? getSafeStorage()
 	: createMemoryStorage();
 
-const nodeStorage = new Map<string, string>();
+const nodeStorage = new Map<string, string | undefined>();
 
 /**
  * Selects the active browser storage mechanism (localStorage or sessionStorage).
@@ -157,9 +157,7 @@ export function setStorage<T>(key: string, val?: T) {
 			break;
 
 		case CONTEXT.NodeJS:
-			set
-				? nodeStorage.set(key, stash)
-				: nodeStorage.delete(key);
+			nodeStorage.set(key, stash);
 			break;
 
 		case CONTEXT.Deno:

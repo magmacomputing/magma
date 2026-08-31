@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.0.3] - 2026-08-31
 
 ### Added & Security
-- **Declarative Mutability (`@Mutable`) & Environment Detection (`isTestEnvironment`)**: Added `@Mutable(condition?)` class decorator in `#library/decorator.library.js` to support declarative method/property mutation exemptions on `@Immutable` / `@Securable` classes, alongside an AST-safe `isTestEnvironment()` detection helper in `#library/storage.library.js`.
+- **Declarative Mutability (`@Mutable`) & Environment Detection (`isTestEnvironment`)**: Added `@Mutable(condition?)` member decorator in `#library/decorator.library.js` to support declarative method/property mutation exemptions on `@Immutable` / `@Securable` classes, alongside an AST-safe `isTestEnvironment()` detection helper in `#library/storage.library.js`.
 
 ## [4.0.0] - 2026-08-27
 

@@ -2,6 +2,17 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-astro` project will be documented in this file.
 
+## [2.2.0] - 2026-08-31
+
+### Added
+- **Lunar Cycle Engine (`LunarTerm`)**: Added comprehensive lunar phase calculations, introducing `t.term.moon` and `t.term.lunar` terms.
+- **Machine Keys & Human Phase Names**: `t.term.moon` and `t.term.lunar.key` resolve short machine-friendly keys (`'new-moon'`, `'waxing-crescent'`, `'full-moon'`, etc.), while `t.term.lunar.phase` provides full human-readable phase names (`'New Moon'`, `'Waxing Crescent'`, `'Full Moon'`, etc.).
+- **1-Based Phase Index (`index`)**: `t.term.lunar.index` provides a 1-based step index (`1`: New Moon ... `5`: Full Moon ... `8`: Waning Crescent) for numerical step calculations and array indexing.
+- **Phase Metadata**: Resolves illumination percentage (0..1), moon age in days, waxing/waning status, and range boundary `start` / `end` Tempo instances.
+- **Hemisphere Awareness**: Lunar phase emojis automatically adjust orientation when `sphere` is set to Southern (`sphere: 'south'`) vs Northern (`sphere: 'north'`), and evaluate to `undefined` if `sphere` is omitted.
+- **Plugin Bundle Export**: Exported `AstroPlugin` (`[AstroTerm, LunarTerm]`) as the default export. Importing `@magmacomputing/tempo-plugin-astro` auto-registers both terms into Tempo's term database via side-effects.
+- **Standalone Helper**: Exported `getLunarPhase(tempo)` standalone calculation function.
+
 ## [2.1.4] - 2026-08-15
 
 ### Changed

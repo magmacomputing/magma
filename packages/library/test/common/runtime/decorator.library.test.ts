@@ -222,4 +222,51 @@ describe('Class Decorators: Mutable', () => {
     }
     expect(typeof StandardClass.init).toBe('function');
   });
+
+  it('should compare member names by identity rather than String coercion (distinct symbols with same description)', () => {
+    const symA = Symbol('testSymbol');
+    const symB = Symbol('testSymbol');
+
+    @Immutable
+    class SymbolEngine {
+      @Mutable
+      static [symA]() {}
+
+      static [symB]() {}
+    }
+
+    // symA is decorated with @Mutable, so its property descriptor shouldn't be locked writable: false
+    expect(() => { (SymbolEngine as any)[symA] = () => {}; }).not.toThrow();
+    // symB is NOT decorated with @Mutable, even though it shares description 'testSymbol' with symA
+    expect(() => { (SymbolEngine as any)[symB] = () => {}; }).toThrow();
+  });
+
+  it('should support non-static / instance members decorated with @Mutable on @Immutable classes', () => {
+    let testMode = true;
+
+    @Immutable
+    class Component {
+      @Mutable(() => testMode)
+      resetInstance() {}
+
+      @Mutable
+      get dynamicData() {
+        return 42;
+      }
+    }
+
+    expect(() => {
+      Component.prototype.resetInstance = () => {};
+    }).not.toThrow();
+
+    expect(() => {
+      Object.defineProperty(Component.prototype, 'dynamicData', {
+        get() { return 100; },
+        configurable: true,
+      });
+    }).not.toThrow();
+
+    const c = new Component();
+    expect((c as any).dynamicData).toBe(100);
+  });
 });

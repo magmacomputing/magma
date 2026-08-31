@@ -32,8 +32,9 @@ function getClassName<T extends Constructor>(value: T, contextName: string | sym
 function createImmutableWrapper<T extends Constructor>(
 	value: T,
 	name: string | undefined,
-	addInitializer: (fn: () => void) => void,
-	immutabilityStrategy: (instance: any) => any							// either Object.freeze or secure (Proxy) strategy
+	addInitializer: (initializer: () => void) => void,
+	immutabilityStrategy: (instance: any) => any,
+	metadata?: any
 ): T {
 	const safeName = name || 'Anonymous';
 	const wrapper = {
@@ -51,9 +52,14 @@ function createImmutableWrapper<T extends Constructor>(
 	}
 
 	addInitializer(() => {
-		const skip = (value as any)[$Mutable]
-			?? (value as any).$Mutable
-			?? [];
+		const metaSymbol = (Symbol as any).metadata;
+		const meta = metadata ?? (metaSymbol ? (value as any)[metaSymbol] : undefined);
+
+		const skip = [
+			...((value as any)[$Mutable] ?? (value as any).$Mutable ?? []),
+			...((value?.prototype as any)?.[$Mutable] ?? (value?.prototype as any)?.$Mutable ?? []),
+			...(meta?.[$Mutable] ?? meta?.$Mutable ?? []),
+		];
 
 		hardenClassStaticsAndPrototypes(value, wrapper, skip);
 	});
@@ -65,10 +71,10 @@ function shouldSkipMember(name: string | symbol, skipList: any): boolean {
 	if (!Array.isArray(skipList)) return false;
 	return skipList.some(entry => {
 		if (isString(entry) || isSymbol(entry)) {
-			return String(entry) === String(name);
+			return entry === name;
 		}
 		if (entry && typeof entry === 'object' && 'name' in entry) {
-			if (String(entry.name) !== String(name)) return false;
+			if (entry.name !== name) return false;
 			return typeof entry.condition === 'function' ? Boolean(entry.condition()) : Boolean(entry.condition ?? true);
 		}
 		return false;
@@ -138,12 +144,12 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
  * class Config { ... }
  * ```
  */
-export function Securable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
+export function Securable<T extends Constructor>(value: T, { kind, name, addInitializer, metadata }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
 
 	switch (kind) {
 		case 'class':
-			return createImmutableWrapper(value, finalName, addInitializer, secure);
+			return createImmutableWrapper(value, finalName, addInitializer, secure, metadata);
 		default:
 			throw new Error(`@Securable decorating unknown 'kind': ${kind} (${name})`);
 	}
@@ -167,12 +173,12 @@ export function Securable<T extends Constructor>(value: T, { kind, name, addInit
  * class Config { ... }
  * ```
  */
-export function Immutable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
+export function Immutable<T extends Constructor>(value: T, { kind, name, addInitializer, metadata }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
 
 	switch (kind) {
 		case 'class':
-			return createImmutableWrapper(value, finalName, addInitializer, (instance) => { Object.freeze(instance); return instance; });
+			return createImmutableWrapper(value, finalName, addInitializer, (instance) => { Object.freeze(instance); return instance; }, metadata);
 
 		default:
 			throw new Error(`@Immutable decorating unknown 'kind': ${kind} (${name})`);
@@ -393,17 +399,33 @@ export type MutableCondition = boolean | (() => boolean);
  */
 export function Mutable(targetOrCondition?: MutableCondition | any, context?: any): any {
 	const applyMutable = (ctx: any, condition?: MutableCondition) => {
-		ctx.addInitializer(function (this: any) {
-			const target = typeof this === 'function' ? this : (this.constructor ?? this);
-			let list = (target as any)[$Mutable];
+		const entry = {
+			name: ctx.name,
+			condition: typeof condition === 'function' ? condition : () => (condition ?? true),
+		};
+
+		if (ctx.metadata) {
+			let list = ctx.metadata[$Mutable];
 			if (!Array.isArray(list)) {
 				list = [];
-				Object.defineProperty(target, $Mutable, { value: list, writable: true, configurable: true });
+				Object.defineProperty(ctx.metadata, $Mutable, { value: list, writable: true, configurable: true });
 			}
-			list.push({
-				name: ctx.name,
-				condition: typeof condition === 'function' ? condition : () => (condition ?? true),
-			});
+			list.push(entry);
+		}
+
+		ctx.addInitializer(function (this: any) {
+			const targets = [this];
+			if (this && typeof this.constructor === 'function' && this.constructor !== this) {
+				targets.push(this.constructor);
+			}
+			for (const target of targets) {
+				let list = (target as any)[$Mutable];
+				if (!Array.isArray(list)) {
+					list = [];
+					Object.defineProperty(target, $Mutable, { value: list, writable: true, configurable: true });
+				}
+				list.push(entry);
+			}
 		});
 	};
 

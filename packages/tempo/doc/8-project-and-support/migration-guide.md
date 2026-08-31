@@ -112,6 +112,7 @@ Tempo.init({
 
 - **`Tempo.extend` vs `Tempo.extends`**: The legacy alias `Tempo.extends` has been excised. Use `Tempo.extend()`.
 - **`TempoInstance` Type**: `TempoInstance` interface alias has been removed in favor of standard `Tempo` class/instance types.
+- **`Mutable<T>` to `MutableObject<T>`**: The utility type `Mutable<T>` has been renamed to `MutableObject<T>` to prevent naming collisions with the `@Mutable` member decorator and clarify object-level `readonly` stripping.
 
 ---
 

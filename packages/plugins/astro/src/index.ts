@@ -1,6 +1,43 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { enums, getTermRange, defineTerm, enumify, type ValueOf } from '@magmacomputing/tempo/plugin/sdk';
 
+export type LunarPhaseKey =
+	| 'new-moon'
+	| 'waxing-crescent'
+	| 'first-quarter'
+	| 'waxing-gibbous'
+	| 'full-moon'
+	| 'waning-gibbous'
+	| 'third-quarter'
+	| 'waning-crescent';
+
+export type LunarPhaseName =
+	| 'New Moon'
+	| 'Waxing Crescent'
+	| 'First Quarter'
+	| 'Waxing Gibbous'
+	| 'Full Moon'
+	| 'Waning Gibbous'
+	| 'Third Quarter'
+	| 'Waning Crescent';
+
+export interface LunarPhaseDetails {
+	/** Short machine-friendly key string (e.g. 'full-moon', 'new-moon') */
+	key: LunarPhaseKey;
+	/** Human-readable lunar phase name (e.g. 'Full Moon', 'New Moon') */
+	phase: LunarPhaseName;
+	/** 1-based lunar phase index (1: New Moon ... 5: Full Moon ... 8: Waning Crescent) */
+	index: number;
+	/** Fraction of the Moon's disk illuminated (0.0 to 1.0) */
+	illumination: number;
+	/** Age of the moon in days into the current synodic month (0.0 to ~29.53) */
+	ageDays: number;
+	/** True if the moon is growing (waxing), false if shrinking (waning) */
+	isWaxing: boolean;
+	/** Unicode emoji representation of the lunar phase, or undefined if sphere is not configured */
+	emoji?: string | undefined;
+}
+
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
 		astro: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
@@ -22,12 +59,184 @@ declare module '@magmacomputing/tempo' {
 			nanosecond: number;
 			start: Tempo;
 			end: Tempo;
-		}
+		};
+		moon: LunarPhaseKey;
+		lunar: {
+			key: LunarPhaseKey;
+			phase: LunarPhaseName;
+			index: number;
+			illumination: number;
+			ageDays: number;
+			isWaxing: boolean;
+			emoji?: string | undefined;
+			group: 'lunar';
+			year: number;
+			month: number;
+			day: number;
+			hour: number;
+			minute: number;
+			second: number;
+			millisecond: number;
+			microsecond: number;
+			nanosecond: number;
+			start: Tempo;
+			end: Tempo;
+		};
 	}
 }
 
+const SYNODIC_MONTH = 29.53058770576;
+const REF_NEW_MOON_MS = 947_182_440_000; // 2000-01-06T18:14:00Z
+
+/**
+ * Calculates lunar phase details (short key, phase name, 1-based index, illumination percentage, age in days, waxing status, emoji)
+ * for a given Tempo instance. Returns `emoji: undefined` if `t.sphere` is not specified.
+ *
+ * @param t - The Tempo instance
+ * @returns LunarPhaseDetails object
+ */
+export function getLunarPhase(t: Tempo): LunarPhaseDetails {
+	const currentMs = t.epoch.ms;
+	const elapsedDays = (currentMs - REF_NEW_MOON_MS) / 86_400_000;
+	const ageDays = ((elapsedDays % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
+	const phaseAngle = (ageDays / SYNODIC_MONTH) * 2 * Math.PI;
+	const illumination = Math.round(((1 - Math.cos(phaseAngle)) / 2) * 10000) / 10000;
+	const isWaxing = ageDays < (SYNODIC_MONTH / 2);
+	const sphere = t.sphere;
+
+	let key: LunarPhaseKey;
+	let phase: LunarPhaseName;
+	let index: number;
+	let emoji: string | undefined;
+
+	const step = SYNODIC_MONTH / 16;
+
+	if (ageDays < step || ageDays >= SYNODIC_MONTH - step) {
+		key = 'new-moon';
+		phase = 'New Moon';
+		index = 1;
+		if (sphere) emoji = '🌑';
+	} else if (ageDays < 3 * step) {
+		key = 'waxing-crescent';
+		phase = 'Waxing Crescent';
+		index = 2;
+		if (sphere === enums.COMPASS.South) emoji = '🌘';
+		else if (sphere === enums.COMPASS.North) emoji = '🌒';
+	} else if (ageDays < 5 * step) {
+		key = 'first-quarter';
+		phase = 'First Quarter';
+		index = 3;
+		if (sphere === enums.COMPASS.South) emoji = '🌗';
+		else if (sphere === enums.COMPASS.North) emoji = '🌓';
+	} else if (ageDays < 7 * step) {
+		key = 'waxing-gibbous';
+		phase = 'Waxing Gibbous';
+		index = 4;
+		if (sphere === enums.COMPASS.South) emoji = '🌖';
+		else if (sphere === enums.COMPASS.North) emoji = '🌔';
+	} else if (ageDays < 9 * step) {
+		key = 'full-moon';
+		phase = 'Full Moon';
+		index = 5;
+		if (sphere) emoji = '🌕';
+	} else if (ageDays < 11 * step) {
+		key = 'waning-gibbous';
+		phase = 'Waning Gibbous';
+		index = 6;
+		if (sphere === enums.COMPASS.South) emoji = '🌔';
+		else if (sphere === enums.COMPASS.North) emoji = '🌖';
+	} else if (ageDays < 13 * step) {
+		key = 'third-quarter';
+		phase = 'Third Quarter';
+		index = 7;
+		if (sphere === enums.COMPASS.South) emoji = '🌓';
+		else if (sphere === enums.COMPASS.North) emoji = '🌗';
+	} else {
+		key = 'waning-crescent';
+		phase = 'Waning Crescent';
+		index = 8;
+		if (sphere === enums.COMPASS.South) emoji = '🌒';
+		else if (sphere === enums.COMPASS.North) emoji = '🌘';
+	}
+
+	return {
+		key,
+		phase,
+		index,
+		illumination,
+		ageDays: Math.round(ageDays * 100) / 100,
+		isWaxing,
+		...(emoji !== undefined ? { emoji } : {}),
+	};
+}
+
+function getLunarScopeRange(t: Tempo, anchor?: any) {
+	const refTempo = anchor ?? t;
+	const currentMs = refTempo.epoch.ms;
+	const timeZone = refTempo.tz ?? 'UTC';
+
+	const elapsedDays = (currentMs - REF_NEW_MOON_MS) / 86_400_000;
+	const ageDays = ((elapsedDays % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
+
+	const step = SYNODIC_MONTH / 8;
+	const phaseIndex = Math.floor(((ageDays + step / 2) % SYNODIC_MONTH) / step);
+
+	const phaseStartDaysOffset = (phaseIndex * step) - (step / 2) - ageDays;
+	const phaseEndDaysOffset = phaseStartDaysOffset + step;
+
+	const startMs = Math.trunc(currentMs + (phaseStartDaysOffset * 86_400_000));
+	const endMs = Math.trunc(currentMs + (phaseEndDaysOffset * 86_400_000));
+
+	const startTempo = new Tempo(startMs, { timeZone, timeStamp: 'ms', sphere: refTempo.sphere });
+	const endTempo = new Tempo(endMs, { timeZone, timeStamp: 'ms', sphere: refTempo.sphere });
+
+	const details = getLunarPhase(refTempo);
+	const dt = startTempo.toDateTime();
+
+	return {
+		key: details.key,
+		phase: details.phase,
+		index: details.index,
+		illumination: details.illumination,
+		ageDays: details.ageDays,
+		isWaxing: details.isWaxing,
+		...(details.emoji !== undefined ? { emoji: details.emoji } : {}),
+		group: 'lunar',
+		year: dt.year,
+		month: dt.month,
+		day: dt.day,
+		hour: dt.hour,
+		minute: dt.minute,
+		second: dt.second,
+		millisecond: dt.millisecond,
+		microsecond: dt.microsecond,
+		nanosecond: dt.nanosecond,
+		start: startTempo,
+		end: endTempo,
+	};
+}
+
+/**
+ * Exposes lunar phase cycle keys (`t.term.moon`) and range scopes (`t.term.lunar`).
+ */
+export const LunarTerm = defineTerm({
+	key: 'moon',
+	scope: 'lunar',
+	description: 'Lunar phase cycle and range resolution',
+	resolve(this: Tempo, anchor?: any) {
+		return [getLunarScopeRange(this, anchor)];
+	},
+	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
+		const scopeObj = getLunarScopeRange(this, anchor);
+		if (keyOnly === true || keyOnly === undefined) {
+			return scopeObj.key;
+		}
+		return scopeObj;
+	},
+});
+
 const ASTRO = enumify({ Vernal: 'vernal', Summer: 'summer', Autumnal: 'autumnal', Winter: 'winter' });
-type ASTRO = ValueOf<typeof ASTRO>
+type ASTRO = ValueOf<typeof ASTRO>;
 
 const { COMPASS, DURATIONS } = enums;
 const key = 'astro';
@@ -70,11 +279,11 @@ function resolve(t: Tempo, anchor?: any) {
 
 	const labels = (sphere === COMPASS.South)
 		? { vernal: 'Autumnal', summer: 'Winter', autumnal: 'Vernal', winter: 'Summer' } as const
-		: { vernal: 'Vernal', summer: 'Summer', autumnal: 'Autumnal', winter: 'Winter' } as const
+		: { vernal: 'Vernal', summer: 'Summer', autumnal: 'Autumn', winter: 'Winter' } as const;
 
 	const seasons = (sphere === COMPASS.South)
 		? { vernal: 'Autumn', summer: 'Winter', autumnal: 'Spring', winter: 'Summer' } as const
-		: { vernal: 'Spring', summer: 'Summer', autumnal: 'Autumn', winter: 'Winter' } as const
+		: { vernal: 'Spring', summer: 'Summer', autumnal: 'Autumn', winter: 'Winter' } as const;
 
 	for (const y of [year - 1, year, year + 1]) {
 		const m = (y: number, t: any) => {
@@ -84,9 +293,9 @@ function resolve(t: Tempo, anchor?: any) {
 			return {
 				year: dt.year, month: dt.month, day: dt.day,
 				hour: dt.hour, minute: dt.minute, second: dt.second,
-				millisecond: dt.millisecond, microsecond: dt.microsecond, nanosecond: dt.nanosecond
-			}
-		}
+				millisecond: dt.millisecond, microsecond: dt.microsecond, nanosecond: dt.nanosecond,
+			};
+		};
 
 		list.push({ key: labels.vernal, season: seasons.vernal, sphere, ...m(y, ASTRO.Vernal), event: 'Equinox', group: 'astronomy' });
 		list.push({ key: labels.summer, season: seasons.summer, sphere, ...m(y, ASTRO.Summer), event: 'Solstice', group: 'astronomy' });
@@ -142,7 +351,7 @@ export const AstroTerm = defineTerm({
 		if (!strictBoundary) {
 			return {
 				...dateScoped,
-				strict: scoped.key
+				strict: scoped.key,
 			};
 		}
 
@@ -155,23 +364,26 @@ export const AstroTerm = defineTerm({
 			second: strictBoundary.second ?? 0,
 			millisecond: strictBoundary.millisecond ?? 0,
 			microsecond: strictBoundary.microsecond ?? 0,
-			nanosecond: strictBoundary.nanosecond ?? 0
+			nanosecond: strictBoundary.nanosecond ?? 0,
 		}).add({ minutes: 1 });
 
 		const keyedScope = getTermRange(this, strictList, false, boundaryAnchor) as any;
 		if (!keyedScope) {
 			return {
 				...dateScoped,
-				strict: scoped.key
+				strict: scoped.key,
 			};
 		}
 
 		return {
 			...keyedScope,
-			strict: scoped.key
+			strict: scoped.key,
 		};
 	}
 });
 
+export const AstroPlugin = [AstroTerm, LunarTerm];
+export default AstroPlugin;
+
 // Side-effect: Auto-register upon import
-Tempo.extend(AstroTerm);
+Tempo.extend(AstroPlugin);

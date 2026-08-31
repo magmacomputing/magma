@@ -8,8 +8,7 @@ const keyFor = Symbol.keyFor($TestTempo) as string;
 describe('Tempo Issue Fixes', () => {
   beforeEach(() => {
     Tempo.init()
-    // Clear mock storage if needed (using env for Node)
-    delete process.env[keyFor]
+    Tempo.writeStore(undefined, keyFor)
     delete (globalThis as any)[$TestTempo]
   })
 
