@@ -67,8 +67,9 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	}
 
 	/**
-	 * Retrieves a value from the cache by key, updating its timestamp to maintain LRU ordering.
-	 * Automatically evicts expired entries on access.
+	 * Retrieves a value from the cache by key. Evaluates TTL expiration via `#timestamps`
+	 * specifically for the requested key, and updates LRU ordering by deleting and re-inserting
+	 * the key in the underlying Map. Does not sweep or evict other expired entries.
 	 *
 	 * @param key - The cache key to retrieve
 	 * @returns The cached value, or undefined if not found or expired

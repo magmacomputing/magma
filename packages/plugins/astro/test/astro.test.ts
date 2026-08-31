@@ -84,6 +84,15 @@ describe('Astro Plugin (Solar & Lunar Terms)', () => {
 			expect(typeof lunar.isWaxing).toBe('boolean');
 			expect(typeof lunar.emoji).toBe('string');
 		});
+
+		it('should return a range containing the input time for times in the final half of the New Moon phase window', () => {
+			const tempo = new Tempo('2000-02-05T04:00:00Z', { timeZone: 'UTC', sphere: 'north' });
+			const scope = tempo.term.lunar;
+
+			expect(scope.key).toBe('new-moon');
+			expect(scope.start.epoch.ms).toBeLessThanOrEqual(tempo.epoch.ms);
+			expect(scope.end.epoch.ms).toBeGreaterThan(tempo.epoch.ms);
+		});
 	});
 
 	describe('Parser Confidence (Numeric Epochs)', () => {

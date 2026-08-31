@@ -27,14 +27,21 @@ export const registerSerializable = (name: string, cls: Function) => {
 
 	if (Registry.has(key)) {
 		const existingCls = Registry.get(key)!;
+		const existingTag = existingCls?.prototype?.[Symbol.toStringTag] ?? (existingCls as any)?.[Symbol.toStringTag];
+		const clsTag = cls?.prototype?.[Symbol.toStringTag] ?? (cls as any)?.[Symbol.toStringTag];
+
+		const existingName = existingCls.name || existingTag;
+		const currentName = cls.name || clsTag || (name.startsWith('$') ? name.slice(1) : name);
+
 		const isSameConstructor =
 			existingCls === cls ||
 			existingCls.toString() === cls.toString() ||
 			(Boolean((cls as any)[sym.$Identity]) && (existingCls as any)[sym.$Identity] === (cls as any)[sym.$Identity]) ||
-			(Boolean((cls as any)[sym.$Target]) && (existingCls as any)[sym.$Target] === (cls as any)[sym.$Target]);
+			(Boolean((cls as any)[sym.$Target]) && (existingCls as any)[sym.$Target] === (cls as any)[sym.$Target]) ||
+			(Boolean(existingName) && Boolean(currentName) && existingName === currentName);
 
 		if (isSameConstructor)
-			return; // Idempotent registration of identical constructor
+			return; // Idempotent registration of identical constructor across monorepo bundles
 
 		throw new Error(`[registerSerializable] Collision: '${key}' is already registered with ${existingCls.name || 'anonymous constructor'}`);
 	}

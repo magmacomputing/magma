@@ -22,7 +22,7 @@ npm install @magmacomputing/tempo-plugin-astro
 import { Tempo } from '@magmacomputing/tempo';
 import '@magmacomputing/tempo-plugin-astro'; // Auto-registers Astro & Lunar terms!
 
-const t = new Tempo('2026-03-20');
+const t = new Tempo('2026-03-20', { sphere: 'north' });
 
 // Get the Astronomical Event mapping
 console.log(t.term.astro);

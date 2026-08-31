@@ -224,7 +224,9 @@ export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T {
 
 /**
  * Registration hook for general plugins. Validates and persists the plugin
- * to the discovery database and global extension list.
+ * to the discovery database. Sandbox registrations persist in sandbox state
+ * without calling rt.addExtension(plugin), while non-sandbox plugins are
+ * persisted to the global extension list.
  *
  * @param plugin - The plugin to register
  * @param state - Optional state context for sandboxed registrations

@@ -13,7 +13,7 @@ const distPath = path.join(__dirname, 'dist');
 const pkgPath = path.resolve(__dirname, 'package.json');
 const pkgVersion = fs.existsSync(pkgPath) ? JSON.parse(fs.readFileSync(pkgPath, 'utf8')).version : '4.0.0';
 const label = `📦 BUILDING TEMPO (v${pkgVersion})`;
-const paddedLabel = label.padStart(Math.floor((43 + label.length) / 2)).padEnd(43);
+const paddedLabel = label.padStart(Math.floor((43 + label.length) / 2)).padEnd(45);
 
 console.log('\n\x1b[42m\x1b[30m\x1b[1m =========================================== \x1b[0m');
 console.log(`\x1b[42m\x1b[30m\x1b[1m${paddedLabel}\x1b[0m`);

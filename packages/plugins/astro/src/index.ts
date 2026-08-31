@@ -179,9 +179,10 @@ function getLunarScopeRange(t: Tempo, anchor?: any) {
 	const ageDays = ((elapsedDays % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
 
 	const step = SYNODIC_MONTH / 8;
-	const phaseIndex = Math.floor(((ageDays + step / 2) % SYNODIC_MONTH) / step);
+	const rawBucket = Math.floor((ageDays + step / 2) / step);
+	const phaseIndex = rawBucket % 8;
 
-	const phaseStartDaysOffset = (phaseIndex * step) - (step / 2) - ageDays;
+	const phaseStartDaysOffset = (rawBucket * step) - (step / 2) - ageDays;
 	const phaseEndDaysOffset = phaseStartDaysOffset + step;
 
 	const startMs = Math.trunc(currentMs + (phaseStartDaysOffset * 86_400_000));
@@ -279,7 +280,7 @@ function resolve(t: Tempo, anchor?: any) {
 
 	const labels = (sphere === COMPASS.South)
 		? { vernal: 'Autumnal', summer: 'Winter', autumnal: 'Vernal', winter: 'Summer' } as const
-		: { vernal: 'Vernal', summer: 'Summer', autumnal: 'Autumn', winter: 'Winter' } as const;
+		: { vernal: 'Vernal', summer: 'Summer', autumnal: 'Autumnal', winter: 'Winter' } as const;
 
 	const seasons = (sphere === COMPASS.South)
 		? { vernal: 'Autumn', summer: 'Winter', autumnal: 'Spring', winter: 'Summer' } as const
