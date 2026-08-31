@@ -28,7 +28,8 @@ jobs:
         with:
           node-version: '22'
       - name: Run Socket Scan
-        run: npx -y @socketsecurity/cli ci || true
+        continue-on-error: true
+        run: npx -y @socketsecurity/cli ci
 
   library:
     name: Library Tests

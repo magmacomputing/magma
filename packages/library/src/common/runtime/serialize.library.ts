@@ -12,6 +12,15 @@ import type { Obj, Type } from '#library/type.library.js';
  */
 export const Registry = (globalThis as any)[sym.$SerializerRegistry] ??= new Map<string, Function>();
 
+const getSafeTag = (c: any): string | undefined => {
+	try {
+		const tag = c?.prototype?.[Symbol.toStringTag] ?? c?.[Symbol.toStringTag];
+		return isString(tag) ? tag : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 /**
  * Registers a Class for custom serialization and deserialization.
  * 
@@ -27,8 +36,8 @@ export const registerSerializable = (name: string, cls: Function) => {
 
 	if (Registry.has(key)) {
 		const existingCls = Registry.get(key)!;
-		const existingTag = existingCls?.prototype?.[Symbol.toStringTag] ?? (existingCls as any)?.[Symbol.toStringTag];
-		const clsTag = cls?.prototype?.[Symbol.toStringTag] ?? (cls as any)?.[Symbol.toStringTag];
+		const existingTag = getSafeTag(existingCls);
+		const clsTag = getSafeTag(cls);
 
 		const existingName = existingCls.name || existingTag;
 		const currentName = cls.name || clsTag || (name.startsWith('$') ? name.slice(1) : name);
