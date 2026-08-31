@@ -23,7 +23,7 @@ type STORAGE = ValueOf<typeof STORAGE>
  * const user = store.get('user');
  * ```
  */
-@StringTag
+@StringTag('WebStore')
 export class WebStore {
 	private static _localInstance?: WebStore;
 	private static _sessionInstance?: WebStore;

@@ -27,8 +27,16 @@ export const registerSerializable = (name: string, cls: Function) => {
 
 	if (Registry.has(key)) {
 		const existingCls = Registry.get(key);
-		if (existingCls === cls || existingCls?.toString() === cls.toString()) {
-			return; // Silently allow idempotent dual-registration
+		const existingTag = (existingCls as any)?.[Symbol.toStringTag];
+		const clsTag = (cls as any)?.[Symbol.toStringTag];
+
+		if (
+			existingCls === cls ||
+			existingCls?.toString() === cls.toString() ||
+			(cls.name && existingCls?.name === cls.name) ||
+			(existingTag && existingTag === clsTag)
+		) {
+			return; // Silently allow idempotent dual-registration across monorepo bundles
 		}
 		throw new Error(`[registerSerializable] Collision: '${key}' is already registered with ${existingCls?.name || 'anonymous constructor'}`);
 	}

@@ -1,8 +1,8 @@
 import '#library/temporal.polyfill.js';
 
-import { Immutable, Serializable, StringTag } from '#library/decorator.library.js';
+import { Immutable, Mutable, Serializable, StringTag } from '#library/decorator.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
-import { getStorage, setStorage } from '#library/storage.library.js';
+import { getStorage, setStorage, isTestEnvironment } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray, dynamicProxy } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { ownKeys, ownEntries, ownValues, unwrap } from '#library/primitive.library.js';
@@ -30,7 +30,7 @@ import { resolveConfig, resolveConfigSync } from './config/config.resolve.js';
 
 import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import { Interval } from './interval.class.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -139,18 +139,6 @@ export class Tempo {
 	/** @internal Static access to global private state. */
 	static [$Internal]() {
 		return ClassStates.get(this) ?? _global;
-	}
-
-	/** @internal */
-	static get [$ImmutableSkip]() {
-		const global = isDefined(globalThis) ? globalThis : (window as any);
-		const nodeEnv = isDefined(global.process)
-			&& global.process.env
-			&& (global.process.env.NODE_ENV === 'test' || global.process.env.CI);
-
-		return (nodeEnv || global.TEMPO_TESTING)
-			? ['init']
-			: []
 	}
 
 	/** @internal brand check to distinguish Tempo objects from other objects */
@@ -785,6 +773,7 @@ export class Tempo {
 	}
 
 	/** Reset Tempo to its default, built-in registration state */
+	@Mutable(isTestEnvironment)
 	static init(options: t.Options = {}): typeof Tempo {
 		if (_lifecycle.initialising) return this;
 		_lifecycle.initialising = true;

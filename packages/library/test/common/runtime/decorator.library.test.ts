@@ -1,4 +1,4 @@
-import { Immutable, Securable, StringTag, Singleton } from '#library/decorator.library.js';
+import { Immutable, Mutable, Securable, StringTag, Singleton } from '#library/decorator.library.js';
 
 describe('Class Decorators: Immutable & Secure', () => {
   it('Immutable: should throw on mutation (Object.freeze, strict mode)', () => {
@@ -171,5 +171,55 @@ describe('Class Decorators: Singleton', () => {
     const z1 = new ZeroArgStore();
     expect(() => new ZeroArgStore('extra')).toThrow(/Argument mismatch/);
     expect(new ZeroArgStore()).toBe(z1);
+  });
+});
+
+describe('Class Decorators: Mutable', () => {
+  it('should prevent hardening of decorated methods when condition evaluates to true', () => {
+    let testMode = true;
+
+    @Immutable
+    class StatefulEngine {
+      static version = 1;
+
+      @Mutable(() => testMode)
+      static reset() {
+        StatefulEngine.version++;
+      }
+    }
+
+    expect(() => {
+      StatefulEngine.reset = () => {};
+    }).not.toThrow();
+  });
+
+  it('should support bare @Mutable, @Mutable(), @Mutable(boolean), and @Mutable(() => boolean)', () => {
+    @Immutable
+    class SyntaxVariantEngine {
+      @Mutable
+      static bareMethod() {}
+
+      @Mutable()
+      static emptyParensMethod() {}
+
+      @Mutable(true)
+      static trueBoolMethod() {}
+
+      @Mutable(false)
+      static falseBoolMethod() {}
+    }
+
+    expect(() => { SyntaxVariantEngine.bareMethod = () => {}; }).not.toThrow();
+    expect(() => { SyntaxVariantEngine.emptyParensMethod = () => {}; }).not.toThrow();
+    expect(() => { SyntaxVariantEngine.trueBoolMethod = () => {}; }).not.toThrow();
+    expect(() => { SyntaxVariantEngine.falseBoolMethod = () => {}; }).toThrow();
+  });
+
+  it('should have zero effect on classes not decorated with @Immutable or @Securable', () => {
+    class StandardClass {
+      @Mutable()
+      static init() {}
+    }
+    expect(typeof StandardClass.init).toBe('function');
   });
 });

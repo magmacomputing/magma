@@ -19,13 +19,13 @@ export const $Registry: unique symbol = Symbol.for('$LibraryRegistry') as any;
 export const $Register: unique symbol = Symbol.for('$LibraryRegister') as any;
 /** Global symbol for accessing the serializer registry */
 export const $SerializerRegistry: unique symbol = Symbol.for('$LibrarySerializerRegistry') as any;
-/** Global symbol for marking objects that should skip immutability enforcement */
-export const $ImmutableSkip: unique symbol = Symbol.for('$LibraryImmutableSkip') as any;
+/** Global symbol for marking class members exempt from immutability enforcement */
+export const $Mutable: unique symbol = Symbol.for('$LibraryMutable') as any;
 /** Global symbol for brand-checking class instances across module boundaries */
 export const $Identity: unique symbol = Symbol.for('$LibraryIdentity') as any;
 
 export const sym = {
-	$Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register, $SerializerRegistry, $Identity, $ImmutableSkip
+	$Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register, $SerializerRegistry, $Identity, $Mutable
 } as const;
 
 /**

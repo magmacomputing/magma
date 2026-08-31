@@ -79,8 +79,8 @@ describe('Tempo Issue Fixes', () => {
 
   describe('Storage Precedence (Discovery > Storage > Defaults)', () => {
     test('Storage overrides Defaults', () => {
-      // Mock storage
-      process.env[keyFor] = '{"pivot":10}';
+      // Write config to storage via Tempo API
+      Tempo.writeStore({ pivot: 10 }, keyFor)
 
       // Initialize without options - should pick up from storage
       Tempo.init({ discovery: $TestTempo, store: keyFor })
@@ -88,7 +88,7 @@ describe('Tempo Issue Fixes', () => {
     })
 
     test('Discovery overrides Storage', () => {
-      process.env[keyFor] = '{"pivot":10}';
+      Tempo.writeStore({ pivot: 10 }, keyFor);
 
       // Global Discovery (using symbol)
       (globalThis as any)[$TestTempo] = {

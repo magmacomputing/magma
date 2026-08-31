@@ -1,6 +1,6 @@
-import { $ImmutableSkip } from '#library/symbol.library.js';
+import { $Mutable } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
-import { isReference, isUndefined, isFunction, isString } from '#library/assertion.library.js';
+import { isReference, isUndefined, isString, isSymbol } from '#library/assertion.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { registerType, getSafeTag } from '#library/type.library.js';
 import type { Constructor, Type } from '#library/type.library.js';
@@ -51,14 +51,28 @@ function createImmutableWrapper<T extends Constructor>(
 	}
 
 	addInitializer(() => {
-		const skip = (value as any)[$ImmutableSkip]
-			?? (value as any).$ImmutableSkip
+		const skip = (value as any)[$Mutable]
+			?? (value as any).$Mutable
 			?? [];
 
 		hardenClassStaticsAndPrototypes(value, wrapper, skip);
 	});
 
 	return wrapper;
+}
+
+function shouldSkipMember(name: string | symbol, skipList: any): boolean {
+	if (!Array.isArray(skipList)) return false;
+	return skipList.some(entry => {
+		if (isString(entry) || isSymbol(entry)) {
+			return String(entry) === String(name);
+		}
+		if (entry && typeof entry === 'object' && 'name' in entry) {
+			if (String(entry.name) !== String(name)) return false;
+			return typeof entry.condition === 'function' ? Boolean(entry.condition()) : Boolean(entry.condition ?? true);
+		}
+		return false;
+	});
 }
 
 /**
@@ -70,7 +84,7 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 	const lockStatic = (ctor: object) => {
 		Reflect.ownKeys(ctor).forEach(name => {
 			if (name === 'prototype' || name === 'length' || name === 'name' || name === 'constructor') return;
-			if (Array.isArray(skip) && skip.some(s => String(s) === String(name))) return;
+			if (shouldSkipMember(name, skip)) return;
 			const desc = Object.getOwnPropertyDescriptor(ctor, name);
 			if (!desc) return;
 			// Only lock if configurable or writable
@@ -91,7 +105,7 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 		if (!isReference(proto)) return;
 		Reflect.ownKeys(proto).forEach(name => {
 			if (name === 'constructor') return;
-			if (Array.isArray(skip) && skip.some(s => String(s) === String(name))) return;
+			if (shouldSkipMember(name, skip)) return;
 			const desc = Object.getOwnPropertyDescriptor(proto, name);
 			if (!desc) return;
 			const update: PropertyDescriptor = {};
@@ -252,27 +266,40 @@ export function Static<T extends Constructor>(value: T, { kind, name }: ClassDec
  * ```
  */
 export function StringTag<T extends Constructor>(tagOrValue?: string | T, context?: ClassDecoratorContext<T>): any {
-	const applyTag = (value: T, customTag?: string) => {
+	const applyTag = (value: T, customTag?: string, contextName?: string | symbol) => {
 		const proto = value.prototype;
+		const tagName = customTag ?? getClassName(value, contextName);
 
-		if (proto && !Object.hasOwn(proto, Symbol.toStringTag)) {
-			const tagName = customTag ?? value.name;
-			Object.defineProperty(proto, Symbol.toStringTag, {
-				value: tagName,
-				configurable: true,
-				writable: false,
-				enumerable: false,
-			});
+		if (tagName) {
+			if (proto && !Object.hasOwn(proto, Symbol.toStringTag)) {
+				Object.defineProperty(proto, Symbol.toStringTag, {
+					value: tagName,
+					configurable: true,
+					writable: false,
+					enumerable: false,
+				});
+			}
+
+			if (!value.name || value.name !== tagName) {
+				try {
+					Object.defineProperty(value, 'name', {
+						value: tagName,
+						configurable: true,
+						writable: false,
+						enumerable: false,
+					});
+				} catch {}
+			}
 		}
 
 		return value;
 	}
 
 	if (typeof tagOrValue === 'function' && context?.kind === 'class')
-		return applyTag(tagOrValue as T);
+		return applyTag(tagOrValue as T, undefined, context.name);
 
-	return (value: T, _ctx?: ClassDecoratorContext<T>) => {
-		return applyTag(value, isString(tagOrValue) ? tagOrValue : undefined);
+	return (value: T, ctx?: ClassDecoratorContext<T>) => {
+		return applyTag(value, isString(tagOrValue) ? tagOrValue : undefined, ctx?.name);
 	}
 }
 
@@ -345,5 +372,45 @@ export function Singleton<T extends Constructor>(
 
 	return (value: T, _ctx?: ClassDecoratorContext<T>) => {
 		return decorate(value, targetOrOptions as SingletonOptions);
+	};
+}
+
+export type MutableCondition = boolean | (() => boolean);
+
+/**
+ * A method, property, or getter decorator that marks a class member to remain mutable
+ * when the class is decorated with `@Immutable` or `@Securable`.
+ *
+ * @param condition - Optional boolean or predicate function. If provided, the member remains mutable ONLY when condition evaluates to true.
+ * @example
+ * ```ts
+ *  @ Mutable()
+ *  static cache;
+ *
+ *  @ Mutable(() => isTestEnvironment())
+ *  static init() { ... }
+ * ```
+ */
+export function Mutable(targetOrCondition?: MutableCondition | any, context?: any): any {
+	const applyMutable = (ctx: any, condition?: MutableCondition) => {
+		ctx.addInitializer(function (this: any) {
+			const target = typeof this === 'function' ? this : (this.constructor ?? this);
+			let list = (target as any)[$Mutable];
+			if (!Array.isArray(list)) {
+				list = [];
+				Object.defineProperty(target, $Mutable, { value: list, writable: true, configurable: true });
+			}
+			list.push({
+				name: ctx.name,
+				condition: typeof condition === 'function' ? condition : () => (condition ?? true),
+			});
+		});
+	};
+
+	if (context && typeof context === 'object' && 'kind' in context)
+		return applyMutable(context, true);
+
+	return (_value: any, ctx: any) => {
+		applyMutable(ctx, targetOrCondition as MutableCondition);
 	};
 }

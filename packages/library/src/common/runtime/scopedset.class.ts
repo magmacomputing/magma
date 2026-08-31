@@ -17,7 +17,7 @@ import { StringTag } from '#library/decorator.library.js';
  * sandbox.has('b');   // true  (own-local)
  * global.has('b');    // false (never written to parent)
  */
-@StringTag
+@StringTag('ScopedSet')
 export class ScopedSet<T> {
 	readonly #own = new Set<T>();
 	readonly #parent: Set<T> | ScopedSet<T> | undefined;

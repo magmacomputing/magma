@@ -70,7 +70,7 @@ export function parseLogLevel(level?: DebugLevel, fallback: LOG = LOG.Info): LOG
  * log.info('Started'); // [App] Started
  * ```
  */
-@StringTag
+@StringTag('Logger')
 export class Logger {
 	#namespace: string;
 
