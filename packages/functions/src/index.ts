@@ -19,3 +19,24 @@ export { getHemisphere } from './timezone/getHemisphere.js';
 
 // --- Duration ---
 export { normaliseFractionalDurations } from './duration/normaliseFractionalDurations.js';
+
+// --- Celestial & Astro ---
+export {
+	getLunarPhase,
+	getLunarPhaseRange,
+	getSolarEvents,
+	getSunriseSunset,
+	getZodiacSign,
+	getChineseZodiac,
+	SYNODIC_MONTH,
+	REF_NEW_MOON_MS,
+	type LunarPhaseKey,
+	type LunarPhaseName,
+	type LunarPhaseResult,
+	type LunarPhaseOptions,
+	type LunarPhaseRange,
+	type SolarEventResult,
+	type SunriseSunsetResult,
+	type WesternZodiacSign,
+	type ChineseZodiacResult
+} from './celestial/index.js';

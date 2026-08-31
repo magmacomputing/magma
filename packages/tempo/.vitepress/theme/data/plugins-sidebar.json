@@ -79,6 +79,10 @@
     "collapsed": false,
     "items": [
       {
+        "text": "@magmacomputing/tempo-plugin-celestial",
+        "link": "/doc/9-plugins/celestial.index"
+      },
+      {
         "text": "Astro (Seasons & Solstices)",
         "link": "/doc/9-plugins/astro.index"
       },

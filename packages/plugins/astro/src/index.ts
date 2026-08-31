@@ -1,42 +1,6 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { enums, getTermRange, defineTerm, enumify, type ValueOf } from '@magmacomputing/tempo/plugin/sdk';
-
-export type LunarPhaseKey =
-	| 'new-moon'
-	| 'waxing-crescent'
-	| 'first-quarter'
-	| 'waxing-gibbous'
-	| 'full-moon'
-	| 'waning-gibbous'
-	| 'third-quarter'
-	| 'waning-crescent';
-
-export type LunarPhaseName =
-	| 'New Moon'
-	| 'Waxing Crescent'
-	| 'First Quarter'
-	| 'Waxing Gibbous'
-	| 'Full Moon'
-	| 'Waning Gibbous'
-	| 'Third Quarter'
-	| 'Waning Crescent';
-
-export interface LunarPhaseDetails {
-	/** Short machine-friendly key string (e.g. 'full-moon', 'new-moon') */
-	key: LunarPhaseKey;
-	/** Human-readable lunar phase name (e.g. 'Full Moon', 'New Moon') */
-	phase: LunarPhaseName;
-	/** 1-based lunar phase index (1: New Moon ... 5: Full Moon ... 8: Waning Crescent) */
-	index: number;
-	/** Fraction of the Moon's disk illuminated (0.0 to 1.0) */
-	illumination: number;
-	/** Age of the moon in days into the current synodic month (0.0 to ~29.53) */
-	ageDays: number;
-	/** True if the moon is growing (waxing), false if shrinking (waning) */
-	isWaxing: boolean;
-	/** Unicode emoji representation of the lunar phase, or undefined if sphere is not configured */
-	emoji?: string | undefined;
-}
+import { getSolarEvents as getSolarEventsFn } from '@magmacomputing/tempo-fns';
 
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
@@ -60,234 +24,31 @@ declare module '@magmacomputing/tempo' {
 			start: Tempo;
 			end: Tempo;
 		};
-		moon: LunarPhaseKey;
-		lunar: {
-			key: LunarPhaseKey;
-			phase: LunarPhaseName;
-			index: number;
-			illumination: number;
-			ageDays: number;
-			isWaxing: boolean;
-			emoji?: string | undefined;
-			group: 'lunar';
-			year: number;
-			month: number;
-			day: number;
-			hour: number;
-			minute: number;
-			second: number;
-			millisecond: number;
-			microsecond: number;
-			nanosecond: number;
-			start: Tempo;
-			end: Tempo;
-		};
 	}
 }
-
-const SYNODIC_MONTH = 29.53058770576;
-const REF_NEW_MOON_MS = 947_182_440_000; // 2000-01-06T18:14:00Z
-
-/**
- * Calculates lunar phase details (short key, phase name, 1-based index, illumination percentage, age in days, waxing status, emoji)
- * for a given Tempo instance. Returns `emoji: undefined` if `t.sphere` is not specified.
- *
- * @param t - The Tempo instance
- * @returns LunarPhaseDetails object
- */
-export function getLunarPhase(t: Tempo): LunarPhaseDetails {
-	const currentMs = t.epoch.ms;
-	const elapsedDays = (currentMs - REF_NEW_MOON_MS) / 86_400_000;
-	const ageDays = ((elapsedDays % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
-	const phaseAngle = (ageDays / SYNODIC_MONTH) * 2 * Math.PI;
-	const illumination = Math.round(((1 - Math.cos(phaseAngle)) / 2) * 10000) / 10000;
-	const isWaxing = ageDays < (SYNODIC_MONTH / 2);
-	const sphere = t.sphere;
-
-	let key: LunarPhaseKey;
-	let phase: LunarPhaseName;
-	let index: number;
-	let emoji: string | undefined;
-
-	const step = SYNODIC_MONTH / 16;
-
-	if (ageDays < step || ageDays >= SYNODIC_MONTH - step) {
-		key = 'new-moon';
-		phase = 'New Moon';
-		index = 1;
-		if (sphere) emoji = '🌑';
-	} else if (ageDays < 3 * step) {
-		key = 'waxing-crescent';
-		phase = 'Waxing Crescent';
-		index = 2;
-		if (sphere === enums.COMPASS.South) emoji = '🌘';
-		else if (sphere === enums.COMPASS.North) emoji = '🌒';
-	} else if (ageDays < 5 * step) {
-		key = 'first-quarter';
-		phase = 'First Quarter';
-		index = 3;
-		if (sphere === enums.COMPASS.South) emoji = '🌗';
-		else if (sphere === enums.COMPASS.North) emoji = '🌓';
-	} else if (ageDays < 7 * step) {
-		key = 'waxing-gibbous';
-		phase = 'Waxing Gibbous';
-		index = 4;
-		if (sphere === enums.COMPASS.South) emoji = '🌖';
-		else if (sphere === enums.COMPASS.North) emoji = '🌔';
-	} else if (ageDays < 9 * step) {
-		key = 'full-moon';
-		phase = 'Full Moon';
-		index = 5;
-		if (sphere) emoji = '🌕';
-	} else if (ageDays < 11 * step) {
-		key = 'waning-gibbous';
-		phase = 'Waning Gibbous';
-		index = 6;
-		if (sphere === enums.COMPASS.South) emoji = '🌔';
-		else if (sphere === enums.COMPASS.North) emoji = '🌖';
-	} else if (ageDays < 13 * step) {
-		key = 'third-quarter';
-		phase = 'Third Quarter';
-		index = 7;
-		if (sphere === enums.COMPASS.South) emoji = '🌓';
-		else if (sphere === enums.COMPASS.North) emoji = '🌗';
-	} else {
-		key = 'waning-crescent';
-		phase = 'Waning Crescent';
-		index = 8;
-		if (sphere === enums.COMPASS.South) emoji = '🌒';
-		else if (sphere === enums.COMPASS.North) emoji = '🌘';
-	}
-
-	return {
-		key,
-		phase,
-		index,
-		illumination,
-		ageDays: Math.round(ageDays * 100) / 100,
-		isWaxing,
-		...(emoji !== undefined ? { emoji } : {}),
-	};
-}
-
-/**
- * Calculates the lunar phase range scope for a given Tempo instance, including start/end boundaries
- * and all phase details (key, name, index, illumination, age, waxing status, emoji).
- *
- * @param t - The Tempo instance
- * @param anchor - Optional anchor time to use instead of the Tempo instance
- * @returns Lunar phase scope object with range boundaries and temporal components
- * @internal
- */
-function getLunarScopeRange(t: Tempo, anchor?: any) {
-	const refTempo = anchor ?? t;
-	const currentMs = refTempo.epoch.ms;
-	const timeZone = refTempo.tz ?? 'UTC';
-
-	const elapsedDays = (currentMs - REF_NEW_MOON_MS) / 86_400_000;
-	const ageDays = ((elapsedDays % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
-
-	const step = SYNODIC_MONTH / 8;
-	const rawBucket = Math.floor((ageDays + step / 2) / step);
-	const phaseIndex = rawBucket % 8;
-
-	const phaseStartDaysOffset = (rawBucket * step) - (step / 2) - ageDays;
-	const phaseEndDaysOffset = phaseStartDaysOffset + step;
-
-	const startMs = Math.trunc(currentMs + (phaseStartDaysOffset * 86_400_000));
-	const endMs = Math.trunc(currentMs + (phaseEndDaysOffset * 86_400_000));
-
-	const startTempo = new Tempo(startMs, { timeZone, timeStamp: 'ms', sphere: refTempo.sphere });
-	const endTempo = new Tempo(endMs, { timeZone, timeStamp: 'ms', sphere: refTempo.sphere });
-
-	const details = getLunarPhase(refTempo);
-	const dt = startTempo.toDateTime();
-
-	return {
-		key: details.key,
-		phase: details.phase,
-		index: details.index,
-		illumination: details.illumination,
-		ageDays: details.ageDays,
-		isWaxing: details.isWaxing,
-		...(details.emoji !== undefined ? { emoji: details.emoji } : {}),
-		group: 'lunar',
-		year: dt.year,
-		month: dt.month,
-		day: dt.day,
-		hour: dt.hour,
-		minute: dt.minute,
-		second: dt.second,
-		millisecond: dt.millisecond,
-		microsecond: dt.microsecond,
-		nanosecond: dt.nanosecond,
-		start: startTempo,
-		end: endTempo,
-	};
-}
-
-/**
- * Exposes lunar phase cycle keys (`t.term.moon`) and range scopes (`t.term.lunar`).
- */
-export const LunarTerm = defineTerm({
-	key: 'moon',
-	scope: 'lunar',
-	description: 'Lunar phase cycle and range resolution',
-	resolve(this: Tempo, anchor?: any) {
-		return [getLunarScopeRange(this, anchor)];
-	},
-	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		const scopeObj = getLunarScopeRange(this, anchor);
-		if (keyOnly === true || keyOnly === undefined) {
-			return scopeObj.key;
-		}
-		return scopeObj;
-	},
-});
 
 const ASTRO = enumify({ Vernal: 'vernal', Summer: 'summer', Autumnal: 'autumnal', Winter: 'winter' });
 type ASTRO = ValueOf<typeof ASTRO>;
 
-const { COMPASS, DURATIONS } = enums;
+const { COMPASS } = enums;
 const key = 'astro';
 const scope = 'astronomy';
 
 /**
- * ## calculateAstroMoment
- * Polynomial approximation for Equinoxes and Solstices (Jean Meeus algorithm, Ch 27).
- * Supported year range: -1000 to +3000.
- *
- * NOTE: This is a mean-polynomial approximation that does not include the 
- * periodic higher-order terms for exact apparent calculations.
+ * Polynomial approximation for Equinoxes and Solstices (Jean Meeus algorithm).
  */
 function calculateAstroMoment(year: number, quarter: ASTRO, timeZone: string) {
-	if (year < -1000 || year > 3000)
-		throw new RangeError(`AstroTerm: Year ${year} is outside the supported Meeus calculation range (-1000 to +3000).`);
+	const events = getSolarEventsFn(year);
+	let keyName: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter' = 'Vernal';
+	if (quarter === ASTRO.Summer) keyName = 'Summer';
+	else if (quarter === ASTRO.Autumnal) keyName = 'Autumnal';
+	else if (quarter === ASTRO.Winter) keyName = 'Winter';
 
-	const y = (year - 2_000) / 1_000;
-	let jde = 0;
-
-	switch (quarter) {
-		case ASTRO.Vernal: jde = 2_451_623.80984 + 365_242.37404 * y + 0.05169 * y * y; break;
-		case ASTRO.Summer: jde = 2_451_716.56767 + 365_241.62603 * y + 0.00325 * y * y; break;
-		case ASTRO.Autumnal: jde = 2_451_810.21715 + 365_242.01767 * y - 0.11575 * y * y; break;
-		case ASTRO.Winter: jde = 2_451_900.05952 + 365_242.74049 * y - 0.06223 * y * y; break;
-	}
-
-	// Use Tempo's native parser with the 'ms' timeStamp hint
-	const epochMs = Math.trunc((jde - 2_440_587.5) * DURATIONS.days);
+	const match = events.find(e => e.key === keyName);
+	const epochMs = match ? match.epochMs : Date.now();
 	return new Tempo(epochMs, { timeZone, timeStamp: 'ms' });
 }
 
-/**
- * Resolves astronomical events (equinoxes and solstices) for a given Tempo instance,
- * spanning the previous, current, and next year relative to the anchor date.
- *
- * @param t - The Tempo instance
- * @param anchor - Optional anchor object with year and timezone overrides
- * @returns Array of astronomical event objects with temporal components and metadata
- * @internal
- */
 function resolve(t: Tempo, anchor?: any) {
 	const sphere = t.sphere;
 	if (!sphere) return [];
@@ -325,15 +86,6 @@ function resolve(t: Tempo, anchor?: any) {
 	return list;
 }
 
-/**
- * Resolves astronomical events by ignoring time components of boundary moments,
- * effectively treating each event as occurring at midnight (00:00:00.000).
- *
- * @param t - The Tempo instance
- * @param anchor - Optional anchor object with year and timezone overrides
- * @returns Array of astronomical event objects with time components zeroed out
- * @internal
- */
 function resolveDateBoundary(t: Tempo, anchor?: any) {
 	const list = resolve(t, anchor);
 	return list.map((item: any) => ({ ...item, hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 }));
@@ -341,7 +93,7 @@ function resolveDateBoundary(t: Tempo, anchor?: any) {
 
 /**
  * Exposes precise astronomical calculations (equinoxes and solstices)
- * as a standard Tempo scope.
+ * as a standard Tempo scope (`t.term.astro` & `t.term.astronomy`).
  */
 export const AstroTerm = defineTerm({
 	key,
@@ -407,7 +159,7 @@ export const AstroTerm = defineTerm({
 	}
 });
 
-export const AstroPlugin = [AstroTerm, LunarTerm];
+export const AstroPlugin = [AstroTerm];
 export default AstroPlugin;
 
 // Side-effect: Auto-register upon import

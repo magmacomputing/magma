@@ -12,6 +12,7 @@ on:
           - '@magmacomputing/tempo'
           - '@magmacomputing/tempo-fns'
           - '@magmacomputing/tempo-plugin-astro'
+          - '@magmacomputing/tempo-plugin-celestial'
           - '@magmacomputing/tempo-plugin-ai'
           - '@magmacomputing/tempo-plugin-batch'
           - '@magmacomputing/tempo-plugin-finance'
@@ -56,7 +57,7 @@ jobs:
           
           # Input validation
           case "$TARGET" in
-            @magmacomputing/tempo|@magmacomputing/tempo-fns|@magmacomputing/tempo-plugin-astro|@magmacomputing/tempo-plugin-ai|@magmacomputing/tempo-plugin-batch|@magmacomputing/tempo-plugin-finance|@magmacomputing/tempo-plugin-snap|@magmacomputing/tempo-plugin-sync|@magmacomputing/tempo-plugin-ticker|all)
+            @magmacomputing/tempo|@magmacomputing/tempo-fns|@magmacomputing/tempo-plugin-astro|@magmacomputing/tempo-plugin-celestial|@magmacomputing/tempo-plugin-ai|@magmacomputing/tempo-plugin-batch|@magmacomputing/tempo-plugin-finance|@magmacomputing/tempo-plugin-snap|@magmacomputing/tempo-plugin-sync|@magmacomputing/tempo-plugin-ticker|all)
               ;;
             *)
               echo "❌ Error: Invalid target '$TARGET'"
@@ -122,6 +123,7 @@ jobs:
             publish_pkg "@magmacomputing/tempo"
             publish_pkg "@magmacomputing/tempo-fns"
             publish_pkg "@magmacomputing/tempo-plugin-astro"
+            publish_pkg "@magmacomputing/tempo-plugin-celestial"
             publish_pkg "@magmacomputing/tempo-plugin-ai"
             publish_pkg "@magmacomputing/tempo-plugin-batch"
             publish_pkg "@magmacomputing/tempo-plugin-finance"
