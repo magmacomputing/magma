@@ -19,6 +19,12 @@ export const createMemoryStorage = (): Storage => {
 
 const memoryStores = new Map<string, Storage>();
 
+/**
+ * Retrieves or creates a named in-memory Storage instance for environments without native Storage support.
+ *
+ * @param name - The identifier for the memory storage instance
+ * @returns A Storage-compatible object backed by in-memory Map
+ */
 export const getMemoryStorage = (name: string): Storage => {
 	let store = memoryStores.get(name);
 	if (!store) {

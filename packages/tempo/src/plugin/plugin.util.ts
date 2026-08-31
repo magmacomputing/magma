@@ -174,6 +174,11 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 /**
  * ## defineInterpreterModule
  * Used to register a module that attaches methods to the Tempo sym.$Interpreter registry.
+ *
+ * @param name - The module name to register in the interpreter
+ * @param logic - The module logic or method collection to install
+ * @param statics - Optional static properties to attach to the Tempo class
+ * @returns The registered module plugin definition
  */
 export function defineInterpreterModule(name: string, logic: any, statics?: Record<string, any>) {
 	return defineModule({
@@ -215,6 +220,9 @@ export function defineInterpreterModule(name: string, logic: any, statics?: Reco
 /**
  * ## definePlugin
  * Used to register a plugin.
+ *
+ * @param plugin - The plugin definition to register
+ * @returns The registered plugin with plugin type metadata attached
  */
 export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T {
 	const result = { ...plugin, [sym.$PluginType]: 'plugin' };
@@ -260,6 +268,9 @@ export type NamespaceConfig = {
 /**
  * ## defineNamespace
  * Creates a lazy-loaded property namespace on the Tempo instance.
+ *
+ * @param config - The namespace configuration including name, version, and resolvers
+ * @returns A registered namespace plugin
  */
 export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> {
 	if (isSymbol(config.name) && !config.name.description)

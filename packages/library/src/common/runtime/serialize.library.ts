@@ -94,7 +94,9 @@ export function cloneify<T>(obj: T, sentinel?: Function): T {
 	}
 }
 
+/** JSON.stringify replacer function that delegates to stringize for custom type handling */
 function replacer(key: string, obj: any): any { return isEmpty(key) ? obj : stringize(obj) }
+/** JSON.parse reviver function that decodes URI-encoded control characters */
 function reviver(_key: string, val: any): any { return decode(val) }
 
 // safe-characters [sp " ; < > [ ] ^ { | }]

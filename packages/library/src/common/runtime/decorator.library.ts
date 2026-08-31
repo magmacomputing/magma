@@ -67,6 +67,15 @@ function createImmutableWrapper<T extends Constructor>(
 	return wrapper;
 }
 
+/**
+ * Determines if a member should be skipped during hardening based on the skip list.
+ * Supports both simple string/symbol entries and conditional skip entries.
+ *
+ * @param name - The member name to check
+ * @param skipList - Array of skip entries (strings, symbols, or conditional objects)
+ * @returns True if the member should be skipped, false otherwise
+ * @internal
+ */
 function shouldSkipMember(name: string | symbol, skipList: any): boolean {
 	if (!Array.isArray(skipList)) return false;
 	return skipList.some(entry => {

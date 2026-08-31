@@ -170,6 +170,15 @@ export function getLunarPhase(t: Tempo): LunarPhaseDetails {
 	};
 }
 
+/**
+ * Calculates the lunar phase range scope for a given Tempo instance, including start/end boundaries
+ * and all phase details (key, name, index, illumination, age, waxing status, emoji).
+ *
+ * @param t - The Tempo instance
+ * @param anchor - Optional anchor time to use instead of the Tempo instance
+ * @returns Lunar phase scope object with range boundaries and temporal components
+ * @internal
+ */
 function getLunarScopeRange(t: Tempo, anchor?: any) {
 	const refTempo = anchor ?? t;
 	const currentMs = refTempo.epoch.ms;
@@ -270,6 +279,15 @@ function calculateAstroMoment(year: number, quarter: ASTRO, timeZone: string) {
 	return new Tempo(epochMs, { timeZone, timeStamp: 'ms' });
 }
 
+/**
+ * Resolves astronomical events (equinoxes and solstices) for a given Tempo instance,
+ * spanning the previous, current, and next year relative to the anchor date.
+ *
+ * @param t - The Tempo instance
+ * @param anchor - Optional anchor object with year and timezone overrides
+ * @returns Array of astronomical event objects with temporal components and metadata
+ * @internal
+ */
 function resolve(t: Tempo, anchor?: any) {
 	const sphere = t.sphere;
 	if (!sphere) return [];
@@ -308,7 +326,13 @@ function resolve(t: Tempo, anchor?: any) {
 }
 
 /**
- * Resolve where a date falls by ignoring time components of boundary moments.
+ * Resolves astronomical events by ignoring time components of boundary moments,
+ * effectively treating each event as occurring at midnight (00:00:00.000).
+ *
+ * @param t - The Tempo instance
+ * @param anchor - Optional anchor object with year and timezone overrides
+ * @returns Array of astronomical event objects with time components zeroed out
+ * @internal
  */
 function resolveDateBoundary(t: Tempo, anchor?: any) {
 	const list = resolve(t, anchor);
