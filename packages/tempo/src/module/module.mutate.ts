@@ -342,21 +342,63 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
  * Mutate Engine Implementation
  */
 const MutateEngine = {
+	/**
+	 * Adds a duration or mutation to the current date-time.
+	 *
+	 * @param args - A mutation value, mutation object, term expression, or date-time input
+	 * @param options - Time zone, calendar, and sphere overrides
+	 * @returns A new mutated Tempo instance
+	 */
 	add(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'add', args, options);
 	},
+	/**
+	 * Alias for `add`. Adds a duration or mutation to the current date-time.
+	 *
+	 * @param args - A mutation value, mutation object, term expression, or date-time input
+	 * @param options - Time zone, calendar, and sphere overrides
+	 * @returns A new mutated Tempo instance
+	 */
 	plus(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'add', args, options);
 	},
+	/**
+	 * Subtracts a duration or mutation from the current date-time.
+	 *
+	 * @param args - A mutation value, mutation object, term expression, or date-time input
+	 * @param options - Time zone, calendar, and sphere overrides
+	 * @returns A new mutated Tempo instance
+	 */
 	subtract(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'subtract', args, options);
 	},
+	/**
+	 * Alias for `subtract`. Subtracts a duration or mutation from the current date-time.
+	 *
+	 * @param args - A mutation value, mutation object, term expression, or date-time input
+	 * @param options - Time zone, calendar, and sphere overrides
+	 * @returns A new mutated Tempo instance
+	 */
 	sub(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'subtract', args, options);
 	},
+	/**
+	 * Alias for `subtract`. Subtracts a duration or mutation from the current date-time.
+	 *
+	 * @param args - A mutation value, mutation object, term expression, or date-time input
+	 * @param options - Time zone, calendar, and sphere overrides
+	 * @returns A new mutated Tempo instance
+	 */
 	minus(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'subtract', args, options);
 	},
+	/**
+	 * Sets specific fields of the current date-time to new values.
+	 *
+	 * @param args - A mutation value, mutation object, term expression, or date-time input
+	 * @param options - Time zone, calendar, and sphere overrides
+	 * @returns A new mutated Tempo instance
+	 */
 	set(this: Tempo, args?: any, options: t.Options = {}) {
 		return mutate.call(this, 'set', args, options);
 	}

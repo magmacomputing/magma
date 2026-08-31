@@ -121,9 +121,11 @@ export function defineModule<T extends Plugin<TempoType>>(module: T): T {
 }
 
 /**
- * ## attachStatics
- * Safely attach static properties to a class, ensuring they are non-enumerable
+ * Safely attaches static properties to a class, ensuring they are non-enumerable
  * to prevent @Immutable from freezing them.
+ *
+ * @param TempoClass - The Tempo class to attach properties to
+ * @param props - Record of property names and values or descriptors to attach
  */
 export function attachStatics(TempoClass: any, props: Record<string, any>) {
 	for (const [key, val] of Object.entries(props)) {
@@ -221,8 +223,12 @@ export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T {
 }
 
 /**
- * ## registerPlugin
- * Registration hook for general plugins.
+ * Registration hook for general plugins. Validates and persists the plugin
+ * to the discovery database and global extension list.
+ *
+ * @param plugin - The plugin to register
+ * @param state - Optional state context for sandboxed registrations
+ * @returns The registered plugin
  */
 export function registerPlugin(plugin: any, state?: any) {
 	const rt = getRuntime();

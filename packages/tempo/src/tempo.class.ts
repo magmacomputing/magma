@@ -146,9 +146,16 @@ export class Tempo {
 
 
 	/**
+	 * Registers event or period aliases and updates the corresponding snippet pattern.
+	 * The {dt} layout combines date-related {snippets} (e.g. dd, mm -or- evt) into a pattern
+	 * against which a string can be tested. Because it includes a list of events (e.g. 'new_years' | 'xmas'),
+	 * we need to rebuild {dt} if the user adds a new event.
+	 *
+	 * @param shape - The internal state to update
+	 * @param kind - Type of alias to register ('evt' for events, 'per' for periods)
+	 * @param token - The snippet token to update
+	 * @param provided - Optional array of [key, value] pairs to register
 	 * @internal
-	 * {dt} is a layout that combines date-related {snippets} (e.g. dd, mm -or- evt) into a pattern against which a string can be tested.  
-	 * because it will also include a list of events (e.g. 'new_years' | 'xmas'), we need to rebuild {dt} if the user adds a new event
 	 */
 	static [$setAliases](shape: Internal.State, kind: 'evt' | 'per', token: any, provided?: [string, any][]) {
 		const field = kind === 'evt' ? 'event' : 'period';
@@ -214,7 +221,13 @@ export class Tempo {
 		if (rebuild) setPatterns(shape);
 	}
 
-	/** try to infer hemisphere using the timezone's daylight-savings setting */
+	/**
+	 * Infers the hemisphere (north/south) using the timezone's daylight-savings setting.
+	 *
+	 * @param shape - The internal state
+	 * @param options - Configuration options containing sphere or timezone
+	 * @returns The resolved compass direction (north/south), or undefined if not determinable
+	 */
 	static #setSphere = (shape: Internal.State, options: t.Options): t.COMPASS | undefined => {
 		if (isDefined(options.sphere)) {
 			const evaluatedSphere = evaluate(options.sphere);
@@ -230,7 +243,12 @@ export class Tempo {
 		return undefined;
 	}
 
-	/** determine if we have a {timeZone} which prefers {mdy} date-order */
+	/**
+	 * Determines if the configured timezone and locale prefer month-day-year date ordering.
+	 *
+	 * @param shape - The internal state containing timezone and locale configuration
+	 * @returns True if the timezone/locale prefers MDY format, false otherwise
+	 */
 	static #isMonthDay(shape: Internal.State) {
 		const { timeZone, locale } = shape.config;
 		const mdy = shape.parse.monthDay;
@@ -286,7 +304,12 @@ export class Tempo {
 		logDebug(`Resolved layout order: ${getLayoutOrder(layout).join(' -> ')}`, shape.config);
 	}
 
-	/** get first Canonical name of a supplied locale */
+	/**
+	 * Gets the first canonical name of a supplied locale, falling back to navigator language.
+	 *
+	 * @param locale - Optional locale string or array of locale strings
+	 * @returns The canonical locale identifier
+	 */
 	static #locale = (locale?: string | string[]) => {
 		const global = Context.global;
 		let language: string | undefined;
