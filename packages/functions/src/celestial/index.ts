@@ -192,9 +192,94 @@ function calculateMeeusJde(JDE0: number): number {
 		70 * Math.cos(((243.58 + 11848.293 * T) * Math.PI) / 180) +
 		58 * Math.cos(((119.81 + 191.606 * T) * Math.PI) / 180) +
 		52 * Math.cos(((297.17 + 4592.518 * T) * Math.PI) / 180) +
-		50 * Math.cos(((21.02 + 4578.031 * T) * Math.PI) / 180);
+		50 * Math.cos(((21.02 + 4578.031 * T) * Math.PI) / 180) +
+		45 * Math.cos(((247.54 + 29929.562 * T) * Math.PI) / 180) +
+		44 * Math.cos(((325.15 + 31555.956 * T) * Math.PI) / 180) +
+		29 * Math.cos(((60.93 + 4443.417 * T) * Math.PI) / 180) +
+		18 * Math.cos(((155.12 + 67555.328 * T) * Math.PI) / 180) +
+		17 * Math.cos(((288.79 + 4562.452 * T) * Math.PI) / 180) +
+		16 * Math.cos(((198.04 + 62894.029 * T) * Math.PI) / 180) +
+		14 * Math.cos(((199.76 + 31436.921 * T) * Math.PI) / 180) +
+		12 * Math.cos(((95.39 + 14577.848 * T) * Math.PI) / 180) +
+		12 * Math.cos(((287.11 + 31931.756 * T) * Math.PI) / 180) +
+		12 * Math.cos(((320.81 + 34777.259 * T) * Math.PI) / 180) +
+		9 * Math.cos(((227.73 + 1222.114 * T) * Math.PI) / 180) +
+		8 * Math.cos(((15.45 + 16859.074 * T) * Math.PI) / 180);
 
 	return JDE0 + (0.00001 * S) / Delta;
+}
+
+function getDeltaT(year: number): number {
+	if (year < 500) {
+		const u = (year - 1820) / 100;
+		return -20 + 32 * u * u;
+	}
+	if (year < 1600) {
+		const u = (year - 1000) / 100;
+		const u2 = u * u;
+		const u3 = u2 * u;
+		const u4 = u3 * u;
+		const u5 = u4 * u;
+		const u6 = u5 * u;
+		return 1574.2 - 556.01 * u + 71.23472 * u2 + 0.319781 * u3 - 0.8503463 * u4 - 0.00505099 * u5 + 0.008357209 * u6;
+	}
+	if (year < 1700) {
+		const t = year - 1600;
+		return 120 - 0.9808 * t - 0.0153 * t * t + 0.00007129 * t * t * t;
+	}
+	if (year < 1800) {
+		const t = year - 1700;
+		const t2 = t * t;
+		const t3 = t2 * t;
+		const t4 = t3 * t;
+		return 8.83 + 0.1603 * t - 0.0059285 * t2 + 0.00013336 * t3 - t4 / 1174000;
+	}
+	if (year < 1860) {
+		const t = year - 1800;
+		const t2 = t * t;
+		const t3 = t2 * t;
+		const t4 = t3 * t;
+		const t5 = t4 * t;
+		const t6 = t5 * t;
+		return 13.72 - 0.332447 * t + 0.0068612 * t2 + 0.0041116 * t3 - 0.00037436 * t4 + 0.0000121272 * t5 - 0.0000001699 * t6;
+	}
+	if (year < 1900) {
+		const t = year - 1860;
+		const t2 = t * t;
+		const t3 = t2 * t;
+		const t4 = t3 * t;
+		const t5 = t4 * t;
+		return 7.62 + 0.5737 * t - 0.251754 * t2 + 0.0168066 * t3 - 0.000447362 * t4 + 0.00000439158 * t5;
+	}
+	if (year < 1920) {
+		const t = year - 1900;
+		const t2 = t * t;
+		const t3 = t2 * t;
+		const t4 = t3 * t;
+		return -2.79 + 1.494119 * t - 0.0598939 * t2 + 0.0061966 * t3 - 0.000197 * t4;
+	}
+	if (year < 1941) {
+		const t = year - 1920;
+		return 21.20 + 0.84493 * t - 0.076100 * t * t + 0.0020936 * t * t * t;
+	}
+	if (year < 1961) {
+		const t = year - 1941;
+		return 29.07 + 0.407 * t - (t * t) / 233 + (t * t * t) / 2547;
+	}
+	if (year < 1986) {
+		const t = year - 1961;
+		return 33.86 + 0.389 * t - 0.056385 * t * t + 0.00624 * t * t * t - 0.0002164 * t * t * t * t;
+	}
+	if (year < 2005) {
+		const t = year - 1986;
+		return 54.96 + 0.963 * t - 0.027065 * t * t + 0.0005705 * t * t * t;
+	}
+	if (year < 2050) {
+		const t = year - 2000;
+		return 62.92 + 0.32217 * t + 0.005589 * t * t;
+	}
+	const u = (year - 1820) / 100;
+	return -20 + 32 * u * u;
 }
 
 /**
@@ -235,9 +320,11 @@ export function getSolarEvents(year: number): SolarEventResult[] {
 		winterJde0 = 2451900.05952 + 365242.74049 * y - 0.06223 * y2 - 0.00823 * y3 + 0.00032 * y4;
 	}
 
+	const deltaT = getDeltaT(year);
 	const toMs = (jde0: number) => {
 		const jde = calculateMeeusJde(jde0);
-		return Math.trunc((jde - 2440587.5) * 86400000);
+		const jdUtc = jde - deltaT / 86400;
+		return Math.trunc((jdUtc - 2440587.5) * 86400000);
 	};
 
 	return [
