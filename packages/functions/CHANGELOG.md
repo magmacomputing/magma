@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Celestial Utilities**: Introduced new pure astronomical, celestial, solar, lunar, and zodiac utility module (`@magmacomputing/tempo-fns/celestial`):
-  - `getLunarPhase`: Calculates lunar phase name, 1-based index (1..8), illumination percentage, age in days, waxing status, and hemisphere-aware emojis.
+  - `getLunarPhase`: Calculates lunar phase name, 1-based index (1..8), illumination 0.0–1.0 fraction, age in days, waxing status, and hemisphere-aware emojis.
   - `getLunarPhaseRange`: Resolves start/end boundaries for active lunar phase cycles.
   - `getSolarEvents`: Calculates Jean Meeus (Ch 27) equinoxes and solstices.
   - `getSunriseSunset`: Resolves location-aware (lat/lon, `lat`/`long`/`lng`) daily sunrise, sunset, solar noon, daylight duration, 1-based solar index (1..5), and solar phase state (`daylight`, `night`, `civil-twilight`, `nautical-twilight`, `astronomical-twilight`).

@@ -18,7 +18,7 @@ npm install @magmacomputing/tempo-plugin-celestial
 
 - **Solar Day Cycles**: Calculates `daylight`, `night`, `civil-twilight`, `nautical-twilight`, and `astronomical-twilight`.
 - **Ephemeris Data**: Returns `sunrise`, `sunset`, `solarNoon`, and total `daylightDurationMs` for given latitude and longitude coordinates.
-- **Lunar Phase Cycles**: Calculates 8 discrete lunar phase states (`new-moon`, `waxing-crescent`, `first-quarter`, `waxing-gibbous`, `full-moon`, `waning-gibbous`, `third-quarter`, `waning-crescent`), illumination percentage, age in days, and hemisphere-aware emoji indicators.
+- **Lunar Phase Cycles**: Calculates 8 discrete lunar phase states (`new-moon`, `waxing-crescent`, `first-quarter`, `waxing-gibbous`, `full-moon`, `waning-gibbous`, `third-quarter`, `waning-crescent`), illumination 0.0–1.0 fraction, age in days, and hemisphere-aware emoji indicators.
 
 ## Usage
 

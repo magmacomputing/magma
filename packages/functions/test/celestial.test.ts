@@ -37,6 +37,23 @@ describe('Astro Pure Functions (tempo-fns)', () => {
 		expect(vernalDate.getUTCMonth()).toBe(2); // March
 	});
 
+	it('calculates solar events for boundaries -1000, 1000, and 3000', () => {
+		for (const yr of [-1000, 1000, 3000]) {
+			const events = getSolarEvents(yr);
+			expect(events).toHaveLength(4);
+			expect(events[0]?.key).toBe('Vernal');
+			expect(events[1]?.key).toBe('Summer');
+			expect(events[2]?.key).toBe('Autumnal');
+			expect(events[3]?.key).toBe('Winter');
+			for (const ev of events) {
+				expect(ev.epochMs).toBeDefined();
+				expect(Number.isNaN(ev.epochMs)).toBe(false);
+			}
+		}
+		expect(() => getSolarEvents(-1001)).toThrow(RangeError);
+		expect(() => getSolarEvents(3001)).toThrow(RangeError);
+	});
+
 	it('calculates sunrise and sunset with 1-based index and coordinate options object', () => {
 		// June 21, 2026 at 02:00 UTC (12:00 PM local time in Sydney)
 		const res = getSunriseSunset(new Date('2026-06-21T02:00:00Z'), { lat: -33.8688, lng: 151.2093 });
@@ -47,6 +64,11 @@ describe('Astro Pure Functions (tempo-fns)', () => {
 		expect(res.isDaylight).toBe(true);
 		expect(res.solarPhaseState).toBe('daylight');
 		expect(res.index).toBe(5); // 1-based (5 = daylight)
+		expect(res.civil).toBeDefined();
+		expect(res.civil.sunriseMs).toBeLessThan(res.sunriseMs);
+		expect(res.civil.sunsetMs).toBeGreaterThan(res.sunsetMs);
+		expect(res.nautical.sunriseMs).toBeLessThan(res.civil.sunriseMs);
+		expect(res.astronomical.sunriseMs).toBeLessThan(res.nautical.sunriseMs);
 
 		// Test alternative coordinate key formats (lat/long)
 		const res2 = getSunriseSunset(new Date('2026-06-21T02:00:00Z'), { lat: -33.8688, long: 151.2093 });

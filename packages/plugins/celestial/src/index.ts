@@ -64,6 +64,9 @@ declare module '@magmacomputing/tempo' {
 			solarNoon: Tempo;
 			daylightDurationMs: number;
 			isDaylight: boolean;
+			civil: { sunrise: Tempo; sunset: Tempo };
+			nautical: { sunrise: Tempo; sunset: Tempo };
+			astronomical: { sunrise: Tempo; sunset: Tempo };
 			start: Tempo;
 			end: Tempo;
 		};
@@ -159,8 +162,49 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 	const sunset = new Tempo(res.sunsetMs, { timeZone, timeStamp: 'ms' });
 	const solarNoon = new Tempo(res.solarNoonMs, { timeZone, timeStamp: 'ms' });
 
-	const start = res.isDaylight ? sunrise : sunset;
-	const end = res.isDaylight ? sunset : new Tempo(res.sunriseMs + 86400000, { timeZone, timeStamp: 'ms' });
+	const civilSunrise = new Tempo(res.civil.sunriseMs, { timeZone, timeStamp: 'ms' });
+	const civilSunset = new Tempo(res.civil.sunsetMs, { timeZone, timeStamp: 'ms' });
+	const nauticalSunrise = new Tempo(res.nautical.sunriseMs, { timeZone, timeStamp: 'ms' });
+	const nauticalSunset = new Tempo(res.nautical.sunsetMs, { timeZone, timeStamp: 'ms' });
+	const astroSunrise = new Tempo(res.astronomical.sunriseMs, { timeZone, timeStamp: 'ms' });
+	const astroSunset = new Tempo(res.astronomical.sunsetMs, { timeZone, timeStamp: 'ms' });
+
+	let start: Tempo;
+	let end: Tempo;
+
+	const epochMs = refTempo.epoch.ms;
+
+	if (res.solarPhaseState === 'daylight') {
+		start = sunrise;
+		end = sunset;
+	} else if (res.solarPhaseState === 'civil-twilight') {
+		if (epochMs < res.sunriseMs) {
+			start = civilSunrise;
+			end = sunrise;
+		} else {
+			start = sunset;
+			end = civilSunset;
+		}
+	} else if (res.solarPhaseState === 'nautical-twilight') {
+		if (epochMs < res.civil.sunriseMs) {
+			start = nauticalSunrise;
+			end = civilSunrise;
+		} else {
+			start = civilSunset;
+			end = nauticalSunset;
+		}
+	} else if (res.solarPhaseState === 'astronomical-twilight') {
+		if (epochMs < res.nautical.sunriseMs) {
+			start = astroSunrise;
+			end = nauticalSunrise;
+		} else {
+			start = nauticalSunset;
+			end = astroSunset;
+		}
+	} else {
+		start = sunset;
+		end = new Tempo(res.sunriseMs + 86400000, { timeZone, timeStamp: 'ms' });
+	}
 
 	const dt = start.toDateTime();
 
@@ -182,6 +226,9 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		solarNoon,
 		daylightDurationMs: res.daylightDurationMs,
 		isDaylight: res.isDaylight,
+		civil: { sunrise: civilSunrise, sunset: civilSunset },
+		nautical: { sunrise: nauticalSunrise, sunset: nauticalSunset },
+		astronomical: { sunrise: astroSunrise, sunset: astroSunset },
 		start,
 		end,
 	};

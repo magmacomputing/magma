@@ -84,4 +84,16 @@ describe('Eastern Zodiac & Western Zodiac Terms', () => {
 		expect(tJP.term.sign).toBe('Wild Boar');
 		expect(tJP.term.shengxiao.emoji).toBe('🐗');
 	});
+
+	it('honors keyOnly: false for lunarSign and eastern terms', () => {
+		const t = new Tempo('2026-06-01T12:00:00Z');
+		const lunarScope = (t.term as any).lunarSignObj ?? (t.term as any).lunarSign;
+		expect(lunarScope).toBe('Horse');
+
+		// Explicit define with keyOnly = false
+		const fullScope = (t as any).defineTerm?.('lunarSign', false) ?? (t.term as any).shengxiao;
+		expect(fullScope.key).toBe('Horse');
+		expect(fullScope.start).toBeDefined();
+		expect(fullScope.end).toBeDefined();
+	});
 });

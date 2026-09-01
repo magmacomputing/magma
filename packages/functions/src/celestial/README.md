@@ -4,7 +4,7 @@ This directory contains pure astronomical, solar, lunar, and zodiac calculation 
 ## Exported Functions
 
 ### `getLunarPhase`
-Calculates lunar phase details (key, phase name, 1-based index, illumination percentage, age in days, waxing status, and hemisphere-aware emojis).
+Calculates lunar phase details (key, phase name, 1-based index, illumination 0.0–1.0 fraction, age in days, waxing status, and hemisphere-aware emojis).
 
 ```typescript
 function getLunarPhase(dateInput: Date | number | string, options?: LunarPhaseOptions): LunarPhaseResult;
@@ -41,7 +41,7 @@ const events = getSolarEvents(2026);
 ```
 
 ### `getSunriseSunset`
-Calculates Sunrise, Sunset, Solar Noon, daylight duration, 1-based solar phase index (1..5), and daily solar phase state (`daylight`, `night`, `civil-twilight`, `nautical-twilight`, `astronomical-twilight`) for a date and location coordinates (`lat`, `lon` or `{ latitude, lat, longitude, long, lng }`).
+Calculates Sunrise, Sunset, Solar Noon, daylight duration, 1-based solar phase index (1..5), daily solar phase state (`daylight`, `night`, `civil-twilight`, `nautical-twilight`, `astronomical-twilight`), and twilight phase windows (`civil`, `nautical`, `astronomical`) for a date and location coordinates (`lat`, `lon` or `{ latitude, lat, longitude, long, lng }`).
 
 ```typescript
 function getSunriseSunset(
@@ -54,9 +54,10 @@ function getSunriseSunset(
 ```typescript
 import { getSunriseSunset } from '@magmacomputing/tempo-fns';
 
-const solar = getSunriseSunset('2026-06-21T12:00:00Z', { lat: -33.8688, lng: 151.2093 });
+const solar = getSunriseSunset('2026-06-21T02:00:00Z', { lat: -33.8688, lng: 151.2093 });
 console.log(solar.isDaylight); // true
 console.log(solar.index); // 5 (daylight)
+console.log(solar.civil.sunriseMs); // Civil twilight start timestamp
 ```
 
 ### `getZodiacSign`

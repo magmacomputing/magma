@@ -126,19 +126,19 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 	const year = anchor?.year ?? refTempo.yy;
 	const res = getChineseZodiacFn(year);
 
-	const baseAnimal = res.animal;
-	const baseEmoji = BASE_EMOJI_MAP[baseAnimal] ?? '🐉';
+	const animal = res.animal;
+	const baseEmoji = BASE_EMOJI_MAP[animal] ?? '🐉';
 
-	const variants = VARIANT_MAP[baseAnimal] ?? {
-		cn: { animal: baseAnimal, emoji: baseEmoji },
-		jp: { animal: baseAnimal, emoji: baseEmoji },
-		kr: { animal: baseAnimal, emoji: baseEmoji },
-		vn: { animal: baseAnimal, emoji: baseEmoji },
+	const variants = VARIANT_MAP[animal] ?? {
+		cn: { animal, emoji: baseEmoji },
+		jp: { animal, emoji: baseEmoji },
+		kr: { animal, emoji: baseEmoji },
+		vn: { animal, emoji: baseEmoji },
 	};
 
 	// Determine key string based on optional locale config
 	const locale = (refTempo as any).config?.locale ?? (refTempo as any).locale;
-	let key = baseAnimal;
+	let key = animal;
 	let emoji = baseEmoji;
 
 	if (locale) {
@@ -150,13 +150,14 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 	}
 
 	const timeZone = refTempo.tz ?? 'UTC';
-	const start = new (t.constructor as any)(`${year}-01-01T00:00:00Z`, { timeZone });
-	const end = new (t.constructor as any)(`${year}-12-31T23:59:59.999Z`, { timeZone });
+	const start = new (t.constructor as any)(`${year}-01-01T00:00:00`, { timeZone });
+	const nextYear = year + 1;
+	const end = new (t.constructor as any)(`${nextYear}-01-01T00:00:00`, { timeZone });
 	const dt = start.toDateTime();
 
 	return {
 		key,
-		animal: baseAnimal,
+		animal,
 		emoji,
 		element: res.element as EasternZodiacScope['element'],
 		yinYang: res.yinYang as EasternZodiacScope['yinYang'],
@@ -204,7 +205,10 @@ export const LunarSignTerm = defineTerm({
 		return [getEasternScope(this, anchor)];
 	},
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		return getEasternScope(this, anchor).key;
+		const scopeObj = getEasternScope(this, anchor);
+		return (keyOnly === false)
+			? scopeObj
+			: scopeObj.key
 	},
 });
 
@@ -216,7 +220,10 @@ export const EasternZodiacTerm = defineTerm({
 		return [getEasternScope(this, anchor)];
 	},
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		return getEasternScope(this, anchor).key;
+		const scopeObj = getEasternScope(this, anchor);
+		return (keyOnly === false)
+			? scopeObj
+			: scopeObj.key
 	},
 });
 

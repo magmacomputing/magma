@@ -175,32 +175,26 @@ export interface SolarEventResult {
 	year: number;
 }
 
-function resolveMeeusPolynomial(Y: number, K: number, A: number, B: number, C: number, D: number): number {
-	const Y2 = Y * Y;
-	const Y3 = Y2 * Y;
-	const Y4 = Y3 * Y;
-	const JDE0 = A + (B * Y) + (C * Y2) + (D * Y3) + (0.000000002 * Y4);
-
+function calculateMeeusJde(JDE0: number): number {
 	const T = (JDE0 - 2451545.0) / 36525;
 	const W = 359.9937 * T - 2.47;
-	const Delta = 1 + 0.0334 * Math.cos(W * Math.PI / 180) + 0.0007 * Math.cos(2 * W * Math.PI / 180);
+	const Delta = 1 + 0.0334 * Math.cos((W * Math.PI) / 180) + 0.0007 * Math.cos((2 * W * Math.PI) / 180);
 
 	const S =
-		485 * Math.cos((324.96 + 1934.136 * T) * Math.PI / 180) +
-		203 * Math.cos((337.23 + 32668.776 * T) * Math.PI / 180) +
-		199 * Math.cos((342.08 + 8933.040 * T) * Math.PI / 180) +
-		182 * Math.cos((27.85 + 4183.998 * T) * Math.PI / 180) +
-		156 * Math.cos((73.14 + 19353.473 * T) * Math.PI / 180) +
-		136 * Math.cos((171.52 + 7299.049 * T) * Math.PI / 180) +
-		77 * Math.cos((222.54 + 22812.296 * T) * Math.PI / 180) +
-		74 * Math.cos((296.72 + 11726.159 * T) * Math.PI / 180) +
-		70 * Math.cos((243.58 + 11848.293 * T) * Math.PI / 180) +
-		58 * Math.cos((119.81 + 191.606 * T) * Math.PI / 180) +
-		52 * Math.cos((297.17 + 4592.518 * T) * Math.PI / 180) +
-		50 * Math.cos((21.02 + 4578.031 * T) * Math.PI / 180);
+		485 * Math.cos(((324.96 + 1934.136 * T) * Math.PI) / 180) +
+		203 * Math.cos(((337.23 + 32668.776 * T) * Math.PI) / 180) +
+		199 * Math.cos(((342.08 + 8933.040 * T) * Math.PI) / 180) +
+		182 * Math.cos(((27.85 + 4183.998 * T) * Math.PI) / 180) +
+		156 * Math.cos(((73.14 + 19353.473 * T) * Math.PI) / 180) +
+		136 * Math.cos(((171.52 + 7299.049 * T) * Math.PI) / 180) +
+		77 * Math.cos(((222.54 + 22812.296 * T) * Math.PI) / 180) +
+		74 * Math.cos(((296.72 + 11726.159 * T) * Math.PI) / 180) +
+		70 * Math.cos(((243.58 + 11848.293 * T) * Math.PI) / 180) +
+		58 * Math.cos(((119.81 + 191.606 * T) * Math.PI) / 180) +
+		52 * Math.cos(((297.17 + 4592.518 * T) * Math.PI) / 180) +
+		50 * Math.cos(((21.02 + 4578.031 * T) * Math.PI) / 180);
 
-	const JDE = JDE0 + (0.00001 * S) / Delta;
-	return Math.round((JDE - 2440587.5) * 86400000);
+	return JDE0 + (0.00001 * S) / Delta;
 }
 
 /**
@@ -214,20 +208,43 @@ export function getSolarEvents(year: number): SolarEventResult[] {
 		throw new RangeError(`Year ${year} is outside the supported Meeus calculation range (-1000 to +3000).`);
 	}
 
-	const y = (year - 2000) / 1000;
+	let vernalJde0: number;
+	let summerJde0: number;
+	let autumnalJde0: number;
+	let winterJde0: number;
 
-	const vernalJde = 2451623.80984 + 365242.37404 * y + 0.05169 * y * y;
-	const summerJde = 2451716.56767 + 365241.62603 * y + 0.00325 * y * y;
-	const autumnalJde = 2451810.21715 + 365242.01767 * y - 0.11575 * y * y;
-	const winterJde = 2451900.05952 + 365242.74049 * y - 0.06223 * y * y;
+	if (year <= 1000) {
+		const y = year / 1000;
+		const y2 = y * y;
+		const y3 = y2 * y;
+		const y4 = y3 * y;
 
-	const toMs = (jde: number) => Math.trunc((jde - 2440587.5) * 86400000);
+		vernalJde0 = 1721139.29189 + 365242.13740 * y + 0.06791 * y2 - 0.00234 * y3 - 0.00111 * y4;
+		summerJde0 = 1721233.25401 + 365241.72562 * y - 0.05323 * y2 + 0.00907 * y3 + 0.00025 * y4;
+		autumnalJde0 = 1721325.70000 + 365242.49558 * y - 0.11677 * y2 - 0.00297 * y3 + 0.00074 * y4;
+		winterJde0 = 1721414.39987 + 365242.88257 * y - 0.00769 * y2 - 0.00933 * y3 + 0.00060 * y4;
+	} else {
+		const y = (year - 2000) / 1000;
+		const y2 = y * y;
+		const y3 = y2 * y;
+		const y4 = y3 * y;
+
+		vernalJde0 = 2451623.80984 + 365242.37404 * y + 0.05169 * y2 - 0.00411 * y3 - 0.00057 * y4;
+		summerJde0 = 2451716.56767 + 365241.62603 * y + 0.00325 * y2 + 0.00888 * y3 - 0.00030 * y4;
+		autumnalJde0 = 2451810.21715 + 365242.01767 * y - 0.11575 * y2 + 0.00337 * y3 + 0.00078 * y4;
+		winterJde0 = 2451900.05952 + 365242.74049 * y - 0.06223 * y2 - 0.00823 * y3 + 0.00032 * y4;
+	}
+
+	const toMs = (jde0: number) => {
+		const jde = calculateMeeusJde(jde0);
+		return Math.trunc((jde - 2440587.5) * 86400000);
+	};
 
 	return [
-		{ key: 'Vernal', event: 'Equinox', epochMs: toMs(vernalJde), year },
-		{ key: 'Summer', event: 'Solstice', epochMs: toMs(summerJde), year },
-		{ key: 'Autumnal', event: 'Equinox', epochMs: toMs(autumnalJde), year },
-		{ key: 'Winter', event: 'Solstice', epochMs: toMs(winterJde), year },
+		{ key: 'Vernal', event: 'Equinox', epochMs: toMs(vernalJde0), year },
+		{ key: 'Summer', event: 'Solstice', epochMs: toMs(summerJde0), year },
+		{ key: 'Autumnal', event: 'Equinox', epochMs: toMs(autumnalJde0), year },
+		{ key: 'Winter', event: 'Solstice', epochMs: toMs(winterJde0), year },
 	];
 }
 
@@ -241,6 +258,11 @@ export interface SolarOptions {
 	lng?: number;
 }
 
+export interface SolarTwilightWindow {
+	sunriseMs: number;
+	sunsetMs: number;
+}
+
 export interface SunriseSunsetResult {
 	sunriseMs: number;
 	sunsetMs: number;
@@ -250,6 +272,9 @@ export interface SunriseSunsetResult {
 	solarPhaseState: 'daylight' | 'night' | 'civil-twilight' | 'nautical-twilight' | 'astronomical-twilight';
 	/** 1-based solar phase index (1: night, 2: astronomical-twilight, 3: nautical-twilight, 4: civil-twilight, 5: daylight) */
 	index: number;
+	civil: SolarTwilightWindow;
+	nautical: SolarTwilightWindow;
+	astronomical: SolarTwilightWindow;
 }
 
 /**
@@ -354,7 +379,18 @@ export function getSunriseSunset(
 		index = 1;
 	}
 
-	return { sunriseMs, sunsetMs, solarNoonMs, daylightDurationMs, isDaylight, solarPhaseState, index };
+	return {
+		sunriseMs,
+		sunsetMs,
+		solarNoonMs,
+		daylightDurationMs,
+		isDaylight,
+		solarPhaseState,
+		index,
+		civil: { sunriseMs: civilSunriseMs, sunsetMs: civilSunsetMs },
+		nautical: { sunriseMs: nauticalSunriseMs, sunsetMs: nauticalSunsetMs },
+		astronomical: { sunriseMs: astroSunriseMs, sunsetMs: astroSunsetMs },
+	};
 }
 
 // --- Zodiac Algorithms ---
