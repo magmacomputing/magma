@@ -94,4 +94,15 @@ describe('Astro Pure Functions (tempo-fns)', () => {
 		expect(cz.element).toBe('Fire');
 		expect(cz.yinYang).toBe('Yang');
 	});
+
+	it('calculates solar events across historical and future ΔT year ranges', () => {
+		for (const yr of [-600, 0, 1200, 1650, 1750, 1850, 1880, 1910, 1930, 1955, 1970, 1995, 2026, 2100, 2200]) {
+			const events = getSolarEvents(yr);
+			expect(events).toHaveLength(4);
+			for (const ev of events) {
+				expect(ev.epochMs).toBeDefined();
+				expect(Number.isNaN(ev.epochMs)).toBe(false);
+			}
+		}
+	});
 });
