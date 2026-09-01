@@ -79,16 +79,16 @@
     "collapsed": false,
     "items": [
       {
-        "text": "@magmacomputing/tempo-plugin-celestial",
-        "link": "/doc/9-plugins/celestial.index"
-      },
-      {
         "text": "Astro (Seasons & Solstices)",
         "link": "/doc/9-plugins/astro.index"
       },
       {
         "text": "Batch (Multi-Threaded SAB)",
         "link": "/doc/9-plugins/batch.index"
+      },
+      {
+        "text": "Celestial (Solar & Lunar Ephemeris)",
+        "link": "/doc/9-plugins/celestial.index"
       },
       {
         "text": "Finance (Fiscal & Business)",
