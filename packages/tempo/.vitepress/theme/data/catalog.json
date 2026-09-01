@@ -9,6 +9,15 @@
     "version": "2.1.5"
   },
   {
+    "id": "celestial",
+    "name": "Celestial Plugin",
+    "description": "Tempo plugin for location-aware solar twilight events (sun/solar) and lunar phase tracking (moon/lunar).",
+    "packageName": "@magmacomputing/tempo-plugin-celestial",
+    "plan": "community",
+    "status": "active",
+    "version": "1.0.0"
+  },
+  {
     "id": "batch",
     "name": "Batch Plugin",
     "description": "Tempo community plugin bringing C-level parallelization to massive date arrays via SharedArrayBuffer and Worker Threads.",
@@ -29,7 +38,7 @@
   {
     "id": "snap",
     "name": "Snap Plugin",
-    "description": "Snap time to blocks",
+    "description": "Tempo plugin for rounding and snapping dates to custom minute, hour, or sub-second intervals — ideal for calendar UI components, time-pickers, and telemetry aggregation.",
     "packageName": "@magmacomputing/tempo-plugin-snap",
     "plan": "community",
     "status": "active",

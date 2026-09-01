@@ -12,6 +12,15 @@ import type { Obj, Type } from '#library/type.library.js';
  */
 export const Registry = (globalThis as any)[sym.$SerializerRegistry] ??= new Map<string, Function>();
 
+const getSafeTag = (c: any): string | undefined => {
+	try {
+		const tag = c?.prototype?.[Symbol.toStringTag] ?? c?.[Symbol.toStringTag];
+		return isString(tag) ? tag : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 /**
  * Registers a Class for custom serialization and deserialization.
  * 
@@ -26,11 +35,24 @@ export const registerSerializable = (name: string, cls: Function) => {
 	const key = name.startsWith('$') ? name : `$${name}`;
 
 	if (Registry.has(key)) {
-		const existingCls = Registry.get(key);
-		if (existingCls === cls || existingCls?.toString() === cls.toString()) {
-			return; // Silently allow idempotent dual-registration
-		}
-		throw new Error(`[registerSerializable] Collision: '${key}' is already registered with ${existingCls?.name || 'anonymous constructor'}`);
+		const existingCls = Registry.get(key)!;
+		const existingTag = getSafeTag(existingCls);
+		const clsTag = getSafeTag(cls);
+
+		const existingName = existingCls.name || existingTag;
+		const currentName = cls.name || clsTag || (name.startsWith('$') ? name.slice(1) : name);
+
+		const isSameConstructor =
+			existingCls === cls ||
+			existingCls.toString() === cls.toString() ||
+			(Boolean((cls as any)[sym.$Identity]) && (existingCls as any)[sym.$Identity] === (cls as any)[sym.$Identity]) ||
+			(Boolean((cls as any)[sym.$Target]) && (existingCls as any)[sym.$Target] === (cls as any)[sym.$Target]) ||
+			(Boolean(existingName) && Boolean(currentName) && existingName === currentName);
+
+		if (isSameConstructor)
+			return; // Idempotent registration of identical constructor across monorepo bundles
+
+		throw new Error(`[registerSerializable] Collision: '${key}' is already registered with ${existingCls.name || 'anonymous constructor'}`);
 	}
 
 	Registry.set(key, cls);
@@ -81,7 +103,9 @@ export function cloneify<T>(obj: T, sentinel?: Function): T {
 	}
 }
 
+/** JSON.stringify replacer function that delegates to stringize for custom type handling */
 function replacer(key: string, obj: any): any { return isEmpty(key) ? obj : stringize(obj) }
+/** JSON.parse reviver function that decodes URI-encoded control characters */
 function reviver(_key: string, val: any): any { return decode(val) }
 
 // safe-characters [sp " ; < > [ ] ^ { | }]

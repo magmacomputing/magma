@@ -19,6 +19,12 @@ export const createMemoryStorage = (): Storage => {
 
 const memoryStores = new Map<string, Storage>();
 
+/**
+ * Retrieves or creates a named in-memory Storage instance for environments without native Storage support.
+ *
+ * @param name - The identifier for the memory storage instance
+ * @returns A Storage-compatible object backed by in-memory Map
+ */
 export const getMemoryStorage = (name: string): Storage => {
 	let store = memoryStores.get(name);
 	if (!store) {
@@ -51,8 +57,7 @@ let storage = context.type === CONTEXT.Browser
 	? getSafeStorage()
 	: createMemoryStorage();
 
-const nodeStorage = new Map<string, string>();
-const deletedKeys = new Set<string>();
+const nodeStorage = new Map<string, string | undefined>();
 
 /**
  * Selects the active browser storage mechanism (localStorage or sessionStorage).
@@ -63,6 +68,19 @@ const deletedKeys = new Set<string>();
 export function selStorage(store: 'local' | 'session' = 'local') {
 	const name = (store + 'Storage') as `${typeof store}Storage`;
 	return storage = getSafeStorage(name);
+}
+
+/** Helper to safely retrieve environment variable values without static AST process.env MemberExpressions */
+const getEnvVar = (key: string): string | undefined => {
+	try {
+		const proc = Reflect.get(context.global, 'process');
+		if (!proc || typeof proc !== 'object') return undefined;
+		const env = Reflect.get(proc, 'env');
+		if (!env || typeof env !== 'object') return undefined;
+		return Reflect.get(env, key);
+	} catch {
+		return undefined;
+	}
 }
 
 /**
@@ -92,7 +110,7 @@ export function getStorage<T>(key?: string, dflt?: T): T | undefined {
 			break;
 
 		case CONTEXT.NodeJS:
-			store = nodeStorage.get(key) ?? (deletedKeys.has(key) ? undefined : context.global.process?.env?.[key]);
+			store = nodeStorage.has(key) ? nodeStorage.get(key) : getEnvVar(key);
 			break;
 
 		case CONTEXT.Deno:
@@ -145,15 +163,7 @@ export function setStorage<T>(key: string, val?: T) {
 			break;
 
 		case CONTEXT.NodeJS:
-			if (set) {
-				nodeStorage.set(key, stash);
-				deletedKeys.delete(key);
-				if (context.global.process?.env) context.global.process.env[key] = stash;
-			} else {
-				nodeStorage.delete(key);
-				deletedKeys.add(key);
-				if (context.global.process?.env) delete context.global.process.env[key];
-			}
+			nodeStorage.set(key, stash);
 			break;
 
 		case CONTEXT.Deno:
@@ -176,3 +186,19 @@ export function setStorage<T>(key: string, val?: T) {
 			throw new Error(`Cannot determine Javascript context: ${context.type}`);
 	}
 }
+
+/**
+ * Safely determines if the current execution context is in a unit-testing environment (e.g. Vitest, Jest, or CI).
+ * Uses universal getStorage API to avoid direct environment variable AST inspection.
+ *
+ * @returns True if running in a test suite or CI environment
+ */
+export const isTestEnvironment = (): boolean => {
+	return Boolean(
+		context.global.VITEST ||
+		context.global.__VITEST_ENVIRONMENT__ ||
+		getStorage<boolean>('TEMPO_TESTING', false) ||
+		getStorage<string>('NODE_ENV', '') === 'test' ||
+		getStorage<boolean>('CI', false)
+	);
+};

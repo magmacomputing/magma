@@ -121,9 +121,11 @@ export function defineModule<T extends Plugin<TempoType>>(module: T): T {
 }
 
 /**
- * ## attachStatics
- * Safely attach static properties to a class, ensuring they are non-enumerable
+ * Safely attaches static properties to a class, ensuring they are non-enumerable
  * to prevent @Immutable from freezing them.
+ *
+ * @param TempoClass - The Tempo class to attach properties to
+ * @param props - Record of property names and values or descriptors to attach
  */
 export function attachStatics(TempoClass: any, props: Record<string, any>) {
 	for (const [key, val] of Object.entries(props)) {
@@ -172,6 +174,11 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 /**
  * ## defineInterpreterModule
  * Used to register a module that attaches methods to the Tempo sym.$Interpreter registry.
+ *
+ * @param name - The module name to register in the interpreter
+ * @param logic - The module logic or method collection to install
+ * @param statics - Optional static properties to attach to the Tempo class
+ * @returns The registered module plugin definition
  */
 export function defineInterpreterModule(name: string, logic: any, statics?: Record<string, any>) {
 	return defineModule({
@@ -213,6 +220,9 @@ export function defineInterpreterModule(name: string, logic: any, statics?: Reco
 /**
  * ## definePlugin
  * Used to register a plugin.
+ *
+ * @param plugin - The plugin definition to register
+ * @returns The registered plugin with plugin type metadata attached
  */
 export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T {
 	const result = { ...plugin, [sym.$PluginType]: 'plugin' };
@@ -221,8 +231,14 @@ export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T {
 }
 
 /**
- * ## registerPlugin
- * Registration hook for general plugins.
+ * Registration hook for general plugins. Validates and persists the plugin
+ * to the discovery database. Sandbox registrations persist in sandbox state
+ * without calling rt.addExtension(plugin), while non-sandbox plugins are
+ * persisted to the global extension list.
+ *
+ * @param plugin - The plugin to register
+ * @param state - Optional state context for sandboxed registrations
+ * @returns The registered plugin
  */
 export function registerPlugin(plugin: any, state?: any) {
 	const rt = getRuntime();
@@ -252,6 +268,9 @@ export type NamespaceConfig = {
 /**
  * ## defineNamespace
  * Creates a lazy-loaded property namespace on the Tempo instance.
+ *
+ * @param config - The namespace configuration including name, version, and resolvers
+ * @returns A registered namespace plugin
  */
 export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> {
 	if (isSymbol(config.name) && !config.name.description)

@@ -83,10 +83,13 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 export type Snippet = typeof Snippet
 
 /**
- * a {layout} is a Record of snippet-combinations describing an input DateTime argument  
- * the Layout's keys are in the order that they will be checked against an input value  
+ * a {layout} is a Record of snippet-combinations describing an input DateTime argument
+ * the Layout's keys are in the order that they will be checked against an input value
  */
-/** @internal Layout components for date resolution */
+/**
+ * Layout components for date resolution in day-month-year or month-day-year order.
+ * @internal
+ */
 export const datePattern = {
 	dmy: '{mod}?(?:{dd}{sep}?{mm}({sep}?{yy})?|{evt}|(?<slk>{slk})|{wkd}){afx}?',
 	mdy: '{mod}?(?:{mm}{sep}?{dd}({sep}?{yy})?|{evt}|(?<slk>{slk})|{wkd}){afx}?'

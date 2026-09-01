@@ -12,7 +12,7 @@ import type { ValueOf } from '#library/type.library.js';
  * const tapper = new Tapper('#my-button', [Tapper.EVENT.SingleTap, () => console.log('Tapped!')]);
  * ```
  */
-@StringTag
+@StringTag('Tapper')
 export class Tapper {
 	static EVENT = enumify({
 		SingleTap: 'singleTap',

@@ -1,0 +1,57 @@
+{
+  "name": "@magmacomputing/tempo-plugin-celestial",
+  "version": "1.0.0",
+  "description": "Tempo plugin for location-aware solar twilight events and lunar phase calculations",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magmacomputing/magma.git",
+    "directory": "packages/plugins/celestial"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && tsc",
+    "test": "vitest run -c ../vitest.shared.ts",
+    "prepublishOnly": "tempo-cli prepublish"
+  },
+  "peerDependencies": {
+    "@magmacomputing/tempo": "^4.0.0"
+  },
+  "tempo": {
+    "vendorVariantId": "tempo-plugin-celestial",
+    "plan": "community"
+  },
+  "keywords": [
+    "tempo",
+    "tempo-plugin",
+    "magmacomputing",
+    "temporal",
+    "plugin",
+    "celestial",
+    "solar",
+    "lunar",
+    "twilight",
+    "sunrise",
+    "sunset",
+    "moon-phase"
+  ]
+}

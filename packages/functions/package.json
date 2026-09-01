@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-fns",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Tree-shakeable functional utilities for the Temporal API",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -28,8 +28,7 @@
     "README.md",
     "CHANGELOG.md",
     "LICENSE",
-    "dist/",
-    "img/"
+    "dist/"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -47,7 +46,7 @@
     }
   },
   "scripts": {
-    "test": "cross-env TEMPO_LICENSE_KEY=\"\" vitest run",
+    "test": "vitest run",
     "build": "npm run clean && npm run build:esm && npm run build:global",
     "build:esm": "node ../../node_modules/typescript-7/bin/tsc -b",
     "build:global": "rollup -c",

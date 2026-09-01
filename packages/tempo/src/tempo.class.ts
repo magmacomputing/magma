@@ -1,8 +1,8 @@
 import '#library/temporal.polyfill.js';
 
-import { Immutable, Serializable, StringTag } from '#library/decorator.library.js';
+import { Immutable, Mutable, Serializable, StringTag } from '#library/decorator.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
-import { getStorage, setStorage } from '#library/storage.library.js';
+import { getStorage, setStorage, isTestEnvironment } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray, dynamicProxy } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { ownKeys, ownEntries, ownValues, unwrap } from '#library/primitive.library.js';
@@ -30,7 +30,7 @@ import { resolveConfig, resolveConfigSync } from './config/config.resolve.js';
 
 import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, $ImmutableSkip, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import { Interval } from './interval.class.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
@@ -141,26 +141,21 @@ export class Tempo {
 		return ClassStates.get(this) ?? _global;
 	}
 
-	/** @internal */
-	static get [$ImmutableSkip]() {
-		const global = isDefined(globalThis) ? globalThis : (window as any);
-		const nodeEnv = isDefined(global.process)
-			&& global.process.env
-			&& (global.process.env.NODE_ENV === 'test' || global.process.env.CI);
-
-		return (nodeEnv || global.TEMPO_TESTING)
-			? ['init']
-			: []
-	}
-
 	/** @internal brand check to distinguish Tempo objects from other objects */
 	get [$Identity](): true { return true }
 
 
 	/**
+	 * Registers event or period aliases and updates the corresponding snippet pattern.
+	 * The {dt} layout combines date-related {snippets} (e.g. dd, mm -or- evt) into a pattern
+	 * against which a string can be tested. Because it includes a list of events (e.g. 'new_years' | 'xmas'),
+	 * we need to rebuild {dt} if the user adds a new event.
+	 *
+	 * @param shape - The internal state to update
+	 * @param kind - Type of alias to register ('evt' for events, 'per' for periods)
+	 * @param token - The snippet token to update
+	 * @param provided - Optional array of [key, value] pairs to register
 	 * @internal
-	 * {dt} is a layout that combines date-related {snippets} (e.g. dd, mm -or- evt) into a pattern against which a string can be tested.  
-	 * because it will also include a list of events (e.g. 'new_years' | 'xmas'), we need to rebuild {dt} if the user adds a new event
 	 */
 	static [$setAliases](shape: Internal.State, kind: 'evt' | 'per', token: any, provided?: [string, any][]) {
 		const field = kind === 'evt' ? 'event' : 'period';
@@ -226,7 +221,13 @@ export class Tempo {
 		if (rebuild) setPatterns(shape);
 	}
 
-	/** try to infer hemisphere using the timezone's daylight-savings setting */
+	/**
+	 * Infers the hemisphere (north/south) using the timezone's daylight-savings setting.
+	 *
+	 * @param shape - The internal state
+	 * @param options - Configuration options containing sphere or timezone
+	 * @returns The resolved compass direction (north/south), or undefined if not determinable
+	 */
 	static #setSphere = (shape: Internal.State, options: t.Options): t.COMPASS | undefined => {
 		if (isDefined(options.sphere)) {
 			const evaluatedSphere = evaluate(options.sphere);
@@ -242,7 +243,12 @@ export class Tempo {
 		return undefined;
 	}
 
-	/** determine if we have a {timeZone} which prefers {mdy} date-order */
+	/**
+	 * Determines if the configured timezone and locale prefer month-day-year date ordering.
+	 *
+	 * @param shape - The internal state containing timezone and locale configuration
+	 * @returns True if the timezone/locale prefers MDY format, false otherwise
+	 */
 	static #isMonthDay(shape: Internal.State) {
 		const { timeZone, locale } = shape.config;
 		const mdy = shape.parse.monthDay;
@@ -298,7 +304,12 @@ export class Tempo {
 		logDebug(`Resolved layout order: ${getLayoutOrder(layout).join(' -> ')}`, shape.config);
 	}
 
-	/** get first Canonical name of a supplied locale */
+	/**
+	 * Gets the first canonical name of a supplied locale, falling back to navigator language.
+	 *
+	 * @param locale - Optional locale string or array of locale strings
+	 * @returns The canonical locale identifier
+	 */
 	static #locale = (locale?: string | string[]) => {
 		const global = Context.global;
 		let language: string | undefined;
@@ -785,6 +796,7 @@ export class Tempo {
 	}
 
 	/** Reset Tempo to its default, built-in registration state */
+	@Mutable(isTestEnvironment)
 	static init(options: t.Options = {}): typeof Tempo {
 		if (_lifecycle.initialising) return this;
 		_lifecycle.initialising = true;

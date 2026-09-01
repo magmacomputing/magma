@@ -1,6 +1,6 @@
-import { $ImmutableSkip } from '#library/symbol.library.js';
+import { $Mutable } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
-import { isReference, isUndefined, isFunction, isString } from '#library/assertion.library.js';
+import { isReference, isUndefined, isString, isSymbol } from '#library/assertion.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { registerType, getSafeTag } from '#library/type.library.js';
 import type { Constructor, Type } from '#library/type.library.js';
@@ -32,8 +32,9 @@ function getClassName<T extends Constructor>(value: T, contextName: string | sym
 function createImmutableWrapper<T extends Constructor>(
 	value: T,
 	name: string | undefined,
-	addInitializer: (fn: () => void) => void,
-	immutabilityStrategy: (instance: any) => any							// either Object.freeze or secure (Proxy) strategy
+	addInitializer: (initializer: () => void) => void,
+	immutabilityStrategy: (instance: any) => any,
+	metadata?: any
 ): T {
 	const safeName = name || 'Anonymous';
 	const wrapper = {
@@ -51,14 +52,42 @@ function createImmutableWrapper<T extends Constructor>(
 	}
 
 	addInitializer(() => {
-		const skip = (value as any)[$ImmutableSkip]
-			?? (value as any).$ImmutableSkip
-			?? [];
+		const metaSymbol = (Symbol as any).metadata;
+		const meta = metadata ?? (metaSymbol ? (value as any)[metaSymbol] : undefined);
+
+		const skip = [
+			...((value as any)[$Mutable] ?? (value as any).$Mutable ?? []),
+			...((value?.prototype as any)?.[$Mutable] ?? (value?.prototype as any)?.$Mutable ?? []),
+			...(meta?.[$Mutable] ?? meta?.$Mutable ?? []),
+		];
 
 		hardenClassStaticsAndPrototypes(value, wrapper, skip);
 	});
 
 	return wrapper;
+}
+
+/**
+ * Determines if a member should be skipped during hardening based on the skip list.
+ * Supports both simple string/symbol entries and conditional skip entries.
+ *
+ * @param name - The member name to check
+ * @param skipList - Array of skip entries (strings, symbols, or conditional objects)
+ * @returns True if the member should be skipped, false otherwise
+ * @internal
+ */
+function shouldSkipMember(name: string | symbol, skipList: any): boolean {
+	if (!Array.isArray(skipList)) return false;
+	return skipList.some(entry => {
+		if (isString(entry) || isSymbol(entry)) {
+			return entry === name;
+		}
+		if (entry && typeof entry === 'object' && 'name' in entry) {
+			if (entry.name !== name) return false;
+			return typeof entry.condition === 'function' ? Boolean(entry.condition()) : Boolean(entry.condition ?? true);
+		}
+		return false;
+	});
 }
 
 /**
@@ -70,7 +99,7 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 	const lockStatic = (ctor: object) => {
 		Reflect.ownKeys(ctor).forEach(name => {
 			if (name === 'prototype' || name === 'length' || name === 'name' || name === 'constructor') return;
-			if (Array.isArray(skip) && skip.some(s => String(s) === String(name))) return;
+			if (shouldSkipMember(name, skip)) return;
 			const desc = Object.getOwnPropertyDescriptor(ctor, name);
 			if (!desc) return;
 			// Only lock if configurable or writable
@@ -91,7 +120,7 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 		if (!isReference(proto)) return;
 		Reflect.ownKeys(proto).forEach(name => {
 			if (name === 'constructor') return;
-			if (Array.isArray(skip) && skip.some(s => String(s) === String(name))) return;
+			if (shouldSkipMember(name, skip)) return;
 			const desc = Object.getOwnPropertyDescriptor(proto, name);
 			if (!desc) return;
 			const update: PropertyDescriptor = {};
@@ -124,12 +153,12 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
  * class Config { ... }
  * ```
  */
-export function Securable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
+export function Securable<T extends Constructor>(value: T, { kind, name, addInitializer, metadata }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
 
 	switch (kind) {
 		case 'class':
-			return createImmutableWrapper(value, finalName, addInitializer, secure);
+			return createImmutableWrapper(value, finalName, addInitializer, secure, metadata);
 		default:
 			throw new Error(`@Securable decorating unknown 'kind': ${kind} (${name})`);
 	}
@@ -153,12 +182,12 @@ export function Securable<T extends Constructor>(value: T, { kind, name, addInit
  * class Config { ... }
  * ```
  */
-export function Immutable<T extends Constructor>(value: T, { kind, name, addInitializer }: ClassDecoratorContext<T>): T | void {
+export function Immutable<T extends Constructor>(value: T, { kind, name, addInitializer, metadata }: ClassDecoratorContext<T>): T | void {
 	const finalName = getClassName(value, name);
 
 	switch (kind) {
 		case 'class':
-			return createImmutableWrapper(value, finalName, addInitializer, (instance) => { Object.freeze(instance); return instance; });
+			return createImmutableWrapper(value, finalName, addInitializer, (instance) => { Object.freeze(instance); return instance; }, metadata);
 
 		default:
 			throw new Error(`@Immutable decorating unknown 'kind': ${kind} (${name})`);
@@ -252,27 +281,40 @@ export function Static<T extends Constructor>(value: T, { kind, name }: ClassDec
  * ```
  */
 export function StringTag<T extends Constructor>(tagOrValue?: string | T, context?: ClassDecoratorContext<T>): any {
-	const applyTag = (value: T, customTag?: string) => {
+	const applyTag = (value: T, customTag?: string, contextName?: string | symbol) => {
 		const proto = value.prototype;
+		const tagName = customTag ?? getClassName(value, contextName);
 
-		if (proto && !Object.hasOwn(proto, Symbol.toStringTag)) {
-			const tagName = customTag ?? value.name;
-			Object.defineProperty(proto, Symbol.toStringTag, {
-				value: tagName,
-				configurable: true,
-				writable: false,
-				enumerable: false,
-			});
+		if (tagName) {
+			if (proto && !Object.hasOwn(proto, Symbol.toStringTag)) {
+				Object.defineProperty(proto, Symbol.toStringTag, {
+					value: tagName,
+					configurable: true,
+					writable: false,
+					enumerable: false,
+				});
+			}
+
+			if (!value.name || value.name !== tagName) {
+				try {
+					Object.defineProperty(value, 'name', {
+						value: tagName,
+						configurable: true,
+						writable: false,
+						enumerable: false,
+					});
+				} catch {}
+			}
 		}
 
 		return value;
 	}
 
 	if (typeof tagOrValue === 'function' && context?.kind === 'class')
-		return applyTag(tagOrValue as T);
+		return applyTag(tagOrValue as T, undefined, context.name);
 
-	return (value: T, _ctx?: ClassDecoratorContext<T>) => {
-		return applyTag(value, isString(tagOrValue) ? tagOrValue : undefined);
+	return (value: T, ctx?: ClassDecoratorContext<T>) => {
+		return applyTag(value, isString(tagOrValue) ? tagOrValue : undefined, ctx?.name);
 	}
 }
 
@@ -345,5 +387,61 @@ export function Singleton<T extends Constructor>(
 
 	return (value: T, _ctx?: ClassDecoratorContext<T>) => {
 		return decorate(value, targetOrOptions as SingletonOptions);
+	};
+}
+
+export type MutableCondition = boolean | (() => boolean);
+
+/**
+ * A method, property, or getter decorator that marks a class member to remain mutable
+ * when the class is decorated with `@Immutable` or `@Securable`.
+ *
+ * @param condition - Optional boolean or predicate function. If provided, the member remains mutable ONLY when condition evaluates to true.
+ * @example
+ * ```ts
+ *  @ Mutable()
+ *  static cache;
+ *
+ *  @ Mutable(() => isTestEnvironment())
+ *  static init() { ... }
+ * ```
+ */
+export function Mutable(targetOrCondition?: MutableCondition | any, context?: any): any {
+	const applyMutable = (ctx: any, condition?: MutableCondition) => {
+		const entry = {
+			name: ctx.name,
+			condition: typeof condition === 'function' ? condition : () => (condition ?? true),
+		};
+
+		if (ctx.metadata) {
+			let list = ctx.metadata[$Mutable];
+			if (!Array.isArray(list)) {
+				list = [];
+				Object.defineProperty(ctx.metadata, $Mutable, { value: list, writable: true, configurable: true });
+			}
+			list.push(entry);
+		}
+
+		ctx.addInitializer(function (this: any) {
+			const targets = [this];
+			if (this && typeof this.constructor === 'function' && this.constructor !== this) {
+				targets.push(this.constructor);
+			}
+			for (const target of targets) {
+				let list = (target as any)[$Mutable];
+				if (!Array.isArray(list)) {
+					list = [];
+					Object.defineProperty(target, $Mutable, { value: list, writable: true, configurable: true });
+				}
+				list.push(entry);
+			}
+		});
+	};
+
+	if (context && typeof context === 'object' && 'kind' in context)
+		return applyMutable(context, true);
+
+	return (_value: any, ctx: any) => {
+		applyMutable(ctx, targetOrCondition as MutableCondition);
 	};
 }

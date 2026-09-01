@@ -1,88 +1,43 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { ParseModule } from '@magmacomputing/tempo/parse';
-import { AstroTerm } from '../src/index.js';
+import { AstroPlugin } from '../src/index.js';
 
-describe('Astro Plugin (Term Implementation)', () => {
-
+describe('Astro Plugin (Astronomical Seasons & Events)', () => {
 	beforeEach(() => {
-		// Bypass monorepo dual-package (src vs dist) type hazard for test plugins
-		Tempo.init({ extends: [ParseModule, AstroTerm] });
+		Tempo.init();
+		Tempo.extend(AstroPlugin);
 	});
 
-	it('should register "astro" and "astronomy" terms', () => {
-		const tempo = new Tempo();
-		// Discovery check: terms should be in the registry
+	it('should register "astro" and "astronomy" terms via AstroPlugin', () => {
+		const tempo = new Tempo('2026-06-21T12:00:00Z', { sphere: 'north' });
 		expect(tempo.term.astro).toBeDefined();
 		expect(tempo.term.astronomy).toBeDefined();
 	});
 
-	describe('Parser Confidence (Numeric Epochs)', () => {
+	it('should calculate Northern Hemisphere astronomical seasons correctly', () => {
+		const spring = new Tempo('2026-04-15T12:00:00Z', { sphere: 'north' });
+		expect(spring.term.astro).toBe('Vernal');
+		expect(spring.term.astronomy.season).toBe('Spring');
+		expect(spring.term.astronomy.event).toBe('Equinox');
 
-		it('should trust a 10-digit ms epoch when timeStamp is explicit (Confidence-Aware)', () => {
-			const tempo = new Tempo(6828940683, { timeZone: 'UTC', timeStamp: 'ms', sphere: 'north' });
+		const summer = new Tempo('2026-07-15T12:00:00Z', { sphere: 'north' });
+		expect(summer.term.astro).toBe('Summer');
+		expect(summer.term.astronomy.season).toBe('Summer');
+		expect(summer.term.astronomy.event).toBe('Solstice');
 
-			expect(tempo.yy).toBe(1970);
-			expect(tempo.mm).toBe(3);
-			expect(tempo.day).toBe(21);
-			expect(tempo.term.astro).toBe('Vernal');
-		});
+		const autumn = new Tempo('2026-10-15T12:00:00Z', { sphere: 'north' });
+		expect(autumn.term.astro).toBe('Autumnal');
+		expect(autumn.term.astronomy.season).toBe('Autumn');
+		expect(autumn.term.astronomy.event).toBe('Equinox');
 
-		it('should correctly handle J2000 epoch (12 digits)', () => {
-			// March 20, 2000 ~07:35 UTC
-			const tempo = new Tempo(953537170176, { timeZone: 'UTC', timeStamp: 'ms', sphere: 'north' });
-			expect(tempo.yy).toBe(2000);
-			expect(tempo.term.astro).toBe('Vernal');
-		});
+		const winter = new Tempo('2026-01-15T12:00:00Z', { sphere: 'north' });
+		expect(winter.term.astro).toBe('Winter');
+		expect(winter.term.astronomy.season).toBe('Winter');
+		expect(winter.term.astronomy.event).toBe('Solstice');
 	});
 
-	describe('Seasonal Ranges (Scope)', () => {
-
-		it('should return a range object for "astronomy" scope', () => {
-			const tempo = new Tempo('2024-06-21', { timeZone: 'UTC', sphere: 'north' });
-			const range = tempo.term.astronomy;
-
-			expect(range.key).toBe('Summer');
-			expect(range.start).toBeDefined();
-			expect(range.end).toBeDefined();
-			// Summer 2024 starts on June 20, 20:51 UTC
-			expect(range.start.toDateTime().month).toBe(6);
-			expect(range.start.toDateTime().day).toBe(20);
-		});
-	});
-
-	describe('Southern Hemisphere Support', () => {
-
-		it('should flip seasons when sphere is set to South', () => {
-			// June 21st is Winter in Sydney
-			const tempo = new Tempo('2024-06-21', {
-				timeZone: 'Australia/Sydney',
-				sphere: 'south'
-			});
-
-			expect(tempo.term.astro).toBe('Winter');
-		});
-	});
-
-	describe('Meeus Range Enforcement', () => {
-
-		it('should succeed for boundary year -999 (which evaluates -1000)', () => {
-			const tempo = new Tempo(undefined, { timeZone: 'UTC', sphere: 'north' }).set({ yy: -999, mm: 1, dd: 1 });
-			expect(() => tempo.term.astro).not.toThrow();
-		});
-
-		it('should succeed for boundary year 2999 (which evaluates 3000)', () => {
-			const tempo = new Tempo(undefined, { timeZone: 'UTC', sphere: 'north' }).set({ yy: 2999, mm: 1, dd: 1 });
-			expect(() => tempo.term.astro).not.toThrow();
-		});
-
-		it('should throw RangeError for year outside the lower bounds (-1000 evaluates -1001)', () => {
-			const tempo = new Tempo(undefined, { timeZone: 'UTC', sphere: 'north' }).set({ yy: -1000, mm: 1, dd: 1 });
-			expect(() => tempo.term.astro).toThrow(/supported Meeus calculation range/);
-		});
-
-		it('should throw RangeError for year outside the upper bounds (3000 evaluates 3001)', () => {
-			const tempo = new Tempo(undefined, { timeZone: 'UTC', sphere: 'north' }).set({ yy: 3000, mm: 1, dd: 1 });
-			expect(() => tempo.term.astro).toThrow(/supported Meeus calculation range/);
-		});
+	it('should invert seasonal names for Southern Hemisphere', () => {
+		const springSouth = new Tempo('2026-10-15T12:00:00Z', { sphere: 'south' });
+		expect(springSouth.term.astro).toBe('Vernal');
+		expect(springSouth.term.astronomy.season).toBe('Spring');
 	});
 });

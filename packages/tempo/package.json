@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -54,7 +54,7 @@
   "jsdelivr": "dist/tempo.bundle.js",
   "imports": {
     "#library": "@magmacomputing/library",
-    "#library/*.js": "@magmacomputing/library/common/*.js",
+    "#library/*.js": "@magmacomputing/library/*.js",
     "#tempo": {
       "default": "./dist/tempo.index.js"
     },

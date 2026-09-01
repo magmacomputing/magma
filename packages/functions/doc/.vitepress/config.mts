@@ -39,9 +39,10 @@ export default defineConfig({
 				items: [
 					{ text: 'Business', link: '/functions/business/' },
 					{ text: 'Calendar', link: '/functions/calendar/' },
+					{ text: 'Celestial', link: '/functions/celestial/' },
+					{ text: 'Duration', link: '/functions/duration/' },
 					{ text: 'Scheduling', link: '/functions/scheduling/' },
 					{ text: 'Timezone', link: '/functions/timezone/' },
-					{ text: 'Duration', link: '/functions/duration/' }
 				]
 			},
 			{

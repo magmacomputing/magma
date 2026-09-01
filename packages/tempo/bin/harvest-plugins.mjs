@@ -33,6 +33,7 @@ const KNOWN_TITLES = {
   'ai.architecture': 'Provider Architecture',
   'astro.index': 'Astro (Seasons & Solstices)',
   'batch.index': 'Batch (Multi-Threaded SAB)',
+  'celestial.index': 'Celestial (Solar & Lunar Ephemeris)',
   'finance.index': 'Finance (Fiscal & Business)',
   'snap.index': 'Snap (Block Rounding)',
   'sync.index': 'Sync (Thread Synchronization)',

@@ -1,5 +1,6 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { enums, getTermRange, defineTerm, enumify, type ValueOf } from '@magmacomputing/tempo/plugin/sdk';
+import { getSolarEvents as getSolarEventsFn } from '@magmacomputing/tempo-fns';
 
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
@@ -22,41 +23,29 @@ declare module '@magmacomputing/tempo' {
 			nanosecond: number;
 			start: Tempo;
 			end: Tempo;
-		}
+		};
 	}
 }
 
 const ASTRO = enumify({ Vernal: 'vernal', Summer: 'summer', Autumnal: 'autumnal', Winter: 'winter' });
-type ASTRO = ValueOf<typeof ASTRO>
+type ASTRO = ValueOf<typeof ASTRO>;
 
-const { COMPASS, DURATIONS } = enums;
+const { COMPASS } = enums;
 const key = 'astro';
 const scope = 'astronomy';
 
 /**
- * ## calculateAstroMoment
- * Polynomial approximation for Equinoxes and Solstices (Jean Meeus algorithm, Ch 27).
- * Supported year range: -1000 to +3000.
- *
- * NOTE: This is a mean-polynomial approximation that does not include the 
- * periodic higher-order terms for exact apparent calculations.
+ * Polynomial approximation for Equinoxes and Solstices (Jean Meeus algorithm).
  */
 function calculateAstroMoment(year: number, quarter: ASTRO, timeZone: string) {
-	if (year < -1000 || year > 3000)
-		throw new RangeError(`AstroTerm: Year ${year} is outside the supported Meeus calculation range (-1000 to +3000).`);
+	const events = getSolarEventsFn(year);
+	let keyName: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter' = 'Vernal';
+	if (quarter === ASTRO.Summer) keyName = 'Summer';
+	else if (quarter === ASTRO.Autumnal) keyName = 'Autumnal';
+	else if (quarter === ASTRO.Winter) keyName = 'Winter';
 
-	const y = (year - 2_000) / 1_000;
-	let jde = 0;
-
-	switch (quarter) {
-		case ASTRO.Vernal: jde = 2_451_623.80984 + 365_242.37404 * y + 0.05169 * y * y; break;
-		case ASTRO.Summer: jde = 2_451_716.56767 + 365_241.62603 * y + 0.00325 * y * y; break;
-		case ASTRO.Autumnal: jde = 2_451_810.21715 + 365_242.01767 * y - 0.11575 * y * y; break;
-		case ASTRO.Winter: jde = 2_451_900.05952 + 365_242.74049 * y - 0.06223 * y * y; break;
-	}
-
-	// Use Tempo's native parser with the 'ms' timeStamp hint
-	const epochMs = Math.trunc((jde - 2_440_587.5) * DURATIONS.days);
+	const match = events.find(e => e.key === keyName);
+	const epochMs = match ? match.epochMs : Date.now();
 	return new Tempo(epochMs, { timeZone, timeStamp: 'ms' });
 }
 
@@ -70,11 +59,11 @@ function resolve(t: Tempo, anchor?: any) {
 
 	const labels = (sphere === COMPASS.South)
 		? { vernal: 'Autumnal', summer: 'Winter', autumnal: 'Vernal', winter: 'Summer' } as const
-		: { vernal: 'Vernal', summer: 'Summer', autumnal: 'Autumnal', winter: 'Winter' } as const
+		: { vernal: 'Vernal', summer: 'Summer', autumnal: 'Autumnal', winter: 'Winter' } as const;
 
 	const seasons = (sphere === COMPASS.South)
 		? { vernal: 'Autumn', summer: 'Winter', autumnal: 'Spring', winter: 'Summer' } as const
-		: { vernal: 'Spring', summer: 'Summer', autumnal: 'Autumn', winter: 'Winter' } as const
+		: { vernal: 'Spring', summer: 'Summer', autumnal: 'Autumn', winter: 'Winter' } as const;
 
 	for (const y of [year - 1, year, year + 1]) {
 		const m = (y: number, t: any) => {
@@ -84,9 +73,9 @@ function resolve(t: Tempo, anchor?: any) {
 			return {
 				year: dt.year, month: dt.month, day: dt.day,
 				hour: dt.hour, minute: dt.minute, second: dt.second,
-				millisecond: dt.millisecond, microsecond: dt.microsecond, nanosecond: dt.nanosecond
-			}
-		}
+				millisecond: dt.millisecond, microsecond: dt.microsecond, nanosecond: dt.nanosecond,
+			};
+		};
 
 		list.push({ key: labels.vernal, season: seasons.vernal, sphere, ...m(y, ASTRO.Vernal), event: 'Equinox', group: 'astronomy' });
 		list.push({ key: labels.summer, season: seasons.summer, sphere, ...m(y, ASTRO.Summer), event: 'Solstice', group: 'astronomy' });
@@ -97,9 +86,6 @@ function resolve(t: Tempo, anchor?: any) {
 	return list;
 }
 
-/**
- * Resolve where a date falls by ignoring time components of boundary moments.
- */
 function resolveDateBoundary(t: Tempo, anchor?: any) {
 	const list = resolve(t, anchor);
 	return list.map((item: any) => ({ ...item, hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 }));
@@ -107,7 +93,7 @@ function resolveDateBoundary(t: Tempo, anchor?: any) {
 
 /**
  * Exposes precise astronomical calculations (equinoxes and solstices)
- * as a standard Tempo scope.
+ * as a standard Tempo scope (`t.term.astro` & `t.term.astronomy`).
  */
 export const AstroTerm = defineTerm({
 	key,
@@ -142,7 +128,7 @@ export const AstroTerm = defineTerm({
 		if (!strictBoundary) {
 			return {
 				...dateScoped,
-				strict: scoped.key
+				strict: scoped.key,
 			};
 		}
 
@@ -155,23 +141,26 @@ export const AstroTerm = defineTerm({
 			second: strictBoundary.second ?? 0,
 			millisecond: strictBoundary.millisecond ?? 0,
 			microsecond: strictBoundary.microsecond ?? 0,
-			nanosecond: strictBoundary.nanosecond ?? 0
+			nanosecond: strictBoundary.nanosecond ?? 0,
 		}).add({ minutes: 1 });
 
 		const keyedScope = getTermRange(this, strictList, false, boundaryAnchor) as any;
 		if (!keyedScope) {
 			return {
 				...dateScoped,
-				strict: scoped.key
+				strict: scoped.key,
 			};
 		}
 
 		return {
 			...keyedScope,
-			strict: scoped.key
+			strict: scoped.key,
 		};
 	}
 });
 
+export const AstroPlugin = [AstroTerm];
+export default AstroPlugin;
+
 // Side-effect: Auto-register upon import
-Tempo.extend(AstroTerm);
+Tempo.extend(AstroPlugin);

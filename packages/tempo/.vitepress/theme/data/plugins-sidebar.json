@@ -87,6 +87,10 @@
         "link": "/doc/9-plugins/batch.index"
       },
       {
+        "text": "Celestial (Solar & Lunar Ephemeris)",
+        "link": "/doc/9-plugins/celestial.index"
+      },
+      {
         "text": "Finance (Fiscal & Business)",
         "link": "/doc/9-plugins/finance.index"
       },
