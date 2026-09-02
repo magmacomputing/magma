@@ -38,6 +38,7 @@ declare module '@magmacomputing/tempo' {
 			moonrise?: Tempo | undefined;
 			moonset?: Tempo | undefined;
 			group: 'lunar';
+			geo?: any;
 			year: number;
 			month: number;
 			day: number;
@@ -57,8 +58,7 @@ declare module '@magmacomputing/tempo' {
 			phases: readonly SolarPhaseState[];
 			index: number;
 			group: 'solar';
-			latitude: number;
-			longitude: number;
+			geo?: any;
 			year: number;
 			month: number;
 			day: number;
@@ -105,11 +105,11 @@ function getCelestialCoordinates(t: Tempo, anchor?: any): { refTempo: Tempo; lat
 		: (anchor != null
 			? new Tempo(typeof anchor === 'number' ? new Date(anchor) : anchor, (t as any).config)
 			: t);
-	const cfg = (refTempo as any).config ?? (t as any).config ?? {};
-	const latVal = cfg.latitude ?? cfg.lat ?? (refTempo as any).latitude ?? (refTempo as any).lat;
-	const lng = cfg.longitude ?? cfg.lng ?? cfg.lon ?? cfg.long ?? (refTempo as any).longitude ?? (refTempo as any).lng ?? (refTempo as any).lon ?? (refTempo as any).long ?? 0;
+	const geo = refTempo.geo ?? (t as any).geo;
+	const latVal = geo?.latitude;
+	const lng = geo?.longitude ?? 0;
 	
-	const explicitSphere = (refTempo as any).sphere ?? (t as any).sphere ?? cfg.sphere;
+	const explicitSphere = (refTempo as any).sphere ?? (t as any).sphere;
 	const sphere: 'north' | 'south' | undefined = explicitSphere
 		? explicitSphere
 		: (latVal !== undefined ? (latVal >= 0 ? 'north' : 'south') : undefined);
@@ -146,6 +146,7 @@ function getLunarScopeRange(t: Tempo, anchor?: any) {
 		moonrise,
 		moonset,
 		group: 'lunar' as const,
+		geo: refTempo.geo ?? (t as any).geo,
 		year: dt.year,
 		month: dt.month,
 		day: dt.day,
@@ -246,8 +247,7 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		phases: SOLAR_PHASE_STATES,
 		index: res.index,
 		group: 'solar' as const,
-		latitude: lat,
-		longitude: lng,
+		geo: refTempo.geo ?? (t as any).geo,
 		year: dt.year,
 		month: dt.month,
 		day: dt.day,

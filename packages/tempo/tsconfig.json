@@ -4,7 +4,6 @@
     { "path": "./src" },
     { "path": "./test" },
     { "path": "./bin" },
-    { "path": "./bench" },
-    { "path": "../plugins/.std" }
+    { "path": "./bench" }
   ]
 }

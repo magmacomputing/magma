@@ -448,12 +448,13 @@ export interface SunriseSunsetResult {
 
 /** Internal helper: Normalizes latitude and longitude from positional arguments or options object */
 function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 0): { lat: number; lng: number } {
-	if (typeof latOrOptions === 'number') {
+	if (typeof latOrOptions === 'number')
 		return { lat: latOrOptions, lng: lngInput };
-	}
+
 	if (latOrOptions && typeof latOrOptions === 'object') {
-		const lat = latOrOptions.latitude ?? latOrOptions.lat ?? 0;
-		const lng = latOrOptions.longitude ?? latOrOptions.lng ?? latOrOptions.lon ?? latOrOptions.long ?? 0;
+		const geo = (latOrOptions as any).geo ?? latOrOptions;
+		const lat = geo.latitude ?? geo.lat ?? (latOrOptions as any).latitude ?? (latOrOptions as any).lat ?? 0;
+		const lng = geo.longitude ?? geo.lng ?? geo.lon ?? geo.long ?? (latOrOptions as any).longitude ?? (latOrOptions as any).lng ?? (latOrOptions as any).lon ?? (latOrOptions as any).long ?? 0;
 		return { lat, lng };
 	}
 	return { lat: 0, lng: 0 };

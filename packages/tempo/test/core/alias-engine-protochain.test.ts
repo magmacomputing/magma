@@ -1,5 +1,5 @@
 import { AliasEngine } from '#tempo/engine/engine.alias.js';
-import { logTempo } from '#tempo/support/support.util.js';
+import { logTempo } from '#tempo/support';
 
 describe('AliasEngine prototype chain (Global → Sandbox → Instance)', () => {
   afterEach(() => {

@@ -48,7 +48,6 @@
 		"**/*.ts"
 	],
 	"references": [
-		{ "path": "../src/tsconfig.json" },
-		{ "path": "../../plugins/.std" }
+		{ "path": "../src/tsconfig.json" }
 	]
 }

@@ -26,7 +26,7 @@ npm install @magmacomputing/tempo-plugin-celestial
 ## Geographic Coordinates & Defaults
 
 > [!NOTE]
-> If `latitude` and `longitude` are omitted, location-aware calculations (`SolarTerm` sunrise/sunset and `LunarTerm` moonrise/moonset) default coordinates to `(0, 0)` (Equator / Prime Meridian). Check `t.term.solar.latitude` and `t.term.solar.longitude` to inspect active coordinates.
+> If geographic coordinates are omitted, location-aware calculations (`SolarTerm` sunrise/sunset and `LunarTerm` moonrise/moonset) default coordinates to `(0, 0)` (Equator / Prime Meridian). Check `t.geo` or `t.term.solar.geo` to inspect active coordinates.
 
 ### Obtaining Coordinates
 
@@ -43,8 +43,8 @@ import { geoLookup } from '@magmacomputing/tempo/library';
 import '@magmacomputing/tempo-plugin-celestial';
 
 // Automatically resolves location coordinates via browser hardware or server IP
-const coords = await geoLookup();
-const t = new Tempo({ latitude: coords.lat, longitude: coords.lng });
+const geo = await geoLookup();
+const t = new Tempo({ geo });
 
 console.log(t.term.sun);            // 'daylight' or 'night'
 console.log(t.term.lunar.moonrise); // Tempo instance for local moonrise
@@ -56,7 +56,7 @@ console.log(t.term.lunar.moonrise); // Tempo instance for local moonrise
 import { Tempo } from '@magmacomputing/tempo';
 import { LunarTerm, SolarTerm } from '@magmacomputing/tempo-plugin-celestial';
 
-const t = new Tempo('2026-06-21T12:00:00Z', { latitude: 40.7128, longitude: -74.006 });
+const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
 
 // --- Solar Day State & Phase Querying ---
 console.log(t.term.sun);                 // 'daylight'
@@ -64,7 +64,7 @@ console.log(t.term.solar.key);           // 'daylight'
 console.log(t.term.solar.phase);         // 'Daylight'
 console.log(t.term.solar.phases);        // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
 console.log(t.term.solar.sunrise);       // Tempo instance for local sunrise
-console.log(t.term.solar.latitude);      // 40.7128
+console.log(t.term.solar.geo);          // { latitude: 40.7128, longitude: -74.006 }
 
 // --- Lunar Phase & Ephemeris ---
 console.log(t.term.moon);                // 'waxing-crescent'

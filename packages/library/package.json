@@ -260,8 +260,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "npm run clean && tsc -b",
-    "clean": "node bin/clean.mjs && (tsc -b --clean || true)",
+    "build": "npm run clean && tsc -b --force",
+    "clean": "node bin/clean.mjs",
     "prepublishOnly": "tempo-cli prepublish"
   },
   "dependencies": {

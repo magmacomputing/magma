@@ -14,6 +14,7 @@ import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFuncti
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
+import { getStashedGeo, coerceGeo } from '#library/mapper.library.js';
 import { Interval } from '#library/scheduling/interval.class.js';
 import { LOG } from '#library/logger.class.js';
 import type { Property, Secure } from '#library/type.library.js';
@@ -234,9 +235,9 @@ export class Tempo {
 			if (isDefined(evaluatedSphere)) return evaluatedSphere;
 		}
 
-		const lat = options.latitude ?? options.lat ?? shape.config.latitude ?? shape.config.lat;
-		if (isNumber(lat))
-			return lat >= 0 ? 'north' : 'south';
+		const geo = coerceGeo(options) ?? shape.config.geo ?? getStashedGeo();
+		if (isNumber(geo?.latitude))
+			return geo.latitude >= 0 ? 'north' : 'south';
 
 		const resolvedTz = options.timeZone ?? shape.config.timeZone;
 		if (isDefined(resolvedTz) && String(resolvedTz).toLowerCase() !== 'utc') {
@@ -1174,7 +1175,7 @@ export class Tempo {
 	/** instantiation Temporal Instant */											#instant?: Temporal.Instant;
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
 	/** memoized instance properties */
-	#memo: { tz?: string; cal?: string; sphere?: t.COMPASS | undefined; fmt?: Record<string, string | undefined> } = {};
+	#memo: { tz?: string; cal?: string; sphere?: t.COMPASS | undefined; geo?: t.GeoConfig | undefined; fmt?: Record<string, string | undefined> } = {};
 	/** indicator that the instance failed to parse */				#errored = false;
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
 	/** mapping of terms to their resolved values */					#term?: any;
@@ -1499,17 +1500,19 @@ export class Tempo {
 	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
+	/** Resolved geographic coordinates object ({ latitude, longitude, ... }) */ get geo(): t.GeoConfig | undefined {
+		if ('geo' in this.#memo) return this.#memo.geo;
+		const res = this.#local.config.geo
+			?? (this as any)[$Internal]().config.geo
+			?? getStashedGeo();
+		return (this.#memo.geo = res ? Object.freeze({ ...res }) : undefined);
+	}
 	/** Resolved hemisphere ('north' | 'south' | undefined) */get sphere(): t.COMPASS | undefined {
 		if ('sphere' in this.#memo) return this.#memo.sphere;
 
 		const globalTz = (this as any)[$Internal]().config.timeZone;
 		const hasInstanceTzOverride = isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(this.tz).toLowerCase() !== String(globalTz).toLowerCase());
-		const lat = (this.#local.options as any)?.latitude
-			?? (this.#local.options as any)?.lat
-			?? (this.#local.config as any)?.latitude
-			?? (this.#local.config as any)?.lat
-			?? (this as any)[$Internal]().config.latitude
-			?? (this as any)[$Internal]().config.lat;
+		const lat = this.geo?.latitude;
 
 		const res = evaluate(
 			this.#local.options && hasOwn(this.#local.options, 'sphere') ? this.#local.options.sphere : undefined,

@@ -38,8 +38,8 @@ const getStore = () => {
 				import('#browser/webstore.class.js')
 					.then(({ WebStore }) => {
 						const local = new WebStore('local');
-						Object.assign(mapStore, local.get(MAP_KEY, {}));		// fetch the previous MAP_KEY coordinates
-						resolve(local);																			// localStorage wrapper
+						Object.assign(mapStore, local.get(MAP_KEY, {}));// fetch the previous MAP_KEY coordinates
+						resolve(local);																	// localStorage wrapper
 					})
 					.catch(reject);
 			} else {
@@ -114,10 +114,10 @@ export const geoLocation = (opts = {} as MapOpts) =>
 export const geoCoords = (coords?: google.maps.GeocoderRequest) =>
 	new Promise<google.maps.GeocoderRequest | null>((resolve, reject) => {
 		if (!isNullish(coords))
-			return resolve(coords);															// user-supplied coordinates
+			return resolve(coords);																// user-supplied coordinates
 
-		geoLocation()																					// get current location
-			.then(geo => isNullish(geo.error)										// successful geolocation
+		geoLocation()																						// get current location
+			.then(geo => isNullish(geo.error)											// successful geolocation
 				? ({ location: { lat: geo.coords.latitude, lng: geo.coords.longitude } })
 				: null																							// unsuccessful geolocation
 			)
@@ -143,7 +143,7 @@ export const mapQuery = (coords?: google.maps.GeocoderRequest, opts = {} as MapO
 		opts = Object.assign({}, defaults, opts);
 		const fulfil = opts.catch ? resolve : reject;
 
-		geoCoords(coords)																			// get a Location object
+		geoCoords(coords)																				// get a Location object
 			.then((loc) => {
 				switch (true) {
 					case (!(typeof window !== 'undefined' && 'google' in window && 'maps' in window['google'])):
@@ -152,11 +152,11 @@ export const mapQuery = (coords?: google.maps.GeocoderRequest, opts = {} as MapO
 					case isNullish(loc):															// unsuccessful geoLocation
 						throw new Error('Cannot determine Coordinates');
 
-					case isNullish(coords): {												 // current location
+					case isNullish(coords): {													// current location
 						const test1 = mapStore.geolocation && mapStore.georesponse;
 						const test2 = isNullish(mapStore.geolocation?.error) && isNullish(mapStore.georesponse?.error);
 
-						if (test1 && test2) {													 // if we already have geocoder
+						if (test1 && test2) {														// if we already have geocoder
 							if (opts.debug)
 								log.debug(opts, 'mapQuery: cache');
 							return resolve(mapStore.georesponse!);				// return previous geocoder
@@ -205,14 +205,14 @@ export const mapHemisphere = (coords?: google.maps.GeocoderRequest, opts = {} as
 				return response.results[0].geometry.location.lat() >= 0 ? 'north' : 'south';
 			}
 
-			const sphere = getHemisphere();											// use the timezone offset to determine hemisphere
+			const sphere = getHemisphere();												// use the timezone offset to determine hemisphere
 
 			if (isNullish(sphere) && opts.catch === false)
 				throw new Error('Cannot determine Hemisphere');
 
 			return sphere;
 		})
-		.catch((error) => {																		 // cannot query coordinates
+		.catch((error) => {																		 	// cannot query coordinates
 			if (opts.debug)
 				log.warn(opts, 'mapHemisphere: ', error.message);
 			if (opts.catch === false)
@@ -235,7 +235,7 @@ export const mapAddress = (coords?: google.maps.GeocoderRequest, opts = {} as Ma
 	mapQuery(coords, opts)
 		.then((response) => {
 			if (!isNullish(response.error)) throw new Error(response.error);
-			return response.results[0];													// first result is 'best-guess'
+			return response.results[0];														// first result is 'best-guess'
 		})
 		.then(({ formatted_address, address_components }) => address_components
 			.reduce((acc: Record<string, string | string[]>, itm: any) => {

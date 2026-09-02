@@ -90,7 +90,7 @@ export const workingHoursUntil = function (start: Tempo | Temporal.ZonedDateTime
 				actualEnd = target;
 
 			if (actualStart.epochNanoseconds < actualEnd.epochNanoseconds)
-				totalNs += actualEnd.epochNanoseconds - actualStart.epochNanoseconds;
+				totalNs += BigInt(actualEnd.epochNanoseconds) - BigInt(actualStart.epochNanoseconds);
 		}
 
 		iterDate = iterDate.add({ days: 1 });

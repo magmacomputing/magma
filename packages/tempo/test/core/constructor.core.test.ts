@@ -70,32 +70,37 @@ describe('Tempo Core', () => {
 				expect(t.format('{yyyy}')).toBe('');
 			});
 		});
-		describe("latitude sphere inference", () => {
+		describe("latitude sphere inference & geo getter", () => {
 			it('infers sphere as south when latitude is negative', () => {
-				const t = new Tempo('2026-09-02', { latitude: -33.8688 });
+				const t = new Tempo('2026-09-02', { geo: { lat: -33.8688, lng: 151.2093 } });
 				expect(t.sphere).toBe('south');
+				expect(t.geo).toEqual({ latitude: -33.8688, longitude: 151.2093 });
+				expect(Object.isFrozen(t.geo)).toBe(true);
 			});
 
 			it('infers sphere as north when latitude is positive', () => {
-				const t = new Tempo('2026-09-02', { lat: 40.7128 });
+				const t = new Tempo('2026-09-02', { geo: { latitude: 40.7128, longitude: -74.006 } });
 				expect(t.sphere).toBe('north');
+				expect(t.geo).toEqual({ latitude: 40.7128, longitude: -74.006 });
 			});
 
 			it('allows explicit sphere to override latitude inference', () => {
-				const t = new Tempo('2026-09-02', { latitude: -33.8688, sphere: 'north' });
+				const t = new Tempo('2026-09-02', { geo: { lat: -33.8688, lng: 151.2093 }, sphere: 'north' });
 				expect(t.sphere).toBe('north');
 			});
 
 			it('infers sphere from global Tempo.init config', () => {
-				Tempo.init({ latitude: -33.8688 });
+				Tempo.init({ geo: { latitude: -33.8688, longitude: 151.2093 } });
 				const t = new Tempo('2026-09-02');
 				expect(t.sphere).toBe('south');
+				expect(t.geo).toEqual({ latitude: -33.8688, longitude: 151.2093 });
 			});
 
 			it('infers sphere from sandbox Tempo.create config', () => {
-				const CustomTempo = Tempo.create({ latitude: -33.8688 });
+				const CustomTempo = Tempo.create({ geo: { latitude: -33.8688, longitude: 151.2093 } });
 				const t = new CustomTempo('2026-09-02');
 				expect(t.sphere).toBe('south');
+				expect(t.geo).toEqual({ latitude: -33.8688, longitude: 151.2093 });
 			});
 		});
 	});

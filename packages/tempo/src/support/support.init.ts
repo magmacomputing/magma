@@ -11,6 +11,7 @@ import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 import { evaluate } from '#library/evaluation.library.js';
+import { coerceGeo } from '#library/mapper.library.js';
 
 import { getRuntime } from './support.runtime.js';
 import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, generateLocalizedSnippets } from './support.util.js';
@@ -421,6 +422,20 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 					setProperty(state.config, 'sphere', arg.value);
 				}
 				break;
+
+			case 'geo':
+			case 'latitude':
+			case 'lat':
+			case 'longitude':
+			case 'lng':
+			case 'lon':
+			case 'long': {
+				const geoConfig = coerceGeo(options);
+				if (geoConfig)
+					setProperty(state.config, 'geo', geoConfig);
+
+				break;
+			}
 
 			case 'catch':
 				setProperty(state.config, 'catch', Boolean(arg.value));

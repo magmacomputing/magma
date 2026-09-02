@@ -22,7 +22,7 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 	});
 
 	it('resolves solar terms (sun and solar)', () => {
-		const t = new Tempo('2026-06-21T12:00:00Z', { latitude: 40.7128, longitude: -74.006 });
+		const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
 		expect(typeof t.term.sun).toBe('string');
 		expect(t.term.solar).toBeDefined();
 		expect(t.term.solar.key).toBe('daylight');
@@ -35,10 +35,12 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(t.term.solar.noon).toBeInstanceOf(Tempo);
 		expect(t.term.solar.sunset).toBeInstanceOf(Tempo);
 		expect(t.term.solar.isDaylight).toBe(true);
+		expect(t.term.solar.geo).toBe(t.geo);
+		expect(t.term.lunar.geo).toBe(t.geo);
 	});
 
 	it('honors numeric anchor 0 in LunarTerm and SolarTerm resolvers', () => {
-		const t = new Tempo('2026-06-21T12:00:00Z', { latitude: 40.7128, longitude: -74.006 });
+		const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
 		
 		const solarRes = SolarTerm.resolve.call(t, 0)[0];
 		const lunarRes = LunarTerm.resolve.call(t, 0)[0];

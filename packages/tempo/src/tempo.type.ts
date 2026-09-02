@@ -9,6 +9,9 @@
 import type { DebugLevel } from '#library/logger.class.js';
 import type { ScopedSet } from '#library/scopedset.class.js';
 import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable } from '#library/type.library.js';
+import type { GeoOptions, GeoConfig } from '#library/mapper.library.js';
+
+export type { GeoOptions, GeoConfig };
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
@@ -344,9 +347,10 @@ export namespace Internal {
 		/** locale (e.g. en-AU) */															locale?: Evaluable<string | string[]> | undefined;
 		/** pivot year for two-digit years */										pivot?: number | undefined;
 		/** hemisphere for term.qtr or term.szn */							sphere?: Evaluable<enums.COMPASS | undefined> | undefined;
-		/** Latitude coordinate in degrees (used by celestial/astro plugins) @internal */ latitude?: number | undefined;
+		/** Geolocation coordinates configuration for location-aware plugins */ geo?: GeoOptions | undefined;
+		/** Latitude coordinate in degrees @internal */ 					latitude?: number | undefined;
 		/** Latitude coordinate alias in degrees @internal */ 							lat?: number | undefined;
-		/** Longitude coordinate in degrees (used by celestial/astro plugins) @internal */ longitude?: number | undefined;
+		/** Longitude coordinate in degrees @internal */ 					longitude?: number | undefined;
 		/** Longitude coordinate alias in degrees @internal */ 						lng?: number | undefined;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions | undefined;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions | undefined;
@@ -450,6 +454,7 @@ export namespace Internal {
 		/** Temporal calendar */																calendar: Temporal.CalendarLike;
 		/** locale (e.g. en-AU) */															locale: string | string[];
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
+		/** Geolocation coordinates configuration */						geo?: GeoConfig | undefined;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions | undefined;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions | undefined;
 		/** scope for configuration mutations */								scope: 'global' | 'local';

@@ -20,7 +20,7 @@
     "build:library": "npm run build --workspace=@magmacomputing/library",
     "build:functions": "npm run build --workspace=@magmacomputing/tempo-fns",
     "build:plugins": "npm run build:tempo && tempo-cli build-plugins",
-    "build:all": "npm run build --workspaces --if-present",
+    "build:all": "npm run build:library && npm run build:tempo && npm run build:functions && npm run build:plugins",
     "clean": "node node_modules/typescript-7/bin/tsc -b --clean",
     "version:bump": "tempo-cli version-bump",
     "version:sync": "tempo-cli version-sync",
