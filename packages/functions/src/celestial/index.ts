@@ -175,6 +175,14 @@ export interface SolarEventResult {
 	year: number;
 }
 
+/**
+ * Calculates the Julian Day Ephemeris time correction for solar events using Jean Meeus algorithms.
+ * Applies periodic terms and corrections to refine the initial JDE estimation.
+ *
+ * @param JDE0 - The initial Julian Day Ephemeris estimate
+ * @returns The refined Julian Day Ephemeris value
+ * @internal
+ */
 function calculateMeeusJde(JDE0: number): number {
 	const T = (JDE0 - 2451545.0) / 36525;
 	const W = 359.9937 * T - 2.47;
@@ -209,6 +217,14 @@ function calculateMeeusJde(JDE0: number): number {
 	return JDE0 + (0.00001 * S) / Delta;
 }
 
+/**
+ * Calculates the ΔT (Delta T) correction between Terrestrial Time and Universal Time for a given year.
+ * Uses polynomial approximations derived from historical data spanning from -500 to +3000.
+ *
+ * @param year - The calendar year for which to calculate ΔT
+ * @returns The ΔT correction value in seconds
+ * @internal
+ */
 function getDeltaT(year: number): number {
 	if (year < -500) {
 		const u = (year - 1820) / 100;

@@ -144,6 +144,16 @@ export function isCronString(val: unknown): val is string {
 	}
 }
 
+/**
+ * Checks if a given date matches the day constraints in a cron schedule.
+ * Handles the logical OR between day-of-month and day-of-week when both are restricted.
+ *
+ * @param schedule - The parsed cron schedule
+ * @param day - The day of the month (1-31)
+ * @param dow - The day of the week (0-7, where 0 and 7 both represent Sunday)
+ * @returns True if the date matches the day constraints
+ * @internal
+ */
 function matchesDay(schedule: CronSchedule, day: number, dow: number): boolean {
 	const domMatch = schedule.daysOfMonth.allowed.has(day);
 	const dowMatch = schedule.daysOfWeek.allowed.has(dow) || (dow === 7 && schedule.daysOfWeek.allowed.has(0));
@@ -153,6 +163,18 @@ function matchesDay(schedule: CronSchedule, day: number, dow: number): boolean {
 		: domMatch && dowMatch
 }
 
+/**
+ * Searches for a cron occurrence timestamp in the specified direction (forward or backward).
+ * Searches up to 5 years in the given direction.
+ *
+ * @param pattern - The cron pattern string
+ * @param anchorMs - The starting anchor timestamp in milliseconds
+ * @param timeZone - The IANA time zone identifier
+ * @param direction - Search direction: 1 for next, -1 for previous
+ * @returns The occurrence timestamp in epoch milliseconds
+ * @throws Error if no match is found within 5 years
+ * @internal
+ */
 function searchCronEpoch(pattern: string, anchorMs: number, timeZone: string, direction: 1 | -1): number {
 	const schedule = parseCron(pattern);
 	const zdt = Temporal.Instant.fromEpochMilliseconds(anchorMs).toZonedDateTimeISO(timeZone);
