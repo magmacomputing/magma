@@ -1,5 +1,7 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
 import { isNullish, isNumber } from '#library/assertion.library.js';
+import { geoLocation } from '#browser/mapper.library.js';
+import { serverGeoLocation } from '#server/mapper.library.js';
 
 export interface GeoLookupResult {
 	lat?: number;
@@ -31,7 +33,6 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 	const context = getContext();
 
 	if (context.type === CONTEXT.Browser) {
-		const { geoLocation } = await import('#browser/mapper.library.js');
 		const res = await geoLocation(opts as any);
 		if (res.error)
 			return { error: res.error };
@@ -41,7 +42,6 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 		return { lat, lng, latitude: lat, longitude: lng, ...res };
 	}
 
-	const { serverGeoLocation } = await import('#server/mapper.library.js');
 	return serverGeoLocation(opts as any);
 }
 

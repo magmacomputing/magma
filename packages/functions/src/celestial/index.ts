@@ -641,7 +641,7 @@ export interface MoonriseMoonsetResult {
 	moonsetMs?: number | undefined;
 }
 
-/** Internal helper: Calculates lunar position (Right Ascension & Declination in radians) */
+/** Internal helper: Calculates lunar position (Right Ascension, Declination in radians, and Horizontal Parallax in degrees) */
 function getMoonPosition(epochMs: number) {
 	const T = (epochMs - 946728000000) / 3155760000000;
 	const rad = Math.PI / 180;
@@ -663,6 +663,10 @@ function getMoonPosition(epochMs: number) {
 		+ 0.277 * Math.sin((M - F) * rad)
 		+ 0.173 * Math.sin((2 * D - F) * rad);
 
+	const hp = 0.9507 + 0.0518 * Math.cos(M * rad)
+		+ 0.0095 * Math.cos((2 * D - M) * rad)
+		+ 0.0078 * Math.cos(2 * D * rad);
+
 	const eps = (23.439 - 0.0000004 * ((epochMs - 946728000000) / 86400000)) * rad;
 
 	const lRad = lonDeg * rad;
@@ -675,11 +679,11 @@ function getMoonPosition(epochMs: number) {
 	const x = Math.cos(lRad);
 	const ra = Math.atan2(y, x);
 
-	return { ra, dec };
+	return { ra, dec, hp };
 }
 
-/** Internal helper: Calculates lunar altitude angle in degrees at a specific timestamp and location */
-function getMoonAltitude(epochMs: number, latDeg: number, lngDeg: number): number {
+/** Internal helper: Calculates lunar altitude angle and parallax target threshold in degrees */
+function getMoonAltitude(epochMs: number, latDeg: number, lngDeg: number): { alt: number; targetAlt: number } {
 	const rad = Math.PI / 180;
 	const latRad = latDeg * rad;
 
@@ -687,11 +691,16 @@ function getMoonAltitude(epochMs: number, latDeg: number, lngDeg: number): numbe
 	const gstDeg = (280.46061837 + 360.98564736629 * d) % 360;
 	const lstRad = (gstDeg + lngDeg) * rad;
 
-	const { ra, dec } = getMoonPosition(epochMs);
+	const { ra, dec, hp } = getMoonPosition(epochMs);
 	const ha = lstRad - ra;
 
 	const sinAlt = Math.sin(latRad) * Math.sin(dec) + Math.cos(latRad) * Math.cos(dec) * Math.cos(ha);
-	return Math.asin(Math.max(-1, Math.min(1, sinAlt))) / rad;
+	const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt))) / rad;
+
+	// Jean Meeus standard target altitude for Moon's upper limb at horizon accounting for horizontal parallax
+	const targetAlt = 0.7275 * hp - 0.5667;
+
+	return { alt, targetAlt };
 }
 
 /**
@@ -718,15 +727,16 @@ export function getMoonriseMoonset(
 	const { startOfDayMs } = getStartOfLocalDayMs(epochMs, lng);
 	const moonDayStartMs = startOfDayMs - (lng * 240000);
 
-	const targetAltitude = -0.5667;
 	let moonriseMs: number | undefined = undefined;
 	let moonsetMs: number | undefined = undefined;
 
-	let prevAlt = getMoonAltitude(moonDayStartMs, lat, lng) - targetAltitude;
+	const initial = getMoonAltitude(moonDayStartMs, lat, lng);
+	let prevAlt = initial.alt - initial.targetAlt;
 
 	for (let i = 1; i <= 24; i++) {
 		const currentMs = moonDayStartMs + (i * 3600000);
-		const currAlt = getMoonAltitude(currentMs, lat, lng) - targetAltitude;
+		const { alt, targetAlt } = getMoonAltitude(currentMs, lat, lng);
+		const currAlt = alt - targetAlt;
 
 		if (prevAlt < 0 && currAlt >= 0) {
 			const fraction = -prevAlt / (currAlt - prevAlt);
@@ -744,5 +754,5 @@ export function getMoonriseMoonset(
 		longitude: lng,
 		moonriseMs,
 		moonsetMs,
-	};
+	}
 }

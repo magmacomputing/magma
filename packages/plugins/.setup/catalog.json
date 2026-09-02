@@ -2,7 +2,7 @@
   {
     "id": "astro",
     "name": "Astro Plugin",
-    "description": "Tempo plugin that calculates precise astronomical seasons (solstices & equinoxes) using the Jean Meeus algorithm — hemisphere-aware, sub-minute accuracy",
+    "description": "Tempo plugin that calculates precise astronomical seasons (solstices & equinoxes) and lunar phases — hemisphere-aware, sub-minute accuracy",
     "packageName": "@magmacomputing/tempo-plugin-astro",
     "plan": "community",
     "status": "active",
@@ -11,11 +11,11 @@
   {
     "id": "celestial",
     "name": "Celestial Plugin",
-    "description": "Tempo plugin for location-aware solar twilight events (sun/solar) and lunar phase tracking (moon/lunar).",
+    "description": "Tempo plugin for location-aware solar twilight events and lunar phase calculations",
     "packageName": "@magmacomputing/tempo-plugin-celestial",
     "plan": "community",
-    "status": "active",
-    "version": "1.0.0"
+    "status": "experimental",
+    "version": "0.1.0"
   },
   {
     "id": "batch",
@@ -38,7 +38,7 @@
   {
     "id": "snap",
     "name": "Snap Plugin",
-    "description": "Tempo plugin for rounding and snapping dates to custom minute, hour, or sub-second intervals — ideal for calendar UI components, time-pickers, and telemetry aggregation.",
+    "description": "Tempo plugin for rounding and snapping dates to custom minute, hour, or sub-second intervals — ideal for calendar UIs, time-pickers, and telemetry aggregation",
     "packageName": "@magmacomputing/tempo-plugin-snap",
     "plan": "community",
     "status": "active",

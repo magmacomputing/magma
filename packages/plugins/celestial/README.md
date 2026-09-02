@@ -2,6 +2,9 @@
 
 # @magmacomputing/tempo-plugin-celestial
 
+> [!WARNING]
+> **Experimental Plugin**: `@magmacomputing/tempo-plugin-celestial` is currently in active development (`v0.1.0`). Ephemeris calculation algorithms and API properties are subject to refinement prior to a stable `1.0.0` release.
+
 <p align="center">
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-celestial"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-celestial?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-celestial/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-celestial"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-celestial?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
@@ -27,18 +30,23 @@ npm install @magmacomputing/tempo-plugin-celestial
 
 ### Obtaining Coordinates
 
-Use `geoLookup()` from `@magmacomputing/library` to automatically resolve location coordinates across both browser and server environments:
+Use `geoLookup()` from `@magmacomputing/tempo/library` to automatically resolve location coordinates across both browser and server environments:
+
+> [!WARNING]
+> **Geolocation Behavior**:
+> - **Browser**: On first invocation, `geoLookup()` will prompt the user for permission to access hardware location services.
+> - **Server**: In Node.js or server environments without GPS hardware, coordinates are resolved via IP geolocation representing the physical server/datacenter network location.
 
 ```typescript
-import { geoLookup } from '@magmacomputing/library';
 import { Tempo } from '@magmacomputing/tempo';
+import { geoLookup } from '@magmacomputing/tempo/library';
 import '@magmacomputing/tempo-plugin-celestial';
 
-// Automatically resolves coordinates via browser hardware or server IP
+// Automatically resolves location coordinates via browser hardware or server IP
 const coords = await geoLookup();
 const t = new Tempo({ latitude: coords.lat, longitude: coords.lng });
 
-console.log(t.term.sun);             // 'daylight' or 'night'
+console.log(t.term.sun);            // 'daylight' or 'night'
 console.log(t.term.lunar.moonrise); // Tempo instance for local moonrise
 ```
 

@@ -30,18 +30,25 @@ const mapStore = {} as MapStore;														// static object to hold last posi
 const MAP_KEY = '_map_';																		// localStorage key
 const log = new Logger('[Mapper]');
 
-const store = await new Promise<void | WebStore>((resolve, reject) => {
-	if (context.type === CONTEXT.Browser) {
-		import('#browser/webstore.class.js')
-			.then(({ WebStore }) => {
-				const local = new WebStore('local');
-				Object.assign(mapStore, local.get(MAP_KEY, {}));		// fetch the previous MAP_KEY coordinates
-				resolve(local);																			// localStorage wrapper
-			})
-			.catch(reject)
+let storePromise: Promise<void | WebStore> | null = null;
+const getStore = () => {
+	if (!storePromise) {
+		storePromise = new Promise<void | WebStore>((resolve, reject) => {
+			if (context.type === CONTEXT.Browser) {
+				import('#browser/webstore.class.js')
+					.then(({ WebStore }) => {
+						const local = new WebStore('local');
+						Object.assign(mapStore, local.get(MAP_KEY, {}));		// fetch the previous MAP_KEY coordinates
+						resolve(local);																			// localStorage wrapper
+					})
+					.catch(reject);
+			} else {
+				resolve(undefined);																	// no access to localStorage
+			}
+		});
 	}
-	else resolve(undefined);																	// no access to localStorage
-})
+	return storePromise;
+}
 
 /**
  * Attempt geolocation via navigator.getCurrentPosition().
@@ -91,7 +98,7 @@ export const geoLocation = (opts = {} as MapOpts) =>
 			const fn = mapStore.geolocation?.error ? log.error : log.info
 			fn(opts, 'geoLocation: ', mapStore.geolocation);
 
-			store?.set(MAP_KEY, mapStore);												// stash currentPosition to localStorage
+			getStore().then((store) => store?.set(MAP_KEY, mapStore));		// stash currentPosition to localStorage
 		})
 
 /** 
@@ -154,14 +161,14 @@ export const mapQuery = (coords?: google.maps.GeocoderRequest, opts = {} as MapO
 								log.debug(opts, 'mapQuery: cache');
 							return resolve(mapStore.georesponse!);				// return previous geocoder
 						}
-					}																												 // drop through to default:
+					}																									// drop through to default:
 
 					default:
 						new window['google']['maps'].Geocoder().geocode(loc!)
 							.then(res => resolve(mapStore.georesponse = asObject(res)))	// successful maps.geocode
 				}
 			})
-			.catch((error) => {																	// unsuccessful geoCoords() | geocode()
+			.catch((error) => {																		// unsuccessful geoCoords() | geocode()
 				Object.assign(mapStore, { georesponse: { error: error.message } });
 				fulfil(mapStore.georesponse);
 			})
@@ -172,7 +179,7 @@ export const mapQuery = (coords?: google.maps.GeocoderRequest, opts = {} as MapO
 				fn(opts, 'mapQuery: ', mapStore.georesponse);
 			}
 
-			store?.set(MAP_KEY, mapStore);												// stash current georesponse to localStorage
+			getStore().then((store) => store?.set(MAP_KEY, mapStore));// stash current georesponse to localStorage
 		})
 
 /**
@@ -188,7 +195,7 @@ export const mapQuery = (coords?: google.maps.GeocoderRequest, opts = {} as MapO
  * ```
  */
 export const mapHemisphere = (coords?: google.maps.GeocoderRequest, opts = {} as MapOpts) =>
-	mapQuery(coords, opts)																					// ask Google
+	mapQuery(coords, opts)																		// ask Google
 		.then((response) => {
 			opts = Object.assign({}, defaults, opts);
 
