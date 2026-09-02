@@ -1,4 +1,4 @@
-import { isNumber, isDefined } from '#library/assertion.library.js';
+import { isNumber, isDefined, isString, isFunction } from '#library/assertion.library.js';
 import type { ValueOf } from '#library/type.library.js';
 
 const TWO_SECONDS = 2_000;																	// default time-out for requests, in milliseconds
@@ -49,7 +49,7 @@ export class HttpError extends Error {
  * Internal helper: incrementally reads a response body, enforcing a cumulative maxBytes limit.
  */
 const readBoundedBody = async (res: Response, maxBytes: number): Promise<string> => {
-	const contentLength = res.headers.get('Content-Length') || res.headers.get('content-length');
+	const contentLength = res.headers?.get?.('Content-Length') || res.headers?.get?.('content-length');
 	if (contentLength) {
 		const bytes = parseInt(contentLength, 10);
 		if (isNumber(bytes) && bytes > maxBytes) {
@@ -59,7 +59,15 @@ const readBoundedBody = async (res: Response, maxBytes: number): Promise<string>
 	}
 
 	if (!res.body) {
-		const rawText = await res.text();
+		let rawText: string;
+		if (isFunction(res.text)) {
+			rawText = await res.text();
+		} else if (isFunction(res.json)) {
+			const obj = await res.json();
+			rawText = isString(obj) ? obj : JSON.stringify(obj);
+		} else {
+			rawText = '';
+		}
 		const byteLength = new TextEncoder().encode(rawText).byteLength;
 		if (byteLength > maxBytes)
 			throw new HttpError(413, `Payload length (${byteLength}) exceeds limit (${maxBytes} bytes)`, null);
@@ -116,7 +124,7 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 	return fetch(url, signallingInit)													// caller will handle the 'catch' if error
 		.then(async res => {
 			if (res.ok) {
-				const contentType = res.headers.get('Content-Type') || '';
+				const contentType = res.headers?.get?.('Content-Type') || res.headers?.get?.('content-type') || '';
 				const isJson = contentType.includes('application/json');
 
 				if (isDefined(config.maxBytes)) {
@@ -129,7 +137,14 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 						return JSON.parse(json) as T;
 					}
 
-					return (isJson ? JSON.parse(rawText) : rawText) as T;
+					if (isJson)
+						return JSON.parse(rawText) as T;
+
+					try {
+						return JSON.parse(rawText) as T;
+					} catch {
+						return rawText as unknown as T;
+					}
 				}
 
 				if (config.prefix) {
@@ -141,9 +156,23 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 					return JSON.parse(json) as T;											// parse the unwrapped string
 				}
 
-				return await (isJson
-					? res.json()																			// default JSON parsing
-					: res.text()) as T;
+				if (isJson)
+					return await res.json() as T;
+
+				if (isFunction(res.json)) {
+					try {
+						return await res.json() as T;
+					} catch {
+						return await res.text() as unknown as T;
+					}
+				}
+
+				const text = await res.text();
+				try {
+					return JSON.parse(text) as T;
+				} catch {
+					return text as unknown as T;
+				}
 			}
 
 			let errorBody: any = null;

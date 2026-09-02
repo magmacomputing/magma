@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added & Security
 - **Declarative Mutability (`@Mutable`) & Environment Detection (`isTestEnvironment`)**: Added `@Mutable(condition?)` member decorator in `#library/decorator.library.js` to support declarative method/property mutation exemptions on `@Immutable` / `@Securable` classes, alongside an AST-safe `isTestEnvironment()` detection helper in `#library/storage.library.js`.
+- **Universal & Server Geolocation Mapping**: Introduced environment-agnostic `geoLookup()` and `resolveGeoCoordinates()` in `#library/common/runtime/mapper.library.js` and server-side `serverGeoLocation()` in `#library/server/mapper.library.js` for resolving browser hardware and IP-based geographic coordinates.
 
 ## [4.0.0] - 2026-08-27
 

@@ -370,6 +370,7 @@ export interface SolarOptions {
 	longitude?: number;
 	long?: number;
 	lng?: number;
+	lon?: number;
 }
 
 export interface SolarTwilightWindow {
@@ -378,6 +379,8 @@ export interface SolarTwilightWindow {
 }
 
 export interface SunriseSunsetResult {
+	latitude: number;
+	longitude: number;
 	sunriseMs: number;
 	sunsetMs: number;
 	solarNoonMs: number;
@@ -391,6 +394,27 @@ export interface SunriseSunsetResult {
 	astronomical: SolarTwilightWindow;
 }
 
+/** Internal helper: Normalizes latitude and longitude from positional arguments or options object */
+function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 0): { lat: number; lng: number } {
+	if (typeof latOrOptions === 'number') {
+		return { lat: latOrOptions, lng: lngInput };
+	}
+	if (latOrOptions && typeof latOrOptions === 'object') {
+		const lat = latOrOptions.latitude ?? latOrOptions.lat ?? 0;
+		const lng = latOrOptions.longitude ?? latOrOptions.lng ?? latOrOptions.lon ?? latOrOptions.long ?? 0;
+		return { lat, lng };
+	}
+	return { lat: 0, lng: 0 };
+}
+
+/** Internal helper: Calculates the UTC millisecond timestamp for the start of the local day at a given longitude */
+function getStartOfLocalDayMs(epochMs: number, lng: number): { startOfDayMs: number; localDate: Date; localMs: number } {
+	const localMs = epochMs + (lng * 240000);
+	const localDate = new Date(localMs);
+	const startOfDay = new Date(Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate()));
+	return { startOfDayMs: startOfDay.getTime(), localDate, localMs };
+}
+
 /**
  * Calculates Sunrise, Sunset, Solar Noon, and Solar Phase State for a given date and coordinates.
  * Accepts latitude and longitude as numbers or via a configuration object (`{ latitude, lat, longitude, long, lng }`).
@@ -398,7 +422,7 @@ export interface SunriseSunsetResult {
  *
  * @param dateInput - Date, Temporal object, or epoch timestamp in ms
  * @param latOrOptions - Latitude in degrees or options object
- * @param lonInput - Longitude in degrees if latitude is passed as a number
+ * @param lngInput - Longitude in degrees if latitude is passed as a number
  * @returns Sunrise/Sunset calculations with timestamps, solar phase state, and 1-based index
  */
 export function getSunriseSunset(
@@ -412,25 +436,13 @@ export function getSunriseSunset(
 			? new Date(dateInput).getTime()
 			: dateInput.getTime();
 
-	let lat = 0;
-	let lon = 0;
-
-	if (typeof latOrOptions === 'number') {
-		lat = latOrOptions;
-		lon = lonInput;
-	} else if (latOrOptions && typeof latOrOptions === 'object') {
-		lat = latOrOptions.latitude ?? latOrOptions.lat ?? 0;
-		lon = latOrOptions.longitude ?? latOrOptions.long ?? latOrOptions.lng ?? 0;
-	}
-
-	const date = new Date(epochMs);
-	const startOfDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-	const startOfDayMs = startOfDay.getTime();
+	const { lat, lng } = resolveCoordinates(latOrOptions, lonInput);
+	const { startOfDayMs, localDate, localMs } = getStartOfLocalDayMs(epochMs, lng);
 
 	// Solar calculations using standard zenith (90.833°)
-	const dayOfYear = Math.floor((epochMs - Date.UTC(date.getUTCFullYear(), 0, 0)) / 86400000);
+	const dayOfYear = Math.floor((localMs - Date.UTC(localDate.getUTCFullYear(), 0, 0)) / 86400000);
 	const gamma = (2 * Math.PI / 365) * (dayOfYear - 1);
-	
+
 	// Equation of time in minutes
 	const eqTime = 229.18 * (0.000075 + 0.001868 * Math.cos(gamma) - 0.032077 * Math.sin(gamma) - 0.014615 * Math.cos(2 * gamma) - 0.040849 * Math.sin(2 * gamma));
 	// Solar declination in radians
@@ -439,7 +451,7 @@ export function getSunriseSunset(
 	const latRad = lat * (Math.PI / 180);
 
 	// Solar noon in UTC minutes from start of UTC day
-	const solarNoonMin = 720 - (4 * lon) - eqTime;
+	const solarNoonMin = 720 - (4 * lng) - eqTime;
 	const solarNoonMs = startOfDayMs + (solarNoonMin * 60000);
 
 	// Hour angle function helper
@@ -494,6 +506,8 @@ export function getSunriseSunset(
 	}
 
 	return {
+		latitude: lat,
+		longitude: lng,
 		sunriseMs,
 		sunsetMs,
 		solarNoonMs,
@@ -563,5 +577,119 @@ export function getChineseZodiac(year: number): ChineseZodiacResult {
 		animal: animals[animalIndex]!,
 		element: elements[elementIndex]!,
 		yinYang,
+	};
+}
+
+// --- Moonrise / Moonset Algorithms ---
+
+export interface MoonriseMoonsetResult {
+	latitude: number;
+	longitude: number;
+	moonriseMs?: number | undefined;
+	moonsetMs?: number | undefined;
+}
+
+/** Internal helper: Calculates lunar position (Right Ascension & Declination in radians) */
+function getMoonPosition(epochMs: number) {
+	const T = (epochMs - 946728000000) / 3155760000000;
+	const rad = Math.PI / 180;
+
+	const L = (218.316 + 481267.8813 * T) % 360;
+	const M = (134.963 + 477198.8676 * T) % 360;
+	const Msun = (357.529 + 35999.0503 * T) % 360;
+	const D = (297.850 + 445267.1114 * T) % 360;
+	const F = (93.272 + 483202.0175 * T) % 360;
+
+	const lonDeg = L + 6.289 * Math.sin(M * rad)
+		+ 1.274 * Math.sin((2 * D - M) * rad)
+		+ 0.658 * Math.sin(2 * D * rad)
+		+ 0.214 * Math.sin(2 * M * rad)
+		- 0.186 * Math.sin(Msun * rad);
+
+	const latDeg = 5.128 * Math.sin(F * rad)
+		+ 0.280 * Math.sin((M + F) * rad)
+		+ 0.277 * Math.sin((M - F) * rad)
+		+ 0.173 * Math.sin((2 * D - F) * rad);
+
+	const eps = (23.439 - 0.0000004 * ((epochMs - 946728000000) / 86400000)) * rad;
+
+	const lRad = lonDeg * rad;
+	const bRad = latDeg * rad;
+
+	const sinDec = Math.sin(bRad) * Math.cos(eps) + Math.cos(bRad) * Math.sin(eps) * Math.sin(lRad);
+	const dec = Math.asin(sinDec);
+
+	const y = Math.sin(lRad) * Math.cos(eps) - Math.tan(bRad) * Math.sin(eps);
+	const x = Math.cos(lRad);
+	const ra = Math.atan2(y, x);
+
+	return { ra, dec };
+}
+
+/** Internal helper: Calculates lunar altitude angle in degrees at a specific timestamp and location */
+function getMoonAltitude(epochMs: number, latDeg: number, lngDeg: number): number {
+	const rad = Math.PI / 180;
+	const latRad = latDeg * rad;
+
+	const d = (epochMs - 946728000000) / 86400000;
+	const gstDeg = (280.46061837 + 360.98564736629 * d) % 360;
+	const lstRad = (gstDeg + lngDeg) * rad;
+
+	const { ra, dec } = getMoonPosition(epochMs);
+	const ha = lstRad - ra;
+
+	const sinAlt = Math.sin(latRad) * Math.sin(dec) + Math.cos(latRad) * Math.cos(dec) * Math.cos(ha);
+	return Math.asin(Math.max(-1, Math.min(1, sinAlt))) / rad;
+}
+
+/**
+ * Calculates Moonrise and Moonset timestamps for a given date and geographic coordinates.
+ * Returns undefined for moonrise or moonset if no rise or set occurs on that calendar date.
+ *
+ * @param dateInput - Date, Temporal object, or epoch timestamp in ms
+ * @param latOrOptions - Latitude in degrees or options object
+ * @param lonInput - Longitude in degrees if latitude is passed as a number
+ * @returns Object containing latitude, longitude, optional `moonriseMs`, and optional `moonsetMs`
+ */
+export function getMoonriseMoonset(
+	dateInput: Date | number | string,
+	latOrOptions: number | SolarOptions = 0,
+	lonInput = 0
+): MoonriseMoonsetResult {
+	const epochMs = typeof dateInput === 'number'
+		? dateInput
+		: typeof dateInput === 'string'
+			? new Date(dateInput).getTime()
+			: dateInput.getTime();
+
+	const { lat, lng } = resolveCoordinates(latOrOptions, lonInput);
+	const { startOfDayMs } = getStartOfLocalDayMs(epochMs, lng);
+
+	const targetAltitude = -0.5667;
+	let moonriseMs: number | undefined = undefined;
+	let moonsetMs: number | undefined = undefined;
+
+	let prevAlt = getMoonAltitude(startOfDayMs, lat, lng) - targetAltitude;
+
+	for (let i = 1; i <= 24; i++) {
+		const currentMs = startOfDayMs + (i * 3600000);
+		const currAlt = getMoonAltitude(currentMs, lat, lng) - targetAltitude;
+
+		if (prevAlt < 0 && currAlt >= 0) {
+			const fraction = -prevAlt / (currAlt - prevAlt);
+			moonriseMs = Math.round(startOfDayMs + ((i - 1 + fraction) * 3600000));
+		} else if (prevAlt > 0 && currAlt <= 0) {
+			const fraction = prevAlt / (prevAlt - currAlt);
+			moonsetMs = Math.round(startOfDayMs + ((i - 1 + fraction) * 3600000));
+		}
+
+		prevAlt = currAlt;
+	}
+
+	return {
+		latitude: lat,
+		longitude: lng,
+		moonriseMs,
+		moonsetMs,
 	};
 }

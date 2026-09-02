@@ -234,6 +234,10 @@ export class Tempo {
 			if (isDefined(evaluatedSphere)) return evaluatedSphere;
 		}
 
+		const lat = (options as any).latitude ?? (options as any).lat ?? shape.config.latitude ?? shape.config.lat;
+		if (isNumber(lat))
+			return lat >= 0 ? 'north' : 'south';
+
 		const resolvedTz = options.timeZone ?? shape.config.timeZone;
 		if (isDefined(resolvedTz) && String(resolvedTz).toLowerCase() !== 'utc') {
 			const sphere = getHemisphere(String(resolvedTz));
@@ -348,7 +352,7 @@ export class Tempo {
 		}
 
 		// Side-effects
-		if (isDefined(mergedOptions.sphere) && !isFunction(mergedOptions.sphere)) {
+		if ((isDefined(mergedOptions.sphere) || isDefined((mergedOptions as any).latitude) || isDefined((mergedOptions as any).lat)) && !isFunction(mergedOptions.sphere)) {
 			const newSphere = Tempo.#setSphere(shape, mergedOptions);
 			if (isDefined(newSphere)) shape.config.sphere = newSphere;
 		}
@@ -1500,9 +1504,16 @@ export class Tempo {
 
 		const globalTz = (this as any)[$Internal]().config.timeZone;
 		const hasInstanceTzOverride = isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(this.tz).toLowerCase() !== String(globalTz).toLowerCase());
+		const lat = (this.#local.options as any)?.latitude
+			?? (this.#local.options as any)?.lat
+			?? (this.#local.config as any)?.latitude
+			?? (this.#local.config as any)?.lat
+			?? (this as any)[$Internal]().config.latitude
+			?? (this as any)[$Internal]().config.lat;
 
 		const res = evaluate(
 			this.#local.options && hasOwn(this.#local.options, 'sphere') ? this.#local.options.sphere : undefined,
+			isNumber(lat) ? (lat >= 0 ? 'north' : 'south') : undefined,
 			hasInstanceTzOverride ? () => getHemisphere(String(this.tz)) : undefined,
 			hasOwn(this.#local.config, 'sphere') ? this.#local.config.sphere : undefined,
 			() => (isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' ? getHemisphere(String(this.tz)) : undefined),

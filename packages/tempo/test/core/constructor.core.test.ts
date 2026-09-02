@@ -70,5 +70,33 @@ describe('Tempo Core', () => {
 				expect(t.format('{yyyy}')).toBe('');
 			});
 		});
+		describe("latitude sphere inference", () => {
+			it('infers sphere as south when latitude is negative', () => {
+				const t = new Tempo('2026-09-02', { latitude: -33.8688 });
+				expect(t.sphere).toBe('south');
+			});
+
+			it('infers sphere as north when latitude is positive', () => {
+				const t = new Tempo('2026-09-02', { lat: 40.7128 });
+				expect(t.sphere).toBe('north');
+			});
+
+			it('allows explicit sphere to override latitude inference', () => {
+				const t = new Tempo('2026-09-02', { latitude: -33.8688, sphere: 'north' });
+				expect(t.sphere).toBe('north');
+			});
+
+			it('infers sphere from global Tempo.init config', () => {
+				Tempo.init({ latitude: -33.8688 });
+				const t = new Tempo('2026-09-02');
+				expect(t.sphere).toBe('south');
+			});
+
+			it('infers sphere from sandbox Tempo.create config', () => {
+				const CustomTempo = Tempo.create({ latitude: -33.8688 });
+				const t = new CustomTempo('2026-09-02');
+				expect(t.sphere).toBe('south');
+			});
+		});
 	});
 });

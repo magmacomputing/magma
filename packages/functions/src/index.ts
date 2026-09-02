@@ -9,7 +9,7 @@ export { getISOWeekOfYear } from './calendar/getISOWeekOfYear.js';
 
 // --- Scheduling ---
 export { nextCron, prevCron } from './scheduling/cron.js';
-export { Interval } from '@magmacomputing/tempo';
+export type { Interval } from '@magmacomputing/tempo';
 
 // --- Timezone & Location ---
 export { isDST } from './timezone/isDST.js';
@@ -24,6 +24,7 @@ export { normaliseFractionalDurations } from './duration/normaliseFractionalDura
 export {
 	getLunarPhase,
 	getLunarPhaseRange,
+	getMoonriseMoonset,
 	getSolarEvents,
 	getSunriseSunset,
 	getZodiacSign,
@@ -35,6 +36,7 @@ export {
 	type LunarPhaseResult,
 	type LunarPhaseOptions,
 	type LunarPhaseRange,
+	type MoonriseMoonsetResult,
 	type SolarEventResult,
 	type SunriseSunsetResult,
 	type WesternZodiacSign,

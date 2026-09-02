@@ -23,9 +23,11 @@ export const $SerializerRegistry: unique symbol = Symbol.for('$LibrarySerializer
 export const $Mutable: unique symbol = Symbol.for('$LibraryMutable') as any;
 /** Global symbol for brand-checking class instances across module boundaries */
 export const $Identity: unique symbol = Symbol.for('$LibraryIdentity') as any;
+/** Global symbol for opting out of class decorator subclass wrapping */
+export const $Unwrapped: unique symbol = Symbol.for('$LibraryUnwrapped') as any;
 
 export const sym = {
-	$Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register, $SerializerRegistry, $Identity, $Mutable
+	$Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register, $SerializerRegistry, $Identity, $Mutable, $Unwrapped
 } as const;
 
 /**

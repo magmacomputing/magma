@@ -17,8 +17,30 @@ npm install @magmacomputing/tempo-plugin-celestial
 ## Features
 
 - **Solar Day Cycles**: Calculates `daylight`, `night`, `civil-twilight`, `nautical-twilight`, and `astronomical-twilight`.
-- **Ephemeris Data**: Returns `sunrise`, `sunset`, `solarNoon`, and total `daylightDurationMs` for given latitude and longitude coordinates.
-- **Lunar Phase Cycles**: Calculates 8 discrete lunar phase states (`new-moon`, `waxing-crescent`, `first-quarter`, `waxing-gibbous`, `full-moon`, `waning-gibbous`, `third-quarter`, `waning-crescent`), illumination 0.0–1.0 fraction, age in days, and hemisphere-aware emoji indicators.
+- **Ephemeris Data**: Returns `sunrise`, `sunset`, `solarNoon`, total `daylightDurationMs`, and explicit `latitude`/`longitude` for given coordinates.
+- **Lunar Phase & Ephemeris**: Calculates 8 discrete lunar phase states (`new-moon`, `waxing-crescent`, etc.), illumination 0.0–1.0 fraction, age in days, hemisphere-aware emoji indicators, and location-aware `moonrise` and `moonset` events.
+
+## Geographic Coordinates & Defaults
+
+> [!NOTE]
+> If `latitude` and `longitude` are omitted, location-aware calculations (`SolarTerm` sunrise/sunset and `LunarTerm` moonrise/moonset) default coordinates to `(0, 0)` (Equator / Prime Meridian). Check `t.term.solar.latitude` and `t.term.solar.longitude` to inspect active coordinates.
+
+### Obtaining Coordinates
+
+Use `geoLookup()` from `@magmacomputing/library` to automatically resolve location coordinates across both browser and server environments:
+
+```typescript
+import { geoLookup } from '@magmacomputing/library';
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-celestial';
+
+// Automatically resolves coordinates via browser hardware or server IP
+const coords = await geoLookup();
+const t = new Tempo({ latitude: coords.lat, longitude: coords.lng });
+
+console.log(t.term.sun);             // 'daylight' or 'night'
+console.log(t.term.lunar.moonrise); // Tempo instance for local moonrise
+```
 
 ## Usage
 
@@ -26,15 +48,17 @@ npm install @magmacomputing/tempo-plugin-celestial
 import { Tempo } from '@magmacomputing/tempo';
 import '@magmacomputing/tempo-plugin-celestial';
 
-const t = new Tempo('2026-06-21T12:00:00Z', { latitude: 40.7128, longitude: -74.006, sphere: 'north' });
+const t = new Tempo('2026-06-21T12:00:00Z', { latitude: 40.7128, longitude: -74.006 });
 
 // Solar Day State
 console.log(t.term.sun); // 'daylight'
 console.log(t.term.solar.sunrise); // Tempo instance for local sunrise
+console.log(t.term.solar.latitude); // 40.7128
 
-// Lunar Phase
+// Lunar Phase & Ephemeris
 console.log(t.term.moon); // 'waxing-crescent'
 console.log(t.term.lunar.illumination); // 0.45
+console.log(t.term.lunar.moonrise); // Tempo instance for local moonrise (or undefined)
 ```
 
 ## Documentation

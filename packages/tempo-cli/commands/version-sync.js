@@ -20,7 +20,7 @@ export async function versionSync(_args) {
 	console.log(`\n🔄 Syncing version ${version} to workspaces...`);
 
 	try {
-		const workspaces = ['@magmacomputing/tempo', '@magmacomputing/library', '@magmacomputing/tempo-pro'];
+		const workspaces = ['@magmacomputing/tempo', '@magmacomputing/library'];
 		let syncedCount = 0;
 		let alreadySyncedCount = 0;
 		for (const ws of workspaces) {

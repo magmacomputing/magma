@@ -1,4 +1,4 @@
-import { isNumber, isNumeric, isText, isArrayLike, isPlainObject, isEmpty } from '#library/assertion.library.js';
+import { isNumber, isNumeric, isText, isArrayLike, isPlainObject, isEmpty, isFunction } from '#library/assertion.library.js';
 
 describe('Assertion Library', () => {
 
@@ -145,14 +145,31 @@ describe('Assertion Library', () => {
 		});
 	});
 
-	describe('isArrayLike', () => {
-		it('should return true for array-like objects', () => {
-			expect(isArrayLike({ 0: 'a', 1: 'b', length: 2 })).toBe(true);
+	describe('isFunction', () => {
+		it('should return true for functions, async functions, generator functions, and async generator functions', () => {
+			function fn() {}
+			const arrow = () => {};
+			async function asyncFn() {}
+			function* genFn() {}
+			async function* asyncGenFn() {}
+
+			expect(isFunction(fn)).toBe(true);
+			expect(isFunction(arrow)).toBe(true);
+			expect(isFunction(asyncFn)).toBe(true);
+			expect(isFunction(genFn)).toBe(true);
+			expect(isFunction(asyncGenFn)).toBe(true);
 		});
 
-		it('should return false for plain non-array-like objects', () => {
-			expect(isArrayLike({ a: 1, b: 2 })).toBe(false);
+		it('should return false for ES6 class constructors and non-function values', () => {
+			class MyClass {}
+
+			expect(isFunction(MyClass)).toBe(false);
+			expect(isFunction({})).toBe(false);
+			expect(isFunction([])).toBe(false);
+			expect(isFunction('function')).toBe(false);
+			expect(isFunction(123)).toBe(false);
+			expect(isFunction(null)).toBe(false);
+			expect(isFunction(undefined)).toBe(false);
 		});
 	});
-
 });

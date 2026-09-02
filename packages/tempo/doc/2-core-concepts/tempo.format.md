@@ -123,6 +123,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 
 | Modifier | Target | Description | Example |
 | :--- | :--- | :--- | :--- |
+| `:<number>` | Number | Zero-fill pads numeric or custom tokens to the specified digit width | `{day:2}` → `09`, `{ns:6}` → `000005` |
 | `:raw` | Number | Unpadded number with no meridiem | `{h12:raw}` → `3` |
 | `:ord` | Number | Unpadded number with ordinal suffix | `{dd:ord}` → `24th` |
 | `:upper` | String | Converts to uppercase | `{mer:upper}` → `PM` |
@@ -137,6 +138,10 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:offset` | `{tz}` | Full numeric timezone offset | `{tz:offset}` → `+10:00` |
 | `:offsetShort` | `{tz}` | Narrow numeric timezone offset | `{tz:offsetShort}` → `+10` |
 | `:offsetCompact` | `{tz}` | Compact numeric timezone offset | `{tz:offsetCompact}` → `+1000` |
+
+> [!TIP]
+> **Numeric Zero-Fill Padding**
+> You can pass any integer width directly as a modifier (e.g. `{day:2}`, `{ns:3}`, `{yy:4}`). This zero-pads any numeric token or custom/term plugin token returning digits to the specified width. Negative values maintain proper sign formatting (e.g. `-5` with `:3` yields `"-05"`).
 
 > [!TIP]
 > **Implicit Localization Bridge**

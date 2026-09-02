@@ -408,6 +408,20 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
 					}
 					break;
+				default: {
+					if (/^\d+$/.test(mod)) {
+						const width = parseInt(mod, 10);
+						const strVal = String(res);
+						if (width > 0 && /^-?\d+$/.test(strVal)) {
+							if (strVal.startsWith('-')) {
+								res = '-' + strVal.slice(1).padStart(Math.max(1, width - 1), '0');
+							} else {
+								res = strVal.padStart(width, '0');
+							}
+						}
+					}
+					break;
+				}
 			}
 		}
 

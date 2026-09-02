@@ -50,7 +50,7 @@
     "build": "npm run clean && npm run build:esm && npm run build:global",
     "build:esm": "node ../../node_modules/typescript-7/bin/tsc -b",
     "build:global": "rollup -c",
-    "clean": "magma-cli rm dist && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
+    "clean": "tempo-cli rm dist && (node ../../node_modules/typescript-7/bin/tsc -b --clean || true)",
     "prepublishOnly": "tempo-cli prepublish",
     "docs:dev": "node ./bin/sync-docs.mjs && vitepress dev doc",
     "docs:build": "node ./bin/sync-docs.mjs && vitepress build doc"

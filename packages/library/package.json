@@ -241,6 +241,10 @@
       "development": "./src/common/runtime/utility.library.ts",
       "default": "./dist/common/runtime/utility.library.js"
     },
+    "#library/mapper.library.js": {
+      "development": "./src/common/runtime/mapper.library.ts",
+      "default": "./dist/common/runtime/mapper.library.js"
+    },
     "#library/*.js": {
       "development": "./src/common/*.ts",
       "default": "./dist/common/*.js"

@@ -199,4 +199,36 @@ describe('Tempo.format() refinements', () => {
       expect(t.format('{nonExistent}' as any)).toBe('{nonExistent}');
     })
   })
+
+  describe('numeric-padding-modifiers', () => {
+    const tNum = new Tempo('2024-05-09T03:05:07.042000005Z');
+
+    it('zero-fills numeric tokens to specified width', () => {
+      expect(tNum.format('{day:2}')).toBe('09');
+      expect(tNum.format('{day:3}')).toBe('009');
+      expect(tNum.format('{dow:2}')).toBe('04');
+      expect(tNum.format('{ns:3}')).toBe('005');
+      expect(tNum.format('{ns:6}')).toBe('000005');
+      expect(tNum.format('{yy:4}')).toBe('0024');
+    })
+
+    it('leaves unpadded numbers untouched if width is already equal or smaller', () => {
+      const tBig = new Tempo('2024-11-25T15:30:45');
+      expect(tBig.format('{day:2}')).toBe('25');
+      expect(tBig.format('{day:1}')).toBe('25');
+    })
+
+    it('works with custom registered tokens returning numeric values (including negative values)', () => {
+      const tCust = new Tempo('2024-05-05', {
+        registry: {
+          tokens: {
+            stepIndex: () => 7,
+            negVal: () => -5
+          }
+        }
+      });
+      expect(tCust.format('{stepIndex:3}' as any)).toBe('007');
+      expect(tCust.format('{negVal:3}' as any)).toBe('-05');
+    })
+  })
 })

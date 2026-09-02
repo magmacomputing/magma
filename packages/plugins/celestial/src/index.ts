@@ -1,5 +1,5 @@
 import { defineTerm } from '@magmacomputing/tempo/plugin/sdk';
-import { getLunarPhase, getLunarPhaseRange, getSunriseSunset } from '@magmacomputing/tempo-fns';
+import { getLunarPhase, getLunarPhaseRange, getMoonriseMoonset, getSunriseSunset } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
 import type { LunarPhaseKey, LunarPhaseName } from '@magmacomputing/tempo-fns';
 
@@ -32,6 +32,8 @@ declare module '@magmacomputing/tempo' {
 			ageDays: number;
 			isWaxing: boolean;
 			emoji?: string | undefined;
+			moonrise?: Tempo | undefined;
+			moonset?: Tempo | undefined;
 			group: 'lunar';
 			year: number;
 			month: number;
@@ -50,6 +52,8 @@ declare module '@magmacomputing/tempo' {
 			key: SolarPhaseState;
 			index: number;
 			group: 'solar';
+			latitude: number;
+			longitude: number;
 			year: number;
 			month: number;
 			day: number;
@@ -74,9 +78,9 @@ declare module '@magmacomputing/tempo' {
 }
 
 /** Internal helper: Computes formatted lunar details for a given Tempo instance */
-function getLunarDetails(t: Tempo): LunarPhaseResult {
-	const sphere = (t as any).sphere;
-	const res = getLunarPhase(t.epoch.ms, { sphere: sphere ? sphere : undefined });
+function getLunarDetails(t: Tempo, anchor?: any): LunarPhaseResult {
+	const { refTempo, lat, sphere } = getCelestialCoordinates(t, anchor);
+	const res = getLunarPhase(refTempo.epoch.ms, { sphere });
 	return {
 		key: res.key,
 		phase: res.phase,
@@ -88,18 +92,36 @@ function getLunarDetails(t: Tempo): LunarPhaseResult {
 	};
 }
 
+/** Internal helper: Resolves latitude, longitude, and hemisphere sphere from a Tempo instance or anchor */
+function getCelestialCoordinates(t: Tempo, anchor?: any): { refTempo: Tempo; lat: number; lng: number; sphere?: 'north' | 'south' } {
+	const refTempo = (anchor instanceof Tempo) ? anchor : (anchor ? new Tempo(anchor, (t as any).config) : t);
+	const cfg = (refTempo as any).config ?? (t as any).config ?? {};
+	const latVal = cfg.latitude ?? cfg.lat ?? (refTempo as any).latitude ?? (refTempo as any).lat;
+	const lng = cfg.longitude ?? cfg.lng ?? cfg.lon ?? cfg.long ?? (refTempo as any).longitude ?? (refTempo as any).lng ?? (refTempo as any).lon ?? (refTempo as any).long ?? 0;
+	
+	const explicitSphere = (refTempo as any).sphere ?? (t as any).sphere ?? cfg.sphere;
+	const sphere: 'north' | 'south' | undefined = explicitSphere
+		? explicitSphere
+		: (latVal !== undefined ? (latVal >= 0 ? 'north' : 'south') : undefined);
+
+	return { refTempo, lat: latVal ?? 0, lng, ...(sphere ? { sphere } : {}) };
+}
+
 /** Internal helper: Resolves full lunar scope range with start/end Tempo boundaries */
 function getLunarScopeRange(t: Tempo, anchor?: any) {
-	const refTempo = anchor ?? t;
+	const { refTempo, lat, lng, sphere } = getCelestialCoordinates(t, anchor);
 	const currentMs = refTempo.epoch.ms;
 	const timeZone = refTempo.tz ?? 'UTC';
 
-	const range = getLunarPhaseRange(currentMs, { sphere: (refTempo as any).sphere ? (refTempo as any).sphere : undefined });
+	const range = getLunarPhaseRange(currentMs, { sphere });
+	const moonEvents = getMoonriseMoonset(currentMs, lat, lng);
 
-	const startTempo = new Tempo(range.startMs, { timeZone, timeStamp: 'ms', sphere: (refTempo as any).sphere });
-	const endTempo = new Tempo(range.endMs, { timeZone, timeStamp: 'ms', sphere: (refTempo as any).sphere });
+	const startTempo = new Tempo(range.startMs, { timeZone, timeStamp: 'ms', sphere });
+	const endTempo = new Tempo(range.endMs, { timeZone, timeStamp: 'ms', sphere });
+	const moonrise = moonEvents.moonriseMs ? new Tempo(moonEvents.moonriseMs, { timeZone, timeStamp: 'ms' }) : undefined;
+	const moonset = moonEvents.moonsetMs ? new Tempo(moonEvents.moonsetMs, { timeZone, timeStamp: 'ms' }) : undefined;
 
-	const details = getLunarDetails(refTempo);
+	const details = getLunarDetails(t, refTempo);
 	const dt = startTempo.toDateTime();
 
 	return {
@@ -110,6 +132,8 @@ function getLunarScopeRange(t: Tempo, anchor?: any) {
 		ageDays: details.ageDays,
 		isWaxing: details.isWaxing,
 		...(details.emoji !== undefined ? { emoji: details.emoji } : {}),
+		moonrise,
+		moonset,
 		group: 'lunar' as const,
 		year: dt.year,
 		month: dt.month,
@@ -140,23 +164,19 @@ export const LunarTerm = defineTerm({
 
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
 		const scopeObj = getLunarScopeRange(this, anchor);
-		if (keyOnly === true || keyOnly === undefined) {
-			return scopeObj.key;
-		}
-		return scopeObj;
+
+		return (keyOnly === true || keyOnly === undefined)
+			? scopeObj.key
+			: scopeObj;
 	},
 });
 
 /** Internal helper: Resolves daily solar scope range for a location */
 function getSolarScopeRange(t: Tempo, anchor?: any) {
-	const refTempo = anchor ?? t;
+	const { refTempo, lat, lng } = getCelestialCoordinates(t, anchor);
 	const timeZone = refTempo.tz ?? 'UTC';
 
-	const cfg = (refTempo as any).config ?? {};
-	const lat = cfg.latitude ?? cfg.lat ?? (refTempo as any).latitude ?? (refTempo as any).lat ?? 0;
-	const lon = cfg.longitude ?? cfg.long ?? cfg.lng ?? (refTempo as any).longitude ?? (refTempo as any).long ?? (refTempo as any).lng ?? 0;
-
-	const res = getSunriseSunset(refTempo.epoch.ms, lat, lon);
+	const res = getSunriseSunset(refTempo.epoch.ms, lat, lng);
 
 	const sunrise = new Tempo(res.sunriseMs, { timeZone, timeStamp: 'ms' });
 	const sunset = new Tempo(res.sunsetMs, { timeZone, timeStamp: 'ms' });
@@ -212,6 +232,8 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		key: res.solarPhaseState,
 		index: res.index,
 		group: 'solar' as const,
+		latitude: lat,
+		longitude: lng,
 		year: dt.year,
 		month: dt.month,
 		day: dt.day,
@@ -249,10 +271,10 @@ export const SolarTerm = defineTerm({
 
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
 		const scopeObj = getSolarScopeRange(this, anchor);
-		if (keyOnly === true || keyOnly === undefined) {
-			return scopeObj.key;
-		}
-		return scopeObj;
+
+		return (keyOnly === true || keyOnly === undefined)
+			? scopeObj.key
+			: scopeObj;
 	},
 });
 
