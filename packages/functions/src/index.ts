@@ -9,7 +9,6 @@ export { getISOWeekOfYear } from './calendar/getISOWeekOfYear.js';
 
 // --- Scheduling ---
 export { nextCron, prevCron } from './scheduling/cron.js';
-export { Interval } from '@magmacomputing/library';
 
 // --- Timezone & Location ---
 export { isDST } from './timezone/isDST.js';
@@ -31,6 +30,8 @@ export {
 	getChineseZodiac,
 	SYNODIC_MONTH,
 	REF_NEW_MOON_MS,
+	LUNAR_PHASE_KEYS,
+	SOLAR_PHASE_STATES,
 	type LunarPhaseKey,
 	type LunarPhaseName,
 	type LunarPhaseResult,

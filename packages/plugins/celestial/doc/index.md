@@ -46,20 +46,41 @@ console.log(t.term.lunar.moonrise); // Tempo instance or undefined when no rise 
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-celestial';
+import { LunarTerm, SolarTerm } from '@magmacomputing/tempo-plugin-celestial';
 
 const t = new Tempo('2026-06-21T12:00:00Z', { latitude: 40.7128, longitude: -74.006 });
 
-// Solar Day State
-console.log(t.term.sun); // 'daylight'
-console.log(t.term.solar.sunrise); // Tempo instance for local sunrise
-console.log(t.term.solar.latitude); // 40.7128
+// --- Solar Day State & Phase Querying ---
+console.log(t.term.sun);             // 'daylight'
+console.log(t.term.solar.phase);     // 'daylight'
+console.log(t.term.solar.phases);    // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
+console.log(t.term.solar.sunrise);   // Tempo instance for local sunrise
+console.log(t.term.solar.latitude);  // 40.7128
 
-// Lunar Phase & Ephemeris
-console.log(t.term.moon); // 'waxing-crescent'
-console.log(t.term.lunar.illumination); // 0.45
-console.log(t.term.lunar.moonrise); // Tempo instance for local moonrise (or undefined)
+// --- Lunar Phase & Ephemeris ---
+console.log(t.term.moon);                // 'waxing-crescent'
+console.log(t.term.lunar.phase);         // 'Waxing Crescent'
+console.log(t.term.lunar.phases);        // ['new-moon', 'waxing-crescent', 'first-quarter', 'waxing-gibbous', 'full-moon', 'waning-gibbous', 'third-quarter', 'waning-crescent']
+console.log(t.term.lunar.illumination);  // 0.45
+console.log(t.term.lunar.moonrise);      // Tempo instance for local moonrise (or undefined)
+
+// --- Programmatic Navigation ---
+// Use .phases to dynamically navigate to the next lunar phase
+const nextPhaseKey = t.term.lunar.phases[t.term.lunar.index % 8];
+const nextMoonTempo = t.set(`#lunar.${nextPhaseKey}`);
 ```
+
+## Phase Discovery & Scope Metadata
+
+Both `LunarTerm` and `SolarTerm` expose immutable, frozen array references (`Object.freeze`) containing all valid identifiers for terms resolution:
+
+- **Static Term References**: `LunarTerm.phases` and `SolarTerm.phases` are available on the plugin definitions without instantiating a `Tempo` object.
+- **Instance Scope References**: `t.term.lunar.phases` and `t.term.solar.phases` share the exact same frozen array reference (`t.term.lunar.phases === LunarTerm.phases`), adding zero memory or GC overhead.
+
+> [!TIP]
+> **Indexing Tip**: Like all Tempo terms (`.month.index`, `.quarter.index`), `.index` is 1-based (`1..8`), while `.phases` is a standard 0-indexed JavaScript array (`0..7`).
+> - **Current Phase**: Use `lunar.key` or `lunar.phases[lunar.index - 1]`.
+> - **Next Phase**: Use `lunar.phases[lunar.index % 8]` (1-based index modulo 8 seamlessly targets the next phase index with automatic wrap-around).
 
 ## Licensing
 

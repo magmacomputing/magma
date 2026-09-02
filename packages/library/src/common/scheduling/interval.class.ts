@@ -82,18 +82,18 @@ export class Interval<T extends TemporalPoint = TemporalPoint> {
 	}
 
 	/** Returns the intersection of this interval and another, or null if they do not overlap */
-	intersection(other: Interval<any>): Interval<T> | null {
+	intersection<U extends TemporalPoint = T>(other: Interval<U>): Interval<T | U> | null {
 		if (!this.overlaps(other)) return null;
-		const maxStart = this.#startNs > other.#startNs ? this.#start : (other.#start as T | null);
-		const minEnd = this.#endNs < other.#endNs ? this.#end : (other.#end as T | null);
-		return new Interval<T>(maxStart, minEnd);
+		const maxStart = this.#startNs > other.#startNs ? this.#start : other.#start;
+		const minEnd = this.#endNs < other.#endNs ? this.#end : other.#end;
+		return new Interval<T | U>(maxStart, minEnd);
 	}
 
 	/** Returns the union of this interval and another, or null if they do not overlap/abut */
-	union(other: Interval<any>): Interval<T> | null {
+	union<U extends TemporalPoint = T>(other: Interval<U>): Interval<T | U> | null {
 		if (!this.overlaps(other) && !this.abuts(other)) return null;
-		const minStart = this.#startNs < other.#startNs ? this.#start : (other.#start as T | null);
-		const maxEnd = this.#endNs > other.#endNs ? this.#end : (other.#end as T | null);
-		return new Interval<T>(minStart, maxEnd);
+		const minStart = this.#startNs < other.#startNs ? this.#start : other.#start;
+		const maxEnd = this.#endNs > other.#endNs ? this.#end : other.#end;
+		return new Interval<T | U>(minStart, maxEnd);
 	}
 }

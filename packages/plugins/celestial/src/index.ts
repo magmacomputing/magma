@@ -1,9 +1,10 @@
 import { defineTerm } from '@magmacomputing/tempo/plugin/sdk';
-import { getLunarPhase, getLunarPhaseRange, getMoonriseMoonset, getSunriseSunset } from '@magmacomputing/tempo-fns';
+import { getLunarPhase, getLunarPhaseRange, getMoonriseMoonset, getSunriseSunset, LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
 import type { LunarPhaseKey, LunarPhaseName } from '@magmacomputing/tempo-fns';
 
 export type { LunarPhaseKey, LunarPhaseName };
+export { LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES };
 
 export interface LunarPhaseOptions {
 	sphere?: 'north' | 'south' | undefined;
@@ -17,6 +18,7 @@ export interface LunarPhaseResult {
 	ageDays: number;
 	isWaxing: boolean;
 	emoji?: string | undefined;
+	phases: readonly LunarPhaseKey[];
 }
 
 export type SolarPhaseState = 'daylight' | 'night' | 'civil-twilight' | 'nautical-twilight' | 'astronomical-twilight';
@@ -32,6 +34,7 @@ declare module '@magmacomputing/tempo' {
 			ageDays: number;
 			isWaxing: boolean;
 			emoji?: string | undefined;
+			phases: readonly LunarPhaseKey[];
 			moonrise?: Tempo | undefined;
 			moonset?: Tempo | undefined;
 			group: 'lunar';
@@ -50,6 +53,8 @@ declare module '@magmacomputing/tempo' {
 		sun: SolarPhaseState;
 		solar: {
 			key: SolarPhaseState;
+			phase: SolarPhaseState;
+			phases: readonly SolarPhaseState[];
 			index: number;
 			group: 'solar';
 			latitude: number;
@@ -89,12 +94,17 @@ function getLunarDetails(t: Tempo, anchor?: any): LunarPhaseResult {
 		ageDays: Math.round(res.ageDays * 100) / 100,
 		isWaxing: res.isWaxing,
 		...(sphere && res.emoji !== undefined ? { emoji: res.emoji } : {}),
+		phases: res.phases,
 	};
 }
 
 /** Internal helper: Resolves latitude, longitude, and hemisphere sphere from a Tempo instance or anchor */
 function getCelestialCoordinates(t: Tempo, anchor?: any): { refTempo: Tempo; lat: number; lng: number; sphere?: 'north' | 'south' } {
-	const refTempo = (anchor instanceof Tempo) ? anchor : (anchor ? new Tempo(anchor, (t as any).config) : t);
+	const refTempo = (anchor instanceof Tempo)
+		? anchor
+		: (anchor != null
+			? new Tempo(typeof anchor === 'number' ? new Date(anchor) : anchor, (t as any).config)
+			: t);
 	const cfg = (refTempo as any).config ?? (t as any).config ?? {};
 	const latVal = cfg.latitude ?? cfg.lat ?? (refTempo as any).latitude ?? (refTempo as any).lat;
 	const lng = cfg.longitude ?? cfg.lng ?? cfg.lon ?? cfg.long ?? (refTempo as any).longitude ?? (refTempo as any).lng ?? (refTempo as any).lon ?? (refTempo as any).long ?? 0;
@@ -132,6 +142,7 @@ function getLunarScopeRange(t: Tempo, anchor?: any) {
 		ageDays: details.ageDays,
 		isWaxing: details.isWaxing,
 		...(details.emoji !== undefined ? { emoji: details.emoji } : {}),
+		phases: LUNAR_PHASE_KEYS,
 		moonrise,
 		moonset,
 		group: 'lunar' as const,
@@ -157,6 +168,7 @@ export const LunarTerm = defineTerm({
 	key: 'moon',
 	scope: 'lunar',
 	description: 'Lunar phase cycle and range resolution',
+	phases: LUNAR_PHASE_KEYS,
 
 	resolve(this: Tempo, anchor?: any) {
 		return [getLunarScopeRange(this, anchor)];
@@ -230,6 +242,8 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 
 	return {
 		key: res.solarPhaseState,
+		phase: res.solarPhaseState,
+		phases: SOLAR_PHASE_STATES,
 		index: res.index,
 		group: 'solar' as const,
 		latitude: lat,
@@ -264,6 +278,7 @@ export const SolarTerm = defineTerm({
 	key: 'sun',
 	scope: 'solar',
 	description: 'Local solar day cycle and twilight range resolution',
+	phases: SOLAR_PHASE_STATES,
 
 	resolve(this: Tempo, anchor?: any) {
 		return [getSolarScopeRange(this, anchor)];

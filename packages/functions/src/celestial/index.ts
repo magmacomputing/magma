@@ -23,6 +23,25 @@ export type LunarPhaseName =
 	| 'Third Quarter'
 	| 'Waning Crescent';
 
+export const LUNAR_PHASE_KEYS = Object.freeze([
+	'new-moon',
+	'waxing-crescent',
+	'first-quarter',
+	'waxing-gibbous',
+	'full-moon',
+	'waning-gibbous',
+	'third-quarter',
+	'waning-crescent'
+] as const);
+
+export const SOLAR_PHASE_STATES = Object.freeze([
+	'night',
+	'astronomical-twilight',
+	'nautical-twilight',
+	'civil-twilight',
+	'daylight'
+] as const);
+
 export interface LunarPhaseResult {
 	key: LunarPhaseKey;
 	phase: LunarPhaseName;
@@ -36,6 +55,8 @@ export interface LunarPhaseResult {
 	isWaxing: boolean;
 	/** Unicode emoji representation based on hemisphere */
 	emoji?: string | undefined;
+	/** Ordered list of all 8 lunar phase keys */
+	phases: readonly LunarPhaseKey[];
 }
 
 export interface LunarPhaseOptions {
@@ -128,7 +149,7 @@ export function getLunarPhase(dateInput: Date | number | string, options: LunarP
 		else if (isNorth) emoji = '🌘';
 	}
 
-	return { key, phase, index, illumination, ageDays, isWaxing, emoji };
+	return { key, phase, index, illumination, ageDays, isWaxing, emoji, phases: LUNAR_PHASE_KEYS };
 }
 
 export interface LunarPhaseRange {
