@@ -61,7 +61,7 @@ const getStore = () => {
  * ```
  */
 export const geoLocation = (opts = {} as MapOpts) =>
-	new Promise<MapStore["geolocation"]>((resolve, reject) => {
+	getStore().then(() => new Promise<MapStore["geolocation"]>((resolve, reject) => {
 		opts = Object.assign({}, defaults, opts);
 		const fulfil = opts.catch ? resolve : reject;
 
@@ -93,7 +93,7 @@ export const geoLocation = (opts = {} as MapOpts) =>
 			Object.assign(mapStore, { geolocation: { error: 'Not Supported' }, georesponse: null });
 			fulfil(mapStore.geolocation);
 		}
-	})
+	}))
 		.finally(() => {
 			const fn = mapStore.geolocation?.error ? log.error : log.info
 			fn(opts, 'geoLocation: ', mapStore.geolocation);
@@ -139,7 +139,7 @@ export const geoCoords = (coords?: google.maps.GeocoderRequest) =>
  * ```
  */
 export const mapQuery = (coords?: google.maps.GeocoderRequest, opts = {} as MapOpts) =>
-	new Promise<MapStore["georesponse"]>((resolve, reject) => {
+	getStore().then(() => new Promise<MapStore["georesponse"]>((resolve, reject) => {
 		opts = Object.assign({}, defaults, opts);
 		const fulfil = opts.catch ? resolve : reject;
 
@@ -172,7 +172,7 @@ export const mapQuery = (coords?: google.maps.GeocoderRequest, opts = {} as MapO
 				Object.assign(mapStore, { georesponse: { error: error.message } });
 				fulfil(mapStore.georesponse);
 			})
-	})
+	}))
 		.finally(() => {
 			if (opts.debug) {
 				const fn = mapStore.georesponse?.error ? log.error : log.debug;
