@@ -13,6 +13,7 @@ export { fetchRequest, fetchHead, HttpError } from '#library/request.library.js'
 export { stringify, objectify, cloneify } from '#library/serialize.library.js';
 export { parseJSONC, stripJSONC, cleanify, isJSON, rawJSON, isRawJSON } from '#library/json.library.js';
 export { getContext, CONTEXT } from '#library/utility.library.js';
+export { Interval } from '#library/scheduling/interval.class.js';
 
 export * from '#library/proxy.library.js';
 export * from '#library/coercion.library.js';

@@ -22,6 +22,7 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(typeof t.term.sun).toBe('string');
 		expect(t.term.solar).toBeDefined();
 		expect(t.term.solar.sunrise).toBeInstanceOf(Tempo);
+		expect(t.term.solar.noon).toBeInstanceOf(Tempo);
 		expect(t.term.solar.sunset).toBeInstanceOf(Tempo);
 		expect(t.term.solar.isDaylight).toBe(true);
 	});

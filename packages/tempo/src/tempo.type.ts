@@ -344,8 +344,10 @@ export namespace Internal {
 		/** locale (e.g. en-AU) */															locale?: Evaluable<string | string[]> | undefined;
 		/** pivot year for two-digit years */										pivot?: number | undefined;
 		/** hemisphere for term.qtr or term.szn */							sphere?: Evaluable<enums.COMPASS | undefined> | undefined;
-		/** Latitude coordinate (degrees) */										latitude?: number | undefined;
-		/** Latitude coordinate alias (degrees) */							lat?: number | undefined;
+		/** Latitude coordinate in degrees (used by celestial/astro plugins) @internal */ latitude?: number | undefined;
+		/** Latitude coordinate alias in degrees @internal */ 							lat?: number | undefined;
+		/** Longitude coordinate in degrees (used by celestial/astro plugins) @internal */ longitude?: number | undefined;
+		/** Longitude coordinate alias in degrees @internal */ 						lng?: number | undefined;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions | undefined;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions | undefined;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp | undefined;

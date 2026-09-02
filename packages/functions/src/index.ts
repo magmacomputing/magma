@@ -9,7 +9,7 @@ export { getISOWeekOfYear } from './calendar/getISOWeekOfYear.js';
 
 // --- Scheduling ---
 export { nextCron, prevCron } from './scheduling/cron.js';
-export { Interval } from '@magmacomputing/tempo';
+export { Interval } from '@magmacomputing/library';
 
 // --- Timezone & Location ---
 export { isDST } from './timezone/isDST.js';

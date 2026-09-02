@@ -14,6 +14,7 @@ import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFuncti
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
+import { Interval } from '#library/scheduling/interval.class.js';
 import { LOG } from '#library/logger.class.js';
 import type { Property, Secure } from '#library/type.library.js';
 
@@ -32,7 +33,6 @@ import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.u
 import { datePattern } from './support/support.default.js';
 import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
-import { Interval } from './interval.class.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {

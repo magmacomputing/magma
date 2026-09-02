@@ -65,7 +65,7 @@ declare module '@magmacomputing/tempo' {
 			nanosecond: number;
 			sunrise: Tempo;
 			sunset: Tempo;
-			solarNoon: Tempo;
+			noon: Tempo;
 			daylightDurationMs: number;
 			isDaylight: boolean;
 			civil: { sunrise: Tempo; sunset: Tempo };
@@ -245,7 +245,7 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		nanosecond: dt.nanosecond,
 		sunrise,
 		sunset,
-		solarNoon,
+		noon: solarNoon,
 		daylightDurationMs: res.daylightDurationMs,
 		isDaylight: res.isDaylight,
 		civil: { sunrise: civilSunrise, sunset: civilSunset },
