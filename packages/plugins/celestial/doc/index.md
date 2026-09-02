@@ -39,7 +39,7 @@ const coords = await geoLookup();
 const t = new Tempo({ latitude: coords.lat, longitude: coords.lng });
 
 console.log(t.term.sun);             // 'daylight' or 'night'
-console.log(t.term.lunar.moonrise); // Tempo instance for local moonrise
+console.log(t.term.lunar.moonrise); // Tempo instance or undefined when no rise occurs on the local date
 ```
 
 ## Usage

@@ -50,11 +50,17 @@ export const serverGeoLocation = async (opts = {} as ServerMapOpts): Promise<Ser
 			{ ...(isNumber(timeout) ? { timeout } : {}), maxBytes: 64 * 1024 }
 		);
 
+		if (typeof data !== 'object' || isNullish(data))
+			throw new Error('Geolocation lookup failed');
+
 		if (data.status === 'fail')
 			throw new Error(data.message || 'Geolocation lookup failed');
 
 		const lat = isNumber(data.lat) ? data.lat : data.latitude;
 		const lng = isNumber(data.lon) ? data.lon : (data.lng ?? data.longitude);
+
+		if (!isNumber(lat) || !isNumber(lng))
+			throw new Error('Geolocation lookup failed');
 
 		const result: ServerGeolocationResult = {
 			lat,

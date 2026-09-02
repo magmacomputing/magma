@@ -664,23 +664,24 @@ export function getMoonriseMoonset(
 
 	const { lat, lng } = resolveCoordinates(latOrOptions, lonInput);
 	const { startOfDayMs } = getStartOfLocalDayMs(epochMs, lng);
+	const moonDayStartMs = startOfDayMs - (lng * 240000);
 
 	const targetAltitude = -0.5667;
 	let moonriseMs: number | undefined = undefined;
 	let moonsetMs: number | undefined = undefined;
 
-	let prevAlt = getMoonAltitude(startOfDayMs, lat, lng) - targetAltitude;
+	let prevAlt = getMoonAltitude(moonDayStartMs, lat, lng) - targetAltitude;
 
 	for (let i = 1; i <= 24; i++) {
-		const currentMs = startOfDayMs + (i * 3600000);
+		const currentMs = moonDayStartMs + (i * 3600000);
 		const currAlt = getMoonAltitude(currentMs, lat, lng) - targetAltitude;
 
 		if (prevAlt < 0 && currAlt >= 0) {
 			const fraction = -prevAlt / (currAlt - prevAlt);
-			moonriseMs = Math.round(startOfDayMs + ((i - 1 + fraction) * 3600000));
+			moonriseMs = Math.round(moonDayStartMs + ((i - 1 + fraction) * 3600000));
 		} else if (prevAlt > 0 && currAlt <= 0) {
 			const fraction = prevAlt / (prevAlt - currAlt);
-			moonsetMs = Math.round(startOfDayMs + ((i - 1 + fraction) * 3600000));
+			moonsetMs = Math.round(moonDayStartMs + ((i - 1 + fraction) * 3600000));
 		}
 
 		prevAlt = currAlt;

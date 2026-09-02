@@ -118,8 +118,8 @@ function getLunarScopeRange(t: Tempo, anchor?: any) {
 
 	const startTempo = new Tempo(range.startMs, { timeZone, timeStamp: 'ms', sphere });
 	const endTempo = new Tempo(range.endMs, { timeZone, timeStamp: 'ms', sphere });
-	const moonrise = moonEvents.moonriseMs ? new Tempo(moonEvents.moonriseMs, { timeZone, timeStamp: 'ms' }) : undefined;
-	const moonset = moonEvents.moonsetMs ? new Tempo(moonEvents.moonsetMs, { timeZone, timeStamp: 'ms' }) : undefined;
+	const moonrise = moonEvents.moonriseMs !== undefined ? new Tempo(moonEvents.moonriseMs, { timeZone, timeStamp: 'ms' }) : undefined;
+	const moonset = moonEvents.moonsetMs !== undefined ? new Tempo(moonEvents.moonsetMs, { timeZone, timeStamp: 'ms' }) : undefined;
 
 	const details = getLunarDetails(t, refTempo);
 	const dt = startTempo.toDateTime();

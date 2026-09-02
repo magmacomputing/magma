@@ -234,7 +234,7 @@ export class Tempo {
 			if (isDefined(evaluatedSphere)) return evaluatedSphere;
 		}
 
-		const lat = (options as any).latitude ?? (options as any).lat ?? shape.config.latitude ?? shape.config.lat;
+		const lat = options.latitude ?? options.lat ?? shape.config.latitude ?? shape.config.lat;
 		if (isNumber(lat))
 			return lat >= 0 ? 'north' : 'south';
 

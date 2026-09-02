@@ -143,6 +143,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 > **Numeric Zero-Fill Padding**
 > You can pass any integer width directly as a modifier (e.g. `{day:2}`, `{ns:3}`, `{yy:4}`). This zero-pads any numeric token or custom/term plugin token returning digits to the specified width. Negative values maintain proper sign formatting (e.g. `-5` with `:3` yields `"-05"`).
 
+<!-- markdownlint-disable-next-line MD028 -->
 > [!TIP]
 > **Implicit Localization Bridge**
 > The `:short` and `:long` styling modifiers act as an automatic bridge to the browser's native `Intl` API! 

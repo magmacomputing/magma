@@ -58,9 +58,15 @@ export const resolveGeoCoordinates = async (
 	opts: Record<string, any> = {}
 ): Promise<{ lat: number; lng: number } | null> => {
 	if (!isNullish(input)) {
-		const cfg = input.config ?? input;
-		const lat = cfg.latitude ?? cfg.lat;
-		const lng = cfg.longitude ?? cfg.lng ?? cfg.lon ?? cfg.long;
+		if (!isNullish(input.config)) {
+			const cfgLat = input.config.latitude ?? input.config.lat;
+			const cfgLng = input.config.longitude ?? input.config.lng ?? input.config.lon ?? input.config.long;
+			if (isNumber(cfgLat) && isNumber(cfgLng))
+				return { lat: cfgLat, lng: cfgLng };
+		}
+
+		const lat = input.latitude ?? input.lat;
+		const lng = input.longitude ?? input.lng ?? input.lon ?? input.long;
 
 		if (isNumber(lat) && isNumber(lng))
 			return { lat, lng };

@@ -64,7 +64,7 @@ const readBoundedBody = async (res: Response, maxBytes: number): Promise<string>
 			rawText = await res.text();
 		} else if (isFunction(res.json)) {
 			const obj = await res.json();
-			rawText = isString(obj) ? obj : JSON.stringify(obj);
+			rawText = JSON.stringify(obj) ?? '';
 		} else {
 			rawText = '';
 		}
@@ -156,23 +156,19 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 					return JSON.parse(json) as T;											// parse the unwrapped string
 				}
 
-				if (isJson)
-					return await res.json() as T;
-
-				if (isFunction(res.json)) {
+				if (isFunction(res.text)) {
+					const text = await res.text();
 					try {
-						return await res.json() as T;
+						return JSON.parse(text) as T;
 					} catch {
-						return await res.text() as unknown as T;
+						return text as unknown as T;
 					}
 				}
 
-				const text = await res.text();
-				try {
-					return JSON.parse(text) as T;
-				} catch {
-					return text as unknown as T;
-				}
+				if (isFunction(res.json))
+					return await res.json() as T;
+
+				return '' as unknown as T;
 			}
 
 			let errorBody: any = null;
