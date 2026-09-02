@@ -51,11 +51,12 @@ import { LunarTerm, SolarTerm } from '@magmacomputing/tempo-plugin-celestial';
 const t = new Tempo('2026-06-21T12:00:00Z', { latitude: 40.7128, longitude: -74.006 });
 
 // --- Solar Day State & Phase Querying ---
-console.log(t.term.sun);             // 'daylight'
-console.log(t.term.solar.phase);     // 'daylight'
-console.log(t.term.solar.phases);    // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
-console.log(t.term.solar.sunrise);   // Tempo instance for local sunrise
-console.log(t.term.solar.latitude);  // 40.7128
+console.log(t.term.sun);                 // 'daylight'
+console.log(t.term.solar.key);           // 'daylight'
+console.log(t.term.solar.phase);         // 'Daylight'
+console.log(t.term.solar.phases);        // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
+console.log(t.term.solar.sunrise);       // Tempo instance for local sunrise
+console.log(t.term.solar.latitude);      // 40.7128
 
 // --- Lunar Phase & Ephemeris ---
 console.log(t.term.moon);                // 'waxing-crescent'

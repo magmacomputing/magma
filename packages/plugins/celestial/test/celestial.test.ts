@@ -25,7 +25,8 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		const t = new Tempo('2026-06-21T12:00:00Z', { latitude: 40.7128, longitude: -74.006 });
 		expect(typeof t.term.sun).toBe('string');
 		expect(t.term.solar).toBeDefined();
-		expect(t.term.solar.phase).toBe('daylight');
+		expect(t.term.solar.key).toBe('daylight');
+		expect(t.term.solar.phase).toBe('Daylight');
 		expect(Array.isArray(t.term.solar.phases)).toBe(true);
 		expect(t.term.solar.phases.length).toBe(5);
 		expect(t.term.solar.phases).toBe(SolarTerm.phases);

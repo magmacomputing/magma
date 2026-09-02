@@ -42,6 +42,21 @@ export const SOLAR_PHASE_STATES = Object.freeze([
 	'daylight'
 ] as const);
 
+export type SolarPhaseName =
+	| 'Daylight'
+	| 'Night'
+	| 'Civil Twilight'
+	| 'Nautical Twilight'
+	| 'Astronomical Twilight';
+
+export const SOLAR_PHASE_NAMES: Record<typeof SOLAR_PHASE_STATES[number], SolarPhaseName> = Object.freeze({
+	'daylight': 'Daylight',
+	'night': 'Night',
+	'civil-twilight': 'Civil Twilight',
+	'nautical-twilight': 'Nautical Twilight',
+	'astronomical-twilight': 'Astronomical Twilight',
+});
+
 export interface LunarPhaseResult {
 	key: LunarPhaseKey;
 	phase: LunarPhaseName;

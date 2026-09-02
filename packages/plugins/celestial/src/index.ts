@@ -1,10 +1,10 @@
 import { defineTerm } from '@magmacomputing/tempo/plugin/sdk';
-import { getLunarPhase, getLunarPhaseRange, getMoonriseMoonset, getSunriseSunset, LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES } from '@magmacomputing/tempo-fns';
+import { getLunarPhase, getLunarPhaseRange, getMoonriseMoonset, getSunriseSunset, LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
-import type { LunarPhaseKey, LunarPhaseName } from '@magmacomputing/tempo-fns';
+import type { LunarPhaseKey, LunarPhaseName, SolarPhaseName } from '@magmacomputing/tempo-fns';
 
-export type { LunarPhaseKey, LunarPhaseName };
-export { LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES };
+export type { LunarPhaseKey, LunarPhaseName, SolarPhaseName };
+export { LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES };
 
 export interface LunarPhaseOptions {
 	sphere?: 'north' | 'south' | undefined;
@@ -53,7 +53,7 @@ declare module '@magmacomputing/tempo' {
 		sun: SolarPhaseState;
 		solar: {
 			key: SolarPhaseState;
-			phase: SolarPhaseState;
+			phase: SolarPhaseName;
 			phases: readonly SolarPhaseState[];
 			index: number;
 			group: 'solar';
@@ -242,7 +242,7 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 
 	return {
 		key: res.solarPhaseState,
-		phase: res.solarPhaseState,
+		phase: SOLAR_PHASE_NAMES[res.solarPhaseState],
 		phases: SOLAR_PHASE_STATES,
 		index: res.index,
 		group: 'solar' as const,
