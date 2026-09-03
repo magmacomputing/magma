@@ -28,10 +28,13 @@ npm install @magmacomputing/tempo-plugin-celestial
 > **Pure Astronomical Calculations**:
 > Tidal state resolution relies exclusively on deterministic celestial mechanics (solar-lunar ecliptic longitude alignment $\Delta \lambda$ and anomalistic lunar perigee proximity) for reproducible, offset-independent math across all time zones and locations.
 
-## Geographic Coordinates & Defaults
+## Geographic Coordinates & Null Contract
 
-> [!NOTE]
-> If geographic coordinates are omitted, location-aware calculations (`SolarTerm` sunrise/sunset and `LunarTerm` moonrise/moonset) default coordinates to `(0, 0)` (Equator / Prime Meridian). Check `t.geo` or `t.term.solar.geo` to inspect active coordinates.
+> [!IMPORTANT]
+> **Location-Dependent Null Contract**:
+> - **Global Astronomical Properties** (`t.term.moon`, `t.term.lunar.phase`, `t.term.tides.isSpringTide`, `t.term.tides.alignmentDeg`) resolve location-independently and are always computed.
+> - **Geo-Dependent Properties** (`t.term.sun`, `solar.sunrise`, `solar.sunset`, `solar.noon`, `lunar.moonrise`, `lunar.moonset`, `tides.lunarTideMinute`) evaluate to `null` when geographic coordinates (`geo: { lat, lng }`) are omitted.
+> - **Distinction**: Property access on `t.term` evaluates to `undefined` if `CelestialPlugin` is not loaded, and to `null` if the plugin is active but location coordinates were not supplied. When `debug >= 1` is enabled in `Tempo` configuration, a developer warning is logged when evaluating geo-dependent keys without coordinates.
 
 ### Obtaining Coordinates
 

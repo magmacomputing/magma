@@ -63,4 +63,37 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(t.term.tides.start).toBeInstanceOf(Tempo);
 		expect(t.term.tides.end).toBeInstanceOf(Tempo);
 	});
+
+	it('evaluates geo-dependent properties to null when geo is missing', () => {
+		const t = new Tempo('2026-06-21T12:00:00Z');
+		
+		// Global properties continue to work
+		expect(typeof t.term.moon).toBe('string');
+		expect(typeof t.term.lunar.phase).toBe('string');
+		expect(typeof t.term.tides.isSpringTide).toBe('boolean');
+
+		// Geo-dependent properties evaluate to null
+		expect(t.term.sun).toBeNull();
+		expect(t.term.solar.key).toBeNull();
+		expect(t.term.solar.sunrise).toBeNull();
+		expect(t.term.solar.sunset).toBeNull();
+		expect(t.term.solar.noon).toBeNull();
+		expect(t.term.solar.isDaylight).toBeNull();
+		expect(t.term.solar.civil.sunrise).toBeNull();
+		expect(t.term.lunar.moonrise).toBeNull();
+		expect(t.term.lunar.moonset).toBeNull();
+		expect(t.term.tides.lunarTideMinute).toBeNull();
+		expect(t.term.tides.isKingTide).toBeNull();
+	});
+
+	it('emits developer warning when geo is missing and debug >= 1', () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const t = new Tempo('2026-06-21T12:00:00Z', { debug: 1 });
+		
+		expect(t.term.sun).toBeNull();
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining("CelestialPlugin: 'geo' coordinates (latitude/longitude) were not provided")
+		);
+		warnSpy.mockRestore();
+	});
 });

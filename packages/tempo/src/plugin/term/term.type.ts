@@ -34,7 +34,7 @@ export interface TermPlugin {
 	/** Resolves the term to concrete time ranges */
 	resolve?: (this: Tempo, anchor?: any) => Range[];
 	/** Defines the term's value or range */
-	define: (this: Tempo, keyOnly?: boolean, anchor?: any) => string | Range | Range[] | undefined;
+	define: (this: Tempo, keyOnly?: boolean, anchor?: any) => string | Range | Range[] | undefined | null;
 }
 
 
@@ -50,7 +50,7 @@ export type Terms = Property<any>;
  */
 export type Range = {
 	/** Unique identifier for the range */
-	key: string;
+	key: string | null;
 	/** Categorization marker (e.g. 'western', 'chinese', 'fiscal') */
 	group?: string;
 	[meta: string]: any;

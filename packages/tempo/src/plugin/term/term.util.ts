@@ -80,7 +80,7 @@ export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) 
  * @returns The matched range key, ResolvedRange object, or undefined if no match
  * @internal
  */
-export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | number = true, anchor?: any): string | ResolvedRange | undefined {
+export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | number = true, anchor?: any): string | ResolvedRange | undefined | null {
 	const chronological = sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
 	if (chronological.length === 0) return undefined;
 
