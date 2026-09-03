@@ -18,7 +18,14 @@ const groups = defineRange([
 	{ key: 'Pisces', day: 19, month: 2, symbol: 'Fish', emoji: '♓', trait: 'Compassionate and artistic, deeply intuitive', group: 'western' },
 ], 'group');
 
-/** resolve the full candidate list for the current context */
+/**
+ * Resolves Western Tropical Zodiac sign candidates for the current date context.
+ *
+ * @param t - The source Tempo instance
+ * @param anchor - Optional reference time override
+ * @returns Array of matching zodiac sign term definitions
+ * @internal
+ */
 function resolve(t: Tempo, anchor?: any) {
 	return resolveCycleWindow(t, groups, { anchor, groupBy: ['group'], group: 'western' });
 }

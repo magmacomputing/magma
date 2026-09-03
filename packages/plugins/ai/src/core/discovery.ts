@@ -40,6 +40,14 @@ export function getRuntimeEnv(): Record<string, string | undefined> {
 	return {};
 }
 
+/**
+ * Retrieves an environment variable value with case-insensitive fallback matching.
+ *
+ * @param env - The environment variables record to search
+ * @param name - The environment variable name to lookup
+ * @returns The environment variable value, or undefined if not found
+ * @internal
+ */
 function getEnvValue(env: Record<string, string | undefined>, name: string): string | undefined {
 	if (env[name] !== undefined) return env[name];
 	const upper = name.toUpperCase();

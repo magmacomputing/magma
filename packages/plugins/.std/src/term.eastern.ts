@@ -120,7 +120,14 @@ const BASE_EMOJI_MAP: Record<string, string> = {
 	Dog: '🐕', Pig: '🐖',
 };
 
-/** Resolves full Lunar Zodiac scope for a given Tempo instance */
+/**
+ * Resolves complete Lunar Zodiac scope including animal, element, Yin/Yang state, and regional variants.
+ *
+ * @param t - The source Tempo instance
+ * @param anchor - Optional reference time or year override
+ * @returns Complete Eastern Zodiac scope with localized emoji, animal names, and temporal boundaries
+ * @internal
+ */
 function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 	const refTempo = anchor ?? t;
 	const year = anchor?.year ?? refTempo.yy;

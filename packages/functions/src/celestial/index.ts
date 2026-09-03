@@ -1,3 +1,4 @@
+/** Average duration of a complete lunar cycle (new moon to new moon) in days */
 export const SYNODIC_MONTH = 29.53058867;
 
 /** Known New Moon reference: Jan 6, 2000 18:14 UTC in milliseconds */
@@ -23,6 +24,7 @@ export type LunarPhaseName =
 	| 'Third Quarter'
 	| 'Waning Crescent';
 
+/** Ordered array of all eight lunar phase identifier keys */
 export const LUNAR_PHASE_KEYS = Object.freeze([
 	'new-moon',
 	'waxing-crescent',
@@ -34,6 +36,7 @@ export const LUNAR_PHASE_KEYS = Object.freeze([
 	'waning-crescent'
 ] as const);
 
+/** Ordered array of solar phase state identifiers from darkest to brightest */
 export const SOLAR_PHASE_STATES = Object.freeze([
 	'night',
 	'astronomical-twilight',
@@ -49,6 +52,7 @@ export type SolarPhaseName =
 	| 'Nautical Twilight'
 	| 'Astronomical Twilight';
 
+/** Maps solar phase state keys to their human-readable display names */
 export const SOLAR_PHASE_NAMES: Record<typeof SOLAR_PHASE_STATES[number], SolarPhaseName> = Object.freeze({
 	'daylight': 'Daylight',
 	'night': 'Night',
@@ -453,6 +457,13 @@ export interface SunriseSunsetResult {
  * @param lngInput - The longitude used when `latOrOptions` is a numeric latitude
  * @returns An object containing the resolved `lat` and `lng` values
  */
+/**
+ * Resolves latitude and longitude from positional arguments or a coordinate options object.
+ *
+ * @param latOrOptions - A latitude value or options containing coordinate fields
+ * @param lngInput - The longitude used when `latOrOptions` is a numeric latitude
+ * @returns An object containing the resolved `lat` and `lng` values
+ */
 function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 0): { lat: number; lng: number } {
 	if (typeof latOrOptions === 'number')
 		return { lat: latOrOptions, lng: lngInput };
@@ -466,6 +477,13 @@ function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 
 	return { lat: 0, lng: 0 };
 }
 
+/**
+ * Determines the UTC start of the calendar day at a specified longitude.
+ *
+ * @param epochMs - The input timestamp in milliseconds since the Unix epoch
+ * @param lng - The longitude in degrees used to determine the local date
+ * @returns The UTC start timestamp, local date, and longitude-adjusted timestamp
+ */
 /**
  * Determines the UTC start of the calendar day at a specified longitude.
  *
@@ -658,6 +676,12 @@ export interface MoonriseMoonsetResult {
  * @param epochMs - The timestamp in milliseconds since the Unix epoch
  * @returns The right ascension and declination in radians, and the horizontal parallax in degrees
  */
+/**
+ * Calculates the Moon's apparent position for a timestamp.
+ *
+ * @param epochMs - The timestamp in milliseconds since the Unix epoch
+ * @returns The right ascension and declination in radians, and the horizontal parallax in degrees
+ */
 function getMoonPosition(epochMs: number) {
 	const T = (epochMs - 946728000000) / 3155760000000;
 	const rad = Math.PI / 180;
@@ -698,7 +722,15 @@ function getMoonPosition(epochMs: number) {
 	return { ra, dec, hp };
 }
 
-/** Internal helper: Calculates lunar altitude angle and parallax target threshold in degrees */
+/**
+ * Calculates lunar altitude angle and parallax target threshold in degrees.
+ *
+ * @param epochMs - The timestamp in milliseconds since the Unix epoch
+ * @param latDeg - The latitude in degrees
+ * @param lngDeg - The longitude in degrees
+ * @returns The altitude and target altitude threshold for moonrise/moonset detection
+ * @internal
+ */
 function getMoonAltitude(epochMs: number, latDeg: number, lngDeg: number): { alt: number; targetAlt: number } {
 	const rad = Math.PI / 180;
 	const latRad = latDeg * rad;
@@ -775,6 +807,7 @@ export function getMoonriseMoonset(
 
 export type TidalState = 'spring' | 'neap' | 'normal';
 
+/** Ordered array of all tidal state identifiers */
 export const TIDAL_PHASE_STATES = Object.freeze(['spring', 'neap', 'normal'] as const);
 
 export interface TidalResult {
