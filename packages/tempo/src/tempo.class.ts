@@ -1079,10 +1079,23 @@ export class Tempo {
 
 	/** static Tempo.terms (registry) */
 	static get terms(): Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>> {
-		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => ({ ...rest } as any));
+		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => {
+			const item: any = { ...rest };
+			const aliasesSet = new Set<string>();
+			if (item.aliases && Array.isArray(item.aliases))
+				item.aliases.forEach((a: string) => { if (a !== item.key) aliasesSet.add(a); });
 
-		// treats `Tempo.terms` as array-like and indexable by key.
-		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key)) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
+			if (item.scope && item.scope !== item.key)
+				aliasesSet.add(item.scope);
+
+			if (aliasesSet.size > 0)
+				item.aliases = Array.from(aliasesSet);
+
+			return item;
+		});
+
+		// treats `Tempo.terms` as array-like and indexable by key, scope, or alias.
+		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key || (t.aliases && Array.isArray(t.aliases) && t.aliases.includes(key)))) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
 	}
 
 	/** static Tempo.registry */
@@ -1547,30 +1560,35 @@ export class Tempo {
 
 	/** list of registered terms and their available range keys */
 	get terms(): Record<string, string[]> {
-		const res: Record<string, string[]> = {};
+		const base: Record<string, string[]> = {};
 		Tempo.terms.forEach(term => {
 			const source = (term as any).ranges || (term as any).groups || [];				// check both ranges and groups
 			const list = Array.isArray(source) ? source : Object.values(source).flat(Infinity) as any[];
 			const ranges = [...new Set(list.map(r => r.key).filter(isString))];				// collect unique range keys
-			res[term.key] = ranges;
-			if (term.scope) res[term.scope] = ranges;							// add scope alias if defined
+			base[term.key] = ranges;
 		});
-		return res;
+
+		return delegate(base, (key) => {
+			if (!isString(key)) return undefined;
+			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || (t.aliases && Array.isArray(t.aliases) && t.aliases.includes(key)));
+			return term ? base[term.key] : undefined;
+		});
 	}
 
 	/** current range key for every registered term */
 	get ranges(): Record<string, string> {
-		const res: Record<string, string> = {};
+		const base: Record<string, string> = {};
 
 		Tempo.terms.forEach(term => {
-			const val = (this as Tempo).term[term.key];							// access the term-delegate (forces evaluation)
-			if (isString(val)) {
-				res[term.key] = val;
-				if (term.scope) res[term.scope] = val;							// alias the string to the scope key
-			}
+			const val = (this as Tempo).term[term.key];						// access the term-delegate (forces evaluation)
+			if (isString(val)) base[term.key] = val;
 		});
 
-		return res;
+		return delegate(base, (key) => {
+			if (!isString(key)) return undefined;
+			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || (t.aliases && Array.isArray(t.aliases) && t.aliases.includes(key)));
+			return term ? base[term.key] : undefined;
+		});
 	}
 
 	/** current Tempo configuration */

@@ -184,6 +184,7 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 export const EasternTerm = defineTerm({
 	key: 'sign',
 	scope: 'shengxiao',
+	aliases: ['lunarSign', 'eastern'],
 	description: 'Eastern Lunar Zodiac cycle and regional variants',
 	resolve(this: Tempo, anchor?: any) {
 		return [getEasternScope(this, anchor)];
@@ -197,35 +198,8 @@ export const EasternTerm = defineTerm({
 	},
 });
 
-export const LunarSignTerm = defineTerm({
-	key: 'lunarSign',
-	scope: 'lunarSign',
-	description: 'Alias for Eastern Lunar Zodiac animal sign',
-	resolve(this: Tempo, anchor?: any) {
-		return [getEasternScope(this, anchor)];
-	},
-	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		const scopeObj = getEasternScope(this, anchor);
-		return (keyOnly === false)
-			? scopeObj
-			: scopeObj.key
-	},
-});
-
-export const EasternZodiacTerm = defineTerm({
-	key: 'eastern',
-	scope: 'eastern',
-	description: 'Alias for Eastern Lunar Zodiac animal sign',
-	resolve(this: Tempo, anchor?: any) {
-		return [getEasternScope(this, anchor)];
-	},
-	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		const scopeObj = getEasternScope(this, anchor);
-		return (keyOnly === false)
-			? scopeObj
-			: scopeObj.key
-	},
-});
+export const LunarSignTerm = EasternTerm;
+export const EasternZodiacTerm = EasternTerm;
 
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {

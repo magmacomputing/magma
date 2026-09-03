@@ -18,8 +18,16 @@ import { TEMPO_VERSION } from '../../tempo.version.js';
  * Helper to register a Term plugin.
  */
 export const defineTerm = <T extends TermPlugin>(term: T): T => {
+	const aliasesSet = new Set<string>();
+	if (term.aliases && Array.isArray(term.aliases)) {
+		term.aliases.forEach((a: string) => { if (a !== term.key) aliasesSet.add(a); });
+	}
+	if (term.scope && term.scope !== term.key) {
+		aliasesSet.add(term.scope);
+	}
 	const result = {
 		...term,
+		...(aliasesSet.size > 0 ? { aliases: Array.from(aliasesSet) } : {}),
 		[sym.$PluginType]: 'term',
 		version: term.version ?? TEMPO_VERSION
 	} as T;
