@@ -1,10 +1,10 @@
 import { defineTerm } from '@magmacomputing/tempo/plugin/sdk';
-import { getLunarPhase, getLunarPhaseRange, getMoonriseMoonset, getSunriseSunset, LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES } from '@magmacomputing/tempo-fns';
+import { getLunarPhase, getLunarPhaseRange, getMoonriseMoonset, getSunriseSunset, getTidalState, LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES, TIDAL_PHASE_STATES } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
-import type { LunarPhaseKey, LunarPhaseName, SolarPhaseName } from '@magmacomputing/tempo-fns';
+import type { LunarPhaseKey, LunarPhaseName, SolarPhaseName, TidalState, TidalResult } from '@magmacomputing/tempo-fns';
 
-export type { LunarPhaseKey, LunarPhaseName, SolarPhaseName };
-export { LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES };
+export type { LunarPhaseKey, LunarPhaseName, SolarPhaseName, TidalState, TidalResult };
+export { LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES, TIDAL_PHASE_STATES };
 
 export interface LunarPhaseOptions {
 	sphere?: 'north' | 'south' | undefined;
@@ -79,6 +79,8 @@ declare module '@magmacomputing/tempo' {
 			start: Tempo;
 			end: Tempo;
 		};
+		tide: TidalState;
+		tides: TidalResult;
 	}
 }
 
@@ -231,7 +233,7 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 			start = astroSunrise;
 			end = nauticalSunrise;
 		} else {
-			start = nauticalSunset;
+			start = astroSunset;
 			end = astroSunset;
 		}
 	} else {
@@ -293,12 +295,69 @@ export const SolarTerm = defineTerm({
 	},
 });
 
+/** Internal helper: Resolves tidal scope range for a location */
+function getTidalScopeRange(t: Tempo, anchor?: any) {
+	const { refTempo, lat, lng } = getCelestialCoordinates(t, anchor);
+	const res = getTidalState(refTempo.epoch.ms, lat, lng);
+	const dt = refTempo.toDateTime();
+
+	return {
+		key: res.state,
+		state: res.state,
+		group: 'tide' as const,
+		alignmentDeg: res.alignmentDeg,
+		isSpringTide: res.isSpringTide,
+		isNeapTide: res.isNeapTide,
+		isKingTide: res.isKingTide,
+		perigeeFactor: res.perigeeFactor,
+		lunarTideMinute: res.lunarTideMinute,
+		states: TIDAL_PHASE_STATES,
+		geo: refTempo.geo ?? (t as any).geo,
+		year: dt.year,
+		month: dt.month,
+		day: dt.day,
+		hour: dt.hour,
+		minute: dt.minute,
+		second: dt.second,
+		millisecond: dt.millisecond,
+		microsecond: dt.microsecond,
+		nanosecond: dt.nanosecond,
+		start: refTempo,
+		end: refTempo.add({ minutes: 745 }),
+	};
+}
+
+/**
+ * ## TidalTerm
+ * Term definition for astronomical tide phase resolution (`t.term.tide`, `t.term.tides`).
+ */
+export const TidalTerm = defineTerm({
+	key: 'tide',
+	aliases: ['tides', 'tidal'],
+	scope: 'tide',
+	description: 'Astronomical tidal state, alignment, and perigee factor',
+	phases: TIDAL_PHASE_STATES,
+
+	resolve(this: Tempo, anchor?: any) {
+		return [getTidalScopeRange(this, anchor)];
+	},
+
+	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
+		const scopeObj = getTidalScopeRange(this, anchor);
+
+		return (keyOnly === true || keyOnly === undefined)
+			? scopeObj.key
+			: scopeObj;
+	},
+});
+
 /**
  * ## CelestialPlugin
- * Plugin bundling SolarTerm (`sun`/`solar`) and LunarTerm (`moon`/`lunar`).
+ * Plugin bundling SolarTerm (`sun`/`solar`), LunarTerm (`moon`/`lunar`), and TidalTerm (`tide`/`tides`).
  */
-export const CelestialPlugin = [SolarTerm, LunarTerm];
+export const CelestialPlugin = [SolarTerm, LunarTerm, TidalTerm];
 
 export default CelestialPlugin;
 
 Tempo.extend(CelestialPlugin);
+

@@ -757,3 +757,94 @@ export function getMoonriseMoonset(
 		moonsetMs,
 	}
 }
+
+export type TidalState = 'spring' | 'neap' | 'normal';
+
+export const TIDAL_PHASE_STATES = Object.freeze(['spring', 'neap', 'normal'] as const);
+
+export interface TidalResult {
+	/** Tidal state category based on solar/lunar alignment */
+	state: TidalState;
+	/** Solar-lunar ecliptic longitude difference in degrees (0..360) */
+	alignmentDeg: number;
+	/** True if Sun and Moon are in Syzygy (New or Full Moon) */
+	isSpringTide: boolean;
+	/** True if Sun and Moon are in Quadrature (1st or 3rd Quarter) */
+	isNeapTide: boolean;
+	/** True if Spring Tide coincides with Lunar Perigee (King Tide) */
+	isKingTide: boolean;
+	/** Proximity factor to lunar perigee (0.0 = apogee, 1.0 = perigee) */
+	perigeeFactor: number;
+	/** Approximate minute offset into current semi-diurnal lunar tide cycle (~12h 25m) */
+	lunarTideMinute: number;
+	/** Ordered list of all tidal state keys */
+	states: readonly TidalState[];
+}
+
+/** Known Perigee reference: Jan 5, 2000 00:20 UTC in milliseconds */
+const REF_PERIGEE_MS = 947031600000;
+/** Anomalistic Month length in days (perigee to perigee) */
+const ANOMALISTIC_MONTH = 27.55455;
+
+/**
+ * Calculates deterministic astronomical tidal state and phase alignment for a given instant.
+ * Uses solar and lunar longitude alignment and orbital distance ratio to determine Spring/Neap/King tides.
+ *
+ * @param dateInput - Date, Temporal object, or epoch timestamp in ms
+ * @param latOrOptions - Latitude in degrees or options object
+ * @param lonInput - Longitude in degrees if latitude is passed as a number
+ * @returns TidalResult object with astronomical tidal indicators
+ */
+export function getTidalState(
+	dateInput: Date | number | string,
+	latOrOptions: number | SolarOptions = 0,
+	lonInput = 0
+): TidalResult {
+	const epochMs = typeof dateInput === 'number'
+		? dateInput
+		: typeof dateInput === 'string'
+			? new Date(dateInput).getTime()
+			: dateInput.getTime();
+
+	const elapsedDays = (epochMs - REF_NEW_MOON_MS) / 86400000;
+	const ageDays = ((elapsedDays % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
+
+	const alignmentDeg = Math.round((ageDays / SYNODIC_MONTH) * 360 * 100) / 100;
+
+	const distFromSyzygy = Math.min(
+		Math.abs(alignmentDeg),
+		Math.abs(alignmentDeg - 180),
+		Math.abs(alignmentDeg - 360)
+	);
+
+	const distFromQuadrature = Math.min(
+		Math.abs(alignmentDeg - 90),
+		Math.abs(alignmentDeg - 270)
+	);
+
+	const isSpringTide = distFromSyzygy <= 35;
+	const isNeapTide = !isSpringTide && distFromQuadrature <= 35;
+	const state: TidalState = isSpringTide ? 'spring' : (isNeapTide ? 'neap' : 'normal');
+
+	const perigeeElapsedDays = (epochMs - REF_PERIGEE_MS) / 86400000;
+	const perigeeDays = ((perigeeElapsedDays % ANOMALISTIC_MONTH) + ANOMALISTIC_MONTH) % ANOMALISTIC_MONTH;
+	const perigeeFactor = Math.round((0.5 + 0.5 * Math.cos((perigeeDays / ANOMALISTIC_MONTH) * 2 * Math.PI)) * 1000) / 1000;
+
+	const isKingTide = isSpringTide && perigeeFactor >= 0.75;
+
+	const lunarTideCycleMins = 745.2;
+	const minsSinceEpoch = Math.floor(epochMs / 60000);
+	const lunarTideMinute = Math.floor(((minsSinceEpoch % lunarTideCycleMins) + lunarTideCycleMins) % lunarTideCycleMins);
+
+	return {
+		state,
+		alignmentDeg,
+		isSpringTide,
+		isNeapTide,
+		isKingTide,
+		perigeeFactor,
+		lunarTideMinute,
+		states: TIDAL_PHASE_STATES,
+	};
+}
+

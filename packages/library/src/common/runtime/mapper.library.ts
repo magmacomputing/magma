@@ -44,6 +44,8 @@ export interface GeoConfig {
 	longitude?: number | undefined;
 	/** Altitude / Elevation in meters above sea level */
 	elevation?: number | undefined;
+	/** Inferred or explicit hemisphere ('north' | 'south') */
+	sphere?: 'north' | 'south' | undefined;
 	/** ISO country code (e.g. 'US', 'AU') */
 	country?: string | undefined;
 	/** City or locality name */
@@ -68,7 +70,7 @@ export interface CoordinateInput {
 
 /**
  * Extracts and coerces latitude and longitude from input object (Tempo options, config, or instance)
- * into a canonical `{ latitude, longitude }` GeoConfig object.
+ * into a canonical `{ latitude, longitude, ... }` GeoConfig object.
  * 
  * @param input - Optional object containing coordinate or geo properties
  */
@@ -86,16 +88,20 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 		?? input.longitude ?? input.lng ?? input.lon ?? input.long
 		?? cfgGeo?.longitude ?? cfgGeo?.lng ?? cfgGeo?.lon ?? cfgGeo?.long;
 
-	if (isNumber(lat) && isNumber(lng)) {
-		return { latitude: lat, longitude: lng };
-	}
-	if (isNumber(lat) || isNumber(lng)) {
-		return {
-			latitude: isNumber(lat) ? lat : undefined,
-			longitude: isNumber(lng) ? lng : undefined,
-		};
-	}
-	return undefined;
+	const elevation = geoObj?.elevation ?? input.elevation ?? cfgGeo?.elevation;
+	const sphere = geoObj?.sphere ?? input.sphere ?? cfgGeo?.sphere;
+	const country = geoObj?.country ?? input.country ?? cfgGeo?.country;
+	const city = geoObj?.city ?? input.city ?? cfgGeo?.city;
+
+	const result: GeoConfig = {};
+	if (isNumber(lat)) result.latitude = lat;
+	if (isNumber(lng)) result.longitude = lng;
+	if (isNumber(elevation)) result.elevation = elevation;
+	if (typeof sphere === 'string') result.sphere = sphere as any;
+	if (typeof country === 'string') result.country = country;
+	if (typeof city === 'string') result.city = city;
+
+	return Object.keys(result).length > 0 ? result : undefined;
 };
 
 /**
@@ -132,8 +138,7 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 	const { type } = getContext();
 
 	switch (type) {
-		case CONTEXT.Browser:
-		case CONTEXT.WebWorker: {
+		case CONTEXT.Browser: {
 			const res = await geoLocation(opts as any);
 			if (res.error)
 				return { error: res.error };
@@ -141,6 +146,14 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 			const lat = res.coords?.latitude;
 			const lng = res.coords?.longitude;
 			return { lat, lng, latitude: lat, longitude: lng, ...res };
+		}
+
+		case CONTEXT.WebWorker: {
+			const stashed = getStashedGeo();
+			if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude))
+				return { lat: stashed.latitude, lng: stashed.longitude, latitude: stashed.latitude, longitude: stashed.longitude };
+
+			return serverGeoLocation(opts as any);
 		}
 
 		case CONTEXT.NodeJS:

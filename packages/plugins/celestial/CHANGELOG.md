@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Experimental Initial Release**: Launch of `@magmacomputing/tempo-plugin-celestial` (`v0.1.0`), bringing location-aware solar day state calculations (`t.term.sun`, `t.term.solar`) and lunar phase/ephemeris calculations (`t.term.moon`, `t.term.lunar`) to Tempo.
+- **Tidal Term Resolution (`TidalTerm`)**: Introduced `TidalTerm` (`key: 'tide'`, `aliases: ['tides', 'tidal']`) for astronomical tide state resolution (`t.term.tide`, `t.term.tides`).
+- **Astronomical Tidal Snap Anchors**: Enables boundary snapping for Spring (`#tide.spring`), Neap (`#tide.neap`), and King (`#tide.king`) tides based on solar-lunar alignment and orbital perigee proximity.
 - **Location-Aware Moonrise & Moonset**: Added `t.term.lunar.moonrise` and `t.term.lunar.moonset` event resolution.
 - **Solar Ephemeris Data**: Provides `t.term.solar.sunrise`, `t.term.solar.noon`, and `t.term.solar.sunset` along with twilight phases.
 - **Universal Geolocation Integration**: Updated documentation and usage guides to feature `@magmacomputing/library`'s `geoLookup()` for automatic browser hardware and server IP geolocation mapping.

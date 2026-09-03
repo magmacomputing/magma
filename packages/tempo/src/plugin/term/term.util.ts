@@ -41,6 +41,7 @@ export function findTermPlugin(ident: string, state?: any): TermPlugin | undefin
 
 	return st.pluginsDb.terms.find((t: TermPlugin) => {
 		if (t.key?.toLowerCase() === termPart || t.scope?.toLowerCase() === termPart) return true;
+		if (t.aliases && Array.isArray(t.aliases) && t.aliases.some((a: string) => a.toLowerCase() === termPart)) return true;
 		if (t.groups) {
 			const list = Array.isArray(t.groups) ? t.groups : Object.values(t.groups).flat(Infinity) as Range[];
 			return list.some((r: Range) => r.key?.toLowerCase() === id || r.key?.toLowerCase() === termPart);
@@ -234,7 +235,7 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Ra
  */
 export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mutate: string): any {
 	const ident = offset.startsWith('#') ? offset.slice(1) : offset;
-	const termObj = terms.find(t => t.key === ident || t.scope === ident);
+	const termObj = terms.find(t => t.key === ident || t.scope === ident || (t.aliases && Array.isArray(t.aliases) && t.aliases.includes(ident)));
 	if (!termObj) return undefined;
 
 	const anchor = (tempo as any).toDateTime();
@@ -273,7 +274,7 @@ export function resolveTermShift(tempo: Tempo, source: any[], offset: string, sh
 	// Otherwise, it's a pre-resolved list of ranges.
 	if (source.length > 0 && 'define' in source[0]) {
 		const ident = offset.startsWith('#') ? offset.slice(1) : offset;
-		const termObj = source.find(t => t.key === ident || t.scope === ident);
+		const termObj = source.find(t => t.key === ident || t.scope === ident || (t.aliases && Array.isArray(t.aliases) && t.aliases.includes(ident)));
 		if (!termObj) return undefined;
 		list = getRange(termObj, tempo, anchor);
 	} else {

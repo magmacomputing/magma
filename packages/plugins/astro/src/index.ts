@@ -97,6 +97,7 @@ function resolveDateBoundary(t: Tempo, anchor?: any) {
  */
 export const AstroTerm = defineTerm({
 	key,
+	aliases: ['equinox', 'solstice'],
 	scope,
 	description: 'Astronomical seasons and events',
 	resolve(this: Tempo, anchor?: any) {

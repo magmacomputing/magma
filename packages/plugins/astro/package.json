@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-plugin-astro",
-  "version": "2.1.5",
+  "version": "2.2.1",
   "description": "Tempo plugin that calculates precise astronomical seasons (solstices & equinoxes) and lunar phases — hemisphere-aware, sub-minute accuracy",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

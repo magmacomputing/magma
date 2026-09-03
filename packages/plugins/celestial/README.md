@@ -22,6 +22,11 @@ npm install @magmacomputing/tempo-plugin-celestial
 - **Solar Day Cycles**: Calculates `daylight`, `night`, `civil-twilight`, `nautical-twilight`, and `astronomical-twilight`.
 - **Ephemeris Data**: Returns `sunrise`, `sunset`, `noon`, total `daylightDurationMs`, and explicit `latitude`/`longitude` for given coordinates.
 - **Lunar Phase & Ephemeris**: Calculates 8 discrete lunar phase states (`new-moon`, `waxing-crescent`, etc.), illumination 0.0–1.0 fraction, age in days, hemisphere-aware emoji indicators, and location-aware `moonrise` and `moonset` events.
+- **Astronomical Tidal Mechanics (`TidalTerm`)**: Provides pure astronomical solar/lunar alignment calculations (`t.term.tide`, `t.term.tides`) for `spring`, `neap`, and `normal` tides, alongside `isKingTide` perigee indicators.
+
+> [!NOTE]
+> **Pure Astronomical Calculations**:
+> Tidal state resolution relies exclusively on deterministic celestial mechanics (solar-lunar ecliptic longitude alignment $\Delta \lambda$ and anomalistic lunar perigee proximity) for reproducible, offset-independent math across all time zones and locations.
 
 ## Geographic Coordinates & Defaults
 
@@ -46,15 +51,16 @@ import '@magmacomputing/tempo-plugin-celestial';
 const geo = await geoLookup();
 const t = new Tempo({ geo });
 
-console.log(t.term.sun);            // 'daylight' or 'night'
-console.log(t.term.lunar.moonrise); // Tempo instance for local moonrise
+console.log(t.term.sun);                 // 'daylight' or 'night'
+console.log(t.term.lunar.moonrise);      // Tempo instance for local moonrise
+console.log(t.term.tide);                // 'spring', 'neap', or 'normal'
 ```
 
 ## Usage
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { LunarTerm, SolarTerm } from '@magmacomputing/tempo-plugin-celestial';
+import '@magmacomputing/tempo-plugin-celestial';
 
 const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
 
@@ -64,7 +70,7 @@ console.log(t.term.solar.key);           // 'daylight'
 console.log(t.term.solar.phase);         // 'Daylight'
 console.log(t.term.solar.phases);        // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
 console.log(t.term.solar.sunrise);       // Tempo instance for local sunrise
-console.log(t.term.solar.geo);          // { latitude: 40.7128, longitude: -74.006 }
+console.log(t.term.solar.geo);           // { latitude: 40.7128, longitude: -74.006 }
 
 // --- Lunar Phase & Ephemeris ---
 console.log(t.term.moon);                // 'waxing-crescent'
@@ -73,18 +79,25 @@ console.log(t.term.lunar.phases);        // ['new-moon', 'waxing-crescent', 'fir
 console.log(t.term.lunar.illumination);  // 0.45
 console.log(t.term.lunar.moonrise);      // Tempo instance for local moonrise (or undefined)
 
+// --- Astronomical Tidal Mechanics ---
+console.log(t.term.tide);                // 'spring', 'neap', or 'normal'
+console.log(t.term.tides.alignmentDeg);  // Solar-lunar alignment angle (0..360°)
+console.log(t.term.tides.isSpringTide);  // true during Syzygy (New or Full Moon)
+console.log(t.term.tides.isNeapTide);    // true during Quadrature (1st or 3rd Quarter)
+console.log(t.term.tides.isKingTide);    // true when Spring Tide aligns with Lunar Perigee
+
 // --- Programmatic Navigation ---
 // Use .phases to dynamically navigate to the next lunar phase
 const nextPhaseKey = t.term.lunar.phases[t.term.lunar.index % 8];
 const nextMoonTempo = t.set(`#lunar.${nextPhaseKey}`);
 ```
 
-## Phase Discovery & Scope Metadata
+## Phase & State Discovery Metadata
 
-Both `LunarTerm` and `SolarTerm` expose immutable, frozen array references (`Object.freeze`) containing all valid identifiers for terms resolution:
+`LunarTerm`, `SolarTerm`, and `TidalTerm` expose immutable, frozen array references (`Object.freeze`) containing all valid identifiers for terms resolution:
 
-- **Static Term References**: `LunarTerm.phases` and `SolarTerm.phases` are available on the plugin definitions without instantiating a `Tempo` object.
-- **Instance Scope References**: `t.term.lunar.phases` and `t.term.solar.phases` share the exact same frozen array reference (`t.term.lunar.phases === LunarTerm.phases`), adding zero memory or GC overhead.
+- **Static Term References**: `LunarTerm.phases`, `SolarTerm.phases`, and `TidalTerm.phases` are available on the plugin definitions without instantiating a `Tempo` object.
+- **Instance Scope References**: `t.term.lunar.phases`, `t.term.solar.phases`, and `t.term.tides.states` share the exact same frozen array references (`t.term.lunar.phases === LunarTerm.phases`), adding zero memory or GC overhead.
 
 > [!TIP]
 > **Indexing Tip**: Like all Tempo terms (`.month.index`, `.quarter.index`), `.index` is 1-based (`1..8`), while `.phases` is a standard 0-indexed JavaScript array (`0..7`).

@@ -28,11 +28,13 @@ export {
 	getSunriseSunset,
 	getZodiacSign,
 	getChineseZodiac,
+	getTidalState,
 	SYNODIC_MONTH,
 	REF_NEW_MOON_MS,
 	LUNAR_PHASE_KEYS,
 	SOLAR_PHASE_STATES,
 	SOLAR_PHASE_NAMES,
+	TIDAL_PHASE_STATES,
 	type LunarPhaseKey,
 	type LunarPhaseName,
 	type SolarPhaseName,
@@ -43,5 +45,7 @@ export {
 	type SolarEventResult,
 	type SunriseSunsetResult,
 	type WesternZodiacSign,
-	type ChineseZodiacResult
+	type ChineseZodiacResult,
+	type TidalState,
+	type TidalResult,
 } from './celestial/index.js';

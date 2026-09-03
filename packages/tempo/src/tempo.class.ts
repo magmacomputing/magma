@@ -230,12 +230,14 @@ export class Tempo {
 	 * @returns The resolved compass direction (north/south), or undefined if not determinable
 	 */
 	static #setSphere = (shape: Internal.State, options: t.Options): t.COMPASS | undefined => {
-		if (isDefined(options.sphere)) {
-			const evaluatedSphere = evaluate(options.sphere);
+		const rawSphere = options.sphere ?? options.geo?.sphere;
+		if (isDefined(rawSphere)) {
+			const evaluatedSphere = evaluate(rawSphere);
 			if (isDefined(evaluatedSphere)) return evaluatedSphere;
 		}
 
 		const geo = coerceGeo(options) ?? shape.config.geo ?? getStashedGeo();
+		if (isDefined(geo?.sphere)) return geo.sphere as t.COMPASS;
 		if (isNumber(geo?.latitude))
 			return geo.latitude >= 0 ? 'north' : 'south';
 
@@ -353,7 +355,7 @@ export class Tempo {
 		}
 
 		// Side-effects
-		if ((isDefined(mergedOptions.sphere) || isDefined((mergedOptions as any).latitude) || isDefined((mergedOptions as any).lat)) && !isFunction(mergedOptions.sphere)) {
+		if ((isDefined(mergedOptions.sphere) || isDefined((mergedOptions as any).latitude) || isDefined((mergedOptions as any).lat) || isDefined(mergedOptions.geo)) && !isFunction(mergedOptions.sphere)) {
 			const newSphere = Tempo.#setSphere(shape, mergedOptions);
 			if (isDefined(newSphere)) shape.config.sphere = newSphere;
 		}
@@ -658,6 +660,11 @@ export class Tempo {
 
 							Tempo.#termMap.set(config.key, config);
 							if (config.scope) Tempo.#termMap.set(config.scope, config);
+							if (config.aliases && Array.isArray(config.aliases)) {
+								for (const alias of config.aliases) {
+									if (!Tempo.#termMap.has(alias)) Tempo.#termMap.set(alias, config);
+								}
+							}
 
 							if (config.version) {
 								const name = config.scope || config.key;
@@ -1513,9 +1520,11 @@ export class Tempo {
 		const globalTz = (this as any)[$Internal]().config.timeZone;
 		const hasInstanceTzOverride = isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(this.tz).toLowerCase() !== String(globalTz).toLowerCase());
 		const lat = this.geo?.latitude;
+		const geoSphere = this.geo?.sphere;
 
 		const res = evaluate(
 			this.#local.options && hasOwn(this.#local.options, 'sphere') ? this.#local.options.sphere : undefined,
+			geoSphere,
 			isNumber(lat) ? (lat >= 0 ? 'north' : 'south') : undefined,
 			hasInstanceTzOverride ? () => getHemisphere(String(this.tz)) : undefined,
 			hasOwn(this.#local.config, 'sphere') ? this.#local.config.sphere : undefined,
@@ -1708,7 +1717,7 @@ export class Tempo {
 
 		let explicitSphere: t.COMPASS | undefined;
 		let evalSphere: t.COMPASS | undefined;
-		const rawSphere = options.sphere ?? (options as any).Sphere;
+		const rawSphere = options.sphere ?? (options as any).Sphere ?? options.geo?.sphere;
 		if (isDefined(rawSphere)) {
 			explicitSphere = evaluate(rawSphere) as t.COMPASS;
 			evalSphere = explicitSphere;

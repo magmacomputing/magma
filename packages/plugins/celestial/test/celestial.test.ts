@@ -48,4 +48,19 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(solarRes.year).toBe(1970);
 		expect(lunarRes.year).toBe(1969);
 	});
+
+	it('resolves tidal terms (tide and alias tides)', () => {
+		const t = new Tempo('2026-03-03T12:00:00Z', { geo: { lat: -33.8688, lng: 151.2093 } });
+		expect(typeof t.term.tide).toBe('string');
+		expect(t.term.tides).toBeDefined();
+		expect(t.term.tides.state).toBe(t.term.tide);
+		expect(typeof t.term.tides.alignmentDeg).toBe('number');
+		expect(typeof t.term.tides.isSpringTide).toBe('boolean');
+		expect(typeof t.term.tides.isNeapTide).toBe('boolean');
+		expect(typeof t.term.tides.isKingTide).toBe('boolean');
+		expect(typeof t.term.tides.perigeeFactor).toBe('number');
+		expect(typeof t.term.tides.lunarTideMinute).toBe('number');
+		expect(t.term.tides.start).toBeInstanceOf(Tempo);
+		expect(t.term.tides.end).toBeInstanceOf(Tempo);
+	});
 });

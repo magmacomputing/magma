@@ -17,6 +17,8 @@ export type TempoTermType = typeof Tempo & {
 export interface TermPlugin {
 	/** Unique identifier for the term */
 	key: string;
+	/** Optional secondary alias keys for the term */
+	aliases?: string[];
 	/** Version of the term plugin */
 	version?: string;
 	/** Scope or category of the term */
