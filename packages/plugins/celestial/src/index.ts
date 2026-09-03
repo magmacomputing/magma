@@ -235,7 +235,7 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 			start = astroSunrise;
 			end = nauticalSunrise;
 		} else {
-			start = astroSunset;
+			start = nauticalSunset;
 			end = astroSunset;
 		}
 	} else {

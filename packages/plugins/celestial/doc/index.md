@@ -55,7 +55,7 @@ const geo = await geoLookup();
 const t = new Tempo({ geo });
 
 console.log(t.term.sun);             // 'daylight' or 'night'
-console.log(t.term.lunar.moonrise); // Tempo instance or undefined when no rise occurs on the local date
+console.log(t.term.lunar.moonrise); // Tempo instance or null when no rise occurs on the local date
 console.log(t.term.tide);           // 'spring', 'neap', or 'normal'
 ```
 
@@ -80,7 +80,7 @@ console.log(t.term.moon);                // 'waxing-crescent'
 console.log(t.term.lunar.phase);         // 'Waxing Crescent'
 console.log(t.term.lunar.phases);        // ['new-moon', 'waxing-crescent', 'first-quarter', 'waxing-gibbous', 'full-moon', 'waning-gibbous', 'third-quarter', 'waning-crescent']
 console.log(t.term.lunar.illumination);  // 0.45
-console.log(t.term.lunar.moonrise);      // Tempo instance for local moonrise (or undefined)
+console.log(t.term.lunar.moonrise);      // Tempo instance for local moonrise (or null)
 
 // --- Astronomical Tidal Mechanics ---
 console.log(t.term.tide);                // 'spring', 'neap', or 'normal'

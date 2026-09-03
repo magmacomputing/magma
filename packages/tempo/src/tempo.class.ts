@@ -1476,9 +1476,10 @@ export class Tempo {
 			});
 		} else {
 			Tempo.#terms.forEach(term => {
-				const define = (keyOnly: boolean, anchor?: any) => {
+				const define = (keyOnly: boolean, anchor?: any, alias?: string) => {
 					try {
-						const res = term.resolve ? term.resolve.call(this, anchor) : term.define.call(this, keyOnly, anchor);
+						const res = term.define ? term.define.call(this, keyOnly, anchor, alias) : (term.resolve ? term.resolve.call(this, anchor, alias) : undefined);
+						if (res !== undefined && !isObject(res)) return res;
 						const out = (getTermRange(this, (Array.isArray(res) ? (res as any) : [res]), keyOnly, anchor) as any);
 						return isObject(out) ? secure(out) : out;
 					} catch (err: unknown) {
@@ -1494,12 +1495,12 @@ export class Tempo {
 				// and scope as longform (isKeyOnly=false → returns full Range with label).
 				// If the term has NO scope, the key IS the only accessor — register it as longform
 				// (isKeyOnly=false) so format() can access res.label on the returned Range.
-				this.#setLazy(target, term.key, (isKey: boolean) => define(isKey, this.toDateTime()), !!term.scope);
-				if (term.scope) this.#setLazy(target, term.scope, (isKey: boolean) => define(isKey, this.toDateTime()), false);
+				this.#setLazy(target, term.key, (isKey: boolean) => define(isKey, this.toDateTime(), term.key), !!term.scope);
+				if (term.scope) this.#setLazy(target, term.scope, (isKey: boolean) => define(isKey, this.toDateTime(), term.scope), false);
 				if (term.aliases && Array.isArray(term.aliases)) {
 					for (const alias of term.aliases) {
 						if (alias !== term.scope) {
-							this.#setLazy(target, alias, (isKey: boolean) => define(isKey, this.toDateTime()), true);
+							this.#setLazy(target, alias, (isKey: boolean) => define(isKey, this.toDateTime(), alias), true);
 						}
 					}
 				}

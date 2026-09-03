@@ -47,14 +47,14 @@ While phase classification is global, **local high-water and low-water timing** 
 ## 3. Server-Side Mapper Strategy & Workarounds (`server/mapper.library.ts`)
 
 ### Current State
-`serverGeoLocation()` executes HTTP IP-geolocation queries via `http://ip-api.com/json/`, resolving `{ lat, lng, country, city, timezone }`.
+`serverGeoLocation()` executes HTTPS IP-geolocation queries by default (rejecting plain HTTP URLs for non-local endpoints), resolving `{ lat, lng, country, city, timezone }`.
 
 ### Challenges & Workarounds for Server/SSR Environments
 
 | Challenge | Impact | Proposed Workaround / Strategy |
 | :--- | :--- | :--- |
-| **Unencrypted HTTP Endpoint** | Modern HTTPS servers or Cloudflare Workers reject mixed unencrypted `http://` calls. | Support configurable HTTPS endpoints (`https://ipapi.co/json/` or `https://ip-api.com/json/` with API key, or custom internal microservice URL via `opts.endpoint`). |
-| **Free-Tier Rate Limits** (45 req/min) | High-traffic Node.js / SSR servers will hit rate-limit errors (HTTP 429). | Implement in-memory LRU caching or server `WebStore` caching by IP address (`query`) with a 24-hour TTL. |
+| **Unencrypted HTTP Endpoint** | Modern HTTPS servers or Cloudflare Workers reject mixed unencrypted `http://` calls. | Default to HTTPS ip-api endpoints (`https://ipapi.co/json/` or `https://ip-api.com/json/`), rejecting unencrypted HTTP for non-local endpoints. |
+| **Free-Tier Rate Limits** (45 req/min) | High-traffic Node.js / SSR servers will hit rate-limit errors (HTTP 429). | Implement server-side caching with explicit 24-hour TTL and access controls, keyed by a pseudonymous hash representation of the IP rather than retaining raw IP values in WebStore. |
 | **Datacenter IP vs User IP** | Server IP geolocation resolves the physical datacenter location (e.g., AWS / Vercel server region), not the client end-user. | Inspect incoming HTTP request headers in SSR middleware (`X-Forwarded-For`, `CF-IPCountry`, `X-Vercel-IP-Country`) and pass client IP to `serverGeoLocation({ ip: clientIp })`. |
 | **Server Offline / Air-Gapped Environments** | External IP fetch fails in restricted server networks. | Gracefully catch fetch errors and fall back to system timezone (`Intl.DateTimeFormat().resolvedOptions().timeZone`) and `getHemisphere()`. |
 

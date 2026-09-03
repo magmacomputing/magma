@@ -97,7 +97,7 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 	if (isNumber(lat)) result.latitude = lat;
 	if (isNumber(lng)) result.longitude = lng;
 	if (isNumber(elevation)) result.elevation = elevation;
-	if (typeof sphere === 'string') result.sphere = sphere as any;
+	if (sphere === 'north' || sphere === 'south') result.sphere = sphere;
 	if (typeof country === 'string') result.country = country;
 	if (typeof city === 'string') result.city = city;
 

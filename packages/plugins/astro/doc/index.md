@@ -32,13 +32,13 @@ import '@magmacomputing/tempo-plugin-astro'; // Auto-registers Astro terms!
 
 const t = new Tempo('2026-03-20', { sphere: 'north' });
 
-// Get the Astronomical Event key ('vernal', 'summer', 'autumnal', 'winter')
+// Get the Astronomical Event key ('Vernal', 'Summer', 'Autumnal', 'Winter')
 console.log(t.term.astro);
-// Output: 'vernal'
+// Output: 'Vernal'
 
 // Query via aliases
-console.log(t.term.equinox);  // 'vernal' or 'autumnal'
-console.log(t.term.solstice); // 'summer' or 'winter'
+console.log(t.term.equinox);  // 'Vernal' or 'Autumnal'
+console.log(t.term.solstice); // 'Summer' or 'Winter'
 
 // Get full Astronomical metadata
 console.log(t.term.astronomy);

@@ -32,9 +32,9 @@ export interface TermPlugin {
 	/** Array of time ranges this term represents */
 	ranges?: any[];
 	/** Resolves the term to concrete time ranges */
-	resolve?: (this: Tempo, anchor?: any) => Range[];
+	resolve?: (this: Tempo, anchor?: any, alias?: string) => Range[];
 	/** Defines the term's value or range */
-	define: (this: Tempo, keyOnly?: boolean, anchor?: any) => string | Range | Range[] | undefined | null;
+	define: (this: Tempo, keyOnly?: boolean, anchor?: any, alias?: string) => string | Range | Range[] | undefined | null;
 }
 
 

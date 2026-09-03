@@ -5,6 +5,8 @@ import { getSolarEvents as getSolarEventsFn } from '@magmacomputing/tempo-fns';
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
 		astro: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
+		equinox: 'Vernal' | 'Autumnal';
+		solstice: 'Summer' | 'Winter';
 		astronomy: {
 			key: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
 			strict: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
@@ -86,8 +88,14 @@ function resolve(t: Tempo, anchor?: any) {
 	return list;
 }
 
-function resolveDateBoundary(t: Tempo, anchor?: any) {
+function resolveFiltered(t: Tempo, anchor?: any, eventFilter?: 'Equinox' | 'Solstice') {
 	const list = resolve(t, anchor);
+	if (!eventFilter) return list;
+	return list.filter((item: any) => item.event === eventFilter);
+}
+
+function resolveDateBoundaryFiltered(t: Tempo, anchor?: any, eventFilter?: 'Equinox' | 'Solstice') {
+	const list = resolveFiltered(t, anchor, eventFilter);
 	return list.map((item: any) => ({ ...item, hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 }));
 }
 
@@ -100,12 +108,14 @@ export const AstroTerm = defineTerm({
 	aliases: ['equinox', 'solstice'],
 	scope,
 	description: 'Astronomical seasons and events',
-	resolve(this: Tempo, anchor?: any) {
-		return resolve(this, anchor);
+	resolve(this: Tempo, anchor?: any, alias?: string) {
+		const filterType = alias === 'equinox' ? 'Equinox' : (alias === 'solstice' ? 'Solstice' : undefined);
+		return resolveFiltered(this, anchor, filterType);
 	},
-	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		const strictList = resolve(this, anchor);
-		const dateBoundaryList = resolveDateBoundary(this, anchor);
+	define(this: Tempo, keyOnly?: boolean, anchor?: any, alias?: string) {
+		const filterType = alias === 'equinox' ? 'Equinox' : (alias === 'solstice' ? 'Solstice' : undefined);
+		const strictList = resolveFiltered(this, anchor, filterType);
+		const dateBoundaryList = resolveDateBoundaryFiltered(this, anchor, filterType);
 		const zdt = anchor ?? (this as any).toDateTime();
 
 		if (keyOnly === true || keyOnly === undefined) {
@@ -157,7 +167,7 @@ export const AstroTerm = defineTerm({
 			...keyedScope,
 			strict: scoped.key,
 		};
-	}
+	},
 });
 
 export const AstroPlugin = [AstroTerm];
