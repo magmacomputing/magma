@@ -18,6 +18,14 @@ import { logDebug, warnDebug } from '../core/logger.js';
 import { RE_ISO_DATE_PREFIX, RE_ISO_Z_SUFFIX } from '../core/patterns.js';
 import type { AiParseOptions } from '../types/index.js';
 
+/**
+ * Parses one natural-language date string into a `Tempo`, using cache, native parsing, or configured AI providers.
+ *
+ * @param str - The natural-language date string to parse
+ * @param options - Parsing, provider, cache, and temporal context options
+ * @returns The parsed `Tempo` with provider and resolution metadata
+ * @internal
+ */
 async function parseSingleInput(str: string, options?: AiParseOptions): Promise<Tempo> {
 	const availableProviders = getAvailableProviders(options);
 	const normalizedStr = normalizeCacheInput(str);

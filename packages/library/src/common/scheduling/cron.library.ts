@@ -125,10 +125,10 @@ export function parseCron(pattern: string): CronSchedule {
 }
 
 /**
- * Type guard to check if a value is a valid cron pattern string.
+ * Determines whether a value is a valid five-field cron expression.
  *
- * @param val - The value to check
- * @returns True if the value is a valid cron pattern string
+ * @param val - The value to validate
+ * @returns `true` if the value is a valid cron expression, `false` otherwise
  */
 export function isCronString(val: unknown): val is string {
 	if (!isString(val)) return false;
@@ -144,6 +144,18 @@ export function isCronString(val: unknown): val is string {
 	}
 }
 
+/**
+ * Determines whether a date satisfies the schedule's day-of-month and day-of-week constraints.
+ *
+ * When both constraints are restricted, a match in either field is sufficient. Otherwise, both
+ * fields must match.
+ *
+ * @param schedule - The parsed cron schedule
+ * @param day - The day of the month
+ * @param dow - The day of the week, where `0` and `7` represent Sunday
+ * @returns `true` if the date matches the day constraints, `false` otherwise
+ * @internal
+ */
 function matchesDay(schedule: CronSchedule, day: number, dow: number): boolean {
 	const domMatch = schedule.daysOfMonth.allowed.has(day);
 	const dowMatch = schedule.daysOfWeek.allowed.has(dow) || (dow === 7 && schedule.daysOfWeek.allowed.has(0));
@@ -153,6 +165,18 @@ function matchesDay(schedule: CronSchedule, day: number, dow: number): boolean {
 		: domMatch && dowMatch
 }
 
+/**
+ * Searches for a cron occurrence timestamp in the specified direction (forward or backward).
+ * Searches up to 5 years in the given direction.
+ *
+ * @param pattern - The cron pattern string
+ * @param anchorMs - The starting anchor timestamp in milliseconds
+ * @param timeZone - The IANA time zone identifier
+ * @param direction - Search direction: 1 for next, -1 for previous
+ * @returns The occurrence timestamp in epoch milliseconds
+ * @throws Error if no match is found within 5 years
+ * @internal
+ */
 function searchCronEpoch(pattern: string, anchorMs: number, timeZone: string, direction: 1 | -1): number {
 	const schedule = parseCron(pattern);
 	const zdt = Temporal.Instant.fromEpochMilliseconds(anchorMs).toZonedDateTimeISO(timeZone);

@@ -7,6 +7,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '../../../');
 
+/**
+ * Synchronize the root package version with the Tempo and Library workspaces.
+ *
+ * Exits the process when the root version is invalid or no workspace can be synchronized.
+ */
 export async function versionSync(_args) {
 	const rootPkgPath = path.resolve(ROOT_DIR, 'package.json');
 	const rootPkg = JSON.parse(readFileSync(rootPkgPath, 'utf8'));
@@ -20,7 +25,7 @@ export async function versionSync(_args) {
 	console.log(`\n🔄 Syncing version ${version} to workspaces...`);
 
 	try {
-		const workspaces = ['@magmacomputing/tempo', '@magmacomputing/library', '@magmacomputing/tempo-pro'];
+		const workspaces = ['@magmacomputing/tempo', '@magmacomputing/library'];
 		let syncedCount = 0;
 		let alreadySyncedCount = 0;
 		for (const ws of workspaces) {

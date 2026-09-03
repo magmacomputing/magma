@@ -13,6 +13,14 @@ const groups = defineRange([
 	{ key: 'Night', locale: { fr: 'Nuit', es: 'Noche', de: 'Nacht' }, hour: 20, group: 'standard' },
 ], 'group');
 
+/**
+ * Resolves daily time period candidates for the current time context.
+ *
+ * @param t - The source Tempo instance
+ * @param anchor - Optional reference time override
+ * @returns Array of matching time-of-day term definitions
+ * @internal
+ */
 function resolve(t: Tempo, anchor?: any) {
 	return resolveCycleWindow(t, groups, { anchor, groupBy: ['group'], group: 'standard' });
 }

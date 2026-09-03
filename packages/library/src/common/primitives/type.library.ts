@@ -287,6 +287,8 @@ export interface TypeValueMap<T = any> {
 	Date: { type: 'Date', value: Date };
 	Function: { type: 'Function', value: Function };
 	AsyncFunction: { type: 'AsyncFunction', value: Function };
+	GeneratorFunction: { type: 'GeneratorFunction', value: Function };
+	AsyncGeneratorFunction: { type: 'AsyncGeneratorFunction', value: Function };
 	Class: { type: 'Class', value: T };
 	Promise: { type: 'Promise', value: Promise<T> };
 	RegExp: { type: 'RegExp', value: RegExp };

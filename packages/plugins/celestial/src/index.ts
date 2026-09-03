@@ -1,9 +1,11 @@
 import { defineTerm } from '@magmacomputing/tempo/plugin/sdk';
-import { getLunarPhase, getLunarPhaseRange, getSunriseSunset } from '@magmacomputing/tempo-fns';
+import { getLunarPhaseRange, getMoonriseMoonset, getSunriseSunset, getTidalState, LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES, TIDAL_PHASE_STATES } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
-import type { LunarPhaseKey, LunarPhaseName } from '@magmacomputing/tempo-fns';
+import type { LunarPhaseKey, LunarPhaseName, SolarPhaseName, TidalState, TidalResult } from '@magmacomputing/tempo-fns';
+import { getCelestialCoordinates, toDateTimeFields, toTempoOrNull, getLunarDetails, createCelestialTermHandlers } from './util.js';
 
-export type { LunarPhaseKey, LunarPhaseName };
+export type { LunarPhaseKey, LunarPhaseName, SolarPhaseName, TidalState, TidalResult };
+export { LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES, TIDAL_PHASE_STATES };
 
 export interface LunarPhaseOptions {
 	sphere?: 'north' | 'south' | undefined;
@@ -17,6 +19,7 @@ export interface LunarPhaseResult {
 	ageDays: number;
 	isWaxing: boolean;
 	emoji?: string | undefined;
+	phases: readonly LunarPhaseKey[];
 }
 
 export type SolarPhaseState = 'daylight' | 'night' | 'civil-twilight' | 'nautical-twilight' | 'astronomical-twilight';
@@ -32,7 +35,11 @@ declare module '@magmacomputing/tempo' {
 			ageDays: number;
 			isWaxing: boolean;
 			emoji?: string | undefined;
+			phases: readonly LunarPhaseKey[];
+			moonrise: Tempo | null;
+			moonset: Tempo | null;
 			group: 'lunar';
+			geo?: any;
 			year: number;
 			month: number;
 			day: number;
@@ -45,11 +52,14 @@ declare module '@magmacomputing/tempo' {
 			start: Tempo;
 			end: Tempo;
 		};
-		sun: SolarPhaseState;
+		sun: SolarPhaseState | null;
 		solar: {
-			key: SolarPhaseState;
-			index: number;
+			key: SolarPhaseState | null;
+			phase: SolarPhaseName | null;
+			phases: readonly SolarPhaseState[];
+			index: number | null;
 			group: 'solar';
+			geo?: any;
 			year: number;
 			month: number;
 			day: number;
@@ -59,48 +69,66 @@ declare module '@magmacomputing/tempo' {
 			millisecond: number;
 			microsecond: number;
 			nanosecond: number;
-			sunrise: Tempo;
-			sunset: Tempo;
-			solarNoon: Tempo;
-			daylightDurationMs: number;
-			isDaylight: boolean;
-			civil: { sunrise: Tempo; sunset: Tempo };
-			nautical: { sunrise: Tempo; sunset: Tempo };
-			astronomical: { sunrise: Tempo; sunset: Tempo };
+			sunrise: Tempo | null;
+			sunset: Tempo | null;
+			noon: Tempo | null;
+			daylightDurationMs: number | null;
+			isDaylight: boolean | null;
+			civil: { sunrise: Tempo | null; sunset: Tempo | null };
+			nautical: { sunrise: Tempo | null; sunset: Tempo | null };
+			astronomical: { sunrise: Tempo | null; sunset: Tempo | null };
+			start: Tempo;
+			end: Tempo;
+		};
+		tide: TidalState;
+		tides: {
+			key: TidalState;
+			state: TidalState;
+			group: 'tide';
+			alignmentDeg: number;
+			isSpringTide: boolean;
+			isNeapTide: boolean;
+			isKingTide: boolean | null;
+			perigeeFactor: number;
+			lunarTideMinute: number | null;
+			states: readonly TidalState[];
+			geo?: any;
+			year: number;
+			month: number;
+			day: number;
+			hour: number;
+			minute: number;
+			second: number;
+			millisecond: number;
+			microsecond: number;
+			nanosecond: number;
 			start: Tempo;
 			end: Tempo;
 		};
 	}
 }
 
-/** Internal helper: Computes formatted lunar details for a given Tempo instance */
-function getLunarDetails(t: Tempo): LunarPhaseResult {
-	const sphere = (t as any).sphere;
-	const res = getLunarPhase(t.epoch.ms, { sphere: sphere ? sphere : undefined });
-	return {
-		key: res.key,
-		phase: res.phase,
-		index: res.index,
-		illumination: Math.round(res.illumination * 10000) / 10000,
-		ageDays: Math.round(res.ageDays * 100) / 100,
-		isWaxing: res.isWaxing,
-		...(sphere && res.emoji !== undefined ? { emoji: res.emoji } : {}),
-	};
-}
-
-/** Internal helper: Resolves full lunar scope range with start/end Tempo boundaries */
+/**
+ * Resolves lunar phase details, lunar events, geolocation, and the containing time range.
+ *
+ * @param t - Tempo context used to determine the reference time and lunar details
+ * @param anchor - Optional anchor used to resolve celestial context
+ * @returns Lunar scope data with phase metadata, optional moonrise and moonset times, and start and end boundaries
+ */
 function getLunarScopeRange(t: Tempo, anchor?: any) {
-	const refTempo = anchor ?? t;
+	const coords = getCelestialCoordinates(t, anchor);
+	const { refTempo, lat, lng, hasGeo, geo, timeZone, sphere } = coords;
 	const currentMs = refTempo.epoch.ms;
-	const timeZone = refTempo.tz ?? 'UTC';
 
-	const range = getLunarPhaseRange(currentMs, { sphere: (refTempo as any).sphere ? (refTempo as any).sphere : undefined });
+	const range = getLunarPhaseRange(currentMs, { sphere });
+	const moonEvents = hasGeo ? getMoonriseMoonset(currentMs, lat!, lng!) : { moonriseMs: undefined, moonsetMs: undefined };
 
-	const startTempo = new Tempo(range.startMs, { timeZone, timeStamp: 'ms', sphere: (refTempo as any).sphere });
-	const endTempo = new Tempo(range.endMs, { timeZone, timeStamp: 'ms', sphere: (refTempo as any).sphere });
+	const startTempo = new Tempo(range.startMs, { timeZone, timeStamp: 'ms', sphere });
+	const endTempo = new Tempo(range.endMs, { timeZone, timeStamp: 'ms', sphere });
+	const moonrise = hasGeo ? toTempoOrNull(moonEvents.moonriseMs, timeZone) : null;
+	const moonset = hasGeo ? toTempoOrNull(moonEvents.moonsetMs, timeZone) : null;
 
-	const details = getLunarDetails(refTempo);
-	const dt = startTempo.toDateTime();
+	const details = getLunarDetails(t, coords);
 
 	return {
 		key: details.key,
@@ -110,16 +138,12 @@ function getLunarScopeRange(t: Tempo, anchor?: any) {
 		ageDays: details.ageDays,
 		isWaxing: details.isWaxing,
 		...(details.emoji !== undefined ? { emoji: details.emoji } : {}),
+		phases: LUNAR_PHASE_KEYS,
+		moonrise,
+		moonset,
 		group: 'lunar' as const,
-		year: dt.year,
-		month: dt.month,
-		day: dt.day,
-		hour: dt.hour,
-		minute: dt.minute,
-		second: dt.second,
-		millisecond: dt.millisecond,
-		microsecond: dt.microsecond,
-		nanosecond: dt.nanosecond,
+		geo,
+		...toDateTimeFields(startTempo),
 		start: startTempo,
 		end: endTempo,
 	};
@@ -133,41 +157,54 @@ export const LunarTerm = defineTerm({
 	key: 'moon',
 	scope: 'lunar',
 	description: 'Lunar phase cycle and range resolution',
-
-	resolve(this: Tempo, anchor?: any) {
-		return [getLunarScopeRange(this, anchor)];
-	},
-
-	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		const scopeObj = getLunarScopeRange(this, anchor);
-		if (keyOnly === true || keyOnly === undefined) {
-			return scopeObj.key;
-		}
-		return scopeObj;
-	},
+	phases: LUNAR_PHASE_KEYS,
+	...createCelestialTermHandlers(getLunarScopeRange),
 });
 
-/** Internal helper: Resolves daily solar scope range for a location */
+/**
+ * Determines the current solar phase and its daily time range for a reference time and location.
+ *
+ * @param t - The Tempo context used to resolve the reference time and location
+ * @param anchor - Optional anchor used when resolving the reference time and location
+ * @returns Solar phase metadata, sunrise and sunset events, twilight events, and the applicable time range
+ */
 function getSolarScopeRange(t: Tempo, anchor?: any) {
-	const refTempo = anchor ?? t;
-	const timeZone = refTempo.tz ?? 'UTC';
+	const { refTempo, lat, lng, hasGeo, geo, timeZone } = getCelestialCoordinates(t, anchor);
 
-	const cfg = (refTempo as any).config ?? {};
-	const lat = cfg.latitude ?? cfg.lat ?? (refTempo as any).latitude ?? (refTempo as any).lat ?? 0;
-	const lon = cfg.longitude ?? cfg.long ?? cfg.lng ?? (refTempo as any).longitude ?? (refTempo as any).long ?? (refTempo as any).lng ?? 0;
+	if (!hasGeo) {
+		return {
+			key: null,
+			phase: null,
+			phases: SOLAR_PHASE_STATES,
+			index: null,
+			group: 'solar' as const,
+			geo: null,
+			...toDateTimeFields(refTempo),
+			sunrise: null,
+			sunset: null,
+			noon: null,
+			daylightDurationMs: null,
+			isDaylight: null,
+			civil: { sunrise: null, sunset: null },
+			nautical: { sunrise: null, sunset: null },
+			astronomical: { sunrise: null, sunset: null },
+			start: refTempo,
+			end: refTempo,
+		};
+	}
 
-	const res = getSunriseSunset(refTempo.epoch.ms, lat, lon);
+	const res = getSunriseSunset(refTempo.epoch.ms, lat!, lng!);
 
-	const sunrise = new Tempo(res.sunriseMs, { timeZone, timeStamp: 'ms' });
-	const sunset = new Tempo(res.sunsetMs, { timeZone, timeStamp: 'ms' });
-	const solarNoon = new Tempo(res.solarNoonMs, { timeZone, timeStamp: 'ms' });
+	const sunrise = toTempoOrNull(res.sunriseMs, timeZone)!;
+	const sunset = toTempoOrNull(res.sunsetMs, timeZone)!;
+	const solarNoon = toTempoOrNull(res.solarNoonMs, timeZone)!;
 
-	const civilSunrise = new Tempo(res.civil.sunriseMs, { timeZone, timeStamp: 'ms' });
-	const civilSunset = new Tempo(res.civil.sunsetMs, { timeZone, timeStamp: 'ms' });
-	const nauticalSunrise = new Tempo(res.nautical.sunriseMs, { timeZone, timeStamp: 'ms' });
-	const nauticalSunset = new Tempo(res.nautical.sunsetMs, { timeZone, timeStamp: 'ms' });
-	const astroSunrise = new Tempo(res.astronomical.sunriseMs, { timeZone, timeStamp: 'ms' });
-	const astroSunset = new Tempo(res.astronomical.sunsetMs, { timeZone, timeStamp: 'ms' });
+	const civilSunrise = toTempoOrNull(res.civil.sunriseMs, timeZone)!;
+	const civilSunset = toTempoOrNull(res.civil.sunsetMs, timeZone)!;
+	const nauticalSunrise = toTempoOrNull(res.nautical.sunriseMs, timeZone)!;
+	const nauticalSunset = toTempoOrNull(res.nautical.sunsetMs, timeZone)!;
+	const astroSunrise = toTempoOrNull(res.astronomical.sunriseMs, timeZone)!;
+	const astroSunset = toTempoOrNull(res.astronomical.sunsetMs, timeZone)!;
 
 	let start: Tempo;
 	let end: Tempo;
@@ -206,24 +243,17 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		end = new Tempo(res.sunriseMs + 86400000, { timeZone, timeStamp: 'ms' });
 	}
 
-	const dt = start.toDateTime();
-
 	return {
 		key: res.solarPhaseState,
+		phase: SOLAR_PHASE_NAMES[res.solarPhaseState],
+		phases: SOLAR_PHASE_STATES,
 		index: res.index,
 		group: 'solar' as const,
-		year: dt.year,
-		month: dt.month,
-		day: dt.day,
-		hour: dt.hour,
-		minute: dt.minute,
-		second: dt.second,
-		millisecond: dt.millisecond,
-		microsecond: dt.microsecond,
-		nanosecond: dt.nanosecond,
+		geo,
+		...toDateTimeFields(start),
 		sunrise,
 		sunset,
-		solarNoon,
+		noon: solarNoon,
 		daylightDurationMs: res.daylightDurationMs,
 		isDaylight: res.isDaylight,
 		civil: { sunrise: civilSunrise, sunset: civilSunset },
@@ -242,25 +272,56 @@ export const SolarTerm = defineTerm({
 	key: 'sun',
 	scope: 'solar',
 	description: 'Local solar day cycle and twilight range resolution',
+	phases: SOLAR_PHASE_STATES,
+	...createCelestialTermHandlers(getSolarScopeRange),
+});
 
-	resolve(this: Tempo, anchor?: any) {
-		return [getSolarScopeRange(this, anchor)];
-	},
+/**
+ * Computes tidal state and timing information for the resolved location and reference time.
+ *
+ * @param anchor - Optional anchor used to resolve the location and reference time.
+ * @returns Tidal state details, lunar alignment, tide indicators, geographic data, date-time fields, and a 745-minute range.
+ */
+function getTidalScopeRange(t: Tempo, anchor?: any) {
+	const { refTempo, lat, lng, hasGeo, geo } = getCelestialCoordinates(t, anchor);
+	const res = getTidalState(refTempo.epoch.ms, lat ?? 0, lng ?? 0);
 
-	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		const scopeObj = getSolarScopeRange(this, anchor);
-		if (keyOnly === true || keyOnly === undefined) {
-			return scopeObj.key;
-		}
-		return scopeObj;
-	},
+	return {
+		key: res.state,
+		state: res.state,
+		group: 'tide' as const,
+		alignmentDeg: res.alignmentDeg,
+		isSpringTide: res.isSpringTide,
+		isNeapTide: res.isNeapTide,
+		isKingTide: hasGeo ? res.isKingTide : null,
+		perigeeFactor: res.perigeeFactor,
+		lunarTideMinute: hasGeo ? res.lunarTideMinute : null,
+		states: TIDAL_PHASE_STATES,
+		geo,
+		...toDateTimeFields(refTempo),
+		start: refTempo,
+		end: refTempo.add({ minutes: 745 }),
+	};
+}
+
+/**
+ * ## TidalTerm
+ * Term definition for astronomical tide phase resolution (`t.term.tide`, `t.term.tides`).
+ */
+export const TidalTerm = defineTerm({
+	key: 'tide',
+	aliases: ['tides', 'tidal'],
+	scope: 'tides',
+	description: 'Astronomical tidal state, alignment, and perigee factor',
+	phases: TIDAL_PHASE_STATES,
+	...createCelestialTermHandlers(getTidalScopeRange),
 });
 
 /**
  * ## CelestialPlugin
- * Plugin bundling SolarTerm (`sun`/`solar`) and LunarTerm (`moon`/`lunar`).
+ * Plugin bundling SolarTerm (`sun`/`solar`), LunarTerm (`moon`/`lunar`), and TidalTerm (`tide`/`tides`).
  */
-export const CelestialPlugin = [SolarTerm, LunarTerm];
+export const CelestialPlugin = [SolarTerm, LunarTerm, TidalTerm];
 
 export default CelestialPlugin;
 

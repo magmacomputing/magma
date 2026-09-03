@@ -70,7 +70,14 @@ export function selStorage(store: 'local' | 'session' = 'local') {
 	return storage = getSafeStorage(name);
 }
 
-/** Helper to safely retrieve environment variable values without static AST process.env MemberExpressions */
+/**
+ * Helper to safely retrieve environment variable values without static AST process.env MemberExpressions.
+ * Uses dynamic reflection to avoid bundler optimizations and static analysis.
+ *
+ * @param key - The environment variable name to retrieve
+ * @returns The environment variable value, or undefined if not available
+ * @internal
+ */
 const getEnvVar = (key: string): string | undefined => {
 	try {
 		const proc = Reflect.get(context.global, 'process');

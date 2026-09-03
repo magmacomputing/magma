@@ -15,7 +15,14 @@ const groups = defineRange([
 	{ key: 'Q4', day: 1, month: 4, year: 1, fiscal: 0, sphere: COMPASS.South, label: 'Fourth Quarter' },
 ], 'sphere');
 
-/** resolve the full candidate list for the current context */
+/**
+ * Resolves fiscal quarter candidates matching the configured hemisphere.
+ *
+ * @param t - The source Tempo instance
+ * @param anchor - Optional reference time override
+ * @returns Array of matching quarter term definitions
+ * @internal
+ */
 function resolve(t: Tempo, anchor?: any): any[] {
 	if (t.sphere === undefined && anchor?.sphere === undefined) {
 		logWarn(`[tempo] QuarterTerm requires 'sphere' configuration (e.g. Tempo.init({ sphere: 'north' }) or { sphere: 'south' }).`, t.config);

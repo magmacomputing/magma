@@ -12,22 +12,23 @@
   },
   "workspaces": [
     "packages/*",
-    "packages/plugins/*"
+    "packages/plugins/*",
+    "packages/plugins/.std"
   ],
   "scripts": {
     "test": "vitest run",
-    "build:tempo": "npm run build:library && npm run build --workspace=@magmacomputing/tempo",
+    "build:tempo": "npm run build:library && npm run build:std && npm run build --workspace=@magmacomputing/tempo",
     "build:library": "npm run build --workspace=@magmacomputing/library",
+    "build:std": "npm run build --workspace=@magmacomputing/tempo-std",
     "build:functions": "npm run build --workspace=@magmacomputing/tempo-fns",
     "build:plugins": "npm run build:tempo && tempo-cli build-plugins",
-    "build:all": "npm run build --workspaces --if-present",
+    "build:all": "npm run build:library && npm run build:std && npm run build:tempo && npm run build:functions && npm run build:plugins",
     "clean": "node node_modules/typescript-7/bin/tsc -b --clean",
     "version:bump": "tempo-cli version-bump",
     "version:sync": "tempo-cli version-sync",
     "catalog:sync": "tempo-cli catalog-sync",
     "providers:sync": "npm run build:library && tempo-cli sync-providers",
     "repl": "npm run repl --workspace=@magmacomputing/tempo",
-    "repl:pro": "npm run repl --workspace=@magmacomputing/tempo-pro",
     "repl:plugins": "tsx --import ./packages/plugins/.bin/temporal-polyfill.mts ./packages/plugins/.bin/repl.mts",
     "repl:dist": "npm run repl:dist --workspace=@magmacomputing/tempo",
     "core": "npm run core --workspace=@magmacomputing/tempo",

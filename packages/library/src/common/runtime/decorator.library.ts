@@ -1,4 +1,4 @@
-import { $Mutable } from '#library/symbol.library.js';
+import { $Mutable, $Unwrapped } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
 import { isReference, isUndefined, isString, isSymbol } from '#library/assertion.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
@@ -25,9 +25,12 @@ function getClassName<T extends Constructor>(value: T, contextName: string | sym
  * Creates a class wrapper that applies an immutability strategy to each instance and hardens its static and prototype members.
  *
  * @param value - The class to wrap
- * @param name - The wrapper's class name, when available
- * @param immutabilityStrategy - The strategy applied to each created instance
- * @returns A wrapped class that applies the immutability strategy to instances
+ * @param name - The class name used for type registration, when available
+ * @param addInitializer - Registers the initializer that hardens class members
+ * @param immutabilityStrategy - Transforms each created instance
+ * @param metadata - Optional decorator metadata used to determine mutable members
+ * @returns The wrapped class, or the original class when subclass wrapping is incompatible with its private state
+ * @internal
  */
 function createImmutableWrapper<T extends Constructor>(
 	value: T,
@@ -37,19 +40,6 @@ function createImmutableWrapper<T extends Constructor>(
 	metadata?: any
 ): T {
 	const safeName = name || 'Anonymous';
-	const wrapper = {
-		[safeName]: class extends value {
-			constructor(...args: any[]) {
-				super(...args);
-				return immutabilityStrategy(this);
-			}
-		}
-	}[safeName] as T;
-
-	if (name) {
-		registerType(value, `${name}_original` as Type);
-		registerType(wrapper, name as Type);
-	}
 
 	addInitializer(() => {
 		const metaSymbol = (Symbol as any).metadata;
@@ -61,8 +51,31 @@ function createImmutableWrapper<T extends Constructor>(
 			...(meta?.[$Mutable] ?? meta?.$Mutable ?? []),
 		];
 
-		hardenClassStaticsAndPrototypes(value, wrapper, skip);
+		hardenClassStaticsAndPrototypes(value, value, skip);
 	});
+
+	// Classes with private static state (#field or transpiled WeakMap private fields) cannot be subclass-wrapped
+	// without breaking ECMAScript private field brand checks. Return original constructor directly.
+	const codeStr = typeof value === 'function' ? Function.prototype.toString.call(value) : '';
+	const hasPrivateState = codeStr.includes('#') || codeStr.includes('WeakMap') || codeStr.includes('__private') || codeStr.includes('privateMap');
+	const isRawConstructor = (value as any)[$Unwrapped] === true || (value as any).raw === true || (value as any)[$Mutable] === 'unwrapped' || hasPrivateState;
+
+	if (isRawConstructor) {
+		if (name) registerType(value, name as Type);
+		return value;
+	}
+
+	const wrapper = {
+		[safeName]: class extends value {
+			constructor(...args: any[]) {
+				super(...args);
+				return immutabilityStrategy(this);
+			}
+		}
+	}[safeName] as T;
+
+	if (name)
+		registerType(wrapper, name as Type);
 
 	return wrapper;
 }
@@ -266,19 +279,13 @@ export function Static<T extends Constructor>(value: T, { kind, name }: ClassDec
 }
 
 /**
- * A class decorator that sets Symbol.toStringTag on the prototype if not already present.
- * Supports both `@StringTag` (without parentheses) and `@StringTag('CustomName')`.
- * 
- * @param tagOrValue - Custom string tag or the class constructor
- * @param context - Optional decorator context when used without parentheses
- * @example
- * ```ts
- *  @ StringTag
- *  class Tapper { ... }
- * 
- *  @ StringTag('CustomTag')
- *  class Special { ... }
- * ```
+ * Applies a string tag to a class and its prototype.
+ *
+ * Supports direct use as `@StringTag` and configured use as `@StringTag('CustomName')`.
+ *
+ * @param tagOrValue - A custom tag string or the class constructor when used directly.
+ * @param context - The decorator context for direct decorator usage.
+ * @returns The decorated class or a decorator that applies the tag.
  */
 export function StringTag<T extends Constructor>(tagOrValue?: string | T, context?: ClassDecoratorContext<T>): any {
 	const applyTag = (value: T, customTag?: string, contextName?: string | symbol) => {
@@ -303,7 +310,7 @@ export function StringTag<T extends Constructor>(tagOrValue?: string | T, contex
 						writable: false,
 						enumerable: false,
 					});
-				} catch {}
+				} catch { }
 			}
 		}
 

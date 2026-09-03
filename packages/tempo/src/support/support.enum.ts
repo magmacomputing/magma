@@ -249,7 +249,7 @@ export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
-const configKeys = ['config', 'parse', 'value', 'intl', 'store', 'discovery', 'debug', 'catch', 'silent', 'timeZone', 'calendar', 'locale', 'sphere', 'timeStamp', 'registry', 'plugins', 'extends', 'cache'] as const;
+const configKeys = ['config', 'parse', 'value', 'intl', 'store', 'discovery', 'debug', 'catch', 'silent', 'timeZone', 'calendar', 'locale', 'sphere', 'geo', 'latitude', 'lat', 'longitude', 'lng', 'timeStamp', 'registry', 'plugins', 'extends', 'cache'] as const;
 export const CONFIG = enumify(configKeys, false);
 export type Config = KeyOf<typeof CONFIG>
 

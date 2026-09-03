@@ -20,10 +20,6 @@ export const StandardTerms = [
 	QuarterTerm,
 	SeasonTerm,
 	ZodiacTerm,
-	SunSignTerm,
-	StarSignTerm,
 	EasternTerm,
-	LunarSignTerm,
-	EasternZodiacTerm,
 	TimelineTerm,
 ];

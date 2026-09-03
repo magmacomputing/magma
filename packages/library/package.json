@@ -241,6 +241,10 @@
       "development": "./src/common/runtime/utility.library.ts",
       "default": "./dist/common/runtime/utility.library.js"
     },
+    "#library/mapper.library.js": {
+      "development": "./src/common/runtime/mapper.library.ts",
+      "default": "./dist/common/runtime/mapper.library.js"
+    },
     "#library/*.js": {
       "development": "./src/common/*.ts",
       "default": "./dist/common/*.js"
@@ -256,8 +260,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "npm run clean && tsc -b",
-    "clean": "node bin/clean.mjs && (tsc -b --clean || true)",
+    "build": "npm run clean && tsc -b --force",
+    "clean": "node bin/clean.mjs",
     "prepublishOnly": "tempo-cli prepublish"
   },
   "dependencies": {

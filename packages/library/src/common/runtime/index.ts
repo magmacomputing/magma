@@ -14,3 +14,4 @@ export * from './scopedset.class.js';
 export * from './serialize.library.js';
 export * from './storage.library.js';
 export * from './utility.library.js';
+export * from './mapper.library.js';

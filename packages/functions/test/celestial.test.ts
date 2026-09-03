@@ -4,7 +4,8 @@ import {
 	getSolarEvents,
 	getSunriseSunset,
 	getZodiacSign,
-	getChineseZodiac
+	getChineseZodiac,
+	getTidalState,
 } from '../src/celestial/index.js';
 
 describe('Astro Pure Functions (tempo-fns)', () => {
@@ -104,5 +105,20 @@ describe('Astro Pure Functions (tempo-fns)', () => {
 				expect(Number.isNaN(ev.epochMs)).toBe(false);
 			}
 		}
+	});
+
+	it('calculates deterministic tidal state and alignment', () => {
+		// New Moon (Jan 6, 2000 18:14 UTC) should be Spring Tide (Syzygy)
+		const springTide = getTidalState(947182440000);
+		expect(springTide.isSpringTide).toBe(true);
+		expect(springTide.state).toBe('spring');
+		expect(springTide.states).toContain('spring');
+		expect(springTide.alignmentDeg).toBeCloseTo(0, 0);
+
+		// First Quarter Moon (~7.38 days later) should be Neap Tide (Quadrature)
+		const neapTide = getTidalState(947182440000 + (7.38 * 86400000));
+		expect(neapTide.isNeapTide).toBe(true);
+		expect(neapTide.state).toBe('neap');
+		expect(neapTide.alignmentDeg).toBeGreaterThan(60);
 	});
 });

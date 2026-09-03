@@ -4,7 +4,15 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "composite": true,
-    "declarationMap": true
+    "noEmit": false,
+    "declarationMap": true,
+    "paths": {
+      "@magmacomputing/tempo": ["../tempo/dist/tempo.index.d.ts"],
+      "@magmacomputing/tempo/core": ["../tempo/dist/core.index.d.ts"],
+      "@magmacomputing/tempo/*": ["../tempo/dist/*"],
+      "@magmacomputing/library": ["../library/dist/common.index.d.ts"],
+      "#library/*": ["../library/dist/common/*"]
+    }
   },
   "include": [
     "src/**/*"
@@ -15,6 +23,9 @@
     "test"
   ],
   "references": [
+    {
+      "path": "../library"
+    },
     {
       "path": "../tempo/src"
     }

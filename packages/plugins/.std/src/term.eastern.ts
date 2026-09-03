@@ -120,7 +120,14 @@ const BASE_EMOJI_MAP: Record<string, string> = {
 	Dog: '🐕', Pig: '🐖',
 };
 
-/** Resolves full Lunar Zodiac scope for a given Tempo instance */
+/**
+ * Resolves complete Lunar Zodiac scope including animal, element, Yin/Yang state, and regional variants.
+ *
+ * @param t - The source Tempo instance
+ * @param anchor - Optional reference time or year override
+ * @returns Complete Eastern Zodiac scope with localized emoji, animal names, and temporal boundaries
+ * @internal
+ */
 function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 	const refTempo = anchor ?? t;
 	const year = anchor?.year ?? refTempo.yy;
@@ -184,6 +191,7 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 export const EasternTerm = defineTerm({
 	key: 'sign',
 	scope: 'shengxiao',
+	aliases: ['lunarSign', 'eastern'],
 	description: 'Eastern Lunar Zodiac cycle and regional variants',
 	resolve(this: Tempo, anchor?: any) {
 		return [getEasternScope(this, anchor)];
@@ -197,35 +205,8 @@ export const EasternTerm = defineTerm({
 	},
 });
 
-export const LunarSignTerm = defineTerm({
-	key: 'lunarSign',
-	scope: 'lunarSign',
-	description: 'Alias for Eastern Lunar Zodiac animal sign',
-	resolve(this: Tempo, anchor?: any) {
-		return [getEasternScope(this, anchor)];
-	},
-	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		const scopeObj = getEasternScope(this, anchor);
-		return (keyOnly === false)
-			? scopeObj
-			: scopeObj.key
-	},
-});
-
-export const EasternZodiacTerm = defineTerm({
-	key: 'eastern',
-	scope: 'eastern',
-	description: 'Alias for Eastern Lunar Zodiac animal sign',
-	resolve(this: Tempo, anchor?: any) {
-		return [getEasternScope(this, anchor)];
-	},
-	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		const scopeObj = getEasternScope(this, anchor);
-		return (keyOnly === false)
-			? scopeObj
-			: scopeObj.key
-	},
-});
+export const LunarSignTerm = EasternTerm;
+export const EasternZodiacTerm = EasternTerm;
 
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {

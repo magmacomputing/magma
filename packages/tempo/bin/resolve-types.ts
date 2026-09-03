@@ -60,6 +60,12 @@ cleanDuplicateTopLevelDts();
 
 // 3. Helper to locate actual relative path of a #library file in LIB_SRC_DIR
 const libFileCache = new Map<string, string>();
+/**
+ * Resolves a library declaration filename to its generated JavaScript path.
+ *
+ * @param targetFileName - The JavaScript filename to locate in the library source directory
+ * @returns The corresponding nested JavaScript path, or `targetFileName` when no nested match exists
+ */
 function findInLibSrc(targetFileName: string): string {
 	if (libFileCache.has(targetFileName)) return libFileCache.get(targetFileName)!;
 
@@ -95,7 +101,51 @@ function findInLibSrc(targetFileName: string): string {
 	return targetFileName;
 }
 
-// 4. Walk through all .d.ts files in dist/ to rewrite aliases
+/**
+ * Resolves a `#tempo` alias to its generated JavaScript path.
+ *
+ * @param importPath - The `#tempo` alias to resolve
+ * @returns The mapped path for known aliases, the alias path without its `#tempo/` prefix for other subpaths, or the original path
+ */
+function findTempoTarget(importPath: string): string {
+	const mappings: Record<string, string> = {
+		'#tempo/support': 'support/support.index.js',
+		'#tempo/module': 'module/module.index.js',
+		'#tempo/parse': 'module/module.parse.js',
+		'#tempo/format': 'module/module.format.js',
+		'#tempo/mutate': 'module/module.mutate.js',
+		'#tempo/duration': 'module/module.duration.js',
+		'#tempo/term': 'plugin/term/term.index.js',
+		'#tempo/std': 'term/index.js',
+	};
+
+	if (mappings[importPath]) return mappings[importPath];
+	if (importPath.startsWith('#tempo/')) {
+		return importPath.slice(7);
+	}
+	return importPath;
+}
+
+/**
+ * Computes a relative import path from a declaration file to a target within the distribution directory.
+ *
+ * @param fromFile - The declaration file from which the import is resolved
+ * @param targetDistPath - The target path relative to the distribution directory
+ * @returns A normalized relative import path
+ */
+function resolveRelativeImport(fromFile: string, targetDistPath: string): string {
+	const fromDir = path.dirname(fromFile);
+	const targetAbsPath = path.resolve(DIST_DIR, targetDistPath);
+	let rel = path.relative(fromDir, targetAbsPath).replace(/\\/g, '/');
+	if (!rel.startsWith('.')) rel = './' + rel;
+	return rel;
+}
+
+/**
+ * Recursively rewrites aliases in declaration files under a directory.
+ *
+ * @param dir - The directory to scan.
+ */
 function walk(dir: string) {
 	const files = fs.readdirSync(dir);
 	for (const file of files) {
@@ -108,6 +158,11 @@ function walk(dir: string) {
 	}
 }
 
+/**
+ * Rewrites library and Tempo alias imports in a declaration file to relative paths.
+ *
+ * @param filePath - Path to the declaration file to update
+ */
 function rewrite(filePath: string) {
 	const content = fs.readFileSync(filePath, 'utf8');
 	const relToDist = path.relative(DIST_DIR, filePath);
@@ -130,7 +185,17 @@ function rewrite(filePath: string) {
 			const actualPath = isInsideLib ? libPath : findInLibSrc(libPath);
 			return `${replacement}${actualPath}`;
 		})
-		.replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`);
+		.replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`)
+		.replace(/(['"])#tempo\/([^"')]+)\1/g, (match, quote, subPath) => {
+			const fullAlias = `#tempo/${subPath}`;
+			const targetDistPath = findTempoTarget(fullAlias);
+			const rel = resolveRelativeImport(filePath, targetDistPath);
+			return `${quote}${rel}${quote}`;
+		})
+		.replace(/(['"])#tempo\1/g, (_, quote) => {
+			const rel = resolveRelativeImport(filePath, 'tempo.index.js');
+			return `${quote}${rel}${quote}`;
+		});
 
 	if (content !== updatedContent) {
 		fs.writeFileSync(filePath, updatedContent);

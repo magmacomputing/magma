@@ -14,6 +14,8 @@ import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFuncti
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
+import { getStashedGeo, coerceGeo } from '#library/mapper.library.js';
+import { Interval } from '#library/scheduling/interval.class.js';
 import { LOG } from '#library/logger.class.js';
 import type { Property, Secure } from '#library/type.library.js';
 
@@ -32,7 +34,6 @@ import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.u
 import { datePattern } from './support/support.default.js';
 import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
-import { Interval } from './interval.class.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -229,10 +230,16 @@ export class Tempo {
 	 * @returns The resolved compass direction (north/south), or undefined if not determinable
 	 */
 	static #setSphere = (shape: Internal.State, options: t.Options): t.COMPASS | undefined => {
-		if (isDefined(options.sphere)) {
-			const evaluatedSphere = evaluate(options.sphere);
+		const rawSphere = options.sphere ?? options.geo?.sphere;
+		if (isDefined(rawSphere)) {
+			const evaluatedSphere = evaluate(rawSphere);
 			if (isDefined(evaluatedSphere)) return evaluatedSphere;
 		}
+
+		const geo = coerceGeo(options) ?? shape.config.geo ?? getStashedGeo();
+		if (isDefined(geo?.sphere)) return geo.sphere as t.COMPASS;
+		if (isNumber(geo?.latitude))
+			return geo.latitude >= 0 ? 'north' : 'south';
 
 		const resolvedTz = options.timeZone ?? shape.config.timeZone;
 		if (isDefined(resolvedTz) && String(resolvedTz).toLowerCase() !== 'utc') {
@@ -348,7 +355,7 @@ export class Tempo {
 		}
 
 		// Side-effects
-		if (isDefined(mergedOptions.sphere) && !isFunction(mergedOptions.sphere)) {
+		if ((isDefined(mergedOptions.sphere) || isDefined((mergedOptions as any).latitude) || isDefined((mergedOptions as any).lat) || isDefined(mergedOptions.geo)) && !isFunction(mergedOptions.sphere)) {
 			const newSphere = Tempo.#setSphere(shape, mergedOptions);
 			if (isDefined(newSphere)) shape.config.sphere = newSphere;
 		}
@@ -653,6 +660,11 @@ export class Tempo {
 
 							Tempo.#termMap.set(config.key, config);
 							if (config.scope) Tempo.#termMap.set(config.scope, config);
+							if (config.aliases && Array.isArray(config.aliases)) {
+								for (const alias of config.aliases) {
+									if (!Tempo.#termMap.has(alias)) Tempo.#termMap.set(alias, config);
+								}
+							}
 
 							if (config.version) {
 								const name = config.scope || config.key;
@@ -1067,10 +1079,23 @@ export class Tempo {
 
 	/** static Tempo.terms (registry) */
 	static get terms(): Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>> {
-		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => ({ ...rest } as any));
+		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => {
+			const item: any = { ...rest };
+			const aliasesSet = new Set<string>();
+			if (item.aliases && Array.isArray(item.aliases))
+				item.aliases.forEach((a: string) => { if (a !== item.key) aliasesSet.add(a); });
 
-		// treats `Tempo.terms` as array-like and indexable by key.
-		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key)) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
+			if (item.scope && item.scope !== item.key)
+				aliasesSet.add(item.scope);
+
+			if (aliasesSet.size > 0)
+				item.aliases = Array.from(aliasesSet);
+
+			return item;
+		});
+
+		// treats `Tempo.terms` as array-like and indexable by key, scope, or alias.
+		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key || (t.aliases && Array.isArray(t.aliases) && t.aliases.includes(key)))) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
 	}
 
 	/** static Tempo.registry */
@@ -1170,7 +1195,7 @@ export class Tempo {
 	/** instantiation Temporal Instant */											#instant?: Temporal.Instant;
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
 	/** memoized instance properties */
-	#memo: { tz?: string; cal?: string; sphere?: t.COMPASS | undefined; fmt?: Record<string, string | undefined> } = {};
+	#memo: { tz?: string; cal?: string; sphere?: t.COMPASS | undefined; geo?: t.GeoConfig | undefined; fmt?: Record<string, string | undefined> } = {};
 	/** indicator that the instance failed to parse */				#errored = false;
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
 	/** mapping of terms to their resolved values */					#term?: any;
@@ -1413,7 +1438,7 @@ export class Tempo {
 
 				const term = Tempo.#termMap.get(key);
 				if (term) {
-					const isKeyOnly = term.key === key;
+					const isKeyOnly = (term.key === key) || (term.scope !== key);
 					const define = (keyOnly: boolean) => {
 						try {
 							const result = term.define.call(this, keyOnly);
@@ -1451,9 +1476,10 @@ export class Tempo {
 			});
 		} else {
 			Tempo.#terms.forEach(term => {
-				const define = (keyOnly: boolean, anchor?: any) => {
+				const define = (keyOnly: boolean, anchor?: any, alias?: string) => {
 					try {
-						const res = term.resolve ? term.resolve.call(this, anchor) : term.define.call(this, keyOnly, anchor);
+						const res = term.define ? term.define.call(this, keyOnly, anchor, alias) : (term.resolve ? term.resolve.call(this, anchor, alias) : undefined);
+						if (res !== undefined && !isObject(res)) return res;
 						const out = (getTermRange(this, (Array.isArray(res) ? (res as any) : [res]), keyOnly, anchor) as any);
 						return isObject(out) ? secure(out) : out;
 					} catch (err: unknown) {
@@ -1469,8 +1495,15 @@ export class Tempo {
 				// and scope as longform (isKeyOnly=false → returns full Range with label).
 				// If the term has NO scope, the key IS the only accessor — register it as longform
 				// (isKeyOnly=false) so format() can access res.label on the returned Range.
-				this.#setLazy(target, term.key, (isKey: boolean) => define(isKey, this.toDateTime()), !!term.scope);
-				if (term.scope) this.#setLazy(target, term.scope, (isKey: boolean) => define(isKey, this.toDateTime()), false);
+				this.#setLazy(target, term.key, (isKey: boolean) => define(isKey, this.toDateTime(), term.key), !!term.scope);
+				if (term.scope) this.#setLazy(target, term.scope, (isKey: boolean) => define(isKey, this.toDateTime(), term.scope), false);
+				if (term.aliases && Array.isArray(term.aliases)) {
+					for (const alias of term.aliases) {
+						if (alias !== term.scope) {
+							this.#setLazy(target, alias, (isKey: boolean) => define(isKey, this.toDateTime(), alias), true);
+						}
+					}
+				}
 			});
 		}
 	}
@@ -1495,14 +1528,25 @@ export class Tempo {
 	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
+	/** Resolved geographic coordinates object ({ latitude, longitude, ... }) */ get geo(): t.GeoConfig | undefined {
+		if ('geo' in this.#memo) return this.#memo.geo;
+		const res = this.#local.config.geo
+			?? (this as any)[$Internal]().config.geo
+			?? getStashedGeo();
+		return (this.#memo.geo = res ? Object.freeze({ ...res }) : undefined);
+	}
 	/** Resolved hemisphere ('north' | 'south' | undefined) */get sphere(): t.COMPASS | undefined {
 		if ('sphere' in this.#memo) return this.#memo.sphere;
 
 		const globalTz = (this as any)[$Internal]().config.timeZone;
 		const hasInstanceTzOverride = isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(this.tz).toLowerCase() !== String(globalTz).toLowerCase());
+		const lat = this.geo?.latitude;
+		const geoSphere = this.geo?.sphere;
 
 		const res = evaluate(
 			this.#local.options && hasOwn(this.#local.options, 'sphere') ? this.#local.options.sphere : undefined,
+			geoSphere,
+			isNumber(lat) ? (lat >= 0 ? 'north' : 'south') : undefined,
 			hasInstanceTzOverride ? () => getHemisphere(String(this.tz)) : undefined,
 			hasOwn(this.#local.config, 'sphere') ? this.#local.config.sphere : undefined,
 			() => (isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' ? getHemisphere(String(this.tz)) : undefined),
@@ -1524,30 +1568,35 @@ export class Tempo {
 
 	/** list of registered terms and their available range keys */
 	get terms(): Record<string, string[]> {
-		const res: Record<string, string[]> = {};
+		const base: Record<string, string[]> = {};
 		Tempo.terms.forEach(term => {
 			const source = (term as any).ranges || (term as any).groups || [];				// check both ranges and groups
 			const list = Array.isArray(source) ? source : Object.values(source).flat(Infinity) as any[];
 			const ranges = [...new Set(list.map(r => r.key).filter(isString))];				// collect unique range keys
-			res[term.key] = ranges;
-			if (term.scope) res[term.scope] = ranges;							// add scope alias if defined
+			base[term.key] = ranges;
 		});
-		return res;
+
+		return delegate(base, (key) => {
+			if (!isString(key)) return undefined;
+			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || (t.aliases && Array.isArray(t.aliases) && t.aliases.includes(key)));
+			return term ? base[term.key] : undefined;
+		});
 	}
 
 	/** current range key for every registered term */
 	get ranges(): Record<string, string> {
-		const res: Record<string, string> = {};
+		const base: Record<string, string> = {};
 
 		Tempo.terms.forEach(term => {
-			const val = (this as Tempo).term[term.key];							// access the term-delegate (forces evaluation)
-			if (isString(val)) {
-				res[term.key] = val;
-				if (term.scope) res[term.scope] = val;							// alias the string to the scope key
-			}
+			const val = (this as Tempo).term[term.key];						// access the term-delegate (forces evaluation)
+			if (isString(val)) base[term.key] = val;
 		});
 
-		return res;
+		return delegate(base, (key) => {
+			if (!isString(key)) return undefined;
+			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || (t.aliases && Array.isArray(t.aliases) && t.aliases.includes(key)));
+			return term ? base[term.key] : undefined;
+		});
 	}
 
 	/** current Tempo configuration */
@@ -1694,7 +1743,7 @@ export class Tempo {
 
 		let explicitSphere: t.COMPASS | undefined;
 		let evalSphere: t.COMPASS | undefined;
-		const rawSphere = options.sphere ?? (options as any).Sphere;
+		const rawSphere = options.sphere ?? (options as any).Sphere ?? options.geo?.sphere;
 		if (isDefined(rawSphere)) {
 			explicitSphere = evaluate(rawSphere) as t.COMPASS;
 			evalSphere = explicitSphere;

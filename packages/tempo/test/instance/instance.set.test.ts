@@ -260,6 +260,14 @@ describe(`${label} set method`, () => {
 				expect(sydNorth.tz).toBe('Australia/Sydney');
 				expect(sydNorth.sphere).toBe('north');
 			});
+
+			test('respects geo.sphere in options and explicit sphere set mutations', () => {
+				const t = new Tempo('2026-05-10', { geo: { sphere: 'south', latitude: 10 } });
+				expect(t.sphere).toBe('south');
+
+				const t2 = t.set({ sphere: 'north' });
+				expect(t2.sphere).toBe('north');
+			});
 		});
 
 		describe('Convenience Mutate Aliases', () => {

@@ -6,7 +6,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.0.3] - 2026-08-31
+## [4.0.3] - 2026-09-02
+
+### Added
+- **Term Registry & Alias Normalization (`aliases`)**: Updated `defineTerm` SDK utility to automatically populate and consolidate a canonical `aliases` array on each `TermPlugin` (combining explicit `aliases` with the term's `scope` identifier). Refactored the static `Tempo.terms` getter and index delegator to return normalized registry objects with full `aliases` coverage and support dynamic term lookups by `key`, `scope`, or any entry in the consolidated `aliases` array.
+- **Numeric Zero-Fill Padding Format Modifiers**: Added support for numeric zero-fill modifiers in `FormatModule` (e.g., `{day:2}`, `{ns:3}`, `{yy:4}`, `{#solar.index:3}`). Updated `formatBraces` matching patterns to support numeric modifier suffixes (`:N`), enabling automatic zero-padding of any numeric core, custom, or term token to a target digit width while preserving sign formatting for negative values (e.g., `-5` with `:3` $\rightarrow$ `"-05"`).
+- **Latitude Hemisphere Inference**: Core `Tempo` now inspects `latitude` / `lat` options across global (`Tempo.init`), sandbox (`Tempo.create`), and instance (`new Tempo()`) contexts to automatically infer hemisphere orientation (`sphere: 'north' | 'south'`) when `sphere` is omitted (`latitude >= 0` $\rightarrow$ `'north'`, `latitude < 0` $\rightarrow$ `'south'`).
 
 ### Changed & Security
 - **Declarative Hardening (`@Mutable`)**: Refactored `Tempo.init()` to use the declarative `@Mutable(isTestEnvironment)` decorator, replacing legacy hard-coded skip lists (`$ImmutableSkip`) and eliminating direct AST `process.env` inspection in core engine sources for enhanced supply chain security.

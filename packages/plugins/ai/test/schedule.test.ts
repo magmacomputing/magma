@@ -344,7 +344,7 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 		const toStringRef = slot.toString;
 		expect(slot.contains).toBe(containsRef);
 		expect(slot.toString).toBe(toStringRef);
-		expect(Object.prototype.toString.call(slot)).toBe('[object Tempo.Interval]');
+		expect(Object.prototype.toString.call(slot)).toBe('[object Interval]');
 		expect(typeof slot.toString).toBe('function');
 		expect(typeof slot.valueOf).toBe('function');
 

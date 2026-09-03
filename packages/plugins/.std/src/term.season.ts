@@ -16,7 +16,14 @@ const groups = defineRange([
 	{ key: 'Winter', day: 1, month: 6, symbol: 'Snowflake', group: 'meteorological', sphere: COMPASS.South },
 ], 'group', 'sphere');
 
-/** resolve the full candidate list for the current context */
+/**
+ * Resolves meteorological season candidates matching the configured hemisphere.
+ *
+ * @param t - The source Tempo instance
+ * @param anchor - Optional reference time override
+ * @returns Array of matching season term definitions
+ * @internal
+ */
 function resolve(t: Tempo, anchor?: any) {
 	if (t.sphere === undefined && anchor?.sphere === undefined) {
 		logWarn(`[tempo] SeasonTerm requires 'sphere' configuration (e.g. Tempo.init({ sphere: 'north' }) or { sphere: 'south' }).`, t.config);

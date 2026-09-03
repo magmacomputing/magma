@@ -7,6 +7,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '../../../');
 
+/**
+ * Builds all available plugin workspaces.
+ */
 export async function buildPlugins(_args) {
 	const pluginsDir = path.resolve(ROOT_DIR, 'packages/plugins');
 	if (!fs.existsSync(pluginsDir)) {
@@ -17,7 +20,7 @@ export async function buildPlugins(_args) {
 	const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
 
 	const workspaceArgs = entries
-		.filter(dirent => dirent.isDirectory() && !dirent.name.startsWith('.bin') && !dirent.name.startsWith('.setup'))
+		.filter(dirent => dirent.isDirectory() && !dirent.name.startsWith('.'))
 		.map(dirent => `--workspace=packages/plugins/${dirent.name}`)
 		.join(' ');
 

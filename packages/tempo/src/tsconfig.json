@@ -13,9 +13,14 @@
         "../../library/src/common/primitives/*.ts",
         "../../library/src/common/temporal/*.ts",
         "../../library/src/common/security/*.ts",
-        "../../library/src/common/runtime/*.ts",
-        "../../library/src/common/scheduling/*.ts"
+        "../../library/src/common/scheduling/*.ts",
+        "../../library/src/common/runtime/*.ts"
       ],
+      "#library/primitives/*.js": [ "../../library/src/common/primitives/*.ts" ],
+      "#library/temporal/*.js": [ "../../library/src/common/temporal/*.ts" ],
+      "#library/security/*.js": [ "../../library/src/common/security/*.ts" ],
+      "#library/scheduling/*.js": [ "../../library/src/common/scheduling/*.ts" ],
+      "#library/runtime/*.js": [ "../../library/src/common/runtime/*.ts" ],
       "#library/*": [
         "../../library/src/common/primitives/*",
         "../../library/src/common/temporal/*",

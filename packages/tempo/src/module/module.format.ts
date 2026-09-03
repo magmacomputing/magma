@@ -50,6 +50,14 @@ export function format(obj?: any): any;
 export function format(obj: any, options: FormatOptions): string;
 
 export function format(obj: any, fmt: string | symbol, options?: any): string;
+/**
+ * Formats a supported date-time value using a named format, template, or internationalization options.
+ *
+ * @param obj - The value to format; omitted values use the current date and time.
+ * @param fmt - A registered format name or literal format template.
+ * @param options - Formatting and configuration overrides.
+ * @returns The formatted date-time string, a format proxy when no format or options are supplied, or an empty string for invalid date-time values.
+ */
 export function format(obj?: any, fmt?: any, options?: any): any {
 	const state = getRuntime().state;
 	const baseConfig = isTempo(obj) ? obj.config : state?.config;
@@ -408,6 +416,20 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
 					}
 					break;
+				default: {
+					if (/^\d+$/.test(mod)) {
+						const width = parseInt(mod, 10);
+						const strVal = String(res);
+						if (width > 0 && /^-?\d+$/.test(strVal)) {
+							if (strVal.startsWith('-')) {
+								res = '-' + strVal.slice(1).padStart(Math.max(1, width - 1), '0');
+							} else {
+								res = strVal.padStart(width, '0');
+							}
+						}
+					}
+					break;
+				}
 			}
 		}
 

@@ -1,3 +1,4 @@
+/** Average duration of a complete lunar cycle (new moon to new moon) in days */
 export const SYNODIC_MONTH = 29.53058867;
 
 /** Known New Moon reference: Jan 6, 2000 18:14 UTC in milliseconds */
@@ -23,6 +24,43 @@ export type LunarPhaseName =
 	| 'Third Quarter'
 	| 'Waning Crescent';
 
+/** Ordered array of all eight lunar phase identifier keys */
+export const LUNAR_PHASE_KEYS = Object.freeze([
+	'new-moon',
+	'waxing-crescent',
+	'first-quarter',
+	'waxing-gibbous',
+	'full-moon',
+	'waning-gibbous',
+	'third-quarter',
+	'waning-crescent'
+] as const);
+
+/** Ordered array of solar phase state identifiers from darkest to brightest */
+export const SOLAR_PHASE_STATES = Object.freeze([
+	'night',
+	'astronomical-twilight',
+	'nautical-twilight',
+	'civil-twilight',
+	'daylight'
+] as const);
+
+export type SolarPhaseName =
+	| 'Daylight'
+	| 'Night'
+	| 'Civil Twilight'
+	| 'Nautical Twilight'
+	| 'Astronomical Twilight';
+
+/** Maps solar phase state keys to their human-readable display names */
+export const SOLAR_PHASE_NAMES: Record<typeof SOLAR_PHASE_STATES[number], SolarPhaseName> = Object.freeze({
+	'daylight': 'Daylight',
+	'night': 'Night',
+	'civil-twilight': 'Civil Twilight',
+	'nautical-twilight': 'Nautical Twilight',
+	'astronomical-twilight': 'Astronomical Twilight',
+});
+
 export interface LunarPhaseResult {
 	key: LunarPhaseKey;
 	phase: LunarPhaseName;
@@ -36,6 +74,8 @@ export interface LunarPhaseResult {
 	isWaxing: boolean;
 	/** Unicode emoji representation based on hemisphere */
 	emoji?: string | undefined;
+	/** Ordered list of all 8 lunar phase keys */
+	phases: readonly LunarPhaseKey[];
 }
 
 export interface LunarPhaseOptions {
@@ -43,11 +83,11 @@ export interface LunarPhaseOptions {
 }
 
 /**
- * Calculates the lunar phase for a date or numeric timestamp.
+ * Determines the lunar phase for a date or epoch timestamp.
  *
- * @param dateInput - Date, Temporal object, or epoch timestamp in ms
- * @param options - Options including hemisphere (`sphere: 'north' | 'south'`)
- * @returns Lunar phase object with age, illumination, phase name, index, and emoji
+ * @param dateInput - Date, ISO date string, or epoch timestamp in milliseconds
+ * @param options - Optional hemisphere used to select the phase emoji
+ * @returns Lunar phase details including age, illumination, phase name, index, waxing status, emoji, and ordered phase keys
  */
 export function getLunarPhase(dateInput: Date | number | string, options: LunarPhaseOptions = {}): LunarPhaseResult {
 	const epochMs = typeof dateInput === 'number'
@@ -128,7 +168,7 @@ export function getLunarPhase(dateInput: Date | number | string, options: LunarP
 		else if (isNorth) emoji = '🌘';
 	}
 
-	return { key, phase, index, illumination, ageDays, isWaxing, emoji };
+	return { key, phase, index, illumination, ageDays, isWaxing, emoji, phases: LUNAR_PHASE_KEYS };
 }
 
 export interface LunarPhaseRange {
@@ -175,6 +215,14 @@ export interface SolarEventResult {
 	year: number;
 }
 
+/**
+ * Calculates the Julian Day Ephemeris time correction for solar events using Jean Meeus algorithms.
+ * Applies periodic terms and corrections to refine the initial JDE estimation.
+ *
+ * @param JDE0 - The initial Julian Day Ephemeris estimate
+ * @returns The refined Julian Day Ephemeris value
+ * @internal
+ */
 function calculateMeeusJde(JDE0: number): number {
 	const T = (JDE0 - 2451545.0) / 36525;
 	const W = 359.9937 * T - 2.47;
@@ -209,6 +257,14 @@ function calculateMeeusJde(JDE0: number): number {
 	return JDE0 + (0.00001 * S) / Delta;
 }
 
+/**
+ * Calculates the ΔT (Delta T) correction between Terrestrial Time and Universal Time for a given year.
+ * Uses polynomial approximations derived from historical data spanning from -500 to +3000.
+ *
+ * @param year - The calendar year for which to calculate ΔT
+ * @returns The ΔT correction value in seconds
+ * @internal
+ */
 function getDeltaT(year: number): number {
 	if (year < -500) {
 		const u = (year - 1820) / 100;
@@ -370,6 +426,7 @@ export interface SolarOptions {
 	longitude?: number;
 	long?: number;
 	lng?: number;
+	lon?: number;
 }
 
 export interface SolarTwilightWindow {
@@ -378,6 +435,8 @@ export interface SolarTwilightWindow {
 }
 
 export interface SunriseSunsetResult {
+	latitude: number;
+	longitude: number;
 	sunriseMs: number;
 	sunsetMs: number;
 	solarNoonMs: number;
@@ -392,14 +451,60 @@ export interface SunriseSunsetResult {
 }
 
 /**
- * Calculates Sunrise, Sunset, Solar Noon, and Solar Phase State for a given date and coordinates.
- * Accepts latitude and longitude as numbers or via a configuration object (`{ latitude, lat, longitude, long, lng }`).
- * Defaults to Equator / Prime Meridian (0, 0) if coordinates are omitted.
+ * Resolves latitude and longitude from positional arguments or a coordinate options object.
  *
- * @param dateInput - Date, Temporal object, or epoch timestamp in ms
- * @param latOrOptions - Latitude in degrees or options object
- * @param lonInput - Longitude in degrees if latitude is passed as a number
- * @returns Sunrise/Sunset calculations with timestamps, solar phase state, and 1-based index
+ * @param latOrOptions - A latitude value or options containing coordinate fields
+ * @param lngInput - The longitude used when `latOrOptions` is a numeric latitude
+ * @returns An object containing the resolved `lat` and `lng` values
+ */
+/**
+ * Resolves latitude and longitude from positional arguments or a coordinate options object.
+ *
+ * @param latOrOptions - A latitude value or options containing coordinate fields
+ * @param lngInput - The longitude used when `latOrOptions` is a numeric latitude
+ * @returns An object containing the resolved `lat` and `lng` values
+ */
+function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 0): { lat: number; lng: number } {
+	if (typeof latOrOptions === 'number')
+		return { lat: latOrOptions, lng: lngInput };
+
+	if (latOrOptions && typeof latOrOptions === 'object') {
+		const geo = (latOrOptions as any).geo ?? latOrOptions;
+		const lat = geo.latitude ?? geo.lat ?? (latOrOptions as any).latitude ?? (latOrOptions as any).lat ?? 0;
+		const lng = geo.longitude ?? geo.lng ?? geo.lon ?? geo.long ?? (latOrOptions as any).longitude ?? (latOrOptions as any).lng ?? (latOrOptions as any).lon ?? (latOrOptions as any).long ?? 0;
+		return { lat, lng };
+	}
+	return { lat: 0, lng: 0 };
+}
+
+/**
+ * Determines the UTC start of the calendar day at a specified longitude.
+ *
+ * @param epochMs - The input timestamp in milliseconds since the Unix epoch
+ * @param lng - The longitude in degrees used to determine the local date
+ * @returns The UTC start timestamp, local date, and longitude-adjusted timestamp
+ */
+/**
+ * Determines the UTC start of the calendar day at a specified longitude.
+ *
+ * @param epochMs - The input timestamp in milliseconds since the Unix epoch
+ * @param lng - The longitude in degrees used to determine the local date
+ * @returns The UTC start timestamp, local date, and longitude-adjusted timestamp
+ */
+function getStartOfLocalDayMs(epochMs: number, lng: number): { startOfDayMs: number; localDate: Date; localMs: number } {
+	const localMs = epochMs + (lng * 240000);
+	const localDate = new Date(localMs);
+	const startOfDay = new Date(Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate()));
+	return { startOfDayMs: startOfDay.getTime(), localDate, localMs };
+}
+
+/**
+ * Calculates sunrise, sunset, solar noon, twilight boundaries, and the solar phase for a date and location.
+ *
+ * @param dateInput - Date value, date string, or epoch timestamp in milliseconds
+ * @param latOrOptions - Latitude in degrees or coordinate options
+ * @param lonInput - Longitude in degrees when `latOrOptions` is a latitude
+ * @returns Solar event timestamps, daylight duration, phase classification, phase index, and resolved coordinates
  */
 export function getSunriseSunset(
 	dateInput: Date | number | string,
@@ -412,25 +517,13 @@ export function getSunriseSunset(
 			? new Date(dateInput).getTime()
 			: dateInput.getTime();
 
-	let lat = 0;
-	let lon = 0;
-
-	if (typeof latOrOptions === 'number') {
-		lat = latOrOptions;
-		lon = lonInput;
-	} else if (latOrOptions && typeof latOrOptions === 'object') {
-		lat = latOrOptions.latitude ?? latOrOptions.lat ?? 0;
-		lon = latOrOptions.longitude ?? latOrOptions.long ?? latOrOptions.lng ?? 0;
-	}
-
-	const date = new Date(epochMs);
-	const startOfDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-	const startOfDayMs = startOfDay.getTime();
+	const { lat, lng } = resolveCoordinates(latOrOptions, lonInput);
+	const { startOfDayMs, localDate, localMs } = getStartOfLocalDayMs(epochMs, lng);
 
 	// Solar calculations using standard zenith (90.833°)
-	const dayOfYear = Math.floor((epochMs - Date.UTC(date.getUTCFullYear(), 0, 0)) / 86400000);
+	const dayOfYear = Math.floor((localMs - Date.UTC(localDate.getUTCFullYear(), 0, 0)) / 86400000);
 	const gamma = (2 * Math.PI / 365) * (dayOfYear - 1);
-	
+
 	// Equation of time in minutes
 	const eqTime = 229.18 * (0.000075 + 0.001868 * Math.cos(gamma) - 0.032077 * Math.sin(gamma) - 0.014615 * Math.cos(2 * gamma) - 0.040849 * Math.sin(2 * gamma));
 	// Solar declination in radians
@@ -439,7 +532,7 @@ export function getSunriseSunset(
 	const latRad = lat * (Math.PI / 180);
 
 	// Solar noon in UTC minutes from start of UTC day
-	const solarNoonMin = 720 - (4 * lon) - eqTime;
+	const solarNoonMin = 720 - (4 * lng) - eqTime;
 	const solarNoonMs = startOfDayMs + (solarNoonMin * 60000);
 
 	// Hour angle function helper
@@ -494,6 +587,8 @@ export function getSunriseSunset(
 	}
 
 	return {
+		latitude: lat,
+		longitude: lng,
 		sunriseMs,
 		sunsetMs,
 		solarNoonMs,
@@ -565,3 +660,236 @@ export function getChineseZodiac(year: number): ChineseZodiacResult {
 		yinYang,
 	};
 }
+
+// --- Moonrise / Moonset Algorithms ---
+
+export interface MoonriseMoonsetResult {
+	latitude: number;
+	longitude: number;
+	moonriseMs?: number | undefined;
+	moonsetMs?: number | undefined;
+}
+
+/**
+ * Calculates the Moon’s apparent position for a timestamp.
+ *
+ * @param epochMs - The timestamp in milliseconds since the Unix epoch
+ * @returns The right ascension and declination in radians, and the horizontal parallax in degrees
+ */
+/**
+ * Calculates the Moon's apparent position for a timestamp.
+ *
+ * @param epochMs - The timestamp in milliseconds since the Unix epoch
+ * @returns The right ascension and declination in radians, and the horizontal parallax in degrees
+ */
+function getMoonPosition(epochMs: number) {
+	const T = (epochMs - 946728000000) / 3155760000000;
+	const rad = Math.PI / 180;
+
+	const L = (218.316 + 481267.8813 * T) % 360;
+	const M = (134.963 + 477198.8676 * T) % 360;
+	const Msun = (357.529 + 35999.0503 * T) % 360;
+	const D = (297.850 + 445267.1114 * T) % 360;
+	const F = (93.272 + 483202.0175 * T) % 360;
+
+	const lonDeg = L + 6.289 * Math.sin(M * rad)
+		+ 1.274 * Math.sin((2 * D - M) * rad)
+		+ 0.658 * Math.sin(2 * D * rad)
+		+ 0.214 * Math.sin(2 * M * rad)
+		- 0.186 * Math.sin(Msun * rad);
+
+	const latDeg = 5.128 * Math.sin(F * rad)
+		+ 0.280 * Math.sin((M + F) * rad)
+		+ 0.277 * Math.sin((M - F) * rad)
+		+ 0.173 * Math.sin((2 * D - F) * rad);
+
+	const hp = 0.9507 + 0.0518 * Math.cos(M * rad)
+		+ 0.0095 * Math.cos((2 * D - M) * rad)
+		+ 0.0078 * Math.cos(2 * D * rad);
+
+	const eps = (23.439 - 0.0000004 * ((epochMs - 946728000000) / 86400000)) * rad;
+
+	const lRad = lonDeg * rad;
+	const bRad = latDeg * rad;
+
+	const sinDec = Math.sin(bRad) * Math.cos(eps) + Math.cos(bRad) * Math.sin(eps) * Math.sin(lRad);
+	const dec = Math.asin(sinDec);
+
+	const y = Math.sin(lRad) * Math.cos(eps) - Math.tan(bRad) * Math.sin(eps);
+	const x = Math.cos(lRad);
+	const ra = Math.atan2(y, x);
+
+	return { ra, dec, hp };
+}
+
+/**
+ * Calculates lunar altitude angle and parallax target threshold in degrees.
+ *
+ * @param epochMs - The timestamp in milliseconds since the Unix epoch
+ * @param latDeg - The latitude in degrees
+ * @param lngDeg - The longitude in degrees
+ * @returns The altitude and target altitude threshold for moonrise/moonset detection
+ * @internal
+ */
+function getMoonAltitude(epochMs: number, latDeg: number, lngDeg: number): { alt: number; targetAlt: number } {
+	const rad = Math.PI / 180;
+	const latRad = latDeg * rad;
+
+	const d = (epochMs - 946728000000) / 86400000;
+	const gstDeg = (280.46061837 + 360.98564736629 * d) % 360;
+	const lstRad = (gstDeg + lngDeg) * rad;
+
+	const { ra, dec, hp } = getMoonPosition(epochMs);
+	const ha = lstRad - ra;
+
+	const sinAlt = Math.sin(latRad) * Math.sin(dec) + Math.cos(latRad) * Math.cos(dec) * Math.cos(ha);
+	const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt))) / rad;
+
+	// Jean Meeus standard target altitude for Moon's upper limb at horizon accounting for horizontal parallax
+	const targetAlt = 0.7275 * hp - 0.5667;
+
+	return { alt, targetAlt };
+}
+
+/**
+ * Calculates moonrise and moonset times for a date and geographic location.
+ * A time is undefined when the Moon does not cross the rise or set threshold during that local calendar day.
+ *
+ * @param dateInput - Date string, `Date`, or epoch timestamp in milliseconds
+ * @param latOrOptions - Latitude in degrees or geographic options
+ * @param lonInput - Longitude in degrees when `latOrOptions` is a latitude
+ * @returns The resolved coordinates and optional moonrise and moonset timestamps in milliseconds
+ */
+export function getMoonriseMoonset(
+	dateInput: Date | number | string,
+	latOrOptions: number | SolarOptions = 0,
+	lonInput = 0
+): MoonriseMoonsetResult {
+	const epochMs = typeof dateInput === 'number'
+		? dateInput
+		: typeof dateInput === 'string'
+			? new Date(dateInput).getTime()
+			: dateInput.getTime();
+
+	const { lat, lng } = resolveCoordinates(latOrOptions, lonInput);
+	const { startOfDayMs } = getStartOfLocalDayMs(epochMs, lng);
+	const moonDayStartMs = startOfDayMs - (lng * 240000);
+
+	let moonriseMs: number | undefined = undefined;
+	let moonsetMs: number | undefined = undefined;
+
+	const initial = getMoonAltitude(moonDayStartMs, lat, lng);
+	let prevAlt = initial.alt - initial.targetAlt;
+
+	for (let i = 1; i <= 24; i++) {
+		const currentMs = moonDayStartMs + (i * 3600000);
+		const { alt, targetAlt } = getMoonAltitude(currentMs, lat, lng);
+		const currAlt = alt - targetAlt;
+
+		if (prevAlt < 0 && currAlt >= 0) {
+			const fraction = -prevAlt / (currAlt - prevAlt);
+			moonriseMs = Math.round(moonDayStartMs + ((i - 1 + fraction) * 3600000));
+		} else if (prevAlt > 0 && currAlt <= 0) {
+			const fraction = prevAlt / (prevAlt - currAlt);
+			moonsetMs = Math.round(moonDayStartMs + ((i - 1 + fraction) * 3600000));
+		}
+
+		prevAlt = currAlt;
+	}
+
+	return {
+		latitude: lat,
+		longitude: lng,
+		moonriseMs,
+		moonsetMs,
+	}
+}
+
+export type TidalState = 'spring' | 'neap' | 'normal';
+
+/** Ordered array of all tidal state identifiers */
+export const TIDAL_PHASE_STATES = Object.freeze(['spring', 'neap', 'normal'] as const);
+
+export interface TidalResult {
+	/** Tidal state category based on solar/lunar alignment */
+	state: TidalState;
+	/** Solar-lunar ecliptic longitude difference in degrees (0..360) */
+	alignmentDeg: number;
+	/** True if Sun and Moon are in Syzygy (New or Full Moon) */
+	isSpringTide: boolean;
+	/** True if Sun and Moon are in Quadrature (1st or 3rd Quarter) */
+	isNeapTide: boolean;
+	/** True if Spring Tide coincides with Lunar Perigee (King Tide) */
+	isKingTide: boolean;
+	/** Proximity factor to lunar perigee (0.0 = apogee, 1.0 = perigee) */
+	perigeeFactor: number;
+	/** Approximate minute offset into current semi-diurnal lunar tide cycle (~12h 25m) */
+	lunarTideMinute: number;
+	/** Ordered list of all tidal state keys */
+	states: readonly TidalState[];
+}
+
+/** Known Perigee reference: Jan 5, 2000 00:20 UTC in milliseconds */
+const REF_PERIGEE_MS = 947031600000;
+/** Anomalistic Month length in days (perigee to perigee) */
+const ANOMALISTIC_MONTH = 27.55455;
+
+/**
+ * Classifies tidal conditions and estimates lunar alignment and perigee proximity for an instant.
+ *
+ * @param dateInput - Date, ISO date string, or epoch timestamp in milliseconds
+ * @returns Tidal state, lunar alignment in degrees, perigee proximity factor, and lunar tide-cycle minute
+ */
+export function getTidalState(
+	dateInput: Date | number | string,
+	latOrOptions: number | SolarOptions = 0,
+	lonInput = 0
+): TidalResult {
+	const epochMs = typeof dateInput === 'number'
+		? dateInput
+		: typeof dateInput === 'string'
+			? new Date(dateInput).getTime()
+			: dateInput.getTime();
+
+	const elapsedDays = (epochMs - REF_NEW_MOON_MS) / 86400000;
+	const ageDays = ((elapsedDays % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
+
+	const alignmentDeg = Math.round((ageDays / SYNODIC_MONTH) * 360 * 100) / 100;
+
+	const distFromSyzygy = Math.min(
+		Math.abs(alignmentDeg),
+		Math.abs(alignmentDeg - 180),
+		Math.abs(alignmentDeg - 360)
+	);
+
+	const distFromQuadrature = Math.min(
+		Math.abs(alignmentDeg - 90),
+		Math.abs(alignmentDeg - 270)
+	);
+
+	const isSpringTide = distFromSyzygy <= 35;
+	const isNeapTide = !isSpringTide && distFromQuadrature <= 35;
+	const state: TidalState = isSpringTide ? 'spring' : (isNeapTide ? 'neap' : 'normal');
+
+	const perigeeElapsedDays = (epochMs - REF_PERIGEE_MS) / 86400000;
+	const perigeeDays = ((perigeeElapsedDays % ANOMALISTIC_MONTH) + ANOMALISTIC_MONTH) % ANOMALISTIC_MONTH;
+	const perigeeFactor = Math.round((0.5 + 0.5 * Math.cos((perigeeDays / ANOMALISTIC_MONTH) * 2 * Math.PI)) * 1000) / 1000;
+
+	const isKingTide = isSpringTide && perigeeFactor >= 0.75;
+
+	const lunarTideCycleMins = 745.2;
+	const minsSinceEpoch = Math.floor(epochMs / 60000);
+	const lunarTideMinute = Math.floor(((minsSinceEpoch % lunarTideCycleMins) + lunarTideCycleMins) % lunarTideCycleMins);
+
+	return {
+		state,
+		alignmentDeg,
+		isSpringTide,
+		isNeapTide,
+		isKingTide,
+		perigeeFactor,
+		lunarTideMinute,
+		states: TIDAL_PHASE_STATES,
+	};
+}
+
