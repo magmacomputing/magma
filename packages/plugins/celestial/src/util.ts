@@ -24,16 +24,14 @@ export function getCelestialCoordinates(t: Tempo, anchor?: any): {
 		: (anchor != null
 			? new Tempo(typeof anchor === 'number' ? new Date(anchor) : anchor, (t as any).config)
 			: t);
-	const geo = refTempo.geo ?? (t as any).geo ?? null;
+
+	const geo = refTempo.geo ?? null;
 	const latVal = geo?.latitude;
 	const lngVal = geo?.longitude;
 	const hasGeo = latVal !== undefined && lngVal !== undefined;
 	const timeZone = refTempo.tz ?? 'UTC';
 
-	const explicitSphere = (refTempo as any).sphere ?? (t as any).sphere;
-	const sphere: 'north' | 'south' | undefined = explicitSphere
-		? explicitSphere
-		: (latVal !== undefined ? (latVal >= 0 ? 'north' : 'south') : undefined);
+	const sphere = refTempo.sphere as 'north' | 'south' | undefined;
 
 	if (!hasGeo && ((refTempo as any).config?.debug ?? 0) >= 1)
 		console.warn("[Tempo Warning] CelestialPlugin: 'geo' coordinates (latitude/longitude) were not provided; geo-dependent properties evaluate to null.");
