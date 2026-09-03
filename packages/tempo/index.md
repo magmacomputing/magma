@@ -130,8 +130,8 @@ async function startTicker() {
     if (fallbackIntervalId) clearInterval(fallbackIntervalId)
     
     const sync = (t) => {
-      const dt = t.toDateTime()
-      updateHands(dt.hour, dt.minute, dt.second)
+      const { hour, minute, second } = t.toDateTime()
+      updateHands(hour, minute, second)
       timeStr.value = t.format('{www}, {yyyy}-{mmm}-{dd} {hh}:{mi}:{ss}')
       tzStr.value = t.tz
     }
@@ -140,7 +140,7 @@ async function startTicker() {
     
     if (isManualTickerPaused.value) return
     
-    ticker = Tempo.ticker(1000, sync, { timeZone: selectedTz.value })
+    ticker = Tempo.ticker({ seconds: 1, timeZone: selectedTz.value }, sync)
   } catch (e) {
     timeStr.value = `Error: ${e.message || 'Unknown'}`
     const fallback = () => {
