@@ -1,4 +1,4 @@
-import { isNullish, isNumber } from '#library/assertion.library.js';
+import { isNullish, isNumber, isString } from '#library/assertion.library.js';
 import { getHemisphere } from '#library/international.library.js';
 import { Logger, type DebugLevel } from '#library/logger.class.js';
 import { fetchRequest } from '#library/request.library.js';
@@ -25,7 +25,7 @@ export interface ServerGeolocationResult {
 
 const log = new Logger('[ServerMapper]');
 const defaults: ServerMapOpts = {
-	endpoint: 'http://ip-api.com/json/',
+	endpoint: 'https://ipwho.is/',
 	timeout: 3000,
 	catch: true,
 	debug: 0,
@@ -53,8 +53,8 @@ export const serverGeoLocation = async (opts = {} as ServerMapOpts): Promise<Ser
 		if (typeof data !== 'object' || isNullish(data))
 			throw new Error('Geolocation lookup failed');
 
-		if (data.status === 'fail')
-			throw new Error(data.message || 'Geolocation lookup failed');
+		if (data.status === 'fail' || data.success === false)
+			throw new Error(data.message || data.reason || 'Geolocation lookup failed');
 
 		const lat = isNumber(data.lat) ? data.lat : data.latitude;
 		const lng = isNumber(data.lon) ? data.lon : (data.lng ?? data.longitude);
@@ -62,15 +62,17 @@ export const serverGeoLocation = async (opts = {} as ServerMapOpts): Promise<Ser
 		if (!isNumber(lat) || !isNumber(lng))
 			throw new Error('Geolocation lookup failed');
 
+		const tz = isString(data.timezone) ? data.timezone : (data.timezone?.id ?? data.timeZone);
+
 		const result: ServerGeolocationResult = {
 			lat,
 			lng,
 			latitude: lat,
 			longitude: lng,
-			country: data.country || data.countryName,
-			city: data.city,
-			timezone: data.timezone,
-			query: data.query || data.ip,
+			...(isString(data.country || data.countryName || data.country_name) ? { country: data.country || data.countryName || data.country_name } : {}),
+			...(isString(data.city || data.cityName || data.city_name) ? { city: data.city || data.cityName || data.city_name } : {}),
+			...(isString(tz) ? { timezone: tz } : {}),
+			...(isString(data.query || data.ip || data.ip_address) ? { query: data.query || data.ip || data.ip_address } : {}),
 			status: 'success',
 		}
 
