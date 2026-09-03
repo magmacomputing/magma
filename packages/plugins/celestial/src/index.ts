@@ -334,7 +334,7 @@ function getTidalScopeRange(t: Tempo, anchor?: any) {
 export const TidalTerm = defineTerm({
 	key: 'tide',
 	aliases: ['tides', 'tidal'],
-	scope: 'tide',
+	scope: 'tides',
 	description: 'Astronomical tidal state, alignment, and perigee factor',
 	phases: TIDAL_PHASE_STATES,
 
