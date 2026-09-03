@@ -1,6 +1,23 @@
 import { Tempo } from '@magmacomputing/tempo';
+import { isNumber, isObject } from '@magmacomputing/tempo/library';
 import { getLunarPhase } from '@magmacomputing/tempo-fns';
 import type { LunarPhaseResult } from './index.js';
+
+/**
+ * Validates that geographic coordinates are finite numbers within valid terrestrial bounds (-90..90 lat, -180..180 lng).
+ * @internal
+ */
+export function isValidGeo(geo: any): geo is { latitude: number; longitude: number } {
+	if (!isObject(geo)) return false;
+
+	const lat = geo.latitude;
+	const lng = geo.longitude;
+
+	const isLatValid = isNumber(lat) && lat >= -90 && lat <= 90;
+	const isLngValid = isNumber(lng) && lng >= -180 && lng <= 180;
+
+	return isLatValid && isLngValid;
+}
 
 /**
  * Resolves the reference time, geographic coordinates, timezone, and hemisphere used for celestial calculations.
@@ -22,19 +39,19 @@ export function getCelestialCoordinates(t: Tempo, anchor?: any): {
 	const refTempo = (anchor instanceof Tempo)
 		? anchor
 		: (anchor != null
-			? new Tempo(typeof anchor === 'number' ? new Date(anchor) : anchor, (t as any).config)
+			? new Tempo(isNumber(anchor) ? new Date(anchor) : anchor, (t as any).config)
 			: t);
 
 	const geo = refTempo.geo ?? null;
-	const latVal = geo?.latitude;
-	const lngVal = geo?.longitude;
-	const hasGeo = latVal !== undefined && lngVal !== undefined;
+	const hasGeo = isValidGeo(geo);
+	const latVal = hasGeo ? geo.latitude : undefined;
+	const lngVal = hasGeo ? geo.longitude : undefined;
 	const timeZone = refTempo.tz ?? 'UTC';
 
 	const sphere = refTempo.sphere as 'north' | 'south' | undefined;
 
 	if (!hasGeo && ((refTempo as any).config?.debug ?? 0) >= 1)
-		console.warn("[Tempo Warning] CelestialPlugin: 'geo' coordinates (latitude/longitude) were not provided; geo-dependent properties evaluate to null.");
+		console.warn("[Tempo Warning] CelestialPlugin: Valid 'geo' coordinates (latitude: -90..90, longitude: -180..180) were not provided; geo-dependent properties evaluate to null.");
 
 	return { refTempo, lat: latVal, lng: lngVal, hasGeo, geo, timeZone, ...(sphere ? { sphere } : {}) };
 }

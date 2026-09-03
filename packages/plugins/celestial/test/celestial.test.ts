@@ -86,13 +86,20 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(t.term.tides.isKingTide).toBeNull();
 	});
 
+	it('evaluates geo-dependent properties to null when geo contains invalid coordinates', () => {
+		const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 100, lng: -74.006 } });
+		
+		expect(t.term.sun).toBeNull();
+		expect(t.term.solar.key).toBeNull();
+	});
+
 	it('emits developer warning when geo is missing and debug >= 1', () => {
 		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 		const t = new Tempo('2026-06-21T12:00:00Z', { debug: 1 });
 		
 		expect(t.term.sun).toBeNull();
 		expect(warnSpy).toHaveBeenCalledWith(
-			expect.stringContaining("CelestialPlugin: 'geo' coordinates (latitude/longitude) were not provided")
+			expect.stringContaining("CelestialPlugin: Valid 'geo' coordinates")
 		);
 		warnSpy.mockRestore();
 	});
