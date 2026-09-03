@@ -79,11 +79,11 @@ export interface LunarPhaseOptions {
 }
 
 /**
- * Calculates the lunar phase for a date or numeric timestamp.
+ * Determines the lunar phase for a date or epoch timestamp.
  *
- * @param dateInput - Date, Temporal object, or epoch timestamp in ms
- * @param options - Options including hemisphere (`sphere: 'north' | 'south'`)
- * @returns Lunar phase object with age, illumination, phase name, index, and emoji
+ * @param dateInput - Date, ISO date string, or epoch timestamp in milliseconds
+ * @param options - Optional hemisphere used to select the phase emoji
+ * @returns Lunar phase details including age, illumination, phase name, index, waxing status, emoji, and ordered phase keys
  */
 export function getLunarPhase(dateInput: Date | number | string, options: LunarPhaseOptions = {}): LunarPhaseResult {
 	const epochMs = typeof dateInput === 'number'
@@ -446,7 +446,13 @@ export interface SunriseSunsetResult {
 	astronomical: SolarTwilightWindow;
 }
 
-/** Internal helper: Normalizes latitude and longitude from positional arguments or options object */
+/**
+ * Resolves latitude and longitude from positional arguments or a coordinate options object.
+ *
+ * @param latOrOptions - A latitude value or options containing coordinate fields
+ * @param lngInput - The longitude used when `latOrOptions` is a numeric latitude
+ * @returns An object containing the resolved `lat` and `lng` values
+ */
 function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 0): { lat: number; lng: number } {
 	if (typeof latOrOptions === 'number')
 		return { lat: latOrOptions, lng: lngInput };
@@ -460,7 +466,13 @@ function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 
 	return { lat: 0, lng: 0 };
 }
 
-/** Internal helper: Calculates the UTC millisecond timestamp for the start of the local day at a given longitude */
+/**
+ * Determines the UTC start of the calendar day at a specified longitude.
+ *
+ * @param epochMs - The input timestamp in milliseconds since the Unix epoch
+ * @param lng - The longitude in degrees used to determine the local date
+ * @returns The UTC start timestamp, local date, and longitude-adjusted timestamp
+ */
 function getStartOfLocalDayMs(epochMs: number, lng: number): { startOfDayMs: number; localDate: Date; localMs: number } {
 	const localMs = epochMs + (lng * 240000);
 	const localDate = new Date(localMs);
@@ -469,13 +481,12 @@ function getStartOfLocalDayMs(epochMs: number, lng: number): { startOfDayMs: num
 }
 
 /**
- * Calculates Sunrise, Sunset, Solar Noon, and Solar Phase State for a given date and coordinates.
- * Accepts latitude and longitude as numbers or via a configuration object (`{ latitude, lat, longitude, long, lng }`).
+ * Calculates sunrise, sunset, solar noon, twilight boundaries, and the solar phase for a date and location.
  *
- * @param dateInput - Date, Temporal object, or epoch timestamp in ms
- * @param latOrOptions - Latitude in degrees or options object
- * @param lngInput - Longitude in degrees if latitude is passed as a number
- * @returns Sunrise/Sunset calculations with timestamps, solar phase state, and 1-based index
+ * @param dateInput - Date value, date string, or epoch timestamp in milliseconds
+ * @param latOrOptions - Latitude in degrees or coordinate options
+ * @param lonInput - Longitude in degrees when `latOrOptions` is a latitude
+ * @returns Solar event timestamps, daylight duration, phase classification, phase index, and resolved coordinates
  */
 export function getSunriseSunset(
 	dateInput: Date | number | string,
@@ -641,7 +652,12 @@ export interface MoonriseMoonsetResult {
 	moonsetMs?: number | undefined;
 }
 
-/** Internal helper: Calculates lunar position (Right Ascension, Declination in radians, and Horizontal Parallax in degrees) */
+/**
+ * Calculates the Moon’s apparent position for a timestamp.
+ *
+ * @param epochMs - The timestamp in milliseconds since the Unix epoch
+ * @returns The right ascension and declination in radians, and the horizontal parallax in degrees
+ */
 function getMoonPosition(epochMs: number) {
 	const T = (epochMs - 946728000000) / 3155760000000;
 	const rad = Math.PI / 180;
@@ -704,13 +720,13 @@ function getMoonAltitude(epochMs: number, latDeg: number, lngDeg: number): { alt
 }
 
 /**
- * Calculates Moonrise and Moonset timestamps for a given date and geographic coordinates.
- * Returns undefined for moonrise or moonset if no rise or set occurs on that calendar date.
+ * Calculates moonrise and moonset times for a date and geographic location.
+ * A time is undefined when the Moon does not cross the rise or set threshold during that local calendar day.
  *
- * @param dateInput - Date, Temporal object, or epoch timestamp in ms
- * @param latOrOptions - Latitude in degrees or options object
- * @param lonInput - Longitude in degrees if latitude is passed as a number
- * @returns Object containing latitude, longitude, optional `moonriseMs`, and optional `moonsetMs`
+ * @param dateInput - Date string, `Date`, or epoch timestamp in milliseconds
+ * @param latOrOptions - Latitude in degrees or geographic options
+ * @param lonInput - Longitude in degrees when `latOrOptions` is a latitude
+ * @returns The resolved coordinates and optional moonrise and moonset timestamps in milliseconds
  */
 export function getMoonriseMoonset(
 	dateInput: Date | number | string,
@@ -786,13 +802,10 @@ const REF_PERIGEE_MS = 947031600000;
 const ANOMALISTIC_MONTH = 27.55455;
 
 /**
- * Calculates deterministic astronomical tidal state and phase alignment for a given instant.
- * Uses solar and lunar longitude alignment and orbital distance ratio to determine Spring/Neap/King tides.
+ * Classifies tidal conditions and estimates lunar alignment and perigee proximity for an instant.
  *
- * @param dateInput - Date, Temporal object, or epoch timestamp in ms
- * @param latOrOptions - Latitude in degrees or options object
- * @param lonInput - Longitude in degrees if latitude is passed as a number
- * @returns TidalResult object with astronomical tidal indicators
+ * @param dateInput - Date, ISO date string, or epoch timestamp in milliseconds
+ * @returns Tidal state, lunar alignment in degrees, perigee proximity factor, and lunar tide-cycle minute
  */
 export function getTidalState(
 	dateInput: Date | number | string,

@@ -3,7 +3,11 @@ import { getLunarPhase } from '@magmacomputing/tempo-fns';
 import type { LunarPhaseResult } from './index.js';
 
 /**
- * Resolves reference Tempo instance, geo coordinates, hemisphere, timezone, and debug flags.
+ * Resolves the reference time, geographic coordinates, timezone, and hemisphere used for celestial calculations.
+ *
+ * @param t - The input `Tempo` instance used as the fallback reference and source of configuration
+ * @param anchor - Optional reference accepted as a `Tempo`, timestamp, or date-like value
+ * @returns The resolved reference `Tempo`, geographic coordinates, timezone, hemisphere, and coordinate availability
  * @internal
  */
 export function getCelestialCoordinates(t: Tempo, anchor?: any): {
@@ -58,7 +62,12 @@ export function toDateTimeFields(t: Tempo) {
 }
 
 /**
- * Converts an epoch millisecond timestamp to a Tempo instance or null.
+ * Creates a `Tempo` instance from an epoch-millisecond timestamp when provided.
+ *
+ * @param ms - The epoch-millisecond timestamp, or `null`/`undefined`
+ * @param timeZone - The timezone to configure on the `Tempo` instance
+ * @param sphere - The optional hemisphere to configure on the `Tempo` instance
+ * @returns A configured `Tempo` instance, or `null` when `ms` is `null` or `undefined`
  * @internal
  */
 export function toTempoOrNull(
@@ -72,7 +81,9 @@ export function toTempoOrNull(
 }
 
 /**
- * Computes formatted lunar details for a given Tempo instance or coordinate context.
+ * Computes lunar phase details for the reference time and hemisphere.
+ *
+ * @returns Lunar phase identifiers, illumination, age, waxing status, optional hemisphere-specific emoji, and phase transition data
  * @internal
  */
 export function getLunarDetails(t: Tempo, coords?: ReturnType<typeof getCelestialCoordinates>): LunarPhaseResult {

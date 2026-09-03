@@ -125,10 +125,10 @@ export function parseCron(pattern: string): CronSchedule {
 }
 
 /**
- * Type guard to check if a value is a valid cron pattern string.
+ * Determines whether a value is a valid five-field cron expression.
  *
- * @param val - The value to check
- * @returns True if the value is a valid cron pattern string
+ * @param val - The value to validate
+ * @returns `true` if the value is a valid cron expression, `false` otherwise
  */
 export function isCronString(val: unknown): val is string {
 	if (!isString(val)) return false;
@@ -145,13 +145,15 @@ export function isCronString(val: unknown): val is string {
 }
 
 /**
- * Checks if a given date matches the day constraints in a cron schedule.
- * Handles the logical OR between day-of-month and day-of-week when both are restricted.
+ * Determines whether a date satisfies the schedule's day-of-month and day-of-week constraints.
+ *
+ * When both constraints are restricted, a match in either field is sufficient. Otherwise, both
+ * fields must match.
  *
  * @param schedule - The parsed cron schedule
- * @param day - The day of the month (1-31)
- * @param dow - The day of the week (0-7, where 0 and 7 both represent Sunday)
- * @returns True if the date matches the day constraints
+ * @param day - The day of the month
+ * @param dow - The day of the week, where `0` and `7` represent Sunday
+ * @returns `true` if the date matches the day constraints, `false` otherwise
  * @internal
  */
 function matchesDay(schedule: CronSchedule, day: number, dow: number): boolean {

@@ -108,7 +108,13 @@ declare module '@magmacomputing/tempo' {
 	}
 }
 
-/** Internal helper: Resolves full lunar scope range with start/end Tempo boundaries */
+/**
+ * Resolves lunar phase details, lunar events, geolocation, and the containing time range.
+ *
+ * @param t - Tempo context used to determine the reference time and lunar details
+ * @param anchor - Optional anchor used to resolve celestial context
+ * @returns Lunar scope data with phase metadata, optional moonrise and moonset times, and start and end boundaries
+ */
 function getLunarScopeRange(t: Tempo, anchor?: any) {
 	const coords = getCelestialCoordinates(t, anchor);
 	const { refTempo, lat, lng, hasGeo, geo, timeZone, sphere } = coords;
@@ -155,7 +161,13 @@ export const LunarTerm = defineTerm({
 	...createCelestialTermHandlers(getLunarScopeRange),
 });
 
-/** Internal helper: Resolves daily solar scope range for a location */
+/**
+ * Determines the current solar phase and its daily time range for a reference time and location.
+ *
+ * @param t - The Tempo context used to resolve the reference time and location
+ * @param anchor - Optional anchor used when resolving the reference time and location
+ * @returns Solar phase metadata, sunrise and sunset events, twilight events, and the applicable time range
+ */
 function getSolarScopeRange(t: Tempo, anchor?: any) {
 	const { refTempo, lat, lng, hasGeo, geo, timeZone } = getCelestialCoordinates(t, anchor);
 
@@ -264,7 +276,12 @@ export const SolarTerm = defineTerm({
 	...createCelestialTermHandlers(getSolarScopeRange),
 });
 
-/** Internal helper: Resolves tidal scope range for a location */
+/**
+ * Computes tidal state and timing information for the resolved location and reference time.
+ *
+ * @param anchor - Optional anchor used to resolve the location and reference time.
+ * @returns Tidal state details, lunar alignment, tide indicators, geographic data, date-time fields, and a 745-minute range.
+ */
 function getTidalScopeRange(t: Tempo, anchor?: any) {
 	const { refTempo, lat, lng, hasGeo, geo } = getCelestialCoordinates(t, anchor);
 	const res = getTidalState(refTempo.epoch.ms, lat ?? 0, lng ?? 0);

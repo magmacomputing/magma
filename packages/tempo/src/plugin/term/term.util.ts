@@ -36,8 +36,11 @@ export const defineTerm = <T extends TermPlugin>(term: T): T => {
 }
 
 /**
- * ## findTermPlugin
- * Find a Term plugin by key, scope, or sub-key.
+ * Finds a term plugin by its key, scope, alias, or range key.
+ *
+ * @param ident - The term or range identifier, optionally prefixed with `#`
+ * @param state - Optional plugin state to search
+ * @returns The matching term plugin, or `undefined` when no match is found
  */
 export function findTermPlugin(ident: string, state?: any): TermPlugin | undefined {
 	if (!isString(ident)) return undefined;
@@ -70,14 +73,13 @@ export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) 
 }
 
 /**
- * Finds where a Tempo instance fits within a range of DateTime values.
- * Returns either a key string, a resolved range object with start/end boundaries, or undefined.
+ * Resolves the range containing a Tempo instance.
  *
- * @param tempo - The Tempo instance to locate within the range
- * @param list - The array of Range objects to search
- * @param keyOnly - If true, returns the key string; if a number, returns a specific cycle; if false, returns the full ResolvedRange
- * @param anchor - Optional anchor ZonedDateTime for range resolution
- * @returns The matched range key, ResolvedRange object, or undefined if no match
+ * @param tempo - The Tempo instance to locate
+ * @param list - The ranges to search
+ * @param keyOnly - Controls the result: `true` returns the range key, a positive integer returns the corresponding cycle range, and `false` returns the resolved range
+ * @param anchor - Optional temporal anchor used to resolve range boundaries
+ * @returns The matching range key, resolved range, or `undefined` when no range is available
  * @internal
  */
 export function getTermRange(tempo: Tempo, list: Range[], keyOnly: boolean | number = true, anchor?: any): string | ResolvedRange | undefined | null {
@@ -236,9 +238,9 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Ra
  *
  * @param tempo - The reference time used to determine the current range
  * @param terms - The available term definitions
- * @param offset - The term key or scope, optionally prefixed with `#`
+ * @param offset - The term key, scope, or alias, optionally prefixed with `#`
  * @param mutate - The boundary to resolve: `start`, `mid`, or `end`
- * @returns The resolved boundary, or `undefined` when the term, range, or boundary is unavailable
+ * @returns The range start, midpoint, or final instant before its end, or `undefined` when unavailable
  * @internal
  */
 export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mutate: string): any {
@@ -265,13 +267,13 @@ export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mu
 }
 
 /**
- * Resolves the start of a range shifted from the current term range.
+ * Resolves the start boundary of a range at a shifted position relative to the current term range.
  *
  * @param tempo - The reference date and time used to identify the current range.
  * @param source - Term plugins or pre-resolved ranges to search.
- * @param offset - The term key or scope when `source` contains plugins.
+ * @param offset - The term key, scope, or alias when `source` contains plugins.
  * @param shift - The number of ranges to move forward or backward.
- * @returns The start of the shifted range, or `undefined` when the term, current range, or target range cannot be resolved.
+ * @returns The start boundary of the shifted range, or `undefined` if the source, current range, or target range cannot be resolved.
  * @internal
  */
 export function resolveTermShift(tempo: Tempo, source: any[], offset: string, shift: number): any {

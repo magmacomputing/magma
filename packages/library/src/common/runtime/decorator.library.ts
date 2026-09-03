@@ -25,9 +25,11 @@ function getClassName<T extends Constructor>(value: T, contextName: string | sym
  * Creates a class wrapper that applies an immutability strategy to each instance and hardens its static and prototype members.
  *
  * @param value - The class to wrap
- * @param name - The wrapper's class name, when available
- * @param immutabilityStrategy - The strategy applied to each created instance
- * @returns A wrapped class that applies the immutability strategy to instances
+ * @param name - The class name used for type registration, when available
+ * @param addInitializer - Registers the initializer that hardens class members
+ * @param immutabilityStrategy - Transforms each created instance
+ * @param metadata - Optional decorator metadata used to determine mutable members
+ * @returns The wrapped class, or the original class when subclass wrapping is incompatible with its private state
  * @internal
  */
 function createImmutableWrapper<T extends Constructor>(
@@ -277,19 +279,13 @@ export function Static<T extends Constructor>(value: T, { kind, name }: ClassDec
 }
 
 /**
- * A class decorator that sets Symbol.toStringTag on the prototype if not already present.
- * Supports both `@StringTag` (without parentheses) and `@StringTag('CustomName')`.
- * 
- * @param tagOrValue - Custom string tag or the class constructor
- * @param context - Optional decorator context when used without parentheses
- * @example
- * ```ts
- *  @ StringTag
- *  class Tapper { ... }
- * 
- *  @ StringTag('CustomTag')
- *  class Special { ... }
- * ```
+ * Applies a string tag to a class and its prototype.
+ *
+ * Supports direct use as `@StringTag` and configured use as `@StringTag('CustomName')`.
+ *
+ * @param tagOrValue - A custom tag string or the class constructor when used directly.
+ * @param context - The decorator context for direct decorator usage.
+ * @returns The decorated class or a decorator that applies the tag.
  */
 export function StringTag<T extends Constructor>(tagOrValue?: string | T, context?: ClassDecoratorContext<T>): any {
 	const applyTag = (value: T, customTag?: string, contextName?: string | symbol) => {

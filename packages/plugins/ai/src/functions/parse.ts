@@ -19,12 +19,11 @@ import { RE_ISO_DATE_PREFIX, RE_ISO_Z_SUFFIX } from '../core/patterns.js';
 import type { AiParseOptions } from '../types/index.js';
 
 /**
- * Parses a single natural language date string into a Tempo instance using AI providers.
- * Handles caching, context resolution, and multi-provider execution strategies.
+ * Parses one natural-language date string into a `Tempo`, using cache, native parsing, or configured AI providers.
  *
- * @param str - The natural language date string to parse
- * @param options - Parsing options including providers, caching, and context
- * @returns A Promise resolving to a Tempo instance with AI metadata attached
+ * @param str - The natural-language date string to parse
+ * @param options - Parsing, provider, cache, and temporal context options
+ * @returns The parsed `Tempo` with provider and resolution metadata
  * @internal
  */
 async function parseSingleInput(str: string, options?: AiParseOptions): Promise<Tempo> {
