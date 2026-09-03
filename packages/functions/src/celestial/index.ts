@@ -471,7 +471,6 @@ function getStartOfLocalDayMs(epochMs: number, lng: number): { startOfDayMs: num
 /**
  * Calculates Sunrise, Sunset, Solar Noon, and Solar Phase State for a given date and coordinates.
  * Accepts latitude and longitude as numbers or via a configuration object (`{ latitude, lat, longitude, long, lng }`).
- * Defaults to Equator / Prime Meridian (0, 0) if coordinates are omitted.
  *
  * @param dateInput - Date, Temporal object, or epoch timestamp in ms
  * @param latOrOptions - Latitude in degrees or options object
