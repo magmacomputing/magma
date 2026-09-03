@@ -95,6 +95,34 @@ function findInLibSrc(targetFileName: string): string {
 	return targetFileName;
 }
 
+// Helper to locate actual relative path of a #tempo alias in DIST_DIR
+function findTempoTarget(importPath: string): string {
+	const mappings: Record<string, string> = {
+		'#tempo/support': 'support/support.index.js',
+		'#tempo/module': 'module/module.index.js',
+		'#tempo/parse': 'module/module.parse.js',
+		'#tempo/format': 'module/module.format.js',
+		'#tempo/mutate': 'module/module.mutate.js',
+		'#tempo/duration': 'module/module.duration.js',
+		'#tempo/term': 'plugin/term/term.index.js',
+		'#tempo/std': 'term/index.js',
+	};
+
+	if (mappings[importPath]) return mappings[importPath];
+	if (importPath.startsWith('#tempo/')) {
+		return importPath.slice(7);
+	}
+	return importPath;
+}
+
+function resolveRelativeImport(fromFile: string, targetDistPath: string): string {
+	const fromDir = path.dirname(fromFile);
+	const targetAbsPath = path.resolve(DIST_DIR, targetDistPath);
+	let rel = path.relative(fromDir, targetAbsPath).replace(/\\/g, '/');
+	if (!rel.startsWith('.')) rel = './' + rel;
+	return rel;
+}
+
 // 4. Walk through all .d.ts files in dist/ to rewrite aliases
 function walk(dir: string) {
 	const files = fs.readdirSync(dir);
@@ -130,7 +158,17 @@ function rewrite(filePath: string) {
 			const actualPath = isInsideLib ? libPath : findInLibSrc(libPath);
 			return `${replacement}${actualPath}`;
 		})
-		.replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`);
+		.replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`)
+		.replace(/(['"])#tempo\/([^"')]+)\1/g, (match, quote, subPath) => {
+			const fullAlias = `#tempo/${subPath}`;
+			const targetDistPath = findTempoTarget(fullAlias);
+			const rel = resolveRelativeImport(filePath, targetDistPath);
+			return `${quote}${rel}${quote}`;
+		})
+		.replace(/(['"])#tempo\1/g, (_, quote) => {
+			const rel = resolveRelativeImport(filePath, 'tempo.index.js');
+			return `${quote}${rel}${quote}`;
+		});
 
 	if (content !== updatedContent) {
 		fs.writeFileSync(filePath, updatedContent);
