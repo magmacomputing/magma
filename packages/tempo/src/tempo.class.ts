@@ -1438,7 +1438,7 @@ export class Tempo {
 
 				const term = Tempo.#termMap.get(key);
 				if (term) {
-					const isKeyOnly = term.key === key;
+					const isKeyOnly = (term.key === key) || (term.scope !== key);
 					const define = (keyOnly: boolean) => {
 						try {
 							const result = term.define.call(this, keyOnly);
@@ -1496,6 +1496,13 @@ export class Tempo {
 				// (isKeyOnly=false) so format() can access res.label on the returned Range.
 				this.#setLazy(target, term.key, (isKey: boolean) => define(isKey, this.toDateTime()), !!term.scope);
 				if (term.scope) this.#setLazy(target, term.scope, (isKey: boolean) => define(isKey, this.toDateTime()), false);
+				if (term.aliases && Array.isArray(term.aliases)) {
+					for (const alias of term.aliases) {
+						if (alias !== term.scope) {
+							this.#setLazy(target, alias, (isKey: boolean) => define(isKey, this.toDateTime()), true);
+						}
+					}
+				}
 			});
 		}
 	}
