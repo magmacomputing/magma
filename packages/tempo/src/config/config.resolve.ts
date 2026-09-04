@@ -26,7 +26,11 @@ function isFileUrl(specifier: string): boolean {
 }
 
 /**
- * Safely resolves relative specifiers against a base URL string or directory path.
+ * Resolves a relative specifier against an HTTP URL or filesystem location.
+ *
+ * @param specifier - The URL or path to resolve.
+ * @param baseLocation - The base URL or filesystem location.
+ * @returns The resolved specifier, or the original specifier when no applicable base is provided or URL resolution fails.
  */
 function resolveSpecifier(specifier: string, baseLocation?: string, pathMod?: any): string {
 	if (isHttpUrl(specifier) || isFileUrl(specifier))
@@ -73,7 +77,11 @@ async function fetchRemoteConfig(url: string): Promise<Options | undefined> {
 }
 
 /**
- * Merges two Options configurations (parent base + child override).
+ * Combines parent and child configuration options, with child values taking precedence.
+ *
+ * @param parent - The base configuration
+ * @param child - The overriding configuration
+ * @returns The merged configuration with registry sub-properties and planner options combined
  */
 function mergeConfigs(parent: Options, child: Options): Options {
 	const merged: Options = { ...parent, ...child };
@@ -99,7 +107,12 @@ function mergeConfigs(parent: Options, child: Options): Options {
 }
 
 /**
- * Recursively resolves `"extends"` references in configuration objects.
+ * Resolves inherited configuration entries and combines them with local options.
+ *
+ * Parent configurations are processed recursively and merged before local properties. Circular references and excessive inheritance depth are skipped.
+ *
+ * @param baseLocation - The path or URL used to resolve relative `extends` entries
+ * @returns The configuration with inherited options merged into its local properties
  */
 async function processExtends(
 	config: Options,
@@ -156,7 +169,11 @@ async function processExtends(
 }
 
 /**
- * Loads a configuration target (file path, file:// URL, or http(s):// URL).
+ * Loads and resolves a configuration target from a local path, `file://` URL, or HTTP(S) URL.
+ *
+ * @param target - The configuration path or URL to load
+ * @param currentDir - The base directory for resolving relative paths
+ * @returns The loaded configuration, or `undefined` if it cannot be loaded
  */
 async function loadConfigTarget(
 	target: string,
@@ -328,9 +345,10 @@ export function resolveConfigSync(options?: { cwd?: string, configFile?: string 
 }
 
 /**
- * Asynchronously discovers and loads a `tempo.config.*` file by traversing upwards
- * from the current working directory until a package.json is found.
- * Supports http(s):// URLs, file:// URLs, and recursive `"extends"` inheritance.
+ * Discovers and loads a Tempo configuration from an explicit target or the surrounding project directories.
+ *
+ * @param options - Optional working directory and configuration target.
+ * @returns The loaded configuration, or `undefined` when no configuration is found or the environment cannot load one.
  */
 export async function resolveConfig(options?: { cwd?: string, configFile?: string }): Promise<Options | undefined> {
 	if (options?.configFile && isHttpUrl(options.configFile))
