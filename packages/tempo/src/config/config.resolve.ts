@@ -1,4 +1,4 @@
-import { isFunction } from '#library/assertion.library.js';
+import { isFunction, isString, isObject } from '#library/assertion.library.js';
 import { parseJSONC } from '#library/json.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import type { Options } from '../tempo.type.js';
@@ -10,6 +10,186 @@ declare const require: any;
 const ctx = getContext();
 let nodeReq: ((id: string) => any) | null | undefined = undefined;
 let syncCache: Options | null | undefined = undefined;
+
+function isHttpUrl(specifier: string): boolean {
+	return /^https?:\/\//i.test(specifier);
+}
+
+function isFileUrl(specifier: string): boolean {
+	return /^file:\/\//i.test(specifier);
+}
+
+/**
+ * Safely resolves relative specifiers against a base URL string or directory path.
+ */
+function resolveSpecifier(specifier: string, baseLocation?: string, pathMod?: any): string {
+	if (isHttpUrl(specifier) || isFileUrl(specifier))
+		return specifier;
+
+	if (baseLocation && isHttpUrl(baseLocation)) {
+		try {
+			return new URL(specifier, baseLocation).href;
+		} catch {
+			return specifier;
+		}
+	}
+
+	if (baseLocation && pathMod) {
+		const baseDir = (baseLocation.endsWith('/') || !pathMod.extname(baseLocation))
+			? baseLocation
+			: pathMod.dirname(baseLocation);
+		return pathMod.resolve(baseDir, specifier);
+	}
+
+	return specifier;
+}
+
+/**
+ * Fetches a JSON/JSONC configuration file over HTTP/HTTPS.
+ */
+async function fetchRemoteConfig(url: string): Promise<Options | undefined> {
+	try {
+		const { fetchRequest } = await import('#library/request.library.js');
+		const data = await fetchRequest<any>(
+			url,
+			{ headers: { Accept: 'application/json, text/plain, */*' } },
+			{ timeout: 3000, maxBytes: 128 * 1024 }
+		);
+
+		if (isObject(data)) return data as Options;
+		if (isString(data)) return parseJSONC(data) as Options;
+	} catch (err: any) {
+		console.warn(`[Tempo] Failed to fetch remote config from ${url}:`, err?.message || err);
+	}
+	return undefined;
+}
+
+/**
+ * Merges two Options configurations (parent base + child override).
+ */
+function mergeConfigs(parent: Options, child: Options): Options {
+	const merged: Options = { ...parent, ...child };
+
+	if (parent.registry || child.registry) {
+		merged.registry = {
+			...parent.registry,
+			...child.registry,
+			formats: { ...parent.registry?.formats, ...child.registry?.formats },
+			locales: { ...parent.registry?.locales, ...child.registry?.locales },
+			numbers: { ...parent.registry?.numbers, ...child.registry?.numbers },
+		};
+	}
+
+	if (parent.planner || child.planner) {
+		merged.planner = {
+			...parent.planner,
+			...child.planner,
+		};
+	}
+
+	return merged;
+}
+
+/**
+ * Recursively resolves `"extends"` references in configuration objects.
+ */
+async function processExtends(
+	config: Options,
+	baseLocation: string,
+	fs?: any,
+	path?: any,
+	urlMod?: any,
+	loadedSet = new Set<string>()
+): Promise<Options> {
+	if (!config || !config.extends) return config;
+
+	const extendsList = Array.isArray(config.extends) ? config.extends : [config.extends];
+	const stringExtends = extendsList.filter((item): item is string => typeof item === 'string');
+	const nonStringExtends = extendsList.filter(item => typeof item !== 'string');
+
+	if (stringExtends.length === 0) return config;
+
+	let mergedParentConfig: Options = {};
+
+	for (const specifier of stringExtends) {
+		const targetUrlOrPath = resolveSpecifier(specifier, baseLocation, path);
+		if (loadedSet.has(targetUrlOrPath)) {
+			console.warn(`[Tempo] Circular extends detected for config target: ${targetUrlOrPath}`);
+			continue;
+		}
+
+		const currentDir = path ? path.dirname(baseLocation) : (typeof process !== 'undefined' ? process.cwd() : '');
+		const parentConfig = await loadConfigTarget(targetUrlOrPath, currentDir, fs, path, urlMod, loadedSet);
+		if (parentConfig)
+			mergedParentConfig = mergeConfigs(mergedParentConfig, parentConfig);
+	}
+
+	const { extends: _, ...localConfigProps } = config;
+	const finalMerged = mergeConfigs(mergedParentConfig, localConfigProps);
+
+	if (nonStringExtends.length > 0 || (mergedParentConfig.extends && Array.isArray(mergedParentConfig.extends))) {
+		const parentNonStringExtends = Array.isArray(mergedParentConfig.extends)
+			? mergedParentConfig.extends.filter(item => typeof item !== 'string')
+			: [];
+		finalMerged.extends = [...parentNonStringExtends, ...nonStringExtends];
+	}
+
+	return finalMerged;
+}
+
+/**
+ * Loads a configuration target (file path, file:// URL, or http(s):// URL).
+ */
+async function loadConfigTarget(
+	target: string,
+	currentDir: string,
+	fs?: any,
+	path?: any,
+	urlMod?: any,
+	loadedSet = new Set<string>()
+): Promise<Options | undefined> {
+	if (loadedSet.has(target)) return undefined;
+	loadedSet.add(target);
+
+	if (isHttpUrl(target)) {
+		const fetched = await fetchRemoteConfig(target);
+		if (fetched)
+			return processExtends(fetched, target, fs, path, urlMod, loadedSet);
+		return undefined;
+	}
+
+	let localPath = target;
+	if (isFileUrl(target)) {
+		if (urlMod?.fileURLToPath)
+			localPath = urlMod.fileURLToPath(target);
+		else
+			localPath = target.replace(/^file:\/\//i, '');
+	} else if (path && !path.isAbsolute(localPath)) {
+		localPath = path.resolve(currentDir, localPath);
+	}
+
+	if (fs && fs.existsSync(localPath)) {
+		try {
+			const ext = path ? path.extname(localPath) : '.json';
+			let loaded: Options | undefined = undefined;
+
+			if (ext === '.json' || ext === '.jsonc') {
+				const content = await fs.promises.readFile(localPath, 'utf8');
+				loaded = parseJSONC(content) as Options;
+			} else if (urlMod) {
+				const imported = await import(/* @vite-ignore */ urlMod.pathToFileURL(localPath).href);
+				loaded = imported.default || imported;
+			}
+
+			if (loaded)
+				return processExtends(loaded, localPath, fs, path, urlMod, loadedSet);
+		} catch (err) {
+			console.warn(`[Tempo] Failed to load config file at ${localPath}:`, err);
+		}
+	}
+
+	return undefined;
+}
 
 /**
  * Safely resolves a Node.js require function in CommonJS or ESM environments.
@@ -96,11 +276,11 @@ export function resolveConfigSync(options?: { cwd?: string, configFile?: string 
 		}
 
 		const rootPath = path.parse(currentDir).root;
-		const exts = ['.jsonc', '.json'];
+		const exts = ['jsonc', 'json'];
 
 		while (currentDir && currentDir !== rootPath) {
 			for (const ext of exts) {
-				const configPath = path.join(currentDir, `tempo.config${ext}`);
+				const configPath = path.join(currentDir, `tempo.config.${ext}`);
 				if (fs.existsSync(configPath)) {
 					try {
 						const content = fs.readFileSync(configPath, 'utf8');
@@ -114,9 +294,7 @@ export function resolveConfigSync(options?: { cwd?: string, configFile?: string 
 			}
 
 			const pkgJson = path.join(currentDir, 'package.json');
-			if (fs.existsSync(pkgJson)) {
-				break;
-			}
+			if (fs.existsSync(pkgJson)) break;
 
 			const parentDir = path.dirname(currentDir);
 			if (parentDir === currentDir) break;
@@ -133,8 +311,12 @@ export function resolveConfigSync(options?: { cwd?: string, configFile?: string 
 /**
  * Asynchronously discovers and loads a `tempo.config.*` file by traversing upwards
  * from the current working directory until a package.json is found.
+ * Supports http(s):// URLs, file:// URLs, and recursive `"extends"` inheritance.
  */
 export async function resolveConfig(options?: { cwd?: string, configFile?: string }): Promise<Options | undefined> {
+	if (options?.configFile && isHttpUrl(options.configFile))
+		return loadConfigTarget(options.configFile, typeof process !== 'undefined' ? process.cwd() : '');
+
 	const ctx = getContext();
 	if (ctx.type !== CONTEXT.NodeJS || !isFunction(ctx.global.process?.cwd))
 		return undefined;
@@ -144,37 +326,19 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 		const modUrl = 'node:url';
 		const modPath = 'node:path';
 
-		const [fs, path] = await Promise.all([
+		const [fs, path, urlMod] = await Promise.all([
 			import(/* @vite-ignore */ modFs),
 			import(/* @vite-ignore */ modPath),
+			import(/* @vite-ignore */ modUrl),
 		]);
 
 		let currentDir = options?.cwd || process.cwd();
 
-		const loadFile = async (configPath: string, ext: string) => {
-			if (ext === '.json' || ext === '.jsonc') {
-				const content = await fs.promises.readFile(configPath, 'utf8');
-				return parseJSONC(content) as Options;
-			} else {
-				const { pathToFileURL } = await import(/* @vite-ignore */ modUrl);
-				const imported = await import(/* @vite-ignore */ pathToFileURL(configPath).href);
-				return imported.default || imported;
-			}
-		};
-
 		if (options?.configFile) {
-			const explicitPath = path.resolve(currentDir, options.configFile);
-			if (fs.existsSync(explicitPath)) {
-				try {
-					return await loadFile(explicitPath, path.extname(explicitPath));
-				} catch (err) {
-					console.warn(`[Tempo] Failed to load explicit config file at ${explicitPath}:`, err);
-					return undefined;
-				}
-			} else {
-				console.warn(`[Tempo] Explicit config file not found at ${explicitPath}`);
-				return undefined;
-			}
+			const target = isHttpUrl(options.configFile) || isFileUrl(options.configFile)
+				? options.configFile
+				: path.resolve(currentDir, options.configFile);
+			return await loadConfigTarget(target, currentDir, fs, path, urlMod);
 		}
 
 		const rootPath = path.parse(currentDir).root;
@@ -187,7 +351,8 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 				const configPath = path.join(currentDir, `tempo.config${ext}`);
 				if (fs.existsSync(configPath)) {
 					try {
-						return await loadFile(configPath, ext);
+						const loaded = await loadConfigTarget(configPath, currentDir, fs, path, urlMod);
+						if (loaded) return loaded;
 					} catch (err) {
 						console.warn(`[Tempo] Found config file at ${configPath} but failed to load it:`, err);
 						continue;

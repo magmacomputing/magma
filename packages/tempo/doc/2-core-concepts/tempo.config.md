@@ -55,27 +55,49 @@ You can then bootstrap this environment at the very top of your application's en
 // main.ts
 import { Tempo } from '@magmacomputing/tempo';
 
-// Automatically discovers and loads 'tempo.config.ts'
+// Automatically discovers and loads local 'tempo.config.ts'
 await Tempo.bootstrap(); 
+
+// OR: Bootstrap from a remote corporate configuration endpoint
+await Tempo.bootstrap({ configFile: 'https://config.internal.company.com/tempo.config.jsonc' });
 
 // Dynamic import ensures domain logic loads ONLY AFTER configuration is complete
 const { App } = await import('./app.js');
 // ...
 ```
+### Remote & Cascading Configurations (`"extends"`)
+
+Tempo configuration files can inherit settings from parent baseline configurations—including remote HTTP(S) endpoints or `file://` URLs—via the `"extends"` key. Local options automatically override parent baseline options:
+
+```jsonc
+// tempo.config.jsonc
+{
+  "extends": "https://central-governance.company.com/tempo-base.config.jsonc",
+  "timeZone": "Australia/Sydney", // Local override
+  "registry": {
+    "periods": {
+      "standup": "09:15"
+    }
+  }
+}
+```
+
 ### Benefits vs. Drawbacks
 
-Using `tempo.config.ts` is the modern standard, but it introduces specific architectural tradeoffs due to Node.js ES Module constraints.
+Using `tempo.config.ts` or `Tempo.bootstrap()` is the modern standard, but it introduces specific architectural tradeoffs due to Node.js ES Module and network boundary constraints.
 
 #### 🌟 Benefits
 - **TypeScript Autocomplete**: Using `defineConfig` provides instant IDE intellisense and type-safety for all configuration options.
-- **Plugin Execution**: You can import and instantiate plugins directly inside the configuration file, keeping your application logic clean.
-- **Dynamic Configuration**: Enables runtime logic (e.g., `debug: process.env.NODE_ENV !== 'production'`) that strict JSON cannot provide.
+- **Plugin Execution**: You can import and instantiate plugins directly inside JS/TS configuration files, keeping your application logic clean.
+- **Central Governance & Remote Cascading**: Enables fetching centralized corporate configs over HTTP(S) or `file://` with recursive inheritance and cycle detection.
+- **Dynamic Configuration**: Enables runtime logic (e.g., `debug: process.env.NODE_ENV !== 'production'`) in JS/TS configs that strict JSON cannot provide.
 
 #### ⚠️ Drawbacks
-- **Asynchronous Requirement**: Because `tempo.config.ts` is evaluated as an ES Module, the JavaScript engine *forces* it to be loaded asynchronously via dynamic `import()`. This means you **must** use `await Tempo.bootstrap()` instead of the synchronous `Tempo.init()`.
+- **Asynchronous Requirement**: Because dynamic config loading and remote fetches are asynchronous, you **must** use `await Tempo.bootstrap()` instead of synchronous calls.
 
-#### 🛑 Risks
-- **Node.js Environment Only**: The `bootstrap()` automatic file discovery relies on Node.js (`fs`, `path`). If you are running strictly in a browser (e.g., via CDN without a bundler), automatic discovery will safely abort, and `bootstrap()` will simply act as a pass-through to `Tempo.init()`. In these environments, you must bundle your config or manually pass your options to `Tempo.init(options)`.
+#### 🛑 Security & Reliability Bounds
+- **Remote Payload Security**: Remote HTTP(S) URLs only load static JSON/JSONC payloads via `parseJSONC`. Dynamic JavaScript execution (`eval` / dynamic `import`) from HTTP URLs is prohibited for supply chain security.
+- **Request Safety**: Remote requests feature a strict 3-second timeout and 128KB maximum payload limit to prevent network hangs.
 - **Floating Promises**: You must ensure you actually `await` the bootstrap call. If you forget the `await` keyword, your application will continue booting before Tempo finishes reading your config file, leading to race conditions where early instances use default settings.
 
 ::: tip

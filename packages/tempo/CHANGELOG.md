@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2026-09-04
+
+### Added
+- **Remote & Cascading Configuration Resolution (`resolveConfig`)**:
+  - **Remote URL Config Fetching**: Enhanced `resolveConfig()` and `Tempo.bootstrap()` to support fetching `tempo.config.jsonc` and `tempo.config.json` files over `http://` and `https://` URLs (including `http://localhost:...` or `http://127.0.0.1:...` for dev servers, local container setups, or central corporate config APIs), parsing payloads via `parseJSONC`.
+  - **`file://` URL Support**: Added support for `file://` URLs in Node.js environments (automatically converted to absolute filesystem paths using `fileURLToPath` for direct `fs` reading).
+  - **Cascading Configuration Inheritance (`"extends"`)**: Introduced recursive `"extends"` resolution in configuration payloads (accepting a string URL/path or an array of URLs/paths). Baseline parent configurations are fetched/loaded and merged with child local overrides (`{ ...parentConfig, ...childConfig }`).
+  - **Security Boundaries & Loop Protection**: Protected remote HTTP requests using `fetchRequest` with a 3-second timeout and 128KB payload size cap to prevent initialization hangs or DoS attacks. Restricted remote loading to static JSON/JSONC data-only payloads (preventing dynamic JS/TS execution from URLs). Implemented loop protection to detect and safely bypass circular `"extends"` references.
+  - **Type System Expansion**: Updated `BaseOptions` and `Discovery` interfaces (`extends` property) in `tempo.type.ts` to accept `string | string[]` config URL/path specifiers alongside plugin objects.
+
 ## [4.0.3] - 2026-09-02
 
 ### Added
