@@ -79,6 +79,7 @@ describe('Remote and Cascading Config Resolution', () => {
 	});
 
 	test('should protect against circular extends loops', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
 		const configA = `{ "extends": "https://company.org/b.jsonc", "timeZone": "UTC" }`;
 		const configB = `{ "extends": "https://company.org/a.jsonc", "locale": "fr-FR" }`;
 
@@ -93,6 +94,7 @@ describe('Remote and Cascading Config Resolution', () => {
 		expect(config).toBeDefined();
 		expect(config?.timeZone).toBe('UTC');
 		expect(config?.locale).toBe('fr-FR');
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Circular extends detected'));
 	});
 
 	test('should return undefined and log warning on network error or 404', async () => {

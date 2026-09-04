@@ -245,7 +245,6 @@
   "scripts": {
     "test": "vitest run",
     "test:dist": "TEST_DIST=true vitest run",
-    "test:browser": "vitest run -c vitest.browser.config.ts",
     "test:ci": "TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
     "repl": "tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:pro": "cross-env TEMPO_LICENSE_KEY=\"mock-pro-token\" tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
