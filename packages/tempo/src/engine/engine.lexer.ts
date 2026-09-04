@@ -50,7 +50,12 @@ export function resolveNumber(str: any): t.Number | any {
 	return enums.NUMBER.keys().find(key => key.startsWith(low)) ?? str;
 }
 
-/** resolve an ordinal string ('1st', '2nd', 'first', 'last', etc) to a 1-based index or -1 for last */
+/**
+ * Resolves an ordinal string to its numeric position.
+ *
+ * @param str - The ordinal string to resolve (e.g., '1st', '2nd', 'first', 'last')
+ * @returns A 1-based index for the position, or -1 for 'last'
+ */
 export function resolveNth(str: any): number {
 	if (!isString(str)) return Number(str) || 1;
 	const low = str.trim().toLowerCase();
@@ -72,7 +77,12 @@ export function resolveNth(str: any): number {
 	}
 }
 
-/** helper to clear base keys and their _alt variants from regex groups */
+/**
+ * Clears specified keys and their alternative variants from regex capture groups.
+ *
+ * @param groups - The groups object containing regex capture results
+ * @param baseKeys - Base key names to clear along with their `_alt` suffixed variants
+ */
 export function clearGroupKeys(groups: t.Groups, ...baseKeys: string[]) {
 	for (const key of ownKeys(groups)) {
 		for (const base of baseKeys) {
@@ -151,7 +161,16 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
 	}
 }
 
-/** resolve an ordinal weekday match (e.g. 3rd Thursday of Nov 2026, last Friday of May) */
+/**
+ * Resolves an ordinal weekday expression to a specific date.
+ *
+ * @param groups - The regex capture groups from the parsed input
+ * @param wkd - The weekday identifier (e.g., 'thu', 'friday')
+ * @param nthStr - The ordinal position (e.g., '3rd', 'last', 'first')
+ * @param dateTime - The anchor date and time for resolution
+ * @param config - Tempo configuration options
+ * @returns The resolved ZonedDateTime, or undefined if resolution fails
+ */
 export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: string, dateTime: Temporal.ZonedDateTime, config: any): Temporal.ZonedDateTime | undefined {
 	const nthVal = resolveNth(nthStr);
 	const weekday = prefix(wkd);
@@ -257,7 +276,16 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	return finalDateTime;
 }
 
-/** resolve an ordinal date unit match (e.g. 1st day of May, last day of 2026, 100th day of 2026) */
+/**
+ * Resolves an ordinal date expression to a specific date.
+ *
+ * @param groups - The regex capture groups from the parsed input
+ * @param unt - The time unit being targeted (e.g., 'day', 'month')
+ * @param nthStr - The ordinal position (e.g., '1st', 'last', '100th')
+ * @param dateTime - The anchor date and time for resolution
+ * @param config - Tempo configuration options
+ * @returns The resolved ZonedDateTime, or undefined if resolution fails
+ */
 export function parseOrdinalDate(
 	groups: t.Groups,
 	unt: string | undefined,
