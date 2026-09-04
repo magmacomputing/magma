@@ -1,6 +1,5 @@
 import { isFunction } from '#library/assertion.library.js';
 import { parseJSONC } from '#library/json.library.js';
-import { when } from '#library/coercion.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import type { Options } from '../tempo.type.js';
 

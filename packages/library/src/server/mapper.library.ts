@@ -1,7 +1,6 @@
 import { isNullish, isNumber, isString } from '#library/assertion.library.js';
 import { getHemisphere } from '#library/international.library.js';
 import { Logger, type DebugLevel } from '#library/logger.class.js';
-import { fetchRequest } from '#library/request.library.js';
 
 export interface ServerMapOpts {
 	endpoint?: string;
@@ -31,6 +30,13 @@ const defaults: ServerMapOpts = {
 	debug: 0,
 }
 
+let requestModulePromise: Promise<typeof import('../common/runtime/request.library.js')> | null = null;
+const getRequestModule = () => {
+	if (!requestModulePromise)
+		requestModulePromise = import('../common/runtime/request.library.js');
+	return requestModulePromise;
+};
+
 /**
  * Perform server-side IP geolocation query via HTTP fetchRequest.
  * 
@@ -44,6 +50,7 @@ export const serverGeoLocation = async (opts = {} as ServerMapOpts): Promise<Ser
 	try {
 		const endpoint = options.endpoint || defaults.endpoint!;
 		const timeout = options.timeout ?? defaults.timeout;
+		const { fetchRequest } = await getRequestModule();
 		const data = await fetchRequest<Record<string, any>>(
 			endpoint,
 			{},
