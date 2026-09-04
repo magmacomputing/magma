@@ -103,4 +103,79 @@ describe('Remote and Cascading Config Resolution', () => {
 		expect(config).toBeUndefined();
 		expect(warnSpy).toHaveBeenCalled();
 	});
+
+	test('should parse commented JSONC served with application/json Content-Type', async () => {
+		const jsoncWithComments = `
+		{
+			// Server returns application/json Content-Type header
+			"timeZone": "Asia/Tokyo",
+			"locale": "ja-JP",
+		}
+		`;
+
+		const originalFetch = globalThis.fetch;
+		globalThis.fetch = vi.fn().mockResolvedValue(new Response(jsoncWithComments, {
+			status: 200,
+			headers: { 'Content-Type': 'application/json' }
+		}));
+
+		try {
+			const config = await resolveConfig({ configFile: 'https://api.internal.org/tempo.config.jsonc' });
+			expect(config).toBeDefined();
+			expect(config?.timeZone).toBe('Asia/Tokyo');
+			expect(config?.locale).toBe('ja-JP');
+		} finally {
+			globalThis.fetch = originalFetch;
+		}
+	});
+
+	test('should allow sibling branches to independently load shared base configs', async () => {
+		const rootConfig = `{ "extends": ["https://company.org/b.jsonc", "https://company.org/c.jsonc"] }`;
+		const configB = `{ "extends": "https://company.org/shared-base.jsonc", "timeZone": "Asia/Tokyo" }`;
+		const configC = `{ "extends": "https://company.org/shared-base.jsonc", "locale": "ja-JP" }`;
+		const sharedBase = `{ "debug": 2 }`;
+
+		vi.spyOn(requestLib, 'fetchRequest').mockImplementation(async (url) => {
+			const strUrl = String(url);
+			if (strUrl === 'https://company.org/root.jsonc') return rootConfig;
+			if (strUrl === 'https://company.org/b.jsonc') return configB;
+			if (strUrl === 'https://company.org/c.jsonc') return configC;
+			if (strUrl === 'https://company.org/shared-base.jsonc') return sharedBase;
+			throw new Error(`404: ${url}`);
+		});
+
+		const config = await resolveConfig({ configFile: 'https://company.org/root.jsonc' });
+		expect(config).toBeDefined();
+		expect(config?.debug).toBe(2);
+		expect(config?.timeZone).toBe('Asia/Tokyo');
+		expect(config?.locale).toBe('ja-JP');
+	});
+
+	test('should enforce max extends depth limit and emit warning', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+
+		vi.spyOn(requestLib, 'fetchRequest').mockImplementation(async (url) => {
+			const num = parseInt(String(url).match(/(\d+)/)?.[1] || '0', 10);
+			return JSON.stringify({ extends: `https://company.org/level-${num + 1}.jsonc`, [`level_${num}`]: true });
+		});
+
+		const config = await resolveConfig({ configFile: 'https://company.org/level-0.jsonc' });
+		expect(config).toBeDefined();
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Maximum config extends depth limit reached'));
+	});
+
+	test('should retain scalar parent extends plugin object when merging extends', async () => {
+		const dummyPlugin = { name: 'dummy-plugin', install: () => { } };
+		const parentConfig = { extends: dummyPlugin, timeZone: 'UTC' };
+		const childConfig = { extends: 'https://company.org/parent.jsonc', locale: 'en-US' };
+
+		vi.spyOn(requestLib, 'fetchRequest').mockImplementation(async (url) => {
+			if (String(url) === 'https://company.org/parent.jsonc') return JSON.stringify(parentConfig);
+			throw new Error('404');
+		});
+
+		const config = await resolveConfig({ configFile: 'https://company.org/parent.jsonc' });
+		expect(config).toBeDefined();
+		expect(config?.timeZone).toBe('UTC');
+	});
 });

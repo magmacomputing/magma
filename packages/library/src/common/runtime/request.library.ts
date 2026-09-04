@@ -32,6 +32,7 @@ type Config = {
 	/** number of milliseconds to attempt a request */				timeout?: number;
 	/** response wrapper (eg.  "alert({hello:'there'})" */		prefix?: string;
 	/** maximum cumulative bytes allowed before aborting */		maxBytes?: number;
+	/** return raw response text without parsing JSON */			rawText?: boolean;
 }
 
 export class HttpError extends Error {
@@ -130,6 +131,9 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 				if (isDefined(config.maxBytes)) {
 					const rawText = await readBoundedBody(res, config.maxBytes);
 
+					if (config.rawText)
+						return rawText as unknown as T;
+
 					if (config.prefix) {
 						const json = rawText.startsWith(config.prefix)
 							? rawText.substring(config.prefix.length).replace(RE_TRAILING_CLOSURE, '')
@@ -145,6 +149,11 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 					} catch {
 						return rawText as unknown as T;
 					}
+				}
+
+				if (config.rawText) {
+					const text = isFunction(res.text) ? await res.text() : '';
+					return text as unknown as T;
 				}
 
 				if (config.prefix) {

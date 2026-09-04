@@ -44,6 +44,8 @@ function resolveSpecifier(specifier: string, baseLocation?: string, pathMod?: an
 	return specifier;
 }
 
+const MAX_EXTENDS_DEPTH = 10;
+
 /**
  * Fetches a JSON/JSONC configuration file over HTTP/HTTPS.
  */
@@ -53,7 +55,7 @@ async function fetchRemoteConfig(url: string): Promise<Options | undefined> {
 		const data = await fetchRequest<any>(
 			url,
 			{ headers: { Accept: 'application/json, text/plain, */*' } },
-			{ timeout: 3000, maxBytes: 128 * 1024 }
+			{ timeout: 3000, maxBytes: 128 * 1024, rawText: true }
 		);
 
 		if (isObject(data)) return data as Options;
@@ -99,9 +101,15 @@ async function processExtends(
 	fs?: any,
 	path?: any,
 	urlMod?: any,
-	loadedSet = new Set<string>()
+	loadedSet = new Set<string>(),
+	depth = 0,
 ): Promise<Options> {
 	if (!config || !config.extends) return config;
+
+	if (depth >= MAX_EXTENDS_DEPTH) {
+		console.warn(`[Tempo] Maximum config extends depth limit reached (${MAX_EXTENDS_DEPTH}). Skipping further extends resolution.`);
+		return config;
+	}
 
 	const extendsList = Array.isArray(config.extends) ? config.extends : [config.extends];
 	const stringExtends = extendsList.filter((item): item is string => typeof item === 'string');
@@ -119,7 +127,8 @@ async function processExtends(
 		}
 
 		const currentDir = path ? path.dirname(baseLocation) : (typeof process !== 'undefined' ? process.cwd() : '');
-		const parentConfig = await loadConfigTarget(targetUrlOrPath, currentDir, fs, path, urlMod, loadedSet);
+		const branchLoadedSet = new Set(loadedSet);
+		const parentConfig = await loadConfigTarget(targetUrlOrPath, currentDir, fs, path, urlMod, branchLoadedSet, depth + 1);
 		if (parentConfig)
 			mergedParentConfig = mergeConfigs(mergedParentConfig, parentConfig);
 	}
@@ -127,10 +136,13 @@ async function processExtends(
 	const { extends: _, ...localConfigProps } = config;
 	const finalMerged = mergeConfigs(mergedParentConfig, localConfigProps);
 
-	if (nonStringExtends.length > 0 || (mergedParentConfig.extends && Array.isArray(mergedParentConfig.extends))) {
-		const parentNonStringExtends = Array.isArray(mergedParentConfig.extends)
-			? mergedParentConfig.extends.filter(item => typeof item !== 'string')
-			: [];
+	const parentExtends = mergedParentConfig.extends;
+	const parentExtendsList = Array.isArray(parentExtends)
+		? parentExtends
+		: (parentExtends != null ? [parentExtends] : []);
+	const parentNonStringExtends = parentExtendsList.filter(item => typeof item !== 'string');
+
+	if (nonStringExtends.length > 0 || parentNonStringExtends.length > 0) {
 		finalMerged.extends = [...parentNonStringExtends, ...nonStringExtends];
 	}
 
@@ -146,7 +158,8 @@ async function loadConfigTarget(
 	fs?: any,
 	path?: any,
 	urlMod?: any,
-	loadedSet = new Set<string>()
+	loadedSet = new Set<string>(),
+	depth = 0
 ): Promise<Options | undefined> {
 	if (loadedSet.has(target)) return undefined;
 	loadedSet.add(target);
@@ -154,7 +167,7 @@ async function loadConfigTarget(
 	if (isHttpUrl(target)) {
 		const fetched = await fetchRemoteConfig(target);
 		if (fetched)
-			return processExtends(fetched, target, fs, path, urlMod, loadedSet);
+			return processExtends(fetched, target, fs, path, urlMod, loadedSet, depth);
 		return undefined;
 	}
 
@@ -182,7 +195,7 @@ async function loadConfigTarget(
 			}
 
 			if (loaded)
-				return processExtends(loaded, localPath, fs, path, urlMod, loadedSet);
+				return processExtends(loaded, localPath, fs, path, urlMod, loadedSet, depth);
 		} catch (err) {
 			console.warn(`[Tempo] Failed to load config file at ${localPath}:`, err);
 		}
