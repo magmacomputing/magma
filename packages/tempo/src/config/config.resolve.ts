@@ -11,10 +11,16 @@ const ctx = getContext();
 let nodeReq: ((id: string) => any) | null | undefined = undefined;
 let syncCache: Options | null | undefined = undefined;
 
+/**
+ * Checks whether a specifier string is an http or https URL.
+ */
 function isHttpUrl(specifier: string): boolean {
 	return /^https?:\/\//i.test(specifier);
 }
 
+/**
+ * Checks whether a specifier string is a file:// URL.
+ */
 function isFileUrl(specifier: string): boolean {
 	return /^file:\/\//i.test(specifier);
 }
