@@ -1,7 +1,7 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin, isCronString } from '../src/index.js';
 
-Tempo.extend(TickerPlugin);
+Tempo.use(TickerPlugin);
 
 describe('Ticker Cron Support', () => {
 	beforeEach(() => {

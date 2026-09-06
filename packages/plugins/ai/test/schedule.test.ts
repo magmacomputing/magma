@@ -2,7 +2,7 @@ import { Tempo, Interval } from '@magmacomputing/tempo';
 import { ParseModule } from '@magmacomputing/tempo/parse';
 import { scheduleAI, initAI } from '../src/index.js';
 
-Tempo.extend(ParseModule);
+Tempo.use(ParseModule);
 
 describe('AI Schedule Plugin (scheduleAI)', () => {
 	beforeEach(async () => {

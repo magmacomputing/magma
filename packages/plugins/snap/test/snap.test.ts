@@ -5,7 +5,7 @@ import { SnapPlugin } from '../src/index.js';
 
 describe('Snap Plugin', () => {
 	beforeAll(() => {
-		Tempo.extend(MutateModule, FormatModule, SnapPlugin);
+		Tempo.use(MutateModule, FormatModule, SnapPlugin);
 	});
 
 	it('should snap to the nearest 15 minutes', () => {

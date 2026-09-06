@@ -2,7 +2,7 @@ import { Tempo } from '#tempo/core';
 import { MutateModule } from '#tempo/mutate';
 import '#tempo/parse';
 
-Tempo.extend(MutateModule);
+Tempo.use(MutateModule);
 
 describe('Mutate Module Aliases (plus & minus)', () => {
 	it('should support .plus() as an alias for .add()', () => {

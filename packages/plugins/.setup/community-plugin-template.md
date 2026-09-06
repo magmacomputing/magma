@@ -153,3 +153,15 @@ When adding a new plugin to the monorepo, update `.github/workflows/publish.yml`
    npm publish --workspace=@magmacomputing/tempo-plugin-[name] $PROVENANCE_FLAG
    ```
 
+## 8. NPM Registry Trusted Publisher Configuration (OIDC & Provenance)
+
+When introducing a new plugin or helper package to the ecosystem, you **must** configure a **Trusted Publisher** on `npmjs.com` to enable CI publishing with cryptographic provenance (`--provenance`):
+
+1. **Navigate to Package Access**: Go to `https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name]/access`.
+2. **Add Publisher**: Under **Publishing Access** $\rightarrow$ **Trusted Publishers**, click **Add GitHub Actions Publisher**.
+3. **Configure Settings**:
+   - **Organization / Owner**: `magmacomputing`
+   - **Repository**: `magma`
+   - **Workflow filename**: `publish.yml`
+   - **Environment**: *(leave blank unless using environment-gated deployments)*
+4. **Why this is mandatory**: The Tempo monorepo uses GitHub Actions OIDC (`id-token: write`) to sign and publish packages with Sigstore provenance. Without an explicit Trusted Publisher binding for each new package on `npmjs.com`, NPM will reject `--provenance` publish attempts with `E404` or `E403` permission errors.

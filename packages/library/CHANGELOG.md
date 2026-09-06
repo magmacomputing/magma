@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2026-09-06
+
+### Added
+- **Revocable & Ephemeral Proxy Engine (`proxy.library`)**:
+  - **Native Revocation Engine**: Upgraded `factory` to support native `Proxy.revocable()` while preserving unwrapping (`sym.$Target`), method binding, and immutability invariants.
+  - **`revocable(target, options?)`**: Exported utility returning `{ proxy, revoke }` for on-demand permanent handle deactivation (`TypeError` on post-revocation access).
+  - **`ephemeral(target, fn, options?)`**: Scoped execution wrapper that passes a revocable proxy to synchronous or asynchronous callbacks and automatically revokes the proxy in `try...finally`, ensuring scoped proxy-handle revocation and preventing post-execution access through the revoked proxy handle.
+- **High-Performance Primitive Fast-Path (`type.library`)**:
+  - Added sub-nanosecond `typeof` fast-path for all 7 primitives (`null`, `undefined`, `string`, `number`, `boolean`, `bigint`, `symbol`) in `protoType()`, achieving ~100x speedup by bypassing object boxing and call-frame overhead.
+  - Replaced non-idiomatic `switch (true)` with a jump-table `switch (type)` in `getType()` and removed redundant type branches.
+  - Documented try-catch safety rationale guarding against throwing dynamic getters, revoked proxies, and cross-realm security errors.
+
 ## [4.0.3] - 2026-09-02
 
 ### Added & Security

@@ -1,6 +1,6 @@
-# ⚠️ Migrating to Tempo v4.0.0
+# ⚠️ Migrating to Tempo v4.x
 
-Tempo v4.0.0 introduces a standardized plugin & registry architecture, strict configuration namespaces, and excises legacy v3.x deprecated interfaces.
+Tempo v4.x introduces a standardized plugin & registry architecture, strict configuration namespaces, cascading configuration inheritance, and deterministic resource disposal while excising legacy v3.x deprecated interfaces.
 
 ## ⚡ Dynamic Functional Context (DFC) & Supplier Options
 
@@ -56,28 +56,54 @@ Tempo v4.0.0 Community Core is 100% open-source without commercial license valid
 
 ---
 
-## 🔌 Plugin Registration (`extends` vs `plugins`)
+# 🚀 Tempo v4.1.0 Updates
 
-In v3.x, passing plugin modules to install via `plugins: [PluginA]` was supported. In v4.0.0, plugin module installation is strictly separated from plugin runtime configuration.
+Tempo v4.1.0 introduces cascading configuration inheritance (`extends`), a dedicated `pluginOptions` configuration slot, and overloaded `Tempo.create()` with deterministic resource cleanup (TC39 `using`).
 
-- **Plugin Installation**: Use `extends: [PluginA, PluginB]` or `Tempo.extend(PluginA, PluginB)`.
-- **Plugin Configuration**: The top-level `plugins` option is now reserved exclusively as a configuration dictionary (`plugins: { ticker: { interval: 1000 }, ai: { provider: 'groq' } }`).
+## 🔌 Configuration Inheritance (`extends`), `plugins`, and `pluginOptions`
 
-### Example Migration:
+In v4.1.0, configuration, plugin registration, and runtime options have been cleanly separated:
+
+- **Configuration Inheritance (`extends`)**: The `extends` option in `Tempo.init()` or `tempo.config.json` is strictly reserved for cascading configuration inheritance via URLs or file paths (mirroring `tsconfig.json` and ESLint conventions): `extends: 'https://company.org/tempo-base.json'`.
+- **Plugin Registration (`plugins`)**: Pass executable plugins, terms, and modules into `plugins: [TickerPlugin, AstroTerm]`.
+- **Plugin Configuration Slot (`pluginOptions`)**: Pass runtime configuration defaults for plugins into `pluginOptions: { ticker: { interval: 500 } }`. Passing plain configuration dictionaries directly under `plugins` is `@deprecated`.
+- **Imperative Registration (`Tempo.use`)**: Use the standard `Tempo.use(Plugin)` static method to register plugins, terms, or modules at runtime. `Tempo.extend()` is `@deprecated Use Tempo.use(...) instead.`.
+
+### Example:
 ```javascript
-// ❌ v3.x (Deprecated)
+// ✅ v4.1.0: Clean Separation
 Tempo.init({
-  plugins: [TickerPlugin]
-});
-
-// ✅ v4.0.0
-Tempo.init({
-  extends: [TickerPlugin],
-  plugins: {
+  extends: 'https://central-governance.company.com/tempo-base.json', // Configuration inheritance
+  plugins: [TickerPlugin, AstroTerm],                               // Feature & Term registration
+  pluginOptions: {                                                  // Plugin runtime options
     ticker: { interval: 500 }
   }
 });
+
+// ✅ Imperative registration
+Tempo.use(TickerPlugin);
 ```
+
+---
+
+## 🔒 Overloaded `Tempo.create()` & Scoped Disposal (`using`)
+
+In v4.1.0, `Tempo.create()` introduces deterministic resource cleanup via TC39 Explicit Resource Management:
+
+- **Scoped Callback Mode**: Run isolated operations without leaking sandbox state to the global scope:
+  ```typescript
+  const season = Tempo.create((sb) => {
+    sb.use(AstroPlugin);
+    return sb('2026-06-21').term.astronomy.season;
+  }); // sandbox automatically disposed upon completion
+  ```
+- **TC39 Explicit Resource Management (`using`)**:
+  ```typescript
+  {
+    using sb = Tempo.create({ discovery: 'ephemeral' });
+    sb.use(MyPlugin);
+  } // sb[Symbol.dispose]() called automatically
+  ```
 
 ---
 
@@ -110,7 +136,7 @@ Tempo.init({
 
 ## 🧹 Deprecated Type & API Cleanup
 
-- **`Tempo.extend` vs `Tempo.extends`**: The legacy alias `Tempo.extends` has been excised. Use `Tempo.extend()`.
+- **`Tempo.use` vs `Tempo.uses`**: The legacy alias `Tempo.uses` has been excised. Use `Tempo.use()`.
 - **`TempoInstance` Type**: `TempoInstance` interface alias has been removed in favor of standard `Tempo` class/instance types.
 - **`Mutable<T>` to `MutableObject<T>`**: The utility type `Mutable<T>` has been renamed to `MutableObject<T>` to prevent naming collisions with the `@Mutable` member decorator and clarify object-level `readonly` stripping.
 

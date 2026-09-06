@@ -35,7 +35,7 @@
         
         try {
             // Manually extend core with ONLY the Format module
-            Tempo.extend(FormatModule);
+            Tempo.use(FormatModule);
 
             const t = new Tempo('2026-04-17');
             document.getElementById('output').innerText = `Modular Parse & Format: ${t.format('{yyyy}-{mm}-{dd}')}`;

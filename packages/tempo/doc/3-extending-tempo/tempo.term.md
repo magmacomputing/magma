@@ -143,7 +143,7 @@ Best for projects that prefer explicit dependencies and a uniform API across all
 import { Tempo } from '@magmacomputing/tempo/core';
 import { TermsModule } from '@magmacomputing/tempo/term';
 
-Tempo.extend(TermsModule);
+Tempo.use(TermsModule);
 ```
 
 ### 3. Surgical Opt-in (Maximum Lite)
@@ -152,7 +152,7 @@ Best for maximum bundle-size optimization—you only load the specific Terms you
 import { Tempo } from '@magmacomputing/tempo/core';
 import { QuarterTerm } from '@magmacomputing/tempo/term/quarter';
 
-Tempo.extend(QuarterTerm);
+Tempo.use(QuarterTerm);
 ```
 
 ## How to Define a Term Plugin
@@ -222,7 +222,7 @@ When a Term plugin defines `ranges` with string-based `key` values, Tempo automa
 *   **Period Scopes**: Ranges defined in a `period` scope (like `midnight` or `morning`) are registered as **Period Aliases**.
 *   **Event Scopes**: Ranges defined in an `event` scope are registered as **Event Aliases**.
 
-This synchronization happens during `Tempo.extend()` and `Tempo.init()`, ensuring that any named range boundaries are immediately available for use in the natural-language parsing engine. For example, if you define a custom Term with a range key `"bedtime"`, you can immediately create a new instance using `new Tempo('bedtime')`.
+This synchronization happens during `Tempo.use()` and `Tempo.init()`, ensuring that any named range boundaries are immediately available for use in the natural-language parsing engine. For example, if you define a custom Term with a range key `"bedtime"`, you can immediately create a new instance using `new Tempo('bedtime')`.
 
 ```ts
 type Range = {
@@ -240,14 +240,14 @@ type Range = {
 
 ### Registering the plugin
 
-Use the static **`Tempo.extend()`** method. This allows you to add Terms dynamically without modifying the library source.
+Use the static **`Tempo.use()`** method. This allows you to add Terms dynamically without modifying the library source.
 
 ```ts
 import { Tempo } from '@magmacomputing/tempo/core';
 import { MyRetailSeasonTerm } from './term.myretailseason.js';
 
 // Register the term plugin
-Tempo.extend(MyRetailSeasonTerm);
+Tempo.use(MyRetailSeasonTerm);
 ```
 
 Every `Tempo` instance created after that point will have the custom Term available.
@@ -263,7 +263,7 @@ Tempo.init({
 });
 
 // 2. Define a term that uses this custom property
-Tempo.extend({
+Tempo.use({
   key: 'cfy',
   scope: 'fiscal',
   description: 'Custom Fiscal Year',

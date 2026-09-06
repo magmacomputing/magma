@@ -10,7 +10,7 @@ describe('Master Guard Extension', () => {
 		expect(() => new Tempo('$$$apple$$$')).toThrow(/Unrecognized or invalid ISO 8601 string: \"\$\$\$apple\$\$\$\"/);
 
 		// 2. Extend with a custom term '$$$apple$$$' via Discovery object
-		Tempo.extend({
+		Tempo.use({
 			terms: [{
 				key: '$$$apple$$$',
 				define(keyOnly?: boolean, anchor?: any) { return anchor?.mm === 10 ? 'OCT' : undefined }
@@ -31,7 +31,7 @@ describe('Master Guard Extension', () => {
 		expect(() => new Tempo('@@@banana@@@')).toThrow(/Unrecognized or invalid ISO 8601 string: \"@@@banana@@@\"/);
 
 		// 2. Extend directly
-		Tempo.extend({
+		Tempo.use({
 			key: '@@@banana@@@',
 			define(keyOnly?: boolean, anchor?: any) { return anchor?.mm === 11 ? 'NOV' : undefined }
 		});

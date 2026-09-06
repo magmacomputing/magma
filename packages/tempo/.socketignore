@@ -1,0 +1,21 @@
+# Socket.dev ignore rules for Tempo
+add.day
+subtract.day
+add.mm
+add.ss
+add.ms
+add.us
+subtract.mm
+subtract.ss
+subtract.ms
+subtract.us
+set.date
+set.day
+set.mm
+set.ss
+set.ms
+set.us
+start.day
+mid.day
+end.day
+https://ipwho.is/

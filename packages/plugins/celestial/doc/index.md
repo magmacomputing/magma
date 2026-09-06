@@ -54,7 +54,7 @@ import '@magmacomputing/tempo-plugin-celestial';
 const geo = await geoLookup();
 const t = new Tempo({ geo });
 
-console.log(t.term.sun);             // 'daylight' or 'night'
+console.log(t.term.sun);            // 'daylight' or 'night'
 console.log(t.term.lunar.moonrise); // Tempo instance or null when no rise occurs on the local date
 console.log(t.term.tide);           // 'spring', 'neap', or 'normal'
 ```
@@ -73,7 +73,7 @@ console.log(t.term.solar.key);           // 'daylight'
 console.log(t.term.solar.phase);         // 'Daylight'
 console.log(t.term.solar.phases);        // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
 console.log(t.term.solar.sunrise);       // Tempo instance for local sunrise
-console.log(t.term.solar.geo);          // { latitude: 40.7128, longitude: -74.006 }
+console.log(t.term.solar.geo);           // { latitude: 40.7128, longitude: -74.006 }
 
 // --- Lunar Phase & Ephemeris ---
 console.log(t.term.moon);                // 'waxing-crescent'
@@ -103,7 +103,7 @@ const nextMoonTempo = t.set(`#lunar.${nextPhaseKey}`);
 - **Instance Scope References**: `t.term.lunar.phases`, `t.term.solar.phases`, and `t.term.tides.states` share the exact same frozen array references (`t.term.lunar.phases === LunarTerm.phases`), adding zero memory or GC overhead.
 
 > [!TIP]
-> **Indexing Tip**: Like all Tempo terms (`.month.index`, `.quarter.index`), `.index` is 1-based (`1..8`), while `.phases` is a standard 0-indexed JavaScript array (`0..7`).
+> **Indexing Tip**: Following ISO calendar standards that drive Temporal and Tempo, `.index` is 1-based (`1..8`), while `.phases` is a standard 0-indexed JavaScript array (`0..7`).
 > - **Current Phase**: Use `lunar.key` or `lunar.phases[lunar.index - 1]`.
 > - **Next Phase**: Use `lunar.phases[lunar.index % 8]` (1-based index modulo 8 seamlessly targets the next phase index with automatic wrap-around).
 

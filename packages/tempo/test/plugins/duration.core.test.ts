@@ -27,7 +27,7 @@ describe('Tempo.duration() (Core)', () => {
 	it('should work after manual extension', async () => {
 		// @ts-ignore
 		const { DurationModule } = await import('#tempo/duration');
-		Tempo.extend(DurationModule);
+		Tempo.use(DurationModule);
 
 		const d = Tempo.duration('P1Y');
 		expect(d.years).toBe(1);

@@ -3,7 +3,7 @@ import { FinanceNamespace } from '../src/index.js';
 
 describe('Finance Namespace', () => {
 	it('should lazy load the finance properties', () => {
-		Tempo.extend(FinanceNamespace);
+		Tempo.use(FinanceNamespace);
 
 		const t1 = new Tempo('2024-02-15');
 		expect(t1.finance.fiscalQuarter).toBe(1);

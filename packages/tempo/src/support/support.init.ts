@@ -66,7 +66,7 @@ function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedC
  */
 export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Internal.State, prevCache?: BoundedCache): t.Internal.State {
 	const runtime = getRuntime();
-	// Global init is intentionally idempotent after first hydration; late-loaded modules must use Tempo.extend().
+	// Global init is intentionally idempotent after first hydration; late-loaded modules must use Tempo.use().
 	if (isGlobal && runtime.state && !baseState) {
 		runtime.state.cache = resolveCache(options.cache, runtime.state.cache);
 		return runtime.state;
@@ -498,13 +498,26 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'extends':
-				// Extensions are handled and installed by Tempo.extend() in Tempo.init() / Discovery
+				// Inherited configuration files/URLs are resolved prior to or during config resolution
+				break;
+
+			case 'pluginOptions':
+				if (isObject(arg.value)) {
+					const existing = state.config.pluginOptions ?? {};
+					setProperty(state.config, 'pluginOptions', { ...existing, ...arg.value });
+					// Keep legacy plugins dictionary in sync for backward compatibility
+					const existingLegacy = state.config.plugins ?? {};
+					setProperty(state.config, 'plugins', { ...existingLegacy, ...arg.value });
+				}
 				break;
 
 			case 'plugins':
-				if (isObject(arg.value) && !Array.isArray(arg.value)) {
+				/** @deprecated Passing configuration dictionaries in 'plugins' is deprecated. Use 'pluginOptions' instead. */
+				if (isObject(arg.value) && !Array.isArray(arg.value) && !isFunction(arg.value) && !('install' in arg.value) && !('key' in arg.value)) {
 					const existing = state.config.plugins ?? {};
 					setProperty(state.config, 'plugins', { ...existing, ...arg.value });
+					const existingOpts = state.config.pluginOptions ?? {};
+					setProperty(state.config, 'pluginOptions', { ...existingOpts, ...arg.value });
 				}
 				break;
 

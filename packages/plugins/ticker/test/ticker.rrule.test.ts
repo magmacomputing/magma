@@ -1,7 +1,7 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin } from '../src/index.js';
 
-Tempo.extend(TickerPlugin);
+Tempo.use(TickerPlugin);
 
 describe('Ticker RRULE Support', () => {
 	beforeEach(() => {

@@ -4,7 +4,7 @@ import { resolveProviderApiKey } from './discovery.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
 import { logDebug } from './logger.js';
 import type { AiProvider, AiBaseOptions } from '../types/index.js';
-import { asNumber, asText, isNumber, isObject, isString, isText, evaluate, evaluateAsync } from '@magmacomputing/tempo/library';
+import { asNumber, asText, isNumber, isObject, isString, isText, evaluate, evaluateAsync, ephemeral } from '@magmacomputing/tempo/library';
 
 export interface FetchFromProviderOptions extends AiBaseOptions {
 	/** AbortSignal for early cancellation / timeout handling */
@@ -104,16 +104,14 @@ export function resolveProviderModel(
 }
 
 /**
- * Performs raw HTTP fetch dispatch to an individual AI provider's chat completions endpoint.
- * Handles authentication headers, timeout abort controllers, JSON schema validation,
- * and rate-limit tracking.
+ * Sends a date-parsing request to an AI provider and returns its response content.
  *
  * @param provider - Target provider configuration
- * @param str - Input string prompt
- * @param contextString - Contextual system instructions (time, timezone, locale)
- * @param options - Execution options (signal, timeout, systemPrompt, debug, tokenLimit)
- * @returns Object containing raw payload string, providerId, and parsed rate limits
- * @throws TempoAiError on network, timeout, or provider status errors
+ * @param str - Input string to parse
+ * @param contextString - Contextual instructions for interpreting the input
+ * @param options - Optional request settings, including cancellation, timeout, prompt, debugging, and token limit
+ * @returns The trimmed response content, provider identifier, and rate-limit information
+ * @throws `TempoAiError` if configuration resolution, validation, cancellation, timeout, network communication, or provider processing fails
  */
 export async function fetchFromProvider(
 	provider: AiProvider,
@@ -238,25 +236,29 @@ Do not include markdown blocks or any text outside the JSON.`;
 		const { timeout: _unusedTimeout, max_completion_tokens: _unusedMct, max_tokens: _unusedMt, tokenLimit: _unusedTl, ...bodyOptions } = provider.options ?? {};
 		const startTime = performance.now();
 
-		const response = await fetch(url, {
-			method: 'POST',
-			redirect: 'error',
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${key}`
-			},
-			body: JSON.stringify({
-				model: model,
-				messages: [
-					{ role: 'system', content: `${systemPrompt}\n${contextString}` },
-					{ role: 'user', content: str }
-				],
-				temperature: 0,
-				...tokenLimit,
-				response_format: { type: 'json_object' },
-				...bodyOptions
-			}),
-			signal: controller.signal
+		const requestHeaders = {
+			'Content-Type': 'application/json',
+			'Authorization': `Bearer ${key}`
+		};
+
+		const response = await ephemeral(requestHeaders, (headers) => {
+			return fetch(url, {
+				method: 'POST',
+				redirect: 'error',
+				headers,
+				body: JSON.stringify({
+					model: model,
+					messages: [
+						{ role: 'system', content: `${systemPrompt}\n${contextString}` },
+						{ role: 'user', content: str }
+					],
+					temperature: 0,
+					...tokenLimit,
+					response_format: { type: 'json_object' },
+					...bodyOptions
+				}),
+				signal: controller.signal
+			});
 		});
 
 		const limits = updateRateLimitsFromResponse(response);

@@ -5,6 +5,20 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-06
+
+### Added
+- **`pluginOptions.ai` Configuration Auto-Discovery (`discovery.ts`)**:
+  - Integrated support for the dedicated `pluginOptions` configuration slot introduced in Tempo v4.1.0.
+  - Automatically resolves AI configuration from `Tempo.config.pluginOptions.ai` and filesystem `pluginOptions.ai` across `tempo.config.*` files, prioritizing `pluginOptions` over the deprecated `plugins.ai` dictionary slot.
+
+### Changed & Security
+- **Ephemeral Credential Hardening (`transport.ts`)**:
+  - Outgoing HTTP provider requests now wrap sensitive authorization headers (`Bearer ${key}`) in an `ephemeral()` revocable proxy handle.
+  - Headers are permanently revoked as soon as the network transport Promise settles, preventing subsequent access to request headers through the revoked proxy handle.
+- **Peer Dependency Alignment**:
+  - Updated `@magmacomputing/tempo` peer dependency requirement to `^4.1.0`.
+
 ## [1.1.0] - 2026-08-19
 
 ### Added

@@ -427,7 +427,7 @@ export class Tempo {
 
 		// 2. Process Terms
 		if (discovery.terms)
-			this.extend(asArray(discovery.terms));
+			this.use(asArray(discovery.terms));
 
 		// 3. Process Registry
 		let registryOpts = discovery.registry ?? {};
@@ -441,9 +441,19 @@ export class Tempo {
 			}
 		}
 
-		// 4. Process Plugins
-		if (discovery.plugins && isObject(discovery.plugins) && !Array.isArray(discovery.plugins))
-			opts = { ...opts, plugins: isObject(opts.plugins) ? { ...opts.plugins, ...discovery.plugins } : discovery.plugins };
+		// 4. Process Plugins & Plugin Options
+		if (discovery.pluginOptions && isObject(discovery.pluginOptions)) {
+			opts = { ...opts, pluginOptions: isObject(opts.pluginOptions) ? { ...opts.pluginOptions, ...discovery.pluginOptions } : discovery.pluginOptions };
+		}
+
+		/** @deprecated Providing configuration dictionaries under 'discovery.plugins' is deprecated. Use 'discovery.pluginOptions' instead. */
+		if (discovery.plugins && isObject(discovery.plugins) && !Array.isArray(discovery.plugins) && !isFunction(discovery.plugins) && !('install' in discovery.plugins) && !('key' in discovery.plugins)) {
+			opts = {
+				...opts,
+				plugins: isObject(opts.plugins) ? { ...opts.plugins, ...discovery.plugins } : discovery.plugins,
+				pluginOptions: isObject(opts.pluginOptions) ? { ...discovery.plugins, ...opts.pluginOptions } : discovery.plugins,
+			};
+		}
 
 		// 5. Process Options
 		if (discovery.ignore) {
@@ -524,26 +534,33 @@ export class Tempo {
 	}
 
 	/**
-	 * Register a plugin or term extension.
+	 * Register discovery configuration with an optional discovery symbol.
 	 * 
-	 * @param plugin - A plugin or term extension to register.
+	 * @param discovery - Discovery object defining options, formats, periods, or terms.
+	 * @param symbol - Optional symbol identifier under globalThis to attach discovery data.
+	 */
+	static use(discovery: t.Discovery, symbol?: symbol): typeof Tempo;
+	/**
+	 * Register an individual plugin.
+	 * 
+	 * @param plugin - The plugin function or definition to register.
 	 * @param options - Optional configuration for the plugin.
 	 */
-	static extend(plugin: TempoPlugin, options?: t.Options): typeof Tempo;
+	static use(plugin: TempoPlugin, options?: t.Options): typeof Tempo;
 	/**
 	 * Register an array of plugins or term extensions.
 	 * 
 	 * @param plugins - An array of plugins, terms, or extensions to register.
 	 * @param options - Optional configuration for the plugins.
 	 */
-	static extend(plugins: (TempoPlugin | TermPlugin | any)[], options?: t.Options): typeof Tempo;
+	static use(plugins: (TempoPlugin | TermPlugin | any)[], options?: t.Options): typeof Tempo;
 	/**
 	 * Register multiple plugins or term extensions.
 	 * 
 	 * @param args - A plugin, term, or list of extensions to register.
 	 */
-	static extend(...args: any[]): typeof Tempo;
-	static extend(...args: any[]): typeof Tempo {
+	static use(...args: any[]): typeof Tempo;
+	static use(...args: any[]): typeof Tempo {
 		const isOptionsArg = (arg: any) =>
 			isObject(arg) &&
 			!isString(arg.name) &&
@@ -555,7 +572,7 @@ export class Tempo {
 			!('locales' in arg) &&
 			!('options' in arg);
 
-		let options = (args.length > 1 && isOptionsArg(args[args.length - 1])) ? args.pop() : undefined;
+		let options = (args.length > 1 && (isOptionsArg(args[args.length - 1]) || isSymbol(args[args.length - 1]))) ? args.pop() : undefined;
 
 		const items = args.flat(Infinity);
 		if (isEmpty(items)) return this;
@@ -709,18 +726,29 @@ export class Tempo {
 							const opts = this[$setDiscovery](this[$Internal](), discovery);
 							if (!isEmpty(opts)) this[$setConfig](this[$Internal](), opts);
 
-							if (discovery.extends)
-								asArray(discovery.extends).forEach(p => this.extend(p));
+							// If a plain configuration dictionary was supplied directly in the plugins array (e.g. { ai: { timeout: 1000 } })
+							const isPlainConfigDict = isObject(discovery) &&
+								!ownKeys(discovery).some(key => DISCOVERY.has(key as any)) &&
+								!('name' in discovery) && !('key' in discovery) && !('install' in discovery);
+							if (isPlainConfigDict) {
+								const state = this[$Internal]();
+								/** @deprecated Supplying plain configuration dictionaries in the plugins array is deprecated. Use 'pluginOptions' instead. */
+								state.config.plugins = { ...(state.config.plugins ?? {}), ...discovery };
+								state.config.pluginOptions = { ...(state.config.pluginOptions ?? {}), ...discovery };
+							}
+
+							if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins) || (isObject(discovery.plugins) && ('name' in discovery.plugins || 'key' in discovery.plugins || 'install' in discovery.plugins))))
+								asArray(discovery.plugins).forEach(p => this.use(p));
 
 							// only trigger init if we're assigning a new discovery object to a symbol
 							if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
 								const discoveryArg = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
-								const discoverySymbol = isString(discoveryArg) ? Symbol.for(discoveryArg) : (isSymbol(discoveryArg) && !Symbol.keyFor(discoveryArg) ? Symbol('TempoSandbox') : discoveryArg);
+								const discoverySymbol = isString(discoveryArg) ? Symbol.for(discoveryArg) : discoveryArg;
 
-								if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item) {
+								if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item)
 									(globalThis as Record<symbol, any>)[discoverySymbol as symbol] = item;
-									this[$setConfig](this[$Internal](), { discovery: discoverySymbol })
-								}
+
+								this[$setConfig](this[$Internal](), { discovery: discoverySymbol });
 							}
 							break;
 						}
@@ -740,20 +768,91 @@ export class Tempo {
 	}
 
 	/**
+	 * @deprecated Use Tempo.use(...) instead.
+	 */
+	static extend(discovery: t.Discovery, symbol?: symbol): typeof Tempo;
+	/**
+	 * @deprecated Use Tempo.use(...) instead.
+	 */
+	static extend(plugin: TempoPlugin, options?: t.Options): typeof Tempo;
+	/**
+	 * @deprecated Use Tempo.use(...) instead.
+	 */
+	static extend(plugins: (TempoPlugin | TermPlugin | any)[], options?: t.Options): typeof Tempo;
+	/**
+	 * @deprecated Use Tempo.use(...) instead.
+	 */
+	static extend(...args: any[]): typeof Tempo;
+	/**
+	 * @deprecated Use Tempo.use(...) instead.
+	 */
+	static extend(...args: any[]): typeof Tempo {
+		return (this.use as any)(...args);
+	}
+
+	/**
 	 * 🏭 Sandbox Factory Mode
 	 * Create a fresh, isolated Tempo subclass with its own configuration and registries.
 	 * Returns a new class that inherits from the caller, but maintains independent state.
 	 */
-	static create(options: t.Options = {}): typeof Tempo {
-		const SandboxTempo = class extends (this as any) {
-			static [Symbol.toStringTag] = 'TempoSandbox';
-			static [$IsBase] = false;
+	/**
+	 * 🏭 Sandbox Factory & Scoped Execution Mode
+	 * 
+	 * 1. Factory Mode: Creates a fresh, isolated Tempo subclass with its own configuration and registries.
+	 *    The returned class implements `Disposable` (`[Symbol.dispose]()`), allowing deterministic cleanup via `using`.
+	 * 
+	 * 2. Scoped Execution Mode: When provided a callback, creates an isolated sandbox, executes the callback,
+	 *    and automatically disposes the sandbox upon completion (supporting both synchronous and Promise returns).
+	 *
+	 * @example
+	 * ```ts
+	 * // Factory mode with `using`
+	 * {
+	 *   using sb = Tempo.create({ discovery: 'test' });
+	 *   sb.use(MyPlugin);
+	 * }
+	 * 
+	 * // Scoped callback mode
+	 * const result = Tempo.create((sb) => {
+	 *   sb.use(MyPlugin);
+	 *   return sb('2026-05-10').format();
+	 * });
+	 * ```
+	 */
+	static create(options?: t.Options): typeof Tempo;
+	static create<R>(fn: (sandbox: typeof Tempo) => R): R;
+	static create<R>(options: t.Options, fn: (sandbox: typeof Tempo) => R): R;
+	static create<R>(arg1?: t.Options | ((sandbox: typeof Tempo) => R), arg2?: (sandbox: typeof Tempo) => R): (typeof Tempo) | R {
+		let options: t.Options = {};
+		let fn: ((sandbox: typeof Tempo) => R) | undefined;
+
+		if (isFunction(arg1)) {
+			fn = arg1 as (sandbox: typeof Tempo) => R;
+		} else if (isObject(arg1)) {
+			options = arg1 as t.Options;
+			if (isFunction(arg2))
+				fn = arg2;
 		}
 
 		const discovery = options.discovery;
 		const normalizedDiscovery = (isObject(discovery) && !isSymbol(discovery)) || isUndefined(discovery) || (isSymbol(discovery) && !Symbol.keyFor(discovery))
 			? Symbol('TempoSandbox')
 			: (isString(discovery) ? Symbol.for(discovery) : discovery) as string | symbol;
+
+		let disposed = false;
+		const SandboxTempo = class extends (this as any) {
+			static [Symbol.toStringTag] = 'TempoSandbox';
+			static [$IsBase] = false;
+			static get isDisposed(): boolean { return disposed; }
+			static [Symbol.dispose]() {
+				if (disposed) return;
+				disposed = true;
+				if ((globalThis as any)[normalizedDiscovery as any] === data)
+					delete (globalThis as any)[normalizedDiscovery as any];
+
+				ClassStates.delete(SandboxTempo as any);
+			}
+		}
 
 		let data: any = { options: { ...options, discovery: normalizedDiscovery }, scope: 'sandbox' };
 
@@ -778,14 +877,30 @@ export class Tempo {
 			{ ...options, discovery: normalizedDiscovery }
 		);
 
-		if (data?.extends)
-			(SandboxTempo as any).extend(data.extends);
-		else if (data?.plugins && (Array.isArray(data.plugins) || isFunction(data.plugins) || (isObject(data.plugins) && ('name' in data.plugins || 'key' in data.plugins || 'install' in data.plugins))))
-			(SandboxTempo as any).extend(data.plugins);
+		if (data?.plugins && (Array.isArray(data.plugins) || isFunction(data.plugins) || (isObject(data.plugins) && ('name' in data.plugins || 'key' in data.plugins || 'install' in data.plugins || sym.$PluginType in data.plugins || (data.plugins as any).type))))
+			(SandboxTempo as any).use(data.plugins);
 
 		Object.freeze(SandboxTempo);
 
-		return SandboxTempo as unknown as typeof Tempo;
+		const sb = SandboxTempo as unknown as typeof Tempo;
+
+		if (fn) {
+			try {
+				const res = fn(sb);
+				if (res && typeof (res as any).then === 'function') {
+					return (res as any).finally(() => {
+						(sb as any)[Symbol.dispose]?.();
+					}) as R;
+				}
+				(sb as any)[Symbol.dispose]?.();
+				return res;
+			} catch (err) {
+				(sb as any)[Symbol.dispose]?.();
+				throw err;
+			}
+		}
+
+		return sb;
 	}
 
 	/** 
@@ -898,11 +1013,14 @@ export class Tempo {
 
 			setLogLevel(state.config.debug ?? options.debug ?? Default?.debug ?? LOG.Info);
 
-			if (userDiscovery?.extends)
-				this.extend(userDiscovery.extends);
+			const isInstallable = (item: any) =>
+				Array.isArray(item) || isFunction(item) || (isObject(item) && ('name' in item || 'key' in item || 'install' in item || sym.$PluginType in item || item.type));
 
-			if (options.extends)
-				this.extend(options.extends);
+			if (userDiscovery?.plugins && isInstallable(userDiscovery.plugins))
+				this.use(userDiscovery.plugins);
+
+			if (options.plugins && isInstallable(options.plugins))
+				this.use(options.plugins);
 
 			if (Context.type === CONTEXT.Browser || state.config.debug === LOG.Debug)
 				logDebug('Tempo:', this.config, state.config);
@@ -1169,7 +1287,7 @@ export class Tempo {
 	static {																									// Static initialization block to sequence the bootstrap phase
 		// Define the reactive register hook
 		getRuntime().setHook($Register, (plugin: TempoPlugin | TempoPlugin[]) => {
-			if (!Tempo.isExtending) Tempo.extend(plugin)
+			if (!Tempo.isExtending) Tempo.use(plugin)
 		});
 
 		onRegistryReset(() => {
@@ -1211,7 +1329,7 @@ export class Tempo {
 	static [$errored] = $errored;
 
 	/** @internal */	static [TermError](config: Internal.Config, term: string): void {
-		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.extend(TermsModule)?)" : "";
+		const hint = Tempo.#terms.length === 0 ? ". (No term plugins are registered—did you forget to call Tempo.use(TermsModule)?)" : "";
 		const msg = `Unknown Term identifier: ${term}${hint}`;
 		logError(msg, config);
 	}
@@ -1676,7 +1794,11 @@ export class Tempo {
 	/** @hidden */																						sub(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.subtract(tempo, options); }
 	/** @hidden */																						minus(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.subtract(tempo, options); }
 	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.MutateSet, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this); }
-	/** returns a clone of the current `Tempo` instance. */		clone() { return new this.#Tempo(this, this.config) }
+	/**
+	 * Returns a clone of the current `Tempo` instance.
+	 * @deprecated Tempo instances are immutable. Use `Tempo.from(instance)` instead.
+	 */
+	clone(): Tempo { return this.#Tempo.from(this, this.config); }
 
 	/** returns the underlying Temporal.ZonedDateTime */			toDateTime() { return this.#resolve() as Temporal.ZonedDateTime; }
 	/** returns a Temporal.PlainDate representation */				toPlainDate() { return this.toDateTime().toPlainDate() }
@@ -1822,7 +1944,7 @@ export class Tempo {
 		}
 		if (isUndefined(tempo) || isEmpty(tempo)) return dateTime ?? instant().toZonedDateTimeISO(this.#local.config.timeZone);
 
-		const msg = 'Tempo ParseModule not loaded. Did you forget to Tempo.extend(ParseModule)?';
+		const msg = 'Tempo ParseModule not loaded. Did you forget to Tempo.use(ParseModule)?';
 		logError(msg, this.#local.config);
 		return undefined as any;
 	}

@@ -43,14 +43,24 @@ function num(groups: Record<string, string | number>) {
 		}, {} as Record<string, number>);
 }
 
-/** resolve a number word (0-10) using prefix matching */
+/**
+ * Resolves a number word by matching its prefix against registered number names.
+ *
+ * @param str - The value to resolve
+ * @returns The matching number name, or the original value when no match exists
+ */
 export function resolveNumber(str: any): t.Number | any {
 	if (!isString(str)) return str;
 	const low = str.trim().toLowerCase();
 	return enums.NUMBER.keys().find(key => key.startsWith(low)) ?? str;
 }
 
-/** resolve an ordinal string ('1st', '2nd', 'first', 'last', etc) to a 1-based index or -1 for last */
+/**
+ * Resolves an ordinal expression to a numeric position.
+ *
+ * @param str - An ordinal expression, numeric value, or `last`
+ * @returns The 1-based position, `-1` for `last`, or `1` when the input is invalid or unspecified
+ */
 export function resolveNth(str: any): number {
 	if (!isString(str)) return Number(str) || 1;
 	const low = str.trim().toLowerCase();
@@ -72,7 +82,12 @@ export function resolveNth(str: any): number {
 	}
 }
 
-/** helper to clear base keys and their _alt variants from regex groups */
+/**
+ * Clears specified keys and their alternative variants from regex capture groups.
+ *
+ * @param groups - The groups object containing regex capture results
+ * @param baseKeys - Base key names to clear along with their `_alt` suffixed variants
+ */
 export function clearGroupKeys(groups: t.Groups, ...baseKeys: string[]) {
 	for (const key of ownKeys(groups)) {
 		for (const base of baseKeys) {
@@ -124,6 +139,15 @@ export function normalizeModifier(mod: string, config: any = {}): string {
 	return mod;
 }
 
+/**
+ * Calculates a signed adjustment from a modifier and period position.
+ *
+ * @param mod - The modifier that determines the adjustment direction and comparison behavior
+ * @param adjust - The magnitude of the adjustment
+ * @param offset - The reference period position
+ * @param period - The current period position
+ * @returns The signed adjustment to apply
+ */
 export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifier, config: any = {}) {
 	adjust = Math.abs(adjust);
 	mod = normalizeModifier(mod as string, config) as any;
@@ -151,7 +175,16 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
 	}
 }
 
-/** resolve an ordinal weekday match (e.g. 3rd Thursday of Nov 2026, last Friday of May) */
+/**
+ * Resolves an ordinal weekday within a specified or anchored month and year.
+ *
+ * @param groups - The parsed input's capture groups.
+ * @param wkd - The weekday name or identifier.
+ * @param nthStr - The ordinal position, such as `3rd`, `first`, or `last`.
+ * @param dateTime - The date and time used as the resolution anchor.
+ * @param config - Tempo configuration options.
+ * @returns The resolved date and time, the anchor date and time when the ordinal falls outside the month, or `undefined` when the weekday or date components cannot be resolved.
+ */
 export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: string, dateTime: Temporal.ZonedDateTime, config: any): Temporal.ZonedDateTime | undefined {
 	const nthVal = resolveNth(nthStr);
 	const weekday = prefix(wkd);
@@ -203,18 +236,13 @@ export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: strin
 }
 
 /**
- * if named-group 'wkd' detected (with optional 'mod', 'nbr', 'sfx' or time-units), then calc relative weekday offset  
- * | Example | Result | Note |
- * | :--- | :---- | :---- |
- * | `Wed` | Wed this week | might be earlier or later or equal to current day |
- * | `-Wed` | Wed last week | same as new Tempo('Wed').add({ weeks: -1 }) |
- * | `+Wed` | Wed next week | same as new Tempo('Wed').add({ weeks:  1 }) |
- * | `-3Wed` | Wed three weeks ago | same as new Tempo('Wed').add({ weeks: -3 }) |
- * | `<Wed` | Wed prior to today | might be current or previous week |
- * | `<=Wed` | Wed prior to tomorrow | might be current or previous week |
- * | `Wed noon` | Wed this week at 12:00pm | even though time-periods may be present, ignore them in this method |
- * 
- * @returns  ZonedDateTime with computed date-offset  
+ * Resolves weekday captures relative to a date and time.
+ *
+ * Supports ordinal weekdays, relative modifiers, numeric week offsets, and weekday suffixes while preserving the time and timezone.
+ *
+ * @param groups - Lexer capture groups containing the weekday expression
+ * @param dateTime - Date and time used as the reference point
+ * @returns The date and time adjusted to the resolved weekday, or the original value when the captures are invalid or unsupported
  */
 export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any): Temporal.ZonedDateTime {
 	const { wkd, mod, nbr = '1', sfx, afx, ...rest } = groups as Lexer.GroupWkd;
@@ -257,7 +285,17 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	return finalDateTime;
 }
 
-/** resolve an ordinal date unit match (e.g. 1st day of May, last day of 2026, 100th day of 2026) */
+/**
+ * Resolves an ordinal date expression to a specific date.
+ *
+ * @param groups - Regex capture groups from the parsed input
+ * @param unt - Time unit targeted by the ordinal expression
+ * @param nthStr - Ordinal position, such as `1st` or `last`
+ * @param dateTime - Date and time providing the resolution context
+ * @param year - Target year
+ * @param month - Target month
+ * @returns The resolved zoned date-time, or `undefined` if the ordinal date is invalid
+ */
 export function parseOrdinalDate(
 	groups: t.Groups,
 	unt: string | undefined,

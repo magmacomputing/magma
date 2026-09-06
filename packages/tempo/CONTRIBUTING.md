@@ -39,7 +39,7 @@ We use **Vitest** for our test suite. All new features or bug fixes must include
 - **Coverage**: `npm run coverage`
 
 > [!IMPORTANT]
-> **Zero State Contamination**: Tests must be idempotent. If your test modifies a global registry (e.g., `Tempo.extend`), ensure you use the `using` keyword or manually call `Tempo[Symbol.dispose]()` to reset the engine for the next test.
+> **Zero State Contamination**: Tests must be idempotent. If your test modifies a global registry (e.g., `Tempo.use`), ensure you use the `using` keyword or manually call `Tempo[Symbol.dispose]()` to reset the engine for the next test.
 
 ## 📜 Coding Standards
 

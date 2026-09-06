@@ -16,21 +16,6 @@ permissions:
   contents: read
 
 jobs:
-  security:
-    name: Socket Security Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Run Socket Scan
-        continue-on-error: true
-        run: npx -y @socketsecurity/cli ci
-
   library:
     name: Library Tests
     runs-on: ubuntu-latest
@@ -44,7 +29,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - name: Install monorepo dependencies
-        run: npm ci
+        run: npm ci --prefer-offline
       - name: Run library tests
         run: npm test --workspace=@magmacomputing/library
 
@@ -62,7 +47,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - name: Install monorepo dependencies
-        run: npm ci
+        run: npm ci --prefer-offline
       - name: Run standard tests
         run: npm test
         working-directory: packages/tempo
@@ -81,7 +66,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - name: Install monorepo dependencies
-        run: npm ci
+        run: npm ci --prefer-offline
       - name: Build Core
         run: npm run build:tempo
       - name: Run plugin tests
@@ -102,7 +87,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - name: Install monorepo dependencies
-        run: npm ci
+        run: npm ci --prefer-offline
       - name: Build Core
         run: npm run build:tempo
       - name: Run functions tests

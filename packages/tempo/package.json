@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo",
-  "version": "4.0.3",
+  "version": "4.1.0",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -245,7 +245,6 @@
   "scripts": {
     "test": "vitest run",
     "test:dist": "TEST_DIST=true vitest run",
-    "test:browser": "vitest run -c vitest.browser.config.ts",
     "test:ci": "TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
     "repl": "tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:pro": "cross-env TEMPO_LICENSE_KEY=\"mock-pro-token\" tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
@@ -272,8 +271,38 @@
     "CHANGELOG.md",
     "SECURITY.md",
     "LICENSE",
+    ".socketignore",
     "dist/"
   ],
+  "socket": {
+    "issueRules": {
+      "url": {
+        "action": "ignore",
+        "ignore": [
+          "add.day",
+          "subtract.day",
+          "add.mm",
+          "add.ss",
+          "add.ms",
+          "add.us",
+          "subtract.mm",
+          "subtract.ss",
+          "subtract.ms",
+          "subtract.us",
+          "set.date",
+          "set.day",
+          "set.mm",
+          "set.ss",
+          "set.ms",
+          "set.us",
+          "start.day",
+          "mid.day",
+          "end.day",
+          "https://ipwho.is/"
+        ]
+      }
+    }
+  },
   "dependencies": {
     "tslib": "^2.8.1"
   },

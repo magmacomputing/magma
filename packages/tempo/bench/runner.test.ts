@@ -6,7 +6,7 @@ import { BenchmarkModule } from '../src/module/module.benchmark.js';
 import { ParseModule } from '../src/module/module.parse.js';
 
 test('benchmark script', () => {
-	Tempo.extend(ParseModule);
+	Tempo.use(ParseModule);
 	Tempo.init({ timeZone: 'America/New_York' });
 
 	const DATASET = [

@@ -12,7 +12,7 @@ describe('Tempo Plugin System', () => {
 			},
 		});
 
-		Tempo.extend(staticPlugin);
+		Tempo.use(staticPlugin);
 		expect((Tempo as any).staticMethod()).toBe('static');
 	});
 
@@ -26,7 +26,7 @@ describe('Tempo Plugin System', () => {
 			},
 		});
 
-		Tempo.extend(instancePlugin);
+		Tempo.use(instancePlugin);
 		const t = new Tempo();
 		expect((t as any).instanceMethod()).toBe('instance');
 	});
@@ -38,20 +38,40 @@ describe('Tempo Plugin System', () => {
 			install() { installCount++; },
 		});
 
-		Tempo.extend(singlePlugin);
-		Tempo.extend(singlePlugin);
+		Tempo.use(singlePlugin);
+		Tempo.use(singlePlugin);
 		expect(installCount).toBe(1);
 	});
 
-	test('should auto-load plugins from init extends option', () => {
+	test('should auto-load plugins from init plugins option', () => {
 		let loaded = false;
 		const initPlugin: Plugin = definePlugin({
-			name: 'InitExtendsPlugin',
+			name: 'InitPluginsPlugin',
 			install() { loaded = true; },
 		});
 
-		Tempo.init({ extends: [initPlugin] });
+		Tempo.init({ plugins: [initPlugin] });
 		expect(loaded).toBe(true);
+	});
+
+	test('should auto-load both plugins and terms via init plugins option', () => {
+		let pluginInstalled = false;
+
+		const testPlugin: Plugin = definePlugin({
+			name: 'TestPluginMulti',
+			install() { pluginInstalled = true; },
+		});
+
+		const testTerm = {
+			key: 'customTermMulti',
+			define(tempo: any) {
+				return tempo;
+			},
+		};
+
+		Tempo.init({ plugins: [testPlugin, testTerm] });
+		expect(pluginInstalled).toBe(true);
+		expect(Tempo.terms['customTermMulti']?.key).toBe('customTermMulti');
 	});
 
 	test('should store plugin configuration dictionary in Tempo.config.plugins', () => {
@@ -67,17 +87,40 @@ describe('Tempo Plugin System', () => {
 		expect(Tempo.config.plugins?.ai?.timeout).toBe(5000);
 	});
 
-	test('should auto-load plugins from global discovery extends', () => {
-		const testDiscovery = '$TempoTestDiscoveryExtends';
+	test('should allow plugin configuration dictionary inside plugins array alongside plugins', () => {
+		let pluginInstalled = false;
+		const testPlugin: Plugin = definePlugin({
+			name: 'TestPluginWithDict',
+			install() { pluginInstalled = true; },
+		});
+
+		Tempo.init({
+			plugins: [
+				testPlugin,
+				{
+					ai: {
+						mode: 'fallback',
+						timeout: 8000,
+					},
+				},
+			],
+		});
+		expect(pluginInstalled).toBe(true);
+		expect(Tempo.config.plugins?.ai?.mode).toBe('fallback');
+		expect(Tempo.config.plugins?.ai?.timeout).toBe(8000);
+	});
+
+	test('should auto-load plugins from global discovery plugins', () => {
+		const testDiscovery = '$TempoTestDiscoveryPlugins';
 		const discoveryKey = Symbol.for(testDiscovery);
 		let loaded = false;
 		const discoveryPlugin: Plugin = {
-			name: 'DiscoveryExtendsPlugin',
+			name: 'DiscoveryPluginsPlugin',
 			install() { loaded = true; },
 		} as Plugin;
 
 		(globalThis as any)[discoveryKey] = {
-			extends: [discoveryPlugin],
+			plugins: [discoveryPlugin],
 		};
 
 		try {
@@ -94,12 +137,6 @@ describe('Tempo Plugin System', () => {
 		const discoveryKey = Symbol.for(testDiscovery);
 		let pluginConfigDuringInstall: any = null;
 
-		(globalThis as any)[discoveryKey] = {
-			plugins: {
-				ConfiguredDiscoveryPlugin: { apiKey: 'test-key-123', customOption: true },
-			},
-		};
-
 		const discoveryPlugin: Plugin = definePlugin({
 			name: 'ConfiguredDiscoveryPlugin',
 			install(tempo) {
@@ -107,14 +144,49 @@ describe('Tempo Plugin System', () => {
 			},
 		});
 
-		(globalThis as any)[discoveryKey].extends = [discoveryPlugin];
+		(globalThis as any)[discoveryKey] = {
+			plugins: [discoveryPlugin],
+		};
 
 		try {
-			Tempo.init({ discovery: testDiscovery });
+			Tempo.init({
+				discovery: testDiscovery,
+				plugins: {
+					ConfiguredDiscoveryPlugin: { apiKey: 'test-key-123', customOption: true },
+				},
+			});
 			expect(pluginConfigDuringInstall).toEqual({ apiKey: 'test-key-123', customOption: true });
 			expect((Tempo.config as any)?.plugins?.ConfiguredDiscoveryPlugin).toEqual({ apiKey: 'test-key-123', customOption: true });
 		} finally {
 			delete (globalThis as any)[discoveryKey];
+			Tempo.init();
+		}
+	});
+
+	test('should configure plugins via pluginOptions and maintain legacy plugins fallback', () => {
+		try {
+			Tempo.init({
+				pluginOptions: {
+					samplePlugin: { timeout: 5000, enabled: true },
+				},
+			});
+			expect((Tempo.config as any)?.pluginOptions?.samplePlugin).toEqual({ timeout: 5000, enabled: true });
+			expect((Tempo.config as any)?.plugins?.samplePlugin).toEqual({ timeout: 5000, enabled: true });
+		} finally {
+			Tempo.init();
+		}
+	});
+
+	test('should populate both plugins and pluginOptions when using deprecated plugins dictionary', () => {
+		try {
+			Tempo.init({
+				plugins: {
+					legacyPlugin: { retries: 3 },
+				},
+			});
+			expect((Tempo.config as any)?.plugins?.legacyPlugin).toEqual({ retries: 3 });
+			expect((Tempo.config as any)?.pluginOptions?.legacyPlugin).toEqual({ retries: 3 });
+		} finally {
 			Tempo.init();
 		}
 	});
@@ -133,7 +205,7 @@ describe('Tempo Plugin System', () => {
 				(TempoClass as any).freshMethod = () => 'fresh';
 			},
 		});
-		Tempo.extend(newPlugin);
+		Tempo.use(newPlugin);
 		expect((Tempo as any).freshMethod()).toBe('fresh');
 	});
 

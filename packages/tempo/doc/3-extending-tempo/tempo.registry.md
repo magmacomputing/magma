@@ -19,10 +19,10 @@ console.log(Tempo.registry.formats);
 Because these registries are frozen proxies, attempting to mutate them directly (e.g., `Tempo.registry.formats.custom = '...'`) will throw an error. This guarantees that internal caches and parser guards remain synchronized. 
 :::
 
-To add or override values, you must use `Tempo.extend()` or `Tempo.init()`:
+To add or override values, you must use `Tempo.use()` or `Tempo.init()`:
 
 ```javascript
-Tempo.extend({
+Tempo.use({
   registry: {
     formats: {
       custom: '{yyyy}!!{mm}!!{dd}'
@@ -55,7 +55,7 @@ Tempo includes a built-in registry of common timezone abbreviations. **Most regi
 | `jst` | `Asia/Tokyo` |
 
 ::: tip
-You can extend this list or override existing aliases using `Tempo.extend({ registry: { timeZones: { ... } } })`.
+You can extend this list or override existing aliases using `Tempo.use({ registry: { timeZones: { ... } } })`.
 :::
 
 ---
@@ -78,6 +78,6 @@ Tempo leverages several other internal data dictionaries to parse and format dat
 
 The core internal `registryUpdate()` utility applies an **additive-only** merge strategy. It deeply merges new keys into the registries but safely preserves existing root keys (preventing accidental overrides of built-in definitions).
 
-When you pass an options object to `Tempo.extend()`, it acts differently depending on the data type:
-- **Enum/Proxy-Backed Registries:** For explicitly wrapped structures (like `formats` and `locales`), `Tempo.extend()` can be used to forcefully shadow existing entries, making it the proper tool to change standard behaviors.
+When you pass an options object to `Tempo.use()`, it acts differently depending on the data type:
+- **Enum/Proxy-Backed Registries:** For explicitly wrapped structures (like `formats` and `locales`), `Tempo.use()` can be used to forcefully shadow existing entries, making it the proper tool to change standard behaviors.
 - **General Registries:** It does not provide a blanket, universal overwrite mechanism for the entire registry system.

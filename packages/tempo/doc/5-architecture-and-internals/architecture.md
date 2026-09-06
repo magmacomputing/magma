@@ -18,7 +18,7 @@ The property descriptor is `enumerable: false, configurable: false, writable: fa
 
 **Benefits:**
 - **Reduced Global Footprint** — Consolidation from seven scatter-slots down to a single root.
-- **Centralized Hardening** — Strict input validation (`Tempo.extend`) and hook management (`setRegisterHook`, `fireRegisterHook`) operate securely from one nexus.
+- **Centralized Hardening** — Strict input validation (`Tempo.use`) and hook management (`setRegisterHook`, `fireRegisterHook`) operate securely from one nexus.
 - **Scoped Runtimes (Experimental)** — `TempoRuntime.createScoped()` returns a fresh, isolated runtime for clean test isolation without `globalThis` manipulation. *Note: This remains an experimental internal feature and is not yet fully threaded through all core utilities. Unlike the primary runtime, a scoped runtime is not pinned to `globalThis`, does not receive the hardened `defineProperty` protections, and relies strictly on lexical scoping.*
 - **Multi-Bundle / HMR Safety** — `getRuntime()` checks `globalThis[BRIDGE]` before constructing, guaranteeing that two bundle copies of Tempo always share the identical runtime object, thereby resolving complex split-brain states in monorepos.
 

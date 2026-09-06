@@ -8,7 +8,7 @@ import { registerType, type Constructor, type Evaluated } from '#library/type.li
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
 
 /** internal options for the unified proxy engine */
-type ProxyOptions = {
+export type ProxyOptions = {
 	frozen?: boolean;																					// read-only Proxy (throws on set/delete)
 	lock?: boolean;																						// deep-freeze the target object
 	appendOnly?: boolean;																			// allow adding properties, but not changing existing ones
@@ -19,18 +19,19 @@ type ProxyOptions = {
 }
 
 /**
- * The unified internal engine for all Proxy creation in the library.
- * Handles unwrapping, Proxy invariants, discovery, and security mechanisms.
+ * Creates a configured proxy for an object, optionally returning a revocation function.
  *
- * @param target - The object to wrap in a Proxy
+ * @param target - The object to wrap
  * @param options - Configuration options for proxy behavior
- * @returns The proxified object with configured behavior
+ * @param isRevocable - Whether to create a revocable proxy
+ * @returns The configured proxy, or an object containing the proxy and its revocation function
  * @internal
  */
-function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
+function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevocable = false): any {
 	const { frozen, lock, appendOnly, onGet, keys, bind, skip } = options;
 	const pending = new Set<PropertyKey>();
 	let cachedJSON: any;
+	let result: any;
 
 	// 1. Unwrap recursive proxies and resolve the true target
 	const tgt = unwrap(target);
@@ -142,7 +143,13 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 		}
 	};
 
-	const result = new Proxy(tgt, handler) as T;
+	if (isRevocable) {
+		const revocableResult = Proxy.revocable(tgt, handler);
+		result = revocableResult.proxy;
+		return { proxy: revocableResult.proxy as T, revoke: revocableResult.revoke };
+	}
+
+	result = new Proxy(tgt, handler) as T;
 	return result;
 }
 
@@ -256,10 +263,10 @@ export function indexedArray<T extends object>(
 }
 
 /**
- * Creates a proxy that evaluates function-valued properties when they are read.
+ * Creates a proxy that evaluates eligible function-valued properties when read.
  *
  * @param target - The object whose properties are evaluated
- * @returns A proxy that invokes eligible function-valued properties with `target` as their receiver
+ * @returns A proxy that invokes eligible functions with `target` as their receiver; symbols, constructors, and fixed function properties are returned unchanged
  */
 export function dynamicProxy<T extends object>(target: T): Evaluated<T> {
 	if (!isObject(target)) return target as any;
@@ -284,5 +291,46 @@ export function dynamicProxy<T extends object>(target: T): Evaluated<T> {
 			return Reflect.getOwnPropertyDescriptor(t, k);
 		},
 	}) as any;
+}
+
+/**
+ * Creates a proxy that can be permanently revoked on demand.
+ *
+ * @param target - The object to wrap
+ * @param options - Proxy behavior configuration
+ * @returns An object containing the proxy and a function that revokes it
+ */
+export function revocable<T extends object>(
+	target: T,
+	options: ProxyOptions = {}
+): { proxy: T; revoke: () => void } {
+	return factory(target, options, true);
+}
+
+/**
+ * Runs a callback with a temporary proxy that is revoked after execution completes.
+ *
+ * @param target - The object to expose through the temporary proxy
+ * @param fn - The callback that receives the temporary proxy
+ * @param options - Configuration options for proxy behavior
+ * @returns The callback's result
+ */
+export function ephemeral<T extends object, R>(
+	target: T,
+	fn: (scoped: T) => R,
+	options: ProxyOptions = {}
+): R {
+	const { proxy, revoke } = revocable(target, options);
+	try {
+		const res = fn(proxy);
+		if (res && typeof (res as any).then === 'function')
+			return Promise.resolve(res).finally(() => revoke()) as R;
+
+		revoke();
+		return res;
+	} catch (err) {
+		revoke();
+		throw err;
+	}
 }
 

@@ -244,7 +244,7 @@
 		import { MutateModule } from '@magmacomputing/tempo/mutate';
 
 		// Opt-in to mutation logic
-		Tempo.extend(MutateModule);
+		Tempo.use(MutateModule);
 
 		try {
 			const t = new Tempo().add({ days: 1 });

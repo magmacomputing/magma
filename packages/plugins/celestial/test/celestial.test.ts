@@ -4,7 +4,7 @@ import { CelestialPlugin, SolarTerm, LunarTerm } from '../src/index.js';
 describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 	beforeEach(() => {
 		Tempo.init();
-		Tempo.extend(CelestialPlugin);
+		Tempo.use(CelestialPlugin);
 	});
 
 	it('resolves lunar terms (moon and lunar)', () => {

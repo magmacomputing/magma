@@ -2,6 +2,14 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-ticker` project will be documented in this file.
 
+## [2.3.1] - 2026-09-06
+
+### Changed & Security
+- **Deterministic Resource Disposal (`[Symbol.dispose]` / `[Symbol.asyncDispose]`)**:
+  - Upgraded Ticker instances to use `Proxy.revocable()`.
+  - Calling `[Symbol.dispose]()` or `[Symbol.asyncDispose]()` (e.g. via TC39 `using ticker = Tempo.ticker(...)`) permanently revokes the proxy handle, preventing zombie operations or memory leaks.
+  - Calling `ticker.stop()` remains non-destructive, allowing safe inspection of `ticker.info` and stopped status.
+
 ## [2.3.0] - 2026-08-20
 
 ### Changed

@@ -27,14 +27,15 @@ export function getHost(t: any): any {
 }
 
 /**
- * ## ensureModule
- * Ensure a specific module is loaded, throwing a friendly error if not.
+ * Verifies that a module is loaded for the specified Tempo host.
  *
- * @param t - The Tempo instance or constructor to check
- * @param module - The module name to verify is loaded
- * @param silent - If true, returns false instead of throwing errors (default: false)
- * @returns True if the module is loaded, false if silent mode and module is missing
- * @throws TempoError if module is not loaded and silent is false
+ * The `term` alias is resolved to `TermsModule`.
+ *
+ * @param t - The Tempo instance or constructor to inspect
+ * @param module - The module name to verify
+ * @param silent - Whether to return `false` instead of reporting a missing module
+ * @returns `true` if the module is loaded, `false` if it is missing and silent or catch mode is enabled
+ * @throws TempoError if the module is missing and neither silent nor catch mode is enabled
  */
 export function ensureModule(t: any, module: string, silent: boolean = false): boolean {
 	const host = getHost(t);
@@ -51,7 +52,7 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 	if (!isDefined(hostLogic) && !isTermsLoaded) {
 		const baseName = mod.endsWith('Module') ? mod.slice(0, -6) : mod;
 		const importPath = baseName === 'Terms' ? 'term' : baseName.toLowerCase();
-		const msg = `${mod} not loaded. (Did you forget to Tempo.extend(${mod}) or import '#tempo/${importPath}' / '@magmacomputing/tempo/${importPath}'?)`;
+		const msg = `${mod} not loaded. (Did you forget to Tempo.use(${mod}) or import '#tempo/${importPath}' / '@magmacomputing/tempo/${importPath}'?)`;
 		if (!silent) logError(msg, t?.config);
 
 		if (silent) return false;

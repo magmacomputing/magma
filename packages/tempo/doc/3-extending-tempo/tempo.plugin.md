@@ -16,7 +16,7 @@ To provide a consistent and intuitive developer experience, the exported symbol 
 
 *(Note: The `Module` suffix and `defineModule` factory are strictly reserved for Tempo's core internal injection APIs like `ParseModule` and should not be used by external plugins.)*
 
-To manually register a plugin, use the static `extend` method. This is typically used for "opt-in" features or when you need to provide specific configuration to a plugin factory.
+To manually register a plugin, use the static `use` method. This is typically used for "opt-in" features or when you need to provide specific configuration to a plugin factory.
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
@@ -24,10 +24,10 @@ import { MyPlugin } from './my-plugin.js';
 import { HolidayPlugin } from './my-holiday-plugin.js';
 
 // Manual registration
-Tempo.extend(MyPlugin);
+Tempo.use(MyPlugin);
 
 // Registration with a Factory (providing options)
-Tempo.extend(HolidayPlugin({ region: 'US-NY' }));
+Tempo.use(HolidayPlugin({ region: 'US-NY' }));
 ```
 
 ---
@@ -82,7 +82,7 @@ import { Tempo } from '@magmacomputing/tempo/core';   // 1. Load the `lite` engi
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker'; // 2. Import the plugin
 
 Tempo.init({ 
-  extends: [TickerPlugin]                             // 3. Register and activate plugin during init
+  plugins: [TickerPlugin]                             // 3. Register and activate plugin during init
 });
 
 // Ticker is now available on the core Tempo class!
@@ -90,14 +90,14 @@ const pulse = Tempo.ticker(1);
 ```
 
 > [!NOTE] Dynamic Extension vs Startup Registration
-> `Tempo.init({ extends: [...] })` establishes baseline configuration at startup and performs initial registration of plugins. In full Tempo (`@magmacomputing/tempo`), standard plugins are registered automatically upon import. To dynamically register custom plugins loaded later at runtime, use `Tempo.extend(Plugin)` directly rather than re-running `Tempo.init()`.
+> `Tempo.init({ plugins: [...] })` establishes baseline configuration at startup and performs initial registration of plugins. In full Tempo (`@magmacomputing/tempo`), standard plugins are registered automatically upon import. To dynamically register custom plugins loaded later at runtime, use `Tempo.use(Plugin)` directly rather than re-running `Tempo.init()`.
 
 ---
 
 ## Best Practices
 
 ### 1. Selective Immobility
-The core methods of Tempo (like `add`, `set`, `format`) are **protected**. The `extend()` system will prevent you from accidentally overwriting these essential behaviors. By standardizing plugins through the Tempo module system, the entire library remains small and fast, while offering unbounded domain-specific customization.
+The core methods of Tempo (like `add`, `set`, `format`) are **protected**. The `use()` system will prevent you from accidentally overwriting these essential behaviors. By standardizing plugins through the Tempo module system, the entire library remains small and fast, while offering unbounded domain-specific customization.
 
 ### 2. Immutability
 When adding instance methods that "modify" the date, always follow the Tempo pattern of returning a **new instance**. Do not mutate `this`. Rely on the core methods (like `this.add()`) inside your plugin, as they automatically guarantee a fresh, cloned instance.
@@ -173,7 +173,7 @@ import { PluginA } from './plugin.a.js';
 import { PluginB } from './plugin.b.js';
 
 export const MyFeaturePlugin = definePlugin((TempoClass, options) => {
-  TempoClass.extend([PluginA, PluginB]);
+  TempoClass.use([PluginA, PluginB]);
 });
 ```
 
@@ -185,27 +185,76 @@ If you require custom commercial plugins, domain-specific extensions, or enterpr
 
 ## Consuming a Plugin
 
-For developers using your plugin, the process should be as simple as a single import and one call to `extend()`.
+For developers using your plugin, registration can be handled imperatively via `use()` or declaratively via configuration:
+
+### 1. Imperative Registration (`Tempo.use`)
+For standalone usage or factory-wrapped plugins, pass the plugin directly to `Tempo.use()`:
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { HolidayPlugin } from 'tempo-plugin-holiday';
 
-// Initialize the plugin with its own options and register it with Tempo
-Tempo.extend(HolidayPlugin({ 
+// Initialize the plugin with inline factory options and register it with Tempo
+Tempo.use(HolidayPlugin({ 
   region: 'US-NY' 
 }));
 ```
+
+### 2. Declarative Configuration (`pluginOptions`)
+In Tempo v4.1.0+, executable plugin registration is cleanly separated from plugin configuration data:
+
+- **`plugins`**: Strictly holds executable plugin definitions, terms, or factory closures (`(Plugin | Term)[]`).
+- **`pluginOptions`**: Dedicated configuration dictionary (`Record<string, any>`) holding serializable runtime options and defaults for plugins.
+
+This enables plugin configurations to be defined in `tempo.config.ts`, `tempo.config.jsonc`, or initialized via `Tempo.init()` / `Tempo.create()`, with full support for cascading inheritance across remote `"extends"` layers.
+
+When plugins are authored directly with `definePlugin`, they can be passed by reference to `plugins` and retrieve their options from `TempoClass.config.pluginOptions`:
+
+```typescript
+// tempo.config.ts or Tempo.init(...)
+import { HolidayPlugin } from 'tempo-plugin-holiday'; // defined via definePlugin
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+
+Tempo.init({
+  plugins: [HolidayPlugin, TickerPlugin],
+  pluginOptions: {
+    holiday: { region: 'US-NY', observeWeekendShifts: true },
+    ticker: { interval: 500 }
+  }
+});
+```
+
+#### Reading `pluginOptions` Inside Your Plugin
+When authoring a plugin designed for declarative configuration, define the plugin directly with `definePlugin` and read configured options from `TempoClass.config.pluginOptions`:
+
+```typescript
+// tempo-plugin-holiday/index.ts
+import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
+
+// Directly exported plugin function (callback-compatible with Tempo.init / Tempo.use)
+export const HolidayPlugin = definePlugin((TempoClass, tempoOptions) => {
+  // Read configured options with fallback to defaults
+  const options = TempoClass.config.pluginOptions?.holiday ?? {};
+  const region = options.region ?? 'US-NY';
+
+  // ... register methods or terms using the resolved options ...
+});
+```
+
+*(Alternatively, if your plugin exports a wrapper factory function `HolidayPluginFactory(options?)`, consumers register the invoked factory result: `plugins: [HolidayPluginFactory()]` or `Tempo.use(HolidayPluginFactory({ ... }))`).*
+
+> [!NOTE] Deprecation Notice: Configuration Dictionaries in `plugins`
+> Supplying plain configuration dictionaries directly under `plugins` or within the `plugins` array (e.g. `plugins: [{ holiday: { ... } }]`) remains supported for backwards compatibility, but is marked `@deprecated` in favor of `pluginOptions`.
 
 ---
 
 ## Bulk Registration
 
-`Tempo.extend()` supports **rest parameters** and **arrays**, allowing you to register multiple plugins in a single call. If the last argument is a plain object (and not a plugin/term), it is treated as a shared configuration for all plugins in that batch.
+`Tempo.use()` supports **rest parameters** and **arrays**, allowing you to register multiple plugins in a single call. If the last argument is a plain object (and not a plugin/term), it is treated as a shared configuration for all plugins in that batch.
 
 ```ts
 // Mix and match arrays and individual arguments
-Tempo.extend(
+Tempo.use(
   [PluginA, PluginB], 
   PluginC, 
   { debug: 5 } // applied to A, B, and C
