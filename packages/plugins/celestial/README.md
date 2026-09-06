@@ -103,7 +103,7 @@ const nextMoonTempo = t.set(`#lunar.${nextPhaseKey}`);
 - **Instance Scope References**: `t.term.lunar.phases`, `t.term.solar.phases`, and `t.term.tides.states` share the exact same frozen array references (`t.term.lunar.phases === LunarTerm.phases`), adding zero memory or GC overhead.
 
 > [!TIP]
-> **Indexing Tip**: Like all Tempo terms (`.month.index`, `.quarter.index`), `.index` is 1-based (`1..8`), while `.phases` is a standard 0-indexed JavaScript array (`0..7`).
+> **Indexing Tip**: Following ISO calendar standards that drive Temporal and Tempo, `.index` is 1-based (`1..8`), while `.phases` is a standard 0-indexed JavaScript array (`0..7`).
 > - **Current Phase**: Use `lunar.key` or `lunar.phases[lunar.index - 1]`.
 > - **Next Phase**: Use `lunar.phases[lunar.index % 8]` (1-based index modulo 8 seamlessly targets the next phase index with automatic wrap-around).
 
