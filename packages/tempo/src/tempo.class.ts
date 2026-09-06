@@ -749,10 +749,10 @@ export class Tempo {
 								const discoveryArg = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
 								const discoverySymbol = isString(discoveryArg) ? Symbol.for(discoveryArg) : discoveryArg;
 
-								if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item) {
+								if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item)
 									(globalThis as Record<symbol, any>)[discoverySymbol as symbol] = item;
-									this[$setConfig](this[$Internal](), { discovery: discoverySymbol })
-								}
+
+								this[$setConfig](this[$Internal](), { discovery: discoverySymbol });
 							}
 							break;
 						}
