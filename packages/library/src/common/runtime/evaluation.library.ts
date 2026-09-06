@@ -1,4 +1,4 @@
-import { isFunction, isNullish, isObject, isUndefined } from '#library/assertion.library.js';
+import { isFunction, isNullish, isObject } from '#library/assertion.library.js';
 import type { Evaluable, AsyncEvaluable, Evaluated, AsyncEvaluated } from '#library/type.library.js';
 
 /**
@@ -23,7 +23,7 @@ export function evaluate<T>(...values: (Evaluable<T> | undefined)[]): T | undefi
 export function evaluate<T>(...values: (Evaluable<T> | undefined)[]): T | undefined {
 	for (const val of values) {
 		const resolved = isFunction(val) ? (val as () => T)() : val;
-		if (!isUndefined(resolved)) return resolved as T;				// return as soon as a value is found.
+		if (resolved !== undefined) return resolved as T;				// return as soon as a value is found.
 	}
 	return undefined;
 }

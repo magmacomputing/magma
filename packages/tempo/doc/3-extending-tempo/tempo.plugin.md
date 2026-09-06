@@ -185,17 +185,61 @@ If you require custom commercial plugins, domain-specific extensions, or enterpr
 
 ## Consuming a Plugin
 
-For developers using your plugin, the process should be as simple as a single import and one call to `use()`.
+For developers using your plugin, registration can be handled imperatively via `use()` or declaratively via configuration:
+
+### 1. Imperative Registration (`Tempo.use`)
+For standalone usage or factory-wrapped plugins, pass the plugin directly to `Tempo.use()`:
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { HolidayPlugin } from 'tempo-plugin-holiday';
 
-// Initialize the plugin with its own options and register it with Tempo
+// Initialize the plugin with inline factory options and register it with Tempo
 Tempo.use(HolidayPlugin({ 
   region: 'US-NY' 
 }));
 ```
+
+### 2. Declarative Configuration (`pluginOptions`)
+In Tempo v4.1.0+, executable plugin registration is cleanly separated from plugin configuration data:
+
+- **`plugins`**: Strictly holds executable plugin definitions, terms, or factory closures (`(Plugin | Term)[]`).
+- **`pluginOptions`**: Dedicated configuration dictionary (`Record<string, any>`) holding serializable runtime options and defaults for plugins.
+
+This enables plugin configurations to be defined in `tempo.config.ts`, `tempo.config.jsonc`, or initialized via `Tempo.init()` / `Tempo.create()`, with full support for cascading inheritance across remote `"extends"` layers:
+
+```typescript
+// tempo.config.ts or Tempo.init(...)
+import { HolidayPlugin } from 'tempo-plugin-holiday';
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+
+Tempo.init({
+  plugins: [HolidayPlugin, TickerPlugin],
+  pluginOptions: {
+    holiday: { region: 'US-NY', observeWeekendShifts: true },
+    ticker: { interval: 500 }
+  }
+});
+```
+
+#### Reading `pluginOptions` Inside Your Plugin
+Plugin authors can read configured options directly from `TempoClass.config.pluginOptions` or `tempoOptions.pluginOptions`:
+
+```typescript
+// tempo-plugin-holiday/index.ts
+import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
+
+export const HolidayPlugin = definePlugin((TempoClass, tempoOptions) => {
+  // Read configured options with fallback to defaults
+  const options = TempoClass.config.pluginOptions?.holiday ?? {};
+  const region = options.region ?? 'US-NY';
+
+  // ... register methods or terms using the resolved options ...
+});
+```
+
+> [!NOTE] Deprecation Notice: Configuration Dictionaries in `plugins`
+> Supplying plain configuration dictionaries directly under `plugins` or within the `plugins` array (e.g. `plugins: [{ holiday: { ... } }]`) remains supported for backwards compatibility, but is marked `@deprecated` in favor of `pluginOptions`.
 
 ---
 

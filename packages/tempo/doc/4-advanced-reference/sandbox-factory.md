@@ -18,15 +18,37 @@ To understand when to use `Tempo.create()`, it helps to contrast it with the oth
   **Concept:** Hard-reset to "out-of-the-box" factory defaults, then apply the provided configuration globally. All previous plugins, terms, and custom formats are purged.
 - **`Tempo.use({ options })`**
   **Concept:** Additive mutation. Keep all existing global settings, plugins, and formats intact, but merge in new configurations.
-- **`Tempo.create({ options })`**
-  **Concept:** Sandbox Factory. Clone the current global state (inheriting all currently loaded plugins and settings), but branch it off into a brand new, isolated class. Any future changes made to this Sandbox will not affect the global `Tempo`, and vice-versa.
+- **`Tempo.create({ options })` / `Tempo.create(fn)` / `Tempo.create(options, fn)`**
+  **Concept:** Sandbox Factory. Clone the current global state (inheriting all currently loaded plugins and settings), but branch it off into a brand new, isolated class. Any future changes made to this Sandbox will not affect the global `Tempo`, and vice-versa. Supports both long-lived derived class creation and ephemeral scoped callback execution with deterministic resource disposal.
 
-### Example: Creating a Sandbox
+### Overloaded Signatures & Usage Modes
+
+`Tempo.create` supports three distinct execution patterns tailored for different application lifecycles:
+
+```typescript
+// 1. Derived Class Factory (Long-lived sandbox)
+static create(options?: Options): typeof Tempo;
+
+// 2. Scoped Callback Mode (Ephemeral auto-disposed sandbox)
+static create<R>(fn: (sandbox: typeof Tempo) => R): R;
+
+// 3. Configured Scoped Callback Mode (Custom options + auto-disposed sandbox)
+static create<R>(options: Options, fn: (sandbox: typeof Tempo) => R): R;
+```
+
+#### Mode 1: Derived Class Factory
+Use this mode when building long-lived domain services, multi-tenant app routers, or dedicated modules requiring custom configurations:
+
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
+import { FinancePlugin } from '@magmacomputing/tempo-plugin-finance';
 
 // Create a specialized Sandbox for a Financial app
 const FinTempo = Tempo.create({
+  plugins: [FinancePlugin],
+  pluginOptions: {
+    finance: { fiscalYearStart: 7 } // July fiscal year
+  },
   registry: {
     periods: {
       'market-open': '09:30',
@@ -38,6 +60,58 @@ const FinTempo = Tempo.create({
 // Standard Tempo remains untouched
 const t1 = new Tempo('market-open'); // Error: Unknown alias
 const t2 = new FinTempo('market-open'); // Success: 09:30
+```
+
+#### Mode 2: Scoped Callback Execution (`Tempo.create(fn)`)
+For unit tests, request-scoped operations, or short-lived calculations, pass an execution callback. `Tempo.create` invokes your callback with a freshly isolated sandbox and **automatically disposes of it** when the function completes:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
+
+// Synchronous callback: automatically disposed on return
+const season = Tempo.create((sb) => {
+  sb.use(AstroPlugin);
+  return sb('2026-06-21').term.astronomy.season;
+});
+
+// Asynchronous callback: automatically disposed when the Promise settles
+const result = await Tempo.create({ timeZone: 'Pacific/Auckland' }, async (sb) => {
+  const data = await fetchFlightDeparture();
+  return sb(data.departureTime).format('{full}');
+});
+```
+
+#### Mode 3: Explicit Resource Management (`using`)
+Sandboxed classes created via `Tempo.create()` implement the TC39 `Disposable` protocol (`Symbol.dispose`). In TypeScript 5.2+ and modern JavaScript runtimes supporting the `using` keyword, sandboxes can be scoped deterministically to code blocks:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { CustomPlugin } from './custom-plugin.js';
+
+{
+  using sb = Tempo.create({ discovery: 'ephemeral-batch' });
+  sb.use(CustomPlugin);
+
+  const formatted = sb('2026-05-10').format();
+  console.log(formatted);
+} // sb is automatically disposed here as execution leaves block scope!
+```
+
+### Deterministic Disposal & Memory Management
+
+Every sandbox class exposes lifecycle disposal mechanisms to prevent memory leaks in high-turnover server environments:
+
+- **`sb[Symbol.dispose]()`**: Purges the sandbox from internal state registries (`ClassStates`) and deletes the registered discovery symbol slot from `globalThis`.
+- **`sb.isDisposed`**: Readonly boolean getter indicating whether the sandbox has been cleaned up.
+
+```typescript
+const sb = Tempo.create();
+console.log(sb.isDisposed); // false
+
+// Explicitly clean up when finished
+sb[Symbol.dispose]();
+console.log(sb.isDisposed); // true
 ```
 
 ## Traceability & Collision Management

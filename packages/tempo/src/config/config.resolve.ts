@@ -55,6 +55,23 @@ function resolveSpecifier(specifier: string, baseLocation?: string, pathMod?: an
 }
 
 const MAX_EXTENDS_DEPTH = 10;
+const MAX_EXTENDS_BUDGET = 25;
+
+interface ExtendsBudget {
+	remaining: number;
+	warned?: boolean;
+}
+
+function checkAndWarnBudget(budget: ExtendsBudget): boolean {
+	if (budget.remaining <= 0) {
+		if (!budget.warned) {
+			budget.warned = true;
+			console.warn(`[Tempo] Maximum config extends target budget reached (${MAX_EXTENDS_BUDGET}). Skipping further extends resolution.`);
+		}
+		return true;
+	}
+	return false;
+}
 
 /**
  * Fetches a JSON/JSONC configuration file over HTTP/HTTPS.
@@ -158,7 +175,7 @@ function mergeConfigs(parent: Options, child: Options): Options {
 /**
  * Resolves inherited configuration entries and combines them with local options.
  *
- * Parent configurations are processed recursively and merged before local properties. Circular references and excessive inheritance depth are skipped.
+ * Parent configurations are processed recursively and merged before local properties. Circular references, excessive inheritance depth, and exhausted target budgets are skipped.
  *
  * @param baseLocation - The path or URL used to resolve relative `extends` entries
  * @returns The configuration with inherited options merged into its local properties
@@ -171,6 +188,7 @@ async function processExtends(
 	urlMod?: any,
 	loadedSet = new Set<string>(),
 	depth = 0,
+	budget: ExtendsBudget = { remaining: MAX_EXTENDS_BUDGET },
 ): Promise<Options> {
 	if (!config || !config.extends) return config;
 
@@ -178,6 +196,9 @@ async function processExtends(
 		console.warn(`[Tempo] Maximum config extends depth limit reached (${MAX_EXTENDS_DEPTH}). Skipping further extends resolution.`);
 		return config;
 	}
+
+	if (checkAndWarnBudget(budget))
+		return config;
 
 	const extendsList = Array.isArray(config.extends) ? config.extends : [config.extends];
 	const stringExtends = extendsList.filter(isString);
@@ -187,7 +208,15 @@ async function processExtends(
 	let mergedParentConfig: Options = {};
 
 	for (const specifier of stringExtends) {
+		if (checkAndWarnBudget(budget))
+			break;
+
 		const targetUrlOrPath = resolveSpecifier(specifier, baseLocation, path);
+		if (baseLocation && isHttpUrl(baseLocation) && !isHttpUrl(targetUrlOrPath)) {
+			console.warn(`[Tempo] Remote configuration cannot extend non-HTTP(S) target: ${targetUrlOrPath}`);
+			continue;
+		}
+
 		if (loadedSet.has(targetUrlOrPath)) {
 			console.warn(`[Tempo] Circular extends detected for config target: ${targetUrlOrPath}`);
 			continue;
@@ -195,7 +224,7 @@ async function processExtends(
 
 		const currentDir = path ? path.dirname(baseLocation) : (typeof process !== 'undefined' ? process.cwd() : '');
 		const branchLoadedSet = new Set(loadedSet);
-		const parentConfig = await loadConfigTarget(targetUrlOrPath, currentDir, fs, path, urlMod, branchLoadedSet, depth + 1);
+		const parentConfig = await loadConfigTarget(targetUrlOrPath, currentDir, fs, path, urlMod, branchLoadedSet, depth + 1, budget);
 		if (parentConfig)
 			mergedParentConfig = mergeConfigs(mergedParentConfig, parentConfig);
 	}
@@ -218,15 +247,22 @@ async function loadConfigTarget(
 	path?: any,
 	urlMod?: any,
 	loadedSet = new Set<string>(),
-	depth = 0
+	depth = 0,
+	budget: ExtendsBudget = { remaining: MAX_EXTENDS_BUDGET },
 ): Promise<Options | undefined> {
 	if (loadedSet.has(target)) return undefined;
+
+	if (depth > 0) {
+		if (checkAndWarnBudget(budget)) return undefined;
+		budget.remaining--;
+	}
+
 	loadedSet.add(target);
 
 	if (isHttpUrl(target)) {
 		const fetched = await fetchRemoteConfig(target);
 		if (fetched)
-			return processExtends(fetched, target, fs, path, urlMod, loadedSet, depth);
+			return processExtends(fetched, target, fs, path, urlMod, loadedSet, depth, budget);
 		return undefined;
 	}
 
@@ -254,7 +290,7 @@ async function loadConfigTarget(
 			}
 
 			if (loaded)
-				return processExtends(loaded, localPath, fs, path, urlMod, loadedSet, depth);
+				return processExtends(loaded, localPath, fs, path, urlMod, loadedSet, depth, budget);
 		} catch (err) {
 			console.warn(`[Tempo] Failed to load config file at ${localPath}:`, err);
 		}

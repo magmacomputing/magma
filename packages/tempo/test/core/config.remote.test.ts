@@ -196,4 +196,143 @@ describe('Remote and Cascading Config Resolution', () => {
 		expect((config?.pluginOptions as any)?.ai?.timeout).toBe(5000);
 		expect((config?.pluginOptions as any)?.ai?.model).toBe('gpt-4');
 	});
+
+	test('should enforce inherited-target budget across sibling extends branches and emit warning', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const loadedTargets: string[] = [];
+
+		const siblingUrls = Array.from({ length: 30 }, (_, i) => `https://company.org/sibling-${i}.jsonc`);
+		const rootConfig = { extends: siblingUrls, timeZone: 'UTC' };
+
+		vi.spyOn(requestLib, 'fetchRequest').mockImplementation(async (url) => {
+			const strUrl = String(url);
+			if (strUrl === 'https://company.org/root.jsonc') return JSON.stringify(rootConfig);
+			loadedTargets.push(strUrl);
+			const idx = siblingUrls.indexOf(strUrl);
+			return JSON.stringify({ [`sibling_${idx}`]: true });
+		});
+
+		const config = await resolveConfig({ configFile: 'https://company.org/root.jsonc' });
+		expect(config).toBeDefined();
+		expect(config?.timeZone).toBe('UTC');
+		// Initial root is depth 0, 25 inherited targets are loaded, 26th is stopped
+		expect(loadedTargets.length).toBe(25);
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Maximum config extends target budget reached'));
+	});
+
+	test('should share inherited-target budget across sibling branches with recursive extends', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const loadedTargets: string[] = [];
+
+		const branchAExtends = Array.from({ length: 15 }, (_, i) => `https://company.org/a-${i}.jsonc`);
+		const branchBExtends = Array.from({ length: 15 }, (_, i) => `https://company.org/b-${i}.jsonc`);
+
+		const rootConfig = {
+			extends: ['https://company.org/branch-a.jsonc', 'https://company.org/branch-b.jsonc'],
+			locale: 'en-US',
+		};
+
+		vi.spyOn(requestLib, 'fetchRequest').mockImplementation(async (url) => {
+			const strUrl = String(url);
+			if (strUrl === 'https://company.org/root.jsonc') return JSON.stringify(rootConfig);
+			loadedTargets.push(strUrl);
+
+			if (strUrl === 'https://company.org/branch-a.jsonc') {
+				return JSON.stringify({ extends: branchAExtends, branchA: true });
+			}
+			if (strUrl === 'https://company.org/branch-b.jsonc') {
+				return JSON.stringify({ extends: branchBExtends, branchB: true });
+			}
+			return JSON.stringify({ item: strUrl });
+		});
+
+		const config = await resolveConfig({ configFile: 'https://company.org/root.jsonc' });
+		expect(config).toBeDefined();
+		expect(config?.locale).toBe('en-US');
+		// branch-a (1) + branchAExtends (15) + branch-b (1) + branchBExtends (8 loaded before budget 25 exhausted) = 25
+		expect(loadedTargets.length).toBe(25);
+		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Maximum config extends target budget reached'));
+	});
+
+	test('should reject non-HTTP(S) extends targets such as file:// when base config is remote', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const remoteConfig = {
+			extends: 'file:///etc/passwd',
+			timeZone: 'Asia/Tokyo',
+		};
+
+		vi.spyOn(requestLib, 'fetchRequest').mockImplementation(async (url) => {
+			if (String(url) === 'https://company.org/malicious.jsonc') {
+				return JSON.stringify(remoteConfig);
+			}
+			throw new Error(`Unexpected request: ${url}`);
+		});
+
+		const config = await resolveConfig({ configFile: 'https://company.org/malicious.jsonc' });
+		expect(config).toBeDefined();
+		expect(config?.timeZone).toBe('Asia/Tokyo');
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining('[Tempo] Remote configuration cannot extend non-HTTP(S) target: file:///etc/passwd'),
+		);
+	});
+
+	test('should reject non-HTTP(S) extends targets in cascading remote configurations', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const rootRemoteConfig = {
+			extends: 'https://company.org/child.jsonc',
+			timeZone: 'UTC',
+		};
+		const childRemoteConfig = {
+			extends: ['file:///home/user/.ssh/id_rsa', 'https://company.org/safe-base.jsonc'],
+			locale: 'en-US',
+		};
+		const safeBaseConfig = {
+			debug: 1,
+		};
+
+		vi.spyOn(requestLib, 'fetchRequest').mockImplementation(async (url) => {
+			const str = String(url);
+			if (str === 'https://company.org/root.jsonc') return JSON.stringify(rootRemoteConfig);
+			if (str === 'https://company.org/child.jsonc') return JSON.stringify(childRemoteConfig);
+			if (str === 'https://company.org/safe-base.jsonc') return JSON.stringify(safeBaseConfig);
+			throw new Error(`404: ${url}`);
+		});
+
+		const config = await resolveConfig({ configFile: 'https://company.org/root.jsonc' });
+		expect(config).toBeDefined();
+		expect(config?.timeZone).toBe('UTC');
+		expect(config?.locale).toBe('en-US');
+		expect(config?.debug).toBe(1);
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining('[Tempo] Remote configuration cannot extend non-HTTP(S) target: file:///home/user/.ssh/id_rsa'),
+		);
+	});
+
+	test('should resolve relative HTTP(S) extends within remote configuration without warning', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const parentConfig = { timeZone: 'UTC', locale: 'en-GB' };
+		const childConfig = { extends: './parent.jsonc', locale: 'en-US' };
+
+		vi.spyOn(requestLib, 'fetchRequest').mockImplementation(async (url) => {
+			const str = String(url);
+			if (str === 'https://company.org/configs/child.jsonc') return JSON.stringify(childConfig);
+			if (str === 'https://company.org/configs/parent.jsonc') return JSON.stringify(parentConfig);
+			throw new Error(`404: ${url}`);
+		});
+
+		const config = await resolveConfig({ configFile: 'https://company.org/configs/child.jsonc' });
+		expect(config).toBeDefined();
+		expect(config?.timeZone).toBe('UTC');
+		expect(config?.locale).toBe('en-US');
+		expect(warnSpy).not.toHaveBeenCalled();
+	});
+
+	test('should preserve local and file:// inheritance behavior when root configuration is local', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const fixtureFileUrl = new URL('./__fixtures__/config/tempo.config.js', import.meta.url).href;
+		const config = await resolveConfig({ configFile: fixtureFileUrl });
+		expect(config).toBeDefined();
+		expect(config?.timeZone).toBe('Europe/Paris');
+		expect(warnSpy).not.toHaveBeenCalled();
+	});
 });

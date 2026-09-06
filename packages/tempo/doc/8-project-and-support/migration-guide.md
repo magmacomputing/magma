@@ -56,25 +56,50 @@ Tempo v4.0.0 Community Core is 100% open-source without commercial license valid
 
 ---
 
-## 🔌 Configuration Inheritance (`extends`) vs Plugin Registration (`plugins`) and `Tempo.use`
+## 🔌 Configuration Inheritance (`extends`), `plugins`, and `pluginOptions`
 
-In v4.1.0, the responsibilities of `extends` and `plugins` have been cleanly separated:
+In v4.1.0, configuration, plugin registration, and runtime options have been cleanly separated:
 
-- **Configuration Inheritance (`extends`)**: The `extends` option in `Tempo.init()` or `tempo.config.json` is strictly reserved for cascading configuration inheritance via URLs or file paths (mirroring `tsconfig.json` and ESLint): `extends: 'https://company.org/tempo-base.json'`.
-- **Plugin Registration (`plugins`)**: Pass plugins, terms, and modules into `plugins: [TickerPlugin, CelestialTerm]`. It also supports plugin configuration dictionaries (`plugins: { ticker: { interval: 500 } }`).
-- **Imperative Registration (`Tempo.use`)**: Use the standard `Tempo.use(Plugin)` static method to register plugins, terms, or modules at runtime. `Tempo.use()` is `@deprecated` in favor of `Tempo.use()`.
+- **Configuration Inheritance (`extends`)**: The `extends` option in `Tempo.init()` or `tempo.config.json` is strictly reserved for cascading configuration inheritance via URLs or file paths (mirroring `tsconfig.json` and ESLint conventions): `extends: 'https://company.org/tempo-base.json'`.
+- **Plugin Registration (`plugins`)**: Pass executable plugins, terms, and modules into `plugins: [TickerPlugin, AstroTerm]`.
+- **Plugin Configuration Slot (`pluginOptions`)**: Pass runtime configuration defaults for plugins into `pluginOptions: { ticker: { interval: 500 } }`. Passing plain configuration dictionaries directly under `plugins` is `@deprecated`.
+- **Imperative Registration (`Tempo.use`)**: Use the standard `Tempo.use(Plugin)` static method to register plugins, terms, or modules at runtime. `Tempo.extend()` is `@deprecated Use Tempo.use(...) instead.`.
 
 ### Example:
 ```javascript
 // ✅ v4.1.0: Clean Separation
 Tempo.init({
   extends: 'https://central-governance.company.com/tempo-base.json', // Configuration inheritance
-  plugins: [TickerPlugin, AstroTerm]                                // Feature & Term registration
+  plugins: [TickerPlugin, AstroTerm],                               // Feature & Term registration
+  pluginOptions: {                                                  // Plugin runtime options
+    ticker: { interval: 500 }
+  }
 });
 
 // ✅ Imperative registration
 Tempo.use(TickerPlugin);
 ```
+
+---
+
+## 🔒 Overloaded `Tempo.create()` & Scoped Disposal (`using`)
+
+In v4.1.0, `Tempo.create()` introduces deterministic resource cleanup via TC39 Explicit Resource Management:
+
+- **Scoped Callback Mode**: Run isolated operations without leaking sandbox state to the global scope:
+  ```typescript
+  const season = Tempo.create((sb) => {
+    sb.use(AstroPlugin);
+    return sb('2026-06-21').term.astronomy.season;
+  }); // sandbox automatically disposed upon completion
+  ```
+- **TC39 Explicit Resource Management (`using`)**:
+  ```typescript
+  {
+    using sb = Tempo.create({ discovery: 'ephemeral' });
+    sb.use(MyPlugin);
+  } // sb[Symbol.dispose]() called automatically
+  ```
 
 ---
 

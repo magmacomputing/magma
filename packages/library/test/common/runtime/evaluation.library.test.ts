@@ -1,4 +1,5 @@
 import { evaluate, evaluateAsync, evaluateConfig, evaluateConfigAsync } from '#library/evaluation.library.js';
+import { registerType } from '#library/type.library.js';
 import { dynamicProxy } from '#library/proxy.library.js';
 import { Pledge } from '#library/pledge.class.js';
 
@@ -52,6 +53,21 @@ describe('evaluation.library', () => {
 				throw new Error('Supplier failed');
 			};
 			expect(() => evaluate(throwingSupplier)).toThrow('Supplier failed');
+		});
+
+		it('should distinguish JavaScript undefined from valid Void and Empty results', () => {
+			class VoidResult {}
+			class EmptyResult {}
+			registerType(VoidResult, 'Void' as any);
+			registerType(EmptyResult, 'Empty' as any);
+
+			const voidResult = new VoidResult();
+			const emptyResult = new EmptyResult();
+
+			expect(evaluate(voidResult, 'fallback')).toBe(voidResult);
+			expect(evaluate(() => voidResult, 'fallback')).toBe(voidResult);
+			expect(evaluate(emptyResult, 'fallback')).toBe(emptyResult);
+			expect(evaluate(() => emptyResult, 'fallback')).toBe(emptyResult);
 		});
 	});
 
