@@ -62,6 +62,12 @@ interface ExtendsBudget {
 	warned?: boolean;
 }
 
+/**
+ * Determines whether the configuration inheritance target budget is exhausted.
+ *
+ * @param budget - The remaining inheritance target budget and warning state
+ * @returns `true` if no inheritance targets remain, `false` otherwise
+ */
 function checkAndWarnBudget(budget: ExtendsBudget): boolean {
 	if (budget.remaining <= 0) {
 		if (!budget.warned) {
@@ -74,7 +80,10 @@ function checkAndWarnBudget(budget: ExtendsBudget): boolean {
 }
 
 /**
- * Fetches a JSON/JSONC configuration file over HTTP/HTTPS.
+ * Fetches and parses a remote JSON or JSONC configuration.
+ *
+ * @param url - The HTTP(S) URL of the configuration
+ * @returns The parsed configuration, or `undefined` if fetching or parsing fails
  */
 async function fetchRemoteConfig(url: string): Promise<Options | undefined> {
 	try {
@@ -94,11 +103,14 @@ async function fetchRemoteConfig(url: string): Promise<Options | undefined> {
 }
 
 /**
- * Combines parent and child configuration options, with child values taking precedence.
+ * Merges parent and child configuration options, with child values taking precedence.
+ *
+ * Nested registry, planner, and plugin option objects are combined, while plugin arrays
+ * are concatenated.
  *
  * @param parent - The base configuration
- * @param child - The overriding configuration
- * @returns The merged configuration with registry sub-properties and planner options combined
+ * @param child - The configuration whose values override the parent
+ * @returns The combined configuration
  */
 function mergeConfigs(parent: Options, child: Options): Options {
 	const merged: Options = { ...parent, ...child };
@@ -238,7 +250,7 @@ async function processExtends(
  *
  * @param target - The configuration path or URL to load
  * @param currentDir - The base directory for resolving relative paths
- * @returns The loaded configuration, or `undefined` if it cannot be loaded
+ * @returns The resolved configuration, or `undefined` if loading fails or the target is already being processed
  */
 async function loadConfigTarget(
 	target: string,
@@ -341,9 +353,12 @@ function getRequireSync() {
 }
 
 /**
- * Synchronously discovers and loads a `tempo.config.jsonc` or `tempo.config.json` file
- * by traversing upwards from process.cwd() until a package.json is found.
- * Results are cached in process memory for maximum performance.
+ * Discovers and synchronously loads a local Tempo configuration file.
+ *
+ * @param options - Optional discovery settings.
+ * @param options.cwd - Directory from which to begin discovery.
+ * @param options.configFile - Explicit path to a JSON or JSONC configuration file.
+ * @returns The loaded configuration, or `undefined` when no supported configuration is found or the environment cannot perform synchronous discovery.
  */
 export function resolveConfigSync(options?: { cwd?: string, configFile?: string }): Options | undefined {
 	if (syncCache !== undefined && !options)

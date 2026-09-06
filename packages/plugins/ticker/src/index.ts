@@ -476,6 +476,14 @@ class TickerInstance implements Ticker.Descriptor {
 	}
 }
 
+/**
+ * Creates and initializes a callable ticker instance.
+ *
+ * @param TempoClass - The `Tempo` class used by the ticker.
+ * @param arg1 - The ticker schedule, options, or pulse callback.
+ * @param arg2 - An optional ticker options object or pulse callback.
+ * @returns The initialized ticker instance.
+ */
 function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.Instance {
 	const instance = new TickerInstance(TempoClass, arg1, arg2);
 	const { proxy, revoke } = Proxy.revocable((() => instance.stop()) as any, {

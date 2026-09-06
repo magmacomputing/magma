@@ -19,13 +19,12 @@ export type ProxyOptions = {
 }
 
 /**
- * The unified internal engine for all Proxy creation in the library.
- * Handles unwrapping, Proxy invariants, discovery, and security mechanisms.
+ * Creates a configured proxy for an object, optionally returning a revocation function.
  *
- * @param target - The object to wrap in a Proxy
+ * @param target - The object to wrap
  * @param options - Configuration options for proxy behavior
- * @param isRevocable - If true, returns { proxy, revoke } using Proxy.revocable
- * @returns The proxified object with configured behavior, or { proxy, revoke } when isRevocable is true
+ * @param isRevocable - Whether to create a revocable proxy
+ * @returns The configured proxy, or an object containing the proxy and its revocation function
  * @internal
  */
 function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevocable = false): any {
@@ -264,10 +263,10 @@ export function indexedArray<T extends object>(
 }
 
 /**
- * Creates a proxy that evaluates function-valued properties when they are read.
+ * Creates a proxy that evaluates eligible function-valued properties when read.
  *
  * @param target - The object whose properties are evaluated
- * @returns A proxy that invokes eligible function-valued properties with `target` as their receiver
+ * @returns A proxy that invokes eligible functions with `target` as their receiver; symbols, constructors, and fixed function properties are returned unchanged
  */
 export function dynamicProxy<T extends object>(target: T): Evaluated<T> {
 	if (!isObject(target)) return target as any;
@@ -295,19 +294,11 @@ export function dynamicProxy<T extends object>(target: T): Evaluated<T> {
 }
 
 /**
- * Creates a revocable Proxy that can be permanently deactivated on demand.
- * Integrates with the unified proxy engine to support unwrapping, freezing, and security invariants.
+ * Creates a proxy that can be permanently revoked on demand.
  *
- * @param target - The object to wrap in a revocable Proxy
- * @param options - Configuration options for proxy behavior (frozen, lock, bind, etc.)
- * @returns An object containing the revocable `proxy` and its `revoke()` function
- * @example
- * ```ts
- * const { proxy, revoke } = revocable({ secret: '123' });
- * console.log(proxy.secret); // '123'
- * revoke();
- * console.log(proxy.secret); // throws TypeError
- * ```
+ * @param target - The object to wrap
+ * @param options - Proxy behavior configuration
+ * @returns An object containing the proxy and a function that revokes it
  */
 export function revocable<T extends object>(
 	target: T,
@@ -317,20 +308,12 @@ export function revocable<T extends object>(
 }
 
 /**
- * Runs a scoped callback with an ephemeral, revocable Proxy that is automatically
- * revoked as soon as the synchronous execution or returned Promise completes.
+ * Runs a callback with a temporary proxy that is revoked after execution completes.
  *
- * @param target - The object to provide ephemerally
- * @param fn - The scoped execution block receiving the ephemeral proxy
+ * @param target - The object to expose through the temporary proxy
+ * @param fn - The callback that receives the temporary proxy
  * @param options - Configuration options for proxy behavior
- * @returns The result of the callback function
- * @example
- * ```ts
- * const result = ephemeral({ token: 'temp' }, (scoped) => {
- *   return scoped.token.toUpperCase();
- * });
- * // scoped proxy is revoked immediately upon return
- * ```
+ * @returns The callback's result
  */
 export function ephemeral<T extends object, R>(
 	target: T,

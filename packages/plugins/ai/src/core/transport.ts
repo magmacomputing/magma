@@ -104,16 +104,14 @@ export function resolveProviderModel(
 }
 
 /**
- * Performs raw HTTP fetch dispatch to an individual AI provider's chat completions endpoint.
- * Handles authentication headers, timeout abort controllers, JSON schema validation,
- * and rate-limit tracking.
+ * Sends a date-parsing request to an AI provider and returns its response content.
  *
  * @param provider - Target provider configuration
- * @param str - Input string prompt
- * @param contextString - Contextual system instructions (time, timezone, locale)
- * @param options - Execution options (signal, timeout, systemPrompt, debug, tokenLimit)
- * @returns Object containing raw payload string, providerId, and parsed rate limits
- * @throws TempoAiError on network, timeout, or provider status errors
+ * @param str - Input string to parse
+ * @param contextString - Contextual instructions for interpreting the input
+ * @param options - Optional request settings, including cancellation, timeout, prompt, debugging, and token limit
+ * @returns The trimmed response content, provider identifier, and rate-limit information
+ * @throws `TempoAiError` if configuration resolution, validation, cancellation, timeout, network communication, or provider processing fails
  */
 export async function fetchFromProvider(
 	provider: AiProvider,

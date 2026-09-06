@@ -5,6 +5,9 @@ import { BatchPlugin } from '../src/index.js';
 // Extend Tempo with the batch plugin
 Tempo.use(BatchPlugin);
 
+/**
+ * Benchmarks synchronous and batch processing of epoch timestamps by adding one week to each value.
+ */
 async function runBenchmark() {
 	console.log('=== TempoBatch Performance Benchmark ===');
 	
