@@ -340,9 +340,9 @@ export function ephemeral<T extends object, R>(
 	const { proxy, revoke } = revocable(target, options);
 	try {
 		const res = fn(proxy);
-		if (res && typeof (res as any).then === 'function') {
-			return (res as any).finally(() => revoke()) as R;
-		}
+		if (res && typeof (res as any).then === 'function')
+			return Promise.resolve(res).finally(() => revoke()) as R;
+
 		revoke();
 		return res;
 	} catch (err) {

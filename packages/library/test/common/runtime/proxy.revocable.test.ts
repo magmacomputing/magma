@@ -111,4 +111,28 @@ describe('ephemeral proxy', () => {
 		expect(leakedProxy).not.toBeNull();
 		expect(() => leakedProxy.data).toThrow(TypeError);
 	});
+
+	test('handles PromiseLike/thenable without .finally and revokes proxy upon resolution', async () => {
+		let leakedProxy: any = null;
+		const target = { data: 'thenable-test' };
+
+		// A custom thenable that implements .then but NOT .finally
+		const customThenable = {
+			then(onFulfilled?: (val: any) => any) {
+				return new Promise((resolve) => setTimeout(resolve, 5)).then(() => {
+					return onFulfilled ? onFulfilled('thenable-result') : 'thenable-result';
+				});
+			}
+		};
+
+		const result = await ephemeral(target, (scoped) => {
+			leakedProxy = scoped;
+			return customThenable;
+		});
+
+		expect(result).toBe('thenable-result');
+		expect(leakedProxy).not.toBeNull();
+		expect(() => leakedProxy.data).toThrow(TypeError);
+	});
 });
+

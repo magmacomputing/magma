@@ -62,5 +62,27 @@ describe('Ticker Stop Listener', () => {
 		expect(() => ticker.info).toThrow(TypeError);
 		expect(() => ticker.pulse()).toThrow(TypeError);
 	});
+
+	it('should still revoke proxy when a stop listener throws in Symbol.dispose', () => {
+		const ticker = Tempo.ticker({ seconds: 1 });
+		ticker.on('stop', () => {
+			throw new Error('Stop listener failure');
+		});
+
+		expect(() => ticker[Symbol.dispose]()).toThrow('Stop listener failure');
+		expect(() => ticker.info).toThrow(TypeError);
+		expect(() => ticker.pulse()).toThrow(TypeError);
+	});
+
+	it('should still revoke proxy when a stop listener throws in Symbol.asyncDispose', async () => {
+		const ticker = Tempo.ticker({ seconds: 1 });
+		ticker.on('stop', () => {
+			throw new Error('Async stop listener failure');
+		});
+
+		await expect(ticker[Symbol.asyncDispose]()).rejects.toThrow('Async stop listener failure');
+		expect(() => ticker.info).toThrow(TypeError);
+		expect(() => ticker.pulse()).toThrow(TypeError);
+	});
 });
 

@@ -537,6 +537,17 @@ export class Tempo {
 	 * Register a plugin or term extension.
 	 * 
 	 * @param plugin - A plugin or term extension to register.
+	/**
+	 * Register discovery configuration with an optional discovery symbol.
+	 * 
+	 * @param discovery - Discovery object defining options, formats, periods, or terms.
+	 * @param symbol - Optional symbol identifier under globalThis to attach discovery data.
+	 */
+	static use(discovery: t.Discovery, symbol?: symbol): typeof Tempo;
+	/**
+	 * Register an individual plugin.
+	 * 
+	 * @param plugin - The plugin function or definition to register.
 	 * @param options - Optional configuration for the plugin.
 	 */
 	static use(plugin: TempoPlugin, options?: t.Options): typeof Tempo;
@@ -565,7 +576,7 @@ export class Tempo {
 			!('locales' in arg) &&
 			!('options' in arg);
 
-		let options = (args.length > 1 && isOptionsArg(args[args.length - 1])) ? args.pop() : undefined;
+		let options = (args.length > 1 && (isOptionsArg(args[args.length - 1]) || isSymbol(args[args.length - 1]))) ? args.pop() : undefined;
 
 		const items = args.flat(Infinity);
 		if (isEmpty(items)) return this;
@@ -736,7 +747,7 @@ export class Tempo {
 							// only trigger init if we're assigning a new discovery object to a symbol
 							if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
 								const discoveryArg = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
-								const discoverySymbol = isString(discoveryArg) ? Symbol.for(discoveryArg) : (isSymbol(discoveryArg) && !Symbol.keyFor(discoveryArg) ? Symbol('TempoSandbox') : discoveryArg);
+								const discoverySymbol = isString(discoveryArg) ? Symbol.for(discoveryArg) : discoveryArg;
 
 								if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item) {
 									(globalThis as Record<symbol, any>)[discoverySymbol as symbol] = item;
@@ -760,6 +771,10 @@ export class Tempo {
 		return this;
 	}
 
+	/**
+	 * @deprecated Use Tempo.use(...) instead.
+	 */
+	static extend(discovery: t.Discovery, symbol?: symbol): typeof Tempo;
 	/**
 	 * @deprecated Use Tempo.use(...) instead.
 	 */
@@ -819,9 +834,8 @@ export class Tempo {
 			fn = arg1 as (sandbox: typeof Tempo) => R;
 		} else if (isObject(arg1)) {
 			options = arg1 as t.Options;
-			if (isFunction(arg2)) {
+			if (isFunction(arg2))
 				fn = arg2;
-			}
 		}
 
 		const discovery = options.discovery;
@@ -837,7 +851,9 @@ export class Tempo {
 			static [Symbol.dispose]() {
 				if (disposed) return;
 				disposed = true;
-				delete (globalThis as any)[normalizedDiscovery as any];
+				if ((globalThis as any)[normalizedDiscovery as any] === data)
+					delete (globalThis as any)[normalizedDiscovery as any];
+
 				ClassStates.delete(SandboxTempo as any);
 			}
 		}

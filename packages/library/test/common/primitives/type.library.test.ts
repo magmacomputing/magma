@@ -76,4 +76,15 @@ describe('Type Library (Runtime)', () => {
 		const arrayLike = { 0: 'a', 1: 'b', length: 2 };
 		expect(getType(arrayLike)).toBe('ArrayLike');
 	});
+
+	it('should return Function for a callable proxy whose get trap throws', () => {
+		const throwingCallableProxy = new Proxy(() => {}, {
+			get() {
+				throw new Error('Hostile get trap error');
+			}
+		});
+
+		expect(getType(throwingCallableProxy)).toBe('Function');
+	});
 });
+

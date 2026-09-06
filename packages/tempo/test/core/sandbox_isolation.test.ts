@@ -141,6 +141,34 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		expect(() => (X as any)[Symbol.dispose]()).not.toThrow();
 	});
 
+	it('preserves newer sandbox data when multiple sandboxes share the same Symbol.for discovery key', () => {
+		const sharedKey = 'shared-discovery-key';
+		const slot = Symbol.for(sharedKey);
+
+		// Sandbox 1 created
+		const sb1 = Tempo.create({ discovery: sharedKey, timeZone: 'Pacific/Auckland' });
+		const data1 = (globalThis as any)[slot];
+		expect(data1).toBeDefined();
+
+		// Sandbox 2 created with same shared key, replacing slot
+		const sb2 = Tempo.create({ discovery: sharedKey, timeZone: 'Asia/Tokyo' });
+		const data2 = (globalThis as any)[slot];
+		expect(data2).toBeDefined();
+		expect(data2).not.toBe(data1);
+
+		// Dispose Sandbox 1
+		(sb1 as any)[Symbol.dispose]();
+		expect((sb1 as any).isDisposed).toBe(true);
+
+		// Sandbox 2 data should still be intact in globalThis[slot]
+		expect((globalThis as any)[slot]).toBe(data2);
+
+		// Dispose Sandbox 2
+		(sb2 as any)[Symbol.dispose]();
+		expect((sb2 as any).isDisposed).toBe(true);
+		expect((globalThis as any)[slot]).toBeUndefined();
+	});
+
 	it('Tempo.create with callback executes synchronous block and automatically disposes sandbox', () => {
 		const discoveryKey = 'test-auto-sandbox-sync';
 		const slot = Symbol.for(discoveryKey);

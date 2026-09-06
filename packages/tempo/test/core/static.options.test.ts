@@ -20,5 +20,23 @@ describe('Tempo Static Options', () => {
         Tempo.use(myDiscovery, $TestTempo)
 
         expect(Tempo.options.timeZone).toBe('Pacific/Auckland')
+        expect((globalThis as any)[$TestTempo]).toBe(myDiscovery)
+        expect(Tempo.config.discovery).toBe($TestTempo)
     })
+
+    test.runIf(typeof (Tempo as any).extend === 'function')(
+        'static options support legacy Tempo.extend with discovery symbol (while supported)',
+        () => {
+            const myDiscovery = {
+                options: { timeZone: 'Asia/Tokyo' }
+            }
+
+            // Register discovery via legacy extend
+            ;(Tempo as any).extend(myDiscovery, $TestTempo)
+
+            expect(Tempo.options.timeZone).toBe('Asia/Tokyo')
+            expect((globalThis as any)[$TestTempo]).toBe(myDiscovery)
+            expect(Tempo.config.discovery).toBe($TestTempo)
+        }
+    )
 })

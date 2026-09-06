@@ -1,6 +1,6 @@
-# ⚠️ Migrating to Tempo v4.0.0
+# ⚠️ Migrating to Tempo v4.x
 
-Tempo v4.0.0 introduces a standardized plugin & registry architecture, strict configuration namespaces, and excises legacy v3.x deprecated interfaces.
+Tempo v4.x introduces a standardized plugin & registry architecture, strict configuration namespaces, cascading configuration inheritance, and deterministic resource disposal while excising legacy v3.x deprecated interfaces.
 
 ## ⚡ Dynamic Functional Context (DFC) & Supplier Options
 
@@ -55,6 +55,10 @@ Tempo v4.0.0 Community Core is 100% open-source without commercial license valid
 - Commercial plugin management and domain-locking hooks have been relocated into the `@magmacomputing/tempo-pro` enterprise package.
 
 ---
+
+# 🚀 Tempo v4.1.0 Updates
+
+Tempo v4.1.0 introduces cascading configuration inheritance (`extends`), a dedicated `pluginOptions` configuration slot, and overloaded `Tempo.create()` with deterministic resource cleanup (TC39 `using`).
 
 ## 🔌 Configuration Inheritance (`extends`), `plugins`, and `pluginOptions`
 

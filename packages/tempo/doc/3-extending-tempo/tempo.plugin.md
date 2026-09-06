@@ -206,11 +206,13 @@ In Tempo v4.1.0+, executable plugin registration is cleanly separated from plugi
 - **`plugins`**: Strictly holds executable plugin definitions, terms, or factory closures (`(Plugin | Term)[]`).
 - **`pluginOptions`**: Dedicated configuration dictionary (`Record<string, any>`) holding serializable runtime options and defaults for plugins.
 
-This enables plugin configurations to be defined in `tempo.config.ts`, `tempo.config.jsonc`, or initialized via `Tempo.init()` / `Tempo.create()`, with full support for cascading inheritance across remote `"extends"` layers:
+This enables plugin configurations to be defined in `tempo.config.ts`, `tempo.config.jsonc`, or initialized via `Tempo.init()` / `Tempo.create()`, with full support for cascading inheritance across remote `"extends"` layers.
+
+When plugins are authored directly with `definePlugin`, they can be passed by reference to `plugins` and retrieve their options from `TempoClass.config.pluginOptions`:
 
 ```typescript
 // tempo.config.ts or Tempo.init(...)
-import { HolidayPlugin } from 'tempo-plugin-holiday';
+import { HolidayPlugin } from 'tempo-plugin-holiday'; // defined via definePlugin
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 Tempo.init({
@@ -223,12 +225,13 @@ Tempo.init({
 ```
 
 #### Reading `pluginOptions` Inside Your Plugin
-Plugin authors can read configured options directly from `TempoClass.config.pluginOptions` or `tempoOptions.pluginOptions`:
+When authoring a plugin designed for declarative configuration, define the plugin directly with `definePlugin` and read configured options from `TempoClass.config.pluginOptions`:
 
 ```typescript
 // tempo-plugin-holiday/index.ts
 import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
 
+// Directly exported plugin function (callback-compatible with Tempo.init / Tempo.use)
 export const HolidayPlugin = definePlugin((TempoClass, tempoOptions) => {
   // Read configured options with fallback to defaults
   const options = TempoClass.config.pluginOptions?.holiday ?? {};
@@ -237,6 +240,8 @@ export const HolidayPlugin = definePlugin((TempoClass, tempoOptions) => {
   // ... register methods or terms using the resolved options ...
 });
 ```
+
+*(Alternatively, if your plugin exports a wrapper factory function `HolidayPluginFactory(options?)`, consumers register the invoked factory result: `plugins: [HolidayPluginFactory()]` or `Tempo.use(HolidayPluginFactory({ ... }))`).*
 
 > [!NOTE] Deprecation Notice: Configuration Dictionaries in `plugins`
 > Supplying plain configuration dictionaries directly under `plugins` or within the `plugins` array (e.g. `plugins: [{ holiday: { ... } }]`) remains supported for backwards compatibility, but is marked `@deprecated` in favor of `pluginOptions`.

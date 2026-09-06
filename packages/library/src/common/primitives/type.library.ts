@@ -67,7 +67,11 @@ export const getType = (obj?: any, ...instances: Instance[]): Type => {
 
 	switch (type) {
 		case 'Function':
-			return isClassConstructor(raw) ? 'Class' : 'Function';
+			try {
+				return isClassConstructor(raw) ? 'Class' : 'Function';
+			} catch {
+				return 'Function';
+			}
 
 		case 'Object': {
 			try {

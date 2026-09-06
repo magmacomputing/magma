@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Introduced `Tempo.use(...)` as the primary static method for registering plugins, terms, and module extensions at runtime.
   - Marked `Tempo.extend()` as `@deprecated Use Tempo.use(...) instead.` while retaining full backwards compatibility.
 
+### Fixed
+- **Sandbox `Symbol.dispose` Global State Leakage**: Fixed a critical bug where invoking `[Symbol.dispose]()` on a sandboxed `Tempo` class (e.g., via the TC39 `using` keyword or scoped callback mode) inherited `Tempo[Symbol.dispose]()` via the prototype chain and inadvertently executed `Tempo.init()`, resetting the global library configuration and wiping registered plugins. Sandboxed classes now implement an isolated `[Symbol.dispose]()` that strictly cleans up local sandbox state and discovery slots without mutating global defaults.
+
 ## [4.0.3] - 2026-09-02
 
 ### Added

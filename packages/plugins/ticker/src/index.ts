@@ -460,13 +460,19 @@ class TickerInstance implements Ticker.Descriptor {
 	}
 
 	async [Symbol.asyncDispose]() {
-		this.stop();
-		this.#revoker?.();
+		try {
+			this.stop();
+		} finally {
+			this.#revoker?.();
+		}
 	}
 	[Symbol.asyncIterator]() { return this.#self; }
 	[Symbol.dispose]() {
-		this.stop();
-		this.#revoker?.();
+		try {
+			this.stop();
+		} finally {
+			this.#revoker?.();
+		}
 	}
 }
 

@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed & Security
 - **Ephemeral Credential Hardening (`transport.ts`)**:
   - Outgoing HTTP provider requests now wrap sensitive authorization headers (`Bearer ${key}`) in an `ephemeral()` revocable proxy handle.
-  - Headers are permanently revoked as soon as the network transport Promise settles, preventing sensitive API tokens from lingering in memory, interceptors, or diagnostic buffers.
+  - Headers are permanently revoked as soon as the network transport Promise settles, preventing subsequent access to request headers through the revoked proxy handle.
 - **Peer Dependency Alignment**:
   - Updated `@magmacomputing/tempo` peer dependency requirement to `^4.1.0`.
 

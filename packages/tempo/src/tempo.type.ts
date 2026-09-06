@@ -496,3 +496,4 @@ export namespace Internal {
 }
 
 export type MatchResult = Internal.Match;
+export type Discovery = Internal.Discovery;
