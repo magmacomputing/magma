@@ -7,7 +7,7 @@
 - **Strict Immutability**: `Tempo` instances are completely frozen (`Object.freeze`). All mutating operations (`add`, `subtract`, `set`) return a new `Tempo` instance.
 - **Constructor Instantiation**: Instantiation and string parsing ALWAYS use the `new Tempo(...)` constructor. (There are no static `Tempo.from` or `Tempo.parse` functions; `Tempo.parse` is a static configuration object getter).
 - **Live Getters**: Core property accessors use short layout tokens: `.yy` (year), `.mm` (month), `.dd` or `.day` (day of month), `.hh` (hour), `.mi` (minute), `.ss` (second), `.ms` (millisecond), `.us` (microsecond), `.ns` (nanosecond), `.dow` (day of week 1-7), `.doy` (day of year 1-366), `.wy` (week of year), `.tz` (timeZone ID), `.cal` (calendar ID), `.ts` (timestamp ms), `.iso` (ISO 8601 UTC string), `.isValid`. *(Note: Long getters like `.year`, `.month`, `.hour`, `.minute`, `.second` do not exist directly on Tempo instances).*
-- **Configuration & Plugins**: System options and plugin registration are configured via `Tempo.init({ timeZone: 'UTC', monthDay: true, extends: [Plugin], registry: { layouts: { ... }, formats: { ... }, numbers: { ... } } })`. Core functionality can also be extended dynamically via `Tempo.extend(Plugin)`.
+- **Configuration & Plugins**: System options and plugin registration are configured via `Tempo.init({ timeZone: 'UTC', monthDay: true, plugins: [Plugin], registry: { layouts: { ... }, formats: { ... }, numbers: { ... } } })`. Cascading configuration is inherited via `extends: 'https://...'`. Core functionality can also be extended dynamically via `Tempo.use(Plugin)`.
 
 ## Formatting & Parsing Tokens
 | Token | Description | Sample Output |

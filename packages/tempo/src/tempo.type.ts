@@ -370,10 +370,18 @@ export namespace Internal {
 		/** Number name mappings */ numbers?: Record<string, number>;
 		/** Noise words to ignore during parsing */ ignores?: Ignore;
 	};
-		/** plugins or namespaces to extend onto Tempo, or config URL/path strings */
-		extends?: string | string[] | (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
-		/** plugin configuration dictionaries */
-		plugins?: Record<string, any>;
+		/** URLs or file paths to inherit configuration from */
+		extends?: string | string[];
+		/**
+		 * Plugins or terms to extend onto Tempo.
+		 * 
+		 * @remarks
+		 * To provide configuration options or defaults for plugins, use `pluginOptions` instead.
+		 * @deprecated Providing a configuration dictionary directly under 'plugins' is deprecated. Use 'pluginOptions' instead.
+		 */
+		plugins?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[] | Record<string, any>;
+		/** Plugin configuration defaults and dictionaries keyed by plugin name */
+		pluginOptions?: Record<string, any>;
 		/** supplied value to parse */													value?: DateTime;
 		/** @internal temporary anchor used during parsing */		anchor?: any;
 		/** @internal accumulated parse results */							result?: Match[] | undefined;
@@ -472,10 +480,18 @@ export namespace Internal {
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
 		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator>, numbers?: Record<string, number> };
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
-		/** plugins or namespaces to extend onto Tempo, or config URL/path strings */
-		extends?: string | string[] | (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
-		/** plugin configuration dictionaries */
-		plugins?: Record<string, any>;
+		/** URLs or file paths to inherit configuration from */
+		extends?: string | string[];
+		/**
+		 * Plugins or terms to extend onto Tempo.
+		 * 
+		 * @remarks
+		 * To provide configuration options or defaults for plugins, use `pluginOptions` instead.
+		 * @deprecated Providing a configuration dictionary directly under 'plugins' is deprecated. Use 'pluginOptions' instead.
+		 */
+		plugins?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[] | Record<string, any>;
+		/** Plugin configuration defaults and dictionaries keyed by plugin name */
+		pluginOptions?: Record<string, any>;
 	}
 }
 

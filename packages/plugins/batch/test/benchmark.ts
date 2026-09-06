@@ -3,7 +3,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { BatchPlugin } from '../src/index.js';
 
 // Extend Tempo with the batch plugin
-Tempo.extend(BatchPlugin);
+Tempo.use(BatchPlugin);
 
 async function runBenchmark() {
 	console.log('=== TempoBatch Performance Benchmark ===');

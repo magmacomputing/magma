@@ -144,7 +144,7 @@ While you *could* import directly from the URL everywhere, the best practice is 
   import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
   Tempo.init({ 
-    extends: [TickerPlugin] 
+    plugins: [TickerPlugin] 
   });
 </script>
 ```
@@ -207,7 +207,7 @@ If you aren't using ESM or just want a simple `<script>` tag for rapid prototypi
   const { Tempo, plugins } = Magma;
   
   // 2. Extend the core engine
-  Tempo.extend(plugins.astro);
+  Tempo.use(plugins.astro);
 
   // 3. Create your instance!
   const t = new Tempo('next friday');
@@ -226,13 +226,13 @@ import { Tempo } from '@magmacomputing/tempo/core';
 import { MutateModule } from '@magmacomputing/tempo/mutate';
 
 // Opt-in to specific functionality
-Tempo.extend(MutateModule);
+Tempo.use(MutateModule);
 
 const t = new Tempo().add({ days: 1 });
 ```
 
 ::: warning
-When using the Lite build, the `Tempo` class will have almost no methods (like `.add()`, `.set()`, or `.format()`) until you explicitly call `Tempo.extend()` with the appropriate module.
+When using the Lite build, the `Tempo` class will have almost no methods (like `.add()`, `.set()`, or `.format()`) until you explicitly call `Tempo.use()` with the appropriate module.
 :::
 
 ---

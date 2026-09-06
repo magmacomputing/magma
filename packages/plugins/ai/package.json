@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-plugin-ai",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Tempo community plugin for LLM-powered natural language parsing.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,7 +30,7 @@
     "plan": "community"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.0.0"
+    "@magmacomputing/tempo": "^4.1.0"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1"

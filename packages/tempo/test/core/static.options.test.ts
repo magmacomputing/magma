@@ -17,7 +17,7 @@ describe('Tempo Static Options', () => {
         }
 
         // Register discovery
-        Tempo.extend(myDiscovery, $TestTempo)
+        Tempo.use(myDiscovery, $TestTempo)
 
         expect(Tempo.options.timeZone).toBe('Pacific/Auckland')
     })

@@ -14,7 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **`file://` URL Support**: Added support for `file://` URLs in Node.js environments (automatically converted to absolute filesystem paths using `fileURLToPath` for direct `fs` reading).
   - **Cascading Configuration Inheritance (`"extends"`)**: Introduced recursive `"extends"` resolution in configuration payloads (accepting a string URL/path or an array of URLs/paths). Baseline parent configurations are fetched/loaded and merged with child local overrides (`{ ...parentConfig, ...childConfig }`).
   - **Security Boundaries & Loop Protection**: Protected remote HTTP requests using `fetchRequest` with a 3-second timeout and 128KB payload size cap to prevent initialization hangs or DoS attacks. Restricted remote loading to static JSON/JSONC data-only payloads (preventing dynamic JS/TS execution from URLs). Implemented loop protection to detect and safely bypass circular `"extends"` references.
-  - **Type System Expansion**: Updated `BaseOptions` and `Discovery` interfaces (`extends` property) in `tempo.type.ts` to accept `string | string[]` config URL/path specifiers alongside plugin objects.
+- **Dedicated `pluginOptions` Configuration Slot**:
+  - Introduced `pluginOptions?: Record<string, any>` in `BaseOptions`, `Discovery`, and `Config` for clean separation between executable plugin registration (`plugins`) and plugin runtime options (`pluginOptions`).
+  - Added recursive namespace merging for `pluginOptions` across `extends` inheritance layers in `resolveConfig`.
+  - Marked legacy dictionary passing under `plugins` as `@deprecated`.
+- **Overloaded `Tempo.create()` & Deterministic Resource Disposal**:
+  - **Explicit Resource Management**: `Tempo.create()` returns `SandboxTempo` subclasses that implement the TC39 `Disposable` protocol (`[Symbol.dispose]()`) and expose `isDisposed`. Disposing a sandbox clears its discovery slot from `globalThis` and purges its state from `ClassStates`.
+  - **Scoped Callback Mode (`Tempo.create(fn)` / `Tempo.create(options, fn)`)**: Overloaded `Tempo.create()` to accept an execution callback, automatically disposing the temporary sandbox upon completion (handling both synchronous returns and async Promises in a `try...finally` block) with zero API namespace bloat.
+  - **Native `using` Block Scoping**: Full support for TC39 explicit resource management: `{ using sb = Tempo.create({ ... }); ... }`.
+### Changed
+- **Architectural Separation of `extends` and `plugins`**:
+  - **`extends`**: Strictly reserved for cascading configuration inheritance via URLs or file paths (`string | string[]`), mirroring modern ecosystem standards (`tsconfig.json`, ESLint).
+  - **`plugins`**: Dedicated key for registering executable plugins, terms, and modules during `Tempo.init({ plugins: [PluginA, TermB] })` or `Tempo.create()`, alongside continuing support for plugin options dictionaries (`Record<string, any>`).
+- **`Tempo.use()` & Deprecation of `Tempo.extend()`**:
+  - Introduced `Tempo.use(...)` as the primary static method for registering plugins, terms, and module extensions at runtime.
+  - Marked `Tempo.extend()` as `@deprecated Use Tempo.use(...) instead.` while retaining full backwards compatibility.
 
 ## [4.0.3] - 2026-09-02
 

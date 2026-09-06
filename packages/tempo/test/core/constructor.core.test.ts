@@ -2,7 +2,7 @@ import { Tempo } from '#tempo/core';
 import { FormatModule } from '#tempo/format';
 import '#tempo/parse';
 
-Tempo.extend(FormatModule);
+Tempo.use(FormatModule);
 
 describe('Tempo Core', () => {
 	beforeEach(() => {

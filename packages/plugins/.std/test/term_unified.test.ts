@@ -48,7 +48,7 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 
 	it('should respect custom labels if provided in the Range object', () => {
 		// 1. Register a custom term that returns a labelled Range
-		Tempo.extend({
+		Tempo.use({
 			key: 'custom',
 			define() {
 				return {

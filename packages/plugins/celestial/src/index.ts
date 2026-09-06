@@ -325,4 +325,4 @@ export const CelestialPlugin = [SolarTerm, LunarTerm, TidalTerm];
 
 export default CelestialPlugin;
 
-Tempo.extend(CelestialPlugin);
+Tempo.use(CelestialPlugin);

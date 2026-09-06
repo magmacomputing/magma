@@ -99,7 +99,7 @@ import { Tempo } from '@magmacomputing/tempo/core';
 import { FinanceNamespace } from './finance.js';
 
 // Extend the core Tempo engine
-Tempo.extend(FinanceNamespace);
+Tempo.use(FinanceNamespace);
 
 const t = new Tempo('2024-07-01');
 
@@ -175,7 +175,7 @@ import { FormatModule } from '@magmacomputing/tempo/format';
 import { SecretPlugin, InternalTools } from './secret.js';
 
 // Register both modules so tempo.format() is available for the audit method
-Tempo.extend(FormatModule, SecretPlugin);
+Tempo.use(FormatModule, SecretPlugin);
 
 const t = new Tempo();
 t[InternalTools].audit();

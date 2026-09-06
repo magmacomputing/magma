@@ -8,7 +8,7 @@ import { registerType, type Constructor, type Evaluated } from '#library/type.li
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
 
 /** internal options for the unified proxy engine */
-type ProxyOptions = {
+export type ProxyOptions = {
 	frozen?: boolean;																					// read-only Proxy (throws on set/delete)
 	lock?: boolean;																						// deep-freeze the target object
 	appendOnly?: boolean;																			// allow adding properties, but not changing existing ones
@@ -24,13 +24,15 @@ type ProxyOptions = {
  *
  * @param target - The object to wrap in a Proxy
  * @param options - Configuration options for proxy behavior
- * @returns The proxified object with configured behavior
+ * @param isRevocable - If true, returns { proxy, revoke } using Proxy.revocable
+ * @returns The proxified object with configured behavior, or { proxy, revoke } when isRevocable is true
  * @internal
  */
-function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
+function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevocable = false): any {
 	const { frozen, lock, appendOnly, onGet, keys, bind, skip } = options;
 	const pending = new Set<PropertyKey>();
 	let cachedJSON: any;
+	let result: any;
 
 	// 1. Unwrap recursive proxies and resolve the true target
 	const tgt = unwrap(target);
@@ -142,7 +144,13 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}): T {
 		}
 	};
 
-	const result = new Proxy(tgt, handler) as T;
+	if (isRevocable) {
+		const revocableResult = Proxy.revocable(tgt, handler);
+		result = revocableResult.proxy;
+		return { proxy: revocableResult.proxy as T, revoke: revocableResult.revoke };
+	}
+
+	result = new Proxy(tgt, handler) as T;
 	return result;
 }
 
@@ -284,5 +292,62 @@ export function dynamicProxy<T extends object>(target: T): Evaluated<T> {
 			return Reflect.getOwnPropertyDescriptor(t, k);
 		},
 	}) as any;
+}
+
+/**
+ * Creates a revocable Proxy that can be permanently deactivated on demand.
+ * Integrates with the unified proxy engine to support unwrapping, freezing, and security invariants.
+ *
+ * @param target - The object to wrap in a revocable Proxy
+ * @param options - Configuration options for proxy behavior (frozen, lock, bind, etc.)
+ * @returns An object containing the revocable `proxy` and its `revoke()` function
+ * @example
+ * ```ts
+ * const { proxy, revoke } = revocable({ secret: '123' });
+ * console.log(proxy.secret); // '123'
+ * revoke();
+ * console.log(proxy.secret); // throws TypeError
+ * ```
+ */
+export function revocable<T extends object>(
+	target: T,
+	options: ProxyOptions = {}
+): { proxy: T; revoke: () => void } {
+	return factory(target, options, true);
+}
+
+/**
+ * Runs a scoped callback with an ephemeral, revocable Proxy that is automatically
+ * revoked as soon as the synchronous execution or returned Promise completes.
+ *
+ * @param target - The object to provide ephemerally
+ * @param fn - The scoped execution block receiving the ephemeral proxy
+ * @param options - Configuration options for proxy behavior
+ * @returns The result of the callback function
+ * @example
+ * ```ts
+ * const result = ephemeral({ token: 'temp' }, (scoped) => {
+ *   return scoped.token.toUpperCase();
+ * });
+ * // scoped proxy is revoked immediately upon return
+ * ```
+ */
+export function ephemeral<T extends object, R>(
+	target: T,
+	fn: (scoped: T) => R,
+	options: ProxyOptions = {}
+): R {
+	const { proxy, revoke } = revocable(target, options);
+	try {
+		const res = fn(proxy);
+		if (res && typeof (res as any).then === 'function') {
+			return (res as any).finally(() => revoke()) as R;
+		}
+		revoke();
+		return res;
+	} catch (err) {
+		revoke();
+		throw err;
+	}
 }
 

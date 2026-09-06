@@ -3,7 +3,7 @@ import { Pledge } from '#library/pledge.class.js';
 import { FormatModule } from '#tempo/format';
 import { MutateModule } from '#tempo/mutate';
 
-Tempo.extend(FormatModule, MutateModule);
+Tempo.use(FormatModule, MutateModule);
 
 describe('Static Symbol.dispose', () => {
 

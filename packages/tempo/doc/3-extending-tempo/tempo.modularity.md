@@ -6,10 +6,10 @@ Tempo is designed as a modular library, allowing you to include only the feature
 
 If you are using module entry points, use this rule of thumb:
 
-1. `import '@magmacomputing/tempo/<module>'` (side-effect import): auto-registers that module. You usually do **not** need `Tempo.extend(...)` for the same module.
-2. `import { SomeModule } from '@magmacomputing/tempo/<module>'` (named import): requires explicit activation via `Tempo.extend(SomeModule)`.
-3. `Tempo.init()` is primarily for baseline configuration and initial discovery. Call it at startup for config; if you load modules later at runtime, use `Tempo.extend(...)` for deterministic activation.
-4. Import order is usually only relevant when modules are loaded dynamically/lazily. For deterministic activation in those cases, prefer explicit `Tempo.extend(...)` immediately after import.
+1. `import '@magmacomputing/tempo/<module>'` (side-effect import): auto-registers that module. You usually do **not** need `Tempo.use(...)` for the same module.
+2. `import { SomeModule } from '@magmacomputing/tempo/<module>'` (named import): requires explicit activation via `Tempo.use(SomeModule)`.
+3. `Tempo.init()` is primarily for baseline configuration and initial discovery. Call it at startup for config; if you load modules later at runtime, use `Tempo.use(...)` for deterministic activation.
+4. Import order is usually only relevant when modules are loaded dynamically/lazily. For deterministic activation in those cases, prefer explicit `Tempo.use(...)` immediately after import.
 
 ## Core vs. Full
 
@@ -26,10 +26,10 @@ import { TermsModule } from '@magmacomputing/tempo/term';
 
 
 // Individual extension...
-Tempo.extend(DurationModule);
+Tempo.use(DurationModule);
 
 // ...or bulk extension!
-Tempo.extend(DurationModule, FormatModule, TermsModule, MutateModule, ...);
+Tempo.use(DurationModule, FormatModule, TermsModule, MutateModule, ...);
 ```
 
 ## Available Modules
@@ -63,7 +63,7 @@ Recommended for consistency with other modules.
 import { Tempo } from '@magmacomputing/tempo/core';
 import { TermsModule } from '@magmacomputing/tempo/term';
 
-Tempo.extend(TermsModule);
+Tempo.use(TermsModule);
 ```
 
 #### 3. The Surgical Strike (Data-Only)
@@ -72,7 +72,7 @@ Best for maximum bundle-size optimization by picking only what you need. Note th
 import { Tempo } from '@magmacomputing/tempo/core';
 import { QuarterTerm } from '@magmacomputing/tempo/term/quarter';
 
-Tempo.extend(QuarterTerm);
+Tempo.use(QuarterTerm);
 ```
 
 ## Custom Modules
@@ -115,10 +115,10 @@ declare module '@magmacomputing/tempo' {
 
 There is a subtle but important distinction between how features are activated in Core mode:
 
-*   **`Tempo.extend(Module)`**: This is **Immediate and Explicit**. It applies the module to the class exactly when the line is executed. This is the recommended pattern for modular applications.
-*   **`Tempo.init()`**: Establishes global baseline configuration at application startup and registers plugins specified in the `extends` array during initial startup discovery.
+*   **`Tempo.use(Module)`**: This is **Immediate and Explicit**. It applies the module or plugin to the class exactly when the line is executed. This is the recommended pattern for modular applications.
+*   **`Tempo.init()`**: Establishes global baseline configuration at application startup and registers plugins specified in the `plugins` array during initial startup discovery.
 
 ::: note
-**Startup Initialization Lifecycle**: `Tempo.init()` establishes baseline configuration during application startup. Built-in plugins are registered automatically via static imports in full Tempo (`@magmacomputing/tempo`), while explicit plugin lists are registered during `Tempo.init({ extends: [...] })`. Note that subsequent calls to `Tempo.init()` re-evaluate and merge configuration options rather than executing as an idempotent no-op. To register additional plugins dynamically after startup, use `Tempo.extend(...)`.
+**Startup Initialization Lifecycle**: `Tempo.init()` establishes baseline configuration during application startup. Built-in plugins are registered automatically via static imports in full Tempo (`@magmacomputing/tempo`), while explicit plugin lists are registered during `Tempo.init({ plugins: [...] })`. Note that subsequent calls to `Tempo.init()` re-evaluate and merge configuration options rather than executing as an idempotent no-op. To register additional plugins dynamically after startup, use `Tempo.use(...)`.
 :::
 

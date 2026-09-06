@@ -6,7 +6,7 @@ import { FormatModule } from '#tempo/format';
 import { QuarterTerm } from '#tempo/std';
 import { TermsModule } from '#tempo';
 
-Tempo.extend([FormatModule, TermsModule, QuarterTerm]);
+Tempo.use([FormatModule, TermsModule, QuarterTerm]);
 
 describe('Fiscal Cycle Wrap-around', () => {
 	it('should resolve Southern Hemisphere Q4 for April anchor', () => {

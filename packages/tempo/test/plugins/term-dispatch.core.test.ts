@@ -8,7 +8,7 @@ import { QuarterTerm } from '#tempo/std';
 describe('Term Dispatch Refactor', () => {
 	beforeEach(() => {
 		Tempo.init();
-		Tempo.extend(QuarterTerm);
+		Tempo.use(QuarterTerm);
 	});
 
 	it('should set term by index (#quarter: 2)', () => {

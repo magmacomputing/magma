@@ -6,7 +6,7 @@ import { ParseModule } from '#tempo/parse';
 import { StandardTerms } from '#tempo/std';
 import { TermsModule } from '#tempo';
 
-Tempo.extend([ParseModule, FormatModule, MutateModule, DurationModule, TermsModule, StandardTerms]);
+Tempo.use([ParseModule, FormatModule, MutateModule, DurationModule, TermsModule, StandardTerms]);
 
 describe('Number-Word Pilot (0-10)', () => {
 	it('should resolve word-based counts in weekday patterns', () => {
@@ -30,7 +30,7 @@ describe('Number-Word Pilot (0-10)', () => {
 	});
 
 	it('should be extendable via global discovery', () => {
-		Tempo.extend({
+		Tempo.use({
 			registry: {
 				numbers: { eleven: 11 }
 			}

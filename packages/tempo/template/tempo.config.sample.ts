@@ -30,18 +30,30 @@ export default defineConfig({
 	},
 
 	// -------------------------------------------------------------------------
-	// Extensions (Executable Plugins / Namespaces / Terms)
+	// Configuration Inheritance (URL or local file path)
 	// -------------------------------------------------------------------------
-	extends: [
-		// Import and register your plugin modules/namespaces here
+	// extends: 'https://company.org/tempo-base.config.jsonc',
+
+	// -------------------------------------------------------------------------
+	// Feature Registration (Plugins, Terms, & Namespaces)
+	// -------------------------------------------------------------------------
+	plugins: [
+		// 1. Register executable plugins, namespaces, or terms:
 		// FinanceNamespace,
-		// TickerPlugin({ interval: 1000 })
+		// AstroTerm,
+
+		// 2. Plugins configured directly via factory closures:
+		// ticker({ interval: 1000 }),
 	],
 
 	// -------------------------------------------------------------------------
-	// Plugin Configuration Dictionaries
+	// Plugin Configuration Options & Defaults
 	// -------------------------------------------------------------------------
-	plugins: {
-		// ai: { mode: 'fallback', providers: [...] }
-	}
+	// pluginOptions: {
+	// 	ai: { mode: 'fallback', timeout: 10000 },
+	// 	ticker: { defaultInterval: 1000 }
+	// },
+
+	// Note: Providing configuration dictionaries directly inside 'plugins'
+	// is supported for backward compatibility, but marked @deprecated in favor of 'pluginOptions'.
 });

@@ -51,7 +51,7 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 	if (!isDefined(hostLogic) && !isTermsLoaded) {
 		const baseName = mod.endsWith('Module') ? mod.slice(0, -6) : mod;
 		const importPath = baseName === 'Terms' ? 'term' : baseName.toLowerCase();
-		const msg = `${mod} not loaded. (Did you forget to Tempo.extend(${mod}) or import '#tempo/${importPath}' / '@magmacomputing/tempo/${importPath}'?)`;
+		const msg = `${mod} not loaded. (Did you forget to Tempo.use(${mod}) or import '#tempo/${importPath}' / '@magmacomputing/tempo/${importPath}'?)`;
 		if (!silent) logError(msg, t?.config);
 
 		if (silent) return false;

@@ -1,7 +1,7 @@
 import { Tempo } from '#tempo';
 import { FormatModule } from '#tempo/format';
 
-Tempo.extend(FormatModule);
+Tempo.use(FormatModule);
 
 describe('Tempo Lazy Evaluation (Shadowing)', () => {
 	beforeEach(() => {

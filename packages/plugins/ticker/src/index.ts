@@ -115,7 +115,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#payload: Record<string, any> = {};
 	#rrule: string | undefined;
 	#cron: string | undefined;
-	#current: Tempo;
+	#next: Tempo;
 	#until: Tempo | undefined;
 	#limit: number | undefined;
 	#ticks = 0;
@@ -131,6 +131,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#stopListeners = new Set<Ticker.Callback>();
 	#hasInvalidSchedule = false;
 	#self!: Ticker.Instance;
+	#revoker?: () => void;
 
 	constructor(TempoClass: typeof Tempo, arg1: any, arg2?: any) {
 		this.#TempoClass = TempoClass;
@@ -212,7 +213,7 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 
 		normaliseFractionalDurations(this.#payload);
-		this.#current = new this.#TempoClass(isOptions(startAt) ? undefined : startAt, isOptions(startAt) ? { ...rest, ...startAt } : rest);
+		this.#next = new this.#TempoClass(isOptions(startAt) ? undefined : startAt, isOptions(startAt) ? { ...rest, ...startAt } : rest);
 	}
 
 	/** explicitly set the proxy-self (called by factory) */
@@ -228,15 +229,15 @@ class TickerInstance implements Ticker.Descriptor {
 			this.stop();
 			return this.#self;
 		}
-		if (!this.#current.isValid) {
+		if (!this.#next.isValid) {
 			this.stop();
-			const err = new Error(`Invalid Ticker seed: ${String(this.#current)}`);
-			if (!this.#current.config?.catch) throw err;
+			const err = new Error(`Invalid Ticker seed: ${String(this.#next)}`);
+			if (!this.#next.config?.catch) throw err;
 			console.error(err.message);
 		} else if (this.#until && !this.#until.isValid) {
 			this.stop();
 			const err = new Error(`Invalid Ticker boundary: ${String(this.#until)}`);
-			if (!this.#current.config?.catch) throw err;
+			if (!this.#next.config?.catch) throw err;
 			console.error(err.message);
 		} else {
 			try {
@@ -259,11 +260,11 @@ class TickerInstance implements Ticker.Descriptor {
 
 					this.#isShorthand = hasShorthand;
 					const hasTermKey = Object.keys(this.#payload).some(k => k.startsWith('#'));
-					const firstStep = this.#isShorthand ? this.#current.set(this.#payload) : this.#current.add(this.#payload);
+					const firstStep = this.#isShorthand ? this.#next.set(this.#payload) : this.#next.add(this.#payload);
 					if (!firstStep.isValid) throw new Error(`Invalid Ticker payload resolution for ${JSON.stringify(this.#payload)}`);
-					this.#isForward = this.#TempoClass.compare(firstStep, this.#current) >= 0;
-					this.#isInstant = firstStep.epoch.ns === this.#current.epoch.ns;
-					if (hasTermKey) this.#current = firstStep;
+					this.#isForward = this.#TempoClass.compare(firstStep, this.#next) >= 0;
+					this.#isInstant = firstStep.epoch.ns === this.#next.epoch.ns;
+					if (hasTermKey) this.#next = firstStep;
 
 					ACTIVE_TICKERS.add(this.#self);
 					this.#runBootstrap();
@@ -271,9 +272,9 @@ class TickerInstance implements Ticker.Descriptor {
 			} catch (e: any) {
 				this.stop();
 				const msg = `Invalid Ticker payload resolution for ${JSON.stringify(this.#payload)}`;
-				if (!this.#current.config?.catch) throw new Error(msg);
+				if (!this.#next.config?.catch) throw new Error(msg);
 				console.error(msg, e);
-				queueMicrotask(() => this.#catchListeners.forEach(l => l(this.#current, () => this.stop())));
+				queueMicrotask(() => this.#catchListeners.forEach(l => l(this.#next, () => this.stop())));
 				this.#isForward = true;
 				this.#isInstant = false;
 			}
@@ -282,10 +283,10 @@ class TickerInstance implements Ticker.Descriptor {
 	}
 
 	#delayMs() {
-		const diff = Math.round(this.#current.epoch.ms - instant().epochMilliseconds);
+		const diff = Math.round(this.#next.epoch.ms - instant().epochMilliseconds);
 		if (diff > 0) return Math.min(diff, 2_147_483_647);
 		if (!this.#isForward) {
-			const stepMs = Math.abs(Math.round(this.#current.add(this.#payload).epoch.ms - this.#current.epoch.ms));
+			const stepMs = Math.abs(Math.round(this.#next.add(this.#payload).epoch.ms - this.#next.epoch.ms));
 			return Math.max(20, Math.min(50, stepMs || 1000));
 		}
 		return 0;
@@ -303,11 +304,11 @@ class TickerInstance implements Ticker.Descriptor {
 		} catch (e: any) {
 			this.stop();
 			if (this.#catchListeners.size > 0) {
-				this.#catchListeners.forEach(l => l(this.#current, () => this.stop()));
+				this.#catchListeners.forEach(l => l(this.#next, () => this.stop()));
 			} else if (!this.#TempoClass.config?.catch) {
 				throw e;
 			}
-			return this.#current;
+			return this.#next;
 		}
 	}
 
@@ -339,9 +340,9 @@ class TickerInstance implements Ticker.Descriptor {
 	}
 
 	pulse(): Tempo {
-		if (this.#stopped) return new (this.#TempoClass as any)(null, this.#current.config);
+		if (this.#stopped) return new (this.#TempoClass as any)(null, this.#next.config);
 
-		const t = this.#current;
+		const t = this.#next;
 		if (!t.isValid) {
 			this.stop();
 			this.#catchListeners.forEach(l => l(t, () => this.stop()));
@@ -350,12 +351,12 @@ class TickerInstance implements Ticker.Descriptor {
 
 		if (this.#cron) {
 			const nextMs = getNextCronEpoch(this.#cron, t.epoch.ms, t.tz);
-			this.#current = new (this.#TempoClass as any)(nextMs, t.config);
+			this.#next = new (this.#TempoClass as any)(nextMs, t.config);
 		} else if (this.#rrule) {
 			const nextMs = getNextRRuleEpoch(this.#rrule, t.epoch.ms);
-			this.#current = new (this.#TempoClass as any)(nextMs, t.config);
+			this.#next = new (this.#TempoClass as any)(nextMs, t.config);
 		} else {
-			this.#current = this.#isInstant ? t : (this.#isShorthand ? t.set(this.#payload) : t.add(this.#payload));
+			this.#next = this.#isInstant ? t : (this.#isShorthand ? t.set(this.#payload) : t.add(this.#payload));
 		}
 
 		this.#ticks++;
@@ -395,13 +396,13 @@ class TickerInstance implements Ticker.Descriptor {
 		for (const w of queue)
 			if (w.isPending) w.resolve(terminalValue as any);
 
-		this.#stopListeners.forEach(l => l(this.#current, () => undefined));
+		this.#stopListeners.forEach(l => l(this.#next, () => undefined));
 	}
 
 	get info() {
 		return {
 			label: this.#label,
-			next: this.#current.clone(),
+			next: this.#next,
 			ticks: this.#ticks,
 			limit: this.#limit,
 			interval: { ...this.#payload },
@@ -454,14 +455,24 @@ class TickerInstance implements Ticker.Descriptor {
 		throw e;
 	}
 
-	async [Symbol.asyncDispose]() { this.stop(); }
+	setRevoker(revoker: () => void) {
+		this.#revoker = revoker;
+	}
+
+	async [Symbol.asyncDispose]() {
+		this.stop();
+		this.#revoker?.();
+	}
 	[Symbol.asyncIterator]() { return this.#self; }
-	[Symbol.dispose]() { this.stop(); }
+	[Symbol.dispose]() {
+		this.stop();
+		this.#revoker?.();
+	}
 }
 
 function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.Instance {
 	const instance = new TickerInstance(TempoClass, arg1, arg2);
-	const proxy = new Proxy((() => instance.stop()) as any, {
+	const { proxy, revoke } = Proxy.revocable((() => instance.stop()) as any, {
 		get: (_, prop) => {
 			if (prop === 'pulse') return instance.pulse.bind(instance);
 			if (prop === 'on') return instance.on.bind(instance);
@@ -476,9 +487,10 @@ function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.I
 			return (instance as any)[prop];
 		},
 		apply: (target) => target(),
-	}) as unknown as Ticker.Instance;
+	});
+	instance.setRevoker(revoke);
 
-	return instance.bootstrap(proxy);
+	return instance.bootstrap(proxy as unknown as Ticker.Instance);
 }
 
 const tickersDescriptor = {

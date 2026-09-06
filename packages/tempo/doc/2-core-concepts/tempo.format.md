@@ -64,7 +64,7 @@ Like the parsing engine, the formatting engine is modular:
 | Version | Formatting Status |
 | :--- | :--- |
 | **Tempo Full** | **Built-in**. Works out of the box. |
-| **Tempo Core** | **Opt-in**. You must call `Tempo.extend(FormatModule)` to enable `.format()`. |
+| **Tempo Core** | **Opt-in**. You must call `Tempo.use(FormatModule)` to enable `.format()`. |
 
 ### Enabling Formatting in Core
 If you are using `@magmacomputing/tempo/core`, you must explicitly register the formatting engine:
@@ -73,7 +73,7 @@ If you are using `@magmacomputing/tempo/core`, you must explicitly register the 
 import { Tempo } from '@magmacomputing/tempo/core';
 import { FormatModule } from '@magmacomputing/tempo/format';
 
-Tempo.extend(FormatModule);
+Tempo.use(FormatModule);
 ```
 
 ---

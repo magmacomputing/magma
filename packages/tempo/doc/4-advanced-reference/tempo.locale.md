@@ -102,7 +102,7 @@ console.log(t.format('{dd:ord}'));      // "15e"
 ### Term Bundled Dictionary
 Plugin authors can optionally bundle a `locale` dictionary directly into their custom Term definition:
 ```typescript
-Tempo.extend({
+Tempo.use({
     terms: [{
         key: 'shift',
         label: 'Shift',

@@ -103,6 +103,55 @@ function mergeConfigs(parent: Options, child: Options): Options {
 		};
 	}
 
+	if (parent.pluginOptions || child.pluginOptions) {
+		const parentOpts = isObject(parent.pluginOptions) ? parent.pluginOptions : {};
+		const childOpts = isObject(child.pluginOptions) ? child.pluginOptions : {};
+		const allKeys = new Set([...Object.keys(parentOpts), ...Object.keys(childOpts)]);
+		const mergedPluginOpts: Record<string, any> = {};
+		for (const key of allKeys) {
+			const pVal = (parentOpts as any)[key];
+			const cVal = (childOpts as any)[key];
+			if (isObject(pVal) || isObject(cVal)) {
+				mergedPluginOpts[key] = {
+					...(isObject(pVal) ? pVal : {}),
+					...(isObject(cVal) ? cVal : {}),
+				};
+			} else {
+				mergedPluginOpts[key] = cVal !== undefined ? cVal : pVal;
+			}
+		}
+		merged.pluginOptions = mergedPluginOpts;
+	}
+
+	if (parent.plugins || child.plugins) {
+		const parentPlugins = parent.plugins;
+		const childPlugins = child.plugins;
+		if (Array.isArray(parentPlugins) || Array.isArray(childPlugins)) {
+			const pList = Array.isArray(parentPlugins) ? parentPlugins : (parentPlugins ? [parentPlugins] : []);
+			const cList = Array.isArray(childPlugins) ? childPlugins : (childPlugins ? [childPlugins] : []);
+			merged.plugins = [...pList, ...cList];
+		} else if (isObject(parentPlugins) || isObject(childPlugins)) {
+			/** @deprecated Providing configuration dictionaries under 'plugins' is deprecated. Use 'pluginOptions' instead. */
+			const pObj = isObject(parentPlugins) ? parentPlugins : {};
+			const cObj = isObject(childPlugins) ? childPlugins : {};
+			const allKeys = new Set([...Object.keys(pObj), ...Object.keys(cObj)]);
+			const mergedObj: Record<string, any> = {};
+			for (const key of allKeys) {
+				const pVal = (pObj as any)[key];
+				const cVal = (cObj as any)[key];
+				if (isObject(pVal) || isObject(cVal)) {
+					mergedObj[key] = {
+						...(isObject(pVal) ? pVal : {}),
+						...(isObject(cVal) ? cVal : {}),
+					};
+				} else {
+					mergedObj[key] = cVal !== undefined ? cVal : pVal;
+				}
+			}
+			merged.plugins = mergedObj;
+		}
+	}
+
 	return merged;
 }
 
@@ -131,8 +180,7 @@ async function processExtends(
 	}
 
 	const extendsList = Array.isArray(config.extends) ? config.extends : [config.extends];
-	const stringExtends = extendsList.filter((item): item is string => typeof item === 'string');
-	const nonStringExtends = extendsList.filter(item => typeof item !== 'string');
+	const stringExtends = extendsList.filter(isString);
 
 	if (stringExtends.length === 0) return config;
 
@@ -153,19 +201,7 @@ async function processExtends(
 	}
 
 	const { extends: _, ...localConfigProps } = config;
-	const finalMerged = mergeConfigs(mergedParentConfig, localConfigProps);
-
-	const parentExtends = mergedParentConfig.extends;
-	const parentExtendsList = Array.isArray(parentExtends)
-		? parentExtends
-		: (parentExtends != null ? [parentExtends] : []);
-	const parentNonStringExtends = parentExtendsList.filter(item => typeof item !== 'string');
-
-	if (nonStringExtends.length > 0 || parentNonStringExtends.length > 0) {
-		finalMerged.extends = [...parentNonStringExtends, ...nonStringExtends];
-	}
-
-	return finalMerged;
+	return mergeConfigs(mergedParentConfig, localConfigProps);
 }
 
 /**

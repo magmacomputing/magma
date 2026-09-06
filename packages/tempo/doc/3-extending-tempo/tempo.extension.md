@@ -138,7 +138,7 @@ Your users can now import and register your plugin elegantly:
 import { Tempo } from '@magmacomputing/tempo/core';
 import { BusinessDaysPlugin } from 'my-business-days-plugin';
 
-Tempo.extend(BusinessDaysPlugin({ skipHolidays: true }));
+Tempo.use(BusinessDaysPlugin({ skipHolidays: true }));
 
 const t = new Tempo();
 const nextBiz = t.addBusinessDays(2);

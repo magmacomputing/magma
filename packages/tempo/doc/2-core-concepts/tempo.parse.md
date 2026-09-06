@@ -132,7 +132,7 @@ The parsing engine is modular. Depending on which version of Tempo you are using
 | Version | Smart Parsing Status |
 | :--- | :--- |
 | **Tempo Full** | **Built-in**. Works out of the box. |
-| **Tempo Core** | **Opt-in**. You must call `Tempo.extend(ParseModule)` to enable natural language support. |
+| **Tempo Core** | **Opt-in**. You must call `Tempo.use(ParseModule)` to enable natural language support. |
 
 ### Enabling Smart Parsing in Core
 If you are using `@magmacomputing/tempo/core`, the constructor only supports basic ISO strings by default. To enable "next Tuesday" style parsing, you must extend it:
@@ -141,7 +141,7 @@ If you are using `@magmacomputing/tempo/core`, the constructor only supports bas
 import { Tempo } from '@magmacomputing/tempo/core';
 import { ParseModule } from '@magmacomputing/tempo/parse';
 
-Tempo.extend(ParseModule);
+Tempo.use(ParseModule);
 ```
 
 ---

@@ -28,8 +28,8 @@ export const TermsModule = defineModule({
 	/** Installs standard terms into the Tempo class */
 	install(this: typeof Tempo, TempoClass: typeof Tempo) {
 		getRuntime().modules['TermsModule'] = true;
-		onRegistryReset(() => { TempoClass.extend(StandardTerms); });
-		TempoClass.extend(StandardTerms);
+		onRegistryReset(() => { TempoClass.use(StandardTerms); });
+		TempoClass.use(StandardTerms);
 	},
 });
 import { getRuntime } from '#tempo/support';
@@ -40,10 +40,10 @@ const core = [ParseModule, FormatModule, MutateModule, DurationModule, TermsModu
 getRuntime().modules['Tempo'] = Tempo;
 onRegistryReset(() => {
 	getRuntime().modules['Tempo'] = Tempo;
-	Tempo.extend(core);
+	Tempo.use(core);
 });
 
-Tempo.extend(core);
+Tempo.use(core);
 
 export { parse, format } from '#tempo/module';
 export { enums };

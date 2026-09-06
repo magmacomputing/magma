@@ -8,7 +8,7 @@ Settings are loaded in the following order (where later stages override earlier 
 1.  **Library Defaults**: Sensible out-of-the-box baseline.
 2.  **Persistent Storage**: Sticky user preferences (which merge into Defaults).
 3.  **Global Discovery**: Enterprise-level setup discovered via `Symbol.for('$Tempo')`.
-4.  **Library Extension**: Dynamic feature registration via `Tempo.extend()`.
+4.  **Library Extension**: Dynamic feature registration via `Tempo.use()`.
 5.  **Explicit Initialization**: Baseline configuration via `Tempo.init()`.
 6.  **Instance Constructor**: Specific overrides for a single `new Tempo()` call.
 
@@ -16,7 +16,7 @@ Settings are loaded in the following order (where later stages override earlier 
 
 ## 🏆 Best Practice: The `tempo.config.ts` Pattern
 
-Rather than scattering `Tempo.init()` or `Tempo.extend()` calls throughout your application, the recommended best practice is to centralize your environment setup into a single `tempo.config.ts` (or `.js`) file. 
+Rather than scattering `Tempo.init()` or `Tempo.use()` calls throughout your application, the recommended best practice is to centralize your environment setup into a single `tempo.config.ts` (or `.js`) file. 
 
 This mirrors modern ecosystem standards (like `vite.config.ts` or `tailwind.config.js`) and ensures that plugins, timezones, and custom aliases are consistently applied before any domain logic executes.
 
@@ -31,14 +31,15 @@ import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 export default defineConfig({
-  timeZone: 'Australia/Sydney',     // Set your baseline timezone
-  extends: [AstroTerm, TickerPlugin], // Register executable plugins
-  plugins: {
-    // Plugin configuration dictionaries
-    ai: {
-      mode: 'fallback',
-      timeout: 10000,
-    }
+  timeZone: 'Australia/Sydney',        // Set your baseline timezone
+  extends: 'https://central-governance.company.com/tempo-base.config.jsonc', // Inherit base config
+  plugins: [
+    AstroTerm,                         // 1. Executable plugin or term
+    TickerPlugin,                      // 2. Plugin singleton (or factory closure)
+  ],
+  pluginOptions: {
+    ai: { mode: 'fallback', timeout: 10000 }, // 3. Plugin configuration defaults
+    ticker: { interval: 1000 }
   },
   registry: {
     periods: { 
@@ -48,6 +49,13 @@ export default defineConfig({
   }
 });
 ```
+
+::: tip Clean Separation: Feature Registration vs Plugin Configuration
+Tempo separates code registration from data configuration:
+- **`plugins`**: Strictly registers executable plugins, namespaces, terms, or factory closures (`(Plugin | Term)[]`).
+- **`pluginOptions`**: Dedicated dictionary holding runtime options and configuration defaults for plugins (`Record<string, any>`), serializable in `tempo.config.json` and cascading across remote `extends`.
+- *(Deprecated)* Passing a configuration dictionary directly into `plugins` or supplying `plugins: { ... }` as an object remains supported for backward compatibility, but is marked `@deprecated` in favor of `pluginOptions`.
+:::
 
 You can then bootstrap this environment at the very top of your application's entry point (e.g., `main.ts` or `index.js`) to guarantee the configuration is locked in before any other files run:
 
@@ -156,12 +164,12 @@ With static ESM imports, import evaluation happens before module body execution.
 :::
 
 ### Explicit Runtime Registration (Not Global Discovery)
-Using `Tempo.extend(...)` is explicit registration after `Tempo` is loaded. It is ergonomic and strongly recommended for normal application code, but it is a different mechanism from pre-bootstrap global discovery.
+Using `Tempo.use(...)` is explicit registration after `Tempo` is loaded. It is ergonomic and strongly recommended for normal application code, but it is a different mechanism from pre-bootstrap global discovery.
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
 
-Tempo.extend({
+Tempo.use({
   options: { timeZone: 'Europe/Paris' },
   timeZones: { MYTZ: 'Asia/Dubai' },
   registry: { formats: { myFormat: '{dd}!!{mm}!!{yyyy}' } },
@@ -172,7 +180,7 @@ Tempo.extend({
 ### Security and Ergonomics Notes
 - **Tamper Prevention**: When utilizing Global Discovery in a shared environment (like micro-frontends), it is highly recommended to `Object.freeze()` your configuration. Tempo only reads from this object, so freezing it prevents third-party scripts from injecting unauthorized plugins before Tempo boots up.
 - Global Discovery is convenient for host-controlled bootstraps and cross-bundle handoff.
-- `Tempo.extend(...)` is usually safer in app code because configuration is explicit, local, and easier to trace.
+- `Tempo.use(...)` is usually safer in app code because configuration is explicit, local, and easier to trace.
 - Use Global Discovery when you must configure `Tempo` before the first `Tempo` import executes.
 
 ### Discovery Contract
@@ -182,8 +190,8 @@ Tempo looks for the following structure:
 | :--- | :--- | :--- |
 | `options` | `Options \| (() => Options)` | Configuration options merged into global state. |
 | `intl` | `IntlOptions` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, `durationFormat`, and `dateTimeFormat`. |
-| `extends` | `Plugin \| Plugin[]` | Modular plugin(s) (including `TermPlugin`s) to be extended onto Tempo automatically. |
-| `plugins` | `Record<string, any>` | Plugin configuration dictionary. |
+| `extends` | `string \| string[]` | Remote URL(s) or local file path(s) to inherit base configuration from. |
+| `plugins` | `(Plugin \| TermPlugin)[] \| Record<string, any>` | Modular plugins/terms to register, or plugin configuration dictionaries. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
 | `registry` | `{ formats?, locales?, numbers?, events?, periods?, snippets?, layouts?, ignores?, modifiers?, tokens? }` | Custom configuration for internal dictionary registries. |
 
@@ -222,8 +230,8 @@ Tempo.init({
 | `sphere` | `Evaluable<'north' \| 'south'>`| Auto-inferred | Hemisphere for seasonal plugins or dynamic supplier. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
 | `registry` | `{ formats?, locales?, numbers?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, number-to-word mappings, parsing logic, localization). |
-| `extends` | `Plugin \| Plugin[]` | `[]` | Plugins/modules to extend during initialization. `Tempo.init()` applies each plugin with `Tempo.extend(p)`. |
-| `plugins` | `Record<string, any>` | `{}` | Plugin configuration dictionaries (e.g. `plugins: { ai: { ... } }`). |
+| `extends` | `string \| string[]` | `undefined` | Remote URL(s) or local file path(s) to inherit base configuration from. |
+| `plugins` | `(Plugin \| TermPlugin)[] \| Record<string, any>` | `[]` | Plugins/terms to register during initialization (applied via `Tempo.use(p)`), or plugin options dictionaries. |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
 | `debug` | `number \| string` | `'info'` | Controls log verbosity via direct `LOG` levels (`0=Off ... 5=Trace`) or string labels (`'trace'`, `'info'`, etc). |

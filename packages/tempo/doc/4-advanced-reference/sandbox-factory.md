@@ -16,7 +16,7 @@ To understand when to use `Tempo.create()`, it helps to contrast it with the oth
 
 - **`Tempo.init({ options })`**
   **Concept:** Hard-reset to "out-of-the-box" factory defaults, then apply the provided configuration globally. All previous plugins, terms, and custom formats are purged.
-- **`Tempo.extend({ options })`**
+- **`Tempo.use({ options })`**
   **Concept:** Additive mutation. Keep all existing global settings, plugins, and formats intact, but merge in new configurations.
 - **`Tempo.create({ options })`**
   **Concept:** Sandbox Factory. Clone the current global state (inheriting all currently loaded plugins and settings), but branch it off into a brand new, isolated class. Any future changes made to this Sandbox will not affect the global `Tempo`, and vice-versa.
@@ -47,7 +47,7 @@ When using sandboxes, it's important to know which configuration resolved an inp
 When a conflict occurs (e.g., you redefine "noon"), Tempo resolves it by checking layers from **highest priority to lowest priority**:
 1. **Local (Instance)**: Options passed to `new Tempo(val, options)`.
 2. **Sandbox (Factory)**: Options passed to `Tempo.create(options)`.
-3. **Plugins**: Aliases registered via `Tempo.extend()`.
+3. **Plugins**: Aliases registered via `Tempo.use()`.
 4. **Global Defaults**: Built-in aliases like "xmas", "midnight", etc.
 
 ### Checking the Trace

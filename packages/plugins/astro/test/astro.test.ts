@@ -4,7 +4,7 @@ import { AstroPlugin } from '../src/index.js';
 describe('Astro Plugin (Astronomical Seasons & Events)', () => {
 	beforeEach(() => {
 		Tempo.init();
-		Tempo.extend(AstroPlugin);
+		Tempo.use(AstroPlugin);
 	});
 
 	it('should register "astro" and "astronomy" terms via AstroPlugin', () => {

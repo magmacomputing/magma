@@ -182,12 +182,16 @@ export function getActiveTempoConfigAi(): AiConfig | undefined {
 	try {
 		const rt = (globalThis as any)[Symbol.for('magmacomputing/tempo/runtime')];
 		const stateConfig = rt?.state?.config;
+		if (stateConfig?.pluginOptions?.ai)
+			return stateConfig.pluginOptions.ai;
 		if (stateConfig?.plugins?.ai)
 			return stateConfig.plugins.ai;
 		if (stateConfig?.ai)
 			return stateConfig.ai;
 
 		const tempoClassConfig = rt?.modules?.['Tempo']?.config || (Tempo as any)?.config;
+		if (tempoClassConfig?.pluginOptions?.ai)
+			return tempoClassConfig.pluginOptions.ai;
 		if (tempoClassConfig?.plugins?.ai)
 			return tempoClassConfig.plugins.ai;
 		if (tempoClassConfig?.ai)
@@ -207,6 +211,8 @@ export async function resolveTempoConfigFileAi(): Promise<AiConfig | undefined> 
 	try {
 		const { resolveConfig } = await import('@magmacomputing/tempo/config');
 		const resolved = await resolveConfig();
+		if (resolved?.pluginOptions && isObject(resolved.pluginOptions) && (resolved.pluginOptions as any).ai)
+			return (resolved.pluginOptions as any).ai as AiConfig;
 		if (resolved?.plugins && isObject(resolved.plugins) && (resolved.plugins as any).ai)
 			return (resolved.plugins as any).ai as AiConfig;
 		if ((resolved as any)?.ai)

@@ -11,7 +11,7 @@ const DummyPlugin = definePlugin({
 describe('Plugin Registration / Initialization', () => {
 	test('Plugins should survive Tempo.init() reset', () => {
 		// 1. Verify installed
-		Tempo.extend(DummyPlugin);
+		Tempo.use(DummyPlugin);
 		Tempo.init();
 		expect((Tempo as any).dummy).toBe(true);
 

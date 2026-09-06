@@ -9,7 +9,7 @@ describe('Custom Configuration Options', () => {
 
 	test('non-standard options are accessible in Terms plugins', () => {
 		// Register a term that uses a custom config option
-		Tempo.extend({
+		Tempo.use({
 			key: 'customTerm',
 			description: 'A term that uses custom config',
 			define() {

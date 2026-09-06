@@ -1,12 +1,12 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin, type Ticker } from '../src/index.js';
 
-Tempo.extend(TickerPlugin);
+Tempo.use(TickerPlugin);
 
 describe('Ticker with Terms', () => {
 	beforeEach(() => {
 		Tempo.init({ sphere: 'north' });
-		Tempo.extend(TickerPlugin);
+		Tempo.use(TickerPlugin);
 	});
 
 	test.each<{ name: string; interval: Ticker.Options; seed: string; expected: string[] }>([

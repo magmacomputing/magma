@@ -166,10 +166,8 @@ describe('Remote and Cascading Config Resolution', () => {
 		expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Maximum config extends depth limit reached'));
 	});
 
-	test('should retain scalar parent extends plugin object when merging extends', async () => {
-		const dummyPlugin = { name: 'dummy-plugin', install: () => { } };
-		const parentConfig = { extends: dummyPlugin, timeZone: 'UTC' };
-		const childConfig = { extends: 'https://company.org/parent.jsonc', locale: 'en-US' };
+	test('should retain and merge parent plugins when resolving cascading config', async () => {
+		const parentConfig = { plugins: { ai: { timeout: 3000 } }, timeZone: 'UTC' };
 
 		vi.spyOn(requestLib, 'fetchRequest').mockImplementation(async (url) => {
 			if (String(url) === 'https://company.org/parent.jsonc') return JSON.stringify(parentConfig);
@@ -179,5 +177,23 @@ describe('Remote and Cascading Config Resolution', () => {
 		const config = await resolveConfig({ configFile: 'https://company.org/parent.jsonc' });
 		expect(config).toBeDefined();
 		expect(config?.timeZone).toBe('UTC');
+		expect((config?.plugins as any)?.ai?.timeout).toBe(3000);
+	});
+
+	test('should retain and merge parent pluginOptions when resolving cascading config', async () => {
+		const parentConfig = { pluginOptions: { ai: { timeout: 3000, model: 'gpt-4' } }, timeZone: 'UTC' };
+		const childConfig = { extends: 'https://company.org/parent.jsonc', pluginOptions: { ai: { timeout: 5000 } } };
+
+		vi.spyOn(requestLib, 'fetchRequest').mockImplementation(async (url) => {
+			if (String(url) === 'https://company.org/parent.jsonc') return JSON.stringify(parentConfig);
+			if (String(url) === 'https://company.org/child.jsonc') return JSON.stringify(childConfig);
+			throw new Error('404');
+		});
+
+		const config = await resolveConfig({ configFile: 'https://company.org/child.jsonc' });
+		expect(config).toBeDefined();
+		expect(config?.timeZone).toBe('UTC');
+		expect((config?.pluginOptions as any)?.ai?.timeout).toBe(5000);
+		expect((config?.pluginOptions as any)?.ai?.model).toBe('gpt-4');
 	});
 });

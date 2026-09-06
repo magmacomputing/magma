@@ -4,7 +4,7 @@ import { resolveProviderApiKey } from './discovery.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
 import { logDebug } from './logger.js';
 import type { AiProvider, AiBaseOptions } from '../types/index.js';
-import { asNumber, asText, isNumber, isObject, isString, isText, evaluate, evaluateAsync } from '@magmacomputing/tempo/library';
+import { asNumber, asText, isNumber, isObject, isString, isText, evaluate, evaluateAsync, ephemeral } from '@magmacomputing/tempo/library';
 
 export interface FetchFromProviderOptions extends AiBaseOptions {
 	/** AbortSignal for early cancellation / timeout handling */
@@ -238,25 +238,29 @@ Do not include markdown blocks or any text outside the JSON.`;
 		const { timeout: _unusedTimeout, max_completion_tokens: _unusedMct, max_tokens: _unusedMt, tokenLimit: _unusedTl, ...bodyOptions } = provider.options ?? {};
 		const startTime = performance.now();
 
-		const response = await fetch(url, {
-			method: 'POST',
-			redirect: 'error',
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${key}`
-			},
-			body: JSON.stringify({
-				model: model,
-				messages: [
-					{ role: 'system', content: `${systemPrompt}\n${contextString}` },
-					{ role: 'user', content: str }
-				],
-				temperature: 0,
-				...tokenLimit,
-				response_format: { type: 'json_object' },
-				...bodyOptions
-			}),
-			signal: controller.signal
+		const requestHeaders = {
+			'Content-Type': 'application/json',
+			'Authorization': `Bearer ${key}`
+		};
+
+		const response = await ephemeral(requestHeaders, (headers) => {
+			return fetch(url, {
+				method: 'POST',
+				redirect: 'error',
+				headers,
+				body: JSON.stringify({
+					model: model,
+					messages: [
+						{ role: 'system', content: `${systemPrompt}\n${contextString}` },
+						{ role: 'user', content: str }
+					],
+					temperature: 0,
+					...tokenLimit,
+					response_format: { type: 'json_object' },
+					...bodyOptions
+				}),
+				signal: controller.signal
+			});
 		});
 
 		const limits = updateRateLimitsFromResponse(response);

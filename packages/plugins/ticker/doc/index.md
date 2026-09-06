@@ -20,14 +20,14 @@ npm install @magmacomputing/tempo-plugin-ticker
 
 ## Usage
 
-To use the Ticker, pass the plugin to `Tempo.init` or `Tempo.extend`:
+To use the Ticker, pass the plugin to `Tempo.init` or `Tempo.use`:
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 Tempo.init({ 
-  extends: [TickerPlugin] 
+  plugins: [TickerPlugin] 
 });
 
 // You can access Ticker-based execution loops through the Tempo API:

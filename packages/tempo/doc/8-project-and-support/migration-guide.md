@@ -56,27 +56,24 @@ Tempo v4.0.0 Community Core is 100% open-source without commercial license valid
 
 ---
 
-## 🔌 Plugin Registration (`extends` vs `plugins`)
+## 🔌 Configuration Inheritance (`extends`) vs Plugin Registration (`plugins`) and `Tempo.use`
 
-In v3.x, passing plugin modules to install via `plugins: [PluginA]` was supported. In v4.0.0, plugin module installation is strictly separated from plugin runtime configuration.
+In v4.1.0, the responsibilities of `extends` and `plugins` have been cleanly separated:
 
-- **Plugin Installation**: Use `extends: [PluginA, PluginB]` or `Tempo.extend(PluginA, PluginB)`.
-- **Plugin Configuration**: The top-level `plugins` option is now reserved exclusively as a configuration dictionary (`plugins: { ticker: { interval: 1000 }, ai: { provider: 'groq' } }`).
+- **Configuration Inheritance (`extends`)**: The `extends` option in `Tempo.init()` or `tempo.config.json` is strictly reserved for cascading configuration inheritance via URLs or file paths (mirroring `tsconfig.json` and ESLint): `extends: 'https://company.org/tempo-base.json'`.
+- **Plugin Registration (`plugins`)**: Pass plugins, terms, and modules into `plugins: [TickerPlugin, CelestialTerm]`. It also supports plugin configuration dictionaries (`plugins: { ticker: { interval: 500 } }`).
+- **Imperative Registration (`Tempo.use`)**: Use the standard `Tempo.use(Plugin)` static method to register plugins, terms, or modules at runtime. `Tempo.use()` is `@deprecated` in favor of `Tempo.use()`.
 
-### Example Migration:
+### Example:
 ```javascript
-// ❌ v3.x (Deprecated)
+// ✅ v4.1.0: Clean Separation
 Tempo.init({
-  plugins: [TickerPlugin]
+  extends: 'https://central-governance.company.com/tempo-base.json', // Configuration inheritance
+  plugins: [TickerPlugin, AstroTerm]                                // Feature & Term registration
 });
 
-// ✅ v4.0.0
-Tempo.init({
-  extends: [TickerPlugin],
-  plugins: {
-    ticker: { interval: 500 }
-  }
-});
+// ✅ Imperative registration
+Tempo.use(TickerPlugin);
 ```
 
 ---
@@ -110,7 +107,7 @@ Tempo.init({
 
 ## 🧹 Deprecated Type & API Cleanup
 
-- **`Tempo.extend` vs `Tempo.extends`**: The legacy alias `Tempo.extends` has been excised. Use `Tempo.extend()`.
+- **`Tempo.use` vs `Tempo.uses`**: The legacy alias `Tempo.uses` has been excised. Use `Tempo.use()`.
 - **`TempoInstance` Type**: `TempoInstance` interface alias has been removed in favor of standard `Tempo` class/instance types.
 - **`Mutable<T>` to `MutableObject<T>`**: The utility type `Mutable<T>` has been renamed to `MutableObject<T>` to prevent naming collisions with the `@Mutable` member decorator and clarify object-level `readonly` stripping.
 

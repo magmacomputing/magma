@@ -21,7 +21,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { FinanceNamespace } from '@magmacomputing/tempo-plugin-finance';
 
 // Register the namespace
-Tempo.extend(FinanceNamespace);
+Tempo.use(FinanceNamespace);
 
 const t = new Tempo('2024-07-01');
 
