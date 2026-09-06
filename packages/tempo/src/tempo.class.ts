@@ -534,10 +534,6 @@ export class Tempo {
 	}
 
 	/**
-	 * Register a plugin or term extension.
-	 * 
-	 * @param plugin - A plugin or term extension to register.
-	/**
 	 * Register discovery configuration with an optional discovery symbol.
 	 * 
 	 * @param discovery - Discovery object defining options, formats, periods, or terms.
