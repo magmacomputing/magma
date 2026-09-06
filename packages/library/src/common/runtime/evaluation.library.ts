@@ -20,6 +20,12 @@ import type { Evaluable, AsyncEvaluable, Evaluated, AsyncEvaluated } from '#libr
  */
 export function evaluate<T>(first: Evaluable<T> | undefined, fallback: Evaluable<T>, ...rest: Evaluable<T>[]): T;
 export function evaluate<T>(...values: (Evaluable<T> | undefined)[]): T | undefined;
+/**
+ * Evaluates candidates in order and returns the first defined result.
+ *
+ * @param values - Values or zero-argument functions that produce candidate results
+ * @returns The first result that is not `undefined`, or `undefined` if no candidate produces one
+ */
 export function evaluate<T>(...values: (Evaluable<T> | undefined)[]): T | undefined {
 	for (const val of values) {
 		const resolved = isFunction(val) ? (val as () => T)() : val;
