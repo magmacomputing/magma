@@ -101,9 +101,8 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 
 	if (geoObj && typeof geoObj === 'object') {
 		for (const key of Object.keys(geoObj)) {
-			if (!['latitude', 'lat', 'longitude', 'lng', 'lon', 'long', 'elevation', 'sphere', 'country', 'city'].includes(key)) {
+			if (!['latitude', 'lat', 'longitude', 'lng', 'lon', 'long', 'elevation', 'sphere', 'country', 'city', '__proto__', 'constructor', 'prototype'].includes(key))
 				(result as any)[key] = geoObj[key];
-			}
 		}
 	}
 
@@ -185,9 +184,13 @@ export const resolveGeoCoordinates = async (
 	input?: CoordinateInput,
 	opts: Record<string, any> = {}
 ): Promise<{ lat: number; lng: number } | null> => {
-	const coerced = coerceGeo(input) ?? getStashedGeo();
+	const coerced = coerceGeo(input);
 	if (coerced && isNumber(coerced.latitude) && isNumber(coerced.longitude))
 		return { lat: coerced.latitude, lng: coerced.longitude };
+
+	const stashed = getStashedGeo();
+	if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude))
+		return { lat: stashed.latitude, lng: stashed.longitude };
 
 	const lookup = await geoLookup(opts);
 	if (isNullish(lookup.error) && isNumber(lookup.lat) && isNumber(lookup.lng))
