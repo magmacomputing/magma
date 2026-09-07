@@ -1,0 +1,11 @@
+{
+	"extends": "./base.jsonc",
+	"pluginOptions": {
+		"safeKey": {
+			"enabled": true
+		},
+		"__proto__": {
+			"polluted": true
+		}
+	}
+}

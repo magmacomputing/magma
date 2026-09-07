@@ -1,5 +1,5 @@
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
-import { isObject, isArray, isFunction, isDefined, isNullish, isMap, isSet } from '#library/assertion.library.js';
+import { isObject, isArray, isFunction, isDefined, isNullish, isMap, isSet, isSafeKey } from '#library/assertion.library.js';
 import { getType } from '#library/type.library.js';
 import type { Extend, Property } from '#library/type.library.js';
 
@@ -41,7 +41,10 @@ export const asObject = <T>(obj?: Record<PropertyKey, any>) => {
 	const temp: any = isArray(obj) ? [] : {};
 
 	ownKeys(obj)
-		.forEach(key => temp[key] = asObject(obj[key]));
+		.forEach(key => {
+			if (!isSafeKey(key)) return;
+			temp[key] = asObject(obj[key]);
+		});
 
 	return temp as T;
 }
@@ -142,7 +145,7 @@ export const getMethods = (obj: any, all = false) => {
 export function ifDefined<T extends Property<any>>(obj: T) {
 	return ownEntries(obj)
 		.reduce((acc, [key, val]) => {
-			if (isDefined<any>(val))
+			if (isSafeKey(key) && isDefined<any>(val))
 				acc[key] = val;
 			return acc as T;
 		}, {} as T)
@@ -221,7 +224,7 @@ export const deepMerge = <T extends Record<PropertyKey, any>>(...objects: Partia
 		if (!isObject(obj)) return prev;
 
 		Object.entries(obj).forEach(([key, value]) => {
-			if (key === '__proto__' || key === 'constructor' || key === 'prototype') return;
+			if (!isSafeKey(key)) return;
 			const pVal = prev[key];
 			if (isObject(pVal) && isObject(value)) {
 				prev[key as keyof T] = deepMerge(pVal, value) as any;

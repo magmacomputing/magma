@@ -1,5 +1,5 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNullish, isNumber, isString } from '#library/assertion.library.js';
+import { isNullish, isNumber, isString, isSafeKey } from '#library/assertion.library.js';
 
 export interface GeoLookupResult {
 	lat?: number;
@@ -101,7 +101,7 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 
 	if (geoObj && typeof geoObj === 'object') {
 		for (const key of Object.keys(geoObj)) {
-			if (!['latitude', 'lat', 'longitude', 'lng', 'lon', 'long', 'elevation', 'sphere', 'country', 'city', '__proto__', 'constructor', 'prototype'].includes(key))
+			if (isSafeKey(key) && !['latitude', 'lat', 'longitude', 'lng', 'lon', 'long', 'elevation', 'sphere', 'country', 'city'].includes(key))
 				(result as any)[key] = geoObj[key];
 		}
 	}

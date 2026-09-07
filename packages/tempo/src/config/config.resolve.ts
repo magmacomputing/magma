@@ -1,4 +1,4 @@
-import { isFunction, isString, isObject } from '#library/assertion.library.js';
+import { isFunction, isString, isObject, isSafeKey } from '#library/assertion.library.js';
 import { parseJSONC } from '#library/json.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import type { Options } from '../tempo.type.js';
@@ -108,6 +108,7 @@ function mergeConfigs(parent: Options, child: Options): Options {
 		const allKeys = new Set([...Object.keys(parentOpts), ...Object.keys(childOpts)]);
 		const mergedPluginOpts: Record<string, any> = {};
 		for (const key of allKeys) {
+			if (!isSafeKey(key)) continue;
 			const pVal = (parentOpts as any)[key];
 			const cVal = (childOpts as any)[key];
 			if (isObject(pVal) || isObject(cVal)) {
@@ -129,25 +130,6 @@ function mergeConfigs(parent: Options, child: Options): Options {
 			const pList = Array.isArray(parentPlugins) ? parentPlugins : (parentPlugins ? [parentPlugins] : []);
 			const cList = Array.isArray(childPlugins) ? childPlugins : (childPlugins ? [childPlugins] : []);
 			merged.plugins = [...pList, ...cList];
-		} else if (isObject(parentPlugins) || isObject(childPlugins)) {
-			/** @deprecated Providing configuration dictionaries under 'plugins' is deprecated. Use 'pluginOptions' instead. */
-			const pObj = isObject(parentPlugins) ? parentPlugins : {};
-			const cObj = isObject(childPlugins) ? childPlugins : {};
-			const allKeys = new Set([...Object.keys(pObj), ...Object.keys(cObj)]);
-			const mergedObj: Record<string, any> = {};
-			for (const key of allKeys) {
-				const pVal = (pObj as any)[key];
-				const cVal = (cObj as any)[key];
-				if (isObject(pVal) || isObject(cVal)) {
-					mergedObj[key] = {
-						...(isObject(pVal) ? pVal : {}),
-						...(isObject(cVal) ? cVal : {}),
-					};
-				} else {
-					mergedObj[key] = cVal !== undefined ? cVal : pVal;
-				}
-			}
-			merged.plugins = mergedObj;
 		}
 	}
 

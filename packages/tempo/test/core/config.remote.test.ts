@@ -92,4 +92,16 @@ describe('Hardened Local Config Resolution and Extends', () => {
 		expect(config).toBeDefined();
 		expect(config?.timeZone).toBe('Europe/Paris');
 	});
+
+	test('should ignore dangerous prototype keys when merging pluginOptions or plugins during extends', async () => {
+		const protoExtendsPath = path.join(fixturesDir, 'proto-extends.jsonc');
+		const config = await resolveConfig({ configFile: protoExtendsPath });
+
+		expect(config).toBeDefined();
+		expect(config?.timeZone).toBe('UTC');
+		expect(config?.pluginOptions?.safeKey).toEqual({ enabled: true });
+		expect(Object.prototype.hasOwnProperty.call(config?.pluginOptions ?? {}, '__proto__')).toBe(false);
+		expect((config?.pluginOptions as any)?.polluted).toBeUndefined();
+		expect(({} as any).polluted).toBeUndefined();
+	});
 });
