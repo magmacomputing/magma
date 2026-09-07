@@ -26,7 +26,7 @@ npm install @magmacomputing/tempo-plugin-geo
 - **Tree-Shakeable Functional APIs**:
   - `geoLookup()`, `resolveGeoCoordinates()`, `serverGeoLocation()`, `geoLocation()`, `coerceGeo()`.
 - **Fluent OOP Integration**:
-  - `t.withGeo()`, `t.lookupGeo()`, `Tempo.geoLookup()`.
+  - `t.geoLocate()`, `t.geoLookup()`, `Tempo.geoLookup()`.
 
 ## Usage
 
@@ -42,7 +42,7 @@ console.log(t1.geo);
 // Fluent OOP:
 Tempo.use(GeoPlugin);
 const t2 = new Tempo();
-const localTime = await t2.withGeo();
+const localTime = await t2.geoLocate();
 console.log(localTime.geo);
 ```
 

@@ -59,7 +59,7 @@ export const GeoPlugin: TempoPlugin = definePlugin({
 		 * Asynchronously resolves coordinates for the current instance (or uses existing coordinates),
 		 * returning a new Tempo instance with the resolved `geo` configuration attached.
 		 */
-		TempoClass.prototype.withGeo = async function (this: Tempo, opts?: Record<string, any>): Promise<Tempo> {
+		TempoClass.prototype.geoLocate = async function (this: Tempo, opts?: Record<string, any>): Promise<Tempo> {
 			const coords = await resolveGeoCoordinates(this, opts);
 			if (coords) {
 				const existingGeo = (typeof this.config.geo === 'object' && this.config.geo !== null) ? this.config.geo : {};
@@ -78,7 +78,7 @@ export const GeoPlugin: TempoPlugin = definePlugin({
 		/**
 		 * Resolves coordinates for this instance via explicit coordinates or automatic IP/hardware lookup.
 		 */
-		TempoClass.prototype.lookupGeo = async function (this: Tempo, opts?: Record<string, any>): Promise<{ lat: number; lng: number } | null> {
+		TempoClass.prototype.geoLookup = async function (this: Tempo, opts?: Record<string, any>): Promise<{ lat: number; lng: number } | null> {
 			return resolveGeoCoordinates(this, opts);
 		};
 	},
@@ -92,11 +92,11 @@ declare module '@magmacomputing/tempo' {
 		/**
 		 * Asynchronously resolves coordinates for this instance and returns a new Tempo instance with geo set.
 		 */
-		withGeo(opts?: Record<string, any>): Promise<Tempo>;
+		geoLocate(opts?: Record<string, any>): Promise<Tempo>;
 		/**
 		 * Resolves coordinates for this instance via explicit coordinates or automatic IP/hardware lookup.
 		 */
-		lookupGeo(opts?: Record<string, any>): Promise<{ lat: number; lng: number } | null>;
+		geoLookup(opts?: Record<string, any>): Promise<{ lat: number; lng: number } | null>;
 	}
 	namespace Tempo {
 		let geoLookup: GeoLookupFn;

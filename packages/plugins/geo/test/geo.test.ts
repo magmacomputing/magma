@@ -94,19 +94,19 @@ describe('Tempo Plugin: Geo', () => {
 			expect(typeof Tempo.serverGeoLocation).toBe('function');
 		});
 
-		it('should allow instance method .lookupGeo() to resolve coordinates', async () => {
+		it('should allow instance method .geoLookup() to resolve coordinates', async () => {
 			const t = new Tempo('2026-01-01', {
 				geo: { latitude: 35.6762, longitude: 139.6503 },
 			});
 
-			const coords = await t.lookupGeo();
+			const coords = await t.geoLookup();
 			expect(coords).toEqual({
 				lat: 35.6762,
 				lng: 139.6503,
 			});
 		});
 
-		it('should allow instance method .withGeo() to return a new Tempo instance with geo set', async () => {
+		it('should allow instance method .geoLocate() to return a new Tempo instance with geo set', async () => {
 			const t = new Tempo('2026-01-01');
 			expect(t.geo).toBeUndefined();
 
@@ -117,18 +117,18 @@ describe('Tempo Plugin: Geo', () => {
 				lon: 2.3522,
 			};
 
-			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-				new Response(JSON.stringify(mockPayload), { status: 200 })
+			vi.spyOn(globalThis, 'fetch').mockImplementation(
+				() => Promise.resolve(new Response(JSON.stringify(mockPayload), { status: 200 }))
 			);
 
-			const withGeo = await t.withGeo();
-			expect(withGeo).toBeInstanceOf(Tempo);
-			expect(withGeo.geo).toBeDefined();
-			expect(withGeo.geo?.latitude).toBe(48.8566);
-			expect(withGeo.geo?.longitude).toBe(2.3522);
+			const located = await t.geoLocate();
+			expect(located).toBeInstanceOf(Tempo);
+			expect(located.geo).toBeDefined();
+			expect(located.geo?.latitude).toBe(48.8566);
+			expect(located.geo?.longitude).toBe(2.3522);
 		});
 
-		it('should preserve existing geo properties (elevation, sphere, custom keys) when calling .withGeo()', async () => {
+		it('should preserve existing geo properties (elevation, sphere, custom keys) when calling .geoLocate()', async () => {
 			const t = new Tempo('2026-01-01', {
 				geo: {
 					elevation: 150,
@@ -149,13 +149,13 @@ describe('Tempo Plugin: Geo', () => {
 				new Response(JSON.stringify(mockPayload), { status: 200 })
 			);
 
-			const withGeo = await t.withGeo();
-			expect(withGeo.geo?.latitude).toBe(-33.8688);
-			expect(withGeo.geo?.longitude).toBe(151.2093);
-			expect((withGeo.geo as any)?.elevation).toBe(150);
-			expect((withGeo.geo as any)?.sphere).toBe('south');
-			expect((withGeo.geo as any)?.city).toBe('Sydney');
-			expect((withGeo.geo as any)?.customKey).toBe('customValue');
+			const located = await t.geoLocate();
+			expect(located.geo?.latitude).toBe(-33.8688);
+			expect(located.geo?.longitude).toBe(151.2093);
+			expect((located.geo as any)?.elevation).toBe(150);
+			expect((located.geo as any)?.sphere).toBe('south');
+			expect((located.geo as any)?.city).toBe('Sydney');
+			expect((located.geo as any)?.customKey).toBe('customValue');
 		});
 	});
 });

@@ -42,7 +42,7 @@ Tempo.use(GeoPlugin);
 const t = new Tempo();
 
 // Resolve coordinates asynchronously and return a new enriched Tempo instance
-const localTime = await t.withGeo();
+const localTime = await t.geoLocate();
 console.log(localTime.geo?.latitude, localTime.geo?.longitude);
 ```
 

@@ -11,4 +11,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Initial Community Release (Bootstrap)**:
   - Decoupled IP geolocation lookup and browser hardware location services from core `@magmacomputing/tempo`.
   - Exported functional utilities: `geoLookup()`, `resolveGeoCoordinates()`, `serverGeoLocation()`, `serverGeoCoords()`, `serverMapHemisphere()`, `geoLocation()`, `coerceGeo()`, `getStashedGeo()`.
-  - Exported `GeoPlugin` installing `withGeo()` and `lookupGeo()` on Tempo instances alongside static helpers on `Tempo`.
+  - Exported `GeoPlugin` installing `geoLocate()` and `geoLookup()` on Tempo instances alongside static helpers on `Tempo`.
