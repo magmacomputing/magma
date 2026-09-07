@@ -201,7 +201,7 @@ The way Terms (Quarters, Seasons, Zodiacs, etc.) are handled has been unified.
 Example of new syntax:
 ```javascript
 // Snap to start of quarter
-t.set({ start: '#quarter' });
+t.set({ '#quarter': 'start' });
 
 // Add two quarters while preserving day-of-quarter
 t.add({ '#quarter': 2 });

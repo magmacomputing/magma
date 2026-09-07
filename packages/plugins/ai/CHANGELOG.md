@@ -5,6 +5,14 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-09-07
+
+### Security & Reliability
+- **Self-Contained Network Transport (`fetch.ts`)**:
+  - Decoupled network request utilities from `@magmacomputing/tempo/library` into a self-contained local transport helper.
+  - Added chunk-by-chunk stream consumption via `res.body.getReader()` with proactive byte accounting and immediate reader cancellation (`await reader.cancel()`).
+  - Enforced upfront `Content-Length` checks against `maxBytes` and strictly bounded stream reads to prevent unbounded memory allocation and OS thread starvation.
+
 ## [1.2.0] - 2026-09-06
 
 ### Added

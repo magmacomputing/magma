@@ -1,7 +1,5 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNullish, isNumber } from '#library/assertion.library.js';
-import { geoLocation } from '#browser/mapper.library.js';
-import { serverGeoLocation } from '#server/mapper.library.js';
+import { isNullish, isNumber, isString } from '#library/assertion.library.js';
 
 export interface GeoLookupResult {
 	lat?: number;
@@ -98,8 +96,8 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 	if (isNumber(lng)) result.longitude = lng;
 	if (isNumber(elevation)) result.elevation = elevation;
 	if (sphere === 'north' || sphere === 'south') result.sphere = sphere;
-	if (typeof country === 'string') result.country = country;
-	if (typeof city === 'string') result.city = city;
+	if (isString(country)) result.country = country;
+	if (isString(city)) result.city = city;
 
 	return Object.keys(result).length > 0 ? result : undefined;
 };
@@ -139,6 +137,7 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 
 	switch (type) {
 		case CONTEXT.Browser: {
+			const { geoLocation } = await import('#browser/mapper.library.js');
 			const res = await geoLocation(opts as any);
 			if (res.error)
 				return { error: res.error };
@@ -153,13 +152,16 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 			if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude))
 				return { lat: stashed.latitude, lng: stashed.longitude, latitude: stashed.latitude, longitude: stashed.longitude };
 
+			const { serverGeoLocation } = await import('#server/mapper.library.js');
 			return serverGeoLocation(opts as any);
 		}
 
 		case CONTEXT.NodeJS:
 		case CONTEXT.Deno:
-		default:
+		default: {
+			const { serverGeoLocation } = await import('#server/mapper.library.js');
 			return serverGeoLocation(opts as any);
+		}
 	}
 }
 

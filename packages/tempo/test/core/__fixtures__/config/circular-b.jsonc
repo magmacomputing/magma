@@ -1,0 +1,4 @@
+{
+	"extends": "./circular-a.jsonc",
+	"locale": "fr-FR"
+}

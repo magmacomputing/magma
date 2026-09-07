@@ -3,18 +3,23 @@
 
 set -e
 
-packages=(
-  "tempo:packages/tempo/package.json"
-  "tempo-plugin-ai:packages/plugins/ai/package.json"
-  "tempo-plugin-astro:packages/plugins/astro/package.json"
-  "tempo-plugin-batch:packages/plugins/batch/package.json"
-  "tempo-plugin-finance:packages/plugins/finance/package.json"
-  "tempo-plugin-snap:packages/plugins/snap/package.json"
-  "tempo-plugin-sync:packages/plugins/sync/package.json"
-)
-
 # Resolve repository root path (3 levels up from packages/plugins/.bin)
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+
+packages=(
+  "tempo:packages/tempo/package.json"
+)
+
+for plugin_dir in "${REPO_ROOT}/packages/plugins"/*; do
+  if [ -d "${plugin_dir}" ] && [ -f "${plugin_dir}/package.json" ]; then
+    is_private=$(node --input-type=module -e "import fs from 'fs'; console.log(JSON.parse(fs.readFileSync(process.argv[2], 'utf8')).private ? 'true' : 'false')" dummy "${plugin_dir}/package.json" 2>/dev/null || echo "false")
+    if [ "${is_private}" = "true" ]; then
+      continue
+    fi
+    plugin_name=$(basename "${plugin_dir}")
+    packages+=("tempo-plugin-${plugin_name}:packages/plugins/${plugin_name}/package.json")
+  fi
+done
 
 printf "%-38s | %-16s | %-16s | %-12s\n" "Package Name" "Published (NPM)" "Local Workspace" "Status"
 printf "%-38s-+-%-16s-+-%-16s-+-%-12s\n" "--------------------------------------" "----------------" "----------------" "------------"

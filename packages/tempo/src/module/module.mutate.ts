@@ -173,12 +173,13 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 								if (type === 'add' || type === 'subtract') {
 									const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string, state));
 									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(key as string);
+									const isTermUnit = isTerm || (isTermPlugin && !isStandard);
 									return {
-										mutate: type,
-										offset: adjust,
-										single: isTerm || (isTermPlugin && !isStandard) ? 'term' : singular(key),
+										mutate: isTermUnit ? type : 'add',
+										offset: (type === 'subtract' && !isTermUnit && typeof adjust === 'number') ? -adjust : adjust,
+										single: isTermUnit ? 'term' : singular(key),
 										term: isTerm ? (key as string) : (isTermPlugin ? key : undefined)
-									}
+									};
 								}
 
 								if (type === 'set' && isString(adjust) && (adjust === 'start' || adjust === 'mid' || adjust === 'end')) {
@@ -191,7 +192,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 										offset: adjust,
 										single: isTermVal || (isTermPlugin && !isStandard) ? 'term' : singular(unitKey as string),
 										term: isTermVal ? (unitKey as string) : (isTermPlugin ? unitKey : undefined)
-									}
+									};
 								}
 
 								switch (key) {
@@ -199,8 +200,16 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 									case 'mid':
 									case 'end': {
 										const val = adjust?.toString() ?? '';
-										const isTermVal = val.startsWith('#');
-										return { mutate: key as any, offset: val, single: isTermVal ? 'term' : singular(val), term: isTermVal ? val : undefined };
+										const unitVal = (enums.ELEMENT as any)[val] ?? val;
+										const isTermVal = (unitVal as string).startsWith('#');
+										const isTermPlugin = !isTermVal && isDefined(findTermPlugin(unitVal as string, state));
+										const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(unitVal as string);
+										return {
+											mutate: key as any,
+											offset: val,
+											single: isTermVal || (isTermPlugin && !isStandard) ? 'term' : singular(unitVal as string),
+											term: isTermVal ? (unitVal as string) : (isTermPlugin ? unitVal : undefined)
+										};
 									}
 									default: {
 										const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string, state));
@@ -210,12 +219,19 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 											offset: adjust,
 											single: isTerm || (isTermPlugin && !isStandard) ? 'term' : singular(key as string),
 											term: isTerm ? (key as string) : (isTermPlugin ? key : undefined)
-										}
+										};
 									}
 								}
 							})(key, adjust, type);
 
-							const slug = `${op}.${single}`;
+							// Term-based mutations
+							if (single === 'term') {
+								const res = resolveTermMutation((this.constructor as any), this, op as any, term!, adjust, currZdt);
+								if (res === null) state.errored = true;
+								return res ?? currZdt;
+							}
+
+							const slug = `${op}:${single}`;
 							const parseInner = (input: any, anchor?: any) => {
 								const res = (this.constructor as any).from(input, { ...this.config, anchor });
 								if (res.isValid) {
@@ -225,88 +241,72 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 								return undefined;
 							};
 
-							// Term-based mutations
-							if (slug.endsWith('.term')) {
-								const res = resolveTermMutation((this.constructor as any), this, op as any, term!, adjust, currZdt);
-								if (res === null) state.errored = true;
-								return res ?? currZdt;
-							}
-
 							// Standard temporal units
 							switch (slug) {
-								case 'add.year': case 'add.month': case 'add.week': case 'add.day':
-								case 'add.hour': case 'add.minute': case 'add.second':
-								case 'add.millisecond': case 'add.microsecond': case 'add.nanosecond':
-								case 'subtract.year': case 'subtract.month': case 'subtract.week': case 'subtract.day':
-								case 'subtract.hour': case 'subtract.minute': case 'subtract.second':
-								case 'subtract.millisecond': case 'subtract.microsecond': case 'subtract.nanosecond':
-									return op === 'subtract' ? currZdt.subtract({ [`${single}s`]: offset }) : currZdt.add({ [`${single}s`]: offset });
+								case 'add:year': case 'add:month': case 'add:week': case 'add:day':
+								case 'add:hour': case 'add:minute': case 'add:second':
+								case 'add:millisecond': case 'add:microsecond': case 'add:nanosecond':
+									return currZdt.add({ [`${single}s`]: offset });
 
-								case 'add.yy': case 'add.mm': case 'add.dd': case 'add.hh':
-								case 'add.mi': case 'add.ss': case 'add.ms': case 'add.us': case 'add.ns':
-								case 'add.wy': case 'add.ww':
-								case 'subtract.yy': case 'subtract.mm': case 'subtract.dd': case 'subtract.hh':
-								case 'subtract.mi': case 'subtract.ss': case 'subtract.ms': case 'subtract.us': case 'subtract.ns':
-								case 'subtract.wy': case 'subtract.ww': {
-									const value = enums.ELEMENT[single as t.Element];
-									return op === 'subtract' ? currZdt.subtract({ [`${value}s`]: offset }) : currZdt.add({ [`${value}s`]: offset });
-								}
+								case 'add:yy': case 'add:mm': case 'add:dd': case 'add:hh':
+								case 'add:mi': case 'add:ss': case 'add:ms': case 'add:us': case 'add:ns':
+								case 'add:wy': case 'add:ww':
+									{
+										const value = enums.ELEMENT[single as t.Element];
+										return currZdt.add({ [`${value}s`]: offset });
+									}
 
-								case 'set.period': case 'set.time': case 'set.date': case 'set.event':
-								case 'set.dow': case 'set.wkd': {
-									const res = parseInner(offset, currZdt);
-									if (isUndefined(res)) state.errored = true;
-									return res ?? currZdt;
-								}
+								case 'set:period': case 'set:time': case 'set:date': case 'set:event':
+								case 'set:dow': case 'set:wkd':
+									{
+										const res = parseInner(offset, currZdt);
+										if (isUndefined(res)) state.errored = true;
+										return res ?? currZdt;
+									}
 
-								case 'set.year': case 'set.month': case 'set.day':
-								case 'set.hour': case 'set.minute': case 'set.second':
-								case 'set.millisecond': case 'set.microsecond': case 'set.nanosecond':
+								case 'set:year': case 'set:month': case 'set:day':
+								case 'set:hour': case 'set:minute': case 'set:second':
+								case 'set:millisecond': case 'set:microsecond': case 'set:nanosecond':
 									return currZdt.with({ [single]: offset });
 
-								case 'set.yy': case 'set.mm': case 'set.dd': case 'set.hh':
-								case 'set.mi': case 'set.ss': case 'set.ms': case 'set.us': case 'set.ns': {
+								case 'set:yy': case 'set:mm': case 'set:dd': case 'set:hh':
+								case 'set:mi': case 'set:ss': case 'set:ms': case 'set:us': case 'set:ns': {
 									const value = enums.ELEMENT[single as t.Element];
 									return currZdt.with({ [value]: offset });
 								}
 
-								case 'start.year': return currZdt.with({ month: enums.MONTH.Jan, day: 1 }).startOfDay();
-								case 'start.month': return currZdt.with({ day: 1 }).startOfDay();
-								case 'start.week': return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Mon) }).startOfDay();
-								case 'start.day': return currZdt.startOfDay();
-								case 'start.hour':
-								case 'start.minute':
-								case 'start.second':
-								case 'start.millisecond':
-								case 'start.microsecond':
-								case 'start.nanosecond':
+								case 'start:year': return currZdt.with({ month: enums.MONTH.Jan, day: 1 }).startOfDay();
+								case 'start:month': return currZdt.with({ day: 1 }).startOfDay();
+								case 'start:week': return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Mon) }).startOfDay();
+								case 'start:day': return currZdt.startOfDay();
+
+								case 'start:hour': case 'start:minute': case 'start:second':
+								case 'start:millisecond': case 'start:microsecond': case 'start:nanosecond':
 									return currZdt.round({ smallestUnit: (enums.ELEMENT[single as t.Element] ?? single) as any, roundingMode: 'trunc' });
 
-								case 'mid.year': return currZdt.with({ month: enums.MONTH.Jul, day: 1 }).startOfDay();
-								case 'mid.month': return currZdt.with({ day: Math.trunc(currZdt.daysInMonth / 2) }).startOfDay();
-								case 'mid.week': return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Thu) }).startOfDay();
-								case 'mid.day': return currZdt.round({ smallestUnit: 'day', roundingMode: 'trunc' }).add({ hours: 12 });
-								case 'mid.hour': return currZdt.round({ smallestUnit: 'hour', roundingMode: 'trunc' }).add({ minutes: 30 });
-								case 'mid.minute': return currZdt.round({ smallestUnit: 'minute', roundingMode: 'trunc' }).add({ seconds: 30 });
-								case 'mid.second': return currZdt.round({ smallestUnit: 'second', roundingMode: 'trunc' }).add({ milliseconds: 500 });
-								case 'mid.millisecond': return currZdt.round({ smallestUnit: 'millisecond', roundingMode: 'trunc' }).add({ microseconds: 500 });
-								case 'mid.microsecond': return currZdt.round({ smallestUnit: 'microsecond', roundingMode: 'trunc' }).add({ nanoseconds: 500 });
-								case 'mid.nanosecond': return currZdt;
+								case 'mid:year': return currZdt.with({ month: enums.MONTH.Jul, day: 1 }).startOfDay();
+								case 'mid:month': return currZdt.with({ day: Math.trunc(currZdt.daysInMonth / 2) }).startOfDay();
+								case 'mid:week': return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Thu) }).startOfDay();
+								case 'mid:day': return currZdt.round({ smallestUnit: 'day', roundingMode: 'trunc' }).add({ hours: 12 });
+								case 'mid:hour': return currZdt.round({ smallestUnit: 'hour', roundingMode: 'trunc' }).add({ minutes: 30 });
+								case 'mid:minute': return currZdt.round({ smallestUnit: 'minute', roundingMode: 'trunc' }).add({ seconds: 30 });
+								case 'mid:second': return currZdt.round({ smallestUnit: 'second', roundingMode: 'trunc' }).add({ milliseconds: 500 });
+								case 'mid:millisecond': return currZdt.round({ smallestUnit: 'millisecond', roundingMode: 'trunc' }).add({ microseconds: 500 });
+								case 'mid:microsecond': return currZdt.round({ smallestUnit: 'microsecond', roundingMode: 'trunc' }).add({ nanoseconds: 500 });
+								case 'mid:nanosecond': return currZdt;
 
-								case 'end.year': return currZdt.add({ years: 1 }).with({ month: enums.MONTH.Jan, day: 1 }).startOfDay().subtract({ nanoseconds: 1 });
-								case 'end.month': return currZdt.add({ months: 1 }).with({ day: 1 }).startOfDay().subtract({ nanoseconds: 1 });
-								case 'end.week': return currZdt.add({ days: (enums.WEEKDAY.Sun - currZdt.dayOfWeek) + 1 }).startOfDay().subtract({ nanoseconds: 1 });
-								case 'end.day':
-								case 'end.hour':
-								case 'end.minute':
-								case 'end.second':
-								case 'end.millisecond':
-								case 'end.microsecond': {
-									const unit = (enums.ELEMENT[single as t.Element] ?? single) as any;
-									const pluralUnit = `${unit}s`;
-									return currZdt.round({ smallestUnit: unit, roundingMode: 'trunc' }).add({ [pluralUnit]: 1 }).subtract({ nanoseconds: 1 });
-								}
-								case 'end.nanosecond':
+								case 'end:year': return currZdt.add({ years: 1 }).with({ month: enums.MONTH.Jan, day: 1 }).startOfDay().subtract({ nanoseconds: 1 });
+								case 'end:month': return currZdt.add({ months: 1 }).with({ day: 1 }).startOfDay().subtract({ nanoseconds: 1 });
+								case 'end:week': return currZdt.add({ days: (enums.WEEKDAY.Sun - currZdt.dayOfWeek) + 1 }).startOfDay().subtract({ nanoseconds: 1 });
+
+								case 'end:day': case 'end:hour': case 'end:minute': case 'end:second':
+								case 'end:millisecond': case 'end:microsecond':
+									{
+										const unit = (enums.ELEMENT[single as t.Element] ?? single) as any;
+										const pluralUnit = `${unit}s`;
+										return currZdt.round({ smallestUnit: unit, roundingMode: 'trunc' }).add({ [pluralUnit]: 1 }).subtract({ nanoseconds: 1 });
+									}
+								case 'end:nanosecond':
 									return currZdt;
 
 								default:

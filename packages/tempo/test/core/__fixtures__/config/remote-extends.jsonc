@@ -1,0 +1,4 @@
+{
+	"extends": "https://example.com/remote.jsonc",
+	"timeZone": "Asia/Tokyo"
+}

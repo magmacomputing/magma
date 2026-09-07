@@ -1,0 +1,10 @@
+{
+	// Base configuration
+	"timeZone": "UTC",
+	"locale": "en-US",
+	"registry": {
+		"formats": {
+			"custom": "{yyyy}-{mm}-{dd}"
+		}
+	}
+}

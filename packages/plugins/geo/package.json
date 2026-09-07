@@ -1,14 +1,14 @@
 {
-  "name": "@magmacomputing/tempo-plugin-ai",
-  "version": "1.2.1",
-  "description": "Tempo community plugin for LLM-powered natural language parsing.",
+  "name": "@magmacomputing/tempo-plugin-geo",
+  "version": "1.0.0",
+  "description": "Tempo community plugin for IP geolocation lookup, browser hardware location services, and coordinate resolution.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/magmacomputing/magma.git",
-    "directory": "packages/plugins/ai"
+    "directory": "packages/plugins/geo"
   },
   "files": [
     "dist",
@@ -21,16 +21,16 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc",
     "test": "vitest run -c ../vitest.shared.ts",
     "prepublishOnly": "tempo-cli prepublish"
   },
   "tempo": {
-    "vendorVariantId": "tempo-plugin-ai",
+    "vendorVariantId": "tempo-plugin-geo",
     "plan": "community"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.1.0"
+    "@magmacomputing/tempo": "^4.1.1"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1"
@@ -39,11 +39,11 @@
     "tempo",
     "tempo-plugin",
     "magmacomputing",
-    "ai",
-    "parsing",
-    "llm",
-    "openai",
-    "gemini"
+    "geo",
+    "geolocation",
+    "coordinates",
+    "ipwhois",
+    "location"
   ],
   "type": "module",
   "exports": {
