@@ -99,6 +99,14 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 	if (isString(country)) result.country = country;
 	if (isString(city)) result.city = city;
 
+	if (geoObj && typeof geoObj === 'object') {
+		for (const key of Object.keys(geoObj)) {
+			if (!['latitude', 'lat', 'longitude', 'lng', 'lon', 'long', 'elevation', 'sphere', 'country', 'city'].includes(key)) {
+				(result as any)[key] = geoObj[key];
+			}
+		}
+	}
+
 	return Object.keys(result).length > 0 ? result : undefined;
 };
 

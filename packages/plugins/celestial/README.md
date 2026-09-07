@@ -40,6 +40,10 @@ npm install @magmacomputing/tempo-plugin-celestial
 
 Use `geoLookup()` from `@magmacomputing/tempo-plugin-geo` to automatically resolve location coordinates across both browser and server environments:
 
+```bash
+npm install @magmacomputing/tempo-plugin-geo
+```
+
 > [!WARNING]
 > **Geolocation Behavior**:
 > - **Browser**: On first invocation, `geoLookup()` will prompt the user for permission to access hardware location services.

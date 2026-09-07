@@ -6,7 +6,7 @@ This template outlines the standard operating procedure for preparing and publis
 
 Ensure the plugin's `package.json` contains the correct community configuration:
 
-- **Version**: Set to a fresh semantic version (e.g., `"1.0.0"` for the first release).
+- **Version**: Set to `"0.1.0"` for the initial bootstrap release (allowing the official `1.0.0` GA release to be published via CI with full Sigstore provenance).
 - **License**: Must strictly be `"MIT"`.
 - **Type**: Set `"type": "module"`.
 - **Files**: Include the published files array:
@@ -143,20 +143,42 @@ All exported components (functions, interfaces, classes, and types) must be prop
 export function myExportedFunction(input: string): string { ... }
 ```
 
-## 7. Release & CI Configuration (`.github/workflows/publish.yml`)
+## 7. Monorepo & CI Configuration
 
-When adding a new plugin to the monorepo, update `.github/workflows/publish.yml` to enable manual `workflow_dispatch` provenance releases:
+### A. Update Monorepo Lockfile (`package-lock.json`)
 
-1. **Add to Package Selector**: Add `@magmacomputing/tempo-plugin-[name]` to the `options` array under `inputs.package`.
-2. **Add to Bulk Publish**: Add the workspace to the `all` branch in the publishing step:
+When adding a new workspace package, you **must** update the root monorepo lockfile so that `npm ci` in CI workflows recognizes the new workspace symlink:
+```bash
+npm install --package-lock-only
+```
+
+### B. Release Workflow Configuration (`.github/workflows/publish.yml`)
+
+Update `.github/workflows/publish.yml` to enable manual `workflow_dispatch` provenance releases:
+
+1. **Add to Package Selector**: Add `@magmacomputing/tempo-plugin-[name]` to the `options` array under `inputs.target`.
+2. **Add to Target Validation**: Add `@magmacomputing/tempo-plugin-[name]` to the `case "$TARGET" in` validation pattern.
+3. **Add to Bulk Publish**: Add `publish_pkg "@magmacomputing/tempo-plugin-[name]"` to the `if [ "$TARGET" = "all" ]` block.
+
+## 8. Initial Release & Trusted Publisher Configuration (OIDC & Provenance)
+
+NPM Trusted Publishing (OIDC) requires that a package **already exists** on the npm registry before its access settings can be configured. Therefore, introducing a new plugin involves a one-time bootstrap step followed by configuring automated CI releases:
+
+### Step 1: Manual Initial Publish (Bootstrap)
+Because npm cannot configure Trusted Publishers for non-existent packages, the initial bootstrap release (`v0.1.0`) must be published manually by an authenticated maintainer:
+1. Build the plugin and navigate to its workspace directory:
    ```bash
-   npm publish --workspace=@magmacomputing/tempo-plugin-[name] $PROVENANCE_FLAG
+   npm run build --workspace=@magmacomputing/tempo-plugin-[name]
+   cd packages/plugins/[name]
+   ```
+2. Authenticate and publish the initial public version:
+   ```bash
+   npm login
+   npm publish --access public
    ```
 
-## 8. NPM Registry Trusted Publisher Configuration (OIDC & Provenance)
-
-When introducing a new plugin or helper package to the ecosystem, you **must** configure a **Trusted Publisher** on `npmjs.com` to enable CI publishing with cryptographic provenance (`--provenance`):
-
+### Step 2: Configure NPM Trusted Publisher
+Once the package exists on `npmjs.com`, configure GitHub Actions OIDC for all future releases:
 1. **Navigate to Package Access**: Go to `https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name]/access`.
 2. **Add Publisher**: Under **Publishing Access** $\rightarrow$ **Trusted Publishers**, click **Add GitHub Actions Publisher**.
 3. **Configure Settings**:
@@ -164,4 +186,6 @@ When introducing a new plugin or helper package to the ecosystem, you **must** c
    - **Repository**: `magma`
    - **Workflow filename**: `publish.yml`
    - **Environment**: *(leave blank unless using environment-gated deployments)*
-4. **Why this is mandatory**: The Tempo monorepo uses GitHub Actions OIDC (`id-token: write`) to sign and publish packages with Sigstore provenance. Without an explicit Trusted Publisher binding for each new package on `npmjs.com`, NPM will reject `--provenance` publish attempts with `E404` or `E403` permission errors.
+
+### Step 3: Subsequent Releases via CI (`1.0.0`+)
+Once configured, bump the package version to `1.0.0` (or subsequent versions) and trigger `.github/workflows/publish.yml` (`workflow_dispatch` or batch release). The release will be cryptographically signed and published with Sigstore provenance (`--provenance`) without requiring long-lived npm tokens.

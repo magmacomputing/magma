@@ -1,6 +1,6 @@
 import { evaluate } from '#library/evaluation.library.js';
-import { isDefined, isObject, isString, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
-import { asArray } from '#library/coercion.library.js';
+import { isDefined, isNumber, isObject, isString, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
+import { asArray, ifNumeric } from '#library/coercion.library.js';
 import { singular } from '#library/string.library.js';
 import { normaliseFractionalDurations } from '#library/temporal.library.js';
 
@@ -174,9 +174,10 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 									const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string, state));
 									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(key as string);
 									const isTermUnit = isTerm || (isTermPlugin && !isStandard);
+									const val = ifNumeric(adjust);
 									return {
 										mutate: isTermUnit ? type : 'add',
-										offset: (type === 'subtract' && !isTermUnit && typeof adjust === 'number') ? -adjust : adjust,
+										offset: (type === 'subtract' && !isTermUnit && isNumber(val)) ? -val : val,
 										single: isTermUnit ? 'term' : singular(key),
 										term: isTerm ? (key as string) : (isTermPlugin ? key : undefined)
 									};

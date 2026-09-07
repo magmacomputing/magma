@@ -249,6 +249,17 @@ async function loadConfigTarget(
 
 	let localPath = target;
 	if (isFileUrl(target)) {
+		try {
+			const parsed = new URL(target);
+			if (parsed.hostname && parsed.hostname !== 'localhost') {
+				console.warn(`[Tempo] Remote file URL with host is not supported: ${target}`);
+				return undefined;
+			}
+		} catch {
+			console.warn(`[Tempo] Invalid file URL config target: ${target}`);
+			return undefined;
+		}
+
 		if (urlMod?.fileURLToPath)
 			localPath = urlMod.fileURLToPath(target);
 		else
@@ -410,9 +421,23 @@ export function resolveConfigSync(options?: { cwd?: string, configFile?: string 
  * @returns The loaded configuration, or `undefined` when no configuration is found or the environment cannot load one.
  */
 export async function resolveConfig(options?: { cwd?: string, configFile?: string }): Promise<Options | undefined> {
-	if (options?.configFile && isHttpUrl(options.configFile)) {
-		console.warn(`[Tempo] Remote HTTP(S) configFile is not supported: ${options.configFile}`);
-		return undefined;
+	if (options?.configFile) {
+		if (isHttpUrl(options.configFile)) {
+			console.warn(`[Tempo] Remote HTTP(S) configFile is not supported: ${options.configFile}`);
+			return undefined;
+		}
+		if (isFileUrl(options.configFile)) {
+			try {
+				const parsed = new URL(options.configFile);
+				if (parsed.hostname && parsed.hostname !== 'localhost') {
+					console.warn(`[Tempo] Remote file URL with host is not supported: ${options.configFile}`);
+					return undefined;
+				}
+			} catch {
+				console.warn(`[Tempo] Invalid file URL configFile: ${options.configFile}`);
+				return undefined;
+			}
+		}
 	}
 
 	const ctx = getContext();

@@ -16,6 +16,53 @@ export interface FetchRequestConfig {
 	rawText?: boolean;
 }
 
+async function readResponseBody(res: Response, maxBytes?: number): Promise<string> {
+	if (maxBytes) {
+		const contentLength = res.headers?.get?.('content-length');
+		if (contentLength) {
+			const parsed = parseInt(contentLength, 10);
+			if (!Number.isNaN(parsed) && parsed > maxBytes) {
+				try { await res.body?.cancel?.(); } catch { }
+				throw new HttpError(413, `Payload length exceeds limit (${maxBytes} bytes)`, null);
+			}
+		}
+	}
+
+	if (maxBytes && res.body && typeof res.body.getReader === 'function') {
+		const reader = res.body.getReader();
+		const decoder = new TextDecoder();
+		let totalBytes = 0;
+		const chunks: string[] = [];
+		try {
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				if (value) {
+					totalBytes += value.byteLength;
+					if (totalBytes > maxBytes) {
+						await reader.cancel('maxBytes exceeded');
+						throw new HttpError(413, `Payload length exceeds limit (${maxBytes} bytes)`, null);
+					}
+					chunks.push(decoder.decode(value, { stream: true }));
+				}
+			}
+			chunks.push(decoder.decode());
+			return chunks.join('');
+		} catch (err) {
+			try { await reader.cancel(); } catch { }
+			throw err;
+		} finally {
+			try { reader.releaseLock(); } catch { }
+		}
+	} else {
+		const text = await res.text();
+		if (maxBytes && new TextEncoder().encode(text).byteLength > maxBytes)
+			throw new HttpError(413, `Payload length exceeds limit (${maxBytes} bytes)`, null);
+
+		return text;
+	}
+}
+
 /**
  * Perform a bounded HTTP fetch request with timeout and error handling.
  */
@@ -33,56 +80,15 @@ export async function fetchRequest<T = any>(
 	if (!res.ok) {
 		let errorBody: any = null;
 		try {
-			const errorText = await res.text();
+			const errorText = await readResponseBody(res, config.maxBytes);
 			try { errorBody = JSON.parse(errorText); } catch { errorBody = errorText; }
-		} catch { }
+		} catch (err) {
+			if (err instanceof HttpError && err.status === 413) throw err;
+		}
 		throw new HttpError(res.status, res.statusText, errorBody);
 	}
 
-	if (config.maxBytes) {
-		const contentLength = res.headers?.get?.('content-length');
-		if (contentLength) {
-			const parsed = parseInt(contentLength, 10);
-			if (!Number.isNaN(parsed) && parsed > config.maxBytes) {
-				try { await res.body?.cancel?.(); } catch { }
-				throw new HttpError(413, `Payload length exceeds limit (${config.maxBytes} bytes)`, null);
-			}
-		}
-	}
-
-	let text: string;
-	if (config.maxBytes && res.body && typeof res.body.getReader === 'function') {
-		const reader = res.body.getReader();
-		const decoder = new TextDecoder();
-		let totalBytes = 0;
-		const chunks: string[] = [];
-		try {
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-				if (value) {
-					totalBytes += value.byteLength;
-					if (totalBytes > config.maxBytes) {
-						await reader.cancel('maxBytes exceeded');
-						throw new HttpError(413, `Payload length exceeds limit (${config.maxBytes} bytes)`, null);
-					}
-					chunks.push(decoder.decode(value, { stream: true }));
-				}
-			}
-			chunks.push(decoder.decode());
-			text = chunks.join('');
-		} catch (err) {
-			try { await reader.cancel(); } catch { }
-			throw err;
-		} finally {
-			try { reader.releaseLock(); } catch { }
-		}
-	} else {
-		text = await res.text();
-		if (config.maxBytes && new TextEncoder().encode(text).byteLength > config.maxBytes) {
-			throw new HttpError(413, `Payload length exceeds limit (${config.maxBytes} bytes)`, null);
-		}
-	}
+	const text = await readResponseBody(res, config.maxBytes);
 
 	if (config.rawText)
 		return text as unknown as T;

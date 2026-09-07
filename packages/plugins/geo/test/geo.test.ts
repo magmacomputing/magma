@@ -127,5 +127,35 @@ describe('Tempo Plugin: Geo', () => {
 			expect(withGeo.geo?.latitude).toBe(48.8566);
 			expect(withGeo.geo?.longitude).toBe(2.3522);
 		});
+
+		it('should preserve existing geo properties (elevation, sphere, custom keys) when calling .withGeo()', async () => {
+			const t = new Tempo('2026-01-01', {
+				geo: {
+					elevation: 150,
+					sphere: 'south',
+					city: 'Sydney',
+					customKey: 'customValue',
+				} as any,
+			});
+
+			const mockPayload = {
+				ip: '1.1.1.1',
+				success: true,
+				lat: -33.8688,
+				lon: 151.2093,
+			};
+
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockPayload), { status: 200 })
+			);
+
+			const withGeo = await t.withGeo();
+			expect(withGeo.geo?.latitude).toBe(-33.8688);
+			expect(withGeo.geo?.longitude).toBe(151.2093);
+			expect((withGeo.geo as any)?.elevation).toBe(150);
+			expect((withGeo.geo as any)?.sphere).toBe('south');
+			expect((withGeo.geo as any)?.city).toBe('Sydney');
+			expect((withGeo.geo as any)?.customKey).toBe('customValue');
+		});
 	});
 });

@@ -1,6 +1,6 @@
 # Plugin Support Binaries
 
-This directory (`packages/plugins/bin/`) contains internal support scripts and utilities for developing and testing Tempo plugins within the monorepo. 
+This directory (`packages/plugins/.bin/`) contains internal support scripts and utilities for developing and testing Tempo plugins within the monorepo. 
 
 It includes:
 - **REPL Environment (`repl.mts`)**: Scripts to initialize an interactive Node.js REPL session with Tempo and Temporal pre-loaded, making it easy to experiment with plugins from the CLI.

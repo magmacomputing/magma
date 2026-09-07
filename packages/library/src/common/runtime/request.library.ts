@@ -182,9 +182,13 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 
 			let errorBody: any = null;
 			try {
-				const errorText = await res.text();
+				const errorText = isDefined(config.maxBytes)
+					? await readBoundedBody(res, config.maxBytes)
+					: (isFunction(res.text) ? await res.text() : '');
 				try { errorBody = JSON.parse(errorText); } catch { errorBody = errorText; }
-			} catch { }
+			} catch (err) {
+				if (err instanceof HttpError && err.status === 413) throw err;
+			}
 
 			throw new HttpError(res.status, res.statusText, errorBody);	// fetch not successful
 		})

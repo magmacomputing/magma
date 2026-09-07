@@ -62,9 +62,14 @@ export const GeoPlugin: TempoPlugin = definePlugin({
 		TempoClass.prototype.withGeo = async function (this: Tempo, opts?: Record<string, any>): Promise<Tempo> {
 			const coords = await resolveGeoCoordinates(this, opts);
 			if (coords) {
+				const existingGeo = (typeof this.config.geo === 'object' && this.config.geo !== null) ? this.config.geo : {};
 				return new TempoClass(this, {
 					...this.config,
-					geo: { latitude: coords.lat, longitude: coords.lng },
+					geo: {
+						...existingGeo,
+						latitude: coords.lat,
+						longitude: coords.lng,
+					},
 				});
 			}
 			return this;

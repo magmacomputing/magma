@@ -29,6 +29,15 @@ describe('Hardened Local Config Resolution and Extends', () => {
 		);
 	});
 
+	test('should reject file: URLs with non-empty hostname other than localhost with warning and return undefined', async () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+		const config = await resolveConfig({ configFile: 'file://host/share/tempo.config.js' });
+		expect(config).toBeUndefined();
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining('[Tempo] Remote file URL with host is not supported: file://host/share/tempo.config.js')
+		);
+	});
+
 	test('should recursively resolve "extends" from local static JSONC base config', async () => {
 		const childConfigPath = path.join(fixturesDir, 'child.jsonc');
 		const config = await resolveConfig({ configFile: childConfigPath });

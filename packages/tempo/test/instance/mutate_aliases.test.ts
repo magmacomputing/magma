@@ -39,4 +39,12 @@ describe('Mutate Module Aliases (plus & minus)', () => {
 		const tDoubleNeg = t.subtract({ days: -2 });
 		expect(tDoubleNeg.iso).toBe('2026-08-27T10:00:00Z');
 	});
+
+	it('should support numeric string durations with subtract and minus', () => {
+		const t = new Tempo('2026-08-25T10:00:00Z');
+		const tSubStr = t.subtract({ days: '3' as any });
+		const tMinusStr = t.minus({ dd: '3' as any });
+		expect(tSubStr.iso).toBe('2026-08-22T10:00:00Z');
+		expect(tMinusStr.iso).toBe('2026-08-22T10:00:00Z');
+	});
 });
