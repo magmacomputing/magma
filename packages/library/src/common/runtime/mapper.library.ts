@@ -1,7 +1,5 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNullish, isNumber } from '#library/assertion.library.js';
-import { geoLocation } from '#browser/mapper.library.js';
-import { serverGeoLocation } from '#server/mapper.library.js';
+import { isNullish, isNumber, isString, isSafeKey } from '#library/assertion.library.js';
 
 export interface GeoLookupResult {
 	lat?: number;
@@ -98,8 +96,15 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 	if (isNumber(lng)) result.longitude = lng;
 	if (isNumber(elevation)) result.elevation = elevation;
 	if (sphere === 'north' || sphere === 'south') result.sphere = sphere;
-	if (typeof country === 'string') result.country = country;
-	if (typeof city === 'string') result.city = city;
+	if (isString(country)) result.country = country;
+	if (isString(city)) result.city = city;
+
+	if (geoObj && typeof geoObj === 'object') {
+		for (const key of Object.keys(geoObj)) {
+			if (isSafeKey(key) && !['latitude', 'lat', 'longitude', 'lng', 'lon', 'long', 'elevation', 'sphere', 'country', 'city'].includes(key))
+				(result as any)[key] = geoObj[key];
+		}
+	}
 
 	return Object.keys(result).length > 0 ? result : undefined;
 };
@@ -139,6 +144,7 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 
 	switch (type) {
 		case CONTEXT.Browser: {
+			const { geoLocation } = await import('#browser/mapper.library.js');
 			const res = await geoLocation(opts as any);
 			if (res.error)
 				return { error: res.error };
@@ -153,13 +159,16 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 			if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude))
 				return { lat: stashed.latitude, lng: stashed.longitude, latitude: stashed.latitude, longitude: stashed.longitude };
 
+			const { serverGeoLocation } = await import('#server/mapper.library.js');
 			return serverGeoLocation(opts as any);
 		}
 
 		case CONTEXT.NodeJS:
 		case CONTEXT.Deno:
-		default:
+		default: {
+			const { serverGeoLocation } = await import('#server/mapper.library.js');
 			return serverGeoLocation(opts as any);
+		}
 	}
 }
 
@@ -175,9 +184,13 @@ export const resolveGeoCoordinates = async (
 	input?: CoordinateInput,
 	opts: Record<string, any> = {}
 ): Promise<{ lat: number; lng: number } | null> => {
-	const coerced = coerceGeo(input) ?? getStashedGeo();
+	const coerced = coerceGeo(input);
 	if (coerced && isNumber(coerced.latitude) && isNumber(coerced.longitude))
 		return { lat: coerced.latitude, lng: coerced.longitude };
+
+	const stashed = getStashedGeo();
+	if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude))
+		return { lat: stashed.latitude, lng: stashed.longitude };
 
 	const lookup = await geoLookup(opts);
 	if (isNullish(lookup.error) && isNumber(lookup.lat) && isNumber(lookup.lng))

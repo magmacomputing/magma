@@ -6,6 +6,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.1] - 2026-09-07
+
+### Added
+- **Mutation & Security Test Coverage**:
+  - Added `mutate_aliases.test.ts` covering unit subtraction aliases (`subtract`, `sub`, `minus`).
+  - Added boundary symmetry test coverage in `instance.set.test.ts`.
+  - Added prototype pollution rejection and config inheritance test coverage in `config.remote.test.ts`.
+
+### Changed
+- **Standardized `pluginOptions` Configuration & Type Cleanup**:
+  - The 'plugins' key as a JSON of plugin-configuration settings has been migrated to `pluginOptions` so as not to overload the `plugins` key (which registers Plugin instances / Terms / Modules / Namespaces), removing the deprecated `Record<string, any>` dictionary union from `BaseOptions.plugins` and `Config.plugins`.
+  - Updated default configuration in `support.default.ts` to `pluginOptions: {}`.
+- **Streamlined Mutation Engine (`module.mutate.ts`)**:
+  - **Negative-Add Normalization**: Refactored standard unit subtractions (`subtract`, `sub`, `minus`) to invert numeric offsets (`-adjust`) and normalize operation type to `'add'`, eliminating 21 redundant `subtract:*` cases and ternaries from `switch (slug)` while preserving directional shift semantics for terms.
+  - **Direct Term Evaluation**: Replaced intermediate string matching (`slug.endsWith(':term')`) with direct property identity evaluation (`single === 'term'`), allowing term mutations to resolve directly before slug interpolation and optimizing dispatch performance.
+- **Documentation Alignment**:
+  - Updated shorthand and mutation guides in `tempo.shorthand.md` and `migration-guide.md` to recommend modern Unit-Key syntax (`{ '#namespace': 'start' | 'mid' | 'end' }`).
+  - Clarified architecture callouts in `tempo.config.md` regarding the clean separation between code registration (`plugins`) and configuration dictionaries (`pluginOptions`).
+
+### Security
+- **Prototype Pollution Defense in Configuration Merging**:
+  - Hardened `resolveConfig` and `mergeConfigs` using centralized `isSafeKey` validation, strictly blocking `__proto__`, `constructor`, and `prototype` keys during recursive cascading inheritance of `pluginOptions`.
+- **Configuration Resolution Boundaries**:
+  - Restricted `extends` inheritance targets strictly to static `.json` and `.jsonc` data files, preventing dynamic JS/TS execution from extended files.
+  - Validated `file://` URLs against remote hostnames and removed remote HTTP(S) config fetching vulnerabilities from `resolveConfig`.
+- **Packaging Maintenance**:
+  - Removed obsolete inline Socket security rules and file tracking from `package.json`.
+
 ## [4.1.0] - 2026-09-04
 
 ### Added

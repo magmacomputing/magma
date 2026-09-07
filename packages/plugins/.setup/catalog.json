@@ -60,7 +60,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
     "status": "active",
-    "version": "1.1.1"
+    "version": "1.2.1"
   },
   {
     "id": "ticker",
@@ -69,7 +69,16 @@
     "packageName": "@magmacomputing/tempo-plugin-ticker",
     "plan": "community",
     "status": "active",
-    "version": "2.3.0"
+    "version": "2.3.1"
+  },
+  {
+    "id": "geo",
+    "name": "Geo Plugin",
+    "description": "Tempo community plugin for IP geolocation lookup, browser hardware location services, and coordinate resolution.",
+    "packageName": "@magmacomputing/tempo-plugin-geo",
+    "plan": "community",
+    "status": "active",
+    "version": "0.1.0"
   },
   {
     "id": "_std",

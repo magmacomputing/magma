@@ -1,4 +1,4 @@
-import { isNumber, isNumeric, isText, isArrayLike, isPlainObject, isEmpty, isFunction } from '#library/assertion.library.js';
+import { isNumber, isNumeric, isText, isArrayLike, isPlainObject, isEmpty, isFunction, isSafeKey } from '#library/assertion.library.js';
 
 describe('Assertion Library', () => {
 
@@ -170,6 +170,22 @@ describe('Assertion Library', () => {
 			expect(isFunction(123)).toBe(false);
 			expect(isFunction(null)).toBe(false);
 			expect(isFunction(undefined)).toBe(false);
+		});
+	});
+
+	describe('isSafeKey', () => {
+		it('should return true for valid object property keys', () => {
+			expect(isSafeKey('name')).toBe(true);
+			expect(isSafeKey('id')).toBe(true);
+			expect(isSafeKey('latitude')).toBe(true);
+			expect(isSafeKey(0)).toBe(true);
+			expect(isSafeKey(Symbol('custom'))).toBe(true);
+		});
+
+		it('should return false for prototype pollution and hijacking keys', () => {
+			expect(isSafeKey('__proto__')).toBe(false);
+			expect(isSafeKey('constructor')).toBe(false);
+			expect(isSafeKey('prototype')).toBe(false);
 		});
 	});
 });

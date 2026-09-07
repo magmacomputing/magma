@@ -56,7 +56,7 @@ describe(`${label} set method`, () => {
 
 	test('startOf/midOf/endOf shorthand via set ({ Term: Value })', () => {
 		const t = new Tempo('2024-05-20 12:34:56');
-		
+
 		// New { Term: Value } syntax (full names)
 		const startDay = t.set({ day: 'start' });
 		expect(startDay.hh).toBe(0);
@@ -280,6 +280,28 @@ describe(`${label} set method`, () => {
 				expect(tPlusObj.dd).toBe(12);
 				expect(tMinusObj.dd).toBe(8);
 				expect(tSubObj.dd).toBe(8);
+			});
+		});
+
+		describe('Boundary Mutation Symmetry (start, mid, end)', () => {
+			test('Unit-Key and old-style ( deprecated ) Boundary-Key syntaxes produce identical results', () => {
+				const t = new Tempo('2026-06-15T12:30:45Z');
+
+				// Year
+				expect(t.set({ start: 'yy' }).iso).toBe(t.set({ yy: 'start' }).iso);
+				expect(t.set({ start: 'year' }).iso).toBe(t.set({ year: 'start' }).iso);
+
+				// Month
+				expect(t.set({ mid: 'mm' }).iso).toBe(t.set({ mm: 'mid' }).iso);
+				expect(t.set({ mid: 'month' }).iso).toBe(t.set({ month: 'mid' }).iso);
+
+				// Day
+				expect(t.set({ end: 'dd' }).iso).toBe(t.set({ dd: 'end' }).iso);
+				expect(t.set({ end: 'day' }).iso).toBe(t.set({ day: 'end' }).iso);
+
+				// Hour
+				expect(t.set({ start: 'hh' }).iso).toBe(t.set({ hh: 'start' }).iso);
+				expect(t.set({ start: 'hour' }).iso).toBe(t.set({ hour: 'start' }).iso);
 			});
 		});
 	});

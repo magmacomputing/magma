@@ -1,0 +1,56 @@
+{
+  "name": "@magmacomputing/tempo-plugin-geo",
+  "version": "0.1.0",
+  "description": "Tempo community plugin for IP geolocation lookup, browser hardware location services, and coordinate resolution.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magmacomputing/magma.git",
+    "directory": "packages/plugins/geo"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && tsc",
+    "test": "vitest run -c ../vitest.shared.ts",
+    "prepublishOnly": "tempo-cli prepublish"
+  },
+  "tempo": {
+    "vendorVariantId": "tempo-plugin-geo",
+    "plan": "community"
+  },
+  "peerDependencies": {
+    "@magmacomputing/tempo": "^4.1.0"
+  },
+  "devDependencies": {
+    "@js-temporal/polyfill": "^0.5.1"
+  },
+  "keywords": [
+    "tempo",
+    "tempo-plugin",
+    "magmacomputing",
+    "geo",
+    "geolocation",
+    "coordinates",
+    "ipwhois",
+    "location"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  }
+}

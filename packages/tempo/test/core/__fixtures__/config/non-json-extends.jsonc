@@ -1,0 +1,4 @@
+{
+	"extends": "./tempo.config.js",
+	"timeZone": "Asia/Tokyo"
+}

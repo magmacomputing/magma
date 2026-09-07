@@ -1,4 +1,5 @@
-import { asText, evaluate, fetchRequest, isObject, isString, parseJSONC } from '@magmacomputing/tempo/library';
+import { asText, evaluate, isObject, isString, parseJSONC } from '@magmacomputing/tempo/library';
+import { fetchRequest } from './fetch.js';
 import { DEFAULT_PROVIDERS } from './config.js';
 import type { AiProvider } from '../types/index.js';
 

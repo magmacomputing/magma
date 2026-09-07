@@ -1,0 +1,4 @@
+{
+	"extends": "./circular-b.jsonc",
+	"timeZone": "UTC"
+}

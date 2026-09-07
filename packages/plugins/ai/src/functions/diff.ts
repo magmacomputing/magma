@@ -36,8 +36,8 @@ function calculateGroundingMetrics(startTempo: Tempo, endTempo: Tempo, holidays?
 	const holidaySet = new Set<string>(holidays ?? []);
 	const matchedHolidays: string[] = [];
 
-	let curr = from.set({ start: 'day' });
-	const limit = to.set({ start: 'day' });
+	let curr = from.set({ day: 'start' });
+	const limit = to.set({ day: 'start' });
 	let businessDaysCount = 0;
 
 	while (curr.epoch.ms < limit.epoch.ms) {

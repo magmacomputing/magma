@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-plugin-ai",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Tempo community plugin for LLM-powered natural language parsing.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

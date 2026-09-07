@@ -377,9 +377,8 @@ export namespace Internal {
 		 * 
 		 * @remarks
 		 * To provide configuration options or defaults for plugins, use `pluginOptions` instead.
-		 * @deprecated Providing a configuration dictionary directly under 'plugins' is deprecated. Use 'pluginOptions' instead.
 		 */
-		plugins?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[] | Record<string, any>;
+		plugins?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
 		/** Plugin configuration defaults and dictionaries keyed by plugin name */
 		pluginOptions?: Record<string, any>;
 		/** supplied value to parse */													value?: DateTime;
@@ -487,9 +486,8 @@ export namespace Internal {
 		 * 
 		 * @remarks
 		 * To provide configuration options or defaults for plugins, use `pluginOptions` instead.
-		 * @deprecated Providing a configuration dictionary directly under 'plugins' is deprecated. Use 'pluginOptions' instead.
 		 */
-		plugins?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[] | Record<string, any>;
+		plugins?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
 		/** Plugin configuration defaults and dictionaries keyed by plugin name */
 		pluginOptions?: Record<string, any>;
 	}

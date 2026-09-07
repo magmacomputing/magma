@@ -1,6 +1,6 @@
 {
   "name": "tempo-monorepo",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "private": true,
   "engines": {
     "node": ">=20.0.0"
@@ -28,6 +28,10 @@
     "version:sync": "tempo-cli version-sync",
     "catalog:sync": "tempo-cli catalog-sync",
     "providers:sync": "npm run build:library && tempo-cli sync-providers",
+    "plugins:check-versions": "./packages/plugins/.bin/check-versions.sh",
+    "plugins:check-diff": "./packages/plugins/.bin/check-branch-diff.sh",
+    "check:versions": "npm run plugins:check-versions",
+    "check:diff": "npm run plugins:check-diff",
     "repl": "npm run repl --workspace=@magmacomputing/tempo",
     "repl:plugins": "tsx --import ./packages/plugins/.bin/temporal-polyfill.mts ./packages/plugins/.bin/repl.mts",
     "repl:dist": "npm run repl:dist --workspace=@magmacomputing/tempo",

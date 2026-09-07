@@ -64,16 +64,16 @@ Tempo v4.1.0 introduces cascading configuration inheritance (`extends`), a dedic
 
 In v4.1.0, configuration, plugin registration, and runtime options have been cleanly separated:
 
-- **Configuration Inheritance (`extends`)**: The `extends` option in `Tempo.init()` or `tempo.config.json` is strictly reserved for cascading configuration inheritance via URLs or file paths (mirroring `tsconfig.json` and ESLint conventions): `extends: 'https://company.org/tempo-base.json'`.
+- **Configuration Inheritance (`extends`)**: The `extends` option in `Tempo.init()` or `tempo.config.json` is strictly reserved for cascading configuration inheritance via local file paths or `file://` URLs (mirroring `tsconfig.json` and ESLint conventions): `extends: './tempo-base.json'`.
 - **Plugin Registration (`plugins`)**: Pass executable plugins, terms, and modules into `plugins: [TickerPlugin, AstroTerm]`.
-- **Plugin Configuration Slot (`pluginOptions`)**: Pass runtime configuration defaults for plugins into `pluginOptions: { ticker: { interval: 500 } }`. Passing plain configuration dictionaries directly under `plugins` is `@deprecated`.
+- **Plugin Configuration Slot (`pluginOptions`)**: Pass runtime configuration defaults for plugins into `pluginOptions: { ticker: { interval: 500 } }`. The 'plugins' key as a JSON of plugin-configuration settings has been migrated to `pluginOptions` so as not to overload the `plugins` key (which registers Plugin instances / Terms / Modules / Namespaces).
 - **Imperative Registration (`Tempo.use`)**: Use the standard `Tempo.use(Plugin)` static method to register plugins, terms, or modules at runtime. `Tempo.extend()` is `@deprecated Use Tempo.use(...) instead.`.
 
 ### Example:
 ```javascript
 // ✅ v4.1.0: Clean Separation
 Tempo.init({
-  extends: 'https://central-governance.company.com/tempo-base.json', // Configuration inheritance
+  extends: './tempo-base.json',                                     // Configuration inheritance
   plugins: [TickerPlugin, AstroTerm],                               // Feature & Term registration
   pluginOptions: {                                                  // Plugin runtime options
     ticker: { interval: 500 }
@@ -201,7 +201,7 @@ The way Terms (Quarters, Seasons, Zodiacs, etc.) are handled has been unified.
 Example of new syntax:
 ```javascript
 // Snap to start of quarter
-t.set({ start: '#quarter' });
+t.set({ '#quarter': 'start' });
 
 // Add two quarters while preserving day-of-quarter
 t.add({ '#quarter': 2 });

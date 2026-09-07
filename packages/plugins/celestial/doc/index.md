@@ -38,7 +38,11 @@ npm install @magmacomputing/tempo-plugin-celestial
 
 ### Obtaining Coordinates
 
-Use `geoLookup()` from `@magmacomputing/tempo/library` to automatically resolve location coordinates across both browser and server environments:
+Use `geoLookup()` from `@magmacomputing/tempo-plugin-geo` to automatically resolve location coordinates across both browser and server environments:
+
+```bash
+npm install @magmacomputing/tempo-plugin-geo
+```
 
 > [!WARNING]
 > **Geolocation Behavior**:
@@ -47,7 +51,7 @@ Use `geoLookup()` from `@magmacomputing/tempo/library` to automatically resolve 
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { geoLookup } from '@magmacomputing/tempo/library';
+import { geoLookup } from '@magmacomputing/tempo-plugin-geo';
 import '@magmacomputing/tempo-plugin-celestial';
 
 // Automatically resolves location coordinates via browser hardware or server IP

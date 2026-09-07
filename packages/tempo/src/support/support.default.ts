@@ -233,7 +233,7 @@ export const Default = secure({
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
 	/** internationalization configuration */									intl: IntlDefault,
-	/** plugin configurations */															plugins: {},
+	/** plugin options and configurations */									pluginOptions: {},
 	/** global data augmentation registries */								registry: {
 		/** Format string templates */ formats: FORMAT,
 		/** Locale-specific configurations */ locales: LOCALE,

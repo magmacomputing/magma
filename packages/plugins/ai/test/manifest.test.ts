@@ -300,8 +300,13 @@ describe('Remote Provider Manifest & Dynamic Defaults', () => {
 
 	it('should reject streamed response without Content-Length when cumulative bytes exceed MAX_MANIFEST_BYTES', async () => {
 		let cancelled = false;
+		let chunksProduced = 0;
 		const stream = new ReadableStream({
 			pull(controller) {
+				if (chunksProduced++ > 20) {
+					controller.close();
+					return;
+				}
 				const chunk = new Uint8Array(256 * 1024);
 				controller.enqueue(chunk);
 			},

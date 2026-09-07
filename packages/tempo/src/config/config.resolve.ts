@@ -1,4 +1,4 @@
-import { isFunction, isString, isObject } from '#library/assertion.library.js';
+import { isFunction, isString, isObject, isSafeKey } from '#library/assertion.library.js';
 import { parseJSONC } from '#library/json.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import type { Options } from '../tempo.type.js';
@@ -36,14 +36,6 @@ function resolveSpecifier(specifier: string, baseLocation?: string, pathMod?: an
 	if (isHttpUrl(specifier) || isFileUrl(specifier))
 		return specifier;
 
-	if (baseLocation && isHttpUrl(baseLocation)) {
-		try {
-			return new URL(specifier, baseLocation).href;
-		} catch {
-			return specifier;
-		}
-	}
-
 	if (baseLocation && pathMod) {
 		const baseDir = (baseLocation.endsWith('/') || !pathMod.extname(baseLocation))
 			? baseLocation
@@ -79,28 +71,6 @@ function checkAndWarnBudget(budget: ExtendsBudget): boolean {
 	return false;
 }
 
-/**
- * Fetches and parses a remote JSON or JSONC configuration.
- *
- * @param url - The HTTP(S) URL of the configuration
- * @returns The parsed configuration, or `undefined` if fetching or parsing fails
- */
-async function fetchRemoteConfig(url: string): Promise<Options | undefined> {
-	try {
-		const { fetchRequest } = await import('#library/request.library.js');
-		const data = await fetchRequest<any>(
-			url,
-			{ headers: { Accept: 'application/json, text/plain, */*' } },
-			{ timeout: 3000, maxBytes: 128 * 1024, rawText: true }
-		);
-
-		if (isObject(data)) return data as Options;
-		if (isString(data)) return parseJSONC(data) as Options;
-	} catch (err: any) {
-		console.warn(`[Tempo] Failed to fetch remote config from ${url}:`, err?.message || err);
-	}
-	return undefined;
-}
 
 /**
  * Merges parent and child configuration options, with child values taking precedence.
@@ -138,6 +108,7 @@ function mergeConfigs(parent: Options, child: Options): Options {
 		const allKeys = new Set([...Object.keys(parentOpts), ...Object.keys(childOpts)]);
 		const mergedPluginOpts: Record<string, any> = {};
 		for (const key of allKeys) {
+			if (!isSafeKey(key)) continue;
 			const pVal = (parentOpts as any)[key];
 			const cVal = (childOpts as any)[key];
 			if (isObject(pVal) || isObject(cVal)) {
@@ -159,25 +130,6 @@ function mergeConfigs(parent: Options, child: Options): Options {
 			const pList = Array.isArray(parentPlugins) ? parentPlugins : (parentPlugins ? [parentPlugins] : []);
 			const cList = Array.isArray(childPlugins) ? childPlugins : (childPlugins ? [childPlugins] : []);
 			merged.plugins = [...pList, ...cList];
-		} else if (isObject(parentPlugins) || isObject(childPlugins)) {
-			/** @deprecated Providing configuration dictionaries under 'plugins' is deprecated. Use 'pluginOptions' instead. */
-			const pObj = isObject(parentPlugins) ? parentPlugins : {};
-			const cObj = isObject(childPlugins) ? childPlugins : {};
-			const allKeys = new Set([...Object.keys(pObj), ...Object.keys(cObj)]);
-			const mergedObj: Record<string, any> = {};
-			for (const key of allKeys) {
-				const pVal = (pObj as any)[key];
-				const cVal = (cObj as any)[key];
-				if (isObject(pVal) || isObject(cVal)) {
-					mergedObj[key] = {
-						...(isObject(pVal) ? pVal : {}),
-						...(isObject(cVal) ? cVal : {}),
-					};
-				} else {
-					mergedObj[key] = cVal !== undefined ? cVal : pVal;
-				}
-			}
-			merged.plugins = mergedObj;
 		}
 	}
 
@@ -223,11 +175,12 @@ async function processExtends(
 		if (checkAndWarnBudget(budget))
 			break;
 
-		const targetUrlOrPath = resolveSpecifier(specifier, baseLocation, path);
-		if (baseLocation && isHttpUrl(baseLocation) && !isHttpUrl(targetUrlOrPath)) {
-			console.warn(`[Tempo] Remote configuration cannot extend non-HTTP(S) target: ${targetUrlOrPath}`);
+		if (isHttpUrl(specifier)) {
+			console.warn(`[Tempo] Remote HTTP(S) config extends is not supported, skipping: ${specifier}`);
 			continue;
 		}
+
+		const targetUrlOrPath = resolveSpecifier(specifier, baseLocation, path);
 
 		if (loadedSet.has(targetUrlOrPath)) {
 			console.warn(`[Tempo] Circular extends detected for config target: ${targetUrlOrPath}`);
@@ -246,7 +199,7 @@ async function processExtends(
 }
 
 /**
- * Loads and resolves a configuration target from a local path, `file://` URL, or HTTP(S) URL.
+ * Loads and resolves a configuration target from a local path or `file://` URL.
  *
  * @param target - The configuration path or URL to load
  * @param currentDir - The base directory for resolving relative paths
@@ -264,6 +217,11 @@ async function loadConfigTarget(
 ): Promise<Options | undefined> {
 	if (loadedSet.has(target)) return undefined;
 
+	if (isHttpUrl(target)) {
+		console.warn(`[Tempo] Remote HTTP(S) config target is not supported: ${target}`);
+		return undefined;
+	}
+
 	if (depth > 0) {
 		if (checkAndWarnBudget(budget)) return undefined;
 		budget.remaining--;
@@ -271,15 +229,19 @@ async function loadConfigTarget(
 
 	loadedSet.add(target);
 
-	if (isHttpUrl(target)) {
-		const fetched = await fetchRemoteConfig(target);
-		if (fetched)
-			return processExtends(fetched, target, fs, path, urlMod, loadedSet, depth, budget);
-		return undefined;
-	}
-
 	let localPath = target;
 	if (isFileUrl(target)) {
+		try {
+			const parsed = new URL(target);
+			if (parsed.hostname && parsed.hostname !== 'localhost') {
+				console.warn(`[Tempo] Remote file URL with host is not supported: ${target}`);
+				return undefined;
+			}
+		} catch {
+			console.warn(`[Tempo] Invalid file URL config target: ${target}`);
+			return undefined;
+		}
+
 		if (urlMod?.fileURLToPath)
 			localPath = urlMod.fileURLToPath(target);
 		else
@@ -296,9 +258,12 @@ async function loadConfigTarget(
 			if (ext === '.json' || ext === '.jsonc') {
 				const content = await fs.promises.readFile(localPath, 'utf8');
 				loaded = parseJSONC(content) as Options;
-			} else if (urlMod) {
+			} else if (depth === 0 && urlMod) {
+				// Only allow JS/TS module execution for top-level project config files, never for extends targets
 				const imported = await import(/* @vite-ignore */ urlMod.pathToFileURL(localPath).href);
 				loaded = imported.default || imported;
+			} else {
+				console.warn(`[Tempo] Config extends only supports static .json and .jsonc data files, skipping: ${localPath}`);
 			}
 
 			if (loaded)
@@ -438,8 +403,24 @@ export function resolveConfigSync(options?: { cwd?: string, configFile?: string 
  * @returns The loaded configuration, or `undefined` when no configuration is found or the environment cannot load one.
  */
 export async function resolveConfig(options?: { cwd?: string, configFile?: string }): Promise<Options | undefined> {
-	if (options?.configFile && isHttpUrl(options.configFile))
-		return loadConfigTarget(options.configFile, typeof process !== 'undefined' ? process.cwd() : '');
+	if (options?.configFile) {
+		if (isHttpUrl(options.configFile)) {
+			console.warn(`[Tempo] Remote HTTP(S) configFile is not supported: ${options.configFile}`);
+			return undefined;
+		}
+		if (isFileUrl(options.configFile)) {
+			try {
+				const parsed = new URL(options.configFile);
+				if (parsed.hostname && parsed.hostname !== 'localhost') {
+					console.warn(`[Tempo] Remote file URL with host is not supported: ${options.configFile}`);
+					return undefined;
+				}
+			} catch {
+				console.warn(`[Tempo] Invalid file URL configFile: ${options.configFile}`);
+				return undefined;
+			}
+		}
+	}
 
 	const ctx = getContext();
 	if (ctx.type !== CONTEXT.NodeJS || !isFunction(ctx.global.process?.cwd))
@@ -459,7 +440,7 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 		let currentDir = options?.cwd || process.cwd();
 
 		if (options?.configFile) {
-			const target = isHttpUrl(options.configFile) || isFileUrl(options.configFile)
+			const target = isFileUrl(options.configFile)
 				? options.configFile
 				: path.resolve(currentDir, options.configFile);
 			return await loadConfigTarget(target, currentDir, fs, path, urlMod);

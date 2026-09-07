@@ -76,6 +76,21 @@ export const isSymbol = (obj: unknown): obj is symbol => isType<symbol>(obj, 'Sy
 export const isSymbolFor = (obj: unknown): obj is symbol => isType<symbol>(obj, 'Symbol') && Symbol.keyFor(obj as symbol) !== undefined;
 export const isPropertyKey = (obj: unknown): obj is PropertyKey => isType<PropertyKey>(obj, 'String', 'Number', 'Symbol');
 
+/**
+ * Asserts if a property key is safe against prototype pollution and prototype hijacking.
+ * Returns false for '__proto__', 'constructor', and 'prototype'.
+ * 
+ * @param key - The property key to check
+ * @returns True if the key is safe to assign or merge
+ * @example
+ * ```ts
+ * isSafeKey('name'); // true
+ * isSafeKey('__proto__'); // false
+ * ```
+ */
+export const isSafeKey = (key: PropertyKey): boolean =>
+	key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
+
 export const isNull = (obj: unknown): obj is null => isType<null>(obj, 'Null');
 export const isNullish = (obj: unknown): obj is Nullish => isType<Nullish>(obj, 'Null', 'Undefined', 'Void', 'Empty');
 export const isUndefined = (obj: unknown): obj is undefined => isType<undefined>(obj, 'Undefined', 'Void', 'Empty');

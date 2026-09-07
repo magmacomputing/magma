@@ -30,14 +30,15 @@ t.subtract({ '#qtr': 1 }); // Resolves backwards to 20 days into the previous Qu
 t.set({ '#qtr': 2 }); // Aligns to the start of the 2nd quarter of the current year
 ```
 
-### C. Structural Mode (Key Shorthand)
+### C. Structural Mode (Boundary Shorthand)
 **Used in:** `.set()`.  
-**Pattern:** `{ start: '#namespace', end: '#namespace' }`  
-**Best for:** Snapping a date to the precise boundaries of its current Term.
+**Pattern:** `{ '#namespace': 'start' | 'mid' | 'end' }`  
+**Best for:** Snapping a date to the precise boundaries or midpoint of its current Term.
 
 ```javascript
-t.set({ start: '#qtr' }); // Snaps to the exact start of the current quarter
-t.set({ end: '#qtr' });   // Snaps to the final nanosecond of the current quarter
+t.set({ '#qtr': 'start' }); // Snaps to the exact start of the current quarter
+t.set({ '#qtr': 'end' });   // Snaps to the final nanosecond of the current quarter
+t.set({ '#qtr': 'mid' });   // Snaps to the midpoint of the current quarter
 ```
 
 ---
