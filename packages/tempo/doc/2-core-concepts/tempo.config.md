@@ -105,7 +105,7 @@ Using `tempo.config.ts` or `Tempo.bootstrap()` is the modern standard, but it in
 
 #### 🛑 Security & Reliability Bounds
 - **Local Data-Only Inheritance**: The `"extends"` mechanism strictly supports static `.json` and `.jsonc` data files parsed via `parseJSONC`. Dynamic JavaScript execution (`eval` or dynamic `import`) from extended configurations is prohibited to prevent unintended code execution in inherited configs.
-- **Local Boundary Safety**: Remote HTTP(S) URLs are rejected for both `configFile` and `"extends"` targets to protect against external network dependencies and remote code injection. `file://` URLs are validated to disallow remote hosts.
+- **Local Boundary Safety**: Remote HTTP(S) URLs are rejected when specified as `configFile` (returning `undefined`), whereas remote `"extends"` targets are skipped with a warning while local configuration processing continues, protecting against external network dependencies and remote code injection. `file://` URLs are validated to disallow remote hosts.
 - **Floating Promises**: You must ensure you actually `await` the bootstrap call. If you forget the `await` keyword, your application will continue booting before Tempo finishes reading your config file, leading to race conditions where early instances use default settings.
 
 ::: tip
