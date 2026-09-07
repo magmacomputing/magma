@@ -54,7 +54,7 @@ export default defineConfig({
 Tempo separates code registration from data configuration:
 - **`plugins`**: Strictly registers executable plugins, namespaces, terms, or factory closures (`(Plugin | Term)[]`).
 - **`pluginOptions`**: Dedicated dictionary holding runtime options and configuration defaults for plugins (`Record<string, any>`), serializable in `tempo.config.json` and cascading across remote `extends`.
-- *(Deprecated)* Passing a configuration dictionary directly into `plugins` or supplying `plugins: { ... }` as an object remains supported for backward compatibility, but is marked `@deprecated` in favor of `pluginOptions`.
+- The 'plugins' key as a JSON of plugin-configuration settings has been migrated to 'pluginOptions' so as not to overload the 'plugins' key (which registers Plugin instances / Terms / Modules / Namespaces).
 :::
 
 You can then bootstrap this environment at the very top of your application's entry point (e.g., `main.ts` or `index.js`) to guarantee the configuration is locked in before any other files run:

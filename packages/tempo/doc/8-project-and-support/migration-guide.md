@@ -66,7 +66,7 @@ In v4.1.0, configuration, plugin registration, and runtime options have been cle
 
 - **Configuration Inheritance (`extends`)**: The `extends` option in `Tempo.init()` or `tempo.config.json` is strictly reserved for cascading configuration inheritance via URLs or file paths (mirroring `tsconfig.json` and ESLint conventions): `extends: 'https://company.org/tempo-base.json'`.
 - **Plugin Registration (`plugins`)**: Pass executable plugins, terms, and modules into `plugins: [TickerPlugin, AstroTerm]`.
-- **Plugin Configuration Slot (`pluginOptions`)**: Pass runtime configuration defaults for plugins into `pluginOptions: { ticker: { interval: 500 } }`. Passing plain configuration dictionaries directly under `plugins` is `@deprecated`.
+- **Plugin Configuration Slot (`pluginOptions`)**: Pass runtime configuration defaults for plugins into `pluginOptions: { ticker: { interval: 500 } }`. The 'plugins' key as a JSON of plugin-configuration settings has been migrated to `pluginOptions` so as not to overload the `plugins` key (which registers Plugin instances / Terms / Modules / Namespaces).
 - **Imperative Registration (`Tempo.use`)**: Use the standard `Tempo.use(Plugin)` static method to register plugins, terms, or modules at runtime. `Tempo.extend()` is `@deprecated Use Tempo.use(...) instead.`.
 
 ### Example:
