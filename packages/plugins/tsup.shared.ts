@@ -20,6 +20,7 @@ if (fs.existsSync(pkgPath)) {
 
 export const sharedConfig: Options = {
 	format: ['esm', 'iife'],
+	splitting: false,
 	globalName: `Magma.plugins.${pkgName}`,
 	// @magmacomputing/tempo/plugin* is inlined only for IIFE (self-contained browser bundle).
 	// For ESM the 'esm-external' plugin below re-marks them as external so all plugins

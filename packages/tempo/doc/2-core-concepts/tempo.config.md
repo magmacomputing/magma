@@ -32,7 +32,7 @@ import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 export default defineConfig({
   timeZone: 'Australia/Sydney',        // Set your baseline timezone
-  extends: 'https://central-governance.company.com/tempo-base.config.jsonc', // Inherit base config
+  extends: './tempo-base.config.jsonc', // Inherit local base config
   plugins: [
     AstroTerm,                         // 1. Executable plugin or term
     TickerPlugin,                      // 2. Plugin singleton (or factory closure)
@@ -53,7 +53,7 @@ export default defineConfig({
 ::: tip Clean Separation: Feature Registration vs Plugin Configuration
 Tempo separates code registration from data configuration:
 - **`plugins`**: Strictly registers executable plugins, namespaces, terms, or factory closures (`(Plugin | Term)[]`).
-- **`pluginOptions`**: Dedicated dictionary holding runtime options and configuration defaults for plugins (`Record<string, any>`), serializable in `tempo.config.json` and cascading across remote `extends`.
+- **`pluginOptions`**: Dedicated dictionary holding runtime options and configuration defaults for plugins (`Record<string, any>`), serializable in `tempo.config.json` and cascading across local `extends`.
 - The 'plugins' key as a JSON of plugin-configuration settings has been migrated to 'pluginOptions' so as not to overload the 'plugins' key (which registers Plugin instances / Terms / Modules / Namespaces).
 :::
 
@@ -63,24 +63,24 @@ You can then bootstrap this environment at the very top of your application's en
 // main.ts
 import { Tempo } from '@magmacomputing/tempo';
 
-// Automatically discovers and loads local 'tempo.config.ts'
+// Automatically discovers and loads local 'tempo.config.ts' (or .js / .json / .jsonc)
 await Tempo.bootstrap(); 
 
-// OR: Bootstrap from a remote corporate configuration endpoint
-await Tempo.bootstrap({ configFile: 'https://config.internal.company.com/tempo.config.jsonc' });
+// OR: Bootstrap from an explicit local configuration file or path
+await Tempo.bootstrap({ configFile: './configs/tempo.production.jsonc' });
 
 // Dynamic import ensures domain logic loads ONLY AFTER configuration is complete
 const { App } = await import('./app.js');
 // ...
 ```
-### Remote & Cascading Configurations (`"extends"`)
+### Cascading Configurations (`"extends"`)
 
-Tempo configuration files can inherit settings from parent baseline configurations—including remote HTTP(S) endpoints or `file://` URLs—via the `"extends"` key. Local options automatically override parent baseline options:
+Tempo configuration files can inherit settings from parent baseline configurations via local file paths or `file://` URLs using the `"extends"` key. Local options automatically override parent baseline options:
 
 ```jsonc
 // tempo.config.jsonc
 {
-  "extends": "https://central-governance.company.com/tempo-base.config.jsonc",
+  "extends": "./tempo-base.config.jsonc",
   "timeZone": "Australia/Sydney", // Local override
   "registry": {
     "periods": {
@@ -92,20 +92,20 @@ Tempo configuration files can inherit settings from parent baseline configuratio
 
 ### Benefits vs. Drawbacks
 
-Using `tempo.config.ts` or `Tempo.bootstrap()` is the modern standard, but it introduces specific architectural tradeoffs due to Node.js ES Module and network boundary constraints.
+Using `tempo.config.ts` or `Tempo.bootstrap()` is the modern standard, but it introduces specific architectural tradeoffs due to Node.js ES Module and asynchronous I/O boundaries.
 
 #### 🌟 Benefits
 - **TypeScript Autocomplete**: Using `defineConfig` provides instant IDE intellisense and type-safety for all configuration options.
 - **Plugin Execution**: You can import and instantiate plugins directly inside JS/TS configuration files, keeping your application logic clean.
-- **Central Governance & Remote Cascading**: Enables fetching centralized corporate configs over HTTP(S) or `file://` with recursive inheritance and cycle detection.
+- **Cascading Configuration Inheritance**: Enables inheriting shared base configs via relative paths, absolute paths, or `file://` URLs with recursive inheritance and cycle detection.
 - **Dynamic Configuration**: Enables runtime logic (e.g., `debug: process.env.NODE_ENV !== 'production'`) in JS/TS configs that strict JSON cannot provide.
 
 #### ⚠️ Drawbacks
-- **Asynchronous Requirement**: Because dynamic config loading and remote fetches are asynchronous, you **must** use `await Tempo.bootstrap()` instead of synchronous calls.
+- **Asynchronous Requirement**: Because dynamic config loading and file reading are asynchronous, you **must** use `await Tempo.bootstrap()` instead of synchronous calls.
 
 #### 🛑 Security & Reliability Bounds
-- **Remote Payload Security**: Remote HTTP(S) URLs only load static JSON/JSONC payloads via `parseJSONC`. Dynamic JavaScript execution (`eval` / dynamic `import`) from HTTP URLs is prohibited for supply chain security.
-- **Request Safety**: Remote requests feature a strict 3-second timeout and 128KB maximum payload limit to prevent network hangs.
+- **Local Data-Only Inheritance**: The `"extends"` mechanism strictly supports static `.json` and `.jsonc` data files parsed via `parseJSONC`. Dynamic JavaScript execution (`eval` or dynamic `import`) from extended configurations is prohibited to prevent unintended code execution in inherited configs.
+- **Local Boundary Safety**: Remote HTTP(S) URLs are rejected for both `configFile` and `"extends"` targets to protect against external network dependencies and remote code injection. `file://` URLs are validated to disallow remote hosts.
 - **Floating Promises**: You must ensure you actually `await` the bootstrap call. If you forget the `await` keyword, your application will continue booting before Tempo finishes reading your config file, leading to race conditions where early instances use default settings.
 
 ::: tip
@@ -190,8 +190,9 @@ Tempo looks for the following structure:
 | :--- | :--- | :--- |
 | `options` | `Options \| (() => Options)` | Configuration options merged into global state. |
 | `intl` | `IntlOptions` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, `durationFormat`, and `dateTimeFormat`. |
-| `extends` | `string \| string[]` | Remote URL(s) or local file path(s) to inherit base configuration from. |
-| `plugins` | `(Plugin \| TermPlugin)[] \| Record<string, any>` | Modular plugins/terms to register, or plugin configuration dictionaries. |
+| `extends` | `string \| string[]` | Local file path(s) or `file://` URL(s) to inherit base configuration from. |
+| `plugins` | `(Plugin \| TermPlugin)[]` | Modular plugins/terms to register during configuration. |
+| `pluginOptions` | `Record<string, any>` | Plugin configuration defaults and dictionaries keyed by plugin name. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
 | `registry` | `{ formats?, locales?, numbers?, events?, periods?, snippets?, layouts?, ignores?, modifiers?, tokens? }` | Custom configuration for internal dictionary registries. |
 
@@ -230,8 +231,9 @@ Tempo.init({
 | `sphere` | `Evaluable<'north' \| 'south'>`| Auto-inferred | Hemisphere for seasonal plugins or dynamic supplier. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
 | `registry` | `{ formats?, locales?, numbers?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, number-to-word mappings, parsing logic, localization). |
-| `extends` | `string \| string[]` | `undefined` | Remote URL(s) or local file path(s) to inherit base configuration from. |
-| `plugins` | `(Plugin \| TermPlugin)[] \| Record<string, any>` | `[]` | Plugins/terms to register during initialization (applied via `Tempo.use(p)`), or plugin options dictionaries. |
+| `extends` | `string \| string[]` | `undefined` | Local file path(s) or `file://` URL(s) to inherit base configuration from. |
+| `plugins` | `(Plugin \| TermPlugin)[]` | `[]` | Plugins/terms to register during initialization (applied via `Tempo.use(p)`). |
+| `pluginOptions` | `Record<string, any>` | `{}` | Plugin configuration defaults and dictionaries keyed by plugin name. |
 | `store` | `string` | `'$Tempo'` | Persistent storage key used by `readStore`/`writeStore`. |
 | `discovery` | `string \| symbol` | `'$Tempo'` symbol key | Discovery slot used to resolve global discovery config. |
 | `debug` | `number \| string` | `'info'` | Controls log verbosity via direct `LOG` levels (`0=Off ... 5=Trace`) or string labels (`'trace'`, `'info'`, etc). |
