@@ -1,5 +1,5 @@
 import { Tempo } from '#tempo';
-import { BoundedCache } from '../../src/support/support.cache.js';
+import { BoundedCache } from '#library/cache.class.js';
 
 describe('Tempo Core Caching Architecture', () => {
 	beforeEach(() => {

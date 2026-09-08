@@ -5,6 +5,8 @@ import {
 	resolveGeoCoordinates,
 	coerceGeo,
 	getStashedGeo,
+	stashGeo,
+	clearStashedGeo,
 	type GeoLookupResult,
 	type GeoConfig,
 	type CoordinateInput,
@@ -25,6 +27,8 @@ export {
 	resolveGeoCoordinates,
 	coerceGeo,
 	getStashedGeo,
+	stashGeo,
+	clearStashedGeo,
 	serverGeoLocation,
 	serverGeoCoords,
 	serverMapHemisphere,
@@ -39,21 +43,56 @@ export type {
 	ServerGeolocationResult,
 };
 
-type GeoLookupFn = typeof geoLookup;
-type ResolveGeoCoordinatesFn = typeof resolveGeoCoordinates;
-type ServerGeoLocationFn = typeof serverGeoLocation;
-type GeoLocationFn = typeof geoLocation;
+/**
+ * Cohesive static namespace for geolocation operations on Tempo.
+ */
+export interface TempoGeoNamespace {
+	/** Asynchronous universal geolocation lookup (browser hardware or server IP) with 24h caching */
+	readonly lookup: typeof geoLookup;
+	/** Asynchronously resolves coordinates from an instance, config, or ambient storage */
+	readonly resolve: typeof resolveGeoCoordinates;
+	/** Coerces coordinates and configurations into a canonical GeoConfig object */
+	readonly coerce: typeof coerceGeo;
+	/** Explicitly stashes coordinates into storage with optional TTL (default 24h) and multi-tenant partitioning */
+	readonly stash: typeof stashGeo;
+	/** Clears stashed coordinates from storage */
+	readonly clear: typeof clearStashedGeo;
+	/** Retrieves stashed coordinates from storage */
+	readonly get: typeof getStashedGeo;
+	/** Low-level server-side IP geolocation handler */
+	readonly server: typeof serverGeoLocation;
+	/** Low-level browser geolocation API handler */
+	readonly browser: typeof geoLocation;
+	/** Current ambient or global coordinates snapshot (reads getStashedGeo() ?? Tempo.config.geo) */
+	readonly current: GeoConfig | undefined;
+}
 
 /**
- * GeoPlugin installs geolocation lookup and coordinate resolution helpers onto Tempo.
+ * GeoPlugin installs geolocation lookup and coordinate resolution helpers onto Tempo under the `Tempo.geo` namespace.
  */
 export const GeoPlugin: TempoPlugin = definePlugin({
 	name: 'geo',
 	install(TempoClass: any) {
-		TempoClass.geoLookup = geoLookup;
-		TempoClass.resolveGeoCoordinates = resolveGeoCoordinates;
-		TempoClass.serverGeoLocation = serverGeoLocation;
-		TempoClass.geoLocation = geoLocation;
+		const geoNamespace: TempoGeoNamespace = {
+			lookup: geoLookup,
+			resolve: resolveGeoCoordinates,
+			coerce: coerceGeo,
+			stash: stashGeo,
+			clear: clearStashedGeo,
+			get: getStashedGeo,
+			server: serverGeoLocation,
+			browser: geoLocation,
+			get current(): GeoConfig | undefined {
+				return getStashedGeo() ?? TempoClass.config?.geo;
+			},
+		}
+
+		Object.defineProperty(TempoClass, 'geo', {
+			value: Object.freeze(geoNamespace),
+			writable: false,
+			configurable: false,
+			enumerable: false,
+		});
 
 		/**
 		 * Asynchronously resolves coordinates for the current instance (or uses existing coordinates),
@@ -98,10 +137,8 @@ declare module '@magmacomputing/tempo' {
 		 */
 		geoLookup(opts?: Record<string, any>): Promise<{ lat: number; lng: number } | null>;
 	}
+
 	namespace Tempo {
-		let geoLookup: GeoLookupFn;
-		let resolveGeoCoordinates: ResolveGeoCoordinatesFn;
-		let serverGeoLocation: ServerGeoLocationFn;
-		let geoLocation: GeoLocationFn;
+		let geo: TempoGeoNamespace;
 	}
 }

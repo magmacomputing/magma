@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/library",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "description": "Shared utility library for Tempo",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -184,6 +184,10 @@
     "#library/schedule.library.js": {
       "development": "./src/common/scheduling/schedule.library.ts",
       "default": "./dist/common/scheduling/schedule.library.js"
+    },
+    "#library/cache.class.js": {
+      "development": "./src/common/runtime/cache.class.ts",
+      "default": "./dist/common/runtime/cache.class.js"
     },
     "#library/decorator.library.js": {
       "development": "./src/common/runtime/decorator.library.ts",

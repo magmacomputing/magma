@@ -1,13 +1,13 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
 import { isNullish, isNumber, isString, isSafeKey } from '#library/assertion.library.js';
-import { getStorage } from '#library/storage.library.js';
+import { getStorage, setStorage } from '#library/storage.library.js';
 
 export interface GeoLookupResult {
-	lat?: number;
-	lng?: number;
-	latitude?: number;
-	longitude?: number;
-	error?: string;
+	lat?: number | undefined;
+	lng?: number | undefined;
+	latitude?: number | undefined;
+	longitude?: number | undefined;
+	error?: string | undefined;
 	[key: string]: any;
 }
 
@@ -68,7 +68,7 @@ export interface CoordinateInput {
 }
 
 /**
- * Extracts and coerces latitude and longitude from input object (Tempo options, config, or instance)
+ * Extracts and coerces latitude and longitude from input object (options, config, or instance)
  * into a canonical `{ latitude, longitude, ... }` GeoConfig object.
  * 
  * @param input - Optional object containing coordinate or geo properties
@@ -111,101 +111,178 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 };
 
 /**
- * Synchronously retrieves stashed geolocation from storage or memory cache if present.
+ * Helper to resolve storage cache keys for single-tenant default or multi-tenant scoped lookups.
+ * @internal
  */
-export const getStashedGeo = (): GeoConfig | undefined => {
-	const { type } = getContext();
-	if (type === CONTEXT.Browser || type === CONTEXT.WebWorker) {
-		try {
-			if (typeof localStorage !== 'undefined') {
-				const raw = localStorage.getItem('_map_');
-				if (raw) {
-					const parsed = JSON.parse(raw);
-					const coords = parsed?.geolocation?.coords ?? parsed?.coords ?? parsed;
-					const lat = coords?.latitude ?? coords?.lat;
-					const lng = coords?.longitude ?? coords?.lng ?? coords?.lon ?? coords?.long;
-					if (isNumber(lat) && isNumber(lng)) {
-						return { latitude: lat, longitude: lng };
-					}
-				}
+const resolveCacheKey = (keyOrOpts?: string | Record<string, any>): string => {
+	if (typeof keyOrOpts === 'string' && keyOrOpts.trim().length > 0)
+		return keyOrOpts.startsWith('_map_') ? keyOrOpts : `_map_:${keyOrOpts.trim()}`;
+	if (keyOrOpts && typeof keyOrOpts === 'object') {
+		const k = keyOrOpts.key ?? keyOrOpts.ip ?? keyOrOpts.query;
+		if (typeof k === 'string' && k.trim().length > 0)
+			return `_map_:${k.trim()}`;
+	}
+	return '_map_';
+};
+
+/**
+ * Synchronously retrieves stashed geolocation from storage or memory cache if present.
+ * Supports optional tenant key or options object for multi-tenant isolation.
+ *
+ * @param keyOrOpts - Optional tenant key or lookup options containing key/ip
+ * @returns Cached GeoConfig or undefined
+ */
+export const getStashedGeo = (keyOrOpts?: string | Record<string, any>): GeoConfig | undefined => {
+	const cacheKey = resolveCacheKey(keyOrOpts);
+	try {
+		const raw = getStorage<any>(cacheKey) ?? (typeof localStorage !== 'undefined' ? localStorage.getItem(cacheKey) : undefined);
+		if (!raw) return undefined;
+
+		const parsed = typeof raw === 'string' && (raw.startsWith('{') || raw.startsWith('['))
+			? JSON.parse(raw)
+			: raw;
+
+		if (typeof parsed === 'string' && parsed.includes(',')) {
+			const parts = parsed.split(',').map(s => parseFloat(s.trim()));
+			if (parts.length >= 2 && isNumber(parts[0]) && isNumber(parts[1])) {
+				return { latitude: parts[0], longitude: parts[1] };
 			}
-		} catch {
-			// ignore storage access errors
 		}
-	} else if (type === CONTEXT.NodeJS || type === CONTEXT.Deno) {
-		try {
-			const raw = getStorage<any>('_map_') ?? getStorage<any>('TEMPO_GEO');
-			if (raw) {
-				if (typeof raw === 'string' && raw.includes(',')) {
-					const parts = raw.split(',').map(s => parseFloat(s.trim()));
-					if (parts.length >= 2 && isNumber(parts[0]) && isNumber(parts[1])) {
-						return { latitude: parts[0], longitude: parts[1] };
-					}
-				}
-				if (typeof raw === 'object') {
-					const coords = raw.geolocation?.coords ?? raw.coords ?? raw;
-					const lat = coords?.latitude ?? coords?.lat;
-					const lng = coords?.longitude ?? coords?.lng ?? coords?.lon ?? coords?.long;
-					if (isNumber(lat) && isNumber(lng)) {
-						const result: GeoConfig = { latitude: lat, longitude: lng };
-						const elevation = raw.elevation ?? coords.elevation;
-						if (isNumber(elevation)) result.elevation = elevation;
-						if (raw.sphere === 'north' || raw.sphere === 'south') result.sphere = raw.sphere;
-						if (isString(raw.country)) result.country = raw.country;
-						if (isString(raw.city)) result.city = raw.city;
-						return result;
-					}
-				}
+
+		if (typeof parsed === 'object' && parsed !== null) {
+			const coords = parsed.geolocation?.coords ?? parsed.coords ?? parsed;
+			const lat = coords?.latitude ?? coords?.lat;
+			const lng = coords?.longitude ?? coords?.lng ?? coords?.lon ?? coords?.long;
+			if (isNumber(lat) && isNumber(lng)) {
+				const result: GeoConfig = { latitude: lat, longitude: lng };
+				const elevation = parsed.elevation ?? coords.elevation;
+				if (isNumber(elevation)) result.elevation = elevation;
+				if (parsed.sphere === 'north' || parsed.sphere === 'south') result.sphere = parsed.sphere;
+				if (isString(parsed.country)) result.country = parsed.country;
+				if (isString(parsed.city)) result.city = parsed.city;
+				return result;
 			}
-		} catch {
-			// ignore storage access errors
 		}
+	} catch {
+		// ignore storage access errors
 	}
 	return undefined;
 };
 
 /**
+ * Explicitly stashes geolocation coordinates in storage with an optional TTL (default: 24 hours).
+ * Supports optional tenant key or options object for multi-tenant isolation.
+ *
+ * @param coords - Geolocation coordinates and metadata to stash
+ * @param ttl - Time-to-live in milliseconds (default: 24 hours)
+ * @param keyOrOpts - Optional tenant key or lookup options containing key/ip
+ */
+export const stashGeo = (
+	coords: GeoConfig,
+	ttl = 24 * 60 * 60 * 1000,
+	keyOrOpts?: string | Record<string, any>
+): void => {
+	const cacheKey = resolveCacheKey(keyOrOpts);
+	setStorage(cacheKey, coords, { ttl });
+};
+
+/**
+ * Clears stashed geolocation coordinates from storage.
+ * Supports optional tenant key or options object for multi-tenant isolation.
+ *
+ * @param keyOrOpts - Optional tenant key or lookup options containing key/ip
+ */
+export const clearStashedGeo = (keyOrOpts?: string | Record<string, any>): void => {
+	const cacheKey = resolveCacheKey(keyOrOpts);
+	setStorage(cacheKey, undefined);
+};
+
+/**
  * Universal geolocation lookup dispatcher.
  * Automatically delegates to browser `geoLocation()` or server `serverGeoLocation()` based on runtime context.
+ * When coordinates are resolved, stashes the result in storage with a 24-hour TTL for fast cached lookups.
  * 
- * @param opts - Lookup options passed down to environment handler
+ * @param opts - Lookup options passed down to environment handler (e.g. `{ refresh: true, key: 'tenant-1' }`)
  */
 export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLookupResult> => {
+	const useCache = opts.refresh !== true;
+
+	if (useCache) {
+		const stashed = getStashedGeo(opts);
+		if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude)) {
+			const { latitude, longitude, ...rest } = stashed;
+			return {
+				...rest,
+				status: 'cached',
+				lat: latitude,
+				lng: longitude,
+				latitude,
+				longitude,
+			};
+		}
+	}
+
 	const { type } = getContext();
+	let res: GeoLookupResult;
 
 	switch (type) {
 		case CONTEXT.Browser: {
 			const { geoLocation } = await import('#browser/mapper.library.js');
-			const res = await geoLocation(opts as any);
-			if (res.error)
-				return { error: res.error };
+			const browserRes = await geoLocation(opts as any);
+			if (browserRes.error)
+				return { error: browserRes.error };
 
-			const lat = res.coords?.latitude;
-			const lng = res.coords?.longitude;
-			return { lat, lng, latitude: lat, longitude: lng, ...res };
+			const lat = browserRes.coords?.latitude;
+			const lng = browserRes.coords?.longitude;
+			res = { lat, lng, latitude: lat, longitude: lng, ...browserRes };
+			break;
 		}
 
 		case CONTEXT.WebWorker: {
-			const stashed = getStashedGeo();
+			const stashed = getStashedGeo(opts);
 			if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude))
 				return { lat: stashed.latitude, lng: stashed.longitude, latitude: stashed.latitude, longitude: stashed.longitude };
 
 			const { serverGeoLocation } = await import('#server/mapper.library.js');
-			return serverGeoLocation(opts as any);
+			res = await serverGeoLocation(opts as any);
+			break;
 		}
 
 		case CONTEXT.NodeJS:
 		case CONTEXT.Deno:
 		default: {
 			const { serverGeoLocation } = await import('#server/mapper.library.js');
-			return serverGeoLocation(opts as any);
+			res = await serverGeoLocation(opts as any);
+			break;
 		}
 	}
-}
+
+	// Stash successfully resolved coordinates with 24-hour TTL
+	const lat = res.latitude ?? res.lat;
+	const lng = res.longitude ?? res.lng;
+	if (isNullish(res.error) && isNumber(lat) && isNumber(lng)) {
+		const stashPayload: GeoConfig = {
+			latitude: lat,
+			longitude: lng,
+			...(isString(res.city) ? { city: res.city } : {}),
+			...(isString(res.country) ? { country: res.country } : {}),
+			...(isNumber(res.elevation) ? { elevation: res.elevation } : {}),
+			...(res.sphere === 'north' || res.sphere === 'south' ? { sphere: res.sphere } : {}),
+		};
+		try {
+			const ttl = isNumber(opts.ttl) ? opts.ttl : 24 * 60 * 60 * 1000;
+			stashGeo(stashPayload, ttl, opts);
+		} catch {
+			// ignore storage errors
+		}
+	}
+
+	return res;
+};
 
 /**
  * Universal coordinate resolver.
- * Extracts latitude and longitude from input object (Tempo instance, config, options),
+ * Extracts latitude and longitude from input object (instance, config, options),
  * or triggers `geoLookup()` if coordinates are omitted.
  * 
  * @param input - Optional object containing coordinate properties
@@ -219,7 +296,7 @@ export const resolveGeoCoordinates = async (
 	if (coerced && isNumber(coerced.latitude) && isNumber(coerced.longitude))
 		return { lat: coerced.latitude, lng: coerced.longitude };
 
-	const stashed = getStashedGeo();
+	const stashed = getStashedGeo(opts);
 	if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude))
 		return { lat: stashed.latitude, lng: stashed.longitude };
 
@@ -228,5 +305,5 @@ export const resolveGeoCoordinates = async (
 		return { lat: lookup.lat, lng: lookup.lng };
 
 	return null;
-}
+};
 

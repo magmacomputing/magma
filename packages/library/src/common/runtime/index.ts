@@ -1,4 +1,5 @@
 export * from './boundary.library.js';
+export * from './cache.class.js';
 export * from './decorator.library.js';
 export * from './enumerate.library.js';
 export * from './evaluation.library.js';

@@ -42,4 +42,4 @@ export { SCHEMA, getLargestUnit, logError, logWarn, logDebug, logTrace, setLogLe
 export { setPatterns } from '../engine/engine.pattern.js';
 export { init, extendState } from './support.init.js';
 export { TempoError } from './support.error.js';
-export { BoundedCache, createCacheFacade } from './support.cache.js';
+export { createCacheFacade } from './support.cache.js';

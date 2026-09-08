@@ -10,12 +10,12 @@ import type { DebugLevel } from '#library/logger.class.js';
 import type { ScopedSet } from '#library/scopedset.class.js';
 import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable } from '#library/type.library.js';
 import type { GeoOptions, GeoConfig } from '#library/mapper.library.js';
+import type { BoundedCache } from '#library/cache.class.js';
 
 export type { GeoOptions, GeoConfig };
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
-import { BoundedCache } from '#tempo/support/support.cache.js';
 import { SLICK_KEYS, type Snippet, type Layout, type Event, type Period, type Ignore } from '#tempo/support/support.default.js';
 import type { Token } from '#tempo/support/support.symbol.js';
 

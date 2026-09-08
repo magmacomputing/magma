@@ -118,8 +118,26 @@ Community plugins must follow a uniform documentation standard.
 
 ## 5. Source Code (`src/index.ts`)
 
-- Rely strictly on open core extensions (`definePlugin`, `defineTerm`).
+- Rely strictly on open core extensions (`definePlugin`, `defineTerm`, `defineNamespace`).
 - While optional, it is highly recommended to provide a short `description` when using `defineTerm` (e.g., `description: 'My custom term'`) so it appears in the `Tempo.terms` registry.
+
+> [!IMPORTANT]
+> **Guideline for Future Agents & Developers: Base Class Lockdown & Immutability**
+>
+> 1. **Zero Flat Pollution on `Tempo`**: Never dump multiple loose methods or properties directly onto the `Tempo` root class. Group related static utilities under a dedicated, cohesive namespace (e.g., `Tempo.geo.*`, `Tempo.sync.*`).
+> 2. **Static Namespace Immutability**: Any static object or namespace attached to the `Tempo` base class **must be strictly immutable/frozen**:
+>    - The namespace object itself must be recursively frozen via `Object.freeze()`.
+>    - The property must be mounted onto `TempoClass` using `Object.defineProperty` with `writable: false`, `configurable: false`, and `enumerable: false` (or via the SDK's `attachStatics` utility).
+>    ```typescript
+>    Object.defineProperty(TempoClass, 'myNamespace', {
+>        value: Object.freeze(myNamespaceObject),
+>        writable: false,
+>        configurable: false,
+>        enumerable: false,
+>    });
+>    ```
+>    *Rationale*: This protects the host class from monkey-patching, accidental mutation, and tampering, while ensuring compatibility with Tempo's internal `@Immutable` and `@Securable` engines.
+> 3. **Fluent Immutable Instance Methods**: Instance methods attached to `Tempo.prototype` must adhere to Tempo's immutable design principles. Methods should return a **new** enriched or transformed `Tempo` instance (e.g., `return new TempoClass(this, { ... })`) rather than mutating `this` in place.
 
 ## 6. TypeScript Documentation (TSDoc)
 

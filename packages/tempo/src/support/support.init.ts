@@ -12,6 +12,7 @@ import { ownEntries } from '#library/primitive.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { coerceGeo } from '#library/mapper.library.js';
+import { BoundedCache } from '#library/cache.class.js';
 
 import { getRuntime } from './support.runtime.js';
 import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, generateLocalizedSnippets } from './support.util.js';
@@ -20,7 +21,6 @@ import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './suppor
 import { STATE } from './support.enum.js';
 
 import enums from './support.enum.js';
-import { BoundedCache } from './support.cache.js';
 import * as t from '../tempo.type.js';
 import { registryUpdate } from './support.register.js';
 

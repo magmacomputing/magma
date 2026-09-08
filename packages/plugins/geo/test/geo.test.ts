@@ -5,6 +5,9 @@ import {
 	resolveGeoCoordinates,
 	coerceGeo,
 	serverGeoLocation,
+	stashGeo,
+	clearStashedGeo,
+	getStashedGeo,
 } from '../src/index.js';
 
 describe('Tempo Plugin: Geo', () => {
@@ -12,8 +15,13 @@ describe('Tempo Plugin: Geo', () => {
 		Tempo.use(GeoPlugin);
 	});
 
+	beforeEach(() => {
+		clearStashedGeo();
+	});
+
 	afterEach(() => {
 		vi.restoreAllMocks();
+		clearStashedGeo();
 	});
 
 	describe('Pure functional coordinate utilities', () => {
@@ -88,10 +96,27 @@ describe('Tempo Plugin: Geo', () => {
 	});
 
 	describe('Tempo OOP Integration via GeoPlugin', () => {
-		it('should attach static methods onto Tempo class', () => {
-			expect(typeof Tempo.geoLookup).toBe('function');
-			expect(typeof Tempo.resolveGeoCoordinates).toBe('function');
-			expect(typeof Tempo.serverGeoLocation).toBe('function');
+		it('should attach Tempo.geo namespace with utilities', () => {
+			expect(typeof Tempo.geo).toBe('object');
+			expect(typeof Tempo.geo.lookup).toBe('function');
+			expect(typeof Tempo.geo.resolve).toBe('function');
+			expect(typeof Tempo.geo.coerce).toBe('function');
+			expect(typeof Tempo.geo.stash).toBe('function');
+			expect(typeof Tempo.geo.clear).toBe('function');
+			expect(typeof Tempo.geo.get).toBe('function');
+			expect(typeof Tempo.geo.server).toBe('function');
+			expect(typeof Tempo.geo.browser).toBe('function');
+			expect(Tempo.geo.current).toBeUndefined();
+		});
+
+		it('should ensure Tempo.geo is a locked-down, frozen, non-writable object', () => {
+			expect(Object.isFrozen(Tempo.geo)).toBe(true);
+			expect(() => {
+				(Tempo as any).geo = {};
+			}).toThrow();
+			expect(() => {
+				(Tempo.geo as any).lookup = () => {};
+			}).toThrow();
 		});
 
 		it('should allow instance method .geoLookup() to resolve coordinates', async () => {
@@ -156,6 +181,95 @@ describe('Tempo Plugin: Geo', () => {
 			expect((located.geo as any)?.sphere).toBe('south');
 			expect((located.geo as any)?.city).toBe('Sydney');
 			expect((located.geo as any)?.customKey).toBe('customValue');
+		});
+	});
+
+	describe('Geo Stashing and Caching with BoundedCache', () => {
+		it('should provide stash, clear, get, and current on Tempo.geo', () => {
+			expect(typeof Tempo.geo.stash).toBe('function');
+			expect(typeof Tempo.geo.clear).toBe('function');
+			expect(typeof Tempo.geo.get).toBe('function');
+			Tempo.geo.stash({ latitude: -33.8688, longitude: 151.2093, city: 'Sydney' });
+			expect(Tempo.geo.current).toEqual({
+				latitude: -33.8688,
+				longitude: 151.2093,
+				city: 'Sydney',
+			});
+			Tempo.geo.clear();
+			expect(Tempo.geo.current).toBeUndefined();
+		});
+
+		it('should cache geoLookup results and bypass with { refresh: true }', async () => {
+			const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+				Promise.resolve(
+					new Response(
+						JSON.stringify({
+							ip: '1.2.3.4',
+							success: true,
+							lat: 34.0522,
+							lon: -118.2437,
+							city: 'Los Angeles',
+							country: 'United States',
+						}),
+						{ status: 200 }
+					)
+				)
+			);
+
+			const first = await geoLookup();
+			expect(first.lat).toBe(34.0522);
+			expect(mockFetch).toHaveBeenCalledTimes(1);
+
+			// Second lookup should be served from BoundedCache (zero network calls)
+			const cached = await geoLookup();
+			expect(cached.lat).toBe(34.0522);
+			expect(mockFetch).toHaveBeenCalledTimes(1);
+
+			// Calling with { refresh: true } should bypass cache
+			const refreshed = await geoLookup({ refresh: true });
+			expect(refreshed.lat).toBe(34.0522);
+			expect(mockFetch).toHaveBeenCalledTimes(2);
+		});
+
+		it('should allow manual stashGeo and clearStashedGeo with multi-tenant isolation', () => {
+			stashGeo({ latitude: 51.5074, longitude: -0.1278, city: 'London' }, undefined, 'tenant-uk');
+			stashGeo({ latitude: 48.8566, longitude: 2.3522, city: 'Paris' }, undefined, 'tenant-fr');
+
+			expect(getStashedGeo('tenant-uk')).toEqual({
+				latitude: 51.5074,
+				longitude: -0.1278,
+				city: 'London',
+			});
+			expect(getStashedGeo('tenant-fr')).toEqual({
+				latitude: 48.8566,
+				longitude: 2.3522,
+				city: 'Paris',
+			});
+
+			clearStashedGeo('tenant-uk');
+			expect(getStashedGeo('tenant-uk')).toBeUndefined();
+			expect(getStashedGeo('tenant-fr')).toBeDefined();
+		});
+
+		it('should perform lookup via Tempo.geo.lookup() and update Tempo.geo.current', async () => {
+			const mockPayload = {
+				ip: '9.9.9.9',
+				success: true,
+				lat: -37.8136,
+				lon: 144.9631,
+				city: 'Melbourne',
+				country: 'Australia',
+			};
+
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockPayload), { status: 200 })
+			);
+
+			const result = await Tempo.geo.lookup();
+			expect(result.lat).toBe(-37.8136);
+			expect(result.lng).toBe(144.9631);
+			expect(result.city).toBe('Melbourne');
+			expect(Tempo.geo.current?.city).toBe('Melbourne');
 		});
 	});
 });
