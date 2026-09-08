@@ -220,7 +220,8 @@ export function clearStorage(): void {
 	switch (context.type) {
 		case CONTEXT.Browser:
 			try {
-				storage.clear();
+				for (const store of memoryStores.values())
+					store.clear();
 			} catch {
 				// ignore
 			}

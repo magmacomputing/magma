@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, deepFreeze, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	geoLookup,
 	resolveGeoCoordinates,
@@ -88,7 +88,7 @@ export const GeoPlugin: TempoPlugin = definePlugin({
 		}
 
 		Object.defineProperty(TempoClass, 'geo', {
-			value: Object.freeze(geoNamespace),
+			value: deepFreeze(geoNamespace),
 			writable: false,
 			configurable: false,
 			enumerable: false,

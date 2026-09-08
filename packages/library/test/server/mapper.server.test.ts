@@ -54,4 +54,32 @@ describe('server/mapper.library', () => {
 
 		vi.unstubAllGlobals();
 	});
+
+	it('serverGeoLocation queries provider URL with explicit IP path when ip option is supplied', async () => {
+		const mockFetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				status: 'success',
+				lat: 37.751,
+				lon: -122.522,
+				country: 'United States',
+				city: 'San Francisco',
+				query: '8.8.8.8',
+			}),
+		});
+
+		vi.stubGlobal('fetch', mockFetch);
+
+		const geo = await serverGeoLocation({ ip: '8.8.8.8' });
+		expect(mockFetch).toHaveBeenCalledWith(
+			'https://ipwho.is/8.8.8.8',
+			expect.anything()
+		);
+		expect(geo.status).toBe('success');
+		expect(geo.query).toBe('8.8.8.8');
+		expect(geo.city).toBe('San Francisco');
+
+		vi.unstubAllGlobals();
+	});
 });
+

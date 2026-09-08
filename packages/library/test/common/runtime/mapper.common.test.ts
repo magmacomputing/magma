@@ -109,7 +109,7 @@ describe('common/runtime/mapper.library', () => {
 	});
 
 	it('getStashedGeo in Node.js discovers coordinates set explicitly via setStorage', () => {
-		setStorage('_map_', {
+		setStorage('_magma_geo_', {
 			geolocation: { coords: { latitude: -33.8688, longitude: 151.2093 } },
 			city: 'Sydney',
 		});
@@ -122,7 +122,7 @@ describe('common/runtime/mapper.library', () => {
 	});
 
 	it('getStashedGeo in Node.js discovers coordinates set as JSON string in setStorage', () => {
-		setStorage('_map_', '{"latitude": 37.7749, "longitude": -122.4194, "city": "San Francisco"}');
+		setStorage('_magma_geo_', '{"latitude": 37.7749, "longitude": -122.4194, "city": "San Francisco"}');
 
 		const stashed = getStashedGeo();
 		expect(stashed).toBeDefined();
@@ -132,11 +132,57 @@ describe('common/runtime/mapper.library', () => {
 	});
 
 	it('getStashedGeo in Node.js supports comma-separated string coordinates in storage', () => {
-		setStorage('_map_', '51.5074, -0.1278');
+		setStorage('_magma_geo_', '51.5074, -0.1278');
 
 		const stashed = getStashedGeo();
 		expect(stashed).toBeDefined();
 		expect(stashed?.latitude).toBe(51.5074);
 		expect(stashed?.longitude).toBe(-0.1278);
 	});
+
+	it('getStashedGeo does not read legacy _map_ storage key', () => {
+		setStorage('_map_', { latitude: 40.7128, longitude: -74.006, city: 'New York' });
+
+		const stashed = getStashedGeo();
+		expect(stashed).toBeUndefined();
+	});
+
+	it('getStashedGeo removes and ignores expired entries with _expires timestamp', async () => {
+		// Stash entry with 30ms TTL
+		stashGeo({ latitude: 10, longitude: 20, city: 'ExpiringCity' }, 30, { key: 'short' });
+
+		expect(getStashedGeo({ key: 'short' })?.city).toBe('ExpiringCity');
+
+		// Wait past 30ms TTL
+		await new Promise(resolve => setTimeout(resolve, 45));
+
+		expect(getStashedGeo({ key: 'short' })).toBeUndefined();
+	});
+
+	it('geoLookup with explicit ip queries provider with ip in path', async () => {
+		const mockFetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				status: 'success',
+				lat: 37.751,
+				lon: -122.522,
+				country: 'United States',
+				city: 'San Francisco',
+				query: '8.8.8.8',
+			}),
+		});
+
+		vi.stubGlobal('fetch', mockFetch);
+
+		const result = await geoLookup({ ip: '8.8.8.8', refresh: true });
+		expect(mockFetch).toHaveBeenCalledWith(
+			'https://ipwho.is/8.8.8.8',
+			expect.anything()
+		);
+		expect(result.query).toBe('8.8.8.8');
+		expect(result.city).toBe('San Francisco');
+
+		vi.unstubAllGlobals();
+	});
 });
+

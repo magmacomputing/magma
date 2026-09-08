@@ -126,11 +126,13 @@ Community plugins must follow a uniform documentation standard.
 >
 > 1. **Zero Flat Pollution on `Tempo`**: Never dump multiple loose methods or properties directly onto the `Tempo` root class. Group related static utilities under a dedicated, cohesive namespace (e.g., `Tempo.geo.*`, `Tempo.sync.*`).
 > 2. **Static Namespace Immutability**: Any static object or namespace attached to the `Tempo` base class **must be strictly immutable/frozen**:
->    - The namespace object itself must be recursively frozen via `Object.freeze()`.
+>    - The namespace object itself (including any nested objects or child namespaces) must be recursively frozen using `deepFreeze()` (available directly from `@magmacomputing/tempo/plugin/sdk` or `#library/utility.library.js`).
 >    - The property must be mounted onto `TempoClass` using `Object.defineProperty` with `writable: false`, `configurable: false`, and `enumerable: false` (or via the SDK's `attachStatics` utility).
 >    ```typescript
+>    import { deepFreeze } from '@magmacomputing/tempo/plugin/sdk';
+>
 >    Object.defineProperty(TempoClass, 'myNamespace', {
->        value: Object.freeze(myNamespaceObject),
+>        value: deepFreeze(myNamespaceObject),
 >        writable: false,
 >        configurable: false,
 >        enumerable: false,

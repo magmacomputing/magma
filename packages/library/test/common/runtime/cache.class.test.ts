@@ -156,4 +156,25 @@ describe('common/runtime/cache.class', () => {
 		expect(cache.has('short_lived')).toBe(false);
 		expect(cache.get('short_lived')).toBeUndefined();
 	});
+
+	it('preserves absolute expiration deadline without renewal on get() or set() updates', async () => {
+		const cache = new BoundedCache<string, string>(10, 40); // 40ms TTL
+		cache.set('item', 'v1');
+
+		// Access item at 20ms
+		await new Promise(resolve => setTimeout(resolve, 20));
+		expect(cache.get('item')).toBe('v1');
+
+		// Update item value at 25ms without specifying a new TTL
+		cache.set('item', 'v2');
+		expect(cache.get('item')).toBe('v2');
+
+		// Wait past original 40ms deadline (e.g. at 55ms total)
+		await new Promise(resolve => setTimeout(resolve, 35));
+
+		// Must be expired because original absolute deadline was not renewed
+		expect(cache.has('item')).toBe(false);
+		expect(cache.get('item')).toBeUndefined();
+	});
 });
+

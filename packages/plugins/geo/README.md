@@ -111,7 +111,7 @@ const t = new Tempo('2026-06-21', { geo: coords });
 > [!CAUTION]
 > **Unpartitioned ambient storage is shared. In multi-tenant environments, always use unique keys or instance-level options.**
 
-- Ambient storage stores coordinates under `_map_` by default.
+- Ambient storage stores coordinates under `_magma_geo_` by default.
 - In a shared process or server handling requests for multiple tenants or distinct users, calling `stash()` or ambient `lookup()` without a key will cause tenants to **overwrite each other's cached coordinates**!
 - **Solution A: Multi-Tenant Key Scoping**:
   Pass a tenant identifier or user ID as the key:
@@ -123,7 +123,7 @@ const t = new Tempo('2026-06-21', { geo: coords });
   const coords = Tempo.geo.get('tenant-alpha');
   Tempo.geo.clear('tenant-alpha');
   ```
-  The cache automatically partitions keys under `_map_:<tenant-id>`, guaranteeing strict isolation.
+  The cache automatically partitions keys under `_magma_geo_:<tenant-id>`, guaranteeing strict isolation.
 
 - **Solution B: Instance-Level Configuration (Recommended)**:
   Avoid ambient storage altogether by binding coordinates directly to `Tempo` instances:
@@ -136,10 +136,11 @@ const t = new Tempo('2026-06-21', { geo: coords });
 
 ## Security & Immutability
 
-Is `Tempo.geo` locked down? **Yes.**
-- The `Tempo.geo` object is frozen via `Object.freeze()`.
-- The `geo` property on `Tempo` is defined with `writable: false`, `configurable: false`, and `enumerable: false`.
-- Any attempt to reassign `Tempo.geo = ...` or mutate `Tempo.geo.lookup = ...` will throw a `TypeError` in strict mode.
+In keeping with Tempo's strict immutability principles, the `Tempo.geo` namespace is fully locked down:
+
+- **Deeply Frozen**: The entire `Tempo.geo` namespace and its attached utilities are recursively frozen.
+- **Tamper-Proof**: Protected against modification, deletion, or monkey-patching. Any attempt to reassign `Tempo.geo` or mutate its methods (e.g. `Tempo.geo.lookup = ...`) will throw a `TypeError` in strict mode.
+- **Pure Instance Operations**: Instance methods like `t.geoLocate()` always return a new, enriched `Tempo` instance, preserving the immutability of the original instance.
 
 ---
 

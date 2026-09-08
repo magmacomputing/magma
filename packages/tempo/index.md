@@ -57,7 +57,7 @@ const features = [
   { title: 'Tempo AI Engine', details: 'Natural language date parsing, multi-provider dispatch (OpenAI, Gemini, Groq, Mistral), and slot resolution.', icon: '🤖' },
   { title: 'Tempo.ticker()', details: 'Community Plugin: State-of-the-art timing engine with AsyncGenerator support and native Daylight Saving Time resolution.', icon: '⏱️' },
   { title: 'Modular Plugins', details: 'Extend Tempo with specialized plugins for Snapping, High-Throughput Batching, and AI dispatch.', icon: '🔌' },
-  { title: 'Temporal Inside', details: 'Built on the ECMAScript Temporal API. Inherit the reliability of the modern standard.', icon: '🏗️' },
+  { title: 'Humanizing Temporal', details: 'Transforming low-level Temporal complexity into intuitive, expressive APIs—anchored in strict ISO 8601 standards.', icon: '🧭' },
   { title: 'Cycle Persistence', details: 'Shift by semantic terms while preserving your relative day-of-period offset.', icon: '🔄' },
   { title: 'Business & Financial', details: 'Native support for fiscal quarters, zodiac cycles, and meteorological seasons for finance and analytics.', icon: '📈' }
 ]

@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Generic Bounded LRU & TTL Cache Engine (`BoundedCache`)**:
-  - Implemented high-performance `BoundedCache<K, V>` in `#library/common/runtime/cache.class.js` supporting configurable capacity constraints (`maxSize`, default 100) and time-to-live expiration (`ttl`, default `Infinity`).
+  - Implemented high-performance `BoundedCache<K, V>` in `#library/common/runtime/cache.class.js` supporting configurable capacity constraints (`maxSize`, default 1000) and time-to-live expiration (`ttl`, default `Infinity`).
   - Added per-entry TTL override support in `set(key, val, ttl?)` with precomputed absolute expiration deadlines (`expiresAt = Date.now() + ttl`).
   - Implemented $O(1)$ fast-path expiration checks: bypasses `#expires` map checks and eliminates clock reads (`Date.now()`) when `ttl === Infinity` or `#expires.size === 0`.
   - Added bulk clear (`clear()`), lazy eviction (`evictExpired()`), iteration (`keys()`, `values()`, `entries()`, `forEach()`, `[Symbol.iterator]()`), and size inspection (`size`).
@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Wired `geoLookup()` to automatically cache resolved geographic coordinates in ambient storage with a 24-hour TTL (`86,400,000 ms`).
   - Added `{ refresh: true }` option to `geoLookup()` to bypass cached results and force fresh network resolution.
   - Added `stashGeo(coords, ttl?, keyOrOpts?)`, `clearStashedGeo(keyOrOpts?)`, and `getStashedGeo(keyOrOpts?)` helpers.
-  - Implemented multi-tenant and IP cache key partitioning (`resolveCacheKey` scoping to `_map_:<key>` or `_map_:<ip>`), preventing tenants from trampling shared geolocation coordinates.
+  - Implemented multi-tenant and IP cache key partitioning (`resolveCacheKey` scoping to `_magma_geo_:<key>` or `_magma_geo_:<ip>`), preventing tenants from trampling shared geolocation coordinates.
 
 ## [4.1.0] - 2026-09-06
 

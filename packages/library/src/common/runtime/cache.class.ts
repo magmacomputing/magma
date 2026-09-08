@@ -69,7 +69,7 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	/**
 	 * Retrieves a value from the cache by key. Evaluates TTL expiration via `#expires`
 	 * specifically for the requested key, and updates LRU ordering by deleting and re-inserting
-	 * the key in the underlying Map. Does not sweep or evict other expired entries.
+	 * the key in the underlying Map. Leaves the expiration deadline unchanged.
 	 *
 	 * @param key - The cache key to retrieve
 	 * @returns The cached value, or undefined if not found or expired
@@ -83,14 +83,6 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 		const val = super.get(key)!;
 		super.delete(key);
 		super.set(key, val);
-
-		const deadline = this.#expires.get(key);
-		if (deadline !== undefined) {
-			const effectiveTtl = this.#ttls.get(key) ?? this.ttl;
-			if (effectiveTtl !== Infinity) {
-				this.#expires.set(key, Date.now() + effectiveTtl);
-			}
-		}
 		return val;
 	}
 
@@ -129,7 +121,9 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	}
 
 	/**
-	 * Sets a key-value pair in the cache, updating its expiration deadline and enforcing LRU eviction.
+	 * Sets a key-value pair in the cache, enforcing LRU eviction.
+	 * If finite-TTL is configured, entries retain their original absolute expiration deadline
+	 * unless an explicit `ttl` override is passed.
 	 * If the cache exceeds maxSize, the oldest non-static entry is removed.
 	 *
 	 * @param key - The cache key to set
@@ -140,19 +134,27 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	override set(key: K, value: V, ttl?: number): this {
 		this.evictExpired();
 
+		const existingDeadline = this.#expires.get(key);
+
 		if (super.has(key)) super.delete(key);
 
 		super.set(key, value);
 		this.#staticKeys.delete(key);
 
-		const effectiveTtl = ttl ?? this.ttl;
-		if (effectiveTtl !== Infinity) {
-			this.#expires.set(key, Date.now() + effectiveTtl);
-			if (isDefined(ttl)) {
+		if (isDefined(ttl)) {
+			if (ttl !== Infinity) {
+				this.#expires.set(key, Date.now() + ttl);
 				this.#ttls.set(key, ttl);
 			} else {
+				this.#expires.delete(key);
 				this.#ttls.delete(key);
 			}
+		} else if (existingDeadline !== undefined) {
+			// Retain existing absolute expiration deadline during cache updates
+			this.#expires.set(key, existingDeadline);
+		} else if (this.ttl !== Infinity) {
+			this.#expires.set(key, Date.now() + this.ttl);
+			this.#ttls.delete(key);
 		} else {
 			this.#expires.delete(key);
 			this.#ttls.delete(key);
