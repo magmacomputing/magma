@@ -36,9 +36,8 @@ export class BatchOrchestrator {
 		if (epochs.length === 0) return [];
 
 		if (options.threads !== undefined) {
-			if (!Number.isInteger(options.threads) || options.threads <= 0) {
+			if (!Number.isInteger(options.threads) || options.threads <= 0)
 				throw new Error("options.threads must be a positive integer");
-			}
 		}
 
 		const threadCount = options.threads ?? os.cpus().length;
@@ -82,6 +81,10 @@ export class BatchOrchestrator {
 		const workers: Promise<void>[] = [];
 		const actualThreads = Math.min(threadCount, Math.ceil(epochs.length / chunkSize));
 
+		const execArgv = (process.execArgv || []).filter(
+			arg => !arg.startsWith('--input-type') && !arg.startsWith('--eval') && !arg.startsWith('-e') && !arg.startsWith('--print') && !arg.startsWith('-p')
+		);
+
 		for (let i = 0; i < actualThreads; i++) {
 			const startIdx = i * chunkSize;
 			const endIdx = Math.min((i + 1) * chunkSize, epochs.length);
@@ -94,8 +97,9 @@ export class BatchOrchestrator {
 						outputBuffer,
 						startIdx,
 						endIdx,
-						operation
-					}
+						operation,
+					},
+					execArgv,
 				});
 				worker.on('message', (msg: any) => {
 					if (msg.status === 'done') resolve();
@@ -135,6 +139,9 @@ export class BatchOrchestrator {
 	private static async _transformWithPostMessage(epochs: number[], operation: string, threadCount: number, chunkSize: number, options: BatchOptions): Promise<any[]> {
 		const workers: Promise<any[]>[] = [];
 		const actualThreads = Math.min(threadCount, Math.ceil(epochs.length / chunkSize));
+		const execArgv = (process.execArgv || []).filter(
+			arg => !arg.startsWith('--input-type') && !arg.startsWith('--eval') && !arg.startsWith('-e') && !arg.startsWith('--print') && !arg.startsWith('-p')
+		);
 
 		for (let i = 0; i < actualThreads; i++) {
 			const startIdx = i * chunkSize;
@@ -146,8 +153,9 @@ export class BatchOrchestrator {
 					workerData: {
 						mode: 'postMessage',
 						chunk,
-						operation
-					}
+						operation,
+					},
+					execArgv,
 				});
 				worker.on('message', (msg: any) => {
 					if (msg.status === 'done') resolve(msg.result);
