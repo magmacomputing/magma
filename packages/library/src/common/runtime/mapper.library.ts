@@ -1,5 +1,6 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
 import { isNullish, isNumber, isString, isSafeKey } from '#library/assertion.library.js';
+import { getStorage } from '#library/storage.library.js';
 
 export interface GeoLookupResult {
 	lat?: number;
@@ -120,9 +121,39 @@ export const getStashedGeo = (): GeoConfig | undefined => {
 				const raw = localStorage.getItem('_map_');
 				if (raw) {
 					const parsed = JSON.parse(raw);
-					const coords = parsed?.geolocation?.coords;
-					if (isNumber(coords?.latitude) && isNumber(coords?.longitude)) {
-						return { latitude: coords.latitude, longitude: coords.longitude };
+					const coords = parsed?.geolocation?.coords ?? parsed?.coords ?? parsed;
+					const lat = coords?.latitude ?? coords?.lat;
+					const lng = coords?.longitude ?? coords?.lng ?? coords?.lon ?? coords?.long;
+					if (isNumber(lat) && isNumber(lng)) {
+						return { latitude: lat, longitude: lng };
+					}
+				}
+			}
+		} catch {
+			// ignore storage access errors
+		}
+	} else if (type === CONTEXT.NodeJS || type === CONTEXT.Deno) {
+		try {
+			const raw = getStorage<any>('_map_') ?? getStorage<any>('TEMPO_GEO');
+			if (raw) {
+				if (typeof raw === 'string' && raw.includes(',')) {
+					const parts = raw.split(',').map(s => parseFloat(s.trim()));
+					if (parts.length >= 2 && isNumber(parts[0]) && isNumber(parts[1])) {
+						return { latitude: parts[0], longitude: parts[1] };
+					}
+				}
+				if (typeof raw === 'object') {
+					const coords = raw.geolocation?.coords ?? raw.coords ?? raw;
+					const lat = coords?.latitude ?? coords?.lat;
+					const lng = coords?.longitude ?? coords?.lng ?? coords?.lon ?? coords?.long;
+					if (isNumber(lat) && isNumber(lng)) {
+						const result: GeoConfig = { latitude: lat, longitude: lng };
+						const elevation = raw.elevation ?? coords.elevation;
+						if (isNumber(elevation)) result.elevation = elevation;
+						if (raw.sphere === 'north' || raw.sphere === 'south') result.sphere = raw.sphere;
+						if (isString(raw.country)) result.country = raw.country;
+						if (isString(raw.city)) result.city = raw.city;
+						return result;
 					}
 				}
 			}

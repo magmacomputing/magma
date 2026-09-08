@@ -1,4 +1,5 @@
-import { coerceGeo, geoLookup, resolveGeoCoordinates } from '../../../src/common/runtime/mapper.library.js';
+import { coerceGeo, geoLookup, resolveGeoCoordinates, getStashedGeo } from '../../../src/common/runtime/mapper.library.js';
+import { setStorage } from '#library/storage.library.js';
 
 describe('common/runtime/mapper.library', () => {
 	afterEach(() => {
@@ -61,8 +62,59 @@ describe('common/runtime/mapper.library', () => {
 			expect(result.lat).toBe(-33.8688);
 			expect(result.lng).toBe(151.2093);
 			expect(result.city).toBe('Sydney');
+			expect(mockFetch).toHaveBeenCalledTimes(1);
 		} finally {
 			vi.unstubAllGlobals();
+		}
+	});
+
+	it('getStashedGeo in Node.js returns undefined by default without developer configuration', () => {
+		expect(getStashedGeo()).toBeUndefined();
+	});
+
+	it('getStashedGeo in Node.js discovers coordinates set explicitly via setStorage', () => {
+		try {
+			setStorage('_map_', {
+				geolocation: { coords: { latitude: -33.8688, longitude: 151.2093 } },
+				city: 'Sydney',
+			});
+
+			const stashed = getStashedGeo();
+			expect(stashed).toBeDefined();
+			expect(stashed?.latitude).toBe(-33.8688);
+			expect(stashed?.longitude).toBe(151.2093);
+			expect(stashed?.city).toBe('Sydney');
+		} finally {
+			setStorage('_map_', undefined);
+		}
+	});
+
+	it('getStashedGeo in Node.js discovers coordinates pre-seeded in process.env.TEMPO_GEO', () => {
+		try {
+			setStorage('_map_', undefined);
+			process.env.TEMPO_GEO = '{"latitude": 37.7749, "longitude": -122.4194, "city": "San Francisco"}';
+
+			const stashed = getStashedGeo();
+			expect(stashed).toBeDefined();
+			expect(stashed?.latitude).toBe(37.7749);
+			expect(stashed?.longitude).toBe(-122.4194);
+			expect(stashed?.city).toBe('San Francisco');
+		} finally {
+			delete process.env.TEMPO_GEO;
+		}
+	});
+
+	it('getStashedGeo in Node.js supports comma-separated string coordinates in TEMPO_GEO', () => {
+		try {
+			setStorage('_map_', undefined);
+			process.env.TEMPO_GEO = '51.5074, -0.1278';
+
+			const stashed = getStashedGeo();
+			expect(stashed).toBeDefined();
+			expect(stashed?.latitude).toBe(51.5074);
+			expect(stashed?.longitude).toBe(-0.1278);
+		} finally {
+			delete process.env.TEMPO_GEO;
 		}
 	});
 });

@@ -21,10 +21,65 @@ export interface BatchOptions {
 	rehydrate?: boolean;
 }
 
+const ALLOWED_FLAGS_WITH_VALUE = new Set([
+	'--import',
+	'--loader',
+	'--experimental-loader',
+	'-r',
+	'--require',
+]);
+
+const ALLOWED_STANDALONE_FLAGS = new Set([
+	'--experimental-vm-modules',
+	'--experimental-temporal',
+	'--experimental-specifier-resolution',
+	'--inspect',
+	'--inspect-brk',
+	'--trace-warnings',
+	'--no-warnings',
+	'--trace-deprecation',
+	'--no-deprecation',
+]);
+
 /**
  * Orchestrates the parallel execution of a mutation or formatting operation across an array of epochs.
  */
 export class BatchOrchestrator {
+	/**
+	 * Sanitizes process.execArgv using a positive AllowList of worker-safe options (loaders, polyfills, inspection).
+	 * Any V8 memory/optimization flags or process-level flags are safely dropped.
+	 *
+	 * @param argv - Array of Node CLI options (defaults to process.execArgv)
+	 * @returns Sanitized array of CLI options safe for worker_threads
+	 * @internal
+	 */
+	static sanitizeExecArgv(argv: string[] = process.execArgv || []): string[] {
+		const result: string[] = [];
+
+		for (let i = 0; i < argv.length; i++) {
+			const arg = argv[i];
+			const eqIdx = arg.indexOf('=');
+			const hasEq = eqIdx !== -1;
+			const rawFlag = hasEq ? arg.slice(0, eqIdx) : arg;
+			const flag = rawFlag.replace(/_/g, '-');
+
+			if (ALLOWED_FLAGS_WITH_VALUE.has(flag)) {
+				if (hasEq) {
+					result.push(arg);
+				} else if (i + 1 < argv.length) {
+					result.push(arg, argv[++i]);
+				}
+				continue;
+			}
+
+			if (ALLOWED_STANDALONE_FLAGS.has(flag)) {
+				result.push(arg);
+				continue;
+			}
+		}
+
+		return result;
+	}
 	/**
 	 * Transforms an array of epochs using a worker pool.
 	 * @param epochs Array of raw millisecond epoch numbers.
@@ -81,9 +136,8 @@ export class BatchOrchestrator {
 		const workers: Promise<void>[] = [];
 		const actualThreads = Math.min(threadCount, Math.ceil(epochs.length / chunkSize));
 
-		const execArgv = (process.execArgv || []).filter(
-			arg => !arg.startsWith('--input-type') && !arg.startsWith('--eval') && !arg.startsWith('-e') && !arg.startsWith('--print') && !arg.startsWith('-p')
-		);
+		const sanitized = this.sanitizeExecArgv();
+		const execArgv = sanitized.length > 0 ? sanitized : undefined;
 
 		for (let i = 0; i < actualThreads; i++) {
 			const startIdx = i * chunkSize;
@@ -99,7 +153,7 @@ export class BatchOrchestrator {
 						endIdx,
 						operation,
 					},
-					execArgv,
+					...(execArgv ? { execArgv } : {}),
 				});
 				worker.on('message', (msg: any) => {
 					if (msg.status === 'done') resolve();
@@ -139,9 +193,8 @@ export class BatchOrchestrator {
 	private static async _transformWithPostMessage(epochs: number[], operation: string, threadCount: number, chunkSize: number, options: BatchOptions): Promise<any[]> {
 		const workers: Promise<any[]>[] = [];
 		const actualThreads = Math.min(threadCount, Math.ceil(epochs.length / chunkSize));
-		const execArgv = (process.execArgv || []).filter(
-			arg => !arg.startsWith('--input-type') && !arg.startsWith('--eval') && !arg.startsWith('-e') && !arg.startsWith('--print') && !arg.startsWith('-p')
-		);
+		const sanitized = this.sanitizeExecArgv();
+		const execArgv = sanitized.length > 0 ? sanitized : undefined;
 
 		for (let i = 0; i < actualThreads; i++) {
 			const startIdx = i * chunkSize;
@@ -155,7 +208,7 @@ export class BatchOrchestrator {
 						chunk,
 						operation,
 					},
-					execArgv,
+					...(execArgv ? { execArgv } : {}),
 				});
 				worker.on('message', (msg: any) => {
 					if (msg.status === 'done') resolve(msg.result);
