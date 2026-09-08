@@ -14,6 +14,12 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	maxSize: number;
 	ttl: number;
 
+	/**
+	 * Creates a bounded cache with configurable capacity and entry lifetime.
+	 *
+	 * @param maxSize - Maximum number of non-static entries retained
+	 * @param ttl - Default time-to-live for entries in milliseconds
+	 */
 	constructor(maxSize = 1000, ttl = 24 * 60 * 60 * 1000) {
 		super();
 		this.maxSize = maxSize;
@@ -27,6 +33,12 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 		return true;
 	}
 
+	/**
+	 * Determines whether a cache entry has passed its expiration deadline.
+	 *
+	 * @param key - Cache key to inspect
+	 * @returns True when the entry has expired, otherwise false
+	 */
 	#isExpired(key: K): boolean {
 		const deadline = this.#expires.get(key);
 		if (deadline === undefined) return false;
