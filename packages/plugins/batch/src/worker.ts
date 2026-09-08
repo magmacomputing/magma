@@ -1,6 +1,13 @@
 import { workerData, parentPort } from 'node:worker_threads';
 import { Tempo } from '@magmacomputing/tempo';
 
+/**
+ * Applies a duration mutation, including supported shorthand units, to a Tempo instance.
+ *
+ * @param t - Tempo instance to mutate
+ * @param op - Mutation value or shorthand duration string
+ * @returns The mutated Tempo instance
+ */
 function applyMutation(t: any, op: any) {
 	if (typeof op === 'string') {
 		const match = op.trim().match(/^([+-]?\d+)\s*([a-zA-Z]+)$/);
@@ -25,6 +32,9 @@ function applyMutation(t: any, op: any) {
 	return t.add(op);
 }
 
+/**
+ * Processes the current worker payload and posts either its result or an error to the parent thread.
+ */
 async function run() {
 	if (!parentPort) return;
 
