@@ -82,6 +82,27 @@ describe('Astro Pure Functions (tempo-fns)', () => {
 		expect(nightRes.index).toBe(1); // 1-based (1 = night)
 	});
 
+	it('factors elevation into apparent sunrise/sunset and daylight duration via horizon dip', () => {
+		const date = new Date('2026-06-21T12:00:00Z');
+		// Sea level in Denver (lat 39.7392, lng -104.9903, elevation 0m)
+		const seaLevel = getSunriseSunset(date, { lat: 39.7392, lng: -104.9903, elevation: 0 });
+		// Actual Mile High City elevation (1600m above sea level)
+		const highAltitude = getSunriseSunset(date, { lat: 39.7392, lng: -104.9903, elevation: 1600 });
+
+		// Higher elevation causes horizon dip: sunrise is earlier, sunset is later
+		expect(highAltitude.sunriseMs).toBeLessThan(seaLevel.sunriseMs);
+		expect(highAltitude.sunsetMs).toBeGreaterThan(seaLevel.sunsetMs);
+		expect(highAltitude.daylightDurationMs).toBeGreaterThan(seaLevel.daylightDurationMs);
+		// Solar noon remains unchanged by elevation
+		expect(highAltitude.solarNoonMs).toBe(seaLevel.solarNoonMs);
+
+		// Difference in sunrise/sunset is approx 8.5 minutes for 1600m at latitude ~40°N
+		const diffMin = (seaLevel.sunriseMs - highAltitude.sunriseMs) / 60000;
+		expect(diffMin).toBeGreaterThan(7);
+		expect(diffMin).toBeLessThan(10);
+		expect(highAltitude.elevation).toBe(1600);
+	});
+
 	it('calculates Western Tropical Zodiac sign', () => {
 		expect(getZodiacSign('2026-03-25')).toBe('Aries');
 		expect(getZodiacSign('2026-07-25')).toBe('Leo');

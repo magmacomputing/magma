@@ -427,6 +427,13 @@ export interface SolarOptions {
 	long?: number;
 	lng?: number;
 	lon?: number;
+	elevation?: number;
+	geo?: {
+		latitude?: number;
+		longitude?: number;
+		elevation?: number;
+		[key: string]: any;
+	};
 }
 
 export interface SolarTwilightWindow {
@@ -437,6 +444,7 @@ export interface SolarTwilightWindow {
 export interface SunriseSunsetResult {
 	latitude: number;
 	longitude: number;
+	elevation?: number;
 	sunriseMs: number;
 	sunsetMs: number;
 	solarNoonMs: number;
@@ -451,39 +459,27 @@ export interface SunriseSunsetResult {
 }
 
 /**
- * Resolves latitude and longitude from positional arguments or a coordinate options object.
+ * Resolves latitude, longitude, and elevation from positional arguments or a coordinate options object.
  *
  * @param latOrOptions - A latitude value or options containing coordinate fields
  * @param lngInput - The longitude used when `latOrOptions` is a numeric latitude
- * @returns An object containing the resolved `lat` and `lng` values
+ * @returns An object containing the resolved `lat`, `lng`, and `elevation` values
  */
-/**
- * Resolves latitude and longitude from positional arguments or a coordinate options object.
- *
- * @param latOrOptions - A latitude value or options containing coordinate fields
- * @param lngInput - The longitude used when `latOrOptions` is a numeric latitude
- * @returns An object containing the resolved `lat` and `lng` values
- */
-function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 0): { lat: number; lng: number } {
+function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 0): { lat: number; lng: number; elevation: number } {
 	if (typeof latOrOptions === 'number')
-		return { lat: latOrOptions, lng: lngInput };
+		return { lat: latOrOptions, lng: lngInput, elevation: 0 };
 
 	if (latOrOptions && typeof latOrOptions === 'object') {
 		const geo = (latOrOptions as any).geo ?? latOrOptions;
 		const lat = geo.latitude ?? geo.lat ?? (latOrOptions as any).latitude ?? (latOrOptions as any).lat ?? 0;
 		const lng = geo.longitude ?? geo.lng ?? geo.lon ?? geo.long ?? (latOrOptions as any).longitude ?? (latOrOptions as any).lng ?? (latOrOptions as any).lon ?? (latOrOptions as any).long ?? 0;
-		return { lat, lng };
+		const rawElevation = geo.elevation ?? (latOrOptions as any).elevation;
+		const elevation = typeof rawElevation === 'number' && !isNaN(rawElevation) ? rawElevation : 0;
+		return { lat, lng, elevation };
 	}
-	return { lat: 0, lng: 0 };
+	return { lat: 0, lng: 0, elevation: 0 };
 }
 
-/**
- * Determines the UTC start of the calendar day at a specified longitude.
- *
- * @param epochMs - The input timestamp in milliseconds since the Unix epoch
- * @param lng - The longitude in degrees used to determine the local date
- * @returns The UTC start timestamp, local date, and longitude-adjusted timestamp
- */
 /**
  * Determines the UTC start of the calendar day at a specified longitude.
  *
@@ -517,10 +513,11 @@ export function getSunriseSunset(
 			? new Date(dateInput).getTime()
 			: dateInput.getTime();
 
-	const { lat, lng } = resolveCoordinates(latOrOptions, lonInput);
+	const { lat, lng, elevation } = resolveCoordinates(latOrOptions, lonInput);
 	const { startOfDayMs, localDate, localMs } = getStartOfLocalDayMs(epochMs, lng);
 
-	// Solar calculations using standard zenith (90.833°)
+	// Solar calculations using standard zenith (90.833°) adjusted for atmospheric horizon dip
+	const dipDeg = elevation > 0 ? 0.0347 * Math.sqrt(elevation) : 0;
 	const dayOfYear = Math.floor((localMs - Date.UTC(localDate.getUTCFullYear(), 0, 0)) / 86400000);
 	const gamma = (2 * Math.PI / 365) * (dayOfYear - 1);
 
@@ -543,7 +540,7 @@ export function getSunriseSunset(
 		return Math.acos(cosHA) * (180 / Math.PI);
 	};
 
-	const haDeg = calcHaDeg(90.833);
+	const haDeg = calcHaDeg(90.833 + dipDeg);
 	const haMin = haDeg * 4;
 	const sunriseMs = startOfDayMs + ((solarNoonMin - haMin) * 60000);
 	const sunsetMs = startOfDayMs + ((solarNoonMin + haMin) * 60000);
@@ -589,6 +586,7 @@ export function getSunriseSunset(
 	return {
 		latitude: lat,
 		longitude: lng,
+		...(elevation > 0 ? { elevation } : {}),
 		sunriseMs,
 		sunsetMs,
 		solarNoonMs,

@@ -7,9 +7,16 @@ import {
 	getStashedGeo,
 	stashGeo,
 	clearStashedGeo,
+	GEO_PROPERTIES,
+	haversineDistance,
+	solarOffset,
 	type GeoLookupResult,
+	type ResolvedCoordinates,
 	type GeoConfig,
 	type CoordinateInput,
+	type DistanceUnit,
+	type SolarOffsetOptions,
+	type SolarOffsetUnit,
 } from '@magmacomputing/library/runtime/mapper.library.js';
 import {
 	serverGeoLocation,
@@ -21,6 +28,7 @@ import {
 import {
 	geoLocation,
 } from '@magmacomputing/library/browser/mapper.library.js';
+import { isString, isNumber, isEmpty, isSafeKey } from '@magmacomputing/library/primitives/assertion.library.js';
 
 export {
 	geoLookup,
@@ -29,6 +37,9 @@ export {
 	getStashedGeo,
 	stashGeo,
 	clearStashedGeo,
+	GEO_PROPERTIES,
+	haversineDistance,
+	solarOffset,
 	serverGeoLocation,
 	serverGeoCoords,
 	serverMapHemisphere,
@@ -37,8 +48,12 @@ export {
 
 export type {
 	GeoLookupResult,
+	ResolvedCoordinates,
 	GeoConfig,
 	CoordinateInput,
+	DistanceUnit,
+	SolarOffsetOptions,
+	SolarOffsetUnit,
 	ServerMapOpts,
 	ServerGeolocationResult,
 };
@@ -53,6 +68,10 @@ export interface TempoGeoNamespace {
 	readonly resolve: typeof resolveGeoCoordinates;
 	/** Coerces coordinates and configurations into a canonical GeoConfig object */
 	readonly coerce: typeof coerceGeo;
+	/** Calculates Great-Circle distance between two coordinates using Haversine formula */
+	readonly distance: typeof haversineDistance;
+	/** Calculates Natural Solar Time Offset between civil clock time and actual solar noon */
+	readonly solarOffset: typeof solarOffset;
 	/** Explicitly stashes coordinates into storage with optional TTL (default 24h) and multi-tenant partitioning */
 	readonly stash: typeof stashGeo;
 	/** Clears stashed coordinates from storage */
@@ -77,6 +96,8 @@ export const GeoPlugin: TempoPlugin = definePlugin({
 			lookup: geoLookup,
 			resolve: resolveGeoCoordinates,
 			coerce: coerceGeo,
+			distance: haversineDistance,
+			solarOffset,
 			stash: stashGeo,
 			clear: clearStashedGeo,
 			get: getStashedGeo,
@@ -85,7 +106,7 @@ export const GeoPlugin: TempoPlugin = definePlugin({
 			get current(): GeoConfig | undefined {
 				return getStashedGeo() ?? TempoClass.config?.geo;
 			},
-		}
+		};
 
 		Object.defineProperty(TempoClass, 'geo', {
 			value: deepFreeze(geoNamespace),
@@ -96,19 +117,66 @@ export const GeoPlugin: TempoPlugin = definePlugin({
 
 		/**
 		 * Asynchronously resolves coordinates for the current instance (or uses existing coordinates),
-		 * returning a new Tempo instance with the resolved `geo` configuration attached.
+		 * returning a new Tempo instance with full context synchronization.
+		 * 
+		 * - setTimezone defaults to true: automatically shifts instance wall-clock time to the resolved location.
+		 * - Option B (Physical Reality): Fresh location metadata updates geographic fields (lat, lng, country, city, sphere, timezone).
+		 * - Custom non-geographic metadata (e.g. { venue: 'HQ', officeId: 42 }) is preserved.
+		 * - Option C (Call-Site Overrides): Explicit parameters passed to .geoLocate(opts) take absolute precedence.
 		 */
 		TempoClass.prototype.geoLocate = async function (this: Tempo, opts?: Record<string, any>): Promise<Tempo> {
+			const setTimezone = opts?.setTimezone !== false;
 			const coords = await resolveGeoCoordinates(this, opts);
 			if (coords) {
 				const existingGeo = (typeof this.config.geo === 'object' && this.config.geo !== null) ? this.config.geo : {};
-				return new TempoClass(this, {
-					...this.config,
-					geo: {
-						...existingGeo,
-						latitude: coords.lat,
-						longitude: coords.lng,
-					},
+
+				// 1. Separate custom non-geo keys from existingGeo to preserve them (Option B)
+				const customKeys: Record<string, any> = {};
+				for (const key of Object.keys(existingGeo)) {
+					if (isSafeKey(key) && !GEO_PROPERTIES.includes(key as any))
+						customKeys[key] = (existingGeo as any)[key];
+				}
+
+				// 2. Extract call-site overrides (Option C)
+				const callSiteGeo = coerceGeo(opts) ?? {};
+				if (opts && typeof opts === 'object') {
+					for (const key of Object.keys(opts)) {
+						if (isSafeKey(key) && !['setTimezone', 'refresh', 'ttl', 'endpoint', 'timeout', 'catch', 'debug', 'geo'].includes(key)) {
+							if (!GEO_PROPERTIES.includes(key as any))
+								customKeys[key] = (opts as any)[key];
+						}
+					}
+				}
+
+				// Preserve existing elevation if network query does not provide elevation data
+				const preservedElevation = isNumber((coords as any)?.elevation)
+					? (coords as any).elevation
+					: (isNumber(existingGeo.elevation) ? existingGeo.elevation : undefined);
+
+				// 3. Compose final merged geo object: custom keys + physical reality (Option B) + call-site overrides (Option C)
+				const mergedGeo: GeoConfig = {
+					...customKeys,
+					...coords,
+					...(isNumber(preservedElevation) ? { elevation: preservedElevation } : {}),
+					...callSiteGeo,
+				};
+
+				// Clean up coordinates and infer sphere
+				if (isNumber(mergedGeo.latitude)) mergedGeo.latitude = Math.round(mergedGeo.latitude * 1000) / 1000;
+				if (isNumber(mergedGeo.longitude)) mergedGeo.longitude = Math.round(mergedGeo.longitude * 1000) / 1000;
+				if (!mergedGeo.sphere && isNumber(mergedGeo.latitude)) {
+					mergedGeo.sphere = mergedGeo.latitude > 0.001 ? 'north' : (mergedGeo.latitude < -0.001 ? 'south' : 'equator');
+				}
+
+				let instance: Tempo = this;
+				const targetTz = mergedGeo.timezone;
+				if (setTimezone && isString(targetTz) && !isEmpty(targetTz))
+					instance = this.set({ timeZone: targetTz });
+
+				return new TempoClass(instance, {
+					...instance.config,
+					geo: deepFreeze(mergedGeo),
+					...(mergedGeo.sphere ? { sphere: mergedGeo.sphere } : {}),
 				});
 			}
 			return this;
@@ -117,8 +185,22 @@ export const GeoPlugin: TempoPlugin = definePlugin({
 		/**
 		 * Resolves coordinates for this instance via explicit coordinates or automatic IP/hardware lookup.
 		 */
-		TempoClass.prototype.geoLookup = async function (this: Tempo, opts?: Record<string, any>): Promise<{ lat: number; lng: number } | null> {
+		TempoClass.prototype.geoLookup = async function (this: Tempo, opts?: Record<string, any>): Promise<ResolvedCoordinates | null> {
 			return resolveGeoCoordinates(this, opts);
+		};
+
+		/**
+		 * Calculates Great-Circle distance from this instance's coordinates to target coordinates using Haversine formula.
+		 */
+		TempoClass.prototype.geoDistance = function (this: Tempo, other: any, unit?: DistanceUnit): number {
+			return haversineDistance(this, other, unit);
+		};
+
+		/**
+		 * Calculates Natural Solar Time Offset between civil clock time and actual solar noon for this instance.
+		 */
+		TempoClass.prototype.geoSolarOffset = function (this: Tempo, options?: SolarOffsetOptions): number {
+			return solarOffset(this, options);
 		};
 	},
 });
@@ -135,7 +217,15 @@ declare module '@magmacomputing/tempo' {
 		/**
 		 * Resolves coordinates for this instance via explicit coordinates or automatic IP/hardware lookup.
 		 */
-		geoLookup(opts?: Record<string, any>): Promise<{ lat: number; lng: number } | null>;
+		geoLookup(opts?: Record<string, any>): Promise<ResolvedCoordinates | null>;
+		/**
+		 * Calculates Great-Circle distance from this instance's coordinates to target coordinates using Haversine formula.
+		 */
+		geoDistance(other: any, unit?: DistanceUnit): number;
+		/**
+		 * Calculates Natural Solar Time Offset between civil clock time and actual solar noon for this instance.
+		 */
+		geoSolarOffset(options?: SolarOffsetOptions): number;
 	}
 
 	namespace Tempo {

@@ -10,7 +10,7 @@ export const SEASON = enumify({
 	/** Spring season */ Spring: 'spring',
 	/** Summer season */ Summer: 'summer',
 	/** Autumn season */ Autumn: 'autumn',
-	/** Winter season */ Winter: 'winter'
+	/** Winter season */ Winter: 'winter',
 }, false);
 export type SEASON = ValueOf<typeof SEASON>
 
@@ -19,7 +19,8 @@ export const COMPASS = looseIndex<string, string>()(enumify({
 	/** North direction */ North: 'north',
 	/** South direction */ South: 'south',
 	/** East direction */ East: 'east',
-	/** West direction */ West: 'west'
+	/** West direction */ West: 'west',
+	/** Equator zone */ Equator: 'equator',
 }, false));
 export type COMPASS = ValueOf<typeof COMPASS>
 
@@ -41,7 +42,7 @@ export const DEFAULTS = {
 		/** number value 7 */ seven: 7,
 		/** number value 8 */ eight: 8,
 		/** number value 9 */ nine: 9,
-		/** number value 10 */ ten: 10
+		/** number value 10 */ ten: 10,
 	},
 	DURATION: {
 		/** approx number of seconds in a year */								year: 31_536_000,

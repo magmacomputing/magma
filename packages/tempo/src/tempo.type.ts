@@ -240,8 +240,9 @@ type _CoreToken = keyof TempoFormatTokens;
  * - a core token alone: `{yyyy}`
  * - a core token with one or more modifiers: `{dd:ord}`, `{tz:zzzzz}`
  * - a term-plugin key (always accepted, cannot be statically known): `{#season.key}`
+ * - a dynamic namespace or property path token: `{geo.city}`, `{finance.taxYear}`, `{term.quarter}`
  */
-type _ValidToken = _CoreToken | `${_CoreToken}:${string}` | `#${string}` | `term.${string}`;
+type _ValidToken = _CoreToken | `${_CoreToken}:${string}` | `#${string}` | `${string}.${string}`;
 
 /**
  * Compile-time validator for Tempo format strings.

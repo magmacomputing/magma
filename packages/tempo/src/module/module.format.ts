@@ -2,7 +2,7 @@ import '#library/temporal.polyfill.js';
 import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix } from '#library/number.library.js';
-import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction } from '#library/assertion.library.js';
+import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish } from '#library/assertion.library.js';
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
@@ -32,6 +32,32 @@ declare module '../tempo.class.js' {
 		): string;
 		/** applies a format to the instance (zero-argument — returns a pre-built format proxy). */	format(): string;
 	}
+}
+
+/**
+ * Resolves dot-delimited namespace tokens (e.g. '{geo.city}', '{custom.tag.name}')
+ * against a Tempo instance with safety guards and graceful fallback.
+ */
+function resolveNamespaceToken(obj: unknown, token: string): string {
+	const parts = token.split('.');
+	if (!parts.every(isSafeKey)) return `{${token}}`;
+
+	const [root, ...rest] = parts;
+	let curr = (obj as any)[root];
+
+	if (isNullish(curr)) {
+		return root === 'geo' ? '' : `{${token}}`;
+	}
+
+	for (const key of rest) {
+		if (isNullish(curr)) return '';
+		curr = curr[key];
+	}
+
+	if (isNullish(curr) || isFunction(curr)) return '';
+	return isObject(curr)
+		? String(curr.label ?? curr.key ?? curr.name ?? curr.value ?? curr)
+		: String(curr);
 }
 
 /**
@@ -254,11 +280,11 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					res = customTokenFn(zdt, { modifiers, config });
 				} else if (token.startsWith('#') && isTempo(obj)) {
 					const termObj = (obj as unknown as Tempo).term[token.slice(1)];
-					if (isObject(termObj)) {
-						res = termObj.label ?? termObj.key ?? `{${token}}`;
-					} else {
-						res = termObj ?? `{${token}}`;
-					}
+					res = isObject(termObj)
+						? (termObj.label ?? termObj.key ?? `{${token}}`)
+						: (termObj ?? `{${token}}`);
+				} else if (token.includes('.') && isTempo(obj)) {
+					res = resolveNamespaceToken(obj, token);
 				} else {
 					res = `{${token}}`;
 				}

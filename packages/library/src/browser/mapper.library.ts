@@ -27,7 +27,7 @@ interface MapStore {																				// a localStorage object
 const defaults = { catch: true, debug: 0 } as MapOpts;			// default Options
 const context = getContext();																// browser / nodejs / google-apps
 const mapStore = {} as MapStore;														// static object to hold last position
-const MAP_KEY = '_magma_geo_';															// localStorage key
+const MAP_KEY = '_magma_browser_map_';											// distinct browser MapStore localStorage key
 const log = new Logger('[Mapper]');
 
 let storePromise: Promise<void | WebStore> | null = null;

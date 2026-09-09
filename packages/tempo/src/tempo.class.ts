@@ -239,7 +239,7 @@ export class Tempo {
 		const geo = coerceGeo(options) ?? shape.config.geo ?? getStashedGeo();
 		if (isDefined(geo?.sphere)) return geo.sphere as t.COMPASS;
 		if (isNumber(geo?.latitude))
-			return geo.latitude >= 0 ? 'north' : 'south';
+			return (geo.latitude > 0.001 ? 'north' : (geo.latitude < -0.001 ? 'south' : 'equator')) as t.COMPASS;
 
 		const resolvedTz = options.timeZone ?? shape.config.timeZone;
 		if (isDefined(resolvedTz) && String(resolvedTz).toLowerCase() !== 'utc') {
@@ -1664,7 +1664,7 @@ export class Tempo {
 		const res = evaluate(
 			this.#local.options && hasOwn(this.#local.options, 'sphere') ? this.#local.options.sphere : undefined,
 			geoSphere,
-			isNumber(lat) ? (lat >= 0 ? 'north' : 'south') : undefined,
+			isNumber(lat) ? (lat > 0.001 ? 'north' : (lat < -0.001 ? 'south' : 'equator')) : undefined,
 			hasInstanceTzOverride ? () => getHemisphere(String(this.tz)) : undefined,
 			hasOwn(this.#local.config, 'sphere') ? this.#local.config.sphere : undefined,
 			() => (isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' ? getHemisphere(String(this.tz)) : undefined),
@@ -1876,12 +1876,25 @@ export class Tempo {
 			setProperty(this.#local.config, 'sphere', evalSphere);
 		}
 
+		const explicitGeo = coerceGeo(options);
+		if (isDefined(explicitGeo)) {
+			setProperty(this.#local.config, 'geo', explicitGeo);
+			this.#local.userProvidedKeys.add('geo');
+			if (isUndefined(evalSphere) && isDefined(explicitGeo.sphere)) {
+				evalSphere = explicitGeo.sphere as t.COMPASS;
+				setProperty(this.#local.config, 'sphere', evalSphere);
+			}
+		} else if (classState.userProvidedKeys?.has('geo')) {
+			setProperty(this.#local.config, 'geo', classState.config.geo);
+		}
+
 		const optionsSnapshot = {
 			...options,
 			...(isDefined(explicitTz) ? { timeZone: resolvedZone } : {}),
 			...(isDefined(explicitCal) ? { calendar: String(evaluatedCal) } : {}),
 			...(isDefined(explicitLoc) ? { locale: finalLocale } : {}),
 			...(isDefined(explicitSphere) ? { sphere: explicitSphere } : {}),
+			...(isDefined(explicitGeo) ? { geo: explicitGeo } : {}),
 		};
 
 		this.#local.options = optionsSnapshot;

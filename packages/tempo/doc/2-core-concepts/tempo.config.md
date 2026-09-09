@@ -304,6 +304,39 @@ When a `Tempo` instance is constructed:
 
 ---
 
+### 4.2 Geographic Coordinates & Location Configuration (`geo`)
+
+You can configure geographic coordinates and location metadata globally or override them on individual instances:
+
+```typescript
+// Global baseline in tempo.config.ts or Tempo.init():
+Tempo.init({
+  geo: {
+    lat: -33.8688,
+    lng: 151.2093,
+    city: 'Sydney',
+    country: 'Australia'
+  }
+});
+
+// Or per-instance override:
+const t = new Tempo('now', {
+  geo: {
+    lat: 51.5074,
+    lng: -0.1278,
+    city: 'London',
+    country: 'United Kingdom'
+  }
+});
+```
+
+* **Deterministic Validation**: Latitudes outside $[-90, 90]$ and longitudes outside $[-180, 180]$ are rejected.
+* **3-Decimal Precision**: Automatically rounded (`Math.round(val * 1000) / 1000`) to guarantee cache hit consistency.
+* **Hemisphere Inference**: Automatically sets `t.sphere` (`'north'`, `'south'`, or `'equator'`).
+* **Canonical Access**: Read through `t.geo` (recursively frozen `GeoConfig`) and `t.sphere`.
+
+---
+
 ## 5. Advanced Parsing Rules
 
 Beyond basic settings, Tempo's parsing engine can be extended with custom rules and behaviors to handle specialized natural language or high-volume processing requirements.

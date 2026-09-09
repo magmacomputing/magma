@@ -324,6 +324,34 @@ Tempo.init({
 
 ---
 
+## 📍 Geographic Context & Coordinates (`geo` Option)
+
+When constructing a `Tempo` instance or calling `parse()`, you can supply a `geo` object directly in the options:
+
+```typescript
+const t = new Tempo('2026-10-24 15:30', {
+  geo: {
+    lat: -33.8688,
+    lng: 151.2093,
+    city: 'Sydney',
+    country: 'Australia'
+  }
+});
+
+console.log(t.geo?.latitude);  // -33.869 (rounded to 3 decimals)
+console.log(t.geo?.longitude); // 151.209
+console.log(t.sphere);         // 'south'
+```
+
+### Deterministic Normalization & Validation
+Tempo applies strict validation and standardization to all incoming coordinate payloads with **zero external network dependencies**:
+* **Boundary Validation**: Coordinates outside physical Earth limits ($\text{lat} \in [-90, 90]$, $\text{lng} \in [-180, 180]$) are strictly rejected.
+* **3-Decimal Precision**: Coordinates are rounded deterministically to 3 decimal places ($\approx 111\,\text{m}$ resolution at the equator), eliminating sensor noise and storage cache fragmentation.
+* **Automatic Hemisphere Inference**: The hemisphere (`'north'`, `'south'`, or `'equator'`) is automatically deduced from latitude, recognizing the $\pm 0.001^\circ$ equatorial band.
+* **Immutable Access**: Normalized geographic metadata is accessible on the instance via `t.geo` (recursively frozen `GeoConfig`) and `t.sphere`.
+
+---
+
 ## 🛡️ Performance: The Master Guard
 Tempo uses a "Scan-and-Consume" engine called the **Master Guard**. This allows it to check your input string against dozens of patterns (weekdays, months, custom events) in a single pass.
 
