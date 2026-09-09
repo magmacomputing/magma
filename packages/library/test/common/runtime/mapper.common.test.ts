@@ -66,6 +66,21 @@ describe('common/runtime/mapper.library', () => {
 		expect(({} as any).polluted).toBeUndefined();
 	});
 
+	it('coerceGeo only copies custom non-geo keys when an explicit geo object is provided', () => {
+		const directWithCustom = { latitude: 10, longitude: 20, venue: 'HQ', locale: 'en' };
+		const coercedDirect = coerceGeo(directWithCustom);
+		expect(coercedDirect?.latitude).toBe(10);
+		expect(coercedDirect?.longitude).toBe(20);
+		expect((coercedDirect as any)?.venue).toBeUndefined();
+		expect((coercedDirect as any)?.locale).toBeUndefined();
+
+		const explicitWithCustom = { geo: { latitude: 10, longitude: 20, venue: 'HQ' } };
+		const coercedExplicit = coerceGeo(explicitWithCustom);
+		expect(coercedExplicit?.latitude).toBe(10);
+		expect(coercedExplicit?.longitude).toBe(20);
+		expect((coercedExplicit as any)?.venue).toBe('HQ');
+	});
+
 	it('resolveGeoCoordinates falls back to getStashedGeo when input only has metadata without coordinates', async () => {
 		const fetchSpy = vi.fn();
 		vi.stubGlobal('fetch', fetchSpy);
@@ -273,9 +288,9 @@ describe('common/runtime/mapper.library', () => {
 
 	describe('solarOffset', () => {
 		it('calculates natural solar time offset for civil timezone in minutes', () => {
-			// Sydney (lng 151.209, AEST UTC+10, meridian 150°) -> (151.209 - 150) * 4 = +4.84 min
+			// Sydney on standard time (lng 151.209, AEST UTC+10, meridian 150°) -> (151.209 - 150) * 4 = +4.84 min
 			const sydney = { lat: -33.8688, lng: 151.2093, timezone: 'Australia/Sydney' };
-			expect(solarOffset(sydney)).toBe(4.84);
+			expect(solarOffset(sydney, { date: '2026-06-21T12:00:00Z' })).toBe(4.84);
 
 			// Denver on standard time (lng -104.99, MST UTC-7, meridian -105°) -> (-104.99 - -105) * 4 = +0.04 min
 			const denver = { lat: 39.7392, lng: -104.9903, timezone: 'America/Denver' };
@@ -284,8 +299,13 @@ describe('common/runtime/mapper.library', () => {
 
 		it('supports unit conversion to seconds and hours with configurable precision', () => {
 			const sydney = { lat: -33.8688, lng: 151.2093, timezone: 'Australia/Sydney' };
-			expect(solarOffset(sydney, { unit: 'seconds' })).toBe(290.16);
-			expect(solarOffset(sydney, { unit: 'hours', precision: 3 })).toBe(0.081);
+			expect(solarOffset(sydney, { date: '2026-06-21T12:00:00Z', unit: 'seconds' })).toBe(290.16);
+			expect(solarOffset(sydney, { date: '2026-06-21T12:00:00Z', unit: 'hours', precision: 3 })).toBe(0.081);
+		});
+
+		it('handles plain GMT and UTC timezones correctly', () => {
+			expect(solarOffset({ lat: 51.5, lng: 0, timezone: 'UTC' })).toBe(0);
+			expect(solarOffset({ lat: 51.5, lng: 0, timezone: 'GMT' })).toBe(0);
 		});
 
 		it('falls back to natural 15-degree solar timezone meridian when no timezone is supplied', () => {

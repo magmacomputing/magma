@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `Equator: 'equator'` to `COMPASS` enum.
   - Updated `t.sphere` to return `'equator'` when coordinates fall within the $\pm 0.001^\circ$ equatorial band.
 
+### Security
+- **Configuration Resolution Decoupling (Socket.dev Anomaly Mitigation)**:
+  - Strictly decoupled recursive `extends` loading from top-level project config resolution in `config.resolve.ts`.
+  - Dedicated `resolveExtendsTarget()` function exclusively reads and parses static `.json` and `.jsonc` files via `fs.promises.readFile` and `parseJSONC`, completely eliminating dynamic module imports (`import()`) from the `extends` pipeline.
+  - Added strict file extension allowlisting (`.json`, `.jsonc`, `.js`, `.mjs`, `.cjs`, `.ts`, `.mts`) to top-level configuration file discovery.
+
 ## [4.1.1] - 2026-09-07
 
 ### Added

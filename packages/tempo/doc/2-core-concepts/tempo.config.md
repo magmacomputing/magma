@@ -228,7 +228,8 @@ Tempo.init({
 | `pivot` | `number` | `75` | Cutoff for parsing two-digit years. |
 | `monthDay` | `MonthDay \| boolean` | `undefined` | Regional date-parsing configuration (grouped). Includes `active`, `locales`, `layouts`, and `timezones`. |
 | `timeStamp`| `'ss' \| 'ms' \| 'us' \| 'ns'` | `'ms'` | Precision for numeric inputs and the `.ts` property. |
-| `sphere` | `Evaluable<'north' \| 'south'>`| Auto-inferred | Hemisphere for seasonal plugins or dynamic supplier. |
+| `sphere` | `Evaluable<'north' \| 'south' \| 'equator'>`| Auto-inferred | Hemisphere for seasonal plugins or dynamic supplier. |
+| `geo` | `GeoOptions` | `undefined` | Geographic coordinates, city, country, elevation, and timezone metadata. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
 | `registry` | `{ formats?, locales?, numbers?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, number-to-word mappings, parsing logic, localization). |
 | `extends` | `string \| string[]` | `undefined` | Local file path(s) or `file://` URL(s) to inherit base configuration from. |

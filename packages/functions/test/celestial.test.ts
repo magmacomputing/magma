@@ -103,6 +103,24 @@ describe('Astro Pure Functions (tempo-fns)', () => {
 		expect(highAltitude.elevation).toBe(1600);
 	});
 
+	it('handles non-finite elevation gracefully and produces valid sunrise/sunset timings', () => {
+		const date = '2026-06-21T12:00:00Z';
+		const baseline = getSunriseSunset(date, { lat: 39.7392, lng: -104.9903, elevation: 0 });
+		const infResult = getSunriseSunset(date, { lat: 39.7392, lng: -104.9903, elevation: Infinity });
+		const negInfResult = getSunriseSunset(date, { lat: 39.7392, lng: -104.9903, elevation: -Infinity });
+		const nanResult = getSunriseSunset(date, { lat: 39.7392, lng: -104.9903, elevation: NaN });
+
+		expect(infResult.elevation).toBe(0);
+		expect(Number.isFinite(infResult.sunriseMs)).toBe(true);
+		expect(Number.isFinite(infResult.sunsetMs)).toBe(true);
+		expect(Number.isFinite(infResult.daylightDurationMs)).toBe(true);
+		expect(infResult.sunriseMs).toBe(baseline.sunriseMs);
+		expect(infResult.sunsetMs).toBe(baseline.sunsetMs);
+
+		expect(negInfResult.elevation).toBe(0);
+		expect(nanResult.elevation).toBe(0);
+	});
+
 	it('calculates Western Tropical Zodiac sign', () => {
 		expect(getZodiacSign('2026-03-25')).toBe('Aries');
 		expect(getZodiacSign('2026-07-25')).toBe('Leo');

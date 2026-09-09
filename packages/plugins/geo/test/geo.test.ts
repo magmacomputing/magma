@@ -355,6 +355,7 @@ describe('Tempo Plugin: Geo', () => {
 
 	describe('Great-Circle Distance & Layout Formatting', () => {
 		const sydney = new Tempo('2026-10-24T10:00:00', {
+			timeZone: 'Australia/Sydney',
 			geo: {
 				latitude: -33.8688,
 				longitude: 151.2093,
@@ -362,16 +363,19 @@ describe('Tempo Plugin: Geo', () => {
 				country: 'au',
 				sphere: 'south',
 				elevation: 42,
+				timezone: 'Australia/Sydney',
 			},
 		});
 
 		const melbourne = new Tempo('2026-10-24T12:00:00', {
+			timeZone: 'Australia/Melbourne',
 			geo: {
 				latitude: -37.8136,
 				longitude: 144.9631,
 				city: 'melbourne',
 				country: 'au',
 				sphere: 'south',
+				timezone: 'Australia/Melbourne',
 			},
 		});
 

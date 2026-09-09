@@ -474,7 +474,7 @@ function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 
 		const lat = geo.latitude ?? geo.lat ?? (latOrOptions as any).latitude ?? (latOrOptions as any).lat ?? 0;
 		const lng = geo.longitude ?? geo.lng ?? geo.lon ?? geo.long ?? (latOrOptions as any).longitude ?? (latOrOptions as any).lng ?? (latOrOptions as any).lon ?? (latOrOptions as any).long ?? 0;
 		const rawElevation = geo.elevation ?? (latOrOptions as any).elevation;
-		const elevation = typeof rawElevation === 'number' && !isNaN(rawElevation) ? rawElevation : 0;
+		const elevation = typeof rawElevation === 'number' && Number.isFinite(rawElevation) ? rawElevation : 0;
 		return { lat, lng, elevation };
 	}
 	return { lat: 0, lng: 0, elevation: 0 };
@@ -586,7 +586,7 @@ export function getSunriseSunset(
 	return {
 		latitude: lat,
 		longitude: lng,
-		...(elevation > 0 ? { elevation } : {}),
+		elevation,
 		sunriseMs,
 		sunsetMs,
 		solarNoonMs,

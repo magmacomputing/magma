@@ -246,10 +246,11 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 	if (isString(city)) result.city = city;
 	if (isString(timezone)) result.timezone = timezone;
 
-	if (isReference(geo)) {
-		for (const key of Object.keys(geo)) {
+	const explicitGeo = isReference(input.geo) ? input.geo : (isReference(input.config?.geo) ? input.config.geo : undefined);
+	if (isReference(explicitGeo)) {
+		for (const key of Object.keys(explicitGeo)) {
 			if (isSafeKey(key) && !GEO_PROPERTIES.includes(key as any))
-				(result as any)[key] = geo[key];
+				(result as any)[key] = explicitGeo[key];
 		}
 	}
 
@@ -591,10 +592,14 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 				}).formatToParts(new Date(epochMs));
 				const tzPart = parts.find(p => p.type === 'timeZoneName')?.value;
 				if (tzPart) {
-					const match = tzPart.match(/GMT([+-])(\d{2}):(\d{2})/);
-					if (match) {
-						const sign = match[1] === '-' ? -1 : 1;
-						offsetMinutes = sign * (parseInt(match[2], 10) * 60 + parseInt(match[3], 10));
+					if (tzPart === 'GMT' || tzPart === 'UTC') {
+						offsetMinutes = 0;
+					} else {
+						const match = tzPart.match(/GMT([+-])(\d{2}):(\d{2})/);
+						if (match) {
+							const sign = match[1] === '-' ? -1 : 1;
+							offsetMinutes = sign * (parseInt(match[2], 10) * 60 + parseInt(match[3], 10));
+						}
 					}
 				}
 			}
