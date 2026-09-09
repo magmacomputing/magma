@@ -305,7 +305,7 @@ When a `Tempo` instance is constructed:
 
 ---
 
-### 4.2 Geographic Coordinates & Location Configuration (`geo`)
+## 4.2 Geographic Coordinates & Location Configuration (`geo`)
 
 You can configure geographic coordinates and location metadata globally or override them on individual instances:
 

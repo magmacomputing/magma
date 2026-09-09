@@ -229,6 +229,11 @@ export function clearStorage(): void {
 
 		case CONTEXT.NodeJS:
 			nodeStorage.clear();
+			storage.clear();
+			break;
+
+		default:
+			storage.clear();
 			break;
 	}
 }

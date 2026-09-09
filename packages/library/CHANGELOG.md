@@ -5,16 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.1.2] - 2026-09-08
+## [4.2.0] - 2026-09-09
 
 ### Added
 - **Generic Bounded LRU & TTL Cache Engine (`BoundedCache`)**:
-  - Implemented high-performance `BoundedCache<K, V>` in `#library/common/runtime/cache.class.js` supporting configurable capacity constraints (`maxSize`, default 1000) and time-to-live expiration (`ttl`, default `Infinity`).
+  - Implemented high-performance `BoundedCache<K, V>` in `#library/cache.class.js` supporting configurable capacity constraints (`maxSize`, default 1000) and time-to-live expiration (`ttl`, default 24 hours / `86,400,000 ms`).
   - Added per-entry TTL override support in `set(key, val, ttl?)` with precomputed absolute expiration deadlines (`expiresAt = Date.now() + ttl`).
-  - Implemented $O(1)$ fast-path expiration checks: bypasses `#expires` map checks and eliminates clock reads (`Date.now()`) when `ttl === Infinity` or `#expires.size === 0`.
+  - Implemented $O(1)$ fast-path expiration checks: eliminates clock reads (`Date.now()`) when keys have no entry-level expiration deadline recorded in `#expires`.
   - Added bulk clear (`clear()`), lazy eviction (`evictExpired()`), iteration (`keys()`, `values()`, `entries()`, `forEach()`, `[Symbol.iterator]()`), and size inspection (`size`).
 - **Bounded In-Memory Server Storage (`storage.library`)**:
-  - Replaced unbounded `Map` backing `nodeStorage` with `BoundedCache<string, string | undefined>(1000, Infinity)`.
+  - Replaced unbounded `Map` backing `nodeStorage` with `BoundedCache<string, string | undefined>(1000, Infinity)` via `#library/cache.class.js`.
   - Added `ServerStorageOptions` interface and updated `setStorage(key, value, options?)` overload to support optional custom `ttl`.
   - Added `clearStorage()` utility to purge in-memory storage entries across test environments and lifecycle boundaries while preserving tombstone deletion semantics (`undefined` value).
 - **Geolocation Caching & Multi-Tenant Partitioning (`mapper.library`)**:

@@ -59,6 +59,8 @@ export const serverGeoLocation = async (opts = {} as ServerMapOpts): Promise<Ser
 				endpoint = `${DEFAULT_GEO_ENDPOINT}/${cleanIp}`;
 			} else if (endpoint.includes('{ip}')) {
 				endpoint = endpoint.replace('{ip}', cleanIp);
+			} else if (cleanIp !== '') {
+				throw new Error(`Custom endpoint must include an '{ip}' placeholder to resolve a specific IP: ${endpoint}`);
 			}
 		}
 

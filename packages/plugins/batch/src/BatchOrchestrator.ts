@@ -136,8 +136,7 @@ export class BatchOrchestrator {
 		const workers: Promise<void>[] = [];
 		const actualThreads = Math.min(threadCount, Math.ceil(epochs.length / chunkSize));
 
-		const sanitized = this.sanitizeExecArgv();
-		const execArgv = sanitized.length > 0 ? sanitized : undefined;
+		const execArgv = this.sanitizeExecArgv();
 
 		for (let i = 0; i < actualThreads; i++) {
 			const startIdx = i * chunkSize;
@@ -153,7 +152,7 @@ export class BatchOrchestrator {
 						endIdx,
 						operation,
 					},
-					...(execArgv ? { execArgv } : {}),
+					execArgv,
 				});
 				worker.on('message', (msg: any) => {
 					if (msg.status === 'done') resolve();
@@ -193,8 +192,7 @@ export class BatchOrchestrator {
 	private static async _transformWithPostMessage(epochs: number[], operation: string, threadCount: number, chunkSize: number, options: BatchOptions): Promise<any[]> {
 		const workers: Promise<any[]>[] = [];
 		const actualThreads = Math.min(threadCount, Math.ceil(epochs.length / chunkSize));
-		const sanitized = this.sanitizeExecArgv();
-		const execArgv = sanitized.length > 0 ? sanitized : undefined;
+		const execArgv = this.sanitizeExecArgv();
 
 		for (let i = 0; i < actualThreads; i++) {
 			const startIdx = i * chunkSize;
@@ -208,7 +206,7 @@ export class BatchOrchestrator {
 						chunk,
 						operation,
 					},
-					...(execArgv ? { execArgv } : {}),
+					execArgv,
 				});
 				worker.on('message', (msg: any) => {
 					if (msg.status === 'done') resolve(msg.result);

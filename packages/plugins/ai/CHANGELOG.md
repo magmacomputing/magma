@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Decoupled network transport entirely from `@magmacomputing/tempo/library` (removing reliance on core internal `HttpError` and `fetchRequest`).
   - Implemented proactive stream consumption via `res.body.getReader()` with strict byte accounting and upfront `Content-Length` enforcement against `maxBytes` to prevent memory exhaustion.
 
+## [1.2.1] - 2026-09-07
+
+### Security & Reliability
+- **Self-Contained Network Transport (`fetch.ts`)**:
+  - Decoupled network request utilities from `@magmacomputing/tempo/library` into a self-contained local transport helper.
+  - Added chunk-by-chunk stream consumption via `res.body.getReader()` with proactive byte accounting and immediate reader cancellation (`await reader.cancel()`).
+  - Enforced upfront `Content-Length` checks against `maxBytes` and strictly bounded stream reads to prevent unbounded memory allocation and OS thread starvation.
+
 ## [1.2.0] - 2026-09-06
 
 ### Added

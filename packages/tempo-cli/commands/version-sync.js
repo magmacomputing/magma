@@ -49,7 +49,10 @@ export async function versionSync(_args) {
 				if (existsSync(wsPkgPath)) {
 					try {
 						const rawContent = readFileSync(wsPkgPath, 'utf8');
-						const updatedContent = rawContent.replace(/"version":\s*"[^"]+"/, `"version": "${version}"`);
+						const updatedContent = rawContent.replace(/^([ \t]*"version"[ \t]*:[ \t]*)"[^"]+"/m, `$1"${version}"`);
+						if (updatedContent === rawContent)
+							throw new Error(`Top-level version key was not found or already matched in ${wsPkgPath}`);
+
 						writeFileSync(wsPkgPath, updatedContent, 'utf8');
 						console.log(`✅ Synced ${ws} to ${version} (file fallback)`);
 						syncedCount++;

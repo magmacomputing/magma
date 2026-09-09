@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-09-09
 
 ### Added
-- **Elevation Support on Solar Term**: Exposed `elevation: number | null` on `t.term.solar` ([`TempoTermRegistry['solar']`](file:///home/michael/Project/magma/packages/plugins/celestial/src/index.ts#L52)).
+- **Elevation Support on Solar Term**: Exposed `elevation: number | null` on `t.term.solar` ([`TempoTermRegistry['solar']`](src/index.ts)).
 - **Atmospheric Horizon Dip**: Factored `t.geo.elevation` into solar sunrise, sunset, and daylight duration calculations via `@magmacomputing/tempo-fns`. Observers at high elevations experience earlier sunrise and later sunset due to geometric horizon dip.
 
 ## [0.1.0] - 2026-09-02
