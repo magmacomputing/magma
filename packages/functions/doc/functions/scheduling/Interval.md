@@ -4,7 +4,7 @@ The `Interval` class provides high-performance interval mathematics and represen
 
 ## Built for Temporal
 
-`Interval` is designed to be fully compatible with both the core `Tempo` class and the native `Temporal` API (`Temporal.ZonedDateTime` and `Temporal.Instant`). It utilizes `.epochNanoseconds` under the hood to ensure extremely fast $O(1)$ intersection and boundary logic.
+`Interval` is designed to be fully compatible with both the core `Tempo` class and the native `Temporal` API (`Temporal.ZonedDateTime` and `Temporal.Instant`). It utilizes `.epochNanoseconds` under the hood to ensure extremely fast `O(1)` intersection and boundary logic.
 
 ## Usage
 

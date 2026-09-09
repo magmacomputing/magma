@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Generic Bounded LRU & TTL Cache Engine (`BoundedCache`)**:
   - Implemented high-performance `BoundedCache<K, V>` in `#library/cache.class.js` supporting configurable capacity constraints (`maxSize`, default 1000) and time-to-live expiration (`ttl`, default 24 hours / `86,400,000 ms`).
   - Added per-entry TTL override support in `set(key, val, ttl?)` with precomputed absolute expiration deadlines (`expiresAt = Date.now() + ttl`).
-  - Implemented $O(1)$ fast-path expiration checks: eliminates clock reads (`Date.now()`) when keys have no entry-level expiration deadline recorded in `#expires`.
+  - Implemented `O(1)` fast-path expiration checks: eliminates clock reads (`Date.now()`) when keys have no entry-level expiration deadline recorded in `#expires`.
   - Added bulk clear (`clear()`), lazy eviction (`evictExpired()`), iteration (`keys()`, `values()`, `entries()`, `forEach()`, `[Symbol.iterator]()`), and size inspection (`size`).
 - **Bounded In-Memory Server Storage (`storage.library`)**:
   - Replaced unbounded `Map` backing `nodeStorage` with `BoundedCache<string, string | undefined>(1000, Infinity)` via `#library/cache.class.js`.

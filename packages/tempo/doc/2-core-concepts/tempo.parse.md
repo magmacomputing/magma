@@ -73,7 +73,7 @@ It correctly resolves both trailing (`200 BC`) and leading (`BC 200`) formats.
 
 ### 📆 Ordinals & Nth Parsing (`"3rd Wednesday of October"`)
 
-Tempo natively supports parsing structured ordinal weekday and ordinal date expressions in deterministic $O(1)$ time with zero network overhead.
+Tempo natively supports parsing structured ordinal weekday and ordinal date expressions in deterministic `O(1)` time with zero network overhead.
 
 ```typescript
 // Ordinal Weekdays
@@ -89,7 +89,7 @@ new Tempo('1st day of 2026');                 // 1st day of 2026
 
 | Input Type & Scenario | Recommended Approach | Key Advantage |
 | :--- | :--- | :--- |
-| **Structured Expressions**<br>(e.g. `"3rd Wednesday of Oct"`, `"1st day of next month"`) | **Native `Tempo` Parsing** | **Deterministic $O(1)$ Speed**<br>Zero API latency, zero token costs, 100% offline processing. |
+| **Structured Expressions**<br>(e.g. `"3rd Wednesday of Oct"`, `"1st day of next month"`) | **Native `Tempo` Parsing** | **Deterministic `O(1)` Speed**<br>Zero API latency, zero token costs, 100% offline processing. |
 | **Free-Form / Conversational Text**<br>(e.g. `"Schedule a call on the third Wednesday after my trip ends"`) | **`tempo-plugin-ai` (`parseAI`)** | **LLM Natural Language Reasoning**<br>Extracts context and conversational intent before passing dates to Tempo. |
 
 > [!TIP]
@@ -345,9 +345,9 @@ console.log(t.sphere);         // 'south'
 
 ### Deterministic Normalization & Validation
 Tempo applies strict validation and standardization to all incoming coordinate payloads with **zero external network dependencies**:
-* **Boundary Validation**: Coordinates outside physical Earth limits ($\text{lat} \in [-90, 90]$, $\text{lng} \in [-180, 180]$) are strictly rejected.
-* **3-Decimal Precision**: Coordinates are rounded deterministically to 3 decimal places ($\approx 111\,\text{m}$ resolution at the equator), eliminating sensor noise and storage cache fragmentation.
-* **Automatic Hemisphere Inference**: The hemisphere (`'north'`, `'south'`, or `'equator'`) is automatically deduced from latitude, recognizing the $\pm 0.001^\circ$ equatorial band.
+* **Boundary Validation**: Coordinates outside physical Earth limits (-90° ≤ lat ≤ 90°, -180° ≤ lng ≤ 180°) are strictly rejected.
+* **3-Decimal Precision**: Coordinates are rounded deterministically to 3 decimal places (≈ 111 m resolution at the equator), eliminating sensor noise and storage cache fragmentation.
+* **Automatic Hemisphere Inference**: The hemisphere (`'north'`, `'south'`, or `'equator'`) is automatically deduced from latitude, recognizing the ±0.001° equatorial band.
 * **Immutable Access**: Normalized geographic metadata is accessible on the instance via `t.geo` (recursively frozen `GeoConfig`) and `t.sphere`.
 
 ---

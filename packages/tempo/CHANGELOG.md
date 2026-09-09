@@ -17,12 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Compile-time format validation: Updated `_ValidToken` in `tempo.type.ts` to accept `${string}.${string}`.
 - **Universal Geographic Context in Parsing & Construction**:
   - Support for `options.geo` (`latitude`, `longitude`, `city`, `country`, `elevation`, `timezone`, etc.) in `new Tempo(input, options)` and `parse(input, options)`.
-  - Enforces deterministic 3-decimal rounding and Earth boundary limits ($\text{lat} \in [-90, 90]$, $\text{lng} \in [-180, 180]$) on input coordinates.
+  - Enforces deterministic 3-decimal rounding and Earth boundary limits (-90° ≤ lat ≤ 90°, -180° ≤ lng ≤ 180°) on input coordinates.
   - Inferred hemisphere (`'north'`, `'south'`, `'equator'`) automatically derived and exposed on `t.sphere` and `t.geo.sphere`.
   - Canonical read-only getter `t.geo` returning frozen `GeoConfig`.
 - **Equator Compass Alignment**:
   - Added `Equator: 'equator'` to `COMPASS` enum.
-  - Updated `t.sphere` to return `'equator'` when coordinates fall within the $\pm 0.001^\circ$ equatorial band.
+  - Updated `t.sphere` to return `'equator'` when coordinates fall within the ±0.001° equatorial band.
 
 ### Security
 - **Configuration Resolution Decoupling (Socket.dev Anomaly Mitigation)**:
@@ -89,8 +89,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Term Registry & Alias Normalization (`aliases`)**: Updated `defineTerm` SDK utility to automatically populate and consolidate a canonical `aliases` array on each `TermPlugin` (combining explicit `aliases` with the term's `scope` identifier). Refactored the static `Tempo.terms` getter and index delegator to return normalized registry objects with full `aliases` coverage and support dynamic term lookups by `key`, `scope`, or any entry in the consolidated `aliases` array.
-- **Numeric Zero-Fill Padding Format Modifiers**: Added support for numeric zero-fill modifiers in `FormatModule` (e.g., `{day:2}`, `{ns:3}`, `{yy:4}`, `{#solar.index:3}`). Updated `formatBraces` matching patterns to support numeric modifier suffixes (`:N`), enabling automatic zero-padding of any numeric core, custom, or term token to a target digit width while preserving sign formatting for negative values (e.g., `-5` with `:3` $\rightarrow$ `"-05"`).
-- **Latitude Hemisphere Inference**: Core `Tempo` now inspects `latitude` / `lat` options across global (`Tempo.init`), sandbox (`Tempo.create`), and instance (`new Tempo()`) contexts to automatically infer hemisphere orientation (`sphere: 'north' | 'south'`) when `sphere` is omitted (`latitude >= 0` $\rightarrow$ `'north'`, `latitude < 0` $\rightarrow$ `'south'`).
+- **Numeric Zero-Fill Padding Format Modifiers**: Added support for numeric zero-fill modifiers in `FormatModule` (e.g., `{day:2}`, `{ns:3}`, `{yy:4}`, `{#solar.index:3}`). Updated `formatBraces` matching patterns to support numeric modifier suffixes (`:N`), enabling automatic zero-padding of any numeric core, custom, or term token to a target digit width while preserving sign formatting for negative values (e.g., `-5` with `:3` → `"-05"`).
+- **Latitude Hemisphere Inference**: Core `Tempo` now inspects `latitude` / `lat` options across global (`Tempo.init`), sandbox (`Tempo.create`), and instance (`new Tempo()`) contexts to automatically infer hemisphere orientation (`sphere: 'north' | 'south'`) when `sphere` is omitted (`latitude >= 0` → `'north'`, `latitude < 0` → `'south'`).
 
 ### Changed & Security
 - **Declarative Hardening (`@Mutable`)**: Refactored `Tempo.init()` to use the declarative `@Mutable(isTestEnvironment)` decorator, replacing legacy hard-coded skip lists (`$ImmutableSkip`) and eliminating direct AST `process.env` inspection in core engine sources for enhanced supply chain security.
@@ -681,7 +681,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 - **API Impact**: No public API changes; layout-ordering behavior is byte-for-byte equivalent to prior releases.
-- **Performance**: Layout resolution is still $O(n)$ where $n$ is the number of layout entries; controller infrastructure is optimized for future per-input classification without per-call overhead.
+- **Performance**: Layout resolution is still `O(n)` where `n` is the number of layout entries; controller infrastructure is optimized for future per-input classification without per-call overhead.
 - **Guidance**: If needed, rename custom aliases to avoid overlap or remove the conflicting custom alias.
 
 ## [2.4.0] - (Skipped)
@@ -844,7 +844,7 @@ _Version 2.4.0 was not released; the project merged new functionality from 2.4.0
 ## [2.0.0] - 2026-03-30
 
 ### Added
-- **Zero-Cost Constructor**: Optimized the instantiation path to $O(1)$ by deferring all parsing and property registration until the first property access.
+- **Zero-Cost Constructor**: Optimized the instantiation path to `O(1)` by deferring all parsing and property registration until the first property access.
 - **Generic Lazy Delegator**: Introduced `getLazyDelegator` in `proxy.library.ts` to standardize on-demand property discovery for `fmt` and `term` objects.
 - **Improved Immutability**: Enhanced `@Immutable` and `secure()` protections that safely handle lazy evaluation on frozen instances via a defensive prototype-shadowing fallback.
 - **Registry Security**: Refactored global registries (FORMAT, NUMBER, TIMEZONE) to use `registryUpdate` with core protection, preventing accidental overrides of built-in tokens.

@@ -23,7 +23,7 @@ npm install @magmacomputing/tempo-plugin-celestial
 
 > [!NOTE]
 > **Pure Astronomical Calculations**:
-> Tidal state resolution relies exclusively on deterministic celestial mechanics (solar-lunar ecliptic longitude alignment $\Delta \lambda$ and anomalistic lunar perigee proximity) for reproducible, offset-independent math across all time zones and locations.
+> Tidal state resolution relies exclusively on deterministic celestial mechanics (solar-lunar ecliptic longitude alignment (Δλ) and anomalistic lunar perigee proximity) for reproducible, offset-independent math across all time zones and locations.
 
 ## Geographic Coordinates & Null Contract
 
