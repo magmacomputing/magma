@@ -1,4 +1,4 @@
-import { isDefined, isString, isUndefined } from '#library/assertion.library.js';
+import { isDefined, isEmpty, isString, isUndefined } from '#library/assertion.library.js';
 import { StringTag } from '#library/decorator.library.js';
 
 /**
@@ -172,7 +172,7 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 			this.#ttls.delete(key);
 		}
 
-		while (this.size > this.maxSize) {
+		while ((this.size - this.#staticKeys.size) > this.maxSize) {
 			let evicted = false;
 			const keysIter = super.keys();
 			let res = keysIter.next();
@@ -213,6 +213,8 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	 */
 	deletePrefix(prefix: string): number {
 		const normalizedPrefix = String(prefix).trim().toLowerCase();
+		if (isEmpty(normalizedPrefix)) return 0;
+
 		const toDelete: K[] = [];
 		for (const key of super.keys()) {
 			if (isString(key) && key.toLowerCase().startsWith(normalizedPrefix))

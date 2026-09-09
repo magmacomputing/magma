@@ -81,6 +81,44 @@ describe('common/runtime/mapper.library', () => {
 		expect((coercedExplicit as any)?.venue).toBe('HQ');
 	});
 
+	it('coerceGeo rejects comma-delimited strings with empty or whitespace-only coordinate segments', () => {
+		expect(coerceGeo(',')).toBeUndefined();
+		expect(coerceGeo('   ,   ')).toBeUndefined();
+		expect(coerceGeo('10,')).toBeUndefined();
+		expect(coerceGeo(',20')).toBeUndefined();
+		expect(coerceGeo('10, 20')).toEqual({ latitude: 10, longitude: 20, sphere: 'north' });
+	});
+
+	it('resolveGeoCoordinates bypasses stashed coordinates when refresh is true', async () => {
+		const mockFetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				status: 'success',
+				lat: 40.7128,
+				lon: -74.0060,
+				city: 'New York',
+			}),
+		});
+		vi.stubGlobal('fetch', mockFetch);
+
+		stashGeo({ latitude: -33.8688, longitude: 151.2093, city: 'Sydney' });
+
+		try {
+			// Normal call returns stashed coordinates
+			const cached = await resolveGeoCoordinates();
+			expect(cached?.city).toBe('Sydney');
+			expect(mockFetch).not.toHaveBeenCalled();
+
+			// Refresh call bypasses stashed coordinates and invokes geoLookup
+			const refreshed = await resolveGeoCoordinates(undefined, { refresh: true });
+			expect(refreshed?.city).toBe('New York');
+			expect(refreshed?.lat).toBe(40.713);
+			expect(mockFetch).toHaveBeenCalledTimes(1);
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
 	it('resolveGeoCoordinates falls back to getStashedGeo when input only has metadata without coordinates', async () => {
 		const fetchSpy = vi.fn();
 		vi.stubGlobal('fetch', fetchSpy);
@@ -306,6 +344,11 @@ describe('common/runtime/mapper.library', () => {
 		it('handles plain GMT and UTC timezones correctly', () => {
 			expect(solarOffset({ lat: 51.5, lng: 0, timezone: 'UTC' })).toBe(0);
 			expect(solarOffset({ lat: 51.5, lng: 0, timezone: 'GMT' })).toBe(0);
+		});
+
+		it('returns NaN immediately when date input is invalid or non-finite', () => {
+			expect(solarOffset({ lat: 51.5, lng: 0, timezone: 'UTC' }, { date: 'invalid-date-string' })).toBeNaN();
+			expect(solarOffset({ lat: 51.5, lng: 0, timezone: 'UTC' }, { date: NaN as any })).toBeNaN();
 		});
 
 		it('falls back to natural 15-degree solar timezone meridian when no timezone is supplied', () => {

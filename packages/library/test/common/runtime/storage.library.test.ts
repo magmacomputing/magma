@@ -123,10 +123,17 @@ describe('Storage Tombstone & BoundedCache Integration (NodeJS)', () => {
       setStorage('d1', 'dyn1');
       setStorage('d2', 'dyn2');
 
-      // glossary_term is static so it must NOT be evicted even though capacity=2 is exceeded by dynamic keys
+      // Static keys do not consume non-static capacity
       expect(getStorage<string>('glossary_term')).toBe('immutable_definition');
-      expect(getStorage<string>('d1')).toBeUndefined(); // d1 evicted
+      expect(getStorage<string>('d1')).toBe('dyn1');
       expect(getStorage<string>('d2')).toBe('dyn2');
+
+      // Adding 3rd dynamic key exceeds maxSize=2 and evicts oldest non-static key (d1)
+      setStorage('d3', 'dyn3');
+      expect(getStorage<string>('glossary_term')).toBe('immutable_definition');
+      expect(getStorage<string>('d1')).toBeUndefined();
+      expect(getStorage<string>('d2')).toBe('dyn2');
+      expect(getStorage<string>('d3')).toBe('dyn3');
     });
   });
 

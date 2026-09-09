@@ -45,19 +45,30 @@ describe('common/runtime/cache.class', () => {
 		expect(cache.size).toBe(2);
 	});
 
-	it('protects static keys from LRU capacity eviction and TTL expiration', () => {
-		const cache = new BoundedCache<string, string>(2, 10);
+	it('protects static keys from LRU capacity eviction and does not allow static keys to consume non-static capacity', () => {
+		const cache = new BoundedCache<string, string>(2, 60000);
 		cache.setStatic('static_term', 'IMMORTAL');
 		expect(cache.isStatic('static_term')).toBe(true);
 		expect(cache.isStatic('other')).toBe(false);
 
+		// With maxSize = 2, 2 non-static entries should both fit alongside the static key
 		cache.set('a', '1');
-		cache.set('b', '2'); // 'a' should be evicted, static_term must remain
+		cache.set('b', '2');
 
 		expect(cache.has('static_term')).toBe(true);
 		expect(cache.get('static_term')).toBe('IMMORTAL');
+		expect(cache.has('a')).toBe(true);
+		expect(cache.get('a')).toBe('1');
+		expect(cache.has('b')).toBe(true);
+		expect(cache.get('b')).toBe('2');
+		expect(cache.size).toBe(3); // 1 static + 2 non-static
+
+		// Adding a 3rd non-static entry evicts the oldest non-static key ('a'), while static_term remains
+		cache.set('c', '3');
+		expect(cache.has('static_term')).toBe(true);
 		expect(cache.has('a')).toBe(false);
 		expect(cache.get('b')).toBe('2');
+		expect(cache.get('c')).toBe('3');
 	});
 
 	it('evicts expired entries after TTL has elapsed', async () => {
@@ -83,6 +94,11 @@ describe('common/runtime/cache.class', () => {
 		expect(deleted).toBe(2);
 		expect(cache.has('geo:sydney')).toBe(false);
 		expect(cache.has('geo:melbourne')).toBe(false);
+		expect(cache.has('user:alice')).toBe(true);
+
+		// Empty and whitespace prefixes return 0 and do not modify the cache
+		expect(cache.deletePrefix('')).toBe(0);
+		expect(cache.deletePrefix('   ')).toBe(0);
 		expect(cache.has('user:alice')).toBe(true);
 	});
 
@@ -157,24 +173,30 @@ describe('common/runtime/cache.class', () => {
 		expect(cache.get('short_lived')).toBeUndefined();
 	});
 
-	it('preserves absolute expiration deadline without renewal on get() or set() updates', async () => {
-		const cache = new BoundedCache<string, string>(10, 40); // 40ms TTL
-		cache.set('item', 'v1');
+	it('preserves absolute expiration deadline without renewal on get() or set() updates', () => {
+		vi.useFakeTimers();
+		try {
+			const cache = new BoundedCache<string, string>(10, 40); // 40ms TTL
+			cache.set('item', 'v1');
 
-		// Access item at 20ms
-		await new Promise(resolve => setTimeout(resolve, 20));
-		expect(cache.get('item')).toBe('v1');
+			// Access item at 20ms
+			vi.advanceTimersByTime(20);
+			expect(cache.get('item')).toBe('v1');
 
-		// Update item value at 25ms without specifying a new TTL
-		cache.set('item', 'v2');
-		expect(cache.get('item')).toBe('v2');
+			// Update item value at 25ms without specifying a new TTL
+			vi.advanceTimersByTime(5);
+			cache.set('item', 'v2');
+			expect(cache.get('item')).toBe('v2');
 
-		// Wait past original 40ms deadline (e.g. at 55ms total)
-		await new Promise(resolve => setTimeout(resolve, 35));
+			// Advance past original 40ms deadline (at 55ms total)
+			vi.advanceTimersByTime(30);
 
-		// Must be expired because original absolute deadline was not renewed
-		expect(cache.has('item')).toBe(false);
-		expect(cache.get('item')).toBeUndefined();
+			// Must be expired because original absolute deadline was not renewed
+			expect(cache.has('item')).toBe(false);
+			expect(cache.get('item')).toBeUndefined();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });
 

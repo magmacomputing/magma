@@ -17,6 +17,9 @@
   ],
   "scripts": {
     "test": "vitest run",
+    "review:agent": "coderabbit review --agent",
+    "review:cli": "coderabbit review",
+    "review:findings": "coderabbit review findings",
     "build:tempo": "npm run build:library && npm run build:std && npm run build --workspace=@magmacomputing/tempo",
     "build:library": "npm run build --workspace=@magmacomputing/library",
     "build:std": "npm run build --workspace=@magmacomputing/tempo-std",

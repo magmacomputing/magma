@@ -40,12 +40,18 @@ describe('Tempo Core Caching Architecture', () => {
 			const cache = new BoundedCache<string, string>(2, 10000);
 			cache.setStatic('static_term', 'IMMORTAL');
 			cache.set('a', '1');
-			cache.set('b', '2'); // 'a' should be evicted, not static_term
+			cache.set('b', '2');
 
 			expect(cache.has('static_term')).toBe(true);
 			expect(cache.get('static_term')).toBe('IMMORTAL');
+			expect(cache.has('a')).toBe(true);
+			expect(cache.get('b')).toBe('2');
+
+			cache.set('c', '3'); // 'a' should be evicted, not static_term
+			expect(cache.has('static_term')).toBe(true);
 			expect(cache.has('a')).toBe(false);
 			expect(cache.get('b')).toBe('2');
+			expect(cache.get('c')).toBe('3');
 		});
 
 		it('should serialize and rehydrate via entries() and fromEntries()', () => {

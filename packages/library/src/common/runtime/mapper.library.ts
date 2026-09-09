@@ -1,5 +1,5 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive } from '#library/assertion.library.js';
+import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isDate, isText } from '#library/assertion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { evaluate } from '#library/evaluation.library.js';
 
@@ -185,8 +185,9 @@ const resolveSphere = (sphere?: any, lat?: number): GeoSphere | undefined => {
  */
 export const coerceGeo = (input?: any): GeoConfig | undefined => {
 	if (isString(input) && input.includes(',')) {
-		const parts = input.split(',').map((s: string) => Number(s.trim()));
-		if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+		const segments = input.split(',').map((s: string) => s.trim());
+		const parts = segments.map((s: string) => s === '' ? NaN : Number(s));
+		if (parts.length >= 2 && !isNaN(parts[0]!) && !isNaN(parts[1]!)) {
 			const coords = normalizeCoords(parts[0], parts[1]);
 			if (coords) {
 				const result: GeoConfig = { latitude: coords.lat, longitude: coords.lng };
@@ -403,20 +404,11 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 
 			const lat = browserRes.coords?.latitude;
 			const lng = browserRes.coords?.longitude;
-			res = { lat, lng, latitude: lat, longitude: lng, ...browserRes };
+			res = { ...browserRes, lat, lng, latitude: lat, longitude: lng };
 			break;
 		}
 
-		case CONTEXT.WebWorker: {
-			const stashed = getStashedGeo(opts);
-			if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude))
-				return { lat: stashed.latitude, lng: stashed.longitude, latitude: stashed.latitude, longitude: stashed.longitude, sphere: stashed.sphere, country: stashed.country, city: stashed.city, timezone: stashed.timezone, elevation: stashed.elevation };
-
-			const { serverGeoLocation } = await import('#server/mapper.library.js');
-			res = await serverGeoLocation(opts as any);
-			break;
-		}
-
+		case CONTEXT.WebWorker:
 		case CONTEXT.NodeJS:
 		case CONTEXT.Deno:
 		default: {
@@ -480,7 +472,7 @@ export const resolveGeoCoordinates = async (
 			lng: coerced.longitude,
 		};
 
-	const stashed = getStashedGeo(opts);
+	const stashed = opts.refresh === true ? undefined : getStashedGeo(opts);
 	if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude))
 		return {
 			...stashed,
@@ -548,6 +540,39 @@ export function haversineDistance(from: any, to: any, unit: DistanceUnit = 'km')
 }
 
 /**
+ * Resolves civil timezone offset in minutes for a given epoch timestamp.
+ * Uses Temporal if present in runtime, with seamless fallback to Intl.DateTimeFormat.
+ * @internal
+ */
+const resolveCivilTimezoneOffset = (tz: string, epochMs: number): number | undefined => {
+	try {
+		if (typeof Temporal !== 'undefined' && typeof Temporal.Instant?.fromEpochMilliseconds === 'function') {
+			const zdt = Temporal.Instant.fromEpochMilliseconds(epochMs).toZonedDateTimeISO(tz);
+			return zdt.offsetNanoseconds / 60_000_000_000;
+		}
+
+		const parts = new Intl.DateTimeFormat('en-US', {
+			timeZone: tz,
+			timeZoneName: 'longOffset',
+			year: 'numeric'
+		}).formatToParts(new Date(epochMs));
+
+		const tzPart = parts.find(p => p.type === 'timeZoneName')?.value;
+		if (tzPart) {
+			if (tzPart === 'GMT' || tzPart === 'UTC') return 0;
+			const match = tzPart.match(/GMT([+-])(\d{2}):(\d{2})/);
+			if (match) {
+				const sign = match[1] === '-' ? -1 : 1;
+				return sign * (parseInt(match[2], 10) * 60 + parseInt(match[3], 10));
+			}
+		}
+	} catch {
+		// Invalid timezone strings gracefully fall back to natural solar meridian
+	}
+	return undefined;
+};
+
+/**
  * Calculates the Natural Solar Time Offset between civil clock time and actual solar time.
  * Based on longitude (approx 4 minutes per 1° offset from standard timezone meridian).
  * 
@@ -563,50 +588,23 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 
 	const lng = geo.longitude;
 	const tz = options?.timeZone
-		?? (typeof coords === 'object' && coords !== null ? (coords.timezone ?? coords.tz) : undefined)
+		?? (isReference(coords) ? ((coords as any).timezone ?? (coords as any).tz) : undefined)
 		?? geo.timezone;
 
 	const dateVal = options?.date
-		?? (typeof coords === 'object' && coords !== null && typeof (coords as any).epoch?.ms === 'number' ? (coords as any).epoch.ms : Date.now());
-
-	let offsetMinutes: number | undefined;
+		?? (isReference(coords) && isNumber((coords as any).epoch?.ms) ? (coords as any).epoch.ms : Date.now());
 
 	const epochMs = typeof dateVal === 'number'
 		? dateVal
-		: (typeof dateVal === 'string'
+		: (isString(dateVal)
 			? Date.parse(dateVal)
-			: (dateVal instanceof Date
+			: (isDate(dateVal)
 				? dateVal.getTime()
-				: (typeof dateVal?.epoch?.ms === 'number' ? dateVal.epoch.ms : Date.now())));
+				: (isReference(dateVal) && isNumber((dateVal as any)?.epoch?.ms) ? (dateVal as any).epoch.ms : Date.now())));
 
-	if (isString(tz) && tz.trim() !== '') {
-		try {
-			if (typeof Temporal !== 'undefined' && typeof Temporal.Instant?.fromEpochMilliseconds === 'function') {
-				const zdt = Temporal.Instant.fromEpochMilliseconds(epochMs).toZonedDateTimeISO(tz);
-				offsetMinutes = zdt.offsetNanoseconds / 60_000_000_000;
-			} else {
-				const parts = new Intl.DateTimeFormat('en-US', {
-					timeZone: tz,
-					timeZoneName: 'longOffset',
-					year: 'numeric'
-				}).formatToParts(new Date(epochMs));
-				const tzPart = parts.find(p => p.type === 'timeZoneName')?.value;
-				if (tzPart) {
-					if (tzPart === 'GMT' || tzPart === 'UTC') {
-						offsetMinutes = 0;
-					} else {
-						const match = tzPart.match(/GMT([+-])(\d{2}):(\d{2})/);
-						if (match) {
-							const sign = match[1] === '-' ? -1 : 1;
-							offsetMinutes = sign * (parseInt(match[2], 10) * 60 + parseInt(match[3], 10));
-						}
-					}
-				}
-			}
-		} catch {
-			// invalid timezone, fall back to natural meridian
-		}
-	}
+	if (!Number.isFinite(epochMs)) return NaN;
+
+	const offsetMinutes = isText(tz) ? resolveCivilTimezoneOffset(tz, epochMs) : undefined;
 
 	// If no civil timezone, use natural solar timezone meridian (round(lng / 15) * 15)
 	const refMeridian = offsetMinutes !== undefined

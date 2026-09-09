@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Consolidated `Tempo.geo` Namespace**:
   - Removed loose static methods mounted directly on the `Tempo` root class (`Tempo.geoLookup`, `Tempo.resolveGeoCoordinates`, `Tempo.serverGeoLocation`, `Tempo.geoLocation`) to prevent flat base class pollution.
   - All static geolocation utilities are now organized under the dedicated, immutable **`Tempo.geo`** namespace (`Tempo.geo.lookup`, `Tempo.geo.resolve`, `Tempo.geo.server`, `Tempo.geo.browser`, `Tempo.geo.stash`, `Tempo.geo.clear`, `Tempo.geo.get`, and `Tempo.geo.current`).
-  - Standalone pure functions (`geoLookup`, `resolveGeoCoordinates`, `serverGeoLocation`, etc.) remain available as direct named exports from the package for tree-shaking.
+  - Standalone tree-shakeable functions (`geoLookup`, `resolveGeoCoordinates`, `serverGeoLocation`, etc.) remain available as direct named exports from the package for tree-shaking.
 - **Storage Key Scoping**:
   - Standardized ambient coordinate storage on `_magma_geo_`.
 

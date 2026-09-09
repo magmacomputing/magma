@@ -52,7 +52,7 @@ console.log(localTime.geo?.latitude, localTime.geo?.longitude);
 
 ### 2. Functional Tree-Shakeable APIs
 
-All underlying utilities can be imported as standalone pure functions without augmenting `Tempo`:
+All underlying utilities can be imported as standalone tree-shakeable functions without augmenting `Tempo`:
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
