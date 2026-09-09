@@ -14,8 +14,8 @@
     "description": "Tempo plugin for location-aware solar twilight events and lunar phase calculations",
     "packageName": "@magmacomputing/tempo-plugin-celestial",
     "plan": "community",
-    "status": "experimental",
-    "version": "0.1.0"
+    "status": "active",
+    "version": "0.2.0"
   },
   {
     "id": "batch",
@@ -24,7 +24,7 @@
     "packageName": "@magmacomputing/tempo-plugin-batch",
     "plan": "community",
     "status": "active",
-    "version": "1.0.2"
+    "version": "1.1.0"
   },
   {
     "id": "finance",
@@ -60,7 +60,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
     "status": "active",
-    "version": "1.2.1"
+    "version": "2.0.0"
   },
   {
     "id": "ticker",
@@ -78,7 +78,7 @@
     "packageName": "@magmacomputing/tempo-plugin-geo",
     "plan": "community",
     "status": "active",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   {
     "id": "_std",

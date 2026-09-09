@@ -27,7 +27,7 @@ interface MapStore {																				// a localStorage object
 const defaults = { catch: true, debug: 0 } as MapOpts;			// default Options
 const context = getContext();																// browser / nodejs / google-apps
 const mapStore = {} as MapStore;														// static object to hold last position
-const MAP_KEY = '_map_';																		// localStorage key
+const MAP_KEY = '_magma_browser_map_';											// distinct browser MapStore localStorage key
 const log = new Logger('[Mapper]');
 
 let storePromise: Promise<void | WebStore> | null = null;
@@ -38,7 +38,7 @@ const getStore = () => {
 				import('#browser/webstore.class.js')
 					.then(({ WebStore }) => {
 						const local = new WebStore('local');
-						Object.assign(mapStore, local.get(MAP_KEY, {}));// fetch the previous MAP_KEY coordinates
+						Object.assign(mapStore, local.get(MAP_KEY, {}));// fetch previous coordinates
 						resolve(local);																	// localStorage wrapper
 					})
 					.catch(reject);
@@ -146,7 +146,7 @@ export const mapQuery = (coords?: google.maps.GeocoderRequest, opts = {} as MapO
 		geoCoords(coords)																				// get a Location object
 			.then((loc) => {
 				switch (true) {
-					case (!(typeof window !== 'undefined' && 'google' in window && 'maps' in window['google'])):
+					case (context.type !== CONTEXT.Browser || !window['google']?.maps):
 						throw new Error('Google Maps API not configured');
 
 					case isNullish(loc):															// unsuccessful geoLocation

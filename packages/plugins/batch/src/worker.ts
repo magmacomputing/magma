@@ -1,6 +1,40 @@
 import { workerData, parentPort } from 'node:worker_threads';
 import { Tempo } from '@magmacomputing/tempo';
 
+/**
+ * Applies a duration mutation, including supported shorthand units, to a Tempo instance.
+ *
+ * @param t - Tempo instance to mutate
+ * @param op - Mutation value or shorthand duration string
+ * @returns The mutated Tempo instance
+ */
+function applyMutation(t: any, op: any) {
+	if (typeof op === 'string') {
+		const match = op.trim().match(/^([+-]?\d+)\s*([a-zA-Z]+)$/);
+		if (match) {
+			const count = parseInt(match[1], 10);
+			const unit = match[2].toLowerCase();
+			const unitMap: Record<string, string> = {
+				d: 'days', day: 'days', days: 'days',
+				w: 'weeks', week: 'weeks', weeks: 'weeks',
+				m: 'minutes', min: 'minutes', mins: 'minutes', minute: 'minutes', minutes: 'minutes',
+				h: 'hours', hr: 'hours', hrs: 'hours', hour: 'hours', hours: 'hours',
+				s: 'seconds', sec: 'seconds', secs: 'seconds', second: 'seconds', seconds: 'seconds',
+				mo: 'months', month: 'months', months: 'months',
+				y: 'years', yr: 'years', yrs: 'years', year: 'years', years: 'years'
+			};
+			const mappedUnit = unitMap[unit];
+			if (mappedUnit) {
+				return t.add({ [mappedUnit]: count });
+			}
+		}
+	}
+	return t.add(op);
+}
+
+/**
+ * Processes the current worker payload and posts either its result or an error to the parent thread.
+ */
 async function run() {
 	if (!parentPort) return;
 
@@ -14,11 +48,8 @@ async function run() {
 
 			for (let i = startIdx; i < endIdx; i++) {
 				const epoch = inputView[i];
-				// Using Tempo to mutate. In a full implementation, we'd have robust parsing of the 'operation' string.
-				// For this prototype, we assume the operation is an add operation (e.g. "+1w").
-				// We get the mutated epoch number and put it back into the buffer.
 				const t = new Tempo(epoch);
-				const resultT = t.add(operation);
+				const resultT = applyMutation(t, operation);
 				outputView[i] = resultT.epoch.ms;
 			}
 			parentPort.postMessage({ status: 'done' });
@@ -30,7 +61,7 @@ async function run() {
 			for (let i = 0; i < chunk.length; i++) {
 				const epoch = chunk[i];
 				const t = new Tempo(epoch);
-				const resultT = t.add(operation);
+				const resultT = applyMutation(t, operation);
 				result[i] = resultT.epoch.ms;
 			}
 

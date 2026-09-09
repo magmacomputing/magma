@@ -228,7 +228,8 @@ Tempo.init({
 | `pivot` | `number` | `75` | Cutoff for parsing two-digit years. |
 | `monthDay` | `MonthDay \| boolean` | `undefined` | Regional date-parsing configuration (grouped). Includes `active`, `locales`, `layouts`, and `timezones`. |
 | `timeStamp`| `'ss' \| 'ms' \| 'us' \| 'ns'` | `'ms'` | Precision for numeric inputs and the `.ts` property. |
-| `sphere` | `Evaluable<'north' \| 'south'>`| Auto-inferred | Hemisphere for seasonal plugins or dynamic supplier. |
+| `sphere` | `Evaluable<'north' \| 'south' \| 'equator'>`| Auto-inferred | Hemisphere for seasonal plugins or dynamic supplier. |
+| `geo` | `GeoOptions` | `undefined` | Geographic coordinates, city, country, elevation, and timezone metadata. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
 | `registry` | `{ formats?, locales?, numbers?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, number-to-word mappings, parsing logic, localization). |
 | `extends` | `string \| string[]` | `undefined` | Local file path(s) or `file://` URL(s) to inherit base configuration from. |
@@ -301,6 +302,39 @@ When a `Tempo` instance is constructed:
 
 > [!NOTE]
 > **Zero Configuration Drift**: Because suppliers are resolved at creation time into an immutable snapshot, an existing `Tempo` instance will never drift or become out-of-sync if external session state changes later in the request lifecycle. Subsequent `new Tempo()` or plugin calls will cleanly evaluate contemporary session state anew.
+
+---
+
+## 4.2 Geographic Coordinates & Location Configuration (`geo`)
+
+You can configure geographic coordinates and location metadata globally or override them on individual instances:
+
+```typescript
+// Global baseline in tempo.config.ts or Tempo.init():
+Tempo.init({
+  geo: {
+    lat: -33.8688,
+    lng: 151.2093,
+    city: 'Sydney',
+    country: 'Australia'
+  }
+});
+
+// Or per-instance override:
+const t = new Tempo('now', {
+  geo: {
+    lat: 51.5074,
+    lng: -0.1278,
+    city: 'London',
+    country: 'United Kingdom'
+  }
+});
+```
+
+* **Deterministic Validation**: Latitudes outside $[-90, 90]$ and longitudes outside $[-180, 180]$ are rejected.
+* **3-Decimal Precision**: Automatically rounded (`Math.round(val * 1000) / 1000`) to guarantee cache hit consistency.
+* **Hemisphere Inference**: Automatically sets `t.sphere` (`'north'`, `'south'`, or `'equator'`).
+* **Canonical Access**: Read through `t.geo` (recursively frozen `GeoConfig`) and `t.sphere`.
 
 ---
 

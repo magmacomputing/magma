@@ -39,6 +39,16 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(t.term.lunar.geo).toBe(t.geo);
 	});
 
+	it('factors elevation into solar sunrise/sunset and exposes elevation on solar term', () => {
+		const seaLevel = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 39.7392, lng: -104.9903, elevation: 0 } });
+		const highAlt = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 39.7392, lng: -104.9903, elevation: 1600 } });
+
+		expect(highAlt.term.solar.elevation).toBe(1600);
+		expect(highAlt.term.solar.sunrise!.epoch.ms).toBeLessThan(seaLevel.term.solar.sunrise!.epoch.ms);
+		expect(highAlt.term.solar.sunset!.epoch.ms).toBeGreaterThan(seaLevel.term.solar.sunset!.epoch.ms);
+		expect(highAlt.term.solar.daylightDurationMs).toBeGreaterThan(seaLevel.term.solar.daylightDurationMs!);
+	});
+
 	it('honors numeric anchor 0 in LunarTerm and SolarTerm resolvers', () => {
 		const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
 		

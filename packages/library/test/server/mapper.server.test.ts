@@ -54,4 +54,67 @@ describe('server/mapper.library', () => {
 
 		vi.unstubAllGlobals();
 	});
+
+	it('serverGeoLocation queries provider URL with explicit IP path when ip option is supplied', async () => {
+		const mockFetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				status: 'success',
+				lat: 37.751,
+				lon: -122.522,
+				country: 'United States',
+				city: 'San Francisco',
+				query: '8.8.8.8',
+			}),
+		});
+
+		vi.stubGlobal('fetch', mockFetch);
+
+		const geo = await serverGeoLocation({ ip: '8.8.8.8' });
+		expect(mockFetch).toHaveBeenCalledWith(
+			'https://ipwho.is/8.8.8.8',
+			expect.anything()
+		);
+		expect(geo.status).toBe('success');
+		expect(geo.query).toBe('8.8.8.8');
+		expect(geo.city).toBe('San Francisco');
+
+		vi.unstubAllGlobals();
+	});
+
+	it('serverGeoLocation replaces {ip} in custom endpoint URL', async () => {
+		const mockFetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				status: 'success',
+				lat: 34.0522,
+				lon: -118.2437,
+				country: 'United States',
+				city: 'Los Angeles',
+				query: '1.1.1.1',
+			}),
+		});
+
+		vi.stubGlobal('fetch', mockFetch);
+
+		const geo = await serverGeoLocation({ endpoint: 'https://custom.geo.api/v1/{ip}/json', ip: '1.1.1.1' });
+		expect(mockFetch).toHaveBeenCalledWith(
+			'https://custom.geo.api/v1/1.1.1.1/json',
+			expect.anything()
+		);
+		expect(geo.status).toBe('success');
+
+		vi.unstubAllGlobals();
+	});
+
+	it('serverGeoLocation fails fast when custom endpoint lacks {ip} placeholder and ip is provided', async () => {
+		const geo = await serverGeoLocation({ endpoint: 'https://custom.geo.api/lookup', ip: '1.1.1.1' });
+		expect(geo.status).toBe('fail');
+		expect(geo.error).toContain("Custom endpoint must include an '{ip}' placeholder");
+
+		await expect(
+			serverGeoLocation({ endpoint: 'https://custom.geo.api/lookup', ip: '1.1.1.1', catch: false })
+		).rejects.toThrow("Custom endpoint must include an '{ip}' placeholder");
+	});
 });
+

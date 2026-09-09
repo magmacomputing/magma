@@ -187,6 +187,57 @@ t.format('{wkd:lower} afternoon');
 
 ---
 
+## 📍 Dynamic Namespace & Spatial Tokens (`{namespace.key}`)
+
+Tempo's format engine dynamically resolves bracketed dot-notated tokens (`{namespace.key}`) against any active plugin namespace or property container on the `Tempo` instance (such as `t.geo`, `t.finance`, `t.astro`, `t.term`, or custom attached metadata).
+
+### Geographic Tokens (`{geo.*}`)
+When geographic coordinates or metadata are attached to a Tempo instance (via `options.geo`, `new Tempo('...', { geo: { city: 'Sydney', country: 'AU', lat: -33.8688, lng: 151.2093 } })`, or resolved via `t.geoLocate()`), you can format location fields directly using `{geo.<property>}` tokens:
+
+| Token | Description | Example |
+| :--- | :--- | :--- |
+| `{geo.city}` | Locality or City name | `Sydney` |
+| `{geo.country}` | ISO Country code or Country name | `AU` / `Australia` |
+| `{geo.sphere}` | Hemisphere (`north`, `south`, or `equator`) | `south` |
+| `{geo.elevation}`| Altitude / Elevation in meters above sea level | `42` |
+| `{geo.timezone}` | IANA Timezone resolved from coordinates | `Australia/Sydney` |
+| `{geo.<custom>}` | Any custom metadata key attached to `t.geo` | `Opera House` |
+
+### Custom & Plugin Namespace Tokens
+Any namespace plugin mounted via `defineNamespace` or property object on the instance can be formatted directly:
+
+```typescript
+// Plugin namespace (e.g. tempo-plugin-finance):
+t.format('Fiscal Quarter: Q{finance.fiscalQuarter} ({finance.taxYear})');
+
+// Term plugin (e.g. season or solar terms):
+t.format('Current Season: {term.season} · {geo.city:title}');
+```
+
+### Modifiers & Graceful Fallback
+All standard formatting modifiers apply seamlessly:
+* `{geo.country:upper}` → `AU`
+* `{geo.city:title}` → `Sydney`
+* `{geo.sphere:upper}` → `SOUTH`
+
+For known property namespaces (like `geo`), if the context is unpopulated or the requested property is missing, the token cleanly resolves to an empty string (`''`) rather than throwing an exception or printing `undefined`:
+
+```typescript
+const t = new Tempo('2026-10-24T15:30:00', {
+  geo: { city: 'Sydney', country: 'AU', lat: -33.869, lng: 151.209 }
+});
+
+t.format('{geo.city}, {geo.country} · {h12}:{mi} {mer}');
+// "Sydney, AU · 03:30 pm"
+
+// Graceful fallback for instances without geo:
+const tNoGeo = new Tempo('2026-10-24T15:30:00');
+tNoGeo.format('Time: {hh}:{mi} [{geo.city}]');
+// "Time: 15:30 []"
+```
+
+---
+
 ## 🌍 Complex Native Intl Formatting
 
 While Tempo's template tokens (`{dd}`, `{mon}`, etc.) combined with the `:locale` modifier are incredibly powerful for structured formats, there are times when you want the full power of the native `Intl.DateTimeFormat` API for complete, culturally-specific sentence formatting (like Arabic numerals or full-length descriptive dates). 

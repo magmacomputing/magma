@@ -132,4 +132,63 @@ describe(`${label} format method`, () => {
     expect(t.format('{ymd:year}')).toBe('240520');
   });
 
+  test('formats spatial tokens {geo.*} with modifiers and graceful fallback', () => {
+    const tWithGeo = new Tempo('2026-10-24T15:30:00', {
+      geo: {
+        latitude: -33.8688,
+        longitude: 151.2093,
+        city: 'sydney',
+        country: 'au',
+        sphere: 'south',
+        elevation: 42,
+        timezone: 'Australia/Sydney',
+        venue: 'opera house',
+      },
+    });
+
+    expect(tWithGeo.format('{geo.city}')).toBe('sydney');
+    expect(tWithGeo.format('{geo.city:title}')).toBe('Sydney');
+    expect(tWithGeo.format('{geo.country:upper}')).toBe('AU');
+    expect(tWithGeo.format('{geo.sphere}')).toBe('south');
+    expect(tWithGeo.format('{geo.elevation}')).toBe('42');
+    expect(tWithGeo.format('{geo.venue:title}')).toBe('Opera house');
+    expect(tWithGeo.format('{geo.city:title}, {geo.country:upper} · {h12}:{mi} {mer}')).toBe('Sydney, AU · 03:30 pm');
+
+    // Missing property returns empty string
+    expect(tWithGeo.format('{geo.nonexistent}')).toBe('');
+
+    // Instance without geo returns empty string without error
+    const tNoGeo = new Tempo('2026-10-24T15:30:00');
+    expect(tNoGeo.format('{geo.city}')).toBe('');
+    expect(tNoGeo.format('{geo.country}')).toBe('');
+    expect(tNoGeo.format('Time: {hh}:{mi} [{geo.city}]')).toBe('Time: 15:30 []');
+  });
+
+  test('dynamically resolves arbitrary {namespace.key} properties on instance', () => {
+    Object.defineProperty(Tempo.prototype, 'custom', {
+      value: {
+        project: 'apollo',
+        iteration: 11,
+        tag: { name: 'core-team' },
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    try {
+      const t = new Tempo('2026-10-24T15:30:00');
+      expect(t.format('Project: {custom.project:upper} (Sprint {custom.iteration})')).toBe('Project: APOLLO (Sprint 11)');
+      expect(t.format('{custom.tag.name}')).toBe('core-team');
+      // Undefined property in known container resolves cleanly to empty string
+      expect(t.format('{custom.missing}')).toBe('');
+      // Entirely unknown namespace without object on instance stays intact
+      expect(t.format('{unknown.token}')).toBe('{unknown.token}');
+      // Security: Prototype pollution or unsafe keys are rejected and left intact
+      expect(t.format('{__proto__.polluted}')).toBe('{__proto__.polluted}');
+      expect(t.format('{constructor.name}')).toBe('{constructor.name}');
+    } finally {
+      delete (Tempo.prototype as any).custom;
+    }
+  });
+
 });

@@ -69,6 +69,7 @@ declare module '@magmacomputing/tempo' {
 			millisecond: number;
 			microsecond: number;
 			nanosecond: number;
+			elevation: number | null;
 			sunrise: Tempo | null;
 			sunset: Tempo | null;
 			noon: Tempo | null;
@@ -118,34 +119,27 @@ declare module '@magmacomputing/tempo' {
 function getLunarScopeRange(t: Tempo, anchor?: any) {
 	const coords = getCelestialCoordinates(t, anchor);
 	const { refTempo, lat, lng, hasGeo, geo, timeZone, sphere } = coords;
-	const currentMs = refTempo.epoch.ms;
+	const { startOfDayMs } = (refTempo as any).startOfDay ? (refTempo as any).startOfDay() : { startOfDayMs: refTempo.epoch.ms };
 
-	const range = getLunarPhaseRange(currentMs, { sphere });
-	const moonEvents = hasGeo ? getMoonriseMoonset(currentMs, lat!, lng!) : { moonriseMs: undefined, moonsetMs: undefined };
+	const lunarDetails = getLunarDetails(t, coords);
 
-	const startTempo = new Tempo(range.startMs, { timeZone, timeStamp: 'ms', sphere });
-	const endTempo = new Tempo(range.endMs, { timeZone, timeStamp: 'ms', sphere });
-	const moonrise = hasGeo ? toTempoOrNull(moonEvents.moonriseMs, timeZone) : null;
-	const moonset = hasGeo ? toTempoOrNull(moonEvents.moonsetMs, timeZone) : null;
+	const moonEvents = hasGeo ? getMoonriseMoonset(refTempo.epoch.ms, lat!, lng!) : null;
+	const moonrise = moonEvents ? toTempoOrNull(moonEvents.moonriseMs, timeZone, sphere) : null;
+	const moonset = moonEvents ? toTempoOrNull(moonEvents.moonsetMs, timeZone, sphere) : null;
 
-	const details = getLunarDetails(t, coords);
+	const { startMs, endMs } = getLunarPhaseRange(refTempo.epoch.ms, { sphere });
+	const start = new Tempo(startMs, { timeZone, timeStamp: 'ms', ...(sphere ? { sphere } : {}) });
+	const end = new Tempo(endMs, { timeZone, timeStamp: 'ms', ...(sphere ? { sphere } : {}) });
 
 	return {
-		key: details.key,
-		phase: details.phase,
-		index: details.index,
-		illumination: details.illumination,
-		ageDays: details.ageDays,
-		isWaxing: details.isWaxing,
-		...(details.emoji !== undefined ? { emoji: details.emoji } : {}),
-		phases: LUNAR_PHASE_KEYS,
+		...lunarDetails,
+		group: 'lunar' as const,
+		geo: hasGeo ? geo : null,
+		...toDateTimeFields(start),
 		moonrise,
 		moonset,
-		group: 'lunar' as const,
-		geo,
-		...toDateTimeFields(startTempo),
-		start: startTempo,
-		end: endTempo,
+		start,
+		end,
 	};
 }
 
@@ -180,6 +174,7 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 			group: 'solar' as const,
 			geo: null,
 			...toDateTimeFields(refTempo),
+			elevation: null,
 			sunrise: null,
 			sunset: null,
 			noon: null,
@@ -193,7 +188,15 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		};
 	}
 
-	const res = getSunriseSunset(refTempo.epoch.ms, lat!, lng!);
+	const elevation = typeof (geo as any)?.elevation === 'number'
+		? (geo as any).elevation
+		: (typeof (t.config?.geo as any)?.elevation === 'number' ? (t.config?.geo as any).elevation : undefined);
+
+	const res = getSunriseSunset(refTempo.epoch.ms, {
+		latitude: lat!,
+		longitude: lng!,
+		...(elevation !== undefined ? { elevation } : {}),
+	});
 
 	const sunrise = toTempoOrNull(res.sunriseMs, timeZone)!;
 	const sunset = toTempoOrNull(res.sunsetMs, timeZone)!;
@@ -250,6 +253,7 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		index: res.index,
 		group: 'solar' as const,
 		geo,
+		elevation: (typeof geo?.elevation === 'number') ? geo.elevation : (typeof (t.config?.geo as any)?.elevation === 'number' ? (t.config?.geo as any).elevation : null),
 		...toDateTimeFields(start),
 		sunrise,
 		sunset,

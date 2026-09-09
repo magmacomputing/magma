@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2026-09-02
+## [0.2.0] - 2026-09-09
 
 ### Added
+- **Elevation Horizon Dip**: Integrated observer elevation (meters above sea level) into `getSunriseSunset()` apparent solar timing calculations:
+  - Added optional `elevation` parameter to `SolarOptions` and included resolved `elevation` in `SunriseSunsetResult`.
+  - Factors atmospheric horizon dip ($\Delta\theta \approx 0.0347^\circ \times \sqrt{\max(0, \text{elevation})}$) into the solar zenith angle ($90.833^\circ + \Delta\theta$).
+  - Correctly shifts sunrise earlier, sunset later, and expands daylight duration for elevated observers while keeping true solar noon transit invariant.
 - **Celestial Utilities**: Introduced new pure astronomical, celestial, solar, lunar, and zodiac utility module (`@magmacomputing/tempo-fns/celestial`):
   - `getLunarPhase`: Calculates lunar phase name, 1-based index (1..8), illumination 0.0–1.0 fraction, age in days, waxing status, and hemisphere-aware emojis.
   - `getLunarPhaseRange`: Resolves start/end boundaries for active lunar phase cycles.

@@ -1,12 +1,13 @@
 import { objectify, stringify } from '#library/serialize.library.js';
 import { CONTEXT, getContext } from '#library/utility.library.js';
 import { isDefined, isUndefined, isString } from '#library/assertion.library.js';
+import { BoundedCache } from '#library/cache.class.js';
 
 const context = getContext();
 
 /** Creates an in-memory Storage object fallback for environments without native Storage support */
-export const createMemoryStorage = (): Storage => {
-	const map = new Map<string, string>();
+export const createMemoryStorage = (maxSize = 1000, ttl = Infinity): Storage => {
+	const map = new BoundedCache<string, string>(maxSize, ttl);
 	return {
 		get length() { return map.size; },
 		clear: () => map.clear(),
@@ -14,7 +15,7 @@ export const createMemoryStorage = (): Storage => {
 		key: (index: number) => Array.from(map.keys())[index] ?? null,
 		removeItem: (key: string) => { map.delete(key); },
 		setItem: (key: string, value: string) => { map.set(key, String(value)); },
-	};
+	}
 }
 
 const memoryStores = new Map<string, Storage>();
@@ -57,7 +58,7 @@ let storage = context.type === CONTEXT.Browser
 	? getSafeStorage()
 	: createMemoryStorage();
 
-const nodeStorage = new Map<string, string | undefined>();
+export const nodeStorage = new BoundedCache<string, string | undefined>(1000, Infinity);
 
 /**
  * Selects the active browser storage mechanism (localStorage or sessionStorage).
@@ -142,19 +143,31 @@ export function getStorage<T>(key?: string, dflt?: T): T | undefined {
 		: dflt;
 }
 
+/** Options for fine-grained cache control in server storage contexts */
+export interface ServerStorageOptions {
+	/** Custom time-to-live in milliseconds for this specific entry */
+	ttl?: number;
+	/** If true, registers as an immortal static key immune to LRU capacity eviction and TTL */
+	static?: boolean;
+}
+
 /**
  * Sets or deletes a value in the active storage mechanism across any runtime environment.
  * Automatically serializes objects for safe storage.
  * 
  * @param key - The storage key to set
  * @param val - The value to store (if undefined, the key is deleted)
+ * @param options - Optional cache control options (server context only)
  * @example
  * ```ts
  * setStorage('user', { name: 'Alice' });
  * setStorage('user', undefined); // deletes 'user'
+ * setStorage('coords', { lat: 10, lng: 20 }, { ttl: 86400000 }); // expires after 24h
  * ```
  */
-export function setStorage<T>(key: string, val?: T) {
+export function setStorage<T>(key: string, val?: T): void;
+export function setStorage<T>(key: string, val: T | undefined, options: ServerStorageOptions): void;
+export function setStorage<T>(key: string, val?: T, options?: ServerStorageOptions): void {
 	const stash = isDefined(val) ? stringify(val) : undefined;
 	const set = isDefined(stash);
 
@@ -170,7 +183,13 @@ export function setStorage<T>(key: string, val?: T) {
 			break;
 
 		case CONTEXT.NodeJS:
-			nodeStorage.set(key, stash);
+			if (!set) {
+				nodeStorage.set(key, undefined, options?.ttl);
+			} else if (options?.static) {
+				nodeStorage.setStatic(key, stash);
+			} else {
+				nodeStorage.set(key, stash, options?.ttl);
+			}
 			break;
 
 		case CONTEXT.Deno:
@@ -191,6 +210,31 @@ export function setStorage<T>(key: string, val?: T) {
 
 		default:
 			throw new Error(`Cannot determine Javascript context: ${context.type}`);
+	}
+}
+
+/**
+ * Clears in-memory storage entries across environments (NodeJS nodeStorage, Browser memory storage).
+ */
+export function clearStorage(): void {
+	switch (context.type) {
+		case CONTEXT.Browser:
+			try {
+				for (const store of memoryStores.values())
+					store.clear();
+			} catch {
+				// ignore
+			}
+			break;
+
+		case CONTEXT.NodeJS:
+			nodeStorage.clear();
+			storage.clear();
+			break;
+
+		default:
+			storage.clear();
+			break;
 	}
 }
 

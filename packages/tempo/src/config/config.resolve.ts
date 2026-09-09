@@ -189,7 +189,7 @@ async function processExtends(
 
 		const currentDir = path ? path.dirname(baseLocation) : (typeof process !== 'undefined' ? process.cwd() : '');
 		const branchLoadedSet = new Set(loadedSet);
-		const parentConfig = await loadConfigTarget(targetUrlOrPath, currentDir, fs, path, urlMod, branchLoadedSet, depth + 1, budget);
+		const parentConfig = await resolveExtendsTarget(targetUrlOrPath, currentDir, fs, path, urlMod, branchLoadedSet, depth + 1, budget);
 		if (parentConfig)
 			mergedParentConfig = mergeConfigs(mergedParentConfig, parentConfig);
 	}
@@ -199,37 +199,14 @@ async function processExtends(
 }
 
 /**
- * Loads and resolves a configuration target from a local path or `file://` URL.
- *
- * @param target - The configuration path or URL to load
- * @param currentDir - The base directory for resolving relative paths
- * @returns The resolved configuration, or `undefined` if loading fails or the target is already being processed
+ * Allowed file extensions for top-level Tempo configuration files.
  */
-async function loadConfigTarget(
-	target: string,
-	currentDir: string,
-	fs?: any,
-	path?: any,
-	urlMod?: any,
-	loadedSet = new Set<string>(),
-	depth = 0,
-	budget: ExtendsBudget = { remaining: MAX_EXTENDS_BUDGET },
-): Promise<Options | undefined> {
-	if (loadedSet.has(target)) return undefined;
+const ALLOWED_CONFIG_EXTENSIONS = new Set(['.json', '.jsonc', '.js', '.mjs', '.cjs', '.ts', '.mts']);
 
-	if (isHttpUrl(target)) {
-		console.warn(`[Tempo] Remote HTTP(S) config target is not supported: ${target}`);
-		return undefined;
-	}
-
-	if (depth > 0) {
-		if (checkAndWarnBudget(budget)) return undefined;
-		budget.remaining--;
-	}
-
-	loadedSet.add(target);
-
-	let localPath = target;
+/**
+ * Resolves a local path from a file URL or relative path, ensuring non-remote security.
+ */
+function resolveLocalConfigPath(target: string, currentDir: string, path?: any, urlMod?: any): string | undefined {
 	if (isFileUrl(target)) {
 		try {
 			const parsed = new URL(target);
@@ -243,31 +220,104 @@ async function loadConfigTarget(
 		}
 
 		if (urlMod?.fileURLToPath)
-			localPath = urlMod.fileURLToPath(target);
-		else
-			localPath = target.replace(/^file:\/\//i, '');
-	} else if (path && !path.isAbsolute(localPath)) {
-		localPath = path.resolve(currentDir, localPath);
+			return urlMod.fileURLToPath(target);
+		return target.replace(/^file:\/\//i, '');
 	}
+
+	if (path && !path.isAbsolute(target)) {
+		return path.resolve(currentDir, target);
+	}
+
+	return target;
+}
+
+/**
+ * Strictly loads and resolves a static inherited configuration target for `extends`.
+ * Config extends only supports static .json and .jsonc data files, NEVER dynamic modules.
+ */
+async function resolveExtendsTarget(
+	target: string,
+	currentDir: string,
+	fs?: any,
+	path?: any,
+	urlMod?: any,
+	loadedSet = new Set<string>(),
+	depth = 1,
+	budget: ExtendsBudget = { remaining: MAX_EXTENDS_BUDGET },
+): Promise<Options | undefined> {
+	if (loadedSet.has(target)) return undefined;
+
+	if (isHttpUrl(target)) {
+		console.warn(`[Tempo] Remote HTTP(S) config target is not supported: ${target}`);
+		return undefined;
+	}
+
+	if (checkAndWarnBudget(budget)) return undefined;
+	budget.remaining--;
+
+	loadedSet.add(target);
+
+	const localPath = resolveLocalConfigPath(target, currentDir, path, urlMod);
+	if (!localPath) return undefined;
 
 	if (fs && fs.existsSync(localPath)) {
 		try {
 			const ext = path ? path.extname(localPath) : '.json';
-			let loaded: Options | undefined = undefined;
+			if (ext !== '.json' && ext !== '.jsonc') {
+				console.warn(`[Tempo] Config extends only supports static .json and .jsonc data files, skipping: ${localPath}`);
+				return undefined;
+			}
 
+			const content = await fs.promises.readFile(localPath, 'utf8');
+			const loaded = parseJSONC(content) as Options;
+			if (loaded)
+				return processExtends(loaded, localPath, fs, path, urlMod, loadedSet, depth, budget);
+		} catch (err) {
+			console.warn(`[Tempo] Failed to load config file at ${localPath}:`, err);
+		}
+	}
+
+	return undefined;
+}
+
+/**
+ * Loads a top-level configuration file discovered in the project or passed via `options.configFile`.
+ * Only permits explicitly supported configuration extensions.
+ */
+async function loadTopLevelConfig(
+	target: string,
+	currentDir: string,
+	fs?: any,
+	path?: any,
+	urlMod?: any,
+): Promise<Options | undefined> {
+	if (isHttpUrl(target)) {
+		console.warn(`[Tempo] Remote HTTP(S) config target is not supported: ${target}`);
+		return undefined;
+	}
+
+	const localPath = resolveLocalConfigPath(target, currentDir, path, urlMod);
+	if (!localPath) return undefined;
+
+	if (fs && fs.existsSync(localPath)) {
+		try {
+			const ext = path ? path.extname(localPath) : '.json';
+			if (!ALLOWED_CONFIG_EXTENSIONS.has(ext)) {
+				console.warn(`[Tempo] Unsupported configuration file format, skipping: ${localPath}`);
+				return undefined;
+			}
+
+			let loaded: Options | undefined = undefined;
 			if (ext === '.json' || ext === '.jsonc') {
 				const content = await fs.promises.readFile(localPath, 'utf8');
 				loaded = parseJSONC(content) as Options;
-			} else if (depth === 0 && urlMod) {
-				// Only allow JS/TS module execution for top-level project config files, never for extends targets
+			} else if (urlMod) {
 				const imported = await import(/* @vite-ignore */ urlMod.pathToFileURL(localPath).href);
 				loaded = imported.default || imported;
-			} else {
-				console.warn(`[Tempo] Config extends only supports static .json and .jsonc data files, skipping: ${localPath}`);
 			}
 
 			if (loaded)
-				return processExtends(loaded, localPath, fs, path, urlMod, loadedSet, depth, budget);
+				return processExtends(loaded, localPath, fs, path, urlMod, new Set([target]), 0);
 		} catch (err) {
 			console.warn(`[Tempo] Failed to load config file at ${localPath}:`, err);
 		}
@@ -443,7 +493,7 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 			const target = isFileUrl(options.configFile)
 				? options.configFile
 				: path.resolve(currentDir, options.configFile);
-			return await loadConfigTarget(target, currentDir, fs, path, urlMod);
+			return await loadTopLevelConfig(target, currentDir, fs, path, urlMod);
 		}
 
 		const rootPath = path.parse(currentDir).root;
@@ -456,7 +506,7 @@ export async function resolveConfig(options?: { cwd?: string, configFile?: strin
 				const configPath = path.join(currentDir, `tempo.config${ext}`);
 				if (fs.existsSync(configPath)) {
 					try {
-						const loaded = await loadConfigTarget(configPath, currentDir, fs, path, urlMod);
+						const loaded = await loadTopLevelConfig(configPath, currentDir, fs, path, urlMod);
 						if (loaded) return loaded;
 					} catch (err) {
 						console.warn(`[Tempo] Found config file at ${configPath} but failed to load it:`, err);

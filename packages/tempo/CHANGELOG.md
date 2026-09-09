@@ -6,6 +6,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] - 2026-09-09
+
+### Added
+- **Dynamic Namespace & Spatial Layout Format Tokens (`{namespace.key}`)**:
+  - Generalized token resolution in `t.format()` to dynamically interpolate any active plugin namespace (`t.finance`, `t.astro`, `t.term`) or custom property container attached to the `Tempo` instance.
+  - Dedicated spatial formatting: `{geo.city}`, `{geo.country}`, `{geo.sphere}`, `{geo.elevation}`, `{geo.timezone}`, and custom location metadata (e.g. `{geo.venue}`).
+  - Full compatibility with format modifiers: e.g. `{geo.country:upper}`, `{geo.city:title}`, `{finance.taxYear}`.
+  - Graceful fallback: Safely resolves missing properties in known contexts (like `geo`) to `''` (empty string) while leaving unhandled tokens intact.
+  - Compile-time format validation: Updated `_ValidToken` in `tempo.type.ts` to accept `${string}.${string}`.
+- **Universal Geographic Context in Parsing & Construction**:
+  - Support for `options.geo` (`latitude`, `longitude`, `city`, `country`, `elevation`, `timezone`, etc.) in `new Tempo(input, options)` and `parse(input, options)`.
+  - Enforces deterministic 3-decimal rounding and Earth boundary limits ($\text{lat} \in [-90, 90]$, $\text{lng} \in [-180, 180]$) on input coordinates.
+  - Inferred hemisphere (`'north'`, `'south'`, `'equator'`) automatically derived and exposed on `t.sphere` and `t.geo.sphere`.
+  - Canonical read-only getter `t.geo` returning frozen `GeoConfig`.
+- **Equator Compass Alignment**:
+  - Added `Equator: 'equator'` to `COMPASS` enum.
+  - Updated `t.sphere` to return `'equator'` when coordinates fall within the $\pm 0.001^\circ$ equatorial band.
+
+### Security
+- **Configuration Resolution Decoupling (Socket.dev Anomaly Mitigation)**:
+  - Strictly decoupled recursive `extends` loading from top-level project config resolution in `config.resolve.ts`.
+  - Dedicated `resolveExtendsTarget()` function exclusively reads and parses static `.json` and `.jsonc` files via `fs.promises.readFile` and `parseJSONC`, completely eliminating dynamic module imports (`import()`) from the `extends` pipeline.
+  - Added strict file extension allowlisting (`.json`, `.jsonc`, `.js`, `.mjs`, `.cjs`, `.ts`, `.mts`) to top-level configuration file discovery.
+
 ## [4.1.1] - 2026-09-07
 
 ### Added

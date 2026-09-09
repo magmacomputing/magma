@@ -1,5 +1,5 @@
 import { parseAI, initAI, resetAI, aiCache, getAiRateLimits, getAiConfig, TempoAiError, AiMode, DEFAULT_PROVIDERS } from '../src/index.js';
-import { BoundedCache } from '@magmacomputing/tempo/support';
+import { BoundedCache } from '@magmacomputing/library';
 import { Tempo } from '@magmacomputing/tempo';
 
 describe('AI Parsing Plugin (parseAI)', () => {

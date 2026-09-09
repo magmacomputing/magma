@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,9 +29,9 @@ export async function versionSync(_args) {
 		let syncedCount = 0;
 		let alreadySyncedCount = 0;
 		for (const ws of workspaces) {
+			const wsRelPath = ws.replace('@magmacomputing/', '');
+			const wsPkgPath = path.resolve(ROOT_DIR, 'packages', wsRelPath, 'package.json');
 			try {
-				const wsRelPath = ws.replace('@magmacomputing/', '');
-				const wsPkgPath = path.resolve(ROOT_DIR, 'packages', wsRelPath, 'package.json');
 				if (existsSync(wsPkgPath)) {
 					const wsPkg = JSON.parse(readFileSync(wsPkgPath, 'utf8'));
 					if (wsPkg.version === version) {
@@ -45,6 +45,22 @@ export async function versionSync(_args) {
 				console.log(`✅ Synced ${ws} to ${version}`);
 				syncedCount++;
 			} catch (error) {
+				// Fallback to direct package.json modification if npm CLI workspace versioning fails
+				if (existsSync(wsPkgPath)) {
+					try {
+						const rawContent = readFileSync(wsPkgPath, 'utf8');
+						const updatedContent = rawContent.replace(/^([ \t]*"version"[ \t]*:[ \t]*)"[^"]+"/m, `$1"${version}"`);
+						if (updatedContent === rawContent)
+							throw new Error(`Top-level version key was not found or already matched in ${wsPkgPath}`);
+
+						writeFileSync(wsPkgPath, updatedContent, 'utf8');
+						console.log(`✅ Synced ${ws} to ${version} (file fallback)`);
+						syncedCount++;
+						continue;
+					} catch (writeErr) {
+						console.warn(`⚠️ File write fallback failed for ${ws}:`, writeErr?.message || writeErr);
+					}
+				}
 				console.warn(`⚠️ Bypassed ${ws} (error details):`, error?.message || error);
 			}
 		}

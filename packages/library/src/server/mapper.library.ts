@@ -7,6 +7,7 @@ export interface ServerMapOpts {
 	timeout?: number;
 	catch?: boolean;
 	debug?: DebugLevel;
+	ip?: string;
 }
 
 export interface ServerGeolocationResult {
@@ -23,8 +24,10 @@ export interface ServerGeolocationResult {
 }
 
 const log = new Logger('[ServerMapper]');
+const DEFAULT_GEO_ENDPOINT = 'https://ipwho.is';
+
 const defaults: ServerMapOpts = {
-	endpoint: 'https://ipwho.is/',
+	endpoint: `${DEFAULT_GEO_ENDPOINT}/`,
 	timeout: 3000,
 	catch: true,
 	debug: 0,
@@ -48,7 +51,19 @@ export const serverGeoLocation = async (opts = {} as ServerMapOpts): Promise<Ser
 	const fulfil = options.catch !== false;
 
 	try {
-		const endpoint = options.endpoint || defaults.endpoint!;
+		let endpoint = options.endpoint || defaults.endpoint!;
+		if (isString(options.ip)) {
+			const cleanIp = encodeURIComponent(options.ip.trim());
+			const normalized = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
+			if (normalized === DEFAULT_GEO_ENDPOINT) {
+				endpoint = `${DEFAULT_GEO_ENDPOINT}/${cleanIp}`;
+			} else if (endpoint.includes('{ip}')) {
+				endpoint = endpoint.replace('{ip}', cleanIp);
+			} else if (cleanIp !== '') {
+				throw new Error(`Custom endpoint must include an '{ip}' placeholder to resolve a specific IP: ${endpoint}`);
+			}
+		}
+
 		const timeout = options.timeout ?? defaults.timeout;
 		const { fetchRequest } = await getRequestModule();
 		const data = await fetchRequest<Record<string, any>>(

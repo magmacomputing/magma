@@ -5,6 +5,16 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-09-08
+
+### Breaking Changes & Major Release
+- **Standardized on Tempo v4.1.0+ Community Core**:
+  - Requires `@magmacomputing/tempo` `^4.1.0`.
+  - Migrated configuration discovery to the dedicated `pluginOptions.ai` configuration slot introduced in Tempo v4.1.0, deprecating legacy `plugins.ai` dictionary passing.
+- **Self-Contained Network Transport (`fetch.ts`)**:
+  - Decoupled network transport entirely from `@magmacomputing/tempo/library` (removing reliance on core internal `HttpError` and `fetchRequest`).
+  - Implemented proactive stream consumption via `res.body.getReader()` with strict byte accounting and upfront `Content-Length` enforcement against `maxBytes` to prevent memory exhaustion.
+
 ## [1.2.1] - 2026-09-07
 
 ### Security & Reliability
