@@ -15,6 +15,16 @@ Tempo offers two primary methods for calculating time differences: `.until()` an
 - **`.until()`** is built for **numeric and mathematical calculations**, returning primitive `Number` metrics (e.g. `420` minutes) or a `Duration` object.
 - **`.since()`** is built for **human-readable relative time formatting**, returning localized `String` outputs (e.g. `"36y ago"` or `"yesterday"` via `Intl.RelativeTimeFormat`).
 
+::: tip Coming from Moment.js or Day.js?
+If you are looking for `.diff()`, you won't find it in Tempo—and for good reason!
+
+In legacy libraries, `a.diff(b)` performed `a - b`, frequently causing off-by-sign confusion (e.g., `today.diff(christmas)` returning a negative number). 
+
+When architecting the modern ECMAScript **`Temporal` API**, the TC39 committee deliberately rejected `.diff()` in favor of directional, self-explanatory methods. Tempo follows this modern standard:
+- **Use `.until()`** for forward-looking math and durations (*"How long until Christmas?"* → `today.until(christmas, 'days')` is intuitively positive).
+- **Use `.since()`** for elapsed time and human-readable relative strings (*"How long since my birthday?"* → `today.since(birthday, 'years')` → `"36y ago"`).
+:::
+
 ### `.until()`
 Calculates the time remaining from the Tempo instance *until* a future date. The target can be a **`Tempo` instance**, a **`Temporal` object**, a **JS `Date`**, an **ISO string**, or a **natural-language string expression**.
 

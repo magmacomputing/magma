@@ -61,7 +61,8 @@ Because Luxon is bowing out and Day.js cannot evolve architecturally without los
 
 - **Choose Day.js if:** You have a legacy codebase and need a tiny <2KB patch for simple tasks, and are comfortable using a library in maintenance mode.
 - **Choose Luxon if:** You need a stable bridge for environments that don't yet support Temporal, but keep in mind it is actively planning for sunset.
-- **Choose date-fns if:** You prefer using functional utilities to manipulate native Temporal objects, rather than a comprehensive class-based wrapper.
-- **Choose Tempo if:** You want a premium, Temporal-first architecture that provides **high precision**, **human-centric parsing**, and the ability to model **complex business-date logic** directly into your application.
+- **Choose date-fns if:** You have an existing codebase heavily invested in date-fns pipelines and want to leverage their transitional bridge as you migrate.
+- **Choose [@magmacomputing/tempo-fns](https://magmacomputing.github.io/magma/functions/) if:** You prefer pure, tree-shakeable functional utilities designed natively for Temporal objects (and Tempo terms) without the overhead of a class-based wrapper.
+- **Choose Tempo if:** You want a premium, Temporal-first architecture that provides **fluent chaining**, **high precision**, **human-centric parsing**, and the ability to model **complex business-date logic** directly into your application.
 
-[**Ready to start? See the Quick Start Guide →**](../../README.md#quick-start)
+[**Ready to start? See the Quick Start Guide →**](../../README.md#⚡-quick-start)

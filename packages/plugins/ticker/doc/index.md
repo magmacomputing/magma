@@ -264,7 +264,7 @@ The object returned by `Tempo.ticker()` (or an instance of the `Ticker` class) i
 The `Ticker` class maintains a static registry of all currently active Tickers. This is useful for debugging, monitoring, or cleanup checks.
 
 ### `Ticker.active`
-A static getter that returns an array of [`Ticker.Snapshot`](#tickersnapshot) objects for all active (non-stopped) Tickers.
+A static getter that returns an array of [`Ticker.Snapshot`](#ticker-snapshot) objects for all active (non-stopped) Tickers.
 
 ```typescript
 import { Ticker } from '@magmacomputing/tempo-plugin-ticker';

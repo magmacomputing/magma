@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/tempo-logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tempo Interactive Workbench</title>
+    <!-- 1. Ensure Temporal exists on globalThis before any module evaluates -->
+    <script type="module" src="/src/polyfill.ts"></script>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <!-- 2. Main application bundle -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

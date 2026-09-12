@@ -32,3 +32,4 @@ Whenever writing, reviewing, refactoring, testing, or discussing code involving 
 
 ## 3. Documentation Maintenance
 - **Do not make updates to documents in `magma/packages/tempo/doc/9-plugins`**: This folder is completely re-built during `docs:build` (harvested from `packages/plugins/*/doc/` via `harvest-plugins.mjs`). Always make plugin documentation updates directly in the respective plugin package (e.g. `packages/plugins/<name>/doc/` or `packages/plugins/<name>/README.md`).
+- **Heading Anchors & VitePress Slugs**: Follow the guidelines in [documentation.md](./documentation.md) for all documentation links (e.g., VitePress `_` prefix on numeric headings, emoji preservation, and dot-to-hyphen punctuation conversion).

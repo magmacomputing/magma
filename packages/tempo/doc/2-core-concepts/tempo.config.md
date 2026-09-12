@@ -20,8 +20,10 @@ Rather than scattering `Tempo.init()` or `Tempo.use()` calls throughout your app
 
 This mirrors modern ecosystem standards (like `vite.config.ts` or `tailwind.config.js`) and ensures that plugins, timezones, and custom aliases are consistently applied before any domain logic executes.
 
-::: info
-**Target Environment**: This automatic configuration discovery pattern relies on Node.js file system capabilities and is designed for Server, Fullstack, or Bundled environments (like Vite or Webpack). If you are using Tempo via a `<script>` tag in a pure Browser environment, skip to [Explicit Initialization](#3-explicit-initialization-tempoinit) to configure Tempo synchronously!
+::: info Target Environment & Discovery
+**Automatic zero-config discovery** relies on Node.js file system capabilities and is exclusive to Server and Node.js environments.
+
+In bundled frontend environments (like Vite or Webpack), you can still maintain a central `tempo.config.ts`, but you must explicitly import and pass it to `Tempo.init(config)` at your application entry point (e.g. `main.ts`). If you are using Tempo via a `<script>` tag in a pure Browser environment, skip to [Explicit Initialization](#_3-explicit-initialization-tempo-init) to configure Tempo directly!
 :::
 
 ```typescript
@@ -32,7 +34,7 @@ import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 export default defineConfig({
   timeZone: 'Australia/Sydney',        // Set your baseline timezone
-  extends: './tempo-base.config.jsonc', // Inherit local base config
+  extends: './tempo-base.config.jsonc',// Inherit local base config
   plugins: [
     AstroTerm,                         // 1. Executable plugin or term
     TickerPlugin,                      // 2. Plugin singleton (or factory closure)
@@ -104,13 +106,13 @@ Using `tempo.config.ts` or `Tempo.bootstrap()` is the modern standard, but it in
 - **Asynchronous Requirement**: Because dynamic config loading and file reading are asynchronous, you **must** use `await Tempo.bootstrap()` instead of synchronous calls.
 
 #### 🛑 Security & Reliability Bounds
-- **Local Data-Only Inheritance**: The `"extends"` mechanism strictly supports static `.json` and `.jsonc` data files parsed via `parseJSONC`. Dynamic JavaScript execution (`eval` or dynamic `import`) from extended configurations is prohibited to prevent unintended code execution in inherited configs.
+- **Local Data-Only Inheritance**: The `"extends"` mechanism strictly supports static `.json` and `.jsonc` data files. Dynamic JavaScript execution (`eval` or dynamic `import`) from extended configurations is prohibited to prevent unintended code execution in inherited configs.
 - **Local Boundary Safety**: Remote HTTP(S) URLs are rejected when specified as `configFile` (returning `undefined`), whereas remote `"extends"` targets are skipped with a warning while local configuration processing continues, protecting against external network dependencies and remote code injection. `file://` URLs are validated to disallow remote hosts.
 - **Floating Promises**: You must ensure you actually `await` the bootstrap call. If you forget the `await` keyword, your application will continue booting before Tempo finishes reading your config file, leading to race conditions where early instances use default settings.
 
 ::: tip
 **Looking to configure Internationalization?**  
-Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See [The Role of Locale](../4-advanced-reference/tempo.locale.md) for a general guide, and the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Format Modifiers & Localization](../1-getting-started/tempo.cookbook.md#format-modifiers--localization) guides for configuration details.
+Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See [The Role of Locale](../4-advanced-reference/tempo.locale.md) for a general guide, and the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Format Modifiers & Localization](../1-getting-started/tempo.cookbook.md#format-modifiers-localization) guides for configuration details.
 :::
 
 ---

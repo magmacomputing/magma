@@ -61,7 +61,7 @@ Tempo is built with a militant **"Performance First"** mindset, specifically tar
 **Status: Achieved.** We successfully meet the Zero-Cost objective under stable conditions. Benchmarks demonstrate an instantiation overhead of ~523µs, and a fast-fail rejection speed of ~359µs (steady-state results after warm-up on the documented hardware setup). 
 
 This objective is achieved through two primary architectural pillars:
-1. **Lazy Evaluation ([Section 1](#1-lazy-evaluation-shadowing))**: Deferring the computationally expensive work of string parsing and Term calculation until the first strict property access.
+1. **Lazy Evaluation ([Section 1](#_1-lazy-evaluation-shadowing))**: Deferring the computationally expensive work of string parsing and Term calculation until the first strict property access.
 2. **Master Guard ([Section 3](#3-master-guard-fast-fail-sync-point))**: Implementing a high-speed "fast-fail" gatekeeper to instantly reject invalid inputs before parsing logic is engaged.
 
 Together, these pillars help ensure that `new Tempo()` maintains an extremely fast constructor execution time by completely deferring standard parsing workloads. However, note that these costs can depend on input scanning length and registry-mutation-driven wordlist rebuilds, meaning performance is not universally input- or registry-independent.
@@ -78,7 +78,7 @@ A delegator Proxy is a wrapper whose traps forward operations to an internal tar
 - **Proxy Discovery (Definition)**: This is the proxy-handler phase that enumerates available target keys and installs enumerable lazy getter properties on the proxy target *without* computing their values.
 - **Triggered by Enumeration APIs**: Discovery executes when enumeration APIs execute, including `Object.keys(instance.fmt)`, `for...in`, and `Reflect.ownKeys(...)`.
 - **Timing**: Discovery happens at enumeration time (before any property `get`), establishing key visibility prior to value resolution.
-- **Relation to [Section 1](#1-lazy-evaluation-shadowing)**: Discovery only registers getters; actual value computation and memoization trigger purely on-demand.
+- **Relation to [Section 1](#_1-lazy-evaluation-shadowing)**: Discovery only registers getters; actual value computation and memoization trigger purely on-demand.
 - **After Access**: Getter access memoizes values directly onto the target object; keys remain highly stable and do not "move" across prototype links.
 
 ### 🛡️ Iteration Notes

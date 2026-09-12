@@ -10,3 +10,9 @@ When the user explicitly approves an implementation plan for autonomous backgrou
 - Validate approval state, verify the identity of the currently approved implementation plan, and validate command scope prior to enabling `SafeToAutoRun` or invoking `run_command`.
 - Destructive commands or actions with external side effects must remain interactive unless explicitly authorized in the approved plan.
 - For non-destructive operations covered by the approved plan, set `SafeToAutoRun: true` and use terminal shell operations (`run_command`) or file tools for unblocked execution.
+
+## 3. Implementation Plan Requirements
+For all Implementation Plans:
+- **Estimated Effort**: Must include an estimated effort assessment (e.g. hours / engineering days with complexity breakdown).
+- **SemVer Classification**: Must explicitly classify whether the release is a **Patch**, **Minor**, or **Major** bump under Semantic Versioning, with rationale.
+
