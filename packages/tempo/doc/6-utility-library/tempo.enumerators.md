@@ -46,7 +46,7 @@ It is generally recommended to use the **values** (lowercase) as type arguments,
 For consumers of the library, these enumerations are exposed via **public package exports**:
 
 - As static properties on `Tempo` (convenient in app code already using `Tempo`)
-- As the canonical enums namespace from `@magmacomputing/tempo/enums`
+- As the default export from `@magmacomputing/tempo/enums`
 - As individual named exports from `@magmacomputing/tempo/enums`
 
 Avoid referencing internal source files (such as `tempo.index.ts`) in application code.
@@ -62,10 +62,10 @@ const monthIndex = Tempo.MONTH.Feb;    // 2 (since 'All' was index 0)
 ```
 
 ### 2. Canonical Namespace Import
-Import the full `enums` namespace object:
+Import the full `enums` object via the default export:
 
 ```typescript
-import { enums } from '@magmacomputing/tempo/enums';
+import enums from '@magmacomputing/tempo/enums';
 
 const { COMPASS, MONTH } = enums;
 const direction = COMPASS.North;

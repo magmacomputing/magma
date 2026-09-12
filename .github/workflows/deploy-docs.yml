@@ -6,6 +6,7 @@ on:
     paths:
       - 'packages/tempo/**'
       - 'packages/functions/**'
+      - 'packages/playground/**'
       - '.github/workflows/deploy-docs.yml'
       - 'package.json'
       - 'package-lock.json'
@@ -48,16 +49,24 @@ jobs:
       - name: Build Tempo
         run: npm run build:tempo
 
+      - name: Build Plugins
+        run: npm run build:plugins
+
       - name: Build Tempo Docs
         run: npm run docs:build --workspace=@magmacomputing/tempo
 
       - name: Build Tempo-Fns Docs
         run: npm run docs:build --workspace=@magmacomputing/tempo-fns
 
+      - name: Build Playground
+        run: npm run build --workspace=@magmacomputing/tempo-playground
+
       - name: Merge Documentation Sites
         run: |
           mkdir -p packages/tempo/.vitepress/dist/functions
           cp -r packages/functions/doc/.vitepress/dist/* packages/tempo/.vitepress/dist/functions/
+          mkdir -p packages/tempo/.vitepress/dist/playground
+          cp -r packages/playground/dist/* packages/tempo/.vitepress/dist/playground/
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

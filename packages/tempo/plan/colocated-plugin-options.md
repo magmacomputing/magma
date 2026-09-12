@@ -78,8 +78,12 @@ export function definePlugin<T extends Plugin<TempoType>, Opts = any>(plugin: T)
     };
   };
 
-  // 2. Copy all properties (name, install, symbols) onto the function
-  const result = Object.assign(factory, plugin, { [sym.$PluginType]: 'plugin' });
+  // 2. Copy properties onto the function (excluding non-writable 'name'), then define name cleanly
+  const { name, ...rest } = plugin;
+  const result = Object.assign(factory, rest, { [sym.$PluginType]: 'plugin' });
+  if (name) {
+    Object.defineProperty(result, 'name', { value: name, configurable: true });
+  }
   
   registerPlugin(result);
   return result as unknown as PluginFactory<T, Opts>;
@@ -97,13 +101,20 @@ export function definePlugin<T extends Plugin<TempoType>, Opts = any>(plugin: T)
 In `Tempo.use(...)` (which processes the `plugins` array during bootstrap and initialization), we update the argument resolver to handle tuples, colocated option objects, and factory closures:
 
 ```typescript
+// Recognize tuples [Plugin, Options] before flattening so option objects are not split
+const isPluginTuple = (entry: any): entry is [any, any] =>
+  Array.isArray(entry) && entry.length === 2 && !Array.isArray(entry[0]) && isObject(entry[1]);
+
+// Flatten nested arrays while keeping [Plugin, Options] tuples intact
+const items = args.flatMap(arg => (isPluginTuple(arg) ? [arg] : Array.isArray(arg) ? arg.flat(Infinity) : [arg]));
+
 // Inside Tempo.use() items loop:
 items.forEach(item => {
   let plugin = item;
   let callSiteOptions: any = undefined;
 
   // 1. Handle Tuple Syntax: [Plugin, Options]
-  if (Array.isArray(item) && item.length >= 1) {
+  if (isPluginTuple(item)) {
     plugin = item[0];
     callSiteOptions = item[1];
   }
@@ -114,8 +125,12 @@ items.forEach(item => {
     if (plugin.install && plugin.name) {
       // It was passed as a bare function: [ TickerPlugin ]
       callSiteOptions = (plugin as any).options;
+    } else if (plugin.length >= 3) {
+      // Legacy standard plugin callback: function(Tempo, options, rehydrator)
+      (plugin as any)(this, callSiteOptions ?? options, (val: any) => new this(val));
+      return;
     } else {
-      // It is an uncalled factory function: execute to get descriptor
+      // Uncalled factory function: execute to get descriptor
       const res = (plugin as any)(this, callSiteOptions ?? options);
       if (res && isObject(res) && (res.install || res.define)) {
         plugin = res;
@@ -129,11 +144,12 @@ items.forEach(item => {
     callSiteOptions = { ...((plugin as any).options), ...(callSiteOptions ?? {}) };
   }
 
-  // 4. Resolve Final Merged Options for this Plugin
+  // 4. Resolve Final Merged Options for this Plugin (Precedence: config -> trailing options -> call-site tuple/closure)
   const pluginName = (plugin as any)?.name;
   const existingConfigOpts = pluginName ? this[$Internal]().config.pluginOptions?.[pluginName] : undefined;
   const resolvedOptions = {
     ...(existingConfigOpts ?? {}),
+    ...(options ?? {}),
     ...(callSiteOptions ?? {}),
   };
 
@@ -147,9 +163,8 @@ items.forEach(item => {
   }
 
   // 6. Invoke install hook with resolved options
-  if (isObject(plugin) && isFunction((plugin as any).install)) {
+  if (isObject(plugin) && isFunction((plugin as any).install))
     (plugin as TempoPlugin).install.call(this, this, resolvedOptions);
-  }
 });
 ```
 

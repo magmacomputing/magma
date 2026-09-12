@@ -6,25 +6,19 @@ Tempo introduces several industry-leading architectural patterns designed for ma
 
 ### TempoRuntime — single hardened bridge
 
-Historically, Tempo spread its inter-module state across many `globalThis[Symbol.for(…)]` slots (`$terms`, `$extends`, `$modules`, `$installed`, `$reset`, `$Plugins`, `$Register`). Each slot was a potential tamper target, making the global namespace difficult to audit securely.
+Historically, Tempo spread its inter-module state across many global symbol slots on `globalThis` (`$terms`, `$extends`, `$modules`, etc.). Each slot was a potential tamper target, making the global namespace difficult to audit securely.
 
-As of modern builds, all bookkeeping is consolidated inside a single **`TempoRuntime`** object (`#tempo/support`). The runtime is stored on `globalThis` under one hardened, highly protected property:
-
-```typescript
-Symbol.for('magmacomputing/tempo/runtime')
-```
-
-The property descriptor is `enumerable: false, configurable: false, writable: false`. External code can neither replace nor delete the runtime.
+As of modern builds, all bookkeeping is consolidated inside a single **`TempoRuntime`** object (internal core runtime). The runtime is stored on `globalThis` under a hardened private symbol property with descriptor `enumerable: false, configurable: false, writable: false`, ensuring external code can neither replace nor delete it.
 
 **Benefits:**
-- **Reduced Global Footprint** — Consolidation from seven scatter-slots down to a single root.
-- **Centralized Hardening** — Strict input validation (`Tempo.use`) and hook management (`setRegisterHook`, `fireRegisterHook`) operate securely from one nexus.
-- **Scoped Runtimes (Experimental)** — `TempoRuntime.createScoped()` returns a fresh, isolated runtime for clean test isolation without `globalThis` manipulation. *Note: This remains an experimental internal feature and is not yet fully threaded through all core utilities. Unlike the primary runtime, a scoped runtime is not pinned to `globalThis`, does not receive the hardened `defineProperty` protections, and relies strictly on lexical scoping.*
-- **Multi-Bundle / HMR Safety** — `getRuntime()` checks `globalThis[BRIDGE]` before constructing, guaranteeing that two bundle copies of Tempo always share the identical runtime object, thereby resolving complex split-brain states in monorepos.
+- **Reduced Global Footprint** — Consolidation from multiple scatter-slots down to a single root.
+- **Centralized Hardening** — Strict input validation (`Tempo.use`) and hook management operate securely from one nexus.
+- **Scoped Runtimes (Experimental)** — `TempoRuntime.createScoped()` returns a fresh, isolated runtime for internal test harnesses without `globalThis` manipulation. *Note: This is an internal testing utility. For user-facing configuration and plugin isolation, use the official Sandbox Factory API (`Tempo.create()`).*
+- **Multi-Bundle / HMR Safety** — Guarantees that two bundle copies of Tempo always share the identical runtime object, resolving complex split-brain states in monorepos.
 
-**User-facing "Global Discovery" slots remain on `globalThis`.** The `sym.$Tempo` slot (and custom discovery symbols passed to `Tempo.init`) are intentionally exposed for user-readability, remaining ordinary writable properties. Only sensitive internal bookkeeping was moved into the hardened runtime.
+**User-facing "Global Discovery" slots remain on `globalThis`.** The `Symbol.for('$Tempo')` slot (and custom discovery symbols passed to `Tempo.init`) are intentionally exposed for user-readability, remaining ordinary writable properties. Only sensitive internal bookkeeping was moved into the hardened runtime.
 
-To solve the "Split-Brain" issue inherent in monorepo development, Tempo utilizes a **Shared Global Registry**. By leveraging `Symbol.for('magmacomputing/library/registry')` on `globalThis`, all versions of the Tempo and Library packages share a unified type-identification engine. This ensures classes are accurately identified as constructors even when loaded across disparate module boundaries.
+To solve the "Split-Brain" issue inherent in monorepo development, Tempo utilizes a **Shared Global Registry**. By leveraging a unified global type-identification symbol on `globalThis`, all versions of Tempo share a synchronized constructor registry. This ensures classes are accurately identified as constructors even when loaded across disparate module boundaries.
 
 ## 🕵️ Decoupled Logging
 Tempo utilizes a centralized, functional diagnostic engine (via `logError` / `logWarn` utilities) relying on private context to avoid polluting the public console or altering object state. This ensures parsing telemetry never clashes with standard application logic.

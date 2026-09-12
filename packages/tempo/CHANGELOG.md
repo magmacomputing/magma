@@ -116,7 +116,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.0.0] - 2026-08-27
 
 ### Breaking Changes
-- **100% Open-Source Community Core**: Completely removed commercial licensing, JWT validation, JWS verification, domain-locking, and premium plugin gating (`license.manager.ts`, `license.validator.ts`, `Tempo.license`, `#formatLicense`, `#isBlocked`, `validateLicenseState`, `LICENSE` enum, `$updateScopeStatus`, and `#tempo/license` export subpath).
+- **100% Open-Source Community Core**: Completely removed commercial licensing, JWT validation, JWS verification, domain-locking, and premium plugin gating (`license.manager.ts`, `license.validator.ts`, `Tempo.license`, `validateLicenseState`, `LICENSE` enum, and `$updateScopeStatus`).
 - **Commercial Package Decoupling**: Relocated all enterprise licensing hooks and commercial plugin management to the `@magmacomputing/tempo-pro` wrapper package.
 - **Config Auto-Discovery Modernization**: Dropped `.cjs` configuration discovery support in favor of modern ES-preferred module extensions (`.mts`, `.ts`, `.mjs`, `.js`, `.jsonc`, `.json`).
 - **`Tempo.ready()` Return Signature**: Simplified `Tempo.ready()` return value to a static `'none'` status for community core compatibility.

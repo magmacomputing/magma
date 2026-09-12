@@ -26,7 +26,7 @@ By using a **Proxy-Delegator** pattern, the constructor returns near-instantly w
 
 ### 2. The Master Guard (Fast-Fail)
 
-The dynamic `#guard` acts as a rapid scan-and-consume gatekeeper.
+The dynamic Master Guard acts as a rapid scan-and-consume gatekeeper.
 
 - **Efficiency**: Invalid inputs are rapidly rejected via a fast greedy scan, bounding failure costs tightly to string length.
 - **Performance**: Validating a string against the guard is ~30% faster than a full parsing cycle, even for simple ISO strings.
@@ -35,7 +35,7 @@ The dynamic `#guard` acts as a rapid scan-and-consume gatekeeper.
 
 ## 🧪 Benchmark Methodology
 
-The benchmark script used `performance.now()` within a Vitest environment to ensure accurate module resolution and internal alias support (`#library`).
+The benchmark script used `performance.now()` within a Vitest environment to ensure accurate module resolution and test environment isolation.
 
 1. **Lazy Creation**: Creates a `new Tempo('2024-05-20')` without accessing any properties.
 2. **Eager Simulation**: Creates a `new Tempo()` and manually triggers discovery on 5 core properties to simulate `O(N)` initialization.

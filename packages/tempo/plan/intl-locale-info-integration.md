@@ -56,19 +56,63 @@ Tempo.init({
 - **Deno / Bun**: Fully supported out-of-the-box.
 
 ### Graceful Degradation Strategy
-If running in an older environment or where `getWeekInfo()` is undefined, Tempo gracefully defaults to standard ISO 8601 values without throwing errors:
+If running in an older environment or where experimental methods are undefined, Tempo gracefully defaults to standard ISO 8601 values without throwing errors:
 ```typescript
-function resolveWeekInfo(locale: Intl.Locale): WeekInfo {
+function resolveLocaleInfo(locale: Intl.Locale): {
+  weekInfo: WeekInfo;
+  hourCycle: string;
+  hourCycles: readonly string[];
+  direction: 'ltr' | 'rtl';
+  numberingSystem: string;
+  numberingSystems: readonly string[];
+} {
+  // 1. Resolve WeekInfo (guards getWeekInfo() and legacy .weekInfo)
+  let firstDay: Weekday = 1;
+  let weekend: readonly Weekday[] = [6, 7];
+  
   if (typeof (locale as any).getWeekInfo === 'function') {
     const raw = (locale as any).getWeekInfo();
-    return {
-      firstDay: raw.firstDay ?? 1,
-      weekend: raw.weekend ?? [6, 7],
-      minimalDays: raw.minimalDays ?? 4,
-    };
+    if (raw?.firstDay != null) firstDay = raw.firstDay;
+    if (Array.isArray(raw?.weekend)) weekend = raw.weekend;
+  } else if ((locale as any).weekInfo) {
+    const raw = (locale as any).weekInfo;
+    if (raw?.firstDay != null) firstDay = raw.firstDay;
+    if (Array.isArray(raw?.weekend)) weekend = raw.weekend;
   }
-  // Safe ISO 8601 fallback
-  return { firstDay: 1, weekend: [6, 7], minimalDays: 4 };
+
+  // 2. Resolve preferred hour cycles (scalar from getHourCycles() array or fallback)
+  let hourCycles: readonly string[] = ['h23'];
+  if (typeof (locale as any).getHourCycles === 'function') {
+    const cycles = (locale as any).getHourCycles();
+    if (Array.isArray(cycles) && cycles.length > 0) hourCycles = cycles;
+  } else if ((locale as any).hourCycle) {
+    hourCycles = [(locale as any).hourCycle];
+  }
+
+  // 3. Resolve text direction
+  let direction: 'ltr' | 'rtl' = 'ltr';
+  if (typeof (locale as any).getTextInfo === 'function') {
+    const textInfo = (locale as any).getTextInfo();
+    if (textInfo?.direction === 'rtl' || textInfo?.direction === 'ltr') direction = textInfo.direction;
+  }
+
+  // 4. Resolve numbering systems (scalar from getNumberingSystems() array or fallback)
+  let numberingSystems: readonly string[] = ['latn'];
+  if (typeof (locale as any).getNumberingSystems === 'function') {
+    const systems = (locale as any).getNumberingSystems();
+    if (Array.isArray(systems) && systems.length > 0) numberingSystems = systems;
+  } else if ((locale as any).numberingSystem) {
+    numberingSystems = [(locale as any).numberingSystem];
+  }
+
+  return {
+    weekInfo: { firstDay, weekend, minimalDays: 4 },
+    hourCycle: hourCycles[0],
+    hourCycles,
+    direction,
+    numberingSystem: numberingSystems[0],
+    numberingSystems,
+  };
 }
 ```
 
@@ -76,7 +120,7 @@ function resolveWeekInfo(locale: Intl.Locale): WeekInfo {
 
 ## 3. The `t.intl` Resolved Namespace Surface
 
-Mirroring [`t.geo`](file:///home/michael/Project/magma/packages/tempo/src/tempo.class.ts#L1649) (which manages physical/geographic context), **`t.intl`** provides a permanent, memoized home for cultural and regional context on every `Tempo` instance.
+Mirroring [`t.geo`](../src/tempo.class.ts) (which manages physical/geographic context), **`t.intl`** provides a permanent, memoized home for cultural and regional context on every `Tempo` instance.
 
 > [!NOTE]
 > `t.intl` is **always populated and inspectable** on every `Tempo` instance, regardless of whether `localeInfo` is `true` or `false`. The `localeInfo: boolean` flag only governs whether **mutations and calendar boundaries** dynamically adapt to it.
@@ -102,12 +146,16 @@ export interface TempoIntlContext {
   readonly firstDay: Weekday;
   /** Shortcut to weekInfo.weekend */
   readonly weekend: readonly Weekday[];
-  /** Preferred regional hour cycle ('h12' | 'h23' | 'h11' | 'h24') */
+  /** Primary hour cycle resolved from getHourCycles()[0] ('h12' | 'h23' | 'h11' | 'h24') */
   readonly hourCycle?: string;
+  /** Complete list of supported hour cycles in preference order */
+  readonly hourCycles?: readonly string[];
   /** Writing direction ('ltr' | 'rtl') */
   readonly direction?: 'ltr' | 'rtl';
-  /** Primary numbering system (e.g. 'latn', 'arab') */
+  /** Primary numbering system resolved from getNumberingSystems()[0] (e.g. 'latn', 'arab') */
   readonly numberingSystem?: string;
+  /** Complete list of supported numbering systems in preference order */
+  readonly numberingSystems?: readonly string[];
 }
 ```
 

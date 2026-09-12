@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  base: './',
   esbuild: {
     target: 'esnext',
   },
@@ -12,8 +13,11 @@ export default defineConfig({
   build: {
     target: 'esnext',
   },
+  resolve: {
+    dedupe: ['@magmacomputing/tempo'],
+  },
   server: {
     port: 5173,
-    host: true,
+    host: 'localhost',
   },
 });
