@@ -61,7 +61,7 @@ Tempo separates code registration from data configuration:
 
 You can then bootstrap this environment at the very top of your application's entry point (e.g., `main.ts` or `index.js`) to guarantee the configuration is locked in before any other files run:
 
-#### Server / Node.js Entry Point (Zero-Config Discovery)
+### Server / Node.js Entry Point (Zero-Config Discovery)
 ```typescript
 // main.ts (Server / Node.js)
 import { Tempo } from '@magmacomputing/tempo';
@@ -77,7 +77,7 @@ const { App } = await import('./app.js');
 // ...
 ```
 
-#### Bundled Frontend Entry Point (Vite / Webpack)
+### Bundled Frontend Entry Point (Vite / Webpack)
 ```typescript
 // main.ts (Bundled Frontend / Browser)
 import { Tempo } from '@magmacomputing/tempo';

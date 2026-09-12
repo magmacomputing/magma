@@ -25,7 +25,7 @@ Snippets represent specific date or time units. When arranged in a layout, they 
 | `{ff}` | Fraction (prefixed by `.`) | `\.[0-9]{1,9}` |
 | `{wkd}` | Weekday (Mon-Sun) | Name strings |
 | `{era}` | Historical era marker | `BC`, `a.d.`, `c.e.`, etc. |
-| `{tz}` | Time zone offset | `Z` or `±hh:mm` |
+| `{tz}` | Time zone designator | `Z`, `±hh:mm`, `GMT+10`, or abbreviation (`AEST`, `PST`) |
 | `{sep}` | Separator character | `/`, `-`, `.`, `,`, or ` ` |
 | `{mod}` | Modifier and count | `+`, `-`, `next`, `prev` |
 | `{unt}` | Time units | `year(s)`, `day(s)`, etc. |

@@ -230,6 +230,8 @@ export interface TempoFormatTokens {
 	ymd: true; dmy: true; mdy: true; hms: true;
 	// ── timestamp / zone / calendar ───────────────────
 	ts: true; nano: true; tz: true; cal: true;
+	/** @deprecated Deprecated in v4.2.0; to be removed in v5.0.0. Use `tz` instead. */
+	tzd: true;
 }
 
 /** All statically-known base token names (derived from TempoFormatTokens). */

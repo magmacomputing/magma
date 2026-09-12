@@ -58,7 +58,9 @@ Tempo.init({
 ### Graceful Degradation Strategy
 If running in an older environment or where experimental methods are undefined, Tempo gracefully defaults to standard ISO 8601 values without throwing errors:
 ```typescript
-function resolveLocaleInfo(locale: Intl.Locale): {
+function resolveLocaleInfo(localeTagOrInstance: string | Intl.Locale): {
+  locale?: Intl.Locale;
+  tag: string;
   weekInfo: WeekInfo;
   hourCycle: string;
   hourCycles: readonly string[];
@@ -66,15 +68,21 @@ function resolveLocaleInfo(locale: Intl.Locale): {
   numberingSystem: string;
   numberingSystems: readonly string[];
 } {
+  const hasLocaleCtor = typeof Intl !== 'undefined' && typeof Intl.Locale === 'function';
+  const locale = hasLocaleCtor
+    ? (localeTagOrInstance instanceof Intl.Locale ? localeTagOrInstance : new Intl.Locale(String(localeTagOrInstance)))
+    : undefined;
+  const tag = locale?.baseName ?? String(localeTagOrInstance);
+
   // 1. Resolve WeekInfo (guards getWeekInfo() and legacy .weekInfo)
   let firstDay: Weekday = 1;
   let weekend: readonly Weekday[] = [6, 7];
   
-  if (typeof (locale as any).getWeekInfo === 'function') {
+  if (locale && typeof (locale as any).getWeekInfo === 'function') {
     const raw = (locale as any).getWeekInfo();
     if (raw?.firstDay != null) firstDay = raw.firstDay;
     if (Array.isArray(raw?.weekend)) weekend = raw.weekend;
-  } else if ((locale as any).weekInfo) {
+  } else if (locale && (locale as any).weekInfo) {
     const raw = (locale as any).weekInfo;
     if (raw?.firstDay != null) firstDay = raw.firstDay;
     if (Array.isArray(raw?.weekend)) weekend = raw.weekend;
@@ -82,30 +90,32 @@ function resolveLocaleInfo(locale: Intl.Locale): {
 
   // 2. Resolve preferred hour cycles (scalar from getHourCycles() array or fallback)
   let hourCycles: readonly string[] = ['h23'];
-  if (typeof (locale as any).getHourCycles === 'function') {
+  if (locale && typeof (locale as any).getHourCycles === 'function') {
     const cycles = (locale as any).getHourCycles();
     if (Array.isArray(cycles) && cycles.length > 0) hourCycles = cycles;
-  } else if ((locale as any).hourCycle) {
+  } else if (locale && (locale as any).hourCycle) {
     hourCycles = [(locale as any).hourCycle];
   }
 
   // 3. Resolve text direction
   let direction: 'ltr' | 'rtl' = 'ltr';
-  if (typeof (locale as any).getTextInfo === 'function') {
+  if (locale && typeof (locale as any).getTextInfo === 'function') {
     const textInfo = (locale as any).getTextInfo();
     if (textInfo?.direction === 'rtl' || textInfo?.direction === 'ltr') direction = textInfo.direction;
   }
 
   // 4. Resolve numbering systems (scalar from getNumberingSystems() array or fallback)
   let numberingSystems: readonly string[] = ['latn'];
-  if (typeof (locale as any).getNumberingSystems === 'function') {
+  if (locale && typeof (locale as any).getNumberingSystems === 'function') {
     const systems = (locale as any).getNumberingSystems();
     if (Array.isArray(systems) && systems.length > 0) numberingSystems = systems;
-  } else if ((locale as any).numberingSystem) {
+  } else if (locale && (locale as any).numberingSystem) {
     numberingSystems = [(locale as any).numberingSystem];
   }
 
   return {
+    locale,
+    tag,
     weekInfo: { firstDay, weekend, minimalDays: 4 },
     hourCycle: hourCycles[0],
     hourCycles,
@@ -124,6 +134,7 @@ Mirroring [`t.geo`](../src/tempo.class.ts) (which manages physical/geographic co
 
 > [!NOTE]
 > `t.intl` is **always populated and inspectable** on every `Tempo` instance, regardless of whether `localeInfo` is `true` or `false`. The `localeInfo: boolean` flag only governs whether **mutations and calendar boundaries** dynamically adapt to it.
+> In environments where the native `Intl.Locale` constructor is unavailable, `t.intl` gracefully falls back to standard ISO 8601 defaults (Monday first day, [6, 7] weekend, 'h23', 'ltr', 'latn') while guarding `Intl.Locale` construction, ensuring `t.intl` and internal month/day ordering heuristics remain stable and reliable.
 
 ```typescript
 export interface WeekInfo {
@@ -136,8 +147,8 @@ export interface WeekInfo {
 }
 
 export interface TempoIntlContext {
-  /** The underlying native Intl.Locale instance */
-  readonly locale: Intl.Locale;
+  /** The underlying native Intl.Locale instance, if available */
+  readonly locale?: Intl.Locale;
   /** Active BCP 47 language tag */
   readonly tag: string;
   /** Regional week configuration */
@@ -147,15 +158,15 @@ export interface TempoIntlContext {
   /** Shortcut to weekInfo.weekend */
   readonly weekend: readonly Weekday[];
   /** Primary hour cycle resolved from getHourCycles()[0] ('h12' | 'h23' | 'h11' | 'h24') */
-  readonly hourCycle?: string;
+  readonly hourCycle: string;
   /** Complete list of supported hour cycles in preference order */
-  readonly hourCycles?: readonly string[];
+  readonly hourCycles: readonly string[];
   /** Writing direction ('ltr' | 'rtl') */
-  readonly direction?: 'ltr' | 'rtl';
+  readonly direction: 'ltr' | 'rtl';
   /** Primary numbering system resolved from getNumberingSystems()[0] (e.g. 'latn', 'arab') */
-  readonly numberingSystem?: string;
+  readonly numberingSystem: string;
   /** Complete list of supported numbering systems in preference order */
-  readonly numberingSystems?: readonly string[];
+  readonly numberingSystems: readonly string[];
 }
 ```
 
