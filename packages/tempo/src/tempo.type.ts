@@ -220,7 +220,7 @@ export interface TempoFormatTokens {
 	// ── month ─────────────────────────────────────────
 	mm: true; mon: true; mmm: true;
 	// ── day ───────────────────────────────────────────
-	dd: true; day: true; dow: true; wkd: true; www: true;
+	dd: true; day: true; dow: true; doy: true; wkd: true; www: true;
 	// ── hour / minute / second ────────────────────────
 	hh: true; h24: true; h12: true; mer: true;
 	mi: true; ss: true;

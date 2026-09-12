@@ -18,6 +18,17 @@ describe(`${label}`, () => {
     expect(tempo.dd).toBe(date.getDate())
   })
 
+  test(`${label} get day-of-year (.doy)`, () => {
+    const t1 = new Tempo('2024-01-01');
+    expect(t1.doy).toBe(1);
+    const t2 = new Tempo('2024-02-01');
+    expect(t2.doy).toBe(32);
+    const tLeapEnd = new Tempo('2024-12-31'); // 2024 is a leap year
+    expect(tLeapEnd.doy).toBe(366);
+    const tNonLeapEnd = new Tempo('2023-12-31');
+    expect(tNonLeapEnd.doy).toBe(365);
+  })
+
   test(`${label} get instance locale and sphere getters`, () => {
     const tDefault = new Tempo('2024-05-20');
     expect(tDefault.locale).toBeDefined();

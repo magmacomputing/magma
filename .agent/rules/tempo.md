@@ -25,11 +25,12 @@ Whenever writing, reviewing, refactoring, testing, or discussing code involving 
   - `{mi}`: Minute (`00`-`59`)
   - `{ss}`: Second (`00`-`59`)
   - `{wkd}`: Weekday name (e.g. `Tuesday`, `Tue`)
-  - `{tzd}`: Time zone offset/identifier (`Z`, `+10:00`, `Australia/Sydney`)
+  - `{doy}`: Day of year (`1`-`366`)
+  - `{tz}`: Time zone offset/identifier (`Z`, `+10:00`, `Australia/Sydney`)
   - `{yw}`: ISO week-year number (`W32`)
   - `{unt}`: Time unit keyword (`day`, `month`, `year`)
 - **Configuration & Plugins**: System configuration, plugins, and terms are registered via `Tempo.init({ plugins: [Plugin, Term] })` or dynamically via `Tempo.use(Plugin)`. Configuration inheritance uses `extends: 'https://...'`.
 
 ## 3. Documentation Maintenance
-- **Do not make updates to documents in `magma/packages/tempo/doc/9-plugins`**: This folder is completely re-built during `docs:build` (harvested from `packages/plugins/*/doc/` via `harvest-plugins.mjs`). Always make plugin documentation updates directly in the respective plugin package (e.g. `packages/plugins/<name>/doc/` or `packages/plugins/<name>/README.md`).
+- **Do not make updates to documents in `packages/tempo/doc/9-plugins`**: This folder is completely re-built during `docs:build` (harvested from `packages/plugins/*/doc/` via `harvest-plugins.mjs`). Always make plugin documentation updates directly in the respective plugin package (e.g. `packages/plugins/<name>/doc/` or `packages/plugins/<name>/README.md`).
 - **Heading Anchors & VitePress Slugs**: Follow the guidelines in [documentation.md](./documentation.md) for all documentation links (e.g., VitePress `_` prefix on numeric headings, emoji preservation, and dot-to-hyphen punctuation conversion).

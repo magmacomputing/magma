@@ -25,7 +25,7 @@ Snippets represent specific date or time units. When arranged in a layout, they 
 | `{ff}` | Fraction (prefixed by `.`) | `\.[0-9]{1,9}` |
 | `{wkd}` | Weekday (Mon-Sun) | Name strings |
 | `{era}` | Historical era marker | `BC`, `a.d.`, `c.e.`, etc. |
-| `{tzd}` | Time zone offset | `Z` or `±hh:mm` |
+| `{tz}` | Time zone offset | `Z` or `±hh:mm` |
 | `{sep}` | Separator character | `/`, `-`, `.`, `,`, or ` ` |
 | `{mod}` | Modifier and count | `+`, `-`, `next`, `prev` |
 | `{unt}` | Time units | `year(s)`, `day(s)`, etc. |
@@ -122,7 +122,7 @@ console.log(regex.source);
 When prompting AI assistants (Cursor, GitHub Copilot, ChatGPT, Claude) to write custom `Tempo` regular expression snippets and layout extensions:
 
 1. **Ingest AI Rules**: Provide the assistant with our official `llms.txt` rules by referencing `@https://tempo.magmacomputing.com.au/llms.txt` in Cursor or pasting `llms.txt` context into ChatGPT.
-2. **Explicit Token Request**: Ask the LLM to use Tempo's standard snippet tokens (`{yy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tzd}`) rather than raw, un-anchored regular expressions.
+2. **Explicit Token Request**: Ask the LLM to use Tempo's standard snippet tokens (`{yy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`, `{tz}`) rather than raw, un-anchored regular expressions.
 3. **Example AI Prompt**:
    ```text
    "Using https://tempo.magmacomputing.com.au/llms.txt, register a custom layout for strings like '20-05-2024' using Tempo.init({ registry: { layouts: { ... } } }) and snippet tokens."

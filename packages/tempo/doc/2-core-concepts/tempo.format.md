@@ -99,6 +99,7 @@ Tempo.use(FormatModule);
 | `{wkd}` | Full Weekday Name | `Saturday` |
 | `{www}` | Short Weekday Name | `Sat` |
 | `{dow}` | ISO Day of Week (1=Mon, 7=Sun) | `6` |
+| `{doy}` | Day of Year (1-366) | `297` |
 | `{hh}` | Zero-padded Hour (24h) | `15` |
 | `{h24}` | Zero-padded Hour synonym (24h) | `15` |
 | `{h12}` | Zero-padded Hour (12h) plus meridiem | `03pm` |

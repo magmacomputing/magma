@@ -846,7 +846,7 @@ function update(isTyping = false) {
     if (valSolarSunsetEl) valSolarSunsetEl.textContent = mutatedTempo.term.solar?.sunset?.format('{hh}:{mi}') || 'N/A';
     if (valSolarDaylightLenEl) {
       const ms = mutatedTempo.term.solar?.daylightDurationMs;
-      valSolarDaylightLenEl.textContent = ms ? `Daylight: ${(ms / 3600000).toFixed(1)} hrs` : 'Daylight: N/A';
+      valSolarDaylightLenEl.textContent = ms != null ? `Daylight: ${(ms / 3600000).toFixed(1)} hrs` : 'Daylight: N/A';
     }
 
     // Lunar
@@ -872,7 +872,7 @@ function update(isTyping = false) {
     const badgeKingTideEl = document.getElementById('badge-king-tide');
     const valTideDescEl = document.getElementById('val-tide-desc');
 
-    if (valTideStateEl) valTideStateEl.textContent = `${mutatedTempo.term.tide} Tide`;
+    if (valTideStateEl) valTideStateEl.textContent = `${mutatedTempo.term.tide ?? 'Normal'} Tide`;
     if (valTideAlignEl) {
       const deg = mutatedTempo.term.tides?.alignmentDeg ?? 0;
       valTideAlignEl.textContent = `${deg.toFixed(1)}°`;
@@ -946,7 +946,7 @@ function update(isTyping = false) {
       codeSnippet += `const target = new Tempo(${JSON.stringify(targetText)});\n`;
       codeSnippet += `const countdown = t.until(target);       // Duration EDO\n`;
       codeSnippet += `console.log(countdown.format());         // "${outputUntilFormattedEl?.textContent || ''}"\n`;
-      codeSnippet += `console.log(t.since(target, 'days'));    // "${outputSinceStrEl?.textContent || ''}"\n`;
+      codeSnippet += `console.log(t.since(target, { unit: 'days', numeric: 'auto' })); // "${outputSinceStrEl?.textContent || ''}"\n`;
     }
     outputCodeEl.textContent = codeSnippet;
   } else {
@@ -979,7 +979,7 @@ function update(isTyping = false) {
     pluginSnippet += `console.log(t.term.lunar?.phase, t.term.lunar?.emoji); // "${mutatedTempo.term.lunar?.phase} ${mutatedTempo.term.lunar?.emoji}"\n`;
     pluginSnippet += `console.log('Illumination:', '${Math.round((mutatedTempo.term.lunar?.illumination ?? 0) * 100)}%');\n\n`;
     pluginSnippet += `// 6. Astronomical Tidal Mechanics\n`;
-    pluginSnippet += `console.log(t.term.tide);              // "${mutatedTempo.term.tide}"\n`;
+    pluginSnippet += `console.log(t.term.tide);              // "${mutatedTempo.term.tide ?? 'Normal'}"\n`;
     pluginSnippet += `console.log('King Tide:', ${mutatedTempo.term.tides?.isKingTide});\n\n`;
     pluginSnippet += `// 7. Inspected Term Property (${selectedTermProp})\n`;
     pluginSnippet += `console.log('${selectedTermProp}:', ${evaluated.codeDisplay});\n`;
@@ -1103,10 +1103,14 @@ function attachEventListeners() {
   });
 
   // --- Copy Inspected Property ---
-  document.getElementById('btn-copy-prop')?.addEventListener('click', () => {
-    navigator.clipboard.writeText(selectedTermProp);
+  document.getElementById('btn-copy-prop')?.addEventListener('click', async () => {
     const btn = document.getElementById('btn-copy-prop')!;
-    btn.textContent = '✅ Copied!';
+    try {
+      await navigator.clipboard.writeText(selectedTermProp);
+      btn.textContent = '✅ Copied!';
+    } catch {
+      btn.textContent = '❌ Copy failed';
+    }
     setTimeout(() => {
       btn.textContent = '📋 Copy';
     }, 1500);
@@ -1209,11 +1213,15 @@ function attachEventListeners() {
   });
 
   // Copy code button
-  document.getElementById('btn-copy-code')?.addEventListener('click', () => {
+  document.getElementById('btn-copy-code')?.addEventListener('click', async () => {
     const code = document.getElementById('output-code')!.textContent || '';
-    navigator.clipboard.writeText(code);
     const btn = document.getElementById('btn-copy-code')!;
-    btn.textContent = '✅ Copied!';
+    try {
+      await navigator.clipboard.writeText(code);
+      btn.textContent = '✅ Copied!';
+    } catch {
+      btn.textContent = '❌ Copy failed';
+    }
     setTimeout(() => {
       btn.textContent = '📋 Copy Code';
     }, 1500);

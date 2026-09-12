@@ -214,7 +214,7 @@ export interface TempoIntlContext {
 2. Mirror boundary calculation for `end:week` and `mid:week`.
 
 ### Phase 4: Formatting Token Integration (`packages/tempo/src/module/module.format.ts`)
-1. Support `{dow:locale}`: Calculates `((zdt.dayOfWeek - firstDay + 7) % 7) + 1`.
+1. Support `{dow:locale}`: When `localeInfo` is enabled, calculates `((zdt.dayOfWeek - this.intl.firstDay + 7) % 7) + 1` relative to the locale's week start; when `localeInfo` is false, falls back to standard Monday-first ISO numbering (`zdt.dayOfWeek`).
 2. Enable `{intl.<property>}` namespace token evaluation (e.g. `{intl.firstDay}`, `{intl.hourCycle}`, `{intl.direction}`) identical to `{geo.<property>}`.
 
 ---
@@ -229,7 +229,8 @@ export interface TempoIntlContext {
 2. **Deterministic ISO Invariance**:
    - Verify `t.dow`, `t.wy`, and `t.iso` produce identical values before and after `localeInfo: true`.
    - Verify `t.set({ start: 'isoWeek' })` always snaps to Monday regardless of locale.
-3. **Graceful Fallback**:
-   - Mock `Intl.Locale.prototype.getWeekInfo = undefined` and verify clean, error-free fallback to ISO 8601.
+3. **Graceful Fallback & Legacy Environments**:
+   - Mock both `Intl.Locale.prototype.getWeekInfo = undefined` and legacy `weekInfo = undefined` to assert clean, error-free fallback to ISO 8601 defaults (`firstDay: 1`, `weekend: [6, 7]`).
+   - Mock `getWeekInfo = undefined` with legacy `.weekInfo` property present to verify proper resolution on intermediate Node/browser runtimes.
 4. **Token Formatting**:
    - Verify `{intl.direction}` returns `'rtl'` for Arabic/Hebrew and `'ltr'` for English/French.

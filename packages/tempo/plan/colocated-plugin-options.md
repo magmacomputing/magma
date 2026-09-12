@@ -217,6 +217,6 @@ In `tempo.config.ts`, declaring options for a plugin that is not currently impor
    - Assert clean registration with default options.
 4. **Configuration Precedence**:
    - Test `plugins: [TickerPlugin({ interval: 1000 })]` combined with `pluginOptions: { ticker: { interval: 2000 } }`.
-   - Verify explicit `pluginOptions` overrides call-site defaults (or vice-versa according to documented precedence).
+   - Verify call-site options take precedence over base configuration (`existingConfigOpts` -> `options` -> `callSiteOptions`).
 5. **Inert Unused Options**:
    - Pass `pluginOptions: { nonExistentPlugin: { foo: 'bar' } }` and assert zero warnings, errors, or performance overhead.

@@ -207,6 +207,8 @@ describe('Tempo.format() refinements', () => {
       expect(tNum.format('{day:2}')).toBe('09');
       expect(tNum.format('{day:3}')).toBe('009');
       expect(tNum.format('{dow:2}')).toBe('04');
+      expect(tNum.format('{doy}')).toBe('130');
+      expect(tNum.format('{doy:4}')).toBe('0130');
       expect(tNum.format('{ns:3}')).toBe('005');
       expect(tNum.format('{ns:6}')).toBe('000005');
       expect(tNum.format('{yy:4}')).toBe('0024');
@@ -231,4 +233,26 @@ describe('Tempo.format() refinements', () => {
       expect(tCust.format('{negVal:3}' as any)).toBe('-05');
     })
   })
+
+  describe('ordinal-modifiers', () => {
+    it('supports :ord and :nth as aliases for ordinal formatting', () => {
+      const t1 = new Tempo('2024-05-01');
+      const t2 = new Tempo('2024-05-02');
+      const t3 = new Tempo('2024-05-03');
+      const t4 = new Tempo('2024-05-04');
+
+      expect(t1.format('{dd:ord}')).toBe('1st');
+      expect(t1.format('{dd:nth}')).toBe('1st');
+
+      expect(t2.format('{dd:ord}')).toBe('2nd');
+      expect(t2.format('{dd:nth}')).toBe('2nd');
+
+      expect(t3.format('{dd:ord}')).toBe('3rd');
+      expect(t3.format('{dd:nth}')).toBe('3rd');
+
+      expect(t4.format('{dd:ord}')).toBe('4th');
+      expect(t4.format('{dd:nth}')).toBe('4th');
+    })
+  })
 })
+

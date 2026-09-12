@@ -222,7 +222,7 @@ export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: strin
 		targetDate = firstWkd.add({ weeks: nthVal - 1 });
 	}
 
-	clearGroupKeys(groups, "nth", "wkd", "mm", "yy", "mod", "nbr", "sfx", "afx", "unt", "dd");
+	clearGroupKeys(groups, "ord", "nth", "wkd", "mm", "yy", "mod", "nbr", "sfx", "afx", "unt", "dd");
 
 	if (targetDate.year === yy && targetDate.month === mm) {
 		const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone ?? 'UTC';
@@ -248,7 +248,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	const { wkd, mod, nbr = '1', sfx, afx, ...rest } = groups as Lexer.GroupWkd;
 	if (isUndefined(wkd)) return dateTime;
 
-	const nthStr = groups["nth"] ?? (groups["mod"]?.toLowerCase() === 'last' && (groups["mm"] || groups["yy"]) ? 'last' : undefined);
+	const nthStr = groups["ord"] ?? groups["nth"] ?? (groups["mod"]?.toLowerCase() === 'last' && (groups["mm"] || groups["yy"]) ? 'last' : undefined);
 	if (isDefined(nthStr)) {
 		const res = parseOrdinalWeekday(groups, wkd, nthStr, dateTime, config);
 		if (isDefined(res)) return res;
@@ -341,7 +341,7 @@ export function parseOrdinalDate(
 			return undefined;
 		}
 
-		clearGroupKeys(groups, "nth", "unt", "mm", "yy", "yy2", "dd", "mod", "nbr", "afx");
+		clearGroupKeys(groups, "ord", "nth", "unt", "mm", "yy", "yy2", "dd", "mod", "nbr", "afx");
 
 		const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone ?? 'UTC';
 		const resZdt = targetDate.toZonedDateTime(tz).withPlainTime(dateTime.toPlainTime());
@@ -388,7 +388,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		delete groups["era"];
 	}
 
-	if (isEmpty(yy) && isEmpty(mm) && isEmpty(dd) && isUndefined(unt) && isUndefined(groups["nth"]))
+	if (isEmpty(yy) && isEmpty(mm) && isEmpty(dd) && isUndefined(unt) && isUndefined(groups["ord"] ?? groups["nth"]))
 		return dateTime;
 
 	if (!isEmpty(mod) && !isEmpty(afx)) {
@@ -412,8 +412,8 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		day: dd ?? fallbackDay,
 	} as any);
 
-	const isExplicitNth = isDefined(groups["nth"]);
-	const nthStr = groups["nth"] ?? (groups["mod"]?.toLowerCase() === 'last' && (groups["mm"] || groups["yy"] || unt) ? 'last' : undefined);
+	const isExplicitNth = isDefined(groups["ord"] ?? groups["nth"]);
+	const nthStr = groups["ord"] ?? groups["nth"] ?? (groups["mod"]?.toLowerCase() === 'last' && (groups["mm"] || groups["yy"] || unt) ? 'last' : undefined);
 	if (isDefined(nthStr)) {
 		const res = parseOrdinalDate(groups, unt, nthStr, dateTime, config, year, month);
 		if (isDefined(res)) return res;
@@ -501,7 +501,7 @@ export function parseTime(groups: t.Groups = {}, dateTime: Temporal.ZonedDateTim
 export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config?: any): Temporal.ZonedDateTime {
 	if (!isTemporal(dateTime)) return dateTime;
 
-	const tzd = groups["tzd"]?.replace(Match.zed, 'UTC');
+	const tzd = (groups["tz"] ?? groups["tzd"])?.replace(Match.zed, 'UTC');
 	const brk = groups["brk"]?.replace(Match.zed, 'UTC');
 	let zone: string | undefined = brk || tzd;
 
@@ -536,6 +536,7 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	delete groups["brk"];
 	delete groups["cal"];
 	delete groups["tzd"];
+	delete groups["tz"];
 
 	if (zone || cal)
 		logDebug(`[Lexer] Applied Zone/Calendar adjustments: Zone=${zone ?? 'unchanged'}, Calendar=${cal ?? 'unchanged'}`, config);

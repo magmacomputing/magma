@@ -20,7 +20,8 @@
 | `{mi}` | Minute (00-59) | `30` |
 | `{ss}` | Second (00-59) | `00` |
 | `{wkd}` | Weekday name | `Tuesday`, `Tue` |
-| `{tzd}` | Time zone offset / identifier | `Z`, `+10:00`, `Australia/Sydney` |
+| `{doy}` | Day of year (1-366) | `216` |
+| `{tz}` | Time zone offset / identifier | `Z`, `+10:00`, `Australia/Sydney` |
 | `{yw}` | ISO Week-Year number | `W32` |
 | `{unt}` | Time unit keyword | `day`, `month`, `year` |
 
