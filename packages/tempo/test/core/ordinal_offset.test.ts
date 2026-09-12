@@ -1,5 +1,6 @@
 import { Tempo } from '#tempo/core';
 import { FormatModule } from '#tempo/format';
+import { parseWeekday, parseDate } from '#tempo/engine/engine.lexer.js';
 import '#tempo/parse';
 
 Tempo.use(FormatModule);
@@ -84,6 +85,61 @@ describe('Core Ordinal Offset Parsing', () => {
 
 			const nonLeap60 = new Tempo('60th day of 2025');
 			expect(nonLeap60.format('{yyyy}-{mm}-{dd}')).toBe('2025-03-01');
+		});
+	});
+
+	describe('Lexer ord / nth Fallback', () => {
+		const dt = Temporal.ZonedDateTime.from('2026-11-01T12:00:00[UTC]');
+
+		it('resolves ordinal weekday from groups.ord and clears both keys', () => {
+			const groups: Record<string, string> = { wkd: 'Thursday', ord: '3rd', mm: '11', yy: '2026' };
+			const res = parseWeekday(groups, dt, {});
+			expect(res.day).toBe(19);
+			expect(groups).not.toHaveProperty('ord');
+			expect(groups).not.toHaveProperty('nth');
+		});
+
+		it('falls back to groups.nth when groups.ord is absent', () => {
+			const groups: Record<string, string> = { wkd: 'Thursday', nth: '3rd', mm: '11', yy: '2026' };
+			const res = parseWeekday(groups, dt, {});
+			expect(res.day).toBe(19);
+			expect(groups).not.toHaveProperty('ord');
+			expect(groups).not.toHaveProperty('nth');
+		});
+
+		it('prioritizes groups.ord over groups.nth when both are present in parseWeekday', () => {
+			const groups: Record<string, string> = { wkd: 'Thursday', ord: '1st', nth: '3rd', mm: '11', yy: '2026' };
+			const res = parseWeekday(groups, dt, {});
+			expect(res.day).toBe(5);
+			expect(groups).not.toHaveProperty('ord');
+			expect(groups).not.toHaveProperty('nth');
+		});
+
+		it('resolves ordinal date from groups.ord and clears both keys', () => {
+			const groups: Record<string, string> = { ord: '100th', yy: '2026' };
+			const res = parseDate(groups, dt, {});
+			expect(res.month).toBe(4);
+			expect(res.day).toBe(10);
+			expect(groups).not.toHaveProperty('ord');
+			expect(groups).not.toHaveProperty('nth');
+		});
+
+		it('falls back to groups.nth in parseDate when groups.ord is absent', () => {
+			const groups: Record<string, string> = { nth: '100th', yy: '2026' };
+			const res = parseDate(groups, dt, {});
+			expect(res.month).toBe(4);
+			expect(res.day).toBe(10);
+			expect(groups).not.toHaveProperty('ord');
+			expect(groups).not.toHaveProperty('nth');
+		});
+
+		it('prioritizes groups.ord over groups.nth when both are present in parseDate', () => {
+			const groups: Record<string, string> = { ord: '1st', nth: '100th', yy: '2026', mm: '5' };
+			const res = parseDate(groups, dt, {});
+			expect(res.month).toBe(5);
+			expect(res.day).toBe(1);
+			expect(groups).not.toHaveProperty('ord');
+			expect(groups).not.toHaveProperty('nth');
 		});
 	});
 });

@@ -66,9 +66,11 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.ff]: /(\.(?<ff>[0-9]{1,9}))/,											// fractional-seconds up-to 9-digits
 	[Token.ord]: /(?:\s?(?:st|nd|rd|th|e|er|re|ème|eme))?/i,	// optional ordinal suffix
 	[Token.mer]: /(\s*(?<mer>am|pm))/,												// meridiem suffix (am,pm)
-	[Token.sfx]: /((?:{sep}+|T)({tm}){tzd}?)/,								// time-pattern suffix 'T {tm} Z'; NOTE: {tm} resolves via Layout fallback in compileRegExp (cross-registry dependency: Snippet → Layout)
+	[Token.sfx]: /((?:{sep}+|T)({tm}){tz}?)/,									// time-pattern suffix 'T {tm} Z'; NOTE: {tm} resolves via Layout fallback in compileRegExp (cross-registry dependency: Snippet → Layout)
 	[Token.wkd]: /(?<wkd>Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)/,	// day-name (abbrev or full)
-	[Token.tzd]: new RegExp(`\\s*(?:(?:GMT|UTC)(?=\\s*[+-]))?\\s*(?<tzd>Z|(?:${Object.keys(TIMEZONE).map(w => Match.escape(w.toUpperCase())).join('|')})|${Match.offset.source})`, 'i'),	// time-zone offset or abbreviation with optional GMT/UTC prefix (e.g. GMT+10, UTC+10:00, +10:00, AEST, PST)
+	[Token.tz]: new RegExp(`\\s*(?:(?:GMT|UTC)(?=\\s*[+-]))?\\s*(?<tz>Z|(?:${Object.keys(TIMEZONE).map(w => Match.escape(w.toUpperCase())).join('|')})|${Match.offset.source})`, 'i'),	// time-zone offset or abbreviation with optional GMT/UTC prefix (e.g. GMT+10, UTC+10:00, +10:00, AEST, PST)
+	/** @deprecated Deprecated in v4.2.0; to be removed in v5.0.0. Use `Token.tz` instead. */
+	[Token.tzd]: new RegExp(`\\s*(?:(?:GMT|UTC)(?=\\s*[+-]))?\\s*(?<tz>Z|(?:${Object.keys(TIMEZONE).map(w => Match.escape(w.toUpperCase())).join('|')})|${Match.offset.source})`, 'i'),
 	[Token.nbr]: new RegExp(`(?<nbr>[0-9]+|${Object.keys(NUMBER).map(w => Match.escape(w)).join('|')})`),	// modifier count; number-word keys are regex-escaped at construction time (setPatterns() also re-escapes, but defence-in-depth)
 	[Token.afx]: new RegExp(`((s)? (?<afx>${Match.modifier.source}))?{sep}?`),	// affix optional plural 's' and (ago|hence)
 	[Token.mod]: new RegExp(`((?<mod>${Match.modifier.source})? *)`),
@@ -106,8 +108,8 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.wkd]: '{mod}?{nbr}?{sep}?{wkd}{afx}?{sfx}?',				// weekday-only layout; MUST precede {dt} (which also matches bare weekday names via its {wkd} alternative)
 	[Token.dt]: datePattern.dmy,															// calendar, event, slick or weekday
 	[Token.tm]: '({hh}{mi}?{ss}?{ff}?{mer}?|{per})',					// clock or period
-	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tzd}?{brk}?',	// calendar/event and clock/period
-	[Token.tmd]: '({tm})(?:(?:{sep}+|T)({dt}))?{tzd}?{brk}?',	// clock/period and calendar/event
+	[Token.dtm]: '({dt})(?:(?:{sep}+|T)({tm}))?{tz}?{brk}?',	// calendar/event and clock/period
+	[Token.tmd]: '({tm})(?:(?:{sep}+|T)({dt}))?{tz}?{brk}?',	// clock/period and calendar/event
 	[Token.dmy]: '{mod}?({wkd}{sep}+)?{dd}{sep}?{mm}({sep}?{yy})?{era}?{afx}?{sfx}?{brk}?',// day-month(-year)
 	[Token.mdy]: '{mod}?({wkd}{sep}+)?{mm}{sep}?{dd}({sep}?{yy})?{era}?{afx}?{sfx}?{brk}?',// month-day(-year)
 	[Token.ymd]: '{mod}?({wkd}{sep}+)?{yy}{sep}?{mm}({sep}?{dd})?{era}?{afx}?{sfx}?{brk}?',// year-month(-day)

@@ -1,0 +1,22 @@
+{
+  "name": "@magmacomputing/tempo-playground",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
+    "@magmacomputing/tempo": "*",
+    "@magmacomputing/tempo-plugin-astro": "*",
+    "@magmacomputing/tempo-plugin-celestial": "*",
+    "@magmacomputing/tempo-plugin-geo": "*"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^6.2.0"
+  }
+}

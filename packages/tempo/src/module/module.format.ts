@@ -212,7 +212,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 	}
 
 	const result = template.replace(new RegExp(Match.formatBraces, 'g'), (_match: string, fullToken: string) => {
-		const [token, ...modifiers] = fullToken.split(':');
+		let [token, ...modifiers] = fullToken.split(':');
+		if (token === 'tzd') token = 'tz';											// @deprecated, will remove in v5.0.0
 		let res: any;
 
 		switch (token) {
@@ -243,6 +244,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'dd': res = pad(zdt.day); break;
 			case 'day': res = zdt.day.toString(); break;
 			case 'dow': res = zdt.dayOfWeek.toString(); break;
+			case 'doy': res = zdt.dayOfYear.toString(); break;
 			case 'wkd': res = enums.WEEKDAYS.keyOf(zdt.dayOfWeek as any); break;
 			case 'www': res = enums.WEEKDAY.keyOf(zdt.dayOfWeek as any); break;
 			case 'h24': case 'hh': res = pad(zdt.hour); break;
@@ -307,7 +309,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'title':
 					res = toTitleCase(String(res), config?.locale);
 					break;
-				case 'ord': {
+				case 'ord':
+				case 'nth': {
 					const val = parseInt(String(res), 10);
 					const localeStr = Array.isArray(config?.locale) ? config.locale[0] : config?.locale;
 					const lang = localeStr?.split('-')[0] ?? 'en';

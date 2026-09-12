@@ -92,7 +92,7 @@ When building custom Terminology Plugins, you must follow the **Golden Rules of 
 **No Reserved Characters**: Range-Keys (e.g., `q1`, `aries`) must not contain:  
 `> < + = , . ! @ # $ % ^ & * ( ) [ ] { }`
 
-The [Range-Keys](#5-development-constraints) rule does not reserve `-` even though the Relative Past shorthand uses `-` as an alias for `<`; that modifier is parsed in operator position, not as part of the range-key token itself.
+This rule does not reserve `-` even though the Relative Past shorthand uses `-` as an alias for `<`; that modifier is parsed in operator position, not as part of the range-key token itself.
 :::
 
 :::warning

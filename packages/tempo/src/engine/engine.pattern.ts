@@ -66,6 +66,14 @@ export class PatternCompiler {
 
 				let res = customs ?? globals ?? stateLayout ?? defaultLayout;						// get the snippet/layout source
 
+				if (isNullish(res) && (name === 'tzd' || token === Token.tzd)) {
+					res = snippet?.[Token.tz]?.source ?? snippet?.['tz' as unknown as keyof Snippet]?.source
+						?? state.parse.snippet[Token.tz]?.source ?? state.parse.snippet['tz' as unknown as keyof Snippet]?.source;
+				} else if (isNullish(res) && (name === 'tz' || token === Token.tz)) {
+					res = snippet?.[Token.tzd]?.source ?? snippet?.['tzd' as any]?.source
+						?? state.parse.snippet[Token.tzd]?.source ?? state.parse.snippet['tzd' as any]?.source;
+				}
+
 				if (isNullish(res) && name.includes('.')) {					// if no definition found, try fallback
 					const prefix = name.split('.')[0];								// get the base token name
 					const pToken = getSymbol(prefix);

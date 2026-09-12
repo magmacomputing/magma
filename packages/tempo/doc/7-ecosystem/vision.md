@@ -17,7 +17,7 @@ Modern developers expect a "warm" API for common tasks. Native Temporal requires
 Data in the real world is messy. Tempo's **Layout** and **Snippet** engine allows developers to interpret human-readable strings, aliases, and custom formats without writing complex custom utility functions. It turns "today", "next Friday 3pm", or "Christmas" into machine-exact time points effortlessly.
 
 ### 3. Contextual & Business Intelligence via Plugins
-Time and physical reality are inseparable: civil time only has meaning relative to a location, a business calendar, or natural cycles. Through its modular plugin architecture, Tempo bridges time with real-world context—such as IP and GPS geolocation (`@magmacomputing/tempo-plugin-geo`), fiscal quarters, meteorological seasons, and astronomical cycles—moving domain-specific complexity out of application code and into reusable, extensible plugins.
+Time and physical reality are inseparable: civil time only has meaning relative to a location, a business calendar, or natural cycles. Through its modular plugin architecture, Tempo bridges time with real-world context—such as IP and GPS geolocation, fiscal quarters, meteorological seasons, and astronomical cycles—moving domain-specific complexity out of application code and into reusable, extensible plugins.
 
 ### 4. Lean, Deterministic, and Hardened
 Tempo is designed to be a thin, highly capable layer. It prioritizes a lightweight, ergonomic API surface for the developer while maintaining robust internal logic to handle the complexities of timezones, calendars, and durations with zero mutable side effects.

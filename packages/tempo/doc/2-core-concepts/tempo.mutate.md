@@ -83,8 +83,8 @@ const t2 = t.set({
 Because mixed object payloads execute strictly in the order they are defined, you must be careful if you use aggressive automated linters (like ESLint's `sort-keys` auto-fixer). If your linter alphabetically re-orders your properties, your math will execute in the wrong order! If your codebase forces alphabetical object keys, stick to chaining: `t.set({ mm: '>2' }).set({ wkd: '>Fri' })`.
 :::
 
-::: info 💡 Why can't I use Slick modifiers on timezones (`tzd`)?
-Changing a timezone (`tzd` or `timeZone`) does not traverse the timeline—it merely changes the local representation of the exact same absolute moment in time. Because no temporal displacement occurs, applying directional Slick modifiers (like `>`) to a timezone is logically invalid and unsupported.
+::: info 💡 Why can't I use Slick modifiers on timezones (`tz`)?
+Changing a timezone (`tz` or `timeZone`) does not traverse the timeline—it merely changes the local representation of the exact same absolute moment in time. Because no temporal displacement occurs, applying directional Slick modifiers (like `>`) to a timezone is logically invalid and unsupported.
 :::
 
 ## Chainability

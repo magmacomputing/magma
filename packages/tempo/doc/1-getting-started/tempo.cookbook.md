@@ -165,7 +165,7 @@ const t = new Tempo('now', {
 });
 ```
 
-👉 **Learn More:** See the [Configuration Guide](../2-core-concepts/tempo.config.md#dynamic--functional-context-evaluation) for details on functional options and immutability guarantees.
+👉 **Learn More:** See the [Configuration Guide](../2-core-concepts/tempo.config.md#_4-1-dynamic-functional-context-evaluation) for details on functional options and immutability guarantees.
 
 ---
 
@@ -241,7 +241,7 @@ t.format('ui-date'); // Resolved with all modifiers intact!
 *Note: Format keys are resolved case-sensitively from the global `registry.formats` object. If the requested key is not found, Tempo will simply treat the provided string as a literal layout string rather than throwing an error.*
 :::
 
-👉 **Learn More:** To build custom zero-overhead logic evaluators (like Fiscal Years or native Intl bridges), read the [Custom Format Tokens Deep Dive](../2-core-concepts/tempo.format.md#custom-format-tokens).
+👉 **Learn More:** To build custom zero-overhead logic evaluators (like Fiscal Years or native Intl bridges), read the [Custom Format Tokens Deep Dive](../2-core-concepts/tempo.format.md#🛠️-custom-format-tokens).
 
 👉 **Learn More:** 
 - [Smart Formatting Guide](../2-core-concepts/tempo.format.md)

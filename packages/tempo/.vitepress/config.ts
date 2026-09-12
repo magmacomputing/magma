@@ -29,6 +29,7 @@ export default withMermaid(defineConfig({
     },
     nav: [
       { text: 'Guide', link: '/README' },
+      { text: 'Playground', link: '/playground/index.html', target: '_self' },
       { text: 'API Reference', link: '/api/index.html', target: '_self' },
       { text: 'Library API', link: '/api/library/index.html', target: '_self' },
       { text: 'Releases', link: '/doc/8-project-and-support/releases/' },

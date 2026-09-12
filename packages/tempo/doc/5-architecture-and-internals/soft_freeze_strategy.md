@@ -6,7 +6,7 @@ The **Soft Freeze** is a design pattern used in the Tempo library to balance **P
 
 Standard JavaScript `Object.freeze()` is a "Hard Freeze":
 - **Pros**: Guaranteed immutability; prevents accidental state corruption.
-- **Cons**: Impossible to extend. Once frozen, even the library itself cannot add new formats or number-words (e.g., via `Tempo.registryUpdate`).
+- **Cons**: Impossible to extend. Once frozen, even the library itself cannot add new formats or number-words (e.g., during plugin registration or configuration via `Tempo.use()`).
 
 An unfrozen object is even riskier:
 - **Risk**: A user could accidentally write `NUMBER['one'] = 'two'`, which would break the library globally for all instances.
@@ -70,7 +70,7 @@ export function enumify(list, frozen = false) {
 ## Benefits
 1. **Bulletproof Public API**: Users cannot accidentally overwrite library constants.
 2. **Library Extensibility**: A plugin can add new data to registries at runtime without bypasses or 'hacks'.
-3. **Safe Global Discovery**: External discovery objects (via `Symbol.for($Tempo)`) can extend the library with new aliases but are prevented from overwriting core keys.
+3. **Safe Global Discovery**: External discovery objects (via `Symbol.for('$Tempo')`) can extend the library with new aliases but are prevented from overwriting core keys.
 4. **Internal State Integrity**: Centralized `STATE` objects are protected from direct access while providing a single source of truth.
 5. **Transparent Experience**: The object behaves like a POJO (Plain Old JavaScript Object) in the debugger and typical usage.
 

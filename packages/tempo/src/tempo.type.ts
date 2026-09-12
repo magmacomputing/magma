@@ -220,7 +220,7 @@ export interface TempoFormatTokens {
 	// ── month ─────────────────────────────────────────
 	mm: true; mon: true; mmm: true;
 	// ── day ───────────────────────────────────────────
-	dd: true; day: true; dow: true; wkd: true; www: true;
+	dd: true; day: true; dow: true; doy: true; wkd: true; www: true;
 	// ── hour / minute / second ────────────────────────
 	hh: true; h24: true; h12: true; mer: true;
 	mi: true; ss: true;
@@ -230,6 +230,8 @@ export interface TempoFormatTokens {
 	ymd: true; dmy: true; mdy: true; hms: true;
 	// ── timestamp / zone / calendar ───────────────────
 	ts: true; nano: true; tz: true; cal: true;
+	/** @deprecated Deprecated in v4.2.0; to be removed in v5.0.0. Use `tz` instead. */
+	tzd: true;
 }
 
 /** All statically-known base token names (derived from TempoFormatTokens). */
