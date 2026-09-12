@@ -122,7 +122,13 @@ const TERM_PROPERTIES: TermPropertyDefinition[] = [
   { prop: 't.term.tides.isKingTide', category: 'tides', label: 'tides.isKingTide', description: 'True when Spring Tide coincides with Lunar Perigee proximity' },
 ];
 
-// Helper to evaluate property expression safely
+/**
+ * Resolves a dot-delimited property path for display in the term inspector.
+ *
+ * @param t - The value from which to resolve the path.
+ * @param path - A property path with an optional `t.` prefix.
+ * @returns Display, type, and generated-code representations, including an error representation when property access fails.
+ */
 function evaluateProperty(t: any, path: string): { val: any; type: string; codeDisplay: string } {
   try {
     const clean = path.replace(/^t\./, '');
@@ -151,7 +157,7 @@ function evaluateProperty(t: any, path: string): { val: any; type: string; codeD
   }
 }
 
-// 3. Render UI Shell
+/** Renders the workbench into `#app` and attaches its event listeners. */
 function initUI() {
   const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -658,6 +664,11 @@ try {
   lastValidTempo = new Tempo();
 }
 
+/**
+ * Re-evaluates the current inputs and refreshes the workbench outputs.
+ *
+ * @param isTyping - Suppresses incomplete-input errors and preserves the last valid date results while the user is typing.
+ */
 function update(isTyping = false) {
   const baseInputEl = document.getElementById('input-base') as HTMLInputElement;
   const formatInputEl = document.getElementById('input-format') as HTMLInputElement;
@@ -988,6 +999,7 @@ function update(isTyping = false) {
   }
 }
 
+/** Registers the workbench controls for mode, input, mutation, geolocation, and clipboard actions. */
 function attachEventListeners() {
   const baseInputEl = document.getElementById('input-base') as HTMLInputElement;
   const formatInputEl = document.getElementById('input-format') as HTMLInputElement;
@@ -1001,6 +1013,7 @@ function attachEventListeners() {
   const labelModeIndicator = document.getElementById('label-mode-indicator')!;
   const badgeCodeMode = document.getElementById('badge-code-mode')!;
 
+  /** Switches the visible workbench mode and refreshes its generated output. */
   function setMode(mode: AppMode) {
     activeMode = mode;
     if (mode === 'core') {

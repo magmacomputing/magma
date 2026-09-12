@@ -178,7 +178,9 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
 /**
  * Resolves an ordinal weekday within a specified or anchored month and year.
  *
- * @param groups - The parsed input's capture groups.
+ * Consumed ordinal, weekday, and date capture groups are removed from `groups`.
+ *
+ * @param groups - The parsed input's mutable capture groups.
  * @param wkd - The weekday name or identifier.
  * @param nthStr - The ordinal position, such as `3rd`, `first`, or `last`.
  * @param dateTime - The date and time used as the resolution anchor.
@@ -239,9 +241,11 @@ export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: strin
  * Resolves weekday captures relative to a date and time.
  *
  * Supports ordinal weekdays, relative modifiers, numeric week offsets, and weekday suffixes while preserving the time and timezone.
+ * When both `ord` and `nth` ordinal captures are present, `ord` takes precedence.
  *
  * @param groups - Lexer capture groups containing the weekday expression
  * @param dateTime - Date and time used as the reference point
+ * @param config - Tempo configuration used for ordinal anchors and modifier aliases
  * @returns The date and time adjusted to the resolved weekday, or the original value when the captures are invalid or unsupported
  */
 export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any): Temporal.ZonedDateTime {
@@ -288,10 +292,13 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 /**
  * Resolves an ordinal date expression to a specific date.
  *
- * @param groups - Regex capture groups from the parsed input
+ * Consumed ordinal and date capture groups are removed from `groups`.
+ *
+ * @param groups - Mutable regex capture groups from the parsed input
  * @param unt - Time unit targeted by the ordinal expression
  * @param nthStr - Ordinal position, such as `1st` or `last`
  * @param dateTime - Date and time providing the resolution context
+ * @param config - Tempo configuration used for diagnostics
  * @param year - Target year
  * @param month - Target month
  * @returns The resolved zoned date-time, or `undefined` if the ordinal date is invalid
@@ -352,7 +359,17 @@ export function parseOrdinalDate(
 	return undefined;
 }
 
-/** resolve a date pattern match */
+/**
+ * Resolves date, relative-unit, and ordinal captures against a reference date.
+ *
+ * When both `ord` and `nth` ordinal captures are present, `ord` takes precedence. The function removes consumed captures or replaces them with normalized year, month, and day values.
+ *
+ * @param groups - Mutable lexer capture groups containing the date expression.
+ * @param dateTime - Date and time used as the resolution context.
+ * @param config - Tempo configuration used for anchors, modifiers, and two-digit-year resolution.
+ * @param pivot - Fallback pivot for resolving two-digit years.
+ * @returns The resolved date and time, or the original value when the captures are invalid or unsupported.
+ */
 export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any, pivot: number = 75): Temporal.ZonedDateTime {
 
 	const { mod, nbr = '1', afx, unt, era } = groups as Lexer.GroupDate & { era?: string };
@@ -495,8 +512,14 @@ export function parseTime(groups: t.Groups = {}, dateTime: Temporal.ZonedDateTim
 }
 
 /**
- * apply a timezone or calendar bracket to the current ZonedDateTime  
- * normalization is applied to ensure 'Z' is treated as 'UTC'
+ * Applies captured timezone and calendar values to a zoned date-time.
+ *
+ * The canonical `tz` capture takes precedence over `tzd`, bracketed zones take precedence over both, and `Z` is normalized to `UTC`. Newly applied values update `config`, and successful processing removes the zone and calendar captures from `groups`. Invalid timezone identifiers are ignored.
+ *
+ * @param groups - Mutable lexer capture groups containing zone or calendar values.
+ * @param dateTime - Date and time to update.
+ * @param config - Optional Tempo configuration updated with applied values.
+ * @returns The date and time with valid zone and calendar adjustments applied.
  */
 export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config?: any): Temporal.ZonedDateTime {
 	if (!isTemporal(dateTime)) return dateTime;
