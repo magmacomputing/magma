@@ -2,8 +2,12 @@ import { Tempo } from '#tempo';
 import { Token } from '#tempo/support';
 
 describe('Canonical {tz} and backwards-compatible {tzd} timezone token', () => {
+  beforeEach(() => {
+    Tempo.init();
+  });
+
   afterEach(() => {
-    Tempo[Symbol.dispose]();
+    Tempo.init();
   });
 
   it('exposes Token.tz and Token.tzd symbols', () => {
