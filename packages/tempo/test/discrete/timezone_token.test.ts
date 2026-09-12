@@ -2,6 +2,10 @@ import { Tempo } from '#tempo';
 import { Token } from '#tempo/support';
 
 describe('Canonical {tz} and backwards-compatible {tzd} timezone token', () => {
+  afterEach(() => {
+    Tempo[Symbol.dispose]();
+  });
+
   it('exposes Token.tz and Token.tzd symbols', () => {
     expect(Token.tz).toBeDefined();
     expect(typeof Token.tz).toBe('symbol');
@@ -26,6 +30,7 @@ describe('Canonical {tz} and backwards-compatible {tzd} timezone token', () => {
     expect(reg.source).toContain('(?<tz>');
 
     Tempo.init({
+      locale: 'en-AU',
       registry: {
         layouts: {
           leadingTz: layout
@@ -46,6 +51,7 @@ describe('Canonical {tz} and backwards-compatible {tzd} timezone token', () => {
     expect(reg.source).toContain('(?<tz>');
 
     Tempo.init({
+      locale: 'en-AU',
       registry: {
         layouts: {
           leadingTzdLegacy: layout
@@ -59,14 +65,14 @@ describe('Canonical {tz} and backwards-compatible {tzd} timezone token', () => {
   });
 
   it('formats with canonical {tz} and modifiers', () => {
-    const t = new Tempo('2026-08-06T16:16:00+10:00[Australia/Sydney]');
+    const t = new Tempo('2026-08-06T16:16:00+10:00[Australia/Sydney]', { locale: 'en-AU' });
     expect(t.format('{tz}')).toBe('Australia/Sydney');
     expect(t.format('{tz:offset}')).toBe('+10:00');
     expect(t.format('{tz:short}')).toBe('AEST');
   });
 
   it('formats with legacy {tzd} and modifiers identically to {tz}', () => {
-    const t = new Tempo('2026-08-06T16:16:00+10:00[Australia/Sydney]');
+    const t = new Tempo('2026-08-06T16:16:00+10:00[Australia/Sydney]', { locale: 'en-AU' });
     expect(t.format('{tzd}')).toBe('Australia/Sydney');
     expect(t.format('{tzd:offset}')).toBe('+10:00');
     expect(t.format('{tzd:short}')).toBe('AEST');
