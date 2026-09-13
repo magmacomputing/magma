@@ -34,3 +34,19 @@ Whenever writing, reviewing, refactoring, testing, or discussing code involving 
 ## 3. Documentation Maintenance
 - **Do not make updates to documents in `packages/tempo/doc/9-plugins`**: This folder is completely re-built during `docs:build` (harvested from `packages/plugins/*/doc/` via `harvest-plugins.mjs`). Always make plugin documentation updates directly in the respective plugin package (e.g. `packages/plugins/<name>/doc/` or `packages/plugins/<name>/README.md`).
 - **Heading Anchors & VitePress Slugs**: Follow the guidelines in [documentation.md](./documentation.md) for all documentation links (e.g., VitePress `_` prefix on numeric headings, emoji preservation, and dot-to-hyphen punctuation conversion).
+
+## 4. Prefer Assertion Library Functions
+- **Assertion Library First**: Always prefer the fast, idiomatic assertion functions from `#library/assertion.library.js` over manual `typeof`, `instanceof`, or bespoke null-checks:
+  - **Primitives**: `isString(x)`, `isNumber(x)`, `isInteger(x)` (bigint), `isDigit(x)` (number or bigint), `isBoolean(x)`, `isSymbol(x)`.
+  - **Callables**: `isCallable(x)` for any invocable function, method, or class constructor (`typeof x === 'function'`).
+  - **Objects**: `isPlainObject(x)` for plain dictionary `{}` or `Object.create(null)` objects. Avoid manual, fragile checks such as `typeof x === 'object' && x !== null` or `x.constructor === Object`.
+  - **Nullish & Presence**: `isDefined(x)`, `isNullish(x)`, `isUndefined(x)`, `isNull(x)`.
+
+## 5. Export Discipline & Internal API Marking (`@internal`)
+- **Prefer Testing via Public Surface**: Always test modules through their public interface whenever possible (e.g. testing `formatList` / `getRelativeTime` instead of private `getLF` / `getRTF`).
+- **Mark Test/Engine Exports with `@internal`**: When a helper, constructor, or internal engine mechanism must be exported across package or module boundaries (for discrete testing, engine consumption, or multi-package support), ALWAYS annotate it with `/** @internal */`. This ensures:
+  - Documentation generators (TypeDoc, API Extractor, VitePress) exclude them from public API documentation.
+  - End users and external consumers are signaled that the symbol is private and subject to change without semver notices.
+- **Formatter vs. Constructor Pattern**: Keep low-level memoized Intl constructor helpers (`getRTF`, `getLF`, `getNF`, `getDF`) private to the module, exposing ergonomic high-level formatters (`getRelativeTime`, `formatList`, `formatNumber`, `formatDuration`). Only export constructor/snapshot helpers (`getDTF`, `getPR`, `getLC`, `getLI`) where deep inspection (`formatToParts`, `resolvedOptions`, `.select()`) is strictly required by engine consumers, and mark them `/** @internal */`.
+
+

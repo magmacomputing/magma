@@ -82,6 +82,7 @@ export function getAliasContext(ctx: NormalizerContext, dateTime: Temporal.Zoned
 		toNow: () => getAliasContext(ctx, instant().toZonedDateTimeISO(tz).withCalendar(cal)),
 		toDateTime: () => dateTime,
 		toString: () => dateTime.toString() as t.ISOString,
+		get zdt() { return dateTime },
 		get yy() { return dateTime.year },
 		get mm() { return dateTime.month },
 		get dd() { return dateTime.day },
@@ -96,7 +97,7 @@ export function getAliasContext(ctx: NormalizerContext, dateTime: Temporal.Zoned
 			const defaultLoc = Array.isArray(Default.locale) ? Default.locale[0] : Default.locale;
 			return (primary ?? defaultLoc) as string;
 		},
-		get sphere() { return state.config.sphere ?? Default.sphere },
+		get sphere() { return state.config.geo?.sphere ?? state.config.sphere ?? Default.sphere },
 		config: state.config,
 		[sym.$Identity]: true,
 	} as t.AliasContext

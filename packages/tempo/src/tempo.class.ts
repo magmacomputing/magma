@@ -10,9 +10,9 @@ import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
-import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
-import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear } from '#library/international.library.js';
+import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear, getLC, getLI } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { getStashedGeo, coerceGeo } from '#library/mapper.library.js';
 import { Interval } from '#library/scheduling/interval.class.js';
@@ -44,6 +44,7 @@ declare module '#library/type.library.js' {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /** current execution context */														const Context = getContext();
 /**  */																											const ClassStates = new WeakMap<typeof Tempo, Internal.State>();
+/** Live instance cache: returns active instances, automatically evicted on garbage collection */		const LiveInstances = new WeakMap<Tempo, Internal.State>();
 // shortcut functions to common Tempo properties / methods
 /** current timestamp (ts) */																export const getStamp = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).ts) as t.Params<number | bigint>;
 /** create new Tempo */																			export const getTempo = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options)) as t.Params<Tempo>;
@@ -261,21 +262,23 @@ export class Tempo {
 		const mdy = shape.parse.monthDay;
 		const globalMdy = Tempo.MONTH_DAY as t.MonthDay;
 
-		let intl: Intl.Locale;
-		try {
-			intl = new Intl.Locale(Tempo.#locale(locale));
-		} catch (e) {
-			logWarn(`Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, shape.config, e);
-			intl = new Intl.Locale('en-US');
+		const rawLocale = Tempo.#locale(locale);
+		if (!getLC(rawLocale)) {
+			logWarn(`Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, shape.config);
 		}
+		const li = getLI(rawLocale);
+		const baseName = li.baseName;
+		const language = li.language ?? li.locale?.language;
 
 		const tz = String(timeZone);
-		const activeLocaleData = mdy.resolvedLocales?.find(l => l.locale === intl.baseName || l.locale === intl.language);
+		const activeLocaleData = mdy.resolvedLocales?.find(l => l.locale === baseName || (language && l.locale === language));
 
-		return (activeLocaleData?.timeZones?.includes(tz)) ||
-			(globalMdy.timezones?.[intl.baseName]?.includes(tz)) ||
-			(globalMdy.timezones?.[intl.language]?.includes(tz)) ||
-			((asArray(globalMdy.locales).includes(intl.baseName) || asArray(globalMdy.locales).includes(intl.language)) && ((intl as any).getTimeZones?.() || []).includes(tz));
+		return Boolean(
+			(activeLocaleData?.timeZones?.includes(tz)) ||
+			(globalMdy.timezones?.[baseName]?.includes(tz)) ||
+			(language && globalMdy.timezones?.[language]?.includes(tz)) ||
+			((asArray(globalMdy.locales).includes(baseName) || (language && asArray(globalMdy.locales).includes(language))) && li.timeZones.includes(tz))
+		);
 	}
 
 	/**
@@ -405,8 +408,8 @@ export class Tempo {
 			if (md.timezones) {
 				const zones = Object.fromEntries(
 					ownEntries(md.timezones, true).map(([k, v]) => {
-						try { return [new Intl.Locale(String(k)).baseName, v] }
-						catch { return [String(k), v] }
+						const baseName = getLC(String(k))?.baseName;
+						return [baseName ?? String(k), v];
 					})
 				);
 				if (isSandbox) md = { ...md, timezones: zones };
@@ -442,16 +445,16 @@ export class Tempo {
 		}
 
 		// 4. Process Plugins & Plugin Options
-		if (discovery.pluginOptions && isObject(discovery.pluginOptions)) {
-			opts = { ...opts, pluginOptions: isObject(opts.pluginOptions) ? { ...opts.pluginOptions, ...discovery.pluginOptions } : discovery.pluginOptions };
+		if (discovery.pluginOptions && isPlainObject(discovery.pluginOptions)) {
+			opts = { ...opts, pluginOptions: isPlainObject(opts.pluginOptions) ? { ...opts.pluginOptions, ...discovery.pluginOptions } : discovery.pluginOptions };
 		}
 
 		/** @deprecated Providing configuration dictionaries under 'discovery.plugins' is deprecated. Use 'discovery.pluginOptions' instead. */
-		if (discovery.plugins && isObject(discovery.plugins) && !Array.isArray(discovery.plugins) && !isFunction(discovery.plugins) && !('install' in discovery.plugins) && !('key' in discovery.plugins)) {
+		if (discovery.plugins && isPlainObject(discovery.plugins) && !('install' in discovery.plugins) && !('key' in discovery.plugins)) {
 			opts = {
 				...opts,
-				plugins: isObject(opts.plugins) ? { ...opts.plugins, ...discovery.plugins } : discovery.plugins,
-				pluginOptions: isObject(opts.pluginOptions) ? { ...discovery.plugins, ...opts.pluginOptions } : discovery.plugins,
+				plugins: isPlainObject(opts.plugins) ? { ...opts.plugins, ...discovery.plugins } : discovery.plugins,
+				pluginOptions: isPlainObject(opts.pluginOptions) ? { ...discovery.plugins, ...opts.pluginOptions } : discovery.plugins,
 			};
 		}
 
@@ -496,7 +499,7 @@ export class Tempo {
 			...Guard,
 			...(state.config.registry?.modifiers ? Object.values(state.config.registry.modifiers).flat() : []),
 			...ownValues(state.parse.layout, true).flatMap(val => {
-				const src = (val as any) instanceof RegExp ? (val as any).source : (typeof val === 'string' ? val : '');
+				const src = (val as any) instanceof RegExp ? (val as any).source : (isString(val) ? val : '');
 				if (!src) return [];
 				return src
 					.replace(/\{[#]?[\w]+(?:\.[\w]+)*(?:\:[a-zA-Z]+)*\}/g, ' ')
@@ -727,7 +730,7 @@ export class Tempo {
 							if (!isEmpty(opts)) this[$setConfig](this[$Internal](), opts);
 
 							// If a plain configuration dictionary was supplied directly in the plugins array (e.g. { ai: { timeout: 1000 } })
-							const isPlainConfigDict = isObject(discovery) &&
+							const isPlainConfigDict = isPlainObject(discovery) &&
 								!ownKeys(discovery).some(key => DISCOVERY.has(key as any)) &&
 								!('name' in discovery) && !('key' in discovery) && !('install' in discovery);
 							if (isPlainConfigDict) {
@@ -887,7 +890,7 @@ export class Tempo {
 		if (fn) {
 			try {
 				const res = fn(sb);
-				if (res && typeof (res as any).then === 'function') {
+				if (res && isCallable((res as any).then)) {
 					return (res as any).finally(() => {
 						(sb as any)[Symbol.dispose]?.();
 					}) as R;
@@ -1629,13 +1632,25 @@ export class Tempo {
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
 	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return this.toDateTime().era; }
 	/** Year within the era (positive integer) */							get eon() { return this.toDateTime().eraYear; }
-	/** @hidden prefer `eon` */																get eraYear() { return this.toDateTime().eraYear; }
+	/**
+	 * Year within the era (positive integer).
+	 * @deprecated Use `eon` (Tempo canonical) or `zdt.eraYear` instead. To be removed in v5.0.0.
+	 */
+	get eraYear() { return this.toDateTime().eraYear; }
 	/** 4-digit iso week-numbering year */										get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** iso week number of the year */												get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
-	/** @hidden prefer `wy` */																get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/**
+	 * ISO week number of the year.
+	 * @deprecated Use `wy` (Tempo canonical) or `zdt.weekOfYear` instead. To be removed in v5.0.0.
+	 */
+	get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
-	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day as t.dd }
+	/**
+	 * Day of the month (1-31).
+	 * @deprecated Use `dd` (Tempo canonical) or `zdt.day` instead. To be removed in v5.0.0.
+	 */
+	get day() { return this.toDateTime().day as t.dd }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
 	/** Minutes of the hour (0-59) */													get mi() { return this.toDateTime().minute as t.mi }
 	/** Seconds of the minute (0-59) */												get ss() { return this.toDateTime().second as t.ss }
@@ -1763,6 +1778,7 @@ export class Tempo {
 		return out as t.Internal.Parse;
 	}
 
+	/** returns the underlying Temporal.ZonedDateTime */			get zdt(): Temporal.ZonedDateTime { return this.toDateTime(); }
 	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term ??= this.#setDelegator('term'); }
 	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#memo.fmt ??= this.#setDelegator('fmt'); }
 	/** units since epoch for this date-time instance */			get epoch() { return Tempo.#getEpoch(this.toDateTime()); }
@@ -1998,7 +2014,7 @@ export class Tempo {
 
 	/** check if we've been given a Tempo Options object */
 	#isOptions(arg: any): arg is t.Options {
-		if (!isObject(arg) || arg.constructor !== Object) return false;
+		if (!isPlainObject(arg)) return false;
 
 		const keys = ownKeys(arg);															// if it contains any 'mutation' keys, then it's not (just) an options object
 		if (keys.some(key => enums.MUTATION.has(key)))

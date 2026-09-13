@@ -1,6 +1,7 @@
 import { base64ToBuffer, bufferToBase64, encodeText, decodeBuffer } from './buffer.library.js';
 import { Logger } from '../runtime/logger.class.js';
 import { keys } from './cipher.library.js';
+import { isPlainObject } from '#library/assertion.library.js';
 
 const logger = new Logger('WebToken');
 
@@ -92,10 +93,8 @@ export const parseJWT = <Header = Record<string, any>, Payload = Record<string, 
 		const header = JSON.parse(headerJson);
 		const payload = JSON.parse(payloadJson);
 
-		if (typeof header !== 'object' || header === null || Array.isArray(header) ||
-			typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+		if (!isPlainObject(header) || !isPlainObject(payload))
 			throw new Error('Invalid JWT shape');
-		}
 
 		return {
 			header,
@@ -156,7 +155,7 @@ export const verifyJWS = async (token: string, publicKey: CryptoKey): Promise<bo
  * @returns A promise resolving to the signed JWS string
  */
 export const signJWS = async (payload: object, privateKey: CryptoKey, headers: object = { alg: 'RS256', typ: 'JWT' }): Promise<string> => {
-	if (typeof payload !== 'object' || payload === null)
+	if (!isPlainObject(payload))
 		throw new TypeError('WebToken: Payload must be a non-null object');
 
 	try {

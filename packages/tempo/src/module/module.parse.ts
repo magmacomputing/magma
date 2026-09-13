@@ -1,7 +1,7 @@
 import '#library/temporal.polyfill.js';
 import { asType } from '#library/type.library.js';
 import { LOG } from '#library/logger.class.js';
-import { isNull, isString, isObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty, isNumber, isNumeric } from '#library/assertion.library.js';
+import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty, isNumber, isDigit, isNumeric } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
@@ -88,7 +88,7 @@ const _ParseEngine = {
 				if (TempoClass) {
 					basis = (TempoClass as any).from(val, safeConfig).toDateTime();
 				} else {
-					const ms = val instanceof Date ? val.getTime() : (typeof val === 'number' || typeof val === 'bigint' ? Number(val) : new Date(String(val)).getTime());
+					const ms = val instanceof Date ? val.getTime() : (isDigit(val) ? Number(val) : new Date(String(val)).getTime());
 					basis = Temporal.Instant.fromEpochMilliseconds(ms || Date.now()).toZonedDateTimeISO(tz).withCalendar(cal);
 				}
 			} else {
@@ -451,7 +451,7 @@ const _ParseEngine = {
 
 	/** check if we've been given a ZonedDateTimeLike object */
 	isZonedDateTimeLike(state: any, tempo: t.DateTime | t.Options | undefined): tempo is Temporal.ZonedDateTimeLike & { value?: any } {
-		if (!isObject(tempo) || isEmpty(tempo) || (tempo.constructor !== Object && tempo.constructor !== undefined))
+		if (!isPlainObject(tempo) || isEmpty(tempo))
 			return false;
 
 		const keys = ownKeys(tempo);

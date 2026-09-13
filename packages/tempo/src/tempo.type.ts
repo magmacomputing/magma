@@ -66,6 +66,8 @@ export interface AliasContext {
 	toNow(): AliasContext;
 	/** return the current state as a raw Temporal.ZonedDateTime */
 	toDateTime(): Temporal.ZonedDateTime;
+	/** return the current state as a raw Temporal.ZonedDateTime */
+	readonly zdt: Temporal.ZonedDateTime;
 	/** return the ISO string representation of the current state */
 	toString(): ISOString;
 
@@ -214,7 +216,11 @@ export interface TempoFormatTokens {
 	// ── year / week ───────────────────────────────────
 	yyyy: true; yy: true; yw: true;
 	// ── week-of-year ─────────────────────────────────
-	ww: true; wy: true; yywy: true; yyww: true;
+	wy: true; yywy: true;
+	/** @deprecated Deprecated in v4.3.0; to be removed in v5.0.0. Use `wy` instead. */
+	ww: true;
+	/** @deprecated Deprecated in v4.3.0; to be removed in v5.0.0. Use `yywy` instead. */
+	yyww: true;
 	// ── era / eon ─────────────────────────────────────
 	era: true; eon: true;
 	// ── month ─────────────────────────────────────────

@@ -1,6 +1,6 @@
 import { objectify, stringify } from '#library/serialize.library.js';
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isDefined, isUndefined, isString } from '#library/assertion.library.js';
+import { isDefined, isUndefined, isString, isCallable, isNumber } from '#library/assertion.library.js';
 import { BoundedCache } from '#library/cache.class.js';
 
 const context = getContext();
@@ -41,12 +41,12 @@ export const getSafeStorage = (name: 'localStorage' | 'sessionStorage' = 'localS
 		const target = globalThis?.[name];
 		if (
 			target &&
-			typeof target.getItem === 'function' &&
-			typeof target.setItem === 'function' &&
-			typeof target.removeItem === 'function' &&
-			typeof target.clear === 'function' &&
-			typeof target.key === 'function' &&
-			typeof target.length === 'number'
+			isCallable(target.getItem) &&
+			isCallable(target.setItem) &&
+			isCallable(target.removeItem) &&
+			isCallable(target.clear) &&
+			isCallable(target.key) &&
+			isNumber(target.length)
 		) return target;
 	} catch {
 		// Ignore SecurityError / ReferenceError in restricted sandboxes

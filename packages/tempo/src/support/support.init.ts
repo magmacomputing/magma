@@ -6,7 +6,7 @@ import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { asType } from '#library/type.library.js';
-import { isString, isObject, isUndefined, isDefined, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
+import { isString, isObject, isPlainObject, isUndefined, isDefined, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
@@ -513,7 +513,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 			case 'plugins':
 				/** @deprecated Passing configuration dictionaries in 'plugins' is deprecated. Use 'pluginOptions' instead. */
-				if (isObject(arg.value) && !Array.isArray(arg.value) && !isFunction(arg.value) && !('install' in arg.value) && !('key' in arg.value)) {
+				if (isPlainObject(arg.value) && !('install' in arg.value) && !('key' in arg.value)) {
 					const existing = state.config.plugins ?? {};
 					setProperty(state.config, 'plugins', { ...existing, ...arg.value });
 					const existingOpts = state.config.pluginOptions ?? {};
