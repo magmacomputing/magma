@@ -247,9 +247,10 @@ export const importPrivateKey = async (pem: string, alg: string = keys.SignKey, 
  * 
  * @param jwk - The standard JsonWebKey object
  * @param usage - Optional explicit key usages
+ * @param extractable - Optional boolean indicating whether the key is extractable (default: false)
  * @returns A promise resolving to the imported CryptoKey
  */
-export const importJWK = async (jwk: JsonWebKey, usage?: KeyUsage[]): Promise<CryptoKey> => {
+export const importJWK = async (jwk: JsonWebKey, usage?: KeyUsage[], extractable = false): Promise<CryptoKey> => {
 	if (!isPlainObject(jwk))
 		throw new TypeError('Cipher: JWK must be an object');
 
@@ -260,7 +261,7 @@ export const importJWK = async (jwk: JsonWebKey, usage?: KeyUsage[]): Promise<Cr
 			'jwk',
 			jwk,
 			{ name: keys.SignKey, hash: hashName },
-			true,
+			extractable,
 			usage ?? defaultUsage
 		);
 	}
@@ -272,7 +273,7 @@ export const importJWK = async (jwk: JsonWebKey, usage?: KeyUsage[]): Promise<Cr
 			'jwk',
 			jwk,
 			{ name: 'HMAC', hash: hashName },
-			true,
+			extractable,
 			usage ?? defaultUsage
 		);
 	}
@@ -375,7 +376,9 @@ export const verifyHmac = async (
 	const expected = await signHmac(data, secret, alg);
 	const actual = signature instanceof Uint8Array
 		? signature
-		: new Uint8Array(signature instanceof ArrayBuffer ? signature : signature.buffer);
+		: signature instanceof ArrayBuffer
+			? new Uint8Array(signature)
+			: new Uint8Array(signature.buffer, signature.byteOffset, signature.byteLength);
 	return timingSafeEqual(expected, actual);
 }
 

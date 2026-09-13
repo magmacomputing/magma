@@ -132,7 +132,7 @@ export const decodeBase64 = <T>(base64 = ''): T => {
  * @returns The URL-safe Base64URL string
  * @example
  * ```ts
- * const url = base64ToBase64Url('a+b/c=='); // 'a-b_c'
+ * const url = base64ToBase64Url('+/8='); // '-_8'
  * ```
  */
 export const base64ToBase64Url = (base64: string): string => base64
@@ -148,7 +148,7 @@ export const base64ToBase64Url = (base64: string): string => base64
  * @returns The standard Base64 string with padding restored
  * @example
  * ```ts
- * const b64 = base64UrlToBase64('a-b_c'); // 'a+b/c=='
+ * const b64 = base64UrlToBase64('-_8'); // '+/8='
  * ```
  */
 export const base64UrlToBase64 = (base64url: string): string =>

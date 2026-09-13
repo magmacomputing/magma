@@ -1,7 +1,7 @@
 import { base64UrlToBuffer, bufferToBase64Url, toBase64Url, decodeBuffer } from './buffer.library.js';
 import { Logger } from '../runtime/logger.class.js';
 import { keys, importPublicKey, importPrivateKey, signData, verifyData, signHmac, verifyHmac } from './cipher.library.js';
-import { isPlainObject, isObject, isString } from '#library/assertion.library.js';
+import { isPlainObject, isString } from '#library/assertion.library.js';
 
 const logger = new Logger('WebToken');
 
@@ -97,11 +97,13 @@ export const parseJWT = <Header = Record<string, any>, Payload = Record<string, 
  * 
  * @param token - The JWS string to verify
  * @param keyOrSecret - The public CryptoKey, PEM public key string, or HMAC shared secret
+ * @param expectedAlg - Optional expected algorithm to enforce (e.g. 'RS256', 'HS256')
  * @returns A promise resolving to true if the signature is valid
  */
 export const verifyJWS = async (
 	token: string,
-	keyOrSecret: CryptoKey | string | Uint8Array
+	keyOrSecret: CryptoKey | string | Uint8Array,
+	expectedAlg?: string
 ): Promise<boolean> => {
 	try {
 		const parsed = parseJWT(token);
@@ -110,6 +112,11 @@ export const verifyJWS = async (
 		const { header, signature, raw } = parsed;
 		const signedData = `${raw.header}.${raw.payload}`;
 		const alg = header.alg ?? 'RS256';
+
+		if (expectedAlg && alg !== expectedAlg) {
+			logger.error(`VERIFY_ERROR: Algorithm mismatch. Expected "${expectedAlg}", got "${alg}"`);
+			return false;
+		}
 
 		if (alg === 'RS256') {
 			const publicKey = isString(keyOrSecret)
@@ -120,6 +127,11 @@ export const verifyJWS = async (
 		}
 
 		if (alg === 'HS256' || alg === 'HS384' || alg === 'HS512') {
+			if (isString(keyOrSecret) && keyOrSecret.includes('-----BEGIN ') && keyOrSecret.includes('KEY-----')) {
+				logger.error('VERIFY_ERROR: Refusing to use asymmetric PEM key as HMAC secret');
+				return false;
+			}
+
 			const hashAlg = alg === 'HS512' ? 'SHA-512' : alg === 'HS384' ? 'SHA-384' : 'SHA-256';
 			return await verifyHmac(
 				signature,
@@ -153,7 +165,7 @@ export const signJWS = async (
 	keyOrSecret: CryptoKey | string | Uint8Array,
 	headers: JWSHeader = { alg: 'RS256', typ: 'JWT' }
 ): Promise<string> => {
-	if (!isObject(payload))
+	if (typeof payload !== 'object' || payload === null)
 		throw new TypeError('WebToken: Payload must be a non-null object');
 
 	try {

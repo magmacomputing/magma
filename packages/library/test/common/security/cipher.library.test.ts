@@ -66,6 +66,10 @@ describe('cipher.library', () => {
 			const importedKey = await importJWK(jwk);
 			expect(importedKey.type).toBe('public');
 			expect(importedKey.algorithm.name).toBe(keys.SignKey);
+			expect(importedKey.extractable).toBe(false);
+
+			const optInKey = await importJWK(jwk, undefined, true);
+			expect(optInKey.extractable).toBe(true);
 		});
 
 		it('imports oct symmetric JWK', async () => {
@@ -78,6 +82,10 @@ describe('cipher.library', () => {
 			const key = await importJWK(octJwk);
 			expect(key.type).toBe('secret');
 			expect(key.algorithm.name).toBe('HMAC');
+			expect(key.extractable).toBe(false);
+
+			const optInOct = await importJWK(octJwk, undefined, true);
+			expect(optInOct.extractable).toBe(true);
 		});
 
 		it('throws on unsupported JWK key type', async () => {
@@ -147,6 +155,15 @@ describe('cipher.library', () => {
 			const signature = await signHmac(message, secret);
 			expect(await verifyHmac(signature, 'different message', secret)).toBe(false);
 			expect(await verifyHmac(signature, message, 'wrong secret')).toBe(false);
+		});
+
+		it('verifies signature when passed as non-Uint8Array ArrayBufferView with byteOffset', async () => {
+			const signature = await signHmac(message, secret);
+			const paddedBuffer = new Uint8Array(signature.length + 20);
+			paddedBuffer.set(signature, 10);
+			const dataView = new DataView(paddedBuffer.buffer, 10, signature.length);
+
+			expect(await verifyHmac(dataView, message, secret)).toBe(true);
 		});
 	});
 

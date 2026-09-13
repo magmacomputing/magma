@@ -119,6 +119,13 @@ describe('webtoken.library', () => {
 
 			const valid = await verifyJWS(token, keyPair.publicKey);
 			expect(valid).toBe(true);
+
+			const dateToken = await signJWS(new Date(), keyPair.privateKey);
+			expect(typeof dateToken).toBe('string');
+
+			const payloadWithDate = { date: new Date(), sub: 'user_42' };
+			const tokenWithDate = await signJWS(payloadWithDate, keyPair.privateKey);
+			expect(await verifyJWS(tokenWithDate, keyPair.publicKey)).toBe(true);
 		});
 
 		it('signs and verifies RS256 token using PEM formatted strings', async () => {
@@ -171,6 +178,14 @@ describe('webtoken.library', () => {
 		it('rejects unsupported algorithms gracefully', async () => {
 			const payload = { sub: 'unsupported_test' };
 			await expect(signJWS(payload, 'secret', { alg: 'NONE' as any })).rejects.toThrow('Unsupported algorithm "NONE"');
+		});
+
+		it('rejects algorithm confusion attack where HS256 token is signed with RS256 public PEM', async () => {
+			const payload = { sub: 'attacker', role: 'admin' };
+			const confusedToken = await signJWS(payload, publicPem, { alg: 'HS256', typ: 'JWT' });
+
+			expect(await verifyJWS(confusedToken, publicPem, 'RS256')).toBe(false);
+			expect(await verifyJWS(confusedToken, publicPem)).toBe(false);
 		});
 	});
 });
