@@ -155,7 +155,7 @@ export const verifyJWS = async (token: string, publicKey: CryptoKey): Promise<bo
  * @returns A promise resolving to the signed JWS string
  */
 export const signJWS = async (payload: object, privateKey: CryptoKey, headers: object = { alg: 'RS256', typ: 'JWT' }): Promise<string> => {
-	if (!isPlainObject(payload))
+	if (typeof payload !== 'object' || payload === null)
 		throw new TypeError('WebToken: Payload must be a non-null object');
 
 	try {

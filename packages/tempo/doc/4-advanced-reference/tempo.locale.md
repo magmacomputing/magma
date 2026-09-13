@@ -131,17 +131,17 @@ Whenever an array of locales is provided (e.g. `['fr-FR', 'en-GB']`), Tempo extr
 Tempo delegates regional calendar metadata (such as `firstDay` of the week, regional `weekend` days, and text `direction`) directly to the ECMAScript `Intl.Locale` Info API powered by the host runtime's Unicode CLDR/ICU database.
 
 > [!NOTE]
-> **Host Environment & ISO 8601 Fallbacks**
+> **Host Environment & Default Baseline Fallbacks**
 > 
 > - **Modern Runtimes (Node 18.19+, Node 20+, Modern Browsers)**:
 >   Tempo pulls dynamic, fully authoritative CLDR data directly from the host engine for all 250+ world territories (e.g. Sunday start for `en-US`, Monday start for `en-GB`, Saturday/Sunday weekend for France, Friday/Saturday for Saudi Arabia).
 > 
-> - **Legacy or Stripped Environments (Minimal Docker / Non-ICU Runtimes)**:
->   If running in an environment lacking the `Intl.Locale` Info API (such as custom Node builds without `full-icu`), Tempo applies a **best-effort regional heuristic** for major cohorts (like US, Canada, and Middle Eastern locales).
+> - **Legacy or Stripped Environments (Minimal Docker / Older Engines)**:
+>   If running in an environment lacking the native `Intl.Locale` Info API, Tempo applies a **best-effort regional heuristic** for major cohorts (like US, Canada, and Middle Eastern locales).
 > 
-> - **ISO 8601 Baseline**:
->   If a locale or territory is not covered by these heuristics, Tempo **deliberately falls back to international ISO 8601 standards**:
->   - **First day of week**: Monday (`1`)
+> - **Default Baseline Settings**:
+>   If a locale or territory is not covered by these heuristics, Tempo **deliberately falls back to standard baseline settings**:
+>   - **First day of week**: Monday (`1`, matching ISO 8601)
 >   - **Weekend days**: Saturday & Sunday (`[6, 7]`)
 >   - **Text direction**: Left-to-Right (`'ltr'`)
 > 

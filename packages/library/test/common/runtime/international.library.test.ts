@@ -40,6 +40,9 @@ describe('International Library', () => {
 			expect(hasIntl()).toBe(true);
 			expect(hasIntl('DateTimeFormat')).toBe(true);
 			expect(hasIntl('NonExistentIntlConstructor')).toBe(false);
+			expect(hasIntl('toString' as any)).toBe(false);
+			expect(hasIntl('valueOf' as any)).toBe(false);
+			expect(hasIntl('constructor' as any)).toBe(false);
 		});
 
 		it('should resolve en-US with Sunday firstDay and ltr direction', () => {
@@ -92,6 +95,17 @@ describe('International Library', () => {
 			const info = getLI('fr-FR');
 			expect(info.language).toBe('fr');
 			expect(info.baseName).toBe('fr-FR');
+		});
+
+		it('should correctly resolve regions for locales with script or without region subtags', () => {
+			const withScript = getLI('zh-Hans-CN');
+			expect(withScript.baseName).toBe('zh-Hans-CN');
+			expect(withScript.language).toBe('zh');
+			expect(withScript.locale?.region).toBe('CN');
+
+			const noRegion = getLI('zh-Hans');
+			expect(noRegion.baseName).toBe('zh-Hans');
+			expect(noRegion.locale?.region).toBeUndefined();
 		});
 	});
 

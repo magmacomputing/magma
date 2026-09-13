@@ -1,4 +1,4 @@
-import { parseJWT } from '../../../src/common/security/webtoken.library.js';
+import { parseJWT, signJWS, verifyJWS } from '../../../src/common/security/webtoken.library.js';
 
 describe('webtoken.library', () => {
 	const validHeader = { alg: 'HS256', typ: 'JWT' };
@@ -72,5 +72,51 @@ describe('webtoken.library', () => {
 
 		expect(parseJWT(nullToken)).toBeNull();
 		expect(() => parseJWT(nullToken, { strict: true })).toThrow('Invalid JWT: Segment decoding failed.');
+	});
+
+	describe('signJWS', () => {
+		let keyPair: CryptoKeyPair;
+
+		beforeAll(async () => {
+			keyPair = await globalThis.crypto.subtle.generateKey(
+				{
+					name: 'RSASSA-PKCS1-v1_5',
+					modulusLength: 2048,
+					publicExponent: new Uint8Array([1, 0, 1]),
+					hash: 'SHA-256',
+				},
+				true,
+				['sign', 'verify']
+			);
+		});
+
+		it('rejects non-object or null payloads with TypeError', async () => {
+			await expect(signJWS(null as any, keyPair.privateKey)).rejects.toThrow(
+				new TypeError('WebToken: Payload must be a non-null object')
+			);
+			await expect(signJWS('string' as any, keyPair.privateKey)).rejects.toThrow(
+				new TypeError('WebToken: Payload must be a non-null object')
+			);
+			await expect(signJWS(12345 as any, keyPair.privateKey)).rejects.toThrow(
+				new TypeError('WebToken: Payload must be a non-null object')
+			);
+		});
+
+		it('accepts class instances and non-plain objects that can be serialized by JSON.stringify', async () => {
+			class CustomPayload {
+				constructor(public sub: string, public role: string) {}
+			}
+
+			const payload = new CustomPayload('user_42', 'admin');
+			const token = await signJWS(payload, keyPair.privateKey);
+
+			expect(typeof token).toBe('string');
+			const parsed = parseJWT(token);
+			expect(parsed?.payload.sub).toBe('user_42');
+			expect(parsed?.payload.role).toBe('admin');
+
+			const valid = await verifyJWS(token, keyPair.publicKey);
+			expect(valid).toBe(true);
+		});
 	});
 });

@@ -17,9 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatically cleanses raw locale strings by trimming whitespace, converting POSIX underscores (`en_US`) to BCP 47 hyphens (`en-US`), stripping POSIX encoding and modifier suffixes (`.UTF-8`, `@euro`), and delegating case canonicalization to `Intl.Locale`.
   - Safely catches syntax errors (e.g. malformed BCP 47 language tags) and returns `undefined` rather than throwing uncaught `RangeError` exceptions.
   - Re-implemented `canonicalLocale(locale)` to delegate to `getLC(locale)?.baseName`, delivering O(1) memoization and seamless POSIX cleansing while preserving full backwards compatibility.
-- **Sub-Nanosecond Primitive Fast-Paths & Callable Type Guard (`assertion.library`)**:
+- **Sub-Nanosecond Primitive Fast-Paths & Type Guards (`assertion.library`)**:
   - Added `isCallable(obj)` in `#library/common/primitives/assertion.library.js` providing a sub-nanosecond type assertion (`typeof obj === 'function'`) that returns `true` for standard functions, arrow functions, async/generator functions, and ES6 class constructors alike, eliminating awkward `isFunction(t) || isClass(t)` compound checks.
+  - Added `isLocale(obj): obj is Intl.Locale` type guard in `assertion.library.js` to safely verify and narrow `Intl.Locale` instances at compile time, eliminating loss of typing and dangerous `(Intl as any).Locale` casts across the codebase.
   - Overhauled core primitive type guards (`isString`, `isBoolean`, `isSymbol`, `isInteger`, `isArray`, `isNull`, `isUndefined`, `isPrimitive`, `isPropertyKey`) with direct sub-nanosecond engine primitives (`typeof`, `Array.isArray`, strict identity `===`), bypassing object-boxing and registry table traversal on hot paths (~10-50x speedup).
+- **Type-Safe Capability Probing & Lazy Regional Fallbacks (`hasIntl`, `international.library`)**:
+  - Typed `hasIntl(feature?: LooseUnion<keyof typeof Intl>)` to provide full IDE autocompletion for standard `Intl` static members while preserving the ability to probe arbitrary/emerging features without TypeScript compiler errors.
+  - Eliminated eager fallback evaluation in `getLI`: regional fallbacks for `firstDay`, `weekend`, and `direction` are evaluated strictly on demand, ensuring zero overhead in modern environments with native `Intl.LocaleInfo` support.
 - **Locale Cleansing Across Intl Formatters (`getDTF`, `getRTF`, `getLF`, `getPR`, `getNF`, `getDF`)**:
   - Integrated `cleanLocaleTag` directly into all internal memoized Intl formatter helpers in `#library/common/runtime/international.library.js`.
   - Automatically cleanses raw POSIX locale tags (e.g. `'en_US.UTF-8'` -> `'en-US'`) before instantiation, maximizing cache hit rates and preventing runtime `RangeError` exceptions.

@@ -14,7 +14,7 @@ export type LocaleInput = string | Intl.Locale | undefined;
  * @internal 
  */
 export const hasIntl = (feature?: LooseUnion<keyof typeof Intl>): boolean =>
-	typeof Intl !== 'undefined' && (!feature || (feature in Intl && isCallable((Intl as Record<string, unknown>)[feature])));
+	typeof Intl !== 'undefined' && (!feature || (Object.hasOwn(Intl, feature) && isCallable((Intl as Record<string, unknown>)[feature])));
 
 /**
  * Cleanses a raw locale string by trimming whitespace, converting POSIX underscores
@@ -192,7 +192,7 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 	const rawWeek = getPropOrCall(loc, 'getWeekInfo', 'weekInfo');
 	const region = (rawWeek?.firstDay != null && Array.isArray(rawWeek?.weekend))
 		? undefined
-		: (loc?.region ?? (baseName.includes('-') ? baseName.split('-')[1]?.toUpperCase() : undefined));
+		: (loc?.region ?? baseName.split('-').slice(1).find((subtag) => /^[a-zA-Z]{2}$|^\d{3}$/.test(subtag))?.toUpperCase());
 
 	const firstDay = rawWeek?.firstDay ?? getFallbackFirstDay(region);
 	const weekend = Array.isArray(rawWeek?.weekend)
