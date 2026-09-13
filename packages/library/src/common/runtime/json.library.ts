@@ -1,3 +1,5 @@
+import { isCallable, isString, isPlainObject } from '#library/assertion.library.js';
+
 /**
  * Type for a JSONC reviver function that transforms parsed values.
  */
@@ -24,7 +26,7 @@ export interface JSONCOptions<T = any> {
  * ```
  */
 export function stripJSONC(text: string): string {
-	if (typeof text !== 'string')
+	if (!isString(text))
 		throw new TypeError('Expected string input to stripJSONC');
 
 	let inString = false;
@@ -147,7 +149,7 @@ export function parseJSONC<T = any>(
 	text: string,
 	optionsOrReviver?: JSONCReviver | JSONCOptions<T>,
 ): T | undefined {
-	const isFn = typeof optionsOrReviver === 'function';
+	const isFn = isCallable(optionsOrReviver);
 	const reviver = isFn ? optionsOrReviver : optionsOrReviver?.reviver;
 	const isSafe = !isFn && (optionsOrReviver?.safe === true || (optionsOrReviver != null && 'fallback' in optionsOrReviver));
 	const fallback = !isFn ? optionsOrReviver?.fallback : undefined;
@@ -172,7 +174,7 @@ export function parseJSONC<T = any>(
  * ```
  */
 export function isJSON(text: unknown): text is string {
-	if (typeof text !== 'string' || text.trim().length === 0) return false;
+	if (!isString(text) || text.trim().length === 0) return false;
 	try {
 		JSON.parse(stripJSONC(text));
 		return true;
@@ -193,10 +195,10 @@ export function isJSON(text: unknown): text is string {
  * ```
  */
 export function rawJSON(text: string): object {
-	if (typeof text !== 'string')
+	if (!isString(text))
 		throw new TypeError('Expected string input to rawJSON');
 
-	if (typeof (JSON as any).rawJSON === 'function')
+	if (isCallable((JSON as any).rawJSON))
 		return (JSON as any).rawJSON(text);
 
 	throw new Error('Native JSON.rawJSON is not supported in this environment');
@@ -213,10 +215,10 @@ export function rawJSON(text: string): object {
  * ```
  */
 export function isRawJSON(obj: unknown): boolean {
-	if (typeof (JSON as any).isRawJSON === 'function')
+	if (isCallable((JSON as any).isRawJSON))
 		return (JSON as any).isRawJSON(obj);
 
-	return typeof obj === 'object' && obj !== null && 'rawJSON' in obj && typeof (obj as any).rawJSON === 'string';
+	return isPlainObject(obj) && 'rawJSON' in obj && isString((obj as any).rawJSON);
 }
 
 /**

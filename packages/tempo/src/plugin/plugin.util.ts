@@ -1,4 +1,4 @@
-import { isFunction, isString, isUndefined, isClass, isObject, isDefined, isSymbol } from '#library/assertion.library.js';
+import { isFunction, isString, isUndefined, isCallable, isObject, isDefined, isSymbol } from '#library/assertion.library.js';
 import { secureRef, delegate } from '#library/proxy.library.js';
 
 import { sym, isTempo } from '../support/support.symbol.js';
@@ -21,7 +21,7 @@ export type TempoModule = Module<TempoType>;
  */
 export function getHost(t: any): any {
 	const TempoClass = getRuntime().modules['Tempo'];
-	if (isFunction(t) || isClass(t)) return t;
+	if (isCallable(t)) return t;
 	if (isTempo(t)) return (t as any).constructor ?? TempoClass;
 	return TempoClass ?? (t as any)?.constructor;
 }
@@ -314,7 +314,7 @@ export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> {
 					} else {
 						weakCache.set(this, proxy);
 					}
-					
+
 					return proxy;
 				},
 				configurable: true,

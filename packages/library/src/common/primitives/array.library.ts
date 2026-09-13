@@ -1,7 +1,7 @@
 import { asString, nullishToValue } from '#library/coercion.library.js';
 import { extract, ownEntries } from '#library/primitive.library.js';
 import { stringify } from '#library/serialize.library.js';
-import { isNumber, isDate, isObject, isDefined, isUndefined, isFunction } from '#library/assertion.library.js';
+import { isNumber, isDate, isObject, isDefined, isUndefined, isFunction, isCallable } from '#library/assertion.library.js';
 import type { Property } from '#library/type.library.js';
 
 // adapted from https://jsbin.com/insert/4/edit?js,output
@@ -113,7 +113,7 @@ export function sortKey<T extends Property<any>>(array: T[], ...keys: (PropertyK
  * @internal
  */
 const groupByImpl = <T>(arr: T[], fn: (itm: T, idx?: number) => PropertyKey): Record<PropertyKey, T[]> => {
-	if (typeof Object.groupBy === 'function')
+	if (isCallable(Object.groupBy))
 		return Object.groupBy(arr, fn as any) as Record<PropertyKey, T[]>;
 	const res: Record<PropertyKey, T[]> = Object.create(null);
 	for (let idx = 0; idx < arr.length; idx++) {

@@ -55,4 +55,16 @@ describe(`${label}`, () => {
       Tempo.init({ locale: prevLocale });
     }
   })
+
+  test(`${label} get underlying Temporal.ZonedDateTime (.zdt)`, () => {
+    const t = new Tempo('2024-02-15T14:30:00+10:00[Australia/Sydney]');
+    expect(t.zdt).toBe(t.toDateTime());
+    expect(t.zdt.daysInMonth).toBe(29); // 2024 leap year Feb
+    expect(t.zdt.inLeapYear).toBe(true);
+    expect(t.zdt.offset).toBe('+11:00'); // Sydney is AEDT (UTC+11) in February
+    expect(t.zdt.dayOfYear).toBe(46);
+    expect(t.zdt.year).toBe(2024);
+    expect(t.zdt.month).toBe(2);
+    expect(t.zdt.day).toBe(15);
+  })
 })

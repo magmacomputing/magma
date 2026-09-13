@@ -6,6 +6,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.0] - 2026-09-13
+
+### Added
+- **Native Temporal Gateway (`t.zdt`)**:
+  - Added read-only `zdt` getter on `Tempo` (and in `AliasContext`) returning the underlying `Temporal.ZonedDateTime` instance.
+  - Provides direct, zero-overhead access to native Temporal properties (`daysInMonth`, `inLeapYear`, `offset`, `hoursInDay`, `monthCode`, etc.) without method call ceremony or namespace pollution.
+- **Day-of-Year Property & Token (`t.doy`, `{doy}`)**:
+  - Added `doy` getter on `Tempo` backed directly by `this.toDateTime().dayOfYear` returning the 1-based day of year (`1..366`).
+  - Added `{doy}` formatting token and lexer group support with width padding modifiers (e.g. `{doy:3}`).
+
+### Changed
+- **Unified Regional Locale Resolution in `#isMonthDay`**:
+  - Refactored `Tempo.#isMonthDay` to use `getLI(rawLocale)` as the single source of truth for `baseName`, `language`, and cached `timeZones`.
+  - Replaces repeated per-evaluation array allocations from `intl.getTimeZones?.()` with frozen, memoized array lookups from `ResolvedLocaleInfo`, while safely logging warnings for invalid locale tags.
+- **Idiomatic Assertion Library Adoption (`isPlainObject`, `isDigit`, `isString`, `isSymbol`)**:
+  - Adopted `isPlainObject` to replace fragile `.constructor === Object` checks in `Tempo.#isOptions`, `isZonedDateTimeLike`, and plugin configuration mergers across `support.init.ts` and `support.register.ts`.
+  - Replaced manual `typeof` string and symbol checks with `isString` and `isSymbol` in `engine.layout.ts` and `tempo.class.ts`.
+- **Functional Alias Geolocation Sphere Resolution**:
+  - Updated `engine.normalizer.ts` (`getAliasContext`) to evaluate `state.config.geo?.sphere` before falling back to `state.config.sphere` and `Default.sphere`, aligning functional alias contexts with instance-level `this.sphere` resolution.
+- **Unpadded Day Format Token Retention**:
+  - Retained `{day}` in `TempoFormatTokens` as a first-class format token for string formatting unpadded calendar day numbers (`1..31`), preserving presentation DSL utility while de-scoping duplicate instance getters.
+
+### Deprecated
+- **Redundant Instance Getters (Slated for Removal in v5.0.0)**:
+  - `t.day`: Deprecated in favor of canonical 2-letter `t.dd` (or `t.zdt.day`).
+  - `t.eraYear`: Deprecated in favor of canonical `t.eon` (or `t.zdt.eraYear`).
+  - `t.ww`: Deprecated in favor of canonical `t.wy` (or `t.zdt.weekOfYear`).
+- **Duplicate Format Tokens (Slated for Removal in v5.0.0)**:
+  - `{ww}`: Deprecated in favor of canonical `{wy}` in `TempoFormatTokens`.
+  - `{yyww}`: Deprecated in favor of canonical `{yywy}` in `TempoFormatTokens`.
+
 ## [4.2.0] - 2026-09-09
 
 ### Added

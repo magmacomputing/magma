@@ -1,5 +1,5 @@
 import { ownEntries } from '#library/primitive.library.js';
-import { isDefined } from '#library/assertion.library.js';
+import { isDefined, isCallable, isSymbol } from '#library/assertion.library.js';
 import type * as t from '../tempo.type.js';
 
 const AGO_HENCE_RE = /\b(ago|hence|from\s+now|prior)\b/i;
@@ -141,11 +141,11 @@ export function selectLayoutPatterns(
 	options: SelectLayoutPatternsOptions = {}
 ): ReadonlyArray<readonly [symbol, RegExp]> {
 	const onPlan = options.onPlan;
-	const wantsPlan = typeof onPlan === 'function';
+	const wantsPlan = isCallable(onPlan);
 
 	const ordered = (ownEntries(state.parse.layout) as [PropertyKey, string][])
 		.map(([layoutKey]) => {
-			const symKey = typeof layoutKey === 'symbol'
+			const symKey = isSymbol(layoutKey)
 				? layoutKey
 				: (state.parse.token?.[String(layoutKey)] as symbol | undefined);
 			return [symKey, symKey ? state.parse.pattern.get(symKey) : undefined] as const;

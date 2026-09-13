@@ -1,5 +1,5 @@
 import { toZonedDateTime, toInstant, getTemporalIds, instant } from '#library/temporal.library.js';
-import { isDefined, isFunction, isString, isUndefined, isNumber, isZonedDateTime } from '#library/assertion.library.js';
+import { isDefined, isFunction, isString, isUndefined, isNumber, isZonedDateTime, isPlainObject } from '#library/assertion.library.js';
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { asError } from '#library/coercion.library.js';
@@ -220,7 +220,6 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): Ra
 
 	if (group) {
 		const meta: any = (term as any).groups ?? (term as any).ranges;
-		const isPlainObject = (val: any) => typeof val === 'object' && val !== null && !Array.isArray(val) && !isFunction(val);
 
 		if (isPlainObject(meta)) {
 			const source = Object.values(meta).flat(Infinity);

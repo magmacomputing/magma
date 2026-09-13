@@ -1,6 +1,6 @@
 import { $Mutable, $Unwrapped } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
-import { isReference, isUndefined, isString, isSymbol } from '#library/assertion.library.js';
+import { isReference, isUndefined, isString, isSymbol, isCallable, isPlainObject } from '#library/assertion.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { registerType, getSafeTag } from '#library/type.library.js';
 import type { Constructor, Type } from '#library/type.library.js';
@@ -56,7 +56,7 @@ function createImmutableWrapper<T extends Constructor>(
 
 	// Classes with private static state (#field or transpiled WeakMap private fields) cannot be subclass-wrapped
 	// without breaking ECMAScript private field brand checks. Return original constructor directly.
-	const codeStr = typeof value === 'function' ? Function.prototype.toString.call(value) : '';
+	const codeStr = isCallable(value) ? Function.prototype.toString.call(value) : '';
 	const hasPrivateState = codeStr.includes('#') || codeStr.includes('WeakMap') || codeStr.includes('__private') || codeStr.includes('privateMap');
 	const isRawConstructor = (value as any)[$Unwrapped] === true || (value as any).raw === true || (value as any)[$Mutable] === 'unwrapped' || hasPrivateState;
 
@@ -95,9 +95,9 @@ function shouldSkipMember(name: string | symbol, skipList: any): boolean {
 		if (isString(entry) || isSymbol(entry)) {
 			return entry === name;
 		}
-		if (entry && typeof entry === 'object' && 'name' in entry) {
+		if (isPlainObject(entry) && 'name' in entry) {
 			if (entry.name !== name) return false;
-			return typeof entry.condition === 'function' ? Boolean(entry.condition()) : Boolean(entry.condition ?? true);
+			return isCallable(entry.condition) ? Boolean(entry.condition()) : Boolean(entry.condition ?? true);
 		}
 		return false;
 	});
@@ -317,7 +317,7 @@ export function StringTag<T extends Constructor>(tagOrValue?: string | T, contex
 		return value;
 	}
 
-	if (typeof tagOrValue === 'function' && context?.kind === 'class')
+	if (isCallable(tagOrValue) && context?.kind === 'class')
 		return applyTag(tagOrValue as T, undefined, context.name);
 
 	return (value: T, ctx?: ClassDecoratorContext<T>) => {
@@ -388,7 +388,7 @@ export function Singleton<T extends Constructor>(
 		return wrapper;
 	};
 
-	if (typeof targetOrOptions === 'function' && context?.kind === 'class') {
+	if (isCallable(targetOrOptions) && context?.kind === 'class') {
 		return decorate(targetOrOptions as T);
 	}
 
@@ -417,7 +417,7 @@ export function Mutable(targetOrCondition?: MutableCondition | any, context?: an
 	const applyMutable = (ctx: any, condition?: MutableCondition) => {
 		const entry = {
 			name: ctx.name,
-			condition: typeof condition === 'function' ? condition : () => (condition ?? true),
+			condition: isCallable(condition) ? condition : () => (condition ?? true),
 		};
 
 		if (ctx.metadata) {
@@ -431,7 +431,7 @@ export function Mutable(targetOrCondition?: MutableCondition | any, context?: an
 
 		ctx.addInitializer(function (this: any) {
 			const targets = [this];
-			if (this && typeof this.constructor === 'function' && this.constructor !== this) {
+			if (this && isCallable(this.constructor) && this.constructor !== this) {
 				targets.push(this.constructor);
 			}
 			for (const target of targets) {
@@ -445,7 +445,7 @@ export function Mutable(targetOrCondition?: MutableCondition | any, context?: an
 		});
 	};
 
-	if (context && typeof context === 'object' && 'kind' in context)
+	if (isPlainObject(context) && 'kind' in context)
 		return applyMutable(context, true);
 
 	return (_value: any, ctx: any) => {
