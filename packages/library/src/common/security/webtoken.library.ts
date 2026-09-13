@@ -1,7 +1,7 @@
 import { base64UrlToBuffer, bufferToBase64Url, toBase64Url, decodeBuffer } from './buffer.library.js';
 import { Logger } from '../runtime/logger.class.js';
 import { keys, importPublicKey, importPrivateKey, signData, verifyData, signHmac, verifyHmac } from './cipher.library.js';
-import { isPlainObject, isString } from '#library/assertion.library.js';
+import { isPlainObject, isPrimitive, isString } from '#library/assertion.library.js';
 
 const logger = new Logger('WebToken');
 
@@ -165,12 +165,16 @@ export const signJWS = async (
 	keyOrSecret: CryptoKey | string | Uint8Array,
 	headers: JWSHeader = { alg: 'RS256', typ: 'JWT' }
 ): Promise<string> => {
-	if (typeof payload !== 'object' || payload === null)
+	if (isPrimitive(payload))
+		throw new TypeError('WebToken: Payload must be a non-null object');
+
+	const serializedPayload = JSON.stringify(payload);
+	if (!serializedPayload || !isPlainObject(JSON.parse(serializedPayload)))
 		throw new TypeError('WebToken: Payload must be a non-null object');
 
 	try {
 		const header64 = toBase64Url(JSON.stringify(headers));
-		const payload64 = toBase64Url(JSON.stringify(payload));
+		const payload64 = toBase64Url(serializedPayload);
 
 		const unsignedToken = `${header64}.${payload64}`;
 		const alg = headers.alg ?? 'RS256';

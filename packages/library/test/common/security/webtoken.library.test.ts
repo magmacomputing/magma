@@ -120,8 +120,9 @@ describe('webtoken.library', () => {
 			const valid = await verifyJWS(token, keyPair.publicKey);
 			expect(valid).toBe(true);
 
-			const dateToken = await signJWS(new Date(), keyPair.privateKey);
-			expect(typeof dateToken).toBe('string');
+			await expect(signJWS(new Date(), keyPair.privateKey)).rejects.toThrow(
+				new TypeError('WebToken: Payload must be a non-null object')
+			);
 
 			const payloadWithDate = { date: new Date(), sub: 'user_42' };
 			const tokenWithDate = await signJWS(payloadWithDate, keyPair.privateKey);
