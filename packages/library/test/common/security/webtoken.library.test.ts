@@ -74,20 +74,22 @@ describe('webtoken.library', () => {
 		expect(() => parseJWT(nullToken, { strict: true })).toThrow('Invalid JWT: Segment decoding failed.');
 	});
 
-	describe('signJWS', () => {
+	describe('signJWS & verifyJWS', () => {
 		let keyPair: CryptoKeyPair;
+		let publicPem: string;
+		let privatePem: string;
 
 		beforeAll(async () => {
-			keyPair = await globalThis.crypto.subtle.generateKey(
-				{
-					name: 'RSASSA-PKCS1-v1_5',
-					modulusLength: 2048,
-					publicExponent: new Uint8Array([1, 0, 1]),
-					hash: 'SHA-256',
-				},
-				true,
-				['sign', 'verify']
-			);
+			const { generateKeyPair } = await import('../../../src/common/security/cipher.library.js');
+			const { bufferToBase64 } = await import('../../../src/common/security/buffer.library.js');
+
+			keyPair = await generateKeyPair();
+
+			const spki = await globalThis.crypto.subtle.exportKey('spki', keyPair.publicKey);
+			publicPem = `-----BEGIN PUBLIC KEY-----\n${bufferToBase64(new Uint8Array(spki))}\n-----END PUBLIC KEY-----`;
+
+			const pkcs8 = await globalThis.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+			privatePem = `-----BEGIN PRIVATE KEY-----\n${bufferToBase64(new Uint8Array(pkcs8))}\n-----END PRIVATE KEY-----`;
 		});
 
 		it('rejects non-object or null payloads with TypeError', async () => {
@@ -117,6 +119,58 @@ describe('webtoken.library', () => {
 
 			const valid = await verifyJWS(token, keyPair.publicKey);
 			expect(valid).toBe(true);
+		});
+
+		it('signs and verifies RS256 token using PEM formatted strings', async () => {
+			const payload = { sub: 'user_pem_test', scope: 'read:write' };
+			const token = await signJWS(payload, privatePem, { alg: 'RS256', typ: 'JWT' });
+
+			expect(typeof token).toBe('string');
+			const parsed = parseJWT(token);
+			expect(parsed?.header.alg).toBe('RS256');
+			expect(parsed?.payload.sub).toBe('user_pem_test');
+
+			const valid = await verifyJWS(token, publicPem);
+			expect(valid).toBe(true);
+		});
+
+		it('signs and verifies symmetric tokens with HS256, HS384, and HS512', async () => {
+			const payload = { sub: 'user_hmac_test', role: 'editor' };
+			const secret = 'super-secret-hmac-key';
+
+			// HS256
+			const token256 = await signJWS(payload, secret, { alg: 'HS256', typ: 'JWT' });
+			expect(await verifyJWS(token256, secret)).toBe(true);
+			expect(await verifyJWS(token256, 'wrong-secret')).toBe(false);
+
+			// HS384
+			const token384 = await signJWS(payload, secret, { alg: 'HS384', typ: 'JWT' });
+			expect(await verifyJWS(token384, secret)).toBe(true);
+
+			// HS512
+			const token512 = await signJWS(payload, secret, { alg: 'HS512', typ: 'JWT' });
+			expect(await verifyJWS(token512, secret)).toBe(true);
+		});
+
+		it('rejects signature verification if token payload or signature is tampered', async () => {
+			const payload = { sub: 'tamper_test' };
+			const secret = 'my-secret';
+			const token = await signJWS(payload, secret, { alg: 'HS256', typ: 'JWT' });
+
+			const [h, , s] = token.split('.');
+			const tamperedPayload = Buffer.from(JSON.stringify({ sub: 'attacker' }))
+				.toString('base64')
+				.replace(/\+/g, '-')
+				.replace(/\//g, '_')
+				.replace(/=/g, '');
+
+			const tamperedToken = `${h}.${tamperedPayload}.${s}`;
+			expect(await verifyJWS(tamperedToken, secret)).toBe(false);
+		});
+
+		it('rejects unsupported algorithms gracefully', async () => {
+			const payload = { sub: 'unsupported_test' };
+			await expect(signJWS(payload, 'secret', { alg: 'NONE' as any })).rejects.toThrow('Unsupported algorithm "NONE"');
 		});
 	});
 });

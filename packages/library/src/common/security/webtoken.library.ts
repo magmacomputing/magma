@@ -1,26 +1,12 @@
-import { base64ToBuffer, bufferToBase64, encodeText, decodeBuffer } from './buffer.library.js';
+import { base64UrlToBuffer, bufferToBase64Url, toBase64Url, decodeBuffer } from './buffer.library.js';
 import { Logger } from '../runtime/logger.class.js';
-import { keys } from './cipher.library.js';
-import { isPlainObject } from '#library/assertion.library.js';
+import { keys, importPublicKey, importPrivateKey, signData, verifyData, signHmac, verifyHmac } from './cipher.library.js';
+import { isPlainObject, isObject, isString } from '#library/assertion.library.js';
 
 const logger = new Logger('WebToken');
 
-const RE_PLUS = /\+/g;
-const RE_SLASH = /\//g;
-const RE_EQUALS = /=/g;
-const RE_DASH = /-/g;
-const RE_UNDERSCORE = /_/g;
-const RE_BASE64URL = /^[A-Za-z0-9_-]*$/;
-
 const MAX_TOKEN_LENGTH = 8192;															// 8 KB
 const MAX_PAYLOAD_LENGTH = 4096;														// 4 KB
-
-const formatBase64Url = (base64: string) => base64
-	.replace(RE_PLUS, '-')
-	.replace(RE_SLASH, '_')
-	.replace(RE_EQUALS, '');
-const toBase64Url = (str: string) => formatBase64Url(bufferToBase64(encodeText(str)));
-const bufToBase64Url = (buf: Uint8Array) => formatBase64Url(bufferToBase64(buf));
 
 export interface ParseJWTOptions {
 	/** If true, throws explicit Errors on length or format validation failures instead of returning null */
@@ -42,15 +28,10 @@ export interface JWTComponents<Header = Record<string, any>, Payload = Record<st
 	};
 }
 
-const base64UrlToBuffer = (part: string): Uint8Array => {
-	if (!RE_BASE64URL.test(part) || part.length % 4 === 1)
-		throw new Error('Invalid base64url segment');
-
-	const base64 = part
-		.replace(RE_DASH, '+')
-		.replace(RE_UNDERSCORE, '/')
-		.padEnd(part.length + (4 - part.length % 4) % 4, '=');
-	return base64ToBuffer(base64);
+export interface JWSHeader {
+	alg?: 'RS256' | 'HS256' | 'HS384' | 'HS512' | string;
+	typ?: string;
+	[key: string]: any;
 }
 
 /**
@@ -86,8 +67,8 @@ export const parseJWT = <Header = Record<string, any>, Payload = Record<string, 
 	}
 
 	try {
-		const headerJson = decodeBuffer(base64UrlToBuffer(parts[0]), 'utf-8', { fatal: true });
-		const payloadJson = decodeBuffer(base64UrlToBuffer(parts[1]), 'utf-8', { fatal: true });
+		const headerJson = decodeBuffer(base64UrlToBuffer(parts[0]), keys.Encoding, { fatal: true });
+		const payloadJson = decodeBuffer(base64UrlToBuffer(parts[1]), keys.Encoding, { fatal: true });
 		const signatureBuf = base64UrlToBuffer(parts[2]);
 
 		const header = JSON.parse(headerJson);
@@ -109,37 +90,47 @@ export const parseJWT = <Header = Record<string, any>, Payload = Record<string, 
 }
 
 /**
- * Verifies a JSON Web Signature (JWS) against a provided public key.
+ * Verifies a JSON Web Signature (JWS) against a provided key or secret.
+ * Inspects the token header's `alg` and supports:
+ * - Asymmetric `RS256`: via CryptoKey or PEM public key string
+ * - Symmetric `HS256`, `HS384`, `HS512`: via shared secret string or Uint8Array
  * 
  * @param token - The JWS string to verify
- * @param publicKey - The CryptoKey used for verification
+ * @param keyOrSecret - The public CryptoKey, PEM public key string, or HMAC shared secret
  * @returns A promise resolving to true if the signature is valid
  */
-export const verifyJWS = async (token: string, publicKey: CryptoKey): Promise<boolean> => {
+export const verifyJWS = async (
+	token: string,
+	keyOrSecret: CryptoKey | string | Uint8Array
+): Promise<boolean> => {
 	try {
-		const parts = token.split('.');
-		if (parts.length !== 3) return false;
+		const parsed = parseJWT(token);
+		if (!parsed) return false;
 
-		const [header, payload, signatureBase64url] = parts;
-		const signedData = `${header}.${payload}`;
+		const { header, signature, raw } = parsed;
+		const signedData = `${raw.header}.${raw.payload}`;
+		const alg = header.alg ?? 'RS256';
 
-		// Base64url to Base64 normalization
-		const signatureBase64 = signatureBase64url
-			.replace(RE_DASH, '+')
-			.replace(RE_UNDERSCORE, '/')
-			.padEnd(signatureBase64url.length + (4 - signatureBase64url.length % 4) % 4, '=');
-		const signatureBytes = base64ToBuffer(signatureBase64);
+		if (alg === 'RS256') {
+			const publicKey = isString(keyOrSecret)
+				? await importPublicKey(keyOrSecret)
+				: keyOrSecret as CryptoKey;
 
-		// crypto.subtle.verify takes signature, key, data
-		const crypto = globalThis.crypto;
-		const dataBytes = encodeText(signedData);
+			return await verifyData(signature, signedData, publicKey, keys.SignKey);
+		}
 
-		return await crypto.subtle.verify(
-			keys.SignKey,
-			publicKey,
-			signatureBytes.buffer,
-			dataBytes
-		);
+		if (alg === 'HS256' || alg === 'HS384' || alg === 'HS512') {
+			const hashAlg = alg === 'HS512' ? 'SHA-512' : alg === 'HS384' ? 'SHA-384' : 'SHA-256';
+			return await verifyHmac(
+				signature,
+				signedData,
+				keyOrSecret as string | Uint8Array,
+				hashAlg
+			);
+		}
+
+		logger.error(`VERIFY_ERROR: Unsupported algorithm "${alg}"`);
+		return false;
 	} catch (e: any) {
 		logger.error('VERIFY_ERROR:', e.stack);
 		return false;
@@ -147,15 +138,22 @@ export const verifyJWS = async (token: string, publicKey: CryptoKey): Promise<bo
 }
 
 /**
- * Natively signs a JSON Web Signature (JWS) payload using the Web Crypto API.
+ * Natively signs a JSON Web Signature (JWS) payload.
+ * Inspects `headers.alg` (default: `{ alg: 'RS256', typ: 'JWT' }`) and supports:
+ * - Asymmetric `RS256`: via CryptoKey or PEM private key string
+ * - Symmetric `HS256`, `HS384`, `HS512`: via shared secret string or Uint8Array
  * 
  * @param payload - The payload object to sign
- * @param privateKey - The CryptoKey used for signing
+ * @param keyOrSecret - The private CryptoKey, PEM private key string, or HMAC shared secret
  * @param headers - Optional JWS headers (default: `{ alg: 'RS256', typ: 'JWT' }`)
  * @returns A promise resolving to the signed JWS string
  */
-export const signJWS = async (payload: object, privateKey: CryptoKey, headers: object = { alg: 'RS256', typ: 'JWT' }): Promise<string> => {
-	if (typeof payload !== 'object' || payload === null)
+export const signJWS = async (
+	payload: object,
+	keyOrSecret: CryptoKey | string | Uint8Array,
+	headers: JWSHeader = { alg: 'RS256', typ: 'JWT' }
+): Promise<string> => {
+	if (!isObject(payload))
 		throw new TypeError('WebToken: Payload must be a non-null object');
 
 	try {
@@ -163,15 +161,28 @@ export const signJWS = async (payload: object, privateKey: CryptoKey, headers: o
 		const payload64 = toBase64Url(JSON.stringify(payload));
 
 		const unsignedToken = `${header64}.${payload64}`;
-		const dataBytes = encodeText(unsignedToken);
+		const alg = headers.alg ?? 'RS256';
 
-		const signatureBytes = await globalThis.crypto.subtle.sign(
-			keys.SignKey,
-			privateKey,
-			dataBytes
-		);
+		let signatureBytes: Uint8Array;
 
-		return `${unsignedToken}.${bufToBase64Url(new Uint8Array(signatureBytes))}`;
+		if (alg === 'RS256') {
+			const privateKey = isString(keyOrSecret)
+				? await importPrivateKey(keyOrSecret)
+				: keyOrSecret as CryptoKey;
+
+			signatureBytes = await signData(unsignedToken, privateKey, keys.SignKey);
+		} else if (alg === 'HS256' || alg === 'HS384' || alg === 'HS512') {
+			const hashAlg = alg === 'HS512' ? 'SHA-512' : alg === 'HS384' ? 'SHA-384' : 'SHA-256';
+			signatureBytes = await signHmac(
+				unsignedToken,
+				keyOrSecret as string | Uint8Array,
+				hashAlg
+			);
+		} else {
+			throw new Error(`WebToken: Unsupported algorithm "${alg}"`);
+		}
+
+		return `${unsignedToken}.${bufferToBase64Url(signatureBytes)}`;
 	} catch (e: any) {
 		logger.error('SIGN_ERROR:', e.stack);
 		throw e;

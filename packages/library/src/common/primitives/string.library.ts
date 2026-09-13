@@ -298,6 +298,25 @@ export const pad = (nbr: string | number | bigint = 0, len = 2, fill?: string | 
 export const padString = (str: string | number | bigint, pad = 6) =>
 	(isNumeric(str) ? Number(str).toFixed(2) : str?.toString() ?? '').padStart(pad, '\u00A0');
 
+/**
+ * Pads a string at the end so that its length is a multiple of the specified block size.
+ * 
+ * @param str - The input string to pad
+ * @param multiple - The block size or multiple to align to (default: 4)
+ * @param fill - The fill character or string to append (default: '=')
+ * @returns The padded string aligned to the multiple
+ * @example
+ * ```ts
+ * padTo('abc', 4, '='); // 'abc='
+ * padTo('abcd', 4, '='); // 'abcd'
+ * ```
+ */
+export const padTo = (str: string, multiple = 4, fill: string | number = '=') => {
+	const s = String(str ?? '');
+	const remainder = s.length % multiple;
+	return remainder === 0 ? s : s.padEnd(s.length + (multiple - remainder), String(fill));
+};
+
 /** 
  * Reconstructs a string from an array of char codes.
  * Useful for hiding strings from minifiers and reverse-engineers.
