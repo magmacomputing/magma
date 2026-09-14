@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [4.3.0] - 2026-09-14
 
+
 ### Added
 - **Compact Tagged-String Serialization (`serialize.library`)**:
   - Modernized `stringify()` to output compact tagged strings for primitive leaf types by default (`compact: true`), significantly reducing byte overhead for storage, caching, and IPC:
@@ -20,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Streamlined `stringize()` recursion by utilizing a module-scoped `activeCompact` state guarded by a synchronous `try...finally` stack frame, eliminating redundant parameter passing across recursive call sites.
 - **Fast Synchronous Keyed Digest (`fastDigest`, `serialize.library`)**:
   - Introduced `fastDigest(str, secret?)` in `#library/serialize.library.js`, providing a high-performance synchronous 64-bit keyed hashing algorithm.
-  - Defaults to an internal ephemeral runtime salt, producing a deterministic 16-character hex digest without asynchronous event-loop delays while preserving a strict unidirectional dependency graph.
+  - Defaults to an internal ephemeral runtime salt (deterministic within a single runtime process, differing across process restarts), producing a 16-character hex digest without asynchronous event-loop delays while preserving a strict unidirectional dependency graph.
 - **Tamper-Evident Signed Serialization (`StringifyOptions.signed`, `serialize.library`)**:
   - Added `signed?: boolean` and `secret?: string` to `StringifyOptions`, wrapping output strings with a tamper-evident signature prefix (`$sig:<digest>:<payload>`).
   - Added signature verification in `objectify()` with support for a strict `requireSigned?: boolean` policy, rejecting tampered or unsigned payloads without deserializing them.
@@ -32,9 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `getLC(localeTag?)` and `cleanLocaleTag(tag?)` in `#library/common/runtime/international.library.js` to memoize `new Intl.Locale(...)` instances across the monorepo.
   - Automatically cleanses raw locale strings by trimming whitespace, converting POSIX underscores (`en_US`) to BCP 47 hyphens (`en-US`), stripping POSIX encoding and modifier suffixes (`.UTF-8`, `@euro`), and delegating case canonicalization to `Intl.Locale`.
   - Safely catches syntax errors (e.g. malformed BCP 47 language tags) and returns `undefined` rather than throwing uncaught `RangeError` exceptions.
-  - Re-implemented `canonicalLocale(locale)` to delegate to `getLC(locale)?.baseName`, delivering O(1) memoization and seamless POSIX cleansing while preserving full backwards compatibility.
+  - Re-implemented `canonicalLocale(locale)` to delegate to `getLC(locale)?.baseName`, delivering O(1) memoization and seamless POSIX cleansing while returning `undefined` for malformed locale tags instead of throwing `RangeError`.
 - **Sub-Nanosecond Primitive Fast-Paths & Type Guards (`assertion.library`)**:
-  - Added `isCallable(obj)` in `#library/common/primitives/assertion.library.js` providing a sub-nanosecond type assertion (`typeof obj === 'function'`) that returns `true` for standard functions, arrow functions, async/generator functions, and ES6 class constructors alike, eliminating awkward `isFunction(t) || isClass(t)` compound checks.
+  - Added `isCallable(obj)` in `#library/common/primitives/assertion.library.js` providing a sub-nanosecond function type assertion (`typeof obj === 'function'`) that returns `true` for standard functions, arrow functions, async/generator functions, and constructors matching `typeof "function"`, avoiding slower prototype traversal.
   - Added `isLocale(obj): obj is Intl.Locale` type guard in `assertion.library.js` to safely verify and narrow `Intl.Locale` instances at compile time, eliminating loss of typing and dangerous `(Intl as any).Locale` casts across the codebase.
   - Overhauled core primitive type guards (`isString`, `isBoolean`, `isSymbol`, `isInteger`, `isArray`, `isNull`, `isUndefined`, `isPrimitive`, `isPropertyKey`) with direct sub-nanosecond engine primitives (`typeof`, `Array.isArray`, strict identity `===`), bypassing object-boxing and registry table traversal on hot paths (~10-50x speedup).
 - **Type-Safe Capability Probing & Lazy Regional Fallbacks (`hasIntl`, `international.library`)**:

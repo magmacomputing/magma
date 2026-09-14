@@ -1,4 +1,4 @@
-import { stringify, objectify, cloneify, registerSerializable } from '#library/serialize.library.js';
+import { stringify, objectify, cloneify, registerSerializable, fastDigest } from '#library/serialize.library.js';
 import { isInteger } from '#library/assertion.library.js';
 
 describe('serialize.library', () => {
@@ -363,6 +363,18 @@ describe('serialize.library', () => {
 			// Rejects with wrong secret
 			const wrongSecret = objectify<any>(signedStr, { secret: 'wrong-secret' });
 			expect(wrongSecret).toBe(signedStr);
+		});
+
+		it('should retain verified state during quoted retry when requireSigned: true', () => {
+			const unquoted = 'hello world';
+			const signed = `$sig:${fastDigest(unquoted)}:${unquoted}`;
+			const res = objectify<string>(signed, { requireSigned: true });
+			expect(res).toBe('hello world');
+		});
+
+		it('should safely guard against malformed compact tags without throwing exceptions', () => {
+			expect(objectify('"~ninvalid"')).toBe('~ninvalid');
+			expect(objectify('"~tinvalid-date"')).toBe('~tinvalid-date');
 		});
 	});
 

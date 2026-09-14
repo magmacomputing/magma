@@ -196,7 +196,7 @@ const RUNTIME_SALT = globalThis.crypto?.randomUUID
  * Computes a fast, synchronous 64-bit keyed hash of a string payload.
  *
  * @param str - The string to hash
- * @param secret - Optional secret key or salt (defaults to an ephemeral runtime salt)
+ * @param secret - Optional secret key or salt (defaults to an ephemeral runtime salt, deterministic only within the current process lifetime)
  * @returns A 16-character hex string digest
  */
 export const fastDigest = (str: string, secret = RUNTIME_SALT): string => {
@@ -411,7 +411,8 @@ const MAX_REGEXP_SOURCE_LENGTH = 512;
  * 
  * When dealing with semi-trusted strings, configure `ObjectifyOptions`:
  * set `allowClasses: false` (or specify an `allowedClasses` allowlist), `maxDepth`,
- * or enforce signature checking with `requireSigned: true`.
+ * or enforce tamper detection with `requireSigned: true`.
+ * For cryptographically authenticated payloads across untrusted network boundaries, use `signJWS()` / `verifyJWS()`.
  * For completely untrusted external input, use native `JSON.parse()` with schema validation instead.
  * 
  * @param str - The string to parse
@@ -460,7 +461,7 @@ export function objectify<T>(str: any, optionsOrSentinel?: Function | ObjectifyO
 			console.warn(`objectify.parse: -> ${str}, ${(error as Error).message}`);
 			return str as unknown as T;														// bail-out
 		}
-		else return objectify(`"${str}"`, options);							// have another try, quoted
+		else return objectify(`"${str}"`, options.requireSigned ? { ...options, requireSigned: false } : options);							// have another try, quoted with signature verified state preserved
 	}
 
 	switch (true) {
@@ -482,9 +483,7 @@ function traverse(obj: Obj, options: ObjectifyOptions, depth = 0): any {
 	if (isObject(obj)) {
 		return typeify(ownEntries(obj)
 			.filter(([key]) => isSafeKey(key))
-			.reduce((acc, [key, val]) => Object.assign(acc, { [toSymbol(key)]: typeify(traverse(val, options, depth + 1), options) }), {}),
-			options
-		);
+			.reduce((acc, [key, val]) => Object.assign(acc, { [toSymbol(key)]: typeify(traverse(val, options, depth + 1), options) }), {}), options);
 	}
 
 	if (isArray(obj)) {
@@ -495,17 +494,22 @@ function traverse(obj: Obj, options: ObjectifyOptions, depth = 0): any {
 	return typeify(obj, options);
 }
 
-/** rebuild an Object from its single key:value representation */
+/** rebuild an Object from its single key:value or tagged-string representation */
 function typeify(json: any, options: ObjectifyOptions) {
 	if (isString(json) && json.startsWith('~')) {
-		if (json.startsWith('~~')) return json.substring(1);
-		if (json.startsWith('~n')) return BigInt(json.substring(2));
-		if (json.startsWith('~t')) {
-			const timeVal = json.substring(2);
-			return new Date(isNumeric(timeVal) ? Number(timeVal) : timeVal);
+		try {
+			if (json.startsWith('~~')) return json.substring(1);
+			if (json.startsWith('~n')) return BigInt(json.substring(2));
+			if (json.startsWith('~t')) {
+				const timeVal = json.substring(2);
+				const d = new Date(isNumeric(timeVal) ? Number(timeVal) : timeVal);
+				return isNaN(d.getTime()) ? json : d;
+			}
+			if (json === '~u') return options.sentinel?.();
+			if (json.startsWith('~y')) return toSymbol(json.substring(2));
+		} catch {
+			return json;
 		}
-		if (json === '~u') return options.sentinel?.();
-		if (json.startsWith('~y')) return toSymbol(json.substring(2));
 	}
 
 	if (!isObject(json) || ownKeys(json).length !== 1)
