@@ -17,10 +17,10 @@ All official and community plugins are 100% open source under the MIT license an
 Tempo plugins are published as scoped packages on the standard npm registry (`npmjs.com`). Install plugins using your package manager of choice:
 
 ```bash
-npm install @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # npm
+npm install @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro  # npm
 pnpm add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # pnpm
 yarn add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # yarn
-bun add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # bun
+bun add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro      # bun
 ```
 
 ---
@@ -31,14 +31,14 @@ Tempo provides flexible registration options depending on your application struc
 
 ### Option A: Initialization Option (Recommended)
 
-Pass plugins directly to `Tempo.init()` during application initialization. This guarantees clean execution order regardless of import hoisting:
+Pass plugins directly to `Tempo.init()` during application initialization via the `plugins` array. This guarantees clean execution order regardless of import hoisting:
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 Tempo.init({
-  extends: [TickerPlugin]
+  plugins: [TickerPlugin]
 });
 
 const t = new Tempo();
@@ -57,20 +57,6 @@ Tempo.extend(AstroTerm);
 
 const t = new Tempo('2026-03-20', { sphere: 'north' });
 console.log(t.term.astro); // Discovers equinoxes and astronomical seasons
-```
-
-### Option C: Explicit Registration (`Tempo.extend`)
-
-Register plugins dynamically matching install behavior:
-
-```javascript
-import { Tempo } from '@magmacomputing/tempo';
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
-
-Tempo.extend(TickerPlugin);
-
-const t = new Tempo();
-console.log(Tempo.tickers);
 ```
 
 ---

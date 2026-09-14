@@ -116,6 +116,37 @@ Community plugins must follow a uniform documentation standard.
 - **Documentation Link** (README only): Link to full docs at `https://magmacomputing.github.io/magma/doc/9-plugins/[name].index.html`.
 - **Licensing**: Must state: "This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required."
 
+### Standard Icons & UI Actions
+
+To maintain complete visual and design consistency across READMEs, documentation pages, and `ecosystem.md`:
+
+- **Documentation Links (Open-Book SVG)**:
+  Any buttons or table links pointing to documentation pages must use the Lucide/Feather **open-book** SVG (`M2 3h6a4 4 0 0 1 4 4v14...`), matching `ecosystem.md` (`CatalogList.vue`). In markdown prose/paragraphs, prefix documentation links with the open-book emoji (`📖 **[Read the Official [Name] Plugin Documentation](...)**`):
+  ```html
+  <a href="./doc/[feature].md" class="btn btn-secondary icon-btn" title="View Documentation">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="View Documentation">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+    </svg>
+  </a>
+  ```
+
+- **Copy Install Command (Two Sheets SVG / Two Folded Pages)**:
+  Any interactive buttons or shortcuts for copying the package install command must use the Two Sheets SVG icon (two pages with folded top-right corners, foreground sheet in bottom-left) matching `ecosystem.md` (`CatalogList.vue`):
+  ```html
+  <button class="action-btn copy-icon-btn" title="Copy Install Command">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 6V4a2 2 0 0 1 2-2h6l4 4v11a2 2 0 0 1-2 2h-3"></path>
+      <path d="M16 2v4h4"></path>
+      <path d="M10 6H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V11l-5-5z"></path>
+      <path d="M10 6v5h5"></path>
+    </svg>
+  </button>
+  ```
+
+> [!IMPORTANT]
+> **Never manually modify documents in `packages/tempo/doc/9-plugins/*` directly.** All plugin documentation must be authored strictly within each plugin's own `packages/plugins/[name]/doc/*` directory. The monorepo's automated harvester copies and indexes them into `packages/tempo/doc/9-plugins/` during `npm run docs:build`.
+
 ## 5. Source Code (`src/index.ts`)
 
 - Rely strictly on open core extensions (`definePlugin`, `defineTerm`, `defineNamespace`).

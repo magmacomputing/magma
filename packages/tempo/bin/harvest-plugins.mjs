@@ -112,6 +112,10 @@ function harvest(dir, pluginDirName, pluginId, isExternal = false) {
     // Maps: ../../[plugin-dir]/doc/[filename].md -> ./[normalised-pluginId].[filename].md
     content = content.replace(/\]\(\.\.\/\.\.\/([^/]+)\/doc\/([^/]+)\.md(?:([#?][^)]*))?\)/g, (_m, p, f, q) => `](./${p.replace(/^\./, '_')}.${f}.md${q || ''})`);
 
+    // Rewrite repo-relative links back to core docs during harvesting:
+    // Maps: ../../../tempo/doc/[dir]/[file].md -> ../[dir]/[file].md
+    content = content.replace(/\]\(\.\.\/\.\.\/\.\.\/tempo\/doc\/([^)]+)\)/g, `](../$1)`);
+
     const basename = path.basename(file, '.md');
     const outName = `${pluginId}.${basename}.md`;
     fs.writeFileSync(path.join(targetDir, outName), content);
