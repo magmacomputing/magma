@@ -18,9 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Retained full backward compatibility: passing `{ compact: false }` outputs legacy single-key object envelopes (`{"$BigInt": 123}`, `{"$Date": "..."}`, `{"$Undefined": "void"}`, `{"$Symbol": "..."}`).
   - Updated `objectify()` to transparently deserialize both compact tagged strings and legacy single-key envelopes back into their native JavaScript instances.
   - Streamlined `stringize()` recursion by utilizing a module-scoped `activeCompact` state guarded by a synchronous `try...finally` stack frame, eliminating redundant parameter passing across recursive call sites.
-- **Fast Synchronous Keyed Digest (`fastDigest`, `cipher.library`)**:
-  - Introduced `fastDigest(str, secret?)` in `#library/cipher.library.js`, providing a high-performance synchronous 64-bit keyed hashing algorithm.
-  - Defaults to an internal ephemeral runtime salt (`RUNTIME_SALT = randomKey()`), producing a deterministic 16-character hex digest without asynchronous event-loop delays or external dependencies.
+- **Fast Synchronous Keyed Digest (`fastDigest`, `serialize.library`)**:
+  - Introduced `fastDigest(str, secret?)` in `#library/serialize.library.js`, providing a high-performance synchronous 64-bit keyed hashing algorithm.
+  - Defaults to an internal ephemeral runtime salt, producing a deterministic 16-character hex digest without asynchronous event-loop delays while preserving a strict unidirectional dependency graph.
 - **Tamper-Evident Signed Serialization (`StringifyOptions.signed`, `serialize.library`)**:
   - Added `signed?: boolean` and `secret?: string` to `StringifyOptions`, wrapping output strings with a tamper-evident signature prefix (`$sig:<digest>:<payload>`).
   - Added signature verification in `objectify()` with support for a strict `requireSigned?: boolean` policy, rejecting tampered or unsigned payloads without deserializing them.
@@ -63,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Codebase-Wide Idiomatic Assertion Adoption**:
-  - Refactored manual `typeof` and fragile object/array/null checks across `serialize.library`, `cipher.library`, `webtoken.library`, `cache.class`, `array.library`, `string.library`, `mapper.library`, and `storage.library` to use idiomatic `assertion.library` functions (`isPlainObject`, `isCallable`, `isString`, `isNumber`, `isPrimitive`, `isFunction`, `isSafeKey`, `isInteger`, `isNumeric`).
+  - Refactored manual `typeof` and fragile object/array/null checks across `serialize.library`, `webtoken.library`, `cache.class`, `array.library`, `string.library`, `mapper.library`, and `storage.library` to use idiomatic `assertion.library` functions (`isPlainObject`, `isCallable`, `isString`, `isNumber`, `isPrimitive`, `isFunction`, `isSafeKey`, `isInteger`, `isNumeric`).
 
 ## [4.2.0] - 2026-09-09
 

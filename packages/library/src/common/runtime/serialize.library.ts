@@ -5,7 +5,6 @@ import { cleanify } from '#library/json.library.js';
 import { asType } from '#library/type.library.js';
 import { isType, isEmpty, isDefined, isUndefined, isNullish, isString, isObject, isArray, isFunction, isSymbolFor, isSymbol, isSafeKey, isNumeric } from '#library/assertion.library.js';
 import { sym } from '#library/symbol.library.js';
-import { fastDigest } from '#library/cipher.library.js';
 import type { Obj, Type } from '#library/type.library.js';
 
 /**
@@ -188,6 +187,29 @@ function toSymbol(value: PropertyKey) {
  * no support Function / WeakMap / WeakSet / WeakRef  
  * limited support for user-defined Classes (must be specifically registered with @Serialize() decorator)
  */
+
+const RUNTIME_SALT = globalThis.crypto?.randomUUID
+	? globalThis.crypto.randomUUID().split('-')[0]
+	: Math.random().toString(36).slice(2, 10);
+
+/**
+ * Computes a fast, synchronous 64-bit keyed hash of a string payload.
+ *
+ * @param str - The string to hash
+ * @param secret - Optional secret key or salt (defaults to an ephemeral runtime salt)
+ * @returns A 16-character hex string digest
+ */
+export const fastDigest = (str: string, secret = RUNTIME_SALT): string => {
+	let h1 = 0x811c9dc5;
+	let h2 = 0x9e3779b9;
+	const input = `${secret}:${str}`;
+	for (let i = 0; i < input.length; i++) {
+		const c = input.charCodeAt(i);
+		h1 = Math.imul(h1 ^ c, 0x01000193);
+		h2 = Math.imul(h2 ^ c, 0x85ebca6b);
+	}
+	return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
+};
 
 /**
  * Configuration options for `stringify()` serialization.

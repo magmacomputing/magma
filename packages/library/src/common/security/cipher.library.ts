@@ -48,31 +48,6 @@ const getAsymmetricKey = () => (_asymmetricKeyPromise ??= subtle.generateKey({
  */
 export const randomKey = () => crypto.randomUUID().split('-')[0];
 
-const RUNTIME_SALT = randomKey();
-
-/**
- * Computes a fast, synchronous 64-bit keyed hash of a string payload.
- *
- * @param str - The string to hash
- * @param secret - Optional secret key or salt (defaults to an ephemeral runtime salt)
- * @returns A 16-character hex string digest
- * @example
- * ```ts
- * const digest = fastDigest('hello world');
- * ```
- */
-export const fastDigest = (str: string, secret = RUNTIME_SALT): string => {
-	let h1 = 0x811c9dc5;
-	let h2 = 0x9e3779b9;
-	const input = `${secret}:${str}`;
-	for (let i = 0; i < input.length; i++) {
-		const c = input.charCodeAt(i);
-		h1 = Math.imul(h1 ^ c, 0x01000193);
-		h2 = Math.imul(h2 ^ c, 0x85ebca6b);
-	}
-	return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
-};
-
 /**
  * Generates a Hash-based Message Authentication Code (HMAC) for a given source payload.
  * 
