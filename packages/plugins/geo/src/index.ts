@@ -29,6 +29,7 @@ import {
 	geoLocation,
 } from '@magmacomputing/library/browser/mapper.library.js';
 import { isString, isNumber, isEmpty, isSafeKey } from '@magmacomputing/library/primitives/assertion.library.js';
+import type { MutableObject } from '@magmacomputing/library/primitives/type.library.js';
 
 export {
 	geoLookup,
@@ -154,7 +155,7 @@ export const GeoPlugin: TempoPlugin = definePlugin({
 					: (isNumber(existingGeo.elevation) ? existingGeo.elevation : undefined);
 
 				// 3. Compose final merged geo object: custom keys + physical reality (Option B) + call-site overrides (Option C)
-				const mergedGeo: GeoConfig = {
+				const mergedGeo: MutableObject<GeoConfig> = {
 					...customKeys,
 					...coords,
 					...(isNumber(preservedElevation) ? { elevation: preservedElevation } : {}),

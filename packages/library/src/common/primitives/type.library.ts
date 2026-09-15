@@ -489,8 +489,10 @@ export type UnionToTuple<T, Acc extends any[] = [], Last = LastInUnion<T>> =
 /** Deep Readonly object for type safety */
 export type Secure<T> = T extends Primitive | Function | Date | RegExp | Error | Map<any, any> | Set<any> | Promise<any>
 	? T
-	: T extends (infer R)[]
-	? SecureArray<R>
+	: T extends readonly any[]
+	? number extends T['length']
+		? SecureArray<T[number]>
+		: { readonly [K in keyof T]: Secure<T[K]> }
 	: T extends object
 	? SecureObject<T>
 	: T

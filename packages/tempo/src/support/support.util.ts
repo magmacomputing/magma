@@ -155,7 +155,7 @@ export const SCHEMA = [
 ] as const;
 
 /** @internal get the largest defined unit from a list of ranges */
-export function getLargestUnit(list: any[]): string {
+export function getLargestUnit(list: readonly any[]): string {
 	for (const [unit] of SCHEMA) {
 		if (list.some(r => r[unit] !== undefined)) return unit;
 	}
@@ -167,7 +167,7 @@ export function getLargestUnit(list: any[]): string {
  * @param value The user-supplied value to normalize
  * @param base The base/default value (e.g., Tempo.MONTH_DAY)
  */
-export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthDay): t.MonthDay {
+export function resolveMonthDay(value: t.MonthDay | boolean | Readonly<t.MonthDay> = {}, base: t.MonthDay): t.MonthDay {
 	const isExplicit = isBoolean(value) || isDefined((value as t.MonthDay).active);
 	if (isBoolean(value)) value = { active: value } as t.MonthDay;
 	const warned = new Set<string>();

@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { secure, isNumber } from '@magmacomputing/tempo/library';
+import { secure, isNumber, asArray } from '@magmacomputing/tempo/library';
 import { _state } from './init.js';
 import { logDebug, warnDebug } from './logger.js';
 import type { AiCacheAdapter } from '../types/index.js';
@@ -146,8 +146,7 @@ export const aiCache = secure({
 			return;
 		}
 
-		const inputs = Array.isArray(input) ? input : [input];
-		for (const i of inputs) {
+		for (const i of asArray(input)) {
 			const normalized = normalizeCacheInput(i);
 			const prefix = `${normalized}::`;
 			Tempo.cache.delete(normalized);

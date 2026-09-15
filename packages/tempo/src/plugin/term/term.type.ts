@@ -18,7 +18,7 @@ export interface TermPlugin {
 	/** Unique identifier for the term */
 	key: string;
 	/** Optional secondary alias keys for the term */
-	aliases?: string[];
+	aliases?: readonly string[] | string[];
 	/** Version of the term plugin */
 	version?: string;
 	/** Scope or category of the term */
@@ -30,11 +30,11 @@ export interface TermPlugin {
 	/** Grouping information for the term */
 	groups?: any;
 	/** Array of time ranges this term represents */
-	ranges?: any[];
+	ranges?: readonly any[] | any[];
 	/** Resolves the term to concrete time ranges */
-	resolve?: (this: Tempo, anchor?: any, alias?: string) => Range[];
+	resolve?: (this: Tempo, anchor?: any, alias?: string) => readonly Range[] | Range[];
 	/** Defines the term's value or range */
-	define: (this: Tempo, keyOnly?: boolean, anchor?: any, alias?: string) => string | Range | Range[] | undefined | null;
+	define: (this: Tempo, keyOnly?: boolean, anchor?: any, alias?: string) => string | Range | readonly Range[] | Range[] | undefined | null;
 }
 
 

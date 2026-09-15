@@ -12,6 +12,6 @@ getRuntime().modules['Tempo'] = Tempo;
 
 export { enums, Token, Snippet, Match, Default, Guard } from '#tempo/support';
 
-export { Interval } from './interval.class.js';
+export { Interval } from './interval.index.js';
 export * from './tempo.class.js';
 export default Tempo;

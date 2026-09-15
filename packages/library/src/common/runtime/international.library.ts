@@ -458,7 +458,7 @@ export function getRelativeTime(value: number, unit: Intl.RelativeTimeFormatUnit
  * formatList(['A', 'B', 'C'], 'en'); // 'A, B, and C'
  * ```
  */
-export function formatList(list: string[], locale?: LocaleInput, type: Intl.ListFormatType = 'conjunction', style: Intl.ListFormatStyle = 'long') {
+export function formatList(list: readonly string[], locale?: LocaleInput, type: Intl.ListFormatType = 'conjunction', style: Intl.ListFormatStyle = 'long') {
 	try {
 		return getLF(locale, { style, type }).format(list);
 	} catch (e) {

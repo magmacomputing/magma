@@ -362,47 +362,67 @@ describe('serialize.library', () => {
 		});
 
 		it('should reject unsigned strings when requireSigned: true', () => {
-			const plainStr = stringify({ safe: true });
-			expect(plainStr.startsWith('$sig:')).toBe(false);
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			try {
+				const plainStr = stringify({ safe: true });
+				expect(plainStr.startsWith('$sig:')).toBe(false);
 
-			// Rejects unsigned string and returns it raw without parsing
-			const rejected = objectify<any>(plainStr, { requireSigned: true });
-			expect(rejected).toBe(plainStr);
+				// Rejects unsigned string and returns it raw without parsing
+				const rejected = objectify<any>(plainStr, { requireSigned: true });
+				expect(rejected).toBe(plainStr);
+			} finally {
+				warnSpy.mockRestore();
+			}
 		});
 
 		it('should reject tampered signed payloads', () => {
-			const secret = 'test-secret';
-			const data = { role: 'user' };
-			const signedStr = stringify(data, { signed: true, secret });
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			try {
+				const secret = 'test-secret';
+				const data = { role: 'user' };
+				const signedStr = stringify(data, { signed: true, secret });
 
-			// Tamper payload
-			const tampered = signedStr.replace('user', 'admin');
-			const rejected = objectify<any>(tampered, { secret });
-			expect(rejected).toBe(tampered);
+				// Tamper payload
+				const tampered = signedStr.replace('user', 'admin');
+				const rejected = objectify<any>(tampered, { secret });
+				expect(rejected).toBe(tampered);
+			} finally {
+				warnSpy.mockRestore();
+			}
 		});
 
 		it('should throw when throwOnError: true on verification failure or unsigned input', () => {
-			const secret = 'test-secret';
-			const signedStr = stringify({ role: 'user' }, { signed: true, secret });
-			const tampered = signedStr.replace('user', 'admin');
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			try {
+				const secret = 'test-secret';
+				const signedStr = stringify({ role: 'user' }, { signed: true, secret });
+				const tampered = signedStr.replace('user', 'admin');
 
-			expect(() => objectify(tampered, { secret, throwOnError: true })).toThrow(/signature verification failed/);
-			expect(() => objectify(signedStr, { throwOnError: true })).toThrow(/requires an explicit secret/);
-			expect(() => objectify('{"plain":true}', { requireSigned: true, throwOnError: true })).toThrow(/rejected by requireSigned/);
+				expect(() => objectify(tampered, { secret, throwOnError: true })).toThrow(/signature verification failed/);
+				expect(() => objectify(signedStr, { throwOnError: true })).toThrow(/requires an explicit secret/);
+				expect(() => objectify('{"plain":true}', { requireSigned: true, throwOnError: true })).toThrow(/rejected by requireSigned/);
+			} finally {
+				warnSpy.mockRestore();
+			}
 		});
 
 		it('should support custom secret for signed stringify and verified objectify', () => {
-			const secret = 'custom-test-secret';
-			const data = { key: 'val' };
-			const signedStr = stringify(data, { signed: true, secret });
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			try {
+				const secret = 'custom-test-secret';
+				const data = { key: 'val' };
+				const signedStr = stringify(data, { signed: true, secret });
 
-			// Succeeds with matching secret
-			const verified = objectify<any>(signedStr, { secret });
-			expect(verified.key).toBe('val');
+				// Succeeds with matching secret
+				const verified = objectify<any>(signedStr, { secret });
+				expect(verified.key).toBe('val');
 
-			// Rejects with wrong secret
-			const wrongSecret = objectify<any>(signedStr, { secret: 'wrong-secret' });
-			expect(wrongSecret).toBe(signedStr);
+				// Rejects with wrong secret
+				const wrongSecret = objectify<any>(signedStr, { secret: 'wrong-secret' });
+				expect(wrongSecret).toBe(signedStr);
+			} finally {
+				warnSpy.mockRestore();
+			}
 		});
 
 		it('should retain verified state during quoted retry when requireSigned: true', () => {
