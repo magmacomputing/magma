@@ -1,4 +1,4 @@
-import { formatCurrency, getHemisphere, getLC, getLI, hasIntl, getDTF, probeMDY, formatList, getRelativeTime, canonicalLocale, cleanLocaleTag, getPR, formatNumber } from '#library/international.library.js';
+import { formatCurrency, getDateTimeFormat, getHemisphere, getLC, getLI, hasIntl, getDTF, probeMDY, formatList, getRelativeTime, canonicalLocales, resolveLocale, isEnglish, getLanguage, cleanLocaleTag, getPR, formatNumber } from '#library/international.library.js';
 
 describe('International Library', () => {
 	describe('formatCurrency', () => {
@@ -32,6 +32,23 @@ describe('International Library', () => {
 	describe('getHemisphere', () => {
 		it('should identify America/Argentina/Buenos_Aires as southern hemisphere', () => {
 			expect(getHemisphere('America/Argentina/Buenos_Aires')).toBe('south');
+		});
+
+		it('should memoize getHemisphere results', () => {
+			const first = getHemisphere('America/New_York');
+			const second = getHemisphere('America/New_York');
+			expect(first).toBe('north');
+			expect(second).toBe(first);
+		});
+	});
+
+	describe('getDateTimeFormat', () => {
+		it('should memoize and return the same resolved options object reference', () => {
+			const a = getDateTimeFormat();
+			const b = getDateTimeFormat();
+			expect(a).toBe(b);
+			expect(a.timeZone).toBeDefined();
+			expect(a.locale).toBeDefined();
 		});
 	});
 
@@ -185,20 +202,85 @@ describe('International Library', () => {
 		});
 	});
 
-	describe('canonicalLocale', () => {
-		it('should return undefined for empty or whitespace-only locale string', () => {
-			expect(canonicalLocale('')).toBeUndefined();
-			expect(canonicalLocale('   ')).toBeUndefined();
+	describe('canonicalLocales', () => {
+		it('should return empty array for undefined, empty, or whitespace-only input', () => {
+			expect(canonicalLocales(undefined)).toEqual([]);
+			expect(canonicalLocales([])).toEqual([]);
+			expect(canonicalLocales('')).toEqual([]);
+			expect(canonicalLocales('   ')).toEqual([]);
 		});
 
 		it('should canonicalize valid locale strings with POSIX conversions', () => {
-			expect(canonicalLocale('en_US')).toBe('en-US');
-			expect(canonicalLocale('en_US.UTF-8')).toBe('en-US');
-			expect(canonicalLocale('fr-FR')).toBe('fr-FR');
+			expect(canonicalLocales('en_US')).toEqual(['en-US']);
+			expect(canonicalLocales('en_US.UTF-8')).toEqual(['en-US']);
+			expect(canonicalLocales('fr-FR')).toEqual(['fr-FR']);
 		});
 
-		it('should return undefined for invalid locale strings', () => {
-			expect(canonicalLocale('invalid!locale#tag')).toBeUndefined();
+		it('should canonicalize case per BCP 47', () => {
+			expect(canonicalLocales('EN-us')).toEqual(['en-US']);
+		});
+
+		it('should filter out invalid locale strings without throwing', () => {
+			expect(canonicalLocales('invalid!locale#tag')).toEqual([]);
+			expect(canonicalLocales(['en_US.UTF-8', 'invalid!locale#tag', 'fr-FR'])).toEqual(['en-US', 'fr-FR']);
+		});
+
+		it('should handle Intl.Locale instances in array or scalar input', () => {
+			expect(canonicalLocales(new Intl.Locale('en-US'))).toEqual(['en-US']);
+			expect(canonicalLocales([new Intl.Locale('en-US'), 'ja_JP'])).toEqual(['en-US', 'ja-JP']);
+		});
+
+		it('should memoize canonicalLocales results', () => {
+			const first = canonicalLocales('en_US.UTF-8');
+			const second = canonicalLocales('en_US.UTF-8');
+			expect(first).toEqual(['en-US']);
+			expect(second).toBe(first);
+		});
+	});
+
+	describe('resolveLocale', () => {
+		it('should return undefined when no valid locales resolve', () => {
+			expect(resolveLocale(undefined)).toBeUndefined();
+			expect(resolveLocale([])).toBeUndefined();
+			expect(resolveLocale('invalid!tag')).toBeUndefined();
+		});
+
+		it('should return a scalar string when exactly one locale resolves', () => {
+			expect(resolveLocale('en_US.UTF-8')).toBe('en-US');
+			expect(resolveLocale(['en_US.UTF-8'])).toBe('en-US');
+			expect(resolveLocale(['en_US.UTF-8', 'invalid!tag'])).toBe('en-US');
+		});
+
+		it('should return an array when multiple locales resolve', () => {
+			expect(resolveLocale(['en_US', 'fr_FR'])).toEqual(['en-US', 'fr-FR']);
+		});
+	});
+
+	describe('isEnglish', () => {
+		it('should return true for English locales', () => {
+			expect(isEnglish('en-US')).toBe(true);
+			expect(isEnglish(['en-US', 'en-GB'])).toBe(true);
+			expect(isEnglish(['en_AU.UTF-8'])).toBe(true);
+		});
+
+		it('should return false if any non-English locale exists or if none resolve', () => {
+			expect(isEnglish('fr-FR')).toBe(false);
+			expect(isEnglish(['en-US', 'fr-FR'])).toBe(false);
+			expect(isEnglish([])).toBe(false);
+			expect(isEnglish(undefined)).toBe(false);
+		});
+	});
+
+	describe('getLanguage', () => {
+		it('should extract the language subtag', () => {
+			expect(getLanguage('en-US')).toBe('en');
+			expect(getLanguage(['fr-CA', 'en-US'])).toBe('fr');
+			expect(getLanguage('de_DE.UTF-8')).toBe('de');
+		});
+
+		it('should use fallback when unresolvable', () => {
+			expect(getLanguage(undefined)).toBe('en');
+			expect(getLanguage('invalid!tag', 'fr')).toBe('fr');
 		});
 	});
 
@@ -263,9 +345,9 @@ describe('International Library', () => {
 			expect(formatList(['A', 'B', 'C'], new Intl.Locale('en-US'), 'conjunction', 'long')).toBe('A, B, and C');
 		});
 
-		it('should accept LocaleInput in canonicalLocale and probeMDY', () => {
+		it('should accept LocaleInput in canonicalLocales and probeMDY', () => {
 			const loc = new Intl.Locale('en-US');
-			expect(canonicalLocale(loc)).toBe('en-US');
+			expect(canonicalLocales(loc)).toEqual(['en-US']);
 			expect(probeMDY(loc)).toBe(true);
 			expect(probeMDY(new Intl.Locale('en-GB'))).toBe(false);
 		});

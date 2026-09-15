@@ -12,7 +12,7 @@ import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
-import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear, getLC, getLI } from '#library/international.library.js';
+import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getISOWeekOfYear, getLC, getLI } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { getStashedGeo, coerceGeo } from '#library/mapper.library.js';
 import { Interval } from '#library/scheduling/interval.class.js';
@@ -263,9 +263,9 @@ export class Tempo {
 		const globalMdy = Tempo.MONTH_DAY as t.MonthDay;
 
 		const rawLocale = Tempo.#locale(locale);
-		if (!getLC(rawLocale)) {
+		if (!getLC(rawLocale))
 			logWarn(`Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, shape.config);
-		}
+
 		const li = getLI(rawLocale);
 		const baseName = li.baseName;
 		const language = li.language ?? li.locale?.language;
@@ -322,17 +322,13 @@ export class Tempo {
 	 */
 	static #locale = (locale?: string | string[]) => {
 		const global = Context.global;
-		let language: string | undefined;
+		const primaryLocale = canonicalLocales(locale)[0];
 
-		const primaryLocale = Array.isArray(locale) ? locale[0] : locale;
-
-		if (primaryLocale) language = canonicalLocale(primaryLocale);
-
-		return language ??
+		return primaryLocale ??
 			global?.navigator?.languages?.[0] ??									// fallback to current first navigator.languages[]
 			global?.navigator?.language ??												// else navigator.language
 			Default.locale ??																			// else default locale
-			primaryLocale																					// cannot determine locale
+			(Array.isArray(locale) ? locale[0] : locale)					// cannot determine locale
 	}
 
 	/**
@@ -1871,11 +1867,8 @@ export class Tempo {
 		const explicitLoc = evaluate(rawLoc);
 		const evaluatedLoc = explicitLoc ?? evaluate(classState.config.locale);
 		if (isDefined(evaluatedLoc)) {
-			const resolvedLocales = asArray(evaluatedLoc).map(l => canonicalLocale(String(l))).filter(Boolean) as string[];
-			if (resolvedLocales.length > 0) {
-				finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
-				setProperty(this.#local.config, 'locale', finalLocale);
-			}
+			finalLocale = resolveLocale(evaluatedLoc);
+			if (finalLocale) setProperty(this.#local.config, 'locale', finalLocale);
 		}
 
 		this.#local.userProvidedKeys = new Set();

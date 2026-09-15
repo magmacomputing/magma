@@ -3,7 +3,7 @@ import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix } from '#library/number.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish } from '#library/assertion.library.js';
-import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear } from '#library/international.library.js';
+import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
 import { isTempo, enums, Match, getRuntime, hasOwn, $Internal } from '#tempo/support';
@@ -312,8 +312,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'ord':
 				case 'nth': {
 					const val = parseInt(String(res), 10);
-					const localeStr = Array.isArray(config?.locale) ? config.locale[0] : config?.locale;
-					const lang = localeStr?.split('-')[0] ?? 'en';
+					const lang = getLanguage(config?.locale);
 					const dict = config?.registry?.locales?.[lang]?.['ordinal'];
 
 					if (isObject(dict)) {
@@ -345,8 +344,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 							if (plugin) {
 								const termVal = (obj as unknown as Tempo).term[termKey];
-								const localeStr = Array.isArray(config?.locale) ? config.locale[0] : config?.locale;
-								const lang = localeStr?.split('-')[0] ?? 'en';
+								const lang = getLanguage(config?.locale);
 								let locRes: any;
 								let valStr: string;
 								let baseKey: string | undefined;
@@ -369,7 +367,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 									const group = flatGroups.find((g: any) => g.key === searchKey);
 									if (group && isObject(group.locale))
 										locRes = group.locale[lang] ?? group.locale.en;
-
 								}
 
 								// 3. Execution or Assignment

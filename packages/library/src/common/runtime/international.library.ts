@@ -1,6 +1,7 @@
 import { getOffsets } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
 import { isFunction, isDefined, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
+import { asArray } from '#library/coercion.library.js';
 
 import type { LooseUnion } from '#library/type.library.js';
 
@@ -258,9 +259,9 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
  * const { timeZone, locale } = getDateTimeFormat();
  * ```
  */
-export function getDateTimeFormat() {
+export const getDateTimeFormat = memoizeFunction(() => {
 	return getDTF().resolvedOptions();
-}
+});
 
 /**
  * Returns the canonicalized locale string, or undefined if the locale is invalid.
@@ -273,9 +274,10 @@ export function getDateTimeFormat() {
  * canonicalLocale('en_US'); // 'en-US'
  * ```
  */
-export function canonicalLocale(locale?: LocaleInput): string | undefined {
+const canonicalLocale = memoizeFunction((locale?: LocaleInput) => {
 	const cleaned = cleanLocaleTag(locale);
 	if (!cleaned) return undefined;
+
 	if (hasIntl('getCanonicalLocales')) {
 		try {
 			return Intl.getCanonicalLocales(cleaned)[0];
@@ -283,7 +285,81 @@ export function canonicalLocale(locale?: LocaleInput): string | undefined {
 			return undefined;
 		}
 	}
+
 	return getLC(cleaned)?.baseName ?? cleaned;
+});
+
+/**
+ * Canonicalizes an array or single locale input into a list of valid BCP 47 locale strings.
+ * Gracefully ignores malformed locales and strips invalid/falsy values without throwing.
+ * 
+ * @param locales - Single or multiple locale identifiers or Intl.Locale instances
+ * @returns An array of canonical BCP 47 locale strings
+ * @example
+ * ```ts
+ * canonicalLocales(['en_US.UTF-8', 'fr-FR', 'invalid!tag']); // ['en-US', 'fr-FR']
+ * ```
+ */
+export const canonicalLocales = memoizeFunction((locales?: unknown): string[] => {
+	if (!isDefined(locales)) return [];
+	return asArray(locales)
+		.map(l => canonicalLocale(l as LocaleInput))
+		.filter(Boolean) as string[];
+});
+
+/**
+ * Resolves a locale or list of locales into a standardized configuration format:
+ * a single string for one valid locale, a string array for multiple, or undefined if none.
+ * 
+ * @param locales - Single or multiple locale identifiers or Intl.Locale instances
+ * @returns A single canonical string, an array of strings, or undefined
+ * @example
+ * ```ts
+ * resolveLocale('en_US'); // 'en-US'
+ * resolveLocale(['en_US', 'fr_FR']); // ['en-US', 'fr-FR']
+ * resolveLocale(['invalid']); // undefined
+ * ```
+ */
+export function resolveLocale(locales?: unknown): string | string[] | undefined {
+	const resolved = canonicalLocales(locales);
+	if (resolved.length === 0) return undefined;
+	return resolved.length === 1 ? resolved[0] : resolved;
+}
+
+/**
+ * Checks whether all resolved locales in the input belong to the English language family ('en-*').
+ * 
+ * @param locales - Single or multiple locale identifiers
+ * @returns True if at least one valid locale exists and all resolved locales are English
+ * @example
+ * ```ts
+ * isEnglish('en-US'); // true
+ * isEnglish(['en-US', 'en-GB']); // true
+ * isEnglish(['en-US', 'fr-FR']); // false
+ * ```
+ */
+export function isEnglish(locales?: unknown): boolean {
+	const resolved = canonicalLocales(locales);
+	return resolved.length > 0 && resolved.every(l => l.split('-')[0]?.toLowerCase() === 'en');
+}
+
+/**
+ * Extracts the primary language subtag (e.g., 'en', 'fr') from a locale or list of locales.
+ * Defaults to 'en' if not determinable.
+ * 
+ * @param locale - Locale identifier or list of locales
+ * @param fallback - Fallback language subtag (default: 'en')
+ * @returns The lowercase language subtag
+ * @example
+ * ```ts
+ * getLanguage('en-US'); // 'en'
+ * getLanguage(['fr-CA', 'en-US']); // 'fr'
+ * getLanguage(); // 'en'
+ * ```
+ */
+export function getLanguage(locale?: unknown, fallback = 'en'): string {
+	const primary = canonicalLocales(locale)[0];
+	return primary ? (primary.split('-')[0]?.toLowerCase() ?? fallback) : fallback;
 }
 
 /**
@@ -424,7 +500,7 @@ export function formatCurrency(str: string | number, scale = 2, currency = 'AUD'
  * @remarks This implementation intentionally differs from the version in `tempo-fns` 
  * (including specific fallback and return behaviors). Do not directly synchronize them.
  */
-export function getHemisphere(timeZone: string = getDateTimeFormat().timeZone) {
+export const getHemisphere = memoizeFunction((timeZone: string = getDateTimeFormat().timeZone): 'north' | 'south' | undefined => {
 	try {
 		const { jan, jul } = getOffsets(timeZone);							// using default reference-year (2024) for stability
 
@@ -440,7 +516,7 @@ export function getHemisphere(timeZone: string = getDateTimeFormat().timeZone) {
 	} catch (e) {
 		return undefined;
 	}
-}
+});
 
 type input = {
 	toPlainDate?: () => any,
@@ -498,7 +574,7 @@ export function getISOWeekOfYear(zdt: input): result {
  * probeMDY('en-GB') // false
  * ```
  */
-export function probeMDY(locale?: LocaleInput): boolean {
+export const probeMDY = memoizeFunction((locale?: LocaleInput): boolean => {
 	try {
 		// Use Dec 24th to check if '12' comes first
 		const date = new Date(2024, 11, 24);
@@ -507,4 +583,4 @@ export function probeMDY(locale?: LocaleInput): boolean {
 	} catch {
 		return false;
 	}
-}
+});
