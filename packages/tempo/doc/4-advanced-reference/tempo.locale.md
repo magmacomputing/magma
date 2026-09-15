@@ -199,8 +199,8 @@ t.set({ isoWeek: 'end' });         // Always snaps to Sunday 23:59:59.999999999
 
 ### Cultural Formatting Tokens
 
-- **`{dow:locale}`**: Formats a 1-based day-of-week index relative to the active locale's `firstDay` (e.g. Sunday = `1` in `en-US`, Monday = `1` in `en-GB`, Saturday = `1` in `ar-SA`). Because the developer explicitly requested `:locale`, this evaluates directly using `t.intl.firstDay`. Standard `{dow}` continues to evaluate to ISO Monday = `1` strictly.
-- **`{hh:locale}`**: Adapts hour formatting to the region's `hourCycle` (`12`-hour format `01..12` in `h12`/`h11` regions like `en-US`, `24`-hour format `00..23` in `h23`/`h24` regions like `fr-FR`). Compose with `:raw` (`{hh:locale:raw}`) for unpadded hours.
+- **`{dow:locale}`**: Formats a 1-based day-of-week index relative to the active locale's `firstDay` (e.g. Sunday = `1` in `en-US` and `ar-SA` [where Saturday is `7`], Monday = `1` in `en-GB`). Because the developer explicitly requested `:locale`, this evaluates directly using `t.intl.firstDay`. Standard `{dow}` continues to evaluate to ISO Monday = `1` strictly.
+- **`{hh:locale}`**: Adapts hour formatting to the region's `hourCycle` (12-hour format `00..11` in `h11` regions, `01..12` in `h12` regions like `en-US`, and 24-hour format `00..23` in `h23`/`h24` regions like `fr-FR`). Compose with `:raw` (`{hh:locale:raw}`) for unpadded hours.
 - **`{time:locale}`**: Formats a complete localized time string, automatically including localized meridiem markers in `h12` locales (`"03:30:45 pm"`) and 24-hour time in `h23` locales (`"15:30:45"`).
 - **Localized Numerals (`:locale`)**: When applied to numeric tokens (`{yyyy:locale}`, `{mm:locale}`, `{dd:locale}`), transliterates digits into the region's native numbering system (e.g. `٢٠٢٦-١٠-٢٤` in `ar-EG`). Base tokens without `:locale` (`{yyyy}-{mm}-{dd}`) always maintain strict ASCII digits for machine safety.
 - **BiDi Isolation**: When formatting localized text tokens (`{mon:locale}`, `{wkd:locale}`) in RTL regions (Arabic, Hebrew), Tempo wraps text in Unicode BiDi isolates to prevent bidirectional text disruption.

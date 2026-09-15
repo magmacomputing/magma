@@ -298,7 +298,11 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				if (modifiers.includes('locale')) {
 					const li = isTempo(obj) ? (obj as any).intl : getLI(config?.locale);
 					const is12 = li.hourCycle === 'h12' || li.hourCycle === 'h11';
-					const h = is12 ? pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || (li.hourCycle === 'h11' ? 0 : 12)) : pad(zdt.hour);
+					const h12 = zdt.hour % 12;
+					const h = li.hourCycle === 'h11' ? pad(h12)
+						: li.hourCycle === 'h12' ? pad(h12 || 12)
+						: li.hourCycle === 'h24' ? pad(zdt.hour || 24)
+						: pad(zdt.hour);
 					const m = pad(zdt.minute);
 					const s = pad(zdt.second);
 					if (is12) {

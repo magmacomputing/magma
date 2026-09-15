@@ -251,8 +251,8 @@ describe('serialize.library', () => {
 		});
 
 		it('should prevent deep recursion stack overflow using maxDepth', () => {
-			let deep = '{"val":1}';
-			for (let i = 0; i < 80; i++) {
+			let deep = '{"$BigInt":123}';
+			for (let i = 0; i < 25; i++) {
 				deep = `{"nested":${deep}}`;
 			}
 
@@ -260,6 +260,29 @@ describe('serialize.library', () => {
 			const res = objectify<any>(deep, { maxDepth: 20 });
 			expect(res).toBeDefined();
 			expect(res.nested).toBeDefined();
+
+			// Navigate to depth 20: traversed and defined
+			let cursor = res;
+			for (let i = 0; i < 20; i++) {
+				cursor = cursor.nested;
+			}
+			expect(cursor).toBeDefined();
+
+			// Beyond depth 20 (depth 21+), traversal was halted: innermost $BigInt was not transformed
+			let deepCursor = cursor;
+			while (deepCursor?.nested) {
+				deepCursor = deepCursor.nested;
+			}
+			expect(deepCursor).toEqual({ $BigInt: 123 });
+			expect(typeof deepCursor).not.toBe('bigint');
+
+			// With sufficient maxDepth, traversal reaches the innermost node and transforms it
+			const full = objectify<any>(deep, { maxDepth: 30 });
+			let fullCursor = full;
+			while (fullCursor?.nested) {
+				fullCursor = fullCursor.nested;
+			}
+			expect(fullCursor).toBe(123n);
 		});
 
 		it('should respect allowClasses: false and prevent class instantiation', () => {
@@ -320,16 +343,22 @@ describe('serialize.library', () => {
 			expect(resHuge).not.toBeInstanceOf(RegExp);
 		});
 
-		it('should sign output with stringify({ signed: true }) and verify in objectify', () => {
+		it('should sign output with stringify({ signed: true, secret }) and verify in objectify', () => {
+			const secret = 'test-secret';
 			const data = { count: 123n, active: true };
-			const signedStr = stringify(data, { signed: true });
+			const signedStr = stringify(data, { signed: true, secret });
 
 			expect(signedStr.startsWith('$sig:')).toBe(true);
 
 			// Automatically verifies and unpacks
-			const unpacked = objectify<any>(signedStr);
+			const unpacked = objectify<any>(signedStr, { secret });
 			expect(unpacked.count).toBe(123n);
 			expect(unpacked.active).toBe(true);
+		});
+
+		it('should throw TypeError when signed: true but secret is omitted', () => {
+			expect(() => stringify({ a: 1 }, { signed: true })).toThrow(TypeError);
+			expect(() => stringify({ a: 1 }, { signed: true, secret: '' })).toThrow(TypeError);
 		});
 
 		it('should reject unsigned strings when requireSigned: true', () => {
@@ -342,13 +371,24 @@ describe('serialize.library', () => {
 		});
 
 		it('should reject tampered signed payloads', () => {
+			const secret = 'test-secret';
 			const data = { role: 'user' };
-			const signedStr = stringify(data, { signed: true });
+			const signedStr = stringify(data, { signed: true, secret });
 
 			// Tamper payload
 			const tampered = signedStr.replace('user', 'admin');
-			const rejected = objectify<any>(tampered);
+			const rejected = objectify<any>(tampered, { secret });
 			expect(rejected).toBe(tampered);
+		});
+
+		it('should throw when throwOnError: true on verification failure or unsigned input', () => {
+			const secret = 'test-secret';
+			const signedStr = stringify({ role: 'user' }, { signed: true, secret });
+			const tampered = signedStr.replace('user', 'admin');
+
+			expect(() => objectify(tampered, { secret, throwOnError: true })).toThrow(/signature verification failed/);
+			expect(() => objectify(signedStr, { throwOnError: true })).toThrow(/requires an explicit secret/);
+			expect(() => objectify('{"plain":true}', { requireSigned: true, throwOnError: true })).toThrow(/rejected by requireSigned/);
 		});
 
 		it('should support custom secret for signed stringify and verified objectify', () => {
@@ -366,10 +406,25 @@ describe('serialize.library', () => {
 		});
 
 		it('should retain verified state during quoted retry when requireSigned: true', () => {
+			const secret = 'test-secret';
 			const unquoted = 'hello world';
-			const signed = `$sig:${fastDigest(unquoted)}:${unquoted}`;
-			const res = objectify<string>(signed, { requireSigned: true });
+			const signed = `$sig:${fastDigest(unquoted, secret)}:${unquoted}`;
+			const res = objectify<string>(signed, { requireSigned: true, secret });
 			expect(res).toBe('hello world');
+		});
+
+		it('should round-trip strings with leading ~ across compact and non-compact modes', () => {
+			const str1 = '~hello';
+			const str2 = '~n1';
+			const str3 = '~~double';
+
+			expect(objectify(stringify(str1, { compact: false }))).toBe(str1);
+			expect(objectify(stringify(str2, { compact: false }))).toBe(str2);
+			expect(objectify(stringify(str3, { compact: false }))).toBe(str3);
+
+			expect(objectify(stringify(str1, { compact: true }))).toBe(str1);
+			expect(objectify(stringify(str2, { compact: true }))).toBe(str2);
+			expect(objectify(stringify(str3, { compact: true }))).toBe(str3);
 		});
 
 		it('should safely guard against malformed compact tags without throwing exceptions', () => {

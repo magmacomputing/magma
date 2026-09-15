@@ -54,7 +54,7 @@ t.set({ week: 'mid' });       // Snaps to Thursday 00:00:00
 t.set({ week: 'end' });       // Snaps to Sunday 23:59:59.999999999
 ```
 
-When `localeInfo: true` is enabled, `week` boundary calculations adapt to the active locale's regional first day of the week (e.g., Sunday in `en-US`, Saturday in `ar-SA`):
+When `localeInfo: true` is enabled, `week` boundary calculations adapt to the active locale's regional first day of the week (e.g., Sunday in `en-US`, Saturday in `ar-EG`):
 ```typescript
 const us = new Tempo('2026-09-16', { locale: 'en-US', localeInfo: true });
 us.set({ week: 'start' });    // Snaps to Sunday 2026-09-13 00:00:00

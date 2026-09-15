@@ -215,9 +215,9 @@ export const fastDigest = (str: string, secret = RUNTIME_SALT): string => {
  * Configuration options for `stringify()` serialization.
  */
 export interface StringifyOptions {
-	/** If true, wraps the output with a tamper-evident signature prefix ($sig:<digest>:<payload>) */
+	/** If true, wraps the output with an integrity signature prefix ($sig:<digest>:<payload>) */
 	signed?: boolean;
-	/** Optional secret key or salt for signature calculation (defaults to an ephemeral runtime salt) */
+	/** Secret key or salt for signature calculation (required when signed is true) */
 	secret?: string;
 	/** If false, uses legacy oneKey object envelopes instead of compact tagged strings (default: true) */
 	compact?: boolean;
@@ -231,14 +231,14 @@ let activeCompact = true;
  * or oneKey object envelopes when `compact: false`.
  * 
  * @param obj - The object to stringify
- * @param options - Optional serialization options (e.g. `{ signed: true, compact: true }`)
+ * @param options - Optional serialization options (e.g. `{ signed: true, secret: 'key', compact: true }`)
  * @returns The safely stringified representation
  * @example
  * ```ts
  * stringify(123n); // '"~n123"'
  * stringify(new Date()); // '"~t1704067200000"'
  * stringify(Symbol.for('app')); // '"~y@@(app)"'
- * stringify(data, { signed: true }); // '$sig:e8b7...:{"id":"~n123"}'
+ * stringify(data, { signed: true, secret: 'my-secret' }); // '$sig:e8b7...:{"id":"~n123"}'
  * ```
  */
 export function stringify<T>(obj: T, options?: StringifyOptions): string {
@@ -246,8 +246,11 @@ export function stringify<T>(obj: T, options?: StringifyOptions): string {
 	activeCompact = options?.compact !== false;
 	try {
 		const str = stringize(obj, false);
-		if (options?.signed)
+		if (options?.signed) {
+			if (!isString(options.secret) || !options.secret)
+				throw new TypeError('stringify: signed serialization requires an explicit secret string');
 			return `$sig:${fastDigest(str, options.secret)}:${str}`;
+		}
 		return str;
 	} finally {
 		activeCompact = prevCompact;
@@ -266,7 +269,7 @@ function stringize<T>(obj: T, recurse = true): string {			// hide the second par
 	switch (arg.type) {
 		case 'String': {
 			let strVal = arg.value;
-			if (activeCompact && strVal.startsWith('~'))
+			if (strVal.startsWith('~'))
 				strVal = `~${strVal}`;
 
 			if (!recurse) {																				// if a top-level string (e.g. 'true' or '1234')
@@ -274,7 +277,7 @@ function stringize<T>(obj: T, recurse = true): string {			// hide the second par
 					|| strVal === 'false'															// so they will be correctly identified during objectify()
 					|| strVal === 'null'
 					|| parseFloat(strVal).toString() === strVal
-					|| (activeCompact && strVal.startsWith('~'));
+					|| strVal.startsWith('~');
 			}
 
 			return recurse
@@ -388,8 +391,10 @@ export interface ObjectifyOptions {
 	maxDepth?: number;
 	/** If true, requires that the string has a valid signature, rejecting unsigned strings (default: false) */
 	requireSigned?: boolean;
-	/** Optional secret key or salt to verify the signature against (defaults to the runtime salt) */
+	/** Secret key or salt to verify the signature against (required for signed verification) */
 	secret?: string;
+	/** If true, throws an Error when signature verification fails, secret is missing, or payload is rejected (default: false) */
+	throwOnError?: boolean;
 }
 
 const MAX_TRAVERSE_DEPTH = 64;
@@ -422,7 +427,7 @@ const MAX_REGEXP_SOURCE_LENGTH = 512;
  * ```ts
  * const obj = objectify('{"$BigInt":"123"}'); // 123n
  * const safe = objectify(input, { allowClasses: false, maxDepth: 10 });
- * const trusted = objectify(input, { requireSigned: true });
+ * const trusted = objectify(input, { requireSigned: true, secret: 'my-secret' });
  * ```
  */
 export function objectify<T>(str: any, optionsOrSentinel?: Function | ObjectifyOptions): T {
@@ -438,18 +443,30 @@ export function objectify<T>(str: any, optionsOrSentinel?: Function | ObjectifyO
 		if (secondColon !== -1) {
 			const sig = str.substring(5, secondColon);
 			const payload = str.substring(secondColon + 1);
+			if (!isString(options.secret) || !options.secret) {
+				console.warn('objectify: signature verification requires an explicit secret string');
+				if (options.throwOnError)
+					throw new TypeError('objectify: signature verification requires an explicit secret string');
+				return str as unknown as T;
+			}
 			const expectedSig = fastDigest(payload, options.secret);
 			if (sig !== expectedSig) {
 				console.warn('objectify: signature verification failed');
+				if (options.throwOnError)
+					throw new Error('objectify: signature verification failed');
 				return str as unknown as T;
 			}
 			str = payload;
 		} else if (options.requireSigned) {
 			console.warn('objectify: malformed signed payload');
+			if (options.throwOnError)
+				throw new Error('objectify: malformed signed payload');
 			return str as unknown as T;
 		}
 	} else if (options.requireSigned) {
 		console.warn('objectify: unsigned string rejected by requireSigned policy');
+		if (options.throwOnError)
+			throw new Error('objectify: unsigned string rejected by requireSigned policy');
 		return str as unknown as T;
 	}
 

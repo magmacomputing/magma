@@ -247,7 +247,7 @@ Tempo.init({
 | `sphere` | `Evaluable<'north' \| 'south' \| 'equator'>`| Auto-inferred | Hemisphere for seasonal plugins or dynamic supplier. |
 | `geo` | `GeoOptions` | `undefined` | Geographic coordinates, city, country, elevation, and timezone metadata. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
-| `localeInfo` | `boolean` | `false` | Enables regional calendar boundaries (`week: 'start' \| 'mid' \| 'end'`) and locale dow indexing via `Intl.LocaleInfo`. |
+| `localeInfo` | `boolean` | `false` | Enables locale-aware week-boundary mutation behavior (`week: 'start' \| 'mid' \| 'end'`). Formatting tokens (`{dow:locale}`, `{hh:locale}`) resolve locale info independently. |
 | `registry` | `{ formats?, locales?, numbers?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, number-to-word mappings, parsing logic, localization). |
 | `extends` | `string \| string[]` | `undefined` | Local file path(s) or `file://` URL(s) to inherit base configuration from. |
 | `plugins` | `(Plugin \| TermPlugin)[]` | `[]` | Plugins/terms to register during initialization (applied via `Tempo.use(p)`). |

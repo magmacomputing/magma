@@ -887,7 +887,7 @@ export class Tempo {
 			try {
 				const res = fn(sb);
 				if (res && isCallable((res as any).then)) {
-					return (res as any).finally(() => {
+					return Promise.resolve(res).finally(() => {
 						(sb as any)[Symbol.dispose]?.();
 					}) as R;
 				}

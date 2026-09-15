@@ -22,9 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fast Synchronous Keyed Digest (`fastDigest`, `serialize.library`)**:
   - Introduced `fastDigest(str, secret?)` in `#library/serialize.library.js`, providing a high-performance synchronous 64-bit keyed hashing algorithm.
   - Defaults to an internal ephemeral runtime salt (deterministic within a single runtime process, differing across process restarts), producing a 16-character hex digest without asynchronous event-loop delays while preserving a strict unidirectional dependency graph.
-- **Tamper-Evident Signed Serialization (`StringifyOptions.signed`, `serialize.library`)**:
-  - Added `signed?: boolean` and `secret?: string` to `StringifyOptions`, wrapping output strings with a tamper-evident signature prefix (`$sig:<digest>:<payload>`).
-  - Added signature verification in `objectify()` with support for a strict `requireSigned?: boolean` policy, rejecting tampered or unsigned payloads without deserializing them.
+- **Integrity Signed Serialization (`StringifyOptions.signed`, `serialize.library`)**:
+  - Added `signed?: boolean` and `secret?: string` to `StringifyOptions`, wrapping output strings with an integrity signature prefix (`$sig:<digest>:<payload>`).
+  - Added signature verification in `objectify()` with support for a strict `requireSigned?: boolean` policy, rejecting modified or unsigned payloads without deserializing them. Designed as a lightweight integrity check for trusted internal state rather than forgery-resistant protection; callers requiring authenticated or cryptographic payloads should use `signJWS()` and `verifyHmac()`.
 - **Standardized Locale & Regional Context Resolver (`getLI`, `ResolvedLocaleInfo`, `LocaleWeekInfo`)**:
   - Introduced `getLI(localeTag?)` in `#library/common/runtime/international.library.js` providing an eager, memoized snapshot resolver for internationalization and regional formatting metadata (`weekInfo`, `firstDay`, `weekend`, `hourCycle`, `hourCycles`, `direction`, `numberingSystem`, `numberingSystems`, `timeZones`, and underlying `locale` instance).
   - Aligned with finalized TC39 Stage 4 `Intl.LocaleInfo` specification (`Intl.Locale.prototype.getWeekInfo()` and `getTimeZones()`), intentionally omitting deprecated `minimalDays`.
