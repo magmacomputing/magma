@@ -146,3 +146,62 @@ Tempo delegates regional calendar metadata (such as `firstDay` of the week, regi
 >   - **Text direction**: Left-to-Right (`'ltr'`)
 > 
 > **Tip for Docker Deployments**: When packaging server applications in minimal Linux or Alpine containers, ensure your Node.js runtime has full ICU support (standard official `node` container images include full ICU by default) so your applications enjoy full native CLDR accuracy across all locales.
+
+---
+
+## 4. `Intl.LocaleInfo` & Regional Calendar Integration
+
+Tempo bridges the mathematical rigor of the ISO 8601 engine with the practical, cultural expectations of calendars around the world (e.g., Sunday-first weeks in North America and Japan, Friday–Saturday weekends in the Middle East).
+
+### Inspecting Cultural Metadata (`t.intl`)
+
+Every `Tempo` instance provides a frozen, globally memoized `t.intl` getter returning `ResolvedLocaleInfo` with zero per-instance allocations:
+
+```typescript
+const t = new Tempo('2026-09-16', { locale: 'en-US' });
+
+console.log(t.intl.firstDay);        // 7 (Sunday)
+console.log(t.intl.weekend);         // [6, 7] (Saturday, Sunday)
+console.log(t.intl.region);          // 'US'
+console.log(t.intl.script);          // 'Latn'
+console.log(t.intl.direction);       // 'ltr'
+console.log(t.intl.hourCycle);       // 'h12'
+console.log(t.intl.numberingSystem); // 'latn'
+console.log(t.intl.baseName);        // 'en-US'
+```
+
+### Opt-in Regional Calendar Math (`localeInfo: true`)
+
+By default, Tempo protects your backend and machine logic with strict ISO 8601 invariants (`t.set({ week: 'start' })` always snaps to Monday). 
+
+To adapt week mutations to human cultural conventions, enable `localeInfo: true`:
+
+```typescript
+// Enable globally or per-instance:
+Tempo.init({ locale: 'en-US', localeInfo: true });
+
+const t = new Tempo('2026-09-16'); // Wednesday
+t.set({ week: 'start' });          // Snaps to previous Sunday (2026-09-13 00:00:00)
+t.set({ week: 'mid' });            // Snaps to Wednesday (2026-09-16 00:00:00, 3 days after start)
+t.set({ week: 'end' });            // Snaps to Saturday (2026-09-19 23:59:59.999999999)
+```
+
+### Dedicated ISO Escape Hatches (`isoWeek`, `wy`)
+
+When `localeInfo: true` is active, you can always guarantee strict ISO 8601 Monday-start boundaries using dedicated ISO tokens:
+
+```typescript
+t.set({ isoWeek: 'start' });       // Always snaps to Monday 00:00:00
+t.set({ wy: 'start' });            // Equivalent dedicated ISO week boundary
+t.set({ isoWeek: 'mid' });         // Always snaps to Thursday 00:00:00
+t.set({ isoWeek: 'end' });         // Always snaps to Sunday 23:59:59.999999999
+```
+
+### Cultural Formatting Tokens
+
+- **`{dow:locale}`**: Formats a 1-based day-of-week index relative to the active locale's `firstDay` (e.g. Sunday = `1` in `en-US`, Monday = `1` in `en-GB`, Saturday = `1` in `ar-SA`). Because the developer explicitly requested `:locale`, this evaluates directly using `t.intl.firstDay`. Standard `{dow}` continues to evaluate to ISO Monday = `1` strictly.
+- **`{hh:locale}`**: Adapts hour formatting to the region's `hourCycle` (`12`-hour format `01..12` in `h12`/`h11` regions like `en-US`, `24`-hour format `00..23` in `h23`/`h24` regions like `fr-FR`). Compose with `:raw` (`{hh:locale:raw}`) for unpadded hours.
+- **`{time:locale}`**: Formats a complete localized time string, automatically including localized meridiem markers in `h12` locales (`"03:30:45 pm"`) and 24-hour time in `h23` locales (`"15:30:45"`).
+- **Localized Numerals (`:locale`)**: When applied to numeric tokens (`{yyyy:locale}`, `{mm:locale}`, `{dd:locale}`), transliterates digits into the region's native numbering system (e.g. `٢٠٢٦-١٠-٢٤` in `ar-EG`). Base tokens without `:locale` (`{yyyy}-{mm}-{dd}`) always maintain strict ASCII digits for machine safety.
+- **BiDi Isolation**: When formatting localized text tokens (`{mon:locale}`, `{wkd:locale}`) in RTL regions (Arabic, Hebrew), Tempo wraps text in Unicode BiDi isolates to prevent bidirectional text disruption.
+- **`{intl.<property>}`**: Directly embeds resolved regional metadata into format templates (e.g. `{intl.region}`, `{intl.script}`, `{intl.direction}`, `{intl.firstDay}`).

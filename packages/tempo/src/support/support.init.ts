@@ -318,6 +318,10 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 			}
 
+			case 'localeInfo':
+				setProperty(state.config, 'localeInfo', Boolean(arg.value));
+				break;
+
 			case 'discovery':
 				setProperty(state.config, 'discovery', arg.value);
 				break;

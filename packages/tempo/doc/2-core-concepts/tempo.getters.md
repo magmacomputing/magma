@@ -71,6 +71,7 @@ console.log(t.zdt.monthCode);    // 'M10'
 | `.tz` | `string` | IANA Time Zone ID | `'Australia/Sydney'` |
 | `.cal` | `string` | Temporal Calendar ID | `'iso8601'` |
 | `.locale` | `string \| string[]` | Resolved BCP 47 locale | `'en-AU'`, `['en-US', 'fr-FR']` |
+| `.intl` | `ResolvedLocaleInfo` | Cultural & regional metadata via `Intl.LocaleInfo` (`firstDay`, `weekend`, `direction`, `hourCycle`) | `{ firstDay: 7, weekend: [6, 7], direction: 'ltr' }` |
 | `.sphere` | `'north' \| 'south' \| undefined` | Resolved hemisphere configuration | `'south'` |
 | `.ts` | `number \| bigint` | Unix timestamp (`number` for `ss`/`ms`/`us`, `bigint` for `ns`) | `1792843200000` |
 | `.nano` | `bigint` | Nanoseconds since Unix epoch | `1792843200000000000n` |

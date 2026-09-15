@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.3.0] - 2026-09-13
 
 ### Added
+- **`Intl.LocaleInfo` & Regional Calendar Context (`t.intl`, `Tempo.intl`, `localeInfo`)**:
+  - Added `intl` accessor on `Tempo` instances (`t.intl`) and statically (`Tempo.intl`) exposing frozen, memoized regional metadata (`firstDay`, `weekend`, `region`, `script`, `hourCycle`, `direction`, `numberingSystem`, `timeZones`) via `getLI` from `@magmacomputing/library` with zero per-instance allocations.
+  - Added opt-in `localeInfo: boolean` configuration flag (`Tempo.init({ localeInfo: true })` or per-instance options), activating culturally authentic calendar arithmetic while strictly preserving Tempo's ISO 8601 baseline by default.
+  - **Adaptive Week Boundaries**: When `localeInfo: true` is active, `t.set({ week: 'start' })`, `t.set({ week: 'mid' })`, and `t.set({ week: 'end' })` adapt dynamically to the active locale's week boundary (e.g. Sunday in `en-US`, Monday in `en-GB`, Saturday in `ar-SA`).
+  - **Dedicated ISO Invariant Escape Hatches**: Added `isoWeek` and `wy` mutation targets (`t.set({ isoWeek: 'start' })`, `t.set({ wy: 'start' })`, `t.set({ isoWeek: 'end' })`, etc.) guaranteeing strict ISO 8601 Monday-start snapping regardless of `localeInfo` settings.
+  - **Locale Day-of-Week & Intl Format Tokens**:
+    - Added `{dow:locale}` modifier yielding the 1-based day of week relative to the locale's week start (`1` on Sunday for `en-US`), evaluated directly from `t.intl.firstDay`.
+    - Added `{hh:locale}` adapting hour formatting to the region's `hourCycle` (12h in `h12` regions like `en-US`, 24h in `h23` regions like `fr-FR`), fully composable with `:raw` (`{hh:locale:raw}`).
+    - Added `{time}` and `{time:locale}` compound time tokens, formatting complete regional time strings with localized meridiem in `h12` locales (`"03:30:45 pm"`).
+    - Added localized numeral transliteration for numeric tokens via `:locale` (e.g., `{yyyy:locale}` producing `٢٠٢٦` in `ar-EG`), while preserving strict ASCII digits for base tokens without `:locale`.
+    - Added Unicode BiDi isolation wrapping for RTL text tokens (`{mon:locale}`) to prevent bidirectional punctuation disruption.
+    - Added `{intl.<prop>}` dynamic format tokens (`{intl.region}`, `{intl.script}`, `{intl.firstDay}`, `{intl.direction}`, `{intl.hourCycle}`) interpolating locale properties.
 - **Native Temporal Gateway (`t.zdt`)**:
   - Added read-only `zdt` getter on `Tempo` (and in `AliasContext`) returning the underlying `Temporal.ZonedDateTime` instance.
   - Provides direct, zero-overhead access to native Temporal properties (`daysInMonth`, `inLeapYear`, `offset`, `hoursInDay`, `monthCode`, etc.) without method call ceremony or namespace pollution.

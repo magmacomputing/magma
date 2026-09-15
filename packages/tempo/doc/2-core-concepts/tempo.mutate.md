@@ -46,6 +46,28 @@ t.set({ month: 'start' });    // Native: Start of the current month
 t.set({ '#qtr': 'end' });     // Slick: End of the current quarter
 ```
 
+#### Week Boundaries & Dedicated ISO Invariance
+By default, week boundaries follow ISO 8601 (Monday start, Thursday middle, Sunday end):
+```typescript
+t.set({ week: 'start' });     // Snaps to Monday 00:00:00
+t.set({ week: 'mid' });       // Snaps to Thursday 00:00:00
+t.set({ week: 'end' });       // Snaps to Sunday 23:59:59.999999999
+```
+
+When `localeInfo: true` is enabled, `week` boundary calculations adapt to the active locale's regional first day of the week (e.g., Sunday in `en-US`, Saturday in `ar-SA`):
+```typescript
+const us = new Tempo('2026-09-16', { locale: 'en-US', localeInfo: true });
+us.set({ week: 'start' });    // Snaps to Sunday 2026-09-13 00:00:00
+us.set({ week: 'mid' });      // Snaps to Wednesday 2026-09-16 00:00:00
+us.set({ week: 'end' });      // Snaps to Saturday 2026-09-19 23:59:59.999999999
+```
+
+To guarantee strict ISO 8601 Monday-to-Sunday boundaries regardless of active locale or `localeInfo` settings, use dedicated ISO tokens:
+```typescript
+us.set({ isoWeek: 'start' }); // Always snaps to Monday 00:00:00
+us.set({ wy: 'start' });      // Equivalent dedicated ISO week boundary
+```
+
 Snippet shorthand keys (`mm`, `yy`, `dd`) are also supported for boundary snapping:
 
 ```typescript

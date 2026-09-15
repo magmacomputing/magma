@@ -12,7 +12,7 @@ import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
-import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getISOWeekOfYear, getLC, getLI } from '#library/international.library.js';
+import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getISOWeekOfYear, getLC, getLI, type ResolvedLocaleInfo } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { getStashedGeo, coerceGeo } from '#library/mapper.library.js';
 import { Interval } from '#library/scheduling/interval.class.js';
@@ -1220,6 +1220,11 @@ export class Tempo {
 		return Tempo.config.registry;
 	}
 
+	/** Resolved cultural and regional locale information for the global locale via Intl.LocaleInfo */
+	static get intl(): ResolvedLocaleInfo {
+		return getLI(Tempo.#locale(Tempo.config.locale));
+	}
+
 	/** static Tempo properties getter */
 	static get properties(): Secure<string[]> {
 		return secure(getAccessors(Tempo)
@@ -1647,6 +1652,8 @@ export class Tempo {
 	 * @deprecated Use `dd` (Tempo canonical) or `zdt.day` instead. To be removed in v5.0.0.
 	 */
 	get day() { return this.toDateTime().day as t.dd }
+	/** Resolved cultural and regional locale information (firstDay, weekend, direction, etc.) via Intl.LocaleInfo */
+	get intl(): ResolvedLocaleInfo { return getLI(this.locale); }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
 	/** Minutes of the hour (0-59) */													get mi() { return this.toDateTime().minute as t.mi }
 	/** Seconds of the minute (0-59) */												get ss() { return this.toDateTime().second as t.ss }

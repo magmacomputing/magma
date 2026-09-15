@@ -97,8 +97,8 @@ Tempo.use(FormatModule);
 | `{mm}` | Zero-padded Month | `10` |
 | `{dd}` | Zero-padded Day | `24` |
 | `{wkd}` | Full Weekday Name | `Saturday` |
-| `{www}` | Short Weekday Name | `Sat` |
 | `{dow}` | ISO Day of Week (1=Mon, 7=Sun) | `6` |
+| `{intl.<prop>}` | Regional metadata via `Intl.LocaleInfo` (`{intl.region}`, `{intl.script}`, `{intl.firstDay}`, `{intl.direction}`, `{intl.hourCycle}`) | `US`, `Latn`, `7`, `ltr` |
 | `{doy}` | Day of Year (1-366) | `297` |
 | `{hh}` | Zero-padded Hour (24h) | `15` |
 | `{h24}` | Zero-padded Hour synonym (24h) | `15` |
@@ -115,6 +115,7 @@ Tempo.use(FormatModule);
 | `{mdy}` | Compact Date (mmddyyyy) | `10242026` |
 | `{ymd}` | Compact Date (yyyymmdd) | `20261024` |
 | `{hms}` | Compact Time (24h) | `153045` |
+| `{time}` | Time (24h, or localized format via `:locale`) | `15:30:45` |
 | `{nano}` | Nanosecond Timestamp | `1792843200000000000` |
 | `{tz}` | Time Zone ID | `Australia/Sydney` |
 | `{cal}` | Calendar System | `iso8601` |
@@ -132,7 +133,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:title` | String | Converts to titlecase | `{mon:locale:title}` → `Octobre` |
 | `:dots` | String | Injects periods (useful for abbreviations) | `{mer:lower:dots}` → `a.m.` |
 | `:space`| String | Injects a leading space (used by `{h12}` auto-meridiem) | `{h12:space:dots}` → `03:30 a.m.` |
-| `:locale` | String | Resolves term via localization dictionary | `{mon:locale}` → `octobre` |
+| `:locale` | Universal | Resolves localized term/month/weekday, adapts `{dow:locale}` to week start, adapts `{hh:locale}` to `hourCycle`, or transliterates numeric tokens into locale `numberingSystem` | `{mon:locale}` → `octobre`, `{dow:locale}` → `1`, `{hh:locale}` → `03` (in `en-US`), `{yyyy:locale}` → `٢٠٢٦` (in `ar-EG`) |
 | `:short` | String | Yields a short or abbreviated style | `{mon:short}` → `Oct` |
 | `:long` | String | Yields a full-length style | `{mon:long}` → `October` |
 | `:yy` | Compound Date | Truncates the internal year component to 2 digits | `{dmy:yy}` → `241026` |

@@ -175,23 +175,25 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(key as string);
 									const isTermUnit = isTerm || (isTermPlugin && !isStandard);
 									const val = ifNumeric(adjust);
+									const isIsoWeek = key === 'isoWeek' || key === 'isoweek';
 									return {
 										mutate: isTermUnit ? type : 'add',
 										offset: (type === 'subtract' && !isTermUnit && isNumber(val)) ? -val : val,
-										single: isTermUnit ? 'term' : singular(key),
+										single: isTermUnit ? 'term' : (isIsoWeek ? 'isoweek' : singular(key)),
 										term: isTerm ? (key as string) : (isTermPlugin ? key : undefined)
 									};
 								}
 
 								if (type === 'set' && isString(adjust) && (adjust === 'start' || adjust === 'mid' || adjust === 'end')) {
-									const unitKey = (enums.ELEMENT as any)[key] ?? key;
+									const isIsoWeek = key === 'isoWeek' || key === 'isoweek' || key === 'wy';
+									const unitKey = isIsoWeek ? 'isoweek' : ((enums.ELEMENT as any)[key] ?? key);
 									const isTermVal = (unitKey as string).startsWith('#');
 									const isTermPlugin = !isTermVal && isDefined(findTermPlugin(unitKey as string, state));
 									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(unitKey as string);
 									return {
 										mutate: adjust as any,
 										offset: adjust,
-										single: isTermVal || (isTermPlugin && !isStandard) ? 'term' : singular(unitKey as string),
+										single: isTermVal || (isTermPlugin && !isStandard) ? 'term' : (isIsoWeek ? 'isoweek' : singular(unitKey as string)),
 										term: isTermVal ? (unitKey as string) : (isTermPlugin ? unitKey : undefined)
 									};
 								}
@@ -201,24 +203,26 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 									case 'mid':
 									case 'end': {
 										const val = adjust?.toString() ?? '';
-										const unitVal = (enums.ELEMENT as any)[val] ?? val;
+										const isIsoWeek = val === 'isoWeek' || val === 'isoweek' || val === 'wy';
+										const unitVal = isIsoWeek ? 'isoweek' : ((enums.ELEMENT as any)[val] ?? val);
 										const isTermVal = (unitVal as string).startsWith('#');
 										const isTermPlugin = !isTermVal && isDefined(findTermPlugin(unitVal as string, state));
 										const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(unitVal as string);
 										return {
 											mutate: key as any,
 											offset: val,
-											single: isTermVal || (isTermPlugin && !isStandard) ? 'term' : singular(unitVal as string),
+											single: isTermVal || (isTermPlugin && !isStandard) ? 'term' : (isIsoWeek ? 'isoweek' : singular(unitVal as string)),
 											term: isTermVal ? (unitVal as string) : (isTermPlugin ? unitVal : undefined)
 										};
 									}
 									default: {
 										const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string, state));
 										const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(key as string);
+										const isIsoWeek = key === 'isoWeek' || key === 'isoweek';
 										return {
 											mutate: 'set',
 											offset: adjust,
-											single: isTerm || (isTermPlugin && !isStandard) ? 'term' : singular(key as string),
+											single: isTerm || (isTermPlugin && !isStandard) ? 'term' : (isIsoWeek ? 'isoweek' : singular(key as string)),
 											term: isTerm ? (key as string) : (isTermPlugin ? key : undefined)
 										};
 									}
@@ -247,7 +251,8 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 								case 'add:year': case 'add:month': case 'add:week': case 'add:day':
 								case 'add:hour': case 'add:minute': case 'add:second':
 								case 'add:millisecond': case 'add:microsecond': case 'add:nanosecond':
-									return currZdt.add({ [`${single}s`]: offset });
+								case 'add:isoweek':
+									return currZdt.add({ [`${single === 'isoweek' ? 'week' : single}s`]: offset });
 
 								case 'add:yy': case 'add:mm': case 'add:dd': case 'add:hh':
 								case 'add:mi': case 'add:ss': case 'add:ms': case 'add:us': case 'add:ns':
@@ -278,7 +283,16 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 
 								case 'start:year': return currZdt.with({ month: enums.MONTH.Jan, day: 1 }).startOfDay();
 								case 'start:month': return currZdt.with({ day: 1 }).startOfDay();
-								case 'start:week': return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Mon) }).startOfDay();
+								case 'start:isoweek':
+								case 'start:wy':
+									return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Mon) }).startOfDay();
+								case 'start:week': {
+									if (!state.config.localeInfo)
+										return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Mon) }).startOfDay();
+
+									const diff = (currZdt.dayOfWeek - this.intl.firstDay + 7) % 7;
+									return currZdt.subtract({ days: diff }).startOfDay();
+								}
 								case 'start:day': return currZdt.startOfDay();
 
 								case 'start:hour': case 'start:minute': case 'start:second':
@@ -287,7 +301,16 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 
 								case 'mid:year': return currZdt.with({ month: enums.MONTH.Jul, day: 1 }).startOfDay();
 								case 'mid:month': return currZdt.with({ day: Math.trunc(currZdt.daysInMonth / 2) }).startOfDay();
-								case 'mid:week': return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Thu) }).startOfDay();
+								case 'mid:isoweek':
+								case 'mid:wy':
+									return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Thu) }).startOfDay();
+								case 'mid:week': {
+									if (!state.config.localeInfo)
+										return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Thu) }).startOfDay();
+
+									const diff = (currZdt.dayOfWeek - this.intl.firstDay + 7) % 7;
+									return currZdt.subtract({ days: diff }).startOfDay().add({ days: 3 });
+								}
 								case 'mid:day': return currZdt.round({ smallestUnit: 'day', roundingMode: 'trunc' }).add({ hours: 12 });
 								case 'mid:hour': return currZdt.round({ smallestUnit: 'hour', roundingMode: 'trunc' }).add({ minutes: 30 });
 								case 'mid:minute': return currZdt.round({ smallestUnit: 'minute', roundingMode: 'trunc' }).add({ seconds: 30 });
@@ -298,7 +321,16 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 
 								case 'end:year': return currZdt.add({ years: 1 }).with({ month: enums.MONTH.Jan, day: 1 }).startOfDay().subtract({ nanoseconds: 1 });
 								case 'end:month': return currZdt.add({ months: 1 }).with({ day: 1 }).startOfDay().subtract({ nanoseconds: 1 });
-								case 'end:week': return currZdt.add({ days: (enums.WEEKDAY.Sun - currZdt.dayOfWeek) + 1 }).startOfDay().subtract({ nanoseconds: 1 });
+								case 'end:isoweek':
+								case 'end:wy':
+									return currZdt.add({ days: (enums.WEEKDAY.Sun - currZdt.dayOfWeek) + 1 }).startOfDay().subtract({ nanoseconds: 1 });
+								case 'end:week': {
+									if (!state.config.localeInfo)
+										return currZdt.add({ days: (enums.WEEKDAY.Sun - currZdt.dayOfWeek) + 1 }).startOfDay().subtract({ nanoseconds: 1 });
+
+									const diff = (currZdt.dayOfWeek - this.intl.firstDay + 7) % 7;
+									return currZdt.subtract({ days: diff }).startOfDay().add({ days: 7 }).subtract({ nanoseconds: 1 });
+								}
 
 								case 'end:day': case 'end:hour': case 'end:minute': case 'end:second':
 								case 'end:millisecond': case 'end:microsecond':

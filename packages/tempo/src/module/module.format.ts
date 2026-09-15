@@ -3,7 +3,7 @@ import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix } from '#library/number.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish } from '#library/assertion.library.js';
-import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage } from '#library/international.library.js';
+import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage, getLI, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
 import { isTempo, enums, Match, getRuntime, hasOwn, $Internal } from '#tempo/support';
@@ -243,11 +243,36 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'mmm': res = enums.MONTH.keyOf(zdt.month as any); break;
 			case 'dd': res = pad(zdt.day); break;
 			case 'day': res = zdt.day.toString(); break;
-			case 'dow': res = zdt.dayOfWeek.toString(); break;
+			case 'dow': {
+				if (modifiers.includes('locale')) {
+					const firstDay = isTempo(obj) ? (obj as any).intl.firstDay : getLI(config?.locale).firstDay;
+					const localDow = ((zdt.dayOfWeek - firstDay + 7) % 7) + 1;
+					res = localDow.toString();
+				} else {
+					res = zdt.dayOfWeek.toString();
+				}
+				break;
+			}
 			case 'doy': res = zdt.dayOfYear.toString(); break;
 			case 'wkd': res = enums.WEEKDAYS.keyOf(zdt.dayOfWeek as any); break;
 			case 'www': res = enums.WEEKDAY.keyOf(zdt.dayOfWeek as any); break;
-			case 'h24': case 'hh': res = pad(zdt.hour); break;
+			case 'h24': case 'hh': {
+				if (modifiers.includes('locale') && token === 'hh') {
+					const hc = isTempo(obj) ? (obj as any).intl.hourCycle : getLI(config?.locale).hourCycle;
+					if (hc === 'h12') {
+						res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12);
+					} else if (hc === 'h11') {
+						res = pad(zdt.hour % 12);
+					} else if (hc === 'h24') {
+						res = pad(zdt.hour === 0 ? 24 : zdt.hour);
+					} else {
+						res = pad(zdt.hour);
+					}
+				} else {
+					res = pad(zdt.hour);
+				}
+				break;
+			}
 			case 'h12': res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12); break;
 			case 'mer': res = zdt.hour >= 12 ? 'pm' : 'am'; break;
 			case 'mi': res = pad(zdt.minute); break;
@@ -269,6 +294,26 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				break;
 			}
 			case 'hms': res = `${pad(zdt.hour)}${pad(zdt.minute)}${pad(zdt.second)}`; break;
+			case 'time': {
+				if (modifiers.includes('locale')) {
+					const li = isTempo(obj) ? (obj as any).intl : getLI(config?.locale);
+					const is12 = li.hourCycle === 'h12' || li.hourCycle === 'h11';
+					const h = is12 ? pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || (li.hourCycle === 'h11' ? 0 : 12)) : pad(zdt.hour);
+					const m = pad(zdt.minute);
+					const s = pad(zdt.second);
+					if (is12) {
+						const dtOptions = config?.intl?.dateTimeFormat ?? {};
+						const mer = formatDayPeriod(zdt.epochMilliseconds, config?.locale, { ...dtOptions, hour: 'numeric', hour12: true, timeZone: tz })
+							|| (zdt.hour >= 12 ? 'pm' : 'am');
+						res = `${h}:${m}:${s} ${mer}`;
+					} else {
+						res = `${h}:${m}:${s}`;
+					}
+				} else {
+					res = `${pad(zdt.hour)}:${pad(zdt.minute)}:${pad(zdt.second)}`;
+				}
+				break;
+			}
 			case 'ts': res = ((config?.timeStamp ?? 'ms') === 'ss')
 				? Math.trunc(zdt.epochMilliseconds / 1000).toString()
 				: zdt.epochMilliseconds.toString(); break;
@@ -285,8 +330,14 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					res = isObject(termObj)
 						? (termObj.label ?? termObj.key ?? `{${token}}`)
 						: (termObj ?? `{${token}}`);
-				} else if (token.includes('.') && isTempo(obj)) {
-					res = resolveNamespaceToken(obj, token);
+				} else if (token.includes('.')) {
+					if (isTempo(obj)) {
+						res = resolveNamespaceToken(obj, token);
+					} else if (token.startsWith('intl.')) {
+						res = resolveNamespaceToken({ intl: getLI(config?.locale) }, token);
+					} else {
+						res = `{${token}}`;
+					}
 				} else {
 					res = `{${token}}`;
 				}
@@ -457,6 +508,15 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					break;
 				}
 			}
+		}
+
+		if (modifiers.includes('locale')) {
+			const li = isTempo(obj) ? (obj as any).intl : getLI(config?.locale);
+			if (li.numberingSystem && li.numberingSystem !== 'latn')
+				res = localizeDigits(res, li.numberingSystem);
+
+			if (li.direction === 'rtl' && (token === 'mon' || token === 'mmm' || token === 'wkd' || token === 'www' || token.startsWith('#') || token === 'time'))
+				res = isolateBidi(res, 'rtl');
 		}
 
 		return res;

@@ -101,6 +101,8 @@ export interface ResolvedLocaleInfo {
 	readonly locale?: Intl.Locale | undefined;
 	readonly baseName: string;
 	readonly language?: string | undefined;
+	readonly region?: string | undefined;
+	readonly script?: string | undefined;
 	readonly weekInfo: LocaleWeekInfo;
 	readonly firstDay: number;
 	readonly weekend: readonly number[];
@@ -189,12 +191,15 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 	const baseName = loc?.baseName ?? canonicalLocale(localeTag) ?? 'en-US';
 	const language = loc?.language ?? (baseName.split('-')[0]?.toLowerCase());
 
+	// Region & Script
+	const region = loc?.region
+		?? (isCallable((loc as any)?.maximize) ? (loc as any).maximize().region : undefined)
+		?? baseName.split('-').slice(1).find((subtag) => /^[a-zA-Z]{2}$|^\d{3}$/.test(subtag))?.toUpperCase();
+	const script = loc?.script
+		?? (isCallable((loc as any)?.maximize) ? (loc as any).maximize().script : undefined);
+
 	// 1. WeekInfo: firstDay & weekend (guards native getWeekInfo() and legacy .weekInfo)
 	const rawWeek = getPropOrCall(loc, 'getWeekInfo', 'weekInfo');
-	const region = (rawWeek?.firstDay != null && Array.isArray(rawWeek?.weekend))
-		? undefined
-		: (loc?.region ?? baseName.split('-').slice(1).find((subtag) => /^[a-zA-Z]{2}$|^\d{3}$/.test(subtag))?.toUpperCase());
-
 	const firstDay = rawWeek?.firstDay ?? getFallbackFirstDay(region);
 	const weekend = Array.isArray(rawWeek?.weekend)
 		? Object.freeze([...rawWeek.weekend])
@@ -232,6 +237,8 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 		locale: loc,
 		baseName,
 		language,
+		region,
+		script,
 		weekInfo,
 		firstDay,
 		weekend,
@@ -243,6 +250,43 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 		timeZones,
 	});
 });
+
+/**
+ * Cached digits map for numbering system transliteration.
+ * @internal
+ */
+const getDigitsMap = memoizeFunction((numberingSystem: string = 'latn'): readonly string[] | undefined => {
+	if (!numberingSystem || numberingSystem === 'latn' || !hasIntl('NumberFormat')) return undefined;
+	try {
+		const nf = new Intl.NumberFormat(`en-u-nu-${numberingSystem}`, { useGrouping: false });
+		const digits = Array.from({ length: 10 }, (_, i) => nf.format(i));
+		// If the engine did not actually support the numbering system, it falls back to '0'..'9'
+		if (digits[0] === '0' && digits[9] === '9') return undefined;
+		return Object.freeze(digits);
+	} catch {
+		return undefined;
+	}
+});
+
+/**
+ * Transliterates ASCII digits (0-9) within a string or number into the target numbering system (e.g. 'arab', 'deva').
+ * Returns the original string if the numbering system is 'latn' or unsupported.
+ */
+export function localizeDigits(value: string | number, numberingSystem: string = 'latn'): string {
+	const str = String(value);
+	if (!numberingSystem || numberingSystem === 'latn') return str;
+	const digits = getDigitsMap(numberingSystem);
+	if (!digits) return str;
+	return str.replace(/[0-9]/g, (d) => digits[+d] ?? d);
+}
+
+/**
+ * Wraps text in Unicode Bidirectional Isolates (\u2067 RLI ... \u2069 PDI) if direction is 'rtl'.
+ */
+export function isolateBidi(text: string, direction?: 'ltr' | 'rtl'): string {
+	if (!text || direction !== 'rtl') return text;
+	return `\u2067${text}\u2069`;
+}
 
 /**
  * International Cookbook  

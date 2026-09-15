@@ -13,6 +13,7 @@ import type { GeoOptions, GeoConfig } from '#library/mapper.library.js';
 import type { BoundedCache } from '#library/cache.class.js';
 
 export type { GeoOptions, GeoConfig };
+export type { ResolvedLocaleInfo, LocaleWeekInfo } from '#library/international.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
@@ -143,7 +144,7 @@ export type SetFields = {
 } & {
 	[K in 'date' | 'time' | 'event' | 'period']?: string;
 } & {
-	[K in 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
+	[K in 'year' | 'month' | 'week' | 'isoWeek' | 'isoweek' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
 }
 export type SlickKey = SLICK_KEYS[number];
 export type SlickOffset = { [K in SlickKey]?: string };
@@ -153,6 +154,8 @@ export type MutateShorthand = {
 	mm?: LooseUnion<mm | Mutate>;
 	wy?: LooseUnion<wy | Mutate>;
 	ww?: LooseUnion<wy | Mutate>;
+	isoWeek?: LooseUnion<number | Mutate>;
+	isoweek?: LooseUnion<number | Mutate>;
 	dd?: LooseUnion<dd | Mutate>;
 	hh?: LooseUnion<hh | Mutate>;
 	mi?: LooseUnion<mi | Mutate>;
@@ -233,7 +236,7 @@ export interface TempoFormatTokens {
 	// ── sub-second ────────────────────────────────────
 	ms: true; us: true; ns: true; ff: true;
 	// ── composite date/time ───────────────────────────
-	ymd: true; dmy: true; mdy: true; hms: true;
+	ymd: true; dmy: true; mdy: true; hms: true; time: true;
 	// ── timestamp / zone / calendar ───────────────────
 	ts: true; nano: true; tz: true; cal: true;
 	/** @deprecated Deprecated in v4.2.0; to be removed in v5.0.0. Use `tz` instead. */
@@ -367,6 +370,7 @@ export namespace Internal {
 		/** Precision to measure timestamps alias */						timestamp?: TimeStamp | undefined;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE | undefined;
 		/** regional date-parsing configuration */							monthDay?: MonthDay | boolean | undefined;
+		/** enable regional calendar boundaries (week start/end/mid) via Intl.LocaleInfo */ localeInfo?: boolean | undefined;
 		/** custom data augmentation registries */							registry?: {
 		/** Format string templates */ formats?: Property<any>;
 		/** Locale-specific configurations */ locales?: Record<string, Record<string, string | Function>>;

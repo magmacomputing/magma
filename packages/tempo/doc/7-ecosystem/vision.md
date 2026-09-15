@@ -6,7 +6,7 @@ The ECMAScript `Temporal` specification represents a monumental leap forward for
 
 Tempo's primary mission is to **humanize Temporal**: transforming low-level precision into an intuitive, expressive, and effortless developer experience.
 
-We believe that developer ergonomics should never compromise mathematical correctness. Tempo achieves this balance through an unyielding commitment to **strict ISO 8601 standards**—ensuring deterministic calendar arithmetic, unambiguous week calculations (where Monday is always day 1), and complete immutability—while providing a warm, fluent API that understands human intent.
+We believe that developer ergonomics should never compromise mathematical correctness. Tempo achieves this balance by providing a rock-solid **ISO 8601 baseline**—ensuring deterministic calendar arithmetic, guaranteed immutable safety, and explicit ISO escape hatches—paired with rich regional and cultural awareness (`Intl.LocaleInfo`) that understands human intent and local calendar conventions.
 
 ## Core Value Proposition
 
