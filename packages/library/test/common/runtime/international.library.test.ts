@@ -50,6 +50,11 @@ describe('International Library', () => {
 			expect(a.timeZone).toBeDefined();
 			expect(a.locale).toBeDefined();
 		});
+
+		it('should return a frozen resolved options object to prevent cache mutation', () => {
+			const res = getDateTimeFormat();
+			expect(Object.isFrozen(res)).toBe(true);
+		});
 	});
 
 	describe('getLI and hasIntl', () => {
@@ -123,6 +128,11 @@ describe('International Library', () => {
 			const noRegion = getLI('zh-Hans');
 			expect(noRegion.baseName).toBe('zh-Hans');
 			expect(noRegion.locale?.region).toBeUndefined();
+		});
+
+		it('should not derive region from extension subtags', () => {
+			const info = getLI('en-u-ca-hebrew');
+			expect(info.region).not.toBe('CA');
 		});
 	});
 
@@ -236,6 +246,13 @@ describe('International Library', () => {
 			expect(first).toEqual(['en-US']);
 			expect(second).toBe(first);
 		});
+
+		it('should return frozen array results to prevent cache mutation', () => {
+			const res = canonicalLocales('en_US.UTF-8');
+			expect(Object.isFrozen(res)).toBe(true);
+			const empty = canonicalLocales(undefined);
+			expect(Object.isFrozen(empty)).toBe(true);
+		});
 	});
 
 	describe('resolveLocale', () => {
@@ -299,6 +316,8 @@ describe('International Library', () => {
 
 		it('should cleanse strings correctly', () => {
 			expect(cleanLocaleTag('en_US.UTF-8')).toBe('en-US');
+			expect(cleanLocaleTag('.UTF-8')).toBeUndefined();
+			expect(cleanLocaleTag('@euro')).toBeUndefined();
 		});
 	});
 

@@ -181,12 +181,43 @@ describe('webtoken.library', () => {
 			await expect(signJWS(payload, 'secret', { alg: 'NONE' as any })).rejects.toThrow('Unsupported algorithm "NONE"');
 		});
 
-		it('rejects algorithm confusion attack where HS256 token is signed with RS256 public PEM', async () => {
+		it('refuses to use asymmetric PEM key as HMAC secret in signJWS', async () => {
 			const payload = { sub: 'attacker', role: 'admin' };
-			const confusedToken = await signJWS(payload, publicPem, { alg: 'HS256', typ: 'JWT' });
+			await expect(signJWS(payload, publicPem, { alg: 'HS256', typ: 'JWT' })).rejects.toThrow(
+				new TypeError('WebToken: Refusing to use asymmetric PEM key as HMAC secret')
+			);
+			await expect(signJWS(payload, privatePem, { alg: 'HS384', typ: 'JWT' })).rejects.toThrow(
+				new TypeError('WebToken: Refusing to use asymmetric PEM key as HMAC secret')
+			);
+			await expect(signJWS(payload, publicPem, { alg: 'HS512', typ: 'JWT' })).rejects.toThrow(
+				new TypeError('WebToken: Refusing to use asymmetric PEM key as HMAC secret')
+			);
+		});
 
-			expect(await verifyJWS(confusedToken, publicPem, 'RS256')).toBe(false);
-			expect(await verifyJWS(confusedToken, publicPem)).toBe(false);
+		it('rejects algorithm confusion attack in verifyJWS when public PEM is used as HMAC secret', async () => {
+			const payload = { sub: 'attacker', role: 'admin' };
+			const hmacToken = await signJWS(payload, 'symmetric-secret', { alg: 'HS256', typ: 'JWT' });
+
+			expect(await verifyJWS(hmacToken, publicPem, 'RS256')).toBe(false);
+			expect(await verifyJWS(hmacToken, publicPem)).toBe(false);
+		});
+
+		it('rejects tokens with missing, empty, or non-string alg header in verifyJWS', async () => {
+			const noAlgToken = makeToken({ typ: 'JWT' }, { sub: 'user_1' });
+			expect(await verifyJWS(noAlgToken, keyPair.publicKey)).toBe(false);
+
+			const emptyAlgToken = makeToken({ alg: '', typ: 'JWT' }, { sub: 'user_1' });
+			expect(await verifyJWS(emptyAlgToken, keyPair.publicKey)).toBe(false);
+
+			const nonStringAlgToken = makeToken({ alg: 123, typ: 'JWT' }, { sub: 'user_1' });
+			expect(await verifyJWS(nonStringAlgToken, keyPair.publicKey)).toBe(false);
+		});
+
+		it('normalizes headers.alg to RS256 in signJWS if alg is omitted from headers', async () => {
+			const tokenNoHeaderAlg = await signJWS({ sub: 'user_default' }, keyPair.privateKey, { typ: 'JWT' } as any);
+			const parsed = parseJWT(tokenNoHeaderAlg);
+			expect(parsed?.header.alg).toBe('RS256');
+			expect(await verifyJWS(tokenNoHeaderAlg, keyPair.publicKey)).toBe(true);
 		});
 	});
 });

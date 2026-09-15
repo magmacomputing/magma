@@ -104,6 +104,153 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(wyEnd.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')).toBe('2026-09-20 23:59:59');
 			expect(wyEnd.dow).toBe(7);
 		});
+
+		it('t.set({ isoWeek: number }) and t.set({ wy: number }) assign numeric ISO weeks across year boundaries', () => {
+			const t = new Tempo('2026-05-20T12:00:00Z'); // Wednesday of week 21, 2026
+			expect(t.wy).toBe(21);
+			expect(t.dow).toBe(3);
+
+			const tSetIso = t.set({ isoWeek: 10 });
+			expect(tSetIso.wy).toBe(10);
+			expect(tSetIso.dow).toBe(3); // Preserves weekday
+			expect(tSetIso.yw).toBe(2026);
+
+			const tSetWy = t.set({ wy: 35 });
+			expect(tSetWy.wy).toBe(35);
+			expect(tSetWy.dow).toBe(3);
+			expect(tSetWy.yw).toBe(2026);
+
+			const tSetLowercase = t.set({ isoweek: 5 });
+			expect(tSetLowercase.wy).toBe(5);
+			expect(tSetLowercase.dow).toBe(3);
+			expect(tSetLowercase.yw).toBe(2026);
+
+			// Across year boundary: 2025-12-30 is Tuesday of week 1 of 2026
+			const tBoundary = new Tempo('2025-12-30T10:00:00Z');
+			expect(tBoundary.yw).toBe(2026);
+			expect(tBoundary.wy).toBe(1);
+			const tTarget = tBoundary.set({ isoWeek: 25 });
+			expect(tTarget.yw).toBe(2026);
+			expect(tTarget.wy).toBe(25);
+			expect(tTarget.dow).toBe(2);
+
+			// Clamping to maxWeeks within the ISO year (2024 has 52 ISO weeks)
+			const t2024 = new Tempo('2024-06-12T12:00:00Z');
+			const tClamped = t2024.set({ isoWeek: 53 });
+			expect(tClamped.yw).toBe(2024);
+			expect(tClamped.wy).toBe(52);
+
+			// Preserves add:isoweek and subtract:isoweek as week-unit addition
+			const tAdd = t.add({ isoweek: 2 });
+			expect(tAdd.wy).toBe(23);
+			const tSub = t.subtract({ isoweek: 3 });
+			expect(tSub.wy).toBe(18);
+		});
+
+		it('t.set({ yw: number }), t.set({ isoYear: number }) assign ISO week-numbering year preserving wy, dow and time', () => {
+			// 2026-05-20T14:30:15Z is Wednesday (dow: 3) of week 21, ISO year 2026
+			const t = new Tempo('2026-05-20T14:30:15Z');
+			expect(t.yw).toBe(2026);
+			expect(t.wy).toBe(21);
+			expect(t.dow).toBe(3);
+
+			// Shift to ISO year 2028
+			const t2028 = t.set({ yw: 2028 });
+			expect(t2028.yw).toBe(2028);
+			expect(t2028.wy).toBe(21);
+			expect(t2028.dow).toBe(3);
+			expect(t2028.format('{hh}:{mi}:{ss}')).toBe('14:30:15');
+
+			// Alias isoYear
+			const tIsoYear = t.set({ isoYear: 2029 });
+			expect(tIsoYear.yw).toBe(2029);
+			expect(tIsoYear.wy).toBe(21);
+			expect(tIsoYear.dow).toBe(3);
+
+			// Alias isoyear
+			const tIsoyearLower = t.set({ isoyear: 2030 });
+			expect(tIsoyearLower.yw).toBe(2030);
+			expect(tIsoyearLower.wy).toBe(21);
+			expect(tIsoyearLower.dow).toBe(3);
+
+			// Clamping: 2020 has 53 ISO weeks; 2020-12-30 is Wednesday of week 53
+			const tWeek53 = new Tempo('2020-12-30T10:00:00Z');
+			expect(tWeek53.yw).toBe(2020);
+			expect(tWeek53.wy).toBe(53);
+			expect(tWeek53.dow).toBe(3);
+
+			// 2021 only has 52 ISO weeks -> clamps to week 52, preserves dow: 3
+			const tClampedYear = tWeek53.set({ yw: 2021 });
+			expect(tClampedYear.yw).toBe(2021);
+			expect(tClampedYear.wy).toBe(52);
+			expect(tClampedYear.dow).toBe(3);
+
+			// add:yw and subtract:yw
+			const tNextYw = t.add({ yw: 2 });
+			expect(tNextYw.yw).toBe(2028);
+			expect(tNextYw.wy).toBe(21);
+			expect(tNextYw.dow).toBe(3);
+
+			const tPrevYw = t.subtract({ yw: 1 });
+			expect(tPrevYw.yw).toBe(2025);
+			expect(tPrevYw.wy).toBe(21);
+			expect(tPrevYw.dow).toBe(3);
+		});
+
+		it('t.set({ yw: "start" | "mid" | "end" }) and aliases correctly snap to ISO year boundaries', () => {
+			const t = new Tempo('2026-05-20T14:30:15Z'); // ISO year 2026
+
+			// start:yw -> Monday of Week 1 at 00:00:00
+			const startYw = t.set({ yw: 'start' });
+			expect(startYw.yw).toBe(2026);
+			expect(startYw.wy).toBe(1);
+			expect(startYw.dow).toBe(1);
+			expect(startYw.format('{hh}:{mi}:{ss}')).toBe('00:00:00');
+
+			// Shorthand start: 'yw' and start: 'isoYear'
+			const startShorthand = t.set({ start: 'yw' });
+			expect(startShorthand.iso).toBe(startYw.iso);
+
+			const startIsoYear = t.set({ start: 'isoYear' });
+			expect(startIsoYear.iso).toBe(startYw.iso);
+
+			// mid:yw -> Thursday of Week 26 at 00:00:00
+			const midYw = t.set({ yw: 'mid' });
+			expect(midYw.yw).toBe(2026);
+			expect(midYw.wy).toBe(26);
+			expect(midYw.dow).toBe(4);
+			expect(midYw.format('{hh}:{mi}:{ss}')).toBe('00:00:00');
+
+			const midShorthand = t.set({ mid: 'yw' });
+			expect(midShorthand.iso).toBe(midYw.iso);
+
+			// end:yw -> Sunday of last week (Week 53 for 2026) at 23:59:59
+			const endYw = t.set({ yw: 'end' });
+			expect(endYw.yw).toBe(2026);
+			expect(endYw.wy).toBe(53);
+			expect(endYw.dow).toBe(7);
+			expect(endYw.format('{hh}:{mi}:{ss}')).toBe('23:59:59');
+			expect(endYw.format('{yyyy}-{mm}-{dd}')).toBe('2027-01-03');
+
+			const endShorthand = t.set({ end: 'yw' });
+			expect(endShorthand.iso).toBe(endYw.iso);
+
+			// end:yw for a 52-week year (2025) ends on Sunday of Week 52
+			const t2025 = new Tempo('2025-06-15T12:00:00Z');
+			const end2025 = t2025.set({ yw: 'end' });
+			expect(end2025.yw).toBe(2025);
+			expect(end2025.wy).toBe(52);
+			expect(end2025.dow).toBe(7);
+			expect(end2025.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')).toBe('2025-12-28 23:59:59');
+
+			// end:yw for a 53-week year (2020) ends on Sunday of Week 53
+			const t2020 = new Tempo('2020-06-15T12:00:00Z');
+			const end2020 = t2020.set({ yw: 'end' });
+			expect(end2020.yw).toBe(2020);
+			expect(end2020.wy).toBe(53);
+			expect(end2020.dow).toBe(7);
+			expect(end2020.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')).toBe('2021-01-03 23:59:59');
+		});
 	});
 
 	describe('3. Reference Stability, Region/Script & Zero Per-Instance Allocation', () => {
@@ -139,6 +286,14 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(Array.isArray(Tempo.intl.weekend)).toBe(true);
 			expect(typeof Tempo.intl.region).toBe('string');
 			expect(typeof Tempo.intl.script).toBe('string');
+		});
+
+		it('resolves subclass static intl for sandboxes created with Tempo.create()', () => {
+			const ArabicTempo = Tempo.create({ locale: 'ar-SA' });
+			expect(ArabicTempo.intl.region).toBe('SA');
+			expect(ArabicTempo.intl.script).toBe('Arab');
+			expect(ArabicTempo.intl.direction).toBe('rtl');
+			expect(ArabicTempo.intl).toBe(new ArabicTempo('2026-01-01').intl);
 		});
 	});
 
@@ -243,6 +398,43 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			// 2026-09-14 is Monday (ISO dow = 1)
 			const monDefault = new Tempo('2026-09-14T10:00:00Z', { locale: 'en-US' });
 			expect(monDefault.format('{dow:locale}')).toBe('2'); // Monday is day 2 in en-US
+		});
+
+		it('overrides week-start calculation for {dow:locale} with per-call locale options', () => {
+			// 2026-09-14 is Monday (ISO dow = 1)
+			// In en-US (Sunday firstDay = 7), Monday is day 2
+			// In en-GB (Monday firstDay = 1), Monday is day 1
+			const t = new Tempo('2026-09-14T10:00:00Z', { locale: 'en-US' });
+			expect(t.format('{dow:locale}')).toBe('2');
+			expect(t.format('{dow:locale}', { locale: 'en-GB' })).toBe('1');
+		});
+
+		it('overrides hour-cycle selection for {hh:locale} and {time:locale}', () => {
+			// 15:30:00 (3:30 PM)
+			const t = new Tempo('2026-09-15T15:30:00Z', { locale: 'en-US' });
+			expect(t.format('{hh:locale}')).toBe('03');
+			expect(t.format('{hh:locale}', { locale: 'fr-FR' })).toBe('15');
+
+			expect(t.format('{time:locale}')).toMatch(/^03:30:00\s+(pm|PM)$/i);
+			expect(t.format('{time:locale}', { locale: 'fr-FR' })).toBe('15:30:00');
+		});
+
+		it('overrides digit transliteration and BiDi isolation per-call', () => {
+			const t = new Tempo('2026-10-24T15:30:00Z', { locale: 'en-US' });
+			expect(t.format('{yyyy:locale}')).toBe('2026');
+			expect(t.format('{yyyy:locale}', { locale: 'ar-EG' })).toBe('٢٠٢٦');
+
+			const arFormatted = t.format('{mon:locale}', { locale: 'ar-EG' });
+			expect(arFormatted.startsWith('\u2067')).toBe(true);
+			expect(arFormatted.endsWith('\u2069')).toBe(true);
+		});
+
+		it('overrides {intl.*} namespace tokens per-call', () => {
+			const t = new Tempo('2026-09-16T10:00:00Z', { locale: 'en-US' });
+			expect(t.format('{intl.region}')).toBe('US');
+			expect(t.format('{intl.region}', { locale: 'ar-SA' })).toBe('SA');
+			expect(t.format('{intl.direction}', { locale: 'ar-SA' })).toBe('rtl');
+			expect(t.format('{intl.script}', { locale: 'ar-SA' })).toBe('Arab');
 		});
 
 		it('formats {intl.*} namespace tokens including region and script', () => {

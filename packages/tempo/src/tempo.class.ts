@@ -320,7 +320,7 @@ export class Tempo {
 	 * @param locale - Optional locale string or array of locale strings
 	 * @returns The canonical locale identifier
 	 */
-	static #locale = (locale?: string | string[]) => {
+	static #locale = (locale?: string | readonly string[]) => {
 		const global = Context.global;
 		const primaryLocale = canonicalLocales(locale)[0];
 
@@ -1222,7 +1222,7 @@ export class Tempo {
 
 	/** Resolved cultural and regional locale information for the global locale via Intl.LocaleInfo */
 	static get intl(): ResolvedLocaleInfo {
-		return getLI(Tempo.#locale(Tempo.config.locale));
+		return getLI(Tempo.#locale(this[$Internal]().config.locale));
 	}
 
 	/** static Tempo properties getter */
@@ -1869,7 +1869,7 @@ export class Tempo {
 		if (isDefined(evaluatedCal))
 			setProperty(this.#local.config, 'calendar', String(evaluatedCal));
 
-		let finalLocale: string | string[] | undefined;
+		let finalLocale: string | readonly string[] | undefined;
 		const rawLoc = options.locale ?? (options as any).Locale;
 		const explicitLoc = evaluate(rawLoc);
 		const evaluatedLoc = explicitLoc ?? evaluate(classState.config.locale);

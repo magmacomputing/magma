@@ -140,17 +140,20 @@ export type Until = (Options & { unit?: Unit }) | Unit
 export type Mutate = 'start' | 'mid' | 'end'
 export type TermOffset = { [K: `#${string}`]: number | string }
 export type SetFields = {
-	[K in Mutate]?: Unit | `#${string}`;
+	[K in Mutate]?: Unit | 'yw' | 'isoYear' | 'isoyear' | 'isoWeek' | 'isoweek' | `#${string}`;
 } & {
 	[K in 'date' | 'time' | 'event' | 'period']?: string;
 } & {
-	[K in 'year' | 'month' | 'week' | 'isoWeek' | 'isoweek' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
+	[K in 'year' | 'month' | 'week' | 'isoWeek' | 'isoweek' | 'isoYear' | 'isoyear' | 'yw' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
 }
 export type SlickKey = SLICK_KEYS[number];
 export type SlickOffset = { [K in SlickKey]?: string };
 
 export type MutateShorthand = {
 	yy?: LooseUnion<number | Mutate>;
+	yw?: LooseUnion<number | Mutate>;
+	isoYear?: LooseUnion<number | Mutate>;
+	isoyear?: LooseUnion<number | Mutate>;
 	mm?: LooseUnion<mm | Mutate>;
 	wy?: LooseUnion<wy | Mutate>;
 	ww?: LooseUnion<wy | Mutate>;
@@ -171,7 +174,7 @@ export type MutateSet = SetFields & MutateShorthand & {
 	calendar?: Temporal.CalendarLike;
 } & TermOffset | DateTime
 export type AddUnits = { [K in Unit]?: number };
-export type MutateAdd = AddUnits & { [K in Element]?: number } & TermOffset | DateTime
+export type MutateAdd = AddUnits & { [K in Element | 'yw' | 'isoYear' | 'isoyear' | 'isoWeek' | 'isoweek']?: number } & TermOffset | DateTime
 
 export type Modifier = '=' | '-' | '+' | '<' | '<=' | '-=' | '>' | '>=' | '+=' | 'this' | 'next' | 'prev' | 'last' | 'first' | undefined
 export type Relative = 'ago' | 'hence' | 'prior' | 'from now'
@@ -313,7 +316,7 @@ export interface FormatOptions extends Intl.DateTimeFormatOptions {
 	/** Calendar system for formatting */
 	calendar?: string;
 	/** Locale or array of locales for formatting */
-	locale?: string | string[];
+	locale?: string | readonly string[];
 }
 
 export interface IntlOptions {
@@ -356,7 +359,7 @@ export namespace Internal {
 		/** convenience error handling policy preset */					error?: 'throw' | 'catch' | 'silent' | 'log' | undefined;
 		/** Temporal timeZone */																timeZone?: Evaluable<Temporal.TimeZoneLike> | undefined;
 		/** Temporal calendar */																calendar?: Evaluable<Temporal.CalendarLike> | undefined;
-		/** locale (e.g. en-AU) */															locale?: Evaluable<string | string[]> | undefined;
+		/** locale (e.g. en-AU) */															locale?: Evaluable<string | readonly string[]> | undefined;
 		/** pivot year for two-digit years */										pivot?: number | undefined;
 		/** hemisphere for term.qtr or term.szn */							sphere?: Evaluable<enums.COMPASS | undefined> | undefined;
 		/** Geolocation coordinates configuration for location-aware plugins */ geo?: GeoOptions | undefined;
@@ -472,7 +475,7 @@ export namespace Internal {
 	export interface Config extends Omit<OptionsKeep, "registry" | "timeZone" | "calendar" | "locale" | "sphere" | "intl" | "planner"> {
 		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
 		/** Temporal calendar */																calendar: Temporal.CalendarLike;
-		/** locale (e.g. en-AU) */															locale: string | string[];
+		/** locale (e.g. en-AU) */															locale: string | readonly string[];
 		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
 		/** Geolocation coordinates configuration */						geo?: GeoConfig | undefined;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions | undefined;

@@ -111,7 +111,12 @@ export const verifyJWS = async (
 
 		const { header, signature, raw } = parsed;
 		const signedData = `${raw.header}.${raw.payload}`;
-		const alg = header.alg ?? 'RS256';
+		const alg = header.alg;
+
+		if (!isString(alg) || !alg) {
+			logger.error('VERIFY_ERROR: Missing or invalid "alg" header parameter');
+			return false;
+		}
 
 		if (expectedAlg && alg !== expectedAlg) {
 			logger.error(`VERIFY_ERROR: Algorithm mismatch. Expected "${expectedAlg}", got "${alg}"`);
@@ -173,11 +178,12 @@ export const signJWS = async (
 		throw new TypeError('WebToken: Payload must be a non-null object');
 
 	try {
-		const header64 = toBase64Url(JSON.stringify(headers));
+		const alg = headers?.alg ?? 'RS256';
+		const normalizedHeaders: JWSHeader = { typ: 'JWT', ...headers, alg };
+		const header64 = toBase64Url(JSON.stringify(normalizedHeaders));
 		const payload64 = toBase64Url(serializedPayload);
 
 		const unsignedToken = `${header64}.${payload64}`;
-		const alg = headers.alg ?? 'RS256';
 
 		let signatureBytes: Uint8Array;
 
@@ -188,6 +194,9 @@ export const signJWS = async (
 
 			signatureBytes = await signData(unsignedToken, privateKey, keys.SignKey);
 		} else if (alg === 'HS256' || alg === 'HS384' || alg === 'HS512') {
+			if (isString(keyOrSecret) && keyOrSecret.includes('-----BEGIN ') && keyOrSecret.includes('KEY-----'))
+				throw new TypeError('WebToken: Refusing to use asymmetric PEM key as HMAC secret');
+
 			const hashAlg = alg === 'HS512' ? 'SHA-512' : alg === 'HS384' ? 'SHA-384' : 'SHA-256';
 			signatureBytes = await signHmac(
 				unsignedToken,

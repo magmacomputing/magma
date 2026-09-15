@@ -29,8 +29,10 @@ export const cleanLocaleTag = (tag?: unknown): string | undefined => {
 	const trimmed = tag.trim();
 	if (isEmpty(trimmed)) return undefined;
 	const stripped = trimmed.split(RE_LOCALE_CLEANSE)[0];
+
+	if (isEmpty(stripped)) return undefined;
 	return stripped.replace(RE_UNDERSCORE, '-');
-};
+}
 
 /** memoized helper for Intl.RelativeTimeFormat instances */
 const getRTF = memoizeFunction((locale?: LocaleInput, options?: Intl.RelativeTimeFormatOptions) => {
@@ -192,9 +194,14 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 	const language = loc?.language ?? (baseName.split('-')[0]?.toLowerCase());
 
 	// Region & Script
+	const regionSubtags: string[] = [];
+	for (const sub of baseName.split('-').slice(1)) {
+		if (sub.length === 1) break;
+		regionSubtags.push(sub);
+	}
 	const region = loc?.region
 		?? (isCallable((loc as any)?.maximize) ? (loc as any).maximize().region : undefined)
-		?? baseName.split('-').slice(1).find((subtag) => /^[a-zA-Z]{2}$|^\d{3}$/.test(subtag))?.toUpperCase();
+		?? regionSubtags.find((subtag) => /^[a-zA-Z]{2}$|^\d{3}$/.test(subtag))?.toUpperCase();
 	const script = loc?.script
 		?? (isCallable((loc as any)?.maximize) ? (loc as any).maximize().script : undefined);
 
@@ -293,6 +300,13 @@ export function isolateBidi(text: string, direction?: 'ltr' | 'rtl'): string {
  * (using 'Intl' namespace objects)
  */
 
+const FALLBACK_DTF_OPTIONS: Readonly<Intl.ResolvedDateTimeFormatOptions> = Object.freeze({
+	locale: 'en-US',
+	calendar: 'iso8601',
+	numberingSystem: 'latn',
+	timeZone: 'UTC'
+} as Intl.ResolvedDateTimeFormatOptions);
+
 /**
  * Retrieves the system's current TimeZone, Calendar, and Locale information
  * by resolving the default `Intl.DateTimeFormat` options.
@@ -303,8 +317,10 @@ export function isolateBidi(text: string, direction?: 'ltr' | 'rtl'): string {
  * const { timeZone, locale } = getDateTimeFormat();
  * ```
  */
-export const getDateTimeFormat = memoizeFunction(() => {
-	return getDTF().resolvedOptions();
+export const getDateTimeFormat = memoizeFunction((): Readonly<Intl.ResolvedDateTimeFormatOptions> => {
+	return (hasIntl('DateTimeFormat'))
+		? Object.freeze(getDTF().resolvedOptions())
+		: FALLBACK_DTF_OPTIONS;
 });
 
 /**
@@ -344,11 +360,10 @@ const canonicalLocale = memoizeFunction((locale?: LocaleInput) => {
  * canonicalLocales(['en_US.UTF-8', 'fr-FR', 'invalid!tag']); // ['en-US', 'fr-FR']
  * ```
  */
-export const canonicalLocales = memoizeFunction((locales?: unknown): string[] => {
-	if (!isDefined(locales)) return [];
-	return asArray(locales)
+export const canonicalLocales = memoizeFunction((locales?: unknown): readonly string[] => {
+	return Object.freeze(asArray(locales)
 		.map(l => canonicalLocale(l as LocaleInput))
-		.filter(Boolean) as string[];
+		.filter(Boolean) as string[]);
 });
 
 /**
@@ -364,7 +379,7 @@ export const canonicalLocales = memoizeFunction((locales?: unknown): string[] =>
  * resolveLocale(['invalid']); // undefined
  * ```
  */
-export function resolveLocale(locales?: unknown): string | string[] | undefined {
+export function resolveLocale(locales?: unknown): string | readonly string[] | undefined {
 	const resolved = canonicalLocales(locales);
 	if (resolved.length === 0) return undefined;
 	return resolved.length === 1 ? resolved[0] : resolved;
@@ -584,13 +599,16 @@ type result = { weekOfYear: number, yearOfWeek: number };
  * ```
  */
 export function getISOWeekOfYear(zdt: input): result {
-	if (isDefined(zdt.weekOfYear) && isDefined(zdt.yearOfWeek))
+	const calId = (zdt as any).calendarId ?? (zdt as any).calendar?.id;
+	if (calId === 'iso8601' && isDefined(zdt.weekOfYear) && isDefined(zdt.yearOfWeek))
 		return { weekOfYear: zdt.weekOfYear, yearOfWeek: zdt.yearOfWeek };
 
 	// Since Temporal.ZonedDateTime is passed in, we can safely extract the PlainDate
 	// to avoid crossing daylight saving boundaries when adding/subtracting days.
 	// Normalize to ISO 8601 calendar because properties like dayOfYear/dayOfWeek are calendar-dependent.
 	const pd = (isFunction(zdt.toPlainDate) ? zdt.toPlainDate() : Temporal.PlainDate.from(zdt)).withCalendar('iso8601');
+	if (isDefined(pd.weekOfYear) && isDefined(pd.yearOfWeek))
+		return { weekOfYear: pd.weekOfYear, yearOfWeek: pd.yearOfWeek };
 
 	// ISO week date algorithm: weeks start on Monday, and the first week of the year contains the first Thursday.
 	// Find the nearest Thursday to the current date.

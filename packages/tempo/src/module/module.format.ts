@@ -211,6 +211,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		}
 	}
 
+	const li = getLI(config?.locale);
+
 	const result = template.replace(new RegExp(Match.formatBraces, 'g'), (_match: string, fullToken: string) => {
 		let [token, ...modifiers] = fullToken.split(':');
 		if (token === 'tzd') token = 'tz';											// @deprecated, will remove in v5.0.0
@@ -245,7 +247,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'day': res = zdt.day.toString(); break;
 			case 'dow': {
 				if (modifiers.includes('locale')) {
-					const firstDay = isTempo(obj) ? (obj as any).intl.firstDay : getLI(config?.locale).firstDay;
+					const firstDay = li.firstDay;
 					const localDow = ((zdt.dayOfWeek - firstDay + 7) % 7) + 1;
 					res = localDow.toString();
 				} else {
@@ -258,7 +260,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'www': res = enums.WEEKDAY.keyOf(zdt.dayOfWeek as any); break;
 			case 'h24': case 'hh': {
 				if (modifiers.includes('locale') && token === 'hh') {
-					const hc = isTempo(obj) ? (obj as any).intl.hourCycle : getLI(config?.locale).hourCycle;
+					const hc = li.hourCycle;
 					if (hc === 'h12') {
 						res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12);
 					} else if (hc === 'h11') {
@@ -296,13 +298,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'hms': res = `${pad(zdt.hour)}${pad(zdt.minute)}${pad(zdt.second)}`; break;
 			case 'time': {
 				if (modifiers.includes('locale')) {
-					const li = isTempo(obj) ? (obj as any).intl : getLI(config?.locale);
 					const is12 = li.hourCycle === 'h12' || li.hourCycle === 'h11';
 					const h12 = zdt.hour % 12;
 					const h = li.hourCycle === 'h11' ? pad(h12)
 						: li.hourCycle === 'h12' ? pad(h12 || 12)
-						: li.hourCycle === 'h24' ? pad(zdt.hour || 24)
-						: pad(zdt.hour);
+							: li.hourCycle === 'h24' ? pad(zdt.hour || 24)
+								: pad(zdt.hour);
 					const m = pad(zdt.minute);
 					const s = pad(zdt.second);
 					if (is12) {
@@ -335,10 +336,10 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						? (termObj.label ?? termObj.key ?? `{${token}}`)
 						: (termObj ?? `{${token}}`);
 				} else if (token.includes('.')) {
-					if (isTempo(obj)) {
+					if (token.startsWith('intl.')) {
+						res = resolveNamespaceToken({ intl: li }, token);
+					} else if (isTempo(obj)) {
 						res = resolveNamespaceToken(obj, token);
-					} else if (token.startsWith('intl.')) {
-						res = resolveNamespaceToken({ intl: getLI(config?.locale) }, token);
 					} else {
 						res = `{${token}}`;
 					}
@@ -502,11 +503,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						const width = parseInt(mod, 10);
 						const strVal = String(res);
 						if (width > 0 && /^-?\d+$/.test(strVal)) {
-							if (strVal.startsWith('-')) {
-								res = '-' + strVal.slice(1).padStart(Math.max(1, width - 1), '0');
-							} else {
-								res = strVal.padStart(width, '0');
-							}
+							res = (strVal.startsWith('-'))
+								? '-' + strVal.slice(1).padStart(Math.max(1, width - 1), '0')
+								: strVal.padStart(width, '0');
 						}
 					}
 					break;
@@ -515,7 +514,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		}
 
 		if (modifiers.includes('locale')) {
-			const li = isTempo(obj) ? (obj as any).intl : getLI(config?.locale);
 			if (li.numberingSystem && li.numberingSystem !== 'latn')
 				res = localizeDigits(res, li.numberingSystem);
 

@@ -238,7 +238,7 @@ export type ELEMENT = ValueOf<typeof ELEMENT>
 export type Element = KeyOf<typeof ELEMENT>
 
 /** allowed mutation keys for .set() and .add() */
-const mutationKeys = [...elementKeys, 'isoWeek', 'isoweek', 'event', 'period', 'clock', 'time', 'date', 'start', 'mid', 'end'] as const;
+const mutationKeys = [...elementKeys, 'yw', 'isoYear', 'isoyear', 'isoWeek', 'isoweek', 'event', 'period', 'clock', 'time', 'date', 'start', 'mid', 'end'] as const;
 export const MUTATION = enumify(mutationKeys, false);
 export type MUTATION = ValueOf<typeof MUTATION>
 export type Mutation = KeyOf<typeof MUTATION>

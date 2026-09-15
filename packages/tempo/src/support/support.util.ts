@@ -312,8 +312,8 @@ const _generateLocalizedSnippets = memoizeFunction((localeKey: string) => {
 		events,
 		monthMap,
 		weekdayMap
-	};
+	}
 });
 
 /** @internal generate localized snippets for a locale or list of locales */
-export const generateLocalizedSnippets = (locales: string | string[]) => _generateLocalizedSnippets(asArray(locales).join(','));
+export const generateLocalizedSnippets = (locales: string | readonly string[]) => _generateLocalizedSnippets(asArray(locales).join(','));

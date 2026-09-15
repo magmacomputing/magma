@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added opt-in `localeInfo: boolean` configuration flag (`Tempo.init({ localeInfo: true })` or per-instance options), activating culturally authentic calendar arithmetic while strictly preserving Tempo's ISO 8601 baseline by default.
   - **Adaptive Week Boundaries**: When `localeInfo: true` is active, `t.set({ week: 'start' })`, `t.set({ week: 'mid' })`, and `t.set({ week: 'end' })` adapt dynamically to the active locale's week boundary (e.g. Sunday in `en-US`, Monday in `en-GB`, Saturday in `ar-SA`).
   - **Dedicated ISO Invariant Escape Hatches**: Added `isoWeek` and `wy` mutation targets (`t.set({ isoWeek: 'start' })`, `t.set({ wy: 'start' })`, `t.set({ isoWeek: 'end' })`, etc.) guaranteeing strict ISO 8601 Monday-start snapping regardless of `localeInfo` settings.
+  - **Numeric ISO Week Assignment (`set:isoweek`, `set:isoWeek`, `set:wy`)**: Added support for setting numeric ISO-week values (`t.set({ isoWeek: 25 })`, `t.set({ wy: 10 })`, `t.set({ isoweek: 5 })`), preserving day of week (`dow`), time, and ISO year of week (`yw`), while gracefully clamping to `maxWeeks` (52 or 53) within the ISO year.
+  - **ISO Week-Numbering Year Mutation (`set:yw`, `set:isoYear`, `add:yw`, `subtract:yw`)**: Added full support for ISO week-numbering year assignment and arithmetic via `yw`, `isoYear`, and `isoyear`. Preserves ISO week-of-year (`wy`, clamped to `maxWeeks`), weekday (`dow`), calendar, timezone, and wall-clock time without crossing DST boundaries. Added ISO year boundary snapping (`t.set({ yw: 'start' })` / `t.set({ yw: 'mid' })` / `t.set({ yw: 'end' })`).
   - **Locale Day-of-Week & Intl Format Tokens**:
     - Added `{dow:locale}` modifier yielding the 1-based day of week relative to the locale's week start (`1` on Sunday for `en-US`), evaluated directly from `t.intl.firstDay`.
     - Added `{hh:locale}` adapting hour formatting to the region's `hourCycle` (12h in `h12` regions like `en-US`, 24h in `h23` regions like `fr-FR`), fully composable with `:raw` (`{hh:locale:raw}`).
@@ -39,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated `engine.normalizer.ts` (`getAliasContext`) to evaluate `state.config.geo?.sphere` before falling back to `state.config.sphere` and `Default.sphere`, aligning functional alias contexts with instance-level `this.sphere` resolution.
 - **Unpadded Day Format Token Retention**:
   - Retained `{day}` in `TempoFormatTokens` as a first-class format token for string formatting unpadded calendar day numbers (`1..31`), preserving presentation DSL utility while de-scoping duplicate instance getters.
+
+### Fixed
+- **ISO 8601 Calendar Invariance in `getISOWeekOfYear`**:
+  - Normalized date calculations through the `iso8601` calendar to guarantee consistent ISO week and year numbering across non-ISO calendars (such as the default `'gregory'` calendar).
 
 ### Deprecated
 - **Redundant Instance Getters (Slated for Removal in v5.0.0)**:

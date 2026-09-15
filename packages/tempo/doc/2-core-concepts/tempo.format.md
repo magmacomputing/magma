@@ -97,6 +97,7 @@ Tempo.use(FormatModule);
 | `{mm}` | Zero-padded Month | `10` |
 | `{dd}` | Zero-padded Day | `24` |
 | `{wkd}` | Full Weekday Name | `Saturday` |
+| `{www}` | Short Weekday Name | `Sat` |
 | `{dow}` | ISO Day of Week (1=Mon, 7=Sun) | `6` |
 | `{intl.<prop>}` | Regional metadata via `Intl.LocaleInfo` (`{intl.region}`, `{intl.script}`, `{intl.firstDay}`, `{intl.direction}`, `{intl.hourCycle}`) | `US`, `Latn`, `7`, `ltr` |
 | `{doy}` | Day of Year (1-366) | `297` |
