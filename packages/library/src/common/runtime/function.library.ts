@@ -1,5 +1,5 @@
 import { secure } from '#library/proxy.library.js';
-import { isInteger, isFunction, isReference, isMap, isSet } from '#library/assertion.library.js';
+import { isInteger, isFunction, isReference, isMap, isSet, isLocale } from '#library/assertion.library.js';
 import type { Property } from '#library/type.library.js';
 
 // https://medium.com/codex/currying-in-typescript-ca5226c85b85
@@ -53,6 +53,7 @@ function serialize(val: any, seen = new WeakSet()): string {
 			if (seen.has(value)) return '<Circular>';
 			seen.add(value);
 
+			if (isLocale(value)) return value.toString();
 			if (isMap(value)) return `map:[${Array.from(value.entries()).map(e => serialize(e, seen)).sort().join(',')}]`;
 			if (isSet(value)) return `set:[${Array.from(value).map(v => serialize(v, seen)).sort().join(',')}]`;
 		}

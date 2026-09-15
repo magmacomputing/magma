@@ -1,12 +1,12 @@
 import '#library/temporal.polyfill.js';
 import { enumify } from '#library/enumerate.library.js';
 import { asArray } from '#library/coercion.library.js';
-import { getDateTimeFormat, getHemisphere, canonicalLocale } from '#library/international.library.js';
+import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, isEnglish } from '#library/international.library.js';
 import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig } from '#library/symbol.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { asType } from '#library/type.library.js';
-import { isString, isObject, isUndefined, isDefined, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
+import { isString, isObject, isPlainObject, isUndefined, isDefined, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
@@ -310,14 +310,17 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 					setProperty(state.config, 'locale', optVal);
 					break;
 				}
-				const resolvedLocales = asArray(arg.value).map(l => canonicalLocale(String(l))).filter(Boolean) as string[];
-				if (resolvedLocales.length > 0) {
-					const finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
+				const finalLocale = resolveLocale(arg.value);
+				if (finalLocale) {
 					setProperty(state.config, 'locale', finalLocale);
-					if (resolvedLocales.every(locale => locale.split('-')[0] === 'en')) clearLocalization();
+					if (isEnglish(finalLocale)) clearLocalization();
 				}
 				break;
 			}
+
+			case 'localeInfo':
+				setProperty(state.config, 'localeInfo', Boolean(arg.value));
+				break;
 
 			case 'discovery':
 				setProperty(state.config, 'discovery', arg.value);
@@ -513,7 +516,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 			case 'plugins':
 				/** @deprecated Passing configuration dictionaries in 'plugins' is deprecated. Use 'pluginOptions' instead. */
-				if (isObject(arg.value) && !Array.isArray(arg.value) && !isFunction(arg.value) && !('install' in arg.value) && !('key' in arg.value)) {
+				if (isPlainObject(arg.value) && !('install' in arg.value) && !('key' in arg.value)) {
 					const existing = state.config.plugins ?? {};
 					setProperty(state.config, 'plugins', { ...existing, ...arg.value });
 					const existingOpts = state.config.pluginOptions ?? {};
@@ -530,8 +533,8 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 	const locale = (isFunction(state.config.locale) && state.config?.scope !== 'local') ? undefined : evaluate(state.config.locale);
 	if (locale) {
-		const locales = asArray(locale).map(l => isString(l) ? l : undefined).filter(Boolean) as string[];
-		if (locales.length > 0 && !locales.every(l => l.split('-')[0] === 'en')) {
+		const locales = canonicalLocales(locale);
+		if (locales.length > 0 && !isEnglish(locales)) {
 			const { snippets, monthMap, weekdayMap, events } = generateLocalizedSnippets(locales);
 			state.parse.monthMap = monthMap;
 			state.parse.weekdayMap = weekdayMap;

@@ -1,4 +1,5 @@
 import { ownEntries } from '#library/primitive.library.js';
+import { isSymbol } from '#library/assertion.library.js';
 import { Token } from '#tempo/support/support.symbol.js';
 import { resolveLayoutOrderPure } from './engine.resolver.js';
 import type * as t from '../tempo.type.js';
@@ -64,7 +65,7 @@ export function resolveLayoutClassificationOrder(layout: Record<symbol, string>,
 	const seen = new Set<symbol>();
 
 	preferred.forEach(name => {
-		const isSym = typeof name === 'symbol';
+		const isSym = isSymbol(name);
 		const description = isSym ? (name.description ?? '') : '';
 		const alias = isSym ? TOKEN_ALIAS.get(name) : undefined;
 

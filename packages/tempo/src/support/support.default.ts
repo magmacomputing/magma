@@ -234,6 +234,7 @@ export const Default = secure({
 	/** default locale if not specified */										locale: getDateTimeFormat().locale,
 	/** hemisphere for term.qtr or term.szn */								sphere: undefined,
 	/** regional date-parsing configuration */								monthDay: MONTH_DAY,
+	/** enable regional calendar boundaries (week start/end/mid) via Intl.LocaleInfo */ localeInfo: false,
 	/** internationalization configuration */									intl: IntlDefault,
 	/** plugin options and configurations */									pluginOptions: {},
 	/** global data augmentation registries */								registry: {

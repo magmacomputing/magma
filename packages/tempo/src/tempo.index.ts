@@ -56,6 +56,6 @@ export type * from '#tempo/duration';
 export type * from '#tempo/term';
 
 export { defineConfig } from './config/config.define.js';
-export { Interval } from './interval.class.js';
+export { Interval } from './interval.index.js';
 export * from './tempo.class.js';
 export default Tempo;

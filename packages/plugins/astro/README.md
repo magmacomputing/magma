@@ -63,7 +63,7 @@ When resolving the `astro` / `astronomy` / `equinox` / `solstice` terms, the plu
 
 ## Documentation
 
-For full API reference, advanced configuration, and detailed explanations of the astronomical calculations, please visit the official **[Astro Plugin Documentation ↗](https://magmacomputing.github.io/magma/doc/9-plugins/astro.index.html)**.
+For full API reference, advanced configuration, and detailed explanations of the astronomical calculations, please visit the official 📖 **[Astro Plugin Documentation](https://magmacomputing.github.io/magma/doc/9-plugins/astro.index.html)**.
 
 ## Licensing
 

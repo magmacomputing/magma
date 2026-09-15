@@ -8,7 +8,7 @@ import { asArray, asError } from '#library/coercion.library.js';
 import { isSymbol, isUndefined, isDefined, isString, isNullish, isObject } from '#library/assertion.library.js';
 import { ownEntries, unwrap } from '#library/primitive.library.js';
 import { memoizeFunction } from '#library/function.library.js';
-import { getDTF } from '#library/international.library.js';
+import { getDTF, getLC } from '#library/international.library.js';
 import { getRuntime } from './support.runtime.js';
 import type * as t from '../tempo.type.js';
 
@@ -155,7 +155,7 @@ export const SCHEMA = [
 ] as const;
 
 /** @internal get the largest defined unit from a list of ranges */
-export function getLargestUnit(list: any[]): string {
+export function getLargestUnit(list: readonly any[]): string {
 	for (const [unit] of SCHEMA) {
 		if (list.some(r => r[unit] !== undefined)) return unit;
 	}
@@ -167,7 +167,7 @@ export function getLargestUnit(list: any[]): string {
  * @param value The user-supplied value to normalize
  * @param base The base/default value (e.g., Tempo.MONTH_DAY)
  */
-export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthDay): t.MonthDay {
+export function resolveMonthDay(value: t.MonthDay | boolean | Readonly<t.MonthDay> = {}, base: t.MonthDay): t.MonthDay {
 	const isExplicit = isBoolean(value) || isDefined((value as t.MonthDay).active);
 	if (isBoolean(value)) value = { active: value } as t.MonthDay;
 	const warned = new Set<string>();
@@ -180,28 +180,24 @@ export function resolveMonthDay(value: t.MonthDay | boolean = {}, base: t.MonthD
 	const tzs: Record<string, string[]> = { ...base.timezones } as any;
 	if (value.timezones) {
 		Object.entries(value.timezones).forEach(([k, v]) => {
-			try {
-				const normalized = new Intl.Locale(k).baseName;
-				tzs[normalized] = [...new Set([...asArray(tzs[normalized] || []), ...asArray(v)])];
-			} catch {
-				tzs[k] = [...new Set([...asArray(tzs[k] || []), ...asArray(v)])];
-			}
+			const normalized = getLC(k)?.baseName ?? k;
+			tzs[normalized] = [...new Set([...asArray(tzs[normalized] || []), ...asArray(v)])];
 		});
 	}
 
-	// 3. Resolve to Internal Format
 	const resolvedLocales = localesList.map(mdy => {
-		const intl = new Intl.Locale(mdy);
-		const tzs_intl = (intl as any).getTimeZones?.() ?? [];
-		const fallback = tzs[intl.baseName] ?? [];
+		const intl = getLC(mdy);
+		const baseName = intl?.baseName ?? mdy;
+		const tzs_intl = (intl as any)?.getTimeZones?.() ?? [];
+		const fallback = tzs[baseName] ?? [];
 
-		if (tzs_intl.length === 0 && fallback.length === 0 && !warned.has(intl.baseName)) {
-			warned.add(intl.baseName);
+		if (tzs_intl.length === 0 && fallback.length === 0 && !warned.has(baseName)) {
+			warned.add(baseName);
 			// Optionally: warn here if needed
 		}
 
 		return {
-			locale: intl.baseName,
+			locale: baseName,
 			timeZones: tzs_intl.length > 0 ? tzs_intl : fallback
 		}
 	});
@@ -316,8 +312,8 @@ const _generateLocalizedSnippets = memoizeFunction((localeKey: string) => {
 		events,
 		monthMap,
 		weekdayMap
-	};
+	}
 });
 
 /** @internal generate localized snippets for a locale or list of locales */
-export const generateLocalizedSnippets = (locales: string | string[]) => _generateLocalizedSnippets(asArray(locales).join(','));
+export const generateLocalizedSnippets = (locales: string | readonly string[]) => _generateLocalizedSnippets(asArray(locales).join(','));

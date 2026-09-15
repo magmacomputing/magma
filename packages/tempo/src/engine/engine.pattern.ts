@@ -3,6 +3,7 @@
 // Responsible for snippet/layout expansion, regex compilation, and pattern caching
 
 import { isRegExp, isNullish, isEmpty, isString } from '#library/assertion.library.js';
+import { asArray } from '#library/coercion.library.js';
 import { ownEntries, ownKeys } from '#library/primitive.library.js';
 import { Match, Snippet, Layout } from '../support/support.default.js';
 import { getSymbol, hasOwn, logWarn, logError } from '../support/support.util.js';
@@ -134,8 +135,8 @@ export class PatternCompiler {
 				const symbols = ['+', '-', '<', '<=', '>', '>=', '='];
 				const words = new Set<string>();
 				symbols.forEach(sym => {
-					const mapped = state.config.registry!.modifiers![sym];
-					if (mapped) (Array.isArray(mapped) ? mapped : [mapped]).forEach(w => words.add(w));
+					asArray(state.config.registry!.modifiers![sym])
+						.forEach(w => words.add(w));
 				});
 				if (words.size > 0) {
 					const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));

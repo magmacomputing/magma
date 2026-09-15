@@ -3,7 +3,7 @@ import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { unwrap } from '#library/primitive.library.js';
 import { isString, isFunction, isSymbol, isDefined, isNumber, isObject } from '#library/assertion.library.js';
-import { registerType, type Constructor, type Evaluated } from '#library/type.library.js';
+import { registerType, type Constructor, type Evaluated, type Secure } from '#library/type.library.js';
 
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
 
@@ -167,7 +167,10 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
  * const p = proxify({ a: 1 });
  * ```
  */
-export function proxify<T extends object>(target: T, frozen = true, lock = frozen, skip = new WeakSet<object>()) {
+export function proxify<T extends object>(target: T, frozen?: true, lock?: boolean, skip?: WeakSet<object>): Readonly<T>;
+export function proxify<T extends object>(target: T, frozen: false, lock?: boolean, skip?: WeakSet<object>): T;
+export function proxify<T extends object>(target: T, frozen?: boolean, lock?: boolean, skip?: WeakSet<object>): Readonly<T> | T;
+export function proxify<T extends object>(target: T, frozen = true, lock = frozen, skip = new WeakSet<object>()): any {
 	return factory(target, { frozen, lock, skip, bind: frozen });
 }
 
@@ -184,7 +187,10 @@ export function proxify<T extends object>(target: T, frozen = true, lock = froze
  * const d = delegate({}, (key) => console.log('Requested:', key));
  * ```
  */
-export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, readonly = true) {
+export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, readonly?: true): Readonly<T>;
+export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, readonly: false): T;
+export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, readonly?: boolean): Readonly<T> | T;
+export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, readonly = true): any {
 	return factory(target, { onGet, frozen: readonly });
 }
 
@@ -215,7 +221,7 @@ export function secureRef<T extends object>(target: T): T {
  * const safe = secure({ apiKey: '123' });
  * ```
  */
-export function secure<const T extends object>(obj: T, skip = new WeakSet<object>()): T {
+export function secure<const T extends object>(obj: T, skip = new WeakSet<object>()): Secure<T> {
 	return factory(obj, { frozen: true, lock: true, skip, bind: true });
 }
 
@@ -230,7 +236,7 @@ export function secure<const T extends object>(obj: T, skip = new WeakSet<object
  * const v = delegator(['a', 'b'], (key) => key.toUpperCase());
  * ```
  */
-export function delegator<K extends string | symbol>(keys: readonly K[] | Record<K, any>, fn: (prop: K) => any): Record<K, any> {
+export function delegator<K extends string | symbol>(keys: readonly K[] | Record<K, any>, fn: (prop: K) => any): Readonly<Record<K, any>> {
 	const keyList = Array.isArray(keys) ? keys : Reflect.ownKeys(keys) as K[];
 	return factory({} as any, { keys: keyList, onGet: fn as any, frozen: true });
 }
@@ -251,10 +257,25 @@ export function delegator<K extends string | symbol>(keys: readonly K[] | Record
  * ```
  */
 export function indexedArray<T extends object>(
+	list: readonly T[] | T[],
+	finder: (key: string) => T | undefined,
+	readonly?: true
+): readonly T[] & Readonly<Record<string, T>>;
+export function indexedArray<T extends object>(
 	list: T[],
 	finder: (key: string) => T | undefined,
+	readonly: false
+): T[] & Record<string, T>;
+export function indexedArray<T extends object>(
+	list: readonly T[] | T[],
+	finder: (key: string) => T | undefined,
+	readonly?: boolean
+): (readonly T[] & Readonly<Record<string, T>>) | (T[] & Record<string, T>);
+export function indexedArray<T extends object>(
+	list: any,
+	finder: (key: string) => T | undefined,
 	readonly = true
-): T[] & Record<string, T> {
+): any {
 	return delegate(list, (key) => {
 		return (isString(key) && key !== 'length' && !(key in Array.prototype) && !isNumber(Number(key)))
 			? finder(key)

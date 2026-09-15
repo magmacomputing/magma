@@ -1,4 +1,5 @@
 import { isFunction, isString, isObject, isSafeKey } from '#library/assertion.library.js';
+import { asArray } from '#library/coercion.library.js';
 import { parseJSONC } from '#library/json.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import type { Options } from '../tempo.type.js';
@@ -123,15 +124,8 @@ function mergeConfigs(parent: Options, child: Options): Options {
 		merged.pluginOptions = mergedPluginOpts;
 	}
 
-	if (parent.plugins || child.plugins) {
-		const parentPlugins = parent.plugins;
-		const childPlugins = child.plugins;
-		if (Array.isArray(parentPlugins) || Array.isArray(childPlugins)) {
-			const pList = Array.isArray(parentPlugins) ? parentPlugins : (parentPlugins ? [parentPlugins] : []);
-			const cList = Array.isArray(childPlugins) ? childPlugins : (childPlugins ? [childPlugins] : []);
-			merged.plugins = [...pList, ...cList];
-		}
-	}
+	if (parent.plugins || child.plugins)
+		merged.plugins = [...asArray(parent.plugins), ...asArray(child.plugins)];
 
 	return merged;
 }
@@ -164,7 +158,7 @@ async function processExtends(
 	if (checkAndWarnBudget(budget))
 		return config;
 
-	const extendsList = Array.isArray(config.extends) ? config.extends : [config.extends];
+	const extendsList = asArray(config.extends);
 	const stringExtends = extendsList.filter(isString);
 
 	if (stringExtends.length === 0) return config;

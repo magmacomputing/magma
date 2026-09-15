@@ -8,11 +8,12 @@
  */
 import type { DebugLevel } from '#library/logger.class.js';
 import type { ScopedSet } from '#library/scopedset.class.js';
-import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable } from '#library/type.library.js';
+import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable, MutableObject } from '#library/type.library.js';
 import type { GeoOptions, GeoConfig } from '#library/mapper.library.js';
 import type { BoundedCache } from '#library/cache.class.js';
 
 export type { GeoOptions, GeoConfig };
+export type { ResolvedLocaleInfo, LocaleWeekInfo } from '#library/international.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
@@ -66,6 +67,8 @@ export interface AliasContext {
 	toNow(): AliasContext;
 	/** return the current state as a raw Temporal.ZonedDateTime */
 	toDateTime(): Temporal.ZonedDateTime;
+	/** return the current state as a raw Temporal.ZonedDateTime */
+	readonly zdt: Temporal.ZonedDateTime;
 	/** return the ISO string representation of the current state */
 	toString(): ISOString;
 
@@ -137,20 +140,25 @@ export type Until = (Options & { unit?: Unit }) | Unit
 export type Mutate = 'start' | 'mid' | 'end'
 export type TermOffset = { [K: `#${string}`]: number | string }
 export type SetFields = {
-	[K in Mutate]?: Unit | `#${string}`;
+	[K in Mutate]?: Unit | 'yw' | 'isoYear' | 'isoyear' | 'isoWeek' | 'isoweek' | `#${string}`;
 } & {
 	[K in 'date' | 'time' | 'event' | 'period']?: string;
 } & {
-	[K in 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
+	[K in 'year' | 'month' | 'week' | 'isoWeek' | 'isoweek' | 'isoYear' | 'isoyear' | 'yw' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
 }
 export type SlickKey = SLICK_KEYS[number];
 export type SlickOffset = { [K in SlickKey]?: string };
 
 export type MutateShorthand = {
 	yy?: LooseUnion<number | Mutate>;
+	yw?: LooseUnion<number | Mutate>;
+	isoYear?: LooseUnion<number | Mutate>;
+	isoyear?: LooseUnion<number | Mutate>;
 	mm?: LooseUnion<mm | Mutate>;
 	wy?: LooseUnion<wy | Mutate>;
 	ww?: LooseUnion<wy | Mutate>;
+	isoWeek?: LooseUnion<number | Mutate>;
+	isoweek?: LooseUnion<number | Mutate>;
 	dd?: LooseUnion<dd | Mutate>;
 	hh?: LooseUnion<hh | Mutate>;
 	mi?: LooseUnion<mi | Mutate>;
@@ -166,7 +174,7 @@ export type MutateSet = SetFields & MutateShorthand & {
 	calendar?: Temporal.CalendarLike;
 } & TermOffset | DateTime
 export type AddUnits = { [K in Unit]?: number };
-export type MutateAdd = AddUnits & { [K in Element]?: number } & TermOffset | DateTime
+export type MutateAdd = AddUnits & { [K in Element | 'yw' | 'isoYear' | 'isoyear' | 'isoWeek' | 'isoweek']?: number } & TermOffset | DateTime
 
 export type Modifier = '=' | '-' | '+' | '<' | '<=' | '-=' | '>' | '>=' | '+=' | 'this' | 'next' | 'prev' | 'last' | 'first' | undefined
 export type Relative = 'ago' | 'hence' | 'prior' | 'from now'
@@ -214,7 +222,11 @@ export interface TempoFormatTokens {
 	// ── year / week ───────────────────────────────────
 	yyyy: true; yy: true; yw: true;
 	// ── week-of-year ─────────────────────────────────
-	ww: true; wy: true; yywy: true; yyww: true;
+	wy: true; yywy: true;
+	/** @deprecated Deprecated in v4.3.0; to be removed in v5.0.0. Use `wy` instead. */
+	ww: true;
+	/** @deprecated Deprecated in v4.3.0; to be removed in v5.0.0. Use `yywy` instead. */
+	yyww: true;
 	// ── era / eon ─────────────────────────────────────
 	era: true; eon: true;
 	// ── month ─────────────────────────────────────────
@@ -227,7 +239,7 @@ export interface TempoFormatTokens {
 	// ── sub-second ────────────────────────────────────
 	ms: true; us: true; ns: true; ff: true;
 	// ── composite date/time ───────────────────────────
-	ymd: true; dmy: true; mdy: true; hms: true;
+	ymd: true; dmy: true; mdy: true; hms: true; time: true;
 	// ── timestamp / zone / calendar ───────────────────
 	ts: true; nano: true; tz: true; cal: true;
 	/** @deprecated Deprecated in v4.2.0; to be removed in v5.0.0. Use `tz` instead. */
@@ -304,7 +316,7 @@ export interface FormatOptions extends Intl.DateTimeFormatOptions {
 	/** Calendar system for formatting */
 	calendar?: string;
 	/** Locale or array of locales for formatting */
-	locale?: string | string[];
+	locale?: string | readonly string[];
 }
 
 export interface IntlOptions {
@@ -314,8 +326,8 @@ export interface IntlOptions {
 }
 
 export interface PlannerOptions {
-	/** preferred parse-order of layouts */										layoutOrder?: (string | symbol)[];
-	/** enable parse planner pre-filtering */									preFilter?: boolean;
+	/** preferred parse-order of layouts */										layoutOrder?: readonly (string | symbol)[] | (string | symbol)[] | undefined;
+	/** enable parse planner pre-filtering */									preFilter?: boolean | undefined;
 }
 
 export interface MonthDay {
@@ -324,7 +336,7 @@ export interface MonthDay {
 	/** timezones to use for MDY fallback (per locale) */			timezones?: Record<string, string[] | readonly string[]>;
 	/** indicates if MDY parsing order is currently active */ active?: boolean | undefined;
 	/** @internal indicates if the active flag was explicitly set by the user */ isExplicit?: boolean | undefined;
-	/** @internal resolved locale and timezone metadata */		resolvedLocales?: { locale: string, timeZones: string[] }[];
+	/** @internal resolved locale and timezone metadata */		resolvedLocales?: readonly { readonly locale: string; readonly timeZones: readonly string[]; }[] | { locale: string; timeZones: string[]; }[] | undefined;
 }
 
 /** Type for consistency in expected arguments for helper functions */
@@ -347,7 +359,7 @@ export namespace Internal {
 		/** convenience error handling policy preset */					error?: 'throw' | 'catch' | 'silent' | 'log' | undefined;
 		/** Temporal timeZone */																timeZone?: Evaluable<Temporal.TimeZoneLike> | undefined;
 		/** Temporal calendar */																calendar?: Evaluable<Temporal.CalendarLike> | undefined;
-		/** locale (e.g. en-AU) */															locale?: Evaluable<string | string[]> | undefined;
+		/** locale (e.g. en-AU) */															locale?: Evaluable<string | readonly string[]> | undefined;
 		/** pivot year for two-digit years */										pivot?: number | undefined;
 		/** hemisphere for term.qtr or term.szn */							sphere?: Evaluable<enums.COMPASS | undefined> | undefined;
 		/** Geolocation coordinates configuration for location-aware plugins */ geo?: GeoOptions | undefined;
@@ -361,10 +373,11 @@ export namespace Internal {
 		/** Precision to measure timestamps alias */						timestamp?: TimeStamp | undefined;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE | undefined;
 		/** regional date-parsing configuration */							monthDay?: MonthDay | boolean | undefined;
+		/** enable regional calendar boundaries (week start/end/mid) via Intl.LocaleInfo */ localeInfo?: boolean | undefined;
 		/** custom data augmentation registries */							registry?: {
 		/** Format string templates */ formats?: Property<any>;
 		/** Locale-specific configurations */ locales?: Record<string, Record<string, string | Function>>;
-		/** Temporal modifiers for relative dates */ modifiers?: Record<string, string | string[]>;
+		/** Temporal modifiers for relative dates */ modifiers?: Record<string, string | readonly string[] | string[]>;
 		/** Token evaluators for custom parsing patterns */ tokens?: Record<string, TokenEvaluator>;
 		/** Snippet registry for parsing shortcuts */ snippets?: Snippet | RegistryOption<Pattern>;
 		/** Layout registry for date/time patterns */ layouts?: Layout | RegistryOption<Pattern>;
@@ -399,7 +412,7 @@ export namespace Internal {
 
 	/** the encapsulated state of a Tempo instance */
 	export interface State {																	// 'global' and 'local' variables
-		/** current defaults for all Tempo instances */					config: Config;
+		/** current defaults for all Tempo instances */					config: MutableObject<Config>;
 		/** parsing rules */																		parse: Parse;
 		/** @internal explicit options snapshot */							options?: Options;
 		/** @internal current valid configuration options */		OPTION: Set<string>;
@@ -460,17 +473,26 @@ export namespace Internal {
 
 	/** Instance configuration derived from supply, storage, and discovery. */
 	export interface Config extends Omit<OptionsKeep, "registry" | "timeZone" | "calendar" | "locale" | "sphere" | "intl" | "planner"> {
-		/** Temporal timeZone */																timeZone: Temporal.TimeZoneLike;
-		/** Temporal calendar */																calendar: Temporal.CalendarLike;
-		/** locale (e.g. en-AU) */															locale: string | string[];
-		/** hemisphere for term.qtr or term.szn */							sphere: enums.COMPASS | undefined;
-		/** Geolocation coordinates configuration */						geo?: GeoConfig | undefined;
-		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions | undefined;
-		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions | undefined;
-		/** scope for configuration mutations */								scope: 'global' | 'local';
-		/** custom data augmentation registries */							registry: { formats: FormatRegistry, locales: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator>, numbers?: Record<string, number> };
+		/** Temporal timeZone */																readonly timeZone: Temporal.TimeZoneLike;
+		/** Temporal calendar */																readonly calendar: Temporal.CalendarLike;
+		/** locale (e.g. en-AU) */															readonly locale: string | readonly string[];
+		/** hemisphere for term.qtr or term.szn */							readonly sphere: enums.COMPASS | undefined;
+		/** Geolocation coordinates configuration */						readonly geo?: Readonly<GeoConfig> | undefined;
+		/** internationalization configuration (relativeTime, etc.) */ readonly intl?: Readonly<IntlOptions> | undefined;
+		/** parse planner configuration (layoutOrder, etc.) */  readonly planner?: Readonly<PlannerOptions> | undefined;
+		/** scope for configuration mutations */								readonly scope: 'global' | 'local';
+		/** custom data augmentation registries */
+		readonly registry: Readonly<{
+			formats: FormatRegistry;
+			locales: Readonly<Record<string, Readonly<Record<string, string | Function>>>>;
+			modifiers?: Readonly<Record<string, string | readonly string[]>>;
+			tokens?: Readonly<Record<string, TokenEvaluator>>;
+			numbers?: Readonly<Record<string, number>>;
+		}>;
 		/** index-signature */																	readonly [key: string]: any;
 	}
+
+	export type MutableConfig = MutableObject<Config>;
 
 	/** structured configuration for Global Discovery via Symbol.for('$Tempo') */
 	export interface Discovery {
@@ -478,23 +500,29 @@ export namespace Internal {
 		/** aliases to merge in the TimeZone dictionary */			timeZones?: Record<string, string>;
 		/** regional date-parsing configuration */							monthDay?: MonthDay;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
-		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | TermPlugin[];
+		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | readonly TermPlugin[] | TermPlugin[];
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
-		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | string[]>, tokens?: Record<string, TokenEvaluator>, numbers?: Record<string, number> };
+		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | readonly string[] | string[]>, tokens?: Record<string, TokenEvaluator>, numbers?: Record<string, number> };
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
-		/** URLs or file paths to inherit configuration from */
-		extends?: string | string[];
+		/** URLs or file paths to inherit configuration from */	extends?: string | readonly string[] | string[];
 		/**
 		 * Plugins or terms to extend onto Tempo.
 		 * 
 		 * @remarks
 		 * To provide configuration options or defaults for plugins, use `pluginOptions` instead.
 		 */
-		plugins?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
+		plugins?: (TempoPlugin | TermPlugin | any) | readonly (TempoPlugin | TermPlugin | any)[] | (TempoPlugin | TermPlugin | any)[];
 		/** Plugin configuration defaults and dictionaries keyed by plugin name */
 		pluginOptions?: Record<string, any>;
 	}
+
+	/** Valid host names for Proxy-based delegator property resolution */
+	export type DelegatorHost = 'term' | 'fmt';
 }
 
+export type Config = Internal.Config;
+export type TimeStamp = Internal.TimeStamp;
 export type MatchResult = Internal.Match;
 export type Discovery = Internal.Discovery;
+export type DelegatorHost = Internal.DelegatorHost;
+

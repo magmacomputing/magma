@@ -16,15 +16,16 @@ import type { Type, Primitive, Nullish, Temporals, Property, GetType } from '#li
 export const isType = <T>(obj: unknown, ...types: Type[]): obj is T => types.includes(getType(obj));
 
 /** Type-Guards: assert `<obj>` is of `<type>` */
-export const isPrimitive = (obj?: unknown): obj is Primitive => isType(obj, 'String', 'Number', 'BigInt', 'Boolean', 'Symbol', 'Undefined', 'Void', 'Null', 'Empty');
+export const isPrimitive = (obj?: unknown): obj is Primitive =>
+	obj === null || (typeof obj !== 'object' && typeof obj !== 'function');
 export const isReference = (obj?: unknown): obj is Object => !isPrimitive(obj);
 /** Type guard to check if a value is iterable (excludes strings) */
 export const isIterable = <T>(obj: unknown): obj is Iterable<T> => Symbol.iterator in Object(obj) && !isString(obj);
 
 /** Type guard to check if a value is a string */
-export const isString = (obj: unknown): obj is string => isType<string>(obj, 'String');
+export const isString = (obj: unknown): obj is string => typeof obj === 'string';
 /** Type guard to check if a value is a non-empty string with meaningful content */
-export const isText = (obj: unknown): obj is string => isString(obj) && obj.trim().length > 0;
+export const isText = (obj: unknown): obj is string => typeof obj === 'string' && obj.trim().length > 0;
 /** Type guard to check if a value is a finite number */
 export const isNumber = (obj: unknown): obj is number => Number.isFinite(obj);
 
@@ -57,11 +58,11 @@ export function isNumeric(str?: any): boolean {
 	}
 }
 /** Type guard to check if a value is a BigInt */
-export const isInteger = (obj: unknown): obj is bigint => isType<bigint>(obj, 'BigInt');
-export const isIntegerLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && RE_BIGINT_LITERAL.test((obj as string).trim());
-export const isDigit = (obj: unknown): obj is number | bigint => isType<number | bigint>(obj, 'Number', 'BigInt');
-export const isBoolean = (obj: unknown): obj is boolean => isType<boolean>(obj, 'Boolean');
-export const isArray = <T = any>(obj: unknown): obj is T[] => isType<T[]>(obj, 'Array');
+export const isInteger = (obj: unknown): obj is bigint => typeof obj === 'bigint';
+export const isIntegerLike = (obj: unknown): obj is string => typeof obj === 'string' && RE_BIGINT_LITERAL.test(obj.trim());
+export const isDigit = (obj: unknown): obj is number | bigint => typeof obj === 'number' ? Number.isFinite(obj) : typeof obj === 'bigint';
+export const isBoolean = (obj: unknown): obj is boolean => typeof obj === 'boolean';
+export const isArray = <T = any>(obj: unknown): obj is T[] => Array.isArray(obj);
 export const isArrayLike = <T = any>(obj: any): obj is ArrayLike<T> => protoType(obj) === 'Object' && 'length' in obj && Object.keys(obj).every(key => key === 'length' || isNumber(Number(key)));
 export const isObject = <T = any>(obj: unknown): obj is Property<T> => isType<Property<T>>(obj, 'Object');
 export const isPlainObject = <T = Property<any>>(obj: unknown): obj is T => {
@@ -71,10 +72,13 @@ export const isPlainObject = <T = Property<any>>(obj: unknown): obj is T => {
 };
 export const isDate = (obj: unknown): obj is Date => isType<Date>(obj, 'Date');
 export const isRegExp = (obj: unknown): obj is RegExp => isType<RegExp>(obj, 'RegExp');
-export const isRegExpLike = (obj: unknown): obj is string => isType<string>(obj, 'String') && RE_REGEXP_LITERAL.test(obj as string);
-export const isSymbol = (obj: unknown): obj is symbol => isType<symbol>(obj, 'Symbol');
-export const isSymbolFor = (obj: unknown): obj is symbol => isType<symbol>(obj, 'Symbol') && Symbol.keyFor(obj as symbol) !== undefined;
-export const isPropertyKey = (obj: unknown): obj is PropertyKey => isType<PropertyKey>(obj, 'String', 'Number', 'Symbol');
+export const isRegExpLike = (obj: unknown): obj is string => typeof obj === 'string' && RE_REGEXP_LITERAL.test(obj);
+export const isSymbol = (obj: unknown): obj is symbol => typeof obj === 'symbol';
+export const isSymbolFor = (obj: unknown): obj is symbol => typeof obj === 'symbol' && Symbol.keyFor(obj) !== undefined;
+export const isPropertyKey = (obj: unknown): obj is PropertyKey => {
+	const t = typeof obj;
+	return t === 'string' || t === 'number' || t === 'symbol';
+};
 
 /**
  * Asserts if a property key is safe against prototype pollution and prototype hijacking.
@@ -91,13 +95,14 @@ export const isPropertyKey = (obj: unknown): obj is PropertyKey => isType<Proper
 export const isSafeKey = (key: PropertyKey): boolean =>
 	key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
 
-export const isNull = (obj: unknown): obj is null => isType<null>(obj, 'Null');
-export const isNullish = (obj: unknown): obj is Nullish => isType<Nullish>(obj, 'Null', 'Undefined', 'Void', 'Empty');
-export const isUndefined = (obj: unknown): obj is undefined => isType<undefined>(obj, 'Undefined', 'Void', 'Empty');
-export const isDefined = <T>(obj: T): obj is NonNullable<T> => !isNullish(obj);
+export const isNull = (obj: unknown): obj is null => obj === null;
+export const isNullish = (obj: unknown): obj is Nullish => obj === null || obj === undefined || isType<Nullish>(obj, 'Void', 'Empty');
+export const isUndefined = (obj: unknown): obj is undefined => obj === undefined || isType<undefined>(obj, 'Void', 'Empty');
+export const isDefined = <T>(obj: T): obj is NonNullable<T> => obj !== null && obj !== undefined && !isNullish(obj);
 
 export const isClass = (obj: unknown): obj is Function => isType<Function>(obj, 'Class');
 export const isFunction = (obj: unknown): obj is Function => isType<Function>(obj, 'Function', 'AsyncFunction', 'GeneratorFunction', 'AsyncGeneratorFunction');
+export const isCallable = (obj: unknown): obj is Function => typeof obj === 'function';
 export const isPromise = <T = any>(obj: unknown): obj is Promise<T> => isType<Promise<T>>(obj, 'Promise');
 export const isMap = <T = any, K = any>(obj: unknown): obj is Map<K, T> => isType<Map<K, T>>(obj, 'Map');
 export const isSet = <T = any>(obj: unknown): obj is Set<T> => isType<Set<T>>(obj, 'Set');
@@ -134,6 +139,10 @@ export const isZonedDateTimeLike = (obj: unknown): obj is Temporal.ZonedDateTime
 ));
 export const isPlainYearMonth = (obj: unknown): obj is Temporal.PlainYearMonth => isType<Temporal.PlainYearMonth>(obj, 'Temporal.PlainYearMonth') || (isDefined((globalThis as any).Temporal?.PlainYearMonth) && (obj as any) instanceof (globalThis as any).Temporal.PlainYearMonth);
 export const isPlainMonthDay = (obj: unknown): obj is Temporal.PlainMonthDay => isType<Temporal.PlainMonthDay>(obj, 'Temporal.PlainMonthDay') || (isDefined((globalThis as any).Temporal?.PlainMonthDay) && (obj as any) instanceof (globalThis as any).Temporal.PlainMonthDay);
+
+/** Type guard to check if a value is an Intl.Locale instance */
+export const isLocale = (obj: unknown): obj is Intl.Locale =>
+	typeof Intl !== 'undefined' && typeof Intl.Locale === 'function' && obj instanceof Intl.Locale;
 
 // non-standard Objects
 export const isEnum = <E extends Property<any>>(obj: unknown): obj is GetType<'Enumify', E> => isType<GetType<'Enumify', E>>(obj, 'Enumify');

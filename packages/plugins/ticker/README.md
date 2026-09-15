@@ -38,7 +38,7 @@ const ticker = Tempo.ticker({ seconds: 1 }, (t, stop) => {
 
 ## Documentation
 
-For full API reference, advanced options, and detailed usage patterns, please visit the official **[Ticker Plugin Documentation ↗](https://magmacomputing.github.io/magma/doc/9-plugins/ticker.index.html)**.
+For full API reference, advanced options, and detailed usage patterns, please visit the official 📖 **[Ticker Plugin Documentation](https://magmacomputing.github.io/magma/doc/9-plugins/ticker.index.html)**.
 
 ## Licensing
 

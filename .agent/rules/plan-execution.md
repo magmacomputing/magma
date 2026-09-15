@@ -16,3 +16,6 @@ For all Implementation Plans:
 - **Estimated Effort**: Must include an estimated effort assessment (e.g. hours / engineering days with complexity breakdown).
 - **SemVer Classification**: Must explicitly classify whether the release is a **Patch**, **Minor**, or **Major** bump under Semantic Versioning, with rationale.
 
+## 4. Git & Version Control Rules
+- **NEVER run `git commit` without explicit instruction**: Never execute `git commit` autonomously, even when completing setup, running version bumps, or finishing tasks. The user uses `git commit` manually in order to identify changes and review work.
+

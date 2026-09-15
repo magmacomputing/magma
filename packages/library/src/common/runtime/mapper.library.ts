@@ -88,24 +88,26 @@ export interface GeoOptions {
 
 export interface GeoConfig {
 	/** Latitude coordinate in degrees (-90 to 90) */
-	latitude?: number | undefined;
+	readonly latitude?: number | undefined;
 	/** Longitude coordinate in degrees (-180 to 180) */
-	longitude?: number | undefined;
+	readonly longitude?: number | undefined;
 	/** Altitude / Elevation in meters above sea level */
-	elevation?: number | undefined;
+	readonly elevation?: number | undefined;
 	/** Inferred or explicit hemisphere ('north' | 'south' | 'equator') */
-	sphere?: GeoSphere | undefined;
+	readonly sphere?: GeoSphere | undefined;
 	/** ISO country code (e.g. 'US', 'AU') */
-	country?: string | undefined;
+	readonly country?: string | undefined;
 	/** City or locality name */
-	city?: string | undefined;
+	readonly city?: string | undefined;
 	/** IANA Time Zone ID (e.g. 'Australia/Sydney') */
-	timezone?: string | undefined;
+	readonly timezone?: string | undefined;
 	/** Custom or future string/number key property */
-	[key: string]: any;
+	readonly [key: string]: any;
 	/** Custom symbol key property */
-	[key: symbol]: any;
+	readonly [key: symbol]: any;
 }
+
+type MutableGeoConfig = { -readonly [K in keyof GeoConfig]: GeoConfig[K] };
 
 export interface CoordinateInput {
 	geo?: GeoOptions | undefined;
@@ -190,7 +192,7 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 		if (parts.length >= 2 && !isNaN(parts[0]!) && !isNaN(parts[1]!)) {
 			const coords = normalizeCoords(parts[0], parts[1]);
 			if (coords) {
-				const result: GeoConfig = { latitude: coords.lat, longitude: coords.lng };
+				const result: MutableGeoConfig = { latitude: coords.lat, longitude: coords.lng };
 				const sphere = resolveSphere(undefined, coords.lat);
 				if (sphere) result.sphere = sphere;
 				return result;
@@ -204,7 +206,7 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 	if (Array.isArray(input) && input.length >= 2) {
 		const coords = normalizeCoords(input[0], input[1]);
 		if (coords) {
-			const result: GeoConfig = { latitude: coords.lat, longitude: coords.lng };
+			const result: MutableGeoConfig = { latitude: coords.lat, longitude: coords.lng };
 			const sphere = resolveSphere(undefined, coords.lat);
 			if (sphere) result.sphere = sphere;
 			return result;
@@ -233,7 +235,7 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
 	const city = evaluate<string>(geo?.city, input.city, cfg?.city);
 	const timezone = evaluate<string>(geo?.timezone, geo?.tz, input.timezone, input.tz, cfg?.timezone, cfg?.tz);
 
-	const result: GeoConfig = {};
+	const result: MutableGeoConfig = {};
 	const nLat = normalizeLat(lat);
 	const nLng = normalizeLng(lng);
 	if (nLat !== undefined) result.latitude = nLat;
@@ -320,7 +322,7 @@ export const getStashedGeo = (keyOrOpts?: string | Record<string, any>): GeoConf
 			const lng = rawCoords?.longitude ?? rawCoords?.lng ?? rawCoords?.lon ?? rawCoords?.long;
 			const coords = normalizeCoords(lat, lng);
 			if (coords) {
-				const result: GeoConfig = { latitude: coords.lat, longitude: coords.lng };
+				const result: MutableGeoConfig = { latitude: coords.lat, longitude: coords.lng };
 				const elevation = parsed.elevation ?? rawCoords.elevation;
 				if (isNumber(elevation)) result.elevation = Math.round(elevation * 1000) / 1000;
 				result.sphere = resolveSphere(parsed.sphere, coords.lat);

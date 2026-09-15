@@ -1,6 +1,6 @@
 import { clearCache } from '#library/function.library.js';
 import { isEqual } from '#library/object.library.js';
-import { isDefined, isObject, isSymbol, isUndefined } from '#library/assertion.library.js';
+import { isDefined, isObject, isPlainObject, isSymbol, isUndefined } from '#library/assertion.library.js';
 import { ownKeys } from '#library/primitive.library.js';
 import { unwrap } from '#library/primitive.library.js';
 import { sym } from './support.symbol.js';
@@ -109,8 +109,8 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 				return;
 			}
 
-			if (isObject(current) && isObject(val)) {							// deep merge for objects (e.g. MONTH_DAY.timezones)
-				if (isDefined(st) && !isObject(st[key])) setProperty(st, key, {});
+			if (isPlainObject(current) && isPlainObject(val)) {		// deep merge for objects (e.g. MONTH_DAY.timezones)
+				if (isDefined(st) && !isPlainObject(st[key])) setProperty(st, key, {});
 				merge(current, val, isDefined(st) ? st[key] : undefined);
 				return;
 			}

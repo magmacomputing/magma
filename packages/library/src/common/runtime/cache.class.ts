@@ -301,7 +301,7 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 		this.evictExpired();
 		const stringEntries: [string, V][] = [];
 		for (const [k, v] of super.entries()) {
-			if (typeof k === 'string')
+			if (isString(k))
 				stringEntries.push([k, v]);
 		}
 		return Object.fromEntries(stringEntries) as Record<string, V>;

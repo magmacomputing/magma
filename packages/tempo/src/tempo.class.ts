@@ -10,9 +10,9 @@ import { getAccessors, omit } from '#library/reflection.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
-import { isEmpty, isDefined, isUndefined, isString, isObject, isSymbol, isFunction, isClass, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
-import { getDateTimeFormat, getHemisphere, canonicalLocale, getISOWeekOfYear } from '#library/international.library.js';
+import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getISOWeekOfYear, getLC, getLI, type ResolvedLocaleInfo } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { getStashedGeo, coerceGeo } from '#library/mapper.library.js';
 import { Interval } from '#library/scheduling/interval.class.js';
@@ -44,6 +44,7 @@ declare module '#library/type.library.js' {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /** current execution context */														const Context = getContext();
 /**  */																											const ClassStates = new WeakMap<typeof Tempo, Internal.State>();
+/** Live instance cache: returns active instances, automatically evicted on garbage collection */		const LiveInstances = new WeakMap<Tempo, Internal.State>();
 // shortcut functions to common Tempo properties / methods
 /** current timestamp (ts) */																export const getStamp = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).ts) as t.Params<number | bigint>;
 /** create new Tempo */																			export const getTempo = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options)) as t.Params<Tempo>;
@@ -57,6 +58,7 @@ namespace Internal {
 	export type Config = t.Internal.Config;
 	export type Discovery = t.Internal.Discovery;
 	export type Registry = t.Internal.Registry;
+	export type DelegatorHost = t.Internal.DelegatorHost;
 	export interface PluginContainer extends TempoPlugin { }
 
 	export type Fmt = {																					// used for the fmtTempo() shortcut
@@ -261,21 +263,23 @@ export class Tempo {
 		const mdy = shape.parse.monthDay;
 		const globalMdy = Tempo.MONTH_DAY as t.MonthDay;
 
-		let intl: Intl.Locale;
-		try {
-			intl = new Intl.Locale(Tempo.#locale(locale));
-		} catch (e) {
-			logWarn(`Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, shape.config, e);
-			intl = new Intl.Locale('en-US');
-		}
+		const rawLocale = Tempo.#locale(locale);
+		if (!getLC(rawLocale))
+			logWarn(`Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, shape.config);
+
+		const li = getLI(rawLocale);
+		const baseName = li.baseName;
+		const language = li.language ?? li.locale?.language;
 
 		const tz = String(timeZone);
-		const activeLocaleData = mdy.resolvedLocales?.find(l => l.locale === intl.baseName || l.locale === intl.language);
+		const activeLocaleData = mdy.resolvedLocales?.find(l => l.locale === baseName || (language && l.locale === language));
 
-		return (activeLocaleData?.timeZones?.includes(tz)) ||
-			(globalMdy.timezones?.[intl.baseName]?.includes(tz)) ||
-			(globalMdy.timezones?.[intl.language]?.includes(tz)) ||
-			((asArray(globalMdy.locales).includes(intl.baseName) || asArray(globalMdy.locales).includes(intl.language)) && ((intl as any).getTimeZones?.() || []).includes(tz));
+		return Boolean(
+			(activeLocaleData?.timeZones?.includes(tz)) ||
+			(globalMdy.timezones?.[baseName]?.includes(tz)) ||
+			(language && globalMdy.timezones?.[language]?.includes(tz)) ||
+			((asArray(globalMdy.locales).includes(baseName) || (language && asArray(globalMdy.locales).includes(language))) && li.timeZones.includes(tz))
+		);
 	}
 
 	/**
@@ -317,19 +321,15 @@ export class Tempo {
 	 * @param locale - Optional locale string or array of locale strings
 	 * @returns The canonical locale identifier
 	 */
-	static #locale = (locale?: string | string[]) => {
+	static #locale = (locale?: string | readonly string[]) => {
 		const global = Context.global;
-		let language: string | undefined;
+		const primaryLocale = canonicalLocales(locale)[0];
 
-		const primaryLocale = Array.isArray(locale) ? locale[0] : locale;
-
-		if (primaryLocale) language = canonicalLocale(primaryLocale);
-
-		return language ??
+		return primaryLocale ??
 			global?.navigator?.languages?.[0] ??									// fallback to current first navigator.languages[]
 			global?.navigator?.language ??												// else navigator.language
 			Default.locale ??																			// else default locale
-			primaryLocale																					// cannot determine locale
+			asArray(locale)[0]																		// cannot determine locale
 	}
 
 	/**
@@ -405,8 +405,8 @@ export class Tempo {
 			if (md.timezones) {
 				const zones = Object.fromEntries(
 					ownEntries(md.timezones, true).map(([k, v]) => {
-						try { return [new Intl.Locale(String(k)).baseName, v] }
-						catch { return [String(k), v] }
+						const baseName = getLC(String(k))?.baseName;
+						return [baseName ?? String(k), v];
 					})
 				);
 				if (isSandbox) md = { ...md, timezones: zones };
@@ -442,16 +442,16 @@ export class Tempo {
 		}
 
 		// 4. Process Plugins & Plugin Options
-		if (discovery.pluginOptions && isObject(discovery.pluginOptions)) {
-			opts = { ...opts, pluginOptions: isObject(opts.pluginOptions) ? { ...opts.pluginOptions, ...discovery.pluginOptions } : discovery.pluginOptions };
+		if (discovery.pluginOptions && isPlainObject(discovery.pluginOptions)) {
+			opts = { ...opts, pluginOptions: isPlainObject(opts.pluginOptions) ? { ...opts.pluginOptions, ...discovery.pluginOptions } : discovery.pluginOptions };
 		}
 
 		/** @deprecated Providing configuration dictionaries under 'discovery.plugins' is deprecated. Use 'discovery.pluginOptions' instead. */
-		if (discovery.plugins && isObject(discovery.plugins) && !Array.isArray(discovery.plugins) && !isFunction(discovery.plugins) && !('install' in discovery.plugins) && !('key' in discovery.plugins)) {
+		if (discovery.plugins && isPlainObject(discovery.plugins) && !('install' in discovery.plugins) && !('key' in discovery.plugins)) {
 			opts = {
 				...opts,
-				plugins: isObject(opts.plugins) ? { ...opts.plugins, ...discovery.plugins } : discovery.plugins,
-				pluginOptions: isObject(opts.pluginOptions) ? { ...discovery.plugins, ...opts.pluginOptions } : discovery.plugins,
+				plugins: isPlainObject(opts.plugins) ? { ...opts.plugins, ...discovery.plugins } : discovery.plugins,
+				pluginOptions: isPlainObject(opts.pluginOptions) ? { ...discovery.plugins, ...opts.pluginOptions } : discovery.plugins,
 			};
 		}
 
@@ -496,7 +496,7 @@ export class Tempo {
 			...Guard,
 			...(state.config.registry?.modifiers ? Object.values(state.config.registry.modifiers).flat() : []),
 			...ownValues(state.parse.layout, true).flatMap(val => {
-				const src = (val as any) instanceof RegExp ? (val as any).source : (typeof val === 'string' ? val : '');
+				const src = (val as any) instanceof RegExp ? (val as any).source : (isString(val) ? val : '');
 				if (!src) return [];
 				return src
 					.replace(/\{[#]?[\w]+(?:\.[\w]+)*(?:\:[a-zA-Z]+)*\}/g, ' ')
@@ -677,11 +677,8 @@ export class Tempo {
 
 							Tempo.#termMap.set(config.key, config);
 							if (config.scope) Tempo.#termMap.set(config.scope, config);
-							if (config.aliases && Array.isArray(config.aliases)) {
-								for (const alias of config.aliases) {
-									if (!Tempo.#termMap.has(alias)) Tempo.#termMap.set(alias, config);
-								}
-							}
+							for (const alias of asArray(config.aliases))
+								if (!Tempo.#termMap.has(alias)) Tempo.#termMap.set(alias, config);
 
 							if (config.version) {
 								const name = config.scope || config.key;
@@ -727,7 +724,7 @@ export class Tempo {
 							if (!isEmpty(opts)) this[$setConfig](this[$Internal](), opts);
 
 							// If a plain configuration dictionary was supplied directly in the plugins array (e.g. { ai: { timeout: 1000 } })
-							const isPlainConfigDict = isObject(discovery) &&
+							const isPlainConfigDict = isPlainObject(discovery) &&
 								!ownKeys(discovery).some(key => DISCOVERY.has(key as any)) &&
 								!('name' in discovery) && !('key' in discovery) && !('install' in discovery);
 							if (isPlainConfigDict) {
@@ -887,8 +884,8 @@ export class Tempo {
 		if (fn) {
 			try {
 				const res = fn(sb);
-				if (res && typeof (res as any).then === 'function') {
-					return (res as any).finally(() => {
+				if (res && isCallable((res as any).then)) {
+					return Promise.resolve(res).finally(() => {
 						(sb as any)[Symbol.dispose]?.();
 					}) as R;
 				}
@@ -1178,7 +1175,7 @@ export class Tempo {
 		}
 	}
 
-	static #getEpoch(inst: { epochMilliseconds: number, epochNanoseconds: bigint }) {
+	static #getEpoch(inst: { epochMilliseconds: number, epochNanoseconds: bigint }): Readonly<{ ss: number; ms: number; us: number; ns: bigint }> {
 		return secure({
 			/** seconds since epoch */														ss: Math.trunc(inst.epochMilliseconds / 1_000),
 			/** milliseconds since epoch */												ms: inst.epochMilliseconds,
@@ -1188,7 +1185,7 @@ export class Tempo {
 	}
 
 	/** static units since Unix epoch */
-	static get epoch() {
+	static get epoch(): Readonly<{ ss: number; ms: number; us: number; ns: bigint }> {
 		return Tempo.#getEpoch(instant());
 	}
 
@@ -1196,12 +1193,13 @@ export class Tempo {
 	static get instant() { return Temporal.Instant.fromEpochNanoseconds(Tempo.now()) }
 
 	/** static Tempo.terms (registry) */
-	static get terms(): Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>> {
+	static get terms(): Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Readonly<Record<string, Omit<TermPlugin, 'define' | 'resolve'>>> {
 		const list = Tempo.#terms.map(({ define, resolve, ...rest }) => {
 			const item: any = { ...rest };
 			const aliasesSet = new Set<string>();
-			if (item.aliases && Array.isArray(item.aliases))
-				item.aliases.forEach((a: string) => { if (a !== item.key) aliasesSet.add(a); });
+			for (const a of asArray(item.aliases))
+				if (a !== item.key)
+					aliasesSet.add(a);
 
 			if (item.scope && item.scope !== item.key)
 				aliasesSet.add(item.scope);
@@ -1213,12 +1211,17 @@ export class Tempo {
 		});
 
 		// treats `Tempo.terms` as array-like and indexable by key, scope, or alias.
-		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key || (t.aliases && Array.isArray(t.aliases) && t.aliases.includes(key)))) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Record<string, Omit<TermPlugin, 'define' | 'resolve'>>;
+		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key))) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Readonly<Record<string, Omit<TermPlugin, 'define' | 'resolve'>>>;
 	}
 
 	/** static Tempo.registry */
 	static get registry() {
 		return Tempo.config.registry;
+	}
+
+	/** Resolved cultural and regional locale information for the global locale via Intl.LocaleInfo */
+	static get intl(): ResolvedLocaleInfo {
+		return getLI(Tempo.#locale(this[$Internal]().config.locale));
 	}
 
 	/** static Tempo properties getter */
@@ -1228,8 +1231,8 @@ export class Tempo {
 	}
 
 	/** Tempo initial default settings */
-	static get default() {
-		return Object.freeze({ ...Default, scope: 'default', timeZone: Default.timeZone || enums.TIMEZONE.utc });
+	static get default(): Readonly<t.Config> {
+		return Object.freeze({ ...Default, scope: 'default', timeZone: Default.timeZone || enums.TIMEZONE.utc }) as unknown as Readonly<t.Config>;
 	}
 
 	/** 
@@ -1539,42 +1542,51 @@ export class Tempo {
 	}
 
 	/** create a Proxy-based delegator that registers lazy properties on-demand */
-	#setDelegator(host: 'term' | 'fmt') {
+	#setDelegator(host: Internal.DelegatorHost) {
 		const target = Object.create(null);
 		const proxy = delegate(target, (key) => {
 			if (key === $Discover) return this.#discover(host, target);
 			if (!isString(key)) return;
 
 			// discovery phase
-			if (host === 'fmt') {
-				if (!ensureModule(this, 'FormatModule')) return undefined;
-				const allFormats = Object.assign({}, enums.FORMAT, this.#local.config.registry?.formats);
-				if (isDefined(allFormats[key]))
-					return this.#setLazy(target, key, () => this.format(key as t.Format))?.();
-			} else {
-				if (!ensureModule(this, 'TermsModule')) return undefined;
+			switch (host) {
+				case 'fmt': {
+					if (!ensureModule(this, 'FormatModule')) return undefined;
+					const allFormats = Object.assign({}, enums.FORMAT, this.#local.config.registry?.formats);
+					if (isDefined(allFormats[key]))
+						return this.#setLazy(target, key, () => this.format(key as t.Format))?.();
+					return undefined;
+				}
+				case 'term': {
+					if (!ensureModule(this, 'TermsModule')) return undefined;
 
-				const term = Tempo.#termMap.get(key);
-				if (term) {
-					const isKeyOnly = (term.key === key) || (term.scope !== key);
-					const define = (keyOnly: boolean) => {
-						try {
-							const result = term.define.call(this, keyOnly);
-							const res = Array.isArray(result) ? getTermRange(this, result, keyOnly) : result;
-							return isObject(res) ? secure(res) : res;
-						} catch (err: unknown) {
-							const error = asError(err);
-							if (error.message.includes('Class constructor')) {
-								logWarn(`Misidentified class in term definition: ${key}`, this.#local.config, error.stack ?? error);
-							} else {
-								throw error;
+					const term = Tempo.#termMap.get(key);
+					if (term) {
+						const isKeyOnly = key === term.key ? Boolean(term.scope) : key !== term.scope;
+						const define = (keyOnly: boolean) => {
+							try {
+								const result = term.define.call(this, keyOnly);
+								const res = Array.isArray(result) ? getTermRange(this, result, keyOnly) : result;
+								return isObject(res) ? secure(res) : res;
+							} catch (err: unknown) {
+								const error = asError(err);
+								if (error.message.includes('Class constructor')) {
+									logWarn(`Misidentified class in term definition: ${key}`, this.#local.config, error.stack ?? error);
+								} else {
+									throw error;
+								}
 							}
+
+							return undefined;
 						}
 
-						return undefined;
+						return this.#setLazy(target, key, define, isKeyOnly)?.();
 					}
-
-					return this.#setLazy(target, key, define, isKeyOnly)?.();
+					return undefined;
+				}
+				default: {
+					const _exhaustive: never = host;
+					return undefined;
 				}
 			}
 		}, true);
@@ -1585,57 +1597,78 @@ export class Tempo {
 		return proxy;
 	}
 
-	#discover(host: 'term' | 'fmt', target: any) {
+	#discover(host: Internal.DelegatorHost, target: any) {
 		if (!_lifecycle.ready) return;
-		if (host === 'fmt') {
-			const allFormats = Object.assign({}, enums.FORMAT, this.#local.config.registry?.formats);
-			ownKeys(allFormats).forEach(key => {
-				if (isString(key)) this.#setLazy(target, key, () => this.format(key as t.Format));
-			});
-		} else {
-			Tempo.#terms.forEach(term => {
-				const define = (keyOnly: boolean, anchor?: any, alias?: string) => {
-					try {
-						const res = term.define ? term.define.call(this, keyOnly, anchor, alias) : (term.resolve ? term.resolve.call(this, anchor, alias) : undefined);
-						if (res !== undefined && !isObject(res)) return res;
-						const out = (getTermRange(this, (Array.isArray(res) ? (res as any) : [res]), keyOnly, anchor) as any);
-						return isObject(out) ? secure(out) : out;
-					} catch (err: unknown) {
-						const error = asError(err);
-						if (error.message.includes('Class constructor')) {
-							logWarn(`Misidentified class in term discovery: ${term.key}`, this.#local.config, error.stack ?? error);
-						} else {
-							throw error;
+		switch (host) {
+			case 'fmt': {
+				const allFormats = Object.assign({}, enums.FORMAT, this.#local.config.registry?.formats);
+				ownKeys(allFormats).forEach(key => {
+					if (isString(key)) this.#setLazy(target, key, () => this.format(key as t.Format));
+				});
+				break;
+			}
+			case 'term': {
+				Tempo.#terms.forEach(term => {
+					const define = (keyOnly: boolean, anchor?: any, alias?: string) => {
+						try {
+							const result = term.define ? term.define.call(this, keyOnly, anchor, alias) : (term.resolve ? term.resolve.call(this, anchor, alias) : undefined);
+							const res = Array.isArray(result) ? getTermRange(this, result, keyOnly, anchor) : result;
+							return isObject(res) ? secure(res) : res;
+						} catch (err: unknown) {
+							const error = asError(err);
+							if (error.message.includes('Class constructor')) {
+								logWarn(`Misidentified class in term discovery: ${term.key}`, this.#local.config, error.stack ?? error);
+							} else {
+								throw error;
+							}
 						}
+
+						return undefined;
 					}
-				}
-				// If the term has a scope, register key as shortform (isKeyOnly=true → returns key string)
-				// and scope as longform (isKeyOnly=false → returns full Range with label).
-				// If the term has NO scope, the key IS the only accessor — register it as longform
-				// (isKeyOnly=false) so format() can access res.label on the returned Range.
-				this.#setLazy(target, term.key, (isKey: boolean) => define(isKey, this.toDateTime(), term.key), !!term.scope);
-				if (term.scope) this.#setLazy(target, term.scope, (isKey: boolean) => define(isKey, this.toDateTime(), term.scope), false);
-				if (term.aliases && Array.isArray(term.aliases)) {
-					for (const alias of term.aliases) {
-						if (alias !== term.scope) {
+					// If the term has a scope, register key as shortform (isKeyOnly=true → returns key string)
+					// and scope as longform (isKeyOnly=false → returns full Range with label).
+					// If the term has NO scope, the key IS the only accessor — register it as longform
+					// (isKeyOnly=false) so format() can access res.label on the returned Range.
+					this.#setLazy(target, term.key, (isKey: boolean) => define(isKey, this.toDateTime(), term.key), !!term.scope);
+					if (term.scope) this.#setLazy(target, term.scope, (isKey: boolean) => define(isKey, this.toDateTime(), term.scope), false);
+					for (const alias of asArray(term.aliases)) {
+						if (alias !== term.scope)
 							this.#setLazy(target, alias, (isKey: boolean) => define(isKey, this.toDateTime(), alias), true);
-						}
 					}
-				}
-			});
+				});
+				break;
+			}
+			default: {
+				const _exhaustive: never = host;
+				break;
+			}
 		}
 	}
 
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
 	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return this.toDateTime().era; }
 	/** Year within the era (positive integer) */							get eon() { return this.toDateTime().eraYear; }
-	/** @hidden prefer `eon` */																get eraYear() { return this.toDateTime().eraYear; }
+	/**
+	 * Year within the era (positive integer).
+	 * @deprecated Use `eon` (Tempo canonical) or `zdt.eraYear` instead. To be removed in v5.0.0.
+	 */
+	get eraYear() { return this.toDateTime().eraYear; }
 	/** 4-digit iso week-numbering year */										get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** iso week number of the year */												get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
-	/** @hidden prefer `wy` */																get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/**
+	 * ISO week number of the year.
+	 * @deprecated Use `wy` (Tempo canonical) or `zdt.weekOfYear` instead. To be removed in v5.0.0.
+	 */
+	get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
-	/** Day of the month (alias for `dd`) */									get day() { return this.toDateTime().day as t.dd }
+	/**
+	 * Day of the month (1-31).
+	 * @deprecated Use `dd` (Tempo canonical) or `zdt.day` instead. To be removed in v5.0.0.
+	 */
+	get day() { return this.toDateTime().day as t.dd }
+	/** Resolved cultural and regional locale information (firstDay, weekend, direction, etc.) via Intl.LocaleInfo */
+	get intl(): ResolvedLocaleInfo { return getLI(this.locale); }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
 	/** Minutes of the hour (0-59) */													get mi() { return this.toDateTime().minute as t.mi }
 	/** Seconds of the minute (0-59) */												get ss() { return this.toDateTime().second as t.ss }
@@ -1646,7 +1679,7 @@ export class Tempo {
 	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
-	/** Resolved geographic coordinates object ({ latitude, longitude, ... }) */ get geo(): t.GeoConfig | undefined {
+	/** Resolved geographic coordinates object ({ latitude, longitude, ... }) */ get geo(): Readonly<t.GeoConfig> | undefined {
 		if ('geo' in this.#memo) return this.#memo.geo;
 		const res = this.#local.config.geo
 			?? (this as any)[$Internal]().config.geo
@@ -1674,7 +1707,7 @@ export class Tempo {
 
 		return (this.#memo.sphere = res as t.COMPASS | undefined);
 	}
-	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[this.#local.config.timeStamp ?? 'ms'] }
+	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[(this.#local.config.timeStamp ?? 'ms') as t.TimeStamp] }
 	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as t.Month) }
 	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as t.Month) }
 	/** Short weekday name (e.g., 'Mon') */										get www() { return Tempo.WEEKDAY.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
@@ -1686,7 +1719,7 @@ export class Tempo {
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
 
 	/** list of registered terms and their available range keys */
-	get terms(): Record<string, string[]> {
+	get terms(): Readonly<Record<string, readonly string[]>> {
 		const base: Record<string, string[]> = {};
 		Tempo.terms.forEach(term => {
 			const source = (term as any).ranges || (term as any).groups || [];				// check both ranges and groups
@@ -1697,13 +1730,13 @@ export class Tempo {
 
 		return delegate(base, (key) => {
 			if (!isString(key)) return undefined;
-			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || (t.aliases && Array.isArray(t.aliases) && t.aliases.includes(key)));
+			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key));
 			return term ? base[term.key] : undefined;
 		});
 	}
 
 	/** current range key for every registered term */
-	get ranges(): Record<string, string> {
+	get ranges(): Readonly<Record<string, string>> {
 		const base: Record<string, string> = {};
 
 		Tempo.terms.forEach(term => {
@@ -1713,13 +1746,13 @@ export class Tempo {
 
 		return delegate(base, (key) => {
 			if (!isString(key)) return undefined;
-			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || (t.aliases && Array.isArray(t.aliases) && t.aliases.includes(key)));
+			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key));
 			return term ? base[term.key] : undefined;
 		});
 	}
 
 	/** current Tempo configuration */
-	get config() {
+	get config(): Readonly<t.Internal.Config> {
 		const global = (this as any)[$Internal]().config;
 		const out = markConfig(Object.create(global));
 		Object.entries(this.#local.config).forEach(([k, v]) => setProperty(out, k, v));
@@ -1735,7 +1768,7 @@ export class Tempo {
 			enumerable: false, configurable: true
 		});
 
-		return dynamicProxy(proxify(out)) as t.Internal.Config;
+		return dynamicProxy(proxify(out)) as Readonly<t.Internal.Config>;
 	}
 
 	/** Instance-specific parse rules (merged with global) */
@@ -1763,6 +1796,7 @@ export class Tempo {
 		return out as t.Internal.Parse;
 	}
 
+	/** returns the underlying Temporal.ZonedDateTime */			get zdt(): Temporal.ZonedDateTime { return this.toDateTime(); }
 	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term ??= this.#setDelegator('term'); }
 	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#memo.fmt ??= this.#setDelegator('fmt'); }
 	/** units since epoch for this date-time instance */			get epoch() { return Tempo.#getEpoch(this.toDateTime()); }
@@ -1850,16 +1884,13 @@ export class Tempo {
 		if (isDefined(evaluatedCal))
 			setProperty(this.#local.config, 'calendar', String(evaluatedCal));
 
-		let finalLocale: string | string[] | undefined;
+		let finalLocale: string | readonly string[] | undefined;
 		const rawLoc = options.locale ?? (options as any).Locale;
 		const explicitLoc = evaluate(rawLoc);
 		const evaluatedLoc = explicitLoc ?? evaluate(classState.config.locale);
 		if (isDefined(evaluatedLoc)) {
-			const resolvedLocales = asArray(evaluatedLoc).map(l => canonicalLocale(String(l))).filter(Boolean) as string[];
-			if (resolvedLocales.length > 0) {
-				finalLocale = resolvedLocales.length === 1 ? resolvedLocales[0] : resolvedLocales;
-				setProperty(this.#local.config, 'locale', finalLocale);
-			}
+			finalLocale = resolveLocale(evaluatedLoc);
+			if (finalLocale) setProperty(this.#local.config, 'locale', finalLocale);
 		}
 
 		this.#local.userProvidedKeys = new Set();
@@ -1998,7 +2029,7 @@ export class Tempo {
 
 	/** check if we've been given a Tempo Options object */
 	#isOptions(arg: any): arg is t.Options {
-		if (!isObject(arg) || arg.constructor !== Object) return false;
+		if (!isPlainObject(arg)) return false;
 
 		const keys = ownKeys(arg);															// if it contains any 'mutation' keys, then it's not (just) an options object
 		if (keys.some(key => enums.MUTATION.has(key)))

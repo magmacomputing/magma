@@ -1,4 +1,4 @@
-import { isNumber, isNumeric, isText, isArrayLike, isPlainObject, isEmpty, isFunction, isSafeKey } from '#library/assertion.library.js';
+import { isNumber, isNumeric, isText, isArrayLike, isPlainObject, isEmpty, isFunction, isCallable, isSafeKey, isLocale } from '#library/assertion.library.js';
 
 describe('Assertion Library', () => {
 
@@ -173,6 +173,35 @@ describe('Assertion Library', () => {
 		});
 	});
 
+	describe('isCallable', () => {
+		it('should return true for all function types and ES6 classes', () => {
+			function fn() {}
+			const arrow = () => {};
+			async function asyncFn() {}
+			function* genFn() {}
+			async function* asyncGenFn() {}
+			class MyClass {}
+
+			expect(isCallable(fn)).toBe(true);
+			expect(isCallable(arrow)).toBe(true);
+			expect(isCallable(asyncFn)).toBe(true);
+			expect(isCallable(genFn)).toBe(true);
+			expect(isCallable(asyncGenFn)).toBe(true);
+			expect(isCallable(MyClass)).toBe(true);
+			expect(isCallable(Intl.Locale)).toBe(true);
+		});
+
+		it('should return false for non-callable values', () => {
+			expect(isCallable({})).toBe(false);
+			expect(isCallable([])).toBe(false);
+			expect(isCallable('function')).toBe(false);
+			expect(isCallable(123)).toBe(false);
+			expect(isCallable(null)).toBe(false);
+			expect(isCallable(undefined)).toBe(false);
+			expect(isCallable(Symbol('test'))).toBe(false);
+		});
+	});
+
 	describe('isSafeKey', () => {
 		it('should return true for valid object property keys', () => {
 			expect(isSafeKey('name')).toBe(true);
@@ -188,4 +217,21 @@ describe('Assertion Library', () => {
 			expect(isSafeKey('prototype')).toBe(false);
 		});
 	});
+
+	describe('isLocale', () => {
+		it('should return true for Intl.Locale instances', () => {
+			expect(isLocale(new Intl.Locale('en-US'))).toBe(true);
+			expect(isLocale(new Intl.Locale('fr-FR'))).toBe(true);
+		});
+
+		it('should return false for non-Intl.Locale values', () => {
+			expect(isLocale('en-US')).toBe(false);
+			expect(isLocale({})).toBe(false);
+			expect(isLocale(null)).toBe(false);
+			expect(isLocale(undefined)).toBe(false);
+			expect(isLocale(123)).toBe(false);
+			expect(isLocale(new Date())).toBe(false);
+		});
+	});
 });
+
