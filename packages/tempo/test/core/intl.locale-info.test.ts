@@ -409,6 +409,11 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(t.format('{dow:locale}', { locale: 'en-GB' })).toBe('1');
 		});
 
+		it('uses the primary locale when an array is configured', () => {
+			const t = new Tempo('2026-09-13T10:00:00Z', { locale: ['en-GB', 'en-US'] });
+			expect(t.format('{dow:locale}')).toBe('7');
+		});
+
 		it('overrides hour-cycle selection for {hh:locale} and {time:locale}', () => {
 			// 15:30:00 (3:30 PM)
 			const t = new Tempo('2026-09-15T15:30:00Z', { locale: 'en-US' });

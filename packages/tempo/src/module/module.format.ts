@@ -3,7 +3,7 @@ import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix } from '#library/number.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish } from '#library/assertion.library.js';
-import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage, getLI, localizeDigits, isolateBidi } from '#library/international.library.js';
+import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
 import { isTempo, enums, Match, getRuntime, hasOwn, $Internal } from '#tempo/support';
@@ -211,7 +211,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		}
 	}
 
-	const li = getLI(config?.locale);
+	const li = getLI(canonicalLocales(config?.locale)[0]);
 
 	const result = template.replace(new RegExp(Match.formatBraces, 'g'), (_match: string, fullToken: string) => {
 		let [token, ...modifiers] = fullToken.split(':');
