@@ -91,21 +91,27 @@ export const parseJWT = <Header = Record<string, any>, Payload = Record<string, 
 
 /**
  * Verifies a JSON Web Signature (JWS) against a provided key or secret.
- * Inspects the token header's `alg` and supports:
+ * Enforces a mandatory caller-supplied `expectedAlg` for algorithm dispatch to prevent algorithm confusion attacks.
+ * Supports:
  * - Asymmetric `RS256`: via CryptoKey or PEM public key string
  * - Symmetric `HS256`, `HS384`, `HS512`: via shared secret string or Uint8Array
  * 
  * @param token - The JWS string to verify
  * @param keyOrSecret - The public CryptoKey, PEM public key string, or HMAC shared secret
- * @param expectedAlg - Optional expected algorithm to enforce (e.g. 'RS256', 'HS256')
+ * @param expectedAlg - Mandatory expected algorithm to enforce (e.g. 'RS256', 'HS256', 'HS384', 'HS512')
  * @returns A promise resolving to true if the signature is valid
  */
 export const verifyJWS = async (
 	token: string,
 	keyOrSecret: CryptoKey | string | Uint8Array,
-	expectedAlg?: string
+	expectedAlg: string
 ): Promise<boolean> => {
 	try {
+		if (!isString(expectedAlg) || !expectedAlg) {
+			logger.error('VERIFY_ERROR: Missing or invalid "expectedAlg" parameter');
+			return false;
+		}
+
 		const parsed = parseJWT(token);
 		if (!parsed) return false;
 
@@ -118,12 +124,12 @@ export const verifyJWS = async (
 			return false;
 		}
 
-		if (expectedAlg && alg !== expectedAlg) {
+		if (alg !== expectedAlg) {
 			logger.error(`VERIFY_ERROR: Algorithm mismatch. Expected "${expectedAlg}", got "${alg}"`);
 			return false;
 		}
 
-		if (alg === 'RS256') {
+		if (expectedAlg === 'RS256') {
 			const publicKey = isString(keyOrSecret)
 				? await importPublicKey(keyOrSecret)
 				: keyOrSecret as CryptoKey;
@@ -131,13 +137,13 @@ export const verifyJWS = async (
 			return await verifyData(signature, signedData, publicKey, keys.SignKey);
 		}
 
-		if (alg === 'HS256' || alg === 'HS384' || alg === 'HS512') {
+		if (expectedAlg === 'HS256' || expectedAlg === 'HS384' || expectedAlg === 'HS512') {
 			if (isString(keyOrSecret) && keyOrSecret.includes('-----BEGIN ') && keyOrSecret.includes('KEY-----')) {
 				logger.error('VERIFY_ERROR: Refusing to use asymmetric PEM key as HMAC secret');
 				return false;
 			}
 
-			const hashAlg = alg === 'HS512' ? 'SHA-512' : alg === 'HS384' ? 'SHA-384' : 'SHA-256';
+			const hashAlg = expectedAlg === 'HS512' ? 'SHA-512' : expectedAlg === 'HS384' ? 'SHA-384' : 'SHA-256';
 			return await verifyHmac(
 				signature,
 				signedData,
@@ -146,7 +152,7 @@ export const verifyJWS = async (
 			);
 		}
 
-		logger.error(`VERIFY_ERROR: Unsupported algorithm "${alg}"`);
+		logger.error(`VERIFY_ERROR: Unsupported algorithm "${expectedAlg}"`);
 		return false;
 	} catch (e: any) {
 		logger.error('VERIFY_ERROR:', e.stack);

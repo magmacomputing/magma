@@ -2,6 +2,15 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-ticker` project will be documented in this file.
 
+## [2.4.0] - 2026-09-16
+
+### Added
+- **Colocated Plugin Options & Factory Support**:
+  - Exported `TickerPluginOptions` interface for typed call-site configuration.
+  - Updated `TickerPlugin.install()` to accept resolved plugin options from `Tempo.use(TickerPlugin({ ... }))` or `[TickerPlugin, { ... }]`.
+  - Configured plugin options are automatically applied as defaults to all subsequent `Tempo.ticker()` calls on the host class.
+  - Added support for the top-level `interval` option key, which automatically resolves cron strings, RFC 5545 RRULE patterns, numeric seconds, and seed timestamps.
+
 ## [2.3.1] - 2026-09-06
 
 ### Changed & Security

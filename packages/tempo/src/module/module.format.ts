@@ -189,7 +189,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		if (!skipMeridiem) {
 			const lastSearch = (rgx: RegExp) => {
 				const matches = [...template.matchAll(rgx)];
-				return matches.length ? matches[matches.length - 1].index! : -1;
+				return matches.at(-1)?.index ?? -1;
 			}
 			const hIndex = lastSearch(/\{h12[^}]*\}/g);
 			const miIndex = lastSearch(/\{mi[^}]*\}/g);

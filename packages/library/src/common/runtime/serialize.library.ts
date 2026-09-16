@@ -212,6 +212,19 @@ export const fastDigest = (str: string, secret = RUNTIME_SALT): string => {
 };
 
 /**
+ * Compares two ASCII/hex digest strings in constant time to prevent timing attacks.
+ */
+const constantTimeEqual = (a: string, b: string): boolean => {
+	if (!isString(a) || !isString(b)) return false;
+	if (a.length !== b.length) return false;
+	let result = 0;
+	for (let i = 0; i < a.length; i++)
+		result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+
+	return result === 0;
+};
+
+/**
  * Configuration options for `stringify()` serialization.
  */
 export interface StringifyOptions {
@@ -450,7 +463,7 @@ export function objectify<T>(str: any, optionsOrSentinel?: Function | ObjectifyO
 				return str as unknown as T;
 			}
 			const expectedSig = fastDigest(payload, options.secret);
-			if (sig !== expectedSig) {
+			if (!constantTimeEqual(sig, expectedSig)) {
 				console.warn('objectify: signature verification failed');
 				if (options.throwOnError)
 					throw new Error('objectify: signature verification failed');

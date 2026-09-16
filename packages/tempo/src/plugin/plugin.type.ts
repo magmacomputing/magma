@@ -4,7 +4,7 @@ import type { Options } from '../tempo.type.js';
  * ## Plugin
  * Interface for general Tempo plugins (Modules/Extensions).
  */
-export interface Plugin<T = any, O = Options> {
+export interface Plugin<T = any, O = any> {
 	name: string;
 	version?: string;
 	options?: O;

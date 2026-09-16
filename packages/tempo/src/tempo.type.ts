@@ -44,8 +44,7 @@ export type PluginEntry<T = any, Opts = any> =
 	| TermFactory<any, Opts>
 	| PluginTuple<any, Opts>
 	| [any, Opts]
-	| ((tempo: any, options?: any, ...args: any[]) => any)
-	| any;
+	| ((tempo: any, options?: any, ...args: any[]) => any);
 
 declare global {
 	interface globalThis {

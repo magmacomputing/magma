@@ -1,5 +1,5 @@
 import { toZonedDateTime, toInstant, getTemporalIds, instant } from '#library/temporal.library.js';
-import { isDefined, isFunction, isString, isUndefined, isNumber, isZonedDateTime, isPlainObject } from '#library/assertion.library.js';
+import { isDefined, isFunction, isObject, isString, isUndefined, isNumber, isZonedDateTime, isPlainObject } from '#library/assertion.library.js';
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
@@ -35,7 +35,7 @@ export const defineTerm = <T extends TermPlugin, Opts = any>(term: T): TermFacto
 	const factory = function (options?: Opts) {
 		return deepFreeze({
 			...termObj,
-			options,
+			options: isObject(options) ? { ...options } : options,
 			[sym.$PluginType]: 'term'
 		});
 	};

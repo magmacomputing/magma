@@ -225,7 +225,7 @@ export function defineInterpreterModule(name: string, logic: any, statics?: Reco
  * @param plugin - The plugin definition to register
  * @returns The registered plugin factory with plugin type metadata attached
  */
-export function definePlugin<Opts = any, T extends Plugin<TempoType, Opts> = Plugin<TempoType, Opts>>(plugin: T): PluginFactory<T, Opts> {
+export function definePlugin<T extends Plugin<TempoType, Opts>, Opts = any>(plugin: T): PluginFactory<T, Opts> {
 	const factory = function (options?: Opts) {
 		return {
 			...plugin,

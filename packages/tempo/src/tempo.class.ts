@@ -7,6 +7,7 @@ import { secure, proxify, delegate, indexedArray, dynamicProxy } from '#library/
 import { getContext, CONTEXT } from '#library/utility.library.js';
 import { ownKeys, ownEntries, ownValues, unwrap } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
+import { ifDefined } from '#library/object.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
@@ -309,7 +310,7 @@ export class Tempo {
 			layout: shape.parse.layout,
 			monthDayLayouts: layouts!,
 			isMonthDay,
-			...(layoutController !== undefined && { layoutController }),
+			...ifDefined({ layoutController }),
 		});
 
 		if (layout !== shape.parse.layout)
@@ -570,10 +571,15 @@ export class Tempo {
 	 */
 	static use(...args: any[]): typeof Tempo;
 	static use(...args: any[]): typeof Tempo {
+		const isPluginLike = (arg: any): boolean =>
+			Array.isArray(arg) ||
+			isFunction(arg) ||
+			(isObject(arg) && ('install' in arg || 'define' in arg || 'key' in arg || 'name' in arg || sym.$PluginType in arg));
+
 		const isPlainConfigDict = (arg: any) =>
 			isPlainObject(arg) &&
 			!ownKeys(arg).some(key => DISCOVERY.has(key as any)) &&
-			!('name' in arg) && !('key' in arg) && !('install' in arg) &&
+			!('name' in arg) && !('key' in arg) && !('install' in arg) && !('define' in arg) && !(sym.$PluginType in arg) &&
 			ownKeys(arg).length > 0 &&
 			ownKeys(arg).every(k => isObject(arg[k]));
 
@@ -581,32 +587,20 @@ export class Tempo {
 			Array.isArray(entry) &&
 			entry.length === 2 &&
 			!Array.isArray(entry[0]) &&
-			(isFunction(entry[0]) || (isObject(entry[0]) && ('install' in entry[0] || 'define' in entry[0] || 'key' in entry[0] || 'name' in entry[0] || sym.$PluginType in entry[0]))) &&
+			isPluginLike(entry[0]) &&
 			isObject(entry[1]) &&
 			!isPlainConfigDict(entry[1]) &&
-			!isFunction(entry[1]) &&
-			!(sym.$PluginType in entry[1]) &&
-			!('install' in entry[1]) &&
-			!('define' in entry[1]);
+			!isPluginLike(entry[1]);
 
 		const isOptionsArg = (arg: any) =>
 			isObject(arg) &&
-			!Array.isArray(arg) &&
-			!isFunction(arg) &&
-			!isPlainConfigDict(arg) &&
-			!isString(arg.name) &&
-			!isDefined(arg.key) &&
-			!('timeZones' in arg) &&
-			!('numbers' in arg) &&
-			!('terms' in arg) &&
-			!('formats' in arg) &&
-			!('locales' in arg) &&
-			!('options' in arg) &&
-			!(sym.$PluginType in arg) &&
-			!('install' in arg) &&
-			!('define' in arg);
+			!isPluginLike(arg) &&
+			!isPlainConfigDict(arg);
 
-		let options = (args.length > 1 && (isOptionsArg(args[args.length - 1]) || isSymbol(args[args.length - 1]))) ? args.pop() : undefined;
+		const lastArg = args.at(-1);
+		let options = (args.length > 1 && (isOptionsArg(lastArg) || isSymbol(lastArg)))
+			? args.pop()
+			: undefined;
 
 		const flattenPlugins = (arr: any[]): any[] => {
 			const result: any[] = [];
@@ -620,7 +614,7 @@ export class Tempo {
 				}
 			}
 			return result;
-		};
+		}
 
 		const items = flattenPlugins(args);
 		if (isEmpty(items)) return this;
@@ -641,7 +635,7 @@ export class Tempo {
 				if (isFunction(plugin)) {
 					if (plugin[sym.$PluginType] || isFunction(plugin.install) || isFunction(plugin.define)) {
 						callSiteOptions = { ...((plugin as any).options ?? {}), ...(callSiteOptions ?? {}) };
-					} else if (plugin.length < 3 && callSiteOptions !== undefined) {
+					} else if (plugin.length === 0 && callSiteOptions !== undefined) {
 						// Potential factory function passed in tuple: [factoryFn, opts]
 						const res = (plugin as any)(callSiteOptions);
 						if (res && (isObject(res) || isFunction(res)) && ((res as any).install || (res as any).define || (sym.$PluginType in res))) {
@@ -687,8 +681,8 @@ export class Tempo {
 						(plugin as any)(this, !isEmpty(resolvedOptions) ? resolvedOptions : options, (val: any) => new this(val));
 					} catch (e: any) {
 						const msg = (e?.message ?? '').toLowerCase();
-						if (msg.includes('constructor') || msg.includes('class') || (e instanceof TypeError) || isClass(plugin)) {
-							logWarn(`Misidentified class in plugin registration: ${(plugin as any).name}`, state.config, e.stack ?? e);
+						if (msg.includes('constructor') || msg.includes('class') || msg.includes('extensible') || msg.includes('read only') || isClass(plugin)) {
+							logWarn(`Misidentified class or frozen sandbox in plugin registration: ${(plugin as any).name}`, state.config, e.stack ?? e);
 						} else {
 							throw e;
 						}
@@ -738,8 +732,11 @@ export class Tempo {
 								}
 							}
 
+							const hasExplicitOptions = (isObject(callSiteOptions) && !isEmpty(callSiteOptions)) ||
+								(isObject(options) && !isEmpty(options));
+
 							if (name && installed.has(name)) {
-								if (!isEmpty(resolvedOptions)) {
+								if (hasExplicitOptions) {
 									registerPlugin(plugin, state);
 									const installOpts = resolvedOptions;
 									(plugin as any).install.call(this, this, installOpts);
@@ -1029,8 +1026,28 @@ export class Tempo {
 		);
 
 		const pluginsToInstall = options.plugins ?? data?.plugins;
-		if (pluginsToInstall && (Array.isArray(pluginsToInstall) || isFunction(pluginsToInstall) || (isObject(pluginsToInstall) && ('name' in pluginsToInstall || 'key' in pluginsToInstall || 'install' in pluginsToInstall || sym.$PluginType in pluginsToInstall || (pluginsToInstall as any).type))))
-			(SandboxTempo as any).use(pluginsToInstall);
+		if (pluginsToInstall && (Array.isArray(pluginsToInstall) || isFunction(pluginsToInstall) || (isObject(pluginsToInstall) && ('name' in pluginsToInstall || 'key' in pluginsToInstall || 'install' in pluginsToInstall || sym.$PluginType in pluginsToInstall || (pluginsToInstall as any).type)))) {
+			let toInstall = pluginsToInstall;
+			if (Array.isArray(pluginsToInstall)) {
+				const isPlainConfigDict = (item: any) =>
+					isPlainObject(item) &&
+					!ownKeys(item).some(key => DISCOVERY.has(key as any)) &&
+					!('name' in item) && !('key' in item) && !('install' in item) && !('define' in item) && !(sym.$PluginType in item);
+
+				const remaining: any[] = [];
+				for (const item of pluginsToInstall) {
+					if (isPlainConfigDict(item)) {
+						state.config.plugins = { ...(state.config.plugins ?? {}), ...item };
+						state.config.pluginOptions = { ...(state.config.pluginOptions ?? {}), ...item };
+					} else {
+						remaining.push(item);
+					}
+				}
+				toInstall = remaining;
+			}
+			if (!isEmpty(toInstall))
+				(SandboxTempo as any).use(toInstall);
+		}
 
 		Object.freeze(SandboxTempo);
 
@@ -1168,11 +1185,30 @@ export class Tempo {
 			const isInstallable = (item: any) =>
 				Array.isArray(item) || isFunction(item) || (isObject(item) && ('name' in item || 'key' in item || 'install' in item || sym.$PluginType in item || item.type));
 
+			const isPlainConfigDict = (item: any) =>
+				isPlainObject(item) &&
+				!ownKeys(item).some(key => DISCOVERY.has(key as any)) &&
+				!('name' in item) && !('key' in item) && !('install' in item) && !('define' in item) && !(sym.$PluginType in item);
+
+			const extractConfigDicts = (plugins: any): any => {
+				if (!Array.isArray(plugins)) return plugins;
+				const remaining: any[] = [];
+				for (const item of plugins) {
+					if (isPlainConfigDict(item)) {
+						state.config.plugins = { ...(state.config.plugins ?? {}), ...item };
+						state.config.pluginOptions = { ...(state.config.pluginOptions ?? {}), ...item };
+					} else {
+						remaining.push(item);
+					}
+				}
+				return remaining;
+			};
+
 			if (userDiscovery?.plugins && isInstallable(userDiscovery.plugins))
-				this.use(userDiscovery.plugins);
+				this.use(extractConfigDicts(userDiscovery.plugins));
 
 			if (options.plugins && isInstallable(options.plugins))
-				this.use(options.plugins);
+				this.use(extractConfigDicts(options.plugins));
 
 			if (Context.type === CONTEXT.Browser || state.config.debug === LOG.Debug)
 				logDebug('Tempo:', this.config, state.config);
@@ -1371,7 +1407,7 @@ export class Tempo {
 
 	/** static Tempo.registry */
 	static get registry() {
-		return Tempo.config.registry;
+		return this.config.registry;
 	}
 
 	/** Resolved cultural and regional locale information for the global locale via Intl.LocaleInfo */

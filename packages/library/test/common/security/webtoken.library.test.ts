@@ -117,7 +117,7 @@ describe('webtoken.library', () => {
 			expect(parsed?.payload.sub).toBe('user_42');
 			expect(parsed?.payload.role).toBe('admin');
 
-			const valid = await verifyJWS(token, keyPair.publicKey);
+			const valid = await verifyJWS(token, keyPair.publicKey, 'RS256');
 			expect(valid).toBe(true);
 
 			await expect(signJWS(new Date(), keyPair.privateKey)).rejects.toThrow(
@@ -126,7 +126,7 @@ describe('webtoken.library', () => {
 
 			const payloadWithDate = { date: new Date(), sub: 'user_42' };
 			const tokenWithDate = await signJWS(payloadWithDate, keyPair.privateKey);
-			expect(await verifyJWS(tokenWithDate, keyPair.publicKey)).toBe(true);
+			expect(await verifyJWS(tokenWithDate, keyPair.publicKey, 'RS256')).toBe(true);
 		});
 
 		it('signs and verifies RS256 token using PEM formatted strings', async () => {
@@ -138,7 +138,7 @@ describe('webtoken.library', () => {
 			expect(parsed?.header.alg).toBe('RS256');
 			expect(parsed?.payload.sub).toBe('user_pem_test');
 
-			const valid = await verifyJWS(token, publicPem);
+			const valid = await verifyJWS(token, publicPem, 'RS256');
 			expect(valid).toBe(true);
 		});
 
@@ -148,16 +148,16 @@ describe('webtoken.library', () => {
 
 			// HS256
 			const token256 = await signJWS(payload, secret, { alg: 'HS256', typ: 'JWT' });
-			expect(await verifyJWS(token256, secret)).toBe(true);
-			expect(await verifyJWS(token256, 'wrong-secret')).toBe(false);
+			expect(await verifyJWS(token256, secret, 'HS256')).toBe(true);
+			expect(await verifyJWS(token256, 'wrong-secret', 'HS256')).toBe(false);
 
 			// HS384
 			const token384 = await signJWS(payload, secret, { alg: 'HS384', typ: 'JWT' });
-			expect(await verifyJWS(token384, secret)).toBe(true);
+			expect(await verifyJWS(token384, secret, 'HS384')).toBe(true);
 
 			// HS512
 			const token512 = await signJWS(payload, secret, { alg: 'HS512', typ: 'JWT' });
-			expect(await verifyJWS(token512, secret)).toBe(true);
+			expect(await verifyJWS(token512, secret, 'HS512')).toBe(true);
 		});
 
 		it('rejects signature verification if token payload or signature is tampered', async () => {
@@ -173,7 +173,7 @@ describe('webtoken.library', () => {
 				.replace(/=/g, '');
 
 			const tamperedToken = `${h}.${tamperedPayload}.${s}`;
-			expect(await verifyJWS(tamperedToken, secret)).toBe(false);
+			expect(await verifyJWS(tamperedToken, secret, 'HS256')).toBe(false);
 		});
 
 		it('rejects unsupported algorithms gracefully', async () => {
@@ -211,7 +211,7 @@ describe('webtoken.library', () => {
 				const hmacToken = await signJWS(payload, 'symmetric-secret', { alg: 'HS256', typ: 'JWT' });
 
 				expect(await verifyJWS(hmacToken, publicPem, 'RS256')).toBe(false);
-				expect(await verifyJWS(hmacToken, publicPem)).toBe(false);
+				expect(await verifyJWS(hmacToken, publicPem, '' as any)).toBe(false);
 			} finally {
 				errorSpy.mockRestore();
 			}
@@ -221,13 +221,13 @@ describe('webtoken.library', () => {
 			const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 			try {
 				const noAlgToken = makeToken({ typ: 'JWT' }, { sub: 'user_1' });
-				expect(await verifyJWS(noAlgToken, keyPair.publicKey)).toBe(false);
+				expect(await verifyJWS(noAlgToken, keyPair.publicKey, 'RS256')).toBe(false);
 
 				const emptyAlgToken = makeToken({ alg: '', typ: 'JWT' }, { sub: 'user_1' });
-				expect(await verifyJWS(emptyAlgToken, keyPair.publicKey)).toBe(false);
+				expect(await verifyJWS(emptyAlgToken, keyPair.publicKey, 'RS256')).toBe(false);
 
 				const nonStringAlgToken = makeToken({ alg: 123, typ: 'JWT' }, { sub: 'user_1' });
-				expect(await verifyJWS(nonStringAlgToken, keyPair.publicKey)).toBe(false);
+				expect(await verifyJWS(nonStringAlgToken, keyPair.publicKey, 'RS256')).toBe(false);
 			} finally {
 				errorSpy.mockRestore();
 			}
@@ -237,7 +237,7 @@ describe('webtoken.library', () => {
 			const tokenNoHeaderAlg = await signJWS({ sub: 'user_default' }, keyPair.privateKey, { typ: 'JWT' } as any);
 			const parsed = parseJWT(tokenNoHeaderAlg);
 			expect(parsed?.header.alg).toBe('RS256');
-			expect(await verifyJWS(tokenNoHeaderAlg, keyPair.publicKey)).toBe(true);
+			expect(await verifyJWS(tokenNoHeaderAlg, keyPair.publicKey, 'RS256')).toBe(true);
 		});
 	});
 });

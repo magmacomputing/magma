@@ -25,8 +25,8 @@ export interface ResolveLayoutOrderArgs {
 	layout: Record<symbol, string>;
 	monthDayLayouts: t.LayoutPair[] | readonly t.LayoutPair[];
 	isMonthDay: boolean;
-	layoutController?: LayoutController;
-	classification?: PropertyKey;
+	layoutController?: LayoutController | undefined;
+	classification?: PropertyKey | undefined;
 }
 
 /**

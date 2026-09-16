@@ -220,6 +220,8 @@ For standalone usage, pass the plugin directly to `Tempo.use()` using any patter
 import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 import { HolidayPlugin } from 'tempo-plugin-holiday';
+import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
+import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
 
 // Pattern 0: bare
 Tempo.use(TickerPlugin);

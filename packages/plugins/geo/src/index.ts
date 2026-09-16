@@ -28,7 +28,7 @@ import {
 import {
 	geoLocation,
 } from '@magmacomputing/library/browser/mapper.library.js';
-import { isString, isNumber, isEmpty, isSafeKey } from '@magmacomputing/library/primitives/assertion.library.js';
+import { isString, isNumber, isObject, isEmpty, isSafeKey } from '@magmacomputing/library/primitives/assertion.library.js';
 import type { MutableObject } from '@magmacomputing/library/primitives/type.library.js';
 
 export {
@@ -90,17 +90,29 @@ export interface TempoGeoNamespace {
 /**
  * Options for configuring the Geo plugin.
  */
-export type GeoPluginOptions = Partial<GeoConfig> & { timeout?: number; highAccuracy?: boolean; [key: string]: any };
+export type GeoPluginOptions = Partial<GeoConfig> & { timeout?: number; highAccuracy?: boolean;[key: string]: any };
 
 /**
  * GeoPlugin installs geolocation lookup and coordinate resolution helpers onto Tempo under the `Tempo.geo` namespace.
  */
 export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 	name: 'geo',
-	install(TempoClass: any) {
+	install(this: any, TempoClass: any, options?: GeoPluginOptions) {
+		const installedClass = TempoClass || this;
+		const getEffectiveOptions = (callSiteOpts?: Record<string, any>, instance?: any) => {
+			const classOpts = installedClass.config?.pluginOptions?.geo;
+			const instanceOpts = instance?.config?.pluginOptions?.geo;
+			return {
+				...(isObject(classOpts) ? classOpts : {}),
+				...(isObject(options) ? options : {}),
+				...(isObject(instanceOpts) ? instanceOpts : {}),
+				...(isObject(callSiteOpts) ? callSiteOpts : {}),
+			}
+		}
+
 		const geoNamespace: TempoGeoNamespace = {
-			lookup: geoLookup,
-			resolve: resolveGeoCoordinates,
+			lookup: (opts?: Record<string, any>) => geoLookup(getEffectiveOptions(opts)),
+			resolve: (target?: any, opts?: Record<string, any>) => resolveGeoCoordinates(target, getEffectiveOptions(opts, target)),
 			coerce: coerceGeo,
 			distance: haversineDistance,
 			solarOffset,
@@ -110,11 +122,11 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 			server: serverGeoLocation,
 			browser: geoLocation,
 			get current(): GeoConfig | undefined {
-				return getStashedGeo() ?? TempoClass.config?.geo;
+				return getStashedGeo() ?? installedClass.config?.geo;
 			},
-		};
+		}
 
-		Object.defineProperty(TempoClass, 'geo', {
+		Object.defineProperty(installedClass, 'geo', {
 			value: deepFreeze(geoNamespace),
 			writable: false,
 			configurable: false,
@@ -131,10 +143,11 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 		 * - Option C (Call-Site Overrides): Explicit parameters passed to .geoLocate(opts) take absolute precedence.
 		 */
 		TempoClass.prototype.geoLocate = async function (this: Tempo, opts?: Record<string, any>): Promise<Tempo> {
-			const setTimezone = opts?.setTimezone !== false;
-			const coords = await resolveGeoCoordinates(this, opts);
+			const effectiveOpts = getEffectiveOptions(opts, this);
+			const setTimezone = effectiveOpts?.setTimezone !== false;
+			const coords = await resolveGeoCoordinates(this, effectiveOpts);
 			if (coords) {
-				const existingGeo = (typeof this.config.geo === 'object' && this.config.geo !== null) ? this.config.geo : {};
+				const existingGeo = isObject(this.config.geo) ? this.config.geo : {};
 
 				// 1. Separate custom non-geo keys from existingGeo to preserve them (Option B)
 				const customKeys: Record<string, any> = {};
@@ -145,7 +158,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 
 				// 2. Extract call-site overrides (Option C)
 				const callSiteGeo = coerceGeo(opts) ?? {};
-				if (opts && typeof opts === 'object') {
+				if (isObject(opts)) {
 					for (const key of Object.keys(opts)) {
 						if (isSafeKey(key) && !['setTimezone', 'refresh', 'ttl', 'endpoint', 'timeout', 'catch', 'debug', 'geo'].includes(key)) {
 							if (!GEO_PROPERTIES.includes(key as any))
@@ -192,7 +205,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 		 * Resolves coordinates for this instance via explicit coordinates or automatic IP/hardware lookup.
 		 */
 		TempoClass.prototype.geoLookup = async function (this: Tempo, opts?: Record<string, any>): Promise<ResolvedCoordinates | null> {
-			return resolveGeoCoordinates(this, opts);
+			return resolveGeoCoordinates(this, getEffectiveOptions(opts, this));
 		};
 
 		/**
