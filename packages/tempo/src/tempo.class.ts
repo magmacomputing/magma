@@ -574,7 +574,7 @@ export class Tempo {
 		const isPluginLike = (arg: any): boolean =>
 			Array.isArray(arg) ||
 			isFunction(arg) ||
-			(isObject(arg) && ('install' in arg || 'define' in arg || 'key' in arg || 'name' in arg || sym.$PluginType in arg));
+			(isObject(arg) && ('install' in arg || 'define' in arg || sym.$PluginType in arg));
 
 		const isPlainConfigDict = (arg: any) =>
 			isPlainObject(arg) &&

@@ -28,8 +28,12 @@ export interface JWTComponents<Header = Record<string, any>, Payload = Record<st
 	};
 }
 
-export interface JWSHeader {
-	alg?: 'RS256' | 'HS256' | 'HS384' | 'HS512' | string;
+export type RS256Algorithm = 'RS256';
+export type HMACAlgorithm = 'HS256' | 'HS384' | 'HS512';
+export type JWSAlgorithm = RS256Algorithm | HMACAlgorithm;
+
+export interface JWSHeader<Alg extends string = string> {
+	alg?: Alg;
 	typ?: string;
 	[key: string]: any;
 }
@@ -101,11 +105,26 @@ export const parseJWT = <Header = Record<string, any>, Payload = Record<string, 
  * @param expectedAlg - Mandatory expected algorithm to enforce (e.g. 'RS256', 'HS256', 'HS384', 'HS512')
  * @returns A promise resolving to true if the signature is valid
  */
-export const verifyJWS = async (
+export async function verifyJWS(
+	token: string,
+	keyOrSecret: CryptoKey | string,
+	expectedAlg: RS256Algorithm
+): Promise<boolean>;
+export async function verifyJWS(
+	token: string,
+	keyOrSecret: string | Uint8Array,
+	expectedAlg: HMACAlgorithm
+): Promise<boolean>;
+export async function verifyJWS(
 	token: string,
 	keyOrSecret: CryptoKey | string | Uint8Array,
 	expectedAlg: string
-): Promise<boolean> => {
+): Promise<boolean>;
+export async function verifyJWS(
+	token: string,
+	keyOrSecret: CryptoKey | string | Uint8Array,
+	expectedAlg: string
+): Promise<boolean> {
 	try {
 		if (!isString(expectedAlg) || !expectedAlg) {
 			logger.error('VERIFY_ERROR: Missing or invalid "expectedAlg" parameter');
@@ -171,11 +190,26 @@ export const verifyJWS = async (
  * @param headers - Optional JWS headers (default: `{ alg: 'RS256', typ: 'JWT' }`)
  * @returns A promise resolving to the signed JWS string
  */
-export const signJWS = async (
+export async function signJWS(
+	payload: object,
+	keyOrSecret: CryptoKey | string,
+	headers?: JWSHeader<RS256Algorithm>
+): Promise<string>;
+export async function signJWS(
+	payload: object,
+	keyOrSecret: string | Uint8Array,
+	headers: JWSHeader<HMACAlgorithm>
+): Promise<string>;
+export async function signJWS(
+	payload: object,
+	keyOrSecret: CryptoKey | string | Uint8Array,
+	headers?: JWSHeader
+): Promise<string>;
+export async function signJWS(
 	payload: object,
 	keyOrSecret: CryptoKey | string | Uint8Array,
 	headers: JWSHeader = { alg: 'RS256', typ: 'JWT' }
-): Promise<string> => {
+): Promise<string> {
 	if (isPrimitive(payload))
 		throw new TypeError('WebToken: Payload must be a non-null object');
 

@@ -103,35 +103,37 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 			const classOpts = installedClass.config?.pluginOptions?.geo;
 			const instanceOpts = instance?.config?.pluginOptions?.geo;
 			return {
-				...(isObject(classOpts) ? classOpts : {}),
 				...(isObject(options) ? options : {}),
+				...(isObject(classOpts) ? classOpts : {}),
 				...(isObject(instanceOpts) ? instanceOpts : {}),
 				...(isObject(callSiteOpts) ? callSiteOpts : {}),
 			}
 		}
 
-		const geoNamespace: TempoGeoNamespace = {
-			lookup: (opts?: Record<string, any>) => geoLookup(getEffectiveOptions(opts)),
-			resolve: (target?: any, opts?: Record<string, any>) => resolveGeoCoordinates(target, getEffectiveOptions(opts, target)),
-			coerce: coerceGeo,
-			distance: haversineDistance,
-			solarOffset,
-			stash: stashGeo,
-			clear: clearStashedGeo,
-			get: getStashedGeo,
-			server: serverGeoLocation,
-			browser: geoLocation,
-			get current(): GeoConfig | undefined {
-				return getStashedGeo() ?? installedClass.config?.geo;
-			},
-		}
+		if (!Object.hasOwn(installedClass, 'geo')) {
+			const geoNamespace: TempoGeoNamespace = {
+				lookup: (opts?: Record<string, any>) => geoLookup(getEffectiveOptions(opts)),
+				resolve: (target?: any, opts?: Record<string, any>) => resolveGeoCoordinates(target, getEffectiveOptions(opts, target)),
+				coerce: coerceGeo,
+				distance: haversineDistance,
+				solarOffset,
+				stash: stashGeo,
+				clear: clearStashedGeo,
+				get: getStashedGeo,
+				server: serverGeoLocation,
+				browser: geoLocation,
+				get current(): GeoConfig | undefined {
+					return getStashedGeo() ?? installedClass.config?.geo;
+				},
+			}
 
-		Object.defineProperty(installedClass, 'geo', {
-			value: deepFreeze(geoNamespace),
-			writable: false,
-			configurable: false,
-			enumerable: false,
-		});
+			Object.defineProperty(installedClass, 'geo', {
+				value: deepFreeze(geoNamespace),
+				writable: false,
+				configurable: false,
+				enumerable: false,
+			});
+		}
 
 		/**
 		 * Asynchronously resolves coordinates for the current instance (or uses existing coordinates),
