@@ -67,12 +67,11 @@ export const asObject = <T>(obj?: Record<PropertyKey, any>): T => {
 	if (isDate(obj) || isRegExp(obj) || isMap(obj) || isSet(obj))
 		return obj as T;
 
-	if (isFunction((obj as any).toJSON)) {
-		try {
+	try {
+		if (isFunction((obj as any).toJSON))
 			return asObject((obj as any).toJSON());
-		} catch {
-			// fallback to property extraction if toJSON throws
-		}
+	} catch {
+		// fallback to property extraction if toJSON throws
 	}
 
 	const temp: Record<PropertyKey, any> = {};
