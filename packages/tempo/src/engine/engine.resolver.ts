@@ -18,7 +18,6 @@ export function resolveLayoutOrderPure(
   isMonthDay: boolean
 ): LayoutEntry[] {
   const layouts = ownEntries(layout) as LayoutEntry[];
-  let changed = false;
 
   monthDayLayouts.forEach(([dmy, mdy]) => {
     const idx1 = layouts.findIndex(([key]) => key.description === dmy);
@@ -26,10 +25,8 @@ export function resolveLayoutOrderPure(
     if (idx1 === -1 || idx2 === -1) return;
     const swap1 = idx1 < idx2 && isMonthDay;
     const swap2 = idx1 > idx2 && !isMonthDay;
-    if (swap1 || swap2) {
+    if (swap1 || swap2)
       [layouts[idx1], layouts[idx2]] = [layouts[idx2], layouts[idx1]];
-      changed = true;
-    }
   });
 
   return layouts;

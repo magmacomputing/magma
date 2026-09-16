@@ -1,4 +1,4 @@
-import { isDefined, isEmpty, isString, isUndefined } from '#library/assertion.library.js';
+import { isDefined, isEmpty, isString } from '#library/assertion.library.js';
 import { StringTag } from '#library/decorator.library.js';
 
 /**

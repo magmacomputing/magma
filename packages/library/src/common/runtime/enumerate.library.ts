@@ -4,7 +4,7 @@ import { ownEntries } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable, StringTag } from '#library/decorator.library.js';
 import { memoizeMethod } from '#library/function.library.js';
-import type { Property, Index, KeyOf, ValueOf, EntryOf, Invert, LooseKey } from '#library/type.library.js';
+import type { Property, Index, KeyOf, ValueOf, Invert, LooseKey } from '#library/type.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T = any> {

@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asText, isDefined, isNumber, isObject, isText, secure, when } from '@magmacomputing/tempo/library';
+import { asText, isDefined, isObject, isText, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {

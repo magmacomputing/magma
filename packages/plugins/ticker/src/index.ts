@@ -4,6 +4,7 @@ import {
 	isObject, isFunction, isDefined, isEmpty, isNumeric, isString, isNumber, Pledge, asArray,
 	instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
+	isUndefined,
 } from '@magmacomputing/tempo/plugin/sdk';
 
 export { isCronString };
@@ -166,6 +167,14 @@ class TickerInstance implements Ticker.Descriptor {
 				}
 				if (isFunction(arg2)) cb = arg2;
 				else if (isOptions(arg2)) Object.assign(rawOptions, arg2);
+		}
+
+		if (isDefined(rawOptions.interval) && isUndefined(rawOptions.seconds) && isUndefined(rawOptions.cron) && isUndefined(rawOptions.rrule)) {
+			const intVal = rawOptions.interval;
+			if (isCronString(intVal)) rawOptions.cron = intVal;
+			else if (isRRuleString(intVal)) rawOptions.rrule = intVal;
+			else if (isNumeric(intVal)) rawOptions.seconds = Number(intVal);
+			else rawOptions.seed = intVal;
 		}
 
 		// ── Initialization ───────────────────────────────────────────────────
@@ -512,16 +521,33 @@ const tickersDescriptor = {
 }
 
 /**
+ * Options for configuring the Ticker plugin.
+ */
+export type TickerPluginOptions = Ticker.Options & { interval?: Ticker.Interval };
+
+/**
  * ## TickerPlugin
  * The Community Ticker Plugin.
  * Exposes the `Tempo.ticker()` factory and `Tempo.tickers` registry.
  */
-export const TickerPlugin: TempoPlugin = definePlugin({
+export const TickerPlugin = definePlugin({
 	name: 'ticker',
-	install(this: typeof Tempo, TempoClass: typeof Tempo) {
+	install(this: typeof Tempo, TempoClass: typeof Tempo, options?: any) {
+		const opts = options as TickerPluginOptions | undefined;
 		const installedClass = TempoClass || this;
-		const tickerFactory = function (this: any, arg1: any, arg2?: any): Ticker.Instance {
+		const tickerFactory = function (this: any, arg1?: any, arg2?: any): Ticker.Instance {
 			const cls = (this as any)?.prototype ? this : ((this as any)?.constructor?.prototype ? (this as any).constructor : installedClass);
+			const defaultOpts = opts ?? (cls as any)?.config?.pluginOptions?.ticker;
+			if (defaultOpts && isObject(defaultOpts)) {
+				if (isUndefined(arg1))
+					return createTicker(cls, defaultOpts.interval ?? defaultOpts);
+
+				if (isFunction(arg1) && isUndefined(arg2))
+					return createTicker(cls, defaultOpts.interval ?? defaultOpts, arg1);
+
+				if (isObject(arg1) && !isFunction(arg1))
+					return createTicker(cls, { ...defaultOpts, ...arg1 }, arg2);
+			}
 			return createTicker(cls, arg1, arg2);
 		};
 

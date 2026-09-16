@@ -2,19 +2,30 @@
 
 ## Executive Summary
 
-This plan outlines the architectural expansion of Tempo's geographic configuration (`t.geo`) leveraging `@magmacomputing/library`'s dual browser (`browser/mapper.library.ts`) and server (`server/mapper.library.ts`) mapping engines.
+This plan outlines the architectural expansion of Tempo's geographic configuration (`t.geo`) leveraging `@magmacomputing/library`'s dual browser (`browser/mapper.library.ts`) and server (`server/mapper.library.ts`) mapping engines, as well as the `@magmacomputing/tempo-plugin-geo` ecosystem plugin.
+
+### Status Overview
+- **Core `GeoConfig` Schema & `t.geo` Instance Getter**: **`Completed`**
+- **Deterministic 3-Decimal Precision & Coordinate Normalization**: **`Completed`**
+- **Automated Hemisphere Inference (`t.sphere`)**: **`Completed`**
+- **Observer Elevation & Solar Horizon Dip Correction (`elevation`)**: **`Completed`**
+- **Server HTTPS IP Geolocation (`serverGeoLocation`)**: **`Completed`**
+- **Universal Geolocation Dispatcher & 24h Storage Caching (`geoLookup`)**: **`Completed`**
+- **Structured Address & Locality Context (`country`, `city`)**: **`Completed`**
+- **Local Coastal Tide Predictions (`nextHighTide`, `nextLowTide`)**: `Outstanding`
+- **Regional Holiday Plugin Integration (`t.geo.country`)**: `Outstanding`
 
 ---
 
 ## 1. TidalTerm & Geographic Coordinates (`lat` / `lng`)
 
-### Current State
+### Current State — **`Completed`**
 `TidalTerm` and `getTidalState()` calculate **global astronomical equilibrium tides**:
-- **Phase Resolution**: Determines `spring`, `neap`, and `normal` tide states based on solar-lunar ecliptic longitude alignment ($\Delta \lambda$).
-- **Perigee Factor**: Identifies `king` tides based on anomalistic lunar perigee proximity.
+- **Phase Resolution** — **`Completed`**: Determines `spring`, `neap`, and `normal` tide states based on solar-lunar ecliptic longitude alignment ($\Delta \lambda$).
+- **Perigee Factor** — **`Completed`**: Identifies `king` tides based on anomalistic lunar perigee proximity.
 - **Coordinates Requirement**: **None.** Global astronomical phase classification is deterministic and coordinate-independent.
 
-### Benefits of Geographic Coordinates for Tidal Mechanics
+### Benefits of Geographic Coordinates for Tidal Mechanics — `Outstanding`
 While phase classification is global, **local high-water and low-water timing** at a specific coastal location is strongly location-dependent:
 1. **Lunar Meridian Transit Offset**: High tide timing shifts by ~4 minutes per degree of geographic longitude ($\lambda$) as the Moon transits the observer's local meridian.
 2. **Local Lunitidal Interval**: Ocean basin hydrodynamics cause a localized delay (lunitidal interval) between lunar meridian transit and peak high water.
@@ -26,7 +37,7 @@ While phase classification is global, **local high-water and low-water timing** 
 
 ### Key Capabilities & Benefits for Tempo
 
-#### A. Structured Address Components (`mapAddress`)
+#### A. Structured Address Components (`mapAddress`) — **`Completed`**
 `mapAddress()` reverse-geocodes coordinates via Google Maps API into normalized components:
 - **`country` (ISO Code, e.g., `'US'`, `'AU'`, `'JP'`)**:
   - **Holiday & Regional Plugins**: Enables automatic country-level bank holiday resolution (`tempo-plugin-holidays`).
@@ -34,45 +45,45 @@ While phase classification is global, **local high-water and low-water timing** 
 - **`locality` / `city`**:
   - Provides rich human-readable location context on `t.geo.city` for UI badges, logs, and schedule metadata.
 
-#### B. Automated Hemisphere Inference (`mapHemisphere`)
-- **Benefit**: Evaluates Google Maps geocoding or falls back to `getHemisphere()` (timezone offset heuristic).
-- **Tempo Impact**: Automatically populates `t.sphere` (`'north'` vs `'south'`) when explicit `sphere` configuration is omitted, seamlessly driving `AstroTerm`, `LunarTerm`, and `TidalTerm` hemisphere adjustments.
+#### B. Automated Hemisphere Inference (`mapHemisphere` & `coerceGeo`) — **`Completed`**
+- **Benefit**: Evaluates Google Maps geocoding or falls back to `getHemisphere()` (timezone offset heuristic) and `resolveSphere()` within $\pm 0.001^\circ$ equatorial band.
+- **Tempo Impact**: Automatically populates `t.sphere` (`'north'` vs `'south'`) when explicit `sphere` configuration is omitted, seamlessly driving `AstroTerm`, `LunarTerm`, and `TidalTerm` hemisphere adjustments across all packages.
 
-#### C. Observer Elevation / Altitude (`coords.altitude`)
-- **Benefit**: `navigator.geolocation` captures `coords.altitude` (meters above sea level).
+#### C. Observer Elevation / Altitude (`coords.altitude` -> `elevation`) — **`Completed`**
+- **Benefit**: `navigator.geolocation` captures `coords.altitude` (meters above sea level), and `coerceGeo` normalizes `elevation`.
 - **Tempo Impact**: Observer elevation shifts apparent horizon dip ($\text{dip} \approx 0.0347^\circ \times \sqrt{\text{elevation\_meters}}$). Passing `elevation` to `SolarTerm` refines sub-minute sunrise/sunset and twilight event timestamps for mountain/aviation applications.
 
 ---
 
 ## 3. Server-Side Mapper Strategy & Workarounds (`server/mapper.library.ts`)
 
-### Current State
-`serverGeoLocation()` executes HTTPS IP-geolocation queries by default (rejecting plain HTTP URLs for non-local endpoints), resolving `{ lat, lng, country, city, timezone }`.
+### Current State — **`Completed`**
+`serverGeoLocation()` executes HTTPS IP-geolocation queries by default (rejecting plain HTTP URLs for non-local endpoints), resolving `{ lat, lng, latitude, longitude, country, city, timezone }`.
 
-### Challenges & Workarounds for Server/SSR Environments
+### Challenges & Implemented Strategies for Server/SSR Environments
 
-| Challenge | Impact | Proposed Workaround / Strategy |
-| :--- | :--- | :--- |
-| **Unencrypted HTTP Endpoint** | Modern HTTPS servers or Cloudflare Workers reject mixed unencrypted `http://` calls. | Default to HTTPS ip-api endpoints (`https://ipapi.co/json/` or `https://ip-api.com/json/`), rejecting unencrypted HTTP for non-local endpoints. |
-| **Free-Tier Rate Limits** (45 req/min) | High-traffic Node.js / SSR servers will hit rate-limit errors (HTTP 429). | Implement server-side caching with explicit 24-hour TTL and access controls, keyed by a pseudonymous hash representation of the IP rather than retaining raw IP values in WebStore. |
-| **Datacenter IP vs User IP** | Server IP geolocation resolves the physical datacenter location (e.g., AWS / Vercel server region), not the client end-user. | Inspect incoming HTTP request headers in SSR middleware (`X-Forwarded-For`, `CF-IPCountry`, `X-Vercel-IP-Country`) and pass client IP to `serverGeoLocation({ ip: clientIp })`. |
-| **Server Offline / Air-Gapped Environments** | External IP fetch fails in restricted server networks. | Gracefully catch fetch errors and fall back to system timezone (`Intl.DateTimeFormat().resolvedOptions().timeZone`) and `getHemisphere()`. |
+| Challenge | Impact | Implemented Strategy | Status |
+| :--- | :--- | :--- | :--- |
+| **Unencrypted HTTP Endpoint** | Modern HTTPS servers or Cloudflare Workers reject mixed unencrypted `http://` calls. | Defaulted to secure HTTPS endpoint (`https://ipwho.is`), rejecting unencrypted HTTP for non-local endpoints. | **`Completed`** |
+| **Free-Tier Rate Limits** (45 req/min) | High-traffic Node.js / SSR servers will hit rate-limit errors (HTTP 429). | Implemented universal caching in `geoLookup()` / `stashGeo()` with 24-hour TTL, isolated by tenant keys in `_magma_geo_`. | **`Completed`** |
+| **Datacenter IP vs User IP** | Server IP geolocation resolves the physical datacenter location, not the client end-user. | Supports `{ ip: clientIp }` option and custom endpoints with `{ip}` placeholders to pass forwarded client IPs. | **`Completed`** |
+| **Server Offline / Restricted Environments** | External IP fetch fails in restricted server networks. | Gracefully catches fetch errors with `catch: true` by default and falls back to system timezone and `getHemisphere()`. | **`Completed`** |
 
 ---
 
-## 4. Proposed `t.geo` Schema & Core Expansion
+## 4. `t.geo` Schema & Core Integration — **`Completed`**
 
-Extend `Tempo` instance configuration `t.geo` to support a rich, normalized geographic object:
+`Tempo` instance configuration `t.geo` supports a rich, normalized geographic object matching `GeoConfig` from `@magmacomputing/library`:
 
 ```typescript
-export interface TempoGeoConfig {
-  latitude: number;
-  longitude: number;
-  elevation?: number;        // Meters above sea level
-  sphere?: 'north' | 'south'; // Inferred or explicit hemisphere
-  country?: string;          // ISO 2-letter country code
-  city?: string;             // Locality / City name
-  timezone?: string;         // IANA timezone identifier
+export interface GeoConfig {
+  readonly latitude?: number | undefined;   // Latitude in degrees (-90..90) [COMPLETED]
+  readonly longitude?: number | undefined;  // Longitude in degrees (-180..180) [COMPLETED]
+  readonly elevation?: number | undefined;  // Meters above sea level [COMPLETED]
+  readonly sphere?: GeoSphere | undefined;  // 'north' | 'south' | 'equator' [COMPLETED]
+  readonly country?: string | undefined;    // ISO country code [COMPLETED]
+  readonly city?: string | undefined;       // Locality / City name [COMPLETED]
+  readonly timezone?: string | undefined;   // IANA timezone identifier [COMPLETED]
 }
 ```
 
@@ -80,6 +91,14 @@ export interface TempoGeoConfig {
 
 ## 5. Phased Roadmap
 
-1. **Phase 1 (Library)**: Add HTTPS endpoint configuration and IP caching to `server/mapper.library.ts`.
-2. **Phase 2 (Core Tempo)**: Expand `coerceGeo()` and `t.geo` getter to preserve `elevation`, `country`, and `city`.
-3. **Phase 3 (Plugins)**: Integrate `t.geo.elevation` into `SolarTerm` twilight horizon calculations, and `t.geo.country` into regional holiday/fiscal plugins.
+1. **Phase 1 (Library)** — **`Completed`**:
+   - Added secure HTTPS endpoint (`https://ipwho.is`) and `{ip}` placeholder support in `server/mapper.library.ts`.
+   - Added 24-hour TTL caching and multi-tenant key isolation in `geoLookup()` and `stashGeo()`.
+2. **Phase 2 (Core Tempo)** — **`Completed`**:
+   - Implemented `coerceGeo()` in `@magmacomputing/library` normalizing 3-decimal precision coordinates, hemisphere inference, `elevation`, `country`, `city`, and `timezone`.
+   - Exposed `get geo(): Readonly<t.GeoConfig> | undefined` and `get sphere(): t.COMPASS | undefined` on `Tempo` instances.
+3. **Phase 3 (Plugins)**:
+   - **`Completed`**: Integrated `t.geo.elevation` into `SolarTerm` (`@magmacomputing/tempo-plugin-celestial`) for atmospheric horizon dip adjustment in sunrise, sunset, and twilight.
+   - **`Completed`**: Packaged full browser & IP geolocation, great-circle distance (`haversineDistance`), and natural solar time offset (`solarOffset`) into `@magmacomputing/tempo-plugin-geo`.
+   - `Outstanding`: Integrate `t.geo.country` into dedicated regional bank holiday and fiscal calendar plugins.
+

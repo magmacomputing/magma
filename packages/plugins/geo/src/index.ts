@@ -88,9 +88,14 @@ export interface TempoGeoNamespace {
 }
 
 /**
+ * Options for configuring the Geo plugin.
+ */
+export type GeoPluginOptions = Partial<GeoConfig> & { timeout?: number; highAccuracy?: boolean; [key: string]: any };
+
+/**
  * GeoPlugin installs geolocation lookup and coordinate resolution helpers onto Tempo under the `Tempo.geo` namespace.
  */
-export const GeoPlugin: TempoPlugin = definePlugin({
+export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 	name: 'geo',
 	install(TempoClass: any) {
 		const geoNamespace: TempoGeoNamespace = {

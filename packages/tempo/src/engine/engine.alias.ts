@@ -15,7 +15,7 @@
  */
 
 import type { Nullable } from '#library/type.library.js';
-import { isDefined, isFunction, isObject } from '#library/assertion.library.js';
+import { isDefined, isFunction } from '#library/assertion.library.js';
 import { Match, logError, logWarn } from '#tempo/support';
 import { ownEntries } from '#library/primitive.library.js';
 import * as t from '../tempo.type.js';

@@ -23,9 +23,29 @@ import type { Token } from '#tempo/support/support.symbol.js';
 import type { AliasEngine } from './engine/engine.alias.js';
 import type { PatternCompiler } from './engine/engine.pattern.js';
 
-import type { TermPlugin } from '#tempo/plugin/term/term.type.js';
+import type { TermPlugin, TermFactory } from '#tempo/plugin/term/term.type.js';
 import type { TempoPlugin } from '#tempo/plugin/plugin.util.js';
+import type { PluginFactory, PluginDescriptor, PluginTuple } from './plugin/plugin.type.js';
 import type { Tempo } from '#tempo/tempo.class.js';
+
+export type { PluginFactory, PluginDescriptor, PluginTuple } from './plugin/plugin.type.js';
+export type { TermFactory } from '#tempo/plugin/term/term.type.js';
+export type { TempoPlugin };
+
+/**
+ * ## PluginEntry
+ * Permissible plugin entry in Tempo configuration or use() calls.
+ * Supports bare plugins, callable plugin factories, term plugins, or tuples [Plugin, Options].
+ */
+export type PluginEntry<T = any, Opts = any> =
+	| TempoPlugin<Opts>
+	| PluginFactory<any, Opts>
+	| TermPlugin
+	| TermFactory<any, Opts>
+	| PluginTuple<any, Opts>
+	| [any, Opts]
+	| ((tempo: any, options?: any, ...args: any[]) => any)
+	| any;
 
 declare global {
 	interface globalThis {
@@ -394,7 +414,7 @@ export namespace Internal {
 		 * @remarks
 		 * To provide configuration options or defaults for plugins, use `pluginOptions` instead.
 		 */
-		plugins?: (TempoPlugin | TermPlugin | any) | (TempoPlugin | TermPlugin | any)[];
+		plugins?: PluginEntry | (PluginEntry | any)[];
 		/** Plugin configuration defaults and dictionaries keyed by plugin name */
 		pluginOptions?: Record<string, any>;
 		/** supplied value to parse */													value?: DateTime;
@@ -511,7 +531,7 @@ export namespace Internal {
 		 * @remarks
 		 * To provide configuration options or defaults for plugins, use `pluginOptions` instead.
 		 */
-		plugins?: (TempoPlugin | TermPlugin | any) | readonly (TempoPlugin | TermPlugin | any)[] | (TempoPlugin | TermPlugin | any)[];
+		plugins?: PluginEntry | readonly (PluginEntry | any)[] | (PluginEntry | any)[];
 		/** Plugin configuration defaults and dictionaries keyed by plugin name */
 		pluginOptions?: Record<string, any>;
 	}

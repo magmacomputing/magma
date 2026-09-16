@@ -14,7 +14,7 @@ import {
 	resolveProviderTtl,
 	executeBatch,
 } from '../core/support.js';
-import { logDebug, warnDebug } from '../core/logger.js';
+import { logDebug } from '../core/logger.js';
 import { RE_ISO_DATE_PREFIX, RE_ISO_Z_SUFFIX } from '../core/patterns.js';
 import type { AiParseOptions } from '../types/index.js';
 

@@ -100,10 +100,20 @@ function resolveDateBoundaryFiltered(t: Tempo, anchor?: any, eventFilter?: 'Equi
 }
 
 /**
+ * Options for configuring the Astronomical Term plugin.
+ */
+export interface AstroTermOptions {
+	sphere?: 'north' | 'south';
+	hemisphere?: 'north' | 'south';
+	precision?: 'standard' | 'high';
+	[key: string]: any;
+}
+
+/**
  * Exposes precise astronomical calculations (equinoxes and solstices)
  * as a standard Tempo scope (`t.term.astro` & `t.term.astronomy`).
  */
-export const AstroTerm = defineTerm({
+export const AstroTerm = defineTerm<any, AstroTermOptions>({
 	key,
 	aliases: ['equinox', 'solstice'],
 	scope,

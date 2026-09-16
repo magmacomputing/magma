@@ -38,20 +38,30 @@ export default defineConfig({
 	// Feature Registration (Plugins, Terms, & Namespaces)
 	// -------------------------------------------------------------------------
 	plugins: [
-		// 1. Register executable plugins, namespaces, or terms:
+		// Pattern 0 — Bare registration (default options, backward-compatible):
 		// FinanceNamespace,
 		// AstroTerm,
+		// TickerPlugin,
 
-		// 2. Plugins configured directly via factory closures:
-		// ticker({ interval: 1000 }),
+		// Pattern 1 — Factory closure (colocated options, Vite/Rollup style):
+		// TickerPlugin({ interval: 1000 }),
+		// GeoPlugin({ timeout: 5000 }),
+
+		// Pattern 2 — Tuple syntax (works with any plugin, including third-party):
+		// [GeoPlugin, { timeout: 5000 }],
+		// [TickerPlugin, { interval: 1000 }],
 	],
 
 	// -------------------------------------------------------------------------
-	// Plugin Configuration Options & Defaults
+	// Plugin Configuration Options & Defaults (Legacy / Shared Fallback)
 	// -------------------------------------------------------------------------
+	// Use 'pluginOptions' as a fallback for plugins that are registered bare,
+	// for lazy-loaded plugins not yet imported, or for enterprise base configs
+	// that are shared via 'extends'. Options declared here are lower-priority
+	// than colocated call-site options (Pattern 1 / Pattern 2 above).
 	// pluginOptions: {
 	// 	ai: { mode: 'fallback', timeout: 10000 },
-	// 	ticker: { defaultInterval: 1000 }
+	// 	ticker: { interval: 1000 },
 	// },
 
 	// Note: Providing configuration dictionaries directly inside 'plugins'

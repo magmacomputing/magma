@@ -31,12 +31,23 @@ export interface TermPlugin {
 	groups?: any;
 	/** Array of time ranges this term represents */
 	ranges?: readonly any[] | any[];
+	/** Colocated or runtime configuration options */
+	options?: any;
 	/** Resolves the term to concrete time ranges */
 	resolve?: (this: Tempo, anchor?: any, alias?: string) => readonly Range[] | Range[];
 	/** Defines the term's value or range */
 	define: (this: Tempo, keyOnly?: boolean, anchor?: any, alias?: string) => string | Range | readonly Range[] | Range[] | undefined | null;
+	[key: string]: any;
 }
 
+/**
+ * ## TermFactory
+ * Callable hybrid term definition that carries descriptor properties
+ * and can also be invoked as a factory with call-site options.
+ */
+export type TermFactory<T extends TermPlugin = TermPlugin, Opts = any> = T & {
+	(options?: Opts): T & { options?: Opts };
+};
 
 /** mapping of terms to their resolved values */
 export type Terms = Property<any>;

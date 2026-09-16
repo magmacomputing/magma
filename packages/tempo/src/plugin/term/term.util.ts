@@ -11,14 +11,13 @@ import { sym, TermError, isTempo } from '../../support/support.symbol.js';
 import { getRuntime } from '../../support/support.runtime.js';
 import { SCHEMA, getLargestUnit } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
-import type { Secure } from '#library/type.library.js';
-import type { TermPlugin, Range, ResolvedRange } from './term.type.js';
+import type { TermPlugin, Range, ResolvedRange, TermFactory } from './term.type.js';
 
 /**
  * ## defineTerm
  * Helper to register a Term plugin.
  */
-export const defineTerm = <T extends TermPlugin>(term: T): Readonly<T> => {
+export const defineTerm = <T extends TermPlugin, Opts = any>(term: T): TermFactory<T, Opts> => {
 	const aliasesSet = new Set<string>();
 	for (const a of asArray(term.aliases))
 		if (a !== term.key) aliasesSet.add(a);
@@ -26,14 +25,29 @@ export const defineTerm = <T extends TermPlugin>(term: T): Readonly<T> => {
 	if (term.scope && term.scope !== term.key)
 		aliasesSet.add(term.scope);
 
-	const result = {
+	const termObj = {
 		...term,
 		...(aliasesSet.size > 0 ? { aliases: Array.from(aliasesSet) } : {}),
 		[sym.$PluginType]: 'term',
 		version: term.version ?? TEMPO_VERSION
 	} as T;
+
+	const factory = function (options?: Opts) {
+		return deepFreeze({
+			...termObj,
+			options,
+			[sym.$PluginType]: 'term'
+		});
+	};
+
+	const { name, ...rest } = termObj as any;
+	const result = Object.assign(factory, rest, { [sym.$PluginType]: 'term' });
+	if (name) {
+		Object.defineProperty(result, 'name', { value: name, configurable: true });
+	}
+
 	registerTerm(result);
-	return deepFreeze(result) as Readonly<T>;
+	return deepFreeze(result) as TermFactory<T, Opts>;
 }
 
 /**

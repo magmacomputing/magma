@@ -6,9 +6,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.3.0] - 2026-09-13
+## [4.3.0] - 2026-09-16
 
 ### Added
+- **Colocated Plugin Options & Callable Plugin Factories (`TickerPlugin(opts)`, `[Plugin, opts]`)**:
+  - `definePlugin` now returns a **`PluginFactory<T, Opts>`** — a callable hybrid that carries all plugin properties as a plain object _and_ can be invoked as a factory to attach colocated options. This eliminates the previous "action-at-a-distance" pattern where plugin options were wired via a disconnected `pluginOptions` dictionary using a magic string key.
+  - **Pattern 1 — Factory Closure** (Vite / Rollup model): `TickerPlugin({ interval: 1000 })` — invoke the plugin as a factory directly inside the `plugins` array. Call-site options are stashed on the returned descriptor and injected into `install(Tempo, resolvedOptions)` at registration time.
+  - **Pattern 2 — Tuple Syntax**: `[GeoPlugin, { timeout: 5000 }]` — pair any plugin (including third-party plugins not built with `definePlugin`) with its options in a 2-element tuple. The engine detects and unpacks `[Plugin, OptionsObject]` tuples before flattening nested arrays so options objects are never misinterpreted as nested plugin arrays.
+  - **Bare Registration Unchanged**: `plugins: [AstroTerm]` continues to work identically — zero breaking changes.
+  - **Options Precedence** (lowest → highest): `config.pluginOptions[name]` → trailing shared options → call-site colocated options. Resolved options are automatically synced back into `state.config.pluginOptions[name]` and passed directly to `plugin.install(Tempo, resolvedOptions)`.
+  - **`Tempo.create` Sandbox Support**: `Tempo.create({ plugins: [...] })` now correctly installs colocated-options plugins using the same desugaring pipeline, enabling full Pattern 1 / Pattern 2 support in isolated test sandboxes.
+  - **Exported Options Types**: `TickerPluginOptions`, `GeoPluginOptions`, and `AstroTermOptions` are now exported from their respective plugin packages, providing full IDE intellisense and type-checking inside `TickerPlugin({ ... })` factory calls.
 - **`Intl.LocaleInfo` & Regional Calendar Context (`t.intl`, `Tempo.intl`, `localeInfo`)**:
   - Added `intl` accessor on `Tempo` instances (`t.intl`) and statically (`Tempo.intl`) exposing frozen, memoized regional metadata (`firstDay`, `weekend`, `region`, `script`, `hourCycle`, `direction`, `numberingSystem`, `timeZones`) via `getLI` from `@magmacomputing/library` with zero per-instance allocations.
   - Added opt-in `localeInfo: boolean` configuration flag (`Tempo.init({ localeInfo: true })` or per-instance options), activating culturally authentic calendar arithmetic while strictly preserving Tempo's ISO 8601 baseline by default.

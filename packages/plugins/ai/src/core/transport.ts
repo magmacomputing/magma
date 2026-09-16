@@ -4,7 +4,7 @@ import { resolveProviderApiKey } from './discovery.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
 import { logDebug } from './logger.js';
 import type { AiProvider, AiBaseOptions } from '../types/index.js';
-import { asNumber, asText, isNumber, isObject, isString, isText, evaluate, evaluateAsync, ephemeral } from '@magmacomputing/tempo/library';
+import { asNumber, asText, isObject, isString, isText, evaluate, evaluateAsync, ephemeral } from '@magmacomputing/tempo/library';
 
 export interface FetchFromProviderOptions extends AiBaseOptions {
 	/** AbortSignal for early cancellation / timeout handling */

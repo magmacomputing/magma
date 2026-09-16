@@ -270,7 +270,6 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 	// 1. Handle Absolute Mutations (start | mid | end) OR Slick Mutations
 	if (ABSOLUTE_MUTATIONS.has(mutate as AbsoluteMutation) || mod) {
 		let jump = zdt;
-		let list = getRange(termObj, instance, jump);
 
 		// Fast-path for simple absolute `.set('#term.key')` (no shifter/modifier):
 		// choose the current containing range, or the most-recent past instance

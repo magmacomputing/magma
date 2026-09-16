@@ -17,11 +17,12 @@ import { evaluate } from '#library/evaluation.library.js';
 import { getStashedGeo, coerceGeo } from '#library/mapper.library.js';
 import { Interval } from '#library/scheduling/interval.class.js';
 import { LOG } from '#library/logger.class.js';
-import type { Property, Secure } from '#library/type.library.js';
+import type { Secure } from '#library/type.library.js';
 
 import { registerPlugin, interpret, ensureModule, type TempoPlugin } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term/term.util.js';
-import type { TermPlugin } from './plugin/term/term.type.js';
+import type { PluginFactory } from './plugin/plugin.type.js';
+import type { TermPlugin, TermFactory } from './plugin/term/term.type.js';
 
 import { AliasEngine } from './engine/engine.alias.js';
 import { PatternCompiler } from './engine/engine.pattern.js';
@@ -32,7 +33,7 @@ import { resolveConfig, resolveConfigSync } from './config/config.resolve.js';
 
 import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Event, Period, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
@@ -44,7 +45,6 @@ declare module '#library/type.library.js' {
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /** current execution context */														const Context = getContext();
 /**  */																											const ClassStates = new WeakMap<typeof Tempo, Internal.State>();
-/** Live instance cache: returns active instances, automatically evicted on garbage collection */		const LiveInstances = new WeakMap<Tempo, Internal.State>();
 // shortcut functions to common Tempo properties / methods
 /** current timestamp (ts) */																export const getStamp = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).ts) as t.Params<number | bigint>;
 /** create new Tempo */																			export const getTempo = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options)) as t.Params<Tempo>;
@@ -539,21 +539,27 @@ export class Tempo {
 	 * @param discovery - Discovery object defining options, formats, periods, or terms.
 	 * @param symbol - Optional symbol identifier under globalThis to attach discovery data.
 	 */
+	/**
+	 * Register discovery configuration with an optional discovery symbol.
+	 * 
+	 * @param discovery - Discovery object defining options, formats, periods, or terms.
+	 * @param symbol - Optional symbol identifier under globalThis to attach discovery data.
+	 */
 	static use(discovery: t.Discovery, symbol?: symbol): typeof Tempo;
 	/**
-	 * Register an individual plugin.
+	 * Register an individual plugin or plugin factory.
 	 * 
 	 * @param plugin - The plugin function or definition to register.
 	 * @param options - Optional configuration for the plugin.
 	 */
-	static use(plugin: TempoPlugin, options?: t.Options): typeof Tempo;
+	static use<T extends TempoPlugin = TempoPlugin, Opts = any>(plugin: t.PluginEntry<T, Opts>, options?: t.Options): typeof Tempo;
 	/**
-	 * Register an array of plugins or term extensions.
+	 * Register an array of plugins, terms, factories, or tuples.
 	 * 
-	 * @param plugins - An array of plugins, terms, or extensions to register.
+	 * @param plugins - An array of plugins, terms, factories, or tuples to register.
 	 * @param options - Optional configuration for the plugins.
 	 */
-	static use(plugins: (TempoPlugin | TermPlugin | any)[], options?: t.Options): typeof Tempo;
+	static use(plugins: (t.PluginEntry | any)[], options?: t.Options): typeof Tempo;
 	/**
 	 * Register multiple plugins or term extensions.
 	 * 
@@ -561,8 +567,29 @@ export class Tempo {
 	 */
 	static use(...args: any[]): typeof Tempo;
 	static use(...args: any[]): typeof Tempo {
+		const isPlainConfigDict = (arg: any) =>
+			isPlainObject(arg) &&
+			!ownKeys(arg).some(key => DISCOVERY.has(key as any)) &&
+			!('name' in arg) && !('key' in arg) && !('install' in arg) &&
+			ownKeys(arg).length > 0 &&
+			ownKeys(arg).every(k => isObject(arg[k]));
+
+		const isPluginTuple = (entry: any): entry is [any, any] =>
+			Array.isArray(entry) &&
+			entry.length === 2 &&
+			!Array.isArray(entry[0]) &&
+			isObject(entry[1]) &&
+			!isPlainConfigDict(entry[1]) &&
+			!isFunction(entry[1]) &&
+			!(sym.$PluginType in entry[1]) &&
+			!('install' in entry[1]) &&
+			!('define' in entry[1]);
+
 		const isOptionsArg = (arg: any) =>
 			isObject(arg) &&
+			!Array.isArray(arg) &&
+			!isFunction(arg) &&
+			!isPlainConfigDict(arg) &&
 			!isString(arg.name) &&
 			!isDefined(arg.key) &&
 			!('timeZones' in arg) &&
@@ -570,41 +597,102 @@ export class Tempo {
 			!('terms' in arg) &&
 			!('formats' in arg) &&
 			!('locales' in arg) &&
-			!('options' in arg);
+			!('options' in arg) &&
+			!(sym.$PluginType in arg) &&
+			!('install' in arg) &&
+			!('define' in arg);
 
 		let options = (args.length > 1 && (isOptionsArg(args[args.length - 1]) || isSymbol(args[args.length - 1]))) ? args.pop() : undefined;
 
-		const items = args.flat(Infinity);
+		const flattenPlugins = (arr: any[]): any[] => {
+			const result: any[] = [];
+			for (const item of arr) {
+				if (isPluginTuple(item)) {
+					result.push(item);
+				} else if (Array.isArray(item)) {
+					result.push(...flattenPlugins(item));
+				} else if (item != null) {
+					result.push(item);
+				}
+			}
+			return result;
+		};
+
+		const items = flattenPlugins(args);
 		if (isEmpty(items)) return this;
 
 		_lifecycle.extendDepth++;																// increment the re-entrant nesting counter
 		try {
 			items.forEach(item => {
-				const arg = item as any;
-				if (isFunction(arg)) {															// Standard Plugin registration
+				let plugin = item;
+				let callSiteOptions: any = undefined;
+
+				// 1. Unpack tuple syntax: [Plugin, Options]
+				if (isPluginTuple(item)) {
+					plugin = item[0];
+					callSiteOptions = item[1];
+				}
+
+				// 2. Resolve Factory Closures or Callable Plugins
+				if (isFunction(plugin)) {
+					if (plugin[sym.$PluginType] || isFunction(plugin.install) || isFunction(plugin.define)) {
+						callSiteOptions = { ...((plugin as any).options ?? {}), ...(callSiteOptions ?? {}) };
+					} else if (plugin.length < 3 && callSiteOptions !== undefined) {
+						// Potential factory function passed in tuple: [factoryFn, opts]
+						const res = (plugin as any)(callSiteOptions);
+						if (res && (isObject(res) || isFunction(res)) && ((res as any).install || (res as any).define || (sym.$PluginType in res))) {
+							plugin = res;
+							callSiteOptions = { ...((res as any).options ?? {}), ...(callSiteOptions ?? {}) };
+						}
+					}
+				} else if (isObject(plugin) && (plugin as any).options) {
+					callSiteOptions = { ...((plugin as any).options ?? {}), ...(callSiteOptions ?? {}) };
+				}
+
+				let pluginType = (plugin as any)?.[sym.$PluginType] || (plugin as any)?.type;
+				if (!pluginType && isFunction((plugin as any)?.define) && (plugin as any)?.key) pluginType = 'term';
+				if (!pluginType && isFunction((plugin as any)?.install)) pluginType = 'plugin';
+
+				if (!pluginType && isFunction(plugin)) {
+					// Legacy Standard Plugin registration callback: (Tempo, options, rehydrator)
 					const state = this[$Internal]();
 					const rt = getRuntime();
-					const installed = state.installed ?? rt.installed;// ScopedSet for sandboxes, global Set for Tempo
-					if (installed.has(arg)) return;
-					installed.add(arg);																// mark as installed (BEFORE side-effects)
+					const installed = state.installed ?? rt.installed; // ScopedSet for sandboxes, global Set for Tempo
+					if (installed.has(plugin)) return;
+					installed.add(plugin); // mark as installed (BEFORE side-effects)
 
-					registerPlugin(arg, state);
+					registerPlugin(plugin, state);
+					const pluginName = (plugin as any).name;
+					const existingConfigOpts = (isString(pluginName) && pluginName.length > 0)
+						? (state.config.pluginOptions?.[pluginName] ?? state.config.plugins?.[pluginName])
+						: undefined;
+					const resolvedOptions = {
+						...(isObject(existingConfigOpts) ? existingConfigOpts : {}),
+						...(isObject(options) ? options : {}),
+						...(isObject(callSiteOptions) ? callSiteOptions : {})
+					};
+
+					if (isString(pluginName) && pluginName.length > 0 && pluginName !== 'anonymous' && !isEmpty(resolvedOptions)) {
+						state.config.pluginOptions = {
+							...(state.config.pluginOptions ?? {}),
+							[pluginName]: resolvedOptions
+						};
+					}
+
 					try {
-						(arg as any)(this, options, (val: any) => new this(val));
+						(plugin as any)(this, !isEmpty(resolvedOptions) ? resolvedOptions : options, (val: any) => new this(val));
 					} catch (e: any) {
 						const msg = (e?.message ?? '').toLowerCase();
-						if (msg.includes('constructor') || msg.includes('class') || (e instanceof TypeError) || isClass(arg)) {
-							logWarn(`Misidentified class in plugin registration: ${(arg as any).name}`, state.config, e.stack ?? e);
+						if (msg.includes('constructor') || msg.includes('class') || (e instanceof TypeError) || isClass(plugin)) {
+							logWarn(`Misidentified class in plugin registration: ${(plugin as any).name}`, state.config, e.stack ?? e);
 						} else {
 							throw e;
 						}
 					}
+					return;
 				}
-				else if (isObject(item)) {
-					let pluginType = item[sym.$PluginType] || item.type;
-					if (!pluginType && isFunction(item.define) && item.key) pluginType = 'term';
-					if (!pluginType && isFunction(item.install)) pluginType = 'plugin';
 
+				if (isObject(plugin) || isFunction(plugin)) {
 					const assertContract = (isValid: boolean, msg: string) => {
 						if (!isValid) {
 							const config = this[$Internal]().config;
@@ -621,43 +709,104 @@ export class Tempo {
 						case 'plugin':
 						case 'namespace':
 						case 'module': {
-							if (!assertContract(isFunction(item.install), `[Tempo] Invalid ${pluginType} object: missing 'install()' method.`)) return;
+							if (!assertContract(isFunction(plugin.install), `[Tempo] Invalid ${pluginType} object: missing 'install()' method.`)) return;
 
-							const name = (item as any).name;
+							const name = (plugin as any).name;
 							const state = this[$Internal]();
 							const rt = getRuntime();
-							const installed = state.installed ?? rt.installed;	// ScopedSet for sandboxes, global Set for Tempo
+							const installed = state.installed ?? rt.installed; // ScopedSet for sandboxes, global Set for Tempo
+
+							// Resolve options precedence: existingConfigOpts < options < callSiteOptions
+							const existingConfigOpts = name
+								? (state.config.pluginOptions?.[name] ?? state.config.plugins?.[name])
+								: undefined;
+							const resolvedOptions = {
+								...(isObject(existingConfigOpts) ? existingConfigOpts : {}),
+								...(isObject(options) ? options : {}),
+								...(isObject(callSiteOptions) ? callSiteOptions : {})
+							};
+
+							// Automatically synchronize resolved options to state.config.pluginOptions
+							if (name && !isEmpty(resolvedOptions)) {
+								state.config.pluginOptions = {
+									...(state.config.pluginOptions ?? {}),
+									[name]: resolvedOptions
+								}
+							}
+
 							if (installed.has(name)) {
-								logDebug(`Plugin already installed by name: ${name}`, state.config);
+								if (!isEmpty(resolvedOptions)) {
+									registerPlugin(plugin, state);
+									const installOpts = resolvedOptions;
+									(plugin as any).install.call(this, this, installOpts);
+								} else {
+									logDebug(`Plugin already installed by name: ${name}`, state.config);
+								}
 								return;
 							}
 							installed.add(name);
 
-							registerPlugin(item, state);
-							if (item.version && isString(name)) {
+							registerPlugin(plugin, state);
+							if (plugin.version && isString(name)) {
 								let suffix = '';
 								if (pluginType === 'plugin') suffix = 'Plugin';
 								else if (pluginType === 'namespace') suffix = 'Namespace';
 								else if (pluginType === 'module') suffix = 'Module';
 								else suffix = 'Plugin';
 
-								Tempo.#versions[`${name}${name.endsWith(suffix) ? '' : suffix}`] = item.version;
+								Tempo.#versions[`${name}${name.endsWith(suffix) ? '' : suffix}`] = plugin.version;
 							}
-							(item as TempoPlugin).install.call(this, this, options);
+							const installOpts = !isEmpty(resolvedOptions) ? resolvedOptions : options;
+							(plugin as any).install.call(this, this, installOpts);
 							break;
 						}
 						case 'term': {
-							if (!assertContract(isFunction(item.define), `[Tempo] Invalid term object: missing 'define()' method.`)) return;
+							if (!assertContract(isFunction(plugin.define), `[Tempo] Invalid term object: missing 'define()' method.`)) return;
 
-							const config = item as TermPlugin;
+							const config = plugin as TermPlugin;
 							const state = this[$Internal]();
+							const termName = config.scope || config.key;
 
-							if (Tempo.#termMap.get(config.key) === config) return;
+							// Resolve options precedence: existingConfigOpts < options < callSiteOptions
+							const existingConfigOpts = termName
+								? (state.config.pluginOptions?.[termName] ?? state.config.plugins?.[termName])
+								: undefined;
+							const resolvedOptions = {
+								...(isObject(existingConfigOpts) ? existingConfigOpts : {}),
+								...(isObject(options) ? options : {}),
+								...(isObject(callSiteOptions) ? callSiteOptions : {})
+							};
+
+							// Automatically synchronize resolved options to state.config.pluginOptions
+							if (termName && !isEmpty(resolvedOptions)) {
+								state.config.pluginOptions = {
+									...(state.config.pluginOptions ?? {}),
+									[termName]: resolvedOptions
+								};
+							}
+
+							const termConfig: TermPlugin = !isEmpty(resolvedOptions)
+								? { ...config, options: resolvedOptions }
+								: config;
+
+							if (Tempo.#termMap.get(config.key) === config) {
+								if (!isEmpty(resolvedOptions)) {
+									Tempo.#termMap.set(config.key, termConfig);
+									if (config.scope) Tempo.#termMap.set(config.scope, termConfig);
+									registerTerm(termConfig, this[$Internal]());
+								}
+								return;
+							}
 							if (Tempo.#termMap.has(config.key)) {
 								const existing = Tempo.#termMap.get(config.key);
 								const rangesMatch = JSON.stringify(existing?.ranges) === JSON.stringify(config.ranges);
 								if (existing?.scope === config.scope && existing?.description === config.description && rangesMatch) {
 									logDebug(`[Tempo#extend] Duplicate term registration ignored for key: "${config.key}"`, state.config);
+									if (!isEmpty(resolvedOptions)) {
+										Tempo.#termMap.set(config.key, termConfig);
+										if (config.scope) Tempo.#termMap.set(config.scope, termConfig);
+										registerTerm(termConfig, this[$Internal]());
+									}
 									return;
 								}
 								logError(`[Tempo#extend] Term collision on key: "${config.key}". Registration aborted.`, state.config);
@@ -675,17 +824,17 @@ export class Tempo {
 								}
 							}
 
-							Tempo.#termMap.set(config.key, config);
-							if (config.scope) Tempo.#termMap.set(config.scope, config);
+							Tempo.#termMap.set(config.key, termConfig);
+							if (config.scope) Tempo.#termMap.set(config.scope, termConfig);
 							for (const alias of asArray(config.aliases))
-								if (!Tempo.#termMap.has(alias)) Tempo.#termMap.set(alias, config);
+								if (!Tempo.#termMap.has(alias)) Tempo.#termMap.set(alias, termConfig);
 
 							if (config.version) {
 								const name = config.scope || config.key;
 								Tempo.#versions[`${name}Term`] = config.version;
 							}
 
-							registerTerm(config, this[$Internal]());
+							registerTerm(termConfig, this[$Internal]());
 
 							// 1a. sync with alias engine
 							if (config.scope && config.ranges) {
@@ -719,7 +868,7 @@ export class Tempo {
 						}
 						default: {
 							// Safe fallback to Discovery Object parsing
-							const discovery = item as any
+							const discovery = item as any;
 							const opts = this[$setDiscovery](this[$Internal](), discovery);
 							if (!isEmpty(opts)) this[$setConfig](this[$Internal](), opts);
 
@@ -735,7 +884,7 @@ export class Tempo {
 							}
 
 							if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins) || (isObject(discovery.plugins) && ('name' in discovery.plugins || 'key' in discovery.plugins || 'install' in discovery.plugins))))
-								asArray(discovery.plugins).forEach(p => this.use(p));
+								this.use(discovery.plugins);
 
 							// only trigger init if we're assigning a new discovery object to a symbol
 							if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
@@ -751,7 +900,7 @@ export class Tempo {
 						}
 					}
 				}
-			})
+			});
 		} finally {
 			_lifecycle.extendDepth--;															// decrement the re-entrant nesting counter
 		}
@@ -874,8 +1023,9 @@ export class Tempo {
 			{ ...options, discovery: normalizedDiscovery }
 		);
 
-		if (data?.plugins && (Array.isArray(data.plugins) || isFunction(data.plugins) || (isObject(data.plugins) && ('name' in data.plugins || 'key' in data.plugins || 'install' in data.plugins || sym.$PluginType in data.plugins || (data.plugins as any).type))))
-			(SandboxTempo as any).use(data.plugins);
+		const pluginsToInstall = options.plugins ?? data?.plugins;
+		if (pluginsToInstall && (Array.isArray(pluginsToInstall) || isFunction(pluginsToInstall) || (isObject(pluginsToInstall) && ('name' in pluginsToInstall || 'key' in pluginsToInstall || 'install' in pluginsToInstall || sym.$PluginType in pluginsToInstall || (pluginsToInstall as any).type))))
+			(SandboxTempo as any).use(pluginsToInstall);
 
 		Object.freeze(SandboxTempo);
 
@@ -1601,6 +1751,7 @@ export class Tempo {
 		if (!_lifecycle.ready) return;
 		switch (host) {
 			case 'fmt': {
+				if (!ensureModule(this, 'FormatModule')) return;
 				const allFormats = Object.assign({}, enums.FORMAT, this.#local.config.registry?.formats);
 				ownKeys(allFormats).forEach(key => {
 					if (isString(key)) this.#setLazy(target, key, () => this.format(key as t.Format));
@@ -1608,6 +1759,7 @@ export class Tempo {
 				break;
 			}
 			case 'term': {
+				if (!ensureModule(this, 'TermsModule')) return;
 				Tempo.#terms.forEach(term => {
 					const define = (keyOnly: boolean, anchor?: any, alias?: string) => {
 						try {

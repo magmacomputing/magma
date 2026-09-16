@@ -116,8 +116,8 @@ export const DEFAULTS = {
 		/** Tempo(01-Jan-1000.00:00:00).ns */										get minTempo() { return Temporal.Instant.from('1000-01-01T00:00+00:00').epochNanoseconds },
 	},
 	MONTH_DAY: {
-		/** supported locales for month-day disambiguation */ locales: ['en-US', 'en-AS'],
-		/** layout patterns for month-day parsing */ layouts: [['dayMonthYearShort', 'monthDayYearShort'], ['dayMonthYear', 'monthDayYear']],
+		/** supported locales for month-day disambiguation */		locales: ['en-US', 'en-AS'],
+		/** layout patterns for month-day parsing */						layouts: [['dayMonthYearShort', 'monthDayYearShort'], ['dayMonthYear', 'monthDayYear']],
 		/** timezone mappings for locale-based month-day ordering */ timezones: {
 			/** US timezones that use month/day/year format */ 'en-US': [
 				"America/Adak", "America/Anchorage", "America/Boise", "America/Chicago", "America/Denver",

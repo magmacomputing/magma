@@ -6,11 +6,11 @@ import { TempoError } from '../support/support.error.js';
 import { getRuntime } from '../support/support.runtime.js';
 import { hasOwn, logError } from '#tempo/support/support.util.js';
 import type { Tempo } from '../tempo.class.js';
-import type { Plugin, Module } from './plugin.type.js';
+import type { Plugin, Module, PluginFactory } from './plugin.type.js';
 import { TEMPO_VERSION } from '../tempo.version.js';
 
 export type TempoType = typeof Tempo;
-export type TempoPlugin = Plugin<TempoType>;
+export type TempoPlugin<Opts = any> = PluginFactory<Plugin<TempoType, Opts>, Opts>;
 export type TempoModule = Module<TempoType>;
 
 /**
@@ -223,12 +223,25 @@ export function defineInterpreterModule(name: string, logic: any, statics?: Reco
  * Used to register a plugin.
  *
  * @param plugin - The plugin definition to register
- * @returns The registered plugin with plugin type metadata attached
+ * @returns The registered plugin factory with plugin type metadata attached
  */
-export function definePlugin<T extends Plugin<TempoType>>(plugin: T): T {
-	const result = { ...plugin, [sym.$PluginType]: 'plugin' };
+export function definePlugin<T extends Plugin<TempoType>, Opts = any>(plugin: T): PluginFactory<T, Opts> {
+	const factory = function (options?: Opts) {
+		return {
+			...plugin,
+			options,
+			[sym.$PluginType]: 'plugin'
+		};
+	};
+
+	const { name, ...rest } = plugin;
+	const result = Object.assign(factory, rest, { [sym.$PluginType]: 'plugin' });
+	if (name) {
+		Object.defineProperty(result, 'name', { value: name, configurable: true });
+	}
+
 	registerPlugin(result);
-	return result as unknown as T;
+	return result as unknown as PluginFactory<T, Opts>;
 }
 
 /**
@@ -271,9 +284,9 @@ export type NamespaceConfig = {
  * Creates a lazy-loaded property namespace on the Tempo instance.
  *
  * @param config - The namespace configuration including name, version, and resolvers
- * @returns A registered namespace plugin
+ * @returns A registered namespace plugin factory
  */
-export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> {
+export function defineNamespace<Opts = any>(config: NamespaceConfig): PluginFactory<Plugin<TempoType>, Opts> {
 	if (isSymbol(config.name) && !config.name.description)
 		throw new TempoError('Tempo Security: Symbol namespaces must have a description.');
 
@@ -323,6 +336,21 @@ export function defineNamespace(config: NamespaceConfig): Plugin<TempoType> {
 		}
 	} as unknown as Plugin<TempoType>;
 
-	registerPlugin(plugin);
-	return plugin;
+	const factory = function (options?: Opts) {
+		return {
+			...plugin,
+			options,
+			[sym.$PluginType]: 'namespace'
+		};
+	};
+
+	const { name, ...rest } = plugin;
+	const result = Object.assign(factory, rest, { [sym.$PluginType]: 'namespace' });
+	if (name) {
+		Object.defineProperty(result, 'name', { value: name, configurable: true });
+	}
+
+	registerPlugin(result);
+	return result as unknown as PluginFactory<Plugin<TempoType>, Opts>;
 }
+
