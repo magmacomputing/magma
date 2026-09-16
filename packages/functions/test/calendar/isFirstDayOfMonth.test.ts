@@ -16,4 +16,12 @@ describe('isFirstDayOfMonth', () => {
 		const t = { day: 1 }; // Duck typing to simulate native Temporal object
 		expect(isFirstDayOfMonth(t as any)).toBe(true);
 	});
+
+	it('should handle objects exposing .zdt without top-level .day property', () => {
+		const wrapper = { zdt: { day: 1 } };
+		expect(isFirstDayOfMonth(wrapper as any)).toBe(true);
+
+		const wrapperNotFirst = { zdt: { day: 15 } };
+		expect(isFirstDayOfMonth(wrapperNotFirst as any)).toBe(false);
+	});
 });

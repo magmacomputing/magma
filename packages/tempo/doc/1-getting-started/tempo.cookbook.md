@@ -172,9 +172,21 @@ const t = new Tempo('now', {
 ## Business Logic and Terms
 
 ### Is it the weekend?
+For simple ISO checks, Saturday is `6` and Sunday is `7`:
 ```typescript
 const t = new Tempo();
 const isWeekend = t.dow >= 6; // Saturday = 6, Sunday = 7
+```
+
+For international applications, use the locale-aware `t.intl.weekend` array (backed by `Intl.LocaleInfo`), which reflects regional weekend days (e.g. `[5, 6]` for Friday & Saturday in Middle Eastern locales like `ar-SA`):
+```typescript
+// Standard weekend ([6, 7] for Saturday and Sunday in en-US)
+const us = new Tempo({ locale: 'en-US' });
+const isUsWeekend = us.intl.weekend.includes(us.dow);
+
+// Regional weekend ([5, 6] for Friday and Saturday in ar-SA)
+const sa = new Tempo({ locale: 'ar-SA' });
+const isSaWeekend = sa.intl.weekend.includes(sa.dow);
 ```
 
 ### What Fiscal Quarter are we in?

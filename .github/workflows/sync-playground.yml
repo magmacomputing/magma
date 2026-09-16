@@ -1,0 +1,39 @@
+name: Sync Playground to Standalone Repository
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-playground:
+    name: Sync packages/playground -> tempo-playground
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout magma
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Stage Playground Files
+        run: |
+          mkdir -p /tmp/tempo-playground
+          cp -r packages/playground/. /tmp/tempo-playground/
+          rm -rf /tmp/tempo-playground/node_modules /tmp/tempo-playground/dist
+
+      - name: Push to magmacomputing/tempo-playground
+        env:
+          TARGET_REPO: "magmacomputing/tempo-playground"
+          SYNC_TOKEN: ${{ secrets.TEMPO_PLAYGROUND_TOKEN || secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          cd /tmp/tempo-playground
+          git init -b main
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+
+          MAGMA_HASH=$(git -C "$GITHUB_WORKSPACE" rev-parse --short HEAD)
+          git commit -m "chore: sync playground from magma@${MAGMA_HASH}"
+
+          git push --force "https://x-access-token:${SYNC_TOKEN}@github.com/${TARGET_REPO}.git" main

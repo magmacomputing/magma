@@ -16,7 +16,7 @@ We categorize utility functions into two distinct buckets. You must determine wh
 These functions rely strictly on standard date calculations and duck-typing native properties (like `.day`, `.month`, `.year`). 
 - **Requirement**: They MUST accept raw `Temporal` primitives (or a polymorphic duck-typed interface) alongside `Tempo` instances.
 - **Why?**: This allows standard `Temporal` API users to download and use `tempo-fns` *without* being forced to adopt `Tempo`.
-- **Example**: `isFirstDayOfMonth(input: TemporalLike | Tempo)` simply checks `input.day === 1`, which natively works for both objects!
+- **Example**: `isFirstDayOfMonth(input: TemporalLike | Tempo)` uses `const target = unwrapTemporal(input)` to unwrap any `Tempo` instance to its underlying native `Temporal.ZonedDateTime` (via `.zdt`) before checking `target.day === 1`. This standardizes all duck-typing strictly on native Temporal properties (`.day`, `.month`, `.year`) while preserving seamless cross-compatibility!
 
 ### B. Tempo-Enhanced Functions
 These functions perform complex business intelligence calculations (like fiscal quarters, astrological seasons) and **require** the internal `Tempo` Terms engine.
