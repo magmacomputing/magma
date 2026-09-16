@@ -540,10 +540,10 @@ export const TickerPlugin = definePlugin({
 			const defaultOpts = opts ?? (cls as any)?.config?.pluginOptions?.ticker;
 			if (defaultOpts && isObject(defaultOpts)) {
 				if (isUndefined(arg1))
-					return createTicker(cls, defaultOpts.interval ?? defaultOpts);
+					return createTicker(cls, defaultOpts);
 
 				if (isFunction(arg1) && isUndefined(arg2))
-					return createTicker(cls, defaultOpts.interval ?? defaultOpts, arg1);
+					return createTicker(cls, defaultOpts, arg1);
 
 				if (isObject(arg1) && !isFunction(arg1))
 					return createTicker(cls, { ...defaultOpts, ...arg1 }, arg2);
