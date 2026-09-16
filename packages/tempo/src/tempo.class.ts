@@ -133,6 +133,7 @@ export class Tempo {
 
 	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return Tempo[$Internal]().pluginsDb.terms }
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
+	/** tracks invalid locales already warned about to avoid log spam */		static #warnedLocales: Set<string> = new Set();
 
 	/** @internal Master Guard predicate (implements RegExp-like interface) */static get [$guard]() { return (this[$Internal]() as any)[$guard] ?? { test: () => true }; }
 
@@ -264,8 +265,10 @@ export class Tempo {
 		const globalMdy = Tempo.MONTH_DAY as t.MonthDay;
 
 		const rawLocale = Tempo.#locale(locale);
-		if (!getLC(rawLocale))
+		if (!getLC(rawLocale) && !Tempo.#warnedLocales.has(rawLocale)) {
+			Tempo.#warnedLocales.add(rawLocale);
 			logWarn(`Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, shape.config);
+		}
 
 		const li = getLI(rawLocale);
 		const baseName = li.baseName;
@@ -578,6 +581,7 @@ export class Tempo {
 			Array.isArray(entry) &&
 			entry.length === 2 &&
 			!Array.isArray(entry[0]) &&
+			(isFunction(entry[0]) || (isObject(entry[0]) && ('install' in entry[0] || 'define' in entry[0] || 'key' in entry[0] || 'name' in entry[0] || sym.$PluginType in entry[0]))) &&
 			isObject(entry[1]) &&
 			!isPlainConfigDict(entry[1]) &&
 			!isFunction(entry[1]) &&
@@ -734,7 +738,7 @@ export class Tempo {
 								}
 							}
 
-							if (installed.has(name)) {
+							if (name && installed.has(name)) {
 								if (!isEmpty(resolvedOptions)) {
 									registerPlugin(plugin, state);
 									const installOpts = resolvedOptions;
@@ -744,7 +748,8 @@ export class Tempo {
 								}
 								return;
 							}
-							installed.add(name);
+							if (!name && installed.has(plugin)) return;		// identity-based dedup for unnamed plugins
+							if (name) installed.add(name); else installed.add(plugin);
 
 							registerPlugin(plugin, state);
 							if (plugin.version && isString(name)) {
@@ -1763,7 +1768,7 @@ export class Tempo {
 				Tempo.#terms.forEach(term => {
 					const define = (keyOnly: boolean, anchor?: any, alias?: string) => {
 						try {
-							const result = term.define ? term.define.call(this, keyOnly, anchor, alias) : (term.resolve ? term.resolve.call(this, anchor, alias) : undefined);
+							const result = term.define ? term.define.call(this, keyOnly, anchor, alias) : undefined;
 							const res = Array.isArray(result) ? getTermRange(this, result, keyOnly, anchor) : result;
 							return isObject(res) ? secure(res) : res;
 						} catch (err: unknown) {
