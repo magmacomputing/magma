@@ -158,6 +158,11 @@ describe('webtoken.library', () => {
 			// HS512
 			const token512 = await signJWS(payload, secret, { alg: 'HS512', typ: 'JWT' });
 			expect(await verifyJWS(token512, secret, 'HS512')).toBe(true);
+
+			// Uint8Array secret
+			const uint8Secret = new TextEncoder().encode('binary-hmac-secret-key-1234567890');
+			const tokenUint8 = await signJWS(payload, uint8Secret, { alg: 'HS256', typ: 'JWT' });
+			expect(await verifyJWS(tokenUint8, uint8Secret, 'HS256')).toBe(true);
 		});
 
 		it('rejects signature verification if token payload or signature is tampered', async () => {

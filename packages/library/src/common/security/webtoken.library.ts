@@ -38,6 +38,10 @@ export interface JWSHeader<Alg extends string = string> {
 	[key: string]: any;
 }
 
+export interface JWSHMACHeader extends JWSHeader<HMACAlgorithm> {
+	alg: HMACAlgorithm;
+}
+
 /**
  * Parses and decodes all three segments of a JSON Web Token (Header, Payload, Signature) without signature verification.
  * 
@@ -198,12 +202,7 @@ export async function signJWS(
 export async function signJWS(
 	payload: object,
 	keyOrSecret: string | Uint8Array,
-	headers: JWSHeader<HMACAlgorithm>
-): Promise<string>;
-export async function signJWS(
-	payload: object,
-	keyOrSecret: CryptoKey | string | Uint8Array,
-	headers?: JWSHeader
+	headers: JWSHMACHeader
 ): Promise<string>;
 export async function signJWS(
 	payload: object,

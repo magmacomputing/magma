@@ -1,6 +1,6 @@
 import { asObject } from '#library/object.library.js';
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNullish } from '#library/assertion.library.js';
+import { isNullish, isReference } from '#library/assertion.library.js';
 import { instant } from '#library/temporal.library.js';
 import { getHemisphere } from '#library/international.library.js';
 import type { DebugLevel } from '#library/logger.class.js';
@@ -38,7 +38,12 @@ const getStore = () => {
 				import('#browser/webstore.class.js')
 					.then(({ WebStore }) => {
 						const local = new WebStore('local');
-						Object.assign(mapStore, local.get(MAP_KEY, {}));// fetch previous coordinates
+						const stashed = local.get<MapStore>(MAP_KEY, {} as MapStore);
+						if (isReference(stashed)) {
+							if (stashed.geolocation && (!stashed.geolocation.coords || (stashed.geolocation as any).$GeolocationPosition))
+								delete (stashed as any).geolocation;
+							Object.assign(mapStore, stashed);
+						}
 						resolve(local);																	// localStorage wrapper
 					})
 					.catch(reject);

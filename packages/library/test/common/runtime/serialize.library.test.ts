@@ -451,6 +451,33 @@ describe('serialize.library', () => {
 			expect(objectify('"~ninvalid"')).toBe('~ninvalid');
 			expect(objectify('"~tinvalid-date"')).toBe('~tinvalid-date');
 		});
+
+		it('should serialize and deserialize host or class objects with prototype getters cleanly', () => {
+			class MockCoordinates {
+				get latitude() { return -28.807; }
+				get longitude() { return 153.302; }
+				get altitude() { return null; }
+				get accuracy() { return 20; }
+				get altitudeAccuracy() { return null; }
+				get heading() { return null; }
+				get speed() { return null; }
+				get [Symbol.toStringTag]() { return 'GeolocationCoordinates'; }
+			}
+
+			class MockPosition {
+				get coords() { return new MockCoordinates() as any; }
+				get timestamp() { return 1773651260108; }
+				get [Symbol.toStringTag]() { return 'GeolocationPosition'; }
+			}
+
+			const pos = new MockPosition();
+			const json = stringify(pos);
+			const restored = objectify<any>(json);
+
+			expect(restored.coords.latitude).toBe(-28.807);
+			expect(restored.coords.longitude).toBe(153.302);
+			expect(restored.timestamp).toBe(1773651260108);
+		});
 	});
 
 });

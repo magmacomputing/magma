@@ -1,5 +1,5 @@
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
-import { isObject, isArray, isFunction, isDefined, isNullish, isMap, isSet, isSafeKey } from '#library/assertion.library.js';
+import { isObject, isArray, isFunction, isDefined, isNullish, isMap, isSet, isDate, isRegExp, isSafeKey, isPrimitive } from '#library/assertion.library.js';
 import { getType } from '#library/type.library.js';
 import type { Extend, Property } from '#library/type.library.js';
 
@@ -24,27 +24,66 @@ export const unQuoteObj = (obj: any) => {
 }
 
 /**
- * Recursively copies enumerable properties of an object into a new object.
- * Returns the original value if it is not an object or is nullish.
+ * Safely collects own and prototype getter / enumerable property keys across the inheritance chain.
+ * Excludes unsafe prototype pollution keys and Object.prototype built-ins.
+ */
+const getObjectKeys = (obj: any): PropertyKey[] => {
+	const keys = new Set<PropertyKey>();
+	let curr = obj;
+	let depth = 0;
+
+	while (curr && curr !== Object.prototype && depth++ < 10) {
+		const descs = Object.getOwnPropertyDescriptors(curr);
+		for (const [key, desc] of Object.entries(descs)) {
+			if (!isSafeKey(key)) continue;
+			if (desc.enumerable || isFunction(desc.get)) {
+				keys.add(key);
+			}
+		}
+		curr = Object.getPrototypeOf(curr);
+	}
+
+	return Array.from(keys);
+};
+
+/**
+ * Recursively converts an object or class/host instance with prototype getters into a plain object.
+ * Returns the original value if it is not an object or is nullish, or specialized types (Date, RegExp, Map, Set).
  * 
- * @param obj - The object to copy
- * @returns A new object with the copied properties
+ * @param obj - The object to convert
+ * @returns A new plain object with copied/evaluated properties
  * @example
  * ```ts
  * const copy = asObject({ a: 1 });
  * ```
  */
-export const asObject = <T>(obj?: Record<PropertyKey, any>) => {
-	if (isNullish(obj) || !isObject(obj))
+export const asObject = <T>(obj?: Record<PropertyKey, any>): T => {
+	if (isPrimitive(obj) || isFunction(obj))
 		return obj as T;
 
-	const temp: any = isArray(obj) ? [] : {};
+	if (isArray(obj))
+		return obj.map(item => asObject(item)) as unknown as T;
 
-	ownKeys(obj)
-		.forEach(key => {
-			if (!isSafeKey(key)) return;
-			temp[key] = asObject(obj[key]);
-		});
+	if (isDate(obj) || isRegExp(obj) || isMap(obj) || isSet(obj))
+		return obj as T;
+
+	if (isFunction((obj as any).toJSON)) {
+		try {
+			return asObject((obj as any).toJSON());
+		} catch {
+			// fallback to property extraction if toJSON throws
+		}
+	}
+
+	const temp: Record<PropertyKey, any> = {};
+
+	for (const key of getObjectKeys(obj)) {
+		try {
+			temp[key] = asObject((obj as any)[key]);
+		} catch {
+			// ignore unreadable or throwing getters
+		}
+	}
 
 	return temp as T;
 }

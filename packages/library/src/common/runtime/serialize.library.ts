@@ -1,9 +1,10 @@
 import { curry } from '#library/function.library.js';
 import { ownKeys, ownValues, ownEntries } from '#library/primitive.library.js';
 import { cleanify } from '#library/json.library.js';
+import { asObject } from '#library/object.library.js';
 
 import { asType } from '#library/type.library.js';
-import { isType, isEmpty, isDefined, isUndefined, isNullish, isString, isObject, isArray, isFunction, isSymbolFor, isSymbol, isSafeKey, isNumeric } from '#library/assertion.library.js';
+import { isType, isEmpty, isDefined, isUndefined, isNullish, isString, isObject, isArray, isFunction, isSymbolFor, isSymbol, isSafeKey, isNumeric, isReference } from '#library/assertion.library.js';
 import { sym } from '#library/symbol.library.js';
 import type { Obj, Type } from '#library/type.library.js';
 
@@ -371,18 +372,22 @@ function stringize<T>(obj: T, recurse = true): string {			// hide the second par
 				case isFunction(value.toJSON):											// Object has its own toJSON method
 					return one(stringize(value.toJSON()));
 
-				case isFunction(value.toString): {									// Object has its own toString method
+				case isFunction(value.toString) && value.toString !== Object.prototype.toString: {									// Object has its own toString method
 					const str = value.toString();
 					return one(str.includes('"')											// TODO: improve detection of JSON vs non-JSON strings
 						? str
 						: JSON.stringify(str));
 				}
 
-				case isFunction(value.valueOf):											// Object has its own valueOf method		
+				case isFunction(value.valueOf) && value.valueOf !== Object.prototype.valueOf:											// Object has its own valueOf method		
 					return one(JSON.stringify(value.valueOf()));
 
-				default:																						// else standard stringify
-					return one(JSON.stringify(value, (key: string, o: any) => isEmpty(key) ? o : stringize(o)));
+				default: {
+					const plain = asObject(value);
+					return (isReference(plain) && Object.keys(plain).length > 0)
+						? stringize(plain)
+						: one(JSON.stringify(value, (key: string, o: any) => isEmpty(key) ? o : stringize(o)));
+				}
 			}
 		}
 	}
