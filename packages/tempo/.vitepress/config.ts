@@ -29,7 +29,7 @@ export default withMermaid(defineConfig({
     },
     nav: [
       { text: 'Guide', link: '/README' },
-      { text: 'Playground', link: '/playground/index.html', target: '_self' },
+      { text: 'REPL', link: '/repl/index.html', target: '_self' },
       { text: 'API Reference', link: '/api/index.html', target: '_self' },
       { text: 'Library API', link: '/api/library/index.html', target: '_self' },
       { text: 'Releases', link: '/doc/8-project-and-support/releases/' },
@@ -45,7 +45,7 @@ export default withMermaid(defineConfig({
             { text: 'Installation', link: '/doc/1-getting-started/installation' },
             { text: 'AI & IDE Integration', link: '/doc/1-getting-started/ai-integration' },
             { text: 'Cookbook', link: '/doc/1-getting-started/tempo.cookbook' },
-            { text: 'Interactive REPL', link: '/doc/1-getting-started/tempo.repl' }
+            { text: 'REPL & Showcase', link: '/doc/1-getting-started/tempo.repl' }
           ]
         },
         {

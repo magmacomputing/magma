@@ -263,7 +263,7 @@ t.format('ui-date'); // Resolved with all modifiers intact!
 ---
 
 ### Ticker Plugin
-The Ticker engine is a premium plugin for precisely driving business logic (like recurring billing or reporting cycles) on specific date boundaries.
+The Ticker engine is a community plugin for precisely driving business logic (like recurring billing or reporting cycles) on specific date boundaries.
 
 ```typescript
 // Drive internal reporting precisely when a new quarter begins

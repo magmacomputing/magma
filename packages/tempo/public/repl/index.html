@@ -14,6 +14,8 @@
 		:root {
 			--bg: #0b0f19;
 			--panel-bg: #111827;
+			--card-bg: #151d30;
+			--subcard-bg: #0f172a;
 			--panel-border: rgba(255, 255, 255, 0.08);
 			--accent: #38bdf8;
 			--accent-glow: rgba(56, 189, 248, 0.25);
@@ -24,6 +26,33 @@
 			--text-main: #f8fafc;
 			--text-muted: #94a3b8;
 			--code-bg: #070a11;
+			--header-bg: rgba(17, 24, 39, 0.85);
+			--footer-bg: #090d16;
+			--line-numbers-bg: rgba(0, 0, 0, 0.25);
+			--result-bg: rgba(0, 0, 0, 0.35);
+			--select-bg: #1e293b;
+		}
+
+		[data-theme="light"] {
+			--bg: #f8fafc;
+			--panel-bg: #ffffff;
+			--card-bg: #ffffff;
+			--subcard-bg: #f1f5f9;
+			--panel-border: rgba(0, 0, 0, 0.09);
+			--accent: #0284c7;
+			--accent-glow: rgba(2, 132, 199, 0.2);
+			--primary: #6366f1;
+			--success: #059669;
+			--warning: #d97706;
+			--error: #dc2626;
+			--text-main: #0f172a;
+			--text-muted: #64748b;
+			--code-bg: #ffffff;
+			--header-bg: rgba(255, 255, 255, 0.92);
+			--footer-bg: #f1f5f9;
+			--line-numbers-bg: #f8fafc;
+			--result-bg: rgba(0, 0, 0, 0.03);
+			--select-bg: #f1f5f9;
 		}
 
 		* {
@@ -39,6 +68,7 @@
 			color: var(--text-main);
 			font-family: 'Outfit', sans-serif;
 			overflow: hidden;
+			transition: background-color 0.2s ease, color 0.2s ease;
 		}
 
 		.app-container {
@@ -53,10 +83,11 @@
 			align-items: center;
 			justify-content: space-between;
 			padding: 10px 20px;
-			background: rgba(17, 24, 39, 0.85);
+			background: var(--header-bg);
 			backdrop-filter: blur(12px);
 			border-bottom: 1px solid var(--panel-border);
 			z-index: 10;
+			transition: background 0.2s ease;
 		}
 
 		.brand {
@@ -75,6 +106,13 @@
 			font-weight: 700;
 			letter-spacing: -0.5px;
 			background: linear-gradient(135deg, #fff, #93c5fd);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		[data-theme="light"] .brand-title {
+			background: linear-gradient(135deg, #0f172a, #0284c7);
 			-webkit-background-clip: text;
 			background-clip: text;
 			-webkit-text-fill-color: transparent;
@@ -109,14 +147,14 @@
 		}
 
 		select {
-			background: #1e293b;
+			background: var(--select-bg);
 			border: 1px solid var(--panel-border);
 			color: var(--text-main);
 			padding: 6px 12px;
 			border-radius: 8px;
 			outline: none;
 			cursor: pointer;
-			transition: border-color 0.15s ease;
+			transition: border-color 0.15s ease, background-color 0.2s ease;
 		}
 
 		select:hover,
@@ -130,7 +168,7 @@
 			gap: 6px;
 			font-size: 0.78rem;
 			color: var(--text-muted);
-			background: rgba(255, 255, 255, 0.04);
+			background: var(--subcard-bg);
 			border: 1px solid var(--panel-border);
 			padding: 5px 10px;
 			border-radius: 8px;
@@ -180,13 +218,14 @@
 		}
 
 		.btn-ghost {
-			background: rgba(255, 255, 255, 0.06);
+			background: var(--subcard-bg);
 			color: var(--text-main);
 			border: 1px solid var(--panel-border);
 		}
 
 		.btn-ghost:hover {
-			background: rgba(255, 255, 255, 0.12);
+			border-color: var(--accent);
+			background: var(--accent-glow);
 		}
 
 		/* Main Layout */
@@ -221,7 +260,7 @@
 			align-items: center;
 			justify-content: space-between;
 			padding: 8px 16px;
-			background: rgba(15, 23, 42, 0.6);
+			background: var(--subcard-bg);
 			border-bottom: 1px solid var(--panel-border);
 			font-size: 0.75rem;
 			font-weight: 700;
@@ -244,10 +283,10 @@
 			font-family: 'Fira Code', monospace;
 			font-size: 0.88rem;
 			line-height: 1.5;
-			color: #475569;
+			color: var(--text-muted);
 			text-align: right;
 			user-select: none;
-			background: rgba(0, 0, 0, 0.2);
+			background: var(--line-numbers-bg);
 			border-right: 1px solid var(--panel-border);
 			overflow: hidden;
 		}
@@ -258,7 +297,7 @@
 			font-family: 'Fira Code', monospace;
 			font-size: 0.88rem;
 			line-height: 1.5;
-			color: #f1f5f9;
+			color: var(--text-main);
 			background: transparent;
 			border: none;
 			outline: none;
@@ -271,12 +310,12 @@
 		/* Output Area */
 		.result-section {
 			padding: 16px;
-			background: rgba(15, 23, 42, 0.4);
+			background: var(--subcard-bg);
 			border-bottom: 1px solid var(--panel-border);
 		}
 
 		.result-box {
-			background: rgba(0, 0, 0, 0.3);
+			background: var(--result-bg);
 			border: 1px solid rgba(16, 185, 129, 0.25);
 			border-radius: 8px;
 			padding: 12px 16px;
@@ -322,8 +361,8 @@
 		}
 
 		.badge-log {
-			background: #334155;
-			color: #cbd5e1;
+			background: var(--panel-border);
+			color: var(--text-muted);
 		}
 
 		.badge-info {
@@ -343,7 +382,7 @@
 
 		.log-content {
 			flex: 1;
-			color: #e2e8f0;
+			color: var(--text-main);
 			white-space: pre-wrap;
 		}
 
@@ -353,10 +392,12 @@
 			align-items: center;
 			justify-content: space-between;
 			padding: 6px 16px;
-			background: #090d16;
+			background: var(--footer-bg);
 			border-top: 1px solid var(--panel-border);
 			font-size: 0.75rem;
 			color: var(--text-muted);
+			transition: background 0.2s ease;
+		}
 		}
 
 		.status-left {
@@ -463,6 +504,10 @@
 				<button id="clearBtn" class="btn btn-ghost" title="Clear Console">
 					<span>Clear</span>
 				</button>
+
+				<button id="btnThemeToggle" class="btn btn-ghost" title="Toggle Light/Dark Theme" style="padding: 6px 10px;">
+					<span id="themeIcon">🌙</span>
+				</button>
 			</div>
 		</header>
 
@@ -554,15 +599,17 @@ console.log('Illumination:', (now.term.lunar.illumination * 100).toFixed(1) + '%
 return \`Current Lunar Phase: \${now.term.lunar.phase}\`;`,
 
 			quarters: `// 💼 Fiscal Quarters and Tempo Math
-const t = new Tempo('2026-02-15');
+const t = new Tempo('2026-02-15', { sphere: 'north' });
 
-console.log('Current Fiscal Quarter:', t.term.quarter.label); // "Q1"
+console.log('Quarter Key:', t.term.qtr); // "Q1"
+console.log('Quarter Label:', t.term.quarter.label); // "First Quarter"
 console.log('Quarter Start:', t.term.quarter.start.format('{yyyy}-{mm}-{dd}'));
 console.log('Quarter End:', t.term.quarter.end.format('{yyyy}-{mm}-{dd}'));
 
-// Chainable Mutation:
-const nextQtr = t.add({ months: 3 });
-console.log('3 Months Later:', nextQtr.term.quarter.label); // "Q2"
+// Chainable Semantic Term Mutation:
+const nextQtr = t.add({ '#quarter': 1 });
+console.log('Next Quarter (Key):', nextQtr.term.qtr); // "Q2"
+console.log('Next Quarter (Label):', nextQtr.term.quarter.label); // "Second Quarter"
 
 return nextQtr.format('Next quarter: {#quarter}');`,
 
@@ -787,6 +834,57 @@ return 'Dynamic import successful!';`
 				alert('Could not copy URL: ' + err.message);
 			}
 		});
+
+		// Theme Management & VitePress Sync
+		const btnThemeToggle = document.getElementById('btnThemeToggle');
+		const themeIcon = document.getElementById('themeIcon');
+
+		function setTheme(theme, save = true) {
+			document.documentElement.setAttribute('data-theme', theme);
+			if (themeIcon) themeIcon.textContent = theme === 'light' ? '☀️' : '🌙';
+			if (save) {
+				try { localStorage.setItem('tempo-theme', theme); } catch {}
+			}
+		}
+
+		function initTheme() {
+			let saved = null;
+			try { saved = localStorage.getItem('tempo-theme'); } catch {}
+
+			if (!saved) {
+				try {
+					if (window.parent && window.parent.document && window.parent.document.documentElement) {
+						const isParentDark = window.parent.document.documentElement.classList.contains('dark');
+						saved = isParentDark ? 'dark' : 'light';
+					}
+				} catch {}
+			}
+
+			if (!saved) {
+				saved = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+			}
+
+			setTheme(saved, false);
+
+			// Watch parent VitePress theme changes if running in iframe
+			try {
+				if (window.parent && window.parent.document && window.parent.document.documentElement) {
+					const observer = new MutationObserver(() => {
+						const isParentDark = window.parent.document.documentElement.classList.contains('dark');
+						setTheme(isParentDark ? 'dark' : 'light', true);
+					});
+					observer.observe(window.parent.document.documentElement, { attributes: true, attributeFilter: ['class'] });
+				}
+			} catch {}
+		}
+
+		btnThemeToggle?.addEventListener('click', () => {
+			const current = document.documentElement.getAttribute('data-theme') || 'dark';
+			const next = current === 'light' ? 'dark' : 'light';
+			setTheme(next, true);
+		});
+
+		initTheme();
 
 		// Boot
 		initRuntime();

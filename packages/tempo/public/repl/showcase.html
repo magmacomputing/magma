@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Tempo Interactive Showcase & Workbench</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link
+		href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+		rel="stylesheet">
+	<style>
+		:root {
+			--bg: #0b0f19;
+			--panel-bg: #111827;
+			--card-bg: #151d30;
+			--subcard-bg: #0a0f1d;
+			--panel-border: rgba(255, 255, 255, 0.08);
+			--card-border: rgba(255, 255, 255, 0.12);
+			--accent: #38bdf8;
+			--accent-glow: rgba(56, 189, 248, 0.25);
+			--purple: #c084fc;
+			--purple-glow: rgba(192, 132, 252, 0.25);
+			--primary: #818cf8;
+			--success: #10b981;
+			--warning: #f59e0b;
+			--error: #ef4444;
+			--text-main: #f8fafc;
+			--text-muted: #94a3b8;
+			--text-dim: #64748b;
+			--code-bg: #070a11;
+			--header-bg: rgba(17, 24, 39, 0.9);
+			--footer-bg: #070a11;
+			--input-bg: #0a0f1d;
+			--chip-bg: rgba(15, 23, 42, 0.9);
+		}
+
+		[data-theme="light"] {
+			--bg: #f8fafc;
+			--panel-bg: #ffffff;
+			--card-bg: #ffffff;
+			--subcard-bg: #f1f5f9;
+			--panel-border: rgba(0, 0, 0, 0.08);
+			--card-border: rgba(0, 0, 0, 0.1);
+			--accent: #0284c7;
+			--accent-glow: rgba(2, 132, 199, 0.2);
+			--purple: #7e22ce;
+			--purple-glow: rgba(126, 34, 206, 0.2);
+			--primary: #4f46e5;
+			--success: #059669;
+			--warning: #d97706;
+			--error: #dc2626;
+			--text-main: #0f172a;
+			--text-muted: #475569;
+			--text-dim: #64748b;
+			--code-bg: #0f172a;
+			--header-bg: rgba(255, 255, 255, 0.92);
+			--footer-bg: #f1f5f9;
+			--input-bg: #f8fafc;
+			--chip-bg: #f1f5f9;
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		html,
+		body {
+			min-height: 100%;
+			background-color: var(--bg);
+			color: var(--text-main);
+			font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			overflow-x: hidden;
+			transition: background-color 0.2s ease, color 0.2s ease;
+		}
+
+		.app-container {
+			display: flex;
+			flex-direction: column;
+			min-height: 100vh;
+		}
+
+		/* Header */
+		header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 12px 24px;
+			background: var(--header-bg);
+			backdrop-filter: blur(16px);
+			border-bottom: 1px solid var(--panel-border);
+			position: sticky;
+			top: 0;
+			z-index: 100;
+			transition: background 0.2s ease;
+		}
+
+		.brand {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			text-decoration: none;
+		}
+
+		.brand-logo {
+			width: 32px;
+			height: 32px;
+			filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.5));
+		}
+
+		.brand-info {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.brand-title {
+			font-size: 1.25rem;
+			font-weight: 800;
+			letter-spacing: -0.5px;
+			background: linear-gradient(135deg, #ffffff, #93c5fd);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+			line-height: 1.2;
+		}
+
+		[data-theme="light"] .brand-title {
+			background: linear-gradient(135deg, #0f172a, #0284c7);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.brand-subtitle {
+			font-size: 0.75rem;
+			color: var(--text-muted);
+		}
+
+		.controls {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			flex-wrap: wrap;
+		}
+
+		/* Mode Switcher Tabs */
+		.mode-tabs {
+			display: flex;
+			background: var(--subcard-bg);
+			padding: 3px;
+			border-radius: 10px;
+			border: 1px solid var(--panel-border);
+			gap: 2px;
+		}
+
+		.mode-tab {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			padding: 6px 14px;
+			border-radius: 8px;
+			border: none;
+			background: transparent;
+			color: var(--text-muted);
+			font-size: 0.85rem;
+			font-weight: 600;
+			font-family: inherit;
+			cursor: pointer;
+			transition: all 0.2s ease;
+		}
+
+		.mode-tab:hover {
+			color: var(--text-main);
+		}
+
+		.mode-tab.active-core {
+			background: #0284c7;
+			color: #ffffff;
+			box-shadow: 0 2px 10px rgba(2, 132, 199, 0.35);
+		}
+
+		.mode-tab.active-plugins {
+			background: #9333ea;
+			color: #ffffff;
+			box-shadow: 0 2px 10px rgba(147, 51, 234, 0.35);
+		}
+
+		.nav-link-btn {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			padding: 6px 12px;
+			border-radius: 8px;
+			border: 1px solid var(--panel-border);
+			background: var(--subcard-bg);
+			color: var(--text-main);
+			text-decoration: none;
+			font-size: 0.82rem;
+			font-weight: 600;
+			transition: all 0.2s ease;
+		}
+
+		.nav-link-btn:hover {
+			border-color: var(--accent);
+			background: var(--accent-glow);
+			color: var(--accent);
+		}
+
+		.tz-badge {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			padding: 4px 10px;
+			border-radius: 999px;
+			background: var(--subcard-bg);
+			border: 1px solid var(--panel-border);
+			font-size: 0.75rem;
+			font-family: 'Fira Code', monospace;
+			color: var(--success);
+		}
+
+		/* Main Content Layout */
+		main {
+			flex: 1;
+			max-width: 1360px;
+			width: 100%;
+			margin: 0 auto;
+			padding: 16px 18px 24px;
+			display: flex;
+			flex-direction: column;
+			gap: 16px;
+		}
+
+		/* Section Cards */
+		.card {
+			background: var(--card-bg);
+			border-radius: 14px;
+			border: 1px solid var(--panel-border);
+			padding: 16px 18px;
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+			backdrop-filter: blur(12px);
+			transition: border-color 0.2s;
+		}
+
+		.card-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 14px;
+			flex-wrap: wrap;
+			gap: 10px;
+		}
+
+		.card-title-group {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.card-title {
+			font-size: 0.85rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.8px;
+		}
+
+		.card-title.cyan { color: var(--accent); }
+		.card-title.purple { color: var(--purple); }
+		.card-title.emerald { color: #34d399; }
+		.card-title.amber { color: #fbbf24; }
+
+		.badge {
+			font-size: 0.7rem;
+			font-weight: 700;
+			padding: 2px 8px;
+			border-radius: 999px;
+			letter-spacing: 0.5px;
+			border: 1px solid transparent;
+		}
+
+		.badge-cyan {
+			background: rgba(56, 189, 248, 0.12);
+			border-color: rgba(56, 189, 248, 0.3);
+			color: var(--accent);
+		}
+
+		.badge-purple {
+			background: rgba(192, 132, 252, 0.12);
+			border-color: rgba(192, 132, 252, 0.3);
+			color: var(--purple);
+		}
+
+		.badge-emerald {
+			background: rgba(52, 211, 153, 0.12);
+			border-color: rgba(52, 211, 153, 0.3);
+			color: #34d399;
+		}
+
+		/* Inputs & Controls */
+		.input-box {
+			width: 100%;
+			padding: 12px 16px;
+			border-radius: 10px;
+			background: var(--subcard-bg);
+			border: 1px solid var(--panel-border);
+			color: var(--text-main);
+			font-size: 1.05rem;
+			font-family: inherit;
+			outline: none;
+			transition: all 0.2s ease;
+		}
+
+		.input-box:focus {
+			border-color: var(--accent);
+			box-shadow: 0 0 0 3px var(--accent-glow);
+		}
+
+		.input-box.mono {
+			font-family: 'Fira Code', monospace;
+			color: var(--accent);
+			font-size: 1.15rem;
+		}
+
+		.chip-row {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			flex-wrap: wrap;
+			margin-top: 10px;
+		}
+
+		.chip-label {
+			font-size: 0.75rem;
+			color: var(--text-dim);
+			font-weight: 600;
+			text-transform: uppercase;
+		}
+
+		.chip-btn {
+			background: var(--chip-bg);
+			border: 1px solid var(--panel-border);
+			color: var(--text-main);
+			font-size: 0.78rem;
+			padding: 4px 10px;
+			border-radius: 6px;
+			cursor: pointer;
+			font-family: inherit;
+			transition: all 0.15s ease;
+		}
+
+		.chip-btn:hover {
+			border-color: var(--accent);
+			color: var(--accent);
+			background: var(--accent-glow);
+		}
+
+		.chip-btn.active {
+			background: var(--accent-glow);
+			border-color: var(--accent);
+			color: var(--accent);
+			font-weight: 600;
+		}
+
+		.token-btn {
+			background: var(--chip-bg);
+			border: 1px solid var(--panel-border);
+			color: var(--accent);
+			font-family: 'Fira Code', monospace;
+			font-size: 0.78rem;
+			padding: 4px 9px;
+			border-radius: 6px;
+			cursor: pointer;
+			transition: all 0.15s ease;
+		}
+
+		.token-btn:hover {
+			background: var(--accent-glow);
+			border-color: var(--accent);
+			transform: translateY(-1px);
+		}
+
+		/* Formatted Output Banner */
+		.output-banner {
+			margin-top: 10px;
+			padding: 12px 16px;
+			background: var(--subcard-bg);
+			border-radius: 10px;
+			border: 1px solid var(--panel-border);
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			flex-wrap: wrap;
+			gap: 10px;
+		}
+
+		.banner-label {
+			font-size: 0.75rem;
+			color: var(--text-dim);
+			text-transform: uppercase;
+			font-weight: 700;
+			letter-spacing: 0.5px;
+		}
+
+		.banner-value {
+			font-size: 1.35rem;
+			font-weight: 700;
+			color: #34d399;
+			letter-spacing: -0.3px;
+		}
+
+		/* Grid Layouts */
+		.grid-2 {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 20px;
+		}
+
+		.grid-4 {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 14px;
+		}
+
+		.grid-3 {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+			gap: 14px;
+		}
+
+		/* Mutation Buttons Grid */
+		.mut-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+			gap: 8px;
+			margin-top: 10px;
+		}
+
+		.btn-mut {
+			padding: 8px 12px;
+			border-radius: 8px;
+			border: 1px solid var(--panel-border);
+			background: var(--subcard-bg);
+			color: var(--text-main);
+			font-size: 0.8rem;
+			font-weight: 600;
+			font-family: inherit;
+			cursor: pointer;
+			transition: all 0.15s ease;
+			text-align: center;
+		}
+
+		.btn-mut:hover {
+			border-color: var(--purple);
+			background: var(--purple-glow);
+			color: var(--purple);
+		}
+
+		.btn-mut.active {
+			background: var(--purple-glow);
+			border-color: var(--purple);
+			color: var(--purple);
+		}
+
+		.btn-reset {
+			border-color: rgba(239, 68, 68, 0.3);
+			color: var(--error);
+		}
+
+		.btn-reset:hover {
+			border-color: var(--error);
+			background: rgba(239, 68, 68, 0.15);
+			color: var(--error);
+		}
+
+		/* Ephemeris / Visual Cards */
+		.ephem-card {
+			background: var(--subcard-bg);
+			border: 1px solid var(--panel-border);
+			border-radius: 10px;
+			padding: 14px 16px;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			transition: transform 0.2s ease, border-color 0.2s ease;
+		}
+
+		.ephem-card:hover {
+			transform: translateY(-2px);
+			border-color: var(--card-border);
+		}
+
+		.ephem-top {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 6px;
+		}
+
+		.ephem-title {
+			font-size: 0.75rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.ephem-val {
+			font-size: 1.15rem;
+			font-weight: 700;
+			color: var(--text-main);
+			margin: 4px 0;
+		}
+
+		.ephem-sub {
+			font-size: 0.78rem;
+			color: var(--text-muted);
+		}
+
+		.ephem-footer {
+			margin-top: 10px;
+			padding-top: 8px;
+			border-top: 1px solid var(--panel-border);
+			font-size: 0.72rem;
+			color: var(--text-dim);
+		}
+
+		/* Term Property Chips */
+		.term-grid {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			max-height: 200px;
+			overflow-y: auto;
+			padding: 8px 4px;
+		}
+
+		.term-chip {
+			background: var(--subcard-bg);
+			border: 1px solid var(--panel-border);
+			color: var(--text-main);
+			font-family: 'Fira Code', monospace;
+			font-size: 0.75rem;
+			padding: 6px 12px;
+			border-radius: 8px;
+			cursor: pointer;
+			transition: all 0.15s ease;
+		}
+
+		.term-chip:hover {
+			border-color: var(--purple);
+			color: var(--purple);
+			background: var(--purple-glow);
+		}
+
+		.term-chip.active {
+			background: var(--purple);
+			border-color: var(--purple);
+			color: #ffffff;
+			font-weight: 600;
+			box-shadow: 0 0 10px var(--purple-glow);
+		}
+
+		/* Code Pane */
+		.code-pane {
+			background: var(--code-bg);
+			border-radius: 12px;
+			border: 1px solid var(--panel-border);
+			overflow: hidden;
+		}
+
+		.code-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 10px 16px;
+			background: rgba(255, 255, 255, 0.03);
+			border-bottom: 1px solid var(--panel-border);
+		}
+
+		.code-title {
+			font-size: 0.78rem;
+			font-family: 'Fira Code', monospace;
+			color: var(--text-muted);
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.btn-copy {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			background: rgba(56, 189, 248, 0.12);
+			border: 1px solid rgba(56, 189, 248, 0.3);
+			color: var(--accent);
+			font-size: 0.78rem;
+			font-weight: 600;
+			padding: 5px 12px;
+			border-radius: 6px;
+			cursor: pointer;
+			font-family: inherit;
+			transition: all 0.15s ease;
+		}
+
+		.btn-copy:hover {
+			background: var(--accent);
+			color: #ffffff;
+		}
+
+		pre.code-block {
+			padding: 16px;
+			margin: 0;
+			font-family: 'Fira Code', monospace;
+			font-size: 0.88rem;
+			line-height: 1.6;
+			color: #e2e8f0;
+			overflow-x: auto;
+			white-space: pre-wrap;
+		}
+
+		/* Status Footer */
+		footer {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 10px 24px;
+			background: var(--footer-bg);
+			border-top: 1px solid var(--panel-border);
+			font-size: 0.75rem;
+			color: var(--text-muted);
+		}
+
+		.status-indicator {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.status-dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background: var(--success);
+			box-shadow: 0 0 8px var(--success);
+		}
+
+		.status-dot.loading {
+			background: var(--warning);
+			box-shadow: 0 0 8px var(--warning);
+		}
+
+		/* Responsive */
+		@media (max-width: 1024px) {
+			.grid-2 { grid-template-columns: 1fr; }
+			.grid-4 { grid-template-columns: repeat(2, 1fr); }
+		}
+
+		@media (max-width: 768px) {
+			header { flex-direction: column; align-items: flex-start; gap: 12px; padding: 12px 16px; }
+			.controls { width: 100%; justify-content: space-between; }
+			.grid-4 { grid-template-columns: 1fr; }
+			main { padding: 16px 12px; }
+		}
+	</style>
+
+	<script type="importmap">
+	{
+		"imports": {
+			"@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
+			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@4.3.0",
+			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@2.3.0",
+			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@1.1.0",
+			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@0.2.0"
+		}
+	}
+	</script>
+</head>
+
+<body>
+	<div class="app-container">
+		<!-- HEADER -->
+		<header>
+			<div class="brand">
+				<svg class="brand-logo" viewBox="0 0 235.319 235.319" fill="#38bdf8">
+					<path d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z"/>
+					<path d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z"/>
+					<path d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z"/>
+				</svg>
+				<div class="brand-info">
+					<span class="brand-title">Tempo Showcase</span>
+					<span class="brand-subtitle">Interactive Feature Workbench</span>
+				</div>
+			</div>
+
+			<div class="controls">
+				<!-- Workbench Mode Switcher -->
+				<div class="mode-tabs">
+					<button id="tabModeCore" class="mode-tab active-core">
+						<span>⚡</span>
+						<span>Core Engine</span>
+					</button>
+					<button id="tabModePlugins" class="mode-tab">
+						<span>🔌</span>
+						<span>Plugins & Ephemeris</span>
+					</button>
+				</div>
+
+				<div class="tz-badge" id="tzBadge">
+					<span>●</span>
+					<span id="tzLabel">UTC</span>
+				</div>
+
+				<button id="btnThemeToggle" class="nav-link-btn" title="Toggle Light/Dark Theme" style="padding: 6px 10px; cursor: pointer;">
+					<span id="themeIcon">🌙</span>
+				</button>
+			</div>
+		</header>
+
+		<!-- MAIN WORKBENCH -->
+		<main>
+			<!-- PERSISTENT SECTION 1: ANCHOR DATE -->
+			<section class="card">
+				<div class="card-header">
+					<div class="card-title-group">
+						<span class="card-title cyan">1. Anchor Date / Natural Expression</span>
+						<span id="modePill" class="badge badge-cyan">⚡ Core Engine Active</span>
+					</div>
+					<span id="isoBadge" class="badge badge-emerald" style="font-family: 'Fira Code', monospace;">Evaluating...</span>
+				</div>
+
+				<input type="text" id="inputBase" class="input-box" value="next Friday at 3pm" placeholder="e.g. 'now', 'tomorrow 9am', 'Christmas', 'Easter', 'in 3 days'">
+				<div id="baseError" style="color: var(--error); font-size: 0.8rem; margin-top: 6px; display: none;"></div>
+
+				<div class="chip-row">
+					<span class="chip-label">Presets:</span>
+					<button class="chip-btn" data-preset="now">now</button>
+					<button class="chip-btn" data-preset="tomorrow at 9am">tomorrow at 9am</button>
+					<button class="chip-btn active" data-preset="next Friday at 3pm">next Friday at 3pm</button>
+					<button class="chip-btn" data-preset="Christmas">Christmas</button>
+					<button class="chip-btn" data-preset="Easter">Easter</button>
+					<button class="chip-btn" data-preset="in 3 days">in 3 days</button>
+					<button class="chip-btn" data-preset="afternoon">afternoon</button>
+				</div>
+			</section>
+
+			<!-- ===================================================== -->
+			<!-- CONTAINER 1: CORE ENGINE SECTIONS -->
+			<!-- ===================================================== -->
+			<div id="coreContainer" style="display: flex; flex-direction: column; gap: 20px;">
+				<!-- SECTION 2: LIVE FORMAT STRING TESTER -->
+				<section class="card" style="border-color: rgba(56, 189, 248, 0.4);">
+					<div class="card-header">
+						<div class="card-title-group">
+							<span class="card-title cyan">2. Live Layout & Format String Tester</span>
+							<span class="badge badge-cyan">Instant Keystroke Preview</span>
+						</div>
+					</div>
+
+					<input type="text" id="inputFormat" class="input-box mono" value="{wkd}, {dd} {mon} {yyyy} at {hh}:{mi}">
+
+					<div class="output-banner">
+						<span class="banner-label">Formatted Output:</span>
+						<span id="outputFormatted" class="banner-value">Evaluating...</span>
+					</div>
+
+					<div class="chip-row">
+						<span class="chip-label">Tokens:</span>
+						<button class="token-btn" data-tok="{yyyy}">+{yyyy}</button>
+						<button class="token-btn" data-tok="{yy}">+{yy}</button>
+						<button class="token-btn" data-tok="{mon}">+{mon}</button>
+						<button class="token-btn" data-tok="{mmm}">+{mmm}</button>
+						<button class="token-btn" data-tok="{dd:ord}">+{dd:ord}</button>
+						<button class="token-btn" data-tok="{wkd}">+{wkd}</button>
+						<button class="token-btn" data-tok="{www}">+{www}</button>
+						<button class="token-btn" data-tok="{hh}">+{hh}</button>
+						<button class="token-btn" data-tok="{mi}">+{mi}</button>
+						<button class="token-btn" data-tok="{ss}">+{ss}</button>
+						<button class="token-btn" data-tok="{tz}">+{tz}</button>
+						<button class="token-btn" data-tok="{tz:offset}">+{tz:offset}</button>
+					</div>
+
+					<div class="chip-row">
+						<span class="chip-label">Presets:</span>
+						<button class="chip-btn" data-tmpl="{wkd}, {dd} {mon} {yyyy} at {hh}:{mi}">Friendly</button>
+						<button class="chip-btn" data-tmpl="{wkd}, {mon} {dd:ord}, {yyyy}">Ordinal Human</button>
+						<button class="chip-btn" data-tmpl="{yyyy}-{mm}-{dd}">ISO Date</button>
+						<button class="chip-btn" data-tmpl="{dd}/{mm}/{yyyy}">EU Standard</button>
+						<button class="chip-btn" data-tmpl="{mm}/{dd}/{yyyy}">US Standard</button>
+						<button class="chip-btn" data-tmpl="{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss} {tz}">Timestamp</button>
+					</div>
+				</section>
+
+				<!-- TWO COLUMNS: MUTATIONS & DURATION ENGINE -->
+				<div class="grid-2">
+					<!-- SECTION 3: MUTATION BENCH -->
+					<section class="card">
+						<div class="card-header">
+							<span class="card-title purple">3. Chained Mutation Bench (.add / .set)</span>
+							<span id="mutSummaryBadge" class="badge badge-purple">None</span>
+						</div>
+
+						<div class="output-banner" style="margin-top: 0; margin-bottom: 12px; padding: 12px 16px;">
+							<span class="banner-label">Mutated Time:</span>
+							<span id="outputMutated" style="font-size: 1.05rem; color: var(--purple); font-weight: 700;">Evaluating...</span>
+						</div>
+
+						<div class="mut-grid">
+							<button id="btnAddDay" class="btn-mut">+1 Day</button>
+							<button id="btnSubDay" class="btn-mut">-1 Day</button>
+							<button id="btnAddWeek" class="btn-mut">+1 Week</button>
+							<button id="btnAddMonth" class="btn-mut">+1 Month</button>
+							<button id="btnSnapWeek" class="btn-mut">Start of Week (.set)</button>
+							<button id="btnSnapMonth" class="btn-mut">End of Month (.set)</button>
+							<button id="btnResetMut" class="btn-mut btn-reset">↺ Reset</button>
+						</div>
+					</section>
+
+					<!-- SECTION 4: DURATION & DELTA ENGINE -->
+					<section class="card">
+						<div class="card-header">
+							<span class="card-title emerald">4. Duration & Relative Delta Engine</span>
+							<span class="badge badge-emerald">.until() / .since()</span>
+						</div>
+
+						<input type="text" id="inputTarget" class="input-box" value="now" placeholder="Target date or expression">
+
+						<div class="chip-row">
+							<span class="chip-label">Presets:</span>
+							<button class="chip-btn" data-target="now">now</button>
+							<button class="chip-btn" data-target="tomorrow">tomorrow</button>
+							<button class="chip-btn" data-target="in 2 weeks">in 2 weeks</button>
+							<button class="chip-btn" data-target="Christmas">Christmas</button>
+						</div>
+
+						<div class="output-banner" style="margin-top: 12px; padding: 12px 16px;">
+							<span class="banner-label">Relative Phrase:</span>
+							<span id="outputRelative" style="font-size: 1.1rem; color: #34d399; font-weight: 700;">Evaluating...</span>
+						</div>
+
+						<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px;">
+							<div style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
+								<div style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Days</div>
+								<div id="valDays" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">0</div>
+							</div>
+							<div style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
+								<div style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Hours</div>
+								<div id="valHours" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">0</div>
+							</div>
+							<div style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
+								<div style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Minutes</div>
+								<div id="valMinutes" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">0</div>
+							</div>
+							<div style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
+								<div style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Weeks</div>
+								<div id="valWeeks" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">0</div>
+							</div>
+						</div>
+					</section>
+				</div>
+			</div>
+
+			<!-- ===================================================== -->
+			<!-- CONTAINER 2: PLUGINS & EPHEMERIS SECTIONS -->
+			<!-- ===================================================== -->
+			<div id="pluginsContainer" style="display: none; flex-direction: column; gap: 20px;">
+				<!-- SECTION 2 (PLUGINS): GEOLOCATION & SOLAR TIME -->
+				<section class="card" style="border-color: rgba(56, 189, 248, 0.4);">
+					<div class="card-header">
+						<div class="card-title-group">
+							<span class="card-title cyan">2. Geolocation & Natural Solar Time</span>
+							<span class="badge badge-cyan">@magmacomputing/tempo-plugin-geo</span>
+						</div>
+						<div style="display: flex; align-items: center; gap: 8px;">
+							<button id="btnDetectIp" class="btn-copy" style="background: rgba(56, 189, 248, 0.2);">
+								<span>📍</span> Detect Location
+							</button>
+							<span id="geoStatus" style="font-size: 0.75rem; color: var(--text-muted);"></span>
+						</div>
+					</div>
+
+					<div class="chip-row">
+						<span class="chip-label">City Presets:</span>
+						<button class="chip-btn active" data-city="syd">🇦🇺 Sydney (S)</button>
+						<button class="chip-btn" data-city="tok">🇯🇵 Tokyo (N)</button>
+						<button class="chip-btn" data-city="lon">🇬🇧 London (N)</button>
+						<button class="chip-btn" data-city="nyc">🇺🇸 New York (N)</button>
+						<button class="chip-btn" data-city="rey">🇮🇸 Reykjavik (N)</button>
+						<button class="chip-btn" data-city="scl">🇨🇱 Santiago (S)</button>
+					</div>
+
+					<div class="grid-3" style="margin-top: 14px;">
+						<div style="background: var(--subcard-bg); padding: 14px; border-radius: 10px; border: 1px solid var(--panel-border);">
+							<div style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Coordinates</div>
+							<div style="font-family: 'Fira Code', monospace; font-size: 0.95rem; color: var(--text-main); margin: 4px 0;">
+								<span id="geoLat">-33.8688</span>°, <span id="geoLng">151.2093</span>°
+							</div>
+							<div style="font-size: 0.75rem; color: var(--text-muted);">
+								Hemisphere: <span id="geoSphere" style="color: #f472b6; font-weight: 700;">SOUTH</span> 🧭
+							</div>
+						</div>
+
+						<div style="background: var(--subcard-bg); padding: 14px; border-radius: 10px; border: 1px solid var(--panel-border);">
+							<div style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Location & Timezone</div>
+							<div id="geoLocationName" style="font-weight: 700; font-size: 1rem; color: var(--accent); margin: 4px 0;">
+								Sydney, Australia
+							</div>
+							<div id="geoTimezone" style="font-size: 0.75rem; color: var(--text-muted); font-family: 'Fira Code', monospace;">
+								Australia/Sydney
+							</div>
+						</div>
+
+						<div style="background: var(--subcard-bg); padding: 14px; border-radius: 10px; border: 1px solid var(--panel-border);">
+							<div style="display: flex; justify-content: space-between; align-items: center;">
+								<span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Solar Time Offset</span>
+								<span style="font-size: 0.65rem; color: #34d399;">Δλ × 4m</span>
+							</div>
+							<div id="geoSolarOffset" style="font-weight: 700; font-size: 1.15rem; color: #fbbf24; margin: 4px 0;">
+								+4.84 min
+							</div>
+							<div style="font-size: 0.75rem; color: var(--text-muted);">
+								Solar Noon: <span id="valSolarNoon" style="color: var(--text-main); font-weight: 600;">11:55</span>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- SECTION 3 (PLUGINS): ASTRONOMICAL & CELESTIAL EPHEMERIS -->
+				<section class="card" style="border-color: rgba(192, 132, 252, 0.4);">
+					<div class="card-header">
+						<div class="card-title-group">
+							<span class="card-title purple">3. Astronomical & Celestial Ephemeris</span>
+							<span class="badge badge-purple">@tempo-plugin-astro & celestial</span>
+						</div>
+						<span style="font-size: 0.75rem; color: var(--text-muted);">Deterministic Calculations</span>
+					</div>
+
+					<div class="grid-4">
+						<!-- Card 1: Astro Event & Season -->
+						<div class="ephem-card">
+							<div>
+								<div class="ephem-top">
+									<span class="ephem-title" style="color: var(--purple);">🪐 Astro Season</span>
+									<span id="badgeAstroEvent" class="badge badge-purple">Equinox</span>
+								</div>
+								<div id="valAstroKey" class="ephem-val">Vernal</div>
+								<div class="ephem-sub">
+									Season: <span id="valAstroSeason" style="color: var(--purple); font-weight: 700;">Spring</span>
+								</div>
+							</div>
+							<div class="ephem-footer">Hemisphere-aware flip</div>
+						</div>
+
+						<!-- Card 2: Solar Day State -->
+						<div class="ephem-card">
+							<div>
+								<div class="ephem-top">
+									<span class="ephem-title" style="color: #fbbf24;">☀️ Solar State</span>
+									<span id="badgeSolarState" class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">Daylight</span>
+								</div>
+								<div id="valSolarPhase" class="ephem-val">Daylight</div>
+								<div class="ephem-sub">
+									<span id="valSolarSunrise" style="color: var(--text-main); font-weight: 600;">06:12</span> → <span id="valSolarSunset" style="color: var(--text-main); font-weight: 600;">18:04</span>
+								</div>
+							</div>
+							<div id="valDaylightLen" class="ephem-footer">Daylight: 11.8 hrs</div>
+						</div>
+
+						<!-- Card 3: Lunar Phase -->
+						<div class="ephem-card">
+							<div>
+								<div class="ephem-top">
+									<span class="ephem-title" style="color: var(--accent);">🌙 Lunar Phase</span>
+									<span id="valLunarEmoji" style="font-size: 1.15rem; line-height: 1;">🌑</span>
+								</div>
+								<div id="valLunarPhase" class="ephem-val">New Moon</div>
+								<div class="ephem-sub">
+									Illumination: <span id="valLunarIllum" style="color: var(--accent); font-weight: 700;">0.0%</span>
+								</div>
+							</div>
+							<div id="valLunarAge" class="ephem-footer">Age: 0.0 days</div>
+						</div>
+
+						<!-- Card 4: Tides & Alignment -->
+						<div class="ephem-card">
+							<div>
+								<div class="ephem-top">
+									<span class="ephem-title" style="color: #34d399;">🌊 Tidal State</span>
+									<span id="badgeTidalState" class="badge badge-emerald">Spring Tide</span>
+								</div>
+								<div id="valTideState" class="ephem-val">Spring</div>
+								<div class="ephem-sub">
+									Alignment: <span id="valTideAngle" style="color: #34d399; font-weight: 700;">0.0°</span>
+								</div>
+							</div>
+							<div class="ephem-footer">Syzygy Solar-Lunar angle</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- SECTION 4 (PLUGINS): DYNAMIC TERM INSPECTOR -->
+				<section class="card">
+					<div class="card-header">
+						<div class="card-title-group">
+							<span class="card-title purple">4. Natural Term Property Inspector</span>
+							<span class="badge badge-purple">t.term.*</span>
+						</div>
+					</div>
+
+					<div class="output-banner" style="margin-top: 0; margin-bottom: 12px; padding: 14px 18px;">
+						<div>
+							<div id="selectedTermLabel" style="font-family: 'Fira Code', monospace; font-size: 0.82rem; color: var(--purple);">t.term.lunar.phase</div>
+							<div id="selectedTermDesc" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Human-readable Lunar Phase name</div>
+						</div>
+						<span id="selectedTermValue" style="font-size: 1.25rem; font-weight: 700; color: var(--text-main);">Evaluating...</span>
+					</div>
+
+					<div class="term-grid" id="termChipsContainer">
+						<!-- Injected via JavaScript -->
+					</div>
+				</section>
+			</div>
+
+			<!-- PERSISTENT SECTION: LIVE TYPESCRIPT CODE GENERATOR -->
+			<section class="code-pane">
+				<div class="code-header">
+					<span class="code-title">
+						<span>📄</span>
+						<span id="codeModeLabel">Generated TypeScript Code</span>
+					</span>
+					<button id="btnCopyCode" class="btn-copy">📋 Copy Code</button>
+				</div>
+				<pre class="code-block"><code id="outputCode">// Initializing Tempo Engine...</code></pre>
+			</section>
+		</main>
+
+		<!-- FOOTER -->
+		<footer>
+			<div class="status-indicator">
+				<div id="statusDot" class="status-dot loading"></div>
+				<span id="statusText">Loading Tempo modules via esm.sh...</span>
+			</div>
+			<div>
+				<span>Tempo v4.3.0 Client-Side Workbench</span>
+			</div>
+		</footer>
+	</div>
+
+	<!-- APPLICATION LOGIC -->
+	<script type="module">
+		import { Temporal } from '@js-temporal/polyfill';
+		if (!globalThis.Temporal) globalThis.Temporal = Temporal;
+
+		import { Tempo } from '@magmacomputing/tempo';
+		import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
+		import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
+		import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+
+		// 1. Initialize Tempo with event registry aliases
+		Tempo.init({
+			registry: {
+				events: {
+					easter: '2026-04-05',
+					'black friday': '2026-11-27',
+					eofy: '30 Jun'
+				}
+			}
+		});
+
+		// 2. Register plugins
+		if (!Tempo.geo) Tempo.use(GeoPlugin);
+		Tempo.use(AstroPlugin);
+		Tempo.use(CelestialPlugin);
+
+		window.Tempo = Tempo;
+		window.Temporal = Temporal;
+
+		// App State
+		let activeMode = 'core'; // 'core' | 'plugins'
+		let mutationChain = []; // sequential list of { method, payload, label }
+		let selectedTermProp = 't.term.lunar.phase';
+
+		const CITY_PRESETS = [
+			{ id: 'syd', name: 'Sydney', flag: '🇦🇺', lat: -33.8688, lng: 151.2093, city: 'Sydney', country: 'Australia', timezone: 'Australia/Sydney', sphere: 'south' },
+			{ id: 'tok', name: 'Tokyo', flag: '🇯🇵', lat: 35.6762, lng: 139.6503, city: 'Tokyo', country: 'Japan', timezone: 'Asia/Tokyo', sphere: 'north' },
+			{ id: 'lon', name: 'London', flag: '🇬🇧', lat: 51.5074, lng: -0.1278, city: 'London', country: 'United Kingdom', timezone: 'Europe/London', sphere: 'north' },
+			{ id: 'nyc', name: 'New York', flag: '🇺🇸', lat: 40.7128, lng: -74.0060, city: 'New York', country: 'United States', timezone: 'America/New_York', sphere: 'north' },
+			{ id: 'rey', name: 'Reykjavik', flag: '🇮🇸', lat: 64.1466, lng: -21.9426, city: 'Reykjavik', country: 'Iceland', timezone: 'Atlantic/Reykjavik', sphere: 'north' },
+			{ id: 'scl', name: 'Santiago', flag: '🇨🇱', lat: -33.4489, lng: -70.6693, city: 'Santiago', country: 'Chile', timezone: 'America/Santiago', sphere: 'south' }
+		];
+
+		let activeGeo = CITY_PRESETS[0];
+
+		const TERM_PROPERTIES = [
+			{ prop: 't.term.astro', category: 'astro', label: 'astro', desc: 'Astronomical Solstice / Equinox event key' },
+			{ prop: 't.term.astronomy.season', category: 'astro', label: 'astronomy.season', desc: 'Hemisphere-aware Astronomical Season ("Spring", "Summer", etc.)' },
+			{ prop: 't.term.astronomy.event', category: 'astro', label: 'astronomy.event', desc: 'Astronomical Event category ("Equinox" vs "Solstice")' },
+			{ prop: 't.term.sun', category: 'solar', label: 'sun', desc: 'Solar twilight state ("daylight", "civil-twilight", "night")' },
+			{ prop: 't.term.solar.phase', category: 'solar', label: 'solar.phase', desc: 'Solar Phase Name (e.g. "Daylight", "Night")' },
+			{ prop: 't.term.solar.sunrise', category: 'solar', label: 'solar.sunrise', desc: 'Tempo instance for civil sunrise' },
+			{ prop: 't.term.solar.sunset', category: 'solar', label: 'solar.sunset', desc: 'Tempo instance for civil sunset' },
+			{ prop: 't.term.moon', category: 'lunar', label: 'moon', desc: 'Canonical Lunar Phase key ("new-moon", "full-moon", etc.)' },
+			{ prop: 't.term.lunar.phase', category: 'lunar', label: 'lunar.phase', desc: 'Human-readable Lunar Phase name' },
+			{ prop: 't.term.lunar.emoji', category: 'lunar', label: 'lunar.emoji', desc: 'Hemisphere-accurate moon emoji indicator' },
+			{ prop: 't.term.lunar.illumination', category: 'lunar', label: 'lunar.illumination', desc: 'Fraction of lunar disk illuminated (0.00 to 1.00)' },
+			{ prop: 't.term.lunar.ageDays', category: 'lunar', label: 'lunar.ageDays', desc: 'Current age of lunar cycle in days' },
+			{ prop: 't.term.tide', category: 'tides', label: 'tide', desc: 'Deterministic tidal state ("spring", "neap", "normal")' },
+			{ prop: 't.term.tides.alignmentDeg', category: 'tides', label: 'tides.alignmentDeg', desc: 'Solar-Lunar ecliptic longitude alignment angle' }
+		];
+
+		// DOM Elements
+		const tabModeCore = document.getElementById('tabModeCore');
+		const tabModePlugins = document.getElementById('tabModePlugins');
+		const coreContainer = document.getElementById('coreContainer');
+		const pluginsContainer = document.getElementById('pluginsContainer');
+		const modePill = document.getElementById('modePill');
+		const tzLabel = document.getElementById('tzLabel');
+		const inputBase = document.getElementById('inputBase');
+		const baseError = document.getElementById('baseError');
+		const isoBadge = document.getElementById('isoBadge');
+		const inputFormat = document.getElementById('inputFormat');
+		const outputFormatted = document.getElementById('outputFormatted');
+		const outputMutated = document.getElementById('outputMutated');
+		const mutSummaryBadge = document.getElementById('mutSummaryBadge');
+		const inputTarget = document.getElementById('inputTarget');
+		const outputRelative = document.getElementById('outputRelative');
+		const valDays = document.getElementById('valDays');
+		const valHours = document.getElementById('valHours');
+		const valMinutes = document.getElementById('valMinutes');
+		const valWeeks = document.getElementById('valWeeks');
+		const outputCode = document.getElementById('outputCode');
+		const codeModeLabel = document.getElementById('codeModeLabel');
+		const btnCopyCode = document.getElementById('btnCopyCode');
+		const statusDot = document.getElementById('statusDot');
+		const statusText = document.getElementById('statusText');
+		const termChipsContainer = document.getElementById('termChipsContainer');
+
+		// Mode Switcher
+		function setMode(mode) {
+			activeMode = mode;
+			if (mode === 'core') {
+				tabModeCore.className = 'mode-tab active-core';
+				tabModePlugins.className = 'mode-tab';
+				coreContainer.style.display = 'flex';
+				pluginsContainer.style.display = 'none';
+				modePill.textContent = '⚡ Core Engine Active';
+				modePill.className = 'badge badge-cyan';
+				codeModeLabel.textContent = 'Generated TypeScript (Core Engine)';
+			} else {
+				tabModeCore.className = 'mode-tab';
+				tabModePlugins.className = 'mode-tab active-plugins';
+				coreContainer.style.display = 'none';
+				pluginsContainer.style.display = 'flex';
+				modePill.textContent = '🔌 Plugins & Terms Active';
+				modePill.className = 'badge badge-purple';
+				codeModeLabel.textContent = 'Generated TypeScript (Plugins & Terms)';
+			}
+			evaluate();
+		}
+
+		tabModeCore.addEventListener('click', () => setMode('core'));
+		tabModePlugins.addEventListener('click', () => setMode('plugins'));
+
+		// Populate Term Chips
+		TERM_PROPERTIES.forEach(item => {
+			const chip = document.createElement('button');
+			chip.className = `term-chip ${item.prop === selectedTermProp ? 'active' : ''}`;
+			chip.textContent = item.label;
+			chip.dataset.prop = item.prop;
+			chip.addEventListener('click', () => {
+				selectedTermProp = item.prop;
+				document.querySelectorAll('.term-chip').forEach(c => c.classList.remove('active'));
+				chip.classList.add('active');
+				evaluate();
+			});
+			termChipsContainer.appendChild(chip);
+		});
+
+		// Evaluate and Update Workbench
+		function evaluate() {
+			const baseExpr = inputBase.value.trim();
+			let t;
+
+			try {
+				if (activeMode === 'plugins') {
+					t = new Tempo(baseExpr || 'now', {
+						geo: {
+							lat: activeGeo.lat,
+							lng: activeGeo.lng,
+							city: activeGeo.city,
+							sphere: activeGeo.sphere
+						},
+						tz: activeGeo.timezone
+					});
+				} else {
+					t = new Tempo(baseExpr || 'now');
+				}
+				baseError.style.display = 'none';
+				isoBadge.textContent = t.iso;
+				isoBadge.className = 'badge badge-emerald';
+			} catch (err) {
+				baseError.textContent = err.message;
+				baseError.style.display = 'block';
+				isoBadge.textContent = 'Invalid Expression';
+				isoBadge.className = 'badge';
+				isoBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+				isoBadge.style.color = '#f87171';
+				return;
+			}
+
+			if (activeMode === 'core') {
+				// 1. Format String
+				try {
+					const fmt = inputFormat.value;
+					outputFormatted.textContent = t.format(fmt);
+					outputFormatted.style.color = '#34d399';
+				} catch (err) {
+					outputFormatted.textContent = err.message;
+					outputFormatted.style.color = '#f87171';
+				}
+
+				// 2. Sequential Chained Mutations (.add / .set)
+				let mutated = t;
+				for (const op of mutationChain) {
+					if (op.method === 'add') mutated = mutated.add(op.payload);
+					else if (op.method === 'set') mutated = mutated.set(op.payload);
+				}
+
+				outputMutated.textContent = mutated.format('{wkd}, {dd} {mon} {yyyy} at {hh}:{mi}');
+				mutSummaryBadge.textContent = mutationChain.length > 0 ? mutationChain.map(o => o.label).join(' → ') : 'None';
+
+				// 3. Duration Engine (Single t.until EDO Promotion)
+				const targetExpr = inputTarget.value.trim() || 'now';
+				try {
+					const targetT = new Tempo(targetExpr);
+					const dur = t.until(targetT);
+					const relPhrase = t.since(targetT, { unit: 'days', numeric: 'auto' });
+
+					outputRelative.textContent = relPhrase ? `${relPhrase} (${dur.format() || dur.iso})` : (dur.format() || dur.iso);
+					outputRelative.style.color = '#34d399';
+
+					valDays.textContent = Math.abs(dur.days ?? 0);
+					valHours.textContent = Math.abs(dur.hours ?? 0);
+					valMinutes.textContent = Math.abs(dur.minutes ?? 0);
+					valWeeks.textContent = Math.abs(dur.weeks ?? (dur.days ? Number((dur.days / 7).toFixed(1)) : 0));
+				} catch (err) {
+					outputRelative.textContent = '(Invalid Target)';
+					outputRelative.style.color = '#f87171';
+					valDays.textContent = '—';
+					valHours.textContent = '—';
+					valMinutes.textContent = '—';
+					valWeeks.textContent = '—';
+				}
+
+				// Build Sequential Mutation Code
+				let mutCodeSnippet = 'const mutated = t';
+				if (mutationChain.length > 0) {
+					for (const op of mutationChain) {
+						const k = Object.keys(op.payload)[0];
+						const v = op.payload[k];
+						if (op.method === 'add') {
+							mutCodeSnippet += `\n  .add({ ${k}: ${v} })`;
+						} else if (op.method === 'set') {
+							mutCodeSnippet += `\n  .set({ ${k}: '${v}' })`;
+						}
+					}
+				}
+				mutCodeSnippet += ';';
+
+				// Core TypeScript Code Snippet
+				outputCode.textContent = `import { Tempo } from '@magmacomputing/tempo';
+
+// 1. Parse Anchor
+const t = new Tempo('${baseExpr}');
+console.log('ISO:', t.iso); // "${t.iso}"
+
+// 2. Format with Tokens
+const formatted = t.format('${inputFormat.value}');
+console.log('Formatted:', formatted); // "${outputFormatted.textContent}"
+
+// 3. Chained Mutation Pipeline (.add / .set)
+${mutCodeSnippet}
+console.log('Mutated:', mutated.format());
+
+// 4. Duration EDO & Relative Delta
+const target = new Tempo('${inputTarget.value.trim() || 'now'}');
+const dur = t.until(target); // Extended Duration Object (EDO)
+console.log('ISO Duration:', dur.iso);
+console.log('Formatted Duration:', dur.format());
+console.log('Unit Breakdown:', { ...dur });
+console.log('Relative Phrase:', t.since(target, { unit: 'days', numeric: 'auto' }));`;
+
+			} else {
+				// PLUGINS MODE
+				document.getElementById('geoLat').textContent = activeGeo.lat.toFixed(4);
+				document.getElementById('geoLng').textContent = activeGeo.lng.toFixed(4);
+				document.getElementById('geoSphere').textContent = activeGeo.sphere.toUpperCase();
+				document.getElementById('geoSphere').style.color = activeGeo.sphere === 'south' ? '#f472b6' : '#38bdf8';
+				document.getElementById('geoLocationName').textContent = `${activeGeo.city}, ${activeGeo.country}`;
+				document.getElementById('geoTimezone').textContent = activeGeo.timezone;
+
+				// Solar offset
+				const offsetMins = (activeGeo.lng * 4 / 60).toFixed(2);
+				document.getElementById('geoSolarOffset').textContent = `${offsetMins >= 0 ? '+' : ''}${offsetMins} min`;
+
+				try {
+					if (t.term?.solar?.noon) {
+						document.getElementById('valSolarNoon').textContent = t.term.solar.noon.format('{hh}:{mi}');
+					}
+				} catch {}
+
+				// Ephemeris Cards
+				try {
+					const term = t.term;
+					if (term) {
+						document.getElementById('valAstroKey').textContent = term.astro || 'Equinox';
+						document.getElementById('valAstroSeason').textContent = term.astronomy?.season || 'Spring';
+						document.getElementById('badgeAstroEvent').textContent = term.astronomy?.event || 'Equinox';
+
+						document.getElementById('valSolarPhase').textContent = term.solar?.phase || 'Daylight';
+						document.getElementById('badgeSolarState').textContent = term.sun || 'daylight';
+						if (term.solar?.sunrise) document.getElementById('valSolarSunrise').textContent = term.solar.sunrise.format('{hh}:{mi}');
+						if (term.solar?.sunset) document.getElementById('valSolarSunset').textContent = term.solar.sunset.format('{hh}:{mi}');
+						if (term.solar?.daylightDurationMs) {
+							const hrs = (term.solar.daylightDurationMs / 3600000).toFixed(1);
+							document.getElementById('valDaylightLen').textContent = `Daylight: ${hrs} hrs`;
+						}
+
+						document.getElementById('valLunarPhase').textContent = term.lunar?.phase || 'Moon Phase';
+						document.getElementById('valLunarEmoji').textContent = term.lunar?.emoji || '🌕';
+						if (term.lunar?.illumination !== undefined) {
+							document.getElementById('valLunarIllum').textContent = `${(term.lunar.illumination * 100).toFixed(1)}%`;
+						}
+						if (term.lunar?.ageDays !== undefined) {
+							document.getElementById('valLunarAge').textContent = `Age: ${term.lunar.ageDays.toFixed(1)} days`;
+						}
+
+						document.getElementById('valTideState').textContent = term.tide ? term.tide.toUpperCase() : 'NORMAL';
+						document.getElementById('badgeTidalState').textContent = term.tides?.isSpringTide ? 'Spring Tide' : 'Neap / Normal';
+						if (term.tides?.alignmentDeg !== undefined) {
+							document.getElementById('valTideAngle').textContent = `${term.tides.alignmentDeg.toFixed(1)}°`;
+						}
+
+						// Inspected Term
+						const foundDef = TERM_PROPERTIES.find(p => p.prop === selectedTermProp);
+						if (foundDef) {
+							document.getElementById('selectedTermLabel').textContent = foundDef.prop;
+							document.getElementById('selectedTermDesc').textContent = foundDef.desc;
+						}
+						const evaluatedVal = eval(selectedTermProp);
+						document.getElementById('selectedTermValue').textContent = typeof evaluatedVal === 'object' ? JSON.stringify(evaluatedVal) : String(evaluatedVal);
+					}
+				} catch (err) {
+					console.error(err);
+				}
+
+				// Plugins TypeScript Snippet
+				outputCode.textContent = `import { Tempo } from '@magmacomputing/tempo';
+import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
+import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
+import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+
+// Register official plugins
+Tempo.use(GeoPlugin);
+Tempo.use(AstroPlugin);
+Tempo.use(CelestialPlugin);
+
+// Initialize with Geolocation (${activeGeo.city})
+const t = new Tempo('${baseExpr}', {
+  geo: {
+    lat: ${activeGeo.lat},
+    lng: ${activeGeo.lng},
+    city: '${activeGeo.city}',
+    sphere: '${activeGeo.sphere}'
+  },
+  tz: '${activeGeo.timezone}'
+});
+
+// Ephemeris & Natural Terms:
+console.log('Season in ${activeGeo.city}:', t.term.astronomy.season); // "${document.getElementById('valAstroSeason').textContent}"
+console.log('Lunar Phase:', t.term.lunar.phase, t.term.lunar.emoji);   // "${document.getElementById('valLunarPhase').textContent} ${document.getElementById('valLunarEmoji').textContent}"
+console.log('Solar State:', t.term.solar.phase);                      // "${document.getElementById('valSolarPhase').textContent}"
+console.log('Inspected (${selectedTermProp}):', ${selectedTermProp});`;
+			}
+		}
+
+		// Event Listeners
+		inputBase.addEventListener('input', evaluate);
+		inputFormat.addEventListener('input', evaluate);
+		inputTarget.addEventListener('input', evaluate);
+
+		// Anchor Presets
+		document.querySelectorAll('[data-preset]').forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('active'));
+				btn.classList.add('active');
+				inputBase.value = btn.dataset.preset;
+				evaluate();
+			});
+		});
+
+		// Format Tokens
+		document.querySelectorAll('[data-tok]').forEach(btn => {
+			btn.addEventListener('click', () => {
+				inputFormat.value += (inputFormat.value.endsWith(' ') || inputFormat.value === '' ? '' : ' ') + btn.dataset.tok;
+				evaluate();
+			});
+		});
+
+		// Format Presets
+		document.querySelectorAll('[data-tmpl]').forEach(btn => {
+			btn.addEventListener('click', () => {
+				inputFormat.value = btn.dataset.tmpl;
+				evaluate();
+			});
+		});
+
+		// Duration Presets
+		document.querySelectorAll('[data-target]').forEach(btn => {
+			btn.addEventListener('click', () => {
+				inputTarget.value = btn.dataset.target;
+				evaluate();
+			});
+		});
+
+		// Sequential Chained Mutations
+		document.getElementById('btnAddDay').addEventListener('click', () => { mutationChain.push({ method: 'add', payload: { days: 1 }, label: '+1d' }); evaluate(); });
+		document.getElementById('btnSubDay').addEventListener('click', () => { mutationChain.push({ method: 'add', payload: { days: -1 }, label: '-1d' }); evaluate(); });
+		document.getElementById('btnAddWeek').addEventListener('click', () => { mutationChain.push({ method: 'add', payload: { days: 7 }, label: '+1w' }); evaluate(); });
+		document.getElementById('btnAddMonth').addEventListener('click', () => { mutationChain.push({ method: 'add', payload: { months: 1 }, label: '+1m' }); evaluate(); });
+		document.getElementById('btnSnapWeek').addEventListener('click', () => { mutationChain.push({ method: 'set', payload: { week: 'start' }, label: 'week:start' }); evaluate(); });
+		document.getElementById('btnSnapMonth').addEventListener('click', () => { mutationChain.push({ method: 'set', payload: { month: 'end' }, label: 'month:end' }); evaluate(); });
+		document.getElementById('btnResetMut').addEventListener('click', () => { mutationChain = []; evaluate(); });
+
+		// City Presets
+		document.querySelectorAll('[data-city]').forEach(btn => {
+			btn.addEventListener('click', () => {
+				const city = CITY_PRESETS.find(c => c.id === btn.dataset.city);
+				if (city) {
+					activeGeo = city;
+					document.querySelectorAll('[data-city]').forEach(b => b.classList.remove('active'));
+					btn.classList.add('active');
+					document.getElementById('geoStatus').textContent = '';
+					evaluate();
+				}
+			});
+		});
+
+		// Geolocation Detection
+		document.getElementById('btnDetectIp').addEventListener('click', () => {
+			const geoStatus = document.getElementById('geoStatus');
+			geoStatus.textContent = 'Querying browser geolocation...';
+			geoStatus.style.color = '#fbbf24';
+
+			if (navigator.geolocation) {
+				navigator.geolocation.getCurrentPosition(
+					(pos) => {
+						const lat = pos.coords.latitude;
+						const lng = pos.coords.longitude;
+						const sphere = lat >= 0 ? 'north' : 'south';
+						const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+						activeGeo = {
+							id: 'custom',
+							name: 'Detected Location',
+							flag: '📍',
+							lat: Math.round(lat * 10000) / 10000,
+							lng: Math.round(lng * 10000) / 10000,
+							city: 'Detected City',
+							country: 'Local',
+							timezone: tz,
+							sphere
+						};
+						document.querySelectorAll('[data-city]').forEach(b => b.classList.remove('active'));
+						geoStatus.textContent = `📍 Lat: ${activeGeo.lat}, Lng: ${activeGeo.lng}`;
+						geoStatus.style.color = '#34d399';
+						evaluate();
+					},
+					(err) => {
+						geoStatus.textContent = `Error: ${err.message}`;
+						geoStatus.style.color = '#f87171';
+					}
+				);
+			} else {
+				geoStatus.textContent = 'Geolocation not supported';
+				geoStatus.style.color = '#f87171';
+			}
+		});
+
+		// Copy Code
+		btnCopyCode.addEventListener('click', async () => {
+			try {
+				await navigator.clipboard.writeText(outputCode.textContent);
+				const orig = btnCopyCode.textContent;
+				btnCopyCode.textContent = '✓ Copied!';
+				setTimeout(() => { btnCopyCode.textContent = orig; }, 1800);
+			} catch (err) {
+				alert('Copy failed: ' + err.message);
+			}
+		});
+
+		// Theme Management & VitePress Sync
+		const btnThemeToggle = document.getElementById('btnThemeToggle');
+		const themeIcon = document.getElementById('themeIcon');
+
+		function setTheme(theme, save = true) {
+			document.documentElement.setAttribute('data-theme', theme);
+			if (themeIcon) themeIcon.textContent = theme === 'light' ? '☀️' : '🌙';
+			if (save) {
+				try { localStorage.setItem('tempo-theme', theme); } catch {}
+			}
+		}
+
+		function initTheme() {
+			let saved = null;
+			try { saved = localStorage.getItem('tempo-theme'); } catch {}
+
+			if (!saved) {
+				try {
+					if (window.parent && window.parent.document && window.parent.document.documentElement) {
+						const isParentDark = window.parent.document.documentElement.classList.contains('dark');
+						saved = isParentDark ? 'dark' : 'light';
+					}
+				} catch {}
+			}
+
+			if (!saved) {
+				saved = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+			}
+
+			setTheme(saved, false);
+
+			// Watch parent VitePress theme changes if running in iframe
+			try {
+				if (window.parent && window.parent.document && window.parent.document.documentElement) {
+					const observer = new MutationObserver(() => {
+						const isParentDark = window.parent.document.documentElement.classList.contains('dark');
+						setTheme(isParentDark ? 'dark' : 'light', true);
+					});
+					observer.observe(window.parent.document.documentElement, { attributes: true, attributeFilter: ['class'] });
+				}
+			} catch {}
+		}
+
+		btnThemeToggle?.addEventListener('click', () => {
+			const current = document.documentElement.getAttribute('data-theme') || 'dark';
+			const next = current === 'light' ? 'dark' : 'light';
+			setTheme(next, true);
+		});
+
+		initTheme();
+
+		// Init
+		tzLabel.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		statusDot.classList.remove('loading');
+		statusText.textContent = 'Tempo 4.3.0 + Plugins ready';
+		evaluate();
+	</script>
+</body>
+
+</html>
