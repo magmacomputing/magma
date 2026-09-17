@@ -491,8 +491,8 @@
 const t = new Tempo('now');
 
 console.log('ISO 8601 String:', t.iso);
-console.log('Formatted:', t.format('{dddd}, {mon:long} {dd}, {yyyy} at {hh}:{mi} {ampm}'));
-console.log('Relative Time:', t.format('Evaluated {ago}'));
+console.log('Formatted:', t.format('{wkd}, {mon} {dd}, {yyyy} at {hh}:{mi}'));
+console.log('Days until next Friday:', t.until('next Friday').format());
 
 // Return value displays in the top Result card:
 return t.format('{yyyy}-{mm}-{dd}');`,
