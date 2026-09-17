@@ -12,17 +12,22 @@
 ## Formatting & Parsing Tokens
 | Token | Description | Sample Output |
 | :--- | :--- | :--- |
-| `{yy}` | Year (2 or 4 digits) | `2026`, `26` |
-| `{mon}` | Month name (Full or Abbreviated) | `August`, `Aug` |
-| `{mm}` | Month number (01-12) | `08` |
-| `{dd}` | Day of month (01-31) | `04` |
+| `{yyyy}` | 4-digit Year | `2026` |
+| `{yy}` | 2-digit Year | `26` |
+| `{mon}` | Full Month Name | `August` |
+| `{mmm}` | Short / Abbreviated Month Name | `Aug` |
+| `{mm}` | Zero-padded Month number (01-12) | `08` |
+| `{dd}` | Zero-padded Day of month (01-31) | `04` |
+| `{wkd}` | Full Weekday Name | `Tuesday` |
+| `{www}` | Short / Abbreviated Weekday Name | `Tue` |
+| `{dow}` | ISO Day of Week (1=Monday .. 7=Sunday) | `2` |
+| `{doy}` | Day of year (1-366) | `216` |
 | `{hh}` | Hour (00-24) | `15` |
 | `{mi}` | Minute (00-59) | `30` |
 | `{ss}` | Second (00-59) | `00` |
-| `{wkd}` | Weekday name | `Tuesday`, `Tue` |
-| `{doy}` | Day of year (1-366) | `216` |
 | `{tz}` | Time zone offset / identifier | `Z`, `+10:00`, `Australia/Sydney` |
-| `{yw}` | ISO Week-Year number | `W32` |
+| `{yw}` | ISO Week-Year number | `2026` |
+| `{wy}` | Zero-padded ISO Week of Year (01-53) | `32` |
 | `{unt}` | Time unit keyword | `day`, `month`, `year` |
 
 ## Key Module Links
