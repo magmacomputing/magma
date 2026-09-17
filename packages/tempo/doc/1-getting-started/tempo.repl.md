@@ -2,26 +2,21 @@
 
 Welcome to the **Tempo Interactive REPL** — an instant, zero-install in-browser scratchpad for testing date-time logic, layout tokens, and plugins directly in your browser.
 
-<div style="margin: 24px 0;">
-  <a href="/magma/repl/index.html" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 600; text-decoration: none; font-size: 0.95rem; box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);">
+<iframe
+  src="/magma/repl/index.html"
+  sandbox="allow-scripts allow-modals"
+  style="width: 100%; height: 680px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; background: #0b0f19; margin-top: 16px; margin-bottom: 20px;"
+  title="Tempo Interactive REPL"
+  loading="lazy"
+></iframe>
+
+<div style="margin: 0 0 32px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+  <span style="color: var(--vp-c-text-2); font-size: 0.9rem;">Runs 100% client-side with native ECMAScript Modules (`esm.sh`). Zero install or local build tools required.</span>
+  <a href="/magma/repl/index.html" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 8px; background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; font-weight: 600; text-decoration: none; font-size: 0.9rem; box-shadow: 0 4px 14px rgba(56, 189, 248, 0.3);">
     <span>🚀 Open Full-Screen REPL</span>
     <span>↗</span>
   </a>
 </div>
-
----
-
-## Live Sandbox
-
-The sandbox below runs 100% client-side with native ECMAScript Modules (`esm.sh`). No Node.js containers or local build tools required:
-
-<iframe
-  src="/magma/repl/index.html"
-  sandbox="allow-scripts allow-modals"
-  style="width: 100%; height: 680px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; background: #0b0f19; margin-top: 16px; margin-bottom: 32px;"
-  title="Tempo Interactive REPL"
-  loading="lazy"
-></iframe>
 
 ---
 
