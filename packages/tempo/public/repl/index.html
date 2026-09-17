@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Tempo Interactive REPL</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+	<link
+		href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+		rel="stylesheet">
 	<style>
 		:root {
 			--bg: #0b0f19;
@@ -29,7 +32,8 @@
 			padding: 0;
 		}
 
-		html, body {
+		html,
+		body {
 			height: 100%;
 			background-color: var(--bg);
 			color: var(--text-main);
@@ -98,7 +102,8 @@
 			position: relative;
 		}
 
-		select, button {
+		select,
+		button {
 			font-family: inherit;
 			font-size: 0.85rem;
 		}
@@ -114,7 +119,8 @@
 			transition: border-color 0.15s ease;
 		}
 
-		select:hover, select:focus {
+		select:hover,
+		select:focus {
 			border-color: var(--accent);
 		}
 
@@ -315,10 +321,25 @@
 			margin-top: 2px;
 		}
 
-		.badge-log { background: #334155; color: #cbd5e1; }
-		.badge-info { background: rgba(56, 189, 248, 0.2); color: var(--accent); }
-		.badge-warn { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-		.badge-error { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+		.badge-log {
+			background: #334155;
+			color: #cbd5e1;
+		}
+
+		.badge-info {
+			background: rgba(56, 189, 248, 0.2);
+			color: var(--accent);
+		}
+
+		.badge-warn {
+			background: rgba(245, 158, 11, 0.2);
+			color: var(--warning);
+		}
+
+		.badge-error {
+			background: rgba(239, 68, 68, 0.2);
+			color: var(--error);
+		}
 
 		.log-content {
 			flex: 1;
@@ -362,17 +383,21 @@
 				flex-wrap: wrap;
 				gap: 10px;
 			}
+
 			.controls {
 				flex-wrap: wrap;
 			}
+
 			.workspace {
 				flex-direction: column;
 			}
+
 			.pane-editor {
 				flex: 1;
 				border-right: none;
 				border-bottom: 1px solid var(--panel-border);
 			}
+
 			.pane-output {
 				flex: 1;
 			}
@@ -392,17 +417,18 @@
 	}
 	</script>
 </head>
+
 <body>
 	<div class="app-container">
 		<header>
 			<div class="brand">
 				<svg class="brand-logo" viewBox="0 0 32 32" fill="none">
-					<circle cx="16" cy="16" r="14" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="70 20"/>
-					<circle cx="16" cy="16" r="8" fill="url(#brand-grad)"/>
+					<circle cx="16" cy="16" r="14" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="70 20" />
+					<circle cx="16" cy="16" r="8" fill="url(#brand-grad)" />
 					<defs>
 						<linearGradient id="brand-grad" x1="8" y1="8" x2="24" y2="24">
-							<stop stop-color="#38bdf8"/>
-							<stop offset="1" stop-color="#818cf8"/>
+							<stop stop-color="#38bdf8" />
+							<stop offset="1" stop-color="#818cf8" />
 						</linearGradient>
 					</defs>
 				</svg>
@@ -449,11 +475,13 @@
 			<section class="pane pane-editor">
 				<div class="pane-header">
 					<span>Code Editor (JavaScript / ES Modules)</span>
-					<span style="font-weight: 400; text-transform: none;">Preloaded: <code>Tempo</code>, <code>Temporal</code></span>
+					<span style="font-weight: 400; text-transform: none;">Preloaded: <code>Tempo</code>,
+						<code>Temporal</code></span>
 				</div>
 				<div class="editor-container">
 					<div id="lineNumbers" class="line-numbers">1</div>
-					<textarea id="codeEditor" class="code-editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+					<textarea id="codeEditor" class="code-editor" spellcheck="false" autocorrect="off"
+						autocapitalize="off"></textarea>
 				</div>
 			</section>
 
@@ -491,7 +519,7 @@
 const t = new Tempo('now');
 
 console.log('ISO 8601 String:', t.iso);
-console.log('Formatted:', t.format('{wkd}, {mon} {dd}, {yyyy} at {hh}:{mi}'));
+console.log('Formatted:', t.format('{wkd}, {mon} {dd}, {yyyy} at {h12}:{mi} [{tz}]'));
 console.log('Days until next Friday:', t.until('next Friday').format());
 
 // Return value displays in the top Result card:
@@ -499,7 +527,7 @@ return t.format('{yyyy}-{mm}-{dd}');`,
 
 			weekend: `// 🗓️ Weekend Checking (from Tempo Cookbook)
 const today = new Tempo();
-console.log('Today:', today.format('{www} {dd} {mon}'));
+console.log('Today:', today.format('{www}, {dd} {mon}'));
 console.log('ISO Day of Week (1..7):', today.dow);
 
 // 1. Simple ISO check (Sat = 6, Sun = 7)
@@ -596,7 +624,7 @@ return 'Dynamic import successful!';`
 				isReady = true;
 				statusDot.classList.remove('loading');
 				statusText.textContent = 'Tempo 4.3.0 + Plugins ready';
-				
+
 				// Check for URL hash code or load default preset
 				const shouldAutoRun = loadFromHashOrPreset();
 				if (shouldAutoRun) {
@@ -769,4 +797,5 @@ return 'Dynamic import successful!';`
 		initRuntime();
 	</script>
 </body>
+
 </html>
