@@ -11,9 +11,9 @@
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1",
     "@magmacomputing/tempo": "^4.3.0",
-    "@magmacomputing/tempo-plugin-astro": "^4.3.0",
-    "@magmacomputing/tempo-plugin-celestial": "^4.3.0",
-    "@magmacomputing/tempo-plugin-geo": "^4.3.0"
+    "@magmacomputing/tempo-plugin-astro": "^2.3.0",
+    "@magmacomputing/tempo-plugin-celestial": "^0.2.0",
+    "@magmacomputing/tempo-plugin-geo": "^1.1.0"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
