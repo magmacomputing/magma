@@ -1,6 +1,14 @@
 import { stringify, objectify } from '#library/serialize.library.js';
+import { padTo } from '#library/string.library.js';
 
 const CHUNK_SIZE = 8192;
+
+const RE_PLUS = /\+/g;
+const RE_SLASH = /\//g;
+const RE_EQUALS = /=/g;
+const RE_DASH = /-/g;
+const RE_UNDERSCORE = /_/g;
+const RE_BASE64URL = /^[A-Za-z0-9_-]*$/;
 
 /**
  * Encodes a text string into a Uint8Array using UTF-8 encoding.
@@ -114,4 +122,79 @@ export const decodeBase64 = <T>(base64 = ''): T => {
 	const str = decodeBuffer(uint8);
 
 	return objectify(str);
+}
+
+/**
+ * Normalizes a standard Base64 string into a URL-safe Base64URL string (RFC 4648 §5).
+ * Replaces `+` with `-`, `/` with `_`, and strips trailing `=` padding.
+ * 
+ * @param base64 - The standard Base64 string to convert
+ * @returns The URL-safe Base64URL string
+ * @example
+ * ```ts
+ * const url = base64ToBase64Url('+/8='); // '-_8'
+ * ```
+ */
+export const base64ToBase64Url = (base64: string): string => base64
+	.replace(RE_PLUS, '-')
+	.replace(RE_SLASH, '_')
+	.replace(RE_EQUALS, '');
+
+/**
+ * Normalizes a URL-safe Base64URL string back into a standard Base64 string.
+ * Replaces `-` with `+`, `_` with `/`, and restores `=` padding using `padTo`.
+ * 
+ * @param base64url - The Base64URL string to convert
+ * @returns The standard Base64 string with padding restored
+ * @example
+ * ```ts
+ * const b64 = base64UrlToBase64('-_8'); // '+/8='
+ * ```
+ */
+export const base64UrlToBase64 = (base64url: string): string =>
+	padTo(base64url.replace(RE_DASH, '+').replace(RE_UNDERSCORE, '/'), 4, '=');
+
+/**
+ * Encodes a raw Uint8Array buffer into a URL-safe Base64URL string.
+ * 
+ * @param buffer - The raw buffer to encode
+ * @returns The Base64URL string representation
+ * @example
+ * ```ts
+ * const str = bufferToBase64Url(new Uint8Array([104, 105]));
+ * ```
+ */
+export const bufferToBase64Url = (buffer: Uint8Array): string =>
+	base64ToBase64Url(bufferToBase64(buffer));
+
+/**
+ * Encodes a UTF-8 text string into a URL-safe Base64URL string.
+ * 
+ * @param str - The text string to encode
+ * @returns The Base64URL string representation
+ * @example
+ * ```ts
+ * const str = toBase64Url('Hello World');
+ * ```
+ */
+export const toBase64Url = (str: string): string =>
+	base64ToBase64Url(bufferToBase64(encodeText(str)));
+
+/**
+ * Decodes a URL-safe Base64URL string into a raw Uint8Array buffer.
+ * Validates that the input contains only valid Base64URL characters and valid segment length.
+ * 
+ * @param part - The Base64URL string to decode
+ * @throws {Error} If the string contains invalid characters or an impossible segment length (length % 4 === 1)
+ * @returns A Uint8Array of the decoded data
+ * @example
+ * ```ts
+ * const buf = base64UrlToBuffer('a-b_');
+ * ```
+ */
+export const base64UrlToBuffer = (part: string): Uint8Array => {
+	if (!RE_BASE64URL.test(part) || part.length % 4 === 1)
+		throw new Error('Invalid base64url segment');
+
+	return base64ToBuffer(base64UrlToBase64(part));
 }

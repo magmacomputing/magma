@@ -116,8 +116,8 @@ export const DEFAULTS = {
 		/** Tempo(01-Jan-1000.00:00:00).ns */										get minTempo() { return Temporal.Instant.from('1000-01-01T00:00+00:00').epochNanoseconds },
 	},
 	MONTH_DAY: {
-		/** supported locales for month-day disambiguation */ locales: ['en-US', 'en-AS'],
-		/** layout patterns for month-day parsing */ layouts: [['dayMonthYearShort', 'monthDayYearShort'], ['dayMonthYear', 'monthDayYear']],
+		/** supported locales for month-day disambiguation */		locales: ['en-US', 'en-AS'],
+		/** layout patterns for month-day parsing */						layouts: [['dayMonthYearShort', 'monthDayYearShort'], ['dayMonthYear', 'monthDayYear']],
 		/** timezone mappings for locale-based month-day ordering */ timezones: {
 			/** US timezones that use month/day/year format */ 'en-US': [
 				"America/Adak", "America/Anchorage", "America/Boise", "America/Chicago", "America/Denver",
@@ -238,7 +238,7 @@ export type ELEMENT = ValueOf<typeof ELEMENT>
 export type Element = KeyOf<typeof ELEMENT>
 
 /** allowed mutation keys for .set() and .add() */
-const mutationKeys = [...elementKeys, 'event', 'period', 'clock', 'time', 'date', 'start', 'mid', 'end'] as const;
+const mutationKeys = [...elementKeys, 'yw', 'isoYear', 'isoyear', 'isoWeek', 'isoweek', 'event', 'period', 'clock', 'time', 'date', 'start', 'mid', 'end'] as const;
 export const MUTATION = enumify(mutationKeys, false);
 export type MUTATION = ValueOf<typeof MUTATION>
 export type Mutation = KeyOf<typeof MUTATION>
@@ -250,7 +250,7 @@ export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
-const configKeys = ['config', 'parse', 'value', 'intl', 'store', 'discovery', 'debug', 'catch', 'silent', 'timeZone', 'calendar', 'locale', 'sphere', 'geo', 'latitude', 'lat', 'longitude', 'lng', 'timeStamp', 'registry', 'plugins', 'extends', 'cache'] as const;
+const configKeys = ['config', 'parse', 'value', 'intl', 'localeInfo', 'store', 'discovery', 'debug', 'catch', 'silent', 'timeZone', 'calendar', 'locale', 'sphere', 'geo', 'latitude', 'lat', 'longitude', 'lng', 'timeStamp', 'registry', 'plugins', 'extends', 'cache'] as const;
 export const CONFIG = enumify(configKeys, false);
 export type Config = KeyOf<typeof CONFIG>
 

@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/tempo": "*",
-    "@magmacomputing/tempo-plugin-astro": "*",
-    "@magmacomputing/tempo-plugin-celestial": "*",
-    "@magmacomputing/tempo-plugin-geo": "*"
+    "@magmacomputing/tempo": "^4.3.0",
+    "@magmacomputing/tempo-plugin-astro": "^4.3.0",
+    "@magmacomputing/tempo-plugin-celestial": "^4.3.0",
+    "@magmacomputing/tempo-plugin-geo": "^4.3.0"
   },
   "devDependencies": {
     "typescript": "^7.0.2",

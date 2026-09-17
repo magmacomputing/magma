@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Tempo Interactive REPL</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--bg: #0b0f19;
+			--panel-bg: #111827;
+			--panel-border: rgba(255, 255, 255, 0.08);
+			--accent: #38bdf8;
+			--accent-glow: rgba(56, 189, 248, 0.25);
+			--primary: #818cf8;
+			--success: #10b981;
+			--warning: #f59e0b;
+			--error: #ef4444;
+			--text-main: #f8fafc;
+			--text-muted: #94a3b8;
+			--code-bg: #070a11;
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		html, body {
+			height: 100%;
+			background-color: var(--bg);
+			color: var(--text-main);
+			font-family: 'Outfit', sans-serif;
+			overflow: hidden;
+		}
+
+		.app-container {
+			display: flex;
+			flex-direction: column;
+			height: 100vh;
+		}
+
+		/* Header */
+		header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 10px 20px;
+			background: rgba(17, 24, 39, 0.85);
+			backdrop-filter: blur(12px);
+			border-bottom: 1px solid var(--panel-border);
+			z-index: 10;
+		}
+
+		.brand {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.brand-logo {
+			width: 28px;
+			height: 28px;
+		}
+
+		.brand-title {
+			font-size: 1.15rem;
+			font-weight: 700;
+			letter-spacing: -0.5px;
+			background: linear-gradient(135deg, #fff, #93c5fd);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.brand-badge {
+			font-size: 0.65rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			padding: 2px 8px;
+			background: rgba(56, 189, 248, 0.12);
+			border: 1px solid rgba(56, 189, 248, 0.3);
+			border-radius: 999px;
+			color: var(--accent);
+		}
+
+		.controls {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.select-wrap {
+			position: relative;
+		}
+
+		select, button {
+			font-family: inherit;
+			font-size: 0.85rem;
+		}
+
+		select {
+			background: #1e293b;
+			border: 1px solid var(--panel-border);
+			color: var(--text-main);
+			padding: 6px 12px;
+			border-radius: 8px;
+			outline: none;
+			cursor: pointer;
+			transition: border-color 0.15s ease;
+		}
+
+		select:hover, select:focus {
+			border-color: var(--accent);
+		}
+
+		.setup-pill {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			font-size: 0.78rem;
+			color: var(--text-muted);
+			background: rgba(255, 255, 255, 0.04);
+			border: 1px solid var(--panel-border);
+			padding: 5px 10px;
+			border-radius: 8px;
+			cursor: default;
+		}
+
+		.setup-pill span.icon {
+			color: var(--primary);
+		}
+
+		.toggle-label {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			font-size: 0.8rem;
+			color: var(--text-muted);
+			cursor: pointer;
+			user-select: none;
+		}
+
+		.toggle-label input {
+			cursor: pointer;
+			accent-color: var(--accent);
+		}
+
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 6px 14px;
+			border-radius: 8px;
+			font-weight: 600;
+			cursor: pointer;
+			border: none;
+			transition: all 0.15s ease;
+		}
+
+		.btn-primary {
+			background: linear-gradient(135deg, #0284c7, #2563eb);
+			color: #fff;
+			box-shadow: 0 0 12px var(--accent-glow);
+		}
+
+		.btn-primary:hover {
+			background: linear-gradient(135deg, #0369a1, #1d4ed8);
+			box-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
+		}
+
+		.btn-ghost {
+			background: rgba(255, 255, 255, 0.06);
+			color: var(--text-main);
+			border: 1px solid var(--panel-border);
+		}
+
+		.btn-ghost:hover {
+			background: rgba(255, 255, 255, 0.12);
+		}
+
+		/* Main Layout */
+		.workspace {
+			display: flex;
+			flex: 1;
+			overflow: hidden;
+		}
+
+		.pane {
+			display: flex;
+			flex-direction: column;
+			height: 100%;
+			overflow: hidden;
+		}
+
+		.pane-editor {
+			flex: 1.1;
+			border-right: 1px solid var(--panel-border);
+			background: var(--code-bg);
+		}
+
+		.pane-output {
+			flex: 0.9;
+			display: flex;
+			flex-direction: column;
+			background: var(--panel-bg);
+		}
+
+		.pane-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 8px 16px;
+			background: rgba(15, 23, 42, 0.6);
+			border-bottom: 1px solid var(--panel-border);
+			font-size: 0.75rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			color: var(--text-muted);
+		}
+
+		/* Editor Area */
+		.editor-container {
+			display: flex;
+			flex: 1;
+			position: relative;
+			overflow: hidden;
+			background: var(--code-bg);
+		}
+
+		.line-numbers {
+			padding: 16px 10px;
+			font-family: 'Fira Code', monospace;
+			font-size: 0.88rem;
+			line-height: 1.5;
+			color: #475569;
+			text-align: right;
+			user-select: none;
+			background: rgba(0, 0, 0, 0.2);
+			border-right: 1px solid var(--panel-border);
+			overflow: hidden;
+		}
+
+		.code-editor {
+			flex: 1;
+			padding: 16px;
+			font-family: 'Fira Code', monospace;
+			font-size: 0.88rem;
+			line-height: 1.5;
+			color: #f1f5f9;
+			background: transparent;
+			border: none;
+			outline: none;
+			resize: none;
+			tab-size: 2;
+			white-space: pre;
+			overflow: auto;
+		}
+
+		/* Output Area */
+		.result-section {
+			padding: 16px;
+			background: rgba(15, 23, 42, 0.4);
+			border-bottom: 1px solid var(--panel-border);
+		}
+
+		.result-box {
+			background: rgba(0, 0, 0, 0.3);
+			border: 1px solid rgba(16, 185, 129, 0.25);
+			border-radius: 8px;
+			padding: 12px 16px;
+			font-family: 'Fira Code', monospace;
+			font-size: 1.05rem;
+			color: var(--success);
+			word-break: break-all;
+			min-height: 48px;
+			display: flex;
+			align-items: center;
+		}
+
+		.result-box.error {
+			border-color: rgba(239, 68, 68, 0.4);
+			color: var(--error);
+		}
+
+		.console-stream {
+			flex: 1;
+			padding: 12px 16px;
+			overflow-y: auto;
+			font-family: 'Fira Code', monospace;
+			font-size: 0.82rem;
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		}
+
+		.log-entry {
+			display: flex;
+			align-items: flex-start;
+			gap: 8px;
+			line-height: 1.5;
+		}
+
+		.log-badge {
+			font-size: 0.65rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			padding: 1px 5px;
+			border-radius: 4px;
+			margin-top: 2px;
+		}
+
+		.badge-log { background: #334155; color: #cbd5e1; }
+		.badge-info { background: rgba(56, 189, 248, 0.2); color: var(--accent); }
+		.badge-warn { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+		.badge-error { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+
+		.log-content {
+			flex: 1;
+			color: #e2e8f0;
+			white-space: pre-wrap;
+		}
+
+		/* Status Bar */
+		footer {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 6px 16px;
+			background: #090d16;
+			border-top: 1px solid var(--panel-border);
+			font-size: 0.75rem;
+			color: var(--text-muted);
+		}
+
+		.status-left {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.status-dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background: var(--success);
+			box-shadow: 0 0 8px var(--success);
+		}
+
+		.status-dot.loading {
+			background: var(--warning);
+			box-shadow: 0 0 8px var(--warning);
+		}
+
+		@media (max-width: 800px) {
+			header {
+				flex-wrap: wrap;
+				gap: 10px;
+			}
+			.controls {
+				flex-wrap: wrap;
+			}
+			.workspace {
+				flex-direction: column;
+			}
+			.pane-editor {
+				flex: 1;
+				border-right: none;
+				border-bottom: 1px solid var(--panel-border);
+			}
+			.pane-output {
+				flex: 1;
+			}
+		}
+	</style>
+
+	<script type="importmap">
+	{
+		"imports": {
+			"@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
+			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@4.3.0",
+			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@4.3.0",
+			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@4.3.0",
+			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@4.3.0",
+			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@4.3.0"
+		}
+	}
+	</script>
+</head>
+<body>
+	<div class="app-container">
+		<header>
+			<div class="brand">
+				<svg class="brand-logo" viewBox="0 0 32 32" fill="none">
+					<circle cx="16" cy="16" r="14" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="70 20"/>
+					<circle cx="16" cy="16" r="8" fill="url(#brand-grad)"/>
+					<defs>
+						<linearGradient id="brand-grad" x1="8" y1="8" x2="24" y2="24">
+							<stop stop-color="#38bdf8"/>
+							<stop offset="1" stop-color="#818cf8"/>
+						</linearGradient>
+					</defs>
+				</svg>
+				<span class="brand-title">Tempo</span>
+				<span class="brand-badge">Interactive REPL</span>
+			</div>
+
+			<div class="controls">
+				<div class="select-wrap">
+					<select id="presetSelect" title="Load Snippet Preset">
+						<option value="quickstart">Preset: Quick Start (Core)</option>
+						<option value="weekend">Preset: Weekend Check (Cookbook)</option>
+						<option value="seasons">Preset: Seasons & Moon (Astro/Geo)</option>
+						<option value="quarters">Preset: Fiscal Quarters & Math</option>
+						<option value="dynamic">Preset: Dynamic Plugin (ESM import)</option>
+					</select>
+				</div>
+
+				<div class="setup-pill" title="Pre-configured environment with official plugins registered">
+					<span class="icon">⚙️</span>
+					<span>Setup: Default (Astro + Geo + Celestial)</span>
+				</div>
+
+				<label class="toggle-label" title="Auto-evaluate on edit">
+					<input type="checkbox" id="autorunToggle" checked>
+					<span>Auto-run</span>
+				</label>
+
+				<button id="runBtn" class="btn btn-primary" title="Execute Code (Ctrl+Enter)">
+					<span>▶ Run</span>
+				</button>
+
+				<button id="shareBtn" class="btn btn-ghost" title="Copy Share Link">
+					<span>📋 Share</span>
+				</button>
+
+				<button id="clearBtn" class="btn btn-ghost" title="Clear Console">
+					<span>Clear</span>
+				</button>
+			</div>
+		</header>
+
+		<main class="workspace">
+			<section class="pane pane-editor">
+				<div class="pane-header">
+					<span>Code Editor (JavaScript / ES Modules)</span>
+					<span style="font-weight: 400; text-transform: none;">Preloaded: <code>Tempo</code>, <code>Temporal</code></span>
+				</div>
+				<div class="editor-container">
+					<div id="lineNumbers" class="line-numbers">1</div>
+					<textarea id="codeEditor" class="code-editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+				</div>
+			</section>
+
+			<section class="pane pane-output">
+				<div class="pane-header">
+					<span>Evaluation Return Value</span>
+					<span id="evalTime">0 ms</span>
+				</div>
+				<div class="result-section">
+					<div id="resultBox" class="result-box">Initializing Sandbox...</div>
+				</div>
+
+				<div class="pane-header">
+					<span>Console Stream</span>
+					<span id="logCount">0 logs</span>
+				</div>
+				<div id="consoleStream" class="console-stream"></div>
+			</section>
+		</main>
+
+		<footer>
+			<div class="status-left">
+				<div id="statusDot" class="status-dot loading"></div>
+				<span id="statusText">Loading Temporal & Tempo via esm.sh...</span>
+			</div>
+			<div>
+				<span>Shortcut: <code>Ctrl + Enter</code> to run</span>
+			</div>
+		</footer>
+	</div>
+
+	<script type="module">
+		const SNIPPETS = {
+			quickstart: `// ⚡ Quick Start with Tempo
+const t = new Tempo('now');
+
+console.log('ISO 8601 String:', t.iso);
+console.log('Formatted:', t.format('{dddd}, {mon:long} {dd}, {yyyy} at {hh}:{mi} {ampm}'));
+console.log('Relative Time:', t.format('Evaluated {ago}'));
+
+// Return value displays in the top Result card:
+return t.format('{yyyy}-{mm}-{dd}');`,
+
+			weekend: `// 🗓️ Weekend Checking (from Tempo Cookbook)
+const today = new Tempo();
+console.log('Today:', today.format('{www} {dd} {mon}'));
+console.log('ISO Day of Week (1..7):', today.dow);
+
+// 1. Simple ISO check (Sat = 6, Sun = 7)
+const isIsoWeekend = today.dow >= 6;
+console.log('Is ISO Weekend?', isIsoWeekend);
+
+// 2. Locale-Aware check using t.intl.weekend
+const us = new Tempo({ locale: 'en-US' });
+const sa = new Tempo({ locale: 'ar-SA' });
+
+console.log('en-US Weekend Days:', us.intl.weekend); // [6, 7] (Saturday, Sunday)
+console.log('ar-SA Weekend Days:', sa.intl.weekend); // [5, 6] (Friday, Saturday)
+
+return \`Today is \${today.format('{www}')}. Weekend in US? \${us.intl.weekend.includes(today.dow)}\`;`,
+
+			seasons: `// 🌍 Hemispheric Seasons & Lunar Phases
+// Tempo terms are hemisphere-aware based on geo coordinates or sphere setting:
+const sydney = new Tempo('2026-07-01', { sphere: 'south' });
+const london = new Tempo('2026-07-01', { sphere: 'north' });
+
+console.log('Sydney in July:', sydney.term.szn); // "Winter"
+console.log('London in July:', london.term.szn); // "Summer"
+
+// Celestial Plugin (Lunar Phase):
+const now = new Tempo();
+console.log('Moon Phase:', now.term.lunar.phase);
+console.log('Illumination:', (now.term.lunar.illumination * 100).toFixed(1) + '%');
+
+return \`Current Lunar Phase: \${now.term.lunar.phase}\`;`,
+
+			quarters: `// 💼 Fiscal Quarters and Tempo Math
+const t = new Tempo('2026-02-15');
+
+console.log('Current Fiscal Quarter:', t.term.quarter.label); // "Q1"
+console.log('Quarter Start:', t.term.quarter.start.format('{yyyy}-{mm}-{dd}'));
+console.log('Quarter End:', t.term.quarter.end.format('{yyyy}-{mm}-{dd}'));
+
+// Chainable Mutation:
+const nextQtr = t.add({ months: 3 });
+console.log('3 Months Later:', nextQtr.term.quarter.label); // "Q2"
+
+return nextQtr.format('Next quarter: {#quarter}');`,
+
+			dynamic: `// 📦 Dynamic Plugin Loading via native ESM
+console.log('Dynamically importing @magmacomputing/tempo-plugin-ticker...');
+const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
+
+// Register the dynamically imported plugin
+Tempo.use(TickerPlugin);
+
+console.log('TickerPlugin loaded and active!');
+return 'Dynamic import successful!';`
+		};
+
+		const codeEditor = document.getElementById('codeEditor');
+		const lineNumbers = document.getElementById('lineNumbers');
+		const resultBox = document.getElementById('resultBox');
+		const consoleStream = document.getElementById('consoleStream');
+		const evalTimeEl = document.getElementById('evalTime');
+		const logCountEl = document.getElementById('logCount');
+		const statusDot = document.getElementById('statusDot');
+		const statusText = document.getElementById('statusText');
+		const presetSelect = document.getElementById('presetSelect');
+		const runBtn = document.getElementById('runBtn');
+		const clearBtn = document.getElementById('clearBtn');
+		const shareBtn = document.getElementById('shareBtn');
+		const autorunToggle = document.getElementById('autorunToggle');
+
+		let logs = [];
+		let autorunTimer = null;
+		let isReady = false;
+
+		// 1. Initialize Runtime
+		async function initRuntime() {
+			try {
+				statusText.textContent = 'Loading Temporal polyfill...';
+				const { Temporal } = await import('@js-temporal/polyfill');
+				if (!globalThis.Temporal && Temporal) globalThis.Temporal = Temporal;
+
+				statusText.textContent = 'Loading Tempo core & plugins...';
+				const { Tempo } = await import('@magmacomputing/tempo');
+				const { AstroPlugin } = await import('@magmacomputing/tempo-plugin-astro');
+				const { GeoPlugin } = await import('@magmacomputing/tempo-plugin-geo');
+				const { CelestialPlugin } = await import('@magmacomputing/tempo-plugin-celestial');
+
+				// Register default plugins
+				Tempo.use(GeoPlugin);
+				Tempo.use(AstroPlugin);
+				Tempo.use(CelestialPlugin);
+
+				window.Tempo = Tempo;
+				window.Temporal = Temporal;
+
+				isReady = true;
+				statusDot.classList.remove('loading');
+				statusText.textContent = 'Tempo 4.3.0 + Plugins ready';
+				
+				// Check for URL hash code or load default preset
+				const shouldAutoRun = loadFromHashOrPreset();
+				if (shouldAutoRun) {
+					executeCode();
+				}
+			} catch (err) {
+				console.error(err);
+				statusText.textContent = 'Initialization failed. Check network/console.';
+				resultBox.textContent = 'Failed to load dependencies: ' + err.message;
+				resultBox.classList.add('error');
+			}
+		}
+
+		// 2. Line numbers and Editor Sync
+		function updateLineNumbers() {
+			const lines = codeEditor.value.split('\n').length;
+			lineNumbers.innerHTML = Array.from({ length: lines }, (_, i) => i + 1).join('<br>');
+		}
+
+		codeEditor.addEventListener('input', () => {
+			updateLineNumbers();
+			if (autorunToggle.checked && isReady) {
+				clearTimeout(autorunTimer);
+				autorunTimer = setTimeout(executeCode, 400);
+			}
+		});
+
+		codeEditor.addEventListener('keydown', (e) => {
+			// Tab key indentation
+			if (e.key === 'Tab') {
+				e.preventDefault();
+				const start = codeEditor.selectionStart;
+				const end = codeEditor.selectionEnd;
+				codeEditor.value = codeEditor.value.substring(0, start) + '  ' + codeEditor.value.substring(end);
+				codeEditor.selectionStart = codeEditor.selectionEnd = start + 2;
+			}
+			// Ctrl+Enter or Cmd+Enter to execute
+			if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+				e.preventDefault();
+				executeCode();
+			}
+		});
+
+		// 3. Execution Sandbox
+		async function executeCode() {
+			if (!isReady) return;
+
+			const startTime = performance.now();
+			clearConsole();
+			resultBox.classList.remove('error');
+			resultBox.textContent = 'Executing...';
+
+			const customConsole = {
+				log: (...args) => appendLog('log', args),
+				info: (...args) => appendLog('info', args),
+				warn: (...args) => appendLog('warn', args),
+				error: (...args) => appendLog('error', args),
+			};
+
+			try {
+				const userCode = codeEditor.value;
+				const asyncFn = new Function('Tempo', 'Temporal', 'console', `
+					return (async () => {
+						${userCode}
+					})();
+				`);
+
+				const result = await asyncFn(window.Tempo, window.Temporal, customConsole);
+				const duration = (performance.now() - startTime).toFixed(1);
+				evalTimeEl.textContent = `${duration} ms`;
+
+				if (result !== undefined) {
+					resultBox.textContent = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
+				} else {
+					resultBox.textContent = '(undefined - check console stream below)';
+					resultBox.style.color = '#94a3b8';
+				}
+			} catch (err) {
+				const duration = (performance.now() - startTime).toFixed(1);
+				evalTimeEl.textContent = `${duration} ms`;
+				resultBox.classList.add('error');
+				resultBox.textContent = err.name + ': ' + err.message;
+				customConsole.error(err.stack || err.message);
+			}
+		}
+
+		function appendLog(type, args) {
+			const formatted = args.map(arg => {
+				if (arg === null) return 'null';
+				if (arg === undefined) return 'undefined';
+				if (typeof arg === 'object') {
+					try { return JSON.stringify(arg, null, 2); } catch { return String(arg); }
+				}
+				return String(arg);
+			}).join(' ');
+
+			const entry = document.createElement('div');
+			entry.className = 'log-entry';
+
+			const badge = document.createElement('span');
+			badge.className = `log-badge badge-${type}`;
+			badge.textContent = type;
+
+			const content = document.createElement('span');
+			content.className = 'log-content';
+			content.textContent = formatted;
+
+			entry.appendChild(badge);
+			entry.appendChild(content);
+			consoleStream.appendChild(entry);
+			consoleStream.scrollTop = consoleStream.scrollHeight;
+
+			logs.push({ type, formatted });
+			logCountEl.textContent = `${logs.length} logs`;
+		}
+
+		function clearConsole() {
+			logs = [];
+			consoleStream.innerHTML = '';
+			logCountEl.textContent = '0 logs';
+		}
+
+		// 4. Presets and Share Hash
+		function loadFromHashOrPreset() {
+			if (window.location.hash.startsWith('#code=')) {
+				try {
+					const encoded = window.location.hash.slice(6);
+					codeEditor.value = decodeURIComponent(atob(encoded));
+					updateLineNumbers();
+					resultBox.textContent = 'Shared code loaded from URL. Click "▶ Run" or press Ctrl+Enter to execute.';
+					resultBox.style.color = '#94a3b8';
+					return false;
+				} catch {
+					// Fallback if hash invalid
+				}
+			}
+			loadPreset('quickstart');
+			return true;
+		}
+
+		function loadPreset(key) {
+			if (SNIPPETS[key]) {
+				codeEditor.value = SNIPPETS[key];
+				updateLineNumbers();
+				if (isReady) executeCode();
+			}
+		}
+
+		presetSelect.addEventListener('change', (e) => {
+			loadPreset(e.target.value);
+		});
+
+		runBtn.addEventListener('click', executeCode);
+		clearBtn.addEventListener('click', clearConsole);
+
+		shareBtn.addEventListener('click', () => {
+			try {
+				const encoded = btoa(encodeURIComponent(codeEditor.value));
+				window.location.hash = 'code=' + encoded;
+				navigator.clipboard.writeText(window.location.href);
+				const origText = shareBtn.textContent;
+				shareBtn.textContent = '✓ Copied URL!';
+				setTimeout(() => { shareBtn.textContent = origText; }, 1800);
+			} catch (err) {
+				alert('Could not copy URL: ' + err.message);
+			}
+		});
+
+		// Boot
+		initRuntime();
+	</script>
+</body>
+</html>

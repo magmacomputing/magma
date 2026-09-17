@@ -1,4 +1,4 @@
-import { isNumber, isDefined, isString, isFunction } from '#library/assertion.library.js';
+import { isNumber, isDefined, isFunction } from '#library/assertion.library.js';
 import type { ValueOf } from '#library/type.library.js';
 
 const TWO_SECONDS = 2_000;																	// default time-out for requests, in milliseconds

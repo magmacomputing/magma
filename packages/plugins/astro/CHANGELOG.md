@@ -2,6 +2,19 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-astro` project will be documented in this file.
 
+## [2.3.0] - 2026-09-16
+
+### Added
+- **Colocated Term Options & Callable Factory Support**:
+  - Exported `AstroTermOptions` interface for typed call-site term configuration (`sphere`, `hemisphere`, `precision`).
+  - Added support for callable term factory `AstroTerm({ sphere: 'south', precision: 'high' })` and tuple registration `[AstroTerm, { sphere: 'south' }]`.
+
+## [2.2.1] - 2026-09-08
+
+### Changed
+- **Documentation & Scope Clarification**:
+  - Updated package description to clarify focus on solar astronomical events (equinoxes and solstices), with lunar phase and twilight capabilities delegated to `@magmacomputing/tempo-plugin-celestial`.
+
 ## [2.2.0] - 2026-09-03
 
 ### Added

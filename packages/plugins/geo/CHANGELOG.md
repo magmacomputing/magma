@@ -5,6 +5,14 @@ All notable changes to the `@magmacomputing/tempo-plugin-geo` project will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-16
+
+### Added
+- **Plugin Options Merging & Callable Plugin Support**:
+  - `GeoPlugin.install` now accepts resolved options passed by `Tempo.use(GeoPlugin, options)` or `Tempo.use(GeoPlugin(options))` or tuple syntax `[GeoPlugin, options]`.
+  - Merges class defaults (`installedClass.config?.pluginOptions?.geo`), plugin registration options, instance options, and call-site options prior to coordinate resolution and lookup.
+  - Ensures call-site options override configured defaults (such as `timeout` and `highAccuracy`) while preserving existing coordinate resolution behavior.
+
 ## [1.0.0] - 2026-09-08
 
 ### Changed (Breaking Changes)

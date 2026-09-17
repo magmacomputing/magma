@@ -1,14 +1,18 @@
 import { curry } from '#library/function.library.js';
 import { ownKeys, ownValues, ownEntries } from '#library/primitive.library.js';
 import { cleanify } from '#library/json.library.js';
+import { asObject } from '#library/object.library.js';
 
 import { asType } from '#library/type.library.js';
-import { isType, isEmpty, isDefined, isUndefined, isNullish, isString, isObject, isArray, isFunction, isSymbolFor, isSymbol } from '#library/assertion.library.js';
+import { isType, isEmpty, isDefined, isUndefined, isNullish, isString, isObject, isArray, isFunction, isSymbolFor, isSymbol, isSafeKey, isNumeric, isReference } from '#library/assertion.library.js';
 import { sym } from '#library/symbol.library.js';
 import type { Obj, Type } from '#library/type.library.js';
 
 /**
  * Global registry mapping class names to their constructors for serialization/deserialization.
+ * 
+ * @security Only register trusted classes whose constructors are free of harmful side effects.
+ * Deserializing via `objectify` will invoke constructors via `Reflect.construct` with deserialized arguments.
  */
 export const Registry = (globalThis as any)[sym.$SerializerRegistry] ??= new Map<string, Function>();
 
@@ -185,20 +189,86 @@ function toSymbol(value: PropertyKey) {
  * limited support for user-defined Classes (must be specifically registered with @Serialize() decorator)
  */
 
+const RUNTIME_SALT = globalThis.crypto?.randomUUID
+	? globalThis.crypto.randomUUID().split('-')[0]
+	: Math.random().toString(36).slice(2, 10);
+
+/**
+ * Computes a fast, synchronous 64-bit keyed hash of a string payload.
+ *
+ * @param str - The string to hash
+ * @param secret - Optional secret key or salt (defaults to an ephemeral runtime salt, deterministic only within the current process lifetime)
+ * @returns A 16-character hex string digest
+ */
+export const fastDigest = (str: string, secret = RUNTIME_SALT): string => {
+	let h1 = 0x811c9dc5;
+	let h2 = 0x9e3779b9;
+	const input = `${secret}:${str}`;
+	for (let i = 0; i < input.length; i++) {
+		const c = input.charCodeAt(i);
+		h1 = Math.imul(h1 ^ c, 0x01000193);
+		h2 = Math.imul(h2 ^ c, 0x85ebca6b);
+	}
+	return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
+};
+
+/**
+ * Compares two ASCII/hex digest strings in constant time to prevent timing attacks.
+ */
+const constantTimeEqual = (a: string, b: string): boolean => {
+	if (!isString(a) || !isString(b)) return false;
+	if (a.length !== b.length) return false;
+	let result = 0;
+	for (let i = 0; i < a.length; i++)
+		result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+
+	return result === 0;
+};
+
+/**
+ * Configuration options for `stringify()` serialization.
+ */
+export interface StringifyOptions {
+	/** If true, wraps the output with an integrity signature prefix ($sig:<digest>:<payload>) */
+	signed?: boolean;
+	/** Secret key or salt for signature calculation (required when signed is true) */
+	secret?: string;
+	/** If false, uses legacy oneKey object envelopes instead of compact tagged strings (default: true) */
+	compact?: boolean;
+}
+
+let activeCompact = true;
+
 /**
  * Serializes objects for string-safe stashing in WebStorage, Cache, etc.
- * Uses `JSON.stringify` where available, else returns a stringified 
- * single key:value object (e.g., `{ "$BigInt": "123" }`) for custom types.
+ * Uses compact tagged strings (`~n`, `~t`, `~u`, `~y`) by default for primitive types,
+ * or oneKey object envelopes when `compact: false`.
  * 
  * @param obj - The object to stringify
+ * @param options - Optional serialization options (e.g. `{ signed: true, secret: 'key', compact: true }`)
  * @returns The safely stringified representation
  * @example
  * ```ts
- * stringify(123n); // '{"$BigInt":"123"}'
+ * stringify(123n); // '"~n123"'
+ * stringify(new Date()); // '"~t1704067200000"'
+ * stringify(Symbol.for('app')); // '"~y@@(app)"'
+ * stringify(data, { signed: true, secret: 'my-secret' }); // '$sig:e8b7...:{"id":"~n123"}'
  * ```
  */
-export function stringify<T>(obj: T) {
-	return stringize(obj, false);
+export function stringify<T>(obj: T, options?: StringifyOptions): string {
+	const prevCompact = activeCompact;
+	activeCompact = options?.compact !== false;
+	try {
+		const str = stringize(obj, false);
+		if (options?.signed) {
+			if (!isString(options.secret) || !options.secret)
+				throw new TypeError('stringify: signed serialization requires an explicit secret string');
+			return `$sig:${fastDigest(str, options.secret)}:${str}`;
+		}
+		return str;
+	} finally {
+		activeCompact = prevCompact;
+	}
 }
 
 /**
@@ -211,17 +281,23 @@ function stringize<T>(obj: T, recurse = true): string {			// hide the second par
 	const one = curry(oneKey)(arg.type);											// curry the oneKey() function
 
 	switch (arg.type) {
-		case 'String':
+		case 'String': {
+			let strVal = arg.value;
+			if (strVal.startsWith('~'))
+				strVal = `~${strVal}`;
+
 			if (!recurse) {																				// if a top-level string (e.g. 'true' or '1234')
-				recurse = arg.value === 'true'											// ensure true|false|null|1234 are quoted by JSON.stringify
-					|| arg.value === 'false'													// so they will be correctly identified during objectify()
-					|| arg.value === 'null'
-					|| parseFloat(arg.value).toString() === arg.value
+				recurse = strVal === 'true'													// ensure true|false|null|1234 are quoted by JSON.stringify
+					|| strVal === 'false'															// so they will be correctly identified during objectify()
+					|| strVal === 'null'
+					|| parseFloat(strVal).toString() === strVal
+					|| strVal.startsWith('~');
 			}
 
 			return recurse
-				? JSON.stringify(encode(arg.value))									// encode string for safe-storage
-				: encode(arg.value);																// dont JSON.stringify a top-level string
+				? JSON.stringify(encode(strVal))										// encode string for safe-storage
+				: encode(strVal);																		// dont JSON.stringify a top-level string
+		}
 
 		case 'Boolean':
 		case 'Null':
@@ -230,10 +306,19 @@ function stringize<T>(obj: T, recurse = true): string {			// hide the second par
 
 		case 'Void':
 		case 'Undefined':
-			return one(JSON.stringify('void'));										// preserve 'undefined' values		
+			return activeCompact
+				? JSON.stringify('~u')
+				: one(JSON.stringify('void'));											// preserve 'undefined' values		
 
 		case 'BigInt':
-			return one(arg.value.toString());											// even though BigInt has a toString method, it is not supported in JSON.stringify
+			return activeCompact
+				? JSON.stringify(`~n${arg.value.toString()}`)
+				: one(arg.value.toString());												// even though BigInt has a toString method, it is not supported in JSON.stringify
+
+		case 'Date':
+			return activeCompact
+				? JSON.stringify(`~t${arg.value.getTime()}`)
+				: one(stringize(arg.value.toJSON()));
 
 		case 'Object': {
 			const obj = ownEntries(arg.value)
@@ -267,8 +352,12 @@ function stringize<T>(obj: T, recurse = true): string {			// hide the second par
 			return one(`[${set}]`);
 		}
 
-		case 'Symbol':
-			return one(fromSymbol(arg.value));
+		case 'Symbol': {
+			const symStr = `${isSymbolFor(arg.value) ? '@' : ''}@(${arg.value.description ?? ''})`;
+			return activeCompact
+				? JSON.stringify(`~y${symStr}`)
+				: one(JSON.stringify(symStr));
+		}
 
 		case 'RegExp':
 			return one(stringize({ source: arg.value.source, flags: arg.value.flags }));
@@ -281,40 +370,123 @@ function stringize<T>(obj: T, recurse = true): string {			// hide the second par
 					return undefined as unknown as string;
 
 				case isFunction(value.toJSON):											// Object has its own toJSON method
-					return one(stringize(value.toJSON(), /** replacer */));
+					return one(stringize(value.toJSON()));
 
-				case isFunction(value.toString): {									// Object has its own toString method
+				case isFunction(value.toString) && value.toString !== Object.prototype.toString: {									// Object has its own toString method
 					const str = value.toString();
 					return one(str.includes('"')											// TODO: improve detection of JSON vs non-JSON strings
 						? str
 						: JSON.stringify(str));
 				}
 
-				case isFunction(value.valueOf):											// Object has its own valueOf method		
+				case isFunction(value.valueOf) && value.valueOf !== Object.prototype.valueOf:											// Object has its own valueOf method		
 					return one(JSON.stringify(value.valueOf()));
 
-				default:																						// else standard stringify
-					return one(JSON.stringify(value, replacer));
+				default: {
+					const plain = asObject(value);
+					return (isReference(plain) && Object.keys(plain).length > 0)
+						? stringize(plain)
+						: one(JSON.stringify(value, (key: string, o: any) => isEmpty(key) ? o : stringize(o)));
+				}
 			}
 		}
 	}
 }
 
 /**
+ * Configuration options for `objectify()` deserialization.
+ */
+export interface ObjectifyOptions {
+	/** Optional function to handle reconstructing undefined/void values */
+	sentinel?: Function;
+	/** Whether to allow instantiation of registered classes via Registry (default: true) */
+	allowClasses?: boolean;
+	/** Optional allowlist of permitted registered class names (matched with or without leading '$') */
+	allowedClasses?: string[] | Set<string>;
+	/** Whether to reconstruct RegExp instances (default: true) */
+	allowRegExp?: boolean;
+	/** Maximum object traversal nesting depth to prevent call-stack exhaustion (default: 64) */
+	maxDepth?: number;
+	/** If true, requires that the string has a valid signature, rejecting unsigned strings (default: false) */
+	requireSigned?: boolean;
+	/** Secret key or salt to verify the signature against (required for signed verification) */
+	secret?: string;
+	/** If true, throws an Error when signature verification fails, secret is missing, or payload is rejected (default: false) */
+	throwOnError?: boolean;
+}
+
+const MAX_TRAVERSE_DEPTH = 64;
+const MAX_REGEXP_SOURCE_LENGTH = 512;
+
+/**
  * Rebuilds an Object from its `stringify`'d string representation.
  * Handles custom single key:value type definitions automatically.
  * 
+ * @security TRUST BOUNDARY WARNING
+ * `objectify()` is an ACTIVE deserializer designed for internal state persistence
+ * (e.g. WebStorage, internal caching, trusted worker IPC).
+ * 
+ * Do NOT use `objectify()` on untrusted or external strings (e.g. HTTP request bodies,
+ * unverified tokens, public webhooks):
+ * - Insecure Deserialization (CWE-502): Can instantiate registered classes via `Reflect.construct`.
+ * - Type Confusion: May produce BigInt, Date, or Map where plain JSON values are expected.
+ * - Global Symbol Pollution: Encoded symbols register into `Symbol.for()`.
+ * 
+ * When dealing with semi-trusted strings, configure `ObjectifyOptions`:
+ * set `allowClasses: false` (or specify an `allowedClasses` allowlist), `maxDepth`,
+ * or enforce tamper detection with `requireSigned: true`.
+ * For cryptographically authenticated payloads across untrusted network boundaries, use `signJWS()` / `verifyJWS()`.
+ * For completely untrusted external input, use native `JSON.parse()` with schema validation instead.
+ * 
  * @param str - The string to parse
- * @param sentinel - Optional function to handle reconstructing undefined/void values
+ * @param optionsOrSentinel - Optional configuration options or a sentinel function for undefined values
  * @returns The deserialized object or original string if parsing fails
  * @example
  * ```ts
  * const obj = objectify('{"$BigInt":"123"}'); // 123n
+ * const safe = objectify(input, { allowClasses: false, maxDepth: 10 });
+ * const trusted = objectify(input, { requireSigned: true, secret: 'my-secret' });
  * ```
  */
-export function objectify<T>(str: any, sentinel?: Function): T {
+export function objectify<T>(str: any, optionsOrSentinel?: Function | ObjectifyOptions): T {
 	if (!isString(str))
 		return str;																							// skip parsing
+
+	const options: ObjectifyOptions = isFunction(optionsOrSentinel)
+		? { sentinel: optionsOrSentinel }
+		: (optionsOrSentinel ?? {});
+
+	if (str.startsWith('$sig:')) {
+		const secondColon = str.indexOf(':', 5);
+		if (secondColon !== -1) {
+			const sig = str.substring(5, secondColon);
+			const payload = str.substring(secondColon + 1);
+			if (!isString(options.secret) || !options.secret) {
+				console.warn('objectify: signature verification requires an explicit secret string');
+				if (options.throwOnError)
+					throw new TypeError('objectify: signature verification requires an explicit secret string');
+				return str as unknown as T;
+			}
+			const expectedSig = fastDigest(payload, options.secret);
+			if (!constantTimeEqual(sig, expectedSig)) {
+				console.warn('objectify: signature verification failed');
+				if (options.throwOnError)
+					throw new Error('objectify: signature verification failed');
+				return str as unknown as T;
+			}
+			str = payload;
+		} else if (options.requireSigned) {
+			console.warn('objectify: malformed signed payload');
+			if (options.throwOnError)
+				throw new Error('objectify: malformed signed payload');
+			return str as unknown as T;
+		}
+	} else if (options.requireSigned) {
+		console.warn('objectify: unsigned string rejected by requireSigned policy');
+		if (options.throwOnError)
+			throw new Error('objectify: unsigned string rejected by requireSigned policy');
+		return str as unknown as T;
+	}
 
 	let parse: any;
 	try {
@@ -324,38 +496,57 @@ export function objectify<T>(str: any, sentinel?: Function): T {
 			console.warn(`objectify.parse: -> ${str}, ${(error as Error).message}`);
 			return str as unknown as T;														// bail-out
 		}
-		else return objectify(`"${str}"`, sentinel);						// have another try, quoted
+		else return objectify(`"${str}"`, options.requireSigned ? { ...options, requireSigned: false } : options);							// have another try, quoted with signature verified state preserved
 	}
 
 	switch (true) {
 		case str.startsWith('{') && str.endsWith('}'):					// looks like Object
 		case str.startsWith('[') && str.endsWith(']'):					// looks like Array
-			return traverse(parse, sentinel);											// recurse into object
+			return traverse(parse, options, 0);										// recurse into object
 
 		default:
-			return parse;
+			return typeify(parse, options);
 	}
 }
 
 /** recurse into Object / Array, looking for special single key:value Objects */
-function traverse(obj: Obj, sentinel?: Function): any {
+function traverse(obj: Obj, options: ObjectifyOptions, depth = 0): any {
+	const maxDepth = options.maxDepth ?? MAX_TRAVERSE_DEPTH;
+	if (depth >= maxDepth)
+		return obj;
+
 	if (isObject(obj)) {
 		return typeify(ownEntries(obj)
-			.reduce((acc, [key, val]) => Object.assign(acc, { [toSymbol(key)]: typeify(traverse(val, sentinel)) }), {}),
-			sentinel
-		)
+			.filter(([key]) => isSafeKey(key))
+			.reduce((acc, [key, val]) => Object.assign(acc, { [toSymbol(key)]: typeify(traverse(val, options, depth + 1), options) }), {}), options);
 	}
 
 	if (isArray(obj)) {
 		return ownValues(obj)
-			.map(val => typeify(traverse(val, sentinel)))
+			.map(val => typeify(traverse(val, options, depth + 1), options));
 	}
 
-	return obj;
+	return typeify(obj, options);
 }
 
-/** rebuild an Object from its single key:value representation */
-function typeify(json: any, sentinel?: Function) {
+/** rebuild an Object from its single key:value or tagged-string representation */
+function typeify(json: any, options: ObjectifyOptions) {
+	if (isString(json) && json.startsWith('~')) {
+		try {
+			if (json.startsWith('~~')) return json.substring(1);
+			if (json.startsWith('~n')) return BigInt(json.substring(2));
+			if (json.startsWith('~t')) {
+				const timeVal = json.substring(2);
+				const d = new Date(isNumeric(timeVal) ? Number(timeVal) : timeVal);
+				return isNaN(d.getTime()) ? json : d;
+			}
+			if (json === '~u') return options.sentinel?.();
+			if (json.startsWith('~y')) return toSymbol(json.substring(2));
+		} catch {
+			return json;
+		}
+	}
+
 	if (!isObject(json) || ownKeys(json).length !== 1)
 		return json;																						// only JSON Objects, with a single key:value pair
 
@@ -370,7 +561,7 @@ function typeify(json: any, sentinel?: Function) {
 			case 'Boolean':
 			case 'Object':
 			case 'Array':
-				return value;																					// these types are already handled by traverse()
+				return value;																				// these types are already handled by traverse()
 
 			case 'Number':
 				return Number(value);
@@ -382,12 +573,13 @@ function typeify(json: any, sentinel?: Function) {
 			case 'Undefined':
 			case 'Empty':
 			case 'Void':
-				return sentinel?.();																	// run Sentinel function to handle undefined values
+				return options.sentinel?.();												// run Sentinel function to handle undefined values
 
 			case 'Date':
 				return new Date(value);
 			case 'RegExp':
-				if (!isObject(value) || !isString(value.source)) return json;
+				if (options.allowRegExp === false) return json;
+				if (!isObject(value) || !isString(value.source) || value.source.length > MAX_REGEXP_SOURCE_LENGTH) return json;
 				return new RegExp(value.source, value.flags);
 			case 'Symbol':
 				return toSymbol(value);
@@ -398,7 +590,17 @@ function typeify(json: any, sentinel?: Function) {
 				if (!isArray(value)) return json;
 				return new Set(value);
 
-			default:
+			default: {
+				if (options.allowClasses === false)
+					return json;
+
+				if (options.allowedClasses) {
+					const allowed = options.allowedClasses instanceof Set
+						? options.allowedClasses.has($type) || options.allowedClasses.has(type)
+						: options.allowedClasses.includes($type) || options.allowedClasses.includes(type);
+					if (!allowed) return json;
+				}
+
 				const cls = Registry.get($type);											// lookup registered Class
 
 				if (!cls) {
@@ -407,6 +609,7 @@ function typeify(json: any, sentinel?: Function) {
 				}
 
 				return Reflect.construct(cls, [value]);								// create new Class instance
+			}
 		}
 	} catch {
 		return json;

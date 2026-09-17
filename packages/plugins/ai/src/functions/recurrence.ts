@@ -61,7 +61,7 @@ function createRecurrenceResult(
 		if (fullyExpanded || cachedOccurrences.length >= neededCount) return;
 		const missingCount = neededCount - cachedOccurrences.length;
 		const fetchCount = Math.max(missingCount, cachedOccurrences.length, defaultBatchSize);
-		const lastOccurrence = cachedOccurrences.length > 0 ? cachedOccurrences[cachedOccurrences.length - 1] : undefined;
+		const lastOccurrence = cachedOccurrences.at(-1);
 		const fresh = expandOccurrences(rruleStr, anchorTempo, {
 			count: fetchCount,
 			after: lastOccurrence ?? options?.after,

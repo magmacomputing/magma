@@ -150,17 +150,37 @@ When building complex logic, consider whether it belongs as a core Plugin extens
 To make your plugin available to the community, package it as a standard NPM module. 
 
 ### Plugin Factories (with Options)
-If your plugin requires its own configuration, export a **factory function** that returns the `Tempo.Plugin` function. This is the cleanest pattern for "marketplace" plugins.
+If your plugin requires its own configuration, use `definePlugin` directly and export the result as a **callable `PluginFactory`**. Consumers can then invoke it at registration time with their options, following the Vite / Rollup colocated plugin model.
 
 ```typescript
 // tempo-plugin-holiday/index.ts
 import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
+import type { TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 
-export const HolidayPlugin = (pluginOptions = {}) => {
-  return definePlugin((TempoClass, tempoOptions, factory) => {
-    // ... use pluginOptions here ...
-  });
-};
+export interface HolidayPluginOptions {
+  region?: string;
+  observeWeekendShifts?: boolean;
+}
+
+// Export the options type so consumers get IDE intellisense inside HolidayPlugin({ ... })
+export const HolidayPlugin = definePlugin({
+  name: 'holiday',
+  install(TempoClass, options?: any) {
+    const opts = options as HolidayPluginOptions | undefined;
+    const region = opts?.region ?? 'US-NY';
+    // ... register methods or terms using the resolved options ...
+  },
+});
+```
+
+Consumers can then register it using any of the three patterns:
+
+```typescript
+plugins: [
+  HolidayPlugin,                            // Pattern 0: bare (uses pluginOptions fallback)
+  HolidayPlugin({ region: 'AU-NSW' }),      // Pattern 1: factory closure
+  [HolidayPlugin, { region: 'AU-NSW' }],   // Pattern 2: tuple
+]
 ```
 
 ### The Module Aggregator Pattern
@@ -185,66 +205,82 @@ If you require custom commercial plugins, domain-specific extensions, or enterpr
 
 ## Consuming a Plugin
 
-For developers using your plugin, registration can be handled imperatively via `use()` or declaratively via configuration:
+For developers using your plugin, registration can be handled imperatively via `use()` or declaratively via configuration. As of **v4.3.0**, Tempo supports three registration patterns:
+
+| Pattern | Syntax | Description |
+|---|---|---|
+| **0 — Bare** | `TickerPlugin` | Default options; reads from `pluginOptions` fallback |
+| **1 — Factory Closure** | `TickerPlugin({ interval: 1000 })` | Colocated options injected at call site |
+| **2 — Tuple** | `[TickerPlugin, { interval: 1000 }]` | Works with any plugin, including third-party |
 
 ### 1. Imperative Registration (`Tempo.use`)
-For standalone usage or factory-wrapped plugins, pass the plugin directly to `Tempo.use()`:
+For standalone usage, pass the plugin directly to `Tempo.use()` using any pattern:
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 import { HolidayPlugin } from 'tempo-plugin-holiday';
+import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
+import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
 
-// Initialize the plugin with inline factory options and register it with Tempo
-Tempo.use(HolidayPlugin({ 
-  region: 'US-NY' 
-}));
+// Pattern 0: bare
+Tempo.use(TickerPlugin);
+
+// Pattern 1: factory closure — options colocated at the call site
+Tempo.use(TickerPlugin({ interval: 1000 }));
+
+// Pattern 2: tuple — pairs any plugin with its options
+Tempo.use([HolidayPlugin, { region: 'US-NY' }]);
+
+// Mix and match in a single call:
+Tempo.use(
+  AstroTerm,
+  TickerPlugin({ interval: 500 }),
+  [GeoPlugin, { timeout: 5000 }],
+);
 ```
 
-### 2. Declarative Configuration (`pluginOptions`)
-In Tempo v4.1.0+, executable plugin registration is cleanly separated from plugin configuration data:
-
-- **`plugins`**: Strictly holds executable plugin definitions, terms, or factory closures (`(Plugin | Term)[]`).
-- **`pluginOptions`**: Dedicated configuration dictionary (`Record<string, any>`) holding serializable runtime options and defaults for plugins.
-
-This enables plugin configurations to be defined in `tempo.config.ts`, `tempo.config.jsonc`, or initialized via `Tempo.init()` / `Tempo.create()`, with full support for cascading inheritance across remote `"extends"` layers.
-
-When plugins are authored directly with `definePlugin`, they can be passed by reference to `plugins` and retrieve their options from `TempoClass.config.pluginOptions`:
+### 2. Declarative Configuration (`defineConfig` / `Tempo.init`)
+All three patterns are supported directly in the `plugins` array of `tempo.config.ts` or `Tempo.init()`:
 
 ```typescript
-// tempo.config.ts or Tempo.init(...)
-import { HolidayPlugin } from 'tempo-plugin-holiday'; // defined via definePlugin
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
+import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
 
 Tempo.init({
-  plugins: [HolidayPlugin, TickerPlugin],
-  pluginOptions: {
-    holiday: { region: 'US-NY', observeWeekendShifts: true },
-    ticker: { interval: 500 }
-  }
+  plugins: [
+    AstroTerm,                            // Pattern 0: bare
+    TickerPlugin({ interval: 1000 }),     // Pattern 1: factory closure
+    [GeoPlugin, { timeout: 5000 }],      // Pattern 2: tuple
+  ],
 });
 ```
 
-#### Reading `pluginOptions` Inside Your Plugin
-When authoring a plugin designed for declarative configuration, define the plugin directly with `definePlugin` and read configured options from `TempoClass.config.pluginOptions`:
+**Options Precedence** (lowest → highest):
+1. `pluginOptions[name]` from config (base/shared fallback)
+2. Trailing shared options passed to `Tempo.use(PluginA, PluginB, sharedOpts)`
+3. Call-site colocated options (Pattern 1 or Pattern 2)
+
+### 3. `pluginOptions` — Legacy / Shared Fallback
+`pluginOptions` remains fully supported as a passive configuration registry. It is the right tool for:
+- **Bare-registered plugins** that read their config from `TempoClass.config.pluginOptions`
+- **Lazy / dynamically imported plugins** that aren't in the main bundle
+- **Enterprise base configs** shared via `extends` across microservices
 
 ```typescript
-// tempo-plugin-holiday/index.ts
-import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
-
-// Directly exported plugin function (callback-compatible with Tempo.init / Tempo.use)
-export const HolidayPlugin = definePlugin((TempoClass, tempoOptions) => {
-  // Read configured options with fallback to defaults
-  const options = TempoClass.config.pluginOptions?.holiday ?? {};
-  const region = options.region ?? 'US-NY';
-
-  // ... register methods or terms using the resolved options ...
+Tempo.init({
+  plugins: [HolidayPlugin, TickerPlugin],  // bare (Pattern 0)
+  pluginOptions: {
+    holiday: { region: 'US-NY', observeWeekendShifts: true },
+    ticker: { interval: 500 },
+    ai: { mode: 'fallback', timeout: 10000 },  // safe even if 'ai' plugin not imported
+  },
 });
 ```
 
-*(Alternatively, if your plugin exports a wrapper factory function `HolidayPluginFactory(options?)`, consumers register the invoked factory result: `plugins: [HolidayPluginFactory()]` or `Tempo.use(HolidayPluginFactory({ ... }))`).*
-
 > [!NOTE] Deprecation Notice: Configuration Dictionaries in `plugins`
-> Supplying plain configuration dictionaries directly under `plugins` or within the `plugins` array (e.g. `plugins: [{ holiday: { ... } }]`) remains supported for backwards compatibility, but is marked `@deprecated` in favor of `pluginOptions`.
+> Supplying plain configuration dictionaries directly inside the `plugins` array (e.g. `plugins: [{ holiday: { ... } }]`) remains supported for backwards compatibility, but is marked `@deprecated` in favor of `pluginOptions` or the new colocated option patterns.
 
 ---
 

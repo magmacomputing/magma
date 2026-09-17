@@ -3,7 +3,7 @@ import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix } from '#library/number.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish } from '#library/assertion.library.js';
-import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear } from '#library/international.library.js';
+import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
 import { isTempo, enums, Match, getRuntime, hasOwn, $Internal } from '#tempo/support';
@@ -189,7 +189,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		if (!skipMeridiem) {
 			const lastSearch = (rgx: RegExp) => {
 				const matches = [...template.matchAll(rgx)];
-				return matches.length ? matches[matches.length - 1].index! : -1;
+				return matches.at(-1)?.index ?? -1;
 			}
 			const hIndex = lastSearch(/\{h12[^}]*\}/g);
 			const miIndex = lastSearch(/\{mi[^}]*\}/g);
@@ -210,6 +210,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 		}
 	}
+
+	const li = getLI(canonicalLocales(config?.locale)[0]);
 
 	const result = template.replace(new RegExp(Match.formatBraces, 'g'), (_match: string, fullToken: string) => {
 		let [token, ...modifiers] = fullToken.split(':');
@@ -243,11 +245,36 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'mmm': res = enums.MONTH.keyOf(zdt.month as any); break;
 			case 'dd': res = pad(zdt.day); break;
 			case 'day': res = zdt.day.toString(); break;
-			case 'dow': res = zdt.dayOfWeek.toString(); break;
+			case 'dow': {
+				if (modifiers.includes('locale')) {
+					const firstDay = li.firstDay;
+					const localDow = ((zdt.dayOfWeek - firstDay + 7) % 7) + 1;
+					res = localDow.toString();
+				} else {
+					res = zdt.dayOfWeek.toString();
+				}
+				break;
+			}
 			case 'doy': res = zdt.dayOfYear.toString(); break;
 			case 'wkd': res = enums.WEEKDAYS.keyOf(zdt.dayOfWeek as any); break;
 			case 'www': res = enums.WEEKDAY.keyOf(zdt.dayOfWeek as any); break;
-			case 'h24': case 'hh': res = pad(zdt.hour); break;
+			case 'h24': case 'hh': {
+				if (modifiers.includes('locale') && token === 'hh') {
+					const hc = li.hourCycle;
+					if (hc === 'h12') {
+						res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12);
+					} else if (hc === 'h11') {
+						res = pad(zdt.hour % 12);
+					} else if (hc === 'h24') {
+						res = pad(zdt.hour === 0 ? 24 : zdt.hour);
+					} else {
+						res = pad(zdt.hour);
+					}
+				} else {
+					res = pad(zdt.hour);
+				}
+				break;
+			}
 			case 'h12': res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12); break;
 			case 'mer': res = zdt.hour >= 12 ? 'pm' : 'am'; break;
 			case 'mi': res = pad(zdt.minute); break;
@@ -269,6 +296,29 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				break;
 			}
 			case 'hms': res = `${pad(zdt.hour)}${pad(zdt.minute)}${pad(zdt.second)}`; break;
+			case 'time': {
+				if (modifiers.includes('locale')) {
+					const is12 = li.hourCycle === 'h12' || li.hourCycle === 'h11';
+					const h12 = zdt.hour % 12;
+					const h = li.hourCycle === 'h11' ? pad(h12)
+						: li.hourCycle === 'h12' ? pad(h12 || 12)
+							: li.hourCycle === 'h24' ? pad(zdt.hour || 24)
+								: pad(zdt.hour);
+					const m = pad(zdt.minute);
+					const s = pad(zdt.second);
+					if (is12) {
+						const dtOptions = config?.intl?.dateTimeFormat ?? {};
+						const mer = formatDayPeriod(zdt.epochMilliseconds, config?.locale, { ...dtOptions, hour: 'numeric', hour12: true, timeZone: tz })
+							|| (zdt.hour >= 12 ? 'pm' : 'am');
+						res = `${h}:${m}:${s} ${mer}`;
+					} else {
+						res = `${h}:${m}:${s}`;
+					}
+				} else {
+					res = `${pad(zdt.hour)}:${pad(zdt.minute)}:${pad(zdt.second)}`;
+				}
+				break;
+			}
 			case 'ts': res = ((config?.timeStamp ?? 'ms') === 'ss')
 				? Math.trunc(zdt.epochMilliseconds / 1000).toString()
 				: zdt.epochMilliseconds.toString(); break;
@@ -285,8 +335,14 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					res = isObject(termObj)
 						? (termObj.label ?? termObj.key ?? `{${token}}`)
 						: (termObj ?? `{${token}}`);
-				} else if (token.includes('.') && isTempo(obj)) {
-					res = resolveNamespaceToken(obj, token);
+				} else if (token.includes('.')) {
+					if (token.startsWith('intl.')) {
+						res = resolveNamespaceToken({ intl: li }, token);
+					} else if (isTempo(obj)) {
+						res = resolveNamespaceToken(obj, token);
+					} else {
+						res = `{${token}}`;
+					}
 				} else {
 					res = `{${token}}`;
 				}
@@ -312,8 +368,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'ord':
 				case 'nth': {
 					const val = parseInt(String(res), 10);
-					const localeStr = Array.isArray(config?.locale) ? config.locale[0] : config?.locale;
-					const lang = localeStr?.split('-')[0] ?? 'en';
+					const lang = getLanguage(config?.locale);
 					const dict = config?.registry?.locales?.[lang]?.['ordinal'];
 
 					if (isObject(dict)) {
@@ -345,8 +400,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 							if (plugin) {
 								const termVal = (obj as unknown as Tempo).term[termKey];
-								const localeStr = Array.isArray(config?.locale) ? config.locale[0] : config?.locale;
-								const lang = localeStr?.split('-')[0] ?? 'en';
+								const lang = getLanguage(config?.locale);
 								let locRes: any;
 								let valStr: string;
 								let baseKey: string | undefined;
@@ -369,7 +423,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 									const group = flatGroups.find((g: any) => g.key === searchKey);
 									if (group && isObject(group.locale))
 										locRes = group.locale[lang] ?? group.locale.en;
-
 								}
 
 								// 3. Execution or Assignment
@@ -450,16 +503,22 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						const width = parseInt(mod, 10);
 						const strVal = String(res);
 						if (width > 0 && /^-?\d+$/.test(strVal)) {
-							if (strVal.startsWith('-')) {
-								res = '-' + strVal.slice(1).padStart(Math.max(1, width - 1), '0');
-							} else {
-								res = strVal.padStart(width, '0');
-							}
+							res = (strVal.startsWith('-'))
+								? '-' + strVal.slice(1).padStart(Math.max(1, width - 1), '0')
+								: strVal.padStart(width, '0');
 						}
 					}
 					break;
 				}
 			}
+		}
+
+		if (modifiers.includes('locale')) {
+			if (li.numberingSystem && li.numberingSystem !== 'latn')
+				res = localizeDigits(res, li.numberingSystem);
+
+			if (li.direction === 'rtl' && (token === 'mon' || token === 'mmm' || token === 'wkd' || token === 'www' || token.startsWith('#') || token === 'time'))
+				res = isolateBidi(res, 'rtl');
 		}
 
 		return res;

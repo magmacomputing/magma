@@ -25,6 +25,73 @@ describe('Object Library', () => {
 			expect(asObject(42 as any)).toBe(42);
 			expect(asObject('test' as any)).toBe('test');
 		});
+
+		it('should convert GeolocationPosition and GeolocationCoordinates into plain objects', () => {
+			class MockCoordinates {
+				get latitude() { return -28.807; }
+				get longitude() { return 153.302; }
+				get altitude() { return null; }
+				get accuracy() { return 20; }
+				get altitudeAccuracy() { return null; }
+				get heading() { return null; }
+				get speed() { return null; }
+				get [Symbol.toStringTag]() { return 'GeolocationCoordinates'; }
+			}
+
+			class MockPosition {
+				get coords() { return new MockCoordinates() as any; }
+				get timestamp() { return 1773651260108; }
+				get [Symbol.toStringTag]() { return 'GeolocationPosition'; }
+			}
+
+			const pos = new MockPosition();
+			const obj = asObject<any>(pos);
+
+			expect(obj).toEqual({
+				coords: {
+					latitude: -28.807,
+					longitude: 153.302,
+					altitude: null,
+					accuracy: 20,
+					altitudeAccuracy: null,
+					heading: null,
+					speed: null,
+				},
+				timestamp: 1773651260108,
+			});
+			expect(obj.constructor).toBe(Object);
+			expect(obj.coords.constructor).toBe(Object);
+		});
+
+		it('should serialize using toJSON if present', () => {
+			const obj = {
+				a: 1,
+				toJSON() {
+					return { b: 2 };
+				},
+			};
+			expect(asObject(obj)).toEqual({ b: 2 });
+		});
+
+		it('should fall back to property extraction if toJSON accessor throws', () => {
+			const obj = {
+				a: 1,
+				get toJSON() {
+					throw new Error('throwing toJSON getter');
+				},
+			};
+			expect(asObject(obj)).toEqual({ a: 1 });
+		});
+
+		it('should fall back to property extraction if toJSON function throws', () => {
+			const obj = {
+				a: 1,
+				toJSON() {
+					throw new Error('throwing toJSON call');
+				},
+			};
+			expect(asObject(obj)).toEqual({ a: 1, toJSON: obj.toJSON });
+		});
 	});
 
 	describe('ifDefined', () => {

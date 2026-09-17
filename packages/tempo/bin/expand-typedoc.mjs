@@ -96,7 +96,7 @@ for (const target of targets) {
 		// - Tempo.WEEKDAY-1.html -> Tempo.WEEKDAY or WEEKDAY
 		const cleanName = file.replace(/\.html$/, '').replace(/-\d+$/, '');
 		const parts = cleanName.split('.');
-		const typeName = parts[parts.length - 1];
+		const typeName = parts.at(-1);
 
 		const expandedSig = typeMap.get(cleanName) || typeMap.get(typeName);
 

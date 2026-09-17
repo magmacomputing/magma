@@ -6,7 +6,7 @@
  * and exports the initialized `Tempo` class alongside core types and utilities.
  */
 import { Tempo } from './tempo.class.js';
-import { onRegistryReset, enums } from '#tempo/support';
+import { onRegistryReset, enums, getRuntime } from '#tempo/support';
 
 import { ParseModule } from '#tempo/parse';
 import { FormatModule } from '#tempo/format';
@@ -32,7 +32,6 @@ export const TermsModule = defineModule({
 		TempoClass.use(StandardTerms);
 	},
 });
-import { getRuntime } from '#tempo/support';
 
 // Batteries Included: Register standard modules
 const core = [ParseModule, FormatModule, MutateModule, DurationModule, TermsModule];
@@ -56,6 +55,6 @@ export type * from '#tempo/duration';
 export type * from '#tempo/term';
 
 export { defineConfig } from './config/config.define.js';
-export { Interval } from './interval.class.js';
+export { Interval } from './interval.index.js';
 export * from './tempo.class.js';
 export default Tempo;

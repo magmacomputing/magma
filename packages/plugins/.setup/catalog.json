@@ -1,8 +1,8 @@
 [
   {
     "id": "astro",
-    "name": "Astro Plugin",
-    "description": "Tempo plugin that calculates precise astronomical seasons (solstices & equinoxes) and lunar phases — hemisphere-aware, sub-minute accuracy",
+    "name": "Astro Term",
+    "description": "Tempo plugin that calculates precise astronomical seasons (solstices & equinoxes) — hemisphere-aware, sub-minute accuracy",
     "packageName": "@magmacomputing/tempo-plugin-astro",
     "plan": "community",
     "status": "active",
@@ -11,7 +11,7 @@
   {
     "id": "celestial",
     "name": "Celestial Plugin",
-    "description": "Tempo plugin for location-aware solar twilight events and lunar phase calculations",
+    "description": "Tempo plugin to add Terms for location-aware solar twilight events, lunar phase calculations, and astronomical tidal mechanics",
     "packageName": "@magmacomputing/tempo-plugin-celestial",
     "plan": "community",
     "status": "active",

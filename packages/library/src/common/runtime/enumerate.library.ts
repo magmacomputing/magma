@@ -4,7 +4,7 @@ import { ownEntries } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable, StringTag } from '#library/decorator.library.js';
 import { memoizeMethod } from '#library/function.library.js';
-import type { Property, Index, KeyOf, ValueOf, EntryOf, Invert, LooseKey } from '#library/type.library.js';
+import type { Property, Index, KeyOf, ValueOf, Invert, LooseKey } from '#library/type.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T = any> {
@@ -17,18 +17,18 @@ declare module '#library/type.library.js' {
 /** Enum methods */
 export type EnumMethods<T extends Property<any> = any> = {
 	/** number of entries in the Enum */											count(): number;
-	/** array of all enumerable property names */							keys(): KeyOf<T>[];
-	/** array of all enumerable object values */							values(): ValueOf<T>[];
-	/** tuple of enumerable entries */												entries(): EntryOf<T>[];
-	/** return an object with the keys and values swapped */	invert(): Invert<T>;
+	/** array of all enumerable property names */							keys(): readonly KeyOf<T>[];
+	/** array of all enumerable object values */							values(): readonly ValueOf<T>[];
+	/** tuple of enumerable entries */												entries(): readonly (readonly [KeyOf<T>, ValueOf<T>])[];
+	/** return an object with the keys and values swapped */	invert(): Readonly<Invert<T>>;
 	/** check if a 'key' exists in the Enum */								has(key: LooseKey<KeyOf<T>>): boolean;
 	/** check if a 'value' exists in the Enum */							includes(search: LooseKey<ValueOf<T>>): boolean;
 	/** return the key for a given value */										keyOf(search: LooseKey<ValueOf<T>>): KeyOf<T>;
-	/** iterate through all Enum entries */										forEach(fn: (entry: EntryOf<T>, index: number, enumify: EnumifyType<any>) => void, thisArg?: any): void;
-	/** filter Enum entries and return a new Enum */					filter(fn: (entry: EntryOf<T>, index: number, enumify: EnumifyType<any>) => boolean, thisArg?: any): EnumifyType<Partial<T>>;
-	/** map Enum entries and return a new Enum */							map(fn: (entry: EntryOf<T>, index: number, enumify: EnumifyType<any>) => any, thisArg?: any): EnumifyType<Property<any>>;
+	/** iterate through all Enum entries */										forEach(fn: (entry: readonly [KeyOf<T>, ValueOf<T>], index: number, enumify: EnumifyType<any>) => void, thisArg?: any): void;
+	/** filter Enum entries and return a new Enum */					filter(fn: (entry: readonly [KeyOf<T>, ValueOf<T>], index: number, enumify: EnumifyType<any>) => boolean, thisArg?: any): EnumifyType<Partial<T>>;
+	/** map Enum entries and return a new Enum */							map(fn: (entry: readonly [KeyOf<T>, ValueOf<T>], index: number, enumify: EnumifyType<any>) => any, thisArg?: any): EnumifyType<Property<any>>;
 	/** extend an Enum with new entries */										extend<const E extends any[] | Property<any>>(list: E, frozen?: boolean): EnumifyType<any>;
-	/** iterate through all Enum entries */										readonly [Symbol.iterator]: () => IterableIterator<EntryOf<T>>;
+	/** iterate through all Enum entries */										readonly [Symbol.iterator]: () => IterableIterator<readonly [KeyOf<T>, ValueOf<T>]>;
 	/** used to identify the Enumify type */									readonly [Symbol.toStringTag]: 'Enumify';
 }
 

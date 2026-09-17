@@ -1,0 +1,7 @@
+{
+  "startCommand": "npm run dev",
+  "installDependencies": true,
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

@@ -6,6 +6,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.0] - 2026-09-16
+
+### Added
+- **Colocated Plugin Options & Callable Plugin Factories (`TickerPlugin(opts)`, `[Plugin, opts]`)**:
+  - `definePlugin` now returns a **`PluginFactory<T, Opts>`** — a callable hybrid that carries all plugin properties as a plain object _and_ can be invoked as a factory to attach colocated options. This eliminates the previous "action-at-a-distance" pattern where plugin options were wired via a disconnected `pluginOptions` dictionary using a magic string key.
+  - **Pattern 1 — Factory Closure** (Vite / Rollup model): `TickerPlugin({ interval: 1000 })` — invoke the plugin as a factory directly inside the `plugins` array. Call-site options are stashed on the returned descriptor and injected into `install(Tempo, resolvedOptions)` at registration time.
+  - **Pattern 2 — Tuple Syntax**: `[GeoPlugin, { timeout: 5000 }]` — pair any plugin (including third-party plugins not built with `definePlugin`) with its options in a 2-element tuple. The engine detects and unpacks `[Plugin, OptionsObject]` tuples before flattening nested arrays so options objects are never misinterpreted as nested plugin arrays.
+  - **Bare Registration Unchanged**: `plugins: [AstroTerm]` continues to work identically — zero breaking changes.
+  - **Options Precedence** (lowest → highest): `config.pluginOptions[name]` → trailing shared options → call-site colocated options. Resolved options are automatically synced back into `state.config.pluginOptions[name]` and passed directly to `plugin.install(Tempo, resolvedOptions)`.
+  - **`Tempo.create` Sandbox Support**: `Tempo.create({ plugins: [...] })` now correctly installs colocated-options plugins using the same desugaring pipeline, enabling full Pattern 1 / Pattern 2 support in isolated test sandboxes.
+  - **Exported Options Types**: `TickerPluginOptions`, `GeoPluginOptions`, and `AstroTermOptions` are now exported from their respective plugin packages, providing full IDE intellisense and type-checking inside `TickerPlugin({ ... })` factory calls.
+- **`Intl.LocaleInfo` & Regional Calendar Context (`t.intl`, `Tempo.intl`, `localeInfo`)**:
+  - Added `intl` accessor on `Tempo` instances (`t.intl`) and statically (`Tempo.intl`) exposing frozen, memoized regional metadata (`firstDay`, `weekend`, `region`, `script`, `hourCycle`, `direction`, `numberingSystem`, `timeZones`) via `getLI` from `@magmacomputing/library` with zero per-instance allocations.
+  - Added opt-in `localeInfo: boolean` configuration flag (`Tempo.init({ localeInfo: true })` or per-instance options), activating culturally authentic calendar arithmetic while strictly preserving Tempo's ISO 8601 baseline by default.
+  - **Adaptive Week Boundaries**: When `localeInfo: true` is active, `t.set({ week: 'start' })`, `t.set({ week: 'mid' })`, and `t.set({ week: 'end' })` adapt dynamically to the active locale's week boundary (e.g. Sunday in `en-US`, Monday in `en-GB`, Saturday in `ar-SA`).
+  - **Dedicated ISO Invariant Escape Hatches**: Added `isoWeek` and `wy` mutation targets (`t.set({ isoWeek: 'start' })`, `t.set({ wy: 'start' })`, `t.set({ isoWeek: 'end' })`, etc.) guaranteeing strict ISO 8601 Monday-start snapping regardless of `localeInfo` settings.
+  - **Numeric ISO Week Assignment (`set:isoweek`, `set:isoWeek`, `set:wy`)**: Added support for setting numeric ISO-week values (`t.set({ isoWeek: 25 })`, `t.set({ wy: 10 })`, `t.set({ isoweek: 5 })`), preserving day of week (`dow`), time, and ISO year of week (`yw`), while gracefully clamping to `maxWeeks` (52 or 53) within the ISO year.
+  - **ISO Week-Numbering Year Mutation (`set:yw`, `set:isoYear`, `add:yw`, `subtract:yw`)**: Added full support for ISO week-numbering year assignment and arithmetic via `yw`, `isoYear`, and `isoyear`. Preserves ISO week-of-year (`wy`, clamped to `maxWeeks`), weekday (`dow`), calendar, timezone, and wall-clock time without crossing DST boundaries. Added ISO year boundary snapping (`t.set({ yw: 'start' })` / `t.set({ yw: 'mid' })` / `t.set({ yw: 'end' })`).
+  - **Locale Day-of-Week & Intl Format Tokens**:
+    - Added `{dow:locale}` modifier yielding the 1-based day of week relative to the locale's week start (`1` on Sunday for `en-US`), evaluated directly from `t.intl.firstDay`.
+    - Added `{hh:locale}` adapting hour formatting to the region's `hourCycle` (12h in `h12` regions like `en-US`, 24h in `h23` regions like `fr-FR`), fully composable with `:raw` (`{hh:locale:raw}`).
+    - Added `{time}` and `{time:locale}` compound time tokens, formatting complete regional time strings with localized meridiem in `h12` locales (`"03:30:45 pm"`).
+    - Added localized numeral transliteration for numeric tokens via `:locale` (e.g., `{yyyy:locale}` producing `٢٠٢٦` in `ar-EG`), while preserving strict ASCII digits for base tokens without `:locale`.
+    - Added Unicode BiDi isolation wrapping for RTL text tokens (`{mon:locale}`) to prevent bidirectional punctuation disruption.
+    - Added `{intl.<prop>}` dynamic format tokens (`{intl.region}`, `{intl.script}`, `{intl.firstDay}`, `{intl.direction}`, `{intl.hourCycle}`) interpolating locale properties.
+- **Native Temporal Gateway (`t.zdt`)**:
+  - Added read-only `zdt` getter on `Tempo` (and in `AliasContext`) returning the underlying `Temporal.ZonedDateTime` instance.
+  - Provides direct, zero-overhead access to native Temporal properties (`daysInMonth`, `inLeapYear`, `offset`, `hoursInDay`, `monthCode`, etc.) without method call ceremony or namespace pollution.
+- **Day-of-Year Property & Token (`t.doy`, `{doy}`)**:
+  - Added `doy` getter on `Tempo` backed directly by `this.toDateTime().dayOfYear` returning the 1-based day of year (`1..366`).
+  - Added `{doy}` formatting token and lexer group support with width padding modifiers (e.g. `{doy:3}`).
+
+### Changed
+- **Unified Regional Locale Resolution in `#isMonthDay`**:
+  - Refactored `Tempo.#isMonthDay` to use `getLI(rawLocale)` as the single source of truth for `baseName`, `language`, and cached `timeZones`.
+  - Replaces repeated per-evaluation array allocations from `intl.getTimeZones?.()` with frozen, memoized array lookups from `ResolvedLocaleInfo`, while safely logging warnings for invalid locale tags.
+- **Idiomatic Assertion Library Adoption (`isPlainObject`, `isDigit`, `isString`, `isSymbol`)**:
+  - Adopted `isPlainObject` to replace fragile `.constructor === Object` checks in `Tempo.#isOptions`, `isZonedDateTimeLike`, and plugin configuration mergers across `support.init.ts` and `support.register.ts`.
+  - Replaced manual `typeof` string and symbol checks with `isString` and `isSymbol` in `engine.layout.ts` and `tempo.class.ts`.
+- **Functional Alias Geolocation Sphere Resolution**:
+  - Updated `engine.normalizer.ts` (`getAliasContext`) to evaluate `state.config.geo?.sphere` before falling back to `state.config.sphere` and `Default.sphere`, aligning functional alias contexts with instance-level `this.sphere` resolution.
+- **Unpadded Day Format Token Retention**:
+  - Retained `{day}` in `TempoFormatTokens` as a first-class format token for string formatting unpadded calendar day numbers (`1..31`), preserving presentation DSL utility while de-scoping duplicate instance getters.
+
+### Fixed
+- **ISO 8601 Calendar Invariance in `getISOWeekOfYear`**:
+  - Normalized date calculations through the `iso8601` calendar to guarantee consistent ISO week and year numbering across non-ISO calendars (such as the default `'gregory'` calendar).
+
+### Deprecated
+- **Redundant Instance Getters (Slated for Removal in v5.0.0)**:
+  - `t.day`: Deprecated in favor of canonical 2-letter `t.dd` (or `t.zdt.day`).
+  - `t.eraYear`: Deprecated in favor of canonical `t.eon` (or `t.zdt.eraYear`).
+  - `t.ww`: Deprecated in favor of canonical `t.wy` (or `t.zdt.weekOfYear`).
+- **Duplicate Format Tokens (Slated for Removal in v5.0.0)**:
+  - `{ww}`: Deprecated in favor of canonical `{wy}` in `TempoFormatTokens`.
+  - `{yyww}`: Deprecated in favor of canonical `{yywy}` in `TempoFormatTokens`.
+
 ## [4.2.0] - 2026-09-09
 
 ### Added

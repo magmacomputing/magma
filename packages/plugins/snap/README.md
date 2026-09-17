@@ -40,7 +40,7 @@ const snapSecond = t.snap('ss', 30);
 
 ## Documentation
 
-For full API reference, advanced configuration, and detailed explanations of the rounding features, please visit the official **[Snap Plugin Documentation ↗](https://magmacomputing.github.io/magma/doc/9-plugins/snap.index.html)**.
+For full API reference, advanced configuration, and detailed explanations of the rounding features, please visit the official 📖 **[Snap Plugin Documentation](https://magmacomputing.github.io/magma/doc/9-plugins/snap.index.html)**.
 
 ## Licensing
 

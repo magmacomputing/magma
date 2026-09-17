@@ -44,7 +44,8 @@ export default withMermaid(defineConfig({
             { text: 'Introduction', link: '/README' },
             { text: 'Installation', link: '/doc/1-getting-started/installation' },
             { text: 'AI & IDE Integration', link: '/doc/1-getting-started/ai-integration' },
-            { text: 'Cookbook', link: '/doc/1-getting-started/tempo.cookbook' }
+            { text: 'Cookbook', link: '/doc/1-getting-started/tempo.cookbook' },
+            { text: 'Interactive REPL', link: '/doc/1-getting-started/tempo.repl' }
           ]
         },
         {

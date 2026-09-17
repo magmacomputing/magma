@@ -6,6 +6,24 @@ The `Tempo` class provides an extensive array of zero-cost getters that allow yo
 > **Zero-Cost Lazy Evaluation**  
 > Tempo uses a sophisticated proxy-based lazy-evaluation pattern. Accessing a getter (like `t.yy`) resolves the property on demand, and then overwrites the getter with a static literal. This means the first access is `O(1)` and every subsequent access is raw property access (`O(0)` cost).
 
+## ⚡ Native Temporal Gateway
+
+| Getter | Type | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `.zdt` | `Temporal.ZonedDateTime` | Direct zero-overhead access to the underlying native Temporal instance | `t.zdt.daysInMonth` |
+
+The `.zdt` getter provides direct, zero-overhead access to the underlying `Temporal.ZonedDateTime` instance, enabling native Temporal inspections and properties without method call ceremony:
+
+```typescript
+const t = new Tempo('2026-10-24T15:30:00[Australia/Sydney]');
+
+console.log(t.zdt.daysInMonth);  // 31
+console.log(t.zdt.inLeapYear);   // false
+console.log(t.zdt.offset);       // '+11:00'
+console.log(t.zdt.hoursInDay);   // 24
+console.log(t.zdt.monthCode);    // 'M10'
+```
+
 ## 📅 Date Properties
 
 | Getter | Type | Description | Example |
@@ -13,7 +31,6 @@ The `Tempo` class provides an extensive array of zero-cost getters that allow yo
 | `.yy` | `number` | 4-digit Year | `2026` |
 | `.mm` | `number` | Month number (1 = Jan, 12 = Dec) | `10` |
 | `.dd` | `number` | Day of the month (1-31) | `24` |
-| `.day` | `number` | Alias for `.dd` | `24` |
 | `.era` | `string` | Localized era string | `'ce'`, `'bce'`, `'ad'`, `'bc'` |
 | `.eon` | `number` | Positive integer year within the current `.era` | `2026`, `4` |
 
@@ -54,6 +71,7 @@ The `Tempo` class provides an extensive array of zero-cost getters that allow yo
 | `.tz` | `string` | IANA Time Zone ID | `'Australia/Sydney'` |
 | `.cal` | `string` | Temporal Calendar ID | `'iso8601'` |
 | `.locale` | `string \| string[]` | Resolved BCP 47 locale | `'en-AU'`, `['en-US', 'fr-FR']` |
+| `.intl` | `ResolvedLocaleInfo` | Cultural & regional metadata via `Intl.LocaleInfo` (`firstDay`, `weekend`, `direction`, `hourCycle`) | `{ firstDay: 7, weekend: [6, 7], direction: 'ltr' }` |
 | `.sphere` | `'north' \| 'south' \| undefined` | Resolved hemisphere configuration | `'south'` |
 | `.ts` | `number \| bigint` | Unix timestamp (`number` for `ss`/`ms`/`us`, `bigint` for `ns`) | `1792843200000` |
 | `.nano` | `bigint` | Nanoseconds since Unix epoch | `1792843200000000000n` |

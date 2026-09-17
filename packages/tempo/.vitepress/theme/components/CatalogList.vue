@@ -129,7 +129,7 @@ const copyInstall = (pkgName: string) => {
                   title="Copy Install Command"
                 >
                   <svg v-if="copiedPkg === plugin.packageName" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6V4a2 2 0 0 1 2-2h6l4 4v11a2 2 0 0 1-2 2h-3"></path><path d="M16 2v4h4"></path><path d="M10 6H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V11l-5-5z"></path><path d="M10 6v5h5"></path></svg>
                 </button>
                 <span v-if="copiedPkg === plugin.packageName" class="copy-tooltip">Copied!</span>
               </div>
@@ -184,7 +184,7 @@ const copyInstall = (pkgName: string) => {
                 title="Copy Install Command"
               >
                 <svg v-if="copiedPkg === plugin.packageName" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6V4a2 2 0 0 1 2-2h6l4 4v11a2 2 0 0 1-2 2h-3"></path><path d="M16 2v4h4"></path><path d="M10 6H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V11l-5-5z"></path><path d="M10 6v5h5"></path></svg>
               </button>
               <span v-if="copiedPkg === plugin.packageName" class="copy-tooltip">Copied!</span>
             </div>
@@ -333,12 +333,12 @@ const copyInstall = (pkgName: string) => {
 
 /* Icon-Only Copy Button */
 .copy-icon-btn {
-  color: var(--vp-c-text-2);
+  color: var(--vp-c-brand);
 }
 .copy-icon-btn:hover {
   border-color: var(--vp-c-brand);
   color: var(--vp-c-brand);
-  background-color: var(--vp-c-bg-mute);
+  background-color: var(--vp-c-brand-soft, var(--vp-c-bg-mute));
 }
 .copy-icon-btn.copied {
   border-color: #10b981;

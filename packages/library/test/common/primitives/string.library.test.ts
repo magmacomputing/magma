@@ -1,4 +1,4 @@
-import { makeTemplate, sprintf, trimAll, randomString } from '#library/string.library.js';
+import { makeTemplate, sprintf, trimAll, randomString, padTo } from '#library/string.library.js';
 
 describe('String Library', () => {
 	describe('makeTemplate', () => {
@@ -66,6 +66,25 @@ describe('String Library', () => {
 		it('should generate string exceeding 65,536 bytes without throwing', () => {
 			const res = randomString(70000);
 			expect(res.length).toBe(70000);
+		});
+	});
+
+	describe('padTo', () => {
+		it('should return unchanged string if length is already a multiple', () => {
+			expect(padTo('abcd', 4)).toBe('abcd');
+			expect(padTo('', 4)).toBe('');
+			expect(padTo('12345678', 4)).toBe('12345678');
+		});
+
+		it('should pad string with "=" by default to nearest multiple', () => {
+			expect(padTo('a', 4)).toBe('a===');
+			expect(padTo('ab', 4)).toBe('ab==');
+			expect(padTo('abc', 4)).toBe('abc=');
+		});
+
+		it('should allow custom fill characters and multiples', () => {
+			expect(padTo('hello', 8, ' ')).toBe('hello   ');
+			expect(padTo('123', 5, '0')).toBe('12300');
 		});
 	});
 });
