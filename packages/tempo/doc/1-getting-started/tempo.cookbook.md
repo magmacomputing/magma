@@ -178,7 +178,7 @@ const t = new Tempo();
 const isWeekend = t.dow >= 6; // Saturday = 6, Sunday = 7
 ```
 
-For international applications, use the locale-aware `t.intl.weekend` array (backed by `Intl.LocaleInfo`), which reflects regional weekend days (e.g. `[5, 6]` for Friday & Saturday in Middle Eastern locales like `ar-SA`):
+For international applications, use the locale-aware `t.intl.weekend` array (backed by `Intl.Locale.prototype.getWeekInfo()` and its fallback resolver), which reflects regional weekend days (e.g. `[5, 6]` for Friday & Saturday in Middle Eastern locales like `ar-SA`):
 ```typescript
 // Standard weekend ([6, 7] for Saturday and Sunday in en-US)
 const us = new Tempo({ locale: 'en-US' });

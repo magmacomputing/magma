@@ -358,6 +358,13 @@
 		}
 
 		@media (max-width: 800px) {
+			header {
+				flex-wrap: wrap;
+				gap: 10px;
+			}
+			.controls {
+				flex-wrap: wrap;
+			}
 			.workspace {
 				flex-direction: column;
 			}
@@ -590,9 +597,11 @@ return 'Dynamic import successful!';`
 				statusDot.classList.remove('loading');
 				statusText.textContent = 'Tempo 4.3.0 + Plugins ready';
 				
-				// Check for URL hash code
-				loadFromHashOrPreset();
-				executeCode();
+				// Check for URL hash code or load default preset
+				const shouldAutoRun = loadFromHashOrPreset();
+				if (shouldAutoRun) {
+					executeCode();
+				}
 			} catch (err) {
 				console.error(err);
 				statusText.textContent = 'Initialization failed. Check network/console.';
@@ -717,12 +726,15 @@ return 'Dynamic import successful!';`
 					const encoded = window.location.hash.slice(6);
 					codeEditor.value = decodeURIComponent(atob(encoded));
 					updateLineNumbers();
-					return;
+					resultBox.textContent = 'Shared code loaded from URL. Click "▶ Run" or press Ctrl+Enter to execute.';
+					resultBox.style.color = '#94a3b8';
+					return false;
 				} catch {
 					// Fallback if hash invalid
 				}
 			}
 			loadPreset('quickstart');
+			return true;
 		}
 
 		function loadPreset(key) {

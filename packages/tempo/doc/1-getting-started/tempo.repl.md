@@ -17,6 +17,7 @@ The sandbox below runs 100% client-side with native ECMAScript Modules (`esm.sh`
 
 <iframe
   src="/magma/repl/index.html"
+  sandbox="allow-scripts allow-modals"
   style="width: 100%; height: 680px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; background: #0b0f19; margin-top: 16px; margin-bottom: 32px;"
   title="Tempo Interactive REPL"
   loading="lazy"

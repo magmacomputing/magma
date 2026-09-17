@@ -16,6 +16,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Validate Sync Secret
+        env:
+          SYNC_TOKEN: ${{ secrets.TEMPO_PLAYGROUND_TOKEN || secrets.GH_PAT }}
+        run: |
+          if [ -z "$SYNC_TOKEN" ]; then
+            echo "::error::Neither TEMPO_PLAYGROUND_TOKEN nor GH_PAT secret is configured."
+            echo "Please configure a GitHub Personal Access Token (PAT) with write access to magmacomputing/tempo-playground."
+            exit 1
+          fi
+
       - name: Stage Playground Files
         run: |
           mkdir -p /tmp/tempo-playground
@@ -25,7 +35,7 @@ jobs:
       - name: Push to magmacomputing/tempo-playground
         env:
           TARGET_REPO: "magmacomputing/tempo-playground"
-          SYNC_TOKEN: ${{ secrets.TEMPO_PLAYGROUND_TOKEN || secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          SYNC_TOKEN: ${{ secrets.TEMPO_PLAYGROUND_TOKEN || secrets.GH_PAT }}
         run: |
           cd /tmp/tempo-playground
           git init -b main
