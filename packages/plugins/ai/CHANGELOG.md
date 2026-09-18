@@ -5,6 +5,17 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-09-18
+
+### Added
+- **`Tempo.ai` Static Action Namespace**:
+  - Implemented cohesive `Tempo.ai` static engine grouping all AI capabilities (`Tempo.ai.parse`, `Tempo.ai.schedule`, `Tempo.ai.format`, `Tempo.ai.extract`, `Tempo.ai.diff`, `Tempo.ai.recurrence`, `Tempo.ai.context`, `Tempo.ai.models`, `Tempo.ai.init`, `Tempo.ai.reset`).
+  - Added readonly property accessors for `Tempo.ai.config`, `Tempo.ai.rateLimits`, and `Tempo.ai.providerRateLimits`.
+  - Added `AiPlugin` via `definePlugin` with deep-frozen namespace attachment and side-effect auto-registration when `Tempo` is globally available.
+  - Retained fine-grained named exports (`parseAI`, `formatAI`, etc.) to preserve 100% tree-shakeability for bundlers.
+- **Interactive REPL Showcase**:
+  - Added dedicated AI semantic parsing and scheduling presets and snippets for the browser playground.
+
 ## [2.0.0] - 2026-09-08
 
 ### Breaking Changes & Major Release

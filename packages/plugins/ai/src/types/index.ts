@@ -6,3 +6,4 @@ export * from './context.type.js';
 export * from './diff.type.js';
 export * from './format.type.js';
 export * from './extract.type.js';
+export * from './namespace.type.js';

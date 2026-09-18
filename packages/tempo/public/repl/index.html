@@ -398,7 +398,6 @@
 			color: var(--text-muted);
 			transition: background 0.2s ease;
 		}
-		}
 
 		.status-left {
 			display: flex;
@@ -453,7 +452,8 @@
 			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@2.3.0",
 			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@1.1.0",
 			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@0.2.0",
-			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@2.4.0"
+			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@2.4.0",
+			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai@2.1.0"
 		}
 	}
 	</script>
@@ -463,10 +463,14 @@
 	<div class="app-container">
 		<header>
 			<div class="brand">
-				<svg class="brand-logo" viewBox="0 0 235.319 235.319" fill="#38bdf8" style="width: 26px; height: 26px; filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.45));">
-					<path d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z"/>
-					<path d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z"/>
-					<path d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z"/>
+				<svg class="brand-logo" viewBox="0 0 235.319 235.319" fill="#38bdf8"
+					style="width: 26px; height: 26px; filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.45));">
+					<path
+						d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z" />
+					<path
+						d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z" />
+					<path
+						d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z" />
 				</svg>
 				<span class="brand-title">Tempo</span>
 				<span class="brand-badge">Interactive REPL</span>
@@ -480,6 +484,7 @@
 						<option value="seasons">Preset: Seasons & Moon (Astro/Geo)</option>
 						<option value="quarters">Preset: Fiscal Quarters & Math</option>
 						<option value="dynamic">Preset: Dynamic Plugin (ESM import)</option>
+						<option value="ai">Preset: AI Semantic Parsing & Scheduling</option>
 					</select>
 				</div>
 
@@ -621,7 +626,40 @@ const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
 Tempo.use(TickerPlugin);
 
 console.log('TickerPlugin loaded and active!');
-return 'Dynamic import successful!';`
+return 'Dynamic import successful!';`,
+
+			ai: `// 🤖 Natural Language Date Parsing & Scheduling with Tempo.ai
+console.log('Loading AI Plugin...');
+const { AiPlugin } = await import('@magmacomputing/tempo-plugin-ai');
+Tempo.use(AiPlugin);
+
+// 1. Initialize AI Providers (Groq/OpenAI/Anthropic or default Mock/Auto)
+await Tempo.ai.init({
+  providers: [
+    { id: 'groq', key: 'mock-key-for-instant-demo' }
+  ]
+});
+
+// 2. Parse conversational date expressions with anchor context
+console.log('Parsing: "Next Tuesday around 2:30pm for 45 minutes"...');
+const event = await Tempo.ai.parse(
+  "Next Tuesday around 2:30pm for 45 minutes",
+  { anchor: 'now' }
+);
+
+console.log('Resolved Timestamp:', event.format('{wkd}, {dd} {mon} {yyyy} at {hh}:{mi}'));
+console.log('AI Provider Used:', event.ai?.provider || 'groq');
+console.log('Ambiguity Flag:', Boolean(event.ai?.ambiguous));
+
+// 3. Multi-point recurrence schedule
+console.log('Scheduling: "Every second Thursday at 10am until EOFY"...');
+const schedule = await Tempo.ai.schedule("Every second Thursday at 10am until EOFY");
+console.log('Next Recurrences Count:', schedule.dates.length);
+if (schedule.dates.length > 0) {
+  console.log('First Recurrence:', schedule.dates[0].format('{yyyy}-{mm}-{dd} {hh}:{mi}'));
+}
+
+return event.format('AI Event: {wkd}, {dd} {mon} {yyyy} at {hh}:{mi}');`
 		};
 
 		const codeEditor = document.getElementById('codeEditor');
@@ -843,13 +881,13 @@ return 'Dynamic import successful!';`
 			document.documentElement.setAttribute('data-theme', theme);
 			if (themeIcon) themeIcon.textContent = theme === 'light' ? '☀️' : '🌙';
 			if (save) {
-				try { localStorage.setItem('tempo-theme', theme); } catch {}
+				try { localStorage.setItem('tempo-theme', theme); } catch { }
 			}
 		}
 
 		function initTheme() {
 			let saved = null;
-			try { saved = localStorage.getItem('tempo-theme'); } catch {}
+			try { saved = localStorage.getItem('tempo-theme'); } catch { }
 
 			if (!saved) {
 				try {
@@ -857,7 +895,7 @@ return 'Dynamic import successful!';`
 						const isParentDark = window.parent.document.documentElement.classList.contains('dark');
 						saved = isParentDark ? 'dark' : 'light';
 					}
-				} catch {}
+				} catch { }
 			}
 
 			if (!saved) {
@@ -875,7 +913,7 @@ return 'Dynamic import successful!';`
 					});
 					observer.observe(window.parent.document.documentElement, { attributes: true, attributeFilter: ['class'] });
 				}
-			} catch {}
+			} catch { }
 		}
 
 		btnThemeToggle?.addEventListener('click', () => {
