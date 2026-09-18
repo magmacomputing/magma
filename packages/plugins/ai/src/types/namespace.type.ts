@@ -50,6 +50,6 @@ declare module '@magmacomputing/tempo' {
 	}
 
 	namespace Tempo {
-		let ai: TempoAiNamespace;
+		const ai: TempoAiNamespace;
 	}
 }

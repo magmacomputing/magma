@@ -633,11 +633,10 @@ console.log('Loading AI Plugin...');
 const { AiPlugin } = await import('@magmacomputing/tempo-plugin-ai');
 Tempo.use(AiPlugin);
 
-// 1. Initialize AI Providers (Groq/OpenAI/Anthropic or default Mock/Auto)
+// 1. Initialize AI Plugin (Zero-config offline mode by default)
+// For live LLM calls, pass a real key: { providers: [{ id: 'groq', key: 'gsk_...' }] }
 await Tempo.ai.init({
-  providers: [
-    { id: 'groq', key: 'mock-key-for-instant-demo' }
-  ]
+  remoteConfigUrl: false
 });
 
 // 2. Parse conversational date expressions with anchor context

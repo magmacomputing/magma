@@ -76,10 +76,20 @@ Tempo.use(TickerPlugin);
 console.log('Ticker plugin active!');
 ```
 
-### 3. Shareable Snippets & Presets
+### 3. AI Semantic Parsing & Natural Language Scheduling
+Explore generative date parsing, conversational recurrence, and multi-point event scheduling powered by `@magmacomputing/tempo-plugin-ai`:
+- Select the **Preset: AI Semantic Parsing & Scheduling** from the preset dropdown.
+- **Zero-Config Instant Exploration**: Works out of the box with the default simulated/mock provider without needing an API key.
+- **Bring Your Own Key (BYOK)**: Connect live endpoints (Groq, Gemini, OpenAI, Anthropic, or local Ollama) by configuring provider keys in `Tempo.ai.init({ providers: [...] })`.
+
+> [!WARNING]
+> **API Key Safety in Share Links**:
+> When you click **📋 Share**, the editor content is encoded into the URL hash (`#code=...`). **Never paste production or sensitive API keys into shared snippets**. For live testing, use ephemeral personal sandbox keys or rely on the built-in zero-config mock mode.
+
+### 4. Shareable Snippets & Presets
 - **Share**: Click the **📋 Share** button in the REPL header to encode your code directly into a shareable URL hash (`#code=...`).
 - **Copy Code**: Click **📋 Copy Code** in the Showcase to grab production-ready TypeScript code for your current visual setup.
 
-### 4. Keyboard Shortcuts
+### 5. Keyboard Shortcuts
 - **`Ctrl + Enter`** (Windows/Linux) or **`Cmd + Enter`** (macOS): Immediately re-evaluate the current editor code.
 - **`Tab`**: Inserts 2-space indentation.
