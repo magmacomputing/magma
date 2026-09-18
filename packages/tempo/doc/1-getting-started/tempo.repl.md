@@ -79,12 +79,12 @@ console.log('Ticker plugin active!');
 ### 3. AI Semantic Parsing & Natural Language Scheduling
 Explore generative date parsing, conversational recurrence, and multi-point event scheduling powered by `@magmacomputing/tempo-plugin-ai`:
 - Select the **Preset: AI Semantic Parsing & Scheduling** from the preset dropdown.
-- **Zero-Config Instant Exploration**: Works out of the box with the default simulated/mock provider without needing an API key.
-- **Bring Your Own Key (BYOK)**: Connect live endpoints (Groq, Gemini, OpenAI, Anthropic, or local Ollama) by configuring provider keys in `Tempo.ai.init({ providers: [...] })`.
+- **Supported Provider Configuration**: Provide an API key or explicit supported provider configuration (e.g., Groq, Gemini, OpenAI, Mistral, or local Ollama) via `Tempo.ai.init({ providers: [...] })` before calling `Tempo.ai.parse` or `Tempo.ai.schedule`.
+- **Bring Your Own Key (BYOK)**: Connect live endpoints by configuring provider keys or passing environment variables.
 
 > [!WARNING]
 > **API Key Safety in Share Links**:
-> When you click **📋 Share**, the editor content is encoded into the URL hash (`#code=...`). **Never paste production or sensitive API keys into shared snippets**. For live testing, use ephemeral personal sandbox keys or rely on the built-in zero-config mock mode.
+> When you click **📋 Share**, the editor content is encoded into the URL hash (`#code=...`). **Never paste production or sensitive API keys into shared snippets**. For live testing, use ephemeral personal sandbox keys.
 
 ### 4. Shareable Snippets & Presets
 - **Share**: Click the **📋 Share** button in the REPL header to encode your code directly into a shareable URL hash (`#code=...`).

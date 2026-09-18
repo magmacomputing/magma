@@ -33,7 +33,7 @@
     "plan": "community"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.0.0"
+    "@magmacomputing/tempo": "^4.3.0"
   },
   "devDependencies": {},
   "keywords": [

@@ -58,7 +58,7 @@ export const AiPlugin: TempoPlugin<AiConfig> = definePlugin({
 			Object.defineProperty(installedClass, 'ai', {
 				value: deepFreeze(aiNamespace),
 				writable: false,
-				configurable: false,
+				configurable: true,
 				enumerable: false,
 			});
 		}

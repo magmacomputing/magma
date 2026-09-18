@@ -31,7 +31,7 @@ import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
 Tempo.use(GeoPlugin);
 ```
 
-#### Auto-Installation (Side-Effect Import)
+### Auto-Installation (Side-Effect Import)
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';

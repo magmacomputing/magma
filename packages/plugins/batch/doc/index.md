@@ -46,6 +46,7 @@ For zero-boilerplate global registration, import the `/install` subpath:
 import { Tempo } from '@magmacomputing/tempo';
 import '@magmacomputing/tempo-plugin-batch/install';
 
+const epochs = [1700000000000, 1700000001000];
 const batchResult = await Tempo.batch(epochs, { weeks: 1 });
 ```
 

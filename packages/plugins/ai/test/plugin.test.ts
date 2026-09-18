@@ -50,7 +50,8 @@ describe('AiPlugin & Tempo.ai Namespace', () => {
 	});
 
 	it('should auto-register when importing install entry point', async () => {
-		await import('../src/install.js');
+		const mod = await import('../src/install.js');
+		expect(mod.AiPlugin).toBe(AiPlugin);
 		expect(Tempo.ai).toBeDefined();
 		expect(typeof Tempo.ai.parse).toBe('function');
 	});
