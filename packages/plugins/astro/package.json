@@ -40,7 +40,7 @@
     "prepublishOnly": "tempo-cli prepublish"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.3.0"
+    "@magmacomputing/tempo": "^4.4.0"
   },
   "tempo": {
     "vendorVariantId": "tempo-plugin-astro",
