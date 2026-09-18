@@ -29,9 +29,9 @@ npm install @magmacomputing/tempo-plugin-snap
 import { Tempo } from '@magmacomputing/tempo';
 import { SnapPlugin } from '@magmacomputing/tempo-plugin-snap';
 
-// Pass the plugin to `Tempo.init` to register it into the runtime.
+// Pass the plugin to `Tempo.init` or `Tempo.use` to register it into the runtime.
 Tempo.init({ 
-  extends: [SnapPlugin] 
+  plugins: [SnapPlugin] 
 });
 
 const t = new Tempo('2026-06-01T14:08:00Z');
@@ -48,6 +48,18 @@ const snapMs = t.snap({ ms: 100 });
 // Force snapping direction instead of standard rounding
 const snapUp = t.snap({ mi: 15, direction: 'up' });
 const snapDown = t.snap({ mi: 15, direction: 'down' });
+```
+
+### Auto-Installation (Side-Effect Import)
+
+For zero-boilerplate global registration, import the `/install` subpath:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-snap/install';
+
+const t = new Tempo('2026-06-01T14:08:00Z');
+console.log(t.snap().format('{hh}:{mi}')); // "14:15"
 ```
 
 ## Licensing

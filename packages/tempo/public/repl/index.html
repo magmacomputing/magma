@@ -647,7 +647,7 @@ const event = await Tempo.ai.parse(
 );
 
 console.log('Resolved Timestamp:', event.format('{wkd}, {dd} {mon} {yyyy} at {hh}:{mi}'));
-console.log('AI Provider Used:', event.ai?.provider || 'groq');
+console.log('AI Provider Used:', event.ai?.provider ?? 'unknown');
 console.log('Ambiguity Flag:', Boolean(event.ai?.ambiguous));
 
 // 3. Multi-point recurrence schedule

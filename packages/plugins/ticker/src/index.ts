@@ -557,3 +557,5 @@ export const TickerPlugin = definePlugin({
 		});
 	},
 });
+
+export default TickerPlugin;

@@ -2,6 +2,13 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-sync` project will be documented in this file.
 
+## [1.1.0] - 2026-09-18
+
+### Added
+- **Subpath Side-Effect Installation (`/install`)**:
+  - Added dedicated `@magmacomputing/tempo-plugin-sync/install` entrypoint for zero-boilerplate side-effect registration on the global `Tempo` instance via `autoInstall`.
+  - Configured `package.json` with `"sideEffects": ["./dist/install.js"]` to ensure the root package entrypoint remains 100% pure and tree-shakeable.
+
 ## [1.0.3] - 2026-07-20
 
 ### Fixed

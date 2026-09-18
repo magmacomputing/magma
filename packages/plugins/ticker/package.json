@@ -1,9 +1,22 @@
 {
   "name": "@magmacomputing/tempo-plugin-ticker",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Tempo plugin that provides a high-performance continuous execution loop (Ticker) based on temporal mathematics.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js"
+    }
+  },
+  "sideEffects": [
+    "./dist/install.js"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -46,12 +59,5 @@
     "datetime",
     "typescript"
   ],
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    }
-  }
+  "type": "module"
 }

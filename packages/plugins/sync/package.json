@@ -1,9 +1,12 @@
 {
   "name": "@magmacomputing/tempo-plugin-sync",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Tempo community plugin providing lock-free, highly precise cross-thread synchronization via SharedArrayBuffer and Atomics.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "sideEffects": [
+    "./dist/install.js"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -49,6 +52,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./install": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/install.js",
+      "default": "./dist/install.js"
     }
   }
 }

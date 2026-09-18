@@ -25,7 +25,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { BatchPlugin } from '@magmacomputing/tempo-plugin-batch';
 
 Tempo.init({ 
-  extends: [BatchPlugin] 
+  plugins: [BatchPlugin] 
 });
 
 // Assume `epochs` is a massive array of integers representing timestamps
@@ -36,6 +36,17 @@ const epochs = [1700000000000, 1700000001000, /* ... millions more ... */];
 const batchResult = await Tempo.batch(epochs, { weeks: 1 });
 
 console.log(batchResult); // Returns an array of mutated timestamp integers
+```
+
+### Auto-Installation (Side-Effect Import)
+
+For zero-boilerplate global registration, import the `/install` subpath:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-batch/install';
+
+const batchResult = await Tempo.batch(epochs, { weeks: 1 });
 ```
 
 ### Rehydration

@@ -31,6 +31,13 @@ import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
 Tempo.use(GeoPlugin);
 ```
 
+#### Auto-Installation (Side-Effect Import)
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-geo/install';
+```
+
 ### The `Tempo.geo` API Surface
 
 | Method / Property | Description |

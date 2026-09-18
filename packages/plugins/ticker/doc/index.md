@@ -34,6 +34,17 @@ Tempo.init({
 const ticker = Tempo.ticker({ seconds: 1 });
 ```
 
+### Auto-Installation (Side-Effect Import)
+
+For zero-boilerplate global registration, import the `/install` subpath:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-ticker/install';
+
+const ticker = Tempo.ticker({ seconds: 1 });
+```
+
 ### Direct Access
 If you need to access the [Reporting & Registry](#reporting-registry) API (like `Ticker.active`), you should import the `Ticker` namespace:
 

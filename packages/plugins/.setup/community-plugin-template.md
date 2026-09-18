@@ -34,14 +34,24 @@ Ensure the plugin's `package.json` contains the correct community configuration:
     "directory": "packages/plugins/[name]"
   }
   ```
-- **Exports**: Define exports with types and import entrypoints:
+- **Exports & Subpaths**: Define exports with types, main entrypoint, and the standardized **`/install`** side-effect entrypoint:
   ```json
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js"
     }
   }
+  ```
+- **SideEffects**: Mark only the `/install` subpath as side-effecting so root imports remain 100% tree-shakeable:
+  ```json
+  "sideEffects": [
+    "./dist/install.js"
+  ]
   ```
 - **Scripts**: 
   - Ensure `"build": "tsup && tsc"` is present.
@@ -50,9 +60,24 @@ Ensure the plugin's `package.json` contains the correct community configuration:
 - **Keywords**: Ensure relevant keywords are present (`tempo`, `tempo-plugin`, `magmacomputing`, `temporal`, `plugin`, etc.).
 - **tempo**: Set `"plan": "community"`.
 
-## 2. Build Configuration (`tsup.config.ts` & `tsconfig.json`)
+## 2. Standard `/install` Subpath (`src/install.ts`)
 
-To ensure standard monorepo builds, include a `tsup.config.ts` that extends the workspace's shared configuration:
+Every Tempo plugin must provide a dedicated `src/install.ts` entrypoint. This enables zero-boilerplate side-effect imports (`import '@magmacomputing/tempo-plugin-[name]/install'`) in scripts, REPLs, and rapid applications while keeping root imports 100% pure and tree-shakeable:
+
+```typescript
+import { autoInstall } from '@magmacomputing/tempo/plugin/sdk';
+import { MyPlugin } from './index.js';
+
+// Auto-register plugin onto Tempo upon side-effect import
+autoInstall(MyPlugin);
+
+export * from './index.js';
+export { MyPlugin, default } from './index.js';
+```
+
+## 3. Build Configuration (`tsup.config.ts` & `tsconfig.json`)
+
+To ensure standard monorepo builds, include a `tsup.config.ts` that extends the workspace's shared configuration and compiles both `src/index.ts` and `src/install.ts`:
 
 ```typescript
 import { defineConfig } from 'tsup';
@@ -60,7 +85,7 @@ import { sharedConfig } from '../tsup.shared.ts';
 
 export default defineConfig({
 	...sharedConfig,
-	entry: ['src/index.ts'],
+	entry: ['src/index.ts', 'src/install.ts'],
 });
 ```
 

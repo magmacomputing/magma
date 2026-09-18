@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-09-18
+
+### Added
+- **Production GA Release**:
+  - Promoted `@magmacomputing/tempo-plugin-celestial` from experimental status to official `v1.0.0` production release.
+- **`/install` Subpath Side-Effect Entry Point**:
+  - Added dedicated `@magmacomputing/tempo-plugin-celestial/install` subpath for one-line side-effect installation (`import '@magmacomputing/tempo-plugin-celestial/install'`).
+  - Automatically registers `CelestialPlugin` (`SolarTerm`, `LunarTerm`, `TidalTerm`) onto `Tempo` upon side-effect import while preserving 100% tree-shakeability for the main package entry point.
+
 ## [0.2.0] - 2026-09-09
 
 ### Added

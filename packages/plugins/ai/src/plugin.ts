@@ -67,12 +67,3 @@ export const AiPlugin: TempoPlugin<AiConfig> = definePlugin({
 
 export const aiPlugin = AiPlugin;
 export default AiPlugin;
-
-// Auto-register side-effect when Tempo is globally available
-if (typeof globalThis !== 'undefined' && (globalThis as any).Tempo?.use) {
-	try {
-		(globalThis as any).Tempo.use(AiPlugin);
-	} catch {
-		// Ignore if already registered
-	}
-}

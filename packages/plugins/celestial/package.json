@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-plugin-celestial",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Tempo plugin to add Terms for location-aware solar twilight events, lunar phase tracking, and astronomical tidal mechanics",
   "type": "module",
   "main": "dist/index.js",
@@ -9,8 +9,15 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js"
     }
   },
+  "sideEffects": [
+    "./dist/install.js"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
