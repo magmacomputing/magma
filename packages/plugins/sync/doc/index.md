@@ -25,12 +25,23 @@ import { Tempo } from '@magmacomputing/tempo';
 import { SyncPlugin } from '@magmacomputing/tempo-plugin-sync';
 
 Tempo.init({ 
-  extends: [SyncPlugin] 
+  plugins: [SyncPlugin] 
 });
 
 // Master Thread: Start the clock
 const clock = Tempo.sync.startClock({ updateIntervalMs: 1 });
 const buffer = clock.buffer; // Pass this SharedArrayBuffer to your workers
+```
+
+### Auto-Installation (Side-Effect Import)
+
+For zero-boilerplate global registration, import the `/install` subpath:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-sync/install';
+
+const clock = Tempo.sync.startClock({ updateIntervalMs: 1 });
 ```
 
 ### Reading from Worker Threads

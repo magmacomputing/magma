@@ -6,7 +6,7 @@
     "packageName": "@magmacomputing/tempo-plugin-astro",
     "plan": "community",
     "status": "active",
-    "version": "2.3.0"
+    "version": "2.4.0"
   },
   {
     "id": "celestial",
@@ -15,7 +15,7 @@
     "packageName": "@magmacomputing/tempo-plugin-celestial",
     "plan": "community",
     "status": "active",
-    "version": "0.2.0"
+    "version": "1.0.0"
   },
   {
     "id": "batch",
@@ -24,7 +24,7 @@
     "packageName": "@magmacomputing/tempo-plugin-batch",
     "plan": "community",
     "status": "active",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   {
     "id": "finance",
@@ -33,7 +33,7 @@
     "packageName": "@magmacomputing/tempo-plugin-finance",
     "plan": "community",
     "status": "active",
-    "version": "1.0.4"
+    "version": "1.1.0"
   },
   {
     "id": "snap",
@@ -42,7 +42,7 @@
     "packageName": "@magmacomputing/tempo-plugin-snap",
     "plan": "community",
     "status": "active",
-    "version": "1.3.3"
+    "version": "1.4.0"
   },
   {
     "id": "sync",
@@ -51,7 +51,7 @@
     "packageName": "@magmacomputing/tempo-plugin-sync",
     "plan": "community",
     "status": "active",
-    "version": "1.0.4"
+    "version": "1.1.0"
   },
   {
     "id": "ai",
@@ -60,7 +60,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
     "status": "active",
-    "version": "2.0.0"
+    "version": "2.1.0"
   },
   {
     "id": "ticker",
@@ -69,7 +69,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ticker",
     "plan": "community",
     "status": "active",
-    "version": "2.4.0"
+    "version": "2.5.0"
   },
   {
     "id": "geo",
@@ -78,7 +78,7 @@
     "packageName": "@magmacomputing/tempo-plugin-geo",
     "plan": "community",
     "status": "active",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   {
     "id": "_std",

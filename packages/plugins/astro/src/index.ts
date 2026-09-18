@@ -182,6 +182,3 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 
 export const AstroPlugin = [AstroTerm];
 export default AstroPlugin;
-
-// Side-effect: Auto-register upon import
-Tempo.extend(AstroPlugin);

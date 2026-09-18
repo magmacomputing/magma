@@ -50,6 +50,7 @@ Thumbs.db
 .rollup.cache/
 **/.vitepress/cache/
 **/.vitepress/dist/
+**/.vitepress/.temp/
 **/doc/api/
 **/public/api/
 **/doc/9-plugins/

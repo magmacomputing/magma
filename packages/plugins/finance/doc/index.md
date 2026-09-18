@@ -33,6 +33,18 @@ console.log(t.finance.taxYear); // 2024
 console.log(t.finance.isFiscalYearStart()); // false
 ```
 
+### Auto-Installation (Side-Effect Import)
+
+For zero-boilerplate global registration, import the `/install` subpath:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-finance/install';
+
+const t = new Tempo('2024-07-01');
+console.log(t.finance.fiscalQuarter); // 3
+```
+
 ## Licensing
 
 This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

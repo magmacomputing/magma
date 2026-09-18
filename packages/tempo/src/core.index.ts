@@ -9,6 +9,11 @@ import { Tempo } from './tempo.class.js';
 import { getRuntime } from '#tempo/support';
 
 getRuntime().modules['Tempo'] = Tempo;
+const pending = getRuntime().modules['$pendingAutoInstalls'];
+if (Array.isArray(pending) && pending.length > 0) {
+	Tempo.use(pending);
+	pending.length = 0;
+}
 
 export { enums, Token, Snippet, Match, Default, Guard } from '#tempo/support';
 

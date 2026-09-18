@@ -26,9 +26,13 @@ npm install @magmacomputing/tempo-plugin-astro
 
 ## Usage
 
+### Explicit Registration (Recommended)
+
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-astro'; // Auto-registers Astro terms!
+import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
+
+Tempo.use(AstroPlugin);
 
 const t = new Tempo('2026-03-20', { sphere: 'north' });
 
@@ -43,6 +47,16 @@ console.log(t.term.solstice); // 'Summer' or 'Winter'
 // Get full Astronomical metadata
 console.log(t.term.astronomy);
 // Output: { key: 'Vernal', season: 'Spring', event: 'Equinox', sphere: 'north', ... }
+```
+
+### Auto-Installation (Side-Effect Import)
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-astro/install';
+
+const t = new Tempo('2026-03-20', { sphere: 'north' });
+console.log(t.term.astro); // Output: 'Vernal'
 ```
 
 ### Response Payload

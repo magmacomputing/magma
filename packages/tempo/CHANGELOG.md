@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.0] - 2026-09-18
+
+### Added
+- **Plugin Auto-Installation & Order-Independent Side-Effect Imports (`autoInstall`, `$pendingAutoInstalls`)**:
+  - Introduced `autoInstall` helper in `@magmacomputing/tempo/plugin/sdk` providing order-independent, idempotent side-effect registration for official and community plugins via the standard `/install` subpath (`import '@magmacomputing/tempo-plugin-<name>/install'`).
+  - Added global ambient `$pendingAutoInstalls` queue support in the runtime engine (`tempo.index.ts`, `core.index.ts`, and `support.init.ts`) to buffer plugin registrations even when a side-effect `/install` import evaluates before `{ Tempo }` is initialized by the bundler or runtime.
+  - Implemented automatic drain and registration of pending installers as soon as Tempo initializes, preserving zero runtime overhead and complete tree-shakeability for base entrypoints.
+
 ## [4.3.0] - 2026-09-16
 
 ### Added

@@ -16,18 +16,20 @@ To provide a consistent and intuitive developer experience, the exported symbol 
 
 *(Note: The `Module` suffix and `defineModule` factory are strictly reserved for Tempo's core internal injection APIs like `ParseModule` and should not be used by external plugins.)*
 
-To manually register a plugin, use the static `use` method. This is typically used for "opt-in" features or when you need to provide specific configuration to a plugin factory.
+To register a plugin, choose between explicit registration (`Tempo.use`) or zero-boilerplate side-effect imports (`/install`):
 
 ```typescript
+// 1. Explicit registration (Recommended for production apps & tree-shaking)
 import { Tempo } from '@magmacomputing/tempo/core';
 import { MyPlugin } from './my-plugin.js';
 import { HolidayPlugin } from './my-holiday-plugin.js';
 
-// Manual registration
 Tempo.use(MyPlugin);
-
-// Registration with a Factory (providing options)
 Tempo.use(HolidayPlugin({ region: 'US-NY' }));
+
+// 2. Zero-boilerplate side-effect registration (Recommended for scripts & REPLs)
+import '@magmacomputing/tempo-plugin-geo/install';
+import '@magmacomputing/tempo-plugin-ai/install';
 ```
 
 ---

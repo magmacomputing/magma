@@ -47,9 +47,12 @@ npm install @magmacomputing/tempo-plugin-geo
 > - **Server**: In Node.js or server environments without GPS hardware, coordinates are resolved via IP geolocation representing the physical server/datacenter network location.
 
 ```typescript
+// Explicit installation (Recommended for production applications & pure tree-shaking):
 import { Tempo } from '@magmacomputing/tempo';
 import { geoLookup } from '@magmacomputing/tempo-plugin-geo';
-import '@magmacomputing/tempo-plugin-celestial';
+import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+
+Tempo.use(CelestialPlugin);
 
 // Automatically resolves location coordinates via browser hardware or server IP
 const geo = await geoLookup();
@@ -60,11 +63,25 @@ console.log(t.term.lunar.moonrise); // Tempo instance or null when no rise occur
 console.log(t.term.tide);           // 'spring', 'neap', or 'normal'
 ```
 
+### Auto-Installation (Side-Effect Import)
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { geoLookup } from '@magmacomputing/tempo-plugin-geo';
+import '@magmacomputing/tempo-plugin-celestial/install';
+
+const geo = await geoLookup();
+const t = new Tempo({ geo });
+console.log(t.term.sun);
+```
+
 ## Usage
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-celestial';
+import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+
+Tempo.use(CelestialPlugin);
 
 const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
 

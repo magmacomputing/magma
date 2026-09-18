@@ -27,3 +27,6 @@ export { scheduleAI } from './functions/schedule.js';
 export { diffAI } from './functions/diff.js';
 export { contextAI } from './functions/context.js';
 
+// AI Plugin Definition & Tempo.ai Namespace
+export { AiPlugin, aiPlugin, default } from './plugin.js';
+

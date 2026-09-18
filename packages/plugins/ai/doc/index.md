@@ -20,7 +20,29 @@ Raw LLM API keys must **never** be exposed in client-side browser bundles or sto
 npm install @magmacomputing/tempo-plugin-ai
 ```
 
-### 1. Zero-Config Mode (Instant Execution)
+### 1. `Tempo.ai` Cohesive Namespace
+Installing `AiPlugin` mounts the frozen **`Tempo.ai`** static action namespace onto `Tempo`:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { AiPlugin } from '@magmacomputing/tempo-plugin-ai';
+
+Tempo.use(AiPlugin);
+
+// Tempo.ai is immediately available:
+const event = await Tempo.ai.parse("next Tuesday around 2:30pm");
+```
+
+#### Auto-Installation (Side-Effect Import)
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-ai/install';
+
+const event = await Tempo.ai.parse("next Tuesday around 2:30pm");
+```
+
+### 2. Zero-Config Mode (Instant Execution)
 If you have standard provider keys in your environment (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`), simply call any AI function directly with zero boilerplate:
 
 ```typescript
@@ -31,7 +53,7 @@ const dt = await parseAI("The penultimate Tuesday before Thanksgiving in 2026");
 console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
 ```
 
-### 2. Explicit Provider Farm Configuration
+### 3. Explicit Provider Farm Configuration
 For custom models, custom SLAs, or multi-provider execution strategies:
 
 ```typescript

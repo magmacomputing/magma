@@ -1,9 +1,22 @@
 {
   "name": "@magmacomputing/tempo-plugin-astro",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Tempo plugin that calculates precise astronomical seasons (solstices & equinoxes) — hemisphere-aware, sub-minute accuracy",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js"
+    }
+  },
+  "sideEffects": [
+    "./dist/install.js"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -27,7 +40,7 @@
     "prepublishOnly": "tempo-cli prepublish"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.0.0"
+    "@magmacomputing/tempo": "^4.4.0"
   },
   "tempo": {
     "vendorVariantId": "tempo-plugin-astro",
@@ -57,12 +70,5 @@
     "datetime",
     "typescript"
   ],
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    }
-  }
+  "type": "module"
 }

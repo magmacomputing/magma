@@ -44,6 +44,12 @@ onRegistryReset(() => {
 
 Tempo.use(core);
 
+const pending = getRuntime().modules['$pendingAutoInstalls'];
+if (Array.isArray(pending) && pending.length > 0) {
+	Tempo.use(pending);
+	pending.length = 0;
+}
+
 export { parse, format } from '#tempo/module';
 export { enums };
 

@@ -354,3 +354,24 @@ export function defineNamespace<Opts = any>(config: NamespaceConfig): PluginFact
 	return result as unknown as PluginFactory<Plugin<TempoType>, Opts>;
 }
 
+/**
+ * Automatically registers a plugin onto the active Tempo constructor or global ambient instance.
+ * Intended for use in plugin `/install` side-effect subpath entry points.
+ *
+ * @param plugin - The plugin definition or factory to register
+ */
+export function autoInstall(plugin: any): void {
+	const host = getHost(null);
+	if (host && isFunction(host.use)) {
+		host.use(plugin);
+	} else if (typeof globalThis !== 'undefined' && isFunction((globalThis as any).Tempo?.use)) {
+		(globalThis as any).Tempo.use(plugin);
+	} else {
+		const rt = getRuntime();
+		if (!Array.isArray(rt.modules['$pendingAutoInstalls']))
+			rt.modules['$pendingAutoInstalls'] = [];
+
+		rt.modules['$pendingAutoInstalls'].push(plugin);
+	}
+}
+

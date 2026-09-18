@@ -5,6 +5,13 @@ All notable changes to the `@magmacomputing/tempo-plugin-geo` project will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-18
+
+### Added
+- **`/install` Subpath Side-Effect Entry Point**:
+  - Added dedicated `@magmacomputing/tempo-plugin-geo/install` subpath for one-line side-effect installation (`import '@magmacomputing/tempo-plugin-geo/install'`).
+  - Automatically mounts `Tempo.geo` on `globalThis.Tempo` or imported `Tempo` while preserving 100% tree-shakeability for the main package entry point.
+
 ## [1.1.0] - 2026-09-16
 
 ### Added

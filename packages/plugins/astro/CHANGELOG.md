@@ -2,6 +2,13 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-astro` project will be documented in this file.
 
+## [2.4.0] - 2026-09-18
+
+### Added
+- **`/install` Subpath Side-Effect Entry Point**:
+  - Added dedicated `@magmacomputing/tempo-plugin-astro/install` subpath for one-line side-effect installation (`import '@magmacomputing/tempo-plugin-astro/install'`).
+  - Automatically registers `AstroTerm` / `AstroPlugin` onto `Tempo` upon side-effect import while preserving 100% tree-shakeability for the main package entry point.
+
 ## [2.3.0] - 2026-09-16
 
 ### Added
