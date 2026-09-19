@@ -2,12 +2,12 @@
 
 Tempo offers two dedicated, zero-install in-browser environments running 100% client-side via native ECMAScript Modules (`esm.sh`):
 
-1. **🎨 Feature Showcase & Workbench**: A dynamic, visual sandbox to test format tokens, chained mutations, relative durations, world geolocation, and astronomical ephemeris in real time with auto-generated TypeScript code.
-2. **⚡ Code REPL**: A freeform JavaScript/TypeScript code editor with real-time evaluation, console streaming, official plugin preloading, and snippet URL sharing.
+1. [**🎨 Feature Showcase & Workbench**](#interactive-feature-showcase): A dynamic, visual sandbox to test format tokens, chained mutations, relative durations, world geolocation, and astronomical ephemeris in real time with auto-generated TypeScript code.
+2. [**⚡ Freeform Code REPL**](#freeform-code-repl): A freeform JavaScript/TypeScript code editor with real-time evaluation, console streaming, official plugin preloading, and snippet URL sharing.
 
 ---
 
-## 🎨 Interactive Feature Showcase
+## 🎨 Interactive Feature Showcase {#interactive-feature-showcase}
 
 Explore live formatting, chained mutations, hemisphere-aware astronomical seasons, and celestial mechanics without writing boilerplate:
 
@@ -29,7 +29,7 @@ Explore live formatting, chained mutations, hemisphere-aware astronomical season
 
 ---
 
-## ⚡ Freeform Code REPL
+## ⚡ Freeform Code REPL {#freeform-code-repl}
 
 An instant scratchpad for testing custom algorithms, experimental plugin imports, and sharing reproducible snippet links:
 
@@ -77,14 +77,18 @@ console.log('Ticker plugin active!');
 ```
 
 ### 3. AI Semantic Parsing & Natural Language Scheduling
-Explore generative date parsing, conversational recurrence, and multi-point event scheduling powered by `@magmacomputing/tempo-plugin-ai`:
+Explore generative date parsing, conversational recurrence, and multi-point event scheduling powered by [`@magmacomputing/tempo-plugin-ai`](/doc/9-plugins/ai.index):
 - Select the **Preset: AI Semantic Parsing & Scheduling** from the preset dropdown.
-- **Supported Provider Configuration**: Provide an API key or explicit supported provider configuration (e.g., Groq, Gemini, OpenAI, Mistral, or local Ollama) via `Tempo.ai.init({ providers: [...] })` before calling `Tempo.ai.parse` or `Tempo.ai.schedule`.
-- **Bring Your Own Key (BYOK)**: Connect live endpoints by configuring provider keys or passing environment variables.
+- **Supported Provider Configuration (BYOK)**: Provide an API key or local endpoint in `Tempo.ai.init({ providers: [...] })` before calling `Tempo.ai.parse` or `Tempo.ai.schedule`.
+- **External Resources & Free Keys**:
+  - **[Groq Console](https://console.groq.com/keys)**: Ultra-fast inference with a generous free tier (recommended for quick testing).
+  - **[Google AI Studio (Gemini)](https://aistudio.google.com/app/apikey)**: Free API key for Gemini models.
+  - **[OpenAI Platform](https://platform.openai.com/api-keys)**: Standard GPT-4o / GPT-4o-mini keys.
+  - **[Ollama](https://ollama.com)**: 100% free, private local LLMs. *Note: When running locally for browser access, start Ollama with CORS enabled: `OLLAMA_ORIGINS="*" ollama serve`.*
 
 > [!WARNING]
 > **API Key Safety in Share Links**:
-> When you click **📋 Share**, the editor content is encoded into the URL hash (`#code=...`). **Never paste production or sensitive API keys into shared snippets**. For live testing, use ephemeral personal sandbox keys.
+> When you click **📋 Share**, the editor content is encoded into the URL hash (`#code=...`). **Never paste production or sensitive API keys into shared snippets**. For live testing, use ephemeral personal sandbox keys or local Ollama.
 
 ### 4. Shareable Snippets & Presets
 - **Share**: Click the **📋 Share** button in the REPL header to encode your code directly into a shareable URL hash (`#code=...`).

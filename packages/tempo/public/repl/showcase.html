@@ -86,8 +86,8 @@
 		/* Header */
 		header {
 			display: flex;
-			align-items: center;
-			justify-content: space-between;
+			flex-direction: column;
+			gap: 12px;
 			padding: 12px 24px;
 			background: var(--header-bg);
 			backdrop-filter: blur(16px);
@@ -96,6 +96,13 @@
 			top: 0;
 			z-index: 100;
 			transition: background 0.2s ease;
+		}
+
+		.header-top {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			width: 100%;
 		}
 
 		.brand {
@@ -142,8 +149,10 @@
 		.controls {
 			display: flex;
 			align-items: center;
+			justify-content: space-between;
 			gap: 12px;
 			flex-wrap: wrap;
+			width: 100%;
 		}
 
 		/* Mode Switcher Tabs */
@@ -267,10 +276,21 @@
 			letter-spacing: 0.8px;
 		}
 
-		.card-title.cyan { color: var(--accent); }
-		.card-title.purple { color: var(--purple); }
-		.card-title.emerald { color: #34d399; }
-		.card-title.amber { color: #fbbf24; }
+		.card-title.cyan {
+			color: var(--accent);
+		}
+
+		.card-title.purple {
+			color: var(--purple);
+		}
+
+		.card-title.emerald {
+			color: #34d399;
+		}
+
+		.card-title.amber {
+			color: #fbbf24;
+		}
 
 		.badge {
 			font-size: 0.7rem;
@@ -655,15 +675,33 @@
 
 		/* Responsive */
 		@media (max-width: 1024px) {
-			.grid-2 { grid-template-columns: 1fr; }
-			.grid-4 { grid-template-columns: repeat(2, 1fr); }
+			.grid-2 {
+				grid-template-columns: 1fr;
+			}
+
+			.grid-4 {
+				grid-template-columns: repeat(2, 1fr);
+			}
 		}
 
 		@media (max-width: 768px) {
-			header { flex-direction: column; align-items: flex-start; gap: 12px; padding: 12px 16px; }
-			.controls { width: 100%; justify-content: space-between; }
-			.grid-4 { grid-template-columns: 1fr; }
-			main { padding: 16px 12px; }
+			header {
+				padding: 12px 16px;
+				gap: 10px;
+			}
+
+			.controls {
+				width: 100%;
+				justify-content: space-between;
+			}
+
+			.grid-4 {
+				grid-template-columns: 1fr;
+			}
+
+			main {
+				padding: 16px 12px;
+			}
 		}
 	</style>
 
@@ -671,10 +709,10 @@
 	{
 		"imports": {
 			"@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
-			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@4.3.0",
-			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@2.3.0",
-			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@1.1.0",
-			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@0.2.0"
+			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@4",
+			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@2",
+			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@1",
+			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@0"
 		}
 	}
 	</script>
@@ -684,16 +722,26 @@
 	<div class="app-container">
 		<!-- HEADER -->
 		<header>
-			<div class="brand">
-				<svg class="brand-logo" viewBox="0 0 235.319 235.319" fill="#38bdf8">
-					<path d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z"/>
-					<path d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z"/>
-					<path d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z"/>
-				</svg>
-				<div class="brand-info">
-					<span class="brand-title">Tempo Showcase</span>
-					<span class="brand-subtitle">Interactive Feature Workbench</span>
+			<div class="header-top">
+				<div class="brand">
+					<svg class="brand-logo" viewBox="0 0 235.319 235.319" fill="#38bdf8">
+						<path
+							d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z" />
+						<path
+							d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z" />
+						<path
+							d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z" />
+					</svg>
+					<div class="brand-info">
+						<span class="brand-title">Tempo Showcase</span>
+						<span class="brand-subtitle">Interactive Feature Workbench</span>
+					</div>
 				</div>
+
+				<button id="btnThemeToggle" class="nav-link-btn" title="Toggle Light/Dark Theme"
+					style="padding: 6px 10px; cursor: pointer;">
+					<span id="themeIcon">🌙</span>
+				</button>
 			</div>
 
 			<div class="controls">
@@ -713,10 +761,6 @@
 					<span>●</span>
 					<span id="tzLabel">UTC</span>
 				</div>
-
-				<button id="btnThemeToggle" class="nav-link-btn" title="Toggle Light/Dark Theme" style="padding: 6px 10px; cursor: pointer;">
-					<span id="themeIcon">🌙</span>
-				</button>
 			</div>
 		</header>
 
@@ -729,10 +773,12 @@
 						<span class="card-title cyan">1. Anchor Date / Natural Expression</span>
 						<span id="modePill" class="badge badge-cyan">⚡ Core Engine Active</span>
 					</div>
-					<span id="isoBadge" class="badge badge-emerald" style="font-family: 'Fira Code', monospace;">Evaluating...</span>
+					<span id="isoBadge" class="badge badge-emerald"
+						style="font-family: 'Fira Code', monospace;">Evaluating...</span>
 				</div>
 
-				<input type="text" id="inputBase" class="input-box" value="next Friday at 3pm" placeholder="e.g. 'now', 'tomorrow 9am', 'Christmas', 'Easter', 'in 3 days'">
+				<input type="text" id="inputBase" class="input-box" value="next Friday at 3pm"
+					placeholder="e.g. 'now', 'tomorrow 9am', 'Christmas', 'Easter', 'in 3 days'">
 				<div id="baseError" style="color: var(--error); font-size: 0.8rem; margin-top: 6px; display: none;"></div>
 
 				<div class="chip-row">
@@ -805,7 +851,8 @@
 
 						<div class="output-banner" style="margin-top: 0; margin-bottom: 12px; padding: 12px 16px;">
 							<span class="banner-label">Mutated Time:</span>
-							<span id="outputMutated" style="font-size: 1.05rem; color: var(--purple); font-weight: 700;">Evaluating...</span>
+							<span id="outputMutated"
+								style="font-size: 1.05rem; color: var(--purple); font-weight: 700;">Evaluating...</span>
 						</div>
 
 						<div class="mut-grid">
@@ -838,23 +885,28 @@
 
 						<div class="output-banner" style="margin-top: 12px; padding: 12px 16px;">
 							<span class="banner-label">Relative Phrase:</span>
-							<span id="outputRelative" style="font-size: 1.1rem; color: #34d399; font-weight: 700;">Evaluating...</span>
+							<span id="outputRelative"
+								style="font-size: 1.1rem; color: #34d399; font-weight: 700;">Evaluating...</span>
 						</div>
 
 						<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px;">
-							<div style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
+							<div
+								style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
 								<div style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Days</div>
 								<div id="valDays" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">0</div>
 							</div>
-							<div style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
+							<div
+								style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
 								<div style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Hours</div>
 								<div id="valHours" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">0</div>
 							</div>
-							<div style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
+							<div
+								style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
 								<div style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Minutes</div>
 								<div id="valMinutes" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">0</div>
 							</div>
-							<div style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
+							<div
+								style="background: var(--subcard-bg); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid var(--panel-border);">
 								<div style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase;">Weeks</div>
 								<div id="valWeeks" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">0</div>
 							</div>
@@ -893,9 +945,12 @@
 					</div>
 
 					<div class="grid-3" style="margin-top: 14px;">
-						<div style="background: var(--subcard-bg); padding: 14px; border-radius: 10px; border: 1px solid var(--panel-border);">
-							<div style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Coordinates</div>
-							<div style="font-family: 'Fira Code', monospace; font-size: 0.95rem; color: var(--text-main); margin: 4px 0;">
+						<div
+							style="background: var(--subcard-bg); padding: 14px; border-radius: 10px; border: 1px solid var(--panel-border);">
+							<div style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">
+								Coordinates</div>
+							<div
+								style="font-family: 'Fira Code', monospace; font-size: 0.95rem; color: var(--text-main); margin: 4px 0;">
 								<span id="geoLat">-33.8688</span>°, <span id="geoLng">151.2093</span>°
 							</div>
 							<div style="font-size: 0.75rem; color: var(--text-muted);">
@@ -903,19 +958,25 @@
 							</div>
 						</div>
 
-						<div style="background: var(--subcard-bg); padding: 14px; border-radius: 10px; border: 1px solid var(--panel-border);">
-							<div style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Location & Timezone</div>
+						<div
+							style="background: var(--subcard-bg); padding: 14px; border-radius: 10px; border: 1px solid var(--panel-border);">
+							<div style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">
+								Location & Timezone</div>
 							<div id="geoLocationName" style="font-weight: 700; font-size: 1rem; color: var(--accent); margin: 4px 0;">
 								Sydney, Australia
 							</div>
-							<div id="geoTimezone" style="font-size: 0.75rem; color: var(--text-muted); font-family: 'Fira Code', monospace;">
+							<div id="geoTimezone"
+								style="font-size: 0.75rem; color: var(--text-muted); font-family: 'Fira Code', monospace;">
 								Australia/Sydney
 							</div>
 						</div>
 
-						<div style="background: var(--subcard-bg); padding: 14px; border-radius: 10px; border: 1px solid var(--panel-border);">
+						<div
+							style="background: var(--subcard-bg); padding: 14px; border-radius: 10px; border: 1px solid var(--panel-border);">
 							<div style="display: flex; justify-content: space-between; align-items: center;">
-								<span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Solar Time Offset</span>
+								<span
+									style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700;">Solar
+									Time Offset</span>
 								<span style="font-size: 0.65rem; color: #34d399;">Δλ × 4m</span>
 							</div>
 							<div id="geoSolarOffset" style="font-weight: 700; font-size: 1.15rem; color: #fbbf24; margin: 4px 0;">
@@ -959,11 +1020,13 @@
 							<div>
 								<div class="ephem-top">
 									<span class="ephem-title" style="color: #fbbf24;">☀️ Solar State</span>
-									<span id="badgeSolarState" class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">Daylight</span>
+									<span id="badgeSolarState" class="badge"
+										style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">Daylight</span>
 								</div>
 								<div id="valSolarPhase" class="ephem-val">Daylight</div>
 								<div class="ephem-sub">
-									<span id="valSolarSunrise" style="color: var(--text-main); font-weight: 600;">06:12</span> → <span id="valSolarSunset" style="color: var(--text-main); font-weight: 600;">18:04</span>
+									<span id="valSolarSunrise" style="color: var(--text-main); font-weight: 600;">06:12</span> → <span
+										id="valSolarSunset" style="color: var(--text-main); font-weight: 600;">18:04</span>
 								</div>
 							</div>
 							<div id="valDaylightLen" class="ephem-footer">Daylight: 11.8 hrs</div>
@@ -1012,10 +1075,14 @@
 
 					<div class="output-banner" style="margin-top: 0; margin-bottom: 12px; padding: 14px 18px;">
 						<div>
-							<div id="selectedTermLabel" style="font-family: 'Fira Code', monospace; font-size: 0.82rem; color: var(--purple);">t.term.lunar.phase</div>
-							<div id="selectedTermDesc" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">Human-readable Lunar Phase name</div>
+							<div id="selectedTermLabel"
+								style="font-family: 'Fira Code', monospace; font-size: 0.82rem; color: var(--purple);">
+								t.term.lunar.phase</div>
+							<div id="selectedTermDesc" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 2px;">
+								Human-readable Lunar Phase name</div>
 						</div>
-						<span id="selectedTermValue" style="font-size: 1.25rem; font-weight: 700; color: var(--text-main);">Evaluating...</span>
+						<span id="selectedTermValue"
+							style="font-size: 1.25rem; font-weight: 700; color: var(--text-main);">Evaluating...</span>
 					</div>
 
 					<div class="term-grid" id="termChipsContainer">
@@ -1310,7 +1377,7 @@ console.log('Relative Phrase:', t.since(target, { unit: 'days', numeric: 'auto' 
 					if (t.term?.solar?.noon) {
 						document.getElementById('valSolarNoon').textContent = t.term.solar.noon.format('{hh}:{mi}');
 					}
-				} catch {}
+				} catch { }
 
 				// Ephemeris Cards
 				try {
@@ -1502,29 +1569,37 @@ console.log('Inspected (${selectedTermProp}):', ${selectedTermProp});`;
 			}
 		});
 
-		// Theme Management & VitePress Sync
+		// Theme Management & Cross-Frame Sync
 		const btnThemeToggle = document.getElementById('btnThemeToggle');
 		const themeIcon = document.getElementById('themeIcon');
+		let themeChannel;
+		try {
+			themeChannel = new BroadcastChannel('tempo_theme_sync');
+			themeChannel.onmessage = (e) => {
+				if (e.data && (e.data.theme === 'light' || e.data.theme === 'dark'))
+					setTheme(e.data.theme, false);
+			};
+		} catch { }
 
 		function setTheme(theme, save = true) {
 			document.documentElement.setAttribute('data-theme', theme);
 			if (themeIcon) themeIcon.textContent = theme === 'light' ? '☀️' : '🌙';
 			if (save) {
-				try { localStorage.setItem('tempo-theme', theme); } catch {}
+				try { localStorage.setItem('tempo-theme', theme); } catch { }
+				try { themeChannel?.postMessage({ theme }); } catch { }
 			}
 		}
 
 		function initTheme() {
 			let saved = null;
-			try { saved = localStorage.getItem('tempo-theme'); } catch {}
+			try { saved = localStorage.getItem('tempo-theme'); } catch { }
 
 			if (!saved) {
 				try {
-					if (window.parent && window.parent.document && window.parent.document.documentElement) {
-						const isParentDark = window.parent.document.documentElement.classList.contains('dark');
-						saved = isParentDark ? 'dark' : 'light';
-					}
-				} catch {}
+					const parentDocEl = window.parent?.document?.documentElement;
+					if (parentDocEl)
+						saved = parentDocEl.classList.contains('dark') ? 'dark' : 'light';
+				} catch { }
 			}
 
 			if (!saved) {
@@ -1535,14 +1610,21 @@ console.log('Inspected (${selectedTermProp}):', ${selectedTermProp});`;
 
 			// Watch parent VitePress theme changes if running in iframe
 			try {
-				if (window.parent && window.parent.document && window.parent.document.documentElement) {
+				const parentDocEl = window.parent?.document?.documentElement;
+				if (parentDocEl) {
 					const observer = new MutationObserver(() => {
-						const isParentDark = window.parent.document.documentElement.classList.contains('dark');
+						const isParentDark = parentDocEl.classList.contains('dark');
 						setTheme(isParentDark ? 'dark' : 'light', true);
 					});
-					observer.observe(window.parent.document.documentElement, { attributes: true, attributeFilter: ['class'] });
+					observer.observe(parentDocEl, { attributes: true, attributeFilter: ['class'] });
 				}
-			} catch {}
+			} catch { }
+
+			// Cross-frame/window storage sync
+			window.addEventListener('storage', (e) => {
+				if (e.key === 'tempo-theme' && e.newValue)
+					setTheme(e.newValue, false);
+			});
 		}
 
 		btnThemeToggle?.addEventListener('click', () => {
@@ -1556,7 +1638,7 @@ console.log('Inspected (${selectedTermProp}):', ${selectedTermProp});`;
 		// Init
 		tzLabel.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		statusDot.classList.remove('loading');
-		statusText.textContent = 'Tempo 4.3.0 + Plugins ready';
+		statusText.textContent = `Tempo ${Tempo.version ?? '4.x'} + Plugins ready`;
 		evaluate();
 	</script>
 </body>

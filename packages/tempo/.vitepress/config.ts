@@ -32,7 +32,6 @@ export default withMermaid(defineConfig({
       { text: 'REPL', link: '/repl/index.html', target: '_self' },
       { text: 'API Reference', link: '/api/index.html', target: '_self' },
       { text: 'Library API', link: '/api/library/index.html', target: '_self' },
-      { text: 'Releases', link: '/doc/8-project-and-support/releases/' },
       { text: 'Functions', link: 'https://magmacomputing.github.io/magma/functions/' }
     ],
     sidebar: {
