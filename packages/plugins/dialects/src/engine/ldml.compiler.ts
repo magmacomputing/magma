@@ -366,6 +366,7 @@ export function compileLdmlParser(mask: string): RegExp {
 	return rx;
 }
 
+/** Resolves a localized full or abbreviated English month name to its month number. */
 function resolveMonth(str: string): number | undefined {
 	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 	if (enums.MONTH && (enums.MONTH as any)[cap]) return (enums.MONTH as any)[cap];

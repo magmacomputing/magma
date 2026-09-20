@@ -43,6 +43,7 @@ function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Inte
 
 const BRACED_CACHE = new Map<string, RegExp>();
 
+/** Compiles a native braced format mask into a cached parsing expression. */
 function compileBracedPattern(fmt: string): RegExp {
 	let cached = BRACED_CACHE.get(fmt);
 	if (cached) return cached;
@@ -144,6 +145,7 @@ function compileBracedPattern(fmt: string): RegExp {
 	return reg;
 }
 
+/** Resolves a localized full or abbreviated English month name to its month number. */
 function resolveMonthNum(str: string): number | undefined {
 	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 	if (enums.MONTH && (enums.MONTH as any)[cap]) return (enums.MONTH as any)[cap];
@@ -153,6 +155,7 @@ function resolveMonthNum(str: string): number | undefined {
 	return undefined;
 }
 
+/** Parses input with a native braced mask, using the supplied date and calendar defaults. */
 function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDateTime, tz: string, cal: string): Temporal.ZonedDateTime | undefined {
 	const rx = compileBracedPattern(fmt);
 	const match = rx.exec(input);
@@ -231,6 +234,7 @@ function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDate
 	}
 }
 
+/** Delegates parsing of an external format mask to the registered dialect plugin. */
 function parseDialectFormat(input: string, fmt: string, state: any, today: Temporal.ZonedDateTime, tz: string, cal: string, dialectOpt?: any): Temporal.ZonedDateTime | undefined {
 	const dialect = dialectOpt ?? evaluate(state.options?.dialect ?? state.config?.dialect);
 	const TempoClass = getRuntime().modules['Tempo'];
