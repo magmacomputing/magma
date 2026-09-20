@@ -3,6 +3,7 @@ import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix } from '#library/number.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish } from '#library/assertion.library.js';
+import { evaluate } from '#library/evaluation.library.js';
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
@@ -33,6 +34,9 @@ declare module '../tempo.class.js' {
 		/** applies a format to the instance (zero-argument — returns a pre-built format proxy). */	format(): string;
 	}
 }
+
+const REGEX_DIGITS = /^\d+$/;
+const REGEX_SIGNED_DIGITS = /^-?\d+$/;
 
 /**
  * Resolves dot-delimited namespace tokens (e.g. '{geo.city}', '{custom.tag.name}')
@@ -166,8 +170,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	if (!isZonedDateTime(zdt)) return '';
 
-	const dialect = options?.dialect ?? config?.dialect;
-	if (dialect && isString(fmt)) {
+	const isNamedFormat = isString(fmt) && formats && hasOwn(formats, fmt);
+	const dialect = evaluate(options?.dialect ?? config?.dialect);
+	if (dialect && isString(fmt) && !isNamedFormat) {
 		const TempoClass = getRuntime().modules['Tempo'] ?? (obj as any)?.constructor;
 		const dialectsRegistry = config?.registry?.dialects
 			?? (getRuntime() as any).dialects
@@ -399,7 +404,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					break;
 				}
 				case 'raw':
-					if (/^[0-9]+$/.test(String(res)))
+					if (REGEX_DIGITS.test(String(res)))
 						res = BigInt(String(res)).toString();
 					break;
 				case 'dots': {
@@ -515,13 +520,17 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					}
 					break;
 				default: {
-					if (/^\d+$/.test(mod)) {
+					if (REGEX_DIGITS.test(mod)) {
 						const width = parseInt(mod, 10);
 						const strVal = String(res);
-						if (width > 0 && /^-?\d+$/.test(strVal)) {
-							res = (strVal.startsWith('-'))
-								? '-' + strVal.slice(1).padStart(Math.max(1, width - 1), '0')
-								: strVal.padStart(width, '0');
+						if (REGEX_SIGNED_DIGITS.test(strVal)) {
+							if (token === 'ff') {
+								res = width > 0 ? strVal.slice(0, width) : strVal;
+							} else if (width > 0) {
+								res = (strVal.startsWith('-'))
+									? '-' + strVal.slice(1).padStart(Math.max(1, width - 1), '0')
+									: strVal.padStart(width, '0');
+							}
 						}
 					}
 					break;

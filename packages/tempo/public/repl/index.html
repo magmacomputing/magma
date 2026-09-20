@@ -615,7 +615,7 @@ console.log('Dialect namespace LDML:', t.dialects.ldml('yyyy/MM/dd HH:mm'));
 
 // 2. POSIX strftime
 console.log('strftime .strftime():', t.dialects.strftime('%Y-%m-%d %H:%M:%S'));
-console.log('strftime auto-detect:', dt => t.format('%A, %B %d %Y (%I:%M %p)', { dialect: DIALECT.Strftime }));
+console.log('strftime auto-detect:', t.format('%A, %B %d %Y (%I:%M %p)', { dialect: DIALECT.Strftime }));
 
 // 3. Dialect Parsing via Tempo.fromFormat()
 const parsed = Tempo.fromFormat('24/10/2026 15:30', 'dd/MM/yyyy HH:mm');

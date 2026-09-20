@@ -36,7 +36,6 @@
 	},
 	"files": [
 		"dist",
-		"src",
 		"README.md",
 		"CHANGELOG.md",
 		"LICENSE"
@@ -53,7 +52,7 @@
 		"@magmacomputing/tempo": "^4.4.0"
 	},
 	"devDependencies": {
-		"@magmacomputing/tempo": "^4.0.0",
+		"@magmacomputing/tempo": "^4.4.0",
 		"vitest": "^4.1.10"
 	},
 	"exports": {

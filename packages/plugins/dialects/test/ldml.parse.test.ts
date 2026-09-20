@@ -34,6 +34,35 @@ describe('Unicode LDML Parsing', () => {
 		expect(t.dd).toBe(24);
 	});
 
+	it('parses dates with weekday names and abbreviations', () => {
+		const t1 = Tempo.fromFormat('Saturday, October 24, 2026', 'EEEE, MMMM d, yyyy');
+		expect(t1.isValid).toBe(true);
+		expect(t1.yy).toBe(2026);
+		expect(t1.mm).toBe(10);
+		expect(t1.dd).toBe(24);
+
+		const t2 = Tempo.fromFormat('Sat, 24 Oct 2026', 'EEE, d MMM yyyy');
+		expect(t2.isValid).toBe(true);
+		expect(t2.yy).toBe(2026);
+		expect(t2.mm).toBe(10);
+		expect(t2.dd).toBe(24);
+	});
+
+	it('returns invalid when LDML textual month is unrecognized', () => {
+		const t = Tempo.fromFormat('24 NotAMonth 2026', 'dd MMMM yyyy', { error: 'catch' });
+		expect(t.isValid).toBe(false);
+	});
+
+	it('parses 1-24 hour tokens (k, kk) and normalizes 24 to 0', () => {
+		const t1 = Tempo.fromFormat('2026-10-24 24:00', 'yyyy-MM-dd kk:mm');
+		expect(t1.isValid).toBe(true);
+		expect(t1.hh).toBe(0);
+
+		const t2 = Tempo.fromFormat('2026-10-24 12:00', 'yyyy-MM-dd k:mm');
+		expect(t2.isValid).toBe(true);
+		expect(t2.hh).toBe(12);
+	});
+
 	it('matches first candidate format across array of masks', () => {
 		const masks = ['yyyy-MM-dd', 'dd/MM/yyyy', 'MM/dd/yyyy'];
 		const t1 = Tempo.dialects.fromFormats('2026-10-24', masks);

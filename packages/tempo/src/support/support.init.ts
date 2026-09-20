@@ -513,7 +513,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'dialect':
-				setProperty(state.config, 'dialect', String(arg.value));
+				if (isString(arg.value) || isFunction(arg.value)) {
+					setProperty(state.config, 'dialect', arg.value);
+				} else {
+					logError(`[Tempo#extend] Invalid dialect option: ${String(arg.value)}. Expected a string or function.`, state.config);
+				}
 				break;
 
 			case 'pluginOptions':

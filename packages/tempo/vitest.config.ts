@@ -71,6 +71,10 @@ export default defineConfig({
 			{ find: /^@magmacomputing\/tempo\/core$/, replacement: resolve(__dirname, './dist/core.index.js') },
 			{ find: /^@magmacomputing\/tempo\/config$/, replacement: resolve(__dirname, './dist/config/config.index.js') },
 			{ find: /^@magmacomputing\/tempo\/library$/, replacement: resolve(__dirname, './dist/library.index.js') },
+			{ find: /^@magmacomputing\/tempo\/(parse|format|mutate|duration)$/, replacement: resolve(__dirname, './dist/module/module.$1.js') },
+			{ find: /^@magmacomputing\/tempo\/module\/(.*)$/, replacement: resolve(__dirname, './dist/module/$1.js') },
+			{ find: /^@magmacomputing\/tempo\/support$/, replacement: resolve(__dirname, './dist/support/support.index.js') },
+			{ find: /^@magmacomputing\/tempo\/enums$/, replacement: resolve(__dirname, './dist/support/support.enum.js') },
 			{ find: /^@magmacomputing\/tempo$/, replacement: resolve(__dirname, './dist/tempo.index.js') },
 		] : [
 			{ find: /^@magmacomputing\/tempo\/plugin$/, replacement: resolve(__dirname, './src/plugin/plugin.index.ts') },

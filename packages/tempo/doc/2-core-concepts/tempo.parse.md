@@ -99,7 +99,7 @@ new Tempo('1st day of 2026');                 // 1st day of 2026
 
 ### 🎭 Structured Mask & Wildcard Parsing (`{format: '...'}`)
 
-You can parse strictly structured templates with braced tokens and `{*} ` wildcards without crafting custom regexes:
+You can parse strictly structured templates with braced tokens and `{*}` wildcards without crafting custom regexes:
 
 ```typescript
 // Braced structured format masks

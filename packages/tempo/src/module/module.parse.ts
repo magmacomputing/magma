@@ -2,6 +2,7 @@ import '#library/temporal.polyfill.js';
 import { asType } from '#library/type.library.js';
 import { LOG } from '#library/logger.class.js';
 import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction } from '#library/assertion.library.js';
+import { evaluate } from '#library/evaluation.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
@@ -35,7 +36,10 @@ function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Inte
 	const cal = String(state.config.calendar || 'iso8601');
 	const loc = Array.isArray(state.config.locale) ? state.config.locale.join(',') : String(state.config.locale || 'en-US');
 	const sph = String(state.config.sphere || 'north');
-	return `${norm}::${dateSalt}::${tz}::${cal}::${loc}::${sph}`;
+	const formatOpt = evaluate(state.options?.format ?? state.config?.format);
+	const fmtKey = formatOpt ? asArray(formatOpt).map(String).join('|') : '';
+	const dialect = String(evaluate(state.options?.dialect ?? state.config?.dialect) ?? '');
+	return `${norm}::${dateSalt}::${tz}::${cal}::${loc}::${sph}::${fmtKey}::${dialect}`;
 }
 
 const BRACED_CACHE = new Map<string, RegExp>();
@@ -43,6 +47,13 @@ const BRACED_CACHE = new Map<string, RegExp>();
 function compileBracedPattern(fmt: string): RegExp {
 	let cached = BRACED_CACHE.get(fmt);
 	if (cached) return cached;
+
+	const groupCounts: Record<string, number> = {};
+	const group = (name: string, regex: string) => {
+		const count = (groupCounts[name] = (groupCounts[name] ?? 0) + 1);
+		const groupName = count === 1 ? name : `${name}_${count}`;
+		return `(?<${groupName}>${regex})`;
+	};
 
 	let pattern = '';
 	let i = 0;
@@ -61,50 +72,50 @@ function compileBracedPattern(fmt: string): RegExp {
 			switch (token) {
 				case 'yyyy':
 				case 'year':
-					pattern += '(?<yyyy>[+-]?\\d{4,6}|\\d{4})';
+					pattern += group('yyyy', '[+-]?\\d{4,6}|\\d{4}');
 					break;
 				case 'yy':
-					pattern += '(?<yy>\\d{2})';
+					pattern += group('yy', '\\d{2}');
 					break;
 				case 'mm':
 				case 'month':
-					pattern += '(?<mm>\\d{1,2})';
+					pattern += group('mm', '\\d{1,2}');
 					break;
 				case 'mmm':
-					pattern += '(?<mmm>[A-Za-z]{3,})';
+					pattern += group('mmm', '[A-Za-z]{3,}');
 					break;
 				case 'mon':
-					pattern += '(?<mon>[A-Za-z]+)';
+					pattern += group('mon', '[A-Za-z]+');
 					break;
 				case 'dd':
 				case 'day':
-					pattern += '(?<dd>\\d{1,2}(?:st|nd|rd|th)?)';
+					pattern += group('dd', '\\d{1,2}(?:st|nd|rd|th)?');
 					break;
 				case 'hh':
 				case 'h24':
 				case 'hour':
-					pattern += '(?<hh>\\d{1,2})';
+					pattern += group('hh', '\\d{1,2}');
 					break;
 				case 'h12':
-					pattern += '(?<h12>\\d{1,2})';
+					pattern += group('h12', '1[0-2]|0?[1-9]');
 					break;
 				case 'mi':
 				case 'min':
 				case 'minute':
-					pattern += '(?<mi>\\d{1,2})';
+					pattern += group('mi', '\\d{1,2}');
 					break;
 				case 'ss':
 				case 'sec':
 				case 'second':
-					pattern += '(?<ss>\\d{1,2})';
+					pattern += group('ss', '\\d{1,2}');
 					break;
 				case 'ms':
 				case 'millisecond':
-					pattern += '(?<ms>\\d{1,3})';
+					pattern += group('ms', '\\d{1,3}');
 					break;
 				case 'mer':
 				case 'ampm':
-					pattern += '(?<mer>[AaPp][Mm]?)';
+					pattern += group('mer', '[AaPp][Mm]?');
 					break;
 				case '*':
 				case '_':
@@ -112,8 +123,7 @@ function compileBracedPattern(fmt: string): RegExp {
 					pattern += '(?:.*?)';
 					break;
 				default:
-					pattern += `(?<${token.replace(/[^a-z0-9]/gi, '_')}>\\S+)`;
-					break;
+					throw new Error(`[Tempo] Unknown braced format token '{${rawToken}}' in format mask '${fmt}'.`);
 			}
 			i = end + 1;
 		} else {
@@ -150,61 +160,80 @@ function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDate
 	if (!match || !match.groups) return undefined;
 
 	const g = match.groups;
+	const getGroup = (name: string) => g[name] ?? Object.entries(g).find(([k]) => k === name || k.startsWith(`${name}_`))?.[1];
+
 	let year = today.year;
-	if (g.yyyy) year = parseInt(g.yyyy, 10);
-	else if (g.yy) {
-		const yy = parseInt(g.yy, 10);
+	const yyyy = getGroup('yyyy');
+	const yyVal = getGroup('yy');
+	if (yyyy) year = parseInt(yyyy, 10);
+	else if (yyVal) {
+		const yy = parseInt(yyVal, 10);
 		year = yy >= 70 ? 1900 + yy : 2000 + yy;
 	}
 
 	let month = 1;
-	if (g.mm) month = parseInt(g.mm, 10);
-	else if (g.mmm || g.mon) {
-		const mNum = resolveMonthNum(g.mmm || g.mon);
+	const mm = getGroup('mm');
+	const mmm = getGroup('mmm');
+	const mon = getGroup('mon');
+	if (mm) month = parseInt(mm, 10);
+	else if (mmm || mon) {
+		const mNum = resolveMonthNum(mmm || mon!);
 		if (mNum) month = mNum;
-	} else {
+		else return undefined;
+	} else if (!yyyy && !yyVal) {
 		month = today.month;
 	}
 
 	let day = 1;
-	if (g.dd) day = parseInt(g.dd.replace(/[^0-9]/g, ''), 10);
-	else day = today.day;
+	const dd = getGroup('dd');
+	if (dd) day = parseInt(dd.replace(/[^0-9]/g, ''), 10);
+	else if (!yyyy && !yyVal && !mm && !mmm && !mon) {
+		day = today.day;
+	}
 
 	let hour = 0;
 	let minute = 0;
 	let second = 0;
 	let millisecond = 0;
 
-	if (g.hh || g.h24) hour = parseInt(g.hh || g.h24, 10);
-	else if (g.h12) hour = parseInt(g.h12, 10);
+	const hh = getGroup('hh');
+	const h12 = getGroup('h12');
+	if (hh) hour = parseInt(hh, 10);
+	else if (h12) hour = parseInt(h12, 10);
 
-	if (g.mer) {
-		const isPm = g.mer.toLowerCase().startsWith('p');
+	const mer = getGroup('mer');
+	if (mer) {
+		const isPm = mer.toLowerCase().startsWith('p');
 		if (isPm && hour < 12) hour += 12;
 		else if (!isPm && hour === 12) hour = 0;
 	}
 
-	if (g.mi) minute = parseInt(g.mi, 10);
-	if (g.ss) second = parseInt(g.ss, 10);
-	if (g.ms) millisecond = parseInt(g.ms, 10);
-
+	const mi = getGroup('mi');
+	if (mi) minute = parseInt(mi, 10);
+	const ss = getGroup('ss');
+	if (ss) second = parseInt(ss, 10);
+	const ms = getGroup('ms');
+	if (ms) millisecond = parseInt(ms.padEnd(3, '0').slice(0, 3), 10);
 	try {
-		return Temporal.PlainDateTime.from({
-			year,
-			month,
-			day,
-			hour,
-			minute,
-			second,
-			millisecond
-		}).toZonedDateTime(tz).withCalendar(cal);
+		return Temporal.PlainDateTime.from(
+			{
+				year,
+				month,
+				day,
+				hour,
+				minute,
+				second,
+				millisecond
+			},
+			{ overflow: 'reject' }
+		).toZonedDateTime(tz).withCalendar(cal);
 	} catch (e) {
 		return undefined;
 	}
 }
 
 function parseDialectFormat(input: string, fmt: string, state: any, today: Temporal.ZonedDateTime, tz: string, cal: string): Temporal.ZonedDateTime | undefined {
-	const dialect = state.options?.dialect ?? state.config?.dialect;
+	const dialect = evaluate(state.options?.dialect ?? state.config?.dialect);
 	const TempoClass = getRuntime().modules['Tempo'];
 	const dialectsRegistry = state.config?.registry?.dialects
 		?? (getRuntime() as any).dialects
@@ -439,7 +468,7 @@ const _ParseEngine = {
 			}
 
 			// 3. Explicit Format Mask Check (Native Braced or Dialect)
-			const formatOpt = state.options?.format ?? state.config?.format;
+			const formatOpt = evaluate(state.options?.format ?? state.config?.format);
 			if (isDefined(formatOpt)) {
 				const formats = asArray(formatOpt);
 				const [tz, cal] = getTemporalIds(state.config.timeZone, state.config.calendar);
@@ -457,6 +486,8 @@ const _ParseEngine = {
 						if (formats.length === 1) throw err;
 					}
 				}
+				state.errored = true;
+				return { type: 'Void', value: undefined as any };
 			}
 
 			if (state.parse.ignorePattern) {

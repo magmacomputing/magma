@@ -41,6 +41,10 @@ import '@magmacomputing/tempo-plugin-dialects/install';
 | `'strftime'` | `DIALECT.Strftime` | `'posix'`, `'c'`, `'python'` | `%Y-%m-%d %H:%M:%S` | POSIX C / Python / SQL specifiers. |
 | `'moment'` | `DIALECT.Moment` | `'dayjs'` | `YYYY-MM-DD` | Legacy Moment.js tokens. |
 
+> [!TIP]
+> **Native Tempo Syntax is Optimal**
+> While the Dialects plugin provides seamless interoperability with legacy format masks, **native Tempo braced syntax (`{token}`) remains the most performant, lightweight, and expressive choice**. Native Tempo syntax runs in Core with zero plugin dependencies, and provides rich capabilities unavailable in external token systems—including custom Terms, dynamic dot namespaces (`{geo.city}`), localized modifiers (`{dow:locale}`, `{hh:locale:raw}`), and regional `{intl.*}` property interpolation.
+
 ---
 
 ## 🛠️ Usage Examples
@@ -66,7 +70,7 @@ t.toFormat('yyyy-MM-dd');                             // "2026-10-24"
 ```typescript
 const t = new Tempo('2026-10-24T15:30:45');
 
-// Auto-detected because mask contains '%'
+// Via Core .format() with explicit 'strftime' dialect
 t.format('%Y-%m-%d %H:%M:%S', { dialect: 'strftime' }); // "2026-10-24 15:30:45"
 t.dialects.strftime('%B %d, %Y (%A)');                  // "October 24, 2026 (Saturday)"
 ```
@@ -86,6 +90,27 @@ const t2 = Tempo.dialects.fromFormats('24/10/2026', [
 
 // Luxon migration alias
 const t3 = Tempo.fromFormat('2026-10-24 15:30', 'yyyy-MM-dd HH:mm');
+```
+
+### 4. Migration Helper (`explain`)
+
+Use `Tempo.dialects.explain()` (or instance `t.dialects.explain()`) to translate legacy masks into native Tempo `{token}` patterns with a breakdown of each mapped token to guide incremental migration:
+
+```typescript
+const result = Tempo.dialects.explain('YYYY-MM-DD HH:mm:ss', 'moment');
+
+console.log(result.pattern); 
+// => "{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}"
+
+console.log(result.tokens);
+// [
+//   { source: 'YYYY', tempo: '{yyyy}', desc: '4-digit year' },
+//   { source: 'MM', tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
+//   { source: 'DD', tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
+//   { source: 'HH', tempo: '{hh}', desc: '24-hour clock (00-23)' },
+//   { source: 'mm', tempo: '{mi}', desc: 'Zero-padded minute (00-59)' },
+//   { source: 'ss', tempo: '{ss}', desc: 'Zero-padded second (00-59)' }
+// ]
 ```
 
 ---

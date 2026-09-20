@@ -838,9 +838,9 @@
 						<button class="chip-btn" data-tmpl="{dd}/{mm}/{yyyy}">EU Standard</button>
 						<button class="chip-btn" data-tmpl="{mm}/{dd}/{yyyy}">US Standard</button>
 						<button class="chip-btn" data-tmpl="{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss} {tz}">Timestamp</button>
-						<button class="chip-btn" data-tmpl="yyyy-MM-dd HH:mm:ss"
+						<button class="chip-btn" data-tmpl="yyyy-MM-dd HH:mm:ss" data-dialect="ldml"
 							style="border-color: rgba(192, 132, 252, 0.4);">Luxon / LDML</button>
-						<button class="chip-btn" data-tmpl="%Y-%m-%d %H:%M:%S" style="border-color: rgba(56, 189, 248, 0.4);">POSIX
+						<button class="chip-btn" data-tmpl="%Y-%m-%d %H:%M:%S" data-dialect="strftime" style="border-color: rgba(56, 189, 248, 0.4);">POSIX
 							strftime</button>
 					</div>
 				</section>
@@ -1130,6 +1130,7 @@
 		import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
 		import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
 		import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+		import { DialectsPlugin, DIALECT } from '@magmacomputing/tempo-plugin-dialects';
 
 		// 1. Initialize Tempo with event registry aliases
 		Tempo.init({
@@ -1146,12 +1147,14 @@
 		if (!Tempo.geo) Tempo.use(GeoPlugin);
 		Tempo.use(AstroPlugin);
 		Tempo.use(CelestialPlugin);
+		Tempo.use(DialectsPlugin);
 
 		window.Tempo = Tempo;
 		window.Temporal = Temporal;
 
 		// App State
 		let activeMode = 'core'; // 'core' | 'plugins'
+		let activeFormatDialect = undefined; // 'ldml' | 'strftime' | undefined
 		let mutationChain = []; // sequential list of { method, payload, label }
 		let selectedTermProp = 't.term.lunar.phase';
 
@@ -1287,7 +1290,9 @@
 				// 1. Format String
 				try {
 					const fmt = inputFormat.value;
-					outputFormatted.textContent = t.format(fmt);
+					let dialect = activeFormatDialect;
+					if (!dialect && fmt.includes('%')) dialect = DIALECT.Strftime;
+					outputFormatted.textContent = dialect ? t.format(fmt, { dialect }) : t.format(fmt);
 					outputFormatted.style.color = '#34d399';
 				} catch (err) {
 					outputFormatted.textContent = err.message;
@@ -1461,7 +1466,10 @@ console.log('Inspected (${selectedTermProp}):', ${selectedTermProp});`;
 
 		// Event Listeners
 		inputBase.addEventListener('input', evaluate);
-		inputFormat.addEventListener('input', evaluate);
+		inputFormat.addEventListener('input', () => {
+			activeFormatDialect = undefined;
+			evaluate();
+		});
 		inputTarget.addEventListener('input', evaluate);
 
 		// Anchor Presets
@@ -1486,6 +1494,7 @@ console.log('Inspected (${selectedTermProp}):', ${selectedTermProp});`;
 		document.querySelectorAll('[data-tmpl]').forEach(btn => {
 			btn.addEventListener('click', () => {
 				inputFormat.value = btn.dataset.tmpl;
+				activeFormatDialect = btn.dataset.dialect || undefined;
 				evaluate();
 			});
 		});

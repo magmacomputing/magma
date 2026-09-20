@@ -23,6 +23,7 @@ export async function catalogSync(_args) {
 
 	const catalogMap = new Map();
 	catalog.forEach(p => catalogMap.set(p.id, p));
+	const localPluginIds = new Set();
 
 	function processPlugin(pluginDir, isExternal) {
 		const pkgPath = path.join(pluginDir, 'package.json');
@@ -31,6 +32,8 @@ export async function catalogSync(_args) {
 		const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
 		let id = path.basename(pluginDir).replace(/^\./, '_').replace(/^tempo-plugin-/, '');
+		if (isExternal && localPluginIds.has(id)) return;
+		if (!isExternal) localPluginIds.add(id);
 
 		const humanName = id.charAt(0).toUpperCase() + id.slice(1) + ' Plugin';
 		const entry = catalogMap.get(id) || { id };

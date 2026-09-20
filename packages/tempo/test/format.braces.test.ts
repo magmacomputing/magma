@@ -52,6 +52,45 @@ describe('Braced Format Mask Parsing & {*} Wildcards', () => {
 		expect(t2.mm).toBe(10);
 	});
 
+	it('supports dynamic function for format option', () => {
+		const getFormat = () => '{dd}.{mm}.{yyyy}';
+		const t = new Tempo('24.10.2026', { format: getFormat });
+		expect(t.isValid).toBe(true);
+		expect(t.yy).toBe(2026);
+		expect(t.mm).toBe(10);
+		expect(t.dd).toBe(24);
+	});
+
+	it('defaults day to 1 when day token is omitted from mask', () => {
+		const t = new Tempo('2026-02', { format: '{yyyy}-{mm}' });
+		expect(t.isValid).toBe(true);
+		expect(t.yy).toBe(2026);
+		expect(t.mm).toBe(2);
+		expect(t.dd).toBe(1);
+	});
+
+	it('throws actionable error on unknown braced tokens in mask', () => {
+		expect(() => {
+			new Tempo('2026-10-24', { format: '{unknownToken}-{mm}-{dd}', error: 'throw' }).toDateTime();
+		}).toThrow(/Unknown braced format token '{unknownToken}'/);
+	});
+
+	it('rejects input and does not fall through to general layout parser when format mask does not match', () => {
+		// '2026-10-24' would normally parse via ISO layout, but format option restricts parsing strictly to '{dd}/{mm}/{yyyy}'
+		const t = new Tempo('2026-10-24', { format: '{dd}/{mm}/{yyyy}', error: 'catch' });
+		expect(t.isValid).toBe(false);
+	});
+
+	it('returns invalid when textual month fails to resolve', () => {
+		const t = new Tempo('24 FooMonth 2026', { format: '{dd} {mmm} {yyyy}', error: 'catch' });
+		expect(t.isValid).toBe(false);
+	});
+
+	it('rejects out-of-range dates with overflow reject', () => {
+		const t = new Tempo('2026-02-31', { format: '{yyyy}-{mm}-{dd}', error: 'catch' });
+		expect(t.isValid).toBe(false);
+	});
+
 	it('throws actionable error when unbraced mask is passed without dialect plugin', () => {
 		expect(() => {
 			new Tempo('non-iso-mask-sample', { format: 'yyyy-MM-dd', error: 'throw' });

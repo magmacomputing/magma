@@ -4,11 +4,13 @@ import { ParseModule } from '@magmacomputing/tempo/parse';
 import { DialectsPlugin, DIALECT } from '../src/index.js';
 
 describe('Dialects Core Modularity & Guardrails', () => {
-	it('registers on Tempo Core and executes dialect formatting when FormatModule is loaded', () => {
+	beforeAll(() => {
 		Tempo.use(FormatModule);
 		Tempo.use(ParseModule);
 		Tempo.use(DialectsPlugin);
+	});
 
+	it('registers on Tempo Core and executes dialect formatting when FormatModule is loaded', () => {
 		const t = new Tempo('2026-10-24T15:30:45');
 		expect(t.format('yyyy-MM-dd HH:mm:ss', { dialect: DIALECT.Ldml })).toBe('2026-10-24 15:30:45');
 		expect(t.toFormat('yyyy-MM-dd')).toBe('2026-10-24');
@@ -22,5 +24,17 @@ describe('Dialects Core Modularity & Guardrails', () => {
 		expect(t.yy).toBe(2026);
 		expect(t.mm).toBe(10);
 		expect(t.dd).toBe(24);
+	});
+
+	it('supports dynamic function for dialect option in formatting and parsing', () => {
+		const getDialect = () => DIALECT.Strftime;
+		const t = new Tempo('2026-10-24T15:30:45');
+		expect(t.format('%Y/%m/%d', { dialect: getDialect })).toBe('2026/10/24');
+
+		const parsed = Tempo.dialects.parse('2026/10/24', '%Y/%m/%d', getDialect);
+		expect(parsed.isValid).toBe(true);
+		expect(parsed.yy).toBe(2026);
+		expect(parsed.mm).toBe(10);
+		expect(parsed.dd).toBe(24);
 	});
 });

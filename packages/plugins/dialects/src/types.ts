@@ -1,4 +1,19 @@
 import type { Tempo } from '@magmacomputing/tempo';
+import type { Dialect } from './constants.js';
+
+export interface ExplainedToken {
+	readonly source: string;
+	readonly tempo: string;
+	readonly desc: string;
+}
+
+export interface ExplainResult {
+	readonly dialect: Dialect;
+	readonly source: string;
+	readonly pattern: string;
+	readonly tokens: readonly ExplainedToken[];
+	toString(): string;
+}
 
 export interface DialectsInstanceNamespace {
 	/**
@@ -13,17 +28,29 @@ export interface DialectsInstanceNamespace {
 	 * Formats this instance using a specified dialect mask.
 	 */
 	format(mask: string, dialect?: string): string;
+	/**
+	 * Explains an external dialect mask, translating it into native Tempo {token} syntax
+	 * with detailed token mappings to guide incremental migration.
+	 */
+	explain(mask: string, dialect?: string): ExplainResult;
 }
 
 export interface DialectsStaticNamespace {
 	/**
 	 * Parses a date string using a format mask and dialect.
 	 */
-	parse(input: string, mask: string, dialect?: string): Tempo;
+	parse(input: string, mask: string, dialect?: string, options?: Tempo.Options): Tempo;
+	parse(input: string, mask: string, options?: Tempo.Options): Tempo;
 	/**
 	 * Parses a date string trying multiple candidate masks until one matches.
 	 */
-	fromFormats(input: string, masks: string[], dialect?: string): Tempo;
+	fromFormats(input: string, masks: string[], dialect?: string, options?: Tempo.Options): Tempo;
+	fromFormats(input: string, masks: string[], options?: Tempo.Options): Tempo;
+	/**
+	 * Explains an external dialect mask, translating it into native Tempo {token} syntax
+	 * with detailed token mappings to guide incremental migration.
+	 */
+	explain(mask: string, dialect?: string): ExplainResult;
 }
 
 declare module '@magmacomputing/tempo' {

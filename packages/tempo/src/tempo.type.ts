@@ -396,8 +396,8 @@ export namespace Internal {
 		/** Precision to measure timestamps alias */						timestamp?: TimeStamp | undefined;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE | undefined;
 		/** regional date-parsing configuration */							monthDay?: MonthDay | boolean | undefined;
-		/** Format mask or array of format masks for parsing / formatting */ format?: string | readonly string[] | undefined;
-		/** Format dialect (e.g. 'ldml', 'strftime', 'moment') */ dialect?: string | undefined;
+		/** Format mask, array of format masks, or dynamic mask resolver */ format?: Evaluable<string | readonly string[]> | undefined;
+		/** Format dialect or dynamic dialect resolver (e.g. 'ldml', 'strftime', 'moment') */ dialect?: Evaluable<string> | undefined;
 		/** custom data augmentation registries */							registry?: {
 		/** Format string templates */														formats?: Property<any>;
 		/** Dialect formatting/parsing engines */									dialects?: Record<string, any>;

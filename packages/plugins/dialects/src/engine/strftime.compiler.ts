@@ -196,6 +196,19 @@ export function compileStrftimeParser(mask: string): RegExp {
 			case 'P':
 				pattern += '(?<mer>[AaPp][Mm]?)';
 				break;
+			case 'A':
+				pattern += '(?<weekday_name>[A-Za-z]+)';
+				break;
+			case 'a':
+				pattern += '(?<weekday_abbr>[A-Za-z]{3,})';
+				break;
+			case 'w':
+			case 'u':
+				pattern += '(?<weekday_num>\\d{1})';
+				break;
+			case 'j':
+				pattern += '(?<day_of_year>\\d{1,3})';
+				break;
 			case 'F':
 				pattern += '(?<yyyy>\\d{4})-(?<mm>\\d{2})-(?<dd>\\d{2})';
 				break;
@@ -261,6 +274,7 @@ export function parseStrftime(
 	else if (g.month_name || g.month_abbr) {
 		const m = resolveMonth(g.month_name || g.month_abbr);
 		if (m) month = m;
+		else return undefined;
 	} else if (!g.yyyy && !g.yy) {
 		month = today.month;
 	}
@@ -275,6 +289,7 @@ export function parseStrftime(
 	let minute = 0;
 	let second = 0;
 	let millisecond = 0;
+	let microsecond = 0;
 
 	if (g.hh) hour = parseInt(g.hh, 10);
 	else if (g.h12) hour = parseInt(g.h12, 10);
@@ -288,19 +303,25 @@ export function parseStrftime(
 	if (g.mi) minute = parseInt(g.mi, 10);
 	if (g.ss) second = parseInt(g.ss, 10);
 	if (g.us) {
-		millisecond = Math.floor(parseInt(g.us.padEnd(6, '0').slice(0, 6), 10) / 1000);
+		const padded = g.us.padEnd(6, '0').slice(0, 6);
+		millisecond = parseInt(padded.slice(0, 3), 10);
+		microsecond = parseInt(padded.slice(3, 6), 10);
 	}
 
 	try {
-		return Temporal.PlainDateTime.from({
-			year,
-			month,
-			day,
-			hour,
-			minute,
-			second,
-			millisecond,
-		}).toZonedDateTime(tz).withCalendar(cal);
+		return Temporal.PlainDateTime.from(
+			{
+				year,
+				month,
+				day,
+				hour,
+				minute,
+				second,
+				millisecond,
+				microsecond,
+			},
+			{ overflow: 'reject' }
+		).toZonedDateTime(tz).withCalendar(cal);
 	} catch (e) {
 		return undefined;
 	}

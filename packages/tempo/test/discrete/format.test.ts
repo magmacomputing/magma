@@ -88,6 +88,15 @@ describe('Tempo.format() refinements', () => {
       expect(tPM.format('{h12}:{mi}:{ss}.{ff}')).toBe('10:30:45.000000000pm');
     })
 
+    it('slices fractional seconds with precision modifiers on {ff:N}', () => {
+      const tFrac = new Tempo('2026-10-24T15:30:45.789123456Z');
+      expect(tFrac.format('{ss}.{ff:0}')).toBe('45.789123456');
+      expect(tFrac.format('{ss}.{ff:1}')).toBe('45.7');
+      expect(tFrac.format('{ss}.{ff:2}')).toBe('45.78');
+      expect(tFrac.format('{ss}.{ff:3}')).toBe('45.789');
+      expect(tFrac.format('{ss}.{ff:6}')).toBe('45.789123');
+    })
+
     it('does not add am/pm if :raw modifier is used on {h12}', () => {
       expect(tAM.format('{h12:raw}:{mi}')).toBe('10:30');
       expect(tPM.format('{h12:raw}:{mi}')).toBe('10:30');

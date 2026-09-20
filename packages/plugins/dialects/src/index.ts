@@ -6,6 +6,7 @@ import { DIALECT, DIALECT_ALIAS, normalizeDialect, type Dialect, type DialectAli
 import { formatWithDialect, parseWithDialect } from './engine/dialect.registry.js';
 import { formatLdml, parseLdml } from './engine/ldml.compiler.js';
 import { formatStrftime, parseStrftime } from './engine/strftime.compiler.js';
+import { explain, type ExplainResult, type ExplainedToken } from './engine/explain.js';
 import { attachDialectShims } from './shims/luxon.shim.js';
 import type { DialectsInstanceNamespace, DialectsStaticNamespace } from './types.js';
 
@@ -19,9 +20,10 @@ export {
 	parseLdml,
 	formatStrftime,
 	parseStrftime,
+	explain,
 };
 
-export type { Dialect, DialectAlias, DialectsInstanceNamespace, DialectsStaticNamespace };
+export type { Dialect, DialectAlias, DialectsInstanceNamespace, DialectsStaticNamespace, ExplainResult, ExplainedToken };
 
 /**
  * ## DialectsPlugin
@@ -45,17 +47,24 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 		// 2. Static tools on Tempo.dialects
 		if (!Object.hasOwn(installedClass, 'dialects')) {
 			const staticNamespace: DialectsStaticNamespace = {
-				parse: (input: string, mask: string, dialect?: string): Tempo => {
+				parse: (input: string, mask: string, dialectOrOptions?: string | any, options?: any): Tempo => {
+					const opts = typeof dialectOrOptions === 'object' && dialectOrOptions !== null ? dialectOrOptions : { dialect: dialectOrOptions, ...options };
 					return (installedClass as any).from(input, {
+						...opts,
 						format: mask,
-						dialect: dialect ?? DIALECT.Ldml,
+						dialect: opts.dialect ?? DIALECT.Ldml,
 					});
 				},
-				fromFormats: (input: string, masks: string[], dialect?: string): Tempo => {
+				fromFormats: (input: string, masks: string[], dialectOrOptions?: string | any, options?: any): Tempo => {
+					const opts = typeof dialectOrOptions === 'object' && dialectOrOptions !== null ? dialectOrOptions : { dialect: dialectOrOptions, ...options };
 					return (installedClass as any).from(input, {
+						...opts,
 						format: masks,
-						dialect: dialect ?? DIALECT.Ldml,
+						dialect: opts.dialect ?? DIALECT.Ldml,
 					});
+				},
+				explain: (mask: string, dialect?: string): ExplainResult => {
+					return explain(mask, dialect);
 				},
 			};
 
@@ -99,6 +108,9 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 								...self.config,
 								dialect,
 							});
+						},
+						explain: (mask: string, dialect?: string): ExplainResult => {
+							return explain(mask, dialect);
 						},
 					};
 				},

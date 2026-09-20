@@ -9,16 +9,21 @@ Ensure the plugin's `package.json` contains the correct community configuration:
 - **Version**: Set to `"0.1.0"` for the initial bootstrap release (allowing the official `1.0.0` GA release to be published via CI with full Sigstore provenance).
 - **License**: Must strictly be `"MIT"`.
 - **Type**: Set `"type": "module"`.
-- **Files**: Include the published files array:
+- **Files**: Include the published files array (omit `"src"` as `"dist"` contains all compiled JavaScript bundles and TypeScript `.d.ts` type definitions):
   ```json
   "files": [
     "dist",
-    "src",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
   ]
   ```
+  > [!NOTE]
+  > **Do not include `"src"` in `"files"`**. The build step (`tsup && tsc`) generates all production artifacts, source maps, and declaration types into `dist/`. Publishing `"src"` adds unnecessary weight to the npm package tarball without providing runtime or typing benefits.
+- **Dependencies (`peerDependencies` vs `devDependencies`)**:
+  - `peerDependencies`: Always declare `@magmacomputing/tempo` as a peer dependency (e.g. `"^4.4.0"`). This informs package managers that the host application provides the core Tempo runtime, guaranteeing a single shared singleton instance across the application.
+  - `devDependencies`: Include `@magmacomputing/tempo` under `devDependencies` so the plugin can resolve imports, compile TypeScript types, and execute local unit tests without bundling Tempo into production dependencies.
+  - `dependencies`: Community plugins should keep production `dependencies` as lean as possible (or empty) to minimize supply-chain surface area.
 - **PublishConfig**: Configure public npm publishing:
   ```json
   "publishConfig": {
