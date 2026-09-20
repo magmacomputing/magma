@@ -166,6 +166,22 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	if (!isZonedDateTime(zdt)) return '';
 
+	const dialect = options?.dialect ?? config?.dialect;
+	if (dialect && isString(fmt)) {
+		const TempoClass = getRuntime().modules['Tempo'] ?? (obj as any)?.constructor;
+		const dialectsRegistry = config?.registry?.dialects
+			?? (getRuntime() as any).dialects
+			?? (getRuntime().modules as any)?.['DialectsModule']
+			?? (globalThis as any)[Symbol.for('Tempo.dialects')]
+			?? (TempoClass as any)?.dialectsRegistry;
+		const formatter = dialectsRegistry?.format ?? dialectsRegistry?.[dialect]?.format;
+
+		if (isFunction(formatter))
+			return formatter(zdt, String(fmt), { ...config, dialect });
+
+		throw new Error(`[Tempo] Formatting with dialect '${dialect}' requires '@magmacomputing/tempo-plugin-dialects'.`);
+	}
+
 	let template = (isString(fmt) && formats && (fmt as string in formats))
 		? (formats as Record<string, string>)[fmt as string]
 		: String(fmt);

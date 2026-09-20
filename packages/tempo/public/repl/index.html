@@ -475,9 +475,10 @@
 			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@4",
 			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@2",
 			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@1",
-			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@0",
+			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@1",
 			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@2",
-			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai@2"
+			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai@2",
+			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects@1"
 		}
 	}
 	</script>
@@ -511,6 +512,7 @@
 					<div class="select-wrap">
 						<select id="presetSelect" title="Load Snippet Preset">
 							<option value="quickstart">Preset: Quick Start (Core)</option>
+							<option value="dialects">Preset: Dialects (Luxon, strftime, Moment)</option>
 							<option value="weekend">Preset: Weekend Check (Cookbook)</option>
 							<option value="seasons">Preset: Seasons & Moon (Astro/Geo)</option>
 							<option value="quarters">Preset: Fiscal Quarters & Math</option>
@@ -599,6 +601,27 @@ console.log('Days until next Friday:', t.until('next Friday').format());
 
 // Return value displays in the top Result card:
 return t.format('{yyyy}-{mm}-{dd}');`,
+
+			dialects: `// 🌐 External Dialect Formatting & Parsing
+// Dynamic import of @magmacomputing/tempo-plugin-dialects
+const { DialectsPlugin, DIALECT } = await import('@magmacomputing/tempo-plugin-dialects');
+Tempo.use(DialectsPlugin);
+
+const t = new Tempo('2026-10-24T15:30:45');
+
+// 1. Luxon-style toFormat & LDML
+console.log('Luxon drop-in .toFormat():', t.toFormat('dd LLL yyyy, HH:mm'));
+console.log('Dialect namespace LDML:', t.dialects.ldml('yyyy/MM/dd HH:mm'));
+
+// 2. POSIX strftime
+console.log('strftime .strftime():', t.dialects.strftime('%Y-%m-%d %H:%M:%S'));
+console.log('strftime auto-detect:', dt => t.format('%A, %B %d %Y (%I:%M %p)', { dialect: DIALECT.Strftime }));
+
+// 3. Dialect Parsing via Tempo.fromFormat()
+const parsed = Tempo.fromFormat('24/10/2026 15:30', 'dd/MM/yyyy HH:mm');
+console.log('Parsed ISO:', parsed.iso);
+
+return t.toFormat('dd LLL yyyy (HH:mm:ss)');`,
 
 			weekend: `// 🗓️ Weekend Checking (from Tempo Cookbook)
 const today = new Tempo();

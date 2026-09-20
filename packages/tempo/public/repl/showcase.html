@@ -712,7 +712,8 @@
 			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@4",
 			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@2",
 			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@1",
-			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@0"
+			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@1",
+			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects@1"
 		}
 	}
 	</script>
@@ -837,6 +838,10 @@
 						<button class="chip-btn" data-tmpl="{dd}/{mm}/{yyyy}">EU Standard</button>
 						<button class="chip-btn" data-tmpl="{mm}/{dd}/{yyyy}">US Standard</button>
 						<button class="chip-btn" data-tmpl="{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss} {tz}">Timestamp</button>
+						<button class="chip-btn" data-tmpl="yyyy-MM-dd HH:mm:ss"
+							style="border-color: rgba(192, 132, 252, 0.4);">Luxon / LDML</button>
+						<button class="chip-btn" data-tmpl="%Y-%m-%d %H:%M:%S" style="border-color: rgba(56, 189, 248, 0.4);">POSIX
+							strftime</button>
 					</div>
 				</section>
 

@@ -89,5 +89,14 @@
     "status": "active",
     "version": "1.0.0",
     "hidden": true
+  },
+  {
+    "id": "dialects",
+    "name": "Dialects Plugin",
+    "description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, and POSIX strftime",
+    "packageName": "@magmacomputing/tempo-plugin-dialects",
+    "version": "1.0.0",
+    "plan": "community",
+    "status": "active"
   }
 ]

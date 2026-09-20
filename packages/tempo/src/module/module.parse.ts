@@ -1,7 +1,7 @@
 import '#library/temporal.polyfill.js';
 import { asType } from '#library/type.library.js';
 import { LOG } from '#library/logger.class.js';
-import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty, isNumber, isDigit, isNumeric } from '#library/assertion.library.js';
+import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
@@ -36,6 +36,186 @@ function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Inte
 	const loc = Array.isArray(state.config.locale) ? state.config.locale.join(',') : String(state.config.locale || 'en-US');
 	const sph = String(state.config.sphere || 'north');
 	return `${norm}::${dateSalt}::${tz}::${cal}::${loc}::${sph}`;
+}
+
+const BRACED_CACHE = new Map<string, RegExp>();
+
+function compileBracedPattern(fmt: string): RegExp {
+	let cached = BRACED_CACHE.get(fmt);
+	if (cached) return cached;
+
+	let pattern = '';
+	let i = 0;
+	while (i < fmt.length) {
+		if (fmt[i] === '{') {
+			const end = fmt.indexOf('}', i);
+			if (end === -1) {
+				pattern += '\\{';
+				i++;
+				continue;
+			}
+			const rawToken = fmt.slice(i + 1, end).trim();
+			const [tok] = rawToken.split(':');
+			const token = tok.toLowerCase();
+
+			switch (token) {
+				case 'yyyy':
+				case 'year':
+					pattern += '(?<yyyy>[+-]?\\d{4,6}|\\d{4})';
+					break;
+				case 'yy':
+					pattern += '(?<yy>\\d{2})';
+					break;
+				case 'mm':
+				case 'month':
+					pattern += '(?<mm>\\d{1,2})';
+					break;
+				case 'mmm':
+					pattern += '(?<mmm>[A-Za-z]{3,})';
+					break;
+				case 'mon':
+					pattern += '(?<mon>[A-Za-z]+)';
+					break;
+				case 'dd':
+				case 'day':
+					pattern += '(?<dd>\\d{1,2}(?:st|nd|rd|th)?)';
+					break;
+				case 'hh':
+				case 'h24':
+				case 'hour':
+					pattern += '(?<hh>\\d{1,2})';
+					break;
+				case 'h12':
+					pattern += '(?<h12>\\d{1,2})';
+					break;
+				case 'mi':
+				case 'min':
+				case 'minute':
+					pattern += '(?<mi>\\d{1,2})';
+					break;
+				case 'ss':
+				case 'sec':
+				case 'second':
+					pattern += '(?<ss>\\d{1,2})';
+					break;
+				case 'ms':
+				case 'millisecond':
+					pattern += '(?<ms>\\d{1,3})';
+					break;
+				case 'mer':
+				case 'ampm':
+					pattern += '(?<mer>[AaPp][Mm]?)';
+					break;
+				case '*':
+				case '_':
+				case 'skip':
+					pattern += '(?:.*?)';
+					break;
+				default:
+					pattern += `(?<${token.replace(/[^a-z0-9]/gi, '_')}>\\S+)`;
+					break;
+			}
+			i = end + 1;
+		} else {
+			const ch = fmt[i];
+			if (/\s/.test(ch)) {
+				pattern += '\\s+';
+				while (i + 1 < fmt.length && /\s/.test(fmt[i + 1])) i++;
+			} else if (/[\\^$*+?.()|[\]{}]/.test(ch)) {
+				pattern += '\\' + ch;
+			} else {
+				pattern += ch;
+			}
+			i++;
+		}
+	}
+
+	const reg = new RegExp(`^${pattern}$`, 'i');
+	BRACED_CACHE.set(fmt, reg);
+	return reg;
+}
+
+function resolveMonthNum(str: string): number | undefined {
+	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+	if (enums.MONTH && (enums.MONTH as any)[cap]) return (enums.MONTH as any)[cap];
+	if (enums.MONTHS && (enums.MONTHS as any)[cap]) return (enums.MONTHS as any)[cap];
+	const short3 = cap.slice(0, 3);
+	if (enums.MONTH && (enums.MONTH as any)[short3]) return (enums.MONTH as any)[short3];
+	return undefined;
+}
+
+function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDateTime, tz: string, cal: string): Temporal.ZonedDateTime | undefined {
+	const rx = compileBracedPattern(fmt);
+	const match = rx.exec(input);
+	if (!match || !match.groups) return undefined;
+
+	const g = match.groups;
+	let year = today.year;
+	if (g.yyyy) year = parseInt(g.yyyy, 10);
+	else if (g.yy) {
+		const yy = parseInt(g.yy, 10);
+		year = yy >= 70 ? 1900 + yy : 2000 + yy;
+	}
+
+	let month = 1;
+	if (g.mm) month = parseInt(g.mm, 10);
+	else if (g.mmm || g.mon) {
+		const mNum = resolveMonthNum(g.mmm || g.mon);
+		if (mNum) month = mNum;
+	} else {
+		month = today.month;
+	}
+
+	let day = 1;
+	if (g.dd) day = parseInt(g.dd.replace(/[^0-9]/g, ''), 10);
+	else day = today.day;
+
+	let hour = 0;
+	let minute = 0;
+	let second = 0;
+	let millisecond = 0;
+
+	if (g.hh || g.h24) hour = parseInt(g.hh || g.h24, 10);
+	else if (g.h12) hour = parseInt(g.h12, 10);
+
+	if (g.mer) {
+		const isPm = g.mer.toLowerCase().startsWith('p');
+		if (isPm && hour < 12) hour += 12;
+		else if (!isPm && hour === 12) hour = 0;
+	}
+
+	if (g.mi) minute = parseInt(g.mi, 10);
+	if (g.ss) second = parseInt(g.ss, 10);
+	if (g.ms) millisecond = parseInt(g.ms, 10);
+
+	try {
+		return Temporal.PlainDateTime.from({
+			year,
+			month,
+			day,
+			hour,
+			minute,
+			second,
+			millisecond
+		}).toZonedDateTime(tz).withCalendar(cal);
+	} catch (e) {
+		return undefined;
+	}
+}
+
+function parseDialectFormat(input: string, fmt: string, state: any, today: Temporal.ZonedDateTime, tz: string, cal: string): Temporal.ZonedDateTime | undefined {
+	const dialect = state.options?.dialect ?? state.config?.dialect;
+	const TempoClass = getRuntime().modules['Tempo'];
+	const dialectsRegistry = state.config?.registry?.dialects
+		?? (getRuntime() as any).dialects
+		?? (getRuntime().modules as any)?.['DialectsModule']
+		?? (globalThis as any)[Symbol.for('Tempo.dialects')]
+		?? (TempoClass as any)?.dialectsRegistry;
+	const parser = dialectsRegistry?.parse ?? (dialect ? dialectsRegistry?.[dialect]?.parse : undefined);
+	if (isFunction(parser)) {
+		return parser(input, fmt, { ...state.config, timeZone: tz, calendar: cal, dialect, today });
+	}
+	throw new Error(`[Tempo] Parsing unbraced format mask '${fmt}' requires '@magmacomputing/tempo-plugin-dialects'.`);
 }
 
 /**
@@ -255,6 +435,27 @@ const _ParseEngine = {
 				if (cachedIso) {
 					accumulateResult(state, { match: 'CacheHit', value: trim, source: 'parseCache' as any });
 					return { type: 'String', value: cachedIso };
+				}
+			}
+
+			// 3. Explicit Format Mask Check (Native Braced or Dialect)
+			const formatOpt = state.options?.format ?? state.config?.format;
+			if (isDefined(formatOpt)) {
+				const formats = asArray(formatOpt);
+				const [tz, cal] = getTemporalIds(state.config.timeZone, state.config.calendar);
+				for (const fmt of formats) {
+					if (!isString(fmt)) continue;
+					try {
+						const res = fmt.includes('{')
+							? parseBracedFormat(trim, fmt, dateTime, tz, cal)
+							: parseDialectFormat(trim, fmt, state, dateTime, tz, cal);
+						if (isZonedDateTime(res)) {
+							accumulateResult(state, { match: 'FormatMask', value: trim, pattern: fmt } as any);
+							return { type: 'Temporal.ZonedDateTime', value: res, zone: tz, calendar: cal };
+						}
+					} catch (err) {
+						if (formats.length === 1) throw err;
+					}
 				}
 			}
 

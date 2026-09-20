@@ -95,6 +95,10 @@
         "link": "/doc/9-plugins/celestial.index"
       },
       {
+        "text": "Dialects (Luxon, strftime, Moment)",
+        "link": "/doc/9-plugins/dialects.index"
+      },
+      {
         "text": "Finance (Fiscal & Business)",
         "link": "/doc/9-plugins/finance.index"
       },

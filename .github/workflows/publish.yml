@@ -20,6 +20,7 @@ on:
           - '@magmacomputing/tempo-plugin-sync'
           - '@magmacomputing/tempo-plugin-ticker'
           - '@magmacomputing/tempo-plugin-geo'
+          - '@magmacomputing/tempo-plugin-dialects'
           - 'all'
   release:
     types: [published]
@@ -58,7 +59,7 @@ jobs:
           
           # Input validation
           case "$TARGET" in
-            @magmacomputing/tempo|@magmacomputing/tempo-fns|@magmacomputing/tempo-plugin-astro|@magmacomputing/tempo-plugin-celestial|@magmacomputing/tempo-plugin-ai|@magmacomputing/tempo-plugin-batch|@magmacomputing/tempo-plugin-finance|@magmacomputing/tempo-plugin-snap|@magmacomputing/tempo-plugin-sync|@magmacomputing/tempo-plugin-ticker|@magmacomputing/tempo-plugin-geo|all)
+            @magmacomputing/tempo|@magmacomputing/tempo-fns|@magmacomputing/tempo-plugin-astro|@magmacomputing/tempo-plugin-celestial|@magmacomputing/tempo-plugin-ai|@magmacomputing/tempo-plugin-batch|@magmacomputing/tempo-plugin-finance|@magmacomputing/tempo-plugin-snap|@magmacomputing/tempo-plugin-sync|@magmacomputing/tempo-plugin-ticker|@magmacomputing/tempo-plugin-geo|@magmacomputing/tempo-plugin-dialects|all)
               ;;
             *)
               echo "❌ Error: Invalid target '$TARGET'"
@@ -94,7 +95,11 @@ jobs:
               pkg_json="packages/functions/package.json"
             else
               local plugin_dir="${pkg#@magmacomputing/tempo-plugin-}"
-              pkg_json="packages/plugins/$plugin_dir/package.json"
+              if [ -f "packages/plugins/$plugin_dir/package.json" ]; then
+                pkg_json="packages/plugins/$plugin_dir/package.json"
+              else
+                pkg_json="packages/plugins/tempo-plugin-$plugin_dir/package.json"
+              fi
             fi
 
             if [ ! -f "$pkg_json" ]; then
@@ -132,6 +137,7 @@ jobs:
             publish_pkg "@magmacomputing/tempo-plugin-sync"
             publish_pkg "@magmacomputing/tempo-plugin-ticker"
             publish_pkg "@magmacomputing/tempo-plugin-geo"
+            publish_pkg "@magmacomputing/tempo-plugin-dialects"
           else
             publish_pkg "$TARGET"
           fi

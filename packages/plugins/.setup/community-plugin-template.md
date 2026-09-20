@@ -122,6 +122,10 @@ To ensure your tests are properly type-checked in isolation, create a `test/tsco
 }
 ```
 
+> [!IMPORTANT]
+> **Do not import test primitives from `'vitest'` in test scripts.**
+> In the Tempo workspace and plugin ecosystem, Vitest runs with `globals: true` (configured in `vitest.shared.ts` / `vitest.config.ts`). Standard testing utilities (`describe`, `it`, `test`, `expect`, `beforeEach`, `afterEach`, `beforeAll`, `afterAll`, `vi`) are globally injected into the test runtime environment. Do not write `import { describe, it, expect } from 'vitest';`.
+
 ## 4. Documentation (`README.md` & `doc/index.md`)
 
 Community plugins must follow a uniform documentation standard.
@@ -171,6 +175,8 @@ To maintain complete visual and design consistency across READMEs, documentation
 
 > [!IMPORTANT]
 > **Never manually modify documents in `packages/tempo/doc/9-plugins/*` directly.** All plugin documentation must be authored strictly within each plugin's own `packages/plugins/[name]/doc/*` directory. The monorepo's automated harvester copies and indexes them into `packages/tempo/doc/9-plugins/` during `npm run docs:build`.
+>
+> **No `file://` Reference Links**: Never use absolute local `file://` links in `README.md`, `doc/index.md`, or notes. These links break when VitePress compiles documentation for GitHub Pages and will not resolve for users on npm or GitHub. Always use standard relative links (e.g., `../[section]/[file].md` or `/doc/9-plugins/[name].index`) or public HTTPS URLs.
 
 ## 5. Source Code (`src/index.ts`)
 

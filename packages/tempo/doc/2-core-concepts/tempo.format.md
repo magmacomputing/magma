@@ -83,6 +83,12 @@ Tempo.use(FormatModule);
 > [!NOTE]
 > **Tempo is heavily opinionated.** To provide maximum predictability and eliminate common timezone or regional bugs, Tempo strictly defaults to **ISO-8601 standards**. This means weeks always start on Monday (`1`), and mathematical bounds (like week-of-year and year-of-week calculations) adhere to the rigorous ISO specification.
 
+> [!TIP]
+> **Format Dialects & Migration**
+> Tempo's formatting engine uses consistent lower-case tokens (`{yyyy}`, `{mm}`, `{dd}`) to prevent common pitfalls—such as the subtle year-end shift between calendar year (`yyyy`) and ISO week-year (`YYYY`).
+>
+> If you are migrating an existing codebase or prefer familiar external formatting standards (such as Luxon, Moment, or POSIX `strftime`), the [`@magmacomputing/tempo-plugin-dialects`](/doc/9-plugins/dialects.index) community plugin is available.
+
 | Token | Description | Example |
 | :--- | :--- | :--- |
 | `{yyyy}` | 4-digit Year | `2026` |

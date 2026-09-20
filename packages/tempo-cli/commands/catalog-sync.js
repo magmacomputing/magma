@@ -30,10 +30,7 @@ export async function catalogSync(_args) {
 
 		const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
-		let id = path.basename(pluginDir).replace(/^\./, '_');
-		if (isExternal) {
-			id = id.replace('tempo-plugin-', '');
-		}
+		let id = path.basename(pluginDir).replace(/^\./, '_').replace(/^tempo-plugin-/, '');
 
 		const humanName = id.charAt(0).toUpperCase() + id.slice(1) + ' Plugin';
 		const entry = catalogMap.get(id) || { id };

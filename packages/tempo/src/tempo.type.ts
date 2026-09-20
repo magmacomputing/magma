@@ -336,6 +336,10 @@ export interface FormatOptions extends Intl.DateTimeFormatOptions {
 	calendar?: string;
 	/** Locale or array of locales for formatting */
 	locale?: string | readonly string[];
+	/** Format mask or array of format masks */
+	format?: string | readonly string[];
+	/** Formatting dialect (e.g. 'ldml', 'strftime', 'moment') */
+	dialect?: string;
 }
 
 export interface IntlOptions {
@@ -382,28 +386,30 @@ export namespace Internal {
 		/** pivot year for two-digit years */										pivot?: number | undefined;
 		/** hemisphere for term.qtr or term.szn */							sphere?: Evaluable<enums.COMPASS | undefined> | undefined;
 		/** Geolocation coordinates configuration for location-aware plugins */ geo?: GeoOptions | undefined;
-		/** Latitude coordinate in degrees @internal */ 					latitude?: number | undefined;
-		/** Latitude coordinate alias in degrees @internal */ 							lat?: number | undefined;
-		/** Longitude coordinate in degrees @internal */ 					longitude?: number | undefined;
-		/** Longitude coordinate alias in degrees @internal */ 						lng?: number | undefined;
+		/** Latitude coordinate in degrees @internal */ 				latitude?: number | undefined;
+		/** Latitude coordinate alias in degrees @internal */ 	lat?: number | undefined;
+		/** Longitude coordinate in degrees @internal */ 				longitude?: number | undefined;
+		/** Longitude coordinate alias in degrees @internal */ 	lng?: number | undefined;
 		/** internationalization configuration (relativeTime, etc.) */ intl?: IntlOptions | undefined;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions | undefined;
 		/** Precision to measure timestamps (ms | us) */				timeStamp?: TimeStamp | undefined;
 		/** Precision to measure timestamps alias */						timestamp?: TimeStamp | undefined;
 		/** initialization strategy ('auto'|'strict'|'defer') */mode?: enums.MODE | undefined;
 		/** regional date-parsing configuration */							monthDay?: MonthDay | boolean | undefined;
-		/** enable regional calendar boundaries (week start/end/mid) via Intl.LocaleInfo */ localeInfo?: boolean | undefined;
+		/** Format mask or array of format masks for parsing / formatting */ format?: string | readonly string[] | undefined;
+		/** Format dialect (e.g. 'ldml', 'strftime', 'moment') */ dialect?: string | undefined;
 		/** custom data augmentation registries */							registry?: {
-		/** Format string templates */ formats?: Property<any>;
-		/** Locale-specific configurations */ locales?: Record<string, Record<string, string | Function>>;
-		/** Temporal modifiers for relative dates */ modifiers?: Record<string, string | readonly string[] | string[]>;
-		/** Token evaluators for custom parsing patterns */ tokens?: Record<string, TokenEvaluator>;
-		/** Snippet registry for parsing shortcuts */ snippets?: Snippet | RegistryOption<Pattern>;
-		/** Layout registry for date/time patterns */ layouts?: Layout | RegistryOption<Pattern>;
-		/** Event registry for special dates */ events?: Event | RegistryOption<Logic>;
-		/** Period registry for time-of-day aliases */ periods?: Period | RegistryOption<Logic>;
-		/** Number name mappings */ numbers?: Record<string, number>;
-		/** Noise words to ignore during parsing */ ignores?: Ignore;
+		/** Format string templates */														formats?: Property<any>;
+		/** Dialect formatting/parsing engines */									dialects?: Record<string, any>;
+		/** Locale-specific configurations */											locales?: Record<string, Record<string, string | Function>>;
+		/** Temporal modifiers for relative dates */							modifiers?: Record<string, string | readonly string[] | string[]>;
+		/** Token evaluators for custom parsing patterns */				tokens?: Record<string, TokenEvaluator>;
+		/** Snippet registry for parsing shortcuts */							snippets?: Snippet | RegistryOption<Pattern>;
+		/** Layout registry for date/time patterns */							layouts?: Layout | RegistryOption<Pattern>;
+		/** Event registry for special dates */										events?: Event | RegistryOption<Logic>;
+		/** Period registry for time-of-day aliases */						periods?: Period | RegistryOption<Logic>;
+		/** Number name mappings */																numbers?: Record<string, number>;
+		/** Noise words to ignore during parsing */								ignores?: Ignore;
 	};
 		/** URLs or file paths to inherit configuration from */
 		extends?: string | string[];
@@ -506,6 +512,7 @@ export namespace Internal {
 			locales: Readonly<Record<string, Readonly<Record<string, string | Function>>>>;
 			modifiers?: Readonly<Record<string, string | readonly string[]>>;
 			tokens?: Readonly<Record<string, TokenEvaluator>>;
+			dialects?: Readonly<Record<string, any>>;
 			numbers?: Readonly<Record<string, number>>;
 		}>;
 		/** index-signature */																	readonly [key: string]: any;
@@ -521,7 +528,7 @@ export namespace Internal {
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | readonly TermPlugin[] | TermPlugin[];
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
-		/** custom data augmentation registries */							registry?: { formats?: Property<any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | readonly string[] | string[]>, tokens?: Record<string, TokenEvaluator>, numbers?: Record<string, number> };
+		/** custom data augmentation registries */							registry?: { formats?: Property<any>, dialects?: Record<string, any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | readonly string[] | string[]>, tokens?: Record<string, TokenEvaluator>, numbers?: Record<string, number> };
 		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
 		/** URLs or file paths to inherit configuration from */	extends?: string | readonly string[] | string[];
 		/**
