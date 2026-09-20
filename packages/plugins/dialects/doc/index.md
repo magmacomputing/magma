@@ -117,7 +117,7 @@ console.log(result.tokens);
 
 ## ⚡ Performance & Lazy Evaluation
 
-1. **Pre-Compiled Formatters**: Formatting masks are tokenized and compiled into high-speed closure interpolators on the first run and cached in memory. Subsequent executions execute in $O(1)$ time with zero regex scanning overhead.
+1. **Pre-Compiled Formatters**: Formatting masks are tokenized and compiled into high-speed closure interpolators on first run and cached in memory. Subsequent executions bypass tokenization and compilation overhead, evaluating directly through cached closures.
 2. **Lazy-Evaluated Namespace**: Accessing `t.dialects` utilizes Tempo's zero-overhead proxy pattern, consuming zero CPU cycles until explicitly invoked on an instance.
 3. **Immutable Static Namespace**: `Tempo.dialects` is recursively frozen via `deepFreeze()` to protect the host class against runtime tampering.
 

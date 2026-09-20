@@ -1,4 +1,5 @@
 import type { Tempo } from '@magmacomputing/tempo';
+import type { Evaluable } from '@magmacomputing/tempo/library';
 import type { Dialect } from './constants.js';
 
 export interface ExplainedToken {
@@ -15,6 +16,8 @@ export interface ExplainResult {
 	toString(): string;
 }
 
+export type DialectInput = Evaluable<string>;
+
 export interface DialectsInstanceNamespace {
 	/**
 	 * Formats this instance using Unicode LDML / Luxon tokens (e.g. 'yyyy-MM-dd HH:mm').
@@ -27,30 +30,30 @@ export interface DialectsInstanceNamespace {
 	/**
 	 * Formats this instance using a specified dialect mask.
 	 */
-	format(mask: string, dialect?: string): string;
+	format(mask: string, dialect?: DialectInput): string;
 	/**
 	 * Explains an external dialect mask, translating it into native Tempo {token} syntax
 	 * with detailed token mappings to guide incremental migration.
 	 */
-	explain(mask: string, dialect?: string): ExplainResult;
+	explain(mask: string, dialect?: DialectInput): ExplainResult;
 }
 
 export interface DialectsStaticNamespace {
 	/**
 	 * Parses a date string using a format mask and dialect.
 	 */
-	parse(input: string, mask: string, dialect?: string, options?: Tempo.Options): Tempo;
+	parse(input: string, mask: string, dialect?: DialectInput, options?: Tempo.Options): Tempo;
 	parse(input: string, mask: string, options?: Tempo.Options): Tempo;
 	/**
 	 * Parses a date string trying multiple candidate masks until one matches.
 	 */
-	fromFormats(input: string, masks: string[], dialect?: string, options?: Tempo.Options): Tempo;
+	fromFormats(input: string, masks: string[], dialect?: DialectInput, options?: Tempo.Options): Tempo;
 	fromFormats(input: string, masks: string[], options?: Tempo.Options): Tempo;
 	/**
 	 * Explains an external dialect mask, translating it into native Tempo {token} syntax
 	 * with detailed token mappings to guide incremental migration.
 	 */
-	explain(mask: string, dialect?: string): ExplainResult;
+	explain(mask: string, dialect?: DialectInput): ExplainResult;
 }
 
 declare module '@magmacomputing/tempo' {

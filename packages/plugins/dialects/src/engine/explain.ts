@@ -1,7 +1,7 @@
 import { evaluate, deepFreeze } from '@magmacomputing/tempo/library';
 import { DIALECT } from '../constants.js';
-import type { ExplainResult, ExplainedToken } from '../types.js';
 import { detectDialect } from './dialect.registry.js';
+import type { ExplainResult, ExplainedToken } from '../types.js';
 
 export type { ExplainedToken, ExplainResult };
 
@@ -81,7 +81,7 @@ const STRFTIME_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; re
 	M: { tempo: '{mi}', desc: 'Zero-padded minute (00-59)' },
 	S: { tempo: '{ss}', desc: 'Zero-padded second (00-59)' },
 	s: { tempo: '{ts}', desc: 'Seconds since UNIX epoch' },
-	f: { tempo: '{ms}', desc: 'Fractional seconds / microseconds' },
+	f: { tempo: '{ff:6}', desc: 'Fractional seconds / microseconds (000000-999999)' },
 	p: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
 	P: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
 	A: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Saturday)' },

@@ -53,7 +53,7 @@ describe('Unicode LDML Parsing', () => {
 		expect(t.isValid).toBe(false);
 	});
 
-	it('parses 1-24 hour tokens (k, kk) and normalizes 24 to 0', () => {
+	it('parses 1-24 hour tokens (k, kk) and normalizes 24 to 0, rejecting invalid hours', () => {
 		const t1 = Tempo.fromFormat('2026-10-24 24:00', 'yyyy-MM-dd kk:mm');
 		expect(t1.isValid).toBe(true);
 		expect(t1.hh).toBe(0);
@@ -61,6 +61,22 @@ describe('Unicode LDML Parsing', () => {
 		const t2 = Tempo.fromFormat('2026-10-24 12:00', 'yyyy-MM-dd k:mm');
 		expect(t2.isValid).toBe(true);
 		expect(t2.hh).toBe(12);
+
+		const t3 = Tempo.fromFormat('2026-10-24 00:00', 'yyyy-MM-dd kk:mm', { error: 'catch' });
+		expect(t3.isValid).toBe(false);
+
+		const t4 = Tempo.fromFormat('2026-10-24 25:00', 'yyyy-MM-dd kk:mm', { error: 'catch' });
+		expect(t4.isValid).toBe(false);
+	});
+
+	it('parses timezone offsets with Z and ZZZZZ tokens', () => {
+		const t1 = Tempo.fromFormat('2026-10-24 15:30:45 +05:00', 'yyyy-MM-dd HH:mm:ss Z');
+		expect(t1.isValid).toBe(true);
+		expect(t1.toDateTime().offset).toBe('+05:00');
+
+		const t2 = Tempo.fromFormat('2026-10-24 15:30:45 Z', 'yyyy-MM-dd HH:mm:ss Z');
+		expect(t2.isValid).toBe(true);
+		expect(t2.toDateTime().offset).toBe('+00:00');
 	});
 
 	it('matches first candidate format across array of masks', () => {

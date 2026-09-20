@@ -141,6 +141,13 @@ export function compileStrftimeParser(mask: string): RegExp {
 	let cached = STRFTIME_PARSE_CACHE.get(mask);
 	if (cached) return cached;
 
+	const groupCounts: Record<string, number> = {};
+	const group = (name: string, regex: string) => {
+		const count = (groupCounts[name] = (groupCounts[name] ?? 0) + 1);
+		const groupName = count === 1 ? name : `${name}_${count}`;
+		return `(?<${groupName}>${regex})`;
+	};
+
 	let pattern = '';
 	let lastIndex = 0;
 
@@ -157,66 +164,72 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += '%';
 				break;
 			case 'Y':
-				pattern += '(?<yyyy>[+-]?\\d{4,6}|\\d{4})';
+				pattern += group('yyyy', '[+-]?\\d{4,6}|\\d{4}');
 				break;
 			case 'y':
-				pattern += '(?<yy>\\d{2})';
+				pattern += group('yy', '\\d{2}');
 				break;
 			case 'm':
-				pattern += '(?<mm>\\d{1,2})';
+				pattern += group('mm', '\\d{1,2}');
 				break;
 			case 'B':
-				pattern += '(?<month_name>[A-Za-z]+)';
+				pattern += group('month_name', '[A-Za-z]+');
 				break;
 			case 'b':
 			case 'h':
-				pattern += '(?<month_abbr>[A-Za-z]{3,})';
+				pattern += group('month_abbr', '[A-Za-z]{3,}');
 				break;
 			case 'd':
 			case 'e':
-				pattern += '(?<dd>\\d{1,2})';
+				pattern += group('dd', '\\d{1,2}');
 				break;
 			case 'H':
-				pattern += '(?<hh>\\d{1,2})';
+				pattern += group('hh', '\\d{1,2}');
 				break;
 			case 'I':
 			case 'l':
-				pattern += '(?<h12>\\d{1,2})';
+				pattern += group('h12', '\\d{1,2}');
 				break;
 			case 'M':
-				pattern += '(?<mi>\\d{1,2})';
+				pattern += group('mi', '\\d{1,2}');
 				break;
 			case 'S':
-				pattern += '(?<ss>\\d{1,2})';
+				pattern += group('ss', '\\d{1,2}');
 				break;
 			case 'f':
-				pattern += '(?<us>\\d{1,6})';
+				pattern += group('us', '\\d{1,6}');
 				break;
 			case 'p':
 			case 'P':
-				pattern += '(?<mer>[AaPp][Mm]?)';
+				pattern += group('mer', '[AaPp][Mm]?');
 				break;
 			case 'A':
-				pattern += '(?<weekday_name>[A-Za-z]+)';
+				pattern += group('weekday_name', '[A-Za-z]+');
 				break;
 			case 'a':
-				pattern += '(?<weekday_abbr>[A-Za-z]{3,})';
+				pattern += group('weekday_abbr', '[A-Za-z]{3,}');
 				break;
 			case 'w':
 			case 'u':
-				pattern += '(?<weekday_num>\\d{1})';
+				pattern += group('weekday_num', '\\d{1}');
 				break;
 			case 'j':
-				pattern += '(?<day_of_year>\\d{1,3})';
+				pattern += group('day_of_year', '\\d{1,3}');
+				break;
+			case 'z':
+				pattern += group('tz_offset', '[+-]\\d{2}(?::?\\d{2})?|Z');
+				break;
+			case 'Z':
+				pattern += group('tz_name', '[A-Za-z0-9_/+.-]+');
 				break;
 			case 'F':
-				pattern += '(?<yyyy>\\d{4})-(?<mm>\\d{2})-(?<dd>\\d{2})';
+				pattern += `${group('yyyy', '\\d{4}')}-${group('mm', '\\d{2}')}-${group('dd', '\\d{2}')}`;
 				break;
 			case 'T':
-				pattern += '(?<hh>\\d{2}):(?<mi>\\d{2}):(?<ss>\\d{2})';
+				pattern += `${group('hh', '\\d{2}')}:${group('mi', '\\d{2}')}:${group('ss', '\\d{2}')}`;
 				break;
 			case 'R':
-				pattern += '(?<hh>\\d{2}):(?<mi>\\d{2})';
+				pattern += `${group('hh', '\\d{2}')}:${group('mi', '\\d{2}')}`;
 				break;
 			default:
 				pattern += match[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -258,31 +271,62 @@ export function parseStrftime(
 	if (!match || !match.groups) return undefined;
 
 	const g = match.groups;
-	const today = options.today ?? Temporal.Now.zonedDateTimeISO(options.timeZone ?? 'UTC');
-	const tz = options.timeZone ?? 'UTC';
+	const getGroup = (name: string) => g[name] ?? Object.entries(g).find(([k]) => k === name || k.startsWith(`${name}_`))?.[1];
+
+	let tz = options.timeZone ?? 'UTC';
+	const tz_offset = getGroup('tz_offset');
+	const tz_name = getGroup('tz_name');
+	if (tz_offset) {
+		tz = tz_offset.toUpperCase() === 'Z' ? 'UTC' : tz_offset;
+	} else if (tz_name) {
+		tz = tz_name;
+	}
+
+	const today = options.today ?? Temporal.Now.zonedDateTimeISO(tz);
 	const cal = options.calendar ?? 'iso8601';
 
 	let year = today.year;
-	if (g.yyyy) year = parseInt(g.yyyy, 10);
-	else if (g.yy) {
-		const yy = parseInt(g.yy, 10);
+	const yyyy = getGroup('yyyy');
+	const yyVal = getGroup('yy');
+	if (yyyy) year = parseInt(yyyy, 10);
+	else if (yyVal) {
+		const yy = parseInt(yyVal, 10);
 		year = yy >= 70 ? 1900 + yy : 2000 + yy;
 	}
 
 	let month = 1;
-	if (g.mm) month = parseInt(g.mm, 10);
-	else if (g.month_name || g.month_abbr) {
-		const m = resolveMonth(g.month_name || g.month_abbr);
-		if (m) month = m;
-		else return undefined;
-	} else if (!g.yyyy && !g.yy) {
-		month = today.month;
-	}
-
 	let day = 1;
-	if (g.dd) day = parseInt(g.dd, 10);
-	else if (!g.yyyy && !g.yy && !g.mm && !g.month_name && !g.month_abbr) {
-		day = today.day;
+	const day_of_year = getGroup('day_of_year');
+	const mm = getGroup('mm');
+	const month_name = getGroup('month_name');
+	const month_abbr = getGroup('month_abbr');
+	const dd = getGroup('dd');
+
+	if (day_of_year) {
+		const doy = parseInt(day_of_year, 10);
+		if (doy < 1 || doy > 366) return undefined;
+		try {
+			const pDate = Temporal.PlainDate.from({ year, month: 1, day: 1 }).add({ days: doy - 1 });
+			if (pDate.year !== year) return undefined;
+			month = pDate.month;
+			day = pDate.day;
+		} catch {
+			return undefined;
+		}
+	} else {
+		if (mm) month = parseInt(mm, 10);
+		else if (month_name || month_abbr) {
+			const m = resolveMonth(month_name || month_abbr);
+			if (m) month = m;
+			else return undefined;
+		} else if (!yyyy && !yyVal) {
+			month = today.month;
+		}
+
+		if (dd) day = parseInt(dd, 10);
+		else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr) {
+			day = today.day;
+		}
 	}
 
 	let hour = 0;
@@ -291,19 +335,25 @@ export function parseStrftime(
 	let millisecond = 0;
 	let microsecond = 0;
 
-	if (g.hh) hour = parseInt(g.hh, 10);
-	else if (g.h12) hour = parseInt(g.h12, 10);
+	const hh = getGroup('hh');
+	const h12 = getGroup('h12');
+	if (hh) hour = parseInt(hh, 10);
+	else if (h12) hour = parseInt(h12, 10);
 
-	if (g.mer) {
-		const isPm = g.mer.toLowerCase().startsWith('p');
+	const mer = getGroup('mer');
+	if (mer) {
+		const isPm = mer.toLowerCase().startsWith('p');
 		if (isPm && hour < 12) hour += 12;
 		else if (!isPm && hour === 12) hour = 0;
 	}
 
-	if (g.mi) minute = parseInt(g.mi, 10);
-	if (g.ss) second = parseInt(g.ss, 10);
-	if (g.us) {
-		const padded = g.us.padEnd(6, '0').slice(0, 6);
+	const mi = getGroup('mi');
+	if (mi) minute = parseInt(mi, 10);
+	const ss = getGroup('ss');
+	if (ss) second = parseInt(ss, 10);
+	const us = getGroup('us');
+	if (us) {
+		const padded = us.padEnd(6, '0').slice(0, 6);
 		millisecond = parseInt(padded.slice(0, 3), 10);
 		microsecond = parseInt(padded.slice(3, 6), 10);
 	}

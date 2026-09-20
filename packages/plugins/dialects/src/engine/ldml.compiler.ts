@@ -1,4 +1,4 @@
-import { pad } from '@magmacomputing/tempo/library';
+import { pad, suffix } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 
 type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
@@ -6,7 +6,7 @@ type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
 const FORMAT_CACHE = new Map<string, FormatterFn>();
 const PARSE_REGEX_CACHE = new Map<string, RegExp>();
 
-const LDML_TOKEN_REGEX = /'(''|[^'])*'|(yyyy|YYYY|MMMM|LLLL|EEEE|cccc|SSS|MMM|LLL|EEE|ccc|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|a|d|H|h|k|m|s|S|c|e|E|y|L|M)/g;
+const LDML_TOKEN_REGEX = /'(''|[^'])*'|(yyyy|YYYY|MMMM|LLLL|EEEE|cccc|SSS|MMM|LLL|EEE|ccc|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|a|Do|d|H|h|k|m|s|S|c|e|E|y|L|M|ZZZZZ|ZZZZ|ZZZ|ZZ|Z|zzzz|zzz|zz|z)/g;
 
 /**
  * Compiles an LDML format mask into a high-performance string builder.
@@ -35,12 +35,16 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 		} else {
 			switch (token) {
 				case 'yyyy':
-				case 'YYYY':
 					parts.push((z) => pad(z.year, 4));
 					break;
+				case 'YYYY':
+					parts.push((z) => pad((z as any).yearOfWeek ?? z.year, 4));
+					break;
 				case 'yy':
-				case 'YY':
 					parts.push((z) => pad(z.year % 100, 2));
+					break;
+				case 'YY':
+					parts.push((z) => pad(((z as any).yearOfWeek ?? z.year) % 100, 2));
 					break;
 				case 'y':
 					parts.push((z) => String(z.year));
@@ -65,6 +69,9 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 
 				case 'dd':
 					parts.push((z) => pad(z.day, 2));
+					break;
+				case 'Do':
+					parts.push((z) => suffix(z.day));
 					break;
 				case 'd':
 					parts.push((z) => String(z.day));
@@ -148,6 +155,22 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 				case 'c':
 				case 'e':
 					parts.push((z) => String(z.dayOfWeek));
+					break;
+
+				case 'ZZZZZ':
+				case 'ZZZZ':
+				case 'ZZZ':
+				case 'Z':
+					parts.push((z) => z.offset);
+					break;
+				case 'ZZ':
+					parts.push((z) => z.offset.replace(':', ''));
+					break;
+				case 'zzzz':
+				case 'zzz':
+				case 'zz':
+				case 'z':
+					parts.push((z) => z.timeZoneId);
 					break;
 
 				default:
@@ -241,6 +264,9 @@ export function compileLdmlParser(mask: string): RegExp {
 				case 'dd':
 					pattern += group('dd', '\\d{2}');
 					break;
+				case 'Do':
+					pattern += group('dd_ord', '\\d{1,2}(?:st|nd|rd|th)');
+					break;
 				case 'd':
 					pattern += group('dd', '\\d{1,2}');
 					break;
@@ -307,6 +333,20 @@ export function compileLdmlParser(mask: string): RegExp {
 					pattern += group('weekday_num', '\\d{1}');
 					break;
 
+				case 'ZZZZZ':
+				case 'ZZZZ':
+				case 'ZZZ':
+				case 'ZZ':
+				case 'Z':
+					pattern += group('tz_offset', '[+-]\\d{2}(?::?\\d{2})?|Z');
+					break;
+				case 'zzzz':
+				case 'zzz':
+				case 'zz':
+				case 'z':
+					pattern += group('tz_name', '[A-Za-z0-9_/+.-]+');
+					break;
+
 				default:
 					pattern += token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 					break;
@@ -350,8 +390,16 @@ export function parseLdml(
 	const g = match.groups;
 	const getGroup = (name: string) => g[name] ?? Object.entries(g).find(([k]) => k === name || k.startsWith(`${name}_`))?.[1];
 
-	const today = options.today ?? Temporal.Now.zonedDateTimeISO(options.timeZone ?? 'UTC');
-	const tz = options.timeZone ?? 'UTC';
+	let tz = options.timeZone ?? 'UTC';
+	const tz_offset = getGroup('tz_offset');
+	const tz_name = getGroup('tz_name');
+	if (tz_offset) {
+		tz = tz_offset.toUpperCase() === 'Z' ? 'UTC' : tz_offset;
+	} else if (tz_name) {
+		tz = tz_name;
+	}
+
+	const today = options.today ?? Temporal.Now.zonedDateTimeISO(tz);
 	const cal = options.calendar ?? 'iso8601';
 
 	let year = today.year;
@@ -378,7 +426,9 @@ export function parseLdml(
 
 	let day = 1;
 	const dd = getGroup('dd');
+	const dd_ord = getGroup('dd_ord');
 	if (dd) day = parseInt(dd, 10);
+	else if (dd_ord) day = parseInt(dd_ord, 10);
 	else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr) {
 		day = today.day;
 	}
@@ -391,10 +441,19 @@ export function parseLdml(
 	const hh = getGroup('hh');
 	const h24 = getGroup('h24');
 	const h12 = getGroup('h12');
-	if (hh) hour = parseInt(hh, 10);
-	else if (h24) {
-		hour = parseInt(h24, 10) % 24;
-	} else if (h12) hour = parseInt(h12, 10);
+	if (hh) {
+		const val = parseInt(hh, 10);
+		if (val < 0 || val > 23) return undefined;
+		hour = val;
+	} else if (h24) {
+		const val = parseInt(h24, 10);
+		if (val < 1 || val > 24) return undefined;
+		hour = val === 24 ? 0 : val;
+	} else if (h12) {
+		const val = parseInt(h12, 10);
+		if (val < 1 || val > 12) return undefined;
+		hour = val;
+	}
 
 	const mer = getGroup('mer');
 	if (mer) {
@@ -404,9 +463,17 @@ export function parseLdml(
 	}
 
 	const mi = getGroup('mi');
-	if (mi) minute = parseInt(mi, 10);
+	if (mi) {
+		const val = parseInt(mi, 10);
+		if (val < 0 || val > 59) return undefined;
+		minute = val;
+	}
 	const ss = getGroup('ss');
-	if (ss) second = parseInt(ss, 10);
+	if (ss) {
+		const val = parseInt(ss, 10);
+		if (val < 0 || val > 59) return undefined;
+		second = val;
+	}
 	const ms = getGroup('ms');
 	if (ms) {
 		millisecond = parseInt(ms.padEnd(3, '0').slice(0, 3), 10);

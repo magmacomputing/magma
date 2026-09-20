@@ -52,4 +52,23 @@ describe('POSIX strftime Formatting & Parsing', () => {
 		expect(t.mi).toBe(30);
 		expect(t.ss).toBe(45);
 	});
+
+	it('parses day of year %j correctly', () => {
+		const t = Tempo.dialects.parse('2026-100', '%Y-%j', DIALECT.Strftime);
+		expect(t.isValid).toBe(true);
+		expect(t.yy).toBe(2026);
+		expect(t.mm).toBe(4);
+		expect(t.dd).toBe(10);
+	});
+
+	it('parses compound masks (%F %T) with repeated groups safely', () => {
+		const t = Tempo.dialects.parse('2026-10-24 15:30:45', '%F %T', DIALECT.Strftime);
+		expect(t.isValid).toBe(true);
+		expect(t.yy).toBe(2026);
+		expect(t.mm).toBe(10);
+		expect(t.dd).toBe(24);
+		expect(t.hh).toBe(15);
+		expect(t.mi).toBe(30);
+		expect(t.ss).toBe(45);
+	});
 });

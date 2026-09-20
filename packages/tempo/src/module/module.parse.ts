@@ -29,16 +29,15 @@ import * as t from '../tempo.type.js';
  * @param state - The parser state whose temporal configuration scopes the key
  * @returns A cache key containing the input, anchor date, time zone, calendar, locale, and hemisphere
  */
-function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Internal.State): string {
+function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Internal.State, formatOpt?: any, dialectOpt?: any): string {
 	const norm = str.trim().toLowerCase();
 	const dateSalt = today.toPlainDate().toString();
 	const tz = String(state.config.timeZone || 'UTC');
 	const cal = String(state.config.calendar || 'iso8601');
 	const loc = Array.isArray(state.config.locale) ? state.config.locale.join(',') : String(state.config.locale || 'en-US');
 	const sph = String(state.config.sphere || 'north');
-	const formatOpt = evaluate(state.options?.format ?? state.config?.format);
 	const fmtKey = formatOpt ? asArray(formatOpt).map(String).join('|') : '';
-	const dialect = String(evaluate(state.options?.dialect ?? state.config?.dialect) ?? '');
+	const dialect = String(dialectOpt ?? '');
 	return `${norm}::${dateSalt}::${tz}::${cal}::${loc}::${sph}::${fmtKey}::${dialect}`;
 }
 
@@ -232,8 +231,8 @@ function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDate
 	}
 }
 
-function parseDialectFormat(input: string, fmt: string, state: any, today: Temporal.ZonedDateTime, tz: string, cal: string): Temporal.ZonedDateTime | undefined {
-	const dialect = evaluate(state.options?.dialect ?? state.config?.dialect);
+function parseDialectFormat(input: string, fmt: string, state: any, today: Temporal.ZonedDateTime, tz: string, cal: string, dialectOpt?: any): Temporal.ZonedDateTime | undefined {
+	const dialect = dialectOpt ?? evaluate(state.options?.dialect ?? state.config?.dialect);
 	const TempoClass = getRuntime().modules['Tempo'];
 	const dialectsRegistry = state.config?.registry?.dialects
 		?? (getRuntime() as any).dialects
@@ -382,7 +381,9 @@ const _ParseEngine = {
 				dateTime = dateTime.withTimeZone(effectiveTz).withCalendar(targetCal);
 
 			if ((state.config.cache === true || state.config.cache === enums.CACHE.On || state.config.cache === enums.CACHE.Refresh || state.config.cache === 'refresh') && isString(tempo) && isZonedDateTime(dateTime) && !state.errored) {
-				const cacheKey = buildCacheKey(tempo, today, state);
+				const formatOpt = evaluate(state.options?.format ?? state.config?.format);
+				const dialectOpt = evaluate(state.options?.dialect ?? state.config?.dialect);
+				const cacheKey = buildCacheKey(tempo, today, state, formatOpt, dialectOpt);
 				state.cache.set(cacheKey, dateTime.toString());
 			}
 
@@ -446,6 +447,8 @@ const _ParseEngine = {
 		if (isString(value)) {
 			let trim = value.trim();
 			const normVal = trim.toLowerCase();
+			const formatOpt = evaluate(state.options?.format ?? state.config?.format);
+			const dialectOpt = evaluate(state.options?.dialect ?? state.config?.dialect);
 
 			// 1. Static Glossary Check
 			if (state.cache.isStatic(normVal)) {
@@ -459,7 +462,7 @@ const _ParseEngine = {
 			// 2. Dynamic Parse Cache Check
 			const cacheOpt = state.config.cache;
 			if (cacheOpt === true || cacheOpt === enums.CACHE.On) {
-				const cacheKey = buildCacheKey(trim, dateTime, state);
+				const cacheKey = buildCacheKey(trim, dateTime, state, formatOpt, dialectOpt);
 				const cachedIso = state.cache.get(cacheKey);
 				if (cachedIso) {
 					accumulateResult(state, { match: 'CacheHit', value: trim, source: 'parseCache' as any });
@@ -468,7 +471,6 @@ const _ParseEngine = {
 			}
 
 			// 3. Explicit Format Mask Check (Native Braced or Dialect)
-			const formatOpt = evaluate(state.options?.format ?? state.config?.format);
 			if (isDefined(formatOpt)) {
 				const formats = asArray(formatOpt);
 				const [tz, cal] = getTemporalIds(state.config.timeZone, state.config.calendar);
@@ -477,10 +479,10 @@ const _ParseEngine = {
 					try {
 						const res = fmt.includes('{')
 							? parseBracedFormat(trim, fmt, dateTime, tz, cal)
-							: parseDialectFormat(trim, fmt, state, dateTime, tz, cal);
+							: parseDialectFormat(trim, fmt, state, dateTime, tz, cal, dialectOpt);
 						if (isZonedDateTime(res)) {
 							accumulateResult(state, { match: 'FormatMask', value: trim, pattern: fmt } as any);
-							return { type: 'Temporal.ZonedDateTime', value: res, zone: tz, calendar: cal };
+							return { type: 'Temporal.ZonedDateTime', value: res, zone: res.timeZoneId, calendar: cal };
 						}
 					} catch (err) {
 						if (formats.length === 1) throw err;

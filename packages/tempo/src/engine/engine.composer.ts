@@ -46,6 +46,8 @@ export function compose(
 		case 'Temporal.PlainDateTime':
 		case 'Temporal.PlainDate':
 			temporal = value;
+			if (derivedTz) timeZone = derivedTz;
+			else if (isZonedDateTime(value)) timeZone = value.timeZoneId;
 			break;
 
 		case 'Void':

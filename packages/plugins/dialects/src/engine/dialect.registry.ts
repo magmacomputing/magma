@@ -39,11 +39,13 @@ export function translateMomentToLdml(mask: string): string {
 		}
 		if (mask.startsWith('YYYY', i)) { out += 'yyyy'; i += 4; }
 		else if (mask.startsWith('YY', i)) { out += 'yy'; i += 2; }
+		else if (mask.startsWith('Do', i)) { out += 'Do'; i += 2; }
 		else if (mask.startsWith('DD', i)) { out += 'dd'; i += 2; }
-		else if (mask.startsWith('D', i) && !mask.startsWith('Do', i)) { out += 'd'; i += 1; }
+		else if (mask.startsWith('D', i)) { out += 'd'; i += 1; }
 		else if (mask.startsWith('dddd', i)) { out += 'EEEE'; i += 4; }
 		else if (mask.startsWith('ddd', i)) { out += 'EEE'; i += 3; }
-		else if (mask.startsWith('A', i)) { out += 'a'; i += 1; }
+		else if (mask.startsWith('A', i)) { out += 'aa'; i += 1; }
+		else if (mask.startsWith('a', i)) { out += 'a'; i += 1; }
 		else {
 			out += mask[i];
 			i++;
