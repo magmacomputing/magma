@@ -1,6 +1,6 @@
 {
 	"name": "@magmacomputing/tempo-plugin-dialects",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"type": "module",
 	"description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, and POSIX strftime",
 	"main": "dist/index.js",

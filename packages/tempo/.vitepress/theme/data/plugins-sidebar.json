@@ -75,13 +75,9 @@
     ]
   },
   {
-    "text": "Community & Pro Plugins",
+    "text": "Community Plugins",
     "collapsed": false,
     "items": [
-      {
-        "text": "@magmacomputing/tempo-plugin-geo",
-        "link": "/doc/9-plugins/geo.index"
-      },
       {
         "text": "Astro (Seasons & Solstices)",
         "link": "/doc/9-plugins/astro.index"
@@ -101,6 +97,10 @@
       {
         "text": "Finance (Fiscal & Business)",
         "link": "/doc/9-plugins/finance.index"
+      },
+      {
+        "text": "Geo (IP & Location Lookup)",
+        "link": "/doc/9-plugins/geo.index"
       },
       {
         "text": "Snap (Block Rounding)",

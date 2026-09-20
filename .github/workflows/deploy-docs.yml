@@ -2,10 +2,12 @@ name: Deploy Documentation
 on:
   push:
     branches: [main]
-    # Trigger only on changes to tempo package or this workflow
+    # Trigger on changes to documentation-producing packages or this workflow
     paths:
       - 'packages/tempo/**'
       - 'packages/functions/**'
+      - 'packages/plugins/**'
+      - 'packages/library/**'
       - '.github/workflows/deploy-docs.yml'
       - 'package.json'
       - 'package-lock.json'
