@@ -362,6 +362,10 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						const existing = state.config.registry.tokens ?? {};
 						setProperty(state.config.registry, 'tokens', { ...existing, ...arg.value.tokens });
 					}
+					if (arg.value.dialects) {
+						const existing = state.config.registry.dialects ?? {};
+						setProperty(state.config.registry, 'dialects', { ...existing, ...arg.value.dialects });
+					}
 					if (arg.value.numbers) {
 						const existing = state.config.registry.numbers ?? {};
 						setProperty(state.config.registry, 'numbers', { ...existing, ...arg.value.numbers });
@@ -502,6 +506,18 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 			case 'extends':
 				// Inherited configuration files/URLs are resolved prior to or during config resolution
+				break;
+
+			case 'format':
+				setProperty(state.config, 'format', arg.value);
+				break;
+
+			case 'dialect':
+				if (isString(arg.value) || isFunction(arg.value)) {
+					setProperty(state.config, 'dialect', arg.value);
+				} else {
+					logError(`[Tempo#extend] Invalid dialect option: ${String(arg.value)}. Expected a string or function.`, state.config);
+				}
 				break;
 
 			case 'pluginOptions':

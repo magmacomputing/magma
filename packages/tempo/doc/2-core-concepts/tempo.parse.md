@@ -97,6 +97,28 @@ new Tempo('1st day of 2026');                 // 1st day of 2026
 
 ---
 
+### 🎭 Structured Mask & Wildcard Parsing (`{format: '...'}`)
+
+You can parse strictly structured templates with braced tokens and `{*}` wildcards without crafting custom regexes:
+
+```typescript
+// Braced structured format masks
+new Tempo('24-10-2026', { format: '{dd}-{mm}-{yyyy}' });
+
+// With non-capturing wildcard {*}
+new Tempo('Recorded on 15 Sep 2026 at server-01', { 
+  format: '{*} on {dd} {mmm} {yyyy} at {*}' 
+});
+```
+
+> [!TIP]
+> **Format Dialects & Migration**
+> Tempo's formatting and parsing engine uses consistent lower-case tokens (`{yyyy}`, `{mm}`, `{dd}`) to prevent common pitfalls—such as the subtle year-end shift between calendar year (`yyyy`) and ISO week-year (`YYYY`).
+>
+> If you are migrating an existing codebase or prefer familiar external formatting standards (such as Luxon, Moment, or POSIX `strftime`), the [`@magmacomputing/tempo-plugin-dialects`](/doc/9-plugins/dialects.index) community plugin is available.
+
+---
+
 ## 🔢 Numeric & Epoch Parsing
 
 Tempo provides robust support for parsing Unix timestamps (Epochs). Unlike standard `Date.parse`, Tempo can interpret epochs in multiple units and handles both `Number` and `BigInt` types.

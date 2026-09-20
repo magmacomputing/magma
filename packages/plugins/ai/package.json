@@ -30,8 +30,11 @@
     "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
+  "sideEffects": [
+    "./dist/install.js"
+  ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc",
     "test": "vitest run -c ../vitest.shared.ts",
     "prepublishOnly": "tempo-cli prepublish"
   },

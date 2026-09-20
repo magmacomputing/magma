@@ -6,6 +6,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.1] - 2026-09-20
+
+### Added
+- **Core Braced Format Mask Parsing (`{format: '...'}`) & Wildcard Matching (`{*}`)**:
+  - Added native braced format mask support across `new Tempo(input, { format })`, `Tempo.from(input, { format })`, and internal parser flows.
+  - Added support for passing candidate format arrays (`format: ['{yyyy}-{mm}-{dd}', '{dd}/{mm}/{yyyy}']`) to automatically match the first valid candidate layout.
+  - Added wildcard token `{*}` (and aliases `{_}`, `{skip}`) to format masks for skipping arbitrary substrings and unstructured prefix/suffix noise during parsing.
+  - Implemented capture group deduplication to support repeated braced tokens (e.g. `{yyyy}...{yyyy}`) without RegExp naming collisions.
+  - Added strict error boundaries and `{ overflow: 'reject' }` on date construction so failed format matches and invalid dates return `{ isValid: false }` rather than silently fallback or constrain.
+  - Added actionable error guidance when unbraced dialect format masks (e.g. `yyyy-MM-dd` or `%Y-%m-%d`) are supplied without `@magmacomputing/tempo-plugin-dialects` installed.
+- **Dynamic `Evaluable<T>` Format & Dialect Configuration**:
+  - `format` and `dialect` configuration/call options support `Evaluable<T>` (`T | (() => T)`), enabling dynamic mask and dialect resolution via runtime thunks.
+
+### Ecosystem
+- **Dialects Plugin (`@magmacomputing/tempo-plugin-dialects` v1.0.0)**:
+  - Official launch of the Dialects plugin providing Unicode LDML (`formatLdml`/`parseLdml`), POSIX `strftime` (`formatStrftime`/`parseStrftime`), and Moment.js compatibility (`formatWithDialect`/`parseWithDialect`).
+  - Added `Tempo.fromFormat()` and `Tempo.dialects` namespace to the Tempo REPL and Showcase.
+
 ## [4.4.0] - 2026-09-18
 
 ### Added

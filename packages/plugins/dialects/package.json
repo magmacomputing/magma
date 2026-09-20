@@ -1,0 +1,70 @@
+{
+	"name": "@magmacomputing/tempo-plugin-dialects",
+	"version": "1.0.0",
+	"type": "module",
+	"description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, and POSIX strftime",
+	"main": "dist/index.js",
+	"module": "dist/index.mjs",
+	"types": "dist/index.d.ts",
+	"sideEffects": [
+		"./dist/install.js"
+	],
+	"scripts": {
+		"build": "tsup && tsc",
+		"prepublishOnly": "tempo-cli prepublish",
+		"test": "vitest run -c ../vitest.shared.ts"
+	},
+	"keywords": [
+		"tempo",
+		"tempo-plugin",
+		"magmacomputing",
+		"temporal",
+		"plugin",
+		"dialects",
+		"luxon",
+		"ldml",
+		"moment",
+		"strftime",
+		"date-fns"
+	],
+	"author": "Magma Computing",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/magmacomputing/magma.git",
+		"directory": "packages/plugins/dialects"
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"CHANGELOG.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"registry": "https://registry.npmjs.org/",
+		"access": "public"
+	},
+	"tempo": {
+		"vendorVariantId": "tempo-plugin-dialects",
+		"plan": "community"
+	},
+	"peerDependencies": {
+		"@magmacomputing/tempo": "^4.4.0"
+	},
+	"devDependencies": {
+		"@magmacomputing/tempo": "^4.4.0",
+		"vitest": "^4.1.10"
+	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"default": "./dist/index.js"
+		},
+		"./install": {
+			"types": "./dist/install.d.ts",
+			"import": "./dist/install.js",
+			"default": "./dist/install.js"
+		}
+	}
+}

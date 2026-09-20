@@ -9,16 +9,21 @@ Ensure the plugin's `package.json` contains the correct community configuration:
 - **Version**: Set to `"0.1.0"` for the initial bootstrap release (allowing the official `1.0.0` GA release to be published via CI with full Sigstore provenance).
 - **License**: Must strictly be `"MIT"`.
 - **Type**: Set `"type": "module"`.
-- **Files**: Include the published files array:
+- **Files**: Include the published files array (omit `"src"` as `"dist"` contains all compiled JavaScript bundles and TypeScript `.d.ts` type definitions):
   ```json
   "files": [
     "dist",
-    "src",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
   ]
   ```
+  > [!NOTE]
+  > **Do not include `"src"` in `"files"`**. The build step (`tsup && tsc`) generates all production artifacts, source maps, and declaration types into `dist/`. Publishing `"src"` adds unnecessary weight to the npm package tarball without providing runtime or typing benefits.
+- **Dependencies (`peerDependencies` vs `devDependencies`)**:
+  - `peerDependencies`: Always declare `@magmacomputing/tempo` as a peer dependency (e.g. `"^4.4.0"`). This informs package managers that the host application provides the core Tempo runtime, guaranteeing a single shared singleton instance across the application.
+  - `devDependencies`: Include `@magmacomputing/tempo` under `devDependencies` so the plugin can resolve imports, compile TypeScript types, and execute local unit tests without bundling Tempo into production dependencies.
+  - `dependencies`: Community plugins should keep production `dependencies` as lean as possible (or empty) to minimize supply-chain surface area.
 - **PublishConfig**: Configure public npm publishing:
   ```json
   "publishConfig": {
@@ -122,6 +127,10 @@ To ensure your tests are properly type-checked in isolation, create a `test/tsco
 }
 ```
 
+> [!IMPORTANT]
+> **Do not import test primitives from `'vitest'` in test scripts.**
+> In the Tempo workspace and plugin ecosystem, Vitest runs with `globals: true` (configured in `vitest.shared.ts` / `vitest.config.ts`). Standard testing utilities (`describe`, `it`, `test`, `expect`, `beforeEach`, `afterEach`, `beforeAll`, `afterAll`, `vi`) are globally injected into the test runtime environment. Do not write `import { describe, it, expect } from 'vitest';`.
+
 ## 4. Documentation (`README.md` & `doc/index.md`)
 
 Community plugins must follow a uniform documentation standard.
@@ -171,6 +180,8 @@ To maintain complete visual and design consistency across READMEs, documentation
 
 > [!IMPORTANT]
 > **Never manually modify documents in `packages/tempo/doc/9-plugins/*` directly.** All plugin documentation must be authored strictly within each plugin's own `packages/plugins/[name]/doc/*` directory. The monorepo's automated harvester copies and indexes them into `packages/tempo/doc/9-plugins/` during `npm run docs:build`.
+>
+> **No `file://` Reference Links**: Never use absolute local `file://` links in `README.md`, `doc/index.md`, or notes. These links break when VitePress compiles documentation for GitHub Pages and will not resolve for users on npm or GitHub. Always use standard relative links (e.g., `../[section]/[file].md` or `/doc/9-plugins/[name].index`) or public HTTPS URLs.
 
 ## 5. Source Code (`src/index.ts`)
 

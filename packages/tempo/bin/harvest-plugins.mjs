@@ -37,7 +37,8 @@ const KNOWN_TITLES = {
   'finance.index': 'Finance (Fiscal & Business)',
   'snap.index': 'Snap (Block Rounding)',
   'sync.index': 'Sync (Thread Synchronization)',
-  'ticker.index': 'Ticker (Execution Loop)'
+  'ticker.index': 'Ticker (Execution Loop)',
+  'dialects.index': 'Dialects (Luxon, strftime, Moment)',
 };
 
 const PREFERRED_AI_ORDER = [
@@ -132,7 +133,7 @@ function harvest(dir, pluginDirName, pluginId, isExternal = false) {
 if (fs.existsSync(pluginsDir)) {
   const plugins = fs.readdirSync(pluginsDir);
   for (const plugin of plugins) {
-    const pluginId = plugin.replace(/^\./, '_');
+    const pluginId = plugin.replace(/^\./, '_').replace(/^tempo-plugin-/, '');
     harvest(pluginsDir, plugin, pluginId);
   }
 }

@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '../../../');
 
+/** Synchronizes the plugin catalog with local and installed plugin packages. */
 export async function catalogSync(_args) {
 	const catalogPath = path.resolve(ROOT_DIR, 'packages/plugins/.setup/catalog.json');
 	const pluginsDir = path.resolve(ROOT_DIR, 'packages/plugins');
@@ -23,17 +24,18 @@ export async function catalogSync(_args) {
 
 	const catalogMap = new Map();
 	catalog.forEach(p => catalogMap.set(p.id, p));
+	const localPluginIds = new Set();
 
+	/** Adds a plugin package to the catalog, preferring local packages over installed copies. */
 	function processPlugin(pluginDir, isExternal) {
 		const pkgPath = path.join(pluginDir, 'package.json');
 		if (!fs.existsSync(pkgPath)) return;
 
 		const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
-		let id = path.basename(pluginDir).replace(/^\./, '_');
-		if (isExternal) {
-			id = id.replace('tempo-plugin-', '');
-		}
+		let id = path.basename(pluginDir).replace(/^\./, '_').replace(/^tempo-plugin-/, '');
+		if (isExternal && localPluginIds.has(id)) return;
+		if (!isExternal) localPluginIds.add(id);
 
 		const humanName = id.charAt(0).toUpperCase() + id.slice(1) + ' Plugin';
 		const entry = catalogMap.get(id) || { id };

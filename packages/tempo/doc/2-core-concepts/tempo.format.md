@@ -83,6 +83,12 @@ Tempo.use(FormatModule);
 > [!NOTE]
 > **Tempo is heavily opinionated.** To provide maximum predictability and eliminate common timezone or regional bugs, Tempo strictly defaults to **ISO-8601 standards**. This means weeks always start on Monday (`1`), and mathematical bounds (like week-of-year and year-of-week calculations) adhere to the rigorous ISO specification.
 
+> [!TIP]
+> **Format Dialects & Migration**
+> Tempo's formatting engine uses consistent lower-case tokens (`{yyyy}`, `{mm}`, `{dd}`) to prevent common pitfalls—such as the subtle year-end shift between calendar year (`yyyy`) and ISO week-year (`YYYY`).
+>
+> If you are migrating an existing codebase or prefer familiar external formatting standards (such as Luxon, Moment, or POSIX `strftime`), the [`@magmacomputing/tempo-plugin-dialects`](/doc/9-plugins/dialects.index) community plugin is available.
+
 | Token | Description | Example |
 | :--- | :--- | :--- |
 | `{yyyy}` | 4-digit Year | `2026` |
@@ -126,7 +132,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 
 | Modifier | Target | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `:<number>` | Number | Zero-fill pads numeric or custom tokens to the specified digit width | `{day:2}` → `09`, `{ns:6}` → `000005` |
+| `:<number>` | Number | Zero-fill pads numeric tokens (e.g. `{ns:6}` → `000005`), or slices fractional-second `{ff}` to precision length (e.g. `{ff:1}` → tenths, `{ff:2}` → hundredths) | `{doy:3}` → `045`, `{ff:1}` → `7` |
 | `:raw` | Number | Unpadded number with no meridiem | `{h12:raw}` → `3` |
 | `:ord` | Number | Unpadded number with ordinal suffix | `{dd:ord}` → `24th` |
 | `:upper` | String | Converts to uppercase | `{mer:upper}` → `PM` |
@@ -143,8 +149,10 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:offsetCompact` | `{tz}` | Compact numeric timezone offset | `{tz:offsetCompact}` → `+1000` |
 
 > [!TIP]
-> **Numeric Zero-Fill Padding**
-> You can pass any integer width directly as a modifier (e.g. `{day:2}`, `{ns:3}`, `{yy:4}`). This zero-pads any numeric token or custom/term plugin token returning digits to the specified width. Negative values maintain proper sign formatting (e.g. `-5` with `:3` yields `"-05"`).
+> **Numeric Zero-Fill Padding & Fractional Precision Slicing**
+> You can pass any integer width directly as a modifier (e.g. `{doy:3}`, `{ns:6}`, `{yy:4}`).
+> * **Standard numeric tokens**: Zero-pads integers to the specified width. Negative values maintain proper sign formatting (e.g. `-5` with `:3` yields `"-05"`).
+> * **Fractional seconds (`{ff}`)**: Slices the 9-digit fractional second string to the specified precision length (e.g. `{ff:1}` for tenths, `{ff:2}` for hundredths, `{ff:3}` for milliseconds, `{ff:6}` for microseconds).
 
 <!-- markdownlint-disable-next-line MD028 -->
 > [!TIP]

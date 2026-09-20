@@ -28,7 +28,10 @@ for (const entry of catalog) {
 	// Actually, wait, community plugins match `entry.id`.
 	// Local plugin folder name may have a leading dot if entry.id starts with '_'
 	const folderName = entry.id.startsWith('_') ? '.' + entry.id.slice(1) : entry.id;
-	const localPkgPath = path.join(pluginsDir, folderName, 'package.json');
+	let localPkgPath = path.join(pluginsDir, folderName, 'package.json');
+	if (!fs.existsSync(localPkgPath)) {
+		localPkgPath = path.join(pluginsDir, 'tempo-plugin-' + folderName, 'package.json');
+	}
 
 	if (fs.existsSync(localPkgPath)) {
 		const pkg = JSON.parse(fs.readFileSync(localPkgPath, 'utf8'));

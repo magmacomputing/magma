@@ -1,11 +1,11 @@
-# Tempo: Immutable Date-Time Engine & AI Syntax Rules (v4.4.0)
+# Tempo: Immutable Date-Time Engine & AI Syntax Rules (v4.4.1)
 
-> Tempo (v4.4.0) is an immutable TypeScript date-time engine built around the ECMAScript Temporal API. It provides type-safe parsing, formatting, relative time arithmetic, and extensible layout matching across Browser and Node.js environments.
+> Tempo (v4.4.1) is an immutable TypeScript date-time engine built around the ECMAScript Temporal API. It provides type-safe parsing, formatting, relative time arithmetic, and extensible layout matching across Browser and Node.js environments.
 
 ## Core Architectural Rules & Philosophy
 - **Temporal Engine**: Tempo uses native `Temporal` in modern runtimes or `@js-temporal/polyfill`. Never instantiate legacy JavaScript `Date`.
 - **Strict Immutability**: `Tempo` instances are completely frozen (`Object.freeze`). All mutating operations (`add`, `subtract`, `set`) return a new `Tempo` instance.
-- **Constructor Instantiation**: Instantiation and string parsing ALWAYS use the `new Tempo(...)` constructor. (There are no static `Tempo.from` or `Tempo.parse` functions; `Tempo.parse` is a static configuration object getter).
+- **Constructor & Static Factory**: Instantiation and string parsing use `new Tempo(...)` or static `Tempo.from(...)`.
 - **Live Getters**: Core property accessors use short layout tokens: `.yy` (year), `.mm` (month), `.dd` or `.day` (day of month), `.hh` (hour), `.mi` (minute), `.ss` (second), `.ms` (millisecond), `.us` (microsecond), `.ns` (nanosecond), `.dow` (day of week 1-7), `.doy` (day of year 1-366), `.wy` (week of year), `.tz` (timeZone ID), `.cal` (calendar ID), `.ts` (timestamp ms), `.iso` (ISO 8601 UTC string), `.isValid`. *(Note: Long getters like `.year`, `.month`, `.hour`, `.minute`, `.second` do not exist directly on Tempo instances).*
 - **Configuration & Plugins**: System options and plugin registration are configured via `Tempo.init({ timeZone: 'UTC', monthDay: true, plugins: [Plugin], registry: { layouts: { ... }, formats: { ... }, numbers: { ... } } })`. Cascading configuration is inherited via `extends: 'https://...'`. Core functionality can also be extended dynamically via `Tempo.use(Plugin)`.
 
@@ -29,10 +29,12 @@
 | `{yw}` | ISO Week-Year number | `2026` |
 | `{wy}` | Zero-padded ISO Week of Year (01-53) | `32` |
 | `{unt}` | Time unit keyword | `day`, `month`, `year` |
+| `{*}` | Wildcard placeholder in format masks | Matches any arbitrary substring |
 
 ## Key Module Links
 - [Full Documentation Concatenation](/llms-full.txt): Complete raw markdown documentation for RAG ingestion.
 - [AI Plugin Capabilities](https://github.com/magmacomputing/magma/tree/main/packages/plugins/ai): Natural language parsing (`parseAI`), slot scheduling (`scheduleAI`), and recurrence rule resolution (`recurrenceAI`).
+- [Dialects Plugin](https://github.com/magmacomputing/magma/tree/main/packages/plugins/dialects): Interoperability with Unicode LDML / Luxon, POSIX strftime, and Moment.js format masks, plus migration helper via `Tempo.dialects.explain()`.
 - [Layout Patterns & Regex Snippets](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/3-extending-tempo/tempo.layout.md): Guide to writing regex layouts and snippets.
 - [Plugin Development](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/3-extending-tempo/tempo.plugin.md): Rules for extending Tempo via plugins.
 - [Utility Library](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/6-utility-library/tempo.library.md): Type detection, serialization (`stringify`/`objectify`), and `Pledge`.
