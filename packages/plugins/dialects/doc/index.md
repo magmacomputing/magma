@@ -2,9 +2,9 @@
 
 # @magmacomputing/tempo-plugin-dialects
 
-[![npm version](https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-dialects?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects)
-[![npm peer dependency version](https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-dialects/peer/@magmacomputing/tempo?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo)
-[![License](https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-dialects?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects)
+<p align="center">
+  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-dialects/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+</p>
 
 The **Dialects Plugin** enables Tempo to format and parse dates using established external format standards such as **Unicode LDML / UTS #35 (Luxon, date-fns)**, **Moment.js / Day.js**, and **POSIX `strftime`**.
 

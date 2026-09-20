@@ -138,12 +138,19 @@ Community plugins must follow a uniform documentation standard.
 ### Structure
 - **Logo**: `![Tempo Plugin](https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/plugin-logo.svg)` (for README) or `![Tempo Plugin](/plugin-logo.svg)` (for docs).
 - **Header**: `# @magmacomputing/tempo-plugin-[name]`
-- **Badges**: Standard visual indicators placed immediately below the Header. Must include NPM Version, Peer Dependency, and License badges from Shields.io:
-  ```markdown
-  [![npm version](https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-[name]?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name])
-  [![npm peer dependency version](https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-[name]/peer/@magmacomputing/tempo?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo)
-  [![License](https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-[name]?style=flat-square)](https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name])
-  ```
+- **Badges**: Standard visual indicators placed immediately below the Header. Badges must be aligned horizontally in a **single centered row** using `<p align="center">` with `style="display: inline-block; margin: 0 4px;"`:
+  - **`README.md` (5 Badges)**: NPM Version, Peer Dependency, License, TypeScript Ready, and Docs VitePress:
+    ```html
+    <p align="center">
+      <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name]"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-[name]?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-[name]/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name]"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-[name]?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/[name].index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
+    </p>
+    ```
+  - **`doc/index.md` (4 Badges)**: NPM Version, Peer Dependency, License, and TypeScript Ready:
+    ```html
+    <p align="center">
+      <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name]"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-[name]?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-[name]/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name]"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-[name]?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+    </p>
+    ```
 - **Description**: A short, concise summary.
 - **Installation**: Code block with `npm install @magmacomputing/tempo-plugin-[name]`. Do not use hard-coded peer-dependency text warnings.
 - **Usage**: TypeScript snippet showing `Tempo.init({ plugins: [...] })` and basic functionality.
