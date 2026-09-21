@@ -457,7 +457,13 @@ export async function encryptWithPassword(
 	const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
 	const key = await derivePasswordKey(password, salt, iterations, ['encrypt']);
 
-	const plaintext = isString(data) ? encodeText(data) : (data instanceof Uint8Array ? data : new Uint8Array(data as ArrayBuffer));
+	const plaintext = isString(data)
+		? encodeText(data)
+		: data instanceof Uint8Array
+			? data
+			: data instanceof ArrayBuffer
+				? new Uint8Array(data)
+				: new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 	const cipherBuf = await subtle.encrypt(
 		{ name: keys.TypeKey, iv: iv as BufferSource },
 		key,

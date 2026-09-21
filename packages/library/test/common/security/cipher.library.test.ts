@@ -270,6 +270,28 @@ describe('cipher.library', () => {
 			);
 		});
 
+		it('encrypts and decrypts various BufferSource types (ArrayBuffer, views, slices)', async () => {
+			// ArrayBuffer
+			const ab = new Uint8Array([1, 2, 3, 4]).buffer;
+			const encAb = await encryptWithPassword(ab, password);
+			const decAb = await decryptWithPassword(encAb, password);
+			expect(Array.from(decAb)).toEqual([1, 2, 3, 4]);
+
+			// TypedArray slice / view with offset
+			const full = new Uint8Array([0, 0, 42, 43, 44, 0, 0]);
+			const slice = full.subarray(2, 5); // [42, 43, 44], byteOffset = 2, byteLength = 3
+			const encSlice = await encryptWithPassword(slice, password);
+			const decSlice = await decryptWithPassword(encSlice, password);
+			expect(Array.from(decSlice)).toEqual([42, 43, 44]);
+
+			// Uint16Array view
+			const u16 = new Uint16Array([0x1234, 0x5678]);
+			const encU16 = await encryptWithPassword(u16, password);
+			const decU16 = await decryptWithPassword(encU16, password);
+			expect(decU16.byteLength).toBe(4);
+			expect(new Uint16Array(decU16.buffer, decU16.byteOffset, 2)).toEqual(u16);
+		});
+
 		it('validates password input presence and type', async () => {
 			// @ts-ignore
 			await expect(encryptWithPassword(plaintext, '')).rejects.toThrow(TypeError);
@@ -280,3 +302,4 @@ describe('cipher.library', () => {
 		});
 	});
 });
+

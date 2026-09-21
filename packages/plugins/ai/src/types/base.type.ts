@@ -146,12 +146,14 @@ export interface AiModelTiers {
  * Represents an LLM provider and its respective BYOK API key and configuration options.
  */
 export interface AiProvider {
-	/** The provider identifier (e.g., 'groq', 'gemini', 'openai', 'mistral', 'custom') */
+	/** The provider identifier (e.g., 'groq', 'gemini', 'openai', 'mistral', 'magma', 'demo', 'custom') */
 	id: string;
 	/** The raw API key for the respective provider (supports static string, sync supplier, or async supplier e.g. for IAM/Vault tokens) */
 	key?: AsyncEvaluable<string> | undefined;
 	/** Optional custom API endpoint URL (supports static string or dynamic supplier) */
 	url?: Evaluable<string> | undefined;
+	/** Optional custom API endpoint URL alias (interchangeable with `url`, supports static string or dynamic supplier) */
+	endpoint?: Evaluable<string> | undefined;
 	/** Optional custom model identifier (supports static string or dynamic supplier) */
 	model?: Evaluable<string> | undefined;
 	/** Tiered model dictionary (e.g. { default: '...', fast: '...', reasoning: '...' }) */
@@ -185,6 +187,10 @@ export interface AiConfig {
 	providers?: AiProvider[] | undefined;
 	/** Execution mode across provider farm (`AiMode.Fallback` | `AiMode.Race` | `AiMode.Consensus` or string literal) */
 	mode?: AiMode | undefined;
+	/** Global fallback base URL / proxy endpoint for providers (e.g. 'https://my-proxy.com/ai') */
+	endpoint?: Evaluable<string> | undefined;
+	/** Global fallback base URL / proxy endpoint alias for providers (interchangeable with `endpoint`) */
+	proxyUrl?: Evaluable<string> | undefined;
 	/** Strict minimum confidence threshold (0.0 to 1.0) */
 	minConfidence?: number | undefined;
 	/** Optional max completion token limit default across providers (default: 2048) */

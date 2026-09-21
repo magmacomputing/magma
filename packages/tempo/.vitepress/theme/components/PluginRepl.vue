@@ -109,14 +109,18 @@ return \`Snapped to \${snapped15m.format('{hh}:{mi}')}\`;`,
 const { SyncPlugin } = await import('@magmacomputing/tempo-plugin-sync');
 Tempo.use(SyncPlugin);
 
-const clock = Tempo.sync.startClock({ updateIntervalMs: 1 });
-console.log('Sync clock active:', clock.running);
-console.log('Clock buffer byte length:', clock.buffer.byteLength);
+Tempo.sync.startClock({ interval: 1 });
+try {
+  const buffer = Tempo.sync.getBuffer();
+  console.log('Clock buffer byte length:', buffer.byteLength);
 
-const nowMs = clock.now();
-console.log('High-precision current epoch ms:', nowMs);
+  const nowMs = Tempo.sync.now(buffer);
+  console.log('High-precision current epoch ms:', nowMs);
 
-return \`Clock running: \${clock.running} (Epoch: \${nowMs})\`;`,
+  return \`Sync read successful (Epoch: \${nowMs})\`;
+} finally {
+  Tempo.sync.stopClock();
+}`,
 
   ticker: `// ⏰ Continuous Temporal Ticker Demo (@magmacomputing/tempo-plugin-ticker)
 const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
@@ -180,7 +184,7 @@ function launchRepl() {
     <div v-if="isActive" class="plugin-repl-active">
       <iframe
         :src="iframeSrc"
-        sandbox="allow-scripts allow-modals allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+        sandbox="allow-scripts allow-modals allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
         :style="{ width: '100%', height: height, border: 'none', borderRadius: '8px' }"
         :title="title || `Interactive ${plugin} demo`"
       ></iframe>

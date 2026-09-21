@@ -71,13 +71,17 @@ const memoryRawProvider: RawStorageProvider = {
 	},
 	async list(dir = ''): Promise<string[]> {
 		const prefix = dir ? (dir.endsWith('/') ? dir : dir + '/') : '';
-		const matches: string[] = [];
+		const entries = new Set<string>();
 		for (const key of memoryVFS.keys()) {
 			if (!prefix || key.startsWith(prefix)) {
-				matches.push(key.slice(prefix.length));
+				const rest = key.slice(prefix.length);
+				if (rest.length > 0) {
+					const segment = rest.split('/')[0];
+					if (segment) entries.add(segment);
+				}
 			}
 		}
-		return matches;
+		return Array.from(entries);
 	}
 };
 
@@ -87,40 +91,35 @@ async function getRawProvider(): Promise<RawStorageProvider> {
 	if (!rawProviderPromise) {
 		rawProviderPromise = (async () => {
 			if (context.type === CONTEXT.Browser || context.type === CONTEXT.WebWorker) {
-				try {
-					const { isOPFSSupported, opfsReadBuffer, opfsWrite, opfsDelete, opfsExists, opfsList } =
-						await import('#browser/opfs.library.js');
+				const { isOPFSSupported, opfsReadBuffer, opfsWrite, opfsDelete, opfsExists, opfsList } =
+					await import('#browser/opfs.library.js');
 
-					if (isOPFSSupported()) {
-						return {
-							readBuffer: opfsReadBuffer,
-							write: (p: string, c: Uint8Array) => opfsWrite(p, c as unknown as BufferSource),
-							delete: opfsDelete,
-							exists: opfsExists,
-							list: opfsList
-						};
-					}
-				} catch (err) {
-					log.warn('Failed to initialize browser OPFS raw provider, falling back to memory:', err);
+				if (isOPFSSupported()) {
+					return {
+						readBuffer: opfsReadBuffer,
+						write: (p: string, c: Uint8Array) => opfsWrite(p, c as unknown as BufferSource),
+						delete: opfsDelete,
+						exists: opfsExists,
+						list: opfsList
+					};
 				}
 			} else if (context.type === CONTEXT.NodeJS) {
-				try {
-					const { serverReadBuffer, serverWrite, serverDelete, serverExists, serverList } =
-						await import('#server/filestore.library.js');
+				const { serverReadBuffer, serverWrite, serverDelete, serverExists, serverList } =
+					await import('#server/filestore.library.js');
 
-					return {
-						readBuffer: (p: string) => serverReadBuffer(p),
-						write: (p: string, c: Uint8Array) => serverWrite(p, c),
-						delete: (p: string) => serverDelete(p),
-						exists: (p: string) => serverExists(p),
-						list: (d?: string) => serverList(d)
-					};
-				} catch (err) {
-					log.warn('Failed to initialize server raw provider, falling back to memory:', err);
-				}
+				return {
+					readBuffer: (p: string) => serverReadBuffer(p),
+					write: (p: string, c: Uint8Array) => serverWrite(p, c),
+					delete: (p: string) => serverDelete(p),
+					exists: (p: string) => serverExists(p),
+					list: (d?: string) => serverList(d)
+				};
 			}
 			return memoryRawProvider;
-		})();
+		})().catch(err => {
+			rawProviderPromise = null;
+			throw err;
+		});
 	}
 	return rawProviderPromise;
 }

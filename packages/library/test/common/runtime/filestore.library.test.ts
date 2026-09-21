@@ -104,6 +104,18 @@ describe('filestore.library', () => {
 			const stillExists = await store.exists('file1.txt');
 			expect(stillExists).toBe(false);
 		});
+
+		it('returns only immediate child segments and deduplicates directories in list', async () => {
+			const store = await getFileStore({ password: masterPassword, namespace: 'nested-dir' });
+
+			await store.write('nested/sub1/a.txt', 'a');
+			await store.write('nested/sub1/b.txt', 'b');
+			await store.write('nested/sub2/c.txt', 'c');
+			await store.write('nested/root-file.txt', 'root');
+
+			const items = await store.list('nested');
+			expect(items.sort()).toEqual(['root-file.txt', 'sub1', 'sub2']);
+		});
 	});
 
 	describe('cryptographic security & isolation', () => {

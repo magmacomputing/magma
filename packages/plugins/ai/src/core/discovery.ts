@@ -254,13 +254,33 @@ export async function resolveAutoDiscoveredConfig(explicitConfig?: AiConfig): Pr
 	// 4. If no providers defined in configuration, scan environment for well-known keys
 	if (!interpolated.providers || interpolated.providers.length === 0) {
 		const envProviders = scanWellKnownEnvProviders(env);
-		if (envProviders.length > 0)
+		if (envProviders.length > 0) {
 			interpolated.providers = envProviders;
+		} else if (interpolated.endpoint || interpolated.proxyUrl) {
+			interpolated.providers = [{
+				id: 'proxy',
+				url: interpolated.endpoint ?? interpolated.proxyUrl,
+				model: 'default',
+				key: 'proxy',
+			}];
+		} else {
+			const magmaDefault = DEFAULT_PROVIDERS.magma;
+			interpolated.providers = [{
+				id: 'magma',
+				...(magmaDefault || {}),
+			}];
+		}
 	} else {
-		// Resolve any missing keys for explicitly configured providers
+		// Resolve any missing keys and normalize endpoints for explicitly configured providers
 		interpolated.providers = interpolated.providers.map(p => {
-			const resolvedKey = resolveProviderApiKey(p.id ?? '', p.key, env);
-			return resolvedKey ? { ...p, key: resolvedKey } : p;
+			const normalizedId = p.id?.toLowerCase() ?? '';
+			const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env) ?? p.key ?? (normalizedId ? DEFAULT_PROVIDERS[normalizedId]?.key : undefined);
+			const resolvedUrl = p.url ?? p.endpoint ?? interpolated.endpoint ?? interpolated.proxyUrl;
+			return {
+				...p,
+				...(resolvedUrl !== undefined ? { url: resolvedUrl } : {}),
+				...(resolvedKey !== undefined ? { key: resolvedKey } : {}),
+			};
 		});
 	}
 

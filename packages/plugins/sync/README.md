@@ -33,7 +33,8 @@ const clock = Tempo.sync.startClock({ updateIntervalMs: 1 });
 const buffer = clock.buffer; // Pass this SharedArrayBuffer to your workers
 ```
 
-> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=sync)**
+> [!NOTE]
+> **Live Interactive Sandbox**: `@magmacomputing/tempo-plugin-sync` uses `SharedArrayBuffer` for real-time thread synchronization, which requires Cross-Origin Isolation headers (`Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`). When hosting on servers supporting COOP/COEP, explore the interactive playground at [Tempo REPL ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=sync).
 
 ### Reading from Worker Threads
 

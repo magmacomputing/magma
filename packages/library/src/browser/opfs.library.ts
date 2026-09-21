@@ -1,7 +1,8 @@
 /**
  * Browser-only Origin Private File System (OPFS) utilities.
- * Provides high-performance, private, origin-isolated virtual filesystem access
- * without polluting the global DOM or exposing secrets to localStorage inspectors.
+ * Provides high-performance, private, origin-isolated virtual filesystem access.
+ * Note: Data is stored in plaintext and is readable by any same-origin script.
+ * Callers requiring encrypted-at-rest storage must use `getFileStore`.
  */
 
 import { objectify, stringify } from '#library/serialize.library.js';
@@ -123,8 +124,10 @@ export async function opfsReadBuffer(path: string): Promise<ArrayBuffer | null> 
 /**
  * Writes text or binary data to a file in the browser OPFS virtual filesystem.
  * Automatically creates parent directories as needed.
+ * Note: Stored as plaintext readable by same-origin scripts. Direct callers requiring
+ * encrypted-at-rest storage must use `getFileStore`.
  * 
- * @param path - Virtual path relative to OPFS root (e.g. "vault/credentials.json")
+ * @param path - Virtual path relative to OPFS root (e.g. "vault/data.json")
  * @param content - String, ArrayBuffer, or Uint8Array data to write
  */
 export async function opfsWrite(path: string, content: string | BufferSource): Promise<void> {
@@ -231,6 +234,8 @@ export async function opfsReadJSON<T = any>(path: string, fallback?: T): Promise
 
 /**
  * Serializes and writes an object or value to a JSON file in OPFS.
+ * Note: Stored as plaintext readable by same-origin scripts. Direct callers requiring
+ * encrypted-at-rest storage must use `getFileStore`.
  * 
  * @param path - Virtual path relative to OPFS root
  * @param data - Object or value to serialize

@@ -21,8 +21,9 @@ const DEFAULT_ROOT_DIR = path.join(os.tmpdir(), 'magma_filestore');
  */
 function resolveSandboxPath(filePath: string, rootDir = DEFAULT_ROOT_DIR): string {
 	const base = path.resolve(rootDir);
-	const target = path.resolve(base, filePath.replace(/^(\.\.[\/\\])+/, ''));
-	if (!target.startsWith(base)) {
+	const target = path.resolve(base, filePath);
+	const relative = path.relative(base, target);
+	if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
 		throw new Error(`Path traversal denied: "${filePath}" escapes sandbox "${base}"`);
 	}
 	return target;

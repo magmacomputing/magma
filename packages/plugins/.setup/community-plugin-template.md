@@ -257,20 +257,17 @@ Update `.github/workflows/publish.yml` to enable manual `workflow_dispatch` prov
 2. **Add to Input Resolution**: Add `[ "$INPUT_PLUGIN_[NAME]" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-[name]")` in the workflow bash script.
 3. *(Optional)* Even without adding a dedicated checkbox, any new plugin can be immediately published via the workflow's **Custom packages** text box by typing `[name]` or `@magmacomputing/tempo-plugin-[name]`.
 
-### C. REPL Playground Registration & Retirement (`packages/tempo/public/repl/index.html`)
+### C. REPL Playground Registration & Retirement (`packages/tempo/public/repl/`)
 
-When introducing or retiring a plugin, update the centralized browser playground in `packages/tempo/public/repl/index.html`:
+When introducing or retiring a plugin, update the centralized browser playground in `packages/tempo/public/repl/` and the embedded documentation REPL component:
 
-1. **Import Map**: Add/remove the ESM specifier under `<script type="importmap">`:
-   ```json
-   "@magmacomputing/tempo-plugin-[name]": "https://esm.sh/@magmacomputing/tempo-plugin-[name]@latest"
-   ```
-2. **Default Snippet**: Add/remove a preset snippet in the `SNIPPETS` object:
-   ```javascript
-   [name]: `// ⚡ Live Demo (@magmacomputing/tempo-plugin-[name])
-   // Usage snippet...`
-   ```
-3. **Retirement Checklist**: When deprecating or retiring a plugin, remove its entry from `importmap`, `SNIPPETS`, the `<select id="presetSelect">` dropdown (if present), and `.github/workflows/publish.yml`.
+1. **Import Map & Catalog Registration**:
+   - Register the plugin in `catalog.json` and `packages/plugins/[name]/package.json`.
+   - Run `node packages/tempo-cli/index.js catalog-sync` (or `npm run build` / `npm run test`) to automatically generate the allowlist and dynamic ESM loader entries in `packages/tempo/public/repl/plugins.manifest.js`.
+2. **Default Snippets & Facades**:
+   - Add a preset snippet in `DEFAULT_SNIPPETS` inside `packages/tempo/.vitepress/theme/components/PluginRepl.vue`.
+   - Add an entry in the preset dropdown (`<select id="presetSelect">`) and `SNIPPETS` in `packages/tempo/public/repl/index.html`.
+3. **Retirement Checklist**: When deprecating or retiring a plugin, remove its package directory, rerun `tempo-cli catalog-sync` to update `plugins.manifest.js`, and clean up any preset references in `PluginRepl.vue` and `index.html`.
 
 ## 8. Initial Release & Trusted Publisher Configuration (OIDC & Provenance)
 

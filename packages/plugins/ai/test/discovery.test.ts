@@ -218,9 +218,107 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 			expect(result.ai?.cached).toBe(false);
 		});
 
-		it('should throw clear TempoAiError when no providers or environment keys are found', async () => {
+		it('should auto-configure magma trial provider when no providers or environment keys are found (zero-config trial)', async () => {
+			const resolved = await resolveAutoDiscoveredConfig();
+			expect(resolved.providers).toBeDefined();
+			expect(resolved.providers?.length).toBe(1);
+			expect(resolved.providers?.[0].id).toBe('magma');
+			expect(resolved.providers?.[0].url).toBe('https://tempo.magmacomputing.com.au/api/ai/demo');
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+				return new Response(JSON.stringify({
+					choices: [{
+						message: {
+							content: JSON.stringify({
+								iso: '2026-08-17T09:00:00Z',
+								confidence: 0.98,
+								reasoning: 'Parsed via demo sandbox',
+							}),
+						},
+					}],
+				}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+			});
+
+			const result = await parseAI('tomorrow at 5pm', { force: true });
+			expect(result.isValid).toBe(true);
+			expect(result.ai?.provider).toBe('magma');
+			expect(fetchSpy).toHaveBeenCalledWith('https://tempo.magmacomputing.com.au/api/ai/demo', expect.anything());
+		});
+
+		it('should throw clear TempoAiError when explicit providers array is empty', async () => {
+			await initAI({ remoteConfigUrl: false, providers: [] });
 			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(TempoAiError);
 			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(/No AI providers configured/i);
+		});
+
+		it('should configure global endpoint and proxyUrl', async () => {
+			await initAI({
+				remoteConfigUrl: false,
+				endpoint: 'https://my-backend.internal/api/ai',
+			});
+
+			const config = getAiConfig();
+			expect(config.endpoint).toBe('https://my-backend.internal/api/ai');
+			expect(config.providers?.[0].url).toBe('https://my-backend.internal/api/ai');
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+				return new Response(JSON.stringify({
+					choices: [{
+						message: {
+							content: JSON.stringify({
+								iso: '2026-08-17T09:00:00Z',
+								confidence: 0.95,
+							}),
+						},
+					}],
+				}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+			});
+
+			const result = await parseAI('tomorrow at 5pm', { force: true });
+			expect(result.isValid).toBe(true);
+			expect(fetchSpy).toHaveBeenCalledWith('https://my-backend.internal/api/ai', expect.anything());
+		});
+
+		it('should support per-provider endpoint alias and dynamic URL evaluable', async () => {
+			let dynamicPort = 8443;
+			await initAI({
+				remoteConfigUrl: false,
+				providers: [
+					{
+						id: 'custom',
+						endpoint: () => `https://localhost:${dynamicPort}/v1/chat`,
+						key: 'custom-secret',
+						model: 'custom-model',
+					},
+				],
+			});
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+				return new Response(JSON.stringify({
+					choices: [{
+						message: {
+							content: JSON.stringify({
+								iso: '2026-08-17T09:00:00Z',
+								confidence: 0.95,
+							}),
+						},
+					}],
+				}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+			});
+
+			await parseAI('tomorrow at 5pm', { force: true });
+			expect(fetchSpy).toHaveBeenCalledWith('https://localhost:8443/v1/chat', expect.anything());
+		});
+
+		it('should format 429 demo sandbox rate limit error with developer guidance', async () => {
+			await initAI({ remoteConfigUrl: false });
+			vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+				return new Response('Rate limit exceeded', { status: 429 });
+			});
+
+			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(
+				/Tempo AI Demo Sandbox rate limit reached \(20 req\/hr\)/
+			);
 		});
 
 		it('should interpolate template keys inside explicit initAI() configuration', async () => {
@@ -261,6 +359,7 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 				plugins: {
 					ai: {
 						timeout: 4500,
+						providers: [],
 					},
 				},
 				silent: true,
@@ -278,6 +377,7 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 				plugins: {
 					ai: {
 						timeout: 9000,
+						providers: [],
 					},
 				},
 				silent: true,
@@ -305,3 +405,4 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 		});
 	});
 });
+

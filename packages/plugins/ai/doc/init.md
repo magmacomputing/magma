@@ -11,7 +11,7 @@ import { parseAI } from '@magmacomputing/tempo-plugin-ai';
 
 // When GROQ_API_KEY is present in the environment:
 // Zero setup required — providers and SLAs are auto-discovered lazily on first call!
-const dt = await parseAI("next Friday at 4pm");
+const dt = await parseAI("The third Thursday in November after Thanksgiving");
 ```
 
 ### Configuration Resolution Order
@@ -60,6 +60,40 @@ await initAI({
   debug: true    // Enable operational trace logging (automatically PII-sanitized in production)
 });
 ```
+
+### Global Backend Proxy (`endpoint`)
+
+For browser applications and client-side frontends where API keys must remain hidden, you can supply a single global `endpoint`:
+
+```typescript
+import { initAI } from '@magmacomputing/tempo-plugin-ai';
+
+// Connect client-side Tempo AI to your backend proxy
+await initAI({
+  endpoint: 'https://api.yourdomain.com/api/aiProxy'
+});
+```
+
+All AI calls will route requests through your backend endpoint.
+
+### Custom Gateway Endpoints
+
+When configuring custom gateways, proxy routes, or private LLM instances, specify the `endpoint`:
+
+```typescript
+await initAI({
+  providers: [
+    {
+      id: 'custom-gateway',
+      endpoint: 'https://ai.internal.corp/v1/chat/completions',
+      key: process.env.INTERNAL_AI_KEY,
+      model: 'llama-3.3-70b-versatile'
+    }
+  ]
+});
+```
+
+
 
 > **Tip**: `initAI` returns a `Promise<void>` and is fully re-callable! Calling it synchronously without `await` instantly initializes local configurations so you can call `parseAI` immediately, while `await initAI()` guarantees that remote provider manifest defaults are fetched and applied before proceeding (with explicit provider configuration values always taking precedence over remote manifest defaults).
 

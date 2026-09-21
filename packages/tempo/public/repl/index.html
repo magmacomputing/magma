@@ -600,17 +600,17 @@
 	{
 		"imports": {
 			"@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
-			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@latest",
-			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai@latest",
-			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@latest",
-			"@magmacomputing/tempo-plugin-batch": "https://esm.sh/@magmacomputing/tempo-plugin-batch@latest",
-			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@latest",
-			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects@latest",
-			"@magmacomputing/tempo-plugin-finance": "https://esm.sh/@magmacomputing/tempo-plugin-finance@latest",
-			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@latest",
-			"@magmacomputing/tempo-plugin-snap": "https://esm.sh/@magmacomputing/tempo-plugin-snap@latest",
-			"@magmacomputing/tempo-plugin-sync": "https://esm.sh/@magmacomputing/tempo-plugin-sync@latest",
-			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@latest"
+			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@^4",
+			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai@^2",
+			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@^2",
+			"@magmacomputing/tempo-plugin-batch": "https://esm.sh/@magmacomputing/tempo-plugin-batch@^2",
+			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@^2",
+			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects@^2",
+			"@magmacomputing/tempo-plugin-finance": "https://esm.sh/@magmacomputing/tempo-plugin-finance@^2",
+			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@^2",
+			"@magmacomputing/tempo-plugin-snap": "https://esm.sh/@magmacomputing/tempo-plugin-snap@^2",
+			"@magmacomputing/tempo-plugin-sync": "https://esm.sh/@magmacomputing/tempo-plugin-sync@^2",
+			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@^2"
 		}
 	}
 	</script>
@@ -893,14 +893,18 @@ return \`Snapped to \${snapped15m.format('{hh}:{mi}')}\`;`,
 const { SyncPlugin } = await import('@magmacomputing/tempo-plugin-sync');
 Tempo.use(SyncPlugin);
 
-const clock = Tempo.sync.startClock({ updateIntervalMs: 1 });
-console.log('Sync clock active:', clock.running);
-console.log('Clock buffer byte length:', clock.buffer.byteLength);
+Tempo.sync.startClock({ interval: 1 });
+try {
+  const buffer = Tempo.sync.getBuffer();
+  console.log('Clock buffer byte length:', buffer.byteLength);
 
-const nowMs = clock.now();
-console.log('High-precision current epoch ms:', nowMs);
+  const nowMs = Tempo.sync.now(buffer);
+  console.log('High-precision current epoch ms:', nowMs);
 
-return \`Clock running: \${clock.running} (Epoch: \${nowMs})\`;`,
+  return \`Sync read successful (Epoch: \${nowMs})\`;
+} finally {
+  Tempo.sync.stopClock();
+}`,
 
 			ticker: `// ⏰ Continuous Temporal Ticker Demo (@magmacomputing/tempo-plugin-ticker)
 const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
@@ -1111,12 +1115,15 @@ try {
 				Tempo.use(AstroPlugin);
 				Tempo.use(CelestialPlugin);
 
-				// Dynamically register extra plugin if specified in query param
-				if (pluginParam && !['geo', 'astro', 'celestial'].includes(pluginParam)) {
+				// Dynamically register extra plugin if specified in query param against auto-synced manifest
+				const { SUPPORTED_EXTRA_PLUGINS } = await import('./plugins.manifest.js')
+					.catch(() => ({ SUPPORTED_EXTRA_PLUGINS: {} }));
+
+				if (pluginParam && Object.prototype.hasOwnProperty.call(SUPPORTED_EXTRA_PLUGINS, pluginParam)) {
+					const targetPlugin = SUPPORTED_EXTRA_PLUGINS[pluginParam];
 					try {
-						statusText.textContent = `Loading @magmacomputing/tempo-plugin-${pluginParam}...`;
-						const mod = await import(`@magmacomputing/tempo-plugin-${pluginParam}`)
-							.catch(() => import(`https://esm.sh/@magmacomputing/tempo-plugin-${pluginParam}`));
+						statusText.textContent = `Loading ${targetPlugin.name}...`;
+						const mod = await targetPlugin.loader();
 						const pluginObj = Object.values(mod).find(v => typeof v === 'object' && v !== null && 'name' in v && 'install' in v);
 						if (pluginObj) Tempo.use(pluginObj);
 					} catch (e) {

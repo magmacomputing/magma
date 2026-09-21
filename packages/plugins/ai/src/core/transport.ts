@@ -123,8 +123,9 @@ export async function fetchFromProvider(
 	let rawModel: string | undefined;
 	let rawKey: string | undefined;
 
-	const defaultUrl = DEFAULT_PROVIDERS[provider.id]?.url;
-	const defaultKey = resolveProviderApiKey(provider.id);
+	const globalEndpoint = _state.config.endpoint ?? _state.config.proxyUrl;
+	const defaultUrl = DEFAULT_PROVIDERS[provider.id]?.url ?? globalEndpoint;
+	const defaultKey = resolveProviderApiKey(provider.id) ?? DEFAULT_PROVIDERS[provider.id]?.key ?? (globalEndpoint ? 'proxy' : undefined);
 
 	const controller = new AbortController();
 	const rawTimeout = options?.timeout ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
@@ -144,8 +145,10 @@ export async function fetchFromProvider(
 		}
 
 		try {
-			rawUrl = asText(evaluate(provider.url, defaultUrl));
+			rawUrl = asText(evaluate(provider.url ?? provider.endpoint, defaultUrl));
 			rawModel = resolveProviderModel(provider, provider.tier as any);
+			if (!rawModel && (globalEndpoint || provider.url || provider.endpoint))
+				rawModel = 'default';
 
 			let abortListener: (() => void) | undefined;
 			const abortPromise = new Promise<never>((_, reject) => {
@@ -270,6 +273,13 @@ Do not include markdown blocks or any text outside the JSON.`;
 			const boundedError = errorText.length > 500 ? `${errorText.slice(0, 500)}... (truncated)` : errorText;
 			const resetTime = limits?.resetAt ?? undefined;
 			_state.limits = limits;
+			if (response.status === 429 && (url.includes('tempo.magmacomputing.com.au/api/ai/demo') || provider.id === 'magma' || provider.id === 'demo')) {
+				throw new TempoAiError(
+					`Tempo AI Demo Sandbox rate limit reached (20 req/hr). To continue with higher throughput, configure your own provider credentials using initAI({ providers: [{ id: 'groq', key: '...' }] }).`,
+					429,
+					resetTime
+				);
+			}
 			throw new TempoAiError(`Provider ${provider.id} failed with status ${response.status}. Details: ${boundedError}`, response.status, resetTime);
 		}
 
