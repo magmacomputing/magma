@@ -152,11 +152,18 @@ const rawReasoning = result.reasoning;
 
 ---
 
-## 5. Ephemeral Processing & Partitioned Caching
+## 5. Ephemeral Processing, Partitioned Caching & Trial Data Handling
 
-### Zero External Telemetry Policy
-* The plugin does not transmit telemetry, analytics, or prompt logs to external tracking servers.
-* Prompt processing and temporal computations occur ephemerally during request execution.
+### Self-Hosted & BYOK Zero External Telemetry Policy
+* When using **Tier 2 (Private Backend Proxy)** or **Tier 3 (Direct Provider Keys / BYOK)**, the plugin never transmits telemetry, analytics, or prompt logs to external tracking servers.
+* Prompt processing and temporal computations occur ephemerally during request execution directly between your infrastructure and your LLM provider.
+
+### Trial Sandbox (`tempo` Provider) Data Handling & Diagnostics
+* For developers evaluating the plugin via the free trial sandbox (`initAI({ provider: 'tempo' })`), requests are processed by the shared evaluation gateway.
+* **Prompt Engineering & Diagnostics**: Sanitized natural language date expressions and model completion responses may be logged to diagnose parsing failures, detect hallucinations, and tune temporal context prompts.
+* **Anonymization**: Client IP addresses are hashed using salted SHA-256 prior to storage; raw IPs and personal identifiers are never stored.
+* **Retention Policy**: Trial sandbox telemetry records are automatically pruned after **30 days** via automated TTL expiration.
+* **Sensitive Data**: Do not submit proprietary or sensitive personal information through the trial sandbox. For strict zero-retention, configure your own backend proxy (`initAI({ endpoint })`) or private provider keys (`initAI({ provider: 'groq', apiKey })`).
 
 ### Partitioned Multi-Tier Caching
 * **Namespaced Cache Keys**: Cache keys are generated with multi-factor domain partitioning (e.g., `diff::`, `format::`, `extract::`) incorporating the prompt text, anchor epoch, target timezone, locale, calendar system, and regional parameters to prevent contextual collision.

@@ -183,6 +183,10 @@ export interface AiProvider {
  * Configuration options for the AI parsing plugin.
  */
 export interface AiConfig {
+	/** Optional single provider shorthand (e.g. 'tempo', 'groq', or an AiProvider object) */
+	provider?: string | AiProvider | undefined;
+	/** Optional single provider API key shorthand (used in combination with `provider`) */
+	apiKey?: AsyncEvaluable<string> | undefined;
 	/** An array of fallback providers to use for routing */
 	providers?: AiProvider[] | undefined;
 	/** Execution mode across provider farm (`AiMode.Fallback` | `AiMode.Race` | `AiMode.Consensus` or string literal) */

@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asNumber, isNumber } from '@magmacomputing/tempo/library';
+import { asNumber, isNumber, isString } from '@magmacomputing/tempo/library';
 
 import { DEFAULT_PROVIDERS } from './config.js';
 import { getResolvedProviderDefaults, loadRemoteManifest, resetManifestCache } from './manifest.js';
@@ -87,14 +87,25 @@ export function initAI(config?: AiConfig): Promise<void> {
   const tempoAiConfig = getActiveTempoConfigAi();
   const env = getRuntimeEnv();
 
-  const hasExplicitProviders = config?.providers !== undefined || tempoAiConfig?.providers !== undefined;
-
   const mergedRaw: AiConfig = {
     ...(tempoAiConfig || {}),
     ...(config || {}),
   };
 
   const mergedConfig = interpolateEnv(mergedRaw, env);
+
+  // Normalize single-provider shorthand (e.g. initAI({ provider: 'tempo' }) or initAI({ provider: 'groq', apiKey: '...' }))
+  if (mergedConfig.provider) {
+    const p = isString(mergedConfig.provider)
+      ? { id: mergedConfig.provider }
+      : { ...mergedConfig.provider };
+    if (mergedConfig.apiKey && !p.key) {
+      p.key = mergedConfig.apiKey;
+    }
+    mergedConfig.providers = [p];
+  }
+
+  const hasExplicitProviders = config?.providers !== undefined || tempoAiConfig?.providers !== undefined || config?.provider !== undefined || tempoAiConfig?.provider !== undefined;
 
   if (!hasExplicitProviders && (!mergedConfig.providers || mergedConfig.providers.length === 0)) {
     const envProviders = scanWellKnownEnvProviders(env);
@@ -107,8 +118,6 @@ export function initAI(config?: AiConfig): Promise<void> {
         model: 'default',
         key: 'proxy',
       }];
-    } else {
-      mergedConfig.providers = [{ id: 'magma', ...(DEFAULT_PROVIDERS.magma || {}) }];
     }
   }
 

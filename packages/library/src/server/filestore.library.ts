@@ -155,6 +155,7 @@ export async function serverDelete(filePath: string, rootDir?: string): Promise<
 export async function serverExists(filePath: string, rootDir?: string): Promise<boolean> {
 	try {
 		const target = resolveSandboxPath(filePath, rootDir);
+		await assertNoSymlinkEscape(target, rootDir);
 		await fs.access(target);
 		return true;
 	} catch {
@@ -171,6 +172,7 @@ export async function serverExists(filePath: string, rootDir?: string): Promise<
 export async function serverList(dir = '', rootDir?: string): Promise<string[]> {
 	try {
 		const target = resolveSandboxPath(dir, rootDir);
+		await assertNoSymlinkEscape(target, rootDir);
 		return await fs.readdir(target);
 	} catch (err: any) {
 		if (err.code === 'ENOENT') return [];

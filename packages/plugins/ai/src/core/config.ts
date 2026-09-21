@@ -67,24 +67,14 @@ export const DEFAULT_PROVIDERS: Readonly<Record<string, Partial<AiProvider>>> = 
 		},
 		tokenParam: 'max_tokens'
 	},
-	magma: {
-		url: 'https://tempo.magmacomputing.com.au/api/ai/demo',
+	tempo: {
+		url: 'https://tempo.magmacomputing.com.au/api/ai/tempo',
 		models: {
 			default: 'llama-3.3-70b-versatile',
 			fast: 'llama-3.3-70b-versatile',
 			large: 'llama-3.3-70b-versatile'
 		},
 		tokenParam: 'max_tokens',
-		key: 'demo-public-sandbox-token'
-	},
-	demo: {
-		url: 'https://tempo.magmacomputing.com.au/api/ai/demo',
-		models: {
-			default: 'llama-3.3-70b-versatile',
-			fast: 'llama-3.3-70b-versatile',
-			large: 'llama-3.3-70b-versatile'
-		},
-		tokenParam: 'max_tokens',
-		key: 'demo-public-sandbox-token'
+		key: 'tempo-public-sandbox-token'
 	}
 });

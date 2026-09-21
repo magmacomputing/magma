@@ -47,6 +47,21 @@ You can declare AI provider configurations directly within your project's `tempo
 
 ## Basic Usage (Explicit Configuration)
 
+### Single Provider Shorthand
+For single-provider workflows, use the concise `provider` and `apiKey` properties:
+
+```typescript
+import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+
+// 1. Free evaluation trial sandbox (zero external keys needed):
+await initAI({ provider: 'tempo' });
+
+// 2. Direct provider with API key:
+await initAI({ provider: 'groq', apiKey: process.env.GROQ_API_KEY });
+```
+
+### Multi-Provider Configuration
+
 ```typescript
 import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
 

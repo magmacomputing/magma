@@ -41,8 +41,12 @@ export function getAvailableProviders(options?: AiBaseOptions): AiProvider[] {
 			? globalProviders
 			: [];
 
-	if (resolved.length === 0)
-		throw new TempoAiError('No AI providers configured. Call initAI() or pass providers in options.', 400);
+	if (resolved.length === 0) {
+		throw new TempoAiError(
+			`[Tempo AI] No AI providers configured.\nChoose one of the following options to initialize:\n  - Free trial sandbox:   initAI({ provider: 'tempo' })\n  - Custom backend proxy: initAI({ endpoint: 'https://api.yourdomain.com/ai' })\n  - Direct API key:       initAI({ provider: 'groq', apiKey: '...' })\n\nFor complete onboarding and configuration options, see:\nhttps://magmacomputing.github.io/magma/doc/9-plugins/ai.onboarding.html`,
+			400
+		);
+	}
 
 	assertNoReservedProviderId(resolved);
 	return resolved as AiProvider[];
@@ -273,9 +277,9 @@ Do not include markdown blocks or any text outside the JSON.`;
 			const boundedError = errorText.length > 500 ? `${errorText.slice(0, 500)}... (truncated)` : errorText;
 			const resetTime = limits?.resetAt ?? undefined;
 			_state.limits = limits;
-			if (response.status === 429 && (url.includes('tempo.magmacomputing.com.au/api/ai/demo') || provider.id === 'magma' || provider.id === 'demo')) {
+			if (response.status === 429 && (url.includes('tempo.magmacomputing.com.au/api/ai') || provider.id === 'tempo')) {
 				throw new TempoAiError(
-					`Tempo AI Demo Sandbox rate limit reached (20 req/hr). To continue with higher throughput, configure your own provider credentials using initAI({ providers: [{ id: 'groq', key: '...' }] }).`,
+					`Tempo AI Trial Sandbox rate limit reached (20 req/hr). To continue with higher throughput, configure your own provider credentials using initAI({ provider: 'groq', apiKey: '...' }) or connect a backend proxy using initAI({ endpoint: 'https://...' }).`,
 					429,
 					resetTime
 				);

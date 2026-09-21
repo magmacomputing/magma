@@ -218,12 +218,13 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 			expect(result.ai?.cached).toBe(false);
 		});
 
-		it('should auto-configure magma trial provider when no providers or environment keys are found (zero-config trial)', async () => {
-			const resolved = await resolveAutoDiscoveredConfig();
-			expect(resolved.providers).toBeDefined();
-			expect(resolved.providers?.length).toBe(1);
-			expect(resolved.providers?.[0].id).toBe('magma');
-			expect(resolved.providers?.[0].url).toBe('https://tempo.magmacomputing.com.au/api/ai/demo');
+		it('should configure tempo trial provider when explicitly requested via initAI({ provider: "tempo" })', async () => {
+			await initAI({ remoteConfigUrl: false, provider: 'tempo' });
+			const config = getAiConfig();
+			expect(config.providers).toBeDefined();
+			expect(config.providers?.length).toBe(1);
+			expect(config.providers?.[0].id).toBe('tempo');
+			expect(config.providers?.[0].url).toBe('https://tempo.magmacomputing.com.au/api/ai/tempo');
 
 			const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
 				return new Response(JSON.stringify({
@@ -232,7 +233,7 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 							content: JSON.stringify({
 								iso: '2026-08-17T09:00:00Z',
 								confidence: 0.98,
-								reasoning: 'Parsed via demo sandbox',
+								reasoning: 'Parsed via tempo sandbox',
 							}),
 						},
 					}],
@@ -241,8 +242,28 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 
 			const result = await parseAI('tomorrow at 5pm', { force: true });
 			expect(result.isValid).toBe(true);
-			expect(result.ai?.provider).toBe('magma');
-			expect(fetchSpy).toHaveBeenCalledWith('https://tempo.magmacomputing.com.au/api/ai/demo', expect.anything());
+			expect(result.ai?.provider).toBe('tempo');
+			expect(fetchSpy).toHaveBeenCalledWith('https://tempo.magmacomputing.com.au/api/ai/tempo', expect.anything());
+		});
+
+		it('should support single provider and apiKey shorthand e.g. initAI({ provider: "groq", apiKey: "..." })', async () => {
+			await initAI({ remoteConfigUrl: false, provider: 'groq', apiKey: 'gsk_single_shorthand' });
+			const config = getAiConfig();
+			expect(config.providers).toBeDefined();
+			expect(config.providers?.length).toBe(1);
+			expect(config.providers?.[0].id).toBe('groq');
+			expect(config.providers?.[0].key).toBe('[REDACTED]');
+		});
+
+		it('should throw actionable TempoAiError with GitHub Pages link when unconfigured', async () => {
+			await initAI({ remoteConfigUrl: false });
+			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(TempoAiError);
+			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(
+				/No AI providers configured/i
+			);
+			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(
+				/https:\/\/magmacomputing\.github\.io\/magma\/doc\/9-plugins\/ai\.onboarding\.html/
+			);
 		});
 
 		it('should throw clear TempoAiError when explicit providers array is empty', async () => {
@@ -326,13 +347,13 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 		});
 
 		it('should format 429 demo sandbox rate limit error with developer guidance', async () => {
-			await initAI({ remoteConfigUrl: false });
+			await initAI({ remoteConfigUrl: false, provider: 'tempo' });
 			vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
 				return new Response('Rate limit exceeded', { status: 429 });
 			});
 
 			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(
-				/Tempo AI Demo Sandbox rate limit reached \(20 req\/hr\)/
+				/Tempo AI Trial Sandbox rate limit reached \(20 req\/hr\)/
 			);
 		});
 

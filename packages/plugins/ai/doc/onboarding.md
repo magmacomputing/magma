@@ -13,36 +13,40 @@ Choose the setup that fits your environment:
 ```mermaid
 flowchart TD
     Start["Developer starts with Tempo AI"] --> Q1{"Where is code running?"}
-    Q1 -- "Browser / Static Site / Sandbox" --> Q2{"Have your own backend?"}
-    Q1 -- "Server / Node.js / Deno / Bun" --> S1["Tier 3: Environment Variables<br/><code>GROQ_API_KEY=...</code>"]
-    Q2 -- "No (Zero-Config Trial)" --> T1["Tier 1: Demo Sandbox<br/><code>await parseAI(...)</code><br/><i>(Free 20 req/hr trial sandbox)</i>"]
+    Q1 -- "Browser / Client / Sandbox" --> Q2{"Have your own backend?"}
+    Q1 -- "Server / Node.js / Deno / Bun" --> S1["Tier 3: Environment Variables or Direct Key<br/><code>GROQ_API_KEY=...</code> or <code>initAI({ provider: 'groq', apiKey: '...' })</code>"]
+    Q2 -- "No (Evaluation Sandbox)" --> T1["Tier 1: Tempo Trial Sandbox<br/><code>initAI({ provider: 'tempo' })</code><br/><i>(Free 20 req/hr trial sandbox)</i>"]
     Q2 -- "Yes (Secure Proxy)" --> T2["Tier 2: Backend Proxy Endpoint<br/><code>initAI({ endpoint: 'https://api.yourdomain.com/api/ai' })</code>"]
 ```
 
 ### Tier Comparison Matrix
 
-| Tier | Best For | Configuration | Rate Limits & Auth |
+| Tier | Best For | Configuration | Rate Limits & Data Handling |
 | :--- | :--- | :--- | :--- |
-| **Tier 1: Demo Sandbox** | Rapid prototyping, browser REPL, onboarding tutorials | Zero setup required! Omit `initAI()` or call with no args. | Public trial sandbox: 20 req/hr per IP (Groq Llama 3.3). |
-| **Tier 2: Backend Proxy** | Production web apps, mobile apps, SPAs | `initAI({ endpoint: 'https://api.yourdomain.com/api/ai' })` | Your backend manages quotas, authentication, and secret storage. |
-| **Tier 3: Direct Keys** | Server-side APIs, microservices, CLI tools, serverless | Environment variables (`GROQ_API_KEY`, etc.) or `initAI({ providers: [...] })` | Full direct provider quota with dynamic key/endpoint supplier support. |
+| **Tier 1: Tempo Sandbox** | Rapid prototyping, browser REPL, onboarding tutorials | `initAI({ provider: 'tempo' })` | Free community sandbox: 20 req/hr per IP (Groq Llama 3.3). Queries are sanitized and retained for up to 30 days for prompt diagnostics. |
+| **Tier 2: Backend Proxy** | Production web apps, mobile apps, SPAs | `initAI({ endpoint: 'https://api.yourdomain.com/api/ai' })` | Your backend manages quotas, authentication, and secret storage. Zero data touches Tempo servers. |
+| **Tier 3: Direct Keys** | Server-side APIs, microservices, CLI tools, serverless | `initAI({ provider: 'groq', apiKey: '...' })` or `initAI({ providers: [...] })` | Full direct provider quota with dynamic key/endpoint supplier support. Direct client-to-provider egress. |
 
 ---
 
-## Tier 1: Zero-Config Trial Sandbox
+## Tier 1: Tempo Trial Sandbox (Evaluation)
 
-When you invoke `parseAI()`, `extractAI()`, or `diffAI()` without prior configuration or environment variables, Tempo AI automatically connects to the public Tempo demo sandbox.
+To quickly explore semantic date parsing without provisioning external API keys or setting up a proxy backend, opt-in to the free Tempo trial sandbox:
 
 ```typescript
-import { parseAI } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
 
-// No API keys or setup needed!
+// Initialize with Tempo's free evaluation sandbox
+await initAI({ provider: 'tempo' });
+
 const dt = await parseAI("The third Thursday in November after Thanksgiving");
 console.log(dt.format());
 ```
 
 > [!NOTE]
-> The demo sandbox is rate-limited to **20 requests/hour per IP**. When exceeded, Tempo AI raises a descriptive `TempoAiError(429)` guiding you to Tier 2 or Tier 3.
+> **Data Handling & Rate Limits on the Trial Sandbox**:
+> The `tempo` evaluation sandbox enforces an IP rate limit of **20 requests/hour**. When exceeded, Tempo AI raises a descriptive `TempoAiError(429)` guiding you to Tier 2 or Tier 3.
+> To continually improve prompt accuracy and diagnose parsing edge cases, queries sent through the free sandbox are scrubbed of credentials and personal identifiers and stored for up to 30 days. Do not submit sensitive personal information through the trial sandbox. For strict zero-retention, use Tier 2 or Tier 3.
 
 ---
 
@@ -58,7 +62,7 @@ initAI({
   endpoint: 'https://api.yourdomain.com/api/aiProxy'
 });
 
-// All subsequent AI calls route through your backend proxy:
+// All subsequent AI calls route through your backend proxy (unless a provider specifies an explicit per-provider endpoint override):
 const meeting = await parseAI("The last Friday before Melbourne Cup Day");
 ```
 
@@ -79,7 +83,7 @@ export const handleAiProxy = async (req, res) => {
   });
 
   const data = await upstreamRes.json();
-  res.json(data);
+  res.status(upstreamRes.status).json(data);
 };
 ```
 

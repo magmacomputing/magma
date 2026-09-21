@@ -9,13 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Unified 3-Tier AI Configuration Architecture**:
-  - **Tier 1 (Zero-Config Trial Sandbox)**: Added default built-in `magma` provider pointing to `https://tempo.magmacomputing.com.au/api/ai/demo` (`llama-3.3-70b-versatile`). When no keys or environment variables are present, AI parsing functions work out of the box with an IP-rated public trial sandbox.
+  - **Tier 1 (Evaluation Sandbox)**: Added default built-in `tempo` provider pointing to `https://tempo.magmacomputing.com.au/api/ai/tempo` (`llama-3.3-70b-versatile`) with declarative opt-in (`initAI({ provider: 'tempo' })`).
   - **Tier 2 (Global Backend Proxy)**: Added root `endpoint` configuration in `AiConfig` (`initAI({ endpoint: 'https://api.yourdomain.com/api/aiProxy' })`) to route all AI provider requests through a single secure backend proxy.
-  - **Tier 3 (Per-Provider Endpoints)**: Added per-provider `endpoint` configuration on `AiProvider` with dynamic evaluable supplier support for custom gateways and private model deployments.
-  - **Actionable 429 Quota Guidance**: Emits descriptive developer error messages when public sandbox rate limits are exceeded, guiding developers to configure their own provider credentials.
+  - **Tier 3 (Per-Provider Endpoints & Direct Keys)**: Added single-provider shorthand options (`initAI({ provider: 'groq', apiKey: '...' })`) and per-provider `endpoint` configuration on `AiProvider` with dynamic evaluable supplier support for custom gateways and private model deployments.
+  - **Actionable Diagnostics & Onboarding Link**: When unconfigured, AI operations throw a structured `TempoAiError` with copy-paste initialization examples and direct links to GitHub Pages onboarding guides.
 - **Documentation & Onboarding Guides**:
   - Added [onboarding.md](doc/onboarding.md) with an architecture flowchart, comparison matrix, and clear differentiation between Core Tempo (deterministic, 0 tokens) and Tempo AI (semantic reasoning).
-  - Updated [init.md](doc/init.md) and companion proxy recipe documentation.
+  - Updated [init.md](doc/init.md) and companion proxy recipe documentation with transparent trial data handling and retention disclosures.
 
 ## [2.1.0] - 2026-09-18
 

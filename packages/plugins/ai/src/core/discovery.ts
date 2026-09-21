@@ -248,6 +248,17 @@ export async function resolveAutoDiscoveredConfig(explicitConfig?: AiConfig): Pr
 		...(explicitConfig || {}),
 	};
 
+	// Normalize single-provider shorthand
+	if (mergedConfig.provider) {
+		const p = isString(mergedConfig.provider)
+			? { id: mergedConfig.provider }
+			: { ...mergedConfig.provider };
+		if (mergedConfig.apiKey && !p.key) {
+			p.key = mergedConfig.apiKey;
+		}
+		mergedConfig.providers = [p];
+	}
+
 	// 3. Interpolate environment variables in configuration strings
 	const interpolated = interpolateEnv(mergedConfig, env);
 
@@ -262,12 +273,6 @@ export async function resolveAutoDiscoveredConfig(explicitConfig?: AiConfig): Pr
 				url: interpolated.endpoint ?? interpolated.proxyUrl,
 				model: 'default',
 				key: 'proxy',
-			}];
-		} else {
-			const magmaDefault = DEFAULT_PROVIDERS.magma;
-			interpolated.providers = [{
-				id: 'magma',
-				...(magmaDefault || {}),
 			}];
 		}
 	} else {
