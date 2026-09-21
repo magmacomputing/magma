@@ -3,25 +3,63 @@ name: Release & Publish
 on:
   workflow_dispatch:
     inputs:
-      target:
-        description: 'Package to publish'
-        required: true
-        default: '@magmacomputing/tempo'
-        type: choice
-        options:
-          - '@magmacomputing/tempo'
-          - '@magmacomputing/tempo-fns'
-          - '@magmacomputing/tempo-plugin-astro'
-          - '@magmacomputing/tempo-plugin-celestial'
-          - '@magmacomputing/tempo-plugin-ai'
-          - '@magmacomputing/tempo-plugin-batch'
-          - '@magmacomputing/tempo-plugin-finance'
-          - '@magmacomputing/tempo-plugin-snap'
-          - '@magmacomputing/tempo-plugin-sync'
-          - '@magmacomputing/tempo-plugin-ticker'
-          - '@magmacomputing/tempo-plugin-geo'
-          - '@magmacomputing/tempo-plugin-dialects'
-          - 'all'
+      all:
+        description: '📦 Publish ALL packages'
+        type: boolean
+        default: false
+      tempo:
+        description: '@magmacomputing/tempo (core)'
+        type: boolean
+        default: false
+      tempo_fns:
+        description: '@magmacomputing/tempo-fns (functional utilities)'
+        type: boolean
+        default: false
+      plugin_ai:
+        description: '@magmacomputing/tempo-plugin-ai'
+        type: boolean
+        default: false
+      plugin_astro:
+        description: '@magmacomputing/tempo-plugin-astro'
+        type: boolean
+        default: false
+      plugin_batch:
+        description: '@magmacomputing/tempo-plugin-batch'
+        type: boolean
+        default: false
+      plugin_celestial:
+        description: '@magmacomputing/tempo-plugin-celestial'
+        type: boolean
+        default: false
+      plugin_dialects:
+        description: '@magmacomputing/tempo-plugin-dialects'
+        type: boolean
+        default: false
+      plugin_finance:
+        description: '@magmacomputing/tempo-plugin-finance'
+        type: boolean
+        default: false
+      plugin_geo:
+        description: '@magmacomputing/tempo-plugin-geo'
+        type: boolean
+        default: false
+      plugin_snap:
+        description: '@magmacomputing/tempo-plugin-snap'
+        type: boolean
+        default: false
+      plugin_sync:
+        description: '@magmacomputing/tempo-plugin-sync'
+        type: boolean
+        default: false
+      plugin_ticker:
+        description: '@magmacomputing/tempo-plugin-ticker'
+        type: boolean
+        default: false
+      custom:
+        description: '✏️ Custom packages (comma/space-separated list, e.g. "my-plugin, another-pkg")'
+        required: false
+        type: string
+        default: ''
   release:
     types: [published]
 
@@ -51,44 +89,109 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Packages
+      - name: Resolve Target Packages & Build
         env:
-          INPUT_TARGET: ${{ github.event.inputs.target }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_ALL: ${{ inputs.all }}
+          INPUT_TEMPO: ${{ inputs.tempo }}
+          INPUT_TEMPO_FNS: ${{ inputs.tempo_fns }}
+          INPUT_PLUGIN_AI: ${{ inputs.plugin_ai }}
+          INPUT_PLUGIN_ASTRO: ${{ inputs.plugin_astro }}
+          INPUT_PLUGIN_BATCH: ${{ inputs.plugin_batch }}
+          INPUT_PLUGIN_CELESTIAL: ${{ inputs.plugin_celestial }}
+          INPUT_PLUGIN_DIALECTS: ${{ inputs.plugin_dialects }}
+          INPUT_PLUGIN_FINANCE: ${{ inputs.plugin_finance }}
+          INPUT_PLUGIN_GEO: ${{ inputs.plugin_geo }}
+          INPUT_PLUGIN_SNAP: ${{ inputs.plugin_snap }}
+          INPUT_PLUGIN_SYNC: ${{ inputs.plugin_sync }}
+          INPUT_PLUGIN_TICKER: ${{ inputs.plugin_ticker }}
+          INPUT_CUSTOM: ${{ inputs.custom }}
         run: |
-          TARGET="${INPUT_TARGET:-@magmacomputing/tempo}"
-          
-          # Input validation
-          case "$TARGET" in
-            @magmacomputing/tempo|@magmacomputing/tempo-fns|@magmacomputing/tempo-plugin-astro|@magmacomputing/tempo-plugin-celestial|@magmacomputing/tempo-plugin-ai|@magmacomputing/tempo-plugin-batch|@magmacomputing/tempo-plugin-finance|@magmacomputing/tempo-plugin-snap|@magmacomputing/tempo-plugin-sync|@magmacomputing/tempo-plugin-ticker|@magmacomputing/tempo-plugin-geo|@magmacomputing/tempo-plugin-dialects|all)
-              ;;
-            *)
-              echo "❌ Error: Invalid target '$TARGET'"
-              exit 1
-              ;;
-          esac
+          PKGS=()
 
-          if [ "$TARGET" = "all" ]; then
-            npm run build:all
-          elif [ "$TARGET" = "@magmacomputing/tempo" ]; then
-            npm run build:tempo
-          elif [ "$TARGET" = "@magmacomputing/tempo-fns" ]; then
-            npm run build:tempo
-            npm run build:functions
+          if [ "$EVENT_NAME" = "release" ] || [ "$INPUT_ALL" = "true" ]; then
+            PKGS=(
+              "@magmacomputing/tempo"
+              "@magmacomputing/tempo-fns"
+              "@magmacomputing/tempo-plugin-astro"
+              "@magmacomputing/tempo-plugin-celestial"
+              "@magmacomputing/tempo-plugin-ai"
+              "@magmacomputing/tempo-plugin-batch"
+              "@magmacomputing/tempo-plugin-finance"
+              "@magmacomputing/tempo-plugin-snap"
+              "@magmacomputing/tempo-plugin-sync"
+              "@magmacomputing/tempo-plugin-ticker"
+              "@magmacomputing/tempo-plugin-geo"
+              "@magmacomputing/tempo-plugin-dialects"
+            )
           else
-            npm run build:plugins
+            [ "$INPUT_TEMPO" = "true" ] && PKGS+=("@magmacomputing/tempo")
+            [ "$INPUT_TEMPO_FNS" = "true" ] && PKGS+=("@magmacomputing/tempo-fns")
+            [ "$INPUT_PLUGIN_AI" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-ai")
+            [ "$INPUT_PLUGIN_ASTRO" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-astro")
+            [ "$INPUT_PLUGIN_BATCH" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-batch")
+            [ "$INPUT_PLUGIN_CELESTIAL" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-celestial")
+            [ "$INPUT_PLUGIN_DIALECTS" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-dialects")
+            [ "$INPUT_PLUGIN_FINANCE" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-finance")
+            [ "$INPUT_PLUGIN_GEO" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-geo")
+            [ "$INPUT_PLUGIN_SNAP" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-snap")
+            [ "$INPUT_PLUGIN_SYNC" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-sync")
+            [ "$INPUT_PLUGIN_TICKER" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-ticker")
+
+            if [ -n "$INPUT_CUSTOM" ]; then
+              CLEAN_CUSTOM=$(echo "$INPUT_CUSTOM" | tr ',' ' ')
+              for item in $CLEAN_CUSTOM; do
+                [ -z "$item" ] && continue
+                if [[ "$item" == @magmacomputing/* ]]; then
+                  PKGS+=("$item")
+                elif [ "$item" = "tempo" ]; then
+                  PKGS+=("@magmacomputing/tempo")
+                elif [ "$item" = "tempo-fns" ] || [ "$item" = "fns" ]; then
+                  PKGS+=("@magmacomputing/tempo-fns")
+                else
+                  PKGS+=("@magmacomputing/tempo-plugin-$item")
+                fi
+              done
+            fi
           fi
 
-      - name: Publish Package(s) with Provenance
-        env:
-          INPUT_TARGET: ${{ github.event.inputs.target }}
-        run: |
-          TARGET="${INPUT_TARGET:-@magmacomputing/tempo}"
+          if [ ${#PKGS[@]} -eq 0 ]; then
+            echo "❌ Error: No packages selected for publication. Please check at least one package or specify in the custom input."
+            exit 1
+          fi
 
+          # Deduplicate package array while preserving order
+          UNIQUE_PKGS=()
+          for p in "${PKGS[@]}"; do
+            skip=0
+            for u in "${UNIQUE_PKGS[@]}"; do
+              if [ "$u" = "$p" ]; then
+                skip=1
+                break
+              fi
+            done
+            if [ $skip -eq 0 ]; then
+              UNIQUE_PKGS+=("$p")
+            fi
+          done
+
+          echo "📋 Packages queued for build & publish:"
+          for p in "${UNIQUE_PKGS[@]}"; do
+            echo "  • $p"
+          done
+
+          echo "TARGET_PKGS=${UNIQUE_PKGS[*]}" >> $GITHUB_ENV
+
+          echo "🔨 Building monorepo packages..."
+          npm run build:all
+
+      - name: Publish Package(s) with Provenance
+        run: |
           publish_pkg() {
             local pkg="$1"
             
             # Read exact version from workspace package.json
-            local pkg_json
+            local pkg_json=""
             if [ "$pkg" = "@magmacomputing/tempo" ]; then
               pkg_json="packages/tempo/package.json"
             elif [ "$pkg" = "@magmacomputing/tempo-fns" ]; then
@@ -97,13 +200,13 @@ jobs:
               local plugin_dir="${pkg#@magmacomputing/tempo-plugin-}"
               if [ -f "packages/plugins/$plugin_dir/package.json" ]; then
                 pkg_json="packages/plugins/$plugin_dir/package.json"
-              else
+              elif [ -f "packages/plugins/tempo-plugin-$plugin_dir/package.json" ]; then
                 pkg_json="packages/plugins/tempo-plugin-$plugin_dir/package.json"
               fi
             fi
 
-            if [ ! -f "$pkg_json" ]; then
-              echo "❌ Error: Could not find package.json for $pkg at $pkg_json"
+            if [ -z "$pkg_json" ] || [ ! -f "$pkg_json" ]; then
+              echo "❌ Error: Could not find package.json for $pkg (searched $pkg_json)"
               exit 1
             fi
 
@@ -125,19 +228,6 @@ jobs:
             (cd "$(dirname "$pkg_json")" && npm publish --access public --provenance)
           }
 
-          if [ "$TARGET" = "all" ]; then
-            publish_pkg "@magmacomputing/tempo"
-            publish_pkg "@magmacomputing/tempo-fns"
-            publish_pkg "@magmacomputing/tempo-plugin-astro"
-            publish_pkg "@magmacomputing/tempo-plugin-celestial"
-            publish_pkg "@magmacomputing/tempo-plugin-ai"
-            publish_pkg "@magmacomputing/tempo-plugin-batch"
-            publish_pkg "@magmacomputing/tempo-plugin-finance"
-            publish_pkg "@magmacomputing/tempo-plugin-snap"
-            publish_pkg "@magmacomputing/tempo-plugin-sync"
-            publish_pkg "@magmacomputing/tempo-plugin-ticker"
-            publish_pkg "@magmacomputing/tempo-plugin-geo"
-            publish_pkg "@magmacomputing/tempo-plugin-dialects"
-          else
-            publish_pkg "$TARGET"
-          fi
+          for pkg in $TARGET_PKGS; do
+            publish_pkg "$pkg"
+          done

@@ -77,6 +77,8 @@ console.log(t.term.sun);
 
 ## Usage
 
+<PluginRepl plugin="celestial" />
+
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';

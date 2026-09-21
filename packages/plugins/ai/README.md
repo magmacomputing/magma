@@ -42,6 +42,8 @@ console.log(dt.ai?.provider);               // 'groq'
 console.log(dt.ai?.confidence);             // 0.98
 ```
 
+> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=ai)**
+
 ---
 
 ## 📚 AI Endpoint Catalog

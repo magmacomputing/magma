@@ -20,6 +20,8 @@ Raw LLM API keys must **never** be exposed in client-side browser bundles or sto
 npm install @magmacomputing/tempo-plugin-ai
 ```
 
+<PluginRepl plugin="ai" />
+
 ### 1. `Tempo.ai` Cohesive Namespace
 Installing `AiPlugin` mounts the frozen **`Tempo.ai`** static action namespace onto `Tempo`:
 

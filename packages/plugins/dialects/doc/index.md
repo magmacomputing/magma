@@ -49,6 +49,8 @@ import '@magmacomputing/tempo-plugin-dialects/install';
 
 ## 🛠️ Usage Examples
 
+<PluginRepl plugin="dialects" />
+
 ### 1. Unicode LDML & Luxon Style Formatting
 
 ```typescript

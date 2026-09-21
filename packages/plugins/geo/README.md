@@ -50,6 +50,8 @@ const localTime = await t.geoLocate();
 console.log(localTime.geo?.latitude, localTime.geo?.longitude);
 ```
 
+> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=geo)**
+
 ### 2. Functional Tree-Shakeable APIs
 
 All underlying utilities can be imported as standalone tree-shakeable functions without augmenting `Tempo`:

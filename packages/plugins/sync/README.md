@@ -33,6 +33,8 @@ const clock = Tempo.sync.startClock({ updateIntervalMs: 1 });
 const buffer = clock.buffer; // Pass this SharedArrayBuffer to your workers
 ```
 
+> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=sync)**
+
 ### Reading from Worker Threads
 
 To read the synchronized time from inside a worker thread, pass the `SharedArrayBuffer` via `workerData` and instantiate an `AtomicReader`.

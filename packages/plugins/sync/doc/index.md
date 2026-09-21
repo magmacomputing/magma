@@ -20,6 +20,8 @@ npm install @magmacomputing/tempo-plugin-sync
 
 ## Usage
 
+<PluginRepl plugin="sync" />
+
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { SyncPlugin } from '@magmacomputing/tempo-plugin-sync';

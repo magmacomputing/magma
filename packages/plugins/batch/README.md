@@ -38,6 +38,8 @@ const batchResult = await Tempo.batch(epochs, { weeks: 1 });
 console.log(batchResult); // Returns an array of mutated timestamp integers
 ```
 
+> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=batch)**
+
 ### Rehydration
 
 By default, `Tempo.batch` returns an array of primitive `number` timestamps to maximize throughput over the thread boundary. If you need fully-fledged `Tempo` objects back, pass `{ rehydrate: true }`:

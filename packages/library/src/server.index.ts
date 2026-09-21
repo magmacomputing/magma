@@ -4,3 +4,4 @@
 
 export * from './server/file.library.js';
 export * from './server/mapper.library.js';
+export * from './server/filestore.library.js';

@@ -37,6 +37,8 @@ console.log(t.term.astronomy);
 // Output: { key: 'Vernal', season: 'Spring', event: 'Equinox', sphere: 'north', ... }
 ```
 
+> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=astro)**
+
 ### Response Payload
 
 #### Astronomical Seasons (`t.term.astronomy`)

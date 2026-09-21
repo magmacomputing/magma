@@ -25,6 +25,8 @@ npm install @magmacomputing/tempo-plugin-snap
 
 ## Usage
 
+<PluginRepl plugin="snap" />
+
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { SnapPlugin } from '@magmacomputing/tempo-plugin-snap';
