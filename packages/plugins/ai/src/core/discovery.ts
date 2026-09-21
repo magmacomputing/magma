@@ -275,7 +275,7 @@ export async function resolveAutoDiscoveredConfig(explicitConfig?: AiConfig): Pr
 		interpolated.providers = interpolated.providers.map(p => {
 			const normalizedId = p.id?.toLowerCase() ?? '';
 			const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env) ?? p.key ?? (normalizedId ? DEFAULT_PROVIDERS[normalizedId]?.key : undefined);
-			const resolvedUrl = p.url ?? p.endpoint ?? interpolated.endpoint ?? interpolated.proxyUrl;
+			const resolvedUrl = p.url ?? p.endpoint ?? interpolated.endpoint ?? interpolated.proxyUrl ?? (normalizedId ? DEFAULT_PROVIDERS[normalizedId]?.url : undefined);
 			return {
 				...p,
 				...(resolvedUrl !== undefined ? { url: resolvedUrl } : {}),

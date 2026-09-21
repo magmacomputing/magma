@@ -124,7 +124,7 @@ export async function fetchFromProvider(
 	let rawKey: string | undefined;
 
 	const globalEndpoint = _state.config.endpoint ?? _state.config.proxyUrl;
-	const defaultUrl = DEFAULT_PROVIDERS[provider.id]?.url ?? globalEndpoint;
+	const defaultUrl = globalEndpoint ?? DEFAULT_PROVIDERS[provider.id]?.url;
 	const defaultKey = resolveProviderApiKey(provider.id) ?? DEFAULT_PROVIDERS[provider.id]?.key ?? (globalEndpoint ? 'proxy' : undefined);
 
 	const controller = new AbortController();

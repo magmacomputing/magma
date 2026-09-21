@@ -74,4 +74,21 @@ describe('server/filestore.library', () => {
 			/Path traversal denied/
 		);
 	});
+
+	it('rejects symlink traversal pointing outside the sandbox', async () => {
+		const outsideDir = path.join(os.tmpdir(), `magma_outside_${Date.now()}`);
+		const sandboxDir = path.join(os.tmpdir(), `magma_sandbox_sym_${Date.now()}`);
+		await fs.mkdir(outsideDir, { recursive: true });
+		await fs.mkdir(sandboxDir, { recursive: true });
+
+		try {
+			await fs.symlink(outsideDir, path.join(sandboxDir, 'sym_link'), 'dir');
+			await expect(serverWrite('sym_link/stolen.txt', 'evil', sandboxDir)).rejects.toThrow(
+				/Path traversal denied/
+			);
+		} finally {
+			await fs.rm(outsideDir, { recursive: true, force: true });
+			await fs.rm(sandboxDir, { recursive: true, force: true });
+		}
+	});
 });

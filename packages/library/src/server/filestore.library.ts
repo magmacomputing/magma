@@ -30,6 +30,45 @@ function resolveSandboxPath(filePath: string, rootDir = DEFAULT_ROOT_DIR): strin
 }
 
 /**
+ * Finds the deepest existing ancestor of a path and returns its real path.
+ */
+async function getExistingRealAncestor(target: string): Promise<{ existingPath: string; realPath: string }> {
+	let curr = target;
+	while (curr && curr !== path.dirname(curr)) {
+		try {
+			const real = await fs.realpath(curr);
+			return { existingPath: curr, realPath: real };
+		} catch (err: any) {
+			if (err.code === 'ENOENT') {
+				curr = path.dirname(curr);
+			} else {
+				throw err;
+			}
+		}
+	}
+	return { existingPath: target, realPath: target };
+}
+
+/**
+ * Validates that resolved target and existing ancestors do not resolve outside the sandbox via symlinks.
+ */
+async function assertNoSymlinkEscape(targetPath: string, rootDir = DEFAULT_ROOT_DIR): Promise<void> {
+	const base = path.resolve(rootDir);
+	const { existingPath: existingBase, realPath: realBase } = await getExistingRealAncestor(base);
+	const expectedRealBase = path.resolve(realBase, path.relative(existingBase, base));
+
+	const { existingPath: existingTarget, realPath: realTarget } = await getExistingRealAncestor(targetPath);
+	const targetRelToBase = path.relative(base, existingTarget);
+
+	if (!targetRelToBase.startsWith('..') && targetRelToBase !== '..') {
+		const relToExpected = path.relative(expectedRealBase, realTarget);
+		if (relToExpected === '..' || relToExpected.startsWith(`..${path.sep}`) || path.isAbsolute(relToExpected)) {
+			throw new Error(`Path traversal denied: "${targetPath}" resolves outside sandbox "${base}" via symlink`);
+		}
+	}
+}
+
+/**
  * Reads a text file from the server sandboxed storage.
  * 
  * @param filePath - Relative path inside the sandboxed root
@@ -39,6 +78,7 @@ function resolveSandboxPath(filePath: string, rootDir = DEFAULT_ROOT_DIR): strin
 export async function serverRead(filePath: string, rootDir?: string): Promise<string | null> {
 	try {
 		const target = resolveSandboxPath(filePath, rootDir);
+		await assertNoSymlinkEscape(target, rootDir);
 		return await fs.readFile(target, 'utf8');
 	} catch (err: any) {
 		if (err.code === 'ENOENT') return null;
@@ -57,6 +97,7 @@ export async function serverRead(filePath: string, rootDir?: string): Promise<st
 export async function serverReadBuffer(filePath: string, rootDir?: string): Promise<Buffer | null> {
 	try {
 		const target = resolveSandboxPath(filePath, rootDir);
+		await assertNoSymlinkEscape(target, rootDir);
 		return await fs.readFile(target);
 	} catch (err: any) {
 		if (err.code === 'ENOENT') return null;
@@ -79,7 +120,9 @@ export async function serverWrite(
 	rootDir?: string
 ): Promise<void> {
 	const target = resolveSandboxPath(filePath, rootDir);
+	await assertNoSymlinkEscape(target, rootDir);
 	await fs.mkdir(path.dirname(target), { recursive: true });
+	await assertNoSymlinkEscape(target, rootDir);
 	await fs.writeFile(target, content, typeof content === 'string' ? 'utf8' : undefined);
 }
 
@@ -93,6 +136,7 @@ export async function serverWrite(
 export async function serverDelete(filePath: string, rootDir?: string): Promise<boolean> {
 	try {
 		const target = resolveSandboxPath(filePath, rootDir);
+		await assertNoSymlinkEscape(target, rootDir);
 		await fs.unlink(target);
 		return true;
 	} catch (err: any) {

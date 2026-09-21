@@ -129,7 +129,7 @@ export function initAI(config?: AiConfig): Promise<void> {
       const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, mergedConfig.debug ?? _state.config.debug);
       const defaultProvider = DEFAULT_PROVIDERS[normalizedId];
       const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env) ?? p.key ?? defaultProvider?.key;
-      const resolvedUrl = p.url ?? p.endpoint ?? defaultProvider?.url ?? mergedConfig.endpoint ?? mergedConfig.proxyUrl;
+      const resolvedUrl = p.url ?? p.endpoint ?? mergedConfig.endpoint ?? mergedConfig.proxyUrl ?? defaultProvider?.url;
       return {
         ...defaults,
         ...p,
@@ -168,7 +168,7 @@ export function initAI(config?: AiConfig): Promise<void> {
         const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, mergedConfig.debug ?? _state.config.debug);
         const defaultProvider = DEFAULT_PROVIDERS[normalizedId];
         const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env) ?? p.key ?? defaultProvider?.key;
-        const resolvedUrl = p.url ?? p.endpoint ?? defaultProvider?.url ?? mergedConfig.endpoint ?? mergedConfig.proxyUrl;
+        const resolvedUrl = p.url ?? p.endpoint ?? mergedConfig.endpoint ?? mergedConfig.proxyUrl ?? defaultProvider?.url;
         let hookOptions: Partial<AiProvider> | null = null;
         try {
           hookOptions = await fetchDefaults(normalizedId);

@@ -279,6 +279,21 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 			expect(fetchSpy).toHaveBeenCalledWith('https://my-backend.internal/api/ai', expect.anything());
 		});
 
+		it('should prioritize global endpoint over default provider URLs when providers are listed without explicit URLs', async () => {
+			await initAI({
+				remoteConfigUrl: false,
+				endpoint: 'https://my-proxy.internal/v1',
+				providers: [
+					{ id: 'openai', key: 'sk-test' },
+					{ id: 'groq', key: 'gsk-test' },
+				],
+			});
+
+			const config = getAiConfig();
+			expect(config.providers?.[0].url).toBe('https://my-proxy.internal/v1');
+			expect(config.providers?.[1].url).toBe('https://my-proxy.internal/v1');
+		});
+
 		it('should support per-provider endpoint alias and dynamic URL evaluable', async () => {
 			let dynamicPort = 8443;
 			await initAI({

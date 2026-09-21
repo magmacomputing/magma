@@ -16,7 +16,7 @@ flowchart TD
     Q1 -- "Browser / Static Site / Sandbox" --> Q2{"Have your own backend?"}
     Q1 -- "Server / Node.js / Deno / Bun" --> S1["Tier 3: Environment Variables<br/><code>GROQ_API_KEY=...</code>"]
     Q2 -- "No (Zero-Config Trial)" --> T1["Tier 1: Demo Sandbox<br/><code>await parseAI(...)</code><br/><i>(Free 20 req/hr trial sandbox)</i>"]
-    Q2 -- "Yes (Secure Proxy)" --> T2["Tier 2: Backend Proxy Endpoint<br/><code>initAI({ endpoint: '/api/ai' })</code>"]
+    Q2 -- "Yes (Secure Proxy)" --> T2["Tier 2: Backend Proxy Endpoint<br/><code>initAI({ endpoint: 'https://api.yourdomain.com/api/ai' })</code>"]
 ```
 
 ### Tier Comparison Matrix
@@ -24,7 +24,7 @@ flowchart TD
 | Tier | Best For | Configuration | Rate Limits & Auth |
 | :--- | :--- | :--- | :--- |
 | **Tier 1: Demo Sandbox** | Rapid prototyping, browser REPL, onboarding tutorials | Zero setup required! Omit `initAI()` or call with no args. | Public trial sandbox: 20 req/hr per IP (Groq Llama 3.3). |
-| **Tier 2: Backend Proxy** | Production web apps, mobile apps, SPAs | `initAI({ endpoint: '/api/ai' })` | Your backend manages quotas, authentication, and secret storage. |
+| **Tier 2: Backend Proxy** | Production web apps, mobile apps, SPAs | `initAI({ endpoint: 'https://api.yourdomain.com/api/ai' })` | Your backend manages quotas, authentication, and secret storage. |
 | **Tier 3: Direct Keys** | Server-side APIs, microservices, CLI tools, serverless | Environment variables (`GROQ_API_KEY`, etc.) or `initAI({ providers: [...] })` | Full direct provider quota with dynamic key/endpoint supplier support. |
 
 ---
