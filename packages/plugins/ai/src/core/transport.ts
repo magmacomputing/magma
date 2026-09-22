@@ -1,6 +1,6 @@
 import { TempoAiError } from './error.js';
 import { DEFAULT_PROVIDERS, RESERVED_PROVIDER_IDS } from './config.js';
-import { resolveProviderApiKey } from './discovery.js';
+import { resolveProviderApiKey, getRuntimeEnv } from './discovery.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
 import { logDebug } from './logger.js';
 import type { AiProvider, AiBaseOptions } from '../types/index.js';
@@ -243,10 +243,20 @@ Do not include markdown blocks or any text outside the JSON.`;
 		const { timeout: _unusedTimeout, max_completion_tokens: _unusedMct, max_tokens: _unusedMt, tokenLimit: _unusedTl, ...bodyOptions } = provider.options ?? {};
 		const startTime = performance.now();
 
-		const requestHeaders = {
+		const env = getRuntimeEnv();
+		const isTelemetryDisabled = options?.telemetry === false
+			|| _state.config.telemetry === false
+			|| env.TEMPO_TELEMETRY === '0'
+			|| env.TEMPO_TELEMETRY_DISABLED === '1'
+			|| env.TEMPO_TELEMETRY === 'false';
+
+		const requestHeaders: Record<string, string> = {
 			'Content-Type': 'application/json',
 			'Authorization': `Bearer ${key}`
 		};
+
+		if (isTelemetryDisabled && (provider.id === 'tempo' || url.includes('tempo.magmacomputing.com.au/api/ai')))
+			requestHeaders['x-tempo-telemetry'] = 'false';
 
 		const response = await ephemeral(requestHeaders, (headers) => {
 			return fetch(url, {

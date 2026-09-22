@@ -188,7 +188,8 @@ export async function getFileStore(options: FileStoreOptions | string): Promise<
 			const raw = await store.read(path);
 			if (raw === null) return fallback ?? null;
 			try {
-				return objectify<T>(raw) ?? fallback ?? null;
+				const parsed = objectify<T>(raw);
+				return parsed !== undefined ? parsed : (fallback ?? null);
 			} catch {
 				return fallback ?? null;
 			}

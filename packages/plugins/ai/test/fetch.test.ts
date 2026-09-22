@@ -1,4 +1,6 @@
-import { fetchRequest, HttpError } from '../src/core/fetch.js';
+import { fetchRequest } from '../src/core/fetch.js';
+import { fetchFromProvider } from '../src/core/transport.js';
+import { initAI, resetAI } from '../src/core/init.js';
 
 describe('fetchRequest error body handling and maxBytes limit', () => {
 	afterEach(() => {
@@ -58,3 +60,107 @@ describe('fetchRequest error body handling and maxBytes limit', () => {
 		});
 	});
 });
+
+describe('fetchFromProvider telemetry opt-out behavior', () => {
+	beforeEach(() => {
+		resetAI();
+	});
+
+	afterEach(() => {
+		resetAI();
+		vi.restoreAllMocks();
+		delete process.env.TEMPO_TELEMETRY;
+		delete process.env.TEMPO_TELEMETRY_DISABLED;
+	});
+
+	it('should attach x-tempo-telemetry: false header when options.telemetry is false for tempo provider', async () => {
+		let capturedTelemetryHeader: string | undefined;
+		vi.spyOn(globalThis, 'fetch').mockImplementation(async (url: any, init: any) => {
+			if (String(url).includes('manifest') || String(url).includes('providers.v1.json')) {
+				return new Response(JSON.stringify({ version: '1.0.0', providers: {} }), {
+					status: 200,
+					headers: { 'content-type': 'application/json' }
+				});
+			}
+			capturedTelemetryHeader = init?.headers?.['x-tempo-telemetry'];
+			return new Response(JSON.stringify({
+				choices: [{ message: { content: JSON.stringify({ reasoning: 'ok', iso: '2026-09-23T12:00:00', confidence: 0.95, ambiguous: false, granularity: 'minute' }) } }]
+			}), {
+				status: 200,
+				headers: { 'content-type': 'application/json' }
+			});
+		});
+
+		await fetchFromProvider(
+			{ id: 'tempo', key: 'test-key', url: 'https://tempo.magmacomputing.com.au/api/ai/tempo' },
+			'tomorrow',
+			'context',
+			{ telemetry: false }
+		);
+
+		expect(capturedTelemetryHeader).toBe('false');
+	});
+
+	it('should attach x-tempo-telemetry: false header when global config.telemetry is false', async () => {
+		let capturedTelemetryHeader: string | undefined;
+		vi.spyOn(globalThis, 'fetch').mockImplementation(async (url: any, init: any) => {
+			if (String(url).includes('manifest') || String(url).includes('providers.v1.json')) {
+				return new Response(JSON.stringify({ version: '1.0.0', providers: {} }), {
+					status: 200,
+					headers: { 'content-type': 'application/json' }
+				});
+			}
+			capturedTelemetryHeader = init?.headers?.['x-tempo-telemetry'];
+			return new Response(JSON.stringify({
+				choices: [{ message: { content: JSON.stringify({ reasoning: 'ok', iso: '2026-09-23T12:00:00', confidence: 0.95, ambiguous: false, granularity: 'minute' }) } }]
+			}), {
+				status: 200,
+				headers: { 'content-type': 'application/json' }
+			});
+		});
+
+		await initAI({
+			remoteConfigUrl: false,
+			telemetry: false,
+			providers: [{ id: 'tempo', key: 'test-key', url: 'https://tempo.magmacomputing.com.au/api/ai/tempo' }]
+		});
+
+		await fetchFromProvider(
+			{ id: 'tempo', key: 'test-key', url: 'https://tempo.magmacomputing.com.au/api/ai/tempo' },
+			'tomorrow',
+			'context'
+		);
+
+		expect(capturedTelemetryHeader).toBe('false');
+	});
+
+	it('should attach x-tempo-telemetry: false header when TEMPO_TELEMETRY=0 environment variable is set', async () => {
+		process.env.TEMPO_TELEMETRY = '0';
+
+		let capturedTelemetryHeader: string | undefined;
+		vi.spyOn(globalThis, 'fetch').mockImplementation(async (url: any, init: any) => {
+			if (String(url).includes('manifest') || String(url).includes('providers.v1.json')) {
+				return new Response(JSON.stringify({ version: '1.0.0', providers: {} }), {
+					status: 200,
+					headers: { 'content-type': 'application/json' }
+				});
+			}
+			capturedTelemetryHeader = init?.headers?.['x-tempo-telemetry'];
+			return new Response(JSON.stringify({
+				choices: [{ message: { content: JSON.stringify({ reasoning: 'ok', iso: '2026-09-23T12:00:00', confidence: 0.95, ambiguous: false, granularity: 'minute' }) } }]
+			}), {
+				status: 200,
+				headers: { 'content-type': 'application/json' }
+			});
+		});
+
+		await fetchFromProvider(
+			{ id: 'tempo', key: 'test-key', url: 'https://tempo.magmacomputing.com.au/api/ai/tempo' },
+			'tomorrow',
+			'context'
+		);
+
+		expect(capturedTelemetryHeader).toBe('false');
+	});
+});
+

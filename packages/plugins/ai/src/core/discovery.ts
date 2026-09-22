@@ -1,4 +1,4 @@
-import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isDefined, isFunction, asText } from '@magmacomputing/tempo/library';
+import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isDefined, isFunction, asText, isUndefined, isEmpty } from '@magmacomputing/tempo/library';
 import type { AsyncEvaluable } from '@magmacomputing/tempo/library';
 import { Tempo } from '@magmacomputing/tempo';
 
@@ -249,40 +249,43 @@ export async function resolveAutoDiscoveredConfig(explicitConfig?: AiConfig): Pr
 	};
 
 	// Normalize single-provider shorthand
-	if (mergedConfig.provider) {
+	if (mergedConfig.provider && isUndefined(mergedConfig.providers)) {
 		const p = isString(mergedConfig.provider)
 			? { id: mergedConfig.provider }
 			: { ...mergedConfig.provider };
-		if (mergedConfig.apiKey && !p.key) {
+		if (mergedConfig.apiKey && !p.key)
 			p.key = mergedConfig.apiKey;
-		}
+
 		mergedConfig.providers = [p];
 	}
 
 	// 3. Interpolate environment variables in configuration strings
 	const interpolated = interpolateEnv(mergedConfig, env);
 
-	// 4. If no providers defined in configuration, scan environment for well-known keys
-	if (!interpolated.providers || interpolated.providers.length === 0) {
-		const envProviders = scanWellKnownEnvProviders(env);
-		if (envProviders.length > 0) {
-			interpolated.providers = envProviders;
-		} else if (interpolated.endpoint || interpolated.proxyUrl) {
+	// 4. If no providers defined in configuration, handle explicit proxy first, then scan environment for well-known keys
+	if (!interpolated.providers || isEmpty(interpolated.providers)) {
+		if (interpolated.endpoint || interpolated.proxyUrl) {
 			interpolated.providers = [{
 				id: 'proxy',
 				url: interpolated.endpoint ?? interpolated.proxyUrl,
 				model: 'default',
 				key: 'proxy',
 			}];
+		} else {
+			const envProviders = scanWellKnownEnvProviders(env);
+			if (envProviders.length > 0)
+				interpolated.providers = envProviders;
 		}
 	} else {
 		// Resolve any missing keys and normalize endpoints for explicitly configured providers
 		interpolated.providers = interpolated.providers.map(p => {
 			const normalizedId = p.id?.toLowerCase() ?? '';
+			const canonicalId = DEFAULT_PROVIDERS[normalizedId] ? normalizedId : p.id;
 			const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env) ?? p.key ?? (normalizedId ? DEFAULT_PROVIDERS[normalizedId]?.key : undefined);
 			const resolvedUrl = p.url ?? p.endpoint ?? interpolated.endpoint ?? interpolated.proxyUrl ?? (normalizedId ? DEFAULT_PROVIDERS[normalizedId]?.url : undefined);
 			return {
 				...p,
+				id: canonicalId,
 				...(resolvedUrl !== undefined ? { url: resolvedUrl } : {}),
 				...(resolvedKey !== undefined ? { key: resolvedKey } : {}),
 			};

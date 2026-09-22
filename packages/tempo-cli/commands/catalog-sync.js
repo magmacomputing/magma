@@ -89,8 +89,8 @@ export async function catalogSync(_args) {
 	);
 
 	const manifestEntries = publicPlugins.map(p => {
-		const major = p.version ? p.version.split('.')[0] : '2';
-		return `\t${JSON.stringify(p.id)}: {\n\t\tname: ${JSON.stringify(p.packageName)},\n\t\tversion: ${JSON.stringify(p.version || 'latest')},\n\t\tloader: () => import(${JSON.stringify(p.packageName)}).catch(() => import('https://esm.sh/' + ${JSON.stringify(p.packageName)} + '@^${major}'))\n\t}`;
+		const versionSuffix = p.version ? `@${p.version}` : '';
+		return `\t${JSON.stringify(p.id)}: {\n\t\tname: ${JSON.stringify(p.packageName)},\n\t\tversion: ${JSON.stringify(p.version || 'latest')},\n\t\tloader: () => import(${JSON.stringify(p.packageName)}).catch(() => import('https://esm.sh/' + ${JSON.stringify(p.packageName)} + ${JSON.stringify(versionSuffix)}))\n\t}`;
 	}).join(',\n');
 
 	const manifestContent = `/**

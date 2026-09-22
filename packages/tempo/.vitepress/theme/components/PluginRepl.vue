@@ -140,20 +140,18 @@ const ticker = Tempo.ticker({ seconds: 1 }, (t, stop) => {
 return 'Ticker started (executes in console stream)';`,
 
   ai: `// 🤖 AI Semantic Parsing & Scheduling (@magmacomputing/tempo-plugin-ai)
-const { AiPlugin } = await import('@magmacomputing/tempo-plugin-ai');
-Tempo.use(AiPlugin);
+import { Tempo } from '@magmacomputing/tempo';
+import { pluginAI, initAI } from '@magmacomputing/tempo-plugin-ai';
 
-await Tempo.ai.init({
-  providers: [
-    { id: 'ollama', endpoint: 'http://localhost:11434/v1', model: 'llama3' }
-  ],
-  remoteConfigUrl: false
-});
+Tempo.extend(pluginAI);
 
-console.log('Tempo.ai initialized with local provider support');
-console.log('Ready to parse: "Next Tuesday around 2:30pm"');
+// Quick-start trial provider (or configure BYOK: initAI({ provider: 'groq', apiKey: '...' }))
+await initAI({ provider: 'tempo' });
 
-return 'Tempo.ai sandbox ready (provide provider key or local Ollama)';`
+const t = await Tempo.ai("next Friday at 2pm");
+console.log('Parsed result:', t.format('YYYY-MM-DD HH:mm'));
+
+return t.iso;`
 };
 
 const activeSnippet = computed(() => {
@@ -184,7 +182,8 @@ function launchRepl() {
     <div v-if="isActive" class="plugin-repl-active">
       <iframe
         :src="iframeSrc"
-        sandbox="allow-scripts allow-modals allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+        sandbox="allow-scripts allow-modals allow-popups"
+        allow="geolocation"
         :style="{ width: '100%', height: height, border: 'none', borderRadius: '8px' }"
         :title="title || `Interactive ${plugin} demo`"
       ></iframe>

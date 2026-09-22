@@ -17,10 +17,6 @@
     "collapsed": false,
     "items": [
       {
-        "text": "Quick Start & Onboarding",
-        "link": "/doc/9-plugins/ai.onboarding"
-      },
-      {
         "text": "Overview",
         "link": "/doc/9-plugins/ai.index"
       },
@@ -75,6 +71,10 @@
       {
         "text": "Provider Architecture",
         "link": "/doc/9-plugins/ai.architecture"
+      },
+      {
+        "text": "AI Configuration & Onboarding Guide",
+        "link": "/doc/9-plugins/ai.onboarding"
       }
     ]
   },

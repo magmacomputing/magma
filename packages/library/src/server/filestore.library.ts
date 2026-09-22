@@ -59,8 +59,8 @@ async function assertNoSymlinkEscape(targetPath: string, rootDir = DEFAULT_ROOT_
 
 	const { existingPath: existingTarget, realPath: realTarget } = await getExistingRealAncestor(targetPath);
 	const targetRelToBase = path.relative(base, existingTarget);
-
-	if (!targetRelToBase.startsWith('..') && targetRelToBase !== '..') {
+	const isTargetOutside = targetRelToBase === '..' || targetRelToBase.startsWith(`..${path.sep}`) || path.isAbsolute(targetRelToBase);
+	if (!isTargetOutside) {
 		const relToExpected = path.relative(expectedRealBase, realTarget);
 		if (relToExpected === '..' || relToExpected.startsWith(`..${path.sep}`) || path.isAbsolute(relToExpected)) {
 			throw new Error(`Path traversal denied: "${targetPath}" resolves outside sandbox "${base}" via symlink`);

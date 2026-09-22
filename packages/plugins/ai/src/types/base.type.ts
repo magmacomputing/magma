@@ -38,6 +38,8 @@ export interface AiBaseOptions {
 	tokenLimit?: number | undefined;
 	/** If true, returns an array containing both successful results and TempoAiErrors instead of throwing */
 	softErrors?: boolean | undefined;
+	/** Optional flag to disable/enable anonymous usage telemetry (default: true). Set to false to opt-out. */
+	telemetry?: boolean | undefined;
 }
 
 /**
@@ -223,4 +225,6 @@ export interface AiConfig {
 	hedgeDelay?: number | undefined;
 	/** If true, logs the spoon-fed LLM context prompt and raw LLM response to the console */
 	debug?: boolean | undefined;
+	/** Optional flag to disable/enable anonymous usage telemetry (default: true). Set to false to opt-out across all AI requests. */
+	telemetry?: boolean | undefined;
 }

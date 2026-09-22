@@ -44,9 +44,14 @@ console.log(dt.format());
 ```
 
 > [!NOTE]
-> **Data Handling & Rate Limits on the Trial Sandbox**:
-> The `tempo` evaluation sandbox enforces an IP rate limit of **20 requests/hour**. When exceeded, Tempo AI raises a descriptive `TempoAiError(429)` guiding you to Tier 2 or Tier 3.
-> To continually improve prompt accuracy and diagnose parsing edge cases, queries sent through the free sandbox are scrubbed of credentials and personal identifiers and stored for up to 30 days. Do not submit sensitive personal information through the trial sandbox. For strict zero-retention, use Tier 2 or Tier 3.
+> **Attention: Trial Gateway Telemetry & Rate Limits**:
+> The public Tempo trial evaluation gateway (`provider: 'tempo'`) collects pseudonymous, de-identified telemetry regarding sandbox usage (latency, error rates, model performance, token counts, and salted SHA-256 IP hashes) to shape the plugin roadmap and improve parsing schemas.
+>
+> If you require strict zero data retention or do not wish to participate in trial sandbox diagnostics, configure your own secure backend proxy (Tier 2) or direct BYOK provider credentials (Tier 3).
+> Learn more in our Security & Privacy guide:
+> [https://magmacomputing.github.io/magma/doc/9-plugins/ai.security.html](https://magmacomputing.github.io/magma/doc/9-plugins/ai.security.html)
+>
+> **Trial Rate Limits**: The free sandbox enforces an IP rate limit of **20 requests/hour**. When exceeded, Tempo AI raises a descriptive `TempoAiError(429)` guiding you to Tier 2 or Tier 3. To continually improve prompt accuracy and diagnose parsing edge cases, queries sent through the free sandbox are scrubbed of credentials and personal identifiers and stored for up to 30 days. Do not submit sensitive personal information through the trial sandbox.
 
 ---
 
@@ -66,24 +71,52 @@ initAI({
 const meeting = await parseAI("The last Friday before Melbourne Cup Day");
 ```
 
-Your backend server (Express, Cloud Functions, Next.js API route) terminates client requests, attaches server-bound secrets, and forwards requests upstream:
+Your backend server (Express, Cloud Functions, Next.js API route) terminates client requests, attaches server-bound secrets, forwards requests upstream with timeout and abort management, and handles client disconnects:
 
 ```typescript
 // Backend handler example (Firebase Cloud Function / Express)
 export const handleAiProxy = async (req, res) => {
-  const payload = req.body;
-  
-  const upstreamRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  });
+  // 1. Authenticate caller (verify JWT / session token)
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer '))
+    return res.status(401).json({ error: 'Unauthorized: Missing or invalid authentication token.' });
 
-  const data = await upstreamRes.json();
-  res.status(upstreamRes.status).json(data);
+  // 2. Verify caller authorization and enforce caller-specific rate limits
+  const user = await verifyUserSession(authHeader.split('Bearer ')[1]);
+  if (!user)
+    return res.status(403).json({ error: 'Forbidden: Caller not authorized for AI proxy routing.' });
+
+  // 3. Configure AbortController with 15s timeout & client disconnect listener
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+  const onClientDisconnect = () => controller.abort();
+  res.on('close', onClientDisconnect);
+
+  try {
+    // 4. Forward sanitized payload upstream with server-side private key & signal
+    const payload = req.body;
+    const upstreamRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    const data = await upstreamRes.json();
+    res.status(upstreamRes.status).json(data);
+  } catch (err: any) {
+    if (controller.signal.aborted) {
+      if (res.writableEnded || res.headersSent) return;
+      return res.status(504).json({ error: 'Gateway Timeout: Upstream AI inference timed out or client disconnected.' });
+    }
+    res.status(500).json({ error: `AI Proxy Error: ${err.message}` });
+  } finally {
+    clearTimeout(timeoutId);
+    res.removeListener?.('close', onClientDisconnect);
+  }
 };
 ```
 
@@ -145,3 +178,4 @@ await initAI({
 | `mode` | `AiMode` | Execution strategy (`fallback`, `race`, `consensus`, `hedged`, `roundrobin`, `adaptive`). |
 | `timeout` | `number` | SLA timeout in milliseconds (default: `15000`). |
 | `cache` | `boolean \| CacheAdapter` | Cache configuration. |
+| `telemetry` | `boolean` | Set to `false` to opt-out of anonymous usage telemetry (default: `true`). |
