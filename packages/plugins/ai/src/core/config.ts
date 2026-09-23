@@ -66,5 +66,15 @@ export const DEFAULT_PROVIDERS: Readonly<Record<string, Partial<AiProvider>>> = 
 			large: 'mistral-large-latest'
 		},
 		tokenParam: 'max_tokens'
+	},
+	tempo: {
+		url: 'https://tempo.magmacomputing.com.au/api/ai/tempo',
+		models: {
+			default: 'openai/gpt-oss-120b',
+			fast: 'openai/gpt-oss-20b',
+			large: 'openai/gpt-oss-120b'
+		},
+		tokenParam: 'max_tokens',
+		key: 'tempo-public-sandbox-token'
 	}
 });

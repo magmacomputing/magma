@@ -49,7 +49,7 @@ for (const plugin of plugins) {
 			let loadedCount = 0;
 
 			for (const key in mod) {
-				if (key.endsWith('Term') || key.endsWith('Plugin') || key.endsWith('Module')) {
+				if (key.endsWith('Term') || key.endsWith('Plugin') || key.endsWith('Module') || key.endsWith('Namespace')) {
 					console.log(`\x1b[32m✔ Loaded plugin from ${plugin}:\x1b[0m ${key}`);
 					globals[key] = mod[key];
 					loadedCount++;
@@ -57,7 +57,7 @@ for (const plugin of plugins) {
 			}
 
 			if (loadedCount === 0)
-				console.log(`\x1b[33m⚠ No standard *Term, *Plugin, or *Module exports found in ${plugin} dist.\x1b[0m`);
+				console.log(`\x1b[33m⚠ No standard *Term, *Plugin, *Module, or *Namespace exports found in ${plugin} dist.\x1b[0m`);
 		} catch (err: any) {
 			console.error(`\x1b[31m✖ Failed to load plugin ${plugin}:\x1b[0m ${err.message}`);
 		}

@@ -16,6 +16,8 @@ npm install @magmacomputing/tempo-plugin-finance
 
 ## Usage
 
+<PluginRepl plugin="finance" />
+
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { FinanceNamespace } from '@magmacomputing/tempo-plugin-finance';

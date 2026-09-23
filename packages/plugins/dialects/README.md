@@ -40,6 +40,8 @@ Tempo.fromFormat('24/10/2026', 'dd/MM/yyyy');
 Tempo.dialects.parse('2026-10-24 15:30', 'yyyy-MM-dd HH:mm');
 ```
 
+> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=dialects)**
+
 ### 2. Zero-Boilerplate Side-Effect Registration
 
 ```typescript

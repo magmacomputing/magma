@@ -1,6 +1,7 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asNumber, isNumber } from '@magmacomputing/tempo/library';
+import { asNumber, isNumber, isString, isUndefined, isEmpty } from '@magmacomputing/tempo/library';
 
+import { DEFAULT_PROVIDERS } from './config.js';
 import { getResolvedProviderDefaults, loadRemoteManifest, resetManifestCache } from './manifest.js';
 import { assertNoReservedProviderId } from './transport.js';
 import { warnDebug } from './logger.js';
@@ -35,6 +36,8 @@ export const _state = {
           const envProviders = scanWellKnownEnvProviders();
           if (envProviders.length > 0)
             initAI({ providers: envProviders });
+          else
+            initAI();
         }
       } finally {
         _autoInit.initializing = false;
@@ -84,8 +87,6 @@ export function initAI(config?: AiConfig): Promise<void> {
   const tempoAiConfig = getActiveTempoConfigAi();
   const env = getRuntimeEnv();
 
-  const hasExplicitProviders = config?.providers !== undefined || tempoAiConfig?.providers !== undefined;
-
   const mergedRaw: AiConfig = {
     ...(tempoAiConfig || {}),
     ...(config || {}),
@@ -93,10 +94,33 @@ export function initAI(config?: AiConfig): Promise<void> {
 
   const mergedConfig = interpolateEnv(mergedRaw, env);
 
-  if (!hasExplicitProviders && (!mergedConfig.providers || mergedConfig.providers.length === 0)) {
-    const envProviders = scanWellKnownEnvProviders(env);
-    if (envProviders.length > 0)
-      mergedConfig.providers = envProviders;
+  // Normalize single-provider shorthand (e.g. initAI({ provider: 'tempo' }) or initAI({ provider: 'groq', apiKey: '...' }))
+  if (mergedConfig.provider && isUndefined(mergedConfig.providers)) {
+    const p = isString(mergedConfig.provider)
+      ? { id: mergedConfig.provider }
+      : { ...mergedConfig.provider };
+    if (mergedConfig.apiKey && !p.key) {
+      p.key = mergedConfig.apiKey;
+    }
+    mergedConfig.providers = [p];
+  }
+
+  const hasExplicitProviders = config?.providers !== undefined || tempoAiConfig?.providers !== undefined || config?.provider !== undefined || tempoAiConfig?.provider !== undefined;
+
+  if (!hasExplicitProviders && (!mergedConfig.providers || isEmpty(mergedConfig.providers))) {
+    if (mergedConfig.endpoint || mergedConfig.proxyUrl) {
+      mergedConfig.providers = [{
+        id: 'proxy',
+        url: mergedConfig.endpoint ?? mergedConfig.proxyUrl,
+        model: 'default',
+        key: 'proxy',
+      }];
+    } else {
+      const envProviders = scanWellKnownEnvProviders(env);
+      if (envProviders.length > 0) {
+        mergedConfig.providers = envProviders;
+      }
+    }
   }
 
   if (mergedConfig.providers)
@@ -114,11 +138,14 @@ export function initAI(config?: AiConfig): Promise<void> {
     return providers.map(p => {
       const normalizedId = p.id?.toLowerCase() ?? '';
       const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, mergedConfig.debug ?? _state.config.debug);
-      const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env);
+      const defaultProvider = DEFAULT_PROVIDERS[normalizedId];
+      const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env) ?? p.key ?? defaultProvider?.key;
+      const resolvedUrl = p.url ?? p.endpoint ?? mergedConfig.endpoint ?? mergedConfig.proxyUrl ?? defaultProvider?.url;
       return {
         ...defaults,
         ...p,
-        ...(resolvedKey ? { key: resolvedKey } : {}),
+        ...(resolvedUrl !== undefined ? { url: resolvedUrl } : {}),
+        ...(resolvedKey !== undefined ? { key: resolvedKey } : {}),
       } as AiProvider;
     });
   };
@@ -150,7 +177,9 @@ export function initAI(config?: AiConfig): Promise<void> {
       const asyncProviders = await Promise.all(currentProviders.map(async p => {
         const normalizedId = p.id?.toLowerCase() ?? '';
         const defaults = getResolvedProviderDefaults(normalizedId, remoteUrl, mergedConfig.debug ?? _state.config.debug);
-        const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env);
+        const defaultProvider = DEFAULT_PROVIDERS[normalizedId];
+        const resolvedKey = resolveProviderApiKey(normalizedId, p.key, env) ?? p.key ?? defaultProvider?.key;
+        const resolvedUrl = p.url ?? p.endpoint ?? mergedConfig.endpoint ?? mergedConfig.proxyUrl ?? defaultProvider?.url;
         let hookOptions: Partial<AiProvider> | null = null;
         try {
           hookOptions = await fetchDefaults(normalizedId);
@@ -161,7 +190,8 @@ export function initAI(config?: AiConfig): Promise<void> {
           ...defaults,
           ...(hookOptions ?? {}),
           ...p,
-          ...(resolvedKey ? { key: resolvedKey } : {})
+          ...(resolvedUrl !== undefined ? { url: resolvedUrl } : {}),
+          ...(resolvedKey !== undefined ? { key: resolvedKey } : {})
         } as AiProvider;
       }));
       if (_state.revision === currentRevision)

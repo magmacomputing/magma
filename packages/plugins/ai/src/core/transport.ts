@@ -1,6 +1,6 @@
 import { TempoAiError } from './error.js';
 import { DEFAULT_PROVIDERS, RESERVED_PROVIDER_IDS } from './config.js';
-import { resolveProviderApiKey } from './discovery.js';
+import { resolveProviderApiKey, getRuntimeEnv } from './discovery.js';
 import { updateRateLimitsFromResponse, _state } from './init.js';
 import { logDebug } from './logger.js';
 import type { AiProvider, AiBaseOptions } from '../types/index.js';
@@ -41,8 +41,12 @@ export function getAvailableProviders(options?: AiBaseOptions): AiProvider[] {
 			? globalProviders
 			: [];
 
-	if (resolved.length === 0)
-		throw new TempoAiError('No AI providers configured. Call initAI() or pass providers in options.', 400);
+	if (resolved.length === 0) {
+		throw new TempoAiError(
+			`[Tempo AI] No AI providers configured.\nChoose one of the following options to initialize:\n  - Free trial sandbox:   initAI({ provider: 'tempo' })\n  - Custom backend proxy: initAI({ endpoint: 'https://api.yourdomain.com/ai' })\n  - Direct API key:       initAI({ provider: 'groq', apiKey: '...' })\n\nFor complete onboarding and configuration options, see:\nhttps://magmacomputing.github.io/magma/doc/9-plugins/ai.onboarding.html`,
+			400
+		);
+	}
 
 	assertNoReservedProviderId(resolved);
 	return resolved as AiProvider[];
@@ -123,8 +127,9 @@ export async function fetchFromProvider(
 	let rawModel: string | undefined;
 	let rawKey: string | undefined;
 
-	const defaultUrl = DEFAULT_PROVIDERS[provider.id]?.url;
-	const defaultKey = resolveProviderApiKey(provider.id);
+	const globalEndpoint = _state.config.endpoint ?? _state.config.proxyUrl;
+	const defaultUrl = globalEndpoint ?? DEFAULT_PROVIDERS[provider.id]?.url;
+	const defaultKey = resolveProviderApiKey(provider.id) ?? DEFAULT_PROVIDERS[provider.id]?.key ?? (globalEndpoint ? 'proxy' : undefined);
 
 	const controller = new AbortController();
 	const rawTimeout = options?.timeout ?? provider.timeout ?? provider.options?.timeout ?? _state.config.timeout ?? 15000;
@@ -144,8 +149,10 @@ export async function fetchFromProvider(
 		}
 
 		try {
-			rawUrl = asText(evaluate(provider.url, defaultUrl));
+			rawUrl = asText(evaluate(provider.url ?? provider.endpoint, defaultUrl));
 			rawModel = resolveProviderModel(provider, provider.tier as any);
+			if (!rawModel && (globalEndpoint || provider.url || provider.endpoint))
+				rawModel = 'default';
 
 			let abortListener: (() => void) | undefined;
 			const abortPromise = new Promise<never>((_, reject) => {
@@ -236,10 +243,20 @@ Do not include markdown blocks or any text outside the JSON.`;
 		const { timeout: _unusedTimeout, max_completion_tokens: _unusedMct, max_tokens: _unusedMt, tokenLimit: _unusedTl, ...bodyOptions } = provider.options ?? {};
 		const startTime = performance.now();
 
-		const requestHeaders = {
+		const env = getRuntimeEnv();
+		const isTelemetryDisabled = options?.telemetry === false
+			|| _state.config.telemetry === false
+			|| env.TEMPO_TELEMETRY === '0'
+			|| env.TEMPO_TELEMETRY_DISABLED === '1'
+			|| env.TEMPO_TELEMETRY === 'false';
+
+		const requestHeaders: Record<string, string> = {
 			'Content-Type': 'application/json',
 			'Authorization': `Bearer ${key}`
 		};
+
+		if (isTelemetryDisabled && (provider.id === 'tempo' || url.includes('tempo.magmacomputing.com.au/api/ai')))
+			requestHeaders['x-tempo-telemetry'] = 'false';
 
 		const response = await ephemeral(requestHeaders, (headers) => {
 			return fetch(url, {
@@ -270,6 +287,13 @@ Do not include markdown blocks or any text outside the JSON.`;
 			const boundedError = errorText.length > 500 ? `${errorText.slice(0, 500)}... (truncated)` : errorText;
 			const resetTime = limits?.resetAt ?? undefined;
 			_state.limits = limits;
+			if (response.status === 429 && (url.includes('tempo.magmacomputing.com.au/api/ai') || provider.id === 'tempo')) {
+				throw new TempoAiError(
+					`Tempo AI Trial Sandbox rate limit reached (20 req/hr). To continue with higher throughput, configure your own provider credentials using initAI({ provider: 'groq', apiKey: '...' }) or connect a backend proxy using initAI({ endpoint: 'https://...' }).`,
+					429,
+					resetTime
+				);
+			}
 			throw new TempoAiError(`Provider ${provider.id} failed with status ${response.status}. Details: ${boundedError}`, response.status, resetTime);
 		}
 

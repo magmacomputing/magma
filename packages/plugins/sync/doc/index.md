@@ -20,6 +20,10 @@ npm install @magmacomputing/tempo-plugin-sync
 
 ## Usage
 
+::: info Live Interactive Sandbox Note
+This plugin leverages `SharedArrayBuffer` and `Atomics` for hardware-level cross-thread synchronization. Modern browsers require **Cross-Origin Isolation** (`Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`) to enable `SharedArrayBuffer`. Because GitHub Pages static hosting cannot emit custom HTTP response headers, the live browser sandbox widget is disabled on this documentation page. To test the Sync plugin, run it in **Node.js** (supported natively) or in a local development environment with custom server headers configured.
+:::
+
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { SyncPlugin } from '@magmacomputing/tempo-plugin-sync';

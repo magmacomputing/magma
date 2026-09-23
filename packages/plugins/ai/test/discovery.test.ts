@@ -218,9 +218,143 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 			expect(result.ai?.cached).toBe(false);
 		});
 
-		it('should throw clear TempoAiError when no providers or environment keys are found', async () => {
+		it('should configure tempo trial provider when explicitly requested via initAI({ provider: "tempo" })', async () => {
+			await initAI({ remoteConfigUrl: false, provider: 'tempo' });
+			const config = getAiConfig();
+			expect(config.providers).toBeDefined();
+			expect(config.providers?.length).toBe(1);
+			expect(config.providers?.[0].id).toBe('tempo');
+			expect(config.providers?.[0].url).toBe('https://tempo.magmacomputing.com.au/api/ai/tempo');
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+				return new Response(JSON.stringify({
+					choices: [{
+						message: {
+							content: JSON.stringify({
+								iso: '2026-08-17T09:00:00Z',
+								confidence: 0.98,
+								reasoning: 'Parsed via tempo sandbox',
+							}),
+						},
+					}],
+				}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+			});
+
+			const result = await parseAI('tomorrow at 5pm', { force: true });
+			expect(result.isValid).toBe(true);
+			expect(result.ai?.provider).toBe('tempo');
+			expect(fetchSpy).toHaveBeenCalledWith('https://tempo.magmacomputing.com.au/api/ai/tempo', expect.anything());
+		});
+
+		it('should support single provider and apiKey shorthand e.g. initAI({ provider: "groq", apiKey: "..." })', async () => {
+			await initAI({ remoteConfigUrl: false, provider: 'groq', apiKey: 'gsk_single_shorthand' });
+			const config = getAiConfig();
+			expect(config.providers).toBeDefined();
+			expect(config.providers?.length).toBe(1);
+			expect(config.providers?.[0].id).toBe('groq');
+			expect(config.providers?.[0].key).toBe('[REDACTED]');
+		});
+
+		it('should throw actionable TempoAiError with GitHub Pages link when unconfigured', async () => {
+			await initAI({ remoteConfigUrl: false });
+			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(TempoAiError);
+			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(
+				/No AI providers configured/i
+			);
+			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(
+				/https:\/\/magmacomputing\.github\.io\/magma\/doc\/9-plugins\/ai\.onboarding\.html/
+			);
+		});
+
+		it('should throw clear TempoAiError when explicit providers array is empty', async () => {
+			await initAI({ remoteConfigUrl: false, providers: [] });
 			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(TempoAiError);
 			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(/No AI providers configured/i);
+		});
+
+		it('should configure global endpoint and proxyUrl', async () => {
+			await initAI({
+				remoteConfigUrl: false,
+				endpoint: 'https://my-backend.internal/api/ai',
+			});
+
+			const config = getAiConfig();
+			expect(config.endpoint).toBe('https://my-backend.internal/api/ai');
+			expect(config.providers?.[0].url).toBe('https://my-backend.internal/api/ai');
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+				return new Response(JSON.stringify({
+					choices: [{
+						message: {
+							content: JSON.stringify({
+								iso: '2026-08-17T09:00:00Z',
+								confidence: 0.95,
+							}),
+						},
+					}],
+				}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+			});
+
+			const result = await parseAI('tomorrow at 5pm', { force: true });
+			expect(result.isValid).toBe(true);
+			expect(fetchSpy).toHaveBeenCalledWith('https://my-backend.internal/api/ai', expect.anything());
+		});
+
+		it('should prioritize global endpoint over default provider URLs when providers are listed without explicit URLs', async () => {
+			await initAI({
+				remoteConfigUrl: false,
+				endpoint: 'https://my-proxy.internal/v1',
+				providers: [
+					{ id: 'openai', key: 'sk-test' },
+					{ id: 'groq', key: 'gsk-test' },
+				],
+			});
+
+			const config = getAiConfig();
+			expect(config.providers?.[0].url).toBe('https://my-proxy.internal/v1');
+			expect(config.providers?.[1].url).toBe('https://my-proxy.internal/v1');
+		});
+
+		it('should support per-provider endpoint alias and dynamic URL evaluable', async () => {
+			let dynamicPort = 8443;
+			await initAI({
+				remoteConfigUrl: false,
+				providers: [
+					{
+						id: 'custom',
+						endpoint: () => `https://localhost:${dynamicPort}/v1/chat`,
+						key: 'custom-secret',
+						model: 'custom-model',
+					},
+				],
+			});
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+				return new Response(JSON.stringify({
+					choices: [{
+						message: {
+							content: JSON.stringify({
+								iso: '2026-08-17T09:00:00Z',
+								confidence: 0.95,
+							}),
+						},
+					}],
+				}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+			});
+
+			await parseAI('tomorrow at 5pm', { force: true });
+			expect(fetchSpy).toHaveBeenCalledWith('https://localhost:8443/v1/chat', expect.anything());
+		});
+
+		it('should format 429 demo sandbox rate limit error with developer guidance', async () => {
+			await initAI({ remoteConfigUrl: false, provider: 'tempo' });
+			vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+				return new Response('Rate limit exceeded', { status: 429 });
+			});
+
+			await expect(parseAI('tomorrow at 5pm', { force: true })).rejects.toThrow(
+				/Tempo AI Trial Sandbox rate limit reached \(20 req\/hr\)/
+			);
 		});
 
 		it('should interpolate template keys inside explicit initAI() configuration', async () => {
@@ -261,6 +395,7 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 				plugins: {
 					ai: {
 						timeout: 4500,
+						providers: [],
 					},
 				},
 				silent: true,
@@ -278,6 +413,7 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 				plugins: {
 					ai: {
 						timeout: 9000,
+						providers: [],
 					},
 				},
 				silent: true,
@@ -305,3 +441,4 @@ describe('AI Provider Farm Auto-Discovery & Zero-Config Subsystem', () => {
 		});
 	});
 });
+

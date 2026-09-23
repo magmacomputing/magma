@@ -153,7 +153,10 @@ Community plugins must follow a uniform documentation standard.
     ```
 - **Description**: A short, concise summary.
 - **Installation**: Code block with `npm install @magmacomputing/tempo-plugin-[name]`. Do not use hard-coded peer-dependency text warnings.
-- **Usage**: TypeScript snippet showing `Tempo.init({ plugins: [...] })` and basic functionality.
+- **Usage & Live Interactive REPL**:
+  - In `doc/index.md` (Web Documentation): Insert the `<PluginRepl plugin="[name]" />` component under `## Usage Examples`. This renders a zero-overhead static code preview with an on-demand "Run Live Interactive Demo" button that mounts the in-browser ESM sandbox.
+  - In `README.md` (GitHub / NPM): Insert an in-context callout link immediately below the primary usage code example:
+    `> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=[name])**`
 - **Documentation Link** (README only): Link to full docs at `https://magmacomputing.github.io/magma/doc/9-plugins/[name].index.html`.
 - **Licensing**: Must state: "This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required."
 
@@ -250,9 +253,21 @@ npm install --package-lock-only
 
 Update `.github/workflows/publish.yml` to enable manual `workflow_dispatch` provenance releases:
 
-1. **Add to Package Selector**: Add `@magmacomputing/tempo-plugin-[name]` to the `options` array under `inputs.target`.
-2. **Add to Target Validation**: Add `@magmacomputing/tempo-plugin-[name]` to the `case "$TARGET" in` validation pattern.
-3. **Add to Bulk Publish**: Add `publish_pkg "@magmacomputing/tempo-plugin-[name]"` to the `if [ "$TARGET" = "all" ]` block.
+1. **Add Checkbox Input**: Add `plugin_[name]` under `inputs:` with `type: boolean` (default: `false`) and description `'@magmacomputing/tempo-plugin-[name]'`.
+2. **Add to Input Resolution**: Add `[ "$INPUT_PLUGIN_[NAME]" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-[name]")` in the workflow bash script.
+3. *(Optional)* Even without adding a dedicated checkbox, any new plugin can be immediately published via the workflow's **Custom packages** text box by typing `[name]` or `@magmacomputing/tempo-plugin-[name]`.
+
+### C. REPL Playground Registration & Retirement (`packages/tempo/public/repl/`)
+
+When introducing or retiring a plugin, update the centralized browser playground in `packages/tempo/public/repl/` and the embedded documentation REPL component:
+
+1. **Import Map & Catalog Registration**:
+   - Register the plugin in `catalog.json` and `packages/plugins/[name]/package.json`.
+   - Run `node packages/tempo-cli/index.js catalog-sync` (or `npm run build` / `npm run test`) to automatically generate the allowlist and dynamic ESM loader entries in `packages/tempo/public/repl/plugins.manifest.js`.
+2. **Default Snippets & Facades**:
+   - Add a preset snippet in `DEFAULT_SNIPPETS` inside `packages/tempo/.vitepress/theme/components/PluginRepl.vue`.
+   - Add an entry in the preset dropdown (`<select id="presetSelect">`) and `SNIPPETS` in `packages/tempo/public/repl/index.html`.
+3. **Retirement Checklist**: When deprecating or retiring a plugin, remove its package directory, rerun `tempo-cli catalog-sync` to update `plugins.manifest.js`, and clean up any preset references in `PluginRepl.vue` and `index.html`.
 
 ## 8. Initial Release & Trusted Publisher Configuration (OIDC & Provenance)
 

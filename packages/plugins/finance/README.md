@@ -35,6 +35,8 @@ console.log(t.finance.taxYear); // 2024
 console.log(t.finance.isFiscalYearStart()); // false
 ```
 
+> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=finance)**
+
 ## Documentation
 
 Full documentation available at [https://magmacomputing.github.io/magma/doc/9-plugins/finance.index.html](https://magmacomputing.github.io/magma/doc/9-plugins/finance.index.html).

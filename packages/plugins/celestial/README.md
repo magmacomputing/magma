@@ -112,6 +112,8 @@ const nextPhaseKey = t.term.lunar.phases[t.term.lunar.index % 8];
 const nextMoonTempo = t.set(`#lunar.${nextPhaseKey}`);
 ```
 
+> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=celestial)**
+
 ## Phase & State Discovery Metadata
 
 `LunarTerm`, `SolarTerm`, and `TidalTerm` expose immutable, frozen array references (`Object.freeze`) containing all valid identifiers for terms resolution:

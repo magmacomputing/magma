@@ -5,6 +5,18 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-09-22
+
+### Added
+- **Unified 3-Tier AI Configuration Architecture**:
+  - **Tier 1 (Evaluation Sandbox)**: Added default built-in `tempo` provider pointing to `https://tempo.magmacomputing.com.au/api/ai/tempo` (`llama-3.3-70b-versatile`) with declarative opt-in (`initAI({ provider: 'tempo' })`).
+  - **Tier 2 (Global Backend Proxy)**: Added root `endpoint` configuration in `AiConfig` (`initAI({ endpoint: 'https://api.yourdomain.com/api/aiProxy' })`) to route all AI provider requests through a single secure backend proxy.
+  - **Tier 3 (Per-Provider Endpoints & Direct Keys)**: Added single-provider shorthand options (`initAI({ provider: 'groq', apiKey: '...' })`) and per-provider `endpoint` configuration on `AiProvider` with dynamic evaluable supplier support for custom gateways and private model deployments.
+  - **Actionable Diagnostics & Onboarding Link**: When unconfigured, AI operations throw a structured `TempoAiError` with copy-paste initialization examples and direct links to GitHub Pages onboarding guides.
+- **Documentation & Onboarding Guides**:
+  - Added [onboarding.md](doc/onboarding.md) with an architecture flowchart, comparison matrix, and clear differentiation between Core Tempo (deterministic, 0 tokens) and Tempo AI (semantic reasoning).
+  - Updated [init.md](doc/init.md) and companion proxy recipe documentation with transparent trial data handling and retention disclosures.
+
 ## [2.1.0] - 2026-09-18
 
 ### Added

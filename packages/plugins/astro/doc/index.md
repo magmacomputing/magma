@@ -26,6 +26,8 @@ npm install @magmacomputing/tempo-plugin-astro
 
 ## Usage
 
+<PluginRepl plugin="astro" />
+
 ### Explicit Registration (Recommended)
 
 ```typescript

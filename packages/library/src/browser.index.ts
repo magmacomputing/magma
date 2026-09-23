@@ -6,3 +6,4 @@ export * from './browser/mapper.library.js';
 export * from './browser/tapper.class.js';
 export * from './browser/webstore.class.js';
 export * from './browser/window.library.js';
+export * from './browser/opfs.library.js';

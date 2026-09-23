@@ -38,6 +38,8 @@ const snapHour = t.snap('hh', 1);
 const snapSecond = t.snap('ss', 30);
 ```
 
+> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=snap)**
+
 ## Documentation
 
 For full API reference, advanced configuration, and detailed explanations of the rounding features, please visit the official 📖 **[Snap Plugin Documentation](https://magmacomputing.github.io/magma/doc/9-plugins/snap.index.html)**.

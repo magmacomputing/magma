@@ -71,6 +71,10 @@
       {
         "text": "Provider Architecture",
         "link": "/doc/9-plugins/ai.architecture"
+      },
+      {
+        "text": "AI Configuration & Onboarding Guide",
+        "link": "/doc/9-plugins/ai.onboarding"
       }
     ]
   },

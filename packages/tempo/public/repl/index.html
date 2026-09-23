@@ -466,19 +466,151 @@
 				flex: 1;
 			}
 		}
+
+		/* Sleek Custom Scrollbars */
+		::-webkit-scrollbar {
+			width: 6px;
+			height: 6px;
+		}
+
+		::-webkit-scrollbar-track {
+			background: rgba(0, 0, 0, 0.1);
+		}
+
+		::-webkit-scrollbar-thumb {
+			background: rgba(255, 255, 255, 0.18);
+			border-radius: 3px;
+		}
+
+		::-webkit-scrollbar-thumb:hover {
+			background: rgba(56, 189, 248, 0.5);
+		}
+
+		/* Embedded Mini-Mode Styles */
+		body.is-embedded header {
+			display: none;
+		}
+
+		.embed-toolbar {
+			display: none;
+			align-items: center;
+			justify-content: space-between;
+			padding: 6px 12px;
+			background: var(--header-bg);
+			backdrop-filter: blur(12px);
+			border-bottom: 1px solid var(--panel-border);
+			z-index: 10;
+		}
+
+		body.is-embedded .embed-toolbar {
+			display: flex;
+		}
+
+		body.is-embedded .workspace {
+			height: calc(100vh - 64px);
+			display: flex;
+			flex-direction: row;
+			overflow: hidden;
+		}
+
+		body.is-embedded .pane-editor {
+			flex: 1.1;
+			border-right: 1px solid var(--panel-border);
+			border-bottom: none;
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			overflow: hidden;
+		}
+
+		body.is-embedded .pane-output {
+			flex: 0.95;
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			min-height: 0;
+			overflow: hidden;
+		}
+
+		body.is-embedded .pane-header {
+			padding: 5px 12px;
+			font-size: 0.68rem;
+			flex-shrink: 0;
+		}
+
+		body.is-embedded .result-section {
+			padding: 8px 12px;
+			flex-shrink: 0;
+		}
+
+		body.is-embedded .result-box {
+			padding: 8px 12px;
+			min-height: 38px;
+			font-size: 0.92rem;
+		}
+
+		body.is-embedded .console-stream {
+			padding: 8px 12px;
+			flex: 1;
+			min-height: 100px;
+			overflow-y: auto;
+			gap: 4px;
+		}
+
+		body.is-embedded .log-entry {
+			font-size: 0.8rem;
+			gap: 6px;
+			line-height: 1.4;
+		}
+
+		body.is-embedded .log-badge {
+			font-size: 0.6rem;
+			padding: 0 4px;
+		}
+
+		body.is-embedded .code-editor,
+		body.is-embedded .line-numbers {
+			padding: 10px;
+			font-size: 0.83rem;
+			line-height: 1.45;
+		}
+
+		body.is-embedded footer {
+			padding: 4px 12px;
+			font-size: 0.72rem;
+			height: 26px;
+		}
+
+		@media (max-width: 520px) {
+			body.is-embedded .workspace {
+				flex-direction: column;
+			}
+			body.is-embedded .pane-editor {
+				border-right: none;
+				border-bottom: 1px solid var(--panel-border);
+				flex: 1;
+			}
+			body.is-embedded .pane-output {
+				flex: 1;
+			}
+		}
 	</style>
 
 	<script type="importmap">
 	{
 		"imports": {
 			"@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
-			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@4",
-			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@2",
-			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@1",
-			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@1",
-			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@2",
-			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai@2",
-			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects@1"
+			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@^4",
+			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai@^2",
+			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@^2",
+			"@magmacomputing/tempo-plugin-batch": "https://esm.sh/@magmacomputing/tempo-plugin-batch@^1",
+			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@^1",
+			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects@^1",
+			"@magmacomputing/tempo-plugin-finance": "https://esm.sh/@magmacomputing/tempo-plugin-finance@^1",
+			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@^1",
+			"@magmacomputing/tempo-plugin-snap": "https://esm.sh/@magmacomputing/tempo-plugin-snap@^1",
+			"@magmacomputing/tempo-plugin-sync": "https://esm.sh/@magmacomputing/tempo-plugin-sync@^1",
+			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@^2"
 		}
 	}
 	</script>
@@ -486,20 +618,62 @@
 
 <body>
 	<div class="app-container">
+		<!-- Embed Toolbar (Visible only when ?embed=true or ?mode=mini) -->
+		<div class="embed-toolbar">
+			<div class="brand" style="gap: 8px;">
+				<span id="embedLogoContainer" style="display: inline-flex; align-items: center;">
+					<svg class="brand-logo" viewBox="0 0 285 235.319" fill="#38bdf8"
+						style="width: 24px; height: 20px; filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.45));">
+						<g transform="translate(-32, 10) scale(0.6, 0.85)">
+							<path fill="#38bdf8"
+								d="M183,102V88h10V58h-23V16.5c0-6.351-5.149-11.5-11.5-11.5h0c-6.351,0-11.5,5.149-11.5,11.5V58h-39V16.5 C108,10.149,102.851,5,96.5,5h0C90.149,5,85,10.149,85,16.5V58H62v30h10v14c0,26.958,20.828,49.9,47,53v49c0,25.957,21.043,47,47,47 h27v-17h-27c-16.5,0-30-13.5-30-30v-49C162.256,152.008,183,129.039,183,102z">
+							</path>
+						</g>
+						<g transform="translate(50, 0)">
+							<path fill="#38bdf8"
+								d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z" />
+							<path fill="#38bdf8"
+								d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z" />
+							<path fill="#38bdf8"
+								d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z" />
+						</g>
+					</svg>
+				</span>
+				<span class="brand-title" id="embedTitle" style="font-size: 0.95rem;">Tempo Live Sandbox</span>
+			</div>
+			<div class="controls-actions">
+				<label class="toggle-label" style="font-size: 0.75rem;" title="Auto-evaluate on edit">
+					<input type="checkbox" id="embedAutorunToggle" checked>
+					<span>Auto-run</span>
+				</label>
+				<button id="embedRunBtn" class="btn btn-primary" style="padding: 4px 12px; font-size: 0.8rem;"
+					title="Execute Code (Ctrl+Enter)">
+					<span>▶ Run</span>
+				</button>
+				<a id="embedOpenFullBtn" href="/magma/repl/index.html" target="_blank" rel="noopener noreferrer"
+					class="btn btn-ghost" style="padding: 4px 10px; font-size: 0.78rem; text-decoration: none;"
+					title="Open in Full-Screen Workbench">
+					<span>Full REPL ↗</span>
+				</a>
+			</div>
+		</div>
+
 		<header>
 			<div class="header-top">
 				<div class="brand">
-					<svg class="brand-logo" viewBox="0 0 235.319 235.319" fill="#38bdf8"
-						style="width: 26px; height: 26px; filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.45));">
-						<path
-							d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z" />
-						<path
-							d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z" />
-						<path
-							d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z" />
-					</svg>
-					<span class="brand-title">Tempo</span>
-					<span class="brand-badge">Interactive REPL</span>
+					<span id="brandLogoContainer" style="display: inline-flex; align-items: center;">
+						<svg class="brand-logo" viewBox="0 0 235.319 235.319" fill="#38bdf8"
+							style="width: 26px; height: 26px; filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.45));">
+							<path
+								d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z" />
+							<path
+								d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z" />
+							<path
+								d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z" />
+						</svg>
+					</span>
+					<span class="brand-title" id="headerTitle">Tempo</span>
+					<span class="brand-badge" id="headerBadge">Interactive REPL</span>
 				</div>
 
 				<button id="btnThemeToggle" class="btn btn-ghost" title="Toggle Light/Dark Theme" style="padding: 6px 10px;">
@@ -602,6 +776,20 @@ console.log('Days until next Friday:', t.until('next Friday').format());
 // Return value displays in the top Result card:
 return t.format('{yyyy}-{mm}-{dd}');`,
 
+			geo: `// 🌍 Live Geolocation Demo (@magmacomputing/tempo-plugin-geo)
+// Note: In browser sandbox, resolves browser GPS or IP-based coordinates
+
+const lookup = await Tempo.geo.lookup();
+console.log('Detected City:', lookup.city ?? 'Local City');
+console.log('Coordinates:', lookup.lat, lookup.lng);
+
+// Attach coordinates to a Tempo instance:
+const localTime = new Tempo('now', { geo: lookup });
+console.log('Astronomical Season:', localTime.term.szn);
+console.log('Moon Phase:', localTime.term.lunar.phase);
+
+return \`Located at \${lookup.city ?? 'Local City'} (\${lookup.lat?.toFixed(2)}°, \${lookup.lng?.toFixed(2)}°)\`;`,
+
 			dialects: `// 🌐 External Dialect Formatting & Parsing
 // Dynamic import of @magmacomputing/tempo-plugin-dialects
 const { DialectsPlugin, DIALECT } = await import('@magmacomputing/tempo-plugin-dialects');
@@ -640,6 +828,100 @@ console.log('en-US Weekend Days:', us.intl.weekend); // [6, 7] (Saturday, Sunday
 console.log('ar-SA Weekend Days:', sa.intl.weekend); // [5, 6] (Friday, Saturday)
 
 return \`Today is \${today.format('{www}')}. Weekend in US? \${us.intl.weekend.includes(today.dow)}\`;`,
+
+			astro: `// ☀️ Astronomical Seasons & Solstices Demo (@magmacomputing/tempo-plugin-astro)
+const sydney = new Tempo('2026-07-01', { sphere: 'south' });
+const london = new Tempo('2026-07-01', { sphere: 'north' });
+
+console.log('Sydney in July:', sydney.term.astro, '-> Season:', sydney.term.szn);
+console.log('London in July:', london.term.astro, '-> Season:', london.term.szn);
+
+const equinox = new Tempo('2026-03-20', { sphere: 'north' });
+console.log('March 20 Equinox:', equinox.term.equinox);
+
+return \`Sydney: \${sydney.term.szn} | London: \${london.term.szn}\`;`,
+
+			celestial: `// 🌙 Celestial Solar & Lunar Ephemeris Demo (@magmacomputing/tempo-plugin-celestial)
+const now = new Tempo();
+console.log('Moon Phase:', now.term.lunar.phase);
+console.log('Illumination:', (now.term.lunar.illumination * 100).toFixed(1) + '%');
+console.log('Is King Tide?', now.term.tides.isKingTide);
+
+return \`Phase: \${now.term.lunar.phase} (\${(now.term.lunar.illumination * 100).toFixed(0)}% illuminated)\`;`,
+
+			batch: `// ⚡ Parallel Bulk Mutation Demo (@magmacomputing/tempo-plugin-batch)
+const { BatchPlugin } = await import('@magmacomputing/tempo-plugin-batch');
+Tempo.use(BatchPlugin);
+
+const timestamps = [1700000000000, 1700086400000, 1700172800000];
+console.log('Original timestamps count:', timestamps.length);
+
+const mutated = await Tempo.batch(timestamps, { weeks: 1 });
+console.log('Mutated +1 week timestamps:', mutated);
+
+return \`Batch processed \${mutated.length} timestamps successfully!\`;`,
+
+			finance: `// 💼 Fiscal & Financial Math Demo (@magmacomputing/tempo-plugin-finance)
+const { FinanceNamespace } = await import('@magmacomputing/tempo-plugin-finance');
+Tempo.use(FinanceNamespace);
+
+const t = new Tempo('2026-07-15');
+console.log('Fiscal Quarter:', t.finance.fiscalQuarter);
+console.log('Tax Year:', t.finance.taxYear);
+console.log('Is Fiscal Year Start?', t.finance.isFiscalYearStart());
+
+return \`Fiscal Q\${t.finance.fiscalQuarter} (Tax Year \${t.finance.taxYear})\`;`,
+
+			snap: `// ⏱️ Time Snapping & Quantization Demo (@magmacomputing/tempo-plugin-snap)
+const { SnapPlugin } = await import('@magmacomputing/tempo-plugin-snap');
+Tempo.use(SnapPlugin);
+
+const t = new Tempo('2026-06-01T14:08:23Z');
+console.log('Original time:', t.format('{hh}:{mi}:{ss}'));
+
+// Snap to nearest 15-minute block
+const snapped15m = t.snap();
+console.log('Snapped (15m):', snapped15m.format('{hh}:{mi}:{ss}'));
+
+// Snap to 1-hour interval upward
+const snapHourUp = t.snap({ hh: 1, direction: 'up' });
+console.log('Snapped Up (1h):', snapHourUp.format('{hh}:{mi}:{ss}'));
+
+return \`Snapped to \${snapped15m.format('{hh}:{mi}')}\`;`,
+
+			sync: `// 🔄 Cross-Thread Time Sync Demo (@magmacomputing/tempo-plugin-sync)
+const { SyncPlugin } = await import('@magmacomputing/tempo-plugin-sync');
+Tempo.use(SyncPlugin);
+
+Tempo.sync.startClock({ interval: 1 });
+try {
+  const buffer = Tempo.sync.getBuffer();
+  console.log('Clock buffer byte length:', buffer.byteLength);
+
+  const nowMs = Tempo.sync.now(buffer);
+  console.log('High-precision current epoch ms:', nowMs);
+
+  return \`Sync read successful (Epoch: \${nowMs})\`;
+} finally {
+  Tempo.sync.stopClock();
+}`,
+
+			ticker: `// ⏰ Continuous Temporal Ticker Demo (@magmacomputing/tempo-plugin-ticker)
+const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
+Tempo.use(TickerPlugin);
+
+console.log('Starting 1-second cadence ticker...');
+let count = 0;
+const ticker = Tempo.ticker({ seconds: 1 }, (t, stop) => {
+  count++;
+  console.log(\`Tick #\${count}:\`, t.format('{hh}:{mi}:{ss}'));
+  if (count >= 3) {
+    console.log('Ticker stopped after 3 ticks.');
+    stop();
+  }
+});
+
+return 'Ticker started (executes in console stream)';`,
 
 			seasons: `// 🌍 Hemispheric Seasons & Lunar Phases
 // Tempo terms are hemisphere-aware based on geo coordinates or sphere setting:
@@ -747,6 +1029,45 @@ try {
 }`
 		};
 
+		const LOGO_TEMPO = `<svg class="brand-logo" viewBox="0 0 235.319 235.319" fill="#38bdf8" style="width: 22px; height: 22px; filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.45));">
+			<path d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z"/>
+			<path d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z"/>
+			<path d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z"/>
+		</svg>`;
+
+		const LOGO_PLUGIN = `<svg class="brand-logo" viewBox="0 0 285 235.319" fill="#38bdf8" style="width: 24px; height: 20px; filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.45));">
+			<g transform="translate(-32, 10) scale(0.6, 0.85)">
+				<path fill="#38bdf8" d="M183,102V88h10V58h-23V16.5c0-6.351-5.149-11.5-11.5-11.5h0c-6.351,0-11.5,5.149-11.5,11.5V58h-39V16.5 C108,10.149,102.851,5,96.5,5h0C90.149,5,85,10.149,85,16.5V58H62v30h10v14c0,26.958,20.828,49.9,47,53v49c0,25.957,21.043,47,47,47 h27v-17h-27c-16.5,0-30-13.5-30-30v-49C162.256,152.008,183,129.039,183,102z"></path>
+			</g>
+			<g transform="translate(50, 0)">
+				<path fill="#38bdf8" d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z"/>
+				<path fill="#38bdf8" d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z"/>
+				<path fill="#38bdf8" d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z"/>
+			</g>
+		</svg>`;
+
+		const urlParams = new URLSearchParams(window.location.search);
+		const isEmbed = urlParams.get('embed') === 'true' || urlParams.get('mode') === 'mini';
+		const pluginParam = urlParams.get('plugin') || urlParams.get('preset');
+		const isPluginMode = Boolean(pluginParam && pluginParam !== 'quickstart' && pluginParam !== 'weekend');
+
+		const embedLogoContainer = document.getElementById('embedLogoContainer');
+		const brandLogoContainer = document.getElementById('brandLogoContainer');
+		if (embedLogoContainer) embedLogoContainer.innerHTML = isPluginMode ? LOGO_PLUGIN : LOGO_TEMPO;
+		if (brandLogoContainer && isPluginMode) brandLogoContainer.innerHTML = LOGO_PLUGIN;
+
+		if (isEmbed) {
+			document.body.classList.add('is-embedded');
+			const embedTitle = document.getElementById('embedTitle');
+			if (embedTitle && pluginParam) {
+				embedTitle.textContent = `Tempo + @magmacomputing/tempo-plugin-${pluginParam}`;
+			}
+		} else if (pluginParam) {
+			const headerBadge = document.getElementById('headerBadge');
+			if (headerBadge)
+				headerBadge.textContent = `@magmacomputing/tempo-plugin-${pluginParam}`;
+		}
+
 		const codeEditor = document.getElementById('codeEditor');
 		const lineNumbers = document.getElementById('lineNumbers');
 		const resultBox = document.getElementById('resultBox');
@@ -760,10 +1081,21 @@ try {
 		const clearBtn = document.getElementById('clearBtn');
 		const shareBtn = document.getElementById('shareBtn');
 		const autorunToggle = document.getElementById('autorunToggle');
+		const embedRunBtn = document.getElementById('embedRunBtn');
+		const embedAutorunToggle = document.getElementById('embedAutorunToggle');
+		const embedOpenFullBtn = document.getElementById('embedOpenFullBtn');
 
 		let logs = [];
 		let autorunTimer = null;
 		let isReady = false;
+
+		function updateEmbedFullLink() {
+			if (embedOpenFullBtn && codeEditor) {
+				const encoded = btoa(encodeURIComponent(codeEditor.value));
+				const base = window.location.origin + window.location.pathname.replace(/\/repl\/.*$/, '/repl/index.html');
+				embedOpenFullBtn.href = `${base}${pluginParam ? '?plugin=' + encodeURIComponent(pluginParam) : ''}#code=${encoded}`;
+			}
+		}
 
 		// 1. Initialize Runtime
 		async function initRuntime() {
@@ -782,6 +1114,22 @@ try {
 				Tempo.use(GeoPlugin);
 				Tempo.use(AstroPlugin);
 				Tempo.use(CelestialPlugin);
+
+				// Dynamically register extra plugin if specified in query param against auto-synced manifest
+				const { SUPPORTED_EXTRA_PLUGINS } = await import('./plugins.manifest.js')
+					.catch(() => ({ SUPPORTED_EXTRA_PLUGINS: {} }));
+
+				if (pluginParam && Object.prototype.hasOwnProperty.call(SUPPORTED_EXTRA_PLUGINS, pluginParam)) {
+					const targetPlugin = SUPPORTED_EXTRA_PLUGINS[pluginParam];
+					try {
+						statusText.textContent = `Loading ${targetPlugin.name}...`;
+						const mod = await targetPlugin.loader();
+						const pluginObj = Object.values(mod).find(v => typeof v === 'object' && v !== null && 'name' in v && 'install' in v);
+						if (pluginObj) Tempo.use(pluginObj);
+					} catch (e) {
+						console.warn(`Plugin ${pluginParam} dynamic load:`, e);
+					}
+				}
 
 				window.Tempo = Tempo;
 				window.Temporal = Temporal;
@@ -810,6 +1158,7 @@ try {
 
 		codeEditor.addEventListener('input', () => {
 			updateLineNumbers();
+			updateEmbedFullLink();
 			if (autorunToggle.checked && isReady) {
 				clearTimeout(autorunTimer);
 				autorunTimer = setTimeout(executeCode, 400);
@@ -873,6 +1222,8 @@ try {
 				resultBox.textContent = err.name + ': ' + err.message;
 				customConsole.error(err.stack || err.message);
 			}
+
+			updateEmbedFullLink();
 		}
 
 		function appendLog(type, args) {
@@ -917,12 +1268,16 @@ try {
 					const encoded = window.location.hash.slice(6);
 					codeEditor.value = decodeURIComponent(atob(encoded));
 					updateLineNumbers();
-					resultBox.textContent = 'Shared code loaded from URL. Click "▶ Run" or press Ctrl+Enter to execute.';
-					resultBox.style.color = '#94a3b8';
-					return false;
+					updateEmbedFullLink();
+					return true;
 				} catch {
 					// Fallback if hash invalid
 				}
+			}
+			if (pluginParam && SNIPPETS[pluginParam]) {
+				if (presetSelect) presetSelect.value = pluginParam;
+				loadPreset(pluginParam);
+				return true;
 			}
 			loadPreset('quickstart');
 			return true;
@@ -932,6 +1287,7 @@ try {
 			if (SNIPPETS[key]) {
 				codeEditor.value = SNIPPETS[key];
 				updateLineNumbers();
+				updateEmbedFullLink();
 				if (isReady) executeCode();
 			}
 		}
@@ -942,6 +1298,17 @@ try {
 
 		runBtn.addEventListener('click', executeCode);
 		clearBtn.addEventListener('click', clearConsole);
+
+		embedRunBtn?.addEventListener('click', executeCode);
+		embedAutorunToggle?.addEventListener('change', (e) => {
+			autorunToggle.checked = e.target.checked;
+		});
+
+		embedOpenFullBtn?.addEventListener('click', (e) => {
+			updateEmbedFullLink();
+			window.open(embedOpenFullBtn.href, '_blank');
+			e.preventDefault();
+		});
 
 		shareBtn.addEventListener('click', () => {
 			try {

@@ -11,7 +11,7 @@ Tempo community plugin for LLM-powered natural language date parsing, schedule c
 This plugin bridges the gap between deterministic date-math and unstructured NLP inputs, utilizing large language models (like Gemini, Groq, or OpenAI) to safely and asynchronously parse, format, and process complex natural language temporal expressions into `Tempo` instances.
 
 ::: warning 🔒 Security Notice
-Raw LLM API keys must **never** be exposed in client-side browser bundles or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, route requests through a secure backend proxy service.
+Raw LLM API keys must **never** be exposed in client-side browser bundles or stored in any client-side storage mechanisms (`localStorage`, `sessionStorage`, `IndexedDB`, OPFS / Origin Private File System, or browser cache). We recommend **zero browser storage** for API credentials; BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, route requests through a secure backend proxy service.
 :::
 
 ## Installation & Quickstart
@@ -19,6 +19,8 @@ Raw LLM API keys must **never** be exposed in client-side browser bundles or sto
 ```bash
 npm install @magmacomputing/tempo-plugin-ai
 ```
+
+<PluginRepl plugin="ai" />
 
 ### 1. `Tempo.ai` Cohesive Namespace
 Installing `AiPlugin` mounts the frozen **`Tempo.ai`** static action namespace onto `Tempo`:
@@ -100,7 +102,7 @@ To streamline error handling and data consumption, return shapes across the AI p
 ## Architecture & Infrastructure Guides
 
 > [!IMPORTANT]
-> **Production Recommendation**: Due to the complexities of LLM APIs, including caching gotchas, context injection, rate limits, and calendar math hallucinations, we politely but strongly recommend reading the dedicated guides below before deploying this plugin in a production environment. 
+> **Production Recommendation**: Due to the complexities of LLM APIs, including caching gotchas, context injection, rate limits, and calendar math hallucinations, we strongly recommend reading the dedicated guides below before deploying this plugin in a production environment. 
 
 - [Security & Privacy Architecture](./security.md) (Smart Debug Telemetry, PII Masking, HTTPS & Proxy Introspection)
 - [Multi-Provider Execution Modes](./modes.md) (Hedged, RoundRobin, Adaptive, Race, Consensus, Fallback)

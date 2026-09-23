@@ -1,7 +1,7 @@
 import { toHex } from '#library/number.library.js';
 import { objectify } from '#library/serialize.library.js';
 import { asString, asError } from '#library/coercion.library.js';
-import { isError, isString, isPlainObject } from '#library/assertion.library.js';
+import { isError, isString, isPlainObject, isText } from '#library/assertion.library.js';
 import { bufferToBase64, base64ToBuffer, encodeBuffer, encodeText, decodeBuffer } from '#library/buffer.library.js';
 
 const crypto = globalThis.crypto;
@@ -397,4 +397,134 @@ export const generateKeyPair = async (): Promise<CryptoKeyPair> => {
 		true,
 		['sign', 'verify']
 	);
+}
+
+const MFS_MAGIC = new Uint8Array([0x4D, 0x46, 0x53, 0x31]); // 'MFS1' (Magma File Store v1)
+const SALT_LENGTH = 16;
+const IV_LENGTH = 12;
+const HEADER_LENGTH = MFS_MAGIC.length + SALT_LENGTH + IV_LENGTH; // 4 + 16 + 12 = 32 bytes
+
+/**
+ * Derives an AES-GCM 256-bit CryptoKey from a password and salt using PBKDF2 with SHA-256.
+ */
+async function derivePasswordKey(
+	password: string | Uint8Array,
+	salt: Uint8Array,
+	iterations = 100_000,
+	usage: KeyUsage[] = ['encrypt', 'decrypt']
+): Promise<CryptoKey> {
+	const passBytes = isString(password) ? encodeText(password) : password;
+	const baseKey = await subtle.importKey(
+		'raw',
+		passBytes as BufferSource,
+		'PBKDF2',
+		false,
+		['deriveKey']
+	);
+
+	return subtle.deriveKey(
+		{
+			name: 'PBKDF2',
+			salt: salt as BufferSource,
+			iterations,
+			hash: 'SHA-256'
+		},
+		baseKey,
+		{ name: keys.TypeKey, length: 256 },
+		false,
+		usage
+	);
+}
+
+/**
+ * Encrypts arbitrary binary or string data using a password with PBKDF2 key derivation and AES-GCM (256-bit).
+ * Encapsulates: [ Magic 4B ("MFS1") | Salt 16B | IV 12B | Ciphertext + Tag ].
+ *
+ * @param data - Raw string or binary data to encrypt
+ * @param password - Encryption password / passphrase
+ * @param iterations - PBKDF2 iteration count (default: 100,000)
+ * @returns Encrypted binary buffer as Uint8Array
+ */
+export async function encryptWithPassword(
+	data: BinaryData | string,
+	password: string,
+	iterations = 100_000
+): Promise<Uint8Array> {
+	if (!isText(password))
+		throw new TypeError('Cipher: A non-empty password string is required for encryption.');
+
+	const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+	const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+	const key = await derivePasswordKey(password, salt, iterations, ['encrypt']);
+
+	const plaintext = isString(data)
+		? encodeText(data)
+		: data instanceof Uint8Array
+			? data
+			: data instanceof ArrayBuffer
+				? new Uint8Array(data)
+				: new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+	const cipherBuf = await subtle.encrypt(
+		{ name: keys.TypeKey, iv: iv as BufferSource },
+		key,
+		plaintext as BufferSource
+	);
+
+	const result = new Uint8Array(HEADER_LENGTH + cipherBuf.byteLength);
+	result.set(MFS_MAGIC, 0);
+	result.set(salt, 4);
+	result.set(iv, 20);
+	result.set(new Uint8Array(cipherBuf), 32);
+
+	return result;
+}
+
+/**
+ * Decrypts data previously encrypted with encryptWithPassword using the supplied password.
+ * Authenticates data integrity and throws an error if the password is incorrect or data was tampered with.
+ *
+ * @param encrypted - Encrypted binary data buffer
+ * @param password - Decryption password / passphrase
+ * @param iterations - PBKDF2 iteration count (default: 100,000)
+ * @returns Decrypted plaintext as Uint8Array
+ */
+export async function decryptWithPassword(
+	encrypted: BinaryData,
+	password: string,
+	iterations = 100_000
+): Promise<Uint8Array> {
+	if (!isText(password))
+		throw new TypeError('Cipher: A non-empty password string is required for decryption.');
+
+	const bytes = encrypted instanceof Uint8Array
+		? encrypted
+		: encrypted instanceof ArrayBuffer
+			? new Uint8Array(encrypted)
+			: new Uint8Array(encrypted.buffer, encrypted.byteOffset, encrypted.byteLength);
+
+	if (bytes.length < HEADER_LENGTH + 16) {
+		throw new Error('Cipher: Invalid encrypted data length (corrupted or truncated).');
+	}
+
+	for (let i = 0; i < MFS_MAGIC.length; i++) {
+		if (bytes[i] !== MFS_MAGIC[i])
+			throw new Error('Cipher: Invalid encrypted file signature (not a valid encrypted file format).');
+	}
+
+	const salt = bytes.subarray(4, 20);
+	const iv = bytes.subarray(20, 32);
+	const ciphertext = bytes.subarray(32);
+
+	const key = await derivePasswordKey(password, salt, iterations, ['decrypt']);
+
+	try {
+		const decryptedBuf = await subtle.decrypt(
+			{ name: keys.TypeKey, iv: iv as BufferSource },
+			key,
+			ciphertext as BufferSource
+		);
+		return new Uint8Array(decryptedBuf);
+	} catch (err: any) {
+		throw new Error('Cipher: Decryption failed. Incorrect password or data corrupted.', { cause: err });
+	}
 }

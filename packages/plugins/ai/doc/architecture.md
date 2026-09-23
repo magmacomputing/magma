@@ -85,7 +85,7 @@ By default, `@magmacomputing/tempo-plugin-ai` lazily fetches provider defaults (
 
 ### Frontend Security Warning
 > [!CAUTION]
-> **Never** expose a raw LLM API key in a client-side browser bundle (like React, Vue, or Svelte) or store it in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser cache). Any Cross-Site Scripting (XSS) vulnerability, compromised NPM dependency, or malicious browser extension can inspect client-side memory/storage and extract secret keys, leading to quota drainage, unexpected billing spikes, or account bans. BYOK provider keys are *only* safe on backend servers and edge workers.
+> **Never** expose a raw LLM API key in a client-side browser bundle (like React, Vue, or Svelte) or store it in any browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, `OPFS`, or browser cache). We strongly recommend **zero browser storage** for API credentials; any Cross-Site Scripting (XSS) vulnerability, compromised NPM dependency, or malicious browser extension can inspect client-side storage and extract secret keys, leading to quota drainage, unexpected billing spikes, or account bans. BYOK provider keys are *only* safe on backend servers and edge workers.
 
 ## Browser & Client-Side Proxy Architecture
 

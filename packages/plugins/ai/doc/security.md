@@ -147,16 +147,31 @@ const rawReasoning = result.reasoning;
 * Keys are fetched just-in-time prior to the HTTP request and never stored in plain text in persistent global state, enabling zero-downtime key rotation.
 
 ### Frontend Zero-Storage Principle
-* **No Client-Side Secrets**: LLM API keys must **never** be bundled into client-side single-page applications (React, Vue, Svelte) or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`).
+* **No Client-Side Secrets (Zero Browser Storage)**: LLM API keys must **never** be bundled into client-side single-page applications (React, Vue, Svelte) or stored in any browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, `OPFS`, Web Locks, or browser cache). We recommend **zero browser storage** for API credentials; any client-side persistence remains accessible to same-origin scripts and vulnerable to XSS exfiltration.
 * **Proxy Architecture**: Public frontend web applications must route requests through a self-hosted backend proxy or secure AI Gateway (Cloudflare Worker, Next.js API Route) where private API keys are kept server-side.
 
 ---
 
-## 5. Ephemeral Processing & Partitioned Caching
+## 5. Ephemeral Processing, Partitioned Caching & Trial Gateway Data Handling
 
-### Zero External Telemetry Policy
-* The plugin does not transmit telemetry, analytics, or prompt logs to external tracking servers.
-* Prompt processing and temporal computations occur ephemerally during request execution.
+### Local Libraries Zero Telemetry Architecture
+* The `@magmacomputing/tempo` core library and `@magmacomputing/tempo-plugin-ai` package **collect zero telemetry, analytics, or prompt logs**.
+* When using **Tier 2 (Private Backend Proxy)** or **Tier 3 (Direct Provider Keys / BYOK)**, prompt processing and temporal computations occur ephemerally during request execution directly between your infrastructure and your configured LLM provider. Zero data touches Magma Computing servers.
+
+### Trial Sandbox Gateway (`provider: 'tempo'`) Data Handling & Diagnostics
+
+> [!NOTE]
+> **Attention: Trial Gateway Telemetry Notice**
+> The public Tempo trial evaluation gateway (`provider: 'tempo'`) collects pseudonymous telemetry regarding sandbox usage (latency, error rates, model performance, token counts, and HMAC-SHA-256 salted IP hashes).
+> This information is used to diagnose parsing failures, tune prompt schemas, and shape the plugin roadmap.
+> For developers requiring strict zero retention or zero external logging, route requests through your own backend proxy (Tier 2) or direct BYOK provider keys (Tier 3) as detailed in our documentation:
+> [https://magmacomputing.github.io/magma/doc/9-plugins/ai.security.html](https://magmacomputing.github.io/magma/doc/9-plugins/ai.security.html)
+
+* **Prompt Engineering & Diagnostics**: Natural language date expressions and model completion responses sent to the free trial gateway may be recorded in diagnostic telemetry records (when payload capture is enabled) to diagnose parsing edge cases, detect hallucinations, and tune temporal context prompts.
+* **Pseudonymous IP Hashing**: Client IP addresses are hashed using HMAC-SHA-256 with a secure server-side salt prior to storage; the gateway stores this HMAC-derived pseudonymous IP identifier, while raw IP addresses are not stored.
+* **Zero Retention Choice (Tier 2 & Tier 3)**: The free trial gateway provides community-subsidized compute for rapid prototyping. If your application handles sensitive data or requires strict zero data retention, use Tier 2 (custom backend proxy) or Tier 3 (direct BYOK keys).
+* **Retention Policy**: Trial gateway telemetry records (including recorded prompt and completion diagnostic bodies) become eligible for automated deletion after **30 days** via Firestore TTL. Firestore TTL deletion executes asynchronously in the background, typically within 24 to 72 hours of TTL expiration.
+* **Sensitive Data**: Do not submit proprietary or sensitive personal information through the trial sandbox gateway. For strict zero retention, configure your own backend proxy (`initAI({ endpoint })`) or private provider keys (`initAI({ provider: 'groq', apiKey })`) together with provider-side zero-data-retention controls and request-level cache bypass (`cache: false` or `force: true`) or a non-persisting cache adapter; local cache management via `Tempo.cache` or `AiCacheAdapter` provides caller-controlled client persistence.
 
 ### Partitioned Multi-Tier Caching
 * **Namespaced Cache Keys**: Cache keys are generated with multi-factor domain partitioning (e.g., `diff::`, `format::`, `extract::`) incorporating the prompt text, anchor epoch, target timezone, locale, calendar system, and regional parameters to prevent contextual collision.

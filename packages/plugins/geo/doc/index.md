@@ -56,6 +56,8 @@ import '@magmacomputing/tempo-plugin-geo/install';
 
 ## Usage Examples
 
+<PluginRepl plugin="geo" />
+
 ### 1. Fluent OOP with `Tempo.geo`
 
 ```typescript

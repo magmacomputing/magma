@@ -14,7 +14,9 @@ import {
 	verifyData,
 	signHmac,
 	verifyHmac,
-	timingSafeEqual
+	timingSafeEqual,
+	encryptWithPassword,
+	decryptWithPassword
 } from '../../../src/common/security/cipher.library.js';
 import { bufferToBase64 } from '../../../src/common/security/buffer.library.js';
 
@@ -216,4 +218,88 @@ describe('cipher.library', () => {
 			expect(k1).not.toBe(k2);
 		});
 	});
+
+	describe('encryptWithPassword & decryptWithPassword (AES-GCM + PBKDF2)', () => {
+		const password = 'correct-horse-battery-staple';
+		const plaintext = 'Secret database payload for Magma';
+
+		it('encrypts and decrypts string data with password', async () => {
+			const encrypted = await encryptWithPassword(plaintext, password);
+			expect(encrypted).toBeInstanceOf(Uint8Array);
+			expect(encrypted.length).toBeGreaterThan(32);
+
+			// Magic header verification ('MFS1')
+			expect(encrypted[0]).toBe(0x4D); // 'M'
+			expect(encrypted[1]).toBe(0x46); // 'F'
+			expect(encrypted[2]).toBe(0x53); // 'S'
+			expect(encrypted[3]).toBe(0x31); // '1'
+
+			const decrypted = await decryptWithPassword(encrypted, password);
+			expect(decrypted).toBeInstanceOf(Uint8Array);
+			expect(new TextDecoder().decode(decrypted)).toBe(plaintext);
+		});
+
+		it('encrypts and decrypts raw binary Uint8Array', async () => {
+			const binary = new Uint8Array([10, 20, 30, 40, 50, 60, 70, 80]);
+			const encrypted = await encryptWithPassword(binary, password);
+			const decrypted = await decryptWithPassword(encrypted, password);
+			expect(Array.from(decrypted)).toEqual(Array.from(binary));
+		});
+
+		it('throws on wrong password decryption', async () => {
+			const encrypted = await encryptWithPassword(plaintext, password);
+			await expect(decryptWithPassword(encrypted, 'incorrect-password')).rejects.toThrow(
+				'Cipher: Decryption failed. Incorrect password or data corrupted.'
+			);
+		});
+
+		it('throws on tampered ciphertext', async () => {
+			const encrypted = await encryptWithPassword(plaintext, password);
+			// Tamper with a ciphertext byte
+			encrypted[encrypted.length - 1] ^= 0xff;
+			await expect(decryptWithPassword(encrypted, password)).rejects.toThrow(
+				'Cipher: Decryption failed. Incorrect password or data corrupted.'
+			);
+		});
+
+		it('rejects corrupted magic header', async () => {
+			const encrypted = await encryptWithPassword(plaintext, password);
+			encrypted[0] = 0x00;
+			await expect(decryptWithPassword(encrypted, password)).rejects.toThrow(
+				'Cipher: Invalid encrypted file signature'
+			);
+		});
+
+		it('encrypts and decrypts various BufferSource types (ArrayBuffer, views, slices)', async () => {
+			// ArrayBuffer
+			const ab = new Uint8Array([1, 2, 3, 4]).buffer;
+			const encAb = await encryptWithPassword(ab, password);
+			const decAb = await decryptWithPassword(encAb, password);
+			expect(Array.from(decAb)).toEqual([1, 2, 3, 4]);
+
+			// TypedArray slice / view with offset
+			const full = new Uint8Array([0, 0, 42, 43, 44, 0, 0]);
+			const slice = full.subarray(2, 5); // [42, 43, 44], byteOffset = 2, byteLength = 3
+			const encSlice = await encryptWithPassword(slice, password);
+			const decSlice = await decryptWithPassword(encSlice, password);
+			expect(Array.from(decSlice)).toEqual([42, 43, 44]);
+
+			// Uint16Array view
+			const u16 = new Uint16Array([0x1234, 0x5678]);
+			const encU16 = await encryptWithPassword(u16, password);
+			const decU16 = await decryptWithPassword(encU16, password);
+			expect(decU16.byteLength).toBe(4);
+			expect(new Uint16Array(decU16.buffer, decU16.byteOffset, 2)).toEqual(u16);
+		});
+
+		it('validates password input presence and type', async () => {
+			// @ts-ignore
+			await expect(encryptWithPassword(plaintext, '')).rejects.toThrow(TypeError);
+			// @ts-ignore
+			await expect(encryptWithPassword(plaintext, null)).rejects.toThrow(TypeError);
+			// @ts-ignore
+			await expect(decryptWithPassword(new Uint8Array(40), '')).rejects.toThrow(TypeError);
+		});
+	});
 });
+

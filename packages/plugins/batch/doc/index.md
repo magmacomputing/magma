@@ -20,6 +20,8 @@ npm install @magmacomputing/tempo-plugin-batch
 
 ## Usage
 
+<PluginRepl plugin="batch" />
+
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { BatchPlugin } from '@magmacomputing/tempo-plugin-batch';

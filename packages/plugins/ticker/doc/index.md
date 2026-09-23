@@ -20,6 +20,8 @@ npm install @magmacomputing/tempo-plugin-ticker
 
 ## Usage
 
+<PluginRepl plugin="ticker" />
+
 To use the Ticker, pass the plugin to `Tempo.init` or `Tempo.use`:
 
 ```typescript
