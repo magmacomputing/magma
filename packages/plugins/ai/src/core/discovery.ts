@@ -250,7 +250,7 @@ export async function resolveAutoDiscoveredConfig(explicitConfig?: AiConfig): Pr
 
 	// Normalize single-provider shorthand
 	if (mergedConfig.provider && isUndefined(mergedConfig.providers)) {
-		const p = isString(mergedConfig.provider)
+		const p: AiProvider = isString(mergedConfig.provider)
 			? { id: mergedConfig.provider }
 			: { ...mergedConfig.provider };
 		if (mergedConfig.apiKey && !p.key)
