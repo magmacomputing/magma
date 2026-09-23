@@ -10,7 +10,7 @@
 
 This plugin bridges deterministic date math and unstructured NLP inputs, leveraging LLMs (Gemini, Groq, OpenAI, Ollama) to asynchronously parse complex natural language expressions into type-safe `Tempo` instances.
 
-> 🔒 **Security Notice**: Raw LLM API keys must **never** be exposed in client-side browser bundles or client storage (`localStorage`, `sessionStorage`, `IndexedDB`). BYOK is only safe on backend servers or edge runtime proxies.
+> 🔒 **Security Notice**: Raw LLM API keys must **never** be exposed in client-side browser bundles or client storage (`localStorage`, `sessionStorage`, `IndexedDB`, `OPFS`). We recommend **zero browser storage** for API credentials; BYOK is only safe on backend servers or edge runtime proxies.
 
 ---
 

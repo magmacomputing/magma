@@ -70,9 +70,9 @@ export const DEFAULT_PROVIDERS: Readonly<Record<string, Partial<AiProvider>>> = 
 	tempo: {
 		url: 'https://tempo.magmacomputing.com.au/api/ai/tempo',
 		models: {
-			default: 'llama-3.3-70b-versatile',
-			fast: 'llama-3.3-70b-versatile',
-			large: 'llama-3.3-70b-versatile'
+			default: 'openai/gpt-oss-20b',
+			fast: 'openai/gpt-oss-20b',
+			large: 'openai/gpt-oss-120b'
 		},
 		tokenParam: 'max_tokens',
 		key: 'tempo-public-sandbox-token'

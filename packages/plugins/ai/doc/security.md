@@ -147,7 +147,7 @@ const rawReasoning = result.reasoning;
 * Keys are fetched just-in-time prior to the HTTP request and never stored in plain text in persistent global state, enabling zero-downtime key rotation.
 
 ### Frontend Zero-Storage Principle
-* **No Client-Side Secrets**: LLM API keys must **never** be bundled into client-side single-page applications (React, Vue, Svelte) or stored in browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, or browser filesystems). Any client-side persistence remains accessible to same-origin scripts and vulnerable to XSS exfiltration.
+* **No Client-Side Secrets (Zero Browser Storage)**: LLM API keys must **never** be bundled into client-side single-page applications (React, Vue, Svelte) or stored in any browser storage (`localStorage`, `sessionStorage`, `IndexedDB`, `OPFS`, Web Locks, or browser cache). We recommend **zero browser storage** for API credentials; any client-side persistence remains accessible to same-origin scripts and vulnerable to XSS exfiltration.
 * **Proxy Architecture**: Public frontend web applications must route requests through a self-hosted backend proxy or secure AI Gateway (Cloudflare Worker, Next.js API Route) where private API keys are kept server-side.
 
 ---
