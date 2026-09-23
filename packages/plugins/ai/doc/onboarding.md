@@ -45,7 +45,7 @@ console.log(dt.format());
 
 > [!NOTE]
 > **Attention: Trial Gateway Telemetry & Rate Limits**:
-> The public Tempo trial evaluation gateway (`provider: 'tempo'`) collects pseudonymous, de-identified telemetry regarding sandbox usage (latency, error rates, model performance, token counts, and salted SHA-256 IP hashes) to shape the plugin roadmap and improve parsing schemas.
+> The public Tempo trial evaluation gateway (`provider: 'tempo'`) collects pseudonymous, de-identified telemetry regarding sandbox usage (latency, error rates, model performance, token counts, and HMAC-SHA-256 salted IP hashes) to shape the plugin roadmap and improve parsing schemas.
 >
 > If you require strict zero data retention or do not wish to participate in trial sandbox diagnostics, configure your own secure backend proxy (Tier 2) or direct BYOK provider credentials (Tier 3).
 > Learn more in our Security & Privacy guide:

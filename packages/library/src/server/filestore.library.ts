@@ -31,11 +31,32 @@ function resolveSandboxPath(filePath: string, rootDir = DEFAULT_ROOT_DIR): strin
 
 /**
  * Finds the deepest existing ancestor of a path and returns its real path.
+ * Handles dangling symlinks by inspecting symlink targets to ensure they cannot escape the sandbox.
  */
-async function getExistingRealAncestor(target: string): Promise<{ existingPath: string; realPath: string }> {
+async function getExistingRealAncestor(target: string, depth = 0): Promise<{ existingPath: string; realPath: string }> {
+	if (depth > 40) {
+		throw new Error(`Path traversal denied: maximum symlink depth exceeded at "${target}"`);
+	}
 	let curr = target;
 	while (curr && curr !== path.dirname(curr)) {
 		try {
+			const lstat = await fs.lstat(curr);
+			if (lstat.isSymbolicLink()) {
+				const linkTarget = await fs.readlink(curr);
+				const resolved = path.resolve(path.dirname(curr), linkTarget);
+				try {
+					const real = await fs.realpath(curr);
+					return { existingPath: curr, realPath: real };
+				} catch (realErr: any) {
+					if (realErr.code === 'ENOENT') {
+						const targetAncestor = await getExistingRealAncestor(resolved, depth + 1);
+						const expectedReal = path.resolve(targetAncestor.realPath, path.relative(targetAncestor.existingPath, resolved));
+						return { existingPath: curr, realPath: expectedReal };
+					}
+					throw realErr;
+				}
+			}
+
 			const real = await fs.realpath(curr);
 			return { existingPath: curr, realPath: real };
 		} catch (err: any) {
@@ -62,9 +83,14 @@ async function assertNoSymlinkEscape(targetPath: string, rootDir = DEFAULT_ROOT_
 	const isTargetOutside = targetRelToBase === '..' || targetRelToBase.startsWith(`..${path.sep}`) || path.isAbsolute(targetRelToBase);
 	if (!isTargetOutside) {
 		const relToExpected = path.relative(expectedRealBase, realTarget);
-		if (relToExpected === '..' || relToExpected.startsWith(`..${path.sep}`) || path.isAbsolute(relToExpected)) {
+		if (relToExpected === '..' || relToExpected.startsWith(`..${path.sep}`) || path.isAbsolute(relToExpected))
 			throw new Error(`Path traversal denied: "${targetPath}" resolves outside sandbox "${base}" via symlink`);
-		}
+	} else {
+		// When existingTarget is outside base, verify it is a legitimate ancestor of base (e.g. uncreated sandbox root)
+		const baseRelToExisting = path.relative(existingTarget, base);
+		const isLegitimateAncestor = !baseRelToExisting.startsWith('..') && !path.isAbsolute(baseRelToExisting);
+		if (!isLegitimateAncestor)
+			throw new Error(`Path traversal denied: "${targetPath}" resolves outside sandbox "${base}"`);
 	}
 }
 

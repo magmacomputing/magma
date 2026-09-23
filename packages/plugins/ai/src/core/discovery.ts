@@ -1,4 +1,4 @@
-import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isDefined, isFunction, asText, isUndefined, isEmpty } from '@magmacomputing/tempo/library';
+import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isDefined, isFunction, asText, isUndefined } from '@magmacomputing/tempo/library';
 import type { AsyncEvaluable } from '@magmacomputing/tempo/library';
 import { Tempo } from '@magmacomputing/tempo';
 
@@ -263,7 +263,7 @@ export async function resolveAutoDiscoveredConfig(explicitConfig?: AiConfig): Pr
 	const interpolated = interpolateEnv(mergedConfig, env);
 
 	// 4. If no providers defined in configuration, handle explicit proxy first, then scan environment for well-known keys
-	if (!interpolated.providers || isEmpty(interpolated.providers)) {
+	if (!interpolated.providers || interpolated.providers.length === 0) {
 		if (interpolated.endpoint || interpolated.proxyUrl) {
 			interpolated.providers = [{
 				id: 'proxy',

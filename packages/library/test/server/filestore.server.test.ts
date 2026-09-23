@@ -91,4 +91,25 @@ describe('server/filestore.library', () => {
 			await fs.rm(sandboxDir, { recursive: true, force: true });
 		}
 	});
+
+	it('rejects dangling symlink traversal targeting outside the sandbox', async () => {
+		const outsideDir = path.join(os.tmpdir(), `magma_outside_dangle_${Date.now()}`);
+		const sandboxDir = path.join(os.tmpdir(), `magma_sandbox_dangle_${Date.now()}`);
+		await fs.mkdir(outsideDir, { recursive: true });
+		await fs.mkdir(sandboxDir, { recursive: true });
+
+		const nonExistentOutsideTarget = path.join(outsideDir, 'non_existent.txt');
+		const danglingSymlink = path.join(sandboxDir, 'dangling_link');
+
+		try {
+			await fs.symlink(nonExistentOutsideTarget, danglingSymlink, 'file');
+			await expect(serverWrite('dangling_link', 'evil', sandboxDir)).rejects.toThrow(
+				/Path traversal denied/
+			);
+			expect(await serverRead('dangling_link', sandboxDir)).toBeNull();
+		} finally {
+			await fs.rm(outsideDir, { recursive: true, force: true });
+			await fs.rm(sandboxDir, { recursive: true, force: true });
+		}
+	});
 });
