@@ -23,7 +23,8 @@ import { logDebug, attachCustomInspect, sanitizeInspectAiMeta } from '../core/lo
 import type { TempoAiDiffResult, AiDiffOptions, DiffPair } from '../types/index.js';
 
 /**
- * Calculates raw difference metrics and business days between two Tempo points.
+ * Calculates raw difference metrics and business days between two Tempo points,
+ * excluding holidays and the start locale's weekend days by default.
  */
 function calculateGroundingMetrics(
 	startTempo: Tempo,
@@ -71,6 +72,15 @@ function calculateGroundingMetrics(
 	};
 }
 
+/**
+ * Resolves one date pair in the requested locale and returns its grounded AI difference.
+ *
+ * @param start - Start date or Tempo instance
+ * @param end - End date or Tempo instance
+ * @param prompt - Optional instruction for the formatted explanation
+ * @param options - Locale, holiday, provider, and cache settings
+ * @returns The formatted difference and computed calendar and business-day metrics
+ */
 async function diffSingleInput(
 	start: any,
 	end: any,

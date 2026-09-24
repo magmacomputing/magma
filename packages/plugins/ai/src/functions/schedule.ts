@@ -60,6 +60,13 @@ function parseDurationMinutes(prompt: string, fallback?: number): number {
 	return 30; // default 30 minutes
 }
 
+/**
+ * Lists active weekdays, defaulting to weekdays outside the locale's weekend.
+ *
+ * @param days - Explicit active weekdays, if supplied
+ * @param weekendDays - ISO weekdays treated as the regional weekend
+ * @returns Comma-separated weekday names for the scheduling prompt
+ */
 function formatActiveDays(days?: Array<number | DayKey | string>, weekendDays: readonly number[] = [6, 7]): string {
 	const weekendSet = new Set<number>(weekendDays);
 	const defaultActive = [1, 2, 3, 4, 5, 6, 7].filter(d => !weekendSet.has(d));
@@ -75,6 +82,16 @@ function formatActiveDays(days?: Array<number | DayKey | string>, weekendDays: r
 	}).join(', ');
 }
 
+/**
+ * Builds the scheduling prompt context from working hours, regional days, and busy slots.
+ *
+ * @param anchorTempo - Reference time carrying locale and weekend information
+ * @param timeZone - Time zone for the requested slot
+ * @param workingHours - Allowed hours and active weekdays
+ * @param busyEvents - Existing intervals the slot must avoid
+ * @param durationMinutes - Required slot length
+ * @returns Calendar context for the scheduling provider
+ */
 function buildContextPrompt(
 	anchorTempo: Tempo,
 	timeZone: string,

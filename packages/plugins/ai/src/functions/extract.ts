@@ -34,6 +34,13 @@ export type {
 	TempoEventType,
 };
 
+/**
+ * Extracts and validates temporal events from one text using the resolved calendar context.
+ *
+ * @param text - Source text to scan for events
+ * @param options - Anchor, locale, provider, category, and cache settings
+ * @returns Structured events with resolved Tempo dates and AI metadata
+ */
 async function extractSingleInput(
 	text: string,
 	options?: AiExtractOptions,

@@ -62,6 +62,14 @@ function calculateFormatGroundingMetrics(targetTempo: Tempo, anchorTempo: Tempo)
 	};
 }
 
+/**
+ * Formats one date with grounded relative-time and locale context for the AI provider.
+ *
+ * @param date - Date or Tempo instance to describe
+ * @param prompt - Optional wording instruction
+ * @param options - Anchor, locale, provider, and cache settings
+ * @returns A human-readable description with AI metadata
+ */
 async function formatSingleInput(
 	date: TempoDateInput,
 	prompt?: string,
