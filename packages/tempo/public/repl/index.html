@@ -1017,7 +1017,7 @@ await Tempo.ai.init({ provider: 'tempo', debug: true });
 // Parse complex cultural/relative calendar expression:
 const t = await Tempo.ai.parse("The Friday before Melbourne Cup next year");
 
-console.log('📅 Parsed:   ', t.format('{www}, {yyyy}-{mm}-{dd}'));
+console.log('📅 Parsed:   ', t.format('{www}, {yyyy}-{mmm}-{dd}'));
 console.log('🧠 Reasoning:', t.ai?.reasoning);
 console.log('🎯 Provider: ', t.ai?.provider, \`(confidence: \${t.ai?.confidence})\`);
 
