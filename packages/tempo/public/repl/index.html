@@ -624,11 +624,13 @@
 			body.is-embedded .workspace {
 				flex-direction: column;
 			}
+
 			body.is-embedded .pane-editor {
 				border-right: none;
 				border-bottom: 1px solid var(--panel-border);
 				flex: 1;
 			}
+
 			body.is-embedded .pane-output {
 				flex: 1;
 			}
@@ -1015,7 +1017,7 @@ await Tempo.ai.init({ provider: 'tempo', debug: true });
 // Parse complex cultural/relative calendar expression:
 const t = await Tempo.ai.parse("The Friday before Melbourne Cup next year");
 
-console.log('📅 Parsed:   ', t.format('{yyyy}-{mm}-{dd} ({www})'));
+console.log('📅 Parsed:   ', t.format('{www}, {yyyy}-{mm}-{dd}'));
 console.log('🧠 Reasoning:', t.ai?.reasoning);
 console.log('🎯 Provider: ', t.ai?.provider, \`(confidence: \${t.ai?.confidence})\`);
 
@@ -1208,7 +1210,8 @@ return t.iso;`
 				const duration = (performance.now() - startTime).toFixed(1);
 				evalTimeEl.textContent = `${duration} ms`;
 
-				const aiLimits = result?.ai?.limits || window.Tempo?.ai?.limits;
+				const aiLimits = result?.ai?.limits
+					|| (typeof window.Tempo?.ai?.rateLimits === 'function' ? window.Tempo.ai.rateLimits() : (window.Tempo?.ai?.rateLimits || window.Tempo?.ai?.limits));
 				const isCached = result?.ai?.cached || result?.ai?.provider === 'cache';
 				if (quotaBadge) {
 					if (aiLimits && typeof aiLimits.remainingRequests === 'number') {
@@ -1217,16 +1220,16 @@ return t.iso;`
 						const resetStr = aiLimits.resetAt ? ` · Resets ${aiLimits.resetAt.format('{hh}:{mi}')}` : '';
 						if (isCached) {
 							quotaBadge.className = 'quota-badge cached';
-							quotaBadge.textContent = `⚡ Quota: ${rem}/20 (Cached · 0 cost)`;
+							quotaBadge.textContent = `⚡ Quota: ${rem} req (Cached · 0 cost)`;
 						} else if (rem <= 3) {
 							quotaBadge.className = 'quota-badge danger';
-							quotaBadge.textContent = `🔴 Quota: ${rem}/20${resetStr}`;
+							quotaBadge.textContent = `🔴 Quota: ${rem} req remaining${resetStr}`;
 						} else if (rem <= 8) {
 							quotaBadge.className = 'quota-badge warning';
-							quotaBadge.textContent = `⚠️ Quota: ${rem}/20${resetStr}`;
+							quotaBadge.textContent = `⚠️ Quota: ${rem} req remaining${resetStr}`;
 						} else {
 							quotaBadge.className = 'quota-badge';
-							quotaBadge.textContent = `⚡ Quota: ${rem}/20${resetStr}`;
+							quotaBadge.textContent = `⚡ Quota: ${rem} req remaining${resetStr}`;
 						}
 					} else {
 						quotaBadge.style.display = 'none';
@@ -1249,7 +1252,7 @@ return t.iso;`
 				if (quotaBadge && (err?.status === 429 || err?.message?.includes('rate limit'))) {
 					quotaBadge.style.display = 'inline-flex';
 					quotaBadge.className = 'quota-badge danger';
-					quotaBadge.textContent = '🔴 Quota Exceeded (0/20)';
+					quotaBadge.textContent = '🔴 Quota Exceeded';
 				}
 			}
 
@@ -1302,22 +1305,23 @@ return t.iso;`
 					if (pluginParam === 'ai' || codeEditor.value.includes('tempo-plugin-ai') || codeEditor.value.includes('Tempo.ai')) {
 						autorunToggle.checked = false;
 						if (embedAutorunToggle) embedAutorunToggle.checked = false;
+						return false;
 					}
-					return true;
+					return autorunToggle.checked;
 				} catch {
 					// Fallback if hash invalid
 				}
 			}
 			if (pluginParam && SNIPPETS[pluginParam]) {
 				if (presetSelect) presetSelect.value = pluginParam;
-				loadPreset(pluginParam);
+				loadPreset(pluginParam, false);
 				return true;
 			}
-			loadPreset('quickstart');
+			loadPreset('quickstart', false);
 			return true;
 		}
 
-		function loadPreset(key) {
+		function loadPreset(key, autoRun = false) {
 			if (SNIPPETS[key]) {
 				codeEditor.value = SNIPPETS[key];
 				updateLineNumbers();
@@ -1329,12 +1333,12 @@ return t.iso;`
 					autorunToggle.checked = true;
 					if (embedAutorunToggle) embedAutorunToggle.checked = true;
 				}
-				if (isReady) executeCode();
+				if (autoRun && isReady && autorunToggle.checked) executeCode();
 			}
 		}
 
 		presetSelect.addEventListener('change', (e) => {
-			loadPreset(e.target.value);
+			loadPreset(e.target.value, true);
 		});
 
 		runBtn.addEventListener('click', executeCode);
