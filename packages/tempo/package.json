@@ -284,9 +284,9 @@
     "@rollup/plugin-alias": "^6.0.0",
     "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^12.3.0",
-    "magic-string": "^1.2.0",
-    "mermaid": "^11.16.1",
-    "typedoc": "^0.28.19",
+    "magic-string": "^1.4.2",
+    "mermaid": "^11.17.2",
+    "typedoc": "^0.28.20",
     "vitepress": "^1.6.4",
     "vitepress-plugin-mermaid": "^2.0.17"
   },
