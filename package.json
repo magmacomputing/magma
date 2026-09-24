@@ -39,7 +39,7 @@
     "repl": "npm run repl --workspace=@magmacomputing/tempo",
     "repl:plugins": "tsx --import ./packages/plugins/.bin/temporal-polyfill.mts ./packages/plugins/.bin/repl.mts",
     "repl:dist": "npm run repl:dist --workspace=@magmacomputing/tempo",
-    "core": "npm run core --workspace=@magmacomputing/tempo",
+    "repl:core": "npm run core --workspace=@magmacomputing/tempo",
     "docs:dev": "npm run docs:dev --workspace=@magmacomputing/tempo",
     "docs:build": "npm run docs:build --workspace=@magmacomputing/tempo",
     "docs:preview": "npm run docs:preview --workspace=@magmacomputing/tempo",
@@ -48,8 +48,7 @@
     "update:check": "npx npm-check-updates --workspaces --root",
     "update:patch": "npx npm-check-updates --workspaces --root --target patch -u",
     "update:minor": "npx npm-check-updates --workspaces --root --target minor -u",
-    "update:all": "npx npm-check-updates --workspaces --root -u",
-    "update": "npx npm-check-updates --workspaces --root -u"
+    "update:all": "npx npm-check-updates --workspaces --root -u"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
@@ -58,9 +57,6 @@
     "@types/hammerjs": "^2.0.46",
     "@types/jquery": "^4.0.1",
     "@types/node": "^26.6.2",
-    "@vitest/browser": "^4.1.11",
-    "@vitest/browser-webdriverio": "^4.1.11",
-    "@vitest/ui": "^4.1.11",
     "cross-env": "^10.1.0",
     "markdown-it-mathjax3": "^5.2.0",
     "rollup": "^4.63.4",
@@ -70,17 +66,14 @@
     "typescript": "^6.0.3",
     "typescript-7": "npm:typescript@^7.0.2",
     "unplugin-swc": "^1.6.0",
-    "vitest": "4.1.11",
-    "webdriverio": "^8.14.6"
+    "vitest": "4.1.11"
   },
   "overrides": {
     "esbuild": "^0.28.0"
   },
   "allowScripts": {
     "@swc/core@1.15.47": true,
-    "esbuild@0.28.2": true,
-    "edgedriver@5.6.1": true,
-    "geckodriver@4.5.1": true
+    "esbuild@0.28.2": true
   },
   "dependencies": {
     "magic-string": "^1.4.2",
