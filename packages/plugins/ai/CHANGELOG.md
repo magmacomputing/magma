@@ -5,6 +5,14 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-09-24
+
+### Added
+- **Regional Weekend Grounding via `Intl.LocaleInfo` (`diffAI`)**:
+  - `diffAI` arithmetic grounding now integrates with Tempo's `startTempo.intl.weekend` property, automatically adapting business day calculations to regional weekend definitions (e.g. Friday & Saturday `[5, 6]` for Saudi Arabia/Egypt/UAE, Friday-only `[5]` for Iran, or Thursday & Friday `[4, 5]` for Afghanistan).
+  - Propagates resolved `locale` to input `Tempo` instances so cultural weekend and calendar metadata resolve accurately from `Intl.Locale.prototype.getWeekInfo()` and host CLDR data.
+  - Updates LLM prompt grounding context to explicitly include active regional weekend day indices.
+
 ## [2.2.1] - 2026-09-24
 
 ### Added

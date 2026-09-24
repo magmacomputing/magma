@@ -25,7 +25,12 @@ import type { TempoAiDiffResult, AiDiffOptions, DiffPair } from '../types/index.
 /**
  * Calculates raw difference metrics and business days between two Tempo points.
  */
-function calculateGroundingMetrics(startTempo: Tempo, endTempo: Tempo, holidays?: string[]) {
+function calculateGroundingMetrics(
+	startTempo: Tempo,
+	endTempo: Tempo,
+	holidays?: string[],
+	weekendDays: readonly number[] = startTempo.intl?.weekend ?? [6, 7],
+) {
 	const calendarDays = Math.round(startTempo.until(endTempo, 'day') * 100) / 100;
 	const elapsedHours = Math.round(startTempo.until(endTempo, 'hour') * 100) / 100;
 
@@ -35,6 +40,7 @@ function calculateGroundingMetrics(startTempo: Tempo, endTempo: Tempo, holidays?
 
 	const holidaySet = new Set<string>(holidays ?? []);
 	const matchedHolidays: string[] = [];
+	const weekendSet = new Set<number>(weekendDays);
 
 	let curr = from.set({ day: 'start' });
 	const limit = to.set({ day: 'start' });
@@ -43,7 +49,7 @@ function calculateGroundingMetrics(startTempo: Tempo, endTempo: Tempo, holidays?
 	while (curr.epoch.ms < limit.epoch.ms) {
 		const dow = curr.dow; // 1 = Monday, 7 = Sunday
 		const dateStr = curr.format('{yyyy}-{mm}-{dd}');
-		const isWeekend = dow === 6 || dow === 7;
+		const isWeekend = weekendSet.has(dow);
 		const isHoliday = holidaySet.has(dateStr);
 
 		if (isHoliday) matchedHolidays.push(dateStr);
@@ -61,6 +67,7 @@ function calculateGroundingMetrics(startTempo: Tempo, endTempo: Tempo, holidays?
 		businessDays,
 		isReverse,
 		matchedHolidays,
+		weekendDays,
 	};
 }
 
@@ -73,8 +80,12 @@ async function diffSingleInput(
 	const fallbackTempo = Tempo.isTempo(start) ? start : (Tempo.isTempo(end) ? end : null);
 	const { tz, loc } = resolveTzAndLocale(options, fallbackTempo);
 
-	const startTempo = Tempo.isTempo(start) ? (start.tz === tz ? start : start.set({ timeZone: tz })) : new Tempo(start, { timeZone: tz });
-	const endTempo = Tempo.isTempo(end) ? (end.tz === tz ? end : end.set({ timeZone: tz })) : new Tempo(end, { timeZone: tz });
+	const startTempo = Tempo.isTempo(start)
+		? (start.tz === tz && start.locale === loc ? start : new Tempo(start, { timeZone: tz, locale: loc }))
+		: new Tempo(start, { timeZone: tz, locale: loc });
+	const endTempo = Tempo.isTempo(end)
+		? (end.tz === tz && end.locale === loc ? end : new Tempo(end, { timeZone: tz, locale: loc }))
+		: new Tempo(end, { timeZone: tz, locale: loc });
 
 	if (!startTempo.isValid)
 		throw new TempoAiError(`Invalid start date provided to diffAI: "${start}"`, 400);
@@ -145,7 +156,7 @@ async function diffSingleInput(
 - Direction: ${grounding.isReverse ? 'Past/Backward (End is earlier than Start)' : 'Future/Forward (Start is earlier than End)'}
 - Computed Calendar Days: ${grounding.calendarDays}
 - Computed Calendar Hours: ${grounding.elapsedHours}
-- Computed Business Working Days: ${grounding.businessDays} (excluding weekends${holidays && holidays.length > 0 ? ' and specified holidays' : ''})
+- Computed Business Working Days: ${grounding.businessDays} (excluding weekends [${(grounding.weekendDays ?? [6, 7]).join(', ')}]${holidays && holidays.length > 0 ? ' and specified holidays' : ''})
 ${grounding.matchedHolidays.length > 0 ? `- Matching Excluded Holidays: ${grounding.matchedHolidays.join(', ')}` : ''}
 ${options?.region ? `- Region Context: ${options.region}` : ''}
 - Target Locale: ${loc}

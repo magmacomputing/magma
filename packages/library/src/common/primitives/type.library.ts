@@ -200,9 +200,25 @@ type SafeCount<T, Acc extends any[] = [], Last = LastInUnion<T>> =
 
 /** Own properties of an Array, Object, Map or Enum */
 export type WellKnownSymbols = { [K in keyof SymbolConstructor]: SymbolConstructor[K] extends symbol ? SymbolConstructor[K] : never }[keyof SymbolConstructor]
+
+/** Standard methods attached to enumify / EnumifyType proxies */
+export type EnumMethodKeys =
+	| 'count'
+	| 'keys'
+	| 'values'
+	| 'entries'
+	| 'invert'
+	| 'has'
+	| 'includes'
+	| 'keyOf'
+	| 'forEach'
+	| 'filter'
+	| 'map'
+	| 'extend';
+
 /** Augmentable map of method/property names to exclude from KeyOf/ValueOf/OwnOf */
 export interface IgnoreOfMap { }
-type IgnoreOf = WellKnownSymbols | keyof IgnoreOfMap;
+type IgnoreOf = WellKnownSymbols | EnumMethodKeys | keyof IgnoreOfMap;
 
 /** Computes the union-member cardinality of type T, with numeric fallback for non-unions or deep recursion */
 export type CountOf<T> = SafeCount<T>

@@ -86,7 +86,7 @@ export interface TempoAiDiffResult {
 ## Key Architectural Behaviors
 
 ### 1. Native Grounding Context
-To guarantee arithmetic precision and prevent LLM hallucinations, `diffAI` natively computes exact calendar days, elapsed hours, and business working days (excluding Saturdays, Sundays, and provided holidays) using `Tempo` before dispatching to the LLM. These metrics are supplied as grounding constraints in the system prompt.
+To guarantee arithmetic precision and prevent LLM hallucinations, `diffAI` natively computes exact calendar days, elapsed hours, and business working days using `Tempo` before dispatching to the LLM. Business day grounding automatically respects regional weekend definitions via `Intl.LocaleInfo` (e.g. Friday/Saturday in `ar-SA`, Friday-only in `fa-IR`, or Saturday/Sunday in standard ISO regions) as well as explicitly provided `holidays`. These metrics are supplied as grounding constraints in the system prompt.
 
 ### 2. Public Holiday Exclusions
 You can supply regional public holidays (e.g., from `@magmacomputing/tempo-fns` via `getPublicHolidays`) to automatically adjust business day counters:
