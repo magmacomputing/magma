@@ -140,6 +140,9 @@ Ease-of-use and repeatable outcomes dictate our architecture:
 
 ## 3. Prioritized Implementation Roadmap
 
+> For detailed architectural specifications and cultural synergy design, see [`future-roadmap-and-cultural-synergy.md`](./future-roadmap-and-cultural-synergy.md).
+
+### Completed Foundation (`v1.0.0`)
 | Priority | Feature | Status | Target | Scope / Target Package | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **P1** | **`t.geoLocate()` Full Context Sync** | ✅ **Complete** | `v1.0.0` | `tempo-plugin-geo` | Default `setTimezone: true`, Option B reality sync, Option C call-site overrides. |
@@ -149,6 +152,16 @@ Ease-of-use and repeatable outcomes dictate our architecture:
 | **P2** | **Rich Metadata Layout Tokens** | ✅ **Complete** | `v1.0.0` | `tempo` / `tempo-plugin-geo` | Dynamic format tokens (`{geo.city}`, `{geo.country}`, `{geo.sphere}`) in `t.format()`. |
 | **P3** | **Elevation Horizon Dip** | ✅ **Complete** | `v1.0.0` | `tempo-fns` / `celestial` | Factor `t.geo.elevation` into solar sunrise/sunset times via horizon dip ($\Delta\theta \approx 0.0347^\circ \times \sqrt{h_{\text{meters}}}$). |
 | **P3** | **Natural Solar Time Offset** | ✅ **Complete** | `v1.0.0` | `mapper.library` / `tempo-plugin-geo` | `Tempo.geo.solarOffset(coords)` and `t.geoSolarOffset()` calculating solar delta. |
+
+### Future Backlog (`v1.1.0` – `v1.3.0`)
+| Priority | Feature | Status | Target | Scope / Target Package | Description |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **P1** | **Velocity & Impossible Travel Anomaly** | 📝 **Planned** | `v1.1.0` | `mapper.library` / `tempo-plugin-geo` | `Tempo.geo.velocity()`, `t.geoVelocity()`, and `isImpossibleTravel()` security checks. |
+| **P1** | **Bearing & Midpoint Calculation** | 📝 **Planned** | `v1.1.0` | `mapper.library` / `tempo-plugin-geo` | Initial compass azimuth ($0^\circ–360^\circ$) and geographic midpoint between locations. |
+| **P1** | **Solar Transit in SolarTerm** | 📝 **Planned** | `v1.1.0` | `tempo-plugin-celestial` | Expose `solar.noon` and `solar.solarTime` in `SolarTerm` for astronomical modeling. |
+| **P2** | **Cultural Sync (`setLocale: true`)** | 📝 **Planned** | `v1.2.0` | `tempo-plugin-geo` | Default language-preserving regional sync (`en-US` + `SA` ➜ `en-SA`) with `'native'` and `false` options. |
+| **P2** | **Geofencing & Proximity Queries** | 📝 **Planned** | `v1.2.0` | `mapper.library` / `tempo-plugin-geo` | Radial `isWithin()` and bounding box `inBoundingBox()` spatial checks. |
+| **P3** | **Pluggable Geocoding Provider Gateway** | 📝 **Planned** | `v1.3.0` | `tempo-plugin-geo` | Pluggable provider adapter (Nominatim, Mapbox, Google Maps) with offline fallback. |
 
 ---
 

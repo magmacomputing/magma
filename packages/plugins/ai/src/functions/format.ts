@@ -74,8 +74,8 @@ async function formatSingleInput(
 	let targetTempo: Tempo;
 	try {
 		targetTempo = Tempo.isTempo(date)
-			? (date.tz === tz ? date : date.set({ timeZone: tz }))
-			: new Tempo(date as any, { timeZone: tz });
+			? (date.tz === tz && date.locale === loc ? date : new Tempo(date.tz === tz ? date : date.set({ timeZone: tz }), { timeZone: tz, locale: loc }))
+			: new Tempo(date as any, { timeZone: tz, locale: loc });
 	} catch (err: any) {
 		const safeDateRep = isReference(date) ? JSON.stringify(date) : String(date);
 		throw new TempoAiError(`Invalid date provided to formatAI: "${safeDateRep}"`, 400, undefined, { cause: err });

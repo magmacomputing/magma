@@ -81,10 +81,10 @@ async function diffSingleInput(
 	const { tz, loc } = resolveTzAndLocale(options, fallbackTempo);
 
 	const startTempo = Tempo.isTempo(start)
-		? (start.tz === tz && start.locale === loc ? start : new Tempo(start, { timeZone: tz, locale: loc }))
+		? (start.tz === tz && start.locale === loc ? start : new Tempo(start.tz === tz ? start : start.set({ timeZone: tz }), { timeZone: tz, locale: loc }))
 		: new Tempo(start, { timeZone: tz, locale: loc });
 	const endTempo = Tempo.isTempo(end)
-		? (end.tz === tz && end.locale === loc ? end : new Tempo(end, { timeZone: tz, locale: loc }))
+		? (end.tz === tz && end.locale === loc ? end : new Tempo(end.tz === tz ? end : end.set({ timeZone: tz }), { timeZone: tz, locale: loc }))
 		: new Tempo(end, { timeZone: tz, locale: loc });
 
 	if (!startTempo.isValid)

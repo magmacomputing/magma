@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Comprehensive `Intl.LocaleInfo` Cultural Grounding Across All AI Handlers**:
-  - **`diffAI`**: Integrated with `startTempo.intl.weekend`, dynamically excluding culturally authentic regional weekends (e.g. Friday & Saturday `[5, 6]` in Saudi Arabia/UAE/Egypt, Friday-only `[5]` in Iran, or Thursday & Friday `[4, 5]` in Afghanistan) alongside user-defined holidays.
+  - **`diffAI`**: Integrated with `startTempo.intl.weekend`, dynamically excluding culturally authentic regional weekends (e.g. Friday & Saturday `[5, 6]` in Saudi Arabia/Egypt, Friday-only `[5]` in Iran, or Thursday & Friday `[4, 5]` in Afghanistan) alongside user-defined holidays.
   - **`scheduleAI`**: Default `workingHours.days` now dynamically calculates from `anchorTempo.intl.weekend` (excluding regional non-working days rather than assuming Monday–Friday), and includes `firstDay` / `weekend` context in LLM prompts.
   - **`parseAI`**: Injects `Week Starts On: ${firstDay}` and `Regional Weekend Days: [${weekend}]` into the LLM context prompt to prevent cultural hallucinations on relative expressions like *"this week"*, *"early next week"*, or *"over the weekend"*.
   - **`recurrenceAI`**: Augments recurrence compiler prompt with `firstDay` (RFC 5545 `WKST`) and `weekend` (`BYDAY`), ensuring expressions like *"every weekend"* or *"every working day"* map to culturally accurate weekday masks.

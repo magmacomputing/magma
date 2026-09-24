@@ -506,6 +506,9 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 		});
 
 		expect(slot).toBeDefined();
+		expect(slot.start.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-09 09:00');
+		expect(slot.end.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-08-09 10:00');
+
 		const requestBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
 		const promptContext = requestBody.messages[0].content;
 		expect(promptContext).toContain('Regional Weekend Days: [5, 6]');

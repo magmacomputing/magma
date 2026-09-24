@@ -141,10 +141,14 @@ export function resolveAnchorTempo(
 ): Tempo {
 	const evaluatedAnchor = evaluate(anchor as any, options?.defaultAnchor as any);
 	const { tz, loc, cal, sph } = context;
-	if (Tempo.isTempo(evaluatedAnchor))
-		return evaluatedAnchor.tz === tz && evaluatedAnchor.locale === loc
-			? evaluatedAnchor
-			: new Tempo(evaluatedAnchor, { timeZone: tz, locale: loc, calendar: cal, sphere: sph as any });
+	if (Tempo.isTempo(evaluatedAnchor)) {
+		if (evaluatedAnchor.tz === tz && evaluatedAnchor.locale === loc && evaluatedAnchor.cal === cal)
+			return evaluatedAnchor;
+		const shifted = (evaluatedAnchor.tz !== tz || (cal && evaluatedAnchor.cal !== cal))
+			? evaluatedAnchor.set({ timeZone: tz, ...(cal ? { calendar: cal } : {}) })
+			: evaluatedAnchor;
+		return new Tempo(shifted, { timeZone: tz, locale: loc, calendar: cal, sphere: sph as any });
+	}
 
 	let instance: Tempo;
 	try {
