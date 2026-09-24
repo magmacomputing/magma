@@ -483,6 +483,35 @@ describe('AI Schedule Plugin (scheduleAI)', () => {
 		expect(slot.end.format('{hh}:{mi}')).toBe('10:00');
 		expect(slot.ai?.conflictBumped).toBe(true);
 	});
+
+	it('should default active working days to regional non-weekend days (e.g. ar-SA Sunday through Thursday)', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						start: '2026-08-09T09:00:00+03:00', // Sunday morning in Riyadh
+						end: '2026-08-09T10:00:00+03:00',
+						summary: 'Scheduled meeting on Sunday in Riyadh',
+						confidence: 0.95
+					})
+				}
+			}]
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		const slot = await scheduleAI('Schedule 1 hour slot', {
+			anchor: '2026-08-07T09:00:00+03:00', // Friday in Saudi Arabia (weekend)
+			locale: 'ar-SA',
+			timeZone: 'Asia/Riyadh',
+		});
+
+		expect(slot).toBeDefined();
+		const requestBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+		const promptContext = requestBody.messages[0].content;
+		expect(promptContext).toContain('Regional Weekend Days: [5, 6]');
+		expect(promptContext).toContain('Monday, Tuesday, Wednesday, Thursday, Sunday');
+		expect(promptContext).toContain('Target Locale: ar-SA');
+	});
 });
 
 

@@ -174,6 +174,8 @@ ${categories.length > 0 ? `6. Only extract events matching one of these categori
 - Target TimeZone: ${tz}
 - Target Locale: ${loc}
 - Calendar System: ${cal}
+- Week Starts On: ${anchorTempo.intl.firstDay} (1=Mon, 7=Sun, 6=Sat)
+- Regional Weekend Days: [${anchorTempo.intl.weekend.join(', ')}]
 ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Filter Categories: ${categories.join(', ')}\n` : ''}`;
 
 	const winningCandidate = await executeWithMode(

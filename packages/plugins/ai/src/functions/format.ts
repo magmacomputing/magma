@@ -171,6 +171,8 @@ Output JSON Schema:
 		`- Reference Anchor: ${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')} (${anchorTempo.tz || tz})`,
 		`- Relative Delta: ${grounding.calendarDays >= 0 ? '+' : ''}${grounding.calendarDays} calendar days (${grounding.elapsedHours >= 0 ? '+' : ''}${grounding.elapsedHours} hours) in the ${grounding.direction.toUpperCase()}`,
 		`- Target Locale: ${loc}`,
+		`- Hour Cycle: ${targetTempo.intl.hourCycle}`,
+		`- Text Direction: ${targetTempo.intl.direction}`,
 	];
 	if (style) contextParts.push(`- Desired Style/Tone: ${style}`);
 	if (region) contextParts.push(`- Regional Context: ${region}`);

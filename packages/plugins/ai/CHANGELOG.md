@@ -8,10 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.0] - 2026-09-24
 
 ### Added
-- **Regional Weekend Grounding via `Intl.LocaleInfo` (`diffAI`)**:
-  - `diffAI` arithmetic grounding now integrates with Tempo's `startTempo.intl.weekend` property, automatically adapting business day calculations to regional weekend definitions (e.g. Friday & Saturday `[5, 6]` for Saudi Arabia/Egypt/UAE, Friday-only `[5]` for Iran, or Thursday & Friday `[4, 5]` for Afghanistan).
-  - Propagates resolved `locale` to input `Tempo` instances so cultural weekend and calendar metadata resolve accurately from `Intl.Locale.prototype.getWeekInfo()` and host CLDR data.
-  - Updates LLM prompt grounding context to explicitly include active regional weekend day indices.
+- **Comprehensive `Intl.LocaleInfo` Cultural Grounding Across All AI Handlers**:
+  - **`diffAI`**: Integrated with `startTempo.intl.weekend`, dynamically excluding culturally authentic regional weekends (e.g. Friday & Saturday `[5, 6]` in Saudi Arabia/UAE/Egypt, Friday-only `[5]` in Iran, or Thursday & Friday `[4, 5]` in Afghanistan) alongside user-defined holidays.
+  - **`scheduleAI`**: Default `workingHours.days` now dynamically calculates from `anchorTempo.intl.weekend` (excluding regional non-working days rather than assuming Monday–Friday), and includes `firstDay` / `weekend` context in LLM prompts.
+  - **`parseAI`**: Injects `Week Starts On: ${firstDay}` and `Regional Weekend Days: [${weekend}]` into the LLM context prompt to prevent cultural hallucinations on relative expressions like *"this week"*, *"early next week"*, or *"over the weekend"*.
+  - **`recurrenceAI`**: Augments recurrence compiler prompt with `firstDay` (RFC 5545 `WKST`) and `weekend` (`BYDAY`), ensuring expressions like *"every weekend"* or *"every working day"* map to culturally accurate weekday masks.
+  - **`formatAI`**: Injects `targetTempo.intl.hourCycle` (`h12` vs `h23`) and `direction` (`ltr` vs `rtl`) into narrative formatting grounding context.
+  - **`extractAI`**: Enhances entity extraction context with regional week boundaries and weekend definitions for disambiguating relative temporal references in unstructured text.
+  - **`resolveAnchorTempo`**: Preserves target locale when rehydrating `Tempo` instances so `t.intl` resolves with the active request locale.
 
 ## [2.2.1] - 2026-09-24
 
