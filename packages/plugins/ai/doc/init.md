@@ -205,20 +205,52 @@ Detailed diagnostic context—including provider resolution, execution lineage, 
 
 ## Configuration Options Reference
 
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `provider` | `string \| AiProvider` | `'tempo'` | Single provider shorthand (e.g. `'tempo'`, `'groq'`). |
+| `apiKey` | `string \| (() => string \| Promise<string>)` | `undefined` | Single provider API key shorthand (used with `provider`). |
+| `providers` | `AiProvider[]` | `[]` | Array of configured AI providers for multi-provider orchestration. |
+| `endpoint` | `string \| (() => string)` | `undefined` | Global fallback base URL or backend proxy endpoint. |
+| `mode` | `AiMode \| string` | `'fallback'` | Multi-provider execution strategy (`'fallback'`, `'race'`, `'consensus'`, `'hedged'`, `'roundrobin'`, `'adaptive'`). |
+| `hedgeDelay` | `number` | `800` | Speculative hedge delay in milliseconds (for `hedged` mode). |
+| `timeout` | `number` | `15000` | Global SLA timeout in milliseconds. |
+| `force` | `boolean` | `false` | If `true`, forces fresh LLM fetches globally and bypasses deterministic pre-parsing. |
+| `debug` | `boolean` | `false` | Global debug flag for operational trace logging and diagnostic metadata. |
+| `cache` | `Map \| boolean` | `true` | In-memory cache map or boolean toggle. |
+| `cacheAdapter` | `AiCacheAdapter` | `undefined` | Custom cache adapter for distributed storage (e.g. Redis, KV). |
+| `ttl` | `number` | `undefined` | Global default time-to-live in milliseconds for cache adapters. |
+| `minConfidence` | `number` | `0.0` | Minimum confidence threshold for AI parsing results (0.0 to 1.0). |
+| `timeZone` | `string \| (() => string)` | Host / Config | Dynamic or static default timezone context. |
+| `locale` | `string \| string[] \| (() => string \| string[])` | Host / Config | Dynamic or static default locale context. |
+| `calendar` | `string \| (() => string)` | `'iso8601'` | Dynamic or static default calendar context. |
+| `sphere` | `string \| (() => string)` | `'earth'` | Dynamic or static default celestial sphere context. |
+| `remoteConfigUrl` | `string \| false` | `providers.v1.json` | URL for dynamic remote provider manifest updates, or `false` to disable. |
+| `telemetry` | `boolean` | `true` | Flag to enable/disable anonymous usage telemetry. |
+
+### TypeScript Interface
+
 ```typescript
 export interface AiConfig {
+  /** Optional single provider shorthand (e.g. 'tempo', 'groq', or an AiProvider object) */
+  provider?: string | AiProvider;
+  /** Optional single provider API key shorthand (used in combination with `provider`) */
+  apiKey?: AsyncEvaluable<string>;
   /** List of configured AI providers */
   providers?: AiProvider[];
+  /** Global fallback base URL / proxy endpoint for providers (e.g. 'https://api.yourdomain.com/ai') */
+  endpoint?: Evaluable<string>;
   /** Default execution mode across providers ('fallback' | 'race' | 'consensus' | 'hedged' | 'roundrobin' | 'adaptive') */
   mode?: 'fallback' | 'race' | 'consensus' | 'hedged' | 'roundrobin' | 'adaptive';
   /** Speculative hedge delay in milliseconds (hedged mode only, default: 800ms) */
   hedgeDelay?: number;
-  /** Global SLA timeout in milliseconds */
+  /** Global SLA timeout in milliseconds (default: 15000ms) */
   timeout?: number;
-  /** Global debug flag for operational trace logging */
+  /** If true, forces fresh LLM fetches globally and bypasses deterministic pre-parsing */
+  force?: boolean;
+  /** Global debug flag for operational trace logging and diagnostic metadata attachment */
   debug?: boolean;
   /** Synchronous Map or BoundedCache for static glossary terms */
-  cache?: Map<string, string>;
+  cache?: Map<string, string> | boolean;
   /** Custom cache adapter for distributed storage (e.g. Redis, KV) */
   cacheAdapter?: AiCacheAdapter;
   /** Global default time-to-live in milliseconds for cache adapters */
@@ -237,5 +269,7 @@ export interface AiConfig {
   fetchDefaults?: (providerId: string) => Promise<Partial<AiProvider> | null> | Partial<AiProvider> | null;
   /** URL for dynamic remote provider manifest updates, or `false` to disable */
   remoteConfigUrl?: string | false;
+  /** Optional flag to disable/enable anonymous usage telemetry (default: true). Set to false to opt-out. */
+  telemetry?: boolean;
 }
 ```

@@ -18,6 +18,7 @@ const harvestedByPlugin = new Map(); // pluginId -> Array<{ basename: string, ti
 
 const KNOWN_TITLES = {
   'ai.index': 'Overview',
+  'ai.onboarding': 'AI Configuration & Onboarding Guide',
   'ai.init': 'Initialization (initAI)',
   'ai.parse': 'Smart Parsing (parseAI)',
   'ai.format': 'Narrative Formatting (formatAI)',
@@ -44,6 +45,7 @@ const KNOWN_TITLES = {
 
 const PREFERRED_AI_ORDER = [
   'index',
+  'onboarding',
   'init',
   'parse',
   'format',

@@ -5,6 +5,19 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-09-24
+
+### Added
+- **Global `force` Configuration Support**: Added `force` option to `AiConfig` (`initAI({ force: true })`) enabling global bypass of local deterministic pre-parsing across all subsequent `parseAI` invocations.
+
+### Changed & Fixed
+- **Interactive REPL Sandbox Integration**:
+  - Fixed syntax issue in interactive browser REPL snippet by migrating from static imports to dynamic imports (`await import('@magmacomputing/tempo-plugin-ai')`) and `Tempo.use(AiPlugin)`.
+  - Updated default AI REPL preset to demonstrate semantic calendar parsing (`"The Friday before Melbourne Cup next year"`), live reasoning capture (`t.ai.reasoning`), and provider telemetry with `debug: true`.
+- **Documentation Refinements**:
+  - Reorganized documentation sidebar to place `AI Configuration & Onboarding Guide` at position #2 directly after Overview.
+  - Abstracted ephemeral model identifiers in onboarding documentation to highlight dynamic `DEFAULT_PROVIDERS` and remote manifest resolution.
+
 ## [2.2.0] - 2026-09-22
 
 ### Added

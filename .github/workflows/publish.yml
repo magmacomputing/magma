@@ -8,51 +8,51 @@ on:
         type: boolean
         default: false
       tempo:
-        description: '@magmacomputing/tempo (core)'
+        description: 'tempo (core)'
         type: boolean
         default: false
       tempo_fns:
-        description: '@magmacomputing/tempo-fns (functional utilities)'
+        description: 'tempo-fns (functional utilities)'
         type: boolean
         default: false
       plugin_ai:
-        description: '@magmacomputing/tempo-plugin-ai'
+        description: 'tempo-plugin-ai'
         type: boolean
         default: false
       plugin_astro:
-        description: '@magmacomputing/tempo-plugin-astro'
+        description: 'tempo-plugin-astro'
         type: boolean
         default: false
       plugin_batch:
-        description: '@magmacomputing/tempo-plugin-batch'
+        description: 'tempo-plugin-batch'
         type: boolean
         default: false
       plugin_celestial:
-        description: '@magmacomputing/tempo-plugin-celestial'
+        description: 'tempo-plugin-celestial'
         type: boolean
         default: false
       plugin_dialects:
-        description: '@magmacomputing/tempo-plugin-dialects'
+        description: 'tempo-plugin-dialects'
         type: boolean
         default: false
       plugin_finance:
-        description: '@magmacomputing/tempo-plugin-finance'
+        description: 'tempo-plugin-finance'
         type: boolean
         default: false
       plugin_geo:
-        description: '@magmacomputing/tempo-plugin-geo'
+        description: 'tempo-plugin-geo'
         type: boolean
         default: false
       plugin_snap:
-        description: '@magmacomputing/tempo-plugin-snap'
+        description: 'tempo-plugin-snap'
         type: boolean
         default: false
       plugin_sync:
-        description: '@magmacomputing/tempo-plugin-sync'
+        description: 'tempo-plugin-sync'
         type: boolean
         default: false
       plugin_ticker:
-        description: '@magmacomputing/tempo-plugin-ticker'
+        description: 'tempo-plugin-ticker'
         type: boolean
         default: false
       custom:
