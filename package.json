@@ -34,51 +34,46 @@
     "providers:sync": "npm run build:library && tempo-cli sync-providers",
     "plugins:check-versions": "./packages/plugins/.bin/check-versions.sh",
     "plugins:check-diff": "./packages/plugins/.bin/check-branch-diff.sh",
-    "check:versions": "npm run plugins:check-versions",
-    "check:diff": "npm run plugins:check-diff",
     "repl": "npm run repl --workspace=@magmacomputing/tempo",
     "repl:plugins": "tsx --import ./packages/plugins/.bin/temporal-polyfill.mts ./packages/plugins/.bin/repl.mts",
     "repl:dist": "npm run repl:dist --workspace=@magmacomputing/tempo",
-    "core": "npm run core --workspace=@magmacomputing/tempo",
+    "repl:core": "npm run repl:core --workspace=@magmacomputing/tempo",
     "docs:dev": "npm run docs:dev --workspace=@magmacomputing/tempo",
     "docs:build": "npm run docs:build --workspace=@magmacomputing/tempo",
     "docs:preview": "npm run docs:preview --workspace=@magmacomputing/tempo",
     "docs:push": "npm run docs:push --workspace=@magmacomputing/tempo",
-    "test:dist": "npm run build:library && npm run build:tempo && TEST_DIST=true vitest run"
+    "test:dist": "npm run build:library && npm run build:tempo && TEST_DIST=true vitest run",
+    "update:check": "npx npm-check-updates --workspaces --root",
+    "update:patch": "npx npm-check-updates --workspaces --root --target patch -u",
+    "update:minor": "npx npm-check-updates --workspaces --root --target minor -u",
+    "update:all": "npx npm-check-updates --workspaces --root -u"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
     "@rollup/plugin-node-resolve": "^16.0.3",
-    "@types/google.maps": "^3.65.3",
+    "@types/google.maps": "^3.66.4",
     "@types/hammerjs": "^2.0.46",
-    "@types/jquery": "^4.0.0",
-    "@types/node": "^26.1.2",
-    "@vitest/browser": "^4.1.8",
-    "@vitest/browser-webdriverio": "^4.1.8",
-    "@vitest/ui": "^4.1.7",
+    "@types/jquery": "^4.0.1",
+    "@types/node": "^26.6.2",
     "cross-env": "^10.1.0",
-    "markdown-it-mathjax3": "^5.2.0",
-    "rollup": "^4.62.2",
+    "rollup": "^4.63.4",
     "tslib": "^2.8.1",
     "tsup": "^8.5.1",
-    "tsx": "^4.22.3",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "typescript-7": "npm:typescript@^7.0.2",
-    "unplugin-swc": "^1.5.11",
-    "vitest": "4.1.10",
-    "webdriverio": "^9.30.1"
+    "unplugin-swc": "^1.6.0",
+    "vitest": "4.1.11"
   },
   "overrides": {
     "esbuild": "^0.28.0"
   },
   "allowScripts": {
-    "edgedriver@6.3.0": true,
     "@swc/core@1.15.47": true,
-    "esbuild@0.28.2": true,
-    "geckodriver@6.1.1": true
+    "esbuild@0.28.2": true
   },
   "dependencies": {
-    "magic-string": "^1.1.1",
+    "magic-string": "^1.4.2",
     "typescript-7": "npm:typescript@^7.0.2"
   }
 }

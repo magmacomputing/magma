@@ -3,6 +3,7 @@ import { asText, asNumber } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import { normalizeCacheInput, readMultiTierCache, writeMultiTierCache } from '../core/cache.js';
+import { _state } from '../core/init.js';
 import {
 	attachAiMeta,
 	fetchFromProvider,
@@ -31,7 +32,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 	const normalizedStr = normalizeCacheInput(str);
 
 	const {
-		force,
+		force: callForce,
 		debug,
 		mode: aiMode,
 		providers,
@@ -49,6 +50,8 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 		sphere: _sph,
 		...coreOptions
 	} = options || {};
+
+	const force = callForce ?? _state.config.force ?? false;
 
 	const fallbackTempo = Tempo.isTempo(anchor) ? anchor : null;
 	const context = resolveFullContext(options, fallbackTempo);

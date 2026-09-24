@@ -245,6 +245,12 @@ export function sanitizeInspectAiMeta(
 		...(isDefined(ai.rawPrompt) ? { rawPrompt: maskPii(ai.rawPrompt, isProd) } : {}),
 		...(isDefined(ai.normalizedPrompt) ? { normalizedPrompt: maskPii(ai.normalizedPrompt, isProd) } : {}),
 		...(isDefined(ai.reasoning) ? { reasoning: maskPii(ai.reasoning, isProd) } : {}),
-		...(ai.limits ? { limits: ai.limits } : {}),
+		...(ai.limits ? {
+			limits: {
+				remainingRequests: ai.limits.remainingRequests,
+				remainingTokens: ai.limits.remainingTokens,
+				resetAt: ai.limits.resetAt ? (typeof ai.limits.resetAt.format === 'function' ? (ai.limits.resetAt.iso ?? String(ai.limits.resetAt)) : ai.limits.resetAt) : null,
+			}
+		} : {}),
 	};
 }

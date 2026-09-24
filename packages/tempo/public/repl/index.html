@@ -293,6 +293,45 @@
 			color: var(--text-muted);
 		}
 
+		.eval-meta-wrap {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.quota-badge {
+			display: inline-flex;
+			align-items: center;
+			gap: 4px;
+			padding: 2px 7px;
+			border-radius: 999px;
+			font-size: 0.7rem;
+			font-weight: 600;
+			text-transform: none;
+			letter-spacing: 0;
+			background: rgba(16, 185, 129, 0.12);
+			border: 1px solid rgba(16, 185, 129, 0.35);
+			color: #34d399;
+		}
+
+		.quota-badge.warning {
+			background: rgba(245, 158, 11, 0.12);
+			border-color: rgba(245, 158, 11, 0.35);
+			color: #fbbf24;
+		}
+
+		.quota-badge.danger {
+			background: rgba(239, 68, 68, 0.12);
+			border-color: rgba(239, 68, 68, 0.35);
+			color: #f87171;
+		}
+
+		.quota-badge.cached {
+			background: rgba(56, 189, 248, 0.12);
+			border-color: rgba(56, 189, 248, 0.35);
+			color: #38bdf8;
+		}
+
 		/* Editor Area */
 		.editor-container {
 			display: flex;
@@ -585,11 +624,13 @@
 			body.is-embedded .workspace {
 				flex-direction: column;
 			}
+
 			body.is-embedded .pane-editor {
 				border-right: none;
 				border-bottom: 1px solid var(--panel-border);
 				flex: 1;
 			}
+
 			body.is-embedded .pane-output {
 				flex: 1;
 			}
@@ -739,7 +780,10 @@
 			<section class="pane pane-output">
 				<div class="pane-header">
 					<span>Evaluation Return Value</span>
-					<span id="evalTime">0 ms</span>
+					<div class="eval-meta-wrap">
+						<span id="quotaBadge" class="quota-badge" style="display: none;"></span>
+						<span id="evalTime">0 ms</span>
+					</div>
 				</div>
 				<div class="result-section">
 					<div id="resultBox" class="result-box">Initializing Sandbox...</div>
@@ -963,70 +1007,26 @@ Tempo.use(TickerPlugin);
 console.log('TickerPlugin loaded and active!');
 return 'Dynamic import successful!';`,
 
-			ai: `// 🤖 Natural Language Date Parsing & Scheduling with Tempo.ai
-// Full Docs: https://magmacomputing.github.io/magma/doc/9-plugins/ai.index.html
-//
-// 🔑 External Provider Resources (Get free keys or run locally):
-//  • Groq (Fast & Free Tier):      https://console.groq.com/keys
-//  • Google Gemini (Free Tier):    https://aistudio.google.com/app/apikey
-//  • OpenAI:                       https://platform.openai.com/api-keys
-//  • Local Ollama (100% Private):  https://ollama.com
-//    (Note: Run with OLLAMA_ORIGINS="*" ollama serve for browser CORS)
-
-console.log('Loading AI Plugin...');
+			ai: `// 🤖 AI Semantic Parsing & Scheduling (@magmacomputing/tempo-plugin-ai)
 const { AiPlugin } = await import('@magmacomputing/tempo-plugin-ai');
 Tempo.use(AiPlugin);
 
-// 1. Configure Supported Provider (Uncomment one or use local Ollama):
-await Tempo.ai.init({
-  providers: [
-    // --- Option A: Groq (Recommended for fast free testing) ---
-    // { id: 'groq', key: 'gsk_your_groq_api_key' },
+// Quick-start trial provider (or configure BYOK: Tempo.ai.init({ provider: 'groq', apiKey: '...' }))
+await Tempo.ai.init({ provider: 'tempo', debug: true });
 
-    // --- Option B: Google Gemini ---
-    // { id: 'gemini', key: 'AIzaSy_your_gemini_api_key' },
+// Parse complex cultural/relative calendar expression:
+const t = await Tempo.ai.parse("The Friday before Melbourne Cup next year");
 
-    // --- Option C: OpenAI ---
-    // { id: 'openai', key: 'sk-your_openai_api_key' },
+console.log('📅 Parsed:   ', t.format('{www}, {yyyy}-{mm}-{dd}'));
+console.log('🧠 Reasoning:', t.ai?.reasoning);
+console.log('🎯 Provider: ', t.ai?.provider, \`(confidence: \${t.ai?.confidence})\`);
 
-    // --- Option D: Local Ollama (No API Key Required) ---
-    { id: 'ollama', endpoint: 'http://localhost:11434/v1', model: 'llama3' }
-  ],
-  remoteConfigUrl: false
-});
+if (t.ai?.limits?.remainingRequests !== undefined) {
+  const resetStr = t.ai.limits.resetAt ? t.ai.limits.resetAt.format('{hh}:{mi}:{ss}') : 'in 1h';
+  console.log('⏱️ Quota:    ', \`\${t.ai.limits.remainingRequests} req remaining (resets at \${resetStr})\`);
+}
 
-console.log('Tempo.ai initialized!');
-console.log('Active Providers:', Tempo.ai.config.providers?.map(p => p.id));
-
-try {
-  // 2. Parse conversational date expressions with anchor context
-  console.log('Parsing: "Next Tuesday around 2:30pm for 45 minutes"...');
-  const event = await Tempo.ai.parse(
-    "Next Tuesday around 2:30pm for 45 minutes",
-    { anchor: 'now' }
-  );
-
-  console.log('Resolved Timestamp:', event.format('{wkd}, {dd} {mon} {yyyy} at {hh}:{mi}'));
-  console.log('AI Provider Used:', event.ai?.provider ?? 'unknown');
-  console.log('Ambiguity Flag:', Boolean(event.ai?.ambiguous));
-
-  // 3. Multi-point recurrence schedule
-  console.log('Scheduling: "Every second Thursday at 10am until EOFY"...');
-  const schedule = await Tempo.ai.schedule("Every second Thursday at 10am until EOFY");
-  console.log('Next Recurrences Count:', schedule.dates.length);
-  if (schedule.dates.length > 0) {
-    console.log('First Recurrence:', schedule.dates[0].format('{yyyy}-{mm}-{dd} {hh}:{mi}'));
-  }
-
-  return event.format('AI Event: {wkd}, {dd} {mon} {yyyy} at {hh}:{mi}');
-} catch (err) {
-  console.warn('Live LLM call requires an active provider key or running local Ollama endpoint.');
-  console.info('🔗 Get free API keys:');
-  console.info('   • Groq:   https://console.groq.com/keys');
-  console.info('   • Gemini: https://aistudio.google.com/app/apikey');
-  console.info('   • Ollama: https://ollama.com (run locally with OLLAMA_ORIGINS="*" ollama serve)');
-  return \`Tempo.ai ready! (Provide a live provider key to parse: \${err.message})\`;
-}`
+return t.iso;`
 		};
 
 		const LOGO_TEMPO = `<svg class="brand-logo" viewBox="0 0 235.319 235.319" fill="#38bdf8" style="width: 22px; height: 22px; filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.45));">
@@ -1073,6 +1073,7 @@ try {
 		const resultBox = document.getElementById('resultBox');
 		const consoleStream = document.getElementById('consoleStream');
 		const evalTimeEl = document.getElementById('evalTime');
+		const quotaBadge = document.getElementById('quotaBadge');
 		const logCountEl = document.getElementById('logCount');
 		const statusDot = document.getElementById('statusDot');
 		const statusText = document.getElementById('statusText');
@@ -1189,6 +1190,7 @@ try {
 			clearConsole();
 			resultBox.classList.remove('error');
 			resultBox.textContent = 'Executing...';
+			if (quotaBadge) quotaBadge.style.display = 'none';
 
 			const customConsole = {
 				log: (...args) => appendLog('log', args),
@@ -1209,6 +1211,32 @@ try {
 				const duration = (performance.now() - startTime).toFixed(1);
 				evalTimeEl.textContent = `${duration} ms`;
 
+				const aiLimits = result?.ai?.limits
+					|| (typeof window.Tempo?.ai?.rateLimits === 'function' ? window.Tempo.ai.rateLimits() : (window.Tempo?.ai?.rateLimits || window.Tempo?.ai?.limits));
+				const isCached = result?.ai?.cached || result?.ai?.provider === 'cache';
+				if (quotaBadge) {
+					if (aiLimits && typeof aiLimits.remainingRequests === 'number') {
+						quotaBadge.style.display = 'inline-flex';
+						const rem = aiLimits.remainingRequests;
+						const resetStr = aiLimits.resetAt ? ` · Resets ${aiLimits.resetAt.format('{hh}:{mi}')}` : '';
+						if (isCached) {
+							quotaBadge.className = 'quota-badge cached';
+							quotaBadge.textContent = `⚡ Quota: ${rem} req (Cached · 0 cost)`;
+						} else if (rem <= 3) {
+							quotaBadge.className = 'quota-badge danger';
+							quotaBadge.textContent = `🔴 Quota: ${rem} req remaining${resetStr}`;
+						} else if (rem <= 8) {
+							quotaBadge.className = 'quota-badge warning';
+							quotaBadge.textContent = `⚠️ Quota: ${rem} req remaining${resetStr}`;
+						} else {
+							quotaBadge.className = 'quota-badge';
+							quotaBadge.textContent = `⚡ Quota: ${rem} req remaining${resetStr}`;
+						}
+					} else {
+						quotaBadge.style.display = 'none';
+					}
+				}
+
 				if (result !== undefined) {
 					resultBox.textContent = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
 				} else {
@@ -1221,6 +1249,16 @@ try {
 				resultBox.classList.add('error');
 				resultBox.textContent = err.name + ': ' + err.message;
 				customConsole.error(err.stack || err.message);
+
+				if (quotaBadge) {
+					if (err?.status === 429 || err?.message?.includes('rate limit')) {
+						quotaBadge.style.display = 'inline-flex';
+						quotaBadge.className = 'quota-badge danger';
+						quotaBadge.textContent = '🔴 Quota Exceeded';
+					} else {
+						quotaBadge.style.display = 'none';
+					}
+				}
 			}
 
 			updateEmbedFullLink();
@@ -1269,31 +1307,43 @@ try {
 					codeEditor.value = decodeURIComponent(atob(encoded));
 					updateLineNumbers();
 					updateEmbedFullLink();
-					return true;
+					if (pluginParam === 'ai' || codeEditor.value.includes('tempo-plugin-ai') || codeEditor.value.includes('Tempo.ai')) {
+						autorunToggle.checked = false;
+						if (embedAutorunToggle) embedAutorunToggle.checked = false;
+						return false;
+					}
+					return autorunToggle.checked;
 				} catch {
 					// Fallback if hash invalid
 				}
 			}
 			if (pluginParam && SNIPPETS[pluginParam]) {
 				if (presetSelect) presetSelect.value = pluginParam;
-				loadPreset(pluginParam);
+				loadPreset(pluginParam, false);
 				return true;
 			}
-			loadPreset('quickstart');
+			loadPreset('quickstart', false);
 			return true;
 		}
 
-		function loadPreset(key) {
+		function loadPreset(key, autoRun = false) {
 			if (SNIPPETS[key]) {
 				codeEditor.value = SNIPPETS[key];
 				updateLineNumbers();
 				updateEmbedFullLink();
-				if (isReady) executeCode();
+				if (key === 'ai') {
+					autorunToggle.checked = false;
+					if (embedAutorunToggle) embedAutorunToggle.checked = false;
+				} else {
+					autorunToggle.checked = true;
+					if (embedAutorunToggle) embedAutorunToggle.checked = true;
+				}
+				if (autoRun && isReady && autorunToggle.checked) executeCode();
 			}
 		}
 
 		presetSelect.addEventListener('change', (e) => {
-			loadPreset(e.target.value);
+			loadPreset(e.target.value, true);
 		});
 
 		runBtn.addEventListener('click', executeCode);

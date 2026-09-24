@@ -227,4 +227,6 @@ export interface AiConfig {
 	debug?: boolean | undefined;
 	/** Optional flag to disable/enable anonymous usage telemetry (default: true). Set to false to opt-out across all AI requests. */
 	telemetry?: boolean | undefined;
+	/** Optional flag to force fresh LLM fetches globally across all AI requests */
+	force?: boolean | undefined;
 }

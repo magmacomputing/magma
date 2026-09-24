@@ -140,16 +140,23 @@ const ticker = Tempo.ticker({ seconds: 1 }, (t, stop) => {
 return 'Ticker started (executes in console stream)';`,
 
   ai: `// 🤖 AI Semantic Parsing & Scheduling (@magmacomputing/tempo-plugin-ai)
-import { Tempo } from '@magmacomputing/tempo';
-import { pluginAI, initAI } from '@magmacomputing/tempo-plugin-ai';
+const { AiPlugin } = await import('@magmacomputing/tempo-plugin-ai');
+Tempo.use(AiPlugin);
 
-Tempo.extend(pluginAI);
+// Quick-start trial provider (or configure BYOK: Tempo.ai.init({ provider: 'groq', apiKey: '...' }))
+await Tempo.ai.init({ provider: 'tempo', debug: true });
 
-// Quick-start trial provider (or configure BYOK: initAI({ provider: 'groq', apiKey: '...' }))
-await initAI({ provider: 'tempo' });
+// Parse complex cultural/relative calendar expression:
+const t = await Tempo.ai.parse("The Friday before Melbourne Cup next year");
 
-const t = await Tempo.ai("next Friday at 2pm");
-console.log('Parsed result:', t.format('YYYY-MM-DD HH:mm'));
+console.log('📅 Parsed:   ', t.format('{www}, {yyyy}-{mm}-{dd}'));
+console.log('🧠 Reasoning:', t.ai?.reasoning);
+console.log('🎯 Provider: ', t.ai?.provider, \`(confidence: \${t.ai?.confidence})\`);
+
+if (t.ai?.limits?.remainingRequests !== undefined) {
+  const resetStr = t.ai.limits.resetAt ? t.ai.limits.resetAt.format('{hh}:{mi}:{ss}') : 'in 1h';
+  console.log('⏱️ Quota:    ', \`\${t.ai.limits.remainingRequests} req remaining (resets at \${resetStr})\`);
+}
 
 return t.iso;`
 };

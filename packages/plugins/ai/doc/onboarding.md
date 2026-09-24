@@ -23,7 +23,7 @@ flowchart TD
 
 | Tier | Best For | Configuration | Rate Limits & Data Handling |
 | :--- | :--- | :--- | :--- |
-| **Tier 1: Tempo Sandbox** | Rapid prototyping, browser REPL, onboarding tutorials | `initAI({ provider: 'tempo' })` | Free community sandbox: 20 req/hr per IP (Groq Llama 3.3). Queries are sanitized and retained for up to 30 days for prompt diagnostics. |
+| **Tier 1: Tempo Sandbox** | Rapid prototyping, browser REPL, onboarding tutorials | `initAI({ provider: 'tempo' })` | Free community evaluation sandbox: 20 req/hr per IP (powered by a managed high-reasoning model). Queries are sanitized and retained for up to 30 days for prompt diagnostics. |
 | **Tier 2: Backend Proxy** | Production web apps, mobile apps, SPAs | `initAI({ endpoint: 'https://api.yourdomain.com/api/ai' })` | Your backend manages quotas, authentication, and secret storage. Zero data touches Tempo servers. |
 | **Tier 3: Direct Keys** | Server-side APIs, microservices, CLI tools, serverless | `initAI({ provider: 'groq', apiKey: '...' })` or `initAI({ providers: [...] })` | Full direct provider quota with dynamic key/endpoint supplier support. Direct client-to-provider egress. |
 
@@ -152,17 +152,22 @@ await initAI({
     {
       id: 'groq',
       key: process.env.GROQ_API_KEY
+      // Automatically resolves default endpoint & latest model from DEFAULT_PROVIDERS / live manifest
     },
     {
       id: 'custom-internal-gateway',
       endpoint: 'https://ai-gateway.internal.corp/v1/chat/completions',
       key: () => getVaultSecret('gateway-token'), // Dynamic supplier
-      model: 'llama-3.3-70b-versatile'
+      model: 'gpt-4o-mini' // Optional: override or specify custom model identifier
     }
   ],
   timeout: 5000
 });
 ```
+
+> [!TIP]
+> **Dynamic Manifest & Zero-Maintenance Model Defaults**:
+> For standard providers (`groq`, `openai`, `gemini`), specifying `model` or `endpoint` is optional. Tempo AI automatically populates them from built-in `DEFAULT_PROVIDERS` and continuously synchronizes the latest optimal models at runtime via the remote provider manifest (`providers.v1.json`). Explicit model parameters are only required when overriding defaults or routing to private custom gateways.
 
 ---
 
@@ -177,5 +182,6 @@ await initAI({
 | `providers[].model` | `string \| (() => string)` | Model identifier. |
 | `mode` | `AiMode` | Execution strategy (`fallback`, `race`, `consensus`, `hedged`, `roundrobin`, `adaptive`). |
 | `timeout` | `number` | SLA timeout in milliseconds (default: `15000`). |
+| `force` | `boolean` | Set to `true` to force fresh LLM fetches and bypass deterministic pre-parsing globally. |
 | `cache` | `boolean \| CacheAdapter` | Cache configuration. |
 | `telemetry` | `boolean` | Set to `false` to opt-out of anonymous usage telemetry (default: `true`). |
