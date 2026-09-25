@@ -161,15 +161,19 @@ export default withMermaid(defineConfig({
   },
   vite: {
     build: {
-      target: 'es2022',
+      target: 'esnext',
       chunkSizeWarningLimit: 2000
     },
     esbuild: {
       target: 'esnext'
     },
     optimizeDeps: {
+      include: ['mermaid', 'fastdom', 'dayjs', '@braintree/sanitize-url', 'cytoscape', 'khroma'],
       esbuildOptions: {
-        target: 'esnext'
+        target: 'esnext',
+        supported: {
+          'destructuring': true
+        }
       }
     },
     resolve: {

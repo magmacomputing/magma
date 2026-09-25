@@ -8,16 +8,16 @@ This guide covers synodic lunar phase cycles, illumination ratio, lunar age, hem
 
 `LunarTerm` models the 29.53-day synodic month across 8 discrete phases:
 
-| Phase Key | Phase Name | Illumination ($\%$) | Age (Days) |
+| Phase Key | Phase Name | Illumination (%) | Age (Days) |
 | :--- | :--- | :--- | :--- |
-| `'new-moon'` | New Moon | $0\%$ | $0.0 - 3.7$ |
-| `'waxing-crescent'` | Waxing Crescent | $1\% - 49\%$ | $3.7 - 7.4$ |
-| `'first-quarter'` | First Quarter | $50\%$ | $7.4 - 11.1$ |
-| `'waxing-gibbous'` | Waxing Gibbous | $51\% - 99\%$ | $11.1 - 14.8$ |
-| `'full-moon'` | Full Moon | $100\%$ | $14.8 - 18.5$ |
-| `'waning-gibbous'` | Waning Gibbous | $99\% - 51\%$ | $18.5 - 22.1$ |
-| `'third-quarter'` | Third Quarter | $50\%$ | $22.1 - 25.8$ |
-| `'waning-crescent'` | Waning Crescent | $49\% - 1\%$ | $25.8 - 29.53$ |
+| `'new-moon'` | New Moon | 0% | 0.0 - 3.7 |
+| `'waxing-crescent'` | Waxing Crescent | 1% - 49% | 3.7 - 7.4 |
+| `'first-quarter'` | First Quarter | 50% | 7.4 - 11.1 |
+| `'waxing-gibbous'` | Waxing Gibbous | 51% - 99% | 11.1 - 14.8 |
+| `'full-moon'` | Full Moon | 100% | 14.8 - 18.5 |
+| `'waning-gibbous'` | Waning Gibbous | 99% - 51% | 18.5 - 22.1 |
+| `'third-quarter'` | Third Quarter | 50% | 22.1 - 25.8 |
+| `'waning-crescent'` | Waning Crescent | 49% - 1% | 25.8 - 29.53 |
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';

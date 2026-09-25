@@ -7,6 +7,10 @@ import {
 	getStashedGeo,
 	stashGeo,
 	clearStashedGeo,
+	setGeoProvider,
+	getGeoProvider,
+	reverseGeocode,
+	forwardGeocode,
 	GEO_PROPERTIES,
 	haversineDistance,
 	solarOffset,
@@ -21,6 +25,7 @@ import {
 	type ResolvedCoordinates,
 	type GeoConfig,
 	type CoordinateInput,
+	type GeoProvider,
 	type DistanceUnit,
 	type TimeUnit,
 	type BearingOptions,
@@ -51,6 +56,10 @@ export {
 	getStashedGeo,
 	stashGeo,
 	clearStashedGeo,
+	setGeoProvider,
+	getGeoProvider,
+	reverseGeocode,
+	forwardGeocode,
 	GEO_PROPERTIES,
 	haversineDistance,
 	solarOffset,
@@ -72,6 +81,7 @@ export type {
 	ResolvedCoordinates,
 	GeoConfig,
 	CoordinateInput,
+	GeoProvider,
 	DistanceUnit,
 	TimeUnit,
 	BearingOptions,
@@ -89,7 +99,7 @@ export type {
  * Cohesive static namespace for geolocation operations on Tempo.
  */
 export interface TempoGeoNamespace {
-	/** Asynchronous universal geolocation lookup (browser hardware or server IP) with 24h caching */
+	/** Asynchronous universal geolocation lookup (browser hardware, server IP, or custom provider) with 24h caching */
 	readonly lookup: typeof geoLookup;
 	/** Asynchronously resolves coordinates from an instance, config, or ambient storage */
 	readonly resolve: typeof resolveGeoCoordinates;
@@ -117,6 +127,14 @@ export interface TempoGeoNamespace {
 	readonly clear: typeof clearStashedGeo;
 	/** Retrieves stashed coordinates from storage */
 	readonly get: typeof getStashedGeo;
+	/** Sets the active custom geolocation provider gateway */
+	readonly setProvider: typeof setGeoProvider;
+	/** Gets the currently registered custom geolocation provider */
+	readonly getProvider: typeof getGeoProvider;
+	/** Reverse geocodes coordinates to address or location metadata using the active provider */
+	readonly reverse: typeof reverseGeocode;
+	/** Forward geocodes an address or place query string into coordinates using the active provider */
+	readonly forward: typeof forwardGeocode;
 	/** Low-level server-side IP geolocation handler */
 	readonly server: typeof serverGeoLocation;
 	/** Low-level browser geolocation API handler */
@@ -128,7 +146,12 @@ export interface TempoGeoNamespace {
 /**
  * Options for configuring the Geo plugin.
  */
-export type GeoPluginOptions = Partial<GeoConfig> & { timeout?: number; highAccuracy?: boolean;[key: string]: any };
+export type GeoPluginOptions = Partial<GeoConfig> & {
+	timeout?: number;
+	highAccuracy?: boolean;
+	provider?: GeoProvider;
+	[key: string]: any;
+};
 
 /**
  * GeoPlugin installs geolocation lookup and coordinate resolution helpers onto Tempo under the `Tempo.geo` namespace.
@@ -137,6 +160,9 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 	name: 'geo',
 	install(this: any, TempoClass: any, options?: GeoPluginOptions) {
 		const installedClass = TempoClass || this;
+		if (options?.provider)
+			setGeoProvider(options.provider);
+
 		const getEffectiveOptions = (callSiteOpts?: Record<string, any>, instance?: any) => {
 			const classOpts = installedClass.config?.pluginOptions?.geo;
 			const instanceOpts = instance?.config?.pluginOptions?.geo;
@@ -164,6 +190,10 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 				stash: stashGeo,
 				clear: clearStashedGeo,
 				get: getStashedGeo,
+				setProvider: setGeoProvider,
+				getProvider: getGeoProvider,
+				reverse: (coords: CoordinateInput, opts?: Record<string, any>) => reverseGeocode(coords, getEffectiveOptions(opts)),
+				forward: (query: string, opts?: Record<string, any>) => forwardGeocode(query, getEffectiveOptions(opts)),
 				server: serverGeoLocation,
 				browser: geoLocation,
 				get current(): GeoConfig | undefined {

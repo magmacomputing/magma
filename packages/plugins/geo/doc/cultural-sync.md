@@ -12,9 +12,14 @@ When a user travels or logs in from another country (e.g. from London to Tokyo o
 
 ---
 
-## 2. Automatic Cultural Sync (`t.geoLocate({ setLocale: true })`)
+## 2. Automatic Cultural Sync (`t.geoLocate({ setLocale })`)
 
-When calling `t.geoLocate()`, passing `{ setLocale: true }` automatically infers the primary BCP 47 language/locale tag for the resolved geographic coordinates and updates the instance's locale configuration.
+When calling `t.geoLocate()`, the `setLocale` option controls how the BCP 47 locale is synchronized with physical geography:
+
+- **`'native'`**: Converts to the primary native language and culture of the territory (e.g. `ar-EG` in Egypt, `ja-JP` in Japan).
+- **`true` / `'regional'`** *(default)*: Preserves the caller's source language while adapting regional calendar rules (e.g. `en-US` + `EG` → `en-EG`).
+- **Custom BCP 47 string**: Explicit override (e.g. `'fr-EG'`).
+- **`false` / `'none'`**: Opts out of locale synchronization.
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -23,22 +28,28 @@ import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
 Tempo.use(GeoPlugin);
 
 const t = new Tempo('2026-06-21T12:00:00Z', {
-  geo: { lat: 30.0444, lng: 31.2357 } // Cairo, Egypt
+  geo: { lat: 30.0444, lng: 31.2357, country: 'EG' } // Cairo, Egypt
 });
 
-// Locate with cultural locale synchronization enabled
-const localized = await t.geoLocate({ setLocale: true });
+// 1. Native Cultural Sync: adopts Egypt's primary native language (Arabic)
+const localizedNative = await t.geoLocate({ setLocale: 'native' });
 
-console.log(localized.tz);     // 'Africa/Cairo'
-console.log(localized.locale); // 'ar-EG'
-console.log(localized.format('full')); // Arabic calendar date string
+console.log(localizedNative.tz);                            // 'Africa/Cairo'
+console.log(localizedNative.locale);                        // 'ar-EG'
+console.log(localizedNative.format({ dateStyle: 'full' })); // 'الأحد، ٢١ يونيو ٢٠٢٦'
+
+// 2. Regional Adaptation (default): keeps English language, adapts Egyptian calendar/weekend
+const localizedRegional = await t.geoLocate({ setLocale: true });
+
+console.log(localizedRegional.locale);                        // 'en-EG'
+console.log(localizedRegional.format({ dateStyle: 'full' })); // 'Sunday, 21 June 2026'
 ```
 
 ### Call-Site Preference Priority
 
-Explicit caller preferences always win:
+Explicit caller preferences always take absolute precedence:
 ```typescript
-// If caller explicitly provides a custom locale, it overrides automatic inference:
+// Explicit custom BCP 47 tag
 const custom = await t.geoLocate({ setLocale: 'fr-EG' });
 console.log(custom.locale); // 'fr-EG'
 ```

@@ -525,4 +525,130 @@ describe('Tempo Plugin: Geo', () => {
 			expect(untouchedLoc.locale).toBe('en-US');
 		});
 	});
+
+	describe('Pluggable Geocoding Provider Gateway', () => {
+		afterEach(() => {
+			Tempo.geo.setProvider(undefined);
+		});
+
+		it('should register and retrieve custom GeoProvider', () => {
+			const mockProvider = {
+				name: 'mock-provider',
+				lookup: vi.fn().mockResolvedValue({ lat: 48.8566, lng: 2.3522, city: 'Paris', country: 'FR' }),
+			};
+
+			Tempo.geo.setProvider(mockProvider);
+			expect(Tempo.geo.getProvider()).toBe(mockProvider);
+			expect(Tempo.geo.getProvider()?.name).toBe('mock-provider');
+		});
+
+		it('should delegate lookup to registered custom provider with automatic caching', async () => {
+			const mockProvider = {
+				name: 'custom-nominatim',
+				lookup: vi.fn().mockResolvedValue({
+					latitude: 52.5200,
+					longitude: 13.4050,
+					city: 'Berlin',
+					country: 'Germany',
+					timezone: 'Europe/Berlin',
+				}),
+			};
+
+			Tempo.geo.setProvider(mockProvider);
+
+			const result = await Tempo.geo.lookup({ refresh: true });
+			expect(mockProvider.lookup).toHaveBeenCalledTimes(1);
+			expect(result.latitude).toBe(52.52);
+			expect(result.longitude).toBe(13.405);
+			expect(result.city).toBe('Berlin');
+			expect(result.country).toBe('Germany');
+
+			// Second call should read from stashed cache
+			const cached = await Tempo.geo.lookup();
+			expect(mockProvider.lookup).toHaveBeenCalledTimes(1); // Cached, not called again
+			expect(cached.status).toBe('cached');
+			expect(cached.latitude).toBe(52.52);
+		});
+
+		it('should support call-site provider override in t.geoLocate()', async () => {
+			const customProvider = {
+				name: 'callsite-custom',
+				lookup: vi.fn().mockResolvedValue({
+					lat: 35.6762,
+					lng: 139.6503,
+					city: 'Tokyo',
+					country: 'Japan',
+					timezone: 'Asia/Tokyo',
+				}),
+			};
+
+			const t = new Tempo('2026-06-21T12:00:00Z');
+			const located = await t.geoLocate({ provider: customProvider, setLocale: 'native' });
+
+			expect(customProvider.lookup).toHaveBeenCalled();
+			expect(located.geo?.city).toBe('Tokyo');
+			expect(located.geo?.latitude).toBe(35.676);
+			expect(located.geo?.longitude).toBe(139.65);
+			expect(located.tz).toBe('Asia/Tokyo');
+			expect(located.locale).toBe('ja-JP');
+		});
+
+		it('should delegate forward and reverse geocoding to active provider', async () => {
+			const mockProvider = {
+				name: 'mock-geocoder',
+				lookup: vi.fn(),
+				reverseGeocode: vi.fn().mockResolvedValue({
+					latitude: -33.869,
+					longitude: 151.209,
+					city: 'Sydney',
+					country: 'AU',
+				}),
+				forwardGeocode: vi.fn().mockResolvedValue({
+					lat: 40.713,
+					lng: -74.006,
+					latitude: 40.713,
+					longitude: -74.006,
+					city: 'New York',
+				}),
+			};
+
+			Tempo.geo.setProvider(mockProvider);
+
+			const reverseRes = await Tempo.geo.reverse({ lat: -33.8688, lng: 151.2093 });
+			expect(mockProvider.reverseGeocode).toHaveBeenCalled();
+			expect(reverseRes?.city).toBe('Sydney');
+
+			const forwardRes = await Tempo.geo.forward('New York, NY');
+			expect(mockProvider.forwardGeocode).toHaveBeenCalledWith('New York, NY', expect.any(Object));
+			expect(forwardRes?.lat).toBe(40.713);
+		});
+
+		it('should fallback gracefully to default lookup if custom provider throws without fallback: false', async () => {
+			const failingProvider = {
+				name: 'failing-provider',
+				lookup: vi.fn().mockRejectedValue(new Error('Rate limit exceeded')),
+			};
+
+			Tempo.geo.setProvider(failingProvider);
+
+			const mockFallbackPayload = {
+				ip: '1.2.3.4',
+				success: true,
+				lat: 51.5074,
+				lon: -0.1278,
+				city: 'London',
+				country: 'United Kingdom',
+				timezone: 'Europe/London',
+			};
+
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockFallbackPayload), { status: 200 })
+			);
+
+			const result = await Tempo.geo.lookup({ refresh: true });
+			expect(failingProvider.lookup).toHaveBeenCalled();
+			expect(result.city).toBe('London');
+			expect(result.latitude).toBe(51.507);
+		});
+	});
 });

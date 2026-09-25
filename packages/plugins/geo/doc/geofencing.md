@@ -8,7 +8,9 @@ This guide details spatial boundary containment, circular radius proximity check
 
 Determines whether the Great-Circle distance between two coordinates is within a given radius threshold:
 
-$$\text{haversineDistance}(\text{from}, \text{to}) \le \text{maxDistance}$$
+```
+haversineDistance(from, to) <= maxDistance
+```
 
 ### Code Examples
 
@@ -74,14 +76,14 @@ console.log(Tempo.geo.inBoundingBox(oxford, londonBox));        // false
 
 ---
 
-## 3. Antimeridian Crossing Resolution ($180^\circ$ Longitude)
+## 3. Antimeridian Crossing Resolution (180° Longitude)
 
-Geographic bounding boxes that span across the International Date Line (antimeridian at $\pm 180^\circ$ longitude, such as Fiji, New Zealand, Alaska Aleutian Islands, and Pacific maritime corridors) have $\text{minLng} > \text{maxLng}$ (e.g. from $170^\circ\text{E}$ to $-170^\circ\text{W}$).
+Geographic bounding boxes that span across the International Date Line (antimeridian at ±180° longitude, such as Fiji, New Zealand, Alaska Aleutian Islands, and Pacific maritime corridors) have `minLng > maxLng` (e.g. from 170°E to -170°W).
 
 `inBoundingBox` handles antimeridian crossing automatically:
 
-- **Standard box ($\text{minLng} \le \text{maxLng}$)**: $\text{minLng} \le \text{lng} \le \text{maxLng}$
-- **Antimeridian box ($\text{minLng} > \text{maxLng}$)**: $\text{lng} \ge \text{minLng} \lor \text{lng} \le \text{maxLng}$
+- **Standard box (`minLng <= maxLng`)**: `minLng <= lng && lng <= maxLng`
+- **Antimeridian box (`minLng > maxLng`)**: `lng >= minLng || lng <= maxLng`
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';

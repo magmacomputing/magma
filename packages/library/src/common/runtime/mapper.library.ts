@@ -115,6 +115,20 @@ export interface GeoLookupResult {
 	[key: string]: any;
 }
 
+/**
+ * Standard interface for pluggable geocoding and geolocation providers.
+ */
+export interface GeoProvider {
+	/** Unique identifier or provider name */
+	readonly name: string;
+	/** Resolves geographic coordinates and location metadata */
+	lookup(opts?: Record<string, any>): Promise<GeoLookupResult | null>;
+	/** Optional reverse geocoding from coordinates to location details */
+	reverseGeocode?(coords: CoordinateInput, opts?: Record<string, any>): Promise<GeoConfig | null>;
+	/** Optional forward geocoding from place/address query to coordinates */
+	forwardGeocode?(query: string, opts?: Record<string, any>): Promise<ResolvedCoordinates | null>;
+}
+
 export interface ResolvedCoordinates extends GeoConfig {
 	lat: number;
 	lng: number;
@@ -435,12 +449,30 @@ export const clearStashedGeo = (keyOrOpts?: string | Record<string, any>): void 
 	setStorage(cacheKey, undefined);
 };
 
+let activeGeoProvider: GeoProvider | undefined;
+
+/**
+ * Sets the active custom geolocation provider gateway.
+ * 
+ * @param provider - GeoProvider implementation or undefined to restore default provider
+ */
+export function setGeoProvider(provider?: GeoProvider): void {
+	activeGeoProvider = provider;
+}
+
+/**
+ * Gets the currently registered custom geolocation provider.
+ */
+export function getGeoProvider(): GeoProvider | undefined {
+	return activeGeoProvider;
+}
+
 /**
  * Universal geolocation lookup dispatcher.
- * Automatically delegates to browser `geoLocation()` or server `serverGeoLocation()` based on runtime context.
+ * Automatically delegates to custom provider, browser `geoLocation()`, or server `serverGeoLocation()`.
  * When coordinates are resolved, stashes the result in storage with a 24-hour TTL for fast cached lookups.
  * 
- * @param opts - Lookup options passed down to environment handler (e.g. `{ refresh: true, key: 'tenant-1' }`)
+ * @param opts - Lookup options passed down to environment handler (e.g. `{ refresh: true, key: 'tenant-1', provider }`)
  */
 export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLookupResult> => {
 	const useCache = opts.refresh !== true;
@@ -460,29 +492,45 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 		}
 	}
 
-	const { type } = getContext();
-	let res: GeoLookupResult;
+	const provider = opts.provider ?? activeGeoProvider;
+	let res: GeoLookupResult | undefined;
 
-	switch (type) {
-		case CONTEXT.Browser: {
-			const { geoLocation } = await import('#browser/mapper.library.js');
-			const browserRes = await geoLocation(opts as any);
-			if (browserRes.error)
-				return { error: browserRes.error };
-
-			const lat = browserRes.coords?.latitude;
-			const lng = browserRes.coords?.longitude;
-			res = { ...browserRes, lat, lng, latitude: lat, longitude: lng };
-			break;
+	if (provider && isFunction(provider.lookup)) {
+		try {
+			const providerRes = await provider.lookup(opts);
+			if (providerRes) {
+				res = providerRes;
+			}
+		} catch (err: any) {
+			if (opts.fallback === false) {
+				return { error: err?.message ?? 'Provider lookup failed' };
+			}
 		}
+	}
 
-		case CONTEXT.WebWorker:
-		case CONTEXT.NodeJS:
-		case CONTEXT.Deno:
-		default: {
-			const { serverGeoLocation } = await import('#server/mapper.library.js');
-			res = await serverGeoLocation(opts as any);
-			break;
+	if (!res || res.error) {
+		const { type } = getContext();
+		switch (type) {
+			case CONTEXT.Browser: {
+				const { geoLocation } = await import('#browser/mapper.library.js');
+				const browserRes = await geoLocation(opts as any);
+				if (browserRes.error)
+					return { error: browserRes.error };
+
+				const lat = browserRes.coords?.latitude;
+				const lng = browserRes.coords?.longitude;
+				res = { ...browserRes, lat, lng, latitude: lat, longitude: lng };
+				break;
+			}
+
+			case CONTEXT.WebWorker:
+			case CONTEXT.NodeJS:
+			case CONTEXT.Deno:
+			default: {
+				const { serverGeoLocation } = await import('#server/mapper.library.js');
+				res = await serverGeoLocation(opts as any);
+				break;
+			}
 		}
 	}
 
@@ -518,6 +566,41 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 
 	return res;
 };
+
+/**
+ * Reverse geocodes coordinates to address or location metadata using the active or provided GeoProvider.
+ * 
+ * @param coords - Coordinate input
+ * @param opts - Options including optional provider override
+ */
+export async function reverseGeocode(
+	coords: CoordinateInput,
+	opts?: Record<string, any>
+): Promise<GeoConfig | null> {
+	const provider = opts?.provider ?? activeGeoProvider;
+	if (provider && isFunction(provider.reverseGeocode)) {
+		return provider.reverseGeocode(coords, opts);
+	}
+	const resolved = coerceGeo(coords);
+	return resolved ?? null;
+}
+
+/**
+ * Forward geocodes an address or place query string into coordinates using the active or provided GeoProvider.
+ * 
+ * @param query - Address or place search query
+ * @param opts - Options including optional provider override
+ */
+export async function forwardGeocode(
+	query: string,
+	opts?: Record<string, any>
+): Promise<ResolvedCoordinates | null> {
+	const provider = opts?.provider ?? activeGeoProvider;
+	if (provider && isFunction(provider.forwardGeocode)) {
+		return provider.forwardGeocode(query, opts);
+	}
+	return null;
+}
 
 /**
  * Universal coordinate resolver.
@@ -563,6 +646,39 @@ export const resolveGeoCoordinates = async (
 	}
 
 	return null;
+};
+
+/**
+ * Internal helper to extract validated, unrounded coordinates from objects, tuples, or strings.
+ * @internal
+ */
+const extractRawCoords = (input: any): { lat: number; lng: number } | undefined => {
+	if (isNullish(input)) return undefined;
+	if (isString(input) && input.includes(',')) {
+		const parts = input.split(',').map(s => Number(s.trim()));
+		if (parts.length >= 2 && isNumber(parts[0]) && isNumber(parts[1]) && parts[0] >= -90 && parts[0] <= 90 && parts[1] >= -180 && parts[1] <= 180) {
+			return { lat: parts[0], lng: parts[1] };
+		}
+		return undefined;
+	}
+	if (Array.isArray(input) && input.length >= 2) {
+		const lat = Number(input[0]);
+		const lng = Number(input[1]);
+		if (isNumber(lat) && isNumber(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+			return { lat, lng };
+		}
+		return undefined;
+	}
+	if (isReference(input)) {
+		const geo = input.geo ?? input.config?.geo ?? input;
+		const cfg = input.config?.geo ?? input.config;
+		const lat = evaluate<number>(geo?.latitude, geo?.lat, input.latitude, input.lat, cfg?.latitude, cfg?.lat);
+		const lng = evaluate<number>(geo?.longitude, geo?.lng, geo?.lon, geo?.long, input.longitude, input.lng, input.lon, input.long, cfg?.longitude, cfg?.lng, cfg?.lon, cfg?.long);
+		if (isNumber(lat) && isNumber(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+			return { lat, lng };
+		}
+	}
+	return undefined;
 };
 
 /**
@@ -858,8 +974,26 @@ export function isImpossibleTravel(from: any, to: any, options?: ImpossibleTrave
  */
 export function isWithin(from: any, to: any, maxDistance: number, unit: DistanceUnit = 'km'): boolean {
 	if (!isNumber(maxDistance) || maxDistance < 0) return false;
-	const dist = haversineDistance(from, to, unit);
-	if (!isNumber(dist)) return false;
+	const c1 = extractRawCoords(from);
+	const c2 = extractRawCoords(to);
+	if (!c1 || !c2 || !isNumber(c1.lat) || !isNumber(c1.lng) || !isNumber(c2.lat) || !isNumber(c2.lng))
+		return false;
+
+	const toRad = Math.PI / 180;
+	const lat1 = c1.lat * toRad;
+	const lng1 = c1.lng * toRad;
+	const lat2 = c2.lat * toRad;
+	const lng2 = c2.lng * toRad;
+	const dLat = lat2 - lat1;
+	const dLng = lng2 - lng1;
+
+	const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+		Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+	const radius = unit === 'miles' ? 3958.7613 : (unit === 'm' ? 6371008.8 : 6371.0088);
+	const dist = radius * c;
+
 	return dist <= maxDistance;
 }
 
@@ -872,8 +1006,8 @@ export function isWithin(from: any, to: any, maxDistance: number, unit: Distance
  * @returns true if coords are inside bbox, false otherwise
  */
 export function inBoundingBox(coords: any, bbox: BoundingBox | [number, number, number, number]): boolean {
-	const geo = coerceGeo(coords);
-	if (!geo || !isNumber(geo.latitude) || !isNumber(geo.longitude)) return false;
+	const geo = extractRawCoords(coords);
+	if (!geo || !isNumber(geo.lat) || !isNumber(geo.lng)) return false;
 	if (isNullish(bbox)) return false;
 
 	let minLat: number | undefined;
@@ -897,8 +1031,8 @@ export function inBoundingBox(coords: any, bbox: BoundingBox | [number, number, 
 	if (!isNumber(minLat) || !isNumber(maxLat) || !isNumber(minLng) || !isNumber(maxLng))
 		return false;
 
-	const lat = geo.latitude;
-	const lng = geo.longitude;
+	const lat = geo.lat;
+	const lng = geo.lng;
 
 	if (lat < minLat || lat > maxLat) return false;
 
@@ -907,6 +1041,53 @@ export function inBoundingBox(coords: any, bbox: BoundingBox | [number, number, 
 		? lng >= minLng && lng <= maxLng
 		: lng >= minLng || lng <= maxLng;
 }
+
+/**
+ * Common country name mappings to ISO 3166-1 alpha-2 codes.
+ */
+const COMMON_COUNTRY_NAMES: Record<string, string> = {
+	australia: 'AU',
+	'united states': 'US',
+	'united kingdom': 'GB',
+	'great britain': 'GB',
+	france: 'FR',
+	germany: 'DE',
+	italy: 'IT',
+	spain: 'ES',
+	japan: 'JP',
+	china: 'CN',
+	canada: 'CA',
+	brazil: 'BR',
+	egypt: 'EG',
+	'saudi arabia': 'SA',
+	russia: 'RU',
+	india: 'IN',
+	mexico: 'MX',
+	'new zealand': 'NZ',
+	netherlands: 'NL',
+	switzerland: 'CH',
+	austria: 'AT',
+	belgium: 'BE',
+	sweden: 'SE',
+	norway: 'NO',
+	denmark: 'DK',
+	finland: 'FI',
+	poland: 'PL',
+	turkey: 'TR',
+	greece: 'GR',
+	israel: 'IL',
+	thailand: 'TH',
+	vietnam: 'VN',
+	indonesia: 'ID',
+	malaysia: 'MY',
+	philippines: 'PH',
+	'south africa': 'ZA',
+	'south korea': 'KR',
+	korea: 'KR',
+	ireland: 'IE',
+	portugal: 'PT',
+	argentina: 'AR',
+};
 
 /**
  * Standard mapping from ISO 3166-1 alpha-2 country codes to primary native BCP 47 locales.
@@ -960,7 +1141,7 @@ export const COUNTRY_PRIMARY_LOCALES: Record<string, string> = {
  * Resolves a synchronized BCP 47 locale based on geolocated country and synchronization mode.
  * 
  * @param currentLocale - Current instance locale (e.g. 'en-US')
- * @param countryCode - Resolved ISO country code (e.g. 'SA')
+ * @param countryCode - Resolved ISO country code (e.g. 'SA') or country name (e.g. 'Saudi Arabia')
  * @param mode - Locale sync mode ('regional' / true, 'native', 'none' / false, or custom string)
  * @returns Validated BCP 47 locale string, or undefined if no change
  */
@@ -972,12 +1153,26 @@ export function resolveCulturalLocale(
 	if (mode === false || mode === 'none' || mode === 'off')
 		return undefined;
 
+	const toCode = (val: string): string | undefined => {
+		const trimmed = val.trim();
+		if (trimmed.length === 2) return trimmed.toUpperCase();
+		return COMMON_COUNTRY_NAMES[trimmed.toLowerCase()];
+	}
+
 	// Normalize country code
 	let country: string | undefined;
 	if (Array.isArray(countryCode)) {
-		country = countryCode.find(c => isString(c) && c.trim().length === 2)?.trim().toUpperCase();
-	} else if (isString(countryCode) && countryCode.trim().length === 2) {
-		country = countryCode.trim().toUpperCase();
+		for (const c of countryCode) {
+			if (isString(c)) {
+				const mapped = toCode(c);
+				if (mapped) {
+					country = mapped;
+					break;
+				}
+			}
+		}
+	} else if (isString(countryCode)) {
+		country = toCode(countryCode);
 	}
 
 	// Custom BCP 47 tag
@@ -995,14 +1190,17 @@ export function resolveCulturalLocale(
 		return loc?.baseName ?? nativeTag;
 	}
 
-	// Regional mode (default: true / 'regional' / 'region'): preserve source language, adapt region
+	// Regional mode (default: true / 'regional' / 'region'): preserve source language and script, adapt region
 	let baseLang = 'en';
+	let script: string | undefined;
 	if (isString(currentLocale) && currentLocale.length > 0) {
 		const loc = getLC(currentLocale);
 		baseLang = loc?.language ?? cleanLocaleTag(currentLocale)?.split('-')[0] ?? 'en';
+		if (loc?.script)
+			script = loc.script;
 	}
 
-	const targetTag = `${baseLang}-${country}`;
+	const targetTag = script ? `${baseLang}-${script}-${country}` : `${baseLang}-${country}`;
 	const loc = getLC(targetTag);
 	return loc?.baseName ?? targetTag;
 }

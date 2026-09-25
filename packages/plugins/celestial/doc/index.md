@@ -40,7 +40,7 @@ Explore detailed guides on specific celestial capabilities:
 ## Geographic Coordinates & Null Contract
 
 ::: tip Pure Astronomical Calculations
-Tidal state resolution relies exclusively on deterministic celestial mechanics (solar-lunar ecliptic longitude alignment $\Delta\lambda$ and anomalistic lunar perigee proximity) for reproducible, offset-independent math across all time zones.
+Tidal state resolution relies exclusively on deterministic celestial mechanics (solar-lunar ecliptic longitude alignment Δλ and anomalistic lunar perigee proximity) for reproducible, offset-independent math across all time zones.
 :::
 
 ::: warning Location-Dependent Null Contract
@@ -58,13 +58,13 @@ Tidal state resolution relies exclusively on deterministic celestial mechanics (
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
-import { geoLookup } from '@magmacomputing/tempo-plugin-geo';
 
 Tempo.use(CelestialPlugin);
 
-// Automatically resolves location coordinates via browser hardware or server IP
-const geo = await geoLookup();
-const t = new Tempo('2026-06-21T12:00:00Z', { geo });
+// Provide geographic coordinates (e.g. New York City)
+const t = new Tempo('2026-06-21T12:00:00Z', {
+  geo: { lat: 40.7128, lng: -74.006 }
+});
 
 // --- Solar Day State & Ephemeris ---
 console.log(t.term.sun);                 // 'daylight'

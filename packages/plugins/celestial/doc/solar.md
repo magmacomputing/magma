@@ -8,13 +8,13 @@ This guide covers solar twilight state classifications, horizon dip elevation ad
 
 `SolarTerm` classifies the solar day into 5 deterministic states based on the Sun's center angle relative to the local geometric horizon:
 
-| Solar State | Solar Elevation Angle ($\alpha$) | Description |
+| Solar State | Solar Elevation Angle (α) | Description |
 | :--- | :--- | :--- |
-| `'daylight'` | $\alpha \ge -0.833^\circ - \text{dip}$ | Sun is above the visible horizon. Full natural illumination. |
-| `'civil-twilight'` | $-6^\circ \le \alpha < -0.833^\circ - \text{dip}$ | Bright twilight. Terrestrial objects are clearly distinguishable without artificial light. |
-| `'nautical-twilight'` | $-12^\circ \le \alpha < -6^\circ$ | Medium twilight. Sea horizon is faintly visible; first-magnitude navigation stars appear. |
-| `'astronomical-twilight'` | $-18^\circ \le \alpha < -12^\circ$ | Dark twilight. Sun no longer illuminates the sky; fainter stars become visible. |
-| `'night'` | $\alpha < -18^\circ$ | Total astronomical darkness. |
+| `'daylight'` | `α >= -0.833° - dip` | Sun is above the visible horizon. Full natural illumination. |
+| `'civil-twilight'` | `-6° <= α < -0.833° - dip` | Bright twilight. Terrestrial objects are clearly distinguishable without artificial light. |
+| `'nautical-twilight'` | `-12° <= α < -6°` | Medium twilight. Sea horizon is faintly visible; first-magnitude navigation stars appear. |
+| `'astronomical-twilight'` | `-18° <= α < -12°` | Dark twilight. Sun no longer illuminates the sky; fainter stars become visible. |
+| `'night'` | `α < -18°` | Total astronomical darkness. |
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -50,8 +50,8 @@ console.log(solarNoon.iso); // e.g. "2026-06-21T16:57:21.134Z"
 Local Apparent Solar Time (AST) is the time measured directly by the apparent position of the Sun (a true solar sundial clock).
 
 It incorporates:
-1. Observer longitudinal displacement: $\Delta\lambda \times 4\text{ min/deg}$ from the Prime Meridian.
-2. The **Equation of Time (EoT)**: accounting for Earth's orbital eccentricity and axial tilt ($\approx -14\text{ to }+16\text{ minutes}$ variance across the year).
+1. Observer longitudinal displacement: `Δλ × 4 min/deg` from the Prime Meridian.
+2. The **Equation of Time (EoT)**: accounting for Earth's orbital eccentricity and axial tilt (≈ -14 to +16 minutes variance across the year).
 
 At the exact moment of solar noon, `solarTime` aligns to `12:00:00.000`.
 
@@ -73,7 +73,9 @@ console.log(atNoon.term.solar.solarTime.format('HH:mm:ss')); // "12:00:00"
 
 Observers at higher elevations experience an expanded visible horizon due to geometric horizon dip:
 
-$$\text{dip} \approx 0.0347^\circ \times \sqrt{\text{elevation\_meters}}$$
+```
+dip ≈ 0.0347° × sqrt(elevation_meters)
+```
 
 Passing `elevation` (in meters) automatically adjusts `sunrise`, `sunset`, and twilight timestamps:
 

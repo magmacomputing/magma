@@ -43,24 +43,6 @@ const KNOWN_TITLES = {
   'dialects.index': 'Dialects (Luxon, strftime, Moment)',
 };
 
-const PREFERRED_AI_ORDER = [
-  'index',
-  'onboarding',
-  'init',
-  'parse',
-  'format',
-  'extract',
-  'recurrence',
-  'schedule',
-  'diff',
-  'context',
-  'modes',
-  'security',
-  'grounding',
-  'rate-limits',
-  'architecture'
-];
-
 function extractTitle(content, pluginId, basename) {
   const key = `${pluginId}.${basename}`;
   if (KNOWN_TITLES[key]) return KNOWN_TITLES[key];
@@ -152,6 +134,52 @@ if (fs.existsSync(nodeModulesDir)) {
   }
 }
 
+const PREFERRED_DOC_ORDER = {
+  ai: [
+    'index',
+    'onboarding',
+    'init',
+    'parse',
+    'format',
+    'extract',
+    'recurrence',
+    'schedule',
+    'diff',
+    'context',
+    'modes',
+    'security',
+    'grounding',
+    'rate-limits',
+    'architecture'
+  ],
+  geo: [
+    'index',
+    'provider-gateway',
+    'geofencing',
+    'transit-and-navigation',
+    'cultural-sync',
+    'storage-and-caching',
+    'solar-offset'
+  ],
+  celestial: [
+    'index',
+    'solar',
+    'lunar',
+    'tides'
+  ]
+};
+
+function getPluginGroupName(pluginId) {
+  const customNames = {
+    ai: 'AI Plugin (@magmacomputing/tempo-plugin-ai)',
+    geo: 'Geo Plugin (@magmacomputing/tempo-plugin-geo)',
+    celestial: 'Celestial Plugin (@magmacomputing/tempo-plugin-celestial)',
+  };
+  if (customNames[pluginId]) return customNames[pluginId];
+  const capitalized = pluginId.charAt(0).toUpperCase() + pluginId.slice(1);
+  return `${capitalized} Plugin (@magmacomputing/tempo-plugin-${pluginId})`;
+}
+
 // 3. Generate dynamic multi-sidebar structure for /doc/9-plugins/
 const sidebar = [
   {
@@ -163,41 +191,69 @@ const sidebar = [
   }
 ];
 
-// Group AI plugin items
-if (harvestedByPlugin.has('ai')) {
-  const aiItems = harvestedByPlugin.get('ai');
-  aiItems.sort((a, b) => {
-    const indexA = PREFERRED_AI_ORDER.indexOf(a.basename);
-    const indexB = PREFERRED_AI_ORDER.indexOf(b.basename);
-    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-    if (indexA !== -1) return -1;
-    if (indexB !== -1) return 1;
-    return a.basename.localeCompare(b.basename);
-  });
+const multiPagePlugins = [];
+const singlePagePlugins = [];
 
-  sidebar.push({
-    text: 'AI Plugin (@magmacomputing/tempo-plugin-ai)',
-    collapsed: false,
-    items: aiItems.map(item => ({ text: item.title, link: item.link }))
-  });
-}
-
-// Group other community & pro plugins
-const otherPlugins = [];
 for (const [pluginId, items] of harvestedByPlugin.entries()) {
-  if (pluginId === 'ai' || pluginId === '_setup') continue;
-  for (const item of items) {
-    otherPlugins.push({ text: item.title, link: item.link });
+  if (pluginId === '_setup') continue;
+
+  if (items.length > 1) {
+    // Multi-page doc topic
+    const orderList = PREFERRED_DOC_ORDER[pluginId] || [];
+    const sortedItems = [...items].sort((a, b) => {
+      if (a.basename === 'index') return -1;
+      if (b.basename === 'index') return 1;
+
+      const indexA = orderList.indexOf(a.basename);
+      const indexB = orderList.indexOf(b.basename);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return a.title.localeCompare(b.title);
+    });
+
+    multiPagePlugins.push({
+      pluginId,
+      text: getPluginGroupName(pluginId),
+      collapsed: false,
+      items: sortedItems.map(item => ({
+        text: item.basename === 'index' ? 'Overview' : item.title,
+        link: item.link
+      }))
+    });
+  } else if (items.length === 1) {
+    // Single-page doc topic
+    const item = items[0];
+    singlePagePlugins.push({
+      text: item.title,
+      link: item.link
+    });
   }
 }
 
-otherPlugins.sort((a, b) => a.text.localeCompare(b.text));
+// Sort multi-page plugins (e.g. AI first or alphabetical)
+multiPagePlugins.sort((a, b) => {
+  if (a.pluginId === 'ai') return -1;
+  if (b.pluginId === 'ai') return 1;
+  return a.text.localeCompare(b.text);
+});
 
-if (otherPlugins.length > 0) {
+for (const group of multiPagePlugins) {
   sidebar.push({
-    text: 'Community Plugins',
+    text: group.text,
+    collapsed: group.collapsed,
+    items: group.items
+  });
+}
+
+// Sort and append single-page community plugins
+singlePagePlugins.sort((a, b) => a.text.localeCompare(b.text));
+
+if (singlePagePlugins.length > 0) {
+  sidebar.push({
+    text: 'Single-Feature Community Plugins',
     collapsed: false,
-    items: otherPlugins
+    items: singlePagePlugins
   });
 }
 

@@ -79,7 +79,63 @@
     ]
   },
   {
-    "text": "Community Plugins",
+    "text": "Celestial Plugin (@magmacomputing/tempo-plugin-celestial)",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/celestial.index"
+      },
+      {
+        "text": "Solar Day Cycles, Ephemeris & Apparent Solar Time",
+        "link": "/doc/9-plugins/celestial.solar"
+      },
+      {
+        "text": "Lunar Ephemeris, Phases & Moonrise/Moonset",
+        "link": "/doc/9-plugins/celestial.lunar"
+      },
+      {
+        "text": "Astronomical Tidal Mechanics",
+        "link": "/doc/9-plugins/celestial.tides"
+      }
+    ]
+  },
+  {
+    "text": "Geo Plugin (@magmacomputing/tempo-plugin-geo)",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/geo.index"
+      },
+      {
+        "text": "Pluggable Geocoding Provider Gateway",
+        "link": "/doc/9-plugins/geo.provider-gateway"
+      },
+      {
+        "text": "Spatial Geofencing & Bounding Boxes",
+        "link": "/doc/9-plugins/geo.geofencing"
+      },
+      {
+        "text": "Transit Velocity, Impossible Travel & Navigation",
+        "link": "/doc/9-plugins/geo.transit-and-navigation"
+      },
+      {
+        "text": "Cultural Locale Synchronization",
+        "link": "/doc/9-plugins/geo.cultural-sync"
+      },
+      {
+        "text": "Storage & Multi-Tenant Caching",
+        "link": "/doc/9-plugins/geo.storage-and-caching"
+      },
+      {
+        "text": "Natural Solar Time Offset",
+        "link": "/doc/9-plugins/geo.solar-offset"
+      }
+    ]
+  },
+  {
+    "text": "Single-Feature Community Plugins",
     "collapsed": false,
     "items": [
       {
@@ -87,20 +143,8 @@
         "link": "/doc/9-plugins/astro.index"
       },
       {
-        "text": "Astronomical Tidal Mechanics",
-        "link": "/doc/9-plugins/celestial.tides"
-      },
-      {
         "text": "Batch (Multi-Threaded SAB)",
         "link": "/doc/9-plugins/batch.index"
-      },
-      {
-        "text": "Celestial (Solar & Lunar Ephemeris)",
-        "link": "/doc/9-plugins/celestial.index"
-      },
-      {
-        "text": "Cultural Locale Synchronization",
-        "link": "/doc/9-plugins/geo.cultural-sync"
       },
       {
         "text": "Dialects (Luxon, strftime, Moment)",
@@ -111,32 +155,8 @@
         "link": "/doc/9-plugins/finance.index"
       },
       {
-        "text": "Geo (IP & Location Lookup)",
-        "link": "/doc/9-plugins/geo.index"
-      },
-      {
-        "text": "Lunar Ephemeris, Phases & Moonrise/Moonset",
-        "link": "/doc/9-plugins/celestial.lunar"
-      },
-      {
-        "text": "Natural Solar Time Offset",
-        "link": "/doc/9-plugins/geo.solar-offset"
-      },
-      {
         "text": "Snap (Block Rounding)",
         "link": "/doc/9-plugins/snap.index"
-      },
-      {
-        "text": "Solar Day Cycles, Ephemeris & Apparent Solar Time",
-        "link": "/doc/9-plugins/celestial.solar"
-      },
-      {
-        "text": "Spatial Geofencing & Bounding Boxes",
-        "link": "/doc/9-plugins/geo.geofencing"
-      },
-      {
-        "text": "Storage & Multi-Tenant Caching",
-        "link": "/doc/9-plugins/geo.storage-and-caching"
       },
       {
         "text": "Sync (Thread Synchronization)",
@@ -145,10 +165,6 @@
       {
         "text": "Ticker (Execution Loop)",
         "link": "/doc/9-plugins/ticker.index"
-      },
-      {
-        "text": "Transit Velocity, Impossible Travel & Navigation",
-        "link": "/doc/9-plugins/geo.transit-and-navigation"
       }
     ]
   }

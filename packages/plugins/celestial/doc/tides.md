@@ -7,7 +7,7 @@ This guide explores astronomical tidal state classification, syzygy and quadratu
 ## 1. Deterministic Astronomical Calculations
 
 Tidal state resolution in `TidalTerm` (`t.term.tide`, `t.term.tides`) relies purely on deterministic celestial mechanics:
-- **Ecliptic Longitude Delta ($\Delta\lambda$)**: The angular separation between the Sun and the Moon.
+- **Ecliptic Longitude Delta (Δλ)**: The angular separation between the Sun and the Moon.
 - **Anomalistic Month Perigee Proximity**: The Moon's orbital distance from Earth along its elliptical orbit (perigee vs. apogee).
 
 ---
@@ -16,8 +16,8 @@ Tidal state resolution in `TidalTerm` (`t.term.tide`, `t.term.tides`) relies pur
 
 | Tidal State | Astronomical Mechanism | Impact on Water Levels |
 | :--- | :--- | :--- |
-| `'spring'` | **Syzygy** ($\Delta\lambda \approx 0^\circ$ New Moon or $180^\circ$ Full Moon). Gravitational forces of Sun and Moon constructively reinforce. | Maximum tidal range (highest high tides, lowest low tides). |
-| `'neap'` | **Quadrature** ($\Delta\lambda \approx 90^\circ$ First Quarter or $270^\circ$ Third Quarter). Gravitational forces act orthogonally. | Minimum tidal range (moderate high tides, moderate low tides). |
+| `'spring'` | **Syzygy** (Δλ ≈ 0° New Moon or 180° Full Moon). Gravitational forces of Sun and Moon constructively reinforce. | Maximum tidal range (highest high tides, lowest low tides). |
+| `'neap'` | **Quadrature** (Δλ ≈ 90° First Quarter or 270° Third Quarter). Gravitational forces act orthogonally. | Minimum tidal range (moderate high tides, moderate low tides). |
 | `'normal'` | Intermediate orbital positions between syzygy and quadrature. | Standard daily tidal fluctuations. |
 
 ```typescript
@@ -42,8 +42,8 @@ console.log(t.term.tides.isNeapTide);   // true during 1st or 3rd Quarter
 
 A **King Tide** (Perigean Spring Tide) occurs when a Spring Tide (New or Full Moon) coincides with the Moon at or near its closest orbital approach to Earth (**Perigee**).
 
-- **`perigeeFactor`**: Normalized metric from $0.0$ (Apogee, farthest) to $1.0$ (Perigee, closest).
-- **`isKingTide`**: Evaluates to `true` when `isSpringTide === true` and `perigeeFactor \ge 0.85`.
+- **`perigeeFactor`**: Normalized metric from 0.0 (Apogee, farthest) to 1.0 (Perigee, closest).
+- **`isKingTide`**: Evaluates to `true` when `isSpringTide === true` and `perigeeFactor >= 0.85`.
 
 ```typescript
 if (t.term.tides.isKingTide) {
@@ -56,4 +56,4 @@ if (t.term.tides.isKingTide) {
 
 ## 4. Lunar Tidal Cycle Minutes (`lunarTideMinute`)
 
-When geographic coordinates are supplied, `t.term.tides.lunarTideMinute` reports the current minute within the $745.2\text{-minute}$ semi-diurnal lunar tidal cycle ($\approx 12\text{ hours } 25.2\text{ minutes}$ between successive lunar culminations).
+When geographic coordinates are supplied, `t.term.tides.lunarTideMinute` reports the current minute within the 745.2-minute semi-diurnal lunar tidal cycle (≈ 12 hours 25.2 minutes between successive lunar culminations).

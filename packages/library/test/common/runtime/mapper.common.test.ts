@@ -598,10 +598,18 @@ describe('common/runtime/mapper.library', () => {
 			expect(resolveCulturalLocale('en-US', 'SA', 'off')).toBeUndefined();
 		});
 
-		it('handles array country codes and unresolvable countries gracefully', () => {
+		it('handles array country codes, country names, and unresolvable countries gracefully', () => {
 			expect(resolveCulturalLocale('en-US', ['IN', 'PK'])).toBe('en-IN');
+			expect(resolveCulturalLocale('en-US', 'France')).toBe('en-FR');
+			expect(resolveCulturalLocale('en-US', 'Australia')).toBe('en-AU');
+			expect(resolveCulturalLocale('en-US', 'Japan', 'native')).toBe('ja-JP');
 			expect(resolveCulturalLocale('en-US', undefined)).toBeUndefined();
 			expect(resolveCulturalLocale('en-US', '')).toBeUndefined();
+		});
+
+		it('preserves script subtag in regional adaptation mode', () => {
+			expect(resolveCulturalLocale('zh-Hans-CN', 'TW')).toBe('zh-Hans-TW');
+			expect(resolveCulturalLocale('sr-Latn-RS', 'BA')).toBe('sr-Latn-BA');
 		});
 	});
 });

@@ -60,14 +60,18 @@ Explore detailed guides on specific capabilities:
 | `Tempo.geo.resolve(input, opts?)` | Lookup | Asynchronously resolves coordinates from an instance, configuration, or ambient storage cache. |
 | `Tempo.geo.coerce(input)` | Geometry | Pure function normalizing various coordinate formats (`lat/lng`, `latitude/longitude`, tuples, etc.) into a canonical `GeoConfig`. |
 | `Tempo.geo.distance(from, to, unit?)` | Navigation | Great-Circle Haversine distance between two coordinates (`'km'`, `'miles'`, or `'m'`). |
-| `Tempo.geo.bearing(from, to)` | Navigation | Initial forward compass azimuth bearing ($0^\circ..360^\circ$) from origin to destination. |
+| `Tempo.geo.bearing(from, to)` | Navigation | Initial forward compass azimuth bearing (0°..360°) from origin to destination. |
 | `Tempo.geo.midpoint(from, to)` | Navigation | Exact geographic midpoint along the Great-Circle path between two coordinates. |
 | `Tempo.geo.velocity(from, to, opts?)` | Security / Transit | Speed of travel between two timestamped instances (`'km'`, `'miles'`, or `'m'`; time unit `'hh'`, `'ss'`, `'mi'`). |
 | `Tempo.geo.isImpossibleTravel(from, to, opts?)` | Security / Transit | Evaluates whether travel between timestamped instances exceeds physical commercial feasibility (default: > 900 km/h). |
 | `Tempo.geo.isWithin(from, to, maxDist, unit?)` | Geofencing | Checks whether two points fall within a maximum radius. |
 | `Tempo.geo.inBoundingBox(coords, box)` | Geofencing | Checks whether a coordinate point falls inside a geographic bounding box with antimeridian support. |
-| `Tempo.geo.resolveCulturalLocale(coords)` | Cultural Sync | Resolves the primary BCP 47 language/locale tag for a geographic location (e.g. `ar-EG` for Cairo). |
-| `Tempo.geo.solarOffset(coords)` | Solar Timing | Computes natural solar time offset (in minutes or milliseconds) derived from longitude delta ($4\text{ min/deg}$). |
+| `resolveCulturalLocale(locale?, country?, mode?)` | Cultural Sync | Standalone function resolving synchronized BCP 47 locale from current locale and ISO country code/name. |
+| `Tempo.geo.solarOffset(coords, opts?)` | Solar Timing | Computes natural solar time offset (in minutes, seconds, or hours) derived from meridian offset (4 min/deg). |
+| `Tempo.geo.setProvider(provider)` | Provider Gateway | Sets custom geolocation/geocoding provider gateway (e.g. OpenStreetMap, Mapbox, internal IP proxy). |
+| `Tempo.geo.getProvider()` | Provider Gateway | Retrieves the active custom geolocation provider. |
+| `Tempo.geo.reverse(coords, opts?)` | Provider Gateway | Reverse geocodes coordinates to locality/address metadata using the active provider. |
+| `Tempo.geo.forward(query, opts?)` | Provider Gateway | Forward geocodes place query string to coordinates using the active provider. |
 | `Tempo.geo.stash(coords, ttl?, keyOrOpts?)` | Storage | Stashes coordinates in storage with an optional custom TTL (default: 24h) and multi-tenant partitioning. |
 | `Tempo.geo.clear(keyOrOpts?)` | Storage | Purges stashed coordinates from storage. |
 | `Tempo.geo.get(keyOrOpts?)` | Storage | Reads stashed coordinates for the specified tenant/IP or ambient default. |
@@ -93,11 +97,14 @@ Tempo.use(GeoPlugin);
 const lookup = await Tempo.geo.lookup();
 console.log(lookup.lat, lookup.lng, lookup.city);
 
-// Enrich a Tempo instance with physical reality and cultural locale
-const t = new Tempo();
-const localTime = await t.geoLocate({ setLocale: true });
+// Enrich a Tempo instance with physical reality and native cultural locale
+const t = new Tempo('2026-06-21T12:00:00Z', {
+  geo: { lat: 30.0444, lng: 31.2357, country: 'EG' } // Cairo, Egypt
+});
+const localTime = await t.geoLocate({ setLocale: 'native' });
 console.log(localTime.geo?.latitude, localTime.geo?.longitude);
-console.log(localTime.format('full')); // Formatted in physical local culture
+console.log(localTime.locale); // 'ar-EG'
+console.log(localTime.format({ dateStyle: 'full' })); // 'الأحد، ٢١ يونيو ٢٠٢٦' (Arabic Egyptian culture)
 ```
 
 ### 2. Standalone Tree-Shakeable Functions
