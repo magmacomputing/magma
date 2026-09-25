@@ -218,14 +218,25 @@ export type EnumMethodKeys =
 
 /** Augmentable map of method/property names to exclude from KeyOf/ValueOf/OwnOf */
 export interface IgnoreOfMap { }
-type IgnoreOf = WellKnownSymbols | EnumMethodKeys | keyof IgnoreOfMap;
+
+/** Exclusions specific to Enumify proxy objects */
+export type EnumMethodExclusions = WellKnownSymbols | EnumMethodKeys | keyof IgnoreOfMap;
+
+/** Detects if T is an Enumify proxy object or contains Enumify type branding */
+type IsEnumProxy<T> =
+	[T] extends [{ readonly [Symbol.toStringTag]: 'Enumify' }] ? true :
+	[T] extends [{ [Symbol.toStringTag]: 'Enumify' }] ? true :
+	false;
+
+/** Dynamic ignore type: strips Enum methods for enum proxies, but only symbols for ordinary objects */
+export type IgnoreOf<T = any> = IsEnumProxy<T> extends true ? EnumMethodExclusions : WellKnownSymbols;
 
 /** Computes the union-member cardinality of type T, with numeric fallback for non-unions or deep recursion */
 export type CountOf<T> = SafeCount<T>
 /** Extracts own properties of an object, excluding well-known symbols and ignored keys */
-export type OwnOf<T extends Obj> = T extends Array<any> ? { [K in number]: T[number] } : Omit<T, IgnoreOf>
+export type OwnOf<T extends Obj> = T extends Array<any> ? { [K in number]: T[number] } : Omit<T, IgnoreOf<T>>
 /** Extracts the keys of an object type, returning numeric indices for array types or string/symbol keys excluding ignored keys for objects */
-export type KeyOf<T extends Obj> = T extends Array<any> ? number : Exclude<Extract<keyof T, string | symbol>, IgnoreOf>
+export type KeyOf<T extends Obj> = T extends Array<any> ? number : Exclude<Extract<keyof T, string | symbol>, IgnoreOf<T>>
 /** Extracts the value types from an object or array */
 export type ValueOf<T extends Obj> = T extends Array<any> ? T[number] : T[KeyOf<T>]
 /** Constructs a tuple type representing a key-value entry pair from an object or array */

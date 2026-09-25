@@ -112,7 +112,8 @@ async function diffSingleInput(
 	const { force, cache: aiCacheOption, ttl, cacheAdapter } = options || {};
 
 	const sortedHolidays = holidays ? [...holidays].sort().join(',') : '';
-	const cacheKey = getNamespacedCacheKey('diff', `${startTempo.epoch.ms}::${endTempo.epoch.ms}::${normalizedPrompt}::${tz}::${loc}::${region}::${sortedHolidays}`);
+	const sortedWeekends = (grounding.weekendDays ?? []).join(',');
+	const cacheKey = getNamespacedCacheKey('diff', `${startTempo.epoch.ms}::${endTempo.epoch.ms}::${normalizedPrompt}::${tz}::${loc}::${region}::${sortedHolidays}::${sortedWeekends}`);
 
 	const { mode, minConfidence: effectiveMinConfidence, isDebug, executeOptions } = resolveExecutionOptions(options, 'diff');
 

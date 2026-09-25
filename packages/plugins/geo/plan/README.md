@@ -156,7 +156,7 @@ Ease-of-use and repeatable outcomes dictate our architecture:
 ### Future Backlog (`v1.1.0` – `v1.3.0`)
 | Priority | Feature | Status | Target | Scope / Target Package | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P1** | **Velocity & Impossible Travel Anomaly** | 📝 **Planned** | `v1.1.0` | `mapper.library` / `tempo-plugin-geo` | `Tempo.geo.velocity()`, `t.geoVelocity()`, and `isImpossibleTravel()` security checks. |
+| **P1** | **Velocity & Impossible Travel Anomaly** | 📝 **Planned** | `v1.1.0` | `mapper.library` / `tempo-plugin-geo` | `Tempo.geo.velocity()` and `Tempo.geo.isImpossibleTravel()` security checks. |
 | **P1** | **Bearing & Midpoint Calculation** | 📝 **Planned** | `v1.1.0` | `mapper.library` / `tempo-plugin-geo` | Initial compass azimuth ($0^\circ–360^\circ$) and geographic midpoint between locations. |
 | **P1** | **Solar Transit in SolarTerm** | 📝 **Planned** | `v1.1.0` | `tempo-plugin-celestial` | Expose `solar.noon` and `solar.solarTime` in `SolarTerm` for astronomical modeling. |
 | **P2** | **Cultural Sync (`setLocale: true`)** | 📝 **Planned** | `v1.2.0` | `tempo-plugin-geo` | Default language-preserving regional sync (`en-US` + `SA` ➜ `en-SA`) with `'native'` and `false` options. |

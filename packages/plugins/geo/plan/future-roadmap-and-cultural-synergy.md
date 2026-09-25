@@ -21,7 +21,7 @@ This implementation plan defines the next evolutionary phase (`v1.1.0` through `
 ## 2. Cultural Synergy: Bridging Geo, Timezone, and `t.intl`
 
 ### 2.1 The Architectural Context
-When Tempo's initial geo plan was drafted, Tempo strictly enforced ISO 8601 week boundaries across all operations. With the introduction of [`t.intl`](file:///home/michael/Project/magma/packages/tempo/src/tempo.class.ts#L1864) and opt-in `localeInfo: true`, Tempo now supports culturally authentic calendar arithmetic (e.g. Sunday-start in `en-US`/`ja-JP`, Saturday-start and Friday/Saturday weekends in `ar-SA`).
+When Tempo's initial geo plan was drafted, Tempo strictly enforced ISO 8601 week boundaries across all operations. With the introduction of [`t.intl`](../../../tempo/src/tempo.class.ts#L1864) and opt-in `localeInfo: true`, Tempo now supports culturally authentic calendar arithmetic (e.g. Sunday-start in `en-US`/`ja-JP`, Saturday-start and Friday/Saturday weekends in `ar-SA`).
 
 ```
 [Geographic Coordinates (lat, lng)]
@@ -127,7 +127,7 @@ A key design question is whether solar offset belongs in `geo` or `SolarTerm`. T
 | **Physics** | $\Delta \lambda \times 4\text{ min/deg}$ from timezone meridian ($\pm \text{EoT}$) | Exact solar altitude, azimuth, zenith, twilight, and transit |
 | **Runtime Cost** | $O(1)$ analytical geometry, zero dependencies | Keplerian orbital ephemeris & trigonometric modeling |
 | **Use Cases** | Circadian light tracking, timezone meridian drift | Twilight tracking, golden hour photography, solar noon |
-| **Target API** | `Tempo.geo.solarOffset(coords)` & `t.geoSolarOffset()` | `t.term.solar.noon` & `t.term.solar.solarTime` |
+| **Target API** | `Tempo.geo.solarOffset(coords)` | `t.term.solar.noon` & `t.term.solar.solarTime` |
 
 ### 3.2 Additions to `SolarTerm` (Celestial Plugin)
 To complete the celestial feature set, `SolarTerm` will incorporate:
@@ -145,9 +145,6 @@ To complete the celestial feature set, `SolarTerm` will incorporate:
   ```typescript
   // Velocity in km/h, mph, or m/s
   const speedKmh = Tempo.geo.velocity(loginLondon, loginTokyo, 'km'); // e.g. 9500 km/h
-
-  // Instance method
-  const velocity = loginTokyo.geoVelocity(loginLondon, 'km');
 
   // Security anomaly check
   const isAnomaly = Tempo.geo.isImpossibleTravel(loginLondon, loginTokyo, {
