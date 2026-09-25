@@ -238,7 +238,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 				const callSiteGeo = coerceGeo(opts) ?? {};
 				if (isObject(opts)) {
 					for (const key of Object.keys(opts)) {
-						if (isSafeKey(key) && !['setTimezone', 'setLocale', 'refresh', 'ttl', 'endpoint', 'timeout', 'catch', 'debug', 'geo'].includes(key)) {
+						if (isSafeKey(key) && !['setTimezone', 'setLocale', 'refresh', 'ttl', 'endpoint', 'timeout', 'catch', 'debug', 'geo', 'provider', 'fallback'].includes(key)) {
 							if (!GEO_PROPERTIES.includes(key as any))
 								customKeys[key] = (opts as any)[key];
 						}

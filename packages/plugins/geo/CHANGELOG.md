@@ -10,10 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Pluggable Geocoding Provider Gateway (`GeoProvider`)**:
   - `GeoProvider` interface: Standardized adapter interface for custom geocoding and geolocation providers (`lookup`, `reverseGeocode`, `forwardGeocode`).
-  - `Tempo.geo.setProvider(provider)` & `Tempo.geo.getProvider()`: Global and instance registration of custom geolocation providers.
+  - `Tempo.geo.setProvider(provider)` & `Tempo.geo.getProvider()`: Global registration of custom geolocation providers on the static namespace.
   - `Tempo.geo.reverse(coords, options?)`: Reverse geocodes coordinates to address/locality metadata.
   - `Tempo.geo.forward(query, options?)`: Forward geocodes place query strings to resolved coordinates.
-  - Plugin registration support: `Tempo.use(GeoPlugin, { provider })` and call-site override `t.geoLocate({ provider })`.
+  - Call-site provider override: `t.geoLocate({ provider })` to dynamically override provider per operation.
   - Automatic 24-hour BoundedCache integration and graceful failover to default environment lookup.
 - **Navigation & Transit Analytics (`Tempo.geo` Static Namespace)**:
   - `Tempo.geo.velocity(from, to, options?)`: Calculates travel speed between two timestamped geographic instances or coordinate objects in `km/h`, `mph`, or `m/s`.

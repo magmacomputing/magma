@@ -352,9 +352,22 @@ const resolveCacheKey = (keyOrOpts?: string | Record<string, any>): string => {
 			: `${MAP_KEY}:${trimmed}`;
 	}
 	if (keyOrOpts && isObject(keyOrOpts)) {
+		const provider = keyOrOpts.provider ?? activeGeoProvider;
+		const providerPrefix = provider && isString(provider.name) && !isEmpty(provider.name)
+			? `provider:${provider.name}`
+			: undefined;
 		const k = keyOrOpts.key ?? keyOrOpts.ip ?? keyOrOpts.query;
-		if (isString(k) && !isEmpty(k))
-			return `${MAP_KEY}:${k.trim()}`;
+		if (isString(k) && !isEmpty(k)) {
+			const trimmedKey = k.trim();
+			return providerPrefix
+				? `${MAP_KEY}:${providerPrefix}:${trimmedKey}`
+				: `${MAP_KEY}:${trimmedKey}`;
+		}
+		if (providerPrefix) {
+			return `${MAP_KEY}:${providerPrefix}`;
+		}
+	} else if (activeGeoProvider && isString(activeGeoProvider.name) && !isEmpty(activeGeoProvider.name)) {
+		return `${MAP_KEY}:provider:${activeGeoProvider.name}`;
 	}
 	return MAP_KEY;
 }
@@ -475,6 +488,7 @@ export function getGeoProvider(): GeoProvider | undefined {
  * @param opts - Lookup options passed down to environment handler (e.g. `{ refresh: true, key: 'tenant-1', provider }`)
  */
 export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLookupResult> => {
+	const provider = opts.provider ?? activeGeoProvider;
 	const useCache = opts.refresh !== true;
 
 	if (useCache) {
@@ -492,7 +506,6 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 		}
 	}
 
-	const provider = opts.provider ?? activeGeoProvider;
 	let res: GeoLookupResult | undefined;
 
 	if (provider && isFunction(provider.lookup)) {
@@ -500,15 +513,21 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 			const providerRes = await provider.lookup(opts);
 			if (providerRes) {
 				res = providerRes;
+				if (providerRes.error && opts.fallback === false)
+					return providerRes;
+			} else if (opts.fallback === false) {
+				return { error: 'Provider returned null and fallback is disabled' };
 			}
 		} catch (err: any) {
-			if (opts.fallback === false) {
+			if (opts.fallback === false)
 				return { error: err?.message ?? 'Provider lookup failed' };
-			}
 		}
 	}
 
 	if (!res || res.error) {
+		if (opts.fallback === false && (provider || res?.error))
+			return res && res.error ? res : { error: 'Geolocation resolution failed and fallback is disabled' };
+
 		const { type } = getContext();
 		switch (type) {
 			case CONTEXT.Browser: {
@@ -655,27 +674,53 @@ export const resolveGeoCoordinates = async (
 const extractRawCoords = (input: any): { lat: number; lng: number } | undefined => {
 	if (isNullish(input)) return undefined;
 	if (isString(input) && input.includes(',')) {
-		const parts = input.split(',').map(s => Number(s.trim()));
-		if (parts.length >= 2 && isNumber(parts[0]) && isNumber(parts[1]) && parts[0] >= -90 && parts[0] <= 90 && parts[1] >= -180 && parts[1] <= 180) {
-			return { lat: parts[0], lng: parts[1] };
+		const segments = input.split(',').map(s => s.trim());
+		if (segments.length >= 2 && segments[0] !== '' && segments[1] !== '') {
+			const lat = Number(segments[0]);
+			const lng = Number(segments[1]);
+			if (isNumber(lat) && isNumber(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+				return { lat, lng };
+			}
 		}
 		return undefined;
 	}
 	if (Array.isArray(input) && input.length >= 2) {
-		const lat = Number(input[0]);
-		const lng = Number(input[1]);
-		if (isNumber(lat) && isNumber(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-			return { lat, lng };
+		const rawLat = input[0];
+		const rawLng = input[1];
+		if (
+			rawLat !== null &&
+			rawLng !== null &&
+			rawLat !== '' &&
+			rawLng !== '' &&
+			typeof rawLat !== 'boolean' &&
+			typeof rawLng !== 'boolean'
+		) {
+			const lat = typeof rawLat === 'string' && rawLat.trim() === '' ? NaN : Number(rawLat);
+			const lng = typeof rawLng === 'string' && rawLng.trim() === '' ? NaN : Number(rawLng);
+			if (isNumber(lat) && isNumber(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+				return { lat, lng };
+			}
 		}
 		return undefined;
 	}
 	if (isReference(input)) {
 		const geo = input.geo ?? input.config?.geo ?? input;
 		const cfg = input.config?.geo ?? input.config;
-		const lat = evaluate<number>(geo?.latitude, geo?.lat, input.latitude, input.lat, cfg?.latitude, cfg?.lat);
-		const lng = evaluate<number>(geo?.longitude, geo?.lng, geo?.lon, geo?.long, input.longitude, input.lng, input.lon, input.long, cfg?.longitude, cfg?.lng, cfg?.lon, cfg?.long);
-		if (isNumber(lat) && isNumber(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-			return { lat, lng };
+		const rawLat = evaluate<any>(geo?.latitude, geo?.lat, input.latitude, input.lat, cfg?.latitude, cfg?.lat);
+		const rawLng = evaluate<any>(geo?.longitude, geo?.lng, geo?.lon, geo?.long, input.longitude, input.lng, input.lon, input.long, cfg?.longitude, cfg?.lng, cfg?.lon, cfg?.long);
+		if (
+			rawLat !== null &&
+			rawLng !== null &&
+			rawLat !== '' &&
+			rawLng !== '' &&
+			typeof rawLat !== 'boolean' &&
+			typeof rawLng !== 'boolean'
+		) {
+			const lat = typeof rawLat === 'string' && rawLat.trim() === '' ? NaN : Number(rawLat);
+			const lng = typeof rawLng === 'string' && rawLng.trim() === '' ? NaN : Number(rawLng);
+			if (isNumber(lat) && isNumber(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+				return { lat, lng };
+			}
 		}
 	}
 	return undefined;

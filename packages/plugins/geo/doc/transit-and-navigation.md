@@ -6,7 +6,7 @@ This guide covers Great-Circle spatial calculations, forward compass bearings, g
 
 ## 1. Great-Circle Distance (`haversineDistance` / `Tempo.geo.distance`)
 
-Calculates the shortest surface distance over the Earth ellipsoid between two geographic coordinates using the Great-Circle Haversine formula (with spherical radius R = 6,371 km / 3,959 miles / 6,371,000 meters).
+Calculates the shortest surface distance approximation on a spherical Earth between two geographic coordinates using the Great-Circle Haversine formula (with spherical radius R = 6,371 km / 3,959 miles / 6,371,000 meters).
 
 ### Supported Distance Units
 - `'km'` (default): Kilometers

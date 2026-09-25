@@ -650,5 +650,75 @@ describe('Tempo Plugin: Geo', () => {
 			expect(result.city).toBe('London');
 			expect(result.latitude).toBe(51.507);
 		});
+
+		it('should strictly return error when fallback: false is provided on provider failure or null return', async () => {
+			const failingProvider = {
+				name: 'strict-failing-provider',
+				lookup: vi.fn().mockRejectedValue(new Error('Strict error')),
+			};
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+			const result = await Tempo.geo.lookup({ provider: failingProvider, fallback: false, refresh: true });
+			expect(failingProvider.lookup).toHaveBeenCalled();
+			expect(result.error).toBe('Strict error');
+			expect(fetchSpy).not.toHaveBeenCalled();
+
+			const nullProvider = {
+				name: 'null-provider',
+				lookup: vi.fn().mockResolvedValue(null),
+			};
+			const nullResult = await Tempo.geo.lookup({ provider: nullProvider, fallback: false, refresh: true });
+			expect(nullResult.error).toBeDefined();
+			expect(fetchSpy).not.toHaveBeenCalled();
+		});
+
+		it('should isolate cache entries per provider identity', async () => {
+			const providerA = {
+				name: 'provider-a',
+				lookup: vi.fn().mockResolvedValue({ lat: 10, lng: 20, city: 'CityA' }),
+			};
+			const providerB = {
+				name: 'provider-b',
+				lookup: vi.fn().mockResolvedValue({ lat: 30, lng: 40, city: 'CityB' }),
+			};
+
+			const resA = await Tempo.geo.lookup({ provider: providerA, refresh: true });
+			expect(resA.city).toBe('CityA');
+
+			const resB = await Tempo.geo.lookup({ provider: providerB, refresh: true });
+			expect(resB.city).toBe('CityB');
+
+			// Read from cache for providerA
+			const cachedA = await Tempo.geo.lookup({ provider: providerA });
+			expect(cachedA.city).toBe('CityA');
+			expect(cachedA.status).toBe('cached');
+			expect(providerA.lookup).toHaveBeenCalledTimes(1);
+
+			// Read from cache for providerB
+			const cachedB = await Tempo.geo.lookup({ provider: providerB });
+			expect(cachedB.city).toBe('CityB');
+			expect(cachedB.status).toBe('cached');
+			expect(providerB.lookup).toHaveBeenCalledTimes(1);
+		});
+
+		it('should not leak provider or fallback into instance.geo during geoLocate', async () => {
+			const mockProvider = {
+				name: 'clean-provider',
+				lookup: vi.fn().mockResolvedValue({ lat: 50, lng: 10, city: 'Frankfurt' }),
+			};
+
+			const t = new Tempo('2026-01-01T00:00:00Z');
+			const located = await t.geoLocate({ provider: mockProvider, fallback: false });
+			expect((located.geo as any).provider).toBeUndefined();
+			expect((located.geo as any).fallback).toBeUndefined();
+			expect(located.geo?.city).toBe('Frankfurt');
+		});
+
+		it('should reject invalid coordinate strings and non-numeric tuple values in spatial queries', () => {
+			expect(Tempo.geo.isWithin([null, 10], [0, 10], 100)).toBe(false);
+			expect(Tempo.geo.isWithin([false, 10], [0, 10], 100)).toBe(false);
+			expect(Tempo.geo.isWithin(',10', '0,10', 100)).toBe(false);
+			expect(Tempo.geo.isWithin('  ,  ', '0,10', 100)).toBe(false);
+		});
 	});
 });
