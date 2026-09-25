@@ -1,7 +1,7 @@
 # Tempo Plugin Geo: Gap Analysis & Feature Roadmap
 
-> **Status:** v1.0.0 Foundation Delivered / v1.1.0+ Backlog Planned  
-> **Target Release:** `v1.0.0` (Foundation Delivered) & `v1.1.0+` (Feature Enhancements)  
+> **Status:** v1.3.0 Delivered / v1.4.0+ Backlog Planned  
+> **Target Release:** `v1.3.0` (Delivered) & `v1.4.0+` (Feature Enhancements)  
 > **Source of Truth:** [`packages/library/src/common/runtime/mapper.library.ts`](../../../library/src/common/runtime/mapper.library.ts)  
 > **Platform Drivers:** [`packages/library/src/browser/mapper.library.ts`](../../../library/src/browser/mapper.library.ts), [`packages/library/src/server/mapper.library.ts`](../../../library/src/server/mapper.library.ts)
 
@@ -154,14 +154,14 @@ Ease-of-use and repeatable outcomes dictate our architecture:
 | **P3** | **Natural Solar Time Offset** | ✅ **Complete** | `v1.0.0` | `mapper.library` / `tempo-plugin-geo` | `Tempo.geo.solarOffset(coords)` calculating solar meridian drift. |
 | **P1** | **Velocity & Impossible Travel Anomaly** | ✅ **Complete** | `v1.3.0` | `mapper.library` / `tempo-plugin-geo` | `Tempo.geo.velocity()` and `Tempo.geo.isImpossibleTravel()` security checks. |
 | **P1** | **Bearing & Midpoint Calculation** | ✅ **Complete** | `v1.3.0` | `mapper.library` / `tempo-plugin-geo` | Great-Circle forward azimuth (`0°–360°`) and geographic midpoint calculation. |
+| **P2** | **Cultural Sync (`setLocale: true`)** | ✅ **Complete** | `v1.3.0` | `tempo-plugin-geo` | Default language-preserving regional sync (`en-US` + `SA` ➜ `en-SA`) with `'native'` and `false` options. |
+| **P2** | **Geofencing & Proximity Queries** | ✅ **Complete** | `v1.3.0` | `mapper.library` / `tempo-plugin-geo` | Radial `isWithin()` and bounding box `inBoundingBox()` spatial checks. |
 
-### Future Backlog (`v1.4.0`+)
+### Future Backlog
 | Priority | Feature | Status | Target | Scope / Target Package | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P1** | **Solar Transit in SolarTerm** | 📝 **Planned** | `v1.4.0` | `tempo-plugin-celestial` | Expose `solar.noon` and `solar.solarTime` in `SolarTerm` for astronomical modeling. |
-| **P2** | **Cultural Sync (`setLocale: true`)** | 📝 **Planned** | `v1.4.0` | `tempo-plugin-geo` | Default language-preserving regional sync (`en-US` + `SA` ➜ `en-SA`) with `'native'` and `false` options. |
-| **P2** | **Geofencing & Proximity Queries** | 📝 **Planned** | `v1.4.0` | `mapper.library` / `tempo-plugin-geo` | Radial `isWithin()` and bounding box `inBoundingBox()` spatial checks. |
-| **P3** | **Pluggable Geocoding Provider Gateway** | 📝 **Planned** | `v1.5.0` | `tempo-plugin-geo` | Pluggable provider adapter (Nominatim, Mapbox, Google Maps) with offline fallback. |
+| **P1** | **Solar Transit in SolarTerm** | 📝 **Planned** | `v1.1.0` | `tempo-plugin-celestial` | Expose `solar.noon` and `solar.solarTime` in `SolarTerm` for astronomical modeling. |
+| **P3** | **Pluggable Geocoding Provider Gateway** | 📝 **Planned** | `v1.4.0` | `tempo-plugin-geo` | Pluggable provider adapter (Nominatim, Mapbox, Google Maps) with offline fallback. |
 
 ---
 

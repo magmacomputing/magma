@@ -1,4 +1,5 @@
 import { defineTerm } from '@magmacomputing/tempo/plugin/sdk';
+import { isNumber } from '@magmacomputing/tempo/library';
 import { getLunarPhaseRange, getMoonriseMoonset, getSunriseSunset, getTidalState, LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES, TIDAL_PHASE_STATES } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
 import type { LunarPhaseKey, LunarPhaseName, SolarPhaseName, TidalState, TidalResult } from '@magmacomputing/tempo-fns';
@@ -73,6 +74,7 @@ declare module '@magmacomputing/tempo' {
 			sunrise: Tempo | null;
 			sunset: Tempo | null;
 			noon: Tempo | null;
+			solarTime: Tempo | null;
 			daylightDurationMs: number | null;
 			isDaylight: boolean | null;
 			civil: { sunrise: Tempo | null; sunset: Tempo | null };
@@ -178,6 +180,7 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 			sunrise: null,
 			sunset: null,
 			noon: null,
+			solarTime: null,
 			daylightDurationMs: null,
 			isDaylight: null,
 			civil: { sunrise: null, sunset: null },
@@ -188,9 +191,9 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		};
 	}
 
-	const elevation = typeof (geo as any)?.elevation === 'number'
+	const elevation = isNumber((geo as any)?.elevation)
 		? (geo as any).elevation
-		: (typeof (t.config?.geo as any)?.elevation === 'number' ? (t.config?.geo as any).elevation : undefined);
+		: (isNumber((t.config?.geo as any)?.elevation) ? (t.config?.geo as any).elevation : undefined);
 
 	const res = getSunriseSunset(refTempo.epoch.ms, {
 		latitude: lat!,
@@ -202,6 +205,15 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 	const sunset = toTempoOrNull(res.sunsetMs, timeZone)!;
 	const solarNoon = toTempoOrNull(res.solarNoonMs, timeZone)!;
 
+	const epochMs = refTempo.epoch.ms;
+	const localSolarDayStartMs = Date.UTC(
+		new Date(epochMs + (lng! * 240000)).getUTCFullYear(),
+		new Date(epochMs + (lng! * 240000)).getUTCMonth(),
+		new Date(epochMs + (lng! * 240000)).getUTCDate()
+	);
+	const solarTimeMs = Math.round(epochMs + (localSolarDayStartMs + 43200000 - res.solarNoonMs));
+	const solarTime = toTempoOrNull(solarTimeMs, 'UTC')!;
+
 	const civilSunrise = toTempoOrNull(res.civil.sunriseMs, timeZone)!;
 	const civilSunset = toTempoOrNull(res.civil.sunsetMs, timeZone)!;
 	const nauticalSunrise = toTempoOrNull(res.nautical.sunriseMs, timeZone)!;
@@ -211,8 +223,6 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 
 	let start: Tempo;
 	let end: Tempo;
-
-	const epochMs = refTempo.epoch.ms;
 
 	if (res.solarPhaseState === 'daylight') {
 		start = sunrise;
@@ -253,11 +263,12 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		index: res.index,
 		group: 'solar' as const,
 		geo,
-		elevation: (typeof geo?.elevation === 'number') ? geo.elevation : (typeof (t.config?.geo as any)?.elevation === 'number' ? (t.config?.geo as any).elevation : null),
+		elevation: isNumber(geo?.elevation) ? geo.elevation : (isNumber((t.config?.geo as any)?.elevation) ? (t.config?.geo as any).elevation : null),
 		...toDateTimeFields(start),
 		sunrise,
 		sunset,
 		noon: solarNoon,
+		solarTime,
 		daylightDurationMs: res.daylightDurationMs,
 		isDaylight: res.isDaylight,
 		civil: { sunrise: civilSunrise, sunset: civilSunset },

@@ -2,6 +2,7 @@ import { CONTEXT, getContext } from '#library/utility.library.js';
 import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isDate, isText, isFunction, isDefined, isCallable } from '#library/assertion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { evaluate } from '#library/evaluation.library.js';
+import { getLC, cleanLocaleTag } from '#library/international.library.js';
 
 /**
  * Supported hemisphere zones including the equatorial band.
@@ -49,6 +50,34 @@ export interface ImpossibleTravelOptions {
 	/** Custom speed threshold override in the specified unit */
 	maxSpeed?: number;
 }
+
+/**
+ * Bounding box coordinates for spatial inclusion queries.
+ */
+export interface BoundingBox {
+	minLat?: number;
+	maxLat?: number;
+	minLng?: number;
+	maxLng?: number;
+	minLatitude?: number;
+	maxLatitude?: number;
+	minLongitude?: number;
+	maxLongitude?: number;
+}
+
+/**
+ * Mode for synchronizing locale during geolocation.
+ * - `'regional'` / `true` (Default): Adapts regional cultural calendar (week start, weekend) while preserving source language (e.g. 'en-US' + 'SA' ➜ 'en-SA').
+ * - `'native'` / `'full'`: Fully localizes language and region to the country's primary native locale (e.g. 'ar-SA').
+ * - `'none'` / `false`: Disables locale synchronization; leaves instance locale untouched.
+ * - Custom BCP 47 string (e.g. `'fr-CH'`, `'es-SA'`): Sets the instance locale directly.
+ */
+export type LocaleSyncMode =
+	| boolean
+	| 'regional' | 'region'
+	| 'native' | 'full'
+	| 'none' | 'off'
+	| (string & {});
 
 /**
  * Supported units for solar offset calculation.
@@ -815,8 +844,167 @@ export function isImpossibleTravel(from: any, to: any, options?: ImpossibleTrave
 
 	const velocity = calculateVelocity(from, to, { unit, timeUnit: unit === 'm' ? 'ss' : 'hh' });
 
-	return (!isNumber(velocity))
-		? false
-		: velocity > threshold;
+	return velocity > threshold;
 }
+
+/**
+ * Checks whether the Great-Circle distance between two coordinates is within a specified radius.
+ * 
+ * @param from - Origin coordinate, object, tuple, or instance
+ * @param to - Target coordinate, object, tuple, or instance
+ * @param maxDistance - Maximum allowable distance
+ * @param unit - Distance unit ('km', 'miles', or 'm'; default: 'km')
+ * @returns true if distance is <= maxDistance, false otherwise
+ */
+export function isWithin(from: any, to: any, maxDistance: number, unit: DistanceUnit = 'km'): boolean {
+	if (!isNumber(maxDistance) || maxDistance < 0) return false;
+	const dist = haversineDistance(from, to, unit);
+	if (!isNumber(dist)) return false;
+	return dist <= maxDistance;
+}
+
+/**
+ * Checks whether a coordinate point falls inside a geographic rectangular bounding box.
+ * Correctly accounts for antimeridian crossing (180° longitude).
+ * 
+ * @param coords - Coordinate to test
+ * @param bbox - Bounding box object or [minLat, minLng, maxLat, maxLng] tuple
+ * @returns true if coords are inside bbox, false otherwise
+ */
+export function inBoundingBox(coords: any, bbox: BoundingBox | [number, number, number, number]): boolean {
+	const geo = coerceGeo(coords);
+	if (!geo || !isNumber(geo.latitude) || !isNumber(geo.longitude)) return false;
+	if (isNullish(bbox)) return false;
+
+	let minLat: number | undefined;
+	let maxLat: number | undefined;
+	let minLng: number | undefined;
+	let maxLng: number | undefined;
+
+	if (Array.isArray(bbox) && bbox.length >= 4) {
+		minLat = bbox[0];
+		minLng = bbox[1];
+		maxLat = bbox[2];
+		maxLng = bbox[3];
+	} else if (isReference(bbox)) {
+		const b = bbox as BoundingBox;
+		minLat = b.minLat ?? b.minLatitude;
+		maxLat = b.maxLat ?? b.maxLatitude;
+		minLng = b.minLng ?? b.minLongitude;
+		maxLng = b.maxLng ?? b.maxLongitude;
+	}
+
+	if (!isNumber(minLat) || !isNumber(maxLat) || !isNumber(minLng) || !isNumber(maxLng))
+		return false;
+
+	const lat = geo.latitude;
+	const lng = geo.longitude;
+
+	if (lat < minLat || lat > maxLat) return false;
+
+	// Check longitude (standard vs antimeridian wrap)
+	return (minLng <= maxLng)
+		? lng >= minLng && lng <= maxLng
+		: lng >= minLng || lng <= maxLng;
+}
+
+/**
+ * Standard mapping from ISO 3166-1 alpha-2 country codes to primary native BCP 47 locales.
+ */
+export const COUNTRY_PRIMARY_LOCALES: Record<string, string> = {
+	AU: 'en-AU',
+	US: 'en-US',
+	GB: 'en-GB',
+	CA: 'en-CA',
+	NZ: 'en-NZ',
+	IE: 'en-IE',
+	SA: 'ar-SA',
+	AE: 'ar-AE',
+	EG: 'ar-EG',
+	JP: 'ja-JP',
+	CN: 'zh-CN',
+	TW: 'zh-TW',
+	HK: 'zh-HK',
+	KR: 'ko-KR',
+	FR: 'fr-FR',
+	DE: 'de-DE',
+	IT: 'it-IT',
+	ES: 'es-ES',
+	MX: 'es-MX',
+	AR: 'es-AR',
+	BR: 'pt-BR',
+	PT: 'pt-PT',
+	RU: 'ru-RU',
+	IN: 'hi-IN',
+	NL: 'nl-NL',
+	SE: 'sv-SE',
+	NO: 'nb-NO',
+	DK: 'da-DK',
+	FI: 'fi-FI',
+	PL: 'pl-PL',
+	TR: 'tr-TR',
+	GR: 'el-GR',
+	IL: 'he-IL',
+	TH: 'th-TH',
+	VN: 'vi-VN',
+	ID: 'id-ID',
+	MY: 'ms-MY',
+	PH: 'fil-PH',
+	ZA: 'en-ZA',
+	CH: 'de-CH',
+	AT: 'de-AT',
+	BE: 'nl-BE',
+};
+
+/**
+ * Resolves a synchronized BCP 47 locale based on geolocated country and synchronization mode.
+ * 
+ * @param currentLocale - Current instance locale (e.g. 'en-US')
+ * @param countryCode - Resolved ISO country code (e.g. 'SA')
+ * @param mode - Locale sync mode ('regional' / true, 'native', 'none' / false, or custom string)
+ * @returns Validated BCP 47 locale string, or undefined if no change
+ */
+export function resolveCulturalLocale(
+	currentLocale: string | undefined,
+	countryCode: string | undefined | string[],
+	mode: LocaleSyncMode = true
+): string | undefined {
+	if (mode === false || mode === 'none' || mode === 'off')
+		return undefined;
+
+	// Normalize country code
+	let country: string | undefined;
+	if (Array.isArray(countryCode)) {
+		country = countryCode.find(c => isString(c) && c.trim().length === 2)?.trim().toUpperCase();
+	} else if (isString(countryCode) && countryCode.trim().length === 2) {
+		country = countryCode.trim().toUpperCase();
+	}
+
+	// Custom BCP 47 tag
+	if (isString(mode) && mode !== 'regional' && mode !== 'region' && mode !== 'native' && mode !== 'full') {
+		const loc = getLC(mode);
+		return loc?.baseName ?? cleanLocaleTag(mode);
+	}
+
+	if (!country) return undefined;
+
+	// Native mode: country -> primary native locale
+	if (mode === 'native' || mode === 'full') {
+		const nativeTag = COUNTRY_PRIMARY_LOCALES[country] ?? `en-${country}`;
+		const loc = getLC(nativeTag);
+		return loc?.baseName ?? nativeTag;
+	}
+
+	// Regional mode (default: true / 'regional' / 'region'): preserve source language, adapt region
+	let baseLang = 'en';
+	if (isString(currentLocale) && currentLocale.length > 0) {
+		const loc = getLC(currentLocale);
+		baseLang = loc?.language ?? cleanLocaleTag(currentLocale)?.split('-')[0] ?? 'en';
+	}
+
+	const targetTag = `${baseLang}-${country}`;
+	const loc = getLC(targetTag);
+	return loc?.baseName ?? targetTag;
+}
+
 

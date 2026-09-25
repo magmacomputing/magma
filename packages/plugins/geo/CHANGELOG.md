@@ -13,8 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Tempo.geo.isImpossibleTravel(from, to, options?)`: Evaluates physical travel feasibility against commercial aviation thresholds (default: 900 km/h) for cybersecurity anomaly detection and impossible travel prevention.
   - `Tempo.geo.bearing(from, to, options?)`: Computes Great-Circle forward azimuth compass bearing in degrees ($0^\circ$ to $360^\circ$).
   - `Tempo.geo.midpoint(from, to)`: Computes Great-Circle geographic midpoint with automatic hemisphere inference (`{ latitude, longitude, sphere }`).
+- **Spatial Boundaries & Geofencing (`Tempo.geo` Static Namespace)**:
+  - `Tempo.geo.isWithin(from, to, maxDistance, unit?)`: Radial proximity query evaluating whether coordinates are within a specified distance (`'km'`, `'miles'`, `'m'`).
+  - `Tempo.geo.inBoundingBox(coords, bbox)`: Spatial containment test evaluating if coordinates fall within rectangular bounding box, including antimeridian crossing ($180^\circ$ longitude wrap).
+- **Automated Cultural Sync (`t.geoLocate({ setLocale })`)**:
+  - `LocaleSyncMode`: Synchronizes BCP 47 locale during `.geoLocate()` with default regional adaptation (`true` / `'regional'`), preserving source language while adapting the cultural calendar (e.g. `en-US` ➜ `en-SA` for Saturday-start weeks and Friday/Saturday weekends).
+  - Supports `'native'` (e.g. `ar-SA`), custom BCP 47 tags (`'es-SA'`, `'fr-CH'`), and opt-out (`false` / `'none'`).
 - **Exported Standalone Functional Utilities**:
-  - Direct named exports: `calculateBearing`, `calculateMidpoint`, `calculateVelocity`, `isImpossibleTravel`, and types `BearingOptions`, `VelocityOptions`, `ImpossibleTravelOptions`, `TimeUnit`.
+  - Direct named exports: `calculateBearing`, `calculateMidpoint`, `calculateVelocity`, `isImpossibleTravel`, `isWithin`, `inBoundingBox`, `resolveCulturalLocale`, and types `BearingOptions`, `VelocityOptions`, `ImpossibleTravelOptions`, `BoundingBox`, `LocaleSyncMode`, `TimeUnit`.
 
 ## [1.2.0] - 2026-09-18
 

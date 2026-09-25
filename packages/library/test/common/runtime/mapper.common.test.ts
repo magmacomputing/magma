@@ -11,6 +11,9 @@ import {
 	calculateMidpoint,
 	calculateVelocity,
 	isImpossibleTravel,
+	isWithin,
+	inBoundingBox,
+	resolveCulturalLocale,
 } from '../../../src/common/runtime/mapper.library.js';
 import { setStorage, clearStorage } from '#library/storage.library.js';
 
@@ -492,11 +495,113 @@ describe('common/runtime/mapper.library', () => {
 			// Normal flight time (14 hours later) -> ~682 km/h -> Feasible
 			const feasibleLoginTokyo = { lat: 35.6762, lng: 139.6503, epoch: { ms: 1700000000000 + 14 * 3600000 } };
 			expect(isImpossibleTravel(loginLondon, feasibleLoginTokyo)).toBe(false);
+
+			// Simultaneous logins from different locations (velocity === Infinity) -> Impossible travel anomaly
+			const concurrentTokyo = { lat: 35.6762, lng: 139.6503, epoch: { ms: 1700000000000 } };
+			expect(isImpossibleTravel(loginLondon, concurrentTokyo)).toBe(true);
 		});
 
 		it('returns false for impossible travel when coordinates or timestamps are invalid', () => {
 			expect(isImpossibleTravel(null, { lat: 10, lng: 10 })).toBe(false);
 			expect(isImpossibleTravel({ lat: 10, lng: 10 }, { lat: 20, lng: 20 })).toBe(false);
+		});
+	});
+
+	describe('isWithin & inBoundingBox (Proximity & Geofencing)', () => {
+		it('isWithin accurately determines if coordinates are within a radial threshold', () => {
+			const sydney = { lat: -33.8688, lng: 151.2093 };
+			const parramatta = { lat: -33.8150, lng: 151.0011 }; // ~20 km away
+			const melbourne = { lat: -37.8136, lng: 144.9631 }; // ~713 km away
+
+			expect(isWithin(sydney, parramatta, 25, 'km')).toBe(true);
+			expect(isWithin(sydney, parramatta, 15, 'km')).toBe(false);
+			expect(isWithin(sydney, melbourne, 50, 'km')).toBe(false);
+			expect(isWithin(sydney, melbourne, 500, 'miles')).toBe(true); // 713 km ≈ 443 miles
+		});
+
+		it('isWithin safely returns false for invalid coordinates or negative radius', () => {
+			expect(isWithin(null, { lat: 0, lng: 0 }, 10)).toBe(false);
+			expect(isWithin({ lat: 0, lng: 0 }, undefined, 10)).toBe(false);
+			expect(isWithin({ lat: 0, lng: 0 }, { lat: 0, lng: 0 }, -5)).toBe(false);
+			expect(isWithin({ lat: 0, lng: 0 }, { lat: 0, lng: 0 }, NaN)).toBe(false);
+		});
+
+		it('inBoundingBox evaluates coordinate containment inside standard rectangular boundaries', () => {
+			const sydneyBBox = {
+				minLat: -34.2,
+				maxLat: -33.5,
+				minLng: 150.5,
+				maxLng: 151.5,
+			};
+
+			const operaHouse = { lat: -33.8568, lng: 151.2153 };
+			const newcastle = { lat: -32.9283, lng: 151.7817 }; // Outside north
+			const canberra = { lat: -35.2809, lng: 149.1300 }; // Outside south-west
+
+			expect(inBoundingBox(operaHouse, sydneyBBox)).toBe(true);
+			expect(inBoundingBox(newcastle, sydneyBBox)).toBe(false);
+			expect(inBoundingBox(canberra, sydneyBBox)).toBe(false);
+		});
+
+		it('inBoundingBox supports [minLat, minLng, maxLat, maxLng] tuple format', () => {
+			const tupleBBox: [number, number, number, number] = [-34.2, 150.5, -33.5, 151.5];
+			expect(inBoundingBox({ lat: -33.8568, lng: 151.2153 }, tupleBBox)).toBe(true);
+			expect(inBoundingBox({ lat: -32.0, lng: 151.0 }, tupleBBox)).toBe(false);
+		});
+
+		it('inBoundingBox handles bounding boxes that cross the antimeridian (180° longitude)', () => {
+			// Fiji / Pacific box spanning across 180°: minLng: 177°E, maxLng: -178°W
+			const pacificBBox = {
+				minLat: -20,
+				maxLat: -15,
+				minLng: 177,
+				maxLng: -178,
+			};
+
+			expect(inBoundingBox({ lat: -18.0, lng: 179.0 }, pacificBBox)).toBe(true);
+			expect(inBoundingBox({ lat: -18.0, lng: -179.0 }, pacificBBox)).toBe(true);
+			expect(inBoundingBox({ lat: -18.0, lng: 150.0 }, pacificBBox)).toBe(false);
+			expect(inBoundingBox({ lat: -10.0, lng: 179.0 }, pacificBBox)).toBe(false); // Outside lat
+		});
+
+		it('inBoundingBox returns false for invalid coordinates or malformed bounding boxes', () => {
+			expect(inBoundingBox(null, { minLat: 0, maxLat: 10, minLng: 0, maxLng: 10 })).toBe(false);
+			expect(inBoundingBox({ lat: 5, lng: 5 }, null as any)).toBe(false);
+			expect(inBoundingBox({ lat: 5, lng: 5 }, {} as any)).toBe(false);
+		});
+	});
+
+	describe('resolveCulturalLocale (Cultural Synergy)', () => {
+		it('adapts region while preserving source language under default regional mode', () => {
+			// English user geolocated to Saudi Arabia -> en-SA (preserving English text, adapting Saudi week)
+			expect(resolveCulturalLocale('en-US', 'SA')).toBe('en-SA');
+			expect(resolveCulturalLocale('en-AU', 'JP')).toBe('en-JP');
+			expect(resolveCulturalLocale('fr-FR', 'DE')).toBe('fr-DE');
+			expect(resolveCulturalLocale('ja-JP', 'US')).toBe('ja-US');
+		});
+
+		it('resolves primary native locale under native mode', () => {
+			expect(resolveCulturalLocale('en-US', 'SA', 'native')).toBe('ar-SA');
+			expect(resolveCulturalLocale('en-US', 'JP', 'native')).toBe('ja-JP');
+			expect(resolveCulturalLocale('en-US', 'FR', 'native')).toBe('fr-FR');
+			expect(resolveCulturalLocale('en-US', 'DE', 'full')).toBe('de-DE');
+		});
+
+		it('applies custom BCP 47 tags directly', () => {
+			expect(resolveCulturalLocale('en-US', 'SA', 'es-SA')).toBe('es-SA');
+			expect(resolveCulturalLocale('en-US', 'CH', 'fr-CH')).toBe('fr-CH');
+		});
+
+		it('preserves existing locale when mode is false / none / off', () => {
+			expect(resolveCulturalLocale('en-US', 'SA', false)).toBeUndefined();
+			expect(resolveCulturalLocale('en-US', 'SA', 'none')).toBeUndefined();
+			expect(resolveCulturalLocale('en-US', 'SA', 'off')).toBeUndefined();
+		});
+
+		it('handles array country codes and unresolvable countries gracefully', () => {
+			expect(resolveCulturalLocale('en-US', ['IN', 'PK'])).toBe('en-IN');
+			expect(resolveCulturalLocale('en-US', undefined)).toBeUndefined();
+			expect(resolveCulturalLocale('en-US', '')).toBeUndefined();
 		});
 	});
 });

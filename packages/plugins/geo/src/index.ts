@@ -14,6 +14,9 @@ import {
 	calculateMidpoint,
 	calculateVelocity,
 	isImpossibleTravel,
+	isWithin,
+	inBoundingBox,
+	resolveCulturalLocale,
 	type GeoLookupResult,
 	type ResolvedCoordinates,
 	type GeoConfig,
@@ -23,6 +26,8 @@ import {
 	type BearingOptions,
 	type VelocityOptions,
 	type ImpossibleTravelOptions,
+	type BoundingBox,
+	type LocaleSyncMode,
 	type SolarOffsetOptions,
 	type SolarOffsetUnit,
 } from '@magmacomputing/library/runtime/mapper.library.js';
@@ -53,6 +58,9 @@ export {
 	calculateMidpoint,
 	calculateVelocity,
 	isImpossibleTravel,
+	isWithin,
+	inBoundingBox,
+	resolveCulturalLocale,
 	serverGeoLocation,
 	serverGeoCoords,
 	serverMapHemisphere,
@@ -69,6 +77,8 @@ export type {
 	BearingOptions,
 	VelocityOptions,
 	ImpossibleTravelOptions,
+	BoundingBox,
+	LocaleSyncMode,
 	SolarOffsetOptions,
 	SolarOffsetUnit,
 	ServerMapOpts,
@@ -95,6 +105,10 @@ export interface TempoGeoNamespace {
 	readonly velocity: typeof calculateVelocity;
 	/** Checks if travel speed between two timestamped instances represents an impossible travel anomaly */
 	readonly isImpossibleTravel: typeof isImpossibleTravel;
+	/** Checks whether Great-Circle distance between two coordinates is within a specified radius */
+	readonly isWithin: typeof isWithin;
+	/** Checks whether coordinates fall inside a rectangular bounding box (with antimeridian wrapping support) */
+	readonly inBoundingBox: typeof inBoundingBox;
 	/** Calculates Natural Solar Time Offset between civil clock time and actual solar noon */
 	readonly solarOffset: typeof solarOffset;
 	/** Explicitly stashes coordinates into storage with optional TTL (default 24h) and multi-tenant partitioning */
@@ -144,6 +158,8 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 				midpoint: calculateMidpoint,
 				velocity: calculateVelocity,
 				isImpossibleTravel,
+				isWithin,
+				inBoundingBox,
 				solarOffset,
 				stash: stashGeo,
 				clear: clearStashedGeo,
@@ -168,6 +184,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 		 * returning a new Tempo instance with full context synchronization.
 		 * 
 		 * - setTimezone defaults to true: automatically shifts instance wall-clock time to the resolved location.
+		 * - setLocale defaults to true: automatically synchronizes regional BCP 47 locale to geolocated country.
 		 * - Option B (Physical Reality): Fresh location metadata updates geographic fields (lat, lng, country, city, sphere, timezone).
 		 * - Custom non-geographic metadata (e.g. { venue: 'HQ', officeId: 42 }) is preserved.
 		 * - Option C (Call-Site Overrides): Explicit parameters passed to .geoLocate(opts) take absolute precedence.
@@ -175,6 +192,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 		TempoClass.prototype.geoLocate = async function (this: Tempo, opts?: Record<string, any>): Promise<Tempo> {
 			const effectiveOpts = getEffectiveOptions(opts, this);
 			const setTimezone = effectiveOpts?.setTimezone !== false;
+			const setLocale = effectiveOpts?.setLocale ?? true;
 			const coords = await resolveGeoCoordinates(this, effectiveOpts);
 			if (coords) {
 				const existingGeo = isObject(this.config.geo) ? this.config.geo : {};
@@ -190,7 +208,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 				const callSiteGeo = coerceGeo(opts) ?? {};
 				if (isObject(opts)) {
 					for (const key of Object.keys(opts)) {
-						if (isSafeKey(key) && !['setTimezone', 'refresh', 'ttl', 'endpoint', 'timeout', 'catch', 'debug', 'geo'].includes(key)) {
+						if (isSafeKey(key) && !['setTimezone', 'setLocale', 'refresh', 'ttl', 'endpoint', 'timeout', 'catch', 'debug', 'geo'].includes(key)) {
 							if (!GEO_PROPERTIES.includes(key as any))
 								customKeys[key] = (opts as any)[key];
 						}
@@ -222,8 +240,13 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 				if (setTimezone && isString(targetTz) && !isEmpty(targetTz))
 					instance = this.set({ timeZone: targetTz });
 
+				const targetLocale = mergedGeo.country
+					? resolveCulturalLocale((this as any).locale ?? this.config.locale, mergedGeo.country, setLocale)
+					: undefined;
+
 				return new TempoClass(instance, {
 					...instance.config,
+					...(targetLocale ? { locale: targetLocale } : {}),
 					geo: deepFreeze(mergedGeo),
 					...(mergedGeo.sphere ? { sphere: mergedGeo.sphere } : {}),
 				});

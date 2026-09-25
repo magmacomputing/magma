@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-25
+
+### Added
+- **Local Apparent Solar Time (`t.term.solar.solarTime`)**:
+  - Added `solarTime` to `t.term.solar` ([`TempoTermRegistry['solar']`](src/index.ts)). Returns a `Tempo` instance representing exact local apparent solar time (AST) factoring in longitudinal displacement (Δλ × 4 min/deg) and the Equation of Time (EoT).
+  - Evaluates to `null` when geographic coordinates are omitted in adherence to the location-dependent null contract.
+- **Solar Noon Precision Verification**:
+  - Fully verified `t.term.solar.noon` meridian transit calculations with comprehensive test coverage.
+
 ## [1.0.0] - 2026-09-18
 
 ### Added

@@ -81,6 +81,8 @@ const t = new Tempo('2026-06-21', { geo: coords });
 | `Tempo.geo.resolve(input, opts?)` | Asynchronously resolves coordinates from an instance, configuration, or ambient storage cache. |
 | `Tempo.geo.coerce(input)` | Pure function normalizing various coordinate formats (`lat/lng`, `latitude/longitude`, etc.) into a canonical `GeoConfig`. |
 | `Tempo.geo.distance(from, to, unit?)` | Calculates Great-Circle distance using Haversine formula (`'km'`, `'miles'`, `'m'`). |
+| `Tempo.geo.isWithin(from, to, maxDist, unit?)` | Radial proximity query testing if distance between coordinates is $\le$ `maxDist`. |
+| `Tempo.geo.inBoundingBox(coords, bbox)` | Spatial containment check inside rectangular bounding box (supports antimeridian crossing). |
 | `Tempo.geo.bearing(from, to, opts?)` | Calculates Great-Circle forward azimuth compass bearing in degrees ($0^\circ$ to $360^\circ$). |
 | `Tempo.geo.midpoint(from, to)` | Computes Great-Circle geographic midpoint with automatic hemisphere inference (`{ latitude, longitude, sphere }`). |
 | `Tempo.geo.velocity(from, to, opts?)` | Computes travel speed/velocity between two timestamped geographic instances in `km/h`, `mph`, or `m/s`. |

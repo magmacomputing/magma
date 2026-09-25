@@ -33,10 +33,27 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(Object.isFrozen(t.term.solar.phases)).toBe(true);
 		expect(t.term.solar.sunrise).toBeInstanceOf(Tempo);
 		expect(t.term.solar.noon).toBeInstanceOf(Tempo);
+		expect(t.term.solar.solarTime).toBeInstanceOf(Tempo);
 		expect(t.term.solar.sunset).toBeInstanceOf(Tempo);
 		expect(t.term.solar.isDaylight).toBe(true);
 		expect(t.term.solar.geo).toBe(t.geo);
 		expect(t.term.lunar.geo).toBe(t.geo);
+	});
+
+	it('computes exact 12:00:00 apparent solar time at solar noon', () => {
+		const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
+		const noonTempo = t.term.solar.noon!;
+		expect(noonTempo).toBeInstanceOf(Tempo);
+
+		// Anchor tempo to exact solar noon
+		const atNoon = new Tempo(noonTempo.epoch.ms, { geo: { lat: 40.7128, lng: -74.006 }, timeZone: 'UTC' });
+		const solarTime = atNoon.term.solar.solarTime!;
+		expect(solarTime).toBeInstanceOf(Tempo);
+
+		const dt = solarTime.toDateTime();
+		expect(dt.hour).toBe(12);
+		expect(dt.minute).toBe(0);
+		expect(dt.second).toBe(0);
 	});
 
 	it('factors elevation into solar sunrise/sunset and exposes elevation on solar term', () => {
@@ -88,6 +105,7 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(t.term.solar.sunrise).toBeNull();
 		expect(t.term.solar.sunset).toBeNull();
 		expect(t.term.solar.noon).toBeNull();
+		expect(t.term.solar.solarTime).toBeNull();
 		expect(t.term.solar.isDaylight).toBeNull();
 		expect(t.term.solar.civil.sunrise).toBeNull();
 		expect(t.term.lunar.moonrise).toBeNull();
@@ -101,6 +119,7 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		
 		expect(t.term.sun).toBeNull();
 		expect(t.term.solar.key).toBeNull();
+		expect(t.term.solar.solarTime).toBeNull();
 	});
 
 	it('emits developer warning when geo is missing and debug >= 1', () => {

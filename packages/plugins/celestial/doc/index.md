@@ -6,7 +6,9 @@
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-celestial"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-celestial?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-celestial/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-celestial"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-celestial?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
-This is a Community plugin for [Tempo](https://github.com/magmacomputing/magma) providing location-aware solar twilight events (`t.term.sun`, `t.term.solar`), real-time lunar cycle phases (`t.term.moon`, `t.term.lunar`), and astronomical tidal mechanics (`t.term.tide`, `t.term.tides`).
+A Community plugin for [Tempo](https://github.com/magmacomputing/magma) providing location-aware solar twilight events (`t.term.sun`, `t.term.solar`), real-time lunar cycle phases (`t.term.moon`, `t.term.lunar`), and astronomical tidal mechanics (`t.term.tide`, `t.term.tides`).
+
+---
 
 ## Installation
 
@@ -14,91 +16,66 @@ This is a Community plugin for [Tempo](https://github.com/magmacomputing/magma) 
 npm install @magmacomputing/tempo-plugin-celestial
 ```
 
-## Features
+---
+
+## Documentation Guide
+
+Explore detailed guides on specific celestial capabilities:
+
+- **[Solar Day Cycles & Ephemeris](./solar.md)**: Twilight bands (`civil`, `nautical`, `astronomical`), atmospheric elevation dip correction, exact apparent solar noon (`solar.noon`), and Local Apparent Solar Time (`solar.solarTime`).
+- **[Lunar Ephemeris & Phases](./lunar.md)**: 8 synodic lunar phases, illumination ratio, lunar age, hemisphere-aware emojis, and local `moonrise`/`moonset` events.
+- **[Astronomical Tidal Mechanics](./tides.md)**: Syzygy, quadrature, and perigee calculations (`spring`, `neap`, `king` tides), solar-lunar alignment angles, and 745-minute tidal cycles.
+
+---
+
+## Features Overview
 
 - **Solar Day Cycles**: Calculates `daylight`, `night`, `civil-twilight`, `nautical-twilight`, and `astronomical-twilight`.
-- **Ephemeris Data**: Returns `sunrise`, `sunset`, `noon`, total `daylightDurationMs`, and explicit `latitude`/`longitude` for given coordinates.
-- **Lunar Phase & Ephemeris**: Calculates 8 discrete lunar phase states (`new-moon`, `waxing-crescent`, etc.), illumination 0.0–1.0 fraction, age in days, hemisphere-aware emoji indicators, and location-aware `moonrise` and `moonset` events.
+- **Ephemeris Data**: Returns `sunrise`, `sunset`, `noon`, `solarTime` (Local Apparent Solar Time), total `daylightDurationMs`, and observer `elevation` horizon dip adjustments.
+- **Lunar Phase & Ephemeris**: Calculates 8 discrete lunar phase states (`new-moon`, `waxing-crescent`, etc.), illumination (0.0–1.0), age in days, hemisphere-aware emojis, and location-aware `moonrise` and `moonset` events.
 - **Astronomical Tidal Mechanics**: Provides pure astronomical solar/lunar alignment calculations (`t.term.tide`, `t.term.tides`) for `spring`, `neap`, and `normal` tides, alongside `isKingTide` perigee indicators.
 
-> [!NOTE]
-> **Pure Astronomical Calculations**:
-> Tidal state resolution relies exclusively on deterministic celestial mechanics (solar-lunar ecliptic longitude alignment (Δλ) and anomalistic lunar perigee proximity) for reproducible, offset-independent math across all time zones and locations.
+---
 
 ## Geographic Coordinates & Null Contract
 
-> [!IMPORTANT]
-> **Location-Dependent Null Contract**:
-> - **Global Astronomical Properties** (`t.term.moon`, `t.term.lunar.phase`, `t.term.tides.isSpringTide`, `t.term.tides.alignmentDeg`) resolve location-independently and are always computed.
-> - **Geo-Dependent Properties** (`t.term.sun`, `solar.sunrise`, `solar.sunset`, `solar.noon`, `lunar.moonrise`, `lunar.moonset`, `tides.lunarTideMinute`) evaluate to `null` when geographic coordinates (`geo: { lat, lng }`) are omitted.
-> - **Distinction**: Property access on `t.term` evaluates to `undefined` if `CelestialPlugin` is not loaded, and to `null` if the plugin is active but location coordinates were not supplied. When `debug >= 1` is enabled in `Tempo` configuration, a developer warning is logged when evaluating geo-dependent keys without coordinates.
+::: tip Pure Astronomical Calculations
+Tidal state resolution relies exclusively on deterministic celestial mechanics (solar-lunar ecliptic longitude alignment $\Delta\lambda$ and anomalistic lunar perigee proximity) for reproducible, offset-independent math across all time zones.
+:::
 
-### Obtaining Coordinates
+::: warning Location-Dependent Null Contract
+- **Global Astronomical Properties** (`t.term.moon`, `t.term.lunar.phase`, `t.term.tides.isSpringTide`, `t.term.tides.alignmentDeg`) resolve location-independently and are always computed.
+- **Geo-Dependent Properties** (`t.term.sun`, `solar.sunrise`, `solar.sunset`, `solar.noon`, `solar.solarTime`, `lunar.moonrise`, `lunar.moonset`, `tides.lunarTideMinute`) evaluate to `null` when geographic coordinates (`geo: { lat, lng }`) are omitted.
+- **Distinction**: Property access on `t.term` evaluates to `undefined` if `CelestialPlugin` is not loaded, and to `null` if the plugin is active but location coordinates were not supplied. When `debug >= 1` is enabled in `Tempo` configuration, a developer warning is logged when evaluating geo-dependent keys without coordinates.
+:::
 
-Use `geoLookup()` from `@magmacomputing/tempo-plugin-geo` to automatically resolve location coordinates across both browser and server environments:
+---
 
-```bash
-npm install @magmacomputing/tempo-plugin-geo
-```
-
-> [!WARNING]
-> **Geolocation Behavior**:
-> - **Browser**: On first invocation, `geoLookup()` will prompt the user for permission to access hardware location services.
-> - **Server**: In Node.js or server environments without GPS hardware, coordinates are resolved via IP geolocation representing the physical server/datacenter network location.
-
-```typescript
-// Explicit installation (Recommended for production applications & pure tree-shaking):
-import { Tempo } from '@magmacomputing/tempo';
-import { geoLookup } from '@magmacomputing/tempo-plugin-geo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
-
-Tempo.use(CelestialPlugin);
-
-// Automatically resolves location coordinates via browser hardware or server IP
-const geo = await geoLookup();
-const t = new Tempo({ geo });
-
-console.log(t.term.sun);            // 'daylight' or 'night'
-console.log(t.term.lunar.moonrise); // Tempo instance or null when no rise occurs on the local date
-console.log(t.term.tide);           // 'spring', 'neap', or 'normal'
-```
-
-### Auto-Installation (Side-Effect Import)
-
-```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { geoLookup } from '@magmacomputing/tempo-plugin-geo';
-import '@magmacomputing/tempo-plugin-celestial/install';
-
-const geo = await geoLookup();
-const t = new Tempo({ geo });
-console.log(t.term.sun);
-```
-
-## Usage
+## Quickstart
 
 <PluginRepl plugin="celestial" />
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { geoLookup } from '@magmacomputing/tempo-plugin-geo';
 
 Tempo.use(CelestialPlugin);
 
-const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
+// Automatically resolves location coordinates via browser hardware or server IP
+const geo = await geoLookup();
+const t = new Tempo('2026-06-21T12:00:00Z', { geo });
 
-// --- Solar Day State & Phase Querying ---
+// --- Solar Day State & Ephemeris ---
 console.log(t.term.sun);                 // 'daylight'
-console.log(t.term.solar.key);           // 'daylight'
 console.log(t.term.solar.phase);         // 'Daylight'
-console.log(t.term.solar.phases);        // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
 console.log(t.term.solar.sunrise);       // Tempo instance for local sunrise
-console.log(t.term.solar.geo);           // { latitude: 40.7128, longitude: -74.006 }
+console.log(t.term.solar.noon);          // Tempo instance for local solar noon
+console.log(t.term.solar.solarTime);     // Tempo instance for local apparent solar time (AST)
 
 // --- Lunar Phase & Ephemeris ---
 console.log(t.term.moon);                // 'waxing-crescent'
 console.log(t.term.lunar.phase);         // 'Waxing Crescent'
-console.log(t.term.lunar.phases);        // ['new-moon', 'waxing-crescent', 'first-quarter', 'waxing-gibbous', 'full-moon', 'waning-gibbous', 'third-quarter', 'waning-crescent']
 console.log(t.term.lunar.illumination);  // 0.45
 console.log(t.term.lunar.moonrise);      // Tempo instance for local moonrise (or null)
 
@@ -106,31 +83,21 @@ console.log(t.term.lunar.moonrise);      // Tempo instance for local moonrise (o
 console.log(t.term.tide);                // 'spring', 'neap', or 'normal'
 console.log(t.term.tides.alignmentDeg);  // Solar-lunar alignment angle (0..360°)
 console.log(t.term.tides.isSpringTide);  // true during Syzygy (New or Full Moon)
-console.log(t.term.tides.isNeapTide);    // true during Quadrature (1st or 3rd Quarter)
 console.log(t.term.tides.isKingTide);    // true when Spring Tide aligns with Lunar Perigee
-
-// --- Programmatic Navigation ---
-// Use .phases to dynamically navigate to the next lunar phase
-const nextPhaseKey = t.term.lunar.phases[t.term.lunar.index % 8];
-const nextMoonTempo = t.set(`#lunar.${nextPhaseKey}`);
 ```
 
-## Phase & State Discovery Metadata
+### Auto-Installation (Side-Effect Import)
 
-`LunarTerm`, `SolarTerm`, and `TidalTerm` expose immutable, frozen array references (`Object.freeze`) containing all valid identifiers for terms resolution:
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-celestial/install';
 
-- **Static Term References**: `LunarTerm.phases`, `SolarTerm.phases`, and `TidalTerm.phases` are available on the plugin definitions without instantiating a `Tempo` object.
-- **Instance Scope References**: `t.term.lunar.phases`, `t.term.solar.phases`, and `t.term.tides.states` share the exact same frozen array references (`t.term.lunar.phases === LunarTerm.phases`), adding zero memory or GC overhead.
+const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
+console.log(t.term.sun);
+```
 
-> [!TIP]
-> **Indexing Tip**: Following ISO calendar standards that drive Temporal and Tempo, `.index` is 1-based (`1..8`), while `.phases` is a standard 0-indexed JavaScript array (`0..7`).
-> - **Current Phase**: Use `lunar.key` or `lunar.phases[lunar.index - 1]`.
-> - **Next Phase**: Use `lunar.phases[lunar.index % 8]` (1-based index modulo 8 seamlessly targets the next phase index with automatic wrap-around).
+---
 
 ## Licensing
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
-
-## License
-
-MIT
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

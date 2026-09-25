@@ -470,5 +470,59 @@ describe('Tempo Plugin: Geo', () => {
 			expect(speedTokyo).toBeGreaterThan(7000);
 			expect(Tempo.geo.isImpossibleTravel(sydney, tokyo)).toBe(true);
 		});
+
+		it('should evaluate proximity via Tempo.geo.isWithin and bounding box containment via Tempo.geo.inBoundingBox', () => {
+			const parramatta = { lat: -33.8150, lng: 151.0011 };
+			expect(Tempo.geo.isWithin(sydney, parramatta, 25, 'km')).toBe(true);
+			expect(Tempo.geo.isWithin(sydney, melbourne, 50, 'km')).toBe(false);
+
+			const sydneyBBox = { minLat: -34.2, maxLat: -33.5, minLng: 150.5, maxLng: 151.5 };
+			expect(Tempo.geo.inBoundingBox(sydney, sydneyBBox)).toBe(true);
+			expect(Tempo.geo.inBoundingBox(melbourne, sydneyBBox)).toBe(false);
+		});
+
+		it('should synchronize cultural locale during t.geoLocate with setLocale options', async () => {
+			const event = new Tempo('2026-09-25T10:00:00Z', { locale: 'en-US' });
+
+			const mockSaudiPayload = {
+				ip: '82.165.197.1',
+				success: true,
+				lat: 24.7136,
+				lon: 46.6753,
+				city: 'Riyadh',
+				country: 'SA',
+				timezone: 'Asia/Riyadh',
+			};
+
+			// 1. Default (regional adaptation): preserves 'en' language, sets 'SA' region -> 'en-SA'
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockSaudiPayload), { status: 200 })
+			);
+			const regionalLoc = await event.geoLocate();
+			expect(regionalLoc.locale).toBe('en-SA');
+			expect(regionalLoc.tz).toBe('Asia/Riyadh');
+			expect(regionalLoc.geo?.country).toBe('SA');
+
+			// 2. Native mode: converts to primary native locale ('ar-SA')
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockSaudiPayload), { status: 200 })
+			);
+			const nativeLoc = await event.geoLocate({ setLocale: 'native' });
+			expect(nativeLoc.locale).toBe('ar-SA');
+
+			// 3. Custom BCP 47 string override
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockSaudiPayload), { status: 200 })
+			);
+			const customLoc = await event.geoLocate({ setLocale: 'es-SA' });
+			expect(customLoc.locale).toBe('es-SA');
+
+			// 4. Opt-out: setLocale: false preserves initial 'en-US'
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockSaudiPayload), { status: 200 })
+			);
+			const untouchedLoc = await event.geoLocate({ setLocale: false });
+			expect(untouchedLoc.locale).toBe('en-US');
+		});
 	});
 });

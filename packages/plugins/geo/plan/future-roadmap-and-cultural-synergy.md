@@ -136,9 +136,9 @@ To complete the celestial feature set, `SolarTerm` will incorporate:
 
 ---
 
-## 4. Prioritized Feature Roadmap (`v1.1.0` – `v1.3.0`)
+## 4. Prioritized Feature Roadmap (`v1.3.0` – `v1.5.0`)
 
-### 4.1 Phase 1 (Target: `v1.1.0`) — Security, Transit & Navigation
+### 4.1 Phase 1 (Target: `v1.3.0`) — Security, Transit & Navigation
 
 #### A. Transit Velocity & Impossible Travel Anomaly Detection
 * **Functionality**: Calculates speed between two timestamped geographic instances and evaluates physical travel feasibility:
@@ -165,7 +165,7 @@ To complete the celestial feature set, `SolarTerm` will incorporate:
 
 ---
 
-### 4.2 Phase 2 (Target: `v1.2.0`) — Cultural Sync & Spatial Boundaries
+### 4.2 Phase 2 (Target: `v1.4.0`) — Cultural Sync & Spatial Boundaries
 
 #### A. Automated Cultural Sync (`setLocale: true`)
 * Automatically maps geolocated ISO country code to primary BCP 47 locale in `t.geoLocate()`, unlocking `t.intl.firstDay` and `t.intl.weekend` without manual configuration.
@@ -184,7 +184,7 @@ To complete the celestial feature set, `SolarTerm` will incorporate:
 
 ---
 
-### 4.3 Phase 3 (Target: `v1.3.0`) — Pluggable Geocoding Provider Gateway
+### 4.3 Phase 3 (Target: `v1.5.0`) — Pluggable Geocoding Provider Gateway
 
 #### A. Standardized Provider Adapter Interface
 * **Functionality**: Extensible interface allowing custom geocoding and reverse geocoding providers (OpenStreetMap Nominatim, Mapbox, Google Maps, or internal corporate proxies) with automatic rate limiting and fallback:
@@ -200,7 +200,7 @@ To complete the celestial feature set, `SolarTerm` will incorporate:
 | :--- | :--- | :--- | :--- |
 | **Velocity & Impossible Travel** | `v1.3.0` | `mapper.library` / `tempo-plugin-geo` | ✅ Complete |
 | **Bearing & Midpoint Calculation** | `v1.3.0` | `mapper.library` / `tempo-plugin-geo` | ✅ Complete |
-| **`SolarTerm.noon` & `SolarTerm.solarTime`** | `v1.4.0` | `tempo-plugin-celestial` | 📝 Planned |
-| **Cultural Sync (`setLocale: true`)** | `v1.4.0` | `tempo-plugin-geo` | 📝 Planned |
-| **Proximity & Bounding Box Geofencing** | `v1.4.0` | `mapper.library` / `tempo-plugin-geo` | 📝 Planned |
-| **Pluggable Geocoding Provider Gateway** | `v1.5.0` | `tempo-plugin-geo` | 📝 Planned |
+| **Cultural Sync (`setLocale: true`)** | `v1.3.0` | `tempo-plugin-geo` | ✅ Complete |
+| **Proximity & Bounding Box Geofencing** | `v1.3.0` | `mapper.library` / `tempo-plugin-geo` | ✅ Complete |
+| **`SolarTerm.noon` & `SolarTerm.solarTime`** | `v1.1.0` | `tempo-plugin-celestial` | ✅ Complete |
+| **Pluggable Geocoding Provider Gateway** | `v1.4.0` | `tempo-plugin-geo` | 📝 Planned |
