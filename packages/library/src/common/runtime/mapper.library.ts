@@ -1,5 +1,5 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isDate, isText } from '#library/assertion.library.js';
+import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isDate, isText, isFunction, isDefined, isCallable } from '#library/assertion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { evaluate } from '#library/evaluation.library.js';
 
@@ -14,9 +14,46 @@ export type GeoSphere = 'north' | 'south' | 'equator';
 export type DistanceUnit = 'km' | 'miles' | 'm';
 
 /**
+ * Supported units for geographic velocity time denominator.
+ */
+export type TimeUnit = 'hh' | 'h' | 'hours' | 'hour' | 'mi' | 'm' | 'minutes' | 'minute' | 'ss' | 's' | 'seconds' | 'second';
+
+/**
+ * Configuration options for initial compass bearing calculation.
+ */
+export interface BearingOptions {
+	/** Number of decimal places to round (default: 1) */
+	precision?: number;
+}
+
+/**
+ * Configuration options for geographic velocity calculation.
+ */
+export interface VelocityOptions {
+	/** Distance unit (default: 'km') */
+	unit?: DistanceUnit;
+	/** Time unit for velocity denominator (default: 'h' for km/h or mph) */
+	timeUnit?: TimeUnit;
+	/** Number of decimal places to round (default: 2) */
+	precision?: number;
+}
+
+/**
+ * Configuration options for impossible travel anomaly detection.
+ */
+export interface ImpossibleTravelOptions {
+	/** Maximum physically feasible commercial speed in km/h (default: 900 km/h) */
+	maxCommercialSpeedKmH?: number;
+	/** Distance unit for threshold (default: 'km') */
+	unit?: DistanceUnit;
+	/** Custom speed threshold override in the specified unit */
+	maxSpeed?: number;
+}
+
+/**
  * Supported units for solar offset calculation.
  */
-export type SolarOffsetUnit = 'minutes' | 'seconds' | 'hours';
+export type SolarOffsetUnit = 'mi' | 'minutes' | 'ss' | 'seconds' | 'hh' | 'hours';
 
 /**
  * Configuration options for natural solar time offset calculation.
@@ -290,7 +327,7 @@ export const getStashedGeo = (keyOrOpts?: string | Record<string, any>): GeoConf
 	const cacheKey = resolveCacheKey(keyOrOpts);
 	try {
 		const raw = getStorage<any>(cacheKey) ??
-			(typeof localStorage !== 'undefined' ? localStorage.getItem(cacheKey) : undefined);
+			(isCallable((globalThis as any).localStorage?.getItem) ? (globalThis as any).localStorage.getItem(cacheKey) : undefined);
 		if (!raw) return undefined;
 
 		const parsed = isString(raw) && (raw.startsWith('{') || raw.startsWith('['))
@@ -500,6 +537,33 @@ export const resolveGeoCoordinates = async (
 };
 
 /**
+ * Internal helper to coerce and project two coordinate sources into radians.
+ * @internal
+ */
+const toRadianCoordinates = (from: any, to: any) => {
+	const c1 = coerceGeo(from);
+	const c2 = coerceGeo(to);
+
+	if (!c1 || !c2 || !isNumber(c1.latitude) || !isNumber(c1.longitude) || !isNumber(c2.latitude) || !isNumber(c2.longitude))
+		return undefined;
+
+	const toRad = Math.PI / 180;
+	const lat1 = c1.latitude * toRad;
+	const lng1 = c1.longitude * toRad;
+	const lat2 = c2.latitude * toRad;
+	const lng2 = c2.longitude * toRad;
+
+	return {
+		lat1,
+		lat2,
+		lng1,
+		lng2,
+		dLat: lat2 - lat1,
+		dLng: lng2 - lng1,
+	}
+}
+
+/**
  * Calculates the Great-Circle distance between two coordinates using the Haversine formula.
  * Accepts coordinate objects, [lat, lng] tuples, strings, or instances exposing .geo.
  * 
@@ -509,34 +573,14 @@ export const resolveGeoCoordinates = async (
  * @returns Calculated distance, or NaN if either coordinate pair is invalid
  */
 export function haversineDistance(from: any, to: any, unit: DistanceUnit = 'km'): number {
-	const c1 = coerceGeo(from);
-	const c2 = coerceGeo(to);
+	const coords = toRadianCoordinates(from, to);
+	if (!coords) return NaN;
 
-	if (!c1 || !c2 || !isNumber(c1.latitude) || !isNumber(c1.longitude) || !isNumber(c2.latitude) || !isNumber(c2.longitude)) {
-		return NaN;
-	}
-
-	const toRad = Math.PI / 180;
-	const lat1 = c1.latitude * toRad;
-	const lng1 = c1.longitude * toRad;
-	const lat2 = c2.latitude * toRad;
-	const lng2 = c2.longitude * toRad;
-
-	const dLat = lat2 - lat1;
-	const dLng = lng2 - lng1;
-
+	const { lat1, lat2, dLat, dLng } = coords;
 	const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
 	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-	let radius: number;
-	if (unit === 'miles') {
-		radius = 3958.7613; // Mean Earth radius in miles
-	} else if (unit === 'm') {
-		radius = 6371008.8; // Mean Earth radius in meters
-	} else {
-		radius = 6371.0088; // Mean Earth radius in kilometers (default)
-	}
-
+	const radius = unit === 'miles' ? 3958.7613 : (unit === 'm' ? 6371008.8 : 6371.0088);
 	const dist = radius * c;
 	return unit === 'm' ? Math.round(dist) : Math.round(dist * 1000) / 1000;
 }
@@ -548,7 +592,7 @@ export function haversineDistance(from: any, to: any, unit: DistanceUnit = 'km')
  */
 const resolveCivilTimezoneOffset = (tz: string, epochMs: number): number | undefined => {
 	try {
-		if (typeof Temporal !== 'undefined' && typeof Temporal.Instant?.fromEpochMilliseconds === 'function') {
+		if (isDefined((globalThis as any).Temporal) && isFunction((globalThis as any).Temporal.Instant?.fromEpochMilliseconds)) {
 			const zdt = Temporal.Instant.fromEpochMilliseconds(epochMs).toZonedDateTimeISO(tz);
 			return zdt.offsetNanoseconds / 60_000_000_000;
 		}
@@ -584,7 +628,7 @@ const resolveCivilTimezoneOffset = (tz: string, epochMs: number): number | undef
  */
 export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 	const geo = coerceGeo(coords);
-	if (!geo || !isNumber(geo.latitude) || !isNumber(geo.longitude) || isNaN(geo.latitude) || isNaN(geo.longitude)) {
+	if (!geo || !isNumber(geo.latitude) || !isNumber(geo.longitude)) {
 		return NaN;
 	}
 
@@ -593,18 +637,10 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 		?? (isReference(coords) ? ((coords as any).timezone ?? (coords as any).tz) : undefined)
 		?? geo.timezone;
 
-	const dateVal = options?.date
-		?? (isReference(coords) && isNumber((coords as any).epoch?.ms) ? (coords as any).epoch.ms : Date.now());
+	const dateVal = options?.date ?? (isReference(coords) ? extractEpochMs(coords) : undefined);
+	const epochMs = isDefined(dateVal) ? extractEpochMs(dateVal) : Date.now();
 
-	const epochMs = typeof dateVal === 'number'
-		? dateVal
-		: (isString(dateVal)
-			? Date.parse(dateVal)
-			: (isDate(dateVal)
-				? dateVal.getTime()
-				: (isReference(dateVal) && isNumber((dateVal as any)?.epoch?.ms) ? (dateVal as any).epoch.ms : Date.now())));
-
-	if (!Number.isFinite(epochMs)) return NaN;
+	if (!isNumber(epochMs)) return NaN;
 
 	const offsetMinutes = isText(tz) ? resolveCivilTimezoneOffset(tz, epochMs) : undefined;
 
@@ -625,11 +661,11 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 		offsetMin += eqTime;
 	}
 
-	const unit = options?.unit ?? 'minutes';
+	const unit = options?.unit ?? 'mi';
 	let res: number;
-	if (unit === 'seconds') {
+	if (unit === 'ss' || unit === 'seconds') {
 		res = offsetMin * 60;
-	} else if (unit === 'hours') {
+	} else if (unit === 'hh' || unit === 'hours') {
 		res = offsetMin / 60;
 	} else {
 		res = offsetMin;
@@ -638,5 +674,149 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 	const precision = options?.precision ?? 2;
 	const factor = Math.pow(10, precision);
 	return Math.round(res * factor) / factor;
+}
+
+/**
+ * Extracts a numeric epoch millisecond timestamp from diverse date/time or instance representations.
+ * @internal
+ */
+export function extractEpochMs(input: any): number | undefined {
+	if (isNullish(input)) return undefined;
+	if (isNumber(input)) return input;
+	if (isDate(input)) return input.getTime();
+	if (isReference(input)) {
+		if (isNumber(input.epoch?.ms)) return input.epoch.ms;
+		if (isNumber(input.epochMilliseconds)) return input.epochMilliseconds;
+		if (isNumber(input.timestamp)) return input.timestamp;
+		if (isDate(input.date)) return input.date.getTime();
+		if (isFunction(input.toInstant)) {
+			try { return input.toInstant().epochMilliseconds; } catch { }
+		}
+		if (isFunction(input.getTime))
+			try { return input.getTime(); } catch { }
+	}
+	if (isString(input)) {
+		const parsed = Date.parse(input);
+		if (isNumber(parsed)) return parsed;
+	}
+	return undefined;
+}
+
+/**
+ * Calculates the initial forward azimuth compass bearing (0° to 360°) along the Great-Circle path from origin to destination.
+ * 
+ * @param from - Origin coordinate, object, tuple, or instance exposing .geo
+ * @param to - Destination coordinate, object, tuple, or instance exposing .geo
+ * @param options - Configuration options such as precision (default: 1 decimal place)
+ * @returns Compass bearing in degrees (0° to 360°), or NaN if either coordinate is invalid
+ */
+export function calculateBearing(from: any, to: any, options?: BearingOptions): number {
+	const coords = toRadianCoordinates(from, to);
+	if (!coords) return NaN;
+
+	const { lat1, lat2, dLng } = coords;
+	const y = Math.sin(dLng) * Math.cos(lat2);
+	const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+
+	const bearing = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+
+	const precision = options?.precision ?? 1;
+	const factor = Math.pow(10, precision);
+	return Math.round(bearing * factor) / factor;
+}
+
+/**
+ * Calculates the geographic midpoint along the Great-Circle path between two coordinates.
+ * 
+ * @param from - Origin coordinate, object, tuple, or instance exposing .geo
+ * @param to - Destination coordinate, object, tuple, or instance exposing .geo
+ * @returns Midpoint coordinate object with inferred hemisphere ({ latitude, longitude, sphere }), or undefined if invalid
+ */
+export function calculateMidpoint(from: any, to: any): { latitude: number; longitude: number; sphere: GeoSphere } | undefined {
+	const coords = toRadianCoordinates(from, to);
+	if (!coords) return undefined;
+
+	const { lat1, lat2, lng1, dLng } = coords;
+	const Bx = Math.cos(lat2) * Math.cos(dLng);
+	const By = Math.cos(lat2) * Math.sin(dLng);
+
+	const latMidRad = Math.atan2(
+		Math.sin(lat1) + Math.sin(lat2),
+		Math.sqrt((Math.cos(lat1) + Bx) ** 2 + By ** 2)
+	);
+	const lngMidRad = lng1 + Math.atan2(By, Math.cos(lat1) + Bx);
+
+	const midLat = Math.round((latMidRad * 180 / Math.PI) * 1000) / 1000;
+	const midLng = Math.round((((lngMidRad * 180 / Math.PI + 540) % 360 - 180)) * 1000) / 1000;
+
+	const sphere: GeoSphere = midLat > 0.001 ? 'north' : (midLat < -0.001 ? 'south' : 'equator');
+
+	return {
+		latitude: midLat,
+		longitude: midLng,
+		sphere,
+	};
+}
+
+/**
+ * Calculates the speed/velocity between two timestamped geographic instances or coordinate objects.
+ * 
+ * @param from - Origin coordinate or timestamped instance
+ * @param to - Destination coordinate or timestamped instance
+ * @param options - Configuration options for units and precision
+ * @returns Calculated velocity in requested unit (e.g. km/h, mph, m/s), or NaN if invalid
+ */
+export function calculateVelocity(from: any, to: any, options?: VelocityOptions | DistanceUnit): number {
+	const opts: VelocityOptions = isString(options) ? { unit: options as DistanceUnit } : (options ?? {});
+	const unit = opts.unit ?? 'km';
+	const timeUnit = opts.timeUnit ?? 'hh';
+
+	const dist = haversineDistance(from, to, unit);
+	if (isNaN(dist)) return NaN;
+
+	const t1 = extractEpochMs(from);
+	const t2 = extractEpochMs(to);
+
+	if (!isNumber(t1) || !isNumber(t2)) return NaN;
+
+	const deltaMs = Math.abs(t2 - t1);
+	if (deltaMs === 0) {
+		return dist === 0 ? 0 : Infinity;
+	}
+
+	let deltaUnits: number;
+	if (timeUnit === 'ss' || timeUnit === 's' || timeUnit === 'seconds' || timeUnit === 'second') {
+		deltaUnits = deltaMs / 1000;
+	} else if (timeUnit === 'mi' || timeUnit === 'm' || timeUnit === 'minutes' || timeUnit === 'minute') {
+		deltaUnits = deltaMs / 60_000;
+	} else {
+		deltaUnits = deltaMs / 3_600_000; // Default: hours ('hh', 'h')
+	}
+
+	const velocity = dist / deltaUnits;
+	const precision = opts.precision ?? 2;
+	const factor = Math.pow(10, precision);
+	return Math.round(velocity * factor) / factor;
+}
+
+/**
+ * Evaluates whether travel between two timestamped geographic instances represents an impossible travel anomaly
+ * (e.g. concurrent logins from distant countries exceeding commercial flight velocities).
+ * 
+ * @param from - Origin coordinate or timestamped instance
+ * @param to - Destination coordinate or timestamped instance
+ * @param options - Feasibility options including custom speed threshold (default max speed: 900 km/h)
+ * @returns true if calculated velocity exceeds commercial feasibility threshold, false otherwise
+ */
+export function isImpossibleTravel(from: any, to: any, options?: ImpossibleTravelOptions): boolean {
+	const unit = options?.unit ?? 'km';
+	const defaultMax = unit === 'miles' ? 560 : (unit === 'm' ? 250 : 900); // 900 km/h ≈ 560 mph ≈ 250 m/s
+	const threshold = options?.maxSpeed ?? options?.maxCommercialSpeedKmH ?? defaultMax;
+
+	const velocity = calculateVelocity(from, to, { unit, timeUnit: unit === 'm' ? 'ss' : 'hh' });
+
+	return (!isNumber(velocity))
+		? false
+		: velocity > threshold;
 }
 

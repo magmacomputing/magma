@@ -5,6 +5,17 @@ All notable changes to the `@magmacomputing/tempo-plugin-geo` project will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-09-25
+
+### Added
+- **Navigation & Transit Analytics (`Tempo.geo` Static Namespace)**:
+  - `Tempo.geo.velocity(from, to, options?)`: Calculates travel speed between two timestamped geographic instances or coordinate objects in `km/h`, `mph`, or `m/s`.
+  - `Tempo.geo.isImpossibleTravel(from, to, options?)`: Evaluates physical travel feasibility against commercial aviation thresholds (default: 900 km/h) for cybersecurity anomaly detection and impossible travel prevention.
+  - `Tempo.geo.bearing(from, to, options?)`: Computes Great-Circle forward azimuth compass bearing in degrees ($0^\circ$ to $360^\circ$).
+  - `Tempo.geo.midpoint(from, to)`: Computes Great-Circle geographic midpoint with automatic hemisphere inference (`{ latitude, longitude, sphere }`).
+- **Exported Standalone Functional Utilities**:
+  - Direct named exports: `calculateBearing`, `calculateMidpoint`, `calculateVelocity`, `isImpossibleTravel`, and types `BearingOptions`, `VelocityOptions`, `ImpossibleTravelOptions`, `TimeUnit`.
+
 ## [1.2.0] - 2026-09-18
 
 ### Added

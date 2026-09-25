@@ -1,4 +1,17 @@
-import { coerceGeo, geoLookup, resolveGeoCoordinates, getStashedGeo, stashGeo, clearStashedGeo, haversineDistance, solarOffset } from '../../../src/common/runtime/mapper.library.js';
+import {
+	coerceGeo,
+	geoLookup,
+	resolveGeoCoordinates,
+	getStashedGeo,
+	stashGeo,
+	clearStashedGeo,
+	haversineDistance,
+	solarOffset,
+	calculateBearing,
+	calculateMidpoint,
+	calculateVelocity,
+	isImpossibleTravel,
+} from '../../../src/common/runtime/mapper.library.js';
 import { setStorage, clearStorage } from '#library/storage.library.js';
 
 describe('common/runtime/mapper.library', () => {
@@ -374,6 +387,116 @@ describe('common/runtime/mapper.library', () => {
 			expect(solarOffset(undefined)).toBeNaN();
 			expect(solarOffset({})).toBeNaN();
 			expect(solarOffset({ lat: 100, lng: 50 })).toBeNaN();
+		});
+	});
+
+	describe('calculateBearing (Compass Azimuth)', () => {
+		it('calculates initial forward compass bearing in degrees (0° to 360°)', () => {
+			const sydney = { lat: -33.8688, lng: 151.2093 };
+			const melbourne = { lat: -37.8136, lng: 144.9631 };
+
+			// Sydney to Melbourne great-circle initial azimuth is approx 230.3° (South-West)
+			const bearing = calculateBearing(sydney, melbourne);
+			expect(bearing).toBe(230.3);
+
+			// Due North (bearing = 0°)
+			expect(calculateBearing({ lat: 0, lng: 0 }, { lat: 10, lng: 0 })).toBe(0);
+
+			// Due East (bearing = 90°)
+			expect(calculateBearing({ lat: 0, lng: 0 }, { lat: 0, lng: 10 })).toBe(90);
+
+			// Due South (bearing = 180°)
+			expect(calculateBearing({ lat: 10, lng: 0 }, { lat: 0, lng: 0 })).toBe(180);
+
+			// Due West (bearing = 270°)
+			expect(calculateBearing({ lat: 0, lng: 10 }, { lat: 0, lng: 0 })).toBe(270);
+		});
+
+		it('respects custom precision option for bearing', () => {
+			const london = { lat: 51.5074, lng: -0.1278 };
+			const tokyo = { lat: 35.6762, lng: 139.6503 };
+
+			expect(calculateBearing(london, tokyo, { precision: 3 })).toBe(31.727);
+		});
+
+		it('returns NaN for invalid coordinate inputs in calculateBearing', () => {
+			expect(calculateBearing(null, { lat: 10, lng: 20 })).toBeNaN();
+			expect(calculateBearing({ lat: 10, lng: 20 }, undefined)).toBeNaN();
+			expect(calculateBearing({ lat: 100, lng: 20 }, { lat: 10, lng: 20 })).toBeNaN();
+		});
+	});
+
+	describe('calculateMidpoint (Great-Circle Midpoint)', () => {
+		it('calculates geographic midpoint between two coordinates with inferred hemisphere', () => {
+			const sydney = { lat: -33.8688, lng: 151.2093 };
+			const melbourne = { lat: -37.8136, lng: 144.9631 };
+
+			const mid = calculateMidpoint(sydney, melbourne);
+			expect(mid).toBeDefined();
+			expect(mid?.latitude).toBe(-35.882);
+			expect(mid?.longitude).toBe(148.164);
+			expect(mid?.sphere).toBe('south');
+		});
+
+		it('correctly calculates midpoint across the equator', () => {
+			const northPt = { lat: 10, lng: 0 };
+			const southPt = { lat: -10, lng: 0 };
+
+			const mid = calculateMidpoint(northPt, southPt);
+			expect(mid).toEqual({
+				latitude: 0,
+				longitude: 0,
+				sphere: 'equator',
+			});
+		});
+
+		it('returns undefined for invalid coordinates in calculateMidpoint', () => {
+			expect(calculateMidpoint(null, { lat: 0, lng: 0 })).toBeUndefined();
+			expect(calculateMidpoint({ lat: 0, lng: 0 }, undefined)).toBeUndefined();
+			expect(calculateMidpoint({ lat: 100, lng: 0 }, { lat: 0, lng: 0 })).toBeUndefined();
+		});
+	});
+
+	describe('calculateVelocity & isImpossibleTravel (Security & Transit)', () => {
+		it('calculates speed between two timestamped geographic instances in km/h, mph, and m/s', () => {
+			const t1 = { lat: 51.5074, lng: -0.1278, epoch: { ms: 1700000000000 } }; // London
+			const t2 = { lat: 48.8566, lng: 2.3522, epoch: { ms: 1700000000000 + 7200000 } }; // Paris (2 hours later)
+
+			// Distance London -> Paris is approx 343.486 km. Over 2 hours = 171.74 km/h
+			const speedKmh = calculateVelocity(t1, t2, 'km');
+			expect(speedKmh).toBe(171.74);
+
+			const speedMph = calculateVelocity(t1, t2, { unit: 'miles' });
+			expect(speedMph).toBe(106.71);
+
+			const speedMs = calculateVelocity(t1, t2, { unit: 'm', timeUnit: 's' });
+			expect(speedMs).toBe(47.71);
+		});
+
+		it('returns 0 when distance is 0 at same timestamp, and Infinity when distance > 0 at same timestamp', () => {
+			const p1 = { lat: 10, lng: 10, epoch: { ms: 1000 } };
+			const p2 = { lat: 10, lng: 10, epoch: { ms: 1000 } };
+			const p3 = { lat: 20, lng: 20, epoch: { ms: 1000 } };
+
+			expect(calculateVelocity(p1, p2)).toBe(0);
+			expect(calculateVelocity(p1, p3)).toBe(Infinity);
+		});
+
+		it('detects impossible travel anomalies based on commercial speed thresholds', () => {
+			const loginLondon = { lat: 51.5074, lng: -0.1278, epoch: { ms: 1700000000000 } };
+			const loginTokyo = { lat: 35.6762, lng: 139.6503, epoch: { ms: 1700000000000 + 3600000 } }; // Tokyo 1 hour later
+
+			// Distance is ~9558 km in 1 hour (9558 km/h) -> Far exceeds 900 km/h commercial jet speed
+			expect(isImpossibleTravel(loginLondon, loginTokyo)).toBe(true);
+
+			// Normal flight time (14 hours later) -> ~682 km/h -> Feasible
+			const feasibleLoginTokyo = { lat: 35.6762, lng: 139.6503, epoch: { ms: 1700000000000 + 14 * 3600000 } };
+			expect(isImpossibleTravel(loginLondon, feasibleLoginTokyo)).toBe(false);
+		});
+
+		it('returns false for impossible travel when coordinates or timestamps are invalid', () => {
+			expect(isImpossibleTravel(null, { lat: 10, lng: 10 })).toBe(false);
+			expect(isImpossibleTravel({ lat: 10, lng: 10 }, { lat: 20, lng: 20 })).toBe(false);
 		});
 	});
 });

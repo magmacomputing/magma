@@ -156,11 +156,11 @@ To complete the celestial feature set, `SolarTerm` will incorporate:
 * **Functionality**: Computes initial forward azimuth bearing and spatial midpoint:
   ```typescript
   // Initial compass bearing (0°–360°)
-  const heading = Tempo.geo.bearing(sydney, melbourne); // 215.4° (SW)
+  const heading = Tempo.geo.bearing(sydney, melbourne); // 230.3° (SW)
 
   // Geographic midpoint between two coordinate anchors
   const midway = Tempo.geo.midpoint(sydney, melbourne);
-  // { latitude: -35.864, longitude: 147.852, sphere: 'south' }
+  // { latitude: -35.882, longitude: 148.164, sphere: 'south' }
   ```
 
 ---
@@ -198,9 +198,9 @@ To complete the celestial feature set, `SolarTerm` will incorporate:
 
 | Feature | Release | Package | Status |
 | :--- | :--- | :--- | :--- |
-| **Velocity & Impossible Travel** | `v1.1.0` | `mapper.library` / `tempo-plugin-geo` | 📝 Planned |
-| **Bearing & Midpoint Calculation** | `v1.1.0` | `mapper.library` / `tempo-plugin-geo` | 📝 Planned |
-| **`SolarTerm.noon` & `SolarTerm.solarTime`** | `v1.1.0` | `tempo-plugin-celestial` | 📝 Planned |
-| **Cultural Sync (`setLocale: true`)** | `v1.2.0` | `tempo-plugin-geo` | 📝 Planned |
-| **Proximity & Bounding Box Geofencing** | `v1.2.0` | `mapper.library` / `tempo-plugin-geo` | 📝 Planned |
-| **Pluggable Geocoding Provider Gateway** | `v1.3.0` | `tempo-plugin-geo` | 📝 Planned |
+| **Velocity & Impossible Travel** | `v1.3.0` | `mapper.library` / `tempo-plugin-geo` | ✅ Complete |
+| **Bearing & Midpoint Calculation** | `v1.3.0` | `mapper.library` / `tempo-plugin-geo` | ✅ Complete |
+| **`SolarTerm.noon` & `SolarTerm.solarTime`** | `v1.4.0` | `tempo-plugin-celestial` | 📝 Planned |
+| **Cultural Sync (`setLocale: true`)** | `v1.4.0` | `tempo-plugin-geo` | 📝 Planned |
+| **Proximity & Bounding Box Geofencing** | `v1.4.0` | `mapper.library` / `tempo-plugin-geo` | 📝 Planned |
+| **Pluggable Geocoding Provider Gateway** | `v1.5.0` | `tempo-plugin-geo` | 📝 Planned |

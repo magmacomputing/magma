@@ -441,5 +441,34 @@ describe('Tempo Plugin: Geo', () => {
 			expect(typeof apparent).toBe('number');
 			expect(apparent).toBe(3.51);
 		});
+
+		it('should calculate compass bearing and geographic midpoint via Tempo.geo static namespace', () => {
+			const bearing = Tempo.geo.bearing(sydney, melbourne);
+			expect(bearing).toBe(230.3);
+
+			const midpoint = Tempo.geo.midpoint(sydney, melbourne);
+			expect(midpoint).toEqual({
+				latitude: -35.882,
+				longitude: 148.164,
+				sphere: 'south',
+			});
+		});
+
+		it('should calculate velocity and detect impossible travel anomalies via Tempo.geo static namespace', () => {
+			// Sydney 10:00 to Melbourne 12:00 (2 hours elapsed, ~713.4 km)
+			const speedKmh = Tempo.geo.velocity(sydney, melbourne, 'km');
+			expect(speedKmh).toBe(356.71);
+
+			// Not impossible travel for commercial aircraft
+			expect(Tempo.geo.isImpossibleTravel(sydney, melbourne)).toBe(false);
+
+			// Supersonic / simultaneous anomaly: Tokyo 1 hour later (sydney is 23:00Z, tokyo is 00:00Z)
+			const tokyo = new Tempo('2026-10-24T00:00:00Z', {
+				geo: { lat: 35.6762, lng: 139.6503 },
+			});
+			const speedTokyo = Tempo.geo.velocity(sydney, tokyo, 'km');
+			expect(speedTokyo).toBeGreaterThan(7000);
+			expect(Tempo.geo.isImpossibleTravel(sydney, tokyo)).toBe(true);
+		});
 	});
 });

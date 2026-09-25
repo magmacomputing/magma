@@ -80,6 +80,12 @@ const t = new Tempo('2026-06-21', { geo: coords });
 | `Tempo.geo.lookup(opts?)` | Universal geolocation lookup (browser hardware GPS or server IP lookup) cached for 24h. Supports `{ refresh: true }`. |
 | `Tempo.geo.resolve(input, opts?)` | Asynchronously resolves coordinates from an instance, configuration, or ambient storage cache. |
 | `Tempo.geo.coerce(input)` | Pure function normalizing various coordinate formats (`lat/lng`, `latitude/longitude`, etc.) into a canonical `GeoConfig`. |
+| `Tempo.geo.distance(from, to, unit?)` | Calculates Great-Circle distance using Haversine formula (`'km'`, `'miles'`, `'m'`). |
+| `Tempo.geo.bearing(from, to, opts?)` | Calculates Great-Circle forward azimuth compass bearing in degrees ($0^\circ$ to $360^\circ$). |
+| `Tempo.geo.midpoint(from, to)` | Computes Great-Circle geographic midpoint with automatic hemisphere inference (`{ latitude, longitude, sphere }`). |
+| `Tempo.geo.velocity(from, to, opts?)` | Computes travel speed/velocity between two timestamped geographic instances in `km/h`, `mph`, or `m/s`. |
+| `Tempo.geo.isImpossibleTravel(from, to, opts?)` | Detects impossible travel anomalies (e.g. concurrent logins exceeding commercial flight speeds of 900 km/h). |
+| `Tempo.geo.solarOffset(coords, opts?)` | Calculates natural solar time offset between civil clock time and solar noon based on meridian drift. |
 | `Tempo.geo.stash(coords, ttl?, keyOrOpts?)` | Stashes coordinates in storage with an optional custom TTL (default: 24h) and multi-tenant partitioning. |
 | `Tempo.geo.clear(keyOrOpts?)` | Purges stashed coordinates from storage. |
 | `Tempo.geo.get(keyOrOpts?)` | Reads stashed coordinates for the specified tenant/IP or ambient default. |

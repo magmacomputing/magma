@@ -10,11 +10,19 @@ import {
 	GEO_PROPERTIES,
 	haversineDistance,
 	solarOffset,
+	calculateBearing,
+	calculateMidpoint,
+	calculateVelocity,
+	isImpossibleTravel,
 	type GeoLookupResult,
 	type ResolvedCoordinates,
 	type GeoConfig,
 	type CoordinateInput,
 	type DistanceUnit,
+	type TimeUnit,
+	type BearingOptions,
+	type VelocityOptions,
+	type ImpossibleTravelOptions,
 	type SolarOffsetOptions,
 	type SolarOffsetUnit,
 } from '@magmacomputing/library/runtime/mapper.library.js';
@@ -41,6 +49,10 @@ export {
 	GEO_PROPERTIES,
 	haversineDistance,
 	solarOffset,
+	calculateBearing,
+	calculateMidpoint,
+	calculateVelocity,
+	isImpossibleTravel,
 	serverGeoLocation,
 	serverGeoCoords,
 	serverMapHemisphere,
@@ -53,6 +65,10 @@ export type {
 	GeoConfig,
 	CoordinateInput,
 	DistanceUnit,
+	TimeUnit,
+	BearingOptions,
+	VelocityOptions,
+	ImpossibleTravelOptions,
 	SolarOffsetOptions,
 	SolarOffsetUnit,
 	ServerMapOpts,
@@ -71,6 +87,14 @@ export interface TempoGeoNamespace {
 	readonly coerce: typeof coerceGeo;
 	/** Calculates Great-Circle distance between two coordinates using Haversine formula */
 	readonly distance: typeof haversineDistance;
+	/** Calculates initial forward azimuth compass bearing (0° to 360°) between two coordinates */
+	readonly bearing: typeof calculateBearing;
+	/** Calculates geographic midpoint along Great-Circle path between two coordinates */
+	readonly midpoint: typeof calculateMidpoint;
+	/** Calculates velocity / travel speed between two timestamped geographic instances */
+	readonly velocity: typeof calculateVelocity;
+	/** Checks if travel speed between two timestamped instances represents an impossible travel anomaly */
+	readonly isImpossibleTravel: typeof isImpossibleTravel;
 	/** Calculates Natural Solar Time Offset between civil clock time and actual solar noon */
 	readonly solarOffset: typeof solarOffset;
 	/** Explicitly stashes coordinates into storage with optional TTL (default 24h) and multi-tenant partitioning */
@@ -116,6 +140,10 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 				resolve: (target?: any, opts?: Record<string, any>) => resolveGeoCoordinates(target, getEffectiveOptions(opts, target)),
 				coerce: coerceGeo,
 				distance: haversineDistance,
+				bearing: calculateBearing,
+				midpoint: calculateMidpoint,
+				velocity: calculateVelocity,
+				isImpossibleTravel,
 				solarOffset,
 				stash: stashGeo,
 				clear: clearStashedGeo,
