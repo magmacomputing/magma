@@ -158,12 +158,38 @@ if (t.ai?.limits?.remainingRequests !== undefined) {
   console.log('⏱️ Quota:    ', \`\${t.ai.limits.remainingRequests} req remaining (resets at \${resetStr})\`);
 }
 
-return t.iso;`
+return t.iso;`,
+
+  holidays: `// 🏖️ Regional Public Holidays & SLA Business Days (@magmacomputing/tempo-plugin-holidays)
+const { HolidaysPlugin } = await import('@magmacomputing/tempo-plugin-holidays');
+Tempo.use(HolidaysPlugin);
+
+// 1. Evaluate holiday by country or instance geo metadata
+const christmas = new Tempo('2026-12-25', { geo: { country: 'US' } });
+console.log('Is Christmas Day holiday in US?', christmas.holidays.isHoliday());
+console.log('Holiday Name:', christmas.holidays.name);
+console.log('Is Business Day?', christmas.holidays.isBusinessDay());
+
+// 2. Next & previous business day arithmetic
+const nextWorkDay = christmas.holidays.nextBusinessDay();
+console.log('Next Business Day after Christmas:', nextWorkDay.format('{www}, {dd} {mon} {yyyy}'));
+
+// 3. Add N working business days
+const deadline = christmas.holidays.addBusinessDays(5);
+console.log('5 Business Days later:', deadline.format('{www}, {dd} {mon} {yyyy}'));
+
+// 4. SLA Working Hours calculation
+const ticketOpened = new Tempo('2026-01-23 15:00:00', { geo: { country: 'AU' } });
+const ticketResolved = new Tempo('2026-01-27 11:00:00', { geo: { country: 'AU' } });
+const hours = ticketOpened.holidays.workingHoursUntil(ticketResolved);
+console.log('SLA Working Hours (9am-5pm window):', hours, 'hours');
+
+return \`Christmas: \${christmas.holidays.name} (Next work day: \${nextWorkDay.format('{www}, {dd} {mon}')})\`;`
 };
 
 const activeSnippet = computed(() => {
   if (props.snippet && props.snippet.trim().length > 0) return props.snippet.trim();
-  return DEFAULT_SNIPPETS[props.plugin] ?? `// ⚡ Interactive Demo for ${props.plugin}\nconst t = new Tempo();\nconsole.log(t.format());\nreturn t.iso;`;
+  return DEFAULT_SNIPPETS[props.plugin] ?? `// ⚡ Interactive Demo for ${props.plugin}\nconst t = new Tempo();\nconsole.log(t.format('{yyyy}-{mm}-{dd}'));\nreturn t.iso;`;
 });
 
 const iframeSrc = computed(() => {
