@@ -45,7 +45,6 @@ export const generateNzHolidays: HolidayCalendarGenerator = (year: number, regio
 			addHoliday(formatDate(year, 1, 4), "Day after New Year's Day (Observed)", true);
 		} else if (nyDow === 7) {
 			addHoliday(formatDate(year, 1, 3), "New Year's Day (Observed)", true);
-			addHoliday(formatDate(year, 1, 4), "Day after New Year's Day (Observed)", true);
 		} else if (nyDow === 5) {
 			addHoliday(formatDate(year, 1, 4), "Day after New Year's Day (Observed)", true);
 		}
@@ -93,7 +92,6 @@ export const generateNzHolidays: HolidayCalendarGenerator = (year: number, regio
 			addHoliday(formatDate(year, 12, 28), 'Boxing Day (Observed)', true);
 		} else if (cDow === 7) {
 			addHoliday(formatDate(year, 12, 27), 'Christmas Day (Observed)', true);
-			addHoliday(formatDate(year, 12, 28), 'Boxing Day (Observed)', true);
 		} else if (cDow === 5) {
 			addHoliday(formatDate(year, 12, 28), 'Boxing Day (Observed)', true);
 		}

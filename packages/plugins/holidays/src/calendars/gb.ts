@@ -75,7 +75,6 @@ export const generateGbHolidays: HolidayCalendarGenerator = (year: number, regio
 			addHoliday(formatDate(year, 12, 28), 'Boxing Day (Observed)', true);
 		} else if (cDow === 7) {
 			addHoliday(formatDate(year, 12, 27), 'Christmas Day (Observed)', true);
-			addHoliday(formatDate(year, 12, 28), 'Boxing Day (Observed)', true);
 		} else if (cDow === 5) {
 			addHoliday(formatDate(year, 12, 28), 'Boxing Day (Observed)', true);
 		}

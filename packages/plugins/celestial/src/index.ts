@@ -15,6 +15,7 @@ import {
 	TIDAL_PHASE_STATES,
 } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
+import { isNumber } from '@magmacomputing/tempo/library';
 import type {
 	LunarPhaseKey,
 	LunarPhaseName,
@@ -30,7 +31,7 @@ import type {
 	EclipseType,
 	EclipseResult,
 } from '@magmacomputing/tempo-fns';
-import { getCelestialCoordinates, toDateTimeFields, toTempoOrNull, getLunarDetails, createCelestialTermHandlers, isNumber } from './util.js';
+import { getCelestialCoordinates, toDateTimeFields, toTempoOrNull, getLunarDetails, createCelestialTermHandlers } from './util.js';
 
 
 export type {

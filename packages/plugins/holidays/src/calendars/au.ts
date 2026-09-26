@@ -94,9 +94,8 @@ export const generateAuHolidays: HolidayCalendarGenerator = (year: number, regio
 			addHoliday(formatDate(year, 12, 27), 'Christmas Day (Observed)', true);
 			addHoliday(formatDate(year, 12, 28), `${boxingName} (Observed)`, true);
 		} else if (cDow === 7) {
-			// Sunday Christmas -> Monday 27 Dec & Tuesday 28 Dec
+			// Sunday Christmas -> Tuesday 27 Dec (Boxing Day is already Monday 26 Dec)
 			addHoliday(formatDate(year, 12, 27), 'Christmas Day (Observed)', true);
-			addHoliday(formatDate(year, 12, 28), `${boxingName} (Observed)`, true);
 		} else if (cDow === 5) {
 			// Friday Christmas -> Boxing Day Saturday -> Monday 28 Dec
 			addHoliday(formatDate(year, 12, 28), `${boxingName} (Observed)`, true);

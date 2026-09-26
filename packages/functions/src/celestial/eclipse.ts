@@ -73,7 +73,9 @@ export function getEclipse(
 	const haMoonTopo = normalizeHourAngle(lstRad - raMoonTopo);
 	const altMoonRad = calculateAltitudeRad(latRad, decMoonTopo, haMoonTopo);
 	const altMoonDeg = altMoonRad / rad;
-	const isMoonAboveHorizon = altMoonDeg >= getLunarHorizonThreshold(hp);
+	const haMoonGeo = normalizeHourAngle(lstRad - ra);
+	const altMoonGeoRad = calculateAltitudeRad(latRad, dec, haMoonGeo);
+	const isMoonAboveHorizon = (altMoonGeoRad / rad) >= getLunarHorizonThreshold(hp);
 
 	const { distanceKm: _distKm, angularDiameterArcmin } = getLunarDistanceMetrics(hp);
 	const rMoonDeg = (angularDiameterArcmin / 2) / 60;

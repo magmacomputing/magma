@@ -131,7 +131,9 @@ export function getTidalState(
 		let high2 = Math.round(tLower + offsetMs);
 
 		while (high1 < epochMs) high1 += Math.round(LUNAR_DAY_MS);
+		while (high1 - Math.round(LUNAR_DAY_MS) >= epochMs) high1 -= Math.round(LUNAR_DAY_MS);
 		while (high2 < epochMs) high2 += Math.round(LUNAR_DAY_MS);
+		while (high2 - Math.round(LUNAR_DAY_MS) >= epochMs) high2 -= Math.round(LUNAR_DAY_MS);
 
 		const nextHighTideMs = Math.min(high1, high2);
 

@@ -1,24 +1,18 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { getLunarPhase } from '@magmacomputing/tempo-fns';
+
+import { isNumber, isReference, isArray, isDefined } from '@magmacomputing/tempo/library';
 import type { LunarPhaseResult } from './index.js';
-
-export function isNumber(val: any): val is number {
-	return typeof val === 'number' && Number.isFinite(val);
-}
-
-export function isObject(val: any): val is Record<string, any> {
-	return val !== null && typeof val === 'object' && !Array.isArray(val);
-}
 
 /**
  * Validates that geographic coordinates are finite numbers within valid terrestrial bounds (-90..90 lat, -180..180 lng).
  * @internal
  */
-export function isValidGeo(geo: any): geo is { latitude: number; longitude: number } {
-	if (!isObject(geo)) return false;
+export function isValidGeo(geo: any): geo is { latitude?: number; longitude?: number; lat?: number; lng?: number; long?: number } {
+	if (!isReference(geo) || isArray(geo)) return false;
 
-	const lat = geo.latitude;
-	const lng = geo.longitude;
+	const lat = geo.latitude ?? geo.lat;
+	const lng = geo.longitude ?? geo.lng ?? geo.long;
 
 	const isLatValid = isNumber(lat) && lat >= -90 && lat <= 90;
 	const isLngValid = isNumber(lng) && lng >= -180 && lng <= 180;
@@ -45,14 +39,14 @@ export function getCelestialCoordinates(t: Tempo, anchor?: any): {
 } {
 	const refTempo = (anchor instanceof Tempo)
 		? anchor
-		: (anchor != null
+		: (isDefined(anchor)
 			? new Tempo(isNumber(anchor) ? new Date(anchor) : anchor, (t as any).config)
 			: t);
 
-	const geo = refTempo.geo ?? null;
+	const geo = refTempo.geo ?? (refTempo as any).config?.geo ?? null;
 	const hasGeo = isValidGeo(geo);
-	const latVal = hasGeo ? geo.latitude : undefined;
-	const lngVal = hasGeo ? geo.longitude : undefined;
+	const latVal = hasGeo ? (geo.latitude ?? geo.lat) : undefined;
+	const lngVal = hasGeo ? (geo.longitude ?? geo.lng ?? geo.long) : undefined;
 	const timeZone = refTempo.tz ?? 'UTC';
 
 	const sphere = refTempo.sphere as 'north' | 'south' | undefined;

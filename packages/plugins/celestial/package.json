@@ -39,6 +39,9 @@
     "test": "vitest run -c ../vitest.shared.ts",
     "prepublishOnly": "tempo-cli prepublish"
   },
+  "dependencies": {
+    "@magmacomputing/tempo-fns": "^1.0.0"
+  },
   "peerDependencies": {
     "@magmacomputing/tempo": "^4.4.0"
   },

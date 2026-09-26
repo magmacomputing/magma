@@ -364,13 +364,13 @@ export function getSunriseSunset(
 	if (isDaylight) {
 		solarPhaseState = 'daylight';
 		index = 5;
-	} else if (civil.sunriseMs !== null && civil.sunsetMs !== null && ((epochMs >= civil.sunriseMs && (sunriseMs === null || epochMs < sunriseMs)) || ((sunsetMs !== null && epochMs > sunsetMs) && epochMs <= civil.sunsetMs) || (sunriseMs === null && sunsetMs === null && epochMs >= civil.sunriseMs && epochMs <= civil.sunsetMs))) {
+	} else if (civil.sunriseMs !== null && civil.sunsetMs !== null && (((sunriseMs !== null && epochMs >= civil.sunriseMs && epochMs < sunriseMs)) || ((sunsetMs !== null && epochMs > sunsetMs) && epochMs <= civil.sunsetMs) || (sunriseMs === null && sunsetMs === null && epochMs >= civil.sunriseMs && epochMs <= civil.sunsetMs))) {
 		solarPhaseState = 'civil-twilight';
 		index = 4;
-	} else if (nautical.sunriseMs !== null && nautical.sunsetMs !== null && ((epochMs >= nautical.sunriseMs && (civil.sunriseMs === null || epochMs < civil.sunriseMs)) || ((civil.sunsetMs !== null && epochMs > civil.sunsetMs) && epochMs <= nautical.sunsetMs) || (civil.sunriseMs === null && civil.sunsetMs === null && epochMs >= nautical.sunriseMs && epochMs <= nautical.sunsetMs))) {
+	} else if (nautical.sunriseMs !== null && nautical.sunsetMs !== null && (((civil.sunriseMs !== null && epochMs >= nautical.sunriseMs && epochMs < civil.sunriseMs)) || ((civil.sunsetMs !== null && epochMs > civil.sunsetMs) && epochMs <= nautical.sunsetMs) || (civil.sunriseMs === null && civil.sunsetMs === null && epochMs >= nautical.sunriseMs && epochMs <= nautical.sunsetMs))) {
 		solarPhaseState = 'nautical-twilight';
 		index = 3;
-	} else if (astronomical.sunriseMs !== null && astronomical.sunsetMs !== null && ((epochMs >= astronomical.sunriseMs && (nautical.sunriseMs === null || epochMs < nautical.sunriseMs)) || ((nautical.sunsetMs !== null && epochMs > nautical.sunsetMs) && epochMs <= astronomical.sunsetMs) || (nautical.sunriseMs === null && nautical.sunsetMs === null && epochMs >= astronomical.sunriseMs && epochMs <= astronomical.sunsetMs))) {
+	} else if (astronomical.sunriseMs !== null && astronomical.sunsetMs !== null && (((nautical.sunriseMs !== null && epochMs >= astronomical.sunriseMs && epochMs < nautical.sunriseMs)) || ((nautical.sunsetMs !== null && epochMs > nautical.sunsetMs) && epochMs <= astronomical.sunsetMs) || (nautical.sunriseMs === null && nautical.sunsetMs === null && epochMs >= astronomical.sunriseMs && epochMs <= astronomical.sunsetMs))) {
 		solarPhaseState = 'astronomical-twilight';
 		index = 2;
 	} else {

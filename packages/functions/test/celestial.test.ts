@@ -81,6 +81,12 @@ describe('Astro Pure Functions (tempo-fns)', () => {
 		const nightRes = getSunriseSunset(new Date('2026-06-21T12:00:00Z'), { lat: -33.8688, lng: 151.2093 });
 		expect(nightRes.solarPhaseState).toBe('night');
 		expect(nightRes.index).toBe(1); // 1-based (1 = night)
+
+		// Tromsø, Norway (lat 69.6492, lng 18.9553) polar night evening (Dec 21 at 20:00 UTC) -> night
+		const tromsoNight = getSunriseSunset(new Date('2026-12-21T20:00:00Z'), { lat: 69.6492, lng: 18.9553 });
+		expect(tromsoNight.isPolarNight).toBe(true);
+		expect(tromsoNight.solarPhaseState).toBe('night');
+		expect(tromsoNight.index).toBe(1);
 	});
 
 	it('factors elevation into apparent sunrise/sunset and daylight duration via horizon dip', () => {

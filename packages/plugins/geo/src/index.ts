@@ -46,7 +46,7 @@ import {
 import {
 	geoLocation,
 } from '@magmacomputing/library/browser/mapper.library.js';
-import { isString, isNumber, isObject, isEmpty, isSafeKey } from '@magmacomputing/library/primitives/assertion.library.js';
+import { isString, isNumber, isObject, isEmpty, isSafeKey } from '@magmacomputing/tempo/library';
 import type { MutableObject } from '@magmacomputing/library/primitives/type.library.js';
 
 export {

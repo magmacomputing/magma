@@ -35,7 +35,16 @@ export const generateUsHolidays: HolidayCalendarGenerator = (year: number, regio
 	};
 
 	// 1. New Year's Day (Jan 1)
-	addFixedWithObservation(1, 1, "New Year's Day");
+	addHoliday(formatDate(year, 1, 1), "New Year's Day");
+	if (includeObserved) {
+		const nyObserved = getUsObservedDate(year, 1, 1);
+
+		if (nyObserved && nyObserved.startsWith(`${year}-`))
+			addHoliday(nyObserved, "New Year's Day (Observed)", true);
+
+		if (getIsoDayOfWeek(year + 1, 1, 1) === 6)
+			addHoliday(formatDate(year, 12, 31), "New Year's Day (Observed)", true);
+	}
 
 	// 2. Martin Luther King Jr. Day (3rd Monday in January)
 	addHoliday(getNthWeekdayOfMonth(year, 1, 1, 3), 'Martin Luther King Jr. Day');

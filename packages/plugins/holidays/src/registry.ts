@@ -100,12 +100,20 @@ export function normalizeCountryCode(countryCode?: string): string {
 	// Check direct alpha-3 / alias map
 	if (ALPHA3_TO_ALPHA2[raw]) return ALPHA3_TO_ALPHA2[raw]!;
 
-	// Handle locale tags like 'en-AU' or subdivision like 'AU-NSW'
+	// Handle locale tags like 'en-AU' or subdivision like 'US-NY'
 	if (raw.includes('-')) {
+		try {
+			const loc = new Intl.Locale(raw);
+			if (loc.region) {
+				const r = loc.region.toUpperCase();
+				return ALPHA3_TO_ALPHA2[r] ?? r;
+			}
+		} catch {
+			// Ignore locale parsing errors for non-standard tags
+		}
 		const parts = raw.split('-');
-		const countryPart = parts.find(p => p.length === 2) ?? parts[0]!;
-		const norm = countryPart.toUpperCase();
-		return ALPHA3_TO_ALPHA2[norm] ?? norm.slice(0, 2);
+		const firstPart = parts[0]!.toUpperCase();
+		return ALPHA3_TO_ALPHA2[firstPart] ?? firstPart.slice(0, 2);
 	}
 
 	return raw.slice(0, 2);
@@ -150,9 +158,18 @@ export function getCalendarHolidays(year: number, options: HolidayOptions = {}):
 					? items.filter(item => !item.region || item.region.toUpperCase().replace(/^[A-Z]{2}-/, '') === normRegion)
 					: items;
 			} else {
-				// Fallback to default US generator if neither built-in nor preloaded
-				const generator = generateUsHolidays;
-				list = generator(year, region, includeObserved);
+				// If country has neither built-in nor preloaded calendar, return empty array without caching
+				const customList: HolidayItem[] = [];
+				if (options.customHolidays && options.customHolidays.length > 0) {
+					const customItems: HolidayItem[] = options.customHolidays.map(date => ({
+						date,
+						name: 'Custom Holiday',
+						country,
+						region,
+					}));
+					return customItems.sort((a, b) => a.date.localeCompare(b.date));
+				}
+				return customList;
 			}
 		}
 		cache.set(cacheKey, list);

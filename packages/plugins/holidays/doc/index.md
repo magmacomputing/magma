@@ -15,7 +15,7 @@ The **Regional Holidays Plugin** provides bank holiday resolution, weekend obser
 - **Zero-Latency Built-in Calendars**: Instant synchronous holiday calculation for US, Australia, United Kingdom, Canada, Germany, France, Japan, and New Zealand.
 - **`t.geo.country` Resolution Cascade**: Automatically resolves national calendars via explicit option, `tempo.geo.country`, `tempo.intl.region`, or BCP-47 `tempo.locale`.
 - **Global Long-Tail Coverage (100+ Countries)**: Dynamic async preloading via `@magmacomputing/tempo-fns` with automatic 24-hour TTL caching in runtime storage.
-- **SLA Working Hours Calculation**: `t.workingHoursUntil(deadline)` calculates business hours between dates, taking into account working hour windows, weekends, and regional holidays.
+- **SLA Working Hours Calculation**: `t.holidays.workingHoursUntil(deadline)` calculates business hours between dates, taking into account working hour windows, weekends, and regional holidays.
 - **Cultural Weekend Awareness**: Automatically respects cultural workweeks (e.g. Friday/Saturday weekend in Middle Eastern locales like `ar-SA`).
 
 ---

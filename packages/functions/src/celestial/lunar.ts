@@ -385,7 +385,7 @@ export function getLunarPosition(
 	const azDeg = normalizeDegrees(Math.atan2(yAz, xAz) / rad);
 
 	const targetAlt = getLunarHorizonThreshold(hp);
-	const isAboveHorizon = altDeg >= targetAlt;
+	const isAboveHorizon = (altGeoRad / rad) >= targetAlt;
 
 	const { distanceKm, angularDiameterArcmin } = getLunarDistanceMetrics(hp);
 	const transitMs = getLunarTransit(epochMs, lat, lng);

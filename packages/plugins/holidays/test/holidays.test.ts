@@ -13,6 +13,25 @@ import {
 } from '../src/index.js';
 import { getEasterSunday, getGoodFriday, getEasterMonday } from '../src/computus.js';
 
+vi.mock('@magmacomputing/tempo-fns', () => ({
+	getPublicHolidays: vi.fn(async (year: number, country: string) => {
+		if (country === 'IT') {
+			return [
+				{ date: `${year}-01-01`, name: "New Year's Day", localName: 'Capodanno', countryCode: 'IT', fixed: true, global: true, counties: null, launchYear: null, types: ['Public'] },
+				{ date: `${year}-05-01`, name: 'Labour Day', localName: 'Festa del Lavoro', countryCode: 'IT', fixed: true, global: true, counties: null, launchYear: null, types: ['Public'] },
+				{ date: `${year}-06-02`, name: 'Republic Day', localName: 'Festa della Repubblica', countryCode: 'IT', fixed: true, global: true, counties: null, launchYear: null, types: ['Public'] },
+			];
+		}
+		if (country === 'BR') {
+			return [
+				{ date: `${year}-09-07`, name: 'Independence Day', localName: 'Dia da Independência', countryCode: 'BR', fixed: true, global: true, counties: null, launchYear: null, types: ['Public'] },
+				{ date: `${year}-11-15`, name: 'Republic Proclamation Day', localName: 'Proclamação da República', countryCode: 'BR', fixed: true, global: true, counties: null, launchYear: null, types: ['Public'] },
+			];
+		}
+		return [];
+	}),
+}));
+
 // Auto-install plugin for OOP tests
 Tempo.use(HolidaysPlugin);
 

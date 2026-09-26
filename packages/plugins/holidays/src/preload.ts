@@ -46,12 +46,22 @@ export async function preloadHolidayCalendar(
 	// 3. Dynamic fetch via getPublicHolidays from @magmacomputing/tempo-fns
 	try {
 		const rawHolidays: PublicHoliday[] = await getPublicHolidays(year, country);
-		const items: HolidayItem[] = (rawHolidays || []).map((h: PublicHoliday) => ({
-			date: h.date,
-			name: h.name || h.localName,
-			country: h.countryCode,
-			region: h.counties && h.counties.length > 0 ? h.counties[0] : undefined,
-		}));
+		const items: HolidayItem[] = (rawHolidays || []).flatMap((h: PublicHoliday): HolidayItem[] => {
+			if (h.counties && h.counties.length > 0) {
+				return h.counties.map(c => ({
+					date: h.date,
+					name: h.name || h.localName,
+					country: h.countryCode,
+					region: c,
+				}));
+			}
+			return [{
+				date: h.date,
+				name: h.name || h.localName,
+				country: h.countryCode,
+				region: undefined,
+			}];
+		});
 
 		// Cache in persistent runtime storage with 24-hour TTL
 		setStorage(storageKey, items, { ttl: TTL_24_HOURS });
