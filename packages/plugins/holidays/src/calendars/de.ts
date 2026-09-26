@@ -28,7 +28,7 @@ export const generateDeHolidays: HolidayCalendarGenerator = (year: number, regio
 		addHoliday(formatDate(year, 1, 6), 'Epiphany', 'Heilige Drei Könige', reg);
 
 	// 3. Internationaler Frauentag (March 8 - BE from 2019, MV from 2023)
-	if (year >= 2019 && ['BE', 'MV'].includes(reg ?? ''))
+	if ((year >= 2019 && reg === 'BE') || (year >= 2023 && reg === 'MV'))
 		addHoliday(formatDate(year, 3, 8), "International Women's Day", 'Internationaler Frauentag', reg);
 
 	// 4. Karfreitag (Good Friday)

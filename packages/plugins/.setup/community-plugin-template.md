@@ -280,8 +280,15 @@ When introducing or retiring a plugin, register it across the browser REPL playg
      > [!NOTE]
      > Even though a new plugin is initially published at `v0.1.0` solely to register it on npmjs and configure Trusted Publishers (OIDC), the plugin is immediately bumped to `v1.0.0` for regular CI publishing via `publish.yml`. Therefore, always target `@^1` (or `@latest`) in the REPL import maps.
 
-3. **Dedicated Playground Preset (`DEFAULT_PRESETS` in `public/repl/index.html`)**:
-   - Add a domain-specific, runnable demonstration snippet under `DEFAULT_PRESETS` in `packages/tempo/public/repl/index.html` using the plugin's key name (e.g. `holidays`, `celestial`, `geo`):
+3. **Dedicated Playground Preset & Dropdown Option (`public/repl/index.html`)**:
+   - **Preset Dropdown Selector**: Add an `<option>` element inside `<select id="presetSelect">` in `packages/tempo/public/repl/index.html`:
+     ```html
+     <select id="presetSelect" title="Load Snippet Preset">
+       <!-- existing presets... -->
+       <option value="[name]">Preset: [Plugin Title & Features]</option>
+     </select>
+     ```
+   - **Preset Code Snippet**: Add a domain-specific, runnable demonstration snippet under `SNIPPETS` / `DEFAULT_PRESETS` in `packages/tempo/public/repl/index.html` using the plugin's key name (e.g. `holidays`, `celestial`, `geo`):
      ```javascript
      [name]: `// 🚀 [Plugin Name] Demo (@magmacomputing/tempo-plugin-[name])
      const { [PluginExport] } = await import('@magmacomputing/tempo-plugin-[name]');
@@ -293,7 +300,7 @@ When introducing or retiring a plugin, register it across the browser REPL playg
      return t.format(...);`,
      ```
      > [!IMPORTANT]
-     > Without this entry, navigating to `https://magmacomputing.github.io/magma/repl/index.html?plugin=[name]` cannot find a matching preset and will silently fall back to displaying the generic `quickstart` template.
+     > Without both the dropdown `<option>` and the snippet dictionary entry, users cannot interactively select the preset from the UI, and navigating to `https://magmacomputing.github.io/magma/repl/index.html?plugin=[name]` will silently fall back to displaying the generic `quickstart` template.
 
 4. **VitePress Ecosystem & Documentation Component**:
    - **`CatalogList.vue` (`packages/tempo/.vitepress/theme/components/CatalogList.vue`)**: Ensure the plugin's ID is assigned to an appropriate functional category in `DOMAIN_GROUPS` (e.g., `geo`, `celestial`, `business`, `system`, `ai`, `dialects`) so it is listed under the proper section on the `ecosystem.md` page.

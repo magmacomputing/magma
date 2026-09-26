@@ -10,6 +10,7 @@ import {
 	businessDaysBetween,
 	workingHoursBetween,
 	preloadHolidayCalendar,
+	normalizeCountryCode,
 } from '../src/index.js';
 import { getEasterSunday, getGoodFriday, getEasterMonday } from '../src/computus.js';
 
@@ -183,6 +184,11 @@ describe('@magmacomputing/tempo-plugin-holidays', () => {
 			const refDay = new Tempo('2026-10-31', { geo: { country: 'DE', region: 'BB' } });
 			expect(refDay.holidays.isHoliday()).toBe(true);
 			expect(refDay.holidays.name).toBe('Reformation Day');
+
+			// Frauentag (March 8): BE from 2019, MV from 2023
+			expect(new Tempo('2019-03-08', { geo: { country: 'DE', region: 'BE' } }).holidays.isHoliday()).toBe(true);
+			expect(new Tempo('2022-03-08', { geo: { country: 'DE', region: 'MV' } }).holidays.isHoliday()).toBe(false);
+			expect(new Tempo('2023-03-08', { geo: { country: 'DE', region: 'MV' } }).holidays.isHoliday()).toBe(true);
 		});
 
 		it('recognizes France Bastille Day and Armistice', () => {
@@ -373,6 +379,13 @@ describe('@magmacomputing/tempo-plugin-holidays', () => {
 
 			// Whitespace & case insensitivity
 			expect(isPublicHoliday(new Tempo('2026-01-26'), { country: ' aus ' })).toBe(true);
+
+			// Subdivision inputs resolve to country prefix rather than subdivision
+			expect(normalizeCountryCode('US-CA')).toBe('US');
+			expect(normalizeCountryCode('USA-CA')).toBe('US');
+			expect(normalizeCountryCode('DE-BY')).toBe('DE');
+			expect(normalizeCountryCode('AU-NSW')).toBe('AU');
+			expect(normalizeCountryCode('en-AU')).toBe('AU');
 		});
 
 		it('resolves region and strips ISO 3166-2 prefix correctly', () => {

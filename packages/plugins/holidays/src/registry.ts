@@ -102,6 +102,16 @@ export function normalizeCountryCode(countryCode?: string): string {
 
 	// Handle locale tags like 'en-AU' or subdivision like 'US-NY'
 	if (raw.includes('-')) {
+		const parts = raw.split('-');
+		const firstPart = parts[0]!.toUpperCase();
+
+		// Check if firstPart is an explicit subdivision prefix (e.g. 'US-CA', 'AU-NSW', 'USA-CA')
+		// where firstPart is a recognized country code or alias
+		if (ALPHA3_TO_ALPHA2[firstPart]) return ALPHA3_TO_ALPHA2[firstPart]!;
+		if (firstPart in BUILTIN_CALENDARS || Object.values(ALPHA3_TO_ALPHA2).includes(firstPart)) {
+			return firstPart;
+		}
+
 		try {
 			const loc = new Intl.Locale(raw);
 			if (loc.region) {
@@ -111,8 +121,7 @@ export function normalizeCountryCode(countryCode?: string): string {
 		} catch {
 			// Ignore locale parsing errors for non-standard tags
 		}
-		const parts = raw.split('-');
-		const firstPart = parts[0]!.toUpperCase();
+
 		return ALPHA3_TO_ALPHA2[firstPart] ?? firstPart.slice(0, 2);
 	}
 
