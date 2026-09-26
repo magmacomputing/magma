@@ -3,6 +3,7 @@ import {
 	getLunarTransit,
 	getLunarDistance,
 	getCrescentTilt,
+	getEclipse,
 } from '../src/index.js';
 
 describe('Lunar Ephemeris Pure Functions (tempo-fns)', () => {
@@ -93,6 +94,35 @@ describe('Lunar Ephemeris Pure Functions (tempo-fns)', () => {
 			expect(typeof res.parallacticAngleDeg).toBe('number');
 			expect(res.parallacticAngleDeg).toBeGreaterThanOrEqual(0);
 			expect(res.parallacticAngleDeg).toBeLessThan(360);
+		});
+	});
+
+	describe('getEclipse', () => {
+		it('detects Solar Eclipse on April 8, 2024 for Dallas TX', () => {
+			// Dallas TX coordinates (lat: 32.7767, lng: -96.7970) at ~18:40 UTC
+			const res = getEclipse('2024-04-08T18:40:00Z', 32.7767, -96.7970);
+
+			expect(res.type).toMatch(/solar/);
+			expect(res.obscuration).toBeGreaterThan(0.5);
+			expect(res.isVisible).toBe(true);
+			expect(res.separationArcmin).toBeLessThanOrEqual(15);
+		});
+
+		it('detects Total Lunar Eclipse on May 16, 2022', () => {
+			// May 16, 2022 ~04:12 UTC (New York lat: 40.7128, lng: -74.0060)
+			const res = getEclipse('2022-05-16T04:12:00Z', 40.7128, -74.0060);
+
+			expect(res.type).toBe('total-lunar');
+			expect(res.obscuration).toBe(1);
+			expect(res.isVisible).toBe(true);
+		});
+
+		it('returns null eclipse type on regular non-eclipse days', () => {
+			const res = getEclipse('2026-06-21T12:00:00Z', 51.5074, -0.1278);
+
+			expect(res.type).toBeNull();
+			expect(res.obscuration).toBe(0);
+			expect(res.isVisible).toBe(false);
 		});
 	});
 });

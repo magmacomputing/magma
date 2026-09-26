@@ -30,6 +30,12 @@ const comingSoonPlugins = computed(() => plugins.value.filter(p => !p.hidden && 
 
 const DOMAIN_GROUPS: DomainGroup[] = [
   {
+    id: 'geo',
+    title: '🌍 Geolocation & Regional Calendars',
+    description: 'Hardware GPS / IP geolocation resolution, cultural calendars, bank holidays, and SLA business day arithmetic.',
+    pluginIds: ['geo', 'holidays']
+  },
+  {
     id: 'celestial',
     title: '☀️ Celestial & Astronomical Science',
     description: 'Hemisphere-aware solar events, lunar phase tracking, solstices, and twilight boundaries.',
@@ -52,6 +58,12 @@ const DOMAIN_GROUPS: DomainGroup[] = [
     title: '⚡ High Performance & System Execution',
     description: 'Lock-free thread synchronization, continuous execution loops, and SAB multi-threading.',
     pluginIds: ['batch', 'sync', 'ticker']
+  },
+  {
+    id: 'dialects',
+    title: '🗣️ Formats & Dialects',
+    description: 'Format dialects for Unicode LDML/Luxon, Moment.js, and POSIX strftime compatibility.',
+    pluginIds: ['dialects']
   }
 ];
 

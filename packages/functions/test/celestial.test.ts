@@ -3,6 +3,7 @@ import {
 	getLunarPhaseRange,
 	getSolarEvents,
 	getSunriseSunset,
+	getSolarPosition,
 	getZodiacSign,
 	getChineseZodiac,
 	getTidalState,
@@ -58,18 +59,18 @@ describe('Astro Pure Functions (tempo-fns)', () => {
 	it('calculates sunrise and sunset with 1-based index and coordinate options object', () => {
 		// June 21, 2026 at 02:00 UTC (12:00 PM local time in Sydney)
 		const res = getSunriseSunset(new Date('2026-06-21T02:00:00Z'), { lat: -33.8688, lng: 151.2093 });
-		expect(res.sunriseMs).toBeLessThan(res.sunsetMs);
-		expect(res.solarNoonMs).toBeGreaterThan(res.sunriseMs);
-		expect(res.solarNoonMs).toBeLessThan(res.sunsetMs);
+		expect(res.sunriseMs!).toBeLessThan(res.sunsetMs!);
+		expect(res.solarNoonMs).toBeGreaterThan(res.sunriseMs!);
+		expect(res.solarNoonMs).toBeLessThan(res.sunsetMs!);
 		expect(res.daylightDurationMs).toBeGreaterThan(0);
 		expect(res.isDaylight).toBe(true);
 		expect(res.solarPhaseState).toBe('daylight');
 		expect(res.index).toBe(5); // 1-based (5 = daylight)
 		expect(res.civil).toBeDefined();
-		expect(res.civil.sunriseMs).toBeLessThan(res.sunriseMs);
-		expect(res.civil.sunsetMs).toBeGreaterThan(res.sunsetMs);
-		expect(res.nautical.sunriseMs).toBeLessThan(res.civil.sunriseMs);
-		expect(res.astronomical.sunriseMs).toBeLessThan(res.nautical.sunriseMs);
+		expect(res.civil.sunriseMs!).toBeLessThan(res.sunriseMs!);
+		expect(res.civil.sunsetMs!).toBeGreaterThan(res.sunsetMs!);
+		expect(res.nautical.sunriseMs!).toBeLessThan(res.civil.sunriseMs!);
+		expect(res.astronomical.sunriseMs!).toBeLessThan(res.nautical.sunriseMs!);
 
 		// Test alternative coordinate key formats (lat/long)
 		const res2 = getSunriseSunset(new Date('2026-06-21T02:00:00Z'), { lat: -33.8688, long: 151.2093 });
@@ -90,14 +91,14 @@ describe('Astro Pure Functions (tempo-fns)', () => {
 		const highAltitude = getSunriseSunset(date, { lat: 39.7392, lng: -104.9903, elevation: 1600 });
 
 		// Higher elevation causes horizon dip: sunrise is earlier, sunset is later
-		expect(highAltitude.sunriseMs).toBeLessThan(seaLevel.sunriseMs);
-		expect(highAltitude.sunsetMs).toBeGreaterThan(seaLevel.sunsetMs);
+		expect(highAltitude.sunriseMs!).toBeLessThan(seaLevel.sunriseMs!);
+		expect(highAltitude.sunsetMs!).toBeGreaterThan(seaLevel.sunsetMs!);
 		expect(highAltitude.daylightDurationMs).toBeGreaterThan(seaLevel.daylightDurationMs);
 		// Solar noon remains unchanged by elevation
 		expect(highAltitude.solarNoonMs).toBe(seaLevel.solarNoonMs);
 
 		// Difference in sunrise/sunset is approx 8.5 minutes for 1600m at latitude ~40°N
-		const diffMin = (seaLevel.sunriseMs - highAltitude.sunriseMs) / 60000;
+		const diffMin = (seaLevel.sunriseMs! - highAltitude.sunriseMs!) / 60000;
 		expect(diffMin).toBeGreaterThan(7);
 		expect(diffMin).toBeLessThan(10);
 		expect(highAltitude.elevation).toBe(1600);
@@ -160,4 +161,67 @@ describe('Astro Pure Functions (tempo-fns)', () => {
 		expect(neapTide.state).toBe('neap');
 		expect(neapTide.alignmentDeg).toBeGreaterThan(60);
 	});
+
+	it('calculates topocentric horizontal solar coordinates and photometric hours', () => {
+		// Sydney, Australia on Summer Solstice noon (~Dec 21 at 02:00 UTC)
+		const midday = getSolarPosition('2026-12-21T02:00:00Z', { lat: -33.8688, lng: 151.2093 });
+		expect(midday.altitude).toBeGreaterThan(70);
+		expect(midday.zenith).toBeLessThan(20);
+		expect(midday.isGoldenHour).toBe(false);
+		expect(midday.isBlueHour).toBe(false);
+		expect(midday.shadowRatio).toBeDefined();
+		expect(midday.shadowRatio).toBeGreaterThan(0);
+		expect(midday.shadowRatio).toBeLessThan(1); // High sun -> short shadow
+
+		// Midnight in Sydney (Sun far below horizon)
+		const midnight = getSolarPosition('2026-12-21T14:00:00Z', { lat: -33.8688, lng: 151.2093 });
+		expect(midnight.altitude).toBeLessThan(-30);
+		expect(midnight.shadowRatio).toBeNull();
+
+		// Golden hour check: sun altitude between -4° and +6°
+		const sunsetRes = getSunriseSunset('2026-12-21T02:00:00Z', { lat: -33.8688, lng: 151.2093 });
+		if (sunsetRes.sunsetMs) {
+			const goldenHourPos = getSolarPosition(sunsetRes.sunsetMs, { lat: -33.8688, lng: 151.2093 });
+			expect(goldenHourPos.isGoldenHour).toBe(true);
+		}
+	});
+
+	it('handles polar regions for Midnight Sun and Polar Night', () => {
+		// Tromsø, Norway (lat 69.6492, lng 18.9553) on June 21 (Summer Solstice: Midnight Sun)
+		const midnightSun = getSunriseSunset('2026-06-21T12:00:00Z', { lat: 69.6492, lng: 18.9553 });
+		expect(midnightSun.isMidnightSun).toBe(true);
+		expect(midnightSun.isPolarNight).toBe(false);
+		expect(midnightSun.isDaylight).toBe(true);
+		expect(midnightSun.solarPhaseState).toBe('daylight');
+		expect(midnightSun.sunriseMs).toBeNull();
+		expect(midnightSun.sunsetMs).toBeNull();
+		expect(midnightSun.daylightDurationMs).toBe(86400000);
+
+		// Tromsø, Norway on December 21 (Winter Solstice: Polar Night)
+		const polarNight = getSunriseSunset('2026-12-21T12:00:00Z', { lat: 69.6492, lng: 18.9553 });
+		expect(polarNight.isMidnightSun).toBe(false);
+		expect(polarNight.isPolarNight).toBe(true);
+		expect(polarNight.isDaylight).toBe(false);
+		expect(polarNight.sunriseMs).toBeNull();
+		expect(polarNight.sunsetMs).toBeNull();
+		expect(polarNight.daylightDurationMs).toBe(0);
+	});
+
+	it('calculates local coastal high and low tide predictions and lunitidal port calibration', () => {
+		const sydneyCoords = { lat: -33.8688, lng: 151.2093 };
+		const tide = getTidalState('2026-03-03T12:00:00Z', sydneyCoords);
+
+		expect(tide.nextHighTideMs).toBeDefined();
+		expect(tide.nextLowTideMs).toBeDefined();
+		expect(tide.nextHighTideMs).toBeGreaterThanOrEqual(new Date('2026-03-03T12:00:00Z').getTime());
+		expect(tide.nextLowTideMs).toBeGreaterThanOrEqual(new Date('2026-03-03T12:00:00Z').getTime());
+		expect(tide.regime).toBe('semi-diurnal');
+		expect(tide.lunitidalIntervalMin).toBe(0);
+
+		// Custom lunitidal interval offset (+120 min)
+		const customTide = getTidalState('2026-03-03T12:00:00Z', { ...sydneyCoords, lunitidalIntervalMin: 120 });
+		expect(customTide.lunitidalIntervalMin).toBe(120);
+		expect(customTide.nextHighTideMs).toBeGreaterThan(tide.nextHighTideMs!);
+	});
 });
+

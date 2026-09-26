@@ -23,7 +23,7 @@ npm install @magmacomputing/tempo-plugin-celestial
 Explore detailed guides on specific celestial capabilities:
 
 - **[Solar Day Cycles & Ephemeris](./solar.md)**: Twilight bands (`civil`, `nautical`, `astronomical`), atmospheric elevation dip correction, exact apparent solar noon (`solar.noon`), and Local Apparent Solar Time (`solar.solarTime`).
-- **[Lunar Ephemeris & Phases](./lunar.md)**: 8 synodic lunar phases, illumination ratio, lunar age, hemisphere-aware emojis, and local `moonrise`/`moonset` events.
+- **[Lunar Ephemeris, Topocentric Ephemeris & Eclipses](./lunar.md)**: 8 synodic lunar phases, illumination ratio, lunar age, hemisphere-aware emojis, topocentric horizon events (`moonrise`/`moonset`), meridian transits (`transit`), real-time sky position (`altitude`/`azimuth`), crescent tilt (`crescentTiltDeg`), orbital distance (`isSupermoon`/`isMicromoon`), and local solar/lunar eclipse detection (`eclipse`/`obscuration`).
 - **[Astronomical Tidal Mechanics](./tides.md)**: Syzygy, quadrature, and perigee calculations (`spring`, `neap`, `king` tides), solar-lunar alignment angles, and 745-minute tidal cycles.
 
 ---
@@ -31,8 +31,9 @@ Explore detailed guides on specific celestial capabilities:
 ## Features Overview
 
 - **Solar Day Cycles**: Calculates `daylight`, `night`, `civil-twilight`, `nautical-twilight`, and `astronomical-twilight`.
-- **Ephemeris Data**: Returns `sunrise`, `sunset`, `noon`, `solarTime` (Local Apparent Solar Time), total `daylightDurationMs`, and observer `elevation` horizon dip adjustments.
-- **Lunar Phase & Ephemeris**: Calculates 8 discrete lunar phase states (`new-moon`, `waxing-crescent`, etc.), illumination (0.0–1.0), age in days, hemisphere-aware emojis, and location-aware `moonrise` and `moonset` events.
+- **Solar Ephemeris Data**: Returns `sunrise`, `sunset`, `noon`, `solarTime` (Local Apparent Solar Time), total `daylightDurationMs`, and observer `elevation` horizon dip adjustments.
+- **Lunar Phase & Topocentric Ephemeris**: Calculates 8 discrete lunar phase states, illumination fraction (0.0–1.0), age in days, hemisphere-aware emojis, local `moonrise` and `moonset` events, meridian transit (`transit`), topocentric position (`altitude`/`azimuth`), bright limb crescent tilt (`crescentTiltDeg`), and orbital distance (`distanceKm`, `angularDiameterArcmin`, `isSupermoon`, `isMicromoon`).
+- **Local Eclipse Obscuration**: Detects active solar and lunar eclipses (`'total-solar'`, `'annular-solar'`, `'partial-solar'`, `'total-lunar'`, `'partial-lunar'`, `'penumbral-lunar'`) and computes local disk obscuration fraction (`0.0` to `1.0`).
 - **Astronomical Tidal Mechanics**: Provides pure astronomical solar/lunar alignment calculations (`t.term.tide`, `t.term.tides`) for `spring`, `neap`, and `normal` tides, alongside `isKingTide` perigee indicators.
 
 ---
@@ -40,12 +41,12 @@ Explore detailed guides on specific celestial capabilities:
 ## Geographic Coordinates & Null Contract
 
 ::: tip Pure Astronomical Calculations
-Tidal state resolution relies exclusively on deterministic celestial mechanics (solar-lunar ecliptic longitude alignment Δλ and anomalistic lunar perigee proximity) for reproducible, offset-independent math across all time zones.
+Tidal state resolution and synodic lunar phases rely on deterministic celestial mechanics for reproducible, offset-independent math across all time zones.
 :::
 
 ::: warning Location-Dependent Null Contract
-- **Global Astronomical Properties** (`t.term.moon`, `t.term.lunar.phase`, `t.term.tides.isSpringTide`, `t.term.tides.alignmentDeg`) resolve location-independently and are always computed.
-- **Geo-Dependent Properties** (`t.term.sun`, `solar.sunrise`, `solar.sunset`, `solar.noon`, `solar.solarTime`, `lunar.moonrise`, `lunar.moonset`, `tides.lunarTideMinute`) evaluate to `null` when geographic coordinates (`geo: { lat, lng }`) are omitted.
+- **Global Astronomical Properties** (`t.term.moon`, `t.term.lunar.phase`, `t.term.lunar.illumination`, `t.term.tides.isSpringTide`, `t.term.tides.alignmentDeg`) resolve location-independently and are always computed.
+- **Geo-Dependent Properties** (`t.term.sun`, `solar.sunrise`, `solar.sunset`, `solar.noon`, `solar.solarTime`, `lunar.moonrise`, `lunar.moonset`, `lunar.transit`, `lunar.altitude`, `lunar.azimuth`, `lunar.crescentTiltDeg`, `lunar.distanceKm`, `lunar.eclipse`, `lunar.obscuration`, `tides.lunarTideMinute`) evaluate to `null` when geographic coordinates (`geo: { lat, lng }`) are omitted.
 - **Distinction**: Property access on `t.term` evaluates to `undefined` if `CelestialPlugin` is not loaded, and to `null` if the plugin is active but location coordinates were not supplied. When `debug >= 1` is enabled in `Tempo` configuration, a developer warning is logged when evaluating geo-dependent keys without coordinates.
 :::
 

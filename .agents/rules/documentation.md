@@ -2,7 +2,13 @@
 
 When composing, reviewing, or refactoring user documentation, guides, or README files across the monorepo (e.g., `packages/tempo/doc/`, `packages/plugins/*/doc/`, and `README.md` files):
 
-## 1. VitePress Heading Slug & Anchor Mismatch Guardrails
+## 1. Plugin Documentation Source of Truth (CRITICAL)
+- **NEVER edit files directly in `packages/tempo/doc/9-plugins/`**: That directory is a build artifact auto-harvested from `packages/plugins/<plugin-name>/doc/` during documentation build (`npm run docs:build` via `harvest-plugins`).
+- **Always edit plugin documentation in its source package**: e.g., `packages/plugins/celestial/doc/lunar.md`, `packages/plugins/ticker/doc/index.md`, etc.
+- Any direct edits made to `packages/tempo/doc/9-plugins/` will be overwritten and lost.
+
+## 2. VitePress Heading Slug & Anchor Mismatch Guardrails
+
 The public documentation site (GitHub Pages) is built with **VitePress**. VitePress generates heading anchors differently than GitHub’s markdown viewer. Always adhere to these rules when creating or linking to headings:
 
 ### A. Numbered Headings (Leading-Digit Prefix `_`)
@@ -51,5 +57,16 @@ The public documentation site (GitHub Pages) is built with **VitePress**. VitePr
   - **Cross-Platform Consistency**: Native UTF-8 characters render reliably everywhere—on npmjs.com, VitePress (GitHub Pages), GitHub Flavored Markdown (GFM), IDE markdown previews, and terminal/CLI pagers.
   - **Avoid Sanitizer Mangling**: HTML entities risk double-escaping (`&amp;rarr;`) or displaying as unrendered raw entity text depending on the sanitizer or markdown environment.
   - **Clean Slugs & Code Spans**: Prevents entity text from leaking into VitePress anchor generation or code spans.
+
+## 7. Prefer Plain Unicode Symbols Over LaTeX Formulas
+- **Do NOT use LaTeX / MathJax delimiters** (e.g., `$formula$`, `$$formula$$`, `\text{...}`, `\approx`, `\times`, `\sqrt{...}`, `^\circ`) in documentation, markdown plans, or READMEs.
+- **Always use readable Unicode characters & plain notation**:
+  - Degree: `°` (e.g., `66.5°`, `-90°..+90°`)
+  - Multiplication: `×` (e.g., `0.0347° × √elevation`)
+  - Approximation & Comparison: `≈`, `≠`, `≤`, `≥`, `±`
+  - Exponents / Roots: `²`, `³`, `√`
+  - Greek letters & symbols: `Δ`, `α`, `δ`, `λ`, `φ`, `θ`
+- **Rationale**: VitePress, GitHub markdown renderers, npmjs, and IDE previews do not render LaTeX by default without custom MathJax/KaTeX plugins, leaving unsightly raw markup like `$\text{dip} \approx 0.0347^\circ$`. Plain Unicode is universally readable across all tools, terminals, and web renderers.
+
 
 

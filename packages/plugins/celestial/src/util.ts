@@ -1,7 +1,14 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { isNumber, isObject } from '@magmacomputing/tempo/library';
 import { getLunarPhase } from '@magmacomputing/tempo-fns';
 import type { LunarPhaseResult } from './index.js';
+
+export function isNumber(val: any): val is number {
+	return typeof val === 'number' && Number.isFinite(val);
+}
+
+export function isObject(val: any): val is Record<string, any> {
+	return val !== null && typeof val === 'object' && !Array.isArray(val);
+}
 
 /**
  * Validates that geographic coordinates are finite numbers within valid terrestrial bounds (-90..90 lat, -180..180 lng).

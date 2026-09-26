@@ -91,11 +91,11 @@
         "link": "/doc/9-plugins/celestial.solar"
       },
       {
-        "text": "Lunar Ephemeris, Phases & Moonrise/Moonset",
+        "text": "Lunar Ephemeris, Phases & Topocentric Position",
         "link": "/doc/9-plugins/celestial.lunar"
       },
       {
-        "text": "Astronomical Tidal Mechanics",
+        "text": "Astronomical Tidal Mechanics & Coastal Predictions",
         "link": "/doc/9-plugins/celestial.tides"
       }
     ]
@@ -131,6 +131,24 @@
       {
         "text": "Natural Solar Time Offset",
         "link": "/doc/9-plugins/geo.solar-offset"
+      }
+    ]
+  },
+  {
+    "text": "Holidays Plugin (@magmacomputing/tempo-plugin-holidays)",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/holidays.index"
+      },
+      {
+        "text": "Business Days & SLA Arithmetic",
+        "link": "/doc/9-plugins/holidays.business-days"
+      },
+      {
+        "text": "Regional Calendars & Dynamic Preloading",
+        "link": "/doc/9-plugins/holidays.regional-calendars"
       }
     ]
   },
