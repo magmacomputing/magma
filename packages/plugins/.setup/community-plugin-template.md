@@ -253,9 +253,27 @@ npm install --package-lock-only
 
 Update `.github/workflows/publish.yml` to enable manual `workflow_dispatch` provenance releases:
 
-1. **Add Checkbox Input**: Add `plugin_[name]` under `inputs:` with `type: boolean` (default: `false`) and description `'@magmacomputing/tempo-plugin-[name]'`.
-2. **Add to Input Resolution**: Add `[ "$INPUT_PLUGIN_[NAME]" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-[name]")` in the workflow bash script.
-3. *(Optional)* Even without adding a dedicated checkbox, any new plugin can be immediately published via the workflow's **Custom packages** text box by typing `[name]` or `@magmacomputing/tempo-plugin-[name]`.
+1. **Add Checkbox Input (`inputs:`)**: Add `plugin_[name]` with `type: boolean` (default: `false`):
+   ```yaml
+   plugin_[name]:
+     description: '@magmacomputing/tempo-plugin-[name]'
+     type: boolean
+     default: false
+   ```
+
+2. **Map Environment Variable (`env:`)**: Map the input under the `Resolve Target Packages & Build` step:
+   ```yaml
+   INPUT_PLUGIN_[NAME]: ${{ inputs.plugin_[name] }}
+   ```
+
+3. **Add to Batch Release Array (`PKGS=(`)**: Include `"@magmacomputing/tempo-plugin-[name]"` in the all-packages list for `INPUT_ALL: true` / release triggers.
+
+4. **Add to Individual Resolution Logic**:
+   ```bash
+   [ "$INPUT_PLUGIN_[NAME]" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-[name]")
+   ```
+
+5. *(Optional)* Even without adding a dedicated checkbox, any new plugin can be immediately published via the workflow's **Custom packages** text box by typing `[name]` or `@magmacomputing/tempo-plugin-[name]`.
 
 ### C. REPL Playground & Interactive Documentation Integration (`packages/tempo/public/repl/`)
 
