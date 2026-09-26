@@ -17,7 +17,7 @@ npm install @magmacomputing/tempo-plugin-celestial
 ## Features
 
 - **Solar Day Cycles**: Calculates `daylight`, `night`, `civil-twilight`, `nautical-twilight`, and `astronomical-twilight`.
-- **Ephemeris Data**: Returns `sunrise`, `sunset`, `noon`, total `daylightDurationMs`, and explicit `latitude`/`longitude` for given coordinates.
+- **Ephemeris Data**: Returns `sunrise`, `sunset`, `noon`, `solarTime` (Local Apparent Solar Time), total `daylightDurationMs`, and explicit `latitude`/`longitude` for given coordinates.
 - **Lunar Phase & Ephemeris**: Calculates 8 discrete lunar phase states (`new-moon`, `waxing-crescent`, etc.), illumination 0.0–1.0 fraction, age in days, hemisphere-aware emoji indicators, and location-aware `moonrise` and `moonset` events.
 - **Astronomical Tidal Mechanics**: Provides pure astronomical solar/lunar alignment calculations (`t.term.tide`, `t.term.tides`) for `spring`, `neap`, and `normal` tides, alongside `isKingTide` perigee indicators.
 
@@ -30,7 +30,7 @@ npm install @magmacomputing/tempo-plugin-celestial
 > [!IMPORTANT]
 > **Location-Dependent Null Contract**:
 > - **Global Astronomical Properties** (`t.term.moon`, `t.term.lunar.phase`, `t.term.tides.isSpringTide`, `t.term.tides.alignmentDeg`) resolve location-independently and are always computed.
-> - **Geo-Dependent Properties** (`t.term.sun`, `solar.sunrise`, `solar.sunset`, `solar.noon`, `lunar.moonrise`, `lunar.moonset`, `tides.lunarTideMinute`) evaluate to `null` when geographic coordinates (`geo: { lat, lng }`) are omitted.
+> - **Geo-Dependent Properties** (`t.term.sun`, `solar.sunrise`, `solar.sunset`, `solar.noon`, `solar.solarTime`, `lunar.moonrise`, `lunar.moonset`, `tides.lunarTideMinute`) evaluate to `null` when geographic coordinates (`geo: { lat, lng }`) are omitted.
 > - **Distinction**: Property access on `t.term` evaluates to `undefined` if `CelestialPlugin` is not loaded, and to `null` if the plugin is active but location coordinates were not supplied. When `debug >= 1` is enabled in `Tempo` configuration, a developer warning is logged when evaluating geo-dependent keys without coordinates.
 
 ### Obtaining Coordinates
@@ -90,6 +90,8 @@ console.log(t.term.solar.key);           // 'daylight'
 console.log(t.term.solar.phase);         // 'Daylight'
 console.log(t.term.solar.phases);        // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
 console.log(t.term.solar.sunrise);       // Tempo instance for local sunrise
+console.log(t.term.solar.noon);          // Tempo instance for local solar noon
+console.log(t.term.solar.solarTime);     // Tempo instance for local apparent solar time
 console.log(t.term.solar.geo);           // { latitude: 40.7128, longitude: -74.006 }
 
 // --- Lunar Phase & Ephemeris ---

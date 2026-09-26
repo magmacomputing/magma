@@ -79,7 +79,81 @@
     ]
   },
   {
-    "text": "Community Plugins",
+    "text": "Celestial Plugin (@magmacomputing/tempo-plugin-celestial)",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/celestial.index"
+      },
+      {
+        "text": "Solar Day Cycles, Ephemeris & Apparent Solar Time",
+        "link": "/doc/9-plugins/celestial.solar"
+      },
+      {
+        "text": "Lunar Ephemeris, Phases & Topocentric Position",
+        "link": "/doc/9-plugins/celestial.lunar"
+      },
+      {
+        "text": "Astronomical Tidal Mechanics & Coastal Predictions",
+        "link": "/doc/9-plugins/celestial.tides"
+      }
+    ]
+  },
+  {
+    "text": "Geo Plugin (@magmacomputing/tempo-plugin-geo)",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/geo.index"
+      },
+      {
+        "text": "Pluggable Geocoding Provider Gateway",
+        "link": "/doc/9-plugins/geo.provider-gateway"
+      },
+      {
+        "text": "Spatial Geofencing & Bounding Boxes",
+        "link": "/doc/9-plugins/geo.geofencing"
+      },
+      {
+        "text": "Transit Velocity, Impossible Travel & Navigation",
+        "link": "/doc/9-plugins/geo.transit-and-navigation"
+      },
+      {
+        "text": "Cultural Locale Synchronization",
+        "link": "/doc/9-plugins/geo.cultural-sync"
+      },
+      {
+        "text": "Storage & Multi-Tenant Caching",
+        "link": "/doc/9-plugins/geo.storage-and-caching"
+      },
+      {
+        "text": "Natural Solar Time Offset",
+        "link": "/doc/9-plugins/geo.solar-offset"
+      }
+    ]
+  },
+  {
+    "text": "Holidays Plugin (@magmacomputing/tempo-plugin-holidays)",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/holidays.index"
+      },
+      {
+        "text": "Business Days & SLA Arithmetic",
+        "link": "/doc/9-plugins/holidays.business-days"
+      },
+      {
+        "text": "Regional Calendars & Dynamic Preloading",
+        "link": "/doc/9-plugins/holidays.regional-calendars"
+      }
+    ]
+  },
+  {
+    "text": "Single-Feature Community Plugins",
     "collapsed": false,
     "items": [
       {
@@ -91,20 +165,12 @@
         "link": "/doc/9-plugins/batch.index"
       },
       {
-        "text": "Celestial (Solar & Lunar Ephemeris)",
-        "link": "/doc/9-plugins/celestial.index"
-      },
-      {
         "text": "Dialects (Luxon, strftime, Moment)",
         "link": "/doc/9-plugins/dialects.index"
       },
       {
         "text": "Finance (Fiscal & Business)",
         "link": "/doc/9-plugins/finance.index"
-      },
-      {
-        "text": "Geo (IP & Location Lookup)",
-        "link": "/doc/9-plugins/geo.index"
       },
       {
         "text": "Snap (Block Rounding)",

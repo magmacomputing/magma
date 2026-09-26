@@ -1,0 +1,69 @@
+{
+  "name": "@magmacomputing/tempo-plugin-holidays",
+  "version": "1.0.0",
+  "description": "Regional bank holiday, public holiday, and business day SLA scheduling plugin for Tempo",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": [
+    "./dist/install.js"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magmacomputing/magma.git",
+    "directory": "packages/plugins/holidays"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && tsc",
+    "test": "vitest run -c ../vitest.shared.ts",
+    "prepublishOnly": "tempo-cli prepublish"
+  },
+  "peerDependencies": {
+    "@magmacomputing/tempo": "^4.4.0"
+  },
+  "tempo": {
+    "vendorVariantId": "tempo-plugin-holidays",
+    "plan": "community"
+  },
+  "devDependencies": {
+    "@magmacomputing/tempo": "^4.4.0",
+    "@magmacomputing/tempo-fns": "^1.0.0"
+  },
+  "keywords": [
+    "tempo",
+    "tempo-plugin",
+    "magmacomputing",
+    "temporal",
+    "plugin",
+    "holidays",
+    "bank-holidays",
+    "public-holidays",
+    "business-days",
+    "calendar",
+    "sla",
+    "typescript"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./install": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/install.js",
+      "default": "./dist/install.js"
+    }
+  }
+}

@@ -649,6 +649,7 @@
 			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects@^1",
 			"@magmacomputing/tempo-plugin-finance": "https://esm.sh/@magmacomputing/tempo-plugin-finance@^1",
 			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@^1",
+			"@magmacomputing/tempo-plugin-holidays": "https://esm.sh/@magmacomputing/tempo-plugin-holidays@^1",
 			"@magmacomputing/tempo-plugin-snap": "https://esm.sh/@magmacomputing/tempo-plugin-snap@^1",
 			"@magmacomputing/tempo-plugin-sync": "https://esm.sh/@magmacomputing/tempo-plugin-sync@^1",
 			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@^2"
@@ -733,6 +734,7 @@
 							<option value="quarters">Preset: Fiscal Quarters & Math</option>
 							<option value="dynamic">Preset: Dynamic Plugin (ESM import)</option>
 							<option value="ai">Preset: AI Semantic Parsing & Scheduling</option>
+							<option value="holidays">Preset: Regional Public Holidays & SLA Business Days</option>
 						</select>
 					</div>
 
@@ -833,6 +835,32 @@ console.log('Astronomical Season:', localTime.term.szn);
 console.log('Moon Phase:', localTime.term.lunar.phase);
 
 return \`Located at \${lookup.city ?? 'Local City'} (\${lookup.lat?.toFixed(2)}°, \${lookup.lng?.toFixed(2)}°)\`;`,
+
+			holidays: `// 🏖️ Regional Public Holidays & SLA Business Days (@magmacomputing/tempo-plugin-holidays)
+const { HolidaysPlugin } = await import('@magmacomputing/tempo-plugin-holidays');
+Tempo.use(HolidaysPlugin);
+
+// 1. Evaluate holiday by country or instance geo metadata
+const christmas = new Tempo('2026-12-25', { geo: { country: 'US' } });
+console.log('Is Christmas Day holiday in US?', christmas.holidays.isHoliday());
+console.log('Holiday Name:', christmas.holidays.name);
+console.log('Is Business Day?', christmas.holidays.isBusinessDay());
+
+// 2. Next & previous business day arithmetic
+const nextWorkDay = christmas.holidays.nextBusinessDay();
+console.log('Next Business Day after Christmas:', nextWorkDay.format('{www}, {dd} {mon} {yyyy}'));
+
+// 3. Add N working business days
+const deadline = christmas.holidays.addBusinessDays(5);
+console.log('5 Business Days later:', deadline.format('{www}, {dd} {mon} {yyyy}'));
+
+// 4. SLA Working Hours calculation
+const ticketOpened = new Tempo('2026-01-23 15:00:00', { geo: { country: 'AU' } });
+const ticketResolved = new Tempo('2026-01-27 11:00:00', { geo: { country: 'AU' } });
+const hours = ticketOpened.holidays.workingHoursUntil(ticketResolved);
+console.log('SLA Working Hours (9am-5pm window):', hours, 'hours');
+
+return \`Christmas: \${christmas.holidays.name} (Next work day: \${nextWorkDay.format('{www}, {dd} {mon}')})\`;`,
 
 			dialects: `// 🌐 External Dialect Formatting & Parsing
 // Dynamic import of @magmacomputing/tempo-plugin-dialects
@@ -1017,7 +1045,7 @@ await Tempo.ai.init({ provider: 'tempo', debug: true });
 // Parse complex cultural/relative calendar expression:
 const t = await Tempo.ai.parse("The Friday before Melbourne Cup next year");
 
-console.log('📅 Parsed:   ', t.format('{www}, {yyyy}-{mm}-{dd}'));
+console.log('📅 Parsed:   ', t.format('{www}, {yyyy}-{mmm}-{dd}'));
 console.log('🧠 Reasoning:', t.ai?.reasoning);
 console.log('🎯 Provider: ', t.ai?.provider, \`(confidence: \${t.ai?.confidence})\`);
 

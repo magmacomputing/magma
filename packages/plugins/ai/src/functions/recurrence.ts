@@ -161,7 +161,8 @@ export async function recurrenceAI(
 
 	const availableProviders = getAvailableProviders(options);
 
-	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}.`;
+	const intl = anchorTempo.intl;
+	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}, Week Starts On (firstDay/WKST): ${intl.firstDay} (1=Mon, 7=Sun, 6=Sat), Regional Weekend Days: [${intl.weekend.join(', ')}].`;
 
 	const systemPrompt = `You are a calendar recurrence compiler. Read the user's natural language schedule and context. Return ONLY a valid JSON object matching this exact schema:
 {

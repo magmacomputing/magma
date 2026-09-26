@@ -7,14 +7,32 @@ import {
 	getStashedGeo,
 	stashGeo,
 	clearStashedGeo,
+	setGeoProvider,
+	getGeoProvider,
+	reverseGeocode,
+	forwardGeocode,
 	GEO_PROPERTIES,
 	haversineDistance,
 	solarOffset,
+	calculateBearing,
+	calculateMidpoint,
+	calculateVelocity,
+	isImpossibleTravel,
+	isWithin,
+	inBoundingBox,
+	resolveCulturalLocale,
 	type GeoLookupResult,
 	type ResolvedCoordinates,
 	type GeoConfig,
 	type CoordinateInput,
+	type GeoProvider,
 	type DistanceUnit,
+	type TimeUnit,
+	type BearingOptions,
+	type VelocityOptions,
+	type ImpossibleTravelOptions,
+	type BoundingBox,
+	type LocaleSyncMode,
 	type SolarOffsetOptions,
 	type SolarOffsetUnit,
 } from '@magmacomputing/library/runtime/mapper.library.js';
@@ -28,7 +46,7 @@ import {
 import {
 	geoLocation,
 } from '@magmacomputing/library/browser/mapper.library.js';
-import { isString, isNumber, isObject, isEmpty, isSafeKey } from '@magmacomputing/library/primitives/assertion.library.js';
+import { isString, isNumber, isObject, isEmpty, isSafeKey } from '@magmacomputing/tempo/library';
 import type { MutableObject } from '@magmacomputing/library/primitives/type.library.js';
 
 export {
@@ -38,9 +56,20 @@ export {
 	getStashedGeo,
 	stashGeo,
 	clearStashedGeo,
+	setGeoProvider,
+	getGeoProvider,
+	reverseGeocode,
+	forwardGeocode,
 	GEO_PROPERTIES,
 	haversineDistance,
 	solarOffset,
+	calculateBearing,
+	calculateMidpoint,
+	calculateVelocity,
+	isImpossibleTravel,
+	isWithin,
+	inBoundingBox,
+	resolveCulturalLocale,
 	serverGeoLocation,
 	serverGeoCoords,
 	serverMapHemisphere,
@@ -52,7 +81,14 @@ export type {
 	ResolvedCoordinates,
 	GeoConfig,
 	CoordinateInput,
+	GeoProvider,
 	DistanceUnit,
+	TimeUnit,
+	BearingOptions,
+	VelocityOptions,
+	ImpossibleTravelOptions,
+	BoundingBox,
+	LocaleSyncMode,
 	SolarOffsetOptions,
 	SolarOffsetUnit,
 	ServerMapOpts,
@@ -63,7 +99,7 @@ export type {
  * Cohesive static namespace for geolocation operations on Tempo.
  */
 export interface TempoGeoNamespace {
-	/** Asynchronous universal geolocation lookup (browser hardware or server IP) with 24h caching */
+	/** Asynchronous universal geolocation lookup (browser hardware, server IP, or custom provider) with 24h caching */
 	readonly lookup: typeof geoLookup;
 	/** Asynchronously resolves coordinates from an instance, config, or ambient storage */
 	readonly resolve: typeof resolveGeoCoordinates;
@@ -71,6 +107,18 @@ export interface TempoGeoNamespace {
 	readonly coerce: typeof coerceGeo;
 	/** Calculates Great-Circle distance between two coordinates using Haversine formula */
 	readonly distance: typeof haversineDistance;
+	/** Calculates initial forward azimuth compass bearing (0° to 360°) between two coordinates */
+	readonly bearing: typeof calculateBearing;
+	/** Calculates geographic midpoint along Great-Circle path between two coordinates */
+	readonly midpoint: typeof calculateMidpoint;
+	/** Calculates velocity / travel speed between two timestamped geographic instances */
+	readonly velocity: typeof calculateVelocity;
+	/** Checks if travel speed between two timestamped instances represents an impossible travel anomaly */
+	readonly isImpossibleTravel: typeof isImpossibleTravel;
+	/** Checks whether Great-Circle distance between two coordinates is within a specified radius */
+	readonly isWithin: typeof isWithin;
+	/** Checks whether coordinates fall inside a rectangular bounding box (with antimeridian wrapping support) */
+	readonly inBoundingBox: typeof inBoundingBox;
 	/** Calculates Natural Solar Time Offset between civil clock time and actual solar noon */
 	readonly solarOffset: typeof solarOffset;
 	/** Explicitly stashes coordinates into storage with optional TTL (default 24h) and multi-tenant partitioning */
@@ -79,6 +127,14 @@ export interface TempoGeoNamespace {
 	readonly clear: typeof clearStashedGeo;
 	/** Retrieves stashed coordinates from storage */
 	readonly get: typeof getStashedGeo;
+	/** Sets the active custom geolocation provider gateway */
+	readonly setProvider: typeof setGeoProvider;
+	/** Gets the currently registered custom geolocation provider */
+	readonly getProvider: typeof getGeoProvider;
+	/** Reverse geocodes coordinates to address or location metadata using the active provider */
+	readonly reverse: typeof reverseGeocode;
+	/** Forward geocodes an address or place query string into coordinates using the active provider */
+	readonly forward: typeof forwardGeocode;
 	/** Low-level server-side IP geolocation handler */
 	readonly server: typeof serverGeoLocation;
 	/** Low-level browser geolocation API handler */
@@ -90,7 +146,12 @@ export interface TempoGeoNamespace {
 /**
  * Options for configuring the Geo plugin.
  */
-export type GeoPluginOptions = Partial<GeoConfig> & { timeout?: number; highAccuracy?: boolean;[key: string]: any };
+export type GeoPluginOptions = Partial<GeoConfig> & {
+	timeout?: number;
+	highAccuracy?: boolean;
+	provider?: GeoProvider;
+	[key: string]: any;
+};
 
 /**
  * GeoPlugin installs geolocation lookup and coordinate resolution helpers onto Tempo under the `Tempo.geo` namespace.
@@ -99,6 +160,9 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 	name: 'geo',
 	install(this: any, TempoClass: any, options?: GeoPluginOptions) {
 		const installedClass = TempoClass || this;
+		if (options?.provider)
+			setGeoProvider(options.provider);
+
 		const getEffectiveOptions = (callSiteOpts?: Record<string, any>, instance?: any) => {
 			const classOpts = installedClass.config?.pluginOptions?.geo;
 			const instanceOpts = instance?.config?.pluginOptions?.geo;
@@ -116,10 +180,20 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 				resolve: (target?: any, opts?: Record<string, any>) => resolveGeoCoordinates(target, getEffectiveOptions(opts, target)),
 				coerce: coerceGeo,
 				distance: haversineDistance,
+				bearing: calculateBearing,
+				midpoint: calculateMidpoint,
+				velocity: calculateVelocity,
+				isImpossibleTravel,
+				isWithin,
+				inBoundingBox,
 				solarOffset,
 				stash: stashGeo,
 				clear: clearStashedGeo,
 				get: getStashedGeo,
+				setProvider: setGeoProvider,
+				getProvider: getGeoProvider,
+				reverse: (coords: CoordinateInput, opts?: Record<string, any>) => reverseGeocode(coords, getEffectiveOptions(opts)),
+				forward: (query: string, opts?: Record<string, any>) => forwardGeocode(query, getEffectiveOptions(opts)),
 				server: serverGeoLocation,
 				browser: geoLocation,
 				get current(): GeoConfig | undefined {
@@ -140,6 +214,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 		 * returning a new Tempo instance with full context synchronization.
 		 * 
 		 * - setTimezone defaults to true: automatically shifts instance wall-clock time to the resolved location.
+		 * - setLocale defaults to true: automatically synchronizes regional BCP 47 locale to geolocated country.
 		 * - Option B (Physical Reality): Fresh location metadata updates geographic fields (lat, lng, country, city, sphere, timezone).
 		 * - Custom non-geographic metadata (e.g. { venue: 'HQ', officeId: 42 }) is preserved.
 		 * - Option C (Call-Site Overrides): Explicit parameters passed to .geoLocate(opts) take absolute precedence.
@@ -147,6 +222,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 		TempoClass.prototype.geoLocate = async function (this: Tempo, opts?: Record<string, any>): Promise<Tempo> {
 			const effectiveOpts = getEffectiveOptions(opts, this);
 			const setTimezone = effectiveOpts?.setTimezone !== false;
+			const setLocale = effectiveOpts?.setLocale ?? true;
 			const coords = await resolveGeoCoordinates(this, effectiveOpts);
 			if (coords) {
 				const existingGeo = isObject(this.config.geo) ? this.config.geo : {};
@@ -162,7 +238,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 				const callSiteGeo = coerceGeo(opts) ?? {};
 				if (isObject(opts)) {
 					for (const key of Object.keys(opts)) {
-						if (isSafeKey(key) && !['setTimezone', 'refresh', 'ttl', 'endpoint', 'timeout', 'catch', 'debug', 'geo'].includes(key)) {
+						if (isSafeKey(key) && !['setTimezone', 'setLocale', 'refresh', 'ttl', 'endpoint', 'timeout', 'catch', 'debug', 'geo', 'provider', 'fallback'].includes(key)) {
 							if (!GEO_PROPERTIES.includes(key as any))
 								customKeys[key] = (opts as any)[key];
 						}
@@ -194,8 +270,13 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 				if (setTimezone && isString(targetTz) && !isEmpty(targetTz))
 					instance = this.set({ timeZone: targetTz });
 
+				const targetLocale = (mergedGeo.country || isString(setLocale))
+					? resolveCulturalLocale((this as any).locale ?? this.config.locale, mergedGeo.country, setLocale)
+					: undefined;
+
 				return new TempoClass(instance, {
 					...instance.config,
+					...(targetLocale ? { locale: targetLocale } : {}),
 					geo: deepFreeze(mergedGeo),
 					...(mergedGeo.sphere ? { sphere: mergedGeo.sphere } : {}),
 				});

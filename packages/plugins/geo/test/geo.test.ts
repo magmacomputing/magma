@@ -128,7 +128,7 @@ describe('Tempo Plugin: Geo', () => {
 				(Tempo as any).geo = {};
 			}).toThrow();
 			expect(() => {
-				(Tempo.geo as any).lookup = () => {};
+				(Tempo.geo as any).lookup = () => { };
 			}).toThrow();
 		});
 
@@ -440,6 +440,297 @@ describe('Tempo Plugin: Geo', () => {
 			const apparent = sydney.geoSolarOffset({ date: '2026-06-21T12:00:00Z', apparent: true });
 			expect(typeof apparent).toBe('number');
 			expect(apparent).toBe(3.51);
+		});
+
+		it('should calculate compass bearing and geographic midpoint via Tempo.geo static namespace', () => {
+			const bearing = Tempo.geo.bearing(sydney, melbourne);
+			expect(bearing).toBe(230.3);
+
+			const midpoint = Tempo.geo.midpoint(sydney, melbourne);
+			expect(midpoint).toEqual({
+				latitude: -35.882,
+				longitude: 148.164,
+				sphere: 'south',
+			});
+		});
+
+		it('should calculate velocity and detect impossible travel anomalies via Tempo.geo static namespace', () => {
+			// Sydney 10:00 to Melbourne 12:00 (2 hours elapsed, ~713.4 km)
+			const speedKmh = Tempo.geo.velocity(sydney, melbourne, 'km');
+			expect(speedKmh).toBe(356.71);
+
+			// Not impossible travel for commercial aircraft
+			expect(Tempo.geo.isImpossibleTravel(sydney, melbourne)).toBe(false);
+
+			// Supersonic / simultaneous anomaly: Tokyo 1 hour later (sydney is 23:00Z, tokyo is 00:00Z)
+			const tokyo = new Tempo('2026-10-24T00:00:00Z', {
+				geo: { lat: 35.6762, lng: 139.6503 },
+			});
+			const speedTokyo = Tempo.geo.velocity(sydney, tokyo, 'km');
+			expect(speedTokyo).toBeGreaterThan(7000);
+			expect(Tempo.geo.isImpossibleTravel(sydney, tokyo)).toBe(true);
+		});
+
+		it('should evaluate proximity via Tempo.geo.isWithin and bounding box containment via Tempo.geo.inBoundingBox', () => {
+			const parramatta = { lat: -33.8150, lng: 151.0011 };
+			expect(Tempo.geo.isWithin(sydney, parramatta, 25, 'km')).toBe(true);
+			expect(Tempo.geo.isWithin(sydney, melbourne, 50, 'km')).toBe(false);
+
+			const sydneyBBox = { minLat: -34.2, maxLat: -33.5, minLng: 150.5, maxLng: 151.5 };
+			expect(Tempo.geo.inBoundingBox(sydney, sydneyBBox)).toBe(true);
+			expect(Tempo.geo.inBoundingBox(melbourne, sydneyBBox)).toBe(false);
+		});
+
+		it('should synchronize cultural locale during t.geoLocate with setLocale options', async () => {
+			const event = new Tempo('2026-09-25T10:00:00Z', { locale: 'en-US' });
+
+			const mockSaudiPayload = {
+				ip: '82.165.197.1',
+				success: true,
+				lat: 24.7136,
+				lon: 46.6753,
+				city: 'Riyadh',
+				country: 'SA',
+				timezone: 'Asia/Riyadh',
+			};
+
+			// 1. Default (regional adaptation): preserves 'en' language, sets 'SA' region -> 'en-SA'
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockSaudiPayload), { status: 200 })
+			);
+			const regionalLoc = await event.geoLocate();
+			expect(regionalLoc.locale).toBe('en-SA');
+			expect(regionalLoc.tz).toBe('Asia/Riyadh');
+			expect(regionalLoc.geo?.country).toBe('SA');
+
+			// 2. Native mode: converts to primary native locale ('ar-SA')
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockSaudiPayload), { status: 200 })
+			);
+			const nativeLoc = await event.geoLocate({ setLocale: 'native' });
+			expect(nativeLoc.locale).toBe('ar-SA');
+
+			// 3. Custom BCP 47 string override
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockSaudiPayload), { status: 200 })
+			);
+			const customLoc = await event.geoLocate({ setLocale: 'es-SA' });
+			expect(customLoc.locale).toBe('es-SA');
+
+			// 4. Opt-out: setLocale: false preserves initial 'en-US'
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockSaudiPayload), { status: 200 })
+			);
+			const untouchedLoc = await event.geoLocate({ setLocale: false });
+			expect(untouchedLoc.locale).toBe('en-US');
+
+			// 5. Explicit custom locale takes effect even on countryless geo result
+			const countrylessPayload = {
+				lat: 0,
+				lon: 0,
+				timezone: 'UTC',
+			};
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(countrylessPayload), { status: 200 })
+			);
+			const countrylessCustom = await event.geoLocate({ setLocale: 'fr-FR' });
+			expect(countrylessCustom.locale).toBe('fr-FR');
+		});
+	});
+
+	describe('Pluggable Geocoding Provider Gateway', () => {
+		afterEach(() => {
+			Tempo.geo.setProvider(undefined);
+		});
+
+		it('should register and retrieve custom GeoProvider', () => {
+			const mockProvider = {
+				name: 'mock-provider',
+				lookup: vi.fn().mockResolvedValue({ lat: 48.8566, lng: 2.3522, city: 'Paris', country: 'FR' }),
+			};
+
+			Tempo.geo.setProvider(mockProvider);
+			expect(Tempo.geo.getProvider()).toBe(mockProvider);
+			expect(Tempo.geo.getProvider()?.name).toBe('mock-provider');
+		});
+
+		it('should delegate lookup to registered custom provider with automatic caching', async () => {
+			const mockProvider = {
+				name: 'custom-nominatim',
+				lookup: vi.fn().mockResolvedValue({
+					latitude: 52.5200,
+					longitude: 13.4050,
+					city: 'Berlin',
+					country: 'Germany',
+					timezone: 'Europe/Berlin',
+				}),
+			};
+
+			Tempo.geo.setProvider(mockProvider);
+
+			const result = await Tempo.geo.lookup({ refresh: true });
+			expect(mockProvider.lookup).toHaveBeenCalledTimes(1);
+			expect(result.latitude).toBe(52.52);
+			expect(result.longitude).toBe(13.405);
+			expect(result.city).toBe('Berlin');
+			expect(result.country).toBe('Germany');
+
+			// Second call should read from stashed cache
+			const cached = await Tempo.geo.lookup();
+			expect(mockProvider.lookup).toHaveBeenCalledTimes(1); // Cached, not called again
+			expect(cached.status).toBe('cached');
+			expect(cached.latitude).toBe(52.52);
+		});
+
+		it('should support call-site provider override in t.geoLocate()', async () => {
+			const customProvider = {
+				name: 'callsite-custom',
+				lookup: vi.fn().mockResolvedValue({
+					lat: 35.6762,
+					lng: 139.6503,
+					city: 'Tokyo',
+					country: 'Japan',
+					timezone: 'Asia/Tokyo',
+				}),
+			};
+
+			const t = new Tempo('2026-06-21T12:00:00Z');
+			const located = await t.geoLocate({ provider: customProvider, setLocale: 'native' });
+
+			expect(customProvider.lookup).toHaveBeenCalled();
+			expect(located.geo?.city).toBe('Tokyo');
+			expect(located.geo?.latitude).toBe(35.676);
+			expect(located.geo?.longitude).toBe(139.65);
+			expect(located.tz).toBe('Asia/Tokyo');
+			expect(located.locale).toBe('ja-JP');
+		});
+
+		it('should delegate forward and reverse geocoding to active provider', async () => {
+			const mockProvider = {
+				name: 'mock-geocoder',
+				lookup: vi.fn(),
+				reverseGeocode: vi.fn().mockResolvedValue({
+					latitude: -33.869,
+					longitude: 151.209,
+					city: 'Sydney',
+					country: 'AU',
+				}),
+				forwardGeocode: vi.fn().mockResolvedValue({
+					lat: 40.713,
+					lng: -74.006,
+					latitude: 40.713,
+					longitude: -74.006,
+					city: 'New York',
+				}),
+			};
+
+			Tempo.geo.setProvider(mockProvider);
+
+			const reverseRes = await Tempo.geo.reverse({ lat: -33.8688, lng: 151.2093 });
+			expect(mockProvider.reverseGeocode).toHaveBeenCalled();
+			expect(reverseRes?.city).toBe('Sydney');
+
+			const forwardRes = await Tempo.geo.forward('New York, NY');
+			expect(mockProvider.forwardGeocode).toHaveBeenCalledWith('New York, NY', expect.any(Object));
+			expect(forwardRes?.lat).toBe(40.713);
+		});
+
+		it('should fallback gracefully to default lookup if custom provider throws without fallback: false', async () => {
+			const failingProvider = {
+				name: 'failing-provider',
+				lookup: vi.fn().mockRejectedValue(new Error('Rate limit exceeded')),
+			};
+
+			Tempo.geo.setProvider(failingProvider);
+
+			const mockFallbackPayload = {
+				ip: '1.2.3.4',
+				success: true,
+				lat: 51.5074,
+				lon: -0.1278,
+				city: 'London',
+				country: 'United Kingdom',
+				timezone: 'Europe/London',
+			};
+
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(mockFallbackPayload), { status: 200 })
+			);
+
+			const result = await Tempo.geo.lookup({ refresh: true });
+			expect(failingProvider.lookup).toHaveBeenCalled();
+			expect(result.city).toBe('London');
+			expect(result.latitude).toBe(51.507);
+		});
+
+		it('should strictly return error when fallback: false is provided on provider failure or null return', async () => {
+			const failingProvider = {
+				name: 'strict-failing-provider',
+				lookup: vi.fn().mockRejectedValue(new Error('Strict error')),
+			};
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch');
+			const result = await Tempo.geo.lookup({ provider: failingProvider, fallback: false, refresh: true });
+			expect(failingProvider.lookup).toHaveBeenCalled();
+			expect(result.error).toBe('Strict error');
+			expect(fetchSpy).not.toHaveBeenCalled();
+
+			const nullProvider = {
+				name: 'null-provider',
+				lookup: vi.fn().mockResolvedValue(null),
+			};
+			const nullResult = await Tempo.geo.lookup({ provider: nullProvider, fallback: false, refresh: true });
+			expect(nullResult.error).toBeDefined();
+			expect(fetchSpy).not.toHaveBeenCalled();
+		});
+
+		it('should isolate cache entries per provider identity', async () => {
+			const providerA = {
+				name: 'provider-a',
+				lookup: vi.fn().mockResolvedValue({ lat: 10, lng: 20, city: 'CityA' }),
+			};
+			const providerB = {
+				name: 'provider-b',
+				lookup: vi.fn().mockResolvedValue({ lat: 30, lng: 40, city: 'CityB' }),
+			};
+
+			const resA = await Tempo.geo.lookup({ provider: providerA, refresh: true });
+			expect(resA.city).toBe('CityA');
+
+			const resB = await Tempo.geo.lookup({ provider: providerB, refresh: true });
+			expect(resB.city).toBe('CityB');
+
+			// Read from cache for providerA
+			const cachedA = await Tempo.geo.lookup({ provider: providerA });
+			expect(cachedA.city).toBe('CityA');
+			expect(cachedA.status).toBe('cached');
+			expect(providerA.lookup).toHaveBeenCalledTimes(1);
+
+			// Read from cache for providerB
+			const cachedB = await Tempo.geo.lookup({ provider: providerB });
+			expect(cachedB.city).toBe('CityB');
+			expect(cachedB.status).toBe('cached');
+			expect(providerB.lookup).toHaveBeenCalledTimes(1);
+		});
+
+		it('should not leak provider or fallback into instance.geo during geoLocate', async () => {
+			const mockProvider = {
+				name: 'clean-provider',
+				lookup: vi.fn().mockResolvedValue({ lat: 50, lng: 10, city: 'Frankfurt' }),
+			};
+
+			const t = new Tempo('2026-01-01T00:00:00Z');
+			const located = await t.geoLocate({ provider: mockProvider, fallback: false });
+			expect((located.geo as any).provider).toBeUndefined();
+			expect((located.geo as any).fallback).toBeUndefined();
+			expect(located.geo?.city).toBe('Frankfurt');
+		});
+
+		it('should reject invalid coordinate strings and non-numeric tuple values in spatial queries', () => {
+			expect(Tempo.geo.isWithin([null, 10], [0, 10], 100)).toBe(false);
+			expect(Tempo.geo.isWithin([false, 10], [0, 10], 100)).toBe(false);
+			expect(Tempo.geo.isWithin(',10', '0,10', 100)).toBe(false);
+			expect(Tempo.geo.isWithin('  ,  ', '0,10', 100)).toBe(false);
 		});
 	});
 });

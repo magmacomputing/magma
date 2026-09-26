@@ -257,17 +257,60 @@ Update `.github/workflows/publish.yml` to enable manual `workflow_dispatch` prov
 2. **Add to Input Resolution**: Add `[ "$INPUT_PLUGIN_[NAME]" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-[name]")` in the workflow bash script.
 3. *(Optional)* Even without adding a dedicated checkbox, any new plugin can be immediately published via the workflow's **Custom packages** text box by typing `[name]` or `@magmacomputing/tempo-plugin-[name]`.
 
-### C. REPL Playground Registration & Retirement (`packages/tempo/public/repl/`)
+### C. REPL Playground & Interactive Documentation Integration (`packages/tempo/public/repl/`)
 
-When introducing or retiring a plugin, update the centralized browser playground in `packages/tempo/public/repl/` and the embedded documentation REPL component:
+When introducing or retiring a plugin, register it across the browser REPL playground, the interactive documentation components, and the plugin ecosystem catalog:
 
-1. **Import Map & Catalog Registration**:
-   - Register the plugin in `catalog.json` and `packages/plugins/[name]/package.json`.
-   - Run `node packages/tempo-cli/index.js catalog-sync` (or `npm run build` / `npm run test`) to automatically generate the allowlist and dynamic ESM loader entries in `packages/tempo/public/repl/plugins.manifest.js`.
-2. **Default Snippets & Facades**:
-   - Add a preset snippet in `DEFAULT_SNIPPETS` inside `packages/tempo/.vitepress/theme/components/PluginRepl.vue`.
-   - Add an entry in the preset dropdown (`<select id="presetSelect">`) and `SNIPPETS` in `packages/tempo/public/repl/index.html`.
-3. **Retirement Checklist**: When deprecating or retiring a plugin, remove its package directory, rerun `tempo-cli catalog-sync` to update `plugins.manifest.js`, and clean up any preset references in `PluginRepl.vue` and `index.html`.
+1. **Catalog Registration & Synchronization**:
+   - Ensure the plugin's `package.json` contains valid metadata (`name`, `version`, `description`, `"tempo": { "plan": "community" }`).
+   - Run the catalog sync CLI command from the repository root:
+     ```bash
+     node packages/tempo-cli/index.js catalog-sync
+     ```
+     This automatically:
+     - Updates the source catalog at `packages/plugins/.setup/catalog.json`.
+     - Regenerates the dynamic ESM browser loader manifest at `packages/tempo/public/repl/plugins.manifest.js`.
+     - Syncs local versions to `packages/tempo/.vitepress/theme/data/catalog.json`.
+
+2. **Browser Import Map Registration (`public/repl/`)**:
+   - Add the plugin's CDN mapping to the `<script type="importmap">` in both `packages/tempo/public/repl/index.html` (pinned to major version `@^1`) and `packages/tempo/public/repl/showcase.html` (`@latest`):
+     ```json
+     "@magmacomputing/tempo-plugin-[name]": "https://esm.sh/@magmacomputing/tempo-plugin-[name]@^1"
+     ```
+     > [!NOTE]
+     > Even though a new plugin is initially published at `v0.1.0` solely to register it on npmjs and configure Trusted Publishers (OIDC), the plugin is immediately bumped to `v1.0.0` for regular CI publishing via `publish.yml`. Therefore, always target `@^1` (or `@latest`) in the REPL import maps.
+
+3. **Dedicated Playground Preset & Dropdown Option (`public/repl/index.html`)**:
+   - **Preset Dropdown Selector**: Add an `<option>` element inside `<select id="presetSelect">` in `packages/tempo/public/repl/index.html`:
+     ```html
+     <select id="presetSelect" title="Load Snippet Preset">
+       <!-- existing presets... -->
+       <option value="[name]">Preset: [Plugin Title & Features]</option>
+     </select>
+     ```
+   - **Preset Code Snippet**: Add a domain-specific, runnable demonstration snippet under `SNIPPETS` / `DEFAULT_PRESETS` in `packages/tempo/public/repl/index.html` using the plugin's key name (e.g. `holidays`, `celestial`, `geo`):
+     ```javascript
+     [name]: `// 🚀 [Plugin Name] Demo (@magmacomputing/tempo-plugin-[name])
+     const { [PluginExport] } = await import('@magmacomputing/tempo-plugin-[name]');
+     Tempo.use([PluginExport]);
+
+     // Runnable domain-specific example code...
+     const t = new Tempo();
+     console.log(t.[name]...);
+     return t.format(...);`,
+     ```
+     > [!IMPORTANT]
+     > Without both the dropdown `<option>` and the snippet dictionary entry, users cannot interactively select the preset from the UI, and navigating to `https://magmacomputing.github.io/magma/repl/index.html?plugin=[name]` will silently fall back to displaying the generic `quickstart` template.
+
+4. **VitePress Ecosystem & Documentation Component**:
+   - **`CatalogList.vue` (`packages/tempo/.vitepress/theme/components/CatalogList.vue`)**: Ensure the plugin's ID is assigned to an appropriate functional category in `DOMAIN_GROUPS` (e.g., `geo`, `celestial`, `business`, `system`, `ai`, `dialects`) so it is listed under the proper section on the `ecosystem.md` page.
+   - **`PluginRepl.vue` (`packages/tempo/.vitepress/theme/components/PluginRepl.vue`)**: Add a matching static preview code snippet to `DEFAULT_SNIPPETS` so `<PluginRepl plugin="[name]" />` embeds a clean static code box with an instant "Run Live Interactive Demo" action.
+
+5. **Retirement Checklist**:
+   - When deprecating or retiring a plugin, remove its package directory from `packages/plugins/`.
+   - Rerun `node packages/tempo-cli/index.js catalog-sync` to prune `plugins.manifest.js`.
+   - Remove its entries from import maps in `index.html` and `showcase.html`.
+   - Prune preset references from `CatalogList.vue`, `PluginRepl.vue`, and `index.html`.
 
 ## 8. Initial Release & Trusted Publisher Configuration (OIDC & Provenance)
 

@@ -62,6 +62,14 @@ function calculateFormatGroundingMetrics(targetTempo: Tempo, anchorTempo: Tempo)
 	};
 }
 
+/**
+ * Formats one date with grounded relative-time and locale context for the AI provider.
+ *
+ * @param date - Date or Tempo instance to describe
+ * @param prompt - Optional wording instruction
+ * @param options - Anchor, locale, provider, and cache settings
+ * @returns A human-readable description with AI metadata
+ */
 async function formatSingleInput(
 	date: TempoDateInput,
 	prompt?: string,
@@ -74,8 +82,8 @@ async function formatSingleInput(
 	let targetTempo: Tempo;
 	try {
 		targetTempo = Tempo.isTempo(date)
-			? (date.tz === tz ? date : date.set({ timeZone: tz }))
-			: new Tempo(date as any, { timeZone: tz });
+			? (date.tz === tz && date.locale === loc ? date : new Tempo(date.tz === tz ? date : date.set({ timeZone: tz }), { timeZone: tz, locale: loc }))
+			: new Tempo(date as any, { timeZone: tz, locale: loc });
 	} catch (err: any) {
 		const safeDateRep = isReference(date) ? JSON.stringify(date) : String(date);
 		throw new TempoAiError(`Invalid date provided to formatAI: "${safeDateRep}"`, 400, undefined, { cause: err });
@@ -171,6 +179,8 @@ Output JSON Schema:
 		`- Reference Anchor: ${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')} (${anchorTempo.tz || tz})`,
 		`- Relative Delta: ${grounding.calendarDays >= 0 ? '+' : ''}${grounding.calendarDays} calendar days (${grounding.elapsedHours >= 0 ? '+' : ''}${grounding.elapsedHours} hours) in the ${grounding.direction.toUpperCase()}`,
 		`- Target Locale: ${loc}`,
+		`- Hour Cycle: ${targetTempo.intl.hourCycle}`,
+		`- Text Direction: ${targetTempo.intl.direction}`,
 	];
 	if (style) contextParts.push(`- Desired Style/Tone: ${style}`);
 	if (region) contextParts.push(`- Regional Context: ${region}`);

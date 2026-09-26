@@ -84,6 +84,41 @@ describe('AI Diff Plugin (diffAI)', () => {
 		expect(contextPrompt).toContain('Region Context: AU-NSW');
 	});
 
+	it('should respect regional weekend dates from Intl.LocaleInfo (e.g. ar-SA)', async () => {
+		const fetchSpy = vi.spyOn(globalThis, 'fetch');
+		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({
+			choices: [{
+				message: {
+					content: JSON.stringify({
+						formatted: '0 business days (Friday and Saturday are regional weekend)',
+						days: 2,
+						hours: 48,
+						businessDays: 0,
+						reasoning: 'Spans Friday and Saturday which are non-working days in Saudi Arabia.',
+						confidence: 0.97,
+					}),
+				},
+			}],
+		}), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+
+		// 2026-08-07 (Friday) to 2026-08-09 (Sunday)
+		// Standard ISO/en-US: Friday is a business day (1 business day)
+		// ar-SA (weekend [5, 6]): Friday and Saturday are weekend (0 business days)
+		const start = '2026-08-07T00:00:00Z';
+		const end = '2026-08-09T00:00:00Z';
+
+		const result = await diffAI(start, end, 'calculate working days in Saudi Arabia', {
+			locale: 'ar-SA',
+		});
+
+		expect(result.businessDays).toBe(0);
+
+		const requestBody = JSON.parse(fetchSpy.mock.calls[0][1]?.body as string);
+		const contextPrompt = requestBody.messages[0].content;
+		expect(contextPrompt).toContain('Computed Business Working Days: 0 (excluding weekends [5, 6])');
+		expect(contextPrompt).toContain('Target Locale: ar-SA');
+	});
+
 	it('should support reverse date intervals with negative business days', async () => {
 		const fetchSpy = vi.spyOn(globalThis, 'fetch');
 		fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({

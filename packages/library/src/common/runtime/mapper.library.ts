@@ -1,7 +1,8 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isDate, isText } from '#library/assertion.library.js';
+import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isDate, isText, isFunction, isDefined, isCallable } from '#library/assertion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { evaluate } from '#library/evaluation.library.js';
+import { getLC, cleanLocaleTag } from '#library/international.library.js';
 
 /**
  * Supported hemisphere zones including the equatorial band.
@@ -14,9 +15,74 @@ export type GeoSphere = 'north' | 'south' | 'equator';
 export type DistanceUnit = 'km' | 'miles' | 'm';
 
 /**
+ * Supported units for geographic velocity time denominator.
+ */
+export type TimeUnit = 'hh' | 'h' | 'hours' | 'hour' | 'mi' | 'm' | 'minutes' | 'minute' | 'ss' | 's' | 'seconds' | 'second';
+
+/**
+ * Configuration options for initial compass bearing calculation.
+ */
+export interface BearingOptions {
+	/** Number of decimal places to round (default: 1) */
+	precision?: number;
+}
+
+/**
+ * Configuration options for geographic velocity calculation.
+ */
+export interface VelocityOptions {
+	/** Distance unit (default: 'km') */
+	unit?: DistanceUnit;
+	/** Time unit for velocity denominator (default: 'h' for km/h or mph) */
+	timeUnit?: TimeUnit;
+	/** Number of decimal places to round (default: 2) */
+	precision?: number;
+}
+
+/**
+ * Configuration options for impossible travel anomaly detection.
+ */
+export interface ImpossibleTravelOptions {
+	/** Maximum physically feasible commercial speed in km/h (default: 900 km/h) */
+	maxCommercialSpeedKmH?: number;
+	/** Distance unit for threshold (default: 'km') */
+	unit?: DistanceUnit;
+	/** Custom speed threshold override in the specified unit */
+	maxSpeed?: number;
+}
+
+/**
+ * Bounding box coordinates for spatial inclusion queries.
+ */
+export interface BoundingBox {
+	minLat?: number;
+	maxLat?: number;
+	minLng?: number;
+	maxLng?: number;
+	minLatitude?: number;
+	maxLatitude?: number;
+	minLongitude?: number;
+	maxLongitude?: number;
+}
+
+/**
+ * Mode for synchronizing locale during geolocation.
+ * - `'regional'` / `true` (Default): Adapts regional cultural calendar (week start, weekend) while preserving source language (e.g. 'en-US' + 'SA' ➜ 'en-SA').
+ * - `'native'` / `'full'`: Fully localizes language and region to the country's primary native locale (e.g. 'ar-SA').
+ * - `'none'` / `false`: Disables locale synchronization; leaves instance locale untouched.
+ * - Custom BCP 47 string (e.g. `'fr-CH'`, `'es-SA'`): Sets the instance locale directly.
+ */
+export type LocaleSyncMode =
+	| boolean
+	| 'regional' | 'region'
+	| 'native' | 'full'
+	| 'none' | 'off'
+	| (string & {});
+
+/**
  * Supported units for solar offset calculation.
  */
-export type SolarOffsetUnit = 'minutes' | 'seconds' | 'hours';
+export type SolarOffsetUnit = 'mi' | 'minutes' | 'ss' | 'seconds' | 'hh' | 'hours';
 
 /**
  * Configuration options for natural solar time offset calculation.
@@ -47,6 +113,20 @@ export interface GeoLookupResult {
 	status?: string | undefined;
 	error?: string | undefined;
 	[key: string]: any;
+}
+
+/**
+ * Standard interface for pluggable geocoding and geolocation providers.
+ */
+export interface GeoProvider {
+	/** Unique identifier or provider name */
+	readonly name: string;
+	/** Resolves geographic coordinates and location metadata */
+	lookup(opts?: Record<string, any>): Promise<GeoLookupResult | null>;
+	/** Optional reverse geocoding from coordinates to location details */
+	reverseGeocode?(coords: CoordinateInput, opts?: Record<string, any>): Promise<GeoConfig | null>;
+	/** Optional forward geocoding from place/address query to coordinates */
+	forwardGeocode?(query: string, opts?: Record<string, any>): Promise<ResolvedCoordinates | null>;
 }
 
 export interface ResolvedCoordinates extends GeoConfig {
@@ -272,9 +352,22 @@ const resolveCacheKey = (keyOrOpts?: string | Record<string, any>): string => {
 			: `${MAP_KEY}:${trimmed}`;
 	}
 	if (keyOrOpts && isObject(keyOrOpts)) {
+		const provider = keyOrOpts.provider ?? activeGeoProvider;
+		const providerPrefix = provider && isString(provider.name) && !isEmpty(provider.name)
+			? `provider:${provider.name}`
+			: undefined;
 		const k = keyOrOpts.key ?? keyOrOpts.ip ?? keyOrOpts.query;
-		if (isString(k) && !isEmpty(k))
-			return `${MAP_KEY}:${k.trim()}`;
+		if (isString(k) && !isEmpty(k)) {
+			const trimmedKey = k.trim();
+			return providerPrefix
+				? `${MAP_KEY}:${providerPrefix}:${trimmedKey}`
+				: `${MAP_KEY}:${trimmedKey}`;
+		}
+		if (providerPrefix) {
+			return `${MAP_KEY}:${providerPrefix}`;
+		}
+	} else if (activeGeoProvider && isString(activeGeoProvider.name) && !isEmpty(activeGeoProvider.name)) {
+		return `${MAP_KEY}:provider:${activeGeoProvider.name}`;
 	}
 	return MAP_KEY;
 }
@@ -290,7 +383,7 @@ export const getStashedGeo = (keyOrOpts?: string | Record<string, any>): GeoConf
 	const cacheKey = resolveCacheKey(keyOrOpts);
 	try {
 		const raw = getStorage<any>(cacheKey) ??
-			(typeof localStorage !== 'undefined' ? localStorage.getItem(cacheKey) : undefined);
+			(isCallable((globalThis as any).localStorage?.getItem) ? (globalThis as any).localStorage.getItem(cacheKey) : undefined);
 		if (!raw) return undefined;
 
 		const parsed = isString(raw) && (raw.startsWith('{') || raw.startsWith('['))
@@ -369,14 +462,33 @@ export const clearStashedGeo = (keyOrOpts?: string | Record<string, any>): void 
 	setStorage(cacheKey, undefined);
 };
 
+let activeGeoProvider: GeoProvider | undefined;
+
+/**
+ * Sets the active custom geolocation provider gateway.
+ * 
+ * @param provider - GeoProvider implementation or undefined to restore default provider
+ */
+export function setGeoProvider(provider?: GeoProvider): void {
+	activeGeoProvider = provider;
+}
+
+/**
+ * Gets the currently registered custom geolocation provider.
+ */
+export function getGeoProvider(): GeoProvider | undefined {
+	return activeGeoProvider;
+}
+
 /**
  * Universal geolocation lookup dispatcher.
- * Automatically delegates to browser `geoLocation()` or server `serverGeoLocation()` based on runtime context.
+ * Automatically delegates to custom provider, browser `geoLocation()`, or server `serverGeoLocation()`.
  * When coordinates are resolved, stashes the result in storage with a 24-hour TTL for fast cached lookups.
  * 
- * @param opts - Lookup options passed down to environment handler (e.g. `{ refresh: true, key: 'tenant-1' }`)
+ * @param opts - Lookup options passed down to environment handler (e.g. `{ refresh: true, key: 'tenant-1', provider }`)
  */
 export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLookupResult> => {
+	const provider = opts.provider ?? activeGeoProvider;
 	const useCache = opts.refresh !== true;
 
 	if (useCache) {
@@ -394,29 +506,50 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 		}
 	}
 
-	const { type } = getContext();
-	let res: GeoLookupResult;
+	let res: GeoLookupResult | undefined;
 
-	switch (type) {
-		case CONTEXT.Browser: {
-			const { geoLocation } = await import('#browser/mapper.library.js');
-			const browserRes = await geoLocation(opts as any);
-			if (browserRes.error)
-				return { error: browserRes.error };
-
-			const lat = browserRes.coords?.latitude;
-			const lng = browserRes.coords?.longitude;
-			res = { ...browserRes, lat, lng, latitude: lat, longitude: lng };
-			break;
+	if (provider && isFunction(provider.lookup)) {
+		try {
+			const providerRes = await provider.lookup(opts);
+			if (providerRes) {
+				res = providerRes;
+				if (providerRes.error && opts.fallback === false)
+					return providerRes;
+			} else if (opts.fallback === false) {
+				return { error: 'Provider returned null and fallback is disabled' };
+			}
+		} catch (err: any) {
+			if (opts.fallback === false)
+				return { error: err?.message ?? 'Provider lookup failed' };
 		}
+	}
 
-		case CONTEXT.WebWorker:
-		case CONTEXT.NodeJS:
-		case CONTEXT.Deno:
-		default: {
-			const { serverGeoLocation } = await import('#server/mapper.library.js');
-			res = await serverGeoLocation(opts as any);
-			break;
+	if (!res || res.error) {
+		if (opts.fallback === false && (provider || res?.error))
+			return res && res.error ? res : { error: 'Geolocation resolution failed and fallback is disabled' };
+
+		const { type } = getContext();
+		switch (type) {
+			case CONTEXT.Browser: {
+				const { geoLocation } = await import('#browser/mapper.library.js');
+				const browserRes = await geoLocation(opts as any);
+				if (browserRes.error)
+					return { error: browserRes.error };
+
+				const lat = browserRes.coords?.latitude;
+				const lng = browserRes.coords?.longitude;
+				res = { ...browserRes, lat, lng, latitude: lat, longitude: lng };
+				break;
+			}
+
+			case CONTEXT.WebWorker:
+			case CONTEXT.NodeJS:
+			case CONTEXT.Deno:
+			default: {
+				const { serverGeoLocation } = await import('#server/mapper.library.js');
+				res = await serverGeoLocation(opts as any);
+				break;
+			}
 		}
 	}
 
@@ -452,6 +585,41 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 
 	return res;
 };
+
+/**
+ * Reverse geocodes coordinates to address or location metadata using the active or provided GeoProvider.
+ * 
+ * @param coords - Coordinate input
+ * @param opts - Options including optional provider override
+ */
+export async function reverseGeocode(
+	coords: CoordinateInput,
+	opts?: Record<string, any>
+): Promise<GeoConfig | null> {
+	const provider = opts?.provider ?? activeGeoProvider;
+	if (provider && isFunction(provider.reverseGeocode)) {
+		return provider.reverseGeocode(coords, opts);
+	}
+	const resolved = coerceGeo(coords);
+	return resolved ?? null;
+}
+
+/**
+ * Forward geocodes an address or place query string into coordinates using the active or provided GeoProvider.
+ * 
+ * @param query - Address or place search query
+ * @param opts - Options including optional provider override
+ */
+export async function forwardGeocode(
+	query: string,
+	opts?: Record<string, any>
+): Promise<ResolvedCoordinates | null> {
+	const provider = opts?.provider ?? activeGeoProvider;
+	if (provider && isFunction(provider.forwardGeocode)) {
+		return provider.forwardGeocode(query, opts);
+	}
+	return null;
+}
 
 /**
  * Universal coordinate resolver.
@@ -500,6 +668,92 @@ export const resolveGeoCoordinates = async (
 };
 
 /**
+ * Internal helper to extract validated, unrounded coordinates from objects, tuples, or strings.
+ * @internal
+ */
+const extractRawCoords = (input: any): { lat: number; lng: number } | undefined => {
+	if (isNullish(input)) return undefined;
+	if (isString(input) && input.includes(',')) {
+		const segments = input.split(',').map(s => s.trim());
+		if (segments.length >= 2 && segments[0] !== '' && segments[1] !== '') {
+			const lat = Number(segments[0]);
+			const lng = Number(segments[1]);
+			if (isNumber(lat) && isNumber(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+				return { lat, lng };
+			}
+		}
+		return undefined;
+	}
+	if (Array.isArray(input) && input.length >= 2) {
+		const rawLat = input[0];
+		const rawLng = input[1];
+		if (
+			rawLat !== null &&
+			rawLng !== null &&
+			rawLat !== '' &&
+			rawLng !== '' &&
+			typeof rawLat !== 'boolean' &&
+			typeof rawLng !== 'boolean'
+		) {
+			const lat = typeof rawLat === 'string' && rawLat.trim() === '' ? NaN : Number(rawLat);
+			const lng = typeof rawLng === 'string' && rawLng.trim() === '' ? NaN : Number(rawLng);
+			if (isNumber(lat) && isNumber(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+				return { lat, lng };
+			}
+		}
+		return undefined;
+	}
+	if (isReference(input)) {
+		const geo = input.geo ?? input.config?.geo ?? input;
+		const cfg = input.config?.geo ?? input.config;
+		const rawLat = evaluate<any>(geo?.latitude, geo?.lat, input.latitude, input.lat, cfg?.latitude, cfg?.lat);
+		const rawLng = evaluate<any>(geo?.longitude, geo?.lng, geo?.lon, geo?.long, input.longitude, input.lng, input.lon, input.long, cfg?.longitude, cfg?.lng, cfg?.lon, cfg?.long);
+		if (
+			rawLat !== null &&
+			rawLng !== null &&
+			rawLat !== '' &&
+			rawLng !== '' &&
+			typeof rawLat !== 'boolean' &&
+			typeof rawLng !== 'boolean'
+		) {
+			const lat = typeof rawLat === 'string' && rawLat.trim() === '' ? NaN : Number(rawLat);
+			const lng = typeof rawLng === 'string' && rawLng.trim() === '' ? NaN : Number(rawLng);
+			if (isNumber(lat) && isNumber(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+				return { lat, lng };
+			}
+		}
+	}
+	return undefined;
+};
+
+/**
+ * Internal helper to coerce and project two coordinate sources into radians.
+ * @internal
+ */
+const toRadianCoordinates = (from: any, to: any) => {
+	const c1 = coerceGeo(from);
+	const c2 = coerceGeo(to);
+
+	if (!c1 || !c2 || !isNumber(c1.latitude) || !isNumber(c1.longitude) || !isNumber(c2.latitude) || !isNumber(c2.longitude))
+		return undefined;
+
+	const toRad = Math.PI / 180;
+	const lat1 = c1.latitude * toRad;
+	const lng1 = c1.longitude * toRad;
+	const lat2 = c2.latitude * toRad;
+	const lng2 = c2.longitude * toRad;
+
+	return {
+		lat1,
+		lat2,
+		lng1,
+		lng2,
+		dLat: lat2 - lat1,
+		dLng: lng2 - lng1,
+	}
+}
+
+/**
  * Calculates the Great-Circle distance between two coordinates using the Haversine formula.
  * Accepts coordinate objects, [lat, lng] tuples, strings, or instances exposing .geo.
  * 
@@ -509,34 +763,14 @@ export const resolveGeoCoordinates = async (
  * @returns Calculated distance, or NaN if either coordinate pair is invalid
  */
 export function haversineDistance(from: any, to: any, unit: DistanceUnit = 'km'): number {
-	const c1 = coerceGeo(from);
-	const c2 = coerceGeo(to);
+	const coords = toRadianCoordinates(from, to);
+	if (!coords) return NaN;
 
-	if (!c1 || !c2 || !isNumber(c1.latitude) || !isNumber(c1.longitude) || !isNumber(c2.latitude) || !isNumber(c2.longitude)) {
-		return NaN;
-	}
-
-	const toRad = Math.PI / 180;
-	const lat1 = c1.latitude * toRad;
-	const lng1 = c1.longitude * toRad;
-	const lat2 = c2.latitude * toRad;
-	const lng2 = c2.longitude * toRad;
-
-	const dLat = lat2 - lat1;
-	const dLng = lng2 - lng1;
-
+	const { lat1, lat2, dLat, dLng } = coords;
 	const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
 	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-	let radius: number;
-	if (unit === 'miles') {
-		radius = 3958.7613; // Mean Earth radius in miles
-	} else if (unit === 'm') {
-		radius = 6371008.8; // Mean Earth radius in meters
-	} else {
-		radius = 6371.0088; // Mean Earth radius in kilometers (default)
-	}
-
+	const radius = unit === 'miles' ? 3958.7613 : (unit === 'm' ? 6371008.8 : 6371.0088);
 	const dist = radius * c;
 	return unit === 'm' ? Math.round(dist) : Math.round(dist * 1000) / 1000;
 }
@@ -548,7 +782,7 @@ export function haversineDistance(from: any, to: any, unit: DistanceUnit = 'km')
  */
 const resolveCivilTimezoneOffset = (tz: string, epochMs: number): number | undefined => {
 	try {
-		if (typeof Temporal !== 'undefined' && typeof Temporal.Instant?.fromEpochMilliseconds === 'function') {
+		if (isDefined((globalThis as any).Temporal) && isFunction((globalThis as any).Temporal.Instant?.fromEpochMilliseconds)) {
 			const zdt = Temporal.Instant.fromEpochMilliseconds(epochMs).toZonedDateTimeISO(tz);
 			return zdt.offsetNanoseconds / 60_000_000_000;
 		}
@@ -584,7 +818,7 @@ const resolveCivilTimezoneOffset = (tz: string, epochMs: number): number | undef
  */
 export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 	const geo = coerceGeo(coords);
-	if (!geo || !isNumber(geo.latitude) || !isNumber(geo.longitude) || isNaN(geo.latitude) || isNaN(geo.longitude)) {
+	if (!geo || !isNumber(geo.latitude) || !isNumber(geo.longitude)) {
 		return NaN;
 	}
 
@@ -593,18 +827,10 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 		?? (isReference(coords) ? ((coords as any).timezone ?? (coords as any).tz) : undefined)
 		?? geo.timezone;
 
-	const dateVal = options?.date
-		?? (isReference(coords) && isNumber((coords as any).epoch?.ms) ? (coords as any).epoch.ms : Date.now());
+	const dateVal = options?.date ?? (isReference(coords) ? extractEpochMs(coords) : undefined);
+	const epochMs = isDefined(dateVal) ? extractEpochMs(dateVal) : Date.now();
 
-	const epochMs = typeof dateVal === 'number'
-		? dateVal
-		: (isString(dateVal)
-			? Date.parse(dateVal)
-			: (isDate(dateVal)
-				? dateVal.getTime()
-				: (isReference(dateVal) && isNumber((dateVal as any)?.epoch?.ms) ? (dateVal as any).epoch.ms : Date.now())));
-
-	if (!Number.isFinite(epochMs)) return NaN;
+	if (!isNumber(epochMs)) return NaN;
 
 	const offsetMinutes = isText(tz) ? resolveCivilTimezoneOffset(tz, epochMs) : undefined;
 
@@ -625,11 +851,11 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 		offsetMin += eqTime;
 	}
 
-	const unit = options?.unit ?? 'minutes';
+	const unit = options?.unit ?? 'mi';
 	let res: number;
-	if (unit === 'seconds') {
+	if (unit === 'ss' || unit === 'seconds') {
 		res = offsetMin * 60;
-	} else if (unit === 'hours') {
+	} else if (unit === 'hh' || unit === 'hours') {
 		res = offsetMin / 60;
 	} else {
 		res = offsetMin;
@@ -639,4 +865,389 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 	const factor = Math.pow(10, precision);
 	return Math.round(res * factor) / factor;
 }
+
+/**
+ * Extracts a numeric epoch millisecond timestamp from diverse date/time or instance representations.
+ * @internal
+ */
+export function extractEpochMs(input: any): number | undefined {
+	if (isNullish(input)) return undefined;
+	if (isNumber(input)) return input;
+	if (isDate(input)) return input.getTime();
+	if (isReference(input)) {
+		if (isNumber(input.epoch?.ms)) return input.epoch.ms;
+		if (isNumber(input.epochMilliseconds)) return input.epochMilliseconds;
+		if (isNumber(input.timestamp)) return input.timestamp;
+		if (isDate(input.date)) return input.date.getTime();
+		if (isFunction(input.toInstant)) {
+			try { return input.toInstant().epochMilliseconds; } catch { }
+		}
+		if (isFunction(input.getTime))
+			try { return input.getTime(); } catch { }
+	}
+	if (isString(input)) {
+		const parsed = Date.parse(input);
+		if (isNumber(parsed)) return parsed;
+	}
+	return undefined;
+}
+
+/**
+ * Calculates the initial forward azimuth compass bearing (0° to 360°) along the Great-Circle path from origin to destination.
+ * 
+ * @param from - Origin coordinate, object, tuple, or instance exposing .geo
+ * @param to - Destination coordinate, object, tuple, or instance exposing .geo
+ * @param options - Configuration options such as precision (default: 1 decimal place)
+ * @returns Compass bearing in degrees (0° to 360°), or NaN if either coordinate is invalid
+ */
+export function calculateBearing(from: any, to: any, options?: BearingOptions): number {
+	const coords = toRadianCoordinates(from, to);
+	if (!coords) return NaN;
+
+	const { lat1, lat2, dLng } = coords;
+	const y = Math.sin(dLng) * Math.cos(lat2);
+	const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+
+	const bearing = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+
+	const precision = options?.precision ?? 1;
+	const factor = Math.pow(10, precision);
+	return Math.round(bearing * factor) / factor;
+}
+
+/**
+ * Calculates the geographic midpoint along the Great-Circle path between two coordinates.
+ * 
+ * @param from - Origin coordinate, object, tuple, or instance exposing .geo
+ * @param to - Destination coordinate, object, tuple, or instance exposing .geo
+ * @returns Midpoint coordinate object with inferred hemisphere ({ latitude, longitude, sphere }), or undefined if invalid
+ */
+export function calculateMidpoint(from: any, to: any): { latitude: number; longitude: number; sphere: GeoSphere } | undefined {
+	const coords = toRadianCoordinates(from, to);
+	if (!coords) return undefined;
+
+	const { lat1, lat2, lng1, dLng } = coords;
+	const Bx = Math.cos(lat2) * Math.cos(dLng);
+	const By = Math.cos(lat2) * Math.sin(dLng);
+
+	const latMidRad = Math.atan2(
+		Math.sin(lat1) + Math.sin(lat2),
+		Math.sqrt((Math.cos(lat1) + Bx) ** 2 + By ** 2)
+	);
+	const lngMidRad = lng1 + Math.atan2(By, Math.cos(lat1) + Bx);
+
+	const midLat = Math.round((latMidRad * 180 / Math.PI) * 1000) / 1000;
+	const midLng = Math.round((((lngMidRad * 180 / Math.PI + 540) % 360 - 180)) * 1000) / 1000;
+
+	const sphere: GeoSphere = midLat > 0.001 ? 'north' : (midLat < -0.001 ? 'south' : 'equator');
+
+	return {
+		latitude: midLat,
+		longitude: midLng,
+		sphere,
+	};
+}
+
+/**
+ * Calculates the speed/velocity between two timestamped geographic instances or coordinate objects.
+ * 
+ * @param from - Origin coordinate or timestamped instance
+ * @param to - Destination coordinate or timestamped instance
+ * @param options - Configuration options for units and precision
+ * @returns Calculated velocity in requested unit (e.g. km/h, mph, m/s), or NaN if invalid
+ */
+export function calculateVelocity(from: any, to: any, options?: VelocityOptions | DistanceUnit): number {
+	const opts: VelocityOptions = isString(options) ? { unit: options as DistanceUnit } : (options ?? {});
+	const unit = opts.unit ?? 'km';
+	const timeUnit = opts.timeUnit ?? 'hh';
+
+	const dist = haversineDistance(from, to, unit);
+	if (isNaN(dist)) return NaN;
+
+	const t1 = extractEpochMs(from);
+	const t2 = extractEpochMs(to);
+
+	if (!isNumber(t1) || !isNumber(t2)) return NaN;
+
+	const deltaMs = Math.abs(t2 - t1);
+	if (deltaMs === 0) {
+		return dist === 0 ? 0 : Infinity;
+	}
+
+	let deltaUnits: number;
+	if (timeUnit === 'ss' || timeUnit === 's' || timeUnit === 'seconds' || timeUnit === 'second') {
+		deltaUnits = deltaMs / 1000;
+	} else if (timeUnit === 'mi' || timeUnit === 'm' || timeUnit === 'minutes' || timeUnit === 'minute') {
+		deltaUnits = deltaMs / 60_000;
+	} else {
+		deltaUnits = deltaMs / 3_600_000; // Default: hours ('hh', 'h')
+	}
+
+	const velocity = dist / deltaUnits;
+	const precision = opts.precision ?? 2;
+	const factor = Math.pow(10, precision);
+	return Math.round(velocity * factor) / factor;
+}
+
+/**
+ * Evaluates whether travel between two timestamped geographic instances represents an impossible travel anomaly
+ * (e.g. concurrent logins from distant countries exceeding commercial flight velocities).
+ * 
+ * @param from - Origin coordinate or timestamped instance
+ * @param to - Destination coordinate or timestamped instance
+ * @param options - Feasibility options including custom speed threshold (default max speed: 900 km/h)
+ * @returns true if calculated velocity exceeds commercial feasibility threshold, false otherwise
+ */
+export function isImpossibleTravel(from: any, to: any, options?: ImpossibleTravelOptions): boolean {
+	const unit = options?.unit ?? 'km';
+	const defaultMax = unit === 'miles' ? 560 : (unit === 'm' ? 250 : 900); // 900 km/h ≈ 560 mph ≈ 250 m/s
+	const threshold = options?.maxSpeed ?? options?.maxCommercialSpeedKmH ?? defaultMax;
+
+	const velocity = calculateVelocity(from, to, { unit, timeUnit: unit === 'm' ? 'ss' : 'hh' });
+
+	return velocity > threshold;
+}
+
+/**
+ * Checks whether the Great-Circle distance between two coordinates is within a specified radius.
+ * 
+ * @param from - Origin coordinate, object, tuple, or instance
+ * @param to - Target coordinate, object, tuple, or instance
+ * @param maxDistance - Maximum allowable distance
+ * @param unit - Distance unit ('km', 'miles', or 'm'; default: 'km')
+ * @returns true if distance is <= maxDistance, false otherwise
+ */
+export function isWithin(from: any, to: any, maxDistance: number, unit: DistanceUnit = 'km'): boolean {
+	if (!isNumber(maxDistance) || maxDistance < 0) return false;
+	const c1 = extractRawCoords(from);
+	const c2 = extractRawCoords(to);
+	if (!c1 || !c2 || !isNumber(c1.lat) || !isNumber(c1.lng) || !isNumber(c2.lat) || !isNumber(c2.lng))
+		return false;
+
+	const toRad = Math.PI / 180;
+	const lat1 = c1.lat * toRad;
+	const lng1 = c1.lng * toRad;
+	const lat2 = c2.lat * toRad;
+	const lng2 = c2.lng * toRad;
+	const dLat = lat2 - lat1;
+	const dLng = lng2 - lng1;
+
+	const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+		Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+	const radius = unit === 'miles' ? 3958.7613 : (unit === 'm' ? 6371008.8 : 6371.0088);
+	const dist = radius * c;
+
+	return dist <= maxDistance;
+}
+
+/**
+ * Checks whether a coordinate point falls inside a geographic rectangular bounding box.
+ * Correctly accounts for antimeridian crossing (180° longitude).
+ * 
+ * @param coords - Coordinate to test
+ * @param bbox - Bounding box object or [minLat, minLng, maxLat, maxLng] tuple
+ * @returns true if coords are inside bbox, false otherwise
+ */
+export function inBoundingBox(coords: any, bbox: BoundingBox | [number, number, number, number]): boolean {
+	const geo = extractRawCoords(coords);
+	if (!geo || !isNumber(geo.lat) || !isNumber(geo.lng)) return false;
+	if (isNullish(bbox)) return false;
+
+	let minLat: number | undefined;
+	let maxLat: number | undefined;
+	let minLng: number | undefined;
+	let maxLng: number | undefined;
+
+	if (Array.isArray(bbox) && bbox.length >= 4) {
+		minLat = bbox[0];
+		minLng = bbox[1];
+		maxLat = bbox[2];
+		maxLng = bbox[3];
+	} else if (isReference(bbox)) {
+		const b = bbox as BoundingBox;
+		minLat = b.minLat ?? b.minLatitude;
+		maxLat = b.maxLat ?? b.maxLatitude;
+		minLng = b.minLng ?? b.minLongitude;
+		maxLng = b.maxLng ?? b.maxLongitude;
+	}
+
+	if (!isNumber(minLat) || !isNumber(maxLat) || !isNumber(minLng) || !isNumber(maxLng))
+		return false;
+
+	const lat = geo.lat;
+	const lng = geo.lng;
+
+	if (lat < minLat || lat > maxLat) return false;
+
+	// Check longitude (standard vs antimeridian wrap)
+	return (minLng <= maxLng)
+		? lng >= minLng && lng <= maxLng
+		: lng >= minLng || lng <= maxLng;
+}
+
+/**
+ * Common country name mappings to ISO 3166-1 alpha-2 codes.
+ */
+const COMMON_COUNTRY_NAMES: Record<string, string> = {
+	australia: 'AU',
+	'united states': 'US',
+	'united kingdom': 'GB',
+	'great britain': 'GB',
+	france: 'FR',
+	germany: 'DE',
+	italy: 'IT',
+	spain: 'ES',
+	japan: 'JP',
+	china: 'CN',
+	canada: 'CA',
+	brazil: 'BR',
+	egypt: 'EG',
+	'saudi arabia': 'SA',
+	russia: 'RU',
+	india: 'IN',
+	mexico: 'MX',
+	'new zealand': 'NZ',
+	netherlands: 'NL',
+	switzerland: 'CH',
+	austria: 'AT',
+	belgium: 'BE',
+	sweden: 'SE',
+	norway: 'NO',
+	denmark: 'DK',
+	finland: 'FI',
+	poland: 'PL',
+	turkey: 'TR',
+	greece: 'GR',
+	israel: 'IL',
+	thailand: 'TH',
+	vietnam: 'VN',
+	indonesia: 'ID',
+	malaysia: 'MY',
+	philippines: 'PH',
+	'south africa': 'ZA',
+	'south korea': 'KR',
+	korea: 'KR',
+	ireland: 'IE',
+	portugal: 'PT',
+	argentina: 'AR',
+};
+
+/**
+ * Standard mapping from ISO 3166-1 alpha-2 country codes to primary native BCP 47 locales.
+ */
+export const COUNTRY_PRIMARY_LOCALES: Record<string, string> = {
+	AU: 'en-AU',
+	US: 'en-US',
+	GB: 'en-GB',
+	CA: 'en-CA',
+	NZ: 'en-NZ',
+	IE: 'en-IE',
+	SA: 'ar-SA',
+	AE: 'ar-AE',
+	EG: 'ar-EG',
+	JP: 'ja-JP',
+	CN: 'zh-CN',
+	TW: 'zh-TW',
+	HK: 'zh-HK',
+	KR: 'ko-KR',
+	FR: 'fr-FR',
+	DE: 'de-DE',
+	IT: 'it-IT',
+	ES: 'es-ES',
+	MX: 'es-MX',
+	AR: 'es-AR',
+	BR: 'pt-BR',
+	PT: 'pt-PT',
+	RU: 'ru-RU',
+	IN: 'hi-IN',
+	NL: 'nl-NL',
+	SE: 'sv-SE',
+	NO: 'nb-NO',
+	DK: 'da-DK',
+	FI: 'fi-FI',
+	PL: 'pl-PL',
+	TR: 'tr-TR',
+	GR: 'el-GR',
+	IL: 'he-IL',
+	TH: 'th-TH',
+	VN: 'vi-VN',
+	ID: 'id-ID',
+	MY: 'ms-MY',
+	PH: 'fil-PH',
+	ZA: 'en-ZA',
+	CH: 'de-CH',
+	AT: 'de-AT',
+	BE: 'nl-BE',
+};
+
+/**
+ * Resolves a synchronized BCP 47 locale based on geolocated country and synchronization mode.
+ * 
+ * @param currentLocale - Current instance locale (e.g. 'en-US')
+ * @param countryCode - Resolved ISO country code (e.g. 'SA') or country name (e.g. 'Saudi Arabia')
+ * @param mode - Locale sync mode ('regional' / true, 'native', 'none' / false, or custom string)
+ * @returns Validated BCP 47 locale string, or undefined if no change
+ */
+export function resolveCulturalLocale(
+	currentLocale: string | undefined,
+	countryCode: string | undefined | string[],
+	mode: LocaleSyncMode = true
+): string | undefined {
+	if (mode === false || mode === 'none' || mode === 'off')
+		return undefined;
+
+	const toCode = (val: string): string | undefined => {
+		const trimmed = val.trim();
+		if (trimmed.length === 2) return trimmed.toUpperCase();
+		return COMMON_COUNTRY_NAMES[trimmed.toLowerCase()];
+	}
+
+	// Normalize country code
+	let country: string | undefined;
+	if (Array.isArray(countryCode)) {
+		for (const c of countryCode) {
+			if (isString(c)) {
+				const mapped = toCode(c);
+				if (mapped) {
+					country = mapped;
+					break;
+				}
+			}
+		}
+	} else if (isString(countryCode)) {
+		country = toCode(countryCode);
+	}
+
+	// Custom BCP 47 tag
+	if (isString(mode) && mode !== 'regional' && mode !== 'region' && mode !== 'native' && mode !== 'full') {
+		const loc = getLC(mode);
+		return loc?.baseName ?? cleanLocaleTag(mode);
+	}
+
+	if (!country) return undefined;
+
+	// Native mode: country -> primary native locale
+	if (mode === 'native' || mode === 'full') {
+		const nativeTag = COUNTRY_PRIMARY_LOCALES[country] ?? `en-${country}`;
+		const loc = getLC(nativeTag);
+		return loc?.baseName ?? nativeTag;
+	}
+
+	// Regional mode (default: true / 'regional' / 'region'): preserve source language and script, adapt region
+	let baseLang = 'en';
+	let script: string | undefined;
+	if (isString(currentLocale) && currentLocale.length > 0) {
+		const loc = getLC(currentLocale);
+		baseLang = loc?.language ?? cleanLocaleTag(currentLocale)?.split('-')[0] ?? 'en';
+		if (loc?.script)
+			script = loc.script;
+	}
+
+	const targetTag = script ? `${baseLang}-${script}-${country}` : `${baseLang}-${country}`;
+	const loc = getLC(targetTag);
+	return loc?.baseName ?? targetTag;
+}
+
 

@@ -33,10 +33,27 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(Object.isFrozen(t.term.solar.phases)).toBe(true);
 		expect(t.term.solar.sunrise).toBeInstanceOf(Tempo);
 		expect(t.term.solar.noon).toBeInstanceOf(Tempo);
+		expect(t.term.solar.solarTime).toBeInstanceOf(Tempo);
 		expect(t.term.solar.sunset).toBeInstanceOf(Tempo);
 		expect(t.term.solar.isDaylight).toBe(true);
 		expect(t.term.solar.geo).toBe(t.geo);
 		expect(t.term.lunar.geo).toBe(t.geo);
+	});
+
+	it('computes exact 12:00:00 apparent solar time at solar noon', () => {
+		const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
+		const noonTempo = t.term.solar.noon!;
+		expect(noonTempo).toBeInstanceOf(Tempo);
+
+		// Anchor tempo to exact solar noon
+		const atNoon = new Tempo(noonTempo.epoch.ms, { geo: { lat: 40.7128, lng: -74.006 }, timeZone: 'UTC' });
+		const solarTime = atNoon.term.solar.solarTime!;
+		expect(solarTime).toBeInstanceOf(Tempo);
+
+		const dt = solarTime.toDateTime();
+		expect(dt.hour).toBe(12);
+		expect(dt.minute).toBe(0);
+		expect(dt.second).toBe(0);
 	});
 
 	it('factors elevation into solar sunrise/sunset and exposes elevation on solar term', () => {
@@ -74,6 +91,37 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(t.term.tides.end).toBeInstanceOf(Tempo);
 	});
 
+	it('resolves location-aware topocentric lunar properties when geo coordinates are present', () => {
+		const t = new Tempo('2026-09-02T12:00:00Z', { geo: { lat: -33.8688, lng: 151.2093 } });
+
+		expect(typeof t.term.lunar.altitude).toBe('number');
+		expect(t.term.lunar.altitude).toBeGreaterThanOrEqual(-90);
+		expect(t.term.lunar.altitude).toBeLessThanOrEqual(90);
+
+		expect(typeof t.term.lunar.azimuth).toBe('number');
+		expect(t.term.lunar.azimuth).toBeGreaterThanOrEqual(0);
+		expect(t.term.lunar.azimuth).toBeLessThan(360);
+
+		expect(typeof t.term.lunar.isAboveHorizon).toBe('boolean');
+		expect(typeof t.term.lunar.crescentTiltDeg).toBe('number');
+		expect(t.term.lunar.crescentTiltDeg).toBeGreaterThanOrEqual(0);
+		expect(t.term.lunar.crescentTiltDeg).toBeLessThan(360);
+
+		expect(typeof t.term.lunar.distanceKm).toBe('number');
+		expect(t.term.lunar.distanceKm).toBeGreaterThan(350000);
+		expect(t.term.lunar.distanceKm).toBeLessThan(410000);
+
+		expect(typeof t.term.lunar.angularDiameterArcmin).toBe('number');
+		expect(typeof t.term.lunar.isSupermoon).toBe('boolean');
+		expect(typeof t.term.lunar.isMicromoon).toBe('boolean');
+
+		if (t.term.lunar.transit) {
+			expect(t.term.lunar.transit).toBeInstanceOf(Tempo);
+			expect(t.term.lunar.transit.toDateTime().year).toBe(2026);
+		}
+
+	});
+
 	it('evaluates geo-dependent properties to null when geo is missing', () => {
 		const t = new Tempo('2026-06-21T12:00:00Z');
 		
@@ -88,10 +136,20 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(t.term.solar.sunrise).toBeNull();
 		expect(t.term.solar.sunset).toBeNull();
 		expect(t.term.solar.noon).toBeNull();
+		expect(t.term.solar.solarTime).toBeNull();
 		expect(t.term.solar.isDaylight).toBeNull();
 		expect(t.term.solar.civil.sunrise).toBeNull();
 		expect(t.term.lunar.moonrise).toBeNull();
 		expect(t.term.lunar.moonset).toBeNull();
+		expect(t.term.lunar.transit).toBeNull();
+		expect(t.term.lunar.altitude).toBeNull();
+		expect(t.term.lunar.azimuth).toBeNull();
+		expect(t.term.lunar.isAboveHorizon).toBeNull();
+		expect(t.term.lunar.crescentTiltDeg).toBeNull();
+		expect(t.term.lunar.distanceKm).toBeNull();
+		expect(t.term.lunar.angularDiameterArcmin).toBeNull();
+		expect(t.term.lunar.isSupermoon).toBeNull();
+		expect(t.term.lunar.isMicromoon).toBeNull();
 		expect(t.term.tides.lunarTideMinute).toBeNull();
 		expect(t.term.tides.isKingTide).toBeNull();
 	});
@@ -101,6 +159,9 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		
 		expect(t.term.sun).toBeNull();
 		expect(t.term.solar.key).toBeNull();
+		expect(t.term.solar.solarTime).toBeNull();
+		expect(t.term.lunar.altitude).toBeNull();
+		expect(t.term.lunar.azimuth).toBeNull();
 	});
 
 	it('emits developer warning when geo is missing and debug >= 1', () => {
@@ -114,3 +175,4 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		warnSpy.mockRestore();
 	});
 });
+

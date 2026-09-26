@@ -34,6 +34,13 @@ export type {
 	TempoEventType,
 };
 
+/**
+ * Extracts and validates temporal events from one text using the resolved calendar context.
+ *
+ * @param text - Source text to scan for events
+ * @param options - Anchor, locale, provider, category, and cache settings
+ * @returns Structured events with resolved Tempo dates and AI metadata
+ */
 async function extractSingleInput(
 	text: string,
 	options?: AiExtractOptions,
@@ -174,6 +181,8 @@ ${categories.length > 0 ? `6. Only extract events matching one of these categori
 - Target TimeZone: ${tz}
 - Target Locale: ${loc}
 - Calendar System: ${cal}
+- Week Starts On: ${anchorTempo.intl.firstDay} (1=Mon, 7=Sun, 6=Sat)
+- Regional Weekend Days: [${anchorTempo.intl.weekend.join(', ')}]
 ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Filter Categories: ${categories.join(', ')}\n` : ''}`;
 
 	const winningCandidate = await executeWithMode(

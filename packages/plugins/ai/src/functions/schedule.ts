@@ -60,8 +60,17 @@ function parseDurationMinutes(prompt: string, fallback?: number): number {
 	return 30; // default 30 minutes
 }
 
-function formatActiveDays(days?: Array<number | DayKey | string>): string {
-	const active = days ?? [1, 2, 3, 4, 5];
+/**
+ * Lists active weekdays, defaulting to weekdays outside the locale's weekend.
+ *
+ * @param days - Explicit active weekdays, if supplied
+ * @param weekendDays - ISO weekdays treated as the regional weekend
+ * @returns Comma-separated weekday names for the scheduling prompt
+ */
+function formatActiveDays(days?: Array<number | DayKey | string>, weekendDays: readonly number[] = [6, 7]): string {
+	const weekendSet = new Set<number>(weekendDays);
+	const defaultActive = [1, 2, 3, 4, 5, 6, 7].filter(d => !weekendSet.has(d));
+	const active = days ?? (defaultActive.length > 0 ? defaultActive : [1, 2, 3, 4, 5]);
 	return active.map(d => {
 		if (isNumber(d) && (ISO_WEEKDAY_NAMES as any)[d]) return (ISO_WEEKDAY_NAMES as any)[d];
 		if (isString(d)) {
@@ -73,6 +82,16 @@ function formatActiveDays(days?: Array<number | DayKey | string>): string {
 	}).join(', ');
 }
 
+/**
+ * Builds the scheduling prompt context from working hours, regional days, and busy slots.
+ *
+ * @param anchorTempo - Reference time carrying locale and weekend information
+ * @param timeZone - Time zone for the requested slot
+ * @param workingHours - Allowed hours and active weekdays
+ * @param busyEvents - Existing intervals the slot must avoid
+ * @param durationMinutes - Required slot length
+ * @returns Calendar context for the scheduling provider
+ */
 function buildContextPrompt(
 	anchorTempo: Tempo,
 	timeZone: string,
@@ -80,7 +99,8 @@ function buildContextPrompt(
 	busyEvents: Array<{ start: Tempo; end: Tempo; title?: string | undefined }>,
 	durationMinutes: number
 ): string {
-	const activeDays = formatActiveDays(workingHours.days);
+	const weekend = anchorTempo.intl?.weekend ?? [6, 7];
+	const activeDays = formatActiveDays(workingHours.days, weekend);
 	const whStart = workingHours.start ?? '09:00';
 	const whEnd = workingHours.end ?? '17:00';
 
@@ -93,6 +113,9 @@ function buildContextPrompt(
 
 	return `Reference Anchor Time: ${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')} (${timeZone})
 Target TimeZone: ${timeZone}
+Target Locale: ${anchorTempo.locale}
+Week Starts On: ${anchorTempo.intl.firstDay} (1=Mon, 7=Sun, 6=Sat)
+Regional Weekend Days: [${weekend.join(', ')}]
 Working Hours: ${whStart} to ${whEnd} (${activeDays}) in ${workingHours.timeZone || timeZone}
 Required Slot Duration: ${durationMinutes} minutes
 Existing Booked Busy Slots to Avoid:
@@ -224,10 +247,12 @@ export async function scheduleAI(
 		operationName: 'scheduleAI',
 	});
 
+	const weekendSet = new Set<number>(anchorTempo.intl?.weekend ?? [6, 7]);
+	const defaultActiveDays = [1, 2, 3, 4, 5, 6, 7].filter(d => !weekendSet.has(d));
 	const workingHours: TempoWorkingHours = {
 		start: options?.workingHours?.start ?? '09:00',
 		end: options?.workingHours?.end ?? '17:00',
-		days: options?.workingHours?.days ?? [1, 2, 3, 4, 5],
+		days: options?.workingHours?.days ?? (defaultActiveDays.length > 0 ? defaultActiveDays : [1, 2, 3, 4, 5]),
 		timeZone: options?.workingHours?.timeZone ?? timeZone,
 	};
 

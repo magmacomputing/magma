@@ -5,6 +5,30 @@ All notable changes to the `@magmacomputing/tempo-plugin-geo` project will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-09-25
+
+### Added
+- **Pluggable Geocoding Provider Gateway (`GeoProvider`)**:
+  - `GeoProvider` interface: Standardized adapter interface for custom geocoding and geolocation providers (`lookup`, `reverseGeocode`, `forwardGeocode`).
+  - `Tempo.geo.setProvider(provider)` & `Tempo.geo.getProvider()`: Global registration of custom geolocation providers on the static namespace.
+  - `Tempo.geo.reverse(coords, options?)`: Reverse geocodes coordinates to address/locality metadata.
+  - `Tempo.geo.forward(query, options?)`: Forward geocodes place query strings to resolved coordinates.
+  - Call-site provider override: `t.geoLocate({ provider })` to dynamically override provider per operation.
+  - Automatic 24-hour BoundedCache integration and graceful failover to default environment lookup.
+- **Navigation & Transit Analytics (`Tempo.geo` Static Namespace)**:
+  - `Tempo.geo.velocity(from, to, options?)`: Calculates travel speed between two timestamped geographic instances or coordinate objects in `km/h`, `mph`, or `m/s`.
+  - `Tempo.geo.isImpossibleTravel(from, to, options?)`: Evaluates physical travel feasibility against commercial aviation thresholds (default: 900 km/h) for cybersecurity anomaly detection and impossible travel prevention.
+  - `Tempo.geo.bearing(from, to, options?)`: Computes Great-Circle forward azimuth compass bearing in degrees (0° to 360°).
+  - `Tempo.geo.midpoint(from, to)`: Computes Great-Circle geographic midpoint with automatic hemisphere inference (`{ latitude, longitude, sphere }`).
+- **Spatial Boundaries & Geofencing (`Tempo.geo` Static Namespace)**:
+  - `Tempo.geo.isWithin(from, to, maxDistance, unit?)`: Radial proximity query evaluating whether coordinates are within a specified distance (`'km'`, `'miles'`, `'m'`).
+  - `Tempo.geo.inBoundingBox(coords, bbox)`: Spatial containment test evaluating if coordinates fall within rectangular bounding box, including antimeridian crossing (180° longitude wrap).
+- **Automated Cultural Sync (`t.geoLocate({ setLocale })`)**:
+  - `LocaleSyncMode`: Synchronizes BCP 47 locale during `.geoLocate()` with default regional adaptation (`true` / `'regional'`), preserving source language while adapting the cultural calendar (e.g. `en-US` ➜ `en-SA` for Saturday-start weeks and Friday/Saturday weekends).
+  - Supports `'native'` (e.g. `ar-SA`), custom BCP 47 tags (`'es-SA'`, `'fr-CH'`), and opt-out (`false` / `'none'`).
+- **Exported Standalone Functional Utilities**:
+  - Direct named exports: `calculateBearing`, `calculateMidpoint`, `calculateVelocity`, `isImpossibleTravel`, `isWithin`, `inBoundingBox`, `resolveCulturalLocale`, and types `BearingOptions`, `VelocityOptions`, `ImpossibleTravelOptions`, `BoundingBox`, `LocaleSyncMode`, `TimeUnit`.
+
 ## [1.2.0] - 2026-09-18
 
 ### Added
