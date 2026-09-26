@@ -104,7 +104,7 @@
     "name": "Holidays Plugin",
     "description": "Regional bank holiday, public holiday, and business day SLA scheduling plugin for Tempo",
     "packageName": "@magmacomputing/tempo-plugin-holidays",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "plan": "community",
     "status": "active"
   }

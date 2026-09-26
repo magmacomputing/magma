@@ -291,12 +291,12 @@ When introducing or retiring a plugin, register it across the browser REPL playg
      - Syncs local versions to `packages/tempo/.vitepress/theme/data/catalog.json`.
 
 2. **Browser Import Map Registration (`public/repl/`)**:
-   - Add the plugin's CDN mapping to the `<script type="importmap">` in both `packages/tempo/public/repl/index.html` (pinned to major version `@^1`) and `packages/tempo/public/repl/showcase.html` (`@latest`):
+   - Add the plugin's CDN mapping to the `<script type="importmap">` in both `packages/tempo/public/repl/index.html` and `packages/tempo/public/repl/showcase.html` using `@latest`:
      ```json
-     "@magmacomputing/tempo-plugin-[name]": "https://esm.sh/@magmacomputing/tempo-plugin-[name]@^1"
+     "@magmacomputing/tempo-plugin-[name]": "https://esm.sh/@magmacomputing/tempo-plugin-[name]@latest"
      ```
      > [!NOTE]
-     > Even though a new plugin is initially published at `v0.1.0` solely to register it on npmjs and configure Trusted Publishers (OIDC), the plugin is immediately bumped to `v1.0.0` for regular CI publishing via `publish.yml`. Therefore, always target `@^1` (or `@latest`) in the REPL import maps.
+     > Always use `@latest` in import maps rather than semver operators like `@^1` or `@^0`, as browsers percent-encode special characters (e.g. `^` $\rightarrow$ `%5E`), causing CDN resolution errors on `esm.sh`.
 
 3. **Dedicated Playground Preset & Dropdown Option (`public/repl/index.html`)**:
    - **Preset Dropdown Selector**: Add an `<option>` element inside `<select id="presetSelect">` in `packages/tempo/public/repl/index.html`:

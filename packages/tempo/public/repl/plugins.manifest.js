@@ -56,7 +56,7 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 	},
 	"holidays": {
 		name: "@magmacomputing/tempo-plugin-holidays",
-		version: "0.1.0",
-		loader: () => import("@magmacomputing/tempo-plugin-holidays").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-holidays" + "@0.1.0"))
+		version: "1.0.0",
+		loader: () => import("@magmacomputing/tempo-plugin-holidays").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-holidays" + "@1.0.0"))
 	}
 };
