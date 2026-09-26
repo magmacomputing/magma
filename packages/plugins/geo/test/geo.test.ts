@@ -128,7 +128,7 @@ describe('Tempo Plugin: Geo', () => {
 				(Tempo as any).geo = {};
 			}).toThrow();
 			expect(() => {
-				(Tempo.geo as any).lookup = () => {};
+				(Tempo.geo as any).lookup = () => { };
 			}).toThrow();
 		});
 
@@ -523,6 +523,18 @@ describe('Tempo Plugin: Geo', () => {
 			);
 			const untouchedLoc = await event.geoLocate({ setLocale: false });
 			expect(untouchedLoc.locale).toBe('en-US');
+
+			// 5. Explicit custom locale takes effect even on countryless geo result
+			const countrylessPayload = {
+				lat: 0,
+				lon: 0,
+				timezone: 'UTC',
+			};
+			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+				new Response(JSON.stringify(countrylessPayload), { status: 200 })
+			);
+			const countrylessCustom = await event.geoLocate({ setLocale: 'fr-FR' });
+			expect(countrylessCustom.locale).toBe('fr-FR');
 		});
 	});
 

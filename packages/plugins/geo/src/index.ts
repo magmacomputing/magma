@@ -270,7 +270,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 				if (setTimezone && isString(targetTz) && !isEmpty(targetTz))
 					instance = this.set({ timeZone: targetTz });
 
-				const targetLocale = mergedGeo.country
+				const targetLocale = (mergedGeo.country || isString(setLocale))
 					? resolveCulturalLocale((this as any).locale ?? this.config.locale, mergedGeo.country, setLocale)
 					: undefined;
 

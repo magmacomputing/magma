@@ -24,6 +24,10 @@ export {
 	getLunarPhase,
 	getLunarPhaseRange,
 	getMoonriseMoonset,
+	getLunarPosition,
+	getLunarTransit,
+	getLunarDistance,
+	getCrescentTilt,
 	getSolarEvents,
 	getSunriseSunset,
 	getZodiacSign,
@@ -42,6 +46,9 @@ export {
 	type LunarPhaseOptions,
 	type LunarPhaseRange,
 	type MoonriseMoonsetResult,
+	type LunarPositionResult,
+	type LunarDistanceResult,
+	type CrescentTiltResult,
 	type SolarEventResult,
 	type SunriseSunsetResult,
 	type WesternZodiacSign,
@@ -49,3 +56,4 @@ export {
 	type TidalState,
 	type TidalResult,
 } from './celestial/index.js';
+

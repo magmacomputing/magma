@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-09-26
+
+### Added
+- **Topocentric Lunar Ephemeris & Horizon Position**:
+  - `getLunarPosition`: Calculates real-time topocentric altitude (corrected for horizontal parallax and atmospheric refraction), compass azimuth bearing ($0^\circ..360^\circ$ North through East), visibility (`isAboveHorizon`), and apparent Right Ascension / Declination.
+- **Local Meridian Transit**:
+  - `getLunarTransit`: Computes the exact timestamp (`transitMs`) of lunar upper culmination (highest altitude transit in the observer's local 24-hour day).
+- **Lunar Distance, Parallax & Supermoon/Micromoon Classification**:
+  - `getLunarDistance`: Computes observer-to-Moon distance in kilometers (`distanceKm`), apparent angular diameter in arcminutes (`angularDiameterArcmin`), horizontal parallax, and evaluates `isSupermoon` / `isMicromoon` during syzygy (New/Full Moon).
+- **Crescent Tilt & Bright Limb Angle**:
+  - `getCrescentTilt`: Calculates bright limb position angle relative to celestial north (`brightLimbAngleDeg`), parallactic angle (`parallacticAngleDeg`), and crescent tilt angle relative to local zenith (`crescentTiltDeg`) to support accurate rendering of tropical "Wet Moon" orientations.
+- **Production Release**:
+  - Promoted `@magmacomputing/tempo-fns` to `1.0.0` general availability with complete tree-shakeable API surface, robust type definitions, and zero runtime dependencies.
+
 ## [0.2.0] - 2026-09-09
 
 ### Added

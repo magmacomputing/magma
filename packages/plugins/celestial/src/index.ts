@@ -1,11 +1,23 @@
 import { defineTerm } from '@magmacomputing/tempo/plugin/sdk';
 import { isNumber } from '@magmacomputing/tempo/library';
-import { getLunarPhaseRange, getMoonriseMoonset, getSunriseSunset, getTidalState, LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES, TIDAL_PHASE_STATES } from '@magmacomputing/tempo-fns';
+import {
+	getLunarPhaseRange,
+	getMoonriseMoonset,
+	getLunarPosition,
+	getLunarDistance,
+	getCrescentTilt,
+	getSunriseSunset,
+	getTidalState,
+	LUNAR_PHASE_KEYS,
+	SOLAR_PHASE_STATES,
+	SOLAR_PHASE_NAMES,
+	TIDAL_PHASE_STATES,
+} from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
-import type { LunarPhaseKey, LunarPhaseName, SolarPhaseName, TidalState, TidalResult } from '@magmacomputing/tempo-fns';
+import type { LunarPhaseKey, LunarPhaseName, SolarPhaseName, TidalState, TidalResult, LunarPositionResult, LunarDistanceResult, CrescentTiltResult } from '@magmacomputing/tempo-fns';
 import { getCelestialCoordinates, toDateTimeFields, toTempoOrNull, getLunarDetails, createCelestialTermHandlers } from './util.js';
 
-export type { LunarPhaseKey, LunarPhaseName, SolarPhaseName, TidalState, TidalResult };
+export type { LunarPhaseKey, LunarPhaseName, SolarPhaseName, TidalState, TidalResult, LunarPositionResult, LunarDistanceResult, CrescentTiltResult };
 export { LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES, TIDAL_PHASE_STATES };
 
 export interface LunarPhaseOptions {
@@ -39,6 +51,15 @@ declare module '@magmacomputing/tempo' {
 			phases: readonly LunarPhaseKey[];
 			moonrise: Tempo | null;
 			moonset: Tempo | null;
+			transit: Tempo | null;
+			altitude: number | null;
+			azimuth: number | null;
+			isAboveHorizon: boolean | null;
+			crescentTiltDeg: number | null;
+			distanceKm: number | null;
+			angularDiameterArcmin: number | null;
+			isSupermoon: boolean | null;
+			isMicromoon: boolean | null;
 			group: 'lunar';
 			geo?: any;
 			year: number;
@@ -116,18 +137,31 @@ declare module '@magmacomputing/tempo' {
  *
  * @param t - Tempo context used to determine the reference time and lunar details
  * @param anchor - Optional anchor used to resolve celestial context
- * @returns Lunar scope data with phase metadata, optional moonrise and moonset times, and start and end boundaries
+ * @returns Lunar scope data with phase metadata, optional moonrise and moonset times, topocentric ephemeris, and start/end boundaries
  */
 function getLunarScopeRange(t: Tempo, anchor?: any) {
 	const coords = getCelestialCoordinates(t, anchor);
 	const { refTempo, lat, lng, hasGeo, geo, timeZone, sphere } = coords;
-	const { startOfDayMs } = (refTempo as any).startOfDay ? (refTempo as any).startOfDay() : { startOfDayMs: refTempo.epoch.ms };
 
 	const lunarDetails = getLunarDetails(t, coords);
 
 	const moonEvents = hasGeo ? getMoonriseMoonset(refTempo.epoch.ms, lat!, lng!) : null;
 	const moonrise = moonEvents ? toTempoOrNull(moonEvents.moonriseMs, timeZone, sphere) : null;
 	const moonset = moonEvents ? toTempoOrNull(moonEvents.moonsetMs, timeZone, sphere) : null;
+
+	const position = hasGeo ? getLunarPosition(refTempo.epoch.ms, lat!, lng!) : null;
+	const distance = hasGeo ? getLunarDistance(refTempo.epoch.ms) : null;
+	const crescentTilt = hasGeo ? getCrescentTilt(refTempo.epoch.ms, lat!, lng!) : null;
+
+	const transit = position?.transitMs ? toTempoOrNull(position.transitMs, timeZone, sphere) : null;
+	const altitude = position ? position.altitude : null;
+	const azimuth = position ? position.azimuth : null;
+	const isAboveHorizon = position ? position.isAboveHorizon : null;
+	const crescentTiltDeg = crescentTilt ? crescentTilt.crescentTiltDeg : null;
+	const distanceKm = distance ? distance.distanceKm : null;
+	const angularDiameterArcmin = distance ? distance.angularDiameterArcmin : null;
+	const isSupermoon = distance ? distance.isSupermoon : null;
+	const isMicromoon = distance ? distance.isMicromoon : null;
 
 	const { startMs, endMs } = getLunarPhaseRange(refTempo.epoch.ms, { sphere });
 	const start = new Tempo(startMs, { timeZone, timeStamp: 'ms', ...(sphere ? { sphere } : {}) });
@@ -140,6 +174,15 @@ function getLunarScopeRange(t: Tempo, anchor?: any) {
 		...toDateTimeFields(start),
 		moonrise,
 		moonset,
+		transit,
+		altitude,
+		azimuth,
+		isAboveHorizon,
+		crescentTiltDeg,
+		distanceKm,
+		angularDiameterArcmin,
+		isSupermoon,
+		isMicromoon,
 		start,
 		end,
 	};

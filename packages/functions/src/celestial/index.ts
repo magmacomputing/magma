@@ -669,12 +669,6 @@ export interface MoonriseMoonsetResult {
 }
 
 /**
- * Calculates the Moon’s apparent position for a timestamp.
- *
- * @param epochMs - The timestamp in milliseconds since the Unix epoch
- * @returns The right ascension and declination in radians, and the horizontal parallax in degrees
- */
-/**
  * Calculates the Moon's apparent position for a timestamp.
  *
  * @param epochMs - The timestamp in milliseconds since the Unix epoch
@@ -721,6 +715,88 @@ function getMoonPosition(epochMs: number) {
 }
 
 /**
+ * Calculates normalized lunar Hour Angle in radians (-PI..PI) for an instant and longitude.
+ * @internal
+ */
+function getMoonHourAngle(epochMs: number, lngDeg: number, raRad?: number): number {
+	const d = (epochMs - 946728000000) / 86400000;
+	const gstDeg = (280.46061837 + 360.98564736629 * d) % 360;
+	const lstRad = (gstDeg + lngDeg) * (Math.PI / 180);
+	const ra = raRad ?? getMoonPosition(epochMs).ra;
+
+	let ha = (lstRad - ra) % (2 * Math.PI);
+	if (ha > Math.PI) ha -= 2 * Math.PI;
+	if (ha < -Math.PI) ha += 2 * Math.PI;
+	return ha;
+}
+
+/**
+ * Calculates topocentric/geocentric lunar distance in kilometers and apparent angular diameter in arcminutes.
+ * @internal
+ */
+function getLunarDistanceMetrics(hpDeg: number): { distanceKm: number; angularDiameterArcmin: number } {
+	const hpRad = hpDeg * (Math.PI / 180);
+	const distanceKm = Math.round((6378.14 / Math.sin(hpRad)) * 10) / 10;
+	const angularDiameterArcmin = Math.round((2 * Math.asin(1737.4 / distanceKm) * (180 / Math.PI) * 60) * 100) / 100;
+	return { distanceKm, angularDiameterArcmin };
+}
+
+/**
+ * Calculates synodic lunar age, syzygy alignment metrics, perigee factor, and supermoon/micromoon flags.
+ * @internal
+ */
+function getLunarSyzygyMetrics(epochMs: number, distanceKm?: number) {
+	const elapsedDays = (epochMs - REF_NEW_MOON_MS) / 86400000;
+	const ageDays = ((elapsedDays % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
+	const alignmentDeg = (ageDays / SYNODIC_MONTH) * 360;
+
+	const distFromSyzygy = Math.min(
+		Math.abs(alignmentDeg),
+		Math.abs(alignmentDeg - 180),
+		Math.abs(alignmentDeg - 360)
+	);
+
+	const dist = distanceKm ?? getLunarDistanceMetrics(getMoonPosition(epochMs).hp).distanceKm;
+	const rawFactor = (406700 - dist) / (406700 - 356400);
+	const perigeeFactor = Math.round(Math.max(0, Math.min(1, rawFactor)) * 1000) / 1000;
+
+	const isNearSyzygy = distFromSyzygy <= 35;
+	const isSupermoon = isNearSyzygy && (dist <= 362000 || perigeeFactor >= 0.88);
+	const isMicromoon = isNearSyzygy && (dist >= 404000 || perigeeFactor <= 0.12);
+
+	return {
+		ageDays,
+		alignmentDeg: Math.round(alignmentDeg * 100) / 100,
+		distFromSyzygy,
+		perigeeFactor,
+		isSupermoon,
+		isMicromoon,
+	};
+}
+
+/**
+ * Calculates apparent solar Right Ascension and Declination in radians for an epoch timestamp.
+ * @internal
+ */
+function getSunCoordinates(epochMs: number): { raSun: number; decSun: number } {
+	const rad = Math.PI / 180;
+	const T = (epochMs - 946728000000) / 3155760000000;
+	const L0 = (280.46646 + 36000.76983 * T) % 360;
+	const M = (357.52911 + 35999.05029 * T) % 360;
+	const C = (1.914602 - 0.004817 * T) * Math.sin(M * rad)
+		+ (0.019993 - 0.000101 * T) * Math.sin(2 * M * rad)
+		+ 0.000289 * Math.sin(3 * M * rad);
+	const sunLonRad = ((L0 + C) % 360) * rad;
+	const eps = (23.439291 - 0.0130042 * T) * rad;
+
+	const sinDecSun = Math.sin(eps) * Math.sin(sunLonRad);
+	const decSun = Math.asin(sinDecSun);
+	const raSun = Math.atan2(Math.cos(eps) * Math.sin(sunLonRad), Math.cos(sunLonRad));
+
+	return { raSun, decSun };
+}
+
+/**
  * Calculates lunar altitude angle and parallax target threshold in degrees.
  *
  * @param epochMs - The timestamp in milliseconds since the Unix epoch
@@ -732,18 +808,11 @@ function getMoonPosition(epochMs: number) {
 function getMoonAltitude(epochMs: number, latDeg: number, lngDeg: number): { alt: number; targetAlt: number } {
 	const rad = Math.PI / 180;
 	const latRad = latDeg * rad;
-
-	const d = (epochMs - 946728000000) / 86400000;
-	const gstDeg = (280.46061837 + 360.98564736629 * d) % 360;
-	const lstRad = (gstDeg + lngDeg) * rad;
-
 	const { ra, dec, hp } = getMoonPosition(epochMs);
-	const ha = lstRad - ra;
+	const ha = getMoonHourAngle(epochMs, lngDeg, ra);
 
 	const sinAlt = Math.sin(latRad) * Math.sin(dec) + Math.cos(latRad) * Math.cos(dec) * Math.cos(ha);
 	const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt))) / rad;
-
-	// Jean Meeus standard target altitude for Moon's upper limb at horizon accounting for horizontal parallax
 	const targetAlt = 0.7275 * hp - 0.5667;
 
 	return { alt, targetAlt };
@@ -849,16 +918,7 @@ export function getTidalState(
 			? new Date(dateInput).getTime()
 			: dateInput.getTime();
 
-	const elapsedDays = (epochMs - REF_NEW_MOON_MS) / 86400000;
-	const ageDays = ((elapsedDays % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
-
-	const alignmentDeg = Math.round((ageDays / SYNODIC_MONTH) * 360 * 100) / 100;
-
-	const distFromSyzygy = Math.min(
-		Math.abs(alignmentDeg),
-		Math.abs(alignmentDeg - 180),
-		Math.abs(alignmentDeg - 360)
-	);
+	const { alignmentDeg, distFromSyzygy } = getLunarSyzygyMetrics(epochMs);
 
 	const distFromQuadrature = Math.min(
 		Math.abs(alignmentDeg - 90),
@@ -888,6 +948,235 @@ export function getTidalState(
 		perigeeFactor,
 		lunarTideMinute,
 		states: TIDAL_PHASE_STATES,
+	};
+}
+
+// --- Lunar Topocentric Ephemeris, Transit, Distance & Crescent Tilt ---
+
+export interface LunarPositionResult {
+	latitude: number;
+	longitude: number;
+	/** Topocentric altitude above (+) or below (-) horizon in degrees (-90..90) */
+	altitude: number;
+	/** Compass azimuth bearing in degrees from True North (0..360, North=0, East=90) */
+	azimuth: number;
+	/** True if Moon is above observer's horizon accounting for horizontal parallax and refraction */
+	isAboveHorizon: boolean;
+	/** Epoch millisecond of upper meridian culmination (transit) during the observer's local calendar day, or undefined */
+	transitMs?: number | undefined;
+	/** Apparent right ascension in degrees (0..360) */
+	rightAscensionDeg: number;
+	/** Apparent declination in degrees (-90..90) */
+	declinationDeg: number;
+	/** Distance from observer to Moon in kilometers */
+	distanceKm: number;
+	/** Apparent angular diameter in arcminutes */
+	angularDiameterArcmin: number;
+}
+
+export interface LunarDistanceResult {
+	/** Distance from Earth to Moon in kilometers */
+	distanceKm: number;
+	/** Apparent angular diameter in arcminutes */
+	angularDiameterArcmin: number;
+	/** Equatorial horizontal parallax in degrees */
+	horizontalParallaxDeg: number;
+	/** Proximity factor to lunar perigee (0.0 = apogee, 1.0 = perigee) */
+	perigeeFactor: number;
+	/** True if Full Moon or New Moon occurs near perigee (supermoon) */
+	isSupermoon: boolean;
+	/** True if Full Moon or New Moon occurs near apogee (micromoon) */
+	isMicromoon: boolean;
+}
+
+export interface CrescentTiltResult {
+	/** Apparent tilt angle of bright illuminated limb relative to local zenith in degrees (0..360) */
+	crescentTiltDeg: number;
+	/** Position angle of bright limb relative to North celestial pole in degrees (0..360) */
+	brightLimbAngleDeg: number;
+	/** Parallactic angle between celestial pole, Moon, and local zenith in degrees (0..360) */
+	parallacticAngleDeg: number;
+}
+
+/**
+ * Calculates the local meridian transit (upper culmination / highest sky altitude) timestamp for a date and location.
+ *
+ * @param dateInput - Date value, ISO date string, or epoch timestamp in milliseconds
+ * @param latOrOptions - Latitude in degrees or coordinate options
+ * @param lonInput - Longitude in degrees when `latOrOptions` is a latitude
+ * @returns Epoch millisecond timestamp of upper meridian transit, or undefined if no transit occurs on the local calendar day
+ */
+export function getLunarTransit(
+	dateInput: Date | number | string,
+	latOrOptions: number | SolarOptions = 0,
+	lonInput = 0
+): number | undefined {
+	const epochMs = typeof dateInput === 'number'
+		? dateInput
+		: typeof dateInput === 'string'
+			? new Date(dateInput).getTime()
+			: dateInput.getTime();
+
+	const { lng } = resolveCoordinates(latOrOptions, lonInput);
+	const { startOfDayMs } = getStartOfLocalDayMs(epochMs, lng);
+	const dayStartMs = startOfDayMs - (lng * 240000);
+
+	let prevHa = getMoonHourAngle(dayStartMs, lng);
+
+	for (let i = 1; i <= 24; i++) {
+		const currentMs = dayStartMs + (i * 3600000);
+		const currHa = getMoonHourAngle(currentMs, lng);
+
+		if (prevHa < 0 && currHa >= 0) {
+			const fraction = -prevHa / (currHa - prevHa);
+			let transitEst = Math.round(dayStartMs + ((i - 1 + fraction) * 3600000));
+			// Refinement step
+			const refinedHa = getMoonHourAngle(transitEst, lng);
+			const rate = (currHa - prevHa) / 3600000;
+
+			if (rate !== 0)
+				transitEst = Math.round(transitEst - (refinedHa / rate));
+
+			return transitEst;
+		}
+
+		prevHa = currHa;
+	}
+
+	return undefined;
+}
+
+/**
+ * Calculates lunar distance, horizontal parallax, apparent angular diameter, and supermoon/micromoon status.
+ *
+ * @param dateInput - Date value, ISO date string, or epoch timestamp in milliseconds
+ * @returns Lunar distance metrics in km, angular diameter in arcmin, perigee factor, and supermoon/micromoon indicators
+ */
+export function getLunarDistance(dateInput: Date | number | string): LunarDistanceResult {
+	const epochMs = typeof dateInput === 'number'
+		? dateInput
+		: typeof dateInput === 'string'
+			? new Date(dateInput).getTime()
+			: dateInput.getTime();
+
+	const { hp } = getMoonPosition(epochMs);
+	const { distanceKm, angularDiameterArcmin } = getLunarDistanceMetrics(hp);
+	const { perigeeFactor, isSupermoon, isMicromoon } = getLunarSyzygyMetrics(epochMs, distanceKm);
+
+	return {
+		distanceKm,
+		angularDiameterArcmin,
+		horizontalParallaxDeg: Math.round(hp * 10000) / 10000,
+		perigeeFactor,
+		isSupermoon,
+		isMicromoon,
+	};
+}
+
+/**
+ * Calculates topocentric altitude, azimuth, meridian transit, and apparent visual coordinates of the Moon.
+ *
+ * @param dateInput - Date value, ISO date string, or epoch timestamp in milliseconds
+ * @param latOrOptions - Latitude in degrees or coordinate options
+ * @param lonInput - Longitude in degrees when `latOrOptions` is a latitude
+ * @returns Real-time topocentric position (altitude, azimuth, visibility, transit, RA, Dec, distance)
+ */
+export function getLunarPosition(
+	dateInput: Date | number | string,
+	latOrOptions: number | SolarOptions = 0,
+	lonInput = 0
+): LunarPositionResult {
+	const epochMs = typeof dateInput === 'number'
+		? dateInput
+		: typeof dateInput === 'string'
+			? new Date(dateInput).getTime()
+			: dateInput.getTime();
+
+	const { lat, lng } = resolveCoordinates(latOrOptions, lonInput);
+	const rad = Math.PI / 180;
+	const latRad = lat * rad;
+
+	const { ra, dec, hp } = getMoonPosition(epochMs);
+	const ha = getMoonHourAngle(epochMs, lng, ra);
+
+	const sinAltGeo = Math.sin(latRad) * Math.sin(dec) + Math.cos(latRad) * Math.cos(dec) * Math.cos(ha);
+	const altGeoRad = Math.asin(Math.max(-1, Math.min(1, sinAltGeo)));
+
+	// Topocentric parallax correction on altitude
+	const altTopoRad = altGeoRad - (hp * rad) * Math.cos(altGeoRad);
+	const altDeg = altTopoRad / rad;
+
+	// Azimuth measured North through East (0..360°)
+	const yAz = -Math.sin(ha);
+	const xAz = Math.cos(latRad) * Math.tan(dec) - Math.sin(latRad) * Math.cos(ha);
+	const azDeg = ((Math.atan2(yAz, xAz) / rad) + 360) % 360;
+
+	const targetAlt = 0.7275 * hp - 0.5667;
+	const isAboveHorizon = altDeg >= targetAlt;
+
+	const { distanceKm, angularDiameterArcmin } = getLunarDistanceMetrics(hp);
+	const transitMs = getLunarTransit(epochMs, lat, lng);
+
+	return {
+		latitude: lat,
+		longitude: lng,
+		altitude: Math.round(altDeg * 100) / 100,
+		azimuth: Math.round(azDeg * 100) / 100,
+		isAboveHorizon,
+		transitMs,
+		rightAscensionDeg: Math.round(((ra * 180 / Math.PI + 360) % 360) * 100) / 100,
+		declinationDeg: Math.round((dec * 180 / Math.PI) * 100) / 100,
+		distanceKm,
+		angularDiameterArcmin,
+	};
+}
+
+/**
+ * Calculates the crescent tilt angle (position angle of the bright limb relative to local zenith).
+ *
+ * In tropical latitudes, this captures the "Wet Moon" / horizontal crescent orientation.
+ *
+ * @param dateInput - Date value, ISO date string, or epoch timestamp in milliseconds
+ * @param latOrOptions - Latitude in degrees or coordinate options
+ * @param lonInput - Longitude in degrees when `latOrOptions` is a latitude
+ * @returns Crescent tilt angle relative to zenith, bright limb position angle, and parallactic angle
+ */
+export function getCrescentTilt(
+	dateInput: Date | number | string,
+	latOrOptions: number | SolarOptions = 0,
+	lonInput = 0
+): CrescentTiltResult {
+	const epochMs = typeof dateInput === 'number'
+		? dateInput
+		: typeof dateInput === 'string'
+			? new Date(dateInput).getTime()
+			: dateInput.getTime();
+
+	const { lat, lng } = resolveCoordinates(latOrOptions, lonInput);
+	const rad = Math.PI / 180;
+	const latRad = lat * rad;
+
+	const { ra, dec } = getMoonPosition(epochMs);
+	const { raSun, decSun } = getSunCoordinates(epochMs);
+
+	// Position angle of illuminated limb relative to North celestial pole
+	const yP = Math.cos(decSun) * Math.sin(raSun - ra);
+	const xP = Math.sin(decSun) * Math.cos(dec) - Math.cos(decSun) * Math.sin(dec) * Math.cos(raSun - ra);
+	const brightLimbAngleDeg = ((Math.atan2(yP, xP) / rad) + 360) % 360;
+
+	// Parallactic angle q (angle between North celestial pole and zenith)
+	const ha = getMoonHourAngle(epochMs, lng, ra);
+	const yQ = Math.sin(ha);
+	const xQ = Math.tan(latRad) * Math.cos(dec) - Math.sin(dec) * Math.cos(ha);
+	const parallacticAngleDeg = ((Math.atan2(yQ, xQ) / rad) + 360) % 360;
+
+	// Crescent tilt relative to local zenith
+	const crescentTiltDeg = (((brightLimbAngleDeg - parallacticAngleDeg) % 360) + 360) % 360;
+
+	return {
+		crescentTiltDeg: Math.round(crescentTiltDeg * 100) / 100,
+		brightLimbAngleDeg: Math.round(brightLimbAngleDeg * 100) / 100,
+		parallacticAngleDeg: Math.round(parallacticAngleDeg * 100) / 100,
 	};
 }
 
