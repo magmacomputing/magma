@@ -8,9 +8,10 @@ import {
 	stashGeo,
 	clearStashedGeo,
 	getStashedGeo,
-	haversineDistance,
-	solarOffset,
+	reverseGeocode,
+	forwardGeocode,
 } from '../src/index.js';
+import { getSpatialReverseCache, getSpatialCacheKey } from '@magmacomputing/library/runtime/mapper.library.js';
 
 describe('Tempo Plugin: Geo', () => {
 	beforeAll(() => {
@@ -19,11 +20,13 @@ describe('Tempo Plugin: Geo', () => {
 
 	beforeEach(() => {
 		clearStashedGeo();
+		getSpatialReverseCache().clear();
 	});
 
 	afterEach(() => {
 		vi.restoreAllMocks();
 		clearStashedGeo();
+		getSpatialReverseCache().clear();
 	});
 
 	describe('Pure functional coordinate utilities', () => {
@@ -117,6 +120,8 @@ describe('Tempo Plugin: Geo', () => {
 			expect(typeof Tempo.geo.stash).toBe('function');
 			expect(typeof Tempo.geo.clear).toBe('function');
 			expect(typeof Tempo.geo.get).toBe('function');
+			expect(typeof Tempo.geo.reverse).toBe('function');
+			expect(typeof Tempo.geo.forward).toBe('function');
 			expect(typeof Tempo.geo.server).toBe('function');
 			expect(typeof Tempo.geo.browser).toBe('function');
 			expect(Tempo.geo.current).toBeUndefined();
@@ -353,7 +358,72 @@ describe('Tempo Plugin: Geo', () => {
 		});
 	});
 
-	describe('Great-Circle Distance & Layout Formatting', () => {
+	describe('Reverse Geocoding and 2-Decimal Spatial BoundedCache', () => {
+		it('should compute 2-decimal spatial cache keys (~1.1 km resolution)', () => {
+			expect(getSpatialCacheKey(37.7749, -122.4194)).toBe('37.77,-122.42');
+			expect(getSpatialCacheKey(-33.8688, 151.2093)).toBe('-33.87,151.21');
+		});
+
+		it('should deduplicate reverse geocode requests within the same 2-decimal spatial bucket', async () => {
+			const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+				Promise.resolve(
+					new Response(
+						JSON.stringify({
+							city: 'San Francisco',
+							countryCode: 'US',
+							principalSubdivision: 'California',
+						}),
+						{ status: 200 }
+					)
+				)
+			);
+
+			// First reverse lookup (37.7749, -122.4194) -> bucket 37.77,-122.42
+			const res1 = await reverseGeocode({ lat: 37.7749, lng: -122.4194 });
+			expect(mockFetch).toHaveBeenCalledTimes(1);
+			expect(res1?.city).toBe('San Francisco');
+			expect(res1?.country).toBe('US');
+
+			// Second reverse lookup nearby (37.7710, -122.4180) -> same bucket 37.77,-122.42
+			const res2 = await reverseGeocode({ lat: 37.7710, lng: -122.4180 });
+			expect(mockFetch).toHaveBeenCalledTimes(1); // Cached!
+			expect(res2?.city).toBe('San Francisco');
+			expect(res2?.latitude).toBe(37.771);
+			expect(res2?.longitude).toBe(-122.418);
+
+			// Calling with { refresh: true } should bypass spatial cache
+			const refreshed = await reverseGeocode({ lat: 37.7710, lng: -122.4180 }, { refresh: true });
+			expect(mockFetch).toHaveBeenCalledTimes(2);
+			expect(refreshed?.city).toBe('San Francisco');
+		});
+
+		it('should support opt-in reverse lookup via t.geoLocate({ reverse: true })', async () => {
+			const t = new Tempo('2026-06-21T12:00:00Z', {
+				geo: { lat: 48.8566, lng: 2.3522 }, // Coordinates provided without city/country
+			});
+
+			const mockFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+				Promise.resolve(
+					new Response(
+						JSON.stringify({
+							city: 'Paris',
+							countryCode: 'FR',
+						}),
+						{ status: 200 }
+					)
+				)
+			);
+
+			const located = await t.geoLocate({ reverse: true });
+			expect(mockFetch).toHaveBeenCalledTimes(1);
+			expect(located.geo?.city).toBe('Paris');
+			expect(located.geo?.country).toBe('FR');
+			expect(located.geo?.latitude).toBe(48.857);
+			expect(located.geo?.longitude).toBe(2.352);
+		});
+	});
+
+	describe('Layout Formatting on Geo-Enabled Instances', () => {
 		const sydney = new Tempo('2026-10-24T10:00:00', {
 			timeZone: 'Australia/Sydney',
 			geo: {
@@ -367,118 +437,12 @@ describe('Tempo Plugin: Geo', () => {
 			},
 		});
 
-		const melbourne = new Tempo('2026-10-24T12:00:00', {
-			timeZone: 'Australia/Melbourne',
-			geo: {
-				latitude: -37.8136,
-				longitude: 144.9631,
-				city: 'melbourne',
-				country: 'au',
-				sphere: 'south',
-				timezone: 'Australia/Melbourne',
-			},
-		});
-
-		it('should calculate distance via pure haversineDistance function', () => {
-			const dist = haversineDistance(sydney, melbourne, 'km');
-			expect(dist).toBe(713.426);
-		});
-
-		it('should calculate distance via Tempo.geo.distance static method', () => {
-			const km = Tempo.geo.distance(sydney, melbourne, 'km');
-			expect(km).toBe(713.426);
-
-			const miles = Tempo.geo.distance(sydney, melbourne, 'miles');
-			expect(miles).toBe(443.303);
-
-			const meters = Tempo.geo.distance(sydney, melbourne, 'm');
-			expect(meters).toBe(713426);
-		});
-
-		it('should calculate distance via instance method t.geoDistance()', () => {
-			const km = sydney.geoDistance(melbourne, 'km');
-			expect(km).toBe(713.426);
-
-			const miles = sydney.geoDistance(melbourne, 'miles');
-			expect(miles).toBe(443.303);
-		});
-
-		it('should detect velocity / impossible travel between timestamped instances', () => {
-			const km = sydney.geoDistance(melbourne, 'km');
-			const hours = sydney.until(melbourne, 'hours');
-			expect(hours).toBe(2);
-
-			const speedKmH = km / hours;
-			expect(speedKmH).toBeCloseTo(356.713, 2);
-		});
-
 		it('should format geographic layout tokens with modifiers and fallback on geo-enabled instances', () => {
 			const formatted = sydney.format('{geo.city:title}, {geo.country:upper} ({geo.sphere}) @ {h12}:{mi} {mer}');
 			expect(formatted).toBe('Sydney, AU (south) @ 10:00 am');
 
 			// Missing custom token cleanly returns empty string
 			expect(sydney.format('{geo.venue}')).toBe('');
-		});
-
-		it('should calculate natural solar time offset via Tempo.geo.solarOffset and t.geoSolarOffset()', () => {
-			// Sydney on October 24 observes AEDT (UTC+11, meridian 165°) -> (151.209 - 165) * 4 = -55.16 min
-			const dstOffset = sydney.geoSolarOffset();
-			expect(dstOffset).toBe(-55.16);
-
-			// Sydney on standard time June 21 observes AEST (UTC+10, meridian 150°) -> (151.209 - 150) * 4 = +4.84 min
-			const staticOffset = Tempo.geo.solarOffset(sydney, { date: '2026-06-21T12:00:00Z' });
-			expect(staticOffset).toBe(4.84);
-
-			const instanceOffset = sydney.geoSolarOffset({ date: '2026-06-21T12:00:00Z' });
-			expect(instanceOffset).toBe(4.84);
-
-			// Unit conversions on standard time
-			expect(sydney.geoSolarOffset({ date: '2026-06-21T12:00:00Z', unit: 'seconds' })).toBe(290.16);
-			expect(sydney.geoSolarOffset({ date: '2026-06-21T12:00:00Z', unit: 'hours', precision: 3 })).toBe(0.081);
-
-			// Apparent solar time on June 21 (incorporating Equation of Time: ~ -1.33 min)
-			const apparent = sydney.geoSolarOffset({ date: '2026-06-21T12:00:00Z', apparent: true });
-			expect(typeof apparent).toBe('number');
-			expect(apparent).toBe(3.51);
-		});
-
-		it('should calculate compass bearing and geographic midpoint via Tempo.geo static namespace', () => {
-			const bearing = Tempo.geo.bearing(sydney, melbourne);
-			expect(bearing).toBe(230.3);
-
-			const midpoint = Tempo.geo.midpoint(sydney, melbourne);
-			expect(midpoint).toEqual({
-				latitude: -35.882,
-				longitude: 148.164,
-				sphere: 'south',
-			});
-		});
-
-		it('should calculate velocity and detect impossible travel anomalies via Tempo.geo static namespace', () => {
-			// Sydney 10:00 to Melbourne 12:00 (2 hours elapsed, ~713.4 km)
-			const speedKmh = Tempo.geo.velocity(sydney, melbourne, 'km');
-			expect(speedKmh).toBe(356.71);
-
-			// Not impossible travel for commercial aircraft
-			expect(Tempo.geo.isImpossibleTravel(sydney, melbourne)).toBe(false);
-
-			// Supersonic / simultaneous anomaly: Tokyo 1 hour later (sydney is 23:00Z, tokyo is 00:00Z)
-			const tokyo = new Tempo('2026-10-24T00:00:00Z', {
-				geo: { lat: 35.6762, lng: 139.6503 },
-			});
-			const speedTokyo = Tempo.geo.velocity(sydney, tokyo, 'km');
-			expect(speedTokyo).toBeGreaterThan(7000);
-			expect(Tempo.geo.isImpossibleTravel(sydney, tokyo)).toBe(true);
-		});
-
-		it('should evaluate proximity via Tempo.geo.isWithin and bounding box containment via Tempo.geo.inBoundingBox', () => {
-			const parramatta = { lat: -33.8150, lng: 151.0011 };
-			expect(Tempo.geo.isWithin(sydney, parramatta, 25, 'km')).toBe(true);
-			expect(Tempo.geo.isWithin(sydney, melbourne, 50, 'km')).toBe(false);
-
-			const sydneyBBox = { minLat: -34.2, maxLat: -33.5, minLng: 150.5, maxLng: 151.5 };
-			expect(Tempo.geo.inBoundingBox(sydney, sydneyBBox)).toBe(true);
-			expect(Tempo.geo.inBoundingBox(melbourne, sydneyBBox)).toBe(false);
 		});
 
 		it('should synchronize cultural locale during t.geoLocate with setLocale options', async () => {
@@ -724,13 +688,6 @@ describe('Tempo Plugin: Geo', () => {
 			expect((located.geo as any).provider).toBeUndefined();
 			expect((located.geo as any).fallback).toBeUndefined();
 			expect(located.geo?.city).toBe('Frankfurt');
-		});
-
-		it('should reject invalid coordinate strings and non-numeric tuple values in spatial queries', () => {
-			expect(Tempo.geo.isWithin([null, 10], [0, 10], 100)).toBe(false);
-			expect(Tempo.geo.isWithin([false, 10], [0, 10], 100)).toBe(false);
-			expect(Tempo.geo.isWithin(',10', '0,10', 100)).toBe(false);
-			expect(Tempo.geo.isWithin('  ,  ', '0,10', 100)).toBe(false);
 		});
 	});
 });

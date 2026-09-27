@@ -1,3 +1,5 @@
+import { isObject } from '../support/index.js';
+
 export type WesternZodiacSign =
 	| 'Aries' | 'Taurus' | 'Gemini' | 'Cancer'
 	| 'Leo' | 'Virgo' | 'Libra' | 'Scorpio'
@@ -16,7 +18,7 @@ export interface ChineseZodiacResult {
  * @returns Western Zodiac sign string name
  */
 export function getZodiacSign(dateInput: Date | number | string): WesternZodiacSign {
-	const date = typeof dateInput === 'object' && 'getMonth' in dateInput ? dateInput : new Date(dateInput);
+	const date = isObject(dateInput) && 'getMonth' in dateInput ? dateInput : new Date(dateInput);
 	const month = date.getUTCMonth() + 1;
 	const day = date.getUTCDate();
 

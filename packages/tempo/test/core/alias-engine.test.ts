@@ -101,4 +101,52 @@ describe('AliasEngine', () => {
 		expect(engine.resolveAlias('evt0_1')?.value).toBe('');
 		expect(engine.resolveAlias('non-existent' as any)).toBeUndefined();
 	});
+
+	it('does not falsely warn on distinct non-Latin script aliases', () => {
+		const warnSpy = vi.spyOn(logTempo, 'warn');
+		const engine = new AliasEngine();
+		engine.registerAliases('evt', [
+			['أمس', 'yesterday'],
+			['اليوم', 'today'],
+			['غدًا', 'tomorrow'],
+			['今日', 'today'],
+			['明日', 'tomorrow'],
+		]);
+		expect(warnSpy).not.toHaveBeenCalled();
+	});
+
+	it('generates patterns matching both NFC and NFD forms for diacritics', () => {
+		const engine = new AliasEngine();
+		// 'été' in NFC
+		const nfcWord = 'été';
+		const nfdWord = 'e\u0301te\u0301';
+		expect(nfcWord).not.toBe(nfdWord);
+
+		engine.registerAliases('evt', [[nfcWord, 'summer']]);
+		const patterns = engine.getPatterns('evt');
+		expect(patterns).toBe(`(?<evt0_0>${nfcWord}|${nfdWord})`);
+		
+		// Ensure regex constructed from pattern matches both NFC and NFD strings
+		const regex = new RegExp(patterns!);
+		expect(regex.test(nfcWord)).toBe(true);
+		expect(regex.test(nfdWord)).toBe(true);
+	});
+
+	it('deduplicates NFC and NFD alias registrations with the same target without warning', () => {
+		const warnSpy = vi.spyOn(logTempo, 'warn');
+		const engine = new AliasEngine();
+		const nfcWord = 'été';
+		const nfdWord = 'e\u0301te\u0301';
+
+		engine.registerAliases('evt', [
+			[nfcWord, 'summer'],
+			[nfdWord, 'summer'],
+		]);
+
+		expect(warnSpy).not.toHaveBeenCalled();
+		const aliases = engine.getAliases('evt');
+		expect(aliases).toHaveLength(1);
+		expect(aliases[0].name.normalize('NFC')).toBe(nfcWord);
+		expect(aliases[0].target).toBe('summer');
+	});
 });

@@ -54,7 +54,7 @@ An instant scratchpad for testing custom algorithms, experimental plugin imports
 ## Key Capabilities
 
 ### 1. Preloaded Official Plugins
-Both environments pre-register the core Tempo instance along with official plugins:
+Both environments pre-register the core Tempo instance along with default official plugins:
 - `@magmacomputing/tempo-plugin-geo`
 - `@magmacomputing/tempo-plugin-astro`
 - `@magmacomputing/tempo-plugin-celestial`
@@ -66,14 +66,14 @@ console.log(t.term.szn);            // "Spring"
 console.log(t.term.lunar.phase);    // "First Quarter"
 ```
 
-### 2. Dynamic Plugin Loading via ESM
-Need an additional plugin like `@magmacomputing/tempo-plugin-ticker` or custom third-party modules? Use standard dynamic imports in the Code REPL:
+### 2. Dynamic Plugin Loading & Presets
+Need an additional plugin like `@magmacomputing/tempo-plugin-spatial`, `@magmacomputing/tempo-plugin-ticker`, or custom third-party modules? Select their preset from the preset dropdown or use standard dynamic imports in the Code REPL:
 
 ```javascript
-const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
-Tempo.use(TickerPlugin);
+const { SpatialPlugin } = await import('@magmacomputing/tempo-plugin-spatial');
+Tempo.use(SpatialPlugin);
 
-console.log('Ticker plugin active!');
+console.log('Spatial plugin active!');
 ```
 
 ### 3. AI Semantic Parsing & Natural Language Scheduling

@@ -6,9 +6,9 @@
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-geo"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-geo?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-geo/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-geo"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-geo?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/geo.index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
-A Community plugin for the [Tempo](https://github.com/magmacomputing/magma) ecosystem that provides IP geolocation lookup, browser hardware location services, coordinate normalization, and 24-hour cached coordinate stashing.
+A Community plugin for the [Tempo](https://github.com/magmacomputing/magma) ecosystem that provides IP geolocation lookup, browser hardware location services, forward & reverse geocoding gateway with pluggable providers, cultural locale synchronization, and 24-hour multi-tenant coordinate caching.
 
-By keeping geolocation logic in this plugin, core `@magmacomputing/tempo` remains zero-network and purely deterministic.
+For geometric GIS math, Great-Circle navigation, and impossible travel anomaly detection, see [`@magmacomputing/tempo-plugin-spatial`](https://www.npmjs.com/package/@magmacomputing/tempo-plugin-spatial).
 
 👉 **[View the full documentation on our GitHub Pages](https://magmacomputing.github.io/magma/doc/9-plugins/geo.index.html)**
 
@@ -30,7 +30,7 @@ Installing `GeoPlugin` mounts an immutable, locked-down **`Tempo.geo`** namespac
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
+import { GeoPlugin, OpenStreetMapProvider } from '@magmacomputing/tempo-plugin-geo';
 
 Tempo.use(GeoPlugin);
 
@@ -38,16 +38,23 @@ Tempo.use(GeoPlugin);
 const lookupResult = await Tempo.geo.lookup();
 console.log(lookupResult.lat, lookupResult.lng, lookupResult.city);
 
-// 2. Inspect Current Ambient / Global Coordinates
+// 2. Reverse Geocoding with Provider Gateway
+Tempo.geo.setProvider(new OpenStreetMapProvider());
+const address = await Tempo.geo.reverse({ lat: -33.8688, lng: 151.2093 });
+console.log(address.city, address.country);
+
+// 3. Inspect Current Ambient / Global Coordinates
 console.log(Tempo.geo.current); // { latitude: ..., longitude: ..., city: ... }
 
-// 3. Force Fresh Network Lookup (bypassing 24h cache)
+// 4. Force Fresh Network Lookup (bypassing 24h cache)
 const fresh = await Tempo.geo.lookup({ refresh: true });
 
-// 4. Enrich a Tempo Instance Asynchronously
-const t = new Tempo();
-const localTime = await t.geoLocate();
-console.log(localTime.geo?.latitude, localTime.geo?.longitude);
+// 5. Enrich a Tempo Instance Asynchronously with Cultural Sync
+const t = new Tempo('2026-06-21T12:00:00Z', {
+  geo: { lat: 30.0444, lng: 31.2357, country: 'EG' } // Cairo
+});
+const localTime = await t.geoLocate({ setLocale: 'native' });
+console.log(localTime.locale); // 'ar-EG'
 ```
 
 > ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=geo)**
@@ -60,6 +67,9 @@ All underlying utilities can be imported as standalone tree-shakeable functions 
 import { Tempo } from '@magmacomputing/tempo';
 import {
   geoLookup,
+  reverseGeocode,
+  forwardGeocode,
+  resolveCulturalLocale,
   resolveGeoCoordinates,
   stashGeo,
   clearStashedGeo,
@@ -78,16 +88,12 @@ const t = new Tempo('2026-06-21', { geo: coords });
 | Method / Property | Description |
 | :--- | :--- |
 | `Tempo.geo.lookup(opts?)` | Universal geolocation lookup (browser hardware GPS or server IP lookup) cached for 24h. Supports `{ refresh: true }`. |
+| `Tempo.geo.reverse(coords, opts?)` | Reverse geocodes coordinates to place/locality metadata using the active provider. |
+| `Tempo.geo.forward(query, opts?)` | Forward geocodes query string to coordinates using the active provider. |
+| `Tempo.geo.setProvider(provider)` | Sets the active custom geocoding provider (e.g. OpenStreetMap, Mapbox, internal IP proxy). |
+| `Tempo.geo.getProvider()` | Retrieves the active custom geocoding provider. |
 | `Tempo.geo.resolve(input, opts?)` | Asynchronously resolves coordinates from an instance, configuration, or ambient storage cache. |
 | `Tempo.geo.coerce(input)` | Pure function normalizing various coordinate formats (`lat/lng`, `latitude/longitude`, etc.) into a canonical `GeoConfig`. |
-| `Tempo.geo.distance(from, to, unit?)` | Calculates Great-Circle distance using Haversine formula (`'km'`, `'miles'`, `'m'`). |
-| `Tempo.geo.isWithin(from, to, maxDist, unit?)` | Radial proximity query testing if distance between coordinates is $\le$ `maxDist`. |
-| `Tempo.geo.inBoundingBox(coords, bbox)` | Spatial containment check inside rectangular bounding box (supports antimeridian crossing). |
-| `Tempo.geo.bearing(from, to, opts?)` | Calculates Great-Circle forward azimuth compass bearing in degrees ($0^\circ$ to $360^\circ$). |
-| `Tempo.geo.midpoint(from, to)` | Computes Great-Circle geographic midpoint with automatic hemisphere inference (`{ latitude, longitude, sphere }`). |
-| `Tempo.geo.velocity(from, to, opts?)` | Computes travel speed/velocity between two timestamped geographic instances in `km/h`, `mph`, or `m/s`. |
-| `Tempo.geo.isImpossibleTravel(from, to, opts?)` | Detects impossible travel anomalies (e.g. concurrent logins exceeding commercial flight speeds of 900 km/h). |
-| `Tempo.geo.solarOffset(coords, opts?)` | Calculates natural solar time offset between civil clock time and solar noon based on meridian drift. |
 | `Tempo.geo.stash(coords, ttl?, keyOrOpts?)` | Stashes coordinates in storage with an optional custom TTL (default: 24h) and multi-tenant partitioning. |
 | `Tempo.geo.clear(keyOrOpts?)` | Purges stashed coordinates from storage. |
 | `Tempo.geo.get(keyOrOpts?)` | Reads stashed coordinates for the specified tenant/IP or ambient default. |
@@ -99,62 +105,12 @@ const t = new Tempo('2026-06-21', { geo: coords });
 
 ## ⚠️ Critical Operational Warnings
 
-### 1. Server Context vs. Client Context
-
-> [!WARNING]
-> **Ambient IP lookup on a server resolves the SERVER's location, NOT the user's location.**
-
-- In a server environment (Node.js, Deno, Bun, Edge runtimes), calling `Tempo.geo.lookup()` without options will query the **datacenter's public outbound IP address**.
-- If your server runs in AWS `us-east-1` (Virginia) and an Australian user hits your API, calling ambient `Tempo.geo.lookup()` will resolve to Virginia!
-- **Best Practice for Backends**:
-  - Always extract the client IP from trusted reverse proxy headers (e.g., `X-Forwarded-For`, `CF-Connecting-IP`) and pass it explicitly:
-    ```typescript
-    const userCoords = await Tempo.geo.lookup({ ip: clientIp });
-    const userTime = new Tempo(date, { geo: userCoords });
-    ```
-  - Or receive explicit GPS/browser coordinates from the frontend client request payload.
-
----
-
-### 2. Multi-Tenant Key Isolation
-
 > [!CAUTION]
-> **Unpartitioned ambient storage is shared. In multi-tenant environments, always use unique keys or instance-level options.**
-
-- Ambient storage stores coordinates under `_magma_geo_` by default.
-- In a shared process or server handling requests for multiple tenants or distinct users, calling `stash()` or ambient `lookup()` without a key will cause tenants to **overwrite each other's cached coordinates**!
-- **Solution A: Multi-Tenant Key Scoping**:
-  Pass a tenant identifier or user ID as the key:
-  ```typescript
-  // Stash coordinates partitioned for tenant A:
-  Tempo.geo.stash(tenantACoords, undefined, 'tenant-alpha');
-
-  // Lookup / retrieve for a specific tenant:
-  const coords = Tempo.geo.get('tenant-alpha');
-  Tempo.geo.clear('tenant-alpha');
-  ```
-  The cache automatically partitions keys under `_magma_geo_:<tenant-id>`, guaranteeing strict isolation.
-
-- **Solution B: Instance-Level Configuration (Recommended)**:
-  Avoid ambient storage altogether by binding coordinates directly to `Tempo` instances:
-  ```typescript
-  const tenantTime = new Tempo(date, { geo: tenantCoords });
-  ```
-  Instance-level coordinates are completely local, immutable, and never touch shared memory or ambient caches.
+> **Server Environments (Node.js, Deno, Bun, Workers)**:
+> In server environments without hardware GPS, calling `Tempo.geo.lookup()` falls back to server outbound public IP geolocation. When executing in multi-user request pipelines, do **not** use the default singleton ambient cache if requests come from multiple distinct users. Instead, pass explicit coordinate payloads (`new Tempo({ geo: userGeo })`) or use tenant keys with `stashGeo(coords, ttl, tenantKey)`.
 
 ---
 
-## Security & Immutability
-
-In keeping with Tempo's strict immutability principles, the `Tempo.geo` namespace is fully locked down:
-
-- **Deeply Frozen**: The entire `Tempo.geo` namespace and its attached utilities are recursively frozen.
-- **Tamper-Proof**: Protected against modification, deletion, or monkey-patching. Any attempt to reassign `Tempo.geo` or mutate its methods (e.g. `Tempo.geo.lookup = ...`) will throw a `TypeError` in strict mode.
-- **Pure Instance Operations**: Instance methods like `t.geoLocate()` always return a new, enriched `Tempo` instance, preserving the immutability of the original instance.
-
----
-
-## Licensing
+## License
 
 This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.
-

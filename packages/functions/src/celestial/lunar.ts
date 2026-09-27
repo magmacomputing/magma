@@ -1,3 +1,4 @@
+import { isString } from '../support/index.js';
 import {
 	SYNODIC_MONTH,
 	REF_NEW_MOON_MS,
@@ -88,7 +89,7 @@ export function getLunarPhase(dateInput: Date | number | string, options: LunarP
 	let sphereVal = options.sphere;
 	let isNorth = false;
 	let isSouth = false;
-	if (typeof sphereVal === 'string') {
+	if (isString(sphereVal)) {
 		const s = sphereVal.toLowerCase();
 		if (s === 'north') isNorth = true;
 		else if (s === 'south') isSouth = true;

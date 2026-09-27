@@ -54,10 +54,11 @@ export class AliasEngine {
 
 	private static _getBaseWord(s: string): string {
 		return s
+			.normalize('NFC')
 			.toLowerCase()
 			.replace(/\[[^\]]*\]\?/g, '')
 			.replace(/.\?/g, '')
-			.replace(/[^a-z0-9]/g, '');
+			.replace(/[^\p{L}\p{M}\p{N}]/gu, '');
 	}
 
 	#parent?: AliasEngineOptions["parent"];
@@ -120,7 +121,7 @@ export class AliasEngine {
 			const existing = existingKey ? this.getAlias(existingKey) : undefined;
 
 			// Skip identical re-registrations across the entire prototype chain to avoid redundant warnings and state growth
-			if (this.getAliases(type, true).some(a => a.target === target && a.name === name))
+			if (this.getAliases(type, true).some(a => a.target === target && a.name.normalize('NFC') === name.normalize('NFC')))
 				continue;
 
 			mutated = true;
@@ -176,7 +177,13 @@ export class AliasEngine {
 				}
 
 				seenBaseNames.add(register.baseWord);
-				patterns.push(`(?<${alias}>${Match.safeAlias(register.name)})`);
+				const nfc = register.name.normalize('NFC');
+				const nfd = register.name.normalize('NFD');
+				const patternBody =
+					nfc === nfd
+						? Match.safeAlias(register.name)
+						: `${Match.safeAlias(nfc)}|${Match.safeAlias(nfd)}`;
+				patterns.push(`(?<${alias}>${patternBody})`);
 			}
 		}
 

@@ -19,3 +19,6 @@ For all Implementation Plans:
 ## 4. Git & Version Control Rules
 - **NEVER run `git commit` without explicit instruction**: Never execute `git commit` autonomously, even when completing setup, running version bumps, or finishing tasks. The user uses `git commit` manually in order to identify changes and review work.
 
+## 5. Monorepo Lockfile Alignment
+- **Automatic Lockfile Synchronization**: Whenever any `package.json` in the monorepo is modified (e.g. version bump, dependency added, modified, or removed across `packages/*` or `packages/plugins/*`), ALWAYS run `npm run lock:sync` (`npm install --package-lock-only`) from the repo root to ensure `package-lock.json` is perfectly aligned before final validation, code review, or commit.
+

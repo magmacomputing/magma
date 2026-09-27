@@ -46,8 +46,8 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 	},
 	"geo": {
 		name: "@magmacomputing/tempo-plugin-geo",
-		version: "1.3.0",
-		loader: () => import("@magmacomputing/tempo-plugin-geo").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-geo" + "@1.3.0"))
+		version: "1.4.0",
+		loader: () => import("@magmacomputing/tempo-plugin-geo").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-geo" + "@1.4.0"))
 	},
 	"dialects": {
 		name: "@magmacomputing/tempo-plugin-dialects",
@@ -58,5 +58,10 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 		name: "@magmacomputing/tempo-plugin-holidays",
 		version: "1.0.0",
 		loader: () => import("@magmacomputing/tempo-plugin-holidays").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-holidays" + "@1.0.0"))
+	},
+	"spatial": {
+		name: "@magmacomputing/tempo-plugin-spatial",
+		version: "1.0.0",
+		loader: () => import("@magmacomputing/tempo-plugin-spatial").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-spatial" + "@1.0.0"))
 	}
 };

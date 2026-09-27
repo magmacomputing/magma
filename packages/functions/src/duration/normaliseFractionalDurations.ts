@@ -1,3 +1,5 @@
+import { isNumber } from '../support/index.js';
+
 /**
  * Normalizes fractional duration values by converting them to smaller units.
  * Temporal API rejects fractional values, so this function converts them downwards.
@@ -25,7 +27,7 @@ export function normaliseFractionalDurations(payload: Record<string, any>) {
 	for (const [big, small, factor] of SCALE) {
 		const v = payload[big];
 
-		if (typeof v === 'number' && !Number.isNaN(v) && v !== Math.trunc(v)) {
+		if (isNumber(v) && v !== Math.trunc(v)) {
 			const whole = Math.trunc(v);
 			const frac = v - whole;
 			if (whole) payload[big] = whole; else delete payload[big];

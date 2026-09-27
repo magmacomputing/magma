@@ -1,3 +1,5 @@
+import { isNumber, isObject, isString } from '../support/index.js';
+
 /** Average duration of a complete lunar cycle (new moon to new moon) in days */
 export const SYNODIC_MONTH = 29.53058867;
 
@@ -39,9 +41,9 @@ export interface SolarTwilightWindow {
  * @returns Timestamp in milliseconds since Unix epoch
  */
 export function toEpochMs(dateInput: Date | number | string): number {
-	return typeof dateInput === 'number'
+	return isNumber(dateInput)
 		? dateInput
-		: typeof dateInput === 'string'
+		: isString(dateInput)
 			? new Date(dateInput).getTime()
 			: dateInput.getTime();
 }
@@ -54,15 +56,15 @@ export function toEpochMs(dateInput: Date | number | string): number {
  * @returns An object containing the resolved `lat`, `lng`, and `elevation` values
  */
 export function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 0): { lat: number; lng: number; elevation: number } {
-	if (typeof latOrOptions === 'number')
+	if (isNumber(latOrOptions))
 		return { lat: latOrOptions, lng: lngInput, elevation: 0 };
 
-	if (latOrOptions && typeof latOrOptions === 'object') {
+	if (isObject(latOrOptions)) {
 		const geo = (latOrOptions as any).geo ?? latOrOptions;
 		const lat = geo.latitude ?? geo.lat ?? (latOrOptions as any).latitude ?? (latOrOptions as any).lat ?? 0;
 		const lng = geo.longitude ?? geo.lng ?? geo.lon ?? geo.long ?? (latOrOptions as any).longitude ?? (latOrOptions as any).lng ?? (latOrOptions as any).lon ?? (latOrOptions as any).long ?? 0;
 		const rawElevation = geo.elevation ?? (latOrOptions as any).elevation;
-		const elevation = typeof rawElevation === 'number' && Number.isFinite(rawElevation) ? rawElevation : 0;
+		const elevation = isNumber(rawElevation) ? rawElevation : 0;
 		return { lat, lng, elevation };
 	}
 	return { lat: 0, lng: 0, elevation: 0 };

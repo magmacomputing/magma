@@ -41,6 +41,10 @@ const KNOWN_TITLES = {
   'sync.index': 'Sync (Thread Synchronization)',
   'ticker.index': 'Ticker (Execution Loop)',
   'dialects.index': 'Dialects (Luxon, strftime, Moment)',
+  'spatial.index': 'Spatial (GIS, Haversine & Transit)',
+  'spatial.transit-and-navigation': 'Transit, Velocity & Navigation',
+  'spatial.geofencing': 'Spatial Geofencing & Bounding Boxes',
+  'spatial.solar-offset': 'Natural Solar Time Offset',
 };
 
 function extractTitle(content, pluginId, basename) {

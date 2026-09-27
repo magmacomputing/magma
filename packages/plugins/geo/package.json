@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-plugin-geo",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Tempo community plugin for IP geolocation lookup, browser hardware location services, and coordinate resolution.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -41,6 +41,9 @@
   "tempo": {
     "vendorVariantId": "tempo-plugin-geo",
     "plan": "community"
+  },
+  "dependencies": {
+    "@magmacomputing/tempo-fns": "^1.1.0"
   },
   "peerDependencies": {
     "@magmacomputing/tempo": "^4.4.0"

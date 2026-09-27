@@ -1,4 +1,5 @@
 import type { Temporal as TemporalType } from '@js-temporal/polyfill';
+import { isObject } from './assert.js';
 export type { TemporalType as Temporal };
 
 /**
@@ -25,5 +26,5 @@ export const getTemporal = (): typeof TemporalType => {
  */
 export function unwrapTemporal<T>(input: T): T extends { readonly zdt: infer U } ? U : T;
 export function unwrapTemporal(input: any): any {
-	return input != null && typeof input === 'object' && 'zdt' in input ? input.zdt : input;
+	return isObject(input) && 'zdt' in input ? input.zdt : input;
 }
