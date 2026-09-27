@@ -131,4 +131,22 @@ describe('AliasEngine', () => {
 		expect(regex.test(nfcWord)).toBe(true);
 		expect(regex.test(nfdWord)).toBe(true);
 	});
+
+	it('deduplicates NFC and NFD alias registrations with the same target without warning', () => {
+		const warnSpy = vi.spyOn(logTempo, 'warn');
+		const engine = new AliasEngine();
+		const nfcWord = 'été';
+		const nfdWord = 'e\u0301te\u0301';
+
+		engine.registerAliases('evt', [
+			[nfcWord, 'summer'],
+			[nfdWord, 'summer'],
+		]);
+
+		expect(warnSpy).not.toHaveBeenCalled();
+		const aliases = engine.getAliases('evt');
+		expect(aliases).toHaveLength(1);
+		expect(aliases[0].name.normalize('NFC')).toBe(nfcWord);
+		expect(aliases[0].target).toBe('summer');
+	});
 });
