@@ -65,3 +65,30 @@ export {
 	type TidalResult,
 } from './celestial/index.js';
 
+// --- Spatial & Navigation ---
+export {
+	haversineDistance,
+	calculateBearing,
+	calculateMidpoint,
+	calculateVelocity,
+	isImpossibleTravel,
+	isWithin,
+	inBoundingBox,
+	solarOffset,
+	resolveCulturalLocale,
+	COMMON_COUNTRY_NAMES,
+	COUNTRY_PRIMARY_LOCALES,
+	type DistanceUnit,
+	type TimeUnit,
+	type BearingOptions,
+	type VelocityOptions,
+	type ImpossibleTravelOptions,
+	type BoundingBox,
+	type SolarOffsetUnit,
+	type SolarOffsetOptions,
+	type LocaleSyncMode,
+	type GeoConfig,
+	type GeoSphere,
+	type CoordinateInput,
+} from './spatial/index.js';
+

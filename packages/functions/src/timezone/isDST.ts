@@ -1,5 +1,5 @@
 import { getOffsets } from './getOffsets.js';
-import { getTemporal, type Temporal } from '../support/index.js';
+import { getTemporal, isString, type Temporal } from '../support/index.js';
 
 /**
  * Determines whether the given date is in Daylight Saving Time (DST).
@@ -18,7 +18,7 @@ export function isDST(date?: Temporal.ZonedDateTime | string, timeZone: string =
 	let zdt: Temporal.ZonedDateTime;
 	const TemporalAPI = getTemporal();
 
-	if (typeof date === 'string') {
+	if (isString(date)) {
 		try {
 			zdt = TemporalAPI.Instant.from(date).toZonedDateTimeISO(timeZone);
 		} catch {

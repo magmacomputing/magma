@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-27
+
+### Added
+- **Pure GIS & Spatial Navigation Module** (`@magmacomputing/tempo-fns/spatial`):
+  - `haversineDistance`: Calculates Great-Circle spherical distance between coordinates in `km`, `miles`, or `m`.
+  - `calculateBearing`: Computes initial forward azimuth compass bearing (0° to 360° True North) along Great-Circle routes.
+  - `calculateMidpoint`: Calculates the geographic midpoint between two coordinate points with hemisphere inference.
+  - `calculateVelocity`: Calculates travel speed between timestamped instances in `km/h`, `mph`, or `m/s`.
+  - `isImpossibleTravel`: Evaluates impossible travel anomalies across logins/events based on commercial aviation velocity thresholds.
+  - `isWithin`: Efficient proximity filtering testing whether coordinates are within a specified radius.
+  - `inBoundingBox`: Spatial inclusion query testing containment within rectangular bounding boxes (with antimeridian wrap support).
+  - `solarOffset`: Calculates natural solar time offset between civil clock time and actual solar noon.
+  - `resolveCulturalLocale`: Resolves country-specific BCP 47 cultural locales with regional adaptation and native options.
+- **Definitive Runtime Type Assertion Suite** (`@magmacomputing/tempo-fns/support`):
+  - Added comprehensive type guard assertions: `isNumber`, `isString`, `isText`, `isBoolean`, `isFunction`, `isNullish`, `isDefined`, `isDate`, `isPrimitive`, `isObject`, and `isReference`.
+
 ## [1.0.0] - 2026-09-26
 
 ### Added

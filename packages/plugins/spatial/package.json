@@ -1,7 +1,7 @@
 {
-  "name": "@magmacomputing/tempo-plugin-geo",
-  "version": "1.4.0",
-  "description": "Tempo community plugin for IP geolocation lookup, browser hardware location services, and coordinate resolution.",
+  "name": "@magmacomputing/tempo-plugin-spatial",
+  "version": "1.0.0",
+  "description": "Tempo community plugin for GIS spatial geometry, Great-Circle navigation, transit velocity, and impossible travel anomaly detection.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -18,7 +18,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/magmacomputing/magma.git",
-    "directory": "packages/plugins/geo"
+    "directory": "packages/plugins/spatial"
   },
   "files": [
     "dist",
@@ -39,7 +39,7 @@
     "prepublishOnly": "tempo-cli prepublish"
   },
   "tempo": {
-    "vendorVariantId": "tempo-plugin-geo",
+    "vendorVariantId": "tempo-plugin-spatial",
     "plan": "community"
   },
   "dependencies": {
@@ -55,11 +55,13 @@
     "tempo",
     "tempo-plugin",
     "magmacomputing",
-    "geo",
-    "geolocation",
-    "coordinates",
-    "ipwhois",
-    "location"
+    "spatial",
+    "gis",
+    "haversine",
+    "bearing",
+    "velocity",
+    "impossible-travel",
+    "geofencing"
   ],
   "type": "module"
 }

@@ -75,6 +75,9 @@
 			display: flex;
 			flex-direction: column;
 			height: 100vh;
+			height: 100%;
+			min-height: 0;
+			overflow: hidden;
 		}
 
 		/* Header */
@@ -88,6 +91,7 @@
 			border-bottom: 1px solid var(--panel-border);
 			z-index: 10;
 			transition: background 0.2s ease;
+			flex-shrink: 0;
 		}
 
 		.header-top {
@@ -256,6 +260,8 @@
 		.workspace {
 			display: flex;
 			flex: 1;
+			min-height: 0;
+			min-width: 0;
 			overflow: hidden;
 		}
 
@@ -263,6 +269,8 @@
 			display: flex;
 			flex-direction: column;
 			height: 100%;
+			min-height: 0;
+			min-width: 0;
 			overflow: hidden;
 		}
 
@@ -270,6 +278,8 @@
 			flex: 1.1;
 			border-right: 1px solid var(--panel-border);
 			background: var(--code-bg);
+			min-height: 0;
+			min-width: 0;
 		}
 
 		.pane-output {
@@ -277,6 +287,9 @@
 			display: flex;
 			flex-direction: column;
 			background: var(--panel-bg);
+			min-height: 0;
+			min-width: 0;
+			overflow: hidden;
 		}
 
 		.pane-header {
@@ -291,6 +304,7 @@
 			text-transform: uppercase;
 			letter-spacing: 1px;
 			color: var(--text-muted);
+			flex-shrink: 0;
 		}
 
 		.eval-meta-wrap {
@@ -339,6 +353,8 @@
 			position: relative;
 			overflow: hidden;
 			background: var(--code-bg);
+			min-height: 0;
+			min-width: 0;
 		}
 
 		.line-numbers {
@@ -352,6 +368,7 @@
 			background: var(--line-numbers-bg);
 			border-right: 1px solid var(--panel-border);
 			overflow: hidden;
+			flex-shrink: 0;
 		}
 
 		.code-editor {
@@ -368,6 +385,8 @@
 			tab-size: 2;
 			white-space: pre;
 			overflow: auto;
+			min-height: 0;
+			min-width: 0;
 		}
 
 		/* Output Area */
@@ -375,6 +394,7 @@
 			padding: 16px;
 			background: var(--subcard-bg);
 			border-bottom: 1px solid var(--panel-border);
+			flex-shrink: 0;
 		}
 
 		.result-box {
@@ -387,6 +407,8 @@
 			color: var(--success);
 			word-break: break-all;
 			min-height: 48px;
+			max-height: 180px;
+			overflow-y: auto;
 			display: flex;
 			align-items: center;
 		}
@@ -398,8 +420,10 @@
 
 		.console-stream {
 			flex: 1;
+			min-height: 0;
 			padding: 12px 16px;
 			overflow-y: auto;
+			overflow-x: hidden;
 			font-family: 'Fira Code', monospace;
 			font-size: 0.82rem;
 			display: flex;
@@ -412,6 +436,7 @@
 			align-items: flex-start;
 			gap: 8px;
 			line-height: 1.5;
+			flex-shrink: 0;
 		}
 
 		.log-badge {
@@ -421,6 +446,7 @@
 			padding: 1px 5px;
 			border-radius: 4px;
 			margin-top: 2px;
+			flex-shrink: 0;
 		}
 
 		.badge-log {
@@ -447,6 +473,7 @@
 			flex: 1;
 			color: var(--text-main);
 			white-space: pre-wrap;
+			word-break: break-word;
 		}
 
 		/* Status Bar */
@@ -460,6 +487,7 @@
 			font-size: 0.75rem;
 			color: var(--text-muted);
 			transition: background 0.2s ease;
+			flex-shrink: 0;
 		}
 
 		.status-left {
@@ -499,14 +527,25 @@
 				flex: 1;
 				border-right: none;
 				border-bottom: 1px solid var(--panel-border);
+				min-height: 0;
 			}
 
 			.pane-output {
 				flex: 1;
+				min-height: 0;
 			}
 		}
 
 		/* Sleek Custom Scrollbars */
+		* {
+			scrollbar-width: thin;
+			scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+		}
+
+		[data-theme="light"] * {
+			scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+		}
+
 		::-webkit-scrollbar {
 			width: 6px;
 			height: 6px;
@@ -516,13 +555,21 @@
 			background: rgba(0, 0, 0, 0.1);
 		}
 
+		[data-theme="light"] ::-webkit-scrollbar-track {
+			background: rgba(0, 0, 0, 0.04);
+		}
+
 		::-webkit-scrollbar-thumb {
-			background: rgba(255, 255, 255, 0.18);
+			background: rgba(255, 255, 255, 0.22);
 			border-radius: 3px;
 		}
 
+		[data-theme="light"] ::-webkit-scrollbar-thumb {
+			background: rgba(0, 0, 0, 0.22);
+		}
+
 		::-webkit-scrollbar-thumb:hover {
-			background: rgba(56, 189, 248, 0.5);
+			background: rgba(56, 189, 248, 0.6);
 		}
 
 		/* Embedded Mini-Mode Styles */
@@ -539,6 +586,7 @@
 			backdrop-filter: blur(12px);
 			border-bottom: 1px solid var(--panel-border);
 			z-index: 10;
+			flex-shrink: 0;
 		}
 
 		body.is-embedded .embed-toolbar {
@@ -547,9 +595,11 @@
 
 		body.is-embedded .workspace {
 			height: calc(100vh - 64px);
+			height: calc(100% - 64px);
 			display: flex;
 			flex-direction: row;
 			overflow: hidden;
+			min-height: 0;
 		}
 
 		body.is-embedded .pane-editor {
@@ -559,6 +609,7 @@
 			display: flex;
 			flex-direction: column;
 			min-width: 0;
+			min-height: 0;
 			overflow: hidden;
 		}
 
@@ -585,14 +636,17 @@
 		body.is-embedded .result-box {
 			padding: 8px 12px;
 			min-height: 38px;
+			max-height: 140px;
+			overflow-y: auto;
 			font-size: 0.92rem;
 		}
 
 		body.is-embedded .console-stream {
 			padding: 8px 12px;
 			flex: 1;
-			min-height: 100px;
+			min-height: 0;
 			overflow-y: auto;
+			overflow-x: hidden;
 			gap: 4px;
 		}
 
@@ -629,10 +683,12 @@
 				border-right: none;
 				border-bottom: 1px solid var(--panel-border);
 				flex: 1;
+				min-height: 0;
 			}
 
 			body.is-embedded .pane-output {
 				flex: 1;
+				min-height: 0;
 			}
 		}
 	</style>
@@ -652,6 +708,7 @@
 			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@latest",
 			"@magmacomputing/tempo-plugin-holidays": "https://esm.sh/@magmacomputing/tempo-plugin-holidays@latest",
 			"@magmacomputing/tempo-plugin-snap": "https://esm.sh/@magmacomputing/tempo-plugin-snap@latest",
+			"@magmacomputing/tempo-plugin-spatial": "https://esm.sh/@magmacomputing/tempo-plugin-spatial@latest",
 			"@magmacomputing/tempo-plugin-sync": "https://esm.sh/@magmacomputing/tempo-plugin-sync@latest",
 			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@latest"
 		}
@@ -729,6 +786,8 @@
 					<div class="select-wrap">
 						<select id="presetSelect" title="Load Snippet Preset">
 							<option value="quickstart">Preset: Quick Start (Core)</option>
+							<option value="spatial">Preset: Spatial & Navigation (GIS, Haversine, Transit)</option>
+							<option value="geo">Preset: Live Geolocation & Providers (Geo)</option>
 							<option value="dialects">Preset: Dialects (Luxon, strftime, Moment)</option>
 							<option value="weekend">Preset: Weekend Check (Cookbook)</option>
 							<option value="seasons">Preset: Seasons & Moon (Astro/Geo)</option>
@@ -823,7 +882,35 @@ console.log('Days until next Friday:', t.until('next Friday').format());
 // Return value displays in the top Result card:
 return t.format('{yyyy}-{mm}-{dd}');`,
 
-			geo: `// 🌍 Live Geolocation Demo (@magmacomputing/tempo-plugin-geo)
+			spatial: `// 🧭 Great-Circle Navigation & Spatial Geofencing (@magmacomputing/tempo-plugin-spatial)
+const { SpatialPlugin } = await import('@magmacomputing/tempo-plugin-spatial');
+Tempo.use(SpatialPlugin);
+
+const sydney = { lat: -33.8688, lng: 151.2093 };
+const london = { lat: 51.5074, lng: -0.1278 };
+
+// 1. Haversine Distance & Initial Bearing
+const distKm = Tempo.spatial.distance(sydney, london, 'km');
+const heading = Tempo.spatial.bearing(sydney, london);
+console.log('Distance Sydney -> London:', distKm.toFixed(1), 'km');
+console.log('Compass Heading:', heading.toFixed(1) + '°');
+
+// 2. Geographic Midpoint
+const mid = Tempo.spatial.midpoint(sydney, london);
+console.log('Great-Circle Midpoint:', \`\${mid.latitude.toFixed(2)}°, \${mid.longitude.toFixed(2)}° (\${mid.sphere})\`);
+
+// 3. Impossible Travel Anomaly Detection
+const loginSydney = new Tempo('2026-03-31T08:00:00Z', { geo: sydney });
+const loginLondon = new Tempo('2026-03-31T09:30:00Z', { geo: london }); // 1.5h later
+const speed = loginSydney.spatialVelocity(loginLondon);
+const isAnomaly = Tempo.spatial.isImpossibleTravel(loginSydney, loginLondon);
+
+console.log('Transit Velocity:', speed.toFixed(1), 'km/h');
+console.log('Impossible Travel Alert?', isAnomaly);
+
+return \`Sydney -> London: \${distKm.toFixed(0)} km (Midpoint: \${mid.latitude.toFixed(1)}°, \${mid.longitude.toFixed(1)}°)\`;`,
+
+			geo: `// 🌍 Live Geolocation & Pluggable Providers (@magmacomputing/tempo-plugin-geo)
 // Note: In browser sandbox, resolves browser GPS or IP-based coordinates
 
 const lookup = await Tempo.geo.lookup();
@@ -834,6 +921,12 @@ console.log('Coordinates:', lookup.lat, lookup.lng);
 const localTime = new Tempo('now', { geo: lookup });
 console.log('Astronomical Season:', localTime.term.szn);
 console.log('Moon Phase:', localTime.term.lunar.phase);
+
+// Reverse Geocoding via Pluggable Provider Gateway:
+const { OpenStreetMapProvider } = await import('@magmacomputing/tempo-plugin-geo');
+Tempo.geo.setProvider(new OpenStreetMapProvider());
+const place = await Tempo.geo.reverse({ lat: -33.8688, lng: 151.2093 });
+console.log('Reverse Geocoded Place:', place.city, place.country);
 
 return \`Located at \${lookup.city ?? 'Local City'} (\${lookup.lat?.toFixed(2)}°, \${lookup.lng?.toFixed(2)}°)\`;`,
 

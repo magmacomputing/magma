@@ -113,24 +113,12 @@
         "link": "/doc/9-plugins/geo.provider-gateway"
       },
       {
-        "text": "Spatial Geofencing & Bounding Boxes",
-        "link": "/doc/9-plugins/geo.geofencing"
-      },
-      {
-        "text": "Transit Velocity, Impossible Travel & Navigation",
-        "link": "/doc/9-plugins/geo.transit-and-navigation"
-      },
-      {
         "text": "Cultural Locale Synchronization",
         "link": "/doc/9-plugins/geo.cultural-sync"
       },
       {
         "text": "Storage & Multi-Tenant Caching",
         "link": "/doc/9-plugins/geo.storage-and-caching"
-      },
-      {
-        "text": "Natural Solar Time Offset",
-        "link": "/doc/9-plugins/geo.solar-offset"
       }
     ]
   },
@@ -149,6 +137,28 @@
       {
         "text": "Regional Calendars & Dynamic Preloading",
         "link": "/doc/9-plugins/holidays.regional-calendars"
+      }
+    ]
+  },
+  {
+    "text": "Spatial Plugin (@magmacomputing/tempo-plugin-spatial)",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/spatial.index"
+      },
+      {
+        "text": "Natural Solar Time Offset",
+        "link": "/doc/9-plugins/spatial.solar-offset"
+      },
+      {
+        "text": "Spatial Geofencing & Bounding Boxes",
+        "link": "/doc/9-plugins/spatial.geofencing"
+      },
+      {
+        "text": "Transit, Velocity & Navigation",
+        "link": "/doc/9-plugins/spatial.transit-and-navigation"
       }
     ]
   },

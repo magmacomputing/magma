@@ -5,6 +5,20 @@ All notable changes to the `@magmacomputing/tempo-plugin-geo` project will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-09-27
+
+### Added
+- **Reverse Geocoding & Spatial Deduplication (`Tempo.geo.reverse`)**:
+  - Reverse geocodes coordinates to address/locality metadata with source-partitioned 2-decimal spatial `BoundedCache` (~1.1 km resolution, 24h TTL) and `{ refresh: true }` cache bypass.
+  - Opt-in reverse geocoding during `.geoLocate()` via `t.geoLocate({ reverse: true })` when coordinates exist without locality metadata.
+- **Dependency on `@magmacomputing/tempo-fns`**:
+  - Imported pure `resolveCulturalLocale` and `type LocaleSyncMode` from `@magmacomputing/tempo-fns`.
+
+### Changed (Clean Break)
+- **Extracted GIS Math & Navigation to `@magmacomputing/tempo-plugin-spatial`**:
+  - Removed GIS calculations (`haversineDistance`, `calculateBearing`, `calculateMidpoint`, `calculateVelocity`, `isImpossibleTravel`, `isWithin`, `inBoundingBox`, `solarOffset`) and instance methods (`geoDistance`, `geoSolarOffset`) from `tempo-plugin-geo` to keep the core lean and focused solely on coordinate resolution, hardware/IP detection, and geocoding.
+  - GIS navigation and spatial geometry are now available via the dedicated `@magmacomputing/tempo-plugin-spatial` plugin under the immutable `Tempo.spatial` namespace.
+
 ## [1.3.0] - 2026-09-25
 
 ### Added

@@ -1,3 +1,4 @@
+import { isNumber, isObject } from '../support/index.js';
 import {
 	REF_PERIGEE_MS,
 	ANOMALISTIC_MONTH,
@@ -94,15 +95,15 @@ export function getTidalState(
 		states: TIDAL_PHASE_STATES,
 	};
 
-	const hasGeo = (typeof latOrOptions === 'object' && latOrOptions !== null) || (typeof latOrOptions === 'number' && (latOrOptions !== 0 || lonInput !== 0));
+	const hasGeo = isObject(latOrOptions) || (isNumber(latOrOptions) && (latOrOptions !== 0 || lonInput !== 0));
 
 	if (hasGeo) {
 		const { lat, lng } = resolveCoordinates(latOrOptions, lonInput);
-		const lunitidalIntervalMin = typeof latOrOptions === 'object' && typeof (latOrOptions as TidalOptions).lunitidalIntervalMin === 'number'
+		const lunitidalIntervalMin = isObject(latOrOptions) && isNumber((latOrOptions as TidalOptions).lunitidalIntervalMin)
 			? (latOrOptions as TidalOptions).lunitidalIntervalMin!
 			: 0;
 
-		const regime: TidalRegime = typeof latOrOptions === 'object' && (latOrOptions as TidalOptions).regime
+		const regime: TidalRegime = isObject(latOrOptions) && (latOrOptions as TidalOptions).regime
 			? (latOrOptions as TidalOptions).regime!
 			: (Math.abs(lat) > 65 ? 'mixed' : 'semi-diurnal');
 
