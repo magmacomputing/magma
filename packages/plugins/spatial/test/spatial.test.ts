@@ -179,7 +179,7 @@ describe('Tempo Plugin: Spatial', () => {
 		});
 
 		it('should calculate solar offset for instance via t.spatialSolarOffset()', () => {
-			const offsetMinutes = sf.spatialSolarOffset({ unit: 'mi' });
+			const offsetMinutes = sf.spatialSolarOffset({ unit: 'mi', timeZone: 'UTC' });
 			// -122.4194° * 4 min/deg = ~ -489.68 minutes
 			expect(Number.isFinite(offsetMinutes)).toBe(true);
 			expect(offsetMinutes).toBeCloseTo(-489.68, 0);

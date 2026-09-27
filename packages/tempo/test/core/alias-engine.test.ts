@@ -114,4 +114,21 @@ describe('AliasEngine', () => {
 		]);
 		expect(warnSpy).not.toHaveBeenCalled();
 	});
+
+	it('generates patterns matching both NFC and NFD forms for diacritics', () => {
+		const engine = new AliasEngine();
+		// 'été' in NFC
+		const nfcWord = 'été';
+		const nfdWord = 'e\u0301te\u0301';
+		expect(nfcWord).not.toBe(nfdWord);
+
+		engine.registerAliases('evt', [[nfcWord, 'summer']]);
+		const patterns = engine.getPatterns('evt');
+		expect(patterns).toBe(`(?<evt0_0>${nfcWord}|${nfdWord})`);
+		
+		// Ensure regex constructed from pattern matches both NFC and NFD strings
+		const regex = new RegExp(patterns!);
+		expect(regex.test(nfcWord)).toBe(true);
+		expect(regex.test(nfdWord)).toBe(true);
+	});
 });

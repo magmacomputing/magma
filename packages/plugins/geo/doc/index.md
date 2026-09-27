@@ -8,7 +8,7 @@
 
 A dedicated Community plugin for the [Tempo](https://github.com/magmacomputing/magma) ecosystem providing universal geolocation lookup, forward and reverse geocoding gateway, pluggable provider architecture, cultural locale synchronization, and multi-tenant bounded coordinate caching.
 
-For geometric GIS math, Great-Circle navigation, and impossible travel anomaly detection, see [`@magmacomputing/tempo-plugin-spatial`](./spatial.index.md).
+For geometric GIS math, Great-Circle navigation, and impossible travel anomaly detection, see [`@magmacomputing/tempo-plugin-spatial`](../../spatial/doc/index.md).
 
 ---
 

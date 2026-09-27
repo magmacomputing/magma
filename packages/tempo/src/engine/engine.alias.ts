@@ -177,7 +177,13 @@ export class AliasEngine {
 				}
 
 				seenBaseNames.add(register.baseWord);
-				patterns.push(`(?<${alias}>${Match.safeAlias(register.name)})`);
+				const nfc = register.name.normalize('NFC');
+				const nfd = register.name.normalize('NFD');
+				const patternBody =
+					nfc === nfd
+						? Match.safeAlias(register.name)
+						: `${Match.safeAlias(nfc)}|${Match.safeAlias(nfd)}`;
+				patterns.push(`(?<${alias}>${patternBody})`);
 			}
 		}
 
