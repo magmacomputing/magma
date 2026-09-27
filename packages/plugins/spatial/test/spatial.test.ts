@@ -180,8 +180,9 @@ describe('Tempo Plugin: Spatial', () => {
 
 		it('should calculate solar offset for instance via t.spatialSolarOffset()', () => {
 			const offsetMinutes = sf.spatialSolarOffset({ unit: 'mi' });
-			// -122.4194° * 4 min/deg = ~ -489.67 minutes
-			expect(offsetMinutes).toBeDefined();
+			// -122.4194° * 4 min/deg = ~ -489.68 minutes
+			expect(Number.isFinite(offsetMinutes)).toBe(true);
+			expect(offsetMinutes).toBeCloseTo(-489.68, 0);
 		});
 
 		it('should evaluate proximity from instance via t.isWithin()', () => {

@@ -278,7 +278,18 @@ describe('common/runtime/mapper.library', () => {
 		);
 		expect(result.query).toBe('8.8.8.8');
 		expect(result.city).toBe('San Francisco');
+	});
 
+	it('coerceGeo rejects whitespace-only coordinate strings and non-finite values', () => {
+		expect(coerceGeo('   ,   ')).toBeUndefined();
+		expect(coerceGeo(['   ', '   '])).toBeUndefined();
+		expect(coerceGeo({ lat: '   ', lng: '   ' })).toBeUndefined();
+		expect(coerceGeo({ lat: Infinity })).toBeUndefined();
+		expect(coerceGeo({ lng: NaN })).toBeUndefined();
+		expect(coerceGeo({ lat: '40.7128', lng: '-74.0060' })).toMatchObject({
+			latitude: 40.713,
+			longitude: -74.006,
+		});
 	});
 });
 

@@ -18,7 +18,10 @@ import {
  */
 export const parseCoordNumber = (val: any): number => {
 	if (!isDefined(val) || isBoolean(val)) return NaN;
-	if (isText(val)) return Number(val.trim());
+	if (isString(val)) {
+		const trimmed = val.trim();
+		return trimmed.length > 0 ? Number(trimmed) : NaN;
+	}
 	return isNumber(val) ? val : NaN;
 };
 
@@ -49,7 +52,7 @@ export const normalizeLng = (lng: any, round = true): number | undefined => {
 export const normalizeCoords = (lat: any, lng: any, round = true): { lat: number; lng: number } | undefined => {
 	const nLat = normalizeLat(lat, round);
 	const nLng = normalizeLng(lng, round);
-	return (nLat !== undefined && nLng !== undefined) ? { lat: nLat, lng: nLng } : undefined;
+	return (isDefined(nLat) && isDefined(nLng)) ? { lat: nLat, lng: nLng } : undefined;
 };
 
 /**
@@ -124,17 +127,17 @@ export function toRadianCoordinates(from: any, to: any): {
 	dLat: number;
 	dLng: number;
 } | undefined {
-	const c1 = coerceGeo(from);
-	const c2 = coerceGeo(to);
+	const c1 = extractRawCoords(from);
+	const c2 = extractRawCoords(to);
 
-	if (!c1 || !c2 || !isNumber(c1.latitude) || !isNumber(c1.longitude) || !isNumber(c2.latitude) || !isNumber(c2.longitude))
+	if (!c1 || !c2 || !isNumber(c1.lat) || !isNumber(c1.lng) || !isNumber(c2.lat) || !isNumber(c2.lng))
 		return undefined;
 
 	const toRad = Math.PI / 180;
-	const lat1 = c1.latitude * toRad;
-	const lng1 = c1.longitude * toRad;
-	const lat2 = c2.latitude * toRad;
-	const lng2 = c2.longitude * toRad;
+	const lat1 = c1.lat * toRad;
+	const lng1 = c1.lng * toRad;
+	const lat2 = c2.lat * toRad;
+	const lng2 = c2.lng * toRad;
 
 	return {
 		lat1,
@@ -160,10 +163,16 @@ export function extractEpochMs(input: any): number | undefined {
 		if (isNumber((input as any).timestamp)) return (input as any).timestamp;
 		if (isDate((input as any).date)) return (input as any).date.getTime();
 		if (isFunction((input as any).toInstant)) {
-			try { return (input as any).toInstant().epochMilliseconds; } catch { }
+			try {
+				const t = (input as any).toInstant().epochMilliseconds;
+				if (isNumber(t)) return t;
+			} catch { }
 		}
 		if (isFunction((input as any).getTime)) {
-			try { return (input as any).getTime(); } catch { }
+			try {
+				const t = (input as any).getTime();
+				if (isNumber(t)) return t;
+			} catch { }
 		}
 	}
 	if (isString(input)) {

@@ -23,7 +23,21 @@ import { calculateVelocity } from './calculateVelocity.js';
 export function isImpossibleTravel(from: any, to: any, options?: ImpossibleTravelOptions): boolean {
 	const unit = options?.unit ?? 'km';
 	const defaultMax = unit === 'miles' ? 560 : (unit === 'm' ? 250 : 900); // 900 km/h ≈ 560 mph ≈ 250 m/s
-	const threshold = options?.maxSpeed ?? options?.maxCommercialSpeedKmH ?? defaultMax;
+
+	let fallbackThreshold: number;
+	if (options?.maxCommercialSpeedKmH !== undefined) {
+		if (unit === 'miles') {
+			fallbackThreshold = options.maxCommercialSpeedKmH * 0.621371;
+		} else if (unit === 'm') {
+			fallbackThreshold = (options.maxCommercialSpeedKmH * 1000) / 3600;
+		} else {
+			fallbackThreshold = options.maxCommercialSpeedKmH;
+		}
+	} else {
+		fallbackThreshold = defaultMax;
+	}
+
+	const threshold = options?.maxSpeed ?? fallbackThreshold;
 
 	const velocity = calculateVelocity(from, to, { unit, timeUnit: unit === 'm' ? 'ss' : 'hh' });
 

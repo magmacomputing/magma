@@ -73,9 +73,8 @@ Explore detailed guides on specific capabilities:
 
 | Instance Method | Description |
 | :--- | :--- |
-| `t.geoLocate(opts?)` | Asynchronously resolves physical location (with optional cultural locale synchronization `{ setLocale: true }`) and returns a new enriched `Tempo` instance. |
-| `t.geoReverse(opts?)` | Reverse geocodes this instance's coordinates and returns a new `Tempo` instance enriched with address metadata. |
-| `t.geoForward(query, opts?)` | Forward geocodes query string and returns a new `Tempo` instance enriched with resolved coordinates. |
+| `t.geoLocate(opts?)` | Asynchronously resolves physical location (with optional reverse geocoding `{ reverse: true }` and cultural locale synchronization `{ setLocale: true }`) and returns a new enriched `Tempo` instance. |
+| `t.geoLookup(opts?)` | Resolves coordinates for this instance via explicit coordinates or automatic IP/hardware lookup. |
 
 ---
 
@@ -105,25 +104,22 @@ console.log(localTime.locale); // 'ar-EG'
 console.log(localTime.format({ dateStyle: 'full' })); // 'الأحد، ٢١ يونيو ٢٠٢٦' (Arabic Egyptian culture)
 ```
 
-### 2. Reverse Geocoding with Pluggable Providers
+### 2. Reverse Geocoding and Instance Enrichment
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { GeoPlugin, OpenStreetMapProvider } from '@magmacomputing/tempo-plugin-geo';
+import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
 
 Tempo.use(GeoPlugin);
 
-// Set OpenStreetMap as the active geocoding provider
-Tempo.geo.setProvider(new OpenStreetMapProvider());
-
-// Reverse geocode coordinates to place details
+// Reverse geocode coordinates to place details (using built-in lookup or custom GeoProvider)
 const place = await Tempo.geo.reverse({ lat: -33.8688, lng: 151.2093 });
-console.log(place.city, place.country); // Sydney, Australia
+console.log(place?.city, place?.country); // Sydney, AU
 
-// Or enrich an instance directly
+// Or enrich an existing instance via t.geoLocate({ reverse: true })
 const t = new Tempo({ geo: { lat: -33.8688, lng: 151.2093 } });
-const enriched = await t.geoReverse();
-console.log(enriched.geo?.city, enriched.geo?.country);
+const enriched = await t.geoLocate({ reverse: true });
+console.log(enriched.geo?.city, enriched.geo?.country); // Sydney, AU
 ```
 
 ---
@@ -134,7 +130,7 @@ In keeping with Tempo's strict immutability principles, the `Tempo.geo` namespac
 
 - **Deeply Frozen**: The entire `Tempo.geo` namespace and attached utilities are recursively frozen via `deepFreeze`.
 - **Tamper-Proof**: Protected against reassignment or monkey-patching.
-- **Pure Instance Operations**: Instance methods like `t.geoLocate()` and `t.geoReverse()` return new, enriched `Tempo` instances, preserving the immutability of the original instance.
+- **Pure Instance Operations**: Instance methods like `t.geoLocate()` return new, enriched `Tempo` instances, preserving the immutability of the original instance.
 
 ---
 

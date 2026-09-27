@@ -37,7 +37,7 @@ const melbourne = { lat: -37.8136, lng: 144.9631 };
 const distKm = Tempo.spatial.distance(sydney, melbourne, 'km'); // 713.435 km
 
 // Compass Bearing
-const bearing = Tempo.spatial.bearing(sydney, melbourne); // 215.1° (SSW)
+const bearing = Tempo.spatial.bearing(sydney, melbourne); // 230.2° (SW)
 
 // Geographic Midpoint
 const mid = Tempo.spatial.midpoint(sydney, melbourne);

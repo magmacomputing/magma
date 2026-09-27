@@ -141,7 +141,7 @@ console.log(isFraud); // true (NY to SF in 45m requires ~5500 km/h)
 
 // Custom threshold (e.g., ground vehicle threshold: 130 km/h)
 const isCarTravelImpossible = Tempo.spatial.isImpossibleTravel(userAuth1, userAuth2, {
-  maxVelocity: 130
+  maxSpeed: 130
 });
 console.log(isCarTravelImpossible); // true
 ```

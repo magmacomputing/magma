@@ -67,8 +67,8 @@ All underlying utilities can be imported as standalone tree-shakeable functions 
 import { Tempo } from '@magmacomputing/tempo';
 import {
   geoLookup,
-  geoReverse,
-  geoForward,
+  reverseGeocode,
+  forwardGeocode,
   resolveCulturalLocale,
   resolveGeoCoordinates,
   stashGeo,

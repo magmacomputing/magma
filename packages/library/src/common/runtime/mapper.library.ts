@@ -148,7 +148,10 @@ export const GEO_PROPERTIES = [
  */
 const parseCoordNumber = (val: any): number => {
 	if (!isDefined(val) || isBoolean(val)) return NaN;
-	if (isText(val)) return Number(val.trim());
+	if (isString(val)) {
+		const trimmed = val.trim();
+		return trimmed.length > 0 ? Number(trimmed) : NaN;
+	}
 	return isNumber(val) ? val : NaN;
 };
 
@@ -179,7 +182,7 @@ const normalizeLng = (lng: any, round = true): number | undefined => {
 const normalizeCoords = (lat: any, lng: any, round = true): { lat: number; lng: number } | undefined => {
 	const nLat = normalizeLat(lat, round);
 	const nLng = normalizeLng(lng, round);
-	return (nLat !== undefined && nLng !== undefined) ? { lat: nLat, lng: nLng } : undefined;
+	return (isDefined(nLat) && isDefined(nLng)) ? { lat: nLat, lng: nLng } : undefined;
 };
 
 /**
@@ -187,7 +190,7 @@ const normalizeCoords = (lat: any, lng: any, round = true): { lat: number; lng: 
  * @internal
  */
 const normalizeElevation = (elevation: any): number | undefined =>
-	isNumber(elevation) && Number.isFinite(elevation) ? Math.round(elevation * 1000) / 1000 : undefined;
+	isNumber(elevation) ? Math.round(elevation * 1000) / 1000 : undefined;
 
 /**
  * Resolves hemisphere: preserves explicit sphere if valid, or infers from latitude (+/- 0.001 band).
@@ -591,7 +594,9 @@ export const getSpatialCacheKey = (lat: number, lng: number, sourceOrOpts?: stri
 		const hasExplicitProvider = Object.hasOwn(sourceOrOpts, 'provider');
 		const provider = hasExplicitProvider ? sourceOrOpts.provider : activeGeoProvider;
 		const providerName = provider && isString(provider.name) && !isEmpty(provider.name) ? provider.name.trim() : undefined;
-		const rawEndpoint = isString(sourceOrOpts.endpoint) && !isEmpty(sourceOrOpts.endpoint) ? sourceOrOpts.endpoint.trim() : undefined;
+		const rawEndpoint = isString(sourceOrOpts.reverseEndpoint ?? sourceOrOpts.reverseGeoEndpoint) && !isEmpty(sourceOrOpts.reverseEndpoint ?? sourceOrOpts.reverseGeoEndpoint)
+			? (sourceOrOpts.reverseEndpoint ?? sourceOrOpts.reverseGeoEndpoint).trim()
+			: undefined;
 		const endpoint = rawEndpoint && isValidGeoEndpoint(rawEndpoint) ? rawEndpoint : undefined;
 		if (providerName && endpoint) return `${bucket}:${providerName}:${endpoint}`;
 		if (providerName) return `${bucket}:${providerName}`;
@@ -668,13 +673,14 @@ export async function reverseGeocode(
 		return null;
 	}
 
-	// Default lightweight reverse geocoding via BigDataCloud client API or custom endpoint
-	if (isText(opts?.endpoint)) {
-		const rawEndpoint = opts.endpoint.trim();
+	// Default lightweight reverse geocoding via BigDataCloud client API or custom reverseEndpoint
+	const rawReverseEndpoint = opts?.reverseEndpoint ?? opts?.reverseGeoEndpoint;
+	if (isText(rawReverseEndpoint)) {
+		const rawEndpoint = rawReverseEndpoint.trim();
 		if (!isValidGeoEndpoint(rawEndpoint))
 			return opts?.fallback === false ? null : coerced;
 	}
-	const customEndpoint = isText(opts?.endpoint) ? opts.endpoint.trim() : undefined;
+	const customEndpoint = isText(rawReverseEndpoint) ? rawReverseEndpoint.trim() : undefined;
 	const fallbackKey = getSpatialCacheKey(lat, lng, customEndpoint ?? 'default');
 
 	if (useCache) {
@@ -719,12 +725,12 @@ export async function reverseGeocode(
 		);
 
 		if (isObject(data)) {
-			const city = isString(data.city)
-				? data.city
-				: (isString(data.locality) ? data.locality : (isString(data.principalSubdivision) ? data.principalSubdivision : undefined));
-			const country = isString(data.countryCode)
-				? data.countryCode
-				: (isString(data.countryName) ? data.countryName : undefined);
+			const city = isText(data.city)
+				? data.city.trim()
+				: (isText(data.locality) ? data.locality.trim() : (isText(data.principalSubdivision) ? data.principalSubdivision.trim() : undefined));
+			const country = isText(data.countryCode)
+				? data.countryCode.trim()
+				: (isText(data.countryName) ? data.countryName.trim() : undefined);
 
 			const result = assembleGeoConfig({ lat, lng }, {
 				city,
@@ -733,7 +739,7 @@ export async function reverseGeocode(
 				timezone: coerced.timezone,
 			});
 
-			if (isDefined(city) || isDefined(country)) {
+			if (isText(city) || isText(country)) {
 				const cachePayload = assembleGeoConfig({ lat, lng }, {
 					city,
 					country,

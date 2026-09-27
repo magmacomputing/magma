@@ -922,9 +922,7 @@ const localTime = new Tempo('now', { geo: lookup });
 console.log('Astronomical Season:', localTime.term.szn);
 console.log('Moon Phase:', localTime.term.lunar.phase);
 
-// Reverse Geocoding via Pluggable Provider Gateway:
-const { OpenStreetMapProvider } = await import('@magmacomputing/tempo-plugin-geo');
-Tempo.geo.setProvider(new OpenStreetMapProvider());
+// Reverse Geocoding to place details:
 const place = await Tempo.geo.reverse({ lat: -33.8688, lng: 151.2093 });
 console.log('Reverse Geocoded Place:', place.city, place.country);
 

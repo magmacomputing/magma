@@ -101,4 +101,17 @@ describe('AliasEngine', () => {
 		expect(engine.resolveAlias('evt0_1')?.value).toBe('');
 		expect(engine.resolveAlias('non-existent' as any)).toBeUndefined();
 	});
+
+	it('does not falsely warn on distinct non-Latin script aliases', () => {
+		const warnSpy = vi.spyOn(logTempo, 'warn');
+		const engine = new AliasEngine();
+		engine.registerAliases('evt', [
+			['أمس', 'yesterday'],
+			['اليوم', 'today'],
+			['غدًا', 'tomorrow'],
+			['今日', 'today'],
+			['明日', 'tomorrow'],
+		]);
+		expect(warnSpy).not.toHaveBeenCalled();
+	});
 });
