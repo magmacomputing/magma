@@ -28,6 +28,7 @@
     "build:plugins": "npm run build:tempo && tempo-cli build-plugins",
     "build:all": "npm run build:library && npm run build:std && npm run build:tempo && npm run build:functions && npm run build:plugins",
     "clean": "node node_modules/typescript-7/bin/tsc -b --clean",
+    "lock:sync": "env -u npm_config_allow_scripts npm install --package-lock-only",
     "version:bump": "tempo-cli version-bump",
     "version:sync": "tempo-cli version-sync",
     "catalog:sync": "tempo-cli catalog-sync",
