@@ -2,7 +2,7 @@
   {
     "id": "astro",
     "name": "Astro Term",
-    "description": "Precise astronomical seasons (solstices & equinoxes) — hemisphere-aware, sub-minute accuracy",
+    "description": "Tempo plugin that calculates precise astronomical seasons (solstices & equinoxes) — hemisphere-aware, sub-minute accuracy",
     "packageName": "@magmacomputing/tempo-plugin-astro",
     "plan": "community",
     "status": "active",
@@ -11,7 +11,7 @@
   {
     "id": "celestial",
     "name": "Celestial Plugin",
-    "description": "Terms for location-aware solar twilight events, lunar phase tracking, and astronomical tidal mechanics",
+    "description": "Tempo plugin to add Terms for location-aware solar twilight events, lunar phase tracking, and astronomical tidal mechanics",
     "packageName": "@magmacomputing/tempo-plugin-celestial",
     "plan": "community",
     "status": "active",
@@ -20,7 +20,7 @@
   {
     "id": "batch",
     "name": "Batch Plugin",
-    "description": "C-level parallelization to massive date arrays via SharedArrayBuffer and Worker Threads.",
+    "description": "Tempo community plugin bringing C-level parallelization to massive date arrays via SharedArrayBuffer and Worker Threads.",
     "packageName": "@magmacomputing/tempo-plugin-batch",
     "plan": "community",
     "status": "active",
@@ -29,7 +29,7 @@
   {
     "id": "finance",
     "name": "Finance Plugin",
-    "description": "Finance namespace and fiscal year utilities",
+    "description": "Tempo Community Plugin: Finance namespace and fiscal year utilities",
     "packageName": "@magmacomputing/tempo-plugin-finance",
     "plan": "community",
     "status": "active",
@@ -38,7 +38,7 @@
   {
     "id": "snap",
     "name": "Snap Plugin",
-    "description": "Rounding and snapping dates to custom minute, hour, or sub-second intervals — ideal for calendar UIs, time-pickers, and telemetry aggregation",
+    "description": "Tempo plugin for rounding and snapping dates to custom minute, hour, or sub-second intervals — ideal for calendar UIs, time-pickers, and telemetry aggregation",
     "packageName": "@magmacomputing/tempo-plugin-snap",
     "plan": "community",
     "status": "active",
@@ -47,7 +47,7 @@
   {
     "id": "sync",
     "name": "Sync Plugin",
-    "description": "Lock-free, highly precise cross-thread synchronization via SharedArrayBuffer and Atomics.",
+    "description": "Tempo community plugin providing lock-free, highly precise cross-thread synchronization via SharedArrayBuffer and Atomics.",
     "packageName": "@magmacomputing/tempo-plugin-sync",
     "plan": "community",
     "status": "active",
@@ -56,7 +56,7 @@
   {
     "id": "ai",
     "name": "AI Plugin",
-    "description": "LLM-powered natural language parsing.",
+    "description": "Tempo community plugin for LLM-powered natural language parsing.",
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
     "status": "active",
@@ -65,7 +65,7 @@
   {
     "id": "ticker",
     "name": "Ticker Plugin",
-    "description": "Provides a high-performance continuous execution loop (Ticker) based on temporal mathematics.",
+    "description": "Tempo plugin that provides a high-performance continuous execution loop (Ticker) based on temporal mathematics.",
     "packageName": "@magmacomputing/tempo-plugin-ticker",
     "plan": "community",
     "status": "active",
@@ -74,11 +74,11 @@
   {
     "id": "geo",
     "name": "Geo Plugin",
-    "description": "IP geolocation lookup, browser hardware location services, and coordinate resolution.",
+    "description": "Tempo community plugin for IP geolocation lookup, browser hardware location services, and coordinate resolution.",
     "packageName": "@magmacomputing/tempo-plugin-geo",
     "plan": "community",
     "status": "active",
-    "version": "1.4.0"
+    "version": "1.4.1"
   },
   {
     "id": "_std",
@@ -93,7 +93,7 @@
   {
     "id": "dialects",
     "name": "Dialects Plugin",
-    "description": "Format dialects for Unicode LDML/Luxon, Moment, and POSIX strftime",
+    "description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, and POSIX strftime",
     "packageName": "@magmacomputing/tempo-plugin-dialects",
     "version": "1.0.1",
     "plan": "community",
@@ -111,7 +111,7 @@
   {
     "id": "spatial",
     "name": "Spatial Plugin",
-    "description": "GIS spatial geometry, Great-Circle navigation, transit velocity, and impossible travel anomaly detection.",
+    "description": "Tempo community plugin for GIS spatial geometry, Great-Circle navigation, transit velocity, and impossible travel anomaly detection.",
     "packageName": "@magmacomputing/tempo-plugin-spatial",
     "version": "1.0.0",
     "plan": "community",

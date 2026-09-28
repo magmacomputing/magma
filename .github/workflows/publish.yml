@@ -51,6 +51,10 @@ on:
         description: 'tempo-plugin-snap'
         type: boolean
         default: false
+      plugin_spatial:
+        description: 'tempo-plugin-spatial'
+        type: boolean
+        default: false
       plugin_sync:
         description: 'tempo-plugin-sync'
         type: boolean
@@ -108,6 +112,7 @@ jobs:
           INPUT_PLUGIN_GEO: ${{ inputs.plugin_geo }}
           INPUT_PLUGIN_HOLIDAYS: ${{ inputs.plugin_holidays }}
           INPUT_PLUGIN_SNAP: ${{ inputs.plugin_snap }}
+          INPUT_PLUGIN_SPATIAL: ${{ inputs.plugin_spatial }}
           INPUT_PLUGIN_SYNC: ${{ inputs.plugin_sync }}
           INPUT_PLUGIN_TICKER: ${{ inputs.plugin_ticker }}
           INPUT_CUSTOM: ${{ inputs.custom }}
@@ -126,6 +131,7 @@ jobs:
               "@magmacomputing/tempo-plugin-geo"
               "@magmacomputing/tempo-plugin-holidays"
               "@magmacomputing/tempo-plugin-snap"
+              "@magmacomputing/tempo-plugin-spatial"
               "@magmacomputing/tempo-plugin-sync"
               "@magmacomputing/tempo-plugin-ticker"
               "@magmacomputing/tempo-plugin-dialects"
@@ -142,6 +148,7 @@ jobs:
             [ "$INPUT_PLUGIN_GEO" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-geo")
             [ "$INPUT_PLUGIN_HOLIDAYS" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-holidays")
             [ "$INPUT_PLUGIN_SNAP" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-snap")
+            [ "$INPUT_PLUGIN_SPATIAL" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-spatial")
             [ "$INPUT_PLUGIN_SYNC" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-sync")
             [ "$INPUT_PLUGIN_TICKER" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-ticker")
 

@@ -46,8 +46,8 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 	},
 	"geo": {
 		name: "@magmacomputing/tempo-plugin-geo",
-		version: "1.4.0",
-		loader: () => import("@magmacomputing/tempo-plugin-geo").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-geo" + "@1.4.0"))
+		version: "1.4.1",
+		loader: () => import("@magmacomputing/tempo-plugin-geo").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-geo" + "@1.4.1"))
 	},
 	"dialects": {
 		name: "@magmacomputing/tempo-plugin-dialects",

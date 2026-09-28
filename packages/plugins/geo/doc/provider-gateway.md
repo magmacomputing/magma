@@ -37,22 +37,55 @@ import { GeoPlugin, type GeoProvider } from '@magmacomputing/tempo-plugin-geo';
 
 Tempo.use(GeoPlugin);
 
-const myCustomProvider: GeoProvider = {
-  name: 'corporate-proxy',
-  async lookup(opts) {
-    const res = await fetch(`https://geo.internal.corp/lookup?ip=${opts?.ip ?? ''}`);
+// Example: OpenStreetMap Nominatim Provider
+const openStreetMapProvider: GeoProvider = {
+  name: 'openstreetmap',
+
+  // 1. Primary Lookup (fall back to default GPS / IP)
+  async lookup() {
+    return null;
+  },
+
+  // 2. Forward Geocoding: Place Query -> Coordinates
+  async forwardGeocode(query: string) {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Tempo-App/1.0' }
+    });
+    const list = await res.json();
+    if (!Array.isArray(list) || list.length === 0) return null;
+
+    const first = list[0];
+    const lat = parseFloat(first.lat);
+    const lng = parseFloat(first.lon);
+    return {
+      lat,
+      lng,
+      latitude: lat,
+      longitude: lng,
+      city: first.address?.city ?? first.address?.town ?? first.address?.suburb,
+      country: first.address?.country,
+      sphere: lat >= 0 ? 'north' : 'south',
+    };
+  },
+
+  // 3. Reverse Geocoding: Coordinates -> Address Details
+  async reverseGeocode(coords) {
+    const lat = (coords as any).latitude ?? (coords as any).lat;
+    const lng = (coords as any).longitude ?? (coords as any).lng;
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Tempo-App/1.0' }
+    });
     const data = await res.json();
     return {
-      latitude: data.lat,
-      longitude: data.lng,
-      city: data.city,
-      country: data.countryCode,
-      timezone: data.tz,
+      city: data.address?.city ?? data.address?.town ?? data.address?.suburb,
+      country: data.address?.country,
     };
   }
 };
 
-Tempo.geo.setProvider(myCustomProvider);
+Tempo.geo.setProvider(openStreetMapProvider);
 ```
 
 ### B. Plugin Installation Options
@@ -61,7 +94,7 @@ You can also pass the provider when loading the plugin:
 
 ```typescript
 Tempo.use(GeoPlugin, {
-  provider: myCustomProvider,
+  provider: openStreetMapProvider,
 });
 ```
 
@@ -71,23 +104,28 @@ Providers can also be overridden per call:
 
 ```typescript
 const t = new Tempo('2026-06-21T12:00:00Z');
-const located = await t.geoLocate({ provider: myCustomProvider });
+const located = await t.geoLocate({ provider: openStreetMapProvider });
 ```
 
 ---
 
-## 3. Forward & Reverse Geocoding
+## 3. Forward & Reverse Geocoding Examples
 
 If a provider implements `forwardGeocode` and `reverseGeocode`, you can invoke them via `Tempo.geo.forward()` and `Tempo.geo.reverse()`:
 
 ```typescript
-// Forward Geocoding: Search query -> Coordinates
+// 1. Forward Geocoding: Search query -> Coordinates
 const coords = await Tempo.geo.forward('Sydney Opera House');
-console.log(coords?.latitude, coords?.longitude);
+console.log('Coordinates:', coords?.latitude, coords?.longitude);
+console.log('City:', coords?.city, 'Country:', coords?.country);
 
-// Reverse Geocoding: Coordinates -> Locality Metadata
+// Attach resolved coordinates to a Tempo instance:
+const sydneyTime = new Tempo('now', { geo: coords });
+console.log('Season in Sydney:', sydneyTime.term.szn);
+
+// 2. Reverse Geocoding: Coordinates -> Locality Metadata
 const details = await Tempo.geo.reverse({ lat: 48.8566, lng: 2.3522 });
-console.log(details?.city, details?.country); // 'Paris', 'FR'
+console.log('Reverse Geocoded:', details?.city, details?.country); // 'Paris', 'France'
 ```
 
 ---
