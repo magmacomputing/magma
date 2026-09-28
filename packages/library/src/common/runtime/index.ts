@@ -17,3 +17,4 @@ export * from './storage.library.js';
 export * from './utility.library.js';
 export * from './mapper.library.js';
 export * from './filestore.library.js';
+export * from './weakcache.class.js';
