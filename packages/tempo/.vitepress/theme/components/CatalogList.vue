@@ -33,7 +33,7 @@ const DOMAIN_GROUPS: DomainGroup[] = [
     id: 'geo',
     title: '🌍 Geolocation & Regional Calendars',
     description: 'Hardware GPS / IP geolocation resolution, cultural calendars, bank holidays, and SLA business day arithmetic.',
-    pluginIds: ['geo', 'holidays']
+    pluginIds: ['geo', 'holidays', 'spatial']
   },
   {
     id: 'celestial',

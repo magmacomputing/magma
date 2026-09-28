@@ -50,6 +50,18 @@ Explore detailed guides on specific capabilities:
 
 ---
 
+## Which Method Should I Choose?
+
+| Goal | Method to Use | Input | Output |
+| :--- | :--- | :--- | :--- |
+| **"Where is this machine / user right now?"** | `Tempo.geo.lookup()` | None / ambient options | `{ latitude, longitude, city, ... }` |
+| **"Convert place name / address to coordinates"** | `Tempo.geo.forward("Paris")` | Address query string | `{ latitude, longitude, ... }` |
+| **"Convert GPS coordinates to street / city / country"** | `Tempo.geo.reverse({ lat, lng })` | Coordinate object | `{ city, country, ... }` |
+| **"Extract or safely normalize coordinates from any input"** | `Tempo.geo.resolve(input)` | Instance, config, or object | Canonical `{ latitude, longitude, ... }` |
+| **"Localize a Tempo instance with timezone & cultural calendar"** | `await t.geoLocate()` | Existing `Tempo` instance | New enriched `Tempo` instance |
+
+---
+
 ## Comprehensive `Tempo.geo` API Surface
 
 | Method / Property | Category | Description |

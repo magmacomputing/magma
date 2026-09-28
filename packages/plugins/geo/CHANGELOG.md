@@ -5,6 +5,16 @@ All notable changes to the `@magmacomputing/tempo-plugin-geo` project will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-09-28
+
+### Fixed
+- **Polymorphic Options in `Tempo.geo.resolve`**:
+  - Support single-argument options usage (e.g. `Tempo.geo.resolve({ reverse: true })`) when target coordinates are omitted.
+- **Deterministic Return Schema**:
+  - Normalized cold IP geolocation responses through `assembleGeoConfig` to eliminate leaking provider transport metadata (`query`, `status`) and guarantee a consistent `GeoConfig` return shape across cold, cached, and reverse lookups.
+- **Auto-Reverse on Stashed / Looked-up Coordinates**:
+  - Automatically triggers reverse geocoding when `{ reverse: true }` is specified on coordinates that lack locality (`city` / `country`) metadata.
+
 ## [1.4.0] - 2026-09-27
 
 ### Added

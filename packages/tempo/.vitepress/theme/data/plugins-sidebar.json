@@ -163,6 +163,28 @@
     ]
   },
   {
+    "text": "Ticker Plugin (@magmacomputing/tempo-plugin-ticker)",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/ticker.index"
+      },
+      {
+        "text": "Event Streams & Reactive Clocks",
+        "link": "/doc/9-plugins/ticker.reactive-clocks-and-events"
+      },
+      {
+        "text": "Intervals & Scheduling Engines",
+        "link": "/doc/9-plugins/ticker.intervals-and-scheduling"
+      },
+      {
+        "text": "Resource Management & Lifecycle",
+        "link": "/doc/9-plugins/ticker.resource-management"
+      }
+    ]
+  },
+  {
     "text": "Single-Feature Community Plugins",
     "collapsed": false,
     "items": [
@@ -189,10 +211,6 @@
       {
         "text": "Sync (Thread Synchronization)",
         "link": "/doc/9-plugins/sync.index"
-      },
-      {
-        "text": "Ticker (Execution Loop)",
-        "link": "/doc/9-plugins/ticker.index"
       }
     ]
   }

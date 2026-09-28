@@ -6,11 +6,11 @@
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ticker"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ticker?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ticker/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ticker"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ticker?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
-This is a Community plugin for the [Tempo](https://github.com/magmacomputing/magma) library that provides a high-performance continuous execution loop (Ticker) based on temporal mathematics.
+A high-performance Community plugin for the [Tempo](https://github.com/magmacomputing/magma) ecosystem providing temporal continuous execution loops, best-effort scheduling with millisecond resolution, explicit resource management disposers (`using` / `await using`), async generator streams, and multi-clock synchronization.
 
-::: info High Performance Loop
-Unlike raw `setInterval`, the Ticker plugin leverages Tempo's temporal core to provide best-effort scheduling with millisecond resolution, making it ideal for standard UI updates, periodic tasks, and accurate state synchronization.
-:::
+Unlike raw `setInterval`, Tempo Ticker handles calendar arithmetic, month-length adjustments, daylight saving shifts, recurrence rules, and cron schedules with zero timer drift.
+
+---
 
 ## Installation
 
@@ -18,27 +18,20 @@ Unlike raw `setInterval`, the Ticker plugin leverages Tempo's temporal core to p
 npm install @magmacomputing/tempo-plugin-ticker
 ```
 
-## Usage
+---
 
-<PluginRepl plugin="ticker" />
+## Architecture & Registration
 
-To use the Ticker, pass the plugin to `Tempo.init` or `Tempo.use`:
+### Plugin Installation
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
-Tempo.init({ 
-  plugins: [TickerPlugin] 
-});
-
-// You can access Ticker-based execution loops through the Tempo API:
-const ticker = Tempo.ticker({ seconds: 1 });
+Tempo.use(TickerPlugin);
 ```
 
 ### Auto-Installation (Side-Effect Import)
-
-For zero-boilerplate global registration, import the `/install` subpath:
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -47,341 +40,99 @@ import '@magmacomputing/tempo-plugin-ticker/install';
 const ticker = Tempo.ticker({ seconds: 1 });
 ```
 
-### Direct Access
-If you need to access the [Reporting & Registry](#reporting-registry) API (like `Ticker.active`), you should import the `Ticker` namespace:
+---
+
+## Documentation Guide
+
+Explore detailed guides on specific capabilities:
+
+- **[Intervals & Scheduling Engines](./intervals-and-scheduling.md)**: Semantic durations (`{ months: 1 }`), calendar terms (`#timeOfDay`), 5-field Cron expressions (`0 9 * * 1-5`), RFC 5545 RRULE, countdowns, and one-shot meeting alerts.
+- **[Resource Management & Lifecycle](./resource-management.md)**: Explicit resource management (`using` / `await using`), async generators (`for await`), programmatic controls (`stop`, `info`, `pulse`), limits, and zombie process prevention.
+- **[Event Streams & Reactive Clocks](./reactive-clocks-and-events.md)**: Event listeners (`.on('pulse')`, `.on('stop')`, `.on('catch')`), registry diagnostics (`Ticker.active`), and zero-drift multi-timezone dashboards with UI signals.
+
+---
+
+## Comprehensive `Ticker` API Surface
+
+### Creation: `Tempo.ticker(intervalOrOptions?, callback?)`
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `intervalOrOptions` | `Ticker.Interval \| Ticker.Options` | Number of seconds, cron expression, RRULE string, calendar term, or comprehensive options object. |
+| `callback` | `(t: Tempo, stop: () => void) => void` | Optional pulse callback. |
+
+### `Ticker.Options` Configuration
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `seconds` / `ss` | `number` | `1` | Seconds interval step. Negative values count backwards. |
+| `minutes` / `mi` | `number` | — | Minutes interval step. |
+| `hours` / `hh` | `number` | — | Hours interval step. |
+| `days` / `dd` | `number` | — | Days interval step. |
+| `months` / `mm` | `number` | — | Calendar months interval step. |
+| `years` / `yy` | `number` | — | Years interval step. |
+| `cron` | `string` | — | Standard 5-field cron expression (e.g. `'*/15 * * * *'`). |
+| `rrule` | `string` | — | Standard RFC 5545 iCalendar recurrence rule string. |
+| `seed` | `string \| Date \| Tempo` | Current time | Initial timestamp or starting point for virtual clocks and countdowns. |
+| `until` | `string \| Date \| Tempo` | — | Inclusive termination boundary. |
+| `limit` | `number` | — | Maximum pulse count before automatic shutdown (`limit: 0` stops immediately). |
+| `label` | `string` | — | Descriptive label visible in `Ticker.active` telemetry. |
+
+### `TickerInstance` Object
+
+| Method / Property | Return Type | Description |
+| :--- | :--- | :--- |
+| `ticker.stop()` | `void` | Stops the ticker, clears active timers, and finalizes pending async iterators. |
+| `ticker.pulse()` | `Tempo` | Manually triggers a pulse, advances state, and notifies listeners. |
+| `ticker.info` | `object` | Telemetry snapshot: `{ next, ticks, limit, interval, stopped }`. |
+| `ticker.on(event, cb)` | `this` | Registers listeners for `'pulse'`, `'stop'`, or `'catch'`. |
+| `[Symbol.dispose]` | `void` | Synchronous disposer hook for `using` blocks. |
+| `[Symbol.asyncDispose]` | `Promise<void>` | Asynchronous disposer hook for `await using` blocks. |
+| `[Symbol.asyncIterator]` | `AsyncGenerator<Tempo>` | Streaming generator support for `for await (const t of ticker)` loops. |
+
+### Static `Ticker` Namespace
+
+| Property | Return Type | Description |
+| :--- | :--- | :--- |
+| `Ticker.active` | `Snapshot[]` | Returns an array of snapshots for all currently running (non-stopped) Tickers. |
+
+---
+
+## Quickstart Examples
+
+<PluginRepl plugin="ticker" />
+
+### 1. Disposer Pattern (Zero Leakage)
 
 ```typescript
-import { Ticker } from '@magmacomputing/tempo-plugin-ticker';
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-ticker/install';
 
-console.log(Ticker.active);
-```
-
-## 🚀 Key Features
-
-The Ticker supports a unified **Options** object, enabling professional resource management and semantic duration-based intervals.
-
-### 1. Semantic Intervals (Duration Objects)
-Instead of raw numeric seconds, you can use `DurationLike` objects or shorthand keys for clarity. This is especially powerful for variable-length intervals like **months**.
-
-```typescript
-// Pulse exactly once a month
-await using monthly = Tempo.ticker({ months: 1 });
-
-// You can also use highly compact shorthand keys
-await using concise = Tempo.ticker({ hh: 1, mi: 30 }); // every 1h 30m
-
-// Pulse every time a new #quarter begins
-await using quarterly = Tempo.ticker({ '#quarter': 1 });
-```
-
-### 2. Term-Based Intervals
-Ticker intervals can be driven by any registered **Term**. This is powerful for syncing with business cycles or daily shifts.
-
-> **Snapping vs Shifting:** Use directional shorthands (like `>`) to snap pulses exactly to the **boundaries** of the term (e.g., the very start of the morning). Using numeric values (like `1`) performs a relative shift, which preserves your current time-offset into the next period (e.g. two hours into a time-period will always be two hours into the next time-period).
-
-```typescript
-// Snap and pulse exactly at the start of every 'morning', 'afternoon', etc.
-using shiftTicker = Tempo.ticker({ '#timeOfDay': '>' }, (t) => {
-  console.log(`New period started: ${t.term.tod}`);
-});
-```
-
-### 3. Stop Conditions (Resource Management)
-Prevent memory leaks and runaway processes by setting a built-in termination condition.
-
-```typescript
-// Pattern A: Stop after exactly 5 ticks (defaults to 1-second interval)
-using tickerA = Tempo.ticker({ limit: 5 }, (t) => console.log(t));
-
-// Pattern B: Stop when a specific virtual time is reached (Inclusive)
-using tickerB = Tempo.ticker({ 
-  seconds: 10,               // Plural DurationLike property
-  seed: '2024-12-25T10:00:00',
-  until: '2024-12-25T12:00:00' 
-}, (t) => console.log(t));
-
-// Pattern C: Stop immediately without pulsing (Limit: 0 is strictly honored)
-using tickerC = Tempo.ticker({ limit: 0 }, (t) => console.log(t)); 
-```
-
-### 4. Virtual Clock (Seeding)
-To create a **Virtual Clock** that increments from a specific point rather than using the system time, use the `seed` option:
-
-```typescript
-// Starts at '2024-01-01', then increments by 1 day per pulse
-await using daily = Tempo.ticker({ 
-  days: 1, 
-  seed: '2024-01-01' 
-}, (t) => console.log(t));
-```
-
-### 5. Backwards Tickers (Countdowns)
-By providing a **negative** interval, you can create a Ticker that moves backwards in time. 
-
-```typescript
-// Count down from 10 seconds, moving backwards 1s at a time
-using countdown = Tempo.ticker({ seconds: -1, seed: "00:00:10" }, (t, stop) => {
-  console.log(t.format('{ss}'));
-  if (t.ss === 0) stop(); 
-});
-```
-
-### 6. Recurrence Rules (RRULE)
-Ticker natively supports standard RFC 5545 RRULE strings or options objects with an `rrule` property.
-
-```typescript
-// Pulse on deterministic calendar recurrences (e.g. daily)
-await using dailySync = Tempo.ticker('FREQ=DAILY;INTERVAL=1');
-
-// Or via options object with additional properties
-await using weeklyMeeting = Tempo.ticker({
-  rrule: 'FREQ=WEEKLY;BYDAY=MO',
-  label: 'Weekly Monday Sync'
-});
-```
-
-### 7. Cron Expressions (Standard 5-Field Syntax)
-Ticker natively accepts 5-part cron expressions (`min hr dom mon dow`) powered by `@magmacomputing/tempo-fns`. You can pass cron strings directly or via the `cron` configuration option.
-
-```typescript
-// Pattern A: Positional 5-field cron string (e.g., 9am Monday–Friday)
-await using weekdaySync = Tempo.ticker('0 9 * * 1-5', (t) => {
-  console.log(`Workday morning pulse: ${t.format('isoTime')}`);
-});
-
-// Pattern B: Options object with cron schedule and boundary limits
-await using healthCheck = Tempo.ticker({
-  cron: '*/15 * * * *', // Every 15 minutes
-  label: '15-Minute Healthcheck',
-  limit: 10
-}, (t) => {
-  console.log(`Healthcheck pulse: ${t.format('isoTime')}`);
-});
-```
-
-## Usage Patterns
-
-### 1. Resource Management (Recommended)
-
-Using the `using` and `await using` keywords ensures that Tickers are automatically stopped when they go out of scope.
-
-```typescript
-// Pattern A: Automatic cleanup for callback-based ticker
 {
-  using ticker = Tempo.ticker((t) => render(t)); // Defaults to a 1-second pulse
-} // interval stops automatically here
+  await using ticker = Tempo.ticker({ seconds: 1 }, (t) => {
+    console.log('Tick:', t.format('{hh}:{mi}:{ss}'));
+  });
 
-// Pattern B: Automatic cleanup for async generator
-{
-  await using ticker = Tempo.ticker(1);
+  // Keep scope alive to observe repeated ticks
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+} // ⚡ Cleaned up automatically upon leaving scope
+```
+
+### 2. Async Generator Stream
+
+```typescript
+async function streamClock() {
+  await using ticker = Tempo.ticker({ seconds: 1 });
+
   for await (const t of ticker) {
-    if (done) break;
+    console.log('Stream tick:', t.iso);
+    if (shouldStop) break;
   }
-} // generator is closed and interval stops here
-```
-
-### 2. Manual Control (Programmatic Stop)
-
-If you are not using the `using` or `await using` keywords, or if you need to stop the Ticker from outside its own loop (e.g., in a separate event handler), you can manually call the `stop()` method on the Ticker object.
-
-```typescript
-// Pattern A: Stop a callback-based ticker
-const tickerA = Tempo.ticker(1, (t) => console.log(t));
-// ... later
-tickerA.stop();
-
-// Pattern B: Stop an async generator externally
-const tickerB = Tempo.ticker(1);
-
-(async () => {
-  for await (const t of tickerB) {
-    console.log(t.toString());
-  }
-  console.log('Ticker has been gracefully stopped.');
-})();
-
-// Close the generator from somewhere else
-setTimeout(() => {
-  tickerB.stop();
-}, 5000);
-```
-### 3. Event Listeners (.on)
-Instead of (or in addition to) the constructor callback, you can register listeners for the `'pulse'`, `'stop'`, and `'catch'` events.
-All listeners use the same callback signature: `(t, stop) => {}`.
-
-```typescript
-const ticker = Tempo.ticker(1);
-ticker.on('pulse', (t) => console.log('Listener A:', t.fmt.weekTime));
-ticker.on('pulse', (t) => console.log('Listener B:', t.fmt.weekTime));
-ticker.on('stop', (t) => console.log('Ticker stopped at:', t.fmt.weekTime));
-```
-For `'stop'` listeners, the `stop` callback argument is included for signature consistency; however, invoking it after stop has already occurred is a no-op.
-
-### 4. Manual Pulsing (.pulse)
-In some scenarios, you may want to drive a Ticker manually (e.g., from a UI event or a WebSocket message) while still benefiting from the Ticker's internal state management and listeners.
-
-```typescript
-const ticker = Tempo.ticker({ seconds: 1 }); // Still has a 1s duration logic
-// ...
-ticker.pulse(); // Manually advance and notify listeners
-```
-
-## 🧟 Zombie Tickers (Warning) {#zombie-tickers-warning}
-
-In a Node.js environment, `Tempo.ticker()` uses background timers (`setTimeout`) to drive its pulses. If you do not explicitly stop a Ticker, it becomes a **"Zombie Ticker"** that continues to run indefinitely, even if the variable that created it has gone out of scope.
-
-### The Risks:
-- **Process Hangs**: Node.js will not exit a process if there are active timers. Undisposed Tickers are a common cause of "mysterious hangs" at the end of test runs.
-- **Test Inconsistency**: Leaked Tickers can continue to fire while subsequent tests are running, leading to flaky assertions and "impossible" state changes.
-- **Memory Leaks**: Each active Ticker maintains closures that prevent garbage collection of the `Tempo` instance and its listeners.
-
-### The Solution:
-Always use the **Disposer Pattern** (`using` or `await using`) or a `try...finally` block to guarantee cleanup:
-
-```typescript
-// ✅✅ BEST: Automatic cleanup via 'using'
-{
-  using ticker = Tempo.ticker(1);
-  // ... logic ...
-} // Stays clean: ticker stopped automatically here
-
-// ✅ GOOD: Manual cleanup in finally block (Required for captured variables)
-let ticker;
-try {
-  ticker = Tempo.ticker(1, (t) => { ... });
-  // ... assertions ...
-} finally {
-  ticker?.stop(); // Prevents "Zombie Tickers" even if assertions fail
 }
 ```
 
-::: warning
-If you are using `const` or `let` without a `finally` block, an assertion failure will skip the `stop()` call, leaving a live timer in the event loop. Always prefer the `using` keyword or `try...finally` for industrial-grade resource management.
-:::
+---
 
-### `Ticker` Object
-The object returned by `Tempo.ticker()` (or an instance of the `Ticker` class) implements the following interface:
+## License
 
-| Method / Property | Description |
-| :--- | :--- |
-| `on(event, cb)` | Registers a listener for the `'pulse'`, `'stop'`, or `'catch'` events. |
-| `pulse()` | Manually triggers a pulse, advances state, and notifies listeners. Returns the emitted pulse Tempo. |
-| `info` | Read-only getter returning `{ next, ticks, limit, interval, stopped }`. |
-| `stop()` | Stops the Ticker, clears active timers, and immediately resolves any pending async iteration Promises. |
-| `[Symbol.dispose]` | Standard cleanup for `using` blocks. |
-| `[Symbol.asyncDispose]` | Standard async cleanup for `await using` blocks. |
-| `[Symbol.asyncIterator]` | Standard async iteration support (for `for await` loops). |
-
-## Reporting & Registry {#reporting-registry}
-
-The `Ticker` class maintains a static registry of all currently active Tickers. This is useful for debugging, monitoring, or cleanup checks.
-
-### `Ticker.active`
-A static getter that returns an array of [`Ticker.Snapshot`](#ticker-snapshot) objects for all active (non-stopped) Tickers.
-
-```typescript
-import { Ticker } from '@magmacomputing/tempo-plugin-ticker';
-
-// Get a report of all running tickers
-const reports = Ticker.active;
-
-reports.forEach(({ ticker, next, ticks }) => {
-  console.log(`Ticker ${ticker} next pulse: ${next}, ticks so far: ${ticks}`);
-});
-```
-
-#### `Ticker.Snapshot`
-```typescript
-type Snapshot = {
-  ticker: Instance;     // The Ticker instance (Proxy) itself
-  next: Tempo;          // The next Tempo value to be emitted
-  ticks: number;        // Number of pulses emitted so far
-  limit?: number;       // The configured limit (if any)
-  interval: object;     // The duration-based interval
-  stopped: boolean;     // Whether the ticker is stopped
-}
-```
-
-## 🎯 One-Shot Ticker (Meeting Alerts)
-
-You can use the Ticker as a "one-shot" timer for specific events by simply specifying a **seed** value. This is perfect for setting up a single alert (e.g., for a meeting) that cleans itself up immediately after firing.
-
-::: tip
-**Seed-Only Logic**: Providing a `seed` (as a string or in an options object) without any other duration-based keys (`seconds`, `minutes`, etc.) or a `limit` implies a `limit: 1`. 
-
-Effectively, `Tempo.ticker('Fri 10am')` and `Tempo.ticker({ seed: 'Fri 10am' })` and `Tempo.ticker({ seed: 'Fri 10am', limit: 1 })` are all treated as one-shot Tickers.
-
-**Inclusive Boundaries**: Termination conditions (`limit` and `until`) are **inclusive**. A Ticker with `limit: 1` will pulse exactly once before stopping.
-:::
-
-```typescript
-// Pattern A: Implicit one-shot via string seed
-Tempo.ticker('Friday 10am', (t) => {
-  console.log(`Meeting alert: ${t.format('{hh}:{mi}')}`);
-});
-
-// Pattern B: Explicit one-shot via options
-const event = { meeting: 'Friday 10am' };
-
-Tempo.ticker({ 
-  seed: { value: 'meeting', event }
-}, (t) => {
-  console.log(`Meeting alert: ${t.format('{hh}:{mi}')}`);
-});
-```
-
-::: warning
-**Future Seeds**: If the `seed` is in the future, the Ticker will remain dormant (waiting) until that time is reached. **Most Tickers emit an initial pulse immediately** (at the `seed` time or "now"), but a future seed will delay that first pulse until the specified time.
-:::
-
-::: danger
-**Persistence**: Ticker timers exist only **in-memory**. If the driving process (e.g., Node.js) terminates, any scheduled future pulses (including those from future seeds) are lost. For critical long-term scheduling, consider an external persistent job runner.
-:::
-
-::: warning
-While `limit: 1` handles the stop condition automatically, always remember that if you are using long-running Tickers without a limit, you **must** use the [Disposer Pattern](#zombie-tickers-warning) or manual `stop()` to avoid memory leaks and zombie processes.
-:::
-
-## 🧭 Advanced: Syncing Multiple Clocks
-
-If you need to show multiple timezones on a dashboard, avoid creating multiple Tickers. Instead, use a single **Master Ticker** to drive all views. This prevents "drift" between the clocks and is much more efficient.
-
-### Using Signals (Recommended)
-
-Signals (from Preact, Solid, or Vue) are perfect for this "one source, many views" pattern.
-
-```typescript
-// 1. Master source of truth
-const now = signal(new Tempo());
-
-// 2. Drive the master from a single ticker
-using _ = Tempo.ticker(1, (t) => now.value = t);
-
-// 3. Derived timezones update automatically and stay 100% in sync
-const sydney = computed(() => now.value.set({ timeZone: 'Australia/Sydney' }));
-const london = computed(() => now.value.set({ timeZone: 'Europe/London' }));
-```
-
-### Using Async Generators (Framework-Agnostic)
-
-If you are not using a reactive framework, you can use the same pattern with an `AsyncGenerator` to derive all clocks from a single pulse.
-
-```typescript
-// One generator, one interval, zero drift.
-await using master = Tempo.ticker(1);
-
-for await (const t of master) {
-  const clocks = {
-    sydney: t.set({ timeZone: 'Australia/Sydney' }),
-    ny:     t.set({ timeZone: 'America/New_York' }),
-    london: t.set({ timeZone: 'Europe/London' })
-  };
-  
-  renderDashboard(clocks);
-}
-```
-
-## Licensing
-
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.
-
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license. No license token is required.

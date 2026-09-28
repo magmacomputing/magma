@@ -18,6 +18,34 @@ const props = withDefaults(
 const isActive = ref(false);
 
 const DEFAULT_SNIPPETS: Record<string, string> = {
+  spatial: `// 🧭 Great-Circle Navigation & Spatial Geofencing (@magmacomputing/tempo-plugin-spatial)
+const { SpatialPlugin } = await import('@magmacomputing/tempo-plugin-spatial');
+Tempo.use(SpatialPlugin);
+
+const sydney = { lat: -33.8688, lng: 151.2093 };
+const london = { lat: 51.5074, lng: -0.1278 };
+
+// 1. Great-Circle Distance & Bearing
+const distKm = Tempo.spatial.distance(sydney, london, 'km');
+const heading = Tempo.spatial.bearing(sydney, london);
+console.log('Distance Sydney -> London:', distKm.toFixed(1), 'km');
+console.log('Compass Bearing:', heading.toFixed(1) + '°');
+
+// 2. Geographic Midpoint
+const mid = Tempo.spatial.midpoint(sydney, london);
+console.log('Midpoint Coordinates:', mid.latitude.toFixed(2), mid.longitude.toFixed(2));
+
+// 3. Impossible Travel Anomaly Detection
+const loginSydney = new Tempo('2026-06-21T10:00:00Z', { geo: sydney });
+const loginLondon = new Tempo('2026-06-21T11:00:00Z', { geo: london });
+const speed = loginSydney.spatialVelocity(loginLondon);
+const isAnomaly = Tempo.spatial.isImpossibleTravel(loginSydney, loginLondon);
+
+console.log('Travel Speed:', speed.toFixed(1), 'km/h');
+console.log('Anomaly Detected (> 900 km/h)?', isAnomaly);
+
+return \`Distance: \${distKm.toFixed(0)} km | Velocity: \${speed.toFixed(0)} km/h (Anomaly: \${isAnomaly})\`;`,
+
   geo: `// 🌍 Live Geolocation Demo (@magmacomputing/tempo-plugin-geo)
 // Resolves your browser location or IP coordinates
 

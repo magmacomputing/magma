@@ -421,6 +421,32 @@ describe('Tempo Plugin: Geo', () => {
 			expect(located.geo?.latitude).toBe(48.857);
 			expect(located.geo?.longitude).toBe(2.352);
 		});
+
+		it('should support polymorphic options in Tempo.geo.resolve({ reverse: true })', async () => {
+			const mockFetch = vi.fn();
+			vi.stubGlobal(
+				'fetch',
+				mockFetch.mockImplementation(async () =>
+					new Response(
+						JSON.stringify({
+							city: 'London',
+							countryCode: 'GB',
+						}),
+						{ status: 200 }
+					)
+				)
+			);
+
+			const resolved = await Tempo.geo.resolve({ lat: 51.5074, lng: -0.1278 }, { reverse: true });
+			expect(resolved?.city).toBe('London');
+			expect(resolved?.country).toBe('GB');
+
+			const resolvedSoloOpts = await Tempo.geo.resolve({ reverse: true, lat: 51.5074, lng: -0.1278 });
+			expect(resolvedSoloOpts?.city).toBe('London');
+			expect(resolvedSoloOpts?.country).toBe('GB');
+
+			vi.unstubAllGlobals();
+		});
 	});
 
 	describe('Layout Formatting on Geo-Enabled Instances', () => {

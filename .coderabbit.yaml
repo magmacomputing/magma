@@ -14,8 +14,8 @@ reviews:
     - "!**/llms*.txt"             # Ignore root or nested LLM context files
     - "!**/public/providers.v1.json" # Ignore static provider definitions
     - "!**/doc/api/**"            # Ignore ONLY the generated TypeDoc API documentation
-    - "!**/docs/**"               # Ignore other generated documentation artifacts
     - "!**/.vitepress/cache/**"   # Ignore VitePress cache
     - "!**/.vitepress/dist/**"    # Ignore VitePress build output
     - "!**/dist/**"               # Ignore all build artifacts
+    - "!**/plan/**"               # Ignore internal planning and roadmap RFCs
     - "!**/vendor/**"             # Ignore third-party code

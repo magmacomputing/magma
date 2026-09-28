@@ -30,7 +30,7 @@ Installing `GeoPlugin` mounts an immutable, locked-down **`Tempo.geo`** namespac
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { GeoPlugin, OpenStreetMapProvider } from '@magmacomputing/tempo-plugin-geo';
+import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
 
 Tempo.use(GeoPlugin);
 
@@ -38,10 +38,9 @@ Tempo.use(GeoPlugin);
 const lookupResult = await Tempo.geo.lookup();
 console.log(lookupResult.lat, lookupResult.lng, lookupResult.city);
 
-// 2. Reverse Geocoding with Provider Gateway
-Tempo.geo.setProvider(new OpenStreetMapProvider());
+// 2. Reverse Geocoding (Coordinates -> Address / City / Country)
 const address = await Tempo.geo.reverse({ lat: -33.8688, lng: 151.2093 });
-console.log(address.city, address.country);
+console.log(address?.city, address?.country); // 'Sydney', 'AU'
 
 // 3. Inspect Current Ambient / Global Coordinates
 console.log(Tempo.geo.current); // { latitude: ..., longitude: ..., city: ... }
@@ -80,6 +79,18 @@ import {
 const coords = await geoLookup();
 const t = new Tempo('2026-06-21', { geo: coords });
 ```
+
+---
+
+## Which Method Should I Choose?
+
+| Goal | Method to Use | Input | Output |
+| :--- | :--- | :--- | :--- |
+| **"Where is this machine / user right now?"** | `Tempo.geo.lookup()` | None / ambient options | `{ latitude, longitude, city, ... }` |
+| **"Convert place name / address to coordinates"** | `Tempo.geo.forward("Paris")` | Address query string | `{ latitude, longitude, ... }` |
+| **"Convert GPS coordinates to street / city / country"** | `Tempo.geo.reverse({ lat, lng })` | Coordinate object | `{ city, country, ... }` |
+| **"Extract or safely normalize coordinates from any input"** | `Tempo.geo.resolve(input)` | Instance, config, or object | Canonical `{ latitude, longitude, ... }` |
+| **"Localize a Tempo instance with timezone & cultural calendar"** | `await t.geoLocate()` | Existing `Tempo` instance | New enriched `Tempo` instance |
 
 ---
 

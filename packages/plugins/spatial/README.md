@@ -1,12 +1,24 @@
+![Tempo Plugin](https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/plugin-logo.svg)
+
 # @magmacomputing/tempo-plugin-spatial
 
-> Community plugin for GIS spatial geometry, Great-Circle navigation, transit velocity, and impossible travel anomaly detection for [Tempo](https://tempo.magmacomputing.com).
+<p align="center">
+  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-spatial"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-spatial?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-spatial/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-spatial"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-spatial?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/spatial.index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
+</p>
+
+A Community plugin for the [Tempo](https://github.com/magmacomputing/magma) ecosystem providing GIS spatial geometry, Great-Circle navigation, transit velocity, impossible travel anomaly detection, spatial geofencing, and natural solar time offset calculations.
+
+📖 **[Read the Official Spatial Plugin Documentation](https://magmacomputing.github.io/magma/doc/9-plugins/spatial.index.html)**
+
+---
 
 ## Installation
 
 ```bash
 npm install @magmacomputing/tempo-plugin-spatial
 ```
+
+---
 
 ## Quick Start
 
@@ -19,11 +31,13 @@ import { SpatialPlugin } from '@magmacomputing/tempo-plugin-spatial';
 Tempo.use(SpatialPlugin);
 ```
 
-Or with side-effect auto-installation:
+Or with zero-boilerplate side-effect auto-installation:
 
 ```typescript
 import '@magmacomputing/tempo-plugin-spatial/install';
 ```
+
+---
 
 ### 2. Static Namespace (`Tempo.spatial.*`)
 
@@ -55,6 +69,10 @@ const inside = Tempo.spatial.inBoundingBox(sydney, {
 }); // true
 ```
 
+> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=spatial)**
+
+---
+
 ### 3. Transit Velocity & Impossible Travel Anomaly Detection
 
 ```typescript
@@ -73,6 +91,8 @@ const speed = Tempo.spatial.velocity(login1, login2); // 5570.22 km/h
 const isAnomalous = Tempo.spatial.isImpossibleTravel(login1, login2); // true
 ```
 
+---
+
 ### 4. Fluent OOP Instance Methods
 
 ```typescript
@@ -85,6 +105,8 @@ const bearing = t1.spatialBearing({ lat: -37.8136, lng: 144.9631 });
 const isClose = t1.isWithin({ lat: -33.87, lng: 151.21 }, 5, 'km');
 ```
 
+---
+
 ## License
 
-MIT © Magma Computing Solutions
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license. No license token is required.

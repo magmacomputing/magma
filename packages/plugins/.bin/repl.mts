@@ -77,3 +77,36 @@ console.log(`\x1b[90mType .exit or Ctrl+C twice to quit.\x1b[0m\n`);
 
 const server = repl.start({ prompt: '\x1b[38;2;252;194;1m⏳ tempo>\x1b[0m ' });
 Object.assign(server.context, globals);
+
+/**
+ * 💡 SMART IDLE: Auto-exit after 1 hour of keyboard inactivity
+ * Monitors 'stdin' so background Tickers won't keep the session alive if you walk away,
+ * while ensuring long-running asynchronous evaluations are never interrupted.
+ */
+let idleTimer: NodeJS.Timeout | undefined;
+let isEvaluating = false;
+
+const resetIdle = () => {
+	if (isEvaluating) return;
+	if (idleTimer) clearTimeout(idleTimer);
+	idleTimer = setTimeout(() => {
+		console.warn('\n\x1b[33m[Tempo] REPL idle for 1 hour. Safety shutdown triggered.\x1b[0m');
+		process.exit(0);
+	}, 3600 * 1000);
+	idleTimer.unref();
+};
+
+const originalEval = server.eval;
+(server as any).eval = function (cmd: any, context: any, filename: any, callback: any) {
+	isEvaluating = true;
+	if (idleTimer) clearTimeout(idleTimer);
+	originalEval.call(this, cmd, context, filename, (err: any, result: any) => {
+		isEvaluating = false;
+		resetIdle();
+		callback(err, result);
+	});
+};
+
+process.stdin.on('data', resetIdle);
+resetIdle();
+

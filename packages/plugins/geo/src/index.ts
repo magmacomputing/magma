@@ -67,12 +67,12 @@ export {
 	getGeoProvider,
 	reverseGeocode,
 	forwardGeocode,
-	GEO_PROPERTIES,
 	resolveCulturalLocale,
 	serverGeoLocation,
 	serverGeoCoords,
 	serverMapHemisphere,
 	geoLocation,
+	GEO_PROPERTIES,
 };
 
 export type {

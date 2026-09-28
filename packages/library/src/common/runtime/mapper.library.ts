@@ -467,7 +467,7 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 		const stashed = getStashedGeo(opts);
 		if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude)) {
 			const { latitude, longitude, ...rest } = stashed;
-			return {
+			const cachedRes: GeoLookupResult = {
 				...rest,
 				status: 'cached',
 				lat: latitude,
@@ -475,6 +475,15 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 				latitude,
 				longitude,
 			};
+			const shouldReverse = opts.reverse === true || opts.autoReverse === true;
+			if (shouldReverse && (!cachedRes.city || !cachedRes.country)) {
+				const reversed = await reverseGeocode(cachedRes, opts);
+				if (reversed) {
+					if (!cachedRes.city && isText(reversed.city)) cachedRes.city = reversed.city;
+					if (!cachedRes.country && isText(reversed.country)) cachedRes.country = reversed.country;
+				}
+			}
+			return cachedRes;
 		}
 	}
 
@@ -537,6 +546,15 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 		res.latitude = coords.lat;
 		res.longitude = coords.lng;
 		res.sphere = sphere;
+
+		const shouldReverse = opts.reverse === true || opts.autoReverse === true;
+		if (shouldReverse && (!res.city || !res.country)) {
+			const reversed = await reverseGeocode(res, opts);
+			if (reversed) {
+				if (!res.city && isText(reversed.city)) res.city = reversed.city;
+				if (!res.country && isText(reversed.country)) res.country = reversed.country;
+			}
+		}
 
 		const stashPayload = assembleGeoConfig(coords, res);
 		try {
@@ -786,11 +804,15 @@ export const resolveGeoCoordinates = async (
 	input?: CoordinateInput,
 	opts: Record<string, any> = {}
 ): Promise<ResolvedCoordinates | null> => {
+	const effectiveOpts = isObject(input)
+		? { ...(input as any), ...opts }
+		: opts;
+
 	const coerced = coerceGeo(input);
 	if (coerced && isNumber(coerced.latitude) && isNumber(coerced.longitude)) {
-		const shouldReverse = opts.reverse === true || opts.autoReverse === true;
+		const shouldReverse = effectiveOpts.reverse === true || effectiveOpts.autoReverse === true;
 		if (shouldReverse && (!coerced.city || !coerced.country)) {
-			const reversed = await reverseGeocode(coerced, opts);
+			const reversed = await reverseGeocode(coerced, effectiveOpts);
 			if (reversed) {
 				return {
 					...reversed,
@@ -812,26 +834,63 @@ export const resolveGeoCoordinates = async (
 		};
 	}
 
-	const stashed = opts.refresh === true ? undefined : getStashedGeo(opts);
-	if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude))
+	const stashed = effectiveOpts.refresh === true ? undefined : getStashedGeo(effectiveOpts);
+	if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude)) {
+		const shouldReverse = effectiveOpts.reverse === true || effectiveOpts.autoReverse === true;
+		if (shouldReverse && (!stashed.city || !stashed.country)) {
+			const reversed = await reverseGeocode(stashed, effectiveOpts);
+			if (reversed) {
+				return {
+					...reversed,
+					...stashed,
+					city: isText(stashed.city) ? stashed.city : reversed.city,
+					country: isText(stashed.country) ? stashed.country : reversed.country,
+					lat: stashed.latitude,
+					lng: stashed.longitude,
+					latitude: stashed.latitude,
+					longitude: stashed.longitude,
+				};
+			}
+		}
 		return {
 			...stashed,
 			lat: stashed.latitude,
 			lng: stashed.longitude,
 		};
+	}
 
-	const lookup = await geoLookup(opts);
+	const lookup = await geoLookup(effectiveOpts);
 	const coords = normalizeCoords(lookup.lat, lookup.lng);
 	if (isNullish(lookup.error) && coords) {
 		const sphere = resolveSphere(lookup.sphere, coords.lat);
-		return {
-			...lookup,
+		const base: ResolvedCoordinates = {
+			...assembleGeoConfig(coords, { ...lookup, sphere }),
 			lat: coords.lat,
 			lng: coords.lng,
 			latitude: coords.lat,
 			longitude: coords.lng,
 			sphere,
 		};
+
+		const shouldReverse = effectiveOpts.reverse === true || effectiveOpts.autoReverse === true;
+		if (shouldReverse && (!base.city || !base.country)) {
+			const reversed = await reverseGeocode(base, effectiveOpts);
+			if (reversed) {
+				return {
+					...reversed,
+					...base,
+					city: isText(base.city) ? base.city : reversed.city,
+					country: isText(base.country) ? base.country : reversed.country,
+					lat: coords.lat,
+					lng: coords.lng,
+					latitude: coords.lat,
+					longitude: coords.lng,
+					sphere,
+				};
+			}
+		}
+
+		return base;
 	}
 
 	return null;
