@@ -27,8 +27,8 @@ ticker.on('stop', (t) => {
   console.log('Ticker stopped at:', t.format('{hh}:{mi}:{ss}'));
 });
 
-ticker.on('catch', (err) => {
-  console.error('Handled callback error:', err);
+ticker.on('catch', (t, stop) => {
+  console.warn('Recovered schedule tick at:', t.iso);
 });
 ```
 
@@ -38,7 +38,7 @@ ticker.on('catch', (err) => {
 | :--- | :--- | :--- |
 | `'pulse'` | `(t: Tempo, stop: () => void) => void` | Emitted on every recurring tick. |
 | `'stop'` | `(t: Tempo) => void` | Emitted when the ticker stops (limit reached or `stop()` called). |
-| `'catch'` | `(err: Error) => void` | Emitted when an exception occurs inside a pulse callback. |
+| `'catch'` | `(t: Tempo, stop: () => void) => void` | Emitted when schedule resolution fails or boundary conditions require recovery. |
 
 ---
 
@@ -59,16 +59,19 @@ for (const { ticker, next, ticks, limit, interval } of running) {
 }
 ```
 
-### Snapshot Structure
+### Snapshot Structure (`Ticker.Snapshot`)
 
 ```typescript
 export interface Snapshot {
-  readonly ticker: TickerInstance; // Reference to the active Ticker instance
-  readonly next: Tempo;            // The next scheduled Tempo value
-  readonly ticks: number;          // Total number of pulses emitted so far
-  readonly limit?: number;         // Configured limit (if any)
-  readonly interval: object;       // The duration-based interval configuration
-  readonly stopped: boolean;       // Current stopped status
+  readonly ticker: Ticker.Instance;       // Reference to the active Ticker instance
+  readonly label?: string;                // Configured telemetry label
+  readonly next: Tempo;                   // The next scheduled Tempo value
+  readonly ticks: number;                 // Total number of pulses emitted so far
+  readonly limit?: number;                // Configured limit (if any)
+  readonly interval: Record<string, any>; // The duration-based interval configuration
+  readonly rrule?: string;                // Configured RFC 5545 recurrence rule
+  readonly cron?: string;                 // Configured 5-field cron expression
+  readonly stopped: boolean;              // Current stopped status
 }
 ```
 
@@ -90,8 +93,8 @@ import '@magmacomputing/tempo-plugin-ticker/install';
 // 1. Single Master Source of Truth
 const masterTime = signal(new Tempo());
 
-// 2. Drive the master clock from a single ticker
-using _ = Tempo.ticker(1, (t) => {
+// 2. Drive the master clock from a master ticker instance (persisted in app scope)
+const masterTicker = Tempo.ticker(1, (t) => {
   masterTime.value = t;
 });
 

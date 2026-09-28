@@ -40,7 +40,7 @@ console.log(lookupResult.lat, lookupResult.lng, lookupResult.city);
 
 // 2. Reverse Geocoding (Coordinates -> Address / City / Country)
 const address = await Tempo.geo.reverse({ lat: -33.8688, lng: 151.2093 });
-console.log(address?.city, address?.country); // 'Sydney', 'Australia'
+console.log(address?.city, address?.country); // 'Sydney', 'AU'
 
 // 3. Inspect Current Ambient / Global Coordinates
 console.log(Tempo.geo.current); // { latitude: ..., longitude: ..., city: ... }

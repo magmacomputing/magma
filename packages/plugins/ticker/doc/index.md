@@ -58,10 +58,10 @@ Explore detailed guides on specific capabilities:
 
 | Parameter | Type | Description |
 | :--- | :--- | :--- |
-| `intervalOrOptions` | `number \| string \| DurationLike \| TickerOptions` | Number of seconds, cron expression, RRULE string, calendar term, or comprehensive options object. |
+| `intervalOrOptions` | `Ticker.Interval \| Ticker.Options` | Number of seconds, cron expression, RRULE string, calendar term, or comprehensive options object. |
 | `callback` | `(t: Tempo, stop: () => void) => void` | Optional pulse callback. |
 
-### `TickerOptions` Configuration
+### `Ticker.Options` Configuration
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
@@ -69,7 +69,7 @@ Explore detailed guides on specific capabilities:
 | `minutes` / `mi` | `number` | — | Minutes interval step. |
 | `hours` / `hh` | `number` | — | Hours interval step. |
 | `days` / `dd` | `number` | — | Days interval step. |
-| `months` / `mon` | `number` | — | Calendar months interval step. |
+| `months` / `mm` | `number` | — | Calendar months interval step. |
 | `years` / `yy` | `number` | — | Years interval step. |
 | `cron` | `string` | — | Standard 5-field cron expression (e.g. `'*/15 * * * *'`). |
 | `rrule` | `string` | — | Standard RFC 5545 iCalendar recurrence rule string. |
@@ -109,11 +109,12 @@ import { Tempo } from '@magmacomputing/tempo';
 import '@magmacomputing/tempo-plugin-ticker/install';
 
 {
-  using ticker = Tempo.ticker({ seconds: 1 }, (t, stop) => {
+  await using ticker = Tempo.ticker({ seconds: 1 }, (t) => {
     console.log('Tick:', t.format('{hh}:{mi}:{ss}'));
   });
 
-  // Block execution...
+  // Keep scope alive to observe repeated ticks
+  await new Promise((resolve) => setTimeout(resolve, 2500));
 } // ⚡ Cleaned up automatically upon leaving scope
 ```
 

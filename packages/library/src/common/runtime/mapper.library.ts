@@ -467,7 +467,7 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 		const stashed = getStashedGeo(opts);
 		if (stashed && isNumber(stashed.latitude) && isNumber(stashed.longitude)) {
 			const { latitude, longitude, ...rest } = stashed;
-			return {
+			const cachedRes: GeoLookupResult = {
 				...rest,
 				status: 'cached',
 				lat: latitude,
@@ -475,6 +475,15 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 				latitude,
 				longitude,
 			};
+			const shouldReverse = opts.reverse === true || opts.autoReverse === true;
+			if (shouldReverse && (!cachedRes.city || !cachedRes.country)) {
+				const reversed = await reverseGeocode(cachedRes, opts);
+				if (reversed) {
+					if (!cachedRes.city && isText(reversed.city)) cachedRes.city = reversed.city;
+					if (!cachedRes.country && isText(reversed.country)) cachedRes.country = reversed.country;
+				}
+			}
+			return cachedRes;
 		}
 	}
 
@@ -542,8 +551,8 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 		if (shouldReverse && (!res.city || !res.country)) {
 			const reversed = await reverseGeocode(res, opts);
 			if (reversed) {
-				if (isText(reversed.city)) res.city = reversed.city;
-				if (isText(reversed.country)) res.country = reversed.country;
+				if (!res.city && isText(reversed.city)) res.city = reversed.city;
+				if (!res.country && isText(reversed.country)) res.country = reversed.country;
 			}
 		}
 

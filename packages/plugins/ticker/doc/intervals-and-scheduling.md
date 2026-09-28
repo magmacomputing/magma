@@ -13,13 +13,21 @@ import { Tempo } from '@magmacomputing/tempo';
 import '@magmacomputing/tempo-plugin-ticker/install';
 
 // Pulse exactly once every calendar month
-await using monthly = Tempo.ticker({ months: 1 });
+await using monthly = Tempo.ticker({ months: 1 }, (t) => {
+  console.log('Monthly pulse:', t.format('{yyyy}-{mm}-{dd}'));
+});
 
 // Multi-unit duration intervals
-await using meetingInterval = Tempo.ticker({ hours: 1, minutes: 30 });
+await using meetingInterval = Tempo.ticker({ hours: 1, minutes: 30 }, (t) => {
+  console.log('Meeting interval pulse:', t.format('{hh}:{mi}'));
+});
 
-// Ultra-compact shorthand notation
+// Ultra-compact shorthand notation (consumed via async iteration)
 await using concise = Tempo.ticker({ hh: 1, mi: 30 }); // every 1h 30m
+for await (const t of concise) {
+  console.log('Concise interval pulse:', t.format('{hh}:{mi}'));
+  break;
+}
 ```
 
 ### Supported Shorthand Units
@@ -31,14 +39,14 @@ await using concise = Tempo.ticker({ hh: 1, mi: 30 }); // every 1h 30m
 | `hh` / `hours` | Hours | `{ hh: 2 }` (Every 2 hours) |
 | `dd` / `days` | Days | `{ dd: 1 }` (Daily at current wall-clock offset) |
 | `ww` / `weeks` | Weeks | `{ ww: 2 }` (Fortnightly) |
-| `mon` / `months` | Calendar Months | `{ mon: 1 }` (1st of each month / monthly) |
+| `mm` / `months` | Calendar Months | `{ mm: 1 }` (1st of each month / monthly) |
 | `yy` / `years` | Years | `{ yy: 1 }` (Annually) |
 
 ---
 
 ## 2. Calendar Term-Driven Intervals
 
-Tickers can be driven directly by any registered **Term** in the Tempo ecosystem (e.g., `#timeOfDay`, `#quarter`, `#season`).
+Ticker can be driven directly by any registered **Term** in the Tempo ecosystem (e.g., `#timeOfDay`, `#quarter`, `#season`).
 
 ### Boundary Snapping (`>`) vs. Relative Shifting (`1`)
 
@@ -67,6 +75,8 @@ Ticker natively accepts standard 5-part cron expressions (`minute hour day-of-mo
 
 ```typescript
 // Pattern A: Positional 5-field cron string (9am Monday through Friday)
+// Note: The callback runs immediately when the ticker is created, even outside the 9am window,
+// before subsequent calls follow the scheduled cron interval.
 await using weekdaySync = Tempo.ticker('0 9 * * 1-5', (t) => {
   console.log(`Workday morning pulse: ${t.format('{hh}:{mi}:{ss}')}`);
 });
@@ -158,4 +168,4 @@ Tempo.ticker({
 ```
 
 > [!NOTE]
-> **Future Seeds**: If the seed time is in the future, the Ticker remains dormant until that scheduled time is reached, fires its single pulse, and terminates automatically.
+> **Future Seeds**: If the seed time is in the future, the Ticker remains dormant until that scheduled time is reached, fires its single pulse, and terminates automatically. For delays exceeding 32-bit integer timeout limits (~24.8 days), timeout capping re-arms the timer until the target epoch is reached.
