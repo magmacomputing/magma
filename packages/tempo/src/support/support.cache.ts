@@ -18,15 +18,15 @@ export function createCacheFacade(getState: () => t.Internal.State) {
 			return getState().weakCache.has(normalized);
 		},
 		/** Sets a weakly held object value in the cache */
-		set(key: string, value: any) {
+		set<V extends WeakKey>(key: string, value: V) {
 			const normalized = String(key).trim().toLowerCase();
 			getState().weakCache.set(normalized, value);
 			return this;
 		},
 		/** Returns the cached value or computes and caches it using the factory function */
-		getOrSet(key: string, factory: (key: string) => any) {
+		getOrSet<V extends WeakKey>(key: string, factory: (key: string) => V): V {
 			const normalized = String(key).trim().toLowerCase();
-			return getState().weakCache.getOrSet(normalized, factory);
+			return getState().weakCache.getOrSet(normalized, factory) as V;
 		},
 		/** Deletes a key from the weak cache */
 		delete(key: string) {

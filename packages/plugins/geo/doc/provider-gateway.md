@@ -38,12 +38,13 @@ import { GeoPlugin, type GeoProvider } from '@magmacomputing/tempo-plugin-geo';
 Tempo.use(GeoPlugin);
 
 // Simple 1 req/sec throttle for public OSM Nominatim usage policy
-let lastOsmCall = 0;
+let nextOsmSlot = 0;
 async function throttleOsm() {
   const now = Date.now();
-  const wait = Math.max(0, 1000 - (now - lastOsmCall));
+  const scheduledTime = Math.max(now, nextOsmSlot);
+  nextOsmSlot = scheduledTime + 1000;
+  const wait = scheduledTime - now;
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-  lastOsmCall = Date.now();
 }
 
 // Example: OpenStreetMap Nominatim Provider (or commercial Mapbox/LocationIQ)

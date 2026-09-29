@@ -65,15 +65,16 @@ export class Finalizer<T = void> {
 	 *
 	 * @param target - The target object to observe for garbage collection
 	 * @param cleanup - The teardown callback to execute upon GC reclamation
-	 * @param unregisterToken - Optional token used for unregistration (defaults to target)
-	 * @returns A teardown function that cancels the finalization registration
+	 * @param unregisterToken - Optional token used for unregistration (defaults to a unique token object)
+	 * @returns A teardown function that cancels the finalization registration without retaining target
 	 */
 	static register(
 		target: WeakKey,
 		cleanup: () => void,
-		unregisterToken: WeakKey = target
+		unregisterToken?: WeakKey
 	): () => boolean {
-		GLOBAL_FINALIZER_REGISTRY.register(target, cleanup, unregisterToken);
-		return () => GLOBAL_FINALIZER_REGISTRY.unregister(unregisterToken);
+		const token = unregisterToken ?? Object.create(null);
+		GLOBAL_FINALIZER_REGISTRY.register(target, cleanup, token);
+		return () => GLOBAL_FINALIZER_REGISTRY.unregister(token);
 	}
 }

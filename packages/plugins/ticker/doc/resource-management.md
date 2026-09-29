@@ -145,12 +145,12 @@ try {
 }
 ```
 
-### Layer 2: Automatic GC Finalization (`FinalizationRegistry`)
-If application code inadvertently drops a Ticker handle without calling `.stop()`, the runtime's Garbage Collector automatically invokes the internal finalizer:
+### Layer 2: Best-Effort GC Finalization (`FinalizationRegistry`)
+While explicit teardown with `.stop()` or `using` is the required approach for deterministic resource management, Tempo provides a best-effort GC finalizer as a background safety net:
 
-* **Automatic Teardown**: Active `setTimeout` / `setInterval` handles are automatically cleared when the Ticker instance handle is garbage collected.
-* **Weak Registry**: `Tempo.tickers` queries active handles weakly—unreferenced tickers are never pinned in memory simply by virtue of being active.
-* **No Zombie Leaks**: Unreferenced tickers cannot run indefinitely or cause permanent memory retention.
+* **Safety-Net Teardown**: Active `setTimeout` / `setInterval` timer loops are scheduled for cleanup if and when the JavaScript engine reclaims an unreferenced Ticker handle.
+* **Weak Registry**: `Tempo.tickers` queries active handles via `WeakRef`—unreferenced tickers are not kept alive in memory solely by the registry.
+* **Leak Mitigation**: Provides defense-in-depth against orphaned timer handles in long-running processes when handles are dropped inadvertently.
 
 > [!NOTE]
-> While the automatic GC safety-net prevents permanent memory leaks in production, explicit resource management with `using` or `ticker.stop()` remains recommended for unit tests where instantaneous teardown is desired before asynchronous test runners advance.
+> Garbage Collection timing is non-deterministic and never guaranteed by ECMAScript runtimes. Always call `.stop()`, `using`, or `await using` to ensure prompt, deterministic release of timers and event listeners.
