@@ -2,6 +2,15 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-ticker` project will be documented in this file.
 
+## [2.5.1] - 2026-09-29
+
+### Added & Changed
+- **Dual-Layer Lifecycle & Automatic GC Finalization (`FinalizationRegistry`)**:
+  - Integrated `Finalizer.register` from `@magmacomputing/tempo/plugin/sdk` / `#library/finalizer.class.js`.
+  - Registered Ticker proxy instances with the garbage collection finalizer: if user code drops a Ticker handle without calling `.stop()`, the Garbage Collector automatically stops the ticker and tears down underlying `setTimeout` / `setInterval` timer handles.
+  - Upgraded internal active registry `ACTIVE_TICKERS` to store `WeakRef<Ticker.Instance>` entries, ensuring active tickers are not strongly pinned in memory and dead references are automatically pruned during `Tempo.tickers` inspection.
+  - Updated documentation (`resource-management.md`) to reflect the dual-layer lifecycle model (deterministic `using` / `stop()` + background GC safety-net).
+
 ## [2.5.0] - 2026-09-18
 
 ### Added

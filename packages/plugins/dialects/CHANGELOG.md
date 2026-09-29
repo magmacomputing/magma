@@ -5,6 +5,14 @@ All notable changes to `@magmacomputing/tempo-plugin-dialects` will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-09-29
+
+### Changed & Performance
+- **WeakCache Memoization**:
+  - Upgraded `FORMAT_CACHE` and `PARSE_REGEX_CACHE` in `ldml.compiler.ts` to `WeakCache<string, FormatterFn>` and `WeakCache<string, RegExp>`.
+  - Upgraded `STRFTIME_FORMAT_CACHE` and `STRFTIME_PARSE_CACHE` in `strftime.compiler.ts` to `WeakCache`.
+  - Dynamically compiled format builder functions and parser regular expressions are now auto-pruned upon garbage collection, eliminating memory leaks when formatting or parsing ad-hoc and custom format strings.
+
 ## [1.0.0] - 2026-09-20
 
 ### Added

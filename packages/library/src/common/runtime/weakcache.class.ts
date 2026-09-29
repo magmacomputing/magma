@@ -1,4 +1,6 @@
 import { StringTag } from '#library/decorator.library.js';
+import { isDefined, isUndefined } from '#library/assertion.library.js';
+import { Finalizer } from './finalizer.class.js';
 
 interface CacheEntry<V extends WeakKey> {
 	ref: WeakRef<V>;
@@ -7,17 +9,22 @@ interface CacheEntry<V extends WeakKey> {
 
 /**
  * ## WeakCache
- * Map-like cache holding values weakly via WeakRef and auto-pruning
- * collected entries using FinalizationRegistry without memory leaks.
+ * Map-like cache holding values weakly via `WeakRef` and auto-pruning
+ * collected entries using `Finalizer` without memory leaks.
+ *
+ * Keys must be primitive (`string | number | symbol`) to ensure the key
+ * does not create a strong reference cycle with the cached value.
  */
 @StringTag('WeakCache')
-export class WeakCache<K = string, V extends WeakKey = WeakKey> {
+export class WeakCache<K extends keyof any = string, V extends WeakKey = WeakKey> {
 	readonly #cache = new Map<K, CacheEntry<V>>();
-	readonly #registry: FinalizationRegistry<K>;
+	readonly #finalizer: Finalizer<{ key: K; token: object }>;
 
 	constructor() {
-		this.#registry = new FinalizationRegistry((key: K) => {
-			this.#cache.delete(key);
+		this.#finalizer = new Finalizer((held: { key: K; token: object }) => {
+			const entry = this.#cache.get(held.key);
+			if (entry && entry.token === held.token)
+				this.#cache.delete(held.key);
 		});
 	}
 
@@ -45,7 +52,7 @@ export class WeakCache<K = string, V extends WeakKey = WeakKey> {
 			token,
 		});
 
-		this.#registry.register(value, key, token);
+		this.#finalizer.register(value, { key, token }, token);
 		return this;
 	}
 
@@ -58,10 +65,11 @@ export class WeakCache<K = string, V extends WeakKey = WeakKey> {
 	 */
 	get(key: K): V | undefined {
 		const entry = this.#cache.get(key);
-		if (!entry) return undefined;
+		if (isUndefined(entry)) return undefined;
 
 		const value = entry.ref.deref();
-		if (!value) {
+		if (isUndefined(value)) {
+			this.#finalizer.unregister(entry.token);
 			this.#cache.delete(key);
 			return undefined;
 		}
@@ -76,7 +84,7 @@ export class WeakCache<K = string, V extends WeakKey = WeakKey> {
 	 * @returns True if the key exists and its value has not been collected
 	 */
 	has(key: K): boolean {
-		return this.get(key) !== undefined;
+		return isDefined(this.get(key));
 	}
 
 	/**
@@ -88,7 +96,7 @@ export class WeakCache<K = string, V extends WeakKey = WeakKey> {
 	 */
 	getOrSet(key: K, factory: (key: K) => V): V {
 		const existing = this.get(key);
-		if (existing !== undefined) return existing;
+		if (isDefined(existing)) return existing;
 
 		const value = factory(key);
 		this.set(key, value);
@@ -103,9 +111,9 @@ export class WeakCache<K = string, V extends WeakKey = WeakKey> {
 	 */
 	delete(key: K): boolean {
 		const entry = this.#cache.get(key);
-		if (entry) {
+		if (isDefined(entry)) {
 			this.#cache.delete(key);
-			this.#registry.unregister(entry.token);
+			this.#finalizer.unregister(entry.token);
 			return true;
 		}
 		return false;
@@ -116,7 +124,7 @@ export class WeakCache<K = string, V extends WeakKey = WeakKey> {
 	 */
 	clear(): void {
 		for (const entry of this.#cache.values()) {
-			this.#registry.unregister(entry.token);
+			this.#finalizer.unregister(entry.token);
 		}
 		this.#cache.clear();
 	}

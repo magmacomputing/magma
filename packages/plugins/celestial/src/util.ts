@@ -2,7 +2,10 @@ import { Tempo } from '@magmacomputing/tempo';
 import { getLunarPhase } from '@magmacomputing/tempo-fns';
 
 import { isNumber, isReference, isArray, isDefined } from '@magmacomputing/tempo/library';
+import { WeakCache } from '@magmacomputing/tempo/plugin/sdk';
 import type { LunarPhaseResult } from './index.js';
+
+const LUNAR_PHASE_CACHE = new WeakCache<string, ReturnType<typeof getLunarPhase>>();
 
 /**
  * Validates that geographic coordinates are finite numbers within valid terrestrial bounds (-90..90 lat, -180..180 lng).
@@ -104,7 +107,12 @@ export function toTempoOrNull(
  */
 export function getLunarDetails(t: Tempo, coords?: ReturnType<typeof getCelestialCoordinates>): LunarPhaseResult {
 	const { refTempo, sphere } = coords ?? getCelestialCoordinates(t);
-	const res = getLunarPhase(refTempo.epoch.ms, { sphere });
+	const cacheKey = `${refTempo.epoch.ms}:${sphere ?? ''}`;
+	let res = LUNAR_PHASE_CACHE.get(cacheKey);
+	if (!res) {
+		res = getLunarPhase(refTempo.epoch.ms, { sphere });
+		LUNAR_PHASE_CACHE.set(cacheKey, res);
+	}
 
 	return {
 		key: res.key,

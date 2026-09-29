@@ -125,4 +125,23 @@ describe('Pledge', () => {
 		}
 	});
 
+	test('unregisters finalizer upon resolution, rejection, and disposal', async () => {
+		const p1 = new Pledge('test-resolve');
+		expect(p1.isPending).toBe(true);
+		p1.resolve('done');
+		expect(p1.isResolved).toBe(true);
+		expect(await p1.promise).toBe('done');
+
+		const p2 = new Pledge({ tag: 'test-reject', catch: true, silent: true });
+		expect(p2.isPending).toBe(true);
+		p2.reject(new Error('aborted'));
+		expect(p2.isRejected).toBe(true);
+		await expect(p2.promise).rejects.toThrow('aborted');
+
+		const p3 = new Pledge({ tag: 'test-dispose', catch: true, silent: true });
+		expect(p3.isPending).toBe(true);
+		p3[Symbol.dispose]();
+		expect(p3.isRejected).toBe(true);
+		await expect(p3.promise).rejects.toThrow('Pledge disposed');
+	});
 });

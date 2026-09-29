@@ -123,10 +123,11 @@ import '@magmacomputing/tempo-plugin-ticker/install';
 ```typescript
 async function streamClock() {
   await using ticker = Tempo.ticker({ seconds: 1 });
+  let count = 0;
 
   for await (const t of ticker) {
     console.log('Stream tick:', t.iso);
-    if (shouldStop) break;
+    if (++count >= 5) break;
   }
 }
 ```

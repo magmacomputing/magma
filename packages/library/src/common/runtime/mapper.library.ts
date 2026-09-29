@@ -477,10 +477,14 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 			};
 			const shouldReverse = opts.reverse === true || opts.autoReverse === true;
 			if (shouldReverse && (!cachedRes.city || !cachedRes.country)) {
-				const reversed = await reverseGeocode(cachedRes, opts);
-				if (reversed) {
-					if (!cachedRes.city && isText(reversed.city)) cachedRes.city = reversed.city;
-					if (!cachedRes.country && isText(reversed.country)) cachedRes.country = reversed.country;
+				try {
+					const reversed = await reverseGeocode(cachedRes, opts);
+					if (reversed) {
+						if (!cachedRes.city && isText(reversed.city)) cachedRes.city = reversed.city;
+						if (!cachedRes.country && isText(reversed.country)) cachedRes.country = reversed.country;
+					}
+				} catch (err: any) {
+					cachedRes.error = err?.message ?? String(err);
 				}
 			}
 			return cachedRes;
@@ -549,10 +553,14 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 
 		const shouldReverse = opts.reverse === true || opts.autoReverse === true;
 		if (shouldReverse && (!res.city || !res.country)) {
-			const reversed = await reverseGeocode(res, opts);
-			if (reversed) {
-				if (!res.city && isText(reversed.city)) res.city = reversed.city;
-				if (!res.country && isText(reversed.country)) res.country = reversed.country;
+			try {
+				const reversed = await reverseGeocode(res, opts);
+				if (reversed) {
+					if (!res.city && isText(reversed.city)) res.city = reversed.city;
+					if (!res.country && isText(reversed.country)) res.country = reversed.country;
+				}
+			} catch (err: any) {
+				res.error = err?.message ?? String(err);
 			}
 		}
 

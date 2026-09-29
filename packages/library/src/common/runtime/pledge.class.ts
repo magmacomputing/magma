@@ -6,6 +6,7 @@ import { secure } from '#library/proxy.library.js';
 import { cleanify } from '#library/json.library.js';
 import { Immutable, StringTag } from '#library/decorator.library.js';
 import { isEmpty, isObject } from '#library/assertion.library.js';
+import { Finalizer } from './finalizer.class.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
@@ -118,6 +119,17 @@ export class Pledge<T> {
 
 		if (this.#status.catch)
 			this.#pledge.promise.catch(err => _dbg.warn(this.#status, err));
+
+		const status = this.#status;
+		const reject = this.#pledge.reject;
+		Finalizer.register(this, () => {
+			if (status.state === _STATE.Pending) {
+				const tag = status.tag ? `'${status.tag}'` : 'instance';
+				status.error = new Error(`Pledge ${tag} collected while pending`);
+				status.state = _STATE.Rejected;
+				reject(status.error);
+			}
+		});
 
 		return Object.freeze(this) as this;
 	}

@@ -5,6 +5,14 @@ All notable changes to `@magmacomputing/tempo-plugin-holidays` will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-09-29
+
+### Changed & Performance
+- **WeakCache Memoization**:
+  - Upgraded holiday storage cache `memoryStore` in `cache.ts` to `WeakCache<string, CacheEntry<unknown>>`.
+  - Memoized `getEasterSunday(year)` calculation results in `computus.ts` using `WeakCache<number, EasterResult>`.
+  - Generated calendar maps and Computus results are now auto-reclaimed upon garbage collection, preventing unbounded memory retention when computing holidays across large date ranges or multiple country jurisdictions.
+
 ## [1.0.0] - 2026-09-26
 
 ### Added

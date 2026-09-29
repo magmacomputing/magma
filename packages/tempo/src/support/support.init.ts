@@ -13,6 +13,7 @@ import { parseLogLevel } from '#library/logger.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { coerceGeo } from '#library/mapper.library.js';
 import { BoundedCache } from '#library/cache.class.js';
+import { WeakCache } from '#library/weakcache.class.js';
 
 import { getRuntime } from './support.runtime.js';
 import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, generateLocalizedSnippets } from './support.util.js';
@@ -96,6 +97,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	state.options = options;
 	const targetCache = baseState?.cache ?? runtime.state?.cache ?? prevCache;
 	state.cache = resolveCache(options.cache, targetCache);
+	state.weakCache = baseState ? new WeakCache() : (runtime.state?.weakCache ?? new WeakCache());
 
 	// 1. Establish the base parsing state
 	const parseState: t.Internal.Parse = {

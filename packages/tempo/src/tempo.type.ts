@@ -11,6 +11,7 @@ import type { ScopedSet } from '#library/scopedset.class.js';
 import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable, MutableObject } from '#library/type.library.js';
 import type { GeoOptions, GeoConfig } from '#library/mapper.library.js';
 import type { BoundedCache } from '#library/cache.class.js';
+import type { WeakCache } from '#library/weakcache.class.js';
 
 export type { GeoOptions, GeoConfig };
 export type { ResolvedLocaleInfo, LocaleWeekInfo } from '#library/international.library.js';
@@ -453,6 +454,7 @@ export namespace Internal {
 		/** @internal Pattern compiler for this Tempo instance */	patternCompiler?: PatternCompiler;
 		/** @internal database of plugins scoped to this state */pluginsDb: { terms: TermPlugin[]; plugins: TempoPlugin[] };
 		/** @internal internal cache engine for static terms and string parses */cache: BoundedCache<string, string>;
+		/** @internal internal weak cache for objects and AST instances */weakCache: WeakCache<string, any>;
 		/** @internal installed-plugin dedup tracker; a ScopedSet for sandboxes (delegates has() to global rt.installed), undefined for the global state */installed?: Set<any> | ScopedSet<any>;
 	}
 

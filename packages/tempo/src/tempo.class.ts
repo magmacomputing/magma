@@ -131,6 +131,10 @@ export class Tempo {
 	static get cache() {
 		return createCacheFacade(() => this[$Internal]());
 	}
+	/** weakly-retained object cache facade for domain objects, ASTs, and plugin instances */
+	static get weakCache() {
+		return this.cache.weak;
+	}
 
 	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return Tempo[$Internal]().pluginsDb.terms }
 	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();

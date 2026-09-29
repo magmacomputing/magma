@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { enums, getTermRange, defineTerm, enumify, type ValueOf } from '@magmacomputing/tempo/plugin/sdk';
+import { enums, getTermRange, defineTerm, enumify, type ValueOf, WeakCache } from '@magmacomputing/tempo/plugin/sdk';
 import { getSolarEvents as getSolarEventsFn } from '@magmacomputing/tempo-fns';
 
 declare module '@magmacomputing/tempo' {
@@ -36,11 +36,21 @@ const { COMPASS } = enums;
 const key = 'astro';
 const scope = 'astronomy';
 
+const SOLAR_EVENTS_CACHE = new WeakCache<number, ReturnType<typeof getSolarEventsFn>>();
+
+function getSolarEvents(year: number) {
+	const cached = SOLAR_EVENTS_CACHE.get(year);
+	if (cached) return cached;
+	const events = getSolarEventsFn(year);
+	SOLAR_EVENTS_CACHE.set(year, events);
+	return events;
+}
+
 /**
  * Polynomial approximation for Equinoxes and Solstices (Jean Meeus algorithm).
  */
 function calculateAstroMoment(year: number, quarter: ASTRO, timeZone: string) {
-	const events = getSolarEventsFn(year);
+	const events = getSolarEvents(year);
 	let keyName: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter' = 'Vernal';
 	if (quarter === ASTRO.Summer) keyName = 'Summer';
 	else if (quarter === ASTRO.Autumnal) keyName = 'Autumnal';

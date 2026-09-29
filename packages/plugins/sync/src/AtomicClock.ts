@@ -1,5 +1,6 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { Singleton } from '@magmacomputing/tempo/library';
+import { Finalizer } from '@magmacomputing/tempo/plugin/sdk';
 
 export interface ClockOptions {
 	/**
@@ -7,6 +8,10 @@ export interface ClockOptions {
 	 * Default: 10
 	 */
 	interval?: number;
+}
+
+interface ClockState {
+	timer: ReturnType<typeof setInterval> | null;
 }
 
 /**
@@ -17,8 +22,8 @@ export interface ClockOptions {
 export class AtomicClock {
 	#buffer: SharedArrayBuffer;
 	#view: BigInt64Array;
-	#timer: ReturnType<typeof setInterval> | null = null;
 	#interval: number;
+	#state: ClockState;
 
 	constructor(options: ClockOptions = {}) {
 		if (typeof SharedArrayBuffer === 'undefined')
@@ -28,6 +33,15 @@ export class AtomicClock {
 		this.#buffer = new SharedArrayBuffer(8);
 		this.#view = new BigInt64Array(this.#buffer);
 		this.#interval = options.interval ?? 10;
+		const state: ClockState = { timer: null };
+		this.#state = state;
+
+		Finalizer.register(this, () => {
+			if (state.timer) {
+				clearInterval(state.timer);
+				state.timer = null;
+			}
+		});
 
 		// Initialize the clock immediately
 		this.#tick();
@@ -44,11 +58,17 @@ export class AtomicClock {
 	 * Starts the synchronization loop.
 	 */
 	start(): void {
-		if (this.#timer) return;
-		this.#timer = setInterval(() => this.#tick(), this.#interval);
+		if (this.#state.timer) return;
+		const view = this.#view;
+		const timer = setInterval(() => {
+			const nowNano = Tempo.now();
+			Atomics.store(view, 0, nowNano);
+		}, this.#interval);
+
+		this.#state.timer = timer;
 		// Unref the timer in Node.js so it doesn't keep the process alive
-		if (typeof (this.#timer as any).unref === 'function') {
-			(this.#timer as any).unref();
+		if (typeof (timer as any).unref === 'function') {
+			(timer as any).unref();
 		}
 	}
 
@@ -56,10 +76,17 @@ export class AtomicClock {
 	 * Stops the synchronization loop.
 	 */
 	stop(): void {
-		if (this.#timer) {
-			clearInterval(this.#timer);
-			this.#timer = null;
+		if (this.#state.timer) {
+			clearInterval(this.#state.timer);
+			this.#state.timer = null;
 		}
+	}
+
+	/**
+	 * Explicit deterministic disposal (Dual-Layer Lifecycle Model).
+	 */
+	[Symbol.dispose](): void {
+		this.stop();
 	}
 
 	/**

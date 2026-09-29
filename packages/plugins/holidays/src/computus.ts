@@ -1,6 +1,10 @@
+import { WeakCache } from '@magmacomputing/tempo/library';
+
 /**
  * Computes calendar dates, floating Easter offsets, and weekday shifts.
  */
+
+const EASTER_CACHE = new WeakCache<number, { year: number; month: number; day: number; dateStr: string }>();
 
 /**
  * Formats year, month, and day integers into an ISO 8601 'YYYY-MM-DD' date string.
@@ -51,6 +55,9 @@ export function offsetDate(year: number, month: number, day: number, daysOffset:
  * @returns Object with year, month (1..12), and day
  */
 export function getEasterSunday(year: number): { year: number; month: number; day: number; dateStr: string } {
+	const cached = EASTER_CACHE.get(year);
+	if (cached) return cached;
+
 	const a = year % 19;
 	const b = Math.floor(year / 100);
 	const c = year % 100;
@@ -66,7 +73,9 @@ export function getEasterSunday(year: number): { year: number; month: number; da
 	const month = Math.floor((h + l - 7 * m + 114) / 31);
 	const day = ((h + l - 7 * m + 114) % 31) + 1;
 
-	return { year, month, day, dateStr: formatDate(year, month, day) };
+	const result = { year, month, day, dateStr: formatDate(year, month, day) };
+	EASTER_CACHE.set(year, result);
+	return result;
 }
 
 /** Returns ISO date string for Good Friday (Easter - 2 days). */

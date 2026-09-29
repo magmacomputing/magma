@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/library",
-  "version": "4.4.0",
+  "version": "4.4.3",
   "description": "Shared utility library for Tempo",
   "author": "Magma Computing Solutions",
   "license": "MIT",
@@ -248,6 +248,14 @@
     "#library/mapper.library.js": {
       "development": "./src/common/runtime/mapper.library.ts",
       "default": "./dist/common/runtime/mapper.library.js"
+    },
+    "#library/weakcache.class.js": {
+      "development": "./src/common/runtime/weakcache.class.ts",
+      "default": "./dist/common/runtime/weakcache.class.js"
+    },
+    "#library/finalizer.class.js": {
+      "development": "./src/common/runtime/finalizer.class.ts",
+      "default": "./dist/common/runtime/finalizer.class.js"
     },
     "#library/*.js": {
       "development": "./src/common/*.ts",

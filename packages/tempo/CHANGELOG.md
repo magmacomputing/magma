@@ -6,6 +6,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.3] - 2026-09-29
+
+### Added
+- **Public Weak Object Cache Facade (`Tempo.cache.weak`, `Tempo.weakCache`)**:
+  - Extended `Tempo.cache` with a dedicated `.weak` sub-facade backed by `WeakCache`, enabling plugins, AST processors, and user code to memoize expensive domain objects without manual lifecycle or eviction management.
+  - Added `Tempo.weakCache` static accessor alias pointing to `Tempo.cache.weak`.
+  - Scoped `state.weakCache` per Tempo state/sandbox context during `init()`.
+  - Added comprehensive unit tests in `packages/tempo/test/support/cache.test.ts`.
+
+### Performance & Memory
+- **Engine Regular Expression Caching (`PatternCompiler`, `module.parse`)**:
+  - Upgraded `PatternCompiler.#globalCache`, `#snippetCache`, and `BRACED_CACHE` from unbounded `Map`s to `WeakCache<string, RegExp>`.
+  - Dynamically compiled format masks and layout regular expressions are cached for rapid reuse during active parsing loops, while allowing V8 to automatically collect unreferenced regex bytecode after operations complete.
+- **Fast Timezone & ISO Date Interning**:
+  - Integrated `WeakCache` and permanent offset memoization into core date helpers, achieving ~120x faster DST evaluation and ~73x faster repeated ISO date parsing with ~99.9% heap reduction for duplicate date instances.
+
 ## [4.4.2] - 2026-09-27
 
 ### Fixed

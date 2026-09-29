@@ -37,7 +37,16 @@ import { GeoPlugin, type GeoProvider } from '@magmacomputing/tempo-plugin-geo';
 
 Tempo.use(GeoPlugin);
 
-// Example: OpenStreetMap Nominatim Provider
+// Simple 1 req/sec throttle for public OSM Nominatim usage policy
+let lastOsmCall = 0;
+async function throttleOsm() {
+  const now = Date.now();
+  const wait = Math.max(0, 1000 - (now - lastOsmCall));
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  lastOsmCall = Date.now();
+}
+
+// Example: OpenStreetMap Nominatim Provider (or commercial Mapbox/LocationIQ)
 const openStreetMapProvider: GeoProvider = {
   name: 'openstreetmap',
 
@@ -48,9 +57,10 @@ const openStreetMapProvider: GeoProvider = {
 
   // 2. Forward Geocoding: Place Query -> Coordinates
   async forwardGeocode(query: string) {
+    await throttleOsm();
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`;
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'Tempo-App/1.0' }
+      headers: { 'User-Agent': 'YourApp-TempoGateway/1.0 (contact@example.com)' }
     });
     const list = await res.json();
     if (!Array.isArray(list) || list.length === 0) return null;
@@ -64,29 +74,33 @@ const openStreetMapProvider: GeoProvider = {
       latitude: lat,
       longitude: lng,
       city: first.address?.city ?? first.address?.town ?? first.address?.suburb,
-      country: first.address?.country,
+      country: first.address?.country_code ? first.address.country_code.toUpperCase() : undefined,
       sphere: lat >= 0 ? 'north' : 'south',
     };
   },
 
   // 3. Reverse Geocoding: Coordinates -> Address Details
   async reverseGeocode(coords) {
+    await throttleOsm();
     const lat = (coords as any).latitude ?? (coords as any).lat;
     const lng = (coords as any).longitude ?? (coords as any).lng;
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'Tempo-App/1.0' }
+      headers: { 'User-Agent': 'YourApp-TempoGateway/1.0 (contact@example.com)' }
     });
     const data = await res.json();
     return {
       city: data.address?.city ?? data.address?.town ?? data.address?.suburb,
-      country: data.address?.country,
+      country: data.address?.country_code ? data.address.country_code.toUpperCase() : undefined,
     };
   }
 };
 
 Tempo.geo.setProvider(openStreetMapProvider);
 ```
+
+> [!NOTE]
+> Public OpenStreetMap Nominatim has a strict usage policy limiting traffic to 1 request per second with an explicit contact User-Agent header. For high-volume production deployments, use a dedicated hosted service (e.g. Mapbox, LocationIQ) or self-hosted Nominatim container.
 
 ### B. Plugin Installation Options
 
@@ -125,7 +139,7 @@ console.log('Season in Sydney:', sydneyTime.term.szn);
 
 // 2. Reverse Geocoding: Coordinates -> Locality Metadata
 const details = await Tempo.geo.reverse({ lat: 48.8566, lng: 2.3522 });
-console.log('Reverse Geocoded:', details?.city, details?.country); // 'Paris', 'France'
+console.log('Reverse Geocoded:', details?.city, details?.country); // 'Paris', 'FR'
 ```
 
 ---

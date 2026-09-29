@@ -1,10 +1,10 @@
-import { pad } from '@magmacomputing/tempo/library';
+import { pad, WeakCache } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 
 type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
 
-const STRFTIME_FORMAT_CACHE = new Map<string, FormatterFn>();
-const STRFTIME_PARSE_CACHE = new Map<string, RegExp>();
+const STRFTIME_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
+const STRFTIME_PARSE_CACHE = new WeakCache<string, RegExp>();
 
 const STRFTIME_SPECIFIER_REGEX = /%([a-zA-Z%])/g;
 

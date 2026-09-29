@@ -1,10 +1,10 @@
-import { pad, suffix } from '@magmacomputing/tempo/library';
+import { pad, suffix, WeakCache } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 
 type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
 
-const FORMAT_CACHE = new Map<string, FormatterFn>();
-const PARSE_REGEX_CACHE = new Map<string, RegExp>();
+const FORMAT_CACHE = new WeakCache<string, FormatterFn>();
+const PARSE_REGEX_CACHE = new WeakCache<string, RegExp>();
 
 const LDML_TOKEN_REGEX = /'(''|[^'])*'|(yyyy|YYYY|MMMM|LLLL|EEEE|cccc|SSS|MMM|LLL|EEE|ccc|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|a|Do|d|H|h|k|m|s|S|c|e|E|y|L|M|ZZZZZ|ZZZZ|ZZZ|ZZ|Z|zzzz|zzz|zz|z)/g;
 
