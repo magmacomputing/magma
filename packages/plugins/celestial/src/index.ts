@@ -75,6 +75,13 @@ const SUNRISE_SUNSET_CACHE = new WeakCache<string, ReturnType<typeof getSunriseS
 const SOLAR_POSITION_CACHE = new WeakCache<string, ReturnType<typeof getSolarPosition>>();
 const TIDAL_STATE_CACHE = new WeakCache<string, ReturnType<typeof getTidalState>>();
 
+/**
+ * Returns the lunar phase range, weakly cached by timestamp and hemisphere.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param sphere - The optional hemisphere for the lunar phase calculation
+ * @returns The phase range's start and end timestamps in milliseconds
+ */
 function cachedLunarPhaseRange(epochMs: number, sphere?: 'north' | 'south') {
 	const key = `${epochMs}:${sphere ?? ''}`;
 	let res = LUNAR_PHASE_RANGE_CACHE.get(key);
@@ -85,6 +92,14 @@ function cachedLunarPhaseRange(epochMs: number, sphere?: 'north' | 'south') {
 	return res;
 }
 
+/**
+ * Returns moonrise and moonset data, weakly cached by timestamp and location.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param lat - The observer's latitude in degrees
+ * @param lng - The observer's longitude in degrees
+ * @returns The cached or newly calculated lunar events
+ */
 function cachedMoonEvents(epochMs: number, lat: number, lng: number) {
 	const key = `${epochMs}:${lat}:${lng}`;
 	let res = MOON_EVENTS_CACHE.get(key);
@@ -95,6 +110,14 @@ function cachedMoonEvents(epochMs: number, lat: number, lng: number) {
 	return res;
 }
 
+/**
+ * Returns the moon's position, weakly cached by timestamp and location.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param lat - The observer's latitude in degrees
+ * @param lng - The observer's longitude in degrees
+ * @returns The cached or newly calculated lunar position
+ */
 function cachedLunarPosition(epochMs: number, lat: number, lng: number) {
 	const key = `${epochMs}:${lat}:${lng}`;
 	let res = LUNAR_POSITION_CACHE.get(key);
@@ -105,6 +128,13 @@ function cachedLunarPosition(epochMs: number, lat: number, lng: number) {
 	return res;
 }
 
+/**
+ * Returns sunrise, sunset, and twilight data, weakly cached by timestamp, location, and elevation.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param options - Observer coordinates in degrees and optional elevation in meters
+ * @returns The cached or newly calculated solar events
+ */
 function cachedSunriseSunset(epochMs: number, options: { latitude: number; longitude: number; elevation?: number }) {
 	const key = `${epochMs}:${options.latitude}:${options.longitude}:${options.elevation ?? 0}`;
 	let res = SUNRISE_SUNSET_CACHE.get(key);
@@ -115,6 +145,13 @@ function cachedSunriseSunset(epochMs: number, options: { latitude: number; longi
 	return res;
 }
 
+/**
+ * Returns the sun's position, weakly cached by timestamp, location, and elevation.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param options - Observer coordinates in degrees and optional elevation in meters
+ * @returns The cached or newly calculated solar position
+ */
 function cachedSolarPosition(epochMs: number, options: { latitude: number; longitude: number; elevation?: number }) {
 	const key = `${epochMs}:${options.latitude}:${options.longitude}:${options.elevation ?? 0}`;
 	let res = SOLAR_POSITION_CACHE.get(key);
@@ -125,6 +162,13 @@ function cachedSolarPosition(epochMs: number, options: { latitude: number; longi
 	return res;
 }
 
+/**
+ * Returns the tidal state, weakly cached by timestamp and tidal calculation options.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param options - Observer and tidal model options, or latitude in degrees with longitude defaulting to zero
+ * @returns The cached or newly calculated tidal state
+ */
 function cachedTidalState(epochMs: number, options: TidalOptions | number) {
 	const key = typeof options === 'number' ? `${epochMs}:${options}` : `${epochMs}:${options.latitude}:${options.longitude}:${options.lunitidalIntervalMin ?? 0}:${options.regime ?? ''}`;
 	let res = TIDAL_STATE_CACHE.get(key);

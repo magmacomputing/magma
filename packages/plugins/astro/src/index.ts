@@ -38,6 +38,12 @@ const scope = 'astronomy';
 
 const SOLAR_EVENTS_CACHE = new WeakCache<number, ReturnType<typeof getSolarEventsFn>>();
 
+/**
+ * Returns equinox and solstice events, reusing the weakly cached result for the year.
+ *
+ * @param year - The year for which to calculate solar events
+ * @returns The cached or newly calculated solar events
+ */
 function getSolarEvents(year: number) {
 	const cached = SOLAR_EVENTS_CACHE.get(year);
 	if (cached) return cached;
