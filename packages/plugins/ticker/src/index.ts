@@ -382,6 +382,8 @@ class TickerInstance implements Ticker.Descriptor {
 
 		this.#ticks++;
 
+		const listeners = [...this.#listeners];
+
 		if (this.#limit !== undefined && this.#ticks >= this.#limit) this.stop(t);
 		if (isDefined(this.#until)) {
 			const cmp = this.#TempoClass.compare(t, this.#until);
@@ -390,7 +392,7 @@ class TickerInstance implements Ticker.Descriptor {
 
 		if (this.#stopped && this.#limit === 0) return t;
 
-		this.#listeners.forEach(l => l(t, () => this.stop()));
+		listeners.forEach(l => l(t, () => this.stop()));
 		return t;
 	}
 
@@ -421,6 +423,9 @@ class TickerInstance implements Ticker.Descriptor {
 			if (w.isPending) w.resolve(terminalValue as any);
 
 		this.#stopListeners.forEach(l => l(this.#next, () => undefined));
+		this.#listeners.clear();
+		this.#catchListeners.clear();
+		this.#stopListeners.clear();
 	}
 
 	get info() {

@@ -484,7 +484,7 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 						if (!cachedRes.country && isText(reversed.country)) cachedRes.country = reversed.country;
 					}
 				} catch (err: any) {
-					cachedRes.error = err?.message ?? String(err);
+					(cachedRes as any).reverseError = err?.message ?? String(err);
 				}
 			}
 			return cachedRes;
@@ -560,7 +560,7 @@ export const geoLookup = async (opts: Record<string, any> = {}): Promise<GeoLook
 					if (!res.country && isText(reversed.country)) res.country = reversed.country;
 				}
 			} catch (err: any) {
-				res.error = err?.message ?? String(err);
+				(res as any).reverseError = err?.message ?? String(err);
 			}
 		}
 

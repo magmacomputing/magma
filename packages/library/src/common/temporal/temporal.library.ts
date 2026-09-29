@@ -53,14 +53,14 @@ export function epoch() {
  * @param year - The year for which to calculate the offsets; defaults to 2024
  * @returns An object containing January and July offsets in nanoseconds
  */
-export function getOffsets(timeZone: string, year = 2024): { jan: number; jul: number } {	//** use a fixed reference-year (2024) for stability */
+export function getOffsets(timeZone: string, year = 2024): Readonly<{ jan: number; jul: number }> {	//** use a fixed reference-year (2024) for stability */
 	const key = `${timeZone}::${year}`;
 	let offsets = offsetCache.get(key);
 
 	if (isUndefined(offsets)) {
 		const jan = Temporal.ZonedDateTime.from({ year, month: 1, day: 1, hour: 0, minute: 0, second: 0, timeZone }).offsetNanoseconds;
 		const jul = Temporal.ZonedDateTime.from({ year, month: 7, day: 1, hour: 0, minute: 0, second: 0, timeZone }).offsetNanoseconds;
-		offsets = { jan, jul };
+		offsets = Object.freeze({ jan, jul });
 		offsetCache.set(key, offsets);
 	}
 	return offsets;

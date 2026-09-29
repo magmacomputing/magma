@@ -101,7 +101,7 @@ Tempo.geo.setProvider(openStreetMapProvider);
 ```
 
 > [!NOTE]
-> Public OpenStreetMap Nominatim has a strict usage policy limiting traffic to 1 request per second with an explicit contact User-Agent header. For high-volume production deployments, use a dedicated hosted service (e.g. Mapbox, LocationIQ) or self-hosted Nominatim container.
+> `throttleOsm` operates within a single JavaScript runtime and does not limit combined traffic across concurrent users or browser tabs. Because public OpenStreetMap Nominatim enforces a strict global rate limit of 1 request per second with a contact User-Agent header, multi-user applications should route requests through a shared backend gateway with centralized rate-limiting and caching, or use a dedicated commercial service (e.g. Mapbox, LocationIQ) or self-hosted Nominatim container.
 
 ### B. Plugin Installation Options
 

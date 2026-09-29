@@ -19,16 +19,10 @@ const GLOBAL_FINALIZER_REGISTRY = new FinalizationRegistry<() => void>((cleanup)
  */
 @StringTag('Finalizer')
 export class Finalizer<T = void> {
-	readonly #registry: FinalizationRegistry<T>;
+	readonly #callback: (heldValue: T) => void;
 
 	constructor(callback: (heldValue: T) => void) {
-		this.#registry = new FinalizationRegistry((heldValue: T) => {
-			try {
-				callback(heldValue);
-			} catch (err) {
-				console.error('Finalizer callback error:', err);
-			}
-		});
+		this.#callback = callback;
 	}
 
 	/**
@@ -46,7 +40,10 @@ export class Finalizer<T = void> {
 	 * @param unregisterToken - Optional token to unregister the callback prior to GC
 	 */
 	register(target: WeakKey, heldValue: T, unregisterToken?: WeakKey): void {
-		this.#registry.register(target, heldValue, unregisterToken);
+		const token = unregisterToken ?? Object.create(null);
+		GLOBAL_FINALIZER_REGISTRY.register(target, () => {
+			this.#callback(heldValue);
+		}, token);
 	}
 
 	/**
@@ -56,7 +53,7 @@ export class Finalizer<T = void> {
 	 * @returns True if a registration was found and removed
 	 */
 	unregister(unregisterToken: WeakKey): boolean {
-		return this.#registry.unregister(unregisterToken);
+		return GLOBAL_FINALIZER_REGISTRY.unregister(unregisterToken);
 	}
 
 	/**

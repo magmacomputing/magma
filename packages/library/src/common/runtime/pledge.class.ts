@@ -121,13 +121,18 @@ export class Pledge<T> {
 			this.#pledge.promise.catch(err => _dbg.warn(this.#status, err));
 
 		const status = this.#status;
-		const reject = this.#pledge.reject;
+		const pledge = this.#pledge;
 		Finalizer.register(this, () => {
 			if (status.state === _STATE.Pending) {
 				const tag = status.tag ? `'${status.tag}'` : 'instance';
 				status.error = new Error(`Pledge ${tag} collected while pending`);
 				status.state = _STATE.Rejected;
-				reject(status.error);
+				try {
+					pledge.promise.catch(() => {});
+				} catch {
+					// best-effort
+				}
+				pledge.reject(status.error);
 			}
 		});
 

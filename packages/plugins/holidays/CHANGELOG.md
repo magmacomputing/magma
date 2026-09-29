@@ -9,9 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed & Performance
 - **WeakCache Memoization**:
-  - Upgraded holiday storage cache `memoryStore` in `cache.ts` to `WeakCache<string, CacheEntry<unknown>>`.
   - Memoized `getEasterSunday(year)` calculation results in `computus.ts` using `WeakCache<number, EasterResult>`.
-  - Generated calendar maps and Computus results are now auto-reclaimed upon garbage collection, preventing unbounded memory retention when computing holidays across large date ranges or multiple country jurisdictions.
+  - Computed holiday dates and Computus results are now auto-reclaimed upon garbage collection, preventing unbounded memory retention when computing holidays across large date ranges or multiple country jurisdictions.
 
 ## [1.0.0] - 2026-09-26
 
