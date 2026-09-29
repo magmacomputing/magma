@@ -41,48 +41,61 @@ describe('Ticker Stop Listener', () => {
 		expect(ticker.info.stopped).toBe(true);
 	});
 
-	it('should permanently revoke the proxy handle upon Symbol.dispose', () => {
+	it('should cleanly stop the ticker upon Symbol.dispose', () => {
 		const ticker = Tempo.ticker({ seconds: 1 });
 		expect(ticker.info.stopped).toBe(false);
 
 		ticker[Symbol.dispose]();
 
-		// Proxy is now revoked, any operation throws TypeError
-		expect(() => ticker.info).toThrow(TypeError);
-		expect(() => ticker.pulse()).toThrow(TypeError);
-		expect(() => ticker()).toThrow(TypeError);
+		expect(ticker.info.stopped).toBe(true);
+		expect(Tempo.tickers.some(s => s.ticker === ticker)).toBe(false);
 	});
 
-	it('should permanently revoke the proxy handle upon Symbol.asyncDispose', async () => {
+	it('should cleanly stop the ticker upon Symbol.asyncDispose', async () => {
 		const ticker = Tempo.ticker({ seconds: 1 });
 		expect(ticker.info.stopped).toBe(false);
 
 		await ticker[Symbol.asyncDispose]();
 
-		expect(() => ticker.info).toThrow(TypeError);
-		expect(() => ticker.pulse()).toThrow(TypeError);
+		expect(ticker.info.stopped).toBe(true);
+		expect(Tempo.tickers.some(s => s.ticker === ticker)).toBe(false);
 	});
 
-	it('should still revoke proxy when a stop listener throws in Symbol.dispose', () => {
+	it('should still stop ticker when a stop listener throws in Symbol.dispose', () => {
 		const ticker = Tempo.ticker({ seconds: 1 });
 		ticker.on('stop', () => {
 			throw new Error('Stop listener failure');
 		});
 
 		expect(() => ticker[Symbol.dispose]()).toThrow('Stop listener failure');
-		expect(() => ticker.info).toThrow(TypeError);
-		expect(() => ticker.pulse()).toThrow(TypeError);
+		expect(ticker.info.stopped).toBe(true);
+		expect(Tempo.tickers.some(s => s.ticker === ticker)).toBe(false);
 	});
 
-	it('should still revoke proxy when a stop listener throws in Symbol.asyncDispose', async () => {
+	it('should still stop ticker when a stop listener throws in Symbol.asyncDispose', async () => {
 		const ticker = Tempo.ticker({ seconds: 1 });
 		ticker.on('stop', () => {
 			throw new Error('Async stop listener failure');
 		});
 
 		await expect(ticker[Symbol.asyncDispose]()).rejects.toThrow('Async stop listener failure');
-		expect(() => ticker.info).toThrow(TypeError);
-		expect(() => ticker.pulse()).toThrow(TypeError);
+		expect(ticker.info.stopped).toBe(true);
+		expect(Tempo.tickers.some(s => s.ticker === ticker)).toBe(false);
+	});
+
+	it('should maintain active tickers list in Tempo.tickers and remove stopped tickers', () => {
+		const t1 = Tempo.ticker({ seconds: 1 });
+		const t2 = Tempo.ticker({ seconds: 2 });
+
+		expect(Tempo.tickers.some(s => s.ticker === t1)).toBe(true);
+		expect(Tempo.tickers.some(s => s.ticker === t2)).toBe(true);
+
+		t1.stop();
+		expect(Tempo.tickers.some(s => s.ticker === t1)).toBe(false);
+		expect(Tempo.tickers.some(s => s.ticker === t2)).toBe(true);
+
+		t2.stop();
+		expect(Tempo.tickers.some(s => s.ticker === t2)).toBe(false);
 	});
 });
 

@@ -3,6 +3,7 @@
 // Responsible for snippet/layout expansion, regex compilation, and pattern caching
 
 import { isRegExp, isNullish, isEmpty, isString } from '#library/assertion.library.js';
+import { WeakCache } from '#library/weakcache.class.js';
 import { asArray } from '#library/coercion.library.js';
 import { ownEntries, ownKeys } from '#library/primitive.library.js';
 import { Match, Snippet, Layout } from '../support/support.default.js';
@@ -20,8 +21,8 @@ export interface PatternCompilerOptions {
 
 export class PatternCompiler {
 	#state: t.Internal.State;
-	#globalCache: Map<string, RegExp> = new Map();
-	#snippetCache: WeakMap<Snippet, Map<string, RegExp>> = new WeakMap();
+	#globalCache: WeakCache<string, RegExp> = new WeakCache();
+	#snippetCache: WeakMap<Snippet, WeakCache<string, RegExp>> = new WeakMap();
 
 	constructor(options: PatternCompilerOptions) {
 		this.#state = options.state;
@@ -36,10 +37,10 @@ export class PatternCompiler {
 	compileRegExp(layout: string | RegExp, snippet?: Snippet): RegExp {
 		const state = this.#state;
 		const source = isRegExp(layout) ? layout.source : layout;
-		let cache: Map<string, RegExp>;
+		let cache: WeakCache<string, RegExp>;
 		if (snippet) {
 			if (!this.#snippetCache.has(snippet))
-				this.#snippetCache.set(snippet, new Map());
+				this.#snippetCache.set(snippet, new WeakCache());
 			cache = this.#snippetCache.get(snippet)!;
 		} else {
 			cache = this.#globalCache;

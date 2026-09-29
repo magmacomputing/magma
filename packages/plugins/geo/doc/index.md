@@ -54,10 +54,10 @@ Explore detailed guides on specific capabilities:
 
 | Goal | Method to Use | Input | Output |
 | :--- | :--- | :--- | :--- |
-| **"Where is this machine / user right now?"** | `Tempo.geo.lookup()` | None / ambient options | `{ latitude, longitude, city, ... }` |
-| **"Convert place name / address to coordinates"** | `Tempo.geo.forward("Paris")` | Address query string | `{ latitude, longitude, ... }` |
-| **"Convert GPS coordinates to street / city / country"** | `Tempo.geo.reverse({ lat, lng })` | Coordinate object | `{ city, country, ... }` |
-| **"Extract or safely normalize coordinates from any input"** | `Tempo.geo.resolve(input)` | Instance, config, or object | Canonical `{ latitude, longitude, ... }` |
+| **"Where is this machine / user right now?"** | `await Tempo.geo.lookup({ refresh: true })` | None / `{ refresh: true }` | Fresh `{ latitude, longitude, city, ... }` |
+| **"Convert place name / address to coordinates"** | `await Tempo.geo.forward("Paris")` | Address query string | `{ latitude, longitude, ... }` |
+| **"Convert GPS coordinates to street / city / country"** | `await Tempo.geo.reverse({ lat, lng })` | Coordinate object | `{ city, country, ... }` |
+| **"Extract or safely normalize coordinates from any input"** | `await Tempo.geo.resolve(input)` | Instance, config, or object | Canonical `{ latitude, longitude, ... }` |
 | **"Localize a Tempo instance with timezone & cultural calendar"** | `await t.geoLocate()` | Existing `Tempo` instance | New enriched `Tempo` instance |
 
 ---

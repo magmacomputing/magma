@@ -4,7 +4,10 @@
 */
 
 import '#library/temporal.polyfill.js';											// ensure Temporal is available
-import { isNumber, isObject, isString, isDefined, isZonedDateTime } from '#library/assertion.library.js';
+import { isNumber, isObject, isString, isDefined, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
+import { WeakCache } from '#library/weakcache.class.js';
+
+const offsetCache = new Map<string, { jan: number; jul: number }>();
 
 /**
  * Returns the current instant in time using `Temporal.Now.instant()`.
@@ -50,11 +53,17 @@ export function epoch() {
  * @param year - The year for which to calculate the offsets; defaults to 2024
  * @returns An object containing January and July offsets in nanoseconds
  */
-export function getOffsets(timeZone: string, year = 2024) {	//** use a fixed reference-year (2024) for stability */
-	const jan = Temporal.ZonedDateTime.from({ year, month: 1, day: 1, hour: 0, minute: 0, second: 0, timeZone }).offsetNanoseconds;
-	const jul = Temporal.ZonedDateTime.from({ year, month: 7, day: 1, hour: 0, minute: 0, second: 0, timeZone }).offsetNanoseconds;
+export function getOffsets(timeZone: string, year = 2024): Readonly<{ jan: number; jul: number }> {	//** use a fixed reference-year (2024) for stability */
+	const key = `${timeZone}::${year}`;
+	let offsets = offsetCache.get(key);
 
-	return { jan, jul };
+	if (isUndefined(offsets)) {
+		const jan = Temporal.ZonedDateTime.from({ year, month: 1, day: 1, hour: 0, minute: 0, second: 0, timeZone }).offsetNanoseconds;
+		const jul = Temporal.ZonedDateTime.from({ year, month: 7, day: 1, hour: 0, minute: 0, second: 0, timeZone }).offsetNanoseconds;
+		offsets = Object.freeze({ jan, jul });
+		offsetCache.set(key, offsets);
+	}
+	return offsets;
 }
 
 /** 
@@ -118,6 +127,9 @@ const RE_TZ_BRACKET = /\[(?!!?u-ca=)[^\]]+\]/i;
 const RE_OFFSET_SUFFIX = /Z$|[+-]\d{2}(:?\d{2})?$/i;
 const RE_UTC_OFFSET = /^UTC([+-])(\d{1,2})(?::(\d{2}))?$/i;
 
+const zdtCache = new WeakCache<string, Temporal.ZonedDateTime>();
+const plainDateCache = new WeakCache<string, Temporal.PlainDate>();
+
 /**
  * Creates a `Temporal.ZonedDateTime` from a property-bag or ISO string.
  * Automatically injects the specified timezone if missing from the string.
@@ -130,20 +142,23 @@ export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike | string, tz: Te
 	if (!isString(bag))
 		return Temporal.ZonedDateTime.from(bag);
 
-	const str = bag
-		.trim()
-		.replace(RE_ISO_DATE_TIME_SPACE, '$1T')
-		.replace(RE_SPACE_BEFORE_ZONE, '');
+	const cacheKey = `${bag}::${tz}`;
+	return zdtCache.getOrSet(cacheKey, () => {
+		const str = bag
+			.trim()
+			.replace(RE_ISO_DATE_TIME_SPACE, '$1T')
+			.replace(RE_SPACE_BEFORE_ZONE, '');
 
-	if (RE_TZ_BRACKET.test(str))
-		return Temporal.ZonedDateTime.from(str);
+		if (RE_TZ_BRACKET.test(str))
+			return Temporal.ZonedDateTime.from(str);
 
-	if (RE_CALENDAR_BRACKET.test(str))
-		return Temporal.ZonedDateTime.from(str.replace(RE_CALENDAR_BRACKET, `[${tz}]$&`));
+		if (RE_CALENDAR_BRACKET.test(str))
+			return Temporal.ZonedDateTime.from(str.replace(RE_CALENDAR_BRACKET, `[${tz}]$&`));
 
-	return (str.includes('T') && RE_OFFSET_SUFFIX.test(str))
-		? Temporal.Instant.from(str).toZonedDateTimeISO(tz)
-		: Temporal.ZonedDateTime.from(`${str}[${tz}]`);
+		return (str.includes('T') && RE_OFFSET_SUFFIX.test(str))
+			? Temporal.Instant.from(str).toZonedDateTimeISO(tz)
+			: Temporal.ZonedDateTime.from(`${str}[${tz}]`);
+	});
 }
 
 /**
@@ -153,7 +168,9 @@ export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike | string, tz: Te
  * @returns The created Temporal.PlainDate
  */
 export function toPlainDate(bag: Temporal.PlainDateLike | string): Temporal.PlainDate {
-	return Temporal.PlainDate.from(bag);
+	return (isString(bag))
+		? plainDateCache.getOrSet(bag, () => Temporal.PlainDate.from(bag))
+		: Temporal.PlainDate.from(bag);
 }
 
 /**

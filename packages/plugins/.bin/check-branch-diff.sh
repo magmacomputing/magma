@@ -16,8 +16,8 @@ for plugin_dir in "${REPO_ROOT}/packages/plugins"/*; do
     plugin_name=$(basename "${plugin_dir}")
     rel_path="packages/plugins/${plugin_name}"
     
-    # Count changed files in this plugin (excluding package.json)
-    changed_count=$(git diff --name-only "${MAIN_BRANCH}...HEAD" -- "${rel_path}" 2>/dev/null | grep -v "package.json" | wc -l || echo "0")
+    # Count changed source files in this plugin (focusing on src/ code changes)
+    changed_count=$(git diff --name-only "${MAIN_BRANCH}...HEAD" -- "${rel_path}/src" 2>/dev/null | wc -l || echo "0")
     
     # Read version from main branch
     main_version=$(git show "${MAIN_BRANCH}:${rel_path}/package.json" 2>/dev/null | node --input-type=module -e "import fs from 'fs'; console.log(JSON.parse(fs.readFileSync(process.stdin.fd, 'utf8')).version)" 2>/dev/null || echo "[NEW]")

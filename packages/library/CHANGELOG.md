@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.3] - 2026-09-29
+
+### Added
+- **Weak-Value Object Cache (`WeakCache`, `weakcache.class`)**:
+  - Introduced `WeakCache<K = string, V extends WeakKey = WeakKey>` in `#library/weakcache.class.js`, providing map-like caching for objects held weakly via `WeakRef` with automatic garbage-collector pruning via `FinalizationRegistry`.
+  - Implemented dedicated per-entry unregister token handles, enabling arbitrary primitive string and numeric keys without runtime `TypeError` exceptions.
+  - Decorated with `@StringTag('WeakCache')` and equipped with `getOrSet(key, factory)`, `has(key)`, `delete(key)`, `clear()`, and `isWeakCache` properties.
+  - Added unit test suite in `packages/library/test/common/runtime/weakcache.class.test.ts`.
+- **Garbage Collection Resource Finalizer (`Finalizer`, `finalizer.class`)**:
+  - Introduced `Finalizer<T = void>` class in `#library/finalizer.class.js` with self-guarding, idempotent `Finalizer.register(target, cleanup, unregisterToken?)` helper.
+  - Wraps native `FinalizationRegistry` with exception isolation (`try/catch`), typed cleanup payloads, and unified deterministic/GC teardown execution.
+  - Added unit test suite in `packages/library/test/common/runtime/finalizer.class.test.ts`.
+- **Dangling Promise Auto-Finalization (`Pledge`, `pledge.class`)**:
+  - Integrated `Finalizer.register` into `Pledge` to automatically reject abandoned, unreferenced pending promises upon garbage collection, preventing hung `await`ers.
+- **Temporal Object Interning & Timezone Offset Caching (`temporal.library`)**:
+  - Integrated `WeakCache` into `toZonedDateTime()` and `toPlainDate()` to canonicalize parsed `Temporal.ZonedDateTime` and `Temporal.PlainDate` instances for identical ISO strings, eliminating duplicate heap object allocations and regex parsing on repeated inputs.
+  - Added permanent memoization for `getOffsets()` to eliminate redundant `Temporal.ZonedDateTime.from()` evaluations during daylight saving time (`isDST`) lookups.
+
 ## [4.3.0] - 2026-09-14
 
 

@@ -111,32 +111,46 @@ using boundedTicker = Tempo.ticker({
 
 ---
 
-## 5. 🧟 Avoiding "Zombie Tickers"
+## 5. Dual-Layer Lifecycle Architecture & GC Safety-Net
 
-In a Node.js runtime, active timers (`setTimeout`) keep the event loop alive. An unstopped Ticker is a **"Zombie Ticker"** that continues to run indefinitely in the background.
+Tempo Ticker features an advanced **Dual-Layer Lifecycle Model** ensuring both deterministic resource teardown and automatic background cleanup:
 
-### Operational Risks:
-- **Process Hangs**: Node.js will not exit after test runs if background timers remain active.
-- **Flaky Tests**: Leaked timers in one test can fire during subsequent tests, causing race conditions and unexpected state mutations.
-- **Memory Leaks**: Tickers hold closures over callbacks, preventing garbage collection of attached data.
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        Tempo Ticker Lifecycle                          │
+├───────────────────────────────────┬────────────────────────────────────┤
+│ 1. Deterministic Layer (Explicit) │ 2. Safety-Net Layer (Automatic)    │
+│   • `using` / `await using`       │   • `FinalizationRegistry` hooks   │
+│   • `ticker.stop()`               │   • `WeakRef` Active Registry      │
+│   • Immediate microsecond cleanup │   • GC-driven background reclaim   │
+└───────────────────────────────────┴────────────────────────────────────┘
+```
 
-### Best-Practice Remediation:
+### Layer 1: Deterministic Cleanup (`using` & `.stop()`)
+In unit tests and latency-sensitive code paths, explicit disposal guarantees immediate teardown before subsequent assertions run:
 
 ```typescript
-// ✅ BEST: Use 'using' or 'await using'
+// ✅ RECOMMENDED: Immediate, deterministic cleanup
 {
   using ticker = Tempo.ticker(1, (t) => { ... });
 }
 
-// ✅ GOOD: Use try...finally when capturing variables across test scopes
+// ✅ EXPLICIT: Try...finally for cross-scope handles
 let ticker;
 try {
   ticker = Tempo.ticker(1, (t) => { ... });
-  // Test assertions...
+  // assertions...
 } finally {
-  ticker?.stop(); // Guarantees cleanup even if assertions throw
+  ticker?.stop();
 }
 ```
 
-> [!CAUTION]
-> Avoid raw `let ticker = Tempo.ticker(...)` without a `finally` block or `using` keyword in unit tests. If an `expect()` assertion throws, the `ticker.stop()` call will be bypassed, leaking a live timer into subsequent tests.
+### Layer 2: Best-Effort GC Finalization (`FinalizationRegistry`)
+While explicit teardown with `.stop()` or `using` is the required approach for deterministic resource management, Tempo provides a best-effort GC finalizer as a background safety net:
+
+* **Safety-Net Teardown**: Active `setTimeout` / `setInterval` timer loops are scheduled for cleanup if and when the JavaScript engine reclaims an unreferenced Ticker handle.
+* **Weak Registry**: `Tempo.tickers` queries active handles via `WeakRef`—unreferenced tickers are not kept alive in memory solely by the registry.
+* **Leak Mitigation**: Provides defense-in-depth against orphaned timer handles in long-running processes when handles are dropped inadvertently.
+
+> [!NOTE]
+> Garbage Collection timing is non-deterministic and never guaranteed by ECMAScript runtimes. Always call `.stop()`, `using`, or `await using` to ensure prompt, deterministic release of timers and event listeners.

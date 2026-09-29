@@ -1,4 +1,4 @@
-import { defineTerm } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, WeakCache } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	getLunarPhaseRange,
 	getMoonriseMoonset,
@@ -67,6 +67,117 @@ export interface LunarPhaseResult {
 }
 
 export type SolarPhaseState = 'daylight' | 'night' | 'civil-twilight' | 'nautical-twilight' | 'astronomical-twilight';
+
+const LUNAR_PHASE_RANGE_CACHE = new WeakCache<string, { startMs: number; endMs: number }>();
+const MOON_EVENTS_CACHE = new WeakCache<string, ReturnType<typeof getMoonriseMoonset>>();
+const LUNAR_POSITION_CACHE = new WeakCache<string, ReturnType<typeof getLunarPosition>>();
+const SUNRISE_SUNSET_CACHE = new WeakCache<string, ReturnType<typeof getSunriseSunset>>();
+const SOLAR_POSITION_CACHE = new WeakCache<string, ReturnType<typeof getSolarPosition>>();
+const TIDAL_STATE_CACHE = new WeakCache<string, ReturnType<typeof getTidalState>>();
+
+/**
+ * Returns the lunar phase range, weakly cached by timestamp and hemisphere.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param sphere - The optional hemisphere for the lunar phase calculation
+ * @returns The phase range's start and end timestamps in milliseconds
+ */
+function cachedLunarPhaseRange(epochMs: number, sphere?: 'north' | 'south') {
+	const key = `${epochMs}:${sphere ?? ''}`;
+	let res = LUNAR_PHASE_RANGE_CACHE.get(key);
+	if (!res) {
+		res = getLunarPhaseRange(epochMs, { sphere });
+		LUNAR_PHASE_RANGE_CACHE.set(key, res);
+	}
+	return res;
+}
+
+/**
+ * Returns moonrise and moonset data, weakly cached by timestamp and location.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param lat - The observer's latitude in degrees
+ * @param lng - The observer's longitude in degrees
+ * @returns The cached or newly calculated lunar events
+ */
+function cachedMoonEvents(epochMs: number, lat: number, lng: number) {
+	const key = `${epochMs}:${lat}:${lng}`;
+	let res = MOON_EVENTS_CACHE.get(key);
+	if (!res) {
+		res = getMoonriseMoonset(epochMs, lat, lng);
+		MOON_EVENTS_CACHE.set(key, res);
+	}
+	return res;
+}
+
+/**
+ * Returns the moon's position, weakly cached by timestamp and location.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param lat - The observer's latitude in degrees
+ * @param lng - The observer's longitude in degrees
+ * @returns The cached or newly calculated lunar position
+ */
+function cachedLunarPosition(epochMs: number, lat: number, lng: number) {
+	const key = `${epochMs}:${lat}:${lng}`;
+	let res = LUNAR_POSITION_CACHE.get(key);
+	if (!res) {
+		res = getLunarPosition(epochMs, lat, lng);
+		LUNAR_POSITION_CACHE.set(key, res);
+	}
+	return res;
+}
+
+/**
+ * Returns sunrise, sunset, and twilight data, weakly cached by timestamp, location, and elevation.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param options - Observer coordinates in degrees and optional elevation in meters
+ * @returns The cached or newly calculated solar events
+ */
+function cachedSunriseSunset(epochMs: number, options: { latitude: number; longitude: number; elevation?: number }) {
+	const key = `${epochMs}:${options.latitude}:${options.longitude}:${options.elevation ?? 0}`;
+	let res = SUNRISE_SUNSET_CACHE.get(key);
+	if (!res) {
+		res = getSunriseSunset(epochMs, options);
+		SUNRISE_SUNSET_CACHE.set(key, res);
+	}
+	return res;
+}
+
+/**
+ * Returns the sun's position, weakly cached by timestamp, location, and elevation.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param options - Observer coordinates in degrees and optional elevation in meters
+ * @returns The cached or newly calculated solar position
+ */
+function cachedSolarPosition(epochMs: number, options: { latitude: number; longitude: number; elevation?: number }) {
+	const key = `${epochMs}:${options.latitude}:${options.longitude}:${options.elevation ?? 0}`;
+	let res = SOLAR_POSITION_CACHE.get(key);
+	if (!res) {
+		res = getSolarPosition(epochMs, options);
+		SOLAR_POSITION_CACHE.set(key, res);
+	}
+	return res;
+}
+
+/**
+ * Returns the tidal state, weakly cached by timestamp and tidal calculation options.
+ *
+ * @param epochMs - The reference time in milliseconds since the Unix epoch
+ * @param options - Observer and tidal model options, or latitude in degrees with longitude defaulting to zero
+ * @returns The cached or newly calculated tidal state
+ */
+function cachedTidalState(epochMs: number, options: TidalOptions | number) {
+	const key = typeof options === 'number' ? `${epochMs}:${options}` : `${epochMs}:${options.latitude}:${options.longitude}:${options.lunitidalIntervalMin ?? 0}:${options.regime ?? ''}`;
+	let res = TIDAL_STATE_CACHE.get(key);
+	if (!res) {
+		res = getTidalState(epochMs, options);
+		TIDAL_STATE_CACHE.set(key, res);
+	}
+	return res;
+}
 
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
@@ -192,11 +303,11 @@ function getLunarScopeRange(t: Tempo, anchor?: any) {
 
 	const lunarDetails = getLunarDetails(t, coords);
 
-	const moonEvents = hasGeo ? getMoonriseMoonset(refTempo.epoch.ms, lat!, lng!) : null;
+	const moonEvents = hasGeo ? cachedMoonEvents(refTempo.epoch.ms, lat!, lng!) : null;
 	const moonrise = moonEvents ? toTempoOrNull(moonEvents.moonriseMs, timeZone, sphere) : null;
 	const moonset = moonEvents ? toTempoOrNull(moonEvents.moonsetMs, timeZone, sphere) : null;
 
-	const position = hasGeo ? getLunarPosition(refTempo.epoch.ms, lat!, lng!) : null;
+	const position = hasGeo ? cachedLunarPosition(refTempo.epoch.ms, lat!, lng!) : null;
 	const distance = hasGeo ? getLunarDistance(refTempo.epoch.ms) : null;
 	const crescentTilt = hasGeo ? getCrescentTilt(refTempo.epoch.ms, lat!, lng!) : null;
 	const eclipseRes = hasGeo ? getEclipse(refTempo.epoch.ms, lat!, lng!) : null;
@@ -213,7 +324,7 @@ function getLunarScopeRange(t: Tempo, anchor?: any) {
 	const eclipse = eclipseRes ? eclipseRes.type : null;
 	const obscuration = eclipseRes ? eclipseRes.obscuration : null;
 
-	const { startMs, endMs } = getLunarPhaseRange(refTempo.epoch.ms, { sphere });
+	const { startMs, endMs } = cachedLunarPhaseRange(refTempo.epoch.ms, sphere);
 	const start = new Tempo(startMs, { timeZone, timeStamp: 'ms', ...(sphere ? { sphere } : {}) });
 	const end = new Tempo(endMs, { timeZone, timeStamp: 'ms', ...(sphere ? { sphere } : {}) });
 
@@ -301,13 +412,13 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		: (isNumber((t.config?.geo as any)?.elevation) ? (t.config?.geo as any).elevation : undefined);
 
 	const epochMs = refTempo.epoch.ms;
-	const res = getSunriseSunset(epochMs, {
+	const res = cachedSunriseSunset(epochMs, {
 		latitude: lat!,
 		longitude: lng!,
 		...(elevation !== undefined ? { elevation } : {}),
 	});
 
-	const position = getSolarPosition(epochMs, {
+	const position = cachedSolarPosition(epochMs, {
 		latitude: lat!,
 		longitude: lng!,
 		...(elevation !== undefined ? { elevation } : {}),
@@ -432,7 +543,7 @@ function getTidalScopeRange(t: Tempo, anchor?: any) {
 		: (isNumber((t.config?.geo as any)?.lunitidalIntervalMin) ? (t.config?.geo as any).lunitidalIntervalMin : undefined);
 	const regime = (geo as any)?.regime ?? (t.config?.geo as any)?.regime;
 
-	const res = getTidalState(refTempo.epoch.ms, hasGeo ? {
+	const res = cachedTidalState(refTempo.epoch.ms, hasGeo ? {
 		latitude: lat!,
 		longitude: lng!,
 		...(lunitidalIntervalMin !== undefined ? { lunitidalIntervalMin } : {}),

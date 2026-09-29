@@ -1,4 +1,4 @@
-import { toZonedDateTime } from '#library/temporal.library.js';
+import { toZonedDateTime, toPlainDate, getOffsets } from '#library/temporal.library.js';
 
 describe('Temporal Library Helpers', () => {
 	describe('toZonedDateTime', () => {
@@ -60,6 +60,31 @@ describe('Temporal Library Helpers', () => {
 			expect(zdt.hour).toBe(0);
 			expect(zdt.minute).toBe(0);
 			expect(zdt.toString()).toContain('[Australia/Sydney]');
+		});
+
+		it('should canonicalize identical string calls to the same ZonedDateTime instance', () => {
+			const zdt1 = toZonedDateTime('2026-09-29T09:00:00', 'Australia/Sydney');
+			const zdt2 = toZonedDateTime('2026-09-29T09:00:00', 'Australia/Sydney');
+			expect(zdt1).toBe(zdt2);
+		});
+	});
+
+	describe('toPlainDate', () => {
+		it('should convert strings to PlainDate and reuse cached instances', () => {
+			const pd1 = toPlainDate('2026-09-29');
+			const pd2 = toPlainDate('2026-09-29');
+			expect(pd1.toString()).toBe('2026-09-29');
+			expect(pd1).toBe(pd2);
+		});
+	});
+
+	describe('getOffsets', () => {
+		it('should return timezone offsets for Jan and Jul and reuse cached offset results', () => {
+			const offsets1 = getOffsets('Australia/Sydney', 2024);
+			const offsets2 = getOffsets('Australia/Sydney', 2024);
+			expect(typeof offsets1.jan).toBe('number');
+			expect(typeof offsets1.jul).toBe('number');
+			expect(offsets1).toBe(offsets2);
 		});
 	});
 });

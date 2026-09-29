@@ -7,9 +7,13 @@ This document outlines next-generation Web Platform, Node.js/Deno, and TC39 stan
 ## 1. Existing Bleeding-Edge Capabilities in Tempo `#library`
 
 Tempo already leverages several cutting-edge platform primitives:
+- **`WeakCache` (`WeakRef` & `Finalizer`)**: Universal weak-value object and regular expression memoization with automatic GC pruning in `packages/library/src/common/runtime/weakcache.class.ts`.
+- **`Finalizer` (`finalizer.class`)**: Safe Garbage Collection finalization hook wrapper around `FinalizationRegistry` with self-guarding idempotent execution in `packages/library/src/common/runtime/finalizer.class.ts`.
+- **Ticker & AtomicClock Auto-Finalization**: GC-backed zombie timer prevention and resource cleanup in `@magmacomputing/tempo-plugin-ticker` (v2.5.1) and `@magmacomputing/tempo-plugin-sync` (v2.5.1).
+- **Pledge GC Lifecycle Safety**: Zero-boilerplate finalization safety for unhandled/abandoned promises in `packages/library/src/common/runtime/pledge.class.ts`.
 - **`Intl.DurationFormat` (`getDF`)**: Memoized duration formatting via native `Intl.DurationFormat` in `packages/library/src/common/runtime/international.library.ts`.
 - **`Intl.Locale` Week Info (`getLI`)**: Native retrieval of `firstDay` and `weekend` definitions via `getLI` in `packages/library/src/common/runtime/international.library.ts` without external calendar data tables (aligning with finalized ECMA-402 Intl.Locale info specifications).
-- **Explicit Resource Management**: Full support for TC39 `using` and `await using` (`Symbol.dispose`, `Symbol.asyncDispose`) across `Ticker`.
+- **Explicit Resource Management**: Full support for TC39 `using` and `await using` (`Symbol.dispose`, `Symbol.asyncDispose`) across `Ticker`, `AtomicClock`, and `Pledge`.
 - **Temporal Polyfill / TC39 Temporal Integration**: Foundation built on ISO 8601 calendar, exact nanosecond epochs, and timezone offsets.
 
 ---
@@ -37,13 +41,15 @@ Tempo already leverages several cutting-edge platform primitives:
 
 ---
 
-### C. Zero-Leakage Safety with `WeakRef` & `FinalizationRegistry`
-**Target**: *Core `#library` & Ticker Resource Lifecycle*
+### C. Automatic Ticker & Stream Finalization (`Finalizer` / `FinalizationRegistry`)
+**Target**: *`@magmacomputing/tempo-plugin-ticker` / Stream Engine*
+**Status**: **Delivered (v2.5.1)**
 
-* **The Problem**: If a developer instantiates a ticker or event stream without calling `stop()` or using `using`, active timers can become orphaned zombie processes.
+* **The Problem**: If a developer instantiates an active ticker or event stream without calling `.stop()` or using `using`, active timer handles (`setInterval` / `setTimeout`) remain alive as orphaned zombie processes in the event loop.
 * **The Solution**:
-  - Register active `Ticker` proxy handles in a `FinalizationRegistry`.
-  - If the user drops all references to a ticker instance and it gets garbage-collected, the finalizer automatically invokes `this.stop()` and clears underlying `setTimeout` / `clearTimeout` handles.
+  - Registered active `Ticker` proxy handles with `Finalizer.register` (`finalizer.class.ts`).
+  - When user code drops all references to the ticker without explicitly stopping it, the Garbage Collector triggers the finalizer to automatically invoke `.stop()` and clear underlying timers.
+  - Active registry `ACTIVE_TICKERS` holds `WeakRef<Ticker.Instance>`, ensuring `Tempo.tickers` queries live instances without pinning unreferenced tickers into memory.
 
 ---
 
@@ -52,8 +58,8 @@ Tempo already leverages several cutting-edge platform primitives:
 
 * **The Problem**: End-user device clocks are often desynchronized from true atomic time by seconds or minutes.
 * **The Solution**:
-  - A lightweight fetch interceptor or HEAD ping measures round-trip time ($RTT$) and calculates client clock drift:
-    $$\Delta = T_{\text{server}} - \left(T_{\text{client}} + \frac{RTT}{2}\right)$$
+  - A lightweight fetch interceptor or HEAD ping measures round-trip time (RTT) and calculates client clock drift:
+    `Δ = T_server - (T_client + RTT / 2)`
   - Applies a monotonic drift offset to `Tempo.now()`, ensuring accurate bidding, financial timestamp validation, and auction countdowns without altering OS system clocks.
 
 ---
@@ -63,7 +69,7 @@ Tempo already leverages several cutting-edge platform primitives:
 
 * **The Problem**: Modern UI frameworks (Preact, Solid, Vue, Angular, Svelte) are converging on TC39 Signals for fine-grained reactivity.
 * **The Solution**:
-  - Provide native reactive time signals:
+  - Provide native reactive time signals backed by `WeakCache`:
     ```typescript
     const currentSecond = Tempo.signal({ interval: 1 });
     // Components reading currentSecond.value automatically re-render on pulse
@@ -91,11 +97,13 @@ Tempo already leverages several cutting-edge platform primitives:
 
 ## 3. Technology Evaluation Matrix
 
-| Capability | Target Layer | Runtime Support | Complexity | Value |
+| Capability | Target Layer | Runtime Support | Complexity | Status / Value |
 | :--- | :--- | :--- | :--- | :--- |
+| **`WeakCache` Memoization** | Core `#library` / Tempo Core | Universal (ES2021+) | Delivered (v4.4.3) | **Production Active** |
+| **`Finalizer` GC Hooks** | Core `#library` (`finalizer.class.ts`) | Universal (ES2021+) | Delivered (v4.4.3) | **Production Active** |
+| **Ticker Auto-Finalization** | `@magmacomputing/tempo-plugin-ticker` | Universal (ES2021+) | Delivered (v2.5.1) | **Production Active** |
 | **Web Locks Leader Tab** | `@magmacomputing/tempo-plugin-tabsync` | Browser (Modern) | Medium | High (Multi-tab efficiency) |
 | **`scheduler.postTask()`** | Core Ticker | Chrome/Edge/Deno (Polyfillable) | Low | High (Render-aligned pacing) |
-| **`FinalizationRegistry`** | Core `#library` / Ticker | Universal (ES2021+) | Low | High (Zombie timer prevention) |
 | **Network Clock Drift** | `@magmacomputing/tempo-plugin-ntp` | Universal | Low | High (Financial/auction precision) |
 | **TC39 Signals** | `@magmacomputing/tempo-plugin-signals` | Universal | Medium | High (Fine-grained UI reactivity) |
 | **Screen Wake Lock** | Ticker / Countdown Option | Browser (Mobile/Desktop) | Low | Medium (Presentation/Kiosk DX) |

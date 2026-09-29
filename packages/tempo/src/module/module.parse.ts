@@ -2,6 +2,7 @@ import '#library/temporal.polyfill.js';
 import { asType } from '#library/type.library.js';
 import { LOG } from '#library/logger.class.js';
 import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction } from '#library/assertion.library.js';
+import { WeakCache } from '#library/weakcache.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
@@ -41,7 +42,7 @@ function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Inte
 	return `${norm}::${dateSalt}::${tz}::${cal}::${loc}::${sph}::${fmtKey}::${dialect}`;
 }
 
-const BRACED_CACHE = new Map<string, RegExp>();
+const BRACED_CACHE = new WeakCache<string, RegExp>();
 
 /** Compiles a native braced format mask into a cached parsing expression. */
 function compileBracedPattern(fmt: string): RegExp {

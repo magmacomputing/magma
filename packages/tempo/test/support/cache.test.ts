@@ -144,5 +144,28 @@ describe('Tempo Core Caching Architecture', () => {
 			expect(hit).toBeDefined();
 			expect(hit?.source).toBe('parseCache');
 		});
+
+		it('should expose Tempo.cache.weak and Tempo.weakCache for object memoization', () => {
+			expect(Tempo.cache.weak.isWeakCache).toBe(true);
+			expect(Tempo.weakCache.isWeakCache).toBe(true);
+
+			const astObj = { type: 'IntervalAST', tokens: ['year', 'month'] };
+			Tempo.cache.weak.set('custom_ast', astObj);
+
+			expect(Tempo.cache.weak.has('custom_ast')).toBe(true);
+			expect(Tempo.weakCache.has('custom_ast')).toBe(true);
+			expect(Tempo.weakCache.get('custom_ast')).toBe(astObj);
+
+			let factoryCalls = 0;
+			const res = Tempo.weakCache.getOrSet('custom_ast', () => {
+				factoryCalls++;
+				return { type: 'NewAST' };
+			});
+			expect(res).toBe(astObj);
+			expect(factoryCalls).toBe(0);
+
+			expect(Tempo.weakCache.delete('custom_ast')).toBe(true);
+			expect(Tempo.cache.weak.has('custom_ast')).toBe(false);
+		});
 	});
 });

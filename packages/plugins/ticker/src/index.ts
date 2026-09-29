@@ -1,10 +1,10 @@
 import { Tempo } from '@magmacomputing/tempo';
 import {
-	enums, definePlugin, attachStatics, type TempoPlugin,
+	enums, definePlugin, attachStatics,
 	isObject, isFunction, isDefined, isEmpty, isNumeric, isString, isNumber, Pledge, asArray,
 	instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
-	isUndefined,
+	isUndefined, Finalizer,
 } from '@magmacomputing/tempo/plugin/sdk';
 
 export { isCronString };
@@ -31,18 +31,35 @@ declare module '@magmacomputing/tempo' {
 	}
 }
 
+interface ActiveTickerEntry {
+	ref: WeakRef<Ticker.Instance>;
+	token: object;
+}
+
+/**
+ * ### ACTIVE_TICKERS
+ * Internal weak registry for all active tickers.
+ */
+const ACTIVE_TICKERS = new Set<ActiveTickerEntry>();
+
 /**
  * ## Ticker
  * Ticker namespace object.
  * Provides access to currently active tickers.
  */
 export const Ticker = {
-	get active() {
-		return asArray(ACTIVE_TICKERS)
-			.map((t): Ticker.Snapshot => {
+	get active(): Ticker.Snapshot[] {
+		const result: Ticker.Snapshot[] = [];
+		for (const entry of ACTIVE_TICKERS) {
+			const t = entry.ref.deref();
+			if (isUndefined(t) || t.info.stopped) {
+				ACTIVE_TICKERS.delete(entry);
+			} else {
 				const { label, next, ticks, limit, interval, rrule, cron, stopped } = t.info;
-				return { ticker: t, label, next, ticks, limit, interval, rrule, cron, stopped };
-			});
+				result.push({ ticker: t, label, next, ticks, limit, interval, rrule, cron, stopped });
+			}
+		}
+		return result;
 	},
 };
 
@@ -101,12 +118,6 @@ export namespace Ticker {
 }
 
 /**
- * ### ACTIVE_TICKERS
- * Internal registry for all active tickers.
- */
-const ACTIVE_TICKERS = new Set<Ticker.Instance>();
-
-/**
  * Stateful internal class for Tempo.Ticker instances.
  * Implements the AsyncGenerator and EventEmitter patterns.
  */
@@ -131,8 +142,8 @@ class TickerInstance implements Ticker.Descriptor {
 	#catchListeners = new Set<Ticker.Callback>();
 	#stopListeners = new Set<Ticker.Callback>();
 	#hasInvalidSchedule = false;
-	#self!: Ticker.Instance;
-	#revoker?: () => void;
+	#selfRef!: WeakRef<Ticker.Instance>;
+	#activeEntry: ActiveTickerEntry | undefined = undefined;
 
 	constructor(TempoClass: typeof Tempo, arg1: any, arg2?: any) {
 		this.#TempoClass = TempoClass;
@@ -227,16 +238,17 @@ class TickerInstance implements Ticker.Descriptor {
 
 	/** explicitly set the proxy-self (called by factory) */
 	bootstrap(proxy: Ticker.Instance) {
-		this.#self = proxy;
+		this.#selfRef = new WeakRef(proxy);
+		this.#activeEntry = { ref: this.#selfRef, token: Object.create(null) };
 
 		// ── Validation ───────────────────────────────────────────────
 		if (this.#limit === 0) {
 			this.stop();
-			return this.#self;
+			return proxy;
 		}
 		if (this.#hasInvalidSchedule) {
 			this.stop();
-			return this.#self;
+			return proxy;
 		}
 		if (!this.#next.isValid) {
 			this.stop();
@@ -253,7 +265,7 @@ class TickerInstance implements Ticker.Descriptor {
 				if (this.#cron || this.#rrule) {
 					this.#isForward = true;
 					this.#isInstant = false;
-					ACTIVE_TICKERS.add(this.#self);
+					ACTIVE_TICKERS.add(this.#activeEntry);
 					this.#runBootstrap();
 				} else {
 					// ── Mode Detection ──────────────────────────────────────────
@@ -275,7 +287,7 @@ class TickerInstance implements Ticker.Descriptor {
 					this.#isInstant = firstStep.epoch.ns === this.#next.epoch.ns;
 					if (hasTermKey) this.#next = firstStep;
 
-					ACTIVE_TICKERS.add(this.#self);
+					ACTIVE_TICKERS.add(this.#activeEntry);
 					this.#runBootstrap();
 				}
 			} catch (e: any) {
@@ -288,7 +300,7 @@ class TickerInstance implements Ticker.Descriptor {
 				this.#isInstant = false;
 			}
 		}
-		return this.#self;
+		return proxy;
 	}
 
 	#delayMs() {
@@ -370,6 +382,8 @@ class TickerInstance implements Ticker.Descriptor {
 
 		this.#ticks++;
 
+		const listeners = [...this.#listeners];
+
 		if (this.#limit !== undefined && this.#ticks >= this.#limit) this.stop(t);
 		if (isDefined(this.#until)) {
 			const cmp = this.#TempoClass.compare(t, this.#until);
@@ -378,7 +392,7 @@ class TickerInstance implements Ticker.Descriptor {
 
 		if (this.#stopped && this.#limit === 0) return t;
 
-		this.#listeners.forEach(l => l(t, () => this.stop()));
+		listeners.forEach(l => l(t, () => this.stop()));
 		return t;
 	}
 
@@ -395,7 +409,10 @@ class TickerInstance implements Ticker.Descriptor {
 	stop(terminalValue?: Tempo) {
 		if (this.#stopped) return;
 		this.#stopped = true;
-		ACTIVE_TICKERS.delete(this.#self);
+		if (this.#activeEntry) {
+			ACTIVE_TICKERS.delete(this.#activeEntry);
+			this.#activeEntry = undefined;
+		}
 		if (this.#schedId) {
 			clearTimeout(this.#schedId);
 			this.#schedId = undefined;
@@ -406,6 +423,9 @@ class TickerInstance implements Ticker.Descriptor {
 			if (w.isPending) w.resolve(terminalValue as any);
 
 		this.#stopListeners.forEach(l => l(this.#next, () => undefined));
+		this.#listeners.clear();
+		this.#catchListeners.clear();
+		this.#stopListeners.clear();
 	}
 
 	get info() {
@@ -464,24 +484,12 @@ class TickerInstance implements Ticker.Descriptor {
 		throw e;
 	}
 
-	setRevoker(revoker: () => void) {
-		this.#revoker = revoker;
-	}
-
 	async [Symbol.asyncDispose]() {
-		try {
-			this.stop();
-		} finally {
-			this.#revoker?.();
-		}
+		this.stop();
 	}
-	[Symbol.asyncIterator]() { return this.#self; }
+	[Symbol.asyncIterator]() { return this.#selfRef?.deref() ?? (this as any); }
 	[Symbol.dispose]() {
-		try {
-			this.stop();
-		} finally {
-			this.#revoker?.();
-		}
+		this.stop();
 	}
 }
 
@@ -495,10 +503,15 @@ class TickerInstance implements Ticker.Descriptor {
  */
 function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.Instance {
 	const instance = new TickerInstance(TempoClass, arg1, arg2);
-	const { proxy, revoke } = Proxy.revocable((() => instance.stop()) as any, {
+	const proxy = new Proxy((() => instance.stop()) as any, {
 		get: (_, prop) => {
 			if (prop === 'pulse') return instance.pulse.bind(instance);
-			if (prop === 'on') return instance.on.bind(instance);
+			if (prop === 'on') {
+				return (event: any, cb: any) => {
+					instance.on(event, cb);
+					return proxy;
+				};
+			}
 			if (prop === 'stop') return instance.stop.bind(instance);
 			if (prop === 'next') return instance.next.bind(instance);
 			if (prop === 'return') return instance.return.bind(instance);
@@ -511,7 +524,9 @@ function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.I
 		},
 		apply: (target) => target(),
 	});
-	instance.setRevoker(revoke);
+	Finalizer.register(proxy, () => {
+		instance.stop();
+	});
 
 	return instance.bootstrap(proxy as unknown as Ticker.Instance);
 }

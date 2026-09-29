@@ -2,9 +2,47 @@ import { secure } from '#library/proxy.library.js';
 import type * as t from '../tempo.type.js';
 
 /**
- * Creates a normalized cache facade exposing safe operations over the active state's BoundedCache.
+ * Creates a normalized cache facade exposing safe operations over the active state's BoundedCache
+ * and WeakCache.
  */
 export function createCacheFacade(getState: () => t.Internal.State) {
+	const weak = secure({
+		/** Retrieves a weakly held object from the cache by key */
+		get(key: string) {
+			const normalized = String(key).trim().toLowerCase();
+			return getState().weakCache.get(normalized);
+		},
+		/** Checks if a key exists in the weak cache and its value is not garbage collected */
+		has(key: string) {
+			const normalized = String(key).trim().toLowerCase();
+			return getState().weakCache.has(normalized);
+		},
+		/** Sets a weakly held object value in the cache */
+		set<V extends WeakKey>(key: string, value: V) {
+			const normalized = String(key).trim().toLowerCase();
+			getState().weakCache.set(normalized, value);
+			return this;
+		},
+		/** Returns the cached value or computes and caches it using the factory function */
+		getOrSet<V extends WeakKey>(key: string, factory: (key: string) => V): V {
+			const normalized = String(key).trim().toLowerCase();
+			return getState().weakCache.getOrSet(normalized, factory) as V;
+		},
+		/** Deletes a key from the weak cache */
+		delete(key: string) {
+			const normalized = String(key).trim().toLowerCase();
+			return getState().weakCache.delete(normalized);
+		},
+		/** Clears all entries from the weak cache */
+		clear() {
+			getState().weakCache.clear();
+		},
+		/** Returns true to identify this instance as a WeakCache facade */
+		get isWeakCache(): boolean {
+			return true;
+		}
+	});
+
 	return secure({
 		/** Retrieves a value from the cache by key */
 		get(key: string) {
@@ -57,6 +95,8 @@ export function createCacheFacade(getState: () => t.Internal.State) {
 		/** Converts the cache to a JSON object */
 		toJSON() {
 			return getState().cache.toJSON();
-		}
+		},
+		/** Weak-value object cache facade */
+		weak,
 	});
 }

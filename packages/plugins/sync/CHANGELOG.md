@@ -2,6 +2,12 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-sync` project will be documented in this file.
 
+## [1.1.1] - 2026-09-29
+
+### Performance & Memory
+- **Dual-Layer Lifecycle Management**:
+  - Implemented `Finalizer.register` and `[Symbol.dispose]` on `AtomicClock` to ensure timer interval loops are deterministically stopped on explicit disposal or automatically cleaned up on GC collection when unreferenced.
+
 ## [1.1.0] - 2026-09-18
 
 ### Added

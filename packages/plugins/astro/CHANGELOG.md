@@ -2,6 +2,13 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-astro` project will be documented in this file.
 
+## [2.4.1] - 2026-09-29
+
+### Changed & Performance
+- **WeakCache Solar Event Memoization**:
+  - Memoized Jean Meeus astronomical polynomial evaluations (`getSolarEvents`) using `WeakCache<number, SolarEvent[]>`.
+  - Astronomical equinox and solstice calculations across multi-year cycles are now cached dynamically and auto-reclaimed upon garbage collection.
+
 ## [2.4.0] - 2026-09-18
 
 ### Added

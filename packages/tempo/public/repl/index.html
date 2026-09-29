@@ -913,8 +913,8 @@ return \`Sydney -> London: \${distKm.toFixed(0)} km (Midpoint: \${mid.latitude.t
 			geo: `// 🌍 Live Geolocation & Pluggable Providers (@magmacomputing/tempo-plugin-geo)
 // Note: In browser sandbox, resolves browser GPS or IP-based coordinates
 
-const lookup = await Tempo.geo.lookup();
-console.log('Detected City:', lookup.city ?? 'Local City');
+const lookup = await Tempo.geo.lookup({ reverse: true });
+console.log('Detected City:', lookup.city ?? 'Local City', ',', lookup.country ?? 'Local Country');
 console.log('Coordinates:', lookup.lat, lookup.lng);
 
 // Attach coordinates to a Tempo instance:
