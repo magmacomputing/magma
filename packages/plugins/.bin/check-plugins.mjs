@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { execSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -76,6 +76,17 @@ async function fetchNpmVersion(pkgName) {
 }
 
 async function main() {
+	let mainCommit;
+	try {
+		mainCommit = execFileSync('git', ['rev-parse', '--verify', '--quiet', '--end-of-options', `${MAIN_BRANCH}^{commit}`], {
+			cwd: REPO_ROOT, stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8'
+		}).trim();
+	} catch {
+		console.error(`Error: ${MAIN_BRANCH} does not resolve to a commit.`);
+		process.exitCode = 1;
+		return;
+	}
+
 	const entries = readdirSync(PLUGINS_DIR);
 	const pluginDirs = [];
 
@@ -108,7 +119,7 @@ async function main() {
 		const npmVersion = npmVersions[i];
 
 		// Read main branch version
-		const mainJsonRaw = getGitOutput(`git show ${MAIN_BRANCH}:${relPath}/package.json`);
+		const mainJsonRaw = getGitOutput(`git show ${mainCommit}:${relPath}/package.json`);
 		let mainVersion = '[NEW]';
 		if (mainJsonRaw) {
 			try {
@@ -119,10 +130,10 @@ async function main() {
 		}
 
 		// Count changed src and doc files
-		const srcDiffRaw = getGitOutput(`git diff --name-only ${MAIN_BRANCH}...HEAD -- ${relPath}/src`);
+		const srcDiffRaw = getGitOutput(`git diff --name-only ${mainCommit}...HEAD -- ${relPath}/src`);
 		const srcCount = srcDiffRaw ? srcDiffRaw.split('\n').filter(Boolean).length : 0;
 
-		const docDiffRaw = getGitOutput(`git diff --name-only ${MAIN_BRANCH}...HEAD -- ${relPath}/doc ${relPath}/*.md`);
+		const docDiffRaw = getGitOutput(`git diff --name-only ${mainCommit}...HEAD -- ${relPath}/doc ${relPath}/*.md`);
 		const docCount = docDiffRaw ? docDiffRaw.split('\n').filter(Boolean).length : 0;
 
 		const isBumpedOverMain = mainVersion !== '[NEW]' && compareSemver(branchVersion, mainVersion) > 0;
