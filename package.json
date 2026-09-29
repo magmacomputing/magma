@@ -33,6 +33,7 @@
     "version:sync": "tempo-cli version-sync",
     "catalog:sync": "tempo-cli catalog-sync",
     "providers:sync": "npm run build:library && tempo-cli sync-providers",
+    "plugins:check": "node ./packages/plugins/.bin/check-plugins.mjs",
     "plugins:check-versions": "./packages/plugins/.bin/check-versions.sh",
     "plugins:check-diff": "./packages/plugins/.bin/check-branch-diff.sh",
     "repl": "npm run repl --workspace=@magmacomputing/tempo",

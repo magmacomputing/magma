@@ -41,8 +41,9 @@ export class Finalizer<T = void> {
 	 */
 	register(target: WeakKey, heldValue: T, unregisterToken?: WeakKey): void {
 		const token = unregisterToken ?? Object.create(null);
+		const callback = this.#callback;
 		GLOBAL_FINALIZER_REGISTRY.register(target, () => {
-			this.#callback(heldValue);
+			callback(heldValue);
 		}, token);
 	}
 
