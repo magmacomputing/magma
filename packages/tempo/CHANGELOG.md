@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.4] - 2026-09-30
+
+### Added & Exported
+- **Reactive Stream Engine (`Reactive<T>`) via Library & Plugin SDK**:
+  - Exported `Reactive<T>` and `Reactive.Subscription` through `@magmacomputing/tempo/library` and the Plugin SDK superbarrel (`@magmacomputing/tempo/plugin/sdk`), providing push/pull duality, `for await` async iteration, explicit resource management (`using sub = stream.on(...)`), and leak-proof garbage collection safety via `Finalizer`.
+  - Added `stream.cast(value)` (and `stream.broadcast` alias) for $O(1)$ multicast fan-out across concurrent pull waiters and push listeners.
+  - Added `stream.until(notifier)` with full notifier listener teardown.
+- **Ergonomic Type Casting Helpers (`cast<T>()` & `Cast<T, Target>`)**:
+  - Exported runtime `cast<T>(value)` coercer and `Cast<T, Target>` type-level constraint resolver from `@magmacomputing/tempo/library` and Plugin SDK to eliminate `as unknown as T` double-assertions.
+- **Explicit Interval Types (`Tempo.Interval`, `Tempo.IntervalConstructor`)**:
+  - Exported `Tempo.Interval` and `Tempo.IntervalConstructor` types in `tempo.type.ts`.
+- **Documentation**:
+  - Added user guide `tempo.reactive.md` in `doc/6-utility-library/` and updated `tempo.library.md` index.
+
 ## [4.4.3] - 2026-09-29
 
 ### Added

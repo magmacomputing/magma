@@ -1,5 +1,6 @@
 import { isFunction, isString, isUndefined, isCallable, isObject, isDefined, isSymbol } from '#library/assertion.library.js';
 import { secureRef, delegate } from '#library/proxy.library.js';
+import { cast } from '#library/type.library.js';
 
 import { sym, isTempo } from '../support/support.symbol.js';
 import { TempoError } from '../support/support.error.js';
@@ -118,7 +119,7 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
 export function defineModule<T extends Plugin<TempoType>>(module: T): T {
 	const result = { ...module, [sym.$PluginType]: 'module' };
 	registerPlugin(result);
-	return result as unknown as T;
+	return cast<T>(result);
 }
 
 /**
@@ -241,7 +242,7 @@ export function definePlugin<T extends Plugin<TempoType, Opts>, Opts = any>(plug
 	}
 
 	registerPlugin(result);
-	return result as unknown as PluginFactory<T, Opts>;
+	return cast<PluginFactory<T, Opts>>(result);
 }
 
 /**
@@ -297,7 +298,7 @@ export function defineNamespace<Opts = any>(config: NamespaceConfig): PluginFact
 	const pluginName = `${namespaceStr}Namespace`;
 	const weakCache = new WeakMap<object, any>();
 
-	const plugin = {
+	const plugin = cast<Plugin<TempoType>>({
 		name: pluginName,
 		version: config.version ?? TEMPO_VERSION,
 		[sym.$PluginType]: 'namespace',
@@ -334,7 +335,7 @@ export function defineNamespace<Opts = any>(config: NamespaceConfig): PluginFact
 				enumerable: false
 			});
 		}
-	} as unknown as Plugin<TempoType>;
+	});
 
 	const factory = function (options?: Opts) {
 		return {
@@ -351,7 +352,7 @@ export function defineNamespace<Opts = any>(config: NamespaceConfig): PluginFact
 	}
 
 	registerPlugin(result);
-	return result as unknown as PluginFactory<Plugin<TempoType>, Opts>;
+	return cast<PluginFactory<Plugin<TempoType>, Opts>>(result);
 }
 
 /**

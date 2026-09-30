@@ -31,15 +31,5 @@ export * from '#library/decorator.library.js';
 export * from '#library/weakcache.class.js';
 export * from '#library/finalizer.class.js';
 export * from '#library/reactive.class.js';
+export * from '#library/type.library.js';
 
-export type {
-	OwnOf,
-	KeyOf,
-	ValueOf,
-	EntryOf,
-	Evaluable,
-	AsyncEvaluable,
-	EvaluableRecord,
-	AsyncEvaluableRecord,
-	Resolved,
-} from '#library/type.library.js';

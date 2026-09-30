@@ -397,7 +397,7 @@ describe('common/runtime/reactive.class', () => {
 		expect(source.state.subscribers).toBe(0); // All detached automatically!
 	});
 
-	it('supports broadcast to resolve all concurrent pull waiters and listeners simultaneously', async () => {
+	it('supports cast (and broadcast alias) to resolve all concurrent pull waiters and listeners simultaneously', async () => {
 		const stream = new Reactive<string>();
 		const received: string[] = [];
 		stream.on('data', (v) => received.push(v));
@@ -406,13 +406,21 @@ describe('common/runtime/reactive.class', () => {
 		const pull2 = stream.pull();
 		expect(stream.state.queued).toBe(2);
 
-		stream.broadcast('hello');
+		// Test primary method .cast()
+		stream.cast('hello');
 
 		const [val1, val2] = await Promise.all([pull1, pull2]);
 		expect(val1).toBe('hello');
 		expect(val2).toBe('hello');
 		expect(received).toEqual(['hello']);
 		expect(stream.state.emitted).toBe(1);
+
+		// Test alias .broadcast()
+		const pull3 = stream.pull();
+		stream.broadcast('world');
+		expect(await pull3).toBe('world');
+		expect(received).toEqual(['hello', 'world']);
+		expect(stream.state.emitted).toBe(2);
 	});
 
 	it('does not buffer pushed items when push listeners are active and no pull waiters exist', () => {

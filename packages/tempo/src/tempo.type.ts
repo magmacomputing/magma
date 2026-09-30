@@ -554,3 +554,13 @@ export type MatchResult = Internal.Match;
 export type Discovery = Internal.Discovery;
 export type DelegatorHost = Internal.DelegatorHost;
 
+/**
+ * Interval representing a continuous temporal range between two points.
+ */
+export type Interval = import('#library/scheduling/interval.class.js').Interval<Tempo>;
+
+/**
+ * Constructor type for Tempo.Interval.
+ */
+export type IntervalConstructor = new (start: DateTime | null, end: DateTime | null) => Interval;
+

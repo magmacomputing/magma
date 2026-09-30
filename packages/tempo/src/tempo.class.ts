@@ -9,7 +9,7 @@ import { ownKeys, ownEntries, ownValues, unwrap } from '#library/primitive.libra
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { pad, trimAll } from '#library/string.library.js';
-import { getType } from '#library/type.library.js';
+import { getType, cast } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
@@ -98,7 +98,7 @@ const intervalProxyHandler: ProxyHandler<typeof Interval> = {
 @Immutable
 @StringTag('Tempo')
 export class Tempo {
-	/** Interval class for checking overlaps and bounds between Temporal points */	static Interval = new Proxy(Interval, intervalProxyHandler) as unknown as new (start: t.DateTime | null, end: t.DateTime | null) => Interval<Tempo>;
+	/** Interval class for checking overlaps and bounds between Temporal points */	static Interval = cast<t.IntervalConstructor>(new Proxy(Interval, intervalProxyHandler));
 
 	/** Weekday names (short-form) */													static get WEEKDAY() { return enums.WEEKDAY }
 	/** Weekday names (long-form) */													static get WEEKDAYS() { return enums.WEEKDAYS }
@@ -1055,7 +1055,7 @@ export class Tempo {
 
 		Object.freeze(SandboxTempo);
 
-		const sb = SandboxTempo as unknown as typeof Tempo;
+		const sb = cast<typeof Tempo>(SandboxTempo);
 
 		if (fn) {
 			try {
@@ -1427,7 +1427,7 @@ export class Tempo {
 
 	/** Tempo initial default settings */
 	static get default(): Readonly<t.Config> {
-		return Object.freeze({ ...Default, scope: 'default', timeZone: Default.timeZone || enums.TIMEZONE.utc }) as unknown as Readonly<t.Config>;
+		return cast<Readonly<t.Config>>(Object.freeze({ ...Default, scope: 'default', timeZone: Default.timeZone || enums.TIMEZONE.utc }));
 	}
 
 	/** 
@@ -2206,7 +2206,7 @@ export class Tempo {
 
 		let mappedTempo = tempo as t.DateTime;
 		if (isObject(tempo) && isDurationLike(tempo)) {
-			const record = { ...(tempo as unknown as Record<string, unknown>) };
+			const record = { ...cast<Record<string, unknown>>(tempo) };
 			let hasMapped = false;
 			for (const [k, v] of Object.entries(record)) {
 				const resolved = enums.ELEMENT.has(k) ? `${enums.ELEMENT[k as t.Element]}s` : undefined;

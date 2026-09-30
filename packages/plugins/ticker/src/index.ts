@@ -4,7 +4,7 @@ import {
 	isObject, isFunction, isDefined, isEmpty, isNumeric, isString, isNumber, asArray,
 	instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
-	isUndefined, Finalizer, Reactive,
+	isUndefined, Finalizer, Reactive, cast,
 } from '@magmacomputing/tempo/plugin/sdk';
 
 export { isCronString };
@@ -143,6 +143,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#catchListeners = new Set<Ticker.Callback>();
 	#stopListeners = new Set<Ticker.Callback>();
 	#hasInvalidSchedule = false;
+	#isCatch = false;
 	#selfRef!: WeakRef<Ticker.Instance>;
 	#activeEntry: ActiveTickerEntry | undefined = undefined;
 
@@ -195,25 +196,25 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#limit = lmt;
 		if (rruleOption)
 			this.#rrule = isString(rruleOption) ? rruleOption : rruleOption.rrule;
-		const isCatch = Boolean(rawOptions.catch ?? this.#TempoClass.config?.catch);
+		this.#isCatch = Boolean(rawOptions.catch ?? this.#TempoClass.config?.catch);
 
 		this.#reactive = new Reactive<Tempo>({
 			tag: this.#label ?? 'Ticker',
-			catch: isCatch,
+			catch: this.#isCatch,
 		});
 
 		if (isDefined(cronOption)) {
 			if (!isCronString(cronOption)) {
 				this.#hasInvalidSchedule = true;
 				const err = new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`);
-				if (!isCatch) throw err;
+				if (!this.#isCatch) throw err;
 				console.error(err.message);
 			} else {
 				this.#cron = cronOption;
 			}
 		}
 
-		if (cb) this.#reactive.on('data', cb);
+		if (cb) this.#reactive.on('data', (t) => cb(t, () => this.stop()));
 
 		const durationKeys = new Set(Object.keys(enums.DURATIONS));
 		for (const [key, val] of Object.entries(rest))
@@ -227,7 +228,7 @@ class TickerInstance implements Ticker.Descriptor {
 
 		if (isDefined(arg1) && !isOptions(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb) {
 			const err = new Error(`Invalid Ticker interval, seed, cron, or rrule: ${String(arg1)}`);
-			if (!isCatch) throw err;
+			if (!this.#isCatch) throw err;
 			console.error(err.message);
 		}
 
@@ -326,7 +327,7 @@ class TickerInstance implements Ticker.Descriptor {
 			const catchListeners = [...this.#catchListeners];
 			this.stop();
 			catchListeners.forEach(l => l(this.#next, () => this.stop()));
-			if (!this.#TempoClass.config?.catch)
+			if (!this.#isCatch)
 				throw e;
 
 			return this.#next;
@@ -388,8 +389,8 @@ class TickerInstance implements Ticker.Descriptor {
 
 		if (this.#stopped && this.#limit === 0) return t;
 
-		// Broadcast pulse to all concurrent pull waiters and push listeners
-		this.#reactive.broadcast(t);
+		// Cast pulse to all concurrent pull waiters and push listeners
+		this.#reactive.cast(t);
 
 		if (willStop)
 			this.stop();
@@ -399,7 +400,7 @@ class TickerInstance implements Ticker.Descriptor {
 
 	on(event: 'pulse' | 'catch' | 'stop', cb: Ticker.Callback) {
 		if (event === 'pulse') {
-			this.#reactive.on('data', cb);
+			this.#reactive.on('data', (t) => cb(t, () => this.stop()));
 			this.#runBootstrap();
 		} else if (event === 'catch') {
 			this.#catchListeners.add(cb);
@@ -545,7 +546,7 @@ function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.I
 		instance.stop();
 	});
 
-	return instance.bootstrap(proxy as unknown as Ticker.Instance);
+	return instance.bootstrap(cast<Ticker.Instance>(proxy));
 }
 
 const tickersDescriptor = {

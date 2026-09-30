@@ -8,7 +8,8 @@
 
 Unlike standard `EventEmitter` (push-only) or `AsyncGenerator` (pull-only), `Reactive<T>` operates seamlessly in both directions:
 
-* **Producer Push (`stream.push(value)`)**: Pushes new values into the stream with $O(1)$ dispatch.
+* **Producer Push (`stream.push(value)`)**: Dispatches the next value to a single pending pull waiter or buffers for future consumers.
+* **Producer Cast (`stream.cast(value)`)**: Multicasts the value to **all** concurrent pull waiters and push listeners simultaneously (fan-out).
 * **Consumer Pull (`await stream.pull()`)**: Pulls the next available value directly as `Promise<T | undefined>`, eliminating `{ value, done }` unwrapping boilerplate.
 * **Consumer Push (`stream.on('data', listener)`)**: Subscribes callback listeners for event-driven workflows.
 * **Consumer Iteration (`for await (const item of stream)`)**: Native ES2018 iteration with backpressure buffering and zero lost items.
@@ -21,11 +22,11 @@ const stream = new Reactive<string>({ tag: 'TaskStream' });
 
 // Producer pushes data
 stream.push('First Event');
-stream.push('Second Event');
+stream.cast('Broadcast Event'); // Casts to all active pull waiters and listeners
 
 // Consumer pulls data directly
 const first = await stream.pull();  // 'First Event'
-const second = await stream.pull(); // 'Second Event'
+const second = await stream.pull(); // 'Broadcast Event'
 ```
 
 <br>
@@ -38,7 +39,7 @@ Register event listeners using familiar `on()`, `once()`, and `off()` methods.
 // Register data listener with early-stop capability
 stream.on('data', (item, stop) => {
   console.log('Received:', item);
-  if (item === 'HALT') stop(); // Early unsubscribe
+  if (item === 'HALT') stop(); // Completes the stream
 });
 
 // Register error or completion listeners

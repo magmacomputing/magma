@@ -274,12 +274,12 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	}
 
 	/**
-	 * Broadcasts a value to ALL pending pull waiters and push listeners simultaneously.
+	 * Casts a value to ALL pending pull waiters and push listeners simultaneously (multicast fan-out).
 	 *
-	 * @param value - The value to broadcast
+	 * @param value - The value to cast across all consumers
 	 * @returns True if the value was successfully emitted; false if completed or inactive
 	 */
-	broadcast(value: T): boolean {
+	cast(value: T): boolean {
 		if (!this.#active || this.#completed) return false;
 
 		this.#emitted++;
@@ -306,6 +306,17 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		}
 
 		return true;
+	}
+
+	/**
+	 * Broadcasts a value to ALL pending pull waiters and push listeners simultaneously.
+	 *
+	 * @alias cast
+	 * @param value - The value to broadcast
+	 * @returns True if the value was successfully emitted; false if completed or inactive
+	 */
+	broadcast(value: T): boolean {
+		return this.cast(value);
 	}
 
 	/**
@@ -507,10 +518,14 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			catch: this.#catch,
 		});
 
+		let notifierCleanups: (() => void)[] = [];
+
 		const stop = () => {
 			subData.unsubscribe();
 			subError.unsubscribe();
 			subEnd.unsubscribe();
+			for (const cleanup of notifierCleanups) cleanup();
+			notifierCleanups = [];
 			output.complete();
 		};
 
@@ -521,20 +536,28 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			subData.unsubscribe();
 			subError.unsubscribe();
 			subEnd.unsubscribe();
+			for (const cleanup of notifierCleanups) cleanup();
+			notifierCleanups = [];
 		});
 
 		if (notifier instanceof AbortSignal) {
 			if (notifier.aborted) {
 				stop();
 			} else {
-				notifier.addEventListener('abort', stop, { once: true });
+				const abortHandler = () => stop();
+				notifier.addEventListener('abort', abortHandler, { once: true });
+				notifierCleanups.push(() => notifier.removeEventListener('abort', abortHandler));
 			}
 		} else if (notifier != null && typeof (notifier as any).then === 'function') {
 			(notifier as Promise<unknown>).then(stop, stop);
 		} else if (notifier != null && typeof (notifier as any).on === 'function') {
 			const trigger = notifier as Reactive<unknown>;
-			trigger.on('data', stop, { once: true });
-			trigger.on('end', stop, { once: true });
+			const subTriggerData = trigger.on('data', stop, { once: true });
+			const subTriggerEnd = trigger.on('end', stop, { once: true });
+			notifierCleanups.push(() => {
+				subTriggerData.unsubscribe();
+				subTriggerEnd.unsubscribe();
+			});
 		}
 
 		return output;
