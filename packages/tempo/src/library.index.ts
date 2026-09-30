@@ -30,6 +30,7 @@ export * from '#library/cron.library.js';
 export * from '#library/decorator.library.js';
 export * from '#library/weakcache.class.js';
 export * from '#library/finalizer.class.js';
+export * from '#library/reactive.class.js';
 
 export type {
 	OwnOf,
