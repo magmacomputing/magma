@@ -178,6 +178,36 @@ describe('common/runtime/reactive.class', () => {
 		expect(pullAfterError).toBeUndefined();
 	});
 
+	it('routes error to pending pull consumers without logging unhandled error', async () => {
+		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		try {
+			const stream = new Reactive<number>(); // catch is false
+			const pullPromise = stream.pull(); // pending waiter
+
+			const testError = new Error('Consumer pull error');
+			stream.error(testError);
+
+			await expect(pullPromise).rejects.toThrow('Consumer pull error');
+			// Because the error was handled by rejecting the pending pull waiter, console.error should not be called
+			expect(errSpy).not.toHaveBeenCalled();
+		} finally {
+			errSpy.mockRestore();
+		}
+	});
+
+	it('logs unhandled error when neither error listeners nor pull waiters exist', async () => {
+		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		try {
+			const stream = new Reactive<number>();
+			const testError = new Error('Unhandled stream error');
+			stream.error(testError);
+
+			expect(errSpy).toHaveBeenCalledWith('Unhandled Reactive error:', testError);
+		} finally {
+			errSpy.mockRestore();
+		}
+	});
+
 	it('supports Reactive.from with Array, Promise, and AsyncIterable', async () => {
 		// Array
 		const fromArray = Reactive.from(['a', 'b', 'c']);

@@ -49,6 +49,42 @@ export namespace Reactive {
 	}
 }
 
+interface ReactiveCleanupState<T> {
+	completed: boolean;
+	readonly waiters: Pledge<IteratorResult<T, void>>[];
+	readonly endListeners: Set<Reactive.EndListener>;
+	readonly dataListeners: Set<Reactive.Listener<T>>;
+	readonly errorListeners: Set<Reactive.ErrorListener>;
+}
+
+function cleanupReactiveState<T>(state: ReactiveCleanupState<T>): void {
+	if (state.completed) return;
+	state.completed = true;
+
+	if (state.waiters.length > 0) {
+		const queue = state.waiters.splice(0);
+		for (const waiter of queue) {
+			if (waiter.isPending)
+				waiter.resolve({ done: true, value: undefined });
+		}
+	}
+
+	if (state.endListeners.size > 0) {
+		const listeners = [...state.endListeners];
+		for (const listener of listeners) {
+			try {
+				listener();
+			} catch (err) {
+				console.error('Reactive end listener failed:', err);
+			}
+		}
+	}
+
+	state.dataListeners.clear();
+	state.errorListeners.clear();
+	state.endListeners.clear();
+}
+
 /**
  * ## Reactive
  *
@@ -84,6 +120,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	#errorListeners = new Set<Reactive.ErrorListener>();
 	#endListeners = new Set<Reactive.EndListener>();
 	#stopCallback: () => void;
+	readonly #cleanupState: ReactiveCleanupState<T>;
 	#unregisterFinalizer?: (() => boolean) | undefined;
 
 	constructor(arg?: Reactive.Options<T> | string) {
@@ -93,11 +130,19 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		this.#catch = Boolean(opts.catch);
 		this.#stopCallback = () => this.complete();
 
+		const cleanupState: ReactiveCleanupState<T> = {
+			completed: false,
+			waiters: this.#waiters,
+			endListeners: this.#endListeners,
+			dataListeners: this.#dataListeners,
+			errorListeners: this.#errorListeners,
+		};
+		this.#cleanupState = cleanupState;
+
 		if (opts.finalizer !== false) {
-			const onGC = () => {
-				this.complete();
-			};
-			this.#unregisterFinalizer = Finalizer.register(this, onGC);
+			this.#unregisterFinalizer = Finalizer.register(this, () => {
+				cleanupReactiveState(cleanupState);
+			});
 		}
 	}
 
@@ -197,9 +242,9 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			}
 		}
 
-		if (this.#waiters.length > 0) {
-			const queue = this.#waiters;
-			this.#waiters = [];
+		const hadWaiters = this.#waiters.length > 0;
+		if (hadWaiters) {
+			const queue = this.#waiters.splice(0);
 			for (const waiter of queue) {
 				if (waiter.isPending) {
 					if (this.#catch) {
@@ -213,7 +258,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 
 		if (this.#catch) {
 			this.complete();
-		} else if (this.#errorListeners.size === 0 && this.#waiters.length === 0) {
+		} else if (this.#errorListeners.size === 0 && !hadWaiters) {
 			console.error('Unhandled Reactive error:', err);
 		}
 	}
@@ -233,32 +278,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		this.#completed = true;
 		this.#active = false;
 
-		// Resolve all remaining pull waiters with done: true
-		if (this.#waiters.length > 0) {
-			const queue = this.#waiters;
-			this.#waiters = [];
-			for (const waiter of queue) {
-				if (waiter.isPending) {
-					waiter.resolve({ done: true, value: undefined });
-				}
-			}
-		}
-
-		// Notify end listeners
-		if (this.#endListeners.size > 0) {
-			const listeners = [...this.#endListeners];
-			for (const listener of listeners) {
-				try {
-					listener();
-				} catch (err) {
-					console.error('Reactive end listener failed:', err);
-				}
-			}
-		}
-
-		this.#dataListeners.clear();
-		this.#errorListeners.clear();
-		this.#endListeners.clear();
+		cleanupReactiveState(this.#cleanupState);
 
 		if (this.#unregisterFinalizer) {
 			this.#unregisterFinalizer();
