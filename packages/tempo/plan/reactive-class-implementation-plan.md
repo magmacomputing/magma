@@ -231,3 +231,5 @@ TickerInstance (Composes / Delegates to Reactive<Tempo>)
 | **M2: Library Export & Tests** | Export from `#library` index and superbarrel SDK; author comprehensive test suite. | `packages/library/src/common/runtime/index.ts`<br>`packages/tempo/src/plugin/plugin.sdk.ts`<br>`packages/library/test/common/runtime/reactive.class.test.ts` |
 | **M3: Ticker Refactor** | Update `TickerInstance` to delegate async reactivity to `Reactive<Tempo>` and expose `.pull()`. | `packages/plugins/ticker/src/index.ts` |
 | **M4: Validation & Benchmarking** | Execute test suites across monorepo and run benchmarks. | Full monorepo |
+| **M5: Fluent Stream Operators** | Implement lightweight combinators (`.map`, `.filter`, `.take`, `.takeUntil`) and disposable subscriptions (`DP-REACTIVE-002`). | [`reactive-stream-operators-plan.md`](./reactive-stream-operators-plan.md) |
+
