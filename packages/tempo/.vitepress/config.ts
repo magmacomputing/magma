@@ -99,7 +99,7 @@ export default withMermaid(defineConfig({
             { text: 'Library Overview', link: '/doc/6-utility-library/tempo.library' },
             { text: 'Enumerators', link: '/doc/6-utility-library/tempo.enumerators' },
             { text: 'Serializers', link: '/doc/6-utility-library/tempo.serializers' },
-            { text: 'Decorators', link: '/doc/6-utility-library/tempo.decorators' },
+            { text: 'Reactive Streams', link: '/doc/6-utility-library/tempo.reactive' },
             { text: 'Advanced Promises (Pledge)', link: '/doc/6-utility-library/tempo.pledge' }
           ]
         },
@@ -132,6 +132,7 @@ export default withMermaid(defineConfig({
     }
   },
   markdown: {
+    math: true,
     config: (md) => {
       // Dynamically rewrite source links to the harvested plugin documents
       const defaultRender = md.renderer.rules.link_open || function (tokens, idx, options, env, self) {

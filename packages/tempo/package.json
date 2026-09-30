@@ -284,6 +284,7 @@
     "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^12.3.0",
     "magic-string": "^1.4.2",
+    "markdown-it-mathjax3": "^4.3.2",
     "mermaid": "^11.17.2",
     "typedoc": "^0.28.20",
     "vitepress": "^1.6.4",

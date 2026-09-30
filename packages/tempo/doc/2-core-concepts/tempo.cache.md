@@ -60,13 +60,13 @@ Tempo provides multiple mechanisms for augmenting parsing intelligence. Choosing
 
 | Mechanism | Tier / Location | Evaluation Model | Best Used For... |
 | :--- | :--- | :--- | :--- |
-| **Glossary** (`Tempo.cache`) | Core Engine | Zero-cost `O(1)` Map lookup | Pre-calculated static ISO date/time strings or exact business dates. |
+| **Glossary** (`Tempo.cache`) | Core Engine | Zero-cost $O(1)$ Map lookup | Pre-calculated static ISO date/time strings or exact business dates. |
 | **Aliases / Events / Periods** (`registry.events` / `periods`) | Registry Engine | Dynamic function or target string | Computing dynamic business dates (e.g. `'deadline' => () => this.add({ days: 30 })`). |
 | **Snippet / Layouts** (`registry.snippets` / `layouts`) | Parser Planner | Regex pattern matcher | Structural natural language formats (e.g. `yyyy/mm/dd` or custom date tokens). |
 
 ### Decision Tree
 
-1. **Use a Glossary (`Tempo.cache`)** when you have fixed, pre-resolved ISO dates for specific terms (e.g., `'eoy 2026'` -> `'2026-12-31T23:59:59Z'`). It offers instant `O(1)` resolution without invoking the regex parser.
+1. **Use a Glossary (`Tempo.cache`)** when you have fixed, pre-resolved ISO dates for specific terms (e.g., `'eoy 2026'` -> `'2026-12-31T23:59:59Z'`). It offers instant $O(1)$ resolution without invoking the regex parser.
 2. **Use an Alias (`registry.events` / `periods`)** when you need dynamic rules calculated relative to the current date/time (e.g., `'market-close'` -> `'16:00'` or `'deadline'` -> `30 days from now`).
 3. **Use a Snippet or Layout (`registry.snippets` / `layouts`)** when parsing custom input structures with variable numbers or tokens (e.g. `"2026-W05"` or `"Quarter 3, 2026"`).
 

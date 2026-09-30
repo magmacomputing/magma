@@ -31,3 +31,10 @@
   background-color: var(--vp-c-bg-mute);
   text-decoration: none !important;
 }
+
+/* Subtle scaling for inline math formulas to blend harmoniously with body text */
+mjx-container {
+  font-size: 90% !important;
+  vertical-align: -0.05em;
+}
+

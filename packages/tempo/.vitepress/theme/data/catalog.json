@@ -6,7 +6,7 @@
     "packageName": "@magmacomputing/tempo-plugin-astro",
     "plan": "community",
     "status": "active",
-    "version": "2.4.0"
+    "version": "2.4.1"
   },
   {
     "id": "celestial",
@@ -15,7 +15,7 @@
     "packageName": "@magmacomputing/tempo-plugin-celestial",
     "plan": "community",
     "status": "active",
-    "version": "1.1.0"
+    "version": "1.1.1"
   },
   {
     "id": "batch",
@@ -51,7 +51,7 @@
     "packageName": "@magmacomputing/tempo-plugin-sync",
     "plan": "community",
     "status": "active",
-    "version": "1.1.0"
+    "version": "1.1.1"
   },
   {
     "id": "ai",
@@ -69,7 +69,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ticker",
     "plan": "community",
     "status": "active",
-    "version": "2.5.0"
+    "version": "2.5.2"
   },
   {
     "id": "geo",
@@ -95,7 +95,7 @@
     "name": "Dialects Plugin",
     "description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, and POSIX strftime",
     "packageName": "@magmacomputing/tempo-plugin-dialects",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "plan": "community",
     "status": "active"
   },
@@ -104,7 +104,7 @@
     "name": "Holidays Plugin",
     "description": "Regional bank holiday, public holiday, and business day SLA scheduling plugin for Tempo",
     "packageName": "@magmacomputing/tempo-plugin-holidays",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "plan": "community",
     "status": "active"
   },

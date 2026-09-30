@@ -37,7 +37,7 @@
 - [Dialects Plugin](https://github.com/magmacomputing/magma/tree/main/packages/plugins/dialects): Interoperability with Unicode LDML / Luxon, POSIX strftime, and Moment.js format masks, plus migration helper via `Tempo.dialects.explain()`.
 - [Layout Patterns & Regex Snippets](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/3-extending-tempo/tempo.layout.md): Guide to writing regex layouts and snippets.
 - [Plugin Development](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/3-extending-tempo/tempo.plugin.md): Rules for extending Tempo via plugins.
-- [Utility Library](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/6-utility-library/tempo.library.md): Type detection, serialization (`stringify`/`objectify`), and `Pledge`.
+- [Utility Library](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/6-utility-library/tempo.library.md): Type detection, serialization (`stringify`/`objectify`), reactive streams (`Reactive`), and deferred promises (`Pledge`).
 
 ## Common Code Snippets & Patterns
 

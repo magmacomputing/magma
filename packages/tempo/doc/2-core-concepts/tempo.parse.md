@@ -73,7 +73,7 @@ It correctly resolves both trailing (`200 BC`) and leading (`BC 200`) formats.
 
 ### 📆 Ordinals & Nth Parsing (`"3rd Wednesday of October"`)
 
-Tempo natively supports parsing structured ordinal weekday and ordinal date expressions in deterministic `O(1)` time with zero network overhead.
+Tempo natively supports parsing structured ordinal weekday and ordinal date expressions in deterministic $O(1)$ time with zero network overhead.
 
 ```typescript
 // Ordinal Weekdays
@@ -89,7 +89,7 @@ new Tempo('1st day of 2026');                 // 1st day of 2026
 
 | Input Type & Scenario | Recommended Approach | Key Advantage |
 | :--- | :--- | :--- |
-| **Structured Expressions**<br>(e.g. `"3rd Wednesday of Oct"`, `"1st day of next month"`) | **Native `Tempo` Parsing** | **Deterministic `O(1)` Speed**<br>Zero API latency, zero token costs, 100% offline processing. |
+| **Structured Expressions**<br>(e.g. `"3rd Wednesday of Oct"`, `"1st day of next month"`) | **Native `Tempo` Parsing** | **Deterministic $O(1)$ Speed**<br>Zero API latency, zero token costs, 100% offline processing. |
 | **Free-Form / Conversational Text**<br>(e.g. `"Schedule a call on the third Wednesday after my trip ends"`) | **`tempo-plugin-ai` (`parseAI`)** | **LLM Natural Language Reasoning**<br>Extracts context and conversational intent before passing dates to Tempo. |
 
 > [!TIP]

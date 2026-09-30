@@ -58,15 +58,23 @@ The public documentation site (GitHub Pages) is built with **VitePress**. VitePr
   - **Avoid Sanitizer Mangling**: HTML entities risk double-escaping (`&amp;rarr;`) or displaying as unrendered raw entity text depending on the sanitizer or markdown environment.
   - **Clean Slugs & Code Spans**: Prevents entity text from leaking into VitePress anchor generation or code spans.
 
-## 7. Prefer Plain Unicode Symbols Over LaTeX Formulas
-- **Do NOT use LaTeX / MathJax delimiters** (e.g., `$formula$`, `$$formula$$`, `\text{...}`, `\approx`, `\times`, `\sqrt{...}`, `^\circ`) in documentation, markdown plans, or READMEs.
-- **Always use readable Unicode characters & plain notation**:
-  - Degree: `°` (e.g., `66.5°`, `-90°..+90°`)
-  - Multiplication: `×` (e.g., `0.0347° × √elevation`)
-  - Approximation & Comparison: `≈`, `≠`, `≤`, `≥`, `±`
-  - Exponents / Roots: `²`, `³`, `√`
-  - Greek letters & symbols: `Δ`, `α`, `δ`, `λ`, `φ`, `θ`
-- **Rationale**: VitePress, GitHub markdown renderers, npmjs, and IDE previews do not render LaTeX by default without custom MathJax/KaTeX plugins, leaving unsightly raw markup like `$\text{dip} \approx 0.0347^\circ$`. Plain Unicode is universally readable across all tools, terminals, and web renderers.
+## 7. Mathematical & Algorithmic Notation (MathJax 3)
+- **VitePress Math Support**: The documentation site has native MathJax 3 enabled (`markdown.math: true` via `markdown-it-mathjax3` with `90%` font scaling in `custom.css`).
+- **Context-Specific Standards**:
+  - **Documentation Prose (`packages/tempo/doc/**`)**: Format Big-O notation and inline math using single dollar signs: `$O(1)$`, `$O(N)$`, `$O(0)$`, `$O(\log n)$`.
+  - **Standalone / Multiline Equations**: Use double dollar signs (`$$...$$`) on their own lines:
+    ```markdown
+    $$
+    \Delta = T_{\text{server}} - \left(T_{\text{client}} + \frac{\text{RTT}}{2}\right)
+    $$
+    ```
+  - **README Files (Published to npmjs.com & GitHub Roots)**: Use inline code backticks (`` `O(1)` ``) or plain text. npmjs.com uses sanitized GFM without MathJax, so code backticks ensure clean, badge-like rendering across npm without raw dollar signs.
+  - **Inside Code Blocks & Source Comments (`// ...`, `/* ... */`)**: Code blocks and comments are never parsed by MathJax. Always use plain text `O(1)` or `O(N)` without dollar signs so IDE hover tooltips, JSDoc, and syntax highlighters do not display raw formatting characters.
+- **Dollar Sign Conflict Prevention Guardrails**:
+  - *Do NOT use `$$...$$` for inline expressions*: Double dollar signs render as **display/block-level formulas** and will break the text line into a separate centered block.
+  - **Code Identifiers in Backticks**: Always wrap symbol properties, discovery keys, and code variables in backticks (e.g., `` `$Target` ``, `` `$Tempo` ``, `` `$updateScopeStatus` ``). MathJax automatically ignores code spans.
+  - **Currency & Prose Dollar Signs**: In regular prose outside code spans, escape literal dollar signs as `\$` (e.g., `\$0 cost`) or wrap in backticks (`` `$0` ``) to prevent unintentional delimiter pairing.
+- **Physical Quantities & Simple Unicode**: For simple unit exponents, degrees, and common operators, prefer plain Unicode characters (`°`, `≈`, `×`, `²`, `³`, `√`, `Δ`, `≤`, `≥`, `±`).
 
 
 

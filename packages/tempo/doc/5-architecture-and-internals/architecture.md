@@ -123,10 +123,10 @@ The **Guarded-Lazy** strategy ensures that even under the weight of hundreds of 
 
 ### How it works:
 1. **Longest-Token Matching**: To prevent fractional matching (e.g., matching `qtr` inside `quarter`), the guard executes a greedy "Scan-and-Consume" loop that strongly prioritizes the longest available token match.
-2. **Unified Wordlist**: The guard systematically ingests all registered Terms, Timezones, Month names, and Custom Events into a single `O(1)` Set lookup (average token-lookup performance *after* cache construction).
-3. **High-Speed Gatekeeper**: By eliminating complex backtracking regular expressions, the gatekeeper provides deterministic `O(1)` average lookup performance regardless of the depth of registered plugins. Note that overall validation time is bounded by the string length during the scan-and-consume phase, plus occasional `O(N)` cache rebuild costs when the underlying registry mutates.
+2. **Unified Wordlist**: The guard systematically ingests all registered Terms, Timezones, Month names, and Custom Events into a single $O(1)$ Set lookup (average token-lookup performance *after* cache construction).
+3. **High-Speed Gatekeeper**: By eliminating complex backtracking regular expressions, the gatekeeper provides deterministic $O(1)$ average lookup performance regardless of the depth of registered plugins. Note that overall validation time is bounded by the string length during the scan-and-consume phase, plus occasional $O(N)$ cache rebuild costs when the underlying registry mutates.
 4. **Versioned Registry**: To avoid catastrophic redundant wordlist rebuilding, the Guard strictly monitors a version counter on the alias registry. The wordlist is dynamically rebuilt *only* when a valid mutation occurs.
-5. **Auto-Lazy**: Valid inputs that successfully clear the guard automatically shift the instance to `mode: 'defer'`, completely deferring the heavy `O(N)` parsing work until a property is strictly read.
+5. **Auto-Lazy**: Valid inputs that successfully clear the guard automatically shift the instance to `mode: 'defer'`, completely deferring the heavy $O(N)$ parsing work until a property is strictly read.
 
 ---
 
@@ -142,7 +142,7 @@ Tempo consolidates all Event and Period alias logic into a deeply optimized **`A
 ### 📈 Validation & Performance
 The algorithmic efficiency of the Master Guard and the success of the Zero-Cost objective remain strictly validated via core benchmarking:
 
-- **Instantiation Overhead**: ~523µs on average (passing the Master Guard). *(Node.js v24.14.1, 12th Gen Intel i7-1255U, Linux x86_64; steady-state measured after 1k warm-up runs, n=10k. Validates the Zero-Cost O(1) objective on this hardware.)*
+- **Instantiation Overhead**: ~523µs on average (passing the Master Guard). *(Node.js v24.14.1, 12th Gen Intel i7-1255U, Linux x86_64; steady-state measured after 1k warm-up runs, n=10k. Validates the Zero-Cost $O(1)$ objective on this hardware.)*
 - **Fast-Fail Rejection**: ~359µs on average (failing the Master Guard). *(Node.js v24.14.1, 12th Gen Intel i7-1255U, Linux x86_64; steady-state measured after 1k warm-up runs, n=10k. Demonstrates the Master Guard's low-latency rejection performance.)*
 
 ::: tip

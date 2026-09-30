@@ -4,7 +4,7 @@ The `Tempo` class provides an extensive array of zero-cost getters that allow yo
 
 > [!TIP]
 > **Zero-Cost Lazy Evaluation**  
-> Tempo uses a sophisticated proxy-based lazy-evaluation pattern. Accessing a getter (like `t.yy`) resolves the property on demand, and then overwrites the getter with a static literal. This means the first access is `O(1)` and every subsequent access is raw property access (`O(0)` cost).
+> Tempo uses a sophisticated proxy-based lazy-evaluation pattern. Accessing a getter (like `t.yy`) resolves the property on demand, and then overwrites the getter with a static literal. This means the first access is $O(1)$ and every subsequent access is raw property access ($O(0)$ cost).
 
 ## ⚡ Native Temporal Gateway
 
