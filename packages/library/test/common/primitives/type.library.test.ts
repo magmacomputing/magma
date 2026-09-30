@@ -1,4 +1,5 @@
-import { protoType, getType, type Singular, type CountOf, type AssertEqual } from '#library/type.library.js';
+import { protoType, getType, cast } from '#library/type.library.js';
+import type { Singular, CountOf, AssertEqual, Cast } from '#library/type.library.js';
 
 describe('Type Library (Compile-Time)', () => {
 	it('should correctly resolve Singular types at compile-time', () => {
@@ -18,6 +19,14 @@ describe('Type Library (Compile-Time)', () => {
 		expect(testArray).toBe(true);
 		expect(testObject).toBe(true);
 	});
+
+	it('should correctly resolve Cast<T, Target> types at compile-time', () => {
+		const testValid: AssertEqual<Cast<string, string>, string> = true;
+		const testFallback: AssertEqual<Cast<number, string>, string> = true;
+
+		expect(testValid).toBe(true);
+		expect(testFallback).toBe(true);
+	});
 });
 
 describe('Type Library (Runtime)', () => {
@@ -28,6 +37,16 @@ describe('Type Library (Runtime)', () => {
 		expect(protoType('hello')).toBe('String');
 		expect(protoType(null)).toBe('Null');
 		expect(protoType(undefined)).toBe('Undefined');
+	});
+
+	it('should ergonomically cast runtime values using cast<T>()', () => {
+		const raw: unknown = 'test-value';
+		const casted = cast<string>(raw);
+		expect(casted).toBe('test-value');
+
+		const obj: any = { count: 42 };
+		const typedObj = cast<{ count: number }>(obj);
+		expect(typedObj.count).toBe(42);
 	});
 
 	it('should safely handle objects with throwing Symbol.toStringTag getters', () => {
@@ -61,13 +80,13 @@ describe('Type Library (Runtime)', () => {
 		expect(getType([])).toBe('Array');
 		expect(getType({})).toBe('Object');
 
-		class TestModel {}
+		class TestModel { }
 		expect(getType(TestModel)).toBe('Class');
 
-		const normalFn = () => {};
+		const normalFn = () => { };
 		expect(getType(normalFn)).toBe('Function');
 
-		const asyncFn = async () => {};
+		const asyncFn = async () => { };
 		expect(getType(asyncFn)).toBe('AsyncFunction');
 
 		function* genFn() { yield 1; }
@@ -78,7 +97,7 @@ describe('Type Library (Runtime)', () => {
 	});
 
 	it('should return Function for a callable proxy whose get trap throws', () => {
-		const throwingCallableProxy = new Proxy(() => {}, {
+		const throwingCallableProxy = new Proxy(() => { }, {
 			get() {
 				throw new Error('Hostile get trap error');
 			}

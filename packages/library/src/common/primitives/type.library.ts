@@ -585,3 +585,20 @@ export type AsyncEvaluated<T extends object> = {
 	[K in keyof T]: Resolved<T[K]>;
 };
 
+/**
+ * Type-level cast: if `T` satisfies `Target`, resolves to `T`, otherwise forces `Target`.
+ */
+export type Cast<T, Target> = T extends Target ? T : Target;
+
+/**
+ * Ergonomically coerces any runtime value to type `T`, eliminating `as unknown as T` / `as any as T` double-assertions.
+ *
+ * @param value - The value to cast
+ * @returns The value typed as `T`
+ * @example
+ * ```ts
+ * const instance = cast<Ticker.Instance>(proxy);
+ * ```
+ */
+export const cast = <T = any>(value: any): T => value as unknown as T;
+

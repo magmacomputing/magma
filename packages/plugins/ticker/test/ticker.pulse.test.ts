@@ -51,4 +51,37 @@ describe('Ticker Pulse Behavior', () => {
 		expect(res3.done).toBe(true);
 		expect(res3.value).toBeUndefined();
 	});
+
+	test('should support direct pull() consumption', async () => {
+		const t = Tempo.ticker({ seconds: 0.05, limit: 2 });
+		const tick1 = await t.pull();
+		const tick2 = await t.pull();
+		const tick3 = await t.pull();
+
+		expect(tick1 instanceof Tempo).toBe(true);
+		expect(tick2 instanceof Tempo).toBe(true);
+		expect(tick3).toBeUndefined();
+		t.stop();
+	});
+
+	test('should support bounded iteration via until(AbortSignal)', async () => {
+		const controller = new AbortController();
+		const t = Tempo.ticker({ seconds: 0.05 });
+		const bounded = t.until(controller.signal);
+
+		const collected: Tempo[] = [];
+		const loop = (async () => {
+			for await (const tick of bounded) {
+				collected.push(tick);
+			}
+		})();
+
+		await new Promise(r => setTimeout(r, 120));
+		controller.abort();
+		await loop;
+
+		expect(collected.length).toBeGreaterThanOrEqual(1);
+		expect(collected[0] instanceof Tempo).toBe(true);
+		t.stop();
+	});
 });

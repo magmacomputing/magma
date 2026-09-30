@@ -57,12 +57,17 @@ describe('server/filestore.library', () => {
 	});
 
 	it('rejects path traversal attempts escaping sandbox', async () => {
-		await expect(serverWrite('../outside.txt', 'hacked', testRoot)).rejects.toThrow(
-			/Path traversal denied/
-		);
-		// serverRead catches errors and safely returns null
-		expect(await serverRead('../outside.txt', testRoot)).toBeNull();
-		expect(await serverRead('foo/../../outside.txt', testRoot)).toBeNull();
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		try {
+			await expect(serverWrite('../outside.txt', 'hacked', testRoot)).rejects.toThrow(
+				/Path traversal denied/
+			);
+			// serverRead catches errors and safely returns null
+			expect(await serverRead('../outside.txt', testRoot)).toBeNull();
+			expect(await serverRead('foo/../../outside.txt', testRoot)).toBeNull();
+		} finally {
+			warnSpy.mockRestore();
+		}
 	});
 
 	it('rejects prefix collision attacks (e.g. sandbox_other dir)', async () => {
@@ -101,6 +106,7 @@ describe('server/filestore.library', () => {
 		const nonExistentOutsideTarget = path.join(outsideDir, 'non_existent.txt');
 		const danglingSymlink = path.join(sandboxDir, 'dangling_link');
 
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 		try {
 			await fs.symlink(nonExistentOutsideTarget, danglingSymlink, 'file');
 			await expect(serverWrite('dangling_link', 'evil', sandboxDir)).rejects.toThrow(
@@ -108,6 +114,7 @@ describe('server/filestore.library', () => {
 			);
 			expect(await serverRead('dangling_link', sandboxDir)).toBeNull();
 		} finally {
+			warnSpy.mockRestore();
 			await fs.rm(outsideDir, { recursive: true, force: true });
 			await fs.rm(sandboxDir, { recursive: true, force: true });
 		}
