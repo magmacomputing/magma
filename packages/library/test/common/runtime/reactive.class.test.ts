@@ -235,4 +235,196 @@ describe('common/runtime/reactive.class', () => {
 		}
 		expect(genCollected).toEqual([1, 2, 3]);
 	});
+
+	// ── M5: Lifecycle & Cancellation Tests ──────────────────────────────────────
+
+	it('returns a disposable Subscription from .on() with .unsubscribe() and [Symbol.dispose]()', () => {
+		const stream = new Reactive<number>();
+		const received: number[] = [];
+
+		const sub = stream.on('data', (v) => received.push(v));
+		expect(sub).toBeInstanceOf(Reactive.Subscription);
+		expect(Object.prototype.toString.call(sub)).toBe('[object Reactive.Subscription]');
+		expect(sub.closed).toBe(false);
+
+		stream.push(10);
+		expect(received).toEqual([10]);
+
+		// Explicit dispose via Symbol.dispose
+		sub[Symbol.dispose]();
+		expect(sub.closed).toBe(true);
+
+		stream.push(20);
+		expect(received).toEqual([10]); // No new events
+
+		// Second dispose is no-op
+		sub.unsubscribe();
+		expect(sub.closed).toBe(true);
+	});
+
+	it('detaches listener automatically when AbortSignal triggers in .on() options', () => {
+		const stream = new Reactive<string>();
+		const controller = new AbortController();
+		const received: string[] = [];
+
+		const sub = stream.on('data', (msg) => received.push(msg), { signal: controller.signal });
+		expect(sub.closed).toBe(false);
+
+		stream.push('hello');
+		expect(received).toEqual(['hello']);
+
+		controller.abort();
+		expect(sub.closed).toBe(true);
+
+		stream.push('world');
+		expect(received).toEqual(['hello']);
+	});
+
+	it('handles already-aborted AbortSignal in .on() options immediately', () => {
+		const stream = new Reactive<string>();
+		const controller = new AbortController();
+		controller.abort();
+
+		const received: string[] = [];
+		const sub = stream.on('data', (msg) => received.push(msg), { signal: controller.signal });
+
+		expect(sub.closed).toBe(true);
+		stream.push('ignored');
+		expect(received).toEqual([]);
+	});
+
+	it('unregisters listener after first emission when { once: true } option is used', () => {
+		const stream = new Reactive<number>();
+		const received: number[] = [];
+
+		const sub = stream.on('data', (v) => received.push(v), { once: true });
+		expect(sub.closed).toBe(false);
+
+		stream.push(1);
+		expect(received).toEqual([1]);
+		expect(sub.closed).toBe(true);
+
+		stream.push(2);
+		expect(received).toEqual([1]);
+	});
+
+	it('bounds stream lifecycle with .until(AbortSignal)', async () => {
+		const stream = new Reactive<number>();
+		const controller = new AbortController();
+		const bounded = stream.until(controller.signal);
+
+		const collected: number[] = [];
+		const pullPromise = (async () => {
+			for await (const val of bounded) {
+				collected.push(val);
+			}
+		})();
+
+		stream.push(1);
+		stream.push(2);
+
+		controller.abort();
+		stream.push(3); // Should be ignored by bounded stream
+
+		await pullPromise;
+		expect(collected).toEqual([1, 2]);
+		expect(bounded.state.completed).toBe(true);
+	});
+
+	it('bounds stream lifecycle with .until(Promise)', async () => {
+		const stream = new Reactive<string>();
+		let resolvePromise!: () => void;
+		const stopPromise = new Promise<void>((resolve) => {
+			resolvePromise = resolve;
+		});
+
+		const bounded = stream.until(stopPromise);
+		const collected: string[] = [];
+
+		const loop = (async () => {
+			for await (const item of bounded) {
+				collected.push(item);
+			}
+		})();
+
+		stream.push('a');
+		stream.push('b');
+
+		resolvePromise();
+		await new Promise((r) => setTimeout(r, 5));
+
+		stream.push('c');
+		await loop;
+
+		expect(collected).toEqual(['a', 'b']);
+		expect(bounded.state.completed).toBe(true);
+	});
+
+	it('bounds stream lifecycle with .until(Reactive)', async () => {
+		const stream = new Reactive<number>();
+		const trigger = new Reactive<void>();
+
+		const bounded = stream.until(trigger);
+		const collected: number[] = [];
+
+		const loop = (async () => {
+			for await (const item of bounded) {
+				collected.push(item);
+			}
+		})();
+
+		stream.push(10);
+		stream.push(20);
+
+		trigger.push(undefined); // Send trigger pulse
+		await new Promise((r) => setTimeout(r, 5));
+
+		stream.push(30);
+		await loop;
+
+		expect(collected).toEqual([10, 20]);
+		expect(bounded.state.completed).toBe(true);
+	});
+
+	it('detaches upstream subscription when .until() downstream is disposed or completed', () => {
+		const source = new Reactive<number>();
+		expect(source.state.subscribers).toBe(0);
+
+		const bounded = source.until(new AbortController().signal);
+		expect(source.state.subscribers).toBe(3); // data, error, end
+
+		bounded.complete();
+		expect(source.state.subscribers).toBe(0); // All detached automatically!
+	});
+
+	it('supports broadcast to resolve all concurrent pull waiters and listeners simultaneously', async () => {
+		const stream = new Reactive<string>();
+		const received: string[] = [];
+		stream.on('data', (v) => received.push(v));
+
+		const pull1 = stream.pull();
+		const pull2 = stream.pull();
+		expect(stream.state.queued).toBe(2);
+
+		stream.broadcast('hello');
+
+		const [val1, val2] = await Promise.all([pull1, pull2]);
+		expect(val1).toBe('hello');
+		expect(val2).toBe('hello');
+		expect(received).toEqual(['hello']);
+		expect(stream.state.emitted).toBe(1);
+	});
+
+	it('does not buffer pushed items when push listeners are active and no pull waiters exist', () => {
+		const stream = new Reactive<number>();
+		const received: number[] = [];
+		stream.on('data', (v) => received.push(v));
+
+		stream.push(1);
+		stream.push(2);
+
+		expect(received).toEqual([1, 2]);
+		expect(stream.state.buffered).toBe(0);
+	});
 });
+

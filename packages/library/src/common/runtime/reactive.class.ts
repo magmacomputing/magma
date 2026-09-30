@@ -6,6 +6,53 @@ import { Finalizer } from './finalizer.class.js';
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
 		Reactive: { type: 'Reactive'; value: Reactive<T> };
+		'Reactive.Subscription': { type: 'Reactive.Subscription'; value: Reactive.Subscription };
+	}
+}
+
+/**
+ * Disposable subscription handle returned by event subscriptions (`stream.on(...)`).
+ * Supports explicit resource management via `using sub = stream.on(...)`.
+ */
+@StringTag('Reactive.Subscription')
+class ReactiveSubscription implements Disposable {
+	#closed = false;
+	readonly #cleanup: () => void;
+	readonly #abortListener?: (() => void) | undefined;
+	readonly #signal?: AbortSignal | undefined;
+
+	constructor(cleanup: () => void, signal?: AbortSignal) {
+		this.#cleanup = cleanup;
+		this.#signal = signal;
+
+		if (signal) {
+			if (signal.aborted) {
+				this.unsubscribe();
+			} else {
+				this.#abortListener = () => this.unsubscribe();
+				signal.addEventListener('abort', this.#abortListener, { once: true });
+			}
+		}
+	}
+
+	/** Whether the subscription has been detached */
+	get closed(): boolean {
+		return this.#closed;
+	}
+
+	/** Detaches the listener from the source stream */
+	unsubscribe(): void {
+		if (this.#closed) return;
+		this.#closed = true;
+		if (this.#signal && this.#abortListener)
+			this.#signal.removeEventListener('abort', this.#abortListener);
+
+		this.#cleanup();
+	}
+
+	/** TC39 explicit resource management hook (calls unsubscribe) */
+	[Symbol.dispose](): void {
+		this.unsubscribe();
 	}
 }
 
@@ -13,6 +60,9 @@ declare module '#library/type.library.js' {
  * Unified namespace for Reactive types and options.
  */
 export namespace Reactive {
+	/** Disposable subscription handle type */
+	export type Subscription = ReactiveSubscription;
+
 	/** Event types supported by Reactive instances */
 	export type EventType = 'data' | 'error' | 'end' | 'stop';
 
@@ -24,6 +74,14 @@ export namespace Reactive {
 
 	/** Listener callback for end/stop events */
 	export type EndListener = () => void;
+
+	/** Options for event subscriptions */
+	export interface SubscriptionOptions {
+		/** Optional AbortSignal to automatically detach the listener when aborted */
+		signal?: AbortSignal | undefined;
+		/** If true, automatically unregisters the listener after its first invocation */
+		once?: boolean | undefined;
+	}
 
 	/** Configuration options for Reactive instances */
 	export interface Options<T = any> {
@@ -107,6 +165,8 @@ function cleanupReactiveState<T>(state: ReactiveCleanupState<T>): void {
  */
 @StringTag('Reactive')
 export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unknown>, Disposable, AsyncDisposable {
+	static readonly Subscription = ReactiveSubscription;
+
 	readonly #tag?: string | undefined;
 	readonly #bufferSize: number;
 	readonly #catch: boolean;
@@ -170,11 +230,11 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	 * Pushes data into the stream (producer mode) or registers a listener (consumer mode).
 	 *
 	 * @param arg - A data value to emit, or a listener callback to subscribe
-	 * @returns True if the value was successfully emitted; false if completed or inactive; `this` if registering a listener
+	 * @returns True if the value was successfully emitted; false if completed or inactive; `Reactive.Subscription` if registering a listener
 	 */
 	push(value: T): boolean;
-	push(listener: Reactive.Listener<T>): this;
-	push(arg: T | Reactive.Listener<T>): boolean | this {
+	push(listener: Reactive.Listener<T>): Reactive.Subscription;
+	push(arg: T | Reactive.Listener<T>): boolean | Reactive.Subscription {
 		if (isFunction(arg)) {
 			return this.on('data', arg as Reactive.Listener<T>);
 		}
@@ -184,14 +244,19 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		this.#emitted++;
 
 		// 1. Dispatch to pending pull waiter if any
-		if (this.#waiters.length > 0) {
+		let dispatchedToWaiter = false;
+		while (this.#waiters.length > 0) {
 			const waiter = this.#waiters.shift()!;
-			if (waiter.isPending)
+			if (waiter.isPending) {
 				waiter.resolve({ done: false, value: arg as T });
-		} else if (this.#buffer.length < this.#bufferSize) {
-			// 2. Buffer for future pull consumers if buffer space is available
-			this.#buffer.push(arg as T);
+				dispatchedToWaiter = true;
+				break;
+			}
 		}
+
+		// 2. Buffer for future pull consumers if buffer space is available and not consumed by push listeners
+		if (!dispatchedToWaiter && this.#dataListeners.size === 0 && this.#buffer.length < this.#bufferSize)
+			this.#buffer.push(arg as T);
 
 		// 3. Dispatch to all push listeners
 		if (this.#dataListeners.size > 0) {
@@ -199,6 +264,41 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			for (const listener of listeners) {
 				try {
 					listener(arg as T, this.#stopCallback);
+				} catch (err: any) {
+					this.error(err instanceof Error ? err : new Error(String(err)));
+				}
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Broadcasts a value to ALL pending pull waiters and push listeners simultaneously.
+	 *
+	 * @param value - The value to broadcast
+	 * @returns True if the value was successfully emitted; false if completed or inactive
+	 */
+	broadcast(value: T): boolean {
+		if (!this.#active || this.#completed) return false;
+
+		this.#emitted++;
+
+		// 1. Dispatch to all pending pull waiters
+		if (this.#waiters.length > 0) {
+			const waiters = this.#waiters.splice(0);
+			for (const waiter of waiters) {
+				if (waiter.isPending)
+					waiter.resolve({ done: false, value });
+			}
+		}
+
+		// 2. Dispatch to all push listeners
+		if (this.#dataListeners.size > 0) {
+			const listeners = [...this.#dataListeners];
+			for (const listener of listeners) {
+				try {
+					listener(value, this.#stopCallback);
 				} catch (err: any) {
 					this.error(err instanceof Error ? err : new Error(String(err)));
 				}
@@ -299,38 +399,67 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	// ── Consumer Methods (Push) ────────────────────────────────────────────────
 
 	/**
-	 * Subscribes to stream events.
+	 * Subscribes to stream events with optional AbortSignal and once configuration.
+	 * Returns a disposable Subscription handle for explicit resource management (`using sub = ...`).
 	 *
 	 * @param event - 'data', 'error', 'end', or 'stop'
 	 * @param listener - Callback to invoke when the event fires
-	 * @returns `this` for chaining
+	 * @param options - Subscription options (AbortSignal, once)
+	 * @returns A disposable Subscription handle
 	 */
-	on(event: 'data', listener: Reactive.Listener<T>): this;
-	on(event: 'error', listener: Reactive.ErrorListener): this;
-	on(event: 'end' | 'stop', listener: Reactive.EndListener): this;
-	on(event: Reactive.EventType, listener: any): this {
-		if (!isFunction(listener)) return this;
+	on(event: 'data', listener: Reactive.Listener<T>, options?: Reactive.SubscriptionOptions): Reactive.Subscription;
+	on(event: 'error', listener: Reactive.ErrorListener, options?: Reactive.SubscriptionOptions): Reactive.Subscription;
+	on(event: 'end' | 'stop', listener: Reactive.EndListener, options?: Reactive.SubscriptionOptions): Reactive.Subscription;
+	on(event: Reactive.EventType, listener: any, options?: Reactive.SubscriptionOptions): Reactive.Subscription {
+		if (!isFunction(listener))
+			return new Reactive.Subscription(() => { });
+
+		if (options?.signal?.aborted)
+			return new Reactive.Subscription(() => { }, options.signal);
+
+		let actualListener = listener;
+		if (options?.once) {
+			actualListener = (...args: any[]) => {
+				sub.unsubscribe();
+				listener(...args);
+			};
+		}
+
+		let cleanup: () => void;
 
 		if (event === 'data') {
-			this.#dataListeners.add(listener);
+			this.#dataListeners.add(actualListener);
+			cleanup = () => {
+				this.#dataListeners.delete(actualListener);
+			};
 			// Flush any existing buffered items to the new push listener
 			if (this.#buffer.length > 0) {
 				const buffered = [...this.#buffer];
 				this.#buffer = [];
 				for (const item of buffered)
-					listener(item, this.#stopCallback);
+					actualListener(item, this.#stopCallback);
 			}
 		} else if (event === 'error') {
-			this.#errorListeners.add(listener);
+			this.#errorListeners.add(actualListener);
+			cleanup = () => {
+				this.#errorListeners.delete(actualListener);
+			};
 		} else if (event === 'end' || event === 'stop') {
 			if (this.#completed) {
-				queueMicrotask(() => listener());
+				queueMicrotask(() => actualListener());
+				cleanup = () => { };
 			} else {
-				this.#endListeners.add(listener);
+				this.#endListeners.add(actualListener);
+				cleanup = () => {
+					this.#endListeners.delete(actualListener);
+				};
 			}
+		} else {
+			cleanup = () => { };
 		}
 
-		return this;
+		const sub = new Reactive.Subscription(cleanup, options?.signal);
+		return sub;
 	}
 
 	/**
@@ -338,18 +467,14 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	 *
 	 * @param event - Event name
 	 * @param listener - Callback function
-	 * @returns `this` for chaining
+	 * @param options - Subscription options
+	 * @returns A disposable Subscription handle
 	 */
-	once(event: 'data', listener: Reactive.Listener<T>): this;
-	once(event: 'error', listener: Reactive.ErrorListener): this;
-	once(event: 'end' | 'stop', listener: Reactive.EndListener): this;
-	once(event: Reactive.EventType, listener: any): this {
-		if (!isFunction(listener)) return this;
-		const wrapper = (...args: any[]) => {
-			this.off(event, wrapper);
-			listener(...args);
-		};
-		return this.on(event as any, wrapper as any);
+	once(event: 'data', listener: Reactive.Listener<T>, options?: Omit<Reactive.SubscriptionOptions, 'once'>): Reactive.Subscription;
+	once(event: 'error', listener: Reactive.ErrorListener, options?: Omit<Reactive.SubscriptionOptions, 'once'>): Reactive.Subscription;
+	once(event: 'end' | 'stop', listener: Reactive.EndListener, options?: Omit<Reactive.SubscriptionOptions, 'once'>): Reactive.Subscription;
+	once(event: Reactive.EventType, listener: any, options?: Omit<Reactive.SubscriptionOptions, 'once'>): Reactive.Subscription {
+		return this.on(event as any, listener, { ...options, once: true });
 	}
 
 	/**
@@ -364,6 +489,55 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		else if (event === 'error') this.#errorListeners.delete(listener as any);
 		else if (event === 'end' || event === 'stop') this.#endListeners.delete(listener as any);
 		return this;
+	}
+
+	// ── Lifecycle & Cancellation ───────────────────────────────────────────────
+
+	/**
+	 * Returns a new Reactive stream that mirrors the source but completes automatically
+	 * when the given notifier (AbortSignal, Promise, or trigger Reactive stream) fires.
+	 *
+	 * @param notifier - An AbortSignal, Promise, or Reactive stream bounding this stream's lifecycle.
+	 * @returns A new Reactive stream
+	 */
+	until(notifier: AbortSignal | Promise<any> | Reactive<any>): Reactive<T> {
+		const output = new Reactive<T>({
+			tag: this.#tag ? `${this.#tag}.until` : 'Reactive.until',
+			bufferSize: this.#bufferSize,
+			catch: this.#catch,
+		});
+
+		const stop = () => {
+			subData.unsubscribe();
+			subError.unsubscribe();
+			subEnd.unsubscribe();
+			output.complete();
+		};
+
+		const subData = this.on('data', (val) => output.push(val));
+		const subError = this.on('error', (err) => output.error(err));
+		const subEnd = this.on('end', () => output.complete());
+		output.on('end', () => {
+			subData.unsubscribe();
+			subError.unsubscribe();
+			subEnd.unsubscribe();
+		});
+
+		if (notifier instanceof AbortSignal) {
+			if (notifier.aborted) {
+				stop();
+			} else {
+				notifier.addEventListener('abort', stop, { once: true });
+			}
+		} else if (notifier != null && typeof (notifier as any).then === 'function') {
+			(notifier as Promise<unknown>).then(stop, stop);
+		} else if (notifier != null && typeof (notifier as any).on === 'function') {
+			const trigger = notifier as Reactive<unknown>;
+			trigger.on('data', stop, { once: true });
+			trigger.on('end', stop, { once: true });
+		}
+
+		return output;
 	}
 
 	// ── Consumer Methods (Pull) ────────────────────────────────────────────────

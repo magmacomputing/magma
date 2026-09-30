@@ -2,6 +2,14 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-ticker` project will be documented in this file.
 
+## [2.5.2] - 2026-09-30
+
+### Changed & Refactored
+- **Reactive Stream Engine Migration (`Reactive<Tempo>`)**:
+  - Re-architected internal async iteration, push event dispatching, and pull queuing to delegate directly to `Reactive<Tempo>` from the Tempo Plugin SDK (`#library`).
+  - Eliminated manual promise queue state and listener dispatch boilerplate.
+  - Added native direct pull support (`await ticker.pull()`) and composable termination (`ticker.until(signal)`).
+
 ## [2.5.1] - 2026-09-29
 
 ### Added & Changed
