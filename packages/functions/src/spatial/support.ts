@@ -2,10 +2,10 @@ import type { GeoConfig, GeoSphere } from './types.js';
 import {
 	isNumber,
 	isString,
-	isText,
 	isBoolean,
 	isFunction,
 	isNullish,
+	isUndefined,
 	isDate,
 	isReference,
 	isDefined,
@@ -17,7 +17,8 @@ import {
  * @internal
  */
 export const parseCoordNumber = (val: any): number => {
-	if (!isDefined(val) || isBoolean(val)) return NaN;
+	if (isNullish(val) || isBoolean(val))
+		return NaN;
 	if (isString(val)) {
 		const trimmed = val.trim();
 		return trimmed.length > 0 ? Number(trimmed) : NaN;
@@ -31,7 +32,8 @@ export const parseCoordNumber = (val: any): number => {
  */
 export const normalizeLat = (lat: any, round = true): number | undefined => {
 	const n = parseCoordNumber(lat);
-	if (!isNumber(n) || n < -90 || n > 90) return undefined;
+	if (!isNumber(n) || n < -90 || n > 90)
+		return undefined;
 	return round ? Math.round(n * 1000) / 1000 : n;
 };
 
@@ -41,7 +43,8 @@ export const normalizeLat = (lat: any, round = true): number | undefined => {
  */
 export const normalizeLng = (lng: any, round = true): number | undefined => {
 	const n = parseCoordNumber(lng);
-	if (!isNumber(n) || n < -180 || n > 180) return undefined;
+	if (!isNumber(n) || n < -180 || n > 180)
+		return undefined;
 	return round ? Math.round(n * 1000) / 1000 : n;
 };
 
@@ -60,7 +63,8 @@ export const normalizeCoords = (lat: any, lng: any, round = true): { lat: number
  * @internal
  */
 export function extractRawCoords(input: any): { lat: number; lng: number } | undefined {
-	if (isNullish(input)) return undefined;
+	if (isNullish(input))
+		return undefined;
 	if (isString(input) && input.includes(',')) {
 		const segments = input.split(',').map(s => s.trim());
 		return segments.length >= 2 ? normalizeCoords(segments[0], segments[1], false) : undefined;
@@ -75,7 +79,8 @@ export function extractRawCoords(input: any): { lat: number; lng: number } | und
 		const findFirstNumber = (...candidates: any[]): number | undefined => {
 			for (const c of candidates) {
 				const n = parseCoordNumber(c);
-				if (isNumber(n)) return n;
+				if (isNumber(n))
+					return n;
 			}
 			return undefined;
 		};
@@ -94,12 +99,14 @@ export function extractRawCoords(input: any): { lat: number; lng: number } | und
  */
 export function coerceGeo(input: any): GeoConfig | undefined {
 	const raw = extractRawCoords(input);
-	if (!raw) return undefined;
+	if (isUndefined(raw))
+		return undefined;
 
-	const lat = normalizeLat(raw.lat);
-	const lng = normalizeLng(raw.lng);
-	if (lat === undefined || lng === undefined) return undefined;
+	const coords = normalizeCoords(raw.lat, raw.lng);
+	if (isUndefined(coords))
+		return undefined;
 
+	const { lat, lng } = coords;
 	const sphere: GeoSphere = lat > 0.001 ? 'north' : (lat < -0.001 ? 'south' : 'equator');
 
 	const geoObj = isReference(input) ? ((input as any).geo ?? (input as any).config?.geo ?? input) : {};
@@ -154,30 +161,40 @@ export function toRadianCoordinates(from: any, to: any): {
  * @internal
  */
 export function extractEpochMs(input: any): number | undefined {
-	if (isNullish(input)) return undefined;
-	if (isNumber(input)) return input;
-	if (isDate(input)) return input.getTime();
+	if (isNullish(input))
+		return undefined;
+	if (isNumber(input))
+		return input;
+	if (isDate(input))
+		return input.getTime();
 	if (isReference(input)) {
-		if (isNumber((input as any).epoch?.ms)) return (input as any).epoch.ms;
-		if (isNumber((input as any).epochMilliseconds)) return (input as any).epochMilliseconds;
-		if (isNumber((input as any).timestamp)) return (input as any).timestamp;
-		if (isDate((input as any).date)) return (input as any).date.getTime();
+		if (isNumber((input as any).epoch?.ms))
+			return (input as any).epoch.ms;
+		if (isNumber((input as any).epochMilliseconds))
+			return (input as any).epochMilliseconds;
+		if (isNumber((input as any).timestamp))
+			return (input as any).timestamp;
+		if (isDate((input as any).date))
+			return (input as any).date.getTime();
 		if (isFunction((input as any).toInstant)) {
 			try {
 				const t = (input as any).toInstant().epochMilliseconds;
-				if (isNumber(t)) return t;
+				if (isNumber(t))
+					return t;
 			} catch { }
 		}
 		if (isFunction((input as any).getTime)) {
 			try {
 				const t = (input as any).getTime();
-				if (isNumber(t)) return t;
+				if (isNumber(t))
+					return t;
 			} catch { }
 		}
 	}
 	if (isString(input)) {
 		const parsed = Date.parse(input);
-		if (isNumber(parsed)) return parsed;
+		if (isNumber(parsed))
+			return parsed;
 	}
 	return undefined;
 }

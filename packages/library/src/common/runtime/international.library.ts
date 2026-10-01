@@ -100,7 +100,7 @@ export interface LocaleWeekInfo {
 }
 
 export interface ResolvedLocaleInfo {
-	readonly locale?: Intl.Locale | undefined;
+	readonly locale: Intl.Locale;
 	readonly baseName: string;
 	readonly language?: string | undefined;
 	readonly region?: string | undefined;
@@ -114,6 +114,62 @@ export interface ResolvedLocaleInfo {
 	readonly numberingSystem: string;
 	readonly numberingSystems: readonly string[];
 	readonly timeZones: readonly string[];
+}
+
+export interface TempoIntlNamespace {
+	/**
+	 * Resolved cultural and regional calendar metadata (firstDay, weekend, direction, hourCycle, etc.)
+	 * via the host engine's CLDR / Intl.Locale Info database.
+	 */
+	readonly info: ResolvedLocaleInfo;
+
+	/**
+	 * Memoized native Intl.Locale instance for the active locale.
+	 */
+	readonly locale: Intl.Locale;
+
+	// =========================================================================
+	// Backward Compatibility Fallbacks (@deprecated for v4.x, removed in v5.0.0)
+	// =========================================================================
+
+	/** @deprecated Use `intl.info.firstDay` instead. To be removed in v5.0.0. */
+	readonly firstDay: number;
+
+	/** @deprecated Use `intl.info.weekend` instead. To be removed in v5.0.0. */
+	readonly weekend: readonly number[];
+
+	/** @deprecated Use `intl.info.direction` instead. To be removed in v5.0.0. */
+	readonly direction: 'ltr' | 'rtl';
+
+	/** @deprecated Use `intl.info.hourCycle` instead. To be removed in v5.0.0. */
+	readonly hourCycle: string;
+
+	/** @deprecated Use `intl.info.hourCycles` instead. To be removed in v5.0.0. */
+	readonly hourCycles: readonly string[];
+
+	/** @deprecated Use `intl.info.numberingSystem` instead. To be removed in v5.0.0. */
+	readonly numberingSystem: string;
+
+	/** @deprecated Use `intl.info.numberingSystems` instead. To be removed in v5.0.0. */
+	readonly numberingSystems: readonly string[];
+
+	/** @deprecated Use `intl.info.region` instead. To be removed in v5.0.0. */
+	readonly region?: string | undefined;
+
+	/** @deprecated Use `intl.info.script` instead. To be removed in v5.0.0. */
+	readonly script?: string | undefined;
+
+	/** @deprecated Use `intl.info.language` instead. To be removed in v5.0.0. */
+	readonly language?: string | undefined;
+
+	/** @deprecated Use `intl.info.timeZones` instead. To be removed in v5.0.0. */
+	readonly timeZones: readonly string[];
+
+	/** @deprecated Use `intl.info.baseName` instead. To be removed in v5.0.0. */
+	readonly baseName: string;
+
+	/** @deprecated Use `intl.info.weekInfo` instead. To be removed in v5.0.0. */
+	readonly weekInfo: LocaleWeekInfo;
 }
 
 /**
@@ -189,7 +245,7 @@ export const getLC = memoizeFunction((localeTag?: LocaleInput): Intl.Locale | un
  * @internal
  */
 export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleInfo => {
-	const loc = getLC(localeTag) ?? getLC('en-US');
+	const loc = (getLC(localeTag) ?? getLC('en-US')) as Intl.Locale;
 	const baseName = loc?.baseName ?? canonicalLocale(localeTag) ?? 'en-US';
 	const language = loc?.language ?? (baseName.split('-')[0]?.toLowerCase());
 
@@ -255,6 +311,33 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 		numberingSystem: numberingSystems[0],
 		numberingSystems,
 		timeZones,
+	});
+});
+
+/**
+ * Memoized helper for the structured TempoIntlNamespace.
+ * @internal
+ */
+export const getIntlNamespace = memoizeFunction((localeTag?: LocaleInput): TempoIntlNamespace => {
+	const info = getLI(localeTag);
+	const loc = (getLC(localeTag) ?? getLC('en-US')) as Intl.Locale;
+
+	return Object.freeze({
+		info,
+		locale: loc,
+		firstDay: info.firstDay,
+		weekend: info.weekend,
+		direction: info.direction,
+		hourCycle: info.hourCycle,
+		hourCycles: info.hourCycles,
+		numberingSystem: info.numberingSystem,
+		numberingSystems: info.numberingSystems,
+		region: info.region,
+		script: info.script,
+		language: info.language,
+		timeZones: info.timeZones,
+		baseName: info.baseName,
+		weekInfo: info.weekInfo,
 	});
 });
 

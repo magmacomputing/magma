@@ -15,7 +15,7 @@ import type { WeakCache } from '#library/weakcache.class.js';
 import type { Interval as TempoInterval } from '#library/scheduling/interval.class.js';
 
 export type { GeoOptions, GeoConfig };
-export type { ResolvedLocaleInfo, LocaleWeekInfo } from '#library/international.library.js';
+export type { ResolvedLocaleInfo, LocaleWeekInfo, TempoIntlNamespace } from '#library/international.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';

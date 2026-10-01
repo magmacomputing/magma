@@ -351,7 +351,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 									if (!state.config.localeInfo)
 										return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Mon) }).startOfDay();
 
-									const diff = (currZdt.dayOfWeek - this.intl.firstDay + 7) % 7;
+									const diff = (currZdt.dayOfWeek - this.intl.info.firstDay + 7) % 7;
 									return currZdt.subtract({ days: diff }).startOfDay();
 								}
 								case 'start:day': return currZdt.startOfDay();
@@ -377,7 +377,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 									if (!state.config.localeInfo)
 										return currZdt.add({ days: -(currZdt.dayOfWeek - enums.WEEKDAY.Thu) }).startOfDay();
 
-									const diff = (currZdt.dayOfWeek - this.intl.firstDay + 7) % 7;
+									const diff = (currZdt.dayOfWeek - this.intl.info.firstDay + 7) % 7;
 									return currZdt.subtract({ days: diff }).startOfDay().add({ days: 3 });
 								}
 								case 'mid:day': return currZdt.round({ smallestUnit: 'day', roundingMode: 'trunc' }).add({ hours: 12 });
@@ -404,7 +404,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 									if (!state.config.localeInfo)
 										return currZdt.add({ days: (enums.WEEKDAY.Sun - currZdt.dayOfWeek) + 1 }).startOfDay().subtract({ nanoseconds: 1 });
 
-									const diff = (currZdt.dayOfWeek - this.intl.firstDay + 7) % 7;
+									const diff = (currZdt.dayOfWeek - this.intl.info.firstDay + 7) % 7;
 									return currZdt.subtract({ days: diff }).startOfDay().add({ days: 7 }).subtract({ nanoseconds: 1 });
 								}
 

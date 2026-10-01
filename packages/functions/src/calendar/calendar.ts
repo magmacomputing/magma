@@ -1,4 +1,4 @@
-import { extractDateParts, isNumber, getLocale, type TemporalLikeDate, type DateInput } from '../support/index.js';
+import { extractDateParts, isNumber, isUndefined, getLocale, isLeapYearNumber, type TemporalLikeDate, type DateInput } from '../support/index.js';
 
 export type { TemporalLikeDate, DateInput };
 
@@ -12,7 +12,7 @@ export interface WeekendOptions {
 const DAYS_PER_MONTH: readonly number[] = Object.freeze([0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]);
 const DEFAULT_WEEKEND: readonly number[] = Object.freeze([6, 7]);
 const FRI_SAT_WEEKEND_REGIONS = new Set([
-	'AE', 'AF', 'BH', 'DZ', 'EG', 'IL', 'IQ', 'JO', 'KW', 'LY', 'OM', 'QA', 'SA', 'SD', 'SY', 'YE'
+	'AE', 'BH', 'DZ', 'EG', 'IL', 'IQ', 'JO', 'KW', 'LY', 'OM', 'QA', 'SA', 'SD', 'SY', 'YE'
 ]);
 
 /**
@@ -67,7 +67,7 @@ export function isLeapYear(yearOrDate: DateInput): boolean {
 	if (!isNumber(year) || isNaN(year))
 		throw new TypeError('[functions] isLeapYear requires a year number, date string, or date object.');
 
-	return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+	return isLeapYearNumber(year);
 }
 
 /**
@@ -91,10 +91,10 @@ export function daysInMonth(
 	let year = parts.year;
 	let m = isNumber(month) ? month : parts.month;
 
-	if (parts.type === 'number') {
+	if (parts.type === 'number' && isUndefined(parts.month)) {
 		if (!isNumber(month))
 			throw new TypeError('[functions] daysInMonth requires a month argument (1-12) when the first argument is a year number.');
-		year = yearOrDate as number;
+		year = parts.year;
 		m = month;
 	} else if (parts.type === 'object' || parts.type === 'Temporal' || parts.type === 'Tempo') {
 		if (isNumber(parts.daysInMonth) && (!isNumber(month) || parts.month === month))
@@ -108,7 +108,7 @@ export function daysInMonth(
 		throw new RangeError(`[functions] daysInMonth month must be between 1 and 12, received ${m}`);
 
 	if (m === 2)
-		return isLeapYear(year) ? 29 : 28;
+		return isLeapYearNumber(year) ? 29 : 28;
 
 	return DAYS_PER_MONTH[m]!;
 }
@@ -154,7 +154,7 @@ export function isLastDayOfMonth(input: DateInput): boolean {
 		if (isNumber(parts.year) && isNumber(parts.month))
 			return parts.day === daysInMonth(parts.year, parts.month);
 
-		return parts.day === (parts.daysInMonth ?? 31);
+		throw new TypeError('[functions] isLastDayOfMonth requires a valid date object, string, or timestamp.');
 	}
 
 	throw new TypeError('[functions] isLastDayOfMonth requires a valid date object, string, or timestamp.');

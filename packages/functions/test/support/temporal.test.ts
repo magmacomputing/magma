@@ -124,4 +124,12 @@ describe('extractDateParts', () => {
 		expect(extractDateParts(undefined).type).toBe('unknown');
 		expect(extractDateParts(true).type).toBe('unknown');
 	});
+
+	it('should reject out-of-bounds ISO date strings without normalizing dayOfWeek', () => {
+		const invalidMonth = extractDateParts('2024-99-01');
+		expect(invalidMonth.dayOfWeek).toBeUndefined();
+
+		const invalidDay = extractDateParts('2024-02-30');
+		expect(invalidDay.dayOfWeek).toBeUndefined();
+	});
 });

@@ -531,7 +531,11 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					break;
 				}
 				case 'offset':
-					if (token === 'tz' && !normMods.includes('short')) res = zdt.offset;
+					if (token === 'tz') {
+						res = normMods.includes('short')
+							? (zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset)
+							: zdt.offset;
+					}
 					break;
 				case 'compact':
 					res = String(res).replace(/:/g, '');

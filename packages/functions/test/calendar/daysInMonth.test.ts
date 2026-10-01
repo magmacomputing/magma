@@ -51,4 +51,9 @@ describe('daysInMonth', () => {
 	it('should throw TypeError when year is passed as number without month', () => {
 		expect(() => daysInMonth(2026 as any)).toThrow(TypeError);
 	});
+
+	it('should extract year and month from epoch timestamps without requiring separate month argument', () => {
+		const feb2024Ts = new Date(2024, 1, 15).getTime();
+		expect(daysInMonth(feb2024Ts)).toBe(29);
+	});
 });

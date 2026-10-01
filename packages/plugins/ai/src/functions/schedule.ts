@@ -99,7 +99,7 @@ function buildContextPrompt(
 	busyEvents: Array<{ start: Tempo; end: Tempo; title?: string | undefined }>,
 	durationMinutes: number
 ): string {
-	const weekend = anchorTempo.intl?.weekend ?? [6, 7];
+	const weekend = anchorTempo.intl?.info?.weekend ?? [6, 7];
 	const activeDays = formatActiveDays(workingHours.days, weekend);
 	const whStart = workingHours.start ?? '09:00';
 	const whEnd = workingHours.end ?? '17:00';
@@ -114,7 +114,7 @@ function buildContextPrompt(
 	return `Reference Anchor Time: ${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')} (${timeZone})
 Target TimeZone: ${timeZone}
 Target Locale: ${anchorTempo.locale}
-Week Starts On: ${anchorTempo.intl.firstDay} (1=Mon, 7=Sun, 6=Sat)
+Week Starts On: ${anchorTempo.intl.info.firstDay} (1=Mon, 7=Sun, 6=Sat)
 Regional Weekend Days: [${weekend.join(', ')}]
 Working Hours: ${whStart} to ${whEnd} (${activeDays}) in ${workingHours.timeZone || timeZone}
 Required Slot Duration: ${durationMinutes} minutes
@@ -247,7 +247,7 @@ export async function scheduleAI(
 		operationName: 'scheduleAI',
 	});
 
-	const weekendSet = new Set<number>(anchorTempo.intl?.weekend ?? [6, 7]);
+	const weekendSet = new Set<number>(anchorTempo.intl?.info?.weekend ?? [6, 7]);
 	const defaultActiveDays = [1, 2, 3, 4, 5, 6, 7].filter(d => !weekendSet.has(d));
 	const workingHours: TempoWorkingHours = {
 		start: options?.workingHours?.start ?? '09:00',

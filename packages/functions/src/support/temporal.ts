@@ -1,5 +1,5 @@
 import type { Temporal as TemporalType } from '@js-temporal/polyfill';
-import { isObject, isNumber, isString, isDate, isTempo, isTemporal } from './assert.js';
+import { isObject, isNumber, isString, isDate, isTempo, isTemporal, isDefined } from './assert.js';
 export type { TemporalType as Temporal };
 
 /**
@@ -47,16 +47,24 @@ export interface ResolvedDateParts {
 }
 
 /**
+ * Fast Gregorian leap year check for a full calendar year number.
+ * @internal
+ */
+export const isLeapYearNumber = (year: number): boolean =>
+	(year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+
+/**
  * Resolves the native Temporal API from the global scope at runtime.
  * This guarantees that functions does not accidentally bundle the polyfill, 
  * while maintaining full type safety.
  */
 export const getTemporal = (): typeof TemporalType => {
-	// @ts-expect-error - Check for global Temporal
-	if (typeof Temporal !== 'undefined') return Temporal;
-
 	if (typeof globalThis !== 'undefined' && 'Temporal' in globalThis)
 		return (globalThis as any).Temporal;
+
+	// @ts-ignore
+	if (typeof Temporal !== 'undefined')
+		return Temporal as any;
 
 	throw new Error("[functions] Temporal API is not available in the global scope. Ensure a polyfill is loaded.");
 };
@@ -99,8 +107,8 @@ export function extractDateParts(input: unknown): ResolvedDateParts {
 		const type: DateSourceType = isT
 			? 'Tempo'
 			: isTemporal(input) || isTemporal(target)
-			? 'Temporal'
-			: 'object';
+				? 'Temporal'
+				: 'object';
 
 		if (isDate(target)) {
 			const d = target.getDay();
@@ -127,15 +135,28 @@ export function extractDateParts(input: unknown): ResolvedDateParts {
 
 	if (isString(input)) {
 		const trimmed = input.trim();
-		// Match calendar date parts: YYYY-MM-DD or YYYY-MM or YYYY
-		const match = trimmed.match(/^([+-]?\d{4,6})(?:-(\d{2}))?(?:-(\d{2}))?/);
-		if (match && match[1]) {
-			const year = parseInt(match[1], 10);
-			const month = match[2] ? parseInt(match[2], 10) : undefined;
-			const day = match[3] ? parseInt(match[3], 10) : undefined;
+		// Match calendar date parts: YYYY-MM-DD or YYYY-MM or YYYY (or signed +YYYYYY)
+		const match = trimmed.match(/^(?:([+-]\d{4,6})|(\d{4}))(?:-(\d{2}))?(?:-(\d{2}))?(?=$|[T\sZ+-])/);
+		const yearStr = match ? (match[1] ?? match[2]) : undefined;
+		if (match && yearStr) {
+			const year = parseInt(yearStr, 10);
+			const month = match[3] ? parseInt(match[3], 10) : undefined;
+			const day = match[4] ? parseInt(match[4], 10) : undefined;
+
+			// Validate month (1-12) and day bounds
+			if (isDefined(month) && (month < 1 || month > 12))
+				return { type: 'string', target: input };
+
+			if (isDefined(month) && isDefined(day)) {
+				const maxDays = (month === 2)
+					? (isLeapYearNumber(year) ? 29 : 28)
+					: [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month]!;
+				if (day < 1 || day > maxDays)
+					return { type: 'string', target: input };
+			}
 
 			let dayOfWeek: number | undefined;
-			if (month !== undefined && day !== undefined) {
+			if (isDefined(month) && isDefined(day)) {
 				const dt = new Date(Date.UTC(year, month - 1, day));
 				const dow = dt.getUTCDay();
 				dayOfWeek = dow === 0 ? 7 : dow;

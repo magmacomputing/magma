@@ -15,7 +15,7 @@
     "packageName": "@magmacomputing/tempo-plugin-celestial",
     "plan": "community",
     "status": "active",
-    "version": "1.1.1"
+    "version": "1.2.0"
   },
   {
     "id": "batch",
@@ -60,7 +60,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
     "status": "active",
-    "version": "2.3.0"
+    "version": "2.3.1"
   },
   {
     "id": "ticker",
@@ -104,7 +104,7 @@
     "name": "Holidays Plugin",
     "description": "Regional bank holiday, public holiday, and business day SLA scheduling plugin for Tempo",
     "packageName": "@magmacomputing/tempo-plugin-holidays",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "plan": "community",
     "status": "active"
   },

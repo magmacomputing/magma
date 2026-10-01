@@ -38,6 +38,12 @@ export const isNullish = (val: any): val is null | undefined =>
 	val === null || val === undefined;
 
 /**
+ * Validates whether an argument is undefined.
+ */
+export const isUndefined = (val: any): val is undefined =>
+	val === undefined;
+
+/**
  * Validates whether an argument is defined (neither null nor undefined).
  */
 export const isDefined = <T>(val: T | null | undefined): val is T =>

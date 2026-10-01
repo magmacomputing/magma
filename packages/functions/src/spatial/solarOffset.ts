@@ -73,7 +73,7 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 
 	// If no civil timezone, use natural solar timezone meridian (round(lng / 15) * 15)
 	const refMeridian =
-		offsetMinutes !== undefined
+		isDefined(offsetMinutes)
 			? (offsetMinutes / 60) * 15
 			: Math.round(lng / 15) * 15;
 

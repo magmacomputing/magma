@@ -1,10 +1,14 @@
-# The Role of Locale in Tempo
+# Internationalization (Intl) & Locale in Tempo
 
-The `locale` configuration setting (`config.locale`) is a foundational pillar of the Tempo engine. Because Tempo delegates heavily to native ECMAScript APIs (`Intl` and `Temporal`), the `locale` parameter is responsible for driving three distinct behavioral systems:
+The `locale` configuration setting (`config.locale`) and internationalization subsystem are foundational pillars of the Tempo engine. Because Tempo delegates heavily to native ECMAScript APIs (`Intl` and `Temporal`), the `locale` parameter is responsible for driving three distinct behavioral systems:
 
 1. **Ambiguity Resolution** (How ambiguous dates are ordered)
 2. **Multi-lingual Parsing** (How foreign text is lexed)
 3. **Auto-localization Formatting** (How output strings are generated)
+
+> [!NOTE]
+> **Scope & Design Philosophy**
+> Tempo focuses strictly on high-performance date-time mathematics, localized calendar heuristics, and temporal token formatting. General-purpose string manipulation (such as `Intl.DisplayNames`, `Intl.Segmenter`, or `Intl.Collator`) is intentionally delegated directly to standard native ECMAScript engines.
 
 When you initialize Tempo (or let it infer its environment), the `locale` dictates how it interprets and communicates dates.
 
@@ -17,7 +21,7 @@ When parsing an ambiguous string like `04/05/2024`, the engine must decide if it
 Tempo uses the active `locale` as a critical piece of metadata to resolve this:
 - It resolves your `locale` (e.g. `'en-US'` or `'en-GB'`) to determine the active region.
 - It cross-references the locale's region or language against the internal `MONTH_DAY` registry to check its preferred layout.
-- If the locale inherently prefers `MDY` (like in the United States), Tempo dynamically swaps its parsing order to attempt `Month-Day-Year` patterns *before* it attempts `Day-Month-Year` patterns.
+- If the locale inherently prefers `MDY` (as in the United States), Tempo dynamically swaps its parsing order to attempt `Month-Day-Year` patterns *before* it attempts `Day-Month-Year` patterns.
 
 *For deeper details on layout configurations and ambiguous digits, see the [Ambiguity Resolution Guide](../2-core-concepts/tempo.parse.md).*
 
@@ -58,85 +62,9 @@ const b = new Tempo('el próximo lunes');  // Matches Spanish ("next Monday")
 When generating human-readable output, Tempo uses the `locale` to ensure the resulting text is culturally accurate. It delegates this heavily to native `Intl` APIs for extreme performance.
 
 - When calling `.toLocaleString()`, Tempo automatically passes your configured `locale` to `Temporal` so that dates and times are correctly formatted for that region.
-- When passing an `Intl.DateTimeFormatOptions` object to `.format()`, you can include a `locale` property to explicitly override the instance's locale for that specific formatting execution.
-- When using granular layout strings, you must explicitly use the `:locale` modifier on structural tokens (e.g., `{mon:locale}` or `{wkd:locale}`) to instruct Tempo to delegate rendering to `Intl`. If your `locale` is an array of strings, the `Intl` engine will prioritize the first supported locale in the list.
-- When generating human-readable relative time durations (e.g., using `.since()`), Tempo utilizes `Intl.RelativeTimeFormat` combined with your `locale` to produce fluid natural language strings (e.g., turning "2 days ago" into "hace 2 días" for Spanish).
+- Custom format masks can leverage `:locale` modifiers (e.g. `{hh:locale}`, `{time:locale}`, `{mon:locale}`, `{geo.sphere:locale}`) to apply local hour-cycles, localized month names, spatial hemisphere translations, and numbering system transliteration.
 
-```typescript
-const t = new Tempo('2024-02-15', { locale: ['fr-FR', 'en-US'] });
-
-console.log(t.format('{wkd:locale}, {dd} {mon:locale} {yyyy}'));
-// "jeudi, 15 février 2024"
-
-console.log(t.format({ dateStyle: 'full', locale: 'de-DE' }));
-// "Donnerstag, 15. Februar 2024"
-```
-
-*For more details on formatting features, see the [Format Guide](../2-core-concepts/tempo.format.md).*
-
-### Global LOCALE Registry
-The easiest way to augment or override translations globally is via the `locales` configuration option. Translations added here apply to terms, custom formats, and dot-namespaced tokens:
-```typescript
-Tempo.init({
-    locale: 'fr-FR',
-    registry: {
-        locales: {
-            fr: {
-                morning: 'Matinée',
-                afternoon: 'Après-midi',
-                // Supports native Intl.PluralRules objects for ordinals!
-                ordinal: { one: 'er', other: 'e' },
-                // Deep hierarchical namespace dictionaries for dot-notated tokens!
-                geo: {
-                    sphere: {
-                        north: 'nord',
-                        south: 'sud',
-                        equator: 'équateur',
-                    },
-                },
-            },
-        },
-    }
-});
-
-const t = new Tempo('2024-05-15 10:30', { locale: 'fr-FR', geo: { sphere: 'south' } });
-console.log(t.format('{#tod:locale}'));        // "Matinée"
-console.log(t.format('{dd:ord}'));             // "15e"
-console.log(t.format('{geo.sphere:locale}'));  // "sud"
-```
-
-> [!NOTE]
-> **Ordinal Localization**: While the `:locale` modifier automatically delegates to native APIs for months and weekdays, the `:ord` modifier **requires** a dictionary in the global `locales` registry for non-English languages. If no `ordinal` dictionary is found, Tempo will fall back to English suffixes (`st`, `nd`, `rd`, `th`). By providing a "Plural Object" mapping as shown above, Tempo natively evaluates the active `Intl.PluralRules` category and automatically appends the correct suffix!
-
-> [!NOTE]
-> **Presentation-Layer Dictionaries & Determinism**: All dictionary mappings configured in `registry.locales` are strictly one-way, deterministic projections applied during `.format()` output resolution. They do not alter instance getters (e.g. `t.geo.sphere` remains standard `'north'` or `'south'`) or mutating operations. Developers have full authority over their translation terms and should ensure dictionaries accurately reflect the target language semantics.
-
-### Term Bundled Dictionary
-Plugin authors can optionally bundle a `locale` dictionary directly into their custom Term definition:
-```typescript
-Tempo.use({
-    terms: [{
-        key: 'shift',
-        label: 'Shift',
-        locale: {
-            es: 'Turno',
-            de: 'Schicht'
-        },
-        // ... logic
-    }]
-});
-```
-*Note: A user's Global `locales` config will always take precedence over a plugin's bundled dictionary.*
 ---
-
-## Initialization & Fallbacks
-
-If you do not explicitly provide a `locale` when initializing `Tempo`, it will gracefully attempt to infer it from the environment:
-1. It checks the browser's prioritized language list (`navigator.languages[0]`).
-2. It falls back to the system's primary language (`navigator.language`).
-3. If no system language is exposed (such as on headless servers without `Intl` extensions), it falls back safely to `'en-US'`.
-
-Whenever an array of locales is provided (e.g. `['fr-FR', 'en-GB']`), Tempo extracts the first item in the array as the "Primary Locale". The primary locale is passed to strict native APIs (like `Intl.Locale`) to guarantee stable and deterministic formatting.
 
 ### Regional Calendar & Environment Fallbacks
 
@@ -161,26 +89,36 @@ Tempo delegates regional calendar metadata (such as `firstDay` of the week, regi
 
 ---
 
-## 4. `Intl.LocaleInfo` & Regional Calendar Integration
+## 4. `Intl.Locale` Info & Regional Calendar Integration
 
-Tempo bridges the mathematical rigor of the ISO 8601 engine with the practical, cultural expectations of calendars around the world (e.g., Sunday-first weeks in North America and Japan, Friday–Saturday weekends in the Middle East).
+Tempo delegates regional calendar and cultural metadata directly to the ECMAScript [`Intl.Locale` Info API](https://github.com/tc39/proposal-intl-locale-info) (such as [`Intl.Locale.prototype.getWeekInfo()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getWeekInfo) and `getTextInfo()`), bridging the mathematical rigor of the ISO 8601 engine with the practical cultural expectations of calendars around the world (e.g., Sunday-first weeks in North America and Japan, Friday–Saturday weekends in the Middle East).
 
-### Inspecting Cultural Metadata (`t.intl`)
+### Inspecting Cultural Metadata (`t.intl.info`)
 
-Every `Tempo` instance provides a frozen, globally memoized `t.intl` getter returning `ResolvedLocaleInfo` with zero per-instance allocations:
+Every `Tempo` instance provides a structured `t.intl` namespace:
+- **`t.intl.info`**: Returns a frozen, memoized `ResolvedLocaleInfo` object.
+- **`t.intl.locale`**: Returns the memoized native ECMAScript `Intl.Locale` instance.
 
 ```typescript
 const t = new Tempo('2026-09-16', { locale: 'en-US' });
 
-console.log(t.intl.firstDay);        // 7 (Sunday)
-console.log(t.intl.weekend);         // [6, 7] (Saturday, Sunday)
-console.log(t.intl.region);          // 'US'
-console.log(t.intl.script);          // 'Latn'
-console.log(t.intl.direction);       // 'ltr'
-console.log(t.intl.hourCycle);       // 'h12'
-console.log(t.intl.numberingSystem); // 'latn'
-console.log(t.intl.baseName);        // 'en-US'
+// Cultural calendar metadata via t.intl.info:
+console.log(t.intl.info.firstDay);        // 7 (Sunday)
+console.log(t.intl.info.weekend);         // [6, 7] (Saturday, Sunday)
+console.log(t.intl.info.region);          // 'US'
+console.log(t.intl.info.script);          // 'Latn'
+console.log(t.intl.info.direction);       // 'ltr'
+console.log(t.intl.info.hourCycle);       // 'h12'
+console.log(t.intl.info.numberingSystem); // 'latn'
+console.log(t.intl.info.baseName);        // 'en-US'
+
+// Native Intl.Locale instance via t.intl.locale:
+console.log(t.intl.locale.language);     // 'en'
+console.log(t.intl.locale.maximize().baseName); // 'en-Latn-US'
 ```
+
+> [!TIP]
+> **Backward Compatibility**: Direct access via `t.intl.firstDay`, `t.intl.weekend`, etc., remains supported as a deprecated fallback during v4.x, but new code should target `t.intl.info.*`.
 
 ### Opt-in Regional Calendar Math (`localeInfo: true`)
 
@@ -211,7 +149,7 @@ t.set({ isoWeek: 'end' });         // Always snaps to Sunday 23:59:59.999999999
 
 ### Cultural Formatting Tokens
 
-- **`{dow:locale}`**: Formats a 1-based day-of-week index relative to the active locale's `firstDay` (e.g. Sunday = `1` in `en-US` and `ar-SA` [where Saturday is `7`], Monday = `1` in `en-GB`). Because the developer explicitly requested `:locale`, this evaluates directly using `t.intl.firstDay`. Standard `{dow}` continues to evaluate to ISO Monday = `1` strictly.
+- **`{dow:locale}`**: Formats a 1-based day-of-week index relative to the active locale's `firstDay` (e.g. Sunday = `1` in `en-US` and `ar-SA` [where Saturday is `7`], Monday = `1` in `en-GB`). Because the developer explicitly requested `:locale`, this evaluates directly using `t.intl.info.firstDay`. Standard `{dow}` continues to evaluate to ISO Monday = `1` strictly.
 - **`{hh:locale}`**: Adapts hour formatting to the region's `hourCycle` (12-hour format `00..11` in `h11` regions, `01..12` in `h12` regions like `en-US`, and 24-hour format `00..23` in `h23`/`h24` regions like `fr-FR`). Compose with `:raw` (`{hh:locale:raw}`) for unpadded hours.
 - **`{time:locale}`**: Formats a complete localized time string, automatically including localized meridiem markers in `h12` locales (`"03:30:45 pm"`) and 24-hour time in `h23` locales (`"15:30:45"`).
 - **Localized Numerals (`:locale`)**: When applied to numeric tokens (`{yyyy:locale}`, `{mm:locale}`, `{dd:locale}`), transliterates digits into the region's native numbering system (e.g. `٢٠٢٦-١٠-٢٤` in `ar-EG`). Base tokens without `:locale` (`{yyyy}-{mm}-{dd}`) always maintain strict ASCII digits for machine safety.
