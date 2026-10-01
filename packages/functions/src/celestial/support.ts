@@ -12,6 +12,12 @@ export const REF_PERIGEE_MS = 947031600000;
 /** Anomalistic Month length in days (perigee to perigee) */
 export const ANOMALISTIC_MONTH = 27.55455;
 
+/** Milliseconds in half a standard day (12 hours = 43,200,000 ms) */
+export const HALF_DAY_MS = 43_200_000;
+
+/** Milliseconds in a standard day (24 hours = 86,400,000 ms) */
+export const DAY_MS = 86_400_000;
+
 export interface SolarOptions {
 	latitude?: number;
 	lat?: number;

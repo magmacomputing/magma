@@ -55,9 +55,9 @@ export class PatternCompiler {
 			}
 
 			if (source.startsWith('/') && source.endsWith('/'))
-				source = source.substring(1, source.length - 1);		// remove the leading/trailing "/"
+				source = source.slice(1, -1);												// remove the leading/trailing "/"
 			if (source.startsWith('^') && source.endsWith('$'))
-				source = source.substring(1, source.length - 1);		// remove the leading/trailing anchors (^ $)
+				source = source.slice(1, -1);												// remove the leading/trailing anchors (^ $)
 
 			return source.replace(BRACES_REGEX, (match, name) => {// iterate over "{}" pairs in the source string
 				const token = getSymbol(name);											// get the symbol for this {name}

@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin, SolarTerm, LunarTerm } from '../src/index.js';
+import { CelestialPlugin, SolarTerm, LunarTerm, HALF_DAY_MS } from '../src/index.js';
 
 describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 	beforeEach(() => {
@@ -21,6 +21,15 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(t.term.lunar.end).toBeInstanceOf(Tempo);
 	});
 
+	it('resolves lunar culmination milestones and angles (transit, nadir, zenith)', () => {
+		const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
+		expect(t.term.lunar.transit).toBeInstanceOf(Tempo);
+		expect(t.term.lunar.nadir).toBeInstanceOf(Tempo);
+		expect(typeof t.term.lunar.zenith).toBe('number');
+		expect(typeof t.term.lunar.altitude).toBe('number');
+		expect(t.term.lunar.zenith!).toBeCloseTo(90 - t.term.lunar.altitude!, 1);
+	});
+
 	it('resolves solar terms (sun and solar)', () => {
 		const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
 		expect(typeof t.term.sun).toBe('string');
@@ -33,6 +42,8 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(Object.isFrozen(t.term.solar.phases)).toBe(true);
 		expect(t.term.solar.sunrise).toBeInstanceOf(Tempo);
 		expect(t.term.solar.noon).toBeInstanceOf(Tempo);
+		expect(t.term.solar.nadir).toBeInstanceOf(Tempo);
+		expect(t.term.solar.nadir!.epoch.ms).toBe(t.term.solar.noon!.epoch.ms + HALF_DAY_MS);
 		expect(t.term.solar.solarTime).toBeInstanceOf(Tempo);
 		expect(t.term.solar.sunset).toBeInstanceOf(Tempo);
 		expect(t.term.solar.isDaylight).toBe(true);

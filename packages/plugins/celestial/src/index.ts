@@ -13,6 +13,8 @@ import {
 	SOLAR_PHASE_STATES,
 	SOLAR_PHASE_NAMES,
 	TIDAL_PHASE_STATES,
+	HALF_DAY_MS,
+	DAY_MS,
 } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
 import { isNumber } from '@magmacomputing/tempo/library';
@@ -49,7 +51,16 @@ export type {
 	EclipseType,
 	EclipseResult,
 };
-export { LUNAR_PHASE_KEYS, SOLAR_PHASE_STATES, SOLAR_PHASE_NAMES, TIDAL_PHASE_STATES, getEclipse, getSolarPosition };
+export {
+	LUNAR_PHASE_KEYS,
+	SOLAR_PHASE_STATES,
+	SOLAR_PHASE_NAMES,
+	TIDAL_PHASE_STATES,
+	HALF_DAY_MS,
+	DAY_MS,
+	getEclipse,
+	getSolarPosition,
+};
 
 export interface LunarPhaseOptions {
 	sphere?: 'north' | 'south' | undefined;
@@ -194,8 +205,10 @@ declare module '@magmacomputing/tempo' {
 			moonrise: Tempo | null;
 			moonset: Tempo | null;
 			transit: Tempo | null;
+			nadir: Tempo | null;
 			altitude: number | null;
 			azimuth: number | null;
+			zenith: number | null;
 			isAboveHorizon: boolean | null;
 			crescentTiltDeg: number | null;
 			distanceKm: number | null;
@@ -239,6 +252,7 @@ declare module '@magmacomputing/tempo' {
 			sunrise: Tempo | null;
 			sunset: Tempo | null;
 			noon: Tempo | null;
+			nadir: Tempo | null;
 			solarTime: Tempo | null;
 			altitude: number | null;
 			azimuth: number | null;
@@ -313,8 +327,10 @@ function getLunarScopeRange(t: Tempo, anchor?: any) {
 	const eclipseRes = hasGeo ? getEclipse(refTempo.epoch.ms, lat!, lng!) : null;
 
 	const transit = position?.transitMs ? toTempoOrNull(position.transitMs, timeZone, sphere) : null;
+	const nadir = position?.antiTransitMs ? toTempoOrNull(position.antiTransitMs, timeZone, sphere) : null;
 	const altitude = position ? position.altitude : null;
 	const azimuth = position ? position.azimuth : null;
+	const zenith = position ? position.zenith : null;
 	const isAboveHorizon = position ? position.isAboveHorizon : null;
 	const crescentTiltDeg = crescentTilt ? crescentTilt.crescentTiltDeg : null;
 	const distanceKm = distance ? distance.distanceKm : null;
@@ -336,8 +352,10 @@ function getLunarScopeRange(t: Tempo, anchor?: any) {
 		moonrise,
 		moonset,
 		transit,
+		nadir,
 		altitude,
 		azimuth,
+		zenith,
 		isAboveHorizon,
 		crescentTiltDeg,
 		distanceKm,
@@ -386,6 +404,7 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 			sunrise: null,
 			sunset: null,
 			noon: null,
+			nadir: null,
 			solarTime: null,
 			altitude: null,
 			azimuth: null,
@@ -426,15 +445,16 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 
 	const sunrise = toTempoOrNull(res.sunriseMs, timeZone);
 	const sunset = toTempoOrNull(res.sunsetMs, timeZone);
-	const solarNoon = toTempoOrNull(res.solarNoonMs, timeZone)!;
+	const solarNoon = toTempoOrNull(res.solarNoonMs, timeZone);
+	const solarNadir = toTempoOrNull(res.solarNadirMs, timeZone);
 
 	const localSolarDayStartMs = Date.UTC(
 		new Date(epochMs + (lng! * 240000)).getUTCFullYear(),
 		new Date(epochMs + (lng! * 240000)).getUTCMonth(),
 		new Date(epochMs + (lng! * 240000)).getUTCDate()
 	);
-	const solarTimeMs = Math.round(epochMs + (localSolarDayStartMs + 43200000 - res.solarNoonMs));
-	const solarTime = toTempoOrNull(solarTimeMs, 'UTC')!;
+	const solarTimeMs = Math.round(epochMs + (localSolarDayStartMs + HALF_DAY_MS - res.solarNoonMs));
+	const solarTime = toTempoOrNull(solarTimeMs, 'UTC');
 
 	const civilSunrise = toTempoOrNull(res.civil.sunriseMs, timeZone);
 	const civilSunset = toTempoOrNull(res.civil.sunsetMs, timeZone);
@@ -451,8 +471,8 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 	let end: Tempo;
 
 	if (res.isMidnightSun || res.isPolarNight || !sunrise || !sunset) {
-		start = new Tempo(res.solarNoonMs - 43200000, { timeZone, timeStamp: 'ms' });
-		end = new Tempo(res.solarNoonMs + 43200000, { timeZone, timeStamp: 'ms' });
+		start = new Tempo(res.solarNoonMs - HALF_DAY_MS, { timeZone, timeStamp: 'ms' });
+		end = new Tempo(res.solarNoonMs + HALF_DAY_MS, { timeZone, timeStamp: 'ms' });
 	} else if (res.solarPhaseState === 'daylight') {
 		start = sunrise;
 		end = sunset;
@@ -482,7 +502,7 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		}
 	} else {
 		start = sunset;
-		end = new Tempo(res.sunriseMs! + 86400000, { timeZone, timeStamp: 'ms' });
+		end = new Tempo(res.sunriseMs! + DAY_MS, { timeZone, timeStamp: 'ms' });
 	}
 
 	return {
@@ -497,6 +517,7 @@ function getSolarScopeRange(t: Tempo, anchor?: any) {
 		sunrise,
 		sunset,
 		noon: solarNoon,
+		nadir: solarNadir,
 		solarTime,
 		altitude: position.altitude,
 		azimuth: position.azimuth,

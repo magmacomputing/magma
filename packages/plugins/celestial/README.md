@@ -90,7 +90,9 @@ console.log(t.term.solar.key);           // 'daylight'
 console.log(t.term.solar.phase);         // 'Daylight'
 console.log(t.term.solar.phases);        // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
 console.log(t.term.solar.sunrise);       // Tempo instance for local sunrise
-console.log(t.term.solar.noon);          // Tempo instance for local solar noon
+console.log(t.term.solar.noon);          // Tempo instance for local solar noon (upper culmination)
+console.log(t.term.solar.nadir);         // Tempo instance for local solar midnight (lower culmination)
+console.log(t.term.solar.zenith);        // Zenith angle in degrees (90° - altitude)
 console.log(t.term.solar.solarTime);     // Tempo instance for local apparent solar time
 console.log(t.term.solar.geo);           // { latitude: 40.7128, longitude: -74.006 }
 
@@ -100,6 +102,9 @@ console.log(t.term.lunar.phase);         // 'Waxing Crescent'
 console.log(t.term.lunar.phases);        // ['new-moon', 'waxing-crescent', 'first-quarter', 'waxing-gibbous', 'full-moon', 'waning-gibbous', 'third-quarter', 'waning-crescent']
 console.log(t.term.lunar.illumination);  // 0.45
 console.log(t.term.lunar.moonrise);      // Tempo instance for local moonrise (or null)
+console.log(t.term.lunar.transit);       // Tempo instance for upper meridian culmination (or null)
+console.log(t.term.lunar.nadir);         // Tempo instance for lower culmination / anti-transit (or null)
+console.log(t.term.lunar.zenith);        // Lunar zenith distance angle in degrees (90° - altitude)
 
 // --- Astronomical Tidal Mechanics ---
 console.log(t.term.tide);                // 'spring', 'neap', or 'normal'

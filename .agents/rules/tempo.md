@@ -49,4 +49,12 @@ Whenever writing, reviewing, refactoring, testing, or discussing code involving 
   - End users and external consumers are signaled that the symbol is private and subject to change without semver notices.
 - **Formatter vs. Constructor Pattern**: Keep low-level memoized Intl constructor helpers (`getRTF`, `getLF`, `getNF`, `getDF`) private to the module, exposing ergonomic high-level formatters (`getRelativeTime`, `formatList`, `formatNumber`, `formatDuration`). Only export constructor/snapshot helpers (`getDTF`, `getPR`, `getLC`, `getLI`) where deep inspection (`formatToParts`, `resolvedOptions`, `.select()`) is strictly required by engine consumers, and mark them `/** @internal */`.
 
+## 6. Type Importing Discipline (Static `import type` vs Inline Dynamic Imports)
+- **Always Prefer Top-Level Static `import type`**: In TypeScript source files (`.ts`), always declare and import types at the top of the file using `import type { Symbol } from '...'` (aliasing with `as` when necessary to prevent local naming collisions, e.g. `import type { Interval as TempoInterval } from '...'`).
+- **Avoid Inline Dynamic Type Imports**: Do NOT use inlined dynamic type imports like `export type Interval = import('#library/scheduling/interval.class.js').Interval<Tempo>;` in source files. Static type imports ensure:
+  - Clean, centralized dependency visibility at the top of every module.
+  - Reliable IDE refactoring, symbol renaming (`F2`), and automated import organization.
+  - Zero runtime footprint (fully elided during compilation with no bundle/performance impact).
+  - Concise, predictable generated `.d.ts` declaration bundles.
+
 

@@ -75,7 +75,7 @@ console.log(t.format({ dateStyle: 'full', locale: 'de-DE' }));
 *For more details on formatting features, see the [Format Guide](../2-core-concepts/tempo.format.md).*
 
 ### Global LOCALE Registry
-The easiest way to augment or override translations globally is via the `locales` configuration option. Translations added here will apply to *any* plugin that resolves the specified key:
+The easiest way to augment or override translations globally is via the `locales` configuration option. Translations added here apply to terms, custom formats, and dot-namespaced tokens:
 ```typescript
 Tempo.init({
     locale: 'fr-FR',
@@ -85,19 +85,31 @@ Tempo.init({
                 morning: 'Matinée',
                 afternoon: 'Après-midi',
                 // Supports native Intl.PluralRules objects for ordinals!
-                ordinal: { one: 'er', other: 'e' }
-            }
-        }
+                ordinal: { one: 'er', other: 'e' },
+                // Deep hierarchical namespace dictionaries for dot-notated tokens!
+                geo: {
+                    sphere: {
+                        north: 'nord',
+                        south: 'sud',
+                        equator: 'équateur',
+                    },
+                },
+            },
+        },
     }
 });
 
-const t = new Tempo('2024-05-15 10:30', { locale: 'fr-FR' });
-console.log(t.format('{#tod:locale}')); // "Matinée"
-console.log(t.format('{dd:ord}'));      // "15e"
+const t = new Tempo('2024-05-15 10:30', { locale: 'fr-FR', geo: { sphere: 'south' } });
+console.log(t.format('{#tod:locale}'));        // "Matinée"
+console.log(t.format('{dd:ord}'));             // "15e"
+console.log(t.format('{geo.sphere:locale}'));  // "sud"
 ```
 
 > [!NOTE]
 > **Ordinal Localization**: While the `:locale` modifier automatically delegates to native APIs for months and weekdays, the `:ord` modifier **requires** a dictionary in the global `locales` registry for non-English languages. If no `ordinal` dictionary is found, Tempo will fall back to English suffixes (`st`, `nd`, `rd`, `th`). By providing a "Plural Object" mapping as shown above, Tempo natively evaluates the active `Intl.PluralRules` category and automatically appends the correct suffix!
+
+> [!NOTE]
+> **Presentation-Layer Dictionaries & Determinism**: All dictionary mappings configured in `registry.locales` are strictly one-way, deterministic projections applied during `.format()` output resolution. They do not alter instance getters (e.g. `t.geo.sphere` remains standard `'north'` or `'south'`) or mutating operations. Developers have full authority over their translation terms and should ensure dictionaries accurately reflect the target language semantics.
 
 ### Term Bundled Dictionary
 Plugin authors can optionally bundle a `locale` dictionary directly into their custom Term definition:

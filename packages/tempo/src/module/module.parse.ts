@@ -380,7 +380,7 @@ const _ParseEngine = {
 
 			dateTime = dt;
 
-			const hasExplicitTzOption = state.options && hasOwn(state.options, 'timeZone');
+			const hasExplicitTzOption = hasOwn(state.options, 'timeZone');
 			const effectiveTz = hasExplicitTzOption ? targetTz : (timeZone ?? targetTz);
 			if (isZonedDateTime(dateTime) && !state.errored)
 				dateTime = dateTime.withTimeZone(effectiveTz).withCalendar(targetCal);

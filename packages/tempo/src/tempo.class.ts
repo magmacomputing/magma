@@ -395,7 +395,7 @@ export class Tempo {
 		markConfig(discovery);																	// auto-mark the discovery object
 
 		const isSandbox = shape !== _global;
-		let opts: Record<string, any> = isFunction(discovery.options) ? discovery.options() : (discovery.options || {});
+		let opts: Record<string, any> = evaluate(discovery.options, {}) ?? {};
 
 		// 1. Process TimeZones (normalize to lowercase for lookup)
 		if (discovery.timeZones) {
@@ -465,11 +465,11 @@ export class Tempo {
 
 		// 5. Process Options
 		if (discovery.ignore) {
-			const ignore = isFunction(discovery.ignore) ? discovery.ignore() : discovery.ignore;
+			const ignore = evaluate(discovery.ignore);
 			opts = { ...opts, ignore };
 		}
 
-		const res = isFunction(opts) ? opts() : opts;
+		const res = evaluate(opts, {}) ?? {};
 
 		if (shape === _global) {
 			this[$buildGuard]();
@@ -1273,7 +1273,7 @@ export class Tempo {
 		if (isSymbol(key)) return key;
 
 		if (isString(key) && key.includes('.')) {
-			const description = key.split('.').pop()!;						// use last segment as description
+			const description = key.split('.').at(-1)!;						// use last segment as description
 			return Token[key as keyof typeof Token] ??= Symbol(description);
 		}
 
@@ -1892,7 +1892,7 @@ export class Tempo {
 		const geoSphere = this.geo?.sphere;
 
 		const res = evaluate(
-			this.#local.options && hasOwn(this.#local.options, 'sphere') ? this.#local.options.sphere : undefined,
+			hasOwn(this.#local.options, 'sphere') ? this.#local.options?.sphere : undefined,
 			geoSphere,
 			isNumber(lat) ? (lat > 0.001 ? 'north' : (lat < -0.001 ? 'south' : 'equator')) : undefined,
 			hasInstanceTzOverride ? () => getHemisphere(String(this.tz)) : undefined,

@@ -177,7 +177,8 @@ describe('Tempo.format() refinements', () => {
       expect(t.format('{tz:short}')).toBe('UTC−4'); 
       expect(t.format('{tz:long}')).toBe('heure d’été de l’Est nord-américain'); 
       expect(t.format('{tz:offset}')).toBe('-04:00');
-      expect(t.format('{tz:offsetcompact}')).toBe('-0400');
+      expect(t.format('{tz:offset:short}')).toBe('-04');
+      expect(t.format('{tz:offset:compact}')).toBe('-0400');
     })
   })
   

@@ -1,6 +1,8 @@
 import {
 	SolarOptions,
 	SolarTwilightWindow,
+	HALF_DAY_MS,
+	DAY_MS,
 	resolveCoordinates,
 	getStartOfLocalDayMs,
 	getSunCoordinates,
@@ -49,6 +51,8 @@ export interface SunriseSunsetResult {
 	sunriseMs: number | null;
 	sunsetMs: number | null;
 	solarNoonMs: number;
+	/** Epoch timestamp in milliseconds of solar midnight (lower culmination) */
+	solarNadirMs: number;
 	daylightDurationMs: number;
 	isDaylight: boolean;
 	isMidnightSun: boolean;
@@ -68,6 +72,8 @@ export interface SolarPositionResult {
 	azimuth: number;
 	/** Angular distance from overhead zenith in degrees (90° - altitude) */
 	zenith: number;
+	/** Angular distance from nadir in degrees (90° + altitude) */
+	nadir: number;
 	/** True if solar altitude is between -4° and +6° (golden hour lighting) */
 	isGoldenHour: boolean;
 	/** True if solar altitude is between -6° and -4° (blue hour lighting) */
@@ -327,7 +333,7 @@ export function getSunriseSunset(
 		// Sun never sets below horizon for 24h: Midnight Sun
 		isMidnightSun = true;
 		isDaylight = true;
-		daylightDurationMs = 86400000;
+		daylightDurationMs = DAY_MS;
 	} else if (cosHAHorizon >= 1) {
 		// Sun never rises above horizon for 24h: Polar Night
 		isPolarNight = true;
@@ -378,6 +384,8 @@ export function getSunriseSunset(
 		index = 1;
 	}
 
+	const solarNadirMs = solarNoonMs + HALF_DAY_MS;
+
 	return {
 		latitude: lat,
 		longitude: lng,
@@ -385,6 +393,7 @@ export function getSunriseSunset(
 		sunriseMs,
 		sunsetMs,
 		solarNoonMs,
+		solarNadirMs,
 		daylightDurationMs,
 		isDaylight,
 		isMidnightSun,
@@ -398,12 +407,12 @@ export function getSunriseSunset(
 }
 
 /**
- * Calculates topocentric horizontal solar coordinates (altitude, azimuth, zenith) and photometric hours.
+ * Calculates topocentric horizontal solar coordinates (altitude, azimuth, zenith, nadir) and photometric hours.
  *
  * @param dateInput - Date value, date string, or epoch timestamp in milliseconds
  * @param latOrOptions - Latitude in degrees or coordinate options
  * @param lonInput - Longitude in degrees when `latOrOptions` is a latitude
- * @returns Solar altitude, azimuth, zenith, golden hour flag, blue hour flag, and shadow length ratio
+ * @returns Solar altitude, azimuth, zenith, nadir, golden hour flag, blue hour flag, and shadow length ratio
  */
 export function getSolarPosition(
 	dateInput: Date | number | string,
@@ -430,6 +439,7 @@ export function getSolarPosition(
 
 	const altitude = Math.round(altDeg * 100) / 100;
 	const zenith = Math.round((90 - altitude) * 100) / 100;
+	const nadir = Math.round((90 + altitude) * 100) / 100;
 
 	// Solar azimuth from North (0°) eastward (90° = East, 180° = South, 270° = West)
 	const y = -Math.cos(decSun) * Math.sin(ha);
@@ -447,6 +457,7 @@ export function getSolarPosition(
 		altitude,
 		azimuth,
 		zenith,
+		nadir,
 		isGoldenHour,
 		isBlueHour,
 		shadowRatio,
