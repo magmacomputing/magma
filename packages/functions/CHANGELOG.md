@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-01
+
+### Added
+- **Lunar Anti-Transit & Lower Culmination Metrics** (`@magmacomputing/tempo-fns/celestial`):
+  - `getLunarAntiTransit`: Calculates the exact local lower meridian transit timestamp (`antiTransitMs`) of the Moon (lower culmination / nadir).
+  - Enhanced `getLunarPosition` and `LunarPositionResult` with `antiTransitMs` and `zenith` (angular distance in degrees from overhead zenith, `90° - altitude`).
+- **Solar Nadir & Lower Culmination Coordinates**:
+  - Enhanced `getSunriseSunset` and `SunriseSunsetResult` with `solarNadirMs` (epoch millisecond timestamp of solar midnight / lower culmination).
+  - Enhanced `getSolarPosition` and `SolarPositionResult` with `nadir` angle (angular distance in degrees from nadir, `90° + altitude`).
+- **Core Calendar Extensions** (`@magmacomputing/tempo-fns/calendar`):
+  - `isLastDayOfMonth`: Determines whether a date is the final day of its calendar month, accounting for leap years.
+  - `isLeapYear`: Fast Gregorian leap year check for year numbers, dates, ISO strings, or Tempo instances.
+  - `daysInMonth`: Calculates the exact number of days (28, 29, 30, or 31) for a specified year and month.
+  - `isWeekend` & `isWeekday`: Determines if a date falls on a weekend or weekday, with support for standard ISO 8601 boundaries (`[6, 7]`), regional cultural adaptation (`options.locale`), and custom `options.weekendDays`.
+- **Astronomical Duration Constants**:
+  - Exported `HALF_DAY_MS` (`43_200_000` ms) and `DAY_MS` (`86_400_000` ms) from the root package and celestial submodule.
+
 ## [1.1.0] - 2026-09-27
 
 ### Added

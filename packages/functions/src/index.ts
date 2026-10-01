@@ -3,9 +3,20 @@ export { isSameFiscalQuarter } from './business/isSameFiscalQuarter.js';
 export { workingHoursUntil, type SLAOptions, preloadHolidays } from './business/workingHoursUntil.js';
 
 // --- Calendar ---
-export { getPublicHolidays, type PublicHoliday } from './calendar/getPublicHolidays.js';
-export { isFirstDayOfMonth } from './calendar/isFirstDayOfMonth.js';
-export { getISOWeekOfYear } from './calendar/getISOWeekOfYear.js';
+export {
+	getISOWeekOfYear,
+	isFirstDayOfMonth,
+	isLastDayOfMonth,
+	isLeapYear,
+	daysInMonth,
+	isWeekend,
+	isWeekday,
+	getPublicHolidays,
+	type WeekendOptions,
+	type PublicHoliday,
+	type DateInput,
+	type TemporalLikeDate,
+} from './calendar/index.js';
 
 // --- Scheduling ---
 export { nextCron, prevCron } from './scheduling/cron.js';
