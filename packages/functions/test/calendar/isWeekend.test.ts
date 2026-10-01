@@ -38,7 +38,7 @@ describe('isWeekend and isWeekday', () => {
 	});
 
 	it('should work with standard Date objects and duck-typed objects', () => {
-		const sat = new Date(Date.UTC(2026, 9, 3));
+		const sat = new Date(2026, 9, 3); // Saturday, Oct 3, 2026
 		expect(isWeekend(sat)).toBe(true);
 
 		expect(isWeekend({ dayOfWeek: 6 })).toBe(true);

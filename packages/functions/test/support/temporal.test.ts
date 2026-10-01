@@ -100,7 +100,7 @@ describe('extractDateParts', () => {
 	});
 
 	it('should extract parts and detect number source type for epoch timestamps', () => {
-		const ts = Date.UTC(2026, 9, 5); // Oct 5, 2026 (Monday)
+		const ts = new Date(2026, 9, 5).getTime(); // Oct 5, 2026 (Monday in local time)
 		const parts = extractDateParts(ts);
 		expect(parts.type).toBe('number');
 		expect(parts.year).toBe(2026);
