@@ -54,7 +54,7 @@ export class PatternCompiler {
 				return source;
 			}
 
-			if (source.startsWith('/') && source.endsWith('/'))
+			if (source.length >= 2 && source.startsWith('/') && source.endsWith('/'))
 				source = source.slice(1, -1);												// remove the leading/trailing "/"
 			if (source.startsWith('^') && source.endsWith('$'))
 				source = source.slice(1, -1);												// remove the leading/trailing anchors (^ $)

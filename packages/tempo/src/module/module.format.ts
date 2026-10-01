@@ -410,6 +410,16 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 		if (res === `{${token}}` || modifiers.length === 0) return res;
 
+		let canonicalTerm: string | undefined;
+		if (token.startsWith('#') && isTempo(obj)) {
+			const termVal = (obj as unknown as Tempo).term[token.slice(1)];
+			if (isObject(termVal)) {
+				canonicalTerm = String(termVal.key ?? termVal.id ?? res);
+			} else if (isDefined(termVal)) {
+				canonicalTerm = String(termVal);
+			}
+		}
+
 		const dtOptions = config?.intl?.dateTimeFormat ?? {};
 
 		for (const mod of modifiers) {
@@ -454,7 +464,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						const lang = getLanguage(config?.locale);
 						const dict = config?.registry?.locales?.[lang];
 						const tokenPath = token.replace(/^#/, '').split('.');
-						const valStr = String(res);
+						const valStr = canonicalTerm ?? String(res);
 
 						// 1. Check user-defined registry.locales (hierarchical, leaf, or flat)
 						const registered = resolveLocaleFromDictionary(dict, tokenPath, valStr, config?.locale);
@@ -467,17 +477,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 							const plugin = findTermPlugin(termName, (obj.constructor as any)[$Internal]());
 
 							if (plugin) {
-								const termVal = (obj as unknown as Tempo).term[termKey];
 								let locRes: any;
-								let baseKey: string | undefined;
-
-								if (isObject(termVal)) {
-									baseKey = String(termVal.key ?? termVal.id);
-								}
-
-								const searchKey = baseKey ?? valStr;
 								const flatGroups = Array.isArray(plugin.groups) ? plugin.groups : (isObject(plugin.groups) ? Object.values(plugin.groups).flat() : []);
-								const group = flatGroups.find((g: any) => g.key === searchKey);
+								const group = flatGroups.find((g: any) => g.key === valStr);
 								if (group && isObject(group.locale))
 									locRes = group.locale[lang] ?? group.locale.en;
 
