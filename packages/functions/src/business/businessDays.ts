@@ -154,8 +154,8 @@ export function prevBusinessDay(date: DateInput, options?: BusinessDayOptions): 
  * ```
  */
 export function addBusinessDays(date: DateInput, amount: number, options?: BusinessDayOptions): Temporal.ZonedDateTime {
-	if (!isNumber(amount))
-		throw new RangeError('Amount must be a finite number');
+	if (!isNumber(amount) || !Number.isInteger(amount))
+		throw new RangeError('Amount must be a finite integer');
 
 	let current = coerceZonedDateTime(date);
 	if (amount === 0) return current;
@@ -200,25 +200,22 @@ export function businessDaysBetween(start: DateInput, end: DateInput, options?: 
 
 	if (startIso === endIso) return 0;
 
-	let current = startZdt;
-	let count = 0;
+	if (startZdt.epochNanoseconds > endZdt.epochNanoseconds)
+		return -businessDaysBetween(end, start, options);
 
-	if (startZdt.epochNanoseconds < endZdt.epochNanoseconds) {
+	let current = startZdt.add({ days: 1 });
+	let count = 0;
+	let iterations = 0;
+	const maxIterations = 100_000;
+
+	while (true) {
+		if (++iterations > maxIterations)
+			throw new RangeError('Search limit exceeded while computing business days between dates');
+		const currIso = toDateKey(current.year, current.month, current.day);
+		if (currIso > endIso) break;
+		if (isBusinessDay(current, options)) count++;
 		current = current.add({ days: 1 });
-		while (true) {
-			const currIso = toDateKey(current.year, current.month, current.day);
-			if (currIso > endIso) break;
-			if (isBusinessDay(current, options)) count++;
-			current = current.add({ days: 1 });
-		}
-		return count;
-	} else {
-		while (true) {
-			const currIso = toDateKey(current.year, current.month, current.day);
-			if (currIso <= endIso) break;
-			if (isBusinessDay(current, options)) count--;
-			current = current.subtract({ days: 1 });
-		}
-		return count;
 	}
+
+	return count;
 }

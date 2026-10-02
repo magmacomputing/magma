@@ -42,7 +42,7 @@ prevBusinessDay('2026-10-05'); // 2026-10-02T00:00:00 (Friday preceding Monday)
 ```
 
 ### `addBusinessDays`
-Adds or subtracts a signed number of working business days, skipping weekends and recognized public holidays. Ideal for financial settlement calculations (e.g., T+2 settlement).
+Adds or subtracts a signed integer number of working business days, skipping weekends and configured public holidays. Pass `options.holidays` or `options.isHoliday` to define regional holidays (ideal for financial settlement calculations such as T+2 settlement).
 
 ```typescript
 function addBusinessDays(date: DateInput, amount: number, options?: BusinessDayOptions): Temporal.ZonedDateTime;
