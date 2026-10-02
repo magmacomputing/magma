@@ -131,6 +131,10 @@ To ensure your tests are properly type-checked in isolation, create a `test/tsco
 > **Do not import test primitives from `'vitest'` in test scripts.**
 > In the Tempo workspace and plugin ecosystem, Vitest runs with `globals: true` (configured in `vitest.shared.ts` / `vitest.config.ts`). Standard testing utilities (`describe`, `it`, `test`, `expect`, `beforeEach`, `afterEach`, `beforeAll`, `afterAll`, `vi`) are globally injected into the test runtime environment. Do not write `import { describe, it, expect } from 'vitest';`.
 
+> [!TIP]
+> **Automatic Monorepo Vitest Resolution**:
+> All `@magmacomputing/tempo-plugin-*` packages are dynamically resolved from source (`packages/plugins/<name>/src/index.ts`) via global wildcard aliases in `vitest.shared.ts` and `vitest.config.mts`. You do **not** need to manually edit any Vitest configuration files when creating a new plugin.
+
 ## 4. Documentation (`README.md` & `doc/index.md`)
 
 Community plugins must follow a uniform documentation standard.

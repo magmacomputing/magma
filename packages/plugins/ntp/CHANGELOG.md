@@ -13,3 +13,4 @@ All notable changes to the `@magmacomputing/tempo-plugin-ntp` project will be do
   - Added `Tempo.prototype.toNtpTime()` instance method.
   - Provided side-effect zero-boilerplate import via `@magmacomputing/tempo-plugin-ntp/install`.
   - Optional passive calibration through `globalThis.fetch` response interception.
+  - Added `[Symbol.toStringTag]` getter returning `'Tempo.ClockDriftEngine'` on `ClockDriftEngine`.

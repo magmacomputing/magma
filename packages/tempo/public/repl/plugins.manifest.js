@@ -16,8 +16,8 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 	},
 	"batch": {
 		name: "@magmacomputing/tempo-plugin-batch",
-		version: "1.2.0",
-		loader: () => import("@magmacomputing/tempo-plugin-batch").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-batch" + "@1.2.0"))
+		version: "1.2.1",
+		loader: () => import("@magmacomputing/tempo-plugin-batch").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-batch" + "@1.2.1"))
 	},
 	"finance": {
 		name: "@magmacomputing/tempo-plugin-finance",
@@ -31,13 +31,13 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 	},
 	"sync": {
 		name: "@magmacomputing/tempo-plugin-sync",
-		version: "1.1.1",
-		loader: () => import("@magmacomputing/tempo-plugin-sync").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-sync" + "@1.1.1"))
+		version: "1.1.2",
+		loader: () => import("@magmacomputing/tempo-plugin-sync").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-sync" + "@1.1.2"))
 	},
 	"ai": {
 		name: "@magmacomputing/tempo-plugin-ai",
-		version: "2.3.1",
-		loader: () => import("@magmacomputing/tempo-plugin-ai").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ai" + "@2.3.1"))
+		version: "2.3.2",
+		loader: () => import("@magmacomputing/tempo-plugin-ai").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ai" + "@2.3.2"))
 	},
 	"ticker": {
 		name: "@magmacomputing/tempo-plugin-ticker",

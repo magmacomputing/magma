@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.1] - 2026-10-02
 
+### Enhanced
+- **Runtime Introspection & Branding (`Symbol.toStringTag`)**:
+  - Added `[Symbol.toStringTag]` getters returning `'Tempo.AiError'` on `TempoAiError` and `'Tempo.HttpError'` on `HttpError` for consistent runtime error inspection.
+
 ### Changed
 - **Intl Namespace Integration**: Updated grounding context and prompts across `diffAI`, `scheduleAI`, `parseAI`, `recurrenceAI`, `formatAI`, and `extractAI` to target the structured `tempo.intl.info.*` namespace properties.
 

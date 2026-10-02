@@ -12,6 +12,8 @@ All notable changes to the `@magmacomputing/tempo-plugin-ticker` project will be
   - Added `ntp: boolean` status flag to `ticker.info` and `Tempo.tickers` snapshot registry.
 
 ### Changed & Refactored
+- **Runtime Introspection & Branding (`Symbol.toStringTag`)**:
+  - Added `[Symbol.toStringTag]` getter returning `'Tempo.Ticker'` on `TickerInstance` for structured runtime type identification and DevTools inspection.
 - **Reactive Stream Engine Migration (`Reactive<Tempo>`)**:
   - Re-architected internal async iteration, push event dispatching, and pull queuing to delegate directly to `Reactive<Tempo>` from the Tempo Plugin SDK (`#library`).
   - Eliminated manual promise queue state and listener dispatch boilerplate.
