@@ -184,8 +184,8 @@ import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
 Tempo.use(TickerPlugin);
 Tempo.use(NtpPlugin);
 
-// Calibrate once with reliable reference server
-await Tempo.ntp.sync('https://cloudflare.com');
+// Calibrate once with reliable reference server (same-origin or CORS-enabled)
+await Tempo.ntp.sync('/api/time');
 
 // Start ticker with NTP compensation enabled
 await using driftCompensated = Tempo.ticker({

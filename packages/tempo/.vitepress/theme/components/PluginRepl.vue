@@ -121,7 +121,7 @@ const { NtpPlugin } = await import('@magmacomputing/tempo-plugin-ntp');
 Tempo.use(NtpPlugin);
 
 // Calibrate with remote time source
-await Tempo.ntp.sync(['https://cloudflare.com', 'https://www.google.com']);
+await Tempo.ntp.sync('https://worldtimeapi.org/api/timezone/Etc/UTC');
 
 // Query calibrated atomic time (100% synchronous!)
 const now = Tempo.ntp.now();

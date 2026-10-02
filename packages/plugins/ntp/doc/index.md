@@ -50,7 +50,7 @@ const now = Tempo.ntp.now();
 Explore detailed guides on architecture, production use-cases, and algorithms:
 
 - **[Use Cases & Production Patterns](./use-cases-and-patterns.md)**: Real-world architectures for financial countdowns, live auctions, zero-overhead passive calibration (`interceptFetch`), distributed logging synchronization, and TOTP authentication.
-- **[Ticker Integration & Atomic Clocks](./ticker-integration.md)**: Integrating with `@magmacomputing/tempo-plugin-ticker` to build true-time reactive UI clocks (`source: 'ntp'`), anti-drift intervals, and synchronized multi-client scheduled jobs.
+- **[Ticker Integration & Atomic Clocks](./ticker-integration.md)**: Integrating with `@magmacomputing/tempo-plugin-ticker` to build true-time, drift-compensated continuous execution loops and scheduled intervals (`ntp: true`).
 - **[Cristian Algorithm & Precision Specs](./algorithms-and-precision.md)**: Mathematical models for round-trip time (RTT) offset calculations, sub-millisecond `Server-Timing` headers, statistical jitter filtering, and EMA smoothing.
 
 ---
@@ -63,15 +63,15 @@ Explore detailed guides on architecture, production use-cases, and algorithms:
 import { Tempo } from '@magmacomputing/tempo';
 import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
 
-// 1. Install the plugin
-Tempo.use(NtpPlugin, { server: 'https://worldtimeapi.org/api/timezone/Etc/UTC' });
+// 1. Install the plugin (points to same-origin or CORS-enabled time endpoint)
+Tempo.use(NtpPlugin, { server: '/api/time' });
 
 // 2. Perform an initial sync
 await Tempo.ntp.sync();
 
 // 3. Query true calibrated atomic time (100% synchronous!)
 const atomicNow = Tempo.ntp.now();
-console.log(`True UTC Time: ${atomicNow.format()}`);
+console.log(`True UTC Time: ${atomicNow.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}')}`);
 console.log(`Measured Drift Offset: ${Tempo.ntp.offset}ms`);
 console.log(`Uncertainty Window: ±${Tempo.ntp.drift.uncertaintyMs}ms`);
 ```

@@ -147,6 +147,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#hasInvalidSchedule = false;
 	#isCatch = false;
 	#useNtp = false;
+	#isNtpCalibratedSeeded = false;
 	#selfRef!: WeakRef<Ticker.Instance>;
 	#activeEntry: ActiveTickerEntry | undefined = undefined;
 
@@ -198,6 +199,7 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#label = label;
 		this.#limit = lmt;
 		this.#useNtp = Boolean(useNtp);
+		this.#isNtpCalibratedSeeded = Boolean(this.#useNtp && (this.#TempoClass as any).ntp?.isCalibrated);
 		if (rruleOption)
 			this.#rrule = isString(rruleOption) ? rruleOption : rruleOption.rrule;
 		this.#isCatch = Boolean(rawOptions.catch ?? this.#TempoClass.config?.catch);
@@ -321,6 +323,11 @@ class TickerInstance implements Ticker.Descriptor {
 	}
 
 	#delayMs() {
+		const isCalibrated = this.#useNtp && Boolean((this.#TempoClass as any).ntp?.isCalibrated);
+		if (isCalibrated && !this.#isNtpCalibratedSeeded && isFunction((this.#TempoClass as any).ntp?.now)) {
+			this.#next = (this.#TempoClass as any).ntp.now(this.#payload);
+			this.#isNtpCalibratedSeeded = true;
+		}
 		const ntpOffset = (this.#useNtp && isNumber((this.#TempoClass as any).ntp?.offset)) ? (this.#TempoClass as any).ntp.offset : 0;
 		const diff = Math.round(this.#next.epoch.ms - (instant().epochMilliseconds + ntpOffset));
 		if (diff > 0) return Math.min(diff, 2_147_483_647);

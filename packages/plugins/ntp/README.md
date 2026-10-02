@@ -42,7 +42,7 @@ Tempo.use(NtpPlugin, {
 
 // 2. Query true calibrated atomic time (100% synchronous!)
 const now = Tempo.ntp.now();
-console.log(`True UTC Time: ${now.format()}`);
+console.log(`True UTC Time: ${now.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}')}`);
 
 // 3. Inspect telemetry and drift
 console.log(`Clock Offset: ${Tempo.ntp.offset}ms`);

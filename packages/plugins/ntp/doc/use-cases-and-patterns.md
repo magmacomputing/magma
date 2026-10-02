@@ -38,13 +38,13 @@ function getAuctionRemainingTime(auctionEnd: Tempo) {
   // Synchronous, true server time calculation
   const trueNow = Tempo.ntp.now();
   
-  if (trueNow.isAfter(auctionEnd)) {
+  if (trueNow.epoch.ms >= auctionEnd.epoch.ms) {
     return { isExpired: true, remainingMs: 0 };
   }
   
   return {
     isExpired: false,
-    remainingMs: auctionEnd.epochMs - trueNow.epochMs
+    remainingMs: auctionEnd.epoch.ms - trueNow.epoch.ms
   };
 }
 ```
@@ -64,8 +64,8 @@ import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
 // Initialize with passive sniffing
 Tempo.use(NtpPlugin, {
   interceptFetch: true,
-  // Optional threshold to prevent micro-fluctuations
-  emaAlpha: 0.2
+  // Smoothing coefficient for Exponential Moving Average
+  alpha: 0.2
 });
 
 // Any normal application request automatically calibrates the clock!
@@ -92,8 +92,8 @@ export function sendTelemetryLog(eventType: string, payload: Record<string, unkn
     event: eventType,
     data: payload,
     // True UTC timestamp matching server logs
-    serverTimeUtc: Tempo.ntp.now().toISOString(),
-    localTimeUtc: Tempo.now().toISOString(),
+    serverTimeUtc: Tempo.ntp.now().format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}'),
+    localTimeUtc: new Tempo().format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}'),
     measuredDriftMs: Tempo.ntp.offset,
     uncertaintyMs: Tempo.ntp.drift.uncertaintyMs
   };
@@ -113,15 +113,15 @@ import { Tempo } from '@magmacomputing/tempo';
 
 function getTotpTimeStep(): number {
   // Always derive 30s bucket from calibrated atomic time
-  const calibratedEpoch = Tempo.ntp.now().epochMs;
+  const calibratedEpoch = Tempo.ntp.now().epoch.ms;
   return Math.floor(calibratedEpoch / 30000);
 }
 ```
 
 ---
 
-## 5. Offline & Sleep-Wake Monotonic Resilience
+## 5. Drift Convergence & High-Frequency Queries
 
-Standard `Date.now()` jumps discontinuously when a laptop sleeps or when the OS updates time via NTP. 
+Once calibrated, `Tempo.ntp.now()` synchronously calculates `Date.now() + offset`. 
 
-`tempo-plugin-ntp` anchors drift against `performance.now()`, which is **strictly monotonic** and immune to system clock step changes. When your application resumes from sleep, the drift engine maintains stability without requiring an immediate re-sync.
+Because drift is continuously smoothed via Exponential Moving Average (EMA) and maintained in-memory, high-frequency renders, animation frames, and interval loops can query true server time millions of times per second with zero network or asynchronous overhead.

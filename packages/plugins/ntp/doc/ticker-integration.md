@@ -6,15 +6,15 @@
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ntp/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
-When combined with [`@magmacomputing/tempo-plugin-ticker`](../../ticker/doc/index.md), `@magmacomputing/tempo-plugin-ntp` unlocks reactive clocks and temporal schedules anchored directly to atomic server time.
+When combined with [`@magmacomputing/tempo-plugin-ticker`](../../ticker/doc/index.md), `@magmacomputing/tempo-plugin-ntp` enables continuous execution loops and scheduled intervals compensated for client-server network clock drift.
 
 ---
 
-## 1. True-Time Reactive Clocks (`source: 'ntp'`)
+## 1. NTP-Compensated Cadence (`ntp: true`)
 
-The Ticker plugin's `Tempo.ticker.now()` reactive clock generator supports the `source: 'ntp'` option. 
+The Ticker plugin supports the `ntp: true` option. 
 
-When configured with `source: 'ntp'`, each pulse emitted by the reactive clock automatically queries the calibrated NTP drift engine. If the network time drift is updated in the background, the UI clock smoothly reflects true atomic time without restarting the loop:
+When `ntp: true` is configured, Ticker seeds unanchored start times from `Tempo.ntp.now()` and dynamically adjusts internal countdown delays to compensate for measured remote clock drift (`Tempo.ntp.offset`):
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -28,16 +28,13 @@ Tempo.use(TickerPlugin);
 // 2. Initial sync
 await Tempo.ntp.sync();
 
-// 3. Create a high-precision 1-second reactive clock
-const clock = Tempo.ticker.now({
-  source: 'ntp',
-  timeZone: 'America/New_York',
-  updateInterval: 1000
-});
-
-// 4. Subscribe to atomic pulses
-clock.on('pulse', (atomicTempo) => {
-  console.log(`Atomic Wall Clock: ${atomicTempo.format('YYYY-MM-DD HH:mm:ss')}`);
+// 3. Create an NTP-compensated 1-second continuous ticker
+const ticker = Tempo.ticker({
+  ntp: true,
+  seconds: 1,
+  timeZone: 'America/New_York'
+}, (atomicTempo) => {
+  console.log(`Atomic Wall Clock: ${atomicTempo.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}`);
   console.log(`Calibrated Drift: ${Tempo.ntp.offset}ms`);
 });
 ```
@@ -46,19 +43,19 @@ clock.on('pulse', (atomicTempo) => {
 
 ## 2. Distributed Wall-Clock Aligned Schedules
 
-In collaborative web applications, multiplayer games, and distributed IoT fleets, multiple independent nodes often need to trigger a synchronized action at the exact same global second or minute boundary.
+In collaborative web applications, multiplayer games, and distributed IoT fleets, multiple independent nodes often need to trigger a synchronized action on true atomic minute or hour boundaries.
 
-If nodes rely on local OS clocks, actions will fire at staggered times due to individual device drift. By driving Ticker with NTP time, all nodes align to true atomic epoch boundaries:
+By passing `ntp: true` alongside cron schedules or duration steps, all participating nodes align to true atomic epoch boundaries:
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
-// Trigger exactly on the top of every minute in atomic UTC
+// Trigger on every 5-minute atomic boundary
 const synchronizedJob = Tempo.ticker({
-  pattern: '0 * * * * *', // Every minute at :00s
-  source: 'ntp'
+  ntp: true,
+  cron: '*/5 * * * *'
 }, (atomicTempo) => {
-  console.log(`[SYNCHRONIZED PULSE] Executing distributed batch at ${atomicTempo.toISOString()}`);
+  console.log(`[SYNCHRONIZED PULSE] Distributed task at ${atomicTempo.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}`);
 });
 ```
 
@@ -66,22 +63,25 @@ const synchronizedJob = Tempo.ticker({
 
 ## 3. Explicit Resource Management & Lifecycle
 
-NTP-backed tickers implement ECMAScript explicit resource management (`[Symbol.dispose]` / `[Symbol.asyncDispose]`):
+NTP-enabled tickers implement ECMAScript explicit resource management (`[Symbol.dispose]` / `[Symbol.asyncDispose]`):
 
 ```typescript
 {
-  using atomicClock = Tempo.ticker.now({ source: 'ntp' });
-  
-  atomicClock.on('pulse', (now) => {
-    updateHeaderClock(now);
+  await using activeTicker = Tempo.ticker({
+    ntp: true,
+    seconds: 5,
+    limit: 10
+  }, (now, stop) => {
+    updateDashboard(now);
   });
   
   // Do work...
-} // 🧹 Automatically stopped and garbage collected upon exiting scope!
+} // 🧹 Automatically stopped and unmounted upon exiting scope!
 ```
 
 ---
 
 ## 4. Fallback Behavior
 
-If `Tempo.ticker.now({ source: 'ntp' })` is invoked before an NTP sync has occurred, or if `NtpPlugin` has not yet been registered, the Ticker plugin gracefully falls back to monotonic local system time (`source: 'local'`) without throwing runtime errors.
+If `Tempo.ticker({ ntp: true, ... })` is invoked before an NTP sync has occurred, or if `NtpPlugin` has not yet been registered, the Ticker plugin gracefully falls back to monotonic local system time without throwing runtime errors.
+

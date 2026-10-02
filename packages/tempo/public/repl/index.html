@@ -1077,14 +1077,9 @@ const { NtpPlugin } = await import('@magmacomputing/tempo-plugin-ntp');
 Tempo.use(NtpPlugin);
 
 console.log('Calibrating clock with remote time source...');
-const sample = await Tempo.ntp.sync({
-  servers: ['https://cloudflare.com', 'https://www.google.com'],
-  samples: 2,
-  timeout: 3000
-});
+const sample = await Tempo.ntp.sync('https://worldtimeapi.org/api/timezone/Etc/UTC');
 
-console.log('Sync Result:', sample.server);
-console.log('Clock Drift:', sample.offset, 'ms (RTT: ' + sample.roundTripTime + 'ms)');
+console.log('Sync Result: Offset', sample.offsetMs, 'ms (Uncertainty: ±' + sample.uncertaintyMs + 'ms, Samples: ' + sample.sampleCount + ')');
 console.log('Calibrated Tempo:', Tempo.ntp.now().format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}'));
 
 return \`Calibrated! Offset: \${Tempo.ntp.offset}ms | Local: \${new Tempo().format('{hh}:{mi}:{ss}.{ms}')} vs NTP: \${Tempo.ntp.now().format('{hh}:{mi}:{ss}.{ms}')}\`;`,

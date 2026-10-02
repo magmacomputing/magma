@@ -8,14 +8,13 @@ describe('Ticker NTP Integration', () => {
 	beforeEach(() => {
 		originalFetch = globalThis.fetch;
 		Tempo.init();
+		delete (Tempo as any).ntp;
 		Tempo.use(TickerPlugin);
 	});
 
 	afterEach(() => {
 		globalThis.fetch = originalFetch;
-		if (Tempo.ntp) {
-			Tempo.ntp.reset();
-		}
+		delete (Tempo as any).ntp;
 	});
 
 	test('should gracefully fallback when NTP plugin is not registered', () => {

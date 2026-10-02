@@ -64,16 +64,23 @@ describe('NtpPlugin & ClockDriftEngine', () => {
 			const engine = new ClockDriftEngine();
 
 			const h1 = new Headers({ 'Server-Timing': 'clock=1727839200123' });
-			expect(engine.extractServerTime(h1)).toBe(1727839200123);
+			expect(engine.extractServerTime(h1)).toEqual({ timeMs: 1727839200123, isCoarse: false });
 
 			const h2 = new Headers({ 'Server-Timing': 'cache;desc="HIT", server_time=1727839200' });
-			expect(engine.extractServerTime(h2)).toBe(1727839200000);
+			expect(engine.extractServerTime(h2)).toEqual({ timeMs: 1727839200000, isCoarse: false });
 
 			const h3 = new Headers({ 'Date': 'Fri, 02 Oct 2026 12:00:00 GMT' });
-			expect(engine.extractServerTime(h3)).toBe(new Date('Fri, 02 Oct 2026 12:00:00 GMT').getTime());
+			expect(engine.extractServerTime(h3)).toEqual({ timeMs: new Date('Fri, 02 Oct 2026 12:00:00 GMT').getTime(), isCoarse: true });
 
 			const h4 = new Headers();
 			expect(engine.extractServerTime(h4)).toBeNull();
+
+			// Pre-year-2000 timestamps and generic time metrics are rejected
+			const h5 = new Headers({ 'Server-Timing': 'time=45.2' });
+			expect(engine.extractServerTime(h5)).toBeNull();
+
+			const h6 = new Headers({ 'Date': 'Thu, 01 Jan 1970 00:00:00 GMT' });
+			expect(engine.extractServerTime(h6)).toBeNull();
 		});
 
 		it('resets state correctly', () => {

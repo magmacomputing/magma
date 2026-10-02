@@ -1,4 +1,7 @@
+import { isFunction } from '@magmacomputing/tempo/plugin/sdk';
 import type { ClockDriftState, NtpSyncOptions } from './types.js';
+
+const RE_SERVER_TIMING = /(?:clock|server_time|epoch)=(\d+(?:\.\d+)?)/i;
 
 /**
  * ## ClockDriftEngine
@@ -15,6 +18,7 @@ export class ClockDriftEngine {
 
 	#options: Required<NtpSyncOptions>;
 	#syncTimer: any = null;
+	#isSyncing = false;
 
 	constructor(options: NtpSyncOptions = {}) {
 		this.#options = {
@@ -78,11 +82,11 @@ export class ClockDriftEngine {
 	 */
 	async sync(endpoint?: string): Promise<ClockDriftState> {
 		const target = endpoint || this.#options.server;
-		if (!target || typeof globalThis.fetch !== 'function')
+		if (!target || !isFunction(globalThis.fetch))
 			return this.drift;
 
-		const t0 = performance.now();
-		const localBefore = Date.now();
+		let t0 = performance.now();
+		let localBefore = Date.now();
 
 		try {
 			let response = await fetch(target, {
@@ -92,6 +96,8 @@ export class ClockDriftEngine {
 
 			// If HEAD method is not allowed by server (405), fallback to lightweight GET
 			if (response.status === 405) {
+				t0 = performance.now();
+				localBefore = Date.now();
 				response = await fetch(target, {
 					method: 'GET',
 					cache: 'no-store',
@@ -104,11 +110,11 @@ export class ClockDriftEngine {
 			if (rtt > this.#options.maxAcceptableRttMs)
 				return this.drift; // Discard high-latency / jittery samples
 
-			const serverTimeMs = this.extractServerTime(response.headers);
-			if (serverTimeMs === null)
+			const extracted = this.extractServerTime(response.headers);
+			if (extracted === null)
 				return this.drift;
 
-			this.ingestSample(serverTimeMs, rtt, localBefore);
+			this.ingestSample(extracted.timeMs, rtt, localBefore, extracted.isCoarse);
 		} catch {
 			// Network failures leave existing drift calibration intact
 		}
@@ -122,8 +128,9 @@ export class ClockDriftEngine {
 	 * @param serverTimeMs - Authoritative server timestamp in milliseconds
 	 * @param rttMs - Measured network Round-Trip Time in milliseconds
 	 * @param localBefore - Local Date.now() timestamp captured at request initiation
+	 * @param isCoarse - Whether the timestamp comes from a 1-second coarse source (adds 500ms uncertainty)
 	 */
-	ingestSample(serverTimeMs: number, rttMs: number, localBefore: number = Date.now() - rttMs): void {
+	ingestSample(serverTimeMs: number, rttMs: number, localBefore: number = Date.now() - rttMs, isCoarse: boolean = false): void {
 		if (rttMs > this.#options.maxAcceptableRttMs) return;
 
 		// Cristian's Algorithm:
@@ -131,18 +138,19 @@ export class ClockDriftEngine {
 		// Local time when response is received = localBefore + rtt
 		// Offset = Estimated Server Time - Local Time = serverTimeMs - (localBefore + rtt / 2)
 		const measuredOffset = serverTimeMs - (localBefore + (rttMs / 2));
+		const sampleUncertainty = (rttMs / 2) + (isCoarse ? 500 : 0);
 
 		if (this.#state.sampleCount === 0) {
 			this.#state = {
 				offsetMs: Math.round(measuredOffset),
-				uncertaintyMs: Math.round(rttMs / 2),
+				uncertaintyMs: Math.round(sampleUncertainty),
 				lastSyncedAt: Date.now(),
 				sampleCount: 1,
 			};
 		} else {
 			// Exponential Moving Average (EMA) smoothing to dampen network jitter
 			const smoothedOffset = (this.#options.alpha * measuredOffset) + ((1 - this.#options.alpha) * this.#state.offsetMs);
-			const smoothedUncertainty = (this.#options.alpha * (rttMs / 2)) + ((1 - this.#options.alpha) * this.#state.uncertaintyMs);
+			const smoothedUncertainty = (this.#options.alpha * sampleUncertainty) + ((1 - this.#options.alpha) * this.#state.uncertaintyMs);
 
 			this.#state = {
 				offsetMs: Math.round(smoothedOffset),
@@ -155,25 +163,26 @@ export class ClockDriftEngine {
 
 	/**
 	 * Parses server timestamp from HTTP response headers.
-	 * Priority 1: High-precision `Server-Timing: clock=<epochMs>` or `server_time=<epochMs>`
+	 * Priority 1: High-precision `Server-Timing: clock=<epochMs>`, `server_time=<epochMs>`, or `epoch=<epochMs>`
 	 * Priority 2: Standard RFC 7231 `Date` header
 	 */
-	extractServerTime(headers: Headers): number | null {
+	extractServerTime(headers: Headers): { timeMs: number; isCoarse: boolean } | null {
 		const serverTiming = headers.get('Server-Timing') || headers.get('server-timing');
 		if (serverTiming) {
-			const match = serverTiming.match(/(?:clock|server_time|time|epoch)=(\d+(?:\.\d+)?)/i);
+			const match = serverTiming.match(RE_SERVER_TIMING);
 			if (match && match[1]) {
 				const val = parseFloat(match[1]);
 				// Handle both seconds (e.g. 1727839200.123) and milliseconds (1727839200123)
-				return val < 1e11 ? Math.round(val * 1000) : Math.round(val);
+				const ms = val < 1e11 ? Math.round(val * 1000) : Math.round(val);
+				if (ms >= 946684800000) return { timeMs: ms, isCoarse: false };
 			}
 		}
 
 		const dateHeader = headers.get('Date') || headers.get('date');
 		if (dateHeader) {
 			const parsed = new Date(dateHeader).getTime();
-			if (!Number.isNaN(parsed) && parsed > 0)
-				return parsed;
+			if (!Number.isNaN(parsed) && parsed >= 946684800000)
+				return { timeMs: parsed, isCoarse: true };
 		}
 
 		return null;
@@ -184,11 +193,15 @@ export class ClockDriftEngine {
 	 */
 	startBackgroundSync(intervalMs: number): void {
 		this.stopBackgroundSync();
-		if (intervalMs > 0 && typeof globalThis.setInterval === 'function') {
+		if (intervalMs > 0 && isFunction(globalThis.setInterval)) {
 			this.#syncTimer = setInterval(() => {
-				this.sync().catch(() => {});
+				if (this.#isSyncing) return;
+				this.#isSyncing = true;
+				this.sync().finally(() => {
+					this.#isSyncing = false;
+				}).catch(() => {});
 			}, intervalMs);
-			if (typeof this.#syncTimer?.unref === 'function')
+			if (isFunction(this.#syncTimer?.unref))
 				this.#syncTimer.unref();
 		}
 	}

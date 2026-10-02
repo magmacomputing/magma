@@ -51,18 +51,18 @@ $$E = \pm \frac{\text{RTT}}{2}$$
 
 ## 2. Sub-Millisecond Precision via `Server-Timing`
 
-Standard HTTP `Date` headers have a coarse **1-second resolution** (`Date: Wed, 02 Oct 2026 06:15:00 GMT`), which introduces up to $\pm 500\text{ms}$ of quantization jitter.
+Standard HTTP `Date` headers have a coarse **1-second resolution** (`Date: Fri, 02 Oct 2026 06:15:00 GMT`), which introduces up to $\pm 500\text{ms}$ of quantization jitter.
 
 `tempo-plugin-ntp` automatically prioritizes sub-millisecond timestamps delivered via the standard HTTP `Server-Timing` header:
 
 ```http
 HTTP/1.1 200 OK
-Date: Wed, 02 Oct 2026 06:15:00 GMT
-Server-Timing: ntp;desc="1727856900123.45"
+Date: Fri, 02 Oct 2026 06:15:00 GMT
+Server-Timing: clock=1727856900123.45
 Content-Type: application/json
 ```
 
-If `Server-Timing` with an `ntp` description is present, the plugin parses the high-precision floating-point epoch timestamp, achieving sub-millisecond synchronization accuracy.
+If `Server-Timing` contains a `clock=...`, `server_time=...`, or `epoch=...` metric, the plugin parses the high-precision floating-point epoch timestamp, achieving sub-millisecond synchronization accuracy.
 
 ---
 
@@ -70,9 +70,9 @@ If `Server-Timing` with an `ntp` description is present, the plugin parses the h
 
 Transient network spikes (e.g., cell tower handoffs, packet retries) can cause anomalous RTT measurements. If an asynchronous network delay is heavily skewed in one direction, the symmetrical assumption ($\text{RTT}/2$) breaks down.
 
-The plugin protects against skew distortion using **RTT Outlier Rejection**:
-- Samples with an RTT significantly higher than the running baseline are penalized or rejected.
-- High-uncertainty samples do not corrupt the established drift calculation.
+The plugin protects against skew distortion using **RTT Threshold Filtering**:
+- Samples exceeding the configurable `maxAcceptableRttMs` threshold (default: `1000ms`) are immediately discarded.
+- High-latency or asymmetrical network spikes are rejected without updating the active drift calibration.
 
 ---
 
