@@ -24,7 +24,7 @@
     "packageName": "@magmacomputing/tempo-plugin-batch",
     "plan": "community",
     "status": "active",
-    "version": "1.2.0"
+    "version": "1.2.1"
   },
   {
     "id": "finance",
@@ -51,7 +51,7 @@
     "packageName": "@magmacomputing/tempo-plugin-sync",
     "plan": "community",
     "status": "active",
-    "version": "1.1.1"
+    "version": "1.1.2"
   },
   {
     "id": "ai",

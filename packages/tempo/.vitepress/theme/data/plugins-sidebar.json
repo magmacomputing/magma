@@ -141,6 +141,28 @@
     ]
   },
   {
+    "text": "Ntp Plugin (@magmacomputing/tempo-plugin-ntp)",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/ntp.index"
+      },
+      {
+        "text": "Cristian Algorithm & Precision Specs",
+        "link": "/doc/9-plugins/ntp.algorithms-and-precision"
+      },
+      {
+        "text": "Ticker Integration & Atomic Clocks",
+        "link": "/doc/9-plugins/ntp.ticker-integration"
+      },
+      {
+        "text": "Use Cases & Production Patterns",
+        "link": "/doc/9-plugins/ntp.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
     "text": "Spatial Plugin (@magmacomputing/tempo-plugin-spatial)",
     "collapsed": false,
     "items": [
@@ -188,10 +210,6 @@
     "text": "Single-Feature Community Plugins",
     "collapsed": false,
     "items": [
-      {
-        "text": "@magmacomputing/tempo-plugin-ntp",
-        "link": "/doc/9-plugins/ntp.index"
-      },
       {
         "text": "Astro (Seasons & Solstices)",
         "link": "/doc/9-plugins/astro.index"
