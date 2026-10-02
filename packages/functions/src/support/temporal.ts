@@ -47,6 +47,13 @@ export interface ResolvedDateParts {
 }
 
 /**
+ * Regular expression matching ISO 8601 calendar date formats (YYYY-MM-DD, YYYY-MM, YYYY, or signed expanded +YYYYYY)
+ * with strict lookahead boundaries to prevent partial backtracking on malformed input.
+ * @internal
+ */
+export const ISO_CALENDAR_DATE_REGEX = /^(?:([+-]\d{4,6})|(\d{4}))(?:-(\d{2})(?:-(\d{2}))?)?(?=$|[T\s]|Z|[+-]\d{2}(?::?\d{2})?$)/;
+
+/**
  * Fast Gregorian leap year check for a full calendar year number.
  * @internal
  */
@@ -135,8 +142,7 @@ export function extractDateParts(input: unknown): ResolvedDateParts {
 
 	if (isString(input)) {
 		const trimmed = input.trim();
-		// Match calendar date parts: YYYY-MM-DD or YYYY-MM or YYYY (or signed +YYYYYY)
-		const match = trimmed.match(/^(?:([+-]\d{4,6})|(\d{4}))(?:-(\d{2}))?(?:-(\d{2}))?(?=$|[T\sZ+-])/);
+		const match = trimmed.match(ISO_CALENDAR_DATE_REGEX);
 		const yearStr = match ? (match[1] ?? match[2]) : undefined;
 		if (match && yearStr) {
 			const year = parseInt(yearStr, 10);
@@ -157,7 +163,8 @@ export function extractDateParts(input: unknown): ResolvedDateParts {
 
 			let dayOfWeek: number | undefined;
 			if (isDefined(month) && isDefined(day)) {
-				const dt = new Date(Date.UTC(year, month - 1, day));
+				const dt = new Date(Date.UTC(2000, month - 1, day));
+				dt.setUTCFullYear(year);
 				const dow = dt.getUTCDay();
 				dayOfWeek = dow === 0 ? 7 : dow;
 			}

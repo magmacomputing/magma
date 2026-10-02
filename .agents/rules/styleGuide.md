@@ -44,5 +44,32 @@ This style guide defines common coding conventions, formatting standards, and Ty
 ## 4. Export Discipline & Internal API Marking (`@internal`)
 - **Prefer Testing via Public Surface**: Always test modules through their public interface whenever possible.
 - **Mark Internal Helpers with `@internal`**: When a helper, constructor, or internal engine mechanism must be exported across package or module boundaries (for discrete testing, engine consumption, or multi-package support), ALWAYS annotate it with `/** @internal */`. This ensures:
-  - Documentation generators (TypeDoc, API Extractor, VitePress) exclude them from public API documentation.
+  - Documentation generators exclude them from public API documentation (e.g. TypeDoc when `excludeInternal` is enabled, or other documentation tools with equivalent filtering configured).
   - End users and external consumers are signaled that the symbol is private and subject to change without semver notices.
+
+---
+
+## 5. Trailing Commas in Multi-Line Structures
+- **Always Include Trailing Commas**: In multi-line object literals, array literals, interface/type property declarations, parameter lists, and function call arguments, always include a trailing comma on the final item. This produces cleaner `git diff`s, prevents multi-line merge conflicts when adding/reordering items, and maintains formatting consistency:
+  ```ts
+  // Preferred
+  const config = {
+  	locale: 'en-US',
+  	timezone: 'America/New_York',
+  	localeInfo: true,
+  };
+
+  function calculateBounds(
+  	origin: GeoCoordinate,
+  	destination: GeoCoordinate,
+  	options?: BoundsOptions,
+  ): BoundingBox { ... }
+
+  // Avoid omitting trailing comma on multi-line structures
+  const config = {
+  	locale: 'en-US',
+  	timezone: 'America/New_York',
+  	localeInfo: true
+  };
+  ```
+

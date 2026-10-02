@@ -395,7 +395,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						: (termObj ?? `{${token}}`);
 				} else if (token.includes('.')) {
 					if (token.startsWith('intl.')) {
-						res = resolveNamespaceToken({ intl: li }, token);
+						res = resolveNamespaceToken({ intl: { ...li, info: li, locale: li.locale } }, token);
 					} else if (isTempo(obj)) {
 						res = resolveNamespaceToken(obj, token);
 					} else {

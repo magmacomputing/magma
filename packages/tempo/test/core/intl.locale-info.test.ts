@@ -469,8 +469,8 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 		it('exposes t.intl.locale native Intl.Locale instance', () => {
 			const t = new Tempo('2026-09-16', { locale: 'en-US' });
 			expect(t.intl.locale).toBeInstanceOf(Intl.Locale);
-			expect(t.intl.locale.baseName).toBe('en-US');
-			expect(t.intl.locale.language).toBe('en');
+			expect(t.intl.locale?.baseName).toBe('en-US');
+			expect(t.intl.locale?.language).toBe('en');
 		});
 
 		it('supports static Tempo.intl.info and Tempo.intl.locale', () => {
@@ -478,10 +478,75 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 				Tempo.init({ locale: 'fr-FR' });
 				expect(Tempo.intl.info.firstDay).toBe(1);
 				expect(Tempo.intl.info.direction).toBe('ltr');
-				expect(Tempo.intl.locale.baseName).toBe('fr-FR');
+				expect(Tempo.intl.locale?.baseName).toBe('fr-FR');
 			} finally {
 				Tempo.init();
 			}
+		});
+	});
+
+	describe('10. High-Performance Intl Utility Hub', () => {
+		it('formats relative time pre-bound to instance locale', () => {
+			const tEn = new Tempo('2026-10-02', { locale: 'en-US' });
+			expect(tEn.intl.relativeTime(-1, 'day')).toMatch(/1 day ago|yesterday/);
+			expect(tEn.intl.relativeTime(2, 'month')).toMatch(/in 2 months/);
+
+			const tFr = new Tempo('2026-10-02', { locale: 'fr-FR' });
+			expect(tFr.intl.relativeTime(-2, 'day')).toMatch(/il y a 2 jours/);
+			expect(tFr.intl.relativeTime(3, 'month')).toMatch(/dans 3 mois/);
+		});
+
+		it('formats localized lists pre-bound to instance locale', () => {
+			const tEn = new Tempo('2026-10-02', { locale: 'en-US' });
+			expect(tEn.intl.list(['Apple', 'Banana', 'Orange'])).toBe('Apple, Banana, and Orange');
+
+			const tFr = new Tempo('2026-10-02', { locale: 'fr-FR' });
+			expect(tFr.intl.list(['lundi', 'mardi', 'mercredi'])).toBe('lundi, mardi et mercredi');
+		});
+
+		it('formats localized numbers pre-bound to instance locale', () => {
+			const tEn = new Tempo('2026-10-02', { locale: 'en-US' });
+			expect(tEn.intl.number(1234567.89)).toBe('1,234,567.89');
+
+			const tDe = new Tempo('2026-10-02', { locale: 'de-DE' });
+			// German uses period for thousands and comma for decimals: 1.234.567,89
+			expect(tDe.intl.number(1234567.89)).toBe('1.234.567,89');
+		});
+
+		it('resolves plural category rules pre-bound to instance locale', () => {
+			const tEn = new Tempo('2026-10-02', { locale: 'en-US' });
+			expect(tEn.intl.plural(1)).toBe('one');
+			expect(tEn.intl.plural(5)).toBe('other');
+
+			const tAr = new Tempo('2026-10-02', { locale: 'ar-EG' });
+			expect(tAr.intl.plural(0)).toBe('zero');
+			expect(tAr.intl.plural(1)).toBe('one');
+			expect(tAr.intl.plural(2)).toBe('two');
+		});
+
+		it('returns memoized constructor instances (dtf, rtf, lf, nf) pre-bound to context', () => {
+			const t = new Tempo('2026-10-02', { locale: 'en-US', timeZone: 'America/New_York' });
+
+			const dtf1 = t.intl.dtf({ dateStyle: 'short' });
+			const dtf2 = t.intl.dtf({ dateStyle: 'short' });
+			expect(dtf1).toBe(dtf2); // Memoized instance reference
+			expect(dtf1.resolvedOptions().timeZone).toBe('America/New_York');
+
+			const rtf = t.intl.rtf();
+			expect(rtf).toBeInstanceOf(Intl.RelativeTimeFormat);
+			expect(rtf.resolvedOptions().locale).toMatch(/en/);
+
+			const lf = t.intl.lf();
+			expect(lf).toBeInstanceOf(Intl.ListFormat);
+
+			const nf = t.intl.nf();
+			expect(nf).toBeInstanceOf(Intl.NumberFormat);
+		});
+
+		it('supports Temporal.TimeZoneLike objects for timezone pre-binding', () => {
+			const tLondon = new Tempo('2026-10-02', { locale: 'en-GB', timeZone: { id: 'Europe/London' } as any });
+			const dtf = tLondon.intl.dtf({ dateStyle: 'short' });
+			expect(dtf.resolvedOptions().timeZone).toBe('Europe/London');
 		});
 	});
 });

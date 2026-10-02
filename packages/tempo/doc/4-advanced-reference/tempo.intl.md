@@ -96,13 +96,13 @@ Tempo delegates regional calendar and cultural metadata directly to the ECMAScri
 ### Inspecting Cultural Metadata (`t.intl.info`)
 
 Every `Tempo` instance provides a structured `t.intl` namespace:
-- **`t.intl.info`**: Returns a frozen, memoized `ResolvedLocaleInfo` object.
-- **`t.intl.locale`**: Returns the memoized native ECMAScript `Intl.Locale` instance.
+- **`t.intl.info`**: Returns a frozen, memoized `ResolvedLocaleInfo` object. Guaranteed to be fully populated across all runtimes (providing standard ISO/CLDR fallbacks if running in minimal or stripped environments).
+- **`t.intl.locale`**: Returns the memoized native ECMAScript `Intl.Locale` instance (typed as `Intl.Locale | undefined` to safely handle legacy or headless environments that lack `Intl.Locale`).
 
 ```typescript
 const t = new Tempo('2026-09-16', { locale: 'en-US' });
 
-// Cultural calendar metadata via t.intl.info:
+// Cultural calendar metadata via t.intl.info (always defined):
 console.log(t.intl.info.firstDay);        // 7 (Sunday)
 console.log(t.intl.info.weekend);         // [6, 7] (Saturday, Sunday)
 console.log(t.intl.info.region);          // 'US'
@@ -112,10 +112,13 @@ console.log(t.intl.info.hourCycle);       // 'h12'
 console.log(t.intl.info.numberingSystem); // 'latn'
 console.log(t.intl.info.baseName);        // 'en-US'
 
-// Native Intl.Locale instance via t.intl.locale:
-console.log(t.intl.locale.language);     // 'en'
-console.log(t.intl.locale.maximize().baseName); // 'en-Latn-US'
+// Native Intl.Locale instance via t.intl.locale (use optional chaining):
+console.log(t.intl.locale?.language);             // 'en'
+console.log(t.intl.locale?.maximize().baseName);  // 'en-Latn-US'
 ```
+
+> [!NOTE]
+> **Type Safety & Environment Portability**: While `t.intl.info.*` properties are guaranteed non-nullish across all platforms, `t.intl.locale` directly exposes the host engine's native `Intl.Locale`. TypeScript strict checking encourages optional chaining (`t.intl.locale?....`) when directly interacting with the native instance prototype.
 
 > [!TIP]
 > **Backward Compatibility**: Direct access via `t.intl.firstDay`, `t.intl.weekend`, etc., remains supported as a deprecated fallback during v4.x, but new code should target `t.intl.info.*`.
@@ -155,3 +158,40 @@ t.set({ isoWeek: 'end' });         // Always snaps to Sunday 23:59:59.999999999
 - **Localized Numerals (`:locale`)**: When applied to numeric tokens (`{yyyy:locale}`, `{mm:locale}`, `{dd:locale}`), transliterates digits into the region's native numbering system (e.g. `٢٠٢٦-١٠-٢٤` in `ar-EG`). Base tokens without `:locale` (`{yyyy}-{mm}-{dd}`) always maintain strict ASCII digits for machine safety.
 - **BiDi Isolation**: When formatting localized text tokens (`{mon:locale}`, `{wkd:locale}`) in RTL regions (Arabic, Hebrew), Tempo wraps text in Unicode BiDi isolates to prevent bidirectional text disruption.
 - **`{intl.<property>}`**: Directly embeds resolved regional metadata into format templates (e.g. `{intl.region}`, `{intl.script}`, `{intl.direction}`, `{intl.firstDay}`).
+
+---
+
+## 5. High-Performance `Intl` Utility Hub
+
+In addition to inspecting regional calendar metadata, the `t.intl` namespace is designed as a zero-overhead, pre-bound internationalization utility hub. 
+
+Native ECMAScript `Intl` formatters (`Intl.RelativeTimeFormat`, `Intl.ListFormat`, `Intl.DateTimeFormat`) are powerful but can be slow to initialize in tight loops because they re-parse Unicode CLDR databases on each constructor call. `Tempo.intl` eliminates this overhead through an internal $O(1)$ LRU memoization pipeline pre-bound to the active instance's `locale` and `timeZone`:
+
+### Pre-Bound Formatting Operations
+
+```typescript
+const t = new Tempo('2026-10-02', { locale: 'fr-FR' });
+
+// 1. Relative Time Formatting (Pre-bound to t.locale)
+t.intl.relativeTime(-2, 'day');              // "il y a 2 jours"
+t.intl.relativeTime(3, 'month');             // "dans 3 mois"
+
+// 2. Localized List Formatting (Pre-bound to t.locale)
+t.intl.list(['lundi', 'mardi', 'mercredi']);  // "lundi, mardi et mercredi"
+
+// 3. Pre-Memoized Native DateTimeFormat Instance
+const dtf = t.intl.dtf({ dateStyle: 'full' }); // Instant O(1) cached Intl.DateTimeFormat
+
+// 4. Plural Category Rules
+t.intl.plural(1);                            // 'one'
+t.intl.plural(5);                            // 'other'
+```
+
+### Architectural Benefits
+
+| Feature | Raw Native `Intl` | `Tempo.intl` Utility Hub |
+| :--- | :--- | :--- |
+| **Instantiation Cost** | Repeated CLDR/ICU initialization | $O(1)$ Globally memoized cache |
+| **Context Wiring** | Manual `locale` & `timeZone` passing | Automatically bound to instance context |
+| **Memory Footprint** | Manual GC management required | 0 bytes added to `Tempo` instances |
+| **Relative & List Formatting** | Multi-line constructor boilerplate | Clean, humanized one-liners |

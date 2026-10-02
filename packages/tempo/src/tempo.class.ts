@@ -1416,7 +1416,7 @@ export class Tempo {
 
 	/** Internationalization namespace (info, locale, and cultural metadata) for the global locale */
 	static get intl(): TempoIntlNamespace {
-		return getIntlNamespace(Tempo.#locale(this[$Internal]().config.locale));
+		return getIntlNamespace(Tempo.#locale(this.config.locale), this.config.timeZone);
 	}
 
 	/** static Tempo properties getter */
@@ -1865,7 +1865,7 @@ export class Tempo {
 	 */
 	get day() { return this.toDateTime().day as t.dd }
 	/** Internationalization namespace (info, locale, and cultural metadata) */
-	get intl(): TempoIntlNamespace { return getIntlNamespace(this.locale); }
+	get intl(): TempoIntlNamespace { return getIntlNamespace(this.locale, this.tz); }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
 	/** Minutes of the hour (0-59) */													get mi() { return this.toDateTime().minute as t.mi }
 	/** Seconds of the minute (0-59) */												get ss() { return this.toDateTime().second as t.ss }
@@ -2066,18 +2066,19 @@ export class Tempo {
 
 		// Evaluate and snapshot dynamic context suppliers for this specific Tempo instance
 		const rawTz = options.timeZone ?? (options as any).timezone ?? (options as any).TimeZone;
-		const explicitTz = evaluate(rawTz);
-		const evaluatedTz = explicitTz ?? evaluate(classState.config.timeZone);
+		const explicitTz = evaluate<Temporal.TimeZoneLike>(rawTz);
+		const evaluatedTz = explicitTz ?? evaluate<Temporal.TimeZoneLike>(classState.config.timeZone);
 		let resolvedZone: string | undefined;
 		if (isDefined(evaluatedTz)) {
-			const zone = String(evaluatedTz).toLowerCase();
-			resolvedZone = (this.constructor as any).timeZones?.[zone] ?? classState.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(evaluatedTz));
+			const tzString = isObject(evaluatedTz) ? getTemporalIds(evaluatedTz)[0] : String(evaluatedTz);
+			const zone = tzString.toLowerCase();
+			resolvedZone = (this.constructor as any).timeZones?.[zone] ?? classState.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(tzString);
 			setProperty(this.#local.config, 'timeZone', resolvedZone);
 		}
 
 		const rawCal = options.calendar ?? (options as any).Calendar;
-		const explicitCal = evaluate(rawCal);
-		const evaluatedCal = explicitCal ?? evaluate(classState.config.calendar);
+		const explicitCal = evaluate<Temporal.CalendarLike>(rawCal);
+		const evaluatedCal = explicitCal ?? evaluate<Temporal.CalendarLike>(classState.config.calendar);
 		if (isDefined(evaluatedCal))
 			setProperty(this.#local.config, 'calendar', String(evaluatedCal));
 

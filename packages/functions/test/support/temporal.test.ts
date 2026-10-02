@@ -132,4 +132,26 @@ describe('extractDateParts', () => {
 		const invalidDay = extractDateParts('2024-02-30');
 		expect(invalidDay.dayOfWeek).toBeUndefined();
 	});
+
+	it('should correctly calculate dayOfWeek for years 0000-0099 without 1900 century offset', () => {
+		const y0001 = extractDateParts('0001-01-01');
+		expect(y0001.year).toBe(1);
+		expect(y0001.dayOfWeek).toBe(1); // Monday
+
+		const y0000 = extractDateParts('0000-01-01');
+		expect(y0000.year).toBe(0);
+		expect(y0000.dayOfWeek).toBe(6); // Saturday
+
+		const y0099 = extractDateParts('0099-01-01');
+		expect(y0099.year).toBe(99);
+		expect(y0099.dayOfWeek).toBe(4); // Thursday
+	});
+
+	it('should reject malformed trailing date components such as 2024-02-300 without partial match', () => {
+		const res = extractDateParts('2024-02-300');
+		expect(res.year).toBeUndefined();
+		expect(res.month).toBeUndefined();
+		expect(res.day).toBeUndefined();
+		expect(res.dayOfWeek).toBeUndefined();
+	});
 });

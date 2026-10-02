@@ -1,4 +1,4 @@
-import { getOffsets } from '#library/temporal.library.js';
+import { getOffsets, getTemporalIds } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
 import { isFunction, isDefined, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
@@ -9,6 +9,7 @@ const RE_UNDERSCORE = /_/g;
 const RE_LOCALE_CLEANSE = /[.@]/;
 
 export type LocaleInput = string | Intl.Locale | undefined;
+export type TimeZoneInput = Temporal.TimeZoneLike | string | undefined;
 
 /** 
  * Guard check for runtime Intl namespace and constructor availability.
@@ -100,7 +101,7 @@ export interface LocaleWeekInfo {
 }
 
 export interface ResolvedLocaleInfo {
-	readonly locale: Intl.Locale;
+	readonly locale?: Intl.Locale | undefined;
 	readonly baseName: string;
 	readonly language?: string | undefined;
 	readonly region?: string | undefined;
@@ -126,7 +127,51 @@ export interface TempoIntlNamespace {
 	/**
 	 * Memoized native Intl.Locale instance for the active locale.
 	 */
-	readonly locale: Intl.Locale;
+	readonly locale?: Intl.Locale | undefined;
+
+	/**
+	 * Formats a relative time description (e.g. -1, 'day' -> 'yesterday' or 'il y a 1 jour')
+	 * pre-bound to the active locale and backed by a globally memoized Intl.RelativeTimeFormat instance.
+	 */
+	relativeTime(value: number, unit: Intl.RelativeTimeFormatUnit, options?: Intl.RelativeTimeFormatOptions): string;
+
+	/**
+	 * Formats an iterable or array of strings into a localized list (e.g. ['A', 'B', 'C'] -> 'A, B, and C')
+	 * pre-bound to the active locale and backed by a globally memoized Intl.ListFormat instance.
+	 */
+	list(items: Iterable<string>, options?: Intl.ListFormatOptions): string;
+
+	/**
+	 * Formats a number according to the active locale and numbering system
+	 * backed by a globally memoized Intl.NumberFormat instance.
+	 */
+	number(value: number | bigint, options?: Intl.NumberFormatOptions): string;
+
+	/**
+	 * Resolves the plural category rule ('zero' | 'one' | 'two' | 'few' | 'many' | 'other')
+	 * for a numeric value in the active locale.
+	 */
+	plural(value: number, options?: Intl.PluralRulesOptions): Intl.LDMLPluralRule;
+
+	/**
+	 * Returns a globally memoized native Intl.DateTimeFormat instance pre-bound to the active locale and timezone.
+	 */
+	dtf(options?: Intl.DateTimeFormatOptions): Intl.DateTimeFormat;
+
+	/**
+	 * Returns a globally memoized native Intl.RelativeTimeFormat instance pre-bound to the active locale.
+	 */
+	rtf(options?: Intl.RelativeTimeFormatOptions): Intl.RelativeTimeFormat;
+
+	/**
+	 * Returns a globally memoized native Intl.ListFormat instance pre-bound to the active locale.
+	 */
+	lf(options?: Intl.ListFormatOptions): Intl.ListFormat;
+
+	/**
+	 * Returns a globally memoized native Intl.NumberFormat instance pre-bound to the active locale.
+	 */
+	nf(options?: Intl.NumberFormatOptions): Intl.NumberFormat;
 
 	// =========================================================================
 	// Backward Compatibility Fallbacks (@deprecated for v4.x, removed in v5.0.0)
@@ -245,7 +290,7 @@ export const getLC = memoizeFunction((localeTag?: LocaleInput): Intl.Locale | un
  * @internal
  */
 export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleInfo => {
-	const loc = (getLC(localeTag) ?? getLC('en-US')) as Intl.Locale;
+	const loc = getLC(localeTag) ?? getLC('en-US');
 	const baseName = loc?.baseName ?? canonicalLocale(localeTag) ?? 'en-US';
 	const language = loc?.language ?? (baseName.split('-')[0]?.toLowerCase());
 
@@ -318,13 +363,40 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
  * Memoized helper for the structured TempoIntlNamespace.
  * @internal
  */
-export const getIntlNamespace = memoizeFunction((localeTag?: LocaleInput): TempoIntlNamespace => {
+export const getIntlNamespace = memoizeFunction((localeTag?: LocaleInput, timeZone?: TimeZoneInput): TempoIntlNamespace => {
 	const info = getLI(localeTag);
-	const loc = (getLC(localeTag) ?? getLC('en-US')) as Intl.Locale;
+	const loc = getLC(localeTag) ?? getLC('en-US');
+	const baseName = info.baseName;
+	const resolvedTz = timeZone ? getTemporalIds(timeZone)[0] : undefined;
 
 	return Object.freeze({
 		info,
 		locale: loc,
+		relativeTime(value: number, unit: Intl.RelativeTimeFormatUnit, options?: Intl.RelativeTimeFormatOptions): string {
+			return getRTF(baseName, options).format(value, unit);
+		},
+		list(items: Iterable<string>, options?: Intl.ListFormatOptions): string {
+			return getLF(baseName, options).format(Array.from(items));
+		},
+		number(value: number | bigint, options?: Intl.NumberFormatOptions): string {
+			return getNF(baseName, options).format(value);
+		},
+		plural(value: number, options?: Intl.PluralRulesOptions): Intl.LDMLPluralRule {
+			return getPR(baseName, options).select(value);
+		},
+		dtf(options?: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+			const dtfOpts = (resolvedTz && !options?.timeZone) ? { ...options, timeZone: resolvedTz } : options;
+			return getDTF(baseName, dtfOpts);
+		},
+		rtf(options?: Intl.RelativeTimeFormatOptions): Intl.RelativeTimeFormat {
+			return getRTF(baseName, options);
+		},
+		lf(options?: Intl.ListFormatOptions): Intl.ListFormat {
+			return getLF(baseName, options);
+		},
+		nf(options?: Intl.NumberFormatOptions): Intl.NumberFormat {
+			return getNF(baseName, options);
+		},
 		firstDay: info.firstDay,
 		weekend: info.weekend,
 		direction: info.direction,
