@@ -1,12 +1,41 @@
 import {
 	isNumber,
 	isObject,
-	isString,
 	toEpochMs,
-	resolveCoordinates,
 } from '../support/index.js';
 
-export { toEpochMs, resolveCoordinates };
+export { toEpochMs };
+
+/**
+ * Resolves latitude, longitude, and elevation for celestial calculations,
+ * defaulting each missing or invalid component to 0.
+ *
+ * @param latOrOptions - Latitude number or options object
+ * @param lngInput - Optional longitude number
+ * @returns Object with lat, lng, and elevation numbers
+ */
+export function resolveCoordinates(
+	latOrOptions: number | SolarOptions = 0,
+	lngInput = 0
+): { lat: number; lng: number; elevation: number } {
+	if (isNumber(latOrOptions))
+		return { lat: latOrOptions, lng: isNumber(lngInput) ? lngInput : 0, elevation: 0 };
+
+	if (isObject(latOrOptions)) {
+		const geo = latOrOptions.geo;
+		const lat = latOrOptions.latitude ?? latOrOptions.lat ?? geo?.latitude ?? geo?.lat ?? 0;
+		const lng = latOrOptions.longitude ?? latOrOptions.long ?? latOrOptions.lng ?? latOrOptions.lon ?? geo?.longitude ?? geo?.lng ?? geo?.long ?? geo?.lon ?? 0;
+		const elevation = latOrOptions.elevation ?? geo?.elevation ?? 0;
+
+		return {
+			lat: isNumber(lat) ? lat : 0,
+			lng: isNumber(lng) ? lng : 0,
+			elevation: isNumber(elevation) ? elevation : 0,
+		};
+	}
+
+	return { lat: 0, lng: 0, elevation: 0 };
+}
 
 /** Average duration of a complete lunar cycle (new moon to new moon) in days */
 export const SYNODIC_MONTH = 29.53058867;

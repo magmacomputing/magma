@@ -12,7 +12,10 @@ import {
 	normalizeLng,
 } from '../support/index.js';
 
-export { parseCoordNumber, normalizeLat, normalizeLng, normalizeCoords, extractRawCoords, extractEpochMs };
+const normalizeSpatialLat = (lat: any, round = true) => normalizeLat(lat, round);
+const normalizeSpatialLng = (lng: any, round = true) => normalizeLng(lng, round);
+
+export { parseCoordNumber, normalizeSpatialLat as normalizeLat, normalizeSpatialLng as normalizeLng, normalizeCoords, extractRawCoords, extractEpochMs };
 
 /**
  * Coerces coordinate inputs into canonical GeoConfig objects with 3-decimal precision.

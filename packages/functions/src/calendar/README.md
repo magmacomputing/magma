@@ -1,6 +1,8 @@
 # Calendar Utilities
 This directory contains calendar and date-oriented utility functions (e.g. week of year, first/last day of month, leap year, days in month, weekend/weekday checks).
 
+All functions accept universal date inputs: ISO date strings (`'YYYY-MM-DD'`), native `Temporal.PlainDate` / `Temporal.ZonedDateTime` instances, JS `Date` objects, timestamps, or `Tempo` objects.
+
 ## Exported Functions
 
 ### `isFirstDayOfMonth`
@@ -13,7 +15,14 @@ function isFirstDayOfMonth(date: DateInput): boolean;
 ```typescript
 import { isFirstDayOfMonth } from '@magmacomputing/tempo-fns';
 
-isFirstDayOfMonth(new Tempo('2026-03-01')); // Returns: true
+isFirstDayOfMonth('2026-03-01'); // Returns: true
+isFirstDayOfMonth('2026-03-15'); // Returns: false
+
+// Native Temporal:
+isFirstDayOfMonth(Temporal.PlainDate.from('2026-04-01')); // Returns: true
+
+// Standard JS Date:
+isFirstDayOfMonth(new Date(2026, 2, 1)); // Returns: true
 ```
 
 ### `isLastDayOfMonth`
@@ -29,11 +38,13 @@ import { isLastDayOfMonth } from '@magmacomputing/tempo-fns';
 isLastDayOfMonth('2024-02-29'); // Returns: true (leap year)
 isLastDayOfMonth('2024-02-28'); // Returns: false
 isLastDayOfMonth('2023-02-28'); // Returns: true (non-leap year)
-isLastDayOfMonth(new Tempo('2026-07-31')); // Returns: true
+
+// Native Temporal:
+isLastDayOfMonth(Temporal.PlainDate.from('2026-07-31')); // Returns: true
 ```
 
 ### `isLeapYear`
-Determines whether a given 4-digit calendar year, Date, ISO string, or Tempo instance falls in a Gregorian leap year.
+Determines whether a given 4-digit calendar year, Date, ISO string, or Temporal instance falls in a Gregorian leap year.
 
 ```typescript
 function isLeapYear(date: DateInput): boolean;
@@ -46,6 +57,10 @@ isLeapYear(2024); // Returns: true
 isLeapYear(2023); // Returns: false
 isLeapYear(2000); // Returns: true
 isLeapYear(1900); // Returns: false
+
+// ISO string or Date:
+isLeapYear('2024-06-15'); // Returns: true
+isLeapYear(new Date(2023, 0, 1)); // Returns: false
 ```
 
 ### `daysInMonth`
@@ -92,7 +107,8 @@ function getISOWeekOfYear(zdt: Temporal.ZonedDateTime | Tempo): { weekOfYear: nu
 ```typescript
 import { getISOWeekOfYear } from '@magmacomputing/tempo-fns';
 
-getISOWeekOfYear(new Tempo('2026-01-01')); // Returns: { weekOfYear: 1, yearOfWeek: 2026 }
+getISOWeekOfYear(Temporal.ZonedDateTime.from('2026-01-01T00:00:00+00:00[UTC]'));
+// Returns: { weekOfYear: 1, yearOfWeek: 2026 }
 ```
 
 ### `getPublicHolidays`

@@ -213,10 +213,9 @@ export function businessDaysBetween(start: DateInput, end: DateInput, options?: 
 		}
 		return count;
 	} else {
-		current = current.subtract({ days: 1 });
 		while (true) {
 			const currIso = toDateKey(current.year, current.month, current.day);
-			if (currIso < endIso) break;
+			if (currIso <= endIso) break;
 			if (isBusinessDay(current, options)) count--;
 			current = current.subtract({ days: 1 });
 		}
