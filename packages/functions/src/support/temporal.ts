@@ -242,12 +242,14 @@ export function coerceZonedDateTime(date: DateInput, fallbackTz = 'UTC'): Tempor
 	const unwrapped = unwrapTemporal(date);
 
 	if (isObject(unwrapped)) {
+		if ('timeZoneId' in (unwrapped as any))
+			return unwrapped as TemporalType.ZonedDateTime;
 		if (isFunction((unwrapped as any).toZonedDateTimeISO))
 			return (unwrapped as any).toZonedDateTimeISO(fallbackTz);
 		if (isFunction((unwrapped as any).toZonedDateTime))
 			return (unwrapped as any).toZonedDateTime(fallbackTz);
 		if ('epochNanoseconds' in (unwrapped as any))
-			return unwrapped as TemporalType.ZonedDateTime;
+			return Temporal.Instant.fromEpochNanoseconds((unwrapped as any).epochNanoseconds).toZonedDateTimeISO(fallbackTz);
 	}
 
 	if (isDate(date))

@@ -130,8 +130,5 @@ export function resolveCoordinates(latOrOptions: any = 0, lngInput = 0): { lat: 
 	if (extracted)
 		return { lat: extracted.lat, lng: extracted.lng, elevation: extracted.elevation ?? 0 };
 
-	if (isNumber(latOrOptions))
-		return { lat: latOrOptions, lng: lngInput, elevation: 0 };
-
 	return { lat: 0, lng: 0, elevation: 0 };
 }

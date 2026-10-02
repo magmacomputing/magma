@@ -42,7 +42,7 @@ describe('Phase 2: Business Day & Working Day Math', () => {
 		});
 
 		it('supports Date objects and timestamps in holidays list', () => {
-			const christmasDate = new Date('2026-12-25T00:00:00Z');
+			const christmasDate = new Date(2026, 11, 25);
 			expect(isBusinessDay('2026-12-25', { holidays: [christmasDate] })).toBe(false);
 			expect(isBusinessDay('2026-12-25', { holidays: [christmasDate.getTime()] })).toBe(false);
 		});

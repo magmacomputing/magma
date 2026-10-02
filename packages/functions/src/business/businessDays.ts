@@ -3,12 +3,9 @@ import {
 	extractDateParts,
 	coerceZonedDateTime,
 	getTemporal,
+	isDefined,
 	isNumber,
-	isString,
-	isObject,
-	isDate,
 	isUndefined,
-	ISO_CALENDAR_DATE_REGEX,
 	type DateInput,
 	type Temporal,
 } from '../support/index.js';
@@ -41,41 +38,9 @@ function buildHolidaySet(holidays?: readonly (string | number | Date | Temporal.
 	const set = new Set<string>();
 
 	for (const h of holidays) {
-		if (isString(h)) {
-			const match = h.trim().match(ISO_CALENDAR_DATE_REGEX);
-			if (match) {
-				const y = (match[1] ?? match[2])!.padStart(4, '0');
-				const m = match[3] ? match[3].padStart(2, '0') : '01';
-				const d = match[4] ? match[4].padStart(2, '0') : '01';
-				set.add(`${y}-${m}-${d}`);
-			} else {
-				const dt = new Date(h);
-				if (isDate(dt)) {
-					const y = dt.getFullYear().toString().padStart(4, '0');
-					const m = (dt.getMonth() + 1).toString().padStart(2, '0');
-					const d = dt.getDate().toString().padStart(2, '0');
-					set.add(`${y}-${m}-${d}`);
-				}
-			}
-		} else if (isNumber(h)) {
-			const dt = new Date(h);
-			if (isDate(dt)) {
-				const y = dt.getFullYear().toString().padStart(4, '0');
-				const m = (dt.getMonth() + 1).toString().padStart(2, '0');
-				const d = dt.getDate().toString().padStart(2, '0');
-				set.add(`${y}-${m}-${d}`);
-			}
-		} else if (isDate(h)) {
-			const y = h.getFullYear().toString().padStart(4, '0');
-			const m = (h.getMonth() + 1).toString().padStart(2, '0');
-			const d = h.getDate().toString().padStart(2, '0');
-			set.add(`${y}-${m}-${d}`);
-		} else if (isObject(h) && 'year' in h && 'month' in h && 'day' in h) {
-			const y = String((h as any).year).padStart(4, '0');
-			const m = String((h as any).month).padStart(2, '0');
-			const d = String((h as any).day).padStart(2, '0');
-			set.add(`${y}-${m}-${d}`);
-		}
+		const parts = extractDateParts(h);
+		if (isDefined(parts.year) && isDefined(parts.month) && isDefined(parts.day))
+			set.add(toDateKey(parts.year, parts.month, parts.day));
 	}
 
 	return set;
@@ -138,8 +103,13 @@ export function isBusinessDay(date: DateInput, options?: BusinessDayOptions): bo
  */
 export function nextBusinessDay(date: DateInput, options?: BusinessDayOptions): Temporal.ZonedDateTime {
 	let current = coerceZonedDateTime(date).add({ days: 1 });
-	while (!isBusinessDay(current, options))
+	let iterations = 0;
+	const maxIterations = 100_000;
+	while (!isBusinessDay(current, options)) {
+		if (++iterations > maxIterations)
+			throw new RangeError('Search limit exceeded while searching for next business day');
 		current = current.add({ days: 1 });
+	}
 
 	return current;
 }
@@ -158,8 +128,13 @@ export function nextBusinessDay(date: DateInput, options?: BusinessDayOptions): 
  */
 export function prevBusinessDay(date: DateInput, options?: BusinessDayOptions): Temporal.ZonedDateTime {
 	let current = coerceZonedDateTime(date).subtract({ days: 1 });
-	while (!isBusinessDay(current, options))
+	let iterations = 0;
+	const maxIterations = 100_000;
+	while (!isBusinessDay(current, options)) {
+		if (++iterations > maxIterations)
+			throw new RangeError('Search limit exceeded while searching for previous business day');
 		current = current.subtract({ days: 1 });
+	}
 
 	return current;
 }
@@ -179,13 +154,20 @@ export function prevBusinessDay(date: DateInput, options?: BusinessDayOptions): 
  * ```
  */
 export function addBusinessDays(date: DateInput, amount: number, options?: BusinessDayOptions): Temporal.ZonedDateTime {
+	if (!isNumber(amount))
+		throw new RangeError('Amount must be a finite number');
+
 	let current = coerceZonedDateTime(date);
 	if (amount === 0) return current;
 
 	const step = amount > 0 ? 1 : -1;
 	let remaining = Math.abs(amount);
+	let iterations = 0;
+	const maxIterations = 100_000;
 
 	while (remaining > 0) {
+		if (++iterations > maxIterations)
+			throw new RangeError('Search limit exceeded while computing business days');
 		current = current.add({ days: step });
 		if (isBusinessDay(current, options))
 			remaining--;
