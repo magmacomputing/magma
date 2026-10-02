@@ -200,7 +200,7 @@ export function businessDaysBetween(start: DateInput, end: DateInput, options?: 
 
 	if (startIso === endIso) return 0;
 
-	if (startZdt.epochNanoseconds > endZdt.epochNanoseconds)
+	if (startIso > endIso)
 		return -businessDaysBetween(end, start, options);
 
 	let current = startZdt.add({ days: 1 });

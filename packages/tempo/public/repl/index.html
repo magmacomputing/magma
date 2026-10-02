@@ -710,6 +710,7 @@
 			"@magmacomputing/tempo-plugin-snap": "https://esm.sh/@magmacomputing/tempo-plugin-snap@latest",
 			"@magmacomputing/tempo-plugin-spatial": "https://esm.sh/@magmacomputing/tempo-plugin-spatial@latest",
 			"@magmacomputing/tempo-plugin-sync": "https://esm.sh/@magmacomputing/tempo-plugin-sync@latest",
+			"@magmacomputing/tempo-plugin-ntp": "https://esm.sh/@magmacomputing/tempo-plugin-ntp@latest",
 			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@latest"
 		}
 	}
@@ -795,6 +796,7 @@
 							<option value="dynamic">Preset: Dynamic Plugin (ESM import)</option>
 							<option value="ai">Preset: AI Semantic Parsing & Scheduling</option>
 							<option value="holidays">Preset: Regional Public Holidays & SLA Business Days</option>
+							<option value="ntp">Preset: Network Time Sync & Drift (NTP)</option>
 						</select>
 					</div>
 
@@ -1069,6 +1071,23 @@ try {
 } finally {
   Tempo.sync.stopClock();
 }`,
+
+			ntp: `// 🌐 Network Time Sync & Drift Calibration (@magmacomputing/tempo-plugin-ntp)
+const { NtpPlugin } = await import('@magmacomputing/tempo-plugin-ntp');
+Tempo.use(NtpPlugin);
+
+console.log('Calibrating clock with remote time source...');
+const sample = await Tempo.ntp.sync({
+  servers: ['https://cloudflare.com', 'https://www.google.com'],
+  samples: 2,
+  timeout: 3000
+});
+
+console.log('Sync Result:', sample.server);
+console.log('Clock Drift:', sample.offset, 'ms (RTT: ' + sample.roundTripTime + 'ms)');
+console.log('Calibrated Tempo:', Tempo.ntp.now().format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}'));
+
+return \`Calibrated! Offset: \${Tempo.ntp.offset}ms | Local: \${new Tempo().format('{hh}:{mi}:{ss}.{ms}')} vs NTP: \${Tempo.ntp.now().format('{hh}:{mi}:{ss}.{ms}')}\`;`,
 
 			ticker: `// ⏰ Continuous Temporal Ticker Demo (@magmacomputing/tempo-plugin-ticker)
 const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');

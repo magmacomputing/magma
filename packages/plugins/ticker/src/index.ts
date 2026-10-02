@@ -1,7 +1,7 @@
 import { Tempo } from '@magmacomputing/tempo';
 import {
 	enums, definePlugin, attachStatics,
-	isObject, isFunction, isDefined, isEmpty, isNumeric, isString, isNumber, asArray,
+	isObject, isFunction, isDefined, isEmpty, isNumeric, isString, isNumber,
 	instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
 	isUndefined, Finalizer, Reactive, cast,
@@ -55,8 +55,8 @@ export const Ticker = {
 			if (isUndefined(t) || t.info.stopped) {
 				ACTIVE_TICKERS.delete(entry);
 			} else {
-				const { label, next, ticks, limit, interval, rrule, cron, stopped } = t.info;
-				result.push({ ticker: t, label, next, ticks, limit, interval, rrule, cron, stopped });
+				const { label, next, ticks, limit, interval, rrule, cron, stopped, ntp } = t.info;
+				result.push({ ticker: t, label, next, ticks, limit, interval, rrule, cron, stopped, ntp });
 			}
 		}
 		return result;
@@ -85,6 +85,7 @@ export namespace Ticker {
 		until?: Tempo.DateTime | Tempo.Options;
 		seed?: Tempo.DateTime | Tempo.Options;
 		catch?: boolean;
+		ntp?: boolean;
 		[key: `#${string}`]: number | string;
 	};
 
@@ -107,6 +108,7 @@ export namespace Ticker {
 			rrule: string | undefined;
 			cron: string | undefined;
 			stopped: boolean;
+			ntp: boolean;
 		};
 	}
 
@@ -144,6 +146,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#stopListeners = new Set<Ticker.Callback>();
 	#hasInvalidSchedule = false;
 	#isCatch = false;
+	#useNtp = false;
 	#selfRef!: WeakRef<Ticker.Instance>;
 	#activeEntry: ActiveTickerEntry | undefined = undefined;
 
@@ -191,9 +194,10 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 
 		// ── Initialization ───────────────────────────────────────────────────
-		const { label, limit: lmt, until: stopAt, seed: startAt, rrule: rruleOption, cron: cronOption, ...rest } = rawOptions;
+		const { label, limit: lmt, until: stopAt, seed: startAt, rrule: rruleOption, cron: cronOption, ntp: useNtp, ...rest } = rawOptions;
 		this.#label = label;
 		this.#limit = lmt;
+		this.#useNtp = Boolean(useNtp);
 		if (rruleOption)
 			this.#rrule = isString(rruleOption) ? rruleOption : rruleOption.rrule;
 		this.#isCatch = Boolean(rawOptions.catch ?? this.#TempoClass.config?.catch);
@@ -240,7 +244,13 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 
 		normaliseFractionalDurations(this.#payload);
-		this.#next = new this.#TempoClass(isOptions(startAt) ? undefined : startAt, isOptions(startAt) ? { ...rest, ...startAt } : rest);
+		if (isDefined(startAt)) {
+			this.#next = new this.#TempoClass(isOptions(startAt) ? undefined : startAt, isOptions(startAt) ? { ...rest, ...startAt } : rest);
+		} else if (this.#useNtp && isFunction((this.#TempoClass as any).ntp?.now)) {
+			this.#next = (this.#TempoClass as any).ntp.now(rest);
+		} else {
+			this.#next = new this.#TempoClass(undefined, rest);
+		}
 	}
 
 	/** explicitly set the proxy-self (called by factory) */
@@ -311,7 +321,8 @@ class TickerInstance implements Ticker.Descriptor {
 	}
 
 	#delayMs() {
-		const diff = Math.round(this.#next.epoch.ms - instant().epochMilliseconds);
+		const ntpOffset = (this.#useNtp && isNumber((this.#TempoClass as any).ntp?.offset)) ? (this.#TempoClass as any).ntp.offset : 0;
+		const diff = Math.round(this.#next.epoch.ms - (instant().epochMilliseconds + ntpOffset));
 		if (diff > 0) return Math.min(diff, 2_147_483_647);
 		if (!this.#isForward) {
 			const stepMs = Math.abs(Math.round(this.#next.add(this.#payload).epoch.ms - this.#next.epoch.ms));
@@ -433,6 +444,10 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 	}
 
+	get [Symbol.toStringTag](): string {
+		return 'Tempo.Ticker';
+	}
+
 	get info() {
 		return {
 			label: this.#label,
@@ -443,6 +458,7 @@ class TickerInstance implements Ticker.Descriptor {
 			rrule: this.#rrule,
 			cron: this.#cron,
 			stopped: this.#stopped,
+			ntp: this.#useNtp,
 		};
 	}
 

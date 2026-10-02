@@ -85,21 +85,21 @@ Calculates speed and velocity vectors between two timestamped spatial points.
 
 ```typescript
 function calculateVelocity(
-  p1: CoordinateInput & { time: Date | number | string },
-  p2: CoordinateInput & { time: Date | number | string },
-  options?: VelocityOptions
-): { speed: number; unit: string; bearing: number };
+  from: CoordinateInput | any,
+  to: CoordinateInput | any,
+  options?: VelocityOptions | DistanceUnit
+): number;
 ```
 **Example:**
 ```typescript
 import { calculateVelocity } from '@magmacomputing/tempo-fns';
 
-const v = calculateVelocity(
-  { lat: 40.7128, lng: -74.006, time: '2026-10-01T12:00:00Z' },
-  { lat: 40.7589, lng: -73.9851, time: '2026-10-01T12:30:00Z' },
-  { distanceUnit: 'km', timeUnit: 'hours' }
+const speed = calculateVelocity(
+  { lat: 40.7128, lng: -74.006, timestamp: 1700000000000 },
+  { lat: 42.3601, lng: -71.0589, timestamp: 1700007200000 },
+  { unit: 'km', timeUnit: 'hh' }
 );
-console.log(`${v.speed} km/h`);
+console.log(`${speed} km/h`);
 ```
 
 ### `closestCoordinate`

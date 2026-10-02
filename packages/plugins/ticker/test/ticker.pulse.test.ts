@@ -11,6 +11,7 @@ describe('Ticker Pulse Behavior', () => {
 	test('limit: 1 should result in 1 pulse currently', async () => {
 		let count = 0;
 		const t = Tempo.ticker({ seconds: 0.1, limit: 1 }, () => count++);
+		expect(Object.prototype.toString.call(t)).toBe('[object Tempo.Ticker]');
 		await new Promise(r => setTimeout(r, 200));
 		expect(count).toBe(1);
 		t.stop();

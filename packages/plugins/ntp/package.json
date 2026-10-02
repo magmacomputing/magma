@@ -1,0 +1,69 @@
+{
+  "name": "@magmacomputing/tempo-plugin-ntp",
+  "version": "1.0.0",
+  "description": "Tempo plugin providing client-server network time synchronization and monotonic clock drift compensation using Cristian's algorithm and HTTP Server-Timing headers.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": [
+    "./dist/install.js"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magmacomputing/magma.git",
+    "directory": "packages/plugins/ntp"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && tsc",
+    "test": "vitest run -c ../vitest.shared.ts",
+    "prepublishOnly": "tempo-cli prepublish"
+  },
+  "peerDependencies": {
+    "@magmacomputing/tempo": "^4.4.0"
+  },
+  "tempo": {
+    "vendorVariantId": "tempo-plugin-ntp",
+    "plan": "community"
+  },
+  "devDependencies": {
+    "@magmacomputing/tempo": "^4.4.4"
+  },
+  "keywords": [
+    "tempo",
+    "tempo-plugin",
+    "magmacomputing",
+    "temporal",
+    "plugin",
+    "ntp",
+    "clock-drift",
+    "time-sync",
+    "sntp",
+    "cristian-algorithm",
+    "server-timing",
+    "network-time",
+    "typescript"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js",
+      "default": "./dist/install.js"
+    }
+  }
+}

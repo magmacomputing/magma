@@ -47,6 +47,10 @@ export class AtomicClock {
 		this.#tick();
 	}
 
+	get [Symbol.toStringTag](): string {
+		return 'Tempo.AtomicClock';
+	}
+
 	/**
 	 * Returns the underlying SharedArrayBuffer to be passed to workers.
 	 */

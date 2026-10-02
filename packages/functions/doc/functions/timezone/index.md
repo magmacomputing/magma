@@ -20,24 +20,26 @@ isValidTimeZone(null);               // Returns: false
 ```
 
 ### `getDSTTransitions`
-Discovers all Daylight Saving Time (DST) clock shift transition events for a timezone within a given calendar year using millisecond-precision binary search.
+Resolves exact timestamps of Daylight Saving Time (DST) transitions for a given timezone and calendar year.
 
 ```typescript
 function getDSTTransitions(
   timeZone: string,
-  year: number = new Date().getFullYear()
-): DSTTransition[];
+  year: number
+): DSTTransitionsResult;
 ```
 **Example:**
 ```typescript
 import { getDSTTransitions } from '@magmacomputing/tempo-fns';
 
-const transitions = getDSTTransitions('America/New_York', 2026);
-// Returns 2 transitions (Spring forward in March, Fall back in November):
-// [
-//   { type: 'gap', instant: Temporal.Instant..., previousOffset: -18000, newOffset: -14400, ... },
-//   { type: 'overlap', instant: Temporal.Instant..., previousOffset: -14400, newOffset: -18000, ... }
-// ]
+const dst = getDSTTransitions('America/New_York', 2026);
+// Returns DSTTransitionsResult:
+// {
+//   hasDST: true,
+//   springForwardMs: 1772953200000,
+//   fallBackMs: 1793512800000,
+//   dstShiftMinutes: 60
+// }
 ```
 
 ### `isDST`

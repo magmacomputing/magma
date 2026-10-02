@@ -69,7 +69,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ticker",
     "plan": "community",
     "status": "active",
-    "version": "2.5.2"
+    "version": "2.6.0"
   },
   {
     "id": "geo",
@@ -113,6 +113,15 @@
     "name": "Spatial Plugin",
     "description": "Tempo community plugin for GIS spatial geometry, Great-Circle navigation, transit velocity, and impossible travel anomaly detection.",
     "packageName": "@magmacomputing/tempo-plugin-spatial",
+    "version": "1.0.0",
+    "plan": "community",
+    "status": "active"
+  },
+  {
+    "id": "ntp",
+    "name": "Ntp Plugin",
+    "description": "Tempo plugin providing client-server network time synchronization and monotonic clock drift compensation using Cristian's algorithm and HTTP Server-Timing headers.",
+    "packageName": "@magmacomputing/tempo-plugin-ntp",
     "version": "1.0.0",
     "plan": "community",
     "status": "active"

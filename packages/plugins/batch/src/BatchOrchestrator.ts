@@ -80,6 +80,11 @@ export class BatchOrchestrator {
 
 		return result;
 	}
+
+	get [Symbol.toStringTag](): string {
+		return 'Tempo.BatchOrchestrator';
+	}
+
 	/**
 	 * Transforms an array of epochs using a worker pool.
 	 * @param epochs Array of raw millisecond epoch numbers.

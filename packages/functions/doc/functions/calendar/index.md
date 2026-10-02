@@ -1,7 +1,7 @@
 # Calendar Utilities
 This directory contains calendar and date-oriented utility functions (e.g. week of year, first/last day of month, leap year, days in month, weekend/weekday checks).
 
-All functions accept universal date inputs: ISO date strings (`'YYYY-MM-DD'`), native `Temporal.PlainDate` / `Temporal.ZonedDateTime` instances, JS `Date` objects, timestamps, or `Tempo` objects.
+Most functions accept universal date inputs: ISO date strings (`'YYYY-MM-DD'`), native `Temporal.PlainDate` / `Temporal.ZonedDateTime` instances, JS `Date` objects, timestamps, or `Tempo` objects (with the exception of `getISOWeekOfYear`, which requires a `Tempo` or `Temporal` object).
 
 ## Exported Functions
 

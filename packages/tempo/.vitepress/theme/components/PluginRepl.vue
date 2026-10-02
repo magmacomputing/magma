@@ -116,6 +116,21 @@ console.log('Is Fiscal Year Start?', t.finance.isFiscalYearStart());
 
 return \`Fiscal Q\${t.finance.fiscalQuarter} (Tax Year \${t.finance.taxYear})\`;`,
 
+  ntp: `// 🌐 Network Time Sync & Clock Drift Compensation Demo (@magmacomputing/tempo-plugin-ntp)
+const { NtpPlugin } = await import('@magmacomputing/tempo-plugin-ntp');
+Tempo.use(NtpPlugin);
+
+// Calibrate with remote time source
+await Tempo.ntp.sync(['https://cloudflare.com', 'https://www.google.com']);
+
+// Query calibrated atomic time (100% synchronous!)
+const now = Tempo.ntp.now();
+console.log('Calibrated True UTC:', now.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}'));
+console.log('Current Clock Offset (ms):', Tempo.ntp.offset);
+console.log('Drift Telemetry:', Tempo.ntp.drift);
+
+return \`NTP Calibrated: \${now.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}')} (Offset: \${Tempo.ntp.offset}ms)\`;`,
+
   snap: `// ⏱️ Time Snapping & Quantization Demo (@magmacomputing/tempo-plugin-snap)
 const { SnapPlugin } = await import('@magmacomputing/tempo-plugin-snap');
 Tempo.use(SnapPlugin);

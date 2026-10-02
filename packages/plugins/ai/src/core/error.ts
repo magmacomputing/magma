@@ -26,6 +26,10 @@ export class TempoAiError extends Error {
 		this.#retryAt = retryAt;
 	}
 
+	get [Symbol.toStringTag](): string {
+		return 'Tempo.AiError';
+	}
+
 	/**
 	 * Gets the HTTP status code for this error.
 	 *

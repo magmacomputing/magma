@@ -171,5 +171,11 @@ describe('Phase 2: Business Day & Working Day Math', () => {
 			const holidays = ['2027-01-01'];
 			expect(businessDaysBetween('2026-12-30', '2027-01-05', { holidays })).toBe(3);
 		});
+
+		it('handles cross-timezone inputs based on local calendar dates', () => {
+			// Oct 5 in Sydney (2026-10-05T01:00:00+10:00) vs Oct 2 in New York (2026-10-02T23:00:00-04:00)
+			expect(businessDaysBetween('2026-10-05T01:00:00+10:00', '2026-10-02T23:00:00-04:00')).toBe(-1);
+			expect(businessDaysBetween('2026-10-02T23:00:00-04:00', '2026-10-05T01:00:00+10:00')).toBe(1);
+		});
 	});
 });
