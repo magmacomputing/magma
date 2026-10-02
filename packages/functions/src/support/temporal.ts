@@ -1,5 +1,5 @@
 import type { Temporal as TemporalType } from '@js-temporal/polyfill';
-import { isObject, isNumber, isString, isDate, isTempo, isTemporal, isDefined } from './assert.js';
+import { isObject, isNumber, isString, isDate, isTempo, isTemporal, isDefined, isFunction } from './assert.js';
 export type { TemporalType as Temporal };
 
 /**
@@ -227,3 +227,114 @@ export function extractDateParts(input: unknown): ResolvedDateParts {
 
 	return { type: 'unknown', target: input };
 }
+
+/**
+ * Coerces a universal DateInput into a native Temporal.ZonedDateTime.
+ * Supports Tempo instances, Temporal objects (PlainDate, PlainDateTime, ZonedDateTime, Instant),
+ * JS Date objects, ISO strings, and numeric epoch timestamps.
+ *
+ * @param date - Date representation to coerce
+ * @param fallbackTz - IANA timezone identifier to use if input lacks timezone context (default: 'UTC')
+ * @returns A native Temporal.ZonedDateTime instance
+ */
+export function coerceZonedDateTime(date: DateInput, fallbackTz = 'UTC'): TemporalType.ZonedDateTime {
+	const Temporal = getTemporal();
+	const unwrapped = unwrapTemporal(date);
+
+	if (isObject(unwrapped)) {
+		if (isFunction((unwrapped as any).toZonedDateTimeISO))
+			return (unwrapped as any).toZonedDateTimeISO(fallbackTz);
+		if (isFunction((unwrapped as any).toZonedDateTime))
+			return (unwrapped as any).toZonedDateTime(fallbackTz);
+		if ('epochNanoseconds' in (unwrapped as any))
+			return unwrapped as TemporalType.ZonedDateTime;
+	}
+
+	if (isDate(date))
+		return Temporal.Instant.fromEpochMilliseconds(date.getTime()).toZonedDateTimeISO(fallbackTz);
+
+	if (isNumber(date))
+		return Temporal.Instant.fromEpochMilliseconds(date).toZonedDateTimeISO(fallbackTz);
+
+	if (isString(date)) {
+		const trimmed = date.trim();
+		try {
+			return Temporal.ZonedDateTime.from(trimmed);
+		} catch {
+			try {
+				return Temporal.PlainDateTime.from(trimmed).toZonedDateTime(fallbackTz);
+			} catch {
+				return Temporal.PlainDate.from(trimmed).toZonedDateTime(fallbackTz);
+			}
+		}
+	}
+
+	const parts = extractDateParts(date);
+	if (isDefined(parts.year) && isDefined(parts.month) && isDefined(parts.day))
+		return Temporal.PlainDate.from({ year: parts.year, month: parts.month, day: parts.day }).toZonedDateTime(fallbackTz);
+
+	throw new TypeError(`[functions] Unable to coerce value into Temporal.ZonedDateTime: ${String(date)}`);
+}
+
+/**
+ * Extracts a numeric epoch millisecond timestamp from diverse date/time or instance representations.
+ * Safely handles numeric timestamps, JS Date instances, Tempo instances, Temporal objects, ISO strings,
+ * and duck-typed objects without throwing.
+ *
+ * @param input - Date representation or instance to inspect
+ * @returns Epoch millisecond timestamp, or undefined if invalid
+ */
+export function extractEpochMs(input: unknown): number | undefined {
+	if (!isDefined(input))
+		return undefined;
+	if (isNumber(input))
+		return input;
+	if (isDate(input))
+		return input.getTime();
+
+	if (isObject(input)) {
+		if (isNumber((input as any).epoch?.ms))
+			return (input as any).epoch.ms;
+		if (isNumber((input as any).epochMilliseconds))
+			return (input as any).epochMilliseconds;
+		if (isNumber((input as any).timestamp))
+			return (input as any).timestamp;
+		if (isDate((input as any).date))
+			return (input as any).date.getTime();
+		if (isFunction((input as any).toInstant)) {
+			try {
+				const t = (input as any).toInstant().epochMilliseconds;
+				if (isNumber(t))
+					return t;
+			} catch {}
+		}
+		if (isFunction((input as any).getTime)) {
+			try {
+				const t = (input as any).getTime();
+				if (isNumber(t))
+					return t;
+			} catch {}
+		}
+	}
+
+	if (isString(input)) {
+		const parsed = Date.parse(input.trim());
+		if (isNumber(parsed))
+			return parsed;
+	}
+
+	return undefined;
+}
+
+/**
+ * Normalizes a date input into milliseconds since the Unix epoch.
+ *
+ * @param dateInput - Date value, ISO date string, or epoch timestamp in milliseconds
+ * @param fallbackMs - Optional fallback value if parsing fails (default: 0)
+ * @returns Timestamp in milliseconds since Unix epoch
+ */
+export function toEpochMs(dateInput: unknown, fallbackMs = 0): number {
+	const ms = extractEpochMs(dateInput);
+	return isDefined(ms) ? ms : fallbackMs;
+}
+

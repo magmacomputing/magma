@@ -1,4 +1,12 @@
-import { isNumber, isObject, isString } from '../support/index.js';
+import {
+	isNumber,
+	isObject,
+	isString,
+	toEpochMs,
+	resolveCoordinates,
+} from '../support/index.js';
+
+export { toEpochMs, resolveCoordinates };
 
 /** Average duration of a complete lunar cycle (new moon to new moon) in days */
 export const SYNODIC_MONTH = 29.53058867;
@@ -37,43 +45,6 @@ export interface SolarOptions {
 export interface SolarTwilightWindow {
 	sunriseMs: number | null;
 	sunsetMs: number | null;
-}
-
-/**
- * Normalizes a Date object, ISO date string, or timestamp into milliseconds since the Unix epoch.
- *
- * @internal
- * @param dateInput - Date value, ISO date string, or epoch timestamp in milliseconds
- * @returns Timestamp in milliseconds since Unix epoch
- */
-export function toEpochMs(dateInput: Date | number | string): number {
-	return isNumber(dateInput)
-		? dateInput
-		: isString(dateInput)
-			? new Date(dateInput).getTime()
-			: dateInput.getTime();
-}
-
-/**
- * Resolves latitude, longitude, and elevation from positional arguments or a coordinate options object.
- *
- * @param latOrOptions - A latitude value or options containing coordinate fields
- * @param lngInput - The longitude used when `latOrOptions` is a numeric latitude
- * @returns An object containing the resolved `lat`, `lng`, and `elevation` values
- */
-export function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 0): { lat: number; lng: number; elevation: number } {
-	if (isNumber(latOrOptions))
-		return { lat: latOrOptions, lng: lngInput, elevation: 0 };
-
-	if (isObject(latOrOptions)) {
-		const geo = (latOrOptions as any).geo ?? latOrOptions;
-		const lat = geo.latitude ?? geo.lat ?? (latOrOptions as any).latitude ?? (latOrOptions as any).lat ?? 0;
-		const lng = geo.longitude ?? geo.lng ?? geo.lon ?? geo.long ?? (latOrOptions as any).longitude ?? (latOrOptions as any).lng ?? (latOrOptions as any).lon ?? (latOrOptions as any).long ?? 0;
-		const rawElevation = geo.elevation ?? (latOrOptions as any).elevation;
-		const elevation = isNumber(rawElevation) ? rawElevation : 0;
-		return { lat, lng, elevation };
-	}
-	return { lat: 0, lng: 0, elevation: 0 };
 }
 
 /**

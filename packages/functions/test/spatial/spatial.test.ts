@@ -1,8 +1,10 @@
 import {
 	haversineDistance,
 	calculateBearing,
+	calculateDestination,
 	calculateMidpoint,
 	calculateVelocity,
+	closestCoordinate,
 	isImpossibleTravel,
 	isWithin,
 	inBoundingBox,
@@ -274,6 +276,115 @@ describe('Spatial & Navigation Algorithms (@magmacomputing/tempo-fns)', () => {
 		it('returns undefined when mode is disabled (false / none)', () => {
 			expect(resolveCulturalLocale('en-US', 'AU', false)).toBeUndefined();
 			expect(resolveCulturalLocale('en-US', 'AU', 'none')).toBeUndefined();
+		});
+	});
+
+	describe('calculateDestination', () => {
+		it('projects forward destination matching haversine distance back to origin', () => {
+			const start = [40.7128, -74.006]; // NYC
+			const distanceKm = 250;
+			const bearing = 45; // Northeast
+
+			const [destLat, destLng] = calculateDestination(start, distanceKm, bearing, 'km');
+			expect(destLat).toBeGreaterThan(40.7128);
+			expect(destLng).toBeGreaterThan(-74.006);
+
+			const returnDist = haversineDistance(start, [destLat, destLng], 'km');
+			expect(returnDist).toBeCloseTo(distanceKm, 1);
+
+			const measuredBearing = calculateBearing(start, [destLat, destLng]);
+			expect(measuredBearing).toBeCloseTo(bearing, 1);
+		});
+
+		it('calculates cardinal projections accurately (North, South, East, West)', () => {
+			const equator = [0, 0];
+			const north1000 = calculateDestination(equator, 1000, 0, 'km');
+			expect(north1000[0]).toBeGreaterThan(0);
+			expect(north1000[1]).toBeCloseTo(0, 4);
+
+			const south1000 = calculateDestination(equator, 1000, 180, 'km');
+			expect(south1000[0]).toBeLessThan(0);
+			expect(south1000[1]).toBeCloseTo(0, 4);
+
+			const east1000 = calculateDestination(equator, 1000, 90, 'km');
+			expect(east1000[0]).toBeCloseTo(0, 4);
+			expect(east1000[1]).toBeGreaterThan(0);
+		});
+
+		it('supports distance units: miles and meters', () => {
+			const start = { lat: 34.0522, lng: -118.2437 }; // LA
+			const destMiles = calculateDestination(start, 100, 90, 'miles');
+			const destMeters = calculateDestination(start, 160934.4, 90, 'm');
+
+			expect(destMiles[0]).toBeCloseTo(destMeters[0], 2);
+			expect(destMiles[1]).toBeCloseTo(destMeters[1], 2);
+		});
+
+		it('handles antimeridian wrapping correctly', () => {
+			const nearDateLine = { lat: 0, lng: 179 };
+			const [destLat, destLng] = calculateDestination(nearDateLine, 300, 90, 'km');
+			expect(destLng).toBeLessThan(-170); // Wrapped across 180° to Western Hemisphere
+		});
+
+		it('returns [NaN, NaN] for invalid start coordinates, distance, or bearing', () => {
+			expect(calculateDestination(null, 100, 90)).toEqual([NaN, NaN]);
+			expect(calculateDestination([999, 0], 100, 90)).toEqual([NaN, NaN]);
+			expect(calculateDestination([0, 0], NaN, 90)).toEqual([NaN, NaN]);
+			expect(calculateDestination([0, 0], 100, NaN)).toEqual([NaN, NaN]);
+		});
+	});
+
+	describe('closestCoordinate', () => {
+		const cities = [
+			{ name: 'London', lat: 51.5074, lng: -0.1278 },
+			{ name: 'Philadelphia', lat: 39.9526, lng: -75.1652 },
+			{ name: 'Tokyo', lat: 35.6762, lng: 139.6503 },
+			{ name: 'Paris', lat: 48.8566, lng: 2.3522 },
+		];
+
+		it('finds the nearest coordinate from a candidate collection', () => {
+			const result = closestCoordinate(NYC, cities, 'km');
+			expect(result).not.toBeNull();
+			expect(result?.coordinate.name).toBe('Philadelphia');
+			expect(result?.index).toBe(1);
+			expect(result?.distance).toBeLessThan(150);
+		});
+
+		it('returns distance 0 when candidate matches target exactly', () => {
+			const result = closestCoordinate(LONDON, cities, 'km');
+			expect(result?.coordinate.name).toBe('London');
+			expect(result?.index).toBe(0);
+			expect(result?.distance).toBe(0);
+		});
+
+		it('supports diverse candidate representations (tuples, latitude/longitude, geo)', () => {
+			const mixedCandidates = [
+				[51.5074, -0.1278],
+				{ latitude: 39.9526, longitude: -75.1652 },
+				{ geo: { lat: 35.6762, lng: 139.6503 } },
+			];
+
+			const result = closestCoordinate(NYC, mixedCandidates, 'miles');
+			expect(result?.index).toBe(1);
+			expect(result?.distance).toBeLessThan(100);
+		});
+
+		it('returns null for empty candidate array or invalid target', () => {
+			expect(closestCoordinate(NYC, [])).toBeNull();
+			expect(closestCoordinate(null, cities)).toBeNull();
+			expect(closestCoordinate([999, 999], cities)).toBeNull();
+		});
+
+		it('skips invalid candidate entries and finds closest among valid candidates', () => {
+			const withInvalid = [
+				null as any,
+				{ lat: 999, lng: 0 },
+				{ name: 'Philadelphia', lat: 39.9526, lng: -75.1652 },
+			];
+
+			const result = closestCoordinate(NYC, withInvalid);
+			expect(result?.coordinate.name).toBe('Philadelphia');
+			expect(result?.index).toBe(2);
 		});
 	});
 });

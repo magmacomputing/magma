@@ -25,6 +25,7 @@ This style guide defines common coding conventions, formatting standards, and Ty
 ## 2. Prefer Assertion Library Functions
 - **Assertion Functions First**: Always prefer fast, idiomatic assertion functions (e.g. from `#library/assertion.library.js` or package support modules) over manual `typeof`, `instanceof`, or bespoke null-checks:
   - **Primitives**: `isString(x)`, `isNumber(x)`, `isInteger(x)` (bigint), `isDigit(x)` (number or bigint), `isBoolean(x)`, `isSymbol(x)`.
+  - **Strings & Text**: Prefer `isText(x)` over manual non-empty string checks like `isString(x) && x.trim().length > 0` or `!isString(x) || x.trim().length === 0`.
   - **Callables**: `isCallable(x)` or `isFunction(x)` for any invocable function, method, or class constructor (`typeof x === 'function'`).
   - **Objects**: `isPlainObject(x)` for plain dictionary `{}` or `Object.create(null)` objects. Avoid manual, fragile checks such as `typeof x === 'object' && x !== null` or `x.constructor === Object`.
   - **Nullish & Presence**: Prefer positive assertions: `isUndefined(x)`, `isNullish(x)`, `isNull(x)`, `isDefined(x)`. Prefer `isUndefined(x)` over negated `!isDefined(x)` for clearer readability.

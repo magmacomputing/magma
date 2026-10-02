@@ -19,6 +19,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `isLeapYear`: Fast Gregorian leap year check for year numbers, dates, ISO strings, or Tempo instances.
   - `daysInMonth`: Calculates the exact number of days (28, 29, 30, or 31) for a specified year and month.
   - `isWeekend` & `isWeekday`: Determines if a date falls on a weekend or weekday, with support for standard ISO 8601 boundaries (`[6, 7]`), regional cultural adaptation (`options.locale`), and custom `options.weekendDays`.
+- **Business Day & Working Day Math** (`@magmacomputing/tempo-fns/business`):
+  - `isBusinessDay`: Determines whether a date is an active working business day, accounting for custom/cultural weekend boundaries and dynamic holiday lists or predicates.
+  - `nextBusinessDay` & `prevBusinessDay`: Calculates the subsequent or preceding business day from any reference date.
+  - `addBusinessDays`: Advances or rewinds a date by $N$ working business days, supporting standard financial settlement schedules (e.g., T+2 settlement).
+  - `businessDaysBetween`: Computes the signed integer count of working business days between two dates.
+- **Spatial Navigation & Geodesy** (`@magmacomputing/tempo-fns/spatial`):
+  - `calculateDestination`: Computes destination coordinates from a starting point, distance, and forward compass bearing using the Great-Circle spherical law of cosines forward geodesic equations.
+  - `closestCoordinate`: Finds the nearest coordinate and Great-Circle distance from a collection of candidate points relative to a target coordinate.
+- **Timezones & DST Analysis** (`@magmacomputing/tempo-fns/timezone`):
+  - `isValidTimeZone`: Safe, non-throwing validator verifying whether a string is a valid IANA timezone identifier accepted by the runtime environment.
+  - `getDSTTransitions`: Resolves exact epoch millisecond timestamps of Spring Forward and Fall Back transitions along with shift magnitude for any timezone and calendar year.
+- **Universal Coordinate Normalization & Root Re-exports** (`@magmacomputing/tempo-fns/support`):
+  - `normalizeCoords`, `extractRawCoords`, `resolveCoordinates`: Centralized universal coordinate extraction supporting `[lat, lng]` tuples, comma strings, property bags, and wrapped instances.
+  - `extractEpochMs` & `toEpochMs`: Universal epoch timestamp extraction for Tempo, Temporal, Date, strings, and numbers.
+  - Re-exported runtime type assertion guards (`isNumber`, `isString`, `isText`, `isBoolean`, `isFunction`, `isNullish`, `isUndefined`, `isDefined`, `isDate`, `isPrimitive`, `isObject`, `isReference`, `isTempo`, `isTemporal`) directly from the root package.
 - **Astronomical Duration Constants**:
   - Exported `HALF_DAY_MS` (`43_200_000` ms) and `DAY_MS` (`86_400_000` ms) from the root package and celestial submodule.
 

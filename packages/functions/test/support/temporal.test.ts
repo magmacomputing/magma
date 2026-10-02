@@ -1,4 +1,11 @@
-import { unwrapTemporal, getTemporal, extractDateParts } from '../../src/support/temporal.js';
+import {
+	unwrapTemporal,
+	getTemporal,
+	extractDateParts,
+	coerceZonedDateTime,
+	extractEpochMs,
+	toEpochMs,
+} from '../../src/support/index.js';
 import { Tempo } from '@magmacomputing/tempo';
 
 describe('unwrapTemporal', () => {
@@ -153,5 +160,92 @@ describe('extractDateParts', () => {
 		expect(res.month).toBeUndefined();
 		expect(res.day).toBeUndefined();
 		expect(res.dayOfWeek).toBeUndefined();
+	});
+});
+
+describe('coerceZonedDateTime', () => {
+	it('should coerce Tempo instances preserving timezone', () => {
+		const t = new Tempo('2026-10-02T15:30:00+09:00[Asia/Tokyo]');
+		const zdt = coerceZonedDateTime(t);
+		expect(zdt.year).toBe(2026);
+		expect(zdt.month).toBe(10);
+		expect(zdt.day).toBe(2);
+		expect(zdt.timeZoneId).toBe('Asia/Tokyo');
+	});
+
+	it('should coerce native Temporal.PlainDate using fallback timezone', () => {
+		const TemporalAPI = getTemporal();
+		const pd = TemporalAPI.PlainDate.from('2026-10-02');
+		const zdt = coerceZonedDateTime(pd, 'Australia/Sydney');
+		expect(zdt.year).toBe(2026);
+		expect(zdt.month).toBe(10);
+		expect(zdt.day).toBe(2);
+		expect(zdt.timeZoneId).toBe('Australia/Sydney');
+	});
+
+	it('should coerce JS Date objects', () => {
+		const date = new Date(Date.UTC(2026, 9, 2, 12, 0, 0));
+		const zdt = coerceZonedDateTime(date, 'UTC');
+		expect(zdt.year).toBe(2026);
+		expect(zdt.month).toBe(10);
+		expect(zdt.day).toBe(2);
+	});
+
+	it('should coerce epoch timestamps (number)', () => {
+		const ms = Date.UTC(2026, 9, 2, 0, 0, 0);
+		const zdt = coerceZonedDateTime(ms, 'UTC');
+		expect(zdt.year).toBe(2026);
+		expect(zdt.month).toBe(10);
+		expect(zdt.day).toBe(2);
+	});
+
+	it('should coerce ISO date strings and full ISO timestamps', () => {
+		const zdtFromDate = coerceZonedDateTime('2026-10-02', 'America/New_York');
+		expect(zdtFromDate.year).toBe(2026);
+		expect(zdtFromDate.month).toBe(10);
+		expect(zdtFromDate.day).toBe(2);
+		expect(zdtFromDate.timeZoneId).toBe('America/New_York');
+
+		const zdtFromZdt = coerceZonedDateTime('2026-10-02T10:00:00+02:00[Europe/Paris]');
+		expect(zdtFromZdt.timeZoneId).toBe('Europe/Paris');
+	});
+
+	it('should coerce duck-typed { year, month, day } objects', () => {
+		const duck = { year: 2026, month: 10, day: 2 };
+		const zdt = coerceZonedDateTime(duck, 'UTC');
+		expect(zdt.year).toBe(2026);
+		expect(zdt.month).toBe(10);
+		expect(zdt.day).toBe(2);
+	});
+
+	it('should throw TypeError for invalid or unrecognizable inputs', () => {
+		expect(() => coerceZonedDateTime(null as any)).toThrow(TypeError);
+		expect(() => coerceZonedDateTime(undefined as any)).toThrow(TypeError);
+	});
+});
+
+describe('extractEpochMs & toEpochMs', () => {
+	it('extracts epoch milliseconds from Tempo instances', () => {
+		const t = new Tempo('2026-10-02T00:00:00Z');
+		expect(extractEpochMs(t)).toBe(Date.UTC(2026, 9, 2));
+		expect(toEpochMs(t)).toBe(Date.UTC(2026, 9, 2));
+	});
+
+	it('extracts epoch milliseconds from JS Dates and numeric timestamps', () => {
+		const dt = new Date('2026-05-15T12:00:00Z');
+		expect(extractEpochMs(dt)).toBe(dt.getTime());
+		expect(extractEpochMs(1234567890)).toBe(1234567890);
+	});
+
+	it('extracts epoch milliseconds from ISO strings', () => {
+		const ms = extractEpochMs('2026-01-01T00:00:00.000Z');
+		expect(ms).toBe(Date.UTC(2026, 0, 1));
+	});
+
+	it('returns undefined / fallback for invalid or nullish inputs', () => {
+		expect(extractEpochMs(null)).toBeUndefined();
+		expect(extractEpochMs(undefined)).toBeUndefined();
+		expect(extractEpochMs('not-a-date')).toBeUndefined();
+		expect(toEpochMs('not-a-date', 999)).toBe(999);
 	});
 });

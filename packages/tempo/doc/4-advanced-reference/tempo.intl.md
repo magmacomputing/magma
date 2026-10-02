@@ -165,7 +165,7 @@ t.set({ isoWeek: 'end' });         // Always snaps to Sunday 23:59:59.999999999
 
 In addition to inspecting regional calendar metadata, the `t.intl` namespace is designed as a zero-overhead, pre-bound internationalization utility hub. 
 
-Native ECMAScript `Intl` formatters (`Intl.RelativeTimeFormat`, `Intl.ListFormat`, `Intl.DateTimeFormat`) are powerful but can be slow to initialize in tight loops because they re-parse Unicode CLDR databases on each constructor call. `Tempo.intl` eliminates this overhead through an internal $O(1)$ LRU memoization pipeline pre-bound to the active instance's `locale` and `timeZone`:
+Native ECMAScript `Intl` formatters (`Intl.RelativeTimeFormat`, `Intl.ListFormat`, `Intl.DateTimeFormat`) are powerful but can be slow to initialize in tight loops because they re-parse Unicode CLDR databases on each constructor call. `Tempo.intl` eliminates this overhead through an internal $O(1)$ memoization cache pre-bound to the active instance's `locale` and `timeZone`:
 
 ### Pre-Bound Formatting Operations
 
