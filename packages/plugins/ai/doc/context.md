@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # `contextAI` — Context & Regional Inference
 
 `contextAI()` is designed to analyze unstructured or ambiguous text (e.g. user biographies, locations, or email bodies) and infer their regional configuration settings. It resolves these properties to a standard configuration object containing timezone, locale, calendar system, and hemisphere.

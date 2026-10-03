@@ -36,8 +36,10 @@ const RE_INTERVAL = /^(\d+(?:\.\d+)?)\s*(ms|s|m|h|d)?$/i;
 function parseIntervalMs(interval?: number | string): number {
 	if (!interval) return 0;
 	if (isNumber(interval)) return Math.max(0, interval);
+
 	const match = String(interval).trim().match(RE_INTERVAL);
 	if (!match) return 0;
+
 	const val = parseFloat(match[1] ?? '0');
 	const unit = (match[2] || 'ms').toLowerCase();
 	switch (unit) {
@@ -69,24 +71,32 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 		const engine = new ClockDriftEngine(options);
 		_globalNtpEngine = engine;
 
+		const getEngine = (): ClockDriftEngine => _globalNtpEngine ?? engine;
+
 		const ntpNamespace: NtpNamespace = {
 			now(timeZone?: string): Tempo {
-				return new TempoClass(engine.nowMs(), isString(timeZone) ? { timeZone } : timeZone);
+				return new TempoClass(getEngine().nowMs(), isString(timeZone) ? { timeZone } : timeZone);
 			},
 			sync(endpoint?: string): Promise<ClockDriftState> {
-				return engine.sync(endpoint);
+				return getEngine().sync(endpoint);
 			},
 			get drift(): ClockDriftState {
-				return engine.drift;
+				return getEngine().drift;
 			},
 			get offset(): number {
-				return engine.offset;
+				return getEngine().offset;
 			},
 			get isCalibrated(): boolean {
-				return engine.isCalibrated;
+				return getEngine().isCalibrated;
 			},
 			reset(): void {
-				engine.reset();
+				getEngine().reset();
+			},
+			dispose(): void {
+				getEngine().dispose();
+			},
+			[Symbol.dispose](): void {
+				getEngine()[Symbol.dispose]();
 			},
 		};
 
@@ -101,8 +111,7 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 		// 2. Mount instance helper method
 		if (!TempoClass.prototype.toNtpTime) {
 			TempoClass.prototype.toNtpTime = function (this: Tempo): Tempo {
-				const activeEngine = _globalNtpEngine ?? engine;
-				const calibratedEpochMs = this.epoch.ms + activeEngine.offset;
+				const calibratedEpochMs = this.epoch.ms + getEngine().offset;
 				return new TempoClass(calibratedEpochMs, { timeZone: this.tz });
 			};
 		}
@@ -112,14 +121,20 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 			_fetchPatched = true;
 			const originalFetch = globalThis.fetch;
 			globalThis.fetch = async function (...args: Parameters<typeof fetch>): Promise<Response> {
+				const init = args[1];
+				const isInternalSync = init?.headers && (
+					(isFunction((init.headers as any).get) && (init.headers as any).get('X-Tempo-Sync')) ||
+					('X-Tempo-Sync' in (init.headers as any))
+				);
+
 				const t0 = performance.now();
 				const localBefore = Date.now();
 				const response = await originalFetch.apply(this, args);
 				const rtt = performance.now() - t0;
 
 				try {
-					if (response?.headers) {
-						const activeEngine = _globalNtpEngine ?? engine;
+					if (!isInternalSync && response?.headers) {
+						const activeEngine = getEngine();
 						const extracted = activeEngine.extractServerTime(response.headers);
 						if (extracted !== null)
 							activeEngine.ingestSample(extracted.timeMs, rtt, localBefore, extracted.isCoarse);

@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # AI Configuration & Onboarding Guide
 
 Tempo provides two complementary parsing layers:

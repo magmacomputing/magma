@@ -51,7 +51,7 @@ export interface ResolvedDateParts {
  * with strict lookahead boundaries to prevent partial backtracking on malformed input.
  * @internal
  */
-export const ISO_CALENDAR_DATE_REGEX = /^(?:([+-]\d{4,6})|(\d{4}))(?:-(\d{2})(?:-(\d{2}))?)?(?=$|[T\s]|Z|[+-]\d{2}(?::?\d{2})?$)/;
+export const ISO_CALENDAR_DATE_REGEX = /^(?:([+-]\d{4,6})|(\d{4}))(?:-(\d{2})(?:-(\d{2}))?)?(?:[T\s]\d{2}(?::\d{2}(?::\d{2}(?:\.\d+)?)?)?(?:Z|[+-]\d{2}(?::?\d{2})?)?(?:\[[A-Za-z0-9_/+-]+\])?)?$/;
 
 /**
  * Fast Gregorian leap year check for a full calendar year number.
@@ -242,7 +242,7 @@ export function coerceZonedDateTime(date: DateInput, fallbackTz = 'UTC'): Tempor
 	const unwrapped = unwrapTemporal(date);
 
 	if (isObject(unwrapped)) {
-		if ('timeZoneId' in (unwrapped as any))
+		if ('timeZoneId' in (unwrapped as any) && ('epochNanoseconds' in (unwrapped as any) || isFunction((unwrapped as any).toInstant)))
 			return unwrapped as TemporalType.ZonedDateTime;
 		if (isFunction((unwrapped as any).toZonedDateTimeISO))
 			return (unwrapped as any).toZonedDateTimeISO(fallbackTz);
@@ -266,7 +266,11 @@ export function coerceZonedDateTime(date: DateInput, fallbackTz = 'UTC'): Tempor
 			try {
 				return Temporal.PlainDateTime.from(trimmed).toZonedDateTime(fallbackTz);
 			} catch {
-				return Temporal.PlainDate.from(trimmed).toZonedDateTime(fallbackTz);
+				try {
+					return Temporal.Instant.from(trimmed).toZonedDateTimeISO(fallbackTz);
+				} catch {
+					return Temporal.PlainDate.from(trimmed).toZonedDateTime(fallbackTz);
+				}
 			}
 		}
 	}

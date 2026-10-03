@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ticker</a>
+</div>
+
+<br>
+
 # Intervals & Scheduling Engines
 
 The `@magmacomputing/tempo-plugin-ticker` plugin supports a unified scheduling interface capable of driving continuous loops via semantic durations, calendar terms, standard 5-field cron syntax, RFC 5545 recurrence rules, and virtual clock countdowns.

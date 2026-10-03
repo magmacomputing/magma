@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # `formatAI` — Contextual & Narrative Date Formatting
 
 `formatAI()` formats a `Tempo` instance, TC39 `Temporal` object, Date, or timestamp into human-friendly, contextual narrative text tailored to specific UI tones, relative time frames, or business domains.

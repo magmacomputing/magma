@@ -164,6 +164,33 @@ Community plugins must follow a uniform documentation standard.
 - **Documentation Link** (README only): Link to full docs at `https://magmacomputing.github.io/magma/doc/9-plugins/[name].index.html`.
 - **Licensing**: Must state: "This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required."
 
+### Multi-Page Plugin Sub-Pages (`doc/[subpage].md`)
+
+For multi-page plugins that provide dedicated guides, deep dives, or architectural breakdowns (e.g. `doc/use-cases.md`, `doc/architecture.md`):
+
+1. **Header & Eyebrow Breadcrumb Navigation**:
+   Sub-pages omit the large plugin logo and lead directly with the **eyebrow breadcrumb** navigation link pointing back to `./index.md`:
+   ```markdown
+   <div class="plugin-eyebrow">
+     <a href="./index.html">← @magmacomputing/tempo-plugin-[name]</a>
+   </div>
+
+   <br>
+
+   # [Sub-Page Title]
+   ```
+2. **Omit Redundant Badges & Hero Logo**:
+   The large plugin logo (`/plugin-logo.svg`) and the `<p align="center">...badges...</p>` block belong strictly on the primary `doc/index.md` package landing page. Do **not** duplicate them on sub-pages; keep sub-pages focused directly on the technical topic.
+3. **Internal Sibling Navigation**:
+   Sub-pages should cross-link to sibling documentation guides within the same plugin using relative links (e.g. `[Deep Dive](./deep-dive.md)`). The monorepo documentation harvester (`harvest-plugins.mjs`) automatically translates these into flat VitePress topic routes.
+4. **Production Use Cases & Architectural Patterns (`doc/use-cases-and-patterns.md`)**:
+   Multi-page plugins should include a dedicated `use-cases-and-patterns.md` guide that 'sells the benefits' and solves concrete real-world business problems (e.g. anti-cheat countdowns, multi-tenant SLA calculation, financial trade settlement, payroll rolling conventions, automated scheduling). Focus on the *business problem* and *architectural solution* rather than merely listing function signatures.
+5. **Code Snippet Validation & Zero-Hallucination Policy**:
+   When writing user documentation (`README.md`, `doc/index.md`, or sub-pages), **every code snippet and expected output comment must be validated against actual execution**:
+   - **Never guess or hallucinate API signatures**: Concur with Tempo's actual methods and types (e.g. standard duration records like `t.add({ day: 1 })`, never invented chained string mutations like `.mutate.add('1 day')`). Always cross-reference the plugin's `src/index.ts` and `src/types.ts`.
+   - **Verify exact numbers & calendar outputs**: Run code examples in Node.js against the compiled plugin/Tempo builds or write automated Vitest tests to confirm that printed dates, day counts, and returned values are 100% mathematically and chronologically accurate.
+   - **Verify statutory vs. industry rules**: Confirm whether a calendar rule represents a national statutory holiday or an exchange-specific closure before documenting it as a built-in behavior.
+
 ### Standard Icons & UI Actions
 
 To maintain complete visual and design consistency across READMEs, documentation pages, and `ecosystem.md`:
@@ -196,6 +223,8 @@ To maintain complete visual and design consistency across READMEs, documentation
 > **Never manually modify documents in `packages/tempo/doc/9-plugins/*` directly.** All plugin documentation must be authored strictly within each plugin's own `packages/plugins/[name]/doc/*` directory. The monorepo's automated harvester copies and indexes them into `packages/tempo/doc/9-plugins/` during `npm run docs:build`.
 >
 > **No `file://` Reference Links**: Never use absolute local `file://` links in `README.md`, `doc/index.md`, or notes. These links break when VitePress compiles documentation for GitHub Pages and will not resolve for users on npm or GitHub. Always use standard relative links (e.g., `../[section]/[file].md` or `/doc/9-plugins/[name].index`) or public HTTPS URLs.
+>
+> **Mandatory Code Snippet Validation (Zero-Hallucination Policy)**: Never invent or guess API signatures, method chains, or return values when writing documentation. Every single code snippet and expected output comment must be executed and confirmed against live code in Node.js or automated Vitest tests.
 
 ## 5. Source Code (`src/index.ts`)
 

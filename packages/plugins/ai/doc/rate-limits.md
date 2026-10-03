@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # Rate Limits & Cache Management
 
 When using third-party AI APIs, your application is subject to strict rate limits. 

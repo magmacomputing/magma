@@ -1,5 +1,6 @@
 import { getTemporal, isNumber, isString, isDefined } from '../support/index.js';
 import { isValidTimeZone } from './isValidTimeZone.js';
+import { isDST } from './isDST.js';
 
 /**
  * Result structure returned by getDSTTransitions.
@@ -36,8 +37,8 @@ export function getDSTTransitions(timeZone: string, year: number): DSTTransition
 	const Temporal = getTemporal();
 	const normalizedTz = timeZone.trim();
 
-	const startOfYearMs = Date.UTC(year, 0, 1, 0, 0, 0, 0);
-	const endOfYearMs = Date.UTC(year + 1, 0, 1, 0, 0, 0, 0);
+	const startOfYearMs = Temporal.PlainDate.from({ year, month: 1, day: 1 }).toZonedDateTime({ timeZone: 'UTC', plainTime: '00:00:00' }).epochMilliseconds;
+	const endOfYearMs = Temporal.PlainDate.from({ year: year + 1, month: 1, day: 1 }).toZonedDateTime({ timeZone: 'UTC', plainTime: '00:00:00' }).epochMilliseconds;
 
 	const getOffset = (ms: number): number =>
 		Temporal.Instant.fromEpochMilliseconds(ms).toZonedDateTimeISO(normalizedTz).offsetNanoseconds;
@@ -86,14 +87,23 @@ export function getDSTTransitions(timeZone: string, year: number): DSTTransition
 	let maxShiftNs = 0;
 
 	for (const tr of transitions) {
+		const wasDst = isDST(tr.timestampMs - 1000, normalizedTz);
+		const isDstNow = isDST(tr.timestampMs + 1000, normalizedTz);
+
+		if (wasDst === isDstNow)
+			continue;
+
 		const shift = Math.abs(tr.toOffset - tr.fromOffset);
 		if (shift > maxShiftNs)
 			maxShiftNs = shift;
-		if (tr.toOffset > tr.fromOffset)
+		if (!wasDst && isDstNow)
 			springForwardMs = tr.timestampMs;
-		else
+		else if (wasDst && !isDstNow)
 			fallBackMs = tr.timestampMs;
 	}
+
+	if (!isDefined(springForwardMs) && !isDefined(fallBackMs))
+		return { hasDST: false };
 
 	return {
 		hasDST: true,

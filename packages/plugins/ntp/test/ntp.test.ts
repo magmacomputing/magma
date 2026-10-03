@@ -93,6 +93,16 @@ describe('NtpPlugin & ClockDriftEngine', () => {
 			expect(engine.offset).toBe(0);
 			expect(engine.drift.sampleCount).toBe(0);
 		});
+
+		it('supports deterministic disposal via dispose() and [Symbol.dispose]()', () => {
+			const engine = new ClockDriftEngine();
+			engine.startBackgroundSync(1000);
+			expect(typeof engine.dispose).toBe('function');
+			expect(typeof engine[Symbol.dispose]).toBe('function');
+
+			engine.dispose();
+			engine[Symbol.dispose]();
+		});
 	});
 
 	describe('Tempo Plugin Integration', () => {
@@ -105,6 +115,8 @@ describe('NtpPlugin & ClockDriftEngine', () => {
 			expect(typeof Tempo.ntp.now).toBe('function');
 			expect(typeof Tempo.ntp.sync).toBe('function');
 			expect(typeof Tempo.ntp.reset).toBe('function');
+			expect(typeof Tempo.ntp.dispose).toBe('function');
+			expect(typeof Tempo.ntp[Symbol.dispose]).toBe('function');
 			expect(typeof Tempo.ntp.offset).toBe('number');
 		});
 
@@ -138,10 +150,13 @@ describe('NtpPlugin & ClockDriftEngine', () => {
 			expect(ntpTime.epoch.ms - t.epoch.ms).toBe(Tempo.ntp.offset);
 		});
 
-		it('resets calibration via Tempo.ntp.reset()', () => {
+		it('resets calibration via Tempo.ntp.reset() and disposes cleanly', () => {
 			Tempo.ntp.reset();
 			expect(Tempo.ntp.offset).toBe(0);
 			expect(Tempo.ntp.isCalibrated).toBe(false);
+
+			Tempo.ntp.dispose();
+			Tempo.ntp[Symbol.dispose]();
 		});
 	});
 });

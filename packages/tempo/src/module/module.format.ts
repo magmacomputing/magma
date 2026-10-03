@@ -467,7 +467,10 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						const valStr = canonicalTerm ?? String(res);
 
 						// 1. Check user-defined registry.locales (hierarchical, leaf, or flat)
-						const registered = resolveLocaleFromDictionary(dict, tokenPath, valStr, config?.locale);
+						let registered = resolveLocaleFromDictionary(dict, tokenPath, valStr, config?.locale);
+						if (!isDefined(registered) && canonicalTerm && canonicalTerm !== String(res))
+							registered = resolveLocaleFromDictionary(dict, tokenPath, String(res), config?.locale);
+
 						if (isDefined(registered)) {
 							res = registered;
 						} else if (token.startsWith('#') && isTempo(obj)) {
@@ -532,9 +535,11 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				}
 				case 'offset':
 					if (token === 'tz') {
-						res = normMods.includes('short')
+						let off = normMods.includes('short')
 							? (zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset)
 							: zdt.offset;
+						if (normMods.includes('compact')) off = off.replace(/:/g, '');
+						res = off;
 					}
 					break;
 				case 'compact':

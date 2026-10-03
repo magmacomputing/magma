@@ -1,10 +1,10 @@
-![Tempo Plugin](/plugin-logo.svg)
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ntp</a>
+</div>
+
+<br>
 
 # Cristian's Algorithm & Precision Engineering
-
-<p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ntp/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
-</p>
 
 `@magmacomputing/tempo-plugin-ntp` implements Flaviu Cristian's probabilistic clock synchronization algorithm over HTTP(S) with modern performance enhancements: high-resolution monotonic baselines, sub-millisecond `Server-Timing` headers, statistical jitter rejection, and Exponential Moving Average (EMA) smoothing.
 

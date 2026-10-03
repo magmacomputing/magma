@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # Multi-Provider Execution Modes (`AiMode`)
 
 `@magmacomputing/tempo-plugin-ai` provides a robust, multi-provider dispatch orchestrator that handles latency hedging, quota load-balancing, consensus verification, and fault-tolerant failovers across diverse LLM providers (e.g. OpenAI, Anthropic, Groq, Mistral, Google Gemini, Ollama, local vLLM).

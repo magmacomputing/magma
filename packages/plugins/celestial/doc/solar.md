@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-celestial</a>
+</div>
+
+<br>
+
 # Solar Day Cycles, Ephemeris & Apparent Solar Time
 
 This guide covers solar twilight state classifications, horizon dip elevation adjustments, exact solar noon, Local Apparent Solar Time (AST), real-time horizontal coordinates, photometric lighting phases, and polar day/night handling in `@magmacomputing/tempo-plugin-celestial`.

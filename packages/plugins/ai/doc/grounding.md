@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # Grounding & Natural Language Parsing
 
 Because natural language dates are entirely relative (e.g., *"next Tuesday"*) and culturally ambiguous (e.g., *"11/12"*), an LLM cannot reliably parse them in a vacuum. 

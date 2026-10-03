@@ -59,6 +59,7 @@ console.log(start.holidays.workingHoursUntil(deadline)); // 4.0 hours (2h Fri + 
 
 - [Business Days & SLA Arithmetic](./business-days.md) - Working day calculations, `addBusinessDays`, `nextBusinessDay`, and `workingHoursUntil`.
 - [Regional Calendars & Dynamic Preloading](./regional-calendars.md) - Built-in country rules, state overlays, observation shifts, and async preloading for 100+ countries.
+- [Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md) - Multi-tenant SaaS SLA engines, T+2 trade settlement, payroll rolling conventions, and HR leave accounting.
 
 ---
 

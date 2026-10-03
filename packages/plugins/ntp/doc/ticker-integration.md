@@ -1,10 +1,10 @@
-![Tempo Plugin](/plugin-logo.svg)
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ntp</a>
+</div>
+
+<br>
 
 # Ticker Integration & Atomic Clocks
-
-<p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ntp/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
-</p>
 
 When combined with [`@magmacomputing/tempo-plugin-ticker`](../../ticker/doc/index.md), `@magmacomputing/tempo-plugin-ntp` enables continuous execution loops and scheduled intervals compensated for client-server network clock drift.
 
@@ -83,5 +83,6 @@ NTP-enabled tickers implement ECMAScript explicit resource management (`[Symbol.
 
 ## 4. Fallback Behavior
 
-If `Tempo.ticker({ ntp: true, ... })` is invoked before an NTP sync has occurred, or if `NtpPlugin` has not yet been registered, the Ticker plugin gracefully falls back to monotonic local system time without throwing runtime errors.
+If `Tempo.ticker({ ntp: true, ... })` is invoked before an NTP sync has occurred, or if `NtpPlugin` has not yet been registered, the Ticker plugin gracefully falls back to local system time and calculates delays from `instant().epochMilliseconds` without throwing runtime errors.
+
 

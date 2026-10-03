@@ -74,3 +74,12 @@ This style guide defines common coding conventions, formatting standards, and Ty
   };
   ```
 
+---
+
+## 6. Module-Level Regular Expression Constants
+- **Hoist Regular Expressions to Module-Level `const`**: Always declare `RegExp` literals as top-level / module-scoped `const` constants (e.g. `const RE_DIGITS = /^\d+$/;`, `const REGEX_ISO_DATE = ...;`) rather than instantiating them inline inside functions, loops, or method bodies.
+  - **Avoid Re-Compilation & Allocation**: Eliminates redundant regex compilation and heap allocation overhead on every function invocation.
+  - **Maintainability & Reusability**: Centralizes pattern definitions and promotes consistent, descriptive naming across the module.
+  - **Global/Sticky Flag Caution**: When using stateful flags (`/g` or `/y`), be mindful of stateful `lastIndex`, resetting it or using stateless methods (like `str.match(RE)`) where appropriate.
+
+

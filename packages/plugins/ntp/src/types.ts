@@ -102,4 +102,14 @@ export interface NtpNamespace {
 	 * Resets the clock drift calibration state back to zero.
 	 */
 	reset(): void;
+
+	/**
+	 * Stops background synchronization and releases active timer resources.
+	 */
+	dispose(): void;
+
+	/**
+	 * Explicit deterministic disposal (Dual-Layer Lifecycle Model).
+	 */
+	[Symbol.dispose](): void;
 }

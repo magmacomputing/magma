@@ -104,8 +104,8 @@ export function daysInMonth(
 	if (!isNumber(year) || !isNumber(m) || isNaN(year) || isNaN(m))
 		throw new TypeError('[functions] daysInMonth requires valid year and month inputs.');
 
-	if (m < 1 || m > 12)
-		throw new RangeError(`[functions] daysInMonth month must be between 1 and 12, received ${m}`);
+	if (!Number.isInteger(m) || m < 1 || m > 12)
+		throw new RangeError(`[functions] daysInMonth month must be an integer between 1 and 12, received ${m}`);
 
 	if (m === 2)
 		return isLeapYearNumber(year) ? 29 : 28;

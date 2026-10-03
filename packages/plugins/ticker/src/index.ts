@@ -86,6 +86,7 @@ export namespace Ticker {
 		seed?: Tempo.DateTime | Tempo.Options;
 		catch?: boolean;
 		ntp?: boolean;
+		timeZone?: Tempo.BaseOptions['timeZone'];
 		[key: `#${string}`]: number | string;
 	};
 
@@ -148,6 +149,8 @@ class TickerInstance implements Ticker.Descriptor {
 	#isCatch = false;
 	#useNtp = false;
 	#isNtpCalibratedSeeded = false;
+	#hasExplicitFutureSeed = false;
+	#options: any;
 	#selfRef!: WeakRef<Ticker.Instance>;
 	#activeEntry: ActiveTickerEntry | undefined = undefined;
 
@@ -196,6 +199,7 @@ class TickerInstance implements Ticker.Descriptor {
 
 		// ── Initialization ───────────────────────────────────────────────────
 		const { label, limit: lmt, until: stopAt, seed: startAt, rrule: rruleOption, cron: cronOption, ntp: useNtp, ...rest } = rawOptions;
+		this.#options = rest;
 		this.#label = label;
 		this.#limit = lmt;
 		this.#useNtp = Boolean(useNtp);
@@ -248,6 +252,7 @@ class TickerInstance implements Ticker.Descriptor {
 		normaliseFractionalDurations(this.#payload);
 		if (isDefined(startAt)) {
 			this.#next = new this.#TempoClass(isOptions(startAt) ? undefined : startAt, isOptions(startAt) ? { ...rest, ...startAt } : rest);
+			this.#hasExplicitFutureSeed = (!isOptions(startAt) || isDefined((startAt as any).epoch)) && this.#next.epoch.ms > instant().epochMilliseconds;
 		} else if (this.#useNtp && isFunction((this.#TempoClass as any).ntp?.now)) {
 			this.#next = (this.#TempoClass as any).ntp.now(rest);
 		} else {
@@ -324,17 +329,22 @@ class TickerInstance implements Ticker.Descriptor {
 
 	#delayMs() {
 		const isCalibrated = this.#useNtp && Boolean((this.#TempoClass as any).ntp?.isCalibrated);
-		if (isCalibrated && !this.#isNtpCalibratedSeeded && isFunction((this.#TempoClass as any).ntp?.now)) {
-			this.#next = (this.#TempoClass as any).ntp.now(this.#payload);
+		if (isCalibrated && !this.#isNtpCalibratedSeeded && !this.#hasExplicitFutureSeed && this.#ticks === 0 && isFunction((this.#TempoClass as any).ntp?.now)) {
+			this.#next = (this.#TempoClass as any).ntp.now(this.#options);
+			const hasTermKey = Object.keys(this.#payload).some(k => k.startsWith('#'));
+			if (hasTermKey)
+				this.#next = this.#isShorthand ? this.#next.set(this.#payload) : this.#next.add(this.#payload);
 			this.#isNtpCalibratedSeeded = true;
 		}
 		const ntpOffset = (this.#useNtp && isNumber((this.#TempoClass as any).ntp?.offset)) ? (this.#TempoClass as any).ntp.offset : 0;
 		const diff = Math.round(this.#next.epoch.ms - (instant().epochMilliseconds + ntpOffset));
 		if (diff > 0) return Math.min(diff, 2_147_483_647);
+
 		if (!this.#isForward) {
 			const stepMs = Math.abs(Math.round(this.#next.add(this.#payload).epoch.ms - this.#next.epoch.ms));
 			return Math.max(20, Math.min(50, stepMs || 1000));
 		}
+
 		return 0;
 	}
 

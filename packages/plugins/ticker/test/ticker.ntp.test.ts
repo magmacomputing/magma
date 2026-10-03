@@ -58,4 +58,60 @@ describe('Ticker NTP Integration', () => {
 		expect(p1 instanceof Tempo).toBe(true);
 		ticker.stop();
 	});
+
+	test('should adjust uncalibrated seed upon late NTP calibration preserving configured timeZone', async () => {
+		Tempo.use(NtpPlugin);
+
+		const mockServerMs = Date.now() + 60000;
+		globalThis.fetch = vi.fn().mockImplementation(async () => {
+			return {
+				status: 200,
+				headers: new Headers({
+					'Server-Timing': `clock=${mockServerMs}`,
+				}),
+			} as any;
+		});
+
+		// Create ticker BEFORE calibration
+		expect(Tempo.ntp.isCalibrated).toBe(false);
+		const ticker = Tempo.ticker({ ntp: true, seconds: 10, timeZone: 'America/New_York', limit: 1 });
+		expect(ticker.info.next.tz).toBe('America/New_York');
+
+		// Calibrate NTP late
+		await Tempo.ntp.sync('/api/mock-time');
+		expect(Tempo.ntp.isCalibrated).toBe(true);
+
+		// Pull next pulse and verify timeZone is preserved and NTP calibrated epoch is reflected
+		const pulse = await ticker.pull();
+		expect(pulse?.tz).toBe('America/New_York');
+		expect(pulse!.epoch.ms - Date.now()).toBeGreaterThanOrEqual(58000);
+		ticker.stop();
+	});
+
+	test('should not replace explicit future seed upon late NTP calibration', async () => {
+		Tempo.use(NtpPlugin);
+
+		const futureEpoch = Date.now() + 300000; // 5 minutes in future
+		const mockServerMs = Date.now() + 5000;
+		globalThis.fetch = vi.fn().mockImplementation(async () => {
+			return {
+				status: 200,
+				headers: new Headers({
+					'Server-Timing': `clock=${mockServerMs}`,
+				}),
+			} as any;
+		});
+
+		const ticker = Tempo.ticker({ ntp: true, seed: new Tempo(futureEpoch), seconds: 1, limit: 1 });
+		expect(ticker.info.next.epoch.ms).toBe(futureEpoch);
+
+		// Calibrate NTP late
+		await Tempo.ntp.sync('/api/mock-time');
+		expect(Tempo.ntp.isCalibrated).toBe(true);
+
+		// The explicit future seed must be preserved
+		expect(ticker.info.next.epoch.ms).toBe(futureEpoch);
+		ticker.stop();
+	});
 });
+

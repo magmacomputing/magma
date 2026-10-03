@@ -366,36 +366,36 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 export const getIntlNamespace = memoizeFunction((localeTag?: LocaleInput, timeZone?: TimeZoneInput): TempoIntlNamespace => {
 	const info = getLI(localeTag);
 	const loc = getLC(localeTag) ?? getLC('en-US');
-	const baseName = info.baseName;
+	const targetLocale = loc?.toString() ?? info.baseName;
 	const resolvedTz = timeZone ? getTemporalIds(timeZone)[0] : undefined;
 
 	return Object.freeze({
 		info,
 		locale: loc,
 		relativeTime(value: number, unit: Intl.RelativeTimeFormatUnit, options?: Intl.RelativeTimeFormatOptions): string {
-			return getRTF(baseName, options).format(value, unit);
+			return getRTF(targetLocale, options).format(value, unit);
 		},
 		list(items: Iterable<string>, options?: Intl.ListFormatOptions): string {
-			return getLF(baseName, options).format(Array.from(items));
+			return getLF(targetLocale, options).format(Array.from(items));
 		},
 		number(value: number | bigint, options?: Intl.NumberFormatOptions): string {
-			return getNF(baseName, options).format(value);
+			return getNF(targetLocale, options).format(value);
 		},
 		plural(value: number, options?: Intl.PluralRulesOptions): Intl.LDMLPluralRule {
-			return getPR(baseName, options).select(value);
+			return getPR(targetLocale, options).select(value);
 		},
 		dtf(options?: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
 			const dtfOpts = (resolvedTz && !options?.timeZone) ? { ...options, timeZone: resolvedTz } : options;
-			return getDTF(baseName, dtfOpts);
+			return getDTF(targetLocale, dtfOpts);
 		},
 		rtf(options?: Intl.RelativeTimeFormatOptions): Intl.RelativeTimeFormat {
-			return getRTF(baseName, options);
+			return getRTF(targetLocale, options);
 		},
 		lf(options?: Intl.ListFormatOptions): Intl.ListFormat {
-			return getLF(baseName, options);
+			return getLF(targetLocale, options);
 		},
 		nf(options?: Intl.NumberFormatOptions): Intl.NumberFormat {
-			return getNF(baseName, options);
+			return getNF(targetLocale, options);
 		},
 		firstDay: info.firstDay,
 		weekend: info.weekend,

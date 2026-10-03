@@ -1,10 +1,10 @@
-![Tempo Plugin](/plugin-logo.svg)
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ntp</a>
+</div>
+
+<br>
 
 # Production Use Cases & Architectural Patterns
-
-<p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ntp/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
-</p>
 
 Client devices in modern web and mobile environments suffer from unpredictable clock skew. Users frequently travel across time zones, adjust system clocks manually, run outdated CMOS batteries, or experience clock throttling during laptop sleep cycles.
 
@@ -33,6 +33,9 @@ import { Tempo } from '@magmacomputing/tempo';
 import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
 
 Tempo.use(NtpPlugin, { server: '/api/v1/time' });
+
+// Ensure calibration is established
+await Tempo.ntp.sync();
 
 function getAuctionRemainingTime(auctionEnd: Tempo) {
   // Synchronous, true server time calculation

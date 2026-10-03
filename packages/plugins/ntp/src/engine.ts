@@ -1,4 +1,4 @@
-import { isFunction } from '@magmacomputing/tempo/plugin/sdk';
+import { isFunction, Finalizer } from '@magmacomputing/tempo/plugin/sdk';
 import type { ClockDriftState, NtpSyncOptions } from './types.js';
 
 const RE_SERVER_TIMING = /(?:clock|server_time|epoch)=(\d+(?:\.\d+)?)/i;
@@ -18,7 +18,11 @@ export class ClockDriftEngine {
 
 	#options: Required<NtpSyncOptions>;
 	#syncTimer: any = null;
+	#unregisterFinalizer: (() => boolean) | null = null;
+	#activeSyncAbortController: AbortController | null = null;
 	#isSyncing = false;
+	#baselineNtpMs = 0;
+	#baselinePerfNow = 0;
 
 	constructor(options: NtpSyncOptions = {}) {
 		this.#options = {
@@ -59,13 +63,17 @@ export class ClockDriftEngine {
 	 * Calculates the current calibrated epoch time in milliseconds.
 	 */
 	nowMs(): number {
-		return Date.now() + this.#state.offsetMs;
+		return (this.#state.sampleCount > 0 && this.#baselineNtpMs > 0 && isFunction(globalThis.performance?.now))
+			? Math.round(this.#baselineNtpMs + (performance.now() - this.#baselinePerfNow))
+			: Date.now() + this.#state.offsetMs;
 	}
 
 	/**
 	 * Resets the clock calibration state back to zero.
 	 */
 	reset(): void {
+		this.#baselineNtpMs = 0;
+		this.#baselinePerfNow = 0;
 		this.#state = {
 			offsetMs: 0,
 			uncertaintyMs: 0,
@@ -87,28 +95,38 @@ export class ClockDriftEngine {
 
 		let t0 = performance.now();
 		let localBefore = Date.now();
+		const timeoutMs = Math.max(3000, this.#options.maxAcceptableRttMs * 2);
+		const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+		this.#activeSyncAbortController = controller;
+		const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+		if (isFunction(timer?.unref)) timer.unref();
 
 		try {
-			let response = await fetch(target, {
+			const init: RequestInit = {
 				method: 'HEAD',
 				cache: 'no-store',
-			});
+				headers: { 'X-Tempo-Sync': '1' },
+			};
+			if (controller) init.signal = controller.signal;
+
+			let response = await fetch(target, init);
 
 			// If HEAD method is not allowed by server (405), fallback to lightweight GET
 			if (response.status === 405) {
 				t0 = performance.now();
 				localBefore = Date.now();
 				response = await fetch(target, {
+					...init,
 					method: 'GET',
-					cache: 'no-store',
 				});
+				response.body?.cancel?.().catch(() => { });
 			}
 
 			const t1 = performance.now();
 			const rtt = t1 - t0;
 
 			if (rtt > this.#options.maxAcceptableRttMs)
-				return this.drift; // Discard high-latency / jittery samples
+				return this.drift;																	// Discard high-latency / jittery samples
 
 			const extracted = this.extractServerTime(response.headers);
 			if (extracted === null)
@@ -116,7 +134,11 @@ export class ClockDriftEngine {
 
 			this.ingestSample(extracted.timeMs, rtt, localBefore, extracted.isCoarse);
 		} catch {
-			// Network failures leave existing drift calibration intact
+			// Network failures or timeouts leave existing drift calibration intact
+		} finally {
+			if (timer) clearTimeout(timer);
+			if (this.#activeSyncAbortController === controller)
+				this.#activeSyncAbortController = null;
 		}
 
 		return this.drift;
@@ -131,7 +153,8 @@ export class ClockDriftEngine {
 	 * @param isCoarse - Whether the timestamp comes from a 1-second coarse source (adds 500ms uncertainty)
 	 */
 	ingestSample(serverTimeMs: number, rttMs: number, localBefore: number = Date.now() - rttMs, isCoarse: boolean = false): void {
-		if (rttMs > this.#options.maxAcceptableRttMs) return;
+		if (!Number.isFinite(serverTimeMs) || !Number.isFinite(rttMs) || !Number.isFinite(localBefore)) return;
+		if (rttMs < 0 || rttMs > this.#options.maxAcceptableRttMs) return;
 
 		// Cristian's Algorithm:
 		// Estimated server time when response is received = serverTimeMs + (rtt / 2)
@@ -139,6 +162,9 @@ export class ClockDriftEngine {
 		// Offset = Estimated Server Time - Local Time = serverTimeMs - (localBefore + rtt / 2)
 		const measuredOffset = serverTimeMs - (localBefore + (rttMs / 2));
 		const sampleUncertainty = (rttMs / 2) + (isCoarse ? 500 : 0);
+
+		this.#baselineNtpMs = serverTimeMs + (rttMs / 2);
+		this.#baselinePerfNow = isFunction(globalThis.performance?.now) ? performance.now() : 0;
 
 		if (this.#state.sampleCount === 0) {
 			this.#state = {
@@ -174,7 +200,7 @@ export class ClockDriftEngine {
 				const val = parseFloat(match[1]);
 				// Handle both seconds (e.g. 1727839200.123) and milliseconds (1727839200123)
 				const ms = val < 1e11 ? Math.round(val * 1000) : Math.round(val);
-				if (ms >= 946684800000) return { timeMs: ms, isCoarse: false };
+				if (Number.isFinite(ms) && ms >= 946684800000) return { timeMs: ms, isCoarse: false };
 			}
 		}
 
@@ -194,15 +220,20 @@ export class ClockDriftEngine {
 	startBackgroundSync(intervalMs: number): void {
 		this.stopBackgroundSync();
 		if (intervalMs > 0 && isFunction(globalThis.setInterval)) {
-			this.#syncTimer = setInterval(() => {
+			const timer = setInterval(() => {
 				if (this.#isSyncing) return;
 				this.#isSyncing = true;
-				this.sync().finally(() => {
-					this.#isSyncing = false;
-				}).catch(() => {});
+				this.sync()
+					.finally(() => { this.#isSyncing = false; })
+					.catch(() => { });
 			}, intervalMs);
-			if (isFunction(this.#syncTimer?.unref))
-				this.#syncTimer.unref();
+			if (isFunction(timer?.unref))
+				timer.unref();
+
+			this.#syncTimer = timer;
+			this.#unregisterFinalizer = Finalizer.register(this, () => {
+				if (timer) clearInterval(timer);
+			});
 		}
 	}
 
@@ -214,5 +245,28 @@ export class ClockDriftEngine {
 			clearInterval(this.#syncTimer);
 			this.#syncTimer = null;
 		}
+		if (this.#unregisterFinalizer !== null) {
+			this.#unregisterFinalizer();
+			this.#unregisterFinalizer = null;
+		}
+		if (this.#activeSyncAbortController !== null) {
+			this.#activeSyncAbortController.abort();
+			this.#activeSyncAbortController = null;
+		}
+		this.#isSyncing = false;
+	}
+
+	/**
+	 * Stops background synchronization and releases active timer resources.
+	 */
+	dispose(): void {
+		this.stopBackgroundSync();
+	}
+
+	/**
+	 * Explicit deterministic disposal (Dual-Layer Lifecycle Model).
+	 */
+	[Symbol.dispose](): void {
+		this.dispose();
 	}
 }

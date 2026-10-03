@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-spatial</a>
+</div>
+
+<br>
+
 # Transit Velocity, Impossible Travel & Navigation
 
 This guide covers Great-Circle spatial calculations, forward compass bearings, geographic midpoints, transit velocity modeling, and impossible travel anomaly detection in `@magmacomputing/tempo-plugin-spatial`.

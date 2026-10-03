@@ -53,6 +53,21 @@ function toDateKey(year: number, month: number, day: number): string {
 	return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+interface NormalizedBusinessDayOptions extends BusinessDayOptions {
+	readonly _holidaySet?: Set<string> | undefined;
+}
+
+function normalizeOptions(options?: BusinessDayOptions): NormalizedBusinessDayOptions | undefined {
+	if (!options) return undefined;
+	if (options.holidays && !('_holidaySet' in (options as any))) {
+		return {
+			...options,
+			_holidaySet: buildHolidaySet(options.holidays),
+		};
+	}
+	return options as NormalizedBusinessDayOptions;
+}
+
 /**
  * Determines whether a given date is an active working business day (non-weekend and non-holiday).
  *
@@ -74,11 +89,8 @@ export function isBusinessDay(date: DateInput, options?: BusinessDayOptions): bo
 		return false;
 
 	const isoDate = toDateKey(parts.year, parts.month, parts.day);
-
-	if (options?.holidays && options.holidays.length > 0) {
-		const holidaySet = buildHolidaySet(options.holidays);
-		if (holidaySet?.has(isoDate)) return false;
-	}
+	const holidaySet = (options as NormalizedBusinessDayOptions)?._holidaySet ?? (options?.holidays ? buildHolidaySet(options.holidays) : undefined);
+	if (holidaySet?.has(isoDate)) return false;
 
 	if (options?.isHoliday) {
 		const Temporal = getTemporal();
@@ -102,10 +114,11 @@ export function isBusinessDay(date: DateInput, options?: BusinessDayOptions): bo
  * ```
  */
 export function nextBusinessDay(date: DateInput, options?: BusinessDayOptions): Temporal.ZonedDateTime {
+	const opts = normalizeOptions(options);
 	let current = coerceZonedDateTime(date).add({ days: 1 });
 	let iterations = 0;
 	const maxIterations = 100_000;
-	while (!isBusinessDay(current, options)) {
+	while (!isBusinessDay(current, opts)) {
 		if (++iterations > maxIterations)
 			throw new RangeError('Search limit exceeded while searching for next business day');
 		current = current.add({ days: 1 });
@@ -127,10 +140,11 @@ export function nextBusinessDay(date: DateInput, options?: BusinessDayOptions): 
  * ```
  */
 export function prevBusinessDay(date: DateInput, options?: BusinessDayOptions): Temporal.ZonedDateTime {
+	const opts = normalizeOptions(options);
 	let current = coerceZonedDateTime(date).subtract({ days: 1 });
 	let iterations = 0;
 	const maxIterations = 100_000;
-	while (!isBusinessDay(current, options)) {
+	while (!isBusinessDay(current, opts)) {
 		if (++iterations > maxIterations)
 			throw new RangeError('Search limit exceeded while searching for previous business day');
 		current = current.subtract({ days: 1 });
@@ -160,6 +174,7 @@ export function addBusinessDays(date: DateInput, amount: number, options?: Busin
 	let current = coerceZonedDateTime(date);
 	if (amount === 0) return current;
 
+	const opts = normalizeOptions(options);
 	const step = amount > 0 ? 1 : -1;
 	let remaining = Math.abs(amount);
 	let iterations = 0;
@@ -169,7 +184,7 @@ export function addBusinessDays(date: DateInput, amount: number, options?: Busin
 		if (++iterations > maxIterations)
 			throw new RangeError('Search limit exceeded while computing business days');
 		current = current.add({ days: step });
-		if (isBusinessDay(current, options))
+		if (isBusinessDay(current, opts))
 			remaining--;
 	}
 
@@ -203,6 +218,7 @@ export function businessDaysBetween(start: DateInput, end: DateInput, options?: 
 	if (startIso > endIso)
 		return -businessDaysBetween(end, start, options);
 
+	const opts = normalizeOptions(options);
 	let current = startZdt.add({ days: 1 });
 	let count = 0;
 	let iterations = 0;
@@ -213,7 +229,7 @@ export function businessDaysBetween(start: DateInput, end: DateInput, options?: 
 			throw new RangeError('Search limit exceeded while computing business days between dates');
 		const currIso = toDateKey(current.year, current.month, current.day);
 		if (currIso > endIso) break;
-		if (isBusinessDay(current, options)) count++;
+		if (isBusinessDay(current, opts)) count++;
 		current = current.add({ days: 1 });
 	}
 

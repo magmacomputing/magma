@@ -81,10 +81,11 @@ describe('Timezone & DST Functions (@magmacomputing/tempo-fns)', () => {
 			expect(fallBackDate.getUTCMonth()).toBe(9); // October
 		});
 
-		it('correctly identifies non-DST observing timezones', () => {
+		it('correctly identifies non-DST observing timezones and non-DST standard offset changes', () => {
 			expect(getDSTTransitions('Asia/Tokyo', 2026)).toEqual({ hasDST: false });
 			expect(getDSTTransitions('America/Phoenix', 2026)).toEqual({ hasDST: false });
 			expect(getDSTTransitions('UTC', 2026)).toEqual({ hasDST: false });
+			expect(getDSTTransitions('Asia/Kathmandu', 1985)).toEqual({ hasDST: false });
 		});
 
 		it('returns { hasDST: false } for invalid timezone or year parameters', () => {

@@ -31,6 +31,10 @@ Tempo.use(NtpPlugin, {
   syncInterval: '15m',          // Automatic periodic re-sync
   interceptFetch: true          // Passively calibrate on existing fetch API calls
 });
+
+// Explicitly calibrate against the server before querying calibrated time
+await Tempo.ntp.sync();
+const now = Tempo.ntp.now();
 ```
 
 ### Auto-Installation (Side-Effect Import)
@@ -39,7 +43,8 @@ Tempo.use(NtpPlugin, {
 import { Tempo } from '@magmacomputing/tempo';
 import '@magmacomputing/tempo-plugin-ntp/install';
 
-// Synchronously query true calibrated server time
+// Synchronize and query true calibrated server time
+await Tempo.ntp.sync();
 const now = Tempo.ntp.now();
 ```
 
