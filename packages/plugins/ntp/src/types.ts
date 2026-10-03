@@ -1,6 +1,19 @@
 import type { Tempo } from '@magmacomputing/tempo';
 
 /**
+ * Origin, URL prefix, regex, or predicate function used to filter passive fetch requests.
+ */
+export type NtpOriginMatcher =
+	| string
+	| RegExp
+	| ((url: string) => boolean);
+
+export type NtpFetchFilter =
+	| boolean
+	| NtpOriginMatcher
+	| readonly (string | RegExp)[];
+
+/**
  * ## NtpSyncOptions
  * Configuration options for the NTP & Clock Drift plugin.
  */
@@ -18,9 +31,31 @@ export interface NtpSyncOptions {
 
 	/**
 	 * Automatically intercept `globalThis.fetch` responses to passively calibrate clock drift.
+	 *
+	 * - `true`: Passively intercepts all fetch requests (unrestricted origin sniffing).
+	 * - `false`: Disabled (default).
+	 * - `string`: Single trusted origin or URL prefix (e.g. `'https://api.example.com'` or `'/api/'`).
+	 * - `Array<string | RegExp>`: List of trusted origins or URL patterns to intercept.
+	 * - `RegExp`: Regular expression pattern matching trusted endpoints.
+	 * - `(url: string) => boolean`: Custom predicate evaluating whether a request URL is trusted.
+	 *
 	 * @default false
 	 */
-	interceptFetch?: boolean;
+	interceptFetch?: NtpFetchFilter;
+
+	/**
+	 * Optional trusted origin(s), URL prefixes, regex patterns, or predicate to restrict passive fetch interception.
+	 * Recommended when `interceptFetch: true` is enabled in applications making external or third-party requests.
+	 *
+	 * @example
+	 * ```ts
+	 * Tempo.use(NtpPlugin, {
+	 *   interceptFetch: true,
+	 *   trustedOrigins: ['https://api.mycompany.com', '/api/']
+	 * });
+	 * ```
+	 */
+	trustedOrigins?: NtpOriginMatcher | readonly (string | RegExp)[];
 
 	/**
 	 * Maximum acceptable Round-Trip Time (RTT) in milliseconds. Samples exceeding this threshold are discarded.

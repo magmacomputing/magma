@@ -29,6 +29,7 @@ export class ClockDriftEngine {
 			server: options.server ?? '/api/time',
 			syncInterval: options.syncInterval ?? 0,
 			interceptFetch: options.interceptFetch ?? false,
+			trustedOrigins: options.trustedOrigins ?? [],
 			maxAcceptableRttMs: options.maxAcceptableRttMs ?? 1000,
 			alpha: Math.min(1, Math.max(0.01, options.alpha ?? 0.3)),
 		};

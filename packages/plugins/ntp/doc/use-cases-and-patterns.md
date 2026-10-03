@@ -54,29 +54,50 @@ function getAuctionRemainingTime(auctionEnd: Tempo) {
 
 ---
 
-## 2. Zero-Overhead Passive Calibration (`interceptFetch`)
+## 2. Zero-Overhead Passive Calibration (`interceptFetch`) & Origin Hardening
 
 Running dedicated background ping loops to sync time can waste mobile battery and add server load. `tempo-plugin-ntp` solves this via **Passive Fetch Interception**.
 
-When `interceptFetch: true` is enabled, the plugin wraps the global `fetch` API. Whenever your application performs any ordinary REST or GraphQL request, the plugin inspects the response's `Server-Timing` or standard `Date` headers and recalculates drift without issuing a single additional HTTP call:
+When passive fetch interception is enabled, the plugin inspects the HTTP response's `Server-Timing` or standard `Date` headers and recalculates drift alongside normal application data fetching, without issuing a single extra HTTP call.
+
+### Trust Boundaries & Origin Hardening
+
+If your application makes network calls to external third parties (e.g., payment gateways, external webhooks, analytics, or user-supplied URLs), you should **never** allow third-party servers to alter your application's shared clock offset.
+
+To enforce strict boundary security, `interceptFetch` supports origin filtering via URL prefixes, origin whitelists, regex patterns, or custom predicates:
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
 
-// Initialize with passive sniffing
+// Option A: Pass trusted origins/prefixes directly to interceptFetch
 Tempo.use(NtpPlugin, {
-  interceptFetch: true,
-  // Smoothing coefficient for Exponential Moving Average
+  interceptFetch: ['https://api.mycompany.com', '/api/'],
   alpha: 0.2
 });
 
-// Any normal application request automatically calibrates the clock!
-const response = await fetch('/api/user/profile');
-const profile = await response.json();
+// Option B: Enable interceptFetch with an explicit trustedOrigins whitelist
+Tempo.use(NtpPlugin, {
+  interceptFetch: true,
+  trustedOrigins: ['https://api.mycompany.com', '/api/']
+});
 
-// System clock is now freshly calibrated
+// Option C: Pattern matching via regular expression or predicate function
+Tempo.use(NtpPlugin, {
+  interceptFetch: (url) => url.startsWith('/api/') || url.includes('trusted-internal.com')
+});
+```
+
+### Production Ingestion Flow
+
+```typescript
+// 1. Trusted first-party call: passively recalibrates Tempo.ntp clock offset
+const user = await fetch('/api/user/profile').then(r => r.json());
 console.log(`Calibrated drift: ${Tempo.ntp.offset}ms (Sample #${Tempo.ntp.drift.sampleCount})`);
+
+// 2. Untrusted third-party call: response headers are safely ignored
+await fetch('https://untrusted-analytics.com/event', { method: 'POST' });
+// Clock offset remains calibrated exclusively by trusted first-party responses
 ```
 
 ---

@@ -27,15 +27,26 @@ import { Tempo } from '@magmacomputing/tempo';
 import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
 
 Tempo.use(NtpPlugin, {
-  server: '/api/time',          // Default time synchronization endpoint
-  syncInterval: '15m',          // Automatic periodic re-sync
-  interceptFetch: true          // Passively calibrate on existing fetch API calls
+  server: '/api/time',                        // Default time synchronization endpoint
+  syncInterval: '15m',                        // Automatic periodic re-sync
+  interceptFetch: ['https://api.mycorp.com', '/api/'] // Passively calibrate only on trusted endpoints
 });
 
 // Explicitly calibrate against the server before querying calibrated time
 await Tempo.ntp.sync();
 const now = Tempo.ntp.now();
 ```
+
+### Configuration Options (`NtpSyncOptions`)
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `server` | `string` | `undefined` | Dedicated HTTP time endpoint returning `Date` or `Server-Timing: clock=<epochMs>`. |
+| `syncInterval` | `string \| number` | `undefined` | Periodic re-sync interval (e.g. `'15m'`, `'1h'`, or ms). |
+| `interceptFetch` | `boolean \| string \| string[] \| RegExp \| Function` | `false` | Passively sniff headers from application `fetch` calls. Can be `true` (sniff all), a path prefix, origin array, regex, or predicate. |
+| `trustedOrigins` | `string \| string[] \| RegExp \| Function` | `undefined` | Whitelist of allowed origins or URL prefixes to sample when `interceptFetch: true` is enabled. |
+| `maxAcceptableRttMs` | `number` | `1000` | Maximum round-trip time threshold in milliseconds. Jittery or delayed requests are discarded. |
+| `alpha` | `number` | `0.3` | Exponential Moving Average (EMA) smoothing factor between `0.0` and `1.0`. |
 
 ### Auto-Installation (Side-Effect Import)
 

@@ -96,7 +96,7 @@ export function evaluateTradeRisk(orderId: string, limitPrice: number) {
 In real-time multiplayer dedicated game servers (spatial combat, FPS, sports), physics simulations (Havok, Rapier, PhysX) run across multiple dedicated background workers. If physics workers derive their simulation `deltaTime` from independent `Date.now()` or `performance.now()` calls, thread scheduling jitter creates simulation desyncs, "rubber-banding", and inconsistent projectile trajectories.
 
 ### Architectural Solution
-The master server loop drives simulation time using `AtomicClock`. Physics worker threads query `reader.now()` at the beginning of each simulation step, ensuring every worker executes calculations using the exact same master game timestamp.
+The master server loop drives simulation time using `AtomicClock`. Physics worker threads query `reader.now()` at the beginning of each simulation step to access drift-free master time. When workers require a strictly common simulation timestamp across all isolates, the master captures one tick value and passes it to all workers.
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -152,7 +152,7 @@ export class AudioWorkletTimeSync {
    */
   processAudioFrame(frameNumber: number) {
     // Lock-free read executes in O(1) time without garbage collection
-    const sampleTimestampNs = reader.nowNano();
+    const sampleTimestampNs = this.reader.nowNano();
 
     return { frameNumber, timestampNs: sampleTimestampNs };
   }

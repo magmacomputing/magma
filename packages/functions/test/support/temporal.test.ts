@@ -208,6 +208,18 @@ describe('coerceZonedDateTime', () => {
 
 		const zdtFromZdt = coerceZonedDateTime('2026-10-02T10:00:00+02:00[Europe/Paris]');
 		expect(zdtFromZdt.timeZoneId).toBe('Europe/Paris');
+
+		// Explicit numeric minute offset preserves offset timezone
+		const zdtOffset = coerceZonedDateTime('2026-10-02T12:00:00+10:00');
+		expect(zdtOffset.timeZoneId).toBe('+10:00');
+		expect(zdtOffset.year).toBe(2026);
+		expect(zdtOffset.month).toBe(10);
+		expect(zdtOffset.day).toBe(2);
+
+		// Explicit seconds-precision offset preserves exact instant projected to fallbackTz
+		const zdtSecondsOffset = coerceZonedDateTime('2026-10-02T12:00:00+05:30:15', 'UTC');
+		expect(zdtSecondsOffset.timeZoneId).toBe('UTC');
+		expect(zdtSecondsOffset.epochMilliseconds).toBe(1790922585000); // 2026-10-02T06:29:45Z
 	});
 
 	it('should coerce duck-typed { year, month, day } objects', () => {

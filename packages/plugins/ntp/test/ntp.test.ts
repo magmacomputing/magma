@@ -158,5 +158,71 @@ describe('NtpPlugin & ClockDriftEngine', () => {
 			Tempo.ntp.dispose();
 			Tempo.ntp[Symbol.dispose]();
 		});
+
+		it('passively ingests samples from allowed origins and filters untrusted origins', async () => {
+			Tempo.ntp.dispose();
+
+			const mockEpoch = Date.now() + 1000;
+			// Mock underlying fetch to return server timestamp
+			globalThis.fetch = vi.fn().mockImplementation(async () => {
+				return {
+					status: 200,
+					headers: new Headers({
+						'Server-Timing': `clock=${mockEpoch}`,
+					}),
+				} as any;
+			});
+
+			(NtpPlugin as any).install(Tempo, {
+				interceptFetch: true,
+				trustedOrigins: ['https://api.trusted.com', '/api/internal'],
+			});
+
+			// 1. Untrusted third-party call: should NOT calibrate
+			await globalThis.fetch('https://untrusted-thirdparty.com/analytics');
+			expect(Tempo.ntp.isCalibrated).toBe(false);
+			expect(Tempo.ntp.drift.sampleCount).toBe(0);
+
+			// 2. Trusted origin call: SHOULD calibrate
+			await globalThis.fetch('https://api.trusted.com/data');
+			expect(Tempo.ntp.isCalibrated).toBe(true);
+			expect(Tempo.ntp.drift.sampleCount).toBe(1);
+
+			// 3. Trusted path call: SHOULD calibrate
+			await globalThis.fetch('/api/internal/status');
+			expect(Tempo.ntp.drift.sampleCount).toBe(2);
+
+			Tempo.ntp.dispose();
+		});
+
+		it('supports regex and predicate matching in interceptFetch directly', async () => {
+			Tempo.ntp.dispose();
+
+			const mockEpoch = Date.now() + 1000;
+			globalThis.fetch = vi.fn().mockImplementation(async () => {
+				return {
+					status: 200,
+					headers: new Headers({
+						'Server-Timing': `clock=${mockEpoch}`,
+					}),
+				} as any;
+			});
+
+			(NtpPlugin as any).install(Tempo, {
+				interceptFetch: (url: string) => url.includes('safe-zone'),
+			});
+
+			// Disallowed
+			await globalThis.fetch('https://api.other.com/metrics');
+			expect(Tempo.ntp.isCalibrated).toBe(false);
+
+			// Allowed via predicate
+			await globalThis.fetch('https://api.other.com/safe-zone/time');
+			expect(Tempo.ntp.isCalibrated).toBe(true);
+			expect(Tempo.ntp.drift.sampleCount).toBe(1);
+
+			Tempo.ntp.dispose();
+		});
 	});
 });
+

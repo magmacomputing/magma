@@ -32,8 +32,8 @@ When running in Node.js or in browsers with Cross-Origin Isolation enabled:
    ```
 2. A typed `Float64Array` view is mounted over the buffer. Each 64-bit IEEE 754 double stores one millisecond timestamp.
 3. The workload is partitioned into balanced slices (`chunkSize = Math.ceil(epochs.length / threadCount)`).
-4. Each worker thread receives pointers to the same memory segment along with its assigned slice indices (`startIdx`, `endIdx`).
-5. Workers mutate timestamps in place and post a lightweight `{ status: 'done' }` signal upon completion. Zero serialization or memory copying takes place across the thread boundary.
+4. Each worker thread receives references to the shared memory buffers along with its assigned slice indices (`startIdx`, `endIdx`).
+5. Workers access the shared buffers directly, mutating timestamps in place within their assigned slices, and post a lightweight `{ status: 'done' }` signal upon completion. Shared buffer access avoids serialization and array cloning across the thread boundary.
 
 ### Mode B: `postMessage` Structural Cloning (Graceful Degradation)
 
