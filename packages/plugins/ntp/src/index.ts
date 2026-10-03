@@ -51,22 +51,25 @@ function parseIntervalMs(interval?: number | string): number {
 	}
 }
 
+type FetchFn = typeof globalThis.fetch;
+
 let _globalNtpEngine: ClockDriftEngine | null = null;
 let _globalSyncOptions: NtpSyncOptions = {};
 let _fetchPatched = false;
-let _originalFetch: typeof globalThis.fetch | null = null;
+let _originalFetch: FetchFn | null = null;
+let _installedFetchWrapper: FetchFn | null = null;
 
 /**
  * Safely extracts a string URL from diverse fetch input types (string, URL, Request).
  */
 function extractRequestUrl(input: unknown): string {
 	if (isString(input)) return input;
-	if (input && typeof input === 'object') {
-		if ('url' in input && isString((input as any).url)) return (input as any).url;
-		if ('href' in input && isString((input as any).href)) return (input as any).href;
-		if (isFunction((input as any).toString)) {
+	if (isObject(input)) {
+		if ('url' in input && isString(input.url)) return input.url;
+		if ('href' in input && isString(input.href)) return input.href;
+		if (isFunction(input.toString)) {
 			try {
-				return (input as any).toString();
+				return input.toString();
 			} catch {
 				return '';
 			}
@@ -169,10 +172,13 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 			},
 			dispose(): void {
 				getEngine().dispose();
-				if (_fetchPatched && _originalFetch) {
-					globalThis.fetch = _originalFetch;
+				if (_fetchPatched) {
+					if (_originalFetch && globalThis.fetch === _installedFetchWrapper)
+						globalThis.fetch = _originalFetch;
+
 					_fetchPatched = false;
 					_originalFetch = null;
+					_installedFetchWrapper = null;
 				}
 			},
 			[Symbol.dispose](): void {
@@ -201,7 +207,7 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 			_fetchPatched = true;
 			_originalFetch = globalThis.fetch;
 			const originalFetch = globalThis.fetch;
-			globalThis.fetch = async function (...args: Parameters<typeof fetch>): Promise<Response> {
+			const fetchWrapper = async function (this: any, ...args: Parameters<FetchFn>): Promise<Response> {
 				const init = args[1];
 				const isInternalSync = init?.headers && (
 					(isFunction((init.headers as any).get) && (init.headers as any).get('X-Tempo-Sync')) ||
@@ -229,6 +235,8 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 
 				return response;
 			};
+			_installedFetchWrapper = fetchWrapper;
+			globalThis.fetch = fetchWrapper;
 		}
 
 		// 4. Setup periodic background sync if interval provided

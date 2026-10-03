@@ -60,6 +60,12 @@ export const ISO_CALENDAR_DATE_REGEX = /^(?:([+-]\d{4,6})|(\d{4}))(?:-(\d{2})(?:
 export const ISO_OFFSET_SUFFIX_REGEX = /([+-]\d{2}(?::?\d{2}(?::?\d{2})?)?|Z)$/i;
 
 /**
+ * Regular expression matching ISO 8601 offset strings with seconds precision (+HH:MM:SS or +HHMMSS).
+ * @internal
+ */
+export const ISO_OFFSET_SECONDS_REGEX = /^[+-]\d{2}:?\d{2}:?\d{2}$/;
+
+/**
  * Fast Gregorian leap year check for a full calendar year number.
  * @internal
  */
@@ -273,12 +279,11 @@ export function coerceZonedDateTime(date: DateInput, fallbackTz = 'UTC'): Tempor
 			if (offsetMatch) {
 				try {
 					const inst = Temporal.Instant.from(trimmed);
-					try {
-						const offsetTz = offsetMatch[1].toUpperCase() === 'Z' ? 'UTC' : offsetMatch[1];
-						return inst.toZonedDateTimeISO(offsetTz);
-					} catch {
-						return inst.toZonedDateTimeISO(fallbackTz);
-					}
+					const rawOffset = offsetMatch[1];
+					const isUtc = rawOffset.toUpperCase() === 'Z';
+					const hasSeconds = ISO_OFFSET_SECONDS_REGEX.test(rawOffset);
+					const offsetTz = isUtc ? 'UTC' : (hasSeconds ? fallbackTz : rawOffset);
+					return inst.toZonedDateTimeISO(offsetTz);
 				} catch {
 					// Fall through to PlainDateTime if instant parsing fails
 				}
